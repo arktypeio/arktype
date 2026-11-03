@@ -321,6 +321,7 @@ export class Interpreter {
 	private opts: InterpreterOptions
 	sitesByNode = new Map<Node, SiteState>()
 	standIns = new WeakMap<object, StandIn>()
+	private methodsByValue = new WeakMap<object, [FunctionNode, SourceModule][]>()
 	// the site whose own call into arktype threw each ParseError
 	parseErrorSites = new WeakMap<ParseError, SiteState>()
 	// deferred default checks by the node whose creation ran them
@@ -978,7 +979,13 @@ export class Interpreter {
 		const depth = changeableDepthOf(result.value)
 		const written =
 			depth > 0 &&
-			this.writtenBefore(binding, module, readAt ?? node, depth, ctx)
+			(this.writtenBefore(binding, module, readAt ?? node, depth, ctx) ??
+				this.writtenThroughThis(
+					`\`${binding.name}\``,
+					result.value as object,
+					depth,
+					ctx
+				))
 		if (written) return { value: new DynamicValue(module, node, written) }
 		if (depth > 0) addHolder(ctx.trace, module, binding, depth)
 		let isReceived = isChangeable(result.value)
@@ -1106,12 +1113,25 @@ export class Interpreter {
 		const depth = changeableDepthOf(result.value)
 		const exported =
 			depth > 0 &&
-			target.kind === "binding" &&
-			this.writtenIn(target.binding, target.module, depth, ctx)
+			((target.kind === "binding" &&
+				this.writtenIn(target.binding, target.module, depth, ctx)) ||
+				this.writtenThroughThis(
+					target.kind === "binding" ?
+						`\`${target.binding.name}\``
+					:	`the default export of ${target.module.path}`,
+					result.value as object,
+					depth,
+					ctx
+				))
 		const dynamic =
 			isDynamic(result.value) ?
 				result.value
-			:	exported && new DynamicValue(target.module, target.binding.id, exported)
+			:	exported &&
+				new DynamicValue(
+					target.module,
+					target.kind === "binding" ? target.binding.id : target.node,
+					exported
+				)
 		if (dynamic) {
 			return {
 				value: new DynamicValue(
@@ -1192,6 +1212,49 @@ export class Interpreter {
 		if (ctx.site?.readsLiterals) return
 		const [write] = this.graph.mayWritesOf(binding, module, heldAs(depth))
 		return write && this.writtenProblemOf(binding, write, module)
+	}
+
+	// e.g. `swap() { this.t = T }` held by the value read, which the program
+	// may call wherever it reads the value
+	private writtenThroughThis(
+		label: string,
+		value: object,
+		depth: number,
+		ctx: Context
+	): string | undefined {
+		if (ctx.site?.readsLiterals) return
+		for (const [fn, module] of this.methodsOf(value)) {
+			const [write] = this.graph.mayWritesThroughThis(fn, module, heldAs(depth))
+			if (write)
+				return `${label} holds a method that ${this.graph.isEscape(write) ? "passes `this` to code the build doesn't follow" : "writes `this`"} at ${module.positionOf(write)}, so its value at the site is not known`
+		}
+	}
+
+	// each function other than an arrow a value holds, whose `this` is what
+	// holds it when the program calls it as a method
+	private methodsOf(value: object): [FunctionNode, SourceModule][] {
+		let result = this.methodsByValue.get(value)
+		if (result) return result
+		this.methodsByValue.set(value, (result = []))
+		const seen = new Set<unknown>()
+		const visit = (value: unknown) => {
+			if (!isPlainContainer(value) || seen.has(value)) return
+			seen.add(value)
+			for (const k of Reflect.ownKeys(value)) {
+				const descriptor = Reflect.getOwnPropertyDescriptor(value, k)!
+				for (const held of [descriptor.value, descriptor.get, descriptor.set]) {
+					const closure =
+						hasDomain(held, "object") ?
+							this.standIns.get(held)?.closure
+						:	undefined
+					if (!closure) visit(held)
+					else if (closure.node.type !== "ArrowFunctionExpression")
+						result!.push([closure.node, closure.module])
+				}
+			}
+		}
+		visit(value)
+		return result
 	}
 
 	private writtenProblemOf(
@@ -1688,8 +1751,16 @@ export class Interpreter {
 				const depth = changeableDepthOf(result.value)
 				const written =
 					depth > 0 &&
-					target.kind === "binding" &&
-					this.writtenIn(target.binding, target.module, depth, ctx)
+					((target.kind === "binding" &&
+						this.writtenIn(target.binding, target.module, depth, ctx)) ||
+						this.writtenThroughThis(
+							target.kind === "binding" ?
+								`\`${target.binding.name}\``
+							:	`the default export of ${target.module.path}`,
+							result.value as object,
+							depth,
+							ctx
+						))
 				if (written) return new DynamicValue(target.module, node, written)
 				if (depth > 0) addHolder(ctx.trace, ...holderOf(target), depth)
 				if (readsAgain(result.value)) mergeTrace(ctx.trace, result.trace)

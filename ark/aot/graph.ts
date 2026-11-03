@@ -1082,6 +1082,8 @@ export class ModuleGraph {
 	private holdings: Holding[] | undefined
 	// how a function's calls are being followed, which its own calls aren't again
 	private returning = new WeakMap<FunctionNode, Set<string>>()
+	// what each method may write through `this`, by how it holds a value
+	private thisWritesByFn = new WeakMap<FunctionNode, Map<string, Node[]>>()
 	// each module of a package the build reads only for what a callee may
 	// write, or null for one it can't read
 	private packageModulesById = new Map<string, SourceModule | null>()
@@ -4094,6 +4096,34 @@ export class ModuleGraph {
 			throw e
 		} finally {
 			this.holdings = outer
+		}
+		return result
+	}
+
+	// what a method a value holds may write of it through `this`, as
+	// `swap() { this.t = T }` does once the program calls `o.swap()`
+	mayWritesThroughThis(
+		fn: FunctionNode,
+		module: SourceModule,
+		held: Held
+	): Node[] {
+		const key = `${held.depth}:${held.copied}`
+		let byHeld = this.thisWritesByFn.get(fn)
+		if (!byHeld) this.thisWritesByFn.set(fn, (byHeld = new Map()))
+		let result = byHeld.get(key)
+		if (result) return result
+		byHeld.set(key, (result = []))
+		for (const node of [...fn.params, fn.body!]) {
+			walk(node, child => {
+				if (child.type === "ThisExpression") {
+					const write = this.mayWriteFrom(child, module, held)
+					if (write) result.push(write)
+				}
+				// a function other than an arrow has a `this` of its own
+				return (
+					!isFunctionNode(child) || child.type === "ArrowFunctionExpression"
+				)
+			})
 		}
 		return result
 	}

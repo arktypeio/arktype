@@ -1548,6 +1548,75 @@ export const T4 = type({ x: S4.user })`
 			])
 		})
 
+		it("values a method they hold writes through this", () => {
+			attest(
+				statusesOf(
+					`import { type } from "arktype"
+import D from "./containers.ts"
+declare const register: (v: unknown) => void
+const o0 = {
+	t: type("string"),
+	swap() {
+		this.t = type("number")
+	}
+}
+o0.swap()
+const o1 = {
+	inner: {
+		t: type("string"),
+		set(t: any) {
+			this.t = t
+		}
+	}
+}
+const o2 = {
+	t: type("string"),
+	get() {
+		return this.t
+	}
+}
+const o3 = {
+	t: type("string"),
+	leak() {
+		register(this)
+	}
+}
+const o4 = {
+	t: type("string"),
+	describe: () => "an arrow has no this of its own"
+}
+export const A0 = type({ x: o0.t })
+export const A1 = type({ x: o1.inner.t })
+export const A2 = type({ x: o2.t })
+export const A3 = type({ x: o3.t })
+export const A4 = type({ x: o4.t })
+export const AD = type({ x: D.t })`,
+					{
+						"/containers.ts": `import { type } from "arktype"
+export default {
+	t: type("string"),
+	swap() {
+		this.t = type("number")
+	}
+}`
+					}
+				)
+			).snap([
+				"5:5 accepted string",
+				"7:12 accepted number",
+				"13:6 accepted string",
+				"20:5 accepted string",
+				"26:5 accepted string",
+				"32:5 accepted string",
+				"35:19 rejected\n  `o0` holds a method that writes `this` at /main.ts:7:3, so its value at the site is not known",
+				"36:19 rejected\n  `o1` holds a method that writes `this` at /main.ts:15:4, so its value at the site is not known",
+				"37:19 accepted { x: string }",
+				"38:19 rejected\n  `o3` holds a method that passes `this` to code the build doesn't follow at /main.ts:28:3, so its value at the site is not known",
+				"39:19 accepted { x: string }",
+				"40:19 rejected\n  `D` is imported from /containers.ts\n  the default export of /containers.ts holds a method that writes `this` at /containers.ts:5:3, so its value at the site is not known"
+			])
+		})
+
 		it("holes read through an object written before the site", () => {
 			const diagnostics = precompile(
 				`import { type } from "arktype"
