@@ -64,6 +64,31 @@ const forge = (dir: string) => {
 	}
 }
 
+// marks the code of each module a stored scan wrote, so a build the cache
+// answers is told apart from one that scans again, which writes no mark, or
+// fails once a mark it gave differs from what it writes
+const forgeScan = (dir: string): number => {
+	let marked = 0
+	for (const path of entriesOf(dir)) {
+		const text = readFileSync(path, "utf8")
+		const stored = JSON.parse(text.slice(text.indexOf("\n") + 1))
+		const modules: Record<string, { answer: { code?: string } | null }> =
+			stored.answer?.modules ?? {}
+		for (const { answer } of Object.values(modules)) {
+			if (!answer?.code) continue
+			answer.code += `\n${forgedLine}\n`
+			marked++
+		}
+		const body = JSON.stringify(stored)
+		writeFileSync(path, `${hashOf(body)}\n${body}`)
+	}
+	return marked
+}
+
+const forgedLine = 'console.log("forged")'
+
+const forgedIn = (code: string) => code.split(forgedLine).length - 1
+
 const isWhole = (path: string) => {
 	const text = readFileSync(path, "utf8")
 	const start = text.indexOf("\n") + 1
@@ -446,7 +471,9 @@ contextualize(function (this: Mocha.Suite) {
 		const built = async (
 			dir: string,
 			plugins: VitePlugin[] = [],
-			alias: Record<string, string> = {}
+			alias: Record<string, string> = {},
+			// false where a workspace links arktype from its source
+			preserveSymlinks = true
 		) => {
 			// Vite sets NODE_ENV for a production build, which later suites' processes inherit
 			const { NODE_ENV } = process.env
@@ -460,7 +487,7 @@ contextualize(function (this: Mocha.Suite) {
 					resolve: {
 						alias,
 						conditions: [...conditions, ...defaultClientConditions],
-						preserveSymlinks: true
+						preserveSymlinks
 					},
 					build: {
 						write: false,
@@ -468,7 +495,10 @@ contextualize(function (this: Mocha.Suite) {
 						lib: { entry: "main.ts", formats: ["es"] }
 					}
 				})) as Rolldown.RolldownOutput[]
-				return output[0].code
+				// each chunk, as a module another plugin adds writes one of its own
+				return output
+					.map(chunk => (chunk.type === "chunk" ? chunk.code : ""))
+					.join("\n")
 			} catch (e) {
 				return (e as Error).message
 			} finally {
@@ -505,6 +535,69 @@ contextualize(function (this: Mocha.Suite) {
 			attest(written.length).equals(2)
 			attest(await built(dir)).equals(code)
 			attest(writtenOf(dir)).equals(written)
+		})
+
+		it("answers a package a workspace links from what its scan stored", async () => {
+			const dir = installed({
+				...packageFiles(
+					"@acme/schemas",
+					{
+						"index.ts":
+							'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n'
+					},
+					{ exports: "./index.ts" },
+					"packages/schemas"
+				),
+				"main.ts":
+					'import { User } from "@acme/schemas"\n\nconsole.log(User.allows({ name: "x" }))\n'
+			})
+			mkdirSync(join(dir, "node_modules/@acme"))
+			symlinkSync(
+				join(dir, "packages/schemas"),
+				join(dir, "node_modules/@acme/schemas")
+			)
+			// as the bundler resolves a link to its file
+			const linked = {
+				"@acme/schemas": join(dir, "packages/schemas/index.ts")
+			}
+			const code = await built(dir, [], linked)
+			attest(code).satisfies(/name/)
+			attest(await built(dir, [], linked)).equals(code)
+			// the package's module, as main.ts reads it unchanged
+			const marked = forgeScan(dir)
+			attest(marked).equals(1)
+			attest(forgedIn(await built(dir, [], linked))).equals(marked)
+		})
+
+		it("answers a module its scan never reached without scanning again", async () => {
+			// arktype's own modules, as Vite follows the link to the workspace's
+			// source, which no scan reads
+			const dir = installed(program)
+			const code = await built(dir, [], {}, false)
+			attest(code).satisfies(/User/)
+			attest(await built(dir, [], {}, false)).equals(code)
+			const marked = forgeScan(dir)
+			attest(marked).equals(2)
+			attest(forgedIn(await built(dir, [], {}, false))).equals(marked)
+		})
+
+		it("scans again for a module its scan never reached that it writes", async () => {
+			const dir = installed({
+				...program,
+				"extra.ts":
+					'import { type } from "arktype"\n\nconsole.log(type({ id: "number" })({ id: 1 }))\n'
+			})
+			// a chunk another plugin adds, which no import from the entry reaches
+			const emitter: VitePlugin = {
+				name: "emitter",
+				buildStart() {
+					this.emitFile({ type: "chunk", id: join(dir, "extra.ts") })
+				}
+			}
+			const code = await built(dir, [emitter])
+			attest(await built(dir, [emitter])).equals(code)
+			attest(forgeScan(dir)).equals(2)
+			attest(forgedIn(await built(dir, [emitter]))).equals(0)
 		})
 
 		it("scans again for a module unlike those it stored", async () => {
