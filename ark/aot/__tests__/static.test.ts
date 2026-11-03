@@ -14,6 +14,10 @@ import {
 const unhinted = (...args: Parameters<typeof diagnosticsOf>) =>
 	diagnosticsOf(...args).map(d => d.slice(0, d.lastIndexOf("\n")))
 
+// a read of a member no setting decides is baked where the build sees it, so
+// one a setting drops shows where the build sees a Type flow
+const dropsDescription: PrecompileOptions = { members: { description: false } }
+
 // where a Scope or Generic is refused, as passed to code the build can't see
 // or, where its read names what it lacks, as read off a value it can't follow
 const escapesOf = (...args: Parameters<typeof analyze>) =>
@@ -1855,7 +1859,8 @@ const D = type.enumerated(...Object.keys($))`)
 
 		it("reads a validator lacks", () => {
 			attest(
-				unhinted(`import { type } from "arktype"
+				unhinted(
+					`import { type } from "arktype"
 const T = type({ a: "string.trim" })
 function g() {
 	const t = T
@@ -1873,7 +1878,10 @@ export const A = g().or("null")
 export const B = D.User.or("null")
 export const E = registry.get("admin").or("null")
 export const schemas = [T].map(t => t.toJsonSchema())
-console.log(Object.keys(T), String(T), JSON.stringify(T))`)
+console.log(Object.keys(T), String(T), JSON.stringify(T))`,
+					{},
+					{ members: { toJsonSchema: false, expression: false, toJSON: false } }
+				)
 			).snap([
 				"/main.ts:8:9  [k]: I reflects on a Type, whose properties a standalone validator doesn't share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
 				"/main.ts:15:18  g().or reads or, which a standalone validator lacks\n  `g()` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
@@ -1883,6 +1891,27 @@ console.log(Object.keys(T), String(T), JSON.stringify(T))`)
 				"/main.ts:19:13  Object.keys(T) reflects on a Type, whose properties a standalone validator doesn't share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
 				"/main.ts:19:29  String(T) reads expression, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
 				"/main.ts:19:40  JSON.stringify(T) reads toJSON, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read"
+			])
+		})
+
+		it("reflects on what may be a Type", () => {
+			attest(
+				unhinted(`import { scope, type } from "arktype"
+const Parsed = type("string.json.parse")
+const Name = type("string")
+const schemas = { Parsed, Name }
+const key = process.argv[2]
+const d: unknown = process.argv[3]
+const $ = scope({ a: "string" }).export()
+console.log(Object.entries(schemas[key]), Object.keys($))
+console.log(Object.keys(Parsed))
+console.log(Object.keys(typeof d === "string" ? Parsed : Name), Object.keys(d || Name), Object.keys(d ?? Name))`)
+			).snap([
+				"/main.ts:8:13  Object.entries(schemas[key]) reflects on a Type, whose properties a standalone validator doesn't share\n  the build can't tell where `schemas[key]` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:9:13  Object.keys(Parsed) reflects on a Type, whose properties a standalone validator doesn't share\n  `Parsed` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				'/main.ts:10:13  Object.keys(typeof d === "string" ? Parsed : Name) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `typeof d === "string" ? Parsed : Name` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read',
+				"/main.ts:10:65  Object.keys(d || Name) reflects on a Type, whose properties a standalone validator doesn't share\n  the build can't tell where `d || Name` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:10:89  Object.keys(d ?? Name) reflects on a Type, whose properties a standalone validator doesn't share\n  the build can't tell where `d ?? Name` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 
@@ -2191,7 +2220,8 @@ export function make(input: { error?: string }) {
 	result.resource = Info
 	return result
 }`
-					}
+					},
+					dropsDescription
 				)
 			).snap([
 				"/main.ts:2:13  make({}).resource.description reads description, which a standalone validator lacks\n  the build can't tell where `make({}).resource` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
@@ -2221,7 +2251,8 @@ export const later = (input: unknown) => {
 	const read = () => input
 	return read()
 }`
-					}
+					},
+					dropsDescription
 				)
 			).snap([
 				"/main.ts:3:13  wrap(User).schema.description reads description, which a standalone validator lacks\n  the build can't tell where `wrap(User).schema` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
@@ -2248,7 +2279,8 @@ export function orUser(x?: unknown) {
 	if (!x) x = User
 	return x
 }`
-					}
+					},
+					dropsDescription
 				)
 			).snap([
 				"/main.ts:7:13  local().description reads description, which a standalone validator lacks\n  the build can't tell where `local()` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
@@ -2270,7 +2302,8 @@ console.log(logged(User, "user").schema.description, first(User).description)`,
 					{
 						"/a.ts": `import { type } from "arktype"
 export const User = type({ name: "string" })`
-					}
+					},
+					dropsDescription
 				)
 			).snap([
 				'/main.ts:8:13  logged(User, "user").schema.description reads description, which a standalone validator lacks\n  the build can\'t tell where `logged(User, "user").schema` comes from, so it may be a Type, which the standalone runtime replaces with a validator',
@@ -2291,7 +2324,8 @@ import { User } from "./a.ts"
 export default {
 	setup: () => (_ctx: unknown) => _toDisplayString(_unref(User).description)
 }`,
-					user
+					user,
+					dropsDescription
 				)
 			).snap([
 				"/main.ts:4:51  _unref(User).description reads description, which a standalone validator lacks\n  `_unref(User)` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read"
@@ -2304,7 +2338,8 @@ const _sfc_main = { setup: () => ({ Schema: User }), data: () => ({ product: { d
 export function render(_ctx: any, _cache: any, $props: any, $setup: any) {
 	return [$setup.Schema.description, _ctx.product.description, $setup.Schema.allows(1)].map(_toDisplayString)
 }`,
-					user
+					user,
+					dropsDescription
 				)
 			).snap([
 				"/main.ts:5:10  $setup.Schema.description reads description, which a standalone validator lacks\n  the build can't tell where `$setup.Schema` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
@@ -2332,7 +2367,6 @@ console.log(Schemas.Inner.Admin.or("null"), A.B.T.or("null"), f.T.or("null"))
 console.log(Schemas.User({}), Schemas.User.allows(1))`)
 			).snap([
 				"/main.ts:15:13  Schemas.User.or reads or, which a standalone validator lacks\n  the build can't tell where `Schemas.User` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
-				"/main.ts:15:38  Schemas.User.expression reads expression, which a standalone validator lacks\n  the build can't tell where `Schemas.User` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
 				"/main.ts:16:13  Schemas.Inner.Admin.or reads or, which a standalone validator lacks\n  the build can't tell where `Schemas.Inner.Admin` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
 				"/main.ts:16:45  A.B.T.or reads or, which a standalone validator lacks\n  the build can't tell where `A.B.T` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
 				"/main.ts:16:63  f.T.or reads or, which a standalone validator lacks\n  the build can't tell where `f.T` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
@@ -2351,13 +2385,29 @@ console.log(jsonOf(T), "json" in T, JSON.stringify(T), T.toJSON, \`\${T}\`)`
 					{ members: { json: true, toJSON: true, expression: true } }
 				)
 			).equals([])
+			// a member no setting decides is baked where the build sees it read
+			attest(diagnosticsOf(source)).equals([])
 			attest(
-				diagnosticsOf(source, {}, { members: { toJSON: true } }).map(
-					diagnostic => diagnostic.split("\n")[0]
-				)
+				diagnosticsOf(
+					source,
+					{},
+					{ members: { json: false, toJSON: true, expression: false } }
+				).map(diagnostic => diagnostic.split("\n")[0])
 			).snap([
 				"/main.ts:3:33  t.json reads json, which a standalone validator lacks",
 				"/main.ts:4:66  `${T}` reads expression, which a standalone validator lacks"
+			])
+		})
+
+		it("Reflect.get at a member's name reads that member", () => {
+			attest(
+				unhinted(`import { type } from "arktype"
+const T = type({ a: "string" })
+const key = process.argv[2]
+console.log(Reflect.get(T, "expression"), Reflect.get(T, "or"), Reflect.get(T, key))`)
+			).snap([
+				'/main.ts:4:43  Reflect.get(T, "or") reads or, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read',
+				"/main.ts:4:65  Reflect.get(T, key) reflects on a Type, whose properties a standalone validator doesn't share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read"
 			])
 		})
 
@@ -2367,9 +2417,7 @@ const T = type({ a: "string" })
 console.log(T.allows(1), T.assert({ a: "" }), T.meta, T["~standard"])
 console.log(T.traverse(1), T.from({ a: "" }), String(T))
 console.log(scope({ a: "string" }).type("a").assert(""))`
-			attest(diagnosticsOf(source).map(d => d.split("\n")[0])).snap([
-				"/main.ts:4:47  String(T) reads expression, which a standalone validator lacks"
-			])
+			attest(diagnosticsOf(source).map(d => d.split("\n")[0])).snap([])
 			attest(
 				diagnosticsOf(
 					source,

@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
-import { hashOf } from "@ark/aot/internal/cache.ts"
+import { AnswerCache, emptySnapshot, hashOf } from "@ark/aot/internal/cache.ts"
 import {
 	createKeyedPrecompiler,
 	type TransformedModule
@@ -22,7 +22,8 @@ import {
 	symlinkSync,
 	writeFileSync
 } from "node:fs"
-import { join } from "node:path"
+import { dirname, join, relative } from "node:path"
+import { threadId } from "node:worker_threads"
 import {
 	build as viteBuild,
 	defaultClientConditions,
@@ -51,14 +52,15 @@ const writtenOf = (dir: string): string[] =>
 	entriesOf(dir).map(path => `${path}@${statSync(path).mtimeMs}`)
 
 // rewrites each stored answer as a valid entry, so one the cache gives is told
-// apart from one the precompiler writes
-const forge = (dir: string) => {
+// apart from one the precompiler writes, naming another snapshot if given
+const forge = (dir: string, snapshot?: string) => {
 	for (const path of entriesOf(dir)) {
 		const text = readFileSync(path, "utf8")
 		const stored = JSON.parse(text.slice(text.indexOf("\n") + 1))
 		const answer = stored.answer.transformed ?? stored.answer.keyed
 		if (!answer) continue
 		answer.code = "forged"
+		if (snapshot !== undefined) stored.snapshot = snapshot
 		const body = JSON.stringify(stored)
 		writeFileSync(path, `${hashOf(body)}\n${body}`)
 	}
@@ -328,6 +330,36 @@ contextualize(function (this: Mocha.Suite) {
 			)
 		})
 
+		it("misses where --emit leaves dependencies to Node", async () => {
+			const dir = writeFixture({
+				"main.ts": `import { type } from "arktype"\nimport { Length } from "schemas"\n\nexport const T = type({ name: Length })\n`,
+				...packageFiles(
+					"schemas",
+					{
+						"index.js": `import { type } from "arktype"\n\nexport const Length = type("string <= 50")\n`
+					},
+					{ ark: { aot: true } }
+				)
+			})
+			await codeIn(dir)
+			forge(dir)
+			// as --emit asks, refusing the site a bundler's build precompiles
+			const send = createAsyncPrecompiler({
+				precompilerOptions: { cwd: dir, conditions },
+				leavesDependencies: true
+			})
+			const id = join(dir, "main.ts")
+			const emitted = (await send([
+				"transform",
+				readFileSync(id, "utf8"),
+				id
+			])) as TransformedModule | undefined
+			await send(["close"])
+			attest(emitted?.errors.map(error => error.split("\n")[0])).snap([
+				"main.ts:4:18  type({ name: Length }) can't be precompiled yet"
+			])
+		})
+
 		it("never reads what another version of the code wrote", async () => {
 			const dir = writeFixture({
 				"main.ts": shapeReader("./shape.ts"),
@@ -337,9 +369,54 @@ contextualize(function (this: Mocha.Suite) {
 			forge(dir)
 			const root = cacheRootOf(dir)
 			const [version] = readdirSync(root)
-			renameSync(join(root, version), join(root, "other"))
+			renameSync(join(root, version), join(root, hashOf("other")))
 			attest(await codeIn(dir)).satisfies(/^import/)
 			attest(readdirSync(root)).equals([version])
+		})
+
+		it("removes nothing in its directory it didn't write", async () => {
+			const dir = writeFixture({
+				"main.ts": shapeReader("./shape.ts"),
+				"shape.ts": shaped("string"),
+				"node_modules/.cache/ark/kept/file.txt": "kept"
+			})
+			await codeIn(dir)
+			attest(readdirSync(cacheRootOf(dir)).includes("kept")).equals(true)
+		})
+
+		it("misses where an entry names a snapshot it couldn't have written", async () => {
+			const dir = writeFixture({
+				"main.ts": shapeReader("./shape.ts"),
+				"shape.ts": shaped("string")
+			})
+			await codeIn(dir)
+			const version = dirname(entriesOf(dir)[0])
+			// a valid snapshot stating nothing, outside the cache, which s-../../
+			// reaches from its directory
+			const body = JSON.stringify(emptySnapshot(undefined))
+			writeFileSync(join(dir, "outside.json"), `${hashOf(body)}\n${body}`)
+			const outside = `../../${relative(version, join(dir, "outside"))}`
+			// one a key every object has, toString, held before it was read
+			for (const [snapshot, domain] of [
+				["toString", "number"],
+				[outside, "boolean"]
+			]) {
+				forge(dir, snapshot)
+				writeFileSync(join(dir, "shape.ts"), shaped(domain))
+				await answersAnew(dir)
+			}
+		})
+
+		it("writes no file a link left in its place reaches", async () => {
+			const dir = writeFixture({ "target.txt": "kept" })
+			const cache = new AnswerCache(dir)
+			const key = hashOf("key")
+			symlinkSync(
+				join(dir, "target.txt"),
+				join(cache.dir, `a-${key}.json.${process.pid}-${threadId}.tmp`)
+			)
+			cache.set(key, "answer", hashOf("snapshot"))
+			attest(readFileSync(join(dir, "target.txt"), "utf8")).equals("kept")
 		})
 
 		it("stores no answer with a diagnostic", async () => {

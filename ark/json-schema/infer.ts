@@ -1056,7 +1056,7 @@ export type inferUnionlessRef<ref, root, seen> =
  * a target that branches into several refs drops the others, letting each
  * acyclic target be inferred once however many paths lead to it */
 export type trackedRefs<ref extends string, root, seen> =
-	isUnit<targetRefs<ref, root>> extends true ? seen | ref
+	isUnion<targetRefs<ref, root>> extends false ? seen | ref
 	: Extract<
 		seen | ref,
 		reachableRefs<targetRefs<ref, root>, root, never>
@@ -1076,12 +1076,11 @@ export type cycleRefs<tracked, depth> =
 
 export type NextCycleDepth = [never, 2, 3, 4]
 
-/** whether `t` has at most one member */
-export type isUnit<t, all = t> =
+export type isUnion<t, members = t> =
 	t extends unknown ?
-		Exclude<all, t> extends never ?
-			true
-		:	false
+		[members] extends [t] ?
+			false
+		:	true
 	:	never
 
 /** refs reachable through `frontier`. Refs across a resource boundary may

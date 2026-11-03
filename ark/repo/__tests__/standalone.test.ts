@@ -1539,6 +1539,17 @@ age must be a number`)
 		attest(String(validator)).equals("Type")
 	})
 
+	it("bakes a __proto__ key's property", async () => {
+		const T = type({ ["__proto__"]: "string" })
+		const { T: validator } = await load(
+			{ T },
+			{ members: { toJsonSchema: true } }
+		)
+		const { properties } = validator.toJsonSchema()
+		attest(Object.getPrototypeOf(properties)).equals(Object.prototype)
+		attest(JSON.stringify(properties)).snap('{"__proto__":{"type":"string"}}')
+	})
+
 	it("writes a schema with a fallback a call passes, as arktype does", async () => {
 		const T = type({ name: "string", "tags?": "string[]" })
 		const D = type({ id: "string.integer.parse", at: "Date | null" })
