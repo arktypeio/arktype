@@ -124,6 +124,33 @@ show()
 		).snap(["main.ts:4:6 bakes description (fields)"])
 	})
 
+	it("a dependency's read at a key it doesn't name loses track without a warning", async () => {
+		attest(
+			await bakedFrom({
+				"/node_modules/server/index.js": `const state = {}
+export const register = schema => {
+	state.schema = schema
+}
+export const list = () =>
+	state.schema["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+export const clone = from => {
+	const to = {}
+	for (const k in from) to[k] = from[k]
+	return to
+}
+`,
+				"/main.ts": `import { type } from "arktype"
+import { clone, list, register } from "server"
+
+register(type("string"))
+console.log(list(), clone({ a: 1 }))
+`
+			})
+		).snap([
+			"main.ts:4:10 bakes expression, description, json, toJSON, toJsonSchema, ~standard.jsonSchema (lost)"
+		])
+	})
+
 	it("bakes nothing where its readers only validate", async () => {
 		attest(
 			await bakedFrom({

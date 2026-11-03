@@ -31,6 +31,9 @@ export type Key = string | typeof anyKey
 export interface Held {
 	path: readonly Key[]
 	of: "type" | "standard"
+	// reached through a dependency's read at a key it doesn't name, as likely
+	// any object's, so losing track past it bakes every member without a warning
+	quiet?: true
 }
 
 export const validatorHeld: Held = { path: [], of: "type" }
@@ -110,8 +113,12 @@ type Value =
 	| { kind: "object"; literal: Node; module: SourceModule }
 	| { kind: "namespace"; module: SourceModule }
 
-const heldKeyOf = (held: Held): string =>
+// what it is where it's held, which a guard reading it tests
+const shapeKeyOf = (held: Held): string =>
 	`${held.of}:${held.path.map(k => (k === anyKey ? "*" : JSON.stringify(k))).join(".")}`
+
+const heldKeyOf = (held: Held): string =>
+	`${held.quiet ? "?" : ""}${shapeKeyOf(held)}`
 
 // the program's modules, read once for every validator
 class Readers {
@@ -359,6 +366,9 @@ class Follow {
 	private value: unknown
 	private read = new Map<IntrospectionMember, string>()
 	private lost: Lost[] = []
+	// where it lost track only past a quiet held
+	private quietlyLost = false
+	private quiet = false
 	private unseen: string[] = []
 	private followsFields = false
 	private seen = new Map<Node, Set<string>>()
@@ -405,8 +415,10 @@ class Follow {
 			let fact = this.pending.pop();
 			fact && this.facts <= maxFacts;
 			fact = this.pending.pop()
-		)
+		) {
+			this.quiet = !!fact.held.quiet
 			this.readAt(fact)
+		}
 	}
 
 	// whether a branch holding the node may run with the validator where its guard reads it
@@ -691,12 +703,12 @@ class Follow {
 
 	reading(): Reading {
 		const members = new Set(this.read.keys())
+		const isLost = this.lost.length > 0 || this.quietlyLost
 		const step: ReadStep =
-			this.lost.length ? "lost"
+			isLost ? "lost"
 			: this.followsFields ? "fields"
 			: "dataflow"
-		if (this.lost.length)
-			for (const member of introspectionMembers) members.add(member)
+		if (isLost) for (const member of introspectionMembers) members.add(member)
 		return {
 			members: introspectionMembers.filter(member => members.has(member)),
 			step,
@@ -715,7 +727,8 @@ class Follow {
 	}
 
 	private lose(node: Node, module: SourceModule, why: string): void {
-		this.lost.push({ at: module.positionOf(node), why })
+		if (this.quiet) this.quietlyLost = true
+		else this.lost.push({ at: module.positionOf(node), why })
 	}
 
 	private readAt({ node, module, held }: Fact): void {
@@ -895,14 +908,16 @@ class Follow {
 				this.bindPattern(read.node, read.module, fieldHeld)
 			else this.push(read.node, read.module, fieldHeld)
 		}
+		const { quiet } = this
 		for (const { node, module } of this.readers.fieldReadsOf(anyKey)) {
 			if (owner !== undefined && !this.readers.mayRead(module, owner)) continue
-			const atKey: Held = { ...fieldHeld, path: [key] }
+			this.quiet = quiet || !!dependencyOf(module.id)
+			const read: Held = this.quiet ? { ...fieldHeld, quiet: true } : fieldHeld
+			const atKey: Held = { ...read, path: [key] }
 			if (node.type === "RestElement")
 				this.bindPattern(node.argument, module, atKey)
-			else if (isPatternTarget(node)) this.bindPattern(node, module, fieldHeld)
-			else if (node.type === "MemberExpression")
-				this.push(node, module, fieldHeld)
+			else if (isPatternTarget(node)) this.bindPattern(node, module, read)
+			else if (node.type === "MemberExpression") this.push(node, module, read)
 			else if (node.type === "SpreadElement")
 				this.push(node.parent!, module, atKey)
 			else if (node.type === "CallExpression") {
@@ -910,6 +925,7 @@ class Follow {
 					this.builtin(node, unwrapExpression(node.callee), i, module, atKey)
 			}
 		}
+		this.quiet = quiet
 	}
 
 	private spread(
@@ -1162,8 +1178,8 @@ class Follow {
 				const binding = module.scopes.bindingsById.get(pattern)
 				if (!binding) return
 				const helds = this.heldsByBinding.get(binding)
-				if (helds) helds.add(heldKeyOf(held))
-				else this.heldsByBinding.set(binding, new Set([heldKeyOf(held)]))
+				if (helds) helds.add(shapeKeyOf(held))
+				else this.heldsByBinding.set(binding, new Set([shapeKeyOf(held)]))
 				this.readBinding(binding, module, held)
 				return
 			}
@@ -1228,7 +1244,7 @@ class Follow {
 			if (key === "jsonSchema") this.record("~standard.jsonSchema", at, module)
 			return
 		}
-		if (key === "~standard") return { path: [], of: "standard" }
+		if (key === "~standard") return { ...held, path: [], of: "standard" }
 		if (key === "toString") this.record("expression", at, module)
 		else if (introspectionMembers.includes(key as never))
 			this.record(key as IntrospectionMember, at, module)
