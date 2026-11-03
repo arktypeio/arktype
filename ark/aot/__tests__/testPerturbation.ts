@@ -485,6 +485,9 @@ interface WorldComparison {
 	observedSites: Set<string>
 }
 
+// what a test observed, keyed `test <n>`, rather than a site
+const isTest = (key: string) => key.startsWith("test ")
+
 // a site key's id and occurrence, ordered as the program runs them
 const orderOf = (key: string) => key.split(":").map(Number)
 
@@ -513,8 +516,22 @@ export const compareWorlds = (
 					[orderOf(key)]
 				:	[]
 			)
+			// the test each of the program's observations was made in
+			const testOf: Record<string, string> = {}
+			for (const [key, observed] of Object.entries(originals)) {
+				if (isTest(key))
+					for (const site of observed.sites as string[]) testOf[site] = key
+			}
 			for (const [key, observed] of Object.entries(originals)) {
 				const actual = actuals[key]
+				if (isTest(key)) {
+					// counted to see, as it may throw what a validator lacks by design
+					if (actual?.threw !== undefined && observed.threw === undefined) {
+						const outcome = `${kind}: a test throws precompiled alone: ${String(actual.threw).split("\n")[0].slice(0, 100)}`
+						counts[outcome] = (counts[outcome] ?? 0) + 1
+					}
+					continue
+				}
 				const expected = reportedOf(observed, actual) as Observation
 				const [id, occurrence] = key.split(":")
 				const site =
@@ -533,6 +550,8 @@ export const compareWorlds = (
 							"unobserved precompiled after a build error"
 						: occurrence && thrown.some(l => isBefore(l, orderOf(key))) ?
 							"unobserved precompiled after a site threw"
+						: actuals[testOf[key]]?.threw !== undefined ?
+							"unobserved precompiled after its test threw"
 						: isCreationCheck(actuals.import) ?
 							"unobserved precompiled after an import threw at creation"
 						:	"unobserved precompiled"

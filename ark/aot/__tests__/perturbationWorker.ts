@@ -400,10 +400,16 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			).catch(e => {
 				observations.import = { threw: messageOf(e) }
 			})
-			for (const test of tests) {
+			for (const [n, test] of tests.entries()) {
 				for (const hook of beforeEachHooks)
 					await settle(valueOrError(() => hook.call(context)))
-				await settle(valueOrError(() => test.call(context)))
+				const before = new Set(Object.keys(observations))
+				const result = await settle(valueOrError(() => test.call(context)))
+				// the sites it observed, and what it threw, which ends it early
+				observations[`test ${n}`] = {
+					sites: Object.keys(observations).filter(key => !before.has(key)),
+					...(result instanceof Error && { threw: messageOf(result) })
+				}
 			}
 		}
 	}
