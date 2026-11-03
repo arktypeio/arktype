@@ -485,6 +485,30 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		attest(types.inner.foo.precompilation).satisfies("string")
 	})
 
+	it("a Type including an alias compiles once it's used", () => {
+		const Node = type({ name: "string", "next?": "this" })
+		attest(Node.internal.unitFn).equals(undefined)
+		const nested = { name: "a", next: { name: "b" } }
+		attest(Node(nested) as object).equals(nested)
+		attest(Node.internal.unitFn).equals(undefined)
+		attest(Node({ name: "a", next: { name: 1 } }).toString()).snap(
+			"next.name must be a string (was a number)"
+		)
+		attest(typeof Node.internal.unitFn).equals("function")
+		attest(Node(nested) as object).equals(nested)
+	})
+
+	it("a definition checking a Type compiles nothing", () => {
+		const $ = scope({}, { exactOptionalPropertyTypes: false })
+		const Named = $.type("string").narrow(
+			(s, ctx) => s.length > 0 || ctx.mustBe("named")
+		)
+		const T = $.type({ "a?": Named })
+		attest(Named.internal.unitFn).equals(undefined)
+		attest(T({ a: undefined }) as object).equals({ a: undefined })
+		attest(T({ a: "" }).toString()).snap('a must be named (was "")')
+	})
+
 	it("allows read before a Type is used checks once it compiles", () => {
 		const T = type({ a: "string" })
 		const allows = T.allows

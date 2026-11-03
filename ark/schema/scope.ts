@@ -947,19 +947,24 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if ((inProgress.definitions || inProgress.resolutions) && node.hasAlias)
 			return node
 
-		// resolving aliases can throw, so they compile on definition
-		const references =
-			node.hasAlias ? referencesThroughAliases(node.references) : undefined
+		// resolving aliases can throw, so they resolve on definition
+		if (node.hasAlias) referencesThroughAliases(node.references)
 		if (node.unitFn || !jit) return node
 		bindPrecompiledUnits?.([node])
 		if (node.unitFn || !canJit(this.cfg)) return node
-		if (references) tryJit(() => precompileRoot(node, references))
-		else node.deferJit()
+		node.deferJit()
 		return node
 	}
 
 	jit(node: BaseNode): void {
-		tryJit(() => precompileRoot(node, node.references))
+		tryJit(() =>
+			precompileRoot(
+				node,
+				node.hasAlias ?
+					referencesThroughAliases(node.references)
+				:	node.references
+			)
+		)
 		// compiling binds what it checked before, unless the host refused
 		if (node.c.preJit) {
 			node.allows = node.c.preJit
