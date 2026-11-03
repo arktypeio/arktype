@@ -155,6 +155,25 @@ console.log(JSON.stringify(spec.paths["/users"].post.requestBody.content["applic
 `)
 	})
 
+	it("a dependency's toJsonSchema() passing a target reads that target's schema", async () => {
+		const out = await loggedEither("target", {
+			"node_modules/convert/package.json":
+				'{ "name": "convert", "type": "module", "exports": "./index.js" }',
+			"node_modules/convert/index.js":
+				'export const convert = schema => schema.toJsonSchema({ target: "draft-07" })\n',
+			"node_modules/convert/index.d.ts":
+				"export declare const convert: (schema: object) => unknown\n",
+			"main.ts": `import { type } from "arktype"
+import { convert } from "convert"
+
+console.log(JSON.stringify(convert(type({ name: "string" }))))
+`
+		})
+		attest(out)
+			.snap(`{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"name":{"type":"string"}},"required":["name"]}
+`)
+	})
+
 	it("a module bakes what it reads of a validator it imports, in a build reading one module at a time", async () => {
 		const out = await logged(
 			"importers",

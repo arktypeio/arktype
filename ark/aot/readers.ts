@@ -973,21 +973,8 @@ class Follow {
 				this.push(member, module, { ...held, path: rest })
 			return
 		}
-		if (key === undefined) {
-			if (held.of === "standard")
-				return this.record("~standard.jsonSchema", member, module)
-			return this.lose(member, module, "reads it at a computed key")
-		}
-		if (held.of === "standard") {
-			if (key === "jsonSchema")
-				this.record("~standard.jsonSchema", member, module)
-			return
-		}
-		if (key === "~standard")
-			return this.push(member, module, { path: [], of: "standard" })
-		if (key === "toString") return this.record("expression", member, module)
-		if (introspectionMembers.includes(key as never))
-			this.record(key as IntrospectionMember, member, module)
+		const read = this.readMember(key, held, member, module)
+		if (read) this.push(member, module, read)
 	}
 
 	// e.g. `tools.map(tool => tool.inputSchema)`, passing each element on
@@ -1224,7 +1211,7 @@ class Follow {
 		}
 	}
 
-	// a member read off the validator or its ~standard by destructuring
+	// a member read off the validator or its ~standard, and what it holds of it
 	private readMember(
 		key: string | undefined,
 		held: Held,
@@ -1245,6 +1232,9 @@ class Follow {
 		if (key === "toString") this.record("expression", at, module)
 		else if (introspectionMembers.includes(key as never))
 			this.record(key as IntrospectionMember, at, module)
+		// a target other than the default is baked with ~standard.jsonSchema's
+		if (key === "toJsonSchema" && !isCalledBare(at))
+			this.record("~standard.jsonSchema", at, module)
 	}
 
 	private bindLeft(left: Node, module: SourceModule, held: Held): void {
@@ -1804,6 +1794,16 @@ const propertyKeyOf = (property: {
 		:	undefined
 	: property.computed || property.key.type !== "Identifier" ? undefined
 	: property.key.name
+
+// e.g. `T.toJsonSchema()`, rather than called with options or read to call later
+const isCalledBare = (read: Node): boolean => {
+	const [operand, call] = operatorOf(read)
+	return (
+		call?.type === "CallExpression" &&
+		call.callee === operand &&
+		!call.arguments.length
+	)
+}
 
 // globals reading an object at keys a call may not name
 const keyedBuiltins: ReadonlySet<string | undefined> = new Set([
