@@ -10,6 +10,7 @@ import { hasArkKind } from "@ark/schema"
 import { errorWritersByCode } from "@ark/schema/internal"
 import { arkKindOf } from "@ark/util"
 import { isTypedFn, keyOf, type Foldable } from "arktype/internal/standalone.ts"
+import { bakedJsonSchemaOptionsMessage } from "arktype/runtime"
 import { bindingOfFunction, isArk } from "@ark/aot/internal/graph.ts"
 import { specifierOf } from "@ark/aot/internal/host.ts"
 import { SourceModule } from "@ark/aot/internal/module.ts"
@@ -488,6 +489,11 @@ interface WorldComparison {
 // what a test observed, keyed `test <n>`, rather than a site
 const isTest = (key: string) => key.startsWith("test ")
 
+// a test passing toJsonSchema() options its validator's baked JSON Schema
+// can't apply, which a standalone validator refuses by design
+const refusesJsonSchemaOptions = (test: Observation | undefined) =>
+	String(test?.threw).includes(bakedJsonSchemaOptionsMessage)
+
 // a site key's id and occurrence, ordered as the program runs them
 const orderOf = (key: string) => key.split(":").map(Number)
 
@@ -525,9 +531,13 @@ export const compareWorlds = (
 			for (const [key, observed] of Object.entries(originals)) {
 				const actual = actuals[key]
 				if (isTest(key)) {
-					// counted to see, as it may throw what a validator lacks by design
-					if (actual?.threw !== undefined && observed.threw === undefined) {
-						const outcome = `${kind}: a test throws precompiled alone: ${String(actual.threw).split("\n")[0].slice(0, 100)}`
+					// a test's own throws aren't compared, as tests call what a validator
+					// lacks by design, like `.extends`, but the documented ones are counted
+					if (
+						observed.threw === undefined &&
+						refusesJsonSchemaOptions(actual)
+					) {
+						const outcome = `${kind}: a test throws precompiled, as it passes toJsonSchema() options a baked JSON Schema can't apply`
 						counts[outcome] = (counts[outcome] ?? 0) + 1
 					}
 					continue
@@ -550,8 +560,8 @@ export const compareWorlds = (
 							"unobserved precompiled after a build error"
 						: occurrence && thrown.some(l => isBefore(l, orderOf(key))) ?
 							"unobserved precompiled after a site threw"
-						: actuals[testOf[key]]?.threw !== undefined ?
-							"unobserved precompiled after its test threw"
+						: refusesJsonSchemaOptions(actuals[testOf[key]]) ?
+							"unobserved precompiled after its test threw, as it passes toJsonSchema() options a baked JSON Schema can't apply"
 						: isCreationCheck(actuals.import) ?
 							"unobserved precompiled after an import threw at creation"
 						:	"unobserved precompiled"
