@@ -280,6 +280,24 @@ export const Item = type({ sku: "string", price: { amount: "number", currency: "
 			]).equals([true, false])
 		})
 
+		it("writes the code of a unit reaching a narrow once, however many Types reach it", () => {
+			const { code, modules } = precompileProgram(
+				`import { type } from "arktype"
+const isSafe = (s: string) => !s.includes("<")
+const Safe = type.string.narrow(isSafe)
+const Named = type({ name: Safe, title: Safe })
+export const A = type({ a: Named })
+export const B = type({ b: Named })
+export const C = type({ c: Named.array() })`,
+				{},
+				{ config: false }
+			)
+			const declared = [code, ...Object.values(modules)]
+				.join("\n")
+				.match(/const \w+(?:Allows|Apply) = /g)!
+			attest(declared.length).equals(new Set(declared).size)
+		})
+
 		it("folds introspection", () => {
 			const result = precompile(
 				`import { type } from "arktype"
