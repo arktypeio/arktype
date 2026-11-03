@@ -133,6 +133,7 @@ import {
 	runsOnArktype,
 	runtimeSpecifiers,
 	runtimeVariantOf,
+	scriptExtensions,
 	transformedId,
 	type DependencyModes,
 	type PrecompileHost,
@@ -1564,13 +1565,7 @@ export class Precompiler {
 		const [, dependency] = dependencyOf(importer) ?? []
 		if (!dependency || this.graph.isFollowed(importer))
 			return { errors: [], warnings: [] }
-		const errors = this.readCopies("arktype", importer).map(report =>
-			[
-				report.message,
-				...report.reasons.map(reason => `  ${reason}`),
-				`  ${report.hint}`
-			].join("\n")
-		)
+		const errors = this.readCopies("arktype", importer).map(renderCopiesReport)
 		const warnings: string[] = []
 		if (
 			this.mode === "standalone" &&
@@ -1589,6 +1584,44 @@ export class Precompiler {
 			else errors.push(message)
 		}
 		return { errors, warnings }
+	}
+
+	// what reading each dependency the modules reach reports, as a build
+	// does for each of them importing arktype
+	readDependenciesOf(ids: string[]): { errors: string[]; warnings: string[] } {
+		const result = { errors: [] as string[], warnings: [] as string[] }
+		const reached = [...ids]
+		const seen = new Set(ids)
+		for (let i = 0; i < reached.length; i++) {
+			const id = reached[i]
+			const source = this.graph.host.readFile(id)
+			if (source === undefined) continue
+			if (i >= ids.length && this.graph.importsArktype(id)) {
+				const { errors, warnings } =
+					this.graph.isFollowed(id) ?
+						{
+							errors: this.readCopies("arktype", id).map(renderCopiesReport),
+							warnings: []
+						}
+					:	this.readDependency(id)
+				result.errors.push(...errors)
+				result.warnings.push(...warnings)
+			}
+			for (const [, specifier] of source.matchAll(loadedSpecifier)) {
+				if (arkPackageSpecifier.test(specifier)) continue
+				const target = this.graph.host.resolve(specifier, id)
+				if (
+					target &&
+					dependencyOf(target) &&
+					scriptExtensions.some(extension => target.endsWith(extension)) &&
+					!seen.has(target)
+				) {
+					seen.add(target)
+					reached.push(target)
+				}
+			}
+		}
+		return result
 	}
 
 	private packageOf(
@@ -6144,6 +6177,15 @@ const arktypeSpecifier =
 	/\b(?:from|import\s*\(?|require\s*\()\s*["'](?:(?:arktype|@ark\/type)(?:\/(?:config|codecs))?|arkregex|@ark\/regex)["']/
 
 const importSpecifier = /\b(?:from|import)\s*["']([^"']+)["']/g
+
+const loadedSpecifier = /\b(?:from|import|require)\s*\(?\s*["']([^"']+)["']/g
+
+const renderCopiesReport = (report: CopiesReport): string =>
+	[
+		report.message,
+		...report.reasons.map(reason => `  ${reason}`),
+		`  ${report.hint}`
+	].join("\n")
 
 const isInIsland = (node: Node, module: SourceModule) =>
 	module.islands.some(island => contains(island, node))

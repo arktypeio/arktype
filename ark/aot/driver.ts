@@ -96,6 +96,7 @@ export type PrecompileRequest =
 	  ]
 	| [kind: "lint", source: string, id: string]
 	| [kind: "readDependency", importer: string]
+	| [kind: "readDependencies", ids: string[]]
 	| [kind: "reset"]
 	| [kind: "refresh"]
 	| [kind: "close"]
@@ -155,6 +156,8 @@ const answerRequests = (
 		const { precompiler } = tracked
 		if (request[0] === "readDependency")
 			return precompiler.readDependency(request[1])
+		if (request[0] === "readDependencies")
+			return precompiler.readDependenciesOf(request[1])
 		if (request[0] === "transform") {
 			const [, source, id, mappings, program] = request
 			if (program !== undefined) {
