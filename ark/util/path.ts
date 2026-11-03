@@ -1,8 +1,8 @@
-import { ReadonlyArray, type array } from "./arrays.ts"
+import type { array } from "./arrays.ts"
 import { throwParseError } from "./errors.ts"
 import type { noInfer } from "./generics.ts"
 import type { requireKeys } from "./records.ts"
-import { isDotAccessible, printSymbol, type JsonArray } from "./serialize.ts"
+import { isDotAccessible, printSymbol } from "./serialize.ts"
 
 export type StringifyPathOptions<stringifiable = PropertyKey> = requireKeys<
 	{
@@ -75,47 +75,4 @@ export const pathAt = (
 		: path.slice()
 	if (key !== undefined) path.pop()
 	return copy
-}
-
-export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
-	// alternate strategy for caching since the base object is frozen
-	private cache: {
-		stringifyAncestors?: readonly string[]
-		json?: JsonArray
-	} = {}
-
-	constructor(...items: array<PropertyKey>) {
-		super()
-		// a single number would create empty slots
-		for (let i = 0; i < items.length; i++) (this as any)[i] = items[i]
-	}
-
-	toJSON(): JsonArray {
-		if (this.cache.json) return this.cache.json
-		this.cache.json = []
-		for (let i = 0; i < this.length; i++) {
-			this.cache.json.push(
-				typeof this[i] === "symbol" ?
-					printSymbol(this[i] as symbol)
-				:	(this[i] as never)
-			)
-		}
-
-		return this.cache.json
-	}
-
-	stringify(): string {
-		return this.stringifyAncestors()[this.length]
-	}
-
-	stringifyAncestors(): readonly string[] {
-		if (this.cache.stringifyAncestors) return this.cache.stringifyAncestors
-		let propString = ""
-		const result: string[] = [propString]
-		for (let i = 0; i < this.length; i++) {
-			propString = appendStringifiedKey(propString, this[i])
-			result.push(propString)
-		}
-		return (this.cache.stringifyAncestors = result)
-	}
 }

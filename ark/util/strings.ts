@@ -29,12 +29,6 @@ export type charsBeforeLast<s extends string> =
 export type contains<s extends string, sub extends string> =
 	s extends `${string}${sub}${string}` ? true : false
 
-export const anchoredRegex = (regex: RegExp | string): RegExp =>
-	new RegExp(
-		anchoredSource(regex),
-		typeof regex === "string" ? "" : regex.flags
-	)
-
 export const deanchoredRegex = (regex: RegExp | string): RegExp =>
 	new RegExp(
 		deanchoredSource(regex),
@@ -56,11 +50,6 @@ export const deanchoredSource = (regex: RegExp | string): string => {
 		source[0] === "^" ? 1 : 0,
 		source[source.length - 1] === "$" ? -1 : undefined
 	)
-}
-
-export const RegexPatterns = {
-	negativeLookahead: (pattern: string) => `(?!${pattern})` as const,
-	nonCapturingGroup: (pattern: string) => `(?:${pattern})` as const
 }
 
 export const Backslash = "\\"

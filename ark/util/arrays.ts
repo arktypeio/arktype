@@ -163,8 +163,6 @@ export declare namespace array {
 
 export type listable<t> = t | readonly t[]
 
-export type flattenListable<t> = t extends array<infer element> ? element : t
-
 export type longerThan<t extends array, n extends number> =
 	`${n}` extends keyof t ? true : false
 
@@ -232,10 +230,6 @@ export const spliterate = <item, included extends item>(
 	}
 	return result as never
 }
-
-export const ReadonlyArray = Array as unknown as new <T>(
-	...args: ConstructorParameters<typeof Array<T>>
-) => ReadonlyArray<T>
 
 export const includes = <a extends array>(
 	array: a,
