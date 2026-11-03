@@ -19,6 +19,7 @@ import {
 } from "@ark/schema"
 import {
 	appendStringifiedKey,
+	defineValue,
 	flatMorph,
 	hasKey,
 	isEmptyObject,
@@ -514,7 +515,8 @@ const writeProps = (
 
 		if (prop.hasDef()) writeDefault(valueSchema, prop.default, ctx)
 
-		schema.properties![prop.key] = valueSchema
+		// assigning "__proto__" would set the prototype
+		defineValue(schema.properties!, prop.key, valueSchema)
 	}
 	ctx.path = path
 	if (node.requiredKeys.length && schema.properties) {
@@ -575,7 +577,7 @@ const writeIndex = (
 			// OpenAPI 3.0 has no patternProperties, only additionalProperties
 			(ctx.target !== "openapi-3.0" || (pattern === "" && !node.props.length))
 		) {
-			;(schema.patternProperties ??= {})[pattern] = valueJsonSchema
+			defineValue((schema.patternProperties ??= {}), pattern, valueJsonSchema)
 			continue
 		}
 
