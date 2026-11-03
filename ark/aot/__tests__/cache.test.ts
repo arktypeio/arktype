@@ -409,6 +409,84 @@ contextualize(function (this: Mocha.Suite) {
 			attest(readdirSync(root)).equals([version])
 		})
 
+		it("reads another directory once a package the precompiler runs changes", () => {
+			const fingerprinted = inFreshProcess(
+				async (dir: string) => {
+					const fs = (await import("node:fs")).default
+					const { registerHooks, syncBuiltinESMExports } = await import(
+						"node:module"
+					)
+					const { basename, dirname, join } = await import("node:path")
+					const { fileURLToPath } = await import("node:url")
+					const loaded = new Set<string>()
+					registerHooks({
+						load: (url, context, next) => {
+							if (url.startsWith("file:")) loaded.add(fileURLToPath(url))
+							return next(url, context)
+						}
+					})
+					const { createPrecompiler } = await import(
+						"@ark/aot/internal/driver.ts"
+					)
+					createPrecompiler({ cwd: dir, conditions: ["ark-ts"] }).precompile(
+						'import { type } from "arktype"\n\nexport const T = type({ a: "string" }).and({ b: "number" })\n',
+						join(dir, "main.ts")
+					)
+					// arktype's packages whose code it ran, by root
+					const names: Record<string, string> = {}
+					for (const file of loaded) {
+						let root = dirname(file)
+						while (!fs.existsSync(join(root, "package.json")))
+							root = dirname(root)
+						const { name } = JSON.parse(
+							fs.readFileSync(join(root, "package.json"), "utf8")
+						)
+						if (/^(?:arktype|arkregex|arksets|@ark\/.+)$/.test(name))
+							names[root] = name
+					}
+					// each cache module a new instance, so it fingerprints anew
+					const cache = import.meta.resolve("@ark/aot/internal/cache.ts")
+					let imports = 0
+					const directoryOf = async () =>
+						basename(
+							new (await import(`${cache}?${imports++}`)).AnswerCache(dir).dir
+						)
+					const read = fs.readFileSync
+					const before = await directoryOf()
+					const unchanged: string[] = []
+					for (const root in names) {
+						fs.readFileSync = ((path: string, ...rest: never[]) => {
+							const text = read(path, ...rest)
+							return (
+									typeof path === "string" &&
+										path.startsWith(`${root}/`) &&
+										/\.[jt]s$/.test(path)
+								) ?
+									`${text}\n// changed`
+								:	text
+						}) as never
+						syncBuiltinESMExports()
+						if ((await directoryOf()) === before) unchanged.push(names[root])
+						fs.readFileSync = read
+						syncBuiltinESMExports()
+					}
+					return { ran: Object.values(names).sort(), unchanged }
+				},
+				[writeFixture({})]
+			)
+			attest(fingerprinted).snap({
+				ran: [
+					"@ark/aot",
+					"@ark/schema",
+					"@ark/util",
+					"arkregex",
+					"arksets",
+					"arktype"
+				],
+				unchanged: []
+			})
+		})
+
 		it("removes nothing in its directory it didn't write", async () => {
 			const dir = writeFixture({
 				"main.ts": shapeReader("./shape.ts"),
@@ -613,6 +691,39 @@ contextualize(function (this: Mocha.Suite) {
 			await transform("a.ts")
 			attest(hasSecondCopy((await transform("sub/b.ts"))?.errors)).equals(true)
 			await send(["close"])
+		})
+
+		it("stores nothing a worker answers once a reset kept it", async () => {
+			const dir = writeFixture({ "main.ts": typed("string") })
+			const id = join(dir, "main.ts")
+			const send = createAsyncPrecompiler({
+				precompilerOptions: { cwd: dir, conditions }
+			})
+			await send(["transform", readFileSync(id, "utf8"), id])
+			writeFileSync(id, typed("number"))
+			attest(await send(["reset"])).equals(false)
+			await send(["transform", readFileSync(id, "utf8"), id])
+			await send(["close"])
+			attest(entriesOf(dir).length).equals(1)
+			await answersAnew(dir)
+		})
+
+		it("stores what a worker answers across a reset nothing it read changed", async () => {
+			const dir = writeFixture({
+				"a.ts": shapeReader("./shape.ts"),
+				"b.ts": shapeReader("./shape.ts"),
+				"shape.ts": shaped("string")
+			})
+			const send = createAsyncPrecompiler({
+				precompilerOptions: { cwd: dir, conditions }
+			})
+			for (const file of ["a.ts", "b.ts"]) {
+				const id = join(dir, file)
+				await send(["transform", readFileSync(id, "utf8"), id])
+				attest(await send(["reset"])).equals(false)
+			}
+			await send(["close"])
+			attest(entriesOf(dir).length).equals(2)
 		})
 
 		it("misses once another module of the program writes what it reads", async () => {

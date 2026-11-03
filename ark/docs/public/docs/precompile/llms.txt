@@ -347,7 +347,7 @@ A validator ships its JSON Schema where the build sees code read it, so a librar
 
 ## Cache
 
-A build keeps each module it precompiles in `node_modules/.cache/ark`, in the directory it runs from, so the next build, dev server or Next.js process reuses what didn't change. An entry is read only while everything that decided it is the same: the versions of `@ark/aot`, `arktype` and Node, the module's source and each file the precompiler read for it, what each import resolved to, and your settings. Deleting the directory is always safe, as the next build writes it again. An entry is code your bundle runs, checked only for a write cut short, so restore the directory from a CI cache only where nothing less trusted than the build, like a pull request from a fork, can write that cache, as for Vite's or webpack's.
+A build keeps each module it precompiles in `node_modules/.cache/ark`, in the directory it runs from, so a later build, dev server or Next.js process can reuse it. An entry is read only while everything its build had read when it wrote the entry is the same: the code of `@ark/aot` and `arktype`, a linked or repacked copy included, the version of Node, the module's source, each file the precompiler had read, what each import had resolved to, and your settings. That includes files the module doesn't import, so the cache serves a build where nothing changed, while a build after you edit a module reuses only what was written before that module was first read, which can be little. A pruned production build or `arktype-precompile --emit` reads the whole program, so it reuses nothing once any module changes. A watch build or dev server stores only what it precompiles before its first change, keeping what it precompiles again to itself. A webpack or Rspack persistent cache is versioned by the same code and your settings, so it rebuilds each module once either changes. Deleting the directory is always safe, as the next build writes it again. An entry is code your bundle runs, checked only for a write cut short, so restore the directory from a CI cache only where nothing less trusted than the build, like a pull request from a fork, can write that cache, as for Vite's or webpack's.
 
 ## Frameworks
 
@@ -721,6 +721,8 @@ The same settings can go under an `"ark"` key in that `package.json` instead, re
 }
 ```
 
+A watch build or dev server reads them again as they change, so a build never mixes modules written under two settings. Rollup and Vite build every module anew under the new ones, Vite's dev server restarting to, unless they change what a Vite build's config was given, like `runtime`. That, and any change under webpack, Rspack, Rolldown, esbuild or Turbopack, fails each build until you restore them or restart it, naming the restart.
+
 Where `package.json` sets `"ark"` and an `ark.json` is beside it, the build fails, naming both, so keep one. A library's `package.json` also sets `"aot": true` under `"ark"` to [opt in](https://arktype.io/docs/precompile/advanced#libraries), which is unrelated to `"precompile"`, how the program reading the file builds.
 
 ## Settings
@@ -1060,6 +1062,8 @@ A definition reading one of its Types, like `type({ email: Email })` with `Email
 **`A standalone validator's JSON Schema takes only a target it was built with, and a fallback only where it was built to apply one`**: code passed `toJsonSchema()` options its baked schema can't apply. A validator applies a `fallback` where it also bakes `~standard.jsonSchema`, as where a library like hono-openapi converts it, or where [`members`](https://arktype.io/docs/precompile/options#members) sets `toJsonSchema`, so set it true where code the build doesn't see passes one. It still throws where arktype reads what a fallback returns other than to write a union, as for a `Date` with keys of its own or a symbol key. Build those with `runtime: "arktype"`.
 
 **`... was written by a build whose cache kept it in ..., where it no longer is`**: delete the bundler's cache to rebuild.
+
+**Turbopack builds a module as it did before you linked or patched arktype**: Turbopack's persistent cache keeps what the loader wrote until the module, a file it read, or the version of `arktype` or `@ark/aot` changes. A linked copy or a patch changes their code without the version, so delete `.next/cache` after changing either. The build's own cache, and webpack's and Rspack's, rebuild by themselves.
 
 **`prune: keeping assert, meta, ~standard and methods, because the validator at src/schemas.ts:3:14 is lost where src/server.ts:12:30 passes it to send, which the build can't follow`**: a production build couldn't prove what its validators are read for, so it kept each member [`members`](https://arktype.io/docs/precompile/options#members) leaves to it. The warning names the first read or module that stopped it, as [prune](https://arktype.io/docs/precompile/options#prune) lists them. Set each member it names in `members`, false where no code reads it, like `assert` where nothing asserts, and true where a library may, like `~standard` for one taking a Standard Schema. The build then writes what you set without the warning, and still prunes what else it can. `prune: false` would build each unit as a module of its own as well, which is larger.
 

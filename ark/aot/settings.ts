@@ -50,6 +50,12 @@ const readJson = (path: string): unknown => {
 	}
 }
 
+// where a build reads its settings, whether or not ark.json is there yet
+export const settingsPathsOf = (cwd: string): string[] => {
+	const project = projectOf(resolve(cwd))
+	return [join(project, "package.json"), join(project, settingsFile)]
+}
+
 // ark.json, or the package.json whose "ark" key holds the same settings
 export const settingsFileOf = (cwd: string): string | undefined => {
 	for (let dir = resolve(cwd); ; dir = dirname(dir)) {
