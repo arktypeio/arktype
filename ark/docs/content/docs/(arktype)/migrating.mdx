@@ -323,18 +323,18 @@ for (const issue of out.issues) {
 
 5. **Swap integrations.** Most accept an ArkType type directly, through [Standard Schema](/docs/standard-schema):
 
-| With Zod                                                    | With ArkType                                                                                                                                        |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `zodResolver(schema)` (react-hook-form)                     | `standardSchemaResolver(schema)` from `@hookform/resolvers/standard-schema`                                                                         |
-| tRPC `.input(schema)`, `@t3-oss/env-*`, TanStack Form       | the same call, given the ArkType type                                                                                                               |
-| AI SDK 6 `tool({ inputSchema })`, MCP SDK v2 `registerTool` | the same call, given the ArkType type, which also supplies the JSON Schema                                                                          |
-| AI SDK 5 `tool({ inputSchema })`                            | `jsonSchema<typeof T.infer>(T.toJsonSchema(), { validate })`, where `validate` returns `{ success: true, value }` or `{ success: false, error }`    |
-| `zValidator` from `@hono/zod-validator`                     | `sValidator` from `@hono/standard-validator`, whose hook's `result.error` is the issue array, not `{ issues }`, and a path segment may be `{ key }` |
-| `@hono/zod-openapi`                                         | `hono-openapi`: `describeRoute`, `validator` and `resolver`                                                                                         |
-| `zod-to-json-schema`, `z.toJSONSchema(schema)`              | `schema.toJsonSchema()`                                                                                                                             |
-| `@asteasolutions/zod-to-openapi`                            | `schema.toJsonSchema({ target: "openapi-3.0" })` for each Schema Object in your OpenAPI document; see below                                         |
-| `drizzle-zod`                                               | `drizzle-arktype`                                                                                                                                   |
-| a library that accepts only Zod                             | keep Zod for that call, and say so                                                                                                                  |
+| With Zod                                                     | With ArkType                                                                                                                                        |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `zodResolver(schema)` (react-hook-form)                      | `standardSchemaResolver(schema)` from `@hookform/resolvers/standard-schema`                                                                         |
+| tRPC `.input(schema)`, `@t3-oss/env-*`, TanStack Form        | the same call, given the ArkType type                                                                                                               |
+| AI SDK 6+ `tool({ inputSchema })`, MCP SDK v2 `registerTool` | the same call, given the ArkType type, which also supplies the JSON Schema                                                                          |
+| AI SDK 5 `tool({ inputSchema })`                             | `jsonSchema<typeof T.infer>(T.toJsonSchema(), { validate })`, where `validate` returns `{ success: true, value }` or `{ success: false, error }`    |
+| `zValidator` from `@hono/zod-validator`                      | `sValidator` from `@hono/standard-validator`, whose hook's `result.error` is the issue array, not `{ issues }`, and a path segment may be `{ key }` |
+| `@hono/zod-openapi`                                          | `hono-openapi`: `describeRoute`, `validator` and `resolver`                                                                                         |
+| `zod-to-json-schema`, `z.toJSONSchema(schema)`               | `schema.toJsonSchema()`                                                                                                                             |
+| `@asteasolutions/zod-to-openapi`                             | `schema.toJsonSchema({ target: "openapi-3.0" })` for each Schema Object in your OpenAPI document; see below                                         |
+| `drizzle-zod`                                                | `drizzle-arktype`                                                                                                                                   |
+| a library that accepts only Zod                              | keep Zod for that call, and say so                                                                                                                  |
 
 With npm, `@hookform/resolvers`, `@t3-oss/env-core` and other packages that peer on `arktype@^2` make installs fail with `ERESOLVE` until they widen their range. For each package the error names, add an [override](/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2) rather than passing `--force` or `--legacy-peer-deps`.
 

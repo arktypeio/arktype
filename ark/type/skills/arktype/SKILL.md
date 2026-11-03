@@ -252,7 +252,7 @@ An object that deletes keys, whether by `"+"` or by `configure`, transforms its 
 
 ## Integrations
 
-- ArkType types are [Standard Schema](https://standardschema.dev), so they work directly with tRPC, oRPC, Hono and other libraries that accept one. react-hook-form takes them through `standardSchemaResolver` from `@hookform/resolvers/standard-schema`.
+- ArkType types are [Standard Schema](https://standardschema.dev), so they work directly with tRPC, oRPC, Hono and other libraries that accept one. The MCP TypeScript SDK takes them as a tool's `inputSchema` from its second major version, `@modelcontextprotocol/server`; `@modelcontextprotocol/sdk` accepts only Zod. react-hook-form takes them through `standardSchemaResolver` from `@hookform/resolvers/standard-schema`.
 - `User.toJsonSchema()` returns the equivalent JSON Schema. It throws for what JSON Schema can't express, like `Date`, `bigint`, a morph or a `.narrow()`. Handle those with a `fallback` keyed by the error's `code`, e.g. `{ fallback: { date: ctx => ({ ...ctx.base, type: "string", format: "date-time" }) } }`, or pass `{ fallback: annotatingFallback }` (exported from `arktype`) to write them as `x-arktype-*` keywords instead.
 - Global configuration (error messages, `onUndeclaredKey`, `numberAllowsInfinity`, and so on) goes through `configure` from `arktype/config`, in its own file, imported first by every file that creates a Type. Calling `configure` after any Type is created, even by reading a keyword like `type.number`, throws unless it changes nothing. See https://arktype.io/docs/configuration.md.
 
