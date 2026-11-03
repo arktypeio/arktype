@@ -9,5 +9,6 @@ export {
 	Precompiler,
 	type ModuleAnalysis,
 	type PrecompiledModule,
-	type PrecompileOptions
+	type PrecompileOptions,
+	type ReadProgram
 } from "./precompile.ts"
