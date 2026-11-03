@@ -32,6 +32,7 @@ import {
 } from "esbuild"
 import { spawnSync } from "node:child_process"
 import {
+	existsSync,
 	mkdirSync,
 	readFileSync,
 	rmSync,
@@ -1071,6 +1072,47 @@ console.log(Limited({ n: 2 }) instanceof type.errors, Other({ s: "" }) instanceo
 		} finally {
 			await ctx.dispose()
 		}
+	})
+
+	it("webpack rebuilds what reads a changed Type, watching only files on disk", async () => {
+		const max = (n: number) =>
+			`import { type } from "arktype"\n\nexport const Max = type("number <= ${n}")\n`
+		const root = writeFixture(
+			{
+				"max.js": max(1),
+				"main.js": `import { type } from "arktype"
+import { Max } from "./max.js"
+
+console.log(type({ n: Max })({ n: 2 }) instanceof type.errors)
+`
+			},
+			fromHere("temp", "webpackRebuilt")
+		)
+		const compiler = webpack({
+			mode: "development",
+			context: root,
+			entry: "./main.js",
+			target: "node",
+			devtool: false,
+			output: { path: join(root, "out") },
+			plugins: [precompile.webpack({ cwd: root })]
+		})
+		const outputs: string[] = []
+		// a watched file missing from disk is purged after each build, which
+		// cost unplugin's virtual modules a rewrite of every other
+		const missing: string[] = []
+		await new Promise<void>((resolve, reject) => {
+			const watching = compiler.watch({}, (error, stats) => {
+				if (error) return reject(error)
+				for (const file of stats!.compilation.fileDependencies)
+					if (!existsSync(file)) missing.push(file)
+				outputs.push(run(readFileSync(join(root, "out", "main.js"), "utf8")))
+				if (outputs.length === 1) writeFileSync(join(root, "max.js"), max(2))
+				else watching!.close(() => resolve())
+			})
+		})
+		attest(outputs).equals(["true\n", "false\n"])
+		attest(missing).equals([])
 	})
 
 	it("keeps a configured worker until its config changes", async () => {

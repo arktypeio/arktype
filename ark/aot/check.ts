@@ -1,6 +1,10 @@
 import { globSync, readFileSync, statSync } from "node:fs"
 import { dirname, resolve, sep } from "node:path"
-import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
+import type {
+	CheckedModule,
+	PrecompilePluginOptions,
+	RenderedDiagnostics
+} from "./driver.ts"
 import { printablePathOf, scriptExtensions, transformedId } from "./host.ts"
 import {
 	pluginCallLinesOf,
@@ -107,6 +111,14 @@ export const check = (
 			) as CheckedModule
 			reportModule(report, result, file, cwd)
 		}
+		// as a build reads each dependency importing arktype
+		const { errors, warnings } = request(
+			"readDependencies",
+			files
+		) as RenderedDiagnostics
+		report.lines.push(...errors, ...warnings)
+		report.errors += errors.length
+		report.errorsOutsideSites += errors.length
 		// as a production build prunes
 		const unpruned =
 			isProductionEnv() &&

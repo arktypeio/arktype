@@ -13,7 +13,7 @@ import {
 } from "@ark/schema"
 import { domainOf, isWellFormedInteger } from "@ark/util"
 import * as runtime from "../runtimeExports.ts"
-import { basesOf, unifies } from "./compilers.ts"
+import { basesOf, discriminantContextOf, unifies } from "./compilers.ts"
 import {
 	isDescribed,
 	isInlineSite,
@@ -103,13 +103,7 @@ const unionSiteOf = (node: UnionNode): IssueContext | undefined =>
 	plainContextOf(issueContextOf({ ...node.failSite, code: "union" }))
 
 const discriminantSiteOf = (node: UnionNode): IssueContext | undefined =>
-	plainContextOf(
-		issueContextOf({
-			code: "discriminant",
-			description: node.discDesc,
-			meta: node.discMeta
-		})
-	)
+	plainContextOf(discriminantContextOf(node))
 
 // what data failing every branch's basis fails, null if the bases can't be checked
 const basesSiteOf = (node: UnionNode): IssueContext | null | undefined => {
@@ -431,14 +425,8 @@ const writeCheck = (js: CombinatorCompiler, node: BaseNode): string => {
 	const constant = constantChecks[condition]
 	if (constant) {
 		const check = runtime[constant] as runtime.Check
-		return site.code === check.code && site.description === check.description ?
-				`runtime.${constant}`
-			:	writeCall(
-					"check",
-					JSON.stringify(site.code),
-					JSON.stringify(site.description),
-					`runtime.${constant}.test`
-				)
+		if (site.code === check.code && site.description === check.description)
+			return `runtime.${constant}`
 	}
 	const factory = ruleFactories.find(kind => node.is(kind))
 	const { rule, exclusive } = node.inner as { rule?: unknown; exclusive?: true }
@@ -469,7 +457,7 @@ const writeCheck = (js: CombinatorCompiler, node: BaseNode): string => {
 		"check",
 		JSON.stringify(site.code),
 		JSON.stringify(site.description),
-		`data => ${condition}`
+		constant ? `runtime.${constant}.test` : `data => ${condition}`
 	)
 }
 
@@ -536,10 +524,9 @@ const isInlined = (node: BaseNode): boolean => {
 	let inlined = inlinedByNode.get(node)
 	if (inlined === undefined) {
 		inlinedByNode.set(node, false)
-		const own = combines(node) && !node.isCyclic ? ownNodesOf(node) : []
+		const own = combines(node) && !node.isCyclic && ownNodesOf(node)
 		inlined =
-			combines(node) &&
-			!node.isCyclic &&
+			!!own &&
 			!declaresRef(node) &&
 			!own.some(declaresRef) &&
 			(own.length <= maxInlinedNodes ||

@@ -10,6 +10,7 @@ Each section is one change since 2.2.9, with code that behaves differently befor
 Go down the list. Each question your code answers yes to links to what to change.
 
 - Do you install with npm, beside a package that peers on `arktype@^2`, like `@hookform/resolvers` or `@t3-oss/env-core`? [Override its peer](#npm-refuses-packages-that-peer-on-arktype-2).
+- Do you keep a package that depends on arktype 2 itself, like `@ark/json-schema@0.0.13`? [Its Types are Standard Schemas](#packages-that-depend-on-arktype-2).
 - Do you ship arktype to a browser without a build step that precompiles? [It's larger](#unprecompiled-arktype-is-larger).
 - Do you install `@ark/type`, `@ark/regex` or an `@arktype/*` package? [Rename it](#package-names).
 - Do you read `ArkErrors` as an array, like `out[0]`, `out.length`, `out.map()` or `[...out]`? [Read `out.issues`](#arkerrors-is-no-longer-an-array).
@@ -57,6 +58,10 @@ peerDependencyRules:
   allowedVersions:
     arktype: "3"
 ```
+
+### Packages that depend on arktype 2
+
+A package that depends on arktype 2 itself, like `@ark/json-schema@0.0.13`, installs its own copy. A Type it returns works in a definition, `.pipe()` or `.to()` as a [Standard Schema](/docs/standard-schema), validating with its own copy, and `toJsonSchema()` writes what that copy's converter does, throwing where that can't stand for the Type, as for one with a morph. A module or Generic from it used in a Scope, or a Type passed to `type.schema()`, throws a `ParseError`: upgrade the package, or override its `arktype`.
 
 ## Bundle size
 

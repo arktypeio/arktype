@@ -144,6 +144,7 @@ import { precompile } from "@ark/aot/unplugin"
 await Bun.build({
 	entrypoints: ["src/main.ts"],
 	outdir: "dist",
+	target: "bun",
 	plugins: [precompile.bun()]
 })
 ```
@@ -1173,7 +1174,7 @@ for (const issue of out.issues) {
 | - | - |
 | `zodResolver(schema)` (react-hook-form) | `standardSchemaResolver(schema)` from `@hookform/resolvers/standard-schema` |
 | tRPC `.input(schema)`, `@t3-oss/env-*`, TanStack Form | the same call, given the ArkType type |
-| AI SDK 6 `tool({ inputSchema })`, MCP SDK v2 `registerTool` | the same call, given the ArkType type, which also supplies the JSON Schema |
+| AI SDK 6+ `tool({ inputSchema })`, MCP SDK v2 `registerTool` | the same call, given the ArkType type, which also supplies the JSON Schema |
 | AI SDK 5 `tool({ inputSchema })` | `jsonSchema<typeof T.infer>(T.toJsonSchema(), { validate })`, where `validate` returns `{ success: true, value }` or `{ success: false, error }` |
 | `zValidator` from `@hono/zod-validator` | `sValidator` from `@hono/standard-validator`, whose hook's `result.error` is the issue array, not `{ issues }`, and a path segment may be `{ key }` |
 | `@hono/zod-openapi` | `hono-openapi`: `describeRoute`, `validator` and `resolver` |
@@ -1432,6 +1433,7 @@ Each section is one change since 2.2.9, with code that behaves differently befor
 Go down the list. Each question your code answers yes to links to what to change.
 
 - Do you install with npm, beside a package that peers on `arktype@^2`, like `@hookform/resolvers` or `@t3-oss/env-core`? [Override its peer](https://arktype.io/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2).
+- Do you keep a package that depends on arktype 2 itself, like `@ark/json-schema@0.0.13`? [Its Types are Standard Schemas](https://arktype.io/docs/upgrading#packages-that-depend-on-arktype-2).
 - Do you ship arktype to a browser without a build step that precompiles? [It's larger](https://arktype.io/docs/upgrading#unprecompiled-arktype-is-larger).
 - Do you install `@ark/type`, `@ark/regex` or an `@arktype/*` package? [Rename it](https://arktype.io/docs/upgrading#package-names).
 - Do you read `ArkErrors` as an array, like `out[0]`, `out.length`, `out.map()` or `[...out]`? [Read `out.issues`](https://arktype.io/docs/upgrading#arkerrors-is-no-longer-an-array).
@@ -1479,6 +1481,10 @@ peerDependencyRules:
   allowedVersions:
     arktype: "3"
 ```
+
+### Packages that depend on arktype 2
+
+A package that depends on arktype 2 itself, like `@ark/json-schema@0.0.13`, installs its own copy. A Type it returns works in a definition, `.pipe()` or `.to()` as a [Standard Schema](https://arktype.io/docs/standard-schema), validating with its own copy, and `toJsonSchema()` writes what that copy's converter does, throwing where that can't stand for the Type, as for one with a morph. A module or Generic from it used in a Scope, or a Type passed to `type.schema()`, throws a `ParseError`: upgrade the package, or override its `arktype`.
 
 ## Bundle size
 
@@ -6982,6 +6988,34 @@ The SDK sends clients the JSON Schema from [`~standard.jsonSchema`](https://arkt
 
 This needs `@modelcontextprotocol/server`, the SDK's second major version. The first, `@modelcontextprotocol/sdk`, accepts only Zod schemas.
 
+To serve it over stdio, connect a transport from `@modelcontextprotocol/server/stdio`:
+
+```ts
+import { McpServer } from "@modelcontextprotocol/server"
+import { StdioServerTransport } from "@modelcontextprotocol/server/stdio"
+
+const server = new McpServer({ name: "greeter", version: "1.0.0" })
+// server.registerTool(...)
+
+await server.connect(new StdioServerTransport())
+```
+
+To serve it from a route handler, like a Next.js App Router route, `createMcpHandler` builds a server for each request, and its `fetch` answers it:
+
+```ts
+import { createMcpHandler, McpServer } from "@modelcontextprotocol/server"
+
+const handler = createMcpHandler(() => {
+	const server = new McpServer({ name: "greeter", version: "1.0.0" })
+	// server.registerTool(...)
+	return server
+})
+
+const serve = (request: Request) => handler.fetch(request)
+
+export { serve as GET, serve as POST, serve as DELETE }
+```
+
 ## AI SDK
 
 The [AI SDK](https://ai-sdk.dev/docs/ai-sdk-core/generating-structured-data) accepts a Type wherever it takes a schema. For structured output:
@@ -7029,20 +7063,7 @@ A [precompiled](https://arktype.io/docs/precompile) validator validates through 
 
 Without it, a build importing `drizzle-arktype` or `presets-arktype` fails, naming the setting. [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting) has each message.
 
-The MCP SDK and the AI SDK also validate through `~standard`. A [production build](https://arktype.io/docs/precompile/options#prune) can't see what a library reads of a validator passed to it, so it warns that it keeps `assert`, `meta`, `~standard` and `methods`. To build without the warning, set each:
-
-```json
-{
-	"precompile": {
-		"members": {
-			"~standard": true,
-			"assert": false,
-			"meta": false,
-			"methods": false
-		}
-	}
-}
-```
+A [production build](https://arktype.io/docs/precompile/options#prune) keeps `~standard` in a validator a library like the MCP SDK validates with, and leaves out what nothing reads.
 
 # fast-check
 

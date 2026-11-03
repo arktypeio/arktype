@@ -269,7 +269,7 @@ const loadArtifact = async (
 				flattenBundle(
 					{ "artifact.js": artifact.code },
 					artifact.modules,
-					new Map([["artifact.js", true]]),
+					{ modules: [], entries: ["artifact.js"], resolve: () => undefined },
 					false
 				)
 			:	undefined
