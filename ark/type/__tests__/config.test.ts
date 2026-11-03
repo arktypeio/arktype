@@ -503,8 +503,15 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		const Named = $.type("string").narrow(
 			(s, ctx) => s.length > 0 || ctx.mustBe("named")
 		)
+		const $internal = Named.internal.$
+		const { jit } = $internal
+		let compiled = 0
+		$internal.jit = node => {
+			compiled++
+			jit.call($internal, node)
+		}
 		const T = $.type({ "a?": Named })
-		attest(Named.internal.unitFn).equals(undefined)
+		attest(compiled).equals(0)
 		attest(T({ a: undefined }) as object).equals({ a: undefined })
 		attest(T({ a: "" }).toString()).snap('a must be named (was "")')
 	})
