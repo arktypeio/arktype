@@ -22,7 +22,7 @@ import {
 	type Node
 } from "./grammar.ts"
 import { lacks, testedOptions } from "./contract.ts"
-import { serialize, type Manifest, type World } from "./perturbationWorker.ts"
+import { serialize, type Manifest } from "./perturbationWorker.ts"
 import {
 	buildPerturbed,
 	comparable,
@@ -1524,6 +1524,15 @@ const buildOptions: BuildOptions = {
 	runsUnfolded: true
 }
 
+// production's: the whole program read, as a bundle's scan does, and
+// nothing checked at creation, so only the program as written compares
+const productionOptions: BuildOptions = {
+	...buildOptions,
+	standalone: { ...buildOptions.standalone, creationChecks: "none" },
+	readsProgram: true,
+	perturbations: ["none"]
+}
+
 // a project of its own: under ark/aot the build would read a program as
 // arktype's own package, where a read off what may be a Type is allowed
 const write = (program: Program, dir: string) => {
@@ -1543,9 +1552,32 @@ interface Counts {
 	programs: number
 	sites: number
 	precompiledSites: number
+	// those production's build precompiles
+	productionSites: number
 	// built with an error outside main.ts's sites, compared all the same
 	erroredPrograms: number
 	refusals: Record<string, number>
+}
+
+// a program built again without each line the build refused a site of, until
+// it refuses none
+const foldedBuildOf = (
+	program: Program,
+	dir: string,
+	opts: BuildOptions,
+	built = buildPerturbed(write(program, dir), opts)
+) => {
+	const foldedDir = join(dir, "folded")
+	let folded = program
+	let build = built
+	// a site can be refused once another reading the same definition is dropped
+	for (;;) {
+		const next = foldedProgramOf(folded, build.errors)
+		if (!next) break
+		folded = next
+		build = buildPerturbed(write(folded, foldedDir), opts)
+	}
+	return { folded, build, dir: build === built ? dir : foldedDir }
 }
 
 const mocksAlike = (a: Manifest, b: Manifest) =>
@@ -1569,35 +1601,44 @@ const disagreementsOf = async (
 			.replace(/\d+(?:\.\d+)? (?:chars|KB|MB)/g, "…")
 		counts.refusals[reason] = (counts.refusals[reason] ?? 0) + 1
 	}
-	const foldedDir = join(dir, "folded")
-	let folded = program
-	let foldedBuild = standalone
-	// a site can be refused once another reading the same definition is dropped
-	for (;;) {
-		const next = foldedProgramOf(folded, foldedBuild.errors)
-		if (!next) break
-		folded = next
-		foldedBuild = buildPerturbed(write(folded, foldedDir), buildOptions)
-	}
+	const {
+		folded,
+		build: foldedBuild,
+		dir: standaloneDir
+	} = foldedBuildOf(program, dir, buildOptions, standalone)
+	const production = foldedBuildOf(
+		program,
+		join(dir, "production"),
+		productionOptions
+	)
 	counts.programs++
 	counts.sites += program.main.filter(isObserved).length
 	counts.precompiledSites += folded.main.filter(isObserved).length
+	counts.productionSites += production.folded.main.filter(isObserved).length
 	if (foldedBuild.errors.length) counts.erroredPrograms++
-	const standaloneDir = foldedBuild === standalone ? dir : foldedDir
 	// the original world as the standalone one mocks it, where the cache's mocks
 	// differ, as a creationChecks other than "helpers" leaves helpers unmocked
 	const originalDir =
-		foldedBuild !== standalone ? foldedDir
+		foldedBuild !== standalone ? standaloneDir
 		: mocksAlike(foldedBuild.manifest, cache.manifest) ? undefined
 		: join(dir, "unmocked")
 	if (originalDir) mkdirSync(originalDir, { recursive: true })
-	const [original, cached, ownOriginal, precompiled] = await Promise.all([
+	const [
+		original,
+		cached,
+		ownOriginal,
+		precompiled,
+		productionOriginal,
+		productionPrecompiled
+	] = await Promise.all([
 		runWorld("original", cache.manifest, dir),
 		runWorld("cache", cache.manifest, dir),
 		originalDir ?
 			runWorld("original", foldedBuild.manifest, originalDir)
 		:	undefined,
-		runWorld("standalone", foldedBuild.manifest, standaloneDir)
+		runWorld("standalone", foldedBuild.manifest, standaloneDir),
+		runWorld("original", production.build.manifest, production.dir),
+		runWorld("standalone", production.build.manifest, production.dir)
 	])
 	const unknownOf = (
 		run: Program,
@@ -1635,6 +1676,18 @@ const disagreementsOf = async (
 				foldedBuild.errors,
 				compareWorlds(foldedBuild, ownOriginal ?? original, precompiled)
 					.disagreements
+			)
+		),
+		...reportOf(
+			"production",
+			unknownOf(
+				production.folded,
+				production.build.errors,
+				compareWorlds(
+					production.build,
+					productionOriginal,
+					productionPrecompiled
+				).disagreements
 			)
 		)
 	]
@@ -1855,7 +1908,7 @@ const allowanceOf = (
 }
 
 // a site's disagreements under each perturbation, by what the first changes
-const reportOf = (world: World, disagreements: Disagreement[]): string[] => {
+const reportOf = (world: string, disagreements: Disagreement[]): string[] => {
 	const disagreementsBySite: Record<string, Disagreement[]> = {}
 	for (const disagreement of disagreements)
 		(disagreementsBySite[disagreement.site] ??= []).push(disagreement)
@@ -2105,6 +2158,7 @@ contextualize(() => {
 			programs: 0,
 			sites: 0,
 			precompiledSites: 0,
+			productionSites: 0,
 			erroredPrograms: 0,
 			refusals: {}
 		}

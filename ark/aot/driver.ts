@@ -33,7 +33,8 @@ import {
 	Precompiler,
 	type ArkPackage,
 	type PrecompiledModule,
-	type PrecompileOptions
+	type PrecompileOptions,
+	type ReadProgram
 } from "./precompile.ts"
 import type { ScannedProgram, ScannedUsage } from "./scan.ts"
 import type { Site } from "./sites.ts"
@@ -100,6 +101,7 @@ export type PrecompileRequest =
 	  ]
 	| [kind: "scan", program: ScannedProgram]
 	| [kind: "unseen", program: ScannedProgram]
+	| [kind: "program", program: ReadProgram]
 	| [kind: "check", source: string, id: string]
 	| [
 			kind: "checkUnwritten",
@@ -160,7 +162,7 @@ const answerRequests = (
 	// one scans it again for a module unlike those the cache holds, and must
 	// write what the cache gave the bundler
 	const scanned = (scan: Scan): TrackedPrecompiler => {
-		if (scan.tracked) return scan.tracked
+		if (scan.tracked) return viewing(scan.tracked, scan)
 		const { usage, given } = scan.served!
 		const written = scan.written!
 		scan.served = scan.written = undefined
@@ -189,6 +191,7 @@ const answerRequests = (
 			scan.cache!.delete(scan.key)
 			throwError(writeUnreproducedScanMessage())
 		}
+		rescanned.viewKey = scan.viewKey
 		return (scan.tracked = rescanned)
 	}
 	const answer = (request: PrecompileRequest): unknown => {
@@ -254,7 +257,7 @@ const answerRequests = (
 					if (!unreached || writesNothing(unreached)) return unreached
 				}
 				return transformedModuleOf(
-					(scan ? scanned(scan) : tracked).precompiler,
+					(scan ? scanned(scan) : viewing(tracked)).precompiler,
 					source,
 					id,
 					undefined,
@@ -268,12 +271,15 @@ const answerRequests = (
 			if (
 				kept?.source === source &&
 				kept.mappings === mappings &&
+				kept.viewKey === tracked.viewKey &&
 				kept.mtimes.every(([file, mtime]) => mtimeOf(file) === mtime) &&
 				precompiler.readCopiesOf(kept.packages, id)
 			)
 				return kept.transformed
 			if (!precompiler.isTransformed(id)) return
-			const key = cache && keyOf(tracked.context, "transform", id, given)
+			const key =
+				cache &&
+				keyOf(tracked.context, "transform", id, given, tracked.viewKey ?? null)
 			const cached =
 				key &&
 				(cachedAnswerOf(tracked, cache!, key) as StoredModule | undefined)
@@ -293,7 +299,13 @@ const answerRequests = (
 					precompiler.graph.host.readFile(id) !== source)
 			)
 				tracked.unsnapshotted.given.push([id, given])
-			const result = precompiledOf(precompiler, source, id, undefined, mappings)
+			const result = precompiledOf(
+				viewing(tracked).precompiler,
+				source,
+				id,
+				undefined,
+				mappings
+			)
 			const transformed =
 				result ?
 					transformedOf(precompiler, result)
@@ -314,6 +326,7 @@ const answerRequests = (
 				mappings,
 				transformed,
 				packages,
+				viewKey: tracked.viewKey,
 				// as each was when first read, so a write meanwhile counts as a change
 				mtimes: transformed.dependencies.map(file => [
 					file,
@@ -334,6 +347,7 @@ const answerRequests = (
 				program,
 				cache,
 				key: keyOf(tracked.context, "scan", { ...program, key: undefined }),
+				viewKey: viewKeyOf(program),
 				tracked: undefined,
 				written: undefined,
 				served: undefined,
@@ -350,6 +364,10 @@ const answerRequests = (
 			) {
 				scan.written = writtenIn(cached)
 				scan.served = { usage: cached.usage, given: [] }
+				// as scanning it would, what this precompiler analyzes next
+				// reads the program
+				tracked.unread = program
+				tracked.viewKey = scan.viewKey
 				return cached.usage
 			}
 			// one another request's analyses preceded may write otherwise
@@ -358,6 +376,8 @@ const answerRequests = (
 			scan.tracked = tracked
 			tracked.unsnapshotted.given.push(...given)
 			const usage = precompiler.scan(program)
+			tracked.unread = undefined
+			tracked.viewKey = scan.viewKey
 			if (cache && isFirst && tracked.storable) {
 				scan.written = modulesWrittenIn(precompiler, program)
 				scan.isStored =
@@ -379,13 +399,21 @@ const answerRequests = (
 				cachedAnswerOf(tracked, scan.cache!, key) === null
 			)
 				return
-			const scanning = scan ? scanned(scan) : tracked
+			const scanning = scan ? scanned(scan) : viewing(tracked)
 			const unseen = scanning.precompiler.unseenIn(program)
 			if (key && scan.isStored && unseen === undefined)
 				store(scanning, scan.cache!, key, null)
 			return unseen
 		}
+		if (request[0] === "program") {
+			// read as a request first analyzes a module, so a build the cache
+			// answers whole doesn't
+			tracked.unread = request[1]
+			tracked.viewKey = viewKeyOf(request[1])
+			return
+		}
 		tracked.analyzed = true
+		viewing(tracked)
 		if (request[0] === "check")
 			return checkedModuleOf(precompiler, request[1], request[2])
 		if (request[0] === "checkUnwritten") {
@@ -572,6 +600,13 @@ interface TrackedPrecompiler {
 	analyzed: boolean
 	// modules resets forgot, whose analyses it may still hold
 	forgotten: number
+	// what its write analysis reads of the program it reads whole, if any,
+	// which an answer it analyzes is stored under, as another module's write
+	// decides it too
+	viewKey: string | undefined
+	// the program it reads once a request analyzes a module, unread as the
+	// cache answered what read it
+	unread: ReadProgram | undefined
 	opts: PrecompilePluginOptions
 	hasAnswered: boolean
 	importsByFile: Record<string, [mtimeMs: number, imports: string[]]>
@@ -603,6 +638,8 @@ const createTrackedPrecompiler = (
 		storable: ++precompilersInThread === 1,
 		analyzed: false,
 		forgotten: 0,
+		viewKey: undefined,
+		unread: undefined,
 		opts,
 		hasAnswered: false,
 		importsByFile: {}
@@ -667,6 +704,34 @@ const keyOf = (...parts: unknown[]): string => hashOf(JSON.stringify(parts))
 const givenOf = (source: string, mappings: string | undefined) =>
 	keyOf(source, mappings ?? null)
 
+// what the write analysis reads of a program read whole: each module, as a
+// write in one decides what a site in another answers, and what loads them
+const viewKeyOf = ({
+	modules,
+	targets,
+	exposed,
+	dynamicImports
+}: ReadProgram): string =>
+	keyOf("program", modules, targets, exposed, dynamicImports)
+
+// the precompiler, having read the program its analyses read whole: the
+// scan's a request names, or one it was given unread
+const viewing = (
+	tracked: TrackedPrecompiler,
+	scan?: Scan
+): TrackedPrecompiler => {
+	// e.g. as a scan of another program read its own since
+	if (scan && tracked.viewKey !== scan.viewKey) {
+		tracked.unread = scan.program
+		tracked.viewKey = scan.viewKey
+	}
+	if (tracked.unread) {
+		tracked.precompiler.readProgram(tracked.unread)
+		tracked.unread = undefined
+	}
+	return tracked
+}
+
 // a cache in node_modules/.cache/ark, unless the project can't keep one
 const cachesByCwd: Record<string, AnswerCache | null> = {}
 
@@ -726,6 +791,8 @@ interface Scan {
 	program: ScannedProgram
 	cache: AnswerCache | undefined
 	key: string
+	// what the write analysis reads of the program
+	viewKey: string
 	// the precompiler holding its usage, once one scanned it
 	tracked: TrackedPrecompiler | undefined
 	// each module the scan wrote, as the cache holds them, which a transform
@@ -884,6 +951,9 @@ const keptAcross = (
 	}
 	tracked.host = host
 	tracked.holds = undefined
+	// a build reads its own program, if any
+	precompiler.readProgram(undefined)
+	tracked.viewKey = tracked.unread = undefined
 	return tracked
 }
 
@@ -1162,6 +1232,7 @@ const unprecompiledOf = (
 interface KeptModule extends StoredModule {
 	source: string
 	mappings: string | undefined
+	viewKey: string | undefined
 	mtimes: [file: string, mtimeMs: number][]
 }
 

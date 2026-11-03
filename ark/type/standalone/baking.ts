@@ -93,6 +93,9 @@ export interface InputParam {
 	kind: "input"
 	label: string
 	reads: [path: PropertyKey[], value: unknown][]
+	// read off a holder code the build can't see may write, so even a build
+	// checking nothing at creation checks each Type read off it
+	isWritable?: boolean
 }
 
 export interface HelperParam {
@@ -130,6 +133,9 @@ export interface StandaloneOptions {
 	lazy?: boolean | undefined
 	// "none" trusts received Types to be the ones built
 	checks?: Checks | undefined
+	// where checks is "none", whether validators still hold their ids, for
+	// a factory to check a Type it reads off a holder
+	holdsIds?: boolean | undefined
 	mutatesInput?: MutatesInput | undefined
 	optimize?: Optimization | undefined
 	// trust data to hold only own, enumerable keys, as JSON.parse's output does
@@ -196,6 +202,7 @@ export interface Baking extends ValidatorReads {
 	// whether a validator compiles as its module loads
 	compilesValidators: boolean
 	checksTypes: boolean
+	holdsIds: boolean
 	mutatesInput: MutatesInput | undefined
 	jsonInput: boolean
 	hoisted: boolean
@@ -237,7 +244,7 @@ export const isCreatedByRuntime = (
 	baking.detailsErrors &&
 	baking.freezes &&
 	baking.readsConfig &&
-	baking.checksTypes &&
+	baking.holdsIds &&
 	defaultMembers.every(member => members.has(member))
 
 // V8 compiles `=== undefined` to one comparison, where `??=` and `== null` test the map
@@ -402,6 +409,7 @@ export const bakingOf = (
 		createsLazily: opts.lazy !== false || opts.hoisted === true,
 		compilesValidators: Object.keys(exports).length === 1,
 		checksTypes: opts.checks !== "none",
+		holdsIds: opts.checks !== "none" || opts.holdsIds === true,
 		mutatesInput: opts.mutatesInput,
 		jsonInput: opts.jsonInput === true,
 		hoisted: opts.hoisted === true,

@@ -394,8 +394,16 @@ export class StandaloneArtifact {
 		for (let i = 0; i < params.length; i++) {
 			const param = params[i]
 			if (param.kind === "input") {
-				for (const [path, value] of param.reads)
-					this.compareInput(`p${i}`, path, value, param.label, checked)
+				for (const [path, value] of param.reads) {
+					this.compareInput(
+						`p${i}`,
+						path,
+						value,
+						param.label,
+						checked,
+						param.isWritable
+					)
+				}
 			} else if (param.kind === "helper") {
 				this.checks.push(
 					`runtime.checkHelper(p${i}, ${JSON.stringify(param.file)}, ${JSON.stringify(param.name)}, ${JSON.stringify(param.label)})`
@@ -540,7 +548,8 @@ export class StandaloneArtifact {
 		path: PropertyKey[],
 		value: unknown,
 		root: string,
-		checked: CheckedHole[]
+		checked: CheckedHole[],
+		isWritable?: boolean
 	): void {
 		let expression = param
 		let label = root
@@ -564,7 +573,7 @@ export class StandaloneArtifact {
 			const isType = hasArkKind(value, "root")
 			const holesName = `holes${this.checks.length}`
 			if (holes.length) this.holesByName.set(holesName, holes)
-			if (this.baking.checksTypes || holes.length) {
+			if (this.baking.checksTypes || holes.length || isWritable) {
 				this.checks.push(
 					`${holes.length ? `const ${holesName} = ` : ""}${this.receiverOf(value, id, label)}(${expression})`
 				)
@@ -633,7 +642,8 @@ export class StandaloneArtifact {
 				[...path, key],
 				Reflect.get(value, key),
 				root,
-				checked
+				checked,
+				isWritable
 			)
 		}
 	}
@@ -1522,7 +1532,7 @@ ${writeFunction(
 				]
 			:	[
 					...written,
-					...(!this.baking.checksTypes ? []
+					...(!this.baking.holdsIds ? []
 					: held ? [writeId(id), held]
 					: onFail ? [writeId(id), "undefined"]
 					: [writeId(id)])
@@ -1535,7 +1545,7 @@ ${writeFunction(
 			: createsWith ? "runtime.createValidatorWith("
 			: "runtime.createValidator("
 		}\n\t${args.join(",\n\t")}\n${isTemplate ? "]" : ")"}`
-		return held && !this.baking.checksTypes ?
+		return held && !this.baking.holdsIds ?
 				`runtime.holdHoles(${created}, ${writeId(id)}, ${held})`
 			:	created
 	}
@@ -2414,7 +2424,7 @@ ${writeFunction(
 
 	withHoles(value: Foldable, expression: string): string {
 		const [id, holes] = keyOf(value)
-		if (!this.baking.checksTypes && !holes.length) return expression
+		if (!this.baking.holdsIds && !holes.length) return expression
 		return `runtime.holdHoles(${expression}, ${writeId(id)}${holes.length ? `, [${this.emitAll(holes)}]` : ""})`
 	}
 

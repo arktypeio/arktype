@@ -124,6 +124,7 @@ import {
 	stepsOf,
 	type FunctionNode,
 	type ImportTarget,
+	type ProgramView,
 	type StandInKind
 } from "./graph.ts"
 import {
@@ -143,6 +144,7 @@ import {
 	type RuntimeVariant
 } from "./host.ts"
 import {
+	changeableDepthOf,
 	createSiteState,
 	findDynamic,
 	inferredNameOf,
@@ -408,6 +410,17 @@ interface WrittenProgram {
 	runtimes: Map<string, RuntimeModule>
 }
 
+// a program's modules, read whole before any is precompiled
+export interface ReadProgram {
+	modules: Record<string, { source: string; mappings?: string | undefined }>
+	// what each module's specifiers resolve to, where the host resolved them
+	targets?: Record<string, Record<string, string>> | undefined
+	// modules code the build doesn't read may import, like a framework's own
+	exposed?: readonly string[] | undefined
+	// each module import() loads, as the host resolved it
+	dynamicImports?: readonly string[] | undefined
+}
+
 export interface ModuleAnalysis {
 	sites: Site[]
 	diagnostics: Diagnostic[]
@@ -491,6 +504,8 @@ export class Precompiler {
 	private componentsById: Record<string, number> = Object.create(null)
 	private exportsArkByModule = new WeakMap<SourceModule, boolean>()
 	private analysesByModule = new WeakMap<SourceModule, ModuleAnalysis>()
+	// whether a site of the program read whole reads a Type off a holder
+	private readsOffHolders: boolean | undefined
 	// each shared unit's modules, written once for every module reading it
 	private sharedWrites: SharedWrites = new Map()
 	// the validators a site's factory last read, which inlining reads again
@@ -569,6 +584,53 @@ export class Precompiler {
 			Object.keys(contract).length ? JSON.stringify(contract) : undefined
 	}
 
+	// whether validators hold the ids a factory compares a Type read off a
+	// holder by under creationChecks "none": unless the build read the whole
+	// program and no site of it reads one
+	private get holdsIds(): boolean {
+		const view = this.graph.view
+		if (this.standalone.checks !== "none" || !view) return true
+		return (this.readsOffHolders ??= view.ids.some(id => {
+			if (!this.isTransformed(id)) return false
+			const module = this.graph.moduleOf(id)
+			return (
+				module instanceof SourceModule &&
+				this.importsArk(module.source, id) &&
+				this.analysisOf(module).sites.some(site =>
+					site.inputs.some(input => this.isOffHolder(input))
+				)
+			)
+		}))
+	}
+
+	// a Type a site reads off what the program can change, as `H.a`, or one a
+	// binding or export holds that was read off it, as `C` given
+	// `const C = H.a`. Under creationChecks "none" its factory still checks
+	// it's the Type the build read, so a write the build missed fails loudly.
+	private isOffHolder(input: Input): boolean {
+		let root: Binding | Node | undefined
+		if (input.kind === "local") root = this.bindingsByInput.get(input)
+		else {
+			const target = this.graph.exportOf(
+				this.graph.moduleOf(input.file!) as SourceModule,
+				input.name
+			)
+			root =
+				target.kind === "binding" ? target.binding
+				: target.kind === "expression" ? target.node
+				: undefined
+		}
+		const evaluated = root && this.interpreter.evaluatedOf(root)
+		if (!evaluated) return true
+		if (input.path.length) return changeableDepthOf(evaluated.value) > 0
+		const isCreated =
+			"type" in root! ?
+				this.interpreter.sitesByNode.get(unwrapExpression(root))?.value ===
+				input.value
+			:	this.isCreatedBy(root, input.value)
+		return !isCreated && evaluated.trace.holders.length > 0
+	}
+
 	// what a bundle's issues may hold, where no runtime or other build's validator can add any
 	private issuesOf(
 		program: ScannedProgram,
@@ -598,8 +660,50 @@ export class Precompiler {
 		return issues
 	}
 
+	// the whole program, as a production bundle's scan or --emit reads it, so
+	// a site reading a value another of its modules may write is refused; or
+	// none, as a build reading a module at a time, which a kept precompiler
+	// reads once the build that read one ends
+	readProgram(program: ReadProgram | undefined): void {
+		if (program) this.graph.readView(this.viewOf(program))
+		else if (this.graph.view) this.graph.readView(undefined)
+		else return
+		// what another module may write was read without the program
+		this.analysesByModule = new WeakMap()
+		this.readsOffHolders = undefined
+	}
+
+	private viewOf(program: ReadProgram): ProgramView {
+		const loose = new Map<string, string>()
+		const resolve = (specifier: string, importer: string) =>
+			program.targets?.[importer]?.[specifier] ??
+			this.graph.host.resolve(specifier, importer)
+		for (const id in program.modules) {
+			const { source, mappings } = program.modules[id]
+			const module = this.add(id, source, mappings)
+			walk(module.program, node => {
+				const specifier = loadedSpecifierOf(node)
+				const target =
+					typeof specifier === "string" ? resolve(specifier, id) : undefined
+				if (target !== undefined && !loose.has(target)) {
+					loose.set(
+						target,
+						`${module.positionOf(node)} loads with ${node.type === "ImportExpression" ? "import()" : "require()"}`
+					)
+				}
+				return true
+			})
+		}
+		for (const id of program.dynamicImports ?? [])
+			if (!loose.has(id)) loose.set(id, "the bundle loads with import()")
+		for (const id of program.exposed ?? [])
+			if (!loose.has(id)) loose.set(id, "a dependency may import unseen")
+		return { ids: Object.keys(program.modules), resolve, loose }
+	}
+
 	// what a bundle's validators are read for, so its next transforms leave out what no read needs
 	scan(program: ScannedProgram): ScannedUsage {
+		this.readProgram(program)
 		this.usagesByProgram.delete(program.key)
 		const unwritten: ScannedUsage = {
 			dropped: [],
@@ -2705,6 +2809,7 @@ export class Precompiler {
 						exportsByName,
 						{
 							...this.standalone,
+							holdsIds: this.holdsIds,
 							members,
 							called,
 							readsAllows,
@@ -3214,7 +3319,11 @@ export class Precompiler {
 			receive(factory, passedAs, {
 				kind: "input",
 				label: passedAs.label,
-				reads: reads.map(input => [input.path, input.value])
+				reads: reads.map(input => [input.path, input.value]),
+				...(this.standalone.checks === "none" &&
+					reads.some(input => this.isOffHolder(input)) && {
+						isWritable: true
+					})
 			})
 			if (this.isSetBefore(reads[0], site, module))
 				factory.inert.push(passedAs.expression)
@@ -4629,7 +4738,8 @@ export class Precompiler {
 			site.status = "island"
 			return site
 		}
-		const dynamic = this.receiveValue(site, state, module)
+		const dynamic =
+			this.receiveValue(site, state, module) ?? this.writtenElsewhereIn(state)
 		if (dynamic) return refuseDynamic(site, dynamic)
 		const runsFirst = runsBeforeBody(state.node, module)
 		const unreadable = this.receiveReads(site, candidate, module, runsFirst)
@@ -4706,6 +4816,39 @@ export class Precompiler {
 			if (declaring !== module) continue
 			const at = progressOf(binding, module)
 			if (at > (site.progress?.[0] ?? 0)) site.progress = [at, binding.name]
+		}
+	}
+
+	// a value the site read that another module of the program may write,
+	// which a module evaluating alone doesn't see
+	private writtenElsewhereIn(state: SiteState): DynamicValue | undefined {
+		for (const [declaring, holder, depth] of state.trace.holders) {
+			const elsewhere = this.graph.elsewhereOf(declaring, holder, depth)
+			if (!elsewhere) continue
+			const name =
+				holder === "default" ?
+					`the default export of ${declaring.path}`
+				:	`\`${holder.name}\``
+			const why =
+				elsewhere.kind === "loose" ?
+					new DynamicValue(
+						elsewhere.exporter,
+						elsewhere.exporter.program,
+						`${name} is exported by ${elsewhere.exporter.path}, which ${elsewhere.why}, so code the build doesn't follow may write it`
+					)
+				:	new DynamicValue(
+						elsewhere.module,
+						elsewhere.node,
+						`${name} ${this.graph.isEscape(elsewhere.node) ? "reaches code the build doesn't follow" : "is written"} at ${elsewhere.module.positionOf(elsewhere.node)}, so its value at the site is not known`
+					)
+			return declaring === state.module || holder === "default" ?
+					why
+				:	new DynamicValue(
+						state.module,
+						state.node,
+						`${name} is imported from ${declaring.path}`,
+						why
+					)
 		}
 	}
 

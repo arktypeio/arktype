@@ -6,6 +6,7 @@ import {
 	diagnosticsOf,
 	memoryHost,
 	precompile,
+	programStatusesOf,
 	statusesOf
 } from "./utils.ts"
 
@@ -1266,6 +1267,434 @@ export const R = type({ a: read.a, b: read.list[0].or("null") })`)
 				"30:19 rejected\n  `o6` reaches code the build doesn't follow at /main.ts:17:1, so its value at the site is not known",
 				"31:19 rejected\n  `o7` is written at /main.ts:21:1, so its value at the site is not known",
 				"32:18 accepted { a: string, b: string | null }"
+			])
+		})
+
+		it("values read where nothing can write them", () => {
+			attest(
+				programStatusesOf({
+					"/main.ts": `import { type } from "arktype"
+import { Code, strategies, kinds, schemas } from "./values.ts"
+export const C = type.enumerated(...Object.values(Code))
+export const S = type.enumerated(...Object.values(strategies))
+export const K = type.enumerated(...kinds)
+export const U = type({ user: schemas.user })`,
+					"/values.ts": `import { type } from "arktype"
+export enum Code { A = "a", B = "b" }
+export const strategies = { random: "random", best: "best" } as const
+export const kinds = ["a", "b"] as const
+export const schemas = { user: type({ name: "string" }) }`,
+					"/reader.ts": `import { Code, strategies, kinds, schemas } from "./values.ts"
+const fail = (code: Code) => new Error(code)
+fail(Code.A)
+kinds.forEach(kind => fetch(kind))
+console.log(strategies.random, Object.keys(schemas), schemas.user.expression)`
+				})
+			).snap([
+				'3:18 accepted "a" | "b"',
+				'4:18 accepted "best" | "random"',
+				'5:18 accepted "a" | "b"',
+				"6:18 accepted { user: { name: string } }"
+			])
+		})
+
+		it("values another module of the program writes", () => {
+			const files = {
+				"/containers.ts": `import { type } from "arktype"
+export const H0 = { a: type("string") }
+export const H1 = { a: type("string") }
+export const H2 = { a: type("string") }
+export const H3 = { a: type("string") }
+export const H4 = { a: type("string") }
+export const H5 = { a: type("string") }
+if (H5) console.log("H5")
+export default { a: type("string") }`,
+				"/mutate.ts": `import { type } from "arktype"
+import D, { H0, H1 } from "./containers.ts"
+import * as containers from "./containers.ts"
+import { box } from "./box.ts"
+H0.a = type("number")
+export const write = () => {
+	H1.a = type("number")
+}
+const h = containers.H2
+h.a = type("number")
+box.h.a = type("number")
+D.a = type("number")`,
+				"/box.ts": `import { H3 } from "./containers.ts"
+export const box = { h: H3 }`,
+				"/reexport.ts": `export { H4 } from "./containers.ts"`,
+				"/loose.ts": `import { type } from "arktype"
+export const L = { a: type("string") }`,
+				"/unrelated.ts": `export const unrelated = 1`,
+				"/main.ts": `import { type } from "arktype"
+import D, { H0, H1, H2, H3, H4, H5 } from "./containers.ts"
+import { L } from "./loose.ts"
+import { write } from "./mutate.ts"
+write()
+export const load = () => [import("./loose.ts"), import("./reexport.ts"), import("./unrelated.ts")]
+export const T0 = type({ x: H0.a })
+export const T1 = type({ x: H1.a })
+export const T2 = type({ x: H2.a })
+export const T3 = type({ x: H3.a })
+export const TD = type({ x: D.a })
+export const TL = type({ x: L.a })
+export const T4 = type({ x: H4.a })
+export const T5 = type({ x: H5.a })`
+			}
+			attest(programStatusesOf(files)).snap([
+				"7:19 rejected\n  `H0` is imported from /containers.ts\n  `H0` is written at /mutate.ts:5:1, so its value at the site is not known",
+				"8:19 rejected\n  `H1` is imported from /containers.ts\n  `H1` is written at /mutate.ts:7:2, so its value at the site is not known",
+				"9:19 rejected\n  `H2` is imported from /containers.ts\n  `H2` is written at /mutate.ts:10:1, so its value at the site is not known",
+				"10:19 rejected\n  `H3` is imported from /containers.ts\n  `H3` is written at /mutate.ts:11:1, so its value at the site is not known",
+				"11:19 rejected\n  the default export of /containers.ts is written at /mutate.ts:12:1, so its value at the site is not known",
+				"12:19 rejected\n  `L` is imported from /loose.ts\n  `L` is exported by /loose.ts, which /main.ts:6:28 loads with import(), so code the build doesn't follow may write it",
+				"13:19 rejected\n  `H4` is imported from /containers.ts\n  `H4` is exported by /reexport.ts, which /main.ts:6:50 loads with import(), so code the build doesn't follow may write it",
+				"14:19 accepted { x: string }"
+			])
+			// a module read alone can't see them
+			attest(
+				statusesOf(files["/main.ts"], files).filter(
+					status => !status.includes("accepted")
+				)
+			).equals([])
+		})
+
+		it("values read through what holds them", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+declare const input: unknown
+declare const send: (v: unknown) => void
+const H0 = { list: [type("string"), type("number")] }
+H0.list.forEach(t => t.assert(input))
+const H1 = { list: [type("string")] }
+for (const t of H1.list) send(t)
+const H2 = { user: type({ name: "string" }) }
+const { user } = H2
+send(user)
+const H3 = { list: [type("string")] }
+send(H3.list.length)
+const H4 = { tags: ["a", "b"] }
+send([...H4.tags])
+const W0 = { inner: { a: "string" } }
+const { inner } = W0
+inner.a = "number"
+const W1 = { list: [{ a: "string" }] }
+W1.list.forEach(o => {
+	o.a = "number"
+})
+export const A0 = type({ x: H0.list[0] })
+export const A1 = type({ x: H1.list[0] })
+export const A2 = type({ x: H2.user })
+export const A3 = type({ x: H3.list[0] })
+export const A4 = type.enumerated(...H4.tags)
+export const B0 = type(W0.inner)
+export const B1 = type(W1.list[0])`)
+			).snap([
+				"4:21 accepted string",
+				"4:37 accepted number",
+				"6:21 accepted string",
+				"8:20 accepted { name: string }",
+				"11:21 accepted string",
+				"22:19 accepted { x: string }",
+				"23:19 accepted { x: string }",
+				"24:19 accepted { x: { name: string } }",
+				"25:19 accepted { x: string }",
+				'26:19 accepted "a" | "b"',
+				"27:19 rejected\n  `W0` is written at /main.ts:17:1, so its value at the site is not known",
+				"28:19 rejected\n  `W1` is written at /main.ts:20:2, so its value at the site is not known"
+			])
+		})
+
+		it("values written through what copies them", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const o0 = { h: { a: "string" } }
+for (const [, v] of Object.entries(o0)) v.a = "number"
+const o1 = { h: { a: "string" } }
+Object.getOwnPropertyDescriptors(o1).h.value.a = "number"
+const l2 = [{ a: "string" }]
+for (const [, v] of l2.entries()) v.a = "number"
+const l3 = [{ a: "string" }]
+const [...rest3] = l3
+rest3[0].a = "number"
+const o4 = { h: { a: "string" } }
+const { ...rest4 } = o4
+rest4.h.a = "number"
+const l5 = [{ a: "string" }]
+l5.forEach((...args) => {
+	args[0].a = "number"
+})
+const l6 = [{ a: "string" }]
+l6.map(v => [v])[0][0].a = "number"
+const l7 = [{ a: "string" }]
+l7.reduce((acc, v) => {
+	acc.a = "number"
+	return v
+})
+const l8 = [{ a: "string" }]
+Array.from(l8, v => {
+	v.a = "number"
+})
+const l9 = [{ a: "string" }]
+l9.forEach(function () {
+	arguments[0].a = "number"
+})
+const c0 = { h: { a: "string" } }
+const copy = { ...c0 }
+copy.h = { a: "number" }
+const c1 = [{ a: "string" }]
+c1.slice().reverse().push({ a: "number" })
+export const O0 = type(o0.h)
+export const O1 = type(o1.h)
+export const L2 = type(l2[0])
+export const L3 = type(l3[0])
+export const O4 = type(o4.h)
+export const L5 = type(l5[0])
+export const L6 = type(l6[0])
+export const L7 = type(l7[0])
+export const L8 = type(l8[0])
+export const L9 = type(l9[0])
+export const C0 = type(c0.h)
+export const C1 = type(c1[0])`)
+			).snap([
+				"38:19 rejected\n  `o0` is written at /main.ts:3:41, so its value at the site is not known",
+				"39:19 rejected\n  `o1` is written at /main.ts:5:1, so its value at the site is not known",
+				"40:19 rejected\n  `l2` is written at /main.ts:7:35, so its value at the site is not known",
+				"41:19 rejected\n  `l3` is written at /main.ts:10:1, so its value at the site is not known",
+				"42:19 rejected\n  `o4` is written at /main.ts:13:1, so its value at the site is not known",
+				"43:19 rejected\n  `l5` is written at /main.ts:16:2, so its value at the site is not known",
+				"44:19 rejected\n  `l6` reaches code the build doesn't follow at /main.ts:19:8, so its value at the site is not known",
+				"45:19 rejected\n  `l7` is written at /main.ts:22:2, so its value at the site is not known",
+				"46:19 rejected\n  `l8` is written at /main.ts:27:2, so its value at the site is not known",
+				"47:19 rejected\n  `l9` reaches code the build doesn't follow at /main.ts:30:1, so its value at the site is not known",
+				"48:19 accepted { a: string }",
+				"49:19 accepted { a: string }"
+			])
+		})
+
+		it("values a recursive function returns", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const H = { a: type("string") }
+const last = (x: any): any => (x.next ? last(x.next) : x)
+last(H).a = type("number")
+export const A = type({ x: H.a })`)
+			).snap([
+				"2:16 accepted string",
+				"4:13 accepted number",
+				"5:18 rejected\n  `H` is written at /main.ts:4:1, so its value at the site is not known"
+			])
+		})
+
+		it("values passed to a package the build reads", () => {
+			const files = {
+				"/node_modules/registry/index.js": `export { register, Registry, nested, store } from "./registry.js"`,
+				"/node_modules/registry/registry.js": `const byName = new Map()
+export const register = schemas => {
+	for (const [name, schema] of Object.entries(schemas)) byName.set(name, schema)
+}
+export class Registry {
+	add(schemas) {
+		for (const name in schemas) byName.set(name, schemas[name])
+	}
+}
+export const nested = schemas => {
+	schemas.inner.a = "number"
+}
+const all = []
+export const store = schemas => {
+	all.push(schemas)
+}`,
+				"/node_modules/cjs/index.js": `"use strict"
+Object.defineProperty(exports, "__esModule", { value: true })
+exports.read = void 0
+const read_1 = require("./read.js")
+Object.defineProperty(exports, "read", { enumerable: true, get: function () { return read_1.read } })`,
+				"/node_modules/cjs/read.js": `"use strict"
+exports.read = void 0
+const read = schemas => Object.keys(schemas).length
+exports.read = read`,
+				"/main.ts": `import { type } from "arktype"
+import { register, Registry, nested, store } from "registry"
+import { read } from "cjs"
+const S0 = { user: type({ name: "string" }) }
+register(S0)
+const S1 = { user: type({ name: "string" }) }
+const registry = new Registry()
+registry.add(S1)
+const S2 = { inner: { a: "string" } }
+nested(S2)
+const S3 = { user: type({ name: "string" }) }
+store(S3)
+const S4 = { user: type({ name: "string" }) }
+read(S4)
+export const T0 = type({ x: S0.user })
+export const T1 = type({ x: S1.user })
+export const T2 = type(S2.inner)
+export const T3 = type({ x: S3.user })
+export const T4 = type({ x: S4.user })`
+			}
+			attest(programStatusesOf(files)).snap([
+				"4:20 accepted { name: string }",
+				"6:20 accepted { name: string }",
+				"11:20 accepted { name: string }",
+				"13:20 accepted { name: string }",
+				"15:19 accepted { x: { name: string } }",
+				"16:19 accepted { x: { name: string } }",
+				"17:19 rejected\n  `S2` is written at /main.ts:10:1, so its value at the site is not known",
+				"18:19 rejected\n  `S3` reaches code the build doesn't follow at /main.ts:12:1, so its value at the site is not known",
+				"19:19 accepted { x: { name: string } }"
+			])
+		})
+
+		it("values a method they hold writes through this", () => {
+			attest(
+				statusesOf(
+					`import { type } from "arktype"
+import D from "./containers.ts"
+declare const register: (v: unknown) => void
+const o0 = {
+	t: type("string"),
+	swap() {
+		this.t = type("number")
+	}
+}
+o0.swap()
+const o1 = {
+	inner: {
+		t: type("string"),
+		set(t: any) {
+			this.t = t
+		}
+	}
+}
+const o2 = {
+	t: type("string"),
+	get() {
+		return this.t
+	}
+}
+const o3 = {
+	t: type("string"),
+	leak() {
+		register(this)
+	}
+}
+const o4 = {
+	t: type("string"),
+	describe: () => "an arrow has no this of its own"
+}
+export const A0 = type({ x: o0.t })
+export const A1 = type({ x: o1.inner.t })
+export const A2 = type({ x: o2.t })
+export const A3 = type({ x: o3.t })
+export const A4 = type({ x: o4.t })
+export const AD = type({ x: D.t })`,
+					{
+						"/containers.ts": `import { type } from "arktype"
+export default {
+	t: type("string"),
+	swap() {
+		this.t = type("number")
+	}
+}`
+					}
+				)
+			).snap([
+				"5:5 accepted string",
+				"7:12 accepted number",
+				"13:6 accepted string",
+				"20:5 accepted string",
+				"26:5 accepted string",
+				"32:5 accepted string",
+				"35:19 rejected\n  `o0` is written at /main.ts:7:3, so its value at the site is not known",
+				"36:19 rejected\n  `o1` holds a method that writes `this` at /main.ts:15:4, so its value at the site is not known",
+				"37:19 accepted { x: string }",
+				"38:19 rejected\n  `o3` holds a method that passes `this` to code the build doesn't follow at /main.ts:28:3, so its value at the site is not known",
+				"39:19 accepted { x: string }",
+				"40:19 rejected\n  `D` is imported from /containers.ts\n  the default export of /containers.ts holds a method that writes `this` at /containers.ts:5:3, so its value at the site is not known"
+			])
+		})
+
+		it("values another module writes, read through a local", () => {
+			const files = {
+				"/containers.ts": `import { type } from "arktype"
+export const H0 = { nested: { c: type("string") } }
+export const H1 = { c: type("string") }
+export const H2 = { c: type("string") }
+export const H3 = { c: type("string") }
+export const H4 = { c: type("string") }`,
+				"/mutate.ts": `import { type } from "arktype"
+import { H0, H1, H2, H3 } from "./containers.ts"
+const { nested } = H0
+nested.c = type("number")
+H1.c = type("number")
+H2.c = type("number")
+H3.c = type("number")`,
+				"/derived.ts": `import { H3 } from "./containers.ts"
+export const C3 = H3.c`,
+				"/main.ts": `import { type } from "arktype"
+import "./mutate.ts"
+import { H0, H1, H2, H4 } from "./containers.ts"
+import { C3 } from "./derived.ts"
+const { nested: { c: C0 } } = H0
+const C1 = H1.c
+const local = { h: H2 }
+const C2 = local.h.c
+const C4 = H4.c
+export const T0 = type({ x: C0 })
+export const T1 = type({ x: C1 })
+export const T2 = type({ x: C2 })
+export const T3 = type({ x: C3 })
+export const T4 = type({ x: C4 })`
+			}
+			attest(programStatusesOf(files)).snap([
+				"10:19 rejected\n  `H0` is imported from /containers.ts\n  `H0` is written at /mutate.ts:4:1, so its value at the site is not known",
+				"11:19 rejected\n  `H1` is imported from /containers.ts\n  `H1` is written at /mutate.ts:5:1, so its value at the site is not known",
+				"12:19 rejected\n  `H2` is imported from /containers.ts\n  `H2` is written at /mutate.ts:6:1, so its value at the site is not known",
+				"13:19 rejected\n  `H3` is imported from /containers.ts\n  `H3` is written at /mutate.ts:7:1, so its value at the site is not known",
+				"14:19 accepted { x: string }"
+			])
+		})
+
+		it("values calling a method the build doesn't know", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+declare const data: unknown
+const H0 = { t: type("string") }
+const wrapper = {
+	h: H0,
+	run() {
+		this.h.t = type("number")
+	}
+}
+wrapper.run()
+const H1 = { list: [type("string")] }
+;(H1.list as any).customize()
+const schemas = { user: type({ name: "string" }) }
+schemas.user(data)
+const H2 = { list: [type("string")], at: new Date(0) }
+H2.list.includes(data as never)
+H2.at.getTime()
+const d = new Date(0)
+d.setTime(1)
+export const A0 = type({ x: H0.t })
+export const A1 = type({ x: H1.list[0] })
+export const A2 = type({ x: schemas.user })
+export const A3 = type({ x: H2.list[0] })
+export const A4 = type("Date").atOrAfter(d)`)
+			).snap([
+				"3:17 accepted string",
+				"7:14 accepted number",
+				"11:21 accepted string",
+				"13:25 accepted { name: string }",
+				"15:21 accepted string",
+				"20:19 rejected\n  `H0` is written at /main.ts:7:3, so its value at the site is not known",
+				"21:19 rejected\n  `H1` reaches code the build doesn't follow at /main.ts:12:2, so its value at the site is not known",
+				"22:19 accepted { x: { name: string } }",
+				"23:19 accepted { x: string }",
+				"24:19 accepted Date >= d'1970-01-01T00:00:00.000Z'"
 			])
 		})
 
