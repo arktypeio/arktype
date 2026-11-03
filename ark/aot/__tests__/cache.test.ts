@@ -284,6 +284,36 @@ contextualize(function (this: Mocha.Suite) {
 			)
 		})
 
+		it("misses where --emit leaves dependencies to Node", async () => {
+			const dir = writeFixture({
+				"main.ts": `import { type } from "arktype"\nimport { Length } from "schemas"\n\nexport const T = type({ name: Length })\n`,
+				...packageFiles(
+					"schemas",
+					{
+						"index.js": `import { type } from "arktype"\n\nexport const Length = type("string <= 50")\n`
+					},
+					{ ark: { aot: true } }
+				)
+			})
+			await codeIn(dir)
+			forge(dir)
+			// as --emit asks, refusing the site a bundler's build precompiles
+			const send = createAsyncPrecompiler({
+				precompilerOptions: { cwd: dir, conditions },
+				leavesDependencies: true
+			})
+			const id = join(dir, "main.ts")
+			const emitted = (await send([
+				"transform",
+				readFileSync(id, "utf8"),
+				id
+			])) as TransformedModule | undefined
+			await send(["close"])
+			attest(emitted?.errors.map(error => error.split("\n")[0])).snap([
+				"main.ts:4:18  type({ name: Length }) can't be precompiled yet"
+			])
+		})
+
 		it("never reads what another version of the code wrote", async () => {
 			const dir = writeFixture({
 				"main.ts": shapeReader("./shape.ts"),
