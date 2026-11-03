@@ -9,6 +9,7 @@ import {
 	writeStandaloneDependencyMessage,
 	withAllowUnsafe,
 	unbundledMessage,
+	writeBundledDependentMessage,
 	writeBundledExternalMessage,
 	writeExternalizedMessage,
 	writeNextExternalMessage,
@@ -710,6 +711,11 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 		])
 	})
 
+	const readsErrors = `import { type } from "arktype"
+
+export const failed = out => out instanceof type.errors
+`
+
 	describe("fails a build whose externals take a package reaching arktype", () => {
 		const errorsOf = async (
 			build: typeof webpack | typeof rspack,
@@ -726,10 +732,13 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 						name: "reads-errors",
 						peerDependencies: { arktype: "*" }
 					}),
+					"node_modules/reads-errors/index.js": readsErrors,
 					"node_modules/wraps-errors/package.json": JSON.stringify({
 						name: "wraps-errors",
 						dependencies: { "reads-errors": "*" }
 					}),
+					"node_modules/wraps-errors/index.js":
+						'export { failed } from "reads-errors"\n',
 					"node_modules/native/package.json": JSON.stringify({
 						name: "native"
 					}),
@@ -745,7 +754,8 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 						JSON.stringify({
 							name: "nested",
 							peerDependencies: { arktype: "*" }
-						})
+						}),
+					"node_modules/bundled/node_modules/nested/index.js": readsErrors
 				},
 				fromHere("temp", "webpackReachingExternals", name)
 			)
@@ -804,6 +814,288 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 			attest(
 				await errorsOf(webpack, precompile.webpack, "native", ["native"])
 			).equals([])
+		})
+	})
+
+	describe("fails a bundle leaving external a package importing arktype", () => {
+		const dependent = (name: string) =>
+			writeFixture(
+				{
+					"package.json": JSON.stringify({ type: "module" }),
+					"main.ts": `import { type } from "arktype"
+import { failed } from "reads-errors"
+
+const out = type({ a: "string" })({ a: 1 })
+console.log(out instanceof type.errors, failed(out))
+`,
+					"declaring.ts": `import { type } from "arktype"
+import { vendorOf } from "declares-arktype"
+
+console.log(vendorOf(type({ a: "string" })))
+`,
+					"subpath.ts": `import { type } from "arktype"
+import { plain } from "has-subpaths/plain"
+
+console.log(plain(type({ a: "string" })))
+`,
+					"otherSubpath.ts": `import { failed } from "has-subpaths/errors"
+
+console.log(failed)
+`,
+					"computed.ts": `import { load } from "computes-imports"
+
+console.log(load)
+`,
+					"defining.ts": `import { Defined } from "defines-types"
+
+console.log(Defined({ a: "ok" }))
+`,
+					"node_modules/defines-types/package.json": JSON.stringify({
+						name: "defines-types",
+						type: "module",
+						exports: "./index.js",
+						peerDependencies: { arktype: "*" }
+					}),
+					"node_modules/defines-types/index.js": `import { type } from "arktype"
+
+export const Defined = type({ a: "string" })
+`,
+					"hoisting.ts": `import { failed } from "bundled"
+
+console.log(failed)
+`,
+					"node_modules/reads-errors/package.json": JSON.stringify({
+						name: "reads-errors",
+						type: "module",
+						exports: "./index.js",
+						peerDependencies: { arktype: "*" }
+					}),
+					"node_modules/reads-errors/index.js": readsErrors,
+					// as hono-openapi's converter does, reading a Type it's passed
+					"node_modules/declares-arktype/package.json": JSON.stringify({
+						name: "declares-arktype",
+						type: "module",
+						exports: "./index.js",
+						peerDependencies: { arktype: "*" },
+						peerDependenciesMeta: { arktype: { optional: true } }
+					}),
+					"node_modules/declares-arktype/index.js": `export const vendorOf = schema =>
+	schema["~standard"].vendor === "arktype"
+`,
+					// as @hookform/resolvers does, importing arktype from one subpath
+					"node_modules/has-subpaths/package.json": JSON.stringify({
+						name: "has-subpaths",
+						type: "module",
+						exports: { "./plain": "./plain.js", "./errors": "./errors.js" },
+						peerDependencies: { arktype: "*" }
+					}),
+					"node_modules/has-subpaths/plain.js":
+						'export const plain = schema => schema["~standard"]\n',
+					"node_modules/has-subpaths/errors.js": readsErrors,
+					"node_modules/computes-imports/package.json": JSON.stringify({
+						name: "computes-imports",
+						type: "module",
+						exports: "./index.js",
+						peerDependencies: { arktype: "*" }
+					}),
+					"node_modules/computes-imports/index.js":
+						"export const load = name => import(`./vendors/${name}.js`)\n",
+					"node_modules/computes-imports/vendors/arktype.js": readsErrors,
+					"node_modules/bundled/package.json": JSON.stringify({
+						name: "bundled",
+						type: "module",
+						exports: "./index.js",
+						dependencies: { nested: "*" }
+					}),
+					"node_modules/bundled/index.js": 'export { failed } from "nested"\n',
+					"node_modules/bundled/node_modules/nested/package.json":
+						JSON.stringify({
+							name: "nested",
+							type: "module",
+							exports: "./index.js",
+							peerDependencies: { arktype: "*" }
+						}),
+					"node_modules/bundled/node_modules/nested/index.js": readsErrors
+				},
+				fromHere("temp", "bundledDependents", name)
+			)
+		const ssrBuild = (
+			root: string,
+			{
+				entry = "main.ts",
+				noExternal = [],
+				opts = {}
+			}: {
+				entry?: string
+				noExternal?: string[]
+				opts?: PrecompileUnpluginOptions
+			} = {}
+		) => {
+			const config = viteConfig({ cwd: root, ...opts }, root)
+			return viteBuild({
+				...config,
+				ssr: { ...config.ssr, noExternal },
+				build: { write: false, ssr: entry }
+			}) as Promise<Rolldown.RolldownOutput>
+		}
+		const messageOf = (build: Promise<unknown>) =>
+			build.then(
+				() => "built",
+				(e: Error) => e.message
+			)
+		const leaves = (name: string, noExternal?: string) =>
+			withAllowUnsafe(writeBundledDependentMessage(name, noExternal))
+
+		it("vite's server leaves it where ssr.noExternal doesn't name it", async () => {
+			attest(
+				(await messageOf(ssrBuild(dependent("ssr")))).includes(
+					leaves("reads-errors", "ssr.noExternal")
+				)
+			).equals(true)
+		})
+
+		it("so one ssr.noExternal names reads the runtime's errors", async () => {
+			const { output } = await ssrBuild(dependent("inlined"), {
+				noExternal: ["reads-errors"]
+			})
+			attest(run(output[0].code)).equals("true true\n")
+		})
+
+		it("names the option of another server environment", async () => {
+			const root = dependent("environment")
+			const builder = await createBuilder({
+				...viteConfig({ cwd: root }, root),
+				environments: {
+					edge: {
+						consumer: "server",
+						build: { write: false, ssr: "main.ts" }
+					}
+				},
+				builder: {}
+			})
+			attest(
+				(await messageOf(builder.build(builder.environments.edge))).includes(
+					leaves("reads-errors", "environments.edge.resolve.noExternal")
+				)
+			).equals(true)
+		})
+
+		it("allows one only declaring arktype", async () => {
+			attest(
+				await messageOf(
+					ssrBuild(dependent("declaring"), { entry: "declaring.ts" })
+				)
+			).equals("built")
+		})
+
+		it("reads the subpath the program imports", async () => {
+			attest(
+				await messageOf(ssrBuild(dependent("plain"), { entry: "subpath.ts" }))
+			).equals("built")
+			attest(
+				(
+					await messageOf(
+						ssrBuild(dependent("subpath"), { entry: "otherSubpath.ts" })
+					)
+				).includes(leaves("has-subpaths", "ssr.noExternal"))
+			).equals(true)
+		})
+
+		it("assumes a computed import reaches what its package imports", async () => {
+			attest(
+				(
+					await messageOf(
+						ssrBuild(dependent("computed"), { entry: "computed.ts" })
+					)
+				).includes(leaves("computes-imports", "ssr.noExternal"))
+			).equals(true)
+		})
+
+		it("names the setting that builds one defining Types", async () => {
+			const defining = { entry: "defining.ts" }
+			attest(
+				(await messageOf(ssrBuild(dependent("defines"), defining))).includes(
+					withAllowUnsafe(writeStandaloneDependencyMessage("defines-types"))
+				)
+			).equals(true)
+			for (const mode of ["aot", "arktype"] as const) {
+				const { output } = await ssrBuild(dependent(`defines-${mode}`), {
+					...defining,
+					opts: { dependencies: { "defines-types": mode } }
+				})
+				attest(run(output[0].code)).equals("{ a: 'ok' }\n")
+			}
+		})
+
+		it("warns with allowUnsafe, and runtime: arktype shares it", async () => {
+			attest(
+				await messageOf(
+					ssrBuild(dependent("unsafe"), { opts: { allowUnsafe: true } })
+				)
+			).equals("built")
+			attest(
+				await messageOf(
+					ssrBuild(dependent("arktype"), { opts: { runtime: "arktype" } })
+				)
+			).equals("built")
+		})
+
+		it("rollup, by the file a tool resolves it to", async () => {
+			const root = dependent("rollup")
+			const file = join(root, "node_modules/reads-errors/index.js")
+			const message = await messageOf(
+				rollup({
+					input: join(root, "main.ts"),
+					logLevel: "silent",
+					makeAbsoluteExternalsRelative: false,
+					plugins: [
+						{
+							name: "externals",
+							resolveId: id =>
+								id === "reads-errors" ? { id: file, external: true } : null
+						},
+						precompile.rollup({ cwd: root, conditions }),
+						{
+							name: "strip",
+							transform: code => transformSync(code, { loader: "ts" }).code
+						}
+					]
+				})
+			)
+			attest(message.includes(leaves("reads-errors"))).equals(true)
+		})
+
+		const esbuildMessage = (name: string, entry: string, external: string) => {
+			const root = dependent(name)
+			return esbuild({
+				entryPoints: [join(root, entry)],
+				bundle: true,
+				write: false,
+				format: "esm",
+				logLevel: "silent",
+				conditions,
+				external: [external],
+				plugins: [precompile.esbuild({ cwd: root, conditions })]
+			}).then(
+				() => "built",
+				(e: { errors: { text: string }[] }) => e.errors[0].text
+			)
+		}
+
+		it("esbuild, as the module importing it resolves it", async () => {
+			attest(await esbuildMessage("esbuild", "hoisting.ts", "nested")).equals(
+				leaves("nested")
+			)
+		})
+
+		it("esbuild, with both a package defining Types needs", async () => {
+			attest(
+				await esbuildMessage("esbuildDefines", "defining.ts", "defines-types")
+			).equals(
+				withAllowUnsafe(
+					`${writeBundledDependentMessage("defines-types", undefined)}\n${writeStandaloneDependencyMessage("defines-types")}`
+				)
+			)
 		})
 	})
 

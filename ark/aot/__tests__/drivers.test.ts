@@ -924,6 +924,8 @@ console.log(Value, note, load, await import("#shared/lazy"))
 							name: "reads-errors",
 							peerDependencies: { arktype: "*" }
 						}),
+						"node_modules/reads-errors/index.js":
+							'import { type } from "arktype"\n\nexport const failed = out => out instanceof type.errors\n',
 						"node_modules/wraps-errors/package.json": JSON.stringify({
 							name: "wraps-errors",
 							dependencies: { "reads-errors": "*" }
