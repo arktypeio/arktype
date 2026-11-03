@@ -2702,25 +2702,25 @@ const changeableDepthOf = (
 	value: unknown,
 	seen = new Set<object>()
 ): number => {
-	if (!isChangeable(value)) return 0
+	// a site reads a Date or RegExp at run time, so a setter changes nothing
+	// the build baked
+	if (!isPlainContainer(value)) return 0
 	let depth = depthsByValue.get(value)
 	if (depth !== undefined) return depth
 	// a value reaching one being counted holds itself
 	if (seen.has(value)) return Infinity
 	depth = 1
-	if (isPlainContainer(value)) {
-		seen.add(value)
-		for (const k of Reflect.ownKeys(value)) {
-			const descriptor = Reflect.getOwnPropertyDescriptor(value, k)!
-			depth = Math.max(
-				depth,
-				"value" in descriptor ?
-					1 + changeableDepthOf(descriptor.value, seen)
-				:	Infinity
-			)
-		}
-		seen.delete(value)
+	seen.add(value)
+	for (const k of Reflect.ownKeys(value)) {
+		const descriptor = Reflect.getOwnPropertyDescriptor(value, k)!
+		depth = Math.max(
+			depth,
+			"value" in descriptor ?
+				1 + changeableDepthOf(descriptor.value, seen)
+			:	Infinity
+		)
 	}
+	seen.delete(value)
 	depthsByValue.set(value, depth)
 	return depth
 }

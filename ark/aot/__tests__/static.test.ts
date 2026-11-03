@@ -1608,7 +1608,7 @@ export default {
 				"20:5 accepted string",
 				"26:5 accepted string",
 				"32:5 accepted string",
-				"35:19 rejected\n  `o0` holds a method that writes `this` at /main.ts:7:3, so its value at the site is not known",
+				"35:19 rejected\n  `o0` is written at /main.ts:7:3, so its value at the site is not known",
 				"36:19 rejected\n  `o1` holds a method that writes `this` at /main.ts:15:4, so its value at the site is not known",
 				"37:19 accepted { x: string }",
 				"38:19 rejected\n  `o3` holds a method that passes `this` to code the build doesn't follow at /main.ts:28:3, so its value at the site is not known",
@@ -1655,6 +1655,46 @@ export const T4 = type({ x: C4 })`
 				"12:19 rejected\n  `H2` is imported from /containers.ts\n  `H2` is written at /mutate.ts:6:1, so its value at the site is not known",
 				"13:19 rejected\n  `H3` is imported from /containers.ts\n  `H3` is written at /mutate.ts:7:1, so its value at the site is not known",
 				"14:19 accepted { x: string }"
+			])
+		})
+
+		it("values calling a method the build doesn't know", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+declare const data: unknown
+const H0 = { t: type("string") }
+const wrapper = {
+	h: H0,
+	run() {
+		this.h.t = type("number")
+	}
+}
+wrapper.run()
+const H1 = { list: [type("string")] }
+;(H1.list as any).customize()
+const schemas = { user: type({ name: "string" }) }
+schemas.user(data)
+const H2 = { list: [type("string")], at: new Date(0) }
+H2.list.includes(data as never)
+H2.at.getTime()
+const d = new Date(0)
+d.setTime(1)
+export const A0 = type({ x: H0.t })
+export const A1 = type({ x: H1.list[0] })
+export const A2 = type({ x: schemas.user })
+export const A3 = type({ x: H2.list[0] })
+export const A4 = type("Date").atOrAfter(d)`)
+			).snap([
+				"3:17 accepted string",
+				"7:14 accepted number",
+				"11:21 accepted string",
+				"13:25 accepted { name: string }",
+				"15:21 accepted string",
+				"20:19 rejected\n  `H0` is written at /main.ts:7:3, so its value at the site is not known",
+				"21:19 rejected\n  `H1` reaches code the build doesn't follow at /main.ts:12:2, so its value at the site is not known",
+				"22:19 accepted { x: { name: string } }",
+				"23:19 accepted { x: string }",
+				"24:19 accepted Date >= d'1970-01-01T00:00:00.000Z'"
 			])
 		})
 

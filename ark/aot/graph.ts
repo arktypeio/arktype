@@ -483,8 +483,8 @@ export interface Held {
 	copied: number
 }
 
-// e.g. what a method the build doesn't know returns, which may hold anything
-// its receiver does
+// e.g. what a rest parameter of a callback holds, which may be anything
+// the receiver does
 const unbounded: Held = { depth: Infinity, copied: 0 }
 
 // past it, a value is followed as if it were unbounded
@@ -774,7 +774,19 @@ const heldByMethod: Record<string, [result: Relation, callback?: Relation[]]> =
 			push: ["none"],
 			unshift: ["none"],
 			hasOwnProperty: ["none"],
-			propertyIsEnumerable: ["none"]
+			propertyIsEnumerable: ["none"],
+			isPrototypeOf: ["none"],
+			toString: ["none"],
+			toLocaleString: ["none"],
+			valueOf: ["self"],
+			get: ["element"],
+			has: ["none"],
+			// a Date's or RegExp's, which a site reads at run time
+			getTime: ["none"],
+			toISOString: ["none"],
+			toJSON: ["none"],
+			test: ["none"],
+			exec: ["none"]
 		},
 		null
 	)
@@ -4445,13 +4457,13 @@ export class ModuleGraph {
 
 	// e.g. `list.forEach(v => { v.a = 1 })`, passing what a receiver holds to a
 	// callback, which is unknown unless the build reads it: each parameter
-	// holds it by its relation in `params`, or else anything it does
+	// holds it by its relation in `params`
 	private mayWriteInCallback(
 		call: Node,
 		arg: Node,
 		module: SourceModule,
 		held: Held,
-		params?: Relation[]
+		params: Relation[]
 	): Node | undefined {
 		if (arg.type === "SpreadElement") return this.escape(call)
 		const fn = this.calleeOf(arg, module)
@@ -4470,7 +4482,7 @@ export class ModuleGraph {
 			const isRest = param.type === "RestElement"
 			// e.g. `(...args) => args[0].a = 1`, whose parameter holds anything
 			const through =
-				isRest || !params ? unbounded : heldThrough(held, params[i] ?? "none")
+				isRest ? unbounded : heldThrough(held, params[i] ?? "none")
 			const write =
 				through &&
 				this.mayWriteThrough(isRest ? param.argument : param, through, fn[1])
@@ -4508,40 +4520,42 @@ export class ModuleGraph {
 					if (call?.type === "CallExpression" && call.callee === callee) {
 						const name = memberNameOf(parent)
 						if (!held.copied && (name as never) in mutatingMethods) return call
-						if (isOnlyArk(this.kindOf(operand, module))) return
+						// e.g. `T.or(o)` or `schemas.user(data)`, calling a Type
+						if (
+							isOnlyArk(this.kindOf(operand, module)) ||
+							isOnlyArk(this.kindOf(parent, module))
+						)
+							return
+						// e.g. `o.reset()` given `o = { reset() { this.a = 1 } }`, run
+						// with its receiver as `this`
+						const method = this.methodOf(parent, module, this.finalKindOfKey)
+						if (method) {
+							const [write] = this.mayWritesThroughThis(...method, held)
+							return (
+								!write || method[1] === module ? write
+								: this.escapes.has(write) ? this.escape(call)
+								: call
+							)
+						}
 						const builtin =
-							(
-								typeof name === "string" &&
-								!this.methodOf(parent, module, this.finalKindOfKey)
-							) ?
-								heldByMethod[name]
-							:	undefined
-						if (builtin) {
-							const write =
-								builtin[1] &&
-								call.arguments[0] &&
-								this.mayWriteInCallback(
-									call,
-									call.arguments[0],
-									module,
-									held,
-									builtin[1]
-								)
-							if (write) return write
-							const next = heldThrough(held, builtin[0])
-							if (!next) return
-							node = call
-							held = next
-							continue
-						}
-						// a method the build doesn't know may call back with anything
-						// its receiver holds and return any of it
-						for (const arg of call.arguments) {
-							const write = this.mayWriteInCallback(call, arg, module, held)
-							if (write) return write
-						}
+							typeof name === "string" ? heldByMethod[name] : undefined
+						// one the build doesn't know may do anything with its receiver
+						if (!builtin) return this.escape(call)
+						const write =
+							builtin[1] &&
+							call.arguments[0] &&
+							this.mayWriteInCallback(
+								call,
+								call.arguments[0],
+								module,
+								held,
+								builtin[1]
+							)
+						if (write) return write
+						const next = heldThrough(held, builtin[0])
+						if (!next) return
 						node = call
-						held = unbounded
+						held = next
 						continue
 					}
 					// a Type or primitive holds nothing the program writes
