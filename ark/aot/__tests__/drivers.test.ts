@@ -10,6 +10,7 @@ import {
 import {
 	configuredThreadMessage,
 	writeTurbopackDependencyMessage,
+	writeChangedSettingsMessage,
 	writeUnansweredResolveMessage,
 	withAllowUnsafe,
 	writeAliasMessage,
@@ -18,8 +19,10 @@ import {
 	writePrecompiledDependencyMessage,
 	writeTextlessMessage,
 	writeUntransformedImportMessage,
+	writeArktypeHint,
 	writeVariantImportMessage
 } from "@ark/aot/internal/messages.ts"
+import { arktypeVersion } from "@ark/aot/internal/version.ts"
 import {
 	createAsyncPrecompiler,
 	type BundlerResolve
@@ -32,6 +35,7 @@ import {
 	existsSync,
 	mkdirSync,
 	readFileSync,
+	rmSync,
 	symlinkSync,
 	utimesSync,
 	writeFileSync
@@ -198,6 +202,49 @@ contextualize(function (this: Mocha.Suite) {
 		)
 		attest(thrownMessage(stderr, app)).snap(
 			"@ark/aot/node needs Node 22.15 or later (this is 22.14.0)"
+		)
+	})
+
+	it("fails each entry for an arktype it doesn't run on, before loading it", () => {
+		// as pnpm resolves the arktype @ark/aot peers to a program's arktype 2,
+		// which has no arktype/codecs for the precompiler to import
+		const root = writeFixture({
+			...packageFiles("arktype", { "index.js": "" }, { version: "2.1.0" }),
+			"main.ts": 'import { type } from "arktype"\n'
+		})
+		const aot = (file: string) => pathToFileURL(fromHere("..", file)).href
+		const main = pathToFileURL(join(root, "main.ts")).href
+		const run = (args: string[]) =>
+			spawnSync(
+				process.execPath,
+				[
+					"--conditions",
+					"ark-ts",
+					"--import",
+					`data:text/javascript,import { registerHooks } from "node:module"; registerHooks({ resolve: (specifier, context, next) => next(specifier, (specifier === "arktype" || specifier.startsWith("arktype/")) && context.parentURL?.startsWith("${aot("")}") ? { ...context, parentURL: "${main}" } : context) })`,
+					...args
+				],
+				{ cwd: root, encoding: "utf8", timeout }
+			)
+		const message = `arktype resolves to 2.1.0, but @ark/aot runs on ${arktypeVersion}
+  2.1.0 at node_modules/arktype, which @ark/aot imports
+  ${writeArktypeHint(arktypeVersion)}`
+		const { stdout } = run([
+			"--input-type=module",
+			"-e",
+			`const loads = [
+	async () => (await import("${aot("turbopack.ts")}")).default.call({ getOptions: () => ({}), resourcePath: "main.ts" }, ""),
+	async () => (await import("${aot("unplugin.ts")}")).precompile.esbuild(),
+	// last, since its hooks would precompile what the others load
+	async () => (await import("${aot("node.ts")}")).register()
+]
+const messages = []
+for (const load of loads) await load().then(() => messages.push("loaded"), e => messages.push(e.message))
+console.log(JSON.stringify(messages))`
+		])
+		attest(JSON.parse(stdout)).equals([message, message, message])
+		attest(run([fromHere("..", "cli.ts"), "--check"]).stderr).equals(
+			`${message}\n`
 		)
 	})
 
@@ -902,6 +949,19 @@ console.log(Value, note, load, await import("#shared/lazy"))
 			attest(refused[0]).satisfies(/prints the name of `isLong`/)
 		})
 
+		it("fails once its settings change while Next runs", () => {
+			const dir = writeFixture({
+				"main.ts":
+					'import { type } from "arktype"\n\nexport const T = type("string")\n'
+			})
+			attest(load(dir).out).satisfies(/export const T/)
+			writeFileSync(
+				join(dir, "ark.json"),
+				JSON.stringify({ precompile: { optimize: "size" } })
+			)
+			attest(load(dir).out).equals(writeChangedSettingsMessage("ark.json"))
+		})
+
 		describe("replaces its precompiler when", () => {
 			const writeMain = (dir: string, specifier: string) =>
 				writeFileSync(
@@ -1040,6 +1100,61 @@ console.log(Value, note, load, await import("#shared/lazy"))
 				"main.ts:3:20  User.errors reads errors, which a standalone validator lacks"
 			])
 			await send(["close"])
+		})
+
+		// what a worker answers for main.ts as a watch build asks, after each change
+		const watched = async (dir: string, changes: (() => void)[]) => {
+			const send = createAsyncPrecompiler({
+				precompilerOptions: { cwd: dir, conditions }
+			})
+			const main = join(dir, "main.ts")
+			const answers: unknown[] = []
+			const resets: unknown[] = []
+			for (const change of [() => {}, ...changes]) {
+				change()
+				resets.push(await send(["reset"]))
+				answers.push(
+					JSON.stringify(
+						await send(["transform", readFileSync(main, "utf8"), main])
+					)
+				)
+			}
+			await send(["close"])
+			return { answers, resets }
+		}
+
+		it("answers anew once a file created shadows what an import resolved to", async () => {
+			const dir = writeFixture({
+				"main.ts":
+					'import { type } from "arktype"\nimport { shape } from "./shape"\n\nexport const T = type(shape)\n',
+				"shape/index.ts": 'export const shape = { a: "string" } as const\n'
+			})
+			const { answers } = await watched(dir, [
+				() =>
+					writeFileSync(
+						join(dir, "shape.ts"),
+						'export const shape = { a: "number" } as const\n'
+					)
+			])
+			rmSync(join(dir, "node_modules"), { recursive: true, force: true })
+			const fresh = await watched(dir, [])
+			attest(answers[1]).equals(fresh.answers[0])
+		})
+
+		it("asks for a new thread once its settings change", async () => {
+			const dir = writeFixture({
+				"main.ts":
+					'import { type } from "arktype"\n\nexport const T = type("string")\n'
+			})
+			const { resets } = await watched(dir, [
+				() => {},
+				() =>
+					writeFileSync(
+						join(dir, "ark.json"),
+						JSON.stringify({ precompile: { optimize: "size" } })
+					)
+			])
+			attest(resets).equals([false, false, true])
 		})
 	})
 

@@ -390,7 +390,7 @@ export class StandaloneArtifact {
 	}
 
 	receive(params: FactoryParam[]): void {
-		const checked: [hole: unknown, kind: HoleKind, expression: string][] = []
+		const checked: CheckedHole[] = []
 		for (let i = 0; i < params.length; i++) {
 			const param = params[i]
 			if (param.kind === "input") {
@@ -413,9 +413,7 @@ export class StandaloneArtifact {
 		this.refuseNameDependence()
 	}
 
-	checkFacts(
-		checked: [hole: unknown, kind: HoleKind, expression: string][]
-	): void {
+	checkFacts(checked: CheckedHole[]): void {
 		// relate classes from referenced Types this factory didn't see
 		for (const hole of this.classes) {
 			if (!checked.some(([checkedHole]) => checkedHole === hole))
@@ -542,7 +540,7 @@ export class StandaloneArtifact {
 		path: PropertyKey[],
 		value: unknown,
 		root: string,
-		checked: [hole: unknown, kind: HoleKind, expression: string][]
+		checked: CheckedHole[]
 	): void {
 		let expression = param
 		let label = root
@@ -628,23 +626,15 @@ export class StandaloneArtifact {
 		)
 		if (!isPlainLiteral(value)) return
 		for (const k of Reflect.ownKeys(value)) {
-			if (!isArray(value)) {
-				this.compareInput(
-					param,
-					[...path, k],
-					Reflect.get(value, k),
-					root,
-					checked
-				)
-			} else if (k !== "length") {
-				this.compareInput(
-					param,
-					[...path, Number(k)],
-					value[Number(k)],
-					root,
-					checked
-				)
-			}
+			if (isArray(value) && k === "length") continue
+			const key = isArray(value) ? Number(k) : k
+			this.compareInput(
+				param,
+				[...path, key],
+				Reflect.get(value, key),
+				root,
+				checked
+			)
 		}
 	}
 
@@ -872,7 +862,7 @@ export class StandaloneArtifact {
 		const { type, params, internedBy } = this.factory!
 		this.writeSharedUnits()
 		const value = this.validatorNames.get(type as never) ?? this.exportOf(type)
-		const defaults = this.writeDefaultChecks(this.defaultChecks)
+		const defaults = this.writeDefaultChecks()
 		const holes =
 			internedBy === undefined ? undefined : (
 				keyOf(type)[1].map(hole => this.holeExpressions.get(hole)!)
@@ -906,7 +896,7 @@ export class StandaloneArtifact {
 			...this.checks,
 			`return ${
 				holes.length ?
-					`runtime.rekeyed(${read}, ${received ?? `[${holes.map(hole => this.emit(hole)).join(", ")}]`})`
+					`runtime.rekeyed(${read}, ${received ?? `[${this.emitAll(holes)}]`})`
 				:	read
 			}`
 		]
@@ -934,7 +924,7 @@ export class StandaloneArtifact {
 			: this.readJson(type)
 		)
 		this.assertBakedWithin()
-		const defaults = this.writeDefaultChecks(this.defaultChecks)
+		const defaults = this.writeDefaultChecks()
 		return this.writeFactoryFunction(index, params, configured, [
 			...(defaults.length ?
 				[...this.writeCalledBody(index), ...defaults.map(({ check }) => check)]
@@ -972,14 +962,18 @@ return namespace`
 			param,
 			[
 				this.declarations.statements.join("\n"),
-				[...this.sharedWriters]
-					.map(([writer, name]) => `const ${name} = ${writer}`)
-					.join("\n"),
+				this.sharedWriterDeclarations,
 				baked
 			]
 				.filter(statement => statement)
 				.join("\n\n")
 		)
+	}
+
+	get sharedWriterDeclarations(): string {
+		return [...this.sharedWriters]
+			.map(([writer, name]) => `const ${name} = ${writer}`)
+			.join("\n")
 	}
 
 	writeFactoryFunction(
@@ -1007,15 +1001,13 @@ ${writeFunction(
 		)
 	}
 
-	writeDefaultChecks(
-		checks: readonly DefaultCheck[]
-	): { check: string; key: string }[] {
-		return checks.map(([node, defaultValue, key]) => {
+	writeDefaultChecks(): { check: string; key: string }[] {
+		return this.defaultChecks.map(([node, defaultValue, key]) => {
 			const input = node.in as BaseRoot
 			// keyed by traversal, value and their holes
 			const [inputId, inputHoles] = traversalKeyOf(input)
 			const [valueId, valueHoles] = encodeKey(defaultValue, undefined, "value")
-			const defaultKey = `[${JSON.stringify(hashOf(`${inputId} ${valueId}`))}, [${[...inputHoles, ...valueHoles].map(hole => this.emit(hole)).join(", ")}]]`
+			const defaultKey = `[${JSON.stringify(hashOf(`${inputId} ${valueId}`))}, [${this.emitAll([...inputHoles, ...valueHoles])}]]`
 			return {
 				check: `runtime.checkDefault(${this.readByRuntime(input)}, ${this.emit(defaultValue)}, ${key === null ? "null" : this.emit(key)}, ${defaultKey})`,
 				key: defaultKey
@@ -1178,18 +1170,13 @@ ${writeFunction(
 			const dependency = unitOf(unit.dependencies[name][0], unit)
 			this.importName(this.specifierOf(dependency.name), name)
 		}
+		const prologue = [...this.declarations.statements, ...refs]
 		return [
 			...writing.params.map(
 				(param, i) => `const ${param} = ${writing.args[i]}`
 			),
-			...this.declarations.statements,
-			...refs,
-			...this.declareMembers(unit, [
-				...this.declarations.statements,
-				...refs,
-				...links,
-				...returned
-			]),
+			...prologue,
+			...this.declareMembers(unit, [...prologue, ...links, ...returned]),
 			...links,
 			`const ${unit.name} = [${returned.join(", ")}]`
 		]
@@ -1343,25 +1330,6 @@ ${writeFunction(
 		return `${name}(${args.join(", ")})`
 	}
 
-	writeUnitFunction(
-		unit: RootUnit,
-		params: string[],
-		prologue: string[],
-		epilogue: string[],
-		returned: string[]
-	): string {
-		const declarations = this.declareMembers(unit, [
-			...prologue,
-			...epilogue,
-			...returned
-		])
-		return writeScope(
-			params,
-			[...prologue, ...declarations, ...epilogue],
-			returned
-		)
-	}
-
 	// traversals reading no other name of their unit need no scope
 	writeUnitArray(unit: RootUnit, returned: string[]): string | undefined {
 		const sourcesByName = new Map(
@@ -1384,11 +1352,7 @@ ${writeFunction(
 		const called = calledMembersOf(unit.members, readers)
 		const forwarded = forwardedOf(called)
 		// an Allows shares its params' text with an Apply, unless only .allows is read
-		const dropsCtx =
-			this.baking.shortest ||
-			(!this.baking.called &&
-				!this.baking.members.has("assert") &&
-				!this.baking.members.has("~standard"))
+		const dropsCtx = this.baking.shortest || this.readsOnlyAllows
 		const declarations = called.flatMap(([name, source]) => {
 			if (forwarded.has(name)) return []
 			// plain params; size and writing traversals drop a trailing unread ctx
@@ -1438,16 +1402,6 @@ ${writeFunction(
 		if (!names.includes(name)) names.push(name)
 	}
 
-	dependencyParamsOf(
-		unit: RootUnit,
-		read: ReadonlySet<string>
-	): [params: string[], args: string[]] {
-		return writeDependencies(
-			this.dependenciesOf(unit, read),
-			this.baking.shortest
-		)
-	}
-
 	// each array of traversals the unit reads, by the names read at its indices
 	dependenciesOf(
 		unit: RootUnit,
@@ -1484,19 +1438,17 @@ ${writeFunction(
 			this.unit = unit
 			const refs = declared.map(i => this.emitRef(unit.refs[i]))
 			this.unit = undefined
-			const [dependencyParams, dependencyArgs] = this.dependencyParamsOf(
-				unit,
-				read
+			const [dependencyParams, dependencyArgs] = writeDependencies(
+				this.dependenciesOf(unit, read),
+				this.baking.shortest
+			)
+			const prologue = declared.map(
+				(i, position) => `const ${refNameOf(unit.name, i)} = refs[${position}]`
 			)
 			// minifiers inline a call passing an array, not a rest parameter
-			const unitFunction = this.writeUnitFunction(
-				unit,
+			const unitFunction = writeScope(
 				[...dependencyParams, "...refs"],
-				declared.map(
-					(i, position) =>
-						`const ${refNameOf(unit.name, i)} = refs[${position}]`
-				),
-				[],
+				[...prologue, ...this.declareMembers(unit, [...prologue, ...returned])],
 				returned
 			)
 			const args = [...dependencyArgs, ...refs]
@@ -1515,9 +1467,7 @@ ${writeFunction(
 		)
 		return [
 			this.declarations.statements.join("\n"),
-			[...this.sharedWriters]
-				.map(([writer, name]) => `const ${name} = ${writer}`)
-				.join("\n"),
+			this.sharedWriterDeclarations,
 			traversals.join("\n"),
 			this.links.join("\n"),
 			[...this.writtenValidators]
@@ -1636,7 +1586,7 @@ ${writeFunction(
 			id,
 			held:
 				holes.length && !form.isTemplate ?
-					`[${holes.map(hole => this.emit(hole)).join(", ")}]`
+					`[${this.emitAll(holes)}]`
 				:	undefined,
 			meta,
 			attributes: [
@@ -2470,7 +2420,7 @@ ${writeFunction(
 	withHoles(value: Foldable, expression: string): string {
 		const [id, holes] = keyOf(value)
 		if (!this.baking.checksTypes && !holes.length) return expression
-		return `runtime.holdHoles(${expression}, ${writeId(id)}${holes.length ? `, [${holes.map(hole => this.emit(hole)).join(", ")}]` : ""})`
+		return `runtime.holdHoles(${expression}, ${writeId(id)}${holes.length ? `, [${this.emitAll(holes)}]` : ""})`
 	}
 
 	readValidator(root: BaseRoot): string | undefined {
@@ -2572,6 +2522,10 @@ ${writeFunction(
 			:	this.emit(value)
 	}
 
+	emitAll(values: readonly unknown[]): string {
+		return values.map(value => this.emit(value)).join(", ")
+	}
+
 	emit(value: unknown): string {
 		const hole = this.holeExpressions.get(value)
 		if (hole) return hole
@@ -2590,7 +2544,7 @@ ${writeFunction(
 			return this.declareConst(
 				value,
 				"made",
-				`${this.emit(made[0])}(${made[1].map(arg => this.emit(arg)).join(", ")})`
+				`${this.emit(made[0])}(${this.emitAll(made[1])})`
 			)
 		}
 		// a unit is compared by reference, so a copy wouldn't equal it
@@ -2747,8 +2701,7 @@ ${writeFunction(
 
 	emitSite(site: object): string {
 		// a discriminant's site holds the path it's read at
-		if (Array.isArray(site))
-			return `[${site.map(k => this.emit(k)).join(", ")}]`
+		if (Array.isArray(site)) return `[${this.emitAll(site)}]`
 		if ("code" in site) {
 			const { code, description, written } = site as IssueContext
 			if (!written)
@@ -2880,3 +2833,5 @@ const shapeFlags = [
 ] as const
 
 const isAny = (): boolean => true
+
+type CheckedHole = [hole: unknown, kind: HoleKind, expression: string]

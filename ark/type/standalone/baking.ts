@@ -335,7 +335,7 @@ export interface StandaloneModules {
 }
 
 // an input alike to an exported Type but not that node is compiled too, by hash
-export const compiledInputsOf = (
+const compiledInputsOf = (
 	exports: Record<string, StandaloneExport>
 ): Set<string> => {
 	const inputs = new Set<string>()

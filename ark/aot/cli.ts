@@ -12,6 +12,7 @@ import {
 	withSettingsFile
 } from "./settings.ts"
 import { cliOptions } from "./settingsValidators.ts"
+import { checkArktypeVersion } from "./version.ts"
 
 // before importing what reads fs.globSync, which older versions lack
 const [major, minor] = process.versions.node.split(".").map(Number)
@@ -20,6 +21,14 @@ if (major < 22 || (major === 22 && minor < 12)) {
 	process.exit(1)
 }
 
+try {
+	checkArktypeVersion()
+} catch (e) {
+	console.error((e as Error).message)
+	process.exit(1)
+}
+
+// after the check, since it imports arktype
 const { check, countOf } = await import("./check.ts")
 
 // a host's options aside, and the CLI's own --declare

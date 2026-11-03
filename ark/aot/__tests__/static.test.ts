@@ -2459,6 +2459,15 @@ const H = type({ ["abc".toUpperCase()]: "string" })`)
 		})
 
 		it("exponentiation that is exact on every engine", () => {
+			// what it throws is worded by the engine's version, e.g. Node 24 says
+			// "undefined must be positive"
+			const thrown = (() => {
+				try {
+					return 2n ** -1n
+				} catch (e) {
+					return String(e)
+				}
+			})()
 			attest(
 				statusesOf(`import { type } from "arktype"
 const A = type.unit(2n ** 64n)
@@ -2466,12 +2475,12 @@ const B = type(\`number < \${2 ** 10}\`)
 const C = type(\`number < \${2 ** 53}\`)
 const D = type.unit((-2n) ** 3n)
 const E = type.unit(2n ** -1n)`)
-			).snap([
+			).equals([
 				"2:11 accepted 18446744073709551616n",
 				"3:11 accepted number < 1024",
 				"4:11 rejected\n  `2 ** 53` is approximated by each engine unless its operands are integers with a safe integer result",
 				"5:11 accepted -8n",
-				"6:11 rejected\n  `2n ** -1n` throws RangeError: Exponent must be positive at build"
+				`6:11 rejected\n  \`2n ** -1n\` throws ${thrown} at build`
 			])
 		})
 

@@ -319,29 +319,22 @@ export const createValidator = ((
 	attributes: ValidatorAttributes,
 	id: string,
 	holes?: readonly unknown[]
-): Validator => {
-	// a meta's onFail (e.g. a matcher's) overrides the configured one
-	const configuredOnFail = attributes.meta.onFail ?? runtimeConfig.onFail
-	const validator: Validator = setPrototypeOf(
-		((
-			data: unknown,
-			pipedFromCtx?: Traversal,
-			onFail: FailHandler | null = configuredOnFail
-		) => {
-			if (!pipedFromCtx) return rootApply(data, onFail)
-			return rootApply(data, pipedInto(pipedFromCtx))
-		}) satisfies Fn,
-		freeze(Validator.prototype)
-	)
-	// an own arrow function, since it is often detached, e.g. when passing to tRPC
-	validator.assert = freeze((data: unknown, pipedFromCtx?: Traversal) =>
-		validator(data, pipedFromCtx, throwOnDefault)
-	)
-	own(validator, attributes)
-	validator.allows = freeze(allows)
-	validator["~standard"] = standardOf(validator, attributes)
-	return holdHoles(freeze(validator), id, holes)
-}) satisfies Fn
+): Validator =>
+	createValidatorWith(
+		(_, configuredOnFail) =>
+			((
+				data: unknown,
+				pipedFromCtx?: Traversal,
+				onFail: FailHandler | null = configuredOnFail
+			) =>
+				pipedFromCtx ?
+					rootApply(data, pipedInto(pipedFromCtx))
+				:	rootApply(data, onFail)) satisfies Fn,
+		[allows],
+		id,
+		attributes,
+		holes
+	)) satisfies Fn
 
 // make returns the validator itself, so each site calls it directly
 export const createValidatorWith = ((
@@ -352,9 +345,11 @@ export const createValidatorWith = ((
 	holes?: readonly unknown[]
 ): Validator => {
 	const validator: Validator = setPrototypeOf(
+		// a meta's onFail (e.g. a matcher's) overrides the configured one
 		make(parts, attributes.meta.onFail ?? runtimeConfig.onFail),
 		freeze(Validator.prototype)
 	)
+	// an own arrow function, since it is often detached, e.g. when passing to tRPC
 	validator.assert = freeze((data: unknown, pipedFromCtx?: Traversal) =>
 		validator(data, pipedFromCtx, throwOnDefault)
 	)
