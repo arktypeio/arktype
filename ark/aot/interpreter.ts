@@ -113,6 +113,8 @@ export interface Trace {
 	exportedFunctions: Read[]
 	// each top-level binding the site can read before it's set, and its reader
 	readFirst: [binding: Binding, module: SourceModule, reader: string][]
+	// each declaration read, with the value as read, as a Module's Type is
+	declared: [value: unknown, declaration: Declaration][]
 }
 
 interface Environment {
@@ -128,7 +130,7 @@ interface Closure {
 	name: string
 }
 
-interface StandIn {
+export interface StandIn {
 	kind: "function" | "class" | "opaque"
 	module: SourceModule
 	node: Node
@@ -136,10 +138,12 @@ interface StandIn {
 	dynamic: DynamicValue | undefined
 	// the parameter count arktype reads as `length`, if a declaration gives it
 	arity: number | undefined
-	isCalled: boolean
+	// what a site reaches as arktype calls it, created once so a cache entry
+	// stores it once
+	call: Call | undefined
 	// by code arktype runs while defining a type, like a description writer
-	isCalledIndirectly: boolean
-	isDefinition: boolean
+	indirectCall: Call | undefined
+	schemaCheck: SchemaCheck | undefined
 }
 
 const createStandIn = (
@@ -154,13 +158,38 @@ const createStandIn = (
 	closure: undefined,
 	dynamic: undefined,
 	arity: undefined,
-	isCalled: false,
-	isCalledIndirectly: false,
-	isDefinition: false,
+	call: undefined,
+	indirectCall: undefined,
+	schemaCheck: undefined,
 	...init
 })
 
-type Reached = DefaultCheck | ScopeAlias
+// a call reaches the site defining the value, so its module alone decides it
+interface Call {
+	standIn: StandIn
+	isDirect: boolean
+}
+
+// arktype checking whether a value is a Standard Schema, as a definition holds it
+interface SchemaCheck {
+	schema: StandIn
+}
+
+type Reached = DefaultCheck | ScopeAlias | Call | SchemaCheck
+
+export const isCall = (reached: Reached): reached is Call =>
+	"standIn" in reached
+
+export const isDefaultCheck = (reached: Reached): reached is DefaultCheck =>
+	Array.isArray(reached) && reached.length === 3
+
+// what a binding's evaluation declares a value as, which its aliases inherit
+interface Declaration {
+	modules: SourceModule[]
+	// it reads what the program holds, so a site reading it receives it
+	compares: boolean
+	checks: boolean
+}
 
 export interface SiteState {
 	node: Node
@@ -183,7 +212,8 @@ export interface SiteState {
 	requests: [Node, SourceModule][]
 	// each value passed to arktype, whose holes a ParseError can print
 	arktypeArguments: unknown[]
-	// default checks and Scope aliases reached, in order
+	// default checks, Scope aliases, calls and Standard Schema checks reached,
+	// in order
 	reached: Reached[]
 	roots: BaseRoot[]
 	// e.g. `User` and "json" for `User.json`, which a standalone build folds
@@ -233,11 +263,17 @@ export interface Context {
 interface Lookup {
 	value: unknown
 	read?: Read
+	declaration?: Declaration | undefined
 }
 
-const lookupOf = (root: InputRoot, value: unknown): Lookup => ({
+const lookupOf = (
+	root: InputRoot,
+	value: unknown,
+	declaration?: Declaration
+): Lookup => ({
 	value,
-	read: { root, path: [], value }
+	read: { root, path: [], value },
+	declaration
 })
 
 const exportRootOf = (
@@ -254,6 +290,7 @@ interface Evaluated {
 	value: unknown
 	trace: Trace
 	error?: unknown
+	declaration?: Declaration
 }
 
 export class ModuleNamespace {
@@ -328,15 +365,12 @@ export class Interpreter {
 	// unknown values a declaration computes at runtime however a site uses them
 	private declaredDynamics = new WeakSet<DynamicValue>()
 	private dynamicFree = new WeakSet<object>()
-	// a site reading one receives it, so its declaration runs
-	private comparedAtCreation = new WeakSet<object>()
-	// a site reading only introspection of one checked at creation receives it
-	private checksByValue = new WeakMap<object, boolean>()
-	private modulesByValue = new WeakMap<object, SourceModule[]>()
 	private opaqueByDynamic = new WeakMap<DynamicValue, object>()
 	private validators = new WeakSet<object>()
 	private arkObjects = new WeakSet<object>()
 	private opaqueStandInsByValue = new WeakMap<object, StandIn>()
+	// each site evaluated to the value, whose module may refuse it
+	private sitesByValue = new WeakMap<object, SiteState[]>()
 	private admitted = new WeakSet<object>()
 	standInsByName = new Map<string, StandIn>()
 	// whether arktype made the innermost native call, and whether any
@@ -418,7 +452,25 @@ export class Interpreter {
 		} catch (e) {
 			site.error = this.thrown(e, site.node, ctx)
 		}
+		if (hasDomain(site.value, "object")) {
+			const sites = this.sitesByValue.get(site.value)
+			if (sites) sites.push(site)
+			else this.sitesByValue.set(site.value, [site])
+		}
 		return site
+	}
+
+	// whether arktype called it while a site defined the value
+	calledDefining(value: unknown, standIn: StandIn): boolean {
+		return this.sitesDefining(value).some(site =>
+			site.reached.some(
+				reached => isCall(reached) && reached.standIn === standIn
+			)
+		)
+	}
+
+	sitesDefining(value: unknown): SiteState[] {
+		return (hasDomain(value, "object") && this.sitesByValue.get(value)) || []
 	}
 
 	private evaluate(node: Node, ctx: Context): unknown {
@@ -825,6 +877,8 @@ export class Interpreter {
 			return { value: this.evaluate(node, ctx) }
 		const base = this.evaluateReference(node.object, ctx)
 		if (base.value === shortCircuit || isDynamic(base.value)) return base
+		if (base.declaration)
+			ctx.trace.declared.push([base.value, base.declaration])
 		// e.g. `$` in `$.type.or("a", "b")`
 		if (
 			hasArkKind(base.value, "root") ||
@@ -839,7 +893,12 @@ export class Interpreter {
 		const key = this.keyOf(node, ctx)
 		if (isDynamic(key)) return { value: key }
 		const value = this.readMember(base.value, key, node, ctx)
-		if (!base.read) return { value }
+		// a Module's Types are declared with it, though only it compares
+		const declaration =
+			base.declaration && hasArkKind(base.value, "module") ?
+				{ ...base.declaration, compares: false }
+			:	undefined
+		if (!base.read) return { value, declaration }
 		// a read stops at a Type whose validator lacks the member
 		if (
 			base.read.value !== base.value ||
@@ -847,10 +906,11 @@ export class Interpreter {
 				((hasArkKind(base.value, "root") && isTypeOnlyMember(key)) ||
 					this.isReadThrough(ctx.site)))
 		)
-			return { value, read: base.read }
+			return { value, read: base.read, declaration }
 		return {
 			value,
-			read: { root: base.read.root, path: [...base.read.path, key], value }
+			read: { root: base.read.root, path: [...base.read.path, key], value },
+			declaration
 		}
 	}
 
@@ -887,7 +947,8 @@ export class Interpreter {
 	}
 
 	private consume(lookup: Lookup, ctx: Context): unknown {
-		const { value, read } = lookup
+		const { value, read, declaration } = lookup
+		if (declaration) ctx.trace.declared.push([value, declaration])
 		if (!read || isDynamic(value)) return value
 		// a declared function is read from a binding only where it may be unset
 		if (
@@ -976,7 +1037,7 @@ export class Interpreter {
 			for (const read of result.trace.reads)
 				if (isArkValue(read.value)) ctx.trace.reads.push(read)
 			// unless the declaration compares what the program holds
-			isReceived = this.comparedAtCreation.has(result.value as object)
+			isReceived = !!result.declaration?.compares
 		}
 		// a binding read before it's set is received, so its factory throws alike
 		const isChecked =
@@ -992,8 +1053,12 @@ export class Interpreter {
 			])
 		}
 		return isReceived || (isReadFirst && !isChecked) ?
-				lookupOf({ kind: "binding", module, binding }, result.value)
-			:	{ value: result.value }
+				lookupOf(
+					{ kind: "binding", module, binding },
+					result.value,
+					result.declaration
+				)
+			:	{ value: result.value, declaration: result.declaration }
 	}
 
 	// why a binding's value can't be read at the site: an unset var, a match
@@ -1124,7 +1189,8 @@ export class Interpreter {
 			this.graph.resolve(declaration.source.value, ctx.module) === target.module
 		return lookupOf(
 			exportRootOf(target, isDirect ? ctx.module : undefined),
-			result.value
+			result.value,
+			result.declaration
 		)
 	}
 
@@ -1234,10 +1300,11 @@ export class Interpreter {
 	}
 
 	private markDeclared(
-		{ value, trace }: Evaluated,
+		result: Evaluated,
 		init: Node | null | undefined,
 		module: SourceModule
 	): void {
+		const { value, trace } = result
 		findDynamic(value, dynamic => {
 			this.declaredDynamics.add(dynamic)
 			return false
@@ -1248,30 +1315,57 @@ export class Interpreter {
 				(this.sitesByNode.get(init) ??
 				this.sitesByNode.get(unwrapExpression(init)))
 			:	undefined
+		result.declaration = this.declarationOf(value, trace, site, module)
+	}
+
+	// whether creating the site's value checks it, as declaring it does
+	checksAtCreation(site: SiteState): boolean {
+		return (
+			!isArkValue(site.value) ||
+			this.declarationOf(site.value, site.trace, site, site.module).checks
+		)
+	}
+
+	private declarationOf(
+		value: unknown,
+		trace: Trace,
+		site: SiteState | undefined,
+		module: SourceModule
+	): Declaration {
 		const compares = trace.reads.some(
 			read => read.root.kind === "binding" || !isArkValue(read.value)
 		)
-		if (compares) this.comparedAtCreation.add(value as object)
-		// a default's check calls the functions it reads at creation
-		const checks =
-			compares ||
-			!!site?.reached.some(reached => reached.length === 3) ||
-			this.checksHolesOf(value, site, module)
-		const values = [value]
-		// e.g. a Module's Types, which its creation created
-		for (const value of values) {
-			// one value can be declared more than once, as by an alias
-			if (!this.checksByValue.get(value as object))
-				this.checksByValue.set(value as object, checks)
-			const modules = this.modulesByValue.get(value as object)
-			if (!modules) this.modulesByValue.set(value as object, [module])
-			else if (!modules.includes(module)) modules.push(module)
-			if (hasArkKind(value, "module")) values.push(...Object.values(value))
+		const declaration: Declaration = {
+			modules: [module],
+			compares,
+			// a default's check calls the functions it reads at creation
+			checks:
+				compares ||
+				!!site?.reached.some(isDefaultCheck) ||
+				this.checksHolesOf(value, site, module)
 		}
+		// e.g. an alias, or a Module's Type, which its creation created
+		for (const [read, inherited] of trace.declared) {
+			if (read !== value && !holdsMember(read, value)) continue
+			if (read === value) declaration.compares ||= inherited.compares
+			declaration.checks ||= inherited.checks
+			for (const declaring of inherited.modules) {
+				if (!declaration.modules.includes(declaring))
+					declaration.modules.push(declaring)
+			}
+		}
+		return declaration
 	}
 
-	modulesDeclaring(value: unknown): readonly SourceModule[] {
-		return this.modulesByValue.get(value as object) ?? []
+	// each module declaring the value where the trace read it
+	modulesDeclaring(value: unknown, trace: Trace): SourceModule[] {
+		const result: SourceModule[] = []
+		for (const [read, declaration] of trace.declared) {
+			if (read !== value) continue
+			for (const declaring of declaration.modules)
+				if (!result.includes(declaring)) result.push(declaring)
+		}
+		return result
 	}
 
 	private checksHolesOf(
@@ -1291,9 +1385,16 @@ export class Interpreter {
 		}
 	}
 
-	// a value whose creation the build didn't see may check anything
-	isCheckedAtCreation(value: unknown): boolean {
-		return this.checksByValue.get(value as object) ?? true
+	// as the trace read it, where a value whose creation the build didn't see
+	// may check anything
+	isCheckedAtCreation(value: unknown, trace: Trace): boolean {
+		let isDeclared = false
+		for (const [read, declaration] of trace.declared) {
+			if (read !== value) continue
+			if (declaration.checks) return true
+			isDeclared = true
+		}
+		return !isDeclared
 	}
 
 	// unless a site reads it as its module's own or through an unchecked Type
@@ -1308,7 +1409,7 @@ export class Interpreter {
 		for (const value of site.readsByValue.keys()) {
 			if (
 				isArkValue(value) &&
-				!this.isCheckedAtCreation(value) &&
+				!this.isCheckedAtCreation(value, site.trace) &&
 				this.holesIn(value).has(hole)
 			)
 				return false
@@ -1318,35 +1419,24 @@ export class Interpreter {
 
 	// one its module creates where the site reads it
 	isOwnHole(read: Node, value: unknown, module: SourceModule): boolean {
-		const [source, origin] = this.sourceOf(value) ?? []
-		if (
-			origin !== module ||
-			!(typeof value === "symbol" ?
-				// e.g. `Symbol("tag")`, whose description no read changes
-				source!.type === "CallExpression" &&
-				source!.arguments.every(
-					arg => arg.type === "Literal" && typeof arg.value === "string"
-				)
-			:	this.standIns.get(value as object)!.kind === "function")
-		)
-			return false
 		const node = unwrapExpression(read)
-		if (node === source) return true
 		const binding =
 			node.type === "Identifier" ?
 				module.scopes.byId.get(node)?.binding
 			:	undefined
-		if (!binding || binding.writes.length) return false
-		const { declaration } = binding
+		// as `Symbol.for("tag")` creates it in any module that calls it
+		if (typeof value === "symbol") {
+			const source = binding ? initOf(binding) : node
+			return !!source && isSymbolCreation(source, module)
+		}
+		const standIn = hasDomain(value, "object") && this.standIns.get(value)
+		if (!standIn || standIn.module !== module || standIn.kind !== "function")
+			return false
+		if (node === standIn.node) return true
+		if (!binding) return false
 		return binding.kind === "function" ?
-				declaration === source
-			:	(binding.kind === "const" ||
-					binding.kind === "let" ||
-					binding.kind === "var") &&
-					declaration.type === "VariableDeclarator" &&
-					declaration.id === binding.id &&
-					!!declaration.init &&
-					unwrapExpression(declaration.init) === source
+				!binding.writes.length && binding.declaration === standIn.node
+			:	initOf(binding) === standIn.node
 	}
 
 	private nodeValue(node: Node, module: SourceModule): Evaluated {
@@ -1673,7 +1763,10 @@ export class Interpreter {
 					this.writtenIn(target.binding, target.module, ctx)
 				if (written) return new DynamicValue(target.module, node, written)
 				if (readsAgain(result.value)) mergeTrace(ctx.trace, result.trace)
-				return this.consume(lookupOf(exportRootOf(target), result.value), ctx)
+				return this.consume(
+					lookupOf(exportRootOf(target), result.value, result.declaration),
+					ctx
+				)
 			}
 		}
 		return this.reject(node, ctx, "reads a nested namespace import")
@@ -1769,7 +1862,7 @@ export class Interpreter {
 		switch (this.calleeKindOf(fn, receiver)) {
 			case "standIn": {
 				const standIn = this.standIns.get(fn as object)!
-				if (this.activeCall?.isDefining) standIn.isCalledIndirectly = true
+				if (this.activeCall?.isDefining) this.markCalled(standIn, false)
 				if (standIn.closure && staticBodyOf(standIn.closure.node)) {
 					const result = this.interpretCall(standIn.closure, args, node, ctx)
 					if (
@@ -2285,10 +2378,38 @@ export class Interpreter {
 		}
 	}
 
+	private markCalled(standIn: StandIn, isDirect: boolean): void {
+		const call =
+			isDirect ?
+				(standIn.call ??= { standIn, isDirect })
+			:	(standIn.indirectCall ??= { standIn, isDirect })
+		this.activeCall?.ctx.site?.reached.push(call)
+	}
+
+	// whether arktype checked it is a Standard Schema defining the site's value
+	checkedAsSchema(site: SiteState, standIn: StandIn): boolean {
+		return !!standIn.schemaCheck && site.reached.includes(standIn.schemaCheck)
+	}
+
+	// whether arktype called it while defining the site's value, or code it
+	// ran did, as the site or a cache entry it reused reached
+	calledIn(site: SiteState, value: unknown, isDirect?: true): boolean {
+		const standIn = hasDomain(value, "object") && this.standIns.get(value)
+		return (
+			!!standIn &&
+			site.reached.some(
+				reached =>
+					isCall(reached) &&
+					reached.standIn === standIn &&
+					(reached.isDirect || !isDirect)
+			)
+		)
+	}
+
 	private callStandIn(standIn: StandIn, args: unknown[]): unknown {
 		const active = this.activeCall
-		if (active?.isArktype) standIn.isCalled = true
-		else if (active?.isDefining) standIn.isCalledIndirectly = true
+		if (active?.isArktype) this.markCalled(standIn, true)
+		else if (active?.isDefining) this.markCalled(standIn, false)
 		const closure = standIn.closure!
 		if (!staticBodyOf(closure.node)) {
 			throw active?.isArktype === false ?
@@ -2400,7 +2521,7 @@ export class Interpreter {
 				)
 			),
 			apply: () => {
-				standIn.isCalled = true
+				this.markCalled(standIn, true)
 				throw new DynamicValue(
 					ctx.module,
 					node,
@@ -2410,7 +2531,7 @@ export class Interpreter {
 				)
 			},
 			construct: (target, args, newTarget) => {
-				standIn.isCalled = true
+				this.markCalled(standIn, true)
 				if (effect) {
 					throw this.calledAtDefinition(
 						standIn,
@@ -2433,12 +2554,14 @@ export class Interpreter {
 			get: (_, k) => (k === arkKind ? undefined : this.refuse(standIn)),
 			has: (_, k) => {
 				if (k !== "~standard") this.refuse(standIn)
-				standIn.isDefinition = true
+				this.activeCall?.ctx.site?.reached.push(
+					(standIn.schemaCheck ??= { schema: standIn })
+				)
 				return true
 			},
 			getPrototypeOf: () => Object.prototype,
 			apply: () => {
-				standIn.isCalled = true
+				this.markCalled(standIn, true)
 				throw this.calledAtDefinition(standIn, undefined)
 			},
 			construct: () => {
@@ -2599,6 +2722,13 @@ const isValidator = (value: unknown): boolean =>
 const isChangeable = (value: unknown): value is object =>
 	isPlainContainer(value) || value instanceof Date || value instanceof RegExp
 
+// e.g. a Type a Module's creation created, at any depth
+const holdsMember = (module: unknown, value: unknown): boolean =>
+	hasArkKind(module, "module") &&
+	Object.values(module).some(
+		member => member === value || holdsMember(member, value)
+	)
+
 // a Generic parses its body per instantiation, a Scope its aliases lazily
 const readsAgain = (value: unknown): boolean =>
 	hasArkKind(value, "generic") ||
@@ -2681,7 +2811,8 @@ const emptyTrace = (): Trace => ({
 	reads: [],
 	helpers: [],
 	exportedFunctions: [],
-	readFirst: []
+	readFirst: [],
+	declared: []
 })
 
 const rootContext = (
@@ -2702,6 +2833,7 @@ const mergeTrace = (into: Trace, from: Trace) => {
 		addHelper(into.helpers, node, module)
 	for (const read of from.exportedFunctions) into.exportedFunctions.push(read)
 	for (const read of from.readFirst) into.readFirst.push(read)
+	for (const declared of from.declared) into.declared.push(declared)
 }
 
 const addHelper = (
@@ -2764,6 +2896,43 @@ const throwsUnset = (node: Node): boolean => {
 		(parent?.type === "CallExpression" &&
 			parent.callee === operand &&
 			!parent.optional)
+	)
+}
+
+// the expression a variable is only ever set to
+const initOf = (binding: Binding): Node | undefined => {
+	const { declaration } = binding
+	return (
+			!binding.writes.length &&
+				(binding.kind === "const" ||
+					binding.kind === "let" ||
+					binding.kind === "var") &&
+				declaration.type === "VariableDeclarator" &&
+				declaration.id === binding.id &&
+				declaration.init
+		) ?
+			unwrapExpression(declaration.init)
+		:	undefined
+}
+
+// e.g. `Symbol("tag")`, whose description no read changes
+const isSymbolCreation = (node: Node, module: SourceModule): boolean => {
+	if (
+		node.type !== "CallExpression" ||
+		!node.arguments.every(
+			arg => arg.type === "Literal" && typeof arg.value === "string"
+		)
+	)
+		return false
+	const callee = unwrapExpression(node.callee)
+	const symbol =
+		callee.type === "MemberExpression" && memberNameOf(callee) === "for" ?
+			unwrapExpression(callee.object)
+		:	callee
+	return (
+		symbol.type === "Identifier" &&
+		symbol.name === "Symbol" &&
+		!module.scopes.byId.get(symbol)?.binding
 	)
 }
 
