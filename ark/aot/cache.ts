@@ -31,6 +31,9 @@ export interface Snapshot {
 	asked: [importer: string, specifier: string, target: string | null][]
 	// the tsconfig whose paths each importer resolves through
 	tsconfigs: [importer: string, tsconfig: string | null][]
+	// each module a plugin ahead gave unlike its file, by what it gave, which
+	// its importers read in its place
+	given: [id: string, given: string][]
 }
 
 export const emptySnapshot = (parent: string | undefined): Snapshot => ({
@@ -38,7 +41,8 @@ export const emptySnapshot = (parent: string | undefined): Snapshot => ({
 	reads: [],
 	resolutions: [],
 	asked: [],
-	tsconfigs: []
+	tsconfigs: [],
+	given: []
 })
 
 export const hashOf = (text: string): string =>
@@ -220,19 +224,21 @@ export class AnswerCache {
 }
 
 export interface SnapshotCheck {
-	(snapshot: string): boolean
+	// given by what the build gave each module it's given
+	(snapshot: string, given: Record<string, string>): boolean
 	// each file it read, as it was before, so a write meanwhile counts as a change
 	mtimes: Record<string, number>
 }
 
 // whether each file and import a snapshot names reads and resolves the
-// same, judged once each until a file it read changes or the build resets
+// same, judged once each until a file it read changes or the build resets,
+// and the build gave each module it names as given what it was given last
 export const createSnapshotCheck = (
 	cache: AnswerCache,
 	host: PrecompileHost,
 	resolveInBundler?: (specifier: string, importer: string) => string | undefined
 ): SnapshotCheck => {
-	const holding: Record<string, boolean> = {}
+	const holding: Record<string, Snapshot["given"] | false> = {}
 	const mtimes: Record<string, number> = {}
 	const hashes: Record<string, string | null> = {}
 	const hashOfFile = (file: string) => {
@@ -243,8 +249,10 @@ export const createSnapshotCheck = (
 	const targets: Record<string, string | null> = {}
 	const tsconfigs: Record<string, string | null> = {}
 	const answers: Record<string, string | null> = {}
-	const holdsFrom = (id: string): boolean => {
+	const holdsFrom = (id: string): Snapshot["given"] | false => {
 		const asked: Snapshot["asked"] = []
+		// read from the cache, so no record's module is a key every object has
+		const given: Record<string, string> = Object.create(null)
 		for (let next: string | undefined = id; next !== undefined; ) {
 			const snapshot = cache.snapshot(next)
 			if (!snapshot) return false
@@ -265,18 +273,28 @@ export const createSnapshotCheck = (
 					return false
 			}
 			asked.push(...snapshot.asked)
+			for (const [module, text] of snapshot.given) given[module] ??= text
 			next = snapshot.parent
 		}
 		// last, as each question waits on the bundler's thread
-		return asked.every(
-			([importer, specifier, target]) =>
-				(answers[`${importer}\0${specifier}`] ??=
-					host.resolve(specifier, importer) ??
-					resolveInBundler?.(specifier, importer) ??
-					null) === target
+		return (
+			asked.every(
+				([importer, specifier, target]) =>
+					(answers[`${importer}\0${specifier}`] ??=
+						host.resolve(specifier, importer) ??
+						resolveInBundler?.(specifier, importer) ??
+						null) === target
+			) && Object.entries(given)
 		)
 	}
-	return Object.assign((id: string) => (holding[id] ??= holdsFrom(id)), {
-		mtimes
-	})
+	return Object.assign(
+		(id: string, given: Record<string, string>) => {
+			const stated = (holding[id] ??= holdsFrom(id))
+			return (
+				stated !== false &&
+				stated.every(([module, text]) => given[module] === text)
+			)
+		},
+		{ mtimes }
+	)
 }

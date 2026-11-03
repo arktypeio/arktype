@@ -4,6 +4,7 @@ import {
 	describeBranches,
 	describeCases,
 	hasArkKind,
+	registryName,
 	schemaScope,
 	suppliedText,
 	type ArkError,
@@ -13,7 +14,7 @@ import {
 } from "@ark/schema"
 import { writeMessage } from "@ark/schema/internal"
 import { messageOf, problemOf, type ArkIssue } from "@ark/schema/runtime"
-import { hasDomain, ParseError } from "@ark/util"
+import { flatMorph, hasDomain, ParseError } from "@ark/util"
 import {
 	holeNameMarker,
 	introspectionMembers,
@@ -688,12 +689,24 @@ type Introspection = ReturnType<typeof observeIntrospection>
 
 const keepBase = (ctx: { base: unknown }) => ctx.base as never
 
+// a registry name's count orders the values arktype named alike before it,
+// which a precompiled validator's json drops
+const countedReference = new RegExp(
+	`^(${registryName.replace("$", "\\$")}\\.[\\w$]+?)\\$[1-9]\\d*$`
+)
+
+const uncounted = (json: unknown): unknown =>
+	typeof json === "string" ? json.replace(countedReference, "$1")
+	: Array.isArray(json) ? json.map(uncounted)
+	: hasDomain(json, "object") ? flatMorph(json, (k, v) => [k, uncounted(v)])
+	: json
+
 // a new schema naming where arktype fell back, so each call is told apart
 const namesCode = (ctx: { code: string; base: object }) =>
 	({ ...ctx.base, fellBack: ctx.code }) as never
 
 const observeIntrospection = (t: Validator) => ({
-	json: observe(() => t.json, undefined),
+	json: observe(() => uncounted(t.json), undefined),
 	jsonSchema: observe(() => t.toJsonSchema(), undefined),
 	// no options, and each target, which a validator writes only if baked,
 	// and a fallback, which it writes again as arktype did at build

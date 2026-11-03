@@ -36,7 +36,8 @@ import {
 	findDynamic,
 	isDynamic,
 	type Interpreter,
-	type SiteState
+	type SiteState,
+	type StandIn
 } from "./interpreter.ts"
 import type { SourceModule } from "./module.ts"
 import {
@@ -258,6 +259,11 @@ export interface Site {
 	holes: Hole[]
 	// functions arktype calls while defining it, e.g. a literal's narrow
 	called: Hole[]
+	// each stand-in arktype called defining it, as its own evaluation or a
+	// cache entry it reused reached the call, held ones too
+	calls: StandIn[]
+	// creating its value checks what it holds, so it can throw
+	checks: boolean
 	inputs: Input[]
 	helpers: Helper[]
 	references: Reference[]
@@ -303,6 +309,8 @@ export interface Reference {
 	isInert: boolean
 	// created by a call to arktype the site makes, which its factory replaces
 	isCreated: boolean
+	// its declaration must run before the site, as the site's trace read it
+	mustRun: boolean
 }
 
 export interface Input {
@@ -484,12 +492,15 @@ export const isFolded = (
 				hole =>
 					hasDomain(hole, "object") &&
 					interpreter.standIns.get(hole)?.node === candidate.fn &&
-					isHeld(hole, interpreter)
+					isHeld(hole, outer.state, interpreter)
 			)
 	)
 
 // a function arktype only calls while defining a type isn't part of it
-export const isHeld = (hole: unknown, interpreter: Interpreter): boolean =>
-	!hasDomain(hole, "object") ||
-	!interpreter.standIns.get(hole)!.isCalled ||
-	registeredNameOf(hole) !== undefined
+export const isHeld = (
+	hole: unknown,
+	site: SiteState,
+	interpreter: Interpreter
+): boolean =>
+	!interpreter.calledIn(site, hole, true) ||
+	registeredNameOf(hole as object) !== undefined

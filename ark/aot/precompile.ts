@@ -150,12 +150,15 @@ import {
 	findDynamic,
 	inferredNameOf,
 	Interpreter,
+	isCall,
+	isDefaultCheck,
 	isDynamic,
 	type InterpreterOptions,
 	ModuleNamespace,
 	type Read,
 	runsBeforeBody,
-	type SiteState
+	type SiteState,
+	type Trace
 } from "./interpreter.ts"
 import { SourceModule } from "./module.ts"
 import type { Preset } from "./presets.ts"
@@ -244,7 +247,6 @@ import {
 	type Helper,
 	type Hole,
 	type Input,
-	type Reference,
 	type Site,
 	type SiteCandidate,
 	type SiteRead
@@ -512,16 +514,8 @@ export class Precompiler {
 	// why the analyses' configuration can't be applied
 	private analyzedProblem: string | undefined
 	private bindingsByInput = new WeakMap<Input, Binding>()
-	// e.g. a Scope configured by a parameter
-	private refusedContainers = new Map<unknown, [Node, SourceModule]>()
-	// a Scope or Generic another module's refused site reads, left to arktype
-	// as its module is written
-	private dynamicStandIns = new Map<
-		unknown,
-		[reader: Span, module: SourceModule, name: string]
-	>()
-	// each replaced by a stand-in a module already written holds
-	private writtenStandIns = new Map<unknown, [Site, SourceModule]>()
+	// each module's refused sites by value, e.g. a Scope configured by a parameter
+	private refusalsByModule = new WeakMap<SourceModule, Map<unknown, Node>>()
 	// each module's reads off what may be a Scope or Generic, refused without a site
 	private scopeReadsByModule = new WeakMap<SourceModule, ScopeRead[]>()
 	// modules being analyzed, which a refused site reaching their functions doesn't reenter
@@ -1532,14 +1526,6 @@ export class Precompiler {
 			return
 		const dropped = new Set(this.graph.forget(files))
 		this.interpreter.forget(dropped)
-		for (const standIns of [
-			this.refusedContainers,
-			this.dynamicStandIns,
-			this.writtenStandIns
-		]) {
-			for (const [value, [, module]] of standIns)
-				if (dropped.has(module)) standIns.delete(value)
-		}
 		if (files.length) {
 			this.namesArkById = Object.create(null)
 			this.componentsById = Object.create(null)
@@ -2117,14 +2103,6 @@ export class Precompiler {
 				result.push([name as ArkPackage, specifier])
 		}
 		return result
-	}
-
-	// whether precompiling a module replaced a Scope or Generic with a
-	// stand-in, which decides what another module's refused site reports
-	writesStandIns(id: string): boolean {
-		return [...this.writtenStandIns.values()].some(
-			([, module]) => module.id === id
-		)
 	}
 
 	// reads the copies the packages reach from a module a cache answers for,
@@ -2716,10 +2694,6 @@ export class Precompiler {
 			reads,
 			diagnostics
 		)
-		for (const site of namesBySite.keys()) {
-			if (standInKindOf(site.value))
-				this.writtenStandIns.set(site.value, [site, module])
-		}
 		const folding: Folding = {
 			module,
 			s,
@@ -3256,9 +3230,7 @@ export class Precompiler {
 			if (
 				(site.introspection || (hole && dropped.has(hole.value))) &&
 				!holes.some(value => calledByChecks.has(value)) &&
-				(hole ?
-					reference.isOwnHole
-				:	reference.isCreated || !this.mustRun(reference, module))
+				(hole ? reference.isOwnHole : reference.isCreated || !reference.mustRun)
 			) {
 				for (const value of holes) unchecked.add(value)
 				continue
@@ -3272,6 +3244,7 @@ export class Precompiler {
 				this.isIslandValue(
 					reference.value,
 					site,
+					module,
 					reference.fixedBy && [reference.fixedBy, module]
 				)
 			) {
@@ -3349,7 +3322,12 @@ export class Precompiler {
 		}
 		for (const reads of readsByRoot.values()) {
 			const island = reads.find(input =>
-				this.isIslandValue(input.value, site, this.originOf(input, module))
+				this.isIslandValue(
+					input.value,
+					site,
+					module,
+					this.originOf(input, module)
+				)
 			)
 			if (island) {
 				reasons.push(islandValueMessage(textOfInput(island)))
@@ -3513,16 +3491,19 @@ export class Precompiler {
 	private isIslandValue(
 		value: unknown,
 		site: Site,
+		module: SourceModule,
 		origin: [Binding, SourceModule] | undefined
 	): boolean {
 		if (!hasArkKind(value, "root")) return false
 		// a binding a site initialized holds that site's Type, not one equal to it
 		if (origin && this.isCreatedBy(origin[0], value))
 			return isInIsland(origin[0].declaration, origin[1])
-		for (const state of this.interpreter.sitesByNode.values()) {
-			if (state.value === value && isInIsland(state.node, state.module))
-				return true
-		}
+		if (
+			this.sitesDefining(value, module).some(state =>
+				isInIsland(state.node, state.module)
+			)
+		)
+			return true
 		// another module's export is read where it's declared
 		return site.inputs.some(input => {
 			if (input.kind !== "import" || input.value !== value) return false
@@ -3755,7 +3736,8 @@ export class Precompiler {
 				const standIn = this.standInOf(hole)
 				if (
 					standIn &&
-					(standIn.isCalled || standIn.isCalledIndirectly) &&
+					(site.calls.includes(standIn) ||
+						this.interpreter.calledDefining(value, standIn)) &&
 					!(
 						hasArkKind(value, "root") && !this.resolvesCaller(value, hole, site)
 					)
@@ -3929,6 +3911,8 @@ export class Precompiler {
 			configureStart: this.configureStartOf(module)
 		}
 		const { sites, diagnostics } = analyzing
+		const refusals = new Map<unknown, Node>()
+		this.refusalsByModule.set(module, refusals)
 		for (const candidate of candidates) {
 			let settledRanges = settledRangesByFn.get(candidate.fn)
 			if (!settledRanges)
@@ -3947,7 +3931,7 @@ export class Precompiler {
 					isFoldable(candidate.state.value) &&
 					!hasArkKind(candidate.state.value, "root")
 				)
-					this.refusedContainers.set(candidate.state.value, [node, module])
+					refusals.set(candidate.state.value, node)
 				if (this.mode === "standalone") this.assertKeyable(site)
 				const refused = this.refuseAnalyzed(site, candidate, analyzing)
 				if (refused) {
@@ -4117,10 +4101,6 @@ export class Precompiler {
 			)
 			refused.push(refuse(read, reasons))
 		}
-		for (const [value, read] of standIns) {
-			const reader = this.dynamicStandIns.get(value)
-			if (reader) leave(read, ...reader)
-		}
 		const readers: Span[] = [
 			...sites.filter(site => site.status === "rejected"),
 			...(this.scopeReadsByModule.get(module) ?? []).map(([node]) =>
@@ -4137,12 +4117,8 @@ export class Precompiler {
 				if (read) {
 					if (read.status !== "rejected")
 						leave(read, site, module, binding.name)
-				} else if (!this.writtenStandIns.has(value)) {
-					// a Scope this module's refused site defines is arktype's
-					// already, so recording it refuses nothing
-					this.dynamicStandIns.set(value, [site, module, binding.name])
 				} else {
-					this.reportWrittenStandInRead(
+					this.reportReplacedRead(
 						site,
 						module,
 						binding.name,
@@ -4156,8 +4132,9 @@ export class Precompiler {
 		return refused
 	}
 
-	// a refused site reads a Scope or Generic a module already precompiled
-	private reportWrittenStandInRead(
+	// a refused site reads a Scope or Generic another module precompiles,
+	// which that module's answer can't depend on, so the site's own reports it
+	private reportReplacedRead(
 		site: Span,
 		module: SourceModule,
 		name: string,
@@ -4165,7 +4142,9 @@ export class Precompiler {
 		isHeld: boolean,
 		diagnostics: Diagnostic[]
 	): void {
-		const [source, origin] = this.writtenStandIns.get(value)!
+		const replaced = this.standInSiteOf(value, module)
+		if (!replaced) return
+		const [source, origin] = replaced
 		const message = `${module.snippetOf(site)} reads \`${name}\`, which the build replaced with an object that lacks its members`
 		// reported once, as each pass over the module's sites finds it
 		if (diagnostics.some(d => d.start === site.start && d.message === message))
@@ -4177,12 +4156,52 @@ export class Precompiler {
 				"unsupported",
 				message,
 				[
-					`\`${name}\` ${isHeld ? "holds" : "is"} ${origin.snippetOf(source)} (${origin.positionOf(source)}), a ${standInKindOf(value)} precompiled before ${module.snippetOf(site)} was refused`
+					`\`${name}\` ${isHeld ? "holds" : "is"} ${origin.snippetOf(source)} (${origin.positionOf(source)}), a ${standInKindOf(value)} the build precompiles`
 				],
 				`Put // @ark-runtime on the line before ${origin.snippetOf(source)}, so arktype defines it at runtime, or build with runtime: "arktype".`,
 				"error"
 			)
 		)
+	}
+
+	// the accepted site of another module the reader reaches whose value is
+	// the Scope or Generic
+	private standInSiteOf(
+		value: unknown,
+		module: SourceModule
+	): [Site, SourceModule] | undefined {
+		for (const { module: from } of this.sitesDefining(value, module)) {
+			if (from === module || this.analyzing.has(from)) continue
+			const site = this.analysisOf(from).sites.find(
+				site => site.status === "accepted" && site.value === value
+			)
+			if (site) return [site, from]
+		}
+	}
+
+	// the refused site of a module the reader reaches whose value it is
+	private refusalOf(
+		value: unknown,
+		module: SourceModule
+	): [Node, SourceModule] | undefined {
+		if (!isFoldable(value) || hasArkKind(value, "root")) return
+		for (const { module: from } of this.sitesDefining(value, module)) {
+			if (!this.analysesByModule.has(from) && !this.analyzing.has(from))
+				this.analysisOf(from)
+			const node = this.refusalsByModule.get(from)?.get(value)
+			if (node) return [node, from]
+		}
+	}
+
+	// each site of a module the reader reaches evaluated to the value, however
+	// the build came to evaluate it first, as an importer's evaluation may
+	private sitesDefining(value: unknown, module: SourceModule): SiteState[] {
+		const reached = this.graph
+			.dependenciesOf(module.id)
+			.map(id => this.graph.moduleOf(id))
+		return this.interpreter
+			.sitesDefining(value)
+			.filter(state => reached.includes(state.module))
 	}
 
 	// each Scope or Generic a refused site may read, with the binding the site
@@ -4565,29 +4584,20 @@ export class Precompiler {
 		}
 	}
 
-	// `"sideEffects": false` lets a bundler drop the declaring module
-	private mustRun(reference: Reference, module: SourceModule): boolean {
-		return (
-			this.interpreter.isCheckedAtCreation(reference.value) ||
-			(!reference.isInert &&
-				this.interpreter
-					.modulesDeclaring(reference.value)
-					.some(declaring => declaring !== module))
-		)
-	}
-
-	// e.g. a Type imported from a module that only declares Types
+	// e.g. a Type imported from a module that only declares Types, as the
+	// site's trace read it
 	private isInertRead(
 		value: unknown,
 		from: SourceModule | undefined,
 		module: SourceModule,
-		runsFirst: boolean
+		runsFirst: boolean,
+		trace: Trace
 	): boolean {
 		return (
 			!!from &&
 			!runsFirst &&
 			this.interpreter
-				.modulesDeclaring(value)
+				.modulesDeclaring(value, trace)
 				.every(declaring => declaring === module || declaring === from) &&
 			this.isInert(from)
 		)
@@ -4657,7 +4667,7 @@ export class Precompiler {
 			!site.progress &&
 			!site.inputs.length &&
 			!site.defaultChecks.length &&
-			!this.interpreter.isCheckedAtCreation(site.value)
+			!site.checks
 		)
 	}
 
@@ -4727,6 +4737,8 @@ export class Precompiler {
 			arktypeArguments: candidate.state.arktypeArguments,
 			holes: [],
 			called: [],
+			calls: [],
+			checks: true,
 			inputs: [],
 			helpers: [],
 			references: [],
@@ -4776,10 +4788,13 @@ export class Precompiler {
 		module: SourceModule
 	): DynamicValue | undefined {
 		const checks = new Set<DefaultCheck>()
-		// a thunk alias is a pair, and a check a triple
+		// a thunk alias is a pair and a check a triple
 		for (const reached of state.reached) {
-			if (reached.length === 2) site.aliases.push(reached)
-			else checks.add(reached)
+			if (isCall(reached)) {
+				if (!site.calls.includes(reached.standIn))
+					site.calls.push(reached.standIn)
+			} else if (isDefaultCheck(reached)) checks.add(reached)
+			else if (Array.isArray(reached)) site.aliases.push(reached)
 		}
 		const dynamic = rejectionOf(state)
 		if (dynamic) return dynamic
@@ -4798,6 +4813,7 @@ export class Precompiler {
 			site.roots = state.roots
 			// arktype checks a default where it first creates its node
 			site.defaultChecks = [...checks]
+			site.checks = this.interpreter.checksAtCreation(state)
 			// e.g. a Generic aliased `define`, whose instantiation is a Type
 			if (!isFoldable(state.value))
 				site.definition = this.definitionOf(state.node, module)
@@ -4810,7 +4826,7 @@ export class Precompiler {
 			}
 		}
 		for (const [value, [read]] of state.readsByValue) {
-			const refused = this.refusedContainers.get(value)
+			const refused = this.refusalOf(value, module)
 			if (!refused) continue
 			return new DynamicValue(
 				module,
@@ -4883,12 +4899,13 @@ export class Precompiler {
 				read.value === introspected &&
 				!read.path.length &&
 				!this.checkHelpers &&
-				!this.interpreter.isCheckedAtCreation(introspected) &&
+				!this.interpreter.isCheckedAtCreation(introspected, state.trace) &&
 				this.isInertRead(
 					introspected,
 					this.importerOf(read.root, module),
 					module,
-					runsFirst
+					runsFirst,
+					state.trace
 				)
 			)
 				continue
@@ -4901,7 +4918,8 @@ export class Precompiler {
 		for (const input of site.inputs) this.suppliedHolesOf(input.value, supplied)
 		this.receiveCalls(state, supplied)
 		for (const value of state.holes) {
-			const isCalled = !site.parseError && !isHeld(value, this.interpreter)
+			const isCalled =
+				!site.parseError && !isHeld(value, state, this.interpreter)
 			const hole = this.holeOf(value, candidate, module, supplied)
 			if (!isCalled) {
 				if (hole instanceof DynamicValue) return hole
@@ -4957,10 +4975,9 @@ export class Precompiler {
 				root.kind !== "export" ||
 				!node ||
 				// arktype caches what it called a helper for, so another site's
-				// call can decide this one's value
+				// call can decide this one's value, as the site reached its entry
 				!(
-					standIn.isCalled ||
-					standIn.isCalledIndirectly ||
+					this.interpreter.calledIn(state, value) ||
 					state.trace.helpers.some(([helper]) => helper === node)
 				) ||
 				site.helpers.some(
@@ -4987,7 +5004,8 @@ export class Precompiler {
 					value,
 					this.importerOf(root, module),
 					module,
-					runsFirst
+					runsFirst,
+					state.trace
 				)
 			) {
 				site.inputs.push({
@@ -5022,22 +5040,31 @@ export class Precompiler {
 			)
 			for (const node of reads) {
 				const read = unwrapExpression(node)
+				const isInert = this.isInertRead(
+					value,
+					this.importedFromOf(node, module),
+					module,
+					runsFirst,
+					state.trace
+				)
 				site.references.push({
 					start: node.start,
 					end: node.end,
 					value,
 					fixedBy: this.fixedByOf(read, value, isImportInput, module),
 					isOwnHole: this.interpreter.isOwnHole(node, value, module),
-					isInert: this.isInertRead(
-						value,
-						this.importedFromOf(node, module),
-						module,
-						runsFirst
-					),
+					isInert,
 					isCreated: state.requests.some(
 						([request, declaring]) =>
 							declaring === module && contains(read, request)
-					)
+					),
+					// `"sideEffects": false` lets a bundler drop the declaring module
+					mustRun:
+						this.interpreter.isCheckedAtCreation(value, state.trace) ||
+						(!isInert &&
+							this.interpreter
+								.modulesDeclaring(value, state.trace)
+								.some(declaring => declaring !== module))
 				})
 			}
 		}
@@ -5163,7 +5190,10 @@ export class Precompiler {
 			source ? [source, module]
 			: standIn ? [standIn.node, standIn.module]
 			: this.interpreter.sourcesBySymbol.get(value as symbol)!
-		if (standIn?.kind === "opaque" && !standIn.isDefinition) {
+		if (
+			standIn?.kind === "opaque" &&
+			!this.interpreter.checkedAsSchema(candidate.state, standIn)
+		) {
 			return new DynamicValue(
 				origin,
 				node,
@@ -5183,7 +5213,7 @@ export class Precompiler {
 			end: node.end,
 			value,
 			kind: standIn?.kind ?? "symbol",
-			isCalledAtDefinition: !!(standIn?.isCalled || standIn?.isCalledIndirectly)
+			isCalledAtDefinition: this.interpreter.calledIn(candidate.state, value)
 		}
 	}
 
@@ -5235,7 +5265,11 @@ export class Precompiler {
 		if (this.mode !== "standalone") return result
 		for (const value of candidate.state.holes) {
 			const standIn = this.standInOf(value)
-			if (!standIn?.isDefinition || !standIn.dynamic) continue
+			if (
+				!standIn?.dynamic ||
+				!this.interpreter.checkedAsSchema(candidate.state, standIn)
+			)
+				continue
 			const source = candidate.state.readsByValue.get(standIn.dynamic)?.[0]
 			const [node, origin] =
 				source ? [source, module] : [standIn.node, standIn.module]
