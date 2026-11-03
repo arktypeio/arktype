@@ -87,11 +87,13 @@ export default {
 }
 ```
 
-With `next build --webpack`, push `precompile.webpack()` onto `config.plugins` in the `webpack` function instead.
+Next 15 builds with webpack, as does `next build --webpack`: push `precompile.webpack()` onto `config.plugins` in the `webpack` function instead. With the pages router, Next leaves dependencies external on the server, so also add `transpilePackages: ["arktype"]`, or the build fails with `Next.js leaves the pages router's dependencies external on the server ...`.
 
 ### Without a bundler
 
-A project that `tsc` compiles to run from its `outDir` precompiles what it emits: `"build": "tsc && arktype-precompile --emit"`.
+A project that `tsc` compiles to run from its `outDir` precompiles what it emits: `"build": "tsc && arktype-precompile --emit"`. `--emit` writes each module reading arktype again from its source, so run anything that rewrites `tsc`'s output, like `tsc-alias`, after it: `"tsc && arktype-precompile --emit && tsc-alias"`.
+
+A library that others install doesn't precompile itself, with `--emit` or a bundler: an app's build fails for a dependency that imports `arktype/runtime`. Precompiling a library means publishing what `tsc` emits with `"ark": { "aot": true }` in its `package.json` and `arktype` in `peerDependencies`, so each app's build precompiles it, and running `npx arktype-precompile --check src` until it accepts every definition.
 
 ### Tests
 
@@ -106,6 +108,7 @@ register()
 ```
 
 - Bun: `Bun.plugin(precompile())` with `precompile` from `@ark/aot/bun`, in a file listed under `preload` in `bunfig.toml`, and again under `[test]` for `bun test`.
+- Jest has no driver, so its tests run on arktype, whose messages add the value, like `(was "x")`, where a precompiled validator's don't.
 
 A project with a config module loads it before each test file, or the first validator a test loads throws that it was created before `configure()` ran: list it in Vitest's `test.setupFiles`, after the plugin in Bun's `[test]` preload, or after the Node driver: `node --import ./register.ts --import ./src/arktype.config.ts --test`.
 
@@ -135,6 +138,7 @@ Composing inside a definition is fine anywhere, even in a function body: `const 
 - Each error in `out.issues` has only `code`, `path`, `data`, `expected` and `message`, and `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatProblemsByPath` or `messageIn`. To group messages by key, group `out.issues` by `issue.path.join(".")`.
 - Error messages say what failed but not what the value was: `email must be an email address`, without `(was "x")`, and a missing key reads as its value would, `name must be a string`, without `(was missing)`. Text configured with `.configure({ message })` or `.describe()` is kept, as is a `required` message configured in the config module, whose function receives `propString` and `valueMeta` as in arktype.
 - The build works out which introspection members, like `toJsonSchema()`, `json` and `~standard.jsonSchema`, each validator needs, baking each where it sees code read it, following it into its dependencies and, in a build reading one module at a time, into each module importing it. So the MCP SDK, the AI SDK, Elysia's OpenAPI plugin, hono-openapi and oRPC's `@orpc/arktype` converter need nothing set, and setting one under `members` only overrides what the build works out. Where the build loses track of a validator, like one passed to a function it can't resolve, it bakes each into it and a production build warns `precompile: baking each introspection member into ...`; the build is correct, only larger. Code the build can't see, like code outside the bundle reading an entry's export, reads a member it didn't bake and throws, naming the member to set true under `members`. A production build decides `assert`, `meta`, `~standard` and `methods` the same way, keeping in each validator what the code it reaches reads, like `~standard` for Hono's `sValidator`, with nothing to set. tRPC, Hono's validators, React Hook Form, TanStack Form and Router and t3-env need nothing.
+- `drizzle-arktype` creates Types from your tables as the program runs, so it runs on arktype, as the next item sets, which ships the parser. To precompile those Types instead, write each one out with a line that fails to compile if it drifts from the table, like `const matches: Equals<typeof selectTask.infer, typeof tasks.$inferSelect> = true`, with `Equals` from migrating.md's How to convert.
 - A dependency that imports arktype fails a standalone build unless it opts in with `"ark": { "aot": true }` in its `package.json`, or the program decides for it under `"precompile"`: `"dependencies": { "@t3-oss/env-core": "aot" }` precompiles one whose Types are static, like t3-env's presets, and `"dependencies": { "drizzle-arktype": "arktype" }` runs one creating Types from values it reads as it runs on arktype, sharing the program's `configure()`. A dependency that only reads `type.errors`, like `@hono/arktype-validator`, builds as it is.
 - A library you publish ships what `tsc` emits, not a precompiled build, with `"ark": { "aot": true }` in its `package.json` and arktype in `peerDependencies`, so each app's build precompiles it with the app's arktype. Run `--check` on its source before publishing, or a refusal surfaces only in an app's build.
 - Locales from `arktype/i18n` aren't supported.
@@ -162,6 +166,7 @@ Each build error names the file, line and column, then why, then the fix on its 
 | `my-lib imports arktype, which a standalone build resolves to arktype/runtime`                                       | set `"precompile": { "dependencies": { "my-lib": "aot" } }`, or `"arktype"` in place of `"aot"` if it creates Types from runtime values |
 | `src/Form.svelte imports arktype, which a standalone build resolves to arktype/runtime`                              | move the Types, and any code reading `type`, into a `.ts` module the component imports; don't set `allowUnsafe`                         |
 | `precompile.esbuild() needs bundle: true`                                                                            | set `bundle: true`                                                                                                                      |
+| `Next.js leaves the pages router's dependencies external on the server ...`                                          | add `transpilePackages: ["arktype"]` to the Next config                                                                                 |
 | `arktype resolves to ... rather than arktype/runtime` (Turbopack)                                                    | add the `resolveAlias` entries it lists                                                                                                 |
 | `type is not a function` at runtime                                                                                  | a module defining Types wasn't precompiled, e.g. no Turbopack rule matches its extension; add one                                       |
 

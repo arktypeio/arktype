@@ -285,13 +285,15 @@ The loader fails a module whose `arktype` imports resolve otherwise, naming the 
 
 The aliases also point a dependency's `arktype` imports at the runtime, so the `*.{js,mjs}` rule has the loader fail the build for a dependency that defines Types but doesn't [opt in](/docs/precompile/advanced#libraries), and precompile one that does or that [`dependencies`](/docs/precompile/options#dependencies) sets to `"aot"`. Turbopack can't run one dependency on arktype, so for one that creates Types from values it reads as it runs, like `drizzle-arktype`, build with webpack or with `runtime: "arktype"`. The loader reads only `import` and `export` declarations, so a CommonJS dependency that `require`s arktype throws `type is not a function` when it loads instead.
 
-With webpack (`next build --webpack`), add the plugin:
+With webpack, which Next 15 builds with, as does `next build --webpack`, add the plugin. The pages router leaves dependencies external on the server, so with it, also have Next bundle arktype:
 
 ```js title="next.config.js"
 // @noErrors
 import { precompile } from "@ark/aot/unplugin"
 
 export default {
+	// for the pages router
+	transpilePackages: ["arktype"],
 	webpack: config => {
 		config.plugins.push(precompile.webpack())
 		return config

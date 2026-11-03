@@ -87,6 +87,8 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`The bundle leaves arktype to be loaded at runtime`** (or `arktype/runtime`): the program would load arktype, or a second copy of its runtime, beside the runtime its validators use, so `out instanceof type.errors` would be false for their errors. A tool that leaves dependencies external does this unless told otherwise: with tsup, add `noExternal: ["arktype"]`, and with tsdown, `deps: { alwaysBundle: [/^arktype(\/|$)/] }`. Where every import of arktype's runtime is left external, as with esbuild's `packages: "external"`, the program loads one copy, and the build allows it.
 
+**`Next.js leaves the pages router's dependencies external on the server when it builds with webpack`**: the server would then load arktype beside the runtime its validators use. Add `transpilePackages: ["arktype"]` to the Next config, as [Next.js](/docs/precompile/setup#next) shows.
+
 **`arktype resolves to more than one copy`**: one copy doesn't recognize another's Types and errors. The message names each copy and the file that reached it.
 
 **`arktype resolves to ... rather than arktype/runtime`** (Turbopack): add the `turbopack.resolveAlias` entries the message lists to your Next config. See [Next.js](/docs/precompile/setup#next).
