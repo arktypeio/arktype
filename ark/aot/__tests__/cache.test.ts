@@ -273,6 +273,84 @@ contextualize(function (this: Mocha.Suite) {
 			attest(readdirSync(root)).equals([version])
 		})
 
+		it("reads another directory once a package the precompiler runs changes", () => {
+			const fingerprinted = inFreshProcess(
+				async (dir: string) => {
+					const fs = (await import("node:fs")).default
+					const { registerHooks, syncBuiltinESMExports } = await import(
+						"node:module"
+					)
+					const { basename, dirname, join } = await import("node:path")
+					const { fileURLToPath } = await import("node:url")
+					const loaded = new Set<string>()
+					registerHooks({
+						load: (url, context, next) => {
+							if (url.startsWith("file:")) loaded.add(fileURLToPath(url))
+							return next(url, context)
+						}
+					})
+					const { createPrecompiler } = await import(
+						"@ark/aot/internal/driver.ts"
+					)
+					createPrecompiler({ cwd: dir, conditions: ["ark-ts"] }).precompile(
+						'import { type } from "arktype"\n\nexport const T = type({ a: "string" }).and({ b: "number" })\n',
+						join(dir, "main.ts")
+					)
+					// arktype's packages whose code it ran, by root
+					const names: Record<string, string> = {}
+					for (const file of loaded) {
+						let root = dirname(file)
+						while (!fs.existsSync(join(root, "package.json")))
+							root = dirname(root)
+						const { name } = JSON.parse(
+							fs.readFileSync(join(root, "package.json"), "utf8")
+						)
+						if (/^(?:arktype|arkregex|arksets|@ark\/.+)$/.test(name))
+							names[root] = name
+					}
+					// each cache module a new instance, so it fingerprints anew
+					const cache = import.meta.resolve("@ark/aot/internal/cache.ts")
+					let imports = 0
+					const directoryOf = async () =>
+						basename(
+							new (await import(`${cache}?${imports++}`)).AnswerCache(dir).dir
+						)
+					const read = fs.readFileSync
+					const before = await directoryOf()
+					const unchanged: string[] = []
+					for (const root in names) {
+						fs.readFileSync = ((path: string, ...rest: never[]) => {
+							const text = read(path, ...rest)
+							return (
+									typeof path === "string" &&
+										path.startsWith(`${root}/`) &&
+										/\.[jt]s$/.test(path)
+								) ?
+									`${text}\n// changed`
+								:	text
+						}) as never
+						syncBuiltinESMExports()
+						if ((await directoryOf()) === before) unchanged.push(names[root])
+						fs.readFileSync = read
+						syncBuiltinESMExports()
+					}
+					return { ran: Object.values(names).sort(), unchanged }
+				},
+				[writeFixture({})]
+			)
+			attest(fingerprinted).snap({
+				ran: [
+					"@ark/aot",
+					"@ark/schema",
+					"@ark/util",
+					"arkregex",
+					"arksets",
+					"arktype"
+				],
+				unchanged: []
+			})
+		})
+
 		it("stores no answer with a diagnostic", async () => {
 			const dir = writeFixture(replaced)
 			const errors = await errorsIn(dir, ["main.ts"])

@@ -12,7 +12,12 @@ import {
 import { dirname, join, relative } from "node:path"
 import { fileURLToPath } from "node:url"
 import { threadId } from "node:worker_threads"
-import { readFile, type PrecompileHost } from "./host.ts"
+import {
+	arkPackageName,
+	packageRootOf,
+	readFile,
+	type PrecompileHost
+} from "./host.ts"
 
 // what a stored answer read, which must read the same for it to be reused
 export interface Snapshot {
@@ -40,24 +45,29 @@ export const hashOf = (text: string): string =>
 	createHash("sha256").update(text).digest("base64url")
 
 // the code writing an answer: arktype's packages by content, as a linked
-// workspace or a repacked tarball changes it without a version, the
-// precompiler's other dependencies by version, and the runtime
+// workspace or a repacked tarball changes it without a version, each as the
+// package importing it resolves it, the precompiler's other dependencies by
+// version, and the runtime
 const fingerprintOf = (): string => {
 	const parts = [process.version, process.platform, process.arch]
-	for (const name of ownPackages) {
-		const root = packageRootOf(
-			name === "@ark/aot" ?
-				fileURLToPath(import.meta.url)
-			:	fileURLToPath(import.meta.resolve(name))
+	const roots = [rootOf(fileURLToPath(import.meta.url))]
+	for (const root of roots) {
+		const { name, dependencies, peerDependencies } = JSON.parse(
+			readFileSync(join(root, "package.json"), "utf8")
 		)
 		const files: string[] = []
 		collectCode(root, files)
 		parts.push(name)
 		for (const file of files.sort())
 			parts.push(relative(root, file), hashOf(readFileSync(file, "utf8")))
+		for (const dependency in { ...dependencies, ...peerDependencies }) {
+			const found =
+				arkPackageName.test(dependency) && packageRootOf(dependency, root)
+			if (found && !roots.includes(found)) roots.push(found)
+		}
 	}
 	for (const name of versionedDependencies) {
-		const root = packageRootOf(fileURLToPath(import.meta.resolve(name)))
+		const root = rootOf(fileURLToPath(import.meta.resolve(name)))
 		parts.push(
 			name,
 			JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version
@@ -66,14 +76,6 @@ const fingerprintOf = (): string => {
 	return hashOf(parts.join("\n"))
 }
 
-const ownPackages = [
-	"@ark/aot",
-	"arktype",
-	"@ark/schema",
-	"@ark/util",
-	"arkregex"
-]
-
 const versionedDependencies = [
 	"oxc-parser",
 	"oxc-resolver",
@@ -81,7 +83,7 @@ const versionedDependencies = [
 	"@jridgewell/sourcemap-codec"
 ]
 
-const packageRootOf = (file: string): string => {
+const rootOf = (file: string): string => {
 	let dir = dirname(file)
 	while (!existsSync(join(dir, "package.json"))) dir = dirname(dir)
 	return dir
