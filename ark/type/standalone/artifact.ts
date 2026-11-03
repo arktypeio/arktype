@@ -107,6 +107,7 @@ import {
 	partsOf,
 	printablePrimitive,
 	printedHoleNamePattern,
+	receiverPrefix,
 	registeredNameAt,
 	traversalKeyOf,
 	writeId,
@@ -537,7 +538,7 @@ export class StandaloneArtifact {
 	receiverOf(value: Foldable, id: string, label: string): string {
 		const kind = hasArkKind(value, "root") ? "" : `, "${kindNameOf(value)}"`
 		const args = `${writeId(id)}, ${JSON.stringify(label)}${kind}`
-		const name = `receive${hashOf(`runtime.holesOf(holder, ${args})`)}`
+		const name = `${receiverPrefix}${hashOf(`runtime.holesOf(holder, ${args})`)}`
 		this.importName(
 			this.share(
 				name,

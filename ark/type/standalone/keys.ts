@@ -306,6 +306,9 @@ export const partsOf = (
 
 export const holeNameMarker = "$hole_"
 
+// what a factory calls to read a Type's holes, which it finds by identity
+export const receiverPrefix = "receive"
+
 // two hashes can first differ inside a "$ark.name" reference
 export const registeredNameAt = (
 	hash: string,

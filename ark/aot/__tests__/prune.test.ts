@@ -201,6 +201,69 @@ contextualize(function (this: Mocha.Suite) {
 			).snap(["meta", "methods"])
 		})
 
+		describe("what a production factory reads of what it's passed", () => {
+			const production = { preset: undefined, creationChecks: "none" } as const
+			const even = `import { type } from "arktype"
+
+export const Even = type("number").narrow(n => n % 2 === 0)
+export const Named = type({ name: "string" })
+export const Fields = { even: Even, name: type("string") }
+`
+
+			const droppedFromMain = (main: string) =>
+				droppedFrom(
+					{
+						"/types.ts": even,
+						"/main.ts": `import { type } from "arktype"\n${main}\n`
+					},
+					production
+				)
+
+			it("a Type's holes off the object holding it", async () => {
+				attest(
+					await droppedFromMain(
+						`import { Fields } from "./types.ts"\n\nconst T = type({ even: Fields.even, name: Fields.name })\nT({})`
+					)
+				).equals(everyMember)
+			})
+
+			it("nothing of an input past a parameter it reads", async () => {
+				attest(
+					await droppedFromMain(
+						`import { Named } from "./types.ts"\n\nconst T = type({ named: Named }).narrow(o => !!o)\nT({})`
+					)
+				).equals(everyMember)
+			})
+
+			it("a member a site's value depends on", async () => {
+				attest(
+					await droppedFrom(
+						{
+							"/types.ts": `import { type } from "arktype"\n\nexport const Tagged = type("string").configure({ tag: "a" })\n`,
+							"/main.ts": `import { type } from "arktype"\nimport { Tagged } from "./types.ts"\n\nconst T = type.enumerated(Tagged.meta.tag)\nT("a")\n`
+						},
+						production
+					)
+				).snap(
+					"main.ts:2:10 passes Tagged to a factory that checks it, which may read any member"
+				)
+			})
+
+			it("a Type through a member of another", async () => {
+				attest(
+					await droppedFrom(
+						{
+							"/types.ts": `import { type } from "arktype"\n\nconst Named = type({ name: "string" })\nexport const Holding = type("string").configure({ schema: Named })\n`,
+							"/main.ts": `import { type } from "arktype"\nimport { Holding } from "./types.ts"\n\nconst H = { held: Holding }\nconst T = type({ a: H.held.meta.schema })\nT({})\n`
+						},
+						production
+					)
+				).snap(
+					"main.ts:4:7 passes H to a factory that checks it, which may read any member"
+				)
+			})
+		})
+
 		it("each member a dependency may read", async () => {
 			attest(
 				await droppedReading(`import { check } from "checker"\n\ncheck(User)`, {
@@ -512,6 +575,25 @@ contextualize(function (this: Mocha.Suite) {
 			).snap(
 				"admin.ts:2:10 passes User to a factory that checks it, which may read any member"
 			)
+		})
+
+		it("still reads what the program reads whole of a validator a factory reads", async () => {
+			const usage = await usageFrom(
+				{
+					"/types.ts": `import { type } from "arktype"\n\nexport const Tagged = type("string").configure({ tag: "a" })\nexport const Other = type({ other: "string" })\n`,
+					"/main.ts": `import { type } from "arktype"\nimport { Tagged, Other } from "./types.ts"\n\nconst T = type.enumerated(Tagged.meta.tag)\nT("a")\nOther({})\n`
+				},
+				{ preset: undefined, creationChecks: "none" }
+			)
+			if (typeof usage === "string" || Array.isArray(usage))
+				throw new Error(String(usage))
+			attest(usage.written).equals(true)
+			attest(usage.dropped).equals([])
+			attest(usage.baked).snap([
+				"main.ts:4:11 bakes nothing (dataflow)",
+				"types.ts:3:23 bakes nothing (dataflow)",
+				"types.ts:4:22 bakes nothing (dataflow)"
+			])
 		})
 
 		it("a Scope", async () => {

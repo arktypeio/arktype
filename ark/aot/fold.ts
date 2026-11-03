@@ -13,7 +13,7 @@ import type { SourceModule } from "./module.ts"
 import { writeParseErrorThrower } from "./output.ts"
 import { operatorOf, type Binding } from "./scope.ts"
 import { isFoldable, siteNameOf, type Site } from "./sites.ts"
-import type { RuntimeModule } from "./usage.ts"
+import type { PassedRead, RuntimeModule } from "./usage.ts"
 type FactoryImport = [specifier: string, name: string, local: string]
 
 export interface PlannedSites {
@@ -34,6 +34,8 @@ export interface SiteFactory {
 	inert: string[]
 	// whose imports the call keeps, by the input passing each
 	bindings: [input: string, binding: Binding][]
+	// each input the site reads a member of a Type through, as `User.in`
+	readsMembers: string[]
 	imports: FactoryImport[]
 }
 
@@ -44,6 +46,7 @@ export const emptyFactory = (): SiteFactory => ({
 	inputs: [],
 	inert: [],
 	bindings: [],
+	readsMembers: [],
 	imports: []
 })
 
@@ -66,7 +69,7 @@ export interface Folding {
 	passed: Binding[]
 	// those a call reads at runtime
 	read: Binding[]
-	readsPassedBy?: (exported: string) => boolean
+	readsPassedBy?: (exported: string, position: number) => PassedRead
 	// the first droppable site, where the config is fixed
 	fixedAt: number
 }

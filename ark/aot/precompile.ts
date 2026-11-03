@@ -604,23 +604,40 @@ export class Precompiler {
 		}))
 	}
 
+	private rootOf(input: Input): Binding | Node | undefined {
+		if (input.kind === "local") return this.bindingsByInput.get(input)
+		const target = this.graph.exportOf(
+			this.graph.moduleOf(input.file!) as SourceModule,
+			input.name
+		)
+		return (
+			target.kind === "binding" ? target.binding
+			: target.kind === "expression" ? target.node
+			: undefined
+		)
+	}
+
+	// whether a site's path reads a member of a Type, as `User.in`, rather than
+	// a Type off what holds it, as `Fields.user`
+	private readsMemberThrough(input: Input): boolean {
+		if (!input.path.length) return false
+		const root = this.rootOf(input)
+		const evaluated = root && this.interpreter.evaluatedOf(root)
+		if (!evaluated) return true
+		let value = evaluated.value
+		for (const k of input.path) {
+			if (hasArkKind(value, "root")) return true
+			value = hasDomain(value, "object") ? Reflect.get(value, k) : undefined
+		}
+		return false
+	}
+
 	// a Type a site reads off what the program can change, as `H.a`, or one a
 	// binding or export holds that was read off it, as `C` given
 	// `const C = H.a`. Under creationChecks "none" its factory still checks
 	// it's the Type the build read, so a write the build missed fails loudly.
 	private isOffHolder(input: Input): boolean {
-		let root: Binding | Node | undefined
-		if (input.kind === "local") root = this.bindingsByInput.get(input)
-		else {
-			const target = this.graph.exportOf(
-				this.graph.moduleOf(input.file!) as SourceModule,
-				input.name
-			)
-			root =
-				target.kind === "binding" ? target.binding
-				: target.kind === "expression" ? target.node
-				: undefined
-		}
+		const root = this.rootOf(input)
 		const evaluated = root && this.interpreter.evaluatedOf(root)
 		if (!evaluated) return true
 		if (input.path.length) return changeableDepthOf(evaluated.value) > 0
@@ -717,14 +734,28 @@ export class Precompiler {
 		if (this.mode !== "standalone") return unwritten
 		const plan = this.planProgram(program)
 		if (typeof plan === "string") return { ...unwritten, unpruned: plan }
+		const used = this.usedIn(program, plan.planned)
+		return this.scanAs(
+			program,
+			plan,
+			unwritten,
+			used,
+			typeof used === "string" ? this.keptMembersMessageOf(used) : undefined
+		)
+	}
+
+	private scanAs(
+		program: ScannedProgram,
+		plan: ProgramPlan,
+		unwritten: ScannedUsage,
+		used: Set<UsedMember> | string,
+		unpruned: string | undefined
+	): ScannedUsage {
 		const { planned, precompiled } = plan
-		const used = this.usedIn(program, planned)
 		const readings = this.readingsIn({
 			...this.usageProgramOf(program, planned),
 			whole: true
 		})
-		const unpruned =
-			typeof used === "string" ? this.keptMembersMessageOf(used) : undefined
 		const dropped =
 			typeof used === "string" ?
 				[]
@@ -770,9 +801,16 @@ export class Precompiler {
 			usage,
 			dropped
 		)
+		// written keeping each member, it still follows the program whole, so
+		// bakes only what it reads
 		if (unprunedAsWritten) {
-			this.usagesByProgram.delete(program.key)
-			return { ...unwritten, unpruned: unprunedAsWritten }
+			return this.scanAs(
+				program,
+				plan,
+				unwritten,
+				unprunedAsWritten,
+				unprunedAsWritten
+			)
 		}
 		const linked =
 			this.inline || this.standalone.lazy ?
@@ -2914,17 +2952,26 @@ export class Precompiler {
 		}
 		folding.kept.push(...(factory?.spans ?? []))
 		// a value's inputs evaluate in place, and a factory may ignore its own
-		const readsPassed =
-			!isValue &&
-			!!factory?.bindings.length &&
-			(folding.readsPassedBy ??= passedReaderOf(() =>
-				this.inline ?
-					this.inlinedModuleOf(folding.specifier, validators.code).program
-				:	parseValidators(validators.code)
-			))(exported)
+		const readerOf =
+			!isValue && !!factory?.bindings.length ?
+				(folding.readsPassedBy ??= passedReaderOf(() =>
+					this.inline ?
+						this.inlinedModuleOf(folding.specifier, validators.code).program
+					:	parseValidators(validators.code)
+				))
+			:	undefined
 		for (const [input, binding] of factory?.bindings ?? []) {
 			folding.passed.push(binding)
-			if (readsPassed && inputs.includes(input)) folding.read.push(binding)
+			if (!readerOf) continue
+			// its params hold what it keeps in place ahead of its inputs
+			const reads = inputs.flatMap((read, i) =>
+				read === input ? readerOf(exported, factory!.spans.length + i) : []
+			)
+			if (
+				reads.includes("any") ||
+				(reads.includes("off") && factory!.readsMembers.includes(input))
+			)
+				folding.read.push(binding)
 		}
 		// droppable with its variable unless it throws or checks; a function's
 		// only where it fixes no config and reads nothing
@@ -3338,6 +3385,8 @@ export class Precompiler {
 				reasons.push(passedAs)
 				continue
 			}
+			if (reads.some(input => this.readsMemberThrough(input)))
+				factory.readsMembers.push(passedAs.expression)
 			receive(factory, passedAs, {
 				kind: "input",
 				label: passedAs.label,
