@@ -1949,6 +1949,18 @@ console.log(jsonOf(T), "json" in T, JSON.stringify(T), T.toJSON, \`\${T}\`)`
 			])
 		})
 
+		it("Reflect.get at a member's name reads that member", () => {
+			attest(
+				unhinted(`import { type } from "arktype"
+const T = type({ a: "string" })
+const key = process.argv[2]
+console.log(Reflect.get(T, "expression"), Reflect.get(T, "or"), Reflect.get(T, key))`)
+			).snap([
+				'/main.ts:4:43  Reflect.get(T, "or") reads or, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read',
+				"/main.ts:4:65  Reflect.get(T, key) reflects on a Type, whose properties a standalone validator doesn't share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read"
+			])
+		})
+
 		it("members a build drops", () => {
 			const source = `import { scope, type } from "arktype"
 const T = type({ a: "string" })

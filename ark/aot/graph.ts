@@ -3364,9 +3364,17 @@ export class ModuleGraph {
 		if (global.type !== "Identifier" || module.scopes.byId.get(global)?.binding)
 			return
 		const name = memberNameOf(callee)
+		const [object, key] = args
 		return (
 			global.name === "JSON" && name === "stringify" ?
 				["toJSON", args.slice(0, 1)]
+			: (
+				global.name === "Reflect" &&
+				name === "get" &&
+				key?.type === "Literal" &&
+				typeof key.value === "string"
+			) ?
+				[key.value, [object]]
 			: (
 				(global.name === "Object" && name !== "is") || global.name === "Reflect"
 			) ?
