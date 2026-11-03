@@ -66,13 +66,44 @@ export const precompile = (
 		opts
 	)
 
+// main.ts precompiled as a production bundle's scan writes it, having read
+// each file as the whole program, so no factory checks what it reads
+export const precompileProgram = (
+	source: string,
+	files: Record<string, string> = {},
+	opts?: PrecompileOptions
+): PrecompiledModule => {
+	const all = { ...files, "/main.ts": source }
+	const precompiler = new Precompiler(memoryHost(all), opts)
+	precompiler.readProgram({ modules: modulesOf(all) })
+	return precompiler.precompile(source, "/main.ts")
+}
+
+const modulesOf = (files: Record<string, string>) =>
+	Object.fromEntries(
+		Object.entries(files).map(([id, source]) => [id, { source }])
+	)
+
 // each site's status, with its value's expression or why it is rejected
 export const statusesOf = (
 	source: string,
 	files?: Record<string, string>,
 	opts?: PrecompileOptions
-): string[] =>
-	analyze(source, files, opts).sites.map(site =>
+): string[] => statusesIn(analyze(source, files, opts))
+
+// main.ts's statuses, the build having read each file as the whole program,
+// as a production bundle's scan or --emit does
+export const programStatusesOf = (
+	files: Record<string, string>,
+	opts?: PrecompileOptions
+): string[] => {
+	const precompiler = new Precompiler(memoryHost(files), opts)
+	precompiler.readProgram({ modules: modulesOf(files) })
+	return statusesIn(precompiler.analyzeSites(files["/main.ts"], "/main.ts"))
+}
+
+const statusesIn = ({ sites }: ModuleAnalysis): string[] =>
+	sites.map(site =>
 		[
 			`${site.line}:${site.column} ${site.status}${
 				site.parseError ? ` (${site.parseError.message})`

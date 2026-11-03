@@ -6,6 +6,7 @@ import {
 	diagnosticsOf,
 	memoryHost,
 	precompile,
+	programStatusesOf,
 	statusesOf
 } from "./utils.ts"
 
@@ -1267,6 +1268,96 @@ export const R = type({ a: read.a, b: read.list[0].or("null") })`)
 				"31:19 rejected\n  `o7` is written at /main.ts:21:1, so its value at the site is not known",
 				"32:18 accepted { a: string, b: string | null }"
 			])
+		})
+
+		it("values read where nothing can write them", () => {
+			attest(
+				programStatusesOf({
+					"/main.ts": `import { type } from "arktype"
+import { Code, strategies, kinds, schemas } from "./values.ts"
+export const C = type.enumerated(...Object.values(Code))
+export const S = type.enumerated(...Object.values(strategies))
+export const K = type.enumerated(...kinds)
+export const U = type({ user: schemas.user })`,
+					"/values.ts": `import { type } from "arktype"
+export enum Code { A = "a", B = "b" }
+export const strategies = { random: "random", best: "best" } as const
+export const kinds = ["a", "b"] as const
+export const schemas = { user: type({ name: "string" }) }`,
+					"/reader.ts": `import { Code, strategies, kinds, schemas } from "./values.ts"
+const fail = (code: Code) => new Error(code)
+fail(Code.A)
+kinds.forEach(kind => fetch(kind))
+console.log(strategies.random, Object.keys(schemas), schemas.user.expression)`
+				})
+			).snap([
+				'3:18 accepted "a" | "b"',
+				'4:18 accepted "best" | "random"',
+				'5:18 accepted "a" | "b"',
+				"6:18 accepted { user: { name: string } }"
+			])
+		})
+
+		it("values another module of the program writes", () => {
+			const files = {
+				"/containers.ts": `import { type } from "arktype"
+export const H0 = { a: type("string") }
+export const H1 = { a: type("string") }
+export const H2 = { a: type("string") }
+export const H3 = { a: type("string") }
+export const H4 = { a: type("string") }
+export const H5 = { a: type("string") }
+if (H5) console.log("H5")
+export default { a: type("string") }`,
+				"/mutate.ts": `import { type } from "arktype"
+import D, { H0, H1 } from "./containers.ts"
+import * as containers from "./containers.ts"
+import { box } from "./box.ts"
+H0.a = type("number")
+export const write = () => {
+	H1.a = type("number")
+}
+const h = containers.H2
+h.a = type("number")
+box.h.a = type("number")
+D.a = type("number")`,
+				"/box.ts": `import { H3 } from "./containers.ts"
+export const box = { h: H3 }`,
+				"/reexport.ts": `export { H4 } from "./containers.ts"`,
+				"/loose.ts": `import { type } from "arktype"
+export const L = { a: type("string") }`,
+				"/unrelated.ts": `export const unrelated = 1`,
+				"/main.ts": `import { type } from "arktype"
+import D, { H0, H1, H2, H3, H4, H5 } from "./containers.ts"
+import { L } from "./loose.ts"
+import { write } from "./mutate.ts"
+write()
+export const load = () => [import("./loose.ts"), import("./reexport.ts"), import("./unrelated.ts")]
+export const T0 = type({ x: H0.a })
+export const T1 = type({ x: H1.a })
+export const T2 = type({ x: H2.a })
+export const T3 = type({ x: H3.a })
+export const TD = type({ x: D.a })
+export const TL = type({ x: L.a })
+export const T4 = type({ x: H4.a })
+export const T5 = type({ x: H5.a })`
+			}
+			attest(programStatusesOf(files)).snap([
+				"7:19 rejected\n  `H0` is imported from /containers.ts\n  `H0` is written at /mutate.ts:5:1, so its value at the site is not known",
+				"8:19 rejected\n  `H1` is imported from /containers.ts\n  `H1` is written at /mutate.ts:7:2, so its value at the site is not known",
+				"9:19 rejected\n  `H2` is imported from /containers.ts\n  `H2` is written at /mutate.ts:10:1, so its value at the site is not known",
+				"10:19 rejected\n  `H3` is imported from /containers.ts\n  `H3` is written at /mutate.ts:11:1, so its value at the site is not known",
+				"11:19 rejected\n  the default export of /containers.ts is written at /mutate.ts:12:1, so its value at the site is not known",
+				"12:19 rejected\n  `L` is imported from /loose.ts\n  `L` is exported by /loose.ts, which /main.ts:6:28 loads with import(), so code the build doesn't follow may write it",
+				"13:19 rejected\n  `H4` is imported from /containers.ts\n  `H4` is exported by /reexport.ts, which /main.ts:6:50 loads with import(), so code the build doesn't follow may write it",
+				"14:19 accepted { x: string }"
+			])
+			// a module read alone can't see them
+			attest(
+				statusesOf(files["/main.ts"], files).filter(
+					status => !status.includes("accepted")
+				)
+			).equals([])
 		})
 
 		it("holes read through an object written before the site", () => {

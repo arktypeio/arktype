@@ -1975,6 +1975,50 @@ console.log(JSON.stringify(User.toJsonSchema()))
 		}
 	})
 
+	it("a Type another module writes", async () => {
+		const root = writeFixture(
+			{
+				"containers.ts": `import { type } from "arktype"
+export const H = { a: type("string") }
+`,
+				"mutate.ts": `import { type } from "arktype"
+import { H } from "./containers.ts"
+H.a = type("number") as never
+`,
+				"main.ts": `import { type } from "arktype"
+import "./mutate.ts"
+import { H } from "./containers.ts"
+const T = type({ x: H.a })
+console.log(T.allows({ x: 1 }))
+`
+			},
+			fromHere("temp", "writtenElsewhere")
+		)
+		// production's, which checks nothing at creation
+		const build = (opts: PrecompileUnpluginOptions) =>
+			esbuild({
+				entryPoints: [join(root, "main.ts")],
+				bundle: true,
+				write: false,
+				format: "esm",
+				conditions: [...conditions, "production"],
+				logLevel: "silent",
+				plugins: [precompile.esbuild({ cwd: root, conditions, ...opts })]
+			}).then(
+				({ outputFiles }) => outputFiles[0].text,
+				(e: { errors: { text: string }[] }) => e.errors.map(e => e.text)
+			)
+		attest(runPlain(root)).equals("true\n")
+		// a pruned build reads the whole program, so refuses the site
+		attest(await build({})).snap([
+			"main.ts:4:11  type({ x: H.a }) cannot be precompiled\n  `H` is imported from containers.ts\n  `H` is written at mutate.ts:3:1, so its value at the site is not known\n  Write the value whole in its literal. Where it differs by case, define a Type for each case and choose one at runtime."
+		])
+		// one reading a module at a time checks the Type it reads off the holder
+		attest(thrownBy((await build({ prune: false })) as string)).snap(
+			"`H.a` is another Type, but was precompiled as the Type it was at build"
+		)
+	})
+
 	it("undetailed bundles", async () => {
 		const reads = join(undetailed, "reads")
 		const message = `${join(undetailed, "node_modules", "reads", "index.js")} imports @ark/schema, which a build with errors: "none" can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own. Import what it reads from arktype, which a standalone build resolves to that runtime, or build without errors: "none".`

@@ -113,7 +113,12 @@ export interface Trace {
 	exportedFunctions: Read[]
 	// each top-level binding the site can read before it's set, and its reader
 	readFirst: [binding: Binding, module: SourceModule, reader: string][]
+	// each changeable value read through a binding or a default export, which
+	// another module of the program may write
+	holders: Holder[]
 }
+
+export type Holder = [module: SourceModule, holder: Binding | "default"]
 
 interface Environment {
 	valuesByBinding: Map<Binding, unknown>
@@ -968,6 +973,7 @@ export class Interpreter {
 			isChangeable(result.value) &&
 			this.writtenBefore(binding, module, readAt ?? node, ctx)
 		if (written) return { value: new DynamicValue(module, node, written) }
+		if (isChangeable(result.value)) addHolder(ctx.trace, module, binding)
 		let isReceived = isChangeable(result.value)
 		if (!isArkValue(result.value) || readsAgain(result.value))
 			mergeTrace(ctx.trace, result.trace)
@@ -1117,6 +1123,7 @@ export class Interpreter {
 				ctx
 			)
 		if (written) return { value: new DynamicValue(ctx.module, node, written) }
+		if (isChangeable(result.value)) addHolder(ctx.trace, ...holderOf(target))
 		if (readsAgain(result.value)) mergeTrace(ctx.trace, result.trace)
 		const declaration = binding.declaration.parent
 		const isDirect =
@@ -1672,6 +1679,8 @@ export class Interpreter {
 					target.kind === "binding" &&
 					this.writtenIn(target.binding, target.module, ctx)
 				if (written) return new DynamicValue(target.module, node, written)
+				if (isChangeable(result.value))
+					addHolder(ctx.trace, ...holderOf(target))
 				if (readsAgain(result.value)) mergeTrace(ctx.trace, result.trace)
 				return this.consume(lookupOf(exportRootOf(target), result.value), ctx)
 			}
@@ -2681,7 +2690,8 @@ const emptyTrace = (): Trace => ({
 	reads: [],
 	helpers: [],
 	exportedFunctions: [],
-	readFirst: []
+	readFirst: [],
+	holders: []
 })
 
 const rootContext = (
@@ -2702,6 +2712,23 @@ const mergeTrace = (into: Trace, from: Trace) => {
 		addHelper(into.helpers, node, module)
 	for (const read of from.exportedFunctions) into.exportedFunctions.push(read)
 	for (const read of from.readFirst) into.readFirst.push(read)
+	for (const [module, holder] of from.holders) addHolder(into, module, holder)
+}
+
+const holderOf = (
+	target: Extract<ImportTarget, { kind: "binding" | "expression" }>
+): Holder => [
+	target.module,
+	target.kind === "binding" ? target.binding : "default"
+]
+
+const addHolder = (
+	trace: Trace,
+	module: SourceModule,
+	holder: Binding | "default"
+) => {
+	if (!trace.holders.some(([m, h]) => m === module && h === holder))
+		trace.holders.push([module, holder])
 }
 
 const addHelper = (

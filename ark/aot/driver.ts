@@ -20,7 +20,8 @@ import { writeUnansweredResolveMessage } from "./messages.ts"
 import {
 	Precompiler,
 	type PrecompiledModule,
-	type PrecompileOptions
+	type PrecompileOptions,
+	type ReadProgram
 } from "./precompile.ts"
 import type { ScannedProgram } from "./scan.ts"
 import type { Site } from "./sites.ts"
@@ -87,6 +88,7 @@ export type PrecompileRequest =
 	  ]
 	| [kind: "scan", program: ScannedProgram]
 	| [kind: "unseen", program: ScannedProgram]
+	| [kind: "program", program: ReadProgram]
 	| [kind: "check", source: string, id: string]
 	| [
 			kind: "checkUnwritten",
@@ -194,6 +196,7 @@ const answerRequests = (
 			return transformed
 		}
 		if (request[0] === "scan") return precompiler.scan(request[1])
+		if (request[0] === "program") return precompiler.readProgram(request[1])
 		if (request[0] === "unseen") return precompiler.unseenIn(request[1])
 		if (request[0] === "check")
 			return checkedModuleOf(precompiler, request[1], request[2])

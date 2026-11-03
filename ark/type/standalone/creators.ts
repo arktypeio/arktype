@@ -102,7 +102,7 @@ export const writtenAttributesOf = (
 	// a creator defaults an empty-meta validator's attributes, so a site needs only imports
 	(
 		!form.isTemplate &&
-		!baking.checksTypes &&
+		!baking.holdsIds &&
 		!onFail &&
 		!form.byRuntime &&
 		attributes.length === 1 &&
@@ -287,7 +287,7 @@ const creatorBodyOf = (baking: Baking, form: CreatorForm): string => {
 		: "runtime.own(validator, attributes)",
 		reads.readsAllows && isCalled ? `validator.allows = ${form.allowsOf}` : "",
 		members.has("~standard") ? `validator["~standard"] = ${standard}` : "",
-		baking.checksTypes ?
+		baking.holdsIds ?
 			`return runtime.holdHoles(${frozen(baking, "validator")}, id, holes)`
 		:	`return ${frozen(baking, "validator")}`
 	]
@@ -306,7 +306,7 @@ const creatorParamsOf = (baking: Baking, form: CreatorForm): string[] => {
 		: holdsOnlyMeta(members) ? ["meta = runtime.emptyMeta"]
 		: form.keepsMeta ? ["attributes = { meta: runtime.emptyMeta }"]
 		: ["attributes"]),
-		...(baking.checksTypes ? ["id", "holes = []"] : []),
+		...(baking.holdsIds ? ["id", "holes = []"] : []),
 		...(!form.configured || form.keepsMeta ? []
 		: baking.readsConfig ? ["configuredOnFail = runtime.runtimeConfig.onFail"]
 		: ["configuredOnFail"])
