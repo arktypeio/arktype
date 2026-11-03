@@ -1099,7 +1099,11 @@ const keepFailure = (
 	const kept = join(failureDir, `${Date.now()}-${bundler}`)
 	mkdirSync(kept, { recursive: true })
 	const files = filesOf(app)
-	for (const name in files) writeFileSync(join(kept, name), files[name])
+	for (const name in files) {
+		// e.g. a dependency's node_modules/schemas-lib/index.js
+		mkdirSync(dirname(join(kept, name)), { recursive: true })
+		writeFileSync(join(kept, name), files[name])
+	}
 	writeFileSync(join(kept, "app.txt"), sourceOfApp(app))
 	writeFileSync(join(kept, "whole.out.txt"), wholeOut)
 	writeFileSync(join(kept, "pruned.out.txt"), prunedOut)

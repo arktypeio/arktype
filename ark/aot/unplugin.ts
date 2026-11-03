@@ -33,7 +33,6 @@ import {
 	fileOf,
 	islandDependencySpecifier,
 	issueFeaturesFile,
-	narrowsIssues,
 	optedInPackagesOf,
 	precompiledDependencyOf,
 	packageNameOf,
@@ -720,8 +719,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			if (!result.read) return { warnings }
 			const [scanned, usage] = result.read
 			scan.scanned = scanned
-			// only what it dropped can fail a read the scan didn't see
-			scan.verifies = !!usage.dropped.length || narrowsIssues(usage.issues)
+			scan.verifies = usage.verifies
 			scan.holders = new Set(usage.holders)
 			esbuildScan = {
 				scanned,
@@ -736,7 +734,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		build.onEnd(result => {
 			if (
 				!scan.scanned ||
-				!scan.verifies ||
+				(!scan.verifies && !esbuildScan?.replaced.size) ||
 				!result.metafile ||
 				result.errors.length
 			)
@@ -1141,7 +1139,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				;(this as never as RollupContext).warn(warning)
 			}
 			const scan = scansByBuild.get(buildOf(this))
-			if (scan?.verifies && !error) {
+			// a read it didn't see may need what it left out, or a copy of a
+			// unit it declares in one function
+			if ((scan?.verifies || scan?.replaced.size) && !error) {
 				const problem = await rollupUnseenOf(
 					this as never,
 					scan,
@@ -1550,7 +1550,7 @@ const rollupScanOf = async (
 			usage.written ?
 				{
 					scanned,
-					verifies: !!usage.dropped.length || narrowsIssues(usage.issues),
+					verifies: usage.verifies,
 					replaced: new Set(usage.replaced),
 					holders: new Set(usage.holders),
 					loaded: new Map(),
