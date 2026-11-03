@@ -1974,6 +1974,44 @@ console.log(out instanceof type.errors ? out.summary : out)
 			attest(message.slice(-expected.length)).equals(expected)
 		})
 
+		it("fails a bundle a plugin ahead of it rewrote to read what no validator bakes", async () => {
+			for (const [name, read] of [
+				["validate", 'schema["~standard"].validate({})'],
+				["describe", "schema.expression"]
+			]) {
+				writeFixture(
+					{
+						"package.json": "{}",
+						"index.js": `export const ${name} = schema => ${read}\n`
+					},
+					join(root, "node_modules", name)
+				)
+			}
+			// it keeps every member, as it can't follow the call, but bakes
+			// what the dependency's dataflow reads, which validates only
+			const describing: VitePlugin = {
+				name: "describing",
+				enforce: "pre",
+				transform: (code, id) =>
+					id.endsWith("/main.ts") ?
+						code.replace(/validate/g, "describe")
+					:	undefined
+			}
+			const message = await importing(
+				'import { validate } from "validate"\nimport { User as Read } from "./types.ts"\nconsole.log(validate(Read))',
+				() =>
+					bundle({}, { plugins: [describing] }).then(
+						() => "",
+						(e: Error) => stripVTControlCharacters(e.message)
+					)
+			)
+			const expected = writeUnseenMessage(
+				"the bundle it built reads more than the modules it read: a module reads expression of a validator. Another plugin wrote or rewrote a module after it read it",
+				"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
+			)
+			attest(message.slice(-expected.length)).equals(expected)
+		})
+
 		it("prunes a module a plugin ahead of it rewrites, reading it as it was built", async () => {
 			// as a Babel plugin like the React Compiler's reformats every module
 			const reformatting: VitePlugin = {

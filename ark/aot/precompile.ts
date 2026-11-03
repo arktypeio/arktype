@@ -354,13 +354,22 @@ type ProgramReads = Pick<
 	| "combines"
 	| "shapes"
 	| "baked"
->
+> & {
+	// what a module another plugin rewrote bakes, given its runtime
+	bakedAs?: (runtime: RuntimeModule) => ReadonlyMap<string, BakedMembers>
+}
 
 interface ProgramUsage {
 	members: ValidatorMembers
 	// the introspection members each site's validator bakes, as its readers
 	// read it, by the site's key
-	baked?: ReadonlyMap<string, BakedMembers>
+	baked?: ReadonlyMap<string, BakedMembers> | undefined
+	// what each site of a module another plugin rewrote bakes, by its key there
+	rewrittenBaked: Map<string, BakedMembers>
+	// the program as scanned and each module as planned, which a module
+	// another plugin rewrote is read in place of
+	program: ScannedProgram
+	planned: ReadonlyMap<string, RuntimeModule>
 	// false where no read may leave a failure's errors unread
 	called: boolean
 	// false where no read takes a validator's .allows
@@ -637,6 +646,9 @@ export class Precompiler {
 				...Object.fromEntries(dropped.map(member => [member, false]))
 			},
 			baked: readings.baked,
+			rewrittenBaked: new Map(),
+			program,
+			planned,
 			called,
 			readsAllows,
 			piped,
@@ -680,9 +692,11 @@ export class Precompiler {
 				const runtime = planned.get(id)!
 				return runtime.validators.length > 0 || runtime.holdsOther
 			}),
-			// what it leaves out a read it didn't see may need
+			// what it leaves out a read it didn't see may need, as an
+			// introspection member it baked only where it saw code read it
 			verifies:
 				dropped.length > 0 ||
+				this.decided.length > 0 ||
 				!usage.called ||
 				!usage.readsAllows ||
 				!usage.piped ||
@@ -889,6 +903,8 @@ export class Precompiler {
 				`the bundle it built reads more than the modules it read: ${read}. Another plugin wrote or rewrote a module after it read it`,
 				"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
 			)
+		const unbaked = this.unbakedIn(program, runtimes, usage)
+		if (unbaked) return unseen(`a module reads ${unbaked} of a validator`)
 		const dropped = defaultMembers.filter(
 			member =>
 				usage.members[member] === false && this.members[member] === undefined
@@ -909,6 +925,29 @@ export class Precompiler {
 			return unseen("a module reads a validator's allows")
 		if (!usage.piped && used.has("piped"))
 			return unseen("a module passes a validator a traversal")
+	}
+
+	// an introspection member the bundle as built reads of a validator its
+	// module, as written, didn't bake
+	private unbakedIn(
+		program: ScannedProgram,
+		runtimes: ReadonlyMap<string, RuntimeModule>,
+		usage: ProgramUsage
+	): IntrospectionMember | undefined {
+		const { baked } = this.readingsIn({
+			...this.usageProgramOf(program, runtimes),
+			whole: true
+		})
+		for (const [key, { members }] of baked) {
+			const id = key.slice(0, key.indexOf("\0"))
+			if (!(id in usage.sources)) continue
+			const written =
+				usage.sources[id] === program.modules[id]?.source ?
+					usage.baked?.get(key)
+				:	usage.rewrittenBaked.get(key)
+			const unbaked = members.find(member => !written?.members.includes(member))
+			if (unbaked) return unbaked
+		}
 	}
 
 	// whether the bundle as built keeps a read of a module the flat function
@@ -1300,19 +1339,40 @@ export class Precompiler {
 		return flat
 	}
 
-	private usageIn(program: string | undefined): ProgramReads {
+	private usageIn(
+		program: string | undefined,
+		id: string,
+		source: string
+	): ProgramReads {
 		const usage =
 			program === undefined ? undefined : this.usagesByProgram.get(program)
-		// a module another plugin rewrote too, as the host verifies the bundle
-		// as built reads no more wherever the usage leaves anything out
-		return (
-			usage ?? {
+		if (!usage || !(id in usage.sources)) {
+			return {
 				members: this.members,
 				called: true,
 				readsAllows: true,
 				piped: true
 			}
-		)
+		}
+		if (usage.sources[id] === source) return usage
+		// one another plugin rewrote is written as the rest, so they share their
+		// units, as the host fails a bundle reading more than its scan found
+		return {
+			...usage,
+			baked: undefined,
+			bakedAs: runtime => {
+				const { baked } = this.readingsIn({
+					...this.usageProgramOf(
+						usage.program,
+						new Map(usage.planned).set(id, runtime)
+					),
+					whole: true
+				})
+				for (const [key, members] of baked)
+					if (key.startsWith(`${id}\0`)) usage.rewrittenBaked.set(key, members)
+				return baked
+			}
+		}
 	}
 
 	// a module as its bundle's scan wrote it, if it's unchanged since
@@ -1780,7 +1840,7 @@ export class Precompiler {
 				modules,
 				imports,
 				diagnostics,
-				this.usageIn(program)
+				this.usageIn(program, id, source)
 			)
 		} else this.writeCachedUnits(sites, modules, imports)
 		this.insertImports(module, s, prefix, modules, imports)
@@ -2486,13 +2546,18 @@ export class Precompiler {
 			piped,
 			combines,
 			shapes,
-			baked
+			baked,
+			bakedAs
 		}: ProgramReads,
 		diagnostics: Diagnostic[]
 	): [validators: StandaloneModules, bakes: ImportedBake[]] {
 		const { namesBySite, exportsByName } = plan
 		let bakes: ImportedBake[] = []
-		if (!baked) {
+		if (bakedAs) {
+			baked = bakedAs(
+				this.runtimeOfPlan(module, { ...plan, folded: [...plan.folded] })
+			)
+		} else if (!baked) {
 			// a build reading no whole bundle follows each module's validators alone
 			const program: ReaderProgram = {
 				entries: new Set(),
