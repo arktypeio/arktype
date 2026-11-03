@@ -496,4 +496,46 @@ x must be a string (was a number)`)
 			attest(T(5).toString()).snap("must be an AB (was a number)")
 		})
 	})
+
+	it("a chain of units is the union its parts would be", () => {
+		attest(type("'a'|'b'|'c'").internal).equals(
+			type("('a'|'b')|'c'").internal as never
+		)
+		attest(type("'c'|'a'|'b'").expression).snap('"a" | "b" | "c"')
+		attest(type("'a'|'b'|'a'").expression).snap('"a" | "b"')
+		attest(type("'a'|'a'").expression).snap('"a"')
+		// what follows the units joins the union they make
+		attest(type("'a'|'b'|string").expression).snap("string")
+		attest(type("string|'a'|'b'").expression).snap("string")
+		attest(type("'a'|'b'&string|1").expression).snap('"a" | "b" | 1')
+		attest(type("'a'|'b'|>string").expression).snap('"a" | "b"')
+		attest(type("('a'|'b')[]|'c'|'d'").expression).snap(
+			'("a" | "b")[] | "c" | "d"'
+		)
+	})
+
+	it("units missing their right operand", () => {
+		attest(() => type("'a'|" as never)).throws(
+			writeMissingRightOperandMessage("|")
+		)
+		attest(() => type("'a'|'b'|" as never)).throws(
+			writeMissingRightOperandMessage("|")
+		)
+		attest(() => type("'a'||'b'" as never)).throws(
+			writeMissingRightOperandMessage("|", "|'b'")
+		)
+	})
+
+	it("equal units keep one branch however they're written", () => {
+		const units = (...branches: unknown[]) =>
+			type.schema(branches.map(unit => ({ unit })) as never).expression
+		attest(units("a", "b", "a")).snap('"a" | "b"')
+		attest(units(1, 2, 1, 2)).snap("1 | 2")
+		attest(units(new Date(0), new Date(0))).snap("d'1970-01-01T00:00:00.000Z'")
+		// a described unit sorts after its undescribed copy, which is the one kept
+		attest(
+			type.schema([{ unit: "a", meta: "first" }, { unit: "a" }] as never)
+				.description
+		).snap('"a"')
+	})
 })

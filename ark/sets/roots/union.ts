@@ -39,6 +39,7 @@ import {
 	type dict,
 	integerLikeMatcher,
 	isDate,
+	isEmptyObject,
 	range,
 	throwParseError,
 	type JsonStructure
@@ -738,11 +739,18 @@ export const domainsOf = (node: BaseRoot): number => {
 	return anyDomain
 }
 
+const isBareUnit = (branch: Union.ChildNode): boolean =>
+	branch.is("unit") && isEmptyObject(branch.meta)
+
 export const reduceBranches = ({
 	branches,
 	ordered
 }: Union.Inner): readonly Union.ChildNode[] => {
 	if (branches.length < 2) return branches
+
+	// sorted, equal units are adjacent, and units that aren't equal are disjoint
+	if (!ordered && branches.every(isBareUnit))
+		return branches.filter((branch, i) => !i || !branch.equals(branches[i - 1]))
 
 	const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
 	// branches sharing no domain are disjoint, most of a union's pairs
