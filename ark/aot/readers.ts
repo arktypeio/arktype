@@ -743,9 +743,19 @@ class Follow {
 		this.lost.push({ at: module.positionOf(node), why })
 	}
 
+	// what holds it reaches code the build can't see, which reads the
+	// introspection members only by name
+	private unfollow(node: Node, module: SourceModule, why: string): void {
+		this.unfollowed.push(`${module.positionOf(node)} ${why}`)
+	}
+
 	private readAt({ node, module, held }: Fact): void {
 		const [operand, parent] = operatorOf(node)
 		if (!parent) return
+		// passed to its site's factory, which finds the holes it holds by the
+		// validator itself, reading no member
+		const kept = this.readers.runtimeOf(module)?.kept
+		if (kept?.some(span => isSpan(operand, span))) return
 		const push = (to: Node, toHeld = held) => this.push(to, module, toHeld)
 		const lose = (why: string) => this.lose(operand, module, why)
 		const isValue = !held.path.length
@@ -1058,8 +1068,10 @@ class Follow {
 		if (!value) {
 			// what holds it is stored where any read of its key may find it
 			if (held.path.length) {
-				this.unfollowed.push(
-					`${module.positionOf(arg)} passes it to ${module.snippetOf(callee)}, which the build can't follow`
+				this.unfollow(
+					arg,
+					module,
+					`passes it to ${module.snippetOf(callee)}, which the build can't follow`
 				)
 				return this.followField(undefined, arg, module, held)
 			}
@@ -1123,8 +1135,10 @@ class Follow {
 		if (!entries) {
 			// what holds it is read where any read of its key may find it
 			if (held.path.length) {
-				this.unfollowed.push(
-					`${module.positionOf(at)} returns it from a function whose calls the build can't follow`
+				this.unfollow(
+					at,
+					module,
+					"returns it from a function whose calls the build can't follow"
 				)
 				return this.followField(undefined, at, module, held)
 			}
@@ -1280,14 +1294,7 @@ class Follow {
 	): void {
 		const runtime = this.readers.runtimeOf(module)
 		for (const reference of binding.references) {
-			if (
-				reference.isWrite ||
-				(runtime &&
-					(isDead(reference.id, runtime) ||
-						// passed to its site's factory, which finds the holes it
-						// holds by the validator itself, reading no member
-						runtime.kept.some(span => isSpan(reference.id, span))))
-			)
+			if (reference.isWrite || (runtime && isDead(reference.id, runtime)))
 				continue
 			const [operand, parent] = operatorOf(reference.id)
 			// read by importers through the export
