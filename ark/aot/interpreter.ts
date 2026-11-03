@@ -305,6 +305,15 @@ const lacksMember = (object: unknown, key: PropertyKey): boolean =>
 const holdsNodeId = (node: BaseNode, key: string) =>
 	node.is("alias") && (key === "reference" || key === "inner")
 
+// a module's declaration of a value
+interface Declaration {
+	module: SourceModule
+	// a site reading it receives it, so its declaration runs
+	compares: boolean
+	// a site reading only its introspection receives it
+	checks: boolean
+}
+
 export class Interpreter {
 	private graph: ModuleGraph
 	private opts: InterpreterOptions
@@ -313,7 +322,10 @@ export class Interpreter {
 	// the site whose own call into arktype threw each ParseError
 	parseErrorSites = new WeakMap<ParseError, SiteState>()
 	// deferred default checks by the node whose creation ran them
-	private checksByOwner = new Map<object, DefaultCheck[]>()
+	private checksByOwner = new Map<
+		object,
+		[check: DefaultCheck, module: SourceModule][]
+	>()
 	// what computing each cache entry reached, by cache and key
 	private reachedByEntry = new WeakMap<object, Map<unknown, Set<Reached>>>()
 	private aliasesByScope = new WeakMap<object, Map<string, ScopeAlias>>()
@@ -328,11 +340,9 @@ export class Interpreter {
 	// unknown values a declaration computes at runtime however a site uses them
 	private declaredDynamics = new WeakSet<DynamicValue>()
 	private dynamicFree = new WeakSet<object>()
-	// a site reading one receives it, so its declaration runs
-	private comparedAtCreation = new WeakSet<object>()
-	// a site reading only introspection of one checked at creation receives it
-	private checksByValue = new WeakMap<object, boolean>()
-	private modulesByValue = new WeakMap<object, SourceModule[]>()
+	private declarationsByValue = new WeakMap<object, Declaration[]>()
+	// which forgetting a module undeclares
+	private valuesByModule = new WeakMap<SourceModule, object[]>()
 	private opaqueByDynamic = new WeakMap<DynamicValue, object>()
 	private validators = new WeakSet<object>()
 	private arkObjects = new WeakSet<object>()
@@ -976,7 +986,9 @@ export class Interpreter {
 			for (const read of result.trace.reads)
 				if (isArkValue(read.value)) ctx.trace.reads.push(read)
 			// unless the declaration compares what the program holds
-			isReceived = this.comparedAtCreation.has(result.value as object)
+			isReceived = !!this.declarationsByValue
+				.get(result.value as object)
+				?.some(d => d.compares)
 		}
 		// a binding read before it's set is received, so its factory throws alike
 		const isChecked =
@@ -1251,7 +1263,6 @@ export class Interpreter {
 		const compares = trace.reads.some(
 			read => read.root.kind === "binding" || !isArkValue(read.value)
 		)
-		if (compares) this.comparedAtCreation.add(value as object)
 		// a default's check calls the functions it reads at creation
 		const checks =
 			compares ||
@@ -1259,19 +1270,54 @@ export class Interpreter {
 			this.checksHolesOf(value, site, module)
 		const values = [value]
 		// e.g. a Module's Types, which its creation created
-		for (const value of values) {
+		for (const declared of values) {
+			let declarations = this.declarationsByValue.get(declared as object)
+			if (!declarations)
+				this.declarationsByValue.set(declared as object, (declarations = []))
 			// one value can be declared more than once, as by an alias
-			if (!this.checksByValue.get(value as object))
-				this.checksByValue.set(value as object, checks)
-			const modules = this.modulesByValue.get(value as object)
-			if (!modules) this.modulesByValue.set(value as object, [module])
-			else if (!modules.includes(module)) modules.push(module)
-			if (hasArkKind(value, "module")) values.push(...Object.values(value))
+			const declaration = declarations.find(d => d.module === module)
+			const isCompared = compares && declared === value
+			if (declaration) {
+				declaration.compares ||= isCompared
+				declaration.checks ||= checks
+			} else {
+				declarations.push({ module, compares: isCompared, checks })
+				let moduleValues = this.valuesByModule.get(module)
+				if (!moduleValues) this.valuesByModule.set(module, (moduleValues = []))
+				moduleValues.push(declared as object)
+			}
+			if (hasArkKind(declared, "module"))
+				values.push(...Object.values(declared))
 		}
 	}
 
 	modulesDeclaring(value: unknown): readonly SourceModule[] {
-		return this.modulesByValue.get(value as object) ?? []
+		return (
+			this.declarationsByValue.get(value as object)?.map(d => d.module) ?? []
+		)
+	}
+
+	// modules the graph reads again, whose declarations and sites are gone
+	forget(modules: ReadonlySet<SourceModule>): void {
+		for (const module of modules) {
+			for (const value of this.valuesByModule.get(module) ?? []) {
+				const declarations = this.declarationsByValue
+					.get(value)!
+					.filter(d => d.module !== module)
+				if (declarations.length)
+					this.declarationsByValue.set(value, declarations)
+				else this.declarationsByValue.delete(value)
+			}
+		}
+		for (const [node, state] of this.sitesByNode)
+			if (modules.has(state.module)) this.sitesByNode.delete(node)
+		for (const [name, standIn] of this.standInsByName)
+			if (modules.has(standIn.module)) this.standInsByName.delete(name)
+		for (const [owner, checks] of this.checksByOwner) {
+			const kept = checks.filter(([, module]) => !modules.has(module))
+			if (kept.length) this.checksByOwner.set(owner, kept)
+			else this.checksByOwner.delete(owner)
+		}
 	}
 
 	private checksHolesOf(
@@ -1293,7 +1339,9 @@ export class Interpreter {
 
 	// a value whose creation the build didn't see may check anything
 	isCheckedAtCreation(value: unknown): boolean {
-		return this.checksByValue.get(value as object) ?? true
+		return (
+			this.declarationsByValue.get(value as object)?.some(d => d.checks) ?? true
+		)
 	}
 
 	// unless a site reads it as its module's own or through an unchecked Type
@@ -2042,15 +2090,16 @@ export class Interpreter {
 		if (owner) {
 			let checks = this.checksByOwner.get(owner)
 			if (!checks) this.checksByOwner.set(owner, (checks = []))
-			checks.push(check)
+			checks.push([check, site.module])
 		}
 		return true
 	}
 
 	private reached: CacheReach = {
 		node: node => {
+			const site = this.activeCall?.ctx.site
 			const checks = this.checksByOwner.get(node)
-			if (checks) this.activeCall?.ctx.site?.reached.push(...checks)
+			if (site && checks) for (const [check] of checks) site.reached.push(check)
 		},
 		cached: (cache, key) => {
 			const site = this.activeCall?.ctx.site
