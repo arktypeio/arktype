@@ -33,6 +33,7 @@ import {
 	existsSync,
 	mkdirSync,
 	readFileSync,
+	rmSync,
 	symlinkSync,
 	utimesSync,
 	writeFileSync
@@ -1054,6 +1055,61 @@ console.log(Value, note, load, await import("#shared/lazy"))
 				"main.ts:3:20  User.errors reads errors, which a standalone validator lacks"
 			])
 			await send(["close"])
+		})
+
+		// what a worker answers for main.ts as a watch build asks, after each change
+		const watched = async (dir: string, changes: (() => void)[]) => {
+			const send = createAsyncPrecompiler({
+				precompilerOptions: { cwd: dir, conditions }
+			})
+			const main = join(dir, "main.ts")
+			const answers: unknown[] = []
+			const resets: unknown[] = []
+			for (const change of [() => {}, ...changes]) {
+				change()
+				resets.push(await send(["reset"]))
+				answers.push(
+					JSON.stringify(
+						await send(["transform", readFileSync(main, "utf8"), main])
+					)
+				)
+			}
+			await send(["close"])
+			return { answers, resets }
+		}
+
+		it("answers anew once a file created shadows what an import resolved to", async () => {
+			const dir = writeFixture({
+				"main.ts":
+					'import { type } from "arktype"\nimport { shape } from "./shape"\n\nexport const T = type(shape)\n',
+				"shape/index.ts": 'export const shape = { a: "string" } as const\n'
+			})
+			const { answers } = await watched(dir, [
+				() =>
+					writeFileSync(
+						join(dir, "shape.ts"),
+						'export const shape = { a: "number" } as const\n'
+					)
+			])
+			rmSync(join(dir, "node_modules"), { recursive: true, force: true })
+			const fresh = await watched(dir, [])
+			attest(answers[1]).equals(fresh.answers[0])
+		})
+
+		it("asks for a new thread once its settings change", async () => {
+			const dir = writeFixture({
+				"main.ts":
+					'import { type } from "arktype"\n\nexport const T = type("string")\n'
+			})
+			const { resets } = await watched(dir, [
+				() => {},
+				() =>
+					writeFileSync(
+						join(dir, "ark.json"),
+						JSON.stringify({ precompile: { optimize: "size" } })
+					)
+			])
+			attest(resets).equals([false, false, true])
 		})
 	})
 

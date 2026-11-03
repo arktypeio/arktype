@@ -14,6 +14,7 @@ import { fingerprintOf } from "@ark/schema/runtime"
 import { writeMissingInverseMessage } from "@ark/schema/codecs"
 import {
 	appendStringifiedKey,
+	flatMorph,
 	hashOf,
 	hasDomain,
 	includes,
@@ -61,7 +62,8 @@ import type {
 	ImportDeclaration,
 	MemberExpression,
 	Node,
-	Span
+	Span,
+	StringLiteral
 } from "oxc-parser"
 import { isPlainContainer } from "./builtins.ts"
 import {
@@ -403,7 +405,7 @@ export interface PrecompiledModule extends ModuleAnalysis {
 }
 
 // a package arktype runs on, which must load once
-type ArkPackage = "arktype" | "@ark/schema" | "@ark/util"
+export type ArkPackage = "arktype" | "@ark/schema" | "@ark/util"
 
 interface PackageCopy {
 	version: string
@@ -1772,18 +1774,8 @@ export class Precompiler {
 	// each import of an arktype package the build found more than one copy of
 	private copyDiagnosticsOf(module: SourceModule): Diagnostic[] {
 		const result: Diagnostic[] = []
-		for (const node of module.program.body) {
-			const specifier =
-				(
-					node.type === "ImportDeclaration" ||
-					node.type === "ExportAllDeclaration" ||
-					node.type === "ExportNamedDeclaration"
-				) ?
-					node.source
-				:	null
-			const name = specifier && arkPackageSpecifier.exec(specifier.value)?.[1]
-			if (!name || !(name in this.copiesByPackage)) continue
-			for (const report of this.readCopies(name as ArkPackage, module.id)) {
+		for (const [name, specifier] of this.arkImportsOf(module)) {
+			for (const report of this.readCopies(name, module.id)) {
 				result.push(
 					this.diagnostic(
 						module,
@@ -1797,6 +1789,59 @@ export class Precompiler {
 			}
 		}
 		return result
+	}
+
+	// the packages whose copies precompiling a module read, which a cache
+	// answering it reads again
+	arkPackagesOf(id: string): ArkPackage[] {
+		const module = this.graph.moduleOf(id)
+		return module instanceof SourceModule ?
+				this.arkImportsOf(module).map(([name]) => name)
+			:	[]
+	}
+
+	// each import or export of a package arktype runs on, with its specifier
+	private arkImportsOf(
+		module: SourceModule
+	): [name: ArkPackage, specifier: StringLiteral][] {
+		const result: [name: ArkPackage, specifier: StringLiteral][] = []
+		for (const node of module.program.body) {
+			const specifier =
+				(
+					node.type === "ImportDeclaration" ||
+					node.type === "ExportAllDeclaration" ||
+					node.type === "ExportNamedDeclaration"
+				) ?
+					node.source
+				:	null
+			const name = specifier && arkPackageSpecifier.exec(specifier.value)?.[1]
+			if (name && name in this.copiesByPackage)
+				result.push([name as ArkPackage, specifier])
+		}
+		return result
+	}
+
+	// whether precompiling a module replaced a Scope or Generic with a
+	// stand-in, which decides what another module's refused site reports
+	writesStandIns(id: string): boolean {
+		return [...this.writtenStandIns.values()].some(
+			([, module]) => module.id === id
+		)
+	}
+
+	// reads the copies the packages reach from a module a cache answers for,
+	// as precompiling it does, or none where one would be reported, which
+	// only precompiling it can
+	readCopiesOf(packages: ArkPackage[], importer: string): boolean {
+		const read = this.copiesByPackage
+		this.copiesByPackage = flatMorph(read, (name, copies) => [
+			name,
+			{ ...copies }
+		])
+		if (packages.every(name => !this.readCopies(name, importer).length))
+			return true
+		this.copiesByPackage = read
+		return false
 	}
 
 	// folds the module's sites into validators, then links its islands and
