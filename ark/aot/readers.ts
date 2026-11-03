@@ -832,6 +832,10 @@ class Follow {
 					...held,
 					path: held.path.slice(1)
 				})
+			case "ForInStatement":
+				if (parent.right === operand && !held.path.length)
+					lose("lists its keys")
+				return
 			case "ExportDefaultDeclaration":
 				return this.readExport(module, "default", held, operand)
 			case "YieldExpression":
@@ -845,7 +849,6 @@ class Follow {
 			case "WhileStatement":
 			case "DoWhileStatement":
 			case "ForStatement":
-			case "ForInStatement":
 			case "SwitchStatement":
 			case "SwitchCase":
 			case "ExpressionStatement":
@@ -1404,6 +1407,39 @@ class Follow {
 					this.push(call, module, { ...held, path: held.path.slice(1) })
 				return true
 			}
+			case "Object.getOwnPropertyDescriptor":
+			case "Object.getOwnPropertyDescriptors":
+			case "Reflect.getOwnPropertyDescriptor":
+				if (index === 0) this.lose(call, module, "reads its descriptors")
+				return true
+			case "Object.defineProperty":
+			case "Reflect.defineProperty": {
+				if (index !== 2) return true
+				const [target, key] = call.arguments
+				const [first, ...rest] = held.path
+				if (first !== "value" && first !== anyKey) return true
+				const owner = globalNameOf(target, module)
+				if (owner && globalObjects.has(owner)) {
+					this.lose(
+						call,
+						module,
+						"stores it on the global object, which code outside the bundle may read"
+					)
+				} else {
+					this.followField(constantOf(key, module), call, module, {
+						...held,
+						path: rest
+					})
+				}
+				return true
+			}
+			// descriptors or entries, which store it at a key the build doesn't follow
+			case "Object.defineProperties":
+			case "Object.create":
+			case "Object.fromEntries":
+				if (index === (name === "Object.fromEntries" ? 0 : 1))
+					this.lose(call, module, "stores it at a key the build can't name")
+				return true
 			case "Object.freeze":
 			case "Object.seal":
 			case "Promise.resolve":
@@ -1433,6 +1469,8 @@ class Follow {
 				return true
 			case "Object.keys":
 			case "Object.getOwnPropertyNames":
+				if (index === 0 && isValue) this.lose(call, module, "lists its keys")
+				return true
 			case "Object.is":
 			case "Array.isArray":
 			case "Boolean":
@@ -1836,6 +1874,9 @@ const keyedBuiltins: ReadonlySet<string | undefined> = new Set([
 	"Object.values",
 	"Object.entries",
 	"Object.assign",
+	"Object.getOwnPropertyDescriptor",
+	"Object.getOwnPropertyDescriptors",
+	"Reflect.getOwnPropertyDescriptor",
 	"JSON.stringify"
 ])
 

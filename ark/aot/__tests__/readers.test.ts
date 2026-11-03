@@ -143,6 +143,46 @@ console.log(described.description)
 		])
 	})
 
+	it("follows a value Object.defineProperty defines to its key", async () => {
+		attest(
+			await bakedFrom({
+				"/main.ts": `import { type } from "arktype"
+
+const holder = {}
+Object.defineProperty(holder, "schema", { value: type("string"), enumerable: true })
+console.log(holder.schema.description)
+Object.defineProperty(globalThis, "Schema", { value: type("number") })
+`
+			})
+		).snap([
+			"main.ts:4:50 bakes description (fields)",
+			"main.ts:6:54 bakes expression, description, json, toJSON, toJsonSchema, ~standard.jsonSchema (lost)",
+			"precompile: baking each introspection member into the validator at main.ts:6:54, because main.ts:6:1 stores it on the global object, which code outside the bundle may read. Set expression, description, json, toJSON, toJsonSchema and ~standard.jsonSchema in members, each false where no code reads it, to build without this warning."
+		])
+	})
+
+	it("bakes every member where a dependency lists its keys", async () => {
+		attest(
+			await bakedFrom({
+				"/node_modules/keys/index.js": `export const keysOf = schema => Object.keys(schema)
+export const forIn = schema => {
+	for (const key in schema) console.log(key)
+}
+`,
+				"/main.ts": `import { type } from "arktype"
+import { forIn, keysOf } from "keys"
+
+console.log(keysOf(type("string")))
+forIn(type("number"))
+`
+			})
+		).snap([
+			"main.ts:4:20 bakes expression, description, json, toJSON, toJsonSchema, ~standard.jsonSchema (lost)",
+			"main.ts:5:7 bakes expression, description, json, toJSON, toJsonSchema, ~standard.jsonSchema (lost)",
+			"precompile: baking each introspection member into 2 validators, like the one at main.ts:4:20, because node_modules/keys/index.js:1:33 lists its keys. Set expression, description, json, toJSON, toJsonSchema and ~standard.jsonSchema in members, each false where no code reads it, to build without this warning."
+		])
+	})
+
 	it("a dependency's read at a key it doesn't name loses track without a warning", async () => {
 		attest(
 			await bakedFrom({
