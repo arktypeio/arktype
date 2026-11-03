@@ -9,6 +9,7 @@ import {
 	type TypeScript
 } from "./declare.ts"
 import type { PrecompilePluginOptions, TransformedModule } from "./driver.ts"
+import type { ReadProgram } from "./precompile.ts"
 import {
 	appendSourceMap,
 	mapToSource,
@@ -131,9 +132,18 @@ const emitProject = (
 	const program = ts.createProgram(programOptions)
 	const emitted: ts.SourceFile[] = []
 	const { rootDir } = options
-	for (const file of emittedFilesOf(program)) {
-		// tsc fails on a module outside rootDir, as one resolved to its source
-		if (rootDir && !isInside(rootDir, file.fileName)) continue
+	// tsc fails on a module outside rootDir, as one resolved to its source
+	const files = emittedFilesOf(program).filter(
+		file => !rootDir || isInside(rootDir, file.fileName)
+	)
+	// the project is the whole program, so a site another module may write a
+	// value of is refused
+	request("program", {
+		modules: Object.fromEntries(
+			files.map(file => [realPathOf(file.fileName), { source: file.text }])
+		)
+	} satisfies ReadProgram)
+	for (const file of files) {
 		const transformed = request(
 			"transform",
 			file.text,

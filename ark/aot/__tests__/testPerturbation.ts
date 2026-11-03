@@ -4,7 +4,8 @@ import {
 	Precompiler,
 	type Diagnostic,
 	type PrecompiledModule,
-	type PrecompileOptions
+	type PrecompileOptions,
+	type ReadProgram
 } from "@ark/aot"
 import { hasArkKind } from "@ark/schema"
 import { errorWritersByCode } from "@ark/schema/internal"
@@ -51,6 +52,11 @@ export interface BuildOptions {
 	standalone?: PrecompileOptions
 	// run a file where no site folds, as a program recording its own does
 	runsUnfolded?: boolean
+	// read each file's program whole first, as a production bundle's scan does
+	readsProgram?: boolean
+	// only these perturbations run, as a build checking nothing at creation
+	// agrees only with the program as written
+	perturbations?: Perturbation[]
 }
 
 const perturbingPrecompiler = (opts: BuildOptions) =>
@@ -103,6 +109,8 @@ export const buildPerturbed = (
 	for (const path of corpus) {
 		const source = readFileSync(path, "utf8")
 		const precompiler = perturbingPrecompiler({ ...opts, mode: "standalone" })
+		if (opts.readsProgram)
+			precompiler.readProgram(programOf(precompiler, path, source))
 		const { sites } = precompiler.analyzeSites(source, path)
 		const unsupported = new Set(
 			precompiler
@@ -231,6 +239,8 @@ export const buildPerturbed = (
 		// one writer for the file and its imports, as a build's is, so a Scope a
 		// refused site reads is left to arktype in the module holding it
 		const writer = perturbingPrecompiler(opts)
+		if (opts.readsProgram)
+			writer.readProgram(programOf(writer, path, marked.toString()))
 		const precompiled = writer.precompile(marked.toString(), path)
 		errors.push(...errorsOf(precompiled))
 		errorsByPath[path] = errorsOf(precompiled)
@@ -295,12 +305,34 @@ export const buildPerturbed = (
 			precompiledByPath,
 			exportNamesByPath,
 			swapsByPath,
+			...(opts.perturbations && { perturbations: opts.perturbations }),
 			...runtimeOf()
 		},
 		sitesById,
 		errors,
 		errorsByPath
 	}
+}
+
+// a file and each module it reaches, as one program
+const programOf = (
+	precompiler: Precompiler,
+	path: string,
+	source: string
+): ReadProgram => {
+	const modules: ReadProgram["modules"] = { [path]: { source } }
+	const pending = [path]
+	for (const importer of pending) {
+		for (const target of precompiler.textImportsOf(
+			modules[importer].source,
+			importer
+		)) {
+			if (!isPerturbable(target) || target in modules) continue
+			modules[target] = { source: readFileSync(target, "utf8") }
+			pending.push(target)
+		}
+	}
+	return { modules }
 }
 
 // an arktype value, which holds the functions a definition passed it

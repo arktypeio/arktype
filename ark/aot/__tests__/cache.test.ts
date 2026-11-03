@@ -138,6 +138,50 @@ const answersAnew = async (dir: string, opts: object = {}) => {
 	attest(cached).equals(json(await uncachedIn(dir, ["main.ts"], opts)))
 }
 
+type Send = ReturnType<typeof createAsyncPrecompiler>
+
+// what --emit asks of a worker: the program, read whole, then each module
+const emitting = async (send: Send, dir: string, files: string[]) => {
+	const modules = Object.fromEntries(
+		files.map(file => {
+			const id = join(dir, file)
+			return [id, { source: readFileSync(id, "utf8") }]
+		})
+	)
+	await send(["program", { modules }])
+	const answers: unknown[] = []
+	for (const id in modules)
+		answers.push(await send(["transform", modules[id].source, id]))
+	return json(answers)
+}
+
+const emittedIn = async (dir: string, files: string[]) => {
+	const send = createAsyncPrecompiler({
+		precompilerOptions: { cwd: dir, conditions, inline: true }
+	})
+	const answers = await emitting(send, dir, files)
+	await send(["close"])
+	return answers
+}
+
+// a site reading a Type off a holder another module of the program, which it
+// doesn't import, may come to write
+const heldElsewhere = {
+	"holder.ts":
+		'import { type } from "arktype"\n\nexport const H1 = { a: type("string") }\nexport const Tb1 = type("number")\n',
+	"main.ts":
+		'import { type } from "arktype"\nimport { H1 } from "./holder.ts"\n\nexport const T = type({ x: H1.a })\n',
+	"writer.ts":
+		'import { H1, Tb1 } from "./holder.ts"\n\nconsole.log(H1.a, Tb1)\n'
+}
+
+const heldFiles = Object.keys(heldElsewhere)
+
+const writeElsewhere = (dir: string) =>
+	appendFileSync(join(dir, "writer.ts"), "H1.a = Tb1\n")
+
+const writtenElsewhere = "`H1` is written at writer.ts:4:1"
+
 const errorsIn = async (dir: string, files: string[]) =>
 	(await transformedIn(dir, files)).map(answer =>
 		answer?.errors.map(error => error.split("\n")[0])
@@ -424,6 +468,51 @@ contextualize(function (this: Mocha.Suite) {
 			await transform("a.ts")
 			attest(hasSecondCopy((await transform("sub/b.ts"))?.errors)).equals(true)
 			await send(["close"])
+		})
+
+		it("misses once another module of the program writes what it reads", async () => {
+			const dir = writeFixture(heldElsewhere)
+			const unwritten = await emittedIn(dir, heldFiles)
+			attest(unwritten.includes(writtenElsewhere)).equals(false)
+			writeElsewhere(dir)
+			const written = await emittedIn(dir, heldFiles)
+			attest(written.includes(writtenElsewhere)).equals(true)
+			rmSync(cacheRootOf(dir), { recursive: true })
+			attest(await emittedIn(dir, heldFiles)).equals(written)
+		})
+
+		it("answers anew across a reset once another module of the program writes what it reads", async () => {
+			const dir = writeFixture(heldElsewhere)
+			const send = createAsyncPrecompiler({
+				precompilerOptions: { cwd: dir, conditions, inline: true }
+			})
+			await emitting(send, dir, heldFiles)
+			attest(await send(["reset"])).equals(false)
+			writeElsewhere(dir)
+			const kept = await emitting(send, dir, heldFiles)
+			await send(["close"])
+			rmSync(cacheRootOf(dir), { recursive: true })
+			attest(kept).equals(await emittedIn(dir, heldFiles))
+			attest(kept.includes(writtenElsewhere)).equals(true)
+		})
+
+		it("reads a module at a time once a reset ends the build that read the program", async () => {
+			const dir = writeFixture(heldElsewhere)
+			writeElsewhere(dir)
+			const send = createAsyncPrecompiler({
+				precompilerOptions: { cwd: dir, conditions, inline: true }
+			})
+			attest(
+				(await emitting(send, dir, heldFiles)).includes(writtenElsewhere)
+			).equals(true)
+			attest(await send(["reset"])).equals(false)
+			const id = join(dir, "main.ts")
+			const kept = json(await send(["transform", readFileSync(id, "utf8"), id]))
+			await send(["close"])
+			attest(kept).equals(
+				json((await uncachedIn(dir, ["main.ts"], { inline: true }))[0])
+			)
+			attest(kept.includes(writtenElsewhere)).equals(false)
 		})
 
 		it("never answers for a module that replaced a Scope a refused site reads", async () => {
