@@ -236,6 +236,26 @@ const answerRequests = (
 					scan.served?.given.push(id)
 					return written.answer ?? undefined
 				}
+				// a module the scan never reached, like one of arktype's own a
+				// workspace links from its source: the scan's usage leaves it
+				// whole, so where the precompiler writes nothing of it, nothing
+				// the scan decided shows in its answer, which a precompiler
+				// that never scanned gives alike, and a build the cache
+				// answered needs no scan for it. One it writes is written by a
+				// precompiler holding the scan, as the registry's state and the
+				// modules the scan replaced may show in its units
+				if (scan?.served && !(id in scan.program.modules)) {
+					tracked.analyzed = true
+					const unreached = transformedModuleOf(
+						precompiler,
+						source,
+						id,
+						undefined,
+						mappings,
+						program
+					)
+					if (!unreached || writesNothing(unreached)) return unreached
+				}
 				return transformedModuleOf(
 					(scan ? scanned(scan) : viewing(tracked)).precompiler,
 					source,
@@ -860,6 +880,14 @@ const withModules = (
 
 const hasDiagnostics = (transformed: TransformedModule) =>
 	transformed.errors.length > 0 || transformed.warnings.length > 0
+
+// a module as its file reads, with no unit a registry's state or a scan's
+// usage could have written otherwise
+const writesNothing = (transformed: TransformedModule) =>
+	transformed.code === undefined &&
+	Object.keys(transformed.modules).length === 0 &&
+	transformed.foldedHelpers.length === 0 &&
+	!hasDiagnostics(transformed)
 
 // the precompiler a reset keeps, having forgotten the modules whose files
 // changed, unless a change may reach past them, as a new resolution, setting
