@@ -168,6 +168,8 @@ class NodeCache {
 	byId: Record<string, BaseNode> | undefined
 	/** whether collecting its references replaced one with an equal node */
 	replacedRefs: boolean | undefined
+	/** whether every alias it reaches has resolved */
+	reachedResolved: boolean | undefined
 	shallowRefs: BaseNode[] | undefined
 	flatRefs: FlatRef[] | undefined
 	fullJson: JsonObject | undefined
@@ -683,7 +685,10 @@ export abstract class BaseNode<
 		}
 		include(this)
 		this.c.replacedRefs = replaced
-		return Object.fromEntries(collected)
+		// without a prototype it's a dictionary, adding no V8 map per unseen id
+		const byId: Record<string, BaseNode> = Object.create(null)
+		for (const [id, node] of collected) byId[id] = node
+		return byId
 	}
 
 	get shallowRefs(): BaseNode[] {
@@ -1738,6 +1743,24 @@ export const referencesThroughAliases = (
 			if (!reached.has(id)) reached.set(id, resolved[id])
 	}
 	return [...reached.values()]
+}
+
+// resolves what referencesThroughAliases lists, in its order since any can throw,
+// without listing it for a Type that may never compile. what a node reaches
+// resolved once, so a Type sharing it doesn't walk it again
+export const resolveReachedAliases = (root: BaseNode): void => {
+	const reached = new Set<BaseNode>()
+	const aliases: AliasNode[] = []
+	const include = (node: BaseNode): void => {
+		if (node.c.reachedResolved || reached.has(node)) return
+		reached.add(node)
+		if (node.is("alias")) aliases.push(node)
+		for (let i = 0; i < node.children.length; i++) include(node.children[i])
+		for (const referenced of node.otherRefs) include(referenced)
+	}
+	include(root)
+	for (let i = 0; i < aliases.length; i++) include(aliases[i].resolution)
+	for (const node of reached) node.c.reachedResolved = true
 }
 
 /** a literal key (named property) or a node (index signatures) representing part of a type structure */

@@ -47,6 +47,7 @@ import {
 } from "./module.ts"
 import {
 	referencesThroughAliases,
+	resolveReachedAliases,
 	rootApplyRuntimeOf,
 	type BaseNode
 } from "./node.ts"
@@ -948,7 +949,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return node
 
 		// resolving aliases can throw, so they resolve on definition
-		if (node.hasAlias) referencesThroughAliases(node.references)
+		if (node.hasAlias) resolveReachedAliases(node)
 		if (node.unitFn || !jit) return node
 		bindPrecompiledUnits?.([node])
 		if (node.unitFn || !canJit(this.cfg)) return node
