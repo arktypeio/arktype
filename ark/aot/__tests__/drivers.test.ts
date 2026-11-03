@@ -19,8 +19,10 @@ import {
 	writePrecompiledDependencyMessage,
 	writeTextlessMessage,
 	writeUntransformedImportMessage,
+	writeArktypeHint,
 	writeVariantImportMessage
 } from "@ark/aot/internal/messages.ts"
+import { arktypeVersion } from "@ark/aot/internal/version.ts"
 import {
 	createAsyncPrecompiler,
 	type BundlerResolve
@@ -200,6 +202,49 @@ contextualize(function (this: Mocha.Suite) {
 		)
 		attest(thrownMessage(stderr, app)).snap(
 			"@ark/aot/node needs Node 22.15 or later (this is 22.14.0)"
+		)
+	})
+
+	it("fails each entry for an arktype it doesn't run on, before loading it", () => {
+		// as pnpm resolves the arktype @ark/aot peers to a program's arktype 2,
+		// which has no arktype/codecs for the precompiler to import
+		const root = writeFixture({
+			...packageFiles("arktype", { "index.js": "" }, { version: "2.1.0" }),
+			"main.ts": 'import { type } from "arktype"\n'
+		})
+		const aot = (file: string) => pathToFileURL(fromHere("..", file)).href
+		const main = pathToFileURL(join(root, "main.ts")).href
+		const run = (args: string[]) =>
+			spawnSync(
+				process.execPath,
+				[
+					"--conditions",
+					"ark-ts",
+					"--import",
+					`data:text/javascript,import { registerHooks } from "node:module"; registerHooks({ resolve: (specifier, context, next) => next(specifier, (specifier === "arktype" || specifier.startsWith("arktype/")) && context.parentURL?.startsWith("${aot("")}") ? { ...context, parentURL: "${main}" } : context) })`,
+					...args
+				],
+				{ cwd: root, encoding: "utf8", timeout }
+			)
+		const message = `arktype resolves to 2.1.0, but @ark/aot runs on ${arktypeVersion}
+  2.1.0 at node_modules/arktype, which @ark/aot imports
+  ${writeArktypeHint(arktypeVersion)}`
+		const { stdout } = run([
+			"--input-type=module",
+			"-e",
+			`const loads = [
+	async () => (await import("${aot("turbopack.ts")}")).default.call({ getOptions: () => ({}), resourcePath: "main.ts" }, ""),
+	async () => (await import("${aot("unplugin.ts")}")).precompile.esbuild(),
+	// last, since its hooks would precompile what the others load
+	async () => (await import("${aot("node.ts")}")).register()
+]
+const messages = []
+for (const load of loads) await load().then(() => messages.push("loaded"), e => messages.push(e.message))
+console.log(JSON.stringify(messages))`
+		])
+		attest(JSON.parse(stdout)).equals([message, message, message])
+		attest(run([fromHere("..", "cli.ts"), "--check"]).stderr).equals(
+			`${message}\n`
 		)
 	})
 
