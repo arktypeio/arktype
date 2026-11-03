@@ -551,8 +551,7 @@ export abstract class BaseNode<
 		// a Map visits the ids added while it's iterated
 		const reached = new Map<string, BaseNode>([[this.id, this]])
 		for (const node of reached.values()) {
-			for (const id in node.byId) {
-				const reference = node.byId[id]
+			for (const reference of referencesWithoutCases(node)) {
 				// an intersection can drop what its operands reach, so only resolving it decides
 				if (reference[flag]) return !reachesOperands || this.reaches(flag, true)
 				if (!reference.is("alias")) continue
@@ -1764,6 +1763,21 @@ export const referencesThroughAliases = (
 	return [...reached.values()]
 }
 
+// in the order of `byId`, leaving out each union's cases, which hold nothing its
+// branches don't, so reading what's reached doesn't discriminate
+export const referencesWithoutCases = (root: BaseNode): Set<BaseNode> => {
+	const references = new Set<BaseNode>()
+	const include = (node: BaseNode): void => {
+		if (references.has(node)) return
+		references.add(node)
+		for (let i = 0; i < node.children.length; i++) include(node.children[i])
+		if (node.is("union")) return
+		for (const referenced of node.otherRefs) include(referenced)
+	}
+	include(root)
+	return references
+}
+
 // resolves what referencesThroughAliases lists, in its order since any can throw,
 // without listing it for a Type that may never compile. what a node reaches
 // resolved once, so a Type sharing it doesn't walk it again
@@ -1771,9 +1785,7 @@ export const resolveReachedAliases = (root: BaseNode): void => {
 	const reached = new Set<BaseNode>()
 	const aliases: AliasNode[] = []
 	const include = (node: BaseNode): void => {
-		// nothing there to resolve, and discriminating it can wait until it's checked
-		if ((!node.hasAlias && !node.userCode) || node.c.reachedResolved) return
-		if (reached.has(node)) return
+		if (!node.hasAlias || node.c.reachedResolved || reached.has(node)) return
 		reached.add(node)
 		if (node.is("alias")) aliases.push(node)
 		for (let i = 0; i < node.children.length; i++) include(node.children[i])
