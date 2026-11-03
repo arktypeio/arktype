@@ -1,12 +1,12 @@
 import { realpathSync } from "node:fs"
-import { dirname } from "node:path"
+import { createRequire } from "node:module"
+import { dirname, extname } from "node:path"
 import { parseSync } from "oxc-parser"
-import {
-	createKeyedPrecompiler,
-	type KeyedModule,
-	type KeyedPrecompiler,
-	type PrecompiledKeyedModule,
-	type PrecompilePluginOptions
+import type {
+	KeyedModule,
+	KeyedPrecompiler,
+	PrecompiledKeyedModule,
+	PrecompilePluginOptions
 } from "./driver.ts"
 import { refuseDeclare } from "./declare.ts"
 import { isProductionEnv, withEnvironment } from "./presets.ts"
@@ -33,6 +33,7 @@ import {
 	writeRuntimeAliasMessage,
 	withAllowUnsafe
 } from "./messages.ts"
+import { checkArktypeVersion } from "./version.ts"
 
 export interface TurbopackLoaderContext {
 	resourcePath: string
@@ -49,6 +50,21 @@ export interface TurbopackLoaderContext {
 }
 
 const precompilersByOptions: Record<string, KeyedPrecompiler> = {}
+
+let driver: typeof import("./driver.ts") | undefined
+
+// the driver imports arktype, so it's loaded once arktype is checked
+const createKeyedPrecompiler = (
+	opts: PrecompilePluginOptions
+): KeyedPrecompiler => {
+	if (!driver) {
+		checkArktypeVersion()
+		driver = createRequire(import.meta.url)(
+			`./driver${extname(import.meta.url)}`
+		) as typeof import("./driver.ts")
+	}
+	return driver.createKeyedPrecompiler(opts)
+}
 
 // ark.json is read once for each option set the loader is given
 const resolvedByOptions: Record<string, PrecompilePluginOptions> = {}

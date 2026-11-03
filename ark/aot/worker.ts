@@ -12,6 +12,7 @@ import type {
 	PrecompileRequest,
 	PrecompilerWorkerData
 } from "./driver.ts"
+import { checkArktypeVersion } from "./version.ts"
 
 export const isPrecompilerWorker = !!(
 	workerData as PrecompilerWorkerData | null
@@ -73,6 +74,7 @@ interface SyncWorker {
 export const createSyncPrecompiler = (
 	data: Omit<PrecompilerWorkerData, "port" | "answered" | "lifeline">
 ): ((...request: PrecompileRequest) => unknown) => {
+	checkArktypeVersion()
 	let worker: SyncWorker | undefined
 	const start = (): SyncWorker => {
 		const { port1, port2 } = new MessageChannel()
@@ -177,6 +179,7 @@ export const createAsyncPrecompiler = (
 	request: PrecompileRequest,
 	resolve?: BundlerResolve
 ) => Promise<unknown>) => {
+	checkArktypeVersion()
 	const pending: PendingRequest[] = []
 	let worker: Worker | undefined
 	let sent = 0
