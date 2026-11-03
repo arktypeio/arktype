@@ -96,6 +96,8 @@ The same settings can go under an `"ark"` key in that `package.json` instead, re
 }
 ```
 
+A watch build or dev server reads them again as they change, so a build never mixes modules written under two settings. Rollup and Vite build every module anew under the new ones, Vite's dev server restarting to, unless they change what a Vite build's config was given, like `runtime`. That, and any change under webpack, Rspack, Rolldown, esbuild or Turbopack, fails each build until you restore them or restart it, naming the restart.
+
 Where `package.json` sets `"ark"` and an `ark.json` is beside it, the build fails, naming both, so keep one. A library's `package.json` also sets `"aot": true` under `"ark"` to [opt in](/docs/precompile/advanced#libraries), which is unrelated to `"precompile"`, how the program reading the file builds.
 
 ## Settings

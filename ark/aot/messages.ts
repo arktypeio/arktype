@@ -19,6 +19,12 @@ export const writeUnreproducedScanMessage = (): string =>
 export const writeChangedSettingsMessage = (path: string): string =>
 	`The precompile settings in ${path} changed while Next ran, and arktype keeps what it compiled under the earlier ones for the process. Restart \`next dev\` to build with the new settings.`
 
+export const writeWatchedSettingsMessage = (
+	path: string,
+	host: string
+): string =>
+	`The precompile settings in ${path} changed while ${host} watched, which can't build each module anew under them, as it keeps what it set up under the earlier ones. Restart ${host} to build with the new settings.`
+
 export const writeUnansweredResolveMessage = (
 	specifier: string,
 	importer: string,

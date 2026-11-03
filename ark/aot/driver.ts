@@ -1,4 +1,5 @@
 import { flatMorph, throwError } from "@ark/util"
+import { existsSync } from "node:fs"
 import { isAbsolute, resolve } from "node:path"
 import type { SourceMap } from "magic-string"
 import {
@@ -37,7 +38,7 @@ import {
 } from "./precompile.ts"
 import type { ScannedProgram, ScannedUsage } from "./scan.ts"
 import type { Site } from "./sites.ts"
-import { withSettingsFile } from "./settings.ts"
+import { settingsPathsOf, withSettingsFile } from "./settings.ts"
 import { isPrecompilerWorker } from "./worker.ts"
 
 export interface PrecompilePluginOptions
@@ -1088,7 +1089,11 @@ const transformedOf = (
 	code: result.map && result.code,
 	map: result.map,
 	dependencies: [
-		...new Set([...result.dependencies, ...precompiler.ownManifests])
+		...new Set([
+			...result.dependencies,
+			...precompiler.ownManifests,
+			...settingsFilesOf(precompiler)
+		])
 	],
 	modules: result.modules,
 	foldedHelpers: result.foldedHelpers,
@@ -1103,12 +1108,20 @@ const unprecompiledOf = (
 	code: undefined,
 	map: undefined,
 	// an import may come to export a Type, which only the plugin watches
-	dependencies: precompiler.inline ? [] : precompiler.textImportsOf(source, id),
+	dependencies: [
+		...(precompiler.inline ? [] : precompiler.textImportsOf(source, id)),
+		...settingsFilesOf(precompiler)
+	],
 	modules: {},
 	foldedHelpers: [],
 	errors: [],
 	warnings: []
 })
+
+// a module's answer depends on the settings it was written under, but a
+// bundler watching a file missing from disk drops it after each build
+const settingsFilesOf = (precompiler: Precompiler): string[] =>
+	settingsPathsOf(precompiler.graph.cwd!).filter(file => existsSync(file))
 
 interface KeptModule extends StoredModule {
 	source: string

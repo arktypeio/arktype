@@ -16,7 +16,8 @@ import {
 	writePrecompiledDependencyMessage,
 	writeUncachedModuleMessage,
 	writeUntransformedImportMessage,
-	writeUnwrittenModuleMessage
+	writeUnwrittenModuleMessage,
+	writeWatchedSettingsMessage
 } from "@ark/aot/internal/messages.ts"
 import {
 	writeEntryHelperMessage,
@@ -42,7 +43,7 @@ import {
 import { isAbsolute, join, relative, sep } from "node:path"
 import { stripVTControlCharacters } from "node:util"
 import { Worker } from "node:worker_threads"
-import { rollup, type Plugin as RollupPlugin } from "rollup"
+import { rollup, watch, type Plugin as RollupPlugin } from "rollup"
 import {
 	createBuilder,
 	createServer,
@@ -1158,6 +1159,245 @@ console.log(type({ n: Max })({ n: 2 }) instanceof type.errors)
 		attest([unchanged - first - 1, nextThreadId() - unchanged - 1]).equals([
 			1, 1
 		])
+	})
+
+	describe("settings that change while it watches", () => {
+		const writeSettings = (root: string, settings: object) =>
+			writeFileSync(
+				join(root, "ark.json"),
+				JSON.stringify({ precompile: settings })
+			)
+
+		// a program whose output depends on its settings, as errors: "first"
+		// does, and the text of a module named alike under each, as
+		// optimize: "size" writes an expression's
+		const settingsApp = (main = "main.ts") => {
+			const root = writeFixture({
+				[main]:
+					'import { type } from "arktype"\n\nconst User = type({ name: "string", age: "number" })\n\nconsole.log(String(User({})), User.expression)\n'
+			})
+			writeSettings(root, { errors: "first" })
+			mkdirSync(join(root, "node_modules"))
+			symlinkSync(
+				fromHere("..", "..", "type"),
+				join(root, "node_modules/arktype")
+			)
+			return root
+		}
+
+		const stripping: RollupPlugin = {
+			name: "stripping",
+			transform: (code, id) =>
+				id.endsWith(".ts") ?
+					transformSync(code, { loader: "ts" }).code
+				:	undefined
+		}
+
+		// each bundle a watch build writes, and each error it fails with
+		const watched = () => {
+			const bundles: string[] = []
+			const errors: string[] = []
+			const collecting = {
+				name: "collecting",
+				generateBundle: (
+					_: unknown,
+					bundle: Record<string, { type: string; code?: string }>
+				) => {
+					bundles.push(
+						Object.values(bundle)
+							.map(output => output.code ?? "")
+							.join("\n")
+					)
+				}
+			}
+			const onEvent = (event: { code: string; error?: Error }) => {
+				if (event.code === "ERROR")
+					errors.push(stripVTControlCharacters(event.error!.message))
+			}
+			// once the build has written or failed as many times, writing again
+			// what a watcher may not yet have watched
+			const settled = async (count: number, write?: () => void) => {
+				for (let waited = 0; bundles.length + errors.length < count; ) {
+					if ((waited += 50) > 20_000)
+						throw new Error(`waited for build ${count} in vain`)
+					if (write && waited % 1000 === 0) write()
+					await new Promise(resolve => setTimeout(resolve, 50))
+				}
+			}
+			return { bundles, errors, collecting, onEvent, settled }
+		}
+
+		it("rollup rebuilds each module under them, as ark.json is written", async () => {
+			const root = settingsApp()
+			rmSync(join(root, "ark.json"))
+			const plugins = () => [
+				precompile.rollup({ cwd: root, conditions }),
+				stripping
+			]
+			const { bundles, collecting, onEvent, settled } = watched()
+			const watcher = watch({
+				input: join(root, "main.ts"),
+				plugins: [...plugins(), collecting],
+				output: { dir: join(root, "out") },
+				watch: { buildDelay: 50 },
+				onwarn: () => {}
+			})
+			watcher.on("event", onEvent)
+			try {
+				await settled(1)
+				const write = () => writeSettings(root, { optimize: "size" })
+				write()
+				await settled(2, write)
+			} finally {
+				await watcher.close()
+			}
+			const fresh = await rollup({
+				input: join(root, "main.ts"),
+				plugins: plugins(),
+				onwarn: () => {}
+			})
+			const { output } = await fresh.generate({})
+			attest(bundles[1] === bundles[0]).equals(false)
+			attest(bundles[1]).equals(output[0].code)
+		})
+
+		it("vite rebuilds each module under them, or fails where they change its config", async () => {
+			const root = settingsApp()
+			const { bundles, errors, collecting, onEvent, settled } = watched()
+			const built = (watch?: object) =>
+				withNodeEnv("production", async () => {
+					const config = viteConfig({ cwd: root }, root)
+					return viteBuild({
+						...config,
+						plugins: [...config.plugins!, collecting],
+						build: {
+							write: false,
+							minify: false,
+							lib: { entry: "main.ts", formats: ["es"] },
+							watch
+						}
+					})
+				})
+			const watcher = (await built({})) as Rolldown.RolldownWatcher
+			watcher.on("event", onEvent)
+			try {
+				await settled(1)
+				writeSettings(root, { optimize: "size" })
+				await settled(2)
+				// arktype's own runtime, which Vite's config inlines
+				writeSettings(root, { runtime: "arktype" })
+				await settled(3)
+			} finally {
+				await watcher.close()
+			}
+			writeSettings(root, { optimize: "size" })
+			await built()
+			attest(bundles[1] === bundles[0]).equals(false)
+			attest(bundles[1]).equals(bundles[2])
+			attest(
+				errors.map(error =>
+					error.endsWith(writeWatchedSettingsMessage("ark.json", "vite"))
+				)
+			).equals([true])
+		})
+
+		// in development throughout, as Vite reads its mode again as it restarts
+		it("vite's dev server restarts under them", () =>
+			withNodeEnv("development", async () => {
+				const root = settingsApp()
+				const served = async () => {
+					const server = await createServer(viteConfig({ cwd: root }, root))
+					return {
+						server,
+						code: async () => (await server.transformRequest("/main.ts"))?.code
+					}
+				}
+				const { server, code } = await served()
+				let restarted: string | undefined
+				try {
+					const before = await code()
+					writeSettings(root, { optimize: "size" })
+					server.watcher.emit("change", join(root, "ark.json"))
+					// a request it answers while restarting fails
+					for (let waited = 0; ; waited += 50) {
+						restarted = await code().catch(() => undefined)
+						if (restarted !== undefined && restarted !== before) break
+						if (waited > 20_000) throw new Error("it never restarted")
+						await new Promise(resolve => setTimeout(resolve, 50))
+					}
+				} finally {
+					await server.close()
+				}
+				const fresh = await served()
+				try {
+					attest(restarted).equals(await fresh.code())
+				} finally {
+					await fresh.server.close()
+				}
+			}))
+
+		it("webpack fails under them, watching them as each module's", async () => {
+			const root = settingsApp("main.js")
+			const compiler = webpack({
+				mode: "development",
+				context: root,
+				entry: "./main.js",
+				target: "node",
+				devtool: false,
+				output: { path: join(root, "out") },
+				plugins: [precompile.webpack({ cwd: root })]
+			})
+			// each build's errors, the last failing it whole
+			const errors: string[][] = []
+			const watching = compiler.watch({}, (error, stats) => {
+				errors.push(
+					error ?
+						[error.message]
+					:	stats!
+							.toJson({ all: false, errors: true })
+							.errors!.map(error => error.message)
+				)
+				if (errors.length === 1) writeSettings(root, { optimize: "size" })
+			})
+			for (let waited = 0; errors.length < 2 && waited < 20_000; waited += 50)
+				await new Promise(resolve => setTimeout(resolve, 50))
+			await new Promise(resolve => watching.close(resolve))
+			attest(errors).equals([
+				[],
+				[writeWatchedSettingsMessage("ark.json", "webpack")]
+			])
+		})
+
+		it("esbuild fails under them until they're restored", async () => {
+			const root = settingsApp()
+			const ctx = await context({
+				entryPoints: [join(root, "main.ts")],
+				bundle: true,
+				write: false,
+				format: "esm",
+				conditions,
+				logLevel: "silent",
+				plugins: [precompile.esbuild({ cwd: root, conditions })]
+			})
+			const rebuilt = () =>
+				ctx.rebuild().then(
+					result => result.outputFiles[0].text,
+					(e: { errors: { text: string }[] }) =>
+						e.errors.map(error => error.text)
+				)
+			try {
+				const first = await rebuilt()
+				writeSettings(root, { optimize: "size" })
+				const changed = await rebuilt()
+				writeSettings(root, { errors: "first" })
+				attest([changed, (await rebuilt()) === first]).equals([
+					[writeWatchedSettingsMessage("ark.json", "esbuild")],
+					true
+				])
+			} finally {
+				await ctx.dispose()
+			}
+		})
 	})
 
 	it("fails once per dependency importing arktype, or warns with allowUnsafe", async () => {
