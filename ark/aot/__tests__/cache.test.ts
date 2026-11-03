@@ -449,6 +449,41 @@ contextualize(function (this: Mocha.Suite) {
 			await send(["close"])
 		})
 
+		it("stores nothing a worker answers once a reset kept it", async () => {
+			// a predicate's registered name counts those arktype registered before
+			const narrowed = (domain: string) =>
+				`import { type } from "arktype"\n\nconst isTruthy = (data: unknown) => !!data\n\nexport const T = type("${domain}").narrow(isTruthy)\n`
+			const dir = writeFixture({ "main.ts": narrowed("string") })
+			const id = join(dir, "main.ts")
+			const send = createAsyncPrecompiler({
+				precompilerOptions: { cwd: dir, conditions }
+			})
+			await send(["transform", readFileSync(id, "utf8"), id])
+			writeFileSync(id, narrowed("number"))
+			attest(await send(["reset"])).equals(false)
+			await send(["transform", readFileSync(id, "utf8"), id])
+			await send(["close"])
+			await answersAnew(dir)
+		})
+
+		it("stores what a worker answers across a reset nothing it read changed", async () => {
+			const dir = writeFixture({
+				"a.ts": shapeReader("./shape.ts"),
+				"b.ts": shapeReader("./shape.ts"),
+				"shape.ts": shaped("string")
+			})
+			const send = createAsyncPrecompiler({
+				precompilerOptions: { cwd: dir, conditions }
+			})
+			for (const file of ["a.ts", "b.ts"]) {
+				const id = join(dir, file)
+				await send(["transform", readFileSync(id, "utf8"), id])
+				attest(await send(["reset"])).equals(false)
+			}
+			await send(["close"])
+			attest(entriesOf(dir).length).equals(2)
+		})
+
 		it("never answers for a module that replaced a Scope a refused site reads", async () => {
 			const dir = writeFixture(replaced)
 			const errors = await errorsIn(dir, ["scope.ts", "main.ts"])

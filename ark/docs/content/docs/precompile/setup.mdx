@@ -230,7 +230,7 @@ A validator ships its JSON Schema where the build sees code read it, so a librar
 
 ## Cache [#cache]
 
-A build keeps each module it precompiles in `node_modules/.cache/ark`, in the directory it runs from, so the next build, dev server or Next.js process reuses what didn't change. An entry is read only while everything that decided it is the same: the versions of `@ark/aot`, `arktype` and Node, the module's source and each file the precompiler read for it, what each import resolved to, and your settings. Deleting the directory is always safe, as the next build writes it again.
+A build keeps each module it precompiles in `node_modules/.cache/ark`, in the directory it runs from, so the next build, dev server or Next.js process reuses what didn't change. An entry is read only while everything that decided it is the same: the code of `@ark/aot` and `arktype`, a linked or repacked copy included, the version of Node, the module's source and each file the precompiler read for it, what each import resolved to, and your settings. A watch build or dev server stores only what it precompiles before its first change, keeping what it precompiles again to itself. Deleting the directory is always safe, as the next build writes it again.
 
 ## Frameworks [#frameworks]
 

@@ -529,8 +529,10 @@ interface TrackedPrecompiler {
 	// asked again for each answer a stored one had it resolve
 	resolveInBundler: BundlerResolver | undefined
 	// whether its answers can outlive it: it's its thread's first precompiler,
-	// as arktype keeps what earlier ones compiled, and was given each module as
-	// its file reads
+	// as arktype keeps what earlier ones compiled, was given each module as its
+	// file reads, and no reset kept it across a change to a file it read, as
+	// analyzing a module again after forgetting it may write it unlike a
+	// precompiler that never read it
 	storable: boolean
 	// whether it answered a request by analyzing a module
 	analyzed: boolean
@@ -835,6 +837,7 @@ const keptAcross = (
 	}
 	tracked.host = host
 	tracked.holds = undefined
+	if (changed.length) tracked.storable = false
 	return tracked
 }
 

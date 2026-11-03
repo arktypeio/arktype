@@ -213,9 +213,7 @@ export interface SnapshotCheck {
 }
 
 // whether each file and import a snapshot names reads and resolves the
-// same, judged once each until a file it read changes or the build resets.
-// A snapshot restates what its precompiler read again once a change made it
-// forget it, which holds over what its parents state
+// same, judged once each until a file it read changes or the build resets
 export const createSnapshotCheck = (
 	cache: AnswerCache,
 	host: PrecompileHost,
@@ -233,30 +231,20 @@ export const createSnapshotCheck = (
 	const tsconfigs: Record<string, string | null> = {}
 	const answers: Record<string, string | null> = {}
 	const holdsFrom = (id: string): boolean => {
-		const stated = new Set<string>()
 		const asked: Snapshot["asked"] = []
 		for (let next: string | undefined = id; next !== undefined; ) {
 			const snapshot = cache.snapshot(next)
 			if (!snapshot) return false
-			for (const [file, hash] of snapshot.reads) {
-				if (stated.has(file)) continue
-				stated.add(file)
+			for (const [file, hash] of snapshot.reads)
 				if ((hashes[file] ??= hashOfFile(file)) !== hash) return false
-			}
 			for (const [importer, specifier, target] of snapshot.resolutions) {
-				const key = `${importer}\0${specifier}`
-				if (stated.has(key)) continue
-				stated.add(key)
 				if (
-					(targets[key] ??= host.resolve(specifier, importer) ?? null) !==
-					target
+					(targets[`${importer}\0${specifier}`] ??=
+						host.resolve(specifier, importer) ?? null) !== target
 				)
 					return false
 			}
 			for (const [importer, tsconfig] of snapshot.tsconfigs) {
-				const key = `${importer}\0`
-				if (stated.has(key)) continue
-				stated.add(key)
 				if (
 					(tsconfigs[importer] ??= host.tsconfigOf?.(importer) ?? null) !==
 					tsconfig
