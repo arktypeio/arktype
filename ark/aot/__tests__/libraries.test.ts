@@ -297,6 +297,35 @@ console.log(User.description)
 `)
 	})
 
+	it("a module loading another whole bakes each member into each namespace it exports", async () => {
+		const out = await logged(
+			"wholeNamespaces",
+			{
+				"schemas.ts": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+`,
+				"index.ts": `export * as inner from "./schemas.ts"
+`,
+				"node_modules/reader/package.json":
+					'{ "name": "reader", "type": "module", "exports": "./index.js" }',
+				"node_modules/reader/index.js":
+					"export const read = (schemas, path, key) => path.reduce((o, k) => o[k], schemas)[key]\n",
+				"node_modules/reader/index.d.ts":
+					"export declare const read: (schemas: object, path: string[], key: string) => unknown\n",
+				"main.ts": `import { read } from "reader"
+import * as all from "./index.ts"
+
+console.log(read(all, ["inner", "User"], "description"))
+`
+			},
+			"out/main.js",
+			{ prune: false }
+		)
+		attest(out).snap(`{ name: a string }
+`)
+	})
+
 	it("an entry's export bakes nothing, so a read outside the bundle throws", async () => {
 		const out = await logged(
 			"entry",

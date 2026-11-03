@@ -40,6 +40,7 @@ import {
 	traversalKeyOf,
 	writeUnprecompilableMessage,
 	type BakedMembers,
+	type BakedNamespace,
 	type Checks,
 	type Optimization,
 	type ValidatorMember,
@@ -1119,8 +1120,8 @@ export class Precompiler {
 	private validatorExportsOf(
 		module: SourceModule,
 		seen = new Set([module])
-	): Record<string, BaseRoot> {
-		const result: Record<string, BaseRoot> = {}
+	): BakedNamespace {
+		const result: BakedNamespace = {}
 		for (const specifier of module.scopes.starExports) {
 			const target = this.graph.resolve(specifier, module)
 			if (!(target instanceof SourceModule) || seen.has(target)) continue
@@ -1130,6 +1131,15 @@ export class Precompiler {
 			Object.assign(result, roots)
 		}
 		for (const name in module.scopes.exportsByName) {
+			const exported = this.graph.exportOf(module, name)
+			// e.g. `export * as schemas from "./schemas.ts"`
+			if (exported.kind === "namespace") {
+				if (seen.has(exported.module)) continue
+				seen.add(exported.module)
+				const inner = this.validatorExportsOf(exported.module, seen)
+				if (Object.keys(inner).length) result[name] = inner
+				continue
+			}
 			const value = this.exportedValueOf(module, name)
 			if (isBakeable(value)) result[name] = value
 		}
