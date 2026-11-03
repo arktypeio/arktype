@@ -4,9 +4,9 @@ import { scanProgram } from "@ark/aot/internal/scan.ts"
 import { posix } from "node:path"
 import { memoryHost } from "./utils.ts"
 
-// what a production build bakes into each validator of a program from
-// /main.ts, its dependencies in /node_modules/<name>/index.js
-const bakedFrom = async (
+// a production build's precompiler, having scanned a program from /main.ts,
+// its dependencies in /node_modules/<name>/index.js
+const scannedFrom = async (
 	files: Record<string, string>,
 	opts?: PrecompileOptions
 ) => {
@@ -24,8 +24,16 @@ const bakedFrom = async (
 		idOf: id => id,
 		cwd: "/"
 	})
-	if (typeof scanned === "string") return scanned
-	const usage = precompiler.scan(scanned)
+	if (typeof scanned === "string") throw new Error(scanned)
+	return { precompiler, usage: precompiler.scan(scanned) }
+}
+
+// what a production build bakes into each validator of a program from /main.ts
+const bakedFrom = async (
+	files: Record<string, string>,
+	opts?: PrecompileOptions
+) => {
+	const { usage } = await scannedFrom(files, opts)
 	if (!usage.baked) return usage.unpruned
 	// then the warning, where it lost track of a validator
 	return usage.lost ? [...usage.baked, usage.lost] : usage.baked
@@ -195,6 +203,43 @@ console.log(describe(User))
 `
 			})
 		).snap(["user.ts:3:21 bakes description (dataflow)"])
+	})
+
+	it("bakes into a module another plugin rewrote what the program reads of it", async () => {
+		const user = `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+`
+		const { precompiler } = await scannedFrom({
+			"/node_modules/describe/index.js": `export const describe = schema => schema.expression
+`,
+			"/user.ts": user,
+			"/main.ts": `import { describe } from "describe"
+import { User } from "./user.ts"
+
+console.log(describe(User))
+`
+		})
+		const written = precompiler.precompile(user, "/user.ts", undefined, "test")
+		// as a plugin ahead of arktype's moves its sites
+		const rewritten = precompiler.precompile(
+			`// built\n${user}`,
+			"/user.ts",
+			undefined,
+			"test"
+		)
+		// the call creating its validator, which names it by where it was
+		const createdIn = ({ modules }: { modules: Record<string, string> }) =>
+			Object.values(modules)
+				.join("\n")
+				.match(/runtime\.createValidatorWith\([^]*?\n\)/)?.[0]
+		attest(createdIn(written)).snap(`runtime.createValidatorWith(
+	apply1pd26jy1hxuluz,
+	intersectionn6cyii0o4b9mn,
+	"1lfjngd1",
+	{ meta: runtime.emptyMeta, expression: expression1dlmq9v0vwoz4a() }
+)`)
+		attest(createdIn(rewritten)).equals(createdIn(written))
 	})
 
 	it("decides only the members members leaves unset", async () => {

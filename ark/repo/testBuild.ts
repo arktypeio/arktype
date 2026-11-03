@@ -155,6 +155,70 @@ for (const pkg of packages) {
 if ("$ark2" in globalThis)
 	throw new Error("⚠️  A deep import installed a registry of its own.")
 
+// every published declaration as the strictest consumer checks it, under TS 6
+// and 7. Errors in third-party declarations are theirs
+const declaringPackages = [
+	"aot",
+	"attest",
+	"fast-check",
+	"fs",
+	"json-schema",
+	"regex",
+	"schema",
+	"sets",
+	"type",
+	"util"
+]
+
+const consumer = fileURLToPath(new URL("temp/consumer/", import.meta.url))
+mkdirSync(consumer, { recursive: true })
+
+const tsDir = (version: number) =>
+	fileURLToPath(fromPackage("attest", `node_modules/typescript-${version}`))
+
+writeFileSync(
+	`${consumer}tsconfig.json`,
+	JSON.stringify({
+		compilerOptions: {
+			module: "nodenext",
+			target: "esnext",
+			strict: true,
+			exactOptionalPropertyTypes: true,
+			skipLibCheck: false,
+			noEmit: true,
+			types: ["node"],
+			// attest's cache modules use the JS API, which TS 7 doesn't publish
+			paths: { typescript: [`${tsDir(6)}/lib/typescript.d.ts`] }
+		},
+		files: declaringPackages.flatMap(pkg =>
+			modulesOf(pkg).map(module =>
+				fileURLToPath(fromPackage(pkg, `out/${module}.d.ts`))
+			)
+		)
+	})
+)
+
+const ownDeclarations = new RegExp(
+	`^ark/(${declaringPackages.join("|")})/out/|^error`
+)
+
+for (const version of [6, 7]) {
+	const { stdout } = spawnSync(
+		process.execPath,
+		[`${tsDir(version)}/bin/tsc`, "--project", consumer, "--pretty", "false"],
+		{ cwd: fileURLToPath(new URL("../..", import.meta.url)), encoding: "utf8" }
+	)
+	// a diagnostic's continuation lines are indented
+	const errors = stdout
+		.split(/\n(?=\S)/)
+		.filter(diagnostic => ownDeclarations.test(diagnostic))
+	if (errors.length) {
+		throw new Error(
+			`⚠️  TS ${version} finds errors in published declarations:\n${errors.join("\n")}`
+		)
+	}
+}
+
 const runtimeNames = Object.keys(
 	await importBuilt("@ark/schema/runtime")
 ).join()

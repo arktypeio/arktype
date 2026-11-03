@@ -134,6 +134,19 @@ rewriteFile(packagesByScope.type.packageJsonPath, contents => {
 	return bumped
 })
 
+// the arktype @ark/aot runs on, which it checks a program resolves to before
+// loading anything that imports it
+const aotVersionPath = join(packagesByScope.aot.path, "version.ts")
+rewriteFile(aotVersionPath, contents => {
+	const bumped = contents.replace(
+		/^(export const arktypeVersion = )"[^"]*"/m,
+		`$1"${nextVersions.get(packagesByScope.type.name)}"`
+	)
+	if (bumped === contents)
+		throw new Error(`Found no arktypeVersion in ${aotVersionPath}`)
+	return bumped
+})
+
 const util = packagesByScope.util
 const nextUtil = nextVersions.get(util.name)!
 // registry.ts, and the copy of its declarations the playground loads

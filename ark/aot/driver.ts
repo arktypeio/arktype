@@ -1,5 +1,4 @@
-import { throwError } from "@ark/util"
-import { readFileSync, statSync } from "node:fs"
+import { flatMorph, throwError } from "@ark/util"
 import { isAbsolute, resolve } from "node:path"
 import type { SourceMap } from "magic-string"
 import {
@@ -13,17 +12,31 @@ import {
 	createNodeHost,
 	printablePathOf,
 	realPathOf,
-	type NodeHostOptions
+	type NodeHostOptions,
+	type PrecompileHost
 } from "./host.ts"
+import {
+	AnswerCache,
+	createSnapshotCheck,
+	emptySnapshot,
+	hashOf,
+	mtimeOf,
+	type Snapshot,
+	type SnapshotCheck
+} from "./cache.ts"
 import { renderDiagnostic, type Diagnostic } from "./diagnostics.ts"
-import { writeUnansweredResolveMessage } from "./messages.ts"
+import {
+	writeUnansweredResolveMessage,
+	writeUnreproducedScanMessage
+} from "./messages.ts"
 import {
 	Precompiler,
+	type ArkPackage,
 	type PrecompiledModule,
 	type PrecompileOptions,
 	type ReadProgram
 } from "./precompile.ts"
-import type { ScannedProgram } from "./scan.ts"
+import type { ScannedProgram, ScannedUsage } from "./scan.ts"
 import type { Site } from "./sites.ts"
 import { withSettingsFile } from "./settings.ts"
 import { isPrecompilerWorker } from "./worker.ts"
@@ -98,6 +111,7 @@ export type PrecompileRequest =
 	  ]
 	| [kind: "lint", source: string, id: string]
 	| [kind: "readDependency", importer: string]
+	| [kind: "readDependencies", ids: string[]]
 	| [kind: "reset"]
 	| [kind: "refresh"]
 	| [kind: "close"]
@@ -139,16 +153,66 @@ const answerRequests = (
 	)
 	const track = () =>
 		createTrackedPrecompiler(data.precompilerOptions, resolveInBundler)
-	// kept across resets, as a rebuild asks again for modules nothing changed
-	const transformedById: Record<string, KeptModule> = {}
+	// kept across the resets that keep the precompiler, as a rebuild asks again
+	// for modules nothing changed
+	let transformedById: Record<string, KeptModule> = {}
+	// each program the build scanned, by the key its transforms name
+	let scansByProgram: Record<string, Scan> = {}
+	// the precompiler holding a scan's usage: where the cache answered it, a new
+	// one scans it again for a module unlike those the cache holds, and must
+	// write what the cache gave the bundler
+	const scanned = (scan: Scan): TrackedPrecompiler => {
+		if (scan.tracked) return viewing(scan.tracked, scan)
+		const { usage, given } = scan.served!
+		const written = scan.written!
+		scan.served = scan.written = undefined
+		const rescanned = track()
+		const { precompiler } = rescanned
+		const reproduces =
+			JSON.stringify(precompiler.scan(scan.program)) ===
+				JSON.stringify(usage) &&
+			given.every(id => {
+				const { source, mappings, answer } = written[id]
+				return (
+					JSON.stringify(
+						transformedModuleOf(
+							precompiler,
+							source,
+							id,
+							undefined,
+							mappings ?? undefined,
+							scan.program.key
+						) ?? null
+					) === JSON.stringify(answer)
+				)
+			})
+		if (!reproduces) {
+			// so the next build scans it anew
+			scan.cache!.delete(scan.key)
+			throwError(writeUnreproducedScanMessage())
+		}
+		rescanned.viewKey = scan.viewKey
+		return (scan.tracked = rescanned)
+	}
 	const answer = (request: PrecompileRequest): unknown => {
 		if (request[0] === "close") return
-		if (request[0] === "refresh" && tracked && !isStale(tracked)) return false
+		if (request[0] === "refresh" && tracked && !hasChanged(tracked.readTimes))
+			return false
 		if (request[0] === "reset" || request[0] === "refresh") {
 			unasked = false
-			tracked = track()
+			scansByProgram = {}
+			const before = tracked
+			const kept = tracked && keptAcross(tracked, data.precompilerOptions)
+			// e.g. as a file created since shadows what a module's import resolved
+			// to, which no mtime it read shows
+			if (!kept) transformedById = {}
+			tracked = kept ?? track()
 			const needsNewThread =
-				conflictsWithThread || tracked.precompiler.needsNewThread
+				conflictsWithThread ||
+				tracked.precompiler.needsNewThread ||
+				// arktype keeps what it compiled under earlier settings
+				(!!before &&
+					JSON.stringify(before.opts) !== JSON.stringify(tracked.opts))
 			// the next request asks the bundler what reading the configuration couldn't
 			if (unasked) tracked = undefined
 			return needsNewThread
@@ -157,11 +221,23 @@ const answerRequests = (
 		const { precompiler } = tracked
 		if (request[0] === "readDependency")
 			return precompiler.readDependency(request[1])
+		if (request[0] === "readDependencies")
+			return precompiler.readDependenciesOf(request[1])
+		const cache = cacheOf(tracked)
 		if (request[0] === "transform") {
 			const [, source, id, mappings, program] = request
 			if (program !== undefined) {
+				const scan = scansByProgram[program]
+				const written = scan?.written?.[id]
+				if (
+					written?.source === source &&
+					written.mappings === (mappings ?? null)
+				) {
+					scan.served?.given.push(id)
+					return written.answer ?? undefined
+				}
 				return transformedModuleOf(
-					precompiler,
+					(scan ? scanned(scan) : viewing(tracked)).precompiler,
 					source,
 					id,
 					undefined,
@@ -173,20 +249,61 @@ const answerRequests = (
 			if (
 				kept?.source === source &&
 				kept.mappings === mappings &&
-				kept.mtimes.every(([file, mtime]) => mtimeOf(file) === mtime)
+				kept.viewKey === tracked.viewKey &&
+				kept.mtimes.every(([file, mtime]) => mtimeOf(file) === mtime) &&
+				precompiler.readCopiesOf(kept.packages, id)
 			)
 				return kept.transformed
 			if (!precompiler.isTransformed(id)) return
-			const result = precompiledOf(precompiler, source, id, undefined, mappings)
-			if (!result) return unprecompiledOf(precompiler, source, id)
-			const transformed = transformedOf(precompiler, result)
+			const key =
+				cache &&
+				keyOf(
+					tracked.context,
+					"transform",
+					id,
+					source,
+					mappings ?? null,
+					tracked.viewKey ?? null
+				)
+			const cached =
+				key &&
+				(cachedAnswerOf(tracked, cache!, key) as StoredModule | undefined)
+			if (cached && precompiler.readCopiesOf(cached.packages, id))
+				return cached.transformed
+			tracked.analyzed = true
+			// its importers read its file, unlike the module a plugin ahead gave
+			if (precompiler.graph.host.readFile(id) !== source)
+				tracked.storable = false
+			const result = precompiledOf(
+				viewing(tracked).precompiler,
+				source,
+				id,
+				undefined,
+				mappings
+			)
+			const transformed =
+				result ?
+					transformedOf(precompiler, result)
+				:	unprecompiledOf(precompiler, source, id)
 			// e.g. an import that can't resolve until a file is written, which no mtime shows
-			if (transformed.errors.length || transformed.warnings.length)
-				return transformed
+			if (hasDiagnostics(transformed)) return transformed
+			const packages = result ? precompiler.arkPackagesOf(id) : []
+			// a stand-in decides what another module reports, which only the
+			// precompiler that wrote it knows
+			if (key && !precompiler.writesStandIns(id)) {
+				store(tracked, cache!, key, {
+					transformed,
+					packages
+				} satisfies StoredModule)
+			}
+			// an import may come to export a Type, which its own imports don't show
+			if (!result) return transformed
 			transformedById[id] = {
 				source,
 				mappings,
 				transformed,
+				packages,
+				viewKey: tracked.viewKey,
 				// as each was when first read, so a write meanwhile counts as a change
 				mtimes: transformed.dependencies.map(file => [
 					file,
@@ -195,9 +312,85 @@ const answerRequests = (
 			}
 			return transformed
 		}
-		if (request[0] === "scan") return precompiler.scan(request[1])
-		if (request[0] === "program") return precompiler.readProgram(request[1])
-		if (request[0] === "unseen") return precompiler.unseenIn(request[1])
+		if (request[0] === "scan") {
+			const [, program] = request
+			const scan: Scan = (scansByProgram[program.key] = {
+				program,
+				cache,
+				key: keyOf(tracked.context, "scan", { ...program, key: undefined }),
+				viewKey: viewKeyOf(program),
+				tracked: undefined,
+				written: undefined,
+				served: undefined,
+				isStored: false
+			})
+			const cached =
+				cache &&
+				(cachedAnswerOf(tracked, cache, scan.key) as StoredScan | undefined)
+			if (
+				cached &&
+				Object.entries(cached.modules).every(([id, { packages }]) =>
+					precompiler.readCopiesOf(packages, id)
+				)
+			) {
+				scan.written = writtenIn(cached)
+				scan.served = { usage: cached.usage, given: [] }
+				// as scanning it would, what this precompiler analyzes next
+				// reads the program
+				tracked.unread = program
+				tracked.viewKey = scan.viewKey
+				return cached.usage
+			}
+			// one another request's analyses preceded may write otherwise
+			const isFirst = !tracked.analyzed
+			tracked.analyzed = true
+			scan.tracked = tracked
+			const usage = precompiler.scan(program)
+			tracked.unread = undefined
+			tracked.viewKey = scan.viewKey
+			if (
+				cache &&
+				isFirst &&
+				tracked.storable &&
+				usage.unpruned === undefined
+			) {
+				scan.written = modulesWrittenIn(precompiler, program)
+				scan.isStored =
+					Object.entries(scan.written).every(
+						([id, { answer }]) =>
+							(!answer || !hasDiagnostics(answer)) &&
+							!precompiler.writesStandIns(id)
+					) &&
+					store(tracked, cache, scan.key, storedScanOf(usage, scan.written))
+			}
+			return usage
+		}
+		if (request[0] === "unseen") {
+			const [, program] = request
+			const scan = scansByProgram[program.key]
+			const key = scan?.cache && keyOf(scan.key, { ...program, key: undefined })
+			// stored only where nothing reads what the scan left out
+			if (
+				key &&
+				scan.served &&
+				cachedAnswerOf(tracked, scan.cache!, key) === null
+			)
+				return
+			const scanning = scan ? scanned(scan) : viewing(tracked)
+			const unseen = scanning.precompiler.unseenIn(program)
+			if (key && scan.isStored && unseen === undefined)
+				store(scanning, scan.cache!, key, null)
+			return unseen
+		}
+		if (request[0] === "program") {
+			// read as a request first analyzes a module, so a build the cache
+			// answers whole doesn't
+			tracked.unread = request[1]
+			tracked.viewKey = viewKeyOf(request[1])
+			return
+		}
+		tracked.analyzed = true
+		viewing(tracked)
 		if (request[0] === "check")
 			return checkedModuleOf(precompiler, request[1], request[2])
 		if (request[0] === "checkUnwritten") {
@@ -216,7 +409,10 @@ const answerRequests = (
 			tracked
 		)
 		if (precompiler.conflictsWithThread) conflictsWithThread = true
-		else if (!hasAnswered || resolvesAsRecorded(tracked, request[2]))
+		else if (
+			!hasAnswered ||
+			resolvesAsRecorded(tracked.opts, reachOf(tracked, request[2]))
+		)
 			return checked
 		// the rule refreshes and asks again, as a new config may need a thread
 		tracked = undefined
@@ -329,104 +525,447 @@ export interface KeyedModule extends InlineModule {
 	files: string[]
 }
 
+interface StoredKeyedModule {
+	keyed: KeyedModule
+	reach: Resolution[]
+	packages: ArkPackage[]
+}
+
 export interface PrecompiledKeyedModule extends KeyedModule {
 	// imports the precompiler couldn't resolve, which the bundler may
 	unresolved: [specifier: string, importer: string][]
 }
 
-const mtimeOf = (file: string) =>
-	statSync(file, { throwIfNoEntry: false })?.mtimeMs ?? -1
-
 interface TrackedPrecompiler {
 	precompiler: Precompiler
+	// what it resolves and reads through, renewed as a reset keeps it
+	host: PrecompileHost
 	readTimes: Record<string, number>
+	// each file as first read, undefined where it was missing
+	sources: Record<string, string | undefined>
 	targetsByImporter: Record<string, Record<string, string | undefined>>
+	// imports that can't carry a Type it resolved to nothing without asking the bundler
+	missesByImporter: Record<string, Set<string>>
+	tsconfigsByImporter: Record<string, string | undefined>
+	// what it read since the snapshot its last stored answer names
+	unsnapshotted: Snapshot
+	snapshot: string | undefined
+	// whether the answers a cache stored still hold, judged for files as they are
+	holds: SnapshotCheck | undefined
+	// what besides a request decides its answer: the options, and whether the
+	// bundler resolves what the precompiler can't, which one stored without
+	// it would have asked
+	context: string
+	// whether it asked the bundler, which a reset can't ask again
+	asked: boolean
+	// asked again for each answer a stored one had it resolve
+	resolveInBundler: BundlerResolver | undefined
+	// whether its answers can outlive it: it's its thread's first precompiler,
+	// as arktype keeps what earlier ones compiled, and was given each module as
+	// its file reads
+	storable: boolean
+	// whether it answered a request by analyzing a module
+	analyzed: boolean
+	// modules resets forgot, whose analyses it may still hold
+	forgotten: number
+	// what its write analysis reads of the program it reads whole, if any,
+	// which an answer it analyzes is stored under, as another module's write
+	// decides it too
+	viewKey: string | undefined
+	// the program it reads once a request analyzes a module, unread as the
+	// cache answered what read it
+	unread: ReadProgram | undefined
 	opts: PrecompilePluginOptions
 	hasAnswered: boolean
 	importsByFile: Record<string, [mtimeMs: number, imports: string[]]>
 }
+
+let precompilersInThread = 0
 
 const createTrackedPrecompiler = (
 	opts: PrecompilePluginOptions,
 	resolveInBundler?: BundlerResolver
 ): TrackedPrecompiler => {
 	opts = withSettingsFile(opts)
-	const readTimes: Record<string, number> = {}
-	const targetsByImporter: TrackedPrecompiler["targetsByImporter"] =
-		Object.create(null)
 	const precompiler = createPrecompiler(opts)
-	const { host } = precompiler.graph
-	precompiler.graph.host = {
-		...host,
-		resolve: (specifier, importer, isValueImport) => {
-			const targets = (targetsByImporter[importer] ??= Object.create(null))
-			if (specifier in targets) return targets[specifier]
-			const target = host.resolve(specifier, importer)
-			// an import that can't carry a Type isn't asked, nor is the miss kept
-			if (
-				target === undefined &&
-				resolveInBundler &&
-				isValueImport?.() === false
-			)
-				return
-			return (targets[specifier] =
-				target ?? resolveInBundler?.(specifier, importer))
-		},
-		readFile: file => {
-			// before reading, so a write meanwhile counts as a change
-			readTimes[file] ??= mtimeOf(file)
-			return host.readFile(file)
-		}
-	}
-	return {
+	const tracked: TrackedPrecompiler = {
 		precompiler,
-		readTimes,
-		targetsByImporter,
+		host: precompiler.graph.host,
+		readTimes: {},
+		sources: {},
+		targetsByImporter: Object.create(null),
+		missesByImporter: {},
+		tsconfigsByImporter: {},
+		unsnapshotted: emptySnapshot(undefined),
+		snapshot: undefined,
+		holds: undefined,
+		context: keyOf(opts, !!resolveInBundler),
+		asked: false,
+		resolveInBundler,
+		storable: ++precompilersInThread === 1,
+		analyzed: false,
+		forgotten: 0,
+		viewKey: undefined,
+		unread: undefined,
 		opts,
 		hasAnswered: false,
 		importsByFile: {}
 	}
+	const { readTimes, sources, targetsByImporter, tsconfigsByImporter } = tracked
+	precompiler.graph.host = {
+		resolve: (specifier, importer, isValueImport) => {
+			const targets = (targetsByImporter[importer] ??= Object.create(null))
+			if (specifier in targets) return targets[specifier]
+			const target = tracked.host.resolve(specifier, importer)
+			if (target === undefined && resolveInBundler) {
+				// an import that can't carry a Type isn't asked, nor is the miss kept
+				if (isValueImport?.() === false) {
+					const misses = (tracked.missesByImporter[importer] ??= new Set())
+					if (!misses.has(specifier)) {
+						misses.add(specifier)
+						tracked.unsnapshotted.resolutions.push([importer, specifier, null])
+					}
+					return
+				}
+				tracked.asked = true
+				const asked = resolveInBundler(specifier, importer)
+				tracked.unsnapshotted.asked.push([importer, specifier, asked ?? null])
+				return (targets[specifier] = asked)
+			}
+			tracked.unsnapshotted.resolutions.push([
+				importer,
+				specifier,
+				target ?? null
+			])
+			return (targets[specifier] = target)
+		},
+		readFile: file => {
+			// before reading, so a write meanwhile counts as a change
+			readTimes[file] ??= mtimeOf(file)
+			const source = tracked.host.readFile(file)
+			if (!(file in sources)) {
+				sources[file] = source
+				tracked.unsnapshotted.reads.push([
+					file,
+					source === undefined ? null : hashOf(source)
+				])
+			}
+			// written as it builds, so what it answers may read either
+			else if (source !== sources[file]) tracked.storable = false
+			return source
+		},
+		tsconfigOf: importer => {
+			if (!(importer in tsconfigsByImporter)) {
+				const tsconfig = tracked.host.tsconfigOf?.(importer)
+				tsconfigsByImporter[importer] = tsconfig
+				tracked.unsnapshotted.tsconfigs.push([importer, tsconfig ?? null])
+			}
+			return tsconfigsByImporter[importer]
+		}
+	}
+	return tracked
 }
 
-const resolvesAsRecorded = (
-	{ precompiler, targetsByImporter, opts }: TrackedPrecompiler,
-	id: string,
-	resolveInBundler?: BundlerResolver
+const keyOf = (...parts: unknown[]): string => hashOf(JSON.stringify(parts))
+
+// what the write analysis reads of a program read whole: each module, as a
+// write in one decides what a site in another answers, and what loads them
+const viewKeyOf = ({
+	modules,
+	targets,
+	exposed,
+	dynamicImports
+}: ReadProgram): string =>
+	keyOf("program", modules, targets, exposed, dynamicImports)
+
+// the precompiler, having read the program its analyses read whole: the
+// scan's a request names, or one it was given unread
+const viewing = (
+	tracked: TrackedPrecompiler,
+	scan?: Scan
+): TrackedPrecompiler => {
+	// e.g. as a scan of another program read its own since
+	if (scan && tracked.viewKey !== scan.viewKey) {
+		tracked.unread = scan.program
+		tracked.viewKey = scan.viewKey
+	}
+	if (tracked.unread) {
+		tracked.precompiler.readProgram(tracked.unread)
+		tracked.unread = undefined
+	}
+	return tracked
+}
+
+// a cache in node_modules/.cache/ark, unless the project can't keep one
+const cachesByCwd: Record<string, AnswerCache | null> = {}
+
+const cacheOf = ({ precompiler }: TrackedPrecompiler) => {
+	const cwd = precompiler.graph.cwd!
+	if (!(cwd in cachesByCwd)) {
+		try {
+			cachesByCwd[cwd] = new AnswerCache(cwd)
+		} catch {
+			cachesByCwd[cwd] = null
+		}
+	}
+	return cachesByCwd[cwd] ?? undefined
+}
+
+// an answer stored for what a key names whose snapshot still holds
+const cachedAnswerOf = (
+	tracked: TrackedPrecompiler,
+	cache: AnswerCache,
+	key: string
+): unknown =>
+	cache.get(
+		key,
+		(tracked.holds ??= createSnapshotCheck(
+			cache,
+			tracked.host,
+			tracked.resolveInBundler
+		))
+	)
+
+// an answer outlives the build where nothing but what it read and resolved
+// decided it
+const store = (
+	tracked: TrackedPrecompiler,
+	cache: AnswerCache,
+	key: string,
+	answer: unknown
 ): boolean => {
-	const host = createNodeHost(opts)
+	if (!tracked.storable) return false
+	const { unsnapshotted } = tracked
+	if (
+		tracked.snapshot === undefined ||
+		unsnapshotted.reads.length ||
+		unsnapshotted.resolutions.length ||
+		unsnapshotted.asked.length ||
+		unsnapshotted.tsconfigs.length
+	) {
+		tracked.snapshot = cache.addSnapshot(unsnapshotted)
+		tracked.unsnapshotted = emptySnapshot(tracked.snapshot)
+	}
+	cache.set(key, answer, tracked.snapshot)
+	return true
+}
+
+// a program a scan read, and what the cache answered for it
+interface Scan {
+	program: ScannedProgram
+	cache: AnswerCache | undefined
+	key: string
+	// what the write analysis reads of the program
+	viewKey: string
+	// the precompiler holding its usage, once one scanned it
+	tracked: TrackedPrecompiler | undefined
+	// each module the scan wrote, as the cache holds them, which a transform
+	// given the same module reads
+	written: Record<string, ProgramModule> | undefined
+	// the usage the cache answered with, and each module it gave the bundler
+	served: { usage: ScannedUsage; given: string[] } | undefined
+	// whether the scan was stored, so what reads its usage may be
+	isStored: boolean
+}
+
+interface ProgramModule {
+	source: string
+	mappings: string | null
+	answer: TransformedModule | null
+	packages: ArkPackage[]
+}
+
+interface StoredModule {
+	transformed: TransformedModule
+	// arktype's, whose copies precompiling it read, which an answer the cache
+	// gives reads again
+	packages: ArkPackage[]
+}
+
+// a scan with every module it wrote, so a build reads them all from one
+interface StoredScan {
+	usage: ScannedUsage
+	modules: Record<string, ProgramModule>
+	// the virtual modules they write, each once, as many share one, which
+	// their modules name by its place
+	texts: string[]
+}
+
+// each module of a program, as transforms naming it would answer
+const modulesWrittenIn = (
+	precompiler: Precompiler,
+	program: ScannedProgram
+): Record<string, ProgramModule> => {
+	const written: Record<string, ProgramModule> = {}
+	for (const id in program.modules) {
+		const { source, mappings, transformed } = program.modules[id]
+		if (!transformed) continue
+		written[id] = {
+			source,
+			mappings: mappings ?? null,
+			packages: packagesOf(precompiler, source, id),
+			answer:
+				transformedModuleOf(
+					precompiler,
+					source,
+					id,
+					undefined,
+					mappings,
+					program.key
+				) ?? null
+		}
+	}
+	return written
+}
+
+const storedScanOf = (
+	usage: ScannedUsage,
+	written: Record<string, ProgramModule>
+): StoredScan => {
+	const texts: string[] = []
+	const places = new Map<string, string>()
+	const placeOf = (text: string) => {
+		if (!places.has(text)) places.set(text, String(texts.push(text) - 1))
+		return places.get(text)!
+	}
+	const modules = flatMorph(written, (id, module) => [
+		id,
+		withModules(module, placeOf)
+	])
+	return { usage, modules, texts }
+}
+
+const writtenIn = ({
+	modules,
+	texts
+}: StoredScan): Record<string, ProgramModule> =>
+	flatMorph(modules, (id, module) => [
+		id,
+		withModules(module, place => texts[+place])
+	])
+
+const withModules = (
+	module: ProgramModule,
+	map: (text: string) => string
+): ProgramModule => ({
+	...module,
+	answer: module.answer && {
+		...module.answer,
+		modules: flatMorph(module.answer.modules, (specifier, text) => [
+			specifier,
+			map(text)
+		])
+	}
+})
+
+const hasDiagnostics = (transformed: TransformedModule) =>
+	transformed.errors.length > 0 || transformed.warnings.length > 0
+
+// the precompiler a reset keeps, having forgotten the modules whose files
+// changed, unless a change may reach past them, as a new resolution, setting
+// or package does, or it may hold more it forgot than it reads
+const keptAcross = (
+	tracked: TrackedPrecompiler,
+	opts: PrecompilePluginOptions,
+	// what the bundler resolved, as the precompiler learned it
+	resolveLearned?: (specifier: string, importer: string) => string | undefined
+): TrackedPrecompiler | undefined => {
+	const { precompiler, readTimes } = tracked
+	if (
+		(tracked.asked && !resolveLearned) ||
+		tracked.forgotten > Object.keys(readTimes).length ||
+		JSON.stringify(withSettingsFile(opts)) !== JSON.stringify(tracked.opts)
+	)
+		return
+	const host = createNodeHost(tracked.opts)
+	const resolvesAs = (specifier: string, importer: string, target?: string) =>
+		(host.resolve(specifier, importer) ??
+			resolveLearned?.(specifier, importer)) === target
+	for (const importer in tracked.targetsByImporter) {
+		const targets = tracked.targetsByImporter[importer]
+		for (const specifier in targets)
+			if (!resolvesAs(specifier, importer, targets[specifier])) return
+	}
+	for (const importer in tracked.missesByImporter) {
+		for (const specifier of tracked.missesByImporter[importer])
+			if (!resolvesAs(specifier, importer)) return
+	}
+	for (const importer in tracked.tsconfigsByImporter) {
+		if (host.tsconfigOf?.(importer) !== tracked.tsconfigsByImporter[importer])
+			return
+	}
+	const changed = Object.keys(readTimes).filter(
+		file => readTimes[file] !== mtimeOf(file)
+	)
+	const forgotten = precompiler.forget(changed)
+	if (!forgotten) return
+	tracked.forgotten += forgotten.length
+	for (const file of changed) {
+		delete readTimes[file]
+		delete tracked.sources[file]
+	}
+	tracked.host = host
+	tracked.holds = undefined
+	// a build reads its own program, if any
+	precompiler.readProgram(undefined)
+	tracked.viewKey = tracked.unread = undefined
+	return tracked
+}
+
+type Resolution = [importer: string, specifier: string, target: string | null]
+
+// what each module a module's imports reach resolved its imports to, and the config
+const reachOf = (
+	{ precompiler, targetsByImporter }: TrackedPrecompiler,
+	id: string
+): Resolution[] => {
+	const result: Resolution[] = []
 	const reached = new Set([id])
 	if (precompiler.config) reached.add(precompiler.config)
 	for (const importer of reached) {
 		const targets = targetsByImporter[importer]
 		for (const specifier in targets) {
 			const target = targets[specifier]
-			if (
-				(host.resolve(specifier, importer) ??
-					resolveInBundler?.(specifier, importer)) !== target
-			)
-				return false
+			result.push([importer, specifier, target ?? null])
 			if (target !== undefined) reached.add(target)
 		}
 	}
-	return true
+	return result
+}
+
+// re-resolved by a new host, which sees each file created since
+const resolvesAsRecorded = (
+	opts: PrecompilePluginOptions,
+	reach: Resolution[],
+	resolveInBundler?: BundlerResolver
+): boolean => {
+	const host = createNodeHost(opts)
+	return reach.every(
+		([importer, specifier, target]) =>
+			(host.resolve(specifier, importer) ??
+				resolveInBundler?.(specifier, importer) ??
+				null) === target
+	)
 }
 
 // a given module unlike its file, as unsaved in an editor, replaces it
 const recordGiven = (
-	{ precompiler, readTimes }: TrackedPrecompiler,
+	tracked: TrackedPrecompiler,
 	source: string,
 	id: string
 ) => {
+	if (tracked.precompiler.graph.host.readFile(id) === source) return
 	// no mtime equals NaN, so the next module replaces the precompiler
-	if (precompiler.graph.host.readFile(id) !== source) readTimes[id] = NaN
+	tracked.readTimes[id] = NaN
+	tracked.storable = false
 }
 
-// what the precompiler cached for any module may be read for the next one
-const isStale = (
-	{ readTimes }: TrackedPrecompiler,
+// whether a file changed since it was read, as what the precompiler cached
+// for any module may be read for the next one
+const hasChanged = (
+	mtimes: Record<string, number>,
 	currentMtimeOf: (file: string) => number = mtimeOf
-) =>
-	Object.keys(readTimes).some(file => readTimes[file] !== currentMtimeOf(file))
+) => Object.keys(mtimes).some(file => mtimes[file] !== currentMtimeOf(file))
 
 export interface KeyedPrecompiler {
 	precompile(source: string, id: string): PrecompiledKeyedModule
@@ -451,20 +990,67 @@ export const createKeyedPrecompiler = (
 			unresolved.set(`${importer}\0${specifier}`, [specifier, importer])
 		return learned
 	}
-	const track = () =>
-		createTrackedPrecompiler({ ...opts, inline: true }, resolveLearned)
+	const inlineOpts = { ...opts, inline: true }
+	const track = () => createTrackedPrecompiler(inlineOpts, resolveLearned)
 	let tracked = track()
 	const precompile = (source: string, id: string): KeyedModule => {
 		const mtimes: Record<string, number> = {}
 		const currentMtimeOf = (file: string) => (mtimes[file] ??= mtimeOf(file))
-		if (isStale(tracked, currentMtimeOf)) tracked = track()
-		if (tracked.hasAnswered) {
-			const keyed = keyedModuleOf(tracked, source, id, currentMtimeOf)
-			if (resolvesAsRecorded(tracked, id, resolveLearned)) return keyed
-			tracked = track()
+		if (hasChanged(tracked.readTimes, currentMtimeOf)) {
+			tracked =
+				keptAcross(
+					tracked,
+					inlineOpts,
+					(specifier, importer) => learnedByImporter[importer]?.[specifier]
+				) ?? track()
 		}
-		tracked.hasAnswered = true
-		return keyedModuleOf(tracked, source, id, currentMtimeOf)
+		if (tracked.holds && hasChanged(tracked.holds.mtimes, currentMtimeOf))
+			tracked.holds = undefined
+		const cache = cacheOf(tracked)
+		const key = cache && keyOf(tracked.context, "keyed", id, source)
+		const cached =
+			key &&
+			(cachedAnswerOf(tracked, cache!, key) as StoredKeyedModule | undefined)
+		// as it re-resolves what it resolved for an answer it held
+		if (
+			cached &&
+			(!tracked.hasAnswered ||
+				resolvesAsRecorded(tracked.opts, cached.reach, resolveLearned)) &&
+			tracked.precompiler.readCopiesOf(cached.packages, id)
+		) {
+			tracked.hasAnswered = true
+			return cached.keyed
+		}
+		let keyed: KeyedModule | undefined
+		if (tracked.hasAnswered) {
+			keyed = keyedModuleOf(tracked, source, id, currentMtimeOf)
+			if (
+				!resolvesAsRecorded(tracked.opts, reachOf(tracked, id), resolveLearned)
+			) {
+				keyed = undefined
+				tracked = track()
+			}
+		}
+		if (!keyed) {
+			tracked.hasAnswered = true
+			keyed = keyedModuleOf(tracked, source, id, currentMtimeOf)
+		}
+		// with what it resolved, which a later process checks as this one does,
+		// unless Turbopack resolved some, which a later process hasn't learned
+		if (
+			key &&
+			!tracked.asked &&
+			!keyed.errors.length &&
+			!keyed.warnings.length &&
+			!tracked.precompiler.writesStandIns(id)
+		) {
+			store(tracked, cache!, key, {
+				keyed,
+				reach: reachOf(tracked, id),
+				packages: packagesOf(tracked.precompiler, source, id)
+			} satisfies StoredKeyedModule)
+		}
+		return keyed
 	}
 	return {
 		precompile: (source, id) => ({
@@ -504,7 +1090,10 @@ const keyedModuleOf = (
 				cached[1]
 			:	(importsByFile[file] = [
 					mtime,
-					precompiler.textImportsOf(readFileSync(file, "utf8"), file)
+					precompiler.textImportsOf(
+						precompiler.graph.host.readFile(file) ?? "",
+						file
+					)
 				])[1]
 	})
 	const transformed = transformedModuleOf(precompiler, source, id, tracked)
@@ -519,6 +1108,19 @@ const keyedModuleOf = (
 	}
 }
 
+const precompiles = (precompiler: Precompiler, source: string, id: string) =>
+	precompiler.checkHelpers || precompiler.importsArk(source, id)
+
+// arktype's packages whose copies precompiling a module read
+const packagesOf = (
+	precompiler: Precompiler,
+	source: string,
+	id: string
+): ArkPackage[] =>
+	precompiler.isTransformed(id) && precompiles(precompiler, source, id) ?
+		precompiler.arkPackagesOf(id)
+	:	[]
+
 const precompiledOf = (
 	precompiler: Precompiler,
 	source: string,
@@ -527,7 +1129,7 @@ const precompiledOf = (
 	mappings?: string,
 	program?: string
 ): PrecompiledModule | undefined => {
-	if (!precompiler.checkHelpers && !precompiler.importsArk(source, id)) return
+	if (!precompiles(precompiler, source, id)) return
 	if (tracked) recordGiven(tracked, source, id)
 	return precompiler.precompile(source, id, mappings, program)
 }
@@ -583,10 +1185,10 @@ const unprecompiledOf = (
 	warnings: []
 })
 
-interface KeptModule {
+interface KeptModule extends StoredModule {
 	source: string
 	mappings: string | undefined
-	transformed: TransformedModule
+	viewKey: string | undefined
 	mtimes: [file: string, mtimeMs: number][]
 }
 
