@@ -62,6 +62,7 @@ import {
 	memberNameOf,
 	nodeMembers,
 	scopeMembers,
+	heldAs,
 	isFunctionNode,
 	readsBindingOf,
 	runtimeMembers,
@@ -113,7 +114,17 @@ export interface Trace {
 	exportedFunctions: Read[]
 	// each top-level binding the site can read before it's set, and its reader
 	readFirst: [binding: Binding, module: SourceModule, reader: string][]
+	// each changeable value read through a binding or a default export, which
+	// another module of the program may write, and how many levels down it
+	// holds what the program can change
+	holders: Holder[]
 }
+
+export type Holder = [
+	module: SourceModule,
+	holder: Binding | "default",
+	depth: number
+]
 
 interface Environment {
 	valuesByBinding: Map<Binding, unknown>
@@ -319,6 +330,7 @@ export class Interpreter {
 	private opts: InterpreterOptions
 	sitesByNode = new Map<Node, SiteState>()
 	standIns = new WeakMap<object, StandIn>()
+	private methodsByValue = new WeakMap<object, [FunctionNode, SourceModule][]>()
 	// the site whose own call into arktype threw each ParseError
 	parseErrorSites = new WeakMap<ParseError, SiteState>()
 	// deferred default checks by the node whose creation ran them
@@ -974,10 +986,18 @@ export class Interpreter {
 			isReadFirst
 		)
 		if (unreadable) return { value: unreadable }
+		const depth = changeableDepthOf(result.value)
 		const written =
-			isChangeable(result.value) &&
-			this.writtenBefore(binding, module, readAt ?? node, ctx)
+			depth > 0 &&
+			(this.writtenBefore(binding, module, readAt ?? node, depth, ctx) ??
+				this.writtenThroughThis(
+					`\`${binding.name}\``,
+					result.value as object,
+					depth,
+					ctx
+				))
 		if (written) return { value: new DynamicValue(module, node, written) }
+		if (depth > 0) addHolder(ctx.trace, module, binding, depth)
 		let isReceived = isChangeable(result.value)
 		if (!isArkValue(result.value) || readsAgain(result.value))
 			mergeTrace(ctx.trace, result.trace)
@@ -985,6 +1005,7 @@ export class Interpreter {
 			// arktype values are immutable, so their reads hold at the site
 			for (const read of result.trace.reads)
 				if (isArkValue(read.value)) ctx.trace.reads.push(read)
+			addHoldersOf(ctx.trace, result.trace)
 			// unless the declaration compares what the program holds
 			isReceived = !!this.declarationsByValue
 				.get(result.value as object)
@@ -1102,14 +1123,28 @@ export class Interpreter {
 		}
 		const result = this.exportValue(target)
 		if (result.error !== undefined) throw result.error
+		const depth = changeableDepthOf(result.value)
 		const exported =
-			isChangeable(result.value) &&
-			target.kind === "binding" &&
-			this.writtenIn(target.binding, target.module, ctx)
+			depth > 0 &&
+			((target.kind === "binding" &&
+				this.writtenIn(target.binding, target.module, depth, ctx)) ||
+				this.writtenThroughThis(
+					target.kind === "binding" ?
+						`\`${target.binding.name}\``
+					:	`the default export of ${target.module.path}`,
+					result.value as object,
+					depth,
+					ctx
+				))
 		const dynamic =
 			isDynamic(result.value) ?
 				result.value
-			:	exported && new DynamicValue(target.module, target.binding.id, exported)
+			:	exported &&
+				new DynamicValue(
+					target.module,
+					target.kind === "binding" ? target.binding.id : target.node,
+					exported
+				)
 		if (dynamic) {
 			return {
 				value: new DynamicValue(
@@ -1121,15 +1156,18 @@ export class Interpreter {
 			}
 		}
 		const written =
-			isChangeable(result.value) &&
+			depth > 0 &&
 			this.writtenBefore(
 				binding,
 				ctx.module,
 				ctx.origin?.module === ctx.module ? ctx.origin.node : node,
+				depth,
 				ctx
 			)
 		if (written) return { value: new DynamicValue(ctx.module, node, written) }
+		if (depth > 0) addHolder(ctx.trace, ...holderOf(target), depth)
 		if (readsAgain(result.value)) mergeTrace(ctx.trace, result.trace)
+		else addHoldersOf(ctx.trace, result.trace)
 		const declaration = binding.declaration.parent
 		const isDirect =
 			declaration?.type === "ImportDeclaration" &&
@@ -1164,13 +1202,14 @@ export class Interpreter {
 		binding: Binding,
 		module: SourceModule,
 		readAt: Node,
+		depth: number,
 		ctx: Context
 	): string | undefined {
 		if (ctx.site?.readsLiterals) return
 		const scope = binding.scope.node
 		const isReadOnce = runsOnceIn(readAt, scope)
 		const write = this.graph
-			.mayWritesOf(binding, module)
+			.mayWritesOf(binding, module, heldAs(depth))
 			.find(
 				write => !isReadOnce || runPointOf(write, scope, module) < readAt.start
 			)
@@ -1181,11 +1220,62 @@ export class Interpreter {
 	private writtenIn(
 		binding: Binding,
 		module: SourceModule,
+		depth: number,
 		ctx: Context
 	): string | undefined {
 		if (ctx.site?.readsLiterals) return
-		const [write] = this.graph.mayWritesOf(binding, module)
+		const [write] = this.graph.mayWritesOf(binding, module, heldAs(depth))
 		return write && this.writtenProblemOf(binding, write, module)
+	}
+
+	// what a binding, or an export's expression, evaluated to, once it has
+	evaluatedOf(key: Binding | Node): Evaluated | undefined {
+		const result =
+			"type" in key ? this.valuesByNode.get(key) : this.valuesByBinding.get(key)
+		return result === "evaluating" ? undefined : result
+	}
+
+	// e.g. `swap() { this.t = T }` held by the value read, which the program
+	// may call wherever it reads the value
+	private writtenThroughThis(
+		label: string,
+		value: object,
+		depth: number,
+		ctx: Context
+	): string | undefined {
+		if (ctx.site?.readsLiterals) return
+		for (const [fn, module] of this.methodsOf(value)) {
+			const [write] = this.graph.mayWritesThroughThis(fn, module, heldAs(depth))
+			if (write)
+				return `${label} holds a method that ${this.graph.isEscape(write) ? "passes `this` to code the build doesn't follow" : "writes `this`"} at ${module.positionOf(write)}, so its value at the site is not known`
+		}
+	}
+
+	// each function other than an arrow a value holds, whose `this` is what
+	// holds it when the program calls it as a method
+	private methodsOf(value: object): [FunctionNode, SourceModule][] {
+		let result = this.methodsByValue.get(value)
+		if (result) return result
+		this.methodsByValue.set(value, (result = []))
+		const seen = new Set<unknown>()
+		const visit = (value: unknown) => {
+			if (!isPlainContainer(value) || seen.has(value)) return
+			seen.add(value)
+			for (const k of Reflect.ownKeys(value)) {
+				const descriptor = Reflect.getOwnPropertyDescriptor(value, k)!
+				for (const held of [descriptor.value, descriptor.get, descriptor.set]) {
+					const closure =
+						hasDomain(held, "object") ?
+							this.standIns.get(held)?.closure
+						:	undefined
+					if (!closure) visit(held)
+					else if (closure.node.type !== "ArrowFunctionExpression")
+						result!.push([closure.node, closure.module])
+				}
+			}
+		}
+		visit(value)
+		return result
 	}
 
 	private writtenProblemOf(
@@ -1715,12 +1805,23 @@ export class Interpreter {
 			case "expression": {
 				const result = this.exportValue(target)
 				if (result.error !== undefined) throw result.error
+				const depth = changeableDepthOf(result.value)
 				const written =
-					isChangeable(result.value) &&
-					target.kind === "binding" &&
-					this.writtenIn(target.binding, target.module, ctx)
+					depth > 0 &&
+					((target.kind === "binding" &&
+						this.writtenIn(target.binding, target.module, depth, ctx)) ||
+						this.writtenThroughThis(
+							target.kind === "binding" ?
+								`\`${target.binding.name}\``
+							:	`the default export of ${target.module.path}`,
+							result.value as object,
+							depth,
+							ctx
+						))
 				if (written) return new DynamicValue(target.module, node, written)
+				if (depth > 0) addHolder(ctx.trace, ...holderOf(target), depth)
 				if (readsAgain(result.value)) mergeTrace(ctx.trace, result.trace)
+				else addHoldersOf(ctx.trace, result.trace)
 				return this.consume(lookupOf(exportRootOf(target), result.value), ctx)
 			}
 		}
@@ -2648,6 +2749,38 @@ const isValidator = (value: unknown): boolean =>
 const isChangeable = (value: unknown): value is object =>
 	isPlainContainer(value) || value instanceof Date || value instanceof RegExp
 
+const depthsByValue = new WeakMap<object, number>()
+
+// how many levels down a value holds what the program can change: 1 for
+// `{ a: type("string") }`, 2 for `{ inner: { a: "string" } }`, and unbounded
+// for one holding itself or a getter, which may return anything
+export const changeableDepthOf = (
+	value: unknown,
+	seen = new Set<object>()
+): number => {
+	// a site reads a Date or RegExp at run time, so a setter changes nothing
+	// the build baked
+	if (!isPlainContainer(value)) return 0
+	let depth = depthsByValue.get(value)
+	if (depth !== undefined) return depth
+	// a value reaching one being counted holds itself
+	if (seen.has(value)) return Infinity
+	depth = 1
+	seen.add(value)
+	for (const k of Reflect.ownKeys(value)) {
+		const descriptor = Reflect.getOwnPropertyDescriptor(value, k)!
+		depth = Math.max(
+			depth,
+			"value" in descriptor ?
+				1 + changeableDepthOf(descriptor.value, seen)
+			:	Infinity
+		)
+	}
+	seen.delete(value)
+	depthsByValue.set(value, depth)
+	return depth
+}
+
 // a Generic parses its body per instantiation, a Scope its aliases lazily
 const readsAgain = (value: unknown): boolean =>
 	hasArkKind(value, "generic") ||
@@ -2730,7 +2863,8 @@ const emptyTrace = (): Trace => ({
 	reads: [],
 	helpers: [],
 	exportedFunctions: [],
-	readFirst: []
+	readFirst: [],
+	holders: []
 })
 
 const rootContext = (
@@ -2751,6 +2885,31 @@ const mergeTrace = (into: Trace, from: Trace) => {
 		addHelper(into.helpers, node, module)
 	for (const read of from.exportedFunctions) into.exportedFunctions.push(read)
 	for (const read of from.readFirst) into.readFirst.push(read)
+	addHoldersOf(into, from)
+}
+
+// what a value was read off, which another module may write before the
+// binding holding it is set, as `const { c } = H` reads `H`
+const addHoldersOf = (into: Trace, from: Trace) => {
+	for (const holder of from.holders) addHolder(into, ...holder)
+}
+
+const holderOf = (
+	target: Extract<ImportTarget, { kind: "binding" | "expression" }>
+): [module: SourceModule, holder: Binding | "default"] => [
+	target.module,
+	target.kind === "binding" ? target.binding : "default"
+]
+
+const addHolder = (
+	trace: Trace,
+	module: SourceModule,
+	holder: Binding | "default",
+	depth: number
+) => {
+	const added = trace.holders.find(([m, h]) => m === module && h === holder)
+	if (!added) trace.holders.push([module, holder, depth])
+	else added[2] = Math.max(added[2], depth)
 }
 
 const addHelper = (

@@ -23,6 +23,7 @@ import type { StringType } from "arktype/internal/variants/string.ts"
 import type {
 	ArrowFunctionExpression,
 	CallExpression,
+	Class,
 	ClassElement,
 	Function,
 	FunctionBody,
@@ -61,7 +62,6 @@ import { SourceModule } from "./module.ts"
 import {
 	declaredIds,
 	exportNameOf,
-	idsOf,
 	isTransparent,
 	isWriteTarget,
 	loadedSourceOf,
@@ -475,6 +475,336 @@ const readingMembersByGlobal: Record<string, string[]> = Object.setPrototypeOf(
 	null
 )
 
+// how a value holds what the program can change of a value the build read:
+// down to `depth` levels, the first `copied` of which it made itself, as
+// `{ ...o }` makes one
+export interface Held {
+	depth: number
+	copied: number
+}
+
+// e.g. what a rest parameter of a callback holds, which may be anything
+// the receiver does
+const unbounded: Held = { depth: Infinity, copied: 0 }
+
+// past it, a value is followed as if it were unbounded
+const maxDepth = 16
+
+export const heldAs = (depth: number, copied = 0): Held => ({
+	depth: depth > maxDepth ? Infinity : depth,
+	copied: Math.min(copied, maxDepth)
+})
+
+// what a value holds of another: e.g. `o.a` its "element", `list.sort()`
+// "self", `list.slice()` a "copy", `Object.entries(o)` "pairs" made for its
+// values and a primitive "none"
+type Relation = "self" | "element" | "copy" | "pairs" | "none"
+
+const heldThrough = (held: Held, relation: Relation): Held | undefined =>
+	relation === "self" ? held
+	: relation === "element" ?
+		heldAs(held.depth - 1, Math.max(0, held.copied - 1))
+	: relation === "copy" ? heldAs(held.depth, Math.max(1, held.copied))
+	: relation === "pairs" ? heldAs(held.depth + 1, Math.max(2, held.copied + 1))
+	: undefined
+
+// e.g. `[o]` or `{ o }`
+const wrapperOf = (held: Held): Held => heldAs(held.depth + 1, held.copied + 1)
+
+// each binding a pattern declares and how it holds what the value
+// destructured into it does, or undefined for one the build doesn't follow,
+// like a parameter property
+const patternHoldingsOf = (
+	pattern: Node,
+	held: Held
+): [id: Node, held: Held][] | undefined => {
+	switch (pattern.type) {
+		case "Identifier":
+			return [[pattern, held]]
+		case "AssignmentPattern":
+			return patternHoldingsOf(pattern.left, held)
+		case "ObjectPattern":
+		case "ArrayPattern": {
+			const result: [Node, Held][] = []
+			const items =
+				pattern.type === "ArrayPattern" ?
+					pattern.elements
+				:	pattern.properties.map(property =>
+						property.type === "RestElement" ? property : property.value
+					)
+			for (const item of items) {
+				if (!item) continue
+				// e.g. `{ a, ...rest }`, whose rest is a copy
+				const holdings =
+					item.type === "RestElement" ?
+						patternHoldingsOf(item.argument, heldThrough(held, "copy")!)
+					:	patternHoldingsOf(item, heldThrough(held, "element")!)
+				if (!holdings) return
+				result.push(...holdings)
+			}
+			return result
+		}
+	}
+}
+
+const elementCallback: Relation[] = ["element", "none", "self"]
+const reducer: Relation[] = ["element", "element", "none", "self"]
+const comparator: Relation[] = ["element", "element"]
+
+// the module an import or a require reads a binding from, and the name it
+// reads, "*" for the whole module
+const sourceOf = (
+	binding: Binding
+): [specifier: string, name: string] | undefined => {
+	const declaration = binding.declaration
+	switch (declaration.type) {
+		case "ImportSpecifier":
+		case "ImportDefaultSpecifier":
+		case "ImportNamespaceSpecifier":
+			return [
+				(declaration.parent as ImportDeclaration).source.value,
+				declaration.type === "ImportSpecifier" ?
+					exportNameOf(declaration.imported)
+				: declaration.type === "ImportDefaultSpecifier" ? "default"
+				: "*"
+			]
+		case "VariableDeclarator": {
+			const init = declaration.init && unwrapExpression(declaration.init)
+			const loaded =
+				init?.type === "CallExpression" ? loadedSourceOf(init) : undefined
+			if (loaded?.type !== "Literal" || typeof loaded.value !== "string") return
+			if (declaration.id.type === "Identifier") return [loaded.value, "*"]
+			// e.g. `const { register } = require("registry")`
+			const property =
+				declaration.id.type === "ObjectPattern" ?
+					declaration.id.properties.find(
+						property =>
+							property.type === "Property" && property.value === binding.id
+					)
+				:	undefined
+			const name =
+				property?.type === "Property" ? keyNameOf(property) : undefined
+			return typeof name === "string" ? [loaded.value, name] : undefined
+		}
+	}
+}
+
+// e.g. `exports` or `module.exports`
+const isExportsOf = (node: Node): boolean => {
+	node = unwrapExpression(node)
+	return (
+		(node.type === "Identifier" && node.name === "exports") ||
+		(node.type === "MemberExpression" &&
+			node.object.type === "Identifier" &&
+			node.object.name === "module" &&
+			memberNameOf(node) === "exports")
+	)
+}
+
+// what a CommonJS module exports as `name`, if it does once: e.g.
+// `exports.name = value`, `module.exports = { name }` or TypeScript's
+// re-export, `Object.defineProperty(exports, "name", { get: () => value })`
+const commonExportOf = (
+	module: SourceModule,
+	name: string
+): Node | undefined => {
+	const values: Node[] = []
+	let isKnown = true
+	walk(module.program, node => {
+		if (!isKnown) return false
+		if (node.type === "CallExpression") {
+			const [target, key, descriptor] = node.arguments
+			if (!target || !isExportsOf(target)) return true
+			if (key?.type !== "Literal" || typeof key.value !== "string")
+				return (isKnown = false)
+			if (key.value !== name) return true
+			const property =
+				descriptor?.type === "ObjectExpression" ?
+					descriptor.properties.find(
+						property =>
+							property.type === "Property" &&
+							(keyNameOf(property) === "get" || keyNameOf(property) === "value")
+					)
+				:	undefined
+			const value =
+				property?.type === "Property" ?
+					unwrapExpression(property.value)
+				:	undefined
+			const exported =
+				!value || property!.type !== "Property" ? undefined
+				: keyNameOf(property as never) === "value" ? value
+				: isFunctionNode(value) ? returnedOf(value)
+				: undefined
+			if (!exported) return (isKnown = false)
+			values.push(exported)
+			return true
+		}
+		if (node.type !== "AssignmentExpression") return true
+		const target = unwrapExpression(node.left)
+		const value = unwrapExpression(node.right)
+		if (
+			target.type === "MemberExpression" &&
+			isExportsOf(target.object) &&
+			memberNameOf(target) === name
+		) {
+			// e.g. `exports.a = exports.b = void 0`
+			if (node.operator !== "=") isKnown = false
+			else if (
+				!(value.type === "UnaryExpression" && value.operator === "void") &&
+				value.type !== "AssignmentExpression"
+			)
+				values.push(value)
+		} else if (isExportsOf(target)) {
+			if (node.operator !== "=") isKnown = false
+			else if (name === "default") values.push(value)
+			// `module.exports = fn` replaces each name it exported
+			else if (value.type !== "ObjectExpression") isKnown = false
+			else {
+				for (const property of value.properties) {
+					if (property.type !== "Property") isKnown = false
+					else if (keyNameOf(property) === name) values.push(property.value)
+				}
+			}
+		}
+		return true
+	})
+	return isKnown && values.length === 1 ? values[0] : undefined
+}
+
+// a method each instance of a class runs, unless one may replace it
+const methodIn = (
+	cls: Class,
+	name: string,
+	module: SourceModule
+): [FunctionNode, SourceModule] | undefined => {
+	let method: FunctionNode | undefined
+	for (const element of cls.body.body) {
+		if (
+			(element.type !== "MethodDefinition" &&
+				element.type !== "PropertyDefinition") ||
+			element.static ||
+			keyNameOf(element) !== name
+		)
+			continue
+		const value = element.value && unwrapExpression(element.value)
+		if (
+			method ||
+			!value ||
+			!isFunctionNode(value) ||
+			(element.type === "MethodDefinition" && element.kind !== "method")
+		)
+			return
+		method = value
+	}
+	return method && !replacesMember(cls, name) ? [method, module] : undefined
+}
+
+// e.g. `store` read only as `store.add(...)` or `new Store()`, so nothing
+// can replace a member its instances run
+const readsOnlyMembers = (binding: Binding): boolean =>
+	!binding.writes.length &&
+	binding.references.every(reference => {
+		const [operand, parent] = operatorOf(reference.id)
+		return (
+			(parent?.type === "MemberExpression" &&
+				parent.object === operand &&
+				!isWriteTarget(parent)) ||
+			(parent?.type === "NewExpression" && parent.callee === operand)
+		)
+	})
+
+// e.g. `this.add = add` or `Object.assign(this, methods)`
+const replacesMember = (cls: Class, name: string): boolean => {
+	let result = false
+	walk(cls.body, node => {
+		if (
+			(node.type === "MemberExpression" &&
+				node.object.type === "ThisExpression" &&
+				memberNameOf(node) === name &&
+				isWriteTarget(node)) ||
+			((node.type === "CallExpression" || node.type === "NewExpression") &&
+				node.arguments.some(arg => arg.type === "ThisExpression"))
+		)
+			result = true
+		return !result
+	})
+	return result
+}
+
+// what a builtin method's result holds of its receiver, and what its
+// callback's parameters do, where it takes one
+const heldByMethod: Record<string, [result: Relation, callback?: Relation[]]> =
+	Object.setPrototypeOf(
+		{
+			at: ["element"],
+			pop: ["element"],
+			shift: ["element"],
+			find: ["element", elementCallback],
+			findLast: ["element", elementCallback],
+			// without an initial value, its first element is its accumulator
+			reduce: ["element", reducer],
+			reduceRight: ["element", reducer],
+			sort: ["self", comparator],
+			reverse: ["self"],
+			fill: ["self"],
+			copyWithin: ["self"],
+			slice: ["copy"],
+			concat: ["copy"],
+			splice: ["copy"],
+			with: ["copy"],
+			toReversed: ["copy"],
+			toSpliced: ["copy"],
+			values: ["copy"],
+			filter: ["copy", elementCallback],
+			toSorted: ["copy", comparator],
+			entries: ["pairs"],
+			// what a callback returns reaches code the build doesn't follow
+			map: ["none", elementCallback],
+			flatMap: ["none", elementCallback],
+			forEach: ["none", elementCallback],
+			some: ["none", elementCallback],
+			every: ["none", elementCallback],
+			findIndex: ["none", elementCallback],
+			findLastIndex: ["none", elementCallback],
+			includes: ["none"],
+			indexOf: ["none"],
+			lastIndexOf: ["none"],
+			join: ["none"],
+			keys: ["none"],
+			push: ["none"],
+			unshift: ["none"],
+			hasOwnProperty: ["none"],
+			propertyIsEnumerable: ["none"],
+			isPrototypeOf: ["none"],
+			toString: ["none"],
+			toLocaleString: ["none"],
+			valueOf: ["self"],
+			get: ["element"],
+			has: ["none"],
+			// a Date's or RegExp's, which a site reads at run time
+			getTime: ["none"],
+			toISOString: ["none"],
+			toJSON: ["none"],
+			test: ["none"],
+			exec: ["none"]
+		},
+		null
+	)
+
+// what a global function's result holds of its first argument
+const heldByGlobal: Record<string, Relation> = Object.setPrototypeOf(
+	{
+		"Object.freeze": "self",
+		"Object.values": "copy",
+		"Object.entries": "pairs",
+		"Object.getOwnPropertyDescriptor": "copy",
+		"Object.getOwnPropertyDescriptors": "pairs",
+		"Array.from": "copy",
+		"Reflect.get": "element"
+	},
+	null
+)
+
 const mutatingMethods: Record<string, 1> = Object.setPrototypeOf(
 	{
 		...storingMethods,
@@ -670,6 +1000,40 @@ interface Located {
 	kindOfKey: KindOfKey
 }
 
+// the whole program, as a production bundle's scan or --emit reads it
+export interface ProgramView {
+	ids: readonly string[]
+	resolve: (specifier: string, importer: string) => string | undefined
+	// why code the build doesn't read may import each module, e.g. an import()
+	loose: ReadonlyMap<string, string>
+}
+
+// where a value another module may write is written, or why it may be
+export type Elsewhere =
+	| { kind: "written"; node: Node; module: SourceModule }
+	| { kind: "loose"; exporter: SourceModule; why: string }
+
+// what holds a value its binding holds, as an alias or a default export
+type Holding =
+	| { binding: Binding; module: SourceModule; held: Held }
+	| { name: "default"; module: SourceModule; held: Held }
+
+// a name a value is exported as, and how it holds the value
+type HeldExport = [module: SourceModule, name: string, held: Held]
+
+interface Follow {
+	writes: Node[]
+	// what holds the binding's value next
+	holdings: Holding[]
+}
+
+type ImporterEdge =
+	// a namespace import's name is "*"
+	| { kind: "import"; name: string; binding: Binding; module: SourceModule }
+	| { kind: "reexport"; name: string; as: string; module: SourceModule }
+	| { kind: "star"; module: SourceModule }
+	| { kind: "whole"; module: SourceModule; node: Node }
+
 export type ImportTarget =
 	| { kind: "arktype"; name: ArkExportName; value: unknown }
 	| { kind: "arktypeNamespace"; specifier: string; value: object }
@@ -723,9 +1087,24 @@ export class ModuleGraph {
 	private resolving = new Set<Node>()
 	private heldKindsByNode = new Map<Node, KindBits>()
 	private writesByBinding = new WeakMap<Binding, Node[]>()
-	private mayWritesByBinding = new WeakMap<Binding, Node[]>()
+	// what mayWritesOf finds of each binding by how it holds a value
+	private followsByBinding = new WeakMap<Binding, Map<string, Follow>>()
 	// where a value reaches code the build doesn't follow, which may write it
 	private escapes = new WeakSet<Node>()
+	private holdings: Holding[] | undefined
+	// how a function's calls are being followed, which its own calls aren't again
+	private returning = new WeakMap<FunctionNode, Set<string>>()
+	// what each method may write through `this`, by how it holds a value
+	private thisWritesByFn = new WeakMap<FunctionNode, Map<string, Node[]>>()
+	// each module of a package the build reads only for what a callee may
+	// write, or null for one it can't read
+	private packageModulesById = new Map<string, SourceModule | null>()
+	view: ProgramView | undefined
+	private importersById: Map<string, ImporterEdge[]> | undefined
+	private elsewhereByHolder = new WeakMap<
+		object,
+		Map<number, Elsewhere | null>
+	>()
 	private importsById: Record<string, string[]> = Object.create(null)
 	private optsInByPackage: Record<string, boolean> = Object.create(null)
 	dependencies: DependencyModes
@@ -3705,21 +4084,283 @@ export class ModuleGraph {
 		}
 	}
 
-	// what may write a binding's value: writesThrough's, and where it reaches
-	// code the build doesn't follow, like `[o][0].a = 1` or `new Map([["o", o]])`
-	mayWritesOf(binding: Binding, module: SourceModule): Node[] {
-		let result = this.mayWritesByBinding.get(binding)
-		if (!result) {
-			result = []
-			this.mayWritesByBinding.set(binding, result)
+	// what may write the value a binding holds as `held` describes: a write at
+	// a level it shares, like `[o][0].a = 1`, or where it reaches code the
+	// build doesn't follow, like `new Map([["o", o]])`
+	mayWritesOf(binding: Binding, module: SourceModule, held: Held): Node[] {
+		return this.followOf(binding, module, held).writes
+	}
+
+	private followOf(binding: Binding, module: SourceModule, held: Held): Follow {
+		const key = `${held.depth}:${held.copied}`
+		let follows = this.followsByBinding.get(binding)
+		if (!follows) this.followsByBinding.set(binding, (follows = new Map()))
+		let result = follows.get(key)
+		if (result) return result
+		result = { writes: [], holdings: [] }
+		follows.set(key, result)
+		const outer = this.holdings
+		this.holdings = result.holdings
+		try {
 			for (const reference of binding.references) {
 				if (reference.isWrite) continue
-				const write = this.mayWriteFrom(reference.id, module)
-				if (write) result.push(write)
+				const write = this.mayWriteFrom(reference.id, module, held)
+				if (write) result.writes.push(write)
 			}
-			result.push(...this.writesThrough(binding, module))
+		} catch (e) {
+			// one left unfinished would read as writing nothing
+			follows.delete(key)
+			throw e
+		} finally {
+			this.holdings = outer
 		}
 		return result
+	}
+
+	// what a method a value holds may write of it through `this`, as
+	// `swap() { this.t = T }` does once the program calls `o.swap()`
+	mayWritesThroughThis(
+		fn: FunctionNode,
+		module: SourceModule,
+		held: Held
+	): Node[] {
+		const key = `${held.depth}:${held.copied}`
+		let byHeld = this.thisWritesByFn.get(fn)
+		if (!byHeld) this.thisWritesByFn.set(fn, (byHeld = new Map()))
+		let result = byHeld.get(key)
+		if (result) return result
+		byHeld.set(key, (result = []))
+		for (const node of [...fn.params, fn.body!]) {
+			walk(node, child => {
+				if (child.type === "ThisExpression") {
+					const write = this.mayWriteFrom(child, module, held)
+					if (write) result.push(write)
+				}
+				// a function other than an arrow has a `this` of its own
+				return (
+					!isFunctionNode(child) || child.type === "ArrowFunctionExpression"
+				)
+			})
+		}
+		return result
+	}
+
+	// reads the whole program, whose other modules may write what one exports
+	readView(view: ProgramView | undefined): void {
+		this.view = view
+		this.importersById = undefined
+		this.elsewhereByHolder = new WeakMap()
+	}
+
+	// where another module of the program may write the value a binding, or a
+	// module's default export, holds `depth` levels down: through an import of
+	// it, of an alias exported in its place or of a module re-exporting it
+	elsewhereOf(
+		module: SourceModule,
+		holder: Binding | "default",
+		depth: number
+	): Elsewhere | undefined {
+		if (!this.view) return
+		const key = holder === "default" ? module : holder
+		let byDepth = this.elsewhereByHolder.get(key)
+		if (!byDepth) this.elsewhereByHolder.set(key, (byDepth = new Map()))
+		let result = byDepth.get(depth)
+		if (result === undefined) {
+			const held = heldAs(depth)
+			result =
+				this.findElsewhere(
+					holder === "default" ?
+						[[module, "default", held]]
+					:	this.exportsHolding(holder, module, held)
+				) ?? null
+			byDepth.set(depth, result)
+		}
+		return result ?? undefined
+	}
+
+	private findElsewhere(exports: HeldExport[]): Elsewhere | undefined {
+		const seen = new Set<string>()
+		for (let i = 0; i < exports.length; i++) {
+			const [exporter, name, held] = exports[i]
+			const key = `${exporter.id}\0${name}\0${held.depth}:${held.copied}`
+			if (seen.has(key)) continue
+			seen.add(key)
+			const why = this.view!.loose.get(exporter.id)
+			if (why) return { kind: "loose", exporter, why }
+			for (const edge of this.importersOf(exporter.id)) {
+				switch (edge.kind) {
+					case "reexport":
+						if (edge.name === name) exports.push([edge.module, edge.as, held])
+						break
+					case "star":
+						if (name !== "default") exports.push([edge.module, name, held])
+						break
+					case "whole":
+						return {
+							kind: "loose",
+							exporter,
+							why: `${edge.module.positionOf(edge.node)} re-exports as a namespace`
+						}
+					case "import": {
+						if (edge.name !== "*" && edge.name !== name) break
+						const write =
+							edge.name === "*" ?
+								this.namespaceWriteOf(
+									edge.binding,
+									edge.module,
+									name,
+									held,
+									exports
+								)
+							:	this.mayWritesOf(edge.binding, edge.module, held)[0]
+						if (write) {
+							return {
+								kind: "written",
+								node: write,
+								module: this.moduleOfNode(write) ?? edge.module
+							}
+						}
+						if (edge.name !== "*") {
+							exports.push(
+								...this.exportsHolding(edge.binding, edge.module, held)
+							)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// where a namespace's reads of an export may write it, adding the names
+	// what holds it next is exported as
+	private namespaceWriteOf(
+		namespace: Binding,
+		module: SourceModule,
+		name: string,
+		held: Held,
+		exports: HeldExport[]
+	): Node | undefined {
+		if (namespace.exportNames.length) return this.escape(namespace.id)
+		const outer = this.holdings
+		const holdings: Holding[] = (this.holdings = [])
+		try {
+			for (const reference of namespace.references) {
+				const [operand, parent] = operatorOf(reference.id)
+				const read =
+					parent?.type === "MemberExpression" && parent.object === operand ?
+						memberNameOf(parent)
+					:	undefined
+				// e.g. `ns.other`, another export
+				if (typeof read === "string" && read !== name) continue
+				// `ns.name` is the export itself, and `ns` holds it as a member
+				const write =
+					read === name ?
+						this.mayWriteFrom(parent!, module, held)
+					:	this.mayWriteFrom(reference.id, module, wrapperOf(held))
+				if (write) return write
+			}
+		} finally {
+			this.holdings = outer
+		}
+		for (const holding of holdings) {
+			if ("binding" in holding) {
+				exports.push(
+					...this.exportsHolding(holding.binding, holding.module, holding.held)
+				)
+			} else exports.push([holding.module, holding.name, holding.held])
+		}
+	}
+
+	// the names a value is exported as: a binding's own, and those of each
+	// binding or default export holding it next
+	private exportsHolding(
+		binding: Binding,
+		module: SourceModule,
+		held: Held
+	): HeldExport[] {
+		const result: HeldExport[] = []
+		const visited = new Set<Follow>()
+		const visit = (binding: Binding, module: SourceModule, held: Held) => {
+			const follow = this.followOf(binding, module, held)
+			if (visited.has(follow)) return
+			visited.add(follow)
+			for (const name of binding.exportNames) result.push([module, name, held])
+			for (const holding of follow.holdings) {
+				if ("binding" in holding)
+					visit(holding.binding, holding.module, holding.held)
+				else result.push([holding.module, holding.name, holding.held])
+			}
+		}
+		visit(binding, module, held)
+		return result
+	}
+
+	private importersOf(id: string): ImporterEdge[] {
+		this.importersById ??= this.linkImporters(this.view!)
+		return this.importersById.get(id) ?? []
+	}
+
+	private linkImporters(view: ProgramView): Map<string, ImporterEdge[]> {
+		const result = new Map<string, ImporterEdge[]>()
+		for (const id of view.ids) {
+			const module = this.modulesById[id]
+			if (!(module instanceof SourceModule)) continue
+			const add = (specifier: string, edge: ImporterEdge) => {
+				const target = view.resolve(specifier, id)
+				if (target === undefined) return
+				const edges = result.get(target)
+				if (edges) edges.push(edge)
+				else result.set(target, [edge])
+			}
+			for (const statement of module.program.body) {
+				if (statement.type === "ImportDeclaration") {
+					if (statement.importKind === "type") continue
+					for (const specifier of statement.specifiers) {
+						const binding = module.scopes.bindingsById.get(specifier.local)
+						if (!binding) continue
+						add(statement.source.value, {
+							kind: "import",
+							name:
+								specifier.type === "ImportNamespaceSpecifier" ? "*"
+								: specifier.type === "ImportDefaultSpecifier" ? "default"
+								: exportNameOf(specifier.imported),
+							binding,
+							module
+						})
+					}
+				} else if (statement.type === "ExportNamedDeclaration") {
+					if (!statement.source || statement.exportKind === "type") continue
+					for (const specifier of statement.specifiers) {
+						add(statement.source.value, {
+							kind: "reexport",
+							name: exportNameOf(specifier.local),
+							as: exportNameOf(specifier.exported),
+							module
+						})
+					}
+				} else if (statement.type === "ExportAllDeclaration") {
+					if (statement.exportKind === "type") continue
+					add(
+						statement.source.value,
+						statement.exported ?
+							{ kind: "whole", module, node: statement }
+						:	{ kind: "star", module }
+					)
+				}
+			}
+		}
+		return result
+	}
+
+	// the module a node was parsed from
+	private moduleOfNode(node: Node): SourceModule | undefined {
+		let root = node
+		while (root.parent) root = root.parent
+		for (const id in this.modulesById) {
+			const module = this.modulesById[id]
+			if (module instanceof SourceModule && module.program === root)
+				return module
+		}
 	}
 
 	// e.g. `type.valueOf(o)` or `User.and(o)`, which arktype reads
@@ -3733,14 +4374,39 @@ export class ModuleGraph {
 		)
 	}
 
-	// e.g. `o.max` given `o = { max: 5 }`
+	// e.g. `o.max` given `o = { max: 5 }`, or a member of an enum
 	private readsPrimitive(
 		member: MemberExpression,
 		module: SourceModule
 	): boolean {
+		const object = unwrapChain(member.object)
+		let binding =
+			object.type === "Identifier" ?
+				module.scopes.byId.get(object)?.binding
+			:	undefined
+		if (binding?.kind === "import") {
+			const target = this.importOf(binding, module)
+			binding = target.kind === "binding" ? target.binding : undefined
+		}
+		if (binding?.kind === "enum") return true
 		const literal = this.literalOf(member.object, module, this.finalKindOfKey)
 		const value = literal && this.valueIn(literal, memberNameOf(member))
 		return !!value && isPrimitiveNode(unwrapExpression(value.node))
+	}
+
+	// e.g. "Object.values" for `Object.values`
+	private globalMemberOf(node: Node, module: SourceModule): string | undefined {
+		node = unwrapChain(node)
+		if (node.type !== "MemberExpression") return
+		const object = unwrapChain(node.object)
+		const name = memberNameOf(node)
+		return (
+				object.type === "Identifier" &&
+					typeof name === "string" &&
+					!module.scopes.byId.get(object)?.binding
+			) ?
+				`${object.name}.${name}`
+			:	undefined
 	}
 
 	// a global reading what it's passed, holding none of it after
@@ -3774,44 +4440,127 @@ export class ModuleGraph {
 		return node
 	}
 
-	private mayWriteThrough(ids: Node[], module: SourceModule): Node | undefined {
-		for (const id of ids) {
+	// e.g. `const { a } = o`, through whose bindings the program may write `o`
+	private mayWriteThrough(
+		pattern: Node,
+		held: Held,
+		module: SourceModule
+	): Node | undefined {
+		const holdings = patternHoldingsOf(pattern, held)
+		if (!holdings) return this.escape(pattern)
+		for (const [id, held] of holdings) {
 			const binding = module.scopes.bindingsById.get(id)
-			const write = binding && this.mayWritesOf(binding, module)[0]
+			if (!binding || held.depth <= held.copied) continue
+			// the program's imports of a package's modules aren't linked
+			if (binding.exportNames.length && this.isPackageModule(module))
+				return this.escape(id)
+			this.holdings?.push({ binding, module, held })
+			const [write] = this.mayWritesOf(binding, module, held)
 			if (write) return write
+		}
+	}
+
+	// e.g. `list.forEach(v => { v.a = 1 })`, passing what a receiver holds to a
+	// callback, which is unknown unless the build reads it: each parameter
+	// holds it by its relation in `params`
+	private mayWriteInCallback(
+		call: Node,
+		arg: Node,
+		module: SourceModule,
+		held: Held,
+		params: Relation[]
+	): Node | undefined {
+		if (arg.type === "SpreadElement") return this.escape(call)
+		const fn = this.calleeOf(arg, module)
+		if (!fn) {
+			// e.g. `"a"` or `list.find(Boolean)`
+			return (
+					isReadOnlyArg(arg, this.kindOf(arg, module)) ||
+						this.readsOnly(arg, module)
+				) ?
+					undefined
+				:	this.escape(call)
+		}
+		// `arguments` aliases each parameter
+		if (readsArguments(fn[0])) return this.escape(call)
+		for (const [i, param] of runtimeParamsOf(fn[0]).entries()) {
+			const isRest = param.type === "RestElement"
+			// e.g. `(...args) => args[0].a = 1`, whose parameter holds anything
+			const through =
+				isRest ? unbounded : heldThrough(held, params[i] ?? "none")
+			const write =
+				through &&
+				this.mayWriteThrough(isRest ? param.argument : param, through, fn[1])
+			// one in another module is reported where it's passed
+			if (write) {
+				return (
+					fn[1] === module ? write
+					: this.escapes.has(write) ? this.escape(call)
+					: call
+				)
+			}
 		}
 	}
 
 	// each use of a value is followed to what holds it next, and any the build
 	// doesn't know leaves its value unknown, as code it can't see may write it
-	private mayWriteFrom(node: Node, module: SourceModule): Node | undefined {
+	private mayWriteFrom(
+		node: Node,
+		module: SourceModule,
+		held: Held
+	): Node | undefined {
 		for (;;) {
+			// e.g. `o.a` of `o = { a: type("string") }` or `{ ...o }` of
+			// `o = { a: "string" }`, sharing nothing the program can change
+			if (held.depth <= held.copied) return
 			const [operand, parent] = operatorOf(node)
 			switch (parent?.type) {
 				case "MemberExpression": {
 					// e.g. `o[k]`, reading `k` as a key
 					if (parent.object !== operand) return
-					if (isWriteTarget(parent)) return writeOf(parent)
+					// a write to a level it copied changes what it made
+					if (isWriteTarget(parent))
+						return held.copied ? undefined : writeOf(parent)
 					const [callee, call] = operatorOf(parent)
 					if (call?.type === "CallExpression" && call.callee === callee) {
-						if ((memberNameOf(parent) as never) in mutatingMethods) return call
-						if (isOnlyArk(this.kindOf(operand, module))) return
-						// e.g. `list.forEach(v => { v.a = 1 })`, passing what it holds to
-						// a callback, which is unknown unless the build reads it
-						for (const arg of call.arguments) {
-							if (arg.type === "SpreadElement") return this.escape(call)
-							const fn = this.functionOf(arg, module)
-							if (fn) {
-								const write = this.mayWriteThrough(
-									runtimeParamsOf(fn[0]).flatMap(idsOf),
-									fn[1]
-								)
-								if (write) return write
-							} else if (!isReadOnlyArg(arg, this.kindOf(arg, module)))
-								return this.escape(call)
+						const name = memberNameOf(parent)
+						if (!held.copied && (name as never) in mutatingMethods) return call
+						// e.g. `T.or(o)` or `schemas.user(data)`, calling a Type
+						if (
+							isOnlyArk(this.kindOf(operand, module)) ||
+							isOnlyArk(this.kindOf(parent, module))
+						)
+							return
+						// e.g. `o.reset()` given `o = { reset() { this.a = 1 } }`, run
+						// with its receiver as `this`
+						const method = this.methodOf(parent, module, this.finalKindOfKey)
+						if (method) {
+							const [write] = this.mayWritesThroughThis(...method, held)
+							return (
+								!write || method[1] === module ? write
+								: this.escapes.has(write) ? this.escape(call)
+								: call
+							)
 						}
-						// e.g. `list.at(0)`, holding what it does
+						const builtin =
+							typeof name === "string" ? heldByMethod[name] : undefined
+						// one the build doesn't know may do anything with its receiver
+						if (!builtin) return this.escape(call)
+						const write =
+							builtin[1] &&
+							call.arguments[0] &&
+							this.mayWriteInCallback(
+								call,
+								call.arguments[0],
+								module,
+								held,
+								builtin[1]
+							)
+						if (write) return write
+						const next = heldThrough(held, builtin[0])
+						if (!next) return
 						node = call
+						held = next
 						continue
 					}
 					// a Type or primitive holds nothing the program writes
@@ -3821,6 +4570,7 @@ export class ModuleGraph {
 					)
 						return
 					node = parent
+					held = heldThrough(held, "element")!
 					continue
 				}
 				case "CallExpression":
@@ -3838,36 +4588,74 @@ export class ModuleGraph {
 						continue
 					}
 					const index = parent.arguments.indexOf(operand as never)
-					if (index === 0 && isObjectWrite(parent.callee, module)) return parent
-					if (index === -1) return this.escape(parent)
-					// e.g. `Object.assign({}, o)` or `Object.freeze(o)`, holding what `o` does
+					// e.g. `f(...list, o)`, whose parameter `o` is passed to is unknown
 					if (
-						(this.isGlobalMember(parent.callee, module, "Object", "assign") &&
-							parent.arguments[0].type === "ObjectExpression") ||
-						(index === 0 &&
-							this.isGlobalMember(parent.callee, module, "Object", "freeze"))
-					) {
+						index === -1 ||
+						parent.arguments
+							.slice(0, index)
+							.some(arg => arg.type === "SpreadElement")
+					)
+						return this.escape(parent)
+					// e.g. `Object.assign(o, x)`, returning `o`
+					if (index === 0 && isObjectWrite(parent.callee, module)) {
+						if (!held.copied) return parent
 						node = parent
+						continue
+					}
+					const global = this.globalMemberOf(parent.callee, module)
+					// e.g. `Object.assign({}, o)`, copying what `o` holds
+					const relation =
+						(
+							global === "Object.assign" &&
+							parent.arguments[0].type === "ObjectExpression"
+						) ?
+							"copy"
+						: index === 0 && global ? heldByGlobal[global]
+						: undefined
+					if (relation) {
+						// e.g. `Array.from(list, v => v.a = 1)`
+						const write =
+							global === "Array.from" &&
+							parent.arguments[1] &&
+							this.mayWriteInCallback(
+								parent,
+								parent.arguments[1],
+								module,
+								held,
+								["element"]
+							)
+						if (write) return write
+						node = parent
+						held = heldThrough(held, relation)!
 						continue
 					}
 					if (this.readsOnly(parent.callee, module))
 						return isMethodHolder(node) ? this.escape(parent) : undefined
-					const fn = this.functionOf(parent.callee, module)
-					const param = fn && runtimeParamsOf(fn[0])[index]
-					if (!param || param.type === "RestElement" || readsArguments(fn[0]))
-						return this.escape(parent)
-					return this.mayWriteThrough(idsOf(param), fn[1]) && parent
+					const fn = this.calleeOf(parent.callee, module)
+					const params = fn && runtimeParamsOf(fn[0])
+					const last = params?.[params.length - 1]
+					const param =
+						params?.[index] ?? (last?.type === "RestElement" ? last : undefined)
+					if (!param || readsArguments(fn![0])) return this.escape(parent)
+					const write =
+						param.type === "RestElement" ?
+							this.mayWriteThrough(param.argument, wrapperOf(held), fn![1])
+						:	this.mayWriteThrough(param, held, fn![1])
+					return (
+						write && (this.escapes.has(write) ? this.escape(parent) : parent)
+					)
 				}
 				// e.g. `const alias = o`, through which the program writes `o`
 				case "VariableDeclarator":
-					return this.mayWriteThrough(idsOf(parent.id), module)
+					return this.mayWriteThrough(parent.id, held, module)
 				case "AssignmentExpression": {
 					const assigned =
 						parent.left.type === "Identifier" ?
 							module.scopes.byId.get(parent.left)?.binding
 						:	undefined
 					if (!assigned) return this.escape(parent)
-					const [write] = this.mayWritesOf(assigned, module)
+					this.holdings?.push({ binding: assigned, module, held })
+					const [write] = this.mayWritesOf(assigned, module, held)
 					if (write) return write
 					node = parent
 					continue
@@ -3875,7 +4663,11 @@ export class ModuleGraph {
 				// e.g. `for (const field of fields) field.x = 1`
 				case "ForOfStatement":
 					return parent.left.type === "VariableDeclaration" ?
-							this.mayWriteThrough(declaredIds(parent.left), module)
+							this.mayWriteThrough(
+								parent.left.declarations[0].id,
+								heldThrough(held, "element")!,
+								module
+							)
 						:	this.escape(parent)
 				case "ConditionalExpression":
 					if (parent.test === operand) return
@@ -3886,21 +4678,36 @@ export class ModuleGraph {
 						return
 					node = parent
 					continue
-				// e.g. `[o]`, `{ o }` or `{ ...o }`, each holding what `o` does
+				// e.g. `{ o }`, holding `o` as a member
 				case "Property":
 					if (parent.value !== operand) return
 					node = parent.parent!
+					held = wrapperOf(held)
 					continue
-				case "SpreadElement":
-					if (
-						parent.parent!.type !== "ArrayExpression" &&
-						parent.parent!.type !== "ObjectExpression"
-					)
-						return this.escape(parent.parent!)
-					node = parent.parent!
-					continue
-				case "LogicalExpression":
 				case "ArrayExpression":
+					node = parent
+					held = wrapperOf(held)
+					continue
+				case "SpreadElement": {
+					const spread = parent.parent!
+					// e.g. `[...list]` or `{ ...o }`, copying what it holds
+					if (
+						spread.type === "ArrayExpression" ||
+						spread.type === "ObjectExpression"
+					) {
+						node = spread
+						held = heldThrough(held, "copy")!
+						continue
+					}
+					// e.g. `type.enumerated(...values)`, which arktype only reads
+					if (
+						spread.type === "CallExpression" &&
+						this.isArkCallee(spread.callee, module)
+					)
+						return
+					return this.escape(spread)
+				}
+				case "LogicalExpression":
 				case "AwaitExpression":
 					node = parent
 					continue
@@ -3912,11 +4719,7 @@ export class ModuleGraph {
 						:	parent
 					const calls = fn && this.callsOf(fn, module)
 					if (!calls) return this.escape(parent)
-					for (const call of calls) {
-						const write = this.mayWriteFrom(call, module)
-						if (write) return write
-					}
-					return
+					return this.mayWriteFromCalls(fn!, calls, module, held)
 				}
 				// e.g. `${o}`, which calls a method it holds
 				case "TemplateLiteral":
@@ -3938,14 +4741,219 @@ export class ModuleGraph {
 				case "ForInStatement":
 				case "TSTypeQuery":
 				case "ExportSpecifier":
-				case "ExportDefaultDeclaration":
 				case undefined:
+					return
+				// e.g. `export default { o }`, which an importer may write
+				case "ExportDefaultDeclaration":
+					if (this.isPackageModule(module)) return this.escape(parent)
+					this.holdings?.push({ name: "default", module, held })
 					return
 				// e.g. thrown, yielded or held by a class field
 				default:
 					return this.escape(parent!)
 			}
 		}
+	}
+
+	// what each call a function returns a value from may write of it, with
+	// one the function makes of itself followed by the outer call's
+	private mayWriteFromCalls(
+		fn: FunctionNode,
+		calls: Node[],
+		module: SourceModule,
+		held: Held
+	): Node | undefined {
+		const key = `${held.depth}:${held.copied}`
+		let returning = this.returning.get(fn)
+		if (!returning) this.returning.set(fn, (returning = new Set()))
+		if (returning.has(key)) return
+		returning.add(key)
+		try {
+			for (const call of calls) {
+				const write = this.mayWriteFrom(call, module, held)
+				if (write) return write
+			}
+		} finally {
+			returning.delete(key)
+		}
+	}
+
+	// the function a call runs, as far as the write analysis follows it: one
+	// the build reads, a class instance's method and, where the build reads
+	// the whole program, one a package exports
+	private calleeOf(
+		callee: Node,
+		module: SourceModule
+	): [FunctionNode, SourceModule] | undefined {
+		const fn =
+			this.functionOf(callee, module) ?? this.instanceMethodOf(callee, module)
+		if (fn || !this.view) return fn
+		const definition = this.definitionOf(callee, module)
+		return definition && isFunctionNode(definition[0]) ?
+				(definition as [FunctionNode, SourceModule])
+			:	undefined
+	}
+
+	// e.g. `store.add` given `const store = new Store()`
+	private instanceMethodOf(
+		callee: Node,
+		module: SourceModule
+	): [FunctionNode, SourceModule] | undefined {
+		callee = unwrapChain(callee)
+		if (callee.type !== "MemberExpression") return
+		const name = memberNameOf(callee)
+		const object = unwrapChain(callee.object)
+		const binding =
+			object.type === "Identifier" ?
+				module.scopes.byId.get(object)?.binding
+			:	undefined
+		const init =
+			(
+				binding?.kind === "const" &&
+				binding.declaration.type === "VariableDeclarator" &&
+				binding.declaration.init
+			) ?
+				unwrapExpression(binding.declaration.init)
+			:	undefined
+		if (
+			typeof name !== "string" ||
+			init?.type !== "NewExpression" ||
+			!readsOnlyMembers(binding!)
+		)
+			return
+		const cls = this.instanceClassOf(init.callee, module)
+		return cls && methodIn(cls[0], name, cls[1])
+	}
+
+	// e.g. `Store` of `class Store {}`, unless the program may change it, or
+	// one a package exports where the build reads the whole program
+	private instanceClassOf(
+		node: Node,
+		module: SourceModule
+	): [Class, SourceModule] | undefined {
+		node = unwrapChain(node)
+		const binding =
+			node.type === "Identifier" ?
+				module.scopes.byId.get(node)?.binding
+			:	undefined
+		if (binding?.kind === "class") {
+			return (
+					readsOnlyMembers(binding) &&
+						!this.writesThrough(binding, module).length
+				) ?
+					[binding.declaration as Class, module]
+				:	undefined
+		}
+		const definition = this.view && this.definitionOf(node, module)
+		return (
+				definition &&
+					(definition[0].type === "ClassDeclaration" ||
+						definition[0].type === "ClassExpression")
+			) ?
+				(definition as [Class, SourceModule])
+			:	undefined
+	}
+
+	// the function or class a value names, read through a package's modules:
+	// e.g. `register` of `import { register } from "registry"`, or
+	// `registry_1.register` of `const registry_1 = require("./registry")`
+	private definitionOf(
+		node: Node,
+		module: SourceModule,
+		seen = new Set<string>()
+	): [Node, SourceModule] | undefined {
+		node = namedFunctionOf(unwrapChain(node), module)
+		if (
+			isFunctionNode(node) ||
+			node.type === "ClassDeclaration" ||
+			node.type === "ClassExpression"
+		)
+			return [node, module]
+		const [object, member] =
+			node.type === "MemberExpression" ?
+				[unwrapChain(node.object), memberNameOf(node)]
+			:	[node, undefined]
+		const binding =
+			object.type === "Identifier" ?
+				(module.scopes.byId.get(object)?.binding ??
+				module.scopes.bindingsById.get(object))
+			:	undefined
+		if (!binding || binding.writes.length) return
+		const source = sourceOf(binding)
+		if (!source) {
+			if (member !== undefined) return
+			if (binding.kind === "function" || binding.kind === "class")
+				return [binding.declaration, module]
+			const init =
+				binding.kind === "const" &&
+				binding.declaration.type === "VariableDeclarator" &&
+				binding.declaration.init
+			return init ? this.definitionOf(init, module, seen) : undefined
+		}
+		const [specifier, imported] = source
+		const name =
+			imported === "*" ? member
+			: member === undefined ? imported
+			: undefined
+		const target =
+			typeof name === "string" ?
+				this.packageModuleOf(specifier, module)
+			:	undefined
+		return target && this.exportedDefinitionOf(target, name as string, seen)
+	}
+
+	private exportedDefinitionOf(
+		module: SourceModule,
+		name: string,
+		seen: Set<string>
+	): [Node, SourceModule] | undefined {
+		const key = `${module.id}\0${name}`
+		if (seen.has(key)) return
+		seen.add(key)
+		const entry = module.scopes.exportsByName[name]
+		if (entry?.kind === "reexport") {
+			const target = this.packageModuleOf(entry.specifier, module)
+			return target && this.exportedDefinitionOf(target, entry.name, seen)
+		}
+		const value =
+			entry?.kind === "binding" ? entry.binding.id
+			: entry?.kind === "expression" ? entry.node
+			: entry ? undefined
+			: commonExportOf(module, name)
+		if (value) return this.definitionOf(value, module, seen)
+		if (entry) return
+		for (const specifier of module.scopes.starExports) {
+			const target = this.packageModuleOf(specifier, module)
+			const result = target && this.exportedDefinitionOf(target, name, seen)
+			if (result) return result
+		}
+	}
+
+	// a module of a package, which the build reads only for what its
+	// functions may write
+	private packageModuleOf(
+		specifier: string,
+		importer: SourceModule
+	): SourceModule | undefined {
+		const id = this.host.resolve(specifier, importer.id)
+		if (!id || !/\.[cm]?[jt]sx?$/.test(id)) return
+		const loaded = this.modulesById[id]
+		if (loaded) return loaded instanceof SourceModule ? loaded : undefined
+		let result = this.packageModulesById.get(id)
+		if (result === undefined) {
+			const source = this.host.readFile(id)
+			result =
+				source === undefined ? null : (
+					new SourceModule(id, source, this.pathOf(id))
+				)
+			if (result?.parseErrors.length) result = null
+			this.packageModulesById.set(id, result)
+		}
+		return result ?? undefined
+	}
+
+	private isPackageModule(module: SourceModule): boolean {
+		return this.packageModulesById.get(module.id) === module
 	}
 
 	functionOf(
