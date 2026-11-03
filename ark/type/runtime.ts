@@ -237,6 +237,22 @@ export const bakeInto = <t>(
 ): t => {
 	// a Type arktype created, as where a site is left to it, has each member
 	if (validator instanceof Validator) {
+		const prior: BakedJsonSchema | undefined = Reflect.getOwnPropertyDescriptor(
+			validator,
+			"toJsonSchema"
+		)?.value
+		const baked = attributes.toJsonSchema as BakedJsonSchema | undefined
+		// another module's bake may answer a target this one doesn't, and
+		// writes what this one does as it would
+		if (prior && baked) {
+			attributes.toJsonSchema = freeze((opts?: { target?: unknown }) => {
+				try {
+					return baked(opts)
+				} catch {
+					return prior(opts)
+				}
+			})
+		}
 		own(validator, attributes)
 		if (standard) own(validator["~standard"], standard)
 	}
@@ -438,6 +454,8 @@ export const bakedJsonSchema = (
 			byTarget[supportedJsonSchemaTargets.indexOf(opts!.target as never)]
 		return written ? written() : throwError(bakedJsonSchemaOptionsMessage)
 	})
+
+type BakedJsonSchema = ReturnType<typeof bakedJsonSchema>
 
 type JsonSchemaWritersByTarget = readonly (() => JsonSchema)[]
 

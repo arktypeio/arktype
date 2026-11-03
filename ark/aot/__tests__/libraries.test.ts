@@ -244,6 +244,38 @@ console.log(describe(ns.inner.User))
 `)
 	})
 
+	it("a module's bake keeps the targets another module's bake answers, in a build reading one module at a time", async () => {
+		const out = await logged(
+			"bakeOrder",
+			{
+				"schemas.ts": `import { type } from "arktype"
+
+export const Name = type("string").describe("a name")
+`,
+				"held.ts": `import { Name } from "./schemas.ts"
+
+export const held = new (class {
+	schema = Name
+})()
+`,
+				"main.ts": `import { held } from "./held.ts"
+import { Name } from "./schemas.ts"
+
+// read as it runs, so the build doesn't fold it
+const name = Date.now() > 0 && Name
+console.log(JSON.stringify(name.toJsonSchema()))
+console.log(JSON.stringify(held.schema.toJsonSchema({ target: "draft-07" })))
+`
+			},
+			"out/main.js",
+			{ prune: false }
+		)
+		attest(out)
+			.snap(`{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string","description":"a name"}
+{"$schema":"http://json-schema.org/draft-07/schema#","type":"string","description":"a name"}
+`)
+	})
+
 	it("a module loading another whole bakes each member into each validator it exports", async () => {
 		const out = await logged(
 			"wholes",
