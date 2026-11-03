@@ -2,8 +2,13 @@ import {
 	$ark,
 	foreignTypesByMorph,
 	mergeToJsonSchemaConfigs,
+	openApiNull,
 	ToJsonSchema,
+	unionJsonSchemaWritersKey,
 	writeForeignArkMessage,
+	writeNullableJsonSchema,
+	writeUnionJsonSchema,
+	type UnionJsonSchemaWriters,
 	type Alias,
 	type BaseRoot,
 	type JsonSchema,
@@ -20,7 +25,6 @@ import {
 import {
 	appendStringifiedKey,
 	flatMorph,
-	hasKey,
 	isEmptyObject,
 	type dict
 } from "@ark/util"
@@ -35,6 +39,16 @@ interface JsonSchemaContext extends ToJsonSchema.Context {
 	open: string[]
 	defNamesById: Record<string, string>
 	defs: Record<string, JsonSchema | undefined>
+	writers: UnionJsonSchemaWriters
+}
+
+// a precompiled validator replays a call's fallback as the build recorded it
+// (ark/type/standalone/fallbacks.ts), seeing every read of what one returns
+// but a check for nullish, so it mirrors those: a Date's date ?? proto and a
+// default's undefined. A union, which reads them, is written by these again.
+export const jsonSchemaWriters: UnionJsonSchemaWriters = {
+	union: writeUnionJsonSchema,
+	nullable: writeNullableJsonSchema
 }
 
 export const rootToJsonSchema = (
@@ -43,7 +57,16 @@ export const rootToJsonSchema = (
 ): JsonSchema => {
 	const ctx: JsonSchemaContext = Object.assign(
 		mergeToJsonSchemaConfigs(node.$.cfg.toJsonSchema, opts),
-		{ path: "", open: [], defNamesById: {}, defs: {} }
+		{
+			path: "",
+			open: [],
+			defNamesById: {},
+			defs: {},
+			writers:
+				(opts as { [unionJsonSchemaWritersKey]?: UnionJsonSchemaWriters })[
+					unionJsonSchemaWritersKey
+				] ?? jsonSchemaWriters
+		}
 	)
 	// a default handler throws naming where the part it can't convert is
 	ctx.fallback = flatMorph(ctx.fallback, (code, handler) => [
@@ -172,54 +195,17 @@ const branchGroupsToJsonSchema = (
 	node: Union.Node,
 	branchGroups: BaseRoot[],
 	ctx: JsonSchemaContext
-): JsonSchema => {
+): JsonSchema =>
 	// special case to simplify { const: true } | { const: false }
 	// to the canonical JSON Schema representation { type: "boolean" }
-	if (branchGroups.length === 1 && branchGroups[0].equals($ark.kw.boolean))
-		return { type: "boolean" }
-
-	const jsonSchemaBranches = branchGroups.map(group =>
-		toJsonSchemaRecurse(group, ctx)
-	)
-	// what's left of a union without its null
-	if (jsonSchemaBranches.length === 1) return jsonSchemaBranches[0]
-
-	const unitKey = ctx.target === "openapi-3.0" ? "enum" : "const"
-	if (
-		jsonSchemaBranches.every(
-			(branch): branch is UnitJsonSchema =>
-				// units with no meta but the union's own are an enum
-				Object.entries(branch).every(
-					([k, v]) =>
-						k === unitKey ||
-						k === "type" ||
-						v === (node.meta as dict)[k] ||
-						v === (node.metaJson as dict)[k]
-				) && hasKey(branch, unitKey)
+	branchGroups.length === 1 && branchGroups[0].equals($ark.kw.boolean) ?
+		{ type: "boolean" }
+	:	ctx.writers.union(
+			branchGroups.map(group => toJsonSchemaRecurse(group, ctx)),
+			ctx.target,
+			node.meta,
+			node.metaJson
 		)
-	) {
-		const values = jsonSchemaBranches.flatMap(branch =>
-			unitKey === "enum" ? branch.enum : [branch.const]
-		)
-		// never has no branches
-		const type = jsonSchemaBranches[0]?.type
-		return type && jsonSchemaBranches.every(branch => branch.type === type) ?
-				{ type, enum: values }
-			:	{ enum: values }
-	}
-
-	return {
-		anyOf: jsonSchemaBranches
-	}
-}
-
-type UnitJsonSchema = JsonSchema.Const &
-	JsonSchema.Enum &
-	JsonSchema.Constrainable
-
-// OpenAPI 3.0 has no null type, and nullable only adds null to a type beside it
-const openApiNull = (): JsonSchema =>
-	({ type: "string", nullable: true, enum: [null] }) as JsonSchema
 
 const writeAnnotation = (
 	schema: object,
@@ -266,31 +252,13 @@ const innerToJsonSchemaByKind: {
 	union: (node, ctx) => {
 		const branchGroups = branchGroupsOf(node)
 		const nonNull = branchGroups.filter(branch => !branch.hasUnit(null))
-		if (nonNull.length === branchGroups.length)
-			return branchGroupsToJsonSchema(node, branchGroups, ctx)
-		// null is written beside the rest, so their values still share a type
-		const schema = branchGroupsToJsonSchema(node, nonNull, ctx)
-		// nullable adds null to the type beside it, so an enum must list it
-		if (
-			ctx.target === "openapi-3.0" &&
-			typeof (schema as JsonSchema.Constrainable).type === "string"
-		) {
-			return Object.assign(
-				schema,
-				{ nullable: true },
-				"enum" in schema && {
-					enum: [...(schema as JsonSchema.Enum).enum, null]
-				}
-			)
-		}
-		return {
-			anyOf: [
-				...(nonNull.length > 1 && "anyOf" in schema ?
-					(schema as JsonSchema.Union).anyOf
-				:	[schema]),
-				ctx.target === "openapi-3.0" ? openApiNull() : { type: "null" }
-			]
-		}
+		return nonNull.length === branchGroups.length ?
+				branchGroupsToJsonSchema(node, branchGroups, ctx)
+			:	ctx.writers.nullable(
+					branchGroupsToJsonSchema(node, nonNull, ctx),
+					nonNull.length > 1,
+					ctx.target
+				)
 	},
 	morph: (node, ctx) => {
 		const foreign = foreignTypesByMorph.get(node.piped[0] as never)

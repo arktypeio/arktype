@@ -63,7 +63,6 @@ import {
 	writeCreatedBeforeConfigureMessage,
 	writtenConfigMessage
 } from "@ark/schema/runtime"
-import { bakedJsonSchemaOptionsMessage } from "arktype/runtime"
 import {
 	packageFiles,
 	run,
@@ -457,16 +456,20 @@ contextualize(function (this: Mocha.Suite) {
 		attest(run(standalone)).equals(runPlain(introspected))
 	})
 
-	it("esbuild ignores a library's fallback where no fallback writes the schema", async () => {
+	it("esbuild writes a schema with a library's fallback, as arktype does", async () => {
 		const root = writeFixture(
 			{
 				// as hono-openapi and @orpc/arktype convert a Type they're passed
 				"main.ts": `import { type } from "arktype"
 
 const User = type({ name: "string", "tags?": "string[]" })
-const Event = type({ at: "Date" })
+const Task = type({
+	id: "string.integer.parse",
+	createdAt: "Date | null",
+	at: type("Date").describe("when")
+}).narrow(() => true)
 
-const convert = (t: typeof User | typeof Event, opts: object) => {
+const convert = (t: typeof User | typeof Task, opts: object) => {
 	try {
 		return t.toJsonSchema(opts)
 	} catch (e) {
@@ -474,14 +477,14 @@ const convert = (t: typeof User | typeof Event, opts: object) => {
 	}
 }
 
+// hono-openapi's, and @orpc/arktype's
+const keepBase = (ctx: { base: object }) => ctx.base
 const date = { date: (ctx: { base: object }) => ({ ...ctx.base, format: "date-time" }) }
 
 console.log(
-	JSON.stringify([
-		convert(User, { fallback: (ctx: { base: object }) => ctx.base }),
-		convert(User, { fallback: date }),
-		convert(Event, { fallback: date })
-	])
+	JSON.stringify(
+		[User, Task].flatMap(t => [keepBase, date].map(fallback => convert(t, { fallback })))
+	)
 )
 `
 			},
@@ -491,11 +494,7 @@ console.log(
 			{ cwd: root, members: { toJsonSchema: true } },
 			root
 		)
-		const [ignored, ignoredWithDate, needed] = JSON.parse(run(standalone))
-		const [user, userWithDate, event] = JSON.parse(runPlain(root))
-		attest([ignored, ignoredWithDate]).equals([user, userWithDate])
-		attest(event.properties.at).equals({ format: "date-time" })
-		attest(needed).equals(`Error: ${bakedJsonSchemaOptionsMessage}`)
+		attest(run(standalone)).equals(runPlain(root))
 	})
 
 	it("esbuild writes no NUL into its output", async () => {

@@ -132,7 +132,7 @@ await generateText({ model, tools: { weather }, prompt: "weather?" })
 `)
 	})
 
-	it("oRPC's OpenAPI document has a procedure's input JSON Schema", async () => {
+	it("oRPC's OpenAPI document has a procedure's input JSON Schema, with a Date", async () => {
 		const out = await loggedEither("orpc", {
 			"main.ts": `import { experimental_ArkTypeToJsonSchemaConverter } from "@orpc/arktype"
 import { OpenAPIGenerator } from "@orpc/openapi"
@@ -141,7 +141,7 @@ import { type } from "arktype"
 
 const createUser = os
 	.route({ method: "POST", path: "/users" })
-	.input(type({ name: "string" }))
+	.input(type({ name: "string", at: "Date" }))
 	.handler(({ input }) => input)
 const generator = new OpenAPIGenerator({
 	schemaConverters: [new experimental_ArkTypeToJsonSchemaConverter()]
@@ -150,8 +150,9 @@ const spec: any = await generator.generate({ createUser })
 console.log(JSON.stringify(spec.paths["/users"].post.requestBody.content["application/json"].schema))
 `
 		})
+		// @orpc/arktype's fallback writes the Date
 		attest(out)
-			.snap(`{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"name":{"type":"string"}},"required":["name"]}
+			.snap(`{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"at":{"type":"string","format":"date-time"},"name":{"type":"string"}},"required":["at","name"]}
 `)
 	})
 

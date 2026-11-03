@@ -1526,7 +1526,7 @@ age must be a number`)
 			T.toJsonSchema({ target: "draft-2020-12" })
 		)
 		attest(() => validator.toJsonSchema({ target: "draft-07" })).throws(
-			'A standalone validator\'s JSON Schema takes only a target it was built with, and a fallback only where its schema needs none; configure({ toJsonSchema }) or build with runtime: "arktype"'
+			'A standalone validator\'s JSON Schema takes only a target it was built with, and a fallback only where it was built to apply one; set members["toJsonSchema"] true, or build with runtime: "arktype"'
 		)
 		const unbaked = ["json", "description", "expression", "toJSON"] as const
 		for (const member of unbaked) {
@@ -1539,30 +1539,82 @@ age must be a number`)
 		attest(String(validator)).equals("Type")
 	})
 
-	it("ignores a fallback a call passes where no fallback writes the schema", async () => {
+	it("writes a schema with a fallback a call passes, as arktype does", async () => {
 		const T = type({ name: "string", "tags?": "string[]" })
-		const D = type({ at: "Date" })
-		const { T: t, D: d } = await load(
-			{ T, D },
-			{ members: { toJsonSchema: true } }
-		)
-		// as hono-openapi and @orpc/arktype pass their own
-		const fallback = {
+		const D = type({ id: "string.integer.parse", at: "Date | null" })
+		const U = type("bigint | 1 | null")
+		const P = type("Date").and({ name: "string" })
+		const {
+			T: t,
+			D: d,
+			U: u,
+			P: p
+		} = await load({ T, D, U, P }, { members: { toJsonSchema: true } })
+		// hono-openapi's, which keeps what a morph is based on
+		const keepBase: ToJsonSchema.UniversalFallback = ctx => ctx.base
+		// @orpc/arktype's, which writes only a Date
+		const date = {
 			date: (ctx: { base: object }) => ({ ...ctx.base, format: "date-time" })
 		}
-		const keepBase: ToJsonSchema.UniversalFallback = ctx => ctx.base
 		attest(t.toJsonSchema({ fallback: keepBase })).equals(
 			T.toJsonSchema({ fallback: keepBase })
 		)
-		attest(t.toJsonSchema({ target: "draft-2020-12", fallback })).equals(
-			T.toJsonSchema({ target: "draft-2020-12", fallback })
+		attest(t.toJsonSchema({ target: "draft-2020-12", fallback: date })).equals(
+			T.toJsonSchema({ target: "draft-2020-12", fallback: date })
 		)
-		attest(() => d.toJsonSchema({ fallback })).throws(
+		attest(d.toJsonSchema({ fallback: keepBase })).equals(
+			D.toJsonSchema({ fallback: keepBase })
+		)
+		// the morph, which only arktype's own handler writes
+		attest(String(caught(() => d.toJsonSchema({ fallback: date })))).equals(
+			String(caught(() => D.toJsonSchema({ fallback: date })))
+		)
+		// a union whose enum or OpenAPI nullable reads what a fallback returns
+		const unit = { domain: () => ({ type: "number", const: 0 }) }
+		for (const target of ["draft-2020-12", "openapi-3.0"] as const) {
+			attest(u.toJsonSchema({ target, fallback: unit })).equals(
+				U.toJsonSchema({ target, fallback: unit })
+			)
+		}
+		// arktype reads a Date's schema to write its keys
+		attest(() => p.toJsonSchema({ fallback: keepBase })).throws(
 			bakedJsonSchemaOptionsMessage
 		)
-		attest(() => t.toJsonSchema({ fallback, useRefs: true })).throws(
+		attest(() => t.toJsonSchema({ fallback: date, useRefs: true })).throws(
 			bakedJsonSchemaOptionsMessage
 		)
+	})
+
+	it("runs a call's fallback on what arktype hands it, as arktype does", async () => {
+		const T = type({
+			at: "Date",
+			n: ["bigint", "=", 5n],
+			"id?": "string.integer.parse"
+		}).describe("an event")
+		const { T: t } = await load({ T }, { members: { toJsonSchema: true } })
+		const write = (t: { toJsonSchema: (opts: object) => unknown }) => {
+			const calls: string[] = []
+			const schema = t.toJsonSchema({
+				fallback: {
+					// nullish, so arktype writes the Date with the proto handler
+					date: () => void calls.push("date"),
+					proto: (ctx: { proto: Function; base: object }) => {
+						calls.push(`proto ${ctx.proto.name}`)
+						return { ...ctx.base, format: "date-time" }
+					},
+					// undefined, so arktype omits the default
+					defaultValue: () => void calls.push("defaultValue"),
+					default: (ctx: { code: string; base: Record<string, unknown> }) => {
+						calls.push(ctx.code)
+						// in the schema arktype writes, as it returns its base
+						ctx.base.fellBack = ctx.code
+						return ctx.base
+					}
+				}
+			})
+			return { schema, calls }
+		}
+		attest(write(t)).equals(write(T))
 	})
 
 	it("introspection prints received functions", async () => {

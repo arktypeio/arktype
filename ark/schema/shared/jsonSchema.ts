@@ -1,4 +1,5 @@
 import {
+	hasKey,
 	includes,
 	throwParseError,
 	type autocomplete,
@@ -188,4 +189,79 @@ export const validateStandardJsonSchemaTarget = (
 		throwParseError(writeInvalidJsonSchemaTargetMessage(target))
 
 	return target
+}
+
+type UnitJsonSchema = JsonSchema.Const &
+	JsonSchema.Enum &
+	JsonSchema.Constrainable
+
+// an OpenAPI Schema Object has no null type, and nullable only adds null to a
+// type beside it
+export const openApiNull = (): JsonSchema =>
+	({ type: "string", nullable: true, enum: [null] }) as JsonSchema
+
+// a union from the schemas of its branches, as arktype writes it and as a
+// precompiled validator does where a branch is a call's fallback's
+export const writeUnionJsonSchema = (
+	branches: JsonSchema[],
+	target: ToJsonSchema.Target,
+	meta: object,
+	metaJson: object
+): JsonSchema => {
+	// what's left of a union without its null
+	if (branches.length === 1) return branches[0]
+	const unitKey = target === "openapi-3.0" ? "enum" : "const"
+	if (
+		branches.every(
+			(branch): branch is UnitJsonSchema =>
+				// units with no meta but the union's own are an enum
+				Object.entries(branch).every(
+					([k, v]) =>
+						k === unitKey ||
+						k === "type" ||
+						v === (meta as Record<string, unknown>)[k] ||
+						v === (metaJson as Record<string, unknown>)[k]
+				) && hasKey(branch, unitKey)
+		)
+	) {
+		const values = branches.flatMap(branch =>
+			unitKey === "enum" ? branch.enum : [branch.const]
+		)
+		// never has no branches
+		const type = branches[0]?.type
+		return type && branches.every(branch => branch.type === type) ?
+				{ type, enum: values }
+			:	{ enum: values }
+	}
+	return { anyOf: branches }
+}
+
+// a union with null, written beside the rest so their values still share a type
+export const writeNullableJsonSchema = (
+	schema: JsonSchema,
+	// whether the rest is a union of its own
+	isUnion: boolean,
+	target: ToJsonSchema.Target
+): JsonSchema => {
+	// nullable adds null to the type beside it, so an enum must list it
+	if (
+		target === "openapi-3.0" &&
+		typeof (schema as JsonSchema.Constrainable).type === "string"
+	) {
+		return Object.assign(
+			schema,
+			{ nullable: true },
+			"enum" in schema && {
+				enum: [...(schema as JsonSchema.Enum).enum, null]
+			}
+		)
+	}
+	return {
+		anyOf: [
+			...(isUnion && "anyOf" in schema ?
+				(schema as JsonSchema.Union).anyOf
+			:	[schema]),
+			target === "openapi-3.0" ? openApiNull() : { type: "null" }
+		]
+	}
 }
