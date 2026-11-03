@@ -9,9 +9,11 @@ import type {
 import type {
 	Anchor,
 	IdentifiedSchema,
+	isUnion,
 	replaceAll,
 	resolveRef,
 	rootOf,
+	TypedSchema,
 	UnresolvedRef
 } from "./infer.ts"
 
@@ -45,13 +47,6 @@ export type validateDocument<schema> =
 		[invalid] extends [never] ?
 			Extract<schema, boolean> | KeywordCompletions
 		:	validateDocumentMember<invalid>
-	:	never
-
-export type isUnion<t, members = t> =
-	t extends unknown ?
-		[members] extends [t] ?
-			false
-		:	true
 	:	never
 
 export type validateDocumentMember<schema> =
@@ -678,10 +673,6 @@ export type checkComponents<components, root> =
 
 export type checkPropertyNames<schema, root> =
 	[nonStringNamesOf<schema>] extends [never] ? checkSchema<schema, root> : never
-
-export interface TypedSchema {
-	type: unknown
-}
 
 export type checkCount<n> =
 	n extends number ?
