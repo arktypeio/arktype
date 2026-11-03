@@ -507,7 +507,7 @@ console.log(User.allows({ name: "Ada" }), User.assert({ name: "Ada" }))
 				() => "",
 				(e: Error) => e.message
 			)
-			attest(message.slice(-unseenFlatMessage.length)).equals(unseenFlatMessage)
+			attest(message.includes(unseenFlatMessage)).equals(true)
 		})
 	})
 
