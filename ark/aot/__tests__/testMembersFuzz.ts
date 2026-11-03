@@ -255,9 +255,11 @@ type HopName = keyof typeof hops
 
 // a step in the reader's module, from the expression holding the validator
 // to another, given the reader's index to name what it declares
+// a step of reader j taking what the reader holds, its k-th as `${j}_${k}`,
+// which suffixes the names it declares, as a reader may take one step twice
 interface Step {
-	setup?: (value: string, j: number) => string[]
-	expr: (value: string, j: number) => string
+	setup?: (value: string, id: string) => string[]
+	expr: (value: string, id: string) => string
 }
 
 const steps: Record<string, Step> = {
@@ -640,8 +642,8 @@ const filesOf = (app: App): Record<string, string> => {
 				value = `v${j}_${k}`
 			}
 			const step = steps[name]
-			lines.push(...(step.setup?.(value, j) ?? []))
-			value = step.expr(value, j)
+			lines.push(...(step.setup?.(value, `${j}_${k}`) ?? []))
+			value = step.expr(value, `${j}_${k}`)
 		}
 		const read = reads[reader.read]
 		const usesLib =
@@ -744,6 +746,18 @@ const run = (args: string[], cwd: string, env: Record<string, string> = {}) => {
 	return status === 0 ? stdout : `exit ${status}\n${stdout}\n${stderr}`
 }
 
+// runs a bundle, printing a crash as its error alone: Node cuts what it prints
+// after the first 146 KB, which a minified bundle's line alone may take
+const runBundle = (file: string, dir: string) =>
+	run(
+		[
+			"--import",
+			"data:text/javascript,for (const event of ['uncaughtException', 'unhandledRejection']) process.on(event, e => { console.error(String(e)); process.exit(1) })",
+			file
+		],
+		dir
+	)
+
 // what a host's build of the app logs, or why it refused
 type Outcome = { refused: string } | { out: string }
 
@@ -800,7 +814,7 @@ const esbuildOutcome = async (
 	} catch (e) {
 		return { refused: messageOf(e) }
 	}
-	return { out: run([join(out, "main.js")], dir) }
+	return { out: runBundle(join(out, "main.js"), dir) }
 }
 
 const viteOutcome = async (dir: string, plugin: boolean): Promise<Outcome> => {
@@ -834,7 +848,7 @@ const viteOutcome = async (dir: string, plugin: boolean): Promise<Outcome> => {
 		if (NODE_ENV === undefined) delete process.env.NODE_ENV
 		else process.env.NODE_ENV = NODE_ENV
 	}
-	return { out: run([join(out, "main.js")], dir) }
+	return { out: runBundle(join(out, "main.js"), dir) }
 }
 
 // webpack reads arktype's built output, as it doesn't strip types
@@ -868,7 +882,7 @@ const webpackOutcome = async (
 		)
 	)
 	if (errors) return { refused: errors }
-	return { out: run([join(out, "main.cjs")], dir) }
+	return { out: runBundle(join(out, "main.cjs"), dir) }
 }
 
 const driver = (dir: string, production: boolean): Outcome => {
@@ -1093,6 +1107,9 @@ const tallyOverbake = async (app: App) => {
 const describeReader = (reader: Reader) =>
 	`hops ${hopsOf(reader).join(",") || "-"}, steps ${reader.steps.join(",") || "-"}, read ${reader.read}`
 
+// the error a run of a build crashed with
+const errorOf = (out: string) => /^\w*Error\b.*$/m.exec(out)?.[0]
+
 // whether each host's build of an app refuses it or runs it as arktype does
 const check = async (app: App): Promise<boolean> => {
 	const dir = writeApp(app)
@@ -1125,10 +1142,19 @@ const check = async (app: App): Promise<boolean> => {
 				)
 			:	["unsound"]
 		// what the bundler alone builds otherwise than Node runs it isn't the plugin's
-		if (observations && verdicts.includes("unsound") && bundlers.has(host)) {
+		if (verdicts.includes("unsound") && bundlers.has(host)) {
 			const plain = await outcomeOf(host, dir, false)
 			const plainObservations = "out" in plain && observationsOf(plain.out)
-			if (plainObservations) {
+			if (!observations) {
+				// a crash it builds alone too, like webpack's emptying a module a
+				// CommonJS module requires
+				if (
+					"out" in plain &&
+					!plainObservations &&
+					errorOf(plain.out) === errorOf(outcome.out)
+				)
+					verdicts[0] = "bundler"
+			} else if (plainObservations) {
 				for (const [j, v] of verdicts.entries()) {
 					if (
 						v === "unsound" &&
@@ -1187,6 +1213,17 @@ if (replayed) {
 			: outcome.out === expected ? `${host}: as the oracle`
 			: `${host}:\n${outcome.out}`
 		)
+		if ("out" in outcome && outcome.out !== expected && bundlers.has(host)) {
+			const plain = await outcomeOf(host, dir, false)
+			console.log(
+				`${host} without arktype's plugin:\n${
+					"refused" in plain ? plain.refused
+					: plain.out === outcome.out ? "the same"
+					: observationsOf(plain.out) ? plain.out
+					: (errorOf(plain.out) ?? plain.out)
+				}`
+			)
+		}
 	}
 	rmSync(root, { recursive: true, force: true })
 	process.exit()
