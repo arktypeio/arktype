@@ -235,6 +235,26 @@ console.log(read(await import("./lazy.ts"), "Item", "expression"))
 `)
 	})
 
+	it("a module loading another only by import() bakes each member into each validator it exports", async () => {
+		const out = await logged(
+			"dynamicImports",
+			{
+				"schemas.ts": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+`,
+				"main.ts": `const { User } = await import("./schemas.ts")
+
+console.log(User.description)
+`
+			},
+			"out/main.js",
+			{ prune: false }
+		)
+		attest(out).snap(`{ name: a string }
+`)
+	})
+
 	it("an entry's export bakes nothing, so a read outside the bundle throws", async () => {
 		const out = await logged(
 			"entry",
@@ -262,10 +282,6 @@ try {
 			},
 			"reader.js"
 		)
-		attest(out).snap(`Ada
-expression isn't baked into this validator, as the build saw no code read it. Set members["expression"] true in the precompile options.
-toJsonSchema isn't baked into this validator, as the build saw no code read it. Set members["toJsonSchema"] true in the precompile options.
-~standard.jsonSchema isn't baked into this validator, as the build saw no code read it. Set members["~standard.jsonSchema"] true in the precompile options.
-`)
+		attest(out).snap()
 	})
 })

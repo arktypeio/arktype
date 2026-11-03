@@ -6130,7 +6130,8 @@ const isEncodingError = (e: Error) =>
 const arktypeSpecifier =
 	/\b(?:from|import\s*\(?|require\s*\()\s*["'](?:(?:arktype|@ark\/type)(?:\/(?:config|codecs))?|arkregex|@ark\/regex)["']/
 
-const importSpecifier = /\b(?:from|import)\s*["']([^"']+)["']/g
+// e.g. `from "./a.ts"`, `import "./a.ts"` or `import("./a.ts")`
+const importSpecifier = /\b(?:from|import\s*\(?)\s*["']([^"']+)["']/g
 
 const isInIsland = (node: Node, module: SourceModule) =>
 	module.islands.some(island => contains(island, node))
