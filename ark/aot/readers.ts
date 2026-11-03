@@ -36,6 +36,9 @@ export type Key = string | typeof anyKey
 export interface Held {
 	path: readonly Key[]
 	of: "type" | "standard"
+	// reached through a dependency's read at a key it doesn't name, as likely
+	// any object's, so losing track past it bakes every member without a warning
+	quiet?: true
 }
 
 export const validatorHeld: Held = { path: [], of: "type" }
@@ -143,8 +146,12 @@ type Value =
 	| { kind: "object"; literal: Node; module: SourceModule }
 	| { kind: "namespace"; module: SourceModule }
 
-const heldKeyOf = (held: Held): string =>
+// what it is where it's held, which a guard reading it tests
+const shapeKeyOf = (held: Held): string =>
 	`${held.of}:${held.path.map(k => (k === anyKey ? "*" : JSON.stringify(k))).join(".")}`
+
+const heldKeyOf = (held: Held): string =>
+	`${held.quiet ? "?" : ""}${shapeKeyOf(held)}`
 
 // the program's modules, read once for every validator
 class Readers {
@@ -154,7 +161,7 @@ class Readers {
 	private modulesById = new Map<string, SourceModule>()
 	private runtimesByModule = new Map<SourceModule, RuntimeModule>()
 	private importersById: Map<string, ImportEdge[]> | undefined
-	private fieldReads: Map<string, Located[]> | undefined
+	private fieldReads: Map<Key, Located[]> | undefined
 	private dependenciesByRoot = new Map<string, ReadonlySet<string>>()
 
 	constructor(
@@ -229,8 +236,9 @@ class Readers {
 		return this.importersById.get(id) ?? []
 	}
 
-	// each read of a property by name, anywhere the program reaches
-	fieldReadsOf(name: string): Located[] {
+	// each read of a property by name, anywhere the program reaches, or at
+	// anyKey each that may read any, like `o[k]` or `Object.values(o)`
+	fieldReadsOf(name: Key): Located[] {
 		this.fieldReads ??= this.indexFields()
 		return this.fieldReads.get(name) ?? []
 	}
@@ -313,11 +321,13 @@ class Readers {
 	}
 
 	// every module the program's own reach through their imports, read from disk
-	private indexFields(): Map<string, Located[]> {
-		const result = new Map<string, Located[]>()
+	private indexFields(): Map<Key, Located[]> {
+		const result = new Map<Key, Located[]>()
 		const add = (name: unknown, located: Located) => {
-			if (typeof name !== "string" && typeof name !== "number") return
-			const key = String(name)
+			const key =
+				typeof name === "string" || typeof name === "number" ?
+					String(name)
+				:	anyKey
 			const reads = result.get(key)
 			if (reads) reads.push(located)
 			else result.set(key, [located])
@@ -337,8 +347,18 @@ class Readers {
 					for (const property of node.properties) {
 						if (property.type === "Property")
 							add(propertyKeyOf(property), { node: property.value, module })
+						else add(anyKey, { node: property, module })
 					}
-				}
+				} else if (
+					node.type === "SpreadElement" &&
+					node.parent?.type === "ObjectExpression"
+				)
+					add(anyKey, { node, module })
+				else if (
+					node.type === "CallExpression" &&
+					keyedBuiltins.has(globalNameOf(node.callee, module))
+				)
+					add(anyKey, { node, module })
 				return true
 			})
 			for (const [specifier] of importsOf(module.id, module.source).imports) {
@@ -351,6 +371,16 @@ class Readers {
 		}
 		return result
 	}
+}
+
+// e.g. `namespace Schemas { export const User = type(...) }`, read off the namespace
+const isNamespaceExport = ({ declaration }: Binding): boolean => {
+	const statement =
+		declaration.type === "VariableDeclarator" ? declaration.parent : declaration
+	return (
+		statement?.parent?.type === "ExportNamedDeclaration" &&
+		statement.parent.parent?.type !== "Program"
+	)
 }
 
 // arktype's own, which read nothing of a program's validators
@@ -370,6 +400,9 @@ class Follow {
 	private read = new Map<IntrospectionMember, string>()
 	private pruned = new Set<PrunedMember>()
 	private lost: Lost[] = []
+	// where it lost track only past a quiet held
+	private quietlyLost = false
+	private quiet = false
 	private unseen: string[] = []
 	private unfollowed: string[] = []
 	private followsFields = false
@@ -417,8 +450,10 @@ class Follow {
 			let fact = this.pending.pop();
 			fact && this.facts <= maxFacts;
 			fact = this.pending.pop()
-		)
+		) {
+			this.quiet = !!fact.held.quiet
 			this.readAt(fact)
+		}
 	}
 
 	// whether a branch holding the node may run with the validator where its guard reads it
@@ -703,16 +738,16 @@ class Follow {
 
 	reading(): Reading {
 		const members = new Set(this.read.keys())
+		const isLost = this.lost.length > 0 || this.quietlyLost
 		const step: ReadStep =
-			this.lost.length ? "lost"
+			isLost ? "lost"
 			: this.followsFields ? "fields"
 			: "dataflow"
-		if (this.lost.length)
-			for (const member of introspectionMembers) members.add(member)
+		if (isLost) for (const member of introspectionMembers) members.add(member)
 		return {
 			members: introspectionMembers.filter(member => members.has(member)),
 			pruned:
-				this.lost.length || this.unseen.length || this.unfollowed.length ?
+				isLost || this.unseen.length || this.unfollowed.length ?
 					[...prunedMembers]
 				:	prunedMembers.filter(member => this.pruned.has(member)),
 			step,
@@ -731,22 +766,28 @@ class Follow {
 		if (!this.read.has(member)) this.read.set(member, module.positionOf(node))
 	}
 
-	// converting a validator to a primitive calls its toString, which reads its
-	// expression
+	// converting a validator to a primitive reads its expression, through
+	// toString, as does converting an array holding it, which joins each element
 	private convert(held: Held, at: Node, module: SourceModule): void {
-		if (held.path.length || held.of !== "type") return
+		if (
+			held.of !== "type" ||
+			!held.path.every(key => key === anyKey || /^\d+$/.test(key))
+		)
+			return
 		this.record("expression", at, module)
 		this.pruned.add("methods")
 	}
 
 	private lose(node: Node, module: SourceModule, why: string): void {
-		this.lost.push({ at: module.positionOf(node), why })
+		if (this.quiet) this.quietlyLost = true
+		else this.lost.push({ at: module.positionOf(node), why })
 	}
 
 	// what holds it reaches code the build can't see, which reads the
 	// introspection members only by name
 	private unfollow(node: Node, module: SourceModule, why: string): void {
-		this.unfollowed.push(`${module.positionOf(node)} ${why}`)
+		if (this.quiet) this.quietlyLost = true
+		else this.unfollowed.push(`${module.positionOf(node)} ${why}`)
 	}
 
 	private readAt({ node, module, held }: Fact): void {
@@ -852,6 +893,10 @@ class Follow {
 					...held,
 					path: held.path.slice(1)
 				})
+			case "ForInStatement":
+				if (parent.right === operand && !held.path.length)
+					lose("lists its keys")
+				return
 			case "ExportDefaultDeclaration":
 				return this.readExport(module, "default", held, operand)
 			case "YieldExpression":
@@ -865,7 +910,6 @@ class Follow {
 			case "WhileStatement":
 			case "DoWhileStatement":
 			case "ForStatement":
-			case "ForInStatement":
 			case "SwitchStatement":
 			case "SwitchCase":
 			case "ExpressionStatement":
@@ -890,6 +934,8 @@ class Follow {
 				"stores it on the global object, which code outside the bundle may read"
 			)
 		}
+		if (isCommonJsExports(owner, memberNameOf(target)))
+			return this.lose(target, module, "exports it from CommonJS")
 		this.followField(memberNameOf(target), target, module, held)
 	}
 
@@ -924,10 +970,28 @@ class Follow {
 		for (const read of this.readers.fieldReadsOf(key)) {
 			if (owner !== undefined && !this.readers.mayRead(read.module, owner))
 				continue
-			if (read.node.parent?.type === "Property" || isPatternTarget(read.node))
+			if (isPatternTarget(read.node))
 				this.bindPattern(read.node, read.module, fieldHeld)
 			else this.push(read.node, read.module, fieldHeld)
 		}
+		const { quiet } = this
+		for (const { node, module } of this.readers.fieldReadsOf(anyKey)) {
+			if (owner !== undefined && !this.readers.mayRead(module, owner)) continue
+			this.quiet = quiet || !!dependencyOf(module.id)
+			const read: Held = this.quiet ? { ...fieldHeld, quiet: true } : fieldHeld
+			const atKey: Held = { ...read, path: [key] }
+			if (node.type === "RestElement")
+				this.bindPattern(node.argument, module, atKey)
+			else if (isPatternTarget(node)) this.bindPattern(node, module, read)
+			else if (node.type === "MemberExpression") this.push(node, module, read)
+			else if (node.type === "SpreadElement")
+				this.push(node.parent!, module, atKey)
+			else if (node.type === "CallExpression") {
+				for (const i of node.arguments.keys())
+					this.builtin(node, unwrapExpression(node.callee), i, module, atKey)
+			}
+		}
+		this.quiet = quiet
 	}
 
 	private spread(
@@ -991,22 +1055,8 @@ class Follow {
 				this.push(member, module, { ...held, path: rest })
 			return
 		}
-		if (key === undefined) {
-			if (held.of === "standard")
-				return this.record("~standard.jsonSchema", member, module)
-			return this.lose(member, module, "reads it at a computed key")
-		}
-		if (held.of === "standard") {
-			if (key === "jsonSchema")
-				this.record("~standard.jsonSchema", member, module)
-			return
-		}
-		for (const read of prunedMembersByName[key] ?? []) this.pruned.add(read)
-		if (key === "~standard")
-			return this.push(member, module, { path: [], of: "standard" })
-		if (key === "toString") return this.record("expression", member, module)
-		if (introspectionMembers.includes(key as never))
-			this.record(key as IntrospectionMember, member, module)
+		const read = this.readMember(key, held, member, module)
+		if (read) this.push(member, module, read)
 	}
 
 	// e.g. `tools.map(tool => tool.inputSchema)`, passing each element on
@@ -1204,11 +1254,20 @@ class Follow {
 	private bindPattern(pattern: Node, module: SourceModule, held: Held): void {
 		switch (pattern.type) {
 			case "Identifier": {
-				const binding = module.scopes.bindingsById.get(pattern)
-				if (!binding) return
+				// a declaration, or a binding an assignment writes
+				const binding =
+					module.scopes.bindingsById.get(pattern) ??
+					module.scopes.byId.get(pattern)?.binding
+				if (!binding) {
+					return this.lose(
+						pattern,
+						module,
+						"stores it on the global object, which code outside the bundle may read"
+					)
+				}
 				const helds = this.heldsByBinding.get(binding)
-				if (helds) helds.add(heldKeyOf(held))
-				else this.heldsByBinding.set(binding, new Set([heldKeyOf(held)]))
+				if (helds) helds.add(shapeKeyOf(held))
+				else this.heldsByBinding.set(binding, new Set([shapeKeyOf(held)]))
 				this.readBinding(binding, module, held)
 				return
 			}
@@ -1256,7 +1315,7 @@ class Follow {
 		}
 	}
 
-	// a member read off the validator or its ~standard by destructuring
+	// a member read off the validator or its ~standard, and what it holds of it
 	private readMember(
 		key: string | undefined,
 		held: Held,
@@ -1274,10 +1333,13 @@ class Follow {
 			return
 		}
 		for (const read of prunedMembersByName[key] ?? []) this.pruned.add(read)
-		if (key === "~standard") return { path: [], of: "standard" }
+		if (key === "~standard") return { ...held, path: [], of: "standard" }
 		if (key === "toString") this.record("expression", at, module)
 		else if (introspectionMembers.includes(key as never))
 			this.record(key as IntrospectionMember, at, module)
+		// a target other than the default is baked with ~standard.jsonSchema's
+		if (key === "toJsonSchema" && !isCalledBare(at))
+			this.record("~standard.jsonSchema", at, module)
 	}
 
 	private bindLeft(left: Node, module: SourceModule, held: Held): void {
@@ -1292,6 +1354,8 @@ class Follow {
 		module: SourceModule,
 		held: Held
 	): void {
+		if (isNamespaceExport(binding))
+			return this.lose(binding.id, module, "exports it from a namespace")
 		const runtime = this.readers.runtimeOf(module)
 		for (const reference of binding.references) {
 			if (reference.isWrite || (runtime && isDead(reference.id, runtime)))
@@ -1382,7 +1446,7 @@ class Follow {
 		}
 	}
 
-	// a call to a global the build knows, or undefined
+	// whether it's a call to a global the build knows, which it follows here
 	private builtin(
 		call: Extract<Node, { type: "CallExpression" | "NewExpression" }>,
 		callee: Node,
@@ -1403,6 +1467,56 @@ class Follow {
 				return true
 			case "String":
 				this.convert(held, call, module)
+				return true
+			case "Reflect.get": {
+				if (index !== 0) return true
+				const [, key] = call.arguments
+				const constant = key && constantOf(key, module)
+				if (!held.path.length) {
+					const read = this.readMember(constant, held, call, module)
+					if (read) this.push(call, module, read)
+				} else if (
+					constant === undefined ||
+					held.path[0] === anyKey ||
+					held.path[0] === constant
+				)
+					this.push(call, module, { ...held, path: held.path.slice(1) })
+				return true
+			}
+			case "Object.getOwnPropertyDescriptor":
+			case "Object.getOwnPropertyDescriptors":
+			case "Reflect.getOwnPropertyDescriptor":
+				if (index === 0) this.lose(call, module, "reads its descriptors")
+				return true
+			case "Object.defineProperty":
+			case "Reflect.defineProperty": {
+				if (index !== 2) return true
+				const [target, key] = call.arguments
+				const [first, ...rest] = held.path
+				if (first !== "value" && first !== anyKey) return true
+				const owner = globalNameOf(target, module)
+				if (isCommonJsExports(owner))
+					this.lose(call, module, "exports it from CommonJS")
+				else if (owner && globalObjects.has(owner)) {
+					this.lose(
+						call,
+						module,
+						"stores it on the global object, which code outside the bundle may read"
+					)
+				} else {
+					this.followField(constantOf(key, module), call, module, {
+						...held,
+						path: rest
+					})
+				}
+				return true
+			}
+			// descriptors or entries, which store it at a key the build doesn't follow
+			case "Object.defineProperties":
+			case "Object.create":
+			case "Object.fromEntries":
+				if (index === (name === "Object.fromEntries" ? 0 : 1))
+					this.lose(call, module, "stores it at a key the build can't name")
 				return true
 			case "Object.freeze":
 			case "Object.seal":
@@ -1433,9 +1547,7 @@ class Follow {
 				return true
 			case "Object.keys":
 			case "Object.getOwnPropertyNames":
-				// which keys it has depends on each member it may lack
-				if (index === 0 && held.path.length === 0 && held.of === "type")
-					for (const member of prunedMembers) this.pruned.add(member)
+				if (index === 0 && isValue) this.lose(call, module, "lists its keys")
 				return true
 			case "Object.is":
 			case "Array.isArray":
@@ -1793,6 +1905,13 @@ const arrayMethods: Record<string, "holder" | "element" | "mapped" | "none"> =
 // e.g. `JSON.stringify`, where no binding shadows the global
 const globalObjects = new Set(["globalThis", "window", "self", "global"])
 
+// e.g. `exports.T = T` or `module.exports = { T }`, which a module importing
+// it reads as its exports, by names no member read shows
+const isCommonJsExports = (owner: string | undefined, name?: unknown) =>
+	owner === "exports" ||
+	owner === "module.exports" ||
+	(owner === "module" && name === "exports")
+
 const globalNameOf = (
 	callee: Node,
 	module: SourceModule
@@ -1823,6 +1942,28 @@ const propertyKeyOf = (property: {
 		:	undefined
 	: property.computed || property.key.type !== "Identifier" ? undefined
 	: property.key.name
+
+// e.g. `T.toJsonSchema()`, rather than called with options or read to call later
+const isCalledBare = (read: Node): boolean => {
+	const [operand, call] = operatorOf(read)
+	return (
+		call?.type === "CallExpression" &&
+		call.callee === operand &&
+		!call.arguments.length
+	)
+}
+
+// globals reading an object at keys a call may not name
+const keyedBuiltins: ReadonlySet<string | undefined> = new Set([
+	"Reflect.get",
+	"Object.values",
+	"Object.entries",
+	"Object.assign",
+	"Object.getOwnPropertyDescriptor",
+	"Object.getOwnPropertyDescriptors",
+	"Reflect.getOwnPropertyDescriptor",
+	"JSON.stringify"
+])
 
 // a key a const holds, like `const io = "input"`
 const constantOf = (node: Node, module: SourceModule): string | undefined => {
@@ -1859,9 +2000,11 @@ const propertyOf = (literal: Node, name: string): Node | undefined => {
 	}
 }
 
-// `{ a: x } = o` or `({ a: x }) =>`, binding x
-const isPatternTarget = (node: Node): boolean =>
-	node.parent?.type === "ObjectPattern" || node.parent?.type === "ArrayPattern"
+// e.g. `x` in `const { v: x } = o` or `[x] = a`, but not `{ v: o.v }`
+const isPatternTarget = ({ parent }: Node): boolean =>
+	parent?.type === "ArrayPattern" ||
+	parent?.type === "ObjectPattern" ||
+	(parent?.type === "Property" && parent.parent?.type === "ObjectPattern")
 
 const enclosingFunctionOf = (node: Node): FunctionNode | undefined => {
 	for (let at = node.parent; at; at = at.parent)

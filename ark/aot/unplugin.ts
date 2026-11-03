@@ -1,5 +1,6 @@
 import { throwError, type KeySet } from "@ark/util"
 import {
+	existsSync,
 	mkdirSync,
 	readFileSync,
 	rmSync,
@@ -62,6 +63,7 @@ import {
 	writePrecompiledDependencyMessage,
 	writeBundledExternalMessage,
 	writeExternalizedMessage,
+	writeNextExternalMessage,
 	writeFilelessImportMessage,
 	writeLoadedFirstMessage,
 	writeUncachedModuleMessage,
@@ -331,13 +333,13 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	// an external arktype loads apart from the runtime its validators use
 	const checkExternal = (
 		isExternal: (specifier: string) => boolean,
-		option: string,
+		problemOf: (specifier: string) => string,
 		warn: (message: string) => void
 	) => {
 		if (!isStandalone || opts?.shadow) return
 		const specifier = externalizableSpecifiers.find(isExternal)
 		if (!specifier) return
-		const problem = writeExternalizedMessage(specifier, option)
+		const problem = problemOf(specifier)
 		if (opts?.allowUnsafe) warn(problem)
 		else throwBuildError(withAllowUnsafe(problem))
 	}
@@ -347,7 +349,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	) {
 		checkExternal(
 			specifier => isExternalIn(options.external, specifier),
-			"external",
+			specifier => writeExternalizedMessage(specifier, "external"),
 			message => this.warn(message)
 		)
 	}
@@ -395,7 +397,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				try {
 					checkExternal(
 						specifier => requests.has(specifier),
-						"externals",
+						specifier =>
+							dependsOnNext(bundler.context) ?
+								writeNextExternalMessage(specifier)
+							:	writeExternalizedMessage(specifier, "externals"),
 						message =>
 							compilation.warnings.push(
 								new bundler.webpack.WebpackError(message)
@@ -1181,9 +1186,13 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 						specifier =>
 							Array.isArray(external) &&
 							external.includes(packageNameOf(specifier)),
-						name === "ssr" ? "ssr.external" : (
-							`environments.${name}.resolve.external`
-						),
+						specifier =>
+							writeExternalizedMessage(
+								specifier,
+								name === "ssr" ? "ssr.external" : (
+									`environments.${name}.resolve.external`
+								)
+							),
 						message => config.logger.warn(message)
 					)
 				}
@@ -1336,7 +1345,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 						external.some((pattern: string) =>
 							matchesBunExternal(pattern, specifier)
 						),
-					"external",
+					specifier => writeExternalizedMessage(specifier, "external"),
 					warning => console.warn(warning)
 				)
 			}
@@ -2183,6 +2192,16 @@ const externalizableSpecifiers = [
 	"@ark/schema/runtime",
 	"@ark/util"
 ]
+
+// Next.js leaves the pages router's dependencies external on the server
+const dependsOnNext = (root: string): boolean => {
+	const manifest = join(root, "package.json")
+	if (!existsSync(manifest)) return false
+	const { dependencies, devDependencies } = JSON.parse(
+		readFileSync(manifest, "utf8")
+	)
+	return "next" in { ...dependencies, ...devDependencies }
+}
 
 const isExternalIn = (external: unknown, specifier: string): boolean =>
 	typeof external === "function" ? !!external(specifier, undefined, false)

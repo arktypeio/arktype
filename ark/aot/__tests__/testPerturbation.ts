@@ -4,12 +4,14 @@ import {
 	Precompiler,
 	type Diagnostic,
 	type PrecompiledModule,
-	type PrecompileOptions
+	type PrecompileOptions,
+	type ReadProgram
 } from "@ark/aot"
 import { hasArkKind } from "@ark/schema"
 import { errorWritersByCode } from "@ark/schema/internal"
 import { arkKindOf } from "@ark/util"
 import { isTypedFn, keyOf, type Foldable } from "arktype/internal/standalone.ts"
+import { bakedJsonSchemaOptionsMessage } from "arktype/runtime"
 import { bindingOfFunction, isArk } from "@ark/aot/internal/graph.ts"
 import { specifierOf } from "@ark/aot/internal/host.ts"
 import { SourceModule } from "@ark/aot/internal/module.ts"
@@ -50,6 +52,11 @@ export interface BuildOptions {
 	standalone?: PrecompileOptions
 	// run a file where no site folds, as a program recording its own does
 	runsUnfolded?: boolean
+	// read each file's program whole first, as a production bundle's scan does
+	readsProgram?: boolean
+	// only these perturbations run, as a build checking nothing at creation
+	// agrees only with the program as written
+	perturbations?: Perturbation[]
 }
 
 const perturbingPrecompiler = (opts: BuildOptions) =>
@@ -102,6 +109,8 @@ export const buildPerturbed = (
 	for (const path of corpus) {
 		const source = readFileSync(path, "utf8")
 		const precompiler = perturbingPrecompiler({ ...opts, mode: "standalone" })
+		if (opts.readsProgram)
+			precompiler.readProgram(programOf(precompiler, path, source))
 		const { sites } = precompiler.analyzeSites(source, path)
 		const unsupported = new Set(
 			precompiler
@@ -230,6 +239,8 @@ export const buildPerturbed = (
 		// one writer for the file and its imports, as a build's is, so a Scope a
 		// refused site reads is left to arktype in the module holding it
 		const writer = perturbingPrecompiler(opts)
+		if (opts.readsProgram)
+			writer.readProgram(programOf(writer, path, marked.toString()))
 		const precompiled = writer.precompile(marked.toString(), path)
 		errors.push(...errorsOf(precompiled))
 		errorsByPath[path] = errorsOf(precompiled)
@@ -294,12 +305,34 @@ export const buildPerturbed = (
 			precompiledByPath,
 			exportNamesByPath,
 			swapsByPath,
+			...(opts.perturbations && { perturbations: opts.perturbations }),
 			...runtimeOf()
 		},
 		sitesById,
 		errors,
 		errorsByPath
 	}
+}
+
+// a file and each module it reaches, as one program
+const programOf = (
+	precompiler: Precompiler,
+	path: string,
+	source: string
+): ReadProgram => {
+	const modules: ReadProgram["modules"] = { [path]: { source } }
+	const pending = [path]
+	for (const importer of pending) {
+		for (const target of precompiler.textImportsOf(
+			modules[importer].source,
+			importer
+		)) {
+			if (!isPerturbable(target) || target in modules) continue
+			modules[target] = { source: readFileSync(target, "utf8") }
+			pending.push(target)
+		}
+	}
+	return { modules }
 }
 
 // an arktype value, which holds the functions a definition passed it
@@ -485,6 +518,14 @@ interface WorldComparison {
 	observedSites: Set<string>
 }
 
+// what a test observed, keyed `test <n>`, rather than a site
+const isTest = (key: string) => key.startsWith("test ")
+
+// a test passing toJsonSchema() options its validator's baked JSON Schema
+// can't apply, which a standalone validator refuses by design
+const refusesJsonSchemaOptions = (test: Observation | undefined) =>
+	String(test?.threw).includes(bakedJsonSchemaOptionsMessage)
+
 // a site key's id and occurrence, ordered as the program runs them
 const orderOf = (key: string) => key.split(":").map(Number)
 
@@ -513,8 +554,26 @@ export const compareWorlds = (
 					[orderOf(key)]
 				:	[]
 			)
+			// the test each of the program's observations was made in
+			const testOf: Record<string, string> = {}
+			for (const [key, observed] of Object.entries(originals)) {
+				if (isTest(key))
+					for (const site of observed.sites as string[]) testOf[site] = key
+			}
 			for (const [key, observed] of Object.entries(originals)) {
 				const actual = actuals[key]
+				if (isTest(key)) {
+					// a test's own throws aren't compared, as tests call what a validator
+					// lacks by design, like `.extends`, but the documented ones are counted
+					if (
+						observed.threw === undefined &&
+						refusesJsonSchemaOptions(actual)
+					) {
+						const outcome = `${kind}: a test throws precompiled, as it passes toJsonSchema() options a baked JSON Schema can't apply`
+						counts[outcome] = (counts[outcome] ?? 0) + 1
+					}
+					continue
+				}
 				const expected = reportedOf(observed, actual) as Observation
 				const [id, occurrence] = key.split(":")
 				const site =
@@ -533,6 +592,8 @@ export const compareWorlds = (
 							"unobserved precompiled after a build error"
 						: occurrence && thrown.some(l => isBefore(l, orderOf(key))) ?
 							"unobserved precompiled after a site threw"
+						: refusesJsonSchemaOptions(actuals[testOf[key]]) ?
+							"unobserved precompiled after its test threw, as it passes toJsonSchema() options a baked JSON Schema can't apply"
 						: isCreationCheck(actuals.import) ?
 							"unobserved precompiled after an import threw at creation"
 						:	"unobserved precompiled"

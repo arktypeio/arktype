@@ -354,6 +354,6 @@ const writeImport = (
 	}
 	if (named.length) clauses.push(`{ ${named.join(", ")} }`)
 	return clauses.length ?
-			`import ${clauses.join(", ")} from "${source}"`
-		:	`import "${source}"`
+			`import ${clauses.join(", ")} from ${JSON.stringify(source)}`
+		:	`import ${JSON.stringify(source)}`
 }

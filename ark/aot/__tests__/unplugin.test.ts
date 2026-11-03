@@ -12,6 +12,7 @@ import {
 	unbundledMessage,
 	writeBundledExternalMessage,
 	writeExternalizedMessage,
+	writeNextExternalMessage,
 	writeFilelessImportMessage,
 	writeLoadedFirstMessage,
 	writePrecompiledDependencyMessage,
@@ -65,7 +66,6 @@ import {
 	writeCreatedBeforeConfigureMessage,
 	writtenConfigMessage
 } from "@ark/schema/runtime"
-import { bakedJsonSchemaOptionsMessage } from "arktype/runtime"
 import {
 	packageFiles,
 	run,
@@ -459,16 +459,20 @@ contextualize(function (this: Mocha.Suite) {
 		attest(run(standalone)).equals(runPlain(introspected))
 	})
 
-	it("esbuild ignores a library's fallback where no fallback writes the schema", async () => {
+	it("esbuild writes a schema with a library's fallback, as arktype does", async () => {
 		const root = writeFixture(
 			{
 				// as hono-openapi and @orpc/arktype convert a Type they're passed
 				"main.ts": `import { type } from "arktype"
 
 const User = type({ name: "string", "tags?": "string[]" })
-const Event = type({ at: "Date" })
+const Task = type({
+	id: "string.integer.parse",
+	createdAt: "Date | null",
+	at: type("Date").describe("when")
+}).narrow(() => true)
 
-const convert = (t: typeof User | typeof Event, opts: object) => {
+const convert = (t: typeof User | typeof Task, opts: object) => {
 	try {
 		return t.toJsonSchema(opts)
 	} catch (e) {
@@ -476,14 +480,14 @@ const convert = (t: typeof User | typeof Event, opts: object) => {
 	}
 }
 
+// hono-openapi's, and @orpc/arktype's
+const keepBase = (ctx: { base: object }) => ctx.base
 const date = { date: (ctx: { base: object }) => ({ ...ctx.base, format: "date-time" }) }
 
 console.log(
-	JSON.stringify([
-		convert(User, { fallback: (ctx: { base: object }) => ctx.base }),
-		convert(User, { fallback: date }),
-		convert(Event, { fallback: date })
-	])
+	JSON.stringify(
+		[User, Task].flatMap(t => [keepBase, date].map(fallback => convert(t, { fallback })))
+	)
 )
 `
 			},
@@ -493,11 +497,7 @@ console.log(
 			{ cwd: root, members: { toJsonSchema: true } },
 			root
 		)
-		const [ignored, ignoredWithDate, needed] = JSON.parse(run(standalone))
-		const [user, userWithDate, event] = JSON.parse(runPlain(root))
-		attest([ignored, ignoredWithDate]).equals([user, userWithDate])
-		attest(event.properties.at).equals({ format: "date-time" })
-		attest(needed).equals(`Error: ${bakedJsonSchemaOptionsMessage}`)
+		attest(run(standalone)).equals(runPlain(root))
 	})
 
 	it("esbuild writes no NUL into its output", async () => {
@@ -670,6 +670,45 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 		]).equals([
 			withAllowUnsafe(writeExternalizedMessage("arktype", "external")),
 			withAllowUnsafe(writeExternalizedMessage("@ark/schema", "ssr.external"))
+		])
+	})
+
+	it("fails a webpack build whose externals take arktype, naming Next.js's setting in an app that depends on it", async () => {
+		const errorsOf = async (name: string, manifest: object) => {
+			const root = writeFixture(
+				{
+					"package.json": JSON.stringify(manifest),
+					"main.js":
+						'import { type } from "arktype"\n\nconsole.log(type("string")("a"))\n'
+				},
+				fromHere("temp", "webpackExternals", name)
+			)
+			const compiler = webpack({
+				mode: "production",
+				context: root,
+				entry: "./main.js",
+				target: "node",
+				output: { path: join(root, "out") },
+				// as Next.js leaves the pages router's dependencies on the server
+				externals: ["arktype"],
+				plugins: [precompile.webpack({ cwd: root })]
+			})
+			const stats = await new Promise<Stats | undefined>((resolve, reject) =>
+				compiler.run((error, stats) =>
+					compiler.close(() => (error ? reject(error) : resolve(stats)))
+				)
+			)
+			return stats?.toJson().errors?.map(error => error.message)
+		}
+		attest([
+			await errorsOf("plain", { type: "module" }),
+			await errorsOf("next", {
+				type: "module",
+				dependencies: { next: "15.5.4" }
+			})
+		]).equals([
+			[withAllowUnsafe(writeExternalizedMessage("arktype", "externals"))],
+			[withAllowUnsafe(writeNextExternalMessage("arktype"))]
 		])
 	})
 
@@ -2259,6 +2298,91 @@ console.log(JSON.stringify(User.toJsonSchema()))
 			attest(run(introspected)).equals(runPlain(root))
 			attest(introspected.includes("tAllows")).equals(false)
 		}
+	})
+
+	it("a Type another module writes", async () => {
+		const root = writeFixture(
+			{
+				"containers.ts": `import { type } from "arktype"
+export const H = { a: type("string") }
+`,
+				"mutate.ts": `import { type } from "arktype"
+import { H } from "./containers.ts"
+H.a = type("number") as never
+`,
+				"main.ts": `import { type } from "arktype"
+import "./mutate.ts"
+import { H } from "./containers.ts"
+const T = type({ x: H.a })
+console.log(T.allows({ x: 1 }))
+`
+			},
+			fromHere("temp", "writtenElsewhere")
+		)
+		// production's, which checks nothing at creation
+		const build = (opts: PrecompileUnpluginOptions) =>
+			esbuild({
+				entryPoints: [join(root, "main.ts")],
+				bundle: true,
+				write: false,
+				format: "esm",
+				conditions: [...conditions, "production"],
+				logLevel: "silent",
+				plugins: [precompile.esbuild({ cwd: root, conditions, ...opts })]
+			}).then(
+				({ outputFiles }) => outputFiles[0].text,
+				(e: { errors: { text: string }[] }) => e.errors.map(e => e.text)
+			)
+		attest(runPlain(root)).equals("true\n")
+		// a pruned build reads the whole program, so refuses the site
+		attest(await build({})).snap([
+			"main.ts:4:11  type({ x: H.a }) cannot be precompiled\n  `H` is imported from containers.ts\n  `H` is written at mutate.ts:3:1, so its value at the site is not known\n  Write the value whole in its literal. Where it differs by case, define a Type for each case and choose one at runtime."
+		])
+		// one reading a module at a time checks the Type it reads off the holder
+		attest(thrownBy((await build({ prune: false })) as string)).snap(
+			"`H.a` is another Type, but was precompiled as the Type it was at build"
+		)
+	})
+
+	it("a Type read off a holder", async () => {
+		const root = writeFixture(
+			{
+				"containers.ts": `import { type } from "arktype"
+export const H = { a: type("string") }
+export const Other = type("number")
+`,
+				"main.ts": `import { type } from "arktype"
+import { H, Other } from "./containers.ts"
+const T = type({ x: H.a })
+console.log(T.allows({ x: "a" }), Other.allows(1))
+`,
+				"plain.ts": `import { type } from "arktype"
+import { Other } from "./containers.ts"
+const T = type({ x: Other })
+console.log(T.allows({ x: 1 }))
+`
+			},
+			fromHere("temp", "readOffHolder")
+		)
+		const build = (entry: string) =>
+			esbuild({
+				entryPoints: [join(root, entry)],
+				bundle: true,
+				write: false,
+				format: "esm",
+				conditions: [...conditions, "production"],
+				logLevel: "silent",
+				plugins: [precompile.esbuild({ cwd: root, conditions })]
+			}).then(({ outputFiles }) => outputFiles[0].text)
+		const js = await build("main.ts")
+		attest(run(js)).equals("true true\n")
+		// a write the build couldn't see, as code it doesn't read may make
+		const written = js.replace(/^var T = /m, "H.a = Other\n$&")
+		attest(thrownBy(written)).snap(
+			"`H.a` is another Type, but was precompiled as the Type it was at build"
+		)
+		// a program reading no Type off a holder holds no ids to compare
+		attest((await build("plain.ts")).includes("holdHoles")).equals(false)
 	})
 
 	it("undetailed bundles", async () => {

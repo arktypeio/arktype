@@ -11,7 +11,9 @@ export * from "./shared/enWriters.ts"
 export * from "./shared/issues.ts"
 export {
 	supportedJsonSchemaTargets,
-	validateStandardJsonSchemaTarget
+	validateStandardJsonSchemaTarget,
+	writeNullableJsonSchema,
+	writeUnionJsonSchema
 } from "./shared/jsonSchema.ts"
 export * from "./shared/transform.ts"
 export * from "./shared/traversal.ts"
@@ -72,6 +74,19 @@ export const configuredWriterOf =
 	(code: string, k: string) =>
 	(...args: unknown[]): unknown =>
 		(programConfig as Record<string, Record<string, Fn>>)[code][k](...args)
+
+// the configured fallback's handler for a code, where a call's names none
+export const configuredFallbackOf =
+	(code: string) =>
+	(ctx: object): unknown => {
+		const { fallback } = (
+			programConfig as { toJsonSchema: { fallback: Record<string, Fn> | Fn } }
+		).toJsonSchema
+		return (
+			typeof fallback === "function" ? fallback : (
+				(fallback[code] ?? fallback.default)
+			))(ctx)
+	}
 
 // functions can't be compared
 export const fingerprintOf = (config: object): string => {

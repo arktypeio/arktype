@@ -305,8 +305,7 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 		attest(check([], { cwd: dir }).lines).snap([
 			'config.ts:3:1  configure() is called, but the build has no `config` module\n  Name this module as the build\'s config in ark.json: { "precompile": { "config": "./config.ts" } }',
 			"main.ts:4:21  accepted",
-			'main.ts:6:21  JSON.stringify(User) reads toJSON, which a standalone validator lacks\n  `User` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-			"1 site in 2 files: 1 accepted (100.0%), 2 errors outside a site"
+			"1 site in 2 files: 1 accepted (100.0%), 1 error outside a site"
 		])
 		attest(runCli(dir, "--check", "--fail-under", "0").status).equals(1)
 	})

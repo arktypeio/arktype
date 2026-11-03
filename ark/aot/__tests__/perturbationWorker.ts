@@ -60,6 +60,8 @@ export interface Manifest {
 	runtimeUrl: string
 	// what a program importing arktype in place of arktype/runtime reads
 	arktypeOnlyNames: string[]
+	// those to run, if not every one
+	perturbations?: Perturbation[]
 }
 
 export type Observation = Record<string, unknown>
@@ -379,7 +381,7 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 		const source = isPrecompiled ? file.precompiled : file.original
 		const readsBindings = /\$arkSite\(\d+, \(\) => \[\(\)/.test(source)
 		const importsModules = /from "\.\.?\//.test(source)
-		for (const kind of perturbations) {
+		for (const kind of manifest.perturbations ?? perturbations) {
 			if (
 				kind === "mock" || kind === "mockKind" || kind === "swap" ?
 					!importsModules
@@ -400,10 +402,16 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			).catch(e => {
 				observations.import = { threw: messageOf(e) }
 			})
-			for (const test of tests) {
+			for (const [n, test] of tests.entries()) {
 				for (const hook of beforeEachHooks)
 					await settle(valueOrError(() => hook.call(context)))
-				await settle(valueOrError(() => test.call(context)))
+				const before = new Set(Object.keys(observations))
+				const result = await settle(valueOrError(() => test.call(context)))
+				// the sites it observed, and what it threw, which ends it early
+				observations[`test ${n}`] = {
+					sites: Object.keys(observations).filter(key => !before.has(key)),
+					...(result instanceof Error && { threw: messageOf(result) })
+				}
 			}
 		}
 	}

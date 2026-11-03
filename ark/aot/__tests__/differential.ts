@@ -688,17 +688,22 @@ type Introspection = ReturnType<typeof observeIntrospection>
 
 const keepBase = (ctx: { base: unknown }) => ctx.base as never
 
+// a new schema naming where arktype fell back, so each call is told apart
+const namesCode = (ctx: { code: string; base: object }) =>
+	({ ...ctx.base, fellBack: ctx.code }) as never
+
 const observeIntrospection = (t: Validator) => ({
 	json: observe(() => t.json, undefined),
 	jsonSchema: observe(() => t.toJsonSchema(), undefined),
 	// no options, and each target, which a validator writes only if baked,
-	// and a fallback, which it ignores only where no fallback writes it
+	// and a fallback, which it writes again as arktype did at build
 	jsonSchemaByOptions: [
 		{},
 		{ target: "draft-2020-12" },
 		{ target: "draft-07" },
 		{ fallback: keepBase },
-		{ target: "draft-2020-12", fallback: { date: keepBase } }
+		{ target: "draft-2020-12", fallback: { date: keepBase } },
+		{ target: "openapi-3.0", fallback: namesCode }
 	].map(opts => observe(() => t.toJsonSchema(opts), undefined)),
 	standardJsonSchema:
 		lacks("~standard") ?

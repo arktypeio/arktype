@@ -60,7 +60,7 @@ The [`errors`](/docs/precompile/options#errors) option ships less: one issue, or
 
 ## Shipping arktype instead
 
-`runtime: "arktype"` ships arktype, leaving definitions as written: each stays a Type with its whole API, and the build registers the code arktype would compile for it, so it skips compiling at runtime. A definition the build can't precompile is compiled at runtime as usual. Use it while you migrate, or where a program relies on composing Types at runtime.
+`runtime: "arktype"` ships arktype, leaving definitions as written: each stays a Type with its whole API, and the build registers the code arktype would compile for it, so it skips compiling at runtime. A definition the build can't precompile is compiled at runtime as usual. [Which to use](/docs/precompile/dynamic-vs-precompiled#which-to-use) says when to choose it.
 
 ```ts
 import { precompile } from "@ark/aot/unplugin"
@@ -75,6 +75,7 @@ To leave only some definitions to arktype in a standalone build, mark them as [r
 - `require("arktype")` or `import("arktype")` fails the build, since it would load arktype/runtime where the build precompiles no definition, but one whose specifier isn't a string literal isn't seen.
 - The build fails for a definition reading an object or array the program writes before it, but doesn't see a write by a module other than the object's and the definition's, or through a call it can't follow. If one changed the object, the definition throws as it's created, naming the object and what the build read.
 - The build doesn't see a Type reach a value through `arguments`, a generator, `Reflect.get`, `import()` or a namespace read at a runtime key, nor a direct `eval` or `with` changing a binding a definition reads. A Type it never sees reach a value is missed: calling a member it lacks throws, and reading one reads `undefined`.
+- The build fails where it sees a Type's keys listed, as by `Object.keys(User)`, `for...in` or a spread, since a validator's differ. Where it can't tell a Type reaches the value, as through `await`, `import()` or a `Proxy`, the keys listed are the validator's.
 - A module importing neither arktype nor a module exporting a Type isn't checked, so a member one of its functions reads off a Type passed to it is missed. Annotating the parameter with arktype's `Type` has the build check it.
 - Inside a function the build can't see every call to, like an exported function, a method or a callback, reading `expression`, `description`, `json`, `toJSON()` or `toJsonSchema()` off a parameter isn't checked, since it's usually some other object's. Passed a Type, such a read reads the member the build bakes where it follows the Type there, and throws where it doesn't. Annotate the parameter with arktype's `Type` so the build checks it, or mark the Type's definition as a [runtime island](/docs/precompile/advanced#runtime-islands). The same goes for a field an exported class's constructor sets from a parameter, read off an instance, and for a Vue template reading a Type that `setup()` or `data()` exposes from a `<script lang="ts">` block; script setup and a plain `<script>` are checked.
 - A definition whose branches arktype orders by the names of the functions they hold, like `type.instanceOf(Cat).or(type.instanceOf(Dog))`, is reported, since a minifier can rename them.

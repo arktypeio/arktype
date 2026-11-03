@@ -15,7 +15,7 @@ import {
 } from "node:fs"
 import { SourceMap, type SourceMapping } from "node:module"
 import { join } from "node:path"
-import { runCli, tempDir } from "./utils.ts"
+import { runCli, tempDir, writeFixture } from "./utils.ts"
 
 const emitted = fromHere("emitted")
 const out = join(emitted, "out")
@@ -131,6 +131,38 @@ contextualize(() => {
 		})
 		attest(existsSync(out)).equals(false)
 	}).timeout(60000)
+
+	it("leaves a dependency that opts in to Node, refusing a site reading its Type", () => {
+		const dir = writeFixture(
+			{
+				"package.json": '{ "type": "module" }',
+				"tsconfig.json": JSON.stringify({
+					compilerOptions: {
+						target: "ES2022",
+						module: "NodeNext",
+						skipLibCheck: true,
+						rootDir: "src",
+						outDir: "out"
+					},
+					include: ["src"]
+				}),
+				"node_modules/schemas/package.json": JSON.stringify({
+					name: "schemas",
+					type: "module",
+					exports: "./index.js",
+					ark: { aot: true }
+				}),
+				"node_modules/schemas/index.js":
+					'import { type } from "arktype"\n\nexport const Length = type("string <= 50")\n',
+				"src/main.ts":
+					'import { type } from "arktype"\nimport { Length } from "schemas"\n\nconsole.log(type({ name: Length }))\n'
+			},
+			fromHere("temp", "emitDependency")
+		)
+		attest(emitPrecompiled({ cwd: dir }).errors).snap([
+			"src/main.ts:4:13  type({ name: Length }) can't be precompiled yet\n  `Length` (src/main.ts:4:26) is not static, so the site holds it as a Standard Schema, which a standalone validator can't receive yet\n  `schemas` is a package --emit leaves to Node, though it imports arktype\n  Bundle the program with arktype's plugin, which precompiles schemas with it where it opts in, or put // @ark-runtime on the line before this definition, so arktype defines it at runtime."
+		])
+	})
 
 	it("refuses a runtime only a bundler can load", () => {
 		attest(() => emitPrecompiled({ cwd: emitted, errors: "none" })).throws(

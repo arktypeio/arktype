@@ -207,12 +207,14 @@ contextualize(function (this: Mocha.Suite) {
 					"/node_modules/checker/index.js": `export const check = t => [t.meta, String(t)]`
 				})
 			).snap(["assert", "~standard"])
-			// which keys it has depends on each
+			// which keys it has depends on each, so listing them loses track
 			attest(
 				await droppedReading(`import { check } from "checker"\n\ncheck(User)`, {
 					"/node_modules/checker/index.js": `export const check = t => Object.keys(t)`
 				})
-			).equals([])
+			).snap(
+				"the validator at types.ts:3:21 is lost where node_modules/checker/index.js:1:27 lists its keys"
+			)
 			attest(
 				await droppedReading(`import { check } from "checker"\n\ncheck(User)`, {
 					"/node_modules/checker/index.js": `export const check = (t, k) => k in t`
@@ -220,6 +222,25 @@ contextualize(function (this: Mocha.Suite) {
 			).snap(
 				"the validator at types.ts:3:21 is lost where node_modules/checker/index.js:1:37 tests it for a key the build can't name"
 			)
+			// as the MCP SDK's bundled ajv reading `fs[f]`, a dependency's read at a
+			// key it doesn't name may find what holds it, so passing that on keeps
+			// each member, as losing track there does, without a warning
+			attest(
+				await droppedReading(
+					`import { Store } from "store"\n\nconst store = new Store()\nstore.keep("a", { v: User })\nstore.show(console.log)`,
+					{
+						"/node_modules/store/index.js": `export class Store {
+	held = {}
+	keep(name, holder) {
+		this.held[name] = holder
+	}
+	show(cb, key) {
+		cb({ entry: this.held[key] })
+	}
+}`
+					}
+				)
+			).equals([])
 		})
 
 		it(".assert", async () => {

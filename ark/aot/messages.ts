@@ -101,6 +101,9 @@ export const writeExternalizedMessage = (
 ): string =>
 	`The build's \`${option}\` option leaves ${specifier} ${loadedAtRuntime}. Remove ${packageNameOf(specifier)} from \`${option}\`.`
 
+export const writeNextExternalMessage = (specifier: string): string =>
+	`Next.js leaves the pages router's dependencies external on the server when it builds with webpack, so it leaves ${specifier} ${loadedAtRuntime}. Add \`transpilePackages: ["${packageNameOf(specifier)}"]\` to next.config.js, so Next.js bundles it.`
+
 export const writeBundledExternalMessage = (specifier: string): string =>
 	`The bundle leaves ${specifier} ${loadedAtRuntime}. Bundle arktype: remove it from the bundler's \`external\` option, or, where a tool leaves dependencies external, have it bundle arktype, as tsup does with \`noExternal: ["arktype"]\` and tsdown with \`deps: { alwaysBundle: [/^arktype(\\/|$)/] }\`.`
 
@@ -390,6 +393,11 @@ const textHints: [
 		/^`(.+)` is a package the build does not read, though (?:it|(.+)) imports arktype$/,
 		(specifier, name = specifier) =>
 			`Precompile ${name} with the program: in ark.json (or package.json's "ark" key), set "precompile": { "dependencies": { "${name}": "aot" } }, or "arktype" in place of "aot" where it defines Types from values known only at runtime.`
+	],
+	[
+		/^`(.+)` is a package --emit leaves to Node, though (?:it|(.+)) imports arktype$/,
+		(specifier, name = specifier) =>
+			`Bundle the program with arktype's plugin, which precompiles ${name} with it where it opts in, or put // @ark-runtime on the line before this definition, so arktype defines it at runtime.`
 	],
 	[
 		/^it's passed to code the build can't see/,

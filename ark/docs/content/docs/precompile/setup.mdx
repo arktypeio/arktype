@@ -230,7 +230,7 @@ A validator ships its JSON Schema where the build sees code read it, so a librar
 
 ## Cache [#cache]
 
-A build keeps each module it precompiles in `node_modules/.cache/ark`, in the directory it runs from, so the next build, dev server or Next.js process reuses what didn't change. An entry is read only while everything that decided it is the same: the code of `@ark/aot` and `arktype`, a linked or repacked copy included, the version of Node, the module's source and each file the precompiler read for it, what each import resolved to, and your settings. A watch build or dev server stores only what it precompiles before its first change, keeping what it precompiles again to itself. A webpack or Rspack persistent cache is versioned by the same code and your settings, so it rebuilds each module once either changes. Deleting the directory is always safe, as the next build writes it again.
+A build keeps each module it precompiles in `node_modules/.cache/ark`, in the directory it runs from, so the next build, dev server or Next.js process reuses what didn't change. An entry is read only while everything that decided it is the same: the code of `@ark/aot` and `arktype`, a linked or repacked copy included, the version of Node, the module's source and each file the precompiler read for it, what each import resolved to, and your settings. A watch build or dev server stores only what it precompiles before its first change, keeping what it precompiles again to itself. A webpack or Rspack persistent cache is versioned by the same code and your settings, so it rebuilds each module once either changes. Deleting the directory is always safe, as the next build writes it again. An entry is code your bundle runs, checked only for a write cut short, so restore the directory from a CI cache only where nothing less trusted than the build, like a pull request from a fork, can write that cache, as for Vite's or webpack's.
 
 ## Frameworks [#frameworks]
 
@@ -285,13 +285,15 @@ The loader fails a module whose `arktype` imports resolve otherwise, naming the 
 
 The aliases also point a dependency's `arktype` imports at the runtime, so the `*.{js,mjs}` rule has the loader fail the build for a dependency that defines Types but doesn't [opt in](/docs/precompile/advanced#libraries), and precompile one that does or that [`dependencies`](/docs/precompile/options#dependencies) sets to `"aot"`. Turbopack can't run one dependency on arktype, so for one that creates Types from values it reads as it runs, like `drizzle-arktype`, build with webpack or with `runtime: "arktype"`. The loader reads only `import` and `export` declarations, so a CommonJS dependency that `require`s arktype throws `type is not a function` when it loads instead.
 
-With webpack (`next build --webpack`), add the plugin:
+With webpack, which Next 15 builds with, as does `next build --webpack`, add the plugin. The pages router leaves dependencies external on the server, so with it, also have Next bundle arktype:
 
 ```js title="next.config.js"
 // @noErrors
 import { precompile } from "@ark/aot/unplugin"
 
 export default {
+	// for the pages router
+	transpilePackages: ["arktype"],
 	webpack: config => {
 		config.plugins.push(precompile.webpack())
 		return config
@@ -332,7 +334,7 @@ A program `tsc` compiles to run from its `outDir` precompiles what it emits with
 
 It reads the nearest `tsconfig.json`, or the one `--tsconfig` names, and the tsconfigs it references. Each module reading arktype, directly or through a Type it imports, is precompiled from its source as a bundler would and emitted again over what `tsc` wrote, in the module format, target and source maps the tsconfig sets, with `arktype` and its other entries imported or required as `arktype/runtime`. Other modules and declarations stay as `tsc` emitted them. It takes the options `--check` does, reads `ark.json`, and fails on what a build would, writing nothing. Since it emits from source, run anything that rewrites `tsc`'s output, like `tsc-alias`, after it.
 
-Dependencies are left to Node, so one that imports `arktype` loads it beside the runtime rather than failing the build. `errors: "none"` and `optimizeErrors: "size"`, which `preset: "smallest"` sets, need a copy of `@ark/schema`'s runtime that only a bundler or the Node driver can load in place of the one `arktype/runtime` imports, so `--emit` refuses them. A library publishes what `tsc` emits without `--emit`, and [opts in](/docs/precompile/advanced#libraries) so its consumers' builds precompile it.
+Dependencies are left to Node, so one that imports `arktype` loads it beside the runtime rather than failing the build. That includes one that [opts in](/docs/precompile/advanced#libraries), whose Types are arktype's at runtime, so a definition reading one of them fails the build, naming the fix. `errors: "none"` and `optimizeErrors: "size"`, which `preset: "smallest"` sets, need a copy of `@ark/schema`'s runtime that only a bundler or the Node driver can load in place of the one `arktype/runtime` imports, so `--emit` refuses them. A library publishes what `tsc` emits without `--emit`, and [opts in](/docs/precompile/advanced#libraries) so its consumers' builds precompile it.
 
 `--emit --declare` also writes [declarations](/docs/precompile/advanced#declarations) as `--declare` does.
 

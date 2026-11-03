@@ -9,7 +9,13 @@ import {
 import { scope, type } from "arktype"
 import { introspectionMembers } from "arktype/internal/standalone.ts"
 import { readFileSync } from "node:fs"
-import { inFreshProcess, memoryHost, normalized, precompile } from "./utils.ts"
+import {
+	inFreshProcess,
+	memoryHost,
+	normalized,
+	precompile,
+	precompileProgram
+} from "./utils.ts"
 
 // a module building alone bakes each into its exports, which a test of how it
 // creates them doesn't read
@@ -174,7 +180,7 @@ export const Team = (User, $ark#0)`)
 		})
 
 		it("creates a size build's validators where they're read", () => {
-			const result = precompile(
+			const result = precompileProgram(
 				`import { type } from "arktype"
 import { User } from "./user.ts"
 export const Name = type("string > 0")
@@ -200,7 +206,7 @@ export const Team = /* @__PURE__ */ $ark_#0($ark_#3Allows)`)
 		})
 
 		it("creates a lazy build's validators where a module reads them as it loads", () => {
-			const result = precompile(
+			const result = precompileProgram(
 				`import { type, type Type } from "arktype"
 export const Name = type("string > 0")
 export const Id = type("string > 2") satisfies Type<string>
@@ -251,7 +257,7 @@ export const nameOf = () => $ark#6()`)
 
 		it("compiles a size build's Type that another compiles as its input", () => {
 			const modules = Object.values(
-				precompile(
+				precompileProgram(
 					`import { type } from "arktype"
 export const Moltar = type({
 	number: "number",

@@ -11,7 +11,11 @@ import {
 } from "@ark/util"
 import type { Predicate } from "../predicate.ts"
 import { defaultValueSerializer, type ConstraintKind } from "./implement.ts"
-import type { JsonSchema } from "./jsonSchema.ts"
+import type {
+	JsonSchema,
+	writeNullableJsonSchema,
+	writeUnionJsonSchema
+} from "./jsonSchema.ts"
 import { namedReference, registeredReference } from "./registry.ts"
 import type {
 	StandardJSONSchemaV1,
@@ -180,6 +184,17 @@ const standardFallback: ToJsonSchema.HandlerByCode = {
 	unit: keepBase,
 	date: keepBase
 }
+
+export interface UnionJsonSchemaWriters {
+	union: typeof writeUnionJsonSchema
+	nullable: typeof writeNullableJsonSchema
+}
+
+// a build passes its own as an option keyed by this, to see which of a
+// fallback's results writing a union reads
+export const unionJsonSchemaWritersKey: unique symbol = Symbol(
+	"unionJsonSchemaWriters"
+)
 
 export const ToJsonSchema = {
 	Error: ToJsonSchemaError,

@@ -34,6 +34,7 @@ import {
 	dateGetTime,
 	getBuiltinNameOfConstructor,
 	hasDomain,
+	printable,
 	prototypeOf,
 	stringifyPath,
 	throwError,
@@ -69,6 +70,7 @@ export {
 	callMorph,
 	computeDefaultValueMorph,
 	configure,
+	configuredFallbackOf,
 	configuredWriterOf,
 	copyOf,
 	describeCollapsibleDate,
@@ -116,6 +118,8 @@ export {
 	writeNotEqualActual,
 	writeProblem,
 	writeProtoActual,
+	writeNullableJsonSchema,
+	writeUnionJsonSchema,
 	writeUnitActual,
 	writeUnitProblem,
 	type ArkError
@@ -237,6 +241,22 @@ export const bakeInto = <t>(
 ): t => {
 	// a Type arktype created, as where a site is left to it, has each member
 	if (validator instanceof Validator) {
+		const prior: BakedJsonSchema | undefined = Reflect.getOwnPropertyDescriptor(
+			validator,
+			"toJsonSchema"
+		)?.value
+		const baked = attributes.toJsonSchema as BakedJsonSchema | undefined
+		// another module's bake may answer a target this one doesn't, and
+		// writes what this one does as it would
+		if (prior && baked) {
+			attributes.toJsonSchema = freeze((opts?: { target?: unknown }) => {
+				try {
+					return baked(opts)
+				} catch {
+					return prior(opts)
+				}
+			})
+		}
 		own(validator, attributes)
 		if (standard) own(validator["~standard"], standard)
 	}
@@ -303,29 +323,22 @@ export const createValidator = ((
 	attributes: ValidatorAttributes,
 	id: string,
 	holes?: readonly unknown[]
-): Validator => {
-	// a meta's onFail (e.g. a matcher's) overrides the configured one
-	const configuredOnFail = attributes.meta.onFail ?? runtimeConfig.onFail
-	const validator: Validator = setPrototypeOf(
-		((
-			data: unknown,
-			pipedFromCtx?: Traversal,
-			onFail: FailHandler | null = configuredOnFail
-		) => {
-			if (!pipedFromCtx) return rootApply(data, onFail)
-			return rootApply(data, pipedInto(pipedFromCtx))
-		}) satisfies Fn,
-		freeze(Validator.prototype)
-	)
-	// an own arrow function, since it is often detached, e.g. when passing to tRPC
-	validator.assert = freeze((data: unknown, pipedFromCtx?: Traversal) =>
-		validator(data, pipedFromCtx, throwOnDefault)
-	)
-	own(validator, attributes)
-	validator.allows = freeze(allows)
-	validator["~standard"] = standardOf(validator, attributes)
-	return holdHoles(freeze(validator), id, holes)
-}) satisfies Fn
+): Validator =>
+	createValidatorWith(
+		(_, configuredOnFail) =>
+			((
+				data: unknown,
+				pipedFromCtx?: Traversal,
+				onFail: FailHandler | null = configuredOnFail
+			) =>
+				pipedFromCtx ?
+					rootApply(data, pipedInto(pipedFromCtx))
+				:	rootApply(data, onFail)) satisfies Fn,
+		[allows],
+		id,
+		attributes,
+		holes
+	)) satisfies Fn
 
 // make returns the validator itself, so each site calls it directly
 export const createValidatorWith = ((
@@ -336,9 +349,11 @@ export const createValidatorWith = ((
 	holes?: readonly unknown[]
 ): Validator => {
 	const validator: Validator = setPrototypeOf(
+		// a meta's onFail (e.g. a matcher's) overrides the configured one
 		make(parts, attributes.meta.onFail ?? runtimeConfig.onFail),
 		freeze(Validator.prototype)
 	)
+	// an own arrow function, since it is often detached, e.g. when passing to tRPC
 	validator.assert = freeze((data: unknown, pipedFromCtx?: Traversal) =>
 		validator(data, pipedFromCtx, throwOnDefault)
 	)
@@ -439,6 +454,56 @@ export const bakedJsonSchema = (
 		return written ? written() : throwError(bakedJsonSchemaOptionsMessage)
 	})
 
+// calls the handler a call's fallback has for a code, else the configured one
+type FallBack = (code: string, ctx: object, configured?: Fn) => unknown
+
+interface JsonSchemaOptions {
+	target?: unknown
+	fallback?: unknown
+}
+
+// a baked schema written again with the fallback a call passes, as the build
+// recorded arktype writing it; a target's replay is 0 where it has none
+export const replayedJsonSchema = (
+	write: () => JsonSchema,
+	byTarget: readonly ((() => JsonSchema) | 0)[],
+	// each target's, then the default's
+	replays: readonly (((fallBack: FallBack) => JsonSchema) | 0)[]
+): ((opts?: JsonSchemaOptions) => JsonSchema) =>
+	freeze((opts?: JsonSchemaOptions) => {
+		let target: number | undefined
+		for (const k in opts) {
+			if (k === "target")
+				target = supportedJsonSchemaTargets.indexOf(opts!.target as never)
+			else if (k !== "fallback") throwError(bakedJsonSchemaOptionsMessage)
+		}
+		const fallback = opts?.fallback
+		// a nullish fallback names no handler
+		if (fallback === undefined || fallback === null) {
+			const written = target === undefined ? write : byTarget[target]
+			return written ? written() : throwError(bakedJsonSchemaOptionsMessage)
+		}
+		const replay = replays[target ?? byTarget.length]
+		return replay ?
+				replay(fallingBackTo(fallback))
+			:	throwError(bakedJsonSchemaOptionsMessage)
+	})
+
+// arktype calls a function for every code, else an object's handler for the
+// code or its default, else the configured one
+const fallingBackTo = (fallback: unknown): FallBack => {
+	const byCode = (
+		typeof fallback === "function" ?
+			{ default: fallback }
+		:	fallback) as Record<string, Fn | undefined>
+	return (code, ctx, configured) => {
+		const handler = byCode[code] ?? byCode.default ?? configured
+		return handler ? handler(ctx) : throwError(bakedJsonSchemaOptionsMessage)
+	}
+}
+
+type BakedJsonSchema = ReturnType<typeof bakedJsonSchema>
+
 type JsonSchemaWritersByTarget = readonly (() => JsonSchema)[]
 
 export const bakedStandardJsonSchema = (
@@ -489,6 +554,17 @@ export const throwJsonSchemaError = (
 ): never => {
 	throw new ToJsonSchemaError(code, message, context)
 }
+
+// arktype's error where no handler writes a code, the first line of whose
+// message is fixed at build and the rest its context, as arktype prints it
+export const fallbackThrower =
+	(code: string, header: string) =>
+	(ctx: object): never =>
+		throwJsonSchemaError(
+			code,
+			header + printable(ctx, { quoteKeys: false, indent: 4 }),
+			ctx
+		)
 
 export const throwUnbaked = (reason: string): never =>
 	throwError(writeUnbakedMessage(reason))
@@ -1134,7 +1210,7 @@ export type writeIdentityMismatchMessage<
 > = `${label} is not ${expectedLabel}, which it was at build`
 
 export const bakedJsonSchemaOptionsMessage =
-	'A standalone validator\'s JSON Schema takes only a target it was built with, and a fallback only where its schema needs none; configure({ toJsonSchema }) or build with runtime: "arktype"'
+	'A standalone validator\'s JSON Schema takes only a target it was built with, and a fallback only where it was built to apply one; set members["toJsonSchema"] true, or build with runtime: "arktype"'
 
 export type bakedJsonSchemaOptionsMessage = typeof bakedJsonSchemaOptionsMessage
 
