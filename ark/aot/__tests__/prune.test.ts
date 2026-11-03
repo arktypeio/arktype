@@ -1989,6 +1989,22 @@ console.log(out instanceof type.errors ? out.summary : out)
 			attest(pruned.includes("~standard")).equals(false)
 		})
 
+		it("writes a module a plugin ahead of it rewrites as it wrote the others", async () => {
+			const reformatting: VitePlugin = {
+				name: "reformatting",
+				enforce: "pre",
+				transform: (code, id) =>
+					id.endsWith("/types.ts") ?
+						`${code.split("\n").join("\n\n")}\n// built`
+					:	undefined
+			}
+			const rewritten = await bundle(
+				{ optimize: "size" },
+				{ plugins: [reformatting] }
+			)
+			attest(rewritten).equals(await bundle({ optimize: "size" }))
+		})
+
 		it("prunes a module a plugin ahead of it splits, as TanStack Router does a route", async () => {
 			writeFileSync(
 				join(root, "route.ts"),

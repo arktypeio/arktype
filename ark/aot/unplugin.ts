@@ -33,7 +33,6 @@ import {
 	fileOf,
 	islandDependencySpecifier,
 	issueFeaturesFile,
-	narrowsIssues,
 	optedInPackagesOf,
 	precompiledDependencyOf,
 	packageNameOf,
@@ -720,8 +719,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			if (!result.read) return { warnings }
 			const [scanned, usage] = result.read
 			scan.scanned = scanned
-			// only what it dropped can fail a read the scan didn't see
-			scan.verifies = !!usage.dropped.length || narrowsIssues(usage.issues)
+			scan.verifies = usage.verifies
 			scan.holders = new Set(usage.holders)
 			esbuildScan = {
 				scanned,
@@ -1522,7 +1520,7 @@ const rollupScanOf = async (
 			usage.written ?
 				{
 					scanned,
-					verifies: !!usage.dropped.length || narrowsIssues(usage.issues),
+					verifies: usage.verifies,
 					replaced: new Set(usage.replaced),
 					holders: new Set(usage.holders),
 					loaded: new Map(),

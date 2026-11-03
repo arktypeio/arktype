@@ -128,6 +128,7 @@ import {
 	arkPackageName,
 	dependencyOf,
 	mapToSource,
+	narrowsIssues,
 	specifierOf,
 	readsNodes,
 	runsOnArktype,
@@ -590,6 +591,7 @@ export class Precompiler {
 			linked: false,
 			replaced: [],
 			written: false,
+			verifies: false,
 			holders: []
 		}
 		if (this.mode !== "standalone") return unwritten
@@ -660,11 +662,18 @@ export class Precompiler {
 			:	undefined
 		usage.written = written
 		if (replaced) usage.replaced = new Set(replaced)
+		const issues = this.issuesOf(program, written)
 		return {
 			dropped,
 			linked,
 			replaced: replaced ?? [],
 			written: true,
+			verifies:
+				!!dropped.length ||
+				!usage.called ||
+				!usage.readsAllows ||
+				!usage.piped ||
+				narrowsIssues(issues),
 			holders: precompiled.filter(id => {
 				const runtime = planned.get(id)!
 				return runtime.validators.length > 0 || runtime.holdsOther
@@ -672,7 +681,7 @@ export class Precompiler {
 			unpruned,
 			lost: readings.lost.length ? writeLostMessage(readings.lost) : undefined,
 			baked: readings.decisions,
-			issues: this.issuesOf(program, written)
+			issues
 		}
 	}
 
@@ -1253,17 +1262,19 @@ export class Precompiler {
 		return flat.replaced
 	}
 
-	private usageIn(
-		program: string | undefined,
-		id: string,
-		source: string
-	): ProgramReads {
+	private usageIn(program: string | undefined): ProgramReads {
 		const usage =
 			program === undefined ? undefined : this.usagesByProgram.get(program)
-		// the host fails a bundle holding a module unlike its scan read it
-		return usage?.sources[id] === source ?
-				usage
-			:	{ members: this.members, called: true, readsAllows: true, piped: true }
+		// a module another plugin rewrote too, as the host verifies the bundle
+		// as built reads no more wherever the usage leaves anything out
+		return (
+			usage ?? {
+				members: this.members,
+				called: true,
+				readsAllows: true,
+				piped: true
+			}
+		)
 	}
 
 	// a module as its bundle's scan wrote it, if it's unchanged since
@@ -1709,7 +1720,7 @@ export class Precompiler {
 				modules,
 				imports,
 				diagnostics,
-				this.usageIn(program, id, source)
+				this.usageIn(program)
 			)
 		} else this.writeCachedUnits(sites, modules, imports)
 		this.insertImports(module, s, prefix, modules, imports)

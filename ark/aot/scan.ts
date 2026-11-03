@@ -571,6 +571,9 @@ export interface ScannedUsage {
 	replaced: string[]
 	// whether it wrote each module, for a transform naming the bundle to read
 	written: boolean
+	// whether it left out anything a read the scan didn't see may need, so the
+	// host reads the bundle as built
+	verifies: boolean
 	// each module creating a validator, which only a module reaching it may read
 	holders: string[]
 	// the warning where it left out no member members leaves to it
