@@ -66,6 +66,8 @@ const renderDiagnostics = (
 
 export interface PrecompilerWorkerData {
 	precompilerOptions: PrecompilePluginOptions
+	// where Node runs each dependency as published, as for --emit
+	leavesDependencies?: boolean | undefined
 	// for a host that waits synchronously
 	port?: MessagePort | undefined
 	answered?: Int32Array | undefined
@@ -136,7 +138,11 @@ const answerRequests = (
 		() => (tracked = undefined)
 	)
 	const track = () =>
-		createTrackedPrecompiler(data.precompilerOptions, resolveInBundler)
+		createTrackedPrecompiler(
+			data.precompilerOptions,
+			resolveInBundler,
+			!!data.leavesDependencies
+		)
 	// kept across resets, as a rebuild asks again for modules nothing changed
 	const transformedById: Record<string, KeptModule> = {}
 	const answer = (request: PrecompileRequest): unknown => {
@@ -345,13 +351,15 @@ interface TrackedPrecompiler {
 
 const createTrackedPrecompiler = (
 	opts: PrecompilePluginOptions,
-	resolveInBundler?: BundlerResolver
+	resolveInBundler?: BundlerResolver,
+	leavesDependencies = false
 ): TrackedPrecompiler => {
 	opts = withSettingsFile(opts)
 	const readTimes: Record<string, number> = {}
 	const targetsByImporter: TrackedPrecompiler["targetsByImporter"] =
 		Object.create(null)
 	const precompiler = createPrecompiler(opts)
+	precompiler.graph.leavesDependencies = leavesDependencies
 	const { host } = precompiler.graph
 	precompiler.graph.host = {
 		...host,

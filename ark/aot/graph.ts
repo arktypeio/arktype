@@ -729,6 +729,8 @@ export class ModuleGraph {
 	private importsById: Record<string, string[]> = Object.create(null)
 	private optsInByPackage: Record<string, boolean> = Object.create(null)
 	dependencies: DependencyModes
+	// where Node runs each dependency as published, as for --emit
+	leavesDependencies = false
 	private packageNamesByDir: Record<string, string | undefined> =
 		Object.create(null)
 
@@ -811,9 +813,11 @@ export class ModuleGraph {
 			return {
 				kind: "package",
 				message:
-					name && this.importsArktype(id) && !this.readsOnlyRuntime(id) ?
-						`\`${specifier}\` is a package the build does not read, though ${specifier === name ? "it" : name} imports arktype`
-					:	`\`${specifier}\` is a package the build does not read`
+					!name || !this.importsArktype(id) || this.readsOnlyRuntime(id) ?
+						`\`${specifier}\` is a package the build does not read`
+					: this.leavesDependencies ?
+						`\`${specifier}\` is a package --emit leaves to Node, though ${specifier === name ? "it" : name} imports arktype`
+					:	`\`${specifier}\` is a package the build does not read, though ${specifier === name ? "it" : name} imports arktype`
 			}
 		}
 		const imports = (this.importsById[importer.id] ??= [])
@@ -877,9 +881,10 @@ export class ModuleGraph {
 		const [root, name] = dependencyOf(id) ?? []
 		return (
 			root === undefined ||
-			(this.optsInByPackage[root] ??=
-				this.dependencies[name!] === "aot" ||
-				optsIn(this.host.readFile(join(root, "package.json"))))
+			(!this.leavesDependencies &&
+				(this.optsInByPackage[root] ??=
+					this.dependencies[name!] === "aot" ||
+					optsIn(this.host.readFile(join(root, "package.json")))))
 		)
 	}
 
