@@ -694,16 +694,13 @@ contextualize(function (this: Mocha.Suite) {
 		})
 
 		it("stores nothing a worker answers once a reset kept it", async () => {
-			// a predicate's registered name counts those arktype registered before
-			const narrowed = (domain: string) =>
-				`import { type } from "arktype"\n\nconst isTruthy = (data: unknown) => !!data\n\nexport const T = type("${domain}").narrow(isTruthy)\n`
-			const dir = writeFixture({ "main.ts": narrowed("string") })
+			const dir = writeFixture({ "main.ts": typed("string") })
 			const id = join(dir, "main.ts")
 			const send = createAsyncPrecompiler({
 				precompilerOptions: { cwd: dir, conditions }
 			})
 			await send(["transform", readFileSync(id, "utf8"), id])
-			writeFileSync(id, narrowed("number"))
+			writeFileSync(id, typed("number"))
 			attest(await send(["reset"])).equals(false)
 			await send(["transform", readFileSync(id, "utf8"), id])
 			await send(["close"])
