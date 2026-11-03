@@ -228,16 +228,15 @@ console.log(describe(User))
 			undefined,
 			"test"
 		)
-		// the call creating its validator, which names it by where it was
+		// the declaration creating its validator, whose module names it by where it was
 		const createdIn = ({ modules }: { modules: Record<string, string> }) =>
 			Object.values(modules)
 				.join("\n")
-				.match(/runtime\.createValidatorWith\([^]*?\n\)/)?.[0]
-		attest(createdIn(written)).snap(`runtime.createValidatorWith(
-	apply1pd26jy1hxuluz,
+				.match(/const validator0 = [^]*?\n\)/)?.[0]
+		attest(createdIn(written)).snap(`const validator0 = createi4hcxm1xcmujt(
 	intersectionn6cyii0o4b9mn,
-	"1lfjngd1",
-	{ meta: runtime.emptyMeta, expression: expression1dlmq9v0vwoz4a() }
+	{ expression: expression1dlmq9v0vwoz4a() },
+	"1lfjngd1"
 )`)
 		attest(createdIn(rewritten)).equals(createdIn(written))
 	})
