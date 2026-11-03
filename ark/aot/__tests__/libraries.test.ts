@@ -221,6 +221,29 @@ number & even
 `)
 	})
 
+	it("a module bakes what it reads through a namespace a module exports, in a build reading one module at a time", async () => {
+		const out = await logged(
+			"nestedNamespaces",
+			{
+				"schemas.ts": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+`,
+				"index.ts": `export * as inner from "./schemas.ts"
+`,
+				"main.ts": `import * as ns from "./index.ts"
+
+const describe = schema => schema.description
+console.log(describe(ns.inner.User))
+`
+			},
+			"out/main.js",
+			{ prune: false }
+		)
+		attest(out).snap(`{ name: a string }
+`)
+	})
+
 	it("a module loading another whole bakes each member into each validator it exports", async () => {
 		const out = await logged(
 			"wholes",

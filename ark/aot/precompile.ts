@@ -1014,7 +1014,7 @@ export class Precompiler {
 				if (target.kind !== "namespace" && !isBakeable(value)) continue
 				for (const reference of binding.references) {
 					// an export is read by the modules importing it
-					const [operand, parent] = operatorOf(reference.id)
+					const [, parent] = operatorOf(reference.id)
 					if (
 						reference.isWrite ||
 						reference.id.type !== "Identifier" ||
@@ -1032,22 +1032,33 @@ export class Precompiler {
 						})
 						continue
 					}
-					const name =
-						parent?.type === "MemberExpression" && parent.object === operand ?
-							memberNameOf(parent)
-						:	undefined
-					if (typeof name !== "string") {
-						addWhole(reference.id, target.module)
-						continue
+					// e.g. `ns.inner.T`, through a namespace it exports
+					let read: Node = reference.id
+					let namespace = target.module
+					for (;;) {
+						const [operand, parent] = operatorOf(read)
+						const name =
+							parent?.type === "MemberExpression" && parent.object === operand ?
+								memberNameOf(parent)
+							:	undefined
+						if (typeof name !== "string") {
+							addWhole(read, namespace)
+							break
+						}
+						const exported = this.graph.exportOf(namespace, name)
+						if (exported.kind === "namespace") {
+							read = parent!
+							namespace = exported.module
+							continue
+						}
+						const value =
+							exported.kind === "binding" || exported.kind === "expression" ?
+								this.interpreter.exportValue(exported).value
+							:	undefined
+						if (isBakeable(value))
+							seeds.push({ runtime, node: parent!, held: validatorHeld, value })
+						break
 					}
-					const read = this.exportedValueOf(target.module, name)
-					if (!isBakeable(read)) continue
-					seeds.push({
-						runtime,
-						node: parent!,
-						held: validatorHeld,
-						value: read
-					})
 				}
 			}
 		}
