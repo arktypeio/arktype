@@ -841,7 +841,7 @@ export class StandaloneArtifact {
 			writeFixConfig(configured),
 			// no validators: only Scopes, Generics and their Modules
 			...(this.roots.length ?
-				this.writeBody(unitFunction => `(${unitFunction})`)
+				this.writeBody()
 			:	[this.declarations.statements.join("\n"), this.modules.join("\n")]),
 			`return ${values.length === 1 ? values[0] : `[${values.join(", ")}]`}`
 		]
@@ -855,7 +855,7 @@ export class StandaloneArtifact {
 		const names = Object.values(this.exports).map(value =>
 			hasArkKind(value, "root") ? this.readValidator(value) : undefined
 		)
-		this.writeBody(unitFunction => `(${unitFunction})`)
+		this.writeBody()
 		if (
 			this.writtenValidators.size !== names.length ||
 			this.declarations.statements.length ||
@@ -889,7 +889,7 @@ export class StandaloneArtifact {
 			internedBy === undefined ? undefined : (
 				keyOf(type)[1].map(hole => this.holeExpressions.get(hole)!)
 			)
-		const body = this.writeCalledBody(index)
+		const body = this.writeBody()
 		body.push(...defaults.map(({ check }) => check), `return ${value}`)
 		const defaultKeys =
 			defaults.length ? `, [${defaults.map(({ key }) => key).join(", ")}]` : ""
@@ -949,7 +949,7 @@ export class StandaloneArtifact {
 		const defaults = this.writeDefaultChecks()
 		return this.writeFactoryFunction(index, params, configured, [
 			...(defaults.length ?
-				[...this.writeCalledBody(index), ...defaults.map(({ check }) => check)]
+				[...this.writeBody(), ...defaults.map(({ check }) => check)]
 			:	this.declarations.statements),
 			`return ${value}`
 		])
@@ -1004,22 +1004,13 @@ return namespace`
 		configured: Configured,
 		statements: string[]
 	): string {
-		const units = this.localUnits.map((_, i) => `var unit${index}_${i}`)
-		return `${units.join("\n")}
-
-${writeFunction(
-	this.baking,
-	`factory${index}`,
-	params.map((_, i) => `p${i}`).join(", "),
-	[writeFixConfig(configured), ...this.checks, ...statements]
-		.filter(statement => statement)
-		.join("\n\n")
-)}`
-	}
-
-	writeCalledBody(index: number): string[] {
-		return this.writeBody((unitFunction, i) =>
-			writeLazyRead(`unit${index}_${i}`, unitFunction)
+		return writeFunction(
+			this.baking,
+			`factory${index}`,
+			params.map((_, i) => `p${i}`).join(", "),
+			[writeFixConfig(configured), ...this.checks, ...statements]
+				.filter(statement => statement)
+				.join("\n\n")
 		)
 	}
 
@@ -1447,9 +1438,22 @@ ${writeFunction(
 		return namesBySource
 	}
 
-	writeBody(
-		wrapUnitFunction: (unitFunction: string, i: number) => string
-	): string[] {
+	// closed over what it's passed, so every Type reading a unit shares its code
+	shareUnitFunction(params: string, body: string): string {
+		const name = `local${hashOf(`${params}\n${body}`)}`
+		this.importName(
+			this.share(
+				name,
+				writeFunction(this.baking, name, params, body, false),
+				{},
+				body.includes("runtime.")
+			),
+			name
+		)
+		return name
+	}
+
+	writeBody(): string[] {
 		const traversals = this.localUnits.map((unit, i) => {
 			this.localNamesByUnit.set(unit, `traversals${i}`)
 			const returned = returnedOf(unit, this.baking)
@@ -1468,13 +1472,16 @@ ${writeFunction(
 				(i, position) => `const ${refNameOf(unit.name, i)} = refs[${position}]`
 			)
 			// minifiers inline a call passing an array, not a rest parameter
-			const unitFunction = writeScope(
-				[...dependencyParams, "...refs"],
-				[...prologue, ...this.declareMembers(unit, [...prologue, ...returned])],
-				returned
+			const unitFunction = this.shareUnitFunction(
+				[...dependencyParams, "...refs"].join(", "),
+				[
+					...prologue,
+					...this.declareMembers(unit, [...prologue, ...returned]),
+					`return [${returned.join(", ")}]`
+				].join("\n")
 			)
 			const args = [...dependencyArgs, ...refs]
-			return `const traversals${i} = ${noInlineOf(this.baking.shortest)}${wrapUnitFunction(unitFunction, i)}(${args.join(", ")})`
+			return `const traversals${i} = ${noInlineOf(this.baking.shortest)}${unitFunction}(${args.join(", ")})`
 		})
 		// written before filtering, as a meta can read a later one
 		const validators = [...this.validatorNames].map(
