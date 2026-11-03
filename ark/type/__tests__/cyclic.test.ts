@@ -1,8 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	AliasNode,
 	writeShallowCycleErrorMessage,
 	writeUnclosedGenericCycleMessage,
-	writeUnsatisfiedParameterConstraintMessage
+	writeUnsatisfiedParameterConstraintMessage,
+	type BaseRoot
 } from "@ark/schema"
 import {
 	writeIndiscriminableMorphMessage,
@@ -1608,5 +1610,25 @@ swap.swap.order[1] must be "on" (was "off")`)
 			"next.v must be a string (was a number)"
 		)
 		attest("pwned" in globalThis).equals(false)
+	})
+
+	it("exporting a cycle doesn't resolve an alias each time it's read", () => {
+		const proto = AliasNode.prototype as unknown as { _resolve(): BaseRoot }
+		const { _resolve } = proto
+		let resolves = 0
+		proto._resolve = function () {
+			resolves++
+			return _resolve.call(this)
+		}
+		try {
+			scope({
+				a: { "b?": "b | null", "c?": "c[]" },
+				b: { "a?": "a | null" },
+				c: { "a?": "a", "b?": "b" }
+			}).export()
+		} finally {
+			proto._resolve = _resolve
+		}
+		attest(resolves < 10).equals(true)
 	})
 })

@@ -786,6 +786,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 			Object.assign(this.res, this._exported)
 
 			if (!this._lazy) {
+				// every alias's resolution is now final, so compiling reads each once
+				this.resolved = true
 				const hasAlias = Object.values(this._exported).some(
 					resolution => isNode(resolution) && resolution.hasAlias
 				)
@@ -807,7 +809,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 						}
 					}
 				}
-				this.resolved = true
 			}
 			$ark.reached?.store(mark, this, "export")
 		} else $ark.reached?.cached(this, "export")
