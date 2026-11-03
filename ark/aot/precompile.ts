@@ -171,7 +171,7 @@ import {
 	type BindingKind
 } from "./scope.ts"
 import type { ShadowContract } from "./shadow.ts"
-import { flattenBundle } from "./flat.ts"
+import { flattenBundle, type FlatBundle, type FlatSite } from "./flat.ts"
 import {
 	writeKeptMembersMessage,
 	writeLostMessage,
@@ -364,8 +364,8 @@ interface ProgramUsage {
 	sources: Record<string, string>
 	// each module as the bundle is written, linked across it
 	written: Record<string, PrecompiledModule>
-	// modules it no longer reads as their units are declared in one function
-	replaced: ReadonlySet<string>
+	// its units declared in one function, where a one-chunk build pays for it
+	flat?: FlatBundle | undefined
 	// whether a size build writes the program's nodes as checkers, as is
 	// smaller for the program as a whole
 	combines?: boolean
@@ -632,8 +632,7 @@ export class Precompiler {
 			readsAllows,
 			piped,
 			sources: plan.sources,
-			written: {},
-			replaced: new Set()
+			written: {}
 		}
 		this.usagesByProgram.set(program.key, usage)
 		const wrote = this.writeSmaller(program, plan, usage)
@@ -656,17 +655,16 @@ export class Precompiler {
 				false
 			:	this.linkProgram(program, plan, usage, wrote)
 		const { written, runtimes } = wrote
-		const replaced =
+		usage.flat =
 			flattens ?
 				this.flattenWritten(written, plan.sources, program, runtimes)
 			:	undefined
 		usage.written = written
-		if (replaced) usage.replaced = new Set(replaced)
 		const issues = this.issuesOf(program, written)
 		return {
 			dropped,
 			linked,
-			replaced: replaced ?? [],
+			replaced: usage.flat?.replaced ?? [],
 			written: true,
 			verifies:
 				!!dropped.length ||
@@ -1229,7 +1227,7 @@ export class Precompiler {
 		sources: Record<string, string>,
 		program: ScannedProgram,
 		runtimes: ReadonlyMap<string, RuntimeModule>
-	): string[] | undefined {
+	): FlatBundle | undefined {
 		const sites: Record<string, string> = {}
 		const modules: Record<string, string> = {}
 		for (const id in written) {
@@ -1244,22 +1242,14 @@ export class Precompiler {
 		if (!flat) return
 		const reach = reacherOf(flat.modules)
 		for (const id in written) {
-			const { code, map } = flat.sites[id]
-			const precompiled = written[id].map
-			written[id] = {
-				...written[id],
-				code,
-				map:
-					map && precompiled ?
-						({
-							...precompiled,
-							mappings: mapToSource(map, precompiled, sources[id]).mappings
-						} as never)
-					:	precompiled,
-				modules: reach(code)
-			}
+			written[id] = flatWrittenOf(
+				written[id],
+				flat.sites[id],
+				sources[id],
+				reach
+			)
 		}
-		return flat.replaced
+		return flat
 	}
 
 	private usageIn(program: string | undefined): ProgramReads {
@@ -1654,29 +1644,41 @@ export class Precompiler {
 		const written = this.writtenIn(program, id, source)
 		if (written) return written
 		const precompiled = this.precompileUnscanned(source, id, mappings, program)
-		const usage =
-			program === undefined ? undefined : this.usagesByProgram.get(program)
+		const flat =
+			program === undefined ? undefined : (
+				this.usagesByProgram.get(program)?.flat
+			)
+		if (
+			!flat ||
+			!Object.keys(precompiled.modules).some(specifier =>
+				flat.replaced.includes(specifier)
+			)
+		)
+			return precompiled
+		// one another plugin rewrote reads the units as the rest do
+		const site = flat.rewrite(id, precompiled.code, precompiled.modules)
+		if (site) {
+			return flatWrittenOf(
+				precompiled,
+				site,
+				source,
+				reacherOf({ ...flat.modules, ...site.modules })
+			)
+		}
 		// its units would be copies of those the bundle reads from one
 		// function, which another validator could tell apart
-		if (
-			usage &&
-			Object.keys(precompiled.modules).some(specifier =>
-				usage.replaced.has(specifier)
-			)
-		) {
-			precompiled.diagnostics.push({
-				severity: "error",
-				rule: "unsupported",
-				file: id,
-				start: 0,
-				end: 0,
-				line: 1,
-				column: 1,
-				message: writeUnscannedFlatMessage(this.graph.pathOf(id)),
-				reasons: [],
-				hint: undefined
-			})
-		}
+		precompiled.diagnostics.push({
+			severity: "error",
+			rule: "unsupported",
+			file: id,
+			start: 0,
+			end: 0,
+			line: 1,
+			column: 1,
+			message: writeUnscannedFlatMessage(this.graph.pathOf(id)),
+			reasons: [],
+			hint: undefined
+		})
 		return precompiled
 	}
 
@@ -6105,6 +6107,25 @@ const mapOf = (s: MagicString, id: string): SourceMap | undefined =>
 	s.hasChanged() ?
 		s.generateMap({ source: id, includeContent: true, hires: "boundary" })
 	:	undefined
+
+// a module reading the units a one-chunk bundle declares in one function
+const flatWrittenOf = (
+	written: PrecompiledModule,
+	{ code, map }: FlatSite,
+	source: string,
+	reach: (code: string) => Record<string, string>
+): PrecompiledModule => ({
+	...written,
+	code,
+	map:
+		map && written.map ?
+			({
+				...written.map,
+				mappings: mapToSource(map, written.map, source).mappings
+			} as never)
+		:	written.map,
+	modules: reach(code)
+})
 
 const holdsOtherConfiguration = (files: string | undefined): boolean =>
 	threadConfiguration ?

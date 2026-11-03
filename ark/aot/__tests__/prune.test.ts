@@ -1989,7 +1989,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 			attest(pruned.includes("~standard")).equals(false)
 		})
 
-		it("writes a module a plugin ahead of it rewrites as it wrote the others", async () => {
+		describe("a module holding validators a plugin ahead of it rewrites", () => {
 			const reformatting: VitePlugin = {
 				name: "reformatting",
 				enforce: "pre",
@@ -1998,11 +1998,21 @@ console.log(out instanceof type.errors ? out.summary : out)
 						`${code.split("\n").join("\n\n")}\n// built`
 					:	undefined
 			}
-			const rewritten = await bundle(
-				{ optimize: "size" },
-				{ plugins: [reformatting] }
-			)
-			attest(rewritten).equals(await bundle({ optimize: "size" }))
+
+			it("is written as it wrote the others", async () => {
+				const rewritten = await bundle(
+					{ optimize: "size" },
+					{ plugins: [reformatting] }
+				)
+				attest(rewritten).equals(await bundle({ optimize: "size" }))
+			})
+
+			it("reads the units it declares in one function", async () => {
+				const rewritten = await bundle({}, { plugins: [reformatting] })
+				attest(run(rewritten)).snap("name must be a string\n")
+				// its validator is the function's, declaring no unit twice
+				attest(rewritten).equals(await bundle())
+			})
 		})
 
 		it("prunes a module a plugin ahead of it splits, as TanStack Router does a route", async () => {

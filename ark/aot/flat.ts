@@ -27,11 +27,23 @@ export interface FlatBundle {
 	modules: Record<string, string>
 	// what a module reading one of these would read a copy of
 	replaced: string[]
+	// a site as another plugin rewrote it, read from the function as its scan
+	// was, unless it would read a copy, given the modules it writes
+	rewrite: (
+		id: string,
+		code: string,
+		modules: Record<string, string>
+	) => RewrittenSite | undefined
 }
 
 export interface FlatSite {
 	code: string
 	map: SourceMap | undefined
+}
+
+export interface RewrittenSite extends FlatSite {
+	// the modules it writes anew, as they read the function
+	modules: Record<string, string>
 }
 
 // a bundle's modules other than its sites and generated modules, as the bundler resolves them
@@ -63,16 +75,19 @@ export const flattenBundle = (
 	const bundled = new Map(parsed)
 	for (const module of program.modules)
 		if (!bundled.has(module.id)) bundled.set(module.id, module)
-	const keptIn = (skipped?: ReadonlyMap<SourceModule, Creation[]>) => {
-		const kept = new KeptCode(bundled, program.resolve, skipped)
-		for (const module of bundled.values()) kept.keepRead(module)
+	const keptIn = (
+		modules: ReadonlyMap<string, SourceModule>,
+		skipped?: ReadonlyMap<SourceModule, Creation[]>
+	) => {
+		const kept = new KeptCode(modules, program.resolve, skipped)
+		for (const module of modules.values()) kept.keepRead(module)
 		for (const id of program.entries) {
-			const entry = bundled.get(id)
+			const entry = modules.get(id)
 			if (entry) kept.keepExports(entry)
 		}
 		return kept
 	}
-	const kept = keptIn()
+	const kept = keptIn(bundled)
 	const units = unitsOf(modules, parsed, kept)
 	if (!units) return
 	const creationsBySite = creationsIn(sites, parsed, units, kept)
@@ -83,17 +98,10 @@ export const flattenBundle = (
 	const flattened = new Set(units.map(unit => unit.specifier))
 	// a flattened unit is read from the function's module
 	const read = new Set(creations.map(creation => creation.name))
-	const readKept =
-		creations.length ?
-			keptIn(
-				new Map(
-					[...creationsBySite].map(([id, creations]) => [
-						parsed.get(id)!,
-						creations
-					])
-				)
-			)
-		:	kept
+	const created = new Map(
+		[...creationsBySite].map(([id, creations]) => [parsed.get(id)!, creations])
+	)
+	const readKept = creations.length ? keptIn(bundled, created) : kept
 	const repointed = new Map<string, Repointed[]>()
 	for (const [key, module] of parsed) {
 		if (flattened.has(key)) continue
@@ -103,7 +111,7 @@ export const flattenBundle = (
 			flat.exported,
 			specifier,
 			read,
-			readKept
+			binding => readKept.reads(binding)
 		)
 		if (!edits) return
 		if (edits.length) repointed.set(key, edits)
@@ -129,11 +137,10 @@ export const flattenBundle = (
 	for (const key of flattened) delete codes[key]
 	codes[specifier] = flat.writeModule([...read])
 	const edit = (
-		key: string,
+		module: SourceModule,
+		edits: Repointed[],
 		rename: (specifier: string) => string
 	): MagicString | undefined => {
-		const module = parsed.get(key)!
-		const edits = repointed.get(key) ?? []
 		let s: MagicString | undefined
 		for (const { start, end, imports } of edits) {
 			s ??= new MagicString(module.source)
@@ -157,8 +164,10 @@ export const flattenBundle = (
 		}
 		return s
 	}
-	for (const key of repointed.keys())
-		if (key in codes) codes[key] = edit(key, unrenamed)!.toString()
+	for (const [key, edits] of repointed) {
+		if (key in codes)
+			codes[key] = edit(parsed.get(key)!, edits, unrenamed)!.toString()
+	}
 	const renamed = renamedOf(codes, modules)
 	if (!renamed) return
 	const rename = (specifier: string) => renamed[specifier] ?? specifier
@@ -168,7 +177,119 @@ export const flattenBundle = (
 		replaced: [
 			...flattened,
 			...Object.keys(renamed).filter(key => key in modules)
-		]
+		],
+		rewrite: (id, code, written) => {
+			const scannedSite = bundled.get(id)
+			if (!scannedSite) return
+			const site = new SourceModule(id, code, id)
+			const added = new Map<string, SourceModule>()
+			for (const key in written) {
+				if (!parsed.has(key))
+					added.set(key, new SourceModule(`${key}.js`, written[key], key))
+			}
+			if ([site, ...added.values()].some(module => module.parseErrors.length))
+				return
+			const rewrittenParsed = new Map([...parsed, ...added]).set(id, site)
+			// an import its scan didn't resolve may read anything
+			const resolved = specifiersOf(scannedSite)
+			for (const source of specifiersOf(site))
+				if (!resolved.has(source) && !rewrittenParsed.has(source)) return
+			const rewritten = new Map([...bundled, ...added]).set(id, site)
+			const keptAsRewritten = keptIn(rewritten)
+			const scanned = creationsBySite.get(id) ?? []
+			// a creation is the function's only where the scan found it here
+			const creations = (
+				creationsIn(
+					{ [id]: code },
+					rewrittenParsed,
+					units,
+					keptAsRewritten
+				).get(id) ?? []
+			).filter(creation =>
+				scanned.some(c => createsSame(c, creation, flat.unwrapped))
+			)
+			const readAsRewritten = keptIn(
+				rewritten,
+				new Map(created).set(site, creations)
+			)
+			// kept code reads a unit's own module only where the scan's did, or
+			// where what it writes reads it from the function
+			for (const [key, module] of rewrittenParsed) {
+				const isWritten = module === site || added.has(key)
+				for (const statement of module.program.body) {
+					if (
+						statement.type !== "ImportDeclaration" ||
+						!flattened.has(statement.source.value)
+					)
+						continue
+					for (const imported of statement.specifiers) {
+						const binding = module.scopes.root.bindings[imported.local.name]
+						if (
+							readAsRewritten.reads(binding) &&
+							(isWritten ?
+								imported.type !== "ImportSpecifier" ||
+								!flat.exported.has(
+									`${statement.source.value}\0${exportNameOf(imported.imported)}`
+								)
+							:	!readKept.reads(binding))
+						)
+							return
+					}
+				}
+			}
+			const reads = new Set<string>()
+			const codes: Record<string, string> = {}
+			for (const [key, module] of added) {
+				const edits = repointedIn(
+					module,
+					flattened,
+					flat.exported,
+					specifier,
+					reads,
+					binding => readAsRewritten.reads(binding)
+				)
+				if (!edits) return
+				codes[key] = edit(module, edits, rename)?.toString() ?? module.source
+			}
+			// read where it's left, as the function makes each creation in its place
+			const edits = repointedIn(
+				site,
+				flattened,
+				flat.exported,
+				specifier,
+				reads,
+				binding =>
+					!binding.references.every(({ id }) =>
+						creations.some(c => c.start <= id.start && id.start < c.end)
+					),
+				true
+			)
+			// the function's module exports only what its scan read
+			if (!edits || [...reads].some(name => !read.has(name))) return
+			// a module it writes anew is named for what it reads
+			const renamedAdded = renamedOf(codes, written)
+			if (!renamedAdded) return
+			const renameAdded = (specifier: string) =>
+				renamedAdded[specifier] ?? rename(specifier)
+			const modules: Record<string, string> = {}
+			for (const key in codes) {
+				modules[renameAdded(key)] = codes[key].replace(
+					virtualSource,
+					(_, imported: string) => JSON.stringify(renameAdded(imported))
+				)
+			}
+			return {
+				...flatSiteOf(
+					site,
+					edit(site, edits, renameAdded),
+					creations,
+					keptAsRewritten,
+					rename(specifier),
+					flat.unwrapped
+				),
+				modules
+			}
+		}
 	}
 	for (const key in codes) {
 		bundle.modules[rename(key)] = codes[key].replace(
@@ -179,7 +300,7 @@ export const flattenBundle = (
 	for (const id in sites) {
 		bundle.sites[id] = flatSiteOf(
 			parsed.get(id)!,
-			edit(id, rename),
+			edit(parsed.get(id)!, repointed.get(id) ?? [], rename),
 			creationsBySite.get(id) ?? [],
 			kept,
 			rename(specifier),
@@ -458,6 +579,45 @@ const keptAnnotationsIn = (
 		return annotation ? [[call.start - annotation.length, call.start]] : []
 	})
 
+// what a module imports, exports from or loads by its literal specifier
+const specifiersOf = (module: SourceModule): Set<string> => {
+	const result = new Set<string>()
+	walk(module.program, node => {
+		const source =
+			(
+				node.type === "ImportDeclaration" ||
+				node.type === "ExportNamedDeclaration" ||
+				node.type === "ExportAllDeclaration"
+			) ?
+				node.source
+			: (
+				node.type === "TSImportEqualsDeclaration" &&
+				node.moduleReference.type === "TSExternalModuleReference"
+			) ?
+				node.moduleReference.expression
+			:	loadedSourceOf(node)
+		if (source?.type === "Literal" && typeof source.value === "string")
+			result.add(source.value)
+		return true
+	})
+	return result
+}
+
+// whether a rewritten site's creation is one its scan found, which the function makes
+const createsSame = (
+	scanned: Creation,
+	rewritten: Creation,
+	unwrapped: ReadonlySet<string>
+): boolean =>
+	scanned.name === rewritten.name &&
+	scanned.creator === rewritten.creator &&
+	scanned.shared === rewritten.shared &&
+	scanned.args.length === rewritten.args.length &&
+	scanned.args.every((arg, i) => arg === rewritten.args[i]) &&
+	(!unwrapped.has(scanned.name) ||
+		rewritten.declared?.memberReads?.name ===
+			scanned.declared!.memberReads!.name)
+
 // an import of units, each name read from the function's module if it's there
 interface Repointed {
 	start: number
@@ -471,7 +631,10 @@ const repointedIn = (
 	exported: ReadonlySet<string>,
 	specifier: string,
 	read: Set<string>,
-	keptCode: KeptCode
+	isRead: (binding: Binding) => boolean,
+	// whether it drops an import of the precompiler's that nothing reads, as
+	// a rewritten site's are read only where the function creates in its place
+	drops = false
 ): Repointed[] | undefined => {
 	const result: Repointed[] = []
 	for (const statement of module.program.body) {
@@ -479,6 +642,7 @@ const repointedIn = (
 		const source = statement.source.value
 		const flat: string[] = []
 		const kept: string[] = []
+		let dropped = false
 		for (const imported of statement.specifiers) {
 			if (imported.type !== "ImportSpecifier") {
 				// a unit read whole would be a copy of the function's
@@ -488,21 +652,21 @@ const repointedIn = (
 			const name = exportNameOf(imported.imported)
 			const local = imported.local.name
 			const named = name === local ? name : `${name} as ${local}`
+			const isReadHere = isRead(module.scopes.root.bindings[local])
 			// an import nothing kept reads links to the unit's own module
-			if (
-				exported.has(`${source}\0${name}`) &&
-				keptCode.reads(module.scopes.root.bindings[local])
-			) {
+			if (isReadHere && exported.has(`${source}\0${name}`)) {
 				read.add(name)
 				flat.push(named)
-			} else kept.push(named)
+			} else if (drops && !isReadHere && source.startsWith("~arktype/"))
+				dropped = true
+			else kept.push(named)
 		}
-		if (!flat.length) continue
+		if (!flat.length && !dropped) continue
 		result.push({
 			start: statement.start,
 			end: statement.end,
 			imports: [
-				[specifier, flat],
+				...(flat.length ? [[specifier, flat] as [string, string[]]] : []),
 				...(kept.length ? [[source, kept] as [string, string[]]] : [])
 			]
 		})

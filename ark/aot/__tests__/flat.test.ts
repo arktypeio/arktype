@@ -7,6 +7,7 @@ import { build, type BuildOptions, type Plugin } from "esbuild"
 import {
 	build as viteBuild,
 	defaultClientConditions,
+	type Plugin as VitePlugin,
 	type Rolldown
 } from "vite"
 import { parseSync } from "oxc-parser"
@@ -63,6 +64,39 @@ const bundle = async (
 
 // a factory's parameter destructuring a unit it reads
 const factoryParam = /{ 0: \w+Allows/
+
+// each unit's allows, declared once unless a validator reads a copy
+const declaredUnits = (js: string) => js.match(/\w+Allows = /g)?.length
+
+// Vite reads its mode from NODE_ENV
+const viteBundle = async (
+	opts: PrecompileUnpluginOptions,
+	plugins: VitePlugin[] = []
+) => {
+	const { NODE_ENV } = process.env
+	process.env.NODE_ENV = "production"
+	try {
+		const result = (await viteBuild({
+			root,
+			configFile: false,
+			logLevel: "silent",
+			plugins: [
+				...plugins,
+				precompile.vite({ conditions: ["ark-ts"], ...opts })
+			],
+			resolve: { conditions: ["ark-ts", ...defaultClientConditions] },
+			build: {
+				write: false,
+				minify: false,
+				lib: { entry: "main.ts", formats: ["es"] }
+			}
+		})) as Rolldown.RolldownOutput[]
+		return result[0].output.find(chunk => chunk.type === "chunk")!.code
+	} finally {
+		if (NODE_ENV === undefined) delete process.env.NODE_ENV
+		else process.env.NODE_ENV = NODE_ENV
+	}
+}
 
 contextualize(function (this: Mocha.Suite) {
 	// each case bundles with esbuild, which a loaded machine slows past mocha's default
@@ -403,34 +437,41 @@ console.log(User.allows({ name: "Ada" }), User.assert({ name: "Ada" }))
 	})
 
 	it("declares the units of a one-chunk Vite build in one function", async () => {
-		// Vite reads its mode from NODE_ENV
-		const viteBundle = async (opts: PrecompileUnpluginOptions) => {
-			const { NODE_ENV } = process.env
-			process.env.NODE_ENV = "production"
-			try {
-				const result = (await viteBuild({
-					root,
-					configFile: false,
-					logLevel: "silent",
-					plugins: [precompile.vite({ conditions: ["ark-ts"], ...opts })],
-					resolve: { conditions: ["ark-ts", ...defaultClientConditions] },
-					build: {
-						write: false,
-						minify: false,
-						lib: { entry: "main.ts", formats: ["es"] }
-					}
-				})) as Rolldown.RolldownOutput[]
-				return result[0].output.find(chunk => chunk.type === "chunk")!.code
-			} finally {
-				if (NODE_ENV === undefined) delete process.env.NODE_ENV
-				else process.env.NODE_ENV = NODE_ENV
-			}
-		}
 		const flat = await viteBundle({})
 		const whole = await viteBundle({ prune: false })
 		attest(run(flat)).equals(run(whole))
 		attest(factoryParam.test(whole)).equals(true)
 		attest(factoryParam.test(flat)).equals(false)
+	})
+
+	describe("a module a plugin ahead of arktype's rewrote after the scan read it", () => {
+		const rewriting = (rewrite: (code: string) => string): VitePlugin => ({
+			name: "rewriting",
+			enforce: "pre",
+			transform: (code, id) =>
+				id.endsWith("/types.ts") ? rewrite(code) : undefined
+		})
+
+		it("reads the units from the function, writing the helpers that read them anew", async () => {
+			const opts = { creationChecks: "helpers" } as const
+			const flat = await viteBundle(opts)
+			// its helpers are written for its source, so they're modules the scan didn't write
+			const rewritten = await viteBundle(opts, [
+				rewriting(code => code.split("\n").join("\n\n"))
+			])
+			attest(run(rewritten)).equals(run(flat))
+			attest(declaredUnits(rewritten)).equals(declaredUnits(flat))
+		})
+
+		it("fails where it keeps a validator whose units the scan found no read of", async () => {
+			const result = await viteBundle({}, [
+				rewriting(code => `${code}\nconsole.log(Unread({}))\n`)
+			]).catch((e: Error) => e)
+			attest(
+				result instanceof Error &&
+					result.message.includes(writeUnscannedFlatMessage("types.ts"))
+			).equals(true)
+		})
 	})
 
 	it("declares a unit however its array is written", () => {
