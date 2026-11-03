@@ -1108,6 +1108,8 @@ export class ModuleGraph {
 	private importsById: Record<string, string[]> = Object.create(null)
 	private optsInByPackage: Record<string, boolean> = Object.create(null)
 	dependencies: DependencyModes
+	// where Node runs each dependency as published, as for --emit
+	leavesDependencies = false
 	private packageNamesByDir: Record<string, string | undefined> =
 		Object.create(null)
 
@@ -1195,9 +1197,11 @@ export class ModuleGraph {
 			return {
 				kind: "package",
 				message:
-					name && this.importsArktype(id) && !this.readsOnlyRuntime(id) ?
-						`\`${specifier}\` is a package the build does not read, though ${specifier === name ? "it" : name} imports arktype`
-					:	`\`${specifier}\` is a package the build does not read`
+					!name || !this.importsArktype(id) || this.readsOnlyRuntime(id) ?
+						`\`${specifier}\` is a package the build does not read`
+					: this.leavesDependencies ?
+						`\`${specifier}\` is a package --emit leaves to Node, though ${specifier === name ? "it" : name} imports arktype`
+					:	`\`${specifier}\` is a package the build does not read, though ${specifier === name ? "it" : name} imports arktype`
 			}
 		}
 		const imports = (this.importsById[importer.id] ??= [])
@@ -1261,9 +1265,10 @@ export class ModuleGraph {
 		const [root, name] = dependencyOf(id) ?? []
 		return (
 			root === undefined ||
-			(this.optsInByPackage[root] ??=
-				this.dependencies[name!] === "aot" ||
-				optsIn(this.host.readFile(join(root, "package.json"))))
+			(!this.leavesDependencies &&
+				(this.optsInByPackage[root] ??=
+					this.dependencies[name!] === "aot" ||
+					optsIn(this.host.readFile(join(root, "package.json")))))
 		)
 	}
 
@@ -3642,7 +3647,7 @@ export class ModuleGraph {
 			:	undefined
 	}
 
-	// e.g. `json` and `T` for `T.json`, or `assert` where members drops it
+	// e.g. `or` and `T` for `T.or`, or `json` or `assert` where members drops it
 	unavailableReadOf(
 		node: Node,
 		module: SourceModule,
@@ -3685,17 +3690,20 @@ export class ModuleGraph {
 		// a validator prints its expression as its string
 		if (read === "toString" && !lacked.has(read)) read = "expression"
 		const object = objects.find(object => isOnlyType(kindOf(object)))
-		// e.g. `t.or` or `${t}`, where `t` may be a Type
+		// e.g. `t.or`, `${t}` or `Object.keys(t)`, where `t` may be a Type
 		const unsure =
 			!object &&
-			(node.type === "MemberExpression" || typeof read === "string") &&
-			objects.find(object => isUnsureRead(read, kindOf(object), lacked))
+			(node.type === "MemberExpression" || typeof read === "string" ?
+				objects.find(object => isUnsureRead(read, kindOf(object), lacked))
+			:	objects.find(object => kindOf(object) & kinds.type))
 		if (unsure) return [read as string, unsure, true]
 		return (
 				object &&
 					(read === undefined ||
 						(typeof read === "string" &&
-							(!isValidatorMember(read) || lacked.has(read))))
+							((!isValidatorMember(read) &&
+								!includes(introspectionMembers, read)) ||
+								lacked.has(read))))
 			) ?
 				[read, object]
 			:	undefined
@@ -3746,9 +3754,17 @@ export class ModuleGraph {
 		if (global.type !== "Identifier" || module.scopes.byId.get(global)?.binding)
 			return
 		const name = memberNameOf(callee)
+		const [object, key] = args
 		return (
 			global.name === "JSON" && name === "stringify" ?
 				["toJSON", args.slice(0, 1)]
+			: (
+				global.name === "Reflect" &&
+				name === "get" &&
+				key?.type === "Literal" &&
+				typeof key.value === "string"
+			) ?
+				[key.value, [object]]
 			: (
 				(global.name === "Object" && name !== "is") || global.name === "Reflect"
 			) ?

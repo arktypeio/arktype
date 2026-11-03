@@ -155,6 +155,25 @@ console.log(JSON.stringify(spec.paths["/users"].post.requestBody.content["applic
 `)
 	})
 
+	it("a dependency's toJsonSchema() passing a target reads that target's schema", async () => {
+		const out = await loggedEither("target", {
+			"node_modules/convert/package.json":
+				'{ "name": "convert", "type": "module", "exports": "./index.js" }',
+			"node_modules/convert/index.js":
+				'export const convert = schema => schema.toJsonSchema({ target: "draft-07" })\n',
+			"node_modules/convert/index.d.ts":
+				"export declare const convert: (schema: object) => unknown\n",
+			"main.ts": `import { type } from "arktype"
+import { convert } from "convert"
+
+console.log(JSON.stringify(convert(type({ name: "string" }))))
+`
+		})
+		attest(out)
+			.snap(`{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"name":{"type":"string"}},"required":["name"]}
+`)
+	})
+
 	it("a module bakes what it reads of a validator it imports, in a build reading one module at a time", async () => {
 		const out = await logged(
 			"importers",
@@ -202,6 +221,61 @@ number & even
 `)
 	})
 
+	it("a module bakes what it reads through a namespace a module exports, in a build reading one module at a time", async () => {
+		const out = await logged(
+			"nestedNamespaces",
+			{
+				"schemas.ts": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+`,
+				"index.ts": `export * as inner from "./schemas.ts"
+`,
+				"main.ts": `import * as ns from "./index.ts"
+
+const describe = schema => schema.description
+console.log(describe(ns.inner.User))
+`
+			},
+			"out/main.js",
+			{ prune: false }
+		)
+		attest(out).snap(`{ name: a string }
+`)
+	})
+
+	it("a module's bake keeps the targets another module's bake answers, in a build reading one module at a time", async () => {
+		const out = await logged(
+			"bakeOrder",
+			{
+				"schemas.ts": `import { type } from "arktype"
+
+export const Name = type("string").describe("a name")
+`,
+				"held.ts": `import { Name } from "./schemas.ts"
+
+export const held = new (class {
+	schema = Name
+})()
+`,
+				"main.ts": `import { held } from "./held.ts"
+import { Name } from "./schemas.ts"
+
+// read as it runs, so the build doesn't fold it
+const name = Date.now() > 0 && Name
+console.log(JSON.stringify(name.toJsonSchema()))
+console.log(JSON.stringify(held.schema.toJsonSchema({ target: "draft-07" })))
+`
+			},
+			"out/main.js",
+			{ prune: false }
+		)
+		attest(out)
+			.snap(`{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string","description":"a name"}
+{"$schema":"http://json-schema.org/draft-07/schema#","type":"string","description":"a name"}
+`)
+	})
+
 	it("a module loading another whole bakes each member into each validator it exports", async () => {
 		const out = await logged(
 			"wholes",
@@ -232,6 +306,55 @@ console.log(read(await import("./lazy.ts"), "Item", "expression"))
 		)
 		attest(out).snap(`{ name: a string }
 { id: number }
+`)
+	})
+
+	it("a module loading another only by import() bakes each member into each validator it exports", async () => {
+		const out = await logged(
+			"dynamicImports",
+			{
+				"schemas.ts": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+`,
+				"main.ts": `const { User } = await import("./schemas.ts")
+
+console.log(User.description)
+`
+			},
+			"out/main.js",
+			{ prune: false }
+		)
+		attest(out).snap(`{ name: a string }
+`)
+	})
+
+	it("a module loading another whole bakes each member into each namespace it exports", async () => {
+		const out = await logged(
+			"wholeNamespaces",
+			{
+				"schemas.ts": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+`,
+				"index.ts": `export * as inner from "./schemas.ts"
+`,
+				"node_modules/reader/package.json":
+					'{ "name": "reader", "type": "module", "exports": "./index.js" }',
+				"node_modules/reader/index.js":
+					"export const read = (schemas, path, key) => path.reduce((o, k) => o[k], schemas)[key]\n",
+				"node_modules/reader/index.d.ts":
+					"export declare const read: (schemas: object, path: string[], key: string) => unknown\n",
+				"main.ts": `import { read } from "reader"
+import * as all from "./index.ts"
+
+console.log(read(all, ["inner", "User"], "description"))
+`
+			},
+			"out/main.js",
+			{ prune: false }
+		)
+		attest(out).snap(`{ name: a string }
 `)
 	})
 

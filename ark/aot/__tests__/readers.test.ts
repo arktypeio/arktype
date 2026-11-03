@@ -82,6 +82,142 @@ console.log(server.list())
 		).snap(["main.ts:5:45 bakes ~standard.jsonSchema (fields)"])
 	})
 
+	it("follows a field to reads at a key they don't name", async () => {
+		attest(
+			await bakedFrom({
+				"/node_modules/store/index.js": `const state = {}
+export const keep = holder => {
+	state.held = holder
+}
+export const show = () => {
+	const held = state.held
+	for (const key in held) console.log(\`\${held[key]}\`)
+	console.log(Reflect.get(held, "w").description, Object.values(held)[2].json)
+	console.log(JSON.stringify({ ...held }))
+}
+`,
+				"/main.ts": `import { type } from "arktype"
+import { keep, show } from "store"
+
+keep({ v: type("string"), w: type("number"), x: type("boolean") })
+show()
+`
+			})
+		).snap([
+			"main.ts:4:11 bakes expression, json, toJSON (fields)",
+			"main.ts:4:30 bakes expression, description, json, toJSON (fields)",
+			"main.ts:4:49 bakes expression, json, toJSON (fields)"
+		])
+	})
+
+	it("follows a field read an object literal holds", async () => {
+		attest(
+			await bakedFrom({
+				"/node_modules/store/index.js": `const state = {}
+export const keep = schema => {
+	state.v = schema
+}
+export const show = () => {
+	const wrapped = { v1: state.v }
+	console.log(wrapped.v1.description)
+}
+`,
+				"/main.ts": `import { type } from "arktype"
+import { keep, show } from "store"
+
+keep(type("string"))
+show()
+`
+			})
+		).snap(["main.ts:4:6 bakes description (fields)"])
+	})
+
+	it("follows a validator assigned to a declared binding", async () => {
+		attest(
+			await bakedFrom({
+				"/main.ts": `import { type } from "arktype"
+
+let json
+json = type("string")
+console.log(JSON.stringify(json))
+let described
+for (const key in { a: 1 }) described = { a: type("number") }[key]
+console.log(described.description)
+`
+			})
+		).snap([
+			"main.ts:4:8 bakes toJSON (dataflow)",
+			"main.ts:7:46 bakes description (dataflow)"
+		])
+	})
+
+	it("follows a value Object.defineProperty defines to its key", async () => {
+		attest(
+			await bakedFrom({
+				"/main.ts": `import { type } from "arktype"
+
+const holder = {}
+Object.defineProperty(holder, "schema", { value: type("string"), enumerable: true })
+console.log(holder.schema.description)
+Object.defineProperty(globalThis, "Schema", { value: type("number") })
+`
+			})
+		).snap([
+			"main.ts:4:50 bakes description (fields)",
+			"main.ts:6:54 bakes expression, description, json, toJSON, toJsonSchema, ~standard.jsonSchema (lost)",
+			"precompile: baking each introspection member into the validator at main.ts:6:54, because main.ts:6:1 stores it on the global object, which code outside the bundle may read. Set expression, description, json, toJSON, toJsonSchema and ~standard.jsonSchema in members, each false where no code reads it, to build without this warning."
+		])
+	})
+
+	it("bakes every member where a dependency lists its keys", async () => {
+		attest(
+			await bakedFrom({
+				"/node_modules/keys/index.js": `export const keysOf = schema => Object.keys(schema)
+export const forIn = schema => {
+	for (const key in schema) console.log(key)
+}
+`,
+				"/main.ts": `import { type } from "arktype"
+import { forIn, keysOf } from "keys"
+
+console.log(keysOf(type("string")))
+forIn(type("number"))
+`
+			})
+		).snap([
+			"main.ts:4:20 bakes expression, description, json, toJSON, toJsonSchema, ~standard.jsonSchema (lost)",
+			"main.ts:5:7 bakes expression, description, json, toJSON, toJsonSchema, ~standard.jsonSchema (lost)",
+			"precompile: baking each introspection member into 2 validators, like the one at main.ts:4:20, because node_modules/keys/index.js:1:33 lists its keys. Set expression, description, json, toJSON, toJsonSchema and ~standard.jsonSchema in members, each false where no code reads it, to build without this warning."
+		])
+	})
+
+	it("a dependency's read at a key it doesn't name loses track without a warning", async () => {
+		attest(
+			await bakedFrom({
+				"/node_modules/server/index.js": `const state = {}
+export const register = schema => {
+	state.schema = schema
+}
+export const list = () =>
+	state.schema["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+export const clone = from => {
+	const to = {}
+	for (const k in from) to[k] = from[k]
+	return to
+}
+`,
+				"/main.ts": `import { type } from "arktype"
+import { clone, list, register } from "server"
+
+register(type("string"))
+console.log(list(), clone({ a: 1 }))
+`
+			})
+		).snap([
+			"main.ts:4:10 bakes expression, description, json, toJSON, toJsonSchema, ~standard.jsonSchema (lost)"
+		])
+	})
+
 	it("bakes nothing where its readers only validate", async () => {
 		attest(
 			await bakedFrom({
@@ -128,6 +264,20 @@ log(type("string"))
 		).snap(["main.ts:4:5 bakes expression, toJSON (dataflow)"])
 	})
 
+	it("converting an array holding it reads its expression", async () => {
+		attest(
+			await bakedFrom({
+				"/main.ts": `import { type } from "arktype"
+
+console.log(String([type("string")]), \`\${[[type("number")]]}\`)
+`
+			})
+		).snap([
+			"main.ts:3:21 bakes expression (dataflow)",
+			"main.ts:3:44 bakes expression (dataflow)"
+		])
+	})
+
 	it("bakes every member where it's read at a computed key", async () => {
 		attest(
 			await bakedFrom({
@@ -171,6 +321,37 @@ globalThis.T = type("string")
 		).snap([
 			"main.ts:3:16 bakes expression, description, json, toJSON, toJsonSchema, ~standard.jsonSchema (lost)",
 			"precompile: baking each introspection member into the validator at main.ts:3:16, because main.ts:3:1 stores it on the global object, which code outside the bundle may read. Set expression, description, json, toJSON, toJsonSchema and ~standard.jsonSchema in members, each false where no code reads it, to build without this warning."
+		])
+	})
+
+	it("bakes every member where a CommonJS module exports it", async () => {
+		attest(
+			await bakedFrom({
+				"/types.ts": `import { type } from "arktype"\n\nexport const User = type("string")\n`,
+				"/holder.ts": `import { User } from "./types.ts"\n\nexport const H = { get v() { return User } }\n`,
+				"/held.cjs": `const { H } = require("./holder.ts")\n\nexports.User = H.v\n`,
+				"/main.ts": `import { User } from "./held.cjs"\n\nconsole.log(String(User))\n`
+			})
+		).snap([
+			"types.ts:3:21 bakes expression, description, json, toJSON, toJsonSchema, ~standard.jsonSchema (lost)",
+			"precompile: baking each introspection member into the validator at types.ts:3:21, because held.cjs:3:1 exports it from CommonJS. Set expression, description, json, toJSON, toJsonSchema and ~standard.jsonSchema in members, each false where no code reads it, to build without this warning."
+		])
+	})
+
+	it("bakes every member where a TypeScript namespace exports it", async () => {
+		attest(
+			await bakedFrom({
+				"/main.ts": `import { type } from "arktype"
+
+namespace Schemas {
+	export const User = type({ name: "string" })
+}
+console.log(Schemas.User.expression)
+`
+			})
+		).snap([
+			"main.ts:4:22 bakes expression, description, json, toJSON, toJsonSchema, ~standard.jsonSchema (lost)",
+			"precompile: baking each introspection member into the validator at main.ts:4:22, because main.ts:4:15 exports it from a namespace. Set expression, description, json, toJSON, toJsonSchema and ~standard.jsonSchema in members, each false where no code reads it, to build without this warning."
 		])
 	})
 
