@@ -1617,6 +1617,47 @@ export default {
 			])
 		})
 
+		it("values another module writes, read through a local", () => {
+			const files = {
+				"/containers.ts": `import { type } from "arktype"
+export const H0 = { nested: { c: type("string") } }
+export const H1 = { c: type("string") }
+export const H2 = { c: type("string") }
+export const H3 = { c: type("string") }
+export const H4 = { c: type("string") }`,
+				"/mutate.ts": `import { type } from "arktype"
+import { H0, H1, H2, H3 } from "./containers.ts"
+const { nested } = H0
+nested.c = type("number")
+H1.c = type("number")
+H2.c = type("number")
+H3.c = type("number")`,
+				"/derived.ts": `import { H3 } from "./containers.ts"
+export const C3 = H3.c`,
+				"/main.ts": `import { type } from "arktype"
+import "./mutate.ts"
+import { H0, H1, H2, H4 } from "./containers.ts"
+import { C3 } from "./derived.ts"
+const { nested: { c: C0 } } = H0
+const C1 = H1.c
+const local = { h: H2 }
+const C2 = local.h.c
+const C4 = H4.c
+export const T0 = type({ x: C0 })
+export const T1 = type({ x: C1 })
+export const T2 = type({ x: C2 })
+export const T3 = type({ x: C3 })
+export const T4 = type({ x: C4 })`
+			}
+			attest(programStatusesOf(files)).snap([
+				"10:19 rejected\n  `H0` is imported from /containers.ts\n  `H0` is written at /mutate.ts:4:1, so its value at the site is not known",
+				"11:19 rejected\n  `H1` is imported from /containers.ts\n  `H1` is written at /mutate.ts:5:1, so its value at the site is not known",
+				"12:19 rejected\n  `H2` is imported from /containers.ts\n  `H2` is written at /mutate.ts:6:1, so its value at the site is not known",
+				"13:19 rejected\n  `H3` is imported from /containers.ts\n  `H3` is written at /mutate.ts:7:1, so its value at the site is not known",
+				"14:19 accepted { x: string }"
+			])
+		})
+
 		it("holes read through an object written before the site", () => {
 			const diagnostics = precompile(
 				`import { type } from "arktype"

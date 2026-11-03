@@ -995,6 +995,7 @@ export class Interpreter {
 			// arktype values are immutable, so their reads hold at the site
 			for (const read of result.trace.reads)
 				if (isArkValue(read.value)) ctx.trace.reads.push(read)
+			addHoldersOf(ctx.trace, result.trace)
 			// unless the declaration compares what the program holds
 			isReceived = this.comparedAtCreation.has(result.value as object)
 		}
@@ -1154,6 +1155,7 @@ export class Interpreter {
 		if (written) return { value: new DynamicValue(ctx.module, node, written) }
 		if (depth > 0) addHolder(ctx.trace, ...holderOf(target), depth)
 		if (readsAgain(result.value)) mergeTrace(ctx.trace, result.trace)
+		else addHoldersOf(ctx.trace, result.trace)
 		const declaration = binding.declaration.parent
 		const isDirect =
 			declaration?.type === "ImportDeclaration" &&
@@ -1764,6 +1766,7 @@ export class Interpreter {
 				if (written) return new DynamicValue(target.module, node, written)
 				if (depth > 0) addHolder(ctx.trace, ...holderOf(target), depth)
 				if (readsAgain(result.value)) mergeTrace(ctx.trace, result.trace)
+				else addHoldersOf(ctx.trace, result.trace)
 				return this.consume(lookupOf(exportRootOf(target), result.value), ctx)
 			}
 		}
@@ -2826,6 +2829,12 @@ const mergeTrace = (into: Trace, from: Trace) => {
 		addHelper(into.helpers, node, module)
 	for (const read of from.exportedFunctions) into.exportedFunctions.push(read)
 	for (const read of from.readFirst) into.readFirst.push(read)
+	addHoldersOf(into, from)
+}
+
+// what a value was read off, which another module may write before the
+// binding holding it is set, as `const { c } = H` reads `H`
+const addHoldersOf = (into: Trace, from: Trace) => {
 	for (const holder of from.holders) addHolder(into, ...holder)
 }
 
