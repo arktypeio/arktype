@@ -1270,6 +1270,43 @@ export class Precompiler {
 			:	{ members: this.members, called: true, readsAllows: true, piped: true }
 	}
 
+	// files changed since it read them, so each module reading them is read
+	// again: the modules it forgot, or undefined where a change may reach past
+	// what modules hold
+	forget(files: string[]): SourceModule[] | undefined {
+		if (
+			files.some(
+				file =>
+					!transformedId.test(file) ||
+					declarationFile.test(file) ||
+					file === this.config ||
+					this.configuration?.modules.includes(file)
+			)
+		)
+			return
+		const dropped = new Set(this.graph.forget(files))
+		this.interpreter.forget(dropped)
+		for (const standIns of [
+			this.refusedContainers,
+			this.dynamicStandIns,
+			this.writtenStandIns
+		]) {
+			for (const [value, [, module]] of standIns)
+				if (dropped.has(module)) standIns.delete(value)
+		}
+		if (files.length) {
+			this.namesArkById = Object.create(null)
+			this.componentsById = Object.create(null)
+			this.loadedBeforeConfigure = undefined
+		}
+		// a build's, which the next scans and reports again
+		this.runtimesById = Object.create(null)
+		this.usagesByProgram.clear()
+		this.reportedDependencies.clear()
+		this.forgetCopies()
+		return [...dropped]
+	}
+
 	// a module as its bundle's scan wrote it, if it's unchanged since
 	private writtenIn(
 		program: string | undefined,
@@ -6131,6 +6168,9 @@ const arktypeSpecifier =
 	/\b(?:from|import\s*\(?|require\s*\()\s*["'](?:(?:arktype|@ark\/type)(?:\/(?:config|codecs))?|arkregex|@ark\/regex)["']/
 
 const importSpecifier = /\b(?:from|import)\s*["']([^"']+)["']/g
+
+// a .d.ts beside a JavaScript module, which the graph reads for its types
+const declarationFile = /\.d\.[cm]?ts$/
 
 const isInIsland = (node: Node, module: SourceModule) =>
 	module.islands.some(island => contains(island, node))

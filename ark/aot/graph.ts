@@ -751,15 +751,16 @@ export class ModuleGraph {
 		// a program evaluates a module once, so it stays as the graph holds it
 		if (existing instanceof SourceModule && existing.source === source)
 			return existing
-		if (existing) this.dropImportersOf(id)
+		if (existing) this.forget([id])
 		const module = new SourceModule(id, source, this.pathOf(id), mappings)
 		this.modulesById[id] = module
 		return module
 	}
 
-	// each importer read the previous version, so it's evaluated again
-	private dropImportersOf(id: string): void {
-		const dropped = [id]
+	// modules read again, as each importer read the previous version, so it's
+	// evaluated again: the modules it held of them and their importers
+	forget(ids: string[]): SourceModule[] {
+		const dropped = [...ids]
 		for (let i = 0; i < dropped.length; i++) {
 			for (const importer in this.importsById) {
 				if (
@@ -769,10 +770,13 @@ export class ModuleGraph {
 					dropped.push(importer)
 			}
 		}
+		const forgotten: SourceModule[] = []
 		for (const droppedId of dropped) {
 			delete this.importsById[droppedId]
 			const module = this.modulesById[droppedId]
-			if (droppedId !== id && module instanceof SourceModule) {
+			if (module instanceof SourceModule) forgotten.push(module)
+			if (ids.includes(droppedId)) delete this.modulesById[droppedId]
+			else if (module instanceof SourceModule) {
 				this.modulesById[droppedId] = new SourceModule(
 					droppedId,
 					module.source,
@@ -780,6 +784,7 @@ export class ModuleGraph {
 				)
 			}
 		}
+		return forgotten
 	}
 
 	moduleOf(id: string): SourceModule | ImportTarget {
