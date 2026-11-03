@@ -19,7 +19,12 @@ import {
 import { $ark } from "../shared/registry.ts"
 import { missingSetEngineMessage } from "../shared/sets.ts"
 import { computeDefaultValueMorph } from "../shared/traversal.ts"
-import { elided, isResolutionFinal, queueUnchecked } from "../shared/utils.ts"
+import {
+	composing,
+	elided,
+	isResolutionFinal,
+	queueUnchecked
+} from "../shared/utils.ts"
 import { BaseProp, type Prop } from "./prop.ts"
 
 export declare namespace Optional {
@@ -97,10 +102,13 @@ export class OptionalNode extends BaseProp<"optional"> {
 		}) as never)
 	}
 
-	expression: string =
-		this.hasDef() ?
-			`${this.keyStr}: ${elided(this.value.expression)} = ${printable(this.inner.default, { ownDataOnly: true })}`
-		:	`${this.keyStr}?: ${elided(this.value.expression)}`
+	get expression(): string {
+		return (this.c.expression ??= composing(() =>
+			this.hasDef() ?
+				`${this.keyStr}: ${elided(this.value.expression)} = ${printable(this.inner.default, { ownDataOnly: true })}`
+			:	`${this.keyStr}?: ${elided(this.value.expression)}`
+		))
+	}
 
 	/** the morph writing its default when its key is missing */
 	defMorph: Morph | undefined =

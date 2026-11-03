@@ -12,6 +12,7 @@ import {
 import { printable, throwParseError, unset } from "@ark/util"
 import type { setImplementationOf } from "../implement.ts"
 import { intersectOrPipeNodes } from "../intersections.ts"
+import { domainBits, domainsOf } from "../roots/union.ts"
 
 export const intersectProps = (
 	l: nodeOfKind<Prop.Kind>,
@@ -88,7 +89,10 @@ const valuesWithUndefined = new WeakMap<BaseRoot, BaseRoot>()
 const withUndefined = (value: BaseRoot): BaseRoot => {
 	let result = valuesWithUndefined.get(value)
 	if (!result) {
-		result = value.allowsUnused(undefined) ? value : value.or($ark.kw.undefined)
+		result =
+			domainsOf(value) & domainBits.undefined && value.allowsUnused(undefined) ?
+				value
+			:	value.or($ark.kw.undefined)
 		// an alias's union is reduced again once it resolves
 		if (!value.hasAlias) valuesWithUndefined.set(value, result)
 	}
