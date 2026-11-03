@@ -10,7 +10,6 @@ import type { TransformedModule } from "@ark/aot/internal/driver.ts"
 import { hashOf } from "@ark/aot/internal/cache.ts"
 import { createAsyncPrecompiler } from "@ark/aot/internal/worker.ts"
 import fc from "fast-check"
-import { createHash } from "node:crypto"
 import {
 	cpSync,
 	existsSync,
@@ -347,71 +346,17 @@ const write = (
 }
 
 // a module's answer as the bundler reads it, apart from the files it
-// depends on, which follow the order modules were asked for, and the count
-// arktype's registry suffixes a name it registered before with, as a
-// precompiler evaluating a module again registers its values again. Virtual
-// modules and what they export are named by their text, so each is renamed
-// by its text without counts or names
+// depends on, which follow the order modules were asked for
 type Answer = string
-
-const uncounted = (text: string) =>
-	text.replace(/ \+ "\$\d+"/g, "").replace(/(\$ark\.\w+)\$\d+/g, "$1")
-
-const virtualSpecifier = /~arktype\/[\w-]+/g
-
-const exportedName = /^export (?:{ (.+) }|const (\w+)|function (\w+))/gm
-
-const replaced = (text: string, from: string, to: string) =>
-	text.split(from).join(to)
 
 const answerOf = (answer: unknown): Answer => {
 	if (!answer) return JSON.stringify(answer ?? null)
-	const { dependencies, modules, code, stored, ...rest } =
+	const { dependencies, modules, stored, ...rest } =
 		answer as TransformedModule & { stored?: true }
-	const texts = Object.entries(modules).map(
-		([specifier, text]): [string, string] => [specifier, uncounted(text)]
-	)
-	// longest first, as one name may extend another, like its Node
-	const exported = texts
-		.flatMap(([specifier, text]) =>
-			[...text.matchAll(exportedName)]
-				.flatMap(([, names, constName, fnName]) =>
-					names ? names.split(", ") : [constName ?? fnName]
-				)
-				.map((name, i): [string, string] => [name, `${specifier}#${i}`])
-		)
-		.sort(([l], [r]) => r.length - l.length)
-	const withNames = (text: string, nameOf: (place: string) => string) =>
-		exported.reduce(
-			(text, [name, place]) => replaced(text, name, nameOf(place)),
-			text
-		)
-	const canonical: Record<string, string> = {}
-	for (const [specifier, text] of texts) {
-		canonical[specifier] = createHash("sha256")
-			.update(withNames(text.replace(virtualSpecifier, "~arktype/"), () => "#"))
-			.digest("base64url")
-	}
-	const renamed = (text: string) =>
-		withNames(
-			uncounted(text).replace(virtualSpecifier, specifier =>
-				specifier in canonical ? `~arktype/${canonical[specifier]}` : specifier
-			),
-			place => {
-				const [specifier, i] = place.split("#")
-				return `${canonical[specifier]}_${i}`
-			}
-		)
 	return JSON.stringify({
 		...rest,
-		code: code && renamed(code),
 		modules: Object.fromEntries(
-			texts
-				.map(([specifier, text]) => [
-					`~arktype/${canonical[specifier]}`,
-					renamed(text)
-				])
-				.sort(([l], [r]) => (l < r ? -1 : 1))
+			Object.entries(modules).sort(([l], [r]) => (l < r ? -1 : 1))
 		)
 	})
 }

@@ -38,6 +38,16 @@ contextualize(() => {
 		)
 	})
 
+	it("a Type holds a bound keyword, not one with its id the scope created first", () => {
+		// ark creates `{ a: unknown }` first, keyed by the id the bound copy keeps
+		type("<t>", { a: "t" })("unknown")
+		const { T } = scope({ T: "unknown" }).export()
+		const a = type({ a: T }).internal.references.find(
+			node => node.id === T.internal.id
+		)
+		attest(a).is(T.internal)
+	})
+
 	it("define", () => {
 		const aliases = scope.define({ foo: "string", bar: { foo: "foo" } })
 		attest<{

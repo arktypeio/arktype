@@ -223,7 +223,7 @@ export const createNode = ({
 	const key =
 		ignoreCache || !$ark.sets ?
 			undefined
-		:	nodeKeyOf(kind, impl, inner, metaJson)
+		:	nodeKeyOf(kind, impl, inner, metaJson, $)
 
 	if (key) {
 		const cached = $.nodesByKey.get(key)
@@ -264,11 +264,14 @@ export const createNode = ({
 }
 
 // children are cached before their parent, so their ids stand in for their content
+// a reference bound to a scope keeps its original's id, so a child from
+// another scope is keyed by that scope too
 const nodeKeyOf = (
 	kind: NodeKind,
 	impl: UnknownNodeImplementation,
 	inner: dict,
-	metaJson: JsonObject | undefined
+	metaJson: JsonObject | undefined,
+	$: BaseScope
 ): string => {
 	const parts: string[] = [kind]
 	for (const k in inner) {
@@ -276,10 +279,10 @@ const nodeKeyOf = (
 		parts.push(
 			`${k}:${
 				impl.keys[k].child === true ?
-					isArray(v) ? `[${idsOf(v as BaseNode[])}]`
-					:	`#${(v as BaseNode).id}`
+					isArray(v) ? `[${idsOf(v as BaseNode[], $)}]`
+					:	idOf(v as BaseNode, $)
 				: k === "unit" ? literalKeyOf(v)
-				: valueKeyOf(v)
+				: valueKeyOf(v, $)
 			}`
 		)
 	}
@@ -293,16 +296,19 @@ const nodeKeyOf = (
 	return parts.join()
 }
 
-const idsOf = (nodes: readonly BaseNode[]): string => {
+const idsOf = (nodes: readonly BaseNode[], $: BaseScope): string => {
 	let ids = ""
 	for (let i = 0; i < nodes.length; i++)
-		ids += i === 0 ? `#${nodes[i].id}` : `,#${nodes[i].id}`
+		ids += i === 0 ? idOf(nodes[i], $) : `,${idOf(nodes[i], $)}`
 	return ids
 }
 
-const valueKeyOf = (v: unknown): string =>
-	isNode(v) ? `#${v.id}`
-	: isArray(v) ? `[${v.map(valueKeyOf).join()}]`
+const idOf = (node: BaseNode, $: BaseScope): string =>
+	node.$ === $ ? `#${node.id}` : `#${node.id}@${node.$.index}`
+
+const valueKeyOf = (v: unknown, $: BaseScope): string =>
+	isNode(v) ? idOf(v, $)
+	: isArray(v) ? `[${v.map(item => valueKeyOf(item, $)).join()}]`
 	: literalKeyOf(v)
 
 // objects are compared by reference, except dates, which units compare by value
