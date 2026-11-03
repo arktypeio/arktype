@@ -402,12 +402,14 @@ The loader fails a module whose `arktype` imports resolve otherwise, naming the 
 
 The aliases also point a dependency's `arktype` imports at the runtime, so the `*.{js,mjs}` rule has the loader fail the build for a dependency that defines Types but doesn't [opt in](https://arktype.io/docs/precompile/advanced#libraries), and precompile one that does or that [`dependencies`](https://arktype.io/docs/precompile/options#dependencies) sets to `"aot"`. Turbopack can't run one dependency on arktype, so for one that creates Types from values it reads as it runs, like `drizzle-arktype`, build with webpack or with `runtime: "arktype"`. The loader reads only `import` and `export` declarations, so a CommonJS dependency that `require`s arktype throws `type is not a function` when it loads instead.
 
-With webpack (`next build --webpack`), add the plugin:
+With webpack, which Next 15 builds with, as does `next build --webpack`, add the plugin. The pages router leaves dependencies external on the server, so with it, also have Next bundle arktype:
 
 ```js
 import { precompile } from "@ark/aot/unplugin"
 
 export default {
+	// for the pages router
+	transpilePackages: ["arktype"],
 	webpack: config => {
 		config.plugins.push(precompile.webpack())
 		return config
@@ -765,7 +767,7 @@ A production bundle reads every module, so it follows a validator a module expor
 
 Keep `assert` or `~standard` on validators you pass to a library. tRPC, for one, calls a validator that has neither as a plain parse function, so it passes on the errors the validator returns as if they were the parsed input.
 
-Each introspection member is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes only a `target`, and a `fallback` only where no fallback writes the schema, so a library passing its own, as hono-openapi and oRPC do, gets what arktype returns. A JSON Schema the build can't bake throws where it's read.
+Each introspection member is baked as arktype returns it under the program's configuration. `toJsonSchema()` then takes a `target` whose schema is baked, and a `fallback` where `~standard.jsonSchema` is baked with it or `members` sets it: the build records what arktype hands each handler of a fallback and does with what it returns, and the validator does the same with the handlers a call passes. So hono-openapi, which passes a fallback for every Type, and oRPC's converter, which passes one for a `Date`, get what arktype returns, for a Type holding a `Date`, a morph or a `.narrow()` too. Other options throw, as does a fallback where arktype reads what it returns other than to write a union, as for a `Date` with keys of its own. A JSON Schema the build can't bake throws where it's read.
 
 ```ts
 precompile.vite({
@@ -999,6 +1001,8 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`The bundle leaves arktype to be loaded at runtime`** (or `arktype/runtime`): the program would load arktype, or a second copy of its runtime, beside the runtime its validators use, so `out instanceof type.errors` would be false for their errors. A tool that leaves dependencies external does this unless told otherwise: with tsup, add `noExternal: ["arktype"]`, and with tsdown, `deps: { alwaysBundle: [/^arktype(\/|$)/] }`. Where every import of arktype's runtime is left external, as with esbuild's `packages: "external"`, the program loads one copy, and the build allows it.
 
+**`Next.js leaves the pages router's dependencies external on the server when it builds with webpack`**: the server would then load arktype beside the runtime its validators use. Add `transpilePackages: ["arktype"]` to the Next config, as [Next.js](https://arktype.io/docs/precompile/setup#next) shows.
+
 **`arktype resolves to more than one copy`**: one copy doesn't recognize another's Types and errors. The message names each copy and the file that reached it.
 
 **`arktype resolves to ... rather than arktype/runtime`** (Turbopack): add the `turbopack.resolveAlias` entries the message lists to your Next config. See [Next.js](https://arktype.io/docs/precompile/setup#next).
@@ -1045,7 +1049,7 @@ A definition reading one of its Types, like `type({ email: Email })` with `Email
 
 **`toJsonSchema isn't baked into this validator, as the build saw no code read it`** at runtime, or the same for another introspection member: code the build didn't see read a member it didn't bake, like code outside the bundle reading a validator an entry exports. Set it true in [`members`](https://arktype.io/docs/precompile/options#members).
 
-**`A standalone validator's JSON Schema takes only a target it was built with, and a fallback only where its schema needs none`**: a library passed options to `toJsonSchema()` that a baked schema can't apply. hono-openapi and oRPC pass a fallback, which changes a Type holding a morph or a Date, as arktype falls back on those. Build with `runtime: "arktype"`, or keep the morph or Date out of the Types you document.
+**`A standalone validator's JSON Schema takes only a target it was built with, and a fallback only where it was built to apply one`**: code passed `toJsonSchema()` options its baked schema can't apply. A validator applies a `fallback` where it also bakes `~standard.jsonSchema`, as where a library like hono-openapi converts it, or where [`members`](https://arktype.io/docs/precompile/options#members) sets `toJsonSchema`, so set it true where code the build doesn't see passes one. It still throws where arktype reads what a fallback returns other than to write a union, as for a `Date` with keys of its own or a symbol key. Build those with `runtime: "arktype"`.
 
 **`... was written by a build whose cache kept it in ..., where it no longer is`**: delete the bundler's cache to rebuild.
 

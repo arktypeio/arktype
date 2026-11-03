@@ -146,7 +146,7 @@ A production bundle reads every module, so it follows a validator a module expor
 
 Keep `assert` or `~standard` on validators you pass to a library. tRPC, for one, calls a validator that has neither as a plain parse function, so it passes on the errors the validator returns as if they were the parsed input.
 
-Each introspection member is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes only a `target`, and a `fallback` only where no fallback writes the schema, so a library passing its own, as hono-openapi and oRPC do, gets what arktype returns. A JSON Schema the build can't bake throws where it's read.
+Each introspection member is baked as arktype returns it under the program's configuration. `toJsonSchema()` then takes a `target` whose schema is baked, and a `fallback` where `~standard.jsonSchema` is baked with it or `members` sets it: the build records what arktype hands each handler of a fallback and does with what it returns, and the validator does the same with the handlers a call passes. So hono-openapi, which passes a fallback for every Type, and oRPC's converter, which passes one for a `Date`, get what arktype returns, for a Type holding a `Date`, a morph or a `.narrow()` too. Other options throw, as does a fallback where arktype reads what it returns other than to write a union, as for a `Date` with keys of its own. A JSON Schema the build can't bake throws where it's read.
 
 ```ts
 import { precompile } from "@ark/aot/unplugin"

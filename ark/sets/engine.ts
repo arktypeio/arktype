@@ -2,7 +2,11 @@ import { $ark, type SetEngine } from "@ark/schema"
 import { intersectNodesRoot, pipeNodesRoot } from "./intersections.ts"
 import { setImplementationsByKind } from "./kinds.ts"
 import { discriminateUnion } from "./roots/union.ts"
-import { rootToJsonSchema, toJsonSchemaRecurse } from "./toJsonSchema.ts"
+import {
+	jsonSchemaWriters,
+	rootToJsonSchema,
+	toJsonSchemaRecurse
+} from "./toJsonSchema.ts"
 
 export const setEngine: SetEngine = {
 	intersect: intersectNodesRoot,
@@ -17,7 +21,8 @@ export const setEngine: SetEngine = {
 			path: "",
 			open: [],
 			defNamesById: {},
-			defs: {}
+			defs: {},
+			writers: jsonSchemaWriters
 		})
 }
 

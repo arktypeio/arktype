@@ -9,10 +9,12 @@ import {
 	registryName,
 	supportedJsonSchemaTargets,
 	ToJsonSchema,
+	unionJsonSchemaWritersKey,
 	type BaseNode,
 	type BaseRoot,
 	type NodeId,
-	type RootUnit
+	type RootUnit,
+	type UnionJsonSchemaWriters
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
@@ -111,6 +113,12 @@ import {
 	type ComposedString
 } from "./keys.ts"
 import {
+	fallbackCodes,
+	traceFallbacks,
+	writeReplay,
+	type FallbackTrace
+} from "./fallbacks.ts"
+import {
 	noInlineOf,
 	writeDependencies,
 	writeScope,
@@ -160,6 +168,10 @@ import {
 	writeUnprecompilableMessage,
 	type BakedLengths
 } from "./values.ts"
+type TracedOptions = ToJsonSchema.Options & {
+	[unionJsonSchemaWritersKey]: UnionJsonSchemaWriters
+}
+
 type DeclarationRole =
 	| "shape"
 	| "keys"
@@ -1686,8 +1698,28 @@ ${writeFunction(
 						)
 					) ?? 0
 			)
+			const ignoresFallback = this.writesWithoutFallback(root)
+			// where code may pass it options, as the build sees code do where it
+			// bakes ~standard.jsonSchema with it, a call's fallback writes the
+			// default and each target whose text is baked
+			const replays =
+				!ignoresFallback &&
+				(bakes("~standard.jsonSchema") ||
+					this.baking.members.has("toJsonSchema")) &&
+				this.baked("toJsonSchema", () =>
+					[
+						...byTarget.map((name, i) =>
+							name === 0 ? 0 : supportedJsonSchemaTargets[i]
+						),
+						undefined
+					].map(target =>
+						target === 0 ? 0 : (this.emitReplay(root, target) ?? 0)
+					)
+				)
 			members.push(
-				`toJsonSchema: runtime.bakedJsonSchema(${written}, [${byTarget.join(", ")}]${this.writesWithoutFallback(root) ? ", 1" : ""})`
+				replays && replays.some(Boolean) ?
+					`toJsonSchema: runtime.replayedJsonSchema(${written}, [${byTarget.join(", ")}], [${replays.join(", ")}])`
+				:	`toJsonSchema: runtime.bakedJsonSchema(${written}, [${byTarget.join(", ")}]${ignoresFallback ? ", 1" : ""})`
 			)
 		}
 		if (standard) {
@@ -1832,7 +1864,95 @@ ${writeFunction(
 
 	emitJsonSchema(root: BaseRoot, write: () => unknown): string {
 		const values: unknown[] = []
-		const writer = this.writeJsonSchemaWriter(root, write, values)
+		return this.declareJsonSchema(
+			this.writeJsonSchemaWriter(root, write, values),
+			values
+		)
+	}
+
+	// toJsonSchema() with the fallback a call passes, where arktype doesn't
+	// read what one returns
+	emitReplay(
+		root: BaseRoot,
+		target: ToJsonSchema.Target | undefined
+	): string | undefined {
+		const write = (opts: TracedOptions) =>
+			root.toJsonSchema(target ? { target, ...opts } : opts)
+		let trace: FallbackTrace | undefined
+		try {
+			assertBakeableJsonSchema(root)
+			trace = this.baking.write(() =>
+				traceFallbacks(root, (fallback, writers) =>
+					write({ fallback, [unionJsonSchemaWritersKey]: writers })
+				)
+			)
+		} catch (e) {
+			if (e instanceof ParseError) return
+			throw e
+		}
+		if (!trace) return
+		const values: unknown[] = []
+		let replay: string | undefined
+		try {
+			replay = this.replayOf(trace, root, write, values)
+		} catch (e) {
+			// e.g. a context holding a symbol key
+			if (e instanceof ParseError) return
+			throw e
+		}
+		return replay && this.declareJsonSchema(replay, values)
+	}
+
+	private replayOf(
+		trace: FallbackTrace,
+		root: BaseRoot,
+		write: (opts: TracedOptions) => unknown,
+		values: unknown[]
+	): string | undefined {
+		const configured = root.$.cfg.toJsonSchema.fallback
+		const firstCalls = new Map<string, number>()
+		for (const step of trace.steps) {
+			if ("code" in step && !firstCalls.has(step.code))
+				firstCalls.set(step.code, step.call)
+		}
+		return writeReplay(
+			trace,
+			value => this.writeData(value, { values }),
+			(code, call) => {
+				// the config module's, which configure() keeps as the program runs
+				if (
+					configured[code as ToJsonSchema.Code] !==
+					ToJsonSchema.defaultConfig.fallback[code as never]
+				)
+					return `runtime.configuredFallbackOf(${JSON.stringify(code)})`
+				// arktype throws at the first it can't convert, naming where it is
+				if (call === undefined || firstCalls.get(code) !== call) return
+				try {
+					traceFallbacks(
+						root,
+						(fallback, writers) =>
+							write({
+								fallback: Object.fromEntries(
+									fallbackCodes.map(c => [c, c === code ? undefined : fallback])
+								),
+								[unionJsonSchemaWritersKey]: writers
+							}),
+						true
+					)
+				} catch (e) {
+					if (!(e instanceof ToJsonSchema.Error)) throw e
+					// its context printed at runtime, results included
+					const header = e.message.slice(0, e.message.indexOf("\n") + 1)
+					return this.declareJsonSchema(
+						`runtime.fallbackThrower(${JSON.stringify(code)}, ${this.emitString(header)})`,
+						[]
+					)
+				}
+			}
+		)
+	}
+
+	declareJsonSchema(writer: string, values: unknown[]): string {
 		this.countBaked(writer)
 		const declared = this.jsonSchemaNameOf(writer)
 		if (declared) return declared
