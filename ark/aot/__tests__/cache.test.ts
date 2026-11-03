@@ -95,10 +95,19 @@ const isWhole = (path: string) => {
 	return text.slice(0, start - 1) === hashOf(text.slice(start))
 }
 
+// a module as a plugin ahead gives it to be transformed, unlike its file, or
+// as another plugin writes it, which the build only checks
+type Given = [
+	file: string,
+	source: string,
+	mappings?: string | undefined,
+	kind?: "checkUnwritten"
+]
+
 // what a build's worker answers for each file, in order
 const transformedIn = async (
 	dir: string,
-	files: string[],
+	files: (string | Given)[],
 	opts: object = {},
 	resolve?: BundlerResolve
 ): Promise<(TransformedModule | undefined)[]> => {
@@ -107,11 +116,14 @@ const transformedIn = async (
 	})
 	const answers: (TransformedModule | undefined)[] = []
 	for (const file of files) {
-		const id = join(dir, file)
+		const [name, source, mappings, kind = "transform"] =
+			typeof file === "string" ? [file] : file
+		const id = join(dir, name)
 		answers.push(
-			(await send(["transform", readFileSync(id, "utf8"), id], resolve)) as
-				| TransformedModule
-				| undefined
+			(await send(
+				[kind, source ?? readFileSync(id, "utf8"), id, mappings],
+				resolve
+			)) as TransformedModule | undefined
 		)
 	}
 	await send(["close"])
@@ -148,6 +160,24 @@ const shaped = (domain: string) =>
 
 const shapeReader = (specifier: string) =>
 	`import { type } from "arktype"\nimport { shape } from "${specifier}"\n\nexport const T = type(shape)\n`
+
+const typed = (domain: string) =>
+	`import { type } from "arktype"\n\nexport const Typed = type({ a: "${domain}" })\n`
+
+const typedReader =
+	'import { type } from "arktype"\nimport { Typed } from "./typed.ts"\n\nexport const T = type({ typed: Typed })\n'
+
+// a module as plugin-typescript gives it, without its blank lines, with the
+// map from each line it gives to the line of its file
+const transpiledOf = (file: string, source: string): Given => {
+	const lines = source.split("\n")
+	const kept = lines.flatMap((line, i) => (line ? [i] : []))
+	return [
+		file,
+		`${kept.map(i => lines[i]).join("\n")}\n`,
+		kept.map((line, i) => `AA${"ACEG"[line - (kept[i - 1] ?? 0)]}A`).join(";")
+	]
+}
 
 const versionOf = (dir: string): string =>
 	JSON.parse(readFileSync(fromHere("..", "..", dir, "package.json"), "utf8"))
@@ -296,6 +326,68 @@ contextualize(function (this: Mocha.Suite) {
 			renameSync(join(root, version), join(root, "other"))
 			attest(await codeIn(dir)).satisfies(/^import/)
 			attest(readdirSync(root)).equals([version])
+		})
+
+		it("answers a module a plugin ahead transpiled", async () => {
+			const dir = writeFixture({
+				"main.ts": shapeReader("./shape.ts"),
+				"shape.ts": shaped("string")
+			})
+			const transpiled = transpiledOf("main.ts", shapeReader("./shape.ts"))
+			const [answer] = await transformedIn(dir, [transpiled])
+			attest(answer?.code).satisfies(/^import/)
+			forge(dir)
+			attest((await transformedIn(dir, [transpiled]))[0]?.code).equals("forged")
+		})
+
+		it("misses once a plugin ahead gives a module it imports otherwise", async () => {
+			const dir = writeFixture({
+				"main.ts": typedReader,
+				"typed.ts": typed("string")
+			})
+			const givenAs = (domain: string) => [
+				transpiledOf("typed.ts", typed(domain)),
+				"main.ts"
+			]
+			const asString = await transformedIn(dir, givenAs("string"))
+			const asNumber = json(await transformedIn(dir, givenAs("number")))
+			attest(asNumber === json(asString)).equals(false)
+			attest(asNumber).equals(json(await uncachedIn(dir, givenAs("number"))))
+		})
+
+		it("misses once another plugin writes a module it imports otherwise", async () => {
+			const dir = writeFixture({
+				"main.ts": shapeReader("./Shape.svelte"),
+				"Shape.svelte": "<script>\n</script>\n"
+			})
+			// as Svelte compiles a component exporting its shape
+			const writtenAs = (domain: string): (string | Given)[] => [
+				[
+					"Shape.svelte",
+					`import "arktype"\n\nexport const shape = { a: "${domain}" }\n`,
+					undefined,
+					"checkUnwritten"
+				],
+				"main.ts"
+			]
+			const asString = await transformedIn(dir, writtenAs("string"))
+			const asNumber = json(await transformedIn(dir, writtenAs("number")))
+			attest(asNumber === json(asString)).equals(false)
+			attest(asNumber).equals(json(await uncachedIn(dir, writtenAs("number"))))
+		})
+
+		it("misses for a module the build gave otherwise before", async () => {
+			const dir = writeFixture({
+				"main.ts": typedReader,
+				"typed.ts": typed("string")
+			})
+			const givenAs = (domain: string) =>
+				transpiledOf("typed.ts", typed(domain))
+			await transformedIn(dir, [givenAs("number")])
+			// its importers read what it was given last, which only precompiling it again gives them
+			const requests = [givenAs("string"), givenAs("number"), "main.ts"]
+			const answers = json(await transformedIn(dir, requests))
+			attest(answers).equals(json(await uncachedIn(dir, requests)))
 		})
 
 		it("stores no answer with a diagnostic", async () => {
@@ -541,6 +633,36 @@ contextualize(function (this: Mocha.Suite) {
 			const written = writtenOf(dir)
 			attest(written.length).equals(2)
 			attest(await built(dir)).equals(code)
+			attest(writtenOf(dir)).equals(written)
+		})
+
+		it("answers a scan that keeps members, warning as it did", async () => {
+			const dir = installed({
+				"main.ts": 'import { A } from "./a.ts"\n\nglobalThis.A = A\n',
+				"a.ts":
+					'import { type } from "arktype"\n\nexport const A = type({ name: "string" })\n'
+			})
+			// the warnings a build logs, and its code
+			const warnedIn = async () => {
+				const warnings: string[] = []
+				const listener: VitePlugin = {
+					name: "listener",
+					// arktype's own, apart from the bundler's, like its timings
+					onLog: (level, log) => {
+						if (level === "warn" && log.plugin === "arktype")
+							warnings.push(log.message)
+					}
+				}
+				return [await built(dir, [listener]), warnings] as const
+			}
+			const [code, warnings] = await warnedIn()
+			attest(warnings).snap([
+				"prune: keeping assert, meta, ~standard and methods, because the validator at a.ts:3:18 is lost where main.ts:3:1 stores it on the global object, which code outside the bundle may read. Set assert, meta, ~standard and methods in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning.",
+				"precompile: baking each introspection member into the validator at a.ts:3:18, because main.ts:3:1 stores it on the global object, which code outside the bundle may read. Set expression, description, json, toJSON, toJsonSchema and ~standard.jsonSchema in members, each false where no code reads it, to build without this warning."
+			])
+			const written = writtenOf(dir)
+			attest(written.length).equals(2)
+			attest(await warnedIn()).equals([code, warnings])
 			attest(writtenOf(dir)).equals(written)
 		})
 
