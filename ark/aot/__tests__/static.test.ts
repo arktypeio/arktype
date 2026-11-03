@@ -1487,6 +1487,67 @@ export const A = type({ x: H.a })`)
 			])
 		})
 
+		it("values passed to a package the build reads", () => {
+			const files = {
+				"/node_modules/registry/index.js": `export { register, Registry, nested, store } from "./registry.js"`,
+				"/node_modules/registry/registry.js": `const byName = new Map()
+export const register = schemas => {
+	for (const [name, schema] of Object.entries(schemas)) byName.set(name, schema)
+}
+export class Registry {
+	add(schemas) {
+		for (const name in schemas) byName.set(name, schemas[name])
+	}
+}
+export const nested = schemas => {
+	schemas.inner.a = "number"
+}
+const all = []
+export const store = schemas => {
+	all.push(schemas)
+}`,
+				"/node_modules/cjs/index.js": `"use strict"
+Object.defineProperty(exports, "__esModule", { value: true })
+exports.read = void 0
+const read_1 = require("./read.js")
+Object.defineProperty(exports, "read", { enumerable: true, get: function () { return read_1.read } })`,
+				"/node_modules/cjs/read.js": `"use strict"
+exports.read = void 0
+const read = schemas => Object.keys(schemas).length
+exports.read = read`,
+				"/main.ts": `import { type } from "arktype"
+import { register, Registry, nested, store } from "registry"
+import { read } from "cjs"
+const S0 = { user: type({ name: "string" }) }
+register(S0)
+const S1 = { user: type({ name: "string" }) }
+const registry = new Registry()
+registry.add(S1)
+const S2 = { inner: { a: "string" } }
+nested(S2)
+const S3 = { user: type({ name: "string" }) }
+store(S3)
+const S4 = { user: type({ name: "string" }) }
+read(S4)
+export const T0 = type({ x: S0.user })
+export const T1 = type({ x: S1.user })
+export const T2 = type(S2.inner)
+export const T3 = type({ x: S3.user })
+export const T4 = type({ x: S4.user })`
+			}
+			attest(programStatusesOf(files)).snap([
+				"4:20 accepted { name: string }",
+				"6:20 accepted { name: string }",
+				"11:20 accepted { name: string }",
+				"13:20 accepted { name: string }",
+				"15:19 accepted { x: { name: string } }",
+				"16:19 accepted { x: { name: string } }",
+				"17:19 rejected\n  `S2` is written at /main.ts:10:1, so its value at the site is not known",
+				"18:19 rejected\n  `S3` reaches code the build doesn't follow at /main.ts:12:1, so its value at the site is not known",
+				"19:19 accepted { x: { name: string } }"
+			])
+		})
+
 		it("holes read through an object written before the site", () => {
 			const diagnostics = precompile(
 				`import { type } from "arktype"

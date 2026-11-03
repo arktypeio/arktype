@@ -23,6 +23,7 @@ import type { StringType } from "arktype/internal/variants/string.ts"
 import type {
 	ArrowFunctionExpression,
 	CallExpression,
+	Class,
 	ClassElement,
 	Function,
 	FunctionBody,
@@ -550,6 +551,186 @@ const elementCallback: Relation[] = ["element", "none", "self"]
 const reducer: Relation[] = ["element", "element", "none", "self"]
 const comparator: Relation[] = ["element", "element"]
 
+// the module an import or a require reads a binding from, and the name it
+// reads, "*" for the whole module
+const sourceOf = (
+	binding: Binding
+): [specifier: string, name: string] | undefined => {
+	const declaration = binding.declaration
+	switch (declaration.type) {
+		case "ImportSpecifier":
+		case "ImportDefaultSpecifier":
+		case "ImportNamespaceSpecifier":
+			return [
+				(declaration.parent as ImportDeclaration).source.value,
+				declaration.type === "ImportSpecifier" ?
+					exportNameOf(declaration.imported)
+				: declaration.type === "ImportDefaultSpecifier" ? "default"
+				: "*"
+			]
+		case "VariableDeclarator": {
+			const init = declaration.init && unwrapExpression(declaration.init)
+			const loaded =
+				init?.type === "CallExpression" ? loadedSourceOf(init) : undefined
+			if (loaded?.type !== "Literal" || typeof loaded.value !== "string") return
+			if (declaration.id.type === "Identifier") return [loaded.value, "*"]
+			// e.g. `const { register } = require("registry")`
+			const property =
+				declaration.id.type === "ObjectPattern" ?
+					declaration.id.properties.find(
+						property =>
+							property.type === "Property" && property.value === binding.id
+					)
+				:	undefined
+			const name =
+				property?.type === "Property" ? keyNameOf(property) : undefined
+			return typeof name === "string" ? [loaded.value, name] : undefined
+		}
+	}
+}
+
+// e.g. `exports` or `module.exports`
+const isExportsOf = (node: Node): boolean => {
+	node = unwrapExpression(node)
+	return (
+		(node.type === "Identifier" && node.name === "exports") ||
+		(node.type === "MemberExpression" &&
+			node.object.type === "Identifier" &&
+			node.object.name === "module" &&
+			memberNameOf(node) === "exports")
+	)
+}
+
+// what a CommonJS module exports as `name`, if it does once: e.g.
+// `exports.name = value`, `module.exports = { name }` or TypeScript's
+// re-export, `Object.defineProperty(exports, "name", { get: () => value })`
+const commonExportOf = (
+	module: SourceModule,
+	name: string
+): Node | undefined => {
+	const values: Node[] = []
+	let isKnown = true
+	walk(module.program, node => {
+		if (!isKnown) return false
+		if (node.type === "CallExpression") {
+			const [target, key, descriptor] = node.arguments
+			if (!target || !isExportsOf(target)) return true
+			if (key?.type !== "Literal" || typeof key.value !== "string")
+				return (isKnown = false)
+			if (key.value !== name) return true
+			const property =
+				descriptor?.type === "ObjectExpression" ?
+					descriptor.properties.find(
+						property =>
+							property.type === "Property" &&
+							(keyNameOf(property) === "get" || keyNameOf(property) === "value")
+					)
+				:	undefined
+			const value =
+				property?.type === "Property" ?
+					unwrapExpression(property.value)
+				:	undefined
+			const exported =
+				!value || property!.type !== "Property" ? undefined
+				: keyNameOf(property as never) === "value" ? value
+				: isFunctionNode(value) ? returnedOf(value)
+				: undefined
+			if (!exported) return (isKnown = false)
+			values.push(exported)
+			return true
+		}
+		if (node.type !== "AssignmentExpression") return true
+		const target = unwrapExpression(node.left)
+		const value = unwrapExpression(node.right)
+		if (
+			target.type === "MemberExpression" &&
+			isExportsOf(target.object) &&
+			memberNameOf(target) === name
+		) {
+			// e.g. `exports.a = exports.b = void 0`
+			if (node.operator !== "=") isKnown = false
+			else if (
+				!(value.type === "UnaryExpression" && value.operator === "void") &&
+				value.type !== "AssignmentExpression"
+			)
+				values.push(value)
+		} else if (isExportsOf(target)) {
+			if (node.operator !== "=") isKnown = false
+			else if (name === "default") values.push(value)
+			// `module.exports = fn` replaces each name it exported
+			else if (value.type !== "ObjectExpression") isKnown = false
+			else {
+				for (const property of value.properties) {
+					if (property.type !== "Property") isKnown = false
+					else if (keyNameOf(property) === name) values.push(property.value)
+				}
+			}
+		}
+		return true
+	})
+	return isKnown && values.length === 1 ? values[0] : undefined
+}
+
+// a method each instance of a class runs, unless one may replace it
+const methodIn = (
+	cls: Class,
+	name: string,
+	module: SourceModule
+): [FunctionNode, SourceModule] | undefined => {
+	let method: FunctionNode | undefined
+	for (const element of cls.body.body) {
+		if (
+			(element.type !== "MethodDefinition" &&
+				element.type !== "PropertyDefinition") ||
+			element.static ||
+			keyNameOf(element) !== name
+		)
+			continue
+		const value = element.value && unwrapExpression(element.value)
+		if (
+			method ||
+			!value ||
+			!isFunctionNode(value) ||
+			(element.type === "MethodDefinition" && element.kind !== "method")
+		)
+			return
+		method = value
+	}
+	return method && !replacesMember(cls, name) ? [method, module] : undefined
+}
+
+// e.g. `store` read only as `store.add(...)` or `new Store()`, so nothing
+// can replace a member its instances run
+const readsOnlyMembers = (binding: Binding): boolean =>
+	!binding.writes.length &&
+	binding.references.every(reference => {
+		const [operand, parent] = operatorOf(reference.id)
+		return (
+			(parent?.type === "MemberExpression" &&
+				parent.object === operand &&
+				!isWriteTarget(parent)) ||
+			(parent?.type === "NewExpression" && parent.callee === operand)
+		)
+	})
+
+// e.g. `this.add = add` or `Object.assign(this, methods)`
+const replacesMember = (cls: Class, name: string): boolean => {
+	let result = false
+	walk(cls.body, node => {
+		if (
+			(node.type === "MemberExpression" &&
+				node.object.type === "ThisExpression" &&
+				memberNameOf(node) === name &&
+				isWriteTarget(node)) ||
+			((node.type === "CallExpression" || node.type === "NewExpression") &&
+				node.arguments.some(arg => arg.type === "ThisExpression"))
+		)
+			result = true
+		return !result
+	})
+	return result
+}
+
 // what a builtin method's result holds of its receiver, and what its
 // callback's parameters do, where it takes one
 const heldByMethod: Record<string, [result: Relation, callback?: Relation[]]> =
@@ -901,6 +1082,9 @@ export class ModuleGraph {
 	private holdings: Holding[] | undefined
 	// how a function's calls are being followed, which its own calls aren't again
 	private returning = new WeakMap<FunctionNode, Set<string>>()
+	// each module of a package the build reads only for what a callee may
+	// write, or null for one it can't read
+	private packageModulesById = new Map<string, SourceModule | null>()
 	view: ProgramView | undefined
 	private importersById: Map<string, ImporterEdge[]> | undefined
 	private elsewhereByHolder = new WeakMap<
@@ -4220,6 +4404,9 @@ export class ModuleGraph {
 		for (const [id, held] of holdings) {
 			const binding = module.scopes.bindingsById.get(id)
 			if (!binding || held.depth <= held.copied) continue
+			// the program's imports of a package's modules aren't linked
+			if (binding.exportNames.length && this.isPackageModule(module))
+				return this.escape(id)
 			this.holdings?.push({ binding, module, held })
 			const [write] = this.mayWritesOf(binding, module, held)
 			if (write) return write
@@ -4237,7 +4424,7 @@ export class ModuleGraph {
 		params?: Relation[]
 	): Node | undefined {
 		if (arg.type === "SpreadElement") return this.escape(call)
-		const fn = this.functionOf(arg, module)
+		const fn = this.calleeOf(arg, module)
 		if (!fn) {
 			// e.g. `"a"` or `list.find(Boolean)`
 			return (
@@ -4257,7 +4444,14 @@ export class ModuleGraph {
 			const write =
 				through &&
 				this.mayWriteThrough(isRest ? param.argument : param, through, fn[1])
-			if (write) return write
+			// one in another module is reported where it's passed
+			if (write) {
+				return (
+					fn[1] === module ? write
+					: this.escapes.has(write) ? this.escape(call)
+					: call
+				)
+			}
 		}
 	}
 
@@ -4388,7 +4582,7 @@ export class ModuleGraph {
 					}
 					if (this.readsOnly(parent.callee, module))
 						return isMethodHolder(node) ? this.escape(parent) : undefined
-					const fn = this.functionOf(parent.callee, module)
+					const fn = this.calleeOf(parent.callee, module)
 					const params = fn && runtimeParamsOf(fn[0])
 					const last = params?.[params.length - 1]
 					const param =
@@ -4502,6 +4696,7 @@ export class ModuleGraph {
 					return
 				// e.g. `export default { o }`, which an importer may write
 				case "ExportDefaultDeclaration":
+					if (this.isPackageModule(module)) return this.escape(parent)
 					this.holdings?.push({ name: "default", module, held })
 					return
 				// e.g. thrown, yielded or held by a class field
@@ -4532,6 +4727,184 @@ export class ModuleGraph {
 		} finally {
 			returning.delete(key)
 		}
+	}
+
+	// the function a call runs, as far as the write analysis follows it: one
+	// the build reads, a class instance's method and, where the build reads
+	// the whole program, one a package exports
+	private calleeOf(
+		callee: Node,
+		module: SourceModule
+	): [FunctionNode, SourceModule] | undefined {
+		const fn =
+			this.functionOf(callee, module) ?? this.instanceMethodOf(callee, module)
+		if (fn || !this.view) return fn
+		const definition = this.definitionOf(callee, module)
+		return definition && isFunctionNode(definition[0]) ?
+				(definition as [FunctionNode, SourceModule])
+			:	undefined
+	}
+
+	// e.g. `store.add` given `const store = new Store()`
+	private instanceMethodOf(
+		callee: Node,
+		module: SourceModule
+	): [FunctionNode, SourceModule] | undefined {
+		callee = unwrapChain(callee)
+		if (callee.type !== "MemberExpression") return
+		const name = memberNameOf(callee)
+		const object = unwrapChain(callee.object)
+		const binding =
+			object.type === "Identifier" ?
+				module.scopes.byId.get(object)?.binding
+			:	undefined
+		const init =
+			(
+				binding?.kind === "const" &&
+				binding.declaration.type === "VariableDeclarator" &&
+				binding.declaration.init
+			) ?
+				unwrapExpression(binding.declaration.init)
+			:	undefined
+		if (
+			typeof name !== "string" ||
+			init?.type !== "NewExpression" ||
+			!readsOnlyMembers(binding!)
+		)
+			return
+		const cls = this.instanceClassOf(init.callee, module)
+		return cls && methodIn(cls[0], name, cls[1])
+	}
+
+	// e.g. `Store` of `class Store {}`, unless the program may change it, or
+	// one a package exports where the build reads the whole program
+	private instanceClassOf(
+		node: Node,
+		module: SourceModule
+	): [Class, SourceModule] | undefined {
+		node = unwrapChain(node)
+		const binding =
+			node.type === "Identifier" ?
+				module.scopes.byId.get(node)?.binding
+			:	undefined
+		if (binding?.kind === "class") {
+			return (
+					readsOnlyMembers(binding) &&
+						!this.writesThrough(binding, module).length
+				) ?
+					[binding.declaration as Class, module]
+				:	undefined
+		}
+		const definition = this.view && this.definitionOf(node, module)
+		return (
+				definition &&
+					(definition[0].type === "ClassDeclaration" ||
+						definition[0].type === "ClassExpression")
+			) ?
+				(definition as [Class, SourceModule])
+			:	undefined
+	}
+
+	// the function or class a value names, read through a package's modules:
+	// e.g. `register` of `import { register } from "registry"`, or
+	// `registry_1.register` of `const registry_1 = require("./registry")`
+	private definitionOf(
+		node: Node,
+		module: SourceModule,
+		seen = new Set<string>()
+	): [Node, SourceModule] | undefined {
+		node = namedFunctionOf(unwrapChain(node), module)
+		if (
+			isFunctionNode(node) ||
+			node.type === "ClassDeclaration" ||
+			node.type === "ClassExpression"
+		)
+			return [node, module]
+		const [object, member] =
+			node.type === "MemberExpression" ?
+				[unwrapChain(node.object), memberNameOf(node)]
+			:	[node, undefined]
+		const binding =
+			object.type === "Identifier" ?
+				(module.scopes.byId.get(object)?.binding ??
+				module.scopes.bindingsById.get(object))
+			:	undefined
+		if (!binding || binding.writes.length) return
+		const source = sourceOf(binding)
+		if (!source) {
+			if (member !== undefined) return
+			if (binding.kind === "function" || binding.kind === "class")
+				return [binding.declaration, module]
+			const init =
+				binding.kind === "const" &&
+				binding.declaration.type === "VariableDeclarator" &&
+				binding.declaration.init
+			return init ? this.definitionOf(init, module, seen) : undefined
+		}
+		const [specifier, imported] = source
+		const name =
+			imported === "*" ? member
+			: member === undefined ? imported
+			: undefined
+		const target =
+			typeof name === "string" ?
+				this.packageModuleOf(specifier, module)
+			:	undefined
+		return target && this.exportedDefinitionOf(target, name as string, seen)
+	}
+
+	private exportedDefinitionOf(
+		module: SourceModule,
+		name: string,
+		seen: Set<string>
+	): [Node, SourceModule] | undefined {
+		const key = `${module.id}\0${name}`
+		if (seen.has(key)) return
+		seen.add(key)
+		const entry = module.scopes.exportsByName[name]
+		if (entry?.kind === "reexport") {
+			const target = this.packageModuleOf(entry.specifier, module)
+			return target && this.exportedDefinitionOf(target, entry.name, seen)
+		}
+		const value =
+			entry?.kind === "binding" ? entry.binding.id
+			: entry?.kind === "expression" ? entry.node
+			: entry ? undefined
+			: commonExportOf(module, name)
+		if (value) return this.definitionOf(value, module, seen)
+		if (entry) return
+		for (const specifier of module.scopes.starExports) {
+			const target = this.packageModuleOf(specifier, module)
+			const result = target && this.exportedDefinitionOf(target, name, seen)
+			if (result) return result
+		}
+	}
+
+	// a module of a package, which the build reads only for what its
+	// functions may write
+	private packageModuleOf(
+		specifier: string,
+		importer: SourceModule
+	): SourceModule | undefined {
+		const id = this.host.resolve(specifier, importer.id)
+		if (!id || !/\.[cm]?[jt]sx?$/.test(id)) return
+		const loaded = this.modulesById[id]
+		if (loaded) return loaded instanceof SourceModule ? loaded : undefined
+		let result = this.packageModulesById.get(id)
+		if (result === undefined) {
+			const source = this.host.readFile(id)
+			result =
+				source === undefined ? null : (
+					new SourceModule(id, source, this.pathOf(id))
+				)
+			if (result?.parseErrors.length) result = null
+			this.packageModulesById.set(id, result)
+		}
+		return result ?? undefined
+	}
+
+	private isPackageModule(module: SourceModule): boolean {
+		return this.packageModulesById.get(module.id) === module
 	}
 
 	functionOf(

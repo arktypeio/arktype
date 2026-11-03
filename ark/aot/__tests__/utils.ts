@@ -79,9 +79,12 @@ export const precompileProgram = (
 	return precompiler.precompile(source, "/main.ts")
 }
 
+// the program a scan reads, which leaves out packages
 const modulesOf = (files: Record<string, string>) =>
 	Object.fromEntries(
-		Object.entries(files).map(([id, source]) => [id, { source }])
+		Object.entries(files).flatMap(([id, source]) =>
+			id.includes("/node_modules/") ? [] : [[id, { source }]]
+		)
 	)
 
 // each site's status, with its value's expression or why it is rejected
