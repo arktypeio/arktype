@@ -108,6 +108,11 @@ const collectCode = (dir: string, files: string[]) => {
 
 let fingerprint: string | undefined
 
+// names the directory of this code's answers, and versions a bundler's
+// persistent cache, which a module's dependencies don't turn over as the
+// code changes without a version
+export const fingerprintOfCode = (): string => (fingerprint ??= fingerprintOf())
+
 export const mtimeOf = (file: string): number =>
 	statSync(file, { throwIfNoEntry: false })?.mtimeMs ?? -1
 
@@ -121,12 +126,12 @@ export class AnswerCache {
 	static maxEntries = 50_000
 
 	constructor(cwd: string) {
-		fingerprint ??= fingerprintOf()
+		const version = fingerprintOfCode()
 		const root = join(cwd, "node_modules", ".cache", "ark")
-		this.dir = join(root, fingerprint)
+		this.dir = join(root, version)
 		if (existsSync(root)) {
 			for (const name of readdirSync(root)) {
-				if (name !== fingerprint)
+				if (name !== version)
 					rmSync(join(root, name), { recursive: true, force: true })
 			}
 		}

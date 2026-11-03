@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
+import { AnswerCache } from "@ark/aot/internal/cache.ts"
 import {
 	emitDeclarations,
 	writeDeclareFrameworkMessage,
@@ -40,7 +41,7 @@ import {
 	symlinkSync,
 	writeFileSync
 } from "node:fs"
-import { isAbsolute, join, relative, sep } from "node:path"
+import { basename, isAbsolute, join, relative, sep } from "node:path"
 import { stripVTControlCharacters } from "node:util"
 import { Worker } from "node:worker_threads"
 import { rollup, watch, type Plugin as RollupPlugin } from "rollup"
@@ -2448,7 +2449,7 @@ console.log(JSON.stringify(User.toJsonSchema()))
 		)
 	})
 
-	it("versions a persistent cache by the options, ark.json's included", () => {
+	it("versions a persistent cache by the code and options, ark.json's included", () => {
 		const root = writeFixture({ "package.json": "{}" })
 		const versionOf = (cache: { type: string; version?: string }) => {
 			const plugin = precompile.raw(
@@ -2467,6 +2468,8 @@ console.log(JSON.stringify(User.toJsonSchema()))
 		}
 		const unset = versionOf({ type: "filesystem" })
 		attest(versionOf({ type: "filesystem" })).equals(unset)
+		// as the cache's own directory turns over once the code changes
+		attest(unset?.includes(basename(new AnswerCache(root).dir))).equals(true)
 		writeFileSync(
 			join(root, "ark.json"),
 			JSON.stringify({ precompile: { errors: "none" } })

@@ -347,7 +347,7 @@ A validator ships its JSON Schema where the build sees code read it, so a librar
 
 ## Cache
 
-A build keeps each module it precompiles in `node_modules/.cache/ark`, in the directory it runs from, so the next build, dev server or Next.js process reuses what didn't change. An entry is read only while everything that decided it is the same: the code of `@ark/aot` and `arktype`, a linked or repacked copy included, the version of Node, the module's source and each file the precompiler read for it, what each import resolved to, and your settings. A watch build or dev server stores only what it precompiles before its first change, keeping what it precompiles again to itself. Deleting the directory is always safe, as the next build writes it again.
+A build keeps each module it precompiles in `node_modules/.cache/ark`, in the directory it runs from, so the next build, dev server or Next.js process reuses what didn't change. An entry is read only while everything that decided it is the same: the code of `@ark/aot` and `arktype`, a linked or repacked copy included, the version of Node, the module's source and each file the precompiler read for it, what each import resolved to, and your settings. A watch build or dev server stores only what it precompiles before its first change, keeping what it precompiles again to itself. A webpack or Rspack persistent cache is versioned by the same code and your settings, so it rebuilds each module once either changes. Deleting the directory is always safe, as the next build writes it again.
 
 ## Frameworks
 
@@ -1047,6 +1047,8 @@ A definition reading one of its Types, like `type({ email: Email })` with `Email
 **`A standalone validator's JSON Schema takes only a target it was built with, and a fallback only where its schema needs none`**: a library passed options to `toJsonSchema()` that a baked schema can't apply. hono-openapi and oRPC pass a fallback, which changes a Type holding a morph or a Date, as arktype falls back on those. Build with `runtime: "arktype"`, or keep the morph or Date out of the Types you document.
 
 **`... was written by a build whose cache kept it in ..., where it no longer is`**: delete the bundler's cache to rebuild.
+
+**Turbopack builds a module as it did before you linked or patched arktype**: Turbopack's persistent cache keeps what the loader wrote until the module, a file it read, or the version of `arktype` or `@ark/aot` changes. A linked copy or a patch changes their code without the version, so delete `.next/cache` after changing either. The build's own cache, and webpack's and Rspack's, rebuild by themselves.
 
 **`prune: keeping assert, meta, ~standard and methods, because the validator at src/schemas.ts:3:14 is lost where src/server.ts:12:30 passes it to send, which the build can't follow`**: a production build couldn't prove what its validators are read for, so it kept each member [`members`](https://arktype.io/docs/precompile/options#members) leaves to it. The warning names the first read or module that stopped it, as [prune](https://arktype.io/docs/precompile/options#prune) lists them. Set each member it names in `members`, false where no code reads it, like `assert` where nothing asserts, and true where a library may, like `~standard` for one taking a Standard Schema. The build then writes what you set without the warning, and still prunes what else it can. `prune: false` would build each unit as a module of its own as well, which is larger.
 

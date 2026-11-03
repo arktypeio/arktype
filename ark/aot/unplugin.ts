@@ -13,6 +13,7 @@ import {
 	type UnpluginInstance,
 	type UnpluginOptions
 } from "unplugin"
+import { fingerprintOfCode } from "./cache.ts"
 import {
 	emitDeclarations,
 	refuseDeclare,
@@ -366,10 +367,11 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	const keepCompiler = (bundler: BundlerCompiler) => {
 		compiler = bundler
 		resolveIn(bundler.options.mode === "development")
-		// a persistent cache keeps what other options precompiled, so they version it
+		// a persistent cache keeps what other options or code precompiled, so
+		// they version it
 		const { cache } = bundler.options
 		if (cache && typeof cache === "object") {
-			const version = `arktype ${JSON.stringify(set)}`
+			const version = `arktype ${fingerprintOfCode()} ${JSON.stringify(set)}`
 			cache.version = cache.version ? `${cache.version} ${version}` : version
 		}
 		// webpack and Rspack decide externals, e.g. Next's, before resolving
