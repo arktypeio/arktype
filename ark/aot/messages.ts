@@ -105,10 +105,21 @@ export const writeNextExternalMessage = (specifier: string): string =>
 	`Next.js leaves the pages router's dependencies external on the server, so it leaves ${specifier} ${loadedAtRuntime}. Add \`bundlePagesRouterDependencies: true\` to next.config.js, so Next.js bundles them as it does the app router's, and leave ${packageNameOf(specifier)} out of \`serverExternalPackages\`.`
 
 export const writeUnreadServerExternalsMessage = (config: string): string =>
-	`The @ark/aot/turbopack loader reads \`serverExternalPackages\` from ${config} without running it, for a package depending on arktype that Next.js would load past \`resolveAlias\`, and can't read one other than an array of string literals. Write it as one.`
+	`The @ark/aot/turbopack loader reads \`serverExternalPackages\` from ${config} without running it, for a package importing arktype that Next.js would load past \`resolveAlias\`, and can't read one other than an array of string literals. Write it as one.`
 
 export const writeBundledExternalMessage = (specifier: string): string =>
 	`The bundle leaves ${specifier} ${loadedAtRuntime}. Bundle arktype: remove it from the bundler's \`external\` option, or, where a tool leaves dependencies external, have it bundle arktype, as tsup does with \`noExternal: ["arktype"]\` and tsdown with \`deps: { alwaysBundle: [/^arktype(\\/|$)/] }\`.`
+
+// `noExternal` is the option a Vite environment on a server takes
+export const writeBundledDependentMessage = (
+	name: string,
+	noExternal: string | undefined
+): string =>
+	`The bundle leaves ${name}, which imports arktype, ${loadedAtRuntime}. ${
+		noExternal ?
+			`Add ${name} to \`${noExternal}\`.`
+		:	`Bundle it: remove it from the bundler's \`external\` option, or, where a tool leaves dependencies external, have it bundle it, as tsup does with \`noExternal: ["${name}"]\` and tsdown with \`deps: { alwaysBundle: ["${name}"] }\`.`
+	}`
 
 export const writeUnwrittenModuleMessage = (specifier: string): string =>
 	`${specifier} is imported by a module this build didn't precompile, as one a cache kept from an earlier build is. Keep that cache from storing the modules @ark/aot transforms, or delete it.`

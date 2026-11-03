@@ -32,10 +32,10 @@ import {
 	createDevelopmentHost,
 	createNodeHost,
 	dependencyOf,
-	dependsOnArktype,
 	fileOf,
 	islandDependencySpecifier,
 	issueFeaturesFile,
+	modulesLoadingArktype,
 	optedInPackagesOf,
 	precompiledDependencyOf,
 	packageNameOf,
@@ -62,6 +62,7 @@ import {
 	writeConflictingPlugins,
 	unbundledMessage,
 	writePrecompiledDependencyMessage,
+	writeBundledDependentMessage,
 	writeBundledExternalMessage,
 	writeExternalizedMessage,
 	writeNextExternalMessage,
@@ -357,24 +358,59 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	}
 	// tsup and tsdown leave dependencies external through a plugin of their
 	// own, which only the bundle shows
-	const checkBundledExternals = (
+	const checkBundledExternals = async (
 		bundle: BundleModules,
-		warn = (message: string) => console.warn(message)
+		warn = (message: string) => console.warn(message),
+		noExternal?: string
 	) => {
 		if (!isStandalone || opts?.shadow) return
 		const specifier = unsharedExternalOf(bundle)
-		if (!specifier) return
-		const problem = writeBundledExternalMessage(specifier)
+		const problem =
+			specifier ?
+				writeBundledExternalMessage(specifier)
+			:	await bundledDependentProblemOf(bundle, noExternal)
+		if (!problem) return
 		if (opts?.allowUnsafe) warn(problem)
 		else throwBuildError(withAllowUnsafe(problem))
 	}
+	const bundledDependentProblemOf = async (
+		bundle: BundleModules,
+		noExternal: string | undefined
+	) => {
+		for (const external of bundle.externals) {
+			if (externalizableSpecifiers.includes(external)) continue
+			const importer = bundle.importerOf[external]
+			const modules = externalModulesLoadingArktype(
+				external,
+				importer && isAbsolute(importer) ? dirname(importer) : realCwd()
+			)
+			if (!modules.length) continue
+			const name = externalPackageOf(external)
+			const bundling = writeBundledDependentMessage(name, noExternal)
+			// what bundling it would then fail with, for one defining Types
+			const [refusal] = (
+				await Promise.all(
+					modules
+						.filter(module => dependencyOf(module)?.[1] === name)
+						.map(readDependency)
+				)
+			).flatMap(({ errors, warnings }) => [...errors, ...warnings])
+			// the setting it names has Vite's server bundle the package too
+			return (
+				!refusal ? bundling
+				: noExternal ? refusal
+				: `${bundling}\n${refusal}`
+			)
+		}
+	}
 	// read once each, as each rebuild leaves the same dependencies external
-	const dependsOnArktypeByExternal: Record<string, boolean> = {}
-	const externalDependsOnArktype = (specifier: string, from: string) =>
-		(dependsOnArktypeByExternal[`${from}\0${specifier}`] ??= dependsOnArktype(
-			packageNameOf(specifier),
-			from
-		))
+	const modulesLoadingArktypeByExternal: Record<string, string[]> = {}
+	const externalModulesLoadingArktype = (specifier: string, from: string) =>
+		(modulesLoadingArktypeByExternal[`${from}\0${specifier}`] ??=
+			modulesLoadingArktype(
+				isAbsolute(specifier) ? externalPackageOf(specifier) : specifier,
+				from
+			))
 	const keepCompiler = (bundler: BundlerCompiler) => {
 		compiler = bundler
 		resolveIn(bundler.options.mode === "development")
@@ -417,7 +453,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 						specifier =>
 							requests.has(specifier) &&
 							(externalizableSpecifiers.includes(specifier) ||
-								externalDependsOnArktype(specifier, requests.get(specifier)!)),
+								externalModulesLoadingArktype(
+									specifier,
+									requests.get(specifier)!
+								).length > 0),
 						specifier =>
 							dependsOnNext(bundler.context) ?
 								writeNextExternalMessage(specifier)
@@ -767,12 +806,13 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	// checked once it's written
 	const checkEsbuildBundle = (build: EsbuildPluginBuild, cwd: string) => {
 		build.initialOptions.metafile = true
-		build.onEnd(result => {
+		build.onEnd(async result => {
 			if (!result.metafile || result.errors.length) return
 			const warnings: { text: string }[] = []
 			try {
-				checkBundledExternals(esbuildBundleOf(result.metafile, cwd), warning =>
-					warnings.push({ text: warning })
+				await checkBundledExternals(
+					esbuildBundleOf(result.metafile, cwd),
+					warning => warnings.push({ text: warning })
 				)
 			} catch (e) {
 				return rejectEsbuild(build, cwd, result.metafile, (e as Error).message)
@@ -1231,8 +1271,13 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		// a build that won't rerun releases its worker
 		async buildEnd(error?: Error) {
 			rewritesCached = false
-			if (!error && !isServing && "getModuleIds" in this)
-				checkBundledExternals(rollupBundleOf(this as never))
+			if (!error && !isServing && "getModuleIds" in this) {
+				await checkBundledExternals(
+					rollupBundleOf(this as never),
+					undefined,
+					noExternalOptionOf((this as ViteBuildContext).environment)
+				)
+			}
 			if (
 				!error &&
 				!isServing &&
@@ -2138,11 +2183,31 @@ const matchesBunExternal = (pattern: string, specifier: string): boolean =>
 interface BundleModules {
 	externals: string[]
 	files: string[]
+	// a module importing each external, as a package manager may not hoist it
+	importerOf: Record<string, string>
 }
+
+interface ViteBuildContext {
+	environment?: { name: string; config: { consumer: string } }
+}
+
+// a Vite environment on a server leaves dependencies external unless told otherwise
+const noExternalOptionOf = (
+	environment: ViteBuildContext["environment"]
+): string | undefined =>
+	environment?.config.consumer !== "server" ? undefined
+	: environment.name === "ssr" ? "ssr.noExternal"
+	: `environments.${environment.name}.resolve.noExternal`
+
+// a tool may leave a dependency external by the file it resolves to
+const externalPackageOf = (specifier: string): string =>
+	isAbsolute(specifier) ?
+		(dependencyOf(specifier)?.[1] ?? specifier)
+	:	packageNameOf(specifier)
 
 // Rolldown's module info has no isExternal, but no code for an external
 const rollupBundleOf = (context: RollupContext): BundleModules => {
-	const bundle: BundleModules = { externals: [], files: [] }
+	const bundle: BundleModules = { externals: [], files: [], importerOf: {} }
 	const seen = new Set<string>()
 	const add = (id: string) => {
 		if (seen.has(id)) return
@@ -2158,8 +2223,10 @@ const rollupBundleOf = (context: RollupContext): BundleModules => {
 		for (const target of [
 			...(info?.importedIds ?? []),
 			...(info?.dynamicallyImportedIds ?? [])
-		])
+		]) {
 			add(target)
+			bundle.importerOf[target] ??= id
+		}
 	}
 	return bundle
 }
@@ -2169,7 +2236,14 @@ const esbuildBundleOf = (metafile: Metafile, cwd: string): BundleModules => ({
 		output =>
 			output.imports?.flatMap(entry => (entry.external ? entry.path : [])) ?? []
 	),
-	files: Object.keys(metafile.inputs).map(path => resolve(cwd, path))
+	files: Object.keys(metafile.inputs).map(path => resolve(cwd, path)),
+	importerOf: Object.fromEntries(
+		Object.entries(metafile.inputs).flatMap(([path, { imports }]) =>
+			imports.flatMap(entry =>
+				entry.external ? [[entry.path, resolve(cwd, path)]] : []
+			)
+		)
+	)
 })
 
 // an external the runtime can't share: arktype as an entry, or a package the
