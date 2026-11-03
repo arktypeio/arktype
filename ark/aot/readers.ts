@@ -786,7 +786,8 @@ class Follow {
 	// what holds it reaches code the build can't see, which reads the
 	// introspection members only by name
 	private unfollow(node: Node, module: SourceModule, why: string): void {
-		this.unfollowed.push(`${module.positionOf(node)} ${why}`)
+		if (this.quiet) this.quietlyLost = true
+		else this.unfollowed.push(`${module.positionOf(node)} ${why}`)
 	}
 
 	private readAt({ node, module, held }: Fact): void {
