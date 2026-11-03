@@ -2,11 +2,15 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { check } from "@ark/aot/internal/check.ts"
 import { spawnSync } from "node:child_process"
-import { writeFileSync } from "node:fs"
+import { readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { runCli, tempDir, writeFixture } from "./utils.ts"
 
 const cwd = fromHere("checked")
+
+const arktypeVersion: string = JSON.parse(
+	readFileSync(fromHere("..", "..", "type", "package.json"), "utf8")
+).version
 
 contextualize(function (this: Mocha.Suite) {
 	// most tests run the CLI, a fresh process that loads arktype and the precompiler
@@ -249,6 +253,51 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 			"src/types.ts:2:21  accepted",
 			"1 site in 1 file: 1 accepted (100.0%)"
 		])
+	})
+
+	it("fails where a dependency resolves arktype to a copy of its own", () => {
+		const arktype = (version: string) => ({
+			"package.json": JSON.stringify({
+				name: "arktype",
+				version,
+				type: "module",
+				exports: { ".": "./index.js", "./runtime": "./index.js" }
+			}),
+			"index.js": "export const type = () => {}\nexport class ArkErrors {}\n"
+		})
+		const at = (dir: string, files: Record<string, string>) =>
+			Object.fromEntries(
+				Object.entries(files).map(([path, text]) => [`${dir}/${path}`, text])
+			)
+		const root = writeFixture({
+			...at("node_modules/arktype", arktype(arktypeVersion)),
+			...at("node_modules/adapter/node_modules/arktype", arktype("2.1.0")),
+			"node_modules/adapter/package.json": JSON.stringify({
+				name: "adapter",
+				version: "1.0.0",
+				type: "module",
+				exports: "./index.js",
+				dependencies: { arktype: "2.1.0" }
+			}),
+			// as @hono/arktype-validator, which a standalone build runs as it is
+			"node_modules/adapter/index.js":
+				'import { type } from "arktype"\nexport const failed = out => out instanceof type.errors\n',
+			"main.ts":
+				'import { type } from "arktype"\nimport { failed } from "adapter"\nexport const T = type("string")\nconsole.log(failed)\n'
+		})
+		const { lines, errors } = check([], { cwd: root })
+		attest(lines[1]).equals(`arktype resolves to more than one copy
+  ${arktypeVersion} at node_modules/arktype, reached from main.ts
+  2.1.0 at node_modules/adapter/node_modules/arktype, reached from node_modules/adapter/index.js
+  Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides.`)
+		// each as a build fails, the second also naming where @ark/aot's own arktype is
+		attest(lines.map(line => line.split("\n")[0])).equals([
+			"main.ts:3:18  accepted",
+			"arktype resolves to more than one copy",
+			`arktype resolves to 2.1.0, but @ark/aot runs on ${arktypeVersion}`,
+			"1 site in 1 file: 1 accepted (100.0%), 2 errors outside a site"
+		])
+		attest(errors).equals(2)
 	})
 
 	it("fails on an error outside every site", () => {

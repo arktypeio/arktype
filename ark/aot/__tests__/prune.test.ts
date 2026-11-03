@@ -158,7 +158,68 @@ contextualize(function (this: Mocha.Suite) {
 					`import { Admin } from "./admin.ts"\nconst T = import.meta.env.DEV ? Admin : User\n\nconsole.log(T)`,
 					admin
 				)
-			).snap("main.ts:6:13 passes T to a function, which may read any member")
+			).equals(everyMember)
+		})
+
+		it("what a dependency it's passed to reads", async () => {
+			// as @hono/standard-validator, validating through ~standard
+			const validator = {
+				"/node_modules/validator/index.js": `export const sValidator = (target, schema) => async value => (await schema["~standard"].validate(value)).issues`
+			}
+			attest(
+				await droppedReading(
+					`import { sValidator } from "validator"\n\nsValidator("json", User)`,
+					validator
+				)
+			).snap(["assert", "meta", "methods"])
+			// Trimmed only passed to the factory creating Admin, which finds its
+			// functions by it, reading no member
+			attest(
+				await droppedFrom({
+					...validator,
+					"/main.ts": `import { type } from "arktype"\nimport { sValidator } from "validator"\n\nconst Trimmed = type("string").pipe(s => s.trim())\nconst Admin = type({ name: Trimmed })\n\nsValidator("json", Admin)`
+				})
+			).snap(["assert", "meta", "methods"])
+			// as the MCP SDK, storing it at a key it reads later
+			const server = {
+				"/node_modules/server/index.js": `export class McpServer {
+	tools = {}
+	registerTool(name, config, handler) {
+		this.tools[name] = { config, handler }
+	}
+	call(name, args) {
+		const { config } = this.tools[name]
+		return "~standard" in config.inputSchema ? config.inputSchema["~standard"].validate(args) : config.inputSchema.assert(args)
+	}
+}`
+			}
+			attest(
+				await droppedReading(
+					`import { McpServer } from "server"\n\nnew McpServer().registerTool("t", { inputSchema: User }, () => {})`,
+					server
+				)
+			).snap(["meta", "methods"])
+		})
+
+		it("each member a dependency may read", async () => {
+			attest(
+				await droppedReading(`import { check } from "checker"\n\ncheck(User)`, {
+					"/node_modules/checker/index.js": `export const check = t => [t.meta, String(t)]`
+				})
+			).snap(["assert", "~standard"])
+			// which keys it has depends on each
+			attest(
+				await droppedReading(`import { check } from "checker"\n\ncheck(User)`, {
+					"/node_modules/checker/index.js": `export const check = t => Object.keys(t)`
+				})
+			).equals([])
+			attest(
+				await droppedReading(`import { check } from "checker"\n\ncheck(User)`, {
+					"/node_modules/checker/index.js": `export const check = (t, k) => k in t`
+				})
+			).snap(
+				"the validator at types.ts:3:21 is lost where node_modules/checker/index.js:1:37 tests it for a key the build can't name"
+			)
 		})
 
 		it(".assert", async () => {
@@ -351,31 +412,19 @@ contextualize(function (this: Mocha.Suite) {
 			)
 		})
 
-		it("an argument", async () => {
-			attest(await droppedReading(`console.log(User)`)).snap(
-				"main.ts:3:13 passes User to a function, which may read any member"
+		it("an argument to a function the build can't follow", async () => {
+			attest(
+				await droppedReading(
+					`declare const send: (t: unknown) => void\nsend(User)`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:4:6 passes it to send, which the build can't follow"
 			)
 		})
 
 		it("a property", async () => {
 			attest(await droppedReading(`export const types = { User }`)).snap(
 				"main.ts exports types, which code outside the bundle may read"
-			)
-		})
-
-		it("a member it doesn't know", async () => {
-			attest(await droppedReading(`User.bind(null)`)).snap(
-				"main.ts:3:1 reads User.bind, a member it doesn't know"
-			)
-		})
-
-		it("a binding other than a const", async () => {
-			attest(
-				await droppedFrom({
-					"/main.ts": `import { type } from "arktype"\n\nlet User = type({ name: "string" })\n\nUser({})`
-				})
-			).snap(
-				'main.ts:3:12 holds type({ name: "string" }) in User, which isn\'t a const'
 			)
 		})
 
@@ -426,10 +475,10 @@ contextualize(function (this: Mocha.Suite) {
 		it("a validator created outside a const", async () => {
 			attest(
 				await droppedFrom({
-					"/main.ts": `import { type } from "arktype"\n\nconsole.log(type({ name: "string" }))`
+					"/main.ts": `import { type } from "arktype"\n\ndeclare const send: (t: unknown) => void\nsend(type({ name: "string" }))`
 				})
 			).snap(
-				'main.ts:3:13 passes type({ name: "string" }) to a function, which may read any member'
+				"the validator at main.ts:4:6 is lost where main.ts:4:6 passes it to send, which the build can't follow"
 			)
 		})
 
@@ -462,7 +511,7 @@ contextualize(function (this: Mocha.Suite) {
 					"/view.tsx": `import { User } from "./types.ts"\n\nexport const view = <User />`
 				})
 			).snap(
-				"view.tsx:3:22 reads User other than to call it or read a member it knows"
+				"the validator at types.ts:3:21 is lost where view.tsx:3:22 reads it in <User />, which the build can't follow"
 			)
 		})
 	})
@@ -564,24 +613,19 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 		it("but not where the object is read whole", async () => {
 			attest(
 				await droppedReading(
-					"const all = { user: User }\nconsole.log(Object.values(all))"
+					"declare const send: (t: unknown) => void\nconst all = { user: User }\nsend(Object.values(all))"
 				)
 			).snap(
-				"main.ts:4:27 passes all, which holds a validator at user, to a function, which may read any member"
-			)
-			attest(await droppedReading("console.log({ user: User })")).snap(
-				"main.ts:3:13 passes { user: User }, which holds a validator at user, to a function, which may read any member"
+				"the validator at types.ts:3:21 is lost where main.ts:5:6 stores it at a key the build can't name"
 			)
 		})
 
-		it("nor where its key is computed", async () => {
+		it("and where its key is computed", async () => {
 			attest(
 				await droppedReading(
 					'const k = "user"\nconst all = { [k]: User }\nall.user({})'
 				)
-			).snap(
-				"main.ts:4:20 reads User other than to call it or read a member it knows"
-			)
+			).equals(everyMember)
 		})
 	})
 
@@ -1133,7 +1177,10 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 		it("warns where it keeps each member members leaves to it", async () => {
 			const main = join(root, "main.ts")
 			const source = readFileSync(main, "utf8")
-			writeFileSync(main, `${source}console.log({ User })\n`)
+			writeFileSync(
+				main,
+				`${source}declare const send: (o: object) => void\nsend({ User })\n`
+			)
 			const textsOf = async (opts: PrecompileUnpluginOptions) =>
 				(await warningsOf(opts)).map(warning => warning.text)
 			const members = Object.fromEntries(
@@ -1141,10 +1188,10 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 			)
 			try {
 				attest(await textsOf({ preset: undefined })).snap([
-					"prune: keeping assert, meta, ~standard and methods, because main.ts:6:13 passes { User }, which holds a validator at User, to a function, which may read any member. Set assert, meta, ~standard and methods in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning."
+					"prune: keeping assert, meta, ~standard and methods, because the validator at types.ts:3:21 is lost where main.ts:7:6 passes it to send, which the build can't follow. Set assert, meta, ~standard and methods in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning."
 				])
 				attest(await textsOf({ members: { assert: true } })).snap([
-					"prune: keeping meta, ~standard and methods, because main.ts:6:13 passes { User }, which holds a validator at User, to a function, which may read any member. Set meta, ~standard and methods in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning."
+					"prune: keeping meta, ~standard and methods, because the validator at types.ts:3:21 is lost where main.ts:7:6 passes it to send, which the build can't follow. Set meta, ~standard and methods in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning."
 				])
 				attest(await textsOf({ members })).equals([])
 				// setting what it kept changes nothing it writes

@@ -153,6 +153,7 @@ import { precompile } from "@ark/aot/unplugin"
 await Bun.build({
 	entrypoints: ["src/main.ts"],
 	outdir: "dist",
+	target: "bun",
 	plugins: [precompile.bun()]
 })
 ```
