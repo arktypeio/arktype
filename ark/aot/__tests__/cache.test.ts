@@ -68,17 +68,22 @@ const forge = (dir: string, snapshot?: string) => {
 
 // marks the code of each module a stored scan wrote, so a build the cache
 // answers is told apart from one that scans again, which writes no mark, or
-// fails once a mark it gave differs from what it writes
-const forgeScan = (dir: string): number => {
+// fails once a mark it gave differs from what it writes. The file named
+// unlike is held unlike the module the bundler gives, so a build scans again
+// once the bundler gives it
+const forgeScan = (dir: string, unlike?: string): number => {
 	let marked = 0
 	for (const path of entriesOf(dir)) {
 		const text = readFileSync(path, "utf8")
 		const stored = JSON.parse(text.slice(text.indexOf("\n") + 1))
-		const modules: Record<string, { answer: { code?: string } | null }> =
-			stored.answer?.modules ?? {}
-		for (const { answer } of Object.values(modules)) {
-			if (!answer?.code) continue
-			answer.code += `\n${forgedLine}\n`
+		const modules: Record<
+			string,
+			{ source: string; answer: { code?: string } | null }
+		> = stored.answer?.modules ?? {}
+		for (const [id, module] of Object.entries(modules)) {
+			if (unlike && id === join(dir, unlike)) module.source += "\n"
+			if (!module.answer?.code) continue
+			module.answer.code += `\n${forgedLine}\n`
 			marked++
 		}
 		const body = JSON.stringify(stored)
@@ -909,6 +914,26 @@ contextualize(function (this: Mocha.Suite) {
 			attest(code).satisfies(/User/)
 			rmSync(cacheRootOf(dir), { recursive: true })
 			attest(await built(dir, [rewriter])).equals(code)
+		})
+
+		it("fails a build whose given modules a new scan writes otherwise, then scans anew", async () => {
+			// each module imports the next, so the bundler gives them in order
+			const dir = installed({
+				"main.ts":
+					'import { Admin, User } from "./admin.ts"\n\nconsole.log(User.allows({ name: "x" }), Admin.allows({ name: "x", role: "admin" }))\n',
+				"admin.ts":
+					'import { type } from "arktype"\nimport { User } from "./user.ts"\n\nexport { User }\nexport const Admin = User.and({ role: "\'admin\'" })\n',
+				"user.ts":
+					'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n'
+			})
+			const code = await built(dir)
+			// as a forged entry would hold it: the cache gives admin.ts marked, then
+			// scans again for user.ts, which writes admin.ts without the mark
+			attest(forgeScan(dir, "user.ts")).equals(2)
+			attest(await built(dir)).satisfies(
+				/scanned this build's program unlike an earlier build did/
+			)
+			attest(await built(dir)).equals(code)
 		})
 
 		it("scans anew where an entry fails its check", async () => {
