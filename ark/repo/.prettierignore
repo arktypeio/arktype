@@ -1,3 +1,6 @@
 pnpm-lock.yaml
 # written in schema-benchmarks' own style, as the clone they are copied into
 bench/external/sb/precompiled/
+
+# written by the harness, read back as stored
+bench/bigapp/results/
