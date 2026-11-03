@@ -256,6 +256,20 @@ log(type("string"))
 		).snap(["main.ts:4:5 bakes expression, toJSON (dataflow)"])
 	})
 
+	it("converting an array holding it reads its expression", async () => {
+		attest(
+			await bakedFrom({
+				"/main.ts": `import { type } from "arktype"
+
+console.log(String([type("string")]), \`\${[[type("number")]]}\`)
+`
+			})
+		).snap([
+			"main.ts:3:21 bakes expression (dataflow)",
+			"main.ts:3:44 bakes expression (dataflow)"
+		])
+	})
+
 	it("bakes every member where it's read at a computed key", async () => {
 		attest(
 			await bakedFrom({

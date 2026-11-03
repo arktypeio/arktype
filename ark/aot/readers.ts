@@ -726,6 +726,16 @@ class Follow {
 		if (!this.read.has(member)) this.read.set(member, module.positionOf(node))
 	}
 
+	// converting a validator to a primitive reads its expression, through
+	// toString, as does converting an array holding it, which joins each element
+	private convert(held: Held, at: Node, module: SourceModule) {
+		if (
+			held.of === "type" &&
+			held.path.every(key => key === anyKey || /^\d+$/.test(key))
+		)
+			this.record("expression", at, module)
+	}
+
 	private lose(node: Node, module: SourceModule, why: string): void {
 		if (this.quiet) this.quietlyLost = true
 		else this.lost.push({ at: module.positionOf(node), why })
@@ -760,12 +770,8 @@ class Follow {
 					this.bindPattern(parent.left, module, held)
 				return
 			case "Property":
-				if (parent.key === operand) {
-					// a computed key converts it to a string
-					if (isValue && held.of === "type")
-						this.record("expression", parent, module)
-					return
-				}
+				// a computed key converts it to a string
+				if (parent.key === operand) return this.convert(held, parent, module)
 				if (
 					parent.value !== operand ||
 					parent.parent?.type !== "ObjectExpression"
@@ -787,12 +793,8 @@ class Follow {
 				if (parent.value !== operand) return
 				return this.followField(propertyKeyOf(parent), parent, module, held)
 			case "MemberExpression":
-				if (parent.object !== operand) {
-					// a computed key converts it to a string
-					if (isValue && held.of === "type")
-						this.record("expression", parent, module)
-					return
-				}
+				// a computed key converts it to a string
+				if (parent.object !== operand) return this.convert(held, parent, module)
 				return this.member(parent, module, held)
 			case "CallExpression":
 			case "NewExpression":
@@ -802,18 +804,14 @@ class Follow {
 				if (parent.tag !== operand) return
 				return
 			case "TemplateLiteral":
-				if (isValue && held.of === "type")
-					this.record("expression", parent, module)
-				return
+				return this.convert(held, parent, module)
 			case "BinaryExpression":
 				// `+`, `in` and arithmetic convert it to a primitive
 				if (
-					isValue &&
-					held.of === "type" &&
 					!/^(?:[!=]==?|instanceof)$/.test(parent.operator) &&
 					!(parent.operator === "in" && parent.right === operand)
 				)
-					this.record("expression", parent, module)
+					this.convert(held, parent, module)
 				return
 			case "ReturnStatement":
 				return this.returnFrom(
@@ -1389,8 +1387,7 @@ class Follow {
 				}
 				return true
 			case "String":
-				if (isValue && held.of === "type")
-					this.record("expression", call, module)
+				this.convert(held, call, module)
 				return true
 			case "Reflect.get": {
 				if (index !== 0) return true
