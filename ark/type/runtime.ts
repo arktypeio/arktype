@@ -34,6 +34,7 @@ import {
 	dateGetTime,
 	getBuiltinNameOfConstructor,
 	hasDomain,
+	printable,
 	prototypeOf,
 	stringifyPath,
 	throwError,
@@ -69,6 +70,7 @@ export {
 	callMorph,
 	computeDefaultValueMorph,
 	configure,
+	configuredFallbackOf,
 	configuredWriterOf,
 	copyOf,
 	describeCollapsibleDate,
@@ -116,6 +118,8 @@ export {
 	writeNotEqualActual,
 	writeProblem,
 	writeProtoActual,
+	writeNullableJsonSchema,
+	writeUnionJsonSchema,
 	writeUnitActual,
 	writeUnitProblem,
 	type ArkError
@@ -450,6 +454,54 @@ export const bakedJsonSchema = (
 		return written ? written() : throwError(bakedJsonSchemaOptionsMessage)
 	})
 
+// calls the handler a call's fallback has for a code, else the configured one
+type FallBack = (code: string, ctx: object, configured?: Fn) => unknown
+
+interface JsonSchemaOptions {
+	target?: unknown
+	fallback?: unknown
+}
+
+// a baked schema written again with the fallback a call passes, as the build
+// recorded arktype writing it; a target's replay is 0 where it has none
+export const replayedJsonSchema = (
+	write: () => JsonSchema,
+	byTarget: readonly ((() => JsonSchema) | 0)[],
+	// each target's, then the default's
+	replays: readonly (((fallBack: FallBack) => JsonSchema) | 0)[]
+): ((opts?: JsonSchemaOptions) => JsonSchema) =>
+	freeze((opts?: JsonSchemaOptions) => {
+		let target: number | undefined
+		for (const k in opts) {
+			if (k === "target")
+				target = supportedJsonSchemaTargets.indexOf(opts!.target as never)
+			else if (k !== "fallback") throwError(bakedJsonSchemaOptionsMessage)
+		}
+		const fallback = opts?.fallback
+		// a nullish fallback names no handler
+		if (fallback === undefined || fallback === null) {
+			const written = target === undefined ? write : byTarget[target]
+			return written ? written() : throwError(bakedJsonSchemaOptionsMessage)
+		}
+		const replay = replays[target ?? byTarget.length]
+		return replay ?
+				replay(fallingBackTo(fallback))
+			:	throwError(bakedJsonSchemaOptionsMessage)
+	})
+
+// arktype calls a function for every code, else an object's handler for the
+// code or its default, else the configured one
+const fallingBackTo = (fallback: unknown): FallBack => {
+	const byCode = (
+		typeof fallback === "function" ?
+			{ default: fallback }
+		:	fallback) as Record<string, Fn | undefined>
+	return (code, ctx, configured) => {
+		const handler = byCode[code] ?? byCode.default ?? configured
+		return handler ? handler(ctx) : throwError(bakedJsonSchemaOptionsMessage)
+	}
+}
+
 type BakedJsonSchema = ReturnType<typeof bakedJsonSchema>
 
 type JsonSchemaWritersByTarget = readonly (() => JsonSchema)[]
@@ -502,6 +554,17 @@ export const throwJsonSchemaError = (
 ): never => {
 	throw new ToJsonSchemaError(code, message, context)
 }
+
+// arktype's error where no handler writes a code, the first line of whose
+// message is fixed at build and the rest its context, as arktype prints it
+export const fallbackThrower =
+	(code: string, header: string) =>
+	(ctx: object): never =>
+		throwJsonSchemaError(
+			code,
+			header + printable(ctx, { quoteKeys: false, indent: 4 }),
+			ctx
+		)
 
 export const throwUnbaked = (reason: string): never =>
 	throwError(writeUnbakedMessage(reason))
@@ -1147,7 +1210,7 @@ export type writeIdentityMismatchMessage<
 > = `${label} is not ${expectedLabel}, which it was at build`
 
 export const bakedJsonSchemaOptionsMessage =
-	'A standalone validator\'s JSON Schema takes only a target it was built with, and a fallback only where its schema needs none; configure({ toJsonSchema }) or build with runtime: "arktype"'
+	'A standalone validator\'s JSON Schema takes only a target it was built with, and a fallback only where it was built to apply one; set members["toJsonSchema"] true, or build with runtime: "arktype"'
 
 export type bakedJsonSchemaOptionsMessage = typeof bakedJsonSchemaOptionsMessage
 
