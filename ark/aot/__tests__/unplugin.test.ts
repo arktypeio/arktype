@@ -11,6 +11,7 @@ import {
 	unbundledMessage,
 	writeBundledExternalMessage,
 	writeExternalizedMessage,
+	writeNextExternalMessage,
 	writeFilelessImportMessage,
 	writeLoadedFirstMessage,
 	writePrecompiledDependencyMessage,
@@ -667,6 +668,45 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 		]).equals([
 			withAllowUnsafe(writeExternalizedMessage("arktype", "external")),
 			withAllowUnsafe(writeExternalizedMessage("@ark/schema", "ssr.external"))
+		])
+	})
+
+	it("fails a webpack build whose externals take arktype, naming Next.js's setting in an app that depends on it", async () => {
+		const errorsOf = async (name: string, manifest: object) => {
+			const root = writeFixture(
+				{
+					"package.json": JSON.stringify(manifest),
+					"main.js":
+						'import { type } from "arktype"\n\nconsole.log(type("string")("a"))\n'
+				},
+				fromHere("temp", "webpackExternals", name)
+			)
+			const compiler = webpack({
+				mode: "production",
+				context: root,
+				entry: "./main.js",
+				target: "node",
+				output: { path: join(root, "out") },
+				// as Next.js leaves the pages router's dependencies on the server
+				externals: ["arktype"],
+				plugins: [precompile.webpack({ cwd: root })]
+			})
+			const stats = await new Promise<Stats | undefined>((resolve, reject) =>
+				compiler.run((error, stats) =>
+					compiler.close(() => (error ? reject(error) : resolve(stats)))
+				)
+			)
+			return stats?.toJson().errors?.map(error => error.message)
+		}
+		attest([
+			await errorsOf("plain", { type: "module" }),
+			await errorsOf("next", {
+				type: "module",
+				dependencies: { next: "15.5.4" }
+			})
+		]).equals([
+			[withAllowUnsafe(writeExternalizedMessage("arktype", "externals"))],
+			[withAllowUnsafe(writeNextExternalMessage("arktype"))]
 		])
 	})
 

@@ -95,6 +95,9 @@ export const writeExternalizedMessage = (
 ): string =>
 	`The build's \`${option}\` option leaves ${specifier} ${loadedAtRuntime}. Remove ${packageNameOf(specifier)} from \`${option}\`.`
 
+export const writeNextExternalMessage = (specifier: string): string =>
+	`Next.js leaves the pages router's dependencies external on the server when it builds with webpack, so it leaves ${specifier} ${loadedAtRuntime}. Add \`transpilePackages: ["${packageNameOf(specifier)}"]\` to next.config.js, so Next.js bundles it.`
+
 export const writeBundledExternalMessage = (specifier: string): string =>
 	`The bundle leaves ${specifier} ${loadedAtRuntime}. Bundle arktype: remove it from the bundler's \`external\` option, or, where a tool leaves dependencies external, have it bundle arktype, as tsup does with \`noExternal: ["arktype"]\` and tsdown with \`deps: { alwaysBundle: [/^arktype(\\/|$)/] }\`.`
 
