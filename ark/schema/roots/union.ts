@@ -156,7 +156,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	// every case node discriminate creates, even for a discriminant it abandons
 	readonly caseNodes: BaseRoot[] = []
 
-	private _disc: Discriminant | null | undefined
+	declare private _disc: Discriminant | null | undefined
 	get discriminant(): Discriminant | null {
 		if (this._disc === undefined) {
 			// null while discriminating, which can read this union's references
@@ -167,14 +167,14 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	/** `discCases`, once read */
-	private _discCases: DiscriminantCases | undefined
+	declare private _discCases: DiscriminantCases | undefined
 	/** the cases of its discriminant, by the serialized value each branch is discriminated by */
 	get discCases(): DiscriminantCases {
 		return (this._discCases ??= casesOf(this.discriminant!))
 	}
 
 	/** `missLists`, once read */
-	private _missLists: boolean | undefined
+	declare private _missLists: boolean | undefined
 	/** whether a miss of its own value lists its branches: if one is described, as an indiscriminable union's does */
 	get missLists(): boolean {
 		return (this._missLists ??=
@@ -184,7 +184,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	/** `discDesc`, once read */
-	private _discDesc: string | undefined
+	declare private _discDesc: string | undefined
 	/** the description of what its discriminant expects */
 	get discDesc(): string {
 		return (this._discDesc ??=
@@ -205,7 +205,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	/** `discMeta`, once read */
-	private _discMeta: ArkEnv.meta | undefined
+	declare private _discMeta: ArkEnv.meta | undefined
 	/** the meta its discriminant's errors are written with: at a key, expected and actual describe the object around it */
 	get discMeta(): ArkEnv.meta {
 		return (this._discMeta ??= metaAtDiscriminant(this.meta, this.missPath))
@@ -345,7 +345,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
-	private _missContexts: omit<DiscriminantErrorContext, "data">[] | undefined
+	declare private _missContexts:
+		| omit<DiscriminantErrorContext, "data">[]
+		| undefined
 	// built once, as a node's is, so its errors share a builder
 	private get missContexts(): omit<DiscriminantErrorContext, "data">[] {
 		return (this._missContexts ??= [false, true].map(

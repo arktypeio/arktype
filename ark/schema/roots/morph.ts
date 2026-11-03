@@ -105,7 +105,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		morph => !hasArkKind(morph, "root") && arityOf(morph) === 1
 	)
 
-	private _traversedMorphs: array<Morph | BaseRoot> | undefined
+	declare private _traversedMorphs: array<Morph | BaseRoot> | undefined
 
 	// a configured message is its output's errors' too
 	get travMorphs(): array<Morph | BaseRoot> {

@@ -957,7 +957,7 @@ export abstract class BaseNode<
 	}
 
 	/** its precompiled unit's function, whose source is its `precompilation` */
-	unitFn: Fn | undefined
+	declare unitFn: Fn | undefined
 
 	get precompilation(): string | undefined {
 		if (this.c.preJit) this.$.jit(this)

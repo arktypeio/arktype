@@ -108,7 +108,7 @@ export abstract class BaseRoot<
 		return this
 	}
 
-	private _standard?: StandardSchemaV1.ArkTypeProps
+	declare private _standard?: StandardSchemaV1.ArkTypeProps
 	get "~standard"(): StandardSchemaV1.ArkTypeProps {
 		return (this._standard ??= {
 			vendor: "arktype",
@@ -233,7 +233,7 @@ export abstract class BaseRoot<
 		return this.$.schema(this.applyStruct("partial", []))
 	}
 
-	private _keyof?: BaseRoot
+	declare private _keyof?: BaseRoot
 	keyof(): BaseRoot {
 		if (this._keyof) return this._keyof
 		const result = this.applyStruct("keyof", []).reduce(

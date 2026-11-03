@@ -87,7 +87,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 		)
 	}
 
-	private _outProp: Prop.Node | undefined
+	declare private _outProp: Prop.Node | undefined
 	get outProp(): Prop.Node {
 		if (!this.hasDef()) return this
 		const { default: defaultValue, ...requiredInner } = this.inner

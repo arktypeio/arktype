@@ -316,7 +316,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		}
 	}
 
-	private _element: BaseRoot | undefined
+	declare private _element: BaseRoot | undefined
 	get element(): BaseRoot {
 		return (this._element ??= this.$.node("union", {
 			branches: this.children
