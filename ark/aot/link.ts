@@ -175,9 +175,9 @@ const declarationsOf = (
 					const local = specifier.local.name
 					const text =
 						specifier.type === "ImportNamespaceSpecifier" ?
-							`import * as ${local} from "${from}"`
+							`import * as ${local} from ${JSON.stringify(from)}`
 						: specifier.type === "ImportSpecifier" ?
-							`import { ${exportNameOf(specifier.imported)} as ${local} } from "${from}"`
+							`import { ${exportNameOf(specifier.imported)} as ${local} } from ${JSON.stringify(from)}`
 						:	undefined
 					if (from in codes) {
 						if (
@@ -292,7 +292,7 @@ export const renamedOf = (
 
 const withRenamed = (code: string, renamed: Record<string, string>) =>
 	code.replace(virtualSource, (match, specifier: string) =>
-		specifier in renamed ? `"${renamed[specifier]}"` : match
+		specifier in renamed ? JSON.stringify(renamed[specifier]) : match
 	)
 
 interface Unit {
@@ -380,7 +380,7 @@ class Linker {
 					edits.overwrite(
 						match.index,
 						match.index + match[0].length,
-						`"${renamed[specifier]}"`
+						JSON.stringify(renamed[specifier])
 					)
 				}
 			}
@@ -791,7 +791,7 @@ class Linker {
 			imported === "* as" ?
 				`* as ${local}`
 			:	`{ ${imported === local ? local : `${imported} as ${local}`} }`
-		const statement = `\nimport ${clause} from "${source}"`
+		const statement = `\nimport ${clause} from ${JSON.stringify(source)}`
 		const existing = reader.module.scopes.root.bindings[local]
 		if (existing) {
 			// the reader already imports it, as a module of units does the runtime
