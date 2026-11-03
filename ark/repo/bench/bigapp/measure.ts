@@ -1,6 +1,6 @@
 // The standing measure of what a large app's output costs, precompiled and not,
-// against its rivals: the benchBuildTime apps generated at each size, with and
-// without narrows.
+// against its rivals: ntwine's packages/shared (ntwine.ts) and the benchBuildTime
+// apps generated at each size, with and without narrows.
 //
 // Bundles as a server does (esbuild, esm, node, production). Every arm runs in
 // fresh processes, once per mode per round, one at a time, in an order rotating
@@ -10,8 +10,9 @@
 //   first   closes after the first validation, whose ms it also times, then
 //           measures ns per later (hot) validation
 //
-// node measure.ts [scale] [crossover] [--rounds=9] [--out=<file>]
-// With no scope, scale at 11, 92 and 1012 Types. crossover adds more sizes.
+// node measure.ts [ntwine] [scale] [crossover] [--rounds=9] [--out=<file>]
+// With no scope, ntwine and scale at 11, 92 and 1012 Types. crossover adds more
+// sizes.
 // Run `pnpm build` first. Reports against results/baseline.json.
 import { spawn, execSync, spawnSync } from "node:child_process"
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
@@ -20,6 +21,7 @@ import { join } from "node:path"
 import { gzipSync } from "node:zlib"
 import { sizes, writeApp, type Library } from "./apps.ts"
 import { bundle, type Bundled } from "./bundle.ts"
+import { ntwineArms, ntwineThread } from "./ntwine.ts"
 
 const args = process.argv.slice(2)
 const flag = (name: string) =>
@@ -27,6 +29,8 @@ const flag = (name: string) =>
 const scopes = args.filter(arg => !arg.startsWith("--"))
 const rounds = Number(flag("rounds") ?? 9)
 const crossover = scopes.includes("crossover")
+const ntwineOn = !scopes.length || scopes.includes("ntwine")
+const scaleOn = !scopes.length || scopes.includes("scale") || crossover
 const scaleSizes = crossover ? Object.keys(sizes).map(Number) : [11, 92, 1012]
 
 const here = import.meta.dirname
@@ -48,12 +52,15 @@ const commit = () => {
 	return dirty ? `${sha}-dirty` : sha
 }
 
+type Call = "arktype" | "zod" | "handler"
+
 interface Arm {
 	name: string
 	group: string
 	library: string
 	path: string
 	bytes: { raw: number; min: number; gz: number }
+	call: Call
 	validator: string
 	data: unknown
 }
@@ -68,8 +75,10 @@ const add = (arm: Omit<Arm, "path">, code: string) => {
 }
 
 interface Built extends Omit<Bundled, "minify"> {
+	runRaw?: boolean
 	group: string
 	library: string
+	call: Call
 	validator: string
 	data: unknown
 }
@@ -86,11 +95,38 @@ const addBuilt = async (b: Built) => {
 		group: b.group,
 		library: b.library,
 		bytes,
+		call: b.call,
 		validator: b.validator,
 		data: b.data
 	}
 	add({ ...arm, name: `${b.group} ${b.library}` }, min)
+	if (b.runRaw) add({ ...arm, name: `${b.group} ${b.library} raw` }, raw)
 	console.error(`built ${b.group} ${b.library}: ${bytes.gz} gz`)
+}
+
+if (ntwineOn) {
+	const arms = ntwineArms(join(out, "ntwine"))
+	const common = {
+		group: "ntwine",
+		validator: "ThreadView",
+		data: ntwineThread,
+		runRaw: true
+	}
+	await addBuilt({
+		...common,
+		...arms.arktype,
+		library: "precompiled",
+		call: "arktype"
+	})
+	await addBuilt({
+		...common,
+		...arms.arktype,
+		precompiled: undefined,
+		library: "arktype",
+		call: "arktype"
+	})
+	await addBuilt({ ...common, ...arms.zod, library: "zod", call: "zod" })
+	await addBuilt({ ...common, ...arms.zod3, library: "zod3", call: "zod" })
 }
 
 const project = {
@@ -105,7 +141,7 @@ const project = {
 	createdAt: "2026-10-09T12:00:00.000Z"
 }
 
-for (const types of scaleSizes) {
+for (const types of scaleOn ? scaleSizes : []) {
 	for (const narrows of [false, true]) {
 		const group = `${types}${narrows ? " narrows" : ""}`
 		const app = (library: Library) => {
@@ -114,6 +150,7 @@ for (const types of scaleSizes) {
 		}
 		const common = {
 			group,
+			call: "handler" as const,
 			validator: "checkProject",
 			data: project
 		}
@@ -141,7 +178,7 @@ for (const types of scaleSizes) {
 
 const child = `
 import { openSync, readSync, writeSync } from "node:fs"
-const { BIGAPP_MODE: mode, BIGAPP_URL: url, BIGAPP_VALIDATOR: name } = process.env
+const { BIGAPP_MODE: mode, BIGAPP_URL: url, BIGAPP_CALL: call, BIGAPP_VALIDATOR: name } = process.env
 const data = JSON.parse(process.env.BIGAPP_DATA)
 const ctl = openSync(process.env.PERF_CTL, "w")
 const ack = openSync(process.env.PERF_ACK, "r")
@@ -158,9 +195,10 @@ if (mode === "import") {
 	console.log(JSON.stringify({ importMs: imported - from }))
 	process.exit(0)
 }
-const validate = m[name]
+const validate = call === "zod" ? d => m[name].safeParse(d) : m[name]
 const check = out => {
-	if (!("data" in out)) throw new Error("invalid: " + JSON.stringify(out))
+	if (call === "zod" ? !out.success : call === "handler" ? !("data" in out) : typeof out?.summary === "string")
+		throw new Error("invalid: " + JSON.stringify(out))
 }
 const started = performance.now()
 const out = validate(data)
@@ -221,6 +259,7 @@ const run = (arm: Arm, mode: Mode) =>
 				...env,
 				BIGAPP_MODE: mode,
 				BIGAPP_URL: `file://${arm.path}`,
+				BIGAPP_CALL: arm.call,
 				BIGAPP_VALIDATOR: arm.validator,
 				BIGAPP_DATA: JSON.stringify(arm.data),
 				PERF_CTL: ctl,

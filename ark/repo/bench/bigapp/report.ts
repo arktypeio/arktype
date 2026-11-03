@@ -49,7 +49,9 @@ const standing = (stored: Stored, group: string) => {
 	const ours = stored.arms[`${group} precompiled`]
 	return Object.fromEntries(
 		armsOf(stored, group)
-			.filter(([name]) => !name.includes("precompiled"))
+			.filter(
+				([name]) => !name.includes("precompiled") && !name.endsWith("raw")
+			)
 			.map(([name, theirs]) => {
 				const versus = (metric: string) =>
 					`${(median(ours.samples[metric]) / median(theirs.samples[metric])).toFixed(2)}x p${signTest(ours.samples[metric], theirs.samples[metric]).toFixed(3)}`
@@ -76,6 +78,7 @@ const groupsOf = (stored: Stored) => [
 // by size, precompiled / each rival: under 1 is a win
 const crossover = (stored: Stored) => {
 	const sized = groupsOf(stored).filter(group => /^\d/.test(group))
+	if (!sized.length) return
 	const rivals = ["zod", "valibot", "arktype"]
 	const metrics: [string, (arm: Arm) => number[]][] = [
 		["gz", arm => [arm.bytes.gz]],

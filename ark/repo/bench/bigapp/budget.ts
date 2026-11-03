@@ -1,5 +1,6 @@
-// Fails when a generated app's precompiled production bundle, minified and
-// gzipped, grows past budget.json. Needs a build, not the network. Lower a budget
+// Fails when a precompiled production bundle, minified and gzipped, grows past
+// budget.json. The generated apps need a build, not the network; ntwine's, a local
+// check, skips loudly where its migration isn't available. Lower a budget
 // as size work lands, never raise one to pass: a raise is a decision about the
 // release's claims.
 import { mkdirSync, readFileSync, rmSync } from "node:fs"
@@ -7,9 +8,10 @@ import { join } from "node:path"
 import { gzipSync } from "node:zlib"
 import { writeApp } from "./apps.ts"
 import { bundle } from "./bundle.ts"
+import { ntwineArms, ntwineAvailable, ntwineMissing } from "./ntwine.ts"
 
 const here = import.meta.dirname
-const budgets: { narrows: Record<string, number> } = JSON.parse(
+const budgets: { narrows: Record<string, number>; ntwine: number } = JSON.parse(
 	readFileSync(join(here, "budget.json"), "utf8")
 )
 const out = join(here, "out", "budget")
@@ -33,6 +35,11 @@ for (const [types, budget] of Object.entries(budgets.narrows)) {
 		budget
 	)
 }
+
+if (ntwineAvailable()) {
+	const { arktype } = ntwineArms(join(out, "ntwine"))
+	check("ntwine", await bundle({ ...arktype, minify: true }), budgets.ntwine)
+} else console.warn(`SKIPPED ntwine's budget: ${ntwineMissing}`)
 rmSync(out, { recursive: true, force: true })
 
 if (failed) process.exit(1)

@@ -6,7 +6,7 @@ import { join } from "node:path"
 export interface Bundled {
 	entry: string
 	cwd: string
-	precompiled?: PrecompileUnpluginOptions
+	precompiled?: PrecompileUnpluginOptions | undefined
 	alias?: Record<string, string>
 	minify: boolean
 }
