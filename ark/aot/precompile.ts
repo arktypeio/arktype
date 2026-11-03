@@ -2215,12 +2215,13 @@ export class Precompiler {
 		} else {
 			for (const specifier in imports) {
 				const locals = imports[specifier]
-				if (!Object.keys(locals).length) inserted += `\nimport "${specifier}"`
+				const from = JSON.stringify(specifier)
+				if (!Object.keys(locals).length) inserted += `\nimport ${from}`
 				for (const name in locals) {
 					inserted +=
 						name === "default" ?
-							`\nimport ${locals[name]} from "${specifier}"`
-						:	`\nimport { ${name} as ${locals[name]} } from "${specifier}"`
+							`\nimport ${locals[name]} from ${from}`
+						:	`\nimport { ${name} as ${locals[name]} } from ${from}`
 				}
 			}
 		}

@@ -366,6 +366,17 @@ contextualize(() => {
 		})
 	})
 
+	it("writes a __proto__ key as a property", () => {
+		const schema = type({
+			["__proto__"]: "string",
+			"a?": "number"
+		}).toJsonSchema({ dialect: null })
+		attest(Object.getPrototypeOf(schema.properties)).equals(Object.prototype)
+		attest(JSON.stringify(schema)).snap(
+			'{"type":"object","properties":{"__proto__":{"type":"string"},"a":{"type":"number"}},"required":["__proto__"]}'
+		)
+	})
+
 	it("an empty object has empty properties", () => {
 		attest(type({}).toJsonSchema({ target: "openapi-3.0" })).snap({
 			type: "object",
