@@ -13,6 +13,12 @@ import type { Rule } from "./diagnostics.ts"
 export const writeUnreadableConfigMessage = (path: string): string =>
 	`The config module ${path} can't be read. Name a module that exists as the build's config.`
 
+export const writeUnreproducedScanMessage = (): string =>
+	"@ark/aot scanned this build's program unlike an earlier build did, whose modules its cache already gave the bundler, so it can't write the rest to match them. The next build scans it anew. Report this at https://github.com/arktypeio/arktype/issues, as a program should be written alike each time."
+
+export const writeChangedSettingsMessage = (path: string): string =>
+	`The precompile settings in ${path} changed while Next ran, and arktype keeps what it compiled under the earlier ones for the process. Restart \`next dev\` to build with the new settings.`
+
 export const writeUnansweredResolveMessage = (
 	specifier: string,
 	importer: string,

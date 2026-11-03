@@ -14,6 +14,7 @@ import { fingerprintOf } from "@ark/schema/runtime"
 import { writeMissingInverseMessage } from "@ark/schema/codecs"
 import {
 	appendStringifiedKey,
+	flatMorph,
 	hashOf,
 	hasDomain,
 	includes,
@@ -61,7 +62,8 @@ import type {
 	ImportDeclaration,
 	MemberExpression,
 	Node,
-	Span
+	Span,
+	StringLiteral
 } from "oxc-parser"
 import { isPlainContainer } from "./builtins.ts"
 import {
@@ -405,7 +407,7 @@ export interface PrecompiledModule extends ModuleAnalysis {
 }
 
 // a package arktype runs on, which must load once
-type ArkPackage = "arktype" | "@ark/schema" | "@ark/util"
+export type ArkPackage = "arktype" | "@ark/schema" | "@ark/util"
 
 interface PackageCopy {
 	version: string
@@ -1264,6 +1266,35 @@ export class Precompiler {
 			:	{ members: this.members, called: true, readsAllows: true, piped: true }
 	}
 
+	// files changed since it read them, so each module reading them is read
+	// again: the modules it forgot, or undefined where a change may reach past
+	// what modules hold
+	forget(files: string[]): SourceModule[] | undefined {
+		if (
+			files.some(
+				file =>
+					!transformedId.test(file) ||
+					declarationFile.test(file) ||
+					file === this.config ||
+					this.configuration?.modules.includes(file)
+			)
+		)
+			return
+		const dropped = new Set(this.graph.forget(files))
+		this.interpreter.forget(dropped)
+		if (files.length) {
+			this.namesArkById = Object.create(null)
+			this.componentsById = Object.create(null)
+			this.loadedBeforeConfigure = undefined
+		}
+		// a build's, which the next scans and reports again
+		this.runtimesById = Object.create(null)
+		this.usagesByProgram.clear()
+		this.reportedDependencies.clear()
+		this.forgetCopies()
+		return [...dropped]
+	}
+
 	// a module as its bundle's scan wrote it, if it's unchanged since
 	private writtenIn(
 		program: string | undefined,
@@ -1729,18 +1760,8 @@ export class Precompiler {
 	// each import of an arktype package the build found more than one copy of
 	private copyDiagnosticsOf(module: SourceModule): Diagnostic[] {
 		const result: Diagnostic[] = []
-		for (const node of module.program.body) {
-			const specifier =
-				(
-					node.type === "ImportDeclaration" ||
-					node.type === "ExportAllDeclaration" ||
-					node.type === "ExportNamedDeclaration"
-				) ?
-					node.source
-				:	null
-			const name = specifier && arkPackageSpecifier.exec(specifier.value)?.[1]
-			if (!name || !(name in this.copiesByPackage)) continue
-			for (const report of this.readCopies(name as ArkPackage, module.id)) {
+		for (const [name, specifier] of this.arkImportsOf(module)) {
+			for (const report of this.readCopies(name, module.id)) {
 				result.push(
 					this.diagnostic(
 						module,
@@ -1754,6 +1775,51 @@ export class Precompiler {
 			}
 		}
 		return result
+	}
+
+	// the packages whose copies precompiling a module read, which a cache
+	// answering it reads again
+	arkPackagesOf(id: string): ArkPackage[] {
+		const module = this.graph.moduleOf(id)
+		return module instanceof SourceModule ?
+				this.arkImportsOf(module).map(([name]) => name)
+			:	[]
+	}
+
+	// each import or export of a package arktype runs on, with its specifier
+	private arkImportsOf(
+		module: SourceModule
+	): [name: ArkPackage, specifier: StringLiteral][] {
+		const result: [name: ArkPackage, specifier: StringLiteral][] = []
+		for (const node of module.program.body) {
+			const specifier =
+				(
+					node.type === "ImportDeclaration" ||
+					node.type === "ExportAllDeclaration" ||
+					node.type === "ExportNamedDeclaration"
+				) ?
+					node.source
+				:	null
+			const name = specifier && arkPackageSpecifier.exec(specifier.value)?.[1]
+			if (name && name in this.copiesByPackage)
+				result.push([name as ArkPackage, specifier])
+		}
+		return result
+	}
+
+	// reads the copies the packages reach from a module a cache answers for,
+	// as precompiling it does, or none where one would be reported, which
+	// only precompiling it can
+	readCopiesOf(packages: ArkPackage[], importer: string): boolean {
+		const read = this.copiesByPackage
+		this.copiesByPackage = flatMorph(read, (name, copies) => [
+			name,
+			{ ...copies }
+		])
+		if (packages.every(name => !this.readCopies(name, importer).length))
+			return true
+		this.copiesByPackage = read
+		return false
 	}
 
 	// folds the module's sites into validators, then links its islands and
@@ -6181,6 +6247,9 @@ const arktypeSpecifier =
 	/\b(?:from|import\s*\(?|require\s*\()\s*["'](?:(?:arktype|@ark\/type)(?:\/(?:config|codecs))?|arkregex|@ark\/regex)["']/
 
 const importSpecifier = /\b(?:from|import)\s*["']([^"']+)["']/g
+
+// a .d.ts beside a JavaScript module, which the graph reads for its types
+const declarationFile = /\.d\.[cm]?ts$/
 
 const isInIsland = (node: Node, module: SourceModule) =>
 	module.islands.some(island => contains(island, node))

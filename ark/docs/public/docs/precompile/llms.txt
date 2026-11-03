@@ -345,6 +345,10 @@ The same settings can go under an `"ark"` key in `package.json` instead; see [ar
 
 A validator ships its JSON Schema where the build sees code read it, so a library that converts it, like the MCP SDK, the AI SDK or hono-openapi, needs nothing set. [`members`](https://arktype.io/docs/precompile/options#members) describes how the build decides, and only overrides it.
 
+## Cache
+
+A build keeps each module it precompiles in `node_modules/.cache/ark`, in the directory it runs from, so the next build, dev server or Next.js process reuses what didn't change. An entry is read only while everything that decided it is the same: the versions of `@ark/aot`, `arktype` and Node, the module's source and each file the precompiler read for it, what each import resolved to, and your settings. Deleting the directory is always safe, as the next build writes it again.
+
 ## Frameworks
 
 With Vite, list `precompile.vite()` right after your framework's plugin, and ahead of `react()`, a Babel plugin like the React Compiler's or another that rewrites modules, so the build reads your modules as you wrote them. Each line was checked with a production build of a small app, on SvelteKit 3.1, Astro 7.4, Nuxt 4.6, React Router 8.5, TanStack Router 1.168, Cloudflare's Vite plugin 1.65 with Wrangler 4.153, and Metro 0.87:

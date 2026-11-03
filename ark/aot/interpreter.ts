@@ -350,7 +350,10 @@ export class Interpreter {
 	// the site whose own call into arktype threw each ParseError
 	parseErrorSites = new WeakMap<ParseError, SiteState>()
 	// deferred default checks by the node whose creation ran them
-	private checksByOwner = new Map<object, DefaultCheck[]>()
+	private checksByOwner = new Map<
+		object,
+		[check: DefaultCheck, module: SourceModule][]
+	>()
 	// what computing each cache entry reached, by cache and key
 	private reachedByEntry = new WeakMap<object, Map<unknown, Set<Reached>>>()
 	private aliasesByScope = new WeakMap<object, Map<string, ScopeAlias>>()
@@ -1368,6 +1371,19 @@ export class Interpreter {
 		return result
 	}
 
+	// modules the graph reads again, whose sites are gone
+	forget(modules: ReadonlySet<SourceModule>): void {
+		for (const [node, state] of this.sitesByNode)
+			if (modules.has(state.module)) this.sitesByNode.delete(node)
+		for (const [name, standIn] of this.standInsByName)
+			if (modules.has(standIn.module)) this.standInsByName.delete(name)
+		for (const [owner, checks] of this.checksByOwner) {
+			const kept = checks.filter(([, module]) => !modules.has(module))
+			if (kept.length) this.checksByOwner.set(owner, kept)
+			else this.checksByOwner.delete(owner)
+		}
+	}
+
 	private checksHolesOf(
 		value: unknown,
 		site: SiteState | undefined,
@@ -2135,15 +2151,16 @@ export class Interpreter {
 		if (owner) {
 			let checks = this.checksByOwner.get(owner)
 			if (!checks) this.checksByOwner.set(owner, (checks = []))
-			checks.push(check)
+			checks.push([check, site.module])
 		}
 		return true
 	}
 
 	private reached: CacheReach = {
 		node: node => {
+			const site = this.activeCall?.ctx.site
 			const checks = this.checksByOwner.get(node)
-			if (checks) this.activeCall?.ctx.site?.reached.push(...checks)
+			if (site && checks) for (const [check] of checks) site.reached.push(check)
 		},
 		cached: (cache, key) => {
 			const site = this.activeCall?.ctx.site
