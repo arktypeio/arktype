@@ -159,6 +159,16 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 			if (reduced) {
 				if (reduced instanceof Disjoint) return reduced.throw()
 
+				// a node already keyed with the meta it would get needs no key written
+				if (
+					reduced.c.keyed &&
+					isEmptyObject(reduced.meta) &&
+					isEmptyObject(meta)
+				) {
+					$ark.reached?.node(reduced)
+					return reduced
+				}
+
 				// we can't cache this reduction for now in case the reduction involved
 				// impliedBy
 				return withMeta(reduced, meta)
@@ -186,7 +196,7 @@ export const compareInnerKeys = (l: string, r: string): number =>
 	: 1
 
 // a value holding an alias outside a structure is deferred to an alias of its own
-const deferAliases = (v: unknown, $: BaseScope): unknown => {
+export const deferAliases = (v: unknown, $: BaseScope): unknown => {
 	if (isArray(v)) {
 		const deferred = v.map(element => deferAliases(element, $))
 		return deferred.some((element, i) => element !== v[i]) ? deferred : v
@@ -260,7 +270,11 @@ export const createNode = ({
 		resolveDescription(new nodeClassesByKind[kind](attachments, $))
 	)
 
-	return key ? $.nodesByKey.set(key, node) : node
+	if (key) {
+		node.c.keyed = true
+		$.nodesByKey.set(key, node)
+	}
+	return node
 }
 
 // children are cached before their parent, so their ids stand in for their content

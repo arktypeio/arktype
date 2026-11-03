@@ -168,6 +168,8 @@ class NodeCache {
 	byId: Record<string, BaseNode> | undefined
 	/** whether collecting its references replaced one with an equal node */
 	replacedRefs: boolean | undefined
+	/** whether it's what its scope's nodesByKey holds for its inner and meta */
+	keyed: boolean | undefined
 	/** whether every alias it reaches has resolved */
 	reachedResolved: boolean | undefined
 	shallowRefs: BaseNode[] | undefined
