@@ -934,6 +934,8 @@ class Follow {
 				"stores it on the global object, which code outside the bundle may read"
 			)
 		}
+		if (isCommonJsExports(owner, memberNameOf(target)))
+			return this.lose(target, module, "exports it from CommonJS")
 		this.followField(memberNameOf(target), target, module, held)
 	}
 
@@ -1493,7 +1495,9 @@ class Follow {
 				const [first, ...rest] = held.path
 				if (first !== "value" && first !== anyKey) return true
 				const owner = globalNameOf(target, module)
-				if (owner && globalObjects.has(owner)) {
+				if (isCommonJsExports(owner))
+					this.lose(call, module, "exports it from CommonJS")
+				else if (owner && globalObjects.has(owner)) {
 					this.lose(
 						call,
 						module,
@@ -1900,6 +1904,13 @@ const arrayMethods: Record<string, "holder" | "element" | "mapped" | "none"> =
 
 // e.g. `JSON.stringify`, where no binding shadows the global
 const globalObjects = new Set(["globalThis", "window", "self", "global"])
+
+// e.g. `exports.T = T` or `module.exports = { T }`, which a module importing
+// it reads as its exports, by names no member read shows
+const isCommonJsExports = (owner: string | undefined, name?: unknown) =>
+	owner === "exports" ||
+	owner === "module.exports" ||
+	(owner === "module" && name === "exports")
 
 const globalNameOf = (
 	callee: Node,

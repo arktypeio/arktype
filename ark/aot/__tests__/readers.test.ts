@@ -324,6 +324,20 @@ globalThis.T = type("string")
 		])
 	})
 
+	it("bakes every member where a CommonJS module exports it", async () => {
+		attest(
+			await bakedFrom({
+				"/types.ts": `import { type } from "arktype"\n\nexport const User = type("string")\n`,
+				"/holder.ts": `import { User } from "./types.ts"\n\nexport const H = { get v() { return User } }\n`,
+				"/held.cjs": `const { H } = require("./holder.ts")\n\nexports.User = H.v\n`,
+				"/main.ts": `import { User } from "./held.cjs"\n\nconsole.log(String(User))\n`
+			})
+		).snap([
+			"types.ts:3:21 bakes expression, description, json, toJSON, toJsonSchema, ~standard.jsonSchema (lost)",
+			"precompile: baking each introspection member into the validator at types.ts:3:21, because held.cjs:3:1 exports it from CommonJS. Set expression, description, json, toJSON, toJsonSchema and ~standard.jsonSchema in members, each false where no code reads it, to build without this warning."
+		])
+	})
+
 	it("bakes every member where a TypeScript namespace exports it", async () => {
 		attest(
 			await bakedFrom({
