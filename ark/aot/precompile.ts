@@ -4491,8 +4491,8 @@ export class Precompiler {
 	// a value the site read that another module of the program may write,
 	// which a module evaluating alone doesn't see
 	private writtenElsewhereIn(state: SiteState): DynamicValue | undefined {
-		for (const [declaring, holder] of state.trace.holders) {
-			const elsewhere = this.graph.elsewhereOf(declaring, holder)
+		for (const [declaring, holder, depth] of state.trace.holders) {
+			const elsewhere = this.graph.elsewhereOf(declaring, holder, depth)
 			if (!elsewhere) continue
 			const name =
 				holder === "default" ?

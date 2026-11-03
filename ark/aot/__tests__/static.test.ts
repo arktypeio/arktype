@@ -1360,6 +1360,133 @@ export const T5 = type({ x: H5.a })`
 			).equals([])
 		})
 
+		it("values read through what holds them", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+declare const input: unknown
+declare const send: (v: unknown) => void
+const H0 = { list: [type("string"), type("number")] }
+H0.list.forEach(t => t.assert(input))
+const H1 = { list: [type("string")] }
+for (const t of H1.list) send(t)
+const H2 = { user: type({ name: "string" }) }
+const { user } = H2
+send(user)
+const H3 = { list: [type("string")] }
+send(H3.list.length)
+const H4 = { tags: ["a", "b"] }
+send([...H4.tags])
+const W0 = { inner: { a: "string" } }
+const { inner } = W0
+inner.a = "number"
+const W1 = { list: [{ a: "string" }] }
+W1.list.forEach(o => {
+	o.a = "number"
+})
+export const A0 = type({ x: H0.list[0] })
+export const A1 = type({ x: H1.list[0] })
+export const A2 = type({ x: H2.user })
+export const A3 = type({ x: H3.list[0] })
+export const A4 = type.enumerated(...H4.tags)
+export const B0 = type(W0.inner)
+export const B1 = type(W1.list[0])`)
+			).snap([
+				"4:21 accepted string",
+				"4:37 accepted number",
+				"6:21 accepted string",
+				"8:20 accepted { name: string }",
+				"11:21 accepted string",
+				"22:19 accepted { x: string }",
+				"23:19 accepted { x: string }",
+				"24:19 accepted { x: { name: string } }",
+				"25:19 accepted { x: string }",
+				'26:19 accepted "a" | "b"',
+				"27:19 rejected\n  `W0` is written at /main.ts:17:1, so its value at the site is not known",
+				"28:19 rejected\n  `W1` is written at /main.ts:20:2, so its value at the site is not known"
+			])
+		})
+
+		it("values written through what copies them", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const o0 = { h: { a: "string" } }
+for (const [, v] of Object.entries(o0)) v.a = "number"
+const o1 = { h: { a: "string" } }
+Object.getOwnPropertyDescriptors(o1).h.value.a = "number"
+const l2 = [{ a: "string" }]
+for (const [, v] of l2.entries()) v.a = "number"
+const l3 = [{ a: "string" }]
+const [...rest3] = l3
+rest3[0].a = "number"
+const o4 = { h: { a: "string" } }
+const { ...rest4 } = o4
+rest4.h.a = "number"
+const l5 = [{ a: "string" }]
+l5.forEach((...args) => {
+	args[0].a = "number"
+})
+const l6 = [{ a: "string" }]
+l6.map(v => [v])[0][0].a = "number"
+const l7 = [{ a: "string" }]
+l7.reduce((acc, v) => {
+	acc.a = "number"
+	return v
+})
+const l8 = [{ a: "string" }]
+Array.from(l8, v => {
+	v.a = "number"
+})
+const l9 = [{ a: "string" }]
+l9.forEach(function () {
+	arguments[0].a = "number"
+})
+const c0 = { h: { a: "string" } }
+const copy = { ...c0 }
+copy.h = { a: "number" }
+const c1 = [{ a: "string" }]
+c1.slice().reverse().push({ a: "number" })
+export const O0 = type(o0.h)
+export const O1 = type(o1.h)
+export const L2 = type(l2[0])
+export const L3 = type(l3[0])
+export const O4 = type(o4.h)
+export const L5 = type(l5[0])
+export const L6 = type(l6[0])
+export const L7 = type(l7[0])
+export const L8 = type(l8[0])
+export const L9 = type(l9[0])
+export const C0 = type(c0.h)
+export const C1 = type(c1[0])`)
+			).snap([
+				"38:19 rejected\n  `o0` is written at /main.ts:3:41, so its value at the site is not known",
+				"39:19 rejected\n  `o1` is written at /main.ts:5:1, so its value at the site is not known",
+				"40:19 rejected\n  `l2` is written at /main.ts:7:35, so its value at the site is not known",
+				"41:19 rejected\n  `l3` is written at /main.ts:10:1, so its value at the site is not known",
+				"42:19 rejected\n  `o4` is written at /main.ts:13:1, so its value at the site is not known",
+				"43:19 rejected\n  `l5` is written at /main.ts:16:2, so its value at the site is not known",
+				"44:19 rejected\n  `l6` reaches code the build doesn't follow at /main.ts:19:8, so its value at the site is not known",
+				"45:19 rejected\n  `l7` is written at /main.ts:22:2, so its value at the site is not known",
+				"46:19 rejected\n  `l8` is written at /main.ts:27:2, so its value at the site is not known",
+				"47:19 rejected\n  `l9` reaches code the build doesn't follow at /main.ts:30:1, so its value at the site is not known",
+				"48:19 accepted { a: string }",
+				"49:19 accepted { a: string }"
+			])
+		})
+
+		it("values a recursive function returns", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const H = { a: type("string") }
+const last = (x: any): any => (x.next ? last(x.next) : x)
+last(H).a = type("number")
+export const A = type({ x: H.a })`)
+			).snap([
+				"2:16 accepted string",
+				"4:13 accepted number",
+				"5:18 rejected\n  `H` is written at /main.ts:4:1, so its value at the site is not known"
+			])
+		})
+
 		it("holes read through an object written before the site", () => {
 			const diagnostics = precompile(
 				`import { type } from "arktype"
