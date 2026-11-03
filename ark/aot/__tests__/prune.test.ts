@@ -207,12 +207,14 @@ contextualize(function (this: Mocha.Suite) {
 					"/node_modules/checker/index.js": `export const check = t => [t.meta, String(t)]`
 				})
 			).snap(["assert", "~standard"])
-			// which keys it has depends on each
+			// which keys it has depends on each, so listing them loses track
 			attest(
 				await droppedReading(`import { check } from "checker"\n\ncheck(User)`, {
 					"/node_modules/checker/index.js": `export const check = t => Object.keys(t)`
 				})
-			).equals([])
+			).snap(
+				"the validator at types.ts:3:21 is lost where node_modules/checker/index.js:1:27 lists its keys"
+			)
 			attest(
 				await droppedReading(`import { check } from "checker"\n\ncheck(User)`, {
 					"/node_modules/checker/index.js": `export const check = (t, k) => k in t`
