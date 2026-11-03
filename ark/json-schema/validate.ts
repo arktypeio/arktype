@@ -8,6 +8,7 @@ import type {
 } from "@ark/util"
 import type {
 	Anchor,
+	AnnotationKeyword,
 	IdentifiedSchema,
 	isUnion,
 	replaceAll,
@@ -444,15 +445,8 @@ export type ValidatedKeyword =
 
 export type KeywordName =
 	| ValidatedKeyword
+	| AnnotationKeyword
 	| "const"
-	| "title"
-	| "description"
-	| "default"
-	| "examples"
-	| "deprecated"
-	| "readOnly"
-	| "writeOnly"
-	| "$comment"
 	| "$schema"
 	| "$id"
 	| "$anchor"
