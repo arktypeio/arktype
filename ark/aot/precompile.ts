@@ -139,6 +139,7 @@ import {
 	type RuntimeVariant
 } from "./host.ts"
 import {
+	changeableDepthOf,
 	createSiteState,
 	findDynamic,
 	inferredNameOf,
@@ -478,6 +479,8 @@ export class Precompiler {
 	private componentsById: Record<string, number> = Object.create(null)
 	private exportsArkByModule = new WeakMap<SourceModule, boolean>()
 	private analysesByModule = new WeakMap<SourceModule, ModuleAnalysis>()
+	// whether a site of the program read whole reads a Type off a holder
+	private readsOffHolders: boolean | undefined
 	// each shared unit's modules, written once for every module reading it
 	private sharedWrites: SharedWrites = new Map()
 	// the validators a site's factory last read, which inlining reads again
@@ -564,11 +567,51 @@ export class Precompiler {
 			Object.keys(contract).length ? JSON.stringify(contract) : undefined
 	}
 
-	// a factory checks no Type it's passed under creationChecks "none", but
-	// one read off an imported holder, which an importer the build can't see
-	// may write, unless it read the whole program
-	private get checksHolders(): boolean {
-		return this.standalone.checks === "none" && !this.graph.view
+	// whether validators hold the ids a factory compares a Type read off a
+	// holder by under creationChecks "none": unless the build read the whole
+	// program and no site of it reads one
+	private get holdsIds(): boolean {
+		const view = this.graph.view
+		if (this.standalone.checks !== "none" || !view) return true
+		return (this.readsOffHolders ??= view.ids.some(id => {
+			if (!this.isTransformed(id)) return false
+			const module = this.graph.moduleOf(id)
+			return (
+				module instanceof SourceModule &&
+				this.importsArk(module.source, id) &&
+				this.analysisOf(module).sites.some(site =>
+					site.inputs.some(input => this.isOffHolder(input))
+				)
+			)
+		}))
+	}
+
+	// a Type a site reads off what the program can change, as `H.a`, or one a
+	// binding or export holds that was read off it, as `C` given
+	// `const C = H.a`. Under creationChecks "none" its factory still checks
+	// it's the Type the build read, so a write the build missed fails loudly.
+	private isOffHolder(input: Input): boolean {
+		let root: Binding | Node | undefined
+		if (input.kind === "local") root = this.bindingsByInput.get(input)
+		else {
+			const target = this.graph.exportOf(
+				this.graph.moduleOf(input.file!) as SourceModule,
+				input.name
+			)
+			root =
+				target.kind === "binding" ? target.binding
+				: target.kind === "expression" ? target.node
+				: undefined
+		}
+		const evaluated = root && this.interpreter.evaluatedOf(root)
+		if (!evaluated) return true
+		if (input.path.length) return changeableDepthOf(evaluated.value) > 0
+		const isCreated =
+			"type" in root! ?
+				this.interpreter.sitesByNode.get(unwrapExpression(root))?.value ===
+				input.value
+			:	this.isCreatedBy(root, input.value)
+		return !isCreated && evaluated.trace.holders.length > 0
 	}
 
 	// what a bundle's issues may hold, where no runtime or other build's validator can add any
@@ -630,6 +673,7 @@ export class Precompiler {
 		this.graph.readView({ ids: Object.keys(program.modules), resolve, loose })
 		// what another module may write was read without the program
 		this.analysesByModule = new WeakMap()
+		this.readsOffHolders = undefined
 	}
 
 	// what a bundle's validators are read for, so its next transforms leave out what no read needs
@@ -2522,7 +2566,7 @@ export class Precompiler {
 						exportsByName,
 						{
 							...this.standalone,
-							holdsIds: this.checksHolders,
+							holdsIds: this.holdsIds,
 							members,
 							called,
 							readsAllows,
@@ -3029,8 +3073,10 @@ export class Precompiler {
 				kind: "input",
 				label: passedAs.label,
 				reads: reads.map(input => [input.path, input.value]),
-				...(this.checksHolders &&
-					reads[0].kind === "import" && { isWritable: true })
+				...(this.standalone.checks === "none" &&
+					reads.some(input => this.isOffHolder(input)) && {
+						isWritable: true
+					})
 			})
 			if (this.isSetBefore(reads[0], site, module))
 				factory.inert.push(passedAs.expression)

@@ -1216,6 +1216,13 @@ export class Interpreter {
 		return write && this.writtenProblemOf(binding, write, module)
 	}
 
+	// what a binding, or an export's expression, evaluated to, once it has
+	evaluatedOf(key: Binding | Node): Evaluated | undefined {
+		const result =
+			"type" in key ? this.valuesByNode.get(key) : this.valuesByBinding.get(key)
+		return result === "evaluating" ? undefined : result
+	}
+
 	// e.g. `swap() { this.t = T }` held by the value read, which the program
 	// may call wherever it reads the value
 	private writtenThroughThis(
@@ -2698,7 +2705,7 @@ const depthsByValue = new WeakMap<object, number>()
 // how many levels down a value holds what the program can change: 1 for
 // `{ a: type("string") }`, 2 for `{ inner: { a: "string" } }`, and unbounded
 // for one holding itself or a getter, which may return anything
-const changeableDepthOf = (
+export const changeableDepthOf = (
 	value: unknown,
 	seen = new Set<object>()
 ): number => {

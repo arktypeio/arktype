@@ -574,11 +574,7 @@ export class StandaloneArtifact {
 			const isType = hasArkKind(value, "root")
 			const holesName = `holes${this.checks.length}`
 			if (holes.length) this.holesByName.set(holesName, holes)
-			if (
-				this.baking.checksTypes ||
-				holes.length ||
-				(isWritable && path.length)
-			) {
+			if (this.baking.checksTypes || holes.length || isWritable) {
 				this.checks.push(
 					`${holes.length ? `const ${holesName} = ` : ""}${this.receiverOf(value, id, label)}(${expression})`
 				)

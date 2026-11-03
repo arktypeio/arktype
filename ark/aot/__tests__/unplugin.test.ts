@@ -2019,6 +2019,47 @@ console.log(T.allows({ x: 1 }))
 		)
 	})
 
+	it("a Type read off a holder", async () => {
+		const root = writeFixture(
+			{
+				"containers.ts": `import { type } from "arktype"
+export const H = { a: type("string") }
+export const Other = type("number")
+`,
+				"main.ts": `import { type } from "arktype"
+import { H, Other } from "./containers.ts"
+const T = type({ x: H.a })
+console.log(T.allows({ x: "a" }), Other.allows(1))
+`,
+				"plain.ts": `import { type } from "arktype"
+import { Other } from "./containers.ts"
+const T = type({ x: Other })
+console.log(T.allows({ x: 1 }))
+`
+			},
+			fromHere("temp", "readOffHolder")
+		)
+		const build = (entry: string) =>
+			esbuild({
+				entryPoints: [join(root, entry)],
+				bundle: true,
+				write: false,
+				format: "esm",
+				conditions: [...conditions, "production"],
+				logLevel: "silent",
+				plugins: [precompile.esbuild({ cwd: root, conditions })]
+			}).then(({ outputFiles }) => outputFiles[0].text)
+		const js = await build("main.ts")
+		attest(run(js)).equals("true true\n")
+		// a write the build couldn't see, as code it doesn't read may make
+		const written = js.replace(/^var T = /m, "H.a = Other\n$&")
+		attest(thrownBy(written)).snap(
+			"`H.a` is another Type, but was precompiled as the Type it was at build"
+		)
+		// a program reading no Type off a holder holds no ids to compare
+		attest((await build("plain.ts")).includes("holdHoles")).equals(false)
+	})
+
 	it("undetailed bundles", async () => {
 		const reads = join(undetailed, "reads")
 		const message = `${join(undetailed, "node_modules", "reads", "index.js")} imports @ark/schema, which a build with errors: "none" can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own. Import what it reads from arktype, which a standalone build resolves to that runtime, or build without errors: "none".`
