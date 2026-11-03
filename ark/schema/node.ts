@@ -1756,6 +1756,8 @@ export const resolveReachedAliases = (root: BaseNode): void => {
 		reached.add(node)
 		if (node.is("alias")) aliases.push(node)
 		for (let i = 0; i < node.children.length; i++) include(node.children[i])
+		// a union's cases hold what its branches do, and aren't created until it's used
+		if (node.is("union")) return
 		for (const referenced of node.otherRefs) include(referenced)
 	}
 	include(root)
