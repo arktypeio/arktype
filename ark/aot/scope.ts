@@ -9,10 +9,12 @@ import {
 	type MethodDefinition,
 	type Node,
 	type ObjectProperty,
-	type ParamPattern,
 	type Program,
 	type PropertyDefinition
 } from "oxc-parser"
+import { runtimeParamsOf } from "./proofs.ts"
+
+export { runtimeParamsOf }
 
 export type BindingKind =
 	| "import"
@@ -646,14 +648,6 @@ export const isWriteTarget = (node: Node): boolean => {
 	}
 	return false
 }
-
-// a TypeScript `this` parameter types the receiver and takes no argument
-export const runtimeParamsOf = (fn: {
-	params: ParamPattern[]
-}): ParamPattern[] =>
-	fn.params[0]?.type === "Identifier" && fn.params[0].name === "this" ?
-		fn.params.slice(1)
-	:	fn.params
 
 export const walk = (node: Node, visit: (node: Node) => boolean): void => {
 	if (visit(node)) forEachChild(node, child => walk(child, visit))

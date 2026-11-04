@@ -105,8 +105,10 @@ export const shadow = (
 	precompile: (...args: unknown[]) => unknown,
 	define: (...args: unknown[]) => unknown,
 	callbacks: readonly number[],
+	proved: readonly number[],
 	...args: unknown[]
-): unknown => shadowUnder({}, site, precompile, define, callbacks, ...args)
+): unknown =>
+	shadowUnder({}, site, precompile, define, callbacks, proved, ...args)
 
 export const shadowUnder = (
 	contract: ShadowContract,
@@ -115,10 +117,12 @@ export const shadowUnder = (
 	define: (...args: unknown[]) => unknown,
 	// indices of the args a validation calls
 	callbacks: readonly number[],
+	// those of them a build proved can't tell what ctx they're passed
+	proved: readonly number[],
 	...args: unknown[]
 ): unknown => {
 	const passed = args.map((arg, i) =>
-		callbacks.includes(i) ? callbackOf(arg) : arg
+		callbacks.includes(i) ? callbackOf(arg, proved.includes(i)) : arg
 	)
 	const swappedBy = (byShadowed: WeakMap<object, unknown>) => {
 		const seen = new Map<object, unknown>()
@@ -494,9 +498,12 @@ const wrapperByCallback = new WeakMap<Function, Function>()
 
 const callbackByWrapper = new WeakMap<object, Function>()
 
+const provedCallbacks = new WeakSet<Function>()
+
 // one per function, so its `name`, `length` and identity are the program's
-const callbackOf = (value: unknown): unknown => {
+const callbackOf = (value: unknown, isProved: boolean): unknown => {
 	if (typeof value !== "function") return value
+	if (isProved) provedCallbacks.add(value)
 	let wrapper = wrapperByCallback.get(value)
 	if (!wrapper) {
 		wrapper = new Proxy(value, {
@@ -638,7 +645,9 @@ const replay = (
 	// e.g. a cyclic node's, piped from a parsed string, which no copy holds
 	if (call && hasDomain(call.root, "object") && !counterparts.has(call.root))
 		counterparts.set(call.root, ctx?.root)
+	const readsCtx = !provedCallbacks.has(callee)
 	const isOtherRoot =
+		readsCtx &&
 		!!call &&
 		!Object.is(counterparts.get(call.root as never) ?? call.root, ctx?.root)
 	// e.g. an argument's copy, as arktype passed it before the call wrote it
@@ -656,9 +665,10 @@ const replay = (
 		!call ||
 		call.callee !== callee ||
 		!isAlike(call.receiver, receiver, { counterparts }) ||
-		call.args.length !== args.length ||
-		isOtherRoot ||
-		!corresponds(call.ctx, ctxState) ||
+		(readsCtx &&
+			(call.args.length !== args.length ||
+				isOtherRoot ||
+				!corresponds(call.ctx, ctxState))) ||
 		call.args.some(
 			(arg, i) =>
 				!(arg instanceof InternalTraversal) &&

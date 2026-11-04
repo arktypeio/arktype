@@ -260,20 +260,26 @@ export const nameOf = () => $ark#6()`)
 				precompileProgram(
 					`import { type } from "arktype"
 export const Moltar = type({
-	number: "number",
-	string: "string",
 	boolean: "boolean",
-	deeplyNested: { foo: "string", num: "number", bool: "boolean" }
+	deeplyNested: { bool: "boolean", foo: "string", num: "number" },
+	number: "number",
+	string: "string"
 })
-export const MoltarSafe = Moltar.onDeepUndeclaredKey("delete")
+export const Trimmed = type({
+	boolean: "boolean",
+	deeplyNested: { bool: "boolean", foo: "string", num: "number" },
+	number: "number",
+	string: "string.trim"
+})
 export const User = type({ name: "string", age: "number", tags: "string[]" })
 export const Team = type({ id: "string", lead: User, members: User.array() })
-export const Item = type({ sku: "string", price: { amount: "number", currency: "string" } })`,
+export const Item = type({ sku: "string", price: { amount: "number", currency: "string" } })
+${Array.from({ length: 16 }, (_, i) => `export const T${i} = type({ id${i}: "string", n${i}: "number", on${i}: "boolean" })`).join("\n")}`,
 					{},
 					{ preset: "smallest", creationChecks: "none", config: false }
 				).modules
 			).join("\n")
-			// MoltarSafe can't be checkers, so its input Moltar is compiled with it
+			// Trimmed can't be checkers, so its input Moltar is compiled with it
 			attest([
 				/runtime\.props\(/.test(modules),
 				/runtime\.props\({[^\n]*deeplyNested/.test(modules)

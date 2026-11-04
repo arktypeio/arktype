@@ -89,9 +89,9 @@ import { #0 as $ark#0 } from "~arktype/#1"
 import { #2 as $ark#2 } from "~arktype/#1"
 import { Name } from "./name.ts"
 export function nullable() {
-	return $arkshadow("/main.ts:4:9  User.or(\\"null\\")", $ark#0, ($arkh0) => ($arkh0.or("null")), [], User, Name, $arkm)
+	return $arkshadow("/main.ts:4:9  User.or(\\"null\\")", $ark#0, ($arkh0) => ($arkh0.or("null")), [], [], User, Name, $arkm)
 }
-const User = $arkshadow("/main.ts:6:14  type({ name: Name }).pipe(user => user.name)", $ark#2, ($arkh0, $arkh1) => (type({ name: $arkh0 }).pipe($arkh1)), [1], Name, user => user.name)
+const User = $arkshadow("/main.ts:6:14  type({ name: Name }).pipe(user => user.name)", $ark#2, ($arkh0, $arkh1) => (type({ name: $arkh0 }).pipe($arkh1)), [1], [1], Name, user => user.name)
 $arkm = 4;
 Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { "/main.ts": { __proto__: null, "nullable": nullable } })`)
 	})

@@ -36,17 +36,19 @@ export type RootApplyParam = "config" | keyof RootApplyRuntime
 
 // name keys the root's resolution, so it must be what its unit names it
 export const writeRootApply = (node: BaseRoot, name: string): string => {
-	const [reads, rootApply] = rootApplyParts(node, name)
-	return `"use strict"\nconst ${reads.join(", ")}\n${rootApply}`
+	const [reads, rootApply, applyFailed] = rootApplyParts(node, name)
+	return `"use strict"\nconst ${reads.join(", ")}\n${applyFailed ? `const applyFailed = ${applyFailed}\n` : ""}return (${rootApply})`
 }
 
-// the node members a root apply reads, as `member = node.member`, and its body
+// the node members a root apply reads, as `member = node.member`, its function
+// and the one its failure path is. An artifact's reads its name from the node,
+// so what differs between two roots is only what they're passed
 export const rootApplyParts = (
 	node: BaseRoot,
 	name: string,
 	// names runtime values as the artifact's module does
 	refOf?: (param: RootApplyParam) => string
-): [reads: string[], body: string] => {
+): [reads: string[], rootApply: string, applyFailed: string | undefined] => {
 	const ref = refOf ?? ((param: RootApplyParam) => param)
 	const js = new CompiledFunction("data", "onFail").indent()
 	const applyFailed = new CompiledFunction("data", "onFail").indent()
@@ -96,7 +98,7 @@ export const rootApplyParts = (
 				.set("ctx.isTree", "untracked === undefined")
 				.const(
 					"result",
-					`${ref("transformResolution")}(ctx, "${name}", data, tTransform)`
+					`${ref("transformResolution")}(ctx, ${refOf ? "node.id" : `"${name}"`}, data, tTransform)`
 				)
 		} else {
 			js.if("!allows(data)", fallback)
@@ -114,13 +116,16 @@ export const rootApplyParts = (
 		js.if("!allows(data)", fallback).const("result", "tTransform(data)")
 		returnResult()
 	} else js.if("!allows(data)", fallback).return("tTransform(data)")
+	const prefix = refOf ? "" : name
 	const failurePath =
 		applyFailed.body ?
-			`const applyFailed = function ${applyFailed.write(`${name}ApplyFailed`)}\n`
-		:	""
-	const rootApply = `${failurePath}return (function ${js.write(`${name}RootApply`)})`
+			`function ${applyFailed.write(`${prefix}ApplyFailed`)}`
+		:	undefined
+	const rootApply = `function ${js.write(`${prefix}RootApply`)}`
 	const reads = nodeMembers
-		.filter(member => new RegExp(`\\b${member}\\b`).test(rootApply))
+		.filter(member =>
+			new RegExp(`\\b${member}\\b`).test(`${failurePath}${rootApply}`)
+		)
 		.map(member => `${member} = node.${member}`)
-	return [reads, rootApply]
+	return [reads, rootApply, failurePath]
 }

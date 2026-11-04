@@ -423,10 +423,10 @@ contextualize(() => {
 	it("an alias named like a number is no limit", () => {
 		const $ = type.scope({ "5": "string" })
 		attest(() => $.type.raw("string < 5")).throws(
-			writeInvalidLimitMessage("<", " 5", "right")
+			writeInvalidLimitMessage("<", "5", "right")
 		)
 		attest(() => $.type.raw("5 < number < 6")).throws(
-			writeInvalidLimitMessage("<", " number", "right")
+			writeInvalidLimitMessage("<", "number", "right")
 		)
 		attest($.type.raw("string < 6").expression).snap("string <= 5")
 	})

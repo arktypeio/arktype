@@ -24,10 +24,14 @@ export const isolate = (code: string): string =>
 /** runs isolated code, returning the values of the names it declares */
 export const evaluate = (
 	isolated: string,
-	names: readonly string[]
+	names: readonly string[],
+	params: Record<string, unknown> = {}
 ): Record<string, unknown> =>
-	new Function(`${isolated}
-        return { ${names.join(", ")} }`)()
+	new Function(
+		...Object.keys(params),
+		`${isolated}
+        return { ${names.join(", ")} }`
+	)(...Object.values(params))
 
 export const executeCode = (code: string): ExecutionResult => {
 	try {
