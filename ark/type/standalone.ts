@@ -276,7 +276,9 @@ const writeArtifact = (
 
 ${writeExport(name, index)}`
 	}
-	const called = [...new Set(Object.values(calls).flat())]
+	const called = [...new Set(Object.values(calls).flat())].filter(
+		read => read[0] !== '"'
+	)
 	const sections = [
 		...creations,
 		called.length ? `export { ${called.join(", ")} }` : "",

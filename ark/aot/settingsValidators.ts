@@ -1,6 +1,20 @@
 /* eslint-disable */
 // @ts-nocheck
 // written by __tests__/writeSettings.ts from __tests__/settingsSchema.ts
+// ark/util/domain.ts
+var hasDomain = (data, kind) => domainOf(data) === kind
+var domainOf = data => {
+	const builtinType = typeof data
+	return (
+		builtinType === "object" ?
+			data === null ?
+				"null"
+			:	"object"
+		: builtinType === "function" ? "object"
+		: builtinType
+	)
+}
+
 // ark/util/records.ts
 var hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k)
 
@@ -82,14 +96,11 @@ var ArkIssues = class {
 		return !continues
 	}
 }
-var applyIssues = (apply, data, onFail, Ctx = ArkIssues) => {
+var foundErrors = (apply, data, onFail, Ctx = ArkIssues) => {
 	const errors = new Ctx()
 	apply(data, errors)
-	return (
-		!errors.count ? data
-		: onFail ? onFail(errors)
-		: errors
-	)
+	if (!errors._.length) errors._at({ code: "predicate" }, data)
+	return onFail ? onFail(errors) : errors
 }
 var messageOf = issue => {
 	let path = ""
@@ -271,11 +282,47 @@ var requiredSiteOf = description => ({
 var failsAt = (ctx, site, data, key) => !ctx?._at || ctx._at(site, data, key)
 var failsIn = (ctx, apply, data, key, missing) =>
 	ctx?._at ? ctx._in(apply, data, key, missing) : !apply(data[key])
+var checkedDefaultOf = ([id, holes]) => {
+	let table = checkedDefaults.next(id)
+	for (const hole of holes) table = table.next(hole)
+	return table
+}
 var holesByValue = /* @__PURE__ */ new WeakMap()
 var holdHoles = (value, id, holes = []) => {
 	holesByValue.set(value, [id, freeze(holes)])
 	return value
 }
+var InternTable = class _InternTable {
+	value = void 0
+	tablesByObject = /* @__PURE__ */ new WeakMap()
+	// a symbol is a WeakMap key only in engines since ES2023
+	tablesByValue = /* @__PURE__ */ new Map()
+	next(hole) {
+		const tables =
+			hasDomain(hole, "object") ? this.tablesByObject : this.tablesByValue
+		let next = tables.get(hole)
+		if (!next) tables.set(hole, (next = new _InternTable()))
+		return next
+	}
+}
+var tablesByKey = /* @__PURE__ */ new Map()
+var internedTable = key => {
+	let table = tablesByKey.get(key)
+	if (!table) tablesByKey.set(key, (table = new InternTable()))
+	return table
+}
+var checkedDefaults = /* @__PURE__ */ new InternTable()
+var intern = (table, holes, create, defaults = []) => {
+	for (const hole of holes) table = table.next(hole)
+	if (
+		table.value !== void 0 &&
+		defaults.some(key => !checkedDefaultOf(key).value)
+	)
+		create()
+	return (table.value ??= create())
+}
+var interned = (key, create, ...args) =>
+	intern(internedTable(key), [], () => create(...args))
 
 // <stdin>
 var intersectionkmdrl70pxuocb = [
@@ -410,11 +457,11 @@ var intersection1e1eu9q0xorpuh = /* @__PURE__ */ ((
 	})
 	return [intersection1e1eu9q0xorpuhAllows]
 })(intersectionkmdrl70pxuocb, intersection1pta4mn06i3i5b)
-var create9xqcpf19hd8ia = ([allows], id, holes = []) => {
+var create12fpvlf14u2zct = ([allows], id, holes = []) => {
 	const validator = (data, pipedFromCtx, onFail) =>
 		allows(data) ?
 			(allows.t?.(data) ?? data)
-		:	applyIssues(
+		:	foundErrors(
 				allows,
 				data,
 				pipedFromCtx ? errors => pipedFromCtx.piped(errors) : onFail
@@ -530,9 +577,8 @@ var created2
 var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
-				const validator0 = create9xqcpf19hd8ia(
-					intersection1e1eu9q0xorpuh,
-					"1memd7b1"
+				const validator0 = interned("deydnu1k3joey", () =>
+					create12fpvlf14u2zct(intersection1e1eu9q0xorpuh, "1memd7b1")
 				)
 				return validator0
 			})())
@@ -541,9 +587,8 @@ var get0 = () => {
 var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
-				const validator0 = create9xqcpf19hd8ia(
-					intersection1azzur91ptz9ds,
-					"1cl1eak0"
+				const validator0 = interned("1yf5ycr149q7ho", () =>
+					create12fpvlf14u2zct(intersection1azzur91ptz9ds, "1cl1eak0")
 				)
 				return validator0
 			})())
@@ -552,9 +597,8 @@ var get1 = () => {
 var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
-				const validator0 = create9xqcpf19hd8ia(
-					intersection1sib0cb02x4j03,
-					"1i9mlhj1"
+				const validator0 = interned("12k1he90m20tls", () =>
+					create12fpvlf14u2zct(intersection1sib0cb02x4j03, "1i9mlhj1")
 				)
 				return validator0
 			})())

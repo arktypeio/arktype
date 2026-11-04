@@ -249,6 +249,14 @@ interface SharedUnit extends WritingScope {
 
 const writesByBaking = new WeakMap<Baking, Map<string, SharedWrite>>()
 
+// arktype compares what a node's meta holds by identity, its key by content
+const holdsObjectInMeta = ({ meta }: BaseNode): boolean =>
+	Object.entries(meta).some(([k, v]) =>
+		(k === "examples" ? (v as unknown[]) : [v]).some(
+			value => typeof value === "object" && value !== null
+		)
+	)
+
 // the options writing a shared unit reads: not those writing an artifact's own
 // validators, nor compiledInputs, which picks the unit itself
 const bakingKeyOf = ({
@@ -985,11 +993,19 @@ export class StandaloneArtifact {
 		const imported = new Set(Object.values(this.imports).flat())
 		const calls: string[][] = []
 		for (const name of names) {
+			const written = (name && this.writtenValidators.get(name)) ?? ""
+			const interned = /^runtime\.interned\(("[^"]*"), \(\) => (.*)\)$/s.exec(
+				written
+			)
 			const call = /^([\w$]+)\(\s*((?:[\w$]+,\s*)*[\w$]+)?\s*\)$/.exec(
-				(name && this.writtenValidators.get(name)) ?? ""
+				interned ? interned[2] : written
 			)
 			const reads = call && [call[1], ...(call[2]?.split(/,\s*/) ?? [])]
 			if (!reads?.every(read => imported.has(read))) return
+			if (interned) {
+				this.importName("arktype/runtime", "interned")
+				reads.unshift("interned", interned[1])
+			}
 			calls.push(reads)
 		}
 		return calls
@@ -1071,8 +1087,10 @@ export class StandaloneArtifact {
 	// Scope. A cycle's aliases and a Scope it can't name are told apart by identity
 	private contentNameOf(root: BaseRoot): string | undefined {
 		if (root.hasAlias) return
+		const nodes = [root, ...root.references]
+		if (nodes.some(holdsObjectInMeta)) return
 		const { scopeNameOf } = this.baking
-		const scopes = [root, ...root.references].map(({ $ }) =>
+		const scopes = nodes.map(({ $ }) =>
 			$.isBuiltin ? $.name : scopeNameOf?.($)
 		)
 		return scopes.includes(undefined) ? undefined : (

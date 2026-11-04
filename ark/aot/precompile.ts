@@ -3474,7 +3474,8 @@ export class Precompiler {
 			created ?
 				`/* @__PURE__ */ ${prefix}_${created[0]}(${created
 					.slice(1)
-					.map(read => `${prefix}_${read}`)
+					// but for what names a Type that's interned
+					.map(read => (read[0] === '"' ? read : `${prefix}_${read}`))
 					.join(", ")})`
 			:	prefix + exported
 		if (!folding.imported.has(exported)) {

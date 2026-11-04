@@ -151,8 +151,10 @@ export const importFolded = (
 		Object.assign(modules, validators.modules)
 	}
 	const locals = (imports[specifier] ??= {})
-	if (created) for (const read of created) locals[read] = `${prefix}_${read}`
-	else locals[exported] = local
+	if (created) {
+		for (const read of created)
+			if (read[0] !== '"') locals[read] = `${prefix}_${read}`
+	} else locals[exported] = local
 }
 
 // a read of an imported validator, passed through what bakes its members

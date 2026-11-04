@@ -1168,8 +1168,11 @@ export const intern = <value>(
 }
 
 // what a key names, created by whichever module reaches it first
-export const interned = <value>(key: string, create: () => value): value =>
-	intern(internedTable(key), [], create)
+export const interned = <value, args extends unknown[]>(
+	key: string,
+	create: (...args: args) => value,
+	...args: args
+): value => intern(internedTable(key), [], () => create(...args))
 
 const helpersKey = /* @__PURE__ */ Symbol.for("arktype.helpers")
 

@@ -91,7 +91,10 @@ const definitions = {
 	Picked: `type("string").narrow(picked)`,
 	Scoped: `scope({ S: { z: "string" } }).export().S`,
 	OtherScope: `$two.type({ z: "string" })`,
-	Defaulted: `type({ d: "string = 'x'" })`
+	Defaulted: `type({ d: "string = 'x'" })`,
+	MetaObject: `type("string").configure({ x: { y: 1 } } as never)`,
+	RegExpExample: `type("string").configure({ examples: [/a/] } as never)`,
+	StringExample: `type("string").configure({ examples: ["a"] } as never)`
 }
 
 const moduleOf = (suffix: string, rewritten: Record<string, string> = {}) =>
@@ -154,7 +157,8 @@ const partition = [
 	"OtherScopeA=OtherScopeB",
 	"PickedA=PickedB",
 	"PipeA=PipeB",
-	"RejectingA=RejectingB"
+	"RejectingA=RejectingB",
+	"StringExampleA=StringExampleB"
 ]
 
 const partitionOf = (stdout: string) => JSON.parse(stdout) as string[]

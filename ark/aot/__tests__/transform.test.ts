@@ -197,12 +197,13 @@ export const User = type({ name: "string" })`
 				}
 			)
 			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark_#0 } from "~arktype/#1"
-import { #2Allows as $ark_#2Allows } from "~arktype/#1"
-import { #3Allows as $ark_#3Allows } from "~arktype/#1"
+import { interned as $ark_interned } from "~arktype/#0"
+import { #1 as $ark_#1 } from "~arktype/#0"
+import { #2Allows as $ark_#2Allows } from "~arktype/#0"
+import { #3Allows as $ark_#3Allows } from "~arktype/#0"
 import { User } from "./user.ts"
-export const Name = /* @__PURE__ */ $ark_#0($ark_#2Allows)
-export const Team = /* @__PURE__ */ $ark_#0($ark_#3Allows)`)
+export const Name = /* @__PURE__ */ $ark_interned("#4", $ark_#1, $ark_#2Allows)
+export const Team = /* @__PURE__ */ $ark_interned("#5", $ark_#1, $ark_#3Allows)`)
 		})
 
 		it("creates a lazy build's validators where a module reads them as it loads", () => {
@@ -215,14 +216,15 @@ export const nameOf = () => type("string > 1")`,
 				{ creationChecks: "none", config: false, members: unintrospected }
 			)
 			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark_#0 } from "~arktype/#1"
-import { #2 as $ark_#2 } from "~arktype/#1"
-import { #3 as $ark_#3 } from "~arktype/#1"
-import { #4 as $ark_#4 } from "~arktype/#1"
-import { #5 as $ark_#5 } from "~arktype/#1"
-import { #6 as $ark#6 } from "~arktype/#1"
-export const Name = /* @__PURE__ */ $ark_#0($ark_#2, $ark_#3)
-export const Id = /* @__PURE__ */ $ark_#0($ark_#4, $ark_#5) satisfies Type<string>
+import { interned as $ark_interned } from "~arktype/#0"
+import { #1 as $ark_#1 } from "~arktype/#0"
+import { #2 as $ark_#2 } from "~arktype/#0"
+import { #3 as $ark_#3 } from "~arktype/#0"
+import { #4 as $ark_#4 } from "~arktype/#0"
+import { #5 as $ark_#5 } from "~arktype/#0"
+import { #6 as $ark#6 } from "~arktype/#0"
+export const Name = /* @__PURE__ */ $ark_interned("#7", $ark_#1, $ark_#2, $ark_#3)
+export const Id = /* @__PURE__ */ $ark_interned("#8", $ark_#1, $ark_#4, $ark_#5) satisfies Type<string>
 export const nameOf = () => $ark#6()`)
 		})
 
@@ -1125,15 +1127,17 @@ export const fresh = () => scope({ a: "string" }).type("a").narrow(isLong)`)
 			const tables = artifact
 				.split(/^export { factory\d+ .*$/m)
 				.slice(0, -1)
-				.map(code => code.match(/runtime\.intern\(\((interned\d+)/)?.[1])
-			attest(tables).equals([
-				"interned0",
-				"interned0",
-				"interned1",
-				"interned2",
-				"interned1",
-				"interned3"
+				.map(
+					code =>
+						code.match(
+							/runtime\.intern\((\(interned\d+|runtime\.internedTable\("[^"]*"\))/
+						)?.[1]
+				)
+			// by what names each, unless only this module can create it
+			attest(tables.map(table => tables.indexOf(table))).equals([
+				0, 0, 2, 3, 2, 5
 			])
+			attest(tables[5]).equals("(interned3")
 		})
 	})
 
@@ -1197,7 +1201,7 @@ export const E = type("strng")`,
 				"}",
 				"$ark$load2();",
 				'import "arktype"',
-				'import { siteOf as $ark$0$siteOf, freeze as $ark$0$freeze, unreadCallErrors as $ark$0$unreadCallErrors, UnreadArkErrors as $ark$0$UnreadArkErrors, deepFreeze as $ark$0$deepFreeze, fixConfig as $ark$0$fixConfig, createValidatorWith as $ark$0$createValidatorWith, emptyMeta as $ark$0$emptyMeta, bakedJsonSchema as $ark$0$bakedJsonSchema, bakedStandardJsonSchema as $ark$0$bakedStandardJsonSchema, precompiledForArktype_$version as $ark$0$precompiledForArktype_$version, ParseError as $ark$0$ParseError } from "arktype/runtime"',
+				'import { siteOf as $ark$0$siteOf, freeze as $ark$0$freeze, unreadCallErrors as $ark$0$unreadCallErrors, UnreadArkErrors as $ark$0$UnreadArkErrors, deepFreeze as $ark$0$deepFreeze, fixConfig as $ark$0$fixConfig, interned as $ark$0$interned, createValidatorWith as $ark$0$createValidatorWith, emptyMeta as $ark$0$emptyMeta, bakedJsonSchema as $ark$0$bakedJsonSchema, bakedStandardJsonSchema as $ark$0$bakedStandardJsonSchema, precompiledForArktype_$version as $ark$0$precompiledForArktype_$version, ParseError as $ark$0$ParseError } from "arktype/runtime"',
 				'const Array = "shadowed"',
 				"$arkfixConfig()",
 				"export const T = /* @__PURE__ */ $ark#0()",
