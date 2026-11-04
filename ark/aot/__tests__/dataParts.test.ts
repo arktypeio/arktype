@@ -137,14 +137,14 @@ console.log(k0.value === k1.value, k0.value.required[0].value === k1.value.requi
 			"narrowedJson",
 			appOf(
 				narrowedLeaf,
-				2,
+				3,
 				`console.log(JSON.stringify(T.json), JSON.stringify(T.toJSON()) === JSON.stringify(T.json), T.expression, T.description)`
 			)
 		)
 		const js = await bundle(root)
 		attest(run(js)).equals(runPlain(root))
-		// what reads its name is written once
-		attest(js.split("baseNameOf(").length < 12).equals(true)
+		// once for each of the expression's 27 narrows and once for all of the json
+		attest(js.split("baseNameOf(").length - 1).equals(28)
 	})
 
 	it("replays a fallback as arktype runs it, each call's objects its own", async () => {

@@ -1,5 +1,6 @@
 import {
 	hasArkKind,
+	holeNameMarker,
 	isNode,
 	LazyGenericRoot,
 	madeMorphs,
@@ -342,7 +343,7 @@ export const partsOf = (
 	return parts
 }
 
-export const holeNameMarker = "$hole_"
+export { holeNameMarker }
 
 // what a factory calls to read a Type's holes, which it finds by identity
 export const receiverPrefix = "receive"
