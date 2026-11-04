@@ -9,7 +9,6 @@ import { isKeyOf, throwParseError, type KeySet, type Scanner } from "@ark/util"
 import type { DateLiteral } from "../../../attributes.ts"
 import { writeDoubleRightBoundMessage } from "../../ast/bounds.ts"
 import type { InferredAst } from "../../ast/infer.ts"
-import type { astToString } from "../../ast/utils.ts"
 import type { RootedRuntimeState, RuntimeState } from "../../reduce/dynamic.ts"
 import {
 	invertedComparators,
@@ -188,9 +187,10 @@ export const parseRightBound = (
 		const limitNode = s.unsetRoot()
 		// after parsing the next operand, use the locations to get the
 		// token from which it was parsed
-		limitToken = s.sc.sliceChars(previousScannerIndex, s.sc.location)
+		limitToken = s.sc.sliceChars(previousScannerIndex, s.sc.location).trim()
+		// ( and keyof are operands that don't set a root
 		if (
-			!limitNode.is("unit") ||
+			!limitNode?.is("unit") ||
 			(typeof limitNode.unit !== "number" &&
 				!(limitNode.unit instanceof Date)) ||
 			(typeof limitNode.unit === "number" && !Number.isFinite(limitNode.unit))
@@ -269,10 +269,15 @@ export type parseRightBound<
 		:	s.error<
 				writeInvalidLimitMessage<
 					comparator,
-					astToString<nextState["root"]>,
+					scannedToken<s["unscanned"], nextState["unscanned"]>,
 					"right"
 				>
 			>
+	:	never
+
+type scannedToken<unscanned extends string, nextUnscanned extends string> =
+	Scanner.skipWhitespace<unscanned> extends `${infer token}${nextUnscanned}` ?
+		token
 	:	never
 
 export const writeInvalidLimitMessage = <
