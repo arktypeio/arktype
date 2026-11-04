@@ -539,6 +539,36 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		attest(T({ a: "" }).toString()).snap('a must be named (was "")')
 	})
 
+	it("an optional key without exactOptionalPropertyTypes can reach its own alias", () => {
+		const $ = scope(
+			{ List: { "next?": "List", value: "string" } },
+			{ exactOptionalPropertyTypes: false }
+		).export()
+		attest($.List({ next: { value: "a" }, value: "b" })).snap({
+			next: { value: "a" },
+			value: "b"
+		})
+		attest($.List({ next: undefined, value: "b" })).snap({
+			next: undefined,
+			value: "b"
+		})
+		attest($.List({ next: { value: 1 }, value: "b" }).toString()).snap(
+			"next.value must be a string (was a number)"
+		)
+
+		const Self = scope({}, { exactOptionalPropertyTypes: false }).type({
+			"next?": "this",
+			value: "string"
+		})
+		attest(Self({ next: undefined, value: "b" })).snap({
+			next: undefined,
+			value: "b"
+		})
+		attest(Self({ next: { value: 1 }, value: "b" }).toString()).snap(
+			"next.value must be a string (was a number)"
+		)
+	})
+
 	it("allows read before a Type is used checks once it compiles", () => {
 		const T = type({ a: "string" })
 		const allows = T.allows
