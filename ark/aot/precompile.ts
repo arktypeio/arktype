@@ -514,7 +514,7 @@ const modulesRunApart = ({ entries, targets }: ScannedProgram): Set<string> => {
 	for (const importing of Object.values(targets)) {
 		for (const specifier in importing) {
 			const id = importing[specifier]
-			const query = /(?!^)[?#].*$/.exec(specifier)?.[0] ?? ""
+			const query = /(?!^)[#?].*$/.exec(specifier)?.[0] ?? ""
 			if ((queries.get(id) ?? query) !== query) apart.add(id)
 			queries.set(id, query)
 		}
