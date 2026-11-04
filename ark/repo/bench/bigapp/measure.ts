@@ -12,7 +12,8 @@
 //
 // node measure.ts [ntwine] [scale] [crossover] [board] [--rounds=9] [--out=<file>]
 //   [--board=<file>]
-// board measures board.ts's arms and sizes and writes its scoreboard to <file>.
+// board measures board.ts's arms and sizes, with its groups through webpack as
+// well, and writes its scoreboard to <file>.
 // With no scope, ntwine and scale at 11, 92 and 1012 Types. crossover adds more
 // sizes.
 // Run `pnpm build` first. Reports against results/baseline.json.
@@ -151,6 +152,31 @@ if (ntwineOn) {
 	await addBuilt({ ...common, ...arms.zod3, library: "zod3", call: "zod" })
 }
 
+if (ntwineOn && board) {
+	const arms = ntwineArms(join(out, "ntwine"))
+	const common = {
+		group: "webpack ntwine",
+		validator: "ThreadView",
+		data: ntwineThread,
+		webpack: true
+	}
+	await addBuilt({
+		...common,
+		...arms.arktype,
+		library: "precompiled",
+		call: "arktype"
+	})
+	await addBuilt({
+		...common,
+		...arms.arktype,
+		precompiled: { ...arms.arktype.precompiled, preset: "smallest" },
+		library: "smallest",
+		call: "arktype"
+	})
+	await addBuilt({ ...common, ...arms.zod, library: "zod", call: "zod" })
+	await addBuilt({ ...common, ...arms.zod3, library: "zod3", call: "zod" })
+}
+
 const project = {
 	id: "1f0c3a52-7b1e-4c5d-9a8b-2e3f4a5b6c7d",
 	orgId: "1f0c3a52-7b1e-4c5d-9a8b-2e3f4a5b6c7d",
@@ -221,6 +247,30 @@ for (const types of scaleOn ? scaleSizes : []) {
 					...common,
 					library: "ajv",
 					entry: await writeAjvApp(types, dir),
+					cwd: dir
+				})
+			}
+			const through = { ...common, group: `webpack ${group}`, webpack: true }
+			await addBuilt({
+				...through,
+				library: "precompiled",
+				entry: arktype.entry,
+				cwd: arktype.dir,
+				precompiled: {}
+			})
+			await addBuilt({
+				...through,
+				library: "smallest",
+				entry: arktype.entry,
+				cwd: arktype.dir,
+				precompiled: { preset: "smallest" }
+			})
+			for (const library of ["zod", "valibot"] as const) {
+				const dir = join(out, "apps", `${types}-${narrows}-${library}`)
+				await addBuilt({
+					...through,
+					library,
+					entry: join(dir, "index.ts"),
 					cwd: dir
 				})
 			}
@@ -348,6 +398,27 @@ type Metric = (typeof metrics)[number]
 
 type Samples = Record<Metric, number[]>
 
+// an arm that can't load or validate is a result: recorded, and left out of the rounds
+const failed: Record<string, string> = {}
+for (const arm of [...arms]) {
+	try {
+		await run(arm, "first")
+	} catch (e) {
+		failed[arm.name] = (e as Error).message
+			.split("\n")
+			.filter(
+				line =>
+					line.length < 300 &&
+					!/^Events |^file:|^\s*\^|^\s+at |^\s*$|^Node\.js|instructions:u/.test(
+						line
+					)
+			)
+			.join(" ")
+		arms.splice(arms.indexOf(arm), 1)
+		console.error(`failed ${arm.name}: ${failed[arm.name]}`)
+	}
+}
+
 const samples: Record<string, Samples> = Object.fromEntries(
 	arms.map(arm => [
 		arm.name,
@@ -386,6 +457,7 @@ const results = {
 	at: new Date().toISOString(),
 	rounds,
 	loads,
+	failed,
 	arms: Object.fromEntries(
 		arms.map(arm => [
 			arm.name,
