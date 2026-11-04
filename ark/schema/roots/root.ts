@@ -555,7 +555,9 @@ export abstract class BaseRoot<
 				: this._out
 			if (
 				operand.is("morph") ||
-				(constraint.implied && !operand.extends(constraint.implied))
+				(constraint.implied &&
+					!meetsImplied(operand, constraint.implied) &&
+					!operand.extends(constraint.implied))
 			) {
 				return throwInvalidOperandError(
 					kind,
@@ -575,16 +577,22 @@ export abstract class BaseRoot<
 		// important this is constraint.kind instead of kind in case
 		// the node was reduced during parsing
 		inner[constraint.kind] = constraint.impl.stacks ? [constraint] : constraint
-		const partialIntersection = this.$.node("intersection", inner, {
-			reduced: true
-		})
+		let result: BaseNode | Disjoint | null
+		// an intersection meets a constraint without a node holding only that
+		if (io !== "out" && this.is("intersection"))
+			result = sets().constrain(this, inner, this.$)
+		else {
+			const partialIntersection = this.$.node("intersection", inner, {
+				reduced: true
+			})
 
-		if (meetsBasis) return partialIntersection
+			if (meetsBasis) return partialIntersection
 
-		const result =
-			io === "out" ?
-				sets().pipe(this, partialIntersection, this.$)
-			:	sets().intersect(this, partialIntersection, this.$)
+			result =
+				io === "out" ?
+					sets().pipe(this, partialIntersection, this.$)
+				:	sets().intersect(this, partialIntersection, this.$)
+		}
 
 		if (result instanceof Disjoint) result.throw()
 
@@ -749,6 +757,19 @@ export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(
 
 export type exclusivizeRangeSchema<schema extends UnknownRangeSchema> =
 	schema extends LimitSchemaValue ? { rule: schema; exclusive: true } : schema
+
+// what a basis extends, so does anything that constrains it, without intersecting them
+const meetsImplied = (operand: BaseRoot, implied: BaseRoot): boolean => {
+	const basis = operand.is("intersection") ? operand.basis : operand
+	if (!basis) return false
+	if (basis.kind === implied.kind) return innerHashesMatch(basis, implied)
+	return (
+		implied.is("union") &&
+		implied.branches.some(
+			branch => branch.kind === basis.kind && innerHashesMatch(basis, branch)
+		)
+	)
+}
 
 export const typeOrTermExtends = (t: unknown, base: unknown): boolean =>
 	hasArkKind(base, "root") ?

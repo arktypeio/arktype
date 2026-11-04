@@ -1,6 +1,7 @@
 import { throwParseError, type dict } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
+import type { Intersection } from "../roots/intersection.ts"
 import type { Discriminant, Union } from "../roots/union.ts"
 import type { BaseScope } from "../scope.ts"
 import type { Disjoint } from "./disjoint.ts"
@@ -13,6 +14,11 @@ import type { ToJsonSchema } from "./toJsonSchema.ts"
 export interface SetEngine {
 	intersect: InternalNodeIntersection<BaseScope>
 	pipe: InternalNodeIntersection<BaseScope>
+	constrain(
+		l: Intersection.Node,
+		inner: Intersection.Inner,
+		$: BaseScope
+	): BaseRoot | Disjoint
 	reduce(
 		kind: NodeKind,
 		inner: dict,
