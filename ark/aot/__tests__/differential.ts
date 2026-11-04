@@ -1,8 +1,6 @@
 import { fromHere } from "@ark/fs"
 import {
 	ArkErrors,
-	describeBranches,
-	describeCases,
 	hasArkKind,
 	registryName,
 	schemaScope,
@@ -527,7 +525,11 @@ const textsOf = (errors: ArkErrors, grouped = true) => {
 				if (isMessaged) text.message = error.message
 			} else {
 				if (issue.problem !== undefined) text.problem = issue.problem
-				if (issue.message !== messageOf({ ...issue, message: undefined }))
+				// a union's text is compared where it's expected
+				if (
+					!issue._r &&
+					issue.message !== messageOf({ ...issue, message: undefined })
+				)
 					text.message = issue.message!
 			}
 			return Object.keys(text).length > 1 ? [text] : []
@@ -535,36 +537,19 @@ const textsOf = (errors: ArkErrors, grouped = true) => {
 		.sort((l, r) => (l.at < r.at ? -1 : 1))
 }
 
-// a union whose branches each fail at its path by their basis is described
-// by those bases, as a validator's union issue is
-const basisCodes = new Set<string>(["domain", "proto", "unit"])
-
-// what a union's error lists for one of its errors: a basis it expects, or
-// the cases of a discriminant a morph's input union missed, as a locale
-// writes them
-const alternativesOf = (error: ArkError): string[] | null => {
-	if (basisCodes.has(error.code)) return [error.expected]
-	if (error.code !== "discriminant") return null
-	const { discriminantKind, cases } = error as ArkError<"discriminant">
-	const each = cases.map(c =>
-		describeCases({ discriminantKind, cases: [c] } as never)
-	)
-	return describeBranches(each) === error.expected ? each : [error.expected]
-}
-
 // what each issue expects, at its path and code, where a validator's issue is
-// written alike: not an issue a callback raised without an expected, nor a
-// union described by its branches' errors, as a validator's issue holds
-// neither the callback nor the errors; a missing key expects its value's
-// brief. Its message is compared too, without what a validator's never says:
-// what the value was, and "value at" before an index path
+// written alike: not an issue a callback raised without an expected, whose
+// callback it doesn't hold, nor a union's, whose message says what it expects;
+// a missing key expects its value's brief. Its message is compared too, without
+// what a validator's never says: what the value was, and "value at" before an
+// index path
 const expectedsOf = (errors: ArkErrors) =>
 	keptOf(errors)
 		.map(issue => {
 			const expected =
-				!(errors instanceof ArkErrors) ? (issue.expected ?? null)
+				issue.code === "union" ? "union"
+				: !(errors instanceof ArkErrors) ? (issue.expected ?? null)
 				: raisesUnexpected(issue as ArkError) ? null
-				: issue.code === "union" ? unionExpectedOf(issue as ArkError<"union">)
 				: issue.expected
 			return {
 				at: `${pathKeyOf(issue.path)}\0${issue.code}`,
@@ -577,36 +562,18 @@ const expectedsOf = (errors: ArkErrors) =>
 // arktype writes a symbol's description only where it's an identifier
 const messageWithoutActual = (message: string): string =>
 	message
-		.replace(/ \(was [^]*\)$/, "")
-		.replace(/^value at /, "")
+		.replace(/ \(was (?:"(?:[^"\\]|\\.)*"|[^)])*\)/g, "")
+		.replace(/(^|, | or )value at /g, "$1")
 		.replace(/\[Symbol\([^)]*\)]/g, "[Symbol]")
 
 // a check's error holds its description, which a raised one doesn't unless
 // pipe.try raised it, describing it by its morph
 const raisesUnexpected = (error: ArkError) =>
+	error.code !== "predicate" &&
 	error.code !== "union" &&
 	error.description === undefined &&
-	(error as ArkError<"predicate">).morph === undefined &&
+	(error as { morph?: unknown }).morph === undefined &&
 	suppliedTextOf(error, "expected") === undefined
-
-const unionExpectedOf = (error: ArkError<"union">): string | null => {
-	const meta: Record<string, unknown> = error.meta ?? {}
-	if (
-		(meta.description !== undefined && meta.keyword === undefined) ||
-		meta.expected !== undefined
-	)
-		return error.expected
-	if (!error.errors.length) return null
-	const expected: string[] = []
-	for (const e of error.errors) {
-		const alternatives =
-			e.propString === error.propString ? alternativesOf(e) : null
-		if (!alternatives) return null
-		for (const alternative of alternatives)
-			if (!expected.includes(alternative)) expected.push(alternative)
-	}
-	return describeBranches(expected)
-}
 
 // a validator's expected and message where arktype's are written from what
 // it doesn't hold

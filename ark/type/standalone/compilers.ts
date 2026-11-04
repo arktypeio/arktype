@@ -93,26 +93,49 @@ class StandaloneCompiler extends TraversalCompiler {
 		return raisesNothing(predicate)
 	}
 
-	// a union no branch allows reports its description, unless data fails each basis
+	// a union no branch allows reports what each branch's first issue expected,
+	// unless it can only be what its description lists
 	override unionFails(node: UnionNode): string {
-		const bases = basesOf(node)
-		if (!bases) return `!${this.error(node)}`
-		const allowed = bases.nodes
-			.map(basis => basis.jsCond(this, "data"))
-			.join(" || ")
-		return `!${this.fails("failsAt", `${allowed} ? ${this.site(node)} : ${this.siteRef(bases.site)}, data`)}`
+		if (expectsItsBases(node)) return `!${this.error(node)}`
+		return this.branchesFail(
+			node,
+			node.branches.map(branch => this.traversal(branch, "Apply"))
+		)
+	}
+
+	private branchesFail(node: UnionNode, branches: string[]): string {
+		return `!runtime.failsBranches(ctx, [${branches.join(", ")}], data${this.ownIssueOf(node)})`
+	}
+
+	override listedFails(node: UnionNode): string {
+		return `!runtime.failsListed(ctx, errors, data${this.ownIssueOf(node)})`
+	}
+
+	private ownIssueOf(node: UnionNode): string {
+		return listsBranches(node) ? "" : `, runtime.ownIssue(${this.site(node)})`
 	}
 
 	// reported at the discriminant so branches don't rerun, unless data can't be read there
 	override missFails(node: UnionNode): string {
-		if (node.missLists) return this.unionFails(node)
+		return node.missLists ?
+				this.unionFails(node)
+			:	this.ifReadable(node, this.missedFails(node))
+	}
+
+	private missedFails(node: UnionNode): string {
 		const path = node.missPath
 		const site = this.siteRef(issueSite(discriminantContextOf(node)))
 		// a key below data is read as a key site reads it
-		const fails =
-			path.length > 1 ?
+		return path.length > 1 ?
 				`!${this.ref(failsAtPath)}(ctx, ${site}, data, [${path.map(k => this.serialize(k)).join(", ")}])`
 			:	`!${this.fails("failsAt", path.length ? `${site}, data, ${this.serialize(path[0])}` : `${site}, data`)}`
+	}
+
+	private ifReadable(
+		node: UnionNode,
+		fails: string,
+		unreadable = (fails: string) => fails
+	): string {
 		const [k, ...deeper] = node.discriminant!.path
 		if (k === undefined) return fails
 		const reads: string[] = []
@@ -123,23 +146,37 @@ class StandaloneCompiler extends TraversalCompiler {
 		}
 		const readable =
 			reads.length ?
-				`${reads.join(" && ")} ? ${fails} : ${this.unionFails(node)}`
+				`${reads.join(" && ")} ? ${fails} : ${unreadable(this.unionFails(node))}`
 			:	fails
-		return `${compileRead("data", k)} ? ${readable} : ${this.unreadableFails(node, k)}`
+		return `${compileRead("data", k)} ? ${readable} : ${unreadable(this.unreadableFails(node))}`
 	}
 
-	// an indiscriminable union applies its branches in a branch only arktype's traversal has
+	// data in no case is applied the default case, whose first issue is listed
+	// beside the miss, unless the data can't be read there, where each branch is
 	override defaultFails(node: UnionNode, caseNode: BaseRoot): string {
+		const isDecided = isDecidedByKeywords(caseNode)
 		const passes =
-			isDecidedByKeywords(caseNode) ?
+			isDecided ?
 				(caseNode.jsCond?.(this, "data") ??
 				this.inv(caseNode, { kind: "Allows" }))
 			:	`(ctx.pushBr(), ${this.applyMember(caseNode)}, ctx.popBr().errN === 0)`
-		return `${passes} || ${this.unionFails(node)}`
+		if (node.missLists) return `${passes} || ${this.unionFails(node)}`
+		const listed = this.branchesFail(node, [
+			`(data, ctx) => ${this.missedFails(node)}`,
+			isDecided ?
+				this.traversal(caseNode, "Apply")
+			:	`(data, ctx) => ${this.applyMember(caseNode)}`
+		])
+		return this.ifReadable(
+			node,
+			isDecided ? `${passes} || ${listed}` : listed,
+			fails => `${passes} || ${fails}`
+		)
 	}
 
 	// data its first key can't be read from fails each branch at its basis
-	private unreadableFails(node: UnionNode, k: PropertyKey): string {
+	private unreadableFails(node: UnionNode): string {
+		const [k] = node.discriminant!.path
 		const bases = basesOf(node)
 		return (
 				bases?.nodes.every(basis =>
@@ -167,13 +204,13 @@ class StandaloneCompiler extends TraversalCompiler {
 	// a rejected union value reports the union's issue at its key, not its Apply
 	override failingSiteOf(prop: BaseNode): string | undefined {
 		const { value, errorCtx } = prop as nodeOfKind<"required">
-		if (reportsItself(value) && !basesOf(value))
+		if (reportsItself(value) && expectsItsBases(value))
 			return this.siteRef(unionKeySiteOf(value.failSite, errorCtx))
 	}
 
-	// unless data failing its branches' bases is described by them
+	// unless its issue reads its branches'
 	override failingApplyOf(value: BaseNode): string | undefined {
-		if (reportsItself(value) && basesOf(value))
+		if (reportsItself(value) && !expectsItsBases(value))
 			return `(data, ctx) => ${this.unionFails(value)}`
 	}
 }
@@ -193,6 +230,31 @@ export const discriminantContextOf = (node: UnionNode): IssueContext =>
 		description: node.discDesc,
 		meta: node.discMeta
 	})
+
+// arktype writes a union's text from its branches' first issues unless it's
+// written its own
+export const listsBranches = (node: UnionNode): boolean => {
+	const { description, keyword } = node.meta
+	const site = issueSiteOf(node.failSite) as IssueContext
+	return (
+		(description === undefined || keyword !== undefined) &&
+		isDescribed(site) &&
+		site.description === node.description
+	)
+}
+
+// whether each branch fails only at its basis, as the union's description lists
+const expectsItsBases = (node: UnionNode): boolean => {
+	if (!listsBranches(node)) return false
+	const expected: string[] = []
+	for (const branch of node.branches) {
+		if (!branch.is("domain") && !branch.is("proto") && !branch.is("unit"))
+			return false
+		const { v } = branch.failSite as { v: TextContext }
+		expected.push(issueContextOf(v).description!)
+	}
+	return describeBranches(expected) === node.description
+}
 
 const reportsItself = (value: BaseNode): value is UnionNode =>
 	value.is("union") && !value.discriminant && !value.hasAlias
@@ -286,12 +348,13 @@ const findBases = (node: UnionNode): Bases | null => {
 	}
 	for (const branch of node.branches)
 		if (!collect(branch, { describes: !defaultCase })) return null
-	const site = issueSiteOf({
-		meta: node.meta,
-		description: describeBranches(expected)
-	}) as IssueContext
-	const unionSite = issueSiteOf(node.failSite) as IssueContext
-	return site.description === unionSite.description ? null : { nodes, site }
+	return {
+		nodes,
+		site: issueSiteOf({
+			meta: node.meta,
+			description: describeBranches(expected)
+		})
+	}
 }
 
 export const refNameOf = (unit: string, i: number): string => `${unit}R${i}`

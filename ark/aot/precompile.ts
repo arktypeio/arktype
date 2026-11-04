@@ -7416,6 +7416,7 @@ const anyIssues: IssueFeatures = {
 	reportsIndices: true,
 	bracketsKeys: true,
 	writesText: true,
+	listsUnions: true,
 	readsKeySites: true,
 	runsArktype: true
 }

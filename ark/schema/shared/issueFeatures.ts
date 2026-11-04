@@ -10,6 +10,9 @@ export const bracketsKeys: boolean = true
 /** text a site writes from the program's config, like a problem */
 export const writesText: boolean = true
 
+/** a union's issue listing its branches', written again where its path changes */
+export const listsUnions: boolean = true
+
 /** a key's site, holding its value's context */
 export const readsKeySites: boolean = true
 

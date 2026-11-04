@@ -561,6 +561,19 @@ const serializeIssues = (issues: KeptIssue[]) =>
 		...(detailsErrors && { data: serialize(data) })
 	}))
 
+// what a union's issues say, without what no message of a validator's does
+const unionTextsOf = (errors: ArkErrors): string[] =>
+	!detailsErrors || firstIssue ?
+		[]
+	:	errors.issues
+			.filter(issue => issue.code === "union")
+			.map(({ message }) =>
+				message
+					.replace(/ \(was (?:"(?:[^"\\]|\\.)*"|[^)])*\)/g, "")
+					.replace(/(^|, | or )value at /g, "$1")
+			)
+			.sort()
+
 const samples = (): unknown[] => [
 	undefined,
 	null,
@@ -597,7 +610,8 @@ const isErrors = (out: unknown): out is ArkErrors =>
 
 // a Type a morph returns is compared by expression, as a validator has one
 export const serialize = (out: unknown): unknown =>
-	isErrors(out) ? { errors: serializeIssues(keptOf(out)) }
+	isErrors(out) ?
+		{ errors: serializeIssues(keptOf(out)), unions: unionTextsOf(out) }
 	: typeof out === "function" && isArk(out) ?
 		{ type: (out as Function & { expression: string }).expression }
 	:	inspect(out, {
@@ -697,6 +711,7 @@ const calledOutcomeOf = (
 		return kept ?
 				{
 					errors: serializeIssues(kept),
+					...(isErrors(out) && { unions: unionTextsOf(out) }),
 					...(anyOf && { anyOf: serializeIssues(anyOf()) })
 				}
 			:	{ out: serialize(out), isInput: out === input }

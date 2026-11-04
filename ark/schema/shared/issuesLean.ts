@@ -6,7 +6,7 @@ import type {
 	FailureSite,
 	SiteContext
 } from "./issues.ts"
-import { bracketsKeys } from "./issueFeatures.ts"
+import { bracketsKeys, listsUnions } from "./issueFeatures.ts"
 
 type WrittenIssue = ArkIssue & { message: string }
 
@@ -189,14 +189,19 @@ export const mergeIssues = (
 	prefix: array<PropertyKey>
 ): void => {
 	for (const issue of merged.issues) {
-		errors._.push({
-			code: issue.code,
-			path: [...prefix, ...issue.path],
-			data: issue.data,
-			expected: issue.expected,
-			problem: issue.problem,
-			message: issue.message === messageOf(issue) ? undefined : issue.message
-		})
+		errors._.push(
+			listsUnions && issue._m ?
+				issue._m(prefix)
+			:	{
+					code: issue.code,
+					path: [...prefix, ...issue.path],
+					data: issue.data,
+					expected: issue.expected,
+					problem: issue.problem,
+					message:
+						issue.message === messageOf(issue) ? undefined : issue.message
+				}
+		)
 	}
 }
 

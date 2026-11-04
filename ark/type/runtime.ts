@@ -10,7 +10,9 @@ import {
 	enInfo,
 	errorsOf,
 	FirstIssues,
+	issueAt,
 	issuesOf,
+	listsUnions,
 	mergeIssues,
 	messageOf,
 	problemOf,
@@ -39,6 +41,7 @@ import {
 	stringifyPath,
 	throwError,
 	throwParseError,
+	type array,
 	type Fn,
 	type inferred,
 	type JsonStructure
@@ -273,9 +276,14 @@ export const standardResultOf = (
 			issues: (out._i ? (out.issues as ArkIssue[]) : out._).map(issue =>
 				(
 					issue.path.length &&
-					(issue.message === undefined || issue.message === messageOf(issue))
+					((listsUnions && issue._r) ||
+						issue.message === undefined ||
+						issue.message === messageOf(issue))
 				) ?
-					{ ...issue, message: problemOf(issue) }
+					{
+						...issue,
+						message: listsUnions && issue._r ? issue._r() : problemOf(issue)
+					}
 				:	((issue.message ??= messageOf(issue)), issue)
 			) as StandardSchemaV1.Issue[]
 		}
@@ -711,6 +719,141 @@ export const failsIn = ((
 	ctx?._at ?
 		ctx._in(apply, data, key, missing)
 	:	!(apply as Fn)((data as Record<PropertyKey, unknown>)[key])) satisfies Fn
+
+const writeBranches = (alternatives: string[]): string => {
+	const unique = [...new Set(alternatives)]
+	if ([...unique].sort().join() === "false,true") return "boolean"
+	const last = unique.pop()!
+	return unique.length ? `${unique.join(", ")} or ${last}` : last
+}
+
+// what arktype's union lists for issues failing at one path. An issue listing
+// alternatives of its own, as a missing key's union or a discriminant's cases,
+// is split by its text, the only place a validator holds them, so where one is
+// written with `or` or a comma outside of quotes, it reads as if they were
+const alternativesOf = (issues: ArkIssue[]): string[] =>
+	issues.flatMap(({ code, expected = "valid" }) =>
+		issues.length > 1 && /^(req|disc|union)/.test(code) ?
+			expected.split(/(?:, | or )(?=(?:[^"]*"[^"]*")*[^"]*$)/)
+		:	[expected]
+	)
+
+// each path as its own issue's message writes it, as arktype's union does
+const writeListed = (errors: readonly ArkIssue[], depth = 0): string => {
+	const atSubject = new Map<string, ArkIssue[]>()
+	for (const error of errors) {
+		error.message ??= messageOf(error)
+		const subject = messageOf({
+			path: error.path.slice(depth),
+			expected: ""
+		} as never)
+		atSubject.set(subject, [...(atSubject.get(subject) ?? []), error])
+	}
+	return writeBranches(
+		[...atSubject].map(
+			([subject, same]) => subject + writeBranches(alternativesOf(same))
+		)
+	)
+}
+
+// a union's issue, which says what its branches' first issues did
+class ListedIssue implements ArkIssue {
+	code: ArkErrorCode = "union"
+	declare path: PropertyKey[]
+	declare data: unknown
+	declare errors: readonly ArkIssue[]
+	declare expected: string
+	declare message: string
+
+	constructor(path: PropertyKey[], data: unknown, errors: readonly ArkIssue[]) {
+		this.path = path
+		this.data = data
+		this.errors = errors
+		this.expected = this.message = writeListed(errors)
+	}
+
+	_m(prefix: array<PropertyKey>): ListedIssue {
+		return new ListedIssue(
+			[...prefix, ...this.path],
+			this.data,
+			this.errors.map(error => ({
+				...error,
+				path: [...prefix, ...error.path],
+				message: error.message === messageOf(error) ? undefined : error.message
+			}))
+		)
+	}
+
+	_r(): string {
+		return writeListed(this.errors, this.path.length)
+	}
+}
+
+type UnionIssueOf = (
+	path: PropertyKey[],
+	data: unknown,
+	errors: readonly ArkIssue[]
+) => ArkIssue
+
+const listedIssue: UnionIssueOf = (path, data, errors) =>
+	new ListedIssue(path.slice(), data, errors)
+
+// a union's issue where it's written its own text, expecting what its branches
+// did unless that's what's written
+export const ownIssue = ((site: FailureSite): UnionIssueOf =>
+	(path, data, errors) => {
+		const issue = issueAt(path, site, data, undefined)
+		const listed = writeListed(errors)
+		issue.expected ??= listed
+		issue.errors = errors
+		return issue
+	}) satisfies Fn
+
+// adds a union's issue of what each branch reported first, each one that's a
+// union of its own being what it lists
+export const failsListed = ((
+	ctx: any,
+	firsts: readonly ArkIssue[],
+	data: unknown,
+	issueOf = listedIssue
+): boolean | undefined => {
+	const issue = issueOf(
+		ctx._p ?? ctx.path,
+		data,
+		firsts.flatMap(first => first.errors ?? first)
+	)
+	if (ctx._p) ctx._.push(issue)
+	else ctx.addError(issue)
+	return ctx.failFast
+}) satisfies Fn
+
+// whether a union fails, by the first issue of each branch; none where one that
+// a write or a getter has made valid since passes
+export const failsBranches = ((
+	ctx: any,
+	branches: readonly CompactApply[],
+	data: unknown,
+	issueOf?: UnionIssueOf
+): boolean | undefined => {
+	if (!ctx?._at) return true
+	const firsts: ArkIssue[] = []
+	for (const branch of branches) {
+		let first: ArkIssue | undefined
+		if (ctx._p) {
+			const issues = new FirstIssues()
+			issues._p = ctx._p.slice()
+			branch(data, issues)
+			first = issues._[0]
+		} else {
+			ctx.pushBr()
+			branch(data, ctx)
+			first = ctx.popBr().error
+		}
+		if (!first) return
+		firsts.push(first)
+	}
+	return failsListed(ctx, firsts, data, issueOf)
+}) satisfies Fn
 
 // compact roots report into ArkErrors, loading no Traversal
 export const applyErrors = (

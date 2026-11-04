@@ -14,7 +14,12 @@ import {
 } from "@ark/schema"
 import { domainOf, isWellFormedInteger } from "@ark/util"
 import * as runtime from "../runtimeExports.ts"
-import { basesOf, discriminantContextOf, unifies } from "./compilers.ts"
+import {
+	basesOf,
+	discriminantContextOf,
+	listsBranches,
+	unifies
+} from "./compilers.ts"
 import {
 	isDescribed,
 	isInlineSite,
@@ -84,12 +89,7 @@ const calleesOf = (node: BaseNode): BaseRoot[] | undefined => {
 				(branch): branch is BaseRoot => branch !== true && branch !== undefined
 			)
 		}
-		if (
-			node.discriminant ||
-			!isDecidedByAllows(node) ||
-			!unionSiteOf(node) ||
-			basesSiteOf(node) === null
-		)
+		if (node.discriminant || !isDecidedByAllows(node) || !unionSiteOf(node))
 			return
 		return [...node.branches]
 	}
@@ -106,15 +106,6 @@ const unionSiteOf = (node: UnionNode): IssueContext | undefined =>
 
 const discriminantSiteOf = (node: UnionNode): IssueContext | undefined =>
 	plainContextOf(discriminantContextOf(node))
-
-// what data failing every branch's basis fails, null if the bases can't be checked
-const basesSiteOf = (node: UnionNode): IssueContext | null | undefined => {
-	const bases = basesOf(node)
-	if (!bases) return
-	return bases.nodes.every(checkOf) ?
-			(plainContextOf(bases.site) ?? null)
-		:	null
-}
 
 const checkOf = (node: BaseNode): IssueContext | undefined =>
 	node.jsCond && plainSiteOf(node)
@@ -244,14 +235,15 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 					pruned
 				)
 	}
-	const site =
-		otherwise === undefined ? discriminantSiteOf(node) : unionSiteOf(node)
+	// a union written its own text lists nothing beside a miss
+	if (otherwise !== undefined && !listsBranches(node)) return
+	const site = discriminantSiteOf(node)
 	// data whose key can't be read fails each branch's basis, as an object
-	const bases = basesSiteOf(node)
+	const bases = basesOf(node)
 	const missed =
-		bases === undefined ? unionSiteOf(node)
-		: basesOf(node)!.nodes.every(basis => basis.domain === "object") ?
-			(bases ?? undefined)
+		!listsBranches(node) ? unionSiteOf(node)
+		: bases?.nodes.every(basis => basis.domain === "object") ?
+			plainContextOf(bases.site)
 		:	undefined
 	return (
 		site &&
@@ -392,7 +384,10 @@ const checkerDescriptionOf = (node: BaseNode): string | undefined => {
 		if (domainCasesOf(node)) return discriminantSiteOf(node)!.description
 		const discriminated = discriminatedOf(node)
 		if (discriminated) return discriminated.missed.description
-		return (basesSiteOf(node) ?? unionSiteOf(node))!.description
+		return (
+			(basesOf(node)?.site as IssueContext | undefined)?.description ??
+			unionSiteOf(node)!.description
+		)
 	}
 }
 
@@ -804,16 +799,12 @@ const writeUnionCombinator = (
 					discriminated.isOwn ? "1" : undefined
 				)
 	}
-	const bases = basesSiteOf(node)
 	return writeCall(
 		"union",
 		`[${node.branches.map(ref).join(", ")}]`,
-		JSON.stringify(unionSiteOf(node)!.description),
-		bases ?
-			`[${basesOf(node)!
-				.nodes.map(basis => writeCheck(js, basis))
-				.join(", ")}]`
-		:	undefined,
-		bases ? JSON.stringify(bases.description) : undefined
+		JSON.stringify(checkerDescriptionOf(node)),
+		listsBranches(node) ? undefined : (
+			`runtime.ownIssue(runtime.siteOf("union", ${JSON.stringify(unionSiteOf(node)!.description)}))`
+		)
 	)
 }

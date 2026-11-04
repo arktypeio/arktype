@@ -10,6 +10,7 @@ import { hasOwn, type Fn } from "@ark/util"
 import {
 	describePredicate,
 	failsAt,
+	failsBranches,
 	requiredSiteOf,
 	siteOf
 } from "./runtime.ts"
@@ -526,13 +527,16 @@ export const discriminateOr = ((
 	missed: FailureSite = { code: "union", description: "an object" }
 ): Checker => {
 	const byValue = new Map(Object.entries(cases))
-	const site: FailureSite = { code: "union", description }
+	const site: FailureSite = { code: "discriminant", description }
+	const miss: Checker = (data, ctx) => !failsAt(ctx as never, site, data, key)
 	const checker: Checker = (data: any, ctx) => {
 		const branch = byValue.get(data?.[key])
 		return branch ?
 				branch === 1 || branch(data, ctx)
 			:	otherwise(data) ||
-					!failsAt(ctx as never, objectCheck.test(data) ? site : missed, data)
+					(objectCheck.test(data) ?
+						!failsBranches(ctx, [miss, otherwise], data)
+					:	!failsAt(ctx as never, missed, data))
 	}
 	checker.description = missed.description
 	if ([...byValue.values(), otherwise].some(branch => (branch as Checker).t)) {
@@ -542,26 +546,17 @@ export const discriminateOr = ((
 	return checker
 }) satisfies Fn
 
-// branches tried in turn, failing as one issue described by bases
+// branches tried in turn, failing as one issue of each's first, by what writes
+// it if it isn't what they did
 export const union = ((
 	branches: readonly Checker[],
 	description: string,
-	bases?: readonly Check[],
-	basesDescription?: string
+	issueOf?: Parameters<typeof failsBranches>[3]
 ): Checker => {
-	const site: FailureSite = { code: "union", description }
-	const basesSite: FailureSite = {
-		code: "union",
-		description: basesDescription
-	}
 	const checker: Checker = (data, ctx) =>
 		branches.some(branch => branch(data)) ||
-		!failsAt(
-			ctx as never,
-			bases && !bases.some(basis => basis.test(data)) ? basesSite : site,
-			data
-		)
-	checker.description = basesDescription ?? description
+		!failsBranches(ctx, branches, data, issueOf)
+	checker.description = description
 	if (branches.some(branch => branch.t))
 		checker.t = data => branches.find(branch => branch(data))!.t?.(data) ?? data
 	return checker

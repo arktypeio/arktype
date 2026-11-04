@@ -637,6 +637,7 @@ export const Fields = { even: Even, name: type("string") }
 				bracketsKeys: false,
 				reportsIndices: false,
 				writesText: false,
+				listsUnions: false,
 				readsKeySites: true,
 				runsArktype: false
 			})
@@ -648,6 +649,7 @@ export const Fields = { even: Even, name: type("string") }
 				bracketsKeys: false,
 				reportsIndices: true,
 				writesText: false,
+				listsUnions: false,
 				readsKeySites: false,
 				runsArktype: false
 			})
@@ -662,6 +664,7 @@ export const Fields = { even: Even, name: type("string") }
 				bracketsKeys: true,
 				reportsIndices: false,
 				writesText: false,
+				listsUnions: false,
 				readsKeySites: true,
 				runsArktype: false
 			})

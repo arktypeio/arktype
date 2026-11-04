@@ -30,6 +30,7 @@ import {
 	type FailureSite,
 	type UnionSite
 } from "./issues.ts"
+import { listsUnions } from "./issueFeatures.ts"
 import { TransformErrors } from "./transform.ts"
 import { inProgress } from "./utils.ts"
 
@@ -234,15 +235,19 @@ export class InternalTraversal implements FailureContext {
 		if (target._merge) target._merge(errors, this.path)
 		else {
 			for (const issue of errors._) {
-				target._.push({
-					...issue,
-					path: [...this.path, ...issue.path],
-					// read by a callback at the old path, so rewritten unless supplied
-					message:
-						issue.message && issue.message === messageOf(issue) ?
-							undefined
-						:	issue.message
-				})
+				target._.push(
+					listsUnions && issue._m ?
+						issue._m(this.path)
+					:	{
+							...issue,
+							path: [...this.path, ...issue.path],
+							// read by a callback at the old path, so rewritten unless supplied
+							message:
+								issue.message && issue.message === messageOf(issue) ?
+									undefined
+								:	issue.message
+						}
+				)
 			}
 		}
 		return target
@@ -331,8 +336,9 @@ export class Traversal extends InternalTraversal {
 	protected raise(input: ArkErrorInput): ArkError {
 		const supplied: SuppliedIssue =
 			typeof input === "object" ? (input as never) : { expected: input }
+		const code = supplied.code ?? "predicate"
 		const issue: ArkIssue = {
-			code: supplied.code ?? "predicate",
+			code,
 			path: [
 				...(supplied.prefixPath ?? []),
 				...(supplied.path ?? this.path),
@@ -343,7 +349,9 @@ export class Traversal extends InternalTraversal {
 			expected:
 				supplied.expected ??
 				supplied.description ??
-				(supplied.morph && describePredicate(supplied))
+				(code === "predicate" || supplied.morph ?
+					describePredicate(supplied)
+				:	undefined)
 		}
 		if (supplied.problem !== undefined) issue.problem = supplied.problem
 		// a keyword's phrase writes the SyntaxError it caught, as string.json's
