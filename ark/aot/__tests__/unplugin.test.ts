@@ -195,7 +195,7 @@ interface RawHooks {
 			mode?: string
 			module: { rules: object[] }
 		}
-		hooks: { compilation: { tap(): void } }
+		hooks: { compilation: { tap(): void }; thisCompilation: { tap(): void } }
 	}): void
 	resolveId: {
 		handler(
@@ -2828,7 +2828,10 @@ console.log(T.allows({ x: 1 }))
 			) as unknown as RawHooks
 			plugin.webpack({
 				options: { cache: false, mode, module: { rules: [] } },
-				hooks: { compilation: { tap: () => {} } }
+				hooks: {
+					compilation: { tap: () => {} },
+					thisCompilation: { tap: () => {} }
+				}
 			})
 			const resolved = await plugin.resolveId.handler.call(
 				{ warn: () => {} },
@@ -2860,7 +2863,10 @@ console.log(T.allows({ x: 1 }))
 				apply({
 					context: app,
 					options: { cache: false, mode, module: { rules: [] } },
-					hooks: { compilation: { tap: () => {} } }
+					hooks: {
+						compilation: { tap: () => {} },
+						thisCompilation: { tap: () => {} }
+					}
 				})
 			}
 			const resolved = await plugin.resolveId.handler.call(
@@ -2940,7 +2946,10 @@ console.log(T.allows({ x: 1 }))
 			) as unknown as RawHooks
 			plugin.webpack({
 				options: { cache, module: { rules: [] } },
-				hooks: { compilation: { tap: () => {} } }
+				hooks: {
+					compilation: { tap: () => {} },
+					thisCompilation: { tap: () => {} }
+				}
 			})
 			return plugin
 		}
@@ -2978,7 +2987,10 @@ console.log(T.allows({ x: 1 }))
 			) as unknown as RawHooks
 			plugin.webpack({
 				options: { cache, module: { rules: [] } },
-				hooks: { compilation: { tap: () => {} } }
+				hooks: {
+					compilation: { tap: () => {} },
+					thisCompilation: { tap: () => {} }
+				}
 			})
 			return cache.version
 		}

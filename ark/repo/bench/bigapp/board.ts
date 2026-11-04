@@ -159,10 +159,10 @@ ${summary.join("\n")}
 
 Each cell compares precompiled's better build (default or \`smallest\`) with the best arm. A two-sided sign test paired by round decides a tie, at p 0.05, so 9 rounds can't go below p 0.004. Bytes are exact. Instructions are perf's instructions:u in a window opening before the import. Hot path is ns per call after warm-up: \`ThreadView\` on ntwine, \`checkProject\` on generated apps. A row marked narrows has a narrow on two base Types per 46.
 
-## esbuild, which prunes
+## esbuild
 
 ${esbuild}
-## webpack, which can't prune and minifies with terser
+## webpack, which minifies with terser
 
 ${webpack}
 ${

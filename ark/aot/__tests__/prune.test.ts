@@ -5,10 +5,13 @@ import { linkBundle } from "@ark/aot/internal/link.ts"
 import { emitPrecompiled } from "@ark/aot/internal/emit.ts"
 import {
 	addLoaded,
+	programAsBuilt,
 	scanProgram,
 	unseenProblemOf,
 	writeKeptMembersMessage,
 	writeUnseenMessage,
+	type BuiltImport,
+	type BuiltModule,
 	type LoadedSources
 } from "@ark/aot/internal/scan.ts"
 import {
@@ -36,7 +39,13 @@ import {
 } from "vite"
 import webpack, { type Stats } from "webpack"
 import { spawnSync } from "node:child_process"
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import {
+	existsSync,
+	readdirSync,
+	readFileSync,
+	rmSync,
+	writeFileSync
+} from "node:fs"
 import { join, posix, relative, win32 } from "node:path"
 import { stripVTControlCharacters } from "node:util"
 import {
@@ -2234,58 +2243,692 @@ console.log(out instanceof type.errors ? out.summary : out)
 	})
 
 	describe("webpack and Rspack", () => {
-		const root = writeFixture(
-			{
-				"types.js": types,
-				"main.js": `import { type } from "arktype"
-import { User } from "./types.js"
-
-const out = User({ name: 5 })
-console.log(out instanceof type.errors ? out.summary : out)
-`
-			},
-			fromHere("temp", "prunedWebpack")
-		)
-
 		const compilers = {
 			webpack: [webpack, precompile.webpack],
 			Rspack: [rspack, precompile.rspack]
 		} as const
 
-		// a production build's bundle, as the compiler writes it
-		const bundle = async (
-			name: keyof typeof compilers,
-			opts: PrecompileUnpluginOptions
-		) => {
-			const [compile, plugin] = compilers[name]
-			const outDir = join(root, "out", name)
-			const compiler = (compile as typeof webpack)({
-				mode: "production",
-				context: root,
-				entry: "./main.js",
-				target: "node",
-				output: { path: outDir, filename: "main.js" },
-				plugins: [plugin(opts) as never]
-			})
-			const stats = await new Promise<Stats | undefined>((resolve, reject) =>
+		type Compiler = keyof typeof compilers
+
+		const names = Object.keys(compilers) as Compiler[]
+
+		const configOf = (
+			name: Compiler,
+			root: string,
+			opts: PrecompileUnpluginOptions,
+			config?: object
+		) => ({
+			mode: "production" as const,
+			context: root,
+			entry: "./main.js",
+			target: "node",
+			output: { path: join(root, "out", name), filename: "main.js" },
+			plugins: [compilers[name][1]({ cwd: root, ...opts }) as never],
+			...config
+		})
+
+		const built = (compiler: webpack.Compiler) =>
+			new Promise<Stats | undefined>((resolve, reject) =>
 				compiler.run((error, stats) =>
 					compiler.close(() => (error ? reject(error) : resolve(stats)))
 				)
 			)
+
+		// a production build's bundle, as the compiler writes it
+		const bundle = async (
+			name: Compiler,
+			root: string,
+			opts: PrecompileUnpluginOptions = {},
+			config?: object
+		) => {
+			const stats = await built(
+				(compilers[name][0] as typeof webpack)(
+					configOf(name, root, opts, config)
+				)
+			)
 			if (stats?.hasErrors()) throw new Error(stats.toString("errors-only"))
-			return readFileSync(join(outDir, "main.js"), "utf8")
+			return readFileSync(join(root, "out", name, "main.js"), "utf8")
 		}
 
-		for (const name of Object.keys(compilers) as (keyof typeof compilers)[]) {
-			it(`builds each validator of a ${name} production build whole`, async () => {
-				const built = await bundle(name, {})
-				attest(
-					spawnSync(process.execPath, { input: built, encoding: "utf8" }).stdout
-				).snap("name must be a string\n")
-				attest(built.includes("~standard")).equals(true)
-				attest(built).equals(await bundle(name, { prune: false }))
+		const output = (js: string, cwd?: string) =>
+			spawnSync(process.execPath, { input: js, encoding: "utf8", cwd }).stdout
+
+		// a build writing more than one file, as CommonJS
+		const splitBundle = async (name: Compiler, root: string) => {
+			const stats = await built(
+				(compilers[name][0] as typeof webpack)(
+					configOf(
+						name,
+						root,
+						{},
+						{
+							output: {
+								path: join(root, "out", name),
+								filename: "main.cjs",
+								chunkFilename: "[name].cjs"
+							}
+						}
+					)
+				)
+			)
+			if (stats?.hasErrors()) throw new Error(stats.toString("errors-only"))
+		}
+
+		const readsStandard = `import { User } from "./types.js"
+
+console.log(typeof User["~standard"].validate)
+`
+
+		for (const name of names) {
+			describe(name, () => {
+				const fixture = (test: string, files: Record<string, string>) =>
+					writeFixture(
+						{ "types.js": types, ...files },
+						fromHere("temp", "prunedWebpack", name, test)
+					)
+
+				const cacheOf = (root: string) =>
+					name === "webpack" ?
+						{
+							cache: {
+								type: "filesystem",
+								cacheDirectory: join(root, "cache")
+							}
+						}
+					:	{
+							cache: {
+								type: "persistent",
+								storage: {
+									type: "filesystem",
+									directory: join(root, "cache")
+								}
+							}
+						}
+
+				it("leaves out what no read needs, as an esbuild build does", async () => {
+					const root = fixture("pruned", {
+						"main.js": `import { type } from "arktype"
+import { User } from "./types.js"
+
+const out = User({ name: 5 })
+console.log(out instanceof type.errors ? out.summary : out)
+`
+					})
+					const pruned = await bundle(name, root)
+					attest(output(pruned)).snap("name must be a string\n")
+					attest(pruned.includes("~standard")).equals(false)
+					const whole = await bundle(name, root, { prune: false })
+					attest(output(whole)).equals(output(pruned))
+					attest(whole.includes("~standard")).equals(true)
+				})
+
+				it("leaves an anonymous function its name, though a minifier inlines what sets it", async () => {
+					const root = fixture("anonymous", {
+						"main.js": `import { type } from "arktype"
+
+const Even = type("number").narrow(n => n % 2 === 0)
+console.log(Even(1).summary)
+`
+					})
+					const js = await bundle(name, root)
+					attest(output(js)).snap(
+						"must be valid according to an anonymous predicate\n"
+					)
+				})
+
+				it("reads the file an alias resolves an import to", async () => {
+					const root = fixture("aliased", {
+						"reader.js": readsStandard,
+						"main.js": `import "@reader"\n`
+					})
+					const js = await bundle(
+						name,
+						root,
+						{},
+						{ resolve: { alias: { "@reader": join(root, "reader.js") } } }
+					)
+					attest(output(js)).snap("function\n")
+				})
+
+				it("reads the file a condition resolves an import to", async () => {
+					const root = fixture("conditioned", {
+						"package.json": JSON.stringify({
+							imports: {
+								"#reader": { custom: "./reader.js", default: "./plain.js" }
+							}
+						}),
+						"reader.js": readsStandard,
+						"plain.js": `import { User } from "./types.js"\n\nconsole.log(User({ name: "" }).name)\n`,
+						"main.js": `import "#reader"\n`
+					})
+					const js = await bundle(
+						name,
+						root,
+						{},
+						{ resolve: { conditionNames: ["custom", "import", "..."] } }
+					)
+					attest(output(js)).snap("function\n")
+				})
+
+				it("reads a module as a loader ahead wrote it", async () => {
+					const root = fixture("loaderAhead", {
+						"reads.ts": `export default (source: string) => source + 'console.log(typeof User.assert)\\n'\n`,
+						"main.js": `import { User } from "./types.js"\n\nconsole.log(User({ name: "" }).name)\n`
+					})
+					const js = await bundle(
+						name,
+						root,
+						{},
+						{
+							module: {
+								rules: [
+									{
+										test: /main\.js$/,
+										enforce: "pre",
+										loader: join(root, "reads.ts")
+									}
+								]
+							}
+						}
+					)
+					attest(output(js)).snap("\nfunction\n")
+				})
+
+				it("leaves whole what an import a later loader adds reaches", async () => {
+					const root = fixture("loaderAfter", {
+						"adds.ts": `export default (source: string) => source + 'import { User } from "./types.js"\\nconsole.log(typeof User["~standard"].validate)\\n'\n`,
+						"uses.js": `import { User } from "./types.js"\n\nconsole.log(User({ name: "" }).name)\n`,
+						"main.js": `import "./uses.js"\n`
+					})
+					const js = await bundle(
+						name,
+						root,
+						{},
+						{
+							module: {
+								rules: [{ test: /main\.js$/, loader: join(root, "adds.ts") }]
+							}
+						}
+					)
+					attest(output(js)).snap("\nfunction\n")
+				})
+
+				it("leaves whole what a generated entry imports", async () => {
+					const root = fixture("generated", {
+						"generates.ts": `export default () => 'import { User } from "./types.js"\\nconsole.log(typeof User["~standard"].validate)\\n'\n`,
+						"uses.js": `import { User } from "./types.js"\n\nconsole.log(User({ name: "" }).name)\n`
+					})
+					const js = await bundle(
+						name,
+						root,
+						{},
+						{ entry: [`${join(root, "generates.ts")}!`, "./uses.js"] }
+					)
+					attest(output(js)).snap("function\n\n")
+				})
+
+				it("leaves whole what a loader's stylesheet module imports", async () => {
+					const root = fixture("stylesheet", {
+						"styles.css": "",
+						"generates.ts": `export default () => 'import { User } from "./types.js"\\nconsole.log(typeof User["~standard"].validate)\\n'\n`,
+						"main.js": `import "./styles.css"\nimport { User } from "./types.js"\n\nconsole.log(User({ name: "" }).name)\n`
+					})
+					const js = await bundle(
+						name,
+						root,
+						{},
+						{
+							module: {
+								rules: [
+									{
+										test: /\.css$/,
+										type: "javascript/auto",
+										loader: join(root, "generates.ts")
+									}
+								]
+							}
+						}
+					)
+					attest(output(js)).snap("function\n\n")
+				})
+
+				it("builds each module on its own where a file builds from two codes", async () => {
+					const root = fixture("twoCodes", {
+						"suffix.ts": `export default (source: string) => source + 'export const suffixed = true\\n'\n`,
+						"other.js": `export { suffixed } from "./types.js"\n`,
+						"main.js": `import { User } from "./types.js"
+import { suffixed } from "./other.js"
+
+console.log(User({ name: "" }).name, suffixed)
+`
+					})
+					const config = {
+						module: {
+							rules: [
+								{
+									test: /types\.js$/,
+									issuer: /other\.js$/,
+									enforce: "pre",
+									loader: join(root, "suffix.ts")
+								}
+							]
+						}
+					}
+					const stats = await built(
+						(compilers[name][0] as typeof webpack)(
+							configOf(name, root, {}, config)
+						)
+					)
+					const { errors, warnings } = stats!.toJson({
+						all: false,
+						errors: true,
+						warnings: true
+					})
+					attest(errors).equals([])
+					attest(
+						warnings?.map(({ message }) => message.includes("two codes"))
+					).equals([true])
+					const js = readFileSync(join(root, "out", name, "main.js"), "utf8")
+					attest(output(js)).snap(" true\n")
+					attest(js).equals(await bundle(name, root, { prune: false }, config))
+				})
+
+				it("reads what a queried module reads", async () => {
+					const root = fixture("queriedRead", {
+						"reader.js": readsStandard,
+						"uses.js": `import { User } from "./types.js"\n\nconsole.log(User({ name: "" }).name)\n`,
+						"main.js": `import "./uses.js"\nimport "./reader.js?v=1"\n`
+					})
+					attest(output(await bundle(name, root))).snap("\nfunction\n")
+				})
+
+				it("fails a build as a module it writes fails to precompile", async () => {
+					const root = fixture("refused", {
+						"main.js": `import { User } from "./types.js"\n\nconst read = User\nconsole.log(Object.keys(read))\n`
+					})
+					const message = await bundle(name, root).then(
+						() => "it built",
+						(e: Error) => e.message
+					)
+					attest(
+						message.includes("Object.keys(read) reflects on a Type")
+					).equals(true)
+				})
+
+				it("fails a build as a loader after it refuses what it wrote", async () => {
+					const root = fixture("refusedAfter", {
+						"refuses.ts": `export default (source: string) => {\n\tif (source.includes("~arktype")) throw new Error("refused its imports")\n\treturn source\n}\n`,
+						"main.js": `import { User } from "./types.js"\n\nconsole.log(User({ name: "" }).name)\n`
+					})
+					const message = await bundle(
+						name,
+						root,
+						{},
+						{
+							module: {
+								rules: [
+									{ test: /types\.js$/, loader: join(root, "refuses.ts") }
+								]
+							}
+						}
+					).then(
+						() => "it built",
+						(e: Error) => e.message
+					)
+					attest(message.includes("refused its imports")).equals(true)
+				})
+
+				it("reads what a computed import reaches", async () => {
+					const root = fixture("computed", {
+						"types/a.js": types,
+						"main.js": `const name = process.argv[2] ?? "a"
+import(\`./types/\${name}.js\`).then(({ User }) =>
+	console.log(typeof User.assert)
+)
+`
+					})
+					await splitBundle(name, root)
+					attest(
+						spawnSync(process.execPath, [join(root, "out", name, "main.cjs")], {
+							encoding: "utf8"
+						}).stdout
+					).snap("function\n")
+				})
+
+				it("reads what a worker it builds reads", async () => {
+					const root = fixture("worker", {
+						"worker.js": `import { parentPort } from "node:worker_threads"
+import { User } from "./types.js"
+
+parentPort.postMessage(typeof User["~standard"].validate)
+`,
+						"main.js": `import { Worker } from "node:worker_threads"
+import { User } from "./types.js"
+
+console.log(User({ name: "" }).name)
+new Worker(new URL("./worker.js", import.meta.url))
+`
+					})
+					await splitBundle(name, root)
+					const dir = join(root, "out", name)
+					attest(
+						readdirSync(dir).some(
+							file =>
+								file !== "main.cjs" &&
+								readFileSync(join(dir, file), "utf8").includes("~standard")
+						)
+					).equals(true)
+				})
+
+				it("answers a build its cache kept as one with no cache, whichever file a read moved to", async () => {
+					const root = fixture("cached", {
+						"reader.js": `import { User } from "./types.js"\n\nconsole.log(User({ name: "" }).name)\n`,
+						"main.js": `import "./reader.js"\n`
+					})
+					const cache = cacheOf(root)
+					const uncached = () => bundle(name, root)
+					const cold = await bundle(name, root, {}, cache)
+					attest(cold.includes("~standard")).equals(false)
+					attest(cold).equals(await uncached())
+					attest(await bundle(name, root, {}, cache)).equals(cold)
+					writeFileSync(join(root, "reader.js"), readsStandard)
+					const edited = await bundle(name, root, {}, cache)
+					attest(output(edited)).snap("function\n")
+					attest(edited).equals(await uncached())
+				})
+
+				it("answers a build its cache kept as a loader ahead wrote it", async () => {
+					const root = fixture("cachedAhead", {
+						"reads.ts": `export default (source: string) => source + 'console.log(typeof User["~standard"].validate)\\n'\n`,
+						"main.js": `import { User } from "./types.js"\n\nconsole.log(User({ name: "" }).name)\n`
+					})
+					const config = (cached: object) => ({
+						...cached,
+						module: {
+							rules: [
+								{
+									test: /main\.js$/,
+									enforce: "pre",
+									loader: join(root, "reads.ts")
+								}
+							]
+						}
+					})
+					const cache = cacheOf(root)
+					const cold = await bundle(name, root, {}, config(cache))
+					attest(output(cold)).snap("\nfunction\n")
+					attest(await bundle(name, root, {}, config(cache))).equals(cold)
+				})
+
+				it("reads again as a watch build's file changes", async () => {
+					const root = fixture("watched", {
+						"reader.js": `import { User } from "./types.js"\n\nconsole.log(User({ name: "" }).name)\n`,
+						"main.js": `import "./reader.js"\n`
+					})
+					const compiler = (compilers[name][0] as typeof webpack)(
+						configOf(name, root, {})
+					)
+					const outputs: string[] = []
+					await new Promise<void>((resolve, reject) => {
+						const watching = compiler.watch({}, (error, stats) => {
+							if (error) return reject(error)
+							if (stats?.hasErrors())
+								return reject(new Error(stats.toString("errors-only")))
+							outputs.push(
+								output(readFileSync(join(root, "out", name, "main.js"), "utf8"))
+							)
+							if (outputs.length === 1)
+								writeFileSync(join(root, "reader.js"), readsStandard)
+							else watching!.close(() => resolve())
+						})
+					})
+					attest(outputs).equals(["\n", "function\n"])
+				})
+
+				it("prunes each of a multi-compiler's builds by its own reads", async () => {
+					const root = fixture("multi", {
+						"reads.js": readsStandard,
+						"calls.js": `import { User } from "./types.js"\n\nconsole.log(User({ name: "" }).name)\n`
+					})
+					const configOfEntry = (entry: string) => ({
+						...configOf(name, root, {}),
+						name: entry,
+						entry: `./${entry}.js`,
+						output: {
+							path: join(root, "out", name),
+							filename: `${entry}.js`
+						}
+					})
+					await new Promise<void>((resolve, reject) => {
+						const compiler = (compilers[name][0] as unknown as typeof webpack)([
+							configOfEntry("reads"),
+							configOfEntry("calls")
+						] as never)
+						compiler.run((error, stats) =>
+							compiler.close(() =>
+								error ? reject(error)
+								: stats?.hasErrors() ?
+									reject(new Error(stats.toString("errors-only")))
+								:	resolve()
+							)
+						)
+					})
+					const emitted = (entry: string) =>
+						readFileSync(join(root, "out", name, `${entry}.js`), "utf8")
+					attest(output(emitted("reads"))).snap("function\n")
+					attest(emitted("calls").includes("~standard")).equals(false)
+				})
 			})
 		}
+
+		// Rspack's child compilations can't load unplugin's virtual modules
+		// Rspack has no such hook, as it only adds a module as it makes them
+		it("fails where a webpack plugin builds a module once it read them", async () => {
+			const root = writeFixture(
+				{
+					"types.js": types,
+					"late.js": readsStandard,
+					"main.js": `import { User } from "./types.js"\n\nconsole.log(User({ name: "" }).name)\n`
+				},
+				fromHere("temp", "prunedWebpack", "late")
+			)
+			const late = {
+				apply: (compiler: webpack.Compiler) =>
+					compiler.hooks.thisCompilation.tap("late", compilation =>
+						compilation.hooks.finishModules.tapAsync("late", (_, done) =>
+							compilation.addInclude(
+								root,
+								compiler.webpack.EntryPlugin.createDependency("./late.js", {
+									name: "main"
+								}),
+								{ name: "main" },
+								error => done(error ?? undefined)
+							)
+						)
+					)
+			}
+			const failure = await bundle(
+				"webpack",
+				root,
+				{},
+				{ plugins: [precompile.webpack({ cwd: root }) as never, late as never] }
+			).then(
+				() => "it built",
+				(e: Error) => e.message
+			)
+			attest(
+				failure.includes(
+					writeUnseenMessage("a plugin built late.js once it had read them")
+				)
+			).equals(true)
+		})
+
+		it("builds a webpack child compilation's modules whole", async () => {
+			const root = writeFixture(
+				{
+					"types.js": types,
+					"child.js": `import { User } from "./types.js"\n\nexport const validate = User["~standard"].validate\n`,
+					"main.js": `import { User } from "./types.js"\n\nconsole.log(User({ name: "" }).name)\n`
+				},
+				fromHere("temp", "prunedWebpack", "child")
+			)
+			const child = {
+				apply: (compiler: webpack.Compiler) =>
+					compiler.hooks.make.tapAsync("child", (compilation, done) =>
+						compilation
+							.createChildCompiler("child", { filename: "child.js" }, [
+								new compiler.webpack.EntryPlugin(root, "./child.js", {
+									name: "child"
+								})
+							])
+							.runAsChild(error => done(error ?? undefined))
+					)
+			}
+			const js = await bundle(
+				"webpack",
+				root,
+				{},
+				{
+					plugins: [precompile.webpack({ cwd: root }) as never, child as never]
+				}
+			)
+			attest(js.includes("~standard")).equals(false)
+			attest(
+				readFileSync(join(root, "out", "webpack", "child.js"), "utf8").includes(
+					"~standard"
+				)
+			).equals(true)
+		})
+	})
+
+	describe("programAsBuilt", () => {
+		const moduleOf = (
+			id: string | undefined,
+			source?: string | null,
+			...imports: BuiltImport[]
+		): BuiltModule => ({
+			id,
+			source,
+			transformed: true,
+			mappings: undefined,
+			imports
+		})
+
+		const importOf = (
+			specifier: string | undefined,
+			target: BuiltModule
+		): BuiltImport => ({ specifier, isDynamic: false, target })
+
+		const readOf = (...entries: BuiltModule[]) =>
+			programAsBuilt("1", entries, {
+				isTransformed: id => !id.includes("node_modules"),
+				cwd: "/app"
+			})
+
+		it("refuses a file built from two codes", () => {
+			attest(readOf(moduleOf("/app/a.ts", null))).equals(
+				"it built a.ts from two codes"
+			)
+			attest(
+				readOf(moduleOf("/app/a.ts", ""), moduleOf("/app/a.ts", "export {}"))
+			).equals("it built a.ts from two codes")
+		})
+
+		it("refuses a specifier a module imports as two files", () => {
+			const source = `import "./c.ts"`
+			attest(
+				readOf(
+					moduleOf(
+						"/app/a.ts",
+						source,
+						importOf("./c.ts", moduleOf("/app/one/c.ts", "")),
+						importOf("./c.ts", moduleOf("/app/two/c.ts", ""))
+					)
+				)
+			).equals(`a.ts imports "./c.ts" as both one/c.ts and two/c.ts`)
+		})
+
+		it("refuses a module it can't read or parse", () => {
+			attest(readOf(moduleOf("/app/a.ts"))).equals("a.ts can't be read")
+			attest(readOf(moduleOf("/app/a.ts", "const"))).equals(
+				"a.ts:1:6 can't be parsed"
+			)
+		})
+
+		it("exposes what a generated module, or an import its text doesn't name, reaches", () => {
+			const read = readOf(
+				moduleOf(
+					undefined,
+					undefined,
+					importOf("./page.ts", moduleOf("/app/page.ts", ""))
+				),
+				moduleOf(
+					"/app/main.ts",
+					`import "./named.ts"`,
+					importOf("./named.ts", moduleOf("/app/named.ts", "")),
+					importOf("./added.ts", moduleOf("/app/added.ts", "")),
+					importOf(undefined, moduleOf("/app/unnamed.ts", ""))
+				)
+			)
+			attest(typeof read !== "string" && read.exposed).equals([
+				"/app/added.ts",
+				"/app/page.ts",
+				"/app/unnamed.ts"
+			])
+		})
+
+		it("writes no program as one chunk where one imports another dynamically", () => {
+			const read = readOf(
+				moduleOf("/app/main.ts", `import("./lazy.ts")`, {
+					specifier: "./lazy.ts",
+					isDynamic: true,
+					target: moduleOf("/app/lazy.ts", "")
+				})
+			)
+			if (typeof read === "string") throw new Error(read)
+			attest(read.dynamicImports).equals(["/app/lazy.ts"])
+			attest(read.isOneChunk).equals(false)
+		})
+
+		it("reads what a dependency imports, not the dependency", () => {
+			const read = readOf(
+				moduleOf(
+					"/app/main.ts",
+					`import "dep"`,
+					importOf(
+						"dep",
+						moduleOf(
+							"/app/node_modules/dep/index.js",
+							undefined,
+							importOf("../../held.ts", moduleOf("/app/held.ts", ""))
+						)
+					)
+				)
+			)
+			if (typeof read === "string") throw new Error(read)
+			attest(Object.keys(read.modules)).equals(["/app/held.ts", "/app/main.ts"])
+			attest(read.exposed).equals(["/app/held.ts"])
+			attest(read.isOneChunk).equals(false)
+		})
+
+		it("answers alike however the bundler found its modules", () => {
+			const reading = (reversed: boolean) => {
+				const imports = [
+					importOf("./a.ts", moduleOf("/app/a.ts", "")),
+					importOf("./b.ts", moduleOf("/app/b.ts", ""))
+				]
+				return readOf(
+					moduleOf(
+						"/app/main.ts",
+						`import "./a.ts"\nimport "./b.ts"`,
+						...(reversed ? imports.reverse() : imports)
+					)
+				)
+			}
+			attest(JSON.stringify(reading(true))).equals(
+				JSON.stringify(reading(false))
+			)
+		})
 	})
 
 	describe("hosts that can't prune", () => {
@@ -2332,30 +2975,6 @@ console.log(out instanceof type.errors ? out.summary : out)
 			).equals([
 				writePruneHostMessage("Turbopack"),
 				writePruneHostMessage("Turbopack")
-			])
-		})
-
-		it("refuses it with webpack and Rspack", () => {
-			const compile = (opts: PrecompileUnpluginOptions) => ({
-				mode: "production" as const,
-				context: settled,
-				entry: "./main.js",
-				plugins: [precompile.webpack(opts) as never]
-			})
-			attest(refusals(opts => webpack(compile(opts)))).equals([
-				writePruneHostMessage("webpack"),
-				writePruneHostMessage("webpack")
-			])
-			attest(
-				refusals(opts =>
-					rspack({
-						...compile(opts),
-						plugins: [precompile.rspack(opts) as never]
-					})
-				)
-			).equals([
-				writePruneHostMessage("rspack"),
-				writePruneHostMessage("rspack")
 			])
 		})
 

@@ -2,6 +2,7 @@ import type {
 	IssueFeatures,
 	ValidatorMember
 } from "arktype/internal/standalone.ts"
+import { flatMorph } from "@ark/util"
 import { isAbsolute } from "node:path"
 import { parseSync, type Program } from "oxc-parser"
 import { dependencyOf, fileOf, printablePathOf, transformedId } from "./host.ts"
@@ -224,6 +225,135 @@ function* programSteps(
 	}
 }
 
+// a module as a bundler built it, for a host that can read one only once it has
+export interface BuiltModule {
+	// its file, undefined where it has none, like what a loader generates
+	id: string | undefined
+	// as it reached the plugin, or as built where the plugin leaves it, null
+	// where the bundle built the file from two codes
+	source: string | null | undefined
+	transformed: boolean
+	mappings: string | undefined
+	imports: BuiltImport[]
+}
+
+export interface BuiltImport {
+	// undefined where nothing names it, like what a bundler's plugin adds
+	specifier: string | undefined
+	isDynamic: boolean
+	target: BuiltModule
+}
+
+// what the modules a bundler built from its entries read, or why it can't tell.
+// Nothing about it is a guess at what the bundle holds, so what it can't read
+// is what no module of the program reads through a name it knows
+export const programAsBuilt = (
+	key: string,
+	entries: readonly BuiltModule[],
+	host: Pick<ScanHost, "isTransformed" | "cwd">
+): ScannedProgram | string => {
+	const pathOf = (id: string) => printablePathOf(host.cwd, id)
+	const modules: Record<string, ScannedModule> = {}
+	const targets: Record<string, Record<string, string>> = {}
+	const arkImports: Record<string, string[]> = {}
+	const dynamicImports = new Set<string>()
+	const exposed = new Set<string>()
+	let isImportedByDependency = false
+	const isRead = (module: BuiltModule) => isReadBuilt(module, host)
+	// what each module's text imports, which a loader after the plugin may add to
+	const namedBy = new Map<string, Set<string>>()
+	const reached = new Set(entries)
+	for (const module of reached) {
+		if (isRead(module)) {
+			const { id, source, transformed, mappings } = module
+			if (source === undefined) return `${pathOf(id)} can't be read`
+			if (source === null || (id in modules && modules[id].source !== source))
+				return `it built ${pathOf(id)} from two codes`
+			if (!(id in modules)) {
+				const { imports, unnamed } = importsOf(id, source)
+				if (unnamed?.reason === unparsed)
+					return `${positionIn(pathOf(id), source, unnamed.offset)} ${unparsed}`
+				namedBy.set(id, new Set(imports.map(([specifier]) => specifier)))
+				modules[id] = { source, transformed, mappings }
+				targets[id] = {}
+			}
+		}
+		for (const { specifier, isDynamic, target } of module.imports) {
+			if (specifier !== undefined && runtimeSpecifier.test(specifier)) {
+				// a generated module's reads are as unknown as a dependency's
+				const imported = (arkImports[module.id ?? ""] ??= [])
+				if (!imported.includes(specifier)) imported.push(specifier)
+				continue
+			}
+			reached.add(target)
+			if (!isRead(target)) continue
+			if (isDynamic) dynamicImports.add(target.id)
+			if (!isRead(module)) {
+				exposed.add(target.id)
+				isImportedByDependency = true
+				continue
+			}
+			if (specifier === undefined || !namedBy.get(module.id)!.has(specifier))
+				exposed.add(target.id)
+			if (specifier === undefined) continue
+			const resolved = targets[module.id]
+			if (specifier in resolved && resolved[specifier] !== target.id)
+				return `${pathOf(module.id)} imports "${specifier}" as both ${pathOf(resolved[specifier])} and ${pathOf(target.id)}`
+			resolved[specifier] = target.id
+		}
+	}
+	const read = [...new Set(entries.filter(isRead).map(({ id }) => id))]
+	return {
+		key,
+		entries: read.sort(),
+		modules: sortedByKey(modules),
+		targets: sortedByKey(
+			flatMorph(targets, (id, resolved) => [id, sortedByKey(resolved)])
+		),
+		arkImports: sortedByKey(
+			flatMorph(arkImports, (id, imported) => [id, imported.sort()])
+		),
+		dynamicImports: [...dynamicImports].sort(),
+		exposed: [...exposed].sort(),
+		isOneChunk:
+			entries.length === 1 &&
+			read.length === 1 &&
+			!dynamicImports.size &&
+			!isImportedByDependency
+	}
+}
+
+const isReadBuilt = (
+	module: BuiltModule,
+	host: Pick<ScanHost, "isTransformed">
+): module is BuiltModule & { id: string } =>
+	module.id !== undefined && !isLeftDependency(module.id, host)
+
+// a module the bundle reaches that its program doesn't hold, as a plugin may
+// add one once the program's read
+export const unreadBuiltOf = (
+	{ modules }: ScannedProgram,
+	entries: readonly BuiltModule[],
+	host: Pick<ScanHost, "isTransformed">
+): string | undefined => {
+	const reached = new Set(entries)
+	for (const module of reached) {
+		if (isReadBuilt(module, host) && !(module.id in modules)) return module.id
+		for (const { specifier, target } of module.imports) {
+			if (specifier === undefined || !runtimeSpecifier.test(specifier))
+				reached.add(target)
+		}
+	}
+}
+
+// the same program read in any order answers the same
+const sortedByKey = <value>(o: Record<string, value>): Record<string, value> =>
+	Object.fromEntries(
+		Object.keys(o)
+			.sort()
+			.map(k => [k, o[k]])
+	)
+
 // import.meta members that load no module; hot and webpackHot are undefined or
 // inert in a production build
 export const isInertMetaProperty = (name: unknown): boolean =>
@@ -272,6 +402,8 @@ interface UnnamedImport {
 	reason: string
 }
 
+const unparsed = "can't be parsed"
+
 const unnamedAt = (offset: number, reason: string): UnnamedImport => ({
 	offset,
 	reason
@@ -291,7 +423,7 @@ export const importsOf = (
 	if (errors.length) {
 		return {
 			imports,
-			unnamed: unnamedAt(errors[0].labels[0]?.start ?? 0, "can't be parsed")
+			unnamed: unnamedAt(errors[0].labels[0]?.start ?? 0, unparsed)
 		}
 	}
 	let unnamed: UnnamedImport | undefined

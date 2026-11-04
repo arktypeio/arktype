@@ -9,8 +9,10 @@ import { spawnSync } from "node:child_process"
 import {
 	existsSync,
 	mkdirSync,
+	readdirSync,
 	readFileSync,
 	rmSync,
+	statSync,
 	writeFileSync
 } from "node:fs"
 import { createRequire } from "node:module"
@@ -56,7 +58,11 @@ const files: Record<string, string> = {
 	"app/layout.jsx":
 		"export default function Layout({ children }) {\n\treturn <html><body>{children}</body></html>\n}\n",
 	"app/page.jsx":
-		'import { User } from "defines-types"\nimport { failed } from "reads-errors"\n\nexport default function Page() {\n\treturn <p>{User({ name: "Ada" }).name} {String(failed(User({})))}</p>\n}\n',
+		'import { User } from "defines-types"\nimport { failed } from "reads-errors"\nimport { Reads } from "./reads.jsx"\n\nexport default function Page() {\n\treturn <p>{User({ name: "Ada" }).name} {String(failed(User({})))} <Reads /></p>\n}\n',
+	// a client component, whose module Next's generated code imports, and only
+	// its own compiler's reads may keep a member
+	"app/reads.jsx":
+		'"use client"\nimport { Age } from "../src/age.ts"\n\nexport const Reads = () => typeof Age.assert\n',
 	// as Next.js leaves on the pages router's server unless told otherwise
 	"pages/legacy.jsx":
 		'import { type } from "arktype"\nimport { failed } from "reads-errors"\nimport { Age } from "../src/age.ts"\n\nexport default function Legacy() {\n\tconst out = Age({ age: -1 })\n\treturn <p>own {String(out instanceof type.errors)} dependency {String(failed(out))}</p>\n}\n',
@@ -127,7 +133,11 @@ const assertRendered = (
 			`${bundler} should build the app. It exited ${status}:\n${output}`
 		)
 	}
-	if (!readFileSync(app, "utf8").includes("Ada<!-- --> <!-- -->true")) {
+	if (
+		!readFileSync(app, "utf8").includes(
+			"Ada<!-- --> <!-- -->true<!-- --> <!-- -->function"
+		)
+	) {
 		throw new Error(
 			`The prerendered page doesn't show the Type's results: ${app}`
 		)
@@ -183,9 +193,29 @@ assertFailsWith(
 	)
 )
 
+// a member no read of the app's needs, which only a whole-program read can drop
+const emittedWith = (text: string, dir: string): string[] =>
+	readdirSync(dir, { recursive: true, encoding: "utf8" }).filter(file => {
+		const path = join(dir, file)
+		return (
+			file.endsWith(".js") &&
+			statSync(path).isFile() &&
+			readFileSync(path, "utf8").includes(text)
+		)
+	})
+
 console.log("▲ Building it with webpack...")
 
 assertRendered("webpack", build(webpack, "--webpack"))
+
+for (const compiler of ["server", "static"]) {
+	const whole = emittedWith("~standard", join(appDir, ".next", compiler))
+	if (whole.length) {
+		throw new Error(
+			`webpack's ${compiler} build should prune what no module reads, but kept ~standard in ${whole.join(", ")}`
+		)
+	}
+}
 
 console.log(
 	"▲ Building it with webpack, Next leaving the pages router's dependencies external..."
