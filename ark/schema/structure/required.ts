@@ -70,7 +70,7 @@ export class RequiredNode extends BaseProp<"required"> {
 		))
 	}
 
-	declare private _errorCtx: NodeErrorContextInput<"required"> | undefined
+	private _errorCtx: NodeErrorContextInput<"required"> | undefined
 	get errorCtx(): NodeErrorContextInput<"required"> {
 		return (this._errorCtx ??= Object.freeze({
 			code: "required",
