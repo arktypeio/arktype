@@ -72,6 +72,7 @@ export {
 	configure,
 	configuredFallbackOf,
 	configuredWriterOf,
+	copyDeclared,
 	copyOf,
 	describeCollapsibleDate,
 	describePredicate,

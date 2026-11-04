@@ -41,6 +41,7 @@ import {
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import {
+	copyDeclared,
 	copyOf,
 	keepOwn,
 	holdsOnlyIndices,
@@ -1403,17 +1404,25 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			:	"Object.getPrototypeOf(data) !== Object.prototype"
 		// checked after the literal's reads
 		js.if(copies, () =>
-			js.outline(
-				`${js.nameOf(this.id)}Copy`,
-				[
-					"out",
-					...transformedProps.flatMap((_, i) => [
-						`value${i}`,
-						`transformed${i}`
-					])
-				],
-				deleteFromCopy
-			)
+			!this.defaultable.length && !this.protoProps.length && !this.index ?
+				js.return(
+					`${js.ref(copyDeclared)}(data, [${this.inOrder.map(prop => js.serialize(prop.key)).join(", ")}]${
+						transformedProps.length ?
+							`, [${transformedProps.map((prop, i) => `${js.serialize(prop.key)}, value${i}, transformed${i}`).join(", ")}]`
+						:	""
+					})`
+				)
+			:	js.outline(
+					`${js.nameOf(this.id)}Copy`,
+					[
+						"out",
+						...transformedProps.flatMap((_, i) => [
+							`value${i}`,
+							`transformed${i}`
+						])
+					],
+					deleteFromCopy
+				)
 		)
 		for (const prop of added) {
 			const store = () =>
