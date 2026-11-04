@@ -780,17 +780,16 @@ const alternativesOf = (issues: ArkIssue[]): string[] =>
 
 // each path as its own issue's message writes it, as arktype's union does
 const writeListed = (errors: readonly ArkIssue[], depth = 0): string => {
-	const atSubject = new Map<string, ArkIssue[]>()
+	// keyed by what `must be` ends, so no key is an object's own or an index
+	const atSubject: Record<string, ArkIssue[]> = {}
 	for (const error of errors) {
 		error.message ??= messageOf(error)
-		const subject = messageOf({
-			path: error.path.slice(depth),
-			expected: ""
-		} as never)
-		atSubject.set(subject, [...(atSubject.get(subject) ?? []), error])
+		;(atSubject[
+			messageOf({ path: error.path.slice(depth), expected: "" } as never)
+		] ??= []).push(error)
 	}
 	return writeBranches(
-		[...atSubject].map(
+		Object.entries(atSubject).map(
 			([subject, same]) => subject + writeBranches(alternativesOf(same))
 		)
 	)
@@ -835,9 +834,6 @@ type UnionIssueOf = (
 	errors: readonly ArkIssue[]
 ) => ArkIssue
 
-const listedIssue: UnionIssueOf = (path, data, errors) =>
-	new ListedIssue(path.slice(), data, errors)
-
 // a union's issue where it's written its own text, expecting what its branches
 // did unless that's what's written
 export const ownIssue = ((site: FailureSite): UnionIssueOf =>
@@ -855,14 +851,15 @@ export const failsListed = ((
 	ctx: any,
 	firsts: readonly ArkIssue[],
 	data: unknown,
-	issueOf = listedIssue
+	issueOf?: UnionIssueOf
 ): boolean | undefined => {
-	const issue = issueOf(
-		ctx._p ?? ctx.path,
-		data,
-		// a shared object reports one issue to each branch reaching it, listed once
-		[...new Set(firsts.flatMap(first => first.errors ?? first))]
-	)
+	const path = ctx._p ?? ctx.path
+	// a shared object reports one issue to each branch reaching it, listed once
+	const errors = [...new Set(firsts.flatMap(first => first.errors ?? first))]
+	const issue =
+		issueOf ?
+			issueOf(path, data, errors)
+		:	new ListedIssue(path.slice(), data, errors)
 	if (ctx._p) ctx._.push(issue)
 	else ctx.addError(issue)
 	return ctx.failFast
