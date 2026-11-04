@@ -31,9 +31,9 @@ try {
 // after the check, since it imports arktype
 const { check, countOf } = await import("./check.ts")
 
-// a host's options aside, and the CLI's own --declare
+// a host's options and a test's aside, and the CLI's own --declare
 const options = Object.entries(cliOptions).filter(
-	([name]) => name !== "inline" && name !== "declare"
+	([name]) => name !== "inline" && name !== "declare" && name !== "defers"
 )
 
 const flagOf = (name: string) =>

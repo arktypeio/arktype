@@ -424,7 +424,7 @@ var union1y9gxj7031g78p = [/* @__PURE__ */ units(["all", "first", "none"])]
 var unionjwbmn509wm1l0 = [/* @__PURE__ */ units(["always", false, true])]
 var union4aw8e70iusaxh = [/* @__PURE__ */ units(["size", "speed"])]
 var union13fa4p20868rbd = [/* @__PURE__ */ units(["helpers", "none", "types"])]
-var intersection1ise2k907o2mee = /* @__PURE__ */ ((
+var intersection1ixlu4z0l7gmlf = /* @__PURE__ */ ((
 	[intersectiono7wbyf0ild808Allows],
 	[uniontxb0ck1na4t1cAllows],
 	[intersection1saekmc1myv528Allows],
@@ -438,13 +438,13 @@ var intersection1ise2k907o2mee = /* @__PURE__ */ ((
 	[union14x0uzw08oe5zuAllows],
 	[union13fa4p20868rbdAllows]
 ) => {
-	const intersection1ise2k907o2meeAllows = (data, ctx) => {
+	const intersection1ixlu4z0l7gmlfAllows = (data, ctx) => {
 		if (!(data instanceof Object || Object(data) === data)) {
 			return !failsAt(ctx, siteOf("domain", "an object"), data)
 		}
-		return structure1ta9jm20zuf7krAllows(data, ctx)
+		return structure1bbc1qq17ha5krAllows(data, ctx)
 	}
-	const structure1ta9jm20zuf7krAllows = (data, ctx) => {
+	const structure1bbc1qq17ha5krAllows = (data, ctx) => {
 		if (
 			!(
 				!("preset" in data) ||
@@ -624,6 +624,14 @@ var intersection1ise2k907o2mee = /* @__PURE__ */ ((
 		) {
 			return false
 		}
+		if (
+			!(
+				!("defers" in data) ||
+				!failsIn(ctx, union14x0uzw08oe5zuAllows, data, "defers")
+			)
+		) {
+			return false
+		}
 		for (const k in data) {
 			switch (k) {
 				case "allowUnsafe":
@@ -633,6 +641,7 @@ var intersection1ise2k907o2mee = /* @__PURE__ */ ((
 				case "creationChecks":
 				case "cwd":
 				case "declare":
+				case "defers":
 				case "dependencies":
 				case "errors":
 				case "freeze":
@@ -658,7 +667,7 @@ var intersection1ise2k907o2mee = /* @__PURE__ */ ((
 		}
 		return true
 	}
-	return [intersection1ise2k907o2meeAllows]
+	return [intersection1ixlu4z0l7gmlfAllows]
 })(
 	intersectiono7wbyf0ild808,
 	uniontxb0ck1na4t1c,
@@ -1004,8 +1013,8 @@ var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
 				const validator0 = create10n7yuw0bfhpvo(
-					intersection1ise2k907o2mee,
-					"1memd7b1"
+					intersection1ixlu4z0l7gmlf,
+					"msro2119"
 				)
 				return validator0
 			})())
@@ -1043,6 +1052,7 @@ export const cliOptions = {
 	creationChecks: { type: "string", values: "helpers|none|types" },
 	cwd: { type: "string", values: "path" },
 	declare: { type: "boolean", values: "true|false" },
+	defers: { type: "boolean", values: "true|false" },
 	dependencies: { type: "object", values: "json" },
 	errors: { type: "string", values: "all|first|none" },
 	freeze: { type: "boolean", values: "true|false" },

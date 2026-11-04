@@ -47,6 +47,8 @@ export const PrecompileOptions = type({
 	"cwd?": type("string > 0").describe("a path"),
 	"inline?": flag,
 	"declare?": flag,
+	// a test's, past the count deciding it
+	"defers?": flag,
 	"+": "reject"
 })
 

@@ -53,7 +53,8 @@ import {
 	type StandaloneBake,
 	type StandaloneModules,
 	type StandaloneOptions,
-	type Configured
+	type Configured,
+	defersCreation
 } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
 import { dirname, join } from "node:path"
@@ -351,6 +352,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	allowUnsafe?: boolean | undefined
 	/** packages that don't opt in, precompiled ("aot") or run on arktype */
 	dependencies?: DependencyModes | undefined
+	/** @internal for a test, whatever the count of validators written together */
+	defers?: boolean | undefined
 }
 
 type ProgramReads = Pick<
@@ -362,6 +365,8 @@ type ProgramReads = Pick<
 	| "combines"
 	| "shapes"
 	| "baked"
+	| "flattens"
+	| "defers"
 > & {
 	// what a module another plugin rewrote bakes, given its runtime
 	bakedAs?: (runtime: RuntimeModule) => ReadonlyMap<string, BakedMembers>
@@ -369,6 +374,10 @@ type ProgramReads = Pick<
 
 interface ProgramUsage {
 	members: ValidatorMembers
+	// whether its units are declared in one function
+	flattens?: boolean | undefined
+	// whether its validators create their traversals at their first call
+	defers?: boolean | undefined
 	// the introspection members each site's validator bakes, as its readers
 	// read it, by the site's key
 	baked?: ReadonlyMap<string, BakedMembers> | undefined
@@ -467,6 +476,7 @@ export class Precompiler {
 	interpreter: Interpreter
 	config: string | undefined
 	inline: boolean
+	private defers: boolean | undefined
 	checkHelpers: boolean
 	private mode: PrecompileMode
 	// false where `config` is, so configure() fails
@@ -547,6 +557,7 @@ export class Precompiler {
 		this.config = opts.config || undefined
 		this.configures = opts.config !== false
 		this.inline = !!opts.inline
+		this.defers = opts.defers
 		const checks = opts.creationChecks ?? "types"
 		this.checkHelpers = this.mode === "standalone" && checks === "helpers"
 		this.shadow = this.mode === "standalone" && !!opts.shadow
@@ -774,6 +785,8 @@ export class Precompiler {
 			this.standalone.optimize === "speed"
 		// a program read whole is written too, as its issues may hold less than any
 		const usage: ProgramUsage = {
+			flattens,
+			defers: flattens ? this.defersIn(plan.planned) : undefined,
 			members: {
 				...this.members,
 				...Object.fromEntries(dropped.map(member => [member, false]))
@@ -819,7 +832,13 @@ export class Precompiler {
 		const { written, runtimes } = wrote
 		usage.flat =
 			flattens ?
-				this.flattenWritten(written, plan.sources, program, runtimes)
+				this.flattenWritten(
+					written,
+					plan.sources,
+					program,
+					runtimes,
+					!!usage.defers
+				)
 			:	undefined
 		usage.written = written
 		const issues = this.issuesOf(program, written)
@@ -1486,7 +1505,8 @@ export class Precompiler {
 		written: Record<string, PrecompiledModule>,
 		sources: Record<string, string>,
 		program: ScannedProgram,
-		runtimes: ReadonlyMap<string, RuntimeModule>
+		runtimes: ReadonlyMap<string, RuntimeModule>,
+		defers: boolean
 	): FlatBundle | undefined {
 		const sites: Record<string, string> = {}
 		const modules: Record<string, string> = {}
@@ -1494,11 +1514,17 @@ export class Precompiler {
 			sites[id] = written[id].code
 			Object.assign(modules, written[id].modules)
 		}
-		const flat = flattenBundle(sites, modules, {
-			modules: [...runtimes.values()].map(runtime => runtime.module),
-			entries: [...program.entries, ...program.exposed],
-			resolve: (specifier, importer) => program.targets[importer]?.[specifier]
-		})
+		const flat = flattenBundle(
+			sites,
+			modules,
+			{
+				modules: [...runtimes.values()].map(runtime => runtime.module),
+				entries: [...program.entries, ...program.exposed],
+				resolve: (specifier, importer) => program.targets[importer]?.[specifier]
+			},
+			true,
+			defers
+		)
 		if (!flat) return
 		const reach = reacherOf(flat.modules)
 		for (const id in written) {
@@ -1510,6 +1536,22 @@ export class Precompiler {
 			)
 		}
 		return flat
+	}
+
+	private defersIn(planned: ReadonlyMap<string, RuntimeModule>): boolean {
+		let validators = 0
+		for (const { validators: read } of planned.values())
+			validators += read.length
+		return this.defersWith(validators)
+	}
+
+	// whether these validators, written together, are created at their first call
+	private defersWith(validators: number): boolean {
+		return (
+			this.standalone.lazy === true &&
+			this.standalone.optimize === "speed" &&
+			(this.defers ?? defersCreation(validators))
+		)
 	}
 
 	private usageIn(
@@ -2813,7 +2855,9 @@ export class Precompiler {
 			combines,
 			shapes,
 			baked,
-			bakedAs
+			bakedAs,
+			flattens,
+			defers
 		}: ProgramReads,
 		diagnostics: Diagnostic[]
 	): [validators: StandaloneModules, bakes: ImportedBake[]] {
@@ -2863,6 +2907,8 @@ export class Precompiler {
 		}
 		for (;;) {
 			const refusalsByName: Record<string, string[]> = {}
+			const defersHere =
+				defers ?? this.defersWith(Object.keys(exportsByName).length)
 			const validators =
 				Object.keys(exportsByName).length ?
 					writeValidators(
@@ -2880,7 +2926,10 @@ export class Precompiler {
 							configured,
 							bake: write => this.bake(write),
 							sharedWrites: this.sharedWrites,
-							hoisted: this.isReachedEarly(module),
+							defers: defersHere,
+							// a unit outside the function it would be read from at a
+							// first call runs at its first call too
+							hoisted: this.isReachedEarly(module) || (defersHere && !flattens),
 							// shadow mode calls what it compares
 							values: !this.shadow,
 							readOnLoad: [...namesBySite]
