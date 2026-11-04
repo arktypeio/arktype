@@ -48,6 +48,7 @@ export const writeBoard = (resultPath: string, outPath: string) => {
 		at: string
 		rounds: number
 		loads: number[]
+		failed?: Record<string, string>
 		arms: Record<string, Arm>
 	} = JSON.parse(readFileSync(resultPath, "utf8"))
 	const groups = [
@@ -85,7 +86,8 @@ export const writeBoard = (resultPath: string, outPath: string) => {
 				)
 				const best = ranked.find(([library]) => ours.includes(library))!
 				for (const build of ours) {
-					const mine = arms.find(([library]) => library === build)![1]
+					const mine = arms.find(([library]) => library === build)?.[1]
+					if (!mine) continue
 					const beaten = arms.every(
 						([library, arm]) =>
 							ours.includes(library) ||
@@ -163,7 +165,15 @@ ${esbuild}
 ## webpack, which can't prune and minifies with terser
 
 ${webpack}
-## Every arm
+${
+	Object.keys(stored.failed ?? {}).length ?
+		`## Failed\n\nThese couldn't load or validate, so they're in no cell:\n\n${Object.entries(
+			stored.failed!
+		)
+			.map(([name, message]) => `- ${name}: ${message}`)
+			.join("\n")}\n\n`
+	:	""
+}## Every arm
 
 Bold wins; (tie) can't be told from it.
 

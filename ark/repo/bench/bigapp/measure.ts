@@ -398,6 +398,27 @@ type Metric = (typeof metrics)[number]
 
 type Samples = Record<Metric, number[]>
 
+// an arm that can't load or validate is a result: recorded, and left out of the rounds
+const failed: Record<string, string> = {}
+for (const arm of [...arms]) {
+	try {
+		await run(arm, "first")
+	} catch (e) {
+		failed[arm.name] = (e as Error).message
+			.split("\n")
+			.filter(
+				line =>
+					line.length < 300 &&
+					!/^Events |^file:|^\s*\^|^\s+at |^\s*$|^Node\.js|instructions:u/.test(
+						line
+					)
+			)
+			.join(" ")
+		arms.splice(arms.indexOf(arm), 1)
+		console.error(`failed ${arm.name}: ${failed[arm.name]}`)
+	}
+}
+
 const samples: Record<string, Samples> = Object.fromEntries(
 	arms.map(arm => [
 		arm.name,
@@ -436,6 +457,7 @@ const results = {
 	at: new Date().toISOString(),
 	rounds,
 	loads,
+	failed,
 	arms: Object.fromEntries(
 		arms.map(arm => [
 			arm.name,
