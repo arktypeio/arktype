@@ -61,6 +61,13 @@ const behaviors: Record<string, string> = {
 		show(type({ "x?": "string" }).or([["5n | -0.5", "=>", toString], "@", "a thing"]), -0, true)
 		show(type(["string | number", "=>", toString]).or("object").or("null"), true, undefined)
 	`,
+	"lists once what an object its branches share raises": `
+		const { union } = scope({ a: { kids: "union[]", "a?": "string" }, b: { kids: "union[]", "b?": "number" }, union: "a | b" }).export()
+		let shared: object = { kids: [], a: 1, b: "x" }
+		for (let i = 0; i < 16; i++) shared = { kids: [shared, shared] }
+		const issue = union(shared).issues[0]
+		console.log(index, issue.errors.length, issue.message)
+	`,
 	"reports a union of no branches as its own": `
 		show(type({ a: "never" }).or({ b: "string" }), {}, { a: 1 })
 	`,
@@ -171,7 +178,9 @@ const behaviors: Record<string, string> = {
 	`
 }
 
-const appOf = (rows: Record<string, string>) => `import { type } from "arktype"
+const appOf = (
+	rows: Record<string, string>
+) => `import { scope, type } from "arktype"
 
 const standard = (t: any, input: unknown) =>
 	console.log(index, JSON.stringify(t["~standard"].validate(input).issues.map((issue: any) => [issue.message, issue.path])))

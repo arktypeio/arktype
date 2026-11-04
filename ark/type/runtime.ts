@@ -820,7 +820,8 @@ export const failsListed = ((
 	const issue = issueOf(
 		ctx._p ?? ctx.path,
 		data,
-		firsts.flatMap(first => first.errors ?? first)
+		// a shared object reports one issue to each branch reaching it, listed once
+		[...new Set(firsts.flatMap(first => first.errors ?? first))]
 	)
 	if (ctx._p) ctx._.push(issue)
 	else ctx.addError(issue)
