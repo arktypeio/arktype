@@ -291,6 +291,30 @@ console.log(show(Above({ name: "abc" })), show(Above({ name: "x" })), show(Narro
 		attest(eager.stdout.includes('{"name":"abc"}')).equals(true)
 	})
 
+	it("creates a validator after its module fixes the config, keeping what it reads of it", async () => {
+		const program = {
+			"config.ts": `import { configure } from "arktype/config"
+configure({ onUndeclaredKey: "delete" })
+`,
+			"main.ts": `import "./config.ts"
+import { type } from "arktype"
+export const T = type({ a: "string" })
+${typesOf(large)}
+console.log(JSON.stringify(T({ a: "a", c: 1 })))
+`
+		}
+		const opts = { config: "config.ts" }
+		const deferredBundle = await bundleOf(program, opts)
+		attest(
+			deferredBundle === (await bundleOf(program, { ...opts, defers: false }))
+		).equals(false)
+		const fixes = deferredBundle.indexOf("fixConfigured(")
+		attest(fixes !== -1 && fixes < deferredBundle.indexOf("var T = ")).equals(
+			true
+		)
+		attest(runBundle(deferredBundle).stdout).equals('{"a":"a"}\n')
+	})
+
 	it("checks what a site reads as its module loads, before any first call", async () => {
 		const program = {
 			"key.ts": `export const key = "a"\n`,
