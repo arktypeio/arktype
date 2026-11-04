@@ -2533,6 +2533,40 @@ console.log(User({ name: "" }).name, suffixed)
 					attest(js).equals(await bundle(name, root, { prune: false }, config))
 				})
 
+				const queried = {
+					"validated.js": `import { type } from "arktype"
+
+const check = () => true
+
+export const V = type("string").narrow(check)
+`,
+					"main.js": `import { V as A } from "./validated.js?v=1"
+import { V as B } from "./validated.js?v=2"
+
+console.log(A("a"), B("b"))
+`
+				}
+
+				const attestFails = async (build: Promise<string>, message: string) =>
+					attest(
+						await build.then(
+							() => `it built, not failing with ${message}`,
+							(e: Error) => (e.message.includes(message) ? message : e.message)
+						)
+					).equals(message)
+
+				const queriedMessage =
+					"can't be precompiled in a module another plugin writes"
+
+				it("fails where a query builds a file that defines a validator again", async () => {
+					const root = fixture("queried", queried)
+					await attestFails(bundle(name, root), queriedMessage)
+					await attestFails(
+						bundle(name, root, { prune: false }),
+						queriedMessage
+					)
+				})
+
 				it("reads what a queried module reads", async () => {
 					const root = fixture("queriedRead", {
 						"reader.js": readsStandard,
@@ -2540,6 +2574,24 @@ console.log(User({ name: "" }).name, suffixed)
 						"main.js": `import "./uses.js"\nimport "./reader.js?v=1"\n`
 					})
 					attest(output(await bundle(name, root))).snap("\nfunction\n")
+				})
+
+				it("reads past a query a rule builds as text", async () => {
+					const root = fixture("queriedAsset", {
+						...queried,
+						"main.js": `import text from "./validated.js?raw"\n\nconsole.log(typeof text)\n`
+					})
+					const js = await bundle(
+						name,
+						root,
+						{},
+						{
+							module: {
+								rules: [{ resourceQuery: /raw/, type: "asset/source" }]
+							}
+						}
+					)
+					attest(output(js)).snap("string\n")
 				})
 
 				it("fails a build as a module it writes fails to precompile", async () => {

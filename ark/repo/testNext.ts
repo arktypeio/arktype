@@ -110,6 +110,9 @@ const build = (config: string, ...flags: string[]) => {
 	return { status: result.status, output: result.stdout + result.stderr }
 }
 
+const unwrittenMessage =
+	"can't be precompiled in a module another plugin writes"
+
 const assertFailsWith = (
 	message: string,
 	{ status, output }: ReturnType<typeof build>
@@ -225,6 +228,32 @@ assertFailsWith(
 	withAllowUnsafe(writeNextExternalMessage("reads-errors")),
 	build(withoutBundling(webpack), "--webpack")
 )
+
+console.log("▲ Building a route that imports a module twice by query...")
+
+writeFileSync(
+	join(appDir, "src/queried.ts"),
+	'import { type } from "arktype"\n\nlet seen = 0\nexport const V = type("string").narrow(() => ++seen > 0)\nexport const seenOf = () => seen\n'
+)
+mkdirSync(join(appDir, "app/queried"))
+writeFileSync(
+	join(appDir, "app/queried/page.jsx"),
+	'import { V as A, seenOf as seenA } from "../../src/queried.ts?v=1"\nimport { V as B, seenOf as seenB } from "../../src/queried.ts?v=2"\n\nexport default function Page() {\n\treturn <p>{`${A("a")} ${seenA()} ${seenB()} ${B("b")}`}</p>\n}\n'
+)
+
+assertFailsWith(unwrittenMessage, build(webpack, "--webpack"))
+
+// Turbopack's loader writes each module on its own, so each keeps its own run
+const queried = build(turbopack)
+const queriedPage = join(appDir, ".next/server/app/queried.html")
+if (
+	queried.status !== 0 ||
+	!readFileSync(queriedPage, "utf8").includes("<p>a 1 0 b</p>")
+) {
+	throw new Error(
+		`Turbopack should keep a module's queries apart. It exited ${queried.status}:\n${queried.output}`
+	)
+}
 
 rmSync(appDir, { recursive: true, force: true })
 

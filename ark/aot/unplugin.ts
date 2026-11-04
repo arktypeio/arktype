@@ -117,7 +117,7 @@ export interface PrecompileUnpluginOptions extends PrecompilePluginOptions {
 
 type Options = PrecompileUnpluginOptions | undefined
 
-// Vite, Rollup and Rolldown's is followed by a checker reading what other plugins write
+// where it's followed by a checker reading what other plugins write
 export type PrecompileUnplugin = Omit<
 	UnpluginInstance<Options, false>,
 	keyof typeof checkingFrameworks
@@ -867,17 +867,27 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			// after each other plugin's, but before Vite's dev server writes each import as a URL
 			...(meta.framework !== "vite" && { order: "post" }),
 			filter: {
-				id: { exclude: [/^\0/, /[/\\]node_modules[/\\]/] },
+				id: {
+					// Rspack has no id for what a loader generates
+					include: /./,
+					exclude: [/^\0/, /[/\\]node_modules[/\\]/]
+				},
 				code: /\bimport\b/
 			},
 			async handler(code, id) {
 				const isOwn =
 					transformedFilter.include.test(id) &&
 					!transformedFilter.exclude.test(id)
+				// webpack and Rspack say what they built, and a query there may
+				// name a script
+				const built = (
+					this.getNativeBuildContext?.() as NativeBuild | undefined
+				)?.loaderContext?._module
+				const isInert = built ? !isScriptModule(built) : isAsset(id)
 				// read once the bundle is built, against what its scan wrote
-				if (!isOwn && !isAsset(id))
+				if (!isOwn && !isInert)
 					othersByBuild.get(buildOf(this))?.set(fileOf(id), code)
-				if (!isStandalone || opts?.shadow || isOwn || isAsset(id)) return
+				if (!isStandalone || opts?.shadow || isOwn || isInert) return
 				const map = (
 					this as { getCombinedSourcemap?: () => { mappings: string } }
 				).getCombinedSourcemap?.()
@@ -1685,7 +1695,10 @@ interface BuiltRead {
 // what the bundler gives a hook, where it's webpack or Rspack
 interface NativeBuild {
 	compilation?: object
-	loaderContext?: { cacheable: (flag: boolean) => void }
+	loaderContext?: {
+		cacheable: (flag: boolean) => void
+		_module?: { type?: string }
+	}
 }
 
 const isScriptModule = ({ type }: { type?: string }) =>
@@ -2686,7 +2699,10 @@ const ownSpecifier = new RegExp(
 const checkingFrameworks = {
 	vite: 1,
 	rollup: 1,
-	rolldown: 1
+	rolldown: 1,
+	webpack: 1,
+	rspack: 1,
+	rsbuild: 1
 } as const satisfies KeySet
 
 const tanstackSplitter = "tanstack-router:code-splitter:compile-reference-file"

@@ -153,14 +153,16 @@ contextualize(() => {
 		it("configures what the plugin resolves", async () => {
 			const root = withArkJson({ precompile: { preset: "smallest" } })
 			const importer = join(root, "main.ts")
-			const { resolveId } = precompile.raw(
+			const [{ resolveId }] = precompile.raw(
 				{ cwd: root },
 				{
 					framework: "webpack",
 					webpack: { compiler: {} as never },
 					versions: {}
 				}
-			) as { resolveId: { handler: (...args: unknown[]) => Promise<unknown> } }
+			) as unknown as [
+				{ resolveId: { handler: (...args: unknown[]) => Promise<unknown> } }
+			]
 			const reported: string[] = []
 			await resolveId.handler.call(
 				{ error: (message: string) => reported.push(message) },

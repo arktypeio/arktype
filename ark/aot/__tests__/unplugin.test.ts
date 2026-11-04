@@ -2424,16 +2424,16 @@ console.log(
 						compiler.close(() => (error ? reject(error) : resolve(stats)))
 					)
 				)
-				// Rspack marks each error with a ×
+				// the plugin reading what others write refuses the call first
 				attest(
 					stats
 						?.toJson()
 						.errors?.map(error =>
-							stripVTControlCharacters(error.message).trim().replace(/^× /, "")
+							stripVTControlCharacters(error.message).includes(
+								"Form.svelte:3:21  text(50) can't be precompiled in a module another plugin writes"
+							)
 						)
-				).equals([
-					writeUntransformedHelperMessage("Form.svelte", "fields.js", "text")
-				])
+				).equals([true])
 			})
 		}
 	})
@@ -2818,14 +2818,14 @@ console.log(T.allows({ x: 1 }))
 
 	it("resolves the runtime of webpack's mode", async () => {
 		const resolvedIn = async (mode: string) => {
-			const plugin = precompile.raw(
+			const [plugin] = precompile.raw(
 				{ cwd: app, conditions },
 				{
 					framework: "webpack",
 					webpack: { compiler: {} as never },
 					versions: {}
 				}
-			) as unknown as RawHooks
+			) as unknown as [RawHooks]
 			plugin.webpack({
 				options: { cache: false, mode, module: { rules: [] } },
 				hooks: {
@@ -2848,12 +2848,14 @@ console.log(T.allows({ x: 1 }))
 
 	it("resolves the runtime of the mode Rsbuild gives each compiler", async () => {
 		const resolvedIn = async (mode: string) => {
-			const plugin = precompile.raw(
+			const [plugin] = precompile.raw(
 				{ cwd: app, conditions },
 				{ framework: "rsbuild", versions: {} }
-			) as unknown as RawHooks & {
-				rsbuild: { setup(api: object): void }
-			}
+			) as unknown as [
+				RawHooks & {
+					rsbuild: { setup(api: object): void }
+				}
+			]
 			const plugins: { apply(compiler: object): void }[] = []
 			plugin.rsbuild.setup({
 				modifyRspackConfig: (modify: (config: object) => void) =>
@@ -2936,14 +2938,14 @@ console.log(T.allows({ x: 1 }))
 		}
 		// each build of a process, the second restoring what the first cached
 		const webpackBuild = () => {
-			const plugin = precompile.raw(
+			const [plugin] = precompile.raw(
 				{ cwd: app, conditions },
 				{
 					framework: "webpack",
 					webpack: { compiler: {} as never },
 					versions: {}
 				}
-			) as unknown as RawHooks
+			) as unknown as [RawHooks]
 			plugin.webpack({
 				options: { cache, module: { rules: [] } },
 				hooks: {
@@ -2977,14 +2979,14 @@ console.log(T.allows({ x: 1 }))
 	it("versions a persistent cache by the code and options, ark.json's included", () => {
 		const root = writeFixture({ "package.json": "{}" })
 		const versionOf = (cache: { type: string; version?: string }) => {
-			const plugin = precompile.raw(
+			const [plugin] = precompile.raw(
 				{ cwd: root, conditions },
 				{
 					framework: "webpack",
 					webpack: { compiler: {} as never },
 					versions: {}
 				}
-			) as unknown as RawHooks
+			) as unknown as [RawHooks]
 			plugin.webpack({
 				options: { cache, module: { rules: [] } },
 				hooks: {
