@@ -241,7 +241,7 @@ const holdsUncounted = (value: unknown, seen = new Set<object>()): boolean => {
 }
 
 // a deferred shape's unit is named under a directory of its own
-const fileOf = (name: string) => `${name.replaceAll("/", "-")}.js`
+const fileOf = (name: string) => `${name.replace(/\//g, "-")}.js`
 
 const link = (code: string) =>
 	code
