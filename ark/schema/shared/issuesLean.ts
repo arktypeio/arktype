@@ -210,10 +210,10 @@ export const messageOf = (issue: ArkIssue): string => {
 	let path = ""
 	for (const k of issue.path) {
 		path +=
-			bracketsKeys && !/^[$_a-z][\w$]*$/i.test(String(k)) ?
+			typeof k === "number" ? `[${k}]`
+			: bracketsKeys && !/^[$_a-z][\w$]*$/i.test(String(k)) ?
 				`[${JSON.stringify(k) ?? String(k)}]`
-			: typeof k === "number" ? `[${k}]`
-			: (path && ".") + String(k)
+			:	(path && ".") + String(k)
 	}
 	return (path && path + " ") + problemOf(issue)
 }

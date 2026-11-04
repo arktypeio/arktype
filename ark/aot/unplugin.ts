@@ -80,12 +80,16 @@ import { withEnvironment, type Environment } from "./presets.ts"
 import {
 	addLoaded,
 	isAsset,
+	programAsBuilt,
 	scanProgram,
 	unfoldedCallProblemOf,
+	unreadBuiltOf,
 	unseenProblemOf,
 	writeUnseenMessage,
 	writeUnprunedMessage,
 	writeUnscannedFlatMessage,
+	type BuiltImport,
+	type BuiltModule,
 	type ImportKind,
 	type Imports,
 	type LoadedSources,
@@ -113,7 +117,7 @@ export interface PrecompileUnpluginOptions extends PrecompilePluginOptions {
 
 type Options = PrecompileUnpluginOptions | undefined
 
-// Vite, Rollup and Rolldown's is followed by a checker reading what other plugins write
+// where it's followed by a checker reading what other plugins write
 export type PrecompileUnplugin = Omit<
 	UnpluginInstance<Options, false>,
 	keyof typeof checkingFrameworks
@@ -421,9 +425,41 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			const version = `arktype ${fingerprintOfCode()} ${JSON.stringify(set)}`
 			cache.version = cache.version ? `${cache.version} ${version}` : version
 		}
+		// a production build reads its modules once it has built them as they
+		// are, then writes those its validators need written, as only then can it
+		// know what a generated entry or a plugin's import reads. A child
+		// compilation's modules run apart from them, and are written whole
+		bundler.hooks.thisCompilation.tap("arktype", compilation => {
+			if (!prunesIn(!!environment?.production)) return
+			const read: BuiltRead = { loaded: new Map(), mappings: new Map() }
+			builtReads.set(compilation, read)
+			compilation.hooks.finishModules.tapPromise(
+				// ahead of what reads the modules as they end
+				{ name: "arktype", stage: -1000 } as never,
+				() => answerBuilt(bundler, compilation, read)
+			)
+			compilation.hooks.seal.tap("arktype", () => {
+				if (!read.program) return
+				const late = unreadBuiltOf(
+					read.program,
+					builtEntriesOf(compilation, read, isTransformedId),
+					{ isTransformed: isTransformedId }
+				)
+				if (!late) return
+				compilation.errors.push(
+					new bundler.webpack.WebpackError(
+						writeUnseenMessage(
+							`a plugin built ${printablePathOf(realCwd(), late)} once it had read them`
+						)
+					)
+				)
+			})
+		})
 		// webpack and Rspack decide externals, e.g. Next's, before resolving
 		bundler.hooks.compilation.tap("arktype", compilation =>
-			compilation.hooks.finishModules.tap("arktype", modules => {
+			compilation.hooks.finishModules.tap("arktype", () => {
+				// as they end, once a production build wrote them
+				const modules = compilation.modules
 				const problem =
 					foldedHelpersById.size &&
 					unfoldedCallProblemOf(
@@ -495,7 +531,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		return (modules[id] = stored[1])
 	}
 	// a pruned build's issue features, once its scan has read every validator
-	const loadIssueFeatures = async (build: object) => {
+	const loadIssueFeatures = async (context: unknown) => {
+		const built = builtReadOf(context)
+		if (built) return built.issues && writeIssueFeatures(built.issues)
+		const build = buildOf(context)
 		const pending = pendingScans.get(build)
 		const scan = pending ? await pending.scanned : scansByBuild.get(build)
 		if (scan?.issues) return writeIssueFeatures(scan.issues)
@@ -566,6 +605,108 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		return problem
 	}
 	const foldedHelpersById = new Map<string, string[]>()
+	// what a webpack or Rspack compilation read of the modules it built, which
+	// its loaders run again to write
+	const builtReads = new WeakMap<object, BuiltRead>()
+	const builtReadOf = (context: unknown) => {
+		const { compilation } =
+			(
+				context as { getNativeBuildContext?: () => NativeBuild }
+			).getNativeBuildContext?.() ?? {}
+		return compilation && builtReads.get(compilation)
+	}
+	const answerBuilt = async (
+		bundler: BundlerCompiler,
+		compilation: BundlerCompilation,
+		read: BuiltRead
+	) => {
+		const warn = (warning: string) =>
+			compilation.warnings.push(new bundler.webpack.WebpackError(warning))
+		const resolve = compilerResolveOf(bundler)
+		const program = programAsBuilt(
+			`${++scans}`,
+			builtEntriesOf(compilation, read, isTransformedId),
+			{ isTransformed: isTransformedId, cwd: realCwd() }
+		)
+		const usage =
+			typeof program === "string" ?
+				writeUnprunedMessage(program)
+			:	await (
+					requestResolving(resolve, "scan", program) as Promise<ScannedUsage>
+				).catch(unreadMessageOf)
+		const scanned =
+			(
+				typeof program !== "string" &&
+				typeof usage !== "string" &&
+				usage.written
+			) ?
+				program
+			:	undefined
+		if (typeof usage === "string") warn(usage)
+		else {
+			for (const warning of warningsOf(usage)) warn(warning)
+			if (scanned) read.issues = usage.issues
+		}
+		read.program = scanned
+		read.answering = true
+		// a module it leaves as it is needn't build again, which only a read shows
+		const rewritten =
+			scanned && new Set(await rewrittenIn(scanned, compilation, resolve))
+		const modules = [...(compilation.modules as Iterable<BuiltBundlerModule>)]
+		const written = modules.filter(({ resource }) => {
+			if (!resource) return false
+			const file = fileOf(resource)
+			return (
+				issueFeaturesFile.test(file) ||
+				(rewritten ? rewritten.has(file) : isTransformedId(file))
+			)
+		})
+		await new Promise<void>((resolve, reject) => {
+			// Rspack answers modules rebuilt together at once and by position,
+			// leaving out each that fails, so a callback may never run. So there,
+			// any answer means every module's done, and one nothing changed for,
+			// which can't fail, means there is one
+			const answersAtOnce = meta.framework !== "webpack"
+			let pending = written.length
+			const answered = (error?: Error | null) => {
+				if (error) reject(error)
+				else if (answersAtOnce || !--pending) resolve()
+			}
+			if (!pending) return resolve()
+			for (const module of written)
+				compilation.rebuildModule(module as never, answered)
+			if (!answersAtOnce) return
+			const unchanged = modules.find(
+				module => module.resource && !written.includes(module)
+			)
+			if (unchanged) compilation.rebuildModule(unchanged as never, answered)
+		})
+	}
+	const rewrittenIn = async (
+		{ key, modules }: ScannedProgram,
+		compilation: BundlerCompilation,
+		resolve: BundlerResolve
+	) =>
+		(
+			await Promise.all(
+				Object.keys(modules).map(async id => {
+					compilation.fileDependencies.add(id)
+					const { source, transformed, mappings } = modules[id]
+					if (!transformed) return []
+					const written = await transform(source, id, mappings, key, resolve)
+					if (!written) return []
+					for (const dependency of written.dependencies)
+						compilation.fileDependencies.add(dependency)
+					return (
+							written.code !== undefined ||
+								written.errors.length ||
+								written.warnings.length
+						) ?
+							id
+						:	[]
+				})
+			)
+		).flat()
 	const isTransformedId = (id: string) =>
 		transformedFilter.include.test(id) && !transformedFilter.exclude.test(id)
 	// keeps the modules a transformed one writes, for its importers to load
@@ -726,17 +867,27 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			// after each other plugin's, but before Vite's dev server writes each import as a URL
 			...(meta.framework !== "vite" && { order: "post" }),
 			filter: {
-				id: { exclude: [/^\0/, /[/\\]node_modules[/\\]/] },
+				id: {
+					// Rspack has no id for what a loader generates
+					include: /./,
+					exclude: [/^\0/, /[/\\]node_modules[/\\]/]
+				},
 				code: /\bimport\b/
 			},
 			async handler(code, id) {
 				const isOwn =
 					transformedFilter.include.test(id) &&
 					!transformedFilter.exclude.test(id)
+				// webpack and Rspack say what they built, and a query there may
+				// name a script
+				const built = (
+					this.getNativeBuildContext?.() as NativeBuild | undefined
+				)?.loaderContext?._module
+				const isInert = built ? !isScriptModule(built) : isAsset(id)
 				// read once the bundle is built, against what its scan wrote
-				if (!isOwn && !isAsset(id))
+				if (!isOwn && !isInert)
 					othersByBuild.get(buildOf(this))?.set(fileOf(id), code)
-				if (!isStandalone || opts?.shadow || isOwn || isAsset(id)) return
+				if (!isStandalone || opts?.shadow || isOwn || isInert) return
 				const map = (
 					this as { getCombinedSourcemap?: () => { mappings: string } }
 				).getCombinedSourcemap?.()
@@ -1119,15 +1270,19 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			filter: {
 				id: [
 					virtual ? /^\0~arktype\// : /^~arktype\//,
-					// written by a pruned Rollup, Rolldown or Vite build's
-					// scan; Farm fails a load answering nothing
-					...(meta.framework in checkingFrameworks ? [issueFeaturesFile] : [])
+					// written by a pruned build's read of its modules, which
+					// esbuild loads itself; Farm fails a load answering nothing
+					...((
+						meta.framework in pruningFrameworks && meta.framework !== "esbuild"
+					) ?
+						[issueFeaturesFile]
+					:	[])
 				]
 			},
 			// a virtual module loads synchronously, as webpack's cache reads it
 			handler(id) {
 				return issueFeaturesFile.test(id) ?
-						loadIssueFeatures(buildOf(this))
+						loadIssueFeatures(this)
 					:	loadModule(id)
 			}
 		},
@@ -1156,16 +1311,34 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 										| { inputSourceMap?: { mappings: string } }
 										| undefined
 								)?.inputSourceMap)
-						const scan = await scanOf(this as never, file, code, map?.mappings)
+						const built = builtReadOf(this)
+						const { loaderContext } =
+							(this.getNativeBuildContext?.() as NativeBuild | undefined) ?? {}
+						if (built && !built.answering) {
+							addLoaded(built.loaded, file, code)
+							if (map) built.mappings.set(file, map.mappings)
+							// one the bundler keeps is read from its file
+							if (code !== host.readFile(file)) loaderContext?.cacheable(false)
+							return
+						}
+						const scan =
+							built ? undefined : (
+								await scanOf(this as never, file, code, map?.mappings)
+							)
 						if (scan) addLoaded(scan.loaded, file, code)
 						const transformed = await transform(
 							code,
 							id,
 							map?.mappings,
-							scan?.scanned.key,
+							built ? built.program?.key : scan?.scanned.key,
 							bundlerResolveOf(this, isTransformedId)
 						)
 						if (!transformed) return
+						// what it's written as may change with any module of the
+						// program, and its imports with it, so the bundler keeps it as
+						// it is, which the next build reads
+						if (built && transformed.code !== undefined)
+							loaderContext?.cacheable(false)
 						for (const dependency of transformed.dependencies) {
 							if (dependency === file) continue
 							this.addWatchFile(dependency)
@@ -1506,6 +1679,116 @@ interface BundleScan {
 	loaded: LoadedSources
 	// what its issues may hold, unless they may hold anything
 	issues: IssueFeatures | undefined
+}
+
+// what a webpack or Rspack compilation has read of the modules it built
+interface BuiltRead {
+	// each transformed module as it reached the plugin
+	loaded: LoadedSources
+	mappings: Map<string, string>
+	// once read, a transform answers for the program it read, if any
+	answering?: boolean
+	program?: ScannedProgram | undefined
+	issues?: IssueFeatures | undefined
+}
+
+// what the bundler gives a hook, where it's webpack or Rspack
+interface NativeBuild {
+	compilation?: object
+	loaderContext?: {
+		cacheable: (flag: boolean) => void
+		_module?: { type?: string }
+	}
+}
+
+const isScriptModule = ({ type }: { type?: string }) =>
+	type?.startsWith("javascript/") ?? true
+
+interface BuiltBlock {
+	dependencies: BuiltDependency[]
+	blocks: BuiltBlock[]
+}
+
+interface BuiltBundlerModule extends BuiltBlock {
+	// only a module with a file has one, a query on it naming another module
+	resource?: string
+	type?: string
+	originalSource?: () => { source: () => string | Buffer } | null
+}
+
+interface BuiltDependency {
+	request?: string | undefined
+}
+
+// the file a module reads as a script. What isn't one is followed like a
+// generated module, as a wasm module may import one
+const builtIdOf = (module: BuiltBundlerModule): string | undefined => {
+	const { resource } = module
+	if (!resource || !isAbsolute(resource) || !isScriptModule(module)) return
+	const file = fileOf(resource)
+	return isAsset(file) ? undefined : file
+}
+
+// each module a compilation's entries reach, as the plugin reads them
+const builtEntriesOf = (
+	compilation: BundlerCompilation,
+	read: BuiltRead,
+	isTransformed: (id: string) => boolean
+): BuiltModule[] => {
+	const built = new Map<BuiltBundlerModule, BuiltModule>()
+	const graph = compilation.moduleGraph
+	const unbuilt: [BuiltBundlerModule, BuiltModule][] = []
+	const builtOf = (module: BuiltBundlerModule): BuiltModule => {
+		const known = built.get(module)
+		if (known) return known
+		const id = builtIdOf(module)
+		const transformed = !!id && isTransformed(id)
+		const of: BuiltModule = {
+			id,
+			source:
+				!id ? undefined
+				: transformed ?
+					read.loaded.has(id) ?
+						read.loaded.get(id)
+					:	readFile(id)
+				: dependencyOf(id) ? undefined
+				: module.originalSource?.()?.source().toString(),
+			transformed,
+			mappings: id && read.mappings.get(id),
+			imports: []
+		}
+		built.set(module, of)
+		unbuilt.push([module, of])
+		return of
+	}
+	const entries = [...compilation.entries.values(), compilation.globalEntry]
+		.flatMap(entry =>
+			entry ? [...entry.dependencies, ...entry.includeDependencies] : []
+		)
+		.flatMap(dependency => {
+			const module = graph.getModule(dependency as never) as
+				| BuiltBundlerModule
+				| null
+				| undefined
+			return module ? builtOf(module) : []
+		})
+	const importsIn = (
+		{ dependencies, blocks }: BuiltBlock,
+		isDynamic: boolean
+	): BuiltImport[] => [
+		...dependencies.flatMap(dependency => {
+			const module = graph.getModule(dependency as never) as
+				| BuiltBundlerModule
+				| null
+				| undefined
+			return module ?
+					{ specifier: dependency.request, isDynamic, target: builtOf(module) }
+				:	[]
+		}),
+		...blocks.flatMap(block => importsIn(block, true))
+	]
+	for (const [module, of] of unbuilt) of.imports = importsIn(module, false)
+	return entries
 }
 
 // a production build's scan, from its first transformed module on
@@ -2108,11 +2391,46 @@ interface BundlerCompiler {
 			| undefined
 		mode?: string | undefined
 	}
-	hooks: { compilation: Tap<BundlerCompilation> }
+	hooks: {
+		compilation: Tap<BundlerCompilation>
+		thisCompilation: Tap<BundlerCompilation>
+	}
+	resolverFactory: {
+		get(
+			type: string,
+			options: object
+		): {
+			resolve(
+				context: object,
+				path: string,
+				request: string,
+				resolveContext: object,
+				callback: (error: Error | null, path?: string | false) => void
+			): void
+		}
+	}
 	webpack: {
 		ExternalModule: abstract new (...args: never[]) => { userRequest: string }
 		WebpackError: new (message: string) => Error
 	}
+}
+
+// resolves what the precompiler can't, as the compiler resolves a module's
+// import, where no loader is running to ask
+const compilerResolveOf = (compiler: BundlerCompiler): BundlerResolve => {
+	const resolver = compiler.resolverFactory.get("normal", {
+		// webpack's and Rspack's
+		dependencyType: "esm",
+		dependencyCategory: "esm"
+	})
+	return async (specifier, importer) =>
+		ownSpecifier.test(specifier) ? undefined : (
+			new Promise(done =>
+				resolver.resolve({}, dirname(importer), specifier, {}, (error, path) =>
+					done((!error && path) || undefined)
+				)
+			)
+		)
 }
 
 // webpack and Rspack build for production where no mode is set
@@ -2135,15 +2453,32 @@ interface RsbuildApi {
 }
 
 interface BundlerCompilation {
-	hooks: { finishModules: Tap<Iterable<unknown>> }
+	hooks: {
+		finishModules: Tap<Iterable<unknown>> & {
+			tapPromise(options: never, fn: () => Promise<void>): void
+		}
+		seal: Tap<void>
+	}
 	moduleGraph: BundlerModuleGraph
+	modules: Iterable<unknown>
+	entries: Map<string, BuiltEntry>
+	// webpack's
+	globalEntry?: BuiltEntry
+	fileDependencies: { add(file: string): void }
+	rebuildModule(module: never, callback: (error?: Error | null) => void): void
 	errors: Error[]
 	warnings: Error[]
+}
+
+interface BuiltEntry {
+	dependencies: unknown[]
+	includeDependencies: unknown[]
 }
 
 interface BundlerModuleGraph {
 	getIncomingConnections: (module: never) => Iterable<{ originModule: unknown }>
 	getIssuer: (module: never) => unknown
+	getModule: (dependency: never) => unknown
 }
 
 const bundlerImportsOf = (
@@ -2364,7 +2699,10 @@ const ownSpecifier = new RegExp(
 const checkingFrameworks = {
 	vite: 1,
 	rollup: 1,
-	rolldown: 1
+	rolldown: 1,
+	webpack: 1,
+	rspack: 1,
+	rsbuild: 1
 } as const satisfies KeySet
 
 const tanstackSplitter = "tanstack-router:code-splitter:compile-reference-file"
@@ -2372,12 +2710,15 @@ const tanstackSplitter = "tanstack-router:code-splitter:compile-reference-file"
 const writeAheadOfSplitterMessage = (call: string): string =>
 	`arktype's plugin is listed ahead of TanStack Router's, which splits a route's code after arktype's precompiles it, into modules it reads unprecompiled. List precompile.vite() after ${call} in vite.config's plugins.`
 
-// each reads the whole bundle before it transforms a module
+// each reads the whole bundle before it writes a module
 const pruningFrameworks = {
 	vite: 1,
 	rollup: 1,
 	rolldown: 1,
-	esbuild: 1
+	esbuild: 1,
+	webpack: 1,
+	rspack: 1,
+	rsbuild: 1
 } as const satisfies KeySet
 
 // each says whether a build watches, which esbuild, Bun and Farm don't

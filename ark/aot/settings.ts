@@ -239,7 +239,7 @@ export const pruneBeforePluginMessage =
 	"prune: true needs arktype's plugin last among esbuild's plugins, so no plugin loads a module after it reads the bundle, so move it last or remove prune: true"
 
 export const writePruneHostMessage = (host: string): string =>
-	`prune: true needs a bundler that reads the whole bundle before it transforms a module, as Vite, Rollup, Rolldown and esbuild do, which ${host} doesn't, so remove it`
+	`prune: true needs a bundler whose whole bundle the plugin can read before it writes a module, as Vite, Rollup, Rolldown, esbuild, webpack and Rspack, which ${host} isn't, so remove it`
 
 export const writeSettingsConflictMessage = (
 	manifest: string,

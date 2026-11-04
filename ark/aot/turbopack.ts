@@ -91,7 +91,11 @@ const resolvedOptionsOf = (
 	refusePrune(set, "Turbopack")
 	refuseArktypeDependencies(set, "Turbopack")
 	return resolvePrecompileOptions(
-		withEnvironment(set, { production, testing: false })
+		withEnvironment(
+			// Next loads a route's modules at its first request, none written as one
+			production ? { defers: "large", ...set } : set,
+			{ production, testing: false }
+		)
 	)
 }
 

@@ -195,7 +195,7 @@ interface RawHooks {
 			mode?: string
 			module: { rules: object[] }
 		}
-		hooks: { compilation: { tap(): void } }
+		hooks: { compilation: { tap(): void }; thisCompilation: { tap(): void } }
 	}): void
 	resolveId: {
 		handler(
@@ -2424,16 +2424,16 @@ console.log(
 						compiler.close(() => (error ? reject(error) : resolve(stats)))
 					)
 				)
-				// Rspack marks each error with a ×
+				// the plugin reading what others write refuses the call first
 				attest(
 					stats
 						?.toJson()
 						.errors?.map(error =>
-							stripVTControlCharacters(error.message).trim().replace(/^× /, "")
+							stripVTControlCharacters(error.message).includes(
+								"Form.svelte:3:21  text(50) can't be precompiled in a module another plugin writes"
+							)
 						)
-				).equals([
-					writeUntransformedHelperMessage("Form.svelte", "fields.js", "text")
-				])
+				).equals([true])
 			})
 		}
 	})
@@ -2818,17 +2818,20 @@ console.log(T.allows({ x: 1 }))
 
 	it("resolves the runtime of webpack's mode", async () => {
 		const resolvedIn = async (mode: string) => {
-			const plugin = precompile.raw(
+			const [plugin] = precompile.raw(
 				{ cwd: app, conditions },
 				{
 					framework: "webpack",
 					webpack: { compiler: {} as never },
 					versions: {}
 				}
-			) as unknown as RawHooks
+			) as unknown as [RawHooks]
 			plugin.webpack({
 				options: { cache: false, mode, module: { rules: [] } },
-				hooks: { compilation: { tap: () => {} } }
+				hooks: {
+					compilation: { tap: () => {} },
+					thisCompilation: { tap: () => {} }
+				}
 			})
 			const resolved = await plugin.resolveId.handler.call(
 				{ warn: () => {} },
@@ -2845,12 +2848,14 @@ console.log(T.allows({ x: 1 }))
 
 	it("resolves the runtime of the mode Rsbuild gives each compiler", async () => {
 		const resolvedIn = async (mode: string) => {
-			const plugin = precompile.raw(
+			const [plugin] = precompile.raw(
 				{ cwd: app, conditions },
 				{ framework: "rsbuild", versions: {} }
-			) as unknown as RawHooks & {
-				rsbuild: { setup(api: object): void }
-			}
+			) as unknown as [
+				RawHooks & {
+					rsbuild: { setup(api: object): void }
+				}
+			]
 			const plugins: { apply(compiler: object): void }[] = []
 			plugin.rsbuild.setup({
 				modifyRspackConfig: (modify: (config: object) => void) =>
@@ -2860,7 +2865,10 @@ console.log(T.allows({ x: 1 }))
 				apply({
 					context: app,
 					options: { cache: false, mode, module: { rules: [] } },
-					hooks: { compilation: { tap: () => {} } }
+					hooks: {
+						compilation: { tap: () => {} },
+						thisCompilation: { tap: () => {} }
+					}
 				})
 			}
 			const resolved = await plugin.resolveId.handler.call(
@@ -2930,17 +2938,20 @@ console.log(T.allows({ x: 1 }))
 		}
 		// each build of a process, the second restoring what the first cached
 		const webpackBuild = () => {
-			const plugin = precompile.raw(
+			const [plugin] = precompile.raw(
 				{ cwd: app, conditions },
 				{
 					framework: "webpack",
 					webpack: { compiler: {} as never },
 					versions: {}
 				}
-			) as unknown as RawHooks
+			) as unknown as [RawHooks]
 			plugin.webpack({
 				options: { cache, module: { rules: [] } },
-				hooks: { compilation: { tap: () => {} } }
+				hooks: {
+					compilation: { tap: () => {} },
+					thisCompilation: { tap: () => {} }
+				}
 			})
 			return plugin
 		}
@@ -2968,17 +2979,20 @@ console.log(T.allows({ x: 1 }))
 	it("versions a persistent cache by the code and options, ark.json's included", () => {
 		const root = writeFixture({ "package.json": "{}" })
 		const versionOf = (cache: { type: string; version?: string }) => {
-			const plugin = precompile.raw(
+			const [plugin] = precompile.raw(
 				{ cwd: root, conditions },
 				{
 					framework: "webpack",
 					webpack: { compiler: {} as never },
 					versions: {}
 				}
-			) as unknown as RawHooks
+			) as unknown as [RawHooks]
 			plugin.webpack({
 				options: { cache, module: { rules: [] } },
-				hooks: { compilation: { tap: () => {} } }
+				hooks: {
+					compilation: { tap: () => {} },
+					thisCompilation: { tap: () => {} }
+				}
 			})
 			return cache.version
 		}
@@ -3181,6 +3195,105 @@ export const U = make()
 				writeCreatedBeforeConfigureMessage("unread.ts", "./config.ts")
 			)
 		).equals(true)
+	})
+
+	describe("a size build's validators, created as their module loads", () => {
+		const types = Array.from(
+			{ length: 24 },
+			(_, i) => `type({ "a${i}?": "string", b${i}: "number" })`
+		).join(", ")
+		const config =
+			'import { configure } from "arktype/config"\n\nconfigure({ exactOptionalPropertyTypes: false })\n'
+		const read = "all[0]({ a0: undefined, b0: 1 }).a0"
+		const run = async (
+			name: string,
+			files: Record<string, string>,
+			prune?: boolean
+		) => {
+			const root = writeFixture(files, fromHere("temp", "configFirst", name))
+			const bundle = await bundlers.esbuild(
+				{ cwd: root, config: "config.ts", preset: "smallest", prune },
+				root
+			)
+			const { stdout, stderr } = spawnSync(
+				process.execPath,
+				["--input-type=module"],
+				{ cwd: root, input: bundle, encoding: "utf8" }
+			)
+			return (
+				stdout ||
+				stderr
+					.split("\n")
+					.find(line => line.includes("configure"))
+					?.replace(/^.*ParseError]: /, "")
+			)
+		}
+
+		it("run the config module first, though arktype is imported ahead of it", async () => {
+			attest(
+				await run("after", {
+					"config.ts": config,
+					"main.ts": `import { type } from "arktype"\nimport "./config.ts"\n\nconst all = [${types}]\n\nconsole.log(${read})\n`
+				})
+			).snap("undefined\n")
+			attest(
+				await run(
+					"afterPruned",
+					{
+						"config.ts": config,
+						"main.ts": `import { type } from "arktype"\nimport "./config.ts"\n\nconst all = [${types}]\n\nconsole.log(${read})\n`
+					},
+					true
+				)
+			).snap("undefined\n")
+		})
+
+		it("run the config module first, though it's what an import of arktype loads", async () => {
+			attest(
+				await run(
+					"through",
+					{
+						"config.ts": config,
+						"ark.ts": `import "./config.ts"\n\nexport { type } from "arktype"\n`,
+						"main.ts": `import { type } from "./ark.ts"\n\nconsole.log([${types}][0]({ a0: undefined, b0: 1 }).a0)\n`
+					},
+					true
+				)
+			).snap("undefined\n")
+		})
+
+		it("run the config module first where the program loads it after a module creating only in a function", async () => {
+			attest(
+				await run(
+					"lazy",
+					{
+						"config.ts": config,
+						"lib.ts": `import { type } from "arktype"\n\nexport const make = () => [${types}]\n`,
+						"main.ts": `import { make } from "./lib.ts"\nimport "./config.ts"\n\nconst all = make()\n\nconsole.log(${read})\n`
+					},
+					true
+				)
+			).snap("undefined\n")
+		})
+
+		it("fail as arktype does where nothing imports the config module", async () => {
+			attest(
+				await run("unimported", {
+					"config.ts": config,
+					"main.ts": `import { type } from "arktype"\n\nconst all = [${types}]\n\nconsole.log(${read})\n`
+				})
+			).snap("main.ts creates a Type before configure() runs")
+			attest(
+				await run(
+					"unimportedPruned",
+					{
+						"config.ts": config,
+						"main.ts": `import { type } from "arktype"\n\nconst all = [${types}]\n\nconsole.log(${read})\n`
+					},
+					true
+				)
+			).snap("main.ts creates a Type before configure() runs")
+		})
 	})
 
 	it("no configuration check without configure", async () => {

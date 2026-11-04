@@ -106,10 +106,10 @@ var messageOf = issue => {
 	let path = ""
 	for (const k of issue.path) {
 		path +=
-			bracketsKeys && !/^[$_a-z][\w$]*$/i.test(String(k)) ?
+			reportsIndices && typeof k === "number" ? `[${k}]`
+			: bracketsKeys && !/^[$_a-z][\w$]*$/i.test(String(k)) ?
 				`[${JSON.stringify(k) ?? String(k)}]`
-			: reportsIndices && typeof k === "number" ? `[${k}]`
-			: (path && ".") + String(k)
+			:	(path && ".") + String(k)
 	}
 	return (path && path + " ") + problemOf(issue)
 }
@@ -365,11 +365,11 @@ var intersection1pta4mn06i3i5b = /* @__PURE__ */ (() => {
 	}
 	return [intersection1pta4mn06i3i5bAllows]
 })()
-var intersection1e1eu9q0xorpuh = /* @__PURE__ */ ((
+var intersectionparbs61a02yao = /* @__PURE__ */ ((
 	[intersectionkmdrl70pxuocbAllows],
 	[intersection1pta4mn06i3i5bAllows]
 ) => {
-	const intersection1e1eu9q0xorpuhAllows = /* @__PURE__ */ closedProps({
+	const intersectionparbs61a02yaoAllows = /* @__PURE__ */ closedProps({
 		preset: /* @__PURE__ */ optional(
 			/* @__PURE__ */ units(["introspectable", "smallest"])
 		),
@@ -453,9 +453,12 @@ var intersection1e1eu9q0xorpuh = /* @__PURE__ */ ((
 			)
 		),
 		inline: /* @__PURE__ */ optional(booleanChecker),
-		declare: /* @__PURE__ */ optional(booleanChecker)
+		declare: /* @__PURE__ */ optional(booleanChecker),
+		defers: /* @__PURE__ */ optional(
+			/* @__PURE__ */ units(["large", false, true])
+		)
 	})
-	return [intersection1e1eu9q0xorpuhAllows]
+	return [intersectionparbs61a02yaoAllows]
 })(intersectionkmdrl70pxuocb, intersection1pta4mn06i3i5b)
 var create12fpvlf14u2zct = ([allows], id, holes = []) => {
 	const validator = (data, pipedFromCtx, onFail) =>
@@ -577,8 +580,8 @@ var created2
 var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
-				const validator0 = interned("18kwczv0a3eybe", () =>
-					create12fpvlf14u2zct(intersection1e1eu9q0xorpuh, "1memd7b1")
+				const validator0 = interned("oo7png1tq1stp", () =>
+					create12fpvlf14u2zct(intersectionparbs61a02yao, "1xqe4zk0")
 				)
 				return validator0
 			})())
@@ -587,7 +590,7 @@ var get0 = () => {
 var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
-				const validator0 = interned("ffea0l1q79dqg", () =>
+				const validator0 = interned("no6p470shuqtg", () =>
 					create12fpvlf14u2zct(intersection1azzur91ptz9ds, "1cl1eak0")
 				)
 				return validator0
@@ -597,7 +600,7 @@ var get1 = () => {
 var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
-				const validator0 = interned("1iy73ly0uy82bx", () =>
+				const validator0 = interned("1x4xgyz09yrolz", () =>
 					create12fpvlf14u2zct(intersection1sib0cb02x4j03, "1i9mlhj1")
 				)
 				return validator0
@@ -614,6 +617,7 @@ export const cliOptions = {
 	creationChecks: { type: "string", values: "helpers|none|types" },
 	cwd: { type: "string", values: "path" },
 	declare: { type: "boolean", values: "true|false" },
+	defers: { type: "string", values: "large|true|false" },
 	dependencies: { type: "object", values: "json" },
 	errors: { type: "string", values: "all|first|none" },
 	freeze: { type: "boolean", values: "true|false" },

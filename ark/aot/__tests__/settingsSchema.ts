@@ -47,6 +47,8 @@ export const PrecompileOptions = type({
 	"cwd?": type("string > 0").describe("a path"),
 	"inline?": flag,
 	"declare?": flag,
+	// what a host sets, or a test past the size deciding it
+	"defers?": "boolean | 'large'",
 	"+": "reject"
 })
 

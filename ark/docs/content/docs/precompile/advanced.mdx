@@ -114,6 +114,12 @@ Each Type's creation is annotated `/* @__PURE__ */`, so your bundler drops a Typ
 
 A [production bundle](/docs/precompile/options#prune) that reads every module it holds leaves out the members no read needs, and the parts of the error runtime no validator in it writes: formatting an array index in a path, writing text configured for a code and, where no [runtime island](#runtime-islands) runs, the message a TraversalError writes for errors arktype returns. Written as one chunk, it also declares the units its validators share in one function.
 
+### Large modules on Turbopack
+
+Turbopack's production build reads one module at a time, so it can't write a program's code once. A route would spend its first request on Types it may never call, so a module writing a lot of code creates each validator's checks at its first call rather than as the module loads. A validator is still there from the import, with its identity and members, and what a Type reads from your code is read and checked on import, so nothing about when a guard fires changes. The cost is a few more instructions per call to read the check through a variable.
+
+[`lazy: false`](/docs/precompile/options#lazy) and `optimize: "size"` leave a module as it is.
+
 ### Unions
 
 A union of objects is checked by one key where a key tells its branches apart. Among keys at the shallowest path, ArkType prefers one every branch holds, then the one with the most values. A branch without the key is checked in every case, and data matching no case reports through it as well as the key, so give each branch the key:

@@ -410,6 +410,46 @@ export const callingRootApply = ((
 				args[1] === undefined ? configuredOnFail : args[1]
 			)) satisfies Fn) satisfies Fn
 
+// a validator's Allows and root apply as load returns them, created at their
+// first call, for one no creator reads as variables
+export const deferred = (load: () => readonly Fn[]): readonly Fn[] => {
+	let parts: readonly Fn[] | undefined
+	const partAt =
+		(i: number): Fn =>
+		(data: unknown, arg: unknown) =>
+			(parts ??= load())[i](data, arg)
+	return [partAt(0), partAt(1)]
+}
+
+// what the validators of one creation share, created once
+export const once = <t>(load: () => t): (() => t) => {
+	let loaded: t | undefined
+	return () => (loaded ??= load())
+}
+
+// callingRootApply creating its parts at its first call
+export const callingDeferredRootApply = ((
+	parts: Fn[],
+	configuredOnFail: FailHandler | null
+): Fn => {
+	const bind = () => ([allows, rootApply] = parts[1]() as unknown as Fn[])
+	// eslint-disable-next-line no-var
+	var allows: Fn = (data: unknown) => (bind(), allows(data))
+	// eslint-disable-next-line no-var
+	var rootApply: Fn = (data: unknown, onFail: unknown) => (
+		bind(),
+		rootApply(data, onFail)
+	)
+	parts[0] = (data: unknown) => allows(data)
+	return ((data: unknown, ...args: ValidatorArgs) =>
+		!args.length ? rootApply(data, configuredOnFail)
+		: args[0] ? rootApply(data, pipedInto(args[0]))
+		: rootApply(
+				data,
+				args[1] === undefined ? configuredOnFail : args[1]
+			)) satisfies Fn
+}) satisfies Fn
+
 type ValidatorParts = [
 	rootApply: RootApply,
 	allows: (data: unknown) => boolean,

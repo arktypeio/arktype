@@ -9,8 +9,10 @@ import { spawnSync } from "node:child_process"
 import {
 	existsSync,
 	mkdirSync,
+	readdirSync,
 	readFileSync,
 	rmSync,
+	statSync,
 	writeFileSync
 } from "node:fs"
 import { createRequire } from "node:module"
@@ -56,7 +58,11 @@ const files: Record<string, string> = {
 	"app/layout.jsx":
 		"export default function Layout({ children }) {\n\treturn <html><body>{children}</body></html>\n}\n",
 	"app/page.jsx":
-		'import { User } from "defines-types"\nimport { failed } from "reads-errors"\n\nexport default function Page() {\n\treturn <p>{User({ name: "Ada" }).name} {String(failed(User({})))}</p>\n}\n',
+		'import { User } from "defines-types"\nimport { failed } from "reads-errors"\nimport { Reads } from "./reads.jsx"\n\nexport default function Page() {\n\treturn <p>{User({ name: "Ada" }).name} {String(failed(User({})))} <Reads /></p>\n}\n',
+	// a client component, whose module Next's generated code imports, and only
+	// its own compiler's reads may keep a member
+	"app/reads.jsx":
+		'"use client"\nimport { Age } from "../src/age.ts"\n\nexport const Reads = () => typeof Age.assert\n',
 	// as Next.js leaves on the pages router's server unless told otherwise
 	"pages/legacy.jsx":
 		'import { type } from "arktype"\nimport { failed } from "reads-errors"\nimport { Age } from "../src/age.ts"\n\nexport default function Legacy() {\n\tconst out = Age({ age: -1 })\n\treturn <p>own {String(out instanceof type.errors)} dependency {String(failed(out))}</p>\n}\n',
@@ -104,6 +110,9 @@ const build = (config: string, ...flags: string[]) => {
 	return { status: result.status, output: result.stdout + result.stderr }
 }
 
+const unwrittenMessage =
+	"can't be precompiled in a module another plugin writes"
+
 const assertFailsWith = (
 	message: string,
 	{ status, output }: ReturnType<typeof build>
@@ -127,7 +136,11 @@ const assertRendered = (
 			`${bundler} should build the app. It exited ${status}:\n${output}`
 		)
 	}
-	if (!readFileSync(app, "utf8").includes("Ada<!-- --> <!-- -->true")) {
+	if (
+		!readFileSync(app, "utf8").includes(
+			"Ada<!-- --> <!-- -->true<!-- --> <!-- -->function"
+		)
+	) {
 		throw new Error(
 			`The prerendered page doesn't show the Type's results: ${app}`
 		)
@@ -183,9 +196,29 @@ assertFailsWith(
 	)
 )
 
+// a member no read of the app's needs, which only a whole-program read can drop
+const emittedWith = (text: string, dir: string): string[] =>
+	readdirSync(dir, { recursive: true, encoding: "utf8" }).filter(file => {
+		const path = join(dir, file)
+		return (
+			file.endsWith(".js") &&
+			statSync(path).isFile() &&
+			readFileSync(path, "utf8").includes(text)
+		)
+	})
+
 console.log("▲ Building it with webpack...")
 
 assertRendered("webpack", build(webpack, "--webpack"))
+
+for (const compiler of ["server", "static"]) {
+	const whole = emittedWith("~standard", join(appDir, ".next", compiler))
+	if (whole.length) {
+		throw new Error(
+			`webpack's ${compiler} build should prune what no module reads, but kept ~standard in ${whole.join(", ")}`
+		)
+	}
+}
 
 console.log(
 	"▲ Building it with webpack, Next leaving the pages router's dependencies external..."
@@ -195,6 +228,32 @@ assertFailsWith(
 	withAllowUnsafe(writeNextExternalMessage("reads-errors")),
 	build(withoutBundling(webpack), "--webpack")
 )
+
+console.log("▲ Building a route that imports a module twice by query...")
+
+writeFileSync(
+	join(appDir, "src/queried.ts"),
+	'import { type } from "arktype"\n\nlet seen = 0\nexport const V = type("string").narrow(() => ++seen > 0)\nexport const seenOf = () => seen\n'
+)
+mkdirSync(join(appDir, "app/queried"))
+writeFileSync(
+	join(appDir, "app/queried/page.jsx"),
+	'import { V as A, seenOf as seenA } from "../../src/queried.ts?v=1"\nimport { V as B, seenOf as seenB } from "../../src/queried.ts?v=2"\n\nexport default function Page() {\n\treturn <p>{`${A("a")} ${seenA()} ${seenB()} ${B("b")}`}</p>\n}\n'
+)
+
+assertFailsWith(unwrittenMessage, build(webpack, "--webpack"))
+
+// Turbopack's loader writes each module on its own, so each keeps its own run
+const queried = build(turbopack)
+const queriedPage = join(appDir, ".next/server/app/queried.html")
+if (
+	queried.status !== 0 ||
+	!readFileSync(queriedPage, "utf8").includes("<p>a 1 0 b</p>")
+) {
+	throw new Error(
+		`Turbopack should keep a module's queries apart. It exited ${queried.status}:\n${queried.output}`
+	)
+}
 
 rmSync(appDir, { recursive: true, force: true })
 

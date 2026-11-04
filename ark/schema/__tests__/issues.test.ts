@@ -5,6 +5,7 @@ import {
 	rootSchema,
 	type ArkErrorCode
 } from "@ark/schema"
+import { ArkErrors as LeanErrors } from "@ark/schema/internal/shared/issuesLean.ts"
 import {
 	ArkErrors,
 	FirstIssues,
@@ -13,6 +14,7 @@ import {
 	type CompactApply,
 	type FailureSite
 } from "@ark/schema/runtime"
+import { stringifyPath } from "@ark/util"
 
 const site = (code: ArkErrorCode, description: string): FailureSite => ({
 	v: { code, description }
@@ -129,6 +131,17 @@ contextualize(() => {
 [0] must be a string
 a[0].b must be a string
 [Symbol(s)] must be a string`)
+	})
+
+	it("prints a number in a path as arktype's own errors do", () => {
+		const path = [0, -1, 1.5, 1e21, NaN, Infinity, -Infinity]
+		const printed = "[0][-1][1.5][1e+21][NaN][Infinity][-Infinity]"
+		attest(stringifyPath(path)).equals(printed)
+		for (const Errors of [ArkErrors, LeanErrors]) {
+			const errors = new Errors()
+			errors._.push({ code: "domain", path, data: 1, expected: "a string" })
+			attest(errors.summary).equals(`${printed} must be a string`)
+		}
 	})
 
 	it("adds through a traversal as through errors", () => {
