@@ -971,6 +971,36 @@ console.log(Team.allows({ lead: { name: "abc" }, members: [] }))
 		}
 	})
 
+	describe("what a validator holds of its id", () => {
+		const root = fixture("comparedIds", {
+			"containers.ts": `import { type } from "arktype"
+export const H = { a: type("string") }
+export const Other = type("number")
+`,
+			"main.ts": `import { type } from "arktype"
+import { H, Other } from "./containers.ts"
+
+const T = type({ x: H.a })
+console.log(T.allows({ x: "a" }), Other.allows(1))
+`
+		})
+
+		it("is nothing where no read compares it", async () => {
+			const js = await esbuildBundle(root)
+			attest(behaviorOf(js)).equals("true true\n")
+			attest(/^var Other = [^"]*$/m.test(js)).equals(true)
+		})
+
+		it("is compared where a read of a holder does", async () => {
+			const js = await esbuildBundle(root)
+			// a write the build couldn't see, as code it doesn't read may make
+			const written = js.replace(/^var T = /m, "H.a = Other\n$&")
+			attest(behaviorOf(written)).equals(
+				"Error: `H.a` is another Type, but was precompiled as the Type it was at build"
+			)
+		})
+	})
+
 	describe("a module a plugin ahead of arktype's rewrote after the scan read it", () => {
 		const rewriting = (rewrite: (code: string) => string): VitePlugin => ({
 			name: "rewriting",

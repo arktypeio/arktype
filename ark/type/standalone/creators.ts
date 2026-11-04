@@ -93,7 +93,7 @@ export const madeApplierOf = (
 
 // the attributes a validator is created with, as its creator takes them
 export const writtenAttributesOf = (
-	baking: Baking,
+	writesId: boolean,
 	form: ValidatorForm,
 	attributes: string[],
 	meta: string | undefined,
@@ -102,7 +102,7 @@ export const writtenAttributesOf = (
 	// a creator defaults an empty-meta validator's attributes, so a site needs only imports
 	(
 		!form.isTemplate &&
-		!baking.holdsIds &&
+		!writesId &&
 		!onFail &&
 		!form.byRuntime &&
 		attributes.length === 1 &&

@@ -618,6 +618,8 @@ export class StandaloneArtifact {
 	}
 
 	receiverOf(value: Foldable, id: string, label: string): string {
+		if (!this.isComparedId(id))
+			throwInternalError(`Comparing ${label}, whose id the scan didn't read`)
 		const kind = hasArkKind(value, "root") ? "" : `, "${kindNameOf(value)}"`
 		const args = `${writeId(id)}, ${JSON.stringify(label)}${kind}`
 		const name = `${receiverPrefix}${hashOf(`runtime.holesOf(holder, ${args})`)}`
@@ -1660,8 +1662,11 @@ return namespace`
 		const { id, held, meta, attributes, onFail } = this.attributesOf(root, form)
 		const fused = fusedApplierOf(this.baking, form, applied)
 		const made = fused ? undefined : madeApplierOf(form, applied, allows)
+		// a template's parts are read by position
+		const writesId =
+			this.baking.holdsIds && (isTemplate || !!held || this.isComparedId(id))
 		const written = writtenAttributesOf(
-			this.baking,
+			writesId,
 			form,
 			attributes,
 			meta,
@@ -1685,7 +1690,7 @@ return namespace`
 			:	[rootApply(), allows]),
 			...(createsWith ?
 				[
-					writeId(id),
+					writesId ? writeId(id) : "undefined",
 					...(held ? [...written, held]
 					: written[0] === "{ meta: runtime.emptyMeta }" ? []
 					: written)
@@ -1694,8 +1699,9 @@ return namespace`
 					...written,
 					...(!this.baking.holdsIds ? []
 					: held ? [writeId(id), held]
-					: onFail ? [writeId(id), "undefined"]
-					: [writeId(id)])
+					: onFail ? [writesId ? writeId(id) : "undefined", "undefined"]
+					: writesId ? [writeId(id)]
+					: [])
 				]),
 			...(onFail ? [onFail] : [])
 		]
@@ -2699,7 +2705,15 @@ return namespace`
 		const [id, allHoles] = keyOf(value)
 		const holes = this.heldOf(allHoles)
 		if (!this.baking.holdsIds && !holes.length) return expression
-		return `runtime.holdHoles(${expression}, ${writeId(id)}${holes.length ? `, [${this.emitAll(holes)}]` : ""})`
+		return (
+			holes.length || this.isComparedId(id) ?
+				`runtime.holdHoles(${expression}, ${writeId(id)}${holes.length ? `, [${this.emitAll(holes)}]` : ""})`
+			:	`runtime.holdHoles(${expression})`
+		)
+	}
+
+	isComparedId(id: string): boolean {
+		return this.baking.cells?.comparedIds.has(id) ?? true
 	}
 
 	readValidator(root: BaseRoot): string | undefined {

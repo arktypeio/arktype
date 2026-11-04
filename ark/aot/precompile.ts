@@ -532,6 +532,27 @@ const isLiteralRename = (read: Node, module: SourceModule): boolean => {
 	)
 }
 
+// the ids compareInput compares of what a factory reads
+const collectComparedIds = (
+	value: unknown,
+	isWritable: boolean | undefined,
+	byHole: ReadonlyMap<unknown, HoleCell>,
+	ids: Set<string>
+): void => {
+	if (
+		hasArkKind(value, "root") ||
+		hasArkKind(value, "module") ||
+		hasArkKind(value, "scope") ||
+		hasArkKind(value, "generic")
+	) {
+		const [id, holes] = keyOf(value)
+		if (isWritable || holes.some(hole => !byHole.has(hole))) ids.add(id)
+	} else if (isPlainContainer(value)) {
+		for (const k of Reflect.ownKeys(value))
+			collectComparedIds(Reflect.get(value, k), isWritable, byHole, ids)
+	}
+}
+
 const holdsCell = (value: unknown, cells: HoleCells | undefined): boolean =>
 	!!cells &&
 	isFoldable(value) &&
@@ -1058,7 +1079,16 @@ export class Precompiler {
 					)
 				:	undefined
 			:	(byHole.get(value)?.name ?? defaults.get(value) ?? runtimeKeyOf(value))
+		const comparedIds = new Set<string>()
+		for (const [, { params }] of factories) {
+			for (const param of params) {
+				if (param.kind !== "input") continue
+				for (const [, value] of param.reads)
+					collectComparedIds(value, param.isWritable, byHole, comparedIds)
+			}
+		}
 		const cells: HoleCells = {
+			comparedIds,
 			byHole,
 			byPlaceholder,
 			defaults,
