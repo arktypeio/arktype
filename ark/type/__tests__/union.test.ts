@@ -526,6 +526,32 @@ x must be a string (was a number)`)
 		)
 	})
 
+	it("a class's Symbol.hasInstance can allow a unit of any domain", () => {
+		class Nullish {
+			static [Symbol.hasInstance](data: unknown) {
+				return data === null || data === undefined
+			}
+		}
+		attest(type.instanceOf(Nullish).or("null").expression).snap("Nullish")
+		attest(type.instanceOf(Nullish).or("5").expression).snap("Nullish | 5")
+		attest(
+			type({ a: type.instanceOf(Nullish) }).or({ a: "null" }).expression
+		).snap("{ a: Nullish }")
+	})
+
+	it("a discriminant doesn't skip a predicate an earlier key tests", () => {
+		const tested: unknown[] = []
+		const T = type({ a: "'x'", b: "1" }).or({
+			a: type("string").narrow(s => {
+				tested.push(s)
+				return true
+			}),
+			b: "2"
+		})
+		attest(tested).snap(["x"])
+		attest(T({ a: "x", b: 1 })).snap({ a: "x", b: 1 })
+	})
+
 	it("equal units keep one branch however they're written", () => {
 		const units = (...branches: unknown[]) =>
 			type.schema(branches.map(unit => ({ unit })) as never).expression

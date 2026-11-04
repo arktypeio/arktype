@@ -12,7 +12,7 @@ import {
 import { printable, throwParseError, unset } from "@ark/util"
 import type { setImplementationOf } from "../implement.ts"
 import { intersectOrPipeNodes } from "../intersections.ts"
-import { domainBits, domainsOf } from "../roots/union.ts"
+import { domainsOf, unitBitsOf } from "../roots/union.ts"
 
 export const intersectProps = (
 	l: nodeOfKind<Prop.Kind>,
@@ -90,7 +90,10 @@ const withUndefined = (value: BaseRoot): BaseRoot => {
 	let result = valuesWithUndefined.get(value)
 	if (!result) {
 		result =
-			domainsOf(value) & domainBits.undefined && value.allowsUnused(undefined) ?
+			(
+				domainsOf(value) & unitBitsOf("undefined") &&
+				value.allowsUnused(undefined)
+			) ?
 				value
 			:	value.or($ark.kw.undefined)
 		// an alias's union is reduced again once it resolves

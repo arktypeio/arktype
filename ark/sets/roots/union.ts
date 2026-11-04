@@ -710,7 +710,7 @@ const isUnknownUnion = (branches: readonly Union.ChildNode[]): boolean => {
 	return branches.every((branch, i) => branch.hash === unknownUnionHashes![i])
 }
 
-export const domainBits: Record<Domain, number> = {
+const domainBits: Record<Domain, number> = {
 	undefined: 1,
 	null: 2,
 	boolean: 4,
@@ -721,12 +721,29 @@ export const domainBits: Record<Domain, number> = {
 	object: 128
 }
 
-const anyDomain = 255
+// a unit's own bit above its domain's
+export const unitBitsOf = (domain: Domain): number => domainBits[domain] * 257
 
-// the domains an input it allows can be in, read without writing that input
+const anyUnit = 255 * 256
+
+const anyDomain = 255 + anyUnit
+
+const ordinaryHasInstance = Function.prototype[Symbol.hasInstance]
+
+// what an input it allows could be, read without writing that input. A proto tests
+// a unit with `instanceof`, which a class's `Symbol.hasInstance` can answer for any
+// domain, though a domain it never tests is disjoint from all but objects
 export const domainsOf = (node: BaseRoot): number => {
-	if (node.is("unit") || node.is("domain")) return domainBits[node.domain]
-	if (node.is("proto")) return domainBits.object
+	if (node.is("unit")) return unitBitsOf(node.domain)
+	if (node.is("domain")) return domainBits[node.domain]
+	if (node.is("proto")) {
+		return (
+				node.builtinName &&
+					node.proto[Symbol.hasInstance] === ordinaryHasInstance
+			) ?
+				domainBits.object
+			:	domainBits.object | anyUnit
+	}
 	if (node.is("intersection"))
 		return node.basis ? domainsOf(node.basis) : anyDomain
 	if (node.is("morph"))
@@ -822,16 +839,18 @@ const requireDisjointProps = (
 	if (!rProps) return false
 	const required = l.structure?.required ?? []
 	// values telling branches apart are mostly units, decided without their inputs
+	// up to the first pair whose intersection could call a predicate or `instanceof`
 	for (const prop of required) {
 		const match = rProps[prop.key]
+		if (!match?.required || prop.value === match.value) continue
 		if (
-			match?.required &&
-			(!(domainsOf(prop.value) & domainsOf(match.value)) ||
-				(prop.value.is("unit") &&
-					match.value.is("unit") &&
-					prop.value.unitJson !== match.value.unitJson))
+			!(domainsOf(prop.value) & domainsOf(match.value)) ||
+			(prop.value.is("unit") &&
+				match.value.is("unit") &&
+				prop.value.unitJson !== match.value.unitJson)
 		)
 			return true
+		break
 	}
 	for (const prop of required) {
 		const match = rProps[prop.key]
