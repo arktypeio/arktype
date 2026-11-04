@@ -42,6 +42,10 @@ export interface FallbackTrace {
 
 const replayRefusal = new Error("refused")
 
+// a Type reusing another at each level calls a fallback and holds objects that
+// double per level, so states their product, each read for every call
+const maxTracedStates = 1 << 20
+
 const refuseReplay = (): never => {
 	throw replayRefusal
 }
@@ -99,10 +103,13 @@ export const traceFallbacks = (
 		return { object: id }
 	}
 
+	let tracedStates = 0
+
 	// discovering objects as it reads them, so states hold each reachable one
 	const snapshot = (): States => {
 		const states: States = []
 		for (let i = 0; i < objects.length; i++) {
+			if (++tracedStates > maxTracedStates) refuseReplay()
 			const o = objects[i] as Record<string, unknown>
 			states.push(
 				Object.keys(o).map(key => {
