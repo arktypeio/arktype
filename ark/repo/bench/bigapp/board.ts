@@ -60,80 +60,95 @@ export const writeBoard = (resultPath: string, outPath: string) => {
 			const arm = stored.arms[`${group} ${library}`]
 			return arm ? [[library, arm] as const] : []
 		})
-	const summary: string[] = []
 	const detail: string[] = []
-	let won = 0
-	let tied = 0
-	let lost = 0
-	// what one build wins alone, since an app ships one
-	const alone = Object.fromEntries(ours.map(build => [build, 0]))
-	for (const group of groups) {
-		const arms = armsOf(group)
-		const cells = ["**" + group + "**"]
-		const rows = new Map(arms.map(([library]) => [library, [] as string[]]))
-		for (const [, of, format] of categories) {
-			const ranked = [...arms].sort(
-				(l, r) => median(of(l[1])) - median(of(r[1]))
+	// whichever bundler a row's arms went through
+	const sectionOf = (groups: string[]) => {
+		const summary: string[] = []
+		let won = 0
+		let tied = 0
+		let lost = 0
+		// what one build wins alone, since an app ships one
+		const alone = Object.fromEntries(ours.map(build => [build, 0]))
+		for (const group of groups) {
+			const arms = armsOf(group)
+			const cells = ["**" + group + "**"]
+			const rows = new Map(arms.map(([library]) => [library, [] as string[]]))
+			for (const [, of, format] of categories) {
+				const ranked = [...arms].sort(
+					(l, r) => median(of(l[1])) - median(of(r[1]))
+				)
+				const [winner, winning] = ranked[0]
+				const p = pOf(of(winning), of(ranked[1][1]))
+				// everything the winner can't be told from at p 0.05
+				const level = ranked.filter(
+					([, arm]) => arm === winning || pOf(of(winning), of(arm)) >= 0.05
+				)
+				const best = ranked.find(([library]) => ours.includes(library))!
+				for (const build of ours) {
+					const mine = arms.find(([library]) => library === build)![1]
+					const beaten = arms.every(
+						([library, arm]) =>
+							ours.includes(library) ||
+							(median(of(mine)) < median(of(arm)) &&
+								pOf(of(mine), of(arm)) < 0.05)
+					)
+					if (beaten) alone[build]++
+				}
+				const leaderIsOurs = ours.includes(winner)
+				const ourLevel = level.some(([library]) => ours.includes(library))
+				for (const [library, arm] of arms) {
+					const text = format(median(of(arm)))
+					rows.get(library)!.push(
+						library === winner ? `**${text}**`
+						: level.some(([l]) => l === library) ? `${text} (tie)`
+						: text
+					)
+				}
+				const gap = median(of(best[1])) - median(of(winning))
+				const ratio = (median(of(best[1])) / median(of(winning))).toFixed(2)
+				if (leaderIsOurs && level.length === 1) {
+					won++
+					cells.push(
+						`win ${format(median(of(winning)))}, ${labels[winner]} (${pText(p)})`
+					)
+				} else if (ourLevel) {
+					tied++
+					cells.push(
+						`tie with ${level
+							.filter(([library]) => library !== best[0])
+							.map(([library]) => labels[library])
+							.join(", ")} (${format(median(of(best[1])))})`
+					)
+				} else {
+					lost++
+					cells.push(
+						`LOSS: ${labels[best[0]]} to ${labels[winner]} by ${format(gap)}, ${ratio}x (${pText(pOf(of(best[1]), of(winning)))})`
+					)
+				}
+			}
+			summary.push(`| ${cells.join(" | ")} |`)
+			detail.push(
+				`### ${group}\n\n| arm | ${categories.map(c => c[0]).join(" | ")} |\n|---|${categories.map(() => "---").join("|")}|\n${arms
+					.map(
+						([library]) =>
+							`| ${labels[library]} | ${rows.get(library)!.join(" | ")} |`
+					)
+					.join("\n")}\n`
 			)
-			const [winner, winning] = ranked[0]
-			const p = pOf(of(winning), of(ranked[1][1]))
-			// everything the winner can't be told from at p 0.05
-			const level = ranked.filter(
-				([, arm]) => arm === winning || pOf(of(winning), of(arm)) >= 0.05
-			)
-			const best = ranked.find(([library]) => ours.includes(library))!
-			for (const build of ours) {
-				const mine = arms.find(([library]) => library === build)![1]
-				const beaten = arms.every(
-					([library, arm]) =>
-						ours.includes(library) ||
-						(median(of(mine)) < median(of(arm)) &&
-							pOf(of(mine), of(arm)) < 0.05)
-				)
-				if (beaten) alone[build]++
-			}
-			const leaderIsOurs = ours.includes(winner)
-			const ourLevel = level.some(([library]) => ours.includes(library))
-			for (const [library, arm] of arms) {
-				const text = format(median(of(arm)))
-				rows.get(library)!.push(
-					library === winner ? `**${text}**`
-					: level.some(([l]) => l === library) ? `${text} (tie)`
-					: text
-				)
-			}
-			const gap = median(of(best[1])) - median(of(winning))
-			const ratio = (median(of(best[1])) / median(of(winning))).toFixed(2)
-			if (leaderIsOurs && level.length === 1) {
-				won++
-				cells.push(
-					`win ${format(median(of(winning)))}, ${labels[winner]} (${pText(p)})`
-				)
-			} else if (ourLevel) {
-				tied++
-				cells.push(
-					`tie with ${level
-						.filter(([library]) => library !== best[0])
-						.map(([library]) => labels[library])
-						.join(", ")} (${format(median(of(best[1])))})`
-				)
-			} else {
-				lost++
-				cells.push(
-					`LOSS: ${labels[best[0]]} to ${labels[winner]} by ${format(gap)}, ${ratio}x (${pText(pOf(of(best[1]), of(winning)))})`
-				)
-			}
 		}
-		summary.push(`| ${cells.join(" | ")} |`)
-		detail.push(
-			`### ${group}\n\n| arm | ${categories.map(c => c[0]).join(" | ")} |\n|---|${categories.map(() => "---").join("|")}|\n${arms
-				.map(
-					([library]) =>
-						`| ${labels[library]} | ${rows.get(library)!.join(" | ")} |`
-				)
-				.join("\n")}\n`
-		)
+		return `${won} wins, ${tied} ties, ${lost} losses of ${won + tied + lost} cells. An app ships one build: alone, against every rival, the default wins ${alone.precompiled} cells and \`smallest\` ${alone.smallest}.
+
+| app | ${categories.map(c => c[0]).join(" | ")} |
+|---|${categories.map(() => "---").join("|")}|
+${summary.join("\n")}
+`
 	}
+	const esbuild = sectionOf(
+		groups.filter(group => !group.startsWith("webpack "))
+	)
+	const webpack = sectionOf(
+		groups.filter(group => group.startsWith("webpack "))
+	)
 	writeFileSync(
 		outPath,
 		`# Scoreboard
@@ -142,12 +157,12 @@ export const writeBoard = (resultPath: string, outPath: string) => {
 
 Each cell compares precompiled's better build (default or \`smallest\`) with the best arm. A two-sided sign test paired by round decides a tie, at p 0.05, so 9 rounds can't go below p 0.004. Bytes are exact. Instructions are perf's instructions:u in a window opening before the import. Hot path is ns per call after warm-up: \`ThreadView\` on ntwine, \`checkProject\` on generated apps. A row marked narrows has a narrow on two base Types per 46.
 
-${won} wins, ${tied} ties, ${lost} losses of ${won + tied + lost} cells. An app ships one build: alone, against every rival, the default wins ${alone.precompiled} cells and \`smallest\` ${alone.smallest}.
+## esbuild, which prunes
 
-| app | ${categories.map(c => c[0]).join(" | ")} |
-|---|${categories.map(() => "---").join("|")}|
-${summary.join("\n")}
+${esbuild}
+## webpack, which can't prune and minifies with terser
 
+${webpack}
 ## Every arm
 
 Bold wins; (tie) can't be told from it.
@@ -155,7 +170,7 @@ Bold wins; (tie) can't be told from it.
 ${detail.join("\n")}
 ## Not measured
 
-ajv validates schemas converted from arktype's rather than a hand port, and has no narrows row because JSON Schema can't express one. ntwine has no valibot or ajv port. Typia, TypeBox, Zod Mini, @ts-runtypes and ata are cited in ark/docs/lib/claims.ts but have no port of these apps.
+ajv validates schemas converted from arktype's rather than a hand port, and has no narrows row because JSON Schema can't express one. ntwine has no valibot or ajv port. Typia, TypeBox, Zod Mini, @ts-runtypes and ata are cited in ark/docs/lib/claims.ts but have no port of these apps. The webpack rows have only the precompiled builds, zod and valibot or zod 3.
 `
 	)
 	console.log(`wrote ${outPath}`)
