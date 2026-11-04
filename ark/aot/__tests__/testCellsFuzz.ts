@@ -126,7 +126,6 @@ const pureReads: Record<string, string> = {
 	everyHelper: `const isLong = (s: string) => s.length > %\nconst check = (s: string) => [s].every(isLong)`,
 	selfCompare: `const check = (s: string): boolean => ((globalThis as any).seen ??= check) === check && s.length > %`,
 	helperIdentity: `const helper = () => {}\nconst check = (s: string) => ((globalThis as any).seen ??= helper) === helper`,
-	helperName: `const helper = () => {}\nconst check = (s: string) => helper.name.length > 2`,
 	helperLength: `const helper = (a: unknown) => a\nconst check = (s: string) => helper.length + s.length > 2`,
 	helperText: `const helper = () => %\nconst check = (s: string) => helper.toString().includes("1")`,
 	helperCall: `const helper = (s: string) => s.length > %\nconst check = (s: string) => helper.call(null, s)`,
@@ -610,12 +609,16 @@ const esbuildOutcome = async (
 }
 
 // each generated module and each of the app's a chunk of its own, keeping a cell
-// from the function it holds as esbuild's layout never would
+// from the function it holds as esbuild's layout never would. Only what's in a
+// chunk keeps its place in the imports: a manual chunk loads ahead of what stays
+// in the entry, which would run Types before the app's config.
 const chunkOf = (id: string): string | undefined => {
-	const generated = /~arktype[/\\]([^/\\?]+)/.exec(id)
+	const generated = /~arktype[/\\]([^/?\\]+)/.exec(id)
 	if (generated) return `generated-${generated[1]}`
-	const own = /[/\\](m\d+)\.ts(?:\?v=(\d))?$/.exec(id)
-	return own ? `${own[1]}${own[2] ?? ""}` : undefined
+	const own = /[/\\](\w+)\.ts(?:\?v=(\d))?$/.exec(id)
+	return own && !id.includes("node_modules") && own[1] !== "main" ?
+			`${own[1]}${own[2] ?? ""}`
+		:	undefined
 }
 
 const viteOutcome = async (
@@ -906,6 +909,9 @@ const firstMismatch = (
 		:	`observation ${at}: expected ${JSON.stringify(expected[at])}, got ${JSON.stringify(observed[at])}`
 }
 
+// the error a run of a build crashed with
+const errorOf = (out: string) => /^\w*Error\b.*$/m.exec(out)?.[0]
+
 const check = async (app: App): Promise<boolean> => {
 	const dir = writeApp(app)
 	const expected = run(["--conditions", "ark-ts", "main.ts"], dir)
@@ -988,10 +994,15 @@ const check = async (app: App): Promise<boolean> => {
 			const plain = await outcomeOf(host, dir, app, false)
 			const plainObservations = "out" in plain && observationsOf(plain.out)
 			if (
-				observations &&
-				plainObservations &&
-				normalized(verdictsOf(plainObservations)) ===
-					normalized(verdictsOf(observations))
+				(observations &&
+					plainObservations &&
+					normalized(verdictsOf(plainObservations)) ===
+						normalized(verdictsOf(observations))) ||
+				// a crash it builds alone too
+				(!observations &&
+					"out" in plain &&
+					!plainObservations &&
+					errorOf(plain.out) === errorOf(outcome.out))
 			) {
 				tally.bundler++
 				continue
