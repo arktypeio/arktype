@@ -1273,6 +1273,20 @@ A tuple expression's `:` constrains the whole Type, so it can't follow a morph. 
 type([["string", "=>", s => s.length], ":", n => n % 2 === 0])
 ```
 
+### Throw a `ParseError` for a group or `keyof` where a literal is required
+
+A right bound or default written as a group or with `keyof` threw a `TypeError` while parsing. It now throws what its type already failed with, except that its message names what was written:
+
+```ts
+// ParseError: Comparator < must be followed by a corresponding literal (was ()
+type("number<(1)")
+
+// ParseError: Default value '(1)' must be a literal value
+type({ foo: "number = (1)" })
+```
+
+A non-literal right bound after a space, like `number < string`, no longer prints that space in its message.
+
 ### Describe a range's minimum first in every engine
 
 Firefox described a range by its maximum first, since the order depended on how the engine sorts:

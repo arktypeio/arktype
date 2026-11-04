@@ -503,6 +503,17 @@ contextualize(() => {
 			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("number"))
 		})
 
+		it("operand that sets no root", () => {
+			// @ts-expect-error
+			attest(() => type({ foo: "number = (1)" })).throwsAndHasTypeError(
+				"Default value '(1)' must be a literal value"
+			)
+			// @ts-expect-error
+			attest(() => type({ foo: "string = keyof a" })).throwsAndHasTypeError(
+				"Default value 'keyof a' must be a literal value"
+			)
+		})
+
 		it("validated default in scope", () => {
 			const $ = scope({
 				specialNumber: "number",

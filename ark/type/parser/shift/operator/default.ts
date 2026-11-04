@@ -67,12 +67,17 @@ export const parseDefault = (
 		s.sc.jumpForward(emptyCollection.length)
 		return [baseNode, "=", emptyCollectionDefaults[emptyCollection]]
 	}
+	const start = s.sc.location
 	s.parseOperand()
 	const defaultNode = s.unsetRoot()
-	// after parsing the next operand, use the locations to get the
-	// token from which it was parsed
-	if (!defaultNode.is("unit"))
-		return s.error(writeNonLiteralDefaultMessage(defaultNode.expression))
+	// ( and keyof are operands that don't set a root
+	if (!defaultNode?.is("unit")) {
+		return s.error(
+			writeNonLiteralDefaultMessage(
+				defaultNode?.expression ?? s.sc.sliceChars(start).trim()
+			)
+		)
+	}
 	const defaultValue =
 		defaultNode.unit instanceof Date ?
 			() => new Date(defaultNode.unit as Date)

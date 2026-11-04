@@ -381,6 +381,31 @@ contextualize(() => {
 			)
 		})
 
+		it("group as a right bound", () => {
+			// @ts-expect-error
+			attest(() => type("number<(1)")).throwsAndHasTypeError(
+				"Comparator < must be followed by a corresponding literal (was ()"
+			)
+			// @ts-expect-error
+			attest(() => type("1<number< (2)")).throwsAndHasTypeError(
+				"Comparator < must be followed by a corresponding literal (was ()"
+			)
+		})
+
+		it("keyof as a right bound", () => {
+			// @ts-expect-error
+			attest(() => type("number<keyof string")).throwsAndHasTypeError(
+				"Comparator < must be followed by a corresponding literal (was keyof)"
+			)
+		})
+
+		it("non-literal right bound after a space", () => {
+			// @ts-expect-error
+			attest(() => type("number < string")).throwsAndHasTypeError(
+				"Comparator < must be followed by a corresponding literal (was string)"
+			)
+		})
+
 		it("number with left Date bound", () => {
 			// @ts-expect-error
 			attest(() => type("d'2001-01-01'<number<2")).throwsAndHasTypeError(
