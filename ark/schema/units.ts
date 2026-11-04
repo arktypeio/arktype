@@ -37,6 +37,7 @@ import { ArkErrors } from "./shared/issues.ts"
 import type { NodeKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import {
+	copyDeclared,
 	copyOf,
 	holdsOnlyIndices,
 	keepOwn,
@@ -305,6 +306,7 @@ const unitConstants = {
 	ArkErrors,
 	arrayIndexMatcher,
 	callMorph,
+	copyDeclared,
 	copyOf,
 	disallowed,
 	errorFromUnion,
