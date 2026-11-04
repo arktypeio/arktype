@@ -554,17 +554,46 @@ const expectedsOf = (errors: ArkErrors) =>
 			return {
 				at: `${pathKeyOf(issue.path)}\0${issue.code}`,
 				expected,
-				message: expected === null ? null : messageWithoutActual(issue.message!)
+				message:
+					expected === null || raisesNever(issue) ?
+						null
+					:	messageWithoutActual(issue.message!)
 			}
 		})
 		.sort((l, r) => (l.at < r.at ? -1 : 1))
 
 // arktype writes a symbol's description only where it's an identifier
 const messageWithoutActual = (message: string): string =>
-	message
-		.replace(/ \(was (?:"(?:[^"\\]|\\.)*"|[^)])*\)/g, "")
+	withoutWas(message)
 		.replace(/(^|, | or )value at /g, "$1")
 		.replace(/\[Symbol\([^)]*\)]/g, "[Symbol]")
+
+// what a value was, which a build's text doesn't say, may hold quotes and parens
+const withoutWas = (message: string): string => {
+	const marker = " (was "
+	let written = ""
+	let from = 0
+	for (
+		let at = message.indexOf(marker);
+		at !== -1;
+		at = message.indexOf(marker, from)
+	) {
+		written += message.slice(from, at)
+		from = at + marker.length
+		let depth = 1
+		let isQuoted = false
+		while (depth && from < message.length) {
+			const char = message[from++]
+			if (isQuoted) {
+				if (char === "\\") from++
+				else if (char === '"') isQuoted = false
+			} else if (char === '"') isQuoted = true
+			else if (char === "(") depth++
+			else if (char === ")") depth--
+		}
+	}
+	return written + message.slice(from)
+}
 
 // a check's error holds its description, which a raised one doesn't unless
 // pipe.try raised it, describing it by its morph
@@ -575,13 +604,19 @@ const raisesUnexpected = (error: ArkError) =>
 	(error as { morph?: unknown }).morph === undefined &&
 	suppliedTextOf(error, "expected") === undefined
 
+// a callback's union of no branches has no text, as the docs say; a `never`'s
+// is compared by unionText.test.ts
+const raisesNever = (issue: { code: string; errors?: readonly unknown[] }) =>
+	issue.code === "union" && issue.errors?.length === 0
+
 // a validator's expected and message where arktype's are written from what
 // it doesn't hold
 const maskExpecteds = (arktype: unknown, precompiled: unknown): unknown => {
 	if (!hasDomain(arktype, "object") || !hasDomain(precompiled, "object"))
 		return precompiled
-	const expecteds = (arktype as { expecteds?: { expected: unknown }[] })
-		.expecteds
+	const expecteds = (
+		arktype as { expecteds?: { expected: unknown; message: unknown }[] }
+	).expecteds
 	const compared = (precompiled as { expecteds?: { expected: unknown }[] })
 		.expecteds
 	if (!expecteds || !compared || expecteds.length !== compared.length)
@@ -591,7 +626,8 @@ const maskExpecteds = (arktype: unknown, precompiled: unknown): unknown => {
 		expecteds: compared.map((entry, i) =>
 			expecteds[i].expected === null ?
 				{ ...entry, expected: null, message: null }
-			:	entry
+			: expecteds[i].message === null ? { ...entry, message: null }
+			: entry
 		)
 	}
 }
