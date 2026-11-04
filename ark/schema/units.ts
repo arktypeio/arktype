@@ -1075,7 +1075,11 @@ const referenceOf = (node: BaseNode, id: NodeId): BaseNode | undefined => {
 const isPatternInstanceIn = (node: BaseNode, value: RegExp): boolean => {
 	for (const id in node.byId) {
 		const reference = node.byId[id]
-		if (reference.is("pattern") && reference.instance === value) return true
+		if (
+			reference.is("pattern") &&
+			(reference.instance === value || reference.tested === value)
+		)
+			return true
 	}
 	return false
 }

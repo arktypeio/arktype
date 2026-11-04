@@ -42,7 +42,8 @@ export const readWritten = (
 	for (const node of nodes) {
 		written.metas.add(node.meta)
 		if (node.is("structure")) written.keyLookups.add(node.byKey)
-		else if (node.is("pattern")) written.patternInstances.add(node.instance)
+		else if (node.is("pattern"))
+			written.patternInstances.add(node.instance).add(node.tested)
 		else if (node.is("optional") || node.is("sequence"))
 			collectDefaults(node, written.defaultsByMorph)
 		else if (

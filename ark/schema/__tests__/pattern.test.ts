@@ -331,6 +331,189 @@ contextualize(() => {
 		}
 	})
 
+	describe("a class counted exactly", () => {
+		const testedSource = (regex: RegExp) => {
+			const node = rootSchema({ domain: "string", pattern: regex })
+			const pattern = node.children.find(child => child.is("pattern"))
+			return pattern!.tested.source
+		}
+
+		it("writes one out past 3", () => {
+			attest(testedSource(/^\d{4}$/)).snap("^\\d\\d\\d\\d$")
+			attest(testedSource(/^\d{3}$/)).snap("^\\d{3}$")
+			attest(testedSource(/^[\]a]{4}-\W{5}/)).snap(
+				"^[\\]a][\\]a][\\]a][\\]a]-\\W\\W\\W\\W\\W"
+			)
+			attest(testedSource(/(?:\s{4}|[^-]{4})+/)).snap(
+				"(?:\\s\\s\\s\\s|[^-][^-][^-][^-])+"
+			)
+		})
+
+		it("leaves whatever else reads as counted", () => {
+			for (const source of [
+				String.raw`\\d{4}`,
+				String.raw`\[a]{4}`,
+				String.raw`[\d{4}]`,
+				String.raw`[\]{4}]`,
+				String.raw`\u0041{4}`,
+				String.raw`\x41{4}`,
+				"a{4}",
+				"(a){4}",
+				"(?:ab){4}",
+				String.raw`(a)\1{4}`,
+				String.raw`\d{4}?`,
+				String.raw`\d{4,}`,
+				String.raw`\d{4,6}`,
+				String.raw`\d{,4}`,
+				String.raw`\d{4`
+			])
+				attest(testedSource(new RegExp(source))).equals(source)
+			attest(testedSource(/\p{L}{4}/u)).equals(String.raw`\p{L}{4}`)
+		})
+
+		it("leaves a count too long to write out", () => {
+			attest(testedSource(/^\d{512}$/)).snap("^\\d{512}$")
+			const long = `^${"\\d{4}".repeat(200)}$`
+			attest(testedSource(new RegExp(long))).equals(long)
+		})
+
+		it("writes out only an outermost class of v, whose classes can nest", () => {
+			const v = (source: string) => new RegExp(source, "v")
+			attest(testedSource(v(String.raw`[[\d]]{4}`))).equals(
+				String.raw`[[\d]]{4}`
+			)
+			attest(testedSource(v("[[a]b]{4}"))).equals("[[a]b]{4}")
+			attest(testedSource(v("[ab]{4}"))).equals("[ab][ab][ab][ab]")
+			const T = rootSchema({ domain: "string", pattern: v("^[[a]b]{4}$") })
+			attest(T.allows("abab")).equals(true)
+			attest(T.allows("abac")).equals(false)
+		})
+
+		it("keeps a pattern's flags and what it writes", () => {
+			const T = rootSchema({ domain: "string", pattern: /^[a-f]{4}$/iu })
+			attest(T.allows("aBcD")).equals(true)
+			attest(T.allows("aBcG")).equals(false)
+			attest(T.expression).snap("/^[a-f]{4}$/iu")
+			attest(
+				rootSchema({ domain: "string", pattern: /^[a-f]{4}$/ }).toJsonSchema()
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "string",
+				pattern: "^[a-f]{4}$"
+			})
+		})
+
+		// starts from where the last match of a global pattern left off, unless reset
+		it("resets lastIndex", () => {
+			const T = rootSchema({ domain: "string", pattern: /\d{4}/g })
+			attest(T.allows("1234")).equals(true)
+			attest(T.allows("1234")).equals(true)
+		})
+
+		// each atom with a string it reads, from what a tokenizer could read wrong
+		const atoms: [source: string, sample: string][] = [
+			["\\d", "4"],
+			["\\D", "-"],
+			["\\w", "_"],
+			["\\W", "]"],
+			["\\s", " "],
+			["\\S", "{"],
+			["[a-c]", "b"],
+			["[^a-c]", "\u{1f600}"],
+			["[\\]]", "]"],
+			["[\\\\]", "\\"],
+			["[[]", "["],
+			["[{4}]", "{"],
+			["[\\d{4}]", "4"],
+			["a", "a"],
+			["\\\\", "\\"],
+			["\\[", "["],
+			["\\]", "]"],
+			["\\{", "{"],
+			["\\.", "."],
+			["\\/", "/"],
+			["\\x41", "A"],
+			["\\u0041", "A"],
+			["\\cA", "\u0001"],
+			["\\0", "\0"],
+			[".", "x"],
+			["\ud83d", "\ud83d"]
+		]
+		const quantifiers: [source: string, reads: number][] = [
+			["", 1],
+			["?", 1],
+			["*", 2],
+			["+", 2],
+			["{0}", 0],
+			["{1}", 1],
+			["{3}", 3],
+			["{4}", 4],
+			["{5}", 5],
+			["{16}", 16],
+			["{4}?", 4],
+			["{4,}", 4],
+			["{4,6}", 5],
+			["{4,6}?", 5],
+			["{,4}", 0]
+		]
+
+		it("reads as its source over generated patterns", () => {
+			let state = 7
+			const random = (n: number) => {
+				state ^= state << 13
+				state ^= state >>> 17
+				state ^= state << 5
+				return (state >>> 0) % n
+			}
+			const pick = <t>(values: readonly t[]) => values[random(values.length)]
+			const noise = [..."a4-_]{}[\\\n\r\u2028", "\ud83d", "\ude00", "\u{1f600}"]
+
+			for (let i = 0; i < 2000; i++) {
+				let source = ""
+				let sample = ""
+				for (let parts = 1 + random(5); parts > 0; parts--) {
+					const [atom, read] = pick(atoms)
+					const [quantifier, reads] = pick(quantifiers)
+					const wrapped = pick([0, 1, 2, 3])
+					// a {,4} reads as literal text
+					const literal = quantifier === "{,4}" ? read + quantifier : undefined
+					const piece =
+						wrapped === 0 ? `(?:${atom}${quantifier})`
+						: wrapped === 1 ? `(${atom}${quantifier})`
+						: `${atom}${quantifier}`
+					source += piece
+					sample += literal ?? read.repeat(reads)
+				}
+				const anchored = pick([`^${source}$`, source, `^(?:${source}|x)$`])
+				const flags = pick(["", "", "i", "u", "s", "m", "g", "y"])
+				let regex: RegExp
+				try {
+					regex = new RegExp(anchored, flags)
+				} catch {
+					continue
+				}
+				const data = [sample, `${sample}\n`, `\n${sample}`, sample.slice(1), ""]
+				for (let edits = 0; edits < 8; edits++) {
+					const at = random(sample.length + 1)
+					data.push(
+						sample.slice(0, at) + pick(noise) + sample.slice(at + random(2))
+					)
+				}
+				const fresh = () => new RegExp(anchored, flags)
+				const mismatched = data.filter(
+					s =>
+						rootSchema({ domain: "string", pattern: regex }).allows(s) !==
+						fresh().test(s)
+				)
+				attest({ anchored, flags, mismatched }).equals({
+					anchored,
+					flags,
+					mismatched: []
+				})
+			}
+		})
+	})
+
 	describe("one atom repeated", () => {
 		it("atoms", () => {
 			const cases: [RegExp, string, string][] = [
