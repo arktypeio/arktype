@@ -2594,6 +2594,40 @@ console.log(A("a"), B("b"))
 					attest(output(js)).snap("string\n")
 				})
 
+				it("runs the config module first though a loader drops the import that loads it", async () => {
+					const root = fixture("configured", {
+						"elides.ts": `import { transformSync } from "esbuild"\n\nexport default (source: string) => transformSync(source, { loader: "ts", target: "esnext" }).code\n`,
+						"ark-config.ts": `import { configure } from "arktype/config"\n\nconfigure({ exactOptionalPropertyTypes: false })\n`,
+						"ark.ts": `import "./ark-config.ts"\n\nexport { type } from "arktype"\n`,
+						// enough that its validators are written to a module of their own
+						"main.ts": `import { type } from "./ark.ts"\n\nconst all = [${Array.from(
+							{ length: 24 },
+							(_, i) => `type({ "a${i}?": "string", b${i}: "number" })`
+						).join(
+							", "
+						)}]\n\nconsole.log(all[0]({ a0: undefined, b0: 1 }).a0)\n`
+					})
+					const js = await bundle(
+						name,
+						root,
+						{ config: "./ark-config.ts", preset: "smallest" },
+						{
+							entry: "./main.ts",
+							resolve: { extensions: [".ts", ".js"] },
+							module: {
+								rules: [
+									{
+										test: /\.ts$/,
+										exclude: /elides\.ts$/,
+										loader: join(root, "elides.ts")
+									}
+								]
+							}
+						}
+					)
+					attest(output(js)).snap("undefined\n")
+				})
+
 				it("fails a build as a module it writes fails to precompile", async () => {
 					const root = fixture("refused", {
 						"main.js": `import { User } from "./types.js"\n\nconst read = User\nconsole.log(Object.keys(read))\n`

@@ -322,8 +322,8 @@ export const User = type({ name: "string" })`
 			attest(result.diagnostics).equals([])
 			attest(foldedCode(result.code)).snap(`import "arktype"
 import $arkfixConfig from "~arktype/#7"
-import { User } from "./user.ts"
 import "./user.ts"
+import { User } from "./user.ts"
 $arkfixConfig()
 const Point = /* @__PURE__ */ $ark#0()
 export const json = /* @__PURE__ */ $ark#2()
