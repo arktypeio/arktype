@@ -945,8 +945,8 @@ export class StandaloneArtifact {
 	}
 
 	// each export's validator as [callee, ...args], creatable from the imports alone
-	writeCalls(configured: Configured): string[][] | undefined {
-		if (writeFixConfig(configured) || !this.roots.length) return
+	writeCalls(): string[][] | undefined {
+		if (!this.roots.length) return
 		this.writeSharedUnits()
 		const names = Object.values(this.exports).map(value =>
 			hasArkKind(value, "root") ? this.readValidator(value) : undefined

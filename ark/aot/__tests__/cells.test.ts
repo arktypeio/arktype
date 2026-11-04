@@ -1001,6 +1001,41 @@ console.log(T.allows({ x: "a" }), Other.allows(1))
 		})
 	})
 
+	describe("a configured program", () => {
+		const root = fixture("configuredInPlace", {
+			"config.ts": `import { configure } from "arktype/config"
+
+configure({ onUndeclaredKey: "delete" })
+`,
+			"main.ts": `import "./config.ts"
+import { type } from "arktype"
+
+export const T = type({ a: "string" })
+export const Unread = type({ b: "number" })
+console.log(JSON.stringify(T({ a: "a", c: 1 })))
+`
+		})
+		const opts = { config: "config.ts" }
+
+		for (const [name, preset] of Object.entries({
+			default: {},
+			smallest: { preset: "smallest" as const }
+		})) {
+			it(`creates a Type after its module fixes the config, in a ${name} build`, async () => {
+				const js = await esbuildBundle(root, { ...opts, ...preset })
+				attest(/^var T = (?:\/\* @__PURE__ \*\/ )?create\w+\(/m.test(js)).equals(
+					true
+				)
+				attest(js.indexOf("fixConfigured(") < js.indexOf("var T = ")).equals(
+					true
+				)
+				attest(behaviorOf(js)).equals(
+					behaviorOf(await esbuildBundle(root, { ...opts, prune: false }))
+				)
+			})
+		}
+	})
+
 	describe("a module a plugin ahead of arktype's rewrote after the scan read it", () => {
 		const rewriting = (rewrite: (code: string) => string): VitePlugin => ({
 			name: "rewriting",

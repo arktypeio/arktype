@@ -6,6 +6,7 @@ import * as runtime from "./runtimeExports.ts"
 import { StandaloneArtifact } from "./standalone/artifact.ts"
 import {
 	bakingOf,
+	writeFixConfig,
 	isCreatedByRuntime,
 	writeFunction,
 	writeLazyRead,
@@ -217,7 +218,9 @@ const writeArtifact = (
 		!!opts.values &&
 		!baking.hoisted &&
 		isUnchecked(name) &&
-		(opts.lazy === false ? baking.shortest : !!opts.readOnLoad?.includes(name))
+		// where its module fixes the config ahead of it, as it's droppable
+		(opts.readOnLoad?.includes(name) ||
+			(opts.lazy === false && baking.shortest && !writeFixConfig(configured)))
 	const [creations, reads] = writeCreations(
 		types,
 		templates,
@@ -370,7 +373,7 @@ const writeCreations = (
 		const [index] = creation.indices
 		const created =
 			creation.indices.every(i => createsInPlace(names[i])) ?
-				artifactOf(creation.indices).writeCalls(configured)
+				artifactOf(creation.indices).writeCalls()
 			:	undefined
 		if (created) {
 			for (const [position, i] of creation.indices.entries())
