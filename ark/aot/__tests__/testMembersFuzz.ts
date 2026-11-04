@@ -896,11 +896,17 @@ const webpackOutcome = async (
 		bundler === "webpack" ?
 			webpack({
 				...config,
-				plugins: plugin ? [precompile.webpack({ cwd: dir, ...buildOptions }) as never] : []
+				plugins:
+					plugin ?
+						[precompile.webpack({ cwd: dir, ...buildOptions }) as never]
+					:	[]
 			})
 		:	(rspack({
 				...config,
-				plugins: plugin ? [precompile.rspack({ cwd: dir, ...buildOptions }) as never] : []
+				plugins:
+					plugin ?
+						[precompile.rspack({ cwd: dir, ...buildOptions }) as never]
+					:	[]
 			}) as never as webpack.Compiler)
 	const errors = await new Promise<string | undefined>((resolve, reject) => {
 		const hung = setTimeout(
