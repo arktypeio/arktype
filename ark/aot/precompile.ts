@@ -2533,7 +2533,16 @@ export class Precompiler {
 				this.usageIn(program, id, source)
 			)
 		} else this.writeCachedUnits(sites, modules, imports)
-		this.insertImports(module, s, prefix, modules, imports)
+		this.insertImports(
+			module,
+			s,
+			prefix,
+			modules,
+			imports,
+			program === undefined ? undefined : (
+				this.usagesByProgram.get(program)?.program
+			)
+		)
 		return {
 			code: s.toString(),
 			map: mapOf(s, id),
@@ -2693,7 +2702,8 @@ export class Precompiler {
 		s: MagicString,
 		prefix: string,
 		modules: Record<string, string>,
-		imports: Record<string, Record<string, string>>
+		imports: Record<string, Record<string, string>>,
+		program: ScannedProgram | undefined
 	): void {
 		let inserted = ""
 		if (this.inline) {
@@ -2719,6 +2729,9 @@ export class Precompiler {
 			}
 		}
 		if (!inserted) return
+		const config = this.configFirstOf(module.id, program)
+		if (config && !this.inline)
+			inserted = `\nimport ${JSON.stringify(config)}${inserted}`
 		const arktypeImport = this.arktypeImportOf(module)
 		if (!arktypeImport) return void s.append(inserted)
 		const lineEnd = module.source.indexOf("\n", arktypeImport.end)
@@ -2728,6 +2741,29 @@ export class Precompiler {
 		)
 		// minified code can continue the import's line
 		s.prependLeft(arktypeImport.end, rest.trim() ? `${inserted}\n` : inserted)
+	}
+
+	// a size build creates a module's validators as their module loads, where
+	// a site would run once all its imports had, one of which may load the
+	// config module. So it loads it ahead of them, if the module would anyway,
+	// or its program, as a build importing it nowhere fails as arktype does
+	private configFirstOf(
+		id: string,
+		program: ScannedProgram | undefined
+	): string | undefined {
+		const config = this.config
+		if (
+			config === undefined ||
+			this.standalone.optimize !== "size" ||
+			!this.configures ||
+			id === config
+		)
+			return
+		const isLoaded =
+			program ?
+				config in program.modules
+			:	this.importClosureOf(id).includes(config)
+		return isLoaded ? specifierOf(id, config) : undefined
 	}
 
 	// e.g. a site in `f` reading `Base`, which a cycle can reach first

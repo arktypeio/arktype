@@ -2664,6 +2664,23 @@ console.log(A("a"), B("b"))
 					attest(message.includes("refused its imports")).equals(true)
 				})
 
+				it("runs the config module first though arktype is imported ahead of it", async () => {
+					const root = fixture("configuredAfter", {
+						"ark-config.js": `import { configure } from "arktype/config"\n\nconfigure({ exactOptionalPropertyTypes: false })\n`,
+						"main.js": `import { type } from "arktype"\nimport "./ark-config.js"\n\nconst all = [${Array.from(
+							{ length: 24 },
+							(_, i) => `type({ "a${i}?": "string", b${i}: "number" })`
+						).join(
+							", "
+						)}]\n\nconsole.log(all[0]({ a0: undefined, b0: 1 }).a0)\n`
+					})
+					const js = await bundle(name, root, {
+						config: "./ark-config.js",
+						preset: "smallest"
+					})
+					attest(output(js)).snap("undefined\n")
+				})
+
 				it("reads what a computed import reaches", async () => {
 					const root = fixture("computed", {
 						"types/a.js": types,
