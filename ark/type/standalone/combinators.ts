@@ -334,13 +334,13 @@ const structureCalleesOf = (
 	if (
 		structure.index ||
 		structure.protoProps.length ||
-		(structure.undeclared === "reject" && !removedSiteOf(structure))
+		(structure.handlesUndeclared === "reject" && !removedSiteOf(structure))
 	)
 		return
 	const { sequence } = structure
 	if (sequence) {
 		if (
-			structure.undeclared ||
+			structure.handlesUndeclared ||
 			structure.props.length ||
 			sequence.prefix ||
 			sequence.optionals ||
@@ -520,9 +520,9 @@ const writeStructure = (
 		}`
 	})
 	const declared = writeObject(entries)
-	if (structure.undeclared === "delete")
+	if (structure.handlesUndeclared === "delete")
 		return writeCall("deletingProps", declared)
-	if (!structure.undeclared)
+	if (!structure.handlesUndeclared)
 		return writeCall(structure.tfs ? "transformingProps" : "props", declared)
 	const removed = removedSiteOf(structure)!
 	return writeCall(

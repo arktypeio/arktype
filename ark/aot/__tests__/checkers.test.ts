@@ -352,6 +352,31 @@ console.log(Env(tagged) === tagged, Object.keys(tagged))
 		)
 	})
 
+	it("leaves a key a Type ignores, whatever the program's config does", async () => {
+		const root = writeFixture(
+			{
+				"config.ts": `import { configure } from "arktype/config"
+
+configure({ onUndeclaredKey: "delete" })
+`,
+				"main.ts": `import "./config.ts"
+import { type } from "arktype"
+
+export const Ignoring = type({ "+": "ignore", a: "string" })
+export const Deleting = type({ a: "string" })
+const data = { a: "a", z: 1 }
+console.log(JSON.stringify(Ignoring(data)), Ignoring.allows(data))
+console.log(JSON.stringify(Deleting(data)))
+${repaying}
+`
+			},
+			fromHere("temp", "checkers", "ignored")
+		)
+		attest(
+			behaviorOf(await bundle(root, { ...smallest, config: "config.ts" }))
+		).equals('{"a":"a","z":1} true\n{"a":"a"}\n')
+	})
+
 	it("reads a failing value once at each depth, with no ctx", async () => {
 		const js = await bundle(
 			fixture(
