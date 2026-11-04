@@ -20,8 +20,11 @@ contextualize(() => {
 
 	it("Date units by their time", () => {
 		const unit = (date: Date) => type.schema({ unit: date }) as never as Type
-		comparesAsJson(unit(new Date(0)), unit(new Date(0)), true)
-		comparesAsJson(unit(new Date(0)), unit(new Date(1)), false)
+		const zero = unit(new Date(0))
+		const alsoZero = unit(new Date(0))
+		const one = unit(new Date(1))
+		comparesAsJson(zero, alsoZero, true)
+		comparesAsJson(zero, one, false)
 	})
 
 	it("a domain by its number options", () => {
@@ -30,8 +33,9 @@ contextualize(() => {
 			domain: "number",
 			numberAllowsInfinity: true
 		})
+		const number = type.number
 		comparesAsJson(nan as never, infinity as never, false)
-		comparesAsJson(nan as never, type.number, false)
+		comparesAsJson(nan as never, number, false)
 	})
 
 	it("a proto by its constructor and whether invalid Dates pass", () => {
