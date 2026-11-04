@@ -228,6 +228,76 @@ s must be reached
 		})
 	})
 
+	describe("a key a checker doesn't declare", () => {
+		itRunsAsUnproved(
+			"is rejected as compiled code rejects it",
+			`const Closed = type({ "+": "reject", a: N, "b?": "string" })
+run(() => Closed({ a: "abc" }))
+run(() => Closed({ a: "abc", b: "b" }))
+run(() => Closed({ a: "abc", c: 1 }))
+run(() => Closed({ a: "x", c: 1, d: 2 }))
+run(() => Closed({ a: "abc", toString: 1 }))
+run(() => Closed({ a: "abc", constructor: 1 }))
+run(() => Closed(Object.create({ a: "abc", inherited: 1 })))
+run(() => Closed(JSON.parse('{"a":"abc","__proto__":1}')))
+run(() => Closed("abc"))
+run(() => Closed.allows({ a: "abc", c: 1 }))
+const Defaulted = type({ "+": "reject", a: N, b: "string = 'x'" })
+run(() => Defaulted({ a: "abc" }))
+run(() => Defaulted({ a: "abc", c: 1 }))
+run(() => Defaulted({ a: "x", c: 1 }))
+const Written = type({ "+": "reject", a: "string" }).configure({ expected: "closed" })
+run(() => Written({ a: "abc", c: 1 }))
+const Deep = type({ "+": "reject", a: { "+": "reject", b: N } })
+run(() => Deep({ a: { b: "x", c: 1 }, d: 1 }))
+const Empty = type({ "+": "reject" })
+run(() => Empty({}))
+run(() => Empty({ a: 1 }))
+run(() => Empty([]))
+const List = type({ "+": "reject", a: "string" }).array()
+run(() => List([{ a: "a" }, { a: "a", b: 1 }]))
+`
+		)
+
+		itRunsAsUnproved(
+			"is deleted as compiled code deletes it",
+			`const Del = type({ "+": "delete", a: N, "b?": "string", c: "string = 'x'", d: { "+": "delete", e: "number = 1" } })
+const good = { a: "abc", d: {} }
+run(() => Del(good))
+run(() => Del({ ...good, extra: 1, b: "b" }))
+run(() => Del({ ...good, a: "x", extra: 1 }))
+run(() => Del({ ...good, d: { e: "x", extra: 1 } }))
+run(() => Del("abc"))
+class Extra { a = "abc"; d = { e: 2 }; extra = 1; get g() { return 1 } }
+const extra = new Extra()
+const copied = Del(extra)
+console.log(copied === extra, copied instanceof Extra, JSON.stringify(copied), JSON.stringify(extra))
+class Declared { a = "abc"; c = "c"; d = { e: 2 } }
+const declared = new Declared()
+const kept = Del(declared)
+console.log(kept === declared, kept instanceof Declared, JSON.stringify(kept))
+const sym = Symbol("s")
+const held = Object.assign(Object.create({ inherited: 1 }), { a: "abc", d: {}, [sym]: 1 })
+const out = Del(held)
+console.log(sym in out, "inherited" in out, Object.keys(out), Object.getPrototypeOf(out) === Object.getPrototypeOf(held))
+const frozen = Object.freeze({ a: "abc", c: "c", d: Object.freeze({ e: 1 }) })
+console.log(Del(frozen) === frozen, JSON.stringify(Del(frozen)))
+const proto = JSON.parse('{"a":"abc","d":{},"__proto__":{"x":1}}')
+console.log(JSON.stringify(Del(proto)), Object.keys(Del(proto)))
+const List = type({ "+": "delete", a: "string", o: "string = 'z'" }).array()
+console.log(JSON.stringify(List([{ a: "a" }, { a: "b", o: "o", p: 1 }])))
+const Keyed = type({ "+": "delete", k: "'a'", v: N }).or({ "+": "delete", k: "'b'", w: "number = 1" })
+console.log(JSON.stringify(Keyed({ k: "a", v: "abc", x: 1 })), JSON.stringify(Keyed({ k: "b", x: 1 })), String(Keyed({ k: "a", v: "x" })))
+const Nullable = type({ o: type({ "+": "delete", a: "string" }).or("null") })
+console.log(JSON.stringify(Nullable({ o: { a: "a", b: 1 } })), JSON.stringify(Nullable({ o: null })))
+const Parent = type({ child: { "+": "delete", a: "string" }, other: "string = 'y'" })
+console.log(JSON.stringify(Parent({ child: { a: "a", b: 1 } })))
+const unchanged = { child: { a: "a" }, other: "o" }
+console.log(Parent(unchanged) === unchanged, Parent(unchanged).child === unchanged.child)
+`
+		)
+	})
+
 	it("reads a failing value once at each depth, with no ctx", async () => {
 		const js = await bundle(
 			fixture(

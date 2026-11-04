@@ -325,15 +325,30 @@ const isLiteralKey = (key: PropertyKey): key is string =>
 const isLiteralDefault = (prop: Optional.Node): boolean =>
 	!prop.defaultsUndefined && !prop.value.tfs && isPrinted(prop.default)
 
+// what a key it rejects fails, as compiled code writes it
+const removedSiteOf = (structure: StructureNode): IssueContext | undefined =>
+	plainContextOf(
+		issueContextOf({
+			code: "undeclared",
+			description: "removed",
+			meta: structure.meta
+		})
+	)
+
 const structureCalleesOf = (
 	structure: StructureNode
 ): BaseRoot[] | undefined => {
 	// its structural morph, if any, writes its defaults
-	if (structure.index || structure.undeclared || structure.protoProps.length)
+	if (
+		structure.index ||
+		structure.protoProps.length ||
+		(structure.undeclared === "reject" && !removedSiteOf(structure))
+	)
 		return
 	const { sequence } = structure
 	if (sequence) {
 		if (
+			structure.undeclared ||
 			structure.props.length ||
 			sequence.prefix ||
 			sequence.optionals ||
@@ -509,9 +524,18 @@ const writeStructure = (
 			: writeCall("required", checker, JSON.stringify(missing))
 		}`
 	})
+	const declared = writeObject(entries)
+	if (structure.undeclared === "delete")
+		return writeCall("deletingProps", declared)
+	if (!structure.undeclared)
+		return writeCall(structure.tfs ? "transformingProps" : "props", declared)
+	const removed = removedSiteOf(structure)!
 	return writeCall(
-		structure.tfs ? "transformingProps" : "props",
-		writeObject(entries)
+		structure.tfs ? "transformingClosedProps" : "closedProps",
+		declared,
+		removed.description === "removed" ?
+			undefined
+		:	JSON.stringify(removed.description)
 	)
 }
 

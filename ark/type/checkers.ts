@@ -6,7 +6,7 @@ import type {
 	FailureSite,
 	SiteContext
 } from "@ark/schema/runtime"
-import type { Fn } from "@ark/util"
+import { hasOwn, type Fn } from "@ark/util"
 import {
 	describePredicate,
 	failsAt,
@@ -281,22 +281,49 @@ const failsValue = (
 	:	!checker(value)
 
 // keys checked in declared order; a missing key expects its checker's description
+const failsProps = (
+	declared: Props,
+	data: any,
+	ctx: FailureContext | number | undefined
+): boolean => {
+	for (const k in declared) {
+		const value = data[k]
+		if (
+			value === undefined && !(k in data) ?
+				!declared[k].o &&
+				failsAt(ctx as never, requiredSiteOf(declared[k].description), data, k)
+			:	failsValue(ctx, declared[k], data, k, value)
+		)
+			return true
+	}
+	return false
+}
+
 export const props = ((declared: Props): Checker => {
+	const checker: Checker = (data, ctx) =>
+		objectCheck.test(data) ?
+			!failsProps(declared, data, ctx)
+		:	!failsAt(ctx as never, objectCheck, data)
+	checker.description = objectCheck.description
+	return checker
+}) satisfies Fn
+
+// rejects each key it doesn't declare, for...in also reaching inherited keys,
+// which aren't undeclared
+export const closedProps = ((
+	declared: Props,
+	description = "removed"
+): Checker => {
+	const removed = siteOf("undeclared", description)
 	const checker: Checker = (data: any, ctx) => {
 		if (!objectCheck.test(data))
 			return !failsAt(ctx as never, objectCheck, data)
-		for (const k in declared) {
-			const value = data[k]
+		if (failsProps(declared, data, ctx)) return false
+		for (const k in data) {
 			if (
-				value === undefined && !(k in data) ?
-					!declared[k].o &&
-					failsAt(
-						ctx as never,
-						requiredSiteOf(declared[k].description),
-						data,
-						k
-					)
-				:	failsValue(ctx, declared[k], data, k, value)
+				!hasOwn(declared, k) &&
+				hasOwn(data, k) &&
+				failsAt(ctx as never, removed, data, k)
 			)
 				return false
 		}
@@ -335,26 +362,62 @@ const copyForWriting = (data: any): any => {
 	)
 }
 
-// props whose values transform or default
-export const transformingProps = ((declared: Props): Checker => {
+// what props whose values transform or default write, keeping what they don't
+const writtenProps = (declared: Props, data: any): any => {
+	let out = data
+	for (const k in declared) {
+		const holds = k in data
+		const defaulted = declared[k].d
+		const value = holds ? declared[k].t?.(data[k]) : defaulted?.[0]
+		// a default is written even where it's undefined
+		if (holds ? value !== undefined && value !== data[k] : defaulted?.length) {
+			if (out === data) out = copyForWriting(data)
+			out[k] = value
+		}
+	}
+	if (out !== data)
+		for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
+	return out
+}
+
+const transformsProps = (declared: Props, checker: Checker): Checker => {
+	checker.t = data => writtenProps(declared, data)
+	return checker
+}
+
+export const transformingProps = ((declared: Props): Checker =>
+	transformsProps(declared, props(declared))) satisfies Fn
+
+export const transformingClosedProps = ((
+	declared: Props,
+	description?: string
+): Checker =>
+	transformsProps(declared, closedProps(declared, description))) satisfies Fn
+
+// a result of the keys it declares, in order; an instance is copied where it
+// must be, keeping its prototype
+export const deletingProps = ((declared: Props): Checker => {
 	const checker = props(declared)
 	checker.t = data => {
-		let out = data
-		for (const k in declared) {
-			const holds = k in data
-			const defaulted = declared[k].d
-			const value = holds ? declared[k].t?.(data[k]) : defaulted?.[0]
-			// a default is written even where it's undefined
-			if (
-				holds ? value !== undefined && value !== data[k] : defaulted?.length
-			) {
+		if (Object.getPrototypeOf(data) !== Object.prototype) {
+			let out = writtenProps(declared, data)
+			for (const k of [
+				...Object.keys(data),
+				...Object.getOwnPropertySymbols(data)
+			]) {
+				if (hasOwn(declared, k)) continue
 				if (out === data) out = copyForWriting(data)
-				out[k] = value
+				delete out[k]
 			}
+			return out
 		}
-		if (out !== data)
-			for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
-		return out
+		const result: Record<string, unknown> = {}
+		for (const k in declared) {
+			const { t, d: defaulted } = declared[k]
+			if (k in data) result[k] = t ? t(data[k]) : data[k]
+			else if (defaulted?.length) result[k] = defaulted[0]
+		}
+		return result
 	}
 	return checker
 }) satisfies Fn
