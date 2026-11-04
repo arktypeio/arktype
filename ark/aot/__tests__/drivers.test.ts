@@ -630,13 +630,15 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 		const load = (
 			dir: string,
 			file = "main.ts",
-			opts: PrecompilePluginOptions = {}
+			opts: PrecompilePluginOptions = {},
+			mode = "development"
 		) => {
 			const dependencies: string[] = []
 			try {
 				// synchronous without getResolve
 				const out = turbopack.call(
 					{
+						mode,
 						resourcePath: join(dir, file),
 						getOptions: () => ({ ...opts, conditions, cwd: dir }),
 						addDependency: dependency =>
@@ -656,6 +658,21 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 				return { out: (e as Error).message, dependencies }
 			}
 		}
+
+		it("creates a large module's validators at their first call in production", () => {
+			const dir = writeFixture({
+				"main.ts": `import { type } from "arktype"
+${Array.from({ length: 200 }, (_, i) => `export const T${i} = type({ id: "string", f${i}: "number" })`).join("\n")}
+`
+			})
+			const production = load(dir, "main.ts", {}, "production").out
+			attest(production).equals(
+				load(dir, "main.ts", { defers: true }, "production").out
+			)
+			attest(
+				production === load(dir, "main.ts", { defers: false }, "production").out
+			).equals(false)
+		})
 
 		// the first line of what main.ts loads as, or of the message it fails
 		// with, where Turbopack resolves what `resolve` returns a path for

@@ -61,9 +61,7 @@ export const flattenBundle = (
 	sites: Record<string, string>,
 	modules: Record<string, string>,
 	program: FlatProgram,
-	whereSmaller = true,
-	// whether its validators create their units at their first call
-	defers = false
+	whereSmaller = true
 ): FlatBundle | undefined => {
 	const parsed = new Map<string, SourceModule>()
 	for (const specifier in modules) {
@@ -87,7 +85,7 @@ export const flattenBundle = (
 	if (!units) return
 	const creationsBySite = creationsIn(sites, parsed, units, kept)
 	const creations = [...creationsBySite.values()].flat()
-	const flat = writeFlat(units, creations, defers)
+	const flat = writeFlat(units, creations)
 	if (!flat) return
 	const specifier = `~arktype/${hashOf(flat.code)}`
 	const flattened = new Set(units.map(unit => unit.specifier))
@@ -106,8 +104,7 @@ export const flattenBundle = (
 			flat.exported,
 			specifier,
 			read,
-			binding => readKept.reads(binding),
-			defers
+			binding => readKept.reads(binding)
 		)
 		if (!edits) return
 		if (edits.length) repointed.set(key, edits)
@@ -129,7 +126,6 @@ export const flattenBundle = (
 			minifiedLengthOf(unflattened.join("\n"))
 	)
 		return
-	const positions = new Map([...read].map((name, i) => [name, i]))
 	const codes: Record<string, string> = { ...modules }
 	for (const key of flattened) delete codes[key]
 	codes[specifier] = flat.writeModule([...read])
@@ -139,16 +135,9 @@ export const flattenBundle = (
 		rename: (specifier: string) => string
 	): MagicString | undefined => {
 		let s: MagicString | undefined
-		for (const { start, end, imports, reads } of edits) {
+		for (const { start, end, imports } of edits) {
 			s ??= new MagicString(module.source)
 			s.overwrite(start, end, writeImports(imports, rename))
-			for (const { start, end, name, key } of reads) {
-				s.overwrite(
-					start,
-					end,
-					`${key ? `${key}: ` : ""}${flatLoad}()${read.size === 1 ? "" : `[${positions.get(name)}]`}`
-				)
-			}
 		}
 		for (const match of module.source.matchAll(virtualSource)) {
 			const target = rename(match[1])
@@ -245,8 +234,7 @@ export const flattenBundle = (
 					flat.exported,
 					specifier,
 					reads,
-					binding => readAsRewritten.reads(binding),
-					defers
+					binding => readAsRewritten.reads(binding)
 				)
 				if (!edits) return
 				codes[key] = edit(module, edits, rename)?.toString() ?? module.source
@@ -262,7 +250,6 @@ export const flattenBundle = (
 					!binding.references.every(({ id }) =>
 						creations.some(c => c.start <= id.start && id.start < c.end)
 					),
-				defers,
 				true
 			)
 			// the function's module exports only what its scan read
@@ -646,21 +633,11 @@ const createsSame = (
 		rewritten.declared?.memberReads?.name ===
 			scanned.declared!.memberReads!.name)
 
-// a read of a unit, from the function's module where it's called at a first call
-interface FlatRead {
-	start: number
-	end: number
-	name: string
-	// the key of the shorthand property it reads for
-	key: string | undefined
-}
-
 // an import of units, each name read from the function's module if it's there
 interface Repointed {
 	start: number
 	end: number
 	imports: [specifier: string, names: string[]][]
-	reads: FlatRead[]
 }
 
 const repointedIn = (
@@ -670,19 +647,16 @@ const repointedIn = (
 	specifier: string,
 	read: Set<string>,
 	isRead: (binding: Binding) => boolean,
-	defers: boolean,
 	// whether it drops an import of the precompiler's that nothing reads, as
 	// a rewritten site's are read only where the function creates in its place
 	drops = false
 ): Repointed[] | undefined => {
 	const result: Repointed[] = []
-	let importsLoad = false
 	for (const statement of module.program.body) {
 		if (statement.type !== "ImportDeclaration") continue
 		const source = statement.source.value
 		const flat: string[] = []
 		const kept: string[] = []
-		const reads: FlatRead[] = []
 		let dropped = false
 		for (const imported of statement.specifiers) {
 			if (imported.type !== "ImportSpecifier") {
@@ -693,38 +667,19 @@ const repointedIn = (
 			const name = exportNameOf(imported.imported)
 			const local = imported.local.name
 			const named = name === local ? name : `${name} as ${local}`
-			const binding = module.scopes.root.bindings[local]
-			const isReadHere = isRead(binding)
+			const isReadHere = isRead(module.scopes.root.bindings[local])
 			// an import nothing kept reads links to the unit's own module
 			if (isReadHere && exported.has(`${source}\0${name}`)) {
 				read.add(name)
-				if (!defers) flat.push(named)
-				else {
-					for (const { id } of binding.references) {
-						// a module can't export what a call reads
-						if (id.parent?.type === "ExportSpecifier") return
-						reads.push({
-							start: id.start,
-							end: id.end,
-							name,
-							key:
-								id.parent?.type === "Property" && id.parent.shorthand ?
-									local
-								:	undefined
-						})
-					}
-					if (!importsLoad) flat.push(flatLoad)
-					importsLoad = true
-				}
+				flat.push(named)
 			} else if (drops && !isReadHere && source.startsWith("~arktype/"))
 				dropped = true
 			else kept.push(named)
 		}
-		if (!flat.length && !reads.length && !dropped) continue
+		if (!flat.length && !dropped) continue
 		result.push({
 			start: statement.start,
 			end: statement.end,
-			reads,
 			imports: [
 				...(flat.length ? [[specifier, flat] as [string, string[]]] : []),
 				...(kept.length ? [[source, kept] as [string, string[]]] : [])
@@ -1177,13 +1132,9 @@ const unitTextsOf = (
 	return { texts, specifiersByName, created }
 }
 
-// what a site deferring its units' creation reads them from
-const flatLoad = "flatLoad"
-
 const writeFlat = (
 	units: UnitModule[],
-	creations: Creation[],
-	defers: boolean
+	creations: Creation[]
 ): Flat | undefined => {
 	const unitTexts = unitTextsOf(units, creations)
 	if (!unitTexts) return
@@ -1482,12 +1433,6 @@ const writeFlat = (
 				written = writtenUnitsOf(body, returned)
 				writtenByReturned.set(returned, written)
 			}
-			if (defers) {
-				return `const ${flatLoad} = /* @__PURE__ */ runtime.once(function () {
-${written.body}
-return ${written.returned}
-})`
-			}
 			// swc would inline the IIFE, making its constants module variables
 			// V8 doesn't inline calls through
 			return `const ${read.length === 1 ? read[0] : `[${read.join(", ")}]`} = /* @__NOINLINE__ */ (() => {
@@ -1499,7 +1444,7 @@ return ${written.returned}
 ${cellImports}
 ${flat.write(read)}
 
-export { ${defers ? flatLoad : read.join(", ")} }
+export { ${read.join(", ")} }
 `
 	}
 	return flat

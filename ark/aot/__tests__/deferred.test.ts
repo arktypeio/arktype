@@ -23,7 +23,8 @@ const typesOf = (count: number, from = 0) =>
 			`export const T${from + i} = type({ id: "string", f${from + i}: "number" })`
 	).join("\n")
 
-const large = 70
+// past what a module writes before it creates its validators at their first call
+const large = 200
 
 // one directory for each program, whose path a bundle's comments print
 const rootsByFiles = new WeakMap<object, string>()
@@ -49,7 +50,10 @@ const bundleOf = async (
 		format: "esm",
 		conditions,
 		logLevel: "silent",
-		plugins: [precompile.esbuild({ conditions, cwd: root, ...opts })]
+		// read a module at a time, as a host written to no one function does
+		plugins: [
+			precompile.esbuild({ conditions, cwd: root, prune: false, ...opts })
+		]
 	})
 	return outputFiles[0].text
 }
@@ -123,7 +127,10 @@ const answersOf = (
 	order: string[],
 	opts?: PrecompileOptions
 ) => {
-	const precompiler = new Precompiler(memoryHost(files), opts)
+	const precompiler = new Precompiler(memoryHost(files), {
+		defers: "large",
+		...opts
+	})
 	return Object.fromEntries(
 		order.map(id => {
 			const { code, modules } = precompiler.precompile(files[id], id)
@@ -202,24 +209,32 @@ contextualize(function (this: Mocha.Suite) {
 	// each case bundles a large program, which a loaded machine slows past mocha's default
 	this.timeout(120_000)
 
-	it("creates a one-chunk program's validators at their first call from 70", async () => {
-		const small = programOf(large - 1)
-		attest(await bundleOf(small)).equals(
+	it("creates a module's validators at their first call once it writes enough", async () => {
+		const small = programOf(5)
+		attest(await bundleOf(small, { defers: "large" })).equals(
 			await bundleOf(small, { defers: false })
 		)
 		const program = programOf(large)
-		attest(await bundleOf(program)).equals(
+		attest(await bundleOf(program, { defers: "large" })).equals(
 			await bundleOf(program, { defers: true })
 		)
 		attest(
-			(await bundleOf(program)) === (await bundleOf(program, { defers: false }))
+			(await bundleOf(program, { defers: "large" })) ===
+				(await bundleOf(program, { defers: false }))
 		).equals(false)
+	})
+
+	it("writes a large module as a small one where no host asks otherwise", async () => {
+		const program = programOf(large)
+		attest(await bundleOf(program)).equals(
+			await bundleOf(program, { defers: false })
+		)
 	})
 
 	for (const opts of [{ lazy: false }, { optimize: "size" }] as const) {
 		it(`writes a large ${JSON.stringify(opts)} program as it would a small one`, async () => {
 			const program = programOf(large)
-			attest(await bundleOf(program, opts)).equals(
+			attest(await bundleOf(program, { ...opts, defers: "large" })).equals(
 				await bundleOf(program, { ...opts, defers: false })
 			)
 		})
@@ -227,7 +242,7 @@ contextualize(function (this: Mocha.Suite) {
 
 	it("leaves each form's identity, surface and answers as an eager build's", async () => {
 		const eagerBundle = await bundleOf(surfaceProgram, { defers: false })
-		const deferredBundle = await bundleOf(surfaceProgram)
+		const deferredBundle = await bundleOf(surfaceProgram, { defers: true })
 		attest(deferredBundle === eagerBundle).equals(false)
 		const eager = runBundle(eagerBundle)
 		const deferred = runBundle(deferredBundle)
@@ -259,13 +274,16 @@ console.log(out instanceof type.errors ? out.summary : out)
 			attest(after === js).equals(false)
 			return runBundle(after).stdout
 		}
-		attest(written(await bundleOf(program))).equals("as loaded\n")
+		attest(written(await bundleOf(program, { defers: true }))).equals(
+			"as loaded\n"
+		)
 		attest(written(await bundleOf(program, { defers: false }))).equals(
 			"as loaded\n"
 		)
 	})
 
 	it("sets a cell as its module loads, before a first call elsewhere reads it", async () => {
+		const opts = { prune: true } as const
 		const program = {
 			"narrowed.ts": `import { type } from "arktype"
 export const Narrowed = type("string").narrow(s => s.length > 2)
@@ -282,8 +300,8 @@ const show = out => out instanceof type.errors ? out.summary : JSON.stringify(ou
 console.log(show(Above({ name: "abc" })), show(Above({ name: "x" })), show(Narrowed("x")))
 `
 		}
-		const eagerBundle = await bundleOf(program, { defers: false })
-		const deferredBundle = await bundleOf(program)
+		const eagerBundle = await bundleOf(program, { ...opts, defers: false })
+		const deferredBundle = await bundleOf(program, { ...opts, defers: true })
 		attest(deferredBundle === eagerBundle).equals(false)
 		attest(/\bsethole\w+\(/.test(deferredBundle)).equals(true)
 		const eager = runBundle(eagerBundle)
@@ -304,7 +322,7 @@ console.log(JSON.stringify(T({ a: "a", c: 1 })))
 `
 		}
 		const opts = { config: "config.ts" }
-		const deferredBundle = await bundleOf(program, opts)
+		const deferredBundle = await bundleOf(program, { ...opts, defers: true })
 		attest(
 			deferredBundle === (await bundleOf(program, { ...opts, defers: false }))
 		).equals(false)
@@ -327,7 +345,7 @@ ${typesOf(large)}
 console.log("loaded", Keyed({ a: "a" }))
 `
 		}
-		const js = await bundleOf(program)
+		const js = await bundleOf(program, { defers: true })
 		attest(runBundle(js).stdout.startsWith("loaded")).equals(true)
 		// what the build read differs where the program runs
 		const changed = js.replace(/var key = "a"/, 'var key = "b"')
@@ -337,7 +355,7 @@ console.log("loaded", Keyed({ a: "a" }))
 		attest(stdout).equals("")
 	})
 
-	it("writes each module where one module is read at a time by its count alone", () => {
+	it("writes each module where one module is read at a time by what it writes alone", () => {
 		const ids = Object.keys(mixed).reverse()
 		const answers = answersOf(mixed, ids)
 		attest(answers).equals(answersOf(mixed, [...ids].reverse()) as never)
@@ -378,7 +396,7 @@ console.log(Reads({ small: { shared: { a: 1 } } }).summary, Small({ shared: {} }
 console.log(T0({ id: "a", f0: 0 }), Reads.allows({}), Small.allows({ shared: valid }))
 `
 		}
-		const mixedRun = await webpackRun(files, {})
+		const mixedRun = await webpackRun(files, { defers: "large" })
 		const eagerRun = await webpackRun(files, { defers: false })
 		attest(mixedRun.stderr).equals("")
 		attest(mixedRun.stdout).equals(eagerRun.stdout)

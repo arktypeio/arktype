@@ -318,11 +318,11 @@ var intersection1pta4mn06i3i5b = /* @__PURE__ */ (() => {
 	}
 	return [intersection1pta4mn06i3i5bAllows]
 })()
-var intersectionk9guce1k0ows5 = /* @__PURE__ */ ((
+var intersectionparbs61a02yao = /* @__PURE__ */ ((
 	[intersectionkmdrl70pxuocbAllows],
 	[intersection1pta4mn06i3i5bAllows]
 ) => {
-	const intersectionk9guce1k0ows5Allows = /* @__PURE__ */ closedProps({
+	const intersectionparbs61a02yaoAllows = /* @__PURE__ */ closedProps({
 		preset: /* @__PURE__ */ optional(
 			/* @__PURE__ */ units(["introspectable", "smallest"])
 		),
@@ -407,9 +407,11 @@ var intersectionk9guce1k0ows5 = /* @__PURE__ */ ((
 		),
 		inline: /* @__PURE__ */ optional(booleanChecker),
 		declare: /* @__PURE__ */ optional(booleanChecker),
-		defers: /* @__PURE__ */ optional(booleanChecker)
+		defers: /* @__PURE__ */ optional(
+			/* @__PURE__ */ units(["large", false, true])
+		)
 	})
-	return [intersectionk9guce1k0ows5Allows]
+	return [intersectionparbs61a02yaoAllows]
 })(intersectionkmdrl70pxuocb, intersection1pta4mn06i3i5b)
 var create9xqcpf19hd8ia = ([allows], id, holes = []) => {
 	const validator = (data, pipedFromCtx, onFail) =>
@@ -532,8 +534,8 @@ var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
 				const validator0 = create9xqcpf19hd8ia(
-					intersectionk9guce1k0ows5,
-					"msro2119"
+					intersectionparbs61a02yao,
+					"1xqe4zk0"
 				)
 				return validator0
 			})())
@@ -571,7 +573,7 @@ export const cliOptions = {
 	creationChecks: { type: "string", values: "helpers|none|types" },
 	cwd: { type: "string", values: "path" },
 	declare: { type: "boolean", values: "true|false" },
-	defers: { type: "boolean", values: "true|false" },
+	defers: { type: "string", values: "large|true|false" },
 	dependencies: { type: "object", values: "json" },
 	errors: { type: "string", values: "all|first|none" },
 	freeze: { type: "boolean", values: "true|false" },

@@ -71,21 +71,14 @@ const comparesExpecteds = detailsErrors && !firstIssue
 // "flat" is the modules with their units declared in one function, as a
 // one-chunk production bundle declares them, which size-optimized units never
 // are; "shaped" is a size build's modules with common intersections written as
-// shapes, as a program with enough of them is; "deferred" and "flatDeferred" are
-// "modules" and "flat" creating their validators at their first call, as a large
-// program does
-type Layout =
-	| "inline"
-	| "modules"
-	| "flat"
-	| "shaped"
-	| "deferred"
-	| "flatDeferred"
+// shapes, as a program with enough of them is; "deferred" is "modules" creating
+// its validators at their first call, as a large module does
+type Layout = "inline" | "modules" | "flat" | "shaped" | "deferred"
 
 export const layouts: Layout[] =
 	testedOptions.optimize === "size" ?
 		["inline", "modules", "shaped"]
-	:	["inline", "modules", "flat", "deferred", "flatDeferred"]
+	:	["inline", "modules", "flat", "deferred"]
 
 // artifacts whose units were declared in one function
 export let flattened = 0
@@ -259,7 +252,7 @@ const loadArtifact = async (
 	members: ValidatorMembers
 ): Promise<any> => {
 	const dir = await outDir()
-	const defers = layout === "deferred" || layout === "flatDeferred"
+	const defers = layout === "deferred"
 	const opts = {
 		members,
 		errors: testedOptions.errors,
@@ -279,13 +272,12 @@ const loadArtifact = async (
 	else {
 		const artifact = precompileStandaloneModules(exports, opts)
 		const flat =
-			layout === "flat" || layout === "flatDeferred" ?
+			layout === "flat" ?
 				flattenBundle(
 					{ "artifact.js": artifact.code },
 					artifact.modules,
 					{ modules: [], entries: ["artifact.js"], resolve: () => undefined },
-					false,
-					defers
+					false
 				)
 			:	undefined
 		if (flat) {

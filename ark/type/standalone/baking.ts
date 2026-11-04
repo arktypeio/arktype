@@ -135,14 +135,13 @@ export interface ConfiguredModule {
 	config: string
 }
 
-// from this many validators written together, what an import spends on the ones
-// it may never call outweighs what calling them through a variable costs. That's
-// a whole program where it's written as one function, read whole before any of
-// it is written, and otherwise a module, so no output depends on build order
-const deferredFrom = 70
+// from this many characters written for a module, what its import spends on code
+// it may never call outweighs reading it through a variable. A module's own text
+// decides, so no output depends on build order
+const deferredFrom = 90_000
 
-export const defersCreation = (validatorCount: number): boolean =>
-	validatorCount >= deferredFrom
+export const defersCreation = (writtenChars: number): boolean =>
+	writtenChars >= deferredFrom
 
 export interface StandaloneOptions {
 	configured?: Configured
