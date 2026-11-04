@@ -790,7 +790,8 @@ const verdictsOf = (observation: unknown): unknown =>
 // returns it (reported as F1 of launch/fuzz8.md), so only a flip on the data the
 // narrow's re-run accepted counts as this
 const isFlip = (expected: unknown, observed: unknown) =>
-	(observed as { errors?: string })?.errors === "is invalid" &&
+	((observed as { errors?: string })?.errors === "is invalid" ||
+		(observed as { out?: string })?.out === '"failed: is invalid"') &&
 	!!expected &&
 	typeof expected === "object" &&
 	"out" in expected
@@ -936,6 +937,16 @@ const check = async (app: App): Promise<boolean> => {
 		if (!mismatch) {
 			tally.sound++
 			for (const { read } of app.modules) bump(reached, read)
+			continue
+		}
+		// a bundle's import.meta.url is the bundle's, whose query is gone, which a
+		// plain build can't show as it doesn't resolve a query
+		if (
+			bundlers.has(host.split(":")[0]) &&
+			app.importing === "query" &&
+			app.modules.some(({ read }) => read === "moduleMeta")
+		) {
+			tally.bundler++
 			continue
 		}
 		// what the bundler alone builds otherwise isn't the plugin's
