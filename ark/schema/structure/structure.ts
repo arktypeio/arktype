@@ -41,6 +41,7 @@ import {
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import {
+	copyDeclared,
 	copyOf,
 	keepOwn,
 	holdsOnlyIndices,
@@ -332,7 +333,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.optional
 	)
 
-	declare private _orderedProps: array<Prop.Node> | undefined
+	private _orderedProps: array<Prop.Node> | undefined
 	/** its props in the order they're checked and an output lists them */
 	get inOrder(): array<Prop.Node> {
 		return (this._orderedProps ??=
@@ -359,12 +360,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}) as FailureSite
 	}
 
-	declare private _allowsProps: array<Prop.Node> | undefined
+	private _allowsProps: array<Prop.Node> | undefined
 	get allowsProps(): array<Prop.Node> {
 		return (this._allowsProps ??= orderedForAllows(this.inOrder))
 	}
 
-	declare private _byKey: Record<Key, Prop.Node | undefined> | undefined
+	private _byKey: Record<Key, Prop.Node | undefined> | undefined
 	/** its props, keyed by key */
 	get byKey(): Record<Key, Prop.Node | undefined> {
 		// on a null prototype, "__proto__" is a key and "toString" isn't
@@ -936,7 +937,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		prop => prop.key in Object.prototype
 	)
 
-	declare private _hasIndexedProp: boolean | undefined
+	private _hasIndexedProp: boolean | undefined
 	get hasIndexedProp(): boolean {
 		return (this._hasIndexedProp ??=
 			this.index !== undefined &&
@@ -947,7 +948,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			))
 	}
 
-	declare private _tfsByKey: Record<Key, TransformStep[]> | undefined
+	private _tfsByKey: Record<Key, TransformStep[]> | undefined
 	/** the steps transforming prop's value, shared by the constraints transforming its key */
 	tfsOf(prop: Prop.Node): TransformStep[] {
 		const cached = this._tfsByKey?.[prop.key]
@@ -1403,17 +1404,25 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			:	"Object.getPrototypeOf(data) !== Object.prototype"
 		// checked after the literal's reads
 		js.if(copies, () =>
-			js.outline(
-				`${js.nameOf(this.id)}Copy`,
-				[
-					"out",
-					...transformedProps.flatMap((_, i) => [
-						`value${i}`,
-						`transformed${i}`
-					])
-				],
-				deleteFromCopy
-			)
+			!this.defaultable.length && !this.protoProps.length && !this.index ?
+				js.return(
+					`${js.ref(copyDeclared)}(data, [${this.inOrder.map(prop => js.serialize(prop.key)).join(", ")}]${
+						transformedProps.length ?
+							`, [${transformedProps.map((prop, i) => `${js.serialize(prop.key)}, value${i}, transformed${i}`).join(", ")}]`
+						:	""
+					})`
+				)
+			:	js.outline(
+					`${js.nameOf(this.id)}Copy`,
+					[
+						"out",
+						...transformedProps.flatMap((_, i) => [
+							`value${i}`,
+							`transformed${i}`
+						])
+					],
+					deleteFromCopy
+				)
 		)
 		for (const prop of added) {
 			const store = () =>

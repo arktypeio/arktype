@@ -1524,6 +1524,8 @@ scope({
 }).export()
 ```
 
+A `Record` is now inferred as the mapped type `Record` expands to, so it's the same type, but TypeScript may print it as `{ [x: string]: number }` rather than `Record<string, number>`.
+
 ### Equate cyclic types of the same shape
 
 Cyclic types were equal only if they referenced the same definitions, so two of the same shape from different aliases weren't equal, and `.extends` and unions related them only by reference (#928). They're now compared by structure:

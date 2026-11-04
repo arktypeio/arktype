@@ -95,6 +95,37 @@ export const keepOwn = (out: object, data: object, k: Key): void => {
 	if (!(k in out) && hasOwn(data, k)) out[k as never] = data[k as never]
 }
 
+/**
+ * what deleting undeclared keys makes of data other than a plain object, a copy
+ * keeping its prototype: what its values transformed to, flat as
+ * [key, value, output], then without the keys it doesn't declare
+ */
+export const copyDeclared = (
+	data: object,
+	declared: readonly Key[],
+	changes?: readonly unknown[]
+): object => {
+	"use strict"
+	let out = data
+	if (changes) {
+		for (let i = 0; i < changes.length; i += 3) {
+			if (Object.is(changes[i + 2], changes[i + 1])) continue
+			if (out === data) out = copyOf(data)
+			out[changes[i] as never] = changes[i + 2] as never
+		}
+		if (out !== data) for (const k of declared) keepOwn(out, data, k)
+	}
+	for (const k of [
+		...Object.keys(data),
+		...Object.getOwnPropertySymbols(data)
+	]) {
+		if (declared.includes(k)) continue
+		if (out === data) out = copyOf(data)
+		delete out[k as never]
+	}
+	return out
+}
+
 // the later output wins a key both changed
 export const mergeTransformed = (
 	input: unknown,
