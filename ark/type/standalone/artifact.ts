@@ -1023,7 +1023,7 @@ export class StandaloneArtifact {
 	// a factory's holes tell the validators of one key apart, whichever module
 	// created each; a validator holding none is interned where it's written
 	private internTableOf(internedBy: number): string {
-		const type = this.factory!.type as BaseRoot
+		const type = this.factory!.type as never
 		return this.internsAcrossModules ?
 				`runtime.internedTable(${JSON.stringify(this.internKeyOf(type, this.validatorFormOf(type)))})`
 			:	writeLazyRead(`interned${internedBy}`, "runtime.internTable()")
