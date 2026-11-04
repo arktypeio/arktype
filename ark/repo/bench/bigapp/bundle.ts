@@ -14,7 +14,7 @@ export interface Bundled {
 	webpack?: boolean | undefined
 }
 
-// the same bundle through webpack, which can't prune and minifies with terser
+// the same bundle through webpack, which minifies with terser
 const bundleWebpack = async ({
 	entry,
 	cwd,

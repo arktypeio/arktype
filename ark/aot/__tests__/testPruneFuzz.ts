@@ -2,10 +2,12 @@
 // behaves as the same app built whole: each app's modules hand validators
 // around, store them and read them every way a program can, and both builds
 // run the same inputs through each read. ARK_PRUNE_FUZZ=<count>[:<seed>]
-// [ARK_PRUNE_FUZZ_BUNDLERS=esbuild,vite] [ARK_PRUNE_FUZZ_FAILURES=<dir>]
+// [ARK_PRUNE_FUZZ_BUNDLERS=esbuild,vite,webpack,rspack]
+// [ARK_PRUNE_FUZZ_FAILURES=<dir>]
 // [ARK_PRUNE_FUZZ_DEBUG=1] pnpm testPruneFuzz
 import { fromHere } from "@ark/fs"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
+import { rspack } from "@rspack/core"
 import { type } from "arktype"
 import { build as esbuild, type Plugin as EsbuildPlugin } from "esbuild"
 import fc from "fast-check"
@@ -15,6 +17,7 @@ import {
 	type InlineConfig,
 	type Plugin as VitePlugin
 } from "vite"
+import webpack, { type Stats } from "webpack"
 import { spawnSync } from "node:child_process"
 import {
 	existsSync,
@@ -26,7 +29,7 @@ import {
 	writeFileSync
 } from "node:fs"
 import { tmpdir } from "node:os"
-import { dirname, join } from "node:path"
+import { basename, dirname, join } from "node:path"
 import { gzipSync } from "node:zlib"
 import {
 	dataOf,
@@ -60,7 +63,7 @@ const failureDir =
 // keeps an app whose whole build's refusal matches, to look into a refusal
 const keptInvalid = process.env.ARK_PRUNE_FUZZ_KEEP_INVALID
 
-type Bundler = "esbuild" | "vite"
+type Bundler = "esbuild" | "vite" | "webpack" | "rspack"
 
 // how a site derives the validator it exports
 const wraps = {
@@ -818,17 +821,40 @@ let appCount = 0
 const writeApp = (app: App): string => {
 	const dir = join(root, `${appCount++}`)
 	rmSync(dir, { recursive: true, force: true })
+	writeFilesTo(dir, app)
+	return dir
+}
+
+const writeFilesTo = (dir: string, app: App) => {
 	mkdirSync(join(dir, "node_modules"), { recursive: true })
-	symlinkSync(
-		fromHere("..", "..", "type"),
-		join(dir, "node_modules", "arktype")
-	)
+	if (!existsSync(join(dir, "node_modules", "arktype"))) {
+		symlinkSync(
+			fromHere("..", "..", "type"),
+			join(dir, "node_modules", "arktype")
+		)
+	}
 	const files = filesOf(app)
 	for (const name in files) {
 		mkdirSync(dirname(join(dir, name)), { recursive: true })
 		writeFileSync(join(dir, name), files[name])
 	}
-	return dir
+}
+
+// the one project each app is an edit of, whose persistent cache earlier apps
+// filled, as a project's cache holds what it read before its last edit
+const editedDir = join(root, "edited")
+
+const writeEdit = (app: App): string => {
+	for (const name of existsSync(editedDir) ? readdirSync(editedDir) : []) {
+		if (name !== "node_modules")
+			rmSync(join(editedDir, name), { recursive: true, force: true })
+	}
+	rmSync(join(editedDir, "node_modules", dependencyPackage), {
+		recursive: true,
+		force: true
+	})
+	writeFilesTo(editedDir, app)
+	return editedDir
 }
 
 interface Built {
@@ -909,6 +935,93 @@ const esbuildPluginsOf = (
 	)
 }
 
+// webpack and Rspack read arktype's built output, as neither strips types itself
+const compilerOf = (
+	bundler: "webpack" | "rspack",
+	dir: string,
+	app: App,
+	out: string,
+	opts: PrecompileUnpluginOptions,
+	cacheDir: string | undefined
+) => {
+	const rewrite = rewrites[app.rewrite]
+	const rewrites_ =
+		app.rewrite === "reformat" ?
+			/(?<![/\\]node_modules[/\\].*)\.ts$/
+		:	/[/\\]reader\d+\.ts$/
+	const config = {
+		mode: "production" as const,
+		context: dir,
+		entry: Object.fromEntries(
+			entriesOf(dir, app).map(entry => [basename(entry, ".ts"), entry])
+		),
+		target: "node" as const,
+		devtool: false as const,
+		...(cacheDir && {
+			cache:
+				bundler === "webpack" ?
+					{ type: "filesystem" as const, cacheDirectory: cacheDir }
+				:	{
+						type: "persistent" as const,
+						storage: { type: "filesystem" as const, directory: cacheDir }
+					}
+		}),
+		output: {
+			path: out,
+			filename: "[name].js",
+			chunkFilename: "chunk-[id].js",
+			module: true,
+			chunkFormat: "module" as const
+		},
+		experiments: { outputModule: true },
+		resolve: {
+			extensions: [".ts", ".js"],
+			conditionNames: ["production", "import", "module", "..."]
+		},
+		optimization:
+			app.splits ? { splitChunks: { chunks: "all" as const, minSize: 0 } } : {},
+		module: {
+			rules: [
+				bundler === "webpack" ?
+					{
+						test: /\.ts$/,
+						exclude: /[/\\]node_modules[/\\]/,
+						loader: fromHere("stripTypesLoader.ts")
+					}
+				:	{
+						test: /\.ts$/,
+						exclude: /[/\\]node_modules[/\\]/,
+						loader: "builtin:swc-loader",
+						options: {
+							jsc: { parser: { syntax: "typescript" }, target: "esnext" }
+						},
+						type: "javascript/auto"
+					},
+				...(rewrite ?
+					[
+						{
+							test: rewrites_,
+							enforce: "pre" as const,
+							resourceQuery: { not: [/split/] },
+							loader: fromHere("rewriteLoader.ts"),
+							options: { rewrite }
+						}
+					]
+				:	[])
+			]
+		}
+	}
+	return bundler === "webpack" ?
+			webpack({
+				...config,
+				plugins: [precompile.webpack({ cwd: dir, ...opts })]
+			} as never)
+		:	(rspack({
+				...config,
+				plugins: [precompile.rspack({ cwd: dir, ...opts })]
+			} as never) as never as webpack.Compiler)
+}
+
 const entriesOf = (dir: string, app: App) => [
 	join(dir, "main.ts"),
 	...(app.entries === 2 ? [join(dir, "other.ts")] : [])
@@ -928,7 +1041,8 @@ const buildWith = async (
 	dir: string,
 	app: App,
 	opts: PrecompileUnpluginOptions,
-	tag: string
+	tag: string,
+	cacheDir?: string
 ): Promise<Built> => {
 	const out = join(dir, `out-${bundler}-${tag}`)
 	rmSync(out, { recursive: true, force: true })
@@ -950,6 +1064,35 @@ const buildWith = async (
 				plugins: esbuildPluginsOf(dir, app.rewrite, opts)
 			})
 			warnings.push(...result.warnings.map(w => w.text))
+		} else if (bundler === "webpack" || bundler === "rspack") {
+			const compiler = compilerOf(bundler, dir, app, out, opts, cacheDir)
+			const stats = await new Promise<Stats | undefined>((resolve, reject) => {
+				const hung = setTimeout(
+					() => reject(new Error(`${bundler} hung building ${dir}`)),
+					300_000
+				)
+				compiler.run((error, stats) =>
+					compiler.close(() => {
+						clearTimeout(hung)
+						if (error) reject(error)
+						else resolve(stats)
+					})
+				)
+			})
+			const info = stats?.toJson({ all: false, errors: true, warnings: true })
+			warnings.push(
+				...(info?.warnings ?? []).map(({ message }) =>
+					message.replace(/^\s*⚠\s*/, "")
+				)
+			)
+			if (info?.errors?.length) {
+				return {
+					refused: info.errors.map(({ message }) => message).join("\n"),
+					warnings,
+					js: "",
+					out
+				}
+			}
 		} else {
 			const { NODE_ENV } = process.env
 			process.env.NODE_ENV = "production"
@@ -1017,9 +1160,11 @@ const buildWith = async (
 
 // a TypeError names a binding as the build minified it, which differs
 // between two bundles of the same program, as do chunk names
+const unlikeBuildMessage = "is another Type, but was precompiled as"
+
 const typeErrorNames = /TypeError: .* (is not a (?:function|constructor))/g
 const chunkNames = /(?:chunk|types\d+)-[\w-]+\.js/g
-const outDirs = /out-(?:esbuild|vite)-(?:whole|pruned)/g
+const outDirs = /out-(?:esbuild|vite|webpack|rspack)-(?:whole|pruned)/g
 
 const runOut = (out: string, app: App) =>
 	["main", ...(app.entries === 2 ? ["other"] : [])]
@@ -1072,6 +1217,22 @@ const tallies: Record<Bundler, Tally> = {
 		bytesSaved: 0
 	},
 	vite: {
+		invalid: {},
+		refused: {},
+		kept: 0,
+		pruned: 0,
+		unsound: 0,
+		bytesSaved: 0
+	},
+	webpack: {
+		invalid: {},
+		refused: {},
+		kept: 0,
+		pruned: 0,
+		unsound: 0,
+		bytesSaved: 0
+	},
+	rspack: {
 		invalid: {},
 		refused: {},
 		kept: 0,
@@ -1163,6 +1324,13 @@ const check = async (app: App): Promise<boolean> => {
 		tally.bytesSaved += saved
 		const wholeOut = runOut(whole.out, app)
 		const prunedOut = runOut(pruned.out, app)
+		// built module by module, it read another module from its file, not as
+		// the loader ahead wrote it, which the guard catches where a Type's text
+		// differs. The pruned build read each as written
+		if (wholeOut.includes(unlikeBuildMessage)) {
+			bump(tally.invalid, unlikeBuildMessage)
+			continue
+		}
 		if (wholeOut !== prunedOut) {
 			tally.unsound++
 			sound = false
@@ -1176,6 +1344,24 @@ const check = async (app: App): Promise<boolean> => {
 				prunedOut
 			)
 			console.error(`\nUNSOUND (${bundler}): kept in ${kept}`)
+		}
+		if (bundler !== "webpack" && bundler !== "rspack") continue
+		// these two hosts keep what they built across builds
+		const edited = writeEdit(app)
+		const cold = await buildWith(bundler, edited, app, opts, "cold")
+		const warm = await buildWith(
+			bundler,
+			edited,
+			app,
+			opts,
+			"warm",
+			join(root, `cache-${bundler}`)
+		)
+		if ((cold.refused ?? cold.js) !== (warm.refused ?? warm.js)) {
+			tally.unsound++
+			sound = false
+			const kept = keepFailure(app, edited, bundler, cold, warm, "", "")
+			console.error(`\nWARM != COLD (${bundler}): kept in ${kept}`)
 		}
 	}
 	if (sound) rmSync(dir, { recursive: true, force: true })

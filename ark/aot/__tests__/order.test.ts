@@ -56,7 +56,7 @@ export const run = (data: unknown) => V(data)`,
 export const json = () => JSON.stringify(L.json)`
 		}
 		attest(answerAfter(files, ["/reader.ts"], "/main.ts")).snap([
-			'import { L } from "./lib.ts"\nimport { #0 as $ark#0 } from "~arktype/#1"\nimport "./lib.ts"\nexport const json = () => JSON.stringify($ark#0())'
+			'import "./lib.ts"\nimport { L } from "./lib.ts"\nimport { #0 as $ark#0 } from "~arktype/#1"\nexport const json = () => JSON.stringify($ark#0())'
 		])
 	})
 
