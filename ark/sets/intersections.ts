@@ -96,7 +96,7 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 	}) as never
 
 // equal nodes can list their outputs' keys in different orders
-const listsKeysAlike = (l: BaseNode, r: BaseNode): boolean =>
+export const listsKeysAlike = (l: BaseNode, r: BaseNode): boolean =>
 	l === r ||
 	(l.children.length === r.children.length &&
 		!(l as Structure.Node).inOrder?.some(

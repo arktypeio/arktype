@@ -1,8 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	AliasNode,
 	writeShallowCycleErrorMessage,
 	writeUnclosedGenericCycleMessage,
-	writeUnsatisfiedParameterConstraintMessage
+	writeUnsatisfiedParameterConstraintMessage,
+	type BaseRoot
 } from "@ark/schema"
 import {
 	writeIndiscriminableMorphMessage,
@@ -1608,5 +1610,51 @@ swap.swap.order[1] must be "on" (was "off")`)
 			"next.v must be a string (was a number)"
 		)
 		attest("pwned" in globalThis).equals(false)
+	})
+
+	it("the first alias reached reports its error", () => {
+		const operands = {
+			inA: { a: "string", self: "inA" },
+			notA: { a: "number", self: "notA" },
+			inB: { b: "string", self: "inB" },
+			notB: { b: "number", self: "notB" }
+		} as const
+
+		attest(() =>
+			scope({
+				root: { first: "inA & notA", second: "inB & notB" },
+				...operands
+			}).export()
+		).throws(
+			"Intersection at a of string and number results in an unsatisfiable type"
+		)
+		attest(() =>
+			scope({
+				root: { first: "inB & notB", second: "inA & notA" },
+				...operands
+			}).export()
+		).throws(
+			"Intersection at b of string and number results in an unsatisfiable type"
+		)
+	})
+
+	it("exporting a cycle doesn't resolve an alias each time it's read", () => {
+		const proto = AliasNode.prototype as unknown as { _resolve(): BaseRoot }
+		const { _resolve } = proto
+		let resolves = 0
+		proto._resolve = function () {
+			resolves++
+			return _resolve.call(this)
+		}
+		try {
+			scope({
+				a: { "b?": "b | null", "c?": "c[]" },
+				b: { "a?": "a | null" },
+				c: { "a?": "a", "b?": "b" }
+			}).export()
+		} finally {
+			proto._resolve = _resolve
+		}
+		attest(resolves < 10).equals(true)
 	})
 })

@@ -80,6 +80,14 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 		}
 	}
 
+	override sameInner(r: DomainNode): boolean {
+		return (
+			this.domain === r.domain &&
+			this.numberAllowsNaN === r.numberAllowsNaN &&
+			this.numberAllowsInfinity === r.numberAllowsInfinity
+		)
+	}
+
 	/** whether it rejects NaN, as the number domain does unless `numberAllowsNaN` */
 	private readonly checksNaN = this.domain === "number" && !this.numberAllowsNaN
 

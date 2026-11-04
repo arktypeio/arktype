@@ -168,6 +168,12 @@ class NodeCache {
 	byId: Record<string, BaseNode> | undefined
 	/** whether collecting its references replaced one with an equal node */
 	replacedRefs: boolean | undefined
+	/** whether it's what its scope's nodesByKey holds for its inner and meta */
+	keyed: boolean | undefined
+	/** whether every alias it reaches has resolved */
+	reachedResolved: boolean | undefined
+	/** whether it reaches user code, through any alias */
+	reachesUserCode: boolean | undefined
 	shallowRefs: BaseNode[] | undefined
 	flatRefs: FlatRef[] | undefined
 	fullJson: JsonObject | undefined
@@ -252,6 +258,13 @@ export const jsonLengthOf = (json: unknown): number => {
 	return length
 }
 
+export const holdsSameChildren = (l: BaseNode, r: BaseNode): boolean => {
+	if (l.children.length !== r.children.length) return false
+	for (let i = 0; i < l.children.length; i++)
+		if (l.children[i] !== r.children[i]) return false
+	return true
+}
+
 const isUnwritten = (v: unknown) =>
 	v === undefined || typeof v === "function" || typeof v === "symbol"
 
@@ -305,8 +318,9 @@ export const hashesMatch = (l: BaseNode, r: BaseNode): boolean =>
 	l.hash === r.hash && (l.hash.endsWith("}") || isJsonEqual(l.json, r.json))
 
 export const innerHashesMatch = (l: BaseNode, r: BaseNode): boolean =>
-	l.innerHash === r.innerHash &&
-	(l.innerHash.endsWith("}") || isJsonEqual(l.innerJson, r.innerJson))
+	(l.kind === r.kind ? l.sameInner(r) : undefined) ??
+	(l.innerHash === r.innerHash &&
+		(l.innerHash.endsWith("}") || isJsonEqual(l.innerJson, r.innerJson)))
 
 const equalJson = new WeakMap<object, WeakSet<object>>()
 
@@ -539,8 +553,7 @@ export abstract class BaseNode<
 		// a Map visits the ids added while it's iterated
 		const reached = new Map<string, BaseNode>([[this.id, this]])
 		for (const node of reached.values()) {
-			for (const id in node.byId) {
-				const reference = node.byId[id]
+			for (const reference of referencesWithoutCases(node)) {
 				// an intersection can drop what its operands reach, so only resolving it decides
 				if (reference[flag]) return !reachesOperands || this.reaches(flag, true)
 				if (!reference.is("alias")) continue
@@ -683,7 +696,10 @@ export abstract class BaseNode<
 		}
 		include(this)
 		this.c.replacedRefs = replaced
-		return Object.fromEntries(collected)
+		// without a prototype it's a dictionary, adding no V8 map per unseen id
+		const byId: Record<string, BaseNode> = Object.create(null)
+		for (const [id, node] of collected) byId[id] = node
+		return byId
 	}
 
 	get shallowRefs(): BaseNode[] {
@@ -944,7 +960,7 @@ export abstract class BaseNode<
 	}
 
 	/** its precompiled unit's function, whose source is its `precompilation` */
-	unitFn: Fn | undefined
+	declare unitFn: Fn | undefined
 
 	get precompilation(): string | undefined {
 		if (this.c.preJit) this.$.jit(this)
@@ -1016,7 +1032,8 @@ export abstract class BaseNode<
 		if (!this.alters && !(isIoFinal() && this.tfs)) return this as never
 
 		const ioInner: Record<any, unknown> = {}
-		for (const [k, v] of this.kv) {
+		for (const k in this.inner) {
+			const v = this.inner[k]
 			const keySchemaImplementation = this.impl.keys[k]
 
 			if (keySchemaImplementation.reduceIo)
@@ -1117,6 +1134,14 @@ export abstract class BaseNode<
 
 	ifEquals(r: unknown): BaseNode | undefined {
 		return this.equals(r) ? this : undefined
+	}
+
+	/**
+	 * whether its inner JSON is that of r, a node of its kind, where that's
+	 * decided without writing either, as most comparisons of nodes are
+	 */
+	sameInner(r: BaseNode): boolean | undefined {
+		return this === r || undefined
 	}
 
 	/** whether it's a node of `kind`, narrowing it to that kind's node */
@@ -1740,6 +1765,41 @@ export const referencesThroughAliases = (
 	return [...reached.values()]
 }
 
+// in the order of `byId`, leaving out each union's cases, which hold nothing its
+// branches don't, so reading what's reached doesn't discriminate
+export const referencesWithoutCases = (root: BaseNode): Set<BaseNode> => {
+	const references = new Set<BaseNode>()
+	const include = (node: BaseNode): void => {
+		if (references.has(node)) return
+		references.add(node)
+		for (let i = 0; i < node.children.length; i++) include(node.children[i])
+		if (node.is("union")) return
+		for (const referenced of node.otherRefs) include(referenced)
+	}
+	include(root)
+	return references
+}
+
+// resolves what referencesThroughAliases lists, in its order since any can throw,
+// without listing it for a Type that may never compile. what a node reaches
+// resolved once, so a Type sharing it doesn't walk it again
+export const resolveReachedAliases = (root: BaseNode): void => {
+	const reached = new Set<BaseNode>()
+	const aliases: AliasNode[] = []
+	const include = (node: BaseNode): void => {
+		if (!node.hasAlias || node.c.reachedResolved || reached.has(node)) return
+		reached.add(node)
+		if (node.is("alias")) aliases.push(node)
+		for (let i = 0; i < node.children.length; i++) include(node.children[i])
+		// a union's cases hold what its branches do, and aren't created until it's used
+		if (node.is("union")) return
+		for (const referenced of node.otherRefs) include(referenced)
+	}
+	include(root)
+	for (let i = 0; i < aliases.length; i++) include(aliases[i].resolution)
+	for (const node of reached) node.c.reachedResolved = true
+}
+
 /** a literal key (named property) or a node (index signatures) representing part of a type structure */
 export type KeyOrKeyNode = Key | BaseRoot
 
@@ -2012,13 +2072,13 @@ const compileRootApply = (node: BaseRoot): RootApply =>
 
 export const writeInnerJson = (node: BaseNode): JsonObject => {
 	const json: JsonObject = {}
-	for (const [k, v] of node.kv) {
+	for (const k in node.inner) {
 		const keyImpl = node.impl.keys[k]
 		if (keyImpl.unserialized) continue
 		const serialize =
 			keyImpl.serialize ??
 			(keyImpl.child ? serializeListableChild : defaultValueSerializer)
-		json[k] = serialize(v as never)
+		json[k] = serialize((node.inner as Dict)[k] as never)
 	}
 	return (node.impl.fixJson?.(json) as JsonObject | undefined) ?? json
 }
@@ -2033,6 +2093,7 @@ const possiblyCollapse = <allowPrimitive extends boolean>(
 	toKey: string | undefined,
 	allowPrimitive: allowPrimitive
 ): [allowPrimitive] extends [false] ? JsonStructure : Json => {
+	if (toKey === undefined || !(toKey in (json as object))) return json as never
 	const collapsibleKeys = Object.keys(json)
 	if (collapsibleKeys.length === 1 && collapsibleKeys[0] === toKey) {
 		const collapsed = json[toKey]

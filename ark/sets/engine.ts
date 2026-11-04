@@ -1,6 +1,7 @@
 import { $ark, type SetEngine } from "@ark/schema"
 import { intersectNodesRoot, pipeNodesRoot } from "./intersections.ts"
 import { setImplementationsByKind } from "./kinds.ts"
+import { constrainIntersection } from "./roots/intersection.ts"
 import { discriminateUnion } from "./roots/union.ts"
 import {
 	jsonSchemaWriters,
@@ -11,6 +12,7 @@ import {
 export const setEngine: SetEngine = {
 	intersect: intersectNodesRoot,
 	pipe: pipeNodesRoot,
+	constrain: constrainIntersection,
 	reduce: (kind, inner, $) => setImplementationsByKind[kind].reduce?.(inner, $),
 	sort: (kind, inner) => setImplementationsByKind[kind].sort?.(inner),
 	discriminate: discriminateUnion,
