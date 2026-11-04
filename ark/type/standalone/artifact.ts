@@ -249,24 +249,27 @@ interface SharedUnit extends WritingScope {
 
 const writesByBaking = new WeakMap<Baking, Map<string, SharedWrite>>()
 
-// keyed by the options writing a shared unit reads: not those writing an
-// artifact's own validators, nor compiledInputs, which picks the unit itself
+// the options writing a shared unit reads: not those writing an artifact's own
+// validators, nor compiledInputs, which picks the unit itself
+const bakingKeyOf = ({
+	write,
+	issues,
+	sharedWrites,
+	compilesValidators,
+	compiledInputs,
+	members,
+	cells,
+	interned,
+	scopeNameOf,
+	...rest
+}: Baking): string => JSON.stringify([rest, [...members].sort()])
+
 const sharedWritesOf = (baking: Baking): Map<string, SharedWrite> => {
 	let writes = writesByBaking.get(baking)
 	if (!writes) {
-		const {
-			write,
-			issues,
-			sharedWrites,
-			compilesValidators,
-			compiledInputs,
-			members,
-			cells,
-			...rest
-		} = baking
-		const key = JSON.stringify([rest, [...members].sort()])
-		writes = sharedWrites.get(key)
-		if (!writes) sharedWrites.set(key, (writes = new Map()))
+		const key = bakingKeyOf(baking)
+		writes = baking.sharedWrites.get(key)
+		if (!writes) baking.sharedWrites.set(key, (writes = new Map()))
 		writesByBaking.set(baking, writes)
 	}
 	return writes
@@ -349,6 +352,7 @@ export class StandaloneArtifact {
 	comparedRoots: BaseRoot[]
 	// written without holes; each factory call rekeys it
 	templates = new Set<unknown>()
+	exportedRoots: ReadonlySet<BaseRoot>
 	checkedRoots: ReadonlySet<BaseRoot>
 	factory: StandaloneFactory | undefined
 	defaultChecks: readonly DefaultCheck[]
@@ -375,10 +379,12 @@ export class StandaloneArtifact {
 			const path = appendStringifiedKey("", name)
 			this.collectExport(value, path)
 		}
-		const exported = new Set(this.roots)
+		this.exportedRoots = new Set(this.roots)
 		for (const [node] of this.defaultChecks)
 			this.collectType(node.in as BaseRoot)
-		this.checkedRoots = new Set(this.roots.filter(root => !exported.has(root)))
+		this.checkedRoots = new Set(
+			this.roots.filter(root => !this.exportedRoots.has(root))
+		)
 		// the runtime writes only en
 		const locale = $ark.config.locale
 		if (locale !== undefined && locale !== $ark.defaultConfig.locale)
@@ -1008,10 +1014,70 @@ export class StandaloneArtifact {
 			configured,
 			holes ?
 				[
-					`return runtime.intern(${writeLazyRead(`interned${internedBy}`, "runtime.internTable()")}, [${holes.join(", ")}], () => {\n${body.filter(statement => statement).join("\n\n")}\n}${defaultKeys})`
+					`return runtime.intern(${this.internTableOf(internedBy!)}, [${holes.join(", ")}], () => {\n${body.filter(statement => statement).join("\n\n")}\n}${defaultKeys})`
 				]
 			:	body
 		)
+	}
+
+	// a factory's holes tell the validators of one key apart, whichever module
+	// created each; a validator holding none is interned where it's written
+	private internTableOf(internedBy: number): string {
+		const type = this.factory!.type as BaseRoot
+		return this.internsAcrossModules ?
+				`runtime.internedTable(${JSON.stringify(this.internKeyOf(type, this.validatorFormOf(type)))})`
+			:	writeLazyRead(`interned${internedBy}`, "runtime.internTable()")
+	}
+
+	get internsAcrossModules(): boolean {
+		const { type } = this.factory!
+		return (
+			hasArkKind(type, "root") &&
+			this.heldOf(keyOf(type)[1]).length > 0 &&
+			this.internNameOf(type) !== undefined
+		)
+	}
+
+	private internNameOf(root: BaseRoot): string | undefined {
+		const { interned } = this.baking
+		return (
+			interned ? interned.get(root)
+			: this.exportedRoots.has(root) ? this.contentNameOf(root)
+			: undefined
+		)
+	}
+
+	// names a Type a site creates that another may create equal, which arktype
+	// returns as one value. A validator keeps the members its creator bakes, so
+	// only those written alike share one
+	private internKeyOf(root: BaseRoot, form: ValidatorForm): string | undefined {
+		const named = this.internNameOf(root)
+		if (named === undefined) return
+		const { called, readsAllows, piped } = form.reads
+		return hashOf(
+			JSON.stringify([
+				named,
+				bakingKeyOf(this.baking),
+				[...form.members].sort(),
+				form.isTemplate,
+				called,
+				readsAllows,
+				piped
+			])
+		)
+	}
+
+	// what arktype keys a node by, read in one module: each node's content in its
+	// Scope. A cycle's aliases and a Scope it can't name are told apart by identity
+	private contentNameOf(root: BaseRoot): string | undefined {
+		if (root.hasAlias) return
+		const { scopeNameOf } = this.baking
+		const scopes = [root, ...root.references].map(({ $ }) =>
+			$.isBuiltin ? $.name : scopeNameOf?.($)
+		)
+		return scopes.includes(undefined) ? undefined : (
+				`${keyOf(root)[0]} ${scopes.join()}`
+			)
 	}
 
 	writeRekeying(read: string): string[] {
@@ -1761,8 +1827,14 @@ return namespace`
 			: createsWith ? "runtime.createValidatorWith("
 			: "runtime.createValidator("
 		}\n\t${args.join(",\n\t")}\n${isTemplate ? "]" : ")"}`
-		return held && !this.baking.holdsIds ?
-				`runtime.holdHoles(${created}, ${writeId(id)}, ${held})`
+		if (held) {
+			return this.baking.holdsIds ?
+					created
+				:	`runtime.holdHoles(${created}, ${writeId(id)}, ${held})`
+		}
+		const key = this.internKeyOf(root, form)
+		return key ?
+				`runtime.interned(${JSON.stringify(key)}, () => ${created})`
 			:	created
 	}
 

@@ -177,6 +177,11 @@ export interface StandaloneOptions {
 	// introspection members an export bakes besides those members sets, as
 	// code the build read reads them off it
 	baked?: Record<string, BakedMembers> | undefined
+	// the roots a program read whole creates alike in modules apart, by what names
+	// each; without it, any module may hold another's equal
+	interned?: ReadonlyMap<unknown, string> | undefined
+	// what names a Scope in every module reading it, if anything does
+	scopeNameOf?: ((scope: BaseScope) => string | undefined) | undefined
 }
 
 export interface BakedMembers {
@@ -232,6 +237,8 @@ export interface Baking extends ValidatorReads {
 	issues: IssueFeatures
 	sharedWrites: SharedWrites
 	cells: HoleCells | undefined
+	interned: ReadonlyMap<unknown, string> | undefined
+	scopeNameOf: ((scope: BaseScope) => string | undefined) | undefined
 }
 
 export const writeFunction = (
@@ -439,7 +446,9 @@ export const bakingOf = (
 		piped: opts.piped !== false,
 		issues: { ...noIssueFeatures },
 		sharedWrites: opts.sharedWrites ?? new Map(),
-		cells: opts.cells
+		cells: opts.cells,
+		interned: opts.interned,
+		scopeNameOf: opts.scopeNameOf
 	}
 }
 

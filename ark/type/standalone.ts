@@ -195,7 +195,8 @@ const writeArtifact = (
 				types[name] = type
 				factories.push(() => writeFolded(name))
 			} else {
-				if (factory.internedBy !== undefined) tables.add(factory.internedBy)
+				if (factory.internedBy !== undefined && !artifact.internsAcrossModules)
+					tables.add(factory.internedBy)
 				factories.push(
 					artifact.writeFactory(index, configured),
 					writeExport(name, index)

@@ -77,6 +77,21 @@ const definitions: fc.Arbitrary<FragmentOf> = nodeOf([]).chain(node =>
 	)
 )
 
+// a Type two modules each define, which arktype returns as one
+const twins: fc.Arbitrary<FragmentOf> = definable.chain(node =>
+	inputsOf(dataOf(node, noAliases)).map(
+		(inputs): FragmentOf =>
+			id => ({
+				containers: [`export const Twin${id} = type(${sourceOf(defOf(node))})`],
+				exports: [`Twin${id}`],
+				main: [
+					observed(`${id}.other`, `Twin${id}`, inputs),
+					observed(id, `type(${sourceOf(defOf(node))})`, inputs)
+				]
+			})
+	)
+)
+
 // unions discriminated but for a branch holding a node, which data matching
 // no case reaches as their default case
 const partlyDiscriminated = {
@@ -1447,6 +1462,7 @@ const programs = fc
 			arbitrary: fc.array(
 				fc.oneof(
 					definitions,
+					twins,
 					defaultCases,
 					narrowedState,
 					defaults,

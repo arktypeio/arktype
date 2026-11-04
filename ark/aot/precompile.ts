@@ -4,6 +4,7 @@ import {
 	writeMissingImportMessage,
 	writePrecompiledUnits,
 	type BaseRoot,
+	type BaseScope,
 	type ErrorDetail,
 	type MutatesInput
 } from "@ark/schema"
@@ -388,6 +389,7 @@ type ProgramReads = Pick<
 	| "shapes"
 	| "baked"
 	| "cells"
+	| "interned"
 > & {
 	// what a module another plugin rewrote bakes, given its runtime
 	bakedAs?: (runtime: RuntimeModule) => ReadonlyMap<string, BakedMembers>
@@ -427,6 +429,8 @@ interface ProgramUsage {
 	shapes?: boolean
 	// holes the program creates once, which a variable can hold for any Type
 	cells?: HoleCells | undefined
+	// the roots sites in modules apart create, by what names each
+	interned?: ReadonlyMap<unknown, string> | undefined
 }
 
 interface ProgramPlan {
@@ -500,6 +504,22 @@ const isRepeated = (fn: Node): boolean => {
 			return true
 	}
 	return false
+}
+
+// a module loaded under two queries, or with one and without, as esbuild holds
+// a run of each where the scan reads one module
+const modulesRunApart = ({ entries, targets }: ScannedProgram): Set<string> => {
+	const queries = new Map(entries.map(id => [id, ""]))
+	const apart = new Set<string>()
+	for (const importing of Object.values(targets)) {
+		for (const specifier in importing) {
+			const id = importing[specifier]
+			const query = /(?!^)[?#].*$/.exec(specifier)?.[0] ?? ""
+			if ((queries.get(id) ?? query) !== query) apart.add(id)
+			queries.set(id, query)
+		}
+	}
+	return apart
 }
 
 const runsAsItsModuleLoads = (read: Node): boolean => {
@@ -632,6 +652,7 @@ export class Precompiler {
 	// whether a site of the program read whole reads a Type off a holder
 	private readsOffHolders: boolean | undefined
 	private sameEachRun: SameEachRun | undefined
+	private runsApart: ReadonlySet<string> = new Set()
 	// each shared unit's modules, written once for every module reading it
 	private sharedWrites: SharedWrites = new Map()
 	// the validators a site's factory last read, which inlining reads again
@@ -869,6 +890,69 @@ export class Precompiler {
 		)
 	}
 
+	// where a Scope is created, naming it to each module reaching it, if it runs once
+	private scopeNameOf(
+		scope: BaseScope,
+		module: SourceModule
+	): string | undefined {
+		const [state, ...others] = this.sitesDefining(scope, module)
+		return !state || others.length || isRepeated(state.node) ?
+				undefined
+			:	`${this.graph.pathOf(state.module.id)}:${state.node.start}`
+	}
+
+	// the roots sites in modules apart create, which arktype returns as one value,
+	// each named by the first site and baking what any of them read
+	private internedIn(
+		{ planned, precompiled }: ProgramPlan,
+		baked: ReadonlyMap<string, BakedMembers>
+	): [
+		interned: ReadonlyMap<unknown, string>,
+		baked: ReadonlyMap<string, BakedMembers>
+	] {
+		const sitesByRoot = new Map<
+			unknown,
+			[path: string, site: Site, id: string][]
+		>()
+		for (const id of precompiled) {
+			const path = this.graph.pathOf(id)
+			for (const span of planned.get(id)!.folded) {
+				for (const root of rootsIn((span as Site).value)) {
+					const sites = sitesByRoot.get(root)
+					if (sites) sites.push([path, span as Site, id])
+					else sitesByRoot.set(root, [[path, span as Site, id]])
+				}
+			}
+		}
+		const interned = new Map<unknown, string>()
+		const merged = new Map(baked)
+		for (const [root, sites] of sitesByRoot) {
+			if (
+				!this.runsApart.has(sites[0][2]) &&
+				sites.every(([, , id]) => id === sites[0][2])
+			)
+				continue
+			const [path, { start }] = sites.reduce((first, site) =>
+				(
+					site[0] < first[0] ||
+					(site[0] === first[0] && site[1].start < first[1].start)
+				) ?
+					site
+				:	first
+			)
+			interned.set(root, `${keyOf(root as BaseRoot)[0]} ${path}:${start}`)
+			const keys = sites.map(([, site, id]) => siteKeyOf(id, site))
+			const read = keys.flatMap(key => merged.get(key) ?? [])
+			if (!read.length) continue
+			const members: BakedMembers = {
+				members: [...new Set(read.flatMap(({ members }) => members))],
+				lost: read.some(({ lost }) => lost)
+			}
+			for (const key of keys) merged.set(key, members)
+		}
+		return [interned, merged]
+	}
+
 	private scanAs(
 		program: ScannedProgram,
 		plan: ProgramPlan,
@@ -892,6 +976,8 @@ export class Precompiler {
 		const called = isRead("call")
 		const readsAllows = isRead("allows")
 		const piped = isRead("piped")
+		this.runsApart = modulesRunApart(program)
+		const [interned, baked] = this.internedIn(plan, readings.baked)
 		// a size build's units are already module constants
 		const flattens =
 			!!program.isOneChunk &&
@@ -903,7 +989,7 @@ export class Precompiler {
 				...this.members,
 				...Object.fromEntries(dropped.map(member => [member, false]))
 			},
-			baked: readings.baked,
+			baked,
 			rewrittenBaked: new Map(),
 			program,
 			planned,
@@ -913,7 +999,8 @@ export class Precompiler {
 			sources: plan.sources,
 			written: {},
 			unscanned: new Map(),
-			cells: this.cellsOf(plan)
+			cells: this.cellsOf(plan),
+			interned
 		}
 		this.usagesByProgram.set(program.key, usage)
 		const wrote = this.writeSmaller(program, plan, usage)
@@ -1223,6 +1310,7 @@ export class Precompiler {
 			!!closure &&
 			!closure.env &&
 			!isRepeated(closure.node) &&
+			!this.runsApart.has(standIn.module.id) &&
 			functionNameOf(hole as Fn).includes(holeNameMarker) &&
 			!!this.sameEachRun?.of(closure.node, standIn.module)
 		)
@@ -3262,7 +3350,8 @@ export class Precompiler {
 			shapes,
 			baked,
 			bakedAs,
-			cells
+			cells,
+			interned
 		}: ProgramReads,
 		diagnostics: Diagnostic[]
 	): [validators: StandaloneModules, bakes: ImportedBake[]] {
@@ -3326,6 +3415,8 @@ export class Precompiler {
 							combines,
 							shapes,
 							cells,
+							interned,
+							scopeNameOf: scope => this.scopeNameOf(scope, module),
 							baked: bakedByName,
 							configured,
 							bake: write => this.bake(write),

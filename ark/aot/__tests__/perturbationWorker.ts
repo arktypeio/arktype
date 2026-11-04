@@ -287,11 +287,24 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 	let occurrencesBySite: Record<number, number> = {}
 	let tests: Function[] = []
 	let beforeEachHooks: Function[] = []
+	let firstKeyOf = new Map<unknown, string>()
 
-	const record = (id: number, observation: Observation) => {
+	// arktype returns one Type for a Scope's equal definitions, so where a world
+	// creates another, one read compares what the other's couldn't
+	const identityOf = (value: unknown, key: string): Observation => {
+		if (!isType(value)) return {}
+		const first = firstKeyOf.get(value)
+		if (first !== undefined) return { sameAs: first }
+		firstKeyOf.set(value, key)
+		return {}
+	}
+
+	const record = (id: number, value: unknown, observation: Observation) => {
 		const occurrence = (occurrencesBySite[id] ??= 0)
 		occurrencesBySite[id]++
-		if (occurrence < 4) observations[`${id}:${occurrence}`] = observation
+		const key = `${id}:${occurrence}`
+		if (occurrence < 4)
+			observations[key] = { ...observation, ...identityOf(value, key) }
 	}
 
 	const context = {
@@ -334,7 +347,11 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			inputsOf: () => unknown[]
 		) => {
 			try {
-				observations[key] = observeValidation(create(), inputsOf, world)
+				const value = create()
+				observations[key] = {
+					...observeValidation(value, inputsOf, world),
+					...identityOf(value, key)
+				}
 			} catch (e) {
 				observations[key] = { threw: messageOf(e) }
 			}
@@ -366,10 +383,10 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			}
 			try {
 				const value = create()
-				record(id, { ...observe(value, world), isPerturbed })
+				record(id, value, { ...observe(value, world), isPerturbed })
 				return value
 			} catch (e) {
-				record(id, { threw: messageOf(e), isPerturbed })
+				record(id, undefined, { threw: messageOf(e), isPerturbed })
 				throw e
 			}
 		}
@@ -393,6 +410,7 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			run++
 			observations = byPerturbation[kind] = {}
 			occurrencesBySite = {}
+			firstKeyOf = new Map()
 			tests = []
 			beforeEachHooks = []
 			// a test's own failures are its suite's to report, but a module that
@@ -612,6 +630,12 @@ const isTypedFn = (
 	params: unknown
 	returns: unknown
 } => typeof value === "function" && "params" in value && "returns" in value
+
+const isType = (value: unknown): boolean =>
+	typeof value === "function" &&
+	isArk(value) &&
+	!isStandIn(value) &&
+	!isTypedFn(value)
 
 // anyOf lists the issues errors "all" finds, as a call's outcome does
 const sample = (

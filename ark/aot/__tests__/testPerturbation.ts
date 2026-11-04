@@ -475,6 +475,19 @@ const reportedOf = (expected: unknown, actual: unknown): unknown => {
 	)
 }
 
+// a site that threw, as a creation check may, created nothing another could be
+const comparableIdentities = (
+	observed: Observation,
+	actual: Observation | undefined,
+	actuals: Record<string, Observation>
+): [observed: Observation, actual: Observation | undefined] => {
+	if (actuals[observed.sameAs as string]?.threw === undefined)
+		return [observed, actual]
+	const { sameAs, ...others } = observed
+	const { sameAs: actualSameAs, ...actualOthers } = actual ?? {}
+	return [others, actual && actualOthers]
+}
+
 // what a factory's checks throw for a value unlike what the build read
 const isCreationCheck = (observation: Observation | undefined) =>
 	typeof observation?.threw === "string" &&
@@ -560,8 +573,12 @@ export const compareWorlds = (
 				if (isTest(key))
 					for (const site of observed.sites as string[]) testOf[site] = key
 			}
-			for (const [key, observed] of Object.entries(originals)) {
-				const actual = actuals[key]
+			for (const [key, observedAs] of Object.entries(originals)) {
+				const [observed, actual] = comparableIdentities(
+					observedAs,
+					actuals[key],
+					actuals
+				)
 				if (isTest(key)) {
 					// a test's own throws aren't compared, as tests call what a validator
 					// lacks by design, like `.extends`, but the documented ones are counted

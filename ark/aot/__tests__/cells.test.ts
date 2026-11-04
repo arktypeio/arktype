@@ -489,7 +489,7 @@ import { Long as Second } from "./m.ts?v=2"
 console.log(String(First("abc")), String(Second("x")))
 `
 			},
-			{ cells: true }
+			{ cells: false }
 		)
 	})
 

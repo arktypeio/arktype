@@ -1138,6 +1138,15 @@ class InternTable {
 
 export const internTable = (): InternTable => new InternTable()
 
+const tablesByKey = /* @__PURE__ */ new Map<string, InternTable>()
+
+// a key's table, so modules written apart can intern alike
+export const internedTable = (key: string): InternTable => {
+	let table = tablesByKey.get(key)
+	if (!table) tablesByKey.set(key, (table = new InternTable()))
+	return table
+}
+
 const checkedDefaults = /* @__PURE__ */ new InternTable()
 
 // returns what it created before for the same holes
@@ -1156,6 +1165,10 @@ export const intern = <value>(
 		create()
 	return (table.value ??= create()) as value
 }
+
+// what a key names, created by whichever module reaches it first
+export const interned = <value>(key: string, create: () => value): value =>
+	intern(internedTable(key), [], create)
 
 const helpersKey = /* @__PURE__ */ Symbol.for("arktype.helpers")
 
