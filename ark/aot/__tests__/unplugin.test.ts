@@ -3197,6 +3197,105 @@ export const U = make()
 		).equals(true)
 	})
 
+	describe("a size build's validators, created as their module loads", () => {
+		const types = Array.from(
+			{ length: 24 },
+			(_, i) => `type({ "a${i}?": "string", b${i}: "number" })`
+		).join(", ")
+		const config =
+			'import { configure } from "arktype/config"\n\nconfigure({ exactOptionalPropertyTypes: false })\n'
+		const read = "all[0]({ a0: undefined, b0: 1 }).a0"
+		const run = async (
+			name: string,
+			files: Record<string, string>,
+			prune?: boolean
+		) => {
+			const root = writeFixture(files, fromHere("temp", "configFirst", name))
+			const bundle = await bundlers.esbuild(
+				{ cwd: root, config: "config.ts", preset: "smallest", prune },
+				root
+			)
+			const { stdout, stderr } = spawnSync(
+				process.execPath,
+				["--input-type=module"],
+				{ cwd: root, input: bundle, encoding: "utf8" }
+			)
+			return (
+				stdout ||
+				stderr
+					.split("\n")
+					.find(line => line.includes("configure"))
+					?.replace(/^.*ParseError]: /, "")
+			)
+		}
+
+		it("run the config module first, though arktype is imported ahead of it", async () => {
+			attest(
+				await run("after", {
+					"config.ts": config,
+					"main.ts": `import { type } from "arktype"\nimport "./config.ts"\n\nconst all = [${types}]\n\nconsole.log(${read})\n`
+				})
+			).snap("undefined\n")
+			attest(
+				await run(
+					"afterPruned",
+					{
+						"config.ts": config,
+						"main.ts": `import { type } from "arktype"\nimport "./config.ts"\n\nconst all = [${types}]\n\nconsole.log(${read})\n`
+					},
+					true
+				)
+			).snap("undefined\n")
+		})
+
+		it("run the config module first, though it's what an import of arktype loads", async () => {
+			attest(
+				await run(
+					"through",
+					{
+						"config.ts": config,
+						"ark.ts": `import "./config.ts"\n\nexport { type } from "arktype"\n`,
+						"main.ts": `import { type } from "./ark.ts"\n\nconsole.log([${types}][0]({ a0: undefined, b0: 1 }).a0)\n`
+					},
+					true
+				)
+			).snap("undefined\n")
+		})
+
+		it("run the config module first where the program loads it after a module creating only in a function", async () => {
+			attest(
+				await run(
+					"lazy",
+					{
+						"config.ts": config,
+						"lib.ts": `import { type } from "arktype"\n\nexport const make = () => [${types}]\n`,
+						"main.ts": `import { make } from "./lib.ts"\nimport "./config.ts"\n\nconst all = make()\n\nconsole.log(${read})\n`
+					},
+					true
+				)
+			).snap("undefined\n")
+		})
+
+		it("fail as arktype does where nothing imports the config module", async () => {
+			attest(
+				await run("unimported", {
+					"config.ts": config,
+					"main.ts": `import { type } from "arktype"\n\nconst all = [${types}]\n\nconsole.log(${read})\n`
+				})
+			).snap("main.ts creates a Type before configure() runs")
+			attest(
+				await run(
+					"unimportedPruned",
+					{
+						"config.ts": config,
+						"main.ts": `import { type } from "arktype"\n\nconst all = [${types}]\n\nconsole.log(${read})\n`
+					},
+					true
+				)
+			).snap("main.ts creates a Type before configure() runs")
+		})
+	})
+
 	it("no configuration check without configure", async () => {
 		const bundle = await bundlers.esbuild({ cwd: app })
 		attest(
