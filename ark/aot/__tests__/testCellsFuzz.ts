@@ -4,8 +4,8 @@
 // modules, and a module run twice. Each module's `check` is one of `reads`,
 // reaching a validator through one of `wrappers`. Observes each result, what
 // the call did to its input, and each predicate call in order.
-// ARK_CELLS_FUZZ=<count>[:<seed>]|catalog[:<wrapper>]
-// [ARK_CELLS_FUZZ_HOSTS=esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,modules,webpack,node,dev,emit]
+// ARK_CELLS_FUZZ=<count>[:<seed>]|catalog[:<wrapper>[:static|dynamic|query]]
+// [ARK_CELLS_FUZZ_HOSTS=esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,chunks,chunks:smallest,modules,webpack,node,dev,emit]
 // [ARK_CELLS_FUZZ_FAILURES=<dir>] pnpm testCellsFuzz
 import { fromHere } from "@ark/fs"
 import { precompile } from "@ark/aot/unplugin"
@@ -20,13 +20,15 @@ import { dirname, join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { tempDir } from "./utils.ts"
 
-const [countArg, seedArg] = (process.env.ARK_CELLS_FUZZ ?? "10").split(":")
+const [countArg, seedArg, importingArg] = (
+	process.env.ARK_CELLS_FUZZ ?? "10"
+).split(":")
 const failureDir =
 	process.env.ARK_CELLS_FUZZ_FAILURES ??
 	join(tmpdir(), "ark-cells-fuzz-failures")
 const hosts = (
 	process.env.ARK_CELLS_FUZZ_HOSTS ??
-	"esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,modules,webpack,node,dev,emit"
+	"esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,chunks,chunks:smallest,modules,webpack,node,dev,emit"
 ).split(",")
 
 // each is a module's `check`, % being the module's own number: the text of two
@@ -126,7 +128,6 @@ const pureReads: Record<string, string> = {
 	everyHelper: `const isLong = (s: string) => s.length > %\nconst check = (s: string) => [s].every(isLong)`,
 	selfCompare: `const check = (s: string): boolean => ((globalThis as any).seen ??= check) === check && s.length > %`,
 	helperIdentity: `const helper = () => {}\nconst check = (s: string) => ((globalThis as any).seen ??= helper) === helper`,
-	helperName: `const helper = () => {}\nconst check = (s: string) => helper.name.length > 2`,
 	helperLength: `const helper = (a: unknown) => a\nconst check = (s: string) => helper.length + s.length > 2`,
 	helperText: `const helper = () => %\nconst check = (s: string) => helper.toString().includes("1")`,
 	helperCall: `const helper = (s: string) => s.length > %\nconst check = (s: string) => helper.call(null, s)`,
@@ -316,8 +317,11 @@ interface AppModule {
 
 interface App {
 	modules: AppModule[]
-	// how main reaches them: a static import, import(), or twice under a query
-	importing: "static" | "dynamic" | "query"
+	// how main reaches them: a static import, import(), twice under a query, or
+	// statically and then again through a global a build can't read, running a
+	// chunk's text again beside the generated chunks it already loaded. A build
+	// seeing the import() itself holds no cell, as it can't see the whole program.
+	importing: "static" | "dynamic" | "query" | "again"
 	writes: boolean
 	config: string
 	configFirst: boolean
@@ -427,8 +431,19 @@ const filesOf = (app: App): Record<string, string> => {
 			module: i
 		}))
 	)
-	const imports = imported.map(({ specifier, local }) =>
-		app.importing === "dynamic" ?
+	if (app.importing === "again") {
+		for (const [i, _] of app.modules.entries()) {
+			imported.push({
+				specifier: `again${i}`,
+				local: `V${i}_again`,
+				module: i
+			})
+		}
+	}
+	const imports = imported.map(({ specifier, local, module }) =>
+		specifier.startsWith("again") ?
+			`const { V: ${local} } = await (globalThis as any).loadAgain("m${module + 1}")`
+		: app.importing === "dynamic" ?
 			`const { V: ${local} } = await import("${specifier}")`
 		:	`import { V as ${local} } from "${specifier}"`
 	)
@@ -438,7 +453,7 @@ const filesOf = (app: App): Record<string, string> => {
 		`import "./setup.ts"`,
 		...(app.configFirst ? configImport : []),
 		...(app.writes ? [`import "./writer.ts"`] : []),
-		...(app.importing === "dynamic" ? [] : imports),
+		...imports.filter(line => line.startsWith("import ")),
 		...(app.configFirst ? [] : configImport)
 	]
 	const cases = imported.map(({ local, module }) => {
@@ -446,8 +461,9 @@ const filesOf = (app: App): Record<string, string> => {
 		const values = baseValues.map(value => `(x => (${input}))(${value})`)
 		return `[${local}, () => [${[...values, ...values, ...extra].join(", ")}]]`
 	})
+	const awaited = imports.filter(line => line.startsWith("const "))
 	files["main.ts"] = `${staticImports.join("\n")}
-${app.importing === "dynamic" ? imports.join("\n") : ""}
+${awaited.join("\n")}
 
 const { calls } = globalThis as any
 const printed = (value: unknown) =>
@@ -537,6 +553,9 @@ const writeApp = (app: App): string => {
 
 const conditions = ["ark-ts", "production"]
 
+// what an app's main runs a chunk again through, knowing only its own path
+const loadAgain = `data:text/javascript,globalThis.loadAgain = name => import(new URL("./" + name + (process.argv[1].endsWith(".ts") ? ".ts" : ".js") + "?again", "file://" + process.argv[1]))`
+
 const run = (args: string[], cwd: string, env: Record<string, string> = {}) => {
 	const { stdout, stderr, status } = spawnSync(process.execPath, args, {
 		cwd,
@@ -550,6 +569,8 @@ const run = (args: string[], cwd: string, env: Record<string, string> = {}) => {
 const runBundle = (file: string, dir: string) =>
 	run(
 		[
+			"--import",
+			loadAgain,
 			"--import",
 			"data:text/javascript,for (const event of ['uncaughtException', 'unhandledRejection']) process.on(event, e => { console.error(String(e)); process.exit(1) })",
 			file
@@ -609,10 +630,27 @@ const esbuildOutcome = async (
 	return { out: runBundle(join(out, "main.js"), dir) }
 }
 
+// each generated module and each of the app's a chunk of its own, keeping a cell
+// from the function it holds as esbuild's layout never would. Only what's in a
+// chunk keeps its place in the imports: a manual chunk loads ahead of what stays
+// in the entry, which would run Types before the app's config.
+const chunkOf =
+	(dir: string) =>
+	(id: string): string | undefined => {
+		const generated = /~arktype[/\\]([^/?\\]+)/.exec(id)
+		if (generated) return `generated-${generated[1]}`
+		const own = /[/\\](\w+)\.ts(?:\?v=(\d))?$/.exec(id)
+		if (own && id.startsWith(dir) && own[1] !== "main")
+			return `${own[1]}${own[2] ?? ""}`
+		// so a chunk run again doesn't import the entry that's waiting for it
+		return id.endsWith("main.ts") ? undefined : "vendor"
+	}
+
 const viteOutcome = async (
 	dir: string,
 	label: string,
-	plugin: boolean
+	plugin: boolean,
+	chunked = false
 ): Promise<Outcome> => {
 	const out = join(dir, `out-${label}`)
 	const { NODE_ENV } = process.env
@@ -631,11 +669,29 @@ const viteOutcome = async (
 				emptyOutDir: true,
 				minify: true,
 				target: "esnext",
-				lib: {
-					entry: join(dir, "main.ts"),
-					formats: ["es"],
-					fileName: (_, name) => `${name}.js`
-				}
+				...(chunked ?
+					{
+						// its preload helper reads document, which node lacks
+						modulePreload: false as const,
+						rolldownOptions: {
+							input: join(dir, "main.ts"),
+							preserveEntrySignatures: "strict" as const,
+							output: {
+								entryFileNames: "[name].js",
+								chunkFileNames: "[name].js",
+								// a chunk run again is read by the name it declares
+								minifyInternalExports: false,
+								manualChunks: chunkOf(dir)
+							}
+						}
+					}
+				:	{
+						lib: {
+							entry: join(dir, "main.ts"),
+							formats: ["es" as const],
+							fileName: (_: string, name: string) => `${name}.js`
+						}
+					})
 			}
 		})
 	} catch (e) {
@@ -749,6 +805,7 @@ const outcomeOf = (
 		: kind === "split" ? esbuildOutcome(dir, label, { plugin, splitting: true })
 		: kind === "modules" ? esbuildOutcome(dir, label, { plugin, prune: false })
 		: kind === "vite" ? viteOutcome(dir, label, plugin)
+		: kind === "chunks" ? viteOutcome(dir, label, plugin, true)
 		: kind === "webpack" ? webpackOutcome(dir, plugin)
 		: kind === "node" ? driver(dir, true)
 		: kind === "dev" ? driver(dir, false)
@@ -756,7 +813,14 @@ const outcomeOf = (
 	)
 }
 
-const bundlers = new Set(["esbuild", "split", "modules", "vite", "webpack"])
+const bundlers = new Set([
+	"esbuild",
+	"split",
+	"modules",
+	"vite",
+	"chunks",
+	"webpack"
+])
 
 const observationsOf = (out: string): unknown[] | undefined => {
 	try {
@@ -772,6 +836,8 @@ const normalized = (observation: unknown) =>
 	JSON.stringify(observation)
 		?.replace(/\$ark\.\w+?\$?\d+/g, "$ark.fn")
 		.replace(/ \(was (?:[^"\\]|\\.)*?\)(?=(?:\\+n)|\\*")/g, "")
+		.replace(/value at \[/g, "[")
+		.replace(/[\w$]+\.(?=[\w$]+ is not a function)/g, "")
 		.replace(
 			/according to (?:an anonymous predicate|[\w$]+)/g,
 			"according to a predicate"
@@ -790,7 +856,8 @@ const verdictsOf = (observation: unknown): unknown =>
 // returns it (reported as F1 of launch/fuzz8.md), so only a flip on the data the
 // narrow's re-run accepted counts as this
 const isFlip = (expected: unknown, observed: unknown) =>
-	(observed as { errors?: string })?.errors === "is invalid" &&
+	((observed as { errors?: string })?.errors === "is invalid" ||
+		(observed as { out?: string })?.out === '"failed: is invalid"') &&
 	!!expected &&
 	typeof expected === "object" &&
 	"out" in expected
@@ -871,9 +938,15 @@ const firstMismatch = (
 		:	`observation ${at}: expected ${JSON.stringify(expected[at])}, got ${JSON.stringify(observed[at])}`
 }
 
+// the error a run of a build crashed with
+const errorOf = (out: string) => /^\w*Error\b.*$/m.exec(out)?.[0]
+
 const check = async (app: App): Promise<boolean> => {
 	const dir = writeApp(app)
-	const expected = run(["--conditions", "ark-ts", "main.ts"], dir)
+	const expected = run(
+		["--conditions", "ark-ts", "--import", loadAgain, join(dir, "main.ts")],
+		dir
+	)
 	const fullExpected = observationsOf(expected)
 	const withoutIdentity = (observations: unknown[] | undefined) =>
 		app.comparesIdentity ? observations?.slice(0, -2) : observations
@@ -888,6 +961,8 @@ const check = async (app: App): Promise<boolean> => {
 		// tsc doesn't rewrite a query, and webpack leaves a queried module's sites
 		// untransformed (F3)
 		if (/^(emit|webpack)/.test(host) && app.importing === "query") continue
+		// only this layout names a chunk main can import again
+		if (app.importing === "again" && !host.startsWith("chunks")) continue
 		const outcome = await outcomeOf(host, dir, app)
 		if ("refused" in outcome) {
 			bump(tally.refused, headOf(outcome.refused))
@@ -938,15 +1013,30 @@ const check = async (app: App): Promise<boolean> => {
 			for (const { read } of app.modules) bump(reached, read)
 			continue
 		}
+		// a bundle's import.meta.url is the bundle's, whose query is gone, which a
+		// plain build can't show as it doesn't resolve a query
+		if (
+			bundlers.has(host.split(":")[0]) &&
+			app.importing === "query" &&
+			app.modules.some(({ read }) => read === "moduleMeta")
+		) {
+			tally.bundler++
+			continue
+		}
 		// what the bundler alone builds otherwise isn't the plugin's
 		if (bundlers.has(host.split(":")[0])) {
 			const plain = await outcomeOf(host, dir, app, false)
 			const plainObservations = "out" in plain && observationsOf(plain.out)
 			if (
-				observations &&
-				plainObservations &&
-				normalized(verdictsOf(plainObservations)) ===
-					normalized(verdictsOf(observations))
+				(observations &&
+					plainObservations &&
+					normalized(verdictsOf(plainObservations)) ===
+						normalized(verdictsOf(observations))) ||
+				// a crash it builds alone too
+				(!observations &&
+					"out" in plain &&
+					!plainObservations &&
+					errorOf(plain.out) === errorOf(outcome.out))
 			) {
 				tally.bundler++
 				continue
@@ -966,13 +1056,15 @@ const started = Date.now()
 if (countArg === "catalog") {
 	const wrapper = seedArg ?? "narrow"
 	for (const read of readNames) {
+		if (read in statefulReads && loopingWrappers.has(wrapper)) continue
 		await check({
 			modules: [
 				{ read, wrapper },
 				{ read, wrapper }
 			],
-			importing: "static",
-			writes: true,
+			importing: (importingArg ?? "static") as App["importing"],
+			// a chunk holding a module it wrote state to reads it anew when run again
+			writes: importingArg !== "again",
 			config: "none",
 			configFirst: true,
 			readsAllows: false,

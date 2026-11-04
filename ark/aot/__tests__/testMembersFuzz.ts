@@ -5,7 +5,7 @@
 // reads it every way a program can. The oracle runs the app's source on
 // arktype. ARK_MEMBERS_FUZZ=<count>[:<seed>[:<path>]]
 // [ARK_MEMBERS_FUZZ_HOSTS=esbuild,vite,modules,webpack,node,dev,emit]
-// [ARK_MEMBERS_FUZZ_FAILURES=<dir>] pnpm testMembersFuzz
+// [ARK_MEMBERS_FUZZ_FAILURES=<dir>] [ARK_PRECOMPILE_OPTIONS=<json>] pnpm testMembersFuzz
 import { fromHere } from "@ark/fs"
 import { Precompiler } from "@ark/aot"
 import { scanProgram } from "@ark/aot/internal/scan.ts"
@@ -49,6 +49,8 @@ const hosts = (process.env.ARK_MEMBERS_FUZZ_HOSTS?.split(",") ??
 const failureDir =
 	process.env.ARK_MEMBERS_FUZZ_FAILURES ??
 	join(tmpdir(), "ark-members-fuzz-failures")
+
+const buildOptions = JSON.parse(process.env.ARK_PRECOMPILE_OPTIONS ?? "{}")
 
 const bundlers = new Set<Host>(["esbuild", "vite", "modules", "webpack"])
 
@@ -813,6 +815,7 @@ const esbuildOutcome = async (
 						precompile.esbuild({
 							conditions,
 							cwd: dir,
+							...buildOptions,
 							...(!prune && { prune: false })
 						})
 					]
@@ -834,7 +837,15 @@ const viteOutcome = async (dir: string, plugin: boolean): Promise<Outcome> => {
 			configFile: false,
 			logLevel: "silent",
 			plugins:
-				plugin ? [precompile.vite({ conditions: ["ark-ts"], cwd: dir })] : [],
+				plugin ?
+					[
+						precompile.vite({
+							conditions: ["ark-ts"],
+							cwd: dir,
+							...buildOptions
+						})
+					]
+				:	[],
 			resolve: { conditions: ["ark-ts", ...defaultClientConditions] },
 			build: {
 				write: true,
@@ -871,7 +882,8 @@ const webpackOutcome = async (
 		target: "node",
 		output: { path: out, filename: "main.cjs" },
 		resolve: { extensions: [".ts", ".js", ".cjs"] },
-		plugins: plugin ? [precompile.webpack({ cwd: dir }) as never] : []
+		plugins:
+			plugin ? [precompile.webpack({ cwd: dir, ...buildOptions }) as never] : []
 	})
 	const errors = await new Promise<string | undefined>(resolve =>
 		compiler.run((error, stats) =>
@@ -898,7 +910,7 @@ const driver = (dir: string, production: boolean): Outcome => {
 			"--conditions",
 			"ark-ts",
 			"--import",
-			`data:text/javascript,import { register } from "${pathToFileURL(fromHere("..", "node.ts"))}"; register(${JSON.stringify({ conditions: ["ark-ts"], cwd: dir })})`,
+			`data:text/javascript,import { register } from "${pathToFileURL(fromHere("..", "node.ts"))}"; register(${JSON.stringify({ conditions: ["ark-ts"], cwd: dir, ...buildOptions })})`,
 			"main.ts"
 		],
 		dir,
@@ -930,7 +942,13 @@ const emitOutcome = (dir: string): Outcome => {
 		return { refused: `harness: tsc failed\n${emitted.stdout}` }
 	const cli = spawnSync(
 		process.execPath,
-		["--conditions", "ark-ts", fromHere("..", "cli.ts"), "--emit"],
+		[
+			"--conditions",
+			"ark-ts",
+			fromHere("..", "cli.ts"),
+			"--emit",
+			...(buildOptions.preset ? ["--preset", buildOptions.preset] : [])
+		],
 		{ cwd: dir, encoding: "utf8", timeout: 120_000 }
 	)
 	if (cli.status !== 0) return { refused: cli.stderr || cli.stdout }
