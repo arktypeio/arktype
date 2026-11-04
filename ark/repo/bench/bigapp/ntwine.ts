@@ -95,6 +95,12 @@ export const ntwineArms = (dir: string) => {
 		join(cache, "node_modules", "yaml"),
 		join(dir, "node_modules", "yaml")
 	)
+	// zod's global mode compiles each schema at its first parse
+	const compiled = join(dir, "zodCompiled.ts")
+	writeFileSync(
+		compiled,
+		`import "zod/compile"\nexport * from ${JSON.stringify(join(zodSource, "index.ts"))}`
+	)
 	return {
 		arktype: {
 			entry: join(dir, "index.ts"),
@@ -106,6 +112,14 @@ export const ntwineArms = (dir: string) => {
 			entry: join(zodSource, "index.ts"),
 			cwd: zodSource,
 			alias: { zod: join(zod4, "index.js") }
+		},
+		zodCompiled: {
+			entry: compiled,
+			cwd: zodSource,
+			alias: {
+				"zod/compile": join(zod4, "compile.js"),
+				zod: join(zod4, "index.js")
+			}
 		},
 		zod3: { entry: join(zodSource, "index.ts"), cwd: zodSource }
 	}

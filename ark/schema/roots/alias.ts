@@ -6,7 +6,12 @@ import {
 	type array,
 	type join
 } from "@ark/util"
-import { ioOf, writeInnerJson, type BaseNode } from "../node.ts"
+import {
+	ioOf,
+	referencesWithoutCases,
+	writeInnerJson,
+	type BaseNode
+} from "../node.ts"
 import { nodesById, type NodeId } from "../parse.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { declareNode } from "../shared/declare.ts"
@@ -306,7 +311,7 @@ const operationsOf = (node: BaseRoot, seen: BaseRoot[] = []): AliasNode[] => {
 	if (!node.hasAlias || seen.includes(node)) return []
 	seen.push(node)
 	const operations: AliasNode[] = []
-	for (const reference of node.references) {
+	for (const reference of referencesWithoutCases(node)) {
 		if (!reference.is("alias")) continue
 		if (reference.operands) operations.push(reference)
 		else {

@@ -55,7 +55,9 @@ export abstract class BaseProp<
 		return this.kind === "optional"
 	}
 
-	implied: BaseRoot = $ark.kw.object.internal
+	get implied(): BaseRoot {
+		return $ark.kw.object.internal
+	}
 
 	get serializedKey(): string {
 		return compileSerializedValue(this.key)
@@ -79,6 +81,18 @@ export abstract class BaseProp<
 		const result = super._tf(mapper, ctx)
 		ctx.path.pop()
 		return result
+	}
+
+	override sameInner(r: BaseProp): boolean | undefined {
+		if (this.key !== r.key) return false
+		return (
+				this.value === r.value &&
+					(this.inner as Optional.Inner).default ===
+						(r.inner as Optional.Inner).default &&
+					this.hasDef() === r.hasDef()
+			) ?
+				true
+			:	undefined
 	}
 
 	/** whether it's an optional prop with a default */

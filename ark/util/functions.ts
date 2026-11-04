@@ -73,16 +73,15 @@ export interface Callable<fn extends Fn, attachments extends object>
 export class Callable<fn extends Fn, attachments extends object = {}> {
 	constructor(
 		fn: fn,
-		...[opts]: {} extends attachments ? [opts?: CallableOptions<attachments>]
+		...args: {} extends attachments ? [opts?: CallableOptions<attachments>]
 		:	[opts: CallableOptions<attachments>]
 	) {
-		return Object.assign(
-			Object.setPrototypeOf(
-				opts?.bind === null ? fn : fn.bind(opts?.bind ?? this),
-				this.constructor.prototype
-			),
-			opts?.attach
+		const opts = args[0]
+		const callable = Object.setPrototypeOf(
+			opts?.bind === null ? fn : fn.bind(opts?.bind ?? this),
+			new.target.prototype
 		)
+		return opts?.attach ? Object.assign(callable, opts.attach) : callable
 	}
 }
 

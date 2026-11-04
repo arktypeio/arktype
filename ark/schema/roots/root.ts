@@ -108,7 +108,7 @@ export abstract class BaseRoot<
 		return this
 	}
 
-	private _standard?: StandardSchemaV1.ArkTypeProps
+	declare private _standard?: StandardSchemaV1.ArkTypeProps
 	get "~standard"(): StandardSchemaV1.ArkTypeProps {
 		return (this._standard ??= {
 			vendor: "arktype",
@@ -233,7 +233,7 @@ export abstract class BaseRoot<
 		return this.$.schema(this.applyStruct("partial", []))
 	}
 
-	private _keyof?: BaseRoot
+	declare private _keyof?: BaseRoot
 	keyof(): BaseRoot {
 		if (this._keyof) return this._keyof
 		const result = this.applyStruct("keyof", []).reduce(
@@ -542,20 +542,30 @@ export abstract class BaseRoot<
 				)
 		}
 
-		const operand =
-			io === "root" ? this
-			: io === "in" ? this._in
-			: this._out
+		// an intersection's output is one too, so one that needn't meet a basis isn't written
 		if (
-			operand.is("morph") ||
-			(constraint.implied && !operand.extends(constraint.implied))
+			io !== "out" ||
+			constraint.implied ||
+			!this.is("intersection") ||
+			this.hasAlias
 		) {
-			return throwInvalidOperandError(
-				kind,
-				// a predicate implies no basis, but can't constrain a morph either
-				(constraint.implied ?? $ark.kw.unknown.internal) as never,
-				this as never
-			)
+			const operand =
+				io === "root" ? this
+				: io === "in" ? this._in
+				: this._out
+			if (
+				operand.is("morph") ||
+				(constraint.implied &&
+					!meetsImplied(operand, constraint.implied) &&
+					!operand.extends(constraint.implied))
+			) {
+				return throwInvalidOperandError(
+					kind,
+					// a predicate implies no basis, but can't constrain a morph either
+					(constraint.implied ?? $ark.kw.unknown.internal) as never,
+					this as never
+				)
+			}
 		}
 
 		// a basis has no constraint to meet, and a constraint alone has nothing to reduce
@@ -567,16 +577,22 @@ export abstract class BaseRoot<
 		// important this is constraint.kind instead of kind in case
 		// the node was reduced during parsing
 		inner[constraint.kind] = constraint.impl.stacks ? [constraint] : constraint
-		const partialIntersection = this.$.node("intersection", inner, {
-			reduced: true
-		})
+		let result: BaseNode | Disjoint | null
+		// an intersection meets a constraint without a node holding only that
+		if (io !== "out" && this.is("intersection"))
+			result = sets().constrain(this, inner, this.$)
+		else {
+			const partialIntersection = this.$.node("intersection", inner, {
+				reduced: true
+			})
 
-		if (meetsBasis) return partialIntersection
+			if (meetsBasis) return partialIntersection
 
-		const result =
-			io === "out" ?
-				sets().pipe(this, partialIntersection, this.$)
-			:	sets().intersect(this, partialIntersection, this.$)
+			result =
+				io === "out" ?
+					sets().pipe(this, partialIntersection, this.$)
+				:	sets().intersect(this, partialIntersection, this.$)
+		}
 
 		if (result instanceof Disjoint) result.throw()
 
@@ -741,6 +757,19 @@ export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(
 
 export type exclusivizeRangeSchema<schema extends UnknownRangeSchema> =
 	schema extends LimitSchemaValue ? { rule: schema; exclusive: true } : schema
+
+// what a basis extends, so does anything that constrains it, without intersecting them
+const meetsImplied = (operand: BaseRoot, implied: BaseRoot): boolean => {
+	const basis = operand.is("intersection") ? operand.basis : operand
+	if (!basis) return false
+	if (basis.kind === implied.kind) return innerHashesMatch(basis, implied)
+	return (
+		implied.is("union") &&
+		implied.branches.some(
+			branch => branch.kind === basis.kind && innerHashesMatch(basis, branch)
+		)
+	)
+}
 
 export const typeOrTermExtends = (t: unknown, base: unknown): boolean =>
 	hasArkKind(base, "root") ?

@@ -10,7 +10,9 @@
 //   first   closes after the first validation, whose ms it also times, then
 //           measures ns per later (hot) validation
 //
-// node measure.ts [ntwine] [scale] [crossover] [--rounds=9] [--out=<file>]
+// node measure.ts [ntwine] [scale] [crossover] [board] [--rounds=9] [--out=<file>]
+//   [--board=<file>]
+// board measures board.ts's arms and sizes and writes its scoreboard to <file>.
 // With no scope, ntwine and scale at 11, 92 and 1012 Types. crossover adds more
 // sizes.
 // Run `pnpm build` first. Reports against results/baseline.json.
@@ -19,7 +21,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { loadavg } from "node:os"
 import { join } from "node:path"
 import { gzipSync } from "node:zlib"
-import { sizes, writeApp, type Library } from "./apps.ts"
+import { sizes, writeAjvApp, writeApp, type Library } from "./apps.ts"
+import { boardSizes, writeBoard } from "./board.ts"
 import { bundle, type Bundled } from "./bundle.ts"
 import { ntwineArms, ntwineThread } from "./ntwine.ts"
 
@@ -29,9 +32,13 @@ const flag = (name: string) =>
 const scopes = args.filter(arg => !arg.startsWith("--"))
 const rounds = Number(flag("rounds") ?? 9)
 const crossover = scopes.includes("crossover")
-const ntwineOn = !scopes.length || scopes.includes("ntwine")
-const scaleOn = !scopes.length || scopes.includes("scale") || crossover
-const scaleSizes = crossover ? Object.keys(sizes).map(Number) : [11, 92, 1012]
+const board = scopes.includes("board")
+const ntwineOn = !scopes.length || scopes.includes("ntwine") || board
+const scaleOn = !scopes.length || scopes.includes("scale") || crossover || board
+const scaleSizes =
+	board ? boardSizes
+	: crossover ? Object.keys(sizes).map(Number)
+	: [11, 92, 1012]
 
 const here = import.meta.dirname
 const out = join(here, "out")
@@ -110,7 +117,7 @@ if (ntwineOn) {
 		group: "ntwine",
 		validator: "ThreadView",
 		data: ntwineThread,
-		runRaw: true
+		runRaw: !board
 	}
 	await addBuilt({
 		...common,
@@ -118,6 +125,21 @@ if (ntwineOn) {
 		library: "precompiled",
 		call: "arktype"
 	})
+	if (board) {
+		await addBuilt({
+			...common,
+			...arms.arktype,
+			precompiled: { ...arms.arktype.precompiled, preset: "smallest" },
+			library: "smallest",
+			call: "arktype"
+		})
+		await addBuilt({
+			...common,
+			...arms.zodCompiled,
+			library: "zodCompiled",
+			call: "zod"
+		})
+	}
 	await addBuilt({
 		...common,
 		...arms.arktype,
@@ -171,6 +193,37 @@ for (const types of scaleOn ? scaleSizes : []) {
 		for (const library of ["zod", "valibot"] as const) {
 			const { dir, entry } = app(library)
 			await addBuilt({ ...common, library, entry, cwd: dir })
+			if (board && library === "zod") {
+				const compiled = join(dir, "zodCompiled.ts")
+				writeFileSync(
+					compiled,
+					`import "zod/compile"\nexport * from "./index.ts"`
+				)
+				await addBuilt({
+					...common,
+					library: "zodCompiled",
+					entry: compiled,
+					cwd: dir
+				})
+			}
+		}
+		if (board) {
+			await addBuilt({
+				...common,
+				library: "smallest",
+				entry: arktype.entry,
+				cwd: arktype.dir,
+				precompiled: { preset: "smallest" }
+			})
+			if (!narrows) {
+				const dir = join(out, "apps", `${types}-ajv`)
+				await addBuilt({
+					...common,
+					library: "ajv",
+					entry: await writeAjvApp(types, dir),
+					cwd: dir
+				})
+			}
 		}
 		rmSync(join(out, "apps"), { recursive: true, force: true })
 	}
@@ -348,3 +401,4 @@ console.log(`wrote ${path}`)
 
 const { report } = await import("./report.ts")
 report(path)
+if (board) writeBoard(path, flag("board") ?? join(dir, `${version}.board.md`))

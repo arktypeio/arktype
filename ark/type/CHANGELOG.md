@@ -960,7 +960,7 @@ A Type is compiled the second time it's called or its `allows` is called, or whe
 
 A union finds its discriminant when it's compiled, checks data, describes a miss or has its references read, rather than when it's created. Where a scope has several definition errors, which is thrown first can change, and can differ between JIT and jitless, e.g. an indeterminate union of morphs before an invalid default it includes.
 
-A host that refuses code generation once it has loaded, as Cloudflare Workers do within a request, has its Types checked as with `jitless` from then on.
+A host that refuses code generation once it has loaded, as Cloudflare Workers do within a request, has its Types checked as with `jitless` from then on. Since a Type compiles once it's used, that includes one defined as the Worker loads and first used within a request, which is up to about 30x slower per call on a plain object, and 3x to 5x on invalid data or a morph. Only a cyclic scope's exports still compile as they load. To check with compiled code on such a host, [precompile](https://arktype.io/docs/precompile) your Types, or read a Type's `precompilation` where it's defined, which compiles it as the Worker loads and adds to its startup.
 
 ### Order keys by code unit
 
@@ -1272,6 +1272,20 @@ A tuple expression's `:` constrains the whole Type, so it can't follow a morph. 
 // now "ParseError: Predicate operand must be unknown (was a morph)"
 type([["string", "=>", s => s.length], ":", n => n % 2 === 0])
 ```
+
+### Throw a `ParseError` for a group or `keyof` where a literal is required
+
+A right bound or default written as a group or with `keyof` threw a `TypeError` while parsing. It now throws what its type already failed with, except that its message names what was written:
+
+```ts
+// ParseError: Comparator < must be followed by a corresponding literal (was ()
+type("number<(1)")
+
+// ParseError: Default value '(1)' must be a literal value
+type({ foo: "number = (1)" })
+```
+
+A non-literal right bound after a space, like `number < string`, no longer prints that space in its message.
 
 ### Describe a range's minimum first in every engine
 
