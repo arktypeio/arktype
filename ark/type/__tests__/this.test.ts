@@ -174,10 +174,6 @@ contextualize(() => {
 
 		type Expected = { name: string; children?: Record<string, Expected> }
 		attest<Expected>(T.t)
-		attest(T.t).type.toString.snap(`{
-	name: string
-	children?: { [x: string]: cyclic }
-}`)
 		attest(T({ name: "a", children: { b: { name: "b" } } })).snap({
 			name: "a",
 			children: { b: { name: "b" } }

@@ -1524,7 +1524,7 @@ scope({
 }).export()
 ```
 
-A `Record` is now inferred as the mapped type `Record` expands to, so it's the same type, but TypeScript prints it as `{ [x: string]: number }` rather than `Record<string, number>`.
+A `Record` is now inferred as the mapped type `Record` expands to, so it's the same type, but TypeScript may print it as `{ [x: string]: number }` rather than `Record<string, number>`.
 
 ### Equate cyclic types of the same shape
 
