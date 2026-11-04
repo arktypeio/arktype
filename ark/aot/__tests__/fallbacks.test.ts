@@ -10,7 +10,10 @@ const traced = (levels: number) => {
 	for (let i = 0; i < levels; i++) t = type({ a: t, b: t })
 	const root = t.internal as BaseRoot
 	return traceFallbacks(root, (fallback, writers) =>
-		root.toJsonSchema({ fallback, [unionJsonSchemaWritersKey]: writers })
+		root.toJsonSchema({
+			fallback,
+			[unionJsonSchemaWritersKey]: writers
+		} as never)
 	)
 }
 
