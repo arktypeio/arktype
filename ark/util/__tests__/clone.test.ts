@@ -1,5 +1,14 @@
 import { attest, contextualize } from "@ark/attest"
-import { deepClone } from "@ark/util"
+import { deepClone, shallowClone } from "@ark/util"
+
+const temporal = (
+	globalThis as {
+		Temporal?: Record<
+			"Instant" | "PlainDate",
+			{ from: (iso: string) => object }
+		>
+	}
+).Temporal
 
 contextualize(() => {
 	it("should return a deep clone of a simple object", () => {
@@ -55,6 +64,38 @@ contextualize(() => {
 		attest<typeof obj>(cloned).equals(obj)
 		attest(cloned !== obj).equals(true)
 		attest(cloned.b !== obj.b).equals(true)
+	})
+
+	if (temporal) {
+		const { Instant, PlainDate } = temporal
+
+		it("preserves native Temporal values nested in a deep clone", () => {
+			const original = {
+				at: Instant.from("2026-11-04T00:00:00Z"),
+				dates: [PlainDate.from("2026-11-04")]
+			}
+			const cloned = deepClone(original)
+			attest(cloned !== original).equals(true)
+			attest(cloned.dates !== original.dates).equals(true)
+			attest(cloned.at.toString()).equals("2026-11-04T00:00:00Z")
+			attest(cloned.dates[0].toString()).equals("2026-11-04")
+		})
+
+		it("preserves a native Temporal value passed directly to shallowClone", () => {
+			const original = PlainDate.from("2026-11-04")
+			attest(shallowClone(original).toString()).equals("2026-11-04")
+		})
+	}
+
+	it("deep clones ordinary objects with a Temporal-like tag", () => {
+		const original = {
+			[Symbol.toStringTag]: "Temporal.Instant",
+			nested: { count: 1 }
+		}
+		const cloned = deepClone(original)
+		attest(cloned !== original).equals(true)
+		attest(cloned.nested !== original.nested).equals(true)
+		attest(cloned.nested.count).equals(1)
 	})
 
 	it("Date", () => {
