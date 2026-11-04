@@ -172,6 +172,8 @@ class NodeCache {
 	keyed: boolean | undefined
 	/** whether every alias it reaches has resolved */
 	reachedResolved: boolean | undefined
+	/** whether it reaches user code, through any alias */
+	reachesUserCode: boolean | undefined
 	shallowRefs: BaseNode[] | undefined
 	flatRefs: FlatRef[] | undefined
 	fullJson: JsonObject | undefined

@@ -20,7 +20,6 @@ import { intrinsic } from "../intrinsic.ts"
 import {
 	holdsSameChildren,
 	ioOf,
-	referencesThroughAliases,
 	type BaseNode,
 	type GettableKeyOrNode,
 	type KeyOrKeyNode
@@ -218,13 +217,28 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 
 const noSiblings: array<BaseConstraint> = []
 
-// a keyword's predicate isn't user code
-const callsUserCode = (node: BaseNode): boolean =>
-	node.userCode ||
-	(node.hasAlias &&
-		referencesThroughAliases(node.references).some(
-			reference => reference.userCode
-		))
+// a keyword's predicate isn't user code. a union's cases hold what its branches
+// do. every node finding none reaches none too, so a cycle is walked once
+const reachesUserCode = (root: BaseNode): boolean => {
+	const final = isResolutionFinal()
+	const reached = new Set<BaseNode>()
+	const reaches = (node: BaseNode): boolean => {
+		if (node.userCode) return true
+		if (!node.hasAlias || reached.has(node)) return false
+		if (node.c.reachesUserCode !== undefined) return node.c.reachesUserCode
+		reached.add(node)
+		const found =
+			node.is("alias") ?
+				reaches(node.resolution)
+			:	node.children.some(reaches) ||
+				(!node.is("union") && node.otherRefs.some(reaches))
+		if (found && final) node.c.reachesUserCode = true
+		return found
+	}
+	if (reaches(root)) return true
+	if (final) for (const node of reached) node.c.reachesUserCode = false
+	return false
+}
 
 // 0 compares data itself, 1 reads a primitive it points to, 2 walks an object
 const branchCost = (branch: BaseRoot): number => {
@@ -245,7 +259,7 @@ const orderedForAllows = (props: array<Prop.Node>): array<Prop.Node> => {
 	const flush = () =>
 		ordered.push(...run.sort((l, r) => allowsRank(l) - allowsRank(r)))
 	for (const prop of props) {
-		if (callsUserCode(prop.value)) {
+		if (reachesUserCode(prop.value)) {
 			flush()
 			ordered.push(prop)
 			run = []
