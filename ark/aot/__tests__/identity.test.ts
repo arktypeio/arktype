@@ -92,6 +92,15 @@ const definitions = {
 	Scoped: `scope({ S: { z: "string" } }).export().S`,
 	OtherScope: `$two.type({ z: "string" })`,
 	Defaulted: `type({ d: "string = 'x'" })`,
+	// equal JSON, which arktype keeps apart by how each reached its nodes
+	Tuple: `type(["number", "number", "...", "number[]", "number"])`,
+	Bounded: `type("number[]>=3")`,
+	Union: `type("false|null|undefined|0|''")`,
+	Units: `type("===", false, null, undefined, 0, "")`,
+	Pruned: `type("'foo'|'bar'|string|'baz'|/.*/")`,
+	String: `type("string")`,
+	Keys: `type("keyof", { foo: "string" })`,
+	Foo: `type("===", "foo")`,
 	MetaObject: `type("string").configure({ x: { y: 1 } } as never)`,
 	RegExpExample: `type("string").configure({ examples: [/a/] } as never)`,
 	StringExample: `type("string").configure({ examples: ["a"] } as never)`
@@ -146,9 +155,12 @@ console.log(JSON.stringify([...groups.values()].filter(group => group.length > 1
 })
 
 const partition = [
+	"BoundedA=BoundedB",
 	"ChainedLeftA=ChainedLeftB",
 	"DefaultedA=DefaultedB",
 	"DescribedA=DescribedB",
+	"FooA=FooB",
+	"KeysA=KeysB",
 	"KeywordA=KeywordB",
 	"LiteralA=LiteralB",
 	"NarrowA=NarrowB",
@@ -157,8 +169,13 @@ const partition = [
 	"OtherScopeA=OtherScopeB",
 	"PickedA=PickedB",
 	"PipeA=PipeB",
+	"PrunedA=PrunedB",
 	"RejectingA=RejectingB",
-	"StringExampleA=StringExampleB"
+	"StringA=StringB",
+	"StringExampleA=StringExampleB",
+	"TupleA=TupleB",
+	"UnionA=UnionB",
+	"UnitsA=UnitsB"
 ]
 
 const partitionOf = (stdout: string) => JSON.parse(stdout) as string[]

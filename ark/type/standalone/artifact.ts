@@ -99,6 +99,7 @@ import {
 	unitOf
 } from "./compilers.ts"
 import {
+	contentKeyOf,
 	encodeKey,
 	holeNameMarker,
 	holeNamePattern,
@@ -1094,7 +1095,7 @@ export class StandaloneArtifact {
 			$.isBuiltin ? $.name : scopeNameOf?.($)
 		)
 		return scopes.includes(undefined) ? undefined : (
-				`${keyOf(root)[0]} ${scopes.join()}`
+				`${keyOf(root)[0]} ${contentKeyOf(root)} ${scopes.join()}`
 			)
 	}
 
