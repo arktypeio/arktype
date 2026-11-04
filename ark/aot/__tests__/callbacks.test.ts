@@ -108,7 +108,7 @@ const D = type("string").describe(type("string").narrow(isLong).description)
 const E = type({ a: type("string").narrow(isLong) }).configure({ description: "selected" }, { where: n => n.toString().includes("is") })`
 		attest(statusesOf(source)).snap([
 			"3:11 rejected\n  `n.expression` (/main.ts:3:133) prints the name of `isLong` (/main.ts:2:16), which the build knows only by a placeholder",
-			"4:11 accepted { a: string & isLong$hole_yx1e5j0rpopfy }",
+			"4:11 accepted { a: string & isLong$hole_ms785y1cqugwq }",
 			"5:11 rejected\n  `node.expression` (/main.ts:5:57) prints the name of `isLong` (/main.ts:2:16), which the build knows only by a placeholder",
 			'6:11 rejected\n  `type("string").narrow(isLong).description` (/main.ts:6:35) prints the name of `isLong` (/main.ts:2:16), which the build knows only by a placeholder',
 			"7:11 rejected\n  `n.toString()` (/main.ts:7:107) prints the name of `isLong` (/main.ts:2:16), which the build knows only by a placeholder"
@@ -128,7 +128,7 @@ const C = type("string").narrow(s => ${nonStatic})`)
 		).snap([
 			'2:11 accepted "a"',
 			'3:11 rejected\n  arktype calls a function (/main.ts:3:36) while defining the type, so it must be a static helper\n  a function (/main.ts:3:36) is not a static helper: it runs `let result = "string"` (/main.ts:4:2), where a static helper declares only consts before one `return`',
-			"7:11 accepted string & fn$hole_13vjtm1qdc194"
+			"7:11 accepted string & fn$hole_bvgui20gqfe3l"
 		])
 	})
 

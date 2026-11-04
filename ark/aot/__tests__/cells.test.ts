@@ -1189,6 +1189,29 @@ console.log(String(User({ name: "x" })))
 			attest(behaviorOf(js)).snap("name must be valid according to isLong\n")
 		})
 
+		// the id it's compared by holds its function's name, which it keeps
+		const compared = fixture("rewrittenRead", {
+			"name.ts": named,
+			"main.ts": `import { type } from "arktype"
+import { Name } from "./name.ts"
+
+const schemas = { name: Name }
+const key = ["name"][0]
+const User = type({ name: schemas[key] })
+
+console.log(String(User({ name: "x" })))
+`
+		})
+
+		for (const opts of [{}, { prune: false }]) {
+			it(`is the Type another module's site compares, ${JSON.stringify(opts)}`, async () => {
+				const js = await viteBundle(compared, opts, {
+					plugins: [rewriting(code => code.split("\n").join("\n\n"))]
+				})
+				attest(behaviorOf(js)).snap("name must be valid according to isLong\n")
+			})
+		}
+
 		it("fails where it can't tell which function is which", async () => {
 			const message = await viteBundle(
 				root,

@@ -172,7 +172,7 @@ contextualize(() => {
 			)
 		).snap({
 			Thing:
-				"Thing holds Function(check$hole_1i84hkb1ixvhzv), which the playground can't trace to where Thing reads it"
+				"Thing holds Function(check$hole_1nchete1wdwtvu), which the playground can't trace to where Thing reads it"
 		})
 	})
 })

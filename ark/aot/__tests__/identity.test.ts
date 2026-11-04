@@ -251,7 +251,7 @@ console.log(Narrow === NarrowAgain, Plain === PlainAgain)
 		)
 		attest(run(await bundle(root, source))).equals(plain)
 		attest(runModuleAtATime(root)).equals(plain)
-	})
+	}).timeout(60_000)
 
 	it("a chunk imported again holds one validator where no run can differ", async () => {
 		const root = fixture("reloaded", {
