@@ -137,6 +137,8 @@ export interface HoleCell {
 }
 
 export interface HoleCells {
+	// what the program's factories compare, the only ids a validator must hold
+	comparedIds: ReadonlySet<string>
 	byHole: Map<unknown, HoleCell>
 	byPlaceholder: Map<string, HoleCell>
 	// each default morph a module of its own can write, by its content

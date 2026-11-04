@@ -971,6 +971,169 @@ console.log(Team.allows({ lead: { name: "abc" }, members: [] }))
 		}
 	})
 
+	describe("what a validator holds of its id", () => {
+		const root = fixture("comparedIds", {
+			"containers.ts": `import { type } from "arktype"
+export const H = { a: type("string") }
+export const Other = type("number")
+`,
+			"main.ts": `import { type } from "arktype"
+import { H, Other } from "./containers.ts"
+
+const T = type({ x: H.a })
+console.log(T.allows({ x: "a" }), Other.allows(1))
+`
+		})
+
+		it("is nothing where no read compares it", async () => {
+			const js = await esbuildBundle(root)
+			attest(behaviorOf(js)).equals("true true\n")
+			attest(/^var Other = [^"]*$/m.test(js)).equals(true)
+		})
+
+		it("is compared where a read of a holder does", async () => {
+			const js = await esbuildBundle(root)
+			// a write the build couldn't see, as code it doesn't read may make
+			const written = js.replace(/^var T = /m, "H.a = Other\n$&")
+			attest(behaviorOf(written)).equals(
+				"Error: `H.a` is another Type, but was precompiled as the Type it was at build"
+			)
+		})
+	})
+
+	describe("a configured program", () => {
+		const root = fixture("configuredInPlace", {
+			"config.ts": `import { configure } from "arktype/config"
+
+configure({ onUndeclaredKey: "delete" })
+`,
+			"main.ts": `import "./config.ts"
+import { type } from "arktype"
+
+export const T = type({ a: "string" })
+export const Unread = type({ b: "number" })
+console.log(JSON.stringify(T({ a: "a", c: 1 })))
+`
+		})
+		const opts = { config: "config.ts" }
+
+		for (const [name, preset] of Object.entries({
+			default: {},
+			smallest: { preset: "smallest" as const }
+		})) {
+			it(`creates a Type after its module fixes the config, in a ${name} build`, async () => {
+				const js = await esbuildBundle(root, { ...opts, ...preset })
+				attest(
+					/^var T = (?:\/\* @__PURE__ \*\/ )?create\w+\(/m.test(js)
+				).equals(true)
+				attest(js.indexOf("fixConfigured(") < js.indexOf("var T = ")).equals(
+					true
+				)
+				attest(behaviorOf(js)).equals(
+					behaviorOf(await esbuildBundle(root, { ...opts, prune: false }))
+				)
+			})
+		}
+	})
+
+	describe("a default holding a cycle", () => {
+		itBehavesAsWhole(
+			"shares its morph where the cycle's the same, and not where it isn't",
+			{
+				"main.ts": `import { scope, type } from "arktype"
+
+const makeTrees = () => []
+const { Tree } = scope({ Tree: { name: "string", "children?": "Tree[]" } }).export()
+const { Tree: Other } = scope({ Tree: { name: "number", "children?": "Tree[]" } }).export()
+const A = type({ trees: Tree.array().default(makeTrees) })
+const B = type({ trees: Tree.array().default(makeTrees) })
+const C = type({ trees: Other.array().default(makeTrees) })
+const D = type({ trees: Tree.array().default(() => []) })
+console.log(JSON.stringify([A({}), B({}), C({}), D({})]))
+console.log(String(A({ trees: [{ name: 1 }] })), String(C({ trees: [{ name: "a" }] })))
+`
+			},
+			{ cells: true }
+		)
+
+		itBehavesAsWhole(
+			"tells apart the narrows of cycles of the same shape",
+			{
+				"main.ts": `import { scope, type } from "arktype"
+
+const isLong = (s: string) => s.length > 2
+const isShort = (s: string) => s.length < 2
+const makeTrees = () => []
+const long = type("string").narrow(isLong)
+const short = type("string").narrow(isShort)
+const { Tree: Long } = scope({ Name: long, Tree: { name: "Name", "children?": "Tree[]" } }).export()
+const { Tree: Short } = scope({ Name: short, Tree: { name: "Name", "children?": "Tree[]" } }).export()
+const A = type({ trees: Long.array().default(makeTrees) })
+const B = type({ trees: Short.array().default(makeTrees) })
+console.log(String(A({ trees: [{ name: "abc" }] })), String(B({ trees: [{ name: "abc" }] })))
+console.log(String(A({ trees: [{ name: "a" }] })), String(B({ trees: [{ name: "a" }] })))
+`
+			},
+			{ cells: true }
+		)
+	})
+
+	it("drops a site what it checks only compares for", async () => {
+		const js = await esbuildBundle(
+			fixture("comparesOnly", {
+				"containers.ts": `import { type } from "arktype"
+export const H = { a: type("string"), b: type("number") }
+`,
+				"main.ts": `import { type } from "arktype"
+import { H } from "./containers.ts"
+
+const Unread = type({ dropped: H.a })
+const Read = type({ kept: H.b })
+console.log(Read.allows({ kept: 1 }))
+`
+			})
+		)
+		attest(js.includes("dropped")).equals(false)
+		attest(js.includes("kept")).equals(true)
+	})
+
+	describe("what reads its node", () => {
+		const onFail = `import { configure } from "arktype/config"
+
+configure({ onFail: errors => \`failed: \${errors.summary}\` })
+`
+
+		for (const [name, opts, config] of [
+			["default", {}, ""],
+			["smallest", { preset: "smallest" as const }, ""],
+			["configured", { config: "config.ts" }, onFail]
+		] as const) {
+			itBehavesAsWhole(
+				`behaves as whole, in a ${name} build`,
+				{
+					"config.ts": config,
+					"main.ts": `${config && 'import "./config.ts"\n'}import { type, scope } from "arktype"
+
+const Contextual = type("string").narrow((s, ctx) => s.length > 2 || ctx.mustBe("long"))
+const Morphed = type("string").pipe(s => s.length)
+const Throws = type("string").pipe.try(s => JSON.parse(s))
+const { Cyclic } = scope({ Cyclic: { "next?": "Cyclic", n: "number = 1" } }).export()
+const tell = (out: unknown) => console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
+tell(Contextual("abc"))
+tell(Contextual("a"))
+tell(Morphed("abc"))
+tell(Morphed(1))
+tell(Throws("{"))
+tell(Cyclic({ next: {} }))
+tell(Cyclic({ next: { n: "a" } }))
+tell([Contextual, Morphed, Cyclic].map(T => T.allows("abc")))
+`
+				},
+				{ cells: true, opts }
+			)
+		}
+	})
+
 	describe("a module a plugin ahead of arktype's rewrote after the scan read it", () => {
 		const rewriting = (rewrite: (code: string) => string): VitePlugin => ({
 			name: "rewriting",
@@ -1006,6 +1169,29 @@ console.log(String(User({ name: "x" })))
 				{
 					plugins: [
 						rewriting(code => code.replace("isLong)", "s => s.length > 2)"))
+					]
+				}
+			).then(
+				() => "",
+				(e: Error) => e.message
+			)
+			attest(message.includes(writeUnscannedCellsMessage("name.ts"))).equals(
+				true
+			)
+		})
+
+		it("fails where a function no longer reads only its argument", async () => {
+			const message = await viteBundle(
+				root,
+				{},
+				{
+					plugins: [
+						rewriting(code =>
+							code.replace(
+								"(s: string) => s.length > 2",
+								"function (s: string) { return arguments.length > 1 && s.length > 2 }"
+							)
+						)
 					]
 				}
 			).then(

@@ -72,6 +72,7 @@ export {
 	configure,
 	configuredFallbackOf,
 	configuredWriterOf,
+	copyDeclared,
 	copyOf,
 	describeCollapsibleDate,
 	describePredicate,
@@ -1080,12 +1081,12 @@ export const checkHeld = (
 // kept off the value so a program can't read it
 const holesByValue = new WeakMap<
 	object,
-	[id: string, holes: readonly unknown[]]
+	[id: string | undefined, holes: readonly unknown[]]
 >()
 
 export const holdHoles = (<value extends object>(
 	value: value,
-	id: string,
+	id?: string,
 	holes: readonly unknown[] = []
 ): value => {
 	holesByValue.set(value, [id, freeze(holes)])

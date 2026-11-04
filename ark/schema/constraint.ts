@@ -109,7 +109,7 @@ export abstract class InternalPrimitiveConstraint<
 	}
 
 	/** `errorCtx`, once read */
-	declare private _errorCtx: d["errorCtx"] | undefined
+	private _errorCtx: d["errorCtx"] | undefined
 	/** the context of the error it reports when data fails it */
 	get errorCtx(): d["errorCtx"] {
 		return (this._errorCtx ??= {

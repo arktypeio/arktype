@@ -16,6 +16,8 @@ export interface RootApplier {
 	failure?: keyof typeof failureSources
 	// reads a name its module declares, so it can't be shared
 	local?: boolean
+	// a function V8 specializes for one root, so a creator can't hold it for many
+	ownsCalls?: boolean
 }
 
 /** how a validator is written: what's read of it, and what it's created from */
@@ -52,7 +54,13 @@ export const fusedApplierOf = (
 	applied: string | RootApplier
 ): RootApplier | undefined => {
 	const { members, reads, ownsValidator, unconfigured } = form
-	if (typeof applied !== "object" || form.isTemplate || form.byRuntime) return
+	if (
+		typeof applied !== "object" ||
+		form.isTemplate ||
+		form.byRuntime ||
+		(applied.ownsCalls && !baking.shortest)
+	)
+		return
 	const fuses =
 		/^(?:\[|{ 0: )?allows\b/.test(applied.params) ?
 			baking.shortest || (!ownsValidator && !applied.local)
@@ -85,7 +93,7 @@ export const madeApplierOf = (
 		!form.ownsValidator &&
 		!form.isTemplate &&
 		typeof applied === "object" &&
-		allows === `${applied.args}[0]` &&
+		(allows === `${applied.args}[0]` || allows === `${applied.args}.allows`) &&
 		!form.byRuntime
 	) ?
 		applied
@@ -93,7 +101,7 @@ export const madeApplierOf = (
 
 // the attributes a validator is created with, as its creator takes them
 export const writtenAttributesOf = (
-	baking: Baking,
+	writesId: boolean,
 	form: ValidatorForm,
 	attributes: string[],
 	meta: string | undefined,
@@ -102,7 +110,7 @@ export const writtenAttributesOf = (
 	// a creator defaults an empty-meta validator's attributes, so a site needs only imports
 	(
 		!form.isTemplate &&
-		!baking.holdsIds &&
+		!writesId &&
 		!onFail &&
 		!form.byRuntime &&
 		attributes.length === 1 &&
@@ -151,8 +159,9 @@ export const frozen = (baking: Baking, expression: string): string =>
 // what a creator's source is decided by, beyond the validator's form
 interface CreatorForm extends ValidatorForm {
 	applier: RootApplier | undefined
-	// whether the creator is passed a make and the parts it creates its root apply from
-	makes: boolean
+	// whether the creator is passed a make and what it creates its root apply
+	// from: an array of parts, or its node
+	makes: CreatedFrom | undefined
 	keepsMeta: boolean
 	// a meta reads no onFail a build without config knows it lacks
 	configured: boolean
@@ -169,11 +178,13 @@ interface CreatorForm extends ValidatorForm {
 	allowsOf: string
 }
 
+export type CreatedFrom = "parts" | "node"
+
 const creatorFormOf = (
 	baking: Baking,
 	form: ValidatorForm,
 	applier: RootApplier | undefined,
-	makes: boolean
+	makes: CreatedFrom | undefined
 ): CreatorForm => {
 	const { members, ownsValidator, unconfigured, reads } = form
 	const piped = reads.piped && form.pipes
@@ -222,7 +233,12 @@ const creatorFormOf = (
 		isCalled,
 		isApply: precise === "apply",
 		assertion,
-		allowsOf: frozen(baking, ownsValidator || makes ? "parts[0]" : "allows")
+		allowsOf: frozen(
+			baking,
+			makes === "node" ? "parts.allows"
+			: ownsValidator || makes ? "parts[0]"
+			: "allows"
+		)
 	}
 }
 
@@ -318,7 +334,7 @@ export const creatorSourceOf = (
 	baking: Baking,
 	form: ValidatorForm,
 	applier: RootApplier | undefined,
-	makes: boolean
+	makes: CreatedFrom | undefined
 ): [params: string, body: string] => {
 	const creator = creatorFormOf(baking, form, applier, makes)
 	return [

@@ -2306,6 +2306,36 @@ age must be a number`)
 		).throws("Cannot assign to read only property 'name'")
 	})
 
+	it("copies an instance deleting undeclared keys, keeping what it declares", async () => {
+		const symbol = Symbol("undeclared")
+		class Named {
+			name = " n "
+			extra = 1;
+			[symbol] = 2
+		}
+		const input = Object.defineProperty(new Named(), "note", {
+			value: "kept",
+			enumerable: false
+		})
+		const { T } = await load({
+			T: type({ "+": "delete", name: "string.trim", "note?": "string" })
+		})
+		const out = T(input)
+		attest(out === input).equals(false)
+		attest(Object.getPrototypeOf(out)).is(Named.prototype)
+		attest(Object.getOwnPropertySymbols(out)).equals([])
+		attest(Object.keys(out)).equals(["name", "note"])
+		attest(out.note).equals("kept")
+		attest(input.name).equals(" n ")
+		attest(input.extra).equals(1)
+		// nothing to delete or write leaves it as it is
+		class Exact {
+			name = "n"
+		}
+		const exact = new Exact()
+		attest(T(exact)).is(exact)
+	})
+
 	it("mutatesInput copies to delete keys", async () => {
 		const exports = {
 			Strict: type({
