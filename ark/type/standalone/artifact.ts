@@ -3138,7 +3138,8 @@ return namespace`
 		return this.readSharedValue("default", () => {
 			const isRead = this.runtimeReadRoots.has(value)
 			this.runtimeReadRoots.add(value)
-			const validator = isTraversed ? this.writeValidator(value) : "void 0"
+			const validator =
+				isTraversed ? this.writeValidator(value).created() : "void 0"
 			if (!isRead) this.runtimeReadRoots.delete(value)
 			const input =
 				isThunkInput ?

@@ -265,6 +265,32 @@ console.log(out instanceof type.errors ? out.summary : out)
 		)
 	})
 
+	it("sets a cell as its module loads, before a first call elsewhere reads it", async () => {
+		const program = {
+			"narrowed.ts": `import { type } from "arktype"
+export const Narrowed = type("string").narrow(s => s.length > 2)
+${typesOf(large)}
+`,
+			"above.ts": `import { type } from "arktype"
+import { Narrowed } from "./narrowed.ts"
+export const Above = type({ name: Narrowed })
+`,
+			"main.ts": `import { type } from "arktype"
+import { Above } from "./above.ts"
+import { Narrowed } from "./narrowed.ts"
+const show = out => out instanceof type.errors ? out.summary : JSON.stringify(out)
+console.log(show(Above({ name: "abc" })), show(Above({ name: "x" })), show(Narrowed("x")))
+`
+		}
+		const eagerBundle = await bundleOf(program, { defers: false })
+		const deferredBundle = await bundleOf(program)
+		attest(deferredBundle === eagerBundle).equals(false)
+		attest(/\bsethole\w+\(/.test(deferredBundle)).equals(true)
+		const eager = runBundle(eagerBundle)
+		attest(runBundle(deferredBundle).stdout).equals(eager.stdout)
+		attest(eager.stdout.includes('{"name":"abc"}')).equals(true)
+	})
+
 	it("checks what a site reads as its module loads, before any first call", async () => {
 		const program = {
 			"key.ts": `export const key = "a"\n`,
