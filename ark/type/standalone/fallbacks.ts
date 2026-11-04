@@ -344,7 +344,9 @@ export type WriteHandler = (code: string, call?: number) => string | undefined
 export const writeReplay = (
 	trace: FallbackTrace,
 	writeValue: (value: unknown) => string,
-	handlerOf: WriteHandler
+	handlerOf: WriteHandler,
+	// what reads a literal, or what's only in scope in the replay
+	read: (text: string, isLocal?: boolean) => string
 ): string | undefined => {
 	const { steps, arrays } = trace
 	const defaults = new Set(
@@ -382,7 +384,7 @@ export const writeReplay = (
 	const isDefault = (ref: Ref) => "hole" in ref && defaults.has(ref.hole)
 
 	const expressionOf = (ref: Ref): string =>
-		"hole" in ref ? `h${ref.hole}`
+		"hole" in ref ? read(`h${ref.hole}`, true)
 		: "object" in ref ? objectAt(ref.object)
 		: writeValue(ref.value)
 
@@ -392,23 +394,28 @@ export const writeReplay = (
 			statements.push(`const o${id} = ${literalOf(id)}`)
 			written[id] = states[id]
 		}
-		return `o${id}`
+		return read(`o${id}`, true)
 	}
 
 	const literalOf = (id: number): string => {
 		const entries = states[id]
-		if (arrays[id])
-			return `[${entries.map(entry => expressionOf((entry as { ref: Ref }).ref)).join(", ")}]`
-		return `{ ${entries
-			.map(entry => {
-				if ("spread" in entry) return `...h${entry.spread}`
-				const value = expressionOf(entry.ref)
-				const key = keyText(entry.key)
-				return isDefault(entry.ref) ?
-						`...(${value} !== void 0 && { ${key}: ${value} })`
-					:	`${key}: ${value}`
-			})
-			.join(", ")} }`
+		if (arrays[id]) {
+			return read(
+				`[${entries.map(entry => expressionOf((entry as { ref: Ref }).ref)).join(", ")}]`
+			)
+		}
+		return read(
+			`{ ${entries
+				.map(entry => {
+					if ("spread" in entry) return read(`...h${entry.spread}`, true)
+					const value = expressionOf(entry.ref)
+					const key = keyText(entry.key)
+					return isDefault(entry.ref) ?
+							`...(${value} !== void 0 && { ${key}: ${value} })`
+						:	`${key}: ${value}`
+				})
+				.join(", ")} }`
+		)
 	}
 
 	const assignKey = (target: string, key: string, ref: Ref) => {

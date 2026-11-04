@@ -1439,7 +1439,8 @@ export type writeUnbakedMessage<reason extends string> =
 
 // json is shared between nodes, so frozen deeply
 export const deepFreeze = <t>(value: t): t => {
-	if (value && typeof value === "object")
+	// what it holds more than once is frozen where it's made
+	if (value && typeof value === "object" && !Object.isFrozen(value))
 		for (const k in freeze(value)) deepFreeze(value[k])
 	return value
 }

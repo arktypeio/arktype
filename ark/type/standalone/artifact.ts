@@ -171,6 +171,9 @@ import {
 	keywordMetas,
 	runtimePathsByValue,
 	totalBaked,
+	DataParts,
+	type DataPart,
+	type DataPartModule,
 	writeBakedLimitMessage,
 	writeUnprecompilableMessage,
 	type BakedLengths,
@@ -217,6 +220,29 @@ interface WrittenValidator {
 interface WriteDataOptions {
 	// collects the functions, Dates and bigints a schema holds
 	values?: unknown[]
+	// what it adds to, whose text then reads what it holds by reference
+	parts?: DataParts
+}
+
+// what writing a part of a Type's data once declares, and how it's read
+interface DataPartWriter {
+	prefix: string
+	valueOf: (text: string) => string
+	declarationOf: (name: string, value: string) => string
+	readsRuntime: boolean
+	// where a part reading what's beside its validator goes, else it's
+	// written where it's read
+	declareLocal?: (value: string) => string
+	// reading it in a module of its own
+	readIn: (name: string) => string
+	// reading it beside its validator
+	read: (specifier: string, name: string) => string
+}
+
+// a JSON Schema's writer, whose text reads a Type's DataParts by reference
+interface JsonSchemaWriter {
+	text: string
+	values: unknown[]
 }
 
 interface Declarations {
@@ -1149,15 +1175,20 @@ export class StandaloneArtifact {
 	): string {
 		this.receive(params)
 		this.writeSharedUnits()
+		const parts = new DataParts()
 		const value = this.baked(member, () =>
 			member === "toJsonSchema" ?
-				this.writeJsonSchema(
-					type,
-					() => {
-						if (thrown) throw thrown
-						return data
-					},
-					{ isRead: true }
+				this.writeDataParts(
+					parts,
+					this.writeJsonSchema(
+						type,
+						() => {
+							if (thrown) throw thrown
+							return data
+						},
+						{ isRead: true, parts }
+					),
+					this.jsonSchemaParts
 				)
 			: member === "expression" ? this.emitExpression(type)
 			: member === "description" ? this.emitDescription(type)
@@ -2134,54 +2165,76 @@ return namespace`
 			if (bakes("toJSON"))
 				members.push(`toJSON: ${frozen(this.baking, `() => ${json}`)}`)
 		}
+		// its schemas for each target and their replays hold much alike, so all
+		// are written before any is declared
+		const parts = new DataParts()
+		const writerOf = (write: () => unknown): JsonSchemaWriter => {
+			const values: unknown[] = []
+			const text = this.writeJsonSchemaWriter(root, write, values, parts)
+			return { text, values }
+		}
 		const standard =
-			bakes("~standard.jsonSchema") &&
-			this.baked("~standard.jsonSchema", () =>
-				(["input", "output"] as const).map(
-					io =>
-						`[${supportedJsonSchemaTargets.map(target => this.emitJsonSchema(root, () => root["~standard"].jsonSchema[io]({ target }))).join(", ")}]`
-				)
-			)
-		if (bakes("toJsonSchema")) {
-			const written = this.baked("toJsonSchema", () =>
-				this.emitJsonSchema(root, () => root.toJsonSchema())
-			)
-			// only targets whose text is already baked
-			const byTarget = supportedJsonSchemaTargets.map(
-				target =>
-					this.jsonSchemaNameOf(
-						this.writeJsonSchemaWriter(root, () =>
-							root.toJsonSchema({ target })
-						)
-					) ?? 0
-			)
-			const ignoresFallback = this.writesWithoutFallback(root)
-			// where code may pass it options, as the build sees code do where it
-			// bakes ~standard.jsonSchema with it, a call's fallback writes the
-			// default and each target whose text is baked
-			const replays =
-				!ignoresFallback &&
-				(bakes("~standard.jsonSchema") ||
-					this.baking.members.has("toJsonSchema")) &&
-				this.baked("toJsonSchema", () =>
-					[
-						...byTarget.map((name, i) =>
-							name === 0 ? 0 : supportedJsonSchemaTargets[i]
-						),
-						undefined
-					].map(target =>
-						target === 0 ? 0 : (this.emitReplay(root, target) ?? 0)
+			bakes("~standard.jsonSchema") ?
+				(["input", "output"] as const).map(io =>
+					supportedJsonSchemaTargets.map(target =>
+						writerOf(() => root["~standard"].jsonSchema[io]({ target }))
 					)
 				)
-			members.push(
-				replays && replays.some(Boolean) ?
-					`toJsonSchema: runtime.replayedJsonSchema(${written}, [${byTarget.join(", ")}], [${replays.join(", ")}])`
-				:	`toJsonSchema: runtime.bakedJsonSchema(${written}, [${byTarget.join(", ")}]${ignoresFallback ? ", 1" : ""})`
-			)
+			:	[]
+		const written = bakes("toJsonSchema") && writerOf(() => root.toJsonSchema())
+		const bakedTexts = new Set(
+			[written || [], ...standard].flat().map(({ text }) => text)
+		)
+		// only targets whose text is already baked
+		const targets =
+			written ?
+				supportedJsonSchemaTargets.map(target => {
+					const { text } = writerOf(() => root.toJsonSchema({ target }))
+					return bakedTexts.has(text) ? text : undefined
+				})
+			:	[]
+		const ignoresFallback = written && this.writesWithoutFallback(root)
+		// where code may pass it options, as the build sees code do where it
+		// bakes ~standard.jsonSchema with it, a call's fallback writes the
+		// default and each target whose text is baked
+		const replays =
+			(
+				written &&
+				!ignoresFallback &&
+				(bakes("~standard.jsonSchema") ||
+					this.baking.members.has("toJsonSchema"))
+			) ?
+				this.baked("toJsonSchema", () => [
+					...supportedJsonSchemaTargets.map(
+						(target, i) => targets[i] && this.writeReplayOf(root, target, parts)
+					),
+					this.writeReplayOf(root, undefined, parts)
+				])
+			:	[]
+		const writerText = (text: string) =>
+			this.writeDataParts(parts, text, this.jsonSchemaParts)
+		const declare = ({ text, values }: JsonSchemaWriter) =>
+			this.declareJsonSchema(writerText(text), values)
+		const standardWriters = this.baked("~standard.jsonSchema", () =>
+			standard.map(writers => `[${writers.map(declare).join(", ")}]`)
+		)
+		if (written) {
+			this.baked("toJsonSchema", () => {
+				const writtenName = declare(written)
+				const byTarget = targets.map(text =>
+					text ? this.jsonSchemaNameOf(writerText(text)) : 0
+				)
+				const replayed = replays.map(replay => (replay ? declare(replay) : 0))
+				members.push(
+					replayed.some(Boolean) ?
+						`toJsonSchema: runtime.replayedJsonSchema(${writtenName}, [${byTarget.join(", ")}], [${replayed.join(", ")}])`
+					:	`toJsonSchema: runtime.bakedJsonSchema(${writtenName}, [${byTarget.join(", ")}]${ignoresFallback ? ", 1" : ""})`
+				)
+			})
 		}
-		if (standard) {
+		if (standardWriters.length) {
 			members.push(
-				`"~standard": { jsonSchema: runtime.bakedStandardJsonSchema(${standard.join(", ")}) }`
+				`"~standard": { jsonSchema: runtime.bakedStandardJsonSchema(${standardWriters.join(", ")}) }`
 			)
 		}
 		return members
@@ -2241,15 +2294,89 @@ return namespace`
 
 	// nodes share json unless it prints a hole
 	readJson(root: BaseRoot): string {
-		const value = `runtime.deepFreeze(${this.writeData(uncountedJsonOf(root.json))})`
-		this.countBaked(value)
+		const parts = new DataParts()
+		const written = this.writeData(uncountedJsonOf(root.json), { parts })
+		const writer: DataPartWriter = {
+			prefix: "json",
+			valueOf: text => `runtime.deepFreeze(${text})`,
+			declarationOf: (name, value) =>
+				writeValue(this.baking.hoisted, name, value),
+			readsRuntime: true,
+			declareLocal: value =>
+				this.declarations.namesByValue.get(value) ??
+				this.declareConst(value, "json", value),
+			readIn: name => this.readValue(name),
+			read: (specifier, name) =>
+				this.read(specifier, name, name, this.readValue(name))
+		}
 		if (holdsLocal(root.json)) {
+			const value = writer.valueOf(this.writeDataParts(parts, written, writer))
+			this.countBaked(value)
 			return (
 				this.declarations.namesByValue.get(root.json) ??
 				this.declareConst(root.json, "json", value)
 			)
 		}
-		return this.readConstant(`json${hashOf(value)}`, value)
+		// its module imports what it holds, as what's read here can't
+		const name = this.dataPartsOf(parts, writer).declare(parts.at(written))
+		return writer.read(this.specifierOf(name), name)
+	}
+
+	// each part of data its text repeats, declared once
+	private writeDataParts(
+		parts: DataParts,
+		text: string,
+		writer: DataPartWriter
+	): string {
+		return parts.write(text, this.dataPartsOf(parts, writer).read)
+	}
+
+	private dataPartsOf(parts: DataParts, writer: DataPartWriter) {
+		const moduleOf = (part: DataPart): DataPartModule => {
+			if (part.module) return part.module
+			const imports: Record<string, string[]> = {}
+			const held: DataPart[] = []
+			const value = writer.valueOf(
+				parts.write(part.text, heldPart => {
+					const { name } = moduleOf(heldPart)
+					imports[this.specifierOf(name)] = [name]
+					held.push(heldPart)
+					return writer.readIn(name)
+				})
+			)
+			return (part.module = {
+				name: `${writer.prefix}${hashOf(value)}`,
+				value,
+				imports,
+				held
+			})
+		}
+		const declare = (part: DataPart): string => {
+			const { name, value, imports, held } = moduleOf(part)
+			if (!part.isDeclared) {
+				part.isDeclared = true
+				for (const heldPart of held) declare(heldPart)
+				this.countBaked(value)
+				this.share(
+					name,
+					writer.declarationOf(name, value),
+					imports,
+					writer.readsRuntime
+				)
+			}
+			return name
+		}
+		const read = (part: DataPart): string | undefined => {
+			if (part.local) {
+				if (!writer.declareLocal) return
+				const value = writer.valueOf(parts.write(part.text, read))
+				this.countBaked(value)
+				return writer.declareLocal(value)
+			}
+			const name = declare(part)
+			return writer.read(this.specifierOf(name), name)
+		}
+		return { declare, read }
 	}
 
 	share(
@@ -2319,20 +2446,13 @@ return namespace`
 		return failure ? { [this.declareFailure(failure)]: [failure] } : {}
 	}
 
-	emitJsonSchema(root: BaseRoot, write: () => unknown): string {
-		const values: unknown[] = []
-		return this.declareJsonSchema(
-			this.writeJsonSchemaWriter(root, write, values),
-			values
-		)
-	}
-
 	// toJsonSchema() with the fallback a call passes, where arktype doesn't
 	// read what one returns
-	emitReplay(
+	writeReplayOf(
 		root: BaseRoot,
-		target: ToJsonSchema.Target | undefined
-	): string | undefined {
+		target: ToJsonSchema.Target | undefined,
+		parts: DataParts
+	): JsonSchemaWriter | undefined {
 		const write = (opts: TracedOptions) =>
 			root.toJsonSchema(target ? { target, ...opts } : opts)
 		let trace: FallbackTrace | undefined
@@ -2351,20 +2471,21 @@ return namespace`
 		const values: unknown[] = []
 		let replay: string | undefined
 		try {
-			replay = this.replayOf(trace, root, write, values)
+			replay = this.replayOf(trace, root, write, values, parts)
 		} catch (e) {
 			// e.g. a context holding a symbol key
 			if (e instanceof ParseError) return
 			throw e
 		}
-		return replay && this.declareJsonSchema(replay, values)
+		return replay ? { text: parts.add(replay), values } : undefined
 	}
 
 	private replayOf(
 		trace: FallbackTrace,
 		root: BaseRoot,
 		write: (opts: TracedOptions) => unknown,
-		values: unknown[]
+		values: unknown[],
+		parts: DataParts
 	): string | undefined {
 		const configured = root.$.cfg.toJsonSchema.fallback
 		const firstCalls = new Map<string, number>()
@@ -2374,7 +2495,7 @@ return namespace`
 		}
 		return writeReplay(
 			trace,
-			value => this.writeData(value, { values }),
+			value => this.writeData(value, { values, parts }),
 			(code, call) => {
 				// the config module's, which configure() keeps as the program runs
 				if (
@@ -2405,7 +2526,8 @@ return namespace`
 						[]
 					)
 				}
-			}
+			},
+			(text, isLocal) => parts.add(text, undefined, isLocal)
 		)
 	}
 
@@ -2433,9 +2555,26 @@ return namespace`
 	writeJsonSchemaWriter(
 		root: BaseRoot,
 		write: () => unknown,
-		values?: unknown[]
+		values: unknown[],
+		parts: DataParts
 	): string {
-		return `() => ${this.writeJsonSchema(root, write, { values })}`
+		return `() => ${this.writeJsonSchema(root, write, { values, parts })}`
+	}
+
+	// a part is read from a function, so each read has objects of its own
+	get jsonSchemaParts(): DataPartWriter {
+		return {
+			prefix: "schema",
+			valueOf: text => text,
+			declarationOf: (name, value) =>
+				writeFunction(this.baking, name, "", `\treturn ${value}`, false),
+			readsRuntime: false,
+			readIn: name => `${name}()`,
+			read: (specifier, name) => {
+				this.importName(specifier, name)
+				return `${name}()`
+			}
+		}
 	}
 
 	// a schema read only via a validator throws where it's read
@@ -2444,8 +2583,9 @@ return namespace`
 		write: () => unknown,
 		{
 			isRead = false,
-			values = []
-		}: { isRead?: boolean; values?: unknown[] | undefined }
+			values = [],
+			parts
+		}: { isRead?: boolean; values?: unknown[]; parts: DataParts }
 	): string {
 		try {
 			assertBakeableJsonSchema(root)
@@ -2471,7 +2611,7 @@ return namespace`
 					`${writeUnprecompilableMessage("a JSON Schema whose writing throws")}: ${String(e)}`
 				)
 			}
-			return `(${this.writeData(schema)})`
+			return `(${this.writeData(schema, { parts })})`
 		} catch (e) {
 			if (isRead || !(e instanceof ParseError)) throw e
 			return `runtime.throwUnbaked(${JSON.stringify(e.message)})`
@@ -2487,9 +2627,15 @@ return namespace`
 				(hasDomain(value, "object") && isDateObject(value)))
 		) {
 			opts.values.push(value)
-			return this.emit(value)
+			const text = this.emit(value)
+			return opts.parts ? opts.parts.add(text, undefined, true) : text
 		}
-		if (typeof value === "string") return this.emitString(value)
+		if (typeof value === "string") {
+			const text = this.emitString(value)
+			return opts.parts && value.includes(holeNameMarker) ?
+					opts.parts.add(text, undefined, true)
+				:	text
+		}
 		if (value === undefined) return "void 0"
 		if (
 			value === null ||
@@ -2497,6 +2643,8 @@ return namespace`
 			typeof value === "boolean"
 		)
 			return printablePrimitive(value)
+		const written = opts.parts?.writtenAs(value as object)
+		if (written) return written
 		const prototype = hasDomain(value, "object") && prototypeOf(value)
 		const isPlainArray = prototype === Array.prototype && Array.isArray(value)
 		if (
@@ -2513,15 +2661,19 @@ return namespace`
 				)
 			)
 		}
+		let text: string
 		if (isPlainArray)
-			return `[${(value as unknown[]).map(v => this.writeData(v, opts)).join(", ")}]`
-		const entries = Object.entries(value as object).map(
-			// a __proto__ key would set an object literal's prototype
-			([k, v]) =>
-				`${k === "__proto__" ? `["__proto__"]` : JSON.stringify(k)}: ${this.writeData(v, opts)}`
-		)
-		if (prototype === null) entries.unshift("__proto__: null")
-		return `{ ${entries.join(", ")} }`
+			text = `[${(value as unknown[]).map(v => this.writeData(v, opts)).join(", ")}]`
+		else {
+			const entries = Object.entries(value as object).map(
+				// a __proto__ key would set an object literal's prototype
+				([k, v]) =>
+					`${k === "__proto__" ? `["__proto__"]` : JSON.stringify(k)}: ${this.writeData(v, opts)}`
+			)
+			if (prototype === null) entries.unshift("__proto__: null")
+			text = `{ ${entries.join(", ")} }`
+		}
+		return opts.parts ? opts.parts.add(text, value as object) : text
 	}
 
 	emitRootApply(
@@ -3541,11 +3693,22 @@ const countedReference = new RegExp(
 	`^(${registryName.replace("$", "\\$")}\\.[\\w$]+?)\\$[1-9]\\d*$`
 )
 
-const uncountedJsonOf = (json: unknown): unknown =>
-	typeof json === "string" ? json.replace(countedReference, "$1")
-	: Array.isArray(json) ? json.map(uncountedJsonOf)
-	: hasDomain(json, "object") ?
-		flatMorph(json, (k, v) => [k, uncountedJsonOf(v)])
-	:	json
+const uncountedJsonOf = (
+	json: unknown,
+	// a node's json holds a reference's, however many times it's referenced
+	seen = new Map<unknown, unknown>()
+): unknown => {
+	if (typeof json === "string") return json.replace(countedReference, "$1")
+	if (!hasDomain(json, "object")) return json
+	let uncounted = seen.get(json)
+	if (!uncounted) {
+		uncounted =
+			Array.isArray(json) ?
+				json.map(v => uncountedJsonOf(v, seen))
+			:	flatMorph(json, (k, v) => [k, uncountedJsonOf(v, seen)])
+		seen.set(json, uncounted)
+	}
+	return uncounted
+}
 
 type CheckedHole = [hole: unknown, kind: HoleKind, expression: string]

@@ -73,18 +73,20 @@ contextualize(() => {
 	it("precompiles a type reused at each level", () => {
 		const Shallow = levels(7)
 		const Deep = levels(14)
-		const lengthOf = (T: type.Any, opts?: { optimize: "size" }) =>
-			precompileStandalone({ T }, opts).code.length
+		const lengthOf = (
+			T: type.Any,
+			opts?: { optimize?: "size"; members?: { json: true } }
+		) => precompileStandalone({ T }, opts).code.length
 		// twice the levels, about twice the code
 		attest(lengthOf(Deep) / lengthOf(Shallow)).satisfies("number < 2.2")
 		attest(
 			lengthOf(Deep, { optimize: "size" }) /
 				lengthOf(Shallow, { optimize: "size" })
 		).satisfies("number < 2.2")
-		attest(() =>
-			precompileStandalone({ T: levels(8) }, { members: { json: true } })
-		).throws(
-			'its introspection bakes 11.8 MB of text (json 11.8 MB), over the 1.0 MB a site may, as json and a JSON Schema repeat each Type they reference. Read fewer of its members, or leave it to arktype with // @ark-runtime or runtime: "arktype"'
+		// its json holds what's reused once
+		const json = { members: { json: true } } as const
+		attest(lengthOf(Deep, json) / lengthOf(Shallow, json)).satisfies(
+			"number < 2.2"
 		)
 	})
 })

@@ -85,7 +85,9 @@ export const isError = (data: unknown) => data instanceof ArkErrors`)
 				"~arktype/#7",
 				"~arktype/#8",
 				"~arktype/#9",
-				"~arktype/#10"
+				"~arktype/#10",
+				"~arktype/#11",
+				"~arktype/#12"
 			])
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
@@ -456,7 +458,6 @@ export const A = type({ a: R.a })`
 		})
 
 		it("refuses a site whose baked introspection is over the limit", () => {
-			// a dag's json and JSON Schema repeat each Type they reference
 			const files = {
 				"/main.ts": `import { type } from "arktype"
 const Leaf = type({ name: "string" })
@@ -466,7 +467,7 @@ export const Shallow = type({ a: Leaf.array() })`
 			}
 			const precompiler = new Precompiler(memoryHost(files), {
 				members: { json: true, toJsonSchema: true },
-				bakedLimit: 1500
+				bakedLimit: 600
 			})
 			const { diagnostics, sites } = precompiler.precompile(
 				files["/main.ts"],
@@ -481,7 +482,7 @@ export const Shallow = type({ a: Leaf.array() })`
 			attest(diagnostics.map(d => [d.severity, renderDiagnostic(d)])).snap([
 				[
 					"error",
-					"/main.ts:4:21  type({ a: Pair.array(), b: Pair.array() }) can't be precompiled yet\n  its introspection bakes 1.6 KB of text (json 790 chars, toJsonSchema 835 chars), over the 1.5 KB a site may, as json and a JSON Schema repeat each Type they reference. Read fewer of its members, or leave it to arktype with // @ark-runtime or runtime: \"arktype\"\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
+					"/main.ts:4:21  type({ a: Pair.array(), b: Pair.array() }) can't be precompiled yet\n  its introspection bakes 907 chars of text (json 450 chars, toJsonSchema 457 chars), over the 600 chars a site may. Read fewer of its members, or leave it to arktype with // @ark-runtime or runtime: \"arktype\"\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
 				]
 			])
 		})

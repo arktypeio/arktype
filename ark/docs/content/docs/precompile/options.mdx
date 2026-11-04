@@ -187,7 +187,7 @@ An instance of a class, or any object whose prototype isn't `Object.prototype`, 
 
 ### bakedLimit
 
-`json` and a JSON Schema repeat each Type they reference, so a Type reusing one at each level bakes text that doubles per level. A site whose baked introspection members total more than `bakedLimit` characters, 1 MB by default, fails the build naming the members and their sizes: read fewer of its members, or leave it to arktype with `// @ark-runtime` or `runtime: "arktype"`.
+A site whose baked introspection members total more than `bakedLimit` characters, 1 MB by default, fails the build naming the members and their sizes: read fewer of its members, or leave it to arktype with `// @ark-runtime` or `runtime: "arktype"`. What `json` and a JSON Schema repeat counts once, as it's written once however many Types reuse it, and each read of a JSON Schema still assembles objects of its own.
 
 ### freeze
 

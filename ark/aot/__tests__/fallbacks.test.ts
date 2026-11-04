@@ -61,7 +61,8 @@ contextualize(() => {
 		const replay = writeReplay(
 			trace,
 			value => JSON.stringify(value),
-			() => undefined
+			() => undefined,
+			text => text
 		)!
 		const replayed = new Function(`return ${replay}`)() as (
 			fallBack: (code: string, ctx: object) => object

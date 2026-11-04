@@ -18,9 +18,98 @@ import type { IntrospectionMember } from "../runtime.ts"
 import * as runtime from "../runtimeExports.ts"
 import { holeNameMarker, holeNamePattern } from "./keys.ts"
 
-// json and a JSON Schema repeat a Type at each reference, so a reused Type's
-// text doubles per level; past this many chars a site's introspection fails
+// past this many chars a site's introspection fails
 export const defaultBakedLimit = 1 << 20
+
+// what writing a part of data once declares, in a module equal text shares
+export interface DataPartModule {
+	name: string
+	value: string
+	imports: Record<string, string[]>
+	held: DataPart[]
+}
+
+export interface DataPart {
+	// the data it holds, as references
+	text: string
+	// how many references to it the distinct parts of the data hold
+	refs: number
+	// reads what's declared beside its validator, so no shared module can
+	local: boolean
+	size?: number
+	module?: DataPartModule
+	isDeclared?: boolean
+}
+
+const dataReference = /\0(\d+)\0/g
+
+// what a repeated part must take to repay what declaring it does, written
+// with the quotes and spaces a minifier takes back
+const minRepeatedPartSize = 32
+
+// json and a JSON Schema repeat a Type at each reference, so a Type reused at
+// each level would multiply their text. Each part's text reads what it holds by
+// reference, so finding what's equal stays linear in the data, and what's
+// repeated can be written once
+export class DataParts {
+	private parts: DataPart[] = []
+	private ids = new Map<string, number>()
+	private written = new Map<object, string>()
+
+	// arktype's json holds what it references, however many times it does
+	writtenAs(value: object): string | undefined {
+		return this.written.get(value)
+	}
+
+	at(reference: string): DataPart {
+		return this.parts[+reference.slice(1, -1)]
+	}
+
+	add(text: string, value?: object, local = false): string {
+		let id = this.ids.get(text)
+		if (id === undefined) {
+			id = this.parts.length
+			this.ids.set(text, id)
+			for (const reference of text.matchAll(dataReference)) {
+				const held = this.parts[+reference[1]]
+				held.refs++
+				local ||= held.local
+			}
+			this.parts.push({ text, refs: 0, local })
+		}
+		const reference = `\0${id}\0`
+		if (value) this.written.set(value, reference)
+		return reference
+	}
+
+	private repeats(part: DataPart): boolean {
+		return part.refs > 1 && this.sizeOf(part) >= minRepeatedPartSize
+	}
+
+	private sizeOf(part: DataPart): number {
+		return (part.size ??= [...part.text.matchAll(dataReference)].reduce(
+			(size, [reference, id]) => {
+				const held = this.parts[+id]
+				return (
+					size - reference.length + (this.repeats(held) ? 0 : this.sizeOf(held))
+				)
+			},
+			part.text.length
+		))
+	}
+
+	// its text with what it holds written in place, unless it's repeated and
+	// read gives what reads it
+	write(text: string, read: (part: DataPart) => string | undefined): string {
+		return text.replace(dataReference, (_, id) => {
+			const part = this.parts[+id]
+			return (
+				(this.repeats(part) ? read(part) : undefined) ??
+				this.write(part.text, read)
+			)
+		})
+	}
+}
 
 const sizeOf = (chars: number): string =>
 	chars >= 1e6 ? `${(chars / 1e6).toFixed(1)} MB`
@@ -40,7 +129,7 @@ export const writeBakedLimitMessage = (
 	const members = Object.entries(lengths)
 		.map(([member, length]) => `${member} ${sizeOf(length!)}`)
 		.join(", ")
-	return `its introspection bakes ${sizeOf(totalBaked(lengths))} of text (${members}), over the ${sizeOf(limit)} a site may, as json and a JSON Schema repeat each Type they reference. Read fewer of its members, or leave it to arktype with // @ark-runtime or runtime: "arktype"`
+	return `its introspection bakes ${sizeOf(totalBaked(lengths))} of text (${members}), over the ${sizeOf(limit)} a site may. Read fewer of its members, or leave it to arktype with // @ark-runtime or runtime: "arktype"`
 }
 
 export const runtimePathsByValue = new Map<unknown, string>()
