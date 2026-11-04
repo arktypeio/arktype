@@ -83,6 +83,7 @@ import {
 	madeApplierOf,
 	preciseFormOf,
 	writtenAttributesOf,
+	type CreatedFrom,
 	type RootApplier,
 	type ValidatorAttributes,
 	type ValidatorForm
@@ -1677,9 +1678,36 @@ return namespace`
 			typeof applied === "string" ? applied : (
 				`${this.emitApplier(applied)}(${applied.args})`
 			)
+		// a validator's own calling convention around what's read of its node
+		const fromNode =
+			(
+				ownsValidator &&
+				!isCompact &&
+				!isTemplate &&
+				!form.byRuntime &&
+				typeof applied === "object" &&
+				allows === `${applied.args}.allows`
+			) ?
+				applied
+			:	undefined
 		const args = [
 			...(fused ? [fused.args]
 			: made ? [this.emitApplier(made), made.args]
+			: fromNode ?
+				[
+					this.emitApplier({
+						...fromNode,
+						params: fromNode.params.replace(
+							/^node\b/,
+							"node, configuredOnFail"
+						),
+						apply:
+							form.pipes ?
+								`runtime.callingRootApply([, ${fromNode.apply}], configuredOnFail)`
+							:	`(rootApply => (data, _, onFail) => rootApply(data, onFail))(${fromNode.apply})`
+					}),
+					fromNode.args
+				]
 			: ownsValidator && !isCompact ?
 				[
 					form.pipes ?
@@ -1707,7 +1735,17 @@ return namespace`
 		]
 		const created = `${
 			isTemplate ? "["
-			: !form.byRuntime ? `${this.creatorOf(form, fused, made !== undefined)}(`
+			: !form.byRuntime ?
+				`${this.creatorOf(
+					form,
+					fused,
+					made ?
+						allows === `${made.args}[0]` ?
+							"parts"
+						:	"node"
+					: fromNode ? "node"
+					: undefined
+				)}(`
 			: createsWith ? "runtime.createValidatorWith("
 			: "runtime.createValidator("
 		}\n\t${args.join(",\n\t")}\n${isTemplate ? "]" : ")"}`
@@ -1774,7 +1812,7 @@ return namespace`
 	creatorOf(
 		form: ValidatorForm,
 		applier: RootApplier | undefined,
-		makes: boolean
+		makes: CreatedFrom | undefined
 	): string {
 		const [params, body] = creatorSourceOf(this.baking, form, applier, makes)
 		const name = `create${hashOf(`${params}\n${body}`)}`
@@ -2382,20 +2420,27 @@ return namespace`
 				false
 			]
 		}
-		const [reads, body] = rootApplyParts(
+		const [reads, apply, applyFailed] = rootApplyParts(
 			root,
 			this.headUnitOf(root).names[root.id],
 			refOf
 		)
-		const captured =
-			/\bTransformErrors\b/.test(body) ?
-				`const TransformErrors = ${this.emit(rootApplyRuntime.TransformErrors)}\n\t\t`
-			:	""
 		// read as defaults, since minifiers inline a call that only takes node
 		return [
-			`(function (${["node", ...reads].join(", ")}) {
-		${captured}${body}
-	})(${shape})`,
+			{
+				params: [
+					"node",
+					...reads,
+					...(/\bTransformErrors\b/.test(apply) ?
+						[`TransformErrors = ${this.emit(rootApplyRuntime.TransformErrors)}`]
+					:	[]),
+					...(applyFailed ? [`applyFailed = ${applyFailed}`] : [])
+				].join(", "),
+				apply,
+				args: shape,
+				local: !refOf("Traversal").startsWith("runtime."),
+				ownsCalls: true
+			},
 			`${shape}.allows`,
 			false
 		]
@@ -2705,11 +2750,9 @@ return namespace`
 		const [id, allHoles] = keyOf(value)
 		const holes = this.heldOf(allHoles)
 		if (!this.baking.holdsIds && !holes.length) return expression
-		return (
-			holes.length || this.isComparedId(id) ?
+		return holes.length || this.isComparedId(id) ?
 				`runtime.holdHoles(${expression}, ${writeId(id)}${holes.length ? `, [${this.emitAll(holes)}]` : ""})`
 			:	`runtime.holdHoles(${expression})`
-		)
 	}
 
 	isComparedId(id: string): boolean {

@@ -1023,9 +1023,9 @@ console.log(JSON.stringify(T({ a: "a", c: 1 })))
 		})) {
 			it(`creates a Type after its module fixes the config, in a ${name} build`, async () => {
 				const js = await esbuildBundle(root, { ...opts, ...preset })
-				attest(/^var T = (?:\/\* @__PURE__ \*\/ )?create\w+\(/m.test(js)).equals(
-					true
-				)
+				attest(
+					/^var T = (?:\/\* @__PURE__ \*\/ )?create\w+\(/m.test(js)
+				).equals(true)
 				attest(js.indexOf("fixConfigured(") < js.indexOf("var T = ")).equals(
 					true
 				)
@@ -1076,6 +1076,43 @@ console.log(String(A({ trees: [{ name: "a" }] })), String(B({ trees: [{ name: "a
 			},
 			{ cells: true }
 		)
+	})
+
+	describe("what reads its node", () => {
+		const onFail = `import { configure } from "arktype/config"
+
+configure({ onFail: errors => \`failed: \${errors.summary}\` })
+`
+
+		for (const [name, opts, config] of [
+			["default", {}, ""],
+			["smallest", { preset: "smallest" as const }, ""],
+			["configured", { config: "config.ts" }, onFail]
+		] as const) {
+			itBehavesAsWhole(
+				`behaves as whole, in a ${name} build`,
+				{
+					"config.ts": config,
+					"main.ts": `${config && 'import "./config.ts"\n'}import { type, scope } from "arktype"
+
+const Contextual = type("string").narrow((s, ctx) => s.length > 2 || ctx.mustBe("long"))
+const Morphed = type("string").pipe(s => s.length)
+const Throws = type("string").pipe.try(s => JSON.parse(s))
+const { Cyclic } = scope({ Cyclic: { "next?": "Cyclic", n: "number = 1" } }).export()
+const tell = (out: unknown) => console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
+tell(Contextual("abc"))
+tell(Contextual("a"))
+tell(Morphed("abc"))
+tell(Morphed(1))
+tell(Throws("{"))
+tell(Cyclic({ next: {} }))
+tell(Cyclic({ next: { n: "a" } }))
+tell([Contextual, Morphed, Cyclic].map(T => T.allows("abc")))
+`
+				},
+				{ cells: true, opts }
+			)
+		}
 	})
 
 	describe("a module a plugin ahead of arktype's rewrote after the scan read it", () => {
