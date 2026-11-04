@@ -8,6 +8,7 @@ import type {
 } from "@ark/schema/runtime"
 import { hasOwn, type Fn } from "@ark/util"
 import {
+	copyOf,
 	describePredicate,
 	failsAt,
 	failsBranches,
@@ -335,35 +336,6 @@ export const closedProps = ((
 	return checker
 }) satisfies Fn
 
-// data inheriting a builtin's prototype keeps state in internal slots
-const isBuiltin = (data: object): boolean => {
-	for (
-		let prototype = Object.getPrototypeOf(data);
-		prototype && Object.getPrototypeOf(prototype);
-		prototype = Object.getPrototypeOf(prototype)
-	) {
-		const { constructor } = prototype
-		if (
-			typeof constructor === "function" &&
-			constructor.prototype === prototype &&
-			/\[native code]\s*}$/.test(Function.prototype.toString.call(constructor))
-		)
-			return true
-	}
-	return false
-}
-
-// keeps data's prototype and enumerable keys; a builtin is written in place
-const copyForWriting = (data: any): any => {
-	const prototype = Object.getPrototypeOf(data)
-	return (
-		Array.isArray(data) ? Object.assign(Array.prototype.slice.call(data), data)
-		: prototype === Object.prototype ? { ...data }
-		: isBuiltin(data) ? data
-		: Object.setPrototypeOf({ ...data }, prototype)
-	)
-}
-
 // what props whose values transform or default write, keeping what they don't
 const writtenProps = (declared: Props, data: any): any => {
 	let out = data
@@ -373,7 +345,7 @@ const writtenProps = (declared: Props, data: any): any => {
 		const value = holds ? declared[k].t?.(data[k]) : defaulted?.[0]
 		// a default is written even where it's undefined
 		if (holds ? value !== undefined && value !== data[k] : defaulted?.length) {
-			if (out === data) out = copyForWriting(data)
+			if (out === data) out = copyOf(data)
 			out[k] = value
 		}
 	}
@@ -408,7 +380,7 @@ export const deletingProps = ((declared: Props): Checker => {
 				...Object.getOwnPropertySymbols(data)
 			]) {
 				if (hasOwn(declared, k)) continue
-				if (out === data) out = copyForWriting(data)
+				if (out === data) out = copyOf(data)
 				delete out[k]
 			}
 			return out
@@ -439,7 +411,7 @@ export const transformingElementsOf = ((element: Checker): Checker => {
 		for (let i = 0; i < data.length; i++) {
 			const value = element.t!(data[i])
 			if (value === data[i]) continue
-			if (out === data) out = copyForWriting(data)
+			if (out === data) out = copyOf(data)
 			out[i] = value
 		}
 		return out

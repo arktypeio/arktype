@@ -340,6 +340,14 @@ const Parent = type({ child: { "+": "delete", a: "string" }, other: "string = 'y
 console.log(JSON.stringify(Parent({ child: { a: "a", b: 1 } })))
 const unchanged = { child: { a: "a" }, other: "o" }
 console.log(Parent(unchanged) === unchanged, Parent(unchanged).child === unchanged.child)
+const Env = type({ "+": "delete", a: "string" })
+process.env.a = "abc"
+process.env.kept = "1"
+const fromEnv = Env(process.env)
+console.log(fromEnv === process.env, JSON.stringify(fromEnv), process.env.kept)
+class Tagged { a = "abc"; extra = 1; get [Symbol.toStringTag]() { return "T" } }
+const tagged = new Tagged()
+console.log(Env(tagged) === tagged, Object.keys(tagged))
 `
 		)
 	})

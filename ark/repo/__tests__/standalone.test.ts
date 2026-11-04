@@ -434,7 +434,7 @@ nick must be a string or null`)
 			])
 		})
 
-		it("copy an instance whose class writes its own tag", async () => {
+		it("write in place an instance whose class writes its own tag", async () => {
 			class Tagged {
 				get [Symbol.toStringTag]() {
 					return "Tagged"
@@ -447,8 +447,8 @@ nick must be a string or null`)
 			const data: any = new Tagged()
 			const out = T(data)
 			attest([out === data, "k" in data, out instanceof Tagged, out.k]).equals([
-				false,
-				false,
+				true,
+				true,
 				true,
 				"x"
 			])
