@@ -94,8 +94,12 @@ const readRaisableCodes = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
 			if (site.m) codes.add(site.m.code)
 		}
 		for (const node of unit.declared) {
-			if (node.is("union") && node.discriminant) codes.add("discriminant")
-			else if (node.is("structure") && node.undeclared === "reject")
+			if (node.is("union")) {
+				// its branches' issues listed, even a discriminated union's
+				// where it can't read its discriminant
+				codes.add("union")
+				if (node.discriminant) codes.add("discriminant")
+			} else if (node.is("structure") && node.undeclared === "reject")
 				codes.add("undeclared")
 		}
 	}

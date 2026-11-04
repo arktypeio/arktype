@@ -54,6 +54,13 @@ const behaviors: Record<string, string> = {
 		show(type("Date").configure({ message: "no day" }).or("RegExp"), 1)
 		show(type("Date").configure({ problem: "no day" }).or("RegExp"), 1)
 	`,
+	"lists a morph's input beside what else a union misses": `
+		const toString = (v: unknown) => String(v)
+		show(type(["string | number", "=>", toString]).or(["object", "@", "a box"]), null, true)
+		show(type([[["string", "@", "a thing"], "|", "number"], "=>", toString]).or("object"), null, true)
+		show(type({ "x?": "string" }).or([["5n | -0.5", "=>", toString], "@", "a thing"]), -0, true)
+		show(type(["string | number", "=>", toString]).or("object").or("null"), true, undefined)
+	`,
 	"reports a union of no branches as its own": `
 		show(type({ a: "never" }).or({ b: "string" }), {}, { a: 1 })
 	`,

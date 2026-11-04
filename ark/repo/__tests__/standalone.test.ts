@@ -283,7 +283,7 @@ contextualize(() => {
 			)
 			attest([T({}), String(T({ a: true })), String(T(null))]).snap([
 				{ a: 5 },
-				"must be { a?: a number } or { a: a string }",
+				"a must be a number or a string",
 				"must be an object"
 			])
 		})
@@ -425,11 +425,11 @@ nick must be a string or null`)
 			})
 			attest(outcomes).snap([
 				{ kind: "a", a: "" },
-				"must be { a: a string } or { c: a string }",
+				"a must be a string or c must be a string",
 				{ kind: "a", c: "y" },
 				{ kind: "b", b: 0 },
 				{ c: "x" },
-				'must be { a: a string, kind: "a" }, { b: a number, kind: "b" } or { c: a string }',
+				'kind must be "a" or "b" or c must be a string',
 				"must be an object"
 			])
 		})
