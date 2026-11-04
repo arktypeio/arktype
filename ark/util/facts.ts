@@ -33,6 +33,9 @@ export const arityOf = (fn: Function): number => {
 		:	fn.length
 }
 
+// callbacks a build read and found read nothing past their first argument
+export const readsOnlyData: WeakSet<Function> = new WeakSet()
+
 export const functionNameOf = (fn: Function): string => fn.name
 
 export const constructorNameOf = (o: object): string | undefined =>

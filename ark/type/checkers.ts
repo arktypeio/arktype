@@ -7,7 +7,12 @@ import type {
 	SiteContext
 } from "@ark/schema/runtime"
 import type { Fn } from "@ark/util"
-import { failsAt, failsIn, requiredSiteOf } from "./runtime.ts"
+import {
+	describePredicate,
+	failsAt,
+	requiredSiteOf,
+	siteOf
+} from "./runtime.ts"
 
 /** a node a size build composes, reporting to a ctx it's passed */
 export interface Checker {
@@ -37,6 +42,26 @@ export const check = ((
 	checker.code = code
 	checker.description = description
 	checker.test = test
+	return checker
+}) satisfies Fn
+
+// a callback a build proved reads only data, read where it's called, as its
+// variable may be set once this has loaded
+export const narrowedBy = ((
+	read: () => (data: any) => boolean,
+	description?: string
+): Checker => {
+	const checker: Checker = (data, ctx) =>
+		read()(data) ||
+		!failsAt(
+			ctx as never,
+			siteOf(
+				"predicate",
+				description ?? describePredicate({ predicate: read() })
+			),
+			data
+		)
+	checker.description = description
 	return checker
 }) satisfies Fn
 
@@ -241,6 +266,20 @@ export const required = ((checker: Checker, description: string): Checker => {
 
 type Props = Record<string, Checker>
 
+// with a ctx, a value is applied once, as arktype applies it, since a callback
+// may see each call; one that transforms is checked first, as arktype checks it
+const failsValue = (
+	ctx: FailureContext | number | undefined,
+	checker: Checker,
+	data: any,
+	k: PropertyKey,
+	value: unknown
+): boolean | undefined =>
+	(ctx as FailureContext | undefined)?._at ?
+		(!checker.t || !checker(value)) &&
+		(ctx as FailureContext)._in(checker as CompactApply, data, k)
+	:	!checker(value)
+
 // keys checked in declared order; a missing key expects its checker's description
 export const props = ((declared: Props): Checker => {
 	const checker: Checker = (data: any, ctx) => {
@@ -248,7 +287,6 @@ export const props = ((declared: Props): Checker => {
 			return !failsAt(ctx as never, objectCheck, data)
 		for (const k in declared) {
 			const value = data[k]
-			// only a failed value is read again, as failsIn reports it
 			if (
 				value === undefined && !(k in data) ?
 					!declared[k].o &&
@@ -258,8 +296,7 @@ export const props = ((declared: Props): Checker => {
 						data,
 						k
 					)
-				:	!declared[k](value) &&
-					failsIn(ctx as never, declared[k] as CompactApply, data, k)
+				:	failsValue(ctx, declared[k], data, k, value)
 			)
 				return false
 		}
@@ -326,7 +363,7 @@ export const transformingProps = ((declared: Props): Checker => {
 export const elementsOf = ((element: Checker): Checker =>
 	(data: any, ctx) => {
 		for (let i = 0; i < data.length; i++)
-			if (failsIn(ctx as never, element as CompactApply, data, i)) return false
+			if (failsValue(ctx, element, data, i, data[i])) return false
 		return true
 	}) satisfies Fn
 

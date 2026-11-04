@@ -133,6 +133,7 @@ import {
 	failureSites,
 	isDescribed,
 	isKeyword,
+	raisesNothing,
 	isLiteralSite,
 	missingDescriptionOf,
 	raisedWritersByCode,
@@ -2274,7 +2275,8 @@ return namespace`
 		const callbacks = declares(
 			root,
 			node =>
-				node.is("morph") || (node.is("predicate") && !isKeyword(node.predicate))
+				node.is("morph") ||
+				(node.is("predicate") && !raisesNothing(node.predicate))
 		)
 		if (!this.baking.detailsErrors) {
 			return this.emitUndetailedApply(
@@ -2293,9 +2295,12 @@ return namespace`
 				node =>
 					node.is("union") && !node.discriminant && !isDecidedByAllows(node)
 			) &&
-			// errors count their issues, not a branch's
+			// errors count their issues, and hold no branches
 			!this.unitsOf(root).some(unit =>
-				unit.members.some(([, source]) => source.includes("ctx.errN"))
+				unit.members.some(
+					([, source]) =>
+						source.includes("ctx.errN") || source.includes("ctx.pushBr")
+				)
 			)
 		if (reportsIssues) assertReportsIssues(this.unitsOf(root))
 		const ctx =
@@ -2308,7 +2313,14 @@ return namespace`
 		// first-issue traversals drop the rest when finalized
 		const appliesErrors = !this.baking.firstIssue || reportsIssues
 		// for speed, issues reported into ArkErrors are found once read
-		const unreads = reportsIssues && this.baking.defersIssues
+		const unreads =
+			reportsIssues &&
+			this.baking.defersIssues &&
+			// a callback runs when arktype would run it
+			!declares(
+				root,
+				node => node.is("predicate") && !isKeyword(node.predicate)
+			)
 		const [callErrors, elementErrors] =
 			unreads ?
 				["runtime.unreadCallErrors", "runtime.unreadElements"]

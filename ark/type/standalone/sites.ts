@@ -13,7 +13,13 @@ import {
 	type SiteContext,
 	type UnionSite
 } from "@ark/schema/internal"
-import { type Fn, hasDomain, isDotAccessible, throwParseError } from "@ark/util"
+import {
+	type Fn,
+	hasDomain,
+	isDotAccessible,
+	readsOnlyData,
+	throwParseError
+} from "@ark/util"
 import * as runtime from "../runtimeExports.ts"
 import type { IssueFeatures } from "./baking.ts"
 import { rootUnitsOf } from "./compilers.ts"
@@ -117,7 +123,7 @@ export const addIssueFeatures = (
 				features.bracketsKeys = true
 		} else if (
 			node.is("morph") ||
-			(node.is("predicate") && !isKeyword(node.predicate))
+			(node.is("predicate") && !raisesNothing(node.predicate))
 		) {
 			features.reportsIndices = true
 			features.bracketsKeys = true
@@ -417,3 +423,7 @@ export const unionKeySiteOf = (
 // runtime keywords with one param never read Traversal
 export const isKeyword = (predicate: unknown): boolean =>
 	runtimePathsByValue.has(predicate) && (predicate as Fn).length < 2
+
+// a callback that can't reach the Traversal it's passed raises nothing
+export const raisesNothing = (predicate: Fn): boolean =>
+	isKeyword(predicate) || readsOnlyData.has(predicate)

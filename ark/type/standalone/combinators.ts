@@ -5,6 +5,7 @@ import {
 	type IntersectionNode,
 	type NodeCompiler,
 	type NodeId,
+	type nodeOfKind,
 	type Optional,
 	type Prop,
 	type StructureNode,
@@ -21,6 +22,7 @@ import {
 	issueContextOf,
 	issueSiteOf,
 	missingDescriptionOf,
+	raisesNothing,
 	type IssueContext
 } from "./sites.ts"
 
@@ -117,18 +119,31 @@ const basesSiteOf = (node: UnionNode): IssueContext | null | undefined => {
 const checkOf = (node: BaseNode): IssueContext | undefined =>
 	node.jsCond && plainSiteOf(node)
 
-// a keyword's predicate, which reads no ctx
-const predicateSiteOf = (node: BaseNode): IssueContext | undefined =>
-	node.is("predicate") && isKeyword(node.predicate) ?
-		plainSiteOf(node)
-	:	undefined
+// a predicate that reads no ctx, keeping the description written for it unless
+// it names the function, which a callback's only has once it's called
+const predicateSiteOf = (node: BaseNode): IssueContext | undefined => {
+	if (!node.is("predicate") || !raisesNothing(node.predicate)) return
+	const site = issueSiteOf(node.failSite) as IssueContext
+	return (
+		!isDescribed(site) ? undefined
+		: isNamedByItsFunction(node) ? site
+		: plainContextOf(site)
+	)
+}
+
+const isNamedByItsFunction = (node: nodeOfKind<"predicate">): boolean =>
+	!isKeyword(node.predicate) &&
+	(issueSiteOf(node.failSite) as IssueContext).description ===
+		runtime.describePredicate(node)
 
 // whether a node's Allows passes as it does, as a keyword's predicate does
 const allowsDecides = (node: BaseRoot): boolean =>
 	!node.hasMorph &&
 	!node.allowsCtx &&
 	Object.values(node.byId).every(
-		ref => !ref.is("predicate") || !!predicateSiteOf(ref)
+		ref =>
+			!ref.is("predicate") ||
+			(isKeyword(ref.predicate) && !!predicateSiteOf(ref))
 	)
 
 // a value compared by identity and printed by the runtime
@@ -641,15 +656,7 @@ const writeIntersectionCombinator = (
 	const refinements = node.preStruct.map(child => writeCheck(js, child))
 	const structure = node.structure && writeStructure(js, node.structure)
 	const predicate = node.inner.predicate?.[0]
-	const within =
-		structure ??
-		(predicate &&
-			writeCall(
-				"check",
-				'"predicate"',
-				JSON.stringify(predicateSiteOf(predicate)!.description),
-				js.ref(predicate.predicate)
-			))
+	const within = structure ?? (predicate && writePredicate(js, predicate))
 	// props check data is an object, as their basis would
 	if (
 		within &&
@@ -662,6 +669,29 @@ const writeIntersectionCombinator = (
 		node.basis ? writeCheck(js, node.basis) : "0",
 		`[${refinements.join(", ")}]`,
 		within
+	)
+}
+
+// a callback is read where it's called, as it may be set once this has loaded
+const writePredicate = (
+	js: CombinatorCompiler,
+	node: nodeOfKind<"predicate">
+): string => {
+	const fn = js.ref(node.predicate)
+	if (isKeyword(node.predicate)) {
+		return writeCall(
+			"check",
+			'"predicate"',
+			JSON.stringify(predicateSiteOf(node)!.description),
+			fn
+		)
+	}
+	return writeCall(
+		"narrowedBy",
+		`() => ${fn}`,
+		isNamedByItsFunction(node) ? undefined : (
+			JSON.stringify(predicateSiteOf(node)!.description)
+		)
 	)
 }
 

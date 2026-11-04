@@ -1179,5 +1179,28 @@ console.log(String(User({ name: "x" })))
 				true
 			)
 		})
+
+		it("fails where a function no longer reads only its argument", async () => {
+			const message = await viteBundle(
+				root,
+				{},
+				{
+					plugins: [
+						rewriting(code =>
+							code.replace(
+								"(s: string) => s.length > 2",
+								"function (s: string) { return arguments.length > 1 && s.length > 2 }"
+							)
+						)
+					]
+				}
+			).then(
+				() => "",
+				(e: Error) => e.message
+			)
+			attest(message.includes(writeUnscannedCellsMessage("name.ts"))).equals(
+				true
+			)
+		})
 	})
 })

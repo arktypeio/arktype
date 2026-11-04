@@ -22,6 +22,7 @@ import {
 	isThunk,
 	ParseError,
 	printable,
+	readsOnlyData,
 	throwError,
 	throwParseError,
 	type Fn
@@ -1181,6 +1182,8 @@ export class Precompiler {
 			(after[i] !== undefined &&
 				this.isCreatedOnce(after[i]) &&
 				nameOf(after[i]) === nameOf(before[i]) &&
+				readsOnlyData.has(after[i] as Fn) ===
+					readsOnlyData.has(before[i] as Fn) &&
 				sites.every(site =>
 					site.references.every(
 						reference => reference.value !== after[i] || reference.isOneValue
@@ -3535,9 +3538,13 @@ export class Precompiler {
 		prefix: string
 	): string {
 		const spans = factory?.spans ?? []
-		const callbacks = (factory?.params ?? []).flatMap((param, i) =>
-			param.kind === "function" ? [i] : []
-		)
+		const callbacks: number[] = []
+		const proved: number[] = []
+		for (const [i, param] of (factory?.params ?? []).entries()) {
+			if (param.kind !== "function") continue
+			callbacks.push(i)
+			if (readsOnlyData.has(param.value as Fn)) proved.push(i)
+		}
 		const parameterSpans = [
 			...spans.map((span, i): [Span, number] => [span, i]),
 			...(factory?.repeats ?? []).filter(
@@ -3553,7 +3560,7 @@ export class Precompiler {
 		original += module.textOf({ start, end: site.end })
 		const params = spans.map((_, i) => `${prefix}h${i}`)
 		const create = index === undefined ? local : `${local}.bind(null, ${index})`
-		return `${prefix}shadow(${JSON.stringify(`${module.positionOf(site)}  ${module.snippetOf(site)}`)}, ${create}, (${params.join(", ")}) => (${original}), [${callbacks.join(", ")}]`
+		return `${prefix}shadow(${JSON.stringify(`${module.positionOf(site)}  ${module.snippetOf(site)}`)}, ${create}, (${params.join(", ")}) => (${original}), [${callbacks.join(", ")}], [${proved.join(", ")}]`
 	}
 
 	// an arktype import that arktype/runtime lacks fails to link

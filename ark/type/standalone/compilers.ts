@@ -26,6 +26,7 @@ import {
 	isDescribed,
 	isInlineSite,
 	isKeyword,
+	raisesNothing,
 	issueContextOf,
 	issueSite,
 	issueSiteOf,
@@ -89,7 +90,7 @@ class StandaloneCompiler extends TraversalCompiler {
 
 	// a keyword check adds no issues itself, so its Apply needn't count them
 	override addsNoIssues(predicate: Predicate): boolean {
-		return isKeyword(predicate)
+		return raisesNothing(predicate)
 	}
 
 	// a union no branch allows reports its description, unless data fails each basis
@@ -325,7 +326,7 @@ export const unifies = (node: BaseNode): boolean => {
 
 // a reference whose Apply reports other than its Allows decides
 const reportsApart = (reference: BaseNode): boolean =>
-	reference.is("predicate") ? !isKeyword(reference.predicate)
+	reference.is("predicate") ? !raisesNothing(reference.predicate)
 	: reference.is("union") ?
 		!reference.discriminant && !isDecidedByAllows(reference)
 	: reference.is("intersection") ?
