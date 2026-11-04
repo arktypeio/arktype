@@ -60,14 +60,18 @@ for (const [name, value] of Object.entries(runtime))
 	indexRuntime(value, `runtime.${name}`)
 
 // named by path, since runtime state differs between builds
-export const runtimeKeyOf = (value: object | symbol): string | undefined =>
-	runtimePathsByValue.get(value) ??
-	((
-		typeof value === "function" &&
-		Reflect.get(globalThis, functionNameOf(value)) === value
-	) ?
-		`globalThis.${functionNameOf(value)}`
-	:	undefined)
+export const runtimeKeyOf = (
+	value: object | symbol | string
+): string | undefined =>
+	typeof value === "string" ? undefined : (
+		(runtimePathsByValue.get(value) ??
+		((
+			typeof value === "function" &&
+			Reflect.get(globalThis, functionNameOf(value)) === value
+		) ?
+			`globalThis.${functionNameOf(value)}`
+		:	undefined))
+	)
 
 // arktype calls a default's thunk each time it writes the schema
 export const assertBakeableJsonSchema = (root: BaseRoot): void => {
@@ -127,22 +131,61 @@ export const holeNameIn = (
 	}
 }
 
+// a function the program creates once, which what reads it finds in one variable
+export interface HoleCell {
+	name: string
+}
+
+export interface HoleCells {
+	byHole: Map<unknown, HoleCell>
+	byPlaceholder: Map<string, HoleCell>
+	// each default morph a module of its own can write, by its content
+	defaults: ReadonlyMap<unknown, string>
+	keyOf: (value: object | symbol | string) => string | undefined
+	// whether what a morph's default reads can be written alongside it
+	isDefaultShared: (morph: unknown) => boolean
+}
+
+export const cellPrefix = "~arktype/cell/"
+
+// reads what's passed, keeping the modules setting the cells a validator reads
+export const heldSpecifier = "~arktype/held"
+
+export const cellSpecifierOf = (cell: HoleCell): string =>
+	`${cellPrefix}${cell.name}`
+
+export const cellSetterOf = (cell: HoleCell): string => `set${cell.name}`
+
+const printsOnlyCells = (s: string, cells: HoleCells | undefined): boolean =>
+	!!cells &&
+	s.match(holeNamePattern)!.every(name => cells.byPlaceholder.has(name))
+
+// what a unit reads by name, as its variable or module, needn't be its factory's
+export const isReadByName = (
+	ref: unknown,
+	cells: HoleCells | undefined
+): boolean => !!cells && (cells.byHole.has(ref) || cells.isDefaultShared(ref))
+
 export const holdsLocal = (
 	value: unknown,
+	cells?: HoleCells,
 	seen = new Set<unknown>()
 ): boolean => {
 	if (seen.has(value)) return false
 	seen.add(value)
-	if (typeof value === "string") return value.includes(holeNameMarker)
+	if (typeof value === "string")
+		return value.includes(holeNameMarker) && !printsOnlyCells(value, cells)
 	const made = madeMorphs.get(value as never)
-	if (made) return made[1].some(arg => holdsLocal(arg, seen))
+	if (made) return made[1].some(arg => holdsLocal(arg, cells, seen))
 	if (isHole(value)) return true
 	if (!hasDomain(value, "object") || isNode(value) || !isPlainLiteral(value))
 		return false
 	return Reflect.ownKeys(value).some(k => {
 		const v = Reflect.get(value, k)
 		return (
-			holdsLocal(k, seen) || (isNode(v) && v.isRoot()) || holdsLocal(v, seen)
+			holdsLocal(k, cells, seen) ||
+			(isNode(v) && v.isRoot()) ||
+			holdsLocal(v, cells, seen)
 		)
 	})
 }

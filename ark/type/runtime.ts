@@ -1060,6 +1060,23 @@ export const checkFunction = (value: unknown, label: string): void => {
 	}
 }
 
+// a value holding a cell a validator reads, set only once its site has run
+export const checkHeld = (
+	value: unknown,
+	label = "A value a validator reads",
+	kind: "Type" | "Module" | "Scope" | "Generic" = "Type"
+): void => {
+	if (value === undefined) {
+		throwError(
+			writeCreationMismatchMessage(
+				label,
+				describeValue(value),
+				`the ${kind} it was at build`
+			)
+		)
+	}
+}
+
 // kept off the value so a program can't read it
 const holesByValue = new WeakMap<
 	object,

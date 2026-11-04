@@ -311,6 +311,10 @@ export interface Reference {
 	isCreated: boolean
 	// its declaration must run before the site, as the site's trace read it
 	mustRun: boolean
+	// the binding it reads, if it reads one by name
+	binding: Binding | undefined
+	// a function read as itself or a binding nothing else writes
+	isOneValue: boolean
 }
 
 export interface Input {
