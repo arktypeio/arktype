@@ -317,8 +317,11 @@ interface AppModule {
 
 interface App {
 	modules: AppModule[]
-	// how main reaches them: a static import, import(), or twice under a query
-	importing: "static" | "dynamic" | "query"
+	// how main reaches them: a static import, import(), twice under a query, or
+	// statically and then again through a global a build can't read, running a
+	// chunk's text again beside the generated chunks it already loaded. A build
+	// seeing the import() itself holds no cell, as it can't see the whole program.
+	importing: "static" | "dynamic" | "query" | "again"
 	writes: boolean
 	config: string
 	configFirst: boolean
@@ -428,8 +431,19 @@ const filesOf = (app: App): Record<string, string> => {
 			module: i
 		}))
 	)
-	const imports = imported.map(({ specifier, local }) =>
-		app.importing === "dynamic" ?
+	if (app.importing === "again") {
+		for (const [i, _] of app.modules.entries()) {
+			imported.push({
+				specifier: `again${i}`,
+				local: `V${i}_again`,
+				module: i
+			})
+		}
+	}
+	const imports = imported.map(({ specifier, local, module }) =>
+		specifier.startsWith("again") ?
+			`const { V: ${local} } = await (globalThis as any).loadAgain("m${module + 1}")`
+		: app.importing === "dynamic" ?
 			`const { V: ${local} } = await import("${specifier}")`
 		:	`import { V as ${local} } from "${specifier}"`
 	)
@@ -439,7 +453,7 @@ const filesOf = (app: App): Record<string, string> => {
 		`import "./setup.ts"`,
 		...(app.configFirst ? configImport : []),
 		...(app.writes ? [`import "./writer.ts"`] : []),
-		...(app.importing === "dynamic" ? [] : imports),
+		...imports.filter(line => line.startsWith("import ")),
 		...(app.configFirst ? [] : configImport)
 	]
 	const cases = imported.map(({ local, module }) => {
@@ -447,8 +461,9 @@ const filesOf = (app: App): Record<string, string> => {
 		const values = baseValues.map(value => `(x => (${input}))(${value})`)
 		return `[${local}, () => [${[...values, ...values, ...extra].join(", ")}]]`
 	})
+	const awaited = imports.filter(line => line.startsWith("const "))
 	files["main.ts"] = `${staticImports.join("\n")}
-${app.importing === "dynamic" ? imports.join("\n") : ""}
+${awaited.join("\n")}
 
 const { calls } = globalThis as any
 const printed = (value: unknown) =>
@@ -538,6 +553,9 @@ const writeApp = (app: App): string => {
 
 const conditions = ["ark-ts", "production"]
 
+// what an app's main runs a chunk again through, knowing only its own path
+const loadAgain = `data:text/javascript,globalThis.loadAgain = name => import(new URL("./" + name + (process.argv[1].endsWith(".ts") ? ".ts" : ".js") + "?again", "file://" + process.argv[1]))`
+
 const run = (args: string[], cwd: string, env: Record<string, string> = {}) => {
 	const { stdout, stderr, status } = spawnSync(process.execPath, args, {
 		cwd,
@@ -551,6 +569,8 @@ const run = (args: string[], cwd: string, env: Record<string, string> = {}) => {
 const runBundle = (file: string, dir: string) =>
 	run(
 		[
+			"--import",
+			loadAgain,
 			"--import",
 			"data:text/javascript,for (const event of ['uncaughtException', 'unhandledRejection']) process.on(event, e => { console.error(String(e)); process.exit(1) })",
 			file
@@ -614,14 +634,17 @@ const esbuildOutcome = async (
 // from the function it holds as esbuild's layout never would. Only what's in a
 // chunk keeps its place in the imports: a manual chunk loads ahead of what stays
 // in the entry, which would run Types before the app's config.
-const chunkOf = (id: string): string | undefined => {
-	const generated = /~arktype[/\\]([^/?\\]+)/.exec(id)
-	if (generated) return `generated-${generated[1]}`
-	const own = /[/\\](\w+)\.ts(?:\?v=(\d))?$/.exec(id)
-	return own && !id.includes("node_modules") && own[1] !== "main" ?
-			`${own[1]}${own[2] ?? ""}`
-		:	undefined
-}
+const chunkOf =
+	(dir: string) =>
+	(id: string): string | undefined => {
+		const generated = /~arktype[/\\]([^/?\\]+)/.exec(id)
+		if (generated) return `generated-${generated[1]}`
+		const own = /[/\\](\w+)\.ts(?:\?v=(\d))?$/.exec(id)
+		if (own && id.startsWith(dir) && own[1] !== "main")
+			return `${own[1]}${own[2] ?? ""}`
+		// so a chunk run again doesn't import the entry that's waiting for it
+		return id.endsWith("main.ts") ? undefined : "vendor"
+	}
 
 const viteOutcome = async (
 	dir: string,
@@ -656,7 +679,9 @@ const viteOutcome = async (
 							output: {
 								entryFileNames: "[name].js",
 								chunkFileNames: "[name].js",
-								manualChunks: chunkOf
+								// a chunk run again is read by the name it declares
+								minifyInternalExports: false,
+								manualChunks: chunkOf(dir)
 							}
 						}
 					}
@@ -918,7 +943,10 @@ const errorOf = (out: string) => /^\w*Error\b.*$/m.exec(out)?.[0]
 
 const check = async (app: App): Promise<boolean> => {
 	const dir = writeApp(app)
-	const expected = run(["--conditions", "ark-ts", "main.ts"], dir)
+	const expected = run(
+		["--conditions", "ark-ts", "--import", loadAgain, join(dir, "main.ts")],
+		dir
+	)
 	const fullExpected = observationsOf(expected)
 	const withoutIdentity = (observations: unknown[] | undefined) =>
 		app.comparesIdentity ? observations?.slice(0, -2) : observations
@@ -933,6 +961,8 @@ const check = async (app: App): Promise<boolean> => {
 		// tsc doesn't rewrite a query, and webpack leaves a queried module's sites
 		// untransformed (F3)
 		if (/^(emit|webpack)/.test(host) && app.importing === "query") continue
+		// only this layout names a chunk main can import again
+		if (app.importing === "again" && !host.startsWith("chunks")) continue
 		const outcome = await outcomeOf(host, dir, app)
 		if ("refused" in outcome) {
 			bump(tally.refused, headOf(outcome.refused))
@@ -1033,7 +1063,8 @@ if (countArg === "catalog") {
 				{ read, wrapper }
 			],
 			importing: (importingArg ?? "static") as App["importing"],
-			writes: true,
+			// a chunk holding a module it wrote state to reads it anew when run again
+			writes: importingArg !== "again",
 			config: "none",
 			configFirst: true,
 			readsAllows: false,
