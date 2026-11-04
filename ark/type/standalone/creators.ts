@@ -16,6 +16,8 @@ export interface RootApplier {
 	failure?: keyof typeof failureSources
 	// reads a name its module declares, so it can't be shared
 	local?: boolean
+	// declares the parts it reads, which its first call creates
+	bound?: string
 	// a function V8 specializes for one root, so a creator can't hold it for many
 	ownsCalls?: boolean
 }
@@ -98,6 +100,58 @@ export const madeApplierOf = (
 	) ?
 		applied
 	:	undefined
+
+// an applier whose parts its first call creates, from parts[1], and assigns.
+// They're variables rather than forwarders, so a call past the first runs what
+// an eager validator's does: a let would check it's initialized at each read,
+// and V8 allocates a function's feedback only after its first call, so no call
+// site records the function assigning them
+export const boundApplierOf = (
+	applier: RootApplier,
+	readsAllows: boolean
+): RootApplier | undefined => {
+	const pattern = /^{ [^}]* }/.exec(applier.params)?.[0]
+	if (!pattern) return
+	const reads = [...pattern.matchAll(/\d+: (\w+)/g)].map(match => match[1])
+	const bound =
+		readsAllows && !reads.includes("allows") ?
+			pattern.replace("{ ", "{ 0: allows, ")
+		:	pattern
+	const names = readsAllows ? [...new Set(["allows", ...reads])] : reads
+	const assigned = `(${bound} = parts[1]())`
+	const entries =
+		/^\([^)]*\) => allows\(data\)/.test(applier.apply) ? ["allows"] : names
+	const rest = applier.params.slice(pattern.length)
+	const passedDown = rest.includes("=")
+	const initial = (name: string) =>
+		!entries.includes(name) ? name
+		: entries.length === 1 ?
+			`${name} = (...args) => (${assigned}, ${name}(...args))`
+		:	`${name} = (...args) => (bind(), ${name}(...args))`
+	const declared = [
+		...(entries.length > 1 ? [`bind = () => ${assigned}`] : []),
+		...names.map(initial)
+	]
+	return {
+		...applier,
+		// a default reads only what's declared by params before it
+		params:
+			passedDown ?
+				`parts${rest.replace(/ *, *(\w+ =)/, `, ${names.join(", ")}, $1`)}`
+			:	`parts${rest}`,
+		bound: [
+			passedDown ?
+				declared
+					.filter(declaration => declaration.includes(" = "))
+					.map(declaration =>
+						declaration.startsWith("bind") ? `var ${declaration}` : declaration
+					)
+					.join("\n")
+			:	`var ${declared.join(", ")}`,
+			...(readsAllows ? ["parts[0] = data => allows(data)"] : [])
+		].join("\n")
+	}
+}
 
 // the attributes a validator is created with, as its creator takes them
 export const writtenAttributesOf = (
@@ -236,7 +290,7 @@ const creatorFormOf = (
 		allowsOf: frozen(
 			baking,
 			makes === "node" ? "parts.allows"
-			: ownsValidator || makes ? "parts[0]"
+			: ownsValidator || makes || applier?.bound ? "parts[0]"
 			: "allows"
 		)
 	}
@@ -286,6 +340,7 @@ const creatorBodyOf = (baking: Baking, form: CreatorForm): string => {
 	)
 	const call = creatorCallOf(baking, form)
 	return [
+		applier?.bound ?? "",
 		form.inlined || form.isApply ? ""
 		: applier ? `const rootApply = ${applier.apply}`
 		: makes ? "const rootApply = make(parts)"

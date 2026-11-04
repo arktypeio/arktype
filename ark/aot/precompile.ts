@@ -72,7 +72,8 @@ import {
 	type StandaloneBake,
 	type StandaloneModules,
 	type StandaloneOptions,
-	type Configured
+	type Configured,
+	defersCreation
 } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
 import { dirname, join } from "node:path"
@@ -376,6 +377,12 @@ export interface PrecompileOptions extends InterpreterOptions {
 	allowUnsafe?: boolean | undefined
 	/** packages that don't opt in, precompiled ("aot") or run on arktype */
 	dependencies?: DependencyModes | undefined
+	/**
+	 * @internal whether validators are created at their first call: "large" for
+	 * a module writing enough, as Turbopack's production build sets, true for a
+	 * test, whatever it writes and in place of one function
+	 */
+	defers?: boolean | "large" | undefined
 }
 
 type ProgramReads = Pick<
@@ -387,6 +394,7 @@ type ProgramReads = Pick<
 	| "combines"
 	| "shapes"
 	| "baked"
+	| "flattens"
 	| "cells"
 > & {
 	// what a module another plugin rewrote bakes, given its runtime
@@ -397,6 +405,8 @@ type ProgramReads = Pick<
 
 interface ProgramUsage {
 	members: ValidatorMembers
+	// whether its units are declared in one function
+	flattens?: boolean | undefined
 	// the introspection members each site's validator bakes, as its readers
 	// read it, by the site's key
 	baked?: ReadonlyMap<string, BakedMembers> | undefined
@@ -566,6 +576,12 @@ const contentOfDefaulted = (
 	return names.includes(undefined) ? undefined : `${id} ${names.join()}`
 }
 
+const writtenCharsOf = ({ code, modules }: StandaloneModules): number => {
+	let chars = code.length
+	for (const specifier in modules) chars += modules[specifier].length
+	return chars
+}
+
 const holdsCell = (value: unknown, cells: HoleCells | undefined): boolean =>
 	!!cells &&
 	isFoldable(value) &&
@@ -591,6 +607,7 @@ export class Precompiler {
 	interpreter: Interpreter
 	config: string | undefined
 	inline: boolean
+	private defers: boolean | "large" | undefined
 	checkHelpers: boolean
 	private mode: PrecompileMode
 	// false where `config` is, so configure() fails
@@ -672,6 +689,7 @@ export class Precompiler {
 		this.config = opts.config || undefined
 		this.configures = opts.config !== false
 		this.inline = !!opts.inline
+		this.defers = opts.defers
 		const checks = opts.creationChecks ?? "types"
 		this.checkHelpers = this.mode === "standalone" && checks === "helpers"
 		this.shadow = this.mode === "standalone" && !!opts.shadow
@@ -896,9 +914,11 @@ export class Precompiler {
 		const flattens =
 			!!program.isOneChunk &&
 			!this.inline &&
-			this.standalone.optimize === "speed"
+			this.standalone.optimize === "speed" &&
+			this.defers !== true
 		// a program read whole is written too, as its issues may hold less than any
 		const usage: ProgramUsage = {
+			flattens,
 			members: {
 				...this.members,
 				...Object.fromEntries(dropped.map(member => [member, false]))
@@ -3262,6 +3282,7 @@ export class Precompiler {
 			shapes,
 			baked,
 			bakedAs,
+			flattens,
 			cells
 		}: ProgramReads,
 		diagnostics: Diagnostic[]
@@ -3312,35 +3333,50 @@ export class Precompiler {
 		}
 		for (;;) {
 			const refusalsByName: Record<string, string[]> = {}
-			const validators =
-				Object.keys(exportsByName).length ?
-					writeValidators(
-						exportsByName,
-						{
-							...this.standalone,
-							holdsIds: this.holdsIds,
-							members,
-							called,
-							readsAllows,
-							piped,
-							combines,
-							shapes,
-							cells,
-							baked: bakedByName,
-							configured,
-							bake: write => this.bake(write),
-							sharedWrites: this.sharedWrites,
-							hoisted: this.isReachedEarly(module),
-							// shadow mode calls what it compares
-							values: !this.shadow,
-							readOnLoad: [...namesBySite]
-								.filter(([site]) => site.declarationStart !== undefined)
-								.map(([, name]) => name)
-						},
-						refusalsByName,
-						this.inline
-					)
-				:	noValidators
+			const write = (defers: boolean) =>
+				writeValidators(
+					exportsByName,
+					{
+						...this.standalone,
+						holdsIds: this.holdsIds,
+						members,
+						called,
+						readsAllows,
+						piped,
+						combines,
+						shapes,
+						cells,
+						baked: bakedByName,
+						configured,
+						bake: write => this.bake(write),
+						sharedWrites: this.sharedWrites,
+						defers,
+						// a unit a first call reads runs at its first call too
+						hoisted: this.isReachedEarly(module) || defers,
+						// shadow mode calls what it compares
+						values: !this.shadow,
+						readOnLoad: [...namesBySite]
+							.filter(([site]) => site.declarationStart !== undefined)
+							.map(([, name]) => name)
+					},
+					refusalsByName,
+					this.inline
+				)
+			const canDefer =
+				!flattens &&
+				this.standalone.lazy === true &&
+				this.standalone.optimize === "speed"
+			let validators = noValidators
+			if (Object.keys(exportsByName).length) {
+				validators = write(canDefer && this.defers === true)
+				if (
+					canDefer &&
+					this.defers === "large" &&
+					!Object.keys(refusalsByName).length &&
+					defersCreation(writtenCharsOf(validators))
+				)
+					validators = write(true)
+			}
 			for (const [site, name] of namesBySite) {
 				if (!refusalsByName[name]) continue
 				diagnostics.push(this.refuseWritten(module, site, refusalsByName[name]))

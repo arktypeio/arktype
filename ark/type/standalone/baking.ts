@@ -135,6 +135,14 @@ export interface ConfiguredModule {
 	config: string
 }
 
+// from this many characters written for a module, what its import spends on code
+// it may never call outweighs reading it through a variable. A module's own text
+// decides, so no output depends on build order
+const deferredFrom = 90_000
+
+export const defersCreation = (writtenChars: number): boolean =>
+	writtenChars >= deferredFrom
+
 export interface StandaloneOptions {
 	configured?: Configured
 	members?: ValidatorMembers | undefined
@@ -158,6 +166,8 @@ export interface StandaloneOptions {
 	values?: boolean | undefined
 	// exports a site reads as its module loads, which a lazy build creates in place
 	readOnLoad?: readonly string[] | undefined
+	// create a validator's traversals at its first call, not as its module loads
+	defers?: boolean | undefined
 	// false where a detailed size build compiles nodes rather than writing checkers
 	combines?: boolean | undefined
 	// where a size build writes checkers, write common intersections as one call each
@@ -221,6 +231,8 @@ export interface Baking extends ValidatorReads {
 	jsonInput: boolean
 	hoisted: boolean
 	shortest: boolean
+	// whether a validator's traversals are created at its first call
+	defers: boolean
 	flattens: boolean
 	combines: boolean
 	shapes: boolean
@@ -242,6 +254,8 @@ export const writeFunction = (
 	isCalledOnLoad = true
 ): string =>
 	baking.hoisted ? `function ${name}(${params}) {\n${body}\n}`
+	: baking.defers && !isCalledOnLoad ?
+		`const ${name} = function (${params}) {\n${body}\n}`
 	: baking.shortest || !isCalledOnLoad ?
 		`const ${name} = (${params}) => {\n${body}\n}`
 	:	`const ${name} = ((${params}) => {\n${body}\n})`
@@ -427,6 +441,8 @@ export const bakingOf = (
 		jsonInput: opts.jsonInput === true,
 		hoisted: opts.hoisted === true,
 		shortest: opts.optimize === "size",
+		defers:
+			opts.defers === true && opts.lazy !== false && opts.optimize !== "size",
 		flattens: opts.optimize === "size" && opts.hoisted !== true && isModular,
 		combines: opts.combines !== false,
 		shapes: opts.shapes === true,
