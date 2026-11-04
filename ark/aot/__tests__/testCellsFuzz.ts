@@ -812,6 +812,7 @@ const normalized = (observation: unknown) =>
 		?.replace(/\$ark\.\w+?\$?\d+/g, "$ark.fn")
 		.replace(/ \(was (?:[^"\\]|\\.)*?\)(?=(?:\\+n)|\\*")/g, "")
 		.replace(/value at \[/g, "[")
+		.replace(/[\w$]+\.(?=[\w$]+ is not a function)/g, "")
 		.replace(
 			/according to (?:an anonymous predicate|[\w$]+)/g,
 			"according to a predicate"
