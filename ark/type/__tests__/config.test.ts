@@ -11,6 +11,29 @@ import { en } from "arktype/locales/en"
 import { withConfig } from "./locales/withConfig.ts"
 
 contextualize(() => {
+	it("a sequence's writer runs as it's created, before its errors", () => {
+		const writing = type.scope(
+			{},
+			{
+				sequence: {
+					description: () => {
+						throw new Error("written")
+					}
+				}
+			}
+		)
+		attest(() => writing.type("string[]")).throws("written")
+		attest(() =>
+			writing.schema({
+				proto: Array,
+				sequence: {
+					prefix: [{ domain: "string" }],
+					postfix: [{ domain: "number" }]
+				}
+			})
+		).throws("written")
+	})
+
 	it("tuple expression", () => {
 		const description = "a series of characters"
 		const types = scope({

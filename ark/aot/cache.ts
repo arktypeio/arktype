@@ -12,7 +12,12 @@ import {
 import { dirname, join, relative } from "node:path"
 import { fileURLToPath } from "node:url"
 import { threadId } from "node:worker_threads"
-import { readFile, type PrecompileHost } from "./host.ts"
+import {
+	arkPackageName,
+	packageRootOf,
+	readFile,
+	type PrecompileHost
+} from "./host.ts"
 
 // what a stored answer read, which must read the same for it to be reused
 export interface Snapshot {
@@ -48,24 +53,29 @@ export const hashOf = (text: string): string =>
 const isHash = (name: string): boolean => /^[\w-]{43}$/.test(name)
 
 // the code writing an answer: arktype's packages by content, as a linked
-// workspace or a repacked tarball changes it without a version, the
-// precompiler's other dependencies by version, and the runtime
+// workspace or a repacked tarball changes it without a version, each as the
+// package importing it resolves it, the precompiler's other dependencies by
+// version, and the runtime
 const fingerprintOf = (): string => {
 	const parts = [process.version, process.platform, process.arch]
-	for (const name of ownPackages) {
-		const root = packageRootOf(
-			name === "@ark/aot" ?
-				fileURLToPath(import.meta.url)
-			:	fileURLToPath(import.meta.resolve(name))
+	const roots = [rootOf(fileURLToPath(import.meta.url))]
+	for (const root of roots) {
+		const { name, dependencies, peerDependencies } = JSON.parse(
+			readFileSync(join(root, "package.json"), "utf8")
 		)
 		const files: string[] = []
 		collectCode(root, files)
 		parts.push(name)
 		for (const file of files.sort())
 			parts.push(relative(root, file), hashOf(readFileSync(file, "utf8")))
+		for (const dependency in { ...dependencies, ...peerDependencies }) {
+			const found =
+				arkPackageName.test(dependency) && packageRootOf(dependency, root)
+			if (found && !roots.includes(found)) roots.push(found)
+		}
 	}
 	for (const name of versionedDependencies) {
-		const root = packageRootOf(fileURLToPath(import.meta.resolve(name)))
+		const root = rootOf(fileURLToPath(import.meta.resolve(name)))
 		parts.push(
 			name,
 			JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version
@@ -74,14 +84,6 @@ const fingerprintOf = (): string => {
 	return hashOf(parts.join("\n"))
 }
 
-const ownPackages = [
-	"@ark/aot",
-	"arktype",
-	"@ark/schema",
-	"@ark/util",
-	"arkregex"
-]
-
 const versionedDependencies = [
 	"oxc-parser",
 	"oxc-resolver",
@@ -89,7 +91,7 @@ const versionedDependencies = [
 	"@jridgewell/sourcemap-codec"
 ]
 
-const packageRootOf = (file: string): string => {
+const rootOf = (file: string): string => {
 	let dir = dirname(file)
 	while (!existsSync(join(dir, "package.json"))) dir = dirname(dir)
 	return dir
@@ -114,6 +116,11 @@ const collectCode = (dir: string, files: string[]) => {
 
 let fingerprint: string | undefined
 
+// names the directory of this code's answers, and versions a bundler's
+// persistent cache, which a module's dependencies don't turn over as the
+// code changes without a version
+export const fingerprintOfCode = (): string => (fingerprint ??= fingerprintOf())
+
 export const mtimeOf = (file: string): number =>
 	statSync(file, { throwIfNoEntry: false })?.mtimeMs ?? -1
 
@@ -128,12 +135,12 @@ export class AnswerCache {
 	static maxEntries = 50_000
 
 	constructor(cwd: string) {
-		fingerprint ??= fingerprintOf()
+		const version = fingerprintOfCode()
 		const root = join(cwd, "node_modules", ".cache", "ark")
-		this.dir = join(root, fingerprint)
+		this.dir = join(root, version)
 		if (existsSync(root)) {
 			for (const name of readdirSync(root)) {
-				if (name !== fingerprint && isHash(name))
+				if (name !== version && isHash(name))
 					rmSync(join(root, name), { recursive: true, force: true })
 			}
 		}
@@ -225,9 +232,7 @@ export interface SnapshotCheck {
 
 // whether each file and import a snapshot names reads and resolves the
 // same, judged once each until a file it read changes or the build resets,
-// and the build gave each module it names as given what it was given.
-// A snapshot restates what its precompiler read again once a change made it
-// forget it, which holds over what its parents state
+// and the build gave each module it names as given what it was given last
 export const createSnapshotCheck = (
 	cache: AnswerCache,
 	host: PrecompileHost,
@@ -245,32 +250,22 @@ export const createSnapshotCheck = (
 	const tsconfigs: Record<string, string | null> = {}
 	const answers: Record<string, string | null> = {}
 	const holdsFrom = (id: string): Snapshot["given"] | false => {
-		const stated = new Set<string>()
 		const asked: Snapshot["asked"] = []
 		// read from the cache, so no record's module is a key every object has
 		const given: Record<string, string> = Object.create(null)
 		for (let next: string | undefined = id; next !== undefined; ) {
 			const snapshot = cache.snapshot(next)
 			if (!snapshot) return false
-			for (const [file, hash] of snapshot.reads) {
-				if (stated.has(file)) continue
-				stated.add(file)
+			for (const [file, hash] of snapshot.reads)
 				if ((hashes[file] ??= hashOfFile(file)) !== hash) return false
-			}
 			for (const [importer, specifier, target] of snapshot.resolutions) {
-				const key = `${importer}\0${specifier}`
-				if (stated.has(key)) continue
-				stated.add(key)
 				if (
-					(targets[key] ??= host.resolve(specifier, importer) ?? null) !==
-					target
+					(targets[`${importer}\0${specifier}`] ??=
+						host.resolve(specifier, importer) ?? null) !== target
 				)
 					return false
 			}
 			for (const [importer, tsconfig] of snapshot.tsconfigs) {
-				const key = `${importer}\0`
-				if (stated.has(key)) continue
-				stated.add(key)
 				if (
 					(tsconfigs[importer] ??= host.tsconfigOf?.(importer) ?? null) !==
 					tsconfig

@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
+import { AnswerCache } from "@ark/aot/internal/cache.ts"
 import {
 	emitDeclarations,
 	writeDeclareFrameworkMessage,
@@ -9,6 +10,7 @@ import {
 	writeStandaloneDependencyMessage,
 	withAllowUnsafe,
 	unbundledMessage,
+	writeBundledDependentMessage,
 	writeBundledExternalMessage,
 	writeExternalizedMessage,
 	writeNextExternalMessage,
@@ -17,7 +19,8 @@ import {
 	writePrecompiledDependencyMessage,
 	writeUncachedModuleMessage,
 	writeUntransformedImportMessage,
-	writeUnwrittenModuleMessage
+	writeUnwrittenModuleMessage,
+	writeWatchedSettingsMessage
 } from "@ark/aot/internal/messages.ts"
 import {
 	writeEntryHelperMessage,
@@ -40,10 +43,10 @@ import {
 	symlinkSync,
 	writeFileSync
 } from "node:fs"
-import { isAbsolute, join, relative, sep } from "node:path"
+import { basename, isAbsolute, join, relative, sep } from "node:path"
 import { stripVTControlCharacters } from "node:util"
 import { Worker } from "node:worker_threads"
-import { rollup, type Plugin as RollupPlugin } from "rollup"
+import { rollup, watch, type Plugin as RollupPlugin } from "rollup"
 import {
 	createBuilder,
 	createServer,
@@ -710,6 +713,11 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 		])
 	})
 
+	const readsErrors = `import { type } from "arktype"
+
+export const failed = out => out instanceof type.errors
+`
+
 	describe("fails a build whose externals take a package reaching arktype", () => {
 		const errorsOf = async (
 			build: typeof webpack | typeof rspack,
@@ -726,10 +734,13 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 						name: "reads-errors",
 						peerDependencies: { arktype: "*" }
 					}),
+					"node_modules/reads-errors/index.js": readsErrors,
 					"node_modules/wraps-errors/package.json": JSON.stringify({
 						name: "wraps-errors",
 						dependencies: { "reads-errors": "*" }
 					}),
+					"node_modules/wraps-errors/index.js":
+						'export { failed } from "reads-errors"\n',
 					"node_modules/native/package.json": JSON.stringify({
 						name: "native"
 					}),
@@ -745,7 +756,8 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 						JSON.stringify({
 							name: "nested",
 							peerDependencies: { arktype: "*" }
-						})
+						}),
+					"node_modules/bundled/node_modules/nested/index.js": readsErrors
 				},
 				fromHere("temp", "webpackReachingExternals", name)
 			)
@@ -804,6 +816,288 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 			attest(
 				await errorsOf(webpack, precompile.webpack, "native", ["native"])
 			).equals([])
+		})
+	})
+
+	describe("fails a bundle leaving external a package importing arktype", () => {
+		const dependent = (name: string) =>
+			writeFixture(
+				{
+					"package.json": JSON.stringify({ type: "module" }),
+					"main.ts": `import { type } from "arktype"
+import { failed } from "reads-errors"
+
+const out = type({ a: "string" })({ a: 1 })
+console.log(out instanceof type.errors, failed(out))
+`,
+					"declaring.ts": `import { type } from "arktype"
+import { vendorOf } from "declares-arktype"
+
+console.log(vendorOf(type({ a: "string" })))
+`,
+					"subpath.ts": `import { type } from "arktype"
+import { plain } from "has-subpaths/plain"
+
+console.log(plain(type({ a: "string" })))
+`,
+					"otherSubpath.ts": `import { failed } from "has-subpaths/errors"
+
+console.log(failed)
+`,
+					"computed.ts": `import { load } from "computes-imports"
+
+console.log(load)
+`,
+					"defining.ts": `import { Defined } from "defines-types"
+
+console.log(Defined({ a: "ok" }))
+`,
+					"node_modules/defines-types/package.json": JSON.stringify({
+						name: "defines-types",
+						type: "module",
+						exports: "./index.js",
+						peerDependencies: { arktype: "*" }
+					}),
+					"node_modules/defines-types/index.js": `import { type } from "arktype"
+
+export const Defined = type({ a: "string" })
+`,
+					"hoisting.ts": `import { failed } from "bundled"
+
+console.log(failed)
+`,
+					"node_modules/reads-errors/package.json": JSON.stringify({
+						name: "reads-errors",
+						type: "module",
+						exports: "./index.js",
+						peerDependencies: { arktype: "*" }
+					}),
+					"node_modules/reads-errors/index.js": readsErrors,
+					// as hono-openapi's converter does, reading a Type it's passed
+					"node_modules/declares-arktype/package.json": JSON.stringify({
+						name: "declares-arktype",
+						type: "module",
+						exports: "./index.js",
+						peerDependencies: { arktype: "*" },
+						peerDependenciesMeta: { arktype: { optional: true } }
+					}),
+					"node_modules/declares-arktype/index.js": `export const vendorOf = schema =>
+	schema["~standard"].vendor === "arktype"
+`,
+					// as @hookform/resolvers does, importing arktype from one subpath
+					"node_modules/has-subpaths/package.json": JSON.stringify({
+						name: "has-subpaths",
+						type: "module",
+						exports: { "./plain": "./plain.js", "./errors": "./errors.js" },
+						peerDependencies: { arktype: "*" }
+					}),
+					"node_modules/has-subpaths/plain.js":
+						'export const plain = schema => schema["~standard"]\n',
+					"node_modules/has-subpaths/errors.js": readsErrors,
+					"node_modules/computes-imports/package.json": JSON.stringify({
+						name: "computes-imports",
+						type: "module",
+						exports: "./index.js",
+						peerDependencies: { arktype: "*" }
+					}),
+					"node_modules/computes-imports/index.js":
+						"export const load = name => import(`./vendors/${name}.js`)\n",
+					"node_modules/computes-imports/vendors/arktype.js": readsErrors,
+					"node_modules/bundled/package.json": JSON.stringify({
+						name: "bundled",
+						type: "module",
+						exports: "./index.js",
+						dependencies: { nested: "*" }
+					}),
+					"node_modules/bundled/index.js": 'export { failed } from "nested"\n',
+					"node_modules/bundled/node_modules/nested/package.json":
+						JSON.stringify({
+							name: "nested",
+							type: "module",
+							exports: "./index.js",
+							peerDependencies: { arktype: "*" }
+						}),
+					"node_modules/bundled/node_modules/nested/index.js": readsErrors
+				},
+				fromHere("temp", "bundledDependents", name)
+			)
+		const ssrBuild = (
+			root: string,
+			{
+				entry = "main.ts",
+				noExternal = [],
+				opts = {}
+			}: {
+				entry?: string
+				noExternal?: string[]
+				opts?: PrecompileUnpluginOptions
+			} = {}
+		) => {
+			const config = viteConfig({ cwd: root, ...opts }, root)
+			return viteBuild({
+				...config,
+				ssr: { ...config.ssr, noExternal },
+				build: { write: false, ssr: entry }
+			}) as Promise<Rolldown.RolldownOutput>
+		}
+		const messageOf = (build: Promise<unknown>) =>
+			build.then(
+				() => "built",
+				(e: Error) => e.message
+			)
+		const leaves = (name: string, noExternal?: string) =>
+			withAllowUnsafe(writeBundledDependentMessage(name, noExternal))
+
+		it("vite's server leaves it where ssr.noExternal doesn't name it", async () => {
+			attest(
+				(await messageOf(ssrBuild(dependent("ssr")))).includes(
+					leaves("reads-errors", "ssr.noExternal")
+				)
+			).equals(true)
+		})
+
+		it("so one ssr.noExternal names reads the runtime's errors", async () => {
+			const { output } = await ssrBuild(dependent("inlined"), {
+				noExternal: ["reads-errors"]
+			})
+			attest(run(output[0].code)).equals("true true\n")
+		})
+
+		it("names the option of another server environment", async () => {
+			const root = dependent("environment")
+			const builder = await createBuilder({
+				...viteConfig({ cwd: root }, root),
+				environments: {
+					edge: {
+						consumer: "server",
+						build: { write: false, ssr: "main.ts" }
+					}
+				},
+				builder: {}
+			})
+			attest(
+				(await messageOf(builder.build(builder.environments.edge))).includes(
+					leaves("reads-errors", "environments.edge.resolve.noExternal")
+				)
+			).equals(true)
+		})
+
+		it("allows one only declaring arktype", async () => {
+			attest(
+				await messageOf(
+					ssrBuild(dependent("declaring"), { entry: "declaring.ts" })
+				)
+			).equals("built")
+		})
+
+		it("reads the subpath the program imports", async () => {
+			attest(
+				await messageOf(ssrBuild(dependent("plain"), { entry: "subpath.ts" }))
+			).equals("built")
+			attest(
+				(
+					await messageOf(
+						ssrBuild(dependent("subpath"), { entry: "otherSubpath.ts" })
+					)
+				).includes(leaves("has-subpaths", "ssr.noExternal"))
+			).equals(true)
+		})
+
+		it("assumes a computed import reaches what its package imports", async () => {
+			attest(
+				(
+					await messageOf(
+						ssrBuild(dependent("computed"), { entry: "computed.ts" })
+					)
+				).includes(leaves("computes-imports", "ssr.noExternal"))
+			).equals(true)
+		})
+
+		it("names the setting that builds one defining Types", async () => {
+			const defining = { entry: "defining.ts" }
+			attest(
+				(await messageOf(ssrBuild(dependent("defines"), defining))).includes(
+					withAllowUnsafe(writeStandaloneDependencyMessage("defines-types"))
+				)
+			).equals(true)
+			for (const mode of ["aot", "arktype"] as const) {
+				const { output } = await ssrBuild(dependent(`defines-${mode}`), {
+					...defining,
+					opts: { dependencies: { "defines-types": mode } }
+				})
+				attest(run(output[0].code)).equals("{ a: 'ok' }\n")
+			}
+		})
+
+		it("warns with allowUnsafe, and runtime: arktype shares it", async () => {
+			attest(
+				await messageOf(
+					ssrBuild(dependent("unsafe"), { opts: { allowUnsafe: true } })
+				)
+			).equals("built")
+			attest(
+				await messageOf(
+					ssrBuild(dependent("arktype"), { opts: { runtime: "arktype" } })
+				)
+			).equals("built")
+		})
+
+		it("rollup, by the file a tool resolves it to", async () => {
+			const root = dependent("rollup")
+			const file = join(root, "node_modules/reads-errors/index.js")
+			const message = await messageOf(
+				rollup({
+					input: join(root, "main.ts"),
+					logLevel: "silent",
+					makeAbsoluteExternalsRelative: false,
+					plugins: [
+						{
+							name: "externals",
+							resolveId: id =>
+								id === "reads-errors" ? { id: file, external: true } : null
+						},
+						precompile.rollup({ cwd: root, conditions }),
+						{
+							name: "strip",
+							transform: code => transformSync(code, { loader: "ts" }).code
+						}
+					]
+				})
+			)
+			attest(message.includes(leaves("reads-errors"))).equals(true)
+		})
+
+		const esbuildMessage = (name: string, entry: string, external: string) => {
+			const root = dependent(name)
+			return esbuild({
+				entryPoints: [join(root, entry)],
+				bundle: true,
+				write: false,
+				format: "esm",
+				logLevel: "silent",
+				conditions,
+				external: [external],
+				plugins: [precompile.esbuild({ cwd: root, conditions })]
+			}).then(
+				() => "built",
+				(e: { errors: { text: string }[] }) => e.errors[0].text
+			)
+		}
+
+		it("esbuild, as the module importing it resolves it", async () => {
+			attest(await esbuildMessage("esbuild", "hoisting.ts", "nested")).equals(
+				leaves("nested")
+			)
+		})
+
+		it("esbuild, with both a package defining Types needs", async () => {
+			attest(
+				await esbuildMessage("esbuildDefines", "defining.ts", "defines-types")
+			).equals(
+				withAllowUnsafe(
+					`${writeBundledDependentMessage("defines-types", undefined)}\n${writeStandaloneDependencyMessage("defines-types")}`
+				)
+			)
 		})
 	})
 
@@ -1294,6 +1588,248 @@ console.log(type({ n: Max })({ n: 2 }) instanceof type.errors)
 		attest([unchanged - first - 1, nextThreadId() - unchanged - 1]).equals([
 			1, 1
 		])
+	})
+
+	describe("settings that change while it watches", () => {
+		const writeSettings = (root: string, settings: object) =>
+			writeFileSync(
+				join(root, "ark.json"),
+				JSON.stringify({ precompile: settings })
+			)
+
+		// a program whose output depends on its settings, as errors: "first"
+		// does, and the text of a module named alike under each, as
+		// optimize: "size" writes an expression's
+		const settingsApp = (main = "main.ts") => {
+			const root = writeFixture({
+				[main]:
+					'import { type } from "arktype"\n\nconst User = type({ name: "string", age: "number" })\n\nconsole.log(String(User({})), User.expression)\n'
+			})
+			writeSettings(root, { errors: "first" })
+			mkdirSync(join(root, "node_modules"))
+			symlinkSync(
+				fromHere("..", "..", "type"),
+				join(root, "node_modules/arktype")
+			)
+			return root
+		}
+
+		const stripping: RollupPlugin = {
+			name: "stripping",
+			transform: (code, id) =>
+				id.endsWith(".ts") ?
+					transformSync(code, { loader: "ts" }).code
+				:	undefined
+		}
+
+		// each bundle a watch build writes, and each error it fails with
+		const watched = () => {
+			const bundles: string[] = []
+			const errors: string[] = []
+			const collecting = {
+				name: "collecting",
+				generateBundle: (
+					_: unknown,
+					bundle: Record<string, { type: string; code?: string }>
+				) => {
+					bundles.push(
+						Object.values(bundle)
+							.map(output => output.code ?? "")
+							.join("\n")
+					)
+				}
+			}
+			const onEvent = (event: {
+				code: string
+				error?: { message: string }
+			}) => {
+				if (event.code === "ERROR")
+					errors.push(stripVTControlCharacters(event.error!.message))
+			}
+			// once the build has written or failed as many times, writing again
+			// what a watcher may not yet have watched
+			const settled = async (count: number, write?: () => void) => {
+				for (let waited = 0; bundles.length + errors.length < count; ) {
+					if ((waited += 50) > 20_000)
+						throw new Error(`waited for build ${count} in vain`)
+					if (write && waited % 1000 === 0) write()
+					await new Promise(resolve => setTimeout(resolve, 50))
+				}
+			}
+			return { bundles, errors, collecting, onEvent, settled }
+		}
+
+		it("rollup rebuilds each module under them, as ark.json is written", async () => {
+			const root = settingsApp()
+			rmSync(join(root, "ark.json"))
+			const plugins = () => [
+				precompile.rollup({ cwd: root, conditions }),
+				stripping
+			]
+			const { bundles, collecting, onEvent, settled } = watched()
+			const watcher = watch({
+				input: join(root, "main.ts"),
+				plugins: [...plugins(), collecting],
+				output: { dir: join(root, "out") },
+				watch: { buildDelay: 50 },
+				onwarn: () => {}
+			})
+			watcher.on("event", onEvent)
+			try {
+				await settled(1)
+				const write = () => writeSettings(root, { optimize: "size" })
+				write()
+				await settled(2, write)
+			} finally {
+				await watcher.close()
+			}
+			const fresh = await rollup({
+				input: join(root, "main.ts"),
+				plugins: plugins(),
+				onwarn: () => {}
+			})
+			const { output } = await fresh.generate({})
+			attest(bundles[1] === bundles[0]).equals(false)
+			attest(bundles[1]).equals(output[0].code)
+		})
+
+		it("vite rebuilds each module under them, or fails where they change its config", async () => {
+			const root = settingsApp()
+			const { bundles, errors, collecting, onEvent, settled } = watched()
+			const built = (watch: object | null = null) =>
+				withNodeEnv("production", async () => {
+					const config = viteConfig({ cwd: root }, root)
+					return viteBuild({
+						...config,
+						plugins: [...config.plugins!, collecting],
+						build: {
+							write: false,
+							minify: false,
+							lib: { entry: "main.ts", formats: ["es"] },
+							watch
+						}
+					})
+				})
+			const watcher = (await built({})) as Rolldown.RolldownWatcher
+			watcher.on("event", onEvent)
+			try {
+				await settled(1)
+				writeSettings(root, { optimize: "size" })
+				await settled(2)
+				// arktype's own runtime, which Vite's config inlines
+				writeSettings(root, { runtime: "arktype" })
+				await settled(3)
+			} finally {
+				await watcher.close()
+			}
+			writeSettings(root, { optimize: "size" })
+			await built()
+			attest(bundles[1] === bundles[0]).equals(false)
+			attest(bundles[1]).equals(bundles[2])
+			attest(
+				errors.map(error =>
+					error.endsWith(writeWatchedSettingsMessage("ark.json", "vite"))
+				)
+			).equals([true])
+		})
+
+		// in development throughout, as Vite reads its mode again as it restarts
+		it("vite's dev server restarts under them", () =>
+			withNodeEnv("development", async () => {
+				const root = settingsApp()
+				const served = async () => {
+					const server = await createServer(viteConfig({ cwd: root }, root))
+					return {
+						server,
+						code: async () => (await server.transformRequest("/main.ts"))?.code
+					}
+				}
+				const { server, code } = await served()
+				let restarted: string | undefined
+				try {
+					const before = await code()
+					writeSettings(root, { optimize: "size" })
+					server.watcher.emit("change", join(root, "ark.json"))
+					// a request it answers while restarting fails
+					for (let waited = 0; ; waited += 50) {
+						restarted = await code().catch(() => undefined)
+						if (restarted !== undefined && restarted !== before) break
+						if (waited > 20_000) throw new Error("it never restarted")
+						await new Promise(resolve => setTimeout(resolve, 50))
+					}
+				} finally {
+					await server.close()
+				}
+				const fresh = await served()
+				try {
+					attest<string | undefined>(restarted).equals(await fresh.code())
+				} finally {
+					await fresh.server.close()
+				}
+			}))
+
+		it("webpack fails under them, watching them as each module's", async () => {
+			const root = settingsApp("main.js")
+			const compiler = webpack({
+				mode: "development",
+				context: root,
+				entry: "./main.js",
+				target: "node",
+				devtool: false,
+				output: { path: join(root, "out") },
+				plugins: [precompile.webpack({ cwd: root })]
+			})
+			// each build's errors, the last failing it whole
+			const errors: string[][] = []
+			const watching = compiler.watch({}, (error, stats) => {
+				errors.push(
+					error ?
+						[error.message]
+					:	stats!
+							.toJson({ all: false, errors: true })
+							.errors!.map(error => error.message)
+				)
+				if (errors.length === 1) writeSettings(root, { optimize: "size" })
+			})
+			for (let waited = 0; errors.length < 2 && waited < 20_000; waited += 50)
+				await new Promise(resolve => setTimeout(resolve, 50))
+			await new Promise(resolve => watching!.close(resolve))
+			attest(errors).equals([
+				[],
+				[writeWatchedSettingsMessage("ark.json", "webpack")]
+			])
+		})
+
+		it("esbuild fails under them until they're restored", async () => {
+			const root = settingsApp()
+			const ctx = await context({
+				entryPoints: [join(root, "main.ts")],
+				bundle: true,
+				write: false,
+				format: "esm",
+				conditions,
+				logLevel: "silent",
+				plugins: [precompile.esbuild({ cwd: root, conditions })]
+			})
+			const rebuilt = () =>
+				ctx.rebuild().then(
+					result => result.outputFiles[0].text,
+					(e: { errors: { text: string }[] }) =>
+						e.errors.map(error => error.text)
+				)
+			try {
+				const first = await rebuilt()
+				writeSettings(root, { optimize: "size" })
+				const changed = await rebuilt()
+				writeSettings(root, { errors: "first" })
+				attest([changed, (await rebuilt()) === first]).equals([
+					[writeWatchedSettingsMessage("ark.json", "esbuild")],
+					true
+				])
+			} finally {
+				await ctx.dispose()
+			}
+		})
 	})
 
 	it("fails once per dependency importing arktype, or warns with allowUnsafe", async () => {
@@ -2429,7 +2965,7 @@ console.log(T.allows({ x: 1 }))
 		)
 	})
 
-	it("versions a persistent cache by the options, ark.json's included", () => {
+	it("versions a persistent cache by the code and options, ark.json's included", () => {
 		const root = writeFixture({ "package.json": "{}" })
 		const versionOf = (cache: { type: string; version?: string }) => {
 			const plugin = precompile.raw(
@@ -2448,6 +2984,8 @@ console.log(T.allows({ x: 1 }))
 		}
 		const unset = versionOf({ type: "filesystem" })
 		attest(versionOf({ type: "filesystem" })).equals(unset)
+		// as the cache's own directory turns over once the code changes
+		attest(unset?.includes(basename(new AnswerCache(root).dir))).equals(true)
 		writeFileSync(
 			join(root, "ark.json"),
 			JSON.stringify({ precompile: { errors: "none" } })

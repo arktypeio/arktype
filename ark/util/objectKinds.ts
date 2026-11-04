@@ -196,8 +196,9 @@ export const objectKindOf = <data extends object>(
 	// Array.isArray (https://github.com/arktypeio/arktype/issues/1597).
 	if (Array.isArray(data)) return "Array" as never
 
-	const constructors = builtinsOf()
 	let prototype: Partial<Object> | null = prototypeOf(data)
+	if (prototype === Object.prototype) return undefined
+	const constructors = builtinsOf()
 	while (
 		prototype?.constructor &&
 		(!isKeyOf(prototype.constructor.name, constructors) ||

@@ -14,6 +14,7 @@ import {
 	type UnpluginInstance,
 	type UnpluginOptions
 } from "unplugin"
+import { fingerprintOfCode } from "./cache.ts"
 import {
 	emitDeclarations,
 	refuseDeclare,
@@ -31,10 +32,10 @@ import {
 	createDevelopmentHost,
 	createNodeHost,
 	dependencyOf,
-	dependsOnArktype,
 	fileOf,
 	islandDependencySpecifier,
 	issueFeaturesFile,
+	modulesLoadingArktype,
 	optedInPackagesOf,
 	precompiledDependencyOf,
 	packageNameOf,
@@ -61,6 +62,7 @@ import {
 	writeConflictingPlugins,
 	unbundledMessage,
 	writePrecompiledDependencyMessage,
+	writeBundledDependentMessage,
 	writeBundledExternalMessage,
 	writeExternalizedMessage,
 	writeNextExternalMessage,
@@ -70,6 +72,7 @@ import {
 	writeUnwrittenModuleMessage,
 	writeVariantImportMessage,
 	writeUntransformedImportMessage,
+	writeWatchedSettingsMessage,
 	withAllowUnsafe
 } from "./messages.ts"
 import type { IssueFeatures } from "arktype/internal/standalone.ts"
@@ -94,6 +97,9 @@ import {
 	pruneBeforePluginMessage,
 	refusePrune,
 	resolvePrecompileOptions,
+	settingsFile,
+	settingsFileOf,
+	settingsPathsOf,
 	withSettingsFile
 } from "./settings.ts"
 import { createAsyncPrecompiler, type BundlerResolve } from "./worker.ts"
@@ -125,6 +131,8 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	const virtual =
 		meta.framework === "esbuild" || meta.framework === "bun" ? "" : "\0"
 	const given = opts
+	// what ark.json is read with, the call's options and the root it's found from
+	let settingsRead = given
 	// the worker applies the preset after the environment's defaults, known
 	// once the bundler has read its config
 	let set = withSettingsFile(given)
@@ -141,7 +149,14 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		resolve: BundlerResolve | undefined,
 		...message: PrecompileRequest
 	) =>
-		precompiler.then(send => send(message, resolve)).catch(rethrowAsBuildError)
+		precompiler
+			.then(send =>
+				// a dev server starts once, so it fails each request instead
+				changedSettings && isServing ?
+					throwBuildError(changedSettings)
+				:	send(message, resolve)
+			)
+			.catch(rethrowAsBuildError)
 	const request = (...message: PrecompileRequest) =>
 		requestResolving(undefined, ...message)
 	const replace = (send: ReturnType<typeof create>) => {
@@ -163,10 +178,16 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	}
 	// a changed file or configuration may need a new worker
 	const reset = () => {
+		checkSettings()
 		precompiler = precompiler.then(async send =>
 			// a config the worker can't read is reported at the next transform
 			(await send(["reset"]).catch(() => false)) ? replace(send) : send
 		)
+	}
+	// a build fails under settings it can't build with
+	const startBuild = () => {
+		reset()
+		if (changedSettings) throwBuildError(changedSettings)
 	}
 	// resolving arktype for a module outside node_modules doesn't wait on the
 	// worker, which may wait on the bundler
@@ -203,24 +224,23 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		opts?.dependencies
 	)
 	// arktype left to Node loads as itself, not as the runtime validators use
-	const inlinedOf = () =>
-		isStandalone ?
+	const inlinedOf = (opts: PrecompileUnpluginOptions, packages: string[]) =>
+		opts.runtime !== "arktype" ?
 			[
 				...runtimePackages,
 				// shadow mode, which reads its validators as arktype's runtime
-				...(opts?.shadow ? ["@ark/aot"] : []),
+				...(opts.shadow ? ["@ark/aot"] : []),
 				...packages,
-				...Object.keys(opts?.dependencies ?? {}).filter(
-					name => opts!.dependencies![name] === "arktype"
+				...Object.keys(opts.dependencies ?? {}).filter(
+					name => opts.dependencies![name] === "arktype"
 				)
 			]
 		:	packages
-	let inlined = inlinedOf()
+	let inlined = inlinedOf(opts, packages)
 	const transformedFilter = transformedFilterOf(packages)
-	// ark.json and the packages that opt in are found from the bundler's root unless cwd is set
-	const setRoot = (root: string) => {
-		if (given?.cwd !== undefined || root === (set.cwd ?? process.cwd())) return
-		set = withSettingsFile({ ...given, cwd: root })
+	const applySettings = (read: Options) => {
+		settingsRead = read
+		set = withSettingsFile(read)
 		refusePruneIn(set)
 		opts = resolvePrecompileOptions(set)
 		productionHost = createNodeHost(opts)
@@ -228,10 +248,66 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		resolveIn(isDevelopment)
 		isStandalone = opts.runtime !== "arktype"
 		variant = resolvedVariantOf(opts)
-		packages = optedInPackagesOf(root, opts.dependencies)
-		inlined = inlinedOf()
+		packages = optedInPackagesOf(opts.cwd ?? process.cwd(), opts.dependencies)
+		inlined = inlinedOf(opts, packages)
 		Object.assign(transformedFilter, transformedFilterOf(packages))
 		updateWorker()
+	}
+	// ark.json and the packages that opt in are found from the bundler's root unless cwd is set
+	const setRoot = (root: string) => {
+		if (given?.cwd !== undefined || root === (set.cwd ?? process.cwd())) return
+		applySettings({ ...given, cwd: root })
+	}
+	// Vite's, which restarts to read new settings into its config
+	let server: { restart(): Promise<void> } | undefined
+	// whether settings changed since the bundler cached a module it transformed
+	let rewritesCached = false
+	// settings changed since the build read them, which it fails under until
+	// they're restored or it restarts, where it can't build each module anew
+	// with the bundler's options read under them
+	let changedSettings: string | undefined
+	const checkSettings = () => {
+		const cwd = settingsRead?.cwd ?? process.cwd()
+		let read: PrecompileUnpluginOptions
+		let fixed: string
+		try {
+			read = withSettingsFile(settingsRead)
+			if (JSON.stringify(read) === JSON.stringify(set))
+				return void (changedSettings = undefined)
+			const resolved = resolvePrecompileOptions(read)
+			// what Vite's config read of them
+			fixed = JSON.stringify([
+				inlinedOf(
+					resolved,
+					optedInPackagesOf(
+						resolved.cwd ?? process.cwd(),
+						resolved.dependencies
+					)
+				),
+				resolved.allowUnsafe
+			])
+		} catch (e) {
+			return void (changedSettings = (e as Error).message)
+		}
+		const redoes =
+			meta.framework === "rollup" ||
+			(meta.framework === "vite" &&
+				(isServing ?
+					!!server && !environment?.testing
+				:	fixed === JSON.stringify([inlined, opts?.allowUnsafe])))
+		if (!redoes) {
+			changedSettings = writeWatchedSettingsMessage(
+				printablePathOf(cwd, settingsFileOf(cwd) ?? join(cwd, settingsFile)),
+				meta.framework
+			)
+			return
+		}
+		changedSettings = undefined
+		applySettings(settingsRead)
+		// a shared module's text may change with them where its name doesn't
+		for (const id in modules) delete modules[id]
+		if (isServing) void server!.restart()
+		else rewritesCached = true
 	}
 	const modules: Record<string, string> = {}
 	const importersById: Record<string, string> = {}
@@ -282,31 +358,67 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	}
 	// tsup and tsdown leave dependencies external through a plugin of their
 	// own, which only the bundle shows
-	const checkBundledExternals = (
+	const checkBundledExternals = async (
 		bundle: BundleModules,
-		warn = (message: string) => console.warn(message)
+		warn = (message: string) => console.warn(message),
+		noExternal?: string
 	) => {
 		if (!isStandalone || opts?.shadow) return
 		const specifier = unsharedExternalOf(bundle)
-		if (!specifier) return
-		const problem = writeBundledExternalMessage(specifier)
+		const problem =
+			specifier ?
+				writeBundledExternalMessage(specifier)
+			:	await bundledDependentProblemOf(bundle, noExternal)
+		if (!problem) return
 		if (opts?.allowUnsafe) warn(problem)
 		else throwBuildError(withAllowUnsafe(problem))
 	}
+	const bundledDependentProblemOf = async (
+		bundle: BundleModules,
+		noExternal: string | undefined
+	) => {
+		for (const external of bundle.externals) {
+			if (externalizableSpecifiers.includes(external)) continue
+			const importer = bundle.importerOf[external]
+			const modules = externalModulesLoadingArktype(
+				external,
+				importer && isAbsolute(importer) ? dirname(importer) : realCwd()
+			)
+			if (!modules.length) continue
+			const name = externalPackageOf(external)
+			const bundling = writeBundledDependentMessage(name, noExternal)
+			// what bundling it would then fail with, for one defining Types
+			const [refusal] = (
+				await Promise.all(
+					modules
+						.filter(module => dependencyOf(module)?.[1] === name)
+						.map(readDependency)
+				)
+			).flatMap(({ errors, warnings }) => [...errors, ...warnings])
+			// the setting it names has Vite's server bundle the package too
+			return (
+				!refusal ? bundling
+				: noExternal ? refusal
+				: `${bundling}\n${refusal}`
+			)
+		}
+	}
 	// read once each, as each rebuild leaves the same dependencies external
-	const dependsOnArktypeByExternal: Record<string, boolean> = {}
-	const externalDependsOnArktype = (specifier: string, from: string) =>
-		(dependsOnArktypeByExternal[`${from}\0${specifier}`] ??= dependsOnArktype(
-			packageNameOf(specifier),
-			from
-		))
+	const modulesLoadingArktypeByExternal: Record<string, string[]> = {}
+	const externalModulesLoadingArktype = (specifier: string, from: string) =>
+		(modulesLoadingArktypeByExternal[`${from}\0${specifier}`] ??=
+			modulesLoadingArktype(
+				isAbsolute(specifier) ? externalPackageOf(specifier) : specifier,
+				from
+			))
 	const keepCompiler = (bundler: BundlerCompiler) => {
 		compiler = bundler
 		resolveIn(bundler.options.mode === "development")
-		// a persistent cache keeps what other options precompiled, so they version it
+		// a persistent cache keeps what other options or code precompiled, so
+		// they version it
 		const { cache } = bundler.options
 		if (cache && typeof cache === "object") {
-			const version = `arktype ${JSON.stringify(set)}`
+			const version = `arktype ${fingerprintOfCode()} ${JSON.stringify(set)}`
 			cache.version = cache.version ? `${cache.version} ${version}` : version
 		}
 		// webpack and Rspack decide externals, e.g. Next's, before resolving
@@ -341,7 +453,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 						specifier =>
 							requests.has(specifier) &&
 							(externalizableSpecifiers.includes(specifier) ||
-								externalDependsOnArktype(specifier, requests.get(specifier)!)),
+								externalModulesLoadingArktype(
+									specifier,
+									requests.get(specifier)!
+								).length > 0),
 						specifier =>
 							dependsOnNext(bundler.context) ?
 								writeNextExternalMessage(specifier)
@@ -541,7 +656,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		this: RollupContext,
 		options: { input: string[] | Record<string, string> }
 	) {
-		reset()
+		startBuild()
+		// as ark.json may be written later
+		for (const path of settingsPathsOf(settingsRead?.cwd ?? process.cwd()))
+			this.addWatchFile(path)
 		const build = buildOf(this)
 		scansByBuild.delete(build)
 		pendingScans.delete(build)
@@ -596,9 +714,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	}
 	// a module Rollup's watch mode kept was written for an earlier bundle
 	const shouldTransformCachedModule = ({ id }: { id: string }) =>
-		prunesIn(!!environment?.production) &&
-		transformedFilter.include.test(id) &&
-		!transformedFilter.exclude.test(id)
+		rewritesCached ||
+		(prunesIn(!!environment?.production) &&
+			transformedFilter.include.test(id) &&
+			!transformedFilter.exclude.test(id))
 	// what another plugin writes, like a compiled Svelte component, is read once it's written
 	const unwrittenChecker: UnpluginOptions = {
 		name: "arktype:unwritten",
@@ -687,12 +806,13 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	// checked once it's written
 	const checkEsbuildBundle = (build: EsbuildPluginBuild, cwd: string) => {
 		build.initialOptions.metafile = true
-		build.onEnd(result => {
+		build.onEnd(async result => {
 			if (!result.metafile || result.errors.length) return
 			const warnings: { text: string }[] = []
 			try {
-				checkBundledExternals(esbuildBundleOf(result.metafile, cwd), warning =>
-					warnings.push({ text: warning })
+				await checkBundledExternals(
+					esbuildBundleOf(result.metafile, cwd),
+					warning => warnings.push({ text: warning })
 				)
 			} catch (e) {
 				return rejectEsbuild(build, cwd, result.metafile, (e as Error).message)
@@ -1070,6 +1190,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			buildApp: async builder => {
 				app = builder
 			},
+			configureServer: devServer => {
+				server = devServer
+			},
 			// Vite and Vitest otherwise leave dependencies to Node or prebundling
 			config: config => {
 				setRoot(resolve(config.root ?? process.cwd()))
@@ -1144,11 +1267,17 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			}
 		},
 		// loading the precompiler overlaps the bundler's own startup
-		buildStart: reset,
+		buildStart: startBuild,
 		// a build that won't rerun releases its worker
 		async buildEnd(error?: Error) {
-			if (!error && !isServing && "getModuleIds" in this)
-				checkBundledExternals(rollupBundleOf(this as never))
+			rewritesCached = false
+			if (!error && !isServing && "getModuleIds" in this) {
+				await checkBundledExternals(
+					rollupBundleOf(this as never),
+					undefined,
+					noExternalOptionOf((this as ViteBuildContext).environment)
+				)
+			}
 			if (
 				!error &&
 				!isServing &&
@@ -1443,6 +1572,7 @@ interface RollupContext {
 		dynamicallyImportedIds: readonly string[]
 	} | null
 	warn: (message: string) => void
+	addWatchFile: (id: string) => void
 }
 
 // what a production bundle's scan read, if it changes what the plugin writes
@@ -2053,11 +2183,31 @@ const matchesBunExternal = (pattern: string, specifier: string): boolean =>
 interface BundleModules {
 	externals: string[]
 	files: string[]
+	// a module importing each external, as a package manager may not hoist it
+	importerOf: Record<string, string>
 }
+
+interface ViteBuildContext {
+	environment?: { name: string; config: { consumer: string } }
+}
+
+// a Vite environment on a server leaves dependencies external unless told otherwise
+const noExternalOptionOf = (
+	environment: ViteBuildContext["environment"]
+): string | undefined =>
+	environment?.config.consumer !== "server" ? undefined
+	: environment.name === "ssr" ? "ssr.noExternal"
+	: `environments.${environment.name}.resolve.noExternal`
+
+// a tool may leave a dependency external by the file it resolves to
+const externalPackageOf = (specifier: string): string =>
+	isAbsolute(specifier) ?
+		(dependencyOf(specifier)?.[1] ?? specifier)
+	:	packageNameOf(specifier)
 
 // Rolldown's module info has no isExternal, but no code for an external
 const rollupBundleOf = (context: RollupContext): BundleModules => {
-	const bundle: BundleModules = { externals: [], files: [] }
+	const bundle: BundleModules = { externals: [], files: [], importerOf: {} }
 	const seen = new Set<string>()
 	const add = (id: string) => {
 		if (seen.has(id)) return
@@ -2073,8 +2223,10 @@ const rollupBundleOf = (context: RollupContext): BundleModules => {
 		for (const target of [
 			...(info?.importedIds ?? []),
 			...(info?.dynamicallyImportedIds ?? [])
-		])
+		]) {
 			add(target)
+			bundle.importerOf[target] ??= id
+		}
 	}
 	return bundle
 }
@@ -2084,7 +2236,14 @@ const esbuildBundleOf = (metafile: Metafile, cwd: string): BundleModules => ({
 		output =>
 			output.imports?.flatMap(entry => (entry.external ? entry.path : [])) ?? []
 	),
-	files: Object.keys(metafile.inputs).map(path => resolve(cwd, path))
+	files: Object.keys(metafile.inputs).map(path => resolve(cwd, path)),
+	importerOf: Object.fromEntries(
+		Object.entries(metafile.inputs).flatMap(([path, { imports }]) =>
+			imports.flatMap(entry =>
+				entry.external ? [[entry.path, resolve(cwd, path)]] : []
+			)
+		)
+	)
 })
 
 // an external the runtime can't share: arktype as an entry, or a package the

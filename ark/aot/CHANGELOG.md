@@ -6,7 +6,7 @@ Initial release: constructs arktype definitions at build time, so arktype's pars
 
 With `optimize: "size"`, as the `"smallest"` preset sets, and detailed errors, a build writes each node as a call to a small runtime checker that describes what it checks from its rule, and each site creates its validator in place. A module whose Types are too few to pay for the checkers' runtime is compiled instead.
 
-A build keeps each answer it can reuse in `node_modules/.cache/ark` where it runs, so a later build, dev server or Next process reads it while nothing that decided it changed: the module, each file the precompiler read and what each import resolved to, the options, and the precompiler's own code and Node. A watch build keeps its precompiler across changes, analyzing again only the modules a change reaches.
+A build keeps each answer it can reuse in `node_modules/.cache/ark` where it runs, so a later build, dev server or Next process reads it while nothing that decided it changed: the module, each file the precompiler read and what each import resolved to, the options, and the precompiler's own code and Node. A watch build keeps its precompiler across changes, analyzing again only the modules a change reaches, and stores only what it answered before the first.
 
 With `jsonInput: true`, a build trusts the objects it checks to be plain data, as `JSON.parse` returns, so a Type rejecting undeclared keys counts a plain object's keys rather than checking each. On moltar's benchmark, it takes 0.82x a default build's cycles on parseStrict and 0.71x on assertStrict, level with ata's ahead-of-time build on parseStrict and 0.88x its cycles on assertStrict. Data with a declared key held non-enumerable can then pass with an undeclared key, as the options page shows.
 

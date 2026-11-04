@@ -555,6 +555,17 @@ contextualize(() => {
 				attest(T.expression).snap("{ a1: 1, a2: 2, a3: 3, a4: 4, a5: 5 }")
 			})
 
+			it("replaces only what the later operand names", () => {
+				const T = type.merge(
+					{ toString: "string", "a?": "1", b: "2" },
+					{ a: "3" }
+				)
+				attest(T.expression).snap("{ a: 3, b: 2, toString: string }")
+				attest(
+					type.merge({ toString: "string" }, { toString: "number" }).expression
+				).snap("{ toString: number }")
+			})
+
 			it("nary", () => {
 				const T = type.merge(
 					{ a1: "1" },

@@ -496,4 +496,72 @@ x must be a string (was a number)`)
 			attest(T(5).toString()).snap("must be an AB (was a number)")
 		})
 	})
+
+	it("a chain of units is the union its parts would be", () => {
+		attest(type("'a'|'b'|'c'").internal).equals(
+			type("('a'|'b')|'c'").internal as never
+		)
+		attest(type("'c'|'a'|'b'").expression).snap('"a" | "b" | "c"')
+		attest(type("'a'|'b'|'a'").expression).snap('"a" | "b"')
+		attest(type("'a'|'a'").expression).snap('"a"')
+		// what follows the units joins the union they make
+		attest(type("'a'|'b'|string").expression).snap("string")
+		attest(type("string|'a'|'b'").expression).snap("string")
+		attest(type("'a'|'b'&string|1").expression).snap('"a" | "b" | 1')
+		attest(type("'a'|'b'|>string").expression).snap('"a" | "b"')
+		attest(type("('a'|'b')[]|'c'|'d'").expression).snap(
+			'("a" | "b")[] | "c" | "d"'
+		)
+	})
+
+	it("units missing their right operand", () => {
+		attest(() => type("'a'|" as never)).throws(
+			writeMissingRightOperandMessage("|")
+		)
+		attest(() => type("'a'|'b'|" as never)).throws(
+			writeMissingRightOperandMessage("|")
+		)
+		attest(() => type("'a'||'b'" as never)).throws(
+			writeMissingRightOperandMessage("|", "|'b'")
+		)
+	})
+
+	it("a class's Symbol.hasInstance can allow a unit of any domain", () => {
+		class Nullish {
+			static [Symbol.hasInstance](data: unknown) {
+				return data === null || data === undefined
+			}
+		}
+		attest(type.instanceOf(Nullish).or("null").expression).snap("Nullish")
+		attest(type.instanceOf(Nullish).or("5").expression).snap("Nullish | 5")
+		attest(
+			type({ a: type.instanceOf(Nullish) }).or({ a: "null" }).expression
+		).snap("{ a: Nullish }")
+	})
+
+	it("a discriminant doesn't skip a predicate an earlier key tests", () => {
+		const tested: unknown[] = []
+		const T = type({ a: "'x'", b: "1" }).or({
+			a: type("string").narrow(s => {
+				tested.push(s)
+				return true
+			}),
+			b: "2"
+		})
+		attest(tested).snap(["x"])
+		attest(T({ a: "x", b: 1 })).snap({ a: "x", b: 1 })
+	})
+
+	it("equal units keep one branch however they're written", () => {
+		const units = (...branches: unknown[]) =>
+			type.schema(branches.map(unit => ({ unit })) as never).expression
+		attest(units("a", "b", "a")).snap('"a" | "b"')
+		attest(units(1, 2, 1, 2)).snap("1 | 2")
+		attest(units(new Date(0), new Date(0))).snap("d'1970-01-01T00:00:00.000Z'")
+		// a described unit sorts after its undescribed copy, which is the one kept
+		attest(
+			type.schema([{ unit: "a", meta: "first" }, { unit: "a" }] as never)
+				.description
+		).snap('"a"')
+	})
 })

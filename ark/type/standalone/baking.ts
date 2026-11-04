@@ -15,7 +15,7 @@ import type { HoleKind, IntrospectionMember } from "../runtime.ts"
 import type { Scope } from "../scope.ts"
 import { combines } from "./combinators.ts"
 import type { SharedModule } from "./modules.ts"
-import { defaultBakedLimit } from "./values.ts"
+import { defaultBakedLimit, type HoleCells } from "./values.ts"
 
 export type ExportedValue = type.Any | Module | Scope<any> | Generic | TypedFn
 
@@ -103,6 +103,8 @@ export interface InputParam {
 	kind: "input"
 	label: string
 	reads: [path: PropertyKey[], value: unknown][]
+	// where a cycle can run the site before what it reads
+	mayBeUnset?: boolean
 	// read off a holder code the build can't see may write, so even a build
 	// checking nothing at creation checks each Type read off it
 	isWritable?: boolean
@@ -179,6 +181,8 @@ export interface StandaloneOptions {
 	readsAllows?: boolean | undefined
 	// false where no call passes a second argument, a traversal to pipe into
 	piped?: boolean | undefined
+	// holes a build reading the whole program found take one value
+	cells?: HoleCells | undefined
 	// what each shared unit was written as, kept across a build's artifacts
 	sharedWrites?: SharedWrites | undefined
 	// introspection members an export bakes besides those members sets, as
@@ -240,6 +244,7 @@ export interface Baking extends ValidatorReads {
 	bakedLimit: number
 	issues: IssueFeatures
 	sharedWrites: SharedWrites
+	cells: HoleCells | undefined
 }
 
 export const writeFunction = (
@@ -450,7 +455,8 @@ export const bakingOf = (
 		readsAllows: opts.readsAllows !== false,
 		piped: opts.piped !== false,
 		issues: { ...noIssueFeatures },
-		sharedWrites: opts.sharedWrites ?? new Map()
+		sharedWrites: opts.sharedWrites ?? new Map(),
+		cells: opts.cells
 	}
 }
 

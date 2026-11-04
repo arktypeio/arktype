@@ -16,6 +16,7 @@ import {
 	throwParseError,
 	tryParseWellFormedBigint,
 	tryParseWellFormedNumber,
+	whitespaceChars,
 	type BigintLiteral,
 	type NonFiniteNumberLiteral,
 	type NumberLiteral,
@@ -31,6 +32,7 @@ import { writePrefixedPrivateReferenceMessage } from "../../ast/validate.ts"
 import type { RuntimeState } from "../../reduce/dynamic.ts"
 import type { StaticState, s } from "../../reduce/static.ts"
 import type { BaseCompletions } from "../../string.ts"
+import { shiftComparator } from "../operator/bounds.ts"
 import { shiftUntilTerminator } from "../tokens.ts"
 import {
 	parseGenericArgs,
@@ -41,7 +43,29 @@ import {
 export const parseUnenclosed = (s: RuntimeState): void => {
 	const token = shiftUntilTerminator(s.sc)
 	if (token === "keyof") s.addPrefix("keyof")
-	else s.root = unenclosedToNode(s, token)
+	else if (!reducedLeftLimit(s, token)) s.root = unenclosedToNode(s, token)
+}
+
+// a limit is a number, so it's read without a unit node unless its token is a reference
+export const limitOf = (s: RuntimeState, token: string): number | undefined => {
+	const first = token.charCodeAt(0)
+	if (first !== 45 && (first < 48 || first > 57)) return
+	const limit = tryParseWellFormedNumber(token)
+	if (limit === undefined || !Number.isFinite(limit)) return
+	if (s.ctx.args && hasOwn(s.ctx.args, token)) return
+	return s.ctx.$.maybeResolve(token) === undefined ? limit : undefined
+}
+
+// >, = and ! could end a definition or be invalid, so only < is decided here
+const reducedLeftLimit = (s: RuntimeState, token: string): boolean => {
+	let i = s.sc.i
+	while (s.sc.chars[i] in whitespaceChars) i++
+	if (s.sc.chars[i] !== "<") return false
+	const limit = limitOf(s, token)
+	if (limit === undefined) return false
+	s.sc.i = i + 1
+	s.reduceLeftBound(limit, shiftComparator(s, "<"))
+	return true
 }
 
 export type parseUnenclosed<s extends StaticState, $, args> =

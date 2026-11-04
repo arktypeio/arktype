@@ -227,7 +227,7 @@ ArkType is ESM-only, but a CommonJS project can `require` it on runtimes that su
 
 ## Runtimes
 
-ArkType runs in Node, Deno, Bun, browsers and edge runtimes like Cloudflare Workers. A precompiled validator never generates code, so it runs under a Content-Security-Policy that blocks `eval`. Without precompiling, ArkType validates without compiling where `new Function` is blocked; under a strict policy, enable [`jitless`](/docs/configuration#jitless) so it never tries `new Function`, which the policy would report.
+ArkType runs in Node, Deno, Bun, browsers and edge runtimes like Cloudflare Workers. A precompiled validator never generates code, so it runs under a Content-Security-Policy that blocks `eval`. Without precompiling, ArkType validates without compiling where `new Function` is blocked, including within a Cloudflare Workers request, which is [up to about 30x slower](/docs/configuration#jitless) per call on a plain object; under a strict policy, enable [`jitless`](/docs/configuration#jitless) so it never tries `new Function`, which the policy would report.
 
 ## Next
 

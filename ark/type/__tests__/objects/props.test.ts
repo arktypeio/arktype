@@ -110,6 +110,29 @@ a must be a number (was missing)`)
 		attest([...new Set(reads)]).equals(["c", "a", "b", "d", "e"])
 	})
 
+	it("allows never past a prop reaching a narrow through a cycle", () => {
+		const readsOf = (T: { allows: (data: unknown) => boolean }) => {
+			const reads: PropertyKey[] = []
+			const data = new Proxy(
+				{ a: null, m: [], n: 0 },
+				{ get: (o, k) => (reads.push(k), Reflect.get(o, k)) }
+			)
+			attest(T.allows(data)).equals(true)
+			return [...new Set(reads)]
+		}
+		const reaching = scope({
+			from: { a: "to | null", m: "string[]", n: "number" },
+			to: { "from?": "from", value: type.number.narrow(() => true) }
+		}).export()
+		attest(readsOf(reaching.from)).equals(["a", "n", "m"])
+
+		const reachingNone = scope({
+			from: { a: "to | null", m: "string[]", n: "number" },
+			to: { "from?": "from", value: "number" }
+		}).export()
+		attest(readsOf(reachingNone.from)).equals(["n", "a", "m"])
+	})
+
 	it("allows by checking numbers and units, then other primitives, then objects", () => {
 		const T = type({
 			a: "object",

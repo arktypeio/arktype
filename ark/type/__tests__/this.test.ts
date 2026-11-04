@@ -172,9 +172,12 @@ contextualize(() => {
 	it("Record of this", () => {
 		const T = type({ name: "string", "children?": "Record<string, this>" })
 
-		attest(T.t).type.toString.snap(
-			"{ name: string; children?: Record<string, cyclic> }"
-		)
+		type Expected = { name: string; children?: Record<string, Expected> }
+		attest<Expected>(T.t)
+		attest(T.t).type.toString.snap(`{
+	name: string
+	children?: { [x: string]: cyclic }
+}`)
 		attest(T({ name: "a", children: { b: { name: "b" } } })).snap({
 			name: "a",
 			children: { b: { name: "b" } }

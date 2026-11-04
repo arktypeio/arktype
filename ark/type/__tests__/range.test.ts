@@ -381,12 +381,62 @@ contextualize(() => {
 			)
 		})
 
+		it("group as a right bound", () => {
+			// @ts-expect-error
+			attest(() => type("number<(1)")).throwsAndHasTypeError(
+				"Comparator < must be followed by a corresponding literal (was ()"
+			)
+			// @ts-expect-error
+			attest(() => type("1<number< (2)")).throwsAndHasTypeError(
+				"Comparator < must be followed by a corresponding literal (was ()"
+			)
+		})
+
+		it("keyof as a right bound", () => {
+			// @ts-expect-error
+			attest(() => type("number<keyof string")).throwsAndHasTypeError(
+				"Comparator < must be followed by a corresponding literal (was keyof)"
+			)
+		})
+
+		it("non-literal right bound after a space", () => {
+			// @ts-expect-error
+			attest(() => type("number < string")).throwsAndHasTypeError(
+				"Comparator < must be followed by a corresponding literal (was string)"
+			)
+		})
+
 		it("number with left Date bound", () => {
 			// @ts-expect-error
 			attest(() => type("d'2001-01-01'<number<2")).throwsAndHasTypeError(
 				writeInvalidLimitMessage(">", "d'2001-01-01'", "left")
 			)
 		})
+	})
+
+	it("a limit's token is read past whitespace", () => {
+		attest(type(" 1  <=  number  <=\t5 ").json).equals(
+			type("1<=number<=5").json
+		)
+	})
+
+	it("an alias named like a number is no limit", () => {
+		const $ = type.scope({ "5": "string" })
+		attest(() => $.type.raw("string < 5")).throws(
+			writeInvalidLimitMessage("<", " 5", "right")
+		)
+		attest(() => $.type.raw("5 < number < 6")).throws(
+			writeInvalidLimitMessage("<", " number", "right")
+		)
+		attest($.type.raw("string < 6").expression).snap("string <= 5")
+	})
+
+	it("a constraint an intersection implies keeps it and its description", () => {
+		const T = type.number.atLeast(5).describe("five")
+		attest(T.atLeast(5).internal).equals(T.internal)
+		attest(T.atLeast(4).internal).equals(T.internal)
+		attest(T.atLeast(6).description).snap("at least 6")
+		attest(T.atMost(9).description).snap("five and at most 9")
 	})
 
 	it("limit String writes with an exponent", () => {

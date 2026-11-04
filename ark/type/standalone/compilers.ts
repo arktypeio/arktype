@@ -528,17 +528,33 @@ export const jsonVariantOf = (variant: number): number => variant + jsonOffset
 // the variant a jsonInput build's variant otherwise matches
 const baseVariantOf = (variant: number) => variant % jsonOffset
 
-const unitsByRoot = compilers.map(() => new WeakMap<BaseRoot, RootUnit[]>())
+type UnitKeyOf = typeof runtimeKeyOf
 
-export const rootUnitsOf = (root: BaseRoot, variant = 0): RootUnit[] => {
-	const cached = unitsByRoot[variant]
+const unitsByKeyOf = new WeakMap<UnitKeyOf, WeakMap<BaseRoot, RootUnit[]>[]>()
+
+// keyed by what names a value, as cells name their holes
+const unitsByRootOf = (keyOf: UnitKeyOf) => {
+	let units = unitsByKeyOf.get(keyOf)
+	if (!units) {
+		units = compilers.map(() => new WeakMap<BaseRoot, RootUnit[]>())
+		unitsByKeyOf.set(keyOf, units)
+	}
+	return units
+}
+
+export const rootUnitsOf = (
+	root: BaseRoot,
+	variant = 0,
+	keyOf: UnitKeyOf = runtimeKeyOf
+): RootUnit[] => {
+	const cached = unitsByRootOf(keyOf)[variant]
 	let units = cached.get(root)
 	if (!units) {
 		cached.set(
 			root,
 			(units = precompileRootUnits(root, {
 				compiler: compilers[variant],
-				keyOf: runtimeKeyOf
+				keyOf
 			}))
 		)
 		const base = baseVariantOf(variant)

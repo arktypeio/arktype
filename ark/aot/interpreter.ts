@@ -1539,10 +1539,7 @@ export class Interpreter {
 		if (!standIn || standIn.module !== module || standIn.kind !== "function")
 			return false
 		if (node === standIn.node) return true
-		if (!binding) return false
-		return binding.kind === "function" ?
-				!binding.writes.length && binding.declaration === standIn.node
-			:	initOf(binding) === standIn.node
+		return !!binding && isDeclaredAs(binding, standIn.node)
 	}
 
 	private nodeValue(node: Node, module: SourceModule): Evaluated {
@@ -3076,7 +3073,7 @@ const throwsUnset = (node: Node): boolean => {
 }
 
 // the expression a variable is only ever set to
-const initOf = (binding: Binding): Node | undefined => {
+export const initOf = (binding: Binding): Node | undefined => {
 	const { declaration } = binding
 	return (
 			!binding.writes.length &&
@@ -3090,6 +3087,15 @@ const initOf = (binding: Binding): Node | undefined => {
 			unwrapExpression(declaration.init)
 		:	undefined
 }
+
+// a binding nothing writes after its declaration creates the value
+export const isDeclaredAs = (
+	binding: Binding,
+	source: Node | undefined
+): boolean =>
+	binding.kind === "function" ?
+		!binding.writes.length && binding.declaration === source
+	:	initOf(binding) === source
 
 // e.g. `Symbol("tag")`, whose description no read changes
 const isSymbolCreation = (node: Node, module: SourceModule): boolean => {

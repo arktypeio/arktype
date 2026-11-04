@@ -1,4 +1,5 @@
 import { flatMorph, throwError } from "@ark/util"
+import { existsSync } from "node:fs"
 import { isAbsolute, resolve } from "node:path"
 import type { SourceMap } from "magic-string"
 import {
@@ -38,7 +39,7 @@ import {
 } from "./precompile.ts"
 import type { ScannedProgram, ScannedUsage } from "./scan.ts"
 import type { Site } from "./sites.ts"
-import { withSettingsFile } from "./settings.ts"
+import { settingsPathsOf, withSettingsFile } from "./settings.ts"
 import { isPrecompilerWorker } from "./worker.ts"
 
 export interface PrecompilePluginOptions
@@ -600,8 +601,10 @@ interface TrackedPrecompiler {
 	// asked again for each answer a stored one had it resolve
 	resolveInBundler: BundlerResolver | undefined
 	// whether its answers can outlive it: it's its thread's first precompiler,
-	// as arktype keeps what earlier ones compiled, and was given each module as
-	// its file reads
+	// as arktype keeps what earlier ones compiled, was given each module as its
+	// file reads, and no reset kept it across a change to a file it read, as
+	// analyzing a module again after forgetting it may write it unlike a
+	// precompiler that never read it
 	storable: boolean
 	// whether it answered a request by analyzing a module
 	analyzed: boolean
@@ -960,6 +963,7 @@ const keptAcross = (
 	}
 	tracked.host = host
 	tracked.holds = undefined
+	if (changed.length) tracked.storable = false
 	// a build reads its own program, if any
 	precompiler.readProgram(undefined)
 	tracked.viewKey = tracked.unread = undefined
@@ -1216,7 +1220,11 @@ const transformedOf = (
 	code: result.map && result.code,
 	map: result.map,
 	dependencies: [
-		...new Set([...result.dependencies, ...precompiler.ownManifests])
+		...new Set([
+			...result.dependencies,
+			...precompiler.ownManifests,
+			...settingsFilesOf(precompiler)
+		])
 	],
 	modules: result.modules,
 	foldedHelpers: result.foldedHelpers,
@@ -1231,12 +1239,20 @@ const unprecompiledOf = (
 	code: undefined,
 	map: undefined,
 	// an import may come to export a Type, which only the plugin watches
-	dependencies: precompiler.inline ? [] : precompiler.textImportsOf(source, id),
+	dependencies: [
+		...(precompiler.inline ? [] : precompiler.textImportsOf(source, id)),
+		...settingsFilesOf(precompiler)
+	],
 	modules: {},
 	foldedHelpers: [],
 	errors: [],
 	warnings: []
 })
+
+// a module's answer depends on the settings it was written under, but a
+// bundler watching a file missing from disk drops it after each build
+const settingsFilesOf = (precompiler: Precompiler): string[] =>
+	settingsPathsOf(precompiler.graph.cwd!).filter(file => existsSync(file))
 
 interface KeptModule extends StoredModule {
 	source: string

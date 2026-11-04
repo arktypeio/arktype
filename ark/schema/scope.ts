@@ -47,6 +47,7 @@ import {
 } from "./module.ts"
 import {
 	referencesThroughAliases,
+	resolveReachedAliases,
 	rootApplyRuntimeOf,
 	type BaseNode
 } from "./node.ts"
@@ -788,6 +789,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 			Object.assign(this.res, this._exported)
 
 			if (!this._lazy) {
+				// every alias's resolution is now final, so compiling reads each once
+				this.resolved = true
 				const hasAlias = Object.values(this._exported).some(
 					resolution => isNode(resolution) && resolution.hasAlias
 				)
@@ -809,7 +812,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 						}
 					}
 				}
-				this.resolved = true
 			}
 			$ark.reached?.store(mark, this, "export")
 		} else $ark.reached?.cached(this, "export")
@@ -951,7 +953,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return node
 
 		// resolving aliases can throw, so they resolve on definition
-		if (node.hasAlias) referencesThroughAliases(node.references)
+		if (node.hasAlias) resolveReachedAliases(node)
 		if (node.unitFn || !jit) return node
 		bindPrecompiledUnits?.([node])
 		if (node.unitFn || !canJit(this.cfg)) return node

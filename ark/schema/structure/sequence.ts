@@ -153,6 +153,12 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	constructor(...args: ConstructorParameters<typeof BaseConstraint>) {
 		super(...args)
 		this.costly = true
+		// a configured writer runs as its node is created
+		if (
+			this.$.cfg.sequence.description !==
+			$ark.defaultConfig.sequence.description
+		)
+			void this.description
 		if (this.inner.postfix) {
 			if (!this.inner.variadic) throwParseError(postfixWithoutVariadicMessage)
 			if (this.inner.optionals || this.inner.defaultables)
@@ -183,7 +189,9 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		this.ctxMorph ||= this.defMorphs.some(morph => morph.length === 2)
 	}
 
-	implied: BaseRoot = $ark.kw.Array.internal
+	get implied(): BaseRoot {
+		return $ark.kw.Array.internal
+	}
 
 	tuple: SequenceTuple = sequenceInnerToTuple(this.inner)
 
@@ -316,7 +324,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		}
 	}
 
-	private _element: BaseRoot | undefined
+	declare private _element: BaseRoot | undefined
 	get element(): BaseRoot {
 		return (this._element ??= this.$.node("union", {
 			branches: this.children
@@ -439,8 +447,9 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		return result
 	}
 
-	// this depends on tuple so needs to come after it
-	expression: string = this.description
+	get expression(): string {
+		return this.description
+	}
 }
 
 export const Sequence = {
