@@ -1078,6 +1078,25 @@ console.log(String(A({ trees: [{ name: "a" }] })), String(B({ trees: [{ name: "a
 		)
 	})
 
+	it("drops a site what it checks only compares for", async () => {
+		const js = await esbuildBundle(
+			fixture("comparesOnly", {
+				"containers.ts": `import { type } from "arktype"
+export const H = { a: type("string"), b: type("number") }
+`,
+				"main.ts": `import { type } from "arktype"
+import { H } from "./containers.ts"
+
+const Unread = type({ dropped: H.a })
+const Read = type({ kept: H.b })
+console.log(Read.allows({ kept: 1 }))
+`
+			})
+		)
+		attest(js.includes("dropped")).equals(false)
+		attest(js.includes("kept")).equals(true)
+	})
+
 	describe("what reads its node", () => {
 		const onFail = `import { configure } from "arktype/config"
 

@@ -301,6 +301,7 @@ export class StandaloneArtifact {
 	holeLabels = new Map<unknown, string>()
 	classes = new Set<unknown>()
 	checks: string[] = []
+	checksAsWhole = false
 	validatorNames = new Map<BaseRoot, string>()
 	defaultValues = new Set<BaseRoot>()
 	readRoots = new Set<BaseRoot>()
@@ -418,8 +419,14 @@ export class StandaloneArtifact {
 		this.objectUnits = written.objectUnits
 	}
 
+	// what it checks that arktype would itself run or throw at creation, read or
+	// not. The rest only compares a read with the build's, for what was built
+	// from it, so it goes with what read it
 	get checksAtCreation(): boolean {
-		return this.checks.length > 0 || this.defaultChecks.length > 0
+		return (
+			this.defaultChecks.length > 0 ||
+			(this.baking.checksTypes ? this.checks.length > 0 : this.checksAsWhole)
+		)
 	}
 
 	receive(params: FactoryParam[]): void {
@@ -427,6 +434,7 @@ export class StandaloneArtifact {
 		for (let i = 0; i < params.length; i++) {
 			const param = params[i]
 			if (param.kind === "input") {
+				const before = this.checks.length
 				for (const [path, value] of param.reads) {
 					this.compareInput(
 						`p${i}`,
@@ -438,11 +446,14 @@ export class StandaloneArtifact {
 						param.mayBeUnset
 					)
 				}
+				this.checksAsWhole ||= !!param.mayBeUnset && this.checks.length > before
 			} else if (param.kind === "helper") {
+				this.checksAsWhole = true
 				this.checks.push(
 					`runtime.checkHelper(p${i}, ${JSON.stringify(param.file)}, ${JSON.stringify(param.name)}, ${JSON.stringify(param.label)})`
 				)
 			} else if (param.kind === "progress") {
+				this.checksAsWhole = true
 				this.checks.push(
 					`runtime.checkProgress(p${i}, ${param.at}, ${JSON.stringify(param.label)})`
 				)
