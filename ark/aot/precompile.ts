@@ -553,6 +553,18 @@ const collectComparedIds = (
 	}
 }
 
+// what a default's value is, a cycle's hash naming only its aliases and its
+// key only the shape of what it holds; undefined if a hole has no cell to name
+const contentOfDefaulted = (
+	value: BaseRoot,
+	byHole: ReadonlyMap<unknown, HoleCell>
+): string | undefined => {
+	if (!value.hasAlias) return value.hash
+	const [id, holes] = keyOf(value)
+	const names = holes.map(hole => byHole.get(hole)?.name)
+	return names.includes(undefined) ? undefined : `${id} ${names.join()}`
+}
+
 const holdsCell = (value: unknown, cells: HoleCells | undefined): boolean =>
 	!!cells &&
 	isFoldable(value) &&
@@ -1111,24 +1123,33 @@ export class Precompiler {
 		for (const [site] of factories) {
 			const created = createdBy(site)
 			if (!created) continue
-			for (const root of rootsIn(created)) {
-				for (const node of root.selectReferences(holdsDefaults))
-					collectDefaults(node as never, collected)
+			const seen = new Set<BaseRoot>()
+			const collectIn = (root: BaseRoot) => {
+				if (seen.has(root)) return
+				seen.add(root)
+				for (const node of root.selectReferences(
+					node => holdsDefaults(node) || node.is("alias")
+				)) {
+					if (node.is("alias")) collectIn(node.resolution)
+					else collectDefaults(node as never, collected)
+				}
 			}
+			for (const root of rootsIn(created)) collectIn(root)
 		}
 		for (const [morph, [key, value, defaultValue]] of collected) {
 			if (
 				typeof key === "symbol" ||
-				value.hasAlias ||
 				holdsObjectMeta(value) ||
 				typeof defaultValue === "symbol" ||
 				(hasDomain(defaultValue, "object") &&
 					!(isThunk(defaultValue) && byHole.has(defaultValue)))
 			)
 				continue
+			const content = contentOfDefaulted(value, byHole)
+			if (content === undefined) continue
 			defaults.set(
 				morph,
-				`default ${printable(key)} ${value.hash} ${byHole.get(defaultValue)?.name ?? printablePrimitive(defaultValue)}`
+				`default ${printable(key)} ${content} ${byHole.get(defaultValue)?.name ?? printablePrimitive(defaultValue)}`
 			)
 			defaultValues.set(morph, value)
 		}

@@ -1036,6 +1036,48 @@ console.log(JSON.stringify(T({ a: "a", c: 1 })))
 		}
 	})
 
+	describe("a default holding a cycle", () => {
+		itBehavesAsWhole(
+			"shares its morph where the cycle's the same, and not where it isn't",
+			{
+				"main.ts": `import { scope, type } from "arktype"
+
+const makeTrees = () => []
+const { Tree } = scope({ Tree: { name: "string", "children?": "Tree[]" } }).export()
+const { Tree: Other } = scope({ Tree: { name: "number", "children?": "Tree[]" } }).export()
+const A = type({ trees: Tree.array().default(makeTrees) })
+const B = type({ trees: Tree.array().default(makeTrees) })
+const C = type({ trees: Other.array().default(makeTrees) })
+const D = type({ trees: Tree.array().default(() => []) })
+console.log(JSON.stringify([A({}), B({}), C({}), D({})]))
+console.log(String(A({ trees: [{ name: 1 }] })), String(C({ trees: [{ name: "a" }] })))
+`
+			},
+			{ cells: true }
+		)
+
+		itBehavesAsWhole(
+			"tells apart the narrows of cycles of the same shape",
+			{
+				"main.ts": `import { scope, type } from "arktype"
+
+const isLong = (s: string) => s.length > 2
+const isShort = (s: string) => s.length < 2
+const makeTrees = () => []
+const long = type("string").narrow(isLong)
+const short = type("string").narrow(isShort)
+const { Tree: Long } = scope({ Name: long, Tree: { name: "Name", "children?": "Tree[]" } }).export()
+const { Tree: Short } = scope({ Name: short, Tree: { name: "Name", "children?": "Tree[]" } }).export()
+const A = type({ trees: Long.array().default(makeTrees) })
+const B = type({ trees: Short.array().default(makeTrees) })
+console.log(String(A({ trees: [{ name: "abc" }] })), String(B({ trees: [{ name: "abc" }] })))
+console.log(String(A({ trees: [{ name: "a" }] })), String(B({ trees: [{ name: "a" }] })))
+`
+			},
+			{ cells: true }
+		)
+	})
+
 	describe("a module a plugin ahead of arktype's rewrote after the scan read it", () => {
 		const rewriting = (rewrite: (code: string) => string): VitePlugin => ({
 			name: "rewriting",
