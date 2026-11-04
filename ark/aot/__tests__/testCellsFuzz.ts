@@ -5,7 +5,7 @@
 // reaching a validator through one of `wrappers`. Observes each result, what
 // the call did to its input, and each predicate call in order.
 // ARK_CELLS_FUZZ=<count>[:<seed>]|catalog[:<wrapper>]
-// [ARK_CELLS_FUZZ_HOSTS=esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,modules,webpack,node,dev,emit]
+// [ARK_CELLS_FUZZ_HOSTS=esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,chunks,chunks:smallest,modules,webpack,node,dev,emit]
 // [ARK_CELLS_FUZZ_FAILURES=<dir>] pnpm testCellsFuzz
 import { fromHere } from "@ark/fs"
 import { precompile } from "@ark/aot/unplugin"
@@ -26,7 +26,7 @@ const failureDir =
 	join(tmpdir(), "ark-cells-fuzz-failures")
 const hosts = (
 	process.env.ARK_CELLS_FUZZ_HOSTS ??
-	"esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,modules,webpack,node,dev,emit"
+	"esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,chunks,chunks:smallest,modules,webpack,node,dev,emit"
 ).split(",")
 
 // each is a module's `check`, % being the module's own number: the text of two
@@ -609,10 +609,20 @@ const esbuildOutcome = async (
 	return { out: runBundle(join(out, "main.js"), dir) }
 }
 
+// each generated module and each of the app's a chunk of its own, keeping a cell
+// from the function it holds as esbuild's layout never would
+const chunkOf = (id: string): string | undefined => {
+	const generated = /~arktype[/\\]([^/\\?]+)/.exec(id)
+	if (generated) return `generated-${generated[1]}`
+	const own = /[/\\](m\d+)\.ts(?:\?v=(\d))?$/.exec(id)
+	return own ? `${own[1]}${own[2] ?? ""}` : undefined
+}
+
 const viteOutcome = async (
 	dir: string,
 	label: string,
-	plugin: boolean
+	plugin: boolean,
+	chunked = false
 ): Promise<Outcome> => {
 	const out = join(dir, `out-${label}`)
 	const { NODE_ENV } = process.env
@@ -631,11 +641,27 @@ const viteOutcome = async (
 				emptyOutDir: true,
 				minify: true,
 				target: "esnext",
-				lib: {
-					entry: join(dir, "main.ts"),
-					formats: ["es"],
-					fileName: (_, name) => `${name}.js`
-				}
+				...(chunked ?
+					{
+						// its preload helper reads document, which node lacks
+						modulePreload: false as const,
+						rolldownOptions: {
+							input: join(dir, "main.ts"),
+							preserveEntrySignatures: "strict" as const,
+							output: {
+								entryFileNames: "[name].js",
+								chunkFileNames: "[name].js",
+								manualChunks: chunkOf
+							}
+						}
+					}
+				:	{
+						lib: {
+							entry: join(dir, "main.ts"),
+							formats: ["es" as const],
+							fileName: (_: string, name: string) => `${name}.js`
+						}
+					})
 			}
 		})
 	} catch (e) {
@@ -749,6 +775,7 @@ const outcomeOf = (
 		: kind === "split" ? esbuildOutcome(dir, label, { plugin, splitting: true })
 		: kind === "modules" ? esbuildOutcome(dir, label, { plugin, prune: false })
 		: kind === "vite" ? viteOutcome(dir, label, plugin)
+		: kind === "chunks" ? viteOutcome(dir, label, plugin, true)
 		: kind === "webpack" ? webpackOutcome(dir, plugin)
 		: kind === "node" ? driver(dir, true)
 		: kind === "dev" ? driver(dir, false)
@@ -756,7 +783,14 @@ const outcomeOf = (
 	)
 }
 
-const bundlers = new Set(["esbuild", "split", "modules", "vite", "webpack"])
+const bundlers = new Set([
+	"esbuild",
+	"split",
+	"modules",
+	"vite",
+	"chunks",
+	"webpack"
+])
 
 const observationsOf = (out: string): unknown[] | undefined => {
 	try {
