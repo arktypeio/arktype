@@ -84,6 +84,7 @@ import {
 	madeApplierOf,
 	preciseFormOf,
 	writtenAttributesOf,
+	type CreatedFrom,
 	type RootApplier,
 	type ValidatorAttributes,
 	type ValidatorForm
@@ -133,6 +134,7 @@ import {
 	failureSites,
 	isDescribed,
 	isKeyword,
+	raisesNothing,
 	isLiteralSite,
 	missingDescriptionOf,
 	raisedWritersByCode,
@@ -311,6 +313,7 @@ export class StandaloneArtifact {
 	holeLabels = new Map<unknown, string>()
 	classes = new Set<unknown>()
 	checks: string[] = []
+	checksAsWhole = false
 	validatorNames = new Map<BaseRoot, string>()
 	defaultValues = new Set<BaseRoot>()
 	readRoots = new Set<BaseRoot>()
@@ -428,8 +431,14 @@ export class StandaloneArtifact {
 		this.objectUnits = written.objectUnits
 	}
 
+	// what it checks that arktype would itself run or throw at creation, read or
+	// not. The rest only compares a read with the build's, for what was built
+	// from it, so it goes with what read it
 	get checksAtCreation(): boolean {
-		return this.checks.length > 0 || this.defaultChecks.length > 0
+		return (
+			this.defaultChecks.length > 0 ||
+			(this.baking.checksTypes ? this.checks.length > 0 : this.checksAsWhole)
+		)
 	}
 
 	receive(params: FactoryParam[]): void {
@@ -437,6 +446,7 @@ export class StandaloneArtifact {
 		for (let i = 0; i < params.length; i++) {
 			const param = params[i]
 			if (param.kind === "input") {
+				const before = this.checks.length
 				for (const [path, value] of param.reads) {
 					this.compareInput(
 						`p${i}`,
@@ -448,11 +458,14 @@ export class StandaloneArtifact {
 						param.mayBeUnset
 					)
 				}
+				this.checksAsWhole ||= !!param.mayBeUnset && this.checks.length > before
 			} else if (param.kind === "helper") {
+				this.checksAsWhole = true
 				this.checks.push(
 					`runtime.checkHelper(p${i}, ${JSON.stringify(param.file)}, ${JSON.stringify(param.name)}, ${JSON.stringify(param.label)})`
 				)
 			} else if (param.kind === "progress") {
+				this.checksAsWhole = true
 				this.checks.push(
 					`runtime.checkProgress(p${i}, ${param.at}, ${JSON.stringify(param.label)})`
 				)
@@ -640,6 +653,8 @@ export class StandaloneArtifact {
 	}
 
 	receiverOf(value: Foldable, id: string, label: string): string {
+		if (!this.isComparedId(id))
+			throwInternalError(`Comparing ${label}, whose id the scan didn't read`)
 		const kind = hasArkKind(value, "root") ? "" : `, "${kindNameOf(value)}"`
 		const args = `${writeId(id)}, ${JSON.stringify(label)}${kind}`
 		const name = `${receiverPrefix}${hashOf(`runtime.holesOf(holder, ${args})`)}`
@@ -965,9 +980,8 @@ export class StandaloneArtifact {
 	}
 
 	// each export's validator as [callee, ...args], creatable from the imports alone
-	writeCalls(configured: Configured): string[][] | undefined {
-		if (writeFixConfig(configured) || !this.roots.length || this.baking.defers)
-			return
+	writeCalls(): string[][] | undefined {
+		if (!this.roots.length || this.baking.defers) return
 		this.writeSharedUnits()
 		const names = Object.values(this.exports).map(value =>
 			hasArkKind(value, "root") ? this.readValidator(value) : undefined
@@ -1793,9 +1807,15 @@ return namespace`
 		const fusing = fusedApplierOf(this.baking, form, applied)
 		const fused =
 			defers && fusing ? boundApplierOf(fusing, reads.readsAllows) : fusing
-		const made = fused ? undefined : madeApplierOf(form, applied, allows)
+		const making = fused ? undefined : madeApplierOf(form, applied, allows)
+		// a node a creator is passed has to exist as it's called, where parts don't
+		const made =
+			defers && making && allows !== `${making.args}[0]` ? undefined : making
+		// a template's parts are read by position
+		const writesId =
+			this.baking.holdsIds && (isTemplate || !!held || this.isComparedId(id))
 		const written = writtenAttributesOf(
-			this.baking,
+			writesId,
 			form,
 			attributes,
 			meta,
@@ -1806,9 +1826,32 @@ return namespace`
 			typeof applied === "string" ? applied : (
 				`${this.emitApplier(applied)}(${applied.args})`
 			)
+		// a validator's own calling convention around what's read of its node,
+		// which a first call creates, so a deferring build reads it as parts
+		const fromNode =
+			(
+				!defers &&
+				ownsValidator &&
+				!isCompact &&
+				!isTemplate &&
+				!form.byRuntime &&
+				typeof applied === "object" &&
+				allows === `${applied.args}.allows`
+			) ?
+				applied
+			:	undefined
 		const make =
 			fused ? undefined
 			: made ? this.emitApplier({ ...made, readsAllows: reads.readsAllows })
+			: fromNode ?
+				this.emitApplier({
+					...fromNode,
+					params: fromNode.params.replace(/^node\b/, "node, configuredOnFail"),
+					apply:
+						form.pipes ?
+							`runtime.callingRootApply([, ${fromNode.apply}], configuredOnFail)`
+						:	`(rootApply => (data, _, onFail) => rootApply(data, onFail))(${fromNode.apply})`
+				})
 			: !ownsValidator ? undefined
 			: isCompact ? rootApply()
 			: form.pipes ?
@@ -1819,6 +1862,7 @@ return namespace`
 		const parts =
 			fused ? fusedParts
 			: made ? made.args
+			: fromNode ? fromNode.args
 			: ownsValidator && isCompact ? allows
 			: make ? `[${allows}, ${rootApply()}]`
 			: defers ? `[${rootApply()}, ${allows}]`
@@ -1839,7 +1883,7 @@ return namespace`
 		const rest = [
 			...(createsWith ?
 				[
-					writeId(id),
+					writesId ? writeId(id) : "undefined",
 					...(held ? [...written, held]
 					: written[0] === "{ meta: runtime.emptyMeta }" ? []
 					: written)
@@ -1848,14 +1892,25 @@ return namespace`
 					...written,
 					...(!this.baking.holdsIds ? []
 					: held ? [writeId(id), held]
-					: onFail ? [writeId(id), "undefined"]
-					: [writeId(id)])
+					: onFail ? [writesId ? writeId(id) : "undefined", "undefined"]
+					: writesId ? [writeId(id)]
+					: [])
 				]),
 			...(onFail ? [onFail] : [])
 		]
 		const creator =
 			isTemplate ? "["
-			: !form.byRuntime ? `${this.creatorOf(form, fused, made !== undefined)}(`
+			: !form.byRuntime ?
+				`${this.creatorOf(
+					form,
+					fused,
+					made ?
+						allows === `${made.args}[0]` ?
+							"parts"
+						:	"node"
+					: fromNode ? "node"
+					: undefined
+				)}(`
 			: createsWith ? "runtime.createValidatorWith("
 			: "runtime.createValidator("
 		const closer = isTemplate ? "]" : ")"
@@ -1933,7 +1988,7 @@ return namespace`
 	creatorOf(
 		form: ValidatorForm,
 		applier: RootApplier | undefined,
-		makes: boolean
+		makes: CreatedFrom | undefined
 	): string {
 		const [params, body] = creatorSourceOf(this.baking, form, applier, makes)
 		const name = `create${hashOf(`${params}\n${body}`)}`
@@ -2384,7 +2439,8 @@ return namespace`
 		const callbacks = declares(
 			root,
 			node =>
-				node.is("morph") || (node.is("predicate") && !isKeyword(node.predicate))
+				node.is("morph") ||
+				(node.is("predicate") && !raisesNothing(node.predicate))
 		)
 		if (!this.baking.detailsErrors) {
 			return this.emitUndetailedApply(
@@ -2403,9 +2459,12 @@ return namespace`
 				node =>
 					node.is("union") && !node.discriminant && !isDecidedByAllows(node)
 			) &&
-			// errors count their issues, not a branch's
+			// errors count their issues, and hold no branches
 			!this.unitsOf(root).some(unit =>
-				unit.members.some(([, source]) => source.includes("ctx.errN"))
+				unit.members.some(
+					([, source]) =>
+						source.includes("ctx.errN") || source.includes("ctx.pushBr")
+				)
 			)
 		if (reportsIssues) assertReportsIssues(this.unitsOf(root))
 		const ctx =
@@ -2418,7 +2477,14 @@ return namespace`
 		// first-issue traversals drop the rest when finalized
 		const appliesErrors = !this.baking.firstIssue || reportsIssues
 		// for speed, issues reported into ArkErrors are found once read
-		const unreads = reportsIssues && this.baking.defersIssues
+		const unreads =
+			reportsIssues &&
+			this.baking.defersIssues &&
+			// a callback runs when arktype would run it
+			!declares(
+				root,
+				node => node.is("predicate") && !isKeyword(node.predicate)
+			)
 		const [callErrors, elementErrors] =
 			unreads ?
 				["runtime.unreadCallErrors", "runtime.unreadElements"]
@@ -2543,20 +2609,27 @@ return namespace`
 				false
 			]
 		}
-		const [reads, body] = rootApplyParts(
+		const [reads, apply, applyFailed] = rootApplyParts(
 			root,
 			this.headUnitOf(root).names[root.id],
 			refOf
 		)
-		const captured =
-			/\bTransformErrors\b/.test(body) ?
-				`const TransformErrors = ${this.emit(rootApplyRuntime.TransformErrors)}\n\t\t`
-			:	""
 		// read as defaults, since minifiers inline a call that only takes node
 		return [
-			`(function (${["node", ...reads].join(", ")}) {
-		${captured}${body}
-	})(${shape})`,
+			{
+				params: [
+					"node",
+					...reads,
+					...(/\bTransformErrors\b/.test(apply) ?
+						[`TransformErrors = ${this.emit(rootApplyRuntime.TransformErrors)}`]
+					:	[]),
+					...(applyFailed ? [`applyFailed = ${applyFailed}`] : [])
+				].join(", "),
+				apply,
+				args: shape,
+				local: !refOf("Traversal").startsWith("runtime."),
+				ownsCalls: true
+			},
 			`${shape}.allows`,
 			false
 		]
@@ -2874,7 +2947,13 @@ return namespace`
 		const [id, allHoles] = keyOf(value)
 		const holes = this.heldOf(allHoles)
 		if (!this.baking.holdsIds && !holes.length) return expression
-		return `runtime.holdHoles(${expression}, ${writeId(id)}${holes.length ? `, [${this.emitAll(holes)}]` : ""})`
+		return holes.length || this.isComparedId(id) ?
+				`runtime.holdHoles(${expression}, ${writeId(id)}${holes.length ? `, [${this.emitAll(holes)}]` : ""})`
+			:	`runtime.holdHoles(${expression})`
+	}
+
+	isComparedId(id: string): boolean {
+		return this.baking.cells?.comparedIds.has(id) ?? true
 	}
 
 	readValidator(root: BaseRoot): string | undefined {

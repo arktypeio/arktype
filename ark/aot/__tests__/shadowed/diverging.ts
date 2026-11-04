@@ -21,6 +21,7 @@ const unparsed = () =>
 		"unparsed",
 		() => type("string > 0"),
 		() => type("0 < string" as never),
+		[],
 		[]
 	)
 
@@ -34,6 +35,7 @@ const validated = shadow(
 	"validated",
 	() => type("number").narrow(n => n > 2),
 	() => type("number").narrow(n => n > 1),
+	[],
 	[]
 ) as type.Any
 
@@ -42,6 +44,7 @@ const called = shadow(
 	(f: unknown) => type("string").narrow(s => (f as typeof isA)(`${s}!`)),
 	(f: unknown) => type("string").narrow(s => (f as typeof isA)(s)),
 	[0],
+	[],
 	isA
 ) as type.Any
 
@@ -61,6 +64,7 @@ const checked = shadow(
 	(f: unknown) =>
 		type("string").narrow((s, ctx) => (f as typeof isFirst)(s, ctx)),
 	[0],
+	[],
 	isFirst
 ) as type.Any
 
@@ -68,6 +72,7 @@ const shared = shadow(
 	"shared",
 	() => type("object").pipe(o => ({ a: o, b: { ...o } })),
 	() => type("object").pipe(o => ({ a: o, b: o })),
+	[],
 	[]
 ) as type.Any
 
@@ -75,6 +80,7 @@ const length = shadow(
 	"length",
 	() => type.fn("string", ":", "number")(s => s.length + 1),
 	() => type.fn("string", ":", "number")(s => s.length),
+	[],
 	[]
 ) as (s: string) => number
 
@@ -82,6 +88,7 @@ const bumped = shadow(
 	"bumped",
 	() => type({ count: "number" }).pipe(counter => (counter.count += 2)),
 	() => type({ count: "number" }).pipe(counter => ++counter.count),
+	[],
 	[]
 ) as type.Any
 
@@ -102,6 +109,7 @@ const aliased = shadow(
 			.pipe(() => ({ a: {}, b: {} }))
 			.pipe(f as typeof isSame),
 	[0],
+	[],
 	isSame
 ) as type.Any
 
@@ -121,6 +129,7 @@ const rooted = shadow(
 			a: type("string").narrow((s, ctx) => (f as typeof isFlagged)(s, ctx))
 		}),
 	[0],
+	[],
 	isFlagged
 ) as type.Any
 
@@ -132,6 +141,7 @@ const reordered = shadowUnder(
 	"reordered",
 	() => first.type({ b: "number" }),
 	() => first.type({ a: "string[]", b: "number" }),
+	[],
 	[]
 ) as type.Any
 

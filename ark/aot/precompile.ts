@@ -22,6 +22,7 @@ import {
 	isThunk,
 	ParseError,
 	printable,
+	readsOnlyData,
 	throwError,
 	throwParseError,
 	type Fn
@@ -539,6 +540,39 @@ const isLiteralRename = (read: Node, module: SourceModule): boolean => {
 				property.value.type === "Literal"
 		)
 	)
+}
+
+// the ids compareInput compares of what a factory reads
+const collectComparedIds = (
+	value: unknown,
+	isWritable: boolean | undefined,
+	byHole: ReadonlyMap<unknown, HoleCell>,
+	ids: Set<string>
+): void => {
+	if (
+		hasArkKind(value, "root") ||
+		hasArkKind(value, "module") ||
+		hasArkKind(value, "scope") ||
+		hasArkKind(value, "generic")
+	) {
+		const [id, holes] = keyOf(value)
+		if (isWritable || holes.some(hole => !byHole.has(hole))) ids.add(id)
+	} else if (isPlainContainer(value)) {
+		for (const k of Reflect.ownKeys(value))
+			collectComparedIds(Reflect.get(value, k), isWritable, byHole, ids)
+	}
+}
+
+// what a default's value is, a cycle's hash naming only its aliases and its
+// key only the shape of what it holds; undefined if a hole has no cell to name
+const contentOfDefaulted = (
+	value: BaseRoot,
+	byHole: ReadonlyMap<unknown, HoleCell>
+): string | undefined => {
+	if (!value.hasAlias) return value.hash
+	const [id, holes] = keyOf(value)
+	const names = holes.map(hole => byHole.get(hole)?.name)
+	return names.includes(undefined) ? undefined : `${id} ${names.join()}`
 }
 
 const holdsCell = (value: unknown, cells: HoleCells | undefined): boolean =>
@@ -1077,7 +1111,16 @@ export class Precompiler {
 					)
 				:	undefined
 			:	(byHole.get(value)?.name ?? defaults.get(value) ?? runtimeKeyOf(value))
+		const comparedIds = new Set<string>()
+		for (const [, { params }] of factories) {
+			for (const param of params) {
+				if (param.kind !== "input") continue
+				for (const [, value] of param.reads)
+					collectComparedIds(value, param.isWritable, byHole, comparedIds)
+			}
+		}
 		const cells: HoleCells = {
+			comparedIds,
 			byHole,
 			byPlaceholder,
 			defaults,
@@ -1100,24 +1143,33 @@ export class Precompiler {
 		for (const [site] of factories) {
 			const created = createdBy(site)
 			if (!created) continue
-			for (const root of rootsIn(created)) {
-				for (const node of root.selectReferences(holdsDefaults))
-					collectDefaults(node as never, collected)
+			const seen = new Set<BaseRoot>()
+			const collectIn = (root: BaseRoot) => {
+				if (seen.has(root)) return
+				seen.add(root)
+				for (const node of root.selectReferences(
+					node => holdsDefaults(node) || node.is("alias")
+				)) {
+					if (node.is("alias")) collectIn(node.resolution)
+					else collectDefaults(node as never, collected)
+				}
 			}
+			for (const root of rootsIn(created)) collectIn(root)
 		}
 		for (const [morph, [key, value, defaultValue]] of collected) {
 			if (
 				typeof key === "symbol" ||
-				value.hasAlias ||
 				holdsObjectMeta(value) ||
 				typeof defaultValue === "symbol" ||
 				(hasDomain(defaultValue, "object") &&
 					!(isThunk(defaultValue) && byHole.has(defaultValue)))
 			)
 				continue
+			const content = contentOfDefaulted(value, byHole)
+			if (content === undefined) continue
 			defaults.set(
 				morph,
-				`default ${printable(key)} ${value.hash} ${byHole.get(defaultValue)?.name ?? printablePrimitive(defaultValue)}`
+				`default ${printable(key)} ${content} ${byHole.get(defaultValue)?.name ?? printablePrimitive(defaultValue)}`
 			)
 			defaultValues.set(morph, value)
 		}
@@ -1149,6 +1201,8 @@ export class Precompiler {
 			(after[i] !== undefined &&
 				this.isCreatedOnce(after[i]) &&
 				nameOf(after[i]) === nameOf(before[i]) &&
+				readsOnlyData.has(after[i] as Fn) ===
+					readsOnlyData.has(before[i] as Fn) &&
 				sites.every(site =>
 					site.references.every(
 						reference => reference.value !== after[i] || reference.isOneValue
@@ -3533,9 +3587,13 @@ export class Precompiler {
 		prefix: string
 	): string {
 		const spans = factory?.spans ?? []
-		const callbacks = (factory?.params ?? []).flatMap((param, i) =>
-			param.kind === "function" ? [i] : []
-		)
+		const callbacks: number[] = []
+		const proved: number[] = []
+		for (const [i, param] of (factory?.params ?? []).entries()) {
+			if (param.kind !== "function") continue
+			callbacks.push(i)
+			if (readsOnlyData.has(param.value as Fn)) proved.push(i)
+		}
 		const parameterSpans = [
 			...spans.map((span, i): [Span, number] => [span, i]),
 			...(factory?.repeats ?? []).filter(
@@ -3551,7 +3609,7 @@ export class Precompiler {
 		original += module.textOf({ start, end: site.end })
 		const params = spans.map((_, i) => `${prefix}h${i}`)
 		const create = index === undefined ? local : `${local}.bind(null, ${index})`
-		return `${prefix}shadow(${JSON.stringify(`${module.positionOf(site)}  ${module.snippetOf(site)}`)}, ${create}, (${params.join(", ")}) => (${original}), [${callbacks.join(", ")}]`
+		return `${prefix}shadow(${JSON.stringify(`${module.positionOf(site)}  ${module.snippetOf(site)}`)}, ${create}, (${params.join(", ")}) => (${original}), [${callbacks.join(", ")}], [${proved.join(", ")}]`
 	}
 
 	// an arktype import that arktype/runtime lacks fails to link

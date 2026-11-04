@@ -1,6 +1,7 @@
 import { declaredNameOf, holeNameOf } from "@ark/aot/internal/holeNames.ts"
+import { proveFunction } from "@ark/aot/internal/proofs.ts"
 import { combinesChecks } from "@ark/aot/internal/smaller.ts"
-import { arkKindOf, printable } from "@ark/util"
+import { arkKindOf, printable, type Fn } from "@ark/util"
 import {
 	keyOf,
 	precompileStandalone,
@@ -87,26 +88,25 @@ const holeNameAt = ({ node, parent }: FunctionSite) =>
 		node.range[0]
 	)
 
-// names each emitted function as the build's interpreter names its source, so
-// the writer can tell the functions a Type holds from arktype's own
+// names each emitted function as the build's interpreter names its source and
+// proves of it what the interpreter does, as it's created, so the writer can
+// tell the functions a Type holds from arktype's own
 const nameFunctions = (
 	code: string,
 	program: EstreeNode,
-	emitted: FunctionSite[],
-	written: FunctionSite[]
+	emitted: FunctionSite[]
 ): string => {
 	const inserts: [at: number, rank: number, text: string][] = []
 	const prologue: string[] = []
 	for (const [i, { node, parent }] of emitted.entries()) {
 		const [start, end] = node.range
-		const name = JSON.stringify(holeNameAt(written[i]))
-		const rename = `$arkHole(${nameOfId(node.id)}, ${name});`
+		const rename = `$arkHole(${nameOfId(node.id)}, ${i});`
 		// a declaration is hoisted, so may be read before it's reached
 		if (node.type === "FunctionDeclaration" && parent === program)
 			prologue.push(rename)
 		else if (node.type.endsWith("Declaration"))
 			inserts.push([end, -start, `\n${rename}`])
-		else inserts.push([start, -end, "$arkHole("], [end, -start, `, ${name})`])
+		else inserts.push([start, -end, "$arkHole("], [end, -start, `, ${i})`])
 	}
 	inserts.sort((l, r) => l[0] - r[0] || l[1] - r[1])
 	let named = ""
@@ -115,12 +115,18 @@ const nameFunctions = (
 		named += code.slice(last, at) + text
 		last = at
 	}
-	return `function $arkHole(f, name) {
-	return Object.defineProperty(f, "name", { value: name })
-}
-${prologue.join("\n")}
+	return `${prologue.join("\n")}
 ${named}${code.slice(last)}`
 }
+
+const holeNamerOf =
+	(written: FunctionSite[]) =>
+	(f: Fn, i: number): Fn => {
+		const site = written[i]
+		if (!site.node.type.startsWith("Class"))
+			proveFunction(f, site.node as never)
+		return Object.defineProperty(f, "name", { value: holeNameAt(site) })
+	}
 
 // the names a program declares at its top level, with each one's initializer
 const declarationsOf = (program: EstreeNode) => {
@@ -246,8 +252,9 @@ export const writePrecompiled = async (
 	const initsByName = declarationsOf(program)
 	const sourceInitsByName = declarationsOf(sourceProgram)
 	const values = evaluate(
-		nameFunctions(isolated, program, emitted, isMapped ? written : emitted),
-		Object.keys(initsByName)
+		nameFunctions(isolated, program, emitted),
+		Object.keys(initsByName),
+		{ $arkHole: holeNamerOf(isMapped ? written : emitted) }
 	)
 	const holesByName = new Map(
 		(isMapped ? written : []).map(site => [holeNameAt(site), site])

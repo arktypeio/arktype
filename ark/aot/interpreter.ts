@@ -9,7 +9,7 @@ import {
 	type BaseRoot,
 	type CacheReach
 } from "@ark/schema"
-import { hasDomain, ParseError } from "@ark/util"
+import { hasDomain, ParseError, type Fn } from "@ark/util"
 import { configure } from "arktype"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
@@ -76,6 +76,7 @@ import {
 	type ModuleGraph
 } from "./graph.ts"
 import type { SourceModule } from "./module.ts"
+import { proveFunction } from "./proofs.ts"
 import {
 	isTransparent,
 	unwrapChain,
@@ -2479,6 +2480,7 @@ export class Interpreter {
 				throw this.calledAtDefinition(standIn, undefined)
 			}
 		})
+		proveFunction(proxy as Fn, closure.node)
 		if (!closure.env) this.standInsByNode.set(closure.node, proxy)
 		return proxy
 	}
