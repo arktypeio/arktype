@@ -2312,15 +2312,13 @@ return namespace`
 			: "InternalTraversal"
 		// first-issue traversals drop the rest when finalized
 		const appliesErrors = !this.baking.firstIssue || reportsIssues
-		// for speed, issues reported into ArkErrors are found once read
-		const unreads =
-			reportsIssues &&
-			this.baking.defersIssues &&
-			// a callback runs when arktype would run it
-			!declares(
-				root,
-				node => node.is("predicate") && !isKeyword(node.predicate)
-			)
+		const runsNarrow = declares(
+			root,
+			node => node.is("predicate") && !isKeyword(node.predicate)
+		)
+		// for speed, issues reported into ArkErrors are found once read, unless a
+		// callback, which runs when arktype would run it
+		const unreads = reportsIssues && this.baking.defersIssues && !runsNarrow
 		const [callErrors, elementErrors] =
 			unreads ?
 				["runtime.unreadCallErrors", "runtime.unreadElements"]
@@ -2414,13 +2412,17 @@ return namespace`
 					params: pattern,
 					apply: `(data, onFail) => allows(data) ? ${valid} : ${
 						unreads ? `runtime.unreadErrors(${apply}, data, onFail, ${Ctx})`
-						: reportsIssues && !this.baking.shortest ?
-							throws && Ctx === "runtime.ArkErrors" ?
-								`runtime.throwIssues(${apply}, data)`
-							:	`runtime.foundErrors(${apply}, data, onFail, ${Ctx})`
-						: reportsIssues ?
-							`runtime.applyIssues(${apply}, data, onFail${this.baking.firstIssue ? `, ${Ctx}` : ""})`
-						:	`runtime.applyErrors(${apply}, data, ${refOf("config")}, onFail, ${Ctx})`
+						: !reportsIssues ?
+							`runtime.applyErrors(${apply}, data, ${refOf("config")}, onFail, ${Ctx})`
+						: (
+							throws &&
+							!runsNarrow &&
+							!this.baking.shortest &&
+							Ctx === "runtime.ArkErrors"
+						) ?
+							`runtime.throwIssues(${apply}, data)`
+							// as arktype, a narrow finding data valid when asked again passes it
+						:	`runtime.${runsNarrow ? "applyIssues" : "foundErrors"}(${apply}, data, onFail${this.baking.firstIssue ? `, ${Ctx}` : ""})`
 					}`,
 					args: parts,
 					local

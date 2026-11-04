@@ -214,7 +214,7 @@ export const foundErrors = (
 	apply: CompactApply,
 	data: unknown,
 	onFail: ArkIssues.Handler | null,
-	Ctx: new () => ArkIssues
+	Ctx: new () => ArkIssues = ArkIssues
 ): unknown => {
 	const errors = new Ctx()
 	// as issuesOf, which a program of these never ships

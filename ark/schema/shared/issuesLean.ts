@@ -152,7 +152,7 @@ export const foundErrors = (
 	apply: CompactApply,
 	data: unknown,
 	onFail: ((errors: ArkErrors) => unknown) | null,
-	Ctx: new () => ArkErrors
+	Ctx: new () => ArkErrors = ArkErrors
 ): unknown => {
 	const errors = new Ctx()
 	issuesOf(apply, data, errors)

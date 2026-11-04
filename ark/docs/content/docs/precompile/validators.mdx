@@ -85,5 +85,6 @@ To leave only some definitions to arktype in a standalone build, mark them as [r
 - A Date or RegExp a Type holds is one object for every Type and validation holding it.
 - A builtin class a Type holds, like `Uint8Array`, is read as the validator's module loads, so a later polyfill isn't seen.
 - When a validator rejects an array, it may look for errors only from the first element it rejects, so a getter or `Proxy` trap reading an element before that one runs once rather than twice.
+- A validator may read a key a different number of times than arktype does, so a getter or `Proxy` trap answering differently between reads can pass or fail differently. arktype's own first call and later calls differ the same way.
 - The `ctx.config` a narrow or morph receives holds only `jitless` and `onFail`.
 - A module of validators fails to link to an `arktype/runtime` of another version, but nothing checks at runtime that `arktype` loads only for runtime islands.

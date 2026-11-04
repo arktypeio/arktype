@@ -45,6 +45,7 @@ import {
 	run,
 	runBundle,
 	runCli,
+	runPlain,
 	writeFixture
 } from "./utils.ts"
 
@@ -1138,6 +1139,43 @@ for (const data of [{ name: 5 }, flipping]) {
 			attest((await bundle({ preset: undefined })).includes("._d=")).equals(
 				true
 			)
+		})
+
+		it("returns what a narrow finds valid once asked again, as arktype does", async () => {
+			const files = writeFixture(
+				{
+					"main.ts": `import { type } from "arktype"
+
+let calls = 0
+const isEvenCall = (s: string) => ++calls % 2 === 0
+const Flips = type("string").narrow(isEvenCall)
+const Holds = type({ flips: Flips, d: "string = 'x'" })
+const matches = /a/g
+const Matches = type("string").narrow(s => matches.test(s))
+console.log(
+	Flips("a"),
+	Flips.assert("b"),
+	Holds({ flips: "c", d: "" }),
+	Holds.assert({ flips: "d", d: "" }),
+	Matches("a"),
+	Matches("a"),
+	Matches("a")
+)
+`
+				},
+				fromHere("temp", "flippingNarrow")
+			)
+			const plain = runPlain(files)
+			attest(plain).snap(
+				"a b { flips: 'c', d: '' } { flips: 'd', d: '' } a a a\n"
+			)
+			for (const preset of [undefined, "smallest"] as const) {
+				attest(
+					run(
+						await bundle({ preset }, { entryPoints: [join(files, "main.ts")] })
+					)
+				).equals(plain)
+			}
 		})
 
 		it("names an undeclared key as the whole build does", async () => {
