@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import { inspect } from "node:util"
 import {
 	keptIssuesOf,
+	keptOf as eachKeptOf,
 	thrownErrorsOf,
 	type KeptIssue
 } from "@ark/aot/internal/issues.ts"
@@ -561,14 +562,15 @@ const serializeIssues = (issues: KeptIssue[]) =>
 		...(detailsErrors && { data: serialize(data) })
 	}))
 
-// what a union's issues say, without what no message of a validator's does
+// what a union's issues say, without what no message of a validator's does, as
+// issues kept apart read: arktype groups what's at one path, which never takes over
 const unionTextsOf = (errors: ArkErrors): string[] =>
 	!detailsErrors || firstIssue ?
 		[]
-	:	errors.issues
+	:	eachKeptOf(errors as never)
 			.filter(issue => issue.code === "union")
 			.map(({ message }) =>
-				message
+				message!
 					.replace(/ \(was (?:"(?:[^"\\]|\\.)*"|[^)])*\)/g, "")
 					.replace(/(^|, | or )value at /g, "$1")
 			)
