@@ -1762,7 +1762,7 @@ console.log(type({ n: Max })({ n: 2 }) instanceof type.errors)
 				}
 				const fresh = await served()
 				try {
-					attest<string | undefined>(restarted).equals(await fresh.code())
+					attest<string>(restarted).equals((await fresh.code())!)
 				} finally {
 					await fresh.server.close()
 				}

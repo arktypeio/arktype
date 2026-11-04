@@ -333,7 +333,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.optional
 	)
 
-	declare private _orderedProps: array<Prop.Node> | undefined
+	private _orderedProps: array<Prop.Node> | undefined
 	/** its props in the order they're checked and an output lists them */
 	get inOrder(): array<Prop.Node> {
 		return (this._orderedProps ??=
@@ -360,12 +360,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}) as FailureSite
 	}
 
-	declare private _allowsProps: array<Prop.Node> | undefined
+	private _allowsProps: array<Prop.Node> | undefined
 	get allowsProps(): array<Prop.Node> {
 		return (this._allowsProps ??= orderedForAllows(this.inOrder))
 	}
 
-	declare private _byKey: Record<Key, Prop.Node | undefined> | undefined
+	private _byKey: Record<Key, Prop.Node | undefined> | undefined
 	/** its props, keyed by key */
 	get byKey(): Record<Key, Prop.Node | undefined> {
 		// on a null prototype, "__proto__" is a key and "toString" isn't
@@ -937,7 +937,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		prop => prop.key in Object.prototype
 	)
 
-	declare private _hasIndexedProp: boolean | undefined
+	private _hasIndexedProp: boolean | undefined
 	get hasIndexedProp(): boolean {
 		return (this._hasIndexedProp ??=
 			this.index !== undefined &&
@@ -948,7 +948,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			))
 	}
 
-	declare private _tfsByKey: Record<Key, TransformStep[]> | undefined
+	private _tfsByKey: Record<Key, TransformStep[]> | undefined
 	/** the steps transforming prop's value, shared by the constraints transforming its key */
 	tfsOf(prop: Prop.Node): TransformStep[] {
 		const cached = this._tfsByKey?.[prop.key]
