@@ -82,6 +82,22 @@ contextualize(() => {
 		comparesAsJson(type("Date >= 0"), type("Date >= 1"), false)
 	})
 
+	it("intersections with a structure differing in another constraint", () => {
+		comparesAsJson(type("string[]"), type("string[] <= 3"), false)
+		comparesAsJson(type("string[] <= 3"), type("string[] <= 4"), false)
+		comparesAsJson(type("string[] <= 3"), type("string[] >= 3"), false)
+		comparesAsJson(type("string[] <= 3"), type("string[] <= 3"), true)
+	})
+
+	it("a structure holding nothing writes nothing", () => {
+		const schema = { proto: Array, minLength: 1 }
+		comparesAsJson(
+			type.schema({ ...schema, structure: {} }) as never,
+			type.schema(schema) as never,
+			true
+		)
+	})
+
 	it("structures alike but for what they do with undeclared keys", () => {
 		comparesAsJson(
 			type({ a: "string" }),

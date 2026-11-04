@@ -232,8 +232,9 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		)
 			return false
 		if (holdsSameChildren(this, r)) return true
-		// a structure holding nothing writes nothing, so only without one is each child written
-		if (lStructure || rStructure) return undefined
+		// a structure holding nothing writes nothing, so its absence wouldn't differ
+		if (lStructure?.children.length === 0 || rStructure?.children.length === 0)
+			return undefined
 		if (this.children.length !== r.children.length) return false
 		for (let i = 0; i < this.children.length; i++) {
 			const lChild = this.children[i]
