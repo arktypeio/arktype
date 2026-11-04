@@ -539,7 +539,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	// as a spread would, keys keep this structure's order and r's new keys follow
 	merge(r: StructureNode): StructureNode {
-		const inner = this.filterKeys("omit", [r.keyof()])
+		const inner =
+			this.index || r.index || r.sequence ?
+				this.filterKeys("omit", [r.keyof()])
+				// a named key is omitted exactly if r names it
+			:	this.withoutKeysOf(r)
 
 		if (r.required) inner.required = append(inner.required, r.required)
 		if (r.optional) inner.optional = append(inner.optional, r.optional)
@@ -549,6 +553,15 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		else delete inner.undeclared
 		inner.order = [...this.keyOrder, ...r.keyOrder]
 		return this.$.node("structure", inner)
+	}
+
+	private withoutKeysOf(r: StructureNode): Structure.Inner.mutable {
+		const result = makeRootAndArrayPropertiesMutable(this.inner)
+		if (result.required)
+			result.required = result.required.filter(prop => !(prop.key in r.byKey))
+		if (result.optional)
+			result.optional = result.optional.filter(prop => !(prop.key in r.byKey))
+		return result
 	}
 
 	private filterKeys(
