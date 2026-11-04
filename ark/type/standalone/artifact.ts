@@ -494,7 +494,9 @@ export class StandaloneArtifact {
 			imports: {},
 			declarations: [
 				`var ${cell.name}`,
-				`function ${cellSetterOf(cell)}(hole) {\n\t${cell.name} = hole\n\treturn true\n}`
+				// through arguments, as a minifier writing this into its site would
+				// otherwise assign an anonymous function, naming it for the variable
+				`function ${cellSetterOf(cell)}() {\n\t${cell.name} = arguments[0]\n\treturn true\n}`
 			],
 			exports: [cell.name, cellSetterOf(cell)]
 		}
