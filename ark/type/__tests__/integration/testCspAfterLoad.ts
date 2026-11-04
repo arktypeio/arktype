@@ -21,6 +21,12 @@ const linked = { node: { value: "number", "next?": "node" } } as const
 // aliases compile on export, so its root applies compile within the request
 const Linked = scope(linked).export()
 
+const cycle = { id: "string", "next?": "this" } as const
+// resolved as it loads, but it compiles once it's used, as any other Type does
+const Cycle = type(cycle)
+const CycleReadAtLoad = type({ read: "string", "next?": "this" })
+const readAtLoad = CycleReadAtLoad.precompilation
+
 const loaded = evaluatedBodies.length
 
 csp.refusesEval = true
@@ -57,6 +63,19 @@ cases({
 			null
 		)
 		strictEqual(User.precompilation, undefined)
+	},
+	aliasReferenceChecksWithinRequest: () => {
+		const Jitless = jitless.type(cycle)
+		const inputs = [
+			{ id: "a", next: { id: "b" } },
+			{ id: "a", next: { id: 1 } }
+		]
+		checksAsJitless(Cycle, Jitless, ...inputs, ...inputs)
+		strictEqual(Cycle.precompilation, undefined)
+	},
+	compiledByReadingAtLoad: () => {
+		notStrictEqual(readAtLoad, undefined)
+		notStrictEqual(CycleReadAtLoad.precompilation, undefined)
 	},
 	appliesCompiledAtLoad: () => {
 		const Jitless = scope(linked, { jitless: true }).export()

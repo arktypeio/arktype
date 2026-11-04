@@ -1,5 +1,10 @@
 // run `pnpm build` first: Turbopack bundles arktype's built entries
-import { writeTurbopackDependencyMessage } from "@ark/aot/internal/messages.ts"
+import {
+	withAllowUnsafe,
+	writeExternalizedMessage,
+	writeNextExternalMessage,
+	writeTurbopackDependencyMessage
+} from "@ark/aot/internal/messages.ts"
 import { spawnSync } from "node:child_process"
 import {
 	existsSync,
@@ -18,20 +23,45 @@ const setup = fileURLToPath(
 // outside node_modules, where the loader would take the app for a dependency
 const appDir = fileURLToPath(new URL("./temp/next/", import.meta.url))
 
-// the Turbopack config Setup shows, so the docs and this build can't drift
-const config =
-	/```js title="next\.config\.js"\n(export default {\n\tturbopack[\S\s]*?)^```$/m.exec(
-		readFileSync(setup, "utf8")
-	)?.[1]
-if (!config) throw new Error(`Found no Turbopack next.config.js in ${setup}`)
+// the configs Setup shows, so the docs and these builds can't drift
+const configs = [
+	...readFileSync(setup, "utf8").matchAll(
+		/```js title="next\.config\.js"\n([\S\s]*?)^```$/gm
+	)
+].map(match => match[1])
+const configNamed = (key: string) => {
+	const config = configs.find(config => config.includes(`\t${key}:`))
+	if (!config) throw new Error(`Found no ${key} next.config.js in ${setup}`)
+	return config
+}
+const turbopack = configNamed("turbopack")
+const webpack = configNamed("webpack")
+
+const bundlesDependencies =
+	"\t// for the pages router\n\tbundlePagesRouterDependencies: true,\n"
+const withoutBundling = (config: string) => {
+	if (!config.includes(bundlesDependencies))
+		throw new Error(`Found no bundlePagesRouterDependencies in:\n${config}`)
+	return config.replace(bundlesDependencies, "")
+}
 
 const files: Record<string, string> = {
-	"package.json": JSON.stringify({ private: true, type: "module" }),
-	"next.config.js": config,
+	// next, which has the webpack plugin name Next's settings
+	"package.json": JSON.stringify({
+		private: true,
+		type: "module",
+		dependencies: { next: "*" }
+	}),
+	"next.config.js": turbopack,
 	"app/layout.jsx":
 		"export default function Layout({ children }) {\n\treturn <html><body>{children}</body></html>\n}\n",
 	"app/page.jsx":
 		'import { User } from "defines-types"\nimport { failed } from "reads-errors"\n\nexport default function Page() {\n\treturn <p>{User({ name: "Ada" }).name} {String(failed(User({})))}</p>\n}\n',
+	// as Next.js leaves on the pages router's server unless told otherwise
+	"pages/legacy.jsx":
+		'import { type } from "arktype"\nimport { failed } from "reads-errors"\nimport { Age } from "../src/age.ts"\n\nexport default function Legacy() {\n\tconst out = Age({ age: -1 })\n\treturn <p>own {String(out instanceof type.errors)} dependency {String(failed(out))}</p>\n}\n',
+	"src/age.ts":
+		'import { type } from "arktype"\n\nexport const Age = type({ age: "number >= 0" })\n',
 	// a dependency that defines a Type, ESM as a dependency ships it
 	"node_modules/defines-types/package.json": JSON.stringify({
 		name: "defines-types",
@@ -46,7 +76,8 @@ const files: Record<string, string> = {
 		name: "reads-errors",
 		version: "1.0.0",
 		type: "module",
-		exports: "./index.js"
+		exports: "./index.js",
+		peerDependencies: { arktype: "*" }
 	}),
 	"node_modules/reads-errors/index.js":
 		'import { type } from "arktype"\nexport const failed = out => out instanceof type.errors\n'
@@ -60,9 +91,11 @@ for (const [path, contents] of Object.entries(files)) {
 
 const next = createRequire(import.meta.url).resolve("next/dist/bin/next")
 
-const build = () => {
+const build = (config: string, ...flags: string[]) => {
+	writeFileSync(join(appDir, "next.config.js"), config)
 	rmSync(join(appDir, ".next"), { recursive: true, force: true })
-	const result = spawnSync(process.execPath, [next, "build"], {
+	rmSync(join(appDir, "node_modules/.cache"), { recursive: true, force: true })
+	const result = spawnSync(process.execPath, [next, "build", ...flags], {
 		cwd: appDir,
 		encoding: "utf8",
 		env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" }
@@ -71,15 +104,51 @@ const build = () => {
 	return { status: result.status, output: result.stdout + result.stderr }
 }
 
+const assertFailsWith = (
+	message: string,
+	{ status, output }: ReturnType<typeof build>
+) => {
+	if (status === 0 || !output.includes(message)) {
+		throw new Error(
+			`The build should fail with:\n${message}\nIt exited ${status}:\n${output}`
+		)
+	}
+}
+
+// prerendered, so the precompiled Type ran in the build
+const assertRendered = (
+	bundler: string,
+	{ status, output }: ReturnType<typeof build>
+) => {
+	const app = join(appDir, ".next/server/app/index.html")
+	const pages = join(appDir, ".next/server/pages/legacy.html")
+	if (status !== 0 || !existsSync(app) || !existsSync(pages)) {
+		throw new Error(
+			`${bundler} should build the app. It exited ${status}:\n${output}`
+		)
+	}
+	if (!readFileSync(app, "utf8").includes("Ada<!-- --> <!-- -->true")) {
+		throw new Error(
+			`The prerendered page doesn't show the Type's results: ${app}`
+		)
+	}
+	if (
+		!readFileSync(pages, "utf8").includes(
+			"own <!-- -->true<!-- --> dependency <!-- -->true"
+		)
+	) {
+		throw new Error(
+			`The pages router's server doesn't take a validator's errors for type.errors: ${pages}`
+		)
+	}
+}
+
 console.log("▲ Building a Next app whose dependency defines a Type...")
 
-const refused = build()
-const message = writeTurbopackDependencyMessage("defines-types")
-if (refused.status === 0 || !refused.output.includes(message)) {
-	throw new Error(
-		`Turbopack should fail the build with:\n${message}\nIt exited ${refused.status}:\n${refused.output}`
-	)
-}
+assertFailsWith(
+	writeTurbopackDependencyMessage("defines-types"),
+	build(turbopack)
+)
 
 console.log("▲ Building it again with the dependency precompiled...")
 
@@ -87,22 +156,48 @@ writeFileSync(
 	join(appDir, "ark.json"),
 	JSON.stringify({ precompile: { dependencies: { "defines-types": "aot" } } })
 )
-const precompiled = build()
-const page = join(appDir, ".next/server/app/index.html")
-if (precompiled.status !== 0 || !existsSync(page)) {
-	throw new Error(
-		`Turbopack should build the app. It exited ${precompiled.status}:\n${precompiled.output}`
+assertRendered("Turbopack", build(turbopack))
+
+console.log(
+	"▲ Building it with Next leaving the pages router's dependencies external..."
+)
+
+assertFailsWith(
+	withAllowUnsafe(writeNextExternalMessage("arktype")),
+	build(withoutBundling(turbopack))
+)
+
+console.log(
+	"▲ Building it with serverExternalPackages naming a package on arktype..."
+)
+
+assertFailsWith(
+	withAllowUnsafe(
+		writeExternalizedMessage("reads-errors", "serverExternalPackages")
+	),
+	build(
+		turbopack.replace(
+			"export default {",
+			'export default {\n\tserverExternalPackages: ["reads-errors"],'
+		)
 	)
-}
-// prerendered, so the precompiled Type ran in the build
-if (!readFileSync(page, "utf8").includes("Ada<!-- --> <!-- -->true")) {
-	throw new Error(
-		`The prerendered page doesn't show the Type's results: ${page}`
-	)
-}
+)
+
+console.log("▲ Building it with webpack...")
+
+assertRendered("webpack", build(webpack, "--webpack"))
+
+console.log(
+	"▲ Building it with webpack, Next leaving the pages router's dependencies external..."
+)
+
+assertFailsWith(
+	withAllowUnsafe(writeNextExternalMessage("reads-errors")),
+	build(withoutBundling(webpack), "--webpack")
+)
 
 rmSync(appDir, { recursive: true, force: true })
 
 console.log(
-	"✅ Turbopack fails a dependency that defines a Type and precompiles one set to aot"
+	"✅ Next fails a dependency that defines a Type and precompiles one set to aot, and either bundler fails where Next leaves arktype external on the server"
 )

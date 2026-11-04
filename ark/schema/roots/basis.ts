@@ -13,7 +13,7 @@ export abstract class InternalBasis<
 		if (!this.tAllows(data, ctx)) ctx.nodeError(this.errorCtx as never, data)
 	}
 
-	private _errorCtx: d["errorCtx"] | undefined
+	declare private _errorCtx: d["errorCtx"] | undefined
 	// frozen when created, as a missing value shares it
 	get errorCtx(): d["errorCtx"] {
 		return (this._errorCtx ??= Object.freeze({

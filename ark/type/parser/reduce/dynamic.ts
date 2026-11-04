@@ -1,5 +1,6 @@
 import type { BaseParseContext, BaseRoot } from "@ark/schema"
 import {
+	isEmptyObject,
 	isKeyOf,
 	type requireKeys,
 	type Scanner,
@@ -33,6 +34,8 @@ type BranchState = {
 	lBound: OpenLeftBound | null
 	intersection: BaseRoot | null
 	union: BaseRoot | null
+	/** the units a union starts with, built together as their union only sorts and dedupes them */
+	units: BaseRoot[] | null
 	pipe: BaseRoot | null
 }
 
@@ -45,6 +48,7 @@ export class RuntimeState {
 		lBound: null,
 		intersection: null,
 		union: null,
+		units: null,
 		pipe: null
 	}
 	finalizer: FinalizingLookahead | undefined
@@ -120,9 +124,10 @@ export class RuntimeState {
 			return
 		}
 
-		if (this.branches.union) {
+		if (this.branches.union || this.branches.units) {
 			this.pushRootBranch("|")
-			this.root = this.branches.union
+			this.unionUnits()
+			this.root = this.branches.union!
 			return
 		}
 
@@ -160,6 +165,16 @@ export class RuntimeState {
 		}
 	}
 
+	private unionUnits(): void {
+		const units = this.branches.units
+		if (!units) return
+		this.branches.units = null
+		this.branches.union =
+			units.length === 1 ?
+				units[0]
+			:	units[0].$.node("union", { branches: units as never })
+	}
+
 	pushRootBranch(token: BranchOperator): void {
 		this.assertRangeUnset()
 		this.applyPrefixes()
@@ -172,15 +187,25 @@ export class RuntimeState {
 
 		if (token === "&") return
 
-		this.branches.union =
-			this.branches.union?.rawOr(this.branches.intersection) ??
-			this.branches.intersection
+		const operand = this.branches.intersection
 		this.branches.intersection = null
+		if (
+			!this.branches.union &&
+			operand.is("unit") &&
+			isEmptyObject(operand.meta)
+		)
+			(this.branches.units ??= []).push(operand)
+		else {
+			this.unionUnits()
+			this.branches.union = this.branches.union?.rawOr(operand) ?? operand
+		}
 
 		if (token === "|") return
 
+		this.unionUnits()
+
 		this.branches.pipe =
-			this.branches.pipe?.rawPipeOnce(this.branches.union) ??
+			this.branches.pipe?.rawPipeOnce(this.branches.union!) ??
 			this.branches.union
 		this.branches.union = null
 	}
@@ -215,6 +240,7 @@ export class RuntimeState {
 			prefixes: [],
 			lBound: null,
 			union: null,
+			units: null,
 			intersection: null,
 			pipe: null
 		}
@@ -231,7 +257,7 @@ export class RuntimeState {
 				invertedComparators[this.branches.lBound.comparator]) ??
 			this.branches.prefixes[this.branches.prefixes.length - 1] ??
 			(this.branches.intersection ? "&"
-			: this.branches.union ? "|"
+			: this.branches.union || this.branches.units ? "|"
 			: this.branches.pipe ? "|>"
 			: undefined)
 		)

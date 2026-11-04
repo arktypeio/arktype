@@ -6,6 +6,7 @@ import {
 	isNode,
 	isRefinedPattern,
 	madeMorphs,
+	registryName,
 	supportedJsonSchemaTargets,
 	ToJsonSchema,
 	unionJsonSchemaWritersKey,
@@ -106,6 +107,7 @@ import {
 	partsOf,
 	printablePrimitive,
 	printedHoleNamePattern,
+	receiverPrefix,
 	registeredNameAt,
 	traversalKeyOf,
 	writeId,
@@ -157,6 +159,8 @@ import {
 } from "./units.ts"
 import {
 	assertBakeableJsonSchema,
+	cellSetterOf,
+	cellSpecifierOf,
 	holdsLocal,
 	holeNameIn,
 	isPlainLiteral,
@@ -165,7 +169,8 @@ import {
 	totalBaked,
 	writeBakedLimitMessage,
 	writeUnprecompilableMessage,
-	type BakedLengths
+	type BakedLengths,
+	type HoleCell
 } from "./values.ts"
 type TracedOptions = ToJsonSchema.Options & {
 	[unionJsonSchemaWritersKey]: UnionJsonSchemaWriters
@@ -221,17 +226,23 @@ const createDeclarations = (): Declarations => ({
 	}
 })
 
+// what a shared module's code is written from, which it declares or imports
+interface WritingScope {
+	params: string[]
+	args: string[]
+	imports: Record<string, string[]>
+	shapesByName: Record<string, string>
+	// the cell each ref read as it's called is, by the ref's name
+	cellReads: Record<string, string>
+}
+
 // a shared unit as it's written: what it returns and reads, and what it's passed
-interface SharedUnit {
+interface SharedUnit extends WritingScope {
 	unit: RootUnit
 	returned: string[]
 	read: ReadonlySet<string>
 	// cyclic roots, created with their own traversals
 	own: BaseRoot[]
-	params: string[]
-	args: string[]
-	imports: Record<string, string[]>
-	shapesByName: Record<string, string>
 }
 
 const writesByBaking = new WeakMap<Baking, Map<string, SharedWrite>>()
@@ -248,6 +259,7 @@ const sharedWritesOf = (baking: Baking): Map<string, SharedWrite> => {
 			compilesValidators,
 			compiledInputs,
 			members,
+			cells,
 			...rest
 		} = baking
 		const key = JSON.stringify([rest, [...members].sort()])
@@ -299,8 +311,16 @@ export class StandaloneArtifact {
 	unitsByHead = new Map<string, RootUnit>()
 	localNamesByUnit = new Map<RootUnit, string>()
 	unit: RootUnit | undefined
-	writing: SharedUnit | undefined
+	writing: WritingScope | undefined
 	sharing: SharedWrite | undefined
+	// whether what it creates reads a cell, so must be created after it's set
+	readsCell = false
+	// whether what's written is read as its code runs, not as its module loads
+	defersCellReads = false
+	// each cell its factory sets, from what parameter
+	setCells: [cell: HoleCell, param: string][] = []
+	// where its factory reads what holds a cell, keeping what set it
+	heldReads: string[] = []
 	// read only with `in`
 	keyLookups: ReadonlySet<object>
 	patternInstances: ReadonlySet<RegExp>
@@ -413,7 +433,8 @@ export class StandaloneArtifact {
 						value,
 						param.label,
 						checked,
-						param.isWritable
+						param.isWritable,
+						param.mayBeUnset
 					)
 				}
 			} else if (param.kind === "helper") {
@@ -424,6 +445,11 @@ export class StandaloneArtifact {
 				this.checks.push(
 					`runtime.checkProgress(p${i}, ${param.at}, ${JSON.stringify(param.label)})`
 				)
+			} else if (this.cellOf(param.value)) {
+				const cell = this.cellOf(param.value)!
+				this.cellModuleOf(cell)
+				this.setCells.push([cell, `p${i}`])
+				this.holeLabels.set(param.value, param.label)
 			} else if (this.receiveHole(param.value, `p${i}`, param.label)) {
 				if (!param.isOwn) checked.push([param.value, param.kind, `p${i}`])
 				if (param.kind === "class") this.classes.add(param.value)
@@ -431,6 +457,64 @@ export class StandaloneArtifact {
 		}
 		this.checkFacts(checked)
 		this.refuseNameDependence()
+	}
+
+	cellOf(value: unknown): HoleCell | undefined {
+		return this.baking.cells?.byHole.get(value)
+	}
+
+	// those a factory receives, as a cell holds the rest
+	heldOf(holes: readonly unknown[]): readonly unknown[] {
+		const { cells } = this.baking
+		return cells ? holes.filter(hole => !cells.byHole.has(hole)) : holes
+	}
+
+	isShared(unit: RootUnit): boolean {
+		return isSharedUnit(unit, this.baking.cells)
+	}
+
+	// declared where a call can reach it early, as an import cycle's can
+	cellModuleOf(cell: HoleCell): string {
+		const specifier = cellSpecifierOf(cell)
+		const module: SharedModule = {
+			readsRuntime: false,
+			imports: {},
+			declarations: [
+				`var ${cell.name}`,
+				`function ${cellSetterOf(cell)}(hole) {\n\t${cell.name} = hole\n\treturn true\n}`
+			],
+			exports: [cell.name, cellSetterOf(cell)]
+		}
+		this.sharing?.push([specifier, module])
+		this.sharedModules[specifier] ??= module
+		return specifier
+	}
+
+	readCell(cell: HoleCell): string {
+		this.importName(this.cellModuleOf(cell), cell.name)
+		return cell.name
+	}
+
+	emitCell(cell: HoleCell): string {
+		// what a shared module writes runs before any site sets it
+		if (this.writing && !this.defersCellReads) {
+			throwInternalError(
+				`Unexpected read of ${cell.name} as a shared module loads`
+			)
+		}
+		this.readsCell = true
+		return this.readCell(cell)
+	}
+
+	// what its factory runs ahead of what it creates, droppable with it
+	writeSets(): string[] {
+		return [
+			...this.setCells.map(([cell, param]) => {
+				this.importName(cellSpecifierOf(cell), cellSetterOf(cell))
+				return `${cellSetterOf(cell)}(${param})`
+			}),
+			...this.heldReads
+		]
 	}
 
 	checkFacts(checked: CheckedHole[]): void {
@@ -515,7 +599,7 @@ export class StandaloneArtifact {
 	}
 
 	holeNamed(name: string, read = functionNameOf): unknown {
-		for (const hole of this.holeExpressions.keys())
+		for (const hole of this.holeLabels.keys())
 			if (typeof hole === "function" && read(hole) === name) return hole
 	}
 
@@ -536,7 +620,7 @@ export class StandaloneArtifact {
 	receiverOf(value: Foldable, id: string, label: string): string {
 		const kind = hasArkKind(value, "root") ? "" : `, "${kindNameOf(value)}"`
 		const args = `${writeId(id)}, ${JSON.stringify(label)}${kind}`
-		const name = `receive${hashOf(`runtime.holesOf(holder, ${args})`)}`
+		const name = `${receiverPrefix}${hashOf(`runtime.holesOf(holder, ${args})`)}`
 		this.importName(
 			this.share(
 				name,
@@ -561,7 +645,8 @@ export class StandaloneArtifact {
 		value: unknown,
 		root: string,
 		checked: CheckedHole[],
-		isWritable?: boolean
+		isWritable?: boolean,
+		mayBeUnset?: boolean
 	): void {
 		let expression = param
 		let label = root
@@ -581,7 +666,8 @@ export class StandaloneArtifact {
 			hasArkKind(value, "scope") ||
 			hasArkKind(value, "generic")
 		) {
-			const [id, holes] = keyOf(value)
+			const [id, allHoles] = keyOf(value)
+			const holes = this.heldOf(allHoles)
 			const isType = hasArkKind(value, "root")
 			const holesName = `holes${this.checks.length}`
 			if (holes.length) this.holesByName.set(holesName, holes)
@@ -589,6 +675,13 @@ export class StandaloneArtifact {
 				this.checks.push(
 					`${holes.length ? `const ${holesName} = ` : ""}${this.receiverOf(value, id, label)}(${expression})`
 				)
+			} else if (allHoles.length) {
+				// a cell it reads is set by then only if what holds it has run
+				if (mayBeUnset) {
+					this.checks.push(
+						`runtime.checkHeld(${expression}, ${JSON.stringify(label)}${isType ? "" : `, "${kindNameOf(value)}"`})`
+					)
+				} else this.heldReads.push(`runtime.checkHeld(${expression})`)
 			}
 			// relate a Module's, Scope's or Generic's classes to ours
 			const related = isType ? [value, ...value.references] : this.writtenNodes
@@ -655,7 +748,8 @@ export class StandaloneArtifact {
 				Reflect.get(value, key),
 				root,
 				checked,
-				isWritable
+				isWritable,
+				mayBeUnset
 			)
 		}
 	}
@@ -715,7 +809,7 @@ export class StandaloneArtifact {
 	}
 
 	unitsOf(root: BaseRoot): RootUnit[] {
-		return rootUnitsOf(root, this.variantOf(root))
+		return rootUnitsOf(root, this.variantOf(root), this.baking.cells?.keyOf)
 	}
 
 	headUnitOf(root: BaseRoot): RootUnit {
@@ -887,7 +981,7 @@ export class StandaloneArtifact {
 		const defaults = this.writeDefaultChecks()
 		const holes =
 			internedBy === undefined ? undefined : (
-				keyOf(type)[1].map(hole => this.holeExpressions.get(hole)!)
+				this.heldOf(keyOf(type)[1]).map(hole => this.holeExpressions.get(hole)!)
 			)
 		const body = this.writeBody()
 		body.push(...defaults.map(({ check }) => check), `return ${value}`)
@@ -907,7 +1001,7 @@ export class StandaloneArtifact {
 
 	writeRekeying(read: string): string[] {
 		const { type } = this.factory!
-		const holes = keyOf(type as never)[1]
+		const holes = this.heldOf(keyOf(type as never)[1])
 		// holes matching a received value's are keyed by that value
 		const received = [...this.holesByName].find(
 			([, received]) =>
@@ -1008,7 +1102,12 @@ return namespace`
 			this.baking,
 			`factory${index}`,
 			params.map((_, i) => `p${i}`).join(", "),
-			[writeFixConfig(configured), ...this.checks, ...statements]
+			[
+				writeFixConfig(configured),
+				...this.writeSets(),
+				...this.checks,
+				...statements
+			]
 				.filter(statement => statement)
 				.join("\n\n")
 		)
@@ -1029,12 +1128,12 @@ return namespace`
 	}
 
 	get localUnits(): RootUnit[] {
-		return this.units.filter(unit => !isSharedUnit(unit))
+		return this.units.filter(unit => !this.isShared(unit))
 	}
 
 	writeSharedUnits(): void {
 		for (const unit of this.units)
-			if (isSharedUnit(unit)) this.writeShared(unit)
+			if (this.isShared(unit)) this.writeShared(unit)
 	}
 
 	specifierOf(name: string): string {
@@ -1064,7 +1163,7 @@ return namespace`
 	writeSharedModule(unit: RootUnit, specifier: string): void {
 		const declarations = this.declarations
 		const returned = returnedOf(unit, this.baking)
-		const writing: SharedUnit = (this.writing = {
+		const writing: SharedUnit = {
 			unit,
 			returned,
 			read: namesReadBy(unit, returned),
@@ -1076,8 +1175,10 @@ return namespace`
 			params: [],
 			args: [],
 			imports: {},
-			shapesByName: {}
-		})
+			shapesByName: {},
+			cellReads: {}
+		}
+		this.writing = writing
 		this.declarations = createDeclarations()
 		this.unit = unit
 		for (const root of writing.own) {
@@ -1136,9 +1237,30 @@ return namespace`
 		return unit.refs.flatMap((value, i) => {
 			const name = refNameOf(unit.name, i)
 			if (!read.has(name)) return []
+			const cell = this.cellOf(value)
+			if (cell) {
+				writing.cellReads[name] = this.readCell(cell)
+				return []
+			}
 			const { statements } = this.declarations
 			const declared = statements.length
+			const { readsCell } = this
+			this.readsCell = false
+			this.defersCellReads = true
 			const emitted = this.emitRef(value)
+			this.defersCellReads = false
+			// e.g. a site whose description prints a cell's name, read as it fails
+			if (this.readsCell) {
+				if (statements.length !== declared) {
+					throwInternalError(
+						`Unexpected declaration of what reads a cell in ${unit.name}`
+					)
+				}
+				writing.cellReads[name] = `(${emitted})`
+				this.readsCell = readsCell
+				return []
+			}
+			this.readsCell = readsCell
 			const exported = /^runtime\.([\w$]+)$/.exec(emitted)?.[1]
 			if (!this.baking.flattens) {
 				const received =
@@ -1377,11 +1499,25 @@ return namespace`
 						isWriting(name) ? `\n"use strict"\n` : ""
 					}`
 			)
-			return `const ${name} = ${/(Apply|Copy)$/.test(name) ? arrow : this.compiledOnLoad(arrow)}`
+			const read = this.readsCells(arrow)
+			return `const ${name} = ${/(Apply|Copy)$/.test(name) ? read : this.compiledOnLoad(read)}`
 		})
 		for (const [name, target] of forwarded)
 			declarations.push(`const ${name} = ${target}`)
 		return declarations
+	}
+
+	// a ref read as its code runs, once the site holding the cell has
+	readsCells(fn: string): string {
+		const cellReads = this.writing?.cellReads
+		if (!cellReads) return fn
+		const refs = Object.keys(cellReads)
+		return refs.length ?
+				fn.replace(
+					new RegExp(`\\b(?:${refs.join("|")})\\b`, "g"),
+					ref => cellReads[ref]
+				)
+			:	fn
 	}
 
 	compiledOnLoad(fn: string): string {
@@ -1425,7 +1561,7 @@ return namespace`
 			if (!read.has(name)) continue
 			const dependency = unitOf(unit.dependencies[name][0], unit)
 			const index = dependency.traversals.flat().indexOf(name)
-			const isShared = isSharedUnit(dependency)
+			const isShared = this.isShared(dependency)
 			if (isShared)
 				this.importName(this.specifierOf(dependency.name), dependency.name)
 			const source =
@@ -1607,9 +1743,11 @@ return namespace`
 			!keepsMeta ? undefined
 			: keywordMetas().has(root.meta) ? "runtime.emptyMeta"
 			: this.emit(root.meta)
-		const [id, holes] = (this.checkedRoots.has(root) ? traversalKeyOf : keyOf)(
-			root
-		)
+		const [id, allHoles] = (
+			this.checkedRoots.has(root) ?
+				traversalKeyOf
+			:	keyOf)(root)
+		const holes = this.heldOf(allHoles)
 		assertDescribed(root)
 		return {
 			id,
@@ -1790,7 +1928,7 @@ return namespace`
 
 	// nodes share json unless it prints a hole
 	readJson(root: BaseRoot): string {
-		const value = `runtime.deepFreeze(${this.writeData(root.json)})`
+		const value = `runtime.deepFreeze(${this.writeData(uncountedJsonOf(root.json))})`
 		this.countBaked(value)
 		if (holdsLocal(root.json)) {
 			return (
@@ -2400,7 +2538,7 @@ return namespace`
 
 	flatTraversalsOf(root: BaseRoot, indices: number[]): string[] | undefined {
 		const unit = this.headUnitOf(root)
-		if (!this.baking.flattens || !isSharedUnit(unit)) return
+		if (!this.baking.flattens || !this.isShared(unit)) return
 		const specifier = this.specifierOf(unit.name)
 		const traversals = this.traversalsOf(root, unit)
 		return indices.map(i => this.read(specifier, traversals[i]))
@@ -2425,7 +2563,7 @@ return namespace`
 	compactTraversalsOf(root: BaseRoot): string | undefined {
 		const unit = this.headUnitOf(root)
 		if (unit.traversals.flat()[0] !== this.traversalsOf(root, unit)[0]) return
-		return isSharedUnit(unit) ?
+		return this.isShared(unit) ?
 				this.read(
 					this.specifierOf(unit.name),
 					unit.name,
@@ -2495,14 +2633,17 @@ return namespace`
 				parts.push(JSON.stringify(s.slice(start, match.index)))
 			const [, registered, predicate, fn, name] = match
 			const placeholder = registered ?? predicate ?? fn ?? name
-			const named = this.holeNamed(placeholder)
+			const cell = this.baking.cells?.byPlaceholder.get(placeholder)
+			const named = cell ? undefined : this.holeNamed(placeholder)
 			const hole =
-				this.holeExpressions.get(named) ??
-				throwParseError(
-					writeUnprecompilableMessage(
-						`the name of ${placeholder}, which the validator doesn't receive`
-					)
-				)
+				cell ?
+					this.emitCell(cell)
+				:	(this.holeExpressions.get(named) ??
+					throwParseError(
+						writeUnprecompilableMessage(
+							`the name of ${placeholder}, which the validator doesn't receive`
+						)
+					))
 			parts.push(
 				// the registry names a function as arktype's json refers to it
 				registered ? `"$ark." + runtime.baseNameOf(${hole})`
@@ -2555,7 +2696,8 @@ return namespace`
 	}
 
 	withHoles(value: Foldable, expression: string): string {
-		const [id, holes] = keyOf(value)
+		const [id, allHoles] = keyOf(value)
+		const holes = this.heldOf(allHoles)
 		if (!this.baking.holdsIds && !holes.length) return expression
 		return `runtime.holdHoles(${expression}, ${writeId(id)}${holes.length ? `, [${this.emitAll(holes)}]` : ""})`
 	}
@@ -2588,7 +2730,7 @@ return namespace`
 		const name = unit.names[node.id]
 		const own = this.writing?.shapesByName[name]
 		if (own) return own
-		if (isSharedUnit(unit)) {
+		if (this.isShared(unit)) {
 			const shape = this.read(
 				this.specifierOf(unit.name),
 				`${name}Node`,
@@ -2664,6 +2806,8 @@ return namespace`
 	}
 
 	emit(value: unknown): string {
+		const cell = this.cellOf(value)
+		if (cell) return this.emitCell(cell)
 		const hole = this.holeExpressions.get(value)
 		if (hole) return hole
 		if (typeof value === "string") return this.emitString(value)
@@ -2785,6 +2929,8 @@ return namespace`
 		value: BaseRoot,
 		defaultValue: unknown
 	): string {
+		if (this.baking.cells?.isDefaultShared(morph))
+			return this.readSharedDefault(key, value, defaultValue)
 		// one morph per default, whose guard prevents double defaulting
 		let name = this.defaultNames.get(morph)
 		if (name) return `(data, ctx) => ${name}(data, ctx)`
@@ -2803,6 +2949,68 @@ return namespace`
 			`const ${name} = runtime.computeDefaultValueMorph(${this.emit(key)}, ${validator}, ${this.emit(defaultValue)}, {${flags.length ? ` ${flags.join(", ")} ` : ""}}${typeof defaultValue === "function" ? `, ${isThunkInput}` : ""})`
 		)
 		return `(data, ctx) => ${name}(data, ctx)`
+	}
+
+	// its own module's, reading a thunk's cell only as it runs
+	readSharedDefault(
+		key: PropertyKey,
+		value: BaseRoot,
+		defaultValue: unknown
+	): string {
+		const flags = defaultedNodeKeys.filter(k => value[k]).map(k => `${k}: true`)
+		const isThunkInput = typeof defaultValue === "function"
+		const isTraversed = isThunkInput || value.alters
+		return this.readSharedValue("default", () => {
+			const isRead = this.runtimeReadRoots.has(value)
+			this.runtimeReadRoots.add(value)
+			const validator = isTraversed ? this.writeValidator(value) : "void 0"
+			if (!isRead) this.runtimeReadRoots.delete(value)
+			const input =
+				isThunkInput ?
+					`() => ${this.readCell(this.cellOf(defaultValue)!)}()`
+				:	this.emit(defaultValue)
+			return `runtime.computeDefaultValueMorph(${this.emit(key)}, ${validator}, ${input}, {${flags.length ? ` ${flags.join(", ")} ` : ""}}${isThunkInput ? ", true" : ""})`
+		})
+	}
+
+	// a value a module of its own declares, named for its text
+	readSharedValue(prefix: string, write: () => string): string {
+		const { writing, declarations, sharedWriters, unit } = this
+		const scope: WritingScope = {
+			params: [],
+			args: [],
+			imports: {},
+			shapesByName: {},
+			cellReads: {}
+		}
+		this.writing = scope
+		this.declarations = createDeclarations()
+		this.sharedWriters = new Map()
+		this.unit = undefined
+		const written = write()
+		const statements = [
+			...scope.params.map((param, i) => `const ${param} = ${scope.args[i]}`),
+			...this.declarations.statements,
+			this.sharedWriterDeclarations
+		].filter(statement => statement)
+		this.writing = writing
+		this.declarations = declarations
+		this.sharedWriters = sharedWriters
+		this.unit = unit
+		const expression =
+			statements.length ?
+				`(() => {\n${statements.join("\n")}\nreturn ${written}\n})()`
+			:	written
+		const name = `${prefix}${hashOf(expression)}`
+		this.importName(
+			this.share(
+				name,
+				writeValue(this.baking.hoisted, name, expression),
+				scope.imports
+			),
+			name
+		)
+		return this.readValue(name)
 	}
 
 	emitWriters(writers: readonly Writer[]): string {
@@ -2970,5 +3178,19 @@ const shapeFlags = [
 ] as const
 
 const isAny = (): boolean => true
+
+// a registry name's count is how many values the process named alike before
+// it, so a reference arktype's serializer wrote drops it (a string reading
+// like one is quoted, so it bakes as written)
+const countedReference = new RegExp(
+	`^(${registryName.replace("$", "\\$")}\\.[\\w$]+?)\\$[1-9]\\d*$`
+)
+
+const uncountedJsonOf = (json: unknown): unknown =>
+	typeof json === "string" ? json.replace(countedReference, "$1")
+	: Array.isArray(json) ? json.map(uncountedJsonOf)
+	: hasDomain(json, "object") ?
+		flatMorph(json, (k, v) => [k, uncountedJsonOf(v)])
+	:	json
 
 type CheckedHole = [hole: unknown, kind: HoleKind, expression: string]

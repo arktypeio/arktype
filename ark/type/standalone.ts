@@ -30,6 +30,7 @@ export * from "./standalone/artifact.ts"
 export * from "./standalone/baking.ts"
 export * from "./standalone/combinators.ts"
 export * from "./standalone/creators.ts"
+export * from "./standalone/fallbacks.ts"
 export * from "./standalone/keys.ts"
 export * from "./standalone/compilers.ts"
 export * from "./standalone/modules.ts"
@@ -116,6 +117,11 @@ const writeArtifact = (
 	const calls: StandaloneModules["calls"] = {}
 	const tables = new Set<number>()
 	const artifactsByName = new Map<string, StandaloneArtifact>()
+	const heldOf = (value: ExportedValue) => {
+		const { cells } = baking
+		const holes = keyOf(value)[1]
+		return cells ? holes.filter(hole => !cells.byHole.has(hole)) : holes
+	}
 	// a trial write: foldable if its code holds nothing received
 	const canFold = (name: string, factory: StandaloneFactory): boolean => {
 		if (
@@ -124,7 +130,7 @@ const writeArtifact = (
 			factory.defaultChecks?.length ||
 			// runtime.rekeyed creates a template's copies with runtime.createValidator
 			(!isCreatedByRuntime(baking.members, baking) &&
-				keyOf(factory.type)[1].length)
+				heldOf(factory.type).length)
 		)
 			return false
 		const trial = new StandaloneArtifact(
@@ -136,7 +142,8 @@ const writeArtifact = (
 		trial.templates.add(factory.type)
 		try {
 			trial.writeCreateBody(configured)
-			return true
+			// created where it's read, after what sets the cell it reads
+			return !trial.readsCell
 		} catch (e) {
 			if (e instanceof ParseError) return false
 			throw e
@@ -183,7 +190,7 @@ const writeArtifact = (
 			if (canFold(name, factory)) {
 				const { type } = factory
 				folded.set(name, [index, artifact])
-				if (keyOf(type)[1].length) templates.add(type)
+				if (heldOf(type).length) templates.add(type)
 				types[name] = type
 				factories.push(() => writeFolded(name))
 			} else {
@@ -236,7 +243,10 @@ const writeArtifact = (
 		if (name in calls) continue
 		const [creation, position] = reads[name]
 		if (position === undefined || valueOf(name) !== undefined) continue
-		const code = artifact.writeRekeying(`${creation}[index]`).join("\n")
+		const code = [
+			...artifact.writeSets(),
+			...artifact.writeRekeying(`${creation}[index]`)
+		].join("\n")
 		sharersByCode.set(code, [...(sharersByCode.get(code) ?? []), name])
 	}
 	for (const sharers of sharersByCode.values()) {
@@ -258,7 +268,7 @@ const writeArtifact = (
 		}
 		const params = artifact.factory!.params.map((_, i) => `p${i}`)
 		if (fold) params.unshift("index")
-		return `${writeFunction(baking, `factory${index}`, params.join(", "), artifact.writeRekeying(fold ? `${creation}[index]` : readOf(creation, position)).join("\n\n"))}
+		return `${writeFunction(baking, `factory${index}`, params.join(", "), [...artifact.writeSets(), ...artifact.writeRekeying(fold ? `${creation}[index]` : readOf(creation, position))].join("\n\n"))}
 
 ${writeExport(name, index)}`
 	}

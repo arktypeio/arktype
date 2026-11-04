@@ -1,6 +1,8 @@
 import {
+	$ark,
 	Disjoint,
 	type BaseRoot,
+	type BaseScope,
 	type Intersection,
 	type IntersectionContext,
 	type NotEqual,
@@ -16,7 +18,7 @@ import {
 	defineRightwardIntersections,
 	type setImplementationOf
 } from "../implement.ts"
-import { intersectOrPipeNodes } from "../intersections.ts"
+import { intersectOrPipeNodes, listsKeysAlike } from "../intersections.ts"
 
 export const intersection: setImplementationOf<Intersection.Declaration> = {
 	// predicates keep their order, since each narrows the input of the next
@@ -70,6 +72,23 @@ const sortExcluded = <node extends NotEqual.Node | NotEqualLength.Node>(
 	nodes: readonly node[]
 ): readonly node[] =>
 	[...nodes].sort((l, r) => l.rule.valueOf() - r.rule.valueOf())
+
+export const constrainIntersection = (
+	l: Intersection.Node,
+	inner: Intersection.Inner,
+	$: BaseScope
+): BaseRoot | Disjoint => {
+	const result = intersectIntersections(l.inner, inner, {
+		$,
+		invert: false,
+		pipe: false
+	})
+	if (result instanceof Disjoint) return result
+	return (
+		$ark.sets!.disjointOf?.(result) ??
+		(l.equals(result) && listsKeysAlike(l, result) ? l : result)
+	)
+}
 
 const intersectIntersections = (
 	l: Intersection.Inner,

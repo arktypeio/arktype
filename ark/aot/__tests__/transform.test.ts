@@ -280,6 +280,24 @@ export const Item = type({ sku: "string", price: { amount: "number", currency: "
 			]).equals([true, false])
 		})
 
+		it("writes the code of a unit reaching a narrow once, however many Types reach it", () => {
+			const { code, modules } = precompileProgram(
+				`import { type } from "arktype"
+const isSafe = (s: string) => !s.includes("<")
+const Safe = type.string.narrow(isSafe)
+const Named = type({ name: Safe, title: Safe })
+export const A = type({ a: Named })
+export const B = type({ b: Named })
+export const C = type({ c: Named.array() })`,
+				{},
+				{ config: false }
+			)
+			const declared = [code, ...Object.values(modules)]
+				.join("\n")
+				.match(/const \w+(?:Allows|Apply) = /g)!
+			attest(declared.length).equals(new Set(declared).size)
+		})
+
 		it("folds introspection", () => {
 			const result = precompile(
 				`import { type } from "arktype"
@@ -372,40 +390,34 @@ const $ = scope({})
 export const T = $.type({ k: $.type.unit(unit) }).or({ k: "'b'", v: "number" })`)
 		})
 
-		it("leaves a Scope to arktype with another module's refused site reading it", () => {
-			const files = {
+		it("reports a refused site reading another module's precompiled Scope", () => {
+			const files: Record<string, string> = {
 				"/scope.ts": `import { scope } from "arktype"
 export const $ = scope({})`,
 				"/main.ts": `import { $ } from "./scope.ts"
 const unit = { toJSON: () => ({ tag: "u" }) }
 export const T = $.type({ k: $.type.unit(unit) }).or({ k: "'b'", v: "number" })`
 			}
-			// the reader first, so the Scope's module is written without a stand-in
-			let precompiler = new Precompiler(memoryHost(files))
-			const reader = precompiler.precompile(files["/main.ts"], "/main.ts")
-			attest(reader.diagnostics.map(renderDiagnostic)).snap([
-				'/main.ts:3:18  $.type({ k: $.type.unit(unit) }).or({ k: "\'b\'", v: "number"… can\'t be precompiled yet\n  the unit {"tag":"u"} can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.'
-			])
-			const left = precompiler.precompile(files["/scope.ts"], "/scope.ts")
-			attest(left.diagnostics.map(renderDiagnostic)).snap([
-				'/scope.ts:2:18  scope({}) is left to arktype\n  $.type({ k: $.type.unit(unit) }).or({ k: "\'b\'", v: "number"… (/main.ts:3:18) reads `$` but isn\'t precompiled, so arktype must define `$` for it'
-			])
-			attest(left.code).equals(files["/scope.ts"])
-			// the Scope's module first, so the reader's module fails the build
-			precompiler = new Precompiler(memoryHost(files))
-			const written = precompiler.precompile(files["/scope.ts"], "/scope.ts")
-			attest(written.diagnostics).equals([])
-			const failed = precompiler.precompile(files["/main.ts"], "/main.ts")
-			attest(
-				failed.diagnostics.map(d => [d.severity, renderDiagnostic(d)])
-			).snap([
+			// the Scope's module precompiles it whichever module is built first
+			const diagnosticsIn = (order: string[]) => {
+				const precompiler = new Precompiler(memoryHost(files))
+				return order.map(id =>
+					precompiler
+						.precompile(files[id], id)
+						.diagnostics.map(d => [d.severity, renderDiagnostic(d)])
+				)
+			}
+			const [reader, written] = diagnosticsIn(["/main.ts", "/scope.ts"])
+			attest(diagnosticsIn(["/scope.ts", "/main.ts"])).equals([written, reader])
+			attest(written).equals([])
+			attest(reader).snap([
 				[
 					"error",
 					'/main.ts:3:18  $.type({ k: $.type.unit(unit) }).or({ k: "\'b\'", v: "number"… can\'t be precompiled yet\n  the unit {"tag":"u"} can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.'
 				],
 				[
 					"error",
-					'/main.ts:3:18  $.type({ k: $.type.unit(unit) }).or({ k: "\'b\'", v: "number"… reads `$`, which the build replaced with an object that lacks its members\n  `$` is scope({}) (/scope.ts:2:18), a Scope precompiled before $.type({ k: $.type.unit(unit) }).or({ k: "\'b\'", v: "number"… was refused\n  Put // @ark-runtime on the line before scope({}), so arktype defines it at runtime, or build with runtime: "arktype".'
+					'/main.ts:3:18  $.type({ k: $.type.unit(unit) }).or({ k: "\'b\'", v: "number"… reads `$`, which the build replaced with an object that lacks its members\n  `$` is scope({}) (/scope.ts:2:18), a Scope the build precompiles\n  Put // @ark-runtime on the line before scope({}), so arktype defines it at runtime, or build with runtime: "arktype".'
 				]
 			])
 		})
@@ -466,8 +478,8 @@ export const Shallow = type({ a: Leaf.array() })`
 			])
 		})
 
-		it("leaves a Scope to arktype that a refused site reads through a holder or alias", () => {
-			const files = {
+		it("reports a refused site reading another module's Scope through a holder or alias", () => {
+			const files: Record<string, string> = {
 				"/holders.ts": `import { scope } from "arktype"
 export const H = { $: scope({ a: "string" }), alt: scope({ a: "number" }) }
 export const $ = scope({ b: "string" })`,
@@ -479,29 +491,28 @@ export const A = H.$.type("a | null")
 export const B = chosen.type("a")
 export const C = direct.type(flag ? "b" : "b | null")`
 			}
-			let precompiler = new Precompiler(memoryHost(files))
-			const reader = precompiler.precompile(files["/main.ts"], "/main.ts")
+			const resultsIn = (order: string[]) => {
+				const precompiler = new Precompiler(memoryHost(files))
+				return Object.fromEntries(
+					order.map(id => [id, precompiler.precompile(files[id], id)])
+				)
+			}
+			const readerFirst = resultsIn(["/main.ts", "/holders.ts"])
+			const holdersFirst = resultsIn(["/holders.ts", "/main.ts"])
 			// `chosen.type("a")` is refused as a read off what may be a Scope, without a site
-			attest(reader.sites.map(site => site.status)).equals([
+			attest(readerFirst["/main.ts"].sites.map(site => site.status)).equals([
 				"accepted",
 				"rejected"
 			])
-			const left = precompiler.precompile(files["/holders.ts"], "/holders.ts")
-			attest(left.diagnostics.map(renderDiagnostic)).snap([
-				'/holders.ts:2:23  scope({ a: "string" }) is left to arktype\n  chosen.type("a") (/main.ts:6:18) reads `chosen` but isn\'t precompiled, so arktype must define `chosen` for it',
-				'/holders.ts:2:52  scope({ a: "number" }) is left to arktype\n  chosen.type("a") (/main.ts:6:18) reads `chosen` but isn\'t precompiled, so arktype must define `chosen` for it',
-				'/holders.ts:3:18  scope({ b: "string" }) is left to arktype\n  direct.type(flag ? "b" : "b | null") (/main.ts:7:18) reads `direct` but isn\'t precompiled, so arktype must define `direct` for it'
-			])
-			attest(left.code).equals(files["/holders.ts"])
-			precompiler = new Precompiler(memoryHost(files))
-			precompiler.precompile(files["/holders.ts"], "/holders.ts")
-			const failed = precompiler.precompile(files["/main.ts"], "/main.ts")
+			for (const id of Object.keys(files))
+				attest(holdersFirst[id].diagnostics).equals(readerFirst[id].diagnostics)
+			attest(readerFirst["/holders.ts"].diagnostics).equals([])
 			// reported once per refused read, whichever stand-in it finds first
-			attest(failed.diagnostics.map(renderDiagnostic)).snap([
-				'/main.ts:6:18  chosen.type("a") reads `chosen`, which the build replaced with an object that lacks its members\n  `chosen` holds scope({ a: "string" }) (/holders.ts:2:23), a Scope precompiled before chosen.type("a") was refused\n  Put // @ark-runtime on the line before scope({ a: "string" }), so arktype defines it at runtime, or build with runtime: "arktype".',
+			attest(readerFirst["/main.ts"].diagnostics.map(renderDiagnostic)).snap([
+				'/main.ts:6:18  chosen.type("a") reads `chosen`, which the build replaced with an object that lacks its members\n  `chosen` holds scope({ a: "string" }) (/holders.ts:2:23), a Scope the build precompiles\n  Put // @ark-runtime on the line before scope({ a: "string" }), so arktype defines it at runtime, or build with runtime: "arktype".',
 				'/main.ts:6:18  chosen.type("a") can\'t be precompiled yet\n  `chosen` may be a Scope, which a standalone build replaces with an object that lacks `type`\n  Assign it to a const and read `type` off that, which the build precompiles, or build with runtime: "arktype".',
 				'/main.ts:7:18  direct.type(flag ? "b" : "b | null") cannot be precompiled\n  `flag` is declared without a value\n  Replace `flag` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.',
-				'/main.ts:7:18  direct.type(flag ? "b" : "b | null") reads `direct`, which the build replaced with an object that lacks its members\n  `direct` is scope({ b: "string" }) (/holders.ts:3:18), a Scope precompiled before direct.type(flag ? "b" : "b | null") was refused\n  Put // @ark-runtime on the line before scope({ b: "string" }), so arktype defines it at runtime, or build with runtime: "arktype".'
+				'/main.ts:7:18  direct.type(flag ? "b" : "b | null") reads `direct`, which the build replaced with an object that lacks its members\n  `direct` is scope({ b: "string" }) (/holders.ts:3:18), a Scope the build precompiles\n  Put // @ark-runtime on the line before scope({ b: "string" }), so arktype defines it at runtime, or build with runtime: "arktype".'
 			])
 			// read off a namespace import, whose binding's value holds no export
 			const namespaced = {
@@ -514,15 +525,15 @@ declare const flag: boolean
 export const A = ns.default.type(flag ? "a" : "a | null")
 export const B = ns.held.s.type(flag ? "a" : "a | null")`
 			}
-			precompiler = new Precompiler(memoryHost(namespaced))
-			precompiler.precompile(namespaced["/main.ts"], "/main.ts")
 			attest(
-				precompiler
-					.precompile(namespaced["/holders.ts"], "/holders.ts")
+				new Precompiler(memoryHost(namespaced))
+					.precompile(namespaced["/main.ts"], "/main.ts")
 					.diagnostics.map(d => d.message)
 			).snap([
-				'scope({ a: "string" }) is left to arktype',
-				'scope({ a: "number" }) is left to arktype'
+				'ns.default.type(flag ? "a" : "a | null") cannot be precompiled',
+				'ns.default.type(flag ? "a" : "a | null") reads `ns`, which the build replaced with an object that lacks its members',
+				'ns.held.s.type(flag ? "a" : "a | null") cannot be precompiled',
+				'ns.held.s.type(flag ? "a" : "a | null") reads `ns`, which the build replaced with an object that lacks its members'
 			])
 			// held by a const of the reader's own module
 			const result = precompile(`import { scope } from "arktype"
@@ -935,15 +946,23 @@ export const Elements = ${elements}`)
 			).snap([
 				'import "arktype"\nimport { isPositive } from "./positive.ts"\nexport const Elements = $ark#0(isPositive)'
 			])
-			// arktype has called isPositive, so the site can't pass it as a hole
+			// another site's definition calls isPositive, but not this one's
 			attest(
 				build(`import { type } from "arktype"
 import { isPositive } from "./positive.ts"
 export const Positive = type(["0 | 1", ":", isPositive])
 export const Elements = ${elements}`)
 			).snap([
-				'/main.ts:4:25  type.module({ a: ["number", ":", isPositive] }).a.array() can\'t be precompiled yet',
-				'import { type } from "arktype"\nimport { isPositive } from "./positive.ts"\nexport const Positive = $ark#0(isPositive)\nexport const Elements = type.module({ a: ["number", ":", isPositive] }).a.array()'
+				'import "arktype"\nimport { isPositive } from "./positive.ts"\nexport const Positive = $ark#0(isPositive)\nexport const Elements = $ark#2(isPositive)'
+			])
+			// arktype calls isPositive for the site's own units, so it can't pass it
+			attest(
+				build(`import { type } from "arktype"
+import { isPositive } from "./positive.ts"
+export const Elements = type.module({ a: ["0 | 1", ":", isPositive] }).a.array()`)
+			).snap([
+				'/main.ts:3:25  type.module({ a: ["0 | 1", ":", isPositive] }).a.array() can\'t be precompiled yet',
+				'import { type } from "arktype"\nimport { isPositive } from "./positive.ts"\nexport const Elements = type.module({ a: ["0 | 1", ":", isPositive] }).a.array()'
 			])
 		})
 

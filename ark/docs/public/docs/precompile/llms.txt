@@ -192,6 +192,10 @@ export default defineConfig({
 
 Vitest runs tests through the same plugin. With a framework, list it right after the framework's plugin, as [Frameworks](https://arktype.io/docs/precompile/setup#frameworks) shows.
 
+On a server, Vite leaves a dependency external unless `ssr.noExternal` names it, and the plugin names only arktype's own packages and those you precompile. A dependency that imports arktype, like `@hono/arktype-validator`, would load it from Node, beside the runtime your validators use, and `out instanceof type.errors` would be false there, so a build fails naming what bundles it: `ssr.noExternal`, or [`dependencies`](https://arktype.io/docs/precompile/options#dependencies) for one that defines Types. One that only reads a Type it's passed, like hono-openapi, needs nothing set.
+
+Only a build checks this, and only for a dependency that declares arktype in its `package.json`. `vite dev` and Vitest bundle nothing, so they load such a dependency from Node without failing, and `instanceof type.errors` stays false in it until you add it.
+
 **esbuild**
 
 ```ts
@@ -311,6 +315,8 @@ await Bun.build({
 
 `target: "bun"` builds a program Bun runs. Leave it out to bundle for a browser. Bun's bundler needs Bun 1.2.22 or later. To precompile as Bun runs your code, see [Bun](https://arktype.io/docs/precompile/setup#bun).
 
+Bun handles what `external` names without asking the plugin, so the build fails for arktype's own packages there but can't check another that imports arktype. Leave one out of `external`, or it loads arktype beside the runtime your validators use, and `out instanceof type.errors` is false there.
+
 **Others**
 
 Farm takes `precompile.farm()` among its `plugins`:
@@ -347,7 +353,7 @@ A validator ships its JSON Schema where the build sees code read it, so a librar
 
 ## Cache
 
-A build keeps each module it precompiles in `node_modules/.cache/ark`, in the directory it runs from, so the next build, dev server or Next.js process reuses what didn't change. An entry is read only while everything that decided it is the same: the versions of `@ark/aot`, `arktype` and Node, the module's source and each file the precompiler read for it, what each import resolved to, and your settings. Deleting the directory is always safe, as the next build writes it again. An entry is code your bundle runs, checked only for a write cut short, so restore the directory from a CI cache only where nothing less trusted than the build, like a pull request from a fork, can write that cache, as for Vite's or webpack's.
+A build keeps each module it precompiles in `node_modules/.cache/ark`, in the directory it runs from, so a later build, dev server or Next.js process can reuse it. An entry is read only while everything its build had read when it wrote the entry is the same: the code of `@ark/aot` and `arktype`, a linked or repacked copy included, the version of Node, the module's source, each file the precompiler had read, what each import had resolved to, and your settings. That includes files the module doesn't import, so the cache serves a build where nothing changed, while a build after you edit a module reuses only what was written before that module was first read, which can be little. A pruned production build or `arktype-precompile --emit` reads the whole program, so it reuses nothing once any module changes. A watch build or dev server stores only what it precompiles before its first change, keeping what it precompiles again to itself. A webpack or Rspack persistent cache is versioned by the same code and your settings, so it rebuilds each module once either changes. Deleting the directory is always safe, as the next build writes it again. An entry is code your bundle runs, checked only for a write cut short, so restore the directory from a CI cache only where nothing less trusted than the build, like a pull request from a fork, can write that cache, as for Vite's or webpack's.
 
 ## Frameworks
 
@@ -378,6 +384,8 @@ With Turbopack, the default, add the loader as a rule for each extension your de
 
 ```js
 export default {
+	// for the pages router
+	bundlePagesRouterDependencies: true,
 	turbopack: {
 		rules: {
 			"*.ts": { loaders: ["@ark/aot/turbopack"] },
@@ -402,14 +410,16 @@ The loader fails a module whose `arktype` imports resolve otherwise, naming the 
 
 The aliases also point a dependency's `arktype` imports at the runtime, so the `*.{js,mjs}` rule has the loader fail the build for a dependency that defines Types but doesn't [opt in](https://arktype.io/docs/precompile/advanced#libraries), and precompile one that does or that [`dependencies`](https://arktype.io/docs/precompile/options#dependencies) sets to `"aot"`. Turbopack can't run one dependency on arktype, so for one that creates Types from values it reads as it runs, like `drizzle-arktype`, build with webpack or with `runtime: "arktype"`. The loader reads only `import` and `export` declarations, so a CommonJS dependency that `require`s arktype throws `type is not a function` when it loads instead.
 
-With webpack, which Next 15 builds with, as does `next build --webpack`, add the plugin. The pages router leaves dependencies external on the server, so with it, also have Next bundle arktype:
+On the pages router's server, Next otherwise leaves dependencies external, where the aliases don't reach, so Node would load arktype, for your code and for any dependency importing it, beside the runtime your validators use, and `out instanceof type.errors` would be false for their errors. `bundlePagesRouterDependencies` has Next bundle them, as it does the app router's, and the loader fails a module there without it. `transpilePackages: ["arktype"]` isn't enough, as a dependency left external still loads its own copy. Either router leaves external a package `serverExternalPackages` names, so the loader fails the build for one that imports arktype, reading the list from `next.config` without running it: name its packages as string literals.
+
+With webpack, which Next 15 builds with, as does `next build --webpack`, add the plugin, which fails the build where Next would leave arktype, or a package importing it, external:
 
 ```js
 import { precompile } from "@ark/aot/unplugin"
 
 export default {
 	// for the pages router
-	transpilePackages: ["arktype"],
+	bundlePagesRouterDependencies: true,
 	webpack: config => {
 		config.plugins.push(precompile.webpack())
 		return config
@@ -717,6 +727,8 @@ The same settings can go under an `"ark"` key in that `package.json` instead, re
 }
 ```
 
+A watch build or dev server reads them again as they change, so a build never mixes modules written under two settings. Rollup and Vite build every module anew under the new ones, Vite's dev server restarting to, unless they change what a Vite build's config was given, like `runtime`. That, and any change under webpack, Rspack, Rolldown, esbuild or Turbopack, fails each build until you restore them or restart it, naming the restart.
+
 Where `package.json` sets `"ark"` and an `ark.json` is beside it, the build fails, naming both, so keep one. A library's `package.json` also sets `"aot": true` under `"ark"` to [opt in](https://arktype.io/docs/precompile/advanced#libraries), which is unrelated to `"precompile"`, how the program reading the file builds.
 
 ## Settings
@@ -871,7 +883,7 @@ A package precompiled with `"aot"` is read as the program is, so a value it retu
 
 ### allowUnsafe
 
-`allowUnsafe: true` (`--allow-unsafe` for `--check`) reports as warnings the problems that may throw at runtime but that a build can still write output for: a dependency that imports arktype or ships precompiled validators, a module the build can't precompile importing arktype, a read off an import it can't resolve, an import that loads a Type before the config module, a Turbopack alias for `@ark/schema/runtime` that doesn't match `errors` and `optimizeErrors`, and a definition that throws a ParseError. Each fails the build otherwise. It applies with `runtime: "arktype"` too, where a ParseError and a dependency shipping precompiled validators fail the build and the rest are warnings anyway.
+`allowUnsafe: true` (`--allow-unsafe` for `--check`) reports as warnings the problems that may throw at runtime but that a build can still write output for: a dependency that imports arktype or ships precompiled validators, a module the build can't precompile importing arktype, a read off an import it can't resolve, an import that loads a Type before the config module, a Turbopack alias for `@ark/schema/runtime` that doesn't match `errors` and `optimizeErrors`, a package the build leaves external that loads arktype beside the runtime, and a definition that throws a ParseError. Each fails the build otherwise. It applies with `runtime: "arktype"` too, where a ParseError and a dependency shipping precompiled validators fail the build and the rest are warnings anyway.
 
 ### conditions and tsconfig
 
@@ -1001,7 +1013,13 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`The bundle leaves arktype to be loaded at runtime`** (or `arktype/runtime`): the program would load arktype, or a second copy of its runtime, beside the runtime its validators use, so `out instanceof type.errors` would be false for their errors. A tool that leaves dependencies external does this unless told otherwise: with tsup, add `noExternal: ["arktype"]`, and with tsdown, `deps: { alwaysBundle: [/^arktype(\/|$)/] }`. Where every import of arktype's runtime is left external, as with esbuild's `packages: "external"`, the program loads one copy, and the build allows it.
 
-**`Next.js leaves the pages router's dependencies external on the server when it builds with webpack`**: the server would then load arktype beside the runtime its validators use. Add `transpilePackages: ["arktype"]` to the Next config, as [Next.js](https://arktype.io/docs/precompile/setup#next) shows.
+**`Next.js leaves the pages router's dependencies external on the server`**: the server would then load arktype beside the runtime its validators use, so `out instanceof type.errors` would be false for their errors. Add `bundlePagesRouterDependencies: true` to the Next config, as [Next.js](https://arktype.io/docs/precompile/setup#next) shows. `transpilePackages: ["arktype"]` isn't enough, as a dependency left external still loads its own copy.
+
+**The build's `serverExternalPackages` option leaves a package** (Turbopack): the package imports arktype, and either router's server would load it, and arktype with it, beside the runtime your validators use. Remove it from `serverExternalPackages`.
+
+**`The bundle leaves @hono/arktype-validator, which imports arktype`**: the package would load arktype from Node, beside the runtime your validators use, so `out instanceof type.errors` would be false for their errors there. With Vite on a server, add it to `ssr.noExternal`, or the option the message names for another environment. Elsewhere, bundle it: remove it from the bundler's `external` option, or, with tsup, add it to `noExternal`, and with tsdown, to `deps.alwaysBundle`. For a package defining Types, like `drizzle-arktype`, the message also names the [`dependencies`](https://arktype.io/docs/precompile/options#dependencies) setting it needs, which alone bundles it on Vite's server. The build reads the modules your imports of the package load, and assumes a computed `import()` or `require()` among them reaches arktype. It only reads a package whose manifest, or a dependency's, declares arktype, and only in a build, as [Setup](https://arktype.io/docs/precompile/setup#bundlers) says.
+
+**The @ark/aot/turbopack loader reads `serverExternalPackages` from `next.config`**: the loader reads the list from `next.config` without running it, as running it again could start a server or write files. Write it in that file as an array of string literals.
 
 **`arktype resolves to more than one copy`**: one copy doesn't recognize another's Types and errors. The message names each copy and the file that reached it.
 
@@ -1052,6 +1070,8 @@ A definition reading one of its Types, like `type({ email: Email })` with `Email
 **`A standalone validator's JSON Schema takes only a target it was built with, and a fallback only where it was built to apply one`**: code passed `toJsonSchema()` options its baked schema can't apply. A validator applies a `fallback` where it also bakes `~standard.jsonSchema`, as where a library like hono-openapi converts it, or where [`members`](https://arktype.io/docs/precompile/options#members) sets `toJsonSchema`, so set it true where code the build doesn't see passes one. It still throws where arktype reads what a fallback returns other than to write a union, as for a `Date` with keys of its own or a symbol key. Build those with `runtime: "arktype"`.
 
 **`... was written by a build whose cache kept it in ..., where it no longer is`**: delete the bundler's cache to rebuild.
+
+**Turbopack builds a module as it did before you linked or patched arktype**: Turbopack's persistent cache keeps what the loader wrote until the module, a file it read, or the version of `arktype` or `@ark/aot` changes. A linked copy or a patch changes their code without the version, so delete `.next/cache` after changing either. The build's own cache, and webpack's and Rspack's, rebuild by themselves.
 
 **`prune: keeping assert, meta, ~standard and methods, because the validator at src/schemas.ts:3:14 is lost where src/server.ts:12:30 passes it to send, which the build can't follow`**: a production build couldn't prove what its validators are read for, so it kept each member [`members`](https://arktype.io/docs/precompile/options#members) leaves to it. The warning names the first read or module that stopped it, as [prune](https://arktype.io/docs/precompile/options#prune) lists them. Set each member it names in `members`, false where no code reads it, like `assert` where nothing asserts, and true where a library may, like `~standard` for one taking a Standard Schema. The build then writes what you set without the warning, and still prunes what else it can. `prune: false` would build each unit as a module of its own as well, which is larger.
 

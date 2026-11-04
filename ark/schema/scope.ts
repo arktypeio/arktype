@@ -47,6 +47,7 @@ import {
 } from "./module.ts"
 import {
 	referencesThroughAliases,
+	resolveReachedAliases,
 	rootApplyRuntimeOf,
 	type BaseNode
 } from "./node.ts"
@@ -171,6 +172,7 @@ export type AliasDefEntry = [name: string, defValue: unknown]
 // Fallback counter for anonymous scopes; scopes are identified by instance
 // identity rather than names to support HMR and multi-bundle environments.
 let anonymousScopeCount = 0
+let scopeCount = 0
 
 // options whose non-default values need an arktype import
 export type InstalledOption = "errors" | "mutatesInput"
@@ -239,6 +241,8 @@ const registerParseContext = <ctx extends BaseParseContext>(ctx: ctx): ctx =>
 
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly name: string
+	/** where it was created among scopes, which tells it apart where its name may not */
+	readonly index: number = scopeCount++
 	readonly isBuiltin: boolean
 	readonly scopeConfig: ArkSchemaScopeConfig | undefined
 
@@ -785,6 +789,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 			Object.assign(this.res, this._exported)
 
 			if (!this._lazy) {
+				// every alias's resolution is now final, so compiling reads each once
+				this.resolved = true
 				const hasAlias = Object.values(this._exported).some(
 					resolution => isNode(resolution) && resolution.hasAlias
 				)
@@ -806,7 +812,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 						}
 					}
 				}
-				this.resolved = true
 			}
 			$ark.reached?.store(mark, this, "export")
 		} else $ark.reached?.cached(this, "export")
@@ -948,7 +953,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return node
 
 		// resolving aliases can throw, so they resolve on definition
-		if (node.hasAlias) referencesThroughAliases(node.references)
+		if (node.hasAlias) resolveReachedAliases(node)
 		if (node.unitFn || !jit) return node
 		bindPrecompiledUnits?.([node])
 		if (node.unitFn || !canJit(this.cfg)) return node

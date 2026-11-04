@@ -21,7 +21,7 @@ import {
 	type InternalTraversal,
 	type Traversal
 } from "../shared/traversal.ts"
-import { hasArkKind } from "../shared/utils.ts"
+import { composing, hasArkKind } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
 
 export declare namespace Morph {
@@ -105,7 +105,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		morph => !hasArkKind(morph, "root") && arityOf(morph) === 1
 	)
 
-	private _traversedMorphs: array<Morph | BaseRoot> | undefined
+	declare private _traversedMorphs: array<Morph | BaseRoot> | undefined
 
 	// a configured message is its output's errors' too
 	get travMorphs(): array<Morph | BaseRoot> {
@@ -157,7 +157,12 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		})
 	}
 
-	expression = `(In: ${this._in.expression}) => ${this.tail ? "To" : "Out"}<${this._out.expression}>`
+	get expression(): string {
+		return (this.c.expression ??= composing(
+			() =>
+				`(In: ${this._in.expression}) => ${this.tail ? "To" : "Out"}<${this._out.expression}>`
+		))
+	}
 
 	get brief(): string {
 		return this._in.meta.description ?? this._in.brief

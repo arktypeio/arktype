@@ -5,7 +5,7 @@ import {
 	type SourceMapMappings,
 	type SourceMapSegment
 } from "@jridgewell/sourcemap-codec"
-import { existsSync, readFileSync, realpathSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs"
 import {
 	basename,
 	dirname,
@@ -180,23 +180,20 @@ export const projectOf = (cwd: string): string => {
 	return project
 }
 
-// for a host that must be told before the build which packages it transforms
-export const optedInPackagesOf = (
-	cwd: string,
-	dependencies?: DependencyModes
-): string[] => {
-	const result = Object.keys(dependencies ?? {}).filter(
-		name => dependencies![name] === "aot"
-	)
-	const project = projectOf(cwd)
-	// every package the project reaches, as one that doesn't opt in may depend on one that does
-	const packages: [root: string, name: string][] = [[project, ""]]
-	const visited = new Set([realPathOf(project)])
+// each package a root reaches through what it declares, with its manifest
+const reachedFrom = function* (
+	start: string,
+	name: string,
+	readsDevDependencies: boolean,
+	leaves: readonly string[] = []
+): Generator<[root: string, name: string, manifest: string]> {
+	const packages: [root: string, name: string][] = [[start, name]]
+	const visited = new Set([realPathOf(start)])
 	for (let i = 0; i < packages.length; i++) {
 		const [root, name] = packages[i]
 		const manifest = readFile(join(root, "package.json"))
 		if (manifest === undefined) continue
-		if (i && optsIn(manifest) && !result.includes(name)) result.push(name)
+		yield [root, name, manifest]
 		const {
 			dependencies,
 			devDependencies,
@@ -206,10 +203,11 @@ export const optedInPackagesOf = (
 		for (const dependency in {
 			...dependencies,
 			// a dependency's devDependencies aren't installed
-			...(!i && devDependencies),
+			...(!i && readsDevDependencies && devDependencies),
 			...optionalDependencies,
 			...peerDependencies
 		}) {
+			if (leaves.includes(dependency)) continue
 			const dependencyRoot = packageRootOf(dependency, root)
 			if (dependencyRoot && !visited.has(dependencyRoot)) {
 				visited.add(dependencyRoot)
@@ -217,7 +215,97 @@ export const optedInPackagesOf = (
 			}
 		}
 	}
+}
+
+// for a host that must be told before the build which packages it transforms
+export const optedInPackagesOf = (
+	cwd: string,
+	dependencies?: DependencyModes
+): string[] => {
+	const result = Object.keys(dependencies ?? {}).filter(
+		name => dependencies![name] === "aot"
+	)
+	// every package the project reaches, as one that doesn't opt in may depend on one that does
+	for (const [, name, manifest] of reachedFrom(projectOf(cwd), "", true))
+		if (name && optsIn(manifest) && !result.includes(name)) result.push(name)
 	return result
+}
+
+const arktypeEntries = ["arktype", "@ark/schema"]
+
+// as an import, not as the vendor name a package compares a schema's to
+const importOfArktype =
+	/(?:\bfrom\s*|\bimport\s*\(?\s*|require\s*\(\s*)["'`](?:arktype|@ark\/schema)(?:\/[^"'`]*)?["'`]/
+
+const importsArktype = (dir: string): boolean =>
+	readdirSync(dir, { withFileTypes: true }).some(entry =>
+		entry.isDirectory() ?
+			entry.name !== "node_modules" && importsArktype(join(dir, entry.name))
+		:	/\.[cm]?js$/.test(entry.name) &&
+			importOfArktype.test(readFile(join(dir, entry.name)) ?? "")
+	)
+
+// a package left to Node loads what it imports from Node, so it may load
+// arktype. Its manifest only says whose code to read, as many declare arktype
+// without importing it, to read a Type they're passed, like @orpc/arktype.
+// For a package left external by name, whichever of its subpaths is imported
+export const dependsOnArktype = (name: string, from: string): boolean => {
+	const start = packageRootOf(name, from)
+	if (!start) return false
+	if (arktypeEntries.includes(name)) return true
+	for (const [root, , manifest] of reachedFrom(
+		start,
+		name,
+		false,
+		arktypeEntries
+	)) {
+		if (
+			arktypeEntries.some(entry => manifest.includes(`"${entry}"`)) &&
+			importsArktype(root)
+		)
+			return true
+	}
+	return false
+}
+
+// each import, or a call that may import anything, with no specifier
+const importOrComputed =
+	/(?:\bfrom\s*|\bimport\s*\(?\s*|require\s*\(\s*)["'`]([^\s"$'`]+)["'`]|\bimport\s*\(|require\s*\(/g
+
+let nodeHost: PrecompileHost | undefined
+
+// each module a specifier loads that imports arktype or computes what it loads,
+// as a package may import it only from a subpath the program doesn't, like
+// t3-env's presets-arktype: none where it can't load arktype, and the specifier
+// where its modules can't be read
+export const modulesLoadingArktype = (
+	specifier: string,
+	from: string
+): string[] => {
+	const name = packageNameOf(specifier)
+	if (!dependsOnArktype(name, from)) return []
+	if (arktypeEntries.includes(name)) return [specifier]
+	const host = (nodeHost ??= createNodeHost())
+	const entry = host.resolve(specifier, join(from, "_"))
+	if (!entry) return [specifier]
+	const modules = new Set<string>()
+	const seen = new Set<string>()
+	const read = (file: string) => {
+		if (seen.has(file)) return
+		seen.add(file)
+		for (const [, imported] of (host.readFile(file) ?? "").matchAll(
+			importOrComputed
+		)) {
+			if (!imported || arktypeEntries.includes(packageNameOf(imported)))
+				modules.add(file)
+			else {
+				const resolved = host.resolve(imported, file)
+				if (resolved) read(resolved)
+			}
+		}
+	}
+	read(entry)
+	return [...modules]
 }
 
 export const packageRootOf = (

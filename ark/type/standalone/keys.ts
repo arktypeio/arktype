@@ -306,6 +306,9 @@ export const partsOf = (
 
 export const holeNameMarker = "$hole_"
 
+// what a factory calls to read a Type's holes, which it finds by identity
+export const receiverPrefix = "receive"
+
 // two hashes can first differ inside a "$ark.name" reference
 export const registeredNameAt = (
 	hash: string,
@@ -322,7 +325,9 @@ const holeName = `[\\w$]*${holeNameMarker.replace("$", "\\$")}[\\da-z]+`
 
 export const holeNamePattern = new RegExp(holeName, "g")
 
+// a hole's registry name, past the count a value named alike before gives
+// it, or its name in text
 export const printedHoleNamePattern = new RegExp(
-	`\\$ark\\.(${holeName})|valid according to (${holeName})|Function\\((${holeName})\\)|(${holeName})`,
+	`\\$ark\\.(${holeName})(?:\\$[1-9]\\d*)?|valid according to (${holeName})|Function\\((${holeName})\\)|(${holeName})`,
 	"g"
 )

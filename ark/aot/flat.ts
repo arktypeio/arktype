@@ -1,4 +1,5 @@
 import { hashOf } from "@ark/util"
+import { cellPrefix, heldSpecifier } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
 import type { Node, Program, Span } from "oxc-parser"
 import { memberNameOf } from "./graph.ts"
@@ -488,7 +489,8 @@ const creationsIn = (
 					(
 						declaration.kind === "const" &&
 						declaration.declarations.length === 1 &&
-						declarator.id.type === "Identifier"
+						declarator.id.type === "Identifier" &&
+						unwrapExpression(declarator.init!) === call
 					) ?
 						{
 							start: statement.start,
@@ -506,6 +508,19 @@ const creationsIn = (
 		if (creations.length) result.set(id, creations)
 	}
 	return result
+}
+
+const isHeldCall = (call: Call, module: SourceModule): boolean => {
+	const binding =
+		call.callee.type === "Identifier" ?
+			module.scopes.root.bindings[call.callee.name]
+		:	undefined
+	const statement = binding?.kind === "import" && binding.declaration.parent
+	return (
+		!!statement &&
+		statement.type === "ImportDeclaration" &&
+		statement.source.value === heldSpecifier
+	)
 }
 
 const keptCallsIn = (module: SourceModule, kept: KeptCode) => {
@@ -526,8 +541,17 @@ const keptCallsIn = (module: SourceModule, kept: KeptCode) => {
 			continue
 		for (const { init } of declaration.declarations) {
 			const call = init && unwrapExpression(init)
-			if (call?.type === "CallExpression")
-				result.push({ statement, declaration, call })
+			if (call?.type !== "CallExpression") continue
+			// a validator held with what sets the cells it reads
+			const held = call.arguments[0]
+			result.push({
+				statement,
+				declaration,
+				call:
+					isHeldCall(call, module) && held?.type === "CallExpression" ?
+						held
+					:	call
+			})
 		}
 	}
 	return result
@@ -937,7 +961,10 @@ const unitsOf = (
 		for (const unit of units.values()) {
 			if (
 				importsOf(unit.module).some(
-					source => source !== runtimeSource && !units.has(source)
+					source =>
+						source !== runtimeSource &&
+						!source.startsWith(cellPrefix) &&
+						!units.has(source)
 				)
 			) {
 				units.delete(unit.specifier)
@@ -1376,6 +1403,18 @@ const writeFlat = (
 	const exported = new Set<string>()
 	for (const [name, specifier] of specifiersByName)
 		exported.add(`${specifier}\0${name}`)
+	const cellImports = [
+		...new Set(
+			units.flatMap(({ module }) =>
+				importsOf(module).filter(source => source.startsWith(cellPrefix))
+			)
+		)
+	]
+		.map(
+			source =>
+				`import { ${source.slice(cellPrefix.length)} } from ${JSON.stringify(source)}\n`
+		)
+		.join("")
 	// as measured for size, then written
 	const writtenByReturned = new Map<string, WrittenUnits>()
 	const flat: Flat = {
@@ -1402,7 +1441,7 @@ return ${written.returned}
 })()`
 		},
 		writeModule: read => `import * as runtime from "arktype/runtime"
-
+${cellImports}
 ${flat.write(read)}
 
 export { ${read.join(", ")} }

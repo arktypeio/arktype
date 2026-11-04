@@ -69,6 +69,10 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 			JSON.stringify(this.unitJson)
 		:	compileSerializedValue(this.unit)
 
+	override sameInner(r: UnitNode): boolean {
+		return this.unitJson === r.unitJson
+	}
+
 	jsCond(js: NodeCompiler, data: string): string {
 		return (
 			isDate(this.unit) ?

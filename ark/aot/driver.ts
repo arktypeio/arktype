@@ -1,4 +1,5 @@
 import { flatMorph, throwError } from "@ark/util"
+import { existsSync } from "node:fs"
 import { isAbsolute, resolve } from "node:path"
 import type { SourceMap } from "magic-string"
 import {
@@ -38,7 +39,7 @@ import {
 } from "./precompile.ts"
 import type { ScannedProgram, ScannedUsage } from "./scan.ts"
 import type { Site } from "./sites.ts"
-import { withSettingsFile } from "./settings.ts"
+import { settingsPathsOf, withSettingsFile } from "./settings.ts"
 import { isPrecompilerWorker } from "./worker.ts"
 
 export interface PrecompilePluginOptions
@@ -271,6 +272,8 @@ const answerRequests = (
 					program
 				)
 			}
+			const previous = tracked.given[id]
+			const given = (tracked.given[id] = givenOf(source, mappings))
 			const kept = transformedById[id]
 			if (
 				kept?.source === source &&
@@ -283,23 +286,26 @@ const answerRequests = (
 			if (!precompiler.isTransformed(id)) return
 			const key =
 				cache &&
-				keyOf(
-					tracked.context,
-					"transform",
-					id,
-					source,
-					mappings ?? null,
-					tracked.viewKey ?? null
-				)
+				keyOf(tracked.context, "transform", id, given, tracked.viewKey ?? null)
 			const cached =
 				key &&
 				(cachedAnswerOf(tracked, cache!, key) as StoredModule | undefined)
-			if (cached && precompiler.readCopiesOf(cached.packages, id))
+			if (
+				cached &&
+				// else what it was given before may still be what its importers read
+				(previous ?? given) === given &&
+				precompiler.readCopiesOf(cached.packages, id)
+			)
 				return cached.transformed
 			tracked.analyzed = true
-			// its importers read its file, unlike the module a plugin ahead gave
-			if (precompiler.graph.host.readFile(id) !== source)
-				tracked.storable = false
+			// a plugin ahead may give it unlike its file, as one transpiling it as
+			// it loads does, which its importers then read
+			if (
+				precompiles(precompiler, source, id) &&
+				(mappings !== undefined ||
+					precompiler.graph.host.readFile(id) !== source)
+			)
+				tracked.unsnapshotted.given.push([id, given])
 			const result = precompiledOf(
 				viewing(tracked).precompiler,
 				source,
@@ -314,9 +320,7 @@ const answerRequests = (
 			// e.g. an import that can't resolve until a file is written, which no mtime shows
 			if (hasDiagnostics(transformed)) return transformed
 			const packages = result ? precompiler.arkPackagesOf(id) : []
-			// a stand-in decides what another module reports, which only the
-			// precompiler that wrote it knows
-			if (key && !precompiler.writesStandIns(id)) {
+			if (key) {
 				store(tracked, cache!, key, {
 					transformed,
 					packages
@@ -340,6 +344,12 @@ const answerRequests = (
 		}
 		if (request[0] === "scan") {
 			const [, program] = request
+			const given = Object.entries(program.modules).map(
+				([id, { source, mappings }]): [string, string] => [
+					id,
+					(tracked!.given[id] = givenOf(source, mappings))
+				]
+			)
 			const scan: Scan = (scansByProgram[program.key] = {
 				program,
 				cache,
@@ -371,21 +381,15 @@ const answerRequests = (
 			const isFirst = !tracked.analyzed
 			tracked.analyzed = true
 			scan.tracked = tracked
+			tracked.unsnapshotted.given.push(...given)
 			const usage = precompiler.scan(program)
 			tracked.unread = undefined
 			tracked.viewKey = scan.viewKey
-			if (
-				cache &&
-				isFirst &&
-				tracked.storable &&
-				usage.unpruned === undefined
-			) {
+			if (cache && isFirst && tracked.storable) {
 				scan.written = modulesWrittenIn(precompiler, program)
 				scan.isStored =
-					Object.entries(scan.written).every(
-						([id, { answer }]) =>
-							(!answer || !hasDiagnostics(answer)) &&
-							!precompiler.writesStandIns(id)
+					Object.values(scan.written).every(
+						({ answer }) => !answer || !hasDiagnostics(answer)
 					) &&
 					store(tracked, cache, scan.key, storedScanOf(usage, scan.written))
 			}
@@ -420,8 +424,14 @@ const answerRequests = (
 		if (request[0] === "check")
 			return checkedModuleOf(precompiler, request[1], request[2])
 		if (request[0] === "checkUnwritten") {
+			const [, source, id, mappings] = request
+			const given = (tracked.given[id] = givenOf(source, mappings))
+			// another plugin wrote it, as Svelte compiles a component, which its
+			// importers then read
+			if (precompiler.importsArk(source, id))
+				tracked.unsnapshotted.given.push([id, given])
 			return renderDiagnostics(
-				precompiler.checkUnwritten(request[1], request[2], request[3]),
+				precompiler.checkUnwritten(source, id, mappings),
 				id => precompiler.graph.pathOf(id)
 			)
 		}
@@ -573,6 +583,9 @@ interface TrackedPrecompiler {
 	// imports that can't carry a Type it resolved to nothing without asking the bundler
 	missesByImporter: Record<string, Set<string>>
 	tsconfigsByImporter: Record<string, string | undefined>
+	// what the build gave each module it was given, which a stored answer
+	// reading the module may have read
+	given: Record<string, string>
 	// what it read since the snapshot its last stored answer names
 	unsnapshotted: Snapshot
 	snapshot: string | undefined
@@ -588,8 +601,10 @@ interface TrackedPrecompiler {
 	// asked again for each answer a stored one had it resolve
 	resolveInBundler: BundlerResolver | undefined
 	// whether its answers can outlive it: it's its thread's first precompiler,
-	// as arktype keeps what earlier ones compiled, and was given each module as
-	// its file reads
+	// as arktype keeps what earlier ones compiled, was given each module as its
+	// file reads, and no reset kept it across a change to a file it read, as
+	// analyzing a module again after forgetting it may write it unlike a
+	// precompiler that never read it
 	storable: boolean
 	// whether it answered a request by analyzing a module
 	analyzed: boolean
@@ -625,6 +640,7 @@ const createTrackedPrecompiler = (
 		targetsByImporter: Object.create(null),
 		missesByImporter: {},
 		tsconfigsByImporter: {},
+		given: {},
 		unsnapshotted: emptySnapshot(undefined),
 		snapshot: undefined,
 		holds: undefined,
@@ -697,6 +713,9 @@ const createTrackedPrecompiler = (
 
 const keyOf = (...parts: unknown[]): string => hashOf(JSON.stringify(parts))
 
+const givenOf = (source: string, mappings: string | undefined) =>
+	keyOf(source, mappings ?? null)
+
 // what the write analysis reads of a program read whole: each module, as a
 // write in one decides what a site in another answers, and what loads them
 const viewKeyOf = ({
@@ -746,13 +765,12 @@ const cachedAnswerOf = (
 	cache: AnswerCache,
 	key: string
 ): unknown =>
-	cache.get(
-		key,
+	cache.get(key, snapshot =>
 		(tracked.holds ??= createSnapshotCheck(
 			cache,
 			tracked.host,
 			tracked.resolveInBundler
-		))
+		))(snapshot, tracked.given)
 	)
 
 // an answer outlives the build where nothing but what it read and resolved
@@ -770,7 +788,8 @@ const store = (
 		unsnapshotted.reads.length ||
 		unsnapshotted.resolutions.length ||
 		unsnapshotted.asked.length ||
-		unsnapshotted.tsconfigs.length
+		unsnapshotted.tsconfigs.length ||
+		unsnapshotted.given.length
 	) {
 		tracked.snapshot = cache.addSnapshot(unsnapshotted)
 		tracked.unsnapshotted = emptySnapshot(tracked.snapshot)
@@ -940,9 +959,11 @@ const keptAcross = (
 	for (const file of changed) {
 		delete readTimes[file]
 		delete tracked.sources[file]
+		delete tracked.given[file]
 	}
 	tracked.host = host
 	tracked.holds = undefined
+	if (changed.length) tracked.storable = false
 	// a build reads its own program, if any
 	precompiler.readProgram(undefined)
 	tracked.viewKey = tracked.unread = undefined
@@ -1078,8 +1099,7 @@ export const createKeyedPrecompiler = (
 			key &&
 			!tracked.asked &&
 			!keyed.errors.length &&
-			!keyed.warnings.length &&
-			!tracked.precompiler.writesStandIns(id)
+			!keyed.warnings.length
 		) {
 			store(tracked, cache!, key, {
 				keyed,
@@ -1200,7 +1220,11 @@ const transformedOf = (
 	code: result.map && result.code,
 	map: result.map,
 	dependencies: [
-		...new Set([...result.dependencies, ...precompiler.ownManifests])
+		...new Set([
+			...result.dependencies,
+			...precompiler.ownManifests,
+			...settingsFilesOf(precompiler)
+		])
 	],
 	modules: result.modules,
 	foldedHelpers: result.foldedHelpers,
@@ -1215,12 +1239,20 @@ const unprecompiledOf = (
 	code: undefined,
 	map: undefined,
 	// an import may come to export a Type, which only the plugin watches
-	dependencies: precompiler.inline ? [] : precompiler.textImportsOf(source, id),
+	dependencies: [
+		...(precompiler.inline ? [] : precompiler.textImportsOf(source, id)),
+		...settingsFilesOf(precompiler)
+	],
 	modules: {},
 	foldedHelpers: [],
 	errors: [],
 	warnings: []
 })
+
+// a module's answer depends on the settings it was written under, but a
+// bundler watching a file missing from disk drops it after each build
+const settingsFilesOf = (precompiler: Precompiler): string[] =>
+	settingsPathsOf(precompiler.graph.cwd!).filter(file => existsSync(file))
 
 interface KeptModule extends StoredModule {
 	source: string

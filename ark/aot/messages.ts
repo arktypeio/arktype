@@ -19,6 +19,12 @@ export const writeUnreproducedScanMessage = (): string =>
 export const writeChangedSettingsMessage = (path: string): string =>
 	`The precompile settings in ${path} changed while Next ran, and arktype keeps what it compiled under the earlier ones for the process. Restart \`next dev\` to build with the new settings.`
 
+export const writeWatchedSettingsMessage = (
+	path: string,
+	host: string
+): string =>
+	`The precompile settings in ${path} changed while ${host} watched, which can't build each module anew under them, as it keeps what it set up under the earlier ones. Restart ${host} to build with the new settings.`
+
 export const writeUnansweredResolveMessage = (
 	specifier: string,
 	importer: string,
@@ -96,10 +102,24 @@ export const writeExternalizedMessage = (
 	`The build's \`${option}\` option leaves ${specifier} ${loadedAtRuntime}. Remove ${packageNameOf(specifier)} from \`${option}\`.`
 
 export const writeNextExternalMessage = (specifier: string): string =>
-	`Next.js leaves the pages router's dependencies external on the server when it builds with webpack, so it leaves ${specifier} ${loadedAtRuntime}. Add \`transpilePackages: ["${packageNameOf(specifier)}"]\` to next.config.js, so Next.js bundles it.`
+	`Next.js leaves the pages router's dependencies external on the server, so it leaves ${specifier} ${loadedAtRuntime}. Add \`bundlePagesRouterDependencies: true\` to next.config.js, so Next.js bundles them as it does the app router's, and leave ${packageNameOf(specifier)} out of \`serverExternalPackages\`.`
+
+export const writeUnreadServerExternalsMessage = (config: string): string =>
+	`The @ark/aot/turbopack loader reads \`serverExternalPackages\` from ${config} without running it, for a package importing arktype that Next.js would load past \`resolveAlias\`, and can't read one other than an array of string literals. Write it as one.`
 
 export const writeBundledExternalMessage = (specifier: string): string =>
 	`The bundle leaves ${specifier} ${loadedAtRuntime}. Bundle arktype: remove it from the bundler's \`external\` option, or, where a tool leaves dependencies external, have it bundle arktype, as tsup does with \`noExternal: ["arktype"]\` and tsdown with \`deps: { alwaysBundle: [/^arktype(\\/|$)/] }\`.`
+
+// `noExternal` is the option a Vite environment on a server takes
+export const writeBundledDependentMessage = (
+	name: string,
+	noExternal: string | undefined
+): string =>
+	`The bundle leaves ${name}, which imports arktype, ${loadedAtRuntime}. ${
+		noExternal ?
+			`Add ${name} to \`${noExternal}\`.`
+		:	`Bundle it: remove it from the bundler's \`external\` option, or, where a tool leaves dependencies external, have it bundle it, as tsup does with \`noExternal: ["${name}"]\` and tsdown with \`deps: { alwaysBundle: ["${name}"] }\`.`
+	}`
 
 export const writeUnwrittenModuleMessage = (specifier: string): string =>
 	`${specifier} is imported by a module this build didn't precompile, as one a cache kept from an earlier build is. Keep that cache from storing the modules @ark/aot transforms, or delete it.`

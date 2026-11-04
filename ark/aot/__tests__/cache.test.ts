@@ -68,17 +68,22 @@ const forge = (dir: string, snapshot?: string) => {
 
 // marks the code of each module a stored scan wrote, so a build the cache
 // answers is told apart from one that scans again, which writes no mark, or
-// fails once a mark it gave differs from what it writes
-const forgeScan = (dir: string): number => {
+// fails once a mark it gave differs from what it writes. The file named
+// unlike is held unlike the module the bundler gives, so a build scans again
+// once the bundler gives it
+const forgeScan = (dir: string, unlike?: string): number => {
 	let marked = 0
 	for (const path of entriesOf(dir)) {
 		const text = readFileSync(path, "utf8")
 		const stored = JSON.parse(text.slice(text.indexOf("\n") + 1))
-		const modules: Record<string, { answer: { code?: string } | null }> =
-			stored.answer?.modules ?? {}
-		for (const { answer } of Object.values(modules)) {
-			if (!answer?.code) continue
-			answer.code += `\n${forgedLine}\n`
+		const modules: Record<
+			string,
+			{ source: string; answer: { code?: string } | null }
+		> = stored.answer?.modules ?? {}
+		for (const [id, module] of Object.entries(modules)) {
+			if (unlike && id === join(dir, unlike)) module.source += "\n"
+			if (!module.answer?.code) continue
+			module.answer.code += `\n${forgedLine}\n`
 			marked++
 		}
 		const body = JSON.stringify(stored)
@@ -97,10 +102,19 @@ const isWhole = (path: string) => {
 	return text.slice(0, start - 1) === hashOf(text.slice(start))
 }
 
+// a module as a plugin ahead gives it to be transformed, unlike its file, or
+// as another plugin writes it, which the build only checks
+type Given = [
+	file: string,
+	source: string,
+	mappings?: string | undefined,
+	kind?: "checkUnwritten"
+]
+
 // what a build's worker answers for each file, in order
 const transformedIn = async (
 	dir: string,
-	files: string[],
+	files: (string | Given)[],
 	opts: object = {},
 	resolve?: BundlerResolve
 ): Promise<(TransformedModule | undefined)[]> => {
@@ -109,11 +123,14 @@ const transformedIn = async (
 	})
 	const answers: (TransformedModule | undefined)[] = []
 	for (const file of files) {
-		const id = join(dir, file)
+		const [name, source, mappings, kind = "transform"] =
+			typeof file === "string" ? [file] : file
+		const id = join(dir, name)
 		answers.push(
-			(await send(["transform", readFileSync(id, "utf8"), id], resolve)) as
-				| TransformedModule
-				| undefined
+			(await send(
+				[kind, source ?? readFileSync(id, "utf8"), id, mappings],
+				resolve
+			)) as TransformedModule | undefined
 		)
 	}
 	await send(["close"])
@@ -194,6 +211,24 @@ const shaped = (domain: string) =>
 
 const shapeReader = (specifier: string) =>
 	`import { type } from "arktype"\nimport { shape } from "${specifier}"\n\nexport const T = type(shape)\n`
+
+const typed = (domain: string) =>
+	`import { type } from "arktype"\n\nexport const Typed = type({ a: "${domain}" })\n`
+
+const typedReader =
+	'import { type } from "arktype"\nimport { Typed } from "./typed.ts"\n\nexport const T = type({ typed: Typed })\n'
+
+// a module as plugin-typescript gives it, without its blank lines, with the
+// map from each line it gives to the line of its file
+const transpiledOf = (file: string, source: string): Given => {
+	const lines = source.split("\n")
+	const kept = lines.flatMap((line, i) => (line ? [i] : []))
+	return [
+		file,
+		`${kept.map(i => lines[i]).join("\n")}\n`,
+		kept.map((line, i) => `AA${"ACEG"[line - (kept[i - 1] ?? 0)]}A`).join(";")
+	]
+}
 
 const versionOf = (dir: string): string =>
 	JSON.parse(readFileSync(fromHere("..", "..", dir, "package.json"), "utf8"))
@@ -374,6 +409,84 @@ contextualize(function (this: Mocha.Suite) {
 			attest(readdirSync(root)).equals([version])
 		})
 
+		it("reads another directory once a package the precompiler runs changes", () => {
+			const fingerprinted = inFreshProcess(
+				async (dir: string) => {
+					const fs = (await import("node:fs")).default
+					const { registerHooks, syncBuiltinESMExports } = await import(
+						"node:module"
+					)
+					const { basename, dirname, join } = await import("node:path")
+					const { fileURLToPath } = await import("node:url")
+					const loaded = new Set<string>()
+					registerHooks({
+						load: (url, context, next) => {
+							if (url.startsWith("file:")) loaded.add(fileURLToPath(url))
+							return next(url, context)
+						}
+					})
+					const { createPrecompiler } = await import(
+						"@ark/aot/internal/driver.ts"
+					)
+					createPrecompiler({ cwd: dir, conditions: ["ark-ts"] }).precompile(
+						'import { type } from "arktype"\n\nexport const T = type({ a: "string" }).and({ b: "number" })\n',
+						join(dir, "main.ts")
+					)
+					// arktype's packages whose code it ran, by root
+					const names: Record<string, string> = {}
+					for (const file of loaded) {
+						let root = dirname(file)
+						while (!fs.existsSync(join(root, "package.json")))
+							root = dirname(root)
+						const { name } = JSON.parse(
+							fs.readFileSync(join(root, "package.json"), "utf8")
+						)
+						if (/^(?:arktype|arkregex|arksets|@ark\/.+)$/.test(name))
+							names[root] = name
+					}
+					// each cache module a new instance, so it fingerprints anew
+					const cache = import.meta.resolve("@ark/aot/internal/cache.ts")
+					let imports = 0
+					const directoryOf = async () =>
+						basename(
+							new (await import(`${cache}?${imports++}`)).AnswerCache(dir).dir
+						)
+					const read = fs.readFileSync
+					const before = await directoryOf()
+					const unchanged: string[] = []
+					for (const root in names) {
+						fs.readFileSync = ((path: string, ...rest: never[]) => {
+							const text = read(path, ...rest)
+							return (
+									typeof path === "string" &&
+										path.startsWith(`${root}/`) &&
+										/\.[jt]s$/.test(path)
+								) ?
+									`${text}\n// changed`
+								:	text
+						}) as never
+						syncBuiltinESMExports()
+						if ((await directoryOf()) === before) unchanged.push(names[root])
+						fs.readFileSync = read
+						syncBuiltinESMExports()
+					}
+					return { ran: Object.values(names).sort(), unchanged }
+				},
+				[writeFixture({})]
+			)
+			attest(fingerprinted).snap({
+				ran: [
+					"@ark/aot",
+					"@ark/schema",
+					"@ark/util",
+					"arkregex",
+					"arksets",
+					"arktype"
+				],
+				unchanged: []
+			})
+		})
+
 		it("removes nothing in its directory it didn't write", async () => {
 			const dir = writeFixture({
 				"main.ts": shapeReader("./shape.ts"),
@@ -419,10 +532,73 @@ contextualize(function (this: Mocha.Suite) {
 			attest(readFileSync(join(dir, "target.txt"), "utf8")).equals("kept")
 		})
 
+		it("answers a module a plugin ahead transpiled", async () => {
+			const dir = writeFixture({
+				"main.ts": shapeReader("./shape.ts"),
+				"shape.ts": shaped("string")
+			})
+			const transpiled = transpiledOf("main.ts", shapeReader("./shape.ts"))
+			const [answer] = await transformedIn(dir, [transpiled])
+			attest(answer?.code).satisfies(/^import/)
+			forge(dir)
+			attest((await transformedIn(dir, [transpiled]))[0]?.code).equals("forged")
+		})
+
+		it("misses once a plugin ahead gives a module it imports otherwise", async () => {
+			const dir = writeFixture({
+				"main.ts": typedReader,
+				"typed.ts": typed("string")
+			})
+			const givenAs = (domain: string) => [
+				transpiledOf("typed.ts", typed(domain)),
+				"main.ts"
+			]
+			const asString = await transformedIn(dir, givenAs("string"))
+			const asNumber = json(await transformedIn(dir, givenAs("number")))
+			attest(asNumber === json(asString)).equals(false)
+			attest(asNumber).equals(json(await uncachedIn(dir, givenAs("number"))))
+		})
+
+		it("misses once another plugin writes a module it imports otherwise", async () => {
+			const dir = writeFixture({
+				"main.ts": shapeReader("./Shape.svelte"),
+				"Shape.svelte": "<script>\n</script>\n"
+			})
+			// as Svelte compiles a component exporting its shape
+			const writtenAs = (domain: string): (string | Given)[] => [
+				[
+					"Shape.svelte",
+					`import "arktype"\n\nexport const shape = { a: "${domain}" }\n`,
+					undefined,
+					"checkUnwritten"
+				],
+				"main.ts"
+			]
+			const asString = await transformedIn(dir, writtenAs("string"))
+			const asNumber = json(await transformedIn(dir, writtenAs("number")))
+			attest(asNumber === json(asString)).equals(false)
+			attest(asNumber).equals(json(await uncachedIn(dir, writtenAs("number"))))
+		})
+
+		it("misses for a module the build gave otherwise before", async () => {
+			const dir = writeFixture({
+				"main.ts": typedReader,
+				"typed.ts": typed("string")
+			})
+			const givenAs = (domain: string) =>
+				transpiledOf("typed.ts", typed(domain))
+			await transformedIn(dir, [givenAs("number")])
+			// its importers read what it was given last, which only precompiling it again gives them
+			const requests = [givenAs("string"), givenAs("number"), "main.ts"]
+			const answers = json(await transformedIn(dir, requests))
+			attest(answers).equals(json(await uncachedIn(dir, requests)))
+		})
+
 		it("stores no answer with a diagnostic", async () => {
 			const dir = writeFixture(replaced)
 			const errors = await errorsIn(dir, ["main.ts"])
-			attest(errors[0]?.length).equals(1)
+			// its refusal, and its read of the Scope scope.ts replaces
+			attest(errors[0]?.length).equals(2)
 			attest(entriesOf(dir)).equals([])
 			attest(await errorsIn(dir, ["main.ts"])).equals(errors)
 		})
@@ -517,6 +693,39 @@ contextualize(function (this: Mocha.Suite) {
 			await send(["close"])
 		})
 
+		it("stores nothing a worker answers once a reset kept it", async () => {
+			const dir = writeFixture({ "main.ts": typed("string") })
+			const id = join(dir, "main.ts")
+			const send = createAsyncPrecompiler({
+				precompilerOptions: { cwd: dir, conditions }
+			})
+			await send(["transform", readFileSync(id, "utf8"), id])
+			writeFileSync(id, typed("number"))
+			attest(await send(["reset"])).equals(false)
+			await send(["transform", readFileSync(id, "utf8"), id])
+			await send(["close"])
+			attest(entriesOf(dir).length).equals(1)
+			await answersAnew(dir)
+		})
+
+		it("stores what a worker answers across a reset nothing it read changed", async () => {
+			const dir = writeFixture({
+				"a.ts": shapeReader("./shape.ts"),
+				"b.ts": shapeReader("./shape.ts"),
+				"shape.ts": shaped("string")
+			})
+			const send = createAsyncPrecompiler({
+				precompilerOptions: { cwd: dir, conditions }
+			})
+			for (const file of ["a.ts", "b.ts"]) {
+				const id = join(dir, file)
+				await send(["transform", readFileSync(id, "utf8"), id])
+				attest(await send(["reset"])).equals(false)
+			}
+			await send(["close"])
+			attest(entriesOf(dir).length).equals(2)
+		})
+
 		it("misses once another module of the program writes what it reads", async () => {
 			const dir = writeFixture(heldElsewhere)
 			const unwritten = await emittedIn(dir, heldFiles)
@@ -562,13 +771,16 @@ contextualize(function (this: Mocha.Suite) {
 			attest(kept.includes(writtenElsewhere)).equals(false)
 		})
 
-		it("never answers for a module that replaced a Scope a refused site reads", async () => {
+		it("answers for a module whose Scope another module's refused site reads", async () => {
 			const dir = writeFixture(replaced)
 			const errors = await errorsIn(dir, ["scope.ts", "main.ts"])
 			attest(errors[1]?.some(error => error.includes(replacedMessage))).equals(
 				true
 			)
-			attest(await errorsIn(dir, ["scope.ts", "main.ts"])).equals(errors)
+			forge(dir)
+			const [scope, main] = await transformedIn(dir, ["scope.ts", "main.ts"])
+			attest(scope?.code).equals("forged")
+			attest(main?.errors.map(error => error.split("\n")[0])).equals(errors[1])
 		})
 	})
 
@@ -622,13 +834,16 @@ contextualize(function (this: Mocha.Suite) {
 			attest(keyedIn(dir, ["a.ts", "sub/b.ts"])[1]).equals(b)
 		})
 
-		it("never answers for a module that replaced a Scope a refused site reads", () => {
+		it("answers for a module whose Scope another module's refused site reads", () => {
 			const dir = writeFixture(replaced)
-			const loaded = keyedIn(dir, ["scope.ts", "main.ts"])
-			attest(
-				loaded[1].errors.some(error => error.includes(replacedMessage))
-			).equals(true)
-			attest(keyedIn(dir, ["scope.ts", "main.ts"])).equals(loaded)
+			const [, main] = keyedIn(dir, ["scope.ts", "main.ts"])
+			attest(main.errors.some(error => error.includes(replacedMessage))).equals(
+				true
+			)
+			forge(dir)
+			const [scope, reread] = keyedIn(dir, ["scope.ts", "main.ts"])
+			attest(scope.code).equals("forged")
+			attest(reread).equals(main)
 		})
 	})
 
@@ -700,6 +915,36 @@ contextualize(function (this: Mocha.Suite) {
 			const written = writtenOf(dir)
 			attest(written.length).equals(2)
 			attest(await built(dir)).equals(code)
+			attest(writtenOf(dir)).equals(written)
+		})
+
+		it("answers a scan that keeps members, warning as it did", async () => {
+			const dir = installed({
+				"main.ts": 'import { A } from "./a.ts"\n\nglobalThis.A = A\n',
+				"a.ts":
+					'import { type } from "arktype"\n\nexport const A = type({ name: "string" })\n'
+			})
+			// the warnings a build logs, and its code
+			const warnedIn = async () => {
+				const warnings: string[] = []
+				const listener: VitePlugin = {
+					name: "listener",
+					// arktype's own, apart from the bundler's, like its timings
+					onLog: (level, log) => {
+						if (level === "warn" && log.plugin === "arktype")
+							warnings.push(log.message)
+					}
+				}
+				return [await built(dir, [listener]), warnings] as const
+			}
+			const [code, warnings] = await warnedIn()
+			attest(warnings).snap([
+				"prune: keeping assert, meta, ~standard and methods, because the validator at a.ts:3:18 is lost where main.ts:3:1 stores it on the global object, which code outside the bundle may read. Set assert, meta, ~standard and methods in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning.",
+				"precompile: baking each introspection member into the validator at a.ts:3:18, because main.ts:3:1 stores it on the global object, which code outside the bundle may read. Set expression, description, json, toJSON, toJsonSchema and ~standard.jsonSchema in members, each false where no code reads it, to build without this warning."
+			])
+			const written = writtenOf(dir)
+			attest(written.length).equals(2)
+			attest(await warnedIn()).equals([code, warnings])
 			attest(writtenOf(dir)).equals(written)
 		})
 
@@ -782,6 +1027,26 @@ contextualize(function (this: Mocha.Suite) {
 			attest(await built(dir, [rewriter])).equals(code)
 		})
 
+		it("fails a build whose given modules a new scan writes otherwise, then scans anew", async () => {
+			// each module imports the next, so the bundler gives them in order
+			const dir = installed({
+				"main.ts":
+					'import { Admin, User } from "./admin.ts"\n\nconsole.log(User.allows({ name: "x" }), Admin.allows({ name: "x", role: "admin" }))\n',
+				"admin.ts":
+					'import { type } from "arktype"\nimport { User } from "./user.ts"\n\nexport { User }\nexport const Admin = User.and({ role: "\'admin\'" })\n',
+				"user.ts":
+					'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n'
+			})
+			const code = await built(dir)
+			// as a forged entry would hold it: the cache gives admin.ts marked, then
+			// scans again for user.ts, which writes admin.ts without the mark
+			attest(forgeScan(dir, "user.ts")).equals(2)
+			attest(await built(dir)).satisfies(
+				/scanned this build's program unlike an earlier build did/
+			)
+			attest(await built(dir)).equals(code)
+		})
+
 		it("scans anew where an entry fails its check", async () => {
 			const dir = installed(program)
 			const code = await built(dir)
@@ -829,6 +1094,32 @@ contextualize(function (this: Mocha.Suite) {
 			attest(failed.includes(secondCopy)).equals(true)
 			attest(writtenOf(dir).length).equals(1)
 			attest(await built(dir)).equals(failed)
+		})
+
+		it("scans once for a program that precompiles a Scope another module reads", async () => {
+			const dir = installed({
+				// what nothing reads, so it prunes without a warning
+				"ark.json": JSON.stringify({
+					precompile: {
+						members: {
+							assert: false,
+							meta: false,
+							"~standard": false,
+							methods: false
+						}
+					}
+				}),
+				"scope.ts":
+					'import { scope } from "arktype"\n\nexport const $ = scope({ a: "string" })\n',
+				"main.ts":
+					'import { $ } from "./scope.ts"\n\nconsole.log($.type("a")("x"))\n'
+			})
+			const code = await built(dir)
+			attest(code).satisfies(/typeof data === "string"/)
+			const written = writtenOf(dir)
+			attest(written.length).equals(2)
+			attest(await built(dir)).equals(code)
+			attest(writtenOf(dir)).equals(written)
 		})
 	})
 })

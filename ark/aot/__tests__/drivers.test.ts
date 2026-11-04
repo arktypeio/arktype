@@ -16,8 +16,10 @@ import {
 	writeAliasMessage,
 	writeExternalizedMessage,
 	writeFilelessImportMessage,
+	writeNextExternalMessage,
 	writePrecompiledDependencyMessage,
 	writeTextlessMessage,
+	writeUnreadServerExternalsMessage,
 	writeUntransformedImportMessage,
 	writeArktypeHint,
 	writeVariantImportMessage
@@ -891,6 +893,173 @@ console.log(Value, note, load, await import("#shared/lazy"))
 			attest(
 				await outcomeOf("@ark/schema/runtime", { ...none, shadow: true })
 			).equals([])
+		})
+
+		describe("where Next.js leaves arktype external on the server", () => {
+			// what the loader fails or warns with on main.ts of a Next app, where
+			// `leavesExternal` has Next's own React external, as on the pages router's
+			// server without bundlePagesRouterDependencies
+			const externalProblemOf = async (
+				name: string,
+				{
+					files = {},
+					leavesExternal = false,
+					withNext = true,
+					opts = {}
+				}: {
+					files?: Record<string, string>
+					leavesExternal?: boolean
+					withNext?: boolean
+					opts?: PrecompilePluginOptions
+				} = {}
+			): Promise<string | undefined> => {
+				const dir = writeFixture(
+					{
+						"main.ts":
+							'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n',
+						...(withNext && {
+							"node_modules/next/package.json": JSON.stringify({ name: "next" })
+						}),
+						"node_modules/reads-errors/package.json": JSON.stringify({
+							name: "reads-errors",
+							peerDependencies: { arktype: "*" }
+						}),
+						"node_modules/reads-errors/index.js":
+							'import { type } from "arktype"\n\nexport const failed = out => out instanceof type.errors\n',
+						"node_modules/wraps-errors/package.json": JSON.stringify({
+							name: "wraps-errors",
+							dependencies: { "reads-errors": "*" }
+						}),
+						"node_modules/native/package.json": JSON.stringify({
+							name: "native"
+						}),
+						...files
+					},
+					fromHere("temp", "nextExternals", name)
+				)
+				const host = createNodeHost({ conditions })
+				const warnings: string[] = []
+				const failure = await new Promise<string | undefined>(settle =>
+					turbopack.call(
+						{
+							resourcePath: join(dir, "main.ts"),
+							rootContext: dir,
+							getOptions: () => ({ ...opts, conditions, cwd: dir }),
+							addDependency: () => {},
+							emitWarning: warning => warnings.push(warning.message),
+							getResolve: () => async (from, request) => {
+								if (request === "next/dist/compiled/react") {
+									if (leavesExternal) throw new Error("external")
+									return request
+								}
+								return host.resolve(
+									request === "arktype" ?
+										opts.runtime === "arktype" ?
+											"arktype"
+										:	"arktype/runtime"
+									:	request,
+									join(from, "main.ts")
+								)!
+							},
+							async: () => error => settle(error?.message)
+						},
+						readFileSync(join(dir, "main.ts"), "utf8")
+					)
+				)
+				return failure ?? warnings[0]
+			}
+
+			const naming = (...names: string[]) => ({
+				files: {
+					"next.config.js": `export default { serverExternalPackages: ${JSON.stringify(names)} }\n`
+				}
+			})
+
+			it("fails a module whose compile leaves dependencies external", async () => {
+				attest(
+					await externalProblemOf("leaves", { leavesExternal: true })
+				).equals(withAllowUnsafe(writeNextExternalMessage("arktype")))
+				attest(await externalProblemOf("bundles")).equals(undefined)
+			})
+
+			it("leaves a project without Next.js, as a host other than Turbopack may run the loader", async () => {
+				attest(
+					await externalProblemOf("noNext", {
+						leavesExternal: true,
+						withNext: false
+					})
+				).equals(undefined)
+			})
+
+			it("fails a package serverExternalPackages names that reaches arktype", async () => {
+				for (const name of ["arktype", "reads-errors", "wraps-errors"]) {
+					attest(await externalProblemOf(name, naming("native", name))).equals(
+						withAllowUnsafe(
+							writeExternalizedMessage(name, "serverExternalPackages")
+						)
+					)
+				}
+				attest(await externalProblemOf("native", naming("native"))).equals(
+					undefined
+				)
+			})
+
+			it("reads serverExternalPackages however next.config returns it", async () => {
+				attest(
+					await externalProblemOf("configFunction", {
+						files: {
+							"next.config.ts":
+								'import type { NextConfig } from "next"\n\nexport default async (): Promise<NextConfig> => ({\n\tserverExternalPackages: ["wraps-errors"]\n})\n'
+						}
+					})
+				).equals(
+					withAllowUnsafe(
+						writeExternalizedMessage("wraps-errors", "serverExternalPackages")
+					)
+				)
+			})
+
+			it("fails a serverExternalPackages it can't read", async () => {
+				for (const [name, config] of [
+					[
+						"spread",
+						'const shared = ["wraps-errors"]\n\nexport default { serverExternalPackages: [...shared] }\n'
+					],
+					[
+						"assigned",
+						'const config = {}\nconfig.serverExternalPackages = ["wraps-errors"]\n\nexport default config\n'
+					]
+				]) {
+					attest(
+						await externalProblemOf(name, {
+							files: { "next.config.mjs": config }
+						})
+					).equals(
+						withAllowUnsafe(
+							writeUnreadServerExternalsMessage("next.config.mjs")
+						)
+					)
+				}
+			})
+
+			it("allows it where validators and arktype share one copy", async () => {
+				attest(
+					await externalProblemOf("runtimeArktype", {
+						...naming("wraps-errors"),
+						leavesExternal: true,
+						opts: { runtime: "arktype" }
+					})
+				).equals(undefined)
+			})
+
+			it("warns with allowUnsafe", async () => {
+				attest(
+					await externalProblemOf("allowUnsafe", {
+						leavesExternal: true,
+						opts: { allowUnsafe: true }
+					})
+				).equals(writeNextExternalMessage("arktype"))
+			})
 		})
 
 		type Change = (fs: typeof import("node:fs"), dir: string) => unknown

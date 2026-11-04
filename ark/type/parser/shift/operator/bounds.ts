@@ -23,7 +23,11 @@ import {
 import type { s, StaticState } from "../../reduce/static.ts"
 import { extractDateLiteralSource, isDateLiteral } from "../operand/date.ts"
 import type { parseOperand } from "../operand/operand.ts"
-import { writeMissingRightOperandMessage } from "../operand/unenclosed.ts"
+import {
+	limitOf,
+	writeMissingRightOperandMessage
+} from "../operand/unenclosed.ts"
+import { shiftUntilTerminator } from "../tokens.ts"
 import { writeUnexpectedCharacterMessage } from "./operator.ts"
 
 export const parseBound = (
@@ -85,7 +89,7 @@ export const comparatorStartChars: KeySet<ComparatorStartChar> = {
 	"!": 1
 }
 
-const shiftComparator = (
+export const shiftComparator = (
 	s: RuntimeState,
 	start: ComparatorStartChar
 ): Comparator =>
@@ -175,20 +179,26 @@ export const parseRightBound = (
 		)
 	}
 	const previousScannerIndex = s.sc.location
-	s.parseOperand()
-	const limitNode = s.unsetRoot()
-	// after parsing the next operand, use the locations to get the
-	// token from which it was parsed
-	const limitToken = s.sc.sliceChars(previousScannerIndex, s.sc.location)
+	s.sc.skipSpace()
+	let limit: number | Date | undefined = limitOf(s, shiftUntilTerminator(s.sc))
+	let limitToken = ""
+	if (limit === undefined) {
+		s.sc.i = previousScannerIndex
+		s.parseOperand()
+		const limitNode = s.unsetRoot()
+		// after parsing the next operand, use the locations to get the
+		// token from which it was parsed
+		limitToken = s.sc.sliceChars(previousScannerIndex, s.sc.location)
+		if (
+			!limitNode.is("unit") ||
+			(typeof limitNode.unit !== "number" &&
+				!(limitNode.unit instanceof Date)) ||
+			(typeof limitNode.unit === "number" && !Number.isFinite(limitNode.unit))
+		)
+			return s.error(writeInvalidLimitMessage(comparator, limitToken, "right"))
+		limit = limitNode.unit
+	}
 	s.root = previousRoot
-	if (
-		!limitNode.is("unit") ||
-		(typeof limitNode.unit !== "number" && !(limitNode.unit instanceof Date)) ||
-		(typeof limitNode.unit === "number" && !Number.isFinite(limitNode.unit))
-	)
-		return s.error(writeInvalidLimitMessage(comparator, limitToken, "right"))
-
-	const limit = limitNode.unit
 	// apply the newly-parsed right bound
 	const exclusive = comparator.length === 1
 

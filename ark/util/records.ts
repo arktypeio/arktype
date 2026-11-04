@@ -285,8 +285,10 @@ export type ifEmptyObjectLiteral<t, onTrue = true, onFalse = false> =
 
 export type EmptyObject = Record<PropertyKey, never>
 
-export const isEmptyObject = (o: object): o is EmptyObject =>
-	Object.keys(o).length === 0
+export const isEmptyObject = (o: object): o is EmptyObject => {
+	for (const k in o) if (hasOwn(o, k)) return false
+	return true
+}
 
 export const stringAndSymbolicEntriesOf = (o: object): Entry<Key>[] => [
 	...Object.entries(o),

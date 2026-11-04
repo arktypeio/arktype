@@ -7,7 +7,8 @@ import {
 	rootSchema,
 	schemaScope,
 	writePrecompiledUnits,
-	type BaseScope
+	type BaseScope,
+	type UnionNode
 } from "@ark/schema"
 import {
 	flatMorph,
@@ -403,5 +404,19 @@ contextualize(() => {
 		attest(
 			T({ precompiledValue: "a", next: { precompiledValue: 1 } }).toString()
 		).snap("next.precompiledValue must be a string (was a number)")
+	})
+
+	it("a definition resolving aliases leaves a union's cases until it's used", () => {
+		const { Tree } = scope({ Tree: { id: "string", "next?": "Tree" } }).export()
+		const T = type({ kind: "'a'", tree: Tree }).or({
+			kind: "'b'",
+			size: "number"
+		})
+		const union = T.internal as UnionNode
+		attest(union.caseNodes.length).equals(0)
+		attest(T({ kind: "c" }).toString()).snap(
+			'kind must be "a" or "b" (was "c")'
+		)
+		attest(union.caseNodes.length).equals(2)
 	})
 })

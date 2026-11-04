@@ -12,7 +12,12 @@ import {
 import { dirname, join, relative } from "node:path"
 import { fileURLToPath } from "node:url"
 import { threadId } from "node:worker_threads"
-import { readFile, type PrecompileHost } from "./host.ts"
+import {
+	arkPackageName,
+	packageRootOf,
+	readFile,
+	type PrecompileHost
+} from "./host.ts"
 
 // what a stored answer read, which must read the same for it to be reused
 export interface Snapshot {
@@ -26,6 +31,9 @@ export interface Snapshot {
 	asked: [importer: string, specifier: string, target: string | null][]
 	// the tsconfig whose paths each importer resolves through
 	tsconfigs: [importer: string, tsconfig: string | null][]
+	// each module a plugin ahead gave unlike its file, by what it gave, which
+	// its importers read in its place
+	given: [id: string, given: string][]
 }
 
 export const emptySnapshot = (parent: string | undefined): Snapshot => ({
@@ -33,7 +41,8 @@ export const emptySnapshot = (parent: string | undefined): Snapshot => ({
 	reads: [],
 	resolutions: [],
 	asked: [],
-	tsconfigs: []
+	tsconfigs: [],
+	given: []
 })
 
 export const hashOf = (text: string): string =>
@@ -44,24 +53,29 @@ export const hashOf = (text: string): string =>
 const isHash = (name: string): boolean => /^[\w-]{43}$/.test(name)
 
 // the code writing an answer: arktype's packages by content, as a linked
-// workspace or a repacked tarball changes it without a version, the
-// precompiler's other dependencies by version, and the runtime
+// workspace or a repacked tarball changes it without a version, each as the
+// package importing it resolves it, the precompiler's other dependencies by
+// version, and the runtime
 const fingerprintOf = (): string => {
 	const parts = [process.version, process.platform, process.arch]
-	for (const name of ownPackages) {
-		const root = packageRootOf(
-			name === "@ark/aot" ?
-				fileURLToPath(import.meta.url)
-			:	fileURLToPath(import.meta.resolve(name))
+	const roots = [rootOf(fileURLToPath(import.meta.url))]
+	for (const root of roots) {
+		const { name, dependencies, peerDependencies } = JSON.parse(
+			readFileSync(join(root, "package.json"), "utf8")
 		)
 		const files: string[] = []
 		collectCode(root, files)
 		parts.push(name)
 		for (const file of files.sort())
 			parts.push(relative(root, file), hashOf(readFileSync(file, "utf8")))
+		for (const dependency in { ...dependencies, ...peerDependencies }) {
+			const found =
+				arkPackageName.test(dependency) && packageRootOf(dependency, root)
+			if (found && !roots.includes(found)) roots.push(found)
+		}
 	}
 	for (const name of versionedDependencies) {
-		const root = packageRootOf(fileURLToPath(import.meta.resolve(name)))
+		const root = rootOf(fileURLToPath(import.meta.resolve(name)))
 		parts.push(
 			name,
 			JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version
@@ -70,14 +84,6 @@ const fingerprintOf = (): string => {
 	return hashOf(parts.join("\n"))
 }
 
-const ownPackages = [
-	"@ark/aot",
-	"arktype",
-	"@ark/schema",
-	"@ark/util",
-	"arkregex"
-]
-
 const versionedDependencies = [
 	"oxc-parser",
 	"oxc-resolver",
@@ -85,7 +91,7 @@ const versionedDependencies = [
 	"@jridgewell/sourcemap-codec"
 ]
 
-const packageRootOf = (file: string): string => {
+const rootOf = (file: string): string => {
 	let dir = dirname(file)
 	while (!existsSync(join(dir, "package.json"))) dir = dirname(dir)
 	return dir
@@ -110,6 +116,11 @@ const collectCode = (dir: string, files: string[]) => {
 
 let fingerprint: string | undefined
 
+// names the directory of this code's answers, and versions a bundler's
+// persistent cache, which a module's dependencies don't turn over as the
+// code changes without a version
+export const fingerprintOfCode = (): string => (fingerprint ??= fingerprintOf())
+
 export const mtimeOf = (file: string): number =>
 	statSync(file, { throwIfNoEntry: false })?.mtimeMs ?? -1
 
@@ -124,12 +135,12 @@ export class AnswerCache {
 	static maxEntries = 50_000
 
 	constructor(cwd: string) {
-		fingerprint ??= fingerprintOf()
+		const version = fingerprintOfCode()
 		const root = join(cwd, "node_modules", ".cache", "ark")
-		this.dir = join(root, fingerprint)
+		this.dir = join(root, version)
 		if (existsSync(root)) {
 			for (const name of readdirSync(root)) {
-				if (name !== fingerprint && isHash(name))
+				if (name !== version && isHash(name))
 					rmSync(join(root, name), { recursive: true, force: true })
 			}
 		}
@@ -213,21 +224,21 @@ export class AnswerCache {
 }
 
 export interface SnapshotCheck {
-	(snapshot: string): boolean
+	// given by what the build gave each module it's given
+	(snapshot: string, given: Record<string, string>): boolean
 	// each file it read, as it was before, so a write meanwhile counts as a change
 	mtimes: Record<string, number>
 }
 
 // whether each file and import a snapshot names reads and resolves the
-// same, judged once each until a file it read changes or the build resets.
-// A snapshot restates what its precompiler read again once a change made it
-// forget it, which holds over what its parents state
+// same, judged once each until a file it read changes or the build resets,
+// and the build gave each module it names as given what it was given last
 export const createSnapshotCheck = (
 	cache: AnswerCache,
 	host: PrecompileHost,
 	resolveInBundler?: (specifier: string, importer: string) => string | undefined
 ): SnapshotCheck => {
-	const holding: Record<string, boolean> = {}
+	const holding: Record<string, Snapshot["given"] | false> = {}
 	const mtimes: Record<string, number> = {}
 	const hashes: Record<string, string | null> = {}
 	const hashOfFile = (file: string) => {
@@ -238,31 +249,23 @@ export const createSnapshotCheck = (
 	const targets: Record<string, string | null> = {}
 	const tsconfigs: Record<string, string | null> = {}
 	const answers: Record<string, string | null> = {}
-	const holdsFrom = (id: string): boolean => {
-		const stated = new Set<string>()
+	const holdsFrom = (id: string): Snapshot["given"] | false => {
 		const asked: Snapshot["asked"] = []
+		// read from the cache, so no record's module is a key every object has
+		const given: Record<string, string> = Object.create(null)
 		for (let next: string | undefined = id; next !== undefined; ) {
 			const snapshot = cache.snapshot(next)
 			if (!snapshot) return false
-			for (const [file, hash] of snapshot.reads) {
-				if (stated.has(file)) continue
-				stated.add(file)
+			for (const [file, hash] of snapshot.reads)
 				if ((hashes[file] ??= hashOfFile(file)) !== hash) return false
-			}
 			for (const [importer, specifier, target] of snapshot.resolutions) {
-				const key = `${importer}\0${specifier}`
-				if (stated.has(key)) continue
-				stated.add(key)
 				if (
-					(targets[key] ??= host.resolve(specifier, importer) ?? null) !==
-					target
+					(targets[`${importer}\0${specifier}`] ??=
+						host.resolve(specifier, importer) ?? null) !== target
 				)
 					return false
 			}
 			for (const [importer, tsconfig] of snapshot.tsconfigs) {
-				const key = `${importer}\0`
-				if (stated.has(key)) continue
-				stated.add(key)
 				if (
 					(tsconfigs[importer] ??= host.tsconfigOf?.(importer) ?? null) !==
 					tsconfig
@@ -270,18 +273,28 @@ export const createSnapshotCheck = (
 					return false
 			}
 			asked.push(...snapshot.asked)
+			for (const [module, text] of snapshot.given) given[module] ??= text
 			next = snapshot.parent
 		}
 		// last, as each question waits on the bundler's thread
-		return asked.every(
-			([importer, specifier, target]) =>
-				(answers[`${importer}\0${specifier}`] ??=
-					host.resolve(specifier, importer) ??
-					resolveInBundler?.(specifier, importer) ??
-					null) === target
+		return (
+			asked.every(
+				([importer, specifier, target]) =>
+					(answers[`${importer}\0${specifier}`] ??=
+						host.resolve(specifier, importer) ??
+						resolveInBundler?.(specifier, importer) ??
+						null) === target
+			) && Object.entries(given)
 		)
 	}
-	return Object.assign((id: string) => (holding[id] ??= holdsFrom(id)), {
-		mtimes
-	})
+	return Object.assign(
+		(id: string, given: Record<string, string>) => {
+			const stated = (holding[id] ??= holdsFrom(id))
+			return (
+				stated !== false &&
+				stated.every(([module, text]) => given[module] === text)
+			)
+		},
+		{ mtimes }
+	)
 }

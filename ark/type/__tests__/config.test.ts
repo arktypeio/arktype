@@ -11,6 +11,29 @@ import { en } from "arktype/locales/en"
 import { withConfig } from "./locales/withConfig.ts"
 
 contextualize(() => {
+	it("a sequence's writer runs as it's created, before its errors", () => {
+		const writing = type.scope(
+			{},
+			{
+				sequence: {
+					description: () => {
+						throw new Error("written")
+					}
+				}
+			}
+		)
+		attest(() => writing.type("string[]")).throws("written")
+		attest(() =>
+			writing.schema({
+				proto: Array,
+				sequence: {
+					prefix: [{ domain: "string" }],
+					postfix: [{ domain: "number" }]
+				}
+			})
+		).throws("written")
+	})
+
 	it("tuple expression", () => {
 		const description = "a series of characters"
 		const types = scope({
@@ -485,7 +508,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		attest(types.inner.foo.precompilation).satisfies("string")
 	})
 
-	it("a Type including an alias compiles once it's used", () => {
+	it("a Type including an alias has compiled code once it's used", () => {
 		const Node = type({ name: "string", "next?": "this" })
 		attest(Node.internal.unitFn).equals(undefined)
 		const nested = { name: "a", next: { name: "b" } }
@@ -503,8 +526,15 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		const Named = $.type("string").narrow(
 			(s, ctx) => s.length > 0 || ctx.mustBe("named")
 		)
+		const $internal = Named.internal.$
+		const { jit } = $internal
+		let compiled = 0
+		$internal.jit = node => {
+			compiled++
+			jit.call($internal, node)
+		}
 		const T = $.type({ "a?": Named })
-		attest(Named.internal.unitFn).equals(undefined)
+		attest(compiled).equals(0)
 		attest(T({ a: undefined }) as object).equals({ a: undefined })
 		attest(T({ a: "" }).toString()).snap('a must be named (was "")')
 	})

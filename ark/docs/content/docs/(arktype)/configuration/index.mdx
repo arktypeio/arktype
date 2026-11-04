@@ -363,7 +363,11 @@ type("Date")(new Date("x"))
 
 ## jitless
 
-ArkType compiles each Type to optimized validation code using `new Function`. Where that's blocked, like Cloudflare Workers, it validates without compiling instead. To turn compiling off yourself, set `jitless: true`:
+ArkType compiles each Type to optimized validation code using `new Function`. Where that's blocked, it validates without compiling instead, which is up to about 30x slower per call on a plain object, and 3x to 5x on invalid data or a morph.
+
+Cloudflare Workers allow `new Function` only as a Worker loads, and a Type compiles once it's used, so a Type first used within a request isn't compiled. To check with compiled code there, [precompile](/docs/precompile) your Types, or read a Type's `precompilation` where it's defined, which compiles it as the Worker loads and adds to its startup.
+
+To turn compiling off yourself, set `jitless: true`:
 
 ```ts title="config.ts"
 import { configure } from "arktype/config"

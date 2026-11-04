@@ -18,8 +18,8 @@ import {
 import { BaseConstraint } from "../constraint.ts"
 import { intrinsic } from "../intrinsic.ts"
 import {
+	holdsSameChildren,
 	ioOf,
-	referencesThroughAliases,
 	type BaseNode,
 	type GettableKeyOrNode,
 	type KeyOrKeyNode
@@ -218,13 +218,28 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 
 const noSiblings: array<BaseConstraint> = []
 
-// a keyword's predicate isn't user code
-const callsUserCode = (node: BaseNode): boolean =>
-	node.userCode ||
-	(node.hasAlias &&
-		referencesThroughAliases(node.references).some(
-			reference => reference.userCode
-		))
+// a keyword's predicate isn't user code. a union's cases hold what its branches
+// do. every node finding none reaches none too, so a cycle is walked once
+const reachesUserCode = (root: BaseNode): boolean => {
+	const final = isResolutionFinal()
+	const reached = new Set<BaseNode>()
+	const reaches = (node: BaseNode): boolean => {
+		if (node.userCode) return true
+		if (!node.hasAlias || reached.has(node)) return false
+		if (node.c.reachesUserCode !== undefined) return node.c.reachesUserCode
+		reached.add(node)
+		const found =
+			node.is("alias") ?
+				reaches(node.resolution)
+			:	node.children.some(reaches) ||
+				(!node.is("union") && node.otherRefs.some(reaches))
+		if (found && final) node.c.reachesUserCode = true
+		return found
+	}
+	if (reaches(root)) return true
+	if (final) for (const node of reached) node.c.reachesUserCode = false
+	return false
+}
 
 // 0 compares data itself, 1 reads a primitive it points to, 2 walks an object
 const branchCost = (branch: BaseRoot): number => {
@@ -245,7 +260,7 @@ const orderedForAllows = (props: array<Prop.Node>): array<Prop.Node> => {
 	const flush = () =>
 		ordered.push(...run.sort((l, r) => allowsRank(l) - allowsRank(r)))
 	for (const prop of props) {
-		if (callsUserCode(prop.value)) {
+		if (reachesUserCode(prop.value)) {
 			flush()
 			ordered.push(prop)
 			run = []
@@ -278,6 +293,23 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.alters ||= this.structMorph !== undefined
 	}
 
+	// JSON lists each kind of constraint and each prop's key in order
+	override sameInner(r: StructureNode): boolean | undefined {
+		if (
+			this.undeclared !== r.undeclared ||
+			!this.sequence !== !r.sequence ||
+			this.index?.length !== r.index?.length ||
+			this.required?.length !== r.required?.length ||
+			this.optional?.length !== r.optional?.length
+		)
+			return false
+		for (let i = 0; i < (this.required?.length ?? 0); i++)
+			if (this.required![i].key !== r.required![i].key) return false
+		for (let i = 0; i < (this.optional?.length ?? 0); i++)
+			if (this.optional![i].key !== r.optional![i].key) return false
+		return holdsSameChildren(this, r) ? true : undefined
+	}
+
 	/** how undeclared keys are constrained, if they are */
 	get handlesUndeclared(): UndeclaredKeyHandling | undefined {
 		return this.undeclared === "ignore" ? undefined : this.undeclared
@@ -301,7 +333,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.optional
 	)
 
-	private _orderedProps: array<Prop.Node> | undefined
+	declare private _orderedProps: array<Prop.Node> | undefined
 	/** its props in the order they're checked and an output lists them */
 	get inOrder(): array<Prop.Node> {
 		return (this._orderedProps ??=
@@ -328,12 +360,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}) as FailureSite
 	}
 
-	private _allowsProps: array<Prop.Node> | undefined
+	declare private _allowsProps: array<Prop.Node> | undefined
 	get allowsProps(): array<Prop.Node> {
 		return (this._allowsProps ??= orderedForAllows(this.inOrder))
 	}
 
-	private _byKey: Record<Key, Prop.Node | undefined> | undefined
+	declare private _byKey: Record<Key, Prop.Node | undefined> | undefined
 	/** its props, keyed by key */
 	get byKey(): Record<Key, Prop.Node | undefined> {
 		// on a null prototype, "__proto__" is a key and "toString" isn't
@@ -522,7 +554,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	// as a spread would, keys keep this structure's order and r's new keys follow
 	merge(r: StructureNode): StructureNode {
-		const inner = this.filterKeys("omit", [r.keyof()])
+		const inner =
+			this.index || r.index || r.sequence ?
+				this.filterKeys("omit", [r.keyof()])
+				// a named key is omitted exactly if r names it
+			:	this.withoutKeysOf(r)
 
 		if (r.required) inner.required = append(inner.required, r.required)
 		if (r.optional) inner.optional = append(inner.optional, r.optional)
@@ -532,6 +568,15 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		else delete inner.undeclared
 		inner.order = [...this.keyOrder, ...r.keyOrder]
 		return this.$.node("structure", inner)
+	}
+
+	private withoutKeysOf(r: StructureNode): Structure.Inner.mutable {
+		const result = makeRootAndArrayPropertiesMutable(this.inner)
+		if (result.required)
+			result.required = result.required.filter(prop => !(prop.key in r.byKey))
+		if (result.optional)
+			result.optional = result.optional.filter(prop => !(prop.key in r.byKey))
+		return result
 	}
 
 	private filterKeys(
@@ -892,7 +937,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		prop => prop.key in Object.prototype
 	)
 
-	private _hasIndexedProp: boolean | undefined
+	declare private _hasIndexedProp: boolean | undefined
 	get hasIndexedProp(): boolean {
 		return (this._hasIndexedProp ??=
 			this.index !== undefined &&
@@ -903,7 +948,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			))
 	}
 
-	private _tfsByKey: Record<Key, TransformStep[]> | undefined
+	declare private _tfsByKey: Record<Key, TransformStep[]> | undefined
 	/** the steps transforming prop's value, shared by the constraints transforming its key */
 	tfsOf(prop: Prop.Node): TransformStep[] {
 		const cached = this._tfsByKey?.[prop.key]
