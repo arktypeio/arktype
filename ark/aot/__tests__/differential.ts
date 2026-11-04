@@ -71,13 +71,19 @@ const comparesExpecteds = detailsErrors && !firstIssue
 // "flat" is the modules with their units declared in one function, as a
 // one-chunk production bundle declares them, which size-optimized units never
 // are; "shaped" is a size build's modules with common intersections written as
-// shapes, as a program with enough of them is
-type Layout = "inline" | "modules" | "flat" | "shaped"
+// shapes, as a program with enough of them is; "deferred" is "modules" creating
+// its validators at their first call, as a large program does
+type Layout =
+	| "inline"
+	| "modules"
+	| "flat"
+	| "shaped"
+	| "deferred"
 
 export const layouts: Layout[] =
 	testedOptions.optimize === "size" ?
 		["inline", "modules", "shaped"]
-	:	["inline", "modules", "flat"]
+	:	["inline", "modules", "flat", "deferred"]
 
 // artifacts whose units were declared in one function
 export let flattened = 0
@@ -232,10 +238,13 @@ const holdsUncounted = (value: unknown, seen = new Set<object>()): boolean => {
 	})
 }
 
+// a deferred shape's unit is named under a directory of its own
+const fileOf = (name: string) => `${name.replaceAll("/", "-")}.js`
+
 const link = (code: string) =>
 	code
 		.replace(/from "arktype\/runtime"/g, `from "./runtime.js"`)
-		.replace(/"~arktype\/([^"]+)"/g, `"./$1.js"`)
+		.replace(/"~arktype\/([^"]+)"/g, (_, name: string) => `"./${fileOf(name)}"`)
 
 // every artifact's modules share one directory, as a bundle shares them
 const modulesBySpecifier: Record<string, string> = {}
@@ -248,6 +257,7 @@ const loadArtifact = async (
 	members: ValidatorMembers
 ): Promise<any> => {
 	const dir = await outDir()
+	const defers = layout === "deferred"
 	const opts = {
 		members,
 		errors: testedOptions.errors,
@@ -258,7 +268,9 @@ const loadArtifact = async (
 		optimize: testedOptions.optimize,
 		jsonInput: testedOptions.jsonInput,
 		configured: testedOptions.config === false ? (false as const) : undefined,
-		shapes: layout === "shaped"
+		shapes: layout === "shaped",
+		defers,
+		hoisted: layout === "deferred"
 	}
 	let code: string
 	if (layout === "inline") code = precompileStandalone(exports, opts).code
@@ -282,7 +294,7 @@ const loadArtifact = async (
 			const written = modulesBySpecifier[specifier]
 			if (written === undefined) {
 				modulesBySpecifier[specifier] = module
-				writeFileSync(join(dir, `${specifier.slice(9)}.js`), link(module))
+				writeFileSync(join(dir, fileOf(specifier.slice(9))), link(module))
 			} else if (written !== module) {
 				throw new Error(
 					`${specifier} names two modules:\n${written}\n${module}`

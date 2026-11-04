@@ -79,6 +79,7 @@ import {
 	canPipe,
 	creatorSourceOf,
 	frozen,
+	boundApplierOf,
 	fusedApplierOf,
 	madeApplierOf,
 	preciseFormOf,
@@ -189,12 +190,22 @@ const sortedConstraintKeys = ["pattern", "index"] as const
 interface RootApplyOptions {
 	// whether the build writes the validator itself, which calls the apply
 	asValidator: boolean
+	// whether anything reads the validator's .allows
+	readsAllows: boolean
 	// whether nothing but the call sets onFail
 	unconfigured: boolean
 	// whether the validator can be piped into, so its apply takes a traversal
 	pipes: boolean
 	// whether the validator fails only by its assert, so its apply throws
 	throws?: boolean
+}
+
+// a validator as written: with its parts, or with a function creating them at
+// its first call
+interface WrittenValidator {
+	parts: string
+	attributes: string[]
+	created: (load?: string) => string
 }
 
 interface WriteDataOptions {
@@ -530,9 +541,20 @@ export class StandaloneArtifact {
 			)
 			return false
 		}
-		this.holeExpressions.set(hole, expression)
+		this.holeExpressions.set(hole, this.heldFrom(expression))
 		this.holeLabels.set(hole, label)
 		return true
+	}
+
+	// read through what a site passes, a hole a first call creates from is read
+	// as the module loads, as a later write to what holds it can't change it. A
+	// parameter is its own, and a Type's holes are frozen
+	heldFrom(expression: string): string {
+		if (!this.baking.defers || /^(?:p\d+|holes\d+\[\d+])$/.test(expression))
+			return expression
+		const name = `held${this.holeExpressions.size}`
+		this.checks.push(`const ${name} = ${expression}`)
+		return name
 	}
 
 	receiverOf(value: Foldable, id: string, label: string): string {
@@ -843,7 +865,7 @@ export class StandaloneArtifact {
 			writeFixConfig(configured),
 			// no validators: only Scopes, Generics and their Modules
 			...(this.roots.length ?
-				this.writeBody()
+				this.writeBody(values)
 			:	[this.declarations.statements.join("\n"), this.modules.join("\n")]),
 			`return ${values.length === 1 ? values[0] : `[${values.join(", ")}]`}`
 		]
@@ -852,7 +874,8 @@ export class StandaloneArtifact {
 
 	// each export's validator as [callee, ...args], creatable from the imports alone
 	writeCalls(configured: Configured): string[][] | undefined {
-		if (writeFixConfig(configured) || !this.roots.length) return
+		if (writeFixConfig(configured) || !this.roots.length || this.baking.defers)
+			return
 		this.writeSharedUnits()
 		const names = Object.values(this.exports).map(value =>
 			hasArkKind(value, "root") ? this.readValidator(value) : undefined
@@ -891,7 +914,7 @@ export class StandaloneArtifact {
 			internedBy === undefined ? undefined : (
 				keyOf(type)[1].map(hole => this.holeExpressions.get(hole)!)
 			)
-		const body = this.writeBody()
+		const body = this.writeBody([value, ...defaults.map(({ check }) => check)])
 		body.push(...defaults.map(({ check }) => check), `return ${value}`)
 		const defaultKeys =
 			defaults.length ? `, [${defaults.map(({ key }) => key).join(", ")}]` : ""
@@ -901,7 +924,7 @@ export class StandaloneArtifact {
 			configured,
 			holes ?
 				[
-					`return runtime.intern(${writeLazyRead(`interned${internedBy}`, "runtime.internTable()")}, [${holes.join(", ")}], () => {\n${body.filter(statement => statement).join("\n\n")}\n}${defaultKeys})`
+					`return runtime.intern(${writeLazyRead(`interned${internedBy}`, "runtime.internTable()")}, [${holes.join(", ")}], ${this.baking.defers ? "function ()" : "() =>"} {\n${body.filter(statement => statement).join("\n\n")}\n}${defaultKeys})`
 				]
 			:	body
 		)
@@ -1040,7 +1063,9 @@ return namespace`
 	}
 
 	specifierOf(name: string): string {
-		return `~arktype/${this.baking.hoisted ? "hoisted/" : ""}${name}`
+		return `~arktype/${this.baking.defers ? "deferred/" : ""}${
+			this.baking.hoisted ? "hoisted/" : ""
+		}${name}`
 	}
 
 	readValue(name: string): string {
@@ -1373,11 +1398,19 @@ return namespace`
 			// plain params; size and writing traversals drop a trailing unread ctx
 			const arrow = source.replace(
 				/^function\(([^)]*)\) {/,
-				(signature, params: string) =>
-					`(${(dropsCtx || isWriting(name)) && !/\bctx\b/.test(source.slice(signature.length)) ? params.replace(/, ctx$/, "") : params}) => {${
+				(signature, params: string) => {
+					const read =
+						(
+							(dropsCtx || isWriting(name)) &&
+							!/\bctx\b/.test(source.slice(signature.length))
+						) ?
+							params.replace(/, ctx$/, "")
+						:	params
+					return `${this.baking.defers ? `function (${read}) {` : `(${read}) => {`}${
 						// a writing traversal is strict even where a bundle's format isn't
 						isWriting(name) ? `\n"use strict"\n` : ""
 					}`
+				}
 			)
 			return `const ${name} = ${/(Apply|Copy)$/.test(name) ? arrow : this.compiledOnLoad(arrow)}`
 		})
@@ -1387,7 +1420,7 @@ return namespace`
 	}
 
 	compiledOnLoad(fn: string): string {
-		return this.baking.shortest ? fn : `(${fn})`
+		return this.baking.shortest || this.baking.defers ? fn : `(${fn})`
 	}
 
 	// a module's only validator compiles as it loads, others at their first call
@@ -1455,7 +1488,7 @@ return namespace`
 		return name
 	}
 
-	writeBody(): string[] {
+	writeBody(eagerReads?: string[]): string[] {
 		const traversals = this.localUnits.map((unit, i) => {
 			this.localNamesByUnit.set(unit, `traversals${i}`)
 			const returned = returnedOf(unit, this.baking)
@@ -1489,32 +1522,130 @@ return namespace`
 		const validators = [...this.validatorNames].map(
 			([root, name]) => [root, name, this.writeValidator(root)] as const
 		)
-		this.writtenValidators = new Map(
-			validators
-				.filter(
-					([root]) => !this.defaultValues.has(root) || this.readRoots.has(root)
-				)
-				.map(([, name, validator]) => [name, validator])
+		const written = validators.filter(
+			([root]) => !this.defaultValues.has(root) || this.readRoots.has(root)
 		)
+		this.writtenValidators = new Map(
+			written.map(([, name, validator]) => [name, validator.created()])
+		)
+		const deferred =
+			eagerReads &&
+			this.writeDeferred(
+				traversals,
+				written.map(([, name, validator]) => [name, validator]),
+				eagerReads
+			)
+		return (
+			deferred ?? [
+				this.declarations.statements.join("\n"),
+				this.sharedWriterDeclarations,
+				traversals.join("\n"),
+				this.links.join("\n"),
+				[...this.writtenValidators]
+					.map(([name, validator]) => `const ${name} = ${validator}`)
+					.join("\n\n"),
+				this.defaults.join("\n"),
+				this.modules.join("\n"),
+				this.fills.join("\n")
+			]
+		)
+	}
+
+	// splits a body into what a load must run, as what a module reads of it and
+	// its checks read, and a function creating the rest at a validator's first call
+	writeDeferred(
+		traversals: string[],
+		validators: (readonly [string, WrittenValidator])[],
+		eagerReads: string[]
+	): string[] | undefined {
+		if (!this.baking.defers || !validators.length) return
+		const statements = [
+			...this.declarations.statements,
+			...[...this.sharedWriters].map(
+				([writer, name]) => `const ${name} = ${writer}`
+			)
+		]
+		const declaredBy = new Map<string, string>()
+		for (const statement of statements)
+			declaredBy.set(/^const ([\w$]+) =/.exec(statement)![1], statement)
+		const validatorsByName = new Map(validators)
+		const fillsByName = new Map<string, string[]>()
+		for (const fill of this.fills) {
+			const target = /^runtime\.freeze\(runtime\.assign\(([\w$]+),/.exec(
+				fill
+			)![1]
+			fillsByName.set(target, [...(fillsByName.get(target) ?? []), fill])
+		}
+		// nothing a load runs may read what only a first call creates
+		const late = new Set(
+			[...traversals, ...this.defaults].map(
+				statement => /^const ([\w$]+) =/.exec(statement)![1]
+			)
+		)
+		const eager = new Set<string>()
+		const reads: string[] = [...eagerReads, ...this.modules]
+		while (reads.length) {
+			const read = reads.pop()!
+			for (const word of read.match(/[\w$]+/g) ?? []) {
+				if (late.has(word)) return
+				if (eager.has(word)) continue
+				const declared = declaredBy.get(word)
+				const validator = validatorsByName.get(word)
+				if (!declared && !validator) continue
+				eager.add(word)
+				if (declared) reads.push(declared)
+				if (validator) reads.push(...validator.attributes)
+				reads.push(...(fillsByName.get(word) ?? []))
+			}
+		}
+		const eagerValidators = validators.filter(([name]) => eager.has(name))
+		// e.g. a body creating only a Module's Scope
+		if (!eagerValidators.length) return
+		const isEager = (statement: string) =>
+			eager.has(/^const ([\w$]+) =/.exec(statement)![1])
+		const lateBody = [
+			...statements.filter(statement => !isEager(statement)),
+			...traversals,
+			...this.links,
+			...validators
+				.filter(([name]) => !eager.has(name))
+				.map(([name, validator]) => `const ${name} = ${validator.created()}`),
+			...this.defaults,
+			...this.fills.filter(
+				fill => !eager.has(/assign\(([\w$]+),/.exec(fill)![1])
+			)
+		]
+		const parts = eagerValidators.map(([, validator]) => validator.parts)
+		const shared = parts.length > 1
+		const load =
+			shared ?
+				`const load = runtime.once(function () {\n${lateBody.join("\n")}\nreturn [${parts.join(", ")}]\n})`
+			:	""
 		return [
-			this.declarations.statements.join("\n"),
-			this.sharedWriterDeclarations,
-			traversals.join("\n"),
-			this.links.join("\n"),
-			[...this.writtenValidators]
-				.map(([name, validator]) => `const ${name} = ${validator}`)
+			statements.filter(isEager).join("\n"),
+			load,
+			eagerValidators
+				.map(([name, validator], i) => {
+					const thunk =
+						shared ?
+							`() => load()[${i}]`
+						:	`function () {\n${lateBody.join("\n")}\nreturn ${validator.parts}\n}`
+					return `const ${name} = ${validator.created(thunk)}`
+				})
 				.join("\n\n"),
-			this.defaults.join("\n"),
 			this.modules.join("\n"),
-			this.fills.join("\n")
+			this.fills
+				.filter(fill => eager.has(/assign\(([\w$]+),/.exec(fill)![1]))
+				.join("\n")
 		]
 	}
 
-	writeValidator(root: BaseRoot): string {
+	writeValidator(root: BaseRoot): WrittenValidator {
 		const form = this.validatorFormOf(root)
 		const { members, reads, isTemplate, ownsValidator, unconfigured } = form
 		const [applied, allows, isCompact] = this.emitRootApply(root, {
 			asValidator: ownsValidator,
+			readsAllows: reads.readsAllows,
 			unconfigured,
 			pipes: form.pipes,
 			// a validator nothing calls fails only by its assert
@@ -1524,7 +1655,10 @@ return namespace`
 				preciseFormOf(this.baking, members, unconfigured, reads) === "object"
 		})
 		const { id, held, meta, attributes, onFail } = this.attributesOf(root, form)
-		const fused = fusedApplierOf(this.baking, form, applied)
+		const { defers } = this.baking
+		const fusing = fusedApplierOf(this.baking, form, applied)
+		const fused =
+			defers && fusing ? boundApplierOf(fusing, reads.readsAllows) : fusing
 		const made = fused ? undefined : madeApplierOf(form, applied, allows)
 		const written = writtenAttributesOf(
 			this.baking,
@@ -1538,17 +1672,37 @@ return namespace`
 			typeof applied === "string" ? applied : (
 				`${this.emitApplier(applied)}(${applied.args})`
 			)
-		const args = [
-			...(fused ? [fused.args]
-			: made ? [this.emitApplier(made), made.args]
-			: ownsValidator && !isCompact ?
-				[
-					form.pipes ?
-						"runtime.callingRootApply"
-					:	"([, rootApply]) => (data, _, onFail) => rootApply(data, onFail)",
-					`[${allows}, ${rootApply()}]`
-				]
-			:	[rootApply(), allows]),
+		const make =
+			fused ? undefined
+			: made ? this.emitApplier({ ...made, readsAllows: reads.readsAllows })
+			: !ownsValidator ? undefined
+			: isCompact ? rootApply()
+			: form.pipes ?
+				defers ? "runtime.callingDeferredRootApply"
+				:	"runtime.callingRootApply"
+			:	"([, rootApply]) => (data, _, onFail) => rootApply(data, onFail)"
+		const [fusedParts, ...fusedRest] = fused?.args.split(", ") ?? []
+		const parts =
+			fused ? fusedParts
+			: made ? made.args
+			: ownsValidator && isCompact ? allows
+			: make ? `[${allows}, ${rootApply()}]`
+			: defers ? `[${rootApply()}, ${allows}]`
+			: ""
+		const isBound =
+			!!fused || !!made || (ownsValidator && (isCompact || form.pipes))
+		const partsArgs = (load?: string): string[] => {
+			const read =
+				load ?
+					isBound ? `[, ${load}]`
+					:	`runtime.deferred(${load})`
+				: defers && isBound ? `[, () => ${parts}]`
+				: undefined
+			if (fused) return [read ?? fusedParts, ...fusedRest]
+			if (make) return [make, read ?? parts]
+			return read ? [`...${read}`] : [rootApply(), allows]
+		}
+		const rest = [
 			...(createsWith ?
 				[
 					writeId(id),
@@ -1565,15 +1719,26 @@ return namespace`
 				]),
 			...(onFail ? [onFail] : [])
 		]
-		const created = `${
+		const creator =
 			isTemplate ? "["
 			: !form.byRuntime ? `${this.creatorOf(form, fused, made !== undefined)}(`
 			: createsWith ? "runtime.createValidatorWith("
 			: "runtime.createValidator("
-		}\n\t${args.join(",\n\t")}\n${isTemplate ? "]" : ")"}`
-		return held && !this.baking.holdsIds ?
-				`runtime.holdHoles(${created}, ${writeId(id)}, ${held})`
-			:	created
+		const closer = isTemplate ? "]" : ")"
+		return {
+			parts,
+			attributes: [
+				...fusedRest,
+				...rest,
+				...(held && !this.baking.holdsIds ? [held] : [])
+			],
+			created: load => {
+				const created = `${creator}\n\t${[...partsArgs(load), ...rest].join(",\n\t")}\n${closer}`
+				return held && !this.baking.holdsIds ?
+						`runtime.holdHoles(${created}, ${writeId(id)}, ${held})`
+					:	created
+			}
+		}
 	}
 
 	validatorFormOf(root: BaseRoot): ValidatorForm {
@@ -2079,7 +2244,7 @@ return namespace`
 		root: BaseRoot,
 		opts: RootApplyOptions
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
-		const { asValidator, unconfigured, throws } = opts
+		const { asValidator, readsAllows, unconfigured, throws } = opts
 		const callbacks = declares(
 			root,
 			node =>
@@ -2178,6 +2343,7 @@ return namespace`
 				const args = `[${traversals}[0], ${traversals}[${this.appliedIndexOf(root)}], ${elements}]`
 				return [
 					this.emitApplier({
+						readsAllows,
 						// a minifier inlines a const read once, but not a default
 						params: `{ 1: apply, 2: allowsElement, 3: applyElement }, onFail, rejectedIn = data => {
 	for (let i = 0; i < data.length; i++) if (!allowsElement(data[i])) return i
@@ -2197,6 +2363,7 @@ return namespace`
 			if (asValidator) {
 				return [
 					this.emitApplier({
+						readsAllows,
 						params: `${pattern}${unconfigured ? "" : ", onFail"}`,
 						apply: `(data, ...args) => allows(data) ? ${valid} : ${callErrors}(${apply}, data, args, ${unconfigured ? "null" : "onFail"}, ${Ctx})`,
 						args: parts,
@@ -2262,7 +2429,7 @@ return namespace`
 	emitUndetailedApply(
 		root: BaseRoot,
 		ctx: string,
-		{ asValidator, unconfigured, pipes }: RootApplyOptions
+		{ asValidator, readsAllows, unconfigured, pipes }: RootApplyOptions
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
 		const strategy = root.applyMode
 		const invalid = "invalid(data, onFail)"
@@ -2331,6 +2498,7 @@ return namespace`
 		if (asValidator && parts && !body) {
 			return [
 				this.emitApplier({
+					readsAllows,
 					params: `${params}${unconfigured ? "" : ", onFail"}`,
 					apply:
 						pipes ?
@@ -2364,14 +2532,21 @@ return namespace`
 
 	// hashed with its args unless shortest: V8 can't inline an Allows call several roots share
 	emitApplier({
-		params,
-		apply,
-		failure,
-		local,
-		args
-	}: Omit<RootApplier, "args"> & { args?: string }): string {
-		if (local) return `((${params}) => ${this.validatorOnLoad(apply)})`
-		const body = `\treturn ${this.validatorOnLoad(apply)}`
+		readsAllows,
+		...applier
+	}: Omit<RootApplier, "args"> & {
+		args?: string
+		readsAllows?: boolean
+	}): string {
+		const { params, apply, bound, failure, local, args } =
+			(this.baking.defers &&
+				readsAllows !== undefined &&
+				boundApplierOf(applier as RootApplier, readsAllows)) ||
+			applier
+		if (local && !bound)
+			return `((${params}) => ${this.validatorOnLoad(apply)})`
+		const body = `${bound ? `${bound}\n` : ""}\treturn ${this.validatorOnLoad(apply)}`
+		if (local) return `((${params}) => {\n${body}\n})`
 		const name = `apply${hashOf(
 			`${params}\n${body}${this.baking.shortest || args === undefined ? "" : `\n${args}`}`
 		)}`
