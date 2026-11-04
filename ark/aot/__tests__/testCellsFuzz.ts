@@ -809,6 +809,7 @@ const normalized = (observation: unknown) =>
 	JSON.stringify(observation)
 		?.replace(/\$ark\.\w+?\$?\d+/g, "$ark.fn")
 		.replace(/ \(was (?:[^"\\]|\\.)*?\)(?=(?:\\+n)|\\*")/g, "")
+		.replace(/value at \[/g, "[")
 		.replace(
 			/according to (?:an anonymous predicate|[\w$]+)/g,
 			"according to a predicate"
