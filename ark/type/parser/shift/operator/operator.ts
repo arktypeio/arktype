@@ -29,7 +29,7 @@ export const parseOperator = (s: RootedRuntimeState): void => {
 			:	s.pushRootBranch(peek)
 		: peek === "&" ? s.pushRootBranch(peek)
 		: peek === ")" ? s.finalizeGroup()
-		: lookaheadIsFinalizing(peek, s.sc.unscanned) ? s.finalize(peek)
+		: lookaheadIsFinalizing(peek, s.sc) ? s.finalize(peek)
 		: isKeyOf(peek, comparatorStartChars) ? parseBound(s, peek)
 		: peek === "%" ? parseDivisor(s)
 		: peek === "#" ? parseBrand(s)
