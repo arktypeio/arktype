@@ -26,6 +26,27 @@ contextualize(() => {
 		attest(original).snap({ foo: "  bar  " })
 	})
 
+	const Instant = (
+		globalThis as {
+			Temporal?: { Instant: new (epochNanoseconds: bigint) => object }
+		}
+	).Temporal?.Instant
+
+	if (Instant) {
+		it("preserves Temporal values when morphing an object", () => {
+			const T = type({ foo: "string.trim", at: type.instanceOf(Instant) })
+			const at = new Instant(0n)
+			const original = { foo: "  bar  ", at, extra: at }
+
+			const out = T.assert(original)
+
+			attest(out.foo).equals("bar")
+			attest(out.at.toString()).equals("1970-01-01T00:00:00Z")
+			attest(Reflect.get(out, "extra")).is(at)
+			attest(original.foo).equals("  bar  ")
+		})
+	}
+
 	it("default clone implementation preserves prototypes", () => {
 		const T = type(["Date", "=>", d => d.toISOString()])
 		attest(T.from(new Date(2000, 1))).equals("2000-02-01T05:00:00.000Z")
