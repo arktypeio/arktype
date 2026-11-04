@@ -231,7 +231,20 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			lStructure.sameInner(rStructure) === false
 		)
 			return false
-		return holdsSameChildren(this, r) ? true : undefined
+		if (holdsSameChildren(this, r)) return true
+		// a structure holding nothing writes nothing, so only without one is each child written
+		if (lStructure || rStructure) return undefined
+		if (this.children.length !== r.children.length) return false
+		for (let i = 0; i < this.children.length; i++) {
+			const lChild = this.children[i]
+			const rChild = r.children[i]
+			if (
+				lChild.kind !== rChild.kind ||
+				lChild.sameInner(rChild as never) === false
+			)
+				return false
+		}
+		return undefined
 	}
 
 	get nestedExpr(): string {

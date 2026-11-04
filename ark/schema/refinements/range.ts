@@ -30,6 +30,13 @@ export abstract class BaseRange<
 			assertLengthRule(this.kind as LengthBoundKind, this.rule as number)
 	}
 
+	override sameInner(r: BaseRange<d>): boolean | undefined {
+		// a Date's rule is written as a string, and NaN is equal to itself once written
+		if (!Number.isFinite(this.rule) || !Number.isFinite(r.rule))
+			return undefined
+		return this.rule === r.rule && this.exclusive === r.exclusive
+	}
+
 	/** the kind of data its bound applies to: a value, a length or a date */
 	get opKind(): OperandKindsByBoundKind[d["kind"]] {
 		return operandKindsByBoundKind[this.kind]
