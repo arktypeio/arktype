@@ -4,7 +4,7 @@
 // modules, and a module run twice. Each module's `check` is one of `reads`,
 // reaching a validator through one of `wrappers`. Observes each result, what
 // the call did to its input, and each predicate call in order.
-// ARK_CELLS_FUZZ=<count>[:<seed>]|catalog[:<wrapper>]
+// ARK_CELLS_FUZZ=<count>[:<seed>]|catalog[:<wrapper>[:static|dynamic|query]]
 // [ARK_CELLS_FUZZ_HOSTS=esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,chunks,chunks:smallest,modules,webpack,node,dev,emit]
 // [ARK_CELLS_FUZZ_FAILURES=<dir>] pnpm testCellsFuzz
 import { fromHere } from "@ark/fs"
@@ -20,7 +20,9 @@ import { dirname, join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { tempDir } from "./utils.ts"
 
-const [countArg, seedArg] = (process.env.ARK_CELLS_FUZZ ?? "10").split(":")
+const [countArg, seedArg, importingArg] = (
+	process.env.ARK_CELLS_FUZZ ?? "10"
+).split(":")
 const failureDir =
 	process.env.ARK_CELLS_FUZZ_FAILURES ??
 	join(tmpdir(), "ark-cells-fuzz-failures")
@@ -1023,12 +1025,13 @@ const started = Date.now()
 if (countArg === "catalog") {
 	const wrapper = seedArg ?? "narrow"
 	for (const read of readNames) {
+		if (read in statefulReads && loopingWrappers.has(wrapper)) continue
 		await check({
 			modules: [
 				{ read, wrapper },
 				{ read, wrapper }
 			],
-			importing: "static",
+			importing: (importingArg ?? "static") as App["importing"],
 			writes: true,
 			config: "none",
 			configFirst: true,
