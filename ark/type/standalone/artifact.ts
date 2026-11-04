@@ -2624,6 +2624,11 @@ return namespace`
 		const element = root.structure!.sequence!.variadic!
 		if (
 			isRefinedPattern(element) ||
+			// its Allows runs again where it rejects, which a callback would see
+			declares(
+				element,
+				node => node.is("predicate") && !isKeyword(node.predicate)
+			) ||
 			!this.unitsByHead.has(`${this.variantOf(element)}${element.id}`)
 		)
 			return
