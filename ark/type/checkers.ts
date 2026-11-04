@@ -53,7 +53,8 @@ export const narrowedBy = ((
 	description?: string
 ): Checker => {
 	const checker: Checker = (data, ctx) =>
-		read()(data) ||
+		// `allows` answers this, and a narrow cast to return a boolean may not
+		!!read()(data) ||
 		!failsAt(
 			ctx as never,
 			siteOf(
