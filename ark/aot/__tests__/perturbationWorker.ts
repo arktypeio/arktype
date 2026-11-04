@@ -641,9 +641,25 @@ const isStandardFailure = (out: unknown): out is { issues: unknown[] } =>
 	Array.isArray((out as { issues?: unknown }).issues) &&
 	Object.keys(out).length === 1
 
+const callbacksRun = () =>
+	(globalThis as { $arkCallbacks?: number }).$arkCallbacks ?? 0
+
 // a call's output, the issues a validator keeps, or what it throws; anyOf
-// lists those errors "all" finds, of which a first-issue validator keeps one
+// lists those errors "all" finds, of which a first-issue validator keeps one.
+// Its count of callbacks is compared too, unless it stops at the first issue,
+// which leaves some unrun that "all" runs
 const outcomeOf = (
+	call: () => unknown,
+	input?: unknown,
+	anyOf?: () => KeptIssue[]
+): Observation => {
+	const before = callbacksRun()
+	const outcome = calledOutcomeOf(call, input, anyOf)
+	const callbacks = callbacksRun() - before
+	return callbacks && !firstIssue ? { ...outcome, callbacks } : outcome
+}
+
+const calledOutcomeOf = (
 	call: () => unknown,
 	input?: unknown,
 	anyOf?: () => KeptIssue[]

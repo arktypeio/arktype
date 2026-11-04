@@ -659,6 +659,7 @@ const derivations = {
 		`${l}.pipe.try(${tried.parse.name}, ${tried.refuse.name})`,
 	exec: (l: string) => `${l}.or("x/^(a)b?$/")`,
 	narrow: (l: string) => `${l}.narrow(${predicates.isEven.name})`,
+	counted: (l: string) => `${l}.narrow(${predicates.isCounted.name})`,
 	to: (l: string, r: string) => `${l}.to(${r})`,
 	chain: (l: string) =>
 		`${l}.pipe(${morphs.double.name}).to("number").pipe(${morphs.box.name})`,
