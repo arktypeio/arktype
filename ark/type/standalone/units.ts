@@ -13,7 +13,7 @@ import { hasDomain, isDate } from "@ark/util"
 import { noIssueFeatures, type Baking, type IssueFeatures } from "./baking.ts"
 import { rootUnitsOf, unitOf } from "./compilers.ts"
 import { addIssueFeatures } from "./sites.ts"
-import { holdsLocal } from "./values.ts"
+import { holdsLocal, isReadByName, type HoleCells } from "./values.ts"
 
 export interface Written {
 	issues: IssueFeatures
@@ -176,15 +176,18 @@ export const isVariadicArray = (root: BaseRoot): root is IntersectionNode =>
 
 const sharedByUnit = new WeakMap<RootUnit, boolean>()
 
-export const isSharedUnit = (unit: RootUnit): boolean => {
+export const isSharedUnit = (unit: RootUnit, cells?: HoleCells): boolean => {
 	let shared = sharedByUnit.get(unit)
 	if (shared === undefined) {
 		// a cyclic unit is decided by what else it reads
 		sharedByUnit.set(unit, true)
 		shared =
 			!unit.identityNamed.has(unit.roots[0].id) &&
-			!unit.refs.some(ref => !isNode(ref) && holdsLocal(ref)) &&
-			readUnitsOf(unit).every(isSharedUnit)
+			!unit.refs.some(
+				ref =>
+					!isNode(ref) && !isReadByName(ref, cells) && holdsLocal(ref, cells)
+			) &&
+			readUnitsOf(unit).every(read => isSharedUnit(read, cells))
 		sharedByUnit.set(unit, shared)
 	}
 	return shared

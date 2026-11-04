@@ -786,7 +786,9 @@ const heldByMethod: Record<string, [result: Relation, callback?: Relation[]]> =
 			toISOString: ["none"],
 			toJSON: ["none"],
 			test: ["none"],
-			exec: ["none"]
+			exec: ["none"],
+			// a TextEncoder's
+			encode: ["none"]
 		},
 		null
 	)

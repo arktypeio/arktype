@@ -3,6 +3,7 @@ import { hashOf } from "@ark/util"
 import type {
 	Configured,
 	FactoryParam,
+	HoleCells,
 	StandaloneExport,
 	StandaloneFactory,
 	StandaloneModules
@@ -36,8 +37,22 @@ export interface SiteFactory {
 	bindings: [input: string, binding: Binding][]
 	// each input the site reads a member of a Type through, as `User.in`
 	readsMembers: string[]
+	// whether it sets or reads an input holding a cell its validator reads
+	holdsCells: boolean
+	// each input holding one, whose site sets it
+	cellInputs: string[]
 	imports: FactoryImport[]
 }
+
+// reads what it's passed so no bundler or minifier can tell it needn't: what
+// sets the cells a validator reads is kept exactly as long as the validator
+export const heldModule = `const held = (validator, ...inputs) => {
+	if (inputs.includes(undefined)) throw new Error("A precompiled validator reads a value that isn't set")
+	return validator
+}
+
+export { held }
+`
 
 export const emptyFactory = (): SiteFactory => ({
 	params: [],
@@ -47,6 +62,8 @@ export const emptyFactory = (): SiteFactory => ({
 	inert: [],
 	bindings: [],
 	readsMembers: [],
+	holdsCells: false,
+	cellInputs: [],
 	imports: []
 })
 
@@ -72,6 +89,7 @@ export interface Folding {
 	readsPassedBy?: (exported: string, position: number) => PassedRead
 	// the first droppable site, where the config is fixed
 	fixedAt: number
+	cells: HoleCells | undefined
 }
 
 export const unplan = (plan: PlannedSites, site: Site): void => {
@@ -161,19 +179,23 @@ export const spliceSite = (
 	spans: readonly Span[],
 	inputs: string[],
 	opener: string,
-	closer: string
+	closer: string,
+	// the text around each span, as the call setting its cell
+	wrappers?: readonly [opener: string, closer: string][]
 ): void => {
 	const replace = (start: number, end: number, text: string) =>
 		start === end ? s.appendLeft(start, text) : s.overwrite(start, end, text)
 	let start = site.start
 	let separator = opener
-	for (const span of spans) {
-		replace(start, span.start, separator)
+	let closed = ""
+	for (const [i, span] of spans.entries()) {
+		replace(start, span.start, `${closed}${separator}${wrappers?.[i][0] ?? ""}`)
 		start = span.end
 		separator = ", "
+		closed = wrappers?.[i][1] ?? ""
 	}
 	const read = inputs.map((input, i) => (i ? ", " : separator) + input)
-	replace(start, site.end, `${read.join("")}${closer}`)
+	replace(start, site.end, `${closed}${read.join("")}${closer}`)
 }
 
 export const receive = (
@@ -204,9 +226,11 @@ export const runtimeModuleOf = (
 	folded: Site[],
 	kept: Span[],
 	read: Binding[],
-	inputs: Record<string, string[]>
+	inputs: Record<string, string[]>,
+	factories: ReadonlyMap<Site, SiteFactory>
 ): RuntimeModule => ({
 	module,
+	factories,
 	folded,
 	kept: [
 		...kept,

@@ -667,7 +667,9 @@ const declareTraversal = (
 	return name
 }
 
-type ContentKeyOf = (value: object | symbol) => string | undefined
+export type ContentKeyOf = (
+	value: object | symbol | string
+) => string | undefined
 
 export interface RootUnit {
 	// its first root's name, which addresses it
@@ -836,16 +838,19 @@ interface WrittenByCompiler {
 
 const writtenByOptions = new Map<
 	UnitOptions["compiler"],
-	Map<ContentKeyOf | undefined, WrittenByCompiler>
+	WeakMap<ContentKeyOf, WrittenByCompiler>
 >()
+
+const keysNothing: ContentKeyOf = () => undefined
 
 const writtenOf = (opts: UnitOptions): WrittenByCompiler => {
 	let byKeyOf = writtenByOptions.get(opts.compiler)
-	if (!byKeyOf) writtenByOptions.set(opts.compiler, (byKeyOf = new Map()))
-	let written = byKeyOf.get(opts.keyOf)
+	if (!byKeyOf) writtenByOptions.set(opts.compiler, (byKeyOf = new WeakMap()))
+	const keyOf = opts.keyOf ?? keysNothing
+	let written = byKeyOf.get(keyOf)
 	if (!written) {
 		byKeyOf.set(
-			opts.keyOf,
+			keyOf,
 			(written = { contents: new WeakMap(), units: new WeakMap() })
 		)
 	}
@@ -995,6 +1000,8 @@ const compileContent = (
 			link.byId[value.id] ??= value
 			return positionOf(value.id)
 		}
+		if (typeof value === "string")
+			return s.opts.keyOf?.(value) ?? serializePrimitive(value)
 		if (!hasDomain(value, "object") && typeof value !== "symbol")
 			return Object.is(value, -0) ? "-0" : serializePrimitive(value as never)
 		const key =

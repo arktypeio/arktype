@@ -1,6 +1,7 @@
 import { receiverPrefix } from "arktype/internal/standalone.ts"
 import type { Node, Program, Span } from "oxc-parser"
 import { memberNameOf } from "./graph.ts"
+import type { SiteFactory } from "./fold.ts"
 import { parseCode, type SourceModule } from "./module.ts"
 import { isInertMetaProperty } from "./scan.ts"
 import {
@@ -10,6 +11,7 @@ import {
 	walk,
 	type Binding
 } from "./scope.ts"
+import type { Site } from "./sites.ts"
 
 // a member, "call" where it may return errors no one reads, or "piped" where a
 // call may pass a second argument
@@ -50,6 +52,8 @@ export interface RuntimeModule {
 	modules: Span[]
 	// a site creating a Module, Scope or Generic, which holds validators
 	holdsOther: boolean
+	// what each site's factory receives
+	factories: ReadonlyMap<Site, SiteFactory>
 }
 
 export interface UsageProgram {
@@ -609,6 +613,7 @@ const nodesAt = (module: SourceModule, spans: Span[]): Node[] => {
 
 export const unprecompiled = (module: SourceModule): RuntimeModule => ({
 	module,
+	factories: new Map(),
 	folded: [],
 	kept: [],
 	passed: [],
