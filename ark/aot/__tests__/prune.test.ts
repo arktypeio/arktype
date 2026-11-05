@@ -796,6 +796,40 @@ export const Fields = { even: Even, name: type("string") }
 			attest(await readOf(`console.log(type.errors)\nT({})`)).equals(whole)
 			attest(await readOf(`T.assert({})`)).equals(whole)
 		})
+
+		it("through a module re-exporting arktype's, as it's read there", async () => {
+			const readThrough = async (barrel: string, body: string) => {
+				const usage = await usageFrom({
+					"/ark.ts": barrel,
+					"/main.ts": `import { type } from "arktype"\nimport { arkType } from "./ark.ts"\n\nconst T = type({ name: "string" })\n\n${body}\n`
+				})
+				if (typeof usage === "string" || Array.isArray(usage))
+					throw new Error(`${usage}`)
+				return [usage.issues!.readsSummary, usage.issues!.readsErrors]
+			}
+			const printed = `console.log(String(new arkType.errors()))\nT({})`
+			attest(
+				await readThrough(
+					`export { type as arkType } from "arktype"\n`,
+					printed
+				)
+			).equals(whole)
+			attest(await readThrough(`export * from "arktype"\n`, printed)).equals(
+				whole
+			)
+			attest(
+				await readThrough(
+					`export { type as arkType } from "arktype"\n`,
+					`const out = T({})\nconsole.log(out instanceof arkType.errors ? out.issues : out)`
+				)
+			).equals(neither)
+			attest(
+				await readThrough(
+					`export * as arkType from "arktype"\n`,
+					`console.log(String(new arkType.ArkErrors()))\nT({})`
+				)
+			).equals(whole)
+		})
 	})
 
 	describe("held in an object literal", () => {
