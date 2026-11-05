@@ -392,7 +392,7 @@ console.log(${definitions.Keyword} === KeywordOther, ${definitions.Named} === Na
 		attest(runModuleAtATime(root, "production")).equals("true false\n")
 	}).timeout(120_000)
 
-	it("a build reading each module alone compares a function's scope and a keyword reached two ways otherwise", async () => {
+	it("a build reading each module alone compares a function's scope otherwise, and a keyword reached two ways as arktype does", async () => {
 		const root = fixture("readAlone", {
 			"shared.ts": `import { scope } from "arktype"
 
@@ -412,8 +412,8 @@ console.log($.type({ x: "A" }) === Scoped, type("unknown") === type.pipe())
 		})
 		attest(runPlain(root)).equals("true false\n")
 		attest(run(await bundle(root, production))).equals("true false\n")
-		attest(run(await bundle(root, source))).equals("false true\n")
-		attest(runModuleAtATime(root)).equals("false true\n")
+		attest(run(await bundle(root, source))).equals("false false\n")
+		attest(runModuleAtATime(root)).equals("false false\n")
 	})
 
 	it("each run of a module creates its own functions, so its own Types", async () => {
