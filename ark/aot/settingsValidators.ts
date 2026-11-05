@@ -38,9 +38,11 @@ var runsArktype = true
 var appliesValues = true
 var transformsBranches = true
 var failsInBranches = true
+var readsSummary = true
+var readsErrors = true
 
 // ark/schema/shared/issues.ts
-var ArkIssues = class {
+var ReadIssues = class {
 	// assigned, as a target lowering class fields defines each with a helper
 	constructor() {
 		this._ = []
@@ -58,27 +60,6 @@ var ArkIssues = class {
 	get issues() {
 		for (const issue of this._) issue.message ??= messageOf(issue)
 		return this._
-	}
-	/**
-	 * A human-readable summary of all errors.
-	 */
-	get summary() {
-		let summary = ""
-		for (const issue of this._)
-			summary += (summary && "\n") + (issue.message ??= messageOf(issue))
-		return summary
-	}
-	/**
-	 * Throw a TraversalError based on these errors.
-	 */
-	throw() {
-		throw new TraversalError(this)
-	}
-	toJSON() {
-		return this.issues
-	}
-	toString() {
-		return this.summary
 	}
 	/** @internal */
 	_at(site, data, key) {
@@ -110,7 +91,32 @@ var ArkIssues = class {
 		return !continues
 	}
 }
-var foundErrors = (apply, data, onFail, Ctx = ArkIssues) => {
+var SummarizedIssues =
+	readsSummary ?
+		class extends ReadIssues {
+			get summary() {
+				let summary = ""
+				for (const issue of this._)
+					summary += (summary && "\n") + (issue.message ??= messageOf(issue))
+				return summary
+			}
+		}
+	:	ReadIssues
+var Issues =
+	readsErrors ?
+		class ArkIssues extends SummarizedIssues {
+			throw() {
+				throw new ThrownIssues(this)
+			}
+			toJSON() {
+				return this.issues
+			}
+			toString() {
+				return this.summary
+			}
+		}
+	:	SummarizedIssues
+var foundErrors = (apply, data, onFail, Ctx = Issues) => {
 	const errors = new Ctx()
 	apply(data, errors)
 	if (!errors._.length) errors._at({ code: "predicate" }, data)
@@ -148,13 +154,16 @@ var problemOf = issue =>
 	(issue.expected !== void 0 ? "must be " + issue.expected
 	: issue.code === "required" ? "is missing"
 	: "is invalid")
-var TraversalError = class extends Error {
-	constructor(errors) {
-		super((runsArktype ? errors._t : void 0) ?? errors.summary)
-		this.name = "TraversalError"
-		Object.defineProperty(this, "arkErrors", { value: errors })
-	}
-}
+var ThrownIssues =
+	readsErrors ?
+		class TraversalError extends Error {
+			constructor(errors) {
+				super((runsArktype ? errors._t : void 0) ?? errors.summary)
+				this.name = "TraversalError"
+				Object.defineProperty(this, "arkErrors", { value: errors })
+			}
+		}
+	:	void 0
 
 // ark/schema/shared/transform.ts
 var TransformErrors = class _TransformErrors {
@@ -257,28 +266,17 @@ var objectCheck = /* @__PURE__ */ check("domain", "an object", data =>
 var arrayCheck = /* @__PURE__ */ check("proto", "an array", data =>
 	Array.isArray(data)
 )
-var min = (
+var moreThan = (
 	rule,
-	exclusive,
-	description = rule === 0 ?
-		exclusive ? "positive"
-		:	"non-negative"
-	:	`${exclusive ? "more than" : "at least"} ${rule}`
-) =>
-	check(
-		"min",
-		description,
-		exclusive ? data => data > rule : data => data >= rule
-	)
+	description = rule === 0 ? "positive" : `more than ${rule}`
+) => check("min", description, data => data > rule)
 var minLength = (
 	rule,
 	description = rule === 1 ? "non-empty" : `at least length ${rule}`
 ) => check("minLength", description, data => data.length >= rule)
 var divisor = (
 	rule,
-	description = rule === 1 ? "an integer"
-	: rule === 2 ? "even"
-	: `a multiple of ${rule}`
+	description = rule === 2 ? "even" : `a multiple of ${rule}`
 ) => check("divisor", description, data => data % rule === 0)
 var printValue = value =>
 	typeof value === "string" ? JSON.stringify(value) : `${value}`
@@ -294,7 +292,12 @@ var booleanChecker = /* @__PURE__ */ check(
 	"boolean",
 	data => typeof data === "boolean"
 )
-var intersection = (basis, refinements, within) => {
+var intersection = (
+	basis,
+	refinements,
+	within,
+	brief = basis ? basis.description : "present"
+) => {
 	const checker = (data, ctx) => {
 		if (basis && !basis.test(data)) return !failsAt(ctx, basis, data)
 		let passed = true
@@ -306,7 +309,7 @@ var intersection = (basis, refinements, within) => {
 		}
 		return !passed || !within || within(data, ctx)
 	}
-	checker.description = basis ? basis.description : "present"
+	checker.description = brief
 	checker.t = within?.t
 	return checker
 }
@@ -560,7 +563,7 @@ var domains = (cases, description, fails) => {
 }
 
 // ark/type/runtime.ts
-var freeze = Object.freeze
+var freeze = /* @__PURE__ */ (() => Object.freeze)()
 var siteOf = (code, description, message) => ({ code, description, x: message })
 var requiredSiteOf = description => ({
 	m: { code: "required", description }
@@ -642,10 +645,10 @@ var intersectionr7fa5i02hq5pc = [
 		"removed"
 	)
 ]
-var intersection12camhx0xb2z7a = /* @__PURE__ */ (([
+var intersectiong64o0o0ukdr2c = /* @__PURE__ */ (([
 	intersectionr7fa5i02hq5pcAllows
 ]) => {
-	const intersection12camhx0xb2z7aAllows = /* @__PURE__ */ sited(
+	const intersectiong64o0o0ukdr2cAllows = /* @__PURE__ */ sited(
 		(data, checkers) =>
 			!(
 				("preset" in data && !checkers[0](data.preset)) ||
@@ -686,7 +689,9 @@ var intersection12camhx0xb2z7a = /* @__PURE__ */ (([
 								"a module path or false",
 								stringCheck.test
 							),
-							[/* @__PURE__ */ minLength(1, "a module path or false")]
+							[/* @__PURE__ */ minLength(1, "a module path or false")],
+							void 0,
+							"a string"
 						),
 						boolean: /* @__PURE__ */ unit(false, "a module path or false")
 					},
@@ -719,12 +724,13 @@ var intersection12camhx0xb2z7a = /* @__PURE__ */ (([
 							1,
 							"the characters a site's baked introspection may total"
 						),
-						/* @__PURE__ */ min(
+						/* @__PURE__ */ moreThan(
 							0,
-							1,
 							"the characters a site's baked introspection may total"
 						)
-					]
+					],
+					void 0,
+					"a number"
 				)
 			),
 			freeze: /* @__PURE__ */ optional(booleanChecker),
@@ -745,7 +751,9 @@ var intersection12camhx0xb2z7a = /* @__PURE__ */ (([
 			tsconfig: /* @__PURE__ */ optional(
 				/* @__PURE__ */ intersection(
 					/* @__PURE__ */ check("domain", "a path", stringCheck.test),
-					[/* @__PURE__ */ minLength(1, "a path")]
+					[/* @__PURE__ */ minLength(1, "a path")],
+					void 0,
+					"a string"
 				)
 			),
 			dependencies: /* @__PURE__ */ optional(
@@ -754,7 +762,9 @@ var intersection12camhx0xb2z7a = /* @__PURE__ */ (([
 			cwd: /* @__PURE__ */ optional(
 				/* @__PURE__ */ intersection(
 					/* @__PURE__ */ check("domain", "a path", stringCheck.test),
-					[/* @__PURE__ */ minLength(1, "a path")]
+					[/* @__PURE__ */ minLength(1, "a path")],
+					void 0,
+					"a string"
 				)
 			),
 			inline: /* @__PURE__ */ optional(booleanChecker),
@@ -767,7 +777,7 @@ var intersection12camhx0xb2z7a = /* @__PURE__ */ (([
 		0,
 		"removed"
 	)
-	return [intersection12camhx0xb2z7aAllows]
+	return [intersectiong64o0o0ukdr2cAllows]
 })(intersectionr7fa5i02hq5pc)
 var create12fpvlf14u2zct = ([allows], id, holes = []) => {
 	const validator = (data, pipedFromCtx, onFail) =>
@@ -781,10 +791,10 @@ var create12fpvlf14u2zct = ([allows], id, holes = []) => {
 	validator.allows = freeze(allows)
 	return holdHoles(freeze(validator), id, holes)
 }
-var intersectionlof7b81fkg9fy = /* @__PURE__ */ (([
+var intersection14iv1st1nsrrgj = /* @__PURE__ */ (([
 	intersectionr7fa5i02hq5pcAllows
 ]) => {
-	const intersectionlof7b81fkg9fyAllows = /* @__PURE__ */ sited(
+	const intersection14iv1st1nsrrgjAllows = /* @__PURE__ */ sited(
 		(data, checkers) =>
 			!(
 				("preset" in data && !checkers[0](data.preset)) ||
@@ -821,7 +831,9 @@ var intersectionlof7b81fkg9fy = /* @__PURE__ */ (([
 								"a module path or false",
 								stringCheck.test
 							),
-							[/* @__PURE__ */ minLength(1, "a module path or false")]
+							[/* @__PURE__ */ minLength(1, "a module path or false")],
+							void 0,
+							"a string"
 						),
 						boolean: /* @__PURE__ */ unit(false, "a module path or false")
 					},
@@ -854,12 +866,13 @@ var intersectionlof7b81fkg9fy = /* @__PURE__ */ (([
 							1,
 							"the characters a site's baked introspection may total"
 						),
-						/* @__PURE__ */ min(
+						/* @__PURE__ */ moreThan(
 							0,
-							1,
 							"the characters a site's baked introspection may total"
 						)
-					]
+					],
+					void 0,
+					"a number"
 				)
 			),
 			freeze: /* @__PURE__ */ optional(booleanChecker),
@@ -880,7 +893,9 @@ var intersectionlof7b81fkg9fy = /* @__PURE__ */ (([
 			tsconfig: /* @__PURE__ */ optional(
 				/* @__PURE__ */ intersection(
 					/* @__PURE__ */ check("domain", "a path", stringCheck.test),
-					[/* @__PURE__ */ minLength(1, "a path")]
+					[/* @__PURE__ */ minLength(1, "a path")],
+					void 0,
+					"a string"
 				)
 			),
 			dependencies: /* @__PURE__ */ optional(
@@ -891,26 +906,26 @@ var intersectionlof7b81fkg9fy = /* @__PURE__ */ (([
 		0,
 		"removed"
 	)
-	return [intersectionlof7b81fkg9fyAllows]
+	return [intersection14iv1st1nsrrgjAllows]
 })(intersectionr7fa5i02hq5pc)
-var intersection1c6et24106vfrx = /* @__PURE__ */ (([
-	intersectionlof7b81fkg9fyAllows
+var intersection134gw5z1ow29ev = /* @__PURE__ */ (([
+	intersection14iv1st1nsrrgjAllows
 ]) => {
-	const intersection1c6et24106vfrxAllows = /* @__PURE__ */ closedProps({
+	const intersection134gw5z1ow29evAllows = /* @__PURE__ */ closedProps({
 		$schema: /* @__PURE__ */ optional(stringCheck),
-		precompile: /* @__PURE__ */ optional(intersectionlof7b81fkg9fyAllows)
+		precompile: /* @__PURE__ */ optional(intersection14iv1st1nsrrgjAllows)
 	})
-	return [intersection1c6et24106vfrxAllows]
-})(intersectionlof7b81fkg9fy)
-var intersection1036f2v1kfn80j = /* @__PURE__ */ (([
-	intersectionlof7b81fkg9fyAllows
+	return [intersection134gw5z1ow29evAllows]
+})(intersection14iv1st1nsrrgj)
+var intersection1pxmr4d0azyt6q = /* @__PURE__ */ (([
+	intersection14iv1st1nsrrgjAllows
 ]) => {
-	const intersection1036f2v1kfn80jAllows = /* @__PURE__ */ closedProps({
-		precompile: /* @__PURE__ */ optional(intersectionlof7b81fkg9fyAllows),
+	const intersection1pxmr4d0azyt6qAllows = /* @__PURE__ */ closedProps({
+		precompile: /* @__PURE__ */ optional(intersection14iv1st1nsrrgjAllows),
 		aot: /* @__PURE__ */ optional(/* @__PURE__ */ unit(true))
 	})
-	return [intersection1036f2v1kfn80jAllows]
-})(intersectionlof7b81fkg9fy)
+	return [intersection1pxmr4d0azyt6qAllows]
+})(intersection14iv1st1nsrrgj)
 var created0
 var created1
 var created2
@@ -918,7 +933,7 @@ var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
 				const validator0 = interned("ba2dyl0hxov64", () =>
-					create12fpvlf14u2zct(intersection12camhx0xb2z7a, "1xqe4zk0")
+					create12fpvlf14u2zct(intersectiong64o0o0ukdr2c, "1xqe4zk0")
 				)
 				return validator0
 			})())
@@ -928,7 +943,7 @@ var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
 				const validator0 = interned("131ktzb1yyv4fo", () =>
-					create12fpvlf14u2zct(intersection1c6et24106vfrx, "1cl1eak0")
+					create12fpvlf14u2zct(intersection134gw5z1ow29ev, "1cl1eak0")
 				)
 				return validator0
 			})())
@@ -938,7 +953,7 @@ var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
 				const validator0 = interned("m6ykoq11dwob9", () =>
-					create12fpvlf14u2zct(intersection1036f2v1kfn80j, "1i9mlhj1")
+					create12fpvlf14u2zct(intersection1pxmr4d0azyt6q, "1i9mlhj1")
 				)
 				return validator0
 			})())

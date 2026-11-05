@@ -1,10 +1,11 @@
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import type {
-	ArkErrorCode,
-	CompactApply,
-	FailureContext,
-	FailureSite,
-	SiteContext
+import {
+	listedIssue,
+	type ArkErrorCode,
+	type CompactApply,
+	type FailureContext,
+	type FailureSite,
+	type SiteContext
 } from "@ark/schema/runtime"
 import { hasOwn, type Fn } from "@ark/util"
 import {
@@ -341,6 +342,18 @@ export const narrowedByEach = ((checkers: readonly Checker[]): Checker => {
 	return checker
 }) satisfies Fn
 
+// a callback a build proved reads only data, written in place with no name
+export const narrowed = ((
+	narrow: (data: any) => boolean,
+	description = "valid according to an anonymous predicate"
+): Checker => {
+	const checker = ((data, ctx) =>
+		!!narrow(data) || !failsAt(ctx as never, checker, data)) as Check
+	checker.code = "predicate"
+	checker.description = description
+	return checker
+}) satisfies Fn
+
 /** the checker a validator is created from, as a call a bundler may drop */
 export const allowsOf = ((validator: { allows: Checker }): Checker =>
 	validator.allows) satisfies Fn
@@ -370,34 +383,27 @@ export const arrayCheck: Check = /* @__PURE__ */ check(
 	data => Array.isArray(data)
 )
 
-// a bound's description, as arktype writes it
+// a bound's description, as arktype writes it. An exclusive bound is apart, so
+// an app writing none ships none of its text
 export const min = ((
 	rule: number,
-	exclusive?: 1,
-	description = rule === 0 ?
-		exclusive ? "positive"
-		:	"non-negative"
-	:	`${exclusive ? "more than" : "at least"} ${rule}`
-): Check =>
-	check(
-		"min",
-		description,
-		exclusive ? data => data > rule : data => data >= rule
-	)) satisfies Fn
+	description = rule === 0 ? "non-negative" : `at least ${rule}`
+): Check => check("min", description, data => data >= rule)) satisfies Fn
+
+export const moreThan = ((
+	rule: number,
+	description = rule === 0 ? "positive" : `more than ${rule}`
+): Check => check("min", description, data => data > rule)) satisfies Fn
 
 export const max = ((
 	rule: number,
-	exclusive?: 1,
-	description = rule === 0 ?
-		exclusive ? "negative"
-		:	"non-positive"
-	:	`${exclusive ? "less than" : "at most"} ${rule}`
-): Check =>
-	check(
-		"max",
-		description,
-		exclusive ? data => data < rule : data => data <= rule
-	)) satisfies Fn
+	description = rule === 0 ? "non-positive" : `at most ${rule}`
+): Check => check("max", description, data => data <= rule)) satisfies Fn
+
+export const lessThan = ((
+	rule: number,
+	description = rule === 0 ? "negative" : `less than ${rule}`
+): Check => check("max", description, data => data < rule)) satisfies Fn
 
 export const minLength = ((
 	rule: number,
@@ -419,11 +425,16 @@ export const exactLength = ((
 
 export const divisor = ((
 	rule: number,
-	description = rule === 1 ? "an integer"
-	: rule === 2 ? "even"
-	: `a multiple of ${rule}`
+	description = rule === 2 ? "even" : `a multiple of ${rule}`
 ): Check =>
 	check("divisor", description, data => data % rule === 0)) satisfies Fn
+
+// what nearly every divisor is, created once
+export const integerCheck: Check = /* @__PURE__ */ check(
+	"divisor",
+	"an integer",
+	data => data % 1 === 0
+)
 
 // a pattern without g or y, whose test reads no lastIndex
 export const pattern = ((
@@ -448,12 +459,11 @@ export const stringRange = ((max?: number, min?: number): Checker => {
 
 // an integer from least to most, inclusive
 export const integerRange = ((least?: number, most?: number): Checker => {
-	const integer = divisor(1)
 	const tooSmall = least === undefined ? numberCheck : min(least)
 	const tooLarge = most === undefined ? numberCheck : max(most)
 	const checker: Checker = (data: any, ctx) =>
 		Number.isFinite(data) ?
-			(data % 1 === 0 || !failsAt(ctx as never, integer, data)) &&
+			(data % 1 === 0 || !failsAt(ctx as never, integerCheck, data)) &&
 			(!(data > most!) || !failsAt(ctx as never, tooLarge, data)) &&
 			(!(data < least!) || !failsAt(ctx as never, tooSmall, data))
 		:	!failsAt(ctx as never, numberCheck, data)
@@ -504,7 +514,9 @@ export const booleanChecker: Checker = /* @__PURE__ */ check(
 export const intersection = ((
 	basis: Check | 0,
 	refinements: readonly Check[],
-	within?: Checker
+	within?: Checker,
+	// what a missing key expects, unless a keyword's basis says more than its brief
+	brief = basis ? basis.description : "present"
 ): Checker => {
 	const checker: Checker = (data, ctx) => {
 		if (basis && !basis.test(data)) return !failsAt(ctx as never, basis, data)
@@ -517,8 +529,7 @@ export const intersection = ((
 		}
 		return !passed || !within || within(data, ctx)
 	}
-	// its brief: its basis's description, or "present" without one
-	checker.description = basis ? basis.description : "present"
+	checker.description = brief
 	checker.t = within?.t
 	return checker
 }) satisfies Fn
@@ -1202,12 +1213,18 @@ export const domains = ((
 export const nullableDescriptionOf = (domain: string): string =>
 	`${domain === "object" ? "an" : "a"} ${domain} or null`
 
-// a domain's checker or null
-export const nullable = ((checker: Checker | 1, domain = "string"): Checker =>
-	domains(
-		{ [domain]: checker, null: 1 },
-		nullableDescriptionOf(domain)
-	)) satisfies Fn
+// a domain's checker that transforms nothing, nor is an object, or null
+export const nullable = ((checker: Checker | 1, domain = "string"): Checker => {
+	const description = nullableDescriptionOf(domain)
+	const site: FailureSite = { code: "discriminant", description }
+	const wrapped: Checker = (data, ctx) =>
+		data === null ||
+		(typeof data === domain ?
+			checker === 1 || checker(data, ctx)
+		:	!failsAt(ctx as never, site, data))
+	wrapped.description = description
+	return wrapped
+}) satisfies Fn
 
 // a union of objects told apart by the string at one key
 export const discriminate = ((
@@ -1270,7 +1287,7 @@ export const discriminateOr = ((
 				branch === 1 || branch(data, ctx)
 			:	otherwise(data) ||
 					(objectCheck.test(data) ?
-						!failsBranches(ctx, [miss, otherwise], data)
+						!failsBranches(ctx, [miss, otherwise], data, listedIssue)
 					:	!failsAt(ctx as never, missed, data))
 	}
 	checker.description = missed.description
@@ -1285,12 +1302,11 @@ export const discriminateOr = ((
 	return checker
 }) satisfies Fn
 
-// branches tried in turn, failing as one issue of each's first, by what writes
-// it if it isn't what they did
+// branches tried in turn, failing as one issue of each's first, by what writes it
 export const union = ((
 	branches: readonly Checker[],
 	description: string,
-	issueOf?: Parameters<typeof failsBranches>[3],
+	issueOf: Parameters<typeof failsBranches>[3],
 	fails?: FailingBranches
 ): Checker => {
 	const checker: Checker = (data, ctx) =>

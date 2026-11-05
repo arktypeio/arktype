@@ -213,8 +213,10 @@ abc,x,abc,x,abcd,y
 			"lib/package.json": `{ "sideEffects": false }`,
 			"lib/name.ts": `import { type } from "arktype"
 
-export const Name = type("string").narrow(s => s.length > 2)
-export const Unread = type("string").narrow(s => s.includes("UNREAD_TEXT"))
+const least = 2
+
+export const Name = type("string").narrow(s => s.length > least)
+export const Unread = type("string").narrow(s => s.includes("UNREAD_TEXT") && !!least)
 `,
 			"lib/user.ts": `import { type } from "arktype"
 import { Name } from "./name.ts"
@@ -377,7 +379,9 @@ must be valid according to an anonymous predicate
 		it("keeps a package duplicated at two paths apart", async () => {
 			const longerThan = (min: number) => `import { type } from "arktype"
 
-export const Long = type("string").narrow(s => s.length > ${min})
+const least = ${min}
+
+export const Long = type("string").narrow(s => s.length > least)
 `
 			const root = fixture("duplicated", {
 				"one/m.ts": longerThan(2),
@@ -463,7 +467,9 @@ abc
 				"reloaded-same",
 				`import { type } from "arktype"
 
-export const Long = type("string").narrow(s => s.length > 4)
+const least = 4
+
+export const Long = type("string").narrow(s => s.length > least)
 `
 			)
 			attest(setsCell(readFileSync(join(root, "out/m.js"), "utf8"))).equals(
@@ -847,7 +853,8 @@ console.log(String(Other({ lead: { name: "x" } })))
 			{
 				"main.ts": `import { type } from "arktype"
 
-const m = type.module({ name: type("string").narrow(s => s.length > 2) })
+const least = 2
+const m = type.module({ name: type("string").narrow(s => s.length > least) })
 const T = type({ n: m.name })
 
 console.log(String(T({ n: "x" })))
@@ -997,6 +1004,126 @@ console.log(Team.allows({ lead: { name: "abc" }, members: [] }))
 				{ cells: true, opts }
 			)
 		}
+	})
+
+	describe("a narrow that reads nothing of its module", () => {
+		const held = (js: string) => /\bheld\(/.test(js)
+
+		const moves = (name: string, narrow: string) => {
+			const files = {
+				"name.ts": `import { type } from "arktype"\n\nexport const Name = type("string").narrow(${narrow})\n`,
+				"main.ts": `import { type } from "arktype"
+import { Name } from "./name.ts"
+
+const User = type({ name: Name })
+
+console.log(String(User({ name: "x" })), JSON.stringify(User({ name: "abc" })))
+`
+			}
+			itBehavesAsWhole(`${name}, in a default build`, files, { cells: false })
+			itBehavesAsWhole(`${name}, in a smallest build`, files, {
+				cells: false,
+				opts: { preset: "smallest" }
+			})
+		}
+
+		moves("writes no site that sets it", "s => s.length > 2")
+		moves(
+			"erases its types",
+			"(s: string): boolean => (s as string).length! > (2 satisfies number)"
+		)
+		moves("holds a function expression", "function (s) { return s.length > 2 }")
+		moves(
+			"reads what it declares",
+			"s => { const least = 2; return s.length > least }"
+		)
+		moves("reads a global no module declares", "s => Number(s.length) > 2")
+
+		it("drops what reads it where nothing reads the Type", async () => {
+			const root = fixture("closedHeld", {
+				"name.ts": `import { type } from "arktype"\n\nexport const Name = type("string").narrow(s => s.includes("UNREAD_TEXT"))\n`,
+				"main.ts": `import { Name } from "./name.ts"\n\nconsole.log("read")\n`
+			})
+			const js = await esbuildBundle(root, {}, { minify: true })
+			attest(js.includes("UNREAD_TEXT")).equals(false)
+			attest(held(js)).equals(false)
+		})
+
+		const staysAt = (name: string, narrow: string, before = "") =>
+			itBehavesAsWhole(
+				name,
+				{
+					"main.ts": `import { type } from "arktype"
+${before}
+const Name = type("string").narrow(${narrow})
+
+console.log(String(Name("x")), JSON.stringify(Name("abc")))
+`
+				},
+				{ cells: true }
+			)
+
+		staysAt(
+			"stays at a site reading a constant",
+			"s => s.length > least",
+			"const least = 2"
+		)
+		staysAt(
+			"stays at a site reading a global a build's module could declare",
+			"s => s.length > check",
+			";(globalThis as any).check = 2"
+		)
+
+		it("stays where its site would bind what it reads otherwise", async () => {
+			const js = await esbuildBundle(
+				fixture("closedThis", {
+					"main.ts": `import { type } from "arktype"
+
+const Name = type("string").narrow(function (this: unknown, s) { return s.length > (this === undefined ? 2 : 0) })
+
+console.log(String(Name("x")))
+`
+				})
+			)
+			attest(setsCell(js)).equals(true)
+			attest(behaviorOf(js)).snap(
+				"must be valid according to an anonymous predicate\n"
+			)
+		})
+
+		itBehavesAsWhole(
+			"prints as an anonymous function, whatever holds it",
+			{
+				"main.ts": `import { type } from "arktype"
+
+const Name = type("string").narrow(s => s.length > 2)
+const Described = type("string").narrow(s => s.length > 3).describe("long")
+
+const print = (t: typeof Name) => console.log(t.expression, t.description, JSON.stringify(t.json))
+console.log(String(Name("x")), String(Described("x")))
+print(Name)
+print(Described)
+`
+			},
+			{ cells: false, opts: { preset: "introspectable" } }
+		)
+
+		it("reads as often as passing it does", async () => {
+			const root = fixture("closedCalls", {
+				"main.ts": `import { type } from "arktype"
+
+const Name = type("string").narrow(s => {
+	;(globalThis as any).calls = ((globalThis as any).calls ?? 0) + 1
+	return s.length > 2
+})
+const List = type({ a: Name, b: Name })
+
+console.log(String(List({ a: "x", b: "abc" })), (globalThis as any).calls)
+`
+			})
+			const whole = behaviorOf(await esbuildBundle(root, { prune: false }))
+			attest(behaviorOf(await esbuildBundle(root))).equals(whole)
+		})
 	})
 
 	describe("what a validator holds of its id", () => {
@@ -1178,6 +1305,51 @@ const User = type({ name: Name })
 
 console.log(String(User({ name: "x" })))
 `
+		})
+
+		describe("a function the cell holds the text of", () => {
+			const closed = fixture("rewrittenClosed", {
+				"name.ts": `import { type } from "arktype"
+
+export const Name = type("string").narrow(s => s.length > 2)
+`,
+				"main.ts": `import { Name } from "./name.ts"
+
+console.log(String(Name("x")))
+`
+			})
+
+			it("holds it where a plugin only spaced it apart", async () => {
+				const js = await viteBundle(
+					closed,
+					{},
+					{
+						plugins: [
+							rewriting(code =>
+								code.replace("s => s.length", "(s) =>\n\ts.length")
+							)
+						]
+					}
+				)
+				attest(setsCell(js)).equals(false)
+				attest(behaviorOf(js)).snap(
+					"must be valid according to an anonymous predicate\n"
+				)
+			})
+
+			it("fails where a plugin changed what it runs", async () => {
+				const message = await viteBundle(
+					closed,
+					{},
+					{ plugins: [rewriting(code => code.replace("> 2", "> 3"))] }
+				).then(
+					() => "",
+					(e: Error) => e.message
+				)
+				attest(message.includes(writeUnscannedCellsMessage("name.ts"))).equals(
+					true
+				)
+			})
 		})
 
 		it("sets the cell its function took", async () => {

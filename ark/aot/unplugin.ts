@@ -1217,7 +1217,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		)
 	}
 	const plugin: UnpluginOptions = {
-		name: "arktype",
+		name: pluginName,
 		enforce: "pre",
 		resolveId: {
 			filter: {
@@ -1704,6 +1704,8 @@ interface BundleScan {
 }
 
 // what a webpack or Rspack compilation has read of the modules it built
+const pluginName = "arktype"
+
 interface BuiltRead {
 	// each transformed module as it reached the plugin
 	loaded: LoadedSources
@@ -1738,6 +1740,7 @@ interface BuiltBundlerModule extends BuiltBlock {
 	resource?: string
 	type?: string
 	originalSource?: () => { source: () => string | Buffer } | null
+	loaders?: { loader: string; ident?: string }[]
 }
 
 interface BuiltDependency {
@@ -1827,6 +1830,15 @@ const unbuiltReadOf = (
 	}
 }
 
+// a request like `-!loader!./file` runs only the loader it names, so nothing the
+// plugin writes of it reaches the bundle, which reads it as it was built
+const loadsThroughPlugin = ({ loaders }: BuiltBundlerModule) =>
+	!!loaders?.some(
+		({ ident, loader }) =>
+			// Rspack writes a loader's ident into its path
+			ident === pluginName || loader.endsWith(`??${pluginName}`)
+	)
+
 // each module a compilation's entries reach, as the plugin reads them
 const builtEntriesOf = (
 	compilation: BundlerCompilation,
@@ -1840,7 +1852,7 @@ const builtEntriesOf = (
 		const known = built.get(module)
 		if (known) return known
 		const id = builtIdOf(module)
-		const transformed = !!id && isTransformed(id)
+		const transformed = !!id && isTransformed(id) && loadsThroughPlugin(module)
 		const of: BuiltModule = {
 			id,
 			source:

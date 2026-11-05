@@ -279,6 +279,8 @@ interface WritingScope {
 	shapesByName: Record<string, string>
 	// the cell each ref read as it's called is, by the ref's name
 	cellReads: Record<string, string>
+	// each cell holding its function's text, by the ref's name
+	narrowedBy: Record<string, HoleCell>
 }
 
 // a shared unit as it's written: what it returns and reads, and what it's passed
@@ -565,17 +567,25 @@ export class StandaloneArtifact {
 	// declared where a call can reach it early, as an import cycle's can
 	cellModuleOf(cell: HoleCell): string {
 		const specifier = cellSpecifierOf(cell)
-		const module: SharedModule = {
-			readsRuntime: false,
-			imports: {},
-			declarations: [
-				`var ${cell.name}`,
-				// through arguments, as a minifier writing this into its site would
-				// otherwise assign an anonymous function, naming it for the variable
-				`function ${cellSetterOf(cell)}() {\n\t${cell.name} = arguments[0]\n\treturn true\n}`
-			],
-			exports: [cell.name, cellSetterOf(cell)]
-		}
+		const module: SharedModule =
+			cell.text !== undefined ?
+				{
+					readsRuntime: false,
+					imports: {},
+					declarations: [`var ${cell.name} = ${cell.text}`],
+					exports: [cell.name]
+				}
+			:	{
+					readsRuntime: false,
+					imports: {},
+					declarations: [
+						`var ${cell.name}`,
+						// through arguments, as a minifier writing this into its site would
+						// otherwise assign an anonymous function, naming it for the variable
+						`function ${cellSetterOf(cell)}() {\n\t${cell.name} = arguments[0]\n\treturn true\n}`
+					],
+					exports: [cell.name, cellSetterOf(cell)]
+				}
 		this.sharing?.push([specifier, module])
 		this.sharedModules[specifier] ??= module
 		return specifier
@@ -587,6 +597,7 @@ export class StandaloneArtifact {
 	}
 
 	emitCell(cell: HoleCell): string {
+		if (cell.text !== undefined) return this.readCell(cell)
 		// what a shared module writes runs before any site sets it
 		if (this.writing && !this.defersCellReads) {
 			throwInternalError(
@@ -770,7 +781,10 @@ export class StandaloneArtifact {
 			hasArkKind(value, "scope") ||
 			hasArkKind(value, "generic")
 		) {
-			const [id, allHoles] = keyOf(value)
+			const [id, keyed] = keyOf(value)
+			const allHoles = keyed.filter(
+				hole => this.cellOf(hole)?.text === undefined
+			)
 			const holes = this.heldOf(allHoles)
 			const isType = hasArkKind(value, "root")
 			const holesName = `holes${this.checks.length}`
@@ -779,14 +793,14 @@ export class StandaloneArtifact {
 				this.checks.push(
 					`${holes.length ? `const ${holesName} = ` : ""}${this.receiverOf(value, id, label)}(${expression})`
 				)
-			} else if (allHoles.length) {
-				// a cell it reads is set by then only if what holds it has run
-				if (mayBeUnset) {
-					this.checks.push(
-						`runtime.checkHeld(${expression}, ${JSON.stringify(label)}${isType ? "" : `, "${kindNameOf(value)}"`})`
-					)
-				} else this.heldReads.push(`runtime.checkHeld(${expression})`)
-			}
+			} else if (keyed.length && mayBeUnset) {
+				// a cell it reads is set by then only if what holds it has run,
+				// and arktype would throw reading it even where no site sets one
+				this.checks.push(
+					`runtime.checkHeld(${expression}, ${JSON.stringify(label)}${isType ? "" : `, "${kindNameOf(value)}"`})`
+				)
+			} else if (allHoles.length)
+				this.heldReads.push(`runtime.checkHeld(${expression})`)
 			// relate a Module's, Scope's or Generic's classes to ours
 			const related = isType ? [value, ...value.references] : this.writtenNodes
 			const protos = related.flatMap(node =>
@@ -1365,7 +1379,8 @@ return namespace`
 			args: [],
 			imports: {},
 			shapesByName: {},
-			cellReads: {}
+			cellReads: {},
+			narrowedBy: {}
 		}
 		this.writing = writing
 		this.declarations = createDeclarations()
@@ -1428,7 +1443,8 @@ return namespace`
 			if (!read.has(name)) return []
 			const cell = this.cellOf(value)
 			if (cell) {
-				writing.cellReads[name] = this.readCell(cell)
+				if (cell.text !== undefined) writing.narrowedBy[name] = cell
+				else writing.cellReads[name] = this.readCell(cell)
 				return []
 			}
 			const { statements } = this.declarations
@@ -1733,15 +1749,26 @@ return namespace`
 		return declarations
 	}
 
-	// a ref read as its code runs, once the site holding the cell has
+	// a ref read as its code runs, once the site holding the cell has, or a
+	// cell holding its function's text, which a checker holds itself
 	readsCells(fn: string): string {
-		const cellReads = this.writing?.cellReads
-		if (!cellReads) return fn
-		const refs = Object.keys(cellReads)
+		if (!this.writing) return fn
+		const { cellReads, narrowedBy } = this.writing
+		const refs = [...Object.keys(cellReads), ...Object.keys(narrowedBy)]
 		return refs.length ?
 				fn.replace(
-					new RegExp(`\\b(?:${refs.join("|")})\\b`, "g"),
-					ref => cellReads[ref]
+					new RegExp(
+						`(runtime\\.narrowedBy\\(\\(\\) => )?\\b(${refs.join("|")})\\b`,
+						"g"
+					),
+					(_, narrows: string | undefined, ref: string) => {
+						const cell = narrowedBy[ref]
+						return (
+							!cell ? `${narrows ?? ""}${cellReads[ref]}`
+							: narrows ? `runtime.narrowed(${cell.text}`
+							: this.readCell(cell)
+						)
+					}
 				)
 			:	fn
 	}
@@ -3198,6 +3225,19 @@ return namespace`
 			const [, registered, predicate, fn, name] = match
 			const placeholder = registered ?? predicate ?? fn ?? name
 			const cell = this.baking.cells?.byPlaceholder.get(placeholder)
+			if (cell?.text !== undefined) {
+				parts.push(
+					JSON.stringify(
+						// as arktype prints a function with no name
+						registered ? "$ark.fn"
+						: predicate ? runtime.describePredicate({})
+						: fn ? "Function(fn)"
+						: "fn"
+					)
+				)
+				start = match.index + match[0].length
+				continue
+			}
 			const named = cell ? undefined : this.holeNamed(placeholder)
 			const hole =
 				cell ?
@@ -3571,7 +3611,8 @@ return namespace`
 			args: [],
 			imports: {},
 			shapesByName: {},
-			cellReads: {}
+			cellReads: {},
+			narrowedBy: {}
 		}
 		this.writing = scope
 		this.declarations = createDeclarations()

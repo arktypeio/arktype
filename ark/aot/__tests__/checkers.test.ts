@@ -88,6 +88,133 @@ contextualize(function (this: Mocha.Suite) {
 			attest(behaviorOf(checkers)).equals(expected)
 		})
 
+	describe("what it writes", () => {
+		it("reads as arktype does, whichever check holds its text", async () => {
+			const root = fixture(
+				"writes",
+				`import { type } from "arktype"
+
+const T = type({
+	positive: "number > 0",
+	nonNegative: "number >= 0",
+	negative: "number < 0",
+	nonPositive: "number <= 0",
+	more: "number > 5",
+	least: "number >= 5",
+	less: "number < 5",
+	most: "number <= 5",
+	integer: "number % 1",
+	even: "number % 2",
+	third: "number % 3",
+	"optional?": "string.uuid"
+})
+const Missing = type({ id: "string.uuid", ip: "string.ip", list: "string[]" })
+
+console.log(String(T({ positive: 0, nonNegative: -1, negative: 0, nonPositive: 1, more: 5, least: 4, less: 5, most: 6, integer: 1.5, even: 3, third: 4, optional: 1 })))
+console.log(String(Missing({})))
+console.log(String(Missing({ id: 1, ip: "x", list: [1] })))
+${repaying}
+`
+			)
+			attest(behaviorOf(await bundle(root, smallest)))
+				.snap(`positive must be positive
+nonNegative must be non-negative
+negative must be negative
+nonPositive must be non-positive
+more must be more than 5
+least must be at least 5
+less must be less than 5
+most must be at most 5
+integer must be an integer
+even must be even
+third must be a multiple of 3
+optional must be a UUID
+id must be a string
+ip must be a string
+list must be an array
+id must be a UUID
+ip must be an IP address
+list[0] must be a string
+`)
+		})
+	})
+
+	describe("a union's issue", () => {
+		const printed = `const printIssues = (out: unknown) => console.log(JSON.stringify(out instanceof type.errors ? out.issues : out))
+
+const Alike = type({ ip: "string.ip" })
+const Unlike = type({ id: "string.uuid | string.email" })
+
+printIssues(Alike({ ip: "x" }))
+printIssues(Alike({ ip: 1 }))
+printIssues(Unlike({ id: "x" }))
+console.log(JSON.stringify(Alike["~standard"].validate({ ip: "x" })))
+console.log(JSON.stringify(Unlike["~standard"].validate({ id: 1 })))
+`
+
+		it("reads as arktype's, whether its branches can only fail alike or not", async () => {
+			const root = fixture(
+				"union-issue",
+				`import { type } from "arktype"\n\n${printed}${repaying}\n`
+			)
+			const written = behaviorOf(await bundle(root, smallest))
+			attest(written).equals(behaviorOf(await bundle(root)))
+			attest(written)
+				.snap(`[{"code":"union","path":["ip"],"data":"x","errors":[{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"},{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"}],"message":"ip must be an IP address","expected":"ip must be an IP address"}]
+[{"code":"union","path":["ip"],"data":1,"errors":[{"code":"domain","path":["ip"],"data":1,"expected":"an IP address","message":"ip must be an IP address"},{"code":"domain","path":["ip"],"data":1,"expected":"an IP address","message":"ip must be an IP address"}],"message":"ip must be an IP address","expected":"ip must be an IP address"}]
+[{"code":"union","path":["id"],"data":"x","errors":[{"code":"pattern","path":["id"],"data":"x","expected":"an email address","message":"id must be an email address"},{"code":"pattern","path":["id"],"data":"x","expected":"a UUID","message":"id must be a UUID"}],"message":"id must be an email address or a UUID","expected":"id must be an email address or a UUID"}]
+{"issues":[{"code":"union","path":["ip"],"data":"x","errors":[{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"},{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"}],"message":"must be an IP address","expected":"ip must be an IP address"}]}
+{"issues":[{"code":"union","path":["id"],"data":1,"errors":[{"code":"domain","path":["id"],"data":1,"expected":"a string","message":"id must be a string"},{"code":"domain","path":["id"],"data":1,"expected":"a UUID","message":"id must be a UUID"}],"message":"must be a string or a UUID","expected":"id must be a string or a UUID"}]}
+`)
+		})
+	})
+
+	it("reads a domain or null as arktype does", async () => {
+		const root = fixture(
+			"nullable",
+			`import { type } from "arktype"
+
+const T = type({
+	plain: "string | null",
+	refined: "(string > 1) | null",
+	count: "(number >= 1) | null",
+	flag: "boolean | null",
+	object: type({ a: "string" }).or("null"),
+	written: type({ a: "number = 1" }).or("null")
+})
+const print = (data: unknown) => {
+	const out = T(data)
+	console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
+}
+print({ plain: null, refined: null, count: null, flag: null, object: null, written: null })
+print({ plain: "a", refined: "ab", count: 1, flag: true, object: { a: "a" }, written: {} })
+print({ plain: 1, refined: "a", count: 0, flag: 1, object: 1, written: 1 })
+print({ plain: {}, refined: 1, count: "a", flag: "a", object: {}, written: { a: "a" } })
+${repaying}
+`
+		)
+		const written = await bundle(root, smallest)
+		attest(written.includes("nullable(")).equals(true)
+		attest(behaviorOf(written)).equals(behaviorOf(await bundle(root)))
+	})
+
+	it("reads type.errors as the class it holds, even from a site", async () => {
+		const root = fixture(
+			"errors-class",
+			`import { type } from "arktype"
+
+const isErrors = (out: unknown) => out instanceof type.errors
+const T = type("string").narrow(s => !(s instanceof type.errors))
+
+console.log(isErrors(T(1)), isErrors(T("a")), typeof type?.errors)
+${repaying}
+`
+		)
+		attest(behaviorOf(await bundle(root, smallest))).snap(
+			"true false function\n"
+		)
+	})
+
 	describe("a narrow that reads only its argument", () => {
 		itRunsAsUnproved(
 			"runs as often at each depth, beside what transforms",
@@ -278,7 +405,7 @@ s must be reached
 					appOf(proved, `console.log(String(type({ s: N })({ s: "x" })))`)
 				)
 			)
-			attest(js.includes("class Traversal")).equals(false)
+			attest(/\bclass Traversal\b/.test(js)).equals(false)
 		})
 	})
 

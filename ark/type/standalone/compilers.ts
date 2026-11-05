@@ -112,7 +112,7 @@ class StandaloneCompiler extends TraversalCompiler {
 	}
 
 	private ownIssueOf(node: UnionNode): string {
-		return listsBranches(node) ? "" : `, runtime.ownIssue(${this.site(node)})`
+		return `, ${listsBranches(node) ? listedIssueOf(node) : `runtime.ownIssue(${this.site(node)})`}`
 	}
 
 	// reported at the discriminant so branches don't rerun, unless data can't be read there
@@ -241,6 +241,26 @@ export const listsBranches = (node: UnionNode): boolean => {
 		isDescribed(site) &&
 		site.description === node.description
 	)
+}
+
+// what lists a union's branches, as their issues can only read alike or may not.
+// Each branch's own checks are its only failures, each described the same
+export const listedIssueOf = (node: UnionNode): string => {
+	const descriptions = new Set(
+		node.branches.flatMap(branch =>
+			branch.is("intersection") ?
+				branch.children.map(child => {
+					const site = issueSiteOf(child.failSite) as IssueContext
+					return child.is("structure") || !child.jsCond || !isDescribed(site) ?
+							undefined
+						:	site.description
+				})
+			:	[undefined]
+		)
+	)
+	return descriptions.size === 1 && !descriptions.has(undefined) ?
+			"runtime.alikeIssue"
+		:	"runtime.listedIssue"
 }
 
 // whether each branch fails only at its basis, as the union's description lists

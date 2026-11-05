@@ -3551,6 +3551,7 @@ export default shared`).js
 			"schema/shared/errors.ts",
 			"schema/shared/issueFeatures.ts",
 			"schema/shared/jsonSchema.ts",
+			"schema/shared/listed.ts",
 			"schema/shared/locale.ts",
 			"schema/shared/registry.ts",
 			"schema/shared/render.ts",

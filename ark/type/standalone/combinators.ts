@@ -19,6 +19,7 @@ import * as runtime from "../runtimeExports.ts"
 import {
 	basesOf,
 	discriminantContextOf,
+	listedIssueOf,
 	listsBranches,
 	unifies
 } from "./compilers.ts"
@@ -429,7 +430,7 @@ const checkerDescriptionOf = (node: BaseNode): string | undefined => {
 	if (node.is("morph"))
 		return node.head ? checkerDescriptionOf(node.head) : undefined
 	if (node.is("intersection")) {
-		if (node.basis) return checkOf(node.basis)!.description
+		if (node.basis) return node.brief
 		const predicate = node.inner.predicate?.[0]
 		return predicate && !node.preStruct.length ?
 				predicateSiteOf(predicate)!.description
@@ -511,19 +512,27 @@ const writeCheck = (js: CombinatorCompiler, node: BaseNode): string => {
 		if (site.code === check.code && site.description === check.description)
 			return `runtime.${constant}`
 	}
-	const factory = ruleFactories.find(kind => node.is(kind))
+	const kind = ruleFactories.find(kind => node.is(kind))
 	const { rule, exclusive } = node.inner as { rule?: unknown; exclusive?: true }
-	if (factory && typeof rule === "number") {
-		const bounds = factory === "min" || factory === "max"
-		const flag = bounds && exclusive ? "1" : undefined
-		const derived = (
-			runtime[factory] as (rule: number, exclusive?: 1) => runtime.Check
-		)(rule, flag && 1)
+	if (kind && typeof rule === "number") {
+		if (
+			ruleCheckOf(kind, rule) === runtime.integerCheck &&
+			site.description === "an integer"
+		)
+			return "runtime.integerCheck"
+		const factory =
+			exclusive ?
+				kind === "min" ?
+					"moreThan"
+				:	"lessThan"
+			:	kind
 		return writeCall(
 			factory,
 			`${rule}`,
-			...(bounds ? [flag] : []),
-			unlessDerived(derived.description, site)
+			unlessDerived(
+				(runtime[factory] as (rule: number) => runtime.Check)(rule).description,
+				site
+			)
 		)
 	}
 	if (node.is("pattern")) {
@@ -772,6 +781,11 @@ const isInlined = (node: BaseNode): boolean => {
 
 type RuleKind = (typeof ruleFactories)[number]
 
+const ruleCheckOf = (kind: RuleKind, rule: number): runtime.Check =>
+	kind === "divisor" && rule === 1 ?
+		runtime.integerCheck
+	:	(runtime[kind] as (rule: number) => runtime.Check)(rule)
+
 // each refinement's rule in kinds order, if each is an inclusive bound or divisor
 const rulesOf = (
 	refinements: readonly BaseNode[],
@@ -792,8 +806,7 @@ const rulesOf = (
 			exclusive ||
 			!site ||
 			site.code !== kinds[i] ||
-			site.description !==
-				(runtime[kinds[i]] as (rule: number) => runtime.Check)(rule).description
+			site.description !== ruleCheckOf(kinds[i], rule).description
 		)
 			return
 		rules[i++] = rule
@@ -960,7 +973,10 @@ const writeIntersectionCombinator = (
 		"intersection",
 		node.basis ? writeCheck(js, node.basis) : "0",
 		`[${refinements.join(", ")}]`,
-		within
+		within,
+		node.basis && node.brief !== checkOf(node.basis)!.description ?
+			JSON.stringify(node.brief)
+		:	undefined
 	)
 }
 
@@ -1036,8 +1052,8 @@ const writeUnionCombinator = (
 		const { description } = discriminantSiteOf(node)!
 		const [domain, checker] = cases.find(([k]) => k !== "null")!
 		if (
-			js.shapes &&
-			!fails &&
+			domain !== "object" &&
+			!Object.values(domains).some(branch => branch !== true && branch.tfs) &&
 			cases.length === 2 &&
 			cases.some(([k, branch]) => k === "null" && branch === "1") &&
 			description === runtime.nullableDescriptionOf(domain)
@@ -1098,9 +1114,9 @@ const writeUnionCombinator = (
 		"union",
 		`[${node.branches.map(branch => ref(branch)).join(", ")}]`,
 		JSON.stringify(checkerDescriptionOf(node)),
-		listsBranches(node) ? undefined : (
-			`runtime.ownIssue(runtime.siteOf("union", ${JSON.stringify(unionSiteOf(node)!.description)}))`
-		),
+		listsBranches(node) ?
+			listedIssueOf(node)
+		:	`runtime.ownIssue(runtime.siteOf("union", ${JSON.stringify(unionSiteOf(node)!.description)}))`,
 		fails
 	)
 }

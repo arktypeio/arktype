@@ -13,9 +13,11 @@ export {
 	discriminatesBooleans,
 	failsInBranches,
 	listsUnions,
-	transformsBranches
+	transformsBranches,
+	traversesUnions
 } from "./shared/issueFeatures.ts"
 export * from "./shared/issues.ts"
+export * from "./shared/listed.ts"
 export {
 	supportedJsonSchemaTargets,
 	validateStandardJsonSchemaTarget,

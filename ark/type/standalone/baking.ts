@@ -337,12 +337,16 @@ export interface IssueFeatures {
 	bracketsKeys: boolean
 	writesText: boolean
 	listsUnions: boolean
+	rewritesUnions: boolean
+	traversesUnions: boolean
 	readsKeySites: boolean
 	runsArktype: boolean
 	appliesValues: boolean
 	transformsBranches: boolean
 	failsInBranches: boolean
 	discriminatesBooleans: boolean
+	readsSummary: boolean
+	readsErrors: boolean
 }
 
 export const noIssueFeatures: IssueFeatures = {
@@ -350,12 +354,16 @@ export const noIssueFeatures: IssueFeatures = {
 	bracketsKeys: false,
 	writesText: false,
 	listsUnions: false,
+	rewritesUnions: false,
+	traversesUnions: false,
 	readsKeySites: false,
 	runsArktype: false,
 	appliesValues: false,
 	transformsBranches: false,
 	failsInBranches: false,
-	discriminatesBooleans: false
+	discriminatesBooleans: false,
+	readsSummary: false,
+	readsErrors: false
 }
 
 export interface StandaloneModules {

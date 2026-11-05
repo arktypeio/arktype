@@ -648,12 +648,16 @@ export const Fields = { even: Even, name: type("string") }
 				reportsIndices: false,
 				writesText: false,
 				listsUnions: false,
+				rewritesUnions: true,
+				traversesUnions: false,
 				readsKeySites: true,
 				runsArktype: false,
 				appliesValues: false,
 				transformsBranches: false,
 				failsInBranches: false,
-				discriminatesBooleans: false
+				discriminatesBooleans: false,
+				readsSummary: true,
+				readsErrors: true
 			})
 			attest(
 				await issuesOf(
@@ -664,12 +668,39 @@ export const Fields = { even: Even, name: type("string") }
 				reportsIndices: true,
 				writesText: false,
 				listsUnions: false,
+				rewritesUnions: true,
+				traversesUnions: false,
 				readsKeySites: false,
 				runsArktype: false,
 				appliesValues: false,
 				transformsBranches: false,
 				failsInBranches: false,
-				discriminatesBooleans: false
+				discriminatesBooleans: false,
+				readsSummary: true,
+				readsErrors: true
+			})
+		})
+
+		it("a union's issue on a Traversal, a callback's", async () => {
+			attest(
+				await issuesOf(
+					`import { type } from "arktype"\n\nconst Keep = () => true\n\nexport const Either = type({ a: "string" }).or({ b: "number" }).narrow(Keep).pipe(data => data)\n`
+				)
+			).snap({
+				bracketsKeys: true,
+				reportsIndices: true,
+				writesText: true,
+				listsUnions: true,
+				rewritesUnions: true,
+				traversesUnions: true,
+				readsKeySites: true,
+				runsArktype: false,
+				appliesValues: false,
+				transformsBranches: false,
+				failsInBranches: false,
+				discriminatesBooleans: false,
+				readsSummary: true,
+				readsErrors: true
 			})
 		})
 
@@ -744,13 +775,103 @@ export const Fields = { even: Even, name: type("string") }
 				reportsIndices: false,
 				writesText: false,
 				listsUnions: false,
+				rewritesUnions: true,
+				traversesUnions: false,
 				readsKeySites: true,
 				runsArktype: false,
 				appliesValues: false,
 				transformsBranches: false,
 				failsInBranches: false,
-				discriminatesBooleans: false
+				discriminatesBooleans: false,
+				readsSummary: true,
+				readsErrors: true
 			})
+		})
+	})
+
+	describe("what a program reads of its errors", () => {
+		const readOf = async (body: string, imports = `{ type }`) => {
+			const usage = await usageFrom({
+				"/main.ts": `import ${imports} from "arktype"\n\nconst T = type({ name: "string" })\n\n${body}\n`
+			})
+			if (typeof usage === "string" || Array.isArray(usage))
+				throw new Error(`${usage}`)
+			return [usage.issues!.readsSummary, usage.issues!.readsErrors]
+		}
+		const neither = [false, false]
+		const whole = [true, true]
+
+		it("past a test for them, nothing of them", async () => {
+			attest(
+				await readOf(
+					`const out = T({})\nconsole.log(out instanceof type.errors ? out.issues : out)`
+				)
+			).equals(neither)
+			attest(
+				await readOf(
+					`const out = T({})\nif (!(out instanceof type.errors)) console.log(out)`
+				)
+			).equals(neither)
+			attest(
+				await readOf(
+					`const out = T({})\nconst check = () => {\n\tif (out instanceof type.errors) return out.count\n\treturn out\n}\nconsole.log(check)`
+				)
+			).equals(neither)
+			attest(
+				await readOf(
+					`import { ArkErrors } from "arktype"\nconst out = T({})\nif (out instanceof ArkErrors) throw out.issues\nconsole.log(out)`
+				)
+			).equals(neither)
+		})
+
+		it("its summary apart from the rest", async () => {
+			attest(
+				await readOf(
+					`const out = T({})\nconsole.log(out instanceof type.errors ? out.summary : out)`
+				)
+			).equals([true, false])
+		})
+
+		it("before a test or without one, as they may be there", async () => {
+			attest(await readOf(`console.log(T({}))`)).equals(whole)
+			attest(await readOf(`const out = T({})\nconsole.log(out)`)).equals(whole)
+			attest(
+				await readOf(
+					`const out = T({})\nconsole.log(out)\nif (out instanceof type.errors) throw out.issues`
+				)
+			).equals(whole)
+			// no statement after the test is past it
+			attest(
+				await readOf(
+					`const out = T({})\nif (out instanceof type.errors) console.log(out.issues)\nconsole.log(out)`
+				)
+			).equals(whole)
+		})
+
+		it("by a test for something else, or a read of another member", async () => {
+			attest(
+				await readOf(
+					`const out = T({})\nconsole.log(out instanceof Error ? out : 1)`
+				)
+			).equals(whole)
+			attest(
+				await readOf(
+					`const out = T({})\nif (out instanceof type.errors) out.throw()`
+				)
+			).equals(whole)
+		})
+
+		it("in a hoisted function, which may run before the test", async () => {
+			attest(
+				await readOf(
+					`const out = T({})\nrun()\nif (out instanceof type.errors) throw out.issues\nfunction run() {\n\tconsole.log(out)\n}`
+				)
+			).equals(whole)
+		})
+
+		it("where the class itself is read", async () => {
+			attest(await readOf(`console.log(type.errors)\nT({})`)).equals(whole)
+			attest(await readOf(`T.assert({})`)).equals(whole)
 		})
 	})
 
@@ -2482,6 +2603,16 @@ console.log(out instanceof type.errors ? out.summary : out)
 		const output = (js: string, cwd?: string) =>
 			spawnSync(process.execPath, { input: js, encoding: "utf8", cwd }).stdout
 
+		// the warnings a build ends with
+		const collecting = (warnings: string[]) => ({
+			apply: (compiler: webpack.Compiler) =>
+				compiler.hooks.done.tap("collecting", stats => {
+					for (const { message } of stats.toJson({ all: false, warnings: true })
+						.warnings ?? [])
+						warnings.push(message)
+				})
+		})
+
 		// a build writing more than one file, as CommonJS
 		const splitBundle = async (name: Compiler, root: string) => {
 			const stats = await built(
@@ -2533,6 +2664,69 @@ console.log(typeof User["~standard"].validate)
 								}
 							}
 						}
+
+				describe("a module an inline loader request keeps from the plugin", () => {
+					const identity = fromHere("identityLoader.ts")
+
+					for (const prefix of ["-!", "!!", "!"]) {
+						it(`reads what ${prefix} imports reads, as it can't write it`, async () => {
+							const root = fixture(
+								`inlineLoader-${
+									prefix === "-!" ? "normal"
+									: prefix === "!!" ? "all"
+									: "own"
+								}`,
+								{
+									"reader.js": `import { User } from "./types.js"
+
+export const use = () => User.expression
+`,
+									"main.js": `import { use } from "${prefix}${identity}!./reader.js"
+
+console.log(use())
+`
+								}
+							)
+							attest(output(await bundle(name, root))).equals(
+								"{ name: string }\n"
+							)
+						})
+					}
+
+					it("refuses to read a file the plugin writes one way and not another", async () => {
+						const root = fixture("inlineLoader-both", {
+							"reader.js": `import { User } from "./types.js"
+
+export const use = () => User.expression
+`,
+							"main.js": `import { use } from "./reader.js"
+import { use as inlined } from "-!${identity}!./reader.js"
+
+console.log(use(), inlined())
+`
+						})
+						const warnings: string[] = []
+						const js = await bundle(
+							name,
+							root,
+							{},
+							{
+								plugins: [
+									compilers[name][1]({ cwd: root }) as never,
+									collecting(warnings) as never
+								]
+							}
+						)
+						attest(warnings.join("\n").includes("from two codes")).equals(true)
+						// built one module at a time, what the inline request reads is missed
+						attest(
+							spawnSync(process.execPath, {
+								input: js,
+								encoding: "utf8"
+							}).stderr.includes("expression isn't baked into this validator")
+						).equals(true)
+					})
+				})
 
 				describe("a package declaring no side effects", () => {
 					const noSideEffects = {

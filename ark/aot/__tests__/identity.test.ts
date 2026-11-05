@@ -495,4 +495,55 @@ console.log(A === SameA, A({ a: "" }), B({ b: "" }))
 		attest(run(js)).equals(runPlain(root))
 		attest(js.includes("tablesByKey")).equals(false)
 	})
+
+	describe("where no read compares them", () => {
+		const twoModules = (main: string, a = `type({ a: "string" })`) =>
+			fixture(`unread-${main.replace(/\W+/g, "-").slice(0, 40)}`, {
+				"a.ts": `import { type } from "arktype"\nexport const A = ${a}\n`,
+				"b.ts": `import { type } from "arktype"\nexport const B = ${a}\n`,
+				"main.ts": `import { A } from "./a.ts"\nimport { B } from "./b.ts"\n${main}\n`
+			})
+		const reads = (name: string, main: string, interns: boolean) =>
+			it(name, async () => {
+				const root = twoModules(main)
+				for (const opts of [{}, { preset: "smallest" as const }]) {
+					const js = await bundle(root, production, opts)
+					attest(js.includes("tablesByKey")).equals(interns)
+					attest(run(js)).equals(runPlain(root))
+				}
+			})
+
+		reads(
+			"creates each where they're only called",
+			`console.log(A({ a: "" }), B({ a: "" }))`,
+			false
+		)
+		reads(
+			"interns them where they're compared",
+			`console.log(A === B, A({ a: "" }))`,
+			true
+		)
+		reads(
+			"interns them where what they hold could be",
+			`console.log(A.allows === B.allows, A({ a: "" }))`,
+			true
+		)
+		reads(
+			"interns them where they're handed off",
+			`const seen = new Set([A]); console.log(seen.has(B))`,
+			true
+		)
+
+		it("interns one holding a callback, which creating it twice could run twice", async () => {
+			const root = fixture("unread-callback", {
+				"shared.ts": `export const isLong = (s: string) => s.length > 1\n`,
+				"a.ts": `import { type } from "arktype"\nimport { isLong } from "./shared.ts"\nexport const A = type("string").narrow(isLong)\n`,
+				"b.ts": `import { type } from "arktype"\nimport { isLong } from "./shared.ts"\nexport const B = type("string").narrow(isLong)\n`,
+				"main.ts": `import { A } from "./a.ts"\nimport { B } from "./b.ts"\nconsole.log(A("ab"), B("abc"))\n`
+			})
+			const js = await bundle(root, production)
+			attest(js.includes("tablesByKey")).equals(true)
+			attest(run(js)).equals(runPlain(root))
+		})
+	})
 })
