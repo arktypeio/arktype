@@ -586,10 +586,10 @@ const failsValue = (
 		appliesValues && checker.e ? checker.e(ctx, checker, value, k)
 		: appliesValues && checker.t?.e ? checker.t.e(ctx, checker, value, k)
 		: (!checker.t ||
-				// as arktype, one checking only, as Allows does, applies it once
-				(ctx as any).chkOnly ||
 				!(appliesValues && checker.a ?
-					checker.a(value, ctx, k)
+					// as arktype, a value reading its ctx is applied once where
+					// one only checks, as Allows does
+					!(ctx as any).chkOnly && checker.a(value, ctx, k)
 				:	checker(value))) &&
 			(ctx as FailureContext)._in(checker as CompactApply, data, k)
 	:	!checker(value)

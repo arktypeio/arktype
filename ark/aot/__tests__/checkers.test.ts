@@ -856,6 +856,22 @@ ${repaying}
 		attest(behaviorOf(await bundle(root, smallest))).equals(runPlain(root))
 	})
 
+	it("checks a transforming key a pipe reaches before applying it where no callback reads ctx", async () => {
+		const root = fixture(
+			"checkedByPipe",
+			appOf(
+				proved,
+				`const T = type({ outer: { "+": "delete", v: N }, other: "number" })
+const Piped = type("string.json.parse").pipe(T)
+run(() => Piped('{ "outer": { "v": "a" }, "other": 1 }'))
+`
+			)
+		)
+		const compiled = behaviorOf(await bundle(root))
+		attest(compiled).equals("outer.v must be valid according to isLong 3\n")
+		attest(behaviorOf(await bundle(root, smallest))).equals(compiled)
+	})
+
 	it("reads a failing value once at each depth, with no ctx", async () => {
 		const js = await bundle(
 			fixture(
