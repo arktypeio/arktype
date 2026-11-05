@@ -1028,14 +1028,8 @@ export class Precompiler {
 		const [interned, baked] = this.internedIn(
 			plan,
 			readings.baked,
-			// every read is a call or a member holding nothing of its own, or two
-			// values for one Type can't be told apart. An assert read to be
-			// called elsewhere, which marks it piped, is a Type's own
 			typeof used === "string" ||
-				used.has("allows") ||
-				used.has("meta") ||
-				used.has("~standard") ||
-				used.has("piped")
+				[...used].some(read => !readsNoIdentity.includes(read))
 		)
 		// a size build's units are already module constants
 		const flattens =
@@ -7620,6 +7614,19 @@ const isReachedOnlyAtBuild = (
 					!site.references.some(reference => contains(reference, node)) &&
 					!(site.definition && contains(site.definition, node))))
 	)
+
+// reads that can't tell two values of one Type apart: a call, or a method
+// called where it's read (one read to call elsewhere is piped), each Type's
+// assert its own and its prototype's shared; and a call's errors, which hold
+// no Type. Any other read of one, or of what it holds, lets it escape where
+// code may compare it, so equal Types are one value as arktype's are
+const readsNoIdentity: UsedMember[] = [
+	"call",
+	"assert",
+	"methods",
+	"summary",
+	"errors"
+]
 
 // each may hand a program's code its errors, or throws them
 const readsErrorsWhole: UsedMember[] = ["errors", "assert", "methods", "piped"]
