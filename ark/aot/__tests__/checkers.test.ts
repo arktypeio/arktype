@@ -80,6 +80,57 @@ contextualize(function (this: Mocha.Suite) {
 			attest(behaviorOf(checkers)).equals(expected)
 		})
 
+	describe("what it writes", () => {
+		it("reads as arktype does, whichever check holds its text", async () => {
+			const root = fixture(
+				"writes",
+				`import { type } from "arktype"
+
+const T = type({
+	positive: "number > 0",
+	nonNegative: "number >= 0",
+	negative: "number < 0",
+	nonPositive: "number <= 0",
+	more: "number > 5",
+	least: "number >= 5",
+	less: "number < 5",
+	most: "number <= 5",
+	integer: "number % 1",
+	even: "number % 2",
+	third: "number % 3",
+	"optional?": "string.uuid"
+})
+const Missing = type({ id: "string.uuid", ip: "string.ip", list: "string[]" })
+
+console.log(String(T({ positive: 0, nonNegative: -1, negative: 0, nonPositive: 1, more: 5, least: 4, less: 5, most: 6, integer: 1.5, even: 3, third: 4, optional: 1 })))
+console.log(String(Missing({})))
+console.log(String(Missing({ id: 1, ip: "x", list: [1] })))
+${repaying}
+`
+			)
+			attest(behaviorOf(await bundle(root, smallest)))
+				.snap(`positive must be positive
+nonNegative must be non-negative
+negative must be negative
+nonPositive must be non-positive
+more must be more than 5
+least must be at least 5
+less must be less than 5
+most must be at most 5
+integer must be an integer
+even must be even
+third must be a multiple of 3
+optional must be a UUID
+id must be a string
+ip must be a string
+list must be an array
+id must be a UUID
+ip must be an IP address
+list[0] must be a string
+`)
+		})
+	})
+
 	describe("a narrow that reads only its argument", () => {
 		itRunsAsUnproved(
 			"runs as often at each depth, beside what transforms",

@@ -97,34 +97,27 @@ export const arrayCheck: Check = /* @__PURE__ */ check(
 	data => Array.isArray(data)
 )
 
-// a bound's description, as arktype writes it
+// a bound's description, as arktype writes it. An exclusive bound is apart, so
+// an app writing none ships none of its text
 export const min = ((
 	rule: number,
-	exclusive?: 1,
-	description = rule === 0 ?
-		exclusive ? "positive"
-		:	"non-negative"
-	:	`${exclusive ? "more than" : "at least"} ${rule}`
-): Check =>
-	check(
-		"min",
-		description,
-		exclusive ? data => data > rule : data => data >= rule
-	)) satisfies Fn
+	description = rule === 0 ? "non-negative" : `at least ${rule}`
+): Check => check("min", description, data => data >= rule)) satisfies Fn
+
+export const moreThan = ((
+	rule: number,
+	description = rule === 0 ? "positive" : `more than ${rule}`
+): Check => check("min", description, data => data > rule)) satisfies Fn
 
 export const max = ((
 	rule: number,
-	exclusive?: 1,
-	description = rule === 0 ?
-		exclusive ? "negative"
-		:	"non-positive"
-	:	`${exclusive ? "less than" : "at most"} ${rule}`
-): Check =>
-	check(
-		"max",
-		description,
-		exclusive ? data => data < rule : data => data <= rule
-	)) satisfies Fn
+	description = rule === 0 ? "non-positive" : `at most ${rule}`
+): Check => check("max", description, data => data <= rule)) satisfies Fn
+
+export const lessThan = ((
+	rule: number,
+	description = rule === 0 ? "negative" : `less than ${rule}`
+): Check => check("max", description, data => data < rule)) satisfies Fn
 
 export const minLength = ((
 	rule: number,
@@ -146,11 +139,16 @@ export const exactLength = ((
 
 export const divisor = ((
 	rule: number,
-	description = rule === 1 ? "an integer"
-	: rule === 2 ? "even"
-	: `a multiple of ${rule}`
+	description = rule === 2 ? "even" : `a multiple of ${rule}`
 ): Check =>
 	check("divisor", description, data => data % rule === 0)) satisfies Fn
+
+// what nearly every divisor is, created once
+export const integerCheck: Check = /* @__PURE__ */ check(
+	"divisor",
+	"an integer",
+	data => data % 1 === 0
+)
 
 // a pattern without g or y, whose test reads no lastIndex
 export const pattern = ((
@@ -175,12 +173,11 @@ export const stringRange = ((max?: number, min?: number): Checker => {
 
 // an integer from least to most, inclusive
 export const integerRange = ((least?: number, most?: number): Checker => {
-	const integer = divisor(1)
 	const tooSmall = least === undefined ? numberCheck : min(least)
 	const tooLarge = most === undefined ? numberCheck : max(most)
 	const checker: Checker = (data: any, ctx) =>
 		Number.isFinite(data) ?
-			(data % 1 === 0 || !failsAt(ctx as never, integer, data)) &&
+			(data % 1 === 0 || !failsAt(ctx as never, integerCheck, data)) &&
 			(!(data > most!) || !failsAt(ctx as never, tooLarge, data)) &&
 			(!(data < least!) || !failsAt(ctx as never, tooSmall, data))
 		:	!failsAt(ctx as never, numberCheck, data)
@@ -231,7 +228,9 @@ export const booleanChecker: Checker = /* @__PURE__ */ check(
 export const intersection = ((
 	basis: Check | 0,
 	refinements: readonly Check[],
-	within?: Checker
+	within?: Checker,
+	// what a missing key expects, unless a keyword's basis says more than its brief
+	brief = basis ? basis.description : "present"
 ): Checker => {
 	const checker: Checker = (data, ctx) => {
 		if (basis && !basis.test(data)) return !failsAt(ctx as never, basis, data)
@@ -244,8 +243,7 @@ export const intersection = ((
 		}
 		return !passed || !within || within(data, ctx)
 	}
-	// its brief: its basis's description, or "present" without one
-	checker.description = basis ? basis.description : "present"
+	checker.description = brief
 	checker.t = within?.t
 	return checker
 }) satisfies Fn
