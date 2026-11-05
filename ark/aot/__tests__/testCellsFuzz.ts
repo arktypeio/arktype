@@ -4,7 +4,7 @@
 // modules, and a module run twice. Each module's `check` is one of `reads`,
 // reaching a validator through one of `wrappers`. Observes each result, what
 // the call did to its input, and each predicate call in order.
-// ARK_CELLS_FUZZ=<count>[:<seed>]|catalog[:<wrapper>[:static|dynamic|query]]
+// ARK_CELLS_FUZZ=<count>[:<seed>]|twins|catalog[:<wrapper>[:static|dynamic|query]]
 // [ARK_CELLS_FUZZ_HOSTS=esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,chunks,chunks:smallest,modules,webpack,webpack:smallest,rspack,rspack:smallest,node,dev,emit]
 // [ARK_CELLS_FUZZ_FAILURES=<dir>] pnpm testCellsFuzz
 import { fromHere } from "@ark/fs"
@@ -329,6 +329,8 @@ interface App {
 	readsAllows: boolean
 	// tallied apart: which Types are one instance differs by host (F2)
 	comparesIdentity: boolean
+	// each of twinDefinitions created exported in one module, unexported in main
+	twins?: true
 }
 
 const readNames = Object.keys(reads)
@@ -391,6 +393,15 @@ const filesOf = (app: App): Record<string, string> => {
 			},
 			include: ["*.ts"]
 		})
+	}
+	if (app.twins) {
+		const names = Object.keys(twinDefinitions)
+		files["twin.ts"] =
+			`import { type } from "arktype"
+export const double = (d: any) => (typeof d === "number" ? d * 2 : d)
+export const positive = (d: number) => d > 0
+${names.map(name => `export const ${name} = type(${twinDefinitions[name]})`).join("\n")}
+`
 	}
 	if (app.config !== "none") {
 		files["config.ts"] =
@@ -455,8 +466,11 @@ const filesOf = (app: App): Record<string, string> => {
 		return `[${local}, () => [${[...values, ...values, ...extra].join(", ")}]]`
 	})
 	const awaited = imports.filter(line => line.startsWith("const "))
+	const twinNames = app.twins ? Object.keys(twinDefinitions) : []
 	files["main.ts"] = `${staticImports.join("\n")}
+${app.twins ? `import { double, positive, ${twinNames.join(", ")} } from "./twin.ts"` : ""}
 ${awaited.join("\n")}
+${twinNames.map(name => `const ${name}Here = type(${twinDefinitions[name]})`).join("\n")}
 
 const { calls } = globalThis as any
 const printed = (value: unknown) =>
@@ -511,12 +525,24 @@ for (const [validator, inputs] of cases) {
 			`
 const validators = cases.map(([validator]) => validator)
 observations.push(new Set(validators).size)
-observations.push(validators.map(v => validators.indexOf(v)))`
+observations.push([...validators.map(v => validators.indexOf(v)), ${twinNames.map(name => `${name}Here === ${name}`).join(", ")}])`
 		:	""
 	}
 console.log(JSON.stringify(observations))
 `
 	return files
+}
+
+// a Type and its unexported twin in another module, which arktype returns as one
+const twinDefinitions: Record<string, string> = {
+	KeywordMorph: `"string.numeric.parse"`,
+	PropMorph: `{ a: "string.numeric.parse" }`,
+	ArrayMorph: `"string.numeric.parse[]"`,
+	HeldMorph: `["string", "=>", double]`,
+	HeldNarrow: `["number", ":", positive]`,
+	Keyword: `"string.email"`,
+	Plain: `{ a: "string" }`,
+	Strings: `"string[]"`
 }
 
 const sourceOfApp = (app: App) => {
@@ -964,6 +990,7 @@ const check = async (app: App): Promise<boolean> => {
 		dir
 	)
 	const fullExpected = observationsOf(expected)
+	if (app.twins) console.log(`source: ${JSON.stringify(fullExpected?.at(-1))}`)
 	const withoutIdentity = (observations: unknown[] | undefined) =>
 		app.comparesIdentity ? observations?.slice(0, -2) : observations
 	const expectedObservations = withoutIdentity(fullExpected)
@@ -994,6 +1021,8 @@ const check = async (app: App): Promise<boolean> => {
 				JSON.stringify(fullExpected.slice(-2))
 		)
 			tally.identities++
+		if (app.twins && observed)
+			console.log(`${host}: ${JSON.stringify(observed.at(-1))}`)
 		// an app crashing whole in arktype must crash in a build, or be refused
 		let mismatch =
 			!expectedObservations || !observations ?
@@ -1068,7 +1097,18 @@ const check = async (app: App): Promise<boolean> => {
 }
 
 const started = Date.now()
-if (countArg === "catalog") {
+if (countArg === "twins") {
+	await check({
+		modules: [{ read: "literal", wrapper: "narrow" }],
+		importing: "static",
+		writes: false,
+		config: "none",
+		configFirst: true,
+		readsAllows: false,
+		comparesIdentity: true,
+		twins: true
+	})
+} else if (countArg === "catalog") {
 	const wrapper = seedArg ?? "narrow"
 	for (const read of readNames) {
 		// a chunk that took in the module holding its state makes it anew when run
