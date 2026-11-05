@@ -469,7 +469,7 @@ for (const [shape, files] of Object.entries(barrelShapes)) {
 			scenarios[
 				`barrel ${shape} ${compiler} ${concatenateModules ? "concatenated" : "apart"}`
 			] = {
-				only,
+				...(only && { only }),
 				files: { "package.json": free, ...files },
 				config: build => ({
 					...config?.(build),
