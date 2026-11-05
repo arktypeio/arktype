@@ -923,7 +923,8 @@ export class Precompiler {
 	// each named by the first site and baking what any of them read
 	private internedIn(
 		{ planned, precompiled }: ProgramPlan,
-		baked: ReadonlyMap<string, BakedMembers>
+		baked: ReadonlyMap<string, BakedMembers>,
+		comparesTypes: boolean
 	): [
 		interned: ReadonlyMap<unknown, string>,
 		baked: ReadonlyMap<string, BakedMembers>
@@ -950,6 +951,8 @@ export class Precompiler {
 				sites.every(([, , id]) => id === sites[0][2])
 			)
 				continue
+			// a hole could be a callback that creating it twice would run twice
+			if (!comparesTypes && !keyOf(root as BaseRoot)[1].length) continue
 			const [path, { start }] = sites.reduce((first, site) =>
 				(
 					site[0] < first[0] ||
