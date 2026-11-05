@@ -290,14 +290,14 @@ export const writeLazyRead = (name: string, initial: string): string =>
 export const writeValue = (
 	hoisted: boolean,
 	name: string,
-	expression: string
+	expression: string,
+	// reads only names and literals, so a bundler drops it with no call around it
+	isPure?: boolean
 ): string =>
 	hoisted ?
 		`var ${name}Value\nfunction ${name}() {\n\treturn ${writeLazyRead(`${name}Value`, expression)}\n}`
-	: /^runtime\.[\w$]+\([\w$]+\)$/.test(expression) ?
-		// reading only names, it tree-shakes without the call around it
-		`const ${name} = /* @__PURE__ */ ${expression}`
-	:	`const ${name} = /* @__PURE__ */ (() => ${expression})()`
+	: isPure ? `const ${name} = /* @__PURE__ */ ${expression}`
+	: `const ${name} = /* @__PURE__ */ (() => ${expression})()`
 
 // errors "none"'s root issue, found once read where it defers issues
 export const invalidErrorsOf = (defersIssues: boolean): string =>

@@ -1545,12 +1545,22 @@ return namespace`
 		return unit.roots.map(root => {
 			const name = unit.names[root.id]
 			const shape = writing.shapesByName[name]
+			const isChecker = this.isCheckerNode(root)
+			const readsCtx =
+				this.baking.flattens &&
+				this.baking.detailsErrors &&
+				this.baking.combines &&
+				root.allowsCtx
 			return writeValue(
 				this.baking.hoisted,
 				`${name}Node`,
 				shape ? `${this.readValue(unit.name)}[${returned.indexOf(shape)}]`
-				: this.isCheckerNode(root) ?
-					`runtime.checkerNode(${this.traversalsOf(root, unit)[0]})`
+				: isChecker ? `runtime.checkerNode(${this.traversalsOf(root, unit)[0]})`
+				: readsCtx ?
+					`runtime.ctxNode(${[
+						this.writeShapeFlags(root, unit),
+						...this.traversalsOf(root, unit)
+					].join(", ")})`
 				:	`runtime.freeze(${this.writeShape(
 						root,
 						this.readValue(`${name}Node`),
@@ -1559,7 +1569,8 @@ return namespace`
 							traversal =>
 								`${this.readValue(unit.name)}[${returned.indexOf(traversal)}]`
 						)
-					)})`
+					)})`,
+				!shape && (isChecker || readsCtx)
 			)
 		})
 	}
@@ -3279,6 +3290,25 @@ return namespace`
 			)}))`
 		)
 		return shape
+	}
+
+	// what a node reading its ctx is told apart by
+	writeShapeFlags(node: BaseRoot, unit: RootUnit): string {
+		const entries = shapeFlags.flatMap(flag =>
+			flag !== "allowsCtx" && node[flag] ? [`${flag}: true`] : []
+		)
+		if (node.hasAlias) {
+			entries.unshift(
+				`id: ${JSON.stringify(unit.names[node.id])}`,
+				`trackedId: ${JSON.stringify(
+					unit.names[node.trackedId as NodeId] ??
+						throwParseError(
+							writeUnprecompilableMessage(`${node.expression}'s cycle`)
+						)
+				)}`
+			)
+		}
+		return `{ ${entries.join(", ")} }`
 	}
 
 	writeShape(

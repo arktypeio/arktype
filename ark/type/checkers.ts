@@ -25,6 +25,7 @@ import {
 	pipeTransformed,
 	requiredSiteOf,
 	runtimeConfig,
+	runtimeScope,
 	silentCtx,
 	siteOf,
 	transformedInApply,
@@ -958,6 +959,26 @@ export const checkerNode = ((checker: Checker) =>
 		tTransform: checker.t,
 		allows: checker
 	})) satisfies Fn
+
+// a node read past its allows, by a cycle or a callback reading its ctx
+export const ctxNode = ((
+	flags: object,
+	tAllows: Checker,
+	tApply: Checker,
+	tTransform?: Transform
+) => {
+	const node: any = Object.freeze({
+		...flags,
+		allowsCtx: true,
+		tAllows,
+		tApply,
+		tTransform,
+		allows: (data: unknown) =>
+			allowsUntracked(node, data) ?? allowsInContext(node, data, runtimeConfig),
+		$: runtimeScope
+	})
+	return node
+}) satisfies Fn
 
 // a union transforms by the branch data takes
 const transformingBranches = (
