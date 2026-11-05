@@ -68,6 +68,21 @@ export const narrowedBy = ((
 	return checker
 }) satisfies Fn
 
+// a callback a build proved reads only data, written in place with no name
+export const narrowed = ((
+	narrow: (data: any) => boolean,
+	description?: string
+): Checker => {
+	const site = siteOf(
+		"predicate",
+		description ?? "valid according to an anonymous predicate"
+	)
+	const checker: Checker = (data, ctx) =>
+		!!narrow(data) || !failsAt(ctx as never, site, data)
+	checker.description = description
+	return checker
+}) satisfies Fn
+
 /** the checker a validator is created from, as a call a bundler may drop */
 export const allowsOf = ((validator: { allows: Checker }): Checker =>
 	validator.allows) satisfies Fn

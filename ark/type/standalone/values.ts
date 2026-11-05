@@ -223,6 +223,9 @@ export const holeNameIn = (
 // a function the program creates once, which what reads it finds in one variable
 export interface HoleCell {
 	name: string
+	// the function's own text, where what it reads means the same in any module,
+	// so the cell holds it and no site sets it
+	text?: string | undefined
 }
 
 export interface HoleCells {
