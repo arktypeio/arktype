@@ -1029,11 +1029,13 @@ export class Precompiler {
 			plan,
 			readings.baked,
 			// every read is a call or a member holding nothing of its own, or two
-			// values for one Type can't be told apart
+			// values for one Type can't be told apart. An assert read to be
+			// called elsewhere, which marks it piped, is a Type's own
 			typeof used === "string" ||
 				used.has("allows") ||
 				used.has("meta") ||
-				used.has("~standard")
+				used.has("~standard") ||
+				used.has("piped")
 		)
 		// a size build's units are already module constants
 		const flattens =
