@@ -183,20 +183,19 @@ contextualize(() => {
 			"\ude00",
 			"\u{1f600}"
 		]
-		const random = (() => {
-			let state = 1
-			// xorshift, so a failure reproduces
-			return (n: number) => {
-				state ^= state << 13
-				state ^= state >>> 17
-				state ^= state << 5
-				return (state >>> 0) % n
-			}
-		})()
+		let state = 1
+		// xorshift, so a failure reproduces
+		const random = (n: number) => {
+			state ^= state << 13
+			state ^= state >>> 17
+			state ^= state << 5
+			return (state >>> 0) % n
+		}
 		const pick = <t>(values: readonly t[]) => values[random(values.length)]
 
 		// valid strings, each edited up to 3 times by the chars the format reads
 		const generated = (valid: readonly string[], chars: string) => {
+			state = 1
 			const pool = [...chars, ...adversarial]
 			const data: string[] = []
 			for (let i = 0; i < 100_000; i++) {
