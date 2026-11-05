@@ -1556,7 +1556,8 @@ return namespace`
 				this.baking.hoisted,
 				`${name}Node`,
 				shape ? `${this.readValue(unit.name)}[${returned.indexOf(shape)}]`
-				: isChecker ? `runtime.checkerNode(${this.traversalsOf(root, unit)[0]})`
+				: isChecker ?
+					`runtime.checkerNode(${this.traversalsOf(root, unit)[0]}${root.reportsPred ? ", true" : ""})`
 				: readsCtx ?
 					`runtime.ctxNode(${[
 						this.writeShapeFlags(root, unit),
@@ -1583,7 +1584,9 @@ return namespace`
 			this.baking.combines &&
 			!this.baking.compiledInputs.has(root.hash) &&
 			combines(root) &&
-			shapeFlags.every(flag => !!root[flag] === (flag === "tfs"))
+			shapeFlags.every(
+				flag => flag === "reportsPred" || !!root[flag] === (flag === "tfs")
+			)
 		)
 	}
 
@@ -3726,7 +3729,8 @@ const shapeFlags = [
 	"hasAlias",
 	"tfs",
 	"allowsCtx",
-	"checksCtx"
+	"checksCtx",
+	"reportsPred"
 ] as const
 
 const isAny = (): boolean => true

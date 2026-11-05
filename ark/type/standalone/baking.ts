@@ -347,6 +347,10 @@ export interface IssueFeatures {
 	listsUnions: boolean
 	readsKeySites: boolean
 	runsArktype: boolean
+	appliesValues: boolean
+	transformsBranches: boolean
+	failsInBranches: boolean
+	discriminatesBooleans: boolean
 }
 
 export const noIssueFeatures: IssueFeatures = {
@@ -355,7 +359,11 @@ export const noIssueFeatures: IssueFeatures = {
 	writesText: false,
 	listsUnions: false,
 	readsKeySites: false,
-	runsArktype: false
+	runsArktype: false,
+	appliesValues: false,
+	transformsBranches: false,
+	failsInBranches: false,
+	discriminatesBooleans: false
 }
 
 export interface StandaloneModules {

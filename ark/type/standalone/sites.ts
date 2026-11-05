@@ -132,11 +132,18 @@ export const addIssueFeatures = (
 			features.reportsIndices = true
 			features.bracketsKeys = true
 			features.writesText = true
+		} else if (node.is("union") && node.tfs) {
+			features.transformsBranches = true
+			if (node.hasMorph || node.hasAlias) features.failsInBranches = true
 		}
 	}
 	for (const unit of units) {
-		if (unit.members.some(([, source]) => addsUnionIssue.test(source)))
-			features.listsUnions = true
+		for (const [, source] of unit.members) {
+			if (addsUnionIssue.test(source)) features.listsUnions = true
+			if (appliesValue.test(source)) features.appliesValues = true
+			if (discriminatesBoolean.test(source))
+				features.discriminatesBooleans = true
+		}
 		for (const ref of unit.refs) {
 			if (!failureSites.has(ref as object)) continue
 			const site = ref as FailureSite
@@ -148,6 +155,14 @@ export const addIssueFeatures = (
 }
 
 const isUnion = (node: BaseNode): boolean => node.is("union")
+
+// what makes a checker apply a value itself
+const appliesValue =
+	/runtime\.(?:morphing|readingCtx|holdingAlias|aliasedValue|aliasedMember)\(/
+
+// a string key written alike may match too, where it's only read needlessly
+const discriminatesBoolean =
+	/runtime\.discriminate\("(?:[^"\\]|\\.)*", { (?:true|false): /
 
 // what adds a union's issue of its branches'
 const addsUnionIssue =

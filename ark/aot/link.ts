@@ -328,9 +328,13 @@ const replaceDataCalls = (
 	return replaced + code.slice(from)
 }
 
-// a shorter call's name and module pay for what sharing it saves (ntwine: at
-// 90, import instructions -10%, gz +0.2 KB; at 160 about none of the former)
-const minSharedCall = 90
+// a shorter call's name and declaration cost what sharing saves, and gzip's matches
+// save most of a call written less often anyway. On ntwine, gz KB, min MB, import G:
+// at 2 calls of 90 116.8, 0.358, 0.179; at 5 of 64 116.2, 0.360, 0.179; none 116.6,
+// 0.381, 0.199. On 92 Types, gz KB: 7.62; 7.36; 7.35
+const minSharedCall = 64
+
+const minSharedCalls = 5
 
 // a checker holding only data is the same wherever it's written, so what's
 // written more than once is made once. Each makes closures an import runs,
@@ -355,7 +359,8 @@ const withSharedChecks = (
 		for (const call of calls.values()) count(bodyOf(call))
 		const shareIn = (code: string, imports: Set<string>) =>
 			replaceDataCalls(code, call => {
-				if (counts.get(call)! < 2 || call.length < minSharedCall) return
+				if (counts.get(call)! < minSharedCalls || call.length < minSharedCall)
+					return
 				const name = `check${hashOf(call)}`
 				calls.set(name, call)
 				imports.add(name)

@@ -246,7 +246,7 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 	// branches lacking the key are tried by their Allows
 	if (otherwise === true || (otherwise && !allowsDecides(otherwise))) return
 	const areBooleans = Object.keys(keyed).every(isBooleanCase)
-	if (areBooleans && otherwise) return
+	if (areBooleans && "default" in discriminant.cases) return
 	for (const k in keyed) {
 		if (!areBooleans && !k.startsWith('"')) return
 		const value = JSON.parse(k) as string
@@ -339,7 +339,8 @@ const unprunedOf = (
 	isCase: (branch: BaseRoot) => boolean,
 	pruned: BaseRoot | true
 ): BaseRoot | true => {
-	if (pruned === true) return pruned
+	// a case of several branches is the union of what they're pruned to
+	if (pruned === true || pruned.is("union")) return pruned
 	const matched = node.branches.filter(isCase)
 	return matched.length === 1 ? matched[0] : pruned
 }
@@ -354,6 +355,13 @@ const isLiteralKey = (key: PropertyKey): key is string =>
 // a primitive default, written where its key is absent
 const isLiteralDefault = (prop: Optional.Node): boolean =>
 	!prop.value.tfs && isPrinted(prop.default)
+
+// a default written by what checks its key, as a function's or one replacing
+// undefined is, rather than by what writes the literals of the keys beside it
+const writesByValues = (prop: Prop.Node): boolean =>
+	prop.is("optional") &&
+	prop.hasDef() &&
+	(prop.defaultsUndefined || !isLiteralDefault(prop))
 
 // what a key it rejects fails, as compiled code writes it
 const removedSiteOf = (structure: StructureNode): IssueContext | undefined =>
@@ -444,7 +452,7 @@ export interface CombinatorCompiler extends NodeCompiler {
 	readonly link: { byId: Record<NodeId, BaseNode> }
 	// whether it writes intersections a shape checks as that shape
 	readonly shapes: boolean
-	refToId(id: NodeId, opts?: { kind: "Allows" }): string
+	refToId(id: NodeId, opts?: { kind: "Allows" | "Apply" }): string
 }
 
 const writeArgs = (...args: (string | undefined)[]): string => {
@@ -552,12 +560,11 @@ const writeStructure = (
 	if (structure.sequence) {
 		const element = structure.sequence.variadic!
 		return writeCall(
-			element.tfs ? "transformingElementsOf" : "elementsOf",
+			!element.tfs ? "elementsOf"
+			: element.hasAlias || element.hasMorph ? "failingElementsOf"
+			: "transformingElementsOf",
 			ref(element),
-			!element.tfs ? undefined
-			: element.hasAlias ? "runtime.failingWithCtx"
-			: element.hasMorph ? "runtime.failingValues"
-			: undefined
+			element.tfs && element.hasAlias ? "1" : undefined
 		)
 	}
 	// in arktype's order; a required key expects its value's brief, which its checker holds
@@ -587,6 +594,15 @@ const writeStructure = (
 	})
 	const declared = writeObject(entries)
 	if (structure.index) {
+		const [{ signature, value }] = structure.index
+		if (
+			structure.index.length === 1 &&
+			!entries.length &&
+			!structure.handlesUndeclared &&
+			signature.is("domain") &&
+			signature.domain === "string"
+		)
+			return writeCall("recordOf", ref(value))
 		return writeCall(
 			"indexed",
 			`[${structure.index.map(({ signature, value }) => `[${readChecker(js, signature)}, ${ref(value)}]`).join(", ")}]`,
@@ -595,27 +611,37 @@ const writeStructure = (
 				JSON.stringify(removedSiteOf(structure)!.description)
 		)
 	}
-	const fails =
-		structure.hasAlias ? "runtime.failingWithCtx"
-		: structure.hasMorph ? "runtime.failingValues"
-		: undefined
-	if (structure.handlesUndeclared === "delete")
-		return writeCall("deletingProps", declared, fails)
+	const withCtx = structure.hasAlias ? "1" : undefined
+	const failing =
+		structure.hasAlias ||
+		structure.hasMorph ||
+		structure.props.some(writesByValues)
+	if (structure.handlesUndeclared === "delete") {
+		return writeCall(
+			failing ? "failingDeletingProps" : "deletingProps",
+			declared,
+			withCtx
+		)
+	}
 	if (!structure.handlesUndeclared) {
 		return writeCall(
-			structure.tfs ? "transformingProps" : "props",
+			!structure.tfs ? "props"
+			: failing ? "failingProps"
+			: "transformingProps",
 			declared,
-			fails
+			withCtx
 		)
 	}
 	const removed = removedSiteOf(structure)!
 	return writeCall(
-		structure.tfs ? "transformingClosedProps" : "closedProps",
+		!structure.tfs ? "closedProps"
+		: failing ? "failingClosedProps"
+		: "transformingClosedProps",
 		declared,
 		removed.description === "removed" ?
 			undefined
 		:	JSON.stringify(removed.description),
-		fails
+		withCtx
 	)
 }
 
@@ -801,7 +827,11 @@ const writeMorph = (js: CombinatorCompiler, node: MorphNode): string =>
 				}
 				// a morph references only its last step
 				js.link.byId[step.id] ??= step
-				return writeCall("piped", readChecker(js, step))
+				return writeCall(
+					"piped",
+					readChecker(js, step),
+					step.reportsPred ? "1" : undefined
+				)
 			})
 			.join(", ")}]`
 	)
@@ -887,6 +917,10 @@ const writeUnionCombinator = (
 ): string => {
 	const ref = (branch: BaseRoot, k?: string) =>
 		readCase(js, branch, k === undefined ? undefined : caseMember(node, k))
+	const fails =
+		node.tfs && (node.hasMorph || node.hasAlias) ?
+			"runtime.failingBranches"
+		:	undefined
 	const units = unitListOf(node)
 	if (units) {
 		if (
@@ -909,7 +943,10 @@ const writeUnionCombinator = (
 			([domain, branch]): [string, string] => [
 				domain,
 				// null and undefined are their domain's only value
-				branch === true || domain === "null" || domain === "undefined" ?
+				(
+					branch === true ||
+					(branch.is("unit") && (domain === "null" || domain === "undefined"))
+				) ?
 					"1"
 				:	ref(branch, JSON.stringify(domain))
 			]
@@ -918,8 +955,9 @@ const writeUnionCombinator = (
 		const [domain, checker] = cases.find(([k]) => k !== "null")!
 		if (
 			js.shapes &&
+			!fails &&
 			cases.length === 2 &&
-			"null" in domains &&
+			cases.some(([k, branch]) => k === "null" && branch === "1") &&
 			description === runtime.nullableDescriptionOf(domain)
 		) {
 			return writeCall(
@@ -931,7 +969,8 @@ const writeUnionCombinator = (
 		return writeCall(
 			"domains",
 			writeObject(cases.map(([domain, branch]) => `${domain}: ${branch}`)),
-			JSON.stringify(description)
+			JSON.stringify(description),
+			fails
 		)
 	}
 	const discriminated = discriminatedOf(node)
@@ -959,7 +998,8 @@ const writeUnionCombinator = (
 					JSON.stringify(key),
 					cases,
 					JSON.stringify(site.description),
-					missedArg
+					missedArg,
+					fails
 				)
 			:	writeCall(
 					"discriminate",
@@ -968,7 +1008,8 @@ const writeUnionCombinator = (
 					unlessDerived(runtime.describeValues(keys), site),
 					missedArg,
 					discriminated.isOwn ? "1" : undefined,
-					discriminated.areBooleans ? "1" : undefined
+					discriminated.areBooleans ? "1" : undefined,
+					fails
 				)
 	}
 	return writeCall(
@@ -977,6 +1018,7 @@ const writeUnionCombinator = (
 		JSON.stringify(checkerDescriptionOf(node)),
 		listsBranches(node) ? undefined : (
 			`runtime.ownIssue(runtime.siteOf("union", ${JSON.stringify(unionSiteOf(node)!.description)}))`
-		)
+		),
+		fails
 	)
 }

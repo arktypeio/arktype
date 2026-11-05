@@ -7506,7 +7506,11 @@ const anyIssues: IssueFeatures = {
 	writesText: true,
 	listsUnions: true,
 	readsKeySites: true,
-	runsArktype: true
+	runsArktype: true,
+	appliesValues: true,
+	transformsBranches: true,
+	failsInBranches: true,
+	discriminatesBooleans: true
 }
 
 // a Type whose members a module importing it can bake, as it holds no value
