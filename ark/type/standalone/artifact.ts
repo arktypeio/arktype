@@ -1743,11 +1743,14 @@ return namespace`
 	read(specifier: string, name: string, param = name, arg = param): string {
 		this.importName(specifier, name)
 		if (!this.writing || param === arg) return arg
-		if (!this.writing.params.includes(param)) {
-			this.writing.params.push(param)
+		// a local can't take the name of the import it reads, as `const a = a()`
+		// would read itself
+		const local = param === name ? `${name}Read` : param
+		if (!this.writing.params.includes(local)) {
+			this.writing.params.push(local)
 			this.writing.args.push(arg)
 		}
-		return param
+		return local
 	}
 
 	importName(specifier: string, name: string): void {
