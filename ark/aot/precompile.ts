@@ -177,6 +177,7 @@ import {
 	isDeclaredAs,
 	isDefaultCheck,
 	isDynamic,
+	isLoop,
 	type InterpreterOptions,
 	ModuleNamespace,
 	type Read,
@@ -502,15 +503,7 @@ interface CopiesReport {
 // run other than once as its module runs: in a function, a class or a loop
 const isRepeated = (fn: Node): boolean => {
 	for (let node = fn.parent; node; node = node.parent) {
-		if (
-			isFunctionNode(node) ||
-			node.type === "ClassBody" ||
-			node.type === "ForStatement" ||
-			node.type === "ForInStatement" ||
-			node.type === "ForOfStatement" ||
-			node.type === "WhileStatement" ||
-			node.type === "DoWhileStatement"
-		)
+		if (isFunctionNode(node) || node.type === "ClassBody" || isLoop(node))
 			return true
 	}
 	return false
@@ -1349,9 +1342,10 @@ export class Precompiler {
 		if (read.type !== "Identifier") return false
 		const binding = module.scopes.byId.get(read)?.binding
 		if (!binding) return false
-		if (binding.kind !== "import")
-			return binding.kind !== "var" && isDeclaredAs(binding, source)
-		const target = this.graph.importOf(binding, module)
+		const target =
+			binding.kind === "import" ?
+				this.graph.importOf(binding, module)
+			:	{ kind: "binding" as const, binding }
 		return (
 			target.kind === "binding" &&
 			target.binding.kind !== "var" &&
@@ -5804,10 +5798,7 @@ export class Precompiler {
 							this.interpreter
 								.modulesDeclaring(value, state.trace)
 								.some(declaring => declaring !== module)),
-					binding:
-						read.type === "Identifier" ?
-							module.scopes.byId.get(read)?.binding
-						:	undefined,
+					binding: module.scopes.byId.get(read)?.binding,
 					isOneValue: this.isOneValueRead(read, value, module)
 				})
 			}
@@ -5847,8 +5838,7 @@ export class Precompiler {
 		if (call.type !== "CallExpression" || call.arguments.length !== 1) return
 		const [definition] = call.arguments
 		const callee = unwrapExpression(call.callee)
-		const reference =
-			callee.type === "Identifier" ? module.scopes.byId.get(callee) : undefined
+		const reference = module.scopes.byId.get(callee)
 		const isDefine =
 			callee.type === "MemberExpression" ?
 				!callee.computed &&
@@ -6917,10 +6907,7 @@ export class Precompiler {
 	// e.g. `T` declared in a `// @ark-runtime` definition
 	private isDeclaredInIsland(node: Node, module: SourceModule): boolean {
 		node = unwrapChain(node)
-		const binding =
-			node.type === "Identifier" ?
-				module.scopes.byId.get(node)?.binding
-			:	undefined
+		const binding = module.scopes.byId.get(node)?.binding
 		return !!binding && isInIsland(binding.declaration, module)
 	}
 

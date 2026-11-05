@@ -3,6 +3,7 @@ import { introspectionMembers } from "arktype/internal/standalone.ts"
 import { join } from "node:path"
 import type { Class, Node, Span } from "oxc-parser"
 import {
+	enclosingFunctionOf,
 	isFunctionNode,
 	memberNameOf,
 	type FunctionNode,
@@ -14,11 +15,12 @@ import {
 	exportNameOf,
 	isWriteTarget,
 	operatorOf,
-	runtimeParamsOf,
+	propertyKeyOf,
 	unwrapExpression,
 	walk,
 	type Binding
 } from "./scope.ts"
+import { runtimeParamsOf } from "./proofs.ts"
 import { importsOf } from "./scan.ts"
 import {
 	isDead,
@@ -1929,20 +1931,6 @@ const globalNameOf = (
 	return typeof name === "string" ? `${root.name}.${name}` : undefined
 }
 
-const propertyKeyOf = (property: {
-	key: Node
-	computed: boolean
-}): string | undefined =>
-	property.key.type === "Literal" ?
-		(
-			typeof property.key.value === "string" ||
-			typeof property.key.value === "number"
-		) ?
-			String(property.key.value)
-		:	undefined
-	: property.computed || property.key.type !== "Identifier" ? undefined
-	: property.key.name
-
 // e.g. `T.toJsonSchema()`, rather than called with options or read to call later
 const isCalledBare = (read: Node): boolean => {
 	const [operand, call] = operatorOf(read)
@@ -2005,11 +1993,6 @@ const isPatternTarget = ({ parent }: Node): boolean =>
 	parent?.type === "ArrayPattern" ||
 	parent?.type === "ObjectPattern" ||
 	(parent?.type === "Property" && parent.parent?.type === "ObjectPattern")
-
-const enclosingFunctionOf = (node: Node): FunctionNode | undefined => {
-	for (let at = node.parent; at; at = at.parent)
-		if (isFunctionNode(at)) return at
-}
 
 const enclosingClassOf = (node: Node): Class | undefined => {
 	for (let at = node.parent; at; at = at.parent) {

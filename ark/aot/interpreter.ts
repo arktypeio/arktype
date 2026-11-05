@@ -76,12 +76,11 @@ import {
 	type ModuleGraph
 } from "./graph.ts"
 import type { SourceModule } from "./module.ts"
-import { proveFunction } from "./proofs.ts"
+import { proveFunction, runtimeParamsOf } from "./proofs.ts"
 import {
 	isTransparent,
 	unwrapChain,
 	operatorOf,
-	runtimeParamsOf,
 	unwrapExpression,
 	walk,
 	type Binding
@@ -1528,10 +1527,7 @@ export class Interpreter {
 	// one its module creates where the site reads it
 	isOwnHole(read: Node, value: unknown, module: SourceModule): boolean {
 		const node = unwrapExpression(read)
-		const binding =
-			node.type === "Identifier" ?
-				module.scopes.byId.get(node)?.binding
-			:	undefined
+		const binding = module.scopes.byId.get(node)?.binding
 		// as `Symbol.for("tag")` creates it in any module that calls it
 		if (typeof value === "symbol") {
 			const source = binding ? initOf(binding) : node
@@ -3187,7 +3183,7 @@ const runsOnceIn = (node: Node, scope: Node): boolean => {
 	return true
 }
 
-const isLoop = (node: Node): boolean =>
+export const isLoop = (node: Node): boolean =>
 	node.type === "ForStatement" ||
 	node.type === "ForInStatement" ||
 	node.type === "ForOfStatement" ||
