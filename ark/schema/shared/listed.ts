@@ -1,5 +1,6 @@
 import type { array } from "@ark/util"
 import type { ArkErrorCode } from "./errors.ts"
+import { rewritesUnions } from "./issueFeatures.ts"
 import { messageOf, type ArkIssue } from "./issues.ts"
 
 const writeBranches = (alternatives: string[]): string => {
@@ -21,14 +22,13 @@ const alternativesOf = (issues: ArkIssue[]): string[] =>
 	)
 
 // each path as its own issue's message writes it, as arktype's union does
-export const writeListed = (errors: readonly ArkIssue[], depth = 0): string => {
+export const writeListed = (errors: readonly ArkIssue[]): string => {
 	// keyed by what `must be` ends, so no key is an object's own or an index
 	const atSubject: Record<string, ArkIssue[]> = {}
 	for (const error of errors) {
 		error.message ??= messageOf(error)
-		;(atSubject[
-			messageOf({ path: error.path.slice(depth), expected: "" } as never)
-		] ??= []).push(error)
+		;(atSubject[messageOf({ path: error.path, expected: "" } as never)] ??=
+			[]).push(error)
 	}
 	return writeBranches(
 		Object.entries(atSubject).map(
@@ -37,8 +37,15 @@ export const writeListed = (errors: readonly ArkIssue[], depth = 0): string => {
 	)
 }
 
+// where a union's branches can only fail alike, as `string.ip`'s formats do,
+// what listing them writes is any one's message
+const writeAlike = (errors: readonly ArkIssue[]): string => {
+	for (const error of errors) error.message ??= messageOf(error)
+	return errors[0].message!
+}
+
 // a union's issue, which says what its branches' first issues did
-export class ListedIssue implements ArkIssue {
+class ListedIssue implements ArkIssue {
 	code: ArkErrorCode = "union"
 	declare path: PropertyKey[]
 	declare data: unknown
@@ -57,13 +64,6 @@ export class ListedIssue implements ArkIssue {
 		this.errors = errors
 		this.expected = this.message = text
 	}
-
-	// read from the prototype, so no issue lists it among its own keys. Marks
-	// one with no reader of its text left in a bundle, which `instanceof` can't
-	// where a copy of this runtime wrote it
-	get _l(): true {
-		return true
-	}
 }
 
 export type UnionIssueOf = (
@@ -72,31 +72,53 @@ export type UnionIssueOf = (
 	errors: readonly ArkIssue[]
 ) => ArkIssue
 
-export const listedIssue: UnionIssueOf = (path, data, errors) =>
-	new ListedIssue(path.slice(), data, errors, writeListed(errors))
+// its readers, what pipes a validator and Standard Schema, only call what an
+// issue holds, so name nothing a bundler would then keep where a program has
+// no such reader or no union
+const issueWriterOf = (
+	write: (errors: readonly ArkIssue[]) => string
+): UnionIssueOf =>
+	rewritesUnions ?
+		(() => {
+			const movedBy = (
+				errors: readonly ArkIssue[],
+				path: (error: ArkIssue) => PropertyKey[]
+			): ArkIssue[] =>
+				errors.map(error => ({
+					...error,
+					path: path(error),
+					message:
+						error.message === messageOf(error) ? undefined : error.message
+				}))
+			class RewrittenIssue extends ListedIssue {
+				_m(prefix: array<PropertyKey>): ArkIssue {
+					const moved = movedBy(this.errors, error => [
+						...prefix,
+						...error.path
+					])
+					return new RewrittenIssue(
+						[...prefix, ...this.path],
+						this.data,
+						moved,
+						write(moved)
+					)
+				}
 
-// a union whose branches can only fail alike, as `string.ip`'s formats do, for
-// which listing them writes the message of any one
-export const alikeIssue: UnionIssueOf = (path, data, errors) => {
-	for (const error of errors) error.message ??= messageOf(error)
-	return new ListedIssue(path.slice(), data, errors, errors[0].message!)
-}
+				// as if data at its path were validated alone
+				_r(): string {
+					return write(
+						movedBy(this.errors, error => error.path.slice(this.path.length))
+					)
+				}
+			}
+			return (path, data, errors) =>
+				new RewrittenIssue(path.slice(), data, errors, write(errors))
+		})()
+	:	(path, data, errors) =>
+			new ListedIssue(path.slice(), data, errors, write(errors))
 
-// the issue at a path before its own, with its text written again there
-export const relisted = (
-	{ path, data, errors }: ArkIssue,
-	prefix: array<PropertyKey>
-): ArkIssue =>
-	listedIssue(
-		[...prefix, ...path],
-		data,
-		errors!.map(error => ({
-			...error,
-			path: [...prefix, ...error.path],
-			message: error.message === messageOf(error) ? undefined : error.message
-		}))
-	)
+export const listedIssue: UnionIssueOf =
+	/* @__PURE__ */ issueWriterOf(writeListed)
 
-// its text, as if data at its path were validated alone
-export const listedFromPath = ({ errors, path }: ArkIssue): string =>
-	writeListed(errors!, path.length)
+export const alikeIssue: UnionIssueOf =
+	/* @__PURE__ */ issueWriterOf(writeAlike)

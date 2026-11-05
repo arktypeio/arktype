@@ -852,6 +852,8 @@ export class Precompiler {
 			typeof used === "string" || used.has(member)
 		issues.readsErrors ||= readsErrorsWhole.some(isRead)
 		issues.readsSummary ||= issues.readsErrors || isRead("summary")
+		issues.rewritesUnions ||=
+			issues.readsErrors || issues.traversesUnions || isRead("~standard")
 		return issues
 	}
 
@@ -7632,6 +7634,7 @@ const anyIssues: IssueFeatures = {
 	bracketsKeys: true,
 	writesText: true,
 	listsUnions: true,
+	rewritesUnions: true,
 	traversesUnions: true,
 	readsKeySites: true,
 	runsArktype: true,

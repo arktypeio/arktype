@@ -37,7 +37,6 @@ import {
 	type SiteContext,
 	type UnionSite
 } from "./issues.ts"
-import { relisted } from "./listed.ts"
 import {
 	applyRejected,
 	Traversal,
@@ -186,8 +185,8 @@ export class ArkErrors extends BaseArkErrors {
 		if (merged instanceof ArkErrors) return mergeErrors(this, merged, prefix)
 		for (const issue of merged.issues) {
 			this._.push(
-				issue._l ?
-					errorOfIssue(relisted(issue, prefix) as never, [], this.config)
+				issue._m ?
+					errorOfIssue(issue._m(prefix) as never, [], this.config)
 				:	errorOfIssue(issue, prefix, this.config)
 			)
 		}

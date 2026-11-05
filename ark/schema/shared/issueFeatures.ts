@@ -13,6 +13,9 @@ export const writesText: boolean = true
 /** a union's issue listing its branches', written again where its path changes */
 export const listsUnions: boolean = true
 
+/** a union's issue written again where its path changes, as by a pipe or Standard Schema */
+export const rewritesUnions: boolean = true
+
 /** a union's issue added to a Traversal, where a validator isn't a checker */
 export const traversesUnions: boolean = true
 

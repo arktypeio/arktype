@@ -15,7 +15,6 @@ import {
 	reportsIndices,
 	writesText
 } from "./issueFeatures.ts"
-import { relisted } from "./listed.ts"
 
 type WrittenIssue = ArkIssue & { message: string }
 
@@ -217,8 +216,8 @@ export const mergeIssues = (
 ): void => {
 	for (const issue of merged.issues) {
 		errors._.push(
-			listsUnions && issue._l ?
-				relisted(issue, prefix)
+			listsUnions && issue._m ?
+				issue._m(prefix)
 			:	{
 					code: issue.code,
 					path: [...prefix, ...issue.path],

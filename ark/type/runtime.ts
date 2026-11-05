@@ -12,7 +12,6 @@ import {
 	FirstIssues,
 	issueAt,
 	issuesOf,
-	listedFromPath,
 	listsUnions,
 	mergeIssues,
 	messageOf,
@@ -282,14 +281,13 @@ export const standardResultOf = (
 			issues: (out._i ? (out.issues as ArkIssue[]) : out._).map(issue =>
 				(
 					issue.path.length &&
-					((listsUnions && issue._l) ||
+					((listsUnions && issue._r) ||
 						issue.message === undefined ||
 						issue.message === messageOf(issue))
 				) ?
 					{
 						...issue,
-						message:
-							listsUnions && issue._l ? listedFromPath(issue) : problemOf(issue)
+						message: listsUnions && issue._r ? issue._r() : problemOf(issue)
 					}
 				:	((issue.message ??= messageOf(issue)), issue)
 			) as StandardSchemaV1.Issue[]

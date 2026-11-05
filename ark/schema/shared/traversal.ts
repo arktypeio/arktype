@@ -31,7 +31,6 @@ import {
 	type UnionSite
 } from "./issues.ts"
 import { listsUnions } from "./issueFeatures.ts"
-import { relisted } from "./listed.ts"
 import { TransformErrors } from "./transform.ts"
 import { inProgress } from "./utils.ts"
 
@@ -237,8 +236,8 @@ export class InternalTraversal implements FailureContext {
 		else {
 			for (const issue of errors._) {
 				target._.push(
-					listsUnions && issue._l ?
-						relisted(issue, this.path)
+					listsUnions && issue._m ?
+						issue._m(this.path)
 					:	{
 							...issue,
 							path: [...this.path, ...issue.path],

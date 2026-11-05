@@ -10,7 +10,6 @@ import {
 	runsArktype,
 	writesText
 } from "./issueFeatures.ts"
-import { relisted } from "./listed.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 
 /**
@@ -26,8 +25,10 @@ export interface ArkIssue {
 	message?: string | undefined
 	/** a union's: each branch's first issue */
 	errors?: readonly ArkIssue[]
-	/** @internal a union's listing its branches, not its own text */
-	_l?: true
+	/** @internal a union's, its text written again at a path before its own */
+	_m?(prefix: array<PropertyKey>): ArkIssue
+	/** @internal a union's text, as if data at its path were validated alone */
+	_r?(): string
 }
 
 type WrittenIssue = ArkIssue & { message: string }
@@ -293,8 +294,8 @@ export const mergeIssues = (
 ): void => {
 	for (const issue of merged.issues) {
 		errors._.push(
-			listsUnions && issue._l ?
-				relisted(issue, prefix)
+			listsUnions && issue._m ?
+				issue._m(prefix)
 			:	{
 					code: issue.code,
 					path: [...prefix, ...issue.path],
