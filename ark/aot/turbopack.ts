@@ -9,6 +9,17 @@ import type {
 	PrecompilePluginOptions
 } from "./driver.ts"
 import { refuseDeclare } from "./declare.ts"
+import {
+	isArkFile,
+	isInProgram,
+	isProgramUnit,
+	isSourceRead,
+	programAnswerOf,
+	programOf,
+	type LoaderResolve,
+	type ProgramAnswer,
+	type ReadProgramDir
+} from "./nextProgram.ts"
 import { isProductionEnv, withEnvironment } from "./presets.ts"
 import {
 	refuseArktypeDependencies,
@@ -24,6 +35,7 @@ import {
 	dependsOnArktype,
 	packageRootOf,
 	printablePathOf,
+	realPathOf,
 	reportDiagnostics,
 	resolvedVariantOf,
 	resolvesToRuntime,
@@ -35,6 +47,7 @@ import {
 	writeAliasMessage,
 	writeChangedSettingsMessage,
 	writeExternalizedMessage,
+	writeMissedByProgramMessage,
 	writeNextExternalMessage,
 	writeRuntimeAliasMessage,
 	writeUnreadServerExternalsMessage,
@@ -88,7 +101,6 @@ const resolvedOptionsOf = (
 	set: PrecompilePluginOptions,
 	production: boolean
 ): PrecompilePluginOptions => {
-	refusePrune(set, "Turbopack")
 	refuseArktypeDependencies(set, "Turbopack")
 	return resolvePrecompileOptions(
 		withEnvironment(
@@ -124,26 +136,139 @@ export default function (
 	} catch (e) {
 		return rethrowAsBuildError(e)
 	}
-	const precompiler = (precompilersByOptions[JSON.stringify(opts)] ??=
-		createKeyedPrecompiler(opts))
+	const reads = readsProgram(this, opts)
+	// as Vite's dev server does, `next dev` builds whole what `next build` prunes
+	if (opts.prune === true && !reads && this.mode !== "development") {
+		try {
+			refusePrune(opts, "a loader outside `next build`")
+		} catch (e) {
+			return rethrowAsBuildError(e)
+		}
+	}
+	const loaded =
+		reads ?
+			answerFromProgram(this, source, opts)
+		:	answerAlone(this, source, opts)
+	if (typeof loaded !== "object") return loaded
+	const done = this.async!()
+	loaded.then(code => done(null, code), done)
+}
+
+// `next build` reads its modules whole, through what Turbopack resolves, where
+// `next dev` writes each as it's asked for
+const readsProgram = (
+	context: TurbopackLoaderContext,
+	opts: PrecompilePluginOptions
+): boolean =>
+	context.mode === "production" &&
+	opts.prune !== false &&
+	opts.runtime !== "arktype" &&
+	!opts.shadow &&
+	!!context.async &&
+	!!context.getResolve &&
+	!!context.rootContext &&
+	!!packageRootOf("next", context.rootContext)
+
+const answerFromProgram = async (
+	context: TurbopackLoaderContext,
+	source: string,
+	opts: PrecompilePluginOptions
+): Promise<string | undefined> => {
+	const id = context.resourcePath
+	if (isProgramUnit(id)) return source
+	const resolve = context.getResolve!({})
+	const program = await programOf(context.rootContext!, opts, resolve)
+	if (program.isReader) {
+		for (const warning of program.warnings)
+			context.emitWarning(new Error(warning))
+	}
+	if (program.refused) {
+		if (opts.prune === true) throwBuildError(program.refused)
+		if (program.isReader) context.emitWarning(new Error(program.refused))
+		return answerAlone(context, source, opts)
+	}
+	const answer = programAnswerOf(program, id)
+	// a dependency it leaves is checked as ever, and one it doesn't is a module
+	// the read missed, whose reads it can't have planned for
+	if (!answer) {
+		if (dependencyOf(id) || isArkFile(id))
+			return answerAlone(context, source, opts)
+		throwBuildError(
+			writeMissedByProgramMessage(
+				printablePathOf(context.rootContext!, id),
+				"is built"
+			)
+		)
+	}
+	if (!isSourceRead(answer!, source)) {
+		throwBuildError(
+			writeMissedByProgramMessage(
+				printablePathOf(context.rootContext!, id),
+				"reaches this loader rewritten"
+			)
+		)
+	}
+	await checkImports(context, program, answer!, resolve)
+	return loadedOf(context, () => precompilerOf(opts), answer!, source, opts)
+}
+
+// Turbopack resolves a module's imports apart for each layer it builds it in,
+// the read's for the one that asked first
+const checkImports = async (
+	context: TurbopackLoaderContext,
+	program: ReadProgramDir,
+	answer: ProgramAnswer,
+	resolve: LoaderResolve
+) => {
+	const id = context.resourcePath
+	await Promise.all(
+		Object.entries(answer.imports).map(async ([specifier, read]) => {
+			const resolved = await resolve(dirname(id), specifier).then(
+				realPathOf,
+				() => undefined
+			)
+			if (
+				read ?
+					resolved !== read
+				:	resolved !== undefined && isInProgram(program, resolved)
+			) {
+				throwBuildError(
+					writeMissedByProgramMessage(
+						printablePathOf(context.rootContext!, id),
+						`imports "${specifier}" as ${resolved === undefined ? "nothing" : printablePathOf(context.rootContext!, resolved)}`
+					)
+				)
+			}
+		})
+	)
+}
+
+const precompilerOf = (opts: PrecompilePluginOptions) =>
+	(precompilersByOptions[JSON.stringify(opts)] ??= createKeyedPrecompiler(opts))
+
+const answerAlone = (
+	context: TurbopackLoaderContext,
+	source: string,
+	opts: PrecompilePluginOptions
+): string | undefined | Promise<string | undefined> => {
+	const precompiler = precompilerOf(opts)
 	let keyed: PrecompiledKeyedModule
 	try {
-		keyed = precompiler.precompile(source, this.resourcePath)
+		keyed = precompiler.precompile(source, context.resourcePath)
 	} catch (e) {
 		return rethrowAsBuildError(e)
 	}
-	const resolve = this.async && this.getResolve?.({})
-	if (!keyed.unresolved.length || !resolve) {
-		const loaded = loadedOf(this, precompiler, keyed, source, opts)
-		if (typeof loaded !== "object") return loaded
-		const done = this.async!()
-		loaded.then(code => done(null, code), done)
-		return
-	}
-	const done = this.async!()
-	resolvedAgain(precompiler, keyed, resolve, source, this.resourcePath)
-		.then(keyed => loadedOf(this, precompiler, keyed, source, opts))
-		.then(code => done(null, code), done)
+	const resolve = context.async && context.getResolve?.({})
+	const precompilerRead = () => precompiler
+	if (!keyed.unresolved.length || !resolve)
+		return loadedOf(context, precompilerRead, keyed, source, opts)
+	return resolvedAgain(
+		precompiler,
+		keyed,
+		resolve,
+		source,
+		context.resourcePath
+	).then(keyed => loadedOf(context, precompilerRead, keyed, source, opts))
 }
 
 // once Turbopack resolves imports the precompiler couldn't, like one only resolveAlias names
@@ -178,7 +303,7 @@ const resolvedAgain = async (
 // the module's code, once what it reads is checked
 const loadedOf = (
 	context: TurbopackLoaderContext,
-	precompiler: KeyedPrecompiler,
+	precompiler: () => KeyedPrecompiler,
 	keyed: KeyedModule,
 	source: string,
 	opts: PrecompilePluginOptions
@@ -196,7 +321,7 @@ const loadedOf = (
 	// resolveAlias gives a dependency the runtime too, so one defining a Type fails here
 	if (specifiers.length && dependencyOf(context.resourcePath)) {
 		reportDiagnostics(
-			precompiler.readDependency(context.resourcePath),
+			precompiler().readDependency(context.resourcePath),
 			warn,
 			throwBuildError
 		)

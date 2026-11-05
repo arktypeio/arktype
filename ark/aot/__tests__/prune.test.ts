@@ -4013,8 +4013,8 @@ console.log(String(User({ name: 5 })))
 					)
 				)
 			).equals([
-				writePruneHostMessage("Turbopack"),
-				writePruneHostMessage("Turbopack")
+				writePruneHostMessage("a loader outside `next build`"),
+				writePruneHostMessage("a loader outside `next build`")
 			])
 		})
 

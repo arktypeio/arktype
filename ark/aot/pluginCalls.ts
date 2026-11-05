@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs"
-import { dirname, join, resolve } from "node:path"
+import { basename, dirname, join, resolve } from "node:path"
 import type { Node, ObjectExpression } from "oxc-parser"
 import type { PrecompilePluginOptions } from "./driver.ts"
 import { memberNameOf } from "./graph.ts"
@@ -208,6 +208,122 @@ const loaderOf = (value: Node): unknown => {
 		) ?
 			literalOf(node.arguments[0])
 		:	undefined
+}
+
+// why next.config's Turbopack rules may run a loader besides this one, whose
+// imports no read of the project sees, or run this one with two sets of options.
+// It's a config only Next.js can run, so what isn't literal can't be told apart
+export const turbopackRulesProblemOf = (
+	file: string,
+	source: string
+): string | undefined => {
+	const name = basename(file)
+	const module = new SourceModule(file, source, name)
+	const unreadable = `${name} doesn't export its turbopack.rules as literals`
+	if (module.parseErrors.length) return unreadable
+	const config = exportedConfigOf(module)
+	const turbopack = config && literalPropertyOf(config, "turbopack")
+	const rules = turbopack && literalPropertyOf(turbopack, "rules")
+	if (!rules) return unreadable
+	const options = new Set<string>()
+	for (const rule of rules.properties) {
+		if (rule.type !== "Property") return unreadable
+		const loaders = loadersOf(rule.value)
+		if (!loaders) return unreadable
+		for (const element of loaders) {
+			const entry = unwrapExpression(element as Node)
+			const isObject = entry.type === "ObjectExpression"
+			const given = isObject ? propertyOf(entry, "loader") : entry
+			const loader = given && loaderOf(given)
+			if (typeof loader !== "string") return unreadable
+			if (loader !== turbopackLoader)
+				return `${name} runs ${loader}, which may add imports it can't see`
+			const set = isObject ? propertyOf(entry, "options") : undefined
+			options.add(set ? module.textOf(set) : "")
+		}
+	}
+	if (options.size > 1)
+		return `${name} runs the loader with ${options.size} sets of options`
+}
+
+// a rule's loaders, as `{ loaders: [] }`, `[]` or a list of either
+const loadersOf = (value: Node): readonly unknown[] | undefined => {
+	const rule = unwrapExpression(value)
+	if (rule.type === "ArrayExpression") {
+		const isRuleList = rule.elements.some(
+			element =>
+				element?.type === "ObjectExpression" &&
+				propertyOf(element, "loaders") !== undefined
+		)
+		if (!isRuleList)
+			return rule.elements.every(Boolean) ? rule.elements : undefined
+		const lists = rule.elements.map(element => element && loadersOf(element))
+		return lists.every(Boolean) ? (lists as unknown[][]).flat() : undefined
+	}
+	if (rule.type !== "ObjectExpression") return
+	const loaders = propertyOf(rule, "loaders")
+	const list = loaders && unwrapExpression(loaders)
+	if (
+		list?.type !== "ArrayExpression" ||
+		!list.elements.every(element => element && element.type !== "SpreadElement")
+	)
+		return
+	return list.elements
+}
+
+const propertyOf = (
+	object: ObjectExpression,
+	key: string
+): Node | undefined => {
+	for (const property of object.properties) {
+		if (
+			property.type === "Property" &&
+			!property.computed &&
+			exportNameOf(property.key) === key
+		)
+			return property.value
+	}
+}
+
+// its property as an object, undefined where a spread may set it or it's not one
+const literalPropertyOf = (
+	object: ObjectExpression,
+	key: string
+): ObjectExpression | undefined => {
+	if (object.properties.some(property => property.type !== "Property")) return
+	const value = propertyOf(object, key)
+	const node = value && unwrapExpression(value)
+	return node?.type === "ObjectExpression" ? node : undefined
+}
+
+// what `export default` or `module.exports =` holds, followed through a const
+const exportedConfigOf = (
+	module: SourceModule
+): ObjectExpression | undefined => {
+	let exported: Node | undefined
+	const declarations: Record<string, Node> = {}
+	walk(module.program, node => {
+		if (node.type === "ExportDefaultDeclaration") exported = node.declaration
+		else if (
+			node.type === "AssignmentExpression" &&
+			module.textOf(node.left) === "module.exports"
+		)
+			exported = node.right
+		else if (
+			node.type === "VariableDeclarator" &&
+			node.id.type === "Identifier" &&
+			node.init
+		)
+			declarations[node.id.name] = node.init
+		return true
+	})
+	if (!exported) return
+	const node = unwrapExpression(exported)
+	const value =
+		node.type === "Identifier" && node.name in declarations ?
+			unwrapExpression(declarations[node.name])
+		:	node
+	return value.type === "ObjectExpression" ? value : undefined
 }
 
 const unread = Symbol("unread")
