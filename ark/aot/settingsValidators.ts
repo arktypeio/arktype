@@ -382,12 +382,12 @@ var recordOf = value => {
 }
 var holdsValue = (checker, data, k) =>
 	checker.u ? data[k] !== void 0 : k in data
-var writtenProps = (declared, data) => {
+var writtenProps = (declared, changing, data) => {
 	let out = data
-	for (const k in declared) {
+	for (const k in changing) {
 		const holds = k in data
-		const defaulted = declared[k].d
-		const value = holds ? declared[k].t?.(data[k]) : defaulted?.[0]
+		const defaulted = changing[k].d
+		const value = holds ? changing[k].t?.(data[k]) : defaulted?.[0]
 		if (holds ? value !== void 0 && value !== data[k] : defaulted?.length) {
 			if (out === data) out = copyOf(data)
 			out[k] = value
@@ -399,11 +399,19 @@ var writtenProps = (declared, data) => {
 	return out
 }
 var isDefaulted = ({ d, w }) => !!(w || d?.length)
-var writtenValues = (declared, data, values) => {
+var changingIn = declared => {
+	const changing = {}
+	for (const k in declared) {
+		const { t, d, w } = declared[k]
+		if (t || w || d?.length) changing[k] = declared[k]
+	}
+	return changing
+}
+var writtenValues = (declared, changing, data, values) => {
 	let out = data
 	let defaults = false
-	for (const k in declared) {
-		const checker = declared[k]
+	for (const k in changing) {
+		const checker = changing[k]
 		if (!holdsValue(checker, data, k)) {
 			defaults ||= isDefaulted(checker)
 			continue
@@ -415,8 +423,8 @@ var writtenValues = (declared, data, values) => {
 		out[k] = value
 	}
 	if (defaults && !values.failed()) {
-		for (const k in declared) {
-			const checker = declared[k]
+		for (const k in changing) {
+			const checker = changing[k]
 			if (holdsValue(checker, data, k) || !isDefaulted(checker)) continue
 			if (out === data) out = copyOf(data)
 			if (checker.w) values.defaulted(checker.w, out)
@@ -452,19 +460,11 @@ var sited = (allows, declared, write, writes, removed, withCtx) => {
 		return true
 	}
 	checker.description = objectCheck.description
-	const changing = {}
-	for (const k in declared)
-		if (declared[k].t || isDefaulted(declared[k])) changing[k] = declared[k]
-	const copied = (data, values) => {
-		const out =
-			values ?
-				writtenValues(changing, data, values)
-			:	writtenProps(changing, data)
-		if (out !== data) {
-			for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
-		}
-		return out
-	}
+	const changing = changingIn(declared)
+	const copied = (data, values) =>
+		values ?
+			writtenValues(declared, changing, data, values)
+		:	writtenProps(declared, changing, data)
 	const written =
 		write ?
 			(data, values) => {

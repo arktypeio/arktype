@@ -709,13 +709,14 @@ interface WrittenValues {
 }
 
 // what props write where nothing can fail, a value's transform returning an
-// object and a default being a literal
-const writtenProps = (declared: Props, data: any): any => {
+// object and a default being a literal. Only the keys changing can write are
+// read, and the rest only where data's copied
+const writtenProps = (declared: Props, changing: Props, data: any): any => {
 	let out = data
-	for (const k in declared) {
+	for (const k in changing) {
 		const holds = k in data
-		const defaulted = declared[k].d
-		const value = holds ? declared[k].t?.(data[k]) : defaulted?.[0]
+		const defaulted = changing[k].d
+		const value = holds ? changing[k].t?.(data[k]) : defaulted?.[0]
 		if (holds ? value !== undefined && value !== data[k] : defaulted?.length) {
 			if (out === data) out = copyOf(data)
 			out[k] = value
@@ -728,17 +729,28 @@ const writtenProps = (declared: Props, data: any): any => {
 
 const isDefaulted = ({ d, w }: Checker) => !!(w || d?.length)
 
+// the keys a shape transforms or defaults, the only ones that can change data
+const changingIn = (declared: Props): Props => {
+	const changing: Props = {}
+	for (const k in declared) {
+		const { t, d, w } = declared[k]
+		if (t || w || d?.length) changing[k] = declared[k]
+	}
+	return changing
+}
+
 // what props write where something can fail: each transform runs first, and a
 // default only where none failed
 const writtenValues = (
 	declared: Props,
+	changing: Props,
 	data: any,
 	values: WrittenValues
 ): any => {
 	let out = data
 	let defaults = false
-	for (const k in declared) {
-		const checker = declared[k]
+	for (const k in changing) {
+		const checker = changing[k]
 		if (!holdsValue(checker, data, k)) {
 			defaults ||= isDefaulted(checker)
 			continue
@@ -750,8 +762,8 @@ const writtenValues = (
 		out[k] = value
 	}
 	if (defaults && !values.failed()) {
-		for (const k in declared) {
-			const checker = declared[k]
+		for (const k in changing) {
+			const checker = changing[k]
 			if (holdsValue(checker, data, k) || !isDefaulted(checker)) continue
 			if (out === data) out = copyOf(data)
 			// a default is written even where it's undefined
@@ -768,7 +780,8 @@ const writtenValues = (
 type WritesValues = (data: any, values: WrittenValues) => unknown
 
 const transformsProps = (declared: Props, checker: Checker): Checker => {
-	checker.t = data => writtenProps(declared, data)
+	const changing = changingIn(declared)
+	checker.t = data => writtenProps(declared, changing, data)
 	return checker
 }
 
@@ -786,8 +799,9 @@ const transformsFailing = (
 	checker: Checker,
 	withCtx?: 1
 ): Checker => {
+	const changing = changingIn(declared)
 	checker.t = failingValues(
-		(data, values) => writtenValues(declared, data, values),
+		(data, values) => writtenValues(declared, changing, data, values),
 		Object.values(declared),
 		withCtx
 	)
@@ -826,7 +840,7 @@ export const deletingProps = ((declared: Props): Checker => {
 	const checker = props(declared)
 	checker.t = data => {
 		if (Object.getPrototypeOf(data) !== Object.prototype)
-			return deletes(declared, data, writtenProps(declared, data))
+			return deletes(declared, data, writtenProps(declared, declared, data))
 		const result: Record<string, unknown> = {}
 		for (const k in declared) {
 			const { t, d: defaulted } = declared[k]
@@ -845,8 +859,13 @@ export const failingDeletingProps = ((
 	const checker = props(declared)
 	checker.t = failingValues(
 		(data, values) => {
-			if (Object.getPrototypeOf(data) !== Object.prototype)
-				return deletes(declared, data, writtenValues(declared, data, values))
+			if (Object.getPrototypeOf(data) !== Object.prototype) {
+				return deletes(
+					declared,
+					data,
+					writtenValues(declared, declared, data, values)
+				)
+			}
 			const result: Record<string, unknown> = {}
 			let defaults = false
 			for (const k in declared) {
@@ -907,19 +926,11 @@ export const sited = ((
 		return true
 	}
 	checker.description = objectCheck.description
-	// a key that can't change is only read where data's copied
-	const changing: Props = {}
-	for (const k in declared)
-		if (declared[k].t || isDefaulted(declared[k])) changing[k] = declared[k]
-	const copied = (data: any, values?: WrittenValues) => {
-		const out =
-			values ?
-				writtenValues(changing, data, values)
-			:	writtenProps(changing, data)
-		if (out !== data)
-			for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
-		return out
-	}
+	const changing = changingIn(declared)
+	const copied = (data: any, values?: WrittenValues) =>
+		values ?
+			writtenValues(declared, changing, data, values)
+		:	writtenProps(declared, changing, data)
 	const written =
 		write ?
 			(data: any, values?: WrittenValues) => {

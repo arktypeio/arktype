@@ -605,6 +605,20 @@ run(() => Trim(1))
 		)
 
 		itRunsAsCompiled(
+			"writes only a shape's keys that transform or default, copying the rest as data holds them",
+			`const Shape = type({ a: "string", b: "number", c: "string", lit: "number = 1", fn: type("string[]").default(() => ["x"]), t: Trim })
+const Failing = type({ a: "string", b: "number", c: "string", lit: "number = 1", fn: type("string[]").default(() => ["x"]), p: Positive })
+const inheriting = (own: object) => Object.assign(Object.create({ c: "inherited" }), own)
+run(() => Shape({ a: "a", b: 1, c: "c", t: " t " }))
+run(() => Shape({ a: "a", b: 1, c: "c", lit: 2, fn: ["y"], t: "t" }))
+run(() => Shape(inheriting({ a: "a", b: 1, t: " t " })))
+run(() => Failing({ a: "a", b: 1, c: "c", p: "2" }))
+run(() => Failing({ a: "a", b: 1, c: "c", p: "-1" }))
+run(() => Failing(inheriting({ a: "a", b: 1, lit: 3, p: "3" })))
+`
+		)
+
+		itRunsAsCompiled(
 			"writes what it returns, even undefined, null or -0",
 			`const Nothing = type("string").pipe(() => undefined)
 const Null = type("string").pipe(() => null)
