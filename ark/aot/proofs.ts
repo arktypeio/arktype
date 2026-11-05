@@ -1,4 +1,4 @@
-import { readsOnlyData, type Fn } from "@ark/util"
+import { isArray, readsOnlyData, type Fn } from "@ark/util"
 import type {
 	ArrowFunctionExpression,
 	Function,
@@ -21,38 +21,29 @@ export const runtimeParamsOf = (fn: {
 const isNode = (value: unknown): value is Node =>
 	typeof (value as Node | null)?.type === "string"
 
-const someNode = (node: Node, test: (node: Node) => boolean): boolean => {
-	if (test(node)) return true
+const readsArgumentsOrEval = (node: Node): boolean => {
+	if (
+		node.type === "Identifier" &&
+		(node.name === "arguments" || node.name === "eval")
+	)
+		return true
 	for (const k in node) {
 		if (k === "parent") continue
 		const value = node[k as keyof Node] as unknown
-		if (someIn(Array.isArray(value) ? value : [value], test)) return true
+		for (const child of isArray(value) ? value : [value])
+			if (isNode(child) && readsArgumentsOrEval(child)) return true
 	}
 	return false
 }
 
-const someIn = (
-	values: readonly unknown[],
-	test: (node: Node) => boolean
-): boolean => values.some(value => isNode(value) && someNode(value, test))
-
-// nothing it runs can read an argument past its one param
-export const readsOnlyItsArgument = (fn: FunctionNode): boolean => {
-	const params = runtimeParamsOf(fn)
-	return (
+/** notes a function that can read no argument past its one param, as it's created */
+export const proveFunction = (fn: Fn, node: FunctionNode): void => {
+	const params = runtimeParamsOf(node)
+	if (
 		params.length === 1 &&
 		params[0].type !== "AssignmentPattern" &&
 		params[0].type !== "RestElement" &&
-		!someNode(
-			fn,
-			node =>
-				node.type === "Identifier" &&
-				(node.name === "arguments" || node.name === "eval")
-		)
+		!readsArgumentsOrEval(node)
 	)
-}
-
-/** notes what a function a build wouldn't run can read, as it's created */
-export const proveFunction = (fn: Fn, node: FunctionNode): void => {
-	if (readsOnlyItsArgument(node)) readsOnlyData.add(fn)
+		readsOnlyData.add(fn)
 }

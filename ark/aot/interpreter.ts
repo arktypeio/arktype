@@ -76,12 +76,11 @@ import {
 	type ModuleGraph
 } from "./graph.ts"
 import type { SourceModule } from "./module.ts"
-import { proveFunction } from "./proofs.ts"
+import { proveFunction, runtimeParamsOf } from "./proofs.ts"
 import {
 	isTransparent,
 	unwrapChain,
 	operatorOf,
-	runtimeParamsOf,
 	unwrapExpression,
 	walk,
 	type Binding
@@ -155,7 +154,6 @@ export interface StandIn {
 	call: Call | undefined
 	// by code arktype runs while defining a type, like a description writer
 	indirectCall: Call | undefined
-	schemaCheck: SchemaCheck | undefined
 }
 
 const createStandIn = (
@@ -172,7 +170,6 @@ const createStandIn = (
 	arity: undefined,
 	call: undefined,
 	indirectCall: undefined,
-	schemaCheck: undefined,
 	...init
 })
 
@@ -182,12 +179,9 @@ interface Call {
 	isDirect: boolean
 }
 
-// arktype checking whether a value is a Standard Schema, as a definition holds it
-interface SchemaCheck {
-	schema: StandIn
-}
-
-type Reached = DefaultCheck | ScopeAlias | Call | SchemaCheck
+// a stand-in itself is arktype checking whether it's a Standard Schema, as a
+// definition holds it
+type Reached = DefaultCheck | ScopeAlias | Call | StandIn
 
 export const isCall = (reached: Reached): reached is Call =>
 	"standIn" in reached
@@ -1528,10 +1522,7 @@ export class Interpreter {
 	// one its module creates where the site reads it
 	isOwnHole(read: Node, value: unknown, module: SourceModule): boolean {
 		const node = unwrapExpression(read)
-		const binding =
-			node.type === "Identifier" ?
-				module.scopes.byId.get(node)?.binding
-			:	undefined
+		const binding = module.scopes.byId.get(node)?.binding
 		// as `Symbol.for("tag")` creates it in any module that calls it
 		if (typeof value === "symbol") {
 			const source = binding ? initOf(binding) : node
@@ -2530,7 +2521,7 @@ export class Interpreter {
 
 	// whether arktype checked it is a Standard Schema defining the site's value
 	checkedAsSchema(site: SiteState, standIn: StandIn): boolean {
-		return !!standIn.schemaCheck && site.reached.includes(standIn.schemaCheck)
+		return site.reached.includes(standIn)
 	}
 
 	// whether arktype called it while defining the site's value, or code it
@@ -2696,9 +2687,7 @@ export class Interpreter {
 			get: (_, k) => (k === arkKind ? undefined : this.refuse(standIn)),
 			has: (_, k) => {
 				if (k !== "~standard") this.refuse(standIn)
-				this.activeCall?.ctx.site?.reached.push(
-					(standIn.schemaCheck ??= { schema: standIn })
-				)
+				this.activeCall?.ctx.site?.reached.push(standIn)
 				return true
 			},
 			getPrototypeOf: () => Object.prototype,
@@ -3187,7 +3176,7 @@ const runsOnceIn = (node: Node, scope: Node): boolean => {
 	return true
 }
 
-const isLoop = (node: Node): boolean =>
+export const isLoop = (node: Node): boolean =>
 	node.type === "ForStatement" ||
 	node.type === "ForInStatement" ||
 	node.type === "ForOfStatement" ||

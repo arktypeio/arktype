@@ -469,9 +469,8 @@ class Linker {
 						module.scopes.bindingsById.get(id)
 					:	undefined
 				const creator =
-					init?.type === "CallExpression" && init.callee.type === "Identifier" ?
-						module.scopes.byId.get(init.callee)?.binding
-					:	undefined
+					init?.type === "CallExpression" &&
+					module.scopes.byId.get(init.callee)?.binding
 				if (
 					!binding?.references.length ||
 					binding.exportNames.length ||
@@ -485,10 +484,7 @@ class Linker {
 				const reads = binding.references.map(({ id }) => id.parent)
 				if (!reads.every(readsAllows)) continue
 				const [checker] = init.arguments
-				const imported =
-					checker.type === "Identifier" ?
-						module.scopes.byId.get(checker)?.binding
-					:	undefined
+				const imported = module.scopes.byId.get(checker)?.binding
 				const declared = imported && this.declarationOf(site, imported)
 				if (declared) {
 					// the checker stays declared, as an alias of it would be kept
