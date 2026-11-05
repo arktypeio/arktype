@@ -2,6 +2,7 @@ import { hashOf } from "@ark/util"
 import MagicString, { type SourceMap } from "magic-string"
 import type { MemberExpression, Node, Span } from "oxc-parser"
 import { SourceModule } from "./module.ts"
+import { writeImportsAhead } from "./output.ts"
 import {
 	exportNameOf,
 	isWriteTarget,
@@ -384,11 +385,16 @@ class Linker {
 					)
 				}
 			}
+			writeImportsAhead(
+				edits,
+				module.program,
+				withRenamed(unit.added.join(""), renamed)
+			)
 			return [
 				[
 					unit.key,
 					{
-						code: edits.toString() + withRenamed(unit.added.join(""), renamed),
+						code: edits.toString(),
 						map:
 							edits.hasChanged() ?
 								edits.generateMap({ hires: "boundary" })
@@ -400,7 +406,9 @@ class Linker {
 	}
 
 	private textOf(unit: Unit): string {
-		return unit.edits.toString() + unit.added.join("")
+		const text = unit.edits.clone()
+		writeImportsAhead(text, unit.module.program, unit.added.join(""))
+		return text.toString()
 	}
 
 	siteTexts(): string[] {

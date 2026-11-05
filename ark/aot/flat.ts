@@ -11,6 +11,7 @@ import {
 	virtualSource
 } from "./link.ts"
 import { parseCode, SourceModule } from "./module.ts"
+import { writeImportsAhead } from "./output.ts"
 import {
 	exportNameOf,
 	isWriteTarget,
@@ -363,7 +364,11 @@ const flatSiteOf = (
 		} else {
 			const local = `${prefix}_${name}`
 			s.overwrite(start, end, local)
-			s.prepend(`import { ${name} as ${local} } from ${source}\n`)
+			writeImportsAhead(
+				s,
+				site.program,
+				`\nimport { ${name} as ${local} } from ${source}`
+			)
 		}
 	}
 	return s ?
