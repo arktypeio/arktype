@@ -103,6 +103,7 @@ import {
 import {
 	bindingsOf,
 	contentKeyOf,
+	contentNodesOf,
 	encodeKey,
 	holeNamePattern,
 	isTypedFn,
@@ -1142,13 +1143,13 @@ export class StandaloneArtifact {
 	// Scope it can't name are told apart by identity
 	private contentNameOf(root: BaseRoot): string | undefined {
 		if (root.hasAlias) return
-		const nodes = [root, ...root.references]
+		const nodes = [...contentNodesOf(root)]
 		if (nodes.some(holdsObjectInMeta)) return
 		const { scopeNameOf } = this.baking
 		const scopeName = ({ $ }: BaseNode) =>
 			$.isBuiltin ? $.name : scopeNameOf?.($)
 		const bindings = bindingsOf(root).map(scopeName)
-		const scopes = root.references.flatMap(node =>
+		const scopes = nodes.flatMap(node =>
 			[node, originalOf(node)].map(scopeName)
 		)
 		return [...bindings, ...scopes].includes(undefined) ? undefined : (

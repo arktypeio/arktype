@@ -103,6 +103,11 @@ const definitions = {
 	// the string of each: one a Scope copied, read apart from arktype's own keyword
 	KeysOrNull: `type(["keyof", { a: "1", "[string]": "unknown" }]).or("null")`,
 	StringOrNull: `type("string|null")`,
+	// each Type's own, held only by what its morph declares
+	DeclaredObject: `type.schema({ declaredIn: type("string").configure({ x: { y: 1 } } as never), morphs: [isShort] } as never)`,
+	DeclaredMessage: `type("string").configure({ message: () => "x" } as never).pipe(isShort)`,
+	// a hole, compared as the build's runtime reads it
+	RootMessage: `type("string").configure({ message: isShort } as never)`,
 	Foo: `type("===", "foo")`,
 	MetaObject: `type("string").configure({ x: { y: 1 } } as never)`,
 	RegExpExample: `type("string").configure({ examples: [/a/] } as never)`,
@@ -175,6 +180,7 @@ const partition = [
 	"PipeA=PipeB",
 	"PrunedA=PrunedB",
 	"RejectingA=RejectingB",
+	"RootMessageA=RootMessageB",
 	"StringA=StringB",
 	"StringExampleA=StringExampleB",
 	"StringOrNullA=StringOrNullB",

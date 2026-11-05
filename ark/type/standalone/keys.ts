@@ -67,7 +67,7 @@ export const originalOf = (node: BaseNode): BaseNode =>
 // knows, which counts the nodes it created first. A node bound from another is read
 // as its original. One arktype keys nowhere, as what it creates before a set engine
 // is, has one id wherever it's read. What's compared by identity is left to the
-// holes it keys
+// holes it keys, as the name that's registered by counts too
 export const contentKeyOf = (node: BaseNode): string => {
 	let key = contentKeysByNode.get(node)
 	if (key === undefined) {
@@ -76,16 +76,32 @@ export const contentKeyOf = (node: BaseNode): string => {
 				hashOf(
 					JSON.stringify([
 						node.kind,
-						Object.entries(node.inner).map(
-							([k, value]) => `${k}:${contentOf(value)}`
-						),
-						node.metaJson
+						contentsOf(node.inner),
+						contentsOf(node.meta)
 					])
 				)
 			:	`#${node.id}`
 		contentKeysByNode.set(node, key)
 	}
 	return key
+}
+
+const contentsOf = (o: object): string[] =>
+	Object.entries(o).map(([k, value]) => `${k}:${contentOf(value)}`)
+
+// each node contentKeyOf reads, which holds what a morph declares where its
+// references don't
+export const contentNodesOf = (root: BaseNode): Set<BaseNode> => {
+	const nodes = new Set<BaseNode>()
+	const read = (value: unknown) => {
+		if (isArray(value)) value.forEach(read)
+		else if (isNode(value) && !nodes.has(value)) {
+			nodes.add(value)
+			Object.values(value.inner).forEach(read)
+		}
+	}
+	read(root)
+	return nodes
 }
 
 const contentOf = (value: unknown): string =>
