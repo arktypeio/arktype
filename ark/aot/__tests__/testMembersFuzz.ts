@@ -4,7 +4,7 @@
 // namespaces, holders, import(), require()) and steps in its own module, then
 // reads it every way a program can. The oracle runs the app's source on
 // arktype. ARK_MEMBERS_FUZZ=<count>[:<seed>[:<path>]]
-// [ARK_MEMBERS_FUZZ_HOSTS=esbuild,vite,modules,webpack,rspack,node,dev,emit]
+// [ARK_MEMBERS_FUZZ_HOSTS=esbuild,vite,modules,webpack,rspack,turbopack,node,dev,emit]
 // [ARK_MEMBERS_FUZZ_FAILURES=<dir>] [ARK_PRECOMPILE_OPTIONS=<json>]
 // [ARK_FUZZ_SIDE_EFFECTS_FREE=1] pnpm testMembersFuzz
 import { fromHere } from "@ark/fs"
@@ -29,6 +29,7 @@ import { tmpdir } from "node:os"
 import { dirname, join, posix } from "node:path"
 import { pathToFileURL } from "node:url"
 import { throughArkBarrel } from "./arkBarrel.ts"
+import { buildOnNext, removeNextApps } from "./nextBuild.ts"
 import { memoryHost, tempDir } from "./utils.ts"
 
 const [countArg, seedArg, path] = (process.env.ARK_MEMBERS_FUZZ ?? "10").split(
@@ -47,7 +48,8 @@ const allHosts = [
 	"dev",
 	"emit"
 ] as const
-type Host = (typeof allHosts)[number]
+// slow enough, a Next build for each app, to be asked for by name
+type Host = (typeof allHosts)[number] | "turbopack"
 const hosts = (process.env.ARK_MEMBERS_FUZZ_HOSTS?.split(",") ??
 	allHosts) as Host[]
 const failureDir =
@@ -61,7 +63,8 @@ const bundlers = new Set<Host>([
 	"vite",
 	"modules",
 	"webpack",
-	"rspack"
+	"rspack",
+	"turbopack"
 ])
 
 // hosts reading one module at a time, which bake what each importer reads
@@ -946,6 +949,18 @@ const webpackOutcome = async (
 	return { out: runBundle(join(out, "main.cjs"), dir) }
 }
 
+const turbopackOutcome = (dir: string, plugin: boolean): Outcome => {
+	const built = buildOnNext(
+		dir,
+		plugin ? "members" : "members-plain",
+		["main"],
+		plugin ? buildOptions : undefined
+	)
+	return built.refused ?
+			{ refused: built.refused }
+		:	{ out: runBundle(built.runners.main, dir) }
+}
+
 const driver = (dir: string, production: boolean): Outcome => {
 	const out = run(
 		[
@@ -1009,6 +1024,7 @@ const outcomeOf = (
 	: host === "vite" ? viteOutcome(dir, plugin)
 	: host === "webpack" ? webpackOutcome(dir, plugin)
 	: host === "rspack" ? webpackOutcome(dir, plugin, "rspack")
+	: host === "turbopack" ? turbopackOutcome(dir, plugin)
 	: host === "node" ? driver(dir, true)
 	: host === "dev" ? driver(dir, false)
 	: emitOutcome(dir)
@@ -1331,4 +1347,5 @@ console.log(
 	`${count} apps from seed ${initialSeed} in ${Math.round((Date.now() - started) / 1000)}s${failures.length ? `\n${failures.length} unsound, kept in:\n${failures.join("\n")}` : ""}`
 )
 rmSync(root, { recursive: true, force: true })
+if (hosts.includes("turbopack")) removeNextApps()
 process.exit(failures.length ? 1 : 0)

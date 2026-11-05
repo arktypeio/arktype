@@ -2,7 +2,7 @@
 // behaves as the same app built whole: each app's modules hand validators
 // around, store them and read them every way a program can, and both builds
 // run the same inputs through each read. ARK_PRUNE_FUZZ=<count>[:<seed>]
-// [ARK_PRUNE_FUZZ_BUNDLERS=esbuild,vite,webpack,rspack]
+// [ARK_PRUNE_FUZZ_BUNDLERS=esbuild,vite,webpack,rspack,turbopack]
 // [ARK_PRUNE_FUZZ_FAILURES=<dir>]
 // [ARK_FUZZ_SIDE_EFFECTS_FREE=1] [ARK_PRUNE_FUZZ_DEBUG=1] pnpm testPruneFuzz
 import { fromHere } from "@ark/fs"
@@ -20,6 +20,7 @@ import {
 import webpack, { type Stats } from "webpack"
 import { spawnSync } from "node:child_process"
 import {
+	copyFileSync,
 	existsSync,
 	mkdirSync,
 	readdirSync,
@@ -45,6 +46,7 @@ import {
 	type Node
 } from "./grammar.ts"
 import { throughArkBarrel } from "./arkBarrel.ts"
+import { buildOnNext, removeNextApps } from "./nextBuild.ts"
 import { tempDir } from "./utils.ts"
 
 // <count>[:<seed>[:<path>]], the path replaying one of a seed's runs
@@ -64,7 +66,7 @@ const failureDir =
 // keeps an app whose whole build's refusal matches, to look into a refusal
 const keptInvalid = process.env.ARK_PRUNE_FUZZ_KEEP_INVALID
 
-type Bundler = "esbuild" | "vite" | "webpack" | "rspack"
+type Bundler = "esbuild" | "vite" | "webpack" | "rspack" | "turbopack"
 
 // how a site derives the validator it exports
 const wraps = {
@@ -1064,6 +1066,22 @@ const buildWith = async (
 	rmSync(out, { recursive: true, force: true })
 	const warnings: string[] = []
 	try {
+		if (bundler === "turbopack") {
+			const built = buildOnNext(
+				dir,
+				tag,
+				entriesOf(dir, app).map(entry => basename(entry, ".ts")),
+				opts
+			)
+			if (built.refused)
+				return { refused: built.refused, warnings: built.warnings, js: "", out }
+			mkdirSync(out, { recursive: true })
+			for (const entry in built.runners) {
+				// the runner's, named as the other bundlers name their entries
+				copyFileSync(built.runners[entry], join(out, `${entry}.cjs`))
+			}
+			return { warnings: built.warnings, js: built.js, out }
+		}
 		if (bundler === "esbuild") {
 			const result = await esbuild({
 				entryPoints: entriesOf(dir, app),
@@ -1180,11 +1198,16 @@ const unlikeBuildMessage = "is another Type, but was precompiled as"
 
 const typeErrorNames = /TypeError: .* (is not a (?:function|constructor))/g
 const chunkNames = /(?:chunk|types\d+)-[\w-]+\.js/g
-const outDirs = /out-(?:esbuild|vite|webpack|rspack)-(?:whole|pruned)/g
+const outDirs =
+	/out-(?:esbuild|vite|webpack|rspack|turbopack)-(?:whole|pruned)/g
 
 const runOut = (out: string, app: App) =>
 	["main", ...(app.entries === 2 ? ["other"] : [])]
-		.map(entry => runEntry(join(out, `${entry}.js`)))
+		.map(entry =>
+			runEntry(
+				join(out, `${entry}.${out.includes("out-turbopack-") ? "cjs" : "js"}`)
+			)
+		)
 		.join("\n")
 
 const runEntry = (file: string) => {
@@ -1255,6 +1278,14 @@ const tallies: Record<Bundler, Tally> = {
 		pruned: 0,
 		unsound: 0,
 		bytesSaved: 0
+	},
+	turbopack: {
+		invalid: {},
+		refused: {},
+		kept: 0,
+		pruned: 0,
+		unsound: 0,
+		bytesSaved: 0
 	}
 }
 
@@ -1299,6 +1330,8 @@ const check = async (app: App): Promise<boolean> => {
 	const dir = writeApp(app)
 	let sound = true
 	for (const bundler of bundlers) {
+		// a rule running a loader besides this one has it write each module alone
+		if (bundler === "turbopack" && rewrites[app.rewrite]) continue
 		const tally = tallies[bundler]
 		const opts: PrecompileUnpluginOptions = {
 			...app.preset,
@@ -1422,4 +1455,5 @@ for (const bundler of bundlers) {
 console.log(
 	`\n${count} apps from seed ${initialSeed} in ${Math.round((Date.now() - started) / 1000)}s${failures.length ? `\n${failures.length} unsound, kept in:\n${failures.join("\n")}` : ""}`
 )
+if (bundlers.includes("turbopack")) removeNextApps()
 process.exit(failures.length ? 1 : 0)
