@@ -1667,11 +1667,6 @@ const disagreementsOf = async (
 				counts.unbaked++
 				return false
 			}
-			if (countsIdentityApart && differsOnlyInIdentity(disagreement)) {
-				counts.excluded[identityApart] =
-					(counts.excluded[identityApart] ?? 0) + 1
-				return false
-			}
 			const excluded = allowanceOf(exclusions, run, disagreement, errors)
 			if (excluded) {
 				counts.excluded[excluded.reason] =
@@ -1928,21 +1923,6 @@ const allowanceOf = (
 			)
 		)
 }
-
-// Temporary, opt-in with ARK_PROGRAMS_IDENTITY_APART=1, and to be dropped once
-// the finding lands or is documented: a Type's unexported twin in another module
-// isn't the same Type on a module-at-a-time build, which stops a run at the first
-// program creating one, so a round covers little else. Everything but identity is
-// still compared, as an observation holds what its value does beside its sameAs.
-const countsIdentityApart = process.env.ARK_PROGRAMS_IDENTITY_APART === "1"
-
-const identityApart = "differs only in identity"
-
-const differsOnlyInIdentity = ({ original, precompiled }: Disagreement) =>
-	Object.keys({ ...original, ...precompiled }).every(
-		k =>
-			k === "sameAs" || comparable(original[k]) === comparable(precompiled[k])
-	)
 
 // a site's disagreements under each perturbation, by what the first changes
 const reportOf = (world: string, disagreements: Disagreement[]): string[] => {
