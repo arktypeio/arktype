@@ -161,6 +161,23 @@ console.log(JSON.stringify(Unlike["~standard"].validate({ id: 1 })))
 		})
 	})
 
+	it("reads type.errors as the class it holds, even from a site", async () => {
+		const root = fixture(
+			"errors-class",
+			`import { type } from "arktype"
+
+const isErrors = (out: unknown) => out instanceof type.errors
+const T = type("string").narrow(s => !(s instanceof type.errors))
+
+console.log(isErrors(T(1)), isErrors(T("a")), typeof type?.errors)
+${repaying}
+`
+		)
+		attest(behaviorOf(await bundle(root, smallest))).snap(
+			"true false function\n"
+		)
+	})
+
 	describe("a narrow that reads only its argument", () => {
 		itRunsAsUnproved(
 			"runs as often at each depth, beside what transforms",

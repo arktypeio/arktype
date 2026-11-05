@@ -2812,6 +2812,9 @@ export class Precompiler {
 		this.linkIslands(module, sites, s, prefix)
 		this.markProgress(module, sites, s, prefix)
 		if (this.checkHelpers) this.registerHelpers(module, s)
+		// esbuild loads stdin as written, which holding no site leaves it
+		if (this.mode === "standalone" && !module.id.includes("<stdin>."))
+			this.nameErrorsClass(module, sites, s, prefix)
 		for (const specifier in inputImports) {
 			const locals = inputImports[specifier]
 			s.append(
@@ -2823,6 +2826,54 @@ export class Precompiler {
 		if (module.id === this.config) this.stampConfiguration(module, s)
 		// an island's errors are arktype's, which may hold anything
 		return module.islands.length ? anyIssues : written
+	}
+
+	// `type.errors` is `ArkErrors`, which leaves `type`, a frozen object holding
+	// only it, for no read outside a site
+	private nameErrorsClass(
+		module: SourceModule,
+		sites: Site[],
+		s: MagicString,
+		prefix: string
+	): void {
+		const name = `${prefix}ArkErrors`
+		for (const statement of module.program.body) {
+			if (
+				statement.type !== "ImportDeclaration" ||
+				statement.importKind === "type" ||
+				!/^arktype(?:\/runtime)?$/.test(statement.source.value)
+			)
+				continue
+			let read = false
+			for (const specifier of statement.specifiers) {
+				if (
+					specifier.type !== "ImportSpecifier" ||
+					specifier.importKind === "type" ||
+					exportNameOf(specifier.imported) !== "type"
+				)
+					continue
+				const binding = module.scopes.bindingsById.get(specifier.local)!
+				for (const { id } of binding.references) {
+					const member = id.parent
+					if (
+						member?.type !== "MemberExpression" ||
+						member.object !== id ||
+						member.optional ||
+						memberNameOf(member) !== "errors" ||
+						isWriteTarget(member) ||
+						sites.some(site => contains(site, member))
+					)
+						continue
+					s.overwrite(member.start, member.end, name)
+					read = true
+				}
+			}
+			if (read) {
+				s.append(
+					`\nimport { ArkErrors as ${name} } from ${JSON.stringify(statement.source.value)}`
+				)
+			}
+		}
 	}
 
 	// cache mode's units: one module per unit, which Types share, beside
