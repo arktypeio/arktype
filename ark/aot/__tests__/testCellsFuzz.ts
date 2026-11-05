@@ -722,7 +722,7 @@ const webpackOutcome = async (
 			webpack({
 				...config,
 				plugins: plugin ? [precompile.webpack({ cwd: dir }) as never] : []
-			})
+			} as never)
 		:	(rspack({
 				...config,
 				plugins: plugin ? [precompile.rspack({ cwd: dir }) as never] : []
