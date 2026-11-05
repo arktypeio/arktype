@@ -40,7 +40,12 @@ const bundleWebpack = async ({
 			library: { type: "module" },
 			module: true
 		},
-		optimization: { minimize: minify },
+		optimization: {
+			minimize: minify,
+			// what an app gets: webpack only keeps annotations in an ESM library, for a
+			// consumer to bundle again, which this is only so the bench can call it
+			minimizeOptions: { javascript: { compress: { passes: 2 } } }
+		},
 		performance: false,
 		resolve: {
 			alias: alias ?? {},

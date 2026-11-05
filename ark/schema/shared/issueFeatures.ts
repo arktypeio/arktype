@@ -13,8 +13,20 @@ export const writesText: boolean = true
 /** a union's issue listing its branches', written again where its path changes */
 export const listsUnions: boolean = true
 
+/** a union's issue written again where its path changes, as by a pipe or Standard Schema */
+export const rewritesUnions: boolean = true
+
+/** a union's issue added to a Traversal, where a validator isn't a checker */
+export const traversesUnions: boolean = true
+
 /** a key's site, holding its value's context */
 export const readsKeySites: boolean = true
 
 /** errors arktype's own runtime writes, whose summary a TraversalError reads */
 export const runsArktype: boolean = true
+
+/** an errors object's `summary` */
+export const readsSummary: boolean = true
+
+/** an errors object read other than by its issues or summary: thrown, printed or passed on */
+export const readsErrors: boolean = true
