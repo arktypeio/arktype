@@ -3404,6 +3404,10 @@ export const U = type({ name: "string", "age?": "number" })
 		const readsExpression = `import * as all from "./barrel.ts"
 console.log((all.U as any).expression)
 `
+		const readsErrors = `import { type } from "arktype"
+const out = type({ name: "string" })({ name: 1 })
+console.log(out instanceof type.errors, String(out))
+`
 		const programs: Record<
 			string,
 			[
@@ -3530,6 +3534,16 @@ console.log(String(A({})), a, allowed, String(B({})), b, String(C({})), c, unall
 				},
 				{ preset: "smallest" },
 				"name must be a string { name: 'a' } true title must be a string { title: 'c' } a must be an object\nb must be boolean { a: { name: 'd' }, b: true } false\n"
+			],
+			"a read of type.errors, which reads the class it holds": [
+				{ "main.ts": readsErrors },
+				{},
+				"true name must be a string\n"
+			],
+			"a read of type.errors in a size build": [
+				{ "main.ts": readsErrors },
+				{ preset: "smallest" },
+				"true name must be a string\n"
 			],
 			"inlined modules, which load ahead of the code": [
 				{ ...barreled, "main.ts": readsExpression },
