@@ -2870,13 +2870,14 @@ export class Precompiler {
 					read = true
 				}
 			}
-			if (read)
+			if (read) {
 				writeImportsAhead(
 					s,
 					module.program,
 					`\nimport { ArkErrors as ${name} } from ${JSON.stringify(statement.source.value)}`,
 					statement.end
 				)
+			}
 		}
 	}
 
