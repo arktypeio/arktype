@@ -3344,9 +3344,13 @@ export class Precompiler {
 			this.foldSite(site, name, factoriesBySite.get(site), folding)
 			folded.push(site)
 		}
-		for (const { name, reads } of bakes) {
+		for (const { name, reads, sites } of bakes) {
 			importFolded(undefined, name, prefix + name, undefined, folding)
 			for (const read of reads) bakeAt(s, module, read, prefix + name)
+			for (const site of sites ?? []) {
+				s.prependRight(site.start, `${prefix}${name}(`)
+				s.appendLeft(site.end, ")")
+			}
 		}
 		const { inputImports, kept, passed, read, fixedAt } = folding
 		// fixed at the first droppable site, as arktype does at its first Type
@@ -3414,6 +3418,7 @@ export class Precompiler {
 	): [validators: StandaloneModules, bakes: ImportedBake[]] {
 		const { namesBySite, exportsByName } = plan
 		let bakes: ImportedBake[] = []
+		let readsAlone = false
 		if (bakedAs) {
 			baked = bakedAs(
 				this.runtimeOfPlan(module, { ...plan, folded: [...plan.folded] })
@@ -3437,7 +3442,8 @@ export class Precompiler {
 						undefined
 					:	(exporter, name, value) =>
 							isBakeable(value) &&
-							this.exportedValueOf(exporter, name) === value
+							(name === undefined ||
+								this.exportedValueOf(exporter, name) === value)
 			}
 			baked = this.readingsIn(
 				program,
@@ -3448,13 +3454,28 @@ export class Precompiler {
 					])
 				)
 			).baked
-			if (program.importersBake) bakes = this.importedBakesOf(module, program)
+			if (program.importersBake) {
+				bakes = this.importedBakesOf(module, program)
+				readsAlone = true
+			}
 			for (const bake of bakes) exportsByName[bake.name] = bake.baked
 		}
 		const bakedByName: Record<string, BakedMembers> = {}
 		for (const [site, name] of namesBySite) {
 			const members = baked.get(siteKeyOf(module.id, site))
-			if (members) bakedByName[name] = members
+			if (!members) continue
+			// its equal in another module may be created first, so it's baked as
+			// what reads that is
+			if (readsAlone && isBakeable(site.value)) {
+				const bake: ImportedBake = {
+					name: `bake${bakes.length}`,
+					baked: { bakes: site.value, ...members },
+					reads: [],
+					sites: [site]
+				}
+				bakes.push(bake)
+				exportsByName[bake.name] = bake.baked
+			} else bakedByName[name] = members
 		}
 		for (;;) {
 			const refusalsByName: Record<string, string[]> = {}
@@ -7504,6 +7525,7 @@ interface ImportedBake {
 	name: string
 	baked: StandaloneBake
 	reads: Node[]
+	sites?: Site[]
 }
 
 interface ProgramReadings {

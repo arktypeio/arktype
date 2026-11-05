@@ -548,7 +548,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 			next: { value: "a" },
 			value: "b"
 		})
-		attest<unknown>($.List({ next: undefined, value: "b" } as never)).snap({
+		attest($.List({ next: undefined, value: "b" } as never) as object).snap({
 			next: undefined,
 			value: "b"
 		})
@@ -560,7 +560,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 			"next?": "this",
 			value: "string"
 		})
-		attest<unknown>(Self({ next: undefined, value: "b" } as never)).snap({
+		attest(Self({ next: undefined, value: "b" } as never) as object).snap({
 			next: undefined,
 			value: "b"
 		})
