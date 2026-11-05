@@ -31,7 +31,7 @@ const bundle = async (
 	return outputFiles![0].text
 }
 
-// each module read alone, as webpack, Turbopack or Node would
+// each module read alone, as Turbopack or Node would
 const runModuleAtATime = (root: string, nodeEnv = "development") =>
 	spawnSync(
 		process.execPath,
@@ -380,6 +380,30 @@ console.log(${definitions.Keyword} === KeywordOther, ${definitions.Named} === Na
 		attest(runModuleAtATime(root)).equals("true false\n")
 		attest(runModuleAtATime(root, "production")).equals("true false\n")
 	}).timeout(120_000)
+
+	it("a build reading each module alone compares a function's scope and a keyword reached two ways otherwise", async () => {
+		const root = fixture("readAlone", {
+			"shared.ts": `import { scope } from "arktype"
+
+const make = () => scope({ A: "string[]" })
+export const $ = make()
+`,
+			"other.ts": `import { $ } from "./shared.ts"
+
+export const Scoped = $.type({ x: "A" })
+`,
+			"main.ts": `import { type } from "arktype"
+import { Scoped } from "./other.ts"
+import { $ } from "./shared.ts"
+
+console.log($.type({ x: "A" }) === Scoped, type("unknown") === type.pipe())
+`
+		})
+		attest(runPlain(root)).equals("true false\n")
+		attest(run(await bundle(root, production))).equals("true false\n")
+		attest(run(await bundle(root, source))).equals("false true\n")
+		attest(runModuleAtATime(root)).equals("false true\n")
+	})
 
 	it("each run of a module creates its own functions, so its own Types", async () => {
 		const root = fixture("queried", {
