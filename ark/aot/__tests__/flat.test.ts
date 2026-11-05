@@ -156,39 +156,58 @@ name must be at most length 10
 		attest(js.match(/\.tag = "none"/g)?.length).equals(1)
 	})
 
-	it("declares each function the function holds, reading a node's parts directly", async () => {
+	it("reads a node's parts directly", async () => {
 		const [js] = await bundle()
 		attest(/\[\w+(?:, \w+)*]\[\d]/.test(js)).equals(false)
-		attest(/\bfunction \w+Allows\(/.test(js)).equals(true)
 		attest(run(js)).equals(run((await bundle({ prune: false }))[0]))
 	})
 
-	it("reports what isn't an object from one check each Apply calls", async () => {
+	describe("a program of more text than its arrows cost V8 to read", () => {
+		const types = 60
 		const files = writeFixture(
 			{
 				"main.ts": `import { type } from "arktype"
 
 const Lead = type({ name: "string" })
 const Team = type({ lead: Lead, members: Lead.array() })
-${Array.from({ length: 8 }, (_, i) => `const O${i} = type({ k${i}: "string" })`).join("\n")}
+${Array.from(
+	{ length: types },
+	(_, i) =>
+		`const T${i} = type({ a${i}: "string", b${i}: "number", c${i}: "boolean", d${i}: "string[]" })`
+).join("\n")}
 
 for (const data of [5, { lead: 5, members: [] }, { lead: {}, members: [{}] }])
 	console.log(String(Team(data)))
-console.log(${Array.from({ length: 8 }, (_, i) => `String(O${i}(5))`).join(", ")})
+console.log(${Array.from({ length: types }, (_, i) => `String(T${i}(${i % 2 ? "5" : "{}"}))`).join(", ")})
 `
 			},
-			fromHere("temp", "flatObjects")
+			fromHere("temp", "flatBig")
 		)
 		const options: BuildOptions = { entryPoints: [join(files, "main.ts")] }
-		const [js] = await bundle({}, options)
-		attest(js.match(/"domain", "an object"/g)?.length).equals(1)
-		attest(run(js)).equals(run((await bundle({ prune: false }, options))[0]))
-		attest(run(js)).snap(`must be an object
+
+		it("declares its functions", async () => {
+			const [js] = await bundle({}, options)
+			attest(/\bfunction \w+Allows\(/.test(js)).equals(true)
+			attest(/\w+Allows = /.test(js)).equals(false)
+		})
+
+		it("reports what isn't an object from one check each Apply calls", async () => {
+			const [js] = await bundle({}, options)
+			attest(js.match(/"domain", "an object"/g)?.length).equals(1)
+			attest(run(js)).equals(run((await bundle({ prune: false }, options))[0]))
+			attest(run(js).split("\n").slice(0, 4).join("\n")).snap(`must be an object
 lead must be an object
 lead.name must be a string
-members[0].name must be a string
-must be an object must be an object must be an object must be an object must be an object must be an object must be an object must be an object
-`)
+members[0].name must be a string`)
+		})
+	})
+
+	it("writes a program of less text as arrows, holding its checks in place", async () => {
+		const [js] = await bundle()
+		attest(/\bfunction \w+(?:Allows|Apply)\(/.test(js)).equals(false)
+		attest(/\w+Allows = \(/.test(js)).equals(true)
+		attest(/\binstanceof Object\b/.test(js)).equals(true)
+		attest(run(js)).equals(run((await bundle({ prune: false }))[0]))
 	})
 
 	it("leaves out of the function a unit only a dropped validator reads", async () => {

@@ -1524,10 +1524,16 @@ const writtenUnitsOf = (body: string, returned: string): WrittenUnits => {
 		inlineCalls,
 		mergeEqualFunctions,
 		dropUnread,
-		readPartsDirectly,
-		shareObjectChecks
+		readPartsDirectly
 	])
 		written = untilUnchanged(written, parse, pass)
+	written = untilUnchanged(
+		written,
+		parse,
+		minifiedLengthOf(written.body) < minLazyText ? functionsAsArrows : (
+			shareObjectChecks
+		)
+	)
 	written.body = functionsDeclared(inGzipOrder(written.body))
 	return written
 }
@@ -1852,32 +1858,60 @@ const shareObjectChecks: UnitsPass = ({ code, program }, s) => {
 				checks.push([init.start + check.index, check[0], check[1]])
 		}
 	}
-	if (checks.length < minSharedObjectChecks) return true
 	const isObject = nameFreeIn(code, "isObjectData")
 	const notObject = nameFreeIn(code, "notObjectData")
-	for (const [start, text, site] of checks) {
-		s.overwrite(
-			start,
-			start + text.length,
-			site ?
-				`if (!${isObject}(data)) return ${notObject}(data, ctx)`
-			:	`${isObject}(data)`
-		)
-	}
 	const site = checks.find(check => check[2])?.[2]
-	s.prependRight(
-		0,
-		`const ${isObject} = function (data) { return data instanceof Object || Object(data) === data }\n${
-			site ?
-				`const ${notObject} = function (data, ctx) { return !ctx._at(${site}("domain", "an object"), data) }\n`
-			:	""
-		}`
+	const helpers = `const ${isObject} = function (data) { return data instanceof Object || Object(data) === data }\n${
+		site ?
+			`const ${notObject} = function (data, ctx) { return !ctx._at(${site}("domain", "an object"), data) }\n`
+		:	""
+	}`
+	const calls = checks.map(([, , site]) =>
+		site ?
+			`if (!${isObject}(data)) return ${notObject}(data, ctx)`
+		:	`${isObject}(data)`
 	)
+	if (
+		minifiedLengthOf(helpers + calls.join("")) >=
+		minifiedLengthOf(checks.map(([, text]) => text).join(""))
+	)
+		return true
+	for (const [i, [start, text]] of checks.entries())
+		s.overwrite(start, start + text.length, calls[i])
+	s.prependRight(0, helpers)
 	return true
 }
 
-// where fewer, the helpers are more text than they save
-const minSharedObjectChecks = 8
+// arrows are shorter than function expressions and gzip smaller, and V8 reads
+// them in full where a function holds them. That costs about 47 instructions a
+// byte of this text (6394 bytes cost 0.3M, 33745 cost 1.6M), so under half a
+// million the bytes are worth more
+const minLazyText = 12_000
+
+const functionsAsArrows: UnitsPass = ({ code, program }, s) => {
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration") continue
+		for (const { init } of statement.declarations) {
+			if (init?.type !== "FunctionExpression" || init.id || !init.body) continue
+			let readsOwn = false
+			walk(init, node => {
+				if (
+					node.type === "ThisExpression" ||
+					(node.type === "Identifier" && node.name === "arguments")
+				)
+					readsOwn = true
+				return !readsOwn
+			})
+			if (readsOwn || init.async || init.generator) continue
+			s.overwrite(
+				init.start,
+				init.body.start,
+				`${code.slice(init.start + "function".length, init.body.start).trim()} => `
+			)
+		}
+	}
+	return true
+}
 
 const applyName = /Apply(?:\$\d+)?$/
 
