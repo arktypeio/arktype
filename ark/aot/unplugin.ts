@@ -1703,9 +1703,9 @@ interface BundleScan {
 	issues: IssueFeatures | undefined
 }
 
-// what a webpack or Rspack compilation has read of the modules it built
 const pluginName = "arktype"
 
+// what a webpack or Rspack compilation has read of the modules it built
 interface BuiltRead {
 	// each transformed module as it reached the plugin
 	loaded: LoadedSources
