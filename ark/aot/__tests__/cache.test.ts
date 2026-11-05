@@ -708,6 +708,36 @@ contextualize(function (this: Mocha.Suite) {
 			await answersAnew(dir)
 		})
 
+		// what a new worker answers for what a kept one does after building others
+		const namesAfter = async (before: string, after: string) => {
+			const moduleOf = (definition: string) =>
+				`import { type } from "arktype"\n\nexport const T = ${definition}\n`
+			const dir = writeFixture({ "main.ts": moduleOf(before) })
+			const id = join(dir, "main.ts")
+			const send = createAsyncPrecompiler({
+				precompilerOptions: { cwd: dir, conditions }
+			})
+			await send(["transform", readFileSync(id, "utf8"), id])
+			writeFileSync(id, moduleOf(after))
+			attest(await send(["reset"])).equals(false)
+			const kept = await send(["transform", readFileSync(id, "utf8"), id])
+			await send(["close"])
+			attest(json([kept])).equals(json(await uncachedIn(dir, ["main.ts"])))
+		}
+
+		it("names a Type holding a Scope's copy of a node as a new worker does, after building others", () =>
+			namesAfter(
+				`type({ a: "string" }).describe("a thing")`,
+				// a key of it reduced to string, which keyof binds to arktype's Scope and back
+				`type(["keyof", { a: "1", "[string]": "unknown" }]).or("null")`
+			))
+
+		it("names a Type holding what a keyword's meta registers as a new worker does, after building others", () =>
+			namesAfter(
+				`type("string.numeric.parse")`,
+				`type("string.date.parse").or("null")`
+			))
+
 		it("stores what a worker answers across a reset nothing it read changed", async () => {
 			const dir = writeFixture({
 				"a.ts": shapeReader("./shape.ts"),
