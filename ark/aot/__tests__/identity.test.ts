@@ -229,6 +229,133 @@ console.log(First === Second, First.expression === expression, First.description
 		attest(runModuleAtATime(root)).equals(plain)
 	})
 
+	it("a Type no export holds is one with its equal, however it's compared", async () => {
+		const definitions = {
+			Holding: `type("string").narrow(isLong)`,
+			HoldingElements: `type("string").narrow(isLong).array()`,
+			Piped: `type(["string", "=>", double])`,
+			Plain: `type("string[]")`,
+			PlainObject: `type({ a: "string" })`,
+			// a keyword holding a morph, whose meta holds an object
+			Keyword: `type("string.numeric.parse")`,
+			KeywordValue: `type({ a: "string.numeric.parse" })`,
+			KeywordElements: `type("string.numeric.parse[]")`,
+			Described: `type("string.numeric.parse").describe("parsed")`
+		}
+		const names = Object.keys(definitions)
+		const declared = (suffix: string, exports: string) =>
+			Object.entries(definitions)
+				.map(
+					([name, definition]) =>
+						`${exports}const ${name}${suffix} = ${definition}`
+				)
+				.join("\n")
+		const shared = `export const double = (d: any) => (typeof d === "number" ? d * 2 : d)
+export const isLong = (s: string) => s.length > 1
+`
+		const root = fixture("unexported", {
+			"package.json": `{ "type": "module" }\n`,
+			"tsconfig.json": JSON.stringify({
+				compilerOptions: {
+					target: "ES2022",
+					module: "NodeNext",
+					rewriteRelativeImportExtensions: true,
+					skipLibCheck: true,
+					types: [],
+					rootDir: ".",
+					outDir: "out"
+				},
+				include: ["*.ts"]
+			}),
+			"shared.ts": shared,
+			"other.ts": `import { type } from "arktype"
+import { double, isLong } from "./shared.ts"
+${declared("Other", "export ")}
+`,
+			"compared.ts": `import { type } from "arktype"
+import { double, isLong } from "./shared.ts"
+import { ${names.map(name => `${name}Other`).join(", ")} } from "./other.ts"
+${declared("", "")}
+console.log(${names.map(name => `${name} === ${name}Other`).join(", ")})
+`,
+			"switched.ts": `import { type } from "arktype"
+import { double, isLong } from "./shared.ts"
+import { ${names.map(name => `${name}Other`).join(", ")} } from "./other.ts"
+${declared("", "")}
+const isCase = (read: unknown, t: unknown) => {
+	switch (read) {
+		case t:
+			return true
+	}
+	return false
+}
+const inSwitch = (read: unknown) => {
+	switch (read) {
+${names.map(name => `		case ${name}:`).join("\n")}
+			return true
+	}
+	return false
+}
+console.log(${names.map(name => `inSwitch(${name}Other)`).join(", ")}, isCase(1, 1))
+`,
+			"held.ts": `import { type } from "arktype"
+import { double, isLong } from "./shared.ts"
+import { ${names.map(name => `${name}Other`).join(", ")} } from "./other.ts"
+${declared("", "")}
+const held = new Set<unknown>([${names.join(", ")}])
+console.log(${names.map(name => `held.has(${name}Other)`).join(", ")})
+`,
+			"read.ts": `import { type } from "arktype"
+import { double, isLong } from "./shared.ts"
+import { ${names.map(name => `${name}Other`).join(", ")} } from "./other.ts"
+${declared("", "")}
+const describe = (t: { description: string }) => t.description
+console.log(${names.map(name => `describe(${name})`).join(", ")})
+console.log(${names.map(name => `${name} === ${name}Other`).join(", ")})
+`,
+			"main.ts": `import "./compared.ts"
+import "./switched.ts"
+import "./held.ts"
+import "./read.ts"
+`
+		})
+		const plain = runPlain(root)
+		attest(plain.includes("false")).equals(false)
+		attest(run(await bundle(root, production))).equals(plain)
+		attest(run(await bundle(root, production, { prune: false }))).equals(plain)
+		attest(
+			run(await bundle(root, production, { preset: "smallest", prune: false }))
+		).equals(plain)
+		attest(runModuleAtATime(root)).equals(plain)
+		attest(runModuleAtATime(root, "production")).equals(plain)
+		attest(runEmitted(root)).equals(plain)
+	}).timeout(120_000)
+
+	it("an object a Type's meta holds keeps it from its equal, as a keyword's doesn't", async () => {
+		const definitions = {
+			Keyword: `type("string.date").describe("a date")`,
+			Named: `type("string").configure({ jsonSchema: {} } as never)`
+		}
+		const root = fixture("metaObjects", {
+			"package.json": `{ "type": "module" }\n`,
+			"other.ts": `import { type } from "arktype"
+export const KeywordOther = ${definitions.Keyword}
+export const NamedOther = ${definitions.Named}
+`,
+			"main.ts": `import { type } from "arktype"
+import { KeywordOther, NamedOther } from "./other.ts"
+console.log(${definitions.Keyword} === KeywordOther, ${definitions.Named} === NamedOther)
+`
+		})
+		attest(runPlain(root)).equals("true false\n")
+		attest(run(await bundle(root, production))).equals("true false\n")
+		attest(run(await bundle(root, production, { prune: false }))).equals(
+			"true false\n"
+		)
+		attest(runModuleAtATime(root)).equals("true false\n")
+		attest(runModuleAtATime(root, "production")).equals("true false\n")
+	}).timeout(120_000)
+
 	it("each run of a module creates its own functions, so its own Types", async () => {
 		const root = fixture("queried", {
 			"m.ts": `import { type } from "arktype"

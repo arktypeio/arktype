@@ -97,9 +97,14 @@ export interface ReaderProgram extends UsageProgram {
 	// false where the build doesn't read the whole program, so no field read is followed
 	whole: boolean
 	// where the build doesn't, whether each module importing a module's export
-	// bakes what it reads of it, as where the export is the validator itself
+	// bakes what it reads of it, as where the export is the validator itself.
+	// Without a name, of what it may hold as another module's equal Type
 	importersBake?:
-		| ((module: SourceModule, name: string, value: unknown) => boolean)
+		| ((
+				module: SourceModule,
+				name: string | undefined,
+				value: unknown
+		  ) => boolean)
 		| undefined
 }
 
@@ -872,9 +877,12 @@ class Follow {
 					this.readMember(key, held, parent, module)
 					return
 				}
+				if (/^[!=]==?$/.test(parent.operator)) {
+					const other = parent.left === operand ? parent.right : parent.left
+					return this.compare(other, held, parent, module)
+				}
 				// `+` and arithmetic convert it to a primitive
-				if (!/^(?:[!=]==?|instanceof)$/.test(parent.operator))
-					this.convert(held, parent, module)
+				if (parent.operator !== "instanceof") this.convert(held, parent, module)
 				return
 			case "ReturnStatement":
 				return this.returnFrom(
@@ -905,13 +913,15 @@ class Follow {
 				return lose("throws it")
 			case "JSXExpressionContainer":
 				return lose("passes it to a JSX element")
+			// what its cases compare it to, or a case's test
+			case "SwitchStatement":
+			case "SwitchCase":
+				return this.compare(undefined, held, parent, module)
 			case "UnaryExpression":
 			case "IfStatement":
 			case "WhileStatement":
 			case "DoWhileStatement":
 			case "ForStatement":
-			case "SwitchStatement":
-			case "SwitchCase":
 			case "ExpressionStatement":
 			case "ChainExpression":
 				return
@@ -1374,6 +1384,36 @@ class Follow {
 			this.readExport(module, name, held, binding.id)
 	}
 
+	private isBakedByImporters(
+		held: Held,
+		module: SourceModule,
+		name?: string
+	): boolean {
+		return (
+			!held.path.length &&
+			held.of === "type" &&
+			!!this.readers.program.importersBake?.(module, name, this.value)
+		)
+	}
+
+	// another module's equal Type keeps what its export does, so a Type compared
+	// by identity is read as an export is, as they're one value only if written alike
+	private compare(
+		other: Node | undefined,
+		held: Held,
+		at: Node,
+		module: SourceModule
+	): void {
+		if (
+			this.readers.program.whole ||
+			other?.type === "Literal" ||
+			(other?.type === "Identifier" && other.name === "undefined") ||
+			this.isBakedByImporters(held, module)
+		)
+			return
+		this.lose(at, module, "compares it to what another module may create")
+	}
+
 	private readExport(
 		module: SourceModule,
 		name: string,
@@ -1393,12 +1433,7 @@ class Follow {
 			return
 		}
 		if (!program.whole) {
-			if (
-				!held.path.length &&
-				held.of === "type" &&
-				program.importersBake?.(module, name, this.value)
-			)
-				return
+			if (this.isBakedByImporters(held, module, name)) return
 			return this.lose(
 				at,
 				module,
