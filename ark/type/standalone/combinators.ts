@@ -17,6 +17,7 @@ import * as runtime from "../runtimeExports.ts"
 import {
 	basesOf,
 	discriminantContextOf,
+	listedIssueOf,
 	listsBranches,
 	unifies
 } from "./compilers.ts"
@@ -818,8 +819,8 @@ const writeUnionCombinator = (
 		"union",
 		`[${node.branches.map(ref).join(", ")}]`,
 		JSON.stringify(checkerDescriptionOf(node)),
-		listsBranches(node) ? undefined : (
-			`runtime.ownIssue(runtime.siteOf("union", ${JSON.stringify(unionSiteOf(node)!.description)}))`
-		)
+		listsBranches(node) ?
+			listedIssueOf(node)
+		:	`runtime.ownIssue(runtime.siteOf("union", ${JSON.stringify(unionSiteOf(node)!.description)}))`
 	)
 }

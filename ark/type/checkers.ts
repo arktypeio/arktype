@@ -1,10 +1,11 @@
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import type {
-	ArkErrorCode,
-	CompactApply,
-	FailureContext,
-	FailureSite,
-	SiteContext
+import {
+	listedIssue,
+	type ArkErrorCode,
+	type CompactApply,
+	type FailureContext,
+	type FailureSite,
+	type SiteContext
 } from "@ark/schema/runtime"
 import { hasOwn, type Fn } from "@ark/util"
 import {
@@ -521,7 +522,7 @@ export const discriminateOr = ((
 				branch === 1 || branch(data, ctx)
 			:	otherwise(data) ||
 					(objectCheck.test(data) ?
-						!failsBranches(ctx, [miss, otherwise], data)
+						!failsBranches(ctx, [miss, otherwise], data, listedIssue)
 					:	!failsAt(ctx as never, missed, data))
 	}
 	checker.description = missed.description
@@ -532,12 +533,11 @@ export const discriminateOr = ((
 	return checker
 }) satisfies Fn
 
-// branches tried in turn, failing as one issue of each's first, by what writes
-// it if it isn't what they did
+// branches tried in turn, failing as one issue of each's first, by what writes it
 export const union = ((
 	branches: readonly Checker[],
 	description: string,
-	issueOf?: Parameters<typeof failsBranches>[3]
+	issueOf: Parameters<typeof failsBranches>[3]
 ): Checker => {
 	const checker: Checker = (data, ctx) =>
 		branches.some(branch => branch(data)) ||

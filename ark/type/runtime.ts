@@ -13,7 +13,6 @@ import {
 	issueAt,
 	issuesOf,
 	listedFromPath,
-	ListedIssue,
 	listsUnions,
 	mergeIssues,
 	messageOf,
@@ -29,6 +28,7 @@ import {
 	type ArkErrorInput,
 	type ArkIssue,
 	type CompactApply,
+	type UnionIssueOf,
 	type FailHandler,
 	type FailureContext,
 	type FailureSite,
@@ -80,6 +80,7 @@ export {
 	configuredWriterOf,
 	copyDeclared,
 	copyOf,
+	alikeIssue,
 	describeCollapsibleDate,
 	describePredicate,
 	disallowed,
@@ -97,6 +98,7 @@ export {
 	holdsOnlyIndices,
 	keepOwn,
 	InternalTraversal,
+	listedIssue,
 	matchesRepeated,
 	mergeTransformed,
 	pipe,
@@ -765,12 +767,6 @@ export const failsIn = ((
 		ctx._in(apply, data, key, missing)
 	:	!(apply as Fn)((data as Record<PropertyKey, unknown>)[key])) satisfies Fn
 
-type UnionIssueOf = (
-	path: PropertyKey[],
-	data: unknown,
-	errors: readonly ArkIssue[]
-) => ArkIssue
-
 // a union's issue where it's written its own text, expecting what its branches
 // did unless that's what's written
 export const ownIssue = ((site: FailureSite): UnionIssueOf =>
@@ -788,15 +784,12 @@ export const failsListed = ((
 	ctx: any,
 	firsts: readonly ArkIssue[],
 	data: unknown,
-	issueOf?: UnionIssueOf
+	issueOf: UnionIssueOf
 ): boolean | undefined => {
 	const path = traversesUnions ? (ctx._p ?? ctx.path) : ctx._p
 	// a shared object reports one issue to each branch reaching it, listed once
 	const errors = [...new Set(firsts.flatMap(first => first.errors ?? first))]
-	const issue =
-		issueOf ?
-			issueOf(path, data, errors)
-		:	new ListedIssue(path.slice(), data, errors)
+	const issue = issueOf(path, data, errors)
 	if (traversesUnions && !ctx._p) ctx.addError(issue)
 	else ctx._.push(issue)
 	return ctx.failFast
@@ -808,7 +801,7 @@ export const failsBranches = ((
 	ctx: any,
 	branches: readonly CompactApply[],
 	data: unknown,
-	issueOf?: UnionIssueOf
+	issueOf: UnionIssueOf
 ): boolean | undefined => {
 	if (!ctx?._at) return true
 	const firsts: ArkIssue[] = []

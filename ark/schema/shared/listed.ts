@@ -46,11 +46,16 @@ export class ListedIssue implements ArkIssue {
 	declare expected: string
 	declare message: string
 
-	constructor(path: PropertyKey[], data: unknown, errors: readonly ArkIssue[]) {
+	constructor(
+		path: PropertyKey[],
+		data: unknown,
+		errors: readonly ArkIssue[],
+		text: string
+	) {
 		this.path = path
 		this.data = data
 		this.errors = errors
-		this.expected = this.message = writeListed(errors)
+		this.expected = this.message = text
 	}
 
 	// read from the prototype, so no issue lists it among its own keys. Marks
@@ -61,12 +66,28 @@ export class ListedIssue implements ArkIssue {
 	}
 }
 
+export type UnionIssueOf = (
+	path: PropertyKey[],
+	data: unknown,
+	errors: readonly ArkIssue[]
+) => ArkIssue
+
+export const listedIssue: UnionIssueOf = (path, data, errors) =>
+	new ListedIssue(path.slice(), data, errors, writeListed(errors))
+
+// a union whose branches can only fail alike, as `string.ip`'s formats do, for
+// which listing them writes the message of any one
+export const alikeIssue: UnionIssueOf = (path, data, errors) => {
+	for (const error of errors) error.message ??= messageOf(error)
+	return new ListedIssue(path.slice(), data, errors, errors[0].message!)
+}
+
 // the issue at a path before its own, with its text written again there
 export const relisted = (
 	{ path, data, errors }: ArkIssue,
 	prefix: array<PropertyKey>
 ): ArkIssue =>
-	new ListedIssue(
+	listedIssue(
 		[...prefix, ...path],
 		data,
 		errors!.map(error => ({

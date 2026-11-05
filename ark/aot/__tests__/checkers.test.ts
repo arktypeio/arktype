@@ -131,6 +131,36 @@ list[0] must be a string
 		})
 	})
 
+	describe("a union's issue", () => {
+		const printed = `const printIssues = (out: unknown) => console.log(JSON.stringify(out instanceof type.errors ? out.issues : out))
+
+const Alike = type({ ip: "string.ip" })
+const Unlike = type({ id: "string.uuid | string.email" })
+
+printIssues(Alike({ ip: "x" }))
+printIssues(Alike({ ip: 1 }))
+printIssues(Unlike({ id: "x" }))
+console.log(JSON.stringify(Alike["~standard"].validate({ ip: "x" })))
+console.log(JSON.stringify(Unlike["~standard"].validate({ id: 1 })))
+`
+
+		it("reads as arktype's, whether its branches can only fail alike or not", async () => {
+			const root = fixture(
+				"union-issue",
+				`import { type } from "arktype"\n\n${printed}${repaying}\n`
+			)
+			const written = behaviorOf(await bundle(root, smallest))
+			attest(written).equals(behaviorOf(await bundle(root)))
+			attest(written)
+				.snap(`[{"code":"union","path":["ip"],"data":"x","errors":[{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"},{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"}],"message":"ip must be an IP address","expected":"ip must be an IP address"}]
+[{"code":"union","path":["ip"],"data":1,"errors":[{"code":"domain","path":["ip"],"data":1,"expected":"an IP address","message":"ip must be an IP address"},{"code":"domain","path":["ip"],"data":1,"expected":"an IP address","message":"ip must be an IP address"}],"message":"ip must be an IP address","expected":"ip must be an IP address"}]
+[{"code":"union","path":["id"],"data":"x","errors":[{"code":"pattern","path":["id"],"data":"x","expected":"an email address","message":"id must be an email address"},{"code":"pattern","path":["id"],"data":"x","expected":"a UUID","message":"id must be a UUID"}],"message":"id must be an email address or a UUID","expected":"id must be an email address or a UUID"}]
+{"issues":[{"code":"union","path":["ip"],"data":"x","errors":[{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"},{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"}],"message":"must be an IP address","expected":"ip must be an IP address"}]}
+{"issues":[{"code":"union","path":["id"],"data":1,"errors":[{"code":"domain","path":["id"],"data":1,"expected":"a string","message":"id must be a string"},{"code":"domain","path":["id"],"data":1,"expected":"a UUID","message":"id must be a UUID"}],"message":"must be a string or a UUID","expected":"id must be a string or a UUID"}]}
+`)
+		})
+	})
+
 	describe("a narrow that reads only its argument", () => {
 		itRunsAsUnproved(
 			"runs as often at each depth, beside what transforms",
