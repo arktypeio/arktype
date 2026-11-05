@@ -121,6 +121,39 @@ true
 		attest(factoryParam.test(flat)).equals(false)
 	})
 
+	it("writes once a function two Types' traversals write alike", async () => {
+		const root = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const Short = type({ name: "string <= 10", tag: "string = 'none'" })
+const Long = type({ name: "string <= 20", tag: "string = 'none'" })
+
+console.log(JSON.stringify([Short({ name: "Ada" }), Long({ name: "Ada" })]))
+console.log(String(Short({ name: "a".repeat(11) })))
+console.log(JSON.stringify(Long({ name: "a".repeat(11) })))
+`
+			},
+			fromHere("temp", "flatMerged")
+		)
+		const { outputFiles } = await build({
+			entryPoints: [join(root, "main.ts")],
+			bundle: true,
+			write: false,
+			format: "esm",
+			platform: "node",
+			conditions,
+			absWorkingDir: root,
+			plugins: [precompile.esbuild({ cwd: root })]
+		})
+		const js = outputFiles[0].text
+		attest(run(js)).snap(`[{"name":"Ada","tag":"none"},{"name":"Ada","tag":"none"}]
+name must be at most length 10
+{"name":"aaaaaaaaaaa","tag":"none"}
+`)
+		attest(js.match(/\.tag = "none"/g)?.length).equals(1)
+	})
+
 	it("leaves out of the function a unit only a dropped validator reads", async () => {
 		const [js] = await bundle(
 			{},

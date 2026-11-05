@@ -1519,7 +1519,7 @@ interface WrittenUnits {
 const writtenUnitsOf = (body: string, returned: string): WrittenUnits => {
 	const parse = unitsParser()
 	let written: WrittenUnits = { body, returned }
-	for (const pass of [skipAliases, inlineCalls, dropUnread])
+	for (const pass of [skipAliases, inlineCalls, mergeEqualFunctions, dropUnread])
 		written = untilUnchanged(written, parse, pass)
 	written.body = inGzipOrder(written.body)
 	return written
@@ -1572,22 +1572,34 @@ const skipAliases: UnitsPass = ({ program, scopes }, s) => {
 					))
 			)
 				continue
-			for (const { id } of binding.references) {
-				const parent = id.parent
-				s.overwrite(
-					id.start,
-					id.end,
-					parent?.type === "Property" && parent.shorthand ?
-						`${binding.name}: ${target.name}`
-					:	target.name
-				)
-			}
+			renameReferences(s, binding, target.name)
 		}
 	}
 }
 
+const renameReferences = (s: MagicString, binding: Binding, name: string) => {
+	for (const { id } of binding.references) {
+		const parent = id.parent
+		s.overwrite(
+			id.start,
+			id.end,
+			parent?.type === "Property" && parent.shorthand ?
+				`${binding.name}: ${name}`
+			:	name
+		)
+	}
+}
+
+type FunctionExpressionNode = Extract<
+	Node,
+	{ type: "ArrowFunctionExpression" | "FunctionExpression" }
+>
+
+const isFunctionExpression = (node: Node): node is FunctionExpressionNode =>
+	node.type === "ArrowFunctionExpression" || node.type === "FunctionExpression"
+
 const forwardedOf = (fn: Node, scopes: ModuleScopes): Binding | undefined => {
-	if (fn.type !== "ArrowFunctionExpression" || fn.async) return
+	if (!isFunctionExpression(fn) || fn.async) return
 	const [only] = fn.body.type === "BlockStatement" ? fn.body.body : []
 	const call =
 		fn.body.type !== "BlockStatement" ? fn.body
@@ -1644,7 +1656,8 @@ const inlineCalls: UnitsPass = ({ code, program, scopes }, s, body) => {
 			const references = scopes.bindingsById.get(id)?.references ?? []
 			const call = references[0]?.id.parent
 			if (
-				fn?.type !== "ArrowFunctionExpression" ||
+				!fn ||
+				!isFunctionExpression(fn) ||
 				fn.async ||
 				references.length !== 1 ||
 				call?.type !== "CallExpression" ||
@@ -1686,7 +1699,7 @@ const statementEndIn = (body: string, statement: Node): number =>
 
 const passesParams = (
 	call: Node & { type: "CallExpression" },
-	fn: Node & { type: "ArrowFunctionExpression" }
+	fn: FunctionExpressionNode
 ) =>
 	call.arguments.length === fn.params.length &&
 	fn.params.every(
@@ -1695,6 +1708,51 @@ const passesParams = (
 			call.arguments[i].type === "Identifier" &&
 			(call.arguments[i] as { name: string }).name === param.name
 	)
+
+// a function written as another is, reading what that reads, is that one, as
+// content can differ below what a traversal reads: a Transform writing defaults
+// doesn't read its unit's bounds. Its readers may then be written alike in turn.
+// A function holding properties keeps them to itself
+const mergeEqualFunctions: UnitsPass = ({ code, program, scopes }, s) => {
+	const firstByText = new Map<string, Binding>()
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration" || statement.kind !== "const")
+			continue
+		for (const { id, init } of statement.declarations) {
+			const binding = scopes.bindingsById.get(id)
+			if (
+				!binding ||
+				!init ||
+				!isFunctionExpression(init) ||
+				binding.references.some(
+					({ id }) =>
+						id.parent?.type === "MemberExpression" && id.parent.object === id
+				)
+			)
+				continue
+			const text = textOfFunction(code, init, binding)
+			const first = firstByText.get(text)
+			if (!first) firstByText.set(text, binding)
+			else renameReferences(s, binding, first.name)
+		}
+	}
+}
+
+// its text without what a build's passes annotate apart, and reading itself as itself
+const textOfFunction = (code: string, fn: Node, binding: Binding): string => {
+	let text = ""
+	let at = fn.start
+	const own = binding.references
+		.filter(({ id }) => fn.start <= id.start && id.end <= fn.end)
+		.sort((l, r) => l.id.start - r.id.start)
+	for (const { id } of own) {
+		text += `${code.slice(at, id.start)}\0`
+		at = id.end
+	}
+	return (text + code.slice(at, fn.end)).replace(noInlineAnnotation, "")
+}
+
+const noInlineAnnotation = /\/\* @__NOINLINE__ \*\/ /g
 
 // a bundler drops only a module's unread declarations, not a function's
 const dropUnread: UnitsPass = ({ code, program, scopes }, s, body) => {
