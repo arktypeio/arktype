@@ -912,6 +912,15 @@ export const morphing = ((
 // read as a node's Transform, unless it's unread
 export const transformOf = ((checker: Checker) => checker.t!) satisfies Fn
 
+// a node only transforming by its checker
+export const checkerNode = ((checker: Checker) =>
+	Object.freeze({
+		tfs: true,
+		tApply: checker,
+		tTransform: checker.t,
+		allows: checker
+	})) satisfies Fn
+
 // a union transforms by the branch data takes
 const transformingBranches = (
 	checker: Checker,

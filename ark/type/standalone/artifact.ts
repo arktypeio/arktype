@@ -89,6 +89,7 @@ import {
 	type ValidatorAttributes,
 	type ValidatorForm
 } from "./creators.ts"
+import { combines } from "./combinators.ts"
 import {
 	assertReportsIssues,
 	compiledForSize,
@@ -1547,8 +1548,9 @@ return namespace`
 			return writeValue(
 				this.baking.hoisted,
 				`${name}Node`,
-				shape ?
-					`${this.readValue(unit.name)}[${returned.indexOf(shape)}]`
+				shape ? `${this.readValue(unit.name)}[${returned.indexOf(shape)}]`
+				: this.isCheckerNode(root) ?
+					`runtime.checkerNode(${this.traversalsOf(root, unit)[0]})`
 				:	`runtime.freeze(${this.writeShape(
 						root,
 						this.readValue(`${name}Node`),
@@ -1561,6 +1563,18 @@ return namespace`
 			)
 		})
 	}
+	// a node only transforming by a checker declared beside it, all of it read off that
+	isCheckerNode(root: BaseRoot): boolean {
+		return (
+			this.baking.flattens &&
+			this.baking.detailsErrors &&
+			this.baking.combines &&
+			!this.baking.compiledInputs.has(root.hash) &&
+			combines(root) &&
+			shapeFlags.every(flag => !!root[flag] === (flag === "tfs"))
+		)
+	}
+
 	// units differing only by their patterns share a template they pass them to
 	writeTemplateCall(
 		unit: RootUnit,
