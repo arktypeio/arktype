@@ -396,8 +396,7 @@ const filesOf = (app: App): Record<string, string> => {
 	}
 	if (app.twins) {
 		const names = Object.keys(twinDefinitions)
-		files["twin.ts"] =
-			`import { type } from "arktype"
+		files["twin.ts"] = `import { type } from "arktype"
 export const double = (d: any) => (typeof d === "number" ? d * 2 : d)
 export const positive = (d: number) => d > 0
 ${names.map(name => `export const ${name} = type(${twinDefinitions[name]})`).join("\n")}
@@ -990,7 +989,8 @@ const check = async (app: App): Promise<boolean> => {
 		dir
 	)
 	const fullExpected = observationsOf(expected)
-	if (app.twins) console.log(`source: ${JSON.stringify(fullExpected?.at(-1))}`)
+	if (app.twins)
+		console.log(`source: ${JSON.stringify(fullExpected?.slice(-1)[0])}`)
 	const withoutIdentity = (observations: unknown[] | undefined) =>
 		app.comparesIdentity ? observations?.slice(0, -2) : observations
 	const expectedObservations = withoutIdentity(fullExpected)
@@ -1022,7 +1022,7 @@ const check = async (app: App): Promise<boolean> => {
 		)
 			tally.identities++
 		if (app.twins && observed)
-			console.log(`${host}: ${JSON.stringify(observed.at(-1))}`)
+			console.log(`${host}: ${JSON.stringify(observed.slice(-1)[0])}`)
 		// an app crashing whole in arktype must crash in a build, or be refused
 		let mismatch =
 			!expectedObservations || !observations ?
