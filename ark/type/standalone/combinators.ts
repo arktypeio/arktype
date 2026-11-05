@@ -219,12 +219,16 @@ interface Cases {
 	// whether a miss is reported at the union's own path
 	isOwn: boolean
 	cases: Record<string, BaseRoot | true>
+	// whether its cases are true and false, rather than strings
+	areBooleans: boolean
 	// the branches lacking the key, which data holding no case is checked by
 	otherwise?: BaseRoot
 	site: IssueContext
 	// what data that isn't an object fails
 	missed: IssueContext
 }
+
+const isBooleanCase = (k: string) => k === "true" || k === "false"
 
 const discriminatedOf = (node: UnionNode): Cases | undefined => {
 	const discriminant = node.discriminant
@@ -241,13 +245,16 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 	const { default: otherwise, ...keyed } = discriminant.cases
 	// branches lacking the key are tried by their Allows
 	if (otherwise === true || (otherwise && !allowsDecides(otherwise))) return
+	const areBooleans = Object.keys(keyed).every(isBooleanCase)
+	if (areBooleans && otherwise) return
 	for (const k in keyed) {
-		if (!k.startsWith('"')) return
+		if (!areBooleans && !k.startsWith('"')) return
 		const value = JSON.parse(k) as string
-		if (isWellFormedInteger(value) || value === "__proto__") return
+		if (!areBooleans && (isWellFormedInteger(value) || value === "__proto__"))
+			return
 		const pruned = discriminant.cases[k]
 		// a case's checker doesn't check the key again, unless it can't be one
-		cases[value] =
+		cases[k.replace(/^"|"$/g, "")] =
 			pruned === true || combines(pruned) ?
 				pruned
 			:	unprunedOf(
@@ -282,6 +289,7 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 			key,
 			isOwn: node.missPath.length === 0,
 			cases,
+			areBooleans,
 			otherwise,
 			site,
 			missed
@@ -933,7 +941,11 @@ const writeUnionCombinator = (
 		const cases = writeObject(
 			keys.map(k => {
 				const branch = discriminated.cases[k]
-				return `${writeKey(k)}: ${branch === true ? "1" : ref(branch, JSON.stringify(k))}`
+				return `${writeKey(k)}: ${
+					branch === true ? "1" : (
+						ref(branch, discriminated.areBooleans ? k : JSON.stringify(k))
+					)
+				}`
 			})
 		)
 		const missedArg =
@@ -955,7 +967,8 @@ const writeUnionCombinator = (
 					cases,
 					unlessDerived(runtime.describeValues(keys), site),
 					missedArg,
-					discriminated.isOwn ? "1" : undefined
+					discriminated.isOwn ? "1" : undefined,
+					discriminated.areBooleans ? "1" : undefined
 				)
 	}
 	return writeCall(

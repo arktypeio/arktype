@@ -1019,10 +1019,18 @@ export const discriminate = ((
 	description = describeValues(Object.keys(cases)),
 	missed: FailureSite = { code: "union", description: "an object" },
 	// a described union misses at its own path
-	isOwn?: 1
+	isOwn?: 1,
+	areBooleans?: 1
 ): Checker => {
 	// keyed by string, so no other value is a case
-	const byValue = new Map(Object.entries(cases))
+	const byValue = new Map<unknown, Checker | 1>(
+		areBooleans ?
+			[
+				[true, cases.true],
+				[false, cases.false]
+			]
+		:	Object.entries(cases)
+	)
 	const site: SiteContext = { code: "discriminant", description }
 	const checker: Checker = (data: any, ctx) => {
 		const branch = byValue.get(data?.[key])
