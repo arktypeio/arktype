@@ -353,6 +353,11 @@ console.log(A === SameA, A({ a: "" }), B({ b: "" }))
 			true
 		)
 		reads(
+			"interns them where a method is read to be called elsewhere",
+			`console.log(A.assert === B.assert, A({ a: "" }))`,
+			true
+		)
+		reads(
 			"interns them where they're handed off",
 			`const seen = new Set([A]); console.log(seen.has(B))`,
 			true
