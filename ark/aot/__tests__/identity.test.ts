@@ -100,6 +100,9 @@ const definitions = {
 	Pruned: `type("'foo'|'bar'|string|'baz'|/.*/")`,
 	String: `type("string")`,
 	Keys: `type("keyof", { foo: "string" })`,
+	// the string of each: one a Scope copied, read apart from arktype's own keyword
+	KeysOrNull: `type(["keyof", { a: "1", "[string]": "unknown" }]).or("null")`,
+	StringOrNull: `type("string|null")`,
 	Foo: `type("===", "foo")`,
 	MetaObject: `type("string").configure({ x: { y: 1 } } as never)`,
 	RegExpExample: `type("string").configure({ examples: [/a/] } as never)`,
@@ -161,6 +164,7 @@ const partition = [
 	"DescribedA=DescribedB",
 	"FooA=FooB",
 	"KeysA=KeysB",
+	"KeysOrNullA=KeysOrNullB",
 	"KeywordA=KeywordB",
 	"LiteralA=LiteralB",
 	"NarrowA=NarrowB",
@@ -173,6 +177,7 @@ const partition = [
 	"RejectingA=RejectingB",
 	"StringA=StringB",
 	"StringExampleA=StringExampleB",
+	"StringOrNullA=StringOrNullB",
 	"TupleA=TupleB",
 	"UnionA=UnionB",
 	"UnitsA=UnitsB"
