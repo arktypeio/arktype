@@ -5564,10 +5564,10 @@ const compactTextOf = (node: Node, module: SourceModule) =>
 	module.textOf(node).replace(/\s/g, "")
 
 // `arguments` aliases each parameter
-const readsArguments = (fn: FunctionNode): boolean => {
-	if (fn.type === "ArrowFunctionExpression") return false
+export const readsArguments = (fn: FunctionNode): boolean => {
+	if (fn.type === "ArrowFunctionExpression" || !fn.body) return false
 	let result = false
-	for (const node of [...fn.params, fn.body!]) {
+	for (const node of [...fn.params, fn.body]) {
 		walk(node, child => {
 			if (child.type === "Identifier" && child.name === "arguments")
 				result = true

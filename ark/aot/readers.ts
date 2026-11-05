@@ -6,6 +6,7 @@ import {
 	enclosingFunctionOf,
 	isFunctionNode,
 	memberNameOf,
+	readsArguments,
 	type FunctionNode,
 	type ModuleGraph
 } from "./graph.ts"
@@ -2034,20 +2035,4 @@ const returnsOf = (fn: FunctionNode): Node[] => {
 		return true
 	})
 	return result
-}
-
-const readsArguments = (fn: FunctionNode): boolean => {
-	if (fn.type === "ArrowFunctionExpression" || !fn.body) return false
-	let reads = false
-	walk(fn.body, node => {
-		if (reads) return false
-		if (
-			node.type === "FunctionExpression" ||
-			node.type === "FunctionDeclaration"
-		)
-			return false
-		reads = node.type === "Identifier" && node.name === "arguments"
-		return true
-	})
-	return reads
 }
