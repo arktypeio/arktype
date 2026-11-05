@@ -94,10 +94,10 @@ const contentsOf = (o: object): string[] =>
 export const contentNodesOf = (root: BaseNode): Set<BaseNode> => {
 	const nodes = new Set<BaseNode>()
 	const read = (value: unknown) => {
-		if (isArray(value)) value.forEach(read)
+		if (isArray(value)) for (const element of value) read(element)
 		else if (isNode(value) && !nodes.has(value)) {
 			nodes.add(value)
-			Object.values(value.inner).forEach(read)
+			for (const held of Object.values(value.inner)) read(held)
 		}
 	}
 	read(root)
