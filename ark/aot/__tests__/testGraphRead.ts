@@ -3,7 +3,7 @@
 // bundler itself decides, by a plugin, a loader, a context or an output format.
 // A pruned build either refuses, throws that a member isn't baked, or runs as
 // the same config's whole build.
-// [ARK_GRAPH_READ_ONLY=<scenario>,...] [ARK_GRAPH_READ_BUNDLERS=webpack,rspack]
+// [ARK_GRAPH_READ_ONLY=<scenario prefix>,...] [ARK_GRAPH_READ_BUNDLERS=webpack,rspack]
 // [ARK_GRAPH_READ_KEEP=<dir>] pnpm testGraphRead
 import { fromHere } from "@ark/fs"
 import { precompile } from "@ark/aot/unplugin"
@@ -106,7 +106,7 @@ const scenarios: Record<string, Scenario> = {
 	library: {
 		files: {
 			"main.ts": `export { U, V } from "./types.ts"\n`,
-			"run.cjs": `const { U } = require("./out/main.cjs")\n${reader.replace("(T: any)", "(T)").replace("(e as Error)", "e")}const out = read(U)\n${log}`
+			"run.cjs": `const { U } = require("./out/main.cjs")\n${reader.replace("(T: any)", "(T)").replace("out: unknown[]", "out").replace("(e as Error)", "e")}const out = read(U)\n${log}`
 		},
 		config: () => ({
 			output: { library: { type: "commonjs2" } }
@@ -316,6 +316,170 @@ const scenarios: Record<string, Scenario> = {
 	}
 }
 
+// webpack defers what a side-effect-free module re-exports until a module asks
+// for it, which the read rebuilding a written module can lose. Each way of
+// reaching a validator through one, under each way of compiling it, as webpack
+// reads a transpiler's output and Rspack's own swc differently from its source
+const free = `{ "type": "module", "sideEffects": false }\n`
+const barrelShapes: Record<string, Record<string, string>> = {
+	nested: {
+		"main.ts": `import { U } from "./outer.ts"\n${readsOne()}`,
+		"outer.ts": `export * from "./inner.ts"\n`,
+		"inner.ts": `export { U } from "./types.ts"\n`
+	},
+	renamed: {
+		"main.ts": `import { Renamed } from "./barrel.ts"\n${readsOne("Renamed")}`,
+		"barrel.ts": `export { U as Renamed } from "./types.ts"\n`
+	},
+	asDefault: {
+		"main.ts": `import U from "./barrel.ts"\n${readsOne()}`,
+		"barrel.ts": `export { U as default } from "./types.ts"\n`
+	},
+	starAs: {
+		"main.ts": `import { ns } from "./barrel.ts"\n${readsOne("ns.U")}`,
+		"barrel.ts": `export * as ns from "./types.ts"\n`
+	},
+	namespaceRead: {
+		"main.ts": `import * as all from "./barrel.ts"\n${readsOne("all.U")}`,
+		"barrel.ts": `export * from "./types.ts"\n`
+	},
+	wholeNamespace: {
+		"main.ts": `import * as all from "./barrel.ts"\nconst out = [Object.keys(all), String((all.U as any)({ name: 1 }))]\n${log}`,
+		"barrel.ts": `export * from "./types.ts"\n`
+	},
+	dynamic: {
+		"main.ts": `import("./barrel.ts").then(({ U }) => {\n${readsOne()}})\n`,
+		"barrel.ts": `export { U } from "./types.ts"\n`
+	},
+	staticAndDynamic: {
+		"main.ts": `import { U } from "./barrel.ts"\nimport("./other.ts").then(({ V }) => {\nconst out = [(U as any).expression, String((V as any)("a"))]\n${log}})\n`,
+		"barrel.ts": `export { U } from "./types.ts"\n`,
+		"other.ts": `export { V } from "./types.ts"\n`
+	},
+	twoBarrels: {
+		"main.ts": `import { U } from "./a.ts"\nimport { V } from "./b.ts"\nconst out = [(U as any).expression, String((V as any)("a"))]\n${log}`,
+		"a.ts": `export { U } from "./types.ts"\n`,
+		"b.ts": `export { V } from "./types.ts"\n`
+	},
+	// what nothing asks for stays unbuilt, beside what's asked for
+	unusedBeside: {
+		"main.ts": `import { U } from "./barrel.ts"\n${readsOne()}`,
+		"barrel.ts": `export { U } from "./types.ts"\nexport { W } from "./unused.ts"\n`,
+		"unused.ts": `import { type } from "arktype"\nexport const W = type({ w: "string" })\n`
+	},
+	// two modules each asked for one validator, one module asked for both
+	splitAcross: {
+		"main.ts": `import { A, B } from "./barrel.ts"\nconst out = [(A as any).expression, String((B as any)({ b: 1 }))]\n${log}`,
+		"barrel.ts": `export { A } from "./a.ts"\nexport { B } from "./b.ts"\n`,
+		"a.ts": `import { type } from "arktype"\nexport const A = type({ a: "string" })\n`,
+		"b.ts": `import { type } from "arktype"\nexport const B = type({ b: "string" })\n`
+	},
+	cycle: {
+		"main.ts": `import { U } from "./a.ts"\n${readsOne()}`,
+		"a.ts": `export * from "./b.ts"\nexport const fromA = 1\n`,
+		"b.ts": `export * from "./a.ts"\nexport { U } from "./types.ts"\n`
+	},
+	ownBeside: {
+		"main.ts": `import { U, own } from "./barrel.ts"\nconst out = [own, (U as any).expression, String((U as any)({ name: 1 }))]\n${log}`,
+		"barrel.ts": `export const own = 1\nexport { U } from "./types.ts"\n`
+	},
+	definedAndReexported: {
+		"main.ts": `import { U, Own } from "./barrel.ts"\nconst out = [(Own as any).expression, String((U as any)({ name: 1 }))]\n${log}`,
+		"barrel.ts": `import { type } from "arktype"\nexport const Own = type({ own: "string" })\nexport { U } from "./types.ts"\n`
+	},
+	readByTwo: {
+		"main.ts": `import { U } from "./barrel.ts"\nimport { use } from "./reader.ts"\nconst out = [use(), String((U as any)({ name: 1 }))]\n${log}`,
+		"barrel.ts": `export * from "./types.ts"\n`,
+		"reader.ts": `import { U } from "./barrel.ts"\nexport const use = () => (U as any).expression\n`
+	},
+	packageDependency: {
+		"main.ts": `import { D } from "dep"\n${readsOne("D")}`,
+		"node_modules/dep/package.json": `{ "name": "dep", "type": "module", "sideEffects": false, "exports": "./index.js" }\n`,
+		"node_modules/dep/index.js": `export { D } from "./types.js"\n`,
+		"node_modules/dep/types.js": `import { type } from "arktype"\nexport const D = type({ name: "string" })\n`
+	},
+	sideEffectsListed: {
+		"main.ts": `import { U } from "./barrel.ts"\n${readsOne()}`,
+		"barrel.ts": `export { U } from "./types.ts"\n`,
+		"package.json": `{ "type": "module", "sideEffects": ["./main.ts"] }\n`
+	}
+}
+
+const barrelCompilers: Record<string, Pick<Scenario, "only" | "config">> = {
+	stripped: {},
+	tsEsm: {
+		config: ({ dir }) => ({
+			module: {
+				rules: [
+					{
+						test: /\.ts$/,
+						type: "javascript/esm",
+						loader: join(dir, "transpileEsm.cjs")
+					}
+				]
+			}
+		})
+	},
+	tsCommonJs: {
+		config: ({ dir }) => ({
+			module: {
+				rules: [{ test: /\.ts$/, loader: join(dir, "transpile.cjs") }]
+			}
+		})
+	},
+	swcCommonJs: {
+		only: "rspack",
+		config: () => ({
+			module: {
+				rules: [
+					{
+						test: /\.ts$/,
+						loader: "builtin:swc-loader",
+						options: {
+							jsc: { parser: { syntax: "typescript" }, target: "es2022" },
+							module: { type: "commonjs" }
+						}
+					}
+				]
+			}
+		})
+	},
+	swc: {
+		only: "rspack",
+		config: () => ({
+			module: {
+				rules: [
+					{
+						test: /\.ts$/,
+						loader: "builtin:swc-loader",
+						options: {
+							jsc: { parser: { syntax: "typescript" }, target: "es2022" },
+							module: { type: "es6" }
+						}
+					}
+				]
+			}
+		})
+	}
+}
+
+for (const [shape, files] of Object.entries(barrelShapes)) {
+	for (const [compiler, { only, config }] of Object.entries(barrelCompilers)) {
+		for (const concatenateModules of [true, false]) {
+			scenarios[
+				`barrel ${shape} ${compiler} ${concatenateModules ? "concatenated" : "apart"}`
+			] = {
+				only,
+				files: { "package.json": free, ...files },
+				config: build => ({
+					...config?.(build),
+					optimization: { concatenateModules }
+				})
+			}
+		}
+	}
+}
+
 const loaderPath = fromHere("stripTypesLoader.ts")
 // a project's ts-loader under module: CommonJS, which is what webpack reads then
 const transpileLoader = `const { createRequire } = require("node:module")
@@ -326,6 +490,11 @@ module.exports = function (source) {
 	}).outputText
 }
 `
+
+const transpileEsmLoader = transpileLoader.replace(
+	"ts.ModuleKind.CommonJS",
+	"ts.ModuleKind.ESNext"
+)
 
 const root = tempDir("ark-graph-read-")
 const keep = process.env.ARK_GRAPH_READ_KEEP
@@ -346,6 +515,7 @@ const writeApp = (name: string, scenario: Scenario): string => {
 		"package.json": `{ "type": "module" }\n`,
 		"types.ts": types,
 		"transpile.cjs": transpileLoader,
+		"transpileEsm.cjs": transpileEsmLoader,
 		...scenario.files
 	}
 	for (const file in files) {
@@ -473,8 +643,9 @@ const isLoud = (out: string) =>
 	)
 
 let unsound = 0
+let crashed = 0
 for (const [name, scenario] of Object.entries(scenarios)) {
-	if (only && !only.includes(name)) continue
+	if (only && !only.some(prefix => name.startsWith(prefix))) continue
 	const dir = writeApp(name, scenario)
 	for (const bundler of bundlers) {
 		if (scenario.only && scenario.only !== bundler) continue
@@ -496,7 +667,13 @@ for (const [name, scenario] of Object.entries(scenarios)) {
 				continue
 			}
 			if (normalized(pruned.out) === normalized(whole.out)) {
-				console.log(`${label}: as whole`)
+				// the same crash whole and pruned is a bug comparing them can't see
+				if (pruned.out.startsWith("exit ") && !isLoud(pruned.out)) {
+					crashed++
+					console.log(
+						`${label}: CRASHED, as whole: ${pruned.out.slice(0, 200)}`
+					)
+				} else console.log(`${label}: as whole`)
 				continue
 			}
 			if (isLoud(pruned.out)) {
@@ -518,6 +695,6 @@ for (const [name, scenario] of Object.entries(scenarios)) {
 	}
 	rmSync(dir, { recursive: true, force: true })
 }
-console.log(`${unsound} unsound`)
+console.log(`${unsound} unsound, ${crashed} crashed as whole`)
 rmSync(root, { recursive: true, force: true })
-process.exit(unsound ? 1 : 0)
+process.exit(unsound || crashed ? 1 : 0)
