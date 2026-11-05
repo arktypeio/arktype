@@ -38,7 +38,7 @@ export class SameEachRun {
 
 	// `seen` answers for what's being read, so a cycle is as sound as what else
 	// its members read, which each decides before the first returns
-	private reads(fn: Node, module: SourceModule, seen: Set<unknown>): boolean {
+	private reads(fn: Node, module: SourceModule, seen: Set<Node>): boolean {
 		if (seen.has(fn)) return true
 		seen.add(fn)
 		let same = true
@@ -58,7 +58,7 @@ export class SameEachRun {
 		id: Node & { name: string },
 		fn: Node,
 		module: SourceModule,
-		seen: Set<unknown>
+		seen: Set<Node>
 	): boolean {
 		const reference = module.scopes.byId.get(id)
 		// e.g. a member's or key's name
@@ -96,7 +96,7 @@ export class SameEachRun {
 	private isSameType(
 		binding: Binding,
 		module: SourceModule,
-		seen: Set<unknown>
+		seen: Set<Node>
 	): boolean {
 		const value = this.interpreter.valueOfBinding(binding, module)
 		return (

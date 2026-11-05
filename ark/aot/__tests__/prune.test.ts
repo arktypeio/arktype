@@ -14,6 +14,7 @@ import {
 	type BuiltModule,
 	type LoadedSources
 } from "@ark/aot/internal/scan.ts"
+import { writeUnbuiltReadMessage } from "@ark/aot/internal/messages.ts"
 import {
 	pruneBeforePluginMessage,
 	writePruneHostMessage
@@ -2533,6 +2534,199 @@ console.log(typeof User["~standard"].validate)
 							}
 						}
 
+				describe("a package declaring no side effects", () => {
+					const noSideEffects = {
+						"package.json": JSON.stringify({
+							type: "module",
+							sideEffects: false
+						})
+					}
+
+					const reads = (imported: string) => `${imported}
+
+console.log(String(User({ name: 5 })))
+`
+
+					const shapes: Record<string, Record<string, string>> = {
+						"imported directly": {
+							"main.js": reads(`import { User } from "./types.js"`)
+						},
+						"through a named re-export": {
+							"barrel.js": `export { User } from "./types.js"\n`,
+							"main.js": reads(`import { User } from "./barrel.js"`)
+						},
+						"through a star re-export": {
+							"barrel.js": `export * from "./types.js"\n`,
+							"main.js": reads(`import { User } from "./barrel.js"`)
+						},
+						"through a star re-export and a rename": {
+							"barrel.js": `export * from "./types.js"
+export { User as Renamed } from "./types.js"
+`,
+							"main.js": reads(`import { Renamed as User } from "./barrel.js"`)
+						},
+						"through a chain of re-exports": {
+							"outer.js": `export * from "./barrel.js"\n`,
+							"barrel.js": `export { User } from "./types.js"\n`,
+							"main.js": reads(`import { User } from "./outer.js"`)
+						},
+						"through a namespace": {
+							"barrel.js": `export * from "./types.js"\n`,
+							"main.js": `import * as all from "./barrel.js"
+
+console.log(String(all.User({ name: 5 })))
+`
+						},
+						"imported dynamically": {
+							"barrel.js": `export { User } from "./types.js"\n`,
+							"main.js": `import(/* webpackMode: "eager" */ "./barrel.js").then(({ User }) =>
+	console.log(String(User({ name: 5 })))
+)
+`
+						},
+						"as a default export": {
+							"types.js": `import { type } from "arktype"
+
+export default type({ name: "string" })
+`,
+							"main.js": reads(`import User from "./types.js"`)
+						},
+						"under another name": {
+							"types.js": `import { type } from "arktype"
+
+const Local = type({ name: "string" })
+
+export { Local as User }
+`,
+							"main.js": reads(`import { User } from "./types.js"`)
+						}
+					}
+
+					for (const [shape, files] of Object.entries(shapes)) {
+						for (const concatenateModules of [true, false]) {
+							it(`keeps a validator ${shape}, ${concatenateModules ? "concatenating" : "not concatenating"} modules`, async () => {
+								const root = fixture(
+									`noSideEffects-${shape}-${concatenateModules}`.replace(
+										/ /g,
+										"-"
+									),
+									{ ...noSideEffects, ...files }
+								)
+								const js = await bundle(
+									name,
+									root,
+									{},
+									{ optimization: { concatenateModules } }
+								)
+								attest(output(js)).equals("name must be a string\n")
+							})
+						}
+					}
+
+					it("keeps both of two validators a module holds, when both are read", async () => {
+						const root = fixture("noSideEffects-both", {
+							...noSideEffects,
+							"types.js": `import { type } from "arktype"
+
+export const First = type({ name: "string" })
+export const Second = type({ age: "number" })
+`,
+							"barrel.js": `export { First } from "./types.js"
+export { Second } from "./types.js"
+`,
+							"main.js": `import { First, Second } from "./barrel.js"
+
+console.log(String(First({ name: 5 })), String(Second({ age: "a" })))
+`
+						})
+						attest(output(await bundle(name, root))).equals(
+							"name must be a string age must be a number\n"
+						)
+					})
+
+					it("leaves out a validator nothing reads of a module one is read from", async () => {
+						const root = fixture("noSideEffects-other", {
+							...noSideEffects,
+							"types.js": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+export const Other = type({ uniqueOther: "string" })
+`,
+							"main.js": reads(`import { User } from "./types.js"`)
+						})
+						const js = await bundle(name, root)
+						attest(js.includes("uniqueOther")).equals(false)
+						attest(output(js)).equals("name must be a string\n")
+					})
+
+					it("builds no more than a raw build of a re-export nothing asks for", async () => {
+						const root = fixture("noSideEffects-unasked", {
+							...noSideEffects,
+							"unasked.js": `import { type } from "arktype"
+
+export const Unasked = type({ uniqueUnasked: "string" })
+Unasked.expression
+`,
+							"types.js": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+export { Unasked } from "./unasked.js"
+`,
+							"main.js": reads(`import { User } from "./types.js"`)
+						})
+						const js = await bundle(name, root)
+						attest(js.includes("uniqueUnasked")).equals(false)
+						attest(output(js)).equals("name must be a string\n")
+					})
+
+					it("keeps a validator defined from one a deferred import holds", async () => {
+						const root = fixture("noSideEffects-deferredImport", {
+							...noSideEffects,
+							"held.js": `import { type } from "arktype"
+
+export const Held = type({ uniqueHeld: "string" })
+`,
+							"holder.js": `import { type } from "arktype"
+import { Held } from "./held.js"
+
+export const Holder = type({ held: Held })
+export { User } from "./types.js"
+`,
+							"main.js": reads(`import { User } from "./holder.js"`)
+						})
+						const js = await bundle(name, root)
+						attest(js.includes("uniqueHeld")).equals(false)
+						attest(output(js)).equals("name must be a string\n")
+					})
+
+					it("answers a build its cache kept as one with no cache", async () => {
+						const root = fixture("noSideEffects-cached", {
+							...noSideEffects,
+							"barrel.js": `export { User } from "./types.js"\n`,
+							"main.js": reads(`import { User } from "./barrel.js"`)
+						})
+						const cache = cacheOf(root)
+						const cold = await bundle(name, root, {}, cache)
+						attest(output(cold)).equals("name must be a string\n")
+						attest(cold).equals(await bundle(name, root))
+						attest(await bundle(name, root, {}, cache)).equals(cold)
+					})
+
+					it("reads a member through a re-export", async () => {
+						const root = fixture("noSideEffects-member", {
+							...noSideEffects,
+							"barrel.js": `export { User } from "./types.js"\n`,
+							"main.js": `import { User } from "./barrel.js"
+
+console.log(User.expression, String(User({ name: 5 })))
+`
+						})
+						attest(output(await bundle(name, root))).equals(
+							"{ name: string } name must be a string\n"
+						)
+					})
+				})
+
 				it("leaves out what no read needs, as an esbuild build does", async () => {
 					const root = fixture("pruned", {
 						"main.js": `import { type } from "arktype"
@@ -3088,6 +3282,53 @@ new Worker(new URL("./worker.js", import.meta.url))
 				readFileSync(join(root, "out", "webpack", "child.js"), "utf8").includes(
 					"~standard"
 				)
+			).equals(true)
+		})
+
+		it("fails a build webpack leaves an export it reads unbuilt in", async () => {
+			const root = writeFixture(
+				{
+					"package.json": JSON.stringify({
+						type: "module",
+						sideEffects: false
+					}),
+					"types.js": types,
+					"main.js": `import { User } from "./types.js"
+
+console.log(String(User({ name: 5 })))
+`
+				},
+				fromHere("temp", "prunedWebpack", "webpack", "forgets")
+			)
+			// as a webpack that came to defer them otherwise might
+			const forgets = {
+				apply: (compiler: webpack.Compiler) =>
+					compiler.hooks.thisCompilation.tap("forgets", compilation =>
+						compilation.hooks.rebuildModule.tap("forgets", module =>
+							(
+								compilation as unknown as {
+									_lazyBarrels: { _modules: WeakMap<object, unknown> }
+								}
+							)._lazyBarrels._modules.delete(module)
+						)
+					)
+			}
+			const error: Error = await bundle(
+				"webpack",
+				root,
+				{},
+				{
+					plugins: [
+						precompile.webpack({ cwd: root }) as never,
+						forgets as never
+					]
+				}
+			).then(
+				() => new Error("built"),
+				e => e
+			)
+			attest(
+				error.message.includes(writeUnbuiltReadMessage("types.js", "User"))
 			).equals(true)
 		})
 	})

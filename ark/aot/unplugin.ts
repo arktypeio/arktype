@@ -69,6 +69,7 @@ import {
 	writeFilelessImportMessage,
 	writeLoadedFirstMessage,
 	writeUncachedModuleMessage,
+	writeUnbuiltReadMessage,
 	writeUnwrittenModuleMessage,
 	writeVariantImportMessage,
 	writeUntransformedImportMessage,
@@ -431,7 +432,11 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		// compilation's modules run apart from them, and are written whole
 		bundler.hooks.thisCompilation.tap("arktype", compilation => {
 			if (!prunesIn(!!environment?.production)) return
-			const read: BuiltRead = { loaded: new Map(), mappings: new Map() }
+			const read: BuiltRead = {
+				loaded: new Map(),
+				mappings: new Map(),
+				written: []
+			}
 			builtReads.set(compilation, read)
 			compilation.hooks.finishModules.tapPromise(
 				// ahead of what reads the modules as they end
@@ -439,6 +444,17 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				() => answerBuilt(bundler, compilation, read)
 			)
 			compilation.hooks.seal.tap("arktype", () => {
+				const unbuilt = unbuiltReadOf(compilation, read.written)
+				if (unbuilt) {
+					compilation.errors.push(
+						new bundler.webpack.WebpackError(
+							writeUnbuiltReadMessage(
+								printablePathOf(realCwd(), unbuilt[0]),
+								unbuilt[1]
+							)
+						)
+					)
+				}
 				if (!read.program) return
 				const late = unreadBuiltOf(
 					read.program,
@@ -661,6 +677,12 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				(rewritten ? rewritten.has(file) : isTransformedId(file))
 			)
 		})
+		// Rspack builds what it's asked for itself, and gives another module to
+		// one that's read once rebuilt
+		if (meta.framework === "webpack") {
+			read.written = written
+			askAgainOf(compilation, written)
+		}
 		await new Promise<void>((resolve, reject) => {
 			// Rspack answers modules rebuilt together at once and by position,
 			// leaving out each that fails, so a callback may never run. So there,
@@ -1690,6 +1712,8 @@ interface BuiltRead {
 	answering?: boolean
 	program?: ScannedProgram | undefined
 	issues?: IssueFeatures | undefined
+	// the modules webpack built again to write them
+	written: BuiltBundlerModule[]
 }
 
 // what the bundler gives a hook, where it's webpack or Rspack
@@ -1718,6 +1742,11 @@ interface BuiltBundlerModule extends BuiltBlock {
 
 interface BuiltDependency {
 	request?: string | undefined
+	// webpack's, each undefined on Rspack: what a re-export exports
+	name?: string | null
+	// and what it asks of the module it depends on, as its lazy barrels read it
+	forwardId?: string | true | null
+	lazyRole?: string | null
 }
 
 // the file a module reads as a script. What isn't one is followed like a
@@ -1727,6 +1756,75 @@ const builtIdOf = (module: BuiltBundlerModule): string | undefined => {
 	if (!resource || !isAbsolute(resource) || !isScriptModule(module)) return
 	const file = fileOf(resource)
 	return isAsset(file) ? undefined : file
+}
+
+// webpack leaves a side-effect-free module's re-exports unbuilt until a module
+// asks for their names, and forgets what was asked of one that had none. A
+// module written to import its validators has some, which nothing asks for
+// again as what reads them is already built, so they'd be missing and nothing
+// would say so. So what was asked is asked again ahead of its rebuild
+const askAgainOf = (
+	{ _lazyBarrels: barrels, moduleGraph: graph }: BundlerCompilation,
+	modules: readonly BuiltBundlerModule[]
+) => {
+	if (!barrels) return
+	for (const module of modules) {
+		barrels.request(
+			module as never,
+			[...graph.getIncomingConnections(module as never)].flatMap(
+				({ dependency }) => dependency ?? []
+			)
+		)
+	}
+}
+
+// what's asked of a module, true for all of its exports. A star re-export asks
+// for what's asked of it. Where a dependency doesn't say, it asks for all
+const namesAskedOf = (
+	graph: BundlerModuleGraph,
+	module: unknown,
+	seen = new Set([module])
+): Set<string> | true => {
+	const names = new Set<string>()
+	for (const { dependency } of graph.getIncomingConnections(module as never)) {
+		if (!dependency) continue
+		const { forwardId, lazyRole } = dependency as BuiltDependency
+		if (forwardId === null) continue
+		if (lazyRole === "*") {
+			const parent = graph.getParentModule?.(dependency as never)
+			if (seen.has(parent)) continue
+			seen.add(parent)
+			const asked = namesAskedOf(graph, parent, seen)
+			if (asked === true) return true
+			for (const name of asked) names.add(name)
+		} else if (typeof forwardId === "string") names.add(forwardId)
+		else return true
+	}
+	return names
+}
+
+// an export of a module it wrote that's asked for yet unbuilt, as askAgainOf
+// keeps from happening unless webpack comes to defer them otherwise. Nothing
+// else would say so, and the read would find it undefined
+const unbuiltReadOf = (
+	{ moduleGraph: graph }: BundlerCompilation,
+	written: readonly BuiltBundlerModule[]
+): [file: string, name: string] | undefined => {
+	for (const module of written) {
+		const unbuilt = module.dependencies.flatMap(dependency =>
+			(
+				typeof dependency.name === "string" &&
+				dependency.request !== undefined &&
+				!graph.getModule(dependency as never)
+			) ?
+				dependency.name
+			:	[]
+		)
+		if (!unbuilt.length) continue
+		const asked = namesAskedOf(graph, module)
+		const read = unbuilt.find(name => asked === true || asked.has(name))
+		if (read) return [fileOf(module.resource!), read]
+	}
 }
 
 // each module a compilation's entries reach, as the plugin reads them
@@ -2468,6 +2566,8 @@ interface BundlerCompilation {
 	rebuildModule(module: never, callback: (error?: Error | null) => void): void
 	errors: Error[]
 	warnings: Error[]
+	// webpack's, where it has them
+	_lazyBarrels?: { request(module: never, dependencies: unknown[]): unknown }
 }
 
 interface BuiltEntry {
@@ -2476,9 +2576,12 @@ interface BuiltEntry {
 }
 
 interface BundlerModuleGraph {
-	getIncomingConnections: (module: never) => Iterable<{ originModule: unknown }>
+	getIncomingConnections: (
+		module: never
+	) => Iterable<{ originModule: unknown; dependency?: unknown }>
 	getIssuer: (module: never) => unknown
 	getModule: (dependency: never) => unknown
+	getParentModule?: (dependency: never) => unknown
 }
 
 const bundlerImportsOf = (

@@ -135,14 +135,6 @@ export interface ConfiguredModule {
 	config: string
 }
 
-// from this many characters written for a module, what its import spends on code
-// it may never call outweighs reading it through a variable. A module's own text
-// decides, so no output depends on build order
-const deferredFrom = 90_000
-
-export const defersCreation = (writtenChars: number): boolean =>
-	writtenChars >= deferredFrom
-
 export interface StandaloneOptions {
 	configured?: Configured
 	members?: ValidatorMembers | undefined
