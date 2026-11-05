@@ -45,9 +45,10 @@ import { createAsyncPrecompiler } from "./worker.ts"
 // Turbopack can't serve a module no file holds, and keeps what it first lists
 // of a directory for the whole build. So whatever its modules import must be
 // on disk before the first of them is answered, which is why a build reads its
-// program up front, and why the files go in a directory that's there as the
-// build starts but that Turbopack has no cause to list: not node_modules/.cache,
-// which a new install lacks, nor .next, which it denies
+// program up front. The files go in node_modules/.bin/.ark, odd as that is for
+// modules, as it's the one place a build probed could resolve them from: there
+// as the build starts, and never listed by Turbopack. node_modules/.cache fails
+// on a new install, which lacks it, and Turbopack denies .next
 const binOf = (root: string): string | undefined => {
 	for (let dir = root; ; dir = dirname(dir)) {
 		const bin = join(dir, "node_modules/.bin")
@@ -437,9 +438,15 @@ const readAndWrite = async (
 	if (typeof scanned === "string") return refusal(scanned)
 	if (queried) return refusal(queried)
 	const program = withRoots(scanned, root, scripts)
-	// what a module writes is a few imports, its validators created in the units
+	// what a module writes is a few imports, its validators created in the units.
+	// Each keeps its methods, whose getters throw for a member it lacks, as a
+	// module Next generates may import one where the read can't see
 	const send = createAsyncPrecompiler({
-		precompilerOptions: { ...opts, defers: false }
+		precompilerOptions: {
+			...opts,
+			defers: false,
+			members: { methods: true, ...opts.members }
+		}
 	})
 	const bundlerResolve = (specifier: string, importer: string) =>
 		resolve(dirname(importer), specifier).then(realPathOf, () => undefined)

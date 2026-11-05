@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { fromHere } from "@ark/fs"
 import {
 	writeMissedByProgramMessage,
 	writeUnreadProgramMessage
@@ -15,6 +16,7 @@ import {
 	readFileSync,
 	writeFileSync
 } from "node:fs"
+import { spawnSync } from "node:child_process"
 import { dirname, join, resolve as resolvePath } from "node:path"
 import { writeFixture } from "./utils.ts"
 
@@ -25,17 +27,20 @@ const rules = (rule: string) =>
 
 const ownRule = '{ loaders: ["@ark/aot/turbopack"] }'
 
-const project = (files: Record<string, string> = {}) =>
-	writeFixture({
-		"next.config.js": rules(ownRule),
-		"node_modules/next/package.json": '{ "name": "next" }',
-		"node_modules/.bin/next": "",
-		"src/user.ts":
-			'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n',
-		"app/page.ts":
-			'import { User } from "../src/user.ts"\n\nexport const GET = (data: unknown) => Response.json(User.allows(data))\n',
-		...files
-	})
+const project = (files: Record<string, string> = {}, root?: string) =>
+	writeFixture(
+		{
+			"next.config.js": rules(ownRule),
+			"node_modules/next/package.json": '{ "name": "next" }',
+			"node_modules/.bin/next": "",
+			"src/user.ts":
+				'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n',
+			"app/page.ts":
+				'import { User } from "../src/user.ts"\n\nexport const GET = (data: unknown) => Response.json(User.allows(data))\n',
+			...files
+		},
+		root
+	)
 
 // Turbopack's own resolver, where a module's layer may answer otherwise
 type Resolved = Record<string, string | undefined>
@@ -124,6 +129,36 @@ contextualize(() => {
 			attest(written.includes("~standard")).equals(false)
 		})
 
+		it("keeps each validator's methods, so a read it can't see throws", async () => {
+			// where arktype resolves, as it does from an app's units
+			const dir = project({}, fromHere("temp", "nextProgram", "methods"))
+			const { out } = await load(dir, "src/user.ts")
+			writeFileSync(join(dir, "src/written.mjs"), out!)
+			const { stderr } = spawnSync(
+				process.execPath,
+				[
+					"--conditions",
+					"ark-ts",
+					"--input-type=module",
+					"-e",
+					'import { User } from "./src/written.mjs"\nUser.expression'
+				],
+				{ cwd: dir, encoding: "utf8" }
+			)
+			attest(
+				stderr.includes("expression isn't baked into this validator")
+			).equals(true)
+		})
+
+		it("creates each validator as its module loads, given defers", async () => {
+			const dir = project()
+			await load(dir, "src/user.ts", { opts: { defers: true } })
+			const written = readdirSync(unitsDirIn(dir))
+				.map(name => readFileSync(join(unitsDirIn(dir), name), "utf8"))
+				.join("\n")
+			attest(/deferred/i.test(written)).equals(false)
+		})
+
 		it("keeps what a module nothing imports reads", async () => {
 			const dir = project({
 				"src/unused.ts":
@@ -138,12 +173,7 @@ contextualize(() => {
 
 		// which code it can't read may read, so it keeps what it would leave out
 		const keptFor = (reason: string) =>
-			writeKeptMembersMessage(reason, [
-				"assert",
-				"meta",
-				"~standard",
-				"methods"
-			])
+			writeKeptMembersMessage(reason, ["assert", "meta", "~standard"])
 
 		it("takes what nothing imports for an entry", async () => {
 			const dir = project({
