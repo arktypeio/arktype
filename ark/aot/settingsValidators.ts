@@ -24,6 +24,9 @@ var bracketsKeys = true
 var writesText = true
 var readsKeySites = true
 var runsArktype = true
+var appliesValues = true
+var transformsBranches = true
+var failsInBranches = true
 
 // ark/schema/shared/issues.ts
 var ArkIssues = class {
@@ -134,6 +137,8 @@ var check = (code, description, test) => {
 	checker.test = test
 	return checker
 }
+var wrapping = checker =>
+	Object.assign((data, ctx) => checker(data, ctx), checker)
 var stringCheck = /* @__PURE__ */ check(
 	"domain",
 	"a string",
@@ -202,15 +207,20 @@ var intersection = (basis, refinements, within) => {
 	return checker
 }
 var optional = (checker, ...value) => {
-	const wrapped = (data, ctx) => checker(data, ctx)
+	const wrapped = wrapping(checker)
 	wrapped.o = 1
 	wrapped.d = value
-	wrapped.t = checker.t
 	return wrapped
 }
 var failsValue = (ctx, checker, data, k, value) =>
 	ctx?._at ?
-		(!checker.t || !checker(value)) && ctx._in(checker, data, k)
+		appliesValues && checker.e ? checker.e(ctx, checker, value, k)
+		: appliesValues && checker.t?.e ? checker.t.e(ctx, checker, value, k)
+		: (!checker.t ||
+				!(appliesValues && checker.a ?
+					checker.a(value, ctx)
+				:	checker(value))) &&
+			ctx._in(checker, data, k)
 	:	!checker(value)
 var failsProps = (declared, data, ctx) => {
 	for (const k in declared) {
@@ -243,6 +253,16 @@ var closedProps = (declared, description = "removed") => {
 	checker.description = objectCheck.description
 	return checker
 }
+var recordOf = value => {
+	const checker = (data, ctx) => {
+		if (!objectCheck.test(data)) return !failsAt(ctx, objectCheck, data)
+		for (const k of Object.keys(data))
+			if (failsValue(ctx, value, data, k, data[k])) return false
+		return true
+	}
+	checker.description = objectCheck.description
+	return checker
+}
 var elementsOf = element => (data, ctx) => {
 	for (let i = 0; i < data.length; i++)
 		if (failsValue(ctx, element, data, i, data[i])) return false
@@ -253,7 +273,7 @@ var units = (
 	code = "discriminant",
 	description = describeValues(values)
 ) => check(code, description, data => values.includes(data))
-var domains = (cases, description) => {
+var domains = (cases, description, fails) => {
 	const site = { code: "discriminant", description }
 	const caseOf = data =>
 		cases[
@@ -268,8 +288,12 @@ var domains = (cases, description) => {
 			:	!failsAt(ctx, site, data)
 	}
 	checker.description = description
-	if (Object.values(cases).some(branch => branch.t))
-		checker.t = data => caseOf(data).t?.(data) ?? data
+	if (transformsBranches && Object.values(cases).some(branch => branch.t)) {
+		checker.t =
+			failsInBranches && fails ?
+				fails(caseOf, Object.values(cases))
+			:	data => caseOf(data).t?.(data) ?? data
+	}
 	return checker
 }
 
@@ -280,8 +304,6 @@ var requiredSiteOf = description => ({
 	m: { code: "required", description }
 })
 var failsAt = (ctx, site, data, key) => !ctx?._at || ctx._at(site, data, key)
-var failsIn = (ctx, apply, data, key, missing) =>
-	ctx?._at ? ctx._in(apply, data, key, missing) : !apply(data[key])
 var checkedDefaultOf = ([id, holes]) => {
 	let table = checkedDefaults.next(id)
 	for (const hole of holes) table = table.next(hole)
@@ -339,37 +361,10 @@ var intersectionkmdrl70pxuocb = [
 		"~standard.jsonSchema": /* @__PURE__ */ optional(booleanChecker)
 	})
 ]
-var intersection1pta4mn06i3i5b = /* @__PURE__ */ (() => {
-	const domainreo45i1f4q5lwAllows = stringCheck
-	const union1rtk4qn1iaivvlAllows = /* @__PURE__ */ units(["aot", "arktype"])
-	const intersection1pta4mn06i3i5bAllows = (data, ctx) => {
-		if (!(data instanceof Object || Object(data) === data)) {
-			return !failsAt(ctx, siteOf("domain", "an object"), data)
-		}
-		return structure19yllhw1t15lvkAllows(data, ctx)
-	}
-	const structure19yllhw1t15lvkAllows = (data, ctx) => {
-		const keys = Object.keys(data)
-		for (let i = 0; i < keys.length; i++) {
-			const k = keys[i]
-			if (domainreo45i1f4q5lwAllows(k)) {
-				if (
-					!(data[k] === "aot" || data[k] === "arktype") &&
-					failsIn(ctx, union1rtk4qn1iaivvlAllows, data, k)
-				) {
-					return false
-				}
-			}
-		}
-		return true
-	}
-	return [intersection1pta4mn06i3i5bAllows]
-})()
-var intersectionparbs61a02yao = /* @__PURE__ */ ((
-	[intersectionkmdrl70pxuocbAllows],
-	[intersection1pta4mn06i3i5bAllows]
-) => {
-	const intersectionparbs61a02yaoAllows = /* @__PURE__ */ closedProps({
+var intersection12uyo530rok9f9 = /* @__PURE__ */ (([
+	intersectionkmdrl70pxuocbAllows
+]) => {
+	const intersection12uyo530rok9f9Allows = /* @__PURE__ */ closedProps({
 		preset: /* @__PURE__ */ optional(
 			/* @__PURE__ */ units(["introspectable", "smallest"])
 		),
@@ -445,7 +440,9 @@ var intersectionparbs61a02yao = /* @__PURE__ */ ((
 				[/* @__PURE__ */ minLength(1, "a path")]
 			)
 		),
-		dependencies: /* @__PURE__ */ optional(intersection1pta4mn06i3i5bAllows),
+		dependencies: /* @__PURE__ */ optional(
+			/* @__PURE__ */ recordOf(/* @__PURE__ */ units(["aot", "arktype"]))
+		),
 		cwd: /* @__PURE__ */ optional(
 			/* @__PURE__ */ intersection(
 				/* @__PURE__ */ check("domain", "a path", stringCheck.test),
@@ -458,8 +455,8 @@ var intersectionparbs61a02yao = /* @__PURE__ */ ((
 			/* @__PURE__ */ units(["large", false, true])
 		)
 	})
-	return [intersectionparbs61a02yaoAllows]
-})(intersectionkmdrl70pxuocb, intersection1pta4mn06i3i5b)
+	return [intersection12uyo530rok9f9Allows]
+})(intersectionkmdrl70pxuocb)
 var create12fpvlf14u2zct = ([allows], id, holes = []) => {
 	const validator = (data, pipedFromCtx, onFail) =>
 		allows(data) ?
@@ -472,11 +469,10 @@ var create12fpvlf14u2zct = ([allows], id, holes = []) => {
 	validator.allows = freeze(allows)
 	return holdHoles(freeze(validator), id, holes)
 }
-var intersectionwzvg801kidwck = /* @__PURE__ */ ((
-	[intersectionkmdrl70pxuocbAllows],
-	[intersection1pta4mn06i3i5bAllows]
-) => {
-	const intersectionwzvg801kidwckAllows = /* @__PURE__ */ closedProps({
+var intersectiongvihp80thfecg = /* @__PURE__ */ (([
+	intersectionkmdrl70pxuocbAllows
+]) => {
+	const intersectiongvihp80thfecgAllows = /* @__PURE__ */ closedProps({
 		preset: /* @__PURE__ */ optional(
 			/* @__PURE__ */ units(["introspectable", "smallest"])
 		),
@@ -552,28 +548,30 @@ var intersectionwzvg801kidwck = /* @__PURE__ */ ((
 				[/* @__PURE__ */ minLength(1, "a path")]
 			)
 		),
-		dependencies: /* @__PURE__ */ optional(intersection1pta4mn06i3i5bAllows)
+		dependencies: /* @__PURE__ */ optional(
+			/* @__PURE__ */ recordOf(/* @__PURE__ */ units(["aot", "arktype"]))
+		)
 	})
-	return [intersectionwzvg801kidwckAllows]
-})(intersectionkmdrl70pxuocb, intersection1pta4mn06i3i5b)
-var intersection1azzur91ptz9ds = /* @__PURE__ */ (([
-	intersectionwzvg801kidwckAllows
+	return [intersectiongvihp80thfecgAllows]
+})(intersectionkmdrl70pxuocb)
+var intersection1dc6pyd072xbyu = /* @__PURE__ */ (([
+	intersectiongvihp80thfecgAllows
 ]) => {
-	const intersection1azzur91ptz9dsAllows = /* @__PURE__ */ closedProps({
+	const intersection1dc6pyd072xbyuAllows = /* @__PURE__ */ closedProps({
 		$schema: /* @__PURE__ */ optional(stringCheck),
-		precompile: /* @__PURE__ */ optional(intersectionwzvg801kidwckAllows)
+		precompile: /* @__PURE__ */ optional(intersectiongvihp80thfecgAllows)
 	})
-	return [intersection1azzur91ptz9dsAllows]
-})(intersectionwzvg801kidwck)
-var intersection1sib0cb02x4j03 = /* @__PURE__ */ (([
-	intersectionwzvg801kidwckAllows
+	return [intersection1dc6pyd072xbyuAllows]
+})(intersectiongvihp80thfecg)
+var intersection1kcbkdk0rwlubd = /* @__PURE__ */ (([
+	intersectiongvihp80thfecgAllows
 ]) => {
-	const intersection1sib0cb02x4j03Allows = /* @__PURE__ */ closedProps({
-		precompile: /* @__PURE__ */ optional(intersectionwzvg801kidwckAllows),
+	const intersection1kcbkdk0rwlubdAllows = /* @__PURE__ */ closedProps({
+		precompile: /* @__PURE__ */ optional(intersectiongvihp80thfecgAllows),
 		aot: /* @__PURE__ */ optional(/* @__PURE__ */ unit(true))
 	})
-	return [intersection1sib0cb02x4j03Allows]
-})(intersectionwzvg801kidwck)
+	return [intersection1kcbkdk0rwlubdAllows]
+})(intersectiongvihp80thfecg)
 var created0
 var created1
 var created2
@@ -581,7 +579,7 @@ var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
 				const validator0 = interned("oo7png1tq1stp", () =>
-					create12fpvlf14u2zct(intersectionparbs61a02yao, "1xqe4zk0")
+					create12fpvlf14u2zct(intersection12uyo530rok9f9, "1xqe4zk0")
 				)
 				return validator0
 			})())
@@ -591,7 +589,7 @@ var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
 				const validator0 = interned("no6p470shuqtg", () =>
-					create12fpvlf14u2zct(intersection1azzur91ptz9ds, "1cl1eak0")
+					create12fpvlf14u2zct(intersection1dc6pyd072xbyu, "1cl1eak0")
 				)
 				return validator0
 			})())
@@ -601,7 +599,7 @@ var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
 				const validator0 = interned("1x4xgyz09yrolz", () =>
-					create12fpvlf14u2zct(intersection1sib0cb02x4j03, "1i9mlhj1")
+					create12fpvlf14u2zct(intersection1kcbkdk0rwlubd, "1i9mlhj1")
 				)
 				return validator0
 			})())

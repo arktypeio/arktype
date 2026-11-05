@@ -648,7 +648,11 @@ export const Fields = { even: Even, name: type("string") }
 				writesText: false,
 				listsUnions: false,
 				readsKeySites: true,
-				runsArktype: false
+				runsArktype: false,
+				appliesValues: false,
+				transformsBranches: false,
+				failsInBranches: false,
+				discriminatesBooleans: false
 			})
 			attest(
 				await issuesOf(
@@ -660,7 +664,72 @@ export const Fields = { even: Even, name: type("string") }
 				writesText: false,
 				listsUnions: false,
 				readsKeySites: false,
-				runsArktype: false
+				runsArktype: false,
+				appliesValues: false,
+				transformsBranches: false,
+				failsInBranches: false,
+				discriminatesBooleans: false
+			})
+		})
+
+		describe("of what checkers hold", () => {
+			// enough that checkers repay the runtime they read
+			const repaying = Array.from(
+				{ length: 30 },
+				(_, i) =>
+					`export const F${i} = type({ a${i}: "string > ${i}", b${i}: "number > ${i}" })`
+			).join("\n")
+
+			const heldBy = async (definition: string) => {
+				const issues = await issuesOf(
+					`import { type } from "arktype"\n\nexport const T = ${definition}\n${repaying}\n`
+				)
+				return typeof issues === "object" && !Array.isArray(issues) ?
+						Object.entries(issues)
+							.filter(
+								([k, on]) =>
+									on &&
+									[
+										"appliesValues",
+										"transformsBranches",
+										"failsInBranches",
+										"discriminatesBooleans"
+									].includes(k)
+							)
+							.map(([k]) => k)
+					:	issues
+			}
+
+			it("nothing of a morph where none's held", async () => {
+				attest(await heldBy(`type({ a: "string" })`)).equals([])
+			})
+
+			it("a value applied by what holds it", async () => {
+				attest(
+					await heldBy(`type({ a: type("string").pipe(s => s.trim()) })`)
+				).equals(["appliesValues"])
+			})
+
+			it("a union whose branch writes only literals can't fail", async () => {
+				attest(
+					await heldBy(`type({ k: "'a'", b: "string = 'x'" }).or({ k: "'c'" })`)
+				).equals(["transformsBranches"])
+			})
+
+			it("a union whose branch holds a morph can", async () => {
+				attest(
+					await heldBy(
+						`type({ k: "'a'", b: type("string").pipe(s => s.trim()) }).or({ k: "'c'" })`
+					)
+				).equals(["appliesValues", "transformsBranches", "failsInBranches"])
+			})
+
+			it("a union told apart by a boolean", async () => {
+				attest(
+					await heldBy(
+						`type({ ok: "true", a: "string" }).or({ ok: "false", b: "number" })`
+					)
+				).equals(["discriminatesBooleans"])
 			})
 		})
 
@@ -675,7 +744,11 @@ export const Fields = { even: Even, name: type("string") }
 				writesText: false,
 				listsUnions: false,
 				readsKeySites: true,
-				runsArktype: false
+				runsArktype: false,
+				appliesValues: false,
+				transformsBranches: false,
+				failsInBranches: false,
+				discriminatesBooleans: false
 			})
 		})
 	})
@@ -1671,6 +1744,80 @@ import { create as $ark_create } from "~arktype/#0"
 
 export { $ark_aAllows as A }
 `)
+		})
+
+		describe("a checker a program writes often", () => {
+			const often =
+				'/* @__PURE__ */ runtime.optional(/* @__PURE__ */ runtime.units(["first", "second"]))'
+			const unitsWriting = (call: string, count: number) =>
+				Object.fromEntries(
+					Array.from({ length: count }, (_, i) => [
+						`~arktype/k${i}`,
+						`import * as runtime from "arktype/runtime"
+
+const k${i}Allows = /* @__PURE__ */ runtime.props({ k${i}: ${call} })
+
+export { k${i}Allows }
+`
+					])
+				)
+			const reading = (count: number) =>
+				Array.from(
+					{ length: count },
+					(_, i) =>
+						`import { k${i}Allows as $ark_k${i}Allows } from "~arktype/k${i}"\nexport const K${i} = /* @__PURE__ */ $ark_create($ark_k${i}Allows)\nexport const L${i} = /* @__PURE__ */ $ark_create($ark_k${i}Allows)\n`
+				).join("")
+			const shared = (call: string, count: number, isOneChunk = false) =>
+				linkBundle(
+					{
+						"/main.ts": {
+							source: "export const A = type({})",
+							code: `import { create as $ark_create } from "~arktype/create"\n${reading(count)}`
+						}
+					},
+					{ ...units, ...unitsWriting(call, count) },
+					{ sharesChecks: true, isOneChunk }
+				)!
+
+			const moduleOf = (modules: Record<string, string>, name: string) =>
+				Object.values(modules).find(code => code.includes(`const ${name} =`))!
+
+			it("is made once, each reading that", () => {
+				const { modules } = shared(often, 5)
+				attest(
+					Object.values(modules).filter(code => code.includes(`= ${often}`))
+						.length
+				).equals(1)
+				attest(
+					moduleOf(modules, "k0Allows").includes("runtime.optional")
+				).equals(false)
+			})
+
+			it("is written where it's written less than a shared one costs", () => {
+				attest(
+					moduleOf(shared(often, 4).modules, "k0Allows").includes(often)
+				).equals(true)
+				const short = "/* @__PURE__ */ runtime.optional(runtime.string)"
+				attest(
+					moduleOf(shared(short, 9).modules, "k0Allows").includes(short)
+				).equals(true)
+			})
+
+			it("is written where it reads what's declared beside it", () => {
+				const reads = `/* @__PURE__ */ runtime.optional(/* @__PURE__ */ runtime.props({ held, first: runtime.string, second: runtime.string }))`
+				attest(
+					moduleOf(shared(reads, 5).modules, "k0Allows").includes(reads)
+				).equals(true)
+			})
+
+			it("leaves what a site creates its validator from, already linked", () => {
+				const { sites } = linkBundle(
+					{ "/main.ts": { source: "export const A = type({})", code: main } },
+					units,
+					{ sharesChecks: true, isOneChunk: true }
+				)!
+				attest(sites["/main.ts"].code.includes("$ark_create(")).equals(true)
+			})
 		})
 
 		it("renames a module it writes into, which another may read unlinked", () => {

@@ -1230,6 +1230,41 @@ console.log(String(User({ name: "x" })))
 			)
 		})
 
+		it("fails where a narrow no longer only returns what it reports", async () => {
+			const reporting = fixture("rewrittenReport", {
+				"name.ts": `import { type } from "arktype"
+
+const isLong = (s: string, ctx: any) => s.length > 2 || ctx.mustBe("long")
+
+export const Name = type("string").narrow(isLong)
+`,
+				"main.ts": `import { Name } from "./name.ts"
+
+console.log(String(Name("x")))
+`
+			})
+			const message = await viteBundle(
+				reporting,
+				{},
+				{
+					plugins: [
+						rewriting(code =>
+							code.replace(
+								'(s: string, ctx: any) => s.length > 2 || ctx.mustBe("long")',
+								'(s: string, ctx: any) => { ctx.seen = true; return s.length > 2 || ctx.mustBe("long") }'
+							)
+						)
+					]
+				}
+			).then(
+				() => "",
+				(e: Error) => e.message
+			)
+			attest(message.includes(writeUnscannedCellsMessage("name.ts"))).equals(
+				true
+			)
+		})
+
 		it("fails where a function no longer reads only its argument", async () => {
 			const message = await viteBundle(
 				root,

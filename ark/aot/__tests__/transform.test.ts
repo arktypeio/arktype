@@ -273,7 +273,7 @@ export const Trimmed = type({
 	boolean: "boolean",
 	deeplyNested: { bool: "boolean", foo: "string", num: "number" },
 	number: "number",
-	string: "string.trim"
+	string: type("string").pipe((s, ctx) => (s.length > 1 ? s : ctx.error("longer")))
 })
 export const User = type({ name: "string", age: "number", tags: "string[]" })
 export const Team = type({ id: "string", lead: User, members: User.array() })
@@ -283,7 +283,7 @@ ${Array.from({ length: 16 }, (_, i) => `export const T${i} = type({ id${i}: "str
 					{ preset: "smallest", creationChecks: "none", config: false }
 				).modules
 			).join("\n")
-			// Trimmed can't be checkers, so its input Moltar is compiled with it
+			// a morph reading its ctx can't be checkers, so its input Moltar is compiled with it
 			attest([
 				/runtime\.props\(/.test(modules),
 				/runtime\.props\({[^\n]*deeplyNested/.test(modules)
