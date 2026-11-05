@@ -267,7 +267,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	tAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
-		const discriminant = this.foundDisc
+		// a predicate reading ctx is only called for the branch compiled code picks
+		const discriminant = this.checksCtx ? this.discriminant : this.foundDisc
 		if (!discriminant) {
 			return this.branches.some(b =>
 				b.checksCtx ?

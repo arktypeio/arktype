@@ -2,6 +2,7 @@ import { fromHere } from "@ark/fs"
 import {
 	ArkErrors,
 	hasArkKind,
+	holeNameMarker,
 	registryName,
 	schemaScope,
 	suppliedText,
@@ -14,7 +15,6 @@ import { writeMessage } from "@ark/schema/internal"
 import { messageOf, problemOf, type ArkIssue } from "@ark/schema/runtime"
 import { flatMorph, hasDomain, ParseError } from "@ark/util"
 import {
-	holeNameMarker,
 	introspectionMembers,
 	keyOf,
 	keywordMetas,

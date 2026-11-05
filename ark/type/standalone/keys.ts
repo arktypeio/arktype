@@ -343,8 +343,6 @@ export const partsOf = (
 	return parts
 }
 
-export { holeNameMarker }
-
 // what a factory calls to read a Type's holes, which it finds by identity
 export const receiverPrefix = "receive"
 
