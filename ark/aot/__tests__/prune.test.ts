@@ -649,7 +649,9 @@ export const Fields = { even: Even, name: type("string") }
 				listsUnions: false,
 				traversesUnions: false,
 				readsKeySites: true,
-				runsArktype: false
+				runsArktype: false,
+				readsSummary: true,
+				readsErrors: true
 			})
 			attest(
 				await issuesOf(
@@ -662,7 +664,9 @@ export const Fields = { even: Even, name: type("string") }
 				listsUnions: false,
 				traversesUnions: false,
 				readsKeySites: false,
-				runsArktype: false
+				runsArktype: false,
+				readsSummary: true,
+				readsErrors: true
 			})
 		})
 
@@ -678,7 +682,9 @@ export const Fields = { even: Even, name: type("string") }
 				listsUnions: true,
 				traversesUnions: true,
 				readsKeySites: true,
-				runsArktype: false
+				runsArktype: false,
+				readsSummary: true,
+				readsErrors: true
 			})
 		})
 
@@ -694,8 +700,96 @@ export const Fields = { even: Even, name: type("string") }
 				listsUnions: false,
 				traversesUnions: false,
 				readsKeySites: true,
-				runsArktype: false
+				runsArktype: false,
+				readsSummary: true,
+				readsErrors: true
 			})
+		})
+	})
+
+	describe("what a program reads of its errors", () => {
+		const readOf = async (body: string, imports = `{ type }`) => {
+			const usage = await usageFrom({
+				"/main.ts": `import ${imports} from "arktype"\n\nconst T = type({ name: "string" })\n\n${body}\n`
+			})
+			if (typeof usage === "string" || Array.isArray(usage))
+				throw new Error(`${usage}`)
+			return [usage.issues!.readsSummary, usage.issues!.readsErrors]
+		}
+		const neither = [false, false]
+		const whole = [true, true]
+
+		it("past a test for them, nothing of them", async () => {
+			attest(
+				await readOf(
+					`const out = T({})\nconsole.log(out instanceof type.errors ? out.issues : out)`
+				)
+			).equals(neither)
+			attest(
+				await readOf(
+					`const out = T({})\nif (!(out instanceof type.errors)) console.log(out)`
+				)
+			).equals(neither)
+			attest(
+				await readOf(
+					`const out = T({})\nconst check = () => {\n\tif (out instanceof type.errors) return out.count\n\treturn out\n}\nconsole.log(check)`
+				)
+			).equals(neither)
+			attest(
+				await readOf(
+					`import { ArkErrors } from "arktype"\nconst out = T({})\nif (out instanceof ArkErrors) throw out.issues\nconsole.log(out)`
+				)
+			).equals(neither)
+		})
+
+		it("its summary apart from the rest", async () => {
+			attest(
+				await readOf(
+					`const out = T({})\nconsole.log(out instanceof type.errors ? out.summary : out)`
+				)
+			).equals([true, false])
+		})
+
+		it("before a test or without one, as they may be there", async () => {
+			attest(await readOf(`console.log(T({}))`)).equals(whole)
+			attest(await readOf(`const out = T({})\nconsole.log(out)`)).equals(whole)
+			attest(
+				await readOf(
+					`const out = T({})\nconsole.log(out)\nif (out instanceof type.errors) throw out.issues`
+				)
+			).equals(whole)
+			// no statement after the test is past it
+			attest(
+				await readOf(
+					`const out = T({})\nif (out instanceof type.errors) console.log(out.issues)\nconsole.log(out)`
+				)
+			).equals(whole)
+		})
+
+		it("by a test for something else, or a read of another member", async () => {
+			attest(
+				await readOf(
+					`const out = T({})\nconsole.log(out instanceof Error ? out : 1)`
+				)
+			).equals(whole)
+			attest(
+				await readOf(
+					`const out = T({})\nif (out instanceof type.errors) out.throw()`
+				)
+			).equals(whole)
+		})
+
+		it("in a hoisted function, which may run before the test", async () => {
+			attest(
+				await readOf(
+					`const out = T({})\nrun()\nif (out instanceof type.errors) throw out.issues\nfunction run() {\n\tconsole.log(out)\n}`
+				)
+			).equals(whole)
+		})
+
+		it("where the class itself is read", async () => {
+			attest(await readOf(`console.log(type.errors)\nT({})`)).equals(whole)
+			attest(await readOf(`T.assert({})`)).equals(whole)
 		})
 	})
 

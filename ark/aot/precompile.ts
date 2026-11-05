@@ -820,7 +820,8 @@ export class Precompiler {
 	// what a bundle's issues may hold, where no runtime or other build's validator can add any
 	private issuesOf(
 		program: ScannedProgram,
-		written: Record<string, PrecompiledModule>
+		written: Record<string, PrecompiledModule>,
+		used: Set<UsedMember> | string
 	): IssueFeatures | undefined {
 		for (const id in program.arkImports) {
 			if (
@@ -842,11 +843,15 @@ export class Precompiler {
 				const feature = k as keyof IssueFeatures
 				issues[feature] ||= held[feature]
 			}
-			issues.traversesUnions ||= [
-				written[id].code,
-				...Object.values(written[id].modules)
-			].some(code => code.includes("Traversal"))
+			const codes = [written[id].code, ...Object.values(written[id].modules)]
+			issues.traversesUnions ||= codes.some(code => code.includes("Traversal"))
+			// its message is a failed default's summary
+			issues.readsErrors ||= codes.some(code => code.includes("checkDefault"))
 		}
+		const isRead = (member: UsedMember) =>
+			typeof used === "string" || used.has(member)
+		issues.readsErrors ||= readsErrorsWhole.some(isRead)
+		issues.readsSummary ||= issues.readsErrors || isRead("summary")
 		return issues
 	}
 
@@ -1075,7 +1080,7 @@ export class Precompiler {
 				this.flattenWritten(written, plan.sources, program, runtimes)
 			:	undefined
 		usage.written = written
-		const issues = this.issuesOf(program, written)
+		const issues = this.issuesOf(program, written, used)
 		return {
 			dropped,
 			linked,
@@ -7567,6 +7572,9 @@ const isReachedOnlyAtBuild = (
 					!(site.definition && contains(site.definition, node))))
 	)
 
+// each may hand a program's code its errors, or throws them
+const readsErrorsWhole: UsedMember[] = ["errors", "assert", "methods", "piped"]
+
 // what arktype's own errors, like an island's, may hold
 const anyIssues: IssueFeatures = {
 	reportsIndices: true,
@@ -7575,7 +7583,9 @@ const anyIssues: IssueFeatures = {
 	listsUnions: true,
 	traversesUnions: true,
 	readsKeySites: true,
-	runsArktype: true
+	runsArktype: true,
+	readsSummary: true,
+	readsErrors: true
 }
 
 // a Type whose members a module importing it can bake, as it holds no value

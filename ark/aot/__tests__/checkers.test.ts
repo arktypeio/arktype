@@ -321,7 +321,7 @@ s must be reached
 					appOf(proved, `console.log(String(type({ s: N })({ s: "x" })))`)
 				)
 			)
-			attest(js.includes("class Traversal")).equals(false)
+			attest(/\bclass Traversal\b/.test(js)).equals(false)
 		})
 	})
 

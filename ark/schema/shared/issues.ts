@@ -4,6 +4,8 @@ import {
 	bracketsKeys,
 	listsUnions,
 	readsKeySites,
+	readsErrors,
+	readsSummary,
 	reportsIndices,
 	runsArktype,
 	writesText
@@ -75,17 +77,8 @@ export interface FailureContext {
 	): boolean | undefined
 }
 
-// named apart from arktype's subclass, which keeps the name ArkErrors
-export { ArkIssues as ArkErrors }
-
-declare namespace ArkIssues {
-	export type Handler<returns = unknown> = (errors: ArkIssues) => returns
-}
-
-/**
- * The errors returned by a Type on invalid input.
- */
-class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
+// what a program's code reads of its errors, as no bundler drops a class's members
+class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	/** @internal each issue in the order it was added */
 	declare _: ArkIssue[]
 	/** @internal the path a fused traversal is at */
@@ -110,31 +103,6 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	get issues(): readonly WrittenIssue[] {
 		for (const issue of this._) issue.message ??= messageOf(issue)
 		return this._ as WrittenIssue[]
-	}
-
-	/**
-	 * A human-readable summary of all errors.
-	 */
-	get summary(): string {
-		let summary = ""
-		for (const issue of this._)
-			summary += (summary && "\n") + (issue.message ??= messageOf(issue))
-		return summary
-	}
-
-	/**
-	 * Throw a TraversalError based on these errors.
-	 */
-	throw(): never {
-		throw new TraversalError(this)
-	}
-
-	toJSON(): readonly unknown[] {
-		return this.issues
-	}
-
-	toString(): string {
-		return this.summary
 	}
 
 	/** @internal */
@@ -177,7 +145,69 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	}
 }
 
-export class FirstIssues extends ArkIssues {
+// each a class only where a build's flag leaves it, as a bundler keeps a class
+// that extends another, and all it reads, but drops one in a branch it folds
+const SummarizedIssues: new () => ReadIssues & { readonly summary: string } =
+	readsSummary ?
+		class extends ReadIssues {
+			get summary(): string {
+				let summary = ""
+				for (const issue of this._)
+					summary += (summary && "\n") + (issue.message ??= messageOf(issue))
+				return summary
+			}
+		}
+	:	(ReadIssues as never)
+
+const Issues: new () => Issues = (
+	readsErrors ?
+		class ArkIssues extends SummarizedIssues {
+			throw(): never {
+				throw new ThrownIssues(this as never)
+			}
+
+			toJSON(): readonly unknown[] {
+				return this.issues
+			}
+
+			toString(): string {
+				return this.summary
+			}
+		}
+	:	SummarizedIssues) as never
+
+/**
+ * The errors returned by a Type on invalid input.
+ */
+interface Issues extends ReadIssues {
+	/**
+	 * A human-readable summary of all errors.
+	 */
+	readonly summary: string
+	/**
+	 * Throw a TraversalError based on these errors.
+	 */
+	throw(): never
+	toJSON(): readonly unknown[]
+	toString(): string
+	/** @internal set by a build asking for only the first issue */
+	failFast?: true
+	/** @internal arktype's errors, which copy their contexts when merged */
+	_merge?(merged: Issues, prefix: array<PropertyKey>): void
+	/** @internal arktype's errors, grouped by path */
+	readonly _i?: ArkIssue[]
+	/** @internal arktype's TraversalError message, one line per error */
+	readonly _t?: string
+}
+
+declare namespace Issues {
+	export type Handler<returns = unknown> = (errors: Issues) => returns
+}
+
+// named apart from arktype's subclass, which keeps the name ArkErrors
+export { Issues as ArkErrors }
+
+export class FirstIssues extends Issues {
 	// read from the prototype, so no errors object lists it among its own keys
 	override get failFast(): true {
 		return true
@@ -192,8 +222,8 @@ export class FirstIssues extends ArkIssues {
 export const applyIssues = (
 	apply: CompactApply,
 	data: unknown,
-	onFail: ArkIssues.Handler | null,
-	Ctx: new () => ArkIssues = ArkIssues
+	onFail: Issues.Handler | null,
+	Ctx: new () => Issues = Issues
 ): unknown => {
 	const errors = new Ctx()
 	apply(data, errors)
@@ -207,7 +237,7 @@ export const applyIssues = (
 export const issuesOf = (
 	apply: CompactApply,
 	data: unknown,
-	errors: ArkIssues
+	errors: Issues
 ): ArkIssue[] => {
 	apply(data, errors)
 	// data a write or a getter has made valid since fails as a whole
@@ -219,25 +249,14 @@ export const issuesOf = (
 export const foundErrors = (
 	apply: CompactApply,
 	data: unknown,
-	onFail: ArkIssues.Handler | null,
-	Ctx: new () => ArkIssues = ArkIssues
+	onFail: Issues.Handler | null,
+	Ctx: new () => Issues = Issues
 ): unknown => {
 	const errors = new Ctx()
 	// as issuesOf, which a program of these never ships
 	apply(data, errors)
 	if (!errors._.length) errors._at({ code: "predicate" }, data)
 	return onFail ? onFail(errors) : errors
-}
-
-interface ArkIssues {
-	/** @internal set by a build asking for only the first issue */
-	failFast?: true
-	/** @internal arktype's errors, which copy their contexts when merged */
-	_merge?(merged: ArkIssues, prefix: array<PropertyKey>): void
-	/** @internal arktype's errors, grouped by path */
-	readonly _i?: ArkIssue[]
-	/** @internal arktype's TraversalError message, one line per error */
-	readonly _t?: string
 }
 
 type Keyed = Record<PropertyKey, unknown>
@@ -264,12 +283,12 @@ export const issueAt = (
 	return issue
 }
 
-export const throwOnDefault: ArkIssues.Handler = errors => errors.throw()
+export const throwOnDefault: Issues.Handler = errors => errors.throw()
 
 // a merged issue's message is rewritten at its path unless supplied
 export const mergeIssues = (
-	errors: ArkIssues,
-	merged: ArkIssues,
+	errors: Issues,
+	merged: Issues,
 	prefix: array<PropertyKey>
 ): void => {
 	for (const issue of merged.issues) {
@@ -311,22 +330,32 @@ export const problemOf = (issue: ArkIssue): string =>
 	: issue.code === "required" ? "is missing"
 	: "is invalid")
 
-export class TraversalError extends Error {
-	declare readonly name: "TraversalError"
-	declare arkErrors: ArkIssues
-
-	constructor(errors: ArkIssues) {
-		super((runsArktype ? errors._t : undefined) ?? errors.summary)
-
-		// assigned, as a field's initializer compiles where the class is defined
-		this.name = "TraversalError"
-		// defined, so it's neither enumerable nor writable
-		Object.defineProperty(this, "arkErrors", { value: errors })
-	}
+interface ThrownIssues extends Error {
+	readonly name: "TraversalError"
+	arkErrors: Issues
 }
 
+const ThrownIssues: new (errors: Issues) => ThrownIssues = (
+	readsErrors ?
+		class TraversalError extends Error {
+			declare readonly name: "TraversalError"
+			declare arkErrors: Issues
+
+			constructor(errors: Issues) {
+				super((runsArktype ? errors._t : undefined) ?? errors.summary)
+
+				// assigned, as a field's initializer compiles where the class is defined
+				this.name = "TraversalError"
+				// defined, so it's neither enumerable nor writable
+				Object.defineProperty(this, "arkErrors", { value: errors })
+			}
+		}
+	:	undefined) as never
+
+export { ThrownIssues as TraversalError }
+
 export const throwIssues = (apply: CompactApply, data: unknown): never => {
-	const errors = new ArkIssues()
+	const errors = new Issues()
 	apply(data, errors)
 	if (!errors._.length) errors._at({ code: "predicate" }, data)
 	return errors.throw()

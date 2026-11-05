@@ -50,12 +50,14 @@ export { throwOnDefault } from "./issues.ts"
 /**
  * Thrown by a Type's `assert`, holding the errors it returned.
  */
-export interface TraversalError extends BaseTraversalError {
+interface ThrownErrors extends BaseTraversalError {
 	arkErrors: ArkErrors
 }
 
-export const TraversalError: new (errors: ArkErrors) => TraversalError =
+const ThrownErrors: new (errors: ArkErrors) => ThrownErrors =
 	BaseTraversalError as never
+
+export { ThrownErrors as TraversalError }
 
 /**
  * A failed check: its context, the data and path it failed at, and the text

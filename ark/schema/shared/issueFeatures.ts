@@ -21,3 +21,9 @@ export const readsKeySites: boolean = true
 
 /** errors arktype's own runtime writes, whose summary a TraversalError reads */
 export const runsArktype: boolean = true
+
+/** an errors object's `summary` */
+export const readsSummary: boolean = true
+
+/** an errors object read other than by its issues or summary: thrown, printed or passed on */
+export const readsErrors: boolean = true

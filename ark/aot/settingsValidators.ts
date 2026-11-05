@@ -24,9 +24,11 @@ var bracketsKeys = true
 var writesText = true
 var readsKeySites = true
 var runsArktype = true
+var readsSummary = true
+var readsErrors = true
 
 // ark/schema/shared/issues.ts
-var ArkIssues = class {
+var ReadIssues = class {
 	// assigned, as a target lowering class fields defines each with a helper
 	constructor() {
 		this._ = []
@@ -44,27 +46,6 @@ var ArkIssues = class {
 	get issues() {
 		for (const issue of this._) issue.message ??= messageOf(issue)
 		return this._
-	}
-	/**
-	 * A human-readable summary of all errors.
-	 */
-	get summary() {
-		let summary = ""
-		for (const issue of this._)
-			summary += (summary && "\n") + (issue.message ??= messageOf(issue))
-		return summary
-	}
-	/**
-	 * Throw a TraversalError based on these errors.
-	 */
-	throw() {
-		throw new TraversalError(this)
-	}
-	toJSON() {
-		return this.issues
-	}
-	toString() {
-		return this.summary
 	}
 	/** @internal */
 	_at(site, data, key) {
@@ -96,7 +77,32 @@ var ArkIssues = class {
 		return !continues
 	}
 }
-var foundErrors = (apply, data, onFail, Ctx = ArkIssues) => {
+var SummarizedIssues =
+	readsSummary ?
+		class extends ReadIssues {
+			get summary() {
+				let summary = ""
+				for (const issue of this._)
+					summary += (summary && "\n") + (issue.message ??= messageOf(issue))
+				return summary
+			}
+		}
+	:	ReadIssues
+var ArkErrors =
+	readsErrors ?
+		class ArkIssues extends SummarizedIssues {
+			throw() {
+				throw new TraversalError(this)
+			}
+			toJSON() {
+				return this.issues
+			}
+			toString() {
+				return this.summary
+			}
+		}
+	:	SummarizedIssues
+var foundErrors = (apply, data, onFail, Ctx = ArkErrors) => {
 	const errors = new Ctx()
 	apply(data, errors)
 	if (!errors._.length) errors._at({ code: "predicate" }, data)
@@ -118,13 +124,16 @@ var problemOf = issue =>
 	(issue.expected !== void 0 ? "must be " + issue.expected
 	: issue.code === "required" ? "is missing"
 	: "is invalid")
-var TraversalError = class extends Error {
-	constructor(errors) {
-		super((runsArktype ? errors._t : void 0) ?? errors.summary)
-		this.name = "TraversalError"
-		Object.defineProperty(this, "arkErrors", { value: errors })
-	}
-}
+var TraversalError =
+	readsErrors ?
+		class TraversalError2 extends Error {
+			constructor(errors) {
+				super((runsArktype ? errors._t : void 0) ?? errors.summary)
+				this.name = "TraversalError"
+				Object.defineProperty(this, "arkErrors", { value: errors })
+			}
+		}
+	:	void 0
 
 // ark/type/checkers.ts
 var check = (code, description, test) => {
