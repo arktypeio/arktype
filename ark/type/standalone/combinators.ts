@@ -554,7 +554,7 @@ const writeObject = (entries: string[]): string => `{ ${entries.join(", ")} }`
 
 // a shape with this many keys that may be absent reads each at a site of its own,
 // as a walker's one site costs it far more than it does a compiled shape
-const minSitedKeys = 48
+const minSitedKeys = 8
 
 // whether a node's checker fails undefined, calling nothing to find out
 const failsUndefined = (node: BaseRoot): boolean =>
