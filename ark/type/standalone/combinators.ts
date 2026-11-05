@@ -362,9 +362,13 @@ const structureCalleesOf = (
 ): BaseRoot[] | undefined => {
 	// its structural morph, if any, writes its defaults
 	if (
-		structure.index ||
 		structure.protoProps.length ||
-		(structure.handlesUndeclared === "reject" && !removedSiteOf(structure))
+		(structure.handlesUndeclared === "reject" && !removedSiteOf(structure)) ||
+		(structure.index &&
+			(structure.tfs ||
+				structure.sequence ||
+				structure.handlesUndeclared === "delete" ||
+				structure.index.some(({ signature }) => signature.hasAlias)))
 	)
 		return
 	const { sequence } = structure
@@ -388,7 +392,13 @@ const structureCalleesOf = (
 		)
 			return
 	}
-	return structure.props.map(prop => prop.value)
+	return [
+		...structure.props.map(prop => prop.value),
+		...(structure.index?.flatMap(({ signature, value }) => [
+			signature,
+			value
+		]) ?? [])
+	]
 }
 
 // a missing key whose issue is required's alone, which props reports
@@ -568,6 +578,15 @@ const writeStructure = (
 		}`
 	})
 	const declared = writeObject(entries)
+	if (structure.index) {
+		return writeCall(
+			"indexed",
+			`[${structure.index.map(({ signature, value }) => `[${readChecker(js, signature)}, ${ref(value)}]`).join(", ")}]`,
+			entries.length ? declared : structure.handlesUndeclared && "void 0",
+			structure.handlesUndeclared &&
+				JSON.stringify(removedSiteOf(structure)!.description)
+		)
+	}
 	const fails =
 		structure.hasAlias ? "runtime.failingWithCtx"
 		: structure.hasMorph ? "runtime.failingValues"
@@ -812,7 +831,9 @@ const writeIntersectionCombinator = (
 	if (
 		within &&
 		!refinements.length &&
-		(!node.basis || (node.structure?.props.length && isObjectCheck(node.basis)))
+		(!node.basis ||
+			((node.structure?.props.length || node.structure?.index) &&
+				isObjectCheck(node.basis)))
 	)
 		return within
 	return writeCall(

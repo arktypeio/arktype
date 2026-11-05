@@ -624,6 +624,44 @@ export const closedProps = ((
 	return checker
 }) satisfies Fn
 
+const matchesKey = (key: Checker, k: PropertyKey, ctx: unknown) =>
+	key.a ? key.a(k, ctx) : key(k)
+
+// each signature a key matches checks its value, after the keys it declares,
+// and where removed is passed, a key no signature matches fails it
+export const indexed = ((
+	signatures: readonly [key: Checker, value: Checker][],
+	declared: Props = {},
+	removed?: string
+): Checker => {
+	const site = removed === undefined ? undefined : siteOf("undeclared", removed)
+	const checker: Checker = (data: any, ctx) => {
+		if (!objectCheck.test(data))
+			return !failsAt(ctx as never, objectCheck, data)
+		if (failsProps(declared, data, ctx)) return false
+		for (const k of [
+			...Object.keys(data),
+			...Object.getOwnPropertySymbols(data)
+		]) {
+			for (const [key, value] of signatures) {
+				if (matchesKey(key, k, ctx) && failsValue(ctx, value, data, k, data[k]))
+					return false
+			}
+			if (
+				site &&
+				typeof k === "string" &&
+				!hasOwn(declared, k) &&
+				!signatures.some(([key]) => matchesKey(key, k, ctx)) &&
+				failsAt(ctx as never, site, data, k)
+			)
+				return false
+		}
+		return true
+	}
+	checker.description = objectCheck.description
+	return checker
+}) satisfies Fn
+
 const holdsValue = (checker: Checker, data: any, k: string): boolean =>
 	checker.u ? data[k] !== undefined : k in data
 
