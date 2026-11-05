@@ -1688,10 +1688,10 @@ export const A = /* @__PURE__ */ $ark_create($ark_aAllows)
 			attest(linkedMain(main))
 				.snap(`import { aAllows as $ark_aAllows } from "~arktype/a"
 import { create as $ark_create } from "~arktype/create"
+import * as $ark_runtime from "arktype/runtime"
 
 export const A = /* @__PURE__ */ $ark_create(/* @__PURE__ */ $ark_runtime.props({ name: $ark_runtime.string }))
-
-import * as $ark_runtime from "arktype/runtime"`)
+`)
 		})
 
 		it("keeps a checker read twice", () => {
@@ -1746,22 +1746,22 @@ export const B = /* @__PURE__ */ $ark_create($ark_bAllows)
 				attest(normalized(`// ${declared[0]}\n${declared[1]}`))
 					.snap(`// ~arktype/a-#0
 import * as runtime from "arktype/runtime"
+import { create } from "~arktype/create"
 
 const aAllows = /* @__PURE__ */ create(/* @__PURE__ */ runtime.props({ name: runtime.string }))
 
 export { aAllows }
-
-import { create } from "~arktype/create"`)
+`)
 				attest(normalized(linked.sites["/main.ts"].code))
 					.snap(`import { aAllows as $ark_aAllows } from "~arktype/a-#0"
 import { create as $ark_create } from "~arktype/create"
+import * as $ark_runtime from "arktype/runtime"
 
 export { $ark_aAllows as A }
 import { bAllows as $ark_bAllows } from "~arktype/b-#1"
 
 export const B = /* @__PURE__ */ $ark_create(/* @__PURE__ */ $ark_runtime.props({ a: /* @__PURE__ */ $ark_runtime.allowsOf($ark_aAllows) }))
-
-import * as $ark_runtime from "arktype/runtime"`)
+`)
 			})
 
 			it("counts where validators don't", () => {
@@ -1770,13 +1770,13 @@ import * as $ark_runtime from "arktype/runtime"`)
 				attest(normalized(linked.sites["/main.ts"].code))
 					.snap(`import { aAllows as $ark_aAllows } from "~arktype/a"
 import { create as $ark_create } from "~arktype/create"
+import * as $ark_runtime from "arktype/runtime"
 
 export const A = /* @__PURE__ */ $ark_create($ark_aAllows)
 import { bAllows as $ark_bAllows } from "~arktype/b"
 
 export const B = /* @__PURE__ */ $ark_create(/* @__PURE__ */ $ark_runtime.props({ a: $ark_aAllows }))
-
-import * as $ark_runtime from "arktype/runtime"`)
+`)
 			})
 
 			it("keeps one two sites create validators from, each its own", () => {
