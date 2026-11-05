@@ -299,6 +299,8 @@ import {
 	markerHint,
 	nodePackageHint,
 	runtimeImportHint,
+	runtimeReexportHint,
+	writeUnexportedRuntimeMessage,
 	dynamicImportHint,
 	unresolvedHint,
 	versionHint,
@@ -3857,6 +3859,27 @@ export class Precompiler {
 	): void {
 		const spans = [...sites, ...module.islands]
 		for (const statement of module.program.body) {
+			// fails to link wherever it's read, as it's read by exporting it
+			if (
+				statement.type === "ExportNamedDeclaration" &&
+				statement.source?.value === "arktype" &&
+				statement.exportKind !== "type"
+			) {
+				for (const { local, exportKind } of statement.specifiers) {
+					const name = exportNameOf(local)
+					if (exportKind === "type" || name in arktypeRuntime) continue
+					diagnostics.push(
+						this.diagnostic(
+							module,
+							local,
+							"R4",
+							writeUnexportedRuntimeMessage(name),
+							[],
+							runtimeReexportHint
+						)
+					)
+				}
+			}
 			if (
 				statement.type !== "ImportDeclaration" ||
 				statement.source.value !== "arktype" ||
@@ -3885,7 +3908,7 @@ export class Precompiler {
 						module,
 						read.id,
 						"R4",
-						`\`${module.textOf(read.id)}\` is arktype's, which arktype/runtime doesn't export, so a standalone build can't load this module`,
+						writeUnexportedRuntimeMessage(module.textOf(read.id)),
 						[],
 						runtimeImportHint
 					)

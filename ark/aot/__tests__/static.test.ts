@@ -2077,6 +2077,19 @@ export const isAlsoType = (x: unknown) => x instanceof Type`).diagnostics.map(
 			])
 		})
 
+		it("an export arktype/runtime lacks, re-exported", () => {
+			const source = `export { Type, type, scope as s } from "arktype"
+export type { Scope } from "arktype"
+export * from "arktype"`
+			attest(precompile(source, {}, { runtime: "arktype" }).diagnostics).equals(
+				[]
+			)
+			attest(precompile(source).diagnostics.map(renderDiagnostic)).snap([
+				"/main.ts:1:10  `Type` is arktype's, which arktype/runtime doesn't export, so a standalone build can't load this module\n  Re-export only what arktype/runtime exports, and import the rest from arktype where a definition the build precompiles reads it, or build with runtime: \"arktype\".",
+				"/main.ts:1:22  `scope` is arktype's, which arktype/runtime doesn't export, so a standalone build can't load this module\n  Re-export only what arktype/runtime exports, and import the rest from arktype where a definition the build precompiles reads it, or build with runtime: \"arktype\"."
+			])
+		})
+
 		it("a read off an import the build can't resolve", () => {
 			const source = `import { type } from "arktype"
 import { User, port } from "~/schemas"
