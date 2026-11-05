@@ -72,7 +72,7 @@ export const contentKeyOf = (node: BaseNode): string => {
 	let key = contentKeysByNode.get(node)
 	if (key === undefined) {
 		key =
-			originalOf(node).c.keyed ?
+			originalOf(node).c.key ?
 				hashOf(
 					JSON.stringify([
 						node.kind,

@@ -954,6 +954,14 @@ precompile.vite({ errors: "first" })
 
 A Type deleting undeclared keys starts its copy as an object literal of nulls, as a precompiled build does unless it's built for size, so V8 stores each fraction it copies in place rather than allocating a box for it. Parsing moltar's benchmark object with `onDeepUndeclaredKey("delete")` allocates 128 bytes per call where it allocated 144, in 0.88x the cycles.
 
+### Build a Type when it's first read
+
+`type()` builds no nodes for a definition it can prove won't throw, so importing a program costs little more than its bytes. The first read of a Type builds it, and it's then what it would have been. Anything else, or any config but `exactOptionalPropertyTypes` and `jitless`, parses at the call as it always did, and throws there.
+
+`type.unit`, `type.enumerated`, `type.Record` and the `array`, `narrow`, `pipe`, `or`, `and`, `exclude`, `to`, `default`, `optional`, `describe`, `configure`, `onUndeclaredKey` and bound methods defer the same way when they can't throw.
+
+Before its first read, `Object.keys()`, `Object.hasOwn()` and `Object.getPrototypeOf()` see a Type's function alone, and `type.Record` is a function standing for its generic. Equal definitions are one Type before they're read, but `===` no longer finds one written two ways equal, as with `type("string")` and `type.keywords.string.root`, or a definition parsed before any node exists and an equal one reached by a form that isn't scanned, as with `type("string[]")` then `type(["string", "[]"])`. Once any node exists, a string definition parses at its call.
+
 ### Compile and discriminate a Type when it's first used
 
 A Type is compiled the second time it's called or its `allows` is called, or when its `precompilation` is read, rather than when it's defined, so Types a program defines but never calls aren't compiled and one it checks once is checked without compiling. A narrow or morph reading `ctx` sees the same `path` and `data` either way: uncompiled, a narrow on an array's element read the array's path, and compiled, a narrow under a key whose value deletes undeclared keys read a path missing that key when other data was invalid. A scope's exports are compiled the same way, so `@ark/schema`'s scope `precompilation` is undefined unless the scope is cyclic. A Type referencing an alias still resolves it where it's defined, so an error resolving the alias is thrown there, but it compiles once it's used like any other. Checking a default as it's defined, or anything else a definition asks of another Type, doesn't count as a use of that Type.

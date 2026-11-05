@@ -161,7 +161,30 @@ const selectedFrom = (
 	return selected
 }
 
+// what a node is called as, so a Type deferred until it's read is the same function
+const callableOf = (cache: NodeCache) =>
+	// not bound to a name, which a Type would have
+	(cache.self = (
+		data: any,
+		pipedFromCtx?: Traversal | undefined,
+		onFail?: ArkErrors.Handler | null
+	) => {
+		if (pipedFromCtx) return pipe(pipedFromCtx, cache.self, data)
+
+		const rootApply = cache.rootApply
+		return rootApply === undefined ?
+				cache.self.initRootApply()(data, onFail)
+			:	rootApply(data, onFail)
+	})
+
+/** a callable and cache a Type holds until it's read, and then is a node of its kind */
+export const deferredCallable = (): { fn: Function; c: object } => {
+	const c = new NodeCache()
+	return { fn: callableOf(c), c }
+}
+
 class NodeCache {
+	self: any
 	expression: string | undefined
 	requiredProps: Map<Key, { deref(): BaseNode | undefined }> | undefined
 	kv: readonly Entry<string>[] | undefined
@@ -170,7 +193,7 @@ class NodeCache {
 	/** whether collecting its references replaced one with an equal node */
 	replacedRefs: boolean | undefined
 	/** whether it's what its scope's nodesByKey holds for its inner and meta */
-	keyed: boolean | undefined
+	key: string | undefined
 	/** the node a Scope bound it from, whose id, inner and meta it keeps */
 	boundFrom: BaseNode | undefined
 	/** whether every alias it reaches has resolved */
@@ -423,24 +446,11 @@ export abstract class BaseNode<
 	}
 
 	constructor(attachments: UnknownAttachmentsInput, $: BaseScope) {
-		const cache = new NodeCache()
+		const shell = attachments.shell
+		const cache: NodeCache = shell ? (shell.c as never) : new NodeCache()
 		cache.metaJson = attachments.metaJson
 		cache.onFail = attachments.meta.onFail ?? $.cfg.onFail
-		super(
-			(
-				data: any,
-				pipedFromCtx?: Traversal | undefined,
-				onFail?: ArkErrors.Handler | null
-			) => {
-				if (pipedFromCtx) return pipe(pipedFromCtx, this, data)
-
-				const rootApply = cache.rootApply
-				return rootApply === undefined ?
-						this.initRootApply()(data, onFail)
-					:	rootApply(data, onFail)
-			},
-			{ bind: null }
-		)
+		super((shell?.fn as never) ?? callableOf(cache), { bind: null })
 		if (attachments.kind !== "intersection") {
 			for (const k in attachments.impl.keys) {
 				// only a prop with a default has the key
@@ -789,7 +799,7 @@ export abstract class BaseNode<
 		}
 	}
 
-	private initRootApply(): RootApply {
+	initRootApply(): RootApply {
 		if (this.c.preJit) {
 			if (this.checksUncompiled) {
 				const rootApply = this.createRootApply()
