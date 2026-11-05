@@ -4,7 +4,7 @@
 // modules, and a module run twice. Each module's `check` is one of `reads`,
 // reaching a validator through one of `wrappers`. Observes each result, what
 // the call did to its input, and each predicate call in order.
-// ARK_CELLS_FUZZ=<count>[:<seed>]|twins|catalog[:<wrapper>[:static|dynamic|query]]
+// ARK_CELLS_FUZZ=<count>[:<seed>]|twins|probes[:<prefix>]|catalog[:<wrapper>[:static|dynamic|query]]
 // [ARK_CELLS_FUZZ_HOSTS=esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,chunks,chunks:smallest,modules,webpack,webpack:smallest,rspack,rspack:smallest,node,dev,emit]
 // [ARK_CELLS_FUZZ_FAILURES=<dir>] pnpm testCellsFuzz
 import { fromHere } from "@ark/fs"
@@ -19,6 +19,8 @@ import { mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { pathToFileURL } from "node:url"
+import { documented, probes } from "./cellsProbes.ts"
+import { throughArkBarrel } from "./arkBarrel.ts"
 import { tempDir } from "./utils.ts"
 
 const [countArg, seedArg, importingArg] = (
@@ -331,6 +333,9 @@ interface App {
 	comparesIdentity: boolean
 	// each of twinDefinitions created exported in one module, unexported in main
 	twins?: true
+	// one of cellsProbes' programs, run as written, compared with arktype's own
+	// messages too
+	probe?: string
 }
 
 const readNames = Object.keys(reads)
@@ -370,7 +375,12 @@ export const stateful = (s: string) => ++box.n % 2 === 0 && s.length > 1
 export default 2
 `
 
-const filesOf = (app: App): Record<string, string> => {
+// each file of an app, whose imports of arktype reach it through a barrel where
+// the round asks
+const filesOf = (app: App): Record<string, string> =>
+	throughArkBarrel(ownFilesOf(app))
+
+const ownFilesOf = (app: App): Record<string, string> => {
 	const files: Record<string, string> = {
 		"package.json": `{ "type": "module" }\n`,
 		"setup.ts": `;(globalThis as any).calls = []\n`,
@@ -394,6 +404,7 @@ const filesOf = (app: App): Record<string, string> => {
 			include: ["*.ts"]
 		})
 	}
+	if (app.probe) return { ...files, ...probes[app.probe] }
 	if (app.twins) {
 		const names = Object.keys(twinDefinitions)
 		files["twin.ts"] = `import { type } from "arktype"
@@ -879,6 +890,7 @@ const normalized = (observation: unknown) =>
 		.replace(/ \(was (?:[^"\\]|\\.)*?\)(?=(?:\\+n)|\\*")/g, "")
 		.replace(/value at \[/g, "[")
 		.replace(/[\w$]+\.(?=[\w$]+ is not a function)/g, "")
+		.replace(/[\w$]+(?= is not iterable)/g, "value")
 		.replace(
 			/according to (?:an anonymous predicate|[\w$]+)/g,
 			"according to a predicate"
@@ -1035,6 +1047,17 @@ const check = async (app: App): Promise<boolean> => {
 			) ?
 				firstMismatch(expectedObservations, observations, verdictsOf)
 			:	undefined
+		// a probe reads its values whole, as arktype writes them, less what the
+		// docs say a standalone validator writes otherwise
+		if (app.probe && observations && expectedObservations) {
+			mismatch =
+				(
+					normalized(documented(observations)) !==
+					normalized(documented(expectedObservations))
+				) ?
+					firstMismatch(expectedObservations, observations, documented)
+				:	undefined
+		}
 		if (
 			!mismatch &&
 			observations &&
@@ -1074,8 +1097,10 @@ const check = async (app: App): Promise<boolean> => {
 			if (
 				(observations &&
 					plainObservations &&
-					normalized(verdictsOf(plainObservations)) ===
-						normalized(verdictsOf(observations))) ||
+					(app.probe ?
+						normalized(plainObservations) === normalized(observations)
+					:	normalized(verdictsOf(plainObservations)) ===
+						normalized(verdictsOf(observations)))) ||
 				// a crash it builds alone too
 				(!observations &&
 					"out" in plain &&
@@ -1097,7 +1122,22 @@ const check = async (app: App): Promise<boolean> => {
 }
 
 const started = Date.now()
-if (countArg === "twins") {
+if (countArg === "probes") {
+	for (const probe of Object.keys(probes)) {
+		if (seedArg && !probe.startsWith(seedArg)) continue
+		const sound = await check({
+			modules: [],
+			importing: "static",
+			writes: false,
+			config: "none",
+			configFirst: true,
+			readsAllows: false,
+			comparesIdentity: false,
+			probe
+		})
+		console.log(`probe ${probe}: ${sound ? "sound" : "UNSOUND"}`)
+	}
+} else if (countArg === "twins") {
 	await check({
 		modules: [{ read: "literal", wrapper: "narrow" }],
 		importing: "static",
