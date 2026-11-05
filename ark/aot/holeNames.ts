@@ -1,5 +1,5 @@
 import { hashOf, isDotAccessible } from "@ark/util"
-import { holeNameMarker } from "arktype/internal/standalone.ts"
+import { holeNameMarker } from "@ark/schema"
 import type { ArrowFunctionExpression, Class, Function, Node } from "oxc-parser"
 
 // reads no files, so the docs playground names a function as a build does

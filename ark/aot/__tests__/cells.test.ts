@@ -151,7 +151,8 @@ const itBehavesAsWhole = (
 		attest(behaviorOf(js)).equals(behaviorOf(whole))
 	})
 
-const declaredUnits = (js: string) => js.match(/\w+Allows = /g)?.length
+const declaredUnits = (js: string) =>
+	js.match(/\bfunction \w+Allows\(|\w+Allows = /g)?.length
 
 contextualize(function (this: Mocha.Suite) {
 	// each case bundles, which a loaded machine slows past mocha's default

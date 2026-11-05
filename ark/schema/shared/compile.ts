@@ -461,6 +461,8 @@ export abstract class NodeCompiler extends CompiledFunction<
 			return `!${this.inv(node, { arg: value })}`
 		}
 		if (node.hasMorph || node.hasAlias) return
+		// a value whose predicates read ctx is checked at its key's path
+		if (node.tfs && node.allowsCtx && node.checksCtx) return
 		// transforming values are checked by Allows first
 		const checksAllowsFirst =
 			node.tfs ||

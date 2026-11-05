@@ -1,6 +1,7 @@
 import {
 	$ark,
 	hasArkKind,
+	holeNameMarker,
 	writeMissingImportMessage,
 	writePrecompiledUnits,
 	type BaseRoot,
@@ -43,7 +44,6 @@ import {
 	defaultMembers,
 	holdsDefaults,
 	holdsObjectMeta,
-	holeNameMarker,
 	holeNamePattern,
 	introspectionMembers,
 	isPlainLiteral,
@@ -73,8 +73,7 @@ import {
 	type StandaloneBake,
 	type StandaloneModules,
 	type StandaloneOptions,
-	type Configured,
-	defersCreation
+	type Configured
 } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
 import { dirname, join } from "node:path"
@@ -177,6 +176,7 @@ import {
 	isDeclaredAs,
 	isDefaultCheck,
 	isDynamic,
+	isLoop,
 	type InterpreterOptions,
 	ModuleNamespace,
 	type Read,
@@ -502,15 +502,7 @@ interface CopiesReport {
 // run other than once as its module runs: in a function, a class or a loop
 const isRepeated = (fn: Node): boolean => {
 	for (let node = fn.parent; node; node = node.parent) {
-		if (
-			isFunctionNode(node) ||
-			node.type === "ClassBody" ||
-			node.type === "ForStatement" ||
-			node.type === "ForInStatement" ||
-			node.type === "ForOfStatement" ||
-			node.type === "WhileStatement" ||
-			node.type === "DoWhileStatement"
-		)
+		if (isFunctionNode(node) || node.type === "ClassBody" || isLoop(node))
 			return true
 	}
 	return false
@@ -596,10 +588,15 @@ const contentOfDefaulted = (
 	return names.includes(undefined) ? undefined : `${id} ${names.join()}`
 }
 
-const writtenCharsOf = ({ code, modules }: StandaloneModules): number => {
+// from this many characters written for a module, what its import spends on code
+// it may never call outweighs reading it through a variable. A module's own text
+// decides, so no output depends on build order
+const deferredFrom = 90_000
+
+const defersCreation = ({ code, modules }: StandaloneModules): boolean => {
 	let chars = code.length
 	for (const specifier in modules) chars += modules[specifier].length
-	return chars
+	return chars >= deferredFrom
 }
 
 // a cell some site sets
@@ -607,6 +604,19 @@ const isSetCell = (hole: unknown, cells: HoleCells | undefined): boolean => {
 	const cell = cells?.byHole.get(hole)
 	return !!cell && cell.text === undefined
 }
+
+const unsupportedModule = (file: string, message: string): Diagnostic => ({
+	severity: "error",
+	rule: "unsupported",
+	file,
+	start: 0,
+	end: 0,
+	line: 1,
+	column: 1,
+	message,
+	reasons: [],
+	hint: undefined
+})
 
 const holdsCell = (value: unknown, cells: HoleCells | undefined): boolean =>
 	isFoldable(value) && keyOf(value)[1].some(hole => isSetCell(hole, cells))
@@ -1166,8 +1176,8 @@ export class Precompiler {
 			return kept
 		}
 		for (const id of precompiled) {
-			const { module } = planned.get(id)!
-			for (const [site] of planned.get(id)!.factories) {
+			const { module, factories } = planned.get(id)!
+			for (const [site] of factories) {
 				for (const { value, isOneValue, binding } of site.references) {
 					if (
 						!site.holes.concat(site.called).some(hole => hole.value === value)
@@ -1361,7 +1371,7 @@ export class Precompiler {
 			const after = closedTextOf(closure!.node, module)
 			return after !== undefined && shapeOfCode(after) === shapeOfCode(text)
 		}
-		const isSame = (hole: unknown, i: number) =>
+		const isSame = (i: number) =>
 			!cells.byHole.has(before[i]) ||
 			(after[i] !== undefined &&
 				this.isCreatedOnce(after[i]) &&
@@ -1374,22 +1384,13 @@ export class Precompiler {
 						reference => reference.value !== after[i] || reference.isOneValue
 					)
 				))
-		if (
-			before.length !== after.length ||
-			!before.every((_, i) => isSame(_, i))
-		) {
-			diagnostics.push({
-				severity: "error",
-				rule: "unsupported",
-				file: module.id,
-				start: 0,
-				end: 0,
-				line: 1,
-				column: 1,
-				message: writeUnscannedCellsMessage(this.graph.pathOf(module.id)),
-				reasons: [],
-				hint: undefined
-			})
+		if (before.length !== after.length || !before.every((_, i) => isSame(i))) {
+			diagnostics.push(
+				unsupportedModule(
+					module.id,
+					writeUnscannedCellsMessage(this.graph.pathOf(module.id))
+				)
+			)
 			return
 		}
 		for (const [i, hole] of before.entries()) {
@@ -1427,9 +1428,10 @@ export class Precompiler {
 		if (read.type !== "Identifier") return false
 		const binding = module.scopes.byId.get(read)?.binding
 		if (!binding) return false
-		if (binding.kind !== "import")
-			return binding.kind !== "var" && isDeclaredAs(binding, source)
-		const target = this.graph.importOf(binding, module)
+		const target =
+			binding.kind === "import" ?
+				this.graph.importOf(binding, module)
+			:	{ kind: "binding" as const, binding }
 		return (
 			target.kind === "binding" &&
 			target.binding.kind !== "var" &&
@@ -2641,18 +2643,9 @@ export class Precompiler {
 		}
 		// its units would be copies of those the bundle reads from one
 		// function, which another validator could tell apart
-		precompiled.diagnostics.push({
-			severity: "error",
-			rule: "unsupported",
-			file: id,
-			start: 0,
-			end: 0,
-			line: 1,
-			column: 1,
-			message: writeUnscannedFlatMessage(this.graph.pathOf(id)),
-			reasons: [],
-			hint: undefined
-		})
+		precompiled.diagnostics.push(
+			unsupportedModule(id, writeUnscannedFlatMessage(this.graph.pathOf(id)))
+		)
 		return precompiled
 	}
 
@@ -3629,7 +3622,7 @@ export class Precompiler {
 					canDefer &&
 					this.defers === "large" &&
 					!Object.keys(refusalsByName).length &&
-					defersCreation(writtenCharsOf(validators))
+					defersCreation(validators)
 				)
 					validators = write(true)
 			}
@@ -5946,10 +5939,7 @@ export class Precompiler {
 							this.interpreter
 								.modulesDeclaring(value, state.trace)
 								.some(declaring => declaring !== module)),
-					binding:
-						read.type === "Identifier" ?
-							module.scopes.byId.get(read)?.binding
-						:	undefined,
+					binding: module.scopes.byId.get(read)?.binding,
 					isOneValue: this.isOneValueRead(read, value, module)
 				})
 			}
@@ -5989,8 +5979,7 @@ export class Precompiler {
 		if (call.type !== "CallExpression" || call.arguments.length !== 1) return
 		const [definition] = call.arguments
 		const callee = unwrapExpression(call.callee)
-		const reference =
-			callee.type === "Identifier" ? module.scopes.byId.get(callee) : undefined
+		const reference = module.scopes.byId.get(callee)
 		const isDefine =
 			callee.type === "MemberExpression" ?
 				!callee.computed &&
@@ -7059,10 +7048,7 @@ export class Precompiler {
 	// e.g. `T` declared in a `// @ark-runtime` definition
 	private isDeclaredInIsland(node: Node, module: SourceModule): boolean {
 		node = unwrapChain(node)
-		const binding =
-			node.type === "Identifier" ?
-				module.scopes.byId.get(node)?.binding
-			:	undefined
+		const binding = module.scopes.byId.get(node)?.binding
 		return !!binding && isInIsland(binding.declaration, module)
 	}
 
