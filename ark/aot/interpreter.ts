@@ -154,7 +154,6 @@ export interface StandIn {
 	call: Call | undefined
 	// by code arktype runs while defining a type, like a description writer
 	indirectCall: Call | undefined
-	schemaCheck: SchemaCheck | undefined
 }
 
 const createStandIn = (
@@ -171,7 +170,6 @@ const createStandIn = (
 	arity: undefined,
 	call: undefined,
 	indirectCall: undefined,
-	schemaCheck: undefined,
 	...init
 })
 
@@ -181,12 +179,9 @@ interface Call {
 	isDirect: boolean
 }
 
-// arktype checking whether a value is a Standard Schema, as a definition holds it
-interface SchemaCheck {
-	schema: StandIn
-}
-
-type Reached = DefaultCheck | ScopeAlias | Call | SchemaCheck
+// a stand-in itself is arktype checking whether it's a Standard Schema, as a
+// definition holds it
+type Reached = DefaultCheck | ScopeAlias | Call | StandIn
 
 export const isCall = (reached: Reached): reached is Call =>
 	"standIn" in reached
@@ -2526,7 +2521,7 @@ export class Interpreter {
 
 	// whether arktype checked it is a Standard Schema defining the site's value
 	checkedAsSchema(site: SiteState, standIn: StandIn): boolean {
-		return !!standIn.schemaCheck && site.reached.includes(standIn.schemaCheck)
+		return site.reached.includes(standIn)
 	}
 
 	// whether arktype called it while defining the site's value, or code it
@@ -2692,9 +2687,7 @@ export class Interpreter {
 			get: (_, k) => (k === arkKind ? undefined : this.refuse(standIn)),
 			has: (_, k) => {
 				if (k !== "~standard") this.refuse(standIn)
-				this.activeCall?.ctx.site?.reached.push(
-					(standIn.schemaCheck ??= { schema: standIn })
-				)
+				this.activeCall?.ctx.site?.reached.push(standIn)
 				return true
 			},
 			getPrototypeOf: () => Object.prototype,
