@@ -5,10 +5,11 @@
 // reaching a validator through one of `wrappers`. Observes each result, what
 // the call did to its input, and each predicate call in order.
 // ARK_CELLS_FUZZ=<count>[:<seed>]|catalog[:<wrapper>[:static|dynamic|query]]
-// [ARK_CELLS_FUZZ_HOSTS=esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,chunks,chunks:smallest,modules,webpack,node,dev,emit]
+// [ARK_CELLS_FUZZ_HOSTS=esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,chunks,chunks:smallest,modules,webpack,webpack:smallest,rspack,rspack:smallest,node,dev,emit]
 // [ARK_CELLS_FUZZ_FAILURES=<dir>] pnpm testCellsFuzz
 import { fromHere } from "@ark/fs"
 import { precompile } from "@ark/aot/unplugin"
+import { rspack } from "@rspack/core"
 import { build as esbuild } from "esbuild"
 import fc from "fast-check"
 import { build as viteBuild, defaultClientConditions } from "vite"
@@ -28,7 +29,7 @@ const failureDir =
 	join(tmpdir(), "ark-cells-fuzz-failures")
 const hosts = (
 	process.env.ARK_CELLS_FUZZ_HOSTS ??
-	"esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,chunks,chunks:smallest,modules,webpack,node,dev,emit"
+	"esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,chunks,chunks:smallest,modules,webpack,webpack:smallest,rspack,rspack:smallest,node,dev,emit"
 ).split(",")
 
 // each is a module's `check`, % being the module's own number: the text of two
@@ -58,7 +59,7 @@ const fixedReads: Record<string, string> = {
 }
 
 // state: a run's own, which a second run can't share. A difference in how often
-// a narrow runs shows in these, so they're kept off traversals that differ in it (F4)
+// a narrow runs shows in these too
 const statefulReads: Record<string, string> = {
 	letCounter: `let calls = 0\nconst check = (s: string) => ++calls % 2 === 0 || s.length > %`,
 	letLimit: `let limit = %\nconst check = (s: string) => s.length > limit++`,
@@ -333,18 +334,10 @@ interface App {
 const readNames = Object.keys(reads)
 const wrapperNames = Object.keys(wrappers)
 
-const loopingWrappers = new Set(["array", "indexed", "cyclic"])
-
-const appModule: fc.Arbitrary<AppModule> = fc
-	.record({
-		read: fc.constantFrom(...readNames),
-		wrapper: fc.constantFrom(...wrapperNames)
-	})
-	.map(({ read, wrapper }) => ({
-		read,
-		wrapper:
-			read in statefulReads && loopingWrappers.has(wrapper) ? "prop" : wrapper
-	}))
+const appModule: fc.Arbitrary<AppModule> = fc.record({
+	read: fc.constantFrom(...readNames),
+	wrapper: fc.constantFrom(...wrapperNames)
+})
 
 const apps: fc.Arbitrary<App> = fc.record({
 	// half of them repeat the first module's text but for what % decides
@@ -703,24 +696,45 @@ const viteOutcome = async (
 	return { out: runBundle(join(out, "main.js"), dir) }
 }
 
+// webpack and Rspack read arktype's built output, and need a project's loader to
+// read a .ts module, as neither strips types itself
 const webpackOutcome = async (
 	dir: string,
-	plugin: boolean
+	label: string,
+	plugin: boolean,
+	bundler: "webpack" | "rspack"
 ): Promise<Outcome> => {
-	const out = join(dir, plugin ? "out-webpack" : "out-webpack-plain")
-	const compiler = webpack({
-		mode: "production",
+	const out = join(dir, `out-${label}`)
+	const config = {
+		mode: "production" as const,
 		context: dir,
 		entry: "./main.ts",
-		target: "node",
+		target: "node" as const,
 		experiments: { topLevelAwait: true },
 		output: { path: out, filename: "main.cjs" },
 		resolve: { extensions: [".ts", ".js", ".cjs"] },
-		plugins: plugin ? [precompile.webpack({ cwd: dir }) as never] : []
-	})
-	const errors = await new Promise<string | undefined>(resolve =>
+		module: {
+			rules: [{ test: /\.ts$/, loader: fromHere("stripTypesLoader.ts") }]
+		}
+	}
+	const compiler =
+		bundler === "webpack" ?
+			webpack({
+				...config,
+				plugins: plugin ? [precompile.webpack({ cwd: dir }) as never] : []
+			})
+		:	(rspack({
+				...config,
+				plugins: plugin ? [precompile.rspack({ cwd: dir }) as never] : []
+			}) as never as webpack.Compiler)
+	const errors = await new Promise<string | undefined>((resolve, reject) => {
+		const hung = setTimeout(
+			() => reject(new Error(`${bundler} hung building ${dir}`)),
+			300_000
+		)
 		compiler.run((error, stats) =>
-			compiler.close(() =>
+			compiler.close(() => {
+				clearTimeout(hung)
 				resolve(
 					error ? messageOf(error)
 					: stats?.hasErrors() ?
@@ -730,9 +744,9 @@ const webpackOutcome = async (
 							.join("\n")
 					:	undefined
 				)
-			)
+			})
 		)
-	)
+	})
 	if (errors) return { refused: errors }
 	return { out: runBundle(join(out, "main.cjs"), dir) }
 }
@@ -806,7 +820,8 @@ const outcomeOf = (
 		: kind === "modules" ? esbuildOutcome(dir, label, { plugin, prune: false })
 		: kind === "vite" ? viteOutcome(dir, label, plugin)
 		: kind === "chunks" ? viteOutcome(dir, label, plugin, true)
-		: kind === "webpack" ? webpackOutcome(dir, plugin)
+		: kind === "webpack" || kind === "rspack" ?
+			webpackOutcome(dir, label, plugin, kind)
 		: kind === "node" ? driver(dir, true)
 		: kind === "dev" ? driver(dir, false)
 		: emitOutcome(dir)
@@ -819,7 +834,8 @@ const bundlers = new Set([
 	"modules",
 	"vite",
 	"chunks",
-	"webpack"
+	"webpack",
+	"rspack"
 ])
 
 const observationsOf = (out: string): unknown[] | undefined => {
@@ -958,9 +974,8 @@ const check = async (app: App): Promise<boolean> => {
 	let sound = true
 	for (const host of hosts) {
 		const tally = tallies[host]
-		// tsc doesn't rewrite a query, and webpack leaves a queried module's sites
-		// untransformed (F3)
-		if (/^(emit|webpack)/.test(host) && app.importing === "query") continue
+		// tsc doesn't rewrite a query
+		if (host === "emit" && app.importing === "query") continue
 		// only this layout names a chunk main can import again
 		if (app.importing === "again" && !host.startsWith("chunks")) continue
 		const outcome = await outcomeOf(host, dir, app)
@@ -1056,7 +1071,10 @@ const started = Date.now()
 if (countArg === "catalog") {
 	const wrapper = seedArg ?? "narrow"
 	for (const read of readNames) {
-		if (read in statefulReads && loopingWrappers.has(wrapper)) continue
+		// a chunk that took in the module holding its state makes it anew when run
+		// again, as the bundler laid it out, whole or pruned
+		if (importingArg === "again" && reads[read].includes("./shared.ts"))
+			continue
 		await check({
 			modules: [
 				{ read, wrapper },
