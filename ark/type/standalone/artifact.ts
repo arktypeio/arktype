@@ -2086,9 +2086,11 @@ return namespace`
 							created
 						:	`runtime.holdHoles(${created}, ${writeId(id)}, ${held})`
 				}
-				return internKey ?
-						`runtime.interned(${JSON.stringify(internKey)}, () => ${created})`
-					:	created
+				if (!internKey) return created
+				const interned = `runtime.interned(${JSON.stringify(internKey)}, () => ${created})`
+				return form.bakedAfter ?
+						`runtime.bakeInto(${interned}, { ${this.emitIntrospection(root, new Set(form.bakedAfter)).join(", ")} })`
+					:	interned
 			}
 		}
 	}
@@ -2097,7 +2099,7 @@ return namespace`
 		const isTemplate = this.templates.has(root)
 		const isRuntimeRead = this.runtimeReadRoots.has(root)
 		const baked = this.baking.bakedByRoot.get(root)?.members ?? []
-		const members =
+		let members: ReadonlySet<ValidatorMember> =
 			isRuntimeRead || baked.length ?
 				new Set([
 					...this.baking.members,
@@ -2105,6 +2107,28 @@ return namespace`
 					...(isRuntimeRead ? defaultMembers : [])
 				])
 			:	this.baking.members
+		// a build reading a module at a time bakes what each module reads of a
+		// Type where it reads it, as a module importing one does, so equal Types
+		// created apart key alike, as arktype returns them as one value
+		const bakedAfter =
+			(
+				!isTemplate &&
+				!this.baking.interned &&
+				!this.baking.freezes &&
+				!this.heldOf(keyOf(root)[1]).length &&
+				this.internNameOf(root) !== undefined
+			) ?
+				new Set(
+					introspectionMembers.filter(
+						member => members.has(member) && !this.baking.members.has(member)
+					)
+				)
+			:	undefined
+		if (bakedAfter?.size) {
+			members = new Set(
+				[...members].filter(member => !bakedAfter.has(member as never))
+			)
+		}
 		const ownsValidator =
 			!isTemplate && !this.baking.shortest && members.has("methods")
 		const unconfigured = !this.baking.readsConfig && !root.meta.onFail
@@ -2115,7 +2139,8 @@ return namespace`
 			ownsValidator,
 			unconfigured,
 			pipes: canPipe(this.baking, members, unconfigured),
-			byRuntime: isCreatedByRuntime(members, this.baking)
+			byRuntime: isCreatedByRuntime(members, this.baking),
+			bakedAfter: bakedAfter?.size ? bakedAfter : undefined
 		}
 	}
 

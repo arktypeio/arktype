@@ -7,6 +7,7 @@ import {
 	type ValidatorMember,
 	type ValidatorReads
 } from "./baking.ts"
+import type { IntrospectionMember } from "../runtime.ts"
 
 /** a root apply a creator is passed, with the params it's declared by */
 export interface RootApplier {
@@ -36,6 +37,8 @@ export interface ValidatorForm {
 	pipes: boolean
 	// created by runtime.createValidator rather than a creator of its own
 	byRuntime: boolean
+	// baked into the validator interning returns, so its members don't key it
+	bakedAfter?: ReadonlySet<IntrospectionMember> | undefined
 }
 
 /** what a validator is created with besides its root apply */
