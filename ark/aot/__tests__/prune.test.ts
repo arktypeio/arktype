@@ -2335,6 +2335,16 @@ console.log(out instanceof type.errors ? out.summary : out)
 		const output = (js: string, cwd?: string) =>
 			spawnSync(process.execPath, { input: js, encoding: "utf8", cwd }).stdout
 
+		// the warnings a build ends with
+		const collecting = (warnings: string[]) => ({
+			apply: (compiler: webpack.Compiler) =>
+				compiler.hooks.done.tap("collecting", stats => {
+					for (const { message } of stats.toJson({ all: false, warnings: true })
+						.warnings ?? [])
+						warnings.push(message)
+				})
+		})
+
 		// a build writing more than one file, as CommonJS
 		const splitBundle = async (name: Compiler, root: string) => {
 			const stats = await built(
@@ -2386,6 +2396,69 @@ console.log(typeof User["~standard"].validate)
 								}
 							}
 						}
+
+				describe("a module an inline loader request keeps from the plugin", () => {
+					const identity = fromHere("identityLoader.ts")
+
+					for (const prefix of ["-!", "!!", "!"]) {
+						it(`reads what ${prefix} imports reads, as it can't write it`, async () => {
+							const root = fixture(
+								`inlineLoader-${
+									prefix === "-!" ? "normal"
+									: prefix === "!!" ? "all"
+									: "own"
+								}`,
+								{
+									"reader.js": `import { User } from "./types.js"
+
+export const use = () => User.expression
+`,
+									"main.js": `import { use } from "${prefix}${identity}!./reader.js"
+
+console.log(use())
+`
+								}
+							)
+							attest(output(await bundle(name, root))).equals(
+								"{ name: string }\n"
+							)
+						})
+					}
+
+					it("refuses to read a file the plugin writes one way and not another", async () => {
+						const root = fixture("inlineLoader-both", {
+							"reader.js": `import { User } from "./types.js"
+
+export const use = () => User.expression
+`,
+							"main.js": `import { use } from "./reader.js"
+import { use as inlined } from "-!${identity}!./reader.js"
+
+console.log(use(), inlined())
+`
+						})
+						const warnings: string[] = []
+						const js = await bundle(
+							name,
+							root,
+							{},
+							{
+								plugins: [
+									compilers[name][1]({ cwd: root }) as never,
+									collecting(warnings) as never
+								]
+							}
+						)
+						attest(warnings.join("\n").includes("from two codes")).equals(true)
+						// built one module at a time, what the inline request reads is missed
+						attest(
+							spawnSync(process.execPath, {
+								input: js,
+								encoding: "utf8"
+							}).stderr.includes("expression isn't baked into this validator")
+						).equals(true)
+					})
+				})
 
 				describe("a package declaring no side effects", () => {
 					const noSideEffects = {

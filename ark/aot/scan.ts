@@ -267,7 +267,12 @@ export const programAsBuilt = (
 		if (isRead(module)) {
 			const { id, source, transformed, mappings } = module
 			if (source === undefined) return `${pathOf(id)} can't be read`
-			if (source === null || (id in modules && modules[id].source !== source))
+			if (
+				source === null ||
+				(id in modules &&
+					(modules[id].source !== source ||
+						modules[id].transformed !== transformed))
+			)
 				return `it built ${pathOf(id)} from two codes`
 			if (!(id in modules)) {
 				const { imports, unnamed } = importsOf(id, source)
