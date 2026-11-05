@@ -5,7 +5,13 @@ import { globalsByName } from "./builtins.ts"
 import { contains, heldAs, isFunctionNode, type ModuleGraph } from "./graph.ts"
 import { initOf, type Interpreter } from "./interpreter.ts"
 import type { SourceModule } from "./module.ts"
-import { operatorOf, unwrapExpression, walk, type Binding } from "./scope.ts"
+import {
+	operatorOf,
+	typeKeys,
+	unwrapExpression,
+	walk,
+	type Binding
+} from "./scope.ts"
 import { isFoldable } from "./sites.ts"
 
 // classes whose instances hold nothing a method they're called with changes
@@ -14,13 +20,6 @@ const fixedClasses = new Set(["Set", "Map", "TextEncoder"])
 const fixedGlobals = new Set(["undefined", "NaN", "Infinity"])
 
 type Located = [binding: Binding, module: SourceModule]
-
-const typeKeys = [
-	"typeAnnotation",
-	"returnType",
-	"typeParameters",
-	"typeArguments"
-]
 
 const isNode = (value: unknown): value is Node =>
 	typeof (value as Node | null)?.type === "string"
@@ -70,7 +69,7 @@ export const closedTextOf = (
 		for (const k in node) {
 			if (k === "parent") continue
 			const value = node[k as keyof Node] as unknown
-			if (typeKeys.includes(k)) {
+			if (k in typeKeys) {
 				if (isNode(value)) erased.push([value.start, value.end])
 			} else if (
 				!(Array.isArray(value) ? value : [value]).every(
