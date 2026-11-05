@@ -170,12 +170,12 @@ const stops = () => true
 
 const allowingCtx = (data: any, ctx: any, checker: Checker) => {
 	if (ctx._at === stops) return checker(data, ctx)
-	const { chkOnly } = ctx
+	const { chkOnly, _at, failsUnion } = ctx
 	ctx.chkOnly = true
 	ctx._at = ctx.failsUnion = stops
 	const allowed = checker(data, ctx)
-	delete ctx._at
-	delete ctx.failsUnion
+	ctx._at = _at
+	ctx.failsUnion = failsUnion
 	ctx.chkOnly = chkOnly
 	return allowed
 }
@@ -980,38 +980,53 @@ export const failingElementsOf = ((element: Checker, withCtx?: 1): Checker => {
 
 // a value transforming may fail: what fails goes to ctx, or without one is
 // returned gathered, as arktype's Transform does for a node with no ctx
+class Written implements WrittenValues {
+	declare gathered: TransformErrors | undefined
+	declare ctx: any
+	declare issues: number
+
+	constructor(ctx: any) {
+		this.ctx = ctx
+		this.issues = ctx?.errN
+		this.gathered = undefined
+	}
+
+	gather(errors: TransformErrors, k?: PropertyKey) {
+		if (this.ctx) addMorphErrs(this.ctx, errors, k)
+		else this.gathered = errors.addTo(this.gathered, k)
+	}
+
+	failed() {
+		return this.gathered ?? this.ctx?.errN > this.issues
+	}
+
+	transformed({ t }: Checker, value: unknown, k: PropertyKey) {
+		let result
+		if (t!.c) {
+			this.ctx.path.push(k)
+			result = t!(value, this.ctx)
+			this.ctx.path.pop()
+		} else result = t!(value)
+		if (!(result instanceof TransformErrors)) return result
+		this.gather(result, k)
+		return value
+	}
+
+	defaulted(write: DefaultWrite, out: any) {
+		const written = write(out, this.ctx)
+		if (written !== out) this.gather(written as TransformErrors)
+	}
+}
+
 const failingValues = (
 	write: WritesValues,
 	held: readonly Checker[],
 	withCtx?: 1
 ): Transform => {
 	const t: Transform = (data, ctx) => {
-		const issues = ctx?.errN
-		let gathered: TransformErrors | undefined
-		const gather = (errors: TransformErrors, k?: PropertyKey) => {
-			if (ctx) addMorphErrs(ctx, errors, k)
-			else gathered = errors.addTo(gathered, k)
-		}
-		const failed = () => gathered ?? ctx?.errN > issues
-		const out = write(data, {
-			transformed: ({ t }, value, k) => {
-				let result
-				if (t!.c) {
-					ctx.path.push(k)
-					result = t!(value, ctx)
-					ctx.path.pop()
-				} else result = t!(value)
-				if (!(result instanceof TransformErrors)) return result
-				gather(result, k)
-				return value
-			},
-			failed,
-			defaulted: (write, out) => {
-				const written = write(out, ctx)
-				if (written !== out) gather(written as TransformErrors)
-			}
-		})
-		return failed() ? (gathered ?? data) : out
+		const values = new Written(ctx)
+		const out = write(data, values)
+		return values.failed() ? (values.gathered ?? data) : out
 	}
 	// what holds an alias transforms with a ctx, whichever value transforms
 	if (withCtx || held.some(({ w }) => w?.length === 2)) t.c = 1
