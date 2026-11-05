@@ -44,6 +44,7 @@ import {
 	unnamedHoles,
 	type Node
 } from "./grammar.ts"
+import { throughArkBarrel } from "./arkBarrel.ts"
 import { tempDir } from "./utils.ts"
 
 // <count>[:<seed>[:<path>]], the path replaying one of a seed's runs
@@ -670,7 +671,12 @@ const sideEffects =
 		{ sideEffects: ["./config.ts"] }
 	:	{}
 
-const filesOf = (app: App): Record<string, string> => {
+// each file of an app, whose imports of arktype reach it through a barrel where
+// the round asks
+const filesOf = (app: App): Record<string, string> =>
+	throughArkBarrel(ownFilesOf(app))
+
+const ownFilesOf = (app: App): Record<string, string> => {
 	const files: Record<string, string> = {}
 	const modules = new Set(app.validators.map(v => v.module))
 	for (const m of modules) {

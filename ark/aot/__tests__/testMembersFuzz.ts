@@ -28,6 +28,7 @@ import {
 import { tmpdir } from "node:os"
 import { dirname, join, posix } from "node:path"
 import { pathToFileURL } from "node:url"
+import { throughArkBarrel } from "./arkBarrel.ts"
 import { memoryHost, tempDir } from "./utils.ts"
 
 const [countArg, seedArg, path] = (process.env.ARK_MEMBERS_FUZZ ?? "10").split(
@@ -616,7 +617,12 @@ const hopsOf = (reader: Reader): HopName[] => {
 const sideEffects =
 	process.env.ARK_FUZZ_SIDE_EFFECTS_FREE === "1" ? { sideEffects: false } : {}
 
-const filesOf = (app: App): Record<string, string> => {
+// each file of an app, whose imports of arktype reach it through a barrel where
+// the round asks
+const filesOf = (app: App): Record<string, string> =>
+	throughArkBarrel(ownFilesOf(app))
+
+const ownFilesOf = (app: App): Record<string, string> => {
 	const files: Record<string, string> = {}
 	if (app.packaged) {
 		files[`node_modules/${packageName}/package.json`] = JSON.stringify({
