@@ -71,7 +71,8 @@ const bundle = async (
 const factoryParam = /{ 0: \w+Allows/
 
 // each unit's allows, declared once unless a validator reads a copy
-const declaredUnits = (js: string) => js.match(/\w+Allows = /g)?.length
+const declaredUnits = (js: string) =>
+	js.match(/\bfunction \w+Allows\(|\w+Allows = /g)?.length
 
 // Vite reads its mode from NODE_ENV
 const viteBundle = async (
@@ -152,6 +153,13 @@ name must be at most length 10
 {"name":"aaaaaaaaaaa","tag":"none"}
 `)
 		attest(js.match(/\.tag = "none"/g)?.length).equals(1)
+	})
+
+	it("declares each function the function holds, reading a node's parts directly", async () => {
+		const [js] = await bundle()
+		attest(/\[\w+(?:, \w+)*]\[\d]/.test(js)).equals(false)
+		attest(/\bfunction \w+Allows\(/.test(js)).equals(true)
+		attest(run(js)).equals(run((await bundle({ prune: false }))[0]))
 	})
 
 	it("leaves out of the function a unit only a dropped validator reads", async () => {

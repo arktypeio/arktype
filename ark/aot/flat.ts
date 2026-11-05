@@ -1,7 +1,7 @@
 import { hashOf } from "@ark/util"
 import { cellPrefix, heldSpecifier } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
-import type { Node, Program, Span } from "oxc-parser"
+import type { Node, Program, Span, VariableDeclarator } from "oxc-parser"
 import { memberNameOf } from "./graph.ts"
 import {
 	prefixOf,
@@ -1519,9 +1519,15 @@ interface WrittenUnits {
 const writtenUnitsOf = (body: string, returned: string): WrittenUnits => {
 	const parse = unitsParser()
 	let written: WrittenUnits = { body, returned }
-	for (const pass of [skipAliases, inlineCalls, mergeEqualFunctions, dropUnread])
+	for (const pass of [
+		skipAliases,
+		inlineCalls,
+		mergeEqualFunctions,
+		dropUnread,
+		readPartsDirectly
+	])
 		written = untilUnchanged(written, parse, pass)
-	written.body = inGzipOrder(written.body)
+	written.body = functionsDeclared(inGzipOrder(written.body))
 	return written
 }
 
@@ -1753,6 +1759,78 @@ const textOfFunction = (code: string, fn: Node, binding: Binding): string => {
 }
 
 const noInlineAnnotation = /\/\* @__NOINLINE__ \*\/ /g
+
+// an array's element read where it's written is that element, and a value read
+// from a function called where it's declared is that value, since what its
+// annotation told a bundler has been decided
+const readPartsDirectly: UnitsPass = ({ code, program }, s) => {
+	walk(program, node => {
+		if (
+			node.type !== "MemberExpression" ||
+			!node.computed ||
+			node.object.type !== "ArrayExpression" ||
+			node.property.type !== "Literal" ||
+			typeof node.property.value !== "number" ||
+			!node.object.elements.every(element => element?.type === "Identifier")
+		)
+			return true
+		const element = node.object.elements[node.property.value] as {
+			name: string
+		}
+		s.overwrite(node.start, node.end, element.name)
+		return false
+	})
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration") continue
+		for (const { init } of statement.declarations) {
+			if (
+				init?.type !== "CallExpression" ||
+				init.arguments.length ||
+				init.callee.type !== "ArrowFunctionExpression" ||
+				init.callee.params.length ||
+				init.callee.body.type === "BlockStatement"
+			)
+				continue
+			const { body } = init.callee
+			s.overwrite(init.start, init.end, code.slice(body.start, body.end))
+		}
+	}
+}
+
+// V8 parses a function declared for a sixth less than a constant holding it, and
+// a call reads it without checking it's been initialized
+const functionsDeclared = (body: string): string => {
+	const { program } = parseUnits(body)
+	const s = new MagicString(body)
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration" || statement.kind !== "const")
+			continue
+		const { declarations } = statement
+		if (!declarations.some(declaresFunction)) continue
+		s.overwrite(
+			statement.start,
+			statement.end,
+			declarations
+				.map(declarator =>
+					declaresFunction(declarator) ?
+						`function ${(declarator.id as { name: string }).name}${body.slice(
+							declarator.init!.start + "function".length,
+							declarator.init!.end
+						)}`
+					:	`const ${body.slice(declarator.start, declarator.end)}`
+				)
+				.join("\n")
+		)
+	}
+	return s.toString()
+}
+
+const declaresFunction = ({ id, init }: VariableDeclarator): boolean =>
+	id.type === "Identifier" &&
+	init?.type === "FunctionExpression" &&
+	!init.id &&
+	!init.async &&
+	!init.generator
 
 // a bundler drops only a module's unread declarations, not a function's
 const dropUnread: UnitsPass = ({ code, program, scopes }, s, body) => {
