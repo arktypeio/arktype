@@ -2911,7 +2911,8 @@ return namespace`
 			return [
 				{
 					params: "node",
-					apply: `(data, onFail) => node.allows(data) ? ${tfs ? "node.tTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${Traversal})`,
+					// a checker's transform is its node's too, as it reads ctx
+					apply: `(data, onFail) => node.allows(data) ? ${strategy === "transform" ? "node.tTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${Traversal})`,
 					args: shape,
 					local: !Traversal.startsWith("runtime.")
 				},

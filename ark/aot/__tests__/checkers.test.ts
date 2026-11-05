@@ -698,6 +698,37 @@ ${repaying}
 		).equals('{"a":"a","z":1} true\n{"a":"a"}\n')
 	})
 
+	it("transforms a key whose callback reads ctx, which sees the key's path", async () => {
+		const root = fixture(
+			"ctxUnderDeleting",
+			`import { type } from "arktype"
+
+const paths: unknown[] = []
+const isValid = (value: unknown, ctx: any) => {
+	paths.push([...ctx.path])
+	return value !== "bad" || ctx.mustBe("valid")
+}
+const T = type({
+	outer: { "+": "delete", v: type("string").narrow(isValid) },
+	other: "number"
+})
+const Piped = type("string.json.parse").pipe(T)
+const show = (out: unknown) =>
+	console.log(
+		out instanceof type.errors ?
+			out.summary.replace(/ \\(was .*\\)/, "")
+		:	JSON.stringify(out),
+		JSON.stringify(paths.splice(0))
+	)
+show(T({ outer: { v: "a", extra: 1 }, other: 1 }))
+show(T({ outer: { v: "bad" }, other: 1 }))
+show(Piped('{ "outer": { "v": "bad" }, "other": 1 }'))
+${repaying}
+`
+		)
+		attest(behaviorOf(await bundle(root, smallest))).equals(runPlain(root))
+	})
+
 	it("reads a failing value once at each depth, with no ctx", async () => {
 		const js = await bundle(
 			fixture(

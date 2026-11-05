@@ -216,9 +216,10 @@ var failsValue = (ctx, checker, data, k, value) =>
 	ctx?._at ?
 		appliesValues && checker.e ? checker.e(ctx, checker, value, k)
 		: appliesValues && checker.t?.e ? checker.t.e(ctx, checker, value, k)
-		: (!checker.t ||
+		: (!checker.t || // as arktype, one checking only, as Allows does, applies it once
+				ctx.chkOnly ||
 				!(appliesValues && checker.a ?
-					checker.a(value, ctx)
+					checker.a(value, ctx, k)
 				:	checker(value))) &&
 			ctx._in(checker, data, k)
 	:	!checker(value)

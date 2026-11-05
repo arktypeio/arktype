@@ -54,8 +54,8 @@ export interface Checker {
 	u?: 1 | undefined
 	/** where a morph writes its default, as a function's may fail */
 	w?: DefaultWrite
-	/** where it holds a callback reading its ctx, its Allows at the key ctx is at */
-	a?: ((data: unknown, ctx: any) => boolean) | undefined
+	/** where it holds a callback reading its ctx, its Allows at the key ctx is at, or at k under it */
+	a?: ((data: unknown, ctx: any, k?: PropertyKey) => boolean) | undefined
 	/** where it holds an alias, how a key applies it */
 	e?: ApplyAt
 }
@@ -185,7 +185,14 @@ const allowingCtx = (data: any, ctx: any, checker: Checker) => {
 // node as its Allows, and read by a key where data's checked first
 export const readingCtx = ((checker: Checker): Checker => {
 	const allows = (data: unknown, ctx: any) => allowingCtx(data, ctx, checker)
-	checker.a = (data, ctx) => allowsInBranchBy(ctx, allows, data)
+	checker.a = (data, ctx, k) => {
+		if (k === undefined) return allowsInBranchBy(ctx, allows, data)
+		// a key's value is checked at its path, which a callback sees
+		ctx.path.push(k)
+		const allowed = allowsInBranchBy(ctx, allows, data)
+		ctx.path.pop()
+		return allowed
+	}
 	return checker
 }) satisfies Fn
 
@@ -556,7 +563,7 @@ export const required = ((checker: Checker, description: string): Checker => {
 type Props = Record<string, Checker>
 
 // with a ctx, a value is applied once, as arktype applies it, since a callback
-// may see each call; one that transforms is checked first, as arktype checks it
+// may see each call; one that transforms is checked first where arktype checks it
 const failsValue = (
 	ctx: FailureContext | number | undefined,
 	checker: Checker,
@@ -568,8 +575,10 @@ const failsValue = (
 		appliesValues && checker.e ? checker.e(ctx, checker, value, k)
 		: appliesValues && checker.t?.e ? checker.t.e(ctx, checker, value, k)
 		: (!checker.t ||
+				// as arktype, one checking only, as Allows does, applies it once
+				(ctx as any).chkOnly ||
 				!(appliesValues && checker.a ?
-					checker.a(value, ctx)
+					checker.a(value, ctx, k)
 				:	checker(value))) &&
 			(ctx as FailureContext)._in(checker as CompactApply, data, k)
 	:	!checker(value)
