@@ -2505,7 +2505,7 @@ export class Interpreter {
 				throw this.calledAtDefinition(standIn, undefined)
 			}
 		})
-		proveFunction(proxy as Fn, closure.node)
+		proveFunction(proxy as Fn, closure.node, this.opts.runtime !== "arktype")
 		if (!closure.env) this.standInsByNode.set(closure.node, proxy)
 		return proxy
 	}

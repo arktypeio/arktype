@@ -8,12 +8,30 @@ import type {
 } from "@ark/schema/runtime"
 import { hasOwn, type Fn } from "@ark/util"
 import {
+	addErrors,
+	addMorphErrs,
+	allowsInBranchBy,
+	allowsInContext,
+	allowsUntracked,
+	ArkErrors,
 	copyOf,
 	describePredicate,
+	enterApplied,
+	exitApplied,
 	failsAt,
 	failsBranches,
+	pipeApplied,
+	pipeChecked,
+	pipeTransformed,
 	requiredSiteOf,
-	siteOf
+	runtimeConfig,
+	silentCtx,
+	siteOf,
+	transformedInApply,
+	TransformErrors,
+	transformIfAllowed,
+	transformResolution,
+	transformsValid
 } from "./runtime.ts"
 
 /** a node a size build composes, reporting to a ctx it's passed */
@@ -22,11 +40,50 @@ export interface Checker {
 	/** what a key it's the value of expects where the key is missing */
 	description?: string | undefined
 	/** where it transforms, e.g. by writing a default, data it allows */
-	t?: ((data: any) => unknown) | undefined
+	t?: Transform | undefined
 	/** where it checks a key that may be absent */
 	o?: 1
 	/** the default of a key that may be absent, if it has one */
 	d?: [value?: unknown]
+	/** where its default replaces undefined too */
+	u?: 1 | undefined
+	/** where a morph writes its default, as a function's may fail */
+	w?: DefaultWrite
+	/** where it holds a callback reading its ctx, its Allows at the key ctx is at */
+	a?: (data: unknown, ctx: any) => boolean
+	/** where it holds an alias, how a key applies it */
+	m?: ApplyAt
+}
+
+type DefaultWrite = (data: any, ctx?: any) => unknown
+
+interface Transform {
+	(data: any, ctx?: any): unknown
+	/** where it holds a morph, how a key applies what it's the transform of */
+	m?: ApplyAt
+	/** where it reports to a ctx, rather than returning what fails */
+	c?: 1
+}
+
+type ApplyAt = (
+	ctx: any,
+	checker: Checker,
+	value: unknown,
+	k: PropertyKey
+) => boolean
+
+const transformedBy = ({ t }: Checker, data: unknown, ctx: unknown) =>
+	!t ? data
+	: t.c ? t(data, ctx)
+	: t(data)
+
+// what holds a morph holds what it reads of it
+const holdingMorphs = (t: Transform, held: readonly Checker[]): Transform => {
+	for (const checker of held) {
+		t.m ??= checker.t?.m
+		t.c ??= checker.t?.c
+	}
+	return t
 }
 
 /** a site, and the checker of the test data passes to avoid it */
@@ -65,6 +122,215 @@ export const narrowedBy = ((
 			data
 		)
 	checker.description = description
+	return checker
+}) satisfies Fn
+
+// a callback a build proved only returns what it reports, passed a ctx to report
+// to where there is one
+export const narrowedWithCtx = ((
+	read: () => (data: any, ctx: any) => boolean,
+	description?: string
+): Checker => {
+	const checker: Checker = (data, ctx: any) => {
+		if (!ctx?._at) return !!read()(data, silentCtx)
+		const errN = ctx.errN
+		if (!read()(data, ctx) && ctx.errN === errN) {
+			return !failsAt(
+				ctx,
+				siteOf(
+					"predicate",
+					description ?? describePredicate({ predicate: read() })
+				),
+				data
+			)
+		}
+		return !ctx.failFast || ctx.errN === errN
+	}
+	checker.description = description
+	return checker
+}) satisfies Fn
+
+const stops = () => true
+
+const allowingCtx = (data: any, ctx: any, checker: Checker) => {
+	if (ctx._at === stops) return checker(data, ctx)
+	const { chkOnly } = ctx
+	ctx.chkOnly = true
+	ctx._at = ctx.failsUnion = stops
+	const allowed = checker(data, ctx)
+	delete ctx._at
+	delete ctx.failsUnion
+	ctx.chkOnly = chkOnly
+	return allowed
+}
+
+// a node holding a callback that may read its ctx runs what Apply does, with a
+// ctx finding no issues, stopping at the first as Allows does. Read through a
+// node as its Allows, and read by a key where data's checked first
+export const readingCtx = ((checker: Checker): Checker => {
+	const allows = (data: unknown, ctx: any) => allowingCtx(data, ctx, checker)
+	checker.a = (data, ctx) => allowsInBranchBy(ctx, allows, data)
+	return checker
+}) satisfies Fn
+
+/** Allows of a node reading its ctx, or passed a depth by an alias it holds */
+export const allowsReadingCtx = ((checker: Checker) =>
+	(data: unknown, ctx: any) =>
+		typeof ctx === "object" ?
+			allowingCtx(data, ctx, checker)
+		:	checker(data)) satisfies Fn
+
+/** what a checker reads of a node compiled since it's in a cycle, or holding one */
+interface AliasedNode {
+	id: string
+	tfs?: true
+	tfsById?: true
+	tAllows: (data: unknown, ctx: any) => boolean
+	tApply: Checker
+	tTransform?: Transform
+}
+
+// a node in a cycle, tracking data as only compiled traversals do. Only where
+// data's reached by what holds it does Allows start at no depth, which a cycle
+// isn't in, so can't reach this node again
+export const compiled = ((node: AliasedNode, transforms?: 1): Checker => {
+	const checker: Checker = (data, ctx: any) =>
+		!ctx ? node.tAllows(data, 0)
+		: ctx._at === stops ? node.tAllows(data, ctx)
+		: node.tApply(data, ctx)
+	if (transforms) {
+		checker.t = (data, ctx) => node.tTransform!(data, ctx)
+		checker.t.c = 1
+	}
+	return checker
+}) satisfies Fn
+
+const wrapping = (checker: Checker): Checker => {
+	const wrapped: Checker = (data, ctx) => checker(data, ctx)
+	wrapped.description = checker.description
+	wrapped.t = checker.t
+	wrapped.a = checker.a
+	wrapped.m = checker.m
+	return wrapped
+}
+
+// tracked as what holds its id, which a unit's shape fills in once it's created
+const resolvedBy = (node: { id: string }, t: Transform): Transform => {
+	const resolved: Transform = (data, ctx) =>
+		transformResolution(ctx, node.id, data, t)
+	resolved.c = 1
+	return resolved
+}
+
+// a key's value holding an alias: only what Apply finds valid is transformed, and
+// one tracked as its node keys what it's applied to by id
+export const aliasedValue = ((
+	checker: Checker,
+	node: AliasedNode,
+	// 1 where it enters an alias, 2 where its transform's tracked by id. Read
+	// off the node they'd be where a unit's shape fills in once it's created
+	flags?: 1 | 2 | 3
+): Checker => {
+	const wrapped = wrapping(checker)
+	const enters = flags! & 1
+	wrapped.m = (ctx, _, value, k) => {
+		ctx.path.push(k)
+		const passes =
+			ctx._at === stops ?
+				checker(value, ctx)
+			:	(node.tfs && transformIfAllowed(ctx, node as never, value)) ||
+				(enters ?
+					(enterApplied(ctx, node.id, value) ??
+					exitApplied(ctx, checker(value, ctx)))
+				:	checker(value, ctx))
+		ctx.path.pop()
+		return !passes
+	}
+	if (checker.t && flags! & 2) wrapped.t = resolvedBy(node, checker.t)
+	return wrapped
+}) satisfies Fn
+
+// a case of a union entered as the branch it was pruned from, holding an alias
+export const aliasedMember = ((checker: Checker, id: string): Checker => {
+	const entered: Checker = (data, ctx: any) =>
+		ctx?._at && ctx._at !== stops ?
+			(enterApplied(ctx, id, data) ?? exitApplied(ctx, checker(data, ctx)))
+		:	checker(data, ctx)
+	entered.description = checker.description
+	entered.a = checker.a
+	if (checker.t) entered.t = resolvedBy({ id }, checker.t)
+	return entered
+}) satisfies Fn
+
+// a structure read by Allows alone, as a root is, where a narrow's read after it
+export const holdingAlias = ((checker: Checker): Checker => {
+	const node = { tAllows: allowsReadingCtx(checker) } as never
+	checker.a = data =>
+		allowsUntracked(node, data) ?? allowsInContext(node, data, runtimeConfig)
+	return checker
+}) satisfies Fn
+
+// a callback that may read its ctx, which can add an issue and still return true
+export const narrowedInCtx = ((
+	read: () => (data: any, ctx: any) => boolean,
+	description?: string
+): Checker => {
+	const checker: Checker = (data, ctx: any) => {
+		if (ctx._at === stops) return !!read()(data, ctx)
+		const errN = ctx.errN
+		if (!read()(data, ctx) && ctx.errN === errN) {
+			return !failsAt(
+				ctx,
+				siteOf(
+					"predicate",
+					description ?? describePredicate({ predicate: read() })
+				),
+				data
+			)
+		}
+		return !ctx.failFast || ctx.errN === errN
+	}
+	checker.description = description
+	return checker
+}) satisfies Fn
+
+const issuesIn = (ctx: any): number => ctx.errN ?? ctx.count
+
+// a structure's issues stop its predicates, and one that transforms is only
+// checked before them, as what they're passed is data as it came
+export const narrowedAfter = ((
+	structure: Checker,
+	narrowed: Checker
+): Checker => {
+	const checker: Checker = (data, ctx: any) => {
+		if (!ctx?._at || ctx._at === stops)
+			return structure(data, ctx) && narrowed(data, ctx)
+		if (structure.t) {
+			if (!(structure.a ? structure.a(data, ctx) : structure(data)))
+				return structure(data, ctx)
+		} else {
+			const issues = issuesIn(ctx)
+			if (!structure(data, ctx)) return false
+			if (issuesIn(ctx) > issues) return true
+		}
+		return narrowed(data, ctx)
+	}
+	checker.t = structure.t
+	checker.description = structure.description
+	return checker
+}) satisfies Fn
+
+// predicates in turn, the first to fail stopping those after it
+export const narrowedByEach = ((checkers: readonly Checker[]): Checker => {
+	const checker: Checker = (data, ctx: any) => {
+		const issues = ctx?._at && issuesIn(ctx)
+		for (const narrowed of checkers) {
+			if (!narrowed(data, ctx)) return false
+			if (ctx?._at && issuesIn(ctx) > issues) return true
+		}
+		return true
+	}
+	checker.description = checkers[0].description
 	return checker
 }) satisfies Fn
 
@@ -252,18 +518,38 @@ export const intersection = ((
 
 // written as value where value is passed, even undefined
 export const optional = ((checker: Checker, ...value: [unknown?]): Checker => {
-	const wrapped: Checker = (data, ctx) => checker(data, ctx)
+	const wrapped = wrapping(checker)
 	wrapped.o = 1
 	wrapped.d = value
-	wrapped.t = checker.t
+	return wrapped
+}) satisfies Fn
+
+// a default that's a function's, or that its value transforms, read where it's
+// written as it may be declared once this has loaded
+export const writtenBy = ((
+	checker: Checker,
+	write: DefaultWrite,
+	replacesUndefined?: 1
+): Checker => {
+	const wrapped = optional(checker)
+	wrapped.w = write
+	wrapped.u = replacesUndefined
+	return wrapped
+}) satisfies Fn
+
+export const replacingUndefined = ((
+	checker: Checker,
+	value: unknown
+): Checker => {
+	const wrapped = optional(checker, value)
+	wrapped.u = 1
 	return wrapped
 }) satisfies Fn
 
 // a required key's checker whose description isn't what the key expects where missing
 export const required = ((checker: Checker, description: string): Checker => {
-	const wrapped: Checker = (data, ctx) => checker(data, ctx)
+	const wrapped = wrapping(checker)
 	wrapped.description = description
-	wrapped.t = checker.t
 	return wrapped
 }) satisfies Fn
 
@@ -279,8 +565,10 @@ const failsValue = (
 	value: unknown
 ): boolean | undefined =>
 	(ctx as FailureContext | undefined)?._at ?
-		(!checker.t || !checker(value)) &&
-		(ctx as FailureContext)._in(checker as CompactApply, data, k)
+		checker.m ? checker.m(ctx, checker, value, k)
+		: checker.t?.m ? checker.t.m(ctx, checker, value, k)
+		: (!checker.t || !(checker.a ? checker.a(value, ctx) : checker(value))) &&
+			(ctx as FailureContext)._in(checker as CompactApply, data, k)
 	:	!checker(value)
 
 // keys checked in declared order; a missing key expects its checker's description
@@ -336,17 +624,51 @@ export const closedProps = ((
 	return checker
 }) satisfies Fn
 
-// what props whose values transform or default write, keeping what they don't
-const writtenProps = (declared: Props, data: any): any => {
+const holdsValue = (checker: Checker, data: any, k: string): boolean =>
+	checker.u ? data[k] !== undefined : k in data
+
+// what a parent's t passes each value through
+interface WrittenValues {
+	transformed(checker: Checker, value: unknown, k: PropertyKey): unknown
+	failed?(): unknown
+	defaulted?(write: DefaultWrite, out: any): void
+}
+
+const transformedValues: WrittenValues = {
+	transformed: ({ t }, value) => t!(value)
+}
+
+const isDefaulted = ({ d, w }: Checker) => !!(w || d?.length)
+
+// what props whose values transform or default write, keeping what they don't:
+// each transform runs first, and a default only where none failed
+const writtenProps = (
+	declared: Props,
+	data: any,
+	values = transformedValues
+): any => {
 	let out = data
+	let defaults = false
 	for (const k in declared) {
-		const holds = k in data
-		const defaulted = declared[k].d
-		const value = holds ? declared[k].t?.(data[k]) : defaulted?.[0]
-		// a default is written even where it's undefined
-		if (holds ? value !== undefined && value !== data[k] : defaulted?.length) {
+		const checker = declared[k]
+		if (!holdsValue(checker, data, k)) {
+			defaults ||= isDefaulted(checker)
+			continue
+		}
+		if (!checker.t) continue
+		const value = values.transformed(checker, data[k], k)
+		if (Object.is(value, data[k])) continue
+		if (out === data) out = copyOf(data)
+		out[k] = value
+	}
+	if (defaults && !values.failed?.()) {
+		for (const k in declared) {
+			const checker = declared[k]
+			if (holdsValue(checker, data, k) || !isDefaulted(checker)) continue
 			if (out === data) out = copyOf(data)
-			out[k] = value
+			// a default is written even where it's undefined
+			if (checker.w) values.defaulted!(checker.w, out)
+			else out[k] = checker.d![0]
 		}
 	}
 	if (out !== data)
@@ -354,27 +676,55 @@ const writtenProps = (declared: Props, data: any): any => {
 	return out
 }
 
-const transformsProps = (declared: Props, checker: Checker): Checker => {
-	checker.t = data => writtenProps(declared, data)
+// a t reading each value through what it's passed
+type WritesValues = (data: any, values?: WrittenValues) => unknown
+
+type FailingValues = (
+	write: WritesValues,
+	held: readonly Checker[]
+) => Transform
+
+const transformsProps = (
+	declared: Props,
+	checker: Checker,
+	fails?: FailingValues
+): Checker => {
+	checker.t =
+		fails ?
+			fails(
+				(data, values) => writtenProps(declared, data, values),
+				Object.values(declared)
+			)
+		:	data => writtenProps(declared, data)
 	return checker
 }
 
-export const transformingProps = ((declared: Props): Checker =>
-	transformsProps(declared, props(declared))) satisfies Fn
+export const transformingProps = ((
+	declared: Props,
+	fails?: FailingValues
+): Checker => transformsProps(declared, props(declared), fails)) satisfies Fn
 
 export const transformingClosedProps = ((
 	declared: Props,
-	description?: string
+	description?: string,
+	fails?: FailingValues
 ): Checker =>
-	transformsProps(declared, closedProps(declared, description))) satisfies Fn
+	transformsProps(
+		declared,
+		closedProps(declared, description),
+		fails
+	)) satisfies Fn
 
 // a result of the keys it declares, in order; an instance is copied where it
 // must be, keeping its prototype
-export const deletingProps = ((declared: Props): Checker => {
+export const deletingProps = ((
+	declared: Props,
+	fails?: FailingValues
+): Checker => {
 	const checker = props(declared)
-	checker.t = data => {
+	const write: WritesValues = (data, values = transformedValues) => {
 		if (Object.getPrototypeOf(data) !== Object.prototype) {
-			let out = writtenProps(declared, data)
+			let out = writtenProps(declared, data, values)
 			for (const k of [
 				...Object.keys(data),
 				...Object.getOwnPropertySymbols(data)
@@ -386,13 +736,28 @@ export const deletingProps = ((declared: Props): Checker => {
 			return out
 		}
 		const result: Record<string, unknown> = {}
+		let defaults = false
 		for (const k in declared) {
-			const { t, d: defaulted } = declared[k]
-			if (k in data) result[k] = t ? t(data[k]) : data[k]
+			const { t, d: defaulted, w } = declared[k]
+			if (holdsValue(declared[k], data, k))
+				result[k] = t ? values.transformed(declared[k], data[k], k) : data[k]
 			else if (defaulted?.length) result[k] = defaulted[0]
+			// holds its place among the keys, as each transform runs before it's written
+			else if (w) {
+				result[k] = undefined
+				defaults = true
+			}
+		}
+		if (defaults && !values.failed!()) {
+			for (const k in declared) {
+				const { w } = declared[k]
+				if (w && !holdsValue(declared[k], data, k)) values.defaulted!(w, result)
+			}
 		}
 		return result
 	}
+	checker.t =
+		fails ? fails(write, Object.values(declared)) : data => write(data)
 	return checker
 }) satisfies Fn
 
@@ -404,23 +769,159 @@ export const elementsOf = ((element: Checker): Checker =>
 		return true
 	}) satisfies Fn
 
-export const transformingElementsOf = ((element: Checker): Checker => {
+export const transformingElementsOf = ((
+	element: Checker,
+	fails?: FailingValues
+): Checker => {
 	const checker = elementsOf(element)
-	checker.t = data => {
+	const write: WritesValues = (data, values = transformedValues) => {
 		let out = data
 		for (let i = 0; i < data.length; i++) {
-			const value = element.t!(data[i])
-			if (value === data[i]) continue
+			const value = values.transformed(element, data[i], i)
+			if (Object.is(value, data[i])) continue
 			if (out === data) out = copyOf(data)
 			out[i] = value
 		}
 		return out
 	}
+	checker.t = fails ? fails(write, [element]) : data => write(data)
+	return checker
+}) satisfies Fn
+
+// a value transforming may fail: what fails goes to ctx, or without one is
+// returned gathered, as arktype's Transform does for a node with no ctx
+export const failingValues: FailingValues = (write, held) => {
+	const t: Transform = (data, ctx) => {
+		const issues = ctx?.errN
+		let gathered: TransformErrors | undefined
+		const gather = (errors: TransformErrors, k?: PropertyKey) => {
+			if (ctx) addMorphErrs(ctx, errors, k)
+			else gathered = errors.addTo(gathered, k)
+		}
+		const failed = () => gathered ?? ctx?.errN > issues
+		const out = write(data, {
+			transformed: ({ t }, value, k) => {
+				let result
+				if (t!.c) {
+					ctx.path.push(k)
+					result = t!(value, ctx)
+					ctx.path.pop()
+				} else result = t!(value)
+				if (!(result instanceof TransformErrors)) return result
+				gather(result, k)
+				return value
+			},
+			failed,
+			defaulted: (write, out) => {
+				const written = write(out, ctx)
+				if (written !== out) gather(written as TransformErrors)
+			}
+		})
+		return failed() ? (gathered ?? data) : out
+	}
+	if (held.some(({ w }) => w?.length === 2)) t.c = 1
+	return holdingMorphs(t, held)
+}
+
+// what holds an alias transforms with a ctx, whichever value transforms
+export const failingWithCtx: FailingValues = (write, held) => {
+	const t = failingValues(write, held)
+	t.c = 1
+	return t
+}
+
+// only transforming a value Apply finds valid finds its morphs' errors
+const applyMorphAt: ApplyAt = (ctx, checker, value, k) => {
+	ctx.path.push(k)
+	const passes =
+		(
+			transformsValid(ctx) &&
+			(checker.a ? checker.a(value, ctx) : checker(value))
+		) ?
+			(transformedInApply(ctx, transformedBy(checker, value, ctx)), true)
+		:	checker(value, ctx)
+	ctx.path.pop()
+	return !passes
+}
+
+/** a step of a morph: what it returns of what the step before returned */
+interface MorphStep {
+	(data: any, ctx?: any): unknown
+	/** where it pipes to a node, so reports to a ctx */
+	p?: 1
+}
+
+// a morph's step piping to a node, as arktype reads it
+export const piped = ((checker: Checker): MorphStep => {
+	const node = {
+		allows: checker,
+		allowsCtx: !!checker.a,
+		tApply: checker,
+		tTransform: (data: unknown, ctx: unknown) =>
+			transformedBy(checker, data, ctx)
+	} as never
+	const pipe =
+		checker.t ? pipeTransformed
+		: checker.a ? pipeChecked
+		: pipeApplied
+	const step: MorphStep = (data, ctx) => pipe(ctx, node, data)
+	step.p = 1
+	return step
+}) satisfies Fn
+
+// its head decides what's allowed, each step taking what the last returned
+export const morphing = ((
+	head: Checker | 0,
+	steps: readonly MorphStep[]
+): Checker => {
+	const checker: Checker = (data, ctx) => !head || head(data, ctx)
+	if (head) checker.description = head.description
+	const t: Transform = (data, ctx) => {
+		let result = data
+		if (head && head.t) {
+			const issues = ctx?.errN
+			result = transformedBy(head, data, ctx)
+			if (result instanceof TransformErrors) {
+				if (!ctx) return result
+				addMorphErrs(ctx, result)
+				return data
+			}
+			if (ctx?.errN > issues) return data
+		}
+		for (const step of steps) {
+			const morphed: any = step(result, ctx)
+			if (
+				step.p ?
+					ctx._errors !== undefined && morphed === ctx._errors
+				:	morphed instanceof ArkErrors
+			) {
+				if (!ctx) return new TransformErrors(morphed, result)
+				addErrors(ctx, morphed)
+				return data
+			}
+			result = morphed
+		}
+		return result
+	}
+	t.m = applyMorphAt
+	if (steps.some(step => step.p) || (head && head.t?.c)) t.c = 1
+	checker.t = t
 	return checker
 }) satisfies Fn
 
 // read as a node's Transform, unless it's unread
 export const transformOf = ((checker: Checker) => checker.t!) satisfies Fn
+
+// a union transforms by the branch data takes
+const transformingBranches = (
+	checker: Checker,
+	branches: readonly (Checker | 1)[],
+	t: Transform
+): Checker => {
+	if (branches.some(branch => (branch as Checker).t))
+		checker.t = holdingMorphs(t, branches as Checker[])
+	return checker
+}
 
 // a union of values compared by identity
 export const units = ((
@@ -449,9 +950,9 @@ export const domains = ((
 			:	!failsAt(ctx as never, site, data)
 	}
 	checker.description = description
-	if (Object.values(cases).some(branch => (branch as Checker).t))
-		checker.t = data => (caseOf(data) as Checker).t?.(data) ?? data
-	return checker
+	return transformingBranches(checker, Object.values(cases), (data, ctx) =>
+		transformedBy(caseOf(data) as Checker, data, ctx)
+	)
 }) satisfies Fn
 
 export const nullableDescriptionOf = (domain: string): string =>
@@ -486,9 +987,9 @@ export const discriminate = ((
 		)
 	}
 	checker.description = missed.description
-	if (Object.values(cases).some(branch => (branch as Checker).t))
-		checker.t = data => (byValue.get(data[key]) as Checker).t?.(data) ?? data
-	return checker
+	return transformingBranches(checker, Object.values(cases), (data, ctx) =>
+		transformedBy(byValue.get(data[key]) as Checker, data, ctx)
+	)
 }) satisfies Fn
 
 // the branches lacking the key check data holding no case
@@ -512,11 +1013,12 @@ export const discriminateOr = ((
 					:	!failsAt(ctx as never, missed, data))
 	}
 	checker.description = missed.description
-	if ([...byValue.values(), otherwise].some(branch => (branch as Checker).t)) {
-		checker.t = data =>
-			((byValue.get(data[key]) ?? otherwise) as Checker).t?.(data) ?? data
-	}
-	return checker
+	return transformingBranches(
+		checker,
+		[...byValue.values(), otherwise],
+		(data, ctx) =>
+			transformedBy((byValue.get(data[key]) ?? otherwise) as Checker, data, ctx)
+	)
 }) satisfies Fn
 
 // branches tried in turn, failing as one issue of each's first, by what writes

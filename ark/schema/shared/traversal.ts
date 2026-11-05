@@ -621,6 +621,12 @@ export const allowsInBranch = (
 		allowsInBranchBy(ctx, node.tAllows, data, node)
 	:	node.allows(data)
 
+// what a callback that only returns its reports is passed where they go unread
+export const silentCtx = {
+	mustBe: (): false => false,
+	reject: (): false => false
+}
+
 // takes Allows, since a precompiled validator has no node
 export const allowsInBranchBy = (
 	ctx: InternalTraversal,

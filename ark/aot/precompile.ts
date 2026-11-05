@@ -24,6 +24,7 @@ import {
 	ParseError,
 	printable,
 	readsOnlyData,
+	returnsReports,
 	throwError,
 	throwParseError,
 	type Fn
@@ -1291,6 +1292,8 @@ export class Precompiler {
 				nameOf(after[i]) === nameOf(before[i]) &&
 				readsOnlyData.has(after[i] as Fn) ===
 					readsOnlyData.has(before[i] as Fn) &&
+				returnsReports.has(after[i] as Fn) ===
+					returnsReports.has(before[i] as Fn) &&
 				sites.every(site =>
 					site.references.every(
 						reference => reference.value !== after[i] || reference.isOneValue
@@ -3707,7 +3710,11 @@ export class Precompiler {
 		for (const [i, param] of (factory?.params ?? []).entries()) {
 			if (param.kind !== "function") continue
 			callbacks.push(i)
-			if (readsOnlyData.has(param.value as Fn)) proved.push(i)
+			if (
+				readsOnlyData.has(param.value as Fn) ||
+				returnsReports.has(param.value as Fn)
+			)
+				proved.push(i)
 		}
 		const parameterSpans = [
 			...spans.map((span, i): [Span, number] => [span, i]),

@@ -529,21 +529,29 @@ class CombinatorCompiler extends forSize(UnifiedCompiler) {
 	readonly shapes: boolean = false
 
 	override unifies(node: BaseNode): boolean {
-		return combines(node) || unifies(node)
+		return (combines(node) && !node.allowsCtx) || unifies(node)
 	}
 
 	override declareTraversals(node: BaseNode): string[] | undefined {
 		const source = writeCombinator(this, node)
 		if (source === undefined) return
 		const allows = this.refToId(node.id, { kind: "Allows" })
-		this.link.members.push([allows, source])
-		if (!node.tfs) return [allows, allows]
+		const apply =
+			node.allowsCtx ? this.refToId(node.id, { kind: "Apply" }) : allows
+		this.link.members.push([apply, source])
+		if (node.allowsCtx) {
+			this.link.members.push([
+				allows,
+				`/* @__PURE__ */ runtime.allowsReadingCtx(${apply})`
+			])
+		}
+		if (!node.tfs) return [allows, apply]
 		const transform = this.refToId(node.id, { kind: "Transform" })
 		this.link.members.push([
 			transform,
-			`/* @__PURE__ */ runtime.transformOf(${allows})`
+			`/* @__PURE__ */ runtime.transformOf(${apply})`
 		])
-		return [allows, allows, transform]
+		return [allows, apply, transform]
 	}
 }
 

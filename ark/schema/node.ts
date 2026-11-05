@@ -33,7 +33,8 @@ import {
 	type dict,
 	type listable,
 	type mutable,
-	type requireKeys
+	type requireKeys,
+	returnsReports
 } from "@ark/util"
 import type { ResolvedConfig } from "./config.ts"
 import type {
@@ -475,7 +476,11 @@ export abstract class BaseNode<
 			// if a predicate accepts exactly one arg, we can safely skip passing context
 			// technically, a predicate could be written like `(data, ...[ctx]) => ctx.mustBe("malicious")`
 			// that would break here, but it feels like a pathological case and is better to let people optimize
-			if (arityOf(this.inner.predicate) !== 1) bits |= flagBits.ctxPred
+			if (
+				arityOf(this.inner.predicate) !== 1 &&
+				!returnsReports.has(this.inner.predicate)
+			)
+				bits |= flagBits.ctxPred
 		} else if (this.is("alias"))
 			bits = flagBits.isCyclic | flagBits.hasAlias | flagBits.topAlias
 

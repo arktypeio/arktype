@@ -71,6 +71,7 @@ export {
 	ArkErrors,
 	arrayIndexMatcher,
 	callMorph,
+	silentCtx,
 	computeDefaultValueMorph,
 	configure,
 	configuredFallbackOf,

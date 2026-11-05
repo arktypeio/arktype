@@ -1,4 +1,4 @@
-import { baseNameOf } from "@ark/util"
+import { baseNameOf, returnsReports } from "@ark/util"
 import { BaseConstraint } from "./constraint.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
@@ -10,6 +10,7 @@ import type {
 import { implementNode, type nodeImplementationOf } from "./shared/implement.ts"
 import {
 	describePredicate,
+	silentCtx,
 	type AliasDepth,
 	type InternalTraversal,
 	type Traversal
@@ -88,7 +89,11 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	compile(js: NodeCompiler): void {
 		const condition = `${js.ref(this.predicate)}(data, ctx)`
 		if (js.trav === "Allows") {
-			js.return(condition)
+			js.return(
+				returnsReports.has(this.predicate) ?
+					`${js.ref(this.predicate)}(data, ${js.ref(silentCtx)})`
+				:	condition
+			)
 			return
 		}
 		if (js.addsNoIssues?.(this.predicate)) {
