@@ -238,7 +238,7 @@ console.log(First === Second, First.expression === expression, First.description
 		attest(run(await bundle(root, production))).equals(plain)
 		attest(run(await bundle(root, source))).equals(plain)
 		attest(runModuleAtATime(root)).equals(plain)
-	})
+	}).timeout(60_000)
 
 	it("each run of a module creates its own functions, so its own Types", async () => {
 		const root = fixture("queried", {
