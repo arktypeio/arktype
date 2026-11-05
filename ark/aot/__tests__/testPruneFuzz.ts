@@ -4,7 +4,7 @@
 // run the same inputs through each read. ARK_PRUNE_FUZZ=<count>[:<seed>]
 // [ARK_PRUNE_FUZZ_BUNDLERS=esbuild,vite,webpack,rspack]
 // [ARK_PRUNE_FUZZ_FAILURES=<dir>]
-// [ARK_PRUNE_FUZZ_DEBUG=1] pnpm testPruneFuzz
+// [ARK_FUZZ_SIDE_EFFECTS_FREE=1] [ARK_PRUNE_FUZZ_DEBUG=1] pnpm testPruneFuzz
 import { fromHere } from "@ark/fs"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { rspack } from "@rspack/core"
@@ -662,6 +662,11 @@ const helperSources: Record<string, string> = {
 const specifierOfModule = (app: App, m: number) =>
 	app.validators.find(v => v.module === m)!.specifier
 
+// a program saying its modules are free of side effects, as a library's package
+// does, which has webpack defer what they re-export
+const sideEffects =
+	process.env.ARK_FUZZ_SIDE_EFFECTS_FREE === "1" ? { sideEffects: false } : {}
+
 const filesOf = (app: App): Record<string, string> => {
 	const files: Record<string, string> = {}
 	const modules = new Set(app.validators.map(v => v.module))
@@ -673,6 +678,7 @@ const filesOf = (app: App): Record<string, string> => {
 				name: dependencyPackage,
 				version: "1.0.0",
 				type: "module",
+				...sideEffects,
 				exports: "./index.js",
 				...(app.dependency === "optIn" && { ark: { aot: true } })
 			})
@@ -793,6 +799,7 @@ const filesOf = (app: App): Record<string, string> => {
 	files["package.json"] = JSON.stringify({
 		name: "prune-fuzz-app",
 		type: "module",
+		...sideEffects,
 		private: true,
 		dependencies: {
 			arktype: "*",

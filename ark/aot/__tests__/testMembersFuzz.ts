@@ -5,7 +5,8 @@
 // reads it every way a program can. The oracle runs the app's source on
 // arktype. ARK_MEMBERS_FUZZ=<count>[:<seed>[:<path>]]
 // [ARK_MEMBERS_FUZZ_HOSTS=esbuild,vite,modules,webpack,rspack,node,dev,emit]
-// [ARK_MEMBERS_FUZZ_FAILURES=<dir>] [ARK_PRECOMPILE_OPTIONS=<json>] pnpm testMembersFuzz
+// [ARK_MEMBERS_FUZZ_FAILURES=<dir>] [ARK_PRECOMPILE_OPTIONS=<json>]
+// [ARK_FUZZ_SIDE_EFFECTS_FREE=1] pnpm testMembersFuzz
 import { fromHere } from "@ark/fs"
 import { Precompiler } from "@ark/aot"
 import { scanProgram } from "@ark/aot/internal/scan.ts"
@@ -610,12 +611,18 @@ const hopsOf = (reader: Reader): HopName[] => {
 	return result
 }
 
+// a program saying its modules are free of side effects, as a library's package
+// does, which has webpack defer what they re-export
+const sideEffects =
+	process.env.ARK_FUZZ_SIDE_EFFECTS_FREE === "1" ? { sideEffects: false } : {}
+
 const filesOf = (app: App): Record<string, string> => {
 	const files: Record<string, string> = {}
 	if (app.packaged) {
 		files[`node_modules/${packageName}/package.json`] = JSON.stringify({
 			name: packageName,
 			type: "module",
+			...sideEffects,
 			exports: "./index.js",
 			ark: { aot: true }
 		})
@@ -696,6 +703,7 @@ const filesOf = (app: App): Record<string, string> => {
 	files["package.json"] = JSON.stringify({
 		name: "members-fuzz-app",
 		type: "module",
+		...sideEffects,
 		private: true,
 		dependencies: {
 			arktype: "*",
