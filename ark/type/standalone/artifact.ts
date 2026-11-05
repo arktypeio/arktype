@@ -1698,8 +1698,11 @@ return namespace`
 		const dropsCtx = this.baking.shortest || this.readsOnlyAllows
 		const declarations = called.flatMap(([name, source]) => {
 			if (forwarded.has(name)) return []
-			// plain params; size and writing traversals drop a trailing unread ctx
-			const arrow = source.replace(
+			// plain params; size and writing traversals drop a trailing unread ctx.
+			// Most of a big program's traversals never run, and V8 parses an arrow
+			// nested in a function in full at load, a function expression only
+			// once it's called, unless parenthesized
+			const written = source.replace(
 				/^function\(([^)]*)\) {/,
 				(signature, params: string) => {
 					const read =
@@ -1709,14 +1712,13 @@ return namespace`
 						) ?
 							params.replace(/, ctx$/, "")
 						:	params
-					return `${this.baking.defers ? `function (${read}) {` : `(${read}) => {`}${
+					return `${this.baking.shortest ? `(${read}) => {` : `function (${read}) {`}${
 						// a writing traversal is strict even where a bundle's format isn't
 						isWriting(name) ? `\n"use strict"\n` : ""
 					}`
 				}
 			)
-			const read = this.readsCells(arrow)
-			return `const ${name} = ${/(Apply|Copy)$/.test(name) ? read : this.compiledOnLoad(read)}`
+			return `const ${name} = ${this.readsCells(written)}`
 		})
 		for (const [name, target] of forwarded)
 			declarations.push(`const ${name} = ${target}`)
@@ -1736,13 +1738,15 @@ return namespace`
 			:	fn
 	}
 
-	compiledOnLoad(fn: string): string {
-		return this.baking.shortest || this.baking.defers ? fn : `(${fn})`
-	}
-
 	// a module's only validator compiles as it loads, others at their first call
 	validatorOnLoad(fn: string): string {
-		return this.baking.compilesValidators ? this.compiledOnLoad(fn) : fn
+		return (
+				this.baking.compilesValidators &&
+					!this.baking.shortest &&
+					!this.baking.defers
+			) ?
+				`(${fn})`
+			:	fn
 	}
 
 	traversalsOf(root: BaseRoot, unit: RootUnit): string[] {
