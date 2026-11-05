@@ -93,7 +93,7 @@ export type entriesOf<o extends object> = entryOf<o>[]
  * of keys, e.g. those defined internally as configs
  */
 export const entriesOf: <o extends object>(o: o) => entryOf<o>[] =
-	Object.entries as never
+	/* @__PURE__ */ (() => Object.entries as never)()
 
 export type Entry<
 	key extends PropertyKey = PropertyKey,

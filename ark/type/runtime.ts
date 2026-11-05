@@ -165,10 +165,10 @@ export type IntrospectionMember = (typeof introspectionMembers)[number]
 export const precompiledForArktype_2_2_9 = true
 
 // captured at load so a program can't replace them; each alone to tree-shake
-export const assign = Object.assign
-export const is = Object.is
-export const freeze = Object.freeze
-export const setPrototypeOf = Object.setPrototypeOf
+export const assign = /* @__PURE__ */ (() => Object.assign)()
+export const is = /* @__PURE__ */ (() => Object.is)()
+export const freeze = /* @__PURE__ */ (() => Object.freeze)()
+export const setPrototypeOf = /* @__PURE__ */ (() => Object.setPrototypeOf)()
 
 /**
  * #### a Type precompiled to validate without arktype, frozen with what it holds
@@ -231,7 +231,8 @@ export const lacks = (member: IntrospectionMember): Error =>
 		`${member} isn't baked into this validator, as the build saw no code read it. Set members["${member}"] true in the precompile options.`
 	)
 
-const getOwnPropertyDescriptors = Object.getOwnPropertyDescriptors
+const getOwnPropertyDescriptors = /* @__PURE__ */ (() =>
+	Object.getOwnPropertyDescriptors)()
 
 // as its own, where the class has only a getter
 export const own = <t extends object>(validator: t, attributes: object): t =>
@@ -652,7 +653,7 @@ export const problemSiteOf = ((
 
 type Writer = string | Fn | undefined
 
-const defineProperty = Object.defineProperty
+const defineProperty = /* @__PURE__ */ (() => Object.defineProperty)()
 
 // written once first read; keeps is 1 if the issue takes expected, 2 if problem
 const writeIssue = (
