@@ -28,6 +28,7 @@ import { writesInPlace } from "@ark/schema/mutatesInput"
 import {
 	appendStringifiedKey,
 	arkKindOf,
+	cached,
 	constructorNameOf,
 	flatMorph,
 	functionNameOf,
@@ -288,13 +289,32 @@ interface SharedUnit extends WritingScope {
 
 const writesByBaking = new WeakMap<Baking, Map<string, SharedWrite>>()
 
-// arktype compares what a node's meta holds by identity, its key by content
+// arktype compares what a node's meta holds by identity, its key by content. A
+// keyword's holds one object, wherever a Type reads it
 const holdsObjectInMeta = ({ meta }: BaseNode): boolean =>
 	Object.entries(meta).some(([k, v]) =>
 		(k === "examples" ? (v as unknown[]) : [v]).some(
-			value => typeof value === "object" && value !== null
+			value =>
+				typeof value === "object" &&
+				value !== null &&
+				!keywordMetaObjects().has(value)
 		)
 	)
+
+const keywordMetaObjects = cached(() => {
+	const objects = new Set<unknown>()
+	const read = (module: object) => {
+		for (const value of Object.values(module)) {
+			if (hasArkKind(value, "module")) read(value as object)
+			else if (hasArkKind(value, "root")) {
+				for (const node of value.references)
+					for (const held of Object.values(node.meta)) objects.add(held)
+			}
+		}
+	}
+	read($ark.ambient as never)
+	return objects
+})
 
 // the options writing a shared unit reads: not those writing an artifact's own
 // validators, nor compiledInputs, which picks the unit itself
@@ -1126,7 +1146,9 @@ export class StandaloneArtifact {
 		return hashOf(
 			JSON.stringify([
 				named,
-				bakingKeyOf(this.baking),
+				// each module picks what's smallest for what it holds, and a
+				// validator behaves alike however it's written
+				bakingKeyOf({ ...this.baking, combines: false, shapes: false }),
 				[...form.members].sort(),
 				form.isTemplate,
 				called,
