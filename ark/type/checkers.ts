@@ -72,14 +72,11 @@ export const narrowedBy = ((
 // a callback a build proved reads only data, written in place with no name
 export const narrowed = ((
 	narrow: (data: any) => boolean,
-	description?: string
+	description = "valid according to an anonymous predicate"
 ): Checker => {
-	const site = siteOf(
-		"predicate",
-		description ?? "valid according to an anonymous predicate"
-	)
-	const checker: Checker = (data, ctx) =>
-		!!narrow(data) || !failsAt(ctx as never, site, data)
+	const checker = ((data, ctx) =>
+		!!narrow(data) || !failsAt(ctx as never, checker, data)) as Check
+	checker.code = "predicate"
 	checker.description = description
 	return checker
 }) satisfies Fn
