@@ -713,4 +713,129 @@ run(() => Deep.allows({ a: { b: { c: { d: { e: "x" } } } } }))
 		)
 		attest(behaviorOf(js)).equals("false 1\n")
 	})
+
+	describe("a shape of many keys that may be absent", () => {
+		const optionalKeys = Array.from(
+			{ length: 48 },
+			(_, i) => `"k${i}?": "string"`
+		).join(", ")
+
+		const app = (body: string) => `import { type } from "arktype"
+
+const show = (out: unknown) =>
+	console.log(
+		out instanceof type.errors ?
+			out.summary.replace(/ \\(was .*?\\)/g, "")
+		:	[JSON.stringify(out), Object(out).constructor?.name, Object.keys(Object(out))]
+	)
+${body}
+${repaying}
+`
+
+		const itWritesAsArktype = (name: string, body: string) =>
+			it(name, async () => {
+				const root = fixture(`sited-${name.replace(/\W+/g, "-")}`, app(body))
+				const js = await bundle(root, smallest)
+				attest(js.includes(" sited(")).equals(true)
+				attest(behaviorOf(js)).equals(runPlain(root))
+			})
+
+		itWritesAsArktype(
+			"deletes keys it doesn't declare, the rest in its order",
+			`const T = type({ "+": "delete", a: "string", ${optionalKeys}, z: "number" })
+show(T({ z: 1, k3: "x", a: "a", other: 1 }))
+show(T({ a: "a", z: 1, k1: undefined }))
+show(T({ a: 1, k47: 2 }))
+show(T(1))
+console.log(T.allows({ a: "a", z: 1, k47: 1 }), T.allows({ a: "a", z: 1, k47: "x" }), T.allows({ a: "a" }))
+class Held { a = "a"; z = 1; k2 = "x"; other = 1 }
+show(T(new Held()))
+show(T(Object.create({ a: "a", z: 1, k4: "inherited" })))
+show(T(Object.defineProperties({}, { a: { value: "a" }, z: { value: 1 }, k5: { value: "hidden" } })))`
+		)
+
+		const parsing = `const Bad = type("number")
+const parsed = type("string").pipe(s => (s === "bad" ? Bad(s) : s.length))`
+
+		itWritesAsArktype(
+			"writes each default and transform where it deletes",
+			`${parsing}
+const T = type({
+	"+": "delete",
+	parsed,
+	"maybeParsed?": parsed,
+	literal: "number = 1",
+	byFunction: type("string[]").default(() => ["x"]),
+	nested: { "+": "delete", a: "string" },
+	${optionalKeys}
+})
+show(T({ parsed: "1", other: 1, nested: { a: "a", b: 1 } }))
+show(T({ parsed: "1", maybeParsed: "22", literal: 3, byFunction: [], k0: "x", nested: { a: "a" } }))
+show(T({ parsed: "bad", nested: { a: "a" } }))
+show(T({ parsed: "bad", maybeParsed: "bad", nested: { a: "a" } }))
+show(T({ parsed: "1", nested: {} }))
+const Literal = type({ "+": "delete", literal: "number = 1", "nested?": { "+": "delete", a: "string" }, ${optionalKeys} })
+show(Literal({ other: 1, nested: { a: "a", b: 1 }, k1: "x" }))
+show(Literal({ literal: 2 }))
+class Held { parsed = "1"; other = 1; nested = { a: "a", b: 1 } }
+const held = T(new Held())
+show(held)`
+		)
+
+		itWritesAsArktype(
+			"only transforming what can change without deleting",
+			`${parsing}
+const Parsing = type({ parsed, "maybeParsed?": parsed, byFunction: type("string[]").default(() => ["x"]), ${optionalKeys} })
+const Literal = type({ literal: "number = 1", ${optionalKeys} })
+const data = { parsed: "1", other: 1, k3: "x" }
+show(Parsing(data))
+show(Parsing({ parsed: "bad" }))
+const hidden = Object.defineProperty({ other: 1 }, "k3", { value: "hidden" })
+const out: any = Literal(hidden)
+show(out)
+console.log(out.k3, out === hidden)
+const full = { literal: 2, k1: "x" }
+console.log(Literal(full) === full)`
+		)
+
+		itWritesAsArktype(
+			"rejects keys it doesn't declare",
+			`const T = type({ "+": "reject", a: "string", ${optionalKeys} })
+show(T({ a: "a", k1: "x" }))
+show(T({ a: "a", other: 1 }))
+console.log(T.allows({ a: "a", k1: "x" }), T.allows({ a: "a", other: 1 }), T.allows(Object.create({ other: 1, a: "a" })))`
+		)
+
+		itWritesAsArktype(
+			"finds what's present as arktype does, reading no further than a failure",
+			`const T = type({ a: "string", u: "string | undefined", "a-b?": "number", "class?": "number", ${optionalKeys} })
+const present = { a: "a", u: undefined }
+console.log(T.allows(present), T.allows({ a: "a" }), T.allows({ a: "a", u: "u", "a-b": 1, class: 1 }), T.allows({ a: "a", u: "u", "a-b": "x" }), T.allows({ a: "a", u: "u", class: "x" }))
+show(T({ a: "a" }))
+console.log(T.allows(Object.create({ ...present, k1: 1 })), T.allows({ ...present, k1: undefined }))
+console.log(T.allows(Object.defineProperty({ ...present }, "k2", { value: 1 })))
+console.log(T.allows(new Proxy({ ...present }, { has: (data, k) => k === "k3" || k in data, get: (data, k) => k === "k3" ? 1 : (data as any)[k] })))
+console.log(T.allows({ a: 1, u: "u", get k0(): string { throw new Error("read past a failure") } }))`
+		)
+
+		it("writes a default replacing undefined where config says it does", async () => {
+			const root = writeFixture(
+				{
+					"config.ts": `import { configure } from "arktype/config"
+configure({ exactOptionalPropertyTypes: false })
+`,
+					"main.ts": `import "./config.ts"
+${app(`const T = type({ "+": "delete", literal: "number = 1", byFunction: type("string[]").default(() => ["x"]), "maybe?": "string", ${optionalKeys} })
+show(T({}))
+show(T({ literal: undefined, byFunction: undefined, maybe: undefined, k1: undefined }))
+show(T({ literal: 2, byFunction: [], maybe: "x", k1: "y" }))
+show(T({ literal: "x" }))`)}`
+				},
+				fromHere("temp", "checkers", "sited-config")
+			)
+			const js = await bundle(root, { ...smallest, config: "config.ts" })
+			attest(js.includes(" sited(")).equals(true)
+			attest(behaviorOf(js)).equals(runPlain(root))
+		})
+	})
 })

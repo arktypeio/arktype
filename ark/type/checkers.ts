@@ -855,6 +855,78 @@ export const failingDeletingProps = ((
 	return checker
 }) satisfies Fn
 
+type SitedWrite = (
+	data: any,
+	checkers: readonly Checker[],
+	value: (checker: Checker, value: unknown, k: string) => unknown,
+	defaults: number[]
+) => any
+
+// a shape of many keys that may be absent, reading each at a site of its own, as
+// one site reading them all finds each absent key by a generic lookup. Only what
+// looks for issues in data that failed still takes that site
+export const sited = ((
+	allows: (data: any, checkers: readonly Checker[]) => boolean,
+	declared: Props,
+	// writes the keys it declares, where it deletes those it doesn't
+	write: SitedWrite | 0,
+	// 1 where it transforms, 2 where a transform can fail
+	writes: 0 | 1 | 2,
+	removed?: string,
+	withCtx?: 1
+): Checker => {
+	const checkers = Object.values(declared)
+	const walks = removed ? closedProps(declared, removed) : props(declared)
+	const checker: Checker = (data: any, ctx: any) => {
+		if (ctx?._at || !objectCheck.test(data)) return walks(data, ctx)
+		if (!allows(data, checkers)) return false
+		if (removed) {
+			for (const k in data)
+				if (!hasOwn(declared, k) && hasOwn(data, k)) return false
+		}
+		return true
+	}
+	checker.description = objectCheck.description
+	// a key that can't change is only read where data's copied
+	const changing: Props = {}
+	for (const k in declared)
+		if (declared[k].t || isDefaulted(declared[k])) changing[k] = declared[k]
+	const copied = (data: any, values?: WrittenValues) => {
+		const out =
+			values ?
+				writtenValues(changing, data, values)
+			:	writtenProps(changing, data)
+		if (out !== data)
+			for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
+		return out
+	}
+	const written =
+		write ?
+			(data: any, values?: WrittenValues) => {
+				if (Object.getPrototypeOf(data) !== Object.prototype)
+					return deletes(declared, data, copied(data, values))
+				const defaults: number[] = []
+				const result = write(
+					data,
+					checkers,
+					values ?
+						(checker, value, k) =>
+							checker.t ? values.transformed(checker, value, k) : value
+					:	({ t }, value) => (t ? t(value) : value),
+					defaults
+				)
+				if (defaults.length && !values!.failed())
+					for (const i of defaults) values!.defaulted(checkers[i].w!, result)
+				return result
+			}
+		:	copied
+	checker.t =
+		writes === 2 ? failingValues(written, checkers, withCtx)
+		: writes ? data => written(data)
+		: undefined
+	return checker
+}) satisfies Fn
+
 // an array's elements, each checked at its index
 export const elementsOf = ((element: Checker): Checker =>
 	(data: any, ctx) => {

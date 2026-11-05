@@ -552,6 +552,71 @@ const writeKey = (key: string): string =>
 
 const writeObject = (entries: string[]): string => `{ ${entries.join(", ")} }`
 
+// a shape with this many keys that may be absent reads each at a site of its own,
+// as a walker's one site costs it far more than it does a compiled shape
+const minSitedKeys = 48
+
+// whether a node's checker fails undefined, calling nothing to find out
+const failsUndefined = (node: BaseRoot): boolean =>
+	node.is("domain") || node.is("proto") ? true
+	: node.is("unit") ? node.unit !== undefined
+	: node.is("intersection") ? !!node.basis && failsUndefined(node.basis)
+	: node.is("union") ? node.branches.every(failsUndefined)
+	: node.is("morph") ? !!node.head && failsUndefined(node.head)
+	: false
+
+const writeAccess = (key: string): string => {
+	const written = writeKey(key)
+	return written === key ? `.${key}` : `[${written}]`
+}
+
+// false where a key's check fails, stopping at the first as a walker does
+const writeSitedAllows = (structure: StructureNode, refs: string[]): string =>
+	`(data, checkers) => !(${structure.inOrder
+		.map((prop, i) => {
+			const has = `${JSON.stringify(prop.key)} in data`
+			// keys holding the same check call the same checker
+			const checker =
+				/^runtime\.\w+$/.test(refs[i]) ?
+					refs[i]
+				:	`checkers[${refs.indexOf(refs[i])}]`
+			const fails = `!${checker}(data${writeAccess(prop.key as string)})`
+			return (
+				prop.is("optional") ? `(${has} && ${fails})`
+				: failsUndefined(prop.value) ? fails
+				: `(!(${has}) || ${fails})`
+			)
+		})
+		.join(" || ")})`
+
+// the keys data holds in arktype's order; a default written by a function holds
+// its key's place until each transform has run
+const writeSitedWrite = (
+	js: CombinatorCompiler,
+	structure: StructureNode
+): string =>
+	`(data, checkers, value, defaults) => { const result = {}; ${structure.inOrder
+		.map((prop, i) => {
+			const access = writeAccess(prop.key as string)
+			const read = `data${access}`
+			const held =
+				prop.value.tfs ?
+					`value(checkers[${i}], ${read}, ${JSON.stringify(prop.key)})`
+				:	read
+			if (!prop.is("optional")) return `result${access} = ${held};`
+			const holds =
+				prop.defaultsUndefined ?
+					`${read} !== void 0`
+				:	`${JSON.stringify(prop.key)} in data`
+			return (
+				!prop.hasDef() ? `if (${holds}) result${access} = ${held};`
+				: isLiteralDefault(prop) ?
+					`result${access} = ${holds} ? ${held} : ${writeLiteral(js, prop.default)};`
+				:	`if (${holds}) result${access} = ${held}; else { result${access} = void 0; defaults.push(${i}); }`
+			)
+		})
+		.join(" ")} return result; }`
+
 const writeStructure = (
 	js: CombinatorCompiler,
 	structure: StructureNode
@@ -567,9 +632,10 @@ const writeStructure = (
 			element.tfs && element.hasAlias ? "1" : undefined
 		)
 	}
+	const refs = structure.inOrder.map(prop => ref(prop.value))
 	// in arktype's order; a required key expects its value's brief, which its checker holds
-	const entries = structure.inOrder.map(prop => {
-		const checker = ref(prop.value)
+	const entries = structure.inOrder.map((prop, i) => {
+		const checker = refs[i]
 		const missing = missingDescriptionOf(issueSiteOf(prop.failSite))
 		return `${writeKey(prop.key as string)}: ${
 			prop.is("optional") ?
@@ -616,6 +682,22 @@ const writeStructure = (
 		structure.hasAlias ||
 		structure.hasMorph ||
 		structure.props.some(writesByValues)
+	if ((structure.optional?.length ?? 0) >= minSitedKeys) {
+		const deletes = structure.handlesUndeclared === "delete"
+		return writeCall(
+			"sited",
+			writeSitedAllows(structure, refs),
+			declared,
+			deletes ? writeSitedWrite(js, structure) : "0",
+			!deletes && !structure.tfs ? "0"
+			: failing ? "2"
+			: "1",
+			structure.handlesUndeclared && !deletes ?
+				JSON.stringify(removedSiteOf(structure)!.description)
+			:	undefined,
+			withCtx
+		)
+	}
 	if (structure.handlesUndeclared === "delete") {
 		return writeCall(
 			failing ? "failingDeletingProps" : "deletingProps",
