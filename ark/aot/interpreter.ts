@@ -46,7 +46,7 @@ import {
 	type PureBuiltin
 } from "./builtins.ts"
 import { DynamicValue, type DynamicCode } from "./dynamic.ts"
-import { declaredNameOf, holeNameOf } from "./holeNames.ts"
+import { declaredNameOf, holeNameOf, namedPlacesOf } from "./holeNames.ts"
 import {
 	bindingOfFunction,
 	contains,
@@ -374,6 +374,7 @@ export class Interpreter {
 	sourcesBySymbol = new Map<symbol, [Node, SourceModule]>()
 	// values reused by every evaluation of the expression creating them
 	private standInsByNode = new Map<Node, object>()
+	private namedPlaces = new WeakMap<SourceModule, Map<Node, number>>()
 	private symbolsByNode = new Map<Node, symbol>()
 	private configurationsByNode = new Map<Node, unknown>()
 	private valuesByBinding = new Map<Binding, Evaluated | "evaluating">()
@@ -2453,7 +2454,31 @@ export class Interpreter {
 	private holeNameOf(node: Node, module: SourceModule, name?: string): string {
 		return this.opts.runtime === "arktype" ?
 				""
-			:	holeNameOf(name, module.path, node.start)
+			:	holeNameOf(name, module.path, this.placeAmongNamed(node, module))
+	}
+
+	// where a function is among those its module declares with its name
+	private placeAmongNamed(node: Node, module: SourceModule): number {
+		let places = this.namedPlaces.get(module)
+		if (!places) {
+			const functions: Node[] = []
+			walk(module.program, child => {
+				if (
+					isFunctionNode(child) ||
+					child.type === "ClassDeclaration" ||
+					child.type === "ClassExpression"
+				)
+					functions.push(child)
+				return true
+			})
+			places = namedPlacesOf(
+				functions,
+				f => f.start,
+				f => declaredNameOf(f as never)
+			)
+			this.namedPlaces.set(module, places)
+		}
+		return places.get(node)!
 	}
 
 	private functionStandIn(closure: Closure, node: Node): object {

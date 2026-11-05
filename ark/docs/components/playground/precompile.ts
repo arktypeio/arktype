@@ -1,4 +1,8 @@
-import { declaredNameOf, holeNameOf } from "@ark/aot/internal/holeNames.ts"
+import {
+	declaredNameOf,
+	holeNameOf,
+	namedPlacesOf
+} from "@ark/aot/internal/holeNames.ts"
 import { proveFunction } from "@ark/aot/internal/proofs.ts"
 import { combinesChecks } from "@ark/aot/internal/smaller.ts"
 import { arkKindOf, printable, type Fn } from "@ark/util"
@@ -31,6 +35,8 @@ interface EstreeNode {
 interface FunctionSite {
 	node: EstreeNode
 	parent: EstreeNode | undefined
+	// where it is among those its program declares with its name
+	place: number
 }
 
 // the editor's file, as a build of it would name it
@@ -68,25 +74,31 @@ const parse = async (code: string): Promise<EstreeNode> =>
 
 // those the interpreter names, in source order
 const functionsOf = (program: EstreeNode): FunctionSite[] => {
-	const functions: FunctionSite[] = []
+	const sites: Omit<FunctionSite, "place">[] = []
+	const named: Omit<FunctionSite, "place">[] = []
 	const visit = (node: EstreeNode, parent: EstreeNode | undefined) => {
-		const isMethod =
-			parent?.type === "MethodDefinition" ||
-			(parent?.type === "Property" && (parent.method || parent.kind !== "init"))
-		if (functionTypes.has(node.type) && !isMethod)
-			functions.push({ node, parent })
+		if (functionTypes.has(node.type)) {
+			const site = { node, parent }
+			sites.push(site)
+			const isMethod =
+				parent?.type === "MethodDefinition" ||
+				(parent?.type === "Property" &&
+					(parent.method || parent.kind !== "init"))
+			if (!isMethod) named.push(site)
+		}
 		for (const child of childrenOf(node)) visit(child, node)
 	}
 	visit(program, undefined)
-	return functions
+	const places = namedPlacesOf(
+		sites,
+		({ node }) => node.range[0],
+		({ node, parent }) => declaredNameOf(node as never, parent as never)
+	)
+	return named.map(site => ({ ...site, place: places.get(site)! }))
 }
 
-const holeNameAt = ({ node, parent }: FunctionSite) =>
-	holeNameOf(
-		declaredNameOf(node as never, parent as never),
-		path,
-		node.range[0]
-	)
+const holeNameAt = ({ node, parent, place }: FunctionSite) =>
+	holeNameOf(declaredNameOf(node as never, parent as never), path, place)
 
 // names each emitted function as the build's interpreter names its source and
 // proves of it what the interpreter does, as it's created, so the writer can

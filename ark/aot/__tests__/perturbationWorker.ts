@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import { inspect } from "node:util"
 import {
 	keptIssuesOf,
+	keptOf as eachKeptOf,
 	thrownErrorsOf,
 	type KeptIssue
 } from "@ark/aot/internal/issues.ts"
@@ -287,11 +288,24 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 	let occurrencesBySite: Record<number, number> = {}
 	let tests: Function[] = []
 	let beforeEachHooks: Function[] = []
+	let firstKeyOf = new Map<unknown, string>()
 
-	const record = (id: number, observation: Observation) => {
+	// arktype returns one Type for a Scope's equal definitions, so where a world
+	// creates another, one read compares what the other's couldn't
+	const identityOf = (value: unknown, key: string): Observation => {
+		if (!isType(value)) return {}
+		const first = firstKeyOf.get(value)
+		if (first !== undefined) return { sameAs: first }
+		firstKeyOf.set(value, key)
+		return {}
+	}
+
+	const record = (id: number, value: unknown, observation: Observation) => {
 		const occurrence = (occurrencesBySite[id] ??= 0)
 		occurrencesBySite[id]++
-		if (occurrence < 4) observations[`${id}:${occurrence}`] = observation
+		const key = `${id}:${occurrence}`
+		if (occurrence < 4)
+			observations[key] = { ...observation, ...identityOf(value, key) }
 	}
 
 	const context = {
@@ -334,7 +348,11 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			inputsOf: () => unknown[]
 		) => {
 			try {
-				observations[key] = observeValidation(create(), inputsOf, world)
+				const value = create()
+				observations[key] = {
+					...observeValidation(value, inputsOf, world),
+					...identityOf(value, key)
+				}
 			} catch (e) {
 				observations[key] = { threw: messageOf(e) }
 			}
@@ -366,10 +384,10 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			}
 			try {
 				const value = create()
-				record(id, { ...observe(value, world), isPerturbed })
+				record(id, value, { ...observe(value, world), isPerturbed })
 				return value
 			} catch (e) {
-				record(id, { threw: messageOf(e), isPerturbed })
+				record(id, undefined, { threw: messageOf(e), isPerturbed })
 				throw e
 			}
 		}
@@ -393,6 +411,7 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			run++
 			observations = byPerturbation[kind] = {}
 			occurrencesBySite = {}
+			firstKeyOf = new Map()
 			tests = []
 			beforeEachHooks = []
 			// a test's own failures are its suite's to report, but a module that
@@ -543,6 +562,20 @@ const serializeIssues = (issues: KeptIssue[]) =>
 		...(detailsErrors && { data: serialize(data) })
 	}))
 
+// what a union's issues say, without what no message of a validator's does, as
+// issues kept apart read: arktype groups what's at one path, which never takes over
+const unionTextsOf = (errors: ArkErrors): string[] =>
+	!detailsErrors || firstIssue ?
+		[]
+	:	eachKeptOf(errors as never)
+			.filter(issue => issue.code === "union")
+			.map(({ message }) =>
+				message!
+					.replace(/ \(was (?:"(?:[^"\\]|\\.)*"|[^)])*\)/g, "")
+					.replace(/(^|, | or )value at /g, "$1")
+			)
+			.sort()
+
 const samples = (): unknown[] => [
 	undefined,
 	null,
@@ -579,7 +612,8 @@ const isErrors = (out: unknown): out is ArkErrors =>
 
 // a Type a morph returns is compared by expression, as a validator has one
 export const serialize = (out: unknown): unknown =>
-	isErrors(out) ? { errors: serializeIssues(keptOf(out)) }
+	isErrors(out) ?
+		{ errors: serializeIssues(keptOf(out)), unions: unionTextsOf(out) }
 	: typeof out === "function" && isArk(out) ?
 		{ type: (out as Function & { expression: string }).expression }
 	:	inspect(out, {
@@ -613,6 +647,12 @@ const isTypedFn = (
 	returns: unknown
 } => typeof value === "function" && "params" in value && "returns" in value
 
+const isType = (value: unknown): boolean =>
+	typeof value === "function" &&
+	isArk(value) &&
+	!isStandIn(value) &&
+	!isTypedFn(value)
+
 // anyOf lists the issues errors "all" finds, as a call's outcome does
 const sample = (
 	validate: (data: unknown) => unknown,
@@ -641,9 +681,25 @@ const isStandardFailure = (out: unknown): out is { issues: unknown[] } =>
 	Array.isArray((out as { issues?: unknown }).issues) &&
 	Object.keys(out).length === 1
 
+const callbacksRun = () =>
+	(globalThis as { $arkCallbacks?: number }).$arkCallbacks ?? 0
+
 // a call's output, the issues a validator keeps, or what it throws; anyOf
-// lists those errors "all" finds, of which a first-issue validator keeps one
+// lists those errors "all" finds, of which a first-issue validator keeps one.
+// Its count of callbacks is compared too, unless it stops at the first issue,
+// which leaves some unrun that "all" runs
 const outcomeOf = (
+	call: () => unknown,
+	input?: unknown,
+	anyOf?: () => KeptIssue[]
+): Observation => {
+	const before = callbacksRun()
+	const outcome = calledOutcomeOf(call, input, anyOf)
+	const callbacks = callbacksRun() - before
+	return callbacks && !firstIssue ? { ...outcome, callbacks } : outcome
+}
+
+const calledOutcomeOf = (
 	call: () => unknown,
 	input?: unknown,
 	anyOf?: () => KeptIssue[]
@@ -657,6 +713,7 @@ const outcomeOf = (
 		return kept ?
 				{
 					errors: serializeIssues(kept),
+					...(isErrors(out) && { unions: unionTextsOf(out) }),
 					...(anyOf && { anyOf: serializeIssues(anyOf()) })
 				}
 			:	{ out: serialize(out), isInput: out === input }

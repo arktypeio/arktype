@@ -10,7 +10,9 @@ import {
 	enInfo,
 	errorsOf,
 	FirstIssues,
+	issueAt,
 	issuesOf,
+	listsUnions,
 	mergeIssues,
 	messageOf,
 	problemOf,
@@ -39,6 +41,7 @@ import {
 	stringifyPath,
 	throwError,
 	throwParseError,
+	type array,
 	type Fn,
 	type inferred,
 	type JsonStructure
@@ -273,9 +276,14 @@ export const standardResultOf = (
 			issues: (out._i ? (out.issues as ArkIssue[]) : out._).map(issue =>
 				(
 					issue.path.length &&
-					(issue.message === undefined || issue.message === messageOf(issue))
+					((listsUnions && issue._r) ||
+						issue.message === undefined ||
+						issue.message === messageOf(issue))
 				) ?
-					{ ...issue, message: problemOf(issue) }
+					{
+						...issue,
+						message: listsUnions && issue._r ? issue._r() : problemOf(issue)
+					}
 				:	((issue.message ??= messageOf(issue)), issue)
 			) as StandardSchemaV1.Issue[]
 		}
@@ -401,6 +409,46 @@ export const callingRootApply = ((
 				data,
 				args[1] === undefined ? configuredOnFail : args[1]
 			)) satisfies Fn) satisfies Fn
+
+// a validator's Allows and root apply as load returns them, created at their
+// first call, for one no creator reads as variables
+export const deferred = (load: () => readonly Fn[]): readonly Fn[] => {
+	let parts: readonly Fn[] | undefined
+	const partAt =
+		(i: number): Fn =>
+		(data: unknown, arg: unknown) =>
+			(parts ??= load())[i](data, arg)
+	return [partAt(0), partAt(1)]
+}
+
+// what the validators of one creation share, created once
+export const once = <t>(load: () => t): (() => t) => {
+	let loaded: t | undefined
+	return () => (loaded ??= load())
+}
+
+// callingRootApply creating its parts at its first call
+export const callingDeferredRootApply = ((
+	parts: Fn[],
+	configuredOnFail: FailHandler | null
+): Fn => {
+	const bind = () => ([allows, rootApply] = parts[1]() as unknown as Fn[])
+	// eslint-disable-next-line no-var
+	var allows: Fn = (data: unknown) => (bind(), allows(data))
+	// eslint-disable-next-line no-var
+	var rootApply: Fn = (data: unknown, onFail: unknown) => (
+		bind(),
+		rootApply(data, onFail)
+	)
+	parts[0] = (data: unknown) => allows(data)
+	return ((data: unknown, ...args: ValidatorArgs) =>
+		!args.length ? rootApply(data, configuredOnFail)
+		: args[0] ? rootApply(data, pipedInto(args[0]))
+		: rootApply(
+				data,
+				args[1] === undefined ? configuredOnFail : args[1]
+			)) satisfies Fn
+}) satisfies Fn
 
 type ValidatorParts = [
 	rootApply: RootApply,
@@ -711,6 +759,139 @@ export const failsIn = ((
 	ctx?._at ?
 		ctx._in(apply, data, key, missing)
 	:	!(apply as Fn)((data as Record<PropertyKey, unknown>)[key])) satisfies Fn
+
+const writeBranches = (alternatives: string[]): string => {
+	const unique = [...new Set(alternatives)]
+	if ([...unique].sort().join() === "false,true") return "boolean"
+	const last = unique.pop()!
+	return unique.length ? `${unique.join(", ")} or ${last}` : last
+}
+
+// what arktype's union lists for issues failing at one path. An issue listing
+// alternatives of its own, as a missing key's union or a discriminant's cases,
+// is split by its text, the only place a validator holds them, so where one is
+// written with `or` or a comma outside of quotes, it reads as if they were
+const alternativesOf = (issues: ArkIssue[]): string[] =>
+	issues.flatMap(({ code, expected = "valid" }) =>
+		issues.length > 1 && /^(req|disc|union)/.test(code) ?
+			expected.split(/(?:, | or )(?=(?:[^"]*"[^"]*")*[^"]*$)/)
+		:	[expected]
+	)
+
+// each path as its own issue's message writes it, as arktype's union does
+const writeListed = (errors: readonly ArkIssue[], depth = 0): string => {
+	// keyed by what `must be` ends, so no key is an object's own or an index
+	const atSubject: Record<string, ArkIssue[]> = {}
+	for (const error of errors) {
+		error.message ??= messageOf(error)
+		;(atSubject[
+			messageOf({ path: error.path.slice(depth), expected: "" } as never)
+		] ??= []).push(error)
+	}
+	return writeBranches(
+		Object.entries(atSubject).map(
+			([subject, same]) => subject + writeBranches(alternativesOf(same))
+		)
+	)
+}
+
+// a union's issue, which says what its branches' first issues did
+class ListedIssue implements ArkIssue {
+	code: ArkErrorCode = "union"
+	declare path: PropertyKey[]
+	declare data: unknown
+	declare errors: readonly ArkIssue[]
+	declare expected: string
+	declare message: string
+
+	constructor(path: PropertyKey[], data: unknown, errors: readonly ArkIssue[]) {
+		this.path = path
+		this.data = data
+		this.errors = errors
+		this.expected = this.message = writeListed(errors)
+	}
+
+	_m(prefix: array<PropertyKey>): ListedIssue {
+		return new ListedIssue(
+			[...prefix, ...this.path],
+			this.data,
+			this.errors.map(error => ({
+				...error,
+				path: [...prefix, ...error.path],
+				message: error.message === messageOf(error) ? undefined : error.message
+			}))
+		)
+	}
+
+	_r(): string {
+		return writeListed(this.errors, this.path.length)
+	}
+}
+
+type UnionIssueOf = (
+	path: PropertyKey[],
+	data: unknown,
+	errors: readonly ArkIssue[]
+) => ArkIssue
+
+// a union's issue where it's written its own text, expecting what its branches
+// did unless that's what's written
+export const ownIssue = ((site: FailureSite): UnionIssueOf =>
+	(path, data, errors) => {
+		const issue = issueAt(path, site, data, undefined)
+		const listed = writeListed(errors)
+		issue.expected ??= listed
+		issue.errors = errors
+		return issue
+	}) satisfies Fn
+
+// adds a union's issue of what each branch reported first, each one that's a
+// union of its own being what it lists
+export const failsListed = ((
+	ctx: any,
+	firsts: readonly ArkIssue[],
+	data: unknown,
+	issueOf?: UnionIssueOf
+): boolean | undefined => {
+	const path = ctx._p ?? ctx.path
+	// a shared object reports one issue to each branch reaching it, listed once
+	const errors = [...new Set(firsts.flatMap(first => first.errors ?? first))]
+	const issue =
+		issueOf ?
+			issueOf(path, data, errors)
+		:	new ListedIssue(path.slice(), data, errors)
+	if (ctx._p) ctx._.push(issue)
+	else ctx.addError(issue)
+	return ctx.failFast
+}) satisfies Fn
+
+// whether a union fails, by the first issue of each branch; none where one that
+// a write or a getter has made valid since passes
+export const failsBranches = ((
+	ctx: any,
+	branches: readonly CompactApply[],
+	data: unknown,
+	issueOf?: UnionIssueOf
+): boolean | undefined => {
+	if (!ctx?._at) return true
+	const firsts: ArkIssue[] = []
+	for (const branch of branches) {
+		let first: ArkIssue | undefined
+		if (ctx._p) {
+			const issues = new FirstIssues()
+			issues._p = ctx._p.slice()
+			branch(data, issues)
+			first = issues._[0]
+		} else {
+			ctx.pushBr()
+			branch(data, ctx)
+			first = ctx.popBr().error
+		}
+		if (!first) return
+		firsts.push(first)
+	}
+	return failsListed(ctx, firsts, data, issueOf)
+}) satisfies Fn
 
 // compact roots report into ArkErrors, loading no Traversal
 export const applyErrors = (
@@ -1139,6 +1320,15 @@ class InternTable {
 
 export const internTable = (): InternTable => new InternTable()
 
+const tablesByKey = /* @__PURE__ */ new Map<string, InternTable>()
+
+// a key's table, so modules written apart can intern alike
+export const internedTable = (key: string): InternTable => {
+	let table = tablesByKey.get(key)
+	if (!table) tablesByKey.set(key, (table = new InternTable()))
+	return table
+}
+
 const checkedDefaults = /* @__PURE__ */ new InternTable()
 
 // returns what it created before for the same holes
@@ -1157,6 +1347,13 @@ export const intern = <value>(
 		create()
 	return (table.value ??= create()) as value
 }
+
+// what a key names, created by whichever module reaches it first
+export const interned = <value, args extends unknown[]>(
+	key: string,
+	create: (...args: args) => value,
+	...args: args
+): value => intern(internedTable(key), [], () => create(...args))
 
 const helpersKey = /* @__PURE__ */ Symbol.for("arktype.helpers")
 
@@ -1242,7 +1439,8 @@ export type writeUnbakedMessage<reason extends string> =
 
 // json is shared between nodes, so frozen deeply
 export const deepFreeze = <t>(value: t): t => {
-	if (value && typeof value === "object")
+	// what it holds more than once is frozen where it's made
+	if (value && typeof value === "object" && !Object.isFrozen(value))
 		for (const k in freeze(value)) deepFreeze(value[k])
 	return value
 }

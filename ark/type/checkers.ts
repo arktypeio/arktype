@@ -8,8 +8,10 @@ import type {
 } from "@ark/schema/runtime"
 import { hasOwn, type Fn } from "@ark/util"
 import {
+	copyOf,
 	describePredicate,
 	failsAt,
+	failsBranches,
 	requiredSiteOf,
 	siteOf
 } from "./runtime.ts"
@@ -52,7 +54,8 @@ export const narrowedBy = ((
 	description?: string
 ): Checker => {
 	const checker: Checker = (data, ctx) =>
-		read()(data) ||
+		// `allows` answers this, and a narrow cast to return a boolean may not
+		!!read()(data) ||
 		!failsAt(
 			ctx as never,
 			siteOf(
@@ -333,35 +336,6 @@ export const closedProps = ((
 	return checker
 }) satisfies Fn
 
-// data inheriting a builtin's prototype keeps state in internal slots
-const isBuiltin = (data: object): boolean => {
-	for (
-		let prototype = Object.getPrototypeOf(data);
-		prototype && Object.getPrototypeOf(prototype);
-		prototype = Object.getPrototypeOf(prototype)
-	) {
-		const { constructor } = prototype
-		if (
-			typeof constructor === "function" &&
-			constructor.prototype === prototype &&
-			/\[native code]\s*}$/.test(Function.prototype.toString.call(constructor))
-		)
-			return true
-	}
-	return false
-}
-
-// keeps data's prototype and enumerable keys; a builtin is written in place
-const copyForWriting = (data: any): any => {
-	const prototype = Object.getPrototypeOf(data)
-	return (
-		Array.isArray(data) ? Object.assign(Array.prototype.slice.call(data), data)
-		: prototype === Object.prototype ? { ...data }
-		: isBuiltin(data) ? data
-		: Object.setPrototypeOf({ ...data }, prototype)
-	)
-}
-
 // what props whose values transform or default write, keeping what they don't
 const writtenProps = (declared: Props, data: any): any => {
 	let out = data
@@ -371,7 +345,7 @@ const writtenProps = (declared: Props, data: any): any => {
 		const value = holds ? declared[k].t?.(data[k]) : defaulted?.[0]
 		// a default is written even where it's undefined
 		if (holds ? value !== undefined && value !== data[k] : defaulted?.length) {
-			if (out === data) out = copyForWriting(data)
+			if (out === data) out = copyOf(data)
 			out[k] = value
 		}
 	}
@@ -406,7 +380,7 @@ export const deletingProps = ((declared: Props): Checker => {
 				...Object.getOwnPropertySymbols(data)
 			]) {
 				if (hasOwn(declared, k)) continue
-				if (out === data) out = copyForWriting(data)
+				if (out === data) out = copyOf(data)
 				delete out[k]
 			}
 			return out
@@ -437,7 +411,7 @@ export const transformingElementsOf = ((element: Checker): Checker => {
 		for (let i = 0; i < data.length; i++) {
 			const value = element.t!(data[i])
 			if (value === data[i]) continue
-			if (out === data) out = copyForWriting(data)
+			if (out === data) out = copyOf(data)
 			out[i] = value
 		}
 		return out
@@ -526,13 +500,16 @@ export const discriminateOr = ((
 	missed: FailureSite = { code: "union", description: "an object" }
 ): Checker => {
 	const byValue = new Map(Object.entries(cases))
-	const site: FailureSite = { code: "union", description }
+	const site: FailureSite = { code: "discriminant", description }
+	const miss: Checker = (data, ctx) => !failsAt(ctx as never, site, data, key)
 	const checker: Checker = (data: any, ctx) => {
 		const branch = byValue.get(data?.[key])
 		return branch ?
 				branch === 1 || branch(data, ctx)
 			:	otherwise(data) ||
-					!failsAt(ctx as never, objectCheck.test(data) ? site : missed, data)
+					(objectCheck.test(data) ?
+						!failsBranches(ctx, [miss, otherwise], data)
+					:	!failsAt(ctx as never, missed, data))
 	}
 	checker.description = missed.description
 	if ([...byValue.values(), otherwise].some(branch => (branch as Checker).t)) {
@@ -542,26 +519,17 @@ export const discriminateOr = ((
 	return checker
 }) satisfies Fn
 
-// branches tried in turn, failing as one issue described by bases
+// branches tried in turn, failing as one issue of each's first, by what writes
+// it if it isn't what they did
 export const union = ((
 	branches: readonly Checker[],
 	description: string,
-	bases?: readonly Check[],
-	basesDescription?: string
+	issueOf?: Parameters<typeof failsBranches>[3]
 ): Checker => {
-	const site: FailureSite = { code: "union", description }
-	const basesSite: FailureSite = {
-		code: "union",
-		description: basesDescription
-	}
 	const checker: Checker = (data, ctx) =>
 		branches.some(branch => branch(data)) ||
-		!failsAt(
-			ctx as never,
-			bases && !bases.some(basis => basis.test(data)) ? basesSite : site,
-			data
-		)
-	checker.description = basesDescription ?? description
+		!failsBranches(ctx, branches, data, issueOf)
+	checker.description = description
 	if (branches.some(branch => branch.t))
 		checker.t = data => branches.find(branch => branch(data))!.t?.(data) ?? data
 	return checker

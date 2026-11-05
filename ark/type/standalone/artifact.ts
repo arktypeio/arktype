@@ -79,6 +79,7 @@ import {
 	canPipe,
 	creatorSourceOf,
 	frozen,
+	boundApplierOf,
 	fusedApplierOf,
 	madeApplierOf,
 	preciseFormOf,
@@ -99,6 +100,7 @@ import {
 	unitOf
 } from "./compilers.ts"
 import {
+	contentKeyOf,
 	encodeKey,
 	holeNameMarker,
 	holeNamePattern,
@@ -169,6 +171,9 @@ import {
 	keywordMetas,
 	runtimePathsByValue,
 	totalBaked,
+	DataParts,
+	type DataPart,
+	type DataPartModule,
 	writeBakedLimitMessage,
 	writeUnprecompilableMessage,
 	type BakedLengths,
@@ -194,6 +199,8 @@ const sortedConstraintKeys = ["pattern", "index"] as const
 interface RootApplyOptions {
 	// whether the build writes the validator itself, which calls the apply
 	asValidator: boolean
+	// whether anything reads the validator's .allows
+	readsAllows: boolean
 	// whether nothing but the call sets onFail
 	unconfigured: boolean
 	// whether the validator can be piped into, so its apply takes a traversal
@@ -202,9 +209,40 @@ interface RootApplyOptions {
 	throws?: boolean
 }
 
+// a validator as written: with its parts, or with a function creating them at
+// its first call
+interface WrittenValidator {
+	parts: string
+	attributes: string[]
+	created: (load?: string) => string
+}
+
 interface WriteDataOptions {
 	// collects the functions, Dates and bigints a schema holds
 	values?: unknown[]
+	// what it adds to, whose text then reads what it holds by reference
+	parts?: DataParts
+}
+
+// what writing a part of a Type's data once declares, and how it's read
+interface DataPartWriter {
+	prefix: string
+	valueOf: (text: string) => string
+	declarationOf: (name: string, value: string) => string
+	readsRuntime: boolean
+	// where a part reading what's beside its validator goes, else it's
+	// written where it's read
+	declareLocal?: (value: string) => string
+	// reading it in a module of its own
+	readIn: (name: string) => string
+	// reading it beside its validator
+	read: (specifier: string, name: string) => string
+}
+
+// a JSON Schema's writer, whose text reads a Type's DataParts by reference
+interface JsonSchemaWriter {
+	text: string
+	values: unknown[]
 }
 
 interface Declarations {
@@ -249,24 +287,35 @@ interface SharedUnit extends WritingScope {
 
 const writesByBaking = new WeakMap<Baking, Map<string, SharedWrite>>()
 
-// keyed by the options writing a shared unit reads: not those writing an
-// artifact's own validators, nor compiledInputs, which picks the unit itself
+// arktype compares what a node's meta holds by identity, its key by content
+const holdsObjectInMeta = ({ meta }: BaseNode): boolean =>
+	Object.entries(meta).some(([k, v]) =>
+		(k === "examples" ? (v as unknown[]) : [v]).some(
+			value => typeof value === "object" && value !== null
+		)
+	)
+
+// the options writing a shared unit reads: not those writing an artifact's own
+// validators, nor compiledInputs, which picks the unit itself
+const bakingKeyOf = ({
+	write,
+	issues,
+	sharedWrites,
+	compilesValidators,
+	compiledInputs,
+	members,
+	cells,
+	interned,
+	scopeNameOf,
+	...rest
+}: Baking): string => JSON.stringify([rest, [...members].sort()])
+
 const sharedWritesOf = (baking: Baking): Map<string, SharedWrite> => {
 	let writes = writesByBaking.get(baking)
 	if (!writes) {
-		const {
-			write,
-			issues,
-			sharedWrites,
-			compilesValidators,
-			compiledInputs,
-			members,
-			cells,
-			...rest
-		} = baking
-		const key = JSON.stringify([rest, [...members].sort()])
-		writes = sharedWrites.get(key)
-		if (!writes) sharedWrites.set(key, (writes = new Map()))
+		const key = bakingKeyOf(baking)
+		writes = baking.sharedWrites.get(key)
+		if (!writes) baking.sharedWrites.set(key, (writes = new Map()))
 		writesByBaking.set(baking, writes)
 	}
 	return writes
@@ -349,6 +398,7 @@ export class StandaloneArtifact {
 	comparedRoots: BaseRoot[]
 	// written without holes; each factory call rekeys it
 	templates = new Set<unknown>()
+	exportedRoots: ReadonlySet<BaseRoot>
 	checkedRoots: ReadonlySet<BaseRoot>
 	factory: StandaloneFactory | undefined
 	defaultChecks: readonly DefaultCheck[]
@@ -375,10 +425,12 @@ export class StandaloneArtifact {
 			const path = appendStringifiedKey("", name)
 			this.collectExport(value, path)
 		}
-		const exported = new Set(this.roots)
+		this.exportedRoots = new Set(this.roots)
 		for (const [node] of this.defaultChecks)
 			this.collectType(node.in as BaseRoot)
-		this.checkedRoots = new Set(this.roots.filter(root => !exported.has(root)))
+		this.checkedRoots = new Set(
+			this.roots.filter(root => !this.exportedRoots.has(root))
+		)
 		// the runtime writes only en
 		const locale = $ark.config.locale
 		if (locale !== undefined && locale !== $ark.defaultConfig.locale)
@@ -494,7 +546,9 @@ export class StandaloneArtifact {
 			imports: {},
 			declarations: [
 				`var ${cell.name}`,
-				`function ${cellSetterOf(cell)}(hole) {\n\t${cell.name} = hole\n\treturn true\n}`
+				// through arguments, as a minifier writing this into its site would
+				// otherwise assign an anonymous function, naming it for the variable
+				`function ${cellSetterOf(cell)}() {\n\t${cell.name} = arguments[0]\n\treturn true\n}`
 			],
 			exports: [cell.name, cellSetterOf(cell)]
 		}
@@ -625,9 +679,20 @@ export class StandaloneArtifact {
 			)
 			return false
 		}
-		this.holeExpressions.set(hole, expression)
+		this.holeExpressions.set(hole, this.heldFrom(expression))
 		this.holeLabels.set(hole, label)
 		return true
+	}
+
+	// read through what a site passes, a hole a first call creates from is read
+	// as the module loads, as a later write to what holds it can't change it. A
+	// parameter is its own, and a Type's holes are frozen
+	heldFrom(expression: string): string {
+		if (!this.baking.defers || /^(?:p\d+|holes\d+\[\d+])$/.test(expression))
+			return expression
+		const name = `held${this.holeExpressions.size}`
+		this.checks.push(`const ${name} = ${expression}`)
+		return name
 	}
 
 	receiverOf(value: Foldable, id: string, label: string): string {
@@ -950,7 +1015,7 @@ export class StandaloneArtifact {
 			writeFixConfig(configured),
 			// no validators: only Scopes, Generics and their Modules
 			...(this.roots.length ?
-				this.writeBody()
+				this.writeBody(values)
 			:	[this.declarations.statements.join("\n"), this.modules.join("\n")]),
 			`return ${values.length === 1 ? values[0] : `[${values.join(", ")}]`}`
 		]
@@ -959,7 +1024,7 @@ export class StandaloneArtifact {
 
 	// each export's validator as [callee, ...args], creatable from the imports alone
 	writeCalls(): string[][] | undefined {
-		if (!this.roots.length) return
+		if (!this.roots.length || this.baking.defers) return
 		this.writeSharedUnits()
 		const names = Object.values(this.exports).map(value =>
 			hasArkKind(value, "root") ? this.readValidator(value) : undefined
@@ -979,11 +1044,19 @@ export class StandaloneArtifact {
 		const imported = new Set(Object.values(this.imports).flat())
 		const calls: string[][] = []
 		for (const name of names) {
+			const written = (name && this.writtenValidators.get(name)) ?? ""
+			const interned = /^runtime\.interned\(("[^"]*"), \(\) => (.*)\)$/s.exec(
+				written
+			)
 			const call = /^([\w$]+)\(\s*((?:[\w$]+,\s*)*[\w$]+)?\s*\)$/.exec(
-				(name && this.writtenValidators.get(name)) ?? ""
+				interned ? interned[2] : written
 			)
 			const reads = call && [call[1], ...(call[2]?.split(/,\s*/) ?? [])]
 			if (!reads?.every(read => imported.has(read))) return
+			if (interned) {
+				this.importName("arktype/runtime", "interned")
+				reads.unshift("interned", interned[1])
+			}
 			calls.push(reads)
 		}
 		return calls
@@ -998,7 +1071,7 @@ export class StandaloneArtifact {
 			internedBy === undefined ? undefined : (
 				this.heldOf(keyOf(type)[1]).map(hole => this.holeExpressions.get(hole)!)
 			)
-		const body = this.writeBody()
+		const body = this.writeBody([value, ...defaults.map(({ check }) => check)])
 		body.push(...defaults.map(({ check }) => check), `return ${value}`)
 		const defaultKeys =
 			defaults.length ? `, [${defaults.map(({ key }) => key).join(", ")}]` : ""
@@ -1008,10 +1081,72 @@ export class StandaloneArtifact {
 			configured,
 			holes ?
 				[
-					`return runtime.intern(${writeLazyRead(`interned${internedBy}`, "runtime.internTable()")}, [${holes.join(", ")}], () => {\n${body.filter(statement => statement).join("\n\n")}\n}${defaultKeys})`
+					`return runtime.intern(${this.internTableOf(internedBy!)}, [${holes.join(", ")}], ${this.baking.defers ? "function ()" : "() =>"} {\n${body.filter(statement => statement).join("\n\n")}\n}${defaultKeys})`
 				]
 			:	body
 		)
+	}
+
+	// a factory's holes tell the validators of one key apart, whichever module
+	// created each; a validator holding none is interned where it's written
+	private internTableOf(internedBy: number): string {
+		const type = this.factory!.type as never
+		return this.internsAcrossModules ?
+				`runtime.internedTable(${JSON.stringify(this.internKeyOf(type, this.validatorFormOf(type)))})`
+			:	writeLazyRead(`interned${internedBy}`, "runtime.internTable()")
+	}
+
+	get internsAcrossModules(): boolean {
+		const { type } = this.factory!
+		return (
+			hasArkKind(type, "root") &&
+			this.heldOf(keyOf(type)[1]).length > 0 &&
+			this.internNameOf(type) !== undefined
+		)
+	}
+
+	private internNameOf(root: BaseRoot): string | undefined {
+		const { interned } = this.baking
+		return (
+			interned ? interned.get(root)
+			: this.exportedRoots.has(root) ? this.contentNameOf(root)
+			: undefined
+		)
+	}
+
+	// names a Type a site creates that another may create equal, which arktype
+	// returns as one value. A validator keeps the members its creator bakes, so
+	// only those written alike share one
+	private internKeyOf(root: BaseRoot, form: ValidatorForm): string | undefined {
+		const named = this.internNameOf(root)
+		if (named === undefined) return
+		const { called, readsAllows, piped } = form.reads
+		return hashOf(
+			JSON.stringify([
+				named,
+				bakingKeyOf(this.baking),
+				[...form.members].sort(),
+				form.isTemplate,
+				called,
+				readsAllows,
+				piped
+			])
+		)
+	}
+
+	// what arktype keys a node by, read in one module: each node's content in its
+	// Scope. A cycle's aliases and a Scope it can't name are told apart by identity
+	private contentNameOf(root: BaseRoot): string | undefined {
+		if (root.hasAlias) return
+		const nodes = [root, ...root.references]
+		if (nodes.some(holdsObjectInMeta)) return
+		const { scopeNameOf } = this.baking
+		const scopes = nodes.map(({ $ }) =>
+			$.isBuiltin ? $.name : scopeNameOf?.($)
+		)
+		return scopes.includes(undefined) ? undefined : (
+				`${keyOf(root)[0]} ${contentKeyOf(root)} ${scopes.join()}`
+			)
 	}
 
 	writeRekeying(read: string): string[] {
@@ -1040,15 +1175,20 @@ export class StandaloneArtifact {
 	): string {
 		this.receive(params)
 		this.writeSharedUnits()
+		const parts = new DataParts()
 		const value = this.baked(member, () =>
 			member === "toJsonSchema" ?
-				this.writeJsonSchema(
-					type,
-					() => {
-						if (thrown) throw thrown
-						return data
-					},
-					{ isRead: true }
+				this.writeDataParts(
+					parts,
+					this.writeJsonSchema(
+						type,
+						() => {
+							if (thrown) throw thrown
+							return data
+						},
+						{ isRead: true, parts }
+					),
+					this.jsonSchemaParts
 				)
 			: member === "expression" ? this.emitExpression(type)
 			: member === "description" ? this.emitDescription(type)
@@ -1152,7 +1292,9 @@ return namespace`
 	}
 
 	specifierOf(name: string): string {
-		return `~arktype/${this.baking.hoisted ? "hoisted/" : ""}${name}`
+		return `~arktype/${this.baking.defers ? "deferred/" : ""}${
+			this.baking.hoisted ? "hoisted/" : ""
+		}${name}`
 	}
 
 	readValue(name: string): string {
@@ -1508,11 +1650,19 @@ return namespace`
 			// plain params; size and writing traversals drop a trailing unread ctx
 			const arrow = source.replace(
 				/^function\(([^)]*)\) {/,
-				(signature, params: string) =>
-					`(${(dropsCtx || isWriting(name)) && !/\bctx\b/.test(source.slice(signature.length)) ? params.replace(/, ctx$/, "") : params}) => {${
+				(signature, params: string) => {
+					const read =
+						(
+							(dropsCtx || isWriting(name)) &&
+							!/\bctx\b/.test(source.slice(signature.length))
+						) ?
+							params.replace(/, ctx$/, "")
+						:	params
+					return `${this.baking.defers ? `function (${read}) {` : `(${read}) => {`}${
 						// a writing traversal is strict even where a bundle's format isn't
 						isWriting(name) ? `\n"use strict"\n` : ""
 					}`
+				}
 			)
 			const read = this.readsCells(arrow)
 			return `const ${name} = ${/(Apply|Copy)$/.test(name) ? read : this.compiledOnLoad(read)}`
@@ -1536,7 +1686,7 @@ return namespace`
 	}
 
 	compiledOnLoad(fn: string): string {
-		return this.baking.shortest ? fn : `(${fn})`
+		return this.baking.shortest || this.baking.defers ? fn : `(${fn})`
 	}
 
 	// a module's only validator compiles as it loads, others at their first call
@@ -1604,7 +1754,7 @@ return namespace`
 		return name
 	}
 
-	writeBody(): string[] {
+	writeBody(eagerReads?: string[]): string[] {
 		const traversals = this.localUnits.map((unit, i) => {
 			this.localNamesByUnit.set(unit, `traversals${i}`)
 			const returned = returnedOf(unit, this.baking)
@@ -1638,32 +1788,130 @@ return namespace`
 		const validators = [...this.validatorNames].map(
 			([root, name]) => [root, name, this.writeValidator(root)] as const
 		)
-		this.writtenValidators = new Map(
-			validators
-				.filter(
-					([root]) => !this.defaultValues.has(root) || this.readRoots.has(root)
-				)
-				.map(([, name, validator]) => [name, validator])
+		const written = validators.filter(
+			([root]) => !this.defaultValues.has(root) || this.readRoots.has(root)
 		)
+		this.writtenValidators = new Map(
+			written.map(([, name, validator]) => [name, validator.created()])
+		)
+		const deferred =
+			eagerReads &&
+			this.writeDeferred(
+				traversals,
+				written.map(([, name, validator]) => [name, validator]),
+				eagerReads
+			)
+		return (
+			deferred ?? [
+				this.declarations.statements.join("\n"),
+				this.sharedWriterDeclarations,
+				traversals.join("\n"),
+				this.links.join("\n"),
+				[...this.writtenValidators]
+					.map(([name, validator]) => `const ${name} = ${validator}`)
+					.join("\n\n"),
+				this.defaults.join("\n"),
+				this.modules.join("\n"),
+				this.fills.join("\n")
+			]
+		)
+	}
+
+	// splits a body into what a load must run, as what a module reads of it and
+	// its checks read, and a function creating the rest at a validator's first call
+	writeDeferred(
+		traversals: string[],
+		validators: (readonly [string, WrittenValidator])[],
+		eagerReads: string[]
+	): string[] | undefined {
+		if (!this.baking.defers || !validators.length) return
+		const statements = [
+			...this.declarations.statements,
+			...[...this.sharedWriters].map(
+				([writer, name]) => `const ${name} = ${writer}`
+			)
+		]
+		const declaredBy = new Map<string, string>()
+		for (const statement of statements)
+			declaredBy.set(/^const ([\w$]+) =/.exec(statement)![1], statement)
+		const validatorsByName = new Map(validators)
+		const fillsByName = new Map<string, string[]>()
+		for (const fill of this.fills) {
+			const target = /^runtime\.freeze\(runtime\.assign\(([\w$]+),/.exec(
+				fill
+			)![1]
+			fillsByName.set(target, [...(fillsByName.get(target) ?? []), fill])
+		}
+		// nothing a load runs may read what only a first call creates
+		const late = new Set(
+			[...traversals, ...this.defaults].map(
+				statement => /^const ([\w$]+) =/.exec(statement)![1]
+			)
+		)
+		const eager = new Set<string>()
+		const reads: string[] = [...eagerReads, ...this.modules]
+		while (reads.length) {
+			const read = reads.pop()!
+			for (const word of read.match(/[\w$]+/g) ?? []) {
+				if (late.has(word)) return
+				if (eager.has(word)) continue
+				const declared = declaredBy.get(word)
+				const validator = validatorsByName.get(word)
+				if (!declared && !validator) continue
+				eager.add(word)
+				if (declared) reads.push(declared)
+				if (validator) reads.push(...validator.attributes)
+				reads.push(...(fillsByName.get(word) ?? []))
+			}
+		}
+		const eagerValidators = validators.filter(([name]) => eager.has(name))
+		// e.g. a body creating only a Module's Scope
+		if (!eagerValidators.length) return
+		const isEager = (statement: string) =>
+			eager.has(/^const ([\w$]+) =/.exec(statement)![1])
+		const lateBody = [
+			...statements.filter(statement => !isEager(statement)),
+			...traversals,
+			...this.links,
+			...validators
+				.filter(([name]) => !eager.has(name))
+				.map(([name, validator]) => `const ${name} = ${validator.created()}`),
+			...this.defaults,
+			...this.fills.filter(
+				fill => !eager.has(/assign\(([\w$]+),/.exec(fill)![1])
+			)
+		]
+		const parts = eagerValidators.map(([, validator]) => validator.parts)
+		const shared = parts.length > 1
+		const load =
+			shared ?
+				`const load = runtime.once(function () {\n${lateBody.join("\n")}\nreturn [${parts.join(", ")}]\n})`
+			:	""
 		return [
-			this.declarations.statements.join("\n"),
-			this.sharedWriterDeclarations,
-			traversals.join("\n"),
-			this.links.join("\n"),
-			[...this.writtenValidators]
-				.map(([name, validator]) => `const ${name} = ${validator}`)
+			statements.filter(isEager).join("\n"),
+			load,
+			eagerValidators
+				.map(([name, validator], i) => {
+					const thunk =
+						shared ?
+							`() => load()[${i}]`
+						:	`function () {\n${lateBody.join("\n")}\nreturn ${validator.parts}\n}`
+					return `const ${name} = ${validator.created(thunk)}`
+				})
 				.join("\n\n"),
-			this.defaults.join("\n"),
 			this.modules.join("\n"),
-			this.fills.join("\n")
+			this.fills
+				.filter(fill => eager.has(/assign\(([\w$]+),/.exec(fill)![1]))
+				.join("\n")
 		]
 	}
 
-	writeValidator(root: BaseRoot): string {
+	writeValidator(root: BaseRoot): WrittenValidator {
 		const form = this.validatorFormOf(root)
 		const { members, reads, isTemplate, ownsValidator, unconfigured } = form
 		const [applied, allows, isCompact] = this.emitRootApply(root, {
 			asValidator: ownsValidator,
+			readsAllows: reads.readsAllows,
 			unconfigured,
 			pipes: form.pipes,
 			// a validator nothing calls fails only by its assert
@@ -1673,8 +1921,14 @@ return namespace`
 				preciseFormOf(this.baking, members, unconfigured, reads) === "object"
 		})
 		const { id, held, meta, attributes, onFail } = this.attributesOf(root, form)
-		const fused = fusedApplierOf(this.baking, form, applied)
-		const made = fused ? undefined : madeApplierOf(form, applied, allows)
+		const { defers } = this.baking
+		const fusing = fusedApplierOf(this.baking, form, applied)
+		const fused =
+			defers && fusing ? boundApplierOf(fusing, reads.readsAllows) : fusing
+		const making = fused ? undefined : madeApplierOf(form, applied, allows)
+		// a node a creator is passed has to exist as it's called, where parts don't
+		const made =
+			defers && making && allows !== `${making.args}[0]` ? undefined : making
 		// a template's parts are read by position
 		const writesId =
 			this.baking.holdsIds && (isTemplate || !!held || this.isComparedId(id))
@@ -1690,9 +1944,11 @@ return namespace`
 			typeof applied === "string" ? applied : (
 				`${this.emitApplier(applied)}(${applied.args})`
 			)
-		// a validator's own calling convention around what's read of its node
+		// a validator's own calling convention around what's read of its node,
+		// which a first call creates, so a deferring build reads it as parts
 		const fromNode =
 			(
+				!defers &&
 				ownsValidator &&
 				!isCompact &&
 				!isTemplate &&
@@ -1702,32 +1958,47 @@ return namespace`
 			) ?
 				applied
 			:	undefined
-		const args = [
-			...(fused ? [fused.args]
-			: made ? [this.emitApplier(made), made.args]
+		const make =
+			fused ? undefined
+			: made ? this.emitApplier({ ...made, readsAllows: reads.readsAllows })
 			: fromNode ?
-				[
-					this.emitApplier({
-						...fromNode,
-						params: fromNode.params.replace(
-							/^node\b/,
-							"node, configuredOnFail"
-						),
-						apply:
-							form.pipes ?
-								`runtime.callingRootApply([, ${fromNode.apply}], configuredOnFail)`
-							:	`(rootApply => (data, _, onFail) => rootApply(data, onFail))(${fromNode.apply})`
-					}),
-					fromNode.args
-				]
-			: ownsValidator && !isCompact ?
-				[
-					form.pipes ?
-						"runtime.callingRootApply"
-					:	"([, rootApply]) => (data, _, onFail) => rootApply(data, onFail)",
-					`[${allows}, ${rootApply()}]`
-				]
-			:	[rootApply(), allows]),
+				this.emitApplier({
+					...fromNode,
+					params: fromNode.params.replace(/^node\b/, "node, configuredOnFail"),
+					apply:
+						form.pipes ?
+							`runtime.callingRootApply([, ${fromNode.apply}], configuredOnFail)`
+						:	`(rootApply => (data, _, onFail) => rootApply(data, onFail))(${fromNode.apply})`
+				})
+			: !ownsValidator ? undefined
+			: isCompact ? rootApply()
+			: form.pipes ?
+				defers ? "runtime.callingDeferredRootApply"
+				:	"runtime.callingRootApply"
+			:	"([, rootApply]) => (data, _, onFail) => rootApply(data, onFail)"
+		const [fusedParts, ...fusedRest] = fused?.args.split(", ") ?? []
+		const parts =
+			fused ? fusedParts
+			: made ? made.args
+			: fromNode ? fromNode.args
+			: ownsValidator && isCompact ? allows
+			: make ? `[${allows}, ${rootApply()}]`
+			: defers ? `[${rootApply()}, ${allows}]`
+			: ""
+		const isBound =
+			!!fused || !!made || (ownsValidator && (isCompact || form.pipes))
+		const partsArgs = (load?: string): string[] => {
+			const read =
+				load ?
+					isBound ? `[, ${load}]`
+					:	`runtime.deferred(${load})`
+				: defers && isBound ? `[, () => ${parts}]`
+				: undefined
+			if (fused) return [read ?? fusedParts, ...fusedRest]
+			if (make) return [make, read ?? parts]
+			return read ? [`...${read}`] : [rootApply(), allows]
+		}
+		const rest = [
 			...(createsWith ?
 				[
 					writesId ? writeId(id) : "undefined",
@@ -1745,7 +2016,7 @@ return namespace`
 				]),
 			...(onFail ? [onFail] : [])
 		]
-		const created = `${
+		const creator =
 			isTemplate ? "["
 			: !form.byRuntime ?
 				`${this.creatorOf(
@@ -1760,10 +2031,27 @@ return namespace`
 				)}(`
 			: createsWith ? "runtime.createValidatorWith("
 			: "runtime.createValidator("
-		}\n\t${args.join(",\n\t")}\n${isTemplate ? "]" : ")"}`
-		return held && !this.baking.holdsIds ?
-				`runtime.holdHoles(${created}, ${writeId(id)}, ${held})`
-			:	created
+		const closer = isTemplate ? "]" : ")"
+		const internKey = held ? undefined : this.internKeyOf(root, form)
+		return {
+			parts,
+			attributes: [
+				...fusedRest,
+				...rest,
+				...(held && !this.baking.holdsIds ? [held] : [])
+			],
+			created: load => {
+				const created = `${creator}\n\t${[...partsArgs(load), ...rest].join(",\n\t")}\n${closer}`
+				if (held) {
+					return this.baking.holdsIds ?
+							created
+						:	`runtime.holdHoles(${created}, ${writeId(id)}, ${held})`
+				}
+				return internKey ?
+						`runtime.interned(${JSON.stringify(internKey)}, () => ${created})`
+					:	created
+			}
+		}
 	}
 
 	validatorFormOf(root: BaseRoot): ValidatorForm {
@@ -1877,54 +2165,76 @@ return namespace`
 			if (bakes("toJSON"))
 				members.push(`toJSON: ${frozen(this.baking, `() => ${json}`)}`)
 		}
+		// its schemas for each target and their replays hold much alike, so all
+		// are written before any is declared
+		const parts = new DataParts()
+		const writerOf = (write: () => unknown): JsonSchemaWriter => {
+			const values: unknown[] = []
+			const text = this.writeJsonSchemaWriter(root, write, values, parts)
+			return { text, values }
+		}
 		const standard =
-			bakes("~standard.jsonSchema") &&
-			this.baked("~standard.jsonSchema", () =>
-				(["input", "output"] as const).map(
-					io =>
-						`[${supportedJsonSchemaTargets.map(target => this.emitJsonSchema(root, () => root["~standard"].jsonSchema[io]({ target }))).join(", ")}]`
-				)
-			)
-		if (bakes("toJsonSchema")) {
-			const written = this.baked("toJsonSchema", () =>
-				this.emitJsonSchema(root, () => root.toJsonSchema())
-			)
-			// only targets whose text is already baked
-			const byTarget = supportedJsonSchemaTargets.map(
-				target =>
-					this.jsonSchemaNameOf(
-						this.writeJsonSchemaWriter(root, () =>
-							root.toJsonSchema({ target })
-						)
-					) ?? 0
-			)
-			const ignoresFallback = this.writesWithoutFallback(root)
-			// where code may pass it options, as the build sees code do where it
-			// bakes ~standard.jsonSchema with it, a call's fallback writes the
-			// default and each target whose text is baked
-			const replays =
-				!ignoresFallback &&
-				(bakes("~standard.jsonSchema") ||
-					this.baking.members.has("toJsonSchema")) &&
-				this.baked("toJsonSchema", () =>
-					[
-						...byTarget.map((name, i) =>
-							name === 0 ? 0 : supportedJsonSchemaTargets[i]
-						),
-						undefined
-					].map(target =>
-						target === 0 ? 0 : (this.emitReplay(root, target) ?? 0)
+			bakes("~standard.jsonSchema") ?
+				(["input", "output"] as const).map(io =>
+					supportedJsonSchemaTargets.map(target =>
+						writerOf(() => root["~standard"].jsonSchema[io]({ target }))
 					)
 				)
-			members.push(
-				replays && replays.some(Boolean) ?
-					`toJsonSchema: runtime.replayedJsonSchema(${written}, [${byTarget.join(", ")}], [${replays.join(", ")}])`
-				:	`toJsonSchema: runtime.bakedJsonSchema(${written}, [${byTarget.join(", ")}]${ignoresFallback ? ", 1" : ""})`
-			)
+			:	[]
+		const written = bakes("toJsonSchema") && writerOf(() => root.toJsonSchema())
+		const bakedTexts = new Set(
+			[written || [], ...standard].flat().map(({ text }) => text)
+		)
+		// only targets whose text is already baked
+		const targets =
+			written ?
+				supportedJsonSchemaTargets.map(target => {
+					const { text } = writerOf(() => root.toJsonSchema({ target }))
+					return bakedTexts.has(text) ? text : undefined
+				})
+			:	[]
+		const ignoresFallback = written && this.writesWithoutFallback(root)
+		// where code may pass it options, as the build sees code do where it
+		// bakes ~standard.jsonSchema with it, a call's fallback writes the
+		// default and each target whose text is baked
+		const replays =
+			(
+				written &&
+				!ignoresFallback &&
+				(bakes("~standard.jsonSchema") ||
+					this.baking.members.has("toJsonSchema"))
+			) ?
+				this.baked("toJsonSchema", () => [
+					...supportedJsonSchemaTargets.map(
+						(target, i) => targets[i] && this.writeReplayOf(root, target, parts)
+					),
+					this.writeReplayOf(root, undefined, parts)
+				])
+			:	[]
+		const writerText = (text: string) =>
+			this.writeDataParts(parts, text, this.jsonSchemaParts)
+		const declare = ({ text, values }: JsonSchemaWriter) =>
+			this.declareJsonSchema(writerText(text), values)
+		const standardWriters = this.baked("~standard.jsonSchema", () =>
+			standard.map(writers => `[${writers.map(declare).join(", ")}]`)
+		)
+		if (written) {
+			this.baked("toJsonSchema", () => {
+				const writtenName = declare(written)
+				const byTarget = targets.map(text =>
+					text ? this.jsonSchemaNameOf(writerText(text)) : 0
+				)
+				const replayed = replays.map(replay => (replay ? declare(replay) : 0))
+				members.push(
+					replayed.some(Boolean) ?
+						`toJsonSchema: runtime.replayedJsonSchema(${writtenName}, [${byTarget.join(", ")}], [${replayed.join(", ")}])`
+					:	`toJsonSchema: runtime.bakedJsonSchema(${writtenName}, [${byTarget.join(", ")}]${ignoresFallback ? ", 1" : ""})`
+				)
+			})
 		}
-		if (standard) {
+		if (standardWriters.length) {
 			members.push(
-				`"~standard": { jsonSchema: runtime.bakedStandardJsonSchema(${standard.join(", ")}) }`
+				`"~standard": { jsonSchema: runtime.bakedStandardJsonSchema(${standardWriters.join(", ")}) }`
 			)
 		}
 		return members
@@ -1984,15 +2294,89 @@ return namespace`
 
 	// nodes share json unless it prints a hole
 	readJson(root: BaseRoot): string {
-		const value = `runtime.deepFreeze(${this.writeData(uncountedJsonOf(root.json))})`
-		this.countBaked(value)
+		const parts = new DataParts()
+		const written = this.writeData(uncountedJsonOf(root.json), { parts })
+		const writer: DataPartWriter = {
+			prefix: "json",
+			valueOf: text => `runtime.deepFreeze(${text})`,
+			declarationOf: (name, value) =>
+				writeValue(this.baking.hoisted, name, value),
+			readsRuntime: true,
+			declareLocal: value =>
+				this.declarations.namesByValue.get(value) ??
+				this.declareConst(value, "json", value),
+			readIn: name => this.readValue(name),
+			read: (specifier, name) =>
+				this.read(specifier, name, name, this.readValue(name))
+		}
 		if (holdsLocal(root.json)) {
+			const value = writer.valueOf(this.writeDataParts(parts, written, writer))
+			this.countBaked(value)
 			return (
 				this.declarations.namesByValue.get(root.json) ??
 				this.declareConst(root.json, "json", value)
 			)
 		}
-		return this.readConstant(`json${hashOf(value)}`, value)
+		// its module imports what it holds, as what's read here can't
+		const name = this.dataPartsOf(parts, writer).declare(parts.at(written))
+		return writer.read(this.specifierOf(name), name)
+	}
+
+	// each part of data its text repeats, declared once
+	private writeDataParts(
+		parts: DataParts,
+		text: string,
+		writer: DataPartWriter
+	): string {
+		return parts.write(text, this.dataPartsOf(parts, writer).read)
+	}
+
+	private dataPartsOf(parts: DataParts, writer: DataPartWriter) {
+		const moduleOf = (part: DataPart): DataPartModule => {
+			if (part.module) return part.module
+			const imports: Record<string, string[]> = {}
+			const held: DataPart[] = []
+			const value = writer.valueOf(
+				parts.write(part.text, heldPart => {
+					const { name } = moduleOf(heldPart)
+					imports[this.specifierOf(name)] = [name]
+					held.push(heldPart)
+					return writer.readIn(name)
+				})
+			)
+			return (part.module = {
+				name: `${writer.prefix}${hashOf(value)}`,
+				value,
+				imports,
+				held
+			})
+		}
+		const declare = (part: DataPart): string => {
+			const { name, value, imports, held } = moduleOf(part)
+			if (!part.isDeclared) {
+				part.isDeclared = true
+				for (const heldPart of held) declare(heldPart)
+				this.countBaked(value)
+				this.share(
+					name,
+					writer.declarationOf(name, value),
+					imports,
+					writer.readsRuntime
+				)
+			}
+			return name
+		}
+		const read = (part: DataPart): string | undefined => {
+			if (part.local) {
+				if (!writer.declareLocal) return
+				const value = writer.valueOf(parts.write(part.text, read))
+				this.countBaked(value)
+				return writer.declareLocal(value)
+			}
+			const name = declare(part)
+			return writer.read(this.specifierOf(name), name)
+		}
+		return { declare, read }
 	}
 
 	share(
@@ -2062,20 +2446,13 @@ return namespace`
 		return failure ? { [this.declareFailure(failure)]: [failure] } : {}
 	}
 
-	emitJsonSchema(root: BaseRoot, write: () => unknown): string {
-		const values: unknown[] = []
-		return this.declareJsonSchema(
-			this.writeJsonSchemaWriter(root, write, values),
-			values
-		)
-	}
-
 	// toJsonSchema() with the fallback a call passes, where arktype doesn't
 	// read what one returns
-	emitReplay(
+	writeReplayOf(
 		root: BaseRoot,
-		target: ToJsonSchema.Target | undefined
-	): string | undefined {
+		target: ToJsonSchema.Target | undefined,
+		parts: DataParts
+	): JsonSchemaWriter | undefined {
 		const write = (opts: TracedOptions) =>
 			root.toJsonSchema(target ? { target, ...opts } : opts)
 		let trace: FallbackTrace | undefined
@@ -2094,20 +2471,21 @@ return namespace`
 		const values: unknown[] = []
 		let replay: string | undefined
 		try {
-			replay = this.replayOf(trace, root, write, values)
+			replay = this.replayOf(trace, root, write, values, parts)
 		} catch (e) {
 			// e.g. a context holding a symbol key
 			if (e instanceof ParseError) return
 			throw e
 		}
-		return replay && this.declareJsonSchema(replay, values)
+		return replay ? { text: parts.add(replay), values } : undefined
 	}
 
 	private replayOf(
 		trace: FallbackTrace,
 		root: BaseRoot,
 		write: (opts: TracedOptions) => unknown,
-		values: unknown[]
+		values: unknown[],
+		parts: DataParts
 	): string | undefined {
 		const configured = root.$.cfg.toJsonSchema.fallback
 		const firstCalls = new Map<string, number>()
@@ -2117,7 +2495,7 @@ return namespace`
 		}
 		return writeReplay(
 			trace,
-			value => this.writeData(value, { values }),
+			value => this.writeData(value, { values, parts }),
 			(code, call) => {
 				// the config module's, which configure() keeps as the program runs
 				if (
@@ -2148,7 +2526,8 @@ return namespace`
 						[]
 					)
 				}
-			}
+			},
+			(text, isLocal) => parts.add(text, undefined, isLocal)
 		)
 	}
 
@@ -2176,9 +2555,26 @@ return namespace`
 	writeJsonSchemaWriter(
 		root: BaseRoot,
 		write: () => unknown,
-		values?: unknown[]
+		values: unknown[],
+		parts: DataParts
 	): string {
-		return `() => ${this.writeJsonSchema(root, write, { values })}`
+		return `() => ${this.writeJsonSchema(root, write, { values, parts })}`
+	}
+
+	// a part is read from a function, so each read has objects of its own
+	get jsonSchemaParts(): DataPartWriter {
+		return {
+			prefix: "schema",
+			valueOf: text => text,
+			declarationOf: (name, value) =>
+				writeFunction(this.baking, name, "", `\treturn ${value}`, false),
+			readsRuntime: false,
+			readIn: name => `${name}()`,
+			read: (specifier, name) => {
+				this.importName(specifier, name)
+				return `${name}()`
+			}
+		}
 	}
 
 	// a schema read only via a validator throws where it's read
@@ -2187,8 +2583,9 @@ return namespace`
 		write: () => unknown,
 		{
 			isRead = false,
-			values = []
-		}: { isRead?: boolean; values?: unknown[] | undefined }
+			values = [],
+			parts
+		}: { isRead?: boolean; values?: unknown[]; parts: DataParts }
 	): string {
 		try {
 			assertBakeableJsonSchema(root)
@@ -2214,7 +2611,7 @@ return namespace`
 					`${writeUnprecompilableMessage("a JSON Schema whose writing throws")}: ${String(e)}`
 				)
 			}
-			return `(${this.writeData(schema)})`
+			return `(${this.writeData(schema, { parts })})`
 		} catch (e) {
 			if (isRead || !(e instanceof ParseError)) throw e
 			return `runtime.throwUnbaked(${JSON.stringify(e.message)})`
@@ -2230,9 +2627,15 @@ return namespace`
 				(hasDomain(value, "object") && isDateObject(value)))
 		) {
 			opts.values.push(value)
-			return this.emit(value)
+			const text = this.emit(value)
+			return opts.parts ? opts.parts.add(text, undefined, true) : text
 		}
-		if (typeof value === "string") return this.emitString(value)
+		if (typeof value === "string") {
+			const text = this.emitString(value)
+			return opts.parts && value.includes(holeNameMarker) ?
+					opts.parts.add(text, undefined, true)
+				:	text
+		}
 		if (value === undefined) return "void 0"
 		if (
 			value === null ||
@@ -2240,6 +2643,8 @@ return namespace`
 			typeof value === "boolean"
 		)
 			return printablePrimitive(value)
+		const written = opts.parts?.writtenAs(value as object)
+		if (written) return written
 		const prototype = hasDomain(value, "object") && prototypeOf(value)
 		const isPlainArray = prototype === Array.prototype && Array.isArray(value)
 		if (
@@ -2256,22 +2661,26 @@ return namespace`
 				)
 			)
 		}
+		let text: string
 		if (isPlainArray)
-			return `[${(value as unknown[]).map(v => this.writeData(v, opts)).join(", ")}]`
-		const entries = Object.entries(value as object).map(
-			// a __proto__ key would set an object literal's prototype
-			([k, v]) =>
-				`${k === "__proto__" ? `["__proto__"]` : JSON.stringify(k)}: ${this.writeData(v, opts)}`
-		)
-		if (prototype === null) entries.unshift("__proto__: null")
-		return `{ ${entries.join(", ")} }`
+			text = `[${(value as unknown[]).map(v => this.writeData(v, opts)).join(", ")}]`
+		else {
+			const entries = Object.entries(value as object).map(
+				// a __proto__ key would set an object literal's prototype
+				([k, v]) =>
+					`${k === "__proto__" ? `["__proto__"]` : JSON.stringify(k)}: ${this.writeData(v, opts)}`
+			)
+			if (prototype === null) entries.unshift("__proto__: null")
+			text = `{ ${entries.join(", ")} }`
+		}
+		return opts.parts ? opts.parts.add(text, value as object) : text
 	}
 
 	emitRootApply(
 		root: BaseRoot,
 		opts: RootApplyOptions
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
-		const { asValidator, unconfigured, throws } = opts
+		const { asValidator, readsAllows, unconfigured, throws } = opts
 		const callbacks = declares(
 			root,
 			node =>
@@ -2312,15 +2721,13 @@ return namespace`
 			: "InternalTraversal"
 		// first-issue traversals drop the rest when finalized
 		const appliesErrors = !this.baking.firstIssue || reportsIssues
-		// for speed, issues reported into ArkErrors are found once read
-		const unreads =
-			reportsIssues &&
-			this.baking.defersIssues &&
-			// a callback runs when arktype would run it
-			!declares(
-				root,
-				node => node.is("predicate") && !isKeyword(node.predicate)
-			)
+		const runsNarrow = declares(
+			root,
+			node => node.is("predicate") && !isKeyword(node.predicate)
+		)
+		// for speed, issues reported into ArkErrors are found once read, unless a
+		// callback, which runs when arktype would run it
+		const unreads = reportsIssues && this.baking.defersIssues && !runsNarrow
 		const [callErrors, elementErrors] =
 			unreads ?
 				["runtime.unreadCallErrors", "runtime.unreadElements"]
@@ -2381,6 +2788,7 @@ return namespace`
 				const args = `[${traversals}[0], ${traversals}[${this.appliedIndexOf(root)}], ${elements}]`
 				return [
 					this.emitApplier({
+						readsAllows,
 						// a minifier inlines a const read once, but not a default
 						params: `{ 1: apply, 2: allowsElement, 3: applyElement }, onFail, rejectedIn = data => {
 	for (let i = 0; i < data.length; i++) if (!allowsElement(data[i])) return i
@@ -2400,6 +2808,7 @@ return namespace`
 			if (asValidator) {
 				return [
 					this.emitApplier({
+						readsAllows,
 						params: `${pattern}${unconfigured ? "" : ", onFail"}`,
 						apply: `(data, ...args) => allows(data) ? ${valid} : ${callErrors}(${apply}, data, args, ${unconfigured ? "null" : "onFail"}, ${Ctx})`,
 						args: parts,
@@ -2414,13 +2823,17 @@ return namespace`
 					params: pattern,
 					apply: `(data, onFail) => allows(data) ? ${valid} : ${
 						unreads ? `runtime.unreadErrors(${apply}, data, onFail, ${Ctx})`
-						: reportsIssues && !this.baking.shortest ?
-							throws && Ctx === "runtime.ArkErrors" ?
-								`runtime.throwIssues(${apply}, data)`
-							:	`runtime.foundErrors(${apply}, data, onFail, ${Ctx})`
-						: reportsIssues ?
-							`runtime.applyIssues(${apply}, data, onFail${this.baking.firstIssue ? `, ${Ctx}` : ""})`
-						:	`runtime.applyErrors(${apply}, data, ${refOf("config")}, onFail, ${Ctx})`
+						: !reportsIssues ?
+							`runtime.applyErrors(${apply}, data, ${refOf("config")}, onFail, ${Ctx})`
+						: (
+							throws &&
+							!runsNarrow &&
+							!this.baking.shortest &&
+							Ctx === "runtime.ArkErrors"
+						) ?
+							`runtime.throwIssues(${apply}, data)`
+							// as arktype, a narrow finding data valid when asked again passes it
+						:	`runtime.${runsNarrow ? "applyIssues" : "foundErrors"}(${apply}, data, onFail${this.baking.firstIssue ? `, ${Ctx}` : ""})`
 					}`,
 					args: parts,
 					local
@@ -2472,7 +2885,7 @@ return namespace`
 	emitUndetailedApply(
 		root: BaseRoot,
 		ctx: string,
-		{ asValidator, unconfigured, pipes }: RootApplyOptions
+		{ asValidator, readsAllows, unconfigured, pipes }: RootApplyOptions
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
 		const strategy = root.applyMode
 		const invalid = "invalid(data, onFail)"
@@ -2541,6 +2954,7 @@ return namespace`
 		if (asValidator && parts && !body) {
 			return [
 				this.emitApplier({
+					readsAllows,
 					params: `${params}${unconfigured ? "" : ", onFail"}`,
 					apply:
 						pipes ?
@@ -2574,14 +2988,21 @@ return namespace`
 
 	// hashed with its args unless shortest: V8 can't inline an Allows call several roots share
 	emitApplier({
-		params,
-		apply,
-		failure,
-		local,
-		args
-	}: Omit<RootApplier, "args"> & { args?: string }): string {
-		if (local) return `((${params}) => ${this.validatorOnLoad(apply)})`
-		const body = `\treturn ${this.validatorOnLoad(apply)}`
+		readsAllows,
+		...applier
+	}: Omit<RootApplier, "args"> & {
+		args?: string
+		readsAllows?: boolean
+	}): string {
+		const { params, apply, bound, failure, local, args } =
+			(this.baking.defers &&
+				readsAllows !== undefined &&
+				boundApplierOf(applier as RootApplier, readsAllows)) ||
+			applier
+		if (local && !bound)
+			return `((${params}) => ${this.validatorOnLoad(apply)})`
+		const body = `${bound ? `${bound}\n` : ""}\treturn ${this.validatorOnLoad(apply)}`
+		if (local) return `((${params}) => {\n${body}\n})`
 		const name = `apply${hashOf(
 			`${params}\n${body}${this.baking.shortest || args === undefined ? "" : `\n${args}`}`
 		)}`
@@ -2624,6 +3045,11 @@ return namespace`
 		const element = root.structure!.sequence!.variadic!
 		if (
 			isRefinedPattern(element) ||
+			// its Allows runs again where it rejects, which a callback would see
+			declares(
+				element,
+				node => node.is("predicate") && !isKeyword(node.predicate)
+			) ||
 			!this.unitsByHead.has(`${this.variantOf(element)}${element.id}`)
 		)
 			return
@@ -3043,7 +3469,8 @@ return namespace`
 		return this.readSharedValue("default", () => {
 			const isRead = this.runtimeReadRoots.has(value)
 			this.runtimeReadRoots.add(value)
-			const validator = isTraversed ? this.writeValidator(value) : "void 0"
+			const validator =
+				isTraversed ? this.writeValidator(value).created() : "void 0"
 			if (!isRead) this.runtimeReadRoots.delete(value)
 			const input =
 				isThunkInput ?
@@ -3266,11 +3693,22 @@ const countedReference = new RegExp(
 	`^(${registryName.replace("$", "\\$")}\\.[\\w$]+?)\\$[1-9]\\d*$`
 )
 
-const uncountedJsonOf = (json: unknown): unknown =>
-	typeof json === "string" ? json.replace(countedReference, "$1")
-	: Array.isArray(json) ? json.map(uncountedJsonOf)
-	: hasDomain(json, "object") ?
-		flatMorph(json, (k, v) => [k, uncountedJsonOf(v)])
-	:	json
+const uncountedJsonOf = (
+	json: unknown,
+	// a node's json holds a reference's, however many times it's referenced
+	seen = new Map<unknown, unknown>()
+): unknown => {
+	if (typeof json === "string") return json.replace(countedReference, "$1")
+	if (!hasDomain(json, "object")) return json
+	let uncounted = seen.get(json)
+	if (!uncounted) {
+		uncounted =
+			Array.isArray(json) ?
+				json.map(v => uncountedJsonOf(v, seen))
+			:	flatMorph(json, (k, v) => [k, uncountedJsonOf(v, seen)])
+		seen.set(json, uncounted)
+	}
+	return uncounted
+}
 
 type CheckedHole = [hole: unknown, kind: HoleKind, expression: string]

@@ -475,6 +475,36 @@ const reportedOf = (expected: unknown, actual: unknown): unknown => {
 	)
 }
 
+// whether the worlds must agree on what else a value is. A site that threw, as a
+// creation check may, created nothing another could be. A program compares what
+// it reads as a value, as what it observes does, which gets one validator, but
+// this wraps each site, where a validator that's only called or read holds what
+// that site reads, so only what's merged counts. A site run again returns one
+// value, even a Scope it creates, which the docs name
+const comparesIdentity = (
+	key: string,
+	observed: Observation,
+	actual: Observation | undefined,
+	observations: Record<string, Observation>,
+	actuals: Record<string, Observation>
+): boolean => {
+	if (actuals[observed.sameAs as string]?.threw !== undefined) return false
+	const [id, occurrence] = key.split(":")
+	if (occurrence === undefined) return true
+	const merged = actual?.sameAs as string | undefined
+	return (
+		merged !== undefined &&
+		merged.split(":")[0] !== id &&
+		((observations[merged]?.sameAs as string | undefined) ?? merged) !==
+			(observed.sameAs ?? key)
+	)
+}
+
+const withoutIdentity = (observation: Observation): Observation => {
+	const { sameAs: _, ...others } = observation
+	return others
+}
+
 // what a factory's checks throw for a value unlike what the build read
 const isCreationCheck = (observation: Observation | undefined) =>
 	typeof observation?.threw === "string" &&
@@ -560,8 +590,19 @@ export const compareWorlds = (
 				if (isTest(key))
 					for (const site of observed.sites as string[]) testOf[site] = key
 			}
-			for (const [key, observed] of Object.entries(originals)) {
-				const actual = actuals[key]
+			for (const [key, observedAs] of Object.entries(originals)) {
+				const compares = comparesIdentity(
+					key,
+					observedAs,
+					actuals[key],
+					originals,
+					actuals
+				)
+				const observed = compares ? observedAs : withoutIdentity(observedAs)
+				const actual =
+					compares || !actuals[key] ?
+						actuals[key]
+					:	withoutIdentity(actuals[key])
 				if (isTest(key)) {
 					// a test's own throws aren't compared, as tests call what a validator
 					// lacks by design, like `.extends`, but the documented ones are counted
@@ -599,8 +640,13 @@ export const compareWorlds = (
 						:	"unobserved precompiled"
 					: comparable(actual) === comparable(expected) ?
 						(
-							comparable(expected) ===
-							comparable(reportedOf(original[file.path].none?.[key], actual))
+							comparable(withoutIdentity(expected)) ===
+							comparable(
+								reportedOf(
+									withoutIdentity(original[file.path].none?.[key] ?? {}),
+									actual
+								)
+							)
 						) ?
 							"agrees"
 						:	"agrees with the change"

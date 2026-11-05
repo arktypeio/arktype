@@ -293,6 +293,8 @@ export abstract class NodeCompiler extends CompiledFunction<
 
 	// written by standalone builds, whose issues hold no node contexts
 	unionFails?(node: UnionNode): string
+	// what fails with the first issues in `errors` of branches no Allows decided
+	listedFails?(node: UnionNode): string
 	missFails?(node: UnionNode): string
 	defaultFails?(node: UnionNode, caseNode: BaseRoot): string
 	undeclaredFails?(node: StructureNode): string

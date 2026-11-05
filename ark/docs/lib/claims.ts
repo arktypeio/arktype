@@ -573,6 +573,12 @@ export const claims = {
 	// build's lead at form scale (sizeAverage) doesn't carry: gzip bytes from
 	// lib/bench/presetScale.json, which the check below the claims holds
 	sizePreset: `Big frontend? The "smallest" preset gzips smaller than Valibot at every scale we measured, ${Math.min(...presetScaleTypes)} to ${Math.max(...presetScaleTypes).toLocaleString("en-US")} Types.`,
+	// benchSize, saas, whose one undiscriminated union is all that ships it: 5220 ->
+	// 5777 B gz under "smallest", 10275 -> 10880 by default; erasing what it reads from
+	// those bundles saves 492 and 556 B. login, moltar and shop hold none and don't
+	// change for it
+	unionListing:
+		"The first union in a bundle that lists what its branches expected ships about 0.5 kB gzipped to write it, and a bundle with none ships nothing for it.",
 	// which benchmarks are ours, and that the averages leave them out
 	benchmarkOwners: `Every benchmark is public. We wrote ${ownedPerCategory} on the full board; the averages above leave those out.${writtenSuites ? ` They keep ${writtenSuites}, Valibot's code, which we wrote in each library and size with our own script.` : ""}`,
 	// the claims that depend on a single benchmark, and which

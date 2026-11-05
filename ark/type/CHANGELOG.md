@@ -1156,7 +1156,7 @@ A getter or `Proxy` trap on validated data can run a different number of times, 
 
 ### Check numeric strings, IP addresses and ISO dates by their characters
 
-`string.numeric`, `string.integer`, `string.ip.v4`, `string.ip.v6` and `string.date.iso`, and the inputs of their `parse` morphs, check a string by reading its characters rather than testing it against their patterns, and `string.uuid` tests its pattern only against a string of a UUID's length. They accept the same strings, and their patterns, `expression`, `json` and JSON Schema are unchanged. A valid IPv4 address takes about half the instructions, an IPv6 address up to 6x fewer, and a string that can't start one is rejected in a fifth of the instructions or less. `string.date.iso` reads `YYYY-MM-DD` and `YYYY-MM-DDTHH:mm:ss` with a fraction and `Z` or an offset itself, and other forms with its pattern.
+`string.numeric`, `string.integer`, `string.ip.v4` and `string.ip.v6`, and the inputs of their `parse` morphs, check a string by reading its characters rather than testing it against their patterns. `string.uuid` tests a faster form of its pattern, only against a string of a UUID's length, and `string.date.iso` tests `YYYY-MM-DD` and `YYYY-MM-DDTHH:mm:ss` with a fraction and `Z` or an offset against a shorter pattern, and other forms against its own. They accept the same strings, and their patterns, `expression`, `json` and JSON Schema are unchanged. A valid UUID takes about half the instructions and half the time, a valid IPv4 address about half the instructions, an IPv6 address up to 6x fewer, and a string that can't start one is rejected in a fifth of the instructions or less.
 
 A pattern node with one of their sources, like `numericStringMatcher` from `@ark/util`, is checked the same way, holding the check as `test`. `@ark/util` exports `uuidMatcher`, `ipv4Matcher`, `ipv6Matcher` and `iso8601Matcher` and their tests, `isUuid`, `isIpv4`, `isIpv6` and `isIso8601`, and its `isNumericString` and `isWellFormedInteger` now read only strings. A build with `optimize: "size"` checks them all by their patterns, which are smaller.
 
@@ -1524,7 +1524,7 @@ scope({
 }).export()
 ```
 
-A `Record` is now inferred as the mapped type `Record` expands to, so it's the same type, but TypeScript prints it as `{ [x: string]: number }` rather than `Record<string, number>`.
+A `Record` is now inferred as the mapped type `Record` expands to, so it's the same type, but TypeScript may print it as `{ [x: string]: number }` rather than `Record<string, number>`.
 
 ### Equate cyclic types of the same shape
 

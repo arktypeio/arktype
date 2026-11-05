@@ -1,8 +1,6 @@
 import { fromHere } from "@ark/fs"
 import {
 	ArkErrors,
-	describeBranches,
-	describeCases,
 	hasArkKind,
 	registryName,
 	schemaScope,
@@ -71,13 +69,14 @@ const comparesExpecteds = detailsErrors && !firstIssue
 // "flat" is the modules with their units declared in one function, as a
 // one-chunk production bundle declares them, which size-optimized units never
 // are; "shaped" is a size build's modules with common intersections written as
-// shapes, as a program with enough of them is
-type Layout = "inline" | "modules" | "flat" | "shaped"
+// shapes, as a program with enough of them is; "deferred" is "modules" creating
+// its validators at their first call, as a large module does
+type Layout = "inline" | "modules" | "flat" | "shaped" | "deferred"
 
 export const layouts: Layout[] =
 	testedOptions.optimize === "size" ?
 		["inline", "modules", "shaped"]
-	:	["inline", "modules", "flat"]
+	:	["inline", "modules", "flat", "deferred"]
 
 // artifacts whose units were declared in one function
 export let flattened = 0
@@ -232,10 +231,13 @@ const holdsUncounted = (value: unknown, seen = new Set<object>()): boolean => {
 	})
 }
 
+// a deferred shape's unit is named under a directory of its own
+const fileOf = (name: string) => `${name.replace(/\//g, "-")}.js`
+
 const link = (code: string) =>
 	code
 		.replace(/from "arktype\/runtime"/g, `from "./runtime.js"`)
-		.replace(/"~arktype\/([^"]+)"/g, `"./$1.js"`)
+		.replace(/"~arktype\/([^"]+)"/g, (_, name: string) => `"./${fileOf(name)}"`)
 
 // every artifact's modules share one directory, as a bundle shares them
 const modulesBySpecifier: Record<string, string> = {}
@@ -248,6 +250,7 @@ const loadArtifact = async (
 	members: ValidatorMembers
 ): Promise<any> => {
 	const dir = await outDir()
+	const defers = layout === "deferred"
 	const opts = {
 		members,
 		errors: testedOptions.errors,
@@ -258,7 +261,9 @@ const loadArtifact = async (
 		optimize: testedOptions.optimize,
 		jsonInput: testedOptions.jsonInput,
 		configured: testedOptions.config === false ? (false as const) : undefined,
-		shapes: layout === "shaped"
+		shapes: layout === "shaped",
+		defers,
+		hoisted: layout === "deferred"
 	}
 	let code: string
 	if (layout === "inline") code = precompileStandalone(exports, opts).code
@@ -282,7 +287,7 @@ const loadArtifact = async (
 			const written = modulesBySpecifier[specifier]
 			if (written === undefined) {
 				modulesBySpecifier[specifier] = module
-				writeFileSync(join(dir, `${specifier.slice(9)}.js`), link(module))
+				writeFileSync(join(dir, fileOf(specifier.slice(9))), link(module))
 			} else if (written !== module) {
 				throw new Error(
 					`${specifier} names two modules:\n${written}\n${module}`
@@ -527,7 +532,11 @@ const textsOf = (errors: ArkErrors, grouped = true) => {
 				if (isMessaged) text.message = error.message
 			} else {
 				if (issue.problem !== undefined) text.problem = issue.problem
-				if (issue.message !== messageOf({ ...issue, message: undefined }))
+				// a union's text is compared where it's expected
+				if (
+					!issue._r &&
+					issue.message !== messageOf({ ...issue, message: undefined })
+				)
 					text.message = issue.message!
 			}
 			return Object.keys(text).length > 1 ? [text] : []
@@ -535,86 +544,86 @@ const textsOf = (errors: ArkErrors, grouped = true) => {
 		.sort((l, r) => (l.at < r.at ? -1 : 1))
 }
 
-// a union whose branches each fail at its path by their basis is described
-// by those bases, as a validator's union issue is
-const basisCodes = new Set<string>(["domain", "proto", "unit"])
-
-// what a union's error lists for one of its errors: a basis it expects, or
-// the cases of a discriminant a morph's input union missed, as a locale
-// writes them
-const alternativesOf = (error: ArkError): string[] | null => {
-	if (basisCodes.has(error.code)) return [error.expected]
-	if (error.code !== "discriminant") return null
-	const { discriminantKind, cases } = error as ArkError<"discriminant">
-	const each = cases.map(c =>
-		describeCases({ discriminantKind, cases: [c] } as never)
-	)
-	return describeBranches(each) === error.expected ? each : [error.expected]
-}
-
 // what each issue expects, at its path and code, where a validator's issue is
-// written alike: not an issue a callback raised without an expected, nor a
-// union described by its branches' errors, as a validator's issue holds
-// neither the callback nor the errors; a missing key expects its value's
-// brief. Its message is compared too, without what a validator's never says:
-// what the value was, and "value at" before an index path
+// written alike: not an issue a callback raised without an expected, whose
+// callback it doesn't hold, nor a union's, whose message says what it expects;
+// a missing key expects its value's brief. Its message is compared too, without
+// what a validator's never says: what the value was, and "value at" before an
+// index path
 const expectedsOf = (errors: ArkErrors) =>
 	keptOf(errors)
 		.map(issue => {
 			const expected =
-				!(errors instanceof ArkErrors) ? (issue.expected ?? null)
+				issue.code === "union" ? "union"
+				: !(errors instanceof ArkErrors) ? (issue.expected ?? null)
 				: raisesUnexpected(issue as ArkError) ? null
-				: issue.code === "union" ? unionExpectedOf(issue as ArkError<"union">)
 				: issue.expected
 			return {
 				at: `${pathKeyOf(issue.path)}\0${issue.code}`,
 				expected,
-				message: expected === null ? null : messageWithoutActual(issue.message!)
+				message:
+					expected === null || raisesNever(issue) ?
+						null
+					:	messageWithoutActual(issue.message!)
 			}
 		})
 		.sort((l, r) => (l.at < r.at ? -1 : 1))
 
 // arktype writes a symbol's description only where it's an identifier
 const messageWithoutActual = (message: string): string =>
-	message
-		.replace(/ \(was [^]*\)$/, "")
-		.replace(/^value at /, "")
+	withoutWas(message)
+		.replace(/(^|, | or )value at /g, "$1")
 		.replace(/\[Symbol\([^)]*\)]/g, "[Symbol]")
+
+// what a value was, which a build's text doesn't say, may hold quotes and parens
+const withoutWas = (message: string): string => {
+	const marker = " (was "
+	let written = ""
+	let from = 0
+	for (
+		let at = message.indexOf(marker);
+		at !== -1;
+		at = message.indexOf(marker, from)
+	) {
+		written += message.slice(from, at)
+		from = at + marker.length
+		let depth = 1
+		let isQuoted = false
+		while (depth && from < message.length) {
+			const char = message[from++]
+			if (isQuoted) {
+				if (char === "\\") from++
+				else if (char === '"') isQuoted = false
+			} else if (char === '"') isQuoted = true
+			else if (char === "(") depth++
+			else if (char === ")") depth--
+		}
+	}
+	return written + message.slice(from)
+}
 
 // a check's error holds its description, which a raised one doesn't unless
 // pipe.try raised it, describing it by its morph
 const raisesUnexpected = (error: ArkError) =>
+	error.code !== "predicate" &&
 	error.code !== "union" &&
 	error.description === undefined &&
-	(error as ArkError<"predicate">).morph === undefined &&
+	(error as { morph?: unknown }).morph === undefined &&
 	suppliedTextOf(error, "expected") === undefined
 
-const unionExpectedOf = (error: ArkError<"union">): string | null => {
-	const meta: Record<string, unknown> = error.meta ?? {}
-	if (
-		(meta.description !== undefined && meta.keyword === undefined) ||
-		meta.expected !== undefined
-	)
-		return error.expected
-	if (!error.errors.length) return null
-	const expected: string[] = []
-	for (const e of error.errors) {
-		const alternatives =
-			e.propString === error.propString ? alternativesOf(e) : null
-		if (!alternatives) return null
-		for (const alternative of alternatives)
-			if (!expected.includes(alternative)) expected.push(alternative)
-	}
-	return describeBranches(expected)
-}
+// a callback's union of no branches has no text, as the docs say; a `never`'s
+// is compared by unionText.test.ts
+const raisesNever = (issue: { code: string; errors?: readonly unknown[] }) =>
+	issue.code === "union" && issue.errors?.length === 0
 
 // a validator's expected and message where arktype's are written from what
 // it doesn't hold
 const maskExpecteds = (arktype: unknown, precompiled: unknown): unknown => {
 	if (!hasDomain(arktype, "object") || !hasDomain(precompiled, "object"))
 		return precompiled
-	const expecteds = (arktype as { expecteds?: { expected: unknown }[] })
-		.expecteds
+	const expecteds = (
+		arktype as { expecteds?: { expected: unknown; message: unknown }[] }
+	).expecteds
 	const compared = (precompiled as { expecteds?: { expected: unknown }[] })
 		.expecteds
 	if (!expecteds || !compared || expecteds.length !== compared.length)
@@ -624,7 +633,8 @@ const maskExpecteds = (arktype: unknown, precompiled: unknown): unknown => {
 		expecteds: compared.map((entry, i) =>
 			expecteds[i].expected === null ?
 				{ ...entry, expected: null, message: null }
-			:	entry
+			: expecteds[i].message === null ? { ...entry, message: null }
+			: entry
 		)
 	}
 }

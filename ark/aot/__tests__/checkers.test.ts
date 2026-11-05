@@ -142,6 +142,52 @@ console.log(String(Limited({ s: "x" })))
 `
 		)
 
+		it("answers allows true whatever truthy value it returned", async () => {
+			const root = fixture(
+				"truthy",
+				`import { type } from "arktype"
+const yes = ((s: any) => (s.length > 1 ? "yes" : 0)) as any
+const generates = function* (s: string) {
+	yield s
+} as any
+const Alone = type("unknown").narrow(yes)
+const Narrowed = type("string").narrow(yes)
+const Twice = type("string").narrow(yes).narrow(s => s.length < 9)
+const Piped = type("string")
+	.narrow(yes)
+	.pipe(s => s.length)
+const Generates = type("string").narrow(generates)
+const Either = Narrowed.or("number")
+console.log(
+	[Alone, Narrowed, Twice, Piped, Generates, Either].map(t => [
+		t.allows("abc"),
+		t.allows("a")
+	])
+)
+${repaying}
+`
+			)
+			const checkers = await bundle(root, smallest)
+			attest(checkers.includes("narrowedBy(")).equals(true)
+			const expected = `[
+  [ true, false ],
+  [ true, false ],
+  [ true, false ],
+  [ true, false ],
+  [ true, true ],
+  [ true, false ]
+]
+`
+			attest(behaviorOf(checkers)).equals(expected)
+			attest(behaviorOf(await bundle(root))).equals(expected)
+			attest(behaviorOf(await bundle(root, { optimize: "size" }))).equals(
+				expected
+			)
+			attest(
+				behaviorOf(await bundle(root, { ...smallest, prune: false }))
+			).equals(expected)
+		})
+
 		it("names its function, or what's written for it", async () => {
 			const root = fixture(
 				"names",
@@ -294,8 +340,41 @@ const Parent = type({ child: { "+": "delete", a: "string" }, other: "string = 'y
 console.log(JSON.stringify(Parent({ child: { a: "a", b: 1 } })))
 const unchanged = { child: { a: "a" }, other: "o" }
 console.log(Parent(unchanged) === unchanged, Parent(unchanged).child === unchanged.child)
+const Env = type({ "+": "delete", a: "string" })
+process.env.a = "abc"
+process.env.kept = "1"
+const fromEnv = Env(process.env)
+console.log(fromEnv === process.env, JSON.stringify(fromEnv), process.env.kept)
+class Tagged { a = "abc"; extra = 1; get [Symbol.toStringTag]() { return "T" } }
+const tagged = new Tagged()
+console.log(Env(tagged) === tagged, Object.keys(tagged))
 `
 		)
+	})
+
+	it("leaves a key a Type ignores, whatever the program's config does", async () => {
+		const root = writeFixture(
+			{
+				"config.ts": `import { configure } from "arktype/config"
+
+configure({ onUndeclaredKey: "delete" })
+`,
+				"main.ts": `import "./config.ts"
+import { type } from "arktype"
+
+export const Ignoring = type({ "+": "ignore", a: "string" })
+export const Deleting = type({ a: "string" })
+const data = { a: "a", z: 1 }
+console.log(JSON.stringify(Ignoring(data)), Ignoring.allows(data))
+console.log(JSON.stringify(Deleting(data)))
+${repaying}
+`
+			},
+			fromHere("temp", "checkers", "ignored")
+		)
+		attest(
+			behaviorOf(await bundle(root, { ...smallest, config: "config.ts" }))
+		).equals('{"a":"a","z":1} true\n{"a":"a"}\n')
 	})
 
 	it("reads a failing value once at each depth, with no ctx", async () => {

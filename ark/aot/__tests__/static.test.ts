@@ -2809,7 +2809,7 @@ export const E = type(__defProp({ a: "string" }, "name", { value: "o", configura
 					{ "/other.ts": "export const isLong = (s: string) => s.length > 1" }
 				)
 			).snap([
-				"6:18 accepted string & fn$hole_mf73o516za619",
+				"6:18 accepted string & fn$hole_hgu1b30q64q3u",
 				'7:18 rejected\n  `__defProp(target, "name", { value, configurable: true })` defines a property other than the name of a function its module created',
 				'8:18 rejected\n  `__defProp((s: string) => s.length < 3, "name", { value: "sh…` defines a property other than the name of a function its module created',
 				'9:18 rejected\n  `__defProp((s: string) => s.length < 3, "length", { value: 2…` defines a property other than the name of a function its module created',
@@ -2839,14 +2839,14 @@ const N = type({ [parseInt(o as never)]: "string" })
 const P = type({ [Number.parseFloat(o as never)]: "string" })
 const Q = type({ [Number.parseInt("12")]: "string" })`)
 			).snap([
-				"5:12 accepted Apple$hole_1c2w4i12760ad",
-				"6:11 accepted Zebra$hole_tlxgt0061ywqu",
+				"5:12 accepted Apple$hole_1fuvc9o0dfhnzb",
+				"6:11 accepted Zebra$hole_1ups7zr0tcgvgi",
 				'9:11 rejected\n  arktype calls `where` (/main.ts:9:102) while defining the type, so it must be a static helper\n  `[n].join("")` converts an object to a primitive, which runs its methods',
 				'10:11 rejected\n  `[Ap, Z].join("")` converts an object to a primitive, which runs its methods',
 				"11:11 rejected\n  `Object.fromEntries([[Ap, 1]])` converts an object to a primitive, which runs its methods",
 				"12:11 rejected\n  `Ap as never` converts an object to a primitive, which runs its methods",
 				"13:11 accepted { a: string, ab: string, xy: string }",
-				"14:11 accepted Zebra$hole_tlxgt0061ywqu",
+				"14:11 accepted Zebra$hole_1ups7zr0tcgvgi",
 				"16:11 rejected\n  `v: any` (/main.ts:15:30) receives the name of `Apple` (/main.ts:3:1), which the build knows only by a placeholder",
 				"17:11 rejected\n  `parseInt(o as never)` converts an object to a primitive, which runs its methods",
 				"18:11 rejected\n  `Number.parseFloat(o as never)` converts an object to a primitive, which runs its methods",

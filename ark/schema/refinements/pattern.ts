@@ -99,6 +99,38 @@ const escapesInRegexLiteral: Record<string, string> = {
 	"\u2029": "\\u2029"
 }
 
+// a class or its escape counted exactly, read from the left so that neither an
+// escaped [ nor what a class holds starts one. Under v a class can nest, but a {
+// in one is an error, so what ends a class and precedes a count ends the outermost
+const countedAtom =
+	/(\\[DSWdsw]|\[(?:\\[\S\s]|[^\\\]])*])(?:{(\d+)}(?!\?))?|\\[\S\s]/g
+
+// V8 unrolls a count up to 3
+const minWrittenOut = 4
+const maxWrittenOutLength = 1024
+
+// the same language, for what V8 tests fastest: past 3 it loops a counted class
+// through a register, where written out one bounds check covers the run. The
+// choices and captures are the same, so it backtracks as its source does
+const writtenOut = (instance: RegExp): RegExp => {
+	const { source, flags } = instance
+	if (!source.includes("{")) return instance
+	const written = source.replace(
+		countedAtom,
+		(token, atom: string | undefined, count: string | undefined) =>
+			(
+				count &&
+				+count >= minWrittenOut &&
+				+count * atom!.length <= maxWrittenOutLength
+			) ?
+				atom!.repeat(+count)
+			:	token
+	)
+	return written === source || written.length > maxWrittenOutLength ?
+			instance
+		:	new RegExp(written, flags)
+}
+
 const writeRegexLiteral = (rule: string, flags = ""): string =>
 	`/${rule.replace(/\\.|[\n\r/\u2028\u2029]/g, token => escapesInRegexLiteral[token] ?? token)}/${flags}`
 
@@ -111,6 +143,8 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 	}
 
 	readonly instance: RegExp = new RegExp(this.rule, this.flags)
+	// what a speed build and arktype test
+	readonly tested: RegExp = writtenOut(this.instance)
 	readonly expression: string = writeRegexLiteral(this.rule, this.flags)
 	readonly test: ((s: string) => boolean) | undefined =
 		testsByExpression[`${this.instance}`]
@@ -121,18 +155,18 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 
 	tAllows: (string: string) => boolean =
 		this.test ??
-		(this.isRepeated ? string => matchesRepeated(this.instance, string)
+		(this.isRepeated ? string => matchesRepeated(this.tested, string)
 		: this.resetsLastIndex ?
 			string => {
-				this.instance.lastIndex = 0
-				return this.instance.test(string)
+				this.tested.lastIndex = 0
+				return this.tested.test(string)
 			}
-		:	this.instance.test.bind(this.instance))
+		:	this.tested.test.bind(this.tested))
 
 	// a ref, so a pattern the engine rejects fails only its definition
 	jsCond(js: NodeCompiler, data: string): string {
 		if (this.test && !js.shortest) return `${js.ref(this.test)}(${data})`
-		const instance = js.ref(this.instance)
+		const instance = js.ref(js.shortest ? this.instance : this.tested)
 		if (this.isRepeated)
 			return `${js.ref(matchesRepeated)}(${instance}, ${data})`
 		return this.resetsLastIndex ?

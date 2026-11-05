@@ -1,23 +1,22 @@
-// formats read by char code, faster than their RegExps; each accepts its RegExp's language
+// formats tested faster than by their RegExps; each accepts its RegExp's language
 import { isDigitCode } from "./numbers.ts"
 
 // unsigned, so codes below each range wrap above it
 const isHexCode = (code: number) =>
 	(code - 48) >>> 0 < 10 || ((code | 32) - 97) >>> 0 < 6
 
-// whether the two digits at i are a number at most max
-const isTwoDigitsAtMost = (s: string, i: number, max: number) => {
-	const tens = s.charCodeAt(i) - 48
-	const ones = s.charCodeAt(i + 1) - 48
-	return tens >= 0 && ones >= 0 && ones <= 9 && tens * 10 + ones <= max
-}
-
 export const uuidMatcher: RegExp =
 	/^(?:[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-[1-8][\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}|0{8}-(?:0{4}-){3}0{12}|f{8}-(?:f{4}-){3}f{12})$/
 
+// uuidMatcher, its classes written out: V8 loops a class counted past 3 through a
+// register, ~23 instructions per char against ~7, where charCodeAt costs ~37
+const uuidWrittenOut =
+	// eslint-disable-next-line unicorn/better-regex
+	/^(?:[\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f]-[\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f]-[1-8][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f]-[89ABab][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f]-[\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f]|0{8}-(?:0{4}-){3}0{12}|f{8}-(?:f{4}-){3}f{12})$/
+
 // its length rejects most strings before the RegExp
 export const isUuid = (s: string): boolean =>
-	s.length === 36 && uuidMatcher.test(s)
+	s.length === 36 && uuidWrittenOut.test(s)
 
 // based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
 export const ipv4Matcher: RegExp =
@@ -116,58 +115,17 @@ export const isIpv6 = (s: string): boolean => {
 export const iso8601Matcher: RegExp =
 	/^[+-]?\d{4}(?!\d{2}\b)(?:(-?)(?:(?:0[1-9]|1[0-2])(?:\1(?:[12]\d|0[1-9]|3[01]))?|W(?:[0-4]\d|5[0-3])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\d|[12]\d{2}|3(?:[0-5]\d|6[1-6])))(?:T(?:(?:(?:[01]\d|2[0-3])(?:(:?)[0-5]\d)?|24:?00)(?:[,.]\d+(?!:))?)?(?:\2[0-5]\d(?:[,.]\d+)?)?(?:[Zz]|[+-](?:[01]\d|2[0-3]):?(?:[0-5]\d)?)?)?)?$/
 
-// YYYY-MM-DD
-const isCalendarDate = (s: string) =>
-	isTwoDigitsAtMost(s, 0, 99) &&
-	isTwoDigitsAtMost(s, 2, 99) &&
-	s.charCodeAt(4) === 45 &&
-	isTwoDigitsAtMost(s, 5, 12) &&
-	s.charCodeAt(7) === 45 &&
-	isTwoDigitsAtMost(s, 8, 31) &&
-	// a month or day of 0
-	!(s.charCodeAt(5) === 48 && s.charCodeAt(6) === 48) &&
-	!(s.charCodeAt(8) === 48 && s.charCodeAt(9) === 48)
+// iso8601Matcher's YYYY-MM-DD and YYYY-MM-DDTHH:mm:ss with a fraction and Z or an
+// offset, without its backreferences and lookaheads
+const commonIso8601 =
+	// eslint-disable-next-line unicorn/better-regex
+	/^\d\d\d\d-(?:0[1-9]|1[0-2])-(?:[12]\d|0[1-9]|3[01])(?:T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:[,.]\d+)?(?:[Zz]|[+-](?:[01]\d|2[0-3]):[0-5]\d)?)?$/
 
-// THH:mm:ss after a date, then maybe a fraction and Z or an offset ±HH:mm
-const isTimeAfterDate = (s: string, length: number) => {
-	if (
-		s.charCodeAt(10) !== 84 ||
-		!isTwoDigitsAtMost(s, 11, 23) ||
-		s.charCodeAt(13) !== 58 ||
-		!isTwoDigitsAtMost(s, 14, 59) ||
-		s.charCodeAt(16) !== 58 ||
-		!isTwoDigitsAtMost(s, 17, 59)
-	)
-		return false
-	let i = 19
-	if (i === length) return true
-	let code = s.charCodeAt(i)
-	// a fraction has a digit
-	if (code === 46 || code === 44) {
-		do if (++i === length) return i > 20
-		while (isDigitCode((code = s.charCodeAt(i))))
-		if (i === 20) return false
-	}
-	if (code === 90 || code === 122) return i + 1 === length
-	return (
-		(code === 43 || code === 45) &&
-		i + 6 === length &&
-		isTwoDigitsAtMost(s, i + 1, 23) &&
-		s.charCodeAt(i + 3) === 58 &&
-		isTwoDigitsAtMost(s, i + 4, 59)
-	)
-}
-
-// toISOString's form is read by char code, others by the RegExp; inlined,
-// terser and swc would allocate a closure per call
+// a string that can't start one is rejected before the RegExps
 export const isIso8601 = (s: string): boolean => {
-	const length = s.length
 	const code = s.charCodeAt(0)
 	return (
 		(isDigitCode(code) || code === 43 || code === 45) &&
-		(((length === 10 || length >= 19) &&
-			/* @__NOINLINE__ */ isCalendarDate(s) &&
-			(length === 10 || /* @__NOINLINE__ */ isTimeAfterDate(s, length))) ||
-			iso8601Matcher.test(s))
+		(commonIso8601.test(s) || iso8601Matcher.test(s))
 	)
 }

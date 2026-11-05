@@ -13,7 +13,7 @@ import {
 import { spawnSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { writeFixture } from "./utils.ts"
+import { runPlain, writeFixture } from "./utils.ts"
 
 // arktype's packages resolve to their source in this repo
 const conditions = ["ark-ts", "production"]
@@ -163,6 +163,33 @@ contextualize(function (this: Mocha.Suite) {
 			"a.ts": `import { type } from "arktype"\nimport { Name } from "./name.ts"\n\nexport const A = type({ name: Name, id: "string" })\n`,
 			"b.ts": `import { type } from "arktype"\nimport { A } from "./a.ts"\nimport { Name } from "./name.ts"\n\nexport const B = type({ name: Name, a: A })\nexport const C = type({ name: Name, a: A })\n`,
 			"main.ts": `import { type } from "arktype"\nimport { B, C } from "./b.ts"\n\n${log}tell(B({ name: "x", a: { name: "abc", id: "i" } }))\ntell(C({ name: "abc", a: { name: "abc", id: "i" } }))\n`
+		})
+
+		it("runs a narrow on an array's elements as often as arktype does", async () => {
+			const root = fixture("narrowed-elements", {
+				"main.ts": `import { type } from "arktype"
+
+const isLong = (s: string) => {
+	globalThis.calls.push(s)
+	return s.length > 2
+}
+const Long = type("string").narrow(isLong)
+const Longs = Long.array()
+// read by what the build can't follow, each keeps its methods
+export const types = [Long, Longs]
+for (const data of [["abc", "abcd"], ["abc", "x", "abcd", "y"]]) {
+	globalThis.calls = []
+	Longs(data)
+	console.log(globalThis.calls.join())
+}
+`
+			})
+			const js = await esbuildBundle(root)
+			attest(setsCell(js)).equals(true)
+			attest(behaviorOf(js)).equals(runPlain(root))
+			attest(behaviorOf(js)).snap(`abc,abcd
+abc,x,abc,x,abcd,y
+`)
 		})
 
 		it("declares what's above a narrow once, as what's above a keyword, besides the narrow's own", async () => {
@@ -462,7 +489,7 @@ import { Long as Second } from "./m.ts?v=2"
 console.log(String(First("abc")), String(Second("x")))
 `
 			},
-			{ cells: true }
+			{ cells: false }
 		)
 	})
 
@@ -1161,6 +1188,29 @@ console.log(String(User({ name: "x" })))
 			attest(setsCell(js)).equals(true)
 			attest(behaviorOf(js)).snap("name must be valid according to isLong\n")
 		})
+
+		// the id it's compared by holds its function's name, which it keeps
+		const compared = fixture("rewrittenRead", {
+			"name.ts": named,
+			"main.ts": `import { type } from "arktype"
+import { Name } from "./name.ts"
+
+const schemas = { name: Name }
+const key = ["name"][0]
+const User = type({ name: schemas[key] })
+
+console.log(String(User({ name: "x" })))
+`
+		})
+
+		for (const opts of [{}, { prune: false }]) {
+			it(`is the Type another module's site compares, ${JSON.stringify(opts)}`, async () => {
+				const js = await viteBundle(compared, opts, {
+					plugins: [rewriting(code => code.split("\n").join("\n\n"))]
+				})
+				attest(behaviorOf(js)).snap("name must be valid according to isLong\n")
+			})
+		}
 
 		it("fails where it can't tell which function is which", async () => {
 			const message = await viteBundle(

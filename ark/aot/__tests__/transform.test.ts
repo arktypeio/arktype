@@ -85,7 +85,9 @@ export const isError = (data: unknown) => data instanceof ArkErrors`)
 				"~arktype/#7",
 				"~arktype/#8",
 				"~arktype/#9",
-				"~arktype/#10"
+				"~arktype/#10",
+				"~arktype/#11",
+				"~arktype/#12"
 			])
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
@@ -197,12 +199,13 @@ export const User = type({ name: "string" })`
 				}
 			)
 			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark_#0 } from "~arktype/#1"
-import { #2Allows as $ark_#2Allows } from "~arktype/#1"
-import { #3Allows as $ark_#3Allows } from "~arktype/#1"
+import { interned as $ark_interned } from "~arktype/#0"
+import { #1 as $ark_#1 } from "~arktype/#0"
+import { #2Allows as $ark_#2Allows } from "~arktype/#0"
+import { #3Allows as $ark_#3Allows } from "~arktype/#0"
 import { User } from "./user.ts"
-export const Name = /* @__PURE__ */ $ark_#0($ark_#2Allows)
-export const Team = /* @__PURE__ */ $ark_#0($ark_#3Allows)`)
+export const Name = /* @__PURE__ */ $ark_interned("#4", $ark_#1, $ark_#2Allows)
+export const Team = /* @__PURE__ */ $ark_interned("#5", $ark_#1, $ark_#3Allows)`)
 		})
 
 		it("creates a lazy build's validators where a module reads them as it loads", () => {
@@ -215,14 +218,15 @@ export const nameOf = () => type("string > 1")`,
 				{ creationChecks: "none", config: false, members: unintrospected }
 			)
 			attest(normalized(result.code)).snap(`import "arktype"
-import { #0 as $ark_#0 } from "~arktype/#1"
-import { #2 as $ark_#2 } from "~arktype/#1"
-import { #3 as $ark_#3 } from "~arktype/#1"
-import { #4 as $ark_#4 } from "~arktype/#1"
-import { #5 as $ark_#5 } from "~arktype/#1"
-import { #6 as $ark#6 } from "~arktype/#1"
-export const Name = /* @__PURE__ */ $ark_#0($ark_#2, $ark_#3)
-export const Id = /* @__PURE__ */ $ark_#0($ark_#4, $ark_#5) satisfies Type<string>
+import { interned as $ark_interned } from "~arktype/#0"
+import { #1 as $ark_#1 } from "~arktype/#0"
+import { #2 as $ark_#2 } from "~arktype/#0"
+import { #3 as $ark_#3 } from "~arktype/#0"
+import { #4 as $ark_#4 } from "~arktype/#0"
+import { #5 as $ark_#5 } from "~arktype/#0"
+import { #6 as $ark#6 } from "~arktype/#0"
+export const Name = /* @__PURE__ */ $ark_interned("#7", $ark_#1, $ark_#2, $ark_#3)
+export const Id = /* @__PURE__ */ $ark_interned("#8", $ark_#1, $ark_#4, $ark_#5) satisfies Type<string>
 export const nameOf = () => $ark#6()`)
 		})
 
@@ -322,8 +326,8 @@ export const User = type({ name: "string" })`
 			attest(result.diagnostics).equals([])
 			attest(foldedCode(result.code)).snap(`import "arktype"
 import $arkfixConfig from "~arktype/#7"
-import { User } from "./user.ts"
 import "./user.ts"
+import { User } from "./user.ts"
 $arkfixConfig()
 const Point = /* @__PURE__ */ $ark#0()
 export const json = /* @__PURE__ */ $ark#2()
@@ -454,7 +458,6 @@ export const A = type({ a: R.a })`
 		})
 
 		it("refuses a site whose baked introspection is over the limit", () => {
-			// a dag's json and JSON Schema repeat each Type they reference
 			const files = {
 				"/main.ts": `import { type } from "arktype"
 const Leaf = type({ name: "string" })
@@ -464,7 +467,7 @@ export const Shallow = type({ a: Leaf.array() })`
 			}
 			const precompiler = new Precompiler(memoryHost(files), {
 				members: { json: true, toJsonSchema: true },
-				bakedLimit: 1500
+				bakedLimit: 600
 			})
 			const { diagnostics, sites } = precompiler.precompile(
 				files["/main.ts"],
@@ -479,7 +482,7 @@ export const Shallow = type({ a: Leaf.array() })`
 			attest(diagnostics.map(d => [d.severity, renderDiagnostic(d)])).snap([
 				[
 					"error",
-					"/main.ts:4:21  type({ a: Pair.array(), b: Pair.array() }) can't be precompiled yet\n  its introspection bakes 1.6 KB of text (json 790 chars, toJsonSchema 835 chars), over the 1.5 KB a site may, as json and a JSON Schema repeat each Type they reference. Read fewer of its members, or leave it to arktype with // @ark-runtime or runtime: \"arktype\"\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
+					"/main.ts:4:21  type({ a: Pair.array(), b: Pair.array() }) can't be precompiled yet\n  its introspection bakes 907 chars of text (json 450 chars, toJsonSchema 457 chars), over the 600 chars a site may. Read fewer of its members, or leave it to arktype with // @ark-runtime or runtime: \"arktype\"\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
 				]
 			])
 		})
@@ -1125,15 +1128,17 @@ export const fresh = () => scope({ a: "string" }).type("a").narrow(isLong)`)
 			const tables = artifact
 				.split(/^export { factory\d+ .*$/m)
 				.slice(0, -1)
-				.map(code => code.match(/runtime\.intern\(\((interned\d+)/)?.[1])
-			attest(tables).equals([
-				"interned0",
-				"interned0",
-				"interned1",
-				"interned2",
-				"interned1",
-				"interned3"
+				.map(
+					code =>
+						code.match(
+							/runtime\.intern\((\(interned\d+|runtime\.internedTable\("[^"]*"\))/
+						)?.[1]
+				)
+			// by what names each, unless only this module can create it
+			attest(tables.map(table => tables.indexOf(table))).equals([
+				0, 0, 2, 3, 2, 5
 			])
+			attest(tables[5]).equals("(interned3")
 		})
 	})
 
@@ -1197,7 +1202,7 @@ export const E = type("strng")`,
 				"}",
 				"$ark$load2();",
 				'import "arktype"',
-				'import { siteOf as $ark$0$siteOf, freeze as $ark$0$freeze, unreadCallErrors as $ark$0$unreadCallErrors, UnreadArkErrors as $ark$0$UnreadArkErrors, deepFreeze as $ark$0$deepFreeze, fixConfig as $ark$0$fixConfig, createValidatorWith as $ark$0$createValidatorWith, emptyMeta as $ark$0$emptyMeta, bakedJsonSchema as $ark$0$bakedJsonSchema, bakedStandardJsonSchema as $ark$0$bakedStandardJsonSchema, precompiledForArktype_$version as $ark$0$precompiledForArktype_$version, ParseError as $ark$0$ParseError } from "arktype/runtime"',
+				'import { siteOf as $ark$0$siteOf, freeze as $ark$0$freeze, unreadCallErrors as $ark$0$unreadCallErrors, UnreadArkErrors as $ark$0$UnreadArkErrors, deepFreeze as $ark$0$deepFreeze, fixConfig as $ark$0$fixConfig, interned as $ark$0$interned, createValidatorWith as $ark$0$createValidatorWith, emptyMeta as $ark$0$emptyMeta, bakedJsonSchema as $ark$0$bakedJsonSchema, bakedStandardJsonSchema as $ark$0$bakedStandardJsonSchema, precompiledForArktype_$version as $ark$0$precompiledForArktype_$version, ParseError as $ark$0$ParseError } from "arktype/runtime"',
 				'const Array = "shadowed"',
 				"$arkfixConfig()",
 				"export const T = /* @__PURE__ */ $ark#0()",

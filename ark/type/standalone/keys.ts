@@ -1,5 +1,6 @@
 import {
 	hasArkKind,
+	holeNameMarker,
 	isNode,
 	LazyGenericRoot,
 	madeMorphs,
@@ -52,6 +53,44 @@ export const keyOf = (value: Foldable): Key => {
 	}
 	return key
 }
+
+const contentKeysByNode = new WeakMap<BaseNode, string>()
+
+// what arktype keys a node by, each child's own in place of an id only this process
+// knows. A node it doesn't key, as a keyword or what a Scope binds is, has one id
+// wherever it's read. What's compared by identity is left to the holes it keys
+export const contentKeyOf = (node: BaseNode): string => {
+	let key = contentKeysByNode.get(node)
+	if (key === undefined) {
+		key =
+			node.c.keyed ?
+				hashOf(
+					JSON.stringify([
+						node.kind,
+						Object.entries(node.inner).map(
+							([k, value]) => `${k}:${contentOf(value)}`
+						),
+						node.metaJson
+					])
+				)
+			:	`#${node.id}`
+		contentKeysByNode.set(node, key)
+	}
+	return key
+}
+
+const contentOf = (value: unknown): string =>
+	typeof value === "string" ? JSON.stringify(value)
+	: typeof value === "bigint" ? `${value}n`
+	: Object.is(value, -0) ? "-0"
+	: !hasDomain(value, "object") ?
+		typeof value === "symbol" ?
+			"$"
+		:	`${value}`
+	: isNode(value) ? contentKeyOf(value)
+	: isArray(value) ? `[${value.map(contentOf).join()}]`
+	: isDateObject(value) ? `${dateGetTime.call(value)}`
+	: "$"
 
 // 8 hash chars tell a received value from another
 export const writeId = (id: string): string => JSON.stringify(id.slice(0, 8))
@@ -304,7 +343,7 @@ export const partsOf = (
 	return parts
 }
 
-export const holeNameMarker = "$hole_"
+export { holeNameMarker }
 
 // what a factory calls to read a Type's holes, which it finds by identity
 export const receiverPrefix = "receive"

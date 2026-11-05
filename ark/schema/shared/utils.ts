@@ -152,11 +152,22 @@ export const composing = <t>(compose: () => t): t => {
 	}
 }
 
-// a nested node prints as "..." past this length, so reuse at each level can't double it
+// what a build's name for a callback it's yet to read holds past the callback's own
+export const holeNameMarker = "$hole_"
+
+const holeNameSuffix = /\$hole_[\da-z]+/g
+
+// a nested node prints as "..." past this length, so reuse at each level can't
+// double it, whatever a build names its callbacks while it writes text
 const maxNestedLength = 1000
 
 export const elided = (nested: string): string =>
-	nested.length > maxNestedLength ? "..." : nested
+	(
+		nested.length > maxNestedLength &&
+		nested.replace(holeNameSuffix, "").length > maxNestedLength
+	) ?
+		"..."
+	:	nested
 
 // prints as printedWithThis unless read while composing another node
 export const printSelfAsThis = <node extends BaseRoot>(

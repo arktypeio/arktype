@@ -104,7 +104,7 @@ Where `package.json` sets `"ark"` and an `ark.json` is beside it, the build fail
 
 ### errors
 
-`errors: "first"` stops each validation at the first issue it finds and returns it alone. Which of the data's issues that is isn't promised: the validator looks for whichever is cheapest to find, which may not be the one arktype finds first. `errors: "none"` returns errors holding one root issue with the code `"predicate"` and the message `is invalid`, so no check's description or message ships. Those errors have no `throw()`, and `assert` throws a plain `Error` whose `cause` is the errors.
+`errors: "first"` stops each validation at the first issue it finds and returns it alone. Which of the data's issues that is isn't promised: the validator looks for whichever is cheapest to find, which may not be the one arktype finds first. `errors: "none"` returns errors holding one root issue with the code `"predicate"` and the message `is invalid`, so no check's description or message ships. It asks a narrow once, so one answering false and then true fails where arktype, asking again for its errors, returns the data. Those errors have no `throw()`, and `assert` throws a plain `Error` whose `cause` is the errors.
 
 The plugin and the Node and Bun drivers resolve `@ark/schema/runtime` to `@ark/schema/runtime/none` under `errors: "none"`, and a module importing any other `@ark/schema` entry, or a runtime island, fails the build. Turbopack needs an alias beside [the ones a standalone build needs](/docs/precompile/setup#next), and its loader fails the build without it:
 
@@ -187,7 +187,7 @@ An instance of a class, or any object whose prototype isn't `Object.prototype`, 
 
 ### bakedLimit
 
-`json` and a JSON Schema repeat each Type they reference, so a Type reusing one at each level bakes text that doubles per level. A site whose baked introspection members total more than `bakedLimit` characters, 1 MB by default, fails the build naming the members and their sizes: read fewer of its members, or leave it to arktype with `// @ark-runtime` or `runtime: "arktype"`.
+A site whose baked introspection members total more than `bakedLimit` characters, 1 MB by default, fails the build naming the members and their sizes: read fewer of its members, or leave it to arktype with `// @ark-runtime` or `runtime: "arktype"`. What `json` and a JSON Schema repeat counts once, as it's written once however many Types reuse it, and each read of a JSON Schema still assembles objects of its own.
 
 ### freeze
 
@@ -205,7 +205,7 @@ An instance of a class, or any object whose prototype isn't `Object.prototype`, 
 
 A [production](#production-builds) bundle reads every module its entries reach before it precompiles one, and leaves out of its validators each member of [`members`](#members) no read needs. A validator only called, or read for `.allows`, keeps neither `assert`, `meta`, `~standard` nor `methods`, and one read as `User.assert(data)` keeps `assert`. It follows a validator into the code it's passed to as it does for the introspection members, so one Hono's `sValidator` holds keeps `~standard`, which it validates through, and nothing else. One an MCP tool's `inputSchema` holds keeps each, without a warning, as where it bakes each introspection member. With `lazy: false`, as `"smallest"` sets, it also writes a checker that only one validator reads where that validator is created, rather than as a declaration of its own.
 
-A bundle written as one chunk, an esbuild build with one entry and neither `splitting` nor `inject`, or a Rollup, Rolldown or Vite build with one entry that imports nothing dynamically, also declares the units its validators share in one function wherever that's smaller, which V8 inlines as it does a factory's parameters. Built for size, it declares them in one module instead, each validator among them. A module the build didn't read as the bundle holds it, like a file changed after the build read it or precompiled code another plugin loads, fails the build where it reads one of those units.
+A bundle written as one chunk, an esbuild build with one entry and neither `splitting` nor `inject`, or a Rollup, Rolldown, Vite, webpack or Rspack build with one entry that imports nothing dynamically, also declares the units its validators share in one function wherever that's smaller, which V8 inlines as it does a factory's parameters. Built for size, it declares them in one module instead, each validator among them. A module the build didn't read as the bundle holds it, like a file changed after the build read it or precompiled code another plugin loads, fails the build where it reads one of those units.
 
 The build leaves a member wherever it can't prove no code reads it:
 
@@ -215,7 +215,7 @@ The build leaves a member wherever it can't prove no code reads it:
 - a module reads an `import.meta` property other than `env`, `hot`, `webpackHot`, `url`, `resolve`, `dirname`, `filename` and the flags Nuxt defines, like `client` and `dev`
 - an esbuild bundle holds a module it can't read, like a Vue component
 
-A Vite, Rollup or Rolldown build reads each module as the bundler loads it, so it reads a component as its framework's plugin compiles it, like a Svelte, Vue or Astro component or an MDX page, and a virtual module as the plugin writing it does. A member set true is always kept.
+A Vite, Rollup or Rolldown build reads each module as the bundler loads it, so it reads a component as its framework's plugin compiles it, like a Svelte, Vue or Astro component or an MDX page, and a virtual module as the plugin writing it does. A webpack or Rspack build reads its modules once it has built them as they are, so it reads what its resolver, aliases and loaders make of them, and what Next.js's generated entries import, then builds again those it writes. Each of Next.js's compilers prunes by its own modules. A member set true is always kept.
 
 Where it can't prune, the build warns once, in the bundler's own warnings, naming the first module that kept it from pruning and how, and the fix. Where it can't read every module the bundle holds, it builds as `prune: false` does:
 
@@ -231,9 +231,9 @@ prune: keeping assert, meta, ~standard and methods, because src/index.ts exports
 
 Setting each in `members` clears it, as the build then has no member left to decide. Where `NODE_ENV` is `production`, `arktype-precompile --check` prints the same warning for a bundle of the files it checks, but tests, stories and configs. It follows relative imports of scripts alone and reads no file as an entry, so it misses what an alias, a virtual module, a component or an entry's exports lead to.
 
-Vite, Rollup, Rolldown and esbuild bundles prune, esbuild only where this plugin is the last, so no plugin loads a module after it reads it. `prune: true` also prunes a Rollup, Rolldown or esbuild bundle that isn't for production, which the build can't tell. webpack, Rspack, Turbopack, the Node and Bun drivers and `arktype-precompile` build every validator whole, and fail with `prune: true`, set in their options or `ark.json`, as does an esbuild build where a plugin follows this one.
+Vite, Rollup, Rolldown, esbuild, webpack and Rspack bundles prune, esbuild only where this plugin is the last, so no plugin loads a module after it reads it. `prune: true` also prunes a Rollup, Rolldown, esbuild, webpack or Rspack bundle that isn't for production, which the build can't tell. Turbopack, the Node and Bun drivers and `arktype-precompile` build every validator whole, and fail with `prune: true`, set in their options or `ark.json`, as does an esbuild build where a plugin follows this one.
 
-A Vite, Rollup or Rolldown build reads each module from its file, then reads the bundle again as it was built, and fails only where the built bundle reads a member it left out, naming the read, as where a plugin ahead of this one adds one. A plugin that rewrites a module without adding a read, like a Babel plugin or TanStack Router's code splitting, changes nothing. An esbuild build reads each module as it loads it, and fails where another plugin loaded one. `prune: false` builds every validator whole, each unit a module of its own.
+A Vite, Rollup or Rolldown build reads each module from its file, then reads the bundle again as it was built, and fails only where the built bundle reads a member it left out, naming the read, as where a plugin ahead of this one adds one. A plugin that rewrites a module without adding a read, like a Babel plugin or TanStack Router's code splitting, changes nothing. An esbuild build reads each module as it loads it, and fails where another plugin loaded one. A webpack or Rspack build reads a module as it reached the plugin, a loader ahead's work included, and each import a loader after it adds keeps every member of what that import reaches, but it can't see a read such a loader adds through an import the module already had. Where it can't read a module, it builds as `prune: false` does, as no module was written yet. `prune: false` builds every validator whole, each unit a module of its own.
 
 ### dependencies
 

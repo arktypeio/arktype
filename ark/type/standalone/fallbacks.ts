@@ -18,29 +18,41 @@ type Ref = { hole: number } | { object: number } | { value: unknown }
 // a key, or where the keys of a fallback's result were copied in
 type Entry = { key: string; ref: Ref } | { spread: number }
 
-// each object the writer made so far, by id, as it was at a step
+// each object the writer made, by id, as it was at a step
 type States = Entry[][]
 
+// each object the writer changed or made since the last step, by ascending id
+type Changes = [id: number, entries: Entry[]][]
+
 type Step =
-	| { call: number; code: string; ctx: number; states: States }
+	| { call: number; code: string; ctx: number; changes: Changes }
 	// a union written from a fallback's result, which it reads
 	| {
 			write: keyof UnionJsonSchemaWriters
 			hole: number
 			args: Ref[]
-			states: States
+			changes: Changes
 	  }
-	| { set: number; key: string; ref: Ref; states: States }
-	| { delete: number; key: string; states: States }
+	| { set: number; key: string; ref: Ref; changes: Changes }
+	| { delete: number; key: string; changes: Changes }
 
 export interface FallbackTrace {
 	steps: Step[]
 	result: Ref
+	changes: Changes
+	// each object as the writer finished it
 	states: States
 	arrays: boolean[]
 }
 
 const replayRefusal = new Error("refused")
+
+// a Type reusing another at each level calls a fallback and holds objects that
+// double per level, each read for every call, so reads grow as their product
+const maxTracedReads = 1 << 24
+
+// each target's trace would read as many
+const tooDeep = new WeakSet<BaseRoot>()
 
 const refuseReplay = (): never => {
 	throw replayRefusal
@@ -61,6 +73,20 @@ const writersByName: UnionJsonSchemaWriters = {
 	nullable: writeNullableJsonSchema
 }
 
+const isUnchanged = (
+	keys: string[],
+	o: Record<string, unknown>,
+	keysRead: string[] | undefined,
+	valuesRead: unknown[]
+): boolean => {
+	if (keys.length !== keysRead?.length) return false
+	for (let i = 0; i < keys.length; i++) {
+		if (keys[i] !== keysRead[i] || !Object.is(o[keys[i]], valuesRead[i]))
+			return false
+	}
+	return true
+}
+
 // writes with a fallback whose results are opaque, recording where each is
 // put, or undefined where arktype reads one other than to write a union, as
 // what it writes would then depend on what a call's fallback returns
@@ -73,7 +99,7 @@ export const traceFallbacks = (
 	// as arktype's error does, whose message is all that's kept
 	printsResults?: true
 ): FallbackTrace | undefined => {
-	if (root.references.some(isUnreplayable)) return
+	if (tooDeep.has(root) || root.references.some(isUnreplayable)) return
 	const objects: object[] = []
 	const ids = new Map<object, number>()
 	const holes = new Map<object, number>()
@@ -99,19 +125,36 @@ export const traceFallbacks = (
 		return { object: id }
 	}
 
-	// discovering objects as it reads them, so states hold each reachable one
-	const snapshot = (): States => {
-		const states: States = []
-		for (let i = 0; i < objects.length; i++) {
-			const o = objects[i] as Record<string, unknown>
-			states.push(
-				Object.keys(o).map(key => {
-					const spread = markers.get(key)
-					return spread === undefined ? { key, ref: refOf(o[key]) } : { spread }
-				})
-			)
+	const states: States = []
+	const keysRead: string[][] = []
+	const valuesRead: unknown[][] = []
+	let reads = 0
+
+	// discovering objects as it reads them, so changes hold each reachable one
+	const changesSinceLastStep = (): Changes => {
+		const changes: Changes = []
+		// its result is only printed where it stops arktype's write
+		if (printsResults) return changes
+		for (let id = 0; id < objects.length; id++) {
+			if (++reads > maxTracedReads) {
+				tooDeep.add(root)
+				refuseReplay()
+			}
+			const o = objects[id] as Record<string, unknown>
+			const keys = Object.keys(o)
+			if (isUnchanged(keys, o, keysRead[id], valuesRead[id])) continue
+			const values = keys.map(key => o[key])
+			keysRead[id] = keys
+			valuesRead[id] = values
+			states[id] = keys.map((key, i) => {
+				const spread = markers.get(key)
+				return spread === undefined ?
+						{ key, ref: refOf(values[i]) }
+					:	{ spread }
+			})
+			changes.push([id, states[id]])
 		}
-		return states
+		return changes
 	}
 
 	const unwritten = () => {
@@ -129,7 +172,7 @@ export const traceFallbacks = (
 						set: hole,
 						key: stringKeyOf(key),
 						ref: refOf(value),
-						states: snapshot()
+						changes: changesSinceLastStep()
 					})
 					return true
 				},
@@ -138,7 +181,7 @@ export const traceFallbacks = (
 					steps.push({
 						delete: hole,
 						key: stringKeyOf(key),
-						states: snapshot()
+						changes: changesSinceLastStep()
 					})
 					return true
 				},
@@ -171,9 +214,9 @@ export const traceFallbacks = (
 
 	const fallback: ToJsonSchema.UniversalFallback = ctx => {
 		const { object } = refOf(ctx) as { object: number }
-		const states = snapshot()
+		const changes = changesSinceLastStep()
 		const { hole, result } = unwritten()
-		steps.push({ call: hole, code: ctx.code, ctx: object, states })
+		steps.push({ call: hole, code: ctx.code, ctx: object, changes })
 		return result as JsonSchema
 	}
 
@@ -216,7 +259,7 @@ export const traceFallbacks = (
 							:	arg
 						)
 					),
-					states: snapshot()
+					changes: changesSinceLastStep()
 				})
 				return result as JsonSchema
 			}
@@ -226,13 +269,13 @@ export const traceFallbacks = (
 	let trace: FallbackTrace
 	try {
 		const result = refOf(write(fallback, writers))
-		const states = snapshot()
-		trace = { steps, result, states, arrays: objects.map(isArray) }
+		const changes = changesSinceLastStep()
+		trace = { steps, result, changes, states, arrays: objects.map(isArray) }
 	} catch (e) {
 		if (e === replayRefusal) return
 		throw e
 	}
-	return isOpaque(trace, copies) ? trace : undefined
+	return !printsResults && isOpaque(trace, copies) ? trace : undefined
 }
 
 // each read of a result's keys copied them somewhere, a default value's
@@ -246,9 +289,9 @@ const isOpaque = (trace: FallbackTrace, copies: number[]): boolean => {
 		)
 	)
 	const isDefault = (ref: Ref) => "hole" in ref && defaults.has(ref.hole)
-	for (const { states } of [...trace.steps, trace]) {
-		for (let id = 0; id < states.length; id++) {
-			for (const entry of states[id]) {
+	for (const { changes } of [...trace.steps, trace]) {
+		for (const [id, entries] of changes) {
+			for (const entry of entries) {
 				if ("spread" in entry) {
 					if (trace.arrays[id] || defaults.has(entry.spread)) return false
 					landed[entry.spread].add(id)
@@ -301,7 +344,9 @@ export type WriteHandler = (code: string, call?: number) => string | undefined
 export const writeReplay = (
 	trace: FallbackTrace,
 	writeValue: (value: unknown) => string,
-	handlerOf: WriteHandler
+	handlerOf: WriteHandler,
+	// what reads a literal, or what's only in scope in the replay
+	read: (text: string, isLocal?: boolean) => string
 ): string | undefined => {
 	const { steps, arrays } = trace
 	const defaults = new Set(
@@ -310,15 +355,13 @@ export const writeReplay = (
 		)
 	)
 	const references = arrays.map(() => new Set<string>())
-	const firstStates: Entry[][] = []
-	const changes = arrays.map(() => false)
+	const stateCounts = arrays.map(() => 0)
 	const count = (ref: Ref, by: string) => {
 		if ("object" in ref) references[ref.object].add(by)
 	}
 	for (const [i, step] of [...steps, trace].entries()) {
-		for (const [id, entries] of step.states.entries()) {
-			const first = (firstStates[id] ??= entries)
-			if (!sameEntries(first, entries)) changes[id] = true
+		for (const [id, entries] of step.changes) {
+			stateCounts[id]++
 			for (const entry of entries)
 				if ("ref" in entry) count(entry.ref, `${id} ${entry.key}`)
 		}
@@ -329,45 +372,54 @@ export const writeReplay = (
 	}
 	count(trace.result, "result")
 	// an object read once and never changed is written where it's read
-	const inlines = references.map((by, id) => by.size === 1 && !changes[id])
+	const inlines = references.map(
+		(by, id) => by.size === 1 && stateCounts[id] === 1
+	)
 
 	const statements: string[] = []
+	// each object as of the step about to run
+	const states: States = []
 	const written: Entry[][] = []
 
 	const isDefault = (ref: Ref) => "hole" in ref && defaults.has(ref.hole)
 
-	const expressionOf = (ref: Ref, states: States): string =>
-		"hole" in ref ? `h${ref.hole}`
-		: "object" in ref ? objectAt(ref.object, states)
+	const expressionOf = (ref: Ref): string =>
+		"hole" in ref ? read(`h${ref.hole}`, true)
+		: "object" in ref ? objectAt(ref.object)
 		: writeValue(ref.value)
 
-	const objectAt = (id: number, states: States): string => {
-		if (inlines[id]) return literalOf(id, states)
+	const objectAt = (id: number): string => {
+		if (inlines[id]) return literalOf(id)
 		if (!written[id]) {
-			statements.push(`const o${id} = ${literalOf(id, states)}`)
+			statements.push(`const o${id} = ${literalOf(id)}`)
 			written[id] = states[id]
 		}
-		return `o${id}`
+		return read(`o${id}`, true)
 	}
 
-	const literalOf = (id: number, states: States): string => {
+	const literalOf = (id: number): string => {
 		const entries = states[id]
-		if (arrays[id])
-			return `[${entries.map(entry => expressionOf((entry as { ref: Ref }).ref, states)).join(", ")}]`
-		return `{ ${entries
-			.map(entry => {
-				if ("spread" in entry) return `...h${entry.spread}`
-				const value = expressionOf(entry.ref, states)
-				const key = keyText(entry.key)
-				return isDefault(entry.ref) ?
-						`...(${value} !== void 0 && { ${key}: ${value} })`
-					:	`${key}: ${value}`
-			})
-			.join(", ")} }`
+		if (arrays[id]) {
+			return read(
+				`[${entries.map(entry => expressionOf((entry as { ref: Ref }).ref)).join(", ")}]`
+			)
+		}
+		return read(
+			`{ ${entries
+				.map(entry => {
+					if ("spread" in entry) return read(`...h${entry.spread}`, true)
+					const value = expressionOf(entry.ref)
+					const key = keyText(entry.key)
+					return isDefault(entry.ref) ?
+							`...(${value} !== void 0 && { ${key}: ${value} })`
+						:	`${key}: ${value}`
+				})
+				.join(", ")} }`
+		)
 	}
 
-	const assignKey = (target: string, key: string, ref: Ref, states: States) => {
-		const value = expressionOf(ref, states)
+	const assignKey = (target: string, key: string, ref: Ref) => {
+		const value = expressionOf(ref)
 		const assignment = `${target}[${JSON.stringify(key)}] = ${value}`
 		statements.push(
 			isDefault(ref) ? `if (${value} !== void 0) ${assignment}` : assignment
@@ -375,12 +427,11 @@ export const writeReplay = (
 	}
 
 	// what changed in each object written so far, as of the step about to run
-	const sync = (states: States) => {
-		for (let id = 0; id < written.length; id++) {
+	const sync = (changes: Changes) => {
+		for (const [id, is] of changes) states[id] = is
+		for (const [id, is] of changes) {
 			const was = written[id]
-			if (!was) continue
-			const is = states[id]
-			if (sameEntries(was, is)) continue
+			if (!was || sameEntries(was, is)) continue
 			written[id] = is
 			const kept = was.filter(entry => {
 				if (is.some(next => sameKey(entry, next))) return true
@@ -396,24 +447,23 @@ export const writeReplay = (
 						"ref" in entry &&
 						!sameRef((prior as typeof entry).ref, entry.ref)
 					)
-						assignKey(`o${id}`, entry.key, entry.ref, states)
+						assignKey(`o${id}`, entry.key, entry.ref)
 				} else if ("spread" in entry)
 					statements.push(`Object.assign(o${id}, h${entry.spread})`)
-				else assignKey(`o${id}`, entry.key, entry.ref, states)
+				else assignKey(`o${id}`, entry.key, entry.ref)
 			}
 		}
 	}
 
 	try {
 		for (const step of steps) {
-			sync(step.states)
+			sync(step.changes)
 			if ("code" in step) {
-				const ctx = objectAt(step.ctx, step.states)
+				const ctx = objectAt(step.ctx)
 				const fallsBack = `f(${JSON.stringify(step.code)}, ${ctx}${handlerArg(handlerOf(step.code, step.call))})`
 				// arktype writes a Date with the proto handler where the date
 				// handler returns nullish
-				const isDate =
-					step.code === "date" && step.states[step.ctx].length === 2
+				const isDate = step.code === "date" && states[step.ctx].length === 2
 				statements.push(
 					`const h${step.call} = ${
 						isDate ?
@@ -422,17 +472,16 @@ export const writeReplay = (
 					}`
 				)
 			} else if ("args" in step) {
-				const args = step.args.map(arg => expressionOf(arg, step.states))
+				const args = step.args.map(expressionOf)
 				statements.push(
 					`const h${step.hole} = runtime.${step.write === "union" ? "writeUnionJsonSchema" : "writeNullableJsonSchema"}(${args.join(", ")})`
 				)
-			} else if ("ref" in step)
-				assignKey(`h${step.set}`, step.key, step.ref, step.states)
+			} else if ("ref" in step) assignKey(`h${step.set}`, step.key, step.ref)
 			else
 				statements.push(`delete h${step.delete}[${JSON.stringify(step.key)}]`)
 		}
-		sync(trace.states)
-		const result = expressionOf(trace.result, trace.states)
+		sync(trace.changes)
+		const result = expressionOf(trace.result)
 		return `f => {\n"use strict"\n${statements.join("\n")}\nreturn ${result}\n}`
 	} catch (e) {
 		if (e === replayRefusal) return

@@ -91,6 +91,8 @@ const withUndefined = (value: BaseRoot): BaseRoot => {
 	if (!result) {
 		result =
 			(
+				// an alias may not have resolved yet
+				!value.hasAlias &&
 				domainsOf(value) & unitBitsOf("undefined") &&
 				value.allowsUnused(undefined)
 			) ?

@@ -181,8 +181,13 @@ export class ArkErrors extends BaseArkErrors {
 	/** @internal */
 	override _merge(merged: BaseArkErrors, prefix: array<PropertyKey>): void {
 		if (merged instanceof ArkErrors) return mergeErrors(this, merged, prefix)
-		for (const issue of merged.issues)
-			this._.push(errorOfIssue(issue, prefix, this.config))
+		for (const issue of merged.issues) {
+			this._.push(
+				issue._m ?
+					errorOfIssue(issue._m(prefix) as never, [], this.config)
+				:	errorOfIssue(issue, prefix, this.config)
+			)
+		}
 	}
 
 	/** @internal the config its errors are written with */

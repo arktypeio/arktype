@@ -289,7 +289,11 @@ const literalOf = (arg: Node): unknown => {
 // what changes what --check reports; a host's own, like `include`, doesn't
 const readOptions: Record<string, unknown> = Object.fromEntries(
 	Object.entries(cliOptions).filter(
-		([name]) => name !== "inline" && name !== "declare" && name !== "cwd"
+		([name]) =>
+			name !== "inline" &&
+			name !== "declare" &&
+			name !== "defers" &&
+			name !== "cwd"
 	)
 )
 

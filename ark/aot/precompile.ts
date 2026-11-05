@@ -4,6 +4,7 @@ import {
 	writeMissingImportMessage,
 	writePrecompiledUnits,
 	type BaseRoot,
+	type BaseScope,
 	type ErrorDetail,
 	type MutatesInput
 } from "@ark/schema"
@@ -72,7 +73,8 @@ import {
 	type StandaloneBake,
 	type StandaloneModules,
 	type StandaloneOptions,
-	type Configured
+	type Configured,
+	defersCreation
 } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
 import { dirname, join } from "node:path"
@@ -376,6 +378,12 @@ export interface PrecompileOptions extends InterpreterOptions {
 	allowUnsafe?: boolean | undefined
 	/** packages that don't opt in, precompiled ("aot") or run on arktype */
 	dependencies?: DependencyModes | undefined
+	/**
+	 * @internal whether validators are created at their first call: "large" for
+	 * a module writing enough, as Turbopack's production build sets, true for a
+	 * test, whatever it writes and in place of one function
+	 */
+	defers?: boolean | "large" | undefined
 }
 
 type ProgramReads = Pick<
@@ -387,7 +395,9 @@ type ProgramReads = Pick<
 	| "combines"
 	| "shapes"
 	| "baked"
+	| "flattens"
 	| "cells"
+	| "interned"
 > & {
 	// what a module another plugin rewrote bakes, given its runtime
 	bakedAs?: (runtime: RuntimeModule) => ReadonlyMap<string, BakedMembers>
@@ -397,6 +407,8 @@ type ProgramReads = Pick<
 
 interface ProgramUsage {
 	members: ValidatorMembers
+	// whether its units are declared in one function
+	flattens?: boolean | undefined
 	// the introspection members each site's validator bakes, as its readers
 	// read it, by the site's key
 	baked?: ReadonlyMap<string, BakedMembers> | undefined
@@ -427,6 +439,8 @@ interface ProgramUsage {
 	shapes?: boolean
 	// holes the program creates once, which a variable can hold for any Type
 	cells?: HoleCells | undefined
+	// the roots sites in modules apart create, by what names each
+	interned?: ReadonlyMap<unknown, string> | undefined
 }
 
 interface ProgramPlan {
@@ -502,6 +516,22 @@ const isRepeated = (fn: Node): boolean => {
 	return false
 }
 
+// a module loaded under two queries, or with one and without, as esbuild holds
+// a run of each where the scan reads one module
+const modulesRunApart = ({ entries, targets }: ScannedProgram): Set<string> => {
+	const queries = new Map(entries.map(id => [id, ""]))
+	const apart = new Set<string>()
+	for (const importing of Object.values(targets)) {
+		for (const specifier in importing) {
+			const id = importing[specifier]
+			const query = /(?!^)[#?].*$/.exec(specifier)?.[0] ?? ""
+			if ((queries.get(id) ?? query) !== query) apart.add(id)
+			queries.set(id, query)
+		}
+	}
+	return apart
+}
+
 const runsAsItsModuleLoads = (read: Node): boolean => {
 	for (let node = read.parent; node; node = node.parent)
 		if (isFunctionNode(node) || node.type === "ClassBody") return false
@@ -566,6 +596,12 @@ const contentOfDefaulted = (
 	return names.includes(undefined) ? undefined : `${id} ${names.join()}`
 }
 
+const writtenCharsOf = ({ code, modules }: StandaloneModules): number => {
+	let chars = code.length
+	for (const specifier in modules) chars += modules[specifier].length
+	return chars
+}
+
 const holdsCell = (value: unknown, cells: HoleCells | undefined): boolean =>
 	!!cells &&
 	isFoldable(value) &&
@@ -591,6 +627,7 @@ export class Precompiler {
 	interpreter: Interpreter
 	config: string | undefined
 	inline: boolean
+	private defers: boolean | "large" | undefined
 	checkHelpers: boolean
 	private mode: PrecompileMode
 	// false where `config` is, so configure() fails
@@ -632,6 +669,7 @@ export class Precompiler {
 	// whether a site of the program read whole reads a Type off a holder
 	private readsOffHolders: boolean | undefined
 	private sameEachRun: SameEachRun | undefined
+	private runsApart: ReadonlySet<string> = new Set()
 	// each shared unit's modules, written once for every module reading it
 	private sharedWrites: SharedWrites = new Map()
 	// the validators a site's factory last read, which inlining reads again
@@ -672,6 +710,7 @@ export class Precompiler {
 		this.config = opts.config || undefined
 		this.configures = opts.config !== false
 		this.inline = !!opts.inline
+		this.defers = opts.defers
 		const checks = opts.creationChecks ?? "types"
 		this.checkHelpers = this.mode === "standalone" && checks === "helpers"
 		this.shadow = this.mode === "standalone" && !!opts.shadow
@@ -869,6 +908,69 @@ export class Precompiler {
 		)
 	}
 
+	// where a Scope is created, naming it to each module reaching it, if it runs once
+	private scopeNameOf(
+		scope: BaseScope,
+		module: SourceModule
+	): string | undefined {
+		const [state, ...others] = this.sitesDefining(scope, module)
+		return !state || others.length || isRepeated(state.node) ?
+				undefined
+			:	`${this.graph.pathOf(state.module.id)}:${state.node.start}`
+	}
+
+	// the roots sites in modules apart create, which arktype returns as one value,
+	// each named by the first site and baking what any of them read
+	private internedIn(
+		{ planned, precompiled }: ProgramPlan,
+		baked: ReadonlyMap<string, BakedMembers>
+	): [
+		interned: ReadonlyMap<unknown, string>,
+		baked: ReadonlyMap<string, BakedMembers>
+	] {
+		const sitesByRoot = new Map<
+			unknown,
+			[path: string, site: Site, id: string][]
+		>()
+		for (const id of precompiled) {
+			const path = this.graph.pathOf(id)
+			for (const span of planned.get(id)!.folded) {
+				for (const root of rootsIn((span as Site).value)) {
+					const sites = sitesByRoot.get(root)
+					if (sites) sites.push([path, span as Site, id])
+					else sitesByRoot.set(root, [[path, span as Site, id]])
+				}
+			}
+		}
+		const interned = new Map<unknown, string>()
+		const merged = new Map(baked)
+		for (const [root, sites] of sitesByRoot) {
+			if (
+				!this.runsApart.has(sites[0][2]) &&
+				sites.every(([, , id]) => id === sites[0][2])
+			)
+				continue
+			const [path, { start }] = sites.reduce((first, site) =>
+				(
+					site[0] < first[0] ||
+					(site[0] === first[0] && site[1].start < first[1].start)
+				) ?
+					site
+				:	first
+			)
+			interned.set(root, `${keyOf(root as BaseRoot)[0]} ${path}:${start}`)
+			const keys = sites.map(([, site, id]) => siteKeyOf(id, site))
+			const read = keys.flatMap(key => merged.get(key) ?? [])
+			if (!read.length) continue
+			const members: BakedMembers = {
+				members: [...new Set(read.flatMap(({ members }) => members))],
+				lost: read.some(({ lost }) => lost)
+			}
+			for (const key of keys) merged.set(key, members)
+		}
+		return [interned, merged]
+	}
+
 	private scanAs(
 		program: ScannedProgram,
 		plan: ProgramPlan,
@@ -892,18 +994,22 @@ export class Precompiler {
 		const called = isRead("call")
 		const readsAllows = isRead("allows")
 		const piped = isRead("piped")
+		this.runsApart = modulesRunApart(program)
+		const [interned, baked] = this.internedIn(plan, readings.baked)
 		// a size build's units are already module constants
 		const flattens =
 			!!program.isOneChunk &&
 			!this.inline &&
-			this.standalone.optimize === "speed"
+			this.standalone.optimize === "speed" &&
+			this.defers !== true
 		// a program read whole is written too, as its issues may hold less than any
 		const usage: ProgramUsage = {
+			flattens,
 			members: {
 				...this.members,
 				...Object.fromEntries(dropped.map(member => [member, false]))
 			},
-			baked: readings.baked,
+			baked,
 			rewrittenBaked: new Map(),
 			program,
 			planned,
@@ -913,7 +1019,8 @@ export class Precompiler {
 			sources: plan.sources,
 			written: {},
 			unscanned: new Map(),
-			cells: this.cellsOf(plan)
+			cells: this.cellsOf(plan),
+			interned
 		}
 		this.usagesByProgram.set(program.key, usage)
 		const wrote = this.writeSmaller(program, plan, usage)
@@ -1223,6 +1330,7 @@ export class Precompiler {
 			!!closure &&
 			!closure.env &&
 			!isRepeated(closure.node) &&
+			!this.runsApart.has(standIn.module.id) &&
 			functionNameOf(hole as Fn).includes(holeNameMarker) &&
 			!!this.sameEachRun?.of(closure.node, standIn.module)
 		)
@@ -2513,7 +2621,16 @@ export class Precompiler {
 				this.usageIn(program, id, source)
 			)
 		} else this.writeCachedUnits(sites, modules, imports)
-		this.insertImports(module, s, prefix, modules, imports)
+		this.insertImports(
+			module,
+			s,
+			prefix,
+			modules,
+			imports,
+			program === undefined ? undefined : (
+				this.usagesByProgram.get(program)?.program
+			)
+		)
 		return {
 			code: s.toString(),
 			map: mapOf(s, id),
@@ -2673,7 +2790,8 @@ export class Precompiler {
 		s: MagicString,
 		prefix: string,
 		modules: Record<string, string>,
-		imports: Record<string, Record<string, string>>
+		imports: Record<string, Record<string, string>>,
+		program: ScannedProgram | undefined
 	): void {
 		let inserted = ""
 		if (this.inline) {
@@ -2699,6 +2817,9 @@ export class Precompiler {
 			}
 		}
 		if (!inserted) return
+		const config = this.configFirstOf(module.id, program)
+		if (config && !this.inline)
+			inserted = `\nimport ${JSON.stringify(config)}${inserted}`
 		const arktypeImport = this.arktypeImportOf(module)
 		if (!arktypeImport) return void s.append(inserted)
 		const lineEnd = module.source.indexOf("\n", arktypeImport.end)
@@ -2708,6 +2829,29 @@ export class Precompiler {
 		)
 		// minified code can continue the import's line
 		s.prependLeft(arktypeImport.end, rest.trim() ? `${inserted}\n` : inserted)
+	}
+
+	// a size build creates a module's validators as their module loads, where
+	// a site would run once all its imports had, one of which may load the
+	// config module. So it loads it ahead of them, if the module would anyway,
+	// or its program, as a build importing it nowhere fails as arktype does
+	private configFirstOf(
+		id: string,
+		program: ScannedProgram | undefined
+	): string | undefined {
+		const config = this.config
+		if (
+			config === undefined ||
+			this.standalone.optimize !== "size" ||
+			!this.configures ||
+			id === config
+		)
+			return
+		const isLoaded =
+			program ?
+				config in program.modules
+			:	this.importClosureOf(id).includes(config)
+		return isLoaded ? specifierOf(id, config) : undefined
 	}
 
 	// e.g. a site in `f` reading `Base`, which a cycle can reach first
@@ -3262,7 +3406,9 @@ export class Precompiler {
 			shapes,
 			baked,
 			bakedAs,
-			cells
+			flattens,
+			cells,
+			interned
 		}: ProgramReads,
 		diagnostics: Diagnostic[]
 	): [validators: StandaloneModules, bakes: ImportedBake[]] {
@@ -3312,35 +3458,52 @@ export class Precompiler {
 		}
 		for (;;) {
 			const refusalsByName: Record<string, string[]> = {}
-			const validators =
-				Object.keys(exportsByName).length ?
-					writeValidators(
-						exportsByName,
-						{
-							...this.standalone,
-							holdsIds: this.holdsIds,
-							members,
-							called,
-							readsAllows,
-							piped,
-							combines,
-							shapes,
-							cells,
-							baked: bakedByName,
-							configured,
-							bake: write => this.bake(write),
-							sharedWrites: this.sharedWrites,
-							hoisted: this.isReachedEarly(module),
-							// shadow mode calls what it compares
-							values: !this.shadow,
-							readOnLoad: [...namesBySite]
-								.filter(([site]) => site.declarationStart !== undefined)
-								.map(([, name]) => name)
-						},
-						refusalsByName,
-						this.inline
-					)
-				:	noValidators
+			const write = (defers: boolean) =>
+				writeValidators(
+					exportsByName,
+					{
+						...this.standalone,
+						holdsIds: this.holdsIds,
+						members,
+						called,
+						readsAllows,
+						piped,
+						combines,
+						shapes,
+						cells,
+						interned,
+						scopeNameOf: scope => this.scopeNameOf(scope, module),
+						baked: bakedByName,
+						configured,
+						bake: write => this.bake(write),
+						sharedWrites: this.sharedWrites,
+						defers,
+						// a unit a first call reads runs at its first call too
+						hoisted: this.isReachedEarly(module) || defers,
+						// shadow mode calls what it compares
+						values: !this.shadow,
+						readOnLoad: [...namesBySite]
+							.filter(([site]) => site.declarationStart !== undefined)
+							.map(([, name]) => name)
+					},
+					refusalsByName,
+					this.inline
+				)
+			const canDefer =
+				!flattens &&
+				this.standalone.lazy === true &&
+				this.standalone.optimize === "speed"
+			let validators = noValidators
+			if (Object.keys(exportsByName).length) {
+				validators = write(canDefer && this.defers === true)
+				if (
+					canDefer &&
+					this.defers === "large" &&
+					!Object.keys(refusalsByName).length &&
+					defersCreation(writtenCharsOf(validators))
+				)
+					validators = write(true)
+			}
 			for (const [site, name] of namesBySite) {
 				if (!refusalsByName[name]) continue
 				diagnostics.push(this.refuseWritten(module, site, refusalsByName[name]))
@@ -3383,7 +3546,8 @@ export class Precompiler {
 			created ?
 				`/* @__PURE__ */ ${prefix}_${created[0]}(${created
 					.slice(1)
-					.map(read => `${prefix}_${read}`)
+					// but for what names a Type that's interned
+					.map(read => (read[0] === '"' ? read : `${prefix}_${read}`))
 					.join(", ")})`
 			:	prefix + exported
 		if (!folding.imported.has(exported)) {
@@ -7324,6 +7488,7 @@ const anyIssues: IssueFeatures = {
 	reportsIndices: true,
 	bracketsKeys: true,
 	writesText: true,
+	listsUnions: true,
 	readsKeySites: true,
 	runsArktype: true
 }

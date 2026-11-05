@@ -291,7 +291,8 @@ export const pruneArktypeImports = (
 	}
 }
 
-// TypeScript drops imports only folded sites read, so re-add them bare
+// TypeScript drops imports only folded sites read, so re-add them bare, ahead of
+// a validator's imports written after them, as they may run the config module
 export const keepImportedModules = (
 	module: SourceModule,
 	folded: Span[],
@@ -323,9 +324,9 @@ export const keepImportedModules = (
 			) &&
 			!bindings.some(binding => passed.includes(binding))
 		) {
-			s.appendLeft(
-				statement.end,
-				`\nimport ${module.textOf({ start: statement.source.start, end: statement.end })}`
+			s.prependRight(
+				statement.start,
+				`import ${module.textOf({ start: statement.source.start, end: statement.end })}\n`
 			)
 		}
 	}

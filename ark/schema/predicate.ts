@@ -92,7 +92,8 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 			return
 		}
 		if (js.addsNoIssues?.(this.predicate)) {
-			js.return(`${condition} || !${js.error(this)}`)
+			// a build may answer `allows` with this, and a narrow returns anything
+			js.return(`!!${condition} || !${js.error(this)}`)
 			return
 		}
 

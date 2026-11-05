@@ -2,6 +2,7 @@ import { pathAt, type array } from "@ark/util"
 import type { ArkErrorCode } from "./errors.ts"
 import {
 	bracketsKeys,
+	listsUnions,
 	readsKeySites,
 	reportsIndices,
 	runsArktype,
@@ -20,6 +21,12 @@ export interface ArkIssue {
 	expected: string | undefined
 	problem?: string | undefined
 	message?: string | undefined
+	/** a union's: each branch's first issue */
+	errors?: readonly ArkIssue[]
+	/** @internal a union's, its text written again at a path before its own */
+	_m?(prefix: array<PropertyKey>): ArkIssue
+	/** @internal a union's text, as if data at its path were validated alone */
+	_r?(): string
 }
 
 type WrittenIssue = ArkIssue & { message: string }
@@ -214,7 +221,7 @@ export const foundErrors = (
 	apply: CompactApply,
 	data: unknown,
 	onFail: ArkIssues.Handler | null,
-	Ctx: new () => ArkIssues
+	Ctx: new () => ArkIssues = ArkIssues
 ): unknown => {
 	const errors = new Ctx()
 	// as issuesOf, which a program of these never ships
@@ -267,14 +274,19 @@ export const mergeIssues = (
 	prefix: array<PropertyKey>
 ): void => {
 	for (const issue of merged.issues) {
-		errors._.push({
-			code: issue.code,
-			path: [...prefix, ...issue.path],
-			data: issue.data,
-			expected: issue.expected,
-			problem: issue.problem,
-			message: issue.message === messageOf(issue) ? undefined : issue.message
-		})
+		errors._.push(
+			listsUnions && issue._m ?
+				issue._m(prefix)
+			:	{
+					code: issue.code,
+					path: [...prefix, ...issue.path],
+					data: issue.data,
+					expected: issue.expected,
+					problem: issue.problem,
+					message:
+						issue.message === messageOf(issue) ? undefined : issue.message
+				}
+		)
 	}
 }
 
@@ -285,10 +297,10 @@ export const messageOf = (issue: ArkIssue): string => {
 	let path = ""
 	for (const k of issue.path) {
 		path +=
-			bracketsKeys && !/^[$_a-z][\w$]*$/i.test(String(k)) ?
+			reportsIndices && typeof k === "number" ? `[${k}]`
+			: bracketsKeys && !/^[$_a-z][\w$]*$/i.test(String(k)) ?
 				`[${JSON.stringify(k) ?? String(k)}]`
-			: reportsIndices && typeof k === "number" ? `[${k}]`
-			: (path && ".") + String(k)
+			:	(path && ".") + String(k)
 	}
 	return (path && path + " ") + problemOf(issue)
 }

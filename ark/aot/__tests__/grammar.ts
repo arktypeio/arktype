@@ -116,7 +116,13 @@ export const predicates = {
 		return remainder === 0
 	},
 	// declared without a name, so an expression nesting it prints fn
-	unnamed: data => data !== null
+	unnamed: data => data !== null,
+	// counts its calls, as what a callback sees is how often it's run
+	isCounted: data => {
+		const counts = globalThis as { $arkCallbacks?: number }
+		counts.$arkCallbacks = (counts.$arkCallbacks ?? 0) + 1
+		return data !== 0
+	}
 } satisfies Record<string, (data: unknown, ctx: Traversal) => boolean>
 
 // holes a program declares without a name, as an array's element gets none

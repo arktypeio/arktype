@@ -509,20 +509,19 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					`!ctx.failsUnion([${this.branches.map(branch => js.traversal(branch, "Apply")).join(", ")}], ${js.site(this)}, data)`
 			)
 		} else if (js.trav === "Apply") {
-			// a compiler writing unionFails needs no branch errors
-			const collects = !js.unionFails
-			if (collects) js.const("errors", "[]")
+			js.const("errors", "[]")
 			for (const branch of this.branches) {
 				js.line("ctx.pushBr()")
 					.line(js.applyMember(branch))
 					.if("!ctx.hasError()", () => js.line("ctx.popBr()").return(true))
-					.line(collects ? "errors.push(ctx.popBr().error)" : "ctx.popBr()")
+					.line("errors.push(ctx.popBr().error)")
 			}
-			if (collects) {
+			if (js.listedFails) js.return(js.listedFails(this))
+			else {
 				js.line(
 					`${js.ref(errorFromUnion)}(ctx, errors, ${js.ref(this.meta)}, data)`
 				).return("!ctx.failFast")
-			} else js.return(js.unionFails!(this))
+			}
 		} else if (js.trav === "Allows") {
 			for (const branch of branches) {
 				// an error a branch's predicate adds through ctx fails only that branch

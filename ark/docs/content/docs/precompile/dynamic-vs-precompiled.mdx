@@ -18,6 +18,16 @@ it generates.
 | Introspection members     | all                                                  | those the build sees read, or [`members`](/docs/precompile/options#members) sets | all                                          |
 | Error messages            | say what was expected and what the value was         | say what was expected, and any text configured for them                          | say what was expected and what the value was |
 | [Locales](/docs/i18n)     | yes                                                  | no                                                                               | yes                                          |
+| Equal definitions         | one Type                                             | one validator, [but for a few cases](#equal-definitions)                         | one Type                                     |
+
+## Equal definitions
+
+arktype returns one Type for a scope's equal definitions, so `type("string[]") === type("string").array()`, in one module or across two. A precompiled program compares the same, including any function a Type holds, except:
+
+- A Type the build leaves to arktype, as a [runtime island](/docs/precompile/advanced#runtime-islands), and its precompiled equal are two values.
+- A build that reads each module alone, as webpack, Rspack, Turbopack and Node do, gives two values for a Type holding a cycle, and for one in a scope a function creates. Reading the whole program, as Vite, Rollup, Rolldown and esbuild do in a production build, gives one. It gives one too for `type("unknown")` and `type.pipe()`, the one keyword reached two ways, which arktype keeps apart.
+- A scope a function creates is created once, however often the function is called, so each call's Types are one value where arktype creates them anew.
+- A chunk imported again at runtime under another URL creates its functions anew, so arktype gives each run its own Type for a narrow the chunk defines. A validator holding a function the build proves can't differ between runs may be one value for both.
 
 ## Which to use
 
