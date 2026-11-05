@@ -468,12 +468,18 @@ export const domains = ((
 export const nullableDescriptionOf = (domain: string): string =>
 	`${domain === "object" ? "an" : "a"} ${domain} or null`
 
-// a domain's checker or null
-export const nullable = ((checker: Checker | 1, domain = "string"): Checker =>
-	domains(
-		{ [domain]: checker, null: 1 },
-		nullableDescriptionOf(domain)
-	)) satisfies Fn
+// a domain's checker that transforms nothing, nor is an object, or null
+export const nullable = ((checker: Checker | 1, domain = "string"): Checker => {
+	const description = nullableDescriptionOf(domain)
+	const site: FailureSite = { code: "discriminant", description }
+	const wrapped: Checker = (data, ctx) =>
+		data === null ||
+		(typeof data === domain ?
+			checker === 1 || checker(data, ctx)
+		:	!failsAt(ctx as never, site, data))
+	wrapped.description = description
+	return wrapped
+}) satisfies Fn
 
 // a union of objects told apart by the string at one key
 export const discriminate = ((

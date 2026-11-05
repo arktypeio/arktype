@@ -88,11 +88,11 @@ var SummarizedIssues =
 			}
 		}
 	:	ReadIssues
-var ArkErrors =
+var Issues =
 	readsErrors ?
 		class ArkIssues extends SummarizedIssues {
 			throw() {
-				throw new TraversalError(this)
+				throw new ThrownIssues(this)
 			}
 			toJSON() {
 				return this.issues
@@ -102,7 +102,7 @@ var ArkErrors =
 			}
 		}
 	:	SummarizedIssues
-var foundErrors = (apply, data, onFail, Ctx = ArkErrors) => {
+var foundErrors = (apply, data, onFail, Ctx = Issues) => {
 	const errors = new Ctx()
 	apply(data, errors)
 	if (!errors._.length) errors._at({ code: "predicate" }, data)
@@ -124,9 +124,9 @@ var problemOf = issue =>
 	(issue.expected !== void 0 ? "must be " + issue.expected
 	: issue.code === "required" ? "is missing"
 	: "is invalid")
-var TraversalError =
+var ThrownIssues =
 	readsErrors ?
-		class TraversalError2 extends Error {
+		class TraversalError extends Error {
 			constructor(errors) {
 				super((runsArktype ? errors._t : void 0) ?? errors.summary)
 				this.name = "TraversalError"

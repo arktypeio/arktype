@@ -161,6 +161,35 @@ console.log(JSON.stringify(Unlike["~standard"].validate({ id: 1 })))
 		})
 	})
 
+	it("reads a domain or null as arktype does", async () => {
+		const root = fixture(
+			"nullable",
+			`import { type } from "arktype"
+
+const T = type({
+	plain: "string | null",
+	refined: "(string > 1) | null",
+	count: "(number >= 1) | null",
+	flag: "boolean | null",
+	object: type({ a: "string" }).or("null"),
+	written: type({ a: "number = 1" }).or("null")
+})
+const print = (data: unknown) => {
+	const out = T(data)
+	console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
+}
+print({ plain: null, refined: null, count: null, flag: null, object: null, written: null })
+print({ plain: "a", refined: "ab", count: 1, flag: true, object: { a: "a" }, written: {} })
+print({ plain: 1, refined: "a", count: 0, flag: 1, object: 1, written: 1 })
+print({ plain: {}, refined: 1, count: "a", flag: "a", object: {}, written: { a: "a" } })
+${repaying}
+`
+		)
+		const written = await bundle(root, smallest)
+		attest(written.includes("nullable(")).equals(true)
+		attest(behaviorOf(written)).equals(behaviorOf(await bundle(root)))
+	})
+
 	it("reads type.errors as the class it holds, even from a site", async () => {
 		const root = fixture(
 			"errors-class",

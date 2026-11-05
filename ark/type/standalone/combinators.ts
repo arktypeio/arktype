@@ -766,7 +766,8 @@ const writeUnionCombinator = (
 		const { description } = discriminantSiteOf(node)!
 		const [domain, checker] = cases.find(([k]) => k !== "null")!
 		if (
-			js.shapes &&
+			domain !== "object" &&
+			!Object.values(domains).some(branch => branch !== true && branch.tfs) &&
 			cases.length === 2 &&
 			"null" in domains &&
 			description === runtime.nullableDescriptionOf(domain)
