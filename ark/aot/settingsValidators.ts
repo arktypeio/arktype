@@ -24,9 +24,11 @@ var bracketsKeys = true
 var writesText = true
 var readsKeySites = true
 var runsArktype = true
+var readsSummary = true
+var readsErrors = true
 
 // ark/schema/shared/issues.ts
-var ArkIssues = class {
+var ReadIssues = class {
 	// assigned, as a target lowering class fields defines each with a helper
 	constructor() {
 		this._ = []
@@ -44,27 +46,6 @@ var ArkIssues = class {
 	get issues() {
 		for (const issue of this._) issue.message ??= messageOf(issue)
 		return this._
-	}
-	/**
-	 * A human-readable summary of all errors.
-	 */
-	get summary() {
-		let summary = ""
-		for (const issue of this._)
-			summary += (summary && "\n") + (issue.message ??= messageOf(issue))
-		return summary
-	}
-	/**
-	 * Throw a TraversalError based on these errors.
-	 */
-	throw() {
-		throw new TraversalError(this)
-	}
-	toJSON() {
-		return this.issues
-	}
-	toString() {
-		return this.summary
 	}
 	/** @internal */
 	_at(site, data, key) {
@@ -96,7 +77,32 @@ var ArkIssues = class {
 		return !continues
 	}
 }
-var foundErrors = (apply, data, onFail, Ctx = ArkIssues) => {
+var SummarizedIssues =
+	readsSummary ?
+		class extends ReadIssues {
+			get summary() {
+				let summary = ""
+				for (const issue of this._)
+					summary += (summary && "\n") + (issue.message ??= messageOf(issue))
+				return summary
+			}
+		}
+	:	ReadIssues
+var Issues =
+	readsErrors ?
+		class ArkIssues extends SummarizedIssues {
+			throw() {
+				throw new ThrownIssues(this)
+			}
+			toJSON() {
+				return this.issues
+			}
+			toString() {
+				return this.summary
+			}
+		}
+	:	SummarizedIssues
+var foundErrors = (apply, data, onFail, Ctx = Issues) => {
 	const errors = new Ctx()
 	apply(data, errors)
 	if (!errors._.length) errors._at({ code: "predicate" }, data)
@@ -118,13 +124,16 @@ var problemOf = issue =>
 	(issue.expected !== void 0 ? "must be " + issue.expected
 	: issue.code === "required" ? "is missing"
 	: "is invalid")
-var TraversalError = class extends Error {
-	constructor(errors) {
-		super((runsArktype ? errors._t : void 0) ?? errors.summary)
-		this.name = "TraversalError"
-		Object.defineProperty(this, "arkErrors", { value: errors })
-	}
-}
+var ThrownIssues =
+	readsErrors ?
+		class TraversalError extends Error {
+			constructor(errors) {
+				super((runsArktype ? errors._t : void 0) ?? errors.summary)
+				this.name = "TraversalError"
+				Object.defineProperty(this, "arkErrors", { value: errors })
+			}
+		}
+	:	void 0
 
 // ark/type/checkers.ts
 var check = (code, description, test) => {
@@ -148,28 +157,17 @@ var objectCheck = /* @__PURE__ */ check("domain", "an object", data =>
 var arrayCheck = /* @__PURE__ */ check("proto", "an array", data =>
 	Array.isArray(data)
 )
-var min = (
+var moreThan = (
 	rule,
-	exclusive,
-	description = rule === 0 ?
-		exclusive ? "positive"
-		:	"non-negative"
-	:	`${exclusive ? "more than" : "at least"} ${rule}`
-) =>
-	check(
-		"min",
-		description,
-		exclusive ? data => data > rule : data => data >= rule
-	)
+	description = rule === 0 ? "positive" : `more than ${rule}`
+) => check("min", description, data => data > rule)
 var minLength = (
 	rule,
 	description = rule === 1 ? "non-empty" : `at least length ${rule}`
 ) => check("minLength", description, data => data.length >= rule)
 var divisor = (
 	rule,
-	description = rule === 1 ? "an integer"
-	: rule === 2 ? "even"
-	: `a multiple of ${rule}`
+	description = rule === 2 ? "even" : `a multiple of ${rule}`
 ) => check("divisor", description, data => data % rule === 0)
 var printValue = value =>
 	typeof value === "string" ? JSON.stringify(value) : `${value}`
@@ -185,7 +183,12 @@ var booleanChecker = /* @__PURE__ */ check(
 	"boolean",
 	data => typeof data === "boolean"
 )
-var intersection = (basis, refinements, within) => {
+var intersection = (
+	basis,
+	refinements,
+	within,
+	brief = basis ? basis.description : "present"
+) => {
 	const checker = (data, ctx) => {
 		if (basis && !basis.test(data)) return !failsAt(ctx, basis, data)
 		let passed = true
@@ -197,7 +200,7 @@ var intersection = (basis, refinements, within) => {
 		}
 		return !passed || !within || within(data, ctx)
 	}
-	checker.description = basis ? basis.description : "present"
+	checker.description = brief
 	checker.t = within?.t
 	return checker
 }
@@ -274,7 +277,7 @@ var domains = (cases, description) => {
 }
 
 // ark/type/runtime.ts
-var freeze = Object.freeze
+var freeze = /* @__PURE__ */ (() => Object.freeze)()
 var siteOf = (code, description, message) => ({ code, description, x: message })
 var requiredSiteOf = description => ({
 	m: { code: "required", description }
@@ -365,11 +368,11 @@ var intersection1pta4mn06i3i5b = /* @__PURE__ */ (() => {
 	}
 	return [intersection1pta4mn06i3i5bAllows]
 })()
-var intersectionparbs61a02yao = /* @__PURE__ */ ((
+var intersectionkhgw4e0or30fq = /* @__PURE__ */ ((
 	[intersectionkmdrl70pxuocbAllows],
 	[intersection1pta4mn06i3i5bAllows]
 ) => {
-	const intersectionparbs61a02yaoAllows = /* @__PURE__ */ closedProps({
+	const intersectionkhgw4e0or30fqAllows = /* @__PURE__ */ closedProps({
 		preset: /* @__PURE__ */ optional(
 			/* @__PURE__ */ units(["introspectable", "smallest"])
 		),
@@ -383,7 +386,9 @@ var intersectionparbs61a02yao = /* @__PURE__ */ ((
 							"a module path or false",
 							stringCheck.test
 						),
-						[/* @__PURE__ */ minLength(1, "a module path or false")]
+						[/* @__PURE__ */ minLength(1, "a module path or false")],
+						void 0,
+						"a string"
 					),
 					boolean: /* @__PURE__ */ unit(false, "a module path or false")
 				},
@@ -416,12 +421,13 @@ var intersectionparbs61a02yao = /* @__PURE__ */ ((
 						1,
 						"the characters a site's baked introspection may total"
 					),
-					/* @__PURE__ */ min(
+					/* @__PURE__ */ moreThan(
 						0,
-						1,
 						"the characters a site's baked introspection may total"
 					)
-				]
+				],
+				void 0,
+				"a number"
 			)
 		),
 		freeze: /* @__PURE__ */ optional(booleanChecker),
@@ -442,14 +448,18 @@ var intersectionparbs61a02yao = /* @__PURE__ */ ((
 		tsconfig: /* @__PURE__ */ optional(
 			/* @__PURE__ */ intersection(
 				/* @__PURE__ */ check("domain", "a path", stringCheck.test),
-				[/* @__PURE__ */ minLength(1, "a path")]
+				[/* @__PURE__ */ minLength(1, "a path")],
+				void 0,
+				"a string"
 			)
 		),
 		dependencies: /* @__PURE__ */ optional(intersection1pta4mn06i3i5bAllows),
 		cwd: /* @__PURE__ */ optional(
 			/* @__PURE__ */ intersection(
 				/* @__PURE__ */ check("domain", "a path", stringCheck.test),
-				[/* @__PURE__ */ minLength(1, "a path")]
+				[/* @__PURE__ */ minLength(1, "a path")],
+				void 0,
+				"a string"
 			)
 		),
 		inline: /* @__PURE__ */ optional(booleanChecker),
@@ -458,7 +468,7 @@ var intersectionparbs61a02yao = /* @__PURE__ */ ((
 			/* @__PURE__ */ units(["large", false, true])
 		)
 	})
-	return [intersectionparbs61a02yaoAllows]
+	return [intersectionkhgw4e0or30fqAllows]
 })(intersectionkmdrl70pxuocb, intersection1pta4mn06i3i5b)
 var create12fpvlf14u2zct = ([allows], id, holes = []) => {
 	const validator = (data, pipedFromCtx, onFail) =>
@@ -472,11 +482,11 @@ var create12fpvlf14u2zct = ([allows], id, holes = []) => {
 	validator.allows = freeze(allows)
 	return holdHoles(freeze(validator), id, holes)
 }
-var intersectionwzvg801kidwck = /* @__PURE__ */ ((
+var intersection1cnx3xs05mypjy = /* @__PURE__ */ ((
 	[intersectionkmdrl70pxuocbAllows],
 	[intersection1pta4mn06i3i5bAllows]
 ) => {
-	const intersectionwzvg801kidwckAllows = /* @__PURE__ */ closedProps({
+	const intersection1cnx3xs05mypjyAllows = /* @__PURE__ */ closedProps({
 		preset: /* @__PURE__ */ optional(
 			/* @__PURE__ */ units(["introspectable", "smallest"])
 		),
@@ -490,7 +500,9 @@ var intersectionwzvg801kidwck = /* @__PURE__ */ ((
 							"a module path or false",
 							stringCheck.test
 						),
-						[/* @__PURE__ */ minLength(1, "a module path or false")]
+						[/* @__PURE__ */ minLength(1, "a module path or false")],
+						void 0,
+						"a string"
 					),
 					boolean: /* @__PURE__ */ unit(false, "a module path or false")
 				},
@@ -523,12 +535,13 @@ var intersectionwzvg801kidwck = /* @__PURE__ */ ((
 						1,
 						"the characters a site's baked introspection may total"
 					),
-					/* @__PURE__ */ min(
+					/* @__PURE__ */ moreThan(
 						0,
-						1,
 						"the characters a site's baked introspection may total"
 					)
-				]
+				],
+				void 0,
+				"a number"
 			)
 		),
 		freeze: /* @__PURE__ */ optional(booleanChecker),
@@ -549,31 +562,33 @@ var intersectionwzvg801kidwck = /* @__PURE__ */ ((
 		tsconfig: /* @__PURE__ */ optional(
 			/* @__PURE__ */ intersection(
 				/* @__PURE__ */ check("domain", "a path", stringCheck.test),
-				[/* @__PURE__ */ minLength(1, "a path")]
+				[/* @__PURE__ */ minLength(1, "a path")],
+				void 0,
+				"a string"
 			)
 		),
 		dependencies: /* @__PURE__ */ optional(intersection1pta4mn06i3i5bAllows)
 	})
-	return [intersectionwzvg801kidwckAllows]
+	return [intersection1cnx3xs05mypjyAllows]
 })(intersectionkmdrl70pxuocb, intersection1pta4mn06i3i5b)
-var intersection1azzur91ptz9ds = /* @__PURE__ */ (([
-	intersectionwzvg801kidwckAllows
+var intersection1nsti2l1hrsnfz = /* @__PURE__ */ (([
+	intersection1cnx3xs05mypjyAllows
 ]) => {
-	const intersection1azzur91ptz9dsAllows = /* @__PURE__ */ closedProps({
+	const intersection1nsti2l1hrsnfzAllows = /* @__PURE__ */ closedProps({
 		$schema: /* @__PURE__ */ optional(stringCheck),
-		precompile: /* @__PURE__ */ optional(intersectionwzvg801kidwckAllows)
+		precompile: /* @__PURE__ */ optional(intersection1cnx3xs05mypjyAllows)
 	})
-	return [intersection1azzur91ptz9dsAllows]
-})(intersectionwzvg801kidwck)
-var intersection1sib0cb02x4j03 = /* @__PURE__ */ (([
-	intersectionwzvg801kidwckAllows
+	return [intersection1nsti2l1hrsnfzAllows]
+})(intersection1cnx3xs05mypjy)
+var intersectionrbniyj0m4vezi = /* @__PURE__ */ (([
+	intersection1cnx3xs05mypjyAllows
 ]) => {
-	const intersection1sib0cb02x4j03Allows = /* @__PURE__ */ closedProps({
-		precompile: /* @__PURE__ */ optional(intersectionwzvg801kidwckAllows),
+	const intersectionrbniyj0m4veziAllows = /* @__PURE__ */ closedProps({
+		precompile: /* @__PURE__ */ optional(intersection1cnx3xs05mypjyAllows),
 		aot: /* @__PURE__ */ optional(/* @__PURE__ */ unit(true))
 	})
-	return [intersection1sib0cb02x4j03Allows]
-})(intersectionwzvg801kidwck)
+	return [intersectionrbniyj0m4veziAllows]
+})(intersection1cnx3xs05mypjy)
 var created0
 var created1
 var created2
@@ -581,7 +596,7 @@ var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
 				const validator0 = interned("oo7png1tq1stp", () =>
-					create12fpvlf14u2zct(intersectionparbs61a02yao, "1xqe4zk0")
+					create12fpvlf14u2zct(intersectionkhgw4e0or30fq, "1xqe4zk0")
 				)
 				return validator0
 			})())
@@ -591,7 +606,7 @@ var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
 				const validator0 = interned("no6p470shuqtg", () =>
-					create12fpvlf14u2zct(intersection1azzur91ptz9ds, "1cl1eak0")
+					create12fpvlf14u2zct(intersection1nsti2l1hrsnfz, "1cl1eak0")
 				)
 				return validator0
 			})())
@@ -601,7 +616,7 @@ var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
 				const validator0 = interned("1x4xgyz09yrolz", () =>
-					create12fpvlf14u2zct(intersection1sib0cb02x4j03, "1i9mlhj1")
+					create12fpvlf14u2zct(intersectionrbniyj0m4vezi, "1i9mlhj1")
 				)
 				return validator0
 			})())

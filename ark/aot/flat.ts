@@ -1,7 +1,7 @@
 import { hashOf } from "@ark/util"
 import { cellPrefix, heldSpecifier } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
-import type { Node, Program, Span } from "oxc-parser"
+import type { Node, Program, Span, VariableDeclarator } from "oxc-parser"
 import { memberNameOf } from "./graph.ts"
 import {
 	prefixOf,
@@ -1519,9 +1519,22 @@ interface WrittenUnits {
 const writtenUnitsOf = (body: string, returned: string): WrittenUnits => {
 	const parse = unitsParser()
 	let written: WrittenUnits = { body, returned }
-	for (const pass of [skipAliases, inlineCalls, dropUnread])
+	for (const pass of [
+		skipAliases,
+		inlineCalls,
+		mergeEqualFunctions,
+		dropUnread,
+		readPartsDirectly
+	])
 		written = untilUnchanged(written, parse, pass)
-	written.body = inGzipOrder(written.body)
+	written = untilUnchanged(
+		written,
+		parse,
+		minifiedLengthOf(written.body) < minLazyText ? functionsAsArrows : (
+			shareObjectChecks
+		)
+	)
+	written.body = functionsDeclared(inGzipOrder(written.body))
 	return written
 }
 
@@ -1572,22 +1585,34 @@ const skipAliases: UnitsPass = ({ program, scopes }, s) => {
 					))
 			)
 				continue
-			for (const { id } of binding.references) {
-				const parent = id.parent
-				s.overwrite(
-					id.start,
-					id.end,
-					parent?.type === "Property" && parent.shorthand ?
-						`${binding.name}: ${target.name}`
-					:	target.name
-				)
-			}
+			renameReferences(s, binding, target.name)
 		}
 	}
 }
 
+const renameReferences = (s: MagicString, binding: Binding, name: string) => {
+	for (const { id } of binding.references) {
+		const parent = id.parent
+		s.overwrite(
+			id.start,
+			id.end,
+			parent?.type === "Property" && parent.shorthand ?
+				`${binding.name}: ${name}`
+			:	name
+		)
+	}
+}
+
+type FunctionExpressionNode = Extract<
+	Node,
+	{ type: "ArrowFunctionExpression" | "FunctionExpression" }
+>
+
+const isFunctionExpression = (node: Node): node is FunctionExpressionNode =>
+	node.type === "ArrowFunctionExpression" || node.type === "FunctionExpression"
+
 const forwardedOf = (fn: Node, scopes: ModuleScopes): Binding | undefined => {
-	if (fn.type !== "ArrowFunctionExpression" || fn.async) return
+	if (!isFunctionExpression(fn) || fn.async) return
 	const [only] = fn.body.type === "BlockStatement" ? fn.body.body : []
 	const call =
 		fn.body.type !== "BlockStatement" ? fn.body
@@ -1644,7 +1669,8 @@ const inlineCalls: UnitsPass = ({ code, program, scopes }, s, body) => {
 			const references = scopes.bindingsById.get(id)?.references ?? []
 			const call = references[0]?.id.parent
 			if (
-				fn?.type !== "ArrowFunctionExpression" ||
+				!fn ||
+				!isFunctionExpression(fn) ||
 				fn.async ||
 				references.length !== 1 ||
 				call?.type !== "CallExpression" ||
@@ -1686,7 +1712,7 @@ const statementEndIn = (body: string, statement: Node): number =>
 
 const passesParams = (
 	call: Node & { type: "CallExpression" },
-	fn: Node & { type: "ArrowFunctionExpression" }
+	fn: FunctionExpressionNode
 ) =>
 	call.arguments.length === fn.params.length &&
 	fn.params.every(
@@ -1695,6 +1721,205 @@ const passesParams = (
 			call.arguments[i].type === "Identifier" &&
 			(call.arguments[i] as { name: string }).name === param.name
 	)
+
+// a function written as another is, reading what that reads, is that one, as
+// content can differ below what a traversal reads: a Transform writing defaults
+// doesn't read its unit's bounds. Its readers may then be written alike in turn.
+// A function holding properties keeps them to itself
+const mergeEqualFunctions: UnitsPass = ({ code, program, scopes }, s) => {
+	const firstByText = new Map<string, Binding>()
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration" || statement.kind !== "const")
+			continue
+		for (const { id, init } of statement.declarations) {
+			const binding = scopes.bindingsById.get(id)
+			if (
+				!binding ||
+				!init ||
+				!isFunctionExpression(init) ||
+				binding.references.some(
+					({ id }) =>
+						id.parent?.type === "MemberExpression" && id.parent.object === id
+				)
+			)
+				continue
+			const text = textOfFunction(code, init, binding)
+			const first = firstByText.get(text)
+			if (!first) firstByText.set(text, binding)
+			else renameReferences(s, binding, first.name)
+		}
+	}
+}
+
+// its text without what a build's passes annotate apart, and reading itself as itself
+const textOfFunction = (code: string, fn: Node, binding: Binding): string => {
+	let text = ""
+	let at = fn.start
+	const own = binding.references
+		.filter(({ id }) => fn.start <= id.start && id.end <= fn.end)
+		.sort((l, r) => l.id.start - r.id.start)
+	for (const { id } of own) {
+		text += `${code.slice(at, id.start)}\0`
+		at = id.end
+	}
+	return (text + code.slice(at, fn.end)).replace(noInlineAnnotation, "")
+}
+
+const noInlineAnnotation = /\/\* @__NOINLINE__ \*\/ /g
+
+// an array's element read where it's written is that element, and a value read
+// from a function called where it's declared is that value, since what its
+// annotation told a bundler has been decided
+const readPartsDirectly: UnitsPass = ({ code, program }, s) => {
+	walk(program, node => {
+		if (
+			node.type !== "MemberExpression" ||
+			!node.computed ||
+			node.object.type !== "ArrayExpression" ||
+			node.property.type !== "Literal" ||
+			typeof node.property.value !== "number" ||
+			!node.object.elements.every(element => element?.type === "Identifier")
+		)
+			return true
+		const element = node.object.elements[node.property.value] as {
+			name: string
+		}
+		s.overwrite(node.start, node.end, element.name)
+		return false
+	})
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration") continue
+		for (const { init } of statement.declarations) {
+			if (
+				init?.type !== "CallExpression" ||
+				init.arguments.length ||
+				init.callee.type !== "ArrowFunctionExpression" ||
+				init.callee.params.length ||
+				init.callee.body.type === "BlockStatement"
+			)
+				continue
+			const { body } = init.callee
+			s.overwrite(init.start, init.end, code.slice(body.start, body.end))
+		}
+	}
+}
+
+// V8 parses a function declared for a sixth less than a constant holding it, and
+// a call reads it without checking it's been initialized
+const functionsDeclared = (body: string): string => {
+	const { program } = parseUnits(body)
+	const s = new MagicString(body)
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration" || statement.kind !== "const")
+			continue
+		const { declarations } = statement
+		if (!declarations.some(declaresFunction)) continue
+		s.overwrite(
+			statement.start,
+			statement.end,
+			declarations
+				.map(declarator =>
+					declaresFunction(declarator) ?
+						`function ${(declarator.id as { name: string }).name}${body.slice(
+							declarator.init!.start + "function".length,
+							declarator.init!.end
+						)}`
+					:	`const ${body.slice(declarator.start, declarator.end)}`
+				)
+				.join("\n")
+		)
+	}
+	return s.toString()
+}
+
+const declaresFunction = ({ id, init }: VariableDeclarator): boolean =>
+	id.type === "Identifier" &&
+	init?.type === "FunctionExpression" &&
+	!init.id &&
+	!init.async &&
+	!init.generator
+
+// an Apply opens by checking data is an object, in a program of objects the text
+// it most repeats. Hot on a rejected call, V8 inlines each call as it read the text
+const shareObjectChecks: UnitsPass = ({ code, program }, s) => {
+	const checks: [start: number, text: string, site: string | undefined][] = []
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration") continue
+		for (const { id, init } of statement.declarations) {
+			if (
+				!init ||
+				!isFunctionExpression(init) ||
+				!applyName.test((id as { name?: string }).name ?? "")
+			)
+				continue
+			for (const check of code
+				.slice(init.start, init.end)
+				.matchAll(objectCheck))
+				checks.push([init.start + check.index, check[0], check[1]])
+		}
+	}
+	const isObject = nameFreeIn(code, "isObjectData")
+	const notObject = nameFreeIn(code, "notObjectData")
+	const site = checks.find(check => check[2])?.[2]
+	const helpers = `const ${isObject} = function (data) { return data instanceof Object || Object(data) === data }\n${
+		site ?
+			`const ${notObject} = function (data, ctx) { return !ctx._at(${site}("domain", "an object"), data) }\n`
+		:	""
+	}`
+	const calls = checks.map(([, , site]) =>
+		site ?
+			`if (!${isObject}(data)) return ${notObject}(data, ctx)`
+		:	`${isObject}(data)`
+	)
+	if (
+		minifiedLengthOf(helpers + calls.join("")) >=
+		minifiedLengthOf(checks.map(([, text]) => text).join(""))
+	)
+		return true
+	for (const [i, [start, text]] of checks.entries())
+		s.overwrite(start, start + text.length, calls[i])
+	s.prependRight(0, helpers)
+	return true
+}
+
+// arrows are shorter than function expressions and gzip smaller, and V8 reads
+// them in full where a function holds them. That costs about 47 instructions a
+// byte of this text (6394 bytes cost 0.3M, 33745 cost 1.6M), so under half a
+// million the bytes are worth more
+const minLazyText = 12_000
+
+const functionsAsArrows: UnitsPass = ({ code, program }, s) => {
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration") continue
+		for (const { init } of statement.declarations) {
+			if (init?.type !== "FunctionExpression" || init.id || !init.body) continue
+			let readsOwn = false
+			walk(init, node => {
+				if (
+					node.type === "ThisExpression" ||
+					(node.type === "Identifier" && node.name === "arguments")
+				)
+					readsOwn = true
+				return !readsOwn
+			})
+			if (readsOwn || init.async || init.generator) continue
+			s.overwrite(
+				init.start,
+				init.body.start,
+				`${code.slice(init.start + "function".length, init.body.start).trim()} => `
+			)
+		}
+	}
+	return true
+}
+
+const applyName = /Apply(?:\$\d+)?$/
+
+const objectCheck =
+	/if \(!\(\(data instanceof Object \|\| Object\(data\) === data\)\)\) {\s*return !ctx\._at\(([\w.]+)\("domain", "an object"\), data\);?\s*}|\(data instanceof Object \|\| Object\(data\) === data\)/g
+
+const nameFreeIn = (code: string, name: string): string =>
+	code.includes(name) ? nameFreeIn(code, `${name}_`) : name
 
 // a bundler drops only a module's unread declarations, not a function's
 const dropUnread: UnitsPass = ({ code, program, scopes }, s, body) => {

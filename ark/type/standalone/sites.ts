@@ -132,6 +132,7 @@ export const addIssueFeatures = (
 			features.reportsIndices = true
 			features.bracketsKeys = true
 			features.writesText = true
+			features.readsErrors = true
 		}
 	}
 	for (const unit of units) {

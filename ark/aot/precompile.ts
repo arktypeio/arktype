@@ -184,9 +184,9 @@ import {
 	type SiteState,
 	type Trace
 } from "./interpreter.ts"
-import { SourceModule } from "./module.ts"
+import { parseCode, SourceModule } from "./module.ts"
 import type { Preset } from "./presets.ts"
-import { SameEachRun } from "./sameEachRun.ts"
+import { closedTextOf, SameEachRun } from "./sameEachRun.ts"
 import { resolvePrecompileOptions } from "./settings.ts"
 import {
 	exportNameOf,
@@ -599,6 +599,12 @@ const defersCreation = ({ code, modules }: StandaloneModules): boolean => {
 	return chars >= deferredFrom
 }
 
+// a cell some site sets
+const isSetCell = (hole: unknown, cells: HoleCells | undefined): boolean => {
+	const cell = cells?.byHole.get(hole)
+	return !!cell && cell.text === undefined
+}
+
 const unsupportedModule = (file: string, message: string): Diagnostic => ({
 	severity: "error",
 	rule: "unsupported",
@@ -613,9 +619,7 @@ const unsupportedModule = (file: string, message: string): Diagnostic => ({
 })
 
 const holdsCell = (value: unknown, cells: HoleCells | undefined): boolean =>
-	!!cells &&
-	isFoldable(value) &&
-	keyOf(value)[1].some(hole => cells.byHole.has(hole))
+	isFoldable(value) && keyOf(value)[1].some(hole => isSetCell(hole, cells))
 
 // where a site's factory finds a hole: passed, or held by a Type it reads
 const setsOrHolds = (param: FactoryParam, hole: unknown): boolean =>
@@ -826,7 +830,8 @@ export class Precompiler {
 	// what a bundle's issues may hold, where no runtime or other build's validator can add any
 	private issuesOf(
 		program: ScannedProgram,
-		written: Record<string, PrecompiledModule>
+		written: Record<string, PrecompiledModule>,
+		used: Set<UsedMember> | string
 	): IssueFeatures | undefined {
 		for (const id in program.arkImports) {
 			if (
@@ -848,7 +853,17 @@ export class Precompiler {
 				const feature = k as keyof IssueFeatures
 				issues[feature] ||= held[feature]
 			}
+			const codes = [written[id].code, ...Object.values(written[id].modules)]
+			issues.traversesUnions ||= codes.some(code => code.includes("Traversal"))
+			// its message is a failed default's summary
+			issues.readsErrors ||= codes.some(code => code.includes("checkDefault"))
 		}
+		const isRead = (member: UsedMember) =>
+			typeof used === "string" || used.has(member)
+		issues.readsErrors ||= readsErrorsWhole.some(isRead)
+		issues.readsSummary ||= issues.readsErrors || isRead("summary")
+		issues.rewritesUnions ||=
+			issues.readsErrors || issues.traversesUnions || isRead("~standard")
 		return issues
 	}
 
@@ -933,7 +948,8 @@ export class Precompiler {
 	// each named by the first site and baking what any of them read
 	private internedIn(
 		{ planned, precompiled }: ProgramPlan,
-		baked: ReadonlyMap<string, BakedMembers>
+		baked: ReadonlyMap<string, BakedMembers>,
+		comparesTypes: boolean
 	): [
 		interned: ReadonlyMap<unknown, string>,
 		baked: ReadonlyMap<string, BakedMembers>
@@ -960,6 +976,8 @@ export class Precompiler {
 				sites.every(([, , id]) => id === sites[0][2])
 			)
 				continue
+			// a hole could be a callback that creating it twice would run twice
+			if (!comparesTypes && !keyOf(root as BaseRoot)[1].length) continue
 			const [path, { start }] = sites.reduce((first, site) =>
 				(
 					site[0] < first[0] ||
@@ -1005,7 +1023,16 @@ export class Precompiler {
 		const readsAllows = isRead("allows")
 		const piped = isRead("piped")
 		this.runsApart = modulesRunApart(program)
-		const [interned, baked] = this.internedIn(plan, readings.baked)
+		const [interned, baked] = this.internedIn(
+			plan,
+			readings.baked,
+			// every read is a call or a member holding nothing of its own, or two
+			// values for one Type can't be told apart
+			typeof used === "string" ||
+				used.has("allows") ||
+				used.has("meta") ||
+				used.has("~standard")
+		)
 		// a size build's units are already module constants
 		const flattens =
 			!!program.isOneChunk &&
@@ -1065,7 +1092,7 @@ export class Precompiler {
 				this.flattenWritten(written, plan.sources, program, runtimes)
 			:	undefined
 		usage.written = written
-		const issues = this.issuesOf(program, written)
+		const issues = this.issuesOf(program, written, used)
 		return {
 			dropped,
 			linked,
@@ -1166,13 +1193,24 @@ export class Precompiler {
 				}
 			}
 		}
+		const texts = new Map<unknown, string>()
+		for (const [site] of factories) {
+			for (const reference of site.references) {
+				if (!isCell.get(reference.value)) continue
+				const text = this.closedPredicateTextOf(site, reference)
+				if (text !== undefined) texts.set(reference.value, text)
+			}
+		}
 		// a validator can read one only where its site runs what sets it
 		for (const [site, factory] of factories) {
 			if (site.introspection) continue
 			const created = createdBy(site)
 			if (!created) continue
 			for (const hole of keyOf(created)[1]) {
-				if (!factory.params.some(param => setsOrHolds(param, hole)))
+				if (
+					!texts.has(hole) &&
+					!factory.params.some(param => setsOrHolds(param, hole))
+				)
 					isCell.set(hole, false)
 			}
 		}
@@ -1189,7 +1227,8 @@ export class Precompiler {
 			)
 				continue
 			const cell: HoleCell = {
-				name: `hole${placeholder.slice(placeholder.indexOf(holeNameMarker) + holeNameMarker.length)}`
+				name: `hole${placeholder.slice(placeholder.indexOf(holeNameMarker) + holeNameMarker.length)}`,
+				text: texts.get(hole)
 			}
 			byHole.set(hole, cell)
 			byPlaceholder.set(placeholder, cell)
@@ -1274,8 +1313,40 @@ export class Precompiler {
 		return cells
 	}
 
+	// the text of a narrow written in place, which can read only its argument and
+	// what's closed over nothing of its module. What runs it never reads its name,
+	// which a variable holding it would change, as a build writes its description
+	private closedPredicateTextOf(
+		site: Site,
+		reference: Site["references"][number]
+	): string | undefined {
+		const { value } = reference
+		const standIn = this.standInOf(value)
+		const node = standIn?.closure?.node
+		const created = createdBy(site)
+		if (
+			!node ||
+			!created ||
+			reference.binding ||
+			reference.start !== node.start ||
+			reference.end !== node.end ||
+			!readsOnlyData.has(value as Fn) ||
+			declaredNameOf(node) !== "" ||
+			// a read of its Type before its site has run throws where a site sets it
+			this.isOnCycle(standIn!.module) ||
+			!rootsIn(created).some(root =>
+				root.references.some(
+					ref => ref.is("predicate") && ref.predicate === value
+				)
+			)
+		)
+			return
+		return closedTextOf(node, standIn!.module)
+	}
+
 	// a module another plugin rewrote creates its holes anew, where what the scan
-	// wrote reads them through their cells, so its sites must set the same ones
+	// wrote reads them through their cells, so its sites must set the same ones,
+	// or write the same text
 	private adoptCells(
 		module: SourceModule,
 		sites: Site[],
@@ -1294,6 +1365,12 @@ export class Precompiler {
 		const after = functionsIn(sites)
 		const nameOf = (hole: unknown) =>
 			declaredNameOf(this.standInOf(hole)!.closure!.node)
+		const isSameText = (text: string | undefined, hole: unknown) => {
+			if (text === undefined) return true
+			const { closure, module } = this.standInOf(hole)!
+			const after = closedTextOf(closure!.node, module)
+			return after !== undefined && shapeOfCode(after) === shapeOfCode(text)
+		}
 		const isSame = (i: number) =>
 			!cells.byHole.has(before[i]) ||
 			(after[i] !== undefined &&
@@ -1301,6 +1378,7 @@ export class Precompiler {
 				nameOf(after[i]) === nameOf(before[i]) &&
 				readsOnlyData.has(after[i] as Fn) ===
 					readsOnlyData.has(before[i] as Fn) &&
+				isSameText(cells.byHole.get(before[i])!.text, after[i]) &&
 				sites.every(site =>
 					site.references.every(
 						reference => reference.value !== after[i] || reference.isOneValue
@@ -2729,6 +2807,9 @@ export class Precompiler {
 		this.linkIslands(module, sites, s, prefix)
 		this.markProgress(module, sites, s, prefix)
 		if (this.checkHelpers) this.registerHelpers(module, s)
+		// esbuild loads stdin as written, which holding no site leaves it
+		if (this.mode === "standalone" && !module.id.includes("<stdin>."))
+			this.nameErrorsClass(module, sites, s, prefix)
 		for (const specifier in inputImports) {
 			const locals = inputImports[specifier]
 			s.append(
@@ -2740,6 +2821,54 @@ export class Precompiler {
 		if (module.id === this.config) this.stampConfiguration(module, s)
 		// an island's errors are arktype's, which may hold anything
 		return module.islands.length ? anyIssues : written
+	}
+
+	// `type.errors` is `ArkErrors`, which leaves `type`, a frozen object holding
+	// only it, for no read outside a site
+	private nameErrorsClass(
+		module: SourceModule,
+		sites: Site[],
+		s: MagicString,
+		prefix: string
+	): void {
+		const name = `${prefix}ArkErrors`
+		for (const statement of module.program.body) {
+			if (
+				statement.type !== "ImportDeclaration" ||
+				statement.importKind === "type" ||
+				!/^arktype(?:\/runtime)?$/.test(statement.source.value)
+			)
+				continue
+			let read = false
+			for (const specifier of statement.specifiers) {
+				if (
+					specifier.type !== "ImportSpecifier" ||
+					specifier.importKind === "type" ||
+					exportNameOf(specifier.imported) !== "type"
+				)
+					continue
+				const binding = module.scopes.bindingsById.get(specifier.local)!
+				for (const { id } of binding.references) {
+					const member = id.parent
+					if (
+						member?.type !== "MemberExpression" ||
+						member.object !== id ||
+						member.optional ||
+						memberNameOf(member) !== "errors" ||
+						isWriteTarget(member) ||
+						sites.some(site => contains(site, member))
+					)
+						continue
+					s.overwrite(member.start, member.end, name)
+					read = true
+				}
+			}
+			if (read) {
+				s.append(
+					`\nimport { ArkErrors as ${name} } from ${JSON.stringify(statement.source.value)}`
+				)
+			}
+		}
 	}
 
 	// cache mode's units: one module per unit, which Types share, beside
@@ -3939,7 +4068,12 @@ export class Precompiler {
 				)
 				continue
 			}
-			const holes = hole ? [hole.value] : keyOf(reference.value as Foldable)[1]
+			const allHoles =
+				hole ? [hole.value] : keyOf(reference.value as Foldable)[1]
+			for (const value of allHoles) read.add(value)
+			const holes = allHoles.filter(
+				value => cells?.byHole.get(value)?.text === undefined
+			)
 			// a Type holding a Standard Schema holds the morph arktype wrapped its
 			// validate in, which no site received, so it can't be passed or baked
 			if (
@@ -3981,7 +4115,15 @@ export class Precompiler {
 				continue
 			}
 			for (const value of holes) read.add(value)
-			if (!holes.length) continue
+			// a Type read before its site ran throws even where no site sets a cell
+			if (
+				!holes.length &&
+				(!allHoles.length ||
+					hole ||
+					(reference.binding &&
+						this.isBindingSetBefore(reference.binding, site, module)))
+			)
+				continue
 			const spanByText =
 				spansByValue.get(reference.value) ?? new Map<string, number>()
 			if (spanByText.has(text)) {
@@ -4002,7 +4144,7 @@ export class Precompiler {
 				spanByText.set(text, factory.spans.length)
 			)
 			factory.spans.push(reference)
-			factory.holdsCells ||= holes.some(value => cells?.byHole.has(value))
+			factory.holdsCells ||= holes.some(value => isSetCell(value, cells))
 			factory.params.push(
 				hole ?
 					{
@@ -7490,14 +7632,21 @@ const isReachedOnlyAtBuild = (
 					!(site.definition && contains(site.definition, node))))
 	)
 
+// each may hand a program's code its errors, or throws them
+const readsErrorsWhole: UsedMember[] = ["errors", "assert", "methods", "piped"]
+
 // what arktype's own errors, like an island's, may hold
 const anyIssues: IssueFeatures = {
 	reportsIndices: true,
 	bracketsKeys: true,
 	writesText: true,
 	listsUnions: true,
+	rewritesUnions: true,
+	traversesUnions: true,
 	readsKeySites: true,
-	runsArktype: true
+	runsArktype: true,
+	readsSummary: true,
+	readsErrors: true
 }
 
 // a Type whose members a module importing it can bake, as it holds no value
@@ -7521,6 +7670,14 @@ interface ProgramReadings {
 	// what each validator bakes, and how it decided
 	decisions: string[]
 }
+
+// what a function's text means, however it's spaced and parenthesized
+const shapeOfCode = (text: string): string =>
+	JSON.stringify(parseCode("a.js", `(${text})`, {}).program.body, (k, v) =>
+		k === "start" || k === "end" || k === "raw" || k === "parent" ?
+			undefined
+		:	v
+	)
 
 const siteKeyOf = (id: string, site: Span) => `${id}\0${site.start}:${site.end}`
 
