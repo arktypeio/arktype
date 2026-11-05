@@ -13,7 +13,7 @@ import {
 	writeFileSync
 } from "node:fs"
 import { createRequire } from "node:module"
-import { dirname, join, relative } from "node:path"
+import { basename, dirname, join, relative } from "node:path"
 
 // what the fuzzers build on Next, which resolves arktype's built output from
 // beside its own install, as testNext's app does
@@ -35,7 +35,9 @@ if (!config) throw new Error("Found no next.config.js in Setup")
 export interface NextBuilt {
 	refused: string | undefined
 	warnings: string[]
-	// each entry's module, to run in a process of its own
+	// each entry's built route, which its first request loads
+	routes: Record<string, string>
+	// a module for each that loads it, to run in a process of its own
 	runners: Record<string, string>
 	// the chunks of the server that hold it
 	js: string
@@ -92,8 +94,10 @@ export const buildOnNext = (
 	mkdirSync(dir, { recursive: true })
 	cpSync(sources, dir, {
 		recursive: true,
+		dereference: true,
 		filter: source =>
-			!lstatSync(source).isSymbolicLink() &&
+			// resolved instead from beside Next's install, as it isn't within its root
+			!(lstatSync(source).isSymbolicLink() && basename(source) === "arktype") &&
 			// which has Next install what it needs for TypeScript in the app
 			!/^out-|^tsconfig\.json$/.test(relative(sources, source))
 	})
@@ -136,15 +140,24 @@ export const buildOnNext = (
 	if (error) throw error
 	const output = stdout + stderr
 	const warnings = warningsOf(output)
-	if (status !== 0)
-		return { refused: messageOf(output), warnings, runners: {}, js: "" }
+	if (status !== 0) {
+		return {
+			refused: messageOf(output),
+			warnings,
+			routes: {},
+			runners: {},
+			js: ""
+		}
+	}
+	const routes: Record<string, string> = {}
 	const runners: Record<string, string> = {}
 	for (const entry of entries) {
+		routes[entry] = join(dir, `.next/server/app/api/${entry}/route.js`)
 		runners[entry] = join(dir, `${entry}-run.cjs`)
 		writeFileSync(
 			runners[entry],
 			`process.env.NODE_ENV = "production"
-const { routeModule } = require(${JSON.stringify(join(dir, `.next/server/app/api/${entry}/route.js`))})
+const { routeModule } = require(${JSON.stringify(routes[entry])})
 // Next loads what a route imports at its first request
 routeModule.ensureUserland()
 `
@@ -153,7 +166,8 @@ routeModule.ensureUserland()
 	return {
 		refused: undefined,
 		warnings,
+		routes,
 		runners,
-		js: jsIn(join(dir, ".next/server/chunks"))
+		js: jsIn(join(dir, ".next/server"))
 	}
 }

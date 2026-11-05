@@ -10,20 +10,34 @@
 //   first   closes after the first validation, whose ms it also times, then
 //           measures ns per later (hot) validation
 //
-// node measure.ts [ntwine] [scale] [crossover] [board] [--rounds=9] [--out=<file>]
-//   [--board=<file>]
+// node measure.ts [ntwine] [scale] [crossover] [next] [board] [--rounds=9]
+//   [--out=<file>] [--board=<file>]
 // board measures board.ts's arms and sizes, with its groups through webpack as
-// well, and writes its scoreboard to <file>.
+// well, and writes its scoreboard to <file>. next builds the largest apps with
+// `next build` on Turbopack, as board does too, measuring a route's first load,
+// Next's own included, which an empty route takes about 552M and 0.51 MB of.
 // With no scope, ntwine and scale at 11, 92 and 1012 Types. crossover adds more
 // sizes.
 // Run `pnpm build` first. Reports against results/baseline.json.
 import { spawn, execSync, spawnSync } from "node:child_process"
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import {
+	cpSync,
+	mkdirSync,
+	mkdtempSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync
+} from "node:fs"
 import { loadavg } from "node:os"
 import { join } from "node:path"
 import { gzipSync } from "node:zlib"
 import { sizes, writeAjvApp, writeApp, type Library } from "./apps.ts"
 import { boardSizes, writeBoard } from "./board.ts"
+import {
+	buildOnNext,
+	removeNextApps
+} from "../../../aot/__tests__/nextBuild.ts"
+import type { PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { bundle, type Bundled } from "./bundle.ts"
 import { ntwineArms, ntwineThread } from "./ntwine.ts"
 
@@ -34,6 +48,7 @@ const scopes = args.filter(arg => !arg.startsWith("--"))
 const rounds = Number(flag("rounds") ?? 9)
 const crossover = scopes.includes("crossover")
 const board = scopes.includes("board")
+const nextOn = board || scopes.includes("next")
 const ntwineOn = !scopes.length || scopes.includes("ntwine") || board
 const scaleOn = !scopes.length || scopes.includes("scale") || crossover || board
 const scaleSizes =
@@ -74,6 +89,7 @@ interface Arm {
 }
 
 const arms: Arm[] = []
+const failed: Record<string, string> = {}
 
 // every bundle's path has the same length, as startup.ts explains
 const add = (arm: Omit<Arm, "path">, code: string) => {
@@ -279,6 +295,110 @@ for (const types of scaleOn ? scaleSizes : []) {
 	}
 }
 
+// what a route's first request loads, in place of a bundle's own import
+const addNext = (
+	group: string,
+	library: string,
+	sources: string,
+	entry: string,
+	options: PrecompileUnpluginOptions | undefined,
+	common: Pick<Arm, "call" | "validator" | "data">
+) => {
+	const name = `${group} ${library}`
+	const built = buildOnNext(
+		sources,
+		name.replace(/\W+/g, "-"),
+		[entry],
+		options
+	)
+	if (built.refused) {
+		failed[name] = built.refused
+		console.error(`failed ${name}: ${built.refused}`)
+		return
+	}
+	add(
+		{
+			...common,
+			name,
+			group,
+			library,
+			bytes: {
+				raw: Buffer.byteLength(built.js),
+				min: Buffer.byteLength(built.js),
+				gz: gzipSync(built.js).length
+			}
+		},
+		`import { createRequire } from "node:module"
+const { routeModule } = createRequire(import.meta.url)(${JSON.stringify(built.routes[entry])})
+await routeModule.ensureUserland()
+export const ${common.validator} = routeModule.userland.${common.validator}
+`
+	)
+	console.error(`built ${name}: ${gzipSync(built.js).length} gz`)
+}
+
+if (nextOn) {
+	const handlers = {
+		call: "handler" as const,
+		validator: "checkProject",
+		data: project
+	}
+	for (const narrows of [false, true]) {
+		const group = `turbopack 1012${narrows ? " narrows" : ""}`
+		const appOf = (library: Library) => {
+			const dir = join(out, "apps", `next-${narrows}-${library}`)
+			writeApp(1012, library, narrows, dir)
+			return dir
+		}
+		const arktype = appOf("arktype")
+		addNext(group, "precompiled", arktype, "index", {}, handlers)
+		addNext(
+			group,
+			"smallest",
+			arktype,
+			"index",
+			{ preset: "smallest" },
+			handlers
+		)
+		for (const library of ["zod", "valibot"] as const)
+			addNext(group, library, appOf(library), "index", undefined, handlers)
+	}
+	rmSync(join(out, "apps"), { recursive: true, force: true })
+	const { arktype, zod } = ntwineArms(join(out, "ntwine"))
+	const ntwine = {
+		call: "arktype" as const,
+		validator: "ThreadView",
+		data: ntwineThread
+	}
+	const group = "turbopack ntwine"
+	rmSync(join(arktype.cwd, "zodCompiled.ts"))
+	addNext(
+		group,
+		"precompiled",
+		arktype.cwd,
+		"index",
+		arktype.precompiled,
+		ntwine
+	)
+	addNext(
+		group,
+		"smallest",
+		arktype.cwd,
+		"index",
+		{ ...arktype.precompiled, preset: "smallest" },
+		ntwine
+	)
+	// Next resolves its imports from where it builds it
+	const zodDir = join(out, "ntwine-zod")
+	cpSync(zod.cwd, zodDir, { recursive: true })
+	mkdirSync(join(zodDir, "node_modules"))
+	symlinkSync(
+		join(arktype.cwd, "node_modules", "yaml"),
+		join(zodDir, "node_modules", "yaml")
+	)
+	addNext(group, "zod", zodDir, "index", undefined, { ...ntwine, call: "zod" })
+}
+
 const child = `
 import { openSync, readSync, writeSync } from "node:fs"
 const { BIGAPP_MODE: mode, BIGAPP_URL: url, BIGAPP_CALL: call, BIGAPP_VALIDATOR: name } = process.env
@@ -399,7 +519,6 @@ type Metric = (typeof metrics)[number]
 type Samples = Record<Metric, number[]>
 
 // an arm that can't load or validate is a result: recorded, and left out of the rounds
-const failed: Record<string, string> = {}
 for (const arm of [...arms]) {
 	try {
 		await run(arm, "first")
@@ -449,6 +568,7 @@ for (let round = 0; round < rounds; round++) {
 }
 process.stderr.write("\n")
 rmSync(out, { recursive: true, force: true })
+if (nextOn) removeNextApps()
 
 const version = commit()
 const results = {
