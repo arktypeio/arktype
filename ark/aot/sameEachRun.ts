@@ -1,10 +1,17 @@
 import { hasDomain } from "@ark/util"
 import { keyOf } from "arktype/internal/standalone.ts"
 import type { Node } from "oxc-parser"
+import { globalsByName } from "./builtins.ts"
 import { contains, heldAs, isFunctionNode, type ModuleGraph } from "./graph.ts"
 import { initOf, type Interpreter } from "./interpreter.ts"
 import type { SourceModule } from "./module.ts"
-import { operatorOf, unwrapExpression, walk, type Binding } from "./scope.ts"
+import {
+	operatorOf,
+	typeKeys,
+	unwrapExpression,
+	walk,
+	type Binding
+} from "./scope.ts"
 import { isFoldable } from "./sites.ts"
 
 // classes whose instances hold nothing a method they're called with changes
@@ -13,6 +20,75 @@ const fixedClasses = new Set(["Set", "Map", "TextEncoder"])
 const fixedGlobals = new Set(["undefined", "NaN", "Infinity"])
 
 type Located = [binding: Binding, module: SourceModule]
+
+const isNode = (value: unknown): value is Node =>
+	typeof (value as Node | null)?.type === "string"
+
+// what a function runs if it's written in another module, as JavaScript: undefined
+// if it reads anything but what it declares and globals a module a build writes
+// can't declare, or what it's bound to, like `this`, differs there
+export const closedTextOf = (
+	fn: Node & { start: number; end: number },
+	module: SourceModule
+): string | undefined => {
+	const erased: [start: number, end: number][] = []
+	const isClosed = (node: Node): boolean => {
+		switch (node.type) {
+			case "ThisExpression":
+			case "Super":
+			case "MetaProperty":
+			case "ImportExpression":
+			case "ClassExpression":
+			case "ClassDeclaration":
+				return false
+			case "TSAsExpression":
+			case "TSSatisfiesExpression":
+			case "TSNonNullExpression":
+				// parentheses around what it casts aren't in its span
+				if (
+					!/^\s*(?:as\b|satisfies\b|!)/.test(
+						module.source.slice(node.expression.end, node.end)
+					)
+				)
+					return false
+				erased.push([node.expression.end, node.end])
+				return isClosed(node.expression)
+			case "Identifier": {
+				if ((node as { optional?: boolean }).optional) return false
+				const reference = module.scopes.byId.get(node)
+				if (
+					reference &&
+					(reference.binding ?
+						!contains(fn, reference.binding.id)
+					:	!(node.name in globalsByName))
+				)
+					return false
+			}
+		}
+		if (node.type.startsWith("TS") || node.type.startsWith("JSX")) return false
+		for (const k in node) {
+			if (k === "parent") continue
+			const value = node[k as keyof Node] as unknown
+			if (k in typeKeys) {
+				if (isNode(value)) erased.push([value.start, value.end])
+			} else if (
+				!(Array.isArray(value) ? value : [value]).every(
+					child => !isNode(child) || isClosed(child)
+				)
+			)
+				return false
+		}
+		return true
+	}
+	if (!isClosed(fn)) return
+	let text = ""
+	let at = fn.start
+	for (const [start, end] of erased.sort(([l], [r]) => l - r)) {
+		text += module.source.slice(at, start)
+		at = end
+	}
+	return text + module.source.slice(at, fn.end)
+}
 
 // Each run of a module's text creates its functions anew: a chunk imported
 // again under a query, a module two queries load, a dynamic import retried.
@@ -38,7 +114,7 @@ export class SameEachRun {
 
 	// `seen` answers for what's being read, so a cycle is as sound as what else
 	// its members read, which each decides before the first returns
-	private reads(fn: Node, module: SourceModule, seen: Set<unknown>): boolean {
+	private reads(fn: Node, module: SourceModule, seen: Set<Node>): boolean {
 		if (seen.has(fn)) return true
 		seen.add(fn)
 		let same = true
@@ -58,7 +134,7 @@ export class SameEachRun {
 		id: Node & { name: string },
 		fn: Node,
 		module: SourceModule,
-		seen: Set<unknown>
+		seen: Set<Node>
 	): boolean {
 		const reference = module.scopes.byId.get(id)
 		// e.g. a member's or key's name
@@ -96,7 +172,7 @@ export class SameEachRun {
 	private isSameType(
 		binding: Binding,
 		module: SourceModule,
-		seen: Set<unknown>
+		seen: Set<Node>
 	): boolean {
 		const value = this.interpreter.valueOfBinding(binding, module)
 		return (

@@ -40,7 +40,7 @@ import {
 	writeUnreadServerExternalsMessage,
 	withAllowUnsafe
 } from "./messages.ts"
-import { walk } from "./scope.ts"
+import { propertyKeyOf, walk } from "./scope.ts"
 import { checkArktypeVersion } from "./version.ts"
 
 export interface TurbopackLoaderContext {
@@ -262,9 +262,7 @@ const serverExternalListsIn = (name: string, source: string) => {
 		if (
 			node.type === "Property" &&
 			!node.computed &&
-			(node.key.type === "Identifier" ?
-				node.key.name
-			:	(node.key as { value?: unknown }).value) === "serverExternalPackages"
+			propertyKeyOf(node) === "serverExternalPackages"
 		) {
 			const { value } = node
 			lists.push(

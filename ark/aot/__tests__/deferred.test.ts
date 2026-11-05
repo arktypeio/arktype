@@ -286,7 +286,8 @@ console.log(out instanceof type.errors ? out.summary : out)
 		const opts = { prune: true } as const
 		const program = {
 			"narrowed.ts": `import { type } from "arktype"
-export const Narrowed = type("string").narrow(s => s.length > 2)
+const least = 2
+export const Narrowed = type("string").narrow(s => s.length > least)
 ${typesOf(large)}
 `,
 			"above.ts": `import { type } from "arktype"

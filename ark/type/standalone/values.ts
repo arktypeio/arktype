@@ -1,5 +1,6 @@
 import {
 	hasArkKind,
+	holeNameMarker,
 	isNode,
 	madeMorphs,
 	type BaseNode,
@@ -16,7 +17,7 @@ import {
 import { keywords } from "../keywords/keywords.ts"
 import type { IntrospectionMember } from "../runtime.ts"
 import * as runtime from "../runtimeExports.ts"
-import { holeNameMarker, holeNamePattern } from "./keys.ts"
+import { holeNamePattern } from "./keys.ts"
 
 // past this many chars a site's introspection fails
 export const defaultBakedLimit = 1 << 20
@@ -223,6 +224,9 @@ export const holeNameIn = (
 // a function the program creates once, which what reads it finds in one variable
 export interface HoleCell {
 	name: string
+	// the function's own text, where what it reads means the same in any module,
+	// so the cell holds it and no site sets it
+	text?: string | undefined
 }
 
 export interface HoleCells {

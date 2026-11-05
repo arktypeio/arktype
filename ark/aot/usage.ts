@@ -1,6 +1,6 @@
 import { receiverPrefix } from "arktype/internal/standalone.ts"
 import type { Node, Program, Span } from "oxc-parser"
-import { memberNameOf } from "./graph.ts"
+import { isFunctionNode, memberNameOf } from "./graph.ts"
 import type { SiteFactory } from "./fold.ts"
 import { parseCode, type SourceModule } from "./module.ts"
 import { isInertMetaProperty } from "./scan.ts"
@@ -8,13 +8,16 @@ import {
 	exportNameOf,
 	isWriteTarget,
 	operatorOf,
+	propertyKeyOf,
+	unwrapExpression,
 	walk,
 	type Binding
 } from "./scope.ts"
 import type { Site } from "./sites.ts"
 
-// a member, "call" where it may return errors no one reads, or "piped" where a
-// call may pass a second argument
+// a member, "call" where it may return errors no one reads, "piped" where a
+// call may pass a second argument, "summary" where a call's errors have theirs
+// read, or "errors" where they may be read in any other way
 export type UsedMember =
 	| "assert"
 	| "~standard"
@@ -23,6 +26,8 @@ export type UsedMember =
 	| "allows"
 	| "call"
 	| "piped"
+	| "summary"
+	| "errors"
 
 const usedMembersByName: Record<string, UsedMember | null> =
 	Object.setPrototypeOf(
@@ -114,6 +119,11 @@ class UsageAnalysis {
 	// each binding read, by the path of keys the validator is held at in it
 	private readBindings = new Map<Binding, Set<string>>()
 	private readExports = new Set<string>()
+	// e.g. `type.errors` in `out instanceof type.errors`
+	private errorsTests = new Set<Node>()
+	// each arktype export a module re-exports, as `name` re-exported `as`
+	private arkReexports: [runtime: RuntimeModule, as: string, name: string][] =
+		[]
 
 	constructor(program: UsageProgram) {
 		this.program = program
@@ -121,6 +131,8 @@ class UsageAnalysis {
 
 	analyze(): void {
 		for (const runtime of this.program.modules.values()) this.link(runtime)
+		for (const [runtime, as, name] of this.arkReexports)
+			this.readArkExport(runtime, as, name, new Set())
 		for (const runtime of this.program.modules.values()) {
 			if (runtime.holdsOther) {
 				escape(
@@ -135,6 +147,12 @@ class UsageAnalysis {
 	private link(runtime: RuntimeModule): void {
 		const { module } = runtime
 		const add = (specifier: string, edge: ImportEdge) => {
+			// e.g. `export * as ark from "arktype"`, whose errors class is read unfollowed
+			if (
+				(edge.kind === "whole" || edge.kind === "star") &&
+				isArkSpecifier(specifier)
+			)
+				this.used.add("errors")
 			const id = this.program.resolve(specifier, module.id)
 			if (id === undefined) return
 			const edges = this.edgesByTarget.get(id)
@@ -151,6 +169,15 @@ class UsageAnalysis {
 					)
 						continue
 					const binding = module.scopes.bindingsById.get(specifier.local)!
+					if (isArkSpecifier(statement.source.value)) {
+						this.readArkImport(
+							specifier.type === "ImportSpecifier" ?
+								exportNameOf(specifier.imported)
+							:	undefined,
+							binding,
+							runtime
+						)
+					}
 					add(
 						statement.source.value,
 						specifier.type === "ImportNamespaceSpecifier" ?
@@ -170,6 +197,13 @@ class UsageAnalysis {
 				if (!statement.source || statement.exportKind === "type") continue
 				for (const specifier of statement.specifiers) {
 					if (specifier.exportKind === "type") continue
+					if (isArkSpecifier(statement.source.value)) {
+						this.arkReexports.push([
+							runtime,
+							exportNameOf(specifier.exported),
+							exportNameOf(specifier.local)
+						])
+					}
 					add(statement.source.value, {
 						kind: "reexport",
 						name: exportNameOf(specifier.local),
@@ -257,6 +291,191 @@ class UsageAnalysis {
 			}
 			return true
 		})
+	}
+
+	// arktype's export `name` re-exported as `as`, read where it's imported
+	private readArkExport(
+		runtime: RuntimeModule,
+		as: string,
+		name: string,
+		seen: Set<string>
+	): void {
+		const { id } = runtime.module
+		const key = `${id}\0${as}`
+		if (seen.has(key)) return
+		seen.add(key)
+		// code outside the bundle may read it
+		if (this.program.entries.has(id) || this.program.exposed.has(id))
+			this.used.add("errors")
+		for (const edge of this.edgesByTarget.get(id) ?? []) {
+			switch (edge.kind) {
+				case "named":
+					if (edge.name === as)
+						this.readArkImport(name, edge.binding, edge.importer)
+					break
+				case "reexport":
+					if (edge.name === as)
+						this.readArkExport(edge.importer, edge.as, name, seen)
+					break
+				case "star":
+					if (as !== "default")
+						this.readArkExport(edge.importer, as, name, seen)
+					break
+				case "input":
+					if (edge.name === as) this.used.add("errors")
+					break
+				// what reads a namespace or a whole module isn't followed
+				default:
+					this.used.add("errors")
+			}
+		}
+	}
+
+	// arktype's export, as what it may hand a program of the errors class, or
+	// undefined for its default or namespace
+	private readArkImport(
+		name: string | undefined,
+		binding: Binding,
+		runtime: RuntimeModule
+	): void {
+		if (name !== "type" && name !== "ArkErrors") {
+			this.used.add("errors")
+			return
+		}
+		for (const { id } of binding.references) {
+			if (isDead(id, runtime)) continue
+			let [operand, parent] = operatorOf(id)
+			if (name === "type") {
+				if (parent?.type === "CallExpression" && parent.callee === operand)
+					continue
+				if (
+					parent?.type !== "MemberExpression" ||
+					parent.object !== operand ||
+					isWriteTarget(parent)
+				) {
+					this.used.add("errors")
+					continue
+				}
+				if (memberNameOf(parent) !== "errors") continue
+				;[operand, parent] = operatorOf(parent)
+			}
+			if (
+				parent?.type === "BinaryExpression" &&
+				parent.operator === "instanceof" &&
+				parent.right === operand
+			)
+				this.errorsTests.add(operand)
+			else this.used.add("errors")
+		}
+	}
+
+	// a call's result, which holds errors unless it's past a test for them
+	private readResult(call: Node, runtime: RuntimeModule): void {
+		const [result, parent] = operatorOf(call)
+		if (parent?.type === "ExpressionStatement") return
+		if (
+			parent?.type !== "VariableDeclarator" ||
+			parent.init !== result ||
+			parent.id.type !== "Identifier"
+		)
+			return this.readErrors(result, parent)
+		const binding = runtime.module.scopes.bindingsById.get(parent.id)!
+		if (
+			binding.kind !== "const" ||
+			binding.exportNames.length ||
+			runtime.passed.includes(binding)
+		) {
+			this.used.add("errors")
+			return
+		}
+		for (const { id } of binding.references) {
+			if (isDead(id, runtime) || this.isPastErrorsTest(id, binding)) continue
+			const [operand, operator] = operatorOf(id)
+			this.readErrors(operand, operator)
+		}
+	}
+
+	private readErrors(node: Node, parent: Node | null | undefined): void {
+		if (this.isErrorsTest(parent, node)) return
+		if (
+			parent?.type === "MemberExpression" &&
+			parent.object === node &&
+			!isWriteTarget(parent)
+		) {
+			const name = memberNameOf(parent)
+			if (name === "issues" || name === "count") return
+			if (name === "summary") {
+				this.used.add("summary")
+				return
+			}
+		}
+		this.used.add("errors")
+	}
+
+	private isErrorsTest(test: Node | null | undefined, tested: Node): boolean {
+		return (
+			test?.type === "BinaryExpression" &&
+			test.operator === "instanceof" &&
+			test.left === tested &&
+			this.errorsTests.has(test.right)
+		)
+	}
+
+	// e.g. `data` in `out instanceof type.errors ? out.issues : { data }`, or
+	// anywhere after `if (out instanceof type.errors) return out.issues`
+	private isPastErrorsTest(read: Node, binding: Binding): boolean {
+		const tests = (test: Node): boolean => {
+			const expression = unwrapExpression(test) as Node
+			return (
+				expression.type === "BinaryExpression" &&
+				this.isErrorsTest(expression, unwrapExpression(expression.left)) &&
+				binding.references.some(
+					({ id }) => id === unwrapExpression(expression.left)
+				)
+			)
+		}
+		const refutes = (test: Node): boolean => {
+			const expression = unwrapExpression(test) as Node
+			return (
+				expression.type === "UnaryExpression" &&
+				expression.operator === "!" &&
+				tests(expression.argument)
+			)
+		}
+		let node = read
+		for (
+			let parent = node.parent;
+			parent;
+			node = parent, parent = node.parent
+		) {
+			// hoisted, so it may run before any test
+			if (parent.type === "FunctionDeclaration") return false
+			if (
+				parent.type === "ConditionalExpression" ||
+				parent.type === "IfStatement"
+			) {
+				if (node === parent.alternate && tests(parent.test)) return true
+				if (node === parent.consequent && refutes(parent.test)) return true
+			} else if (
+				parent.type === "BlockStatement" ||
+				parent.type === "Program"
+			) {
+				const body = parent.body as Node[]
+				if (
+					body
+						.slice(0, body.indexOf(node))
+						.some(
+							statement =>
+								statement.type === "IfStatement" &&
+								!statement.alternate &&
+								tests(statement.test) &&
+								leaves(statement.consequent)
+						)
+				)
+					return true
+			}
+		}
+		return false
 	}
 
 	// a validator, or an object literal holding one at path, as a value
@@ -450,6 +669,7 @@ class UsageAnalysis {
 		if (parent?.type === "CallExpression" && parent.callee === node) {
 			this.used.add("call")
 			this.readArguments(parent)
+			this.readResult(parent, runtime)
 			return
 		}
 		if (
@@ -521,20 +741,17 @@ class UsageAnalysis {
 	}
 }
 
-// an object literal property's key, where it's a name
-const propertyKeyOf = (property: {
-	key: Node
-	computed: boolean
-}): string | undefined =>
-	property.key.type === "Literal" ?
-		(
-			typeof property.key.value === "string" ||
-			typeof property.key.value === "number"
-		) ?
-			String(property.key.value)
-		:	undefined
-	: property.computed || property.key.type !== "Identifier" ? undefined
-	: property.key.name
+const isArkSpecifier = (specifier: string): boolean =>
+	specifier === "arktype" || specifier.startsWith("arktype/")
+
+// no statement after it in its block runs
+const leaves = (statement: Node): boolean =>
+	statement.type === "BlockStatement" ?
+		!!statement.body.length && leaves(statement.body[statement.body.length - 1])
+	:	statement.type === "ReturnStatement" ||
+		statement.type === "ThrowStatement" ||
+		statement.type === "BreakStatement" ||
+		statement.type === "ContinueStatement"
 
 const literalOf = (node: Node | undefined): string | undefined =>
 	node?.type === "Literal" && typeof node.value === "string" ? node.value
@@ -647,12 +864,7 @@ export const passedReaderOf = (
 type PassedReads = Map<number, PassedRead>
 
 const readsOf = (fn: Node | undefined): PassedReads | undefined => {
-	if (
-		fn?.type !== "ArrowFunctionExpression" &&
-		fn?.type !== "FunctionExpression" &&
-		fn?.type !== "FunctionDeclaration"
-	)
-		return
+	if (!fn || !isFunctionNode(fn)) return
 	const positions = new Map<string, number>()
 	for (const [i, param] of fn.params.entries()) {
 		if (param.type !== "Identifier") return

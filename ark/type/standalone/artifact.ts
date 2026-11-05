@@ -1,6 +1,7 @@
 import {
 	$ark,
 	hasArkKind,
+	holeNameMarker,
 	hashedPrefixLength,
 	isDecidedByAllows,
 	isNode,
@@ -100,13 +101,15 @@ import {
 	unitOf
 } from "./compilers.ts"
 import {
+	bindingsOf,
 	contentKeyOf,
+	contentNodesOf,
 	encodeKey,
-	holeNameMarker,
 	holeNamePattern,
 	isTypedFn,
 	keyOf,
 	kindNameOf,
+	originalOf,
 	partsOf,
 	printablePrimitive,
 	printedHoleNamePattern,
@@ -274,6 +277,8 @@ interface WritingScope {
 	shapesByName: Record<string, string>
 	// the cell each ref read as it's called is, by the ref's name
 	cellReads: Record<string, string>
+	// each cell holding its function's text, by the ref's name
+	narrowedBy: Record<string, HoleCell>
 }
 
 // a shared unit as it's written: what it returns and reads, and what it's passed
@@ -541,17 +546,25 @@ export class StandaloneArtifact {
 	// declared where a call can reach it early, as an import cycle's can
 	cellModuleOf(cell: HoleCell): string {
 		const specifier = cellSpecifierOf(cell)
-		const module: SharedModule = {
-			readsRuntime: false,
-			imports: {},
-			declarations: [
-				`var ${cell.name}`,
-				// through arguments, as a minifier writing this into its site would
-				// otherwise assign an anonymous function, naming it for the variable
-				`function ${cellSetterOf(cell)}() {\n\t${cell.name} = arguments[0]\n\treturn true\n}`
-			],
-			exports: [cell.name, cellSetterOf(cell)]
-		}
+		const module: SharedModule =
+			cell.text !== undefined ?
+				{
+					readsRuntime: false,
+					imports: {},
+					declarations: [`var ${cell.name} = ${cell.text}`],
+					exports: [cell.name]
+				}
+			:	{
+					readsRuntime: false,
+					imports: {},
+					declarations: [
+						`var ${cell.name}`,
+						// through arguments, as a minifier writing this into its site would
+						// otherwise assign an anonymous function, naming it for the variable
+						`function ${cellSetterOf(cell)}() {\n\t${cell.name} = arguments[0]\n\treturn true\n}`
+					],
+					exports: [cell.name, cellSetterOf(cell)]
+				}
 		this.sharing?.push([specifier, module])
 		this.sharedModules[specifier] ??= module
 		return specifier
@@ -563,6 +576,7 @@ export class StandaloneArtifact {
 	}
 
 	emitCell(cell: HoleCell): string {
+		if (cell.text !== undefined) return this.readCell(cell)
 		// what a shared module writes runs before any site sets it
 		if (this.writing && !this.defersCellReads) {
 			throwInternalError(
@@ -746,7 +760,10 @@ export class StandaloneArtifact {
 			hasArkKind(value, "scope") ||
 			hasArkKind(value, "generic")
 		) {
-			const [id, allHoles] = keyOf(value)
+			const [id, keyed] = keyOf(value)
+			const allHoles = keyed.filter(
+				hole => this.cellOf(hole)?.text === undefined
+			)
 			const holes = this.heldOf(allHoles)
 			const isType = hasArkKind(value, "root")
 			const holesName = `holes${this.checks.length}`
@@ -755,14 +772,14 @@ export class StandaloneArtifact {
 				this.checks.push(
 					`${holes.length ? `const ${holesName} = ` : ""}${this.receiverOf(value, id, label)}(${expression})`
 				)
-			} else if (allHoles.length) {
-				// a cell it reads is set by then only if what holds it has run
-				if (mayBeUnset) {
-					this.checks.push(
-						`runtime.checkHeld(${expression}, ${JSON.stringify(label)}${isType ? "" : `, "${kindNameOf(value)}"`})`
-					)
-				} else this.heldReads.push(`runtime.checkHeld(${expression})`)
-			}
+			} else if (keyed.length && mayBeUnset) {
+				// a cell it reads is set by then only if what holds it has run,
+				// and arktype would throw reading it even where no site sets one
+				this.checks.push(
+					`runtime.checkHeld(${expression}, ${JSON.stringify(label)}${isType ? "" : `, "${kindNameOf(value)}"`})`
+				)
+			} else if (allHoles.length)
+				this.heldReads.push(`runtime.checkHeld(${expression})`)
 			// relate a Module's, Scope's or Generic's classes to ours
 			const related = isType ? [value, ...value.references] : this.writtenNodes
 			const protos = related.flatMap(node =>
@@ -1135,17 +1152,22 @@ export class StandaloneArtifact {
 	}
 
 	// what arktype keys a node by, read in one module: each node's content in its
-	// Scope. A cycle's aliases and a Scope it can't name are told apart by identity
+	// Scope and its original's, which key equal nodes apart. Each binding of the root
+	// returned another value, which a child's key can't see. A cycle's aliases and a
+	// Scope it can't name are told apart by identity
 	private contentNameOf(root: BaseRoot): string | undefined {
 		if (root.hasAlias) return
-		const nodes = [root, ...root.references]
+		const nodes = [...contentNodesOf(root)]
 		if (nodes.some(holdsObjectInMeta)) return
 		const { scopeNameOf } = this.baking
-		const scopes = nodes.map(({ $ }) =>
+		const scopeName = ({ $ }: BaseNode) =>
 			$.isBuiltin ? $.name : scopeNameOf?.($)
+		const bindings = bindingsOf(root).map(scopeName)
+		const scopes = nodes.flatMap(node =>
+			[node, originalOf(node)].map(scopeName)
 		)
-		return scopes.includes(undefined) ? undefined : (
-				`${keyOf(root)[0]} ${contentKeyOf(root)} ${scopes.join()}`
+		return [...bindings, ...scopes].includes(undefined) ? undefined : (
+				`${keyOf(root)[0]} ${contentKeyOf(root)} ${bindings.join()} ${scopes.join()}`
 			)
 	}
 
@@ -1333,7 +1355,8 @@ return namespace`
 			args: [],
 			imports: {},
 			shapesByName: {},
-			cellReads: {}
+			cellReads: {},
+			narrowedBy: {}
 		}
 		this.writing = writing
 		this.declarations = createDeclarations()
@@ -1396,7 +1419,8 @@ return namespace`
 			if (!read.has(name)) return []
 			const cell = this.cellOf(value)
 			if (cell) {
-				writing.cellReads[name] = this.readCell(cell)
+				if (cell.text !== undefined) writing.narrowedBy[name] = cell
+				else writing.cellReads[name] = this.readCell(cell)
 				return []
 			}
 			const { statements } = this.declarations
@@ -1647,8 +1671,11 @@ return namespace`
 		const dropsCtx = this.baking.shortest || this.readsOnlyAllows
 		const declarations = called.flatMap(([name, source]) => {
 			if (forwarded.has(name)) return []
-			// plain params; size and writing traversals drop a trailing unread ctx
-			const arrow = source.replace(
+			// plain params; size and writing traversals drop a trailing unread ctx.
+			// Most of a big program's traversals never run, and V8 parses an arrow
+			// nested in a function in full at load, a function expression only
+			// once it's called, unless parenthesized
+			const written = source.replace(
 				/^function\(([^)]*)\) {/,
 				(signature, params: string) => {
 					const read =
@@ -1658,40 +1685,52 @@ return namespace`
 						) ?
 							params.replace(/, ctx$/, "")
 						:	params
-					return `${this.baking.defers ? `function (${read}) {` : `(${read}) => {`}${
+					return `${this.baking.shortest ? `(${read}) => {` : `function (${read}) {`}${
 						// a writing traversal is strict even where a bundle's format isn't
 						isWriting(name) ? `\n"use strict"\n` : ""
 					}`
 				}
 			)
-			const read = this.readsCells(arrow)
-			return `const ${name} = ${/(Apply|Copy)$/.test(name) ? read : this.compiledOnLoad(read)}`
+			return `const ${name} = ${this.readsCells(written)}`
 		})
 		for (const [name, target] of forwarded)
 			declarations.push(`const ${name} = ${target}`)
 		return declarations
 	}
 
-	// a ref read as its code runs, once the site holding the cell has
+	// a ref read as its code runs, once the site holding the cell has, or a
+	// cell holding its function's text, which a checker holds itself
 	readsCells(fn: string): string {
-		const cellReads = this.writing?.cellReads
-		if (!cellReads) return fn
-		const refs = Object.keys(cellReads)
+		if (!this.writing) return fn
+		const { cellReads, narrowedBy } = this.writing
+		const refs = [...Object.keys(cellReads), ...Object.keys(narrowedBy)]
 		return refs.length ?
 				fn.replace(
-					new RegExp(`\\b(?:${refs.join("|")})\\b`, "g"),
-					ref => cellReads[ref]
+					new RegExp(
+						`(runtime\\.narrowedBy\\(\\(\\) => )?\\b(${refs.join("|")})\\b`,
+						"g"
+					),
+					(_, narrows: string | undefined, ref: string) => {
+						const cell = narrowedBy[ref]
+						return (
+							!cell ? `${narrows ?? ""}${cellReads[ref]}`
+							: narrows ? `runtime.narrowed(${cell.text}`
+							: this.readCell(cell)
+						)
+					}
 				)
 			:	fn
 	}
 
-	compiledOnLoad(fn: string): string {
-		return this.baking.shortest || this.baking.defers ? fn : `(${fn})`
-	}
-
 	// a module's only validator compiles as it loads, others at their first call
 	validatorOnLoad(fn: string): string {
-		return this.baking.compilesValidators ? this.compiledOnLoad(fn) : fn
+		return (
+				this.baking.compilesValidators &&
+					!this.baking.shortest &&
+					!this.baking.defers
+			) ?
+				`(${fn})`
+			:	fn
 	}
 
 	traversalsOf(root: BaseRoot, unit: RootUnit): string[] {
@@ -3134,6 +3173,19 @@ return namespace`
 			const [, registered, predicate, fn, name] = match
 			const placeholder = registered ?? predicate ?? fn ?? name
 			const cell = this.baking.cells?.byPlaceholder.get(placeholder)
+			if (cell?.text !== undefined) {
+				parts.push(
+					JSON.stringify(
+						// as arktype prints a function with no name
+						registered ? "$ark.fn"
+						: predicate ? runtime.describePredicate({})
+						: fn ? "Function(fn)"
+						: "fn"
+					)
+				)
+				start = match.index + match[0].length
+				continue
+			}
 			const named = cell ? undefined : this.holeNamed(placeholder)
 			const hole =
 				cell ?
@@ -3488,7 +3540,8 @@ return namespace`
 			args: [],
 			imports: {},
 			shapesByName: {},
-			cellReads: {}
+			cellReads: {},
+			narrowedBy: {}
 		}
 		this.writing = scope
 		this.declarations = createDeclarations()

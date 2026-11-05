@@ -73,6 +73,13 @@ const writersByName: UnionJsonSchemaWriters = {
 	nullable: writeNullableJsonSchema
 }
 
+const defaultCallsOf = (steps: Step[]): Set<number> =>
+	new Set(
+		steps.flatMap(step =>
+			"code" in step && step.code === "defaultValue" ? [step.call] : []
+		)
+	)
+
 const isUnchanged = (
 	keys: string[],
 	o: Record<string, unknown>,
@@ -283,11 +290,7 @@ export const traceFallbacks = (
 // and no definition is a result, which arktype checks is set to reference it
 const isOpaque = (trace: FallbackTrace, copies: number[]): boolean => {
 	const landed = copies.map(() => new Set<number>())
-	const defaults = new Set(
-		trace.steps.flatMap(step =>
-			"code" in step && step.code === "defaultValue" ? [step.call] : []
-		)
-	)
+	const defaults = defaultCallsOf(trace.steps)
 	const isDefault = (ref: Ref) => "hole" in ref && defaults.has(ref.hole)
 	for (const { changes } of [...trace.steps, trace]) {
 		for (const [id, entries] of changes) {
@@ -303,8 +306,8 @@ const isOpaque = (trace: FallbackTrace, copies: number[]): boolean => {
 			}
 		}
 	}
-	const holdsResult = (ref: Ref | undefined, key: string) => {
-		if (!ref || !("object" in ref)) return false
+	const holdsResult = (ref: Ref, key: string) => {
+		if (!("object" in ref)) return false
 		const defs = trace.states[ref.object].find(
 			entry => "key" in entry && entry.key === key
 		)
@@ -320,17 +323,12 @@ const isOpaque = (trace: FallbackTrace, copies: number[]): boolean => {
 	return (
 		!holdsResult(trace.result, "$defs") &&
 		!holdsResult(trace.result, "definitions") &&
-		trace.steps.every(
-			step =>
-				!("code" in step) ||
-				step.code !== "defs" ||
-				!holdsResult({ object: step.ctx }, "defs")
-		) &&
 		!isDefault(trace.result) &&
 		trace.steps.every(step =>
-			"set" in step ? !isDefault(step.ref) || step.key === "default"
-			: "args" in step ? !step.args.some(isDefault)
-			: true
+			"code" in step ?
+				step.code !== "defs" || !holdsResult({ object: step.ctx }, "defs")
+			: "set" in step ? !isDefault(step.ref) || step.key === "default"
+			: !("args" in step) || !step.args.some(isDefault)
 		) &&
 		copies.every((count, hole) => count <= landed[hole].size)
 	)
@@ -349,11 +347,7 @@ export const writeReplay = (
 	read: (text: string, isLocal?: boolean) => string
 ): string | undefined => {
 	const { steps, arrays } = trace
-	const defaults = new Set(
-		steps.flatMap(step =>
-			"code" in step && step.code === "defaultValue" ? [step.call] : []
-		)
-	)
+	const defaults = defaultCallsOf(steps)
 	const references = arrays.map(() => new Set<string>())
 	const stateCounts = arrays.map(() => 0)
 	const count = (ref: Ref, by: string) => {

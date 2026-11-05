@@ -2,6 +2,7 @@ import { hashOf } from "@ark/util"
 import MagicString, { type SourceMap } from "magic-string"
 import type { MemberExpression, Node, Span } from "oxc-parser"
 import { SourceModule } from "./module.ts"
+import { writeImportsAhead } from "./output.ts"
 import {
 	exportNameOf,
 	isWriteTarget,
@@ -384,11 +385,16 @@ class Linker {
 					)
 				}
 			}
+			writeImportsAhead(
+				edits,
+				module.program,
+				withRenamed(unit.added.join(""), renamed)
+			)
 			return [
 				[
 					unit.key,
 					{
-						code: edits.toString() + withRenamed(unit.added.join(""), renamed),
+						code: edits.toString(),
 						map:
 							edits.hasChanged() ?
 								edits.generateMap({ hires: "boundary" })
@@ -400,7 +406,9 @@ class Linker {
 	}
 
 	private textOf(unit: Unit): string {
-		return unit.edits.toString() + unit.added.join("")
+		const text = unit.edits.clone()
+		writeImportsAhead(text, unit.module.program, unit.added.join(""))
+		return text.toString()
 	}
 
 	siteTexts(): string[] {
@@ -469,9 +477,8 @@ class Linker {
 						module.scopes.bindingsById.get(id)
 					:	undefined
 				const creator =
-					init?.type === "CallExpression" && init.callee.type === "Identifier" ?
-						module.scopes.byId.get(init.callee)?.binding
-					:	undefined
+					init?.type === "CallExpression" &&
+					module.scopes.byId.get(init.callee)?.binding
 				if (
 					!binding?.references.length ||
 					binding.exportNames.length ||
@@ -485,10 +492,7 @@ class Linker {
 				const reads = binding.references.map(({ id }) => id.parent)
 				if (!reads.every(readsAllows)) continue
 				const [checker] = init.arguments
-				const imported =
-					checker.type === "Identifier" ?
-						module.scopes.byId.get(checker)?.binding
-					:	undefined
+				const imported = module.scopes.byId.get(checker)?.binding
 				const declared = imported && this.declarationOf(site, imported)
 				if (declared) {
 					// the checker stays declared, as an alias of it would be kept

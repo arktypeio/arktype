@@ -466,6 +466,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				isNode(reference) ?
 					composing(() => {
 						const copy = new (reference.constructor as any)(reference, this)
+						copy.c.boundFrom = reference
 						// a bound node keeps the descriptions of the scope that created it
 						if (reference.keptDesc || !this.describesLike(reference.$)) {
 							copy.keptDesc = true

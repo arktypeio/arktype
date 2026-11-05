@@ -170,6 +170,8 @@ class NodeCache {
 	replacedRefs: boolean | undefined
 	/** whether it's what its scope's nodesByKey holds for its inner and meta */
 	keyed: boolean | undefined
+	/** the node a Scope bound it from, whose id, inner and meta it keeps */
+	boundFrom: BaseNode | undefined
 	/** whether every alias it reaches has resolved */
 	reachedResolved: boolean | undefined
 	/** whether it reaches user code, through any alias */
@@ -756,13 +758,9 @@ export abstract class BaseNode<
 		this.c.flatMorphs = flatMorphs
 	}
 
-	// a Type without contextual callbacks checks its first data uncompiled
+	// a Type checks its first data uncompiled
 	private get checksUncompiled(): boolean {
-		return (
-			!this.ctxPred &&
-			!this.ctxMorph &&
-			($ark.inPlace?.checksUncompiled(this as never) ?? !this.c.usedPreJit)
-		)
+		return $ark.inPlace?.checksUncompiled(this as never) ?? !this.c.usedPreJit
 	}
 
 	deferJit(): void {
@@ -825,7 +823,7 @@ export abstract class BaseNode<
 
 			case "contextual":
 				return (data, onFail = this.onFail) => {
-					if (allowsInContext(this, data, this.$.cfg)) return data
+					if (allowsInContext(this, data, this.$.cfg, Traversal)) return data
 
 					return this.rejectRoot(data, onFail, runtime)
 				}

@@ -44,6 +44,13 @@ for (const data of [
 }
 console.log(User.allows({ name: "Ada", email: "ada@arktype.io" }))
 `,
+		"hashbang.ts": `#!/usr/bin/env node
+import { type } from "arktype"
+import { User } from "./types.ts"
+
+let Member = type({ user: User, rank: "number" })
+console.log(String(Member({ rank: 1 })))
+`,
 		// what a rewrite may import, as the React Compiler imports its runtime
 		"memo.ts": "export const memo = <t>(value: t): t => value\n"
 	},
@@ -71,7 +78,8 @@ const bundle = async (
 const factoryParam = /{ 0: \w+Allows/
 
 // each unit's allows, declared once unless a validator reads a copy
-const declaredUnits = (js: string) => js.match(/\w+Allows = /g)?.length
+const declaredUnits = (js: string) =>
+	js.match(/\bfunction \w+Allows\(|\w+Allows = /g)?.length
 
 // Vite reads its mode from NODE_ENV
 const viteBundle = async (
@@ -119,6 +127,94 @@ true
 		attest(run(flat)).equals(run(whole))
 		attest(factoryParam.test(whole)).equals(true)
 		attest(factoryParam.test(flat)).equals(false)
+	})
+
+	it("writes once a function two Types' traversals write alike", async () => {
+		const root = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const Short = type({ name: "string <= 10", tag: "string = 'none'" })
+const Long = type({ name: "string <= 20", tag: "string = 'none'" })
+
+console.log(JSON.stringify([Short({ name: "Ada" }), Long({ name: "Ada" })]))
+console.log(String(Short({ name: "a".repeat(11) })))
+console.log(JSON.stringify(Long({ name: "a".repeat(11) })))
+`
+			},
+			fromHere("temp", "flatMerged")
+		)
+		const { outputFiles } = await build({
+			entryPoints: [join(root, "main.ts")],
+			bundle: true,
+			write: false,
+			format: "esm",
+			platform: "node",
+			conditions,
+			absWorkingDir: root,
+			plugins: [precompile.esbuild({ cwd: root })]
+		})
+		const js = outputFiles[0].text
+		attest(run(js))
+			.snap(`[{"name":"Ada","tag":"none"},{"name":"Ada","tag":"none"}]
+name must be at most length 10
+{"name":"aaaaaaaaaaa","tag":"none"}
+`)
+		attest(js.match(/\.tag = "none"/g)?.length).equals(1)
+	})
+
+	it("reads a node's parts directly", async () => {
+		const [js] = await bundle()
+		attest(/\[\w+(?:, \w+)*]\[\d]/.test(js)).equals(false)
+		attest(run(js)).equals(run((await bundle({ prune: false }))[0]))
+	})
+
+	describe("a program of more text than its arrows cost V8 to read", () => {
+		const types = 60
+		const files = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const Lead = type({ name: "string" })
+const Team = type({ lead: Lead, members: Lead.array() })
+${Array.from(
+	{ length: types },
+	(_, i) =>
+		`const T${i} = type({ a${i}: "string", b${i}: "number", c${i}: "boolean", d${i}: "string[]" })`
+).join("\n")}
+
+for (const data of [5, { lead: 5, members: [] }, { lead: {}, members: [{}] }])
+	console.log(String(Team(data)))
+console.log(${Array.from({ length: types }, (_, i) => `String(T${i}(${i % 2 ? "5" : "{}"}))`).join(", ")})
+`
+			},
+			fromHere("temp", "flatBig")
+		)
+		const options: BuildOptions = { entryPoints: [join(files, "main.ts")] }
+
+		it("declares its functions", async () => {
+			const [js] = await bundle({}, options)
+			attest(/\bfunction \w+Allows\(/.test(js)).equals(true)
+			attest(/\w+Allows = /.test(js)).equals(false)
+		})
+
+		it("reports what isn't an object from one check each Apply calls", async () => {
+			const [js] = await bundle({}, options)
+			attest(js.match(/"domain", "an object"/g)?.length).equals(1)
+			attest(run(js)).equals(run((await bundle({ prune: false }, options))[0]))
+			attest(run(js).split("\n").slice(0, 4).join("\n")).snap(`must be an object
+lead must be an object
+lead.name must be a string
+members[0].name must be a string`)
+		})
+	})
+
+	it("writes a program of less text as arrows, holding its checks in place", async () => {
+		const [js] = await bundle()
+		attest(/\bfunction \w+(?:Allows|Apply)\(/.test(js)).equals(false)
+		attest(/\w+Allows = \(/.test(js)).equals(true)
+		attest(/\binstanceof Object\b/.test(js)).equals(true)
+		attest(run(js)).equals(run((await bundle({ prune: false }))[0]))
 	})
 
 	it("leaves out of the function a unit only a dropped validator reads", async () => {
@@ -227,6 +323,13 @@ export default Unread
 				js
 			)
 		attest(flat?.[1].includes("__PURE__")).equals(false)
+	})
+
+	it("keeps a hashbang first ahead of a creation it can't declare as an import", async () => {
+		const [js] = await bundle({}, { entryPoints: [join(root, "hashbang.ts")] })
+		attest(js.startsWith("#!/usr/bin/env node\n")).equals(true)
+		attest(run(js)).snap(`user must be an object
+`)
 	})
 
 	it("creates in the function a validator whose creator nothing else calls", async () => {
