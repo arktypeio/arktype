@@ -2829,7 +2829,7 @@ export class Precompiler {
 			}
 		}
 		if (!inserted) return
-		const config = this.configFirstOf(module.id, program)
+		const config = this.configFirstOf(module, program)
 		if (config && !this.inline)
 			inserted = `\nimport ${JSON.stringify(config)}${inserted}`
 		const arktypeImport = this.arktypeImportOf(module)
@@ -2845,10 +2845,11 @@ export class Precompiler {
 
 	// a size build creates a module's validators as their module loads, where
 	// a site would run once all its imports had, one of which may load the
-	// config module. So it loads it ahead of them, if the module would anyway,
-	// or its program, as a build importing it nowhere fails as arktype does
+	// config module, or once a function runs, after any module of its program
+	// may have. So it loads it ahead of them, if the site would run after it, as
+	// one creating as its module loads ahead of it throws as arktype does
 	private configFirstOf(
-		id: string,
+		module: SourceModule,
 		program: ScannedProgram | undefined
 	): string | undefined {
 		const config = this.config
@@ -2856,14 +2857,17 @@ export class Precompiler {
 			config === undefined ||
 			this.standalone.optimize !== "size" ||
 			!this.configures ||
-			id === config
+			module.id === config
 		)
 			return
 		const isLoaded =
-			program ?
-				config in program.modules
-			:	this.importClosureOf(id).includes(config)
-		return isLoaded ? specifierOf(id, config) : undefined
+			this.importClosureOf(module.id).includes(config) ||
+			(!!program &&
+				config in program.modules &&
+				this.analysisOf(module).sites.some(
+					site => site.declarationStart === undefined
+				))
+		return isLoaded ? specifierOf(module.id, config) : undefined
 	}
 
 	// e.g. a site in `f` reading `Base`, which a cycle can reach first

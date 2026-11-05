@@ -3276,6 +3276,25 @@ export const U = make()
 			).snap("undefined\n")
 		})
 
+		it("fail as arktype does where the program loads it after a module creating as it loads", async () => {
+			attest(
+				await run(
+					"unseenOrder",
+					{
+						"config.ts": config,
+						"lib.ts": `import { type } from "arktype"\n\n${Array.from(
+							{ length: 24 },
+							(_, i) =>
+								`export const T${i} = type({ "a${i}?": "string", b${i}: "number" })`
+						).join("\n")}\n`,
+						// no order the build can read, as it reads no query
+						"main.ts": `import { T0 } from "./lib.ts?v=1"\nimport "./config.ts"\n\nconsole.log(T0({ a0: undefined, b0: 1 }).a0)\n`
+					},
+					true
+				)
+			).snap("lib.ts creates a Type before configure() runs")
+		})
+
 		it("fail as arktype does where nothing imports the config module", async () => {
 			attest(
 				await run("unimported", {
