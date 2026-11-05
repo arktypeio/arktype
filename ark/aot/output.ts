@@ -13,6 +13,7 @@ import MagicString from "magic-string"
 import type {
 	ImportDeclarationSpecifier,
 	MemberExpression,
+	Node,
 	Program,
 	Span
 } from "oxc-parser"
@@ -254,25 +255,37 @@ export const firstStatementOf = (program: Program): Program["body"][number] =>
 // entries whose exports only sites read, so a standalone build drops them
 const prunedSpecifiers: unknown[] = ["arktype", "arktype/codecs"]
 
-// an import only folded sites read becomes e.g. `import "arktype"`
+// an import only folded sites read becomes e.g. `import "arktype"`, as does
+// arktype's export imported through a module re-exporting it, which no type
+// stripping drops and may be one arktype/runtime lacks. Returns each written bare
+// or dropped, as one written bare imports its module
 export const pruneArktypeImports = (
 	module: SourceModule,
 	folded: Span[],
-	s: MagicString
-): void => {
+	s: MagicString,
+	importsArktype: (specifier: ImportDeclarationSpecifier) => boolean
+): Set<Node> => {
+	const pruned = new Set<Node>()
 	// e.g. `import "arktype"`, written once however many imports it replaces
 	const bare = new Set<unknown>()
 	for (const statement of module.program.body) {
 		if (
 			statement.type !== "ImportDeclaration" ||
-			!prunedSpecifiers.includes(statement.source.value) ||
 			statement.importKind === "type"
 		)
 			continue
-		const kept = statement.specifiers.filter(specifier =>
-			isReadOutside(specifier, folded, module)
-		)
+		const isArktype = prunedSpecifiers.includes(statement.source.value)
+		const kept = statement.specifiers.filter(specifier => {
+			const references =
+				module.scopes.bindingsById.get(specifier.local)?.references ?? []
+			return (
+				references.some(({ id }) => !folded.some(site => contains(site, id))) ||
+				// one nothing reads stays unresolved, as a host resolving each import costs
+				(!isArktype && (!references.length || !importsArktype(specifier)))
+			)
+		})
 		if (kept.length === statement.specifiers.length) continue
+		if (!kept.length) pruned.add(statement)
 		if (kept.length || !bare.has(statement.source.value)) {
 			if (!kept.length) bare.add(statement.source.value)
 			s.overwrite(
@@ -289,6 +302,36 @@ export const pruneArktypeImports = (
 			:	statement.start
 		s.overwrite(start, statement.end, "", { contentOnly: true })
 	}
+	return pruned
+}
+
+// a re-export of what arktype/runtime lacks fails to link, though what imports
+// it reads it only in sites, so it's dropped; a read outside one is refused there
+export const pruneArktypeReexports = (
+	module: SourceModule,
+	s: MagicString,
+	isRuntimeExport: (name: string) => boolean
+): void => {
+	for (const statement of module.program.body) {
+		if (
+			statement.type !== "ExportNamedDeclaration" ||
+			statement.source?.value !== "arktype" ||
+			statement.exportKind === "type"
+		)
+			continue
+		const kept = statement.specifiers.filter(
+			({ local, exportKind }) =>
+				exportKind === "type" || isRuntimeExport(exportNameOf(local))
+		)
+		if (kept.length === statement.specifiers.length) continue
+		s.overwrite(
+			statement.start,
+			statement.source.end,
+			kept.length ?
+				`export { ${kept.map(specifier => module.textOf(specifier)).join(", ")} } from "arktype"`
+			:	`import "arktype"`
+		)
+	}
 }
 
 // TypeScript drops imports only folded sites read, so re-add them bare, ahead of
@@ -298,12 +341,14 @@ export const keepImportedModules = (
 	folded: Span[],
 	kept: Span[],
 	passed: Binding[],
+	pruned: ReadonlySet<Node>,
 	s: MagicString
 ): void => {
 	for (const statement of module.program.body) {
 		if (
 			statement.type !== "ImportDeclaration" ||
 			prunedSpecifiers.includes(statement.source.value) ||
+			pruned.has(statement) ||
 			statement.importKind === "type"
 		)
 			continue
@@ -331,15 +376,6 @@ export const keepImportedModules = (
 		}
 	}
 }
-
-const isReadOutside = (
-	specifier: ImportDeclarationSpecifier,
-	sites: Span[],
-	module: SourceModule
-) =>
-	!!module.scopes.bindingsById
-		.get(specifier.local)
-		?.references.some(({ id }) => !sites.some(site => contains(site, id)))
 
 const writeImport = (
 	specifiers: ImportDeclarationSpecifier[],

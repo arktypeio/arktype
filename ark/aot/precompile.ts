@@ -299,7 +299,6 @@ import {
 	markerHint,
 	nodePackageHint,
 	runtimeImportHint,
-	runtimeReexportHint,
 	writeUnexportedRuntimeMessage,
 	dynamicImportHint,
 	unresolvedHint,
@@ -330,6 +329,7 @@ import {
 	keepImportedModules,
 	noValidators,
 	pruneArktypeImports,
+	pruneArktypeReexports,
 	writeConfigFixer,
 	writeUnitTable,
 	writeValidators
@@ -3483,8 +3483,8 @@ export class Precompiler {
 			imports[fixerSpecifier] = { default: `${prefix}fixConfig` }
 			s.appendLeft(fixedAt, `${prefix}fixConfig()\n`)
 		}
-		this.replaceArktypeImports(module, s, prefix, folded)
-		keepImportedModules(module, folded, kept, passed, s)
+		const pruned = this.replaceArktypeImports(module, s, prefix, folded)
+		keepImportedModules(module, folded, kept, passed, pruned, s)
 		this.runtimesById[module.id] = runtimeModuleOf(
 			module,
 			folded,
@@ -3798,7 +3798,7 @@ export class Precompiler {
 		s: MagicString,
 		prefix: string,
 		folded: Site[]
-	): void {
+	): ReadonlySet<Node> {
 		if (this.shadow) {
 			if (folded.length) {
 				s.prependLeft(
@@ -3808,14 +3808,24 @@ export class Precompiler {
 					:	`import { shadow as ${prefix}shadow } from "@ark/aot/shadow"\n`
 				)
 			}
-			return
+			return new Set()
 		}
 		// linkIslands leaves configure()'s import to the runtime
 		const linked = module.islands.filter(
 			island =>
 				!this.configureCallsOf(module).some(call => contains(island, call))
 		)
-		pruneArktypeImports(module, [...folded, ...linked], s)
+		pruneArktypeReexports(module, s, name => name in arktypeRuntime)
+		return pruneArktypeImports(
+			module,
+			[...folded, ...linked],
+			s,
+			({ local }) => {
+				const binding = module.scopes.bindingsById.get(local)!
+				const { kind } = this.graph.importOf(binding, module)
+				return kind === "arktype" || kind === "arktypeNamespace"
+			}
+		)
 	}
 
 	// arktype receives each span through a parameter, evaluated once
@@ -3861,27 +3871,6 @@ export class Precompiler {
 	): void {
 		const spans = [...sites, ...module.islands]
 		for (const statement of module.program.body) {
-			// fails to link wherever it's read, as it's read by exporting it
-			if (
-				statement.type === "ExportNamedDeclaration" &&
-				statement.source?.value === "arktype" &&
-				statement.exportKind !== "type"
-			) {
-				for (const { local, exportKind } of statement.specifiers) {
-					const name = exportNameOf(local)
-					if (exportKind === "type" || name in arktypeRuntime) continue
-					diagnostics.push(
-						this.diagnostic(
-							module,
-							local,
-							"R4",
-							writeUnexportedRuntimeMessage(name),
-							[],
-							runtimeReexportHint
-						)
-					)
-				}
-			}
 			if (
 				statement.type !== "ImportDeclaration" ||
 				statement.source.value !== "arktype" ||

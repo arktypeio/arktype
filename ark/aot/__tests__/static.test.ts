@@ -2077,16 +2077,29 @@ export const isAlsoType = (x: unknown) => x instanceof Type`).diagnostics.map(
 			])
 		})
 
-		it("an export arktype/runtime lacks, re-exported", () => {
-			const source = `export { Type, type, scope as s } from "arktype"
-export type { Scope } from "arktype"
+		it("an export arktype/runtime lacks, re-exported for sites to read", () => {
+			const barrel = `export { Type, type, scope as s } from "arktype"
+export { type Scope, match } from "arktype"
 export * from "arktype"`
-			attest(precompile(source, {}, { runtime: "arktype" }).diagnostics).equals(
-				[]
+			const written = precompile(barrel)
+			attest(written.diagnostics).equals([])
+			attest(written.code).snap(`export { type } from "arktype"
+export { type Scope } from "arktype"
+export * from "arktype"`)
+			const main = precompile(
+				`import { s, type } from "./ark.ts"
+export const types = s({ a: "string" }).export()
+export const isType = (x: unknown) => x instanceof type`,
+				{ "/ark.ts": barrel }
 			)
-			attest(precompile(source).diagnostics.map(renderDiagnostic)).snap([
-				"/main.ts:1:10  `Type` is arktype's, which arktype/runtime doesn't export, so a standalone build can't load this module\n  Re-export only what arktype/runtime exports, and import the rest from arktype where a definition the build precompiles reads it, or build with runtime: \"arktype\".",
-				"/main.ts:1:22  `scope` is arktype's, which arktype/runtime doesn't export, so a standalone build can't load this module\n  Re-export only what arktype/runtime exports, and import the rest from arktype where a definition the build precompiles reads it, or build with runtime: \"arktype\"."
+			attest(main.code.split("\n")[0]).equals('import { type } from "./ark.ts"')
+			// read outside a site, it's refused there
+			attest(
+				precompile(`import { s } from "./ark.ts"\nexport const read = s`, {
+					"/ark.ts": barrel
+				}).diagnostics.map(renderDiagnostic)
+			).snap([
+				'/main.ts:2:21  `s` is used outside a precompiled site\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
 			])
 		})
 

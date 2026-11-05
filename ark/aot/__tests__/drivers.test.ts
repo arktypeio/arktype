@@ -329,6 +329,26 @@ export const Exported = type({ b: "number" })
 			).equals(expected)
 		})
 
+		it("a barrel re-exporting what arktype/runtime lacks for sites to read, in and outside production", () => {
+			const root = writeFixture(
+				{
+					"ark.ts": `export { scope, type } from "arktype"\n`,
+					"main.ts": `import { scope, type } from "./ark.ts"
+
+const types = scope({ user: { name: "string" } }).export()
+const Id = type("string")
+
+console.log(String(types.user({ name: 5 })), Id("x"))
+`
+				},
+				fromHere("temp", "arkBarrel")
+			)
+			for (const NODE_ENV of ["development", "production"]) {
+				const { stdout, stderr } = node(["main.ts"], {}, root, { NODE_ENV })
+				attest([stdout, stderr]).equals(["name must be a string x\n", ""])
+			}
+		})
+
 		it("import cycle", () => {
 			const expected = runPlain(cycle)
 			// a module reached before it loads creates lazily, even with lazy false
