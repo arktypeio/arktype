@@ -948,7 +948,8 @@ export class StandaloneArtifact {
 
 	get comparedValues(): unknown[] {
 		return [
-			...this.comparedRoots,
+			// a default's own is read only by what checks it
+			...this.comparedRoots.filter(root => !this.defaultValues.has(root)),
 			...this.moduleNames.keys(),
 			...this.typedFnNames.keys(),
 			...this.declarations.valuesByRole.literal,
