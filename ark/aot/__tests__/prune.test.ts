@@ -647,6 +647,7 @@ export const Fields = { even: Even, name: type("string") }
 				reportsIndices: false,
 				writesText: false,
 				listsUnions: false,
+				traversesUnions: false,
 				readsKeySites: true,
 				runsArktype: false
 			})
@@ -659,7 +660,24 @@ export const Fields = { even: Even, name: type("string") }
 				reportsIndices: true,
 				writesText: false,
 				listsUnions: false,
+				traversesUnions: false,
 				readsKeySites: false,
+				runsArktype: false
+			})
+		})
+
+		it("a union's issue on a Traversal, a callback's", async () => {
+			attest(
+				await issuesOf(
+					`import { type } from "arktype"\n\nconst Keep = () => true\n\nexport const Either = type({ a: "string" }).or({ b: "number" }).narrow(Keep).pipe(data => data)\n`
+				)
+			).snap({
+				bracketsKeys: true,
+				reportsIndices: true,
+				writesText: true,
+				listsUnions: true,
+				traversesUnions: true,
+				readsKeySites: true,
 				runsArktype: false
 			})
 		})
@@ -674,6 +692,7 @@ export const Fields = { even: Even, name: type("string") }
 				reportsIndices: false,
 				writesText: false,
 				listsUnions: false,
+				traversesUnions: false,
 				readsKeySites: true,
 				runsArktype: false
 			})

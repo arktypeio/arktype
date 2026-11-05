@@ -12,6 +12,8 @@ import {
 	FirstIssues,
 	issueAt,
 	issuesOf,
+	listedFromPath,
+	ListedIssue,
 	listsUnions,
 	mergeIssues,
 	messageOf,
@@ -19,7 +21,9 @@ import {
 	runtimeConfig,
 	supportedJsonSchemaTargets,
 	throwOnDefault,
+	traversesUnions,
 	validateStandardJsonSchemaTarget,
+	writeListed,
 	type ArkError,
 	type ArkErrorCode,
 	type ArkErrorInput,
@@ -41,7 +45,6 @@ import {
 	stringifyPath,
 	throwError,
 	throwParseError,
-	type array,
 	type Fn,
 	type inferred,
 	type JsonStructure
@@ -277,13 +280,14 @@ export const standardResultOf = (
 			issues: (out._i ? (out.issues as ArkIssue[]) : out._).map(issue =>
 				(
 					issue.path.length &&
-					((listsUnions && issue._r) ||
+					((listsUnions && issue._l) ||
 						issue.message === undefined ||
 						issue.message === messageOf(issue))
 				) ?
 					{
 						...issue,
-						message: listsUnions && issue._r ? issue._r() : problemOf(issue)
+						message:
+							listsUnions && issue._l ? listedFromPath(issue) : problemOf(issue)
 					}
 				:	((issue.message ??= messageOf(issue)), issue)
 			) as StandardSchemaV1.Issue[]
@@ -761,74 +765,6 @@ export const failsIn = ((
 		ctx._in(apply, data, key, missing)
 	:	!(apply as Fn)((data as Record<PropertyKey, unknown>)[key])) satisfies Fn
 
-const writeBranches = (alternatives: string[]): string => {
-	const unique = [...new Set(alternatives)]
-	if ([...unique].sort().join() === "false,true") return "boolean"
-	const last = unique.pop()!
-	return unique.length ? `${unique.join(", ")} or ${last}` : last
-}
-
-// what arktype's union lists for issues failing at one path. An issue listing
-// alternatives of its own, as a missing key's union or a discriminant's cases,
-// is split by its text, the only place a validator holds them, so where one is
-// written with `or` or a comma outside of quotes, it reads as if they were
-const alternativesOf = (issues: ArkIssue[]): string[] =>
-	issues.flatMap(({ code, expected = "valid" }) =>
-		issues.length > 1 && /^(req|disc|union)/.test(code) ?
-			expected.split(/(?:, | or )(?=(?:[^"]*"[^"]*")*[^"]*$)/)
-		:	[expected]
-	)
-
-// each path as its own issue's message writes it, as arktype's union does
-const writeListed = (errors: readonly ArkIssue[], depth = 0): string => {
-	// keyed by what `must be` ends, so no key is an object's own or an index
-	const atSubject: Record<string, ArkIssue[]> = {}
-	for (const error of errors) {
-		error.message ??= messageOf(error)
-		;(atSubject[
-			messageOf({ path: error.path.slice(depth), expected: "" } as never)
-		] ??= []).push(error)
-	}
-	return writeBranches(
-		Object.entries(atSubject).map(
-			([subject, same]) => subject + writeBranches(alternativesOf(same))
-		)
-	)
-}
-
-// a union's issue, which says what its branches' first issues did
-class ListedIssue implements ArkIssue {
-	code: ArkErrorCode = "union"
-	declare path: PropertyKey[]
-	declare data: unknown
-	declare errors: readonly ArkIssue[]
-	declare expected: string
-	declare message: string
-
-	constructor(path: PropertyKey[], data: unknown, errors: readonly ArkIssue[]) {
-		this.path = path
-		this.data = data
-		this.errors = errors
-		this.expected = this.message = writeListed(errors)
-	}
-
-	_m(prefix: array<PropertyKey>): ListedIssue {
-		return new ListedIssue(
-			[...prefix, ...this.path],
-			this.data,
-			this.errors.map(error => ({
-				...error,
-				path: [...prefix, ...error.path],
-				message: error.message === messageOf(error) ? undefined : error.message
-			}))
-		)
-	}
-
-	_r(): string {
-		return writeListed(this.errors, this.path.length)
-	}
-}
-
 type UnionIssueOf = (
 	path: PropertyKey[],
 	data: unknown,
@@ -854,15 +790,15 @@ export const failsListed = ((
 	data: unknown,
 	issueOf?: UnionIssueOf
 ): boolean | undefined => {
-	const path = ctx._p ?? ctx.path
+	const path = traversesUnions ? (ctx._p ?? ctx.path) : ctx._p
 	// a shared object reports one issue to each branch reaching it, listed once
 	const errors = [...new Set(firsts.flatMap(first => first.errors ?? first))]
 	const issue =
 		issueOf ?
 			issueOf(path, data, errors)
 		:	new ListedIssue(path.slice(), data, errors)
-	if (ctx._p) ctx._.push(issue)
-	else ctx.addError(issue)
+	if (traversesUnions && !ctx._p) ctx.addError(issue)
+	else ctx._.push(issue)
 	return ctx.failFast
 }) satisfies Fn
 
@@ -878,15 +814,15 @@ export const failsBranches = ((
 	const firsts: ArkIssue[] = []
 	for (const branch of branches) {
 		let first: ArkIssue | undefined
-		if (ctx._p) {
+		if (traversesUnions && !ctx._p) {
+			ctx.pushBr()
+			branch(data, ctx)
+			first = ctx.popBr().error
+		} else {
 			const issues = new FirstIssues()
 			issues._p = ctx._p.slice()
 			branch(data, issues)
 			first = issues._[0]
-		} else {
-			ctx.pushBr()
-			branch(data, ctx)
-			first = ctx.popBr().error
 		}
 		if (!first) return
 		firsts.push(first)

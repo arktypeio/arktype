@@ -342,6 +342,7 @@ export interface IssueFeatures {
 	bracketsKeys: boolean
 	writesText: boolean
 	listsUnions: boolean
+	traversesUnions: boolean
 	readsKeySites: boolean
 	runsArktype: boolean
 }
@@ -351,6 +352,7 @@ export const noIssueFeatures: IssueFeatures = {
 	bracketsKeys: false,
 	writesText: false,
 	listsUnions: false,
+	traversesUnions: false,
 	readsKeySites: false,
 	runsArktype: false
 }

@@ -534,7 +534,7 @@ const textsOf = (errors: ArkErrors, grouped = true) => {
 				if (issue.problem !== undefined) text.problem = issue.problem
 				// a union's text is compared where it's expected
 				if (
-					!issue._r &&
+					!issue._l &&
 					issue.message !== messageOf({ ...issue, message: undefined })
 				)
 					text.message = issue.message!

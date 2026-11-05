@@ -842,6 +842,10 @@ export class Precompiler {
 				const feature = k as keyof IssueFeatures
 				issues[feature] ||= held[feature]
 			}
+			issues.traversesUnions ||= [
+				written[id].code,
+				...Object.values(written[id].modules)
+			].some(code => code.includes("Traversal"))
 		}
 		return issues
 	}
@@ -7569,6 +7573,7 @@ const anyIssues: IssueFeatures = {
 	bracketsKeys: true,
 	writesText: true,
 	listsUnions: true,
+	traversesUnions: true,
 	readsKeySites: true,
 	runsArktype: true
 }
