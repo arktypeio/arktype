@@ -1549,6 +1549,15 @@ export class Precompiler {
 				this.restoreRuntimes(wrote, plan)
 			}
 		}
+		// each decision above weighs each call, so what they share is shared last
+		if (usage.combines) {
+			const shared = this.linkWritten(wrote.written, sources, {
+				exposesAllows: usage.readsAllows,
+				isOneChunk,
+				sharesChecks: true
+			})
+			return link.changed || shared.changed
+		}
 		return link.changed
 	}
 

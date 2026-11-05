@@ -294,6 +294,9 @@ export const writeValue = (
 ): string =>
 	hoisted ?
 		`var ${name}Value\nfunction ${name}() {\n\treturn ${writeLazyRead(`${name}Value`, expression)}\n}`
+	: /^runtime\.[\w$]+\([\w$]+\)$/.test(expression) ?
+		// reading only names, it tree-shakes without the call around it
+		`const ${name} = /* @__PURE__ */ ${expression}`
 	:	`const ${name} = /* @__PURE__ */ (() => ${expression})()`
 
 // errors "none"'s root issue, found once read where it defers issues

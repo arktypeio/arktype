@@ -31,6 +31,8 @@ export interface LinkOptions {
 	exposesAllows?: boolean
 	// the bundle is one chunk, so its units may be one module
 	isOneChunk?: boolean
+	// its units are checkers, so what they call may be shared
+	sharesChecks?: boolean
 }
 
 interface LinkPass {
@@ -45,9 +47,13 @@ interface LinkPass {
 export const linkBundle = (
 	sites: Record<string, LinkedSite>,
 	modules: Record<string, string>,
-	{ exposesAllows = false, isOneChunk = false }: LinkOptions = {}
+	{
+		exposesAllows = false,
+		isOneChunk = false,
+		sharesChecks = false
+	}: LinkOptions = {}
 ): LinkedBundle | undefined => {
-	let codes = modules
+	let codes = sharesChecks ? withSharedChecks(modules) : modules
 	const siteCodes = Object.fromEntries(
 		Object.entries(sites).map(([id, site]) => [id, site.code])
 	)
@@ -58,7 +64,12 @@ export const linkBundle = (
 		codes = linker.codes()
 	}
 	const linker = new Linker(codes, siteCodes, sites)
-	linker.link({ intoSites: true, exposesAllows, declaresEach: isOneChunk })
+	// sharing reads what's linked, where what each site creates is already declared
+	linker.link({
+		intoSites: true,
+		exposesAllows,
+		declaresEach: isOneChunk && !sharesChecks
+	})
 	codes = linker.codes()
 	const one = isOneChunk ? oneModuleOf(codes, linker.siteTexts()) : undefined
 	const renamed = one?.renamed ?? renamedOf(codes, modules)
@@ -256,6 +267,129 @@ const isDeferred = (id: Node, statement: Node): boolean => {
 			return true
 	}
 	return false
+}
+
+const pureRuntimeCall = "/* @__PURE__ */ runtime."
+
+// past the call's closing paren, or at the text's end where it has none
+const endOfCall = (code: string, from: number): number => {
+	let depth = 0
+	let isQuoted = false
+	for (let i = from; i < code.length; i++) {
+		const char = code[i]
+		if (isQuoted) {
+			if (char === "\\") i++
+			else if (char === '"') isQuoted = false
+		} else if (char === '"') isQuoted = true
+		else if (char === "(") depth++
+		else if (char === ")" && --depth === 0) return i + 1
+	}
+	return code.length
+}
+
+// calls the runtime with literals and what it exports alone
+const holdsOnlyData = (call: string): boolean =>
+	/^[\s(),:[\]{}-]*$/.test(
+		call
+			.replace(/"(?:[^"\\]|\\.)*"/g, "")
+			.split("/* @__PURE__ */")
+			.join("")
+			.replace(/\bruntime\.[\w$]+/g, "")
+			.replace(
+				/\b(?:void 0|true|false|null|\d+(?:\.\d+)?(?:e[+-]?\d+)?)\b/g,
+				""
+			)
+			.replace(/[\w$]+(?=:)/g, "")
+	)
+
+// each outermost call in text holding only data, as replace writes it
+const replaceDataCalls = (
+	code: string,
+	replace: (call: string) => string | undefined
+): string => {
+	let replaced = ""
+	let from = 0
+	for (
+		let at = code.indexOf(pureRuntimeCall);
+		at !== -1;
+		at = code.indexOf(pureRuntimeCall, from)
+	) {
+		const end = endOfCall(code, at + pureRuntimeCall.length)
+		const call = code.slice(at, end)
+		const written = holdsOnlyData(call) ? replace(call) : undefined
+		if (written !== undefined) {
+			replaced += code.slice(from, at) + written
+			from = end
+		} else {
+			replaced += code.slice(from, at + pureRuntimeCall.length)
+			from = at + pureRuntimeCall.length
+		}
+	}
+	return replaced + code.slice(from)
+}
+
+// a shorter call's name and module pay for what sharing it saves (ntwine: at
+// 90, import instructions -10%, gz +0.2 KB; at 160 about none of the former)
+const minSharedCall = 90
+
+// a checker holding only data is the same wherever it's written, so what's
+// written more than once is made once. Each makes closures an import runs,
+// which gzip's matches for its text don't save
+const withSharedChecks = (
+	modules: Record<string, string>
+): Record<string, string> => {
+	const codes = { ...modules }
+	// each shared call, of which only what it holds may be shared in turn
+	const calls = new Map<string, string>()
+	const importsOf = new Map<string, Set<string>>()
+	const bodyOf = (call: string) => call.slice(pureRuntimeCall.length)
+	for (let pass = 0; pass < maxPasses; pass++) {
+		const counts = new Map<string, number>()
+		const count = (code: string) => {
+			replaceDataCalls(code, call => {
+				counts.set(call, (counts.get(call) ?? 0) + 1)
+				return undefined
+			})
+		}
+		for (const specifier in codes) count(codes[specifier])
+		for (const call of calls.values()) count(bodyOf(call))
+		const shareIn = (code: string, imports: Set<string>) =>
+			replaceDataCalls(code, call => {
+				if (counts.get(call)! < 2 || call.length < minSharedCall) return
+				const name = `check${hashOf(call)}`
+				calls.set(name, call)
+				imports.add(name)
+				return name
+			})
+		let shared = false
+		for (const specifier in codes) {
+			const imports = new Set<string>()
+			const code = shareIn(codes[specifier], imports)
+			if (code === codes[specifier]) continue
+			shared = true
+			codes[specifier] =
+				[...imports]
+					.map(name => `import { ${name} } from "~arktype/${name}"\n`)
+					.join("") + code
+		}
+		for (const [name, call] of calls) {
+			const imports = importsOf.get(name) ?? new Set<string>()
+			importsOf.set(name, imports)
+			const written = pureRuntimeCall + shareIn(bodyOf(call), imports)
+			if (written === call) continue
+			shared = true
+			calls.set(name, written)
+		}
+		if (!shared) break
+	}
+	for (const [name, call] of calls) {
+		codes[`~arktype/${name}`] =
+			[...(importsOf.get(name) ?? [])]
+				.map(held => `import { ${held} } from "~arktype/${held}"\n`)
+				.join("") +
+			`import * as runtime from "arktype/runtime"\n\nconst ${name} = ${call}\n\nexport { ${name} }\n`
+	}
+	return codes
 }
 
 export const virtualSource = /"(~arktype\/[^"]+)"/g
