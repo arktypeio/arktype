@@ -1524,7 +1524,8 @@ const writtenUnitsOf = (body: string, returned: string): WrittenUnits => {
 		inlineCalls,
 		mergeEqualFunctions,
 		dropUnread,
-		readPartsDirectly
+		readPartsDirectly,
+		shareObjectChecks
 	])
 		written = untilUnchanged(written, parse, pass)
 	written.body = functionsDeclared(inGzipOrder(written.body))
@@ -1831,6 +1832,60 @@ const declaresFunction = ({ id, init }: VariableDeclarator): boolean =>
 	!init.id &&
 	!init.async &&
 	!init.generator
+
+// an Apply opens by checking data is an object, in a program of objects the text
+// it most repeats. Hot on a rejected call, V8 inlines each call as it read the text
+const shareObjectChecks: UnitsPass = ({ code, program }, s) => {
+	const checks: [start: number, text: string, site: string | undefined][] = []
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration") continue
+		for (const { id, init } of statement.declarations) {
+			if (
+				!init ||
+				!isFunctionExpression(init) ||
+				!applyName.test((id as { name?: string }).name ?? "")
+			)
+				continue
+			for (const check of code
+				.slice(init.start, init.end)
+				.matchAll(objectCheck))
+				checks.push([init.start + check.index, check[0], check[1]])
+		}
+	}
+	if (checks.length < minSharedObjectChecks) return true
+	const isObject = nameFreeIn(code, "isObjectData")
+	const notObject = nameFreeIn(code, "notObjectData")
+	for (const [start, text, site] of checks) {
+		s.overwrite(
+			start,
+			start + text.length,
+			site ?
+				`if (!${isObject}(data)) return ${notObject}(data, ctx)`
+			:	`${isObject}(data)`
+		)
+	}
+	const site = checks.find(check => check[2])?.[2]
+	s.prependRight(
+		0,
+		`const ${isObject} = function (data) { return data instanceof Object || Object(data) === data }\n${
+			site ?
+				`const ${notObject} = function (data, ctx) { return !ctx._at(${site}("domain", "an object"), data) }\n`
+			:	""
+		}`
+	)
+	return true
+}
+
+// where fewer, the helpers are more text than they save
+const minSharedObjectChecks = 8
+
+const applyName = /Apply(?:\$\d+)?$/
+
+const objectCheck =
+	/if \(!\(\(data instanceof Object \|\| Object\(data\) === data\)\)\) {\s*return !ctx\._at\(([\w.]+)\("domain", "an object"\), data\);?\s*}|\(data instanceof Object \|\| Object\(data\) === data\)/g
+
+const nameFreeIn = (code: string, name: string): string =>
+	code.includes(name) ? nameFreeIn(code, `${name}_`) : name
 
 // a bundler drops only a module's unread declarations, not a function's
 const dropUnread: UnitsPass = ({ code, program, scopes }, s, body) => {

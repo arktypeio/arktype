@@ -148,7 +148,8 @@ console.log(JSON.stringify(Long({ name: "a".repeat(11) })))
 			plugins: [precompile.esbuild({ cwd: root })]
 		})
 		const js = outputFiles[0].text
-		attest(run(js)).snap(`[{"name":"Ada","tag":"none"},{"name":"Ada","tag":"none"}]
+		attest(run(js))
+			.snap(`[{"name":"Ada","tag":"none"},{"name":"Ada","tag":"none"}]
 name must be at most length 10
 {"name":"aaaaaaaaaaa","tag":"none"}
 `)
@@ -160,6 +161,34 @@ name must be at most length 10
 		attest(/\[\w+(?:, \w+)*]\[\d]/.test(js)).equals(false)
 		attest(/\bfunction \w+Allows\(/.test(js)).equals(true)
 		attest(run(js)).equals(run((await bundle({ prune: false }))[0]))
+	})
+
+	it("reports what isn't an object from one check each Apply calls", async () => {
+		const files = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const Lead = type({ name: "string" })
+const Team = type({ lead: Lead, members: Lead.array() })
+${Array.from({ length: 8 }, (_, i) => `const O${i} = type({ k${i}: "string" })`).join("\n")}
+
+for (const data of [5, { lead: 5, members: [] }, { lead: {}, members: [{}] }])
+	console.log(String(Team(data)))
+console.log(${Array.from({ length: 8 }, (_, i) => `String(O${i}(5))`).join(", ")})
+`
+			},
+			fromHere("temp", "flatObjects")
+		)
+		const options: BuildOptions = { entryPoints: [join(files, "main.ts")] }
+		const [js] = await bundle({}, options)
+		attest(js.match(/"domain", "an object"/g)?.length).equals(1)
+		attest(run(js)).equals(run((await bundle({ prune: false }, options))[0]))
+		attest(run(js)).snap(`must be an object
+lead must be an object
+lead.name must be a string
+members[0].name must be a string
+must be an object must be an object must be an object must be an object must be an object must be an object must be an object must be an object
+`)
 	})
 
 	it("leaves out of the function a unit only a dropped validator reads", async () => {
