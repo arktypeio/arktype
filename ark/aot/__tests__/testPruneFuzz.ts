@@ -662,10 +662,13 @@ const helperSources: Record<string, string> = {
 const specifierOfModule = (app: App, m: number) =>
 	app.validators.find(v => v.module === m)!.specifier
 
-// a program saying its modules are free of side effects, as a library's package
-// does, which has webpack defer what they re-export
+// a program saying the rest of its modules are free of side effects, as a library's
+// package does, which has webpack defer what they re-export. Its config module
+// has one, which a bundler would otherwise drop, and which a Type says it needs
 const sideEffects =
-	process.env.ARK_FUZZ_SIDE_EFFECTS_FREE === "1" ? { sideEffects: false } : {}
+	process.env.ARK_FUZZ_SIDE_EFFECTS_FREE === "1" ?
+		{ sideEffects: ["./config.ts"] }
+	:	{}
 
 const filesOf = (app: App): Record<string, string> => {
 	const files: Record<string, string> = {}
