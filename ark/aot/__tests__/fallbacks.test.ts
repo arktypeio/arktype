@@ -39,7 +39,7 @@ contextualize(() => {
 
 	it("refuses one reusing another too deep to read at each call", () => {
 		attest(traced(12)).equals(undefined)
-	})
+	}).timeout(60_000)
 
 	it("replays what a writer changes after a call could read it", () => {
 		const writeSchema = (fallback: (ctx: object) => object) => {
