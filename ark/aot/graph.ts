@@ -67,12 +67,12 @@ import {
 	loadedSourceOf,
 	unwrapChain,
 	operatorOf,
-	runtimeParamsOf,
 	unwrapExpression,
 	walk,
 	type Binding,
 	type Reference
 } from "./scope.ts"
+import { runtimeParamsOf } from "./proofs.ts"
 
 export type FunctionNode = Function | ArrowFunctionExpression
 
@@ -1440,8 +1440,7 @@ export class ModuleGraph {
 		node = unwrapChain(node)
 		const id =
 			node.type === "MemberExpression" ? unwrapChain(node.object) : node
-		const reference =
-			id.type === "Identifier" ? module.scopes.byId.get(id) : undefined
+		const reference = module.scopes.byId.get(id)
 		const [name, read] =
 			(reference && this.arkExportOf(reference, module)) ?? []
 		return read === node ? name : undefined
@@ -1876,10 +1875,7 @@ export class ModuleGraph {
 		let annotated = castOf(node)
 		if (!annotated) {
 			const id = unwrapChain(node)
-			const binding =
-				id.type === "Identifier" ?
-					module.scopes.byId.get(id)?.binding
-				:	undefined
+			const binding = module.scopes.byId.get(id)?.binding
 			const declaration = binding?.declaration
 			// e.g. `def as Piped` for `p` in `const p = def as Piped`
 			annotated =
@@ -3012,10 +3008,7 @@ export class ModuleGraph {
 	): KindBits {
 		const object = unwrapChain(member.object)
 		const name = memberNameOf(member)
-		const context =
-			object.type === "Identifier" ?
-				module.scopes.byId.get(object)?.binding
-			:	undefined
+		const context = module.scopes.byId.get(object)?.binding
 		if (
 			context?.kind !== "param" ||
 			!(context.name in componentContexts) ||
@@ -3046,10 +3039,7 @@ export class ModuleGraph {
 		kindOfKey: KindOfKey
 	): KindBits | undefined {
 		const object = unwrapChain(member.object)
-		const binding =
-			object.type === "Identifier" ?
-				module.scopes.byId.get(object)?.binding
-			:	undefined
+		const binding = module.scopes.byId.get(object)?.binding
 		if (binding?.kind !== "param" || binding.id.parent?.type === "RestElement")
 			return
 		const fn = binding.declaration as FunctionNode
@@ -3617,10 +3607,7 @@ export class ModuleGraph {
 		module: SourceModule
 	): ImportTarget | undefined {
 		object = unwrapChain(object)
-		const binding =
-			object.type === "Identifier" ?
-				module.scopes.byId.get(object)?.binding
-			:	undefined
+		const binding = module.scopes.byId.get(object)?.binding
 		if (binding?.kind !== "import" || typeof name !== "string") return
 		const target = this.importOf(binding, module)
 		return (
@@ -3825,10 +3812,7 @@ export class ModuleGraph {
 
 	private isArktypeImport(node: Node, module: SourceModule): boolean {
 		if (this.arkExportNameOf(node, module)) return true
-		const binding =
-			node.type === "Identifier" ?
-				module.scopes.byId.get(node)?.binding
-			:	undefined
+		const binding = module.scopes.byId.get(node)?.binding
 		if (binding?.kind !== "import") return false
 		const target = this.importOf(binding, module).kind
 		return target === "arktype" || target === "arktypeNamespace"
@@ -4398,10 +4382,7 @@ export class ModuleGraph {
 		module: SourceModule
 	): boolean {
 		const object = unwrapChain(member.object)
-		let binding =
-			object.type === "Identifier" ?
-				module.scopes.byId.get(object)?.binding
-			:	undefined
+		let binding = module.scopes.byId.get(object)?.binding
 		if (binding?.kind === "import") {
 			const target = this.importOf(binding, module)
 			binding = target.kind === "binding" ? target.binding : undefined
@@ -4667,10 +4648,7 @@ export class ModuleGraph {
 				case "VariableDeclarator":
 					return this.mayWriteThrough(parent.id, held, module)
 				case "AssignmentExpression": {
-					const assigned =
-						parent.left.type === "Identifier" ?
-							module.scopes.byId.get(parent.left)?.binding
-						:	undefined
+					const assigned = module.scopes.byId.get(parent.left)?.binding
 					if (!assigned) return this.escape(parent)
 					this.holdings?.push({ binding: assigned, module, held })
 					const [write] = this.mayWritesOf(assigned, module, held)
@@ -4821,10 +4799,7 @@ export class ModuleGraph {
 		if (callee.type !== "MemberExpression") return
 		const name = memberNameOf(callee)
 		const object = unwrapChain(callee.object)
-		const binding =
-			object.type === "Identifier" ?
-				module.scopes.byId.get(object)?.binding
-			:	undefined
+		const binding = module.scopes.byId.get(object)?.binding
 		const init =
 			(
 				binding?.kind === "const" &&
@@ -4850,10 +4825,7 @@ export class ModuleGraph {
 		module: SourceModule
 	): [Class, SourceModule] | undefined {
 		node = unwrapChain(node)
-		const binding =
-			node.type === "Identifier" ?
-				module.scopes.byId.get(node)?.binding
-			:	undefined
+		const binding = module.scopes.byId.get(node)?.binding
 		if (binding?.kind === "class") {
 			return (
 					readsOnlyMembers(binding) &&
@@ -5577,10 +5549,7 @@ const isNamed = (node: Node, module: SourceModule): boolean =>
 	namedFunctionOf(node.parent, module) === node
 
 const initOf = (node: Node, module: SourceModule): Node | undefined => {
-	const binding =
-		node.type === "Identifier" ?
-			module.scopes.byId.get(node)?.binding
-		:	undefined
+	const binding = module.scopes.byId.get(node)?.binding
 	return (
 			binding &&
 				!binding.writes.length &&
@@ -5595,10 +5564,10 @@ const compactTextOf = (node: Node, module: SourceModule) =>
 	module.textOf(node).replace(/\s/g, "")
 
 // `arguments` aliases each parameter
-const readsArguments = (fn: FunctionNode): boolean => {
-	if (fn.type === "ArrowFunctionExpression") return false
+export const readsArguments = (fn: FunctionNode): boolean => {
+	if (fn.type === "ArrowFunctionExpression" || !fn.body) return false
 	let result = false
-	for (const node of [...fn.params, fn.body!]) {
+	for (const node of [...fn.params, fn.body]) {
 		walk(node, child => {
 			if (child.type === "Identifier" && child.name === "arguments")
 				result = true

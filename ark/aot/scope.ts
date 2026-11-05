@@ -14,8 +14,6 @@ import {
 } from "oxc-parser"
 import { runtimeParamsOf } from "./proofs.ts"
 
-export { runtimeParamsOf }
-
 export type BindingKind =
 	| "import"
 	| "const"
@@ -672,6 +670,21 @@ export const loadedSourceOf = (node: Node): Node | undefined =>
 	) ?
 		node.arguments[0]
 	:	undefined
+
+// an object literal property's key, where it's a name
+export const propertyKeyOf = (property: {
+	key: Node
+	computed: boolean
+}): string | undefined =>
+	property.key.type === "Literal" ?
+		(
+			typeof property.key.value === "string" ||
+			typeof property.key.value === "number"
+		) ?
+			String(property.key.value)
+		:	undefined
+	: property.computed || property.key.type !== "Identifier" ? undefined
+	: property.key.name
 
 export const exportNameOf = (node: Node): string =>
 	node.type === "Literal" ?

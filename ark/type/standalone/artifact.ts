@@ -1,6 +1,7 @@
 import {
 	$ark,
 	hasArkKind,
+	holeNameMarker,
 	hashedPrefixLength,
 	isDecidedByAllows,
 	isNode,
@@ -103,7 +104,6 @@ import {
 	bindingsOf,
 	contentKeyOf,
 	encodeKey,
-	holeNameMarker,
 	holeNamePattern,
 	isTypedFn,
 	keyOf,

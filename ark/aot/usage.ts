@@ -1,6 +1,6 @@
 import { receiverPrefix } from "arktype/internal/standalone.ts"
 import type { Node, Program, Span } from "oxc-parser"
-import { memberNameOf } from "./graph.ts"
+import { isFunctionNode, memberNameOf } from "./graph.ts"
 import type { SiteFactory } from "./fold.ts"
 import { parseCode, type SourceModule } from "./module.ts"
 import { isInertMetaProperty } from "./scan.ts"
@@ -8,6 +8,7 @@ import {
 	exportNameOf,
 	isWriteTarget,
 	operatorOf,
+	propertyKeyOf,
 	walk,
 	type Binding
 } from "./scope.ts"
@@ -521,21 +522,6 @@ class UsageAnalysis {
 	}
 }
 
-// an object literal property's key, where it's a name
-const propertyKeyOf = (property: {
-	key: Node
-	computed: boolean
-}): string | undefined =>
-	property.key.type === "Literal" ?
-		(
-			typeof property.key.value === "string" ||
-			typeof property.key.value === "number"
-		) ?
-			String(property.key.value)
-		:	undefined
-	: property.computed || property.key.type !== "Identifier" ? undefined
-	: property.key.name
-
 const literalOf = (node: Node | undefined): string | undefined =>
 	node?.type === "Literal" && typeof node.value === "string" ? node.value
 	: (
@@ -647,12 +633,7 @@ export const passedReaderOf = (
 type PassedReads = Map<number, PassedRead>
 
 const readsOf = (fn: Node | undefined): PassedReads | undefined => {
-	if (
-		fn?.type !== "ArrowFunctionExpression" &&
-		fn?.type !== "FunctionExpression" &&
-		fn?.type !== "FunctionDeclaration"
-	)
-		return
+	if (!fn || !isFunctionNode(fn)) return
 	const positions = new Map<string, number>()
 	for (const [i, param] of fn.params.entries()) {
 		if (param.type !== "Identifier") return

@@ -1,5 +1,6 @@
 import {
 	hasArkKind,
+	holeNameMarker,
 	isNode,
 	madeMorphs,
 	type BaseNode,
@@ -16,7 +17,7 @@ import {
 import { keywords } from "../keywords/keywords.ts"
 import type { IntrospectionMember } from "../runtime.ts"
 import * as runtime from "../runtimeExports.ts"
-import { holeNameMarker, holeNamePattern } from "./keys.ts"
+import { holeNamePattern } from "./keys.ts"
 
 // past this many chars a site's introspection fails
 export const defaultBakedLimit = 1 << 20
