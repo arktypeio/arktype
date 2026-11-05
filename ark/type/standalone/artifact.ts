@@ -1144,7 +1144,9 @@ export class StandaloneArtifact {
 		return hashOf(
 			JSON.stringify([
 				named,
-				bakingKeyOf(this.baking),
+				// each module picks what's smallest for what it holds, and a
+				// validator behaves alike however it's written
+				bakingKeyOf({ ...this.baking, combines: false, shapes: false }),
 				[...form.members].sort(),
 				form.isTemplate,
 				called,

@@ -331,6 +331,31 @@ import "./read.ts"
 		attest(runEmitted(root)).equals(plain)
 	}).timeout(120_000)
 
+	it("a Type is one with its equal however each module's smallest writes it", async () => {
+		const definition = `type("number[] | 'a' | null")`
+		const root = fixture("writtenApart", {
+			"package.json": `{ "type": "module" }\n`,
+			"other.ts": `import { type } from "arktype"
+export const Other = ${definition}
+`,
+			// holds enough that checkers repay their runtime, where the other doesn't
+			"main.ts": `import { type } from "arktype"
+import { Other } from "./other.ts"
+const T0 = type("string")
+${Array.from(
+	{ length: 8 },
+	(_, i) =>
+		`const T${i + 1} = type({ id: "string", left: T${i}.array(), right: T${i}.array() })`
+).join("\n")}
+console.log(${definition} === Other, T8.allows({}))
+`
+		})
+		attest(runPlain(root)).equals("true false\n")
+		attest(
+			run(await bundle(root, production, { preset: "smallest", prune: false }))
+		).equals("true false\n")
+	}).timeout(120_000)
+
 	it("an object a Type's meta holds keeps it from its equal, as a keyword's doesn't", async () => {
 		const definitions = {
 			Keyword: `type("string.date").describe("a date")`,
