@@ -1046,8 +1046,9 @@ export const allowsAcyclic = (
 export const allowsInContext = (
 	node: BaseNode,
 	data: unknown,
-	config: ResolvedConfig
-): boolean => allowsInTraversal(node, data, new Traversal(data, config))
+	config: ResolvedConfig,
+	ctor: typeof Traversal = Traversal
+): boolean => allowsInTraversal(node, data, new ctor(data, config))
 
 // a contextual predicate can add an error and still return true
 const allowsInTraversal = (

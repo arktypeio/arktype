@@ -758,13 +758,9 @@ export abstract class BaseNode<
 		this.c.flatMorphs = flatMorphs
 	}
 
-	// a Type without contextual callbacks checks its first data uncompiled
+	// a Type checks its first data uncompiled
 	private get checksUncompiled(): boolean {
-		return (
-			!this.ctxPred &&
-			!this.ctxMorph &&
-			($ark.inPlace?.checksUncompiled(this as never) ?? !this.c.usedPreJit)
-		)
+		return $ark.inPlace?.checksUncompiled(this as never) ?? !this.c.usedPreJit
 	}
 
 	deferJit(): void {
@@ -827,7 +823,7 @@ export abstract class BaseNode<
 
 			case "contextual":
 				return (data, onFail = this.onFail) => {
-					if (allowsInContext(this, data, this.$.cfg)) return data
+					if (allowsInContext(this, data, this.$.cfg, Traversal)) return data
 
 					return this.rejectRoot(data, onFail, runtime)
 				}

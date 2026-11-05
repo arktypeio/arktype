@@ -124,6 +124,9 @@ export const writeBundledDependentMessage = (
 export const writeUnwrittenModuleMessage = (specifier: string): string =>
 	`${specifier} is imported by a module this build didn't precompile, as one a cache kept from an earlier build is. Keep that cache from storing the modules @ark/aot transforms, or delete it.`
 
+export const writeUnbuiltReadMessage = (file: string, name: string): string =>
+	`webpack left the export ${name} of ${file} unbuilt once @ark/aot wrote it, though a module reads it, which would find it undefined. Set prune: false to build it whole, and report this and your webpack version at https://github.com/arktypeio/arktype/issues.`
+
 // `resolved` is where it resolves other than to arktype/runtime
 export const writeAliasMessage = (
 	specifier: string,
