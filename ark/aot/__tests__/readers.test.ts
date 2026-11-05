@@ -295,6 +295,24 @@ console.log(read(type("string"), process.argv[2]))
 		])
 	})
 
+	it("bakes every member where a parameter's default reads arguments", async () => {
+		attest(
+			await bakedFrom({
+				"/main.ts": `import { type } from "arktype"
+
+function f(schema, read = arguments[0]) {
+	console.log(read.expression)
+}
+
+f(type("string"))
+`
+			})
+		).snap([
+			"main.ts:7:3 bakes expression, description, json, toJSON, toJsonSchema, ~standard.jsonSchema (lost)",
+			"precompile: baking each introspection member into the validator at main.ts:7:3, because main.ts:7:3 passes it to a function reading arguments. Set expression, description, json, toJSON, toJsonSchema and ~standard.jsonSchema in members, each false where no code reads it, to build without this warning."
+		])
+	})
+
 	it("bakes every member where a Map holds it", async () => {
 		attest(
 			await bakedFrom({
