@@ -19,6 +19,7 @@ import {
 } from "vite"
 import webpack, { type Stats } from "webpack"
 import { spawnSync } from "node:child_process"
+import { createHash } from "node:crypto"
 import {
 	existsSync,
 	mkdirSync,
@@ -674,7 +675,26 @@ const sideEffects =
 // each file of an app, whose imports of arktype reach it through a barrel where
 // the round asks
 const filesOf = (app: App): Record<string, string> =>
-	throughArkBarrel(ownFilesOf(app))
+	versionedByContent(throughArkBarrel(ownFilesOf(app)))
+
+// a dependency's version, which webpack's and Rspack's persistent caches take a
+// package in node_modules to be by, changes with what it holds, as a published
+// one's does: otherwise a warm build reads the last app's package as this one's
+const versionedByContent = (
+	files: Record<string, string>
+): Record<string, string> => {
+	const manifest = `node_modules/${dependencyPackage}/package.json`
+	const source = files[`node_modules/${dependencyPackage}/index.js`]
+	if (!files[manifest] || source === undefined) return files
+	const version = `1.0.${parseInt(createHash("sha1").update(source).digest("hex").slice(0, 8), 16)}`
+	return {
+		...files,
+		[manifest]: files[manifest].replace(
+			'"version":"1.0.0"',
+			`"version":"${version}"`
+		)
+	}
+}
 
 const ownFilesOf = (app: App): Record<string, string> => {
 	const files: Record<string, string> = {}
