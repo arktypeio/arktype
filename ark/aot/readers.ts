@@ -100,14 +100,9 @@ export interface ReaderProgram extends UsageProgram {
 	// false where the build doesn't read the whole program, so no field read is followed
 	whole: boolean
 	// where the build doesn't, whether each module importing a module's export
-	// bakes what it reads of it, as where the export is the validator itself.
-	// Without a name, of what it may hold as another module's equal Type
+	// bakes what it reads of it, as where the export is the validator itself
 	importersBake?:
-		| ((
-				module: SourceModule,
-				name: string | undefined,
-				value: unknown
-		  ) => boolean)
+		| ((module: SourceModule, name: string, value: unknown) => boolean)
 		| undefined
 }
 
@@ -798,6 +793,19 @@ class Follow {
 		else this.unfollowed.push(`${module.positionOf(node)} ${why}`)
 	}
 
+	// a frozen build reading a module at a time keys each interned Type by the
+	// members its module bakes, which where it may be compared to one another
+	// module creates are all an export would bake. A whole program merges
+	// what each site bakes, and an unfrozen build bakes them after interning
+	private get keysByMembers(): boolean {
+		const { program } = this.readers
+		return !program.whole && !program.importersBake
+	}
+
+	private isComparison(read: Node, module: SourceModule): boolean {
+		return this.keysByMembers && comparesIdentity(read, module)
+	}
+
 	private readAt({ node, module, held }: Fact): void {
 		const [operand, parent] = operatorOf(node)
 		if (!parent) return
@@ -881,8 +889,8 @@ class Follow {
 					return
 				}
 				if (/^[!=]==?$/.test(parent.operator)) {
-					const other = parent.left === operand ? parent.right : parent.left
-					return this.compare(other, held, parent, module)
+					if (isValue && this.isComparison(operand, module)) lose("compares it")
+					return
 				}
 				// `+` and arithmetic convert it to a primitive
 				if (parent.operator !== "instanceof") this.convert(held, parent, module)
@@ -916,10 +924,10 @@ class Follow {
 				return lose("throws it")
 			case "JSXExpressionContainer":
 				return lose("passes it to a JSX element")
-			// what its cases compare it to, or a case's test
 			case "SwitchStatement":
 			case "SwitchCase":
-				return this.compare(undefined, held, parent, module)
+				if (isValue && this.isComparison(operand, module)) lose("compares it")
+				return
 			case "UnaryExpression":
 			case "IfStatement":
 			case "WhileStatement":
@@ -1347,6 +1355,12 @@ class Follow {
 		}
 		for (const read of prunedMembersByName[key] ?? []) this.pruned.add(read)
 		if (key === "~standard") return { ...held, path: [], of: "standard" }
+		// e.g. `T.assert === U.assert`, each a value of the validator's own,
+		// which code holding one may compare
+		if (key in ownedMembers && this.keysByMembers && !isUsedInPlace(at)) {
+			this.lose(at, module, `holds its ${key}, which may be compared`)
+			return
+		}
 		if (key === "toString") this.record("expression", at, module)
 		else if (introspectionMembers.includes(key as never))
 			this.record(key as IntrospectionMember, at, module)
@@ -1387,36 +1401,6 @@ class Follow {
 			this.readExport(module, name, held, binding.id)
 	}
 
-	private isBakedByImporters(
-		held: Held,
-		module: SourceModule,
-		name?: string
-	): boolean {
-		return (
-			!held.path.length &&
-			held.of === "type" &&
-			!!this.readers.program.importersBake?.(module, name, this.value)
-		)
-	}
-
-	// another module's equal Type keeps what its export does, so a Type compared
-	// by identity is read as an export is, as they're one value only if written alike
-	private compare(
-		other: Node | undefined,
-		held: Held,
-		at: Node,
-		module: SourceModule
-	): void {
-		if (
-			this.readers.program.whole ||
-			other?.type === "Literal" ||
-			(other?.type === "Identifier" && other.name === "undefined") ||
-			this.isBakedByImporters(held, module)
-		)
-			return
-		this.lose(at, module, "compares it to what another module may create")
-	}
-
 	private readExport(
 		module: SourceModule,
 		name: string,
@@ -1436,7 +1420,12 @@ class Follow {
 			return
 		}
 		if (!program.whole) {
-			if (this.isBakedByImporters(held, module, name)) return
+			if (
+				!held.path.length &&
+				held.of === "type" &&
+				program.importersBake?.(module, name, this.value)
+			)
+				return
 			return this.lose(
 				at,
 				module,
@@ -1588,6 +1577,9 @@ class Follow {
 				if (index === 0 && isValue) this.lose(call, module, "lists its keys")
 				return true
 			case "Object.is":
+				if (isValue && this.isComparison(call.arguments[index], module))
+					this.lose(call, module, "compares it")
+				return true
 			case "Array.isArray":
 			case "Boolean":
 			case "Number.isFinite":
@@ -2070,4 +2062,85 @@ const returnsOf = (fn: FunctionNode): Node[] => {
 		return true
 	})
 	return result
+}
+
+// the members holding values of a validator's own, which equal Types share
+// in arktype, as `toString` and its prototype's other methods are anyway
+const ownedMembers: Record<string, true> = Object.setPrototypeOf(
+	{
+		assert: true,
+		allows: true,
+		meta: true,
+		json: true,
+		toJSON: true,
+		toJsonSchema: true
+	},
+	null
+)
+
+// called or read from where it's read, so held nowhere to compare
+const isUsedInPlace = (read: Node): boolean => {
+	const [operand, parent] = operatorOf(read)
+	return (
+		(parent?.type === "CallExpression" && parent.callee === operand) ||
+		(parent?.type === "MemberExpression" &&
+			parent.object === operand &&
+			!isWriteTarget(parent))
+	)
+}
+
+// whether code reading a value can tell it apart from an equal one, as
+// equal Types are one value in arktype, which a build reading a module at a
+// time keeps only where each bakes every member: `===` or Object.is with
+// what may be one, or a switch over them
+const comparesIdentity = (read: Node, module: SourceModule): boolean => {
+	const [operand, parent] = operatorOf(read)
+	if (!parent) return false
+	switch (parent.type) {
+		case "BinaryExpression":
+			return (
+				/^[!=]==?$/.test(parent.operator) &&
+				!isPrimitiveLiteral(
+					unwrapExpression(parent.left) === operand ?
+						parent.right
+					:	parent.left,
+					module
+				)
+			)
+		case "CallExpression": {
+			if (globalNameOf(parent.callee, module) !== "Object.is") return false
+			const other = parent.arguments.find(arg => arg !== operand)
+			return !other || !isPrimitiveLiteral(other, module)
+		}
+		case "SwitchStatement":
+			return (
+				parent.discriminant === operand &&
+				parent.cases.some(
+					({ test }) => test && !isPrimitiveLiteral(test, module)
+				)
+			)
+		case "SwitchCase": {
+			const { discriminant } = parent.parent as Extract<
+				Node,
+				{ type: "SwitchStatement" }
+			>
+			return (
+				parent.test === operand && !isPrimitiveLiteral(discriminant, module)
+			)
+		}
+	}
+	return false
+}
+
+// e.g. `null` or `"a"`, which no Type is, so comparing one to it tells nothing of identity
+const isPrimitiveLiteral = (node: Node, module: SourceModule): boolean => {
+	const expression = unwrapExpression(node) as Node
+	return (
+		expression.type === "Literal" ||
+		expression.type === "TemplateLiteral" ||
+		(expression.type === "UnaryExpression" && expression.operator === "void") ||
+		(expression.type === "Identifier" &&
+			expression.name === "undefined" &&
+			!module.scopes.byId.get(expression)?.binding)
+	)
 }

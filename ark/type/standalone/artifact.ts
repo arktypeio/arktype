@@ -29,7 +29,6 @@ import { writesInPlace } from "@ark/schema/mutatesInput"
 import {
 	appendStringifiedKey,
 	arkKindOf,
-	cached,
 	constructorNameOf,
 	flatMorph,
 	functionNameOf,
@@ -293,32 +292,13 @@ interface SharedUnit extends WritingScope {
 
 const writesByBaking = new WeakMap<Baking, Map<string, SharedWrite>>()
 
-// arktype compares what a node's meta holds by identity, its key by content. A
-// keyword's holds one object, wherever a Type reads it
+// arktype compares what a node's meta holds by identity, its key by content
 const holdsObjectInMeta = ({ meta }: BaseNode): boolean =>
 	Object.entries(meta).some(([k, v]) =>
 		(k === "examples" ? (v as unknown[]) : [v]).some(
-			value =>
-				typeof value === "object" &&
-				value !== null &&
-				!keywordMetaObjects().has(value)
+			value => typeof value === "object" && value !== null
 		)
 	)
-
-const keywordMetaObjects = cached(() => {
-	const objects = new Set<unknown>()
-	const read = (module: object) => {
-		for (const value of Object.values(module)) {
-			if (hasArkKind(value, "module")) read(value as object)
-			else if (hasArkKind(value, "root")) {
-				for (const node of value.references)
-					for (const held of Object.values(node.meta)) objects.add(held)
-			}
-		}
-	}
-	read($ark.ambient as never)
-	return objects
-})
 
 // the options writing a shared unit reads: not those writing an artifact's own
 // validators, nor compiledInputs, which picks the unit itself
@@ -1161,9 +1141,7 @@ export class StandaloneArtifact {
 		return hashOf(
 			JSON.stringify([
 				named,
-				// each module picks what's smallest for what it holds, and a
-				// validator behaves alike however it's written
-				bakingKeyOf({ ...this.baking, combines: false, shapes: false }),
+				bakingKeyOf(this.baking),
 				[...form.members].sort(),
 				form.isTemplate,
 				called,
@@ -1765,11 +1743,14 @@ return namespace`
 	read(specifier: string, name: string, param = name, arg = param): string {
 		this.importName(specifier, name)
 		if (!this.writing || param === arg) return arg
-		if (!this.writing.params.includes(param)) {
-			this.writing.params.push(param)
+		// a local can't take the name of the import it reads, as `const a = a()`
+		// would read itself
+		const local = param === name ? `${name}Read` : param
+		if (!this.writing.params.includes(local)) {
+			this.writing.params.push(local)
 			this.writing.args.push(arg)
 		}
-		return param
+		return local
 	}
 
 	importName(specifier: string, name: string): void {
@@ -2108,9 +2089,11 @@ return namespace`
 							created
 						:	`runtime.holdHoles(${created}, ${writeId(id)}, ${held})`
 				}
-				return internKey ?
-						`runtime.interned(${JSON.stringify(internKey)}, () => ${created})`
-					:	created
+				if (!internKey) return created
+				const interned = `runtime.interned(${JSON.stringify(internKey)}, () => ${created})`
+				return form.bakedAfter ?
+						`runtime.bakeInto(${interned}, { ${this.emitIntrospection(root, new Set(form.bakedAfter)).join(", ")} })`
+					:	interned
 			}
 		}
 	}
@@ -2119,7 +2102,7 @@ return namespace`
 		const isTemplate = this.templates.has(root)
 		const isRuntimeRead = this.runtimeReadRoots.has(root)
 		const baked = this.baking.bakedByRoot.get(root)?.members ?? []
-		const members =
+		let members: ReadonlySet<ValidatorMember> =
 			isRuntimeRead || baked.length ?
 				new Set([
 					...this.baking.members,
@@ -2127,6 +2110,28 @@ return namespace`
 					...(isRuntimeRead ? defaultMembers : [])
 				])
 			:	this.baking.members
+		// a build reading a module at a time bakes what each module reads of a
+		// Type where it reads it, as a module importing one does, so equal Types
+		// created apart key alike, as arktype returns them as one value
+		const bakedAfter =
+			(
+				!isTemplate &&
+				!this.baking.interned &&
+				!this.baking.freezes &&
+				!this.heldOf(keyOf(root)[1]).length &&
+				this.internNameOf(root) !== undefined
+			) ?
+				new Set(
+					introspectionMembers.filter(
+						member => members.has(member) && !this.baking.members.has(member)
+					)
+				)
+			:	undefined
+		if (bakedAfter?.size) {
+			members = new Set(
+				[...members].filter(member => !bakedAfter.has(member as never))
+			)
+		}
 		const ownsValidator =
 			!isTemplate && !this.baking.shortest && members.has("methods")
 		const unconfigured = !this.baking.readsConfig && !root.meta.onFail
@@ -2137,7 +2142,8 @@ return namespace`
 			ownsValidator,
 			unconfigured,
 			pipes: canPipe(this.baking, members, unconfigured),
-			byRuntime: isCreatedByRuntime(members, this.baking)
+			byRuntime: isCreatedByRuntime(members, this.baking),
+			bakedAfter: bakedAfter?.size ? bakedAfter : undefined
 		}
 	}
 

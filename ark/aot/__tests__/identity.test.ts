@@ -240,158 +240,6 @@ console.log(First === Second, First.expression === expression, First.description
 		attest(runModuleAtATime(root)).equals(plain)
 	}).timeout(60_000)
 
-	it("a Type no export holds is one with its equal, however it's compared", async () => {
-		const definitions = {
-			Holding: `type("string").narrow(isLong)`,
-			HoldingElements: `type("string").narrow(isLong).array()`,
-			Piped: `type(["string", "=>", double])`,
-			Plain: `type("string[]")`,
-			PlainObject: `type({ a: "string" })`,
-			// a keyword holding a morph, whose meta holds an object
-			Keyword: `type("string.numeric.parse")`,
-			KeywordValue: `type({ a: "string.numeric.parse" })`,
-			KeywordElements: `type("string.numeric.parse[]")`,
-			Described: `type("string.numeric.parse").describe("parsed")`
-		}
-		const names = Object.keys(definitions)
-		const declared = (suffix: string, exports: string) =>
-			Object.entries(definitions)
-				.map(
-					([name, definition]) =>
-						`${exports}const ${name}${suffix} = ${definition}`
-				)
-				.join("\n")
-		const shared = `export const double = (d: any) => (typeof d === "number" ? d * 2 : d)
-export const isLong = (s: string) => s.length > 1
-`
-		const root = fixture("unexported", {
-			"package.json": `{ "type": "module" }\n`,
-			"tsconfig.json": JSON.stringify({
-				compilerOptions: {
-					target: "ES2022",
-					module: "NodeNext",
-					rewriteRelativeImportExtensions: true,
-					skipLibCheck: true,
-					types: [],
-					rootDir: ".",
-					outDir: "out"
-				},
-				include: ["*.ts"]
-			}),
-			"shared.ts": shared,
-			"other.ts": `import { type } from "arktype"
-import { double, isLong } from "./shared.ts"
-${declared("Other", "export ")}
-`,
-			"compared.ts": `import { type } from "arktype"
-import { double, isLong } from "./shared.ts"
-import { ${names.map(name => `${name}Other`).join(", ")} } from "./other.ts"
-${declared("", "")}
-console.log(${names.map(name => `${name} === ${name}Other`).join(", ")})
-`,
-			"switched.ts": `import { type } from "arktype"
-import { double, isLong } from "./shared.ts"
-import { ${names.map(name => `${name}Other`).join(", ")} } from "./other.ts"
-${declared("", "")}
-const isCase = (read: unknown, t: unknown) => {
-	switch (read) {
-		case t:
-			return true
-	}
-	return false
-}
-const inSwitch = (read: unknown) => {
-	switch (read) {
-${names.map(name => `		case ${name}:`).join("\n")}
-			return true
-	}
-	return false
-}
-console.log(${names.map(name => `inSwitch(${name}Other)`).join(", ")}, isCase(1, 1))
-`,
-			"held.ts": `import { type } from "arktype"
-import { double, isLong } from "./shared.ts"
-import { ${names.map(name => `${name}Other`).join(", ")} } from "./other.ts"
-${declared("", "")}
-const held = new Set<unknown>([${names.join(", ")}])
-console.log(${names.map(name => `held.has(${name}Other)`).join(", ")})
-`,
-			"read.ts": `import { type } from "arktype"
-import { double, isLong } from "./shared.ts"
-import { ${names.map(name => `${name}Other`).join(", ")} } from "./other.ts"
-${declared("", "")}
-const describe = (t: { description: string }) => t.description
-console.log(${names.map(name => `describe(${name})`).join(", ")})
-console.log(${names.map(name => `${name} === ${name}Other`).join(", ")})
-`,
-			"main.ts": `import "./compared.ts"
-import "./switched.ts"
-import "./held.ts"
-import "./read.ts"
-`
-		})
-		const plain = runPlain(root)
-		attest(plain.includes("false")).equals(false)
-		attest(run(await bundle(root, production))).equals(plain)
-		attest(run(await bundle(root, production, { prune: false }))).equals(plain)
-		attest(
-			run(await bundle(root, production, { preset: "smallest", prune: false }))
-		).equals(plain)
-		attest(runModuleAtATime(root)).equals(plain)
-		attest(runModuleAtATime(root, "production")).equals(plain)
-		attest(runEmitted(root)).equals(plain)
-	}).timeout(120_000)
-
-	it("a Type is one with its equal however each module's smallest writes it", async () => {
-		const definition = `type("number[] | 'a' | null")`
-		const root = fixture("writtenApart", {
-			"package.json": `{ "type": "module" }\n`,
-			"other.ts": `import { type } from "arktype"
-export const Other = ${definition}
-`,
-			// holds enough that checkers repay their runtime, where the other doesn't
-			"main.ts": `import { type } from "arktype"
-import { Other } from "./other.ts"
-const T0 = type("string")
-${Array.from(
-	{ length: 8 },
-	(_, i) =>
-		`const T${i + 1} = type({ id: "string", left: T${i}.array(), right: T${i}.array() })`
-).join("\n")}
-console.log(${definition} === Other, T8.allows({}))
-`
-		})
-		attest(runPlain(root)).equals("true false\n")
-		attest(
-			run(await bundle(root, production, { preset: "smallest", prune: false }))
-		).equals("true false\n")
-	}).timeout(120_000)
-
-	it("an object a Type's meta holds keeps it from its equal, as a keyword's doesn't", async () => {
-		const definitions = {
-			Keyword: `type("string.date").describe("a date")`,
-			Named: `type("string").configure({ jsonSchema: {} } as never)`
-		}
-		const root = fixture("metaObjects", {
-			"package.json": `{ "type": "module" }\n`,
-			"other.ts": `import { type } from "arktype"
-export const KeywordOther = ${definitions.Keyword}
-export const NamedOther = ${definitions.Named}
-`,
-			"main.ts": `import { type } from "arktype"
-import { KeywordOther, NamedOther } from "./other.ts"
-console.log(${definitions.Keyword} === KeywordOther, ${definitions.Named} === NamedOther)
-`
-		})
-		attest(runPlain(root)).equals("true false\n")
-		attest(run(await bundle(root, production))).equals("true false\n")
-		attest(run(await bundle(root, production, { prune: false }))).equals(
-			"true false\n"
-		)
-		attest(runModuleAtATime(root)).equals("true false\n")
-		attest(runModuleAtATime(root, "production")).equals("true false\n")
-	}).timeout(120_000)
-
 	it("each run of a module creates its own functions, so its own Types", async () => {
 		const root = fixture("queried", {
 			"m.ts": `import { type } from "arktype"
@@ -472,6 +320,42 @@ console.log(A === SameA, A({ a: "" }), B({ b: "" }))
 		attest(js.includes("tablesByKey")).equals(false)
 	})
 
+	describe("compared beside one another module creates", () => {
+		// main's Type is its own, which the build may write with less than the
+		// one a.ts exports
+		const compares = (name: string, read: string) =>
+			it(name, async () => {
+				const root = fixture(`compared-${name.replace(/\W+/g, "-")}`, {
+					"a.ts": `import { type } from "arktype"\nexport const A = type({ a: "string" })\n`,
+					"main.ts": `import { type } from "arktype"\nimport { A } from "./a.ts"\nconst B = type({ a: "string" })\nconsole.log(${read})\n`
+				})
+				const plain = runPlain(root)
+				attest(plain.startsWith("true")).equals(true)
+				attest(run(await bundle(root, production))).equals(plain)
+				attest(
+					run(await bundle(root, production, { preset: "smallest" }))
+				).equals(plain)
+				attest(runModuleAtATime(root)).equals(plain)
+				attest(runModuleAtATime(root, "production")).equals(plain)
+			}).timeout(60_000)
+
+		compares("by Object.is", "Object.is(A, B)")
+		compares("by ===", "A === B")
+		compares("by !==", "!(B !== A)")
+		compares(
+			"by a switch",
+			"(() => { switch (B) { case A: return true } return false })()"
+		)
+		compares("in a function it's passed to", "((x, y) => x === y)(A, B)")
+		compares("by its assert", "A.assert === B.assert")
+		compares(
+			"by an assert held to compare later",
+			"(f => f === A.assert)(B.assert)"
+		)
+		compares("by its ~standard", `A["~standard"] === B["~standard"]`)
+		compares("where its module reads more of it", "A === B, B.expression")
+	})
+
 	describe("where no read compares them", () => {
 		const twoModules = (main: string, a = `type({ a: "string" })`) =>
 			fixture(`unread-${main.replace(/\W+/g, "-").slice(0, 40)}`, {
@@ -502,6 +386,11 @@ console.log(A === SameA, A({ a: "" }), B({ b: "" }))
 		reads(
 			"interns them where what they hold could be",
 			`console.log(A.allows === B.allows, A({ a: "" }))`,
+			true
+		)
+		reads(
+			"interns them where a method is read to be called elsewhere",
+			`console.log(A.assert === B.assert, A({ a: "" }))`,
 			true
 		)
 		reads(

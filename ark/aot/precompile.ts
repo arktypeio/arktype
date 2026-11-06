@@ -1028,12 +1028,8 @@ export class Precompiler {
 		const [interned, baked] = this.internedIn(
 			plan,
 			readings.baked,
-			// every read is a call or a member holding nothing of its own, or two
-			// values for one Type can't be told apart
 			typeof used === "string" ||
-				used.has("allows") ||
-				used.has("meta") ||
-				used.has("~standard")
+				[...used].some(read => !readsNoIdentity.includes(read))
 		)
 		// a size build's units are already module constants
 		const flattens =
@@ -3474,13 +3470,9 @@ export class Precompiler {
 			this.foldSite(site, name, factoriesBySite.get(site), folding)
 			folded.push(site)
 		}
-		for (const { name, reads, sites } of bakes) {
+		for (const { name, reads } of bakes) {
 			importFolded(undefined, name, prefix + name, undefined, folding)
 			for (const read of reads) bakeAt(s, module, read, prefix + name)
-			for (const site of sites ?? []) {
-				s.prependRight(site.start, `${prefix}${name}(`)
-				s.appendLeft(site.end, ")")
-			}
 		}
 		const { inputImports, kept, passed, read, fixedAt } = folding
 		// fixed at the first droppable site, as arktype does at its first Type
@@ -3548,7 +3540,6 @@ export class Precompiler {
 	): [validators: StandaloneModules, bakes: ImportedBake[]] {
 		const { namesBySite, exportsByName } = plan
 		let bakes: ImportedBake[] = []
-		let readsAlone = false
 		if (bakedAs) {
 			baked = bakedAs(
 				this.runtimeOfPlan(module, { ...plan, folded: [...plan.folded] })
@@ -3572,8 +3563,7 @@ export class Precompiler {
 						undefined
 					:	(exporter, name, value) =>
 							isBakeable(value) &&
-							(name === undefined ||
-								this.exportedValueOf(exporter, name) === value)
+							this.exportedValueOf(exporter, name) === value
 			}
 			baked = this.readingsIn(
 				program,
@@ -3584,28 +3574,13 @@ export class Precompiler {
 					])
 				)
 			).baked
-			if (program.importersBake) {
-				bakes = this.importedBakesOf(module, program)
-				readsAlone = true
-			}
+			if (program.importersBake) bakes = this.importedBakesOf(module, program)
 			for (const bake of bakes) exportsByName[bake.name] = bake.baked
 		}
 		const bakedByName: Record<string, BakedMembers> = {}
 		for (const [site, name] of namesBySite) {
 			const members = baked.get(siteKeyOf(module.id, site))
-			if (!members) continue
-			// its equal in another module may be created first, so it's baked as
-			// what reads that is
-			if (readsAlone && isBakeable(site.value)) {
-				const bake: ImportedBake = {
-					name: `bake${bakes.length}`,
-					baked: { bakes: site.value, ...members },
-					reads: [],
-					sites: [site]
-				}
-				bakes.push(bake)
-				exportsByName[bake.name] = bake.baked
-			} else bakedByName[name] = members
+			if (members) bakedByName[name] = members
 		}
 		for (;;) {
 			const refusalsByName: Record<string, string[]> = {}
@@ -7640,6 +7615,19 @@ const isReachedOnlyAtBuild = (
 					!(site.definition && contains(site.definition, node))))
 	)
 
+// reads that can't tell two values of one Type apart: a call, or a method
+// called where it's read (one read to call elsewhere is piped), each Type's
+// assert its own and its prototype's shared; and a call's errors, which hold
+// no Type. Any other read of one, or of what it holds, lets it escape where
+// code may compare it, so equal Types are one value as arktype's are
+const readsNoIdentity: UsedMember[] = [
+	"call",
+	"assert",
+	"methods",
+	"summary",
+	"errors"
+]
+
 // each may hand a program's code its errors, or throws them
 const readsErrorsWhole: UsedMember[] = ["errors", "assert", "methods", "piped"]
 
@@ -7668,7 +7656,6 @@ interface ImportedBake {
 	name: string
 	baked: StandaloneBake
 	reads: Node[]
-	sites?: Site[]
 }
 
 interface ProgramReadings {

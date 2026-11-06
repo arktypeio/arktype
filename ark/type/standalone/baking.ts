@@ -408,9 +408,7 @@ const bakedByRootOf = (
 	}
 	for (const value of Object.values(exports)) {
 		if (arkKindOf(value) !== undefined || !("bakes" in value)) continue
-		// what it bakes is its own, so a validator of the same Type stays as written
-		for (const root of bakedRootsOf(value.bakes))
-			add(root, { members: [], lost: value.lost })
+		for (const root of bakedRootsOf(value.bakes)) add(root, value)
 	}
 	for (const name in baked) {
 		const value = exports[name]
