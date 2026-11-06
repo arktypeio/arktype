@@ -277,8 +277,8 @@ export interface Site {
 	progress: [at: number, name: string] | undefined
 	// start of its declaring statement, which a bundler may drop
 	declarationStart: number | undefined
-	// whether it runs only once something calls it, which its module doesn't as
-	// it loads
+	// whether its module isn't seen to run it as it loads, as a site in a
+	// function it doesn't call then, which runs once something calls it
 	deferred: boolean
 	// whether it initializes a variable, e.g. one a function declares
 	initializes: boolean

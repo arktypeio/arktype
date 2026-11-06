@@ -3263,25 +3263,75 @@ export const U = make()
 			).snap("undefined\n")
 		})
 
-		it("run the config module first where the program loads it after a module creating only in a function", async () => {
-			const lazy = (name: string, lib: string) =>
-				run(
-					name,
+		it("run the config module first where the program loads it after a module creating only once called", async () => {
+			const lazy = {
+				exported: [`export const make = () => [${types}]`, "lib.make()"],
+				// an export of it calls nothing
+				specified: [
+					`const make = () => [${types}]\nexport { make }`,
+					"lib.make()"
+				],
+				// though an import cycle could call it as the module loads
+				importing: [
+					`import { n } from "./n.ts"\n\nexport const make = () => [${types}, n]`,
+					"lib.make()"
+				],
+				method: [
+					`export class C {\n\tmake() {\n\t\treturn [${types}]\n\t}\n}`,
+					"new lib.C().make()"
+				],
+				field: [`export class C {\n\tall = [${types}]\n}`, "new lib.C().all"]
+			}
+			const results: Record<string, string | undefined> = {}
+			for (const [name, [lib, made]] of Object.entries(lazy)) {
+				results[name] = await run(
+					`lazy-${name}`,
 					{
 						"config.ts": config,
-						"lib.ts": `import { type } from "arktype"\n\n${lib}\n`,
-						"main.ts": `import { make } from "./lib.ts"\nimport "./config.ts"\n\nconst all = make()\n\nconsole.log(${read})\n`
+						"n.ts": "export const n = 1\n",
+						"lib.ts": `import { type } from "arktype"\n${lib}\n`,
+						"main.ts": `import * as lib from "./lib.ts"\nimport "./config.ts"\n\nconst all = ${made}\n\nconsole.log(${read})\n`
 					},
 					true
 				)
-			attest(await lazy("lazy", `export const make = () => [${types}]`)).snap(
-				"undefined\n"
-			)
-			// an export of it calls nothing
+			}
+			attest(results).snap({
+				exported: "undefined\n",
+				specified: "undefined\n",
+				importing: "undefined\n",
+				method: "undefined\n",
+				field: "undefined\n"
+			})
+		})
+
+		it("fail where the program loads it after a module calling another's factory as it loads", async () => {
+			const files = (main: string) => ({
+				"config.ts": config,
+				"lib.ts": `import { type } from "arktype"\n\nexport const make = () => [${types}]\n`,
+				"made.ts": `import { make } from "./lib.ts"\n\nexport const all = make()\n`,
+				"main.ts": main
+			})
 			attest(
-				await lazy(
-					"lazyExported",
-					`const make = () => [${types}]\nexport { make }`
+				await run(
+					"madeAhead",
+					files(
+						`import { all } from "./made.ts"\nimport "./config.ts"\n\nconsole.log(${read})\n`
+					),
+					true
+				).catch(
+					(e: { errors: { text: string }[] }) => e.errors[0].text.split("\n")[0]
+				)
+			).snap(
+				'main.ts:1:1  import { all } from "./made.ts" loads made.ts, which creates a Type, before the config module config.ts runs configure()'
+			)
+			// the factory's module first, as what calls it runs configured
+			attest(
+				await run(
+					"madeAfter",
+					files(
+						`import "./lib.ts"\nimport "./config.ts"\nimport { all } from "./made.ts"\n\nconsole.log(${read})\n`
+					),
+					true
 				)
 			).snap("undefined\n")
 		})
@@ -3316,7 +3366,9 @@ export const U = make()
 				statement: `export const all: unknown[] = []\n${list.map(t => `all.push(${t})`).join("\n")}`,
 				// in a function the module calls as it loads
 				called: `const make = () => [${types}]\nexport const all = make()`,
-				immediate: `export const all = (() => [${types}])()`
+				immediate: `export const all = (() => [${types}])()`,
+				// in a field of a class the module constructs as it loads
+				constructed: `class C {\n\tall = [${types}]\n}\n\nexport const { all } = new C()`
 			}
 			const results: Record<string, (string | undefined)[]> = {}
 			for (const [name, lib] of Object.entries(atLoad)) {
@@ -3359,6 +3411,10 @@ export const U = make()
 				immediate: [
 					"lib.ts creates a Type before configure() runs",
 					'main.ts:1:1  import * as lib from "./lib.ts" loads lib.ts, which creates a Type, before the config module config.ts runs configure()'
+				],
+				constructed: [
+					"lib.ts creates a Type before configure() runs",
+					"lib.ts creates a Type before configure() runs"
 				]
 			})
 		})

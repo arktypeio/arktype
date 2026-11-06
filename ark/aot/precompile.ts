@@ -178,11 +178,11 @@ import {
 	isDefaultCheck,
 	isDynamic,
 	isLoop,
+	isRunAtLoad,
 	type InterpreterOptions,
 	ModuleNamespace,
 	type Read,
 	runsBeforeBody,
-	runsOnceCalled,
 	type SiteState,
 	type Trace
 } from "./interpreter.ts"
@@ -5665,7 +5665,7 @@ export class Precompiler {
 			defaultChecks: [],
 			aliases: [],
 			declarationStart: declarationStartOf(node),
-			deferred: runsOnceCalled(node, module),
+			deferred: !isRunAtLoad(node, module),
 			initializes: !!initializedOf(node),
 			introspection: undefined,
 			unavailableRead: undefined,
@@ -6348,10 +6348,42 @@ export class Precompiler {
 			module instanceof SourceModule &&
 			this.isTransformed(id) &&
 			this.importsArk(module.source, id) &&
-			this.analysisOf(module).sites.some(
+			(this.analysisOf(module).sites.some(
 				site => site.status === "accepted" && !site.deferred
-			)
+			) ||
+				this.callsCreatorAtLoad(module))
 		)
+	}
+
+	// e.g. `make()` as it loads, where `make` is another module's, holding a site
+	// that module can't tell runs then
+	private callsCreatorAtLoad(module: SourceModule): boolean {
+		let calls = false
+		walk(module.program, node => {
+			if (node.type === "CallExpression" && isRunAtLoad(node, module)) {
+				const target = this.graph.functionOf(node.callee, module)
+				calls ||=
+					!!target &&
+					target[1] !== module &&
+					this.isTransformed(target[1].id) &&
+					this.createsOnCall(...target)
+			}
+			return !calls
+		})
+		return calls
+	}
+
+	// whether calling fn runs a site its module accepted, not in a function within
+	private createsOnCall(fn: FunctionNode, module: SourceModule): boolean {
+		return this.analysisOf(module).sites.some(site => {
+			if (site.status !== "accepted" || !contains(fn, site)) return false
+			let within = false
+			walk(fn, node => {
+				within ||= node !== fn && isFunctionNode(node) && contains(node, site)
+				return !within && contains(node, site)
+			})
+			return !within
+		})
 	}
 
 	// a module importing this one back may run before or after it
