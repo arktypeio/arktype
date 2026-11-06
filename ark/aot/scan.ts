@@ -4,7 +4,7 @@ import type {
 } from "arktype/internal/standalone.ts"
 import { flatMorph } from "@ark/util"
 import { isAbsolute } from "node:path"
-import { parseSync, type Program } from "oxc-parser"
+import { parseSync, type Node, type Program } from "oxc-parser"
 import { dependencyOf, fileOf, printablePathOf, transformedId } from "./host.ts"
 import { langOf } from "./module.ts"
 import { ModuleScopes, operatorOf, walk } from "./scope.ts"
@@ -235,6 +235,9 @@ export interface BuiltModule {
 	transformed: boolean
 	mappings: string | undefined
 	imports: BuiltImport[]
+	// a transformed module as the loaders after the plugin built it, which
+	// write nothing the plugin reads
+	built?: string | undefined
 }
 
 export interface BuiltImport {
@@ -267,8 +270,16 @@ export const programAsBuilt = (
 		if (isRead(module)) {
 			const { id, source, transformed, mappings } = module
 			if (source === undefined) return `${pathOf(id)} can't be read`
-			if (source === null || (id in modules && modules[id].source !== source))
+			if (
+				source === null ||
+				(id in modules &&
+					(modules[id].source !== source ||
+						modules[id].transformed !== transformed))
+			)
 				return `it built ${pathOf(id)} from two codes`
+			const added = module.built && memberAddedIn(source, module.built)
+			if (added)
+				return `a loader after arktype's adds a read of ${added} to ${pathOf(id)}`
 			if (!(id in modules)) {
 				const { imports, unnamed } = importsOf(id, source)
 				if (unnamed?.reason === unparsed)
@@ -328,6 +339,94 @@ const isReadBuilt = (
 	host: Pick<ScanHost, "isTransformed">
 ): module is BuiltModule & { id: string } =>
 	module.id !== undefined && !isLeftDependency(module.id, host)
+
+// the words a read of an introspection member is written with, counted
+// wherever they are, as a loader may write `const { json } = User` as
+// `User.json`
+const memberNames = [
+	"expression",
+	"description",
+	"json",
+	"toJSON",
+	"toJsonSchema",
+	"jsonSchema"
+]
+
+// an introspection member that code holds more often than what it was built
+// from, as a loader writing a read of it would
+const memberAddedIn = (source: string, built: string) =>
+	memberNames.find(name => {
+		const word = new RegExp(`\\b${name}\\b`, "g")
+		return (built.match(word)?.length ?? 0) > (source.match(word)?.length ?? 0)
+	})
+
+// what a define may name without a module's binding being what it reads
+const definableGlobals = new Set([
+	...Object.getOwnPropertyNames(globalThis),
+	"window",
+	"self",
+	"document",
+	"navigator",
+	"location",
+	"module",
+	"exports",
+	"require",
+	"__dirname",
+	"__filename",
+	"__webpack_require__",
+	"__non_webpack_require__"
+])
+
+// the first name in a define's code that isn't a global, where it can't be read
+const bindingNamedIn = (code: string): string | undefined => {
+	const { program, errors } = parseSync("define.js", `(${code})`)
+	if (errors.length) return code
+	let named: string | undefined
+	const visit = (node: Node): boolean => {
+		if (named !== undefined || node.type === "MetaProperty") return false
+		if (node.type === "Identifier" && !definableGlobals.has(node.name))
+			named = node.name
+		// a name at a key reads nothing
+		if (
+			(node.type === "MemberExpression" || node.type === "Property") &&
+			!node.computed
+		) {
+			walk(node.type === "Property" ? node.value : node.object, visit)
+			return false
+		}
+		return true
+	}
+	walk(program, visit)
+	return named
+}
+
+// why a bundler writing a define into a module may read a validator its read
+// can't see, as no module's text holds that code. What names only literals and
+// globals can't reach a binding, which a read at a global's key is baked for
+export const unreadDefineOf = (
+	defines: Record<string, unknown> | undefined
+): string | undefined => {
+	for (const key in defines) {
+		const value = defines[key]
+		const code =
+			typeof value === "function" ? String(value)
+			: typeof value === "string" ? value
+			: undefined
+		if (code !== undefined) {
+			const named = bindingNamedIn(code)
+			if (named !== undefined)
+				return `define names ${named} in ${code}, which may read a validator where no module's text shows it`
+		} else if (typeof value === "object" && value !== null) {
+			// webpack's DefinePlugin.runtimeValue
+			if ("fn" in value)
+				return `define writes ${key} at build time, which may read a validator where no module's text shows it`
+			if (!(value instanceof RegExp)) {
+				const nested = unreadDefineOf(value as Record<string, unknown>)
+				if (nested) return nested
+			}
+		}
+	}
+}
 
 // a module the bundle reaches that its program doesn't hold, as a plugin may
 // add one once the program's read

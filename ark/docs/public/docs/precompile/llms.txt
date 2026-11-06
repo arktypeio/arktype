@@ -129,6 +129,16 @@ In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates 
 | Introspection members | all | those the build sees read, or [`members`](https://arktype.io/docs/precompile/options#members) sets | all |
 | Error messages | say what was expected and what the value was | say what was expected, and any text configured for them | say what was expected and what the value was |
 | [Locales](https://arktype.io/docs/i18n) | yes | no | yes |
+| Equal definitions | one Type | one validator, [but for a few cases](https://arktype.io/docs/precompile/dynamic-vs-precompiled#equal-definitions) | one Type |
+
+## Equal definitions
+
+arktype returns one Type for a scope's equal definitions, so `type("string[]") === type("string").array()`, in one module or across two. A precompiled program compares the same, including any function a Type holds, except:
+
+- A Type the build leaves to arktype, as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands), and its precompiled equal are two values.
+- A build that reads each module alone, as Turbopack and Node do, and webpack and Rspack where they don't [prune](https://arktype.io/docs/precompile/options#prune), gives two values for a Type holding a cycle, and for one in a scope a function creates. Reading the whole program, as Vite, Rollup, Rolldown, esbuild, webpack and Rspack do in a production build, gives one. It gives one too for `type("unknown")` and `type.pipe()`, the one keyword reached two ways, which arktype keeps apart.
+- A scope a function creates is created once, however often the function is called, so each call's Types are one value where arktype creates them anew.
+- A chunk imported again at runtime under another URL creates its functions anew, so arktype gives each run its own Type for a narrow the chunk defines. A validator holding a function the build proves can't differ between runs may be one value for both.
 
 ## Which to use
 
@@ -565,7 +575,7 @@ A definition holding functions, like a narrow, a morph or a class, becomes a cal
 
 ## What a validator has
 
-Besides being called, a validator has `allows()`, and by default `assert()`, `meta`, `~standard`, `traverse()`, `from()` and `toString()`. `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` are baked as arktype returns them, each into the validators the build sees code read it off, its dependencies' included, so the MCP SDK, the AI SDK, Elysia's OpenAPI plugin, hono-openapi and oRPC's converter get a JSON Schema with nothing to set. The [`members`](https://arktype.io/docs/precompile/options#members) option bakes one into every validator or none instead, and says how the build decides. A read the build sees in the program, like `User.expression`, is replaced by its value either way. Reading one a validator lacks throws, naming the member and the setting.
+Besides being called, a validator has `allows()`, and by default `assert()`, `meta`, `~standard`, `traverse()`, `from()` and `toString()`. `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` are baked as arktype returns them, each into the validators the build sees code read it off, its dependencies' included, so the MCP SDK, the AI SDK, Elysia's OpenAPI plugin, hono-openapi and oRPC's converter get a JSON Schema with nothing to set. The [`members`](https://arktype.io/docs/precompile/options#members) option bakes one into every validator or none instead, and says how the build decides. A read the build sees in the program, like `User.expression`, is replaced by its value either way. Reading one a validator lacks throws, naming the member and the setting, or reads `undefined` where a [production bundle](https://arktype.io/docs/precompile/options#prune) left out the validator's methods.
 
 It lacks the methods that compose or relate a Type, like `.and`, `.or`, `.in` or `.extends`. The build fails where it sees one read outside a definition it precompiles, including off a value it lost track of after a Type reached it, and, once for each import, off an import it can't resolve:
 
@@ -585,11 +595,13 @@ A validator and its members are frozen, except a Date or RegExp it holds, unless
 
 A validator returns errors of its own, instances of `type.errors` and of `arktype`'s `ArkErrors`. Each issue holds the failed check's `code`, `path`, `data` and `expected`, with a message like `name must be a string`:
 
-- A message doesn't say what the value was unless text configured for it does, and the errors arktype groups at one path stay apart. A union no branch allows is one issue, expecting the union's description unless the value is of no branch's type, as in `must be an object`.
+- A message doesn't say what the value was unless text configured for it does, and the errors arktype groups at one path stay apart. A union no branch allows is one issue whose `errors` hold each branch's first, written as arktype lists them, as in `a must be a string or b must be a string`. The first union in a bundle that lists what its branches expected ships about 0.5 kB gzipped to write it, and a bundle with none ships nothing for it.
+- Where each of a union's branches can only fail at what it is, as in `Date | RegExp`, its issue's `expected` reads `a Date or a RegExp`, where arktype's reads `must be a Date or a RegExp`.
+- A branch's text is its check's alone, so a union's description or a discriminated union's holding `or` or a comma outside of quotes, failing beside another branch at one path, lists as if each were an alternative: `boolean, a thing or other` where arktype writes `boolean or a thing or other`.
 - A missing key's issue has the code `required` and expects what its value's basis describes, as arktype's does: `name must be a string`.
 - `assert` throws a `TraversalError` whose message is the errors' `summary`, one line per issue, rather than arktype's bulleted list.
 - A path starting with a bracket, an index's or a quoted key's, reads `[0] must be a string`, without arktype's `value at`, even where a problem is configured. A symbol key is written as `String` writes it, `[Symbol(id)]`, where arktype writes `[Symbol(symbol)]` unless its description is an identifier.
-- Text a narrow or morph puts in `ctx.reject({ meta })` isn't written, so pass it as `expected`, `problem` or `message` instead. An issue a narrow raises without one reads `is invalid` rather than naming the function. One a `pipe.try` morph raises by throwing expects what arktype's does, like `valid according to parse`, but has no `morph` or `cause`.
+- Text a narrow or morph puts in `ctx.reject({ meta })` isn't written, so pass it as `expected`, `problem` or `message` instead. An issue a narrow raises with a `code` of its own and none of those reads `is invalid`, and `must be valid` among a union's branches, where arktype writes what the code expects. One a `pipe.try` morph raises by throwing expects what arktype's does, like `valid according to parse`, but has no `morph` or `cause`.
 - A validator a morph calls with its `ctx` adds its issues to that validation.
 - `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatProblemsByPath`, `byAncestorPath` or `messageIn`, and the errors have no `toLocaleString`.
 - [`firstIssue(out)`](https://arktype.io/docs/errors#finding-only-the-first) finds only the first issue of errors that haven't found theirs, stopping where the data first fails.
@@ -624,6 +636,7 @@ To leave only some definitions to arktype in a standalone build, mark them as [r
 - A Date or RegExp a Type holds is one object for every Type and validation holding it.
 - A builtin class a Type holds, like `Uint8Array`, is read as the validator's module loads, so a later polyfill isn't seen.
 - When a validator rejects an array, it may look for errors only from the first element it rejects, so a getter or `Proxy` trap reading an element before that one runs once rather than twice.
+- A validator may read a key a different number of times than arktype does, so a getter or `Proxy` trap answering differently between reads can pass or fail differently. arktype's own first call and later calls differ the same way.
 - The `ctx.config` a narrow or morph receives holds only `jitless` and `onFail`.
 - A module of validators fails to link to an `arktype/runtime` of another version, but nothing checks at runtime that `arktype` loads only for runtime islands.
 
@@ -735,7 +748,7 @@ Where `package.json` sets `"ark"` and an `ark.json` is beside it, the build fail
 
 ### errors
 
-`errors: "first"` stops each validation at the first issue it finds and returns it alone. Which of the data's issues that is isn't promised: the validator looks for whichever is cheapest to find, which may not be the one arktype finds first. `errors: "none"` returns errors holding one root issue with the code `"predicate"` and the message `is invalid`, so no check's description or message ships. Those errors have no `throw()`, and `assert` throws a plain `Error` whose `cause` is the errors.
+`errors: "first"` stops each validation at the first issue it finds and returns it alone. Which of the data's issues that is isn't promised: the validator looks for whichever is cheapest to find, which may not be the one arktype finds first. `errors: "none"` returns errors holding one root issue with the code `"predicate"` and the message `is invalid`, so no check's description or message ships. It asks a narrow once, so one answering false and then true fails where arktype, asking again for its errors, returns the data. Those errors have no `throw()`, and `assert` throws a plain `Error` whose `cause` is the errors.
 
 The plugin and the Node and Bun drivers resolve `@ark/schema/runtime` to `@ark/schema/runtime/none` under `errors: "none"`, and a module importing any other `@ark/schema` entry, or a runtime island, fails the build. Turbopack needs an alias beside [the ones a standalone build needs](https://arktype.io/docs/precompile/setup#next), and its loader fails the build without it:
 
@@ -759,7 +772,7 @@ The values are [arktype's `errors`](https://arktype.io/docs/configuration#errors
 
 `members` decides what a validator has besides validating. `assert`, `meta`, `~standard` and `methods` (`traverse()`, `from()` and `toString()`) default to true. A dropped one reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`.
 
-`expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema`, the introspection members, are each baked into the validators the build sees code read it off, and set true or false, into every validator or none. Where it can't see one, `String(User)` without `expression` is `"Type"`, and reading another throws, naming the member and the setting:
+`expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema`, the introspection members, are each baked into the validators the build sees code read it off, and set true or false, into every validator or none. Where it can't see one, `String(User)` without `expression` is `"Type"`, and reading another throws, naming the member and the setting, unless a [pruned](https://arktype.io/docs/precompile/options#prune) validator lacks `methods`, where it reads `undefined`:
 
 ```
 toJsonSchema isn't baked into this validator, as the build saw no code read it. Set members["toJsonSchema"] true in the precompile options.
@@ -775,7 +788,7 @@ precompile: baking each introspection member into the validator at src/router.ts
 
 It doesn't warn where it lost track only past a dependency's read at a key that dependency doesn't name, as in the MCP SDK, since every program using it would warn.
 
-A production bundle reads every module, so it follows a validator a module exports to its importers. One an entry, or a module a dependency imports, exports may be read by code outside the bundle, so the build bakes nothing for that code. A build reading one module at a time, like webpack, Rspack, Turbopack, the Node and Bun drivers and `arktype-precompile --emit`, follows a validator through its module and into its dependencies. Each module importing one follows what it does with it the same way, and bakes what that reads into it where it's read, each introspection member where it loses track, as where it passes it to `registerTool`. One a module stores at a key, or exports inside an object, bakes each where it's created, as code in another module may read it. A [frozen](https://arktype.io/docs/precompile/options#freeze) validator takes nothing from its importers, so in development, as on a dev server, one a module exports bakes each where it's created. So a validator has at least what a production bundle bakes it in development, and a production build reading one module at a time bakes what a module reads of it there. A read the build doesn't transform, like one outside the bundle reading an entry's export, throws in production alone. A build reading one module at a time doesn't transform a module that loads its validators only by `require()`, so nothing it reads of them is baked: set each member it reads true.
+A production bundle reads every module, so it follows a validator a module exports to its importers. One an entry, or a module a dependency imports, exports may be read by code outside the bundle, so the build bakes nothing for that code. A build reading one module at a time, like webpack and Rspack where they don't [prune](https://arktype.io/docs/precompile/options#prune), Turbopack, the Node and Bun drivers and `arktype-precompile --emit`, follows a validator through its module and into its dependencies. Each module importing one follows what it does with it the same way, and bakes what that reads into it where it's read, each introspection member where it loses track, as where it passes it to `registerTool`. One a module stores at a key, or exports inside an object, bakes each where it's created, as code in another module may read it. A [frozen](https://arktype.io/docs/precompile/options#freeze) validator takes nothing from its importers, so in development, as on a dev server, one a module exports bakes each where it's created. So a validator has at least what a production bundle bakes it in development, and a production build reading one module at a time bakes what a module reads of it there. A read the build doesn't transform, like one outside the bundle reading an entry's export, throws in production alone. A build reading one module at a time doesn't transform a module that loads its validators only by `require()`, so nothing it reads of them is baked: set each member it reads true.
 
 Keep `assert` or `~standard` on validators you pass to a library. tRPC, for one, calls a validator that has neither as a plain parse function, so it passes on the errors the validator returns as if they were the parsed input.
 
@@ -814,7 +827,7 @@ An instance of a class, or any object whose prototype isn't `Object.prototype`, 
 
 ### bakedLimit
 
-`json` and a JSON Schema repeat each Type they reference, so a Type reusing one at each level bakes text that doubles per level. A site whose baked introspection members total more than `bakedLimit` characters, 1 MB by default, fails the build naming the members and their sizes: read fewer of its members, or leave it to arktype with `// @ark-runtime` or `runtime: "arktype"`.
+A site whose baked introspection members total more than `bakedLimit` characters, 1 MB by default, fails the build naming the members and their sizes: read fewer of its members, or leave it to arktype with `// @ark-runtime` or `runtime: "arktype"`. What `json` and a JSON Schema repeat counts once, as it's written once however many Types reuse it, and each read of a JSON Schema still assembles objects of its own.
 
 ### freeze
 
@@ -841,6 +854,7 @@ The build leaves a member wherever it can't prove no code reads it:
 - a module is imported dynamically, through `require` or `import.meta.glob()`, or holds a Scope
 - a module reads an `import.meta` property other than `env`, `hot`, `webpackHot`, `url`, `resolve`, `dirname`, `filename` and the flags Nuxt defines, like `client` and `dev`
 - an esbuild bundle holds a module it can't read, like a Vue component
+- a `define` names a binding rather than a literal or a global, as `READ: "local.expression"` does, since no module's text holds the code it writes
 
 A Vite, Rollup or Rolldown build reads each module as the bundler loads it, so it reads a component as its framework's plugin compiles it, like a Svelte, Vue or Astro component or an MDX page, and a virtual module as the plugin writing it does. A webpack or Rspack build reads its modules once it has built them as they are, so it reads what its resolver, aliases and loaders make of them, and what Next.js's generated entries import, then builds again those it writes. Each of Next.js's compilers prunes by its own modules. A member set true is always kept.
 
@@ -860,7 +874,7 @@ Setting each in `members` clears it, as the build then has no member left to dec
 
 Vite, Rollup, Rolldown, esbuild, webpack and Rspack bundles prune, esbuild only where this plugin is the last, so no plugin loads a module after it reads it. `prune: true` also prunes a Rollup, Rolldown, esbuild, webpack or Rspack bundle that isn't for production, which the build can't tell. Turbopack, the Node and Bun drivers and `arktype-precompile` build every validator whole, and fail with `prune: true`, set in their options or `ark.json`, as does an esbuild build where a plugin follows this one.
 
-A Vite, Rollup or Rolldown build reads each module from its file, then reads the bundle again as it was built, and fails only where the built bundle reads a member it left out, naming the read, as where a plugin ahead of this one adds one. A plugin that rewrites a module without adding a read, like a Babel plugin or TanStack Router's code splitting, changes nothing. An esbuild build reads each module as it loads it, and fails where another plugin loaded one. A webpack or Rspack build reads a module as it reached the plugin, a loader ahead's work included, and each import a loader after it adds keeps every member of what that import reaches, but it can't see a read such a loader adds through an import the module already had. Where it can't read a module, it builds as `prune: false` does, as no module was written yet. `prune: false` builds every validator whole, each unit a module of its own.
+A Vite, Rollup or Rolldown build reads each module from its file, then reads the bundle again as it was built, and fails only where the built bundle reads a member it left out, naming the read, as where a plugin ahead of this one adds one. A plugin that rewrites a module without adding a read, like a Babel plugin or TanStack Router's code splitting, changes nothing. An esbuild build reads each module as it loads it, and fails where another plugin loaded one. A webpack or Rspack build reads a module as it reached the plugin, a loader ahead's work included, and each import a loader after it adds keeps every member of what that import reaches. Where such a loader adds a read of an introspection member, it builds as `prune: false` does, but it can't see one adding a read of another member through an import the module already had. Where it can't read a module, it builds as `prune: false` does, as no module was written yet. `prune: false` builds every validator whole, each unit a module of its own.
 
 ### dependencies
 

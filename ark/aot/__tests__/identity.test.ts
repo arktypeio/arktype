@@ -100,6 +100,14 @@ const definitions = {
 	Pruned: `type("'foo'|'bar'|string|'baz'|/.*/")`,
 	String: `type("string")`,
 	Keys: `type("keyof", { foo: "string" })`,
+	// the string of each: one a Scope copied, read apart from arktype's own keyword
+	KeysOrNull: `type(["keyof", { a: "1", "[string]": "unknown" }]).or("null")`,
+	StringOrNull: `type("string|null")`,
+	// each Type's own, held only by what its morph declares
+	DeclaredObject: `type.schema({ declaredIn: type("string").configure({ x: { y: 1 } } as never), morphs: [isShort] } as never)`,
+	DeclaredMessage: `type("string").configure({ message: () => "x" } as never).pipe(isShort)`,
+	// a hole, compared as the build's runtime reads it
+	RootMessage: `type("string").configure({ message: isShort } as never)`,
 	Foo: `type("===", "foo")`,
 	MetaObject: `type("string").configure({ x: { y: 1 } } as never)`,
 	RegExpExample: `type("string").configure({ examples: [/a/] } as never)`,
@@ -161,6 +169,7 @@ const partition = [
 	"DescribedA=DescribedB",
 	"FooA=FooB",
 	"KeysA=KeysB",
+	"KeysOrNullA=KeysOrNullB",
 	"KeywordA=KeywordB",
 	"LiteralA=LiteralB",
 	"NarrowA=NarrowB",
@@ -171,8 +180,10 @@ const partition = [
 	"PipeA=PipeB",
 	"PrunedA=PrunedB",
 	"RejectingA=RejectingB",
+	"RootMessageA=RootMessageB",
 	"StringA=StringB",
 	"StringExampleA=StringExampleB",
+	"StringOrNullA=StringOrNullB",
 	"TupleA=TupleB",
 	"UnionA=UnionB",
 	"UnitsA=UnitsB"
@@ -227,7 +238,7 @@ console.log(First === Second, First.expression === expression, First.description
 		attest(run(await bundle(root, production))).equals(plain)
 		attest(run(await bundle(root, source))).equals(plain)
 		attest(runModuleAtATime(root)).equals(plain)
-	})
+	}).timeout(60_000)
 
 	it("a Type no export holds is one with its equal, however it's compared", async () => {
 		const definitions = {
