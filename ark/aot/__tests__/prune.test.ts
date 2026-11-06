@@ -1244,7 +1244,7 @@ console.log(READ, String(User({ name: 5 })))
 					"prune: off, because define names local in local.expression, which may read a validator where no module's text shows it, so the build keeps every member of its validators. Set prune: false to build them whole without this warning."
 				])
 				const out = runBundle(await bundle({ preset: undefined }, options))
-				attest(out.stderr.includes("expression isn't baked")).equals(true)
+				attest(out.stderr.includes("expression isn't precompiled")).equals(true)
 			})
 
 			it("prunes where each names a literal or a global", async () => {
@@ -2024,10 +2024,19 @@ export { k${i}Allows }
 				Object.values(modules).find(code => code.includes(`const ${name} =`))!
 
 			it("is made once, each reading that", () => {
-				const { modules } = shared(often, 5)
+				const { modules } = shared(often, 7)
+				// its units are shared in turn, as long and as often written
 				attest(
-					Object.values(modules).filter(code => code.includes(`= ${often}`))
-						.length
+					Object.values(modules).filter(code =>
+						code.includes("= /* @__PURE__ */ runtime.optional(")
+					).length
+				).equals(1)
+				attest(
+					Object.values(modules).filter(code =>
+						code.includes(
+							'= /* @__PURE__ */ runtime.units(["first", "second"])'
+						)
+					).length
 				).equals(1)
 				attest(
 					moduleOf(modules, "k0Allows").includes("runtime.optional")
@@ -2036,9 +2045,9 @@ export { k${i}Allows }
 
 			it("is written where it's written less than a shared one costs", () => {
 				attest(
-					moduleOf(shared(often, 4).modules, "k0Allows").includes(often)
+					moduleOf(shared(often, 6).modules, "k0Allows").includes(often)
 				).equals(true)
-				const short = "/* @__PURE__ */ runtime.optional(runtime.string)"
+				const short = "/* @__PURE__ */ runtime.units([1, 2])"
 				attest(
 					moduleOf(shared(short, 9).modules, "k0Allows").includes(short)
 				).equals(true)
@@ -2047,7 +2056,7 @@ export { k${i}Allows }
 			it("is written where it reads what's declared beside it", () => {
 				const reads = `/* @__PURE__ */ runtime.optional(/* @__PURE__ */ runtime.props({ held, first: runtime.string, second: runtime.string }))`
 				attest(
-					moduleOf(shared(reads, 5).modules, "k0Allows").includes(reads)
+					moduleOf(shared(reads, 7).modules, "k0Allows").includes(reads)
 				).equals(true)
 			})
 
@@ -3059,7 +3068,7 @@ console.log(String(User({ name: 5 })))
 							spawnSync(process.execPath, {
 								input: js,
 								encoding: "utf8"
-							}).stderr.includes("expression isn't baked")
+							}).stderr.includes("expression isn't precompiled")
 						).equals(true)
 					})
 
@@ -3144,7 +3153,7 @@ console.log(use(), inlined())
 							spawnSync(process.execPath, {
 								input: js,
 								encoding: "utf8"
-							}).stderr.includes("expression isn't baked into this validator")
+							}).stderr.includes("expression isn't precompiled")
 						).equals(true)
 					})
 				})

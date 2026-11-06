@@ -1126,17 +1126,21 @@ const writeUnionCombinator = (
 		const { description } = discriminantSiteOf(node)!
 		const [domain, checker] = cases.find(([k]) => k !== "null")!
 		if (
-			domain !== "object" &&
-			!Object.values(domains).some(branch => branch !== true && branch.tfs) &&
+			!fails &&
 			cases.length === 2 &&
 			cases.some(([k, branch]) => k === "null" && branch === "1") &&
 			description === runtime.nullableDescriptionOf(domain)
 		) {
-			return writeCall(
-				"nullable",
-				checker,
-				domain === "string" ? undefined : JSON.stringify(domain)
-			)
+			if (domain === "object") return writeCall("nullableObject", checker)
+			if (
+				!Object.values(domains).some(branch => branch !== true && branch.tfs)
+			) {
+				return writeCall(
+					"nullable",
+					checker,
+					domain === "string" ? undefined : JSON.stringify(domain)
+				)
+			}
 		}
 		return writeCall(
 			"domains",
