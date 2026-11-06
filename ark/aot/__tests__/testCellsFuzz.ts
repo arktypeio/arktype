@@ -1073,6 +1073,10 @@ const check = async (app: App): Promise<boolean> => {
 			allFlips(expectedObservations, observations)
 		) {
 			tally.flips++
+			// F1 is fixed, so a flip is kept to read, though not counted unsound
+			console.error(
+				`\nFLIP (${host}): kept in ${keepFailure(app, `${host}-flip`, expected, outcome.out)}`
+			)
 			continue
 		}
 		if (!mismatch) {
