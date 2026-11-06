@@ -108,9 +108,6 @@ export const writeNextExternalMessage = (specifier: string): string =>
 export const writeUnreadProgramMessage = (reason: string): string =>
 	`The @ark/aot/turbopack loader can't read this project whole, because ${reason}, so each module holds its own validators, which is larger and slower to load. Set prune: false to build them so without this warning.`
 
-export const writeUnfinishedProgramMessage = (minutes: number): string =>
-	`The @ark/aot/turbopack loader's read of the project didn't finish in ${minutes} minutes. Set prune: false to have each module hold its own validators.`
-
 // a module Turbopack builds as the read didn't see it, whose reads no validator planned for
 export const writeMissedByProgramMessage = (
 	module: string,

@@ -1,4 +1,11 @@
-import { existsSync, readFileSync, realpathSync } from "node:fs"
+import {
+	existsSync,
+	mkdirSync,
+	readdirSync,
+	readFileSync,
+	realpathSync,
+	rmSync
+} from "node:fs"
 import { createRequire } from "node:module"
 import { basename, dirname, extname, join, relative, sep } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -11,21 +18,25 @@ import type {
 } from "./driver.ts"
 import { refuseDeclare } from "./declare.ts"
 import {
+	answerFileOf,
+	doneFileOf,
 	isArkFile,
 	isInProgram,
+	isProgramRead,
 	isProgramUnit,
 	isSourceRead,
 	programAnswerOf,
 	programOf,
-	type LoaderResolve,
+	readProjectWith,
+	readsWith,
+	resolvedOptionsOf,
+	type NextConfigLike,
 	type ProgramAnswer,
 	type ReadProgramDir
 } from "./nextProgram.ts"
-import { isProductionEnv, withEnvironment } from "./presets.ts"
+import { isProductionEnv } from "./presets.ts"
 import {
-	refuseArktypeDependencies,
 	refusePrune,
-	resolvePrecompileOptions,
 	settingsFileOf,
 	settingsPathsOf,
 	withSettingsFile
@@ -98,21 +109,6 @@ const resolvedByOptions: Record<string, PrecompilePluginOptions> = {}
 // as each option set first read them, since arktype keeps what it compiled
 // under them for the process
 const settingsByOptions: Record<string, string> = {}
-
-// with ark.json's, where prune: true would be ignored
-const resolvedOptionsOf = (
-	set: PrecompilePluginOptions,
-	production: boolean
-): PrecompilePluginOptions => {
-	refuseArktypeDependencies(set, "Turbopack")
-	return resolvePrecompileOptions(
-		withEnvironment(
-			// Next loads a route's modules at its first request, none written as one
-			production ? { defers: "large", ...set } : set,
-			{ production, testing: false }
-		)
-	)
-}
 
 // a webpack loader, called with its context as `this`
 export default function (
@@ -212,16 +208,11 @@ const readsProgram = (
 	opts: PrecompilePluginOptions
 ): boolean =>
 	context.mode === "production" &&
-	opts.prune !== false &&
-	opts.runtime !== "arktype" &&
-	!opts.shadow &&
+	readsWith(opts) &&
 	!!context.async &&
 	!!context.getResolve &&
 	!!context.rootContext &&
 	!!packageRootOf("next", context.rootContext)
-
-// each read whose warnings a module has reported
-const warnedReads = new Set<string>()
 
 const answerFromProgram = async (
 	context: TurbopackLoaderContext,
@@ -231,20 +222,17 @@ const answerFromProgram = async (
 	const id = context.resourcePath
 	if (isProgramUnit(id)) return source
 	const resolve = context.getResolve!({})
-	const program = await programOf(context.rootContext!, opts, resolve)
-	// once a build, as the reader's process answers many of its modules, and
-	// Turbopack prints what each module warns of
-	if (program.isReader && !warnedReads.has(program.dir)) {
-		warnedReads.add(program.dir)
-		for (const warning of program.warnings)
-			context.emitWarning(new Error(warning))
-		if (program.refused && opts.prune !== true)
-			context.emitWarning(new Error(program.refused))
-	}
+	const program = programOf(context.rootContext!, opts)
+	// what Turbopack's build cache keeps its output against
+	context.addDependency(doneFileOf(program.dir))
 	if (program.refused) {
 		if (opts.prune === true) throwBuildError(program.refused)
+		// next.config's wrapper reports why it can't read the project
+		if (!isProgramRead() && isFirstToWarn(program.dir))
+			context.emitWarning(new Error(program.refused))
 		return answerAlone(context, source, opts)
 	}
+	context.addDependency(answerFileOf(program.dir, id))
 	const answer = programAnswerOf(program, id)
 	// a dependency it leaves is checked as ever, and one it doesn't is a module
 	// the read missed, whose reads it can't have planned for
@@ -269,6 +257,67 @@ const answerFromProgram = async (
 	await checkImports(context, program, answer!, resolve)
 	return loadedOf(context, () => precompilerOf(opts), answer!, source, opts)
 }
+
+// the first of a build's processes, whose parent each shares, to ask
+const isFirstToWarn = (dir: string) => {
+	const programs = dirname(dir)
+	mkdirSync(programs, { recursive: true })
+	try {
+		mkdirSync(join(programs, `warned-${process.ppid}`))
+	} catch {
+		return false
+	}
+	// an earlier build's
+	for (const name of readdirSync(programs)) {
+		const pid = /^warned-(\d+)$/.exec(name)?.[1]
+		if (pid && pid !== `${process.ppid}` && !isAlive(Number(pid)))
+			rmSync(join(programs, name), { recursive: true, force: true })
+	}
+	return true
+}
+
+const isAlive = (pid: number) => {
+	try {
+		process.kill(pid, 0)
+		return true
+	} catch {
+		return false
+	}
+}
+
+const productionBuild = "phase-production-build"
+
+type NextConfigOf<config, context> =
+	| config
+	| ((phase: string, context: context) => config | Promise<config>)
+
+/**
+ * next.config's export, so `next build` reads the project as Next loads it,
+ * before Turbopack starts: Turbopack's build cache then restores of an earlier
+ * build only what this build's read left as it was
+ */
+export const withPrecompile =
+	<config extends NextConfigLike, context = unknown>(
+		config: NextConfigOf<config, context>
+	) =>
+	async (phase: string, context: context): Promise<config> => {
+		const loaded =
+			typeof config === "function" ? await config(phase, context) : config
+		// each process loading next.config for the build, as a worker does, after
+		// the one that read it
+		if (phase !== productionBuild || !process.env.TURBOPACK || isProgramRead())
+			return loaded
+		const { refused, warnings, opts } = await readProjectWith(
+			process.cwd(),
+			loaded
+		)
+		if (refused && opts.prune === true) throw new Error(refused)
+		for (const warning of refused ? [refused] : warnings)
+			console.warn(` ⚠ ${warning}`)
+		return loaded
+	}
+
+type LoaderResolve = (context: string, request: string) => Promise<string>
 
 // Turbopack resolves a module's imports apart for each layer it builds it in,
 // the read's for the one that asked first
