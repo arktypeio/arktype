@@ -3057,8 +3057,12 @@ const runPointOf = (
 			binding.exportNames.length && importsValues(module) ?
 				setAt(binding)
 			:	Infinity
-		for (const reference of binding.references)
+		for (const reference of binding.references) {
+			// `export { f }` runs nothing: what imports it runs it once this
+			// module has, or through a cycle, as read above
+			if (reference.id.parent?.type === "ExportSpecifier") continue
 			result = Math.min(result, runPointOf(reference.id, scope, module, seen))
+		}
 		return result
 	}
 	return node.start
@@ -3067,6 +3071,11 @@ const runPointOf = (
 // e.g. a site in an exported function an import cycle can call early
 export const runsBeforeBody = (node: Node, module: SourceModule): boolean =>
 	runPointOf(node, module.program, module) <= module.program.start
+
+// e.g. a site in a function its module neither calls as it runs nor passes
+// elsewhere, as far as the module tells, where an import cycle can't call it
+export const runsOnceCalled = (node: Node, module: SourceModule): boolean =>
+	runPointOf(node, module.program, module) === Infinity
 
 // e.g. `Base` read by an exported function declared above it
 const readsFirst = (

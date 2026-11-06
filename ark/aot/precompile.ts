@@ -124,7 +124,6 @@ import {
 	contains,
 	declarationStartOf,
 	initializedOf,
-	isDeferred,
 	errorReaders,
 	importsValues,
 	isArk,
@@ -183,6 +182,7 @@ import {
 	ModuleNamespace,
 	type Read,
 	runsBeforeBody,
+	runsOnceCalled,
 	type SiteState,
 	type Trace
 } from "./interpreter.ts"
@@ -5665,7 +5665,7 @@ export class Precompiler {
 			defaultChecks: [],
 			aliases: [],
 			declarationStart: declarationStartOf(node),
-			deferred: isDeferred(node),
+			deferred: runsOnceCalled(node, module),
 			initializes: !!initializedOf(node),
 			introspection: undefined,
 			unavailableRead: undefined,

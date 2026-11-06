@@ -5736,23 +5736,6 @@ export const initializedOf = (node: Node): VariableDeclarator | undefined => {
 		:	undefined
 }
 
-// run once something calls it, as in a function or a field each instance
-// initializes, not as its module loads
-export const isDeferred = (node: Node): boolean => {
-	for (let child = node, parent = node.parent; parent; parent = parent.parent) {
-		if (isFunctionNode(parent)) return true
-		if (
-			(parent.type === "PropertyDefinition" ||
-				parent.type === "AccessorProperty") &&
-			!parent.static &&
-			parent.value === child
-		)
-			return true
-		child = parent
-	}
-	return false
-}
-
 // a statement's first variable, so nothing it runs precedes its site
 export const declarationStartOf = (node: Node): number | undefined => {
 	const declarator = initializedOf(node)

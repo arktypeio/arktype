@@ -3264,15 +3264,24 @@ export const U = make()
 		})
 
 		it("run the config module first where the program loads it after a module creating only in a function", async () => {
-			attest(
-				await run(
-					"lazy",
+			const lazy = (name: string, lib: string) =>
+				run(
+					name,
 					{
 						"config.ts": config,
-						"lib.ts": `import { type } from "arktype"\n\nexport const make = () => [${types}]\n`,
+						"lib.ts": `import { type } from "arktype"\n\n${lib}\n`,
 						"main.ts": `import { make } from "./lib.ts"\nimport "./config.ts"\n\nconst all = make()\n\nconsole.log(${read})\n`
 					},
 					true
+				)
+			attest(await lazy("lazy", `export const make = () => [${types}]`)).snap(
+				"undefined\n"
+			)
+			// an export of it calls nothing
+			attest(
+				await lazy(
+					"lazyExported",
+					`const make = () => [${types}]\nexport { make }`
 				)
 			).snap("undefined\n")
 		})
@@ -3304,7 +3313,10 @@ export const U = make()
 				// beside sites in a function, which alone would run once it's called
 				exported: `export default ${list[0]}\nexport const make = () => [${list.slice(1)}]`,
 				// holding no Type the build reads, so what imports it isn't checked
-				statement: `export const all: unknown[] = []\n${list.map(t => `all.push(${t})`).join("\n")}`
+				statement: `export const all: unknown[] = []\n${list.map(t => `all.push(${t})`).join("\n")}`,
+				// in a function the module calls as it loads
+				called: `const make = () => [${types}]\nexport const all = make()`,
+				immediate: `export const all = (() => [${types}])()`
 			}
 			const results: Record<string, (string | undefined)[]> = {}
 			for (const [name, lib] of Object.entries(atLoad)) {
@@ -3339,6 +3351,14 @@ export const U = make()
 				statement: [
 					"lib.ts creates a Type before configure() runs",
 					"lib.ts creates a Type before configure() runs"
+				],
+				called: [
+					"lib.ts creates a Type before configure() runs",
+					'main.ts:1:1  import * as lib from "./lib.ts" loads lib.ts, which creates a Type, before the config module config.ts runs configure()'
+				],
+				immediate: [
+					"lib.ts creates a Type before configure() runs",
+					'main.ts:1:1  import * as lib from "./lib.ts" loads lib.ts, which creates a Type, before the config module config.ts runs configure()'
 				]
 			})
 		})
