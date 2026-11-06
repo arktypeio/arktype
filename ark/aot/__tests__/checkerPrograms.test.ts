@@ -716,6 +716,21 @@ for (const data of [[], ["a"], ["a", "b"], [1, 2], [1]]) {
 	run(() => [shown(ArrayK({ k: data })), globalThis.calls])
 }
 `,
+	allowsStopping: `
+const short = function (s: string, ctx: any) { globalThis.calls.push("short:" + s); return s.length < 5 || ctx.mustBe("short") }
+const noBoom = function (s: string, ctx: any) { globalThis.calls.push("noBoom:" + s); if (s === "boom") throw new Error("boom"); return ctx.path.length > 0 }
+const Keys = type({ k: type("string").narrow(short), j: type("string").narrow(noBoom) })
+run(() => Keys.allows({ k: "toolong", j: "boom" }))
+run(() => Keys({ k: "toolong", j: "ok" }))
+const adds = function (s: string, ctx: any) { globalThis.calls.push("adds:" + s); if (s.startsWith("b")) ctx.error("no b"); return true }
+const unary = function (s: string) { globalThis.calls.push("unary:" + s); return s.length > 1 }
+const Each = type("string").narrow(adds).narrow(unary)
+for (const data of ["bad", "b", "a"]) {
+	run(() => Each.allows(data))
+	run(() => Each(data))
+}
+${repaying}
+`,
 	sharedAlias: `
 const shared = scope({ a: { kids: "union[]", "a?": "string" }, b: { kids: "union[]", "b?": "number" }, union: "a | b" }).export()
 let deep: object = { kids: [], a: 1, b: "x" }
@@ -1098,6 +1113,7 @@ const themes: Record<string, [marker: string, names: string[]]> = {
 		[
 			"pipedReports",
 			"ctxNarrows",
+			"allowsStopping",
 			"indexCtxKey",
 			"indexCtxKeyReject",
 			"indexCtxKeyRejectNarrow",

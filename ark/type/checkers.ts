@@ -160,7 +160,7 @@ export const narrowedWithCtx = ((
 	description?: string
 ): Checker => {
 	const checker: Checker = (data, ctx: any) =>
-		ctx?._at ?
+		ctx?._at && ctx._at !== stops ?
 			reportedBy(read, description, data, ctx)
 		:	!!read()(data, silentCtx)
 	checker.description = description
@@ -331,10 +331,12 @@ export const narrowedAfter = ((
 // predicates in turn, the first to fail stopping those after it
 export const narrowedByEach = ((checkers: readonly Checker[]): Checker => {
 	const checker: Checker = (data, ctx: any) => {
-		const issues = ctx?._at && issuesIn(ctx)
+		// an issue stops what Apply runs, where Allows stops only at false
+		const applies = ctx?._at && ctx._at !== stops
+		const issues = applies && issuesIn(ctx)
 		for (const narrowed of checkers) {
 			if (!narrowed(data, ctx)) return false
-			if (ctx?._at && issuesIn(ctx) > issues) return true
+			if (applies && issuesIn(ctx) > issues) return true
 		}
 		return true
 	}
