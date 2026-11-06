@@ -1052,7 +1052,7 @@ const mismatchOf = (
 		(unbakedMessage.test(threw) ||
 			// toString's backstop, as converting it reads expression
 			JSON.stringify(observed) ===
-				JSON.stringify(expected)?.replace(/Type<[^"]*>/g, "Type"))
+				JSON.stringify(expected)?.replace(/Type<(?:[^"\\]|\\.)*>/g, "Type"))
 	)
 		return "unbakedThroughCommonJs"
 	if (read.fallback && fallbackMessage.test(threw)) return "fallbackUnbaked"
