@@ -777,13 +777,11 @@ export const failed = out => out instanceof type.errors
 			)
 			// Rspack marks each error with a × and ends it with a newline, and
 			// colors both where the terminal supports it, as CI's does
-			return stats
-				?.toJson()
-				.errors?.map(error =>
-					stripVTControlCharacters(error.message)
-						.replace(/^\s*× /, "")
-						.trimEnd()
-				)
+			return stats?.toJson().errors?.map(error =>
+				stripVTControlCharacters(error.message)
+					.replace(/^\s*× /, "")
+					.trimEnd()
+			)
 		}
 
 		it("directly or through what it depends on", async () => {
