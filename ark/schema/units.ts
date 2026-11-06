@@ -15,6 +15,7 @@ import {
 	jsTypeOfDescriptions,
 	nameOf,
 	printable,
+	returnsReports,
 	serializePrimitive,
 	throwInternalError,
 	timeOf,
@@ -445,10 +446,11 @@ const keyRegisteredNames = (root: BaseRoot): string => {
 				const constant = constantNames!.get(value)
 				if (constant) kindsByName[nameOf(value as object)] = `$.${constant}`
 				else if (typeof value === "function" && !isNode(value)) {
-					// only predicate and morph arity is compiled
+					// only predicate and morph arity is compiled, and whether a build
+					// proved a predicate only returns what it reports
 					kindsByName[nameOf(value)] =
 						node.is("predicate") || node.is("morph") ?
-							`fn:${arityOf(value)}`
+							`fn:${arityOf(value)}${returnsReports.has(value) ? "r" : ""}`
 						:	"fn"
 				}
 			})

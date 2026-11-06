@@ -282,11 +282,14 @@ export const writeLazyRead = (name: string, initial: string): string =>
 export const writeValue = (
 	hoisted: boolean,
 	name: string,
-	expression: string
+	expression: string,
+	// reads only names and literals, so a bundler drops it with no call around it
+	isPure?: boolean
 ): string =>
 	hoisted ?
 		`var ${name}Value\nfunction ${name}() {\n\treturn ${writeLazyRead(`${name}Value`, expression)}\n}`
-	:	`const ${name} = /* @__PURE__ */ (() => ${expression})()`
+	: isPure ? `const ${name} = /* @__PURE__ */ ${expression}`
+	: `const ${name} = /* @__PURE__ */ (() => ${expression})()`
 
 // errors "none"'s root issue, found once read where it defers issues
 export const invalidErrorsOf = (defersIssues: boolean): string =>
@@ -338,6 +341,10 @@ export interface IssueFeatures {
 	traversesUnions: boolean
 	readsKeySites: boolean
 	runsArktype: boolean
+	appliesValues: boolean
+	transformsBranches: boolean
+	failsInBranches: boolean
+	discriminatesBooleans: boolean
 	readsSummary: boolean
 	readsErrors: boolean
 }
@@ -351,6 +358,10 @@ export const noIssueFeatures: IssueFeatures = {
 	traversesUnions: false,
 	readsKeySites: false,
 	runsArktype: false,
+	appliesValues: false,
+	transformsBranches: false,
+	failsInBranches: false,
+	discriminatesBooleans: false,
 	readsSummary: false,
 	readsErrors: false
 }
@@ -408,7 +419,9 @@ const bakedByRootOf = (
 	}
 	for (const value of Object.values(exports)) {
 		if (arkKindOf(value) !== undefined || !("bakes" in value)) continue
-		for (const root of bakedRootsOf(value.bakes)) add(root, value)
+		// what it bakes is its own, so a validator of the same Type stays as written
+		for (const root of bakedRootsOf(value.bakes))
+			add(root, { members: [], lost: value.lost })
 	}
 	for (const name in baked) {
 		const value = exports[name]

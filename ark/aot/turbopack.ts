@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs"
 import { createRequire } from "node:module"
-import { dirname, extname, join } from "node:path"
+import { basename, dirname, extname, join, relative, sep } from "node:path"
+import { fileURLToPath } from "node:url"
 import { parseSync } from "oxc-parser"
 import type {
 	KeyedModule,
@@ -50,6 +51,7 @@ import {
 	writeMissedByProgramMessage,
 	writeNextExternalMessage,
 	writeRuntimeAliasMessage,
+	writeUnresolvedSchemaRuntimeMessage,
 	writeUnreadServerExternalsMessage,
 	withAllowUnsafe
 } from "./messages.ts"
@@ -136,6 +138,13 @@ export default function (
 	} catch (e) {
 		return rethrowAsBuildError(e)
 	}
+	if (isRuntimeShim(this.resourcePath)) {
+		try {
+			return runtimeShimOf(this, opts)
+		} catch (e) {
+			return rethrowAsBuildError(e)
+		}
+	}
 	const reads = readsProgram(this, opts)
 	// as Vite's dev server does, `next dev` builds whole what `next build` prunes
 	if (opts.prune === true && !reads && this.mode !== "development") {
@@ -152,6 +161,42 @@ export default function (
 	if (typeof loaded !== "object") return loaded
 	const done = this.async!()
 	loaded.then(code => done(null, code), done)
+}
+
+// what turbopack.resolveAlias loads for @ark/schema/runtime, in place of an
+// alias to the entry the build's options load, which would differ between them
+const runtimeShim = fileURLToPath(
+	new URL(`./turbopackRuntime${extname(import.meta.url)}`, import.meta.url)
+)
+
+let realRuntimeShim: string | undefined
+
+const isRuntimeShim = (path: string): boolean =>
+	basename(path) === basename(runtimeShim) &&
+	realPathOf(path) === (realRuntimeShim ??= realPathOf(runtimeShim))
+
+// the copy of @ark/schema's runtime the build's options load, as arktype's
+// resolves it, re-exported by a path no alias reaches
+const runtimeShimOf = (
+	context: TurbopackLoaderContext,
+	opts: PrecompilePluginOptions
+): string => {
+	const host = createNodeHost(opts)
+	const root = context.rootContext ?? opts.cwd ?? process.cwd()
+	const runtime = host.resolve("arktype/runtime", join(root, "package.json"))
+	const variant = resolvedVariantOf(opts)
+	const entry =
+		variant ? `@ark/schema/runtime/${variant}` : "@ark/schema/runtime"
+	const resolved = runtime && host.resolve(entry, runtime)
+	if (!resolved)
+		return throwBuildError(writeUnresolvedSchemaRuntimeMessage(entry))
+	const path = relative(
+		dirname(realPathOf(context.resourcePath)),
+		realPathOf(resolved)
+	)
+		.split(sep)
+		.join("/")
+	return `export * from ${JSON.stringify(path.startsWith(".") ? path : `./${path}`)}\n`
 }
 
 // `next build` reads its modules whole, through what Turbopack resolves, where
@@ -452,24 +497,14 @@ const checkAliases = async (
 		}
 	}
 	if (opts.runtime === "arktype" || opts.shadow) return
-	// the runtime loads @ark/schema's, which the build may replace with a copy
-	const variant = resolvedVariantOf(opts)
-	const expected = host.resolve(
-		variant ? `@ark/schema/runtime/${variant}` : "@ark/schema/runtime",
-		runtime
-	)
+	// the runtime loads @ark/schema's, which the build may replace with a copy,
+	// through the module the loader writes for its options
 	const resolved = await resolve(dirname(runtime), "@ark/schema/runtime").catch(
 		() => undefined
 	)
-	if (
-		expected === undefined ||
-		resolved === undefined ||
-		realpathSync(resolved) === realpathSync(expected)
-	)
-		return
+	if (resolved === undefined || isRuntimeShim(resolved)) return
 	const problem = writeRuntimeAliasMessage(
-		printablePathOf(opts.cwd ?? process.cwd(), resolved),
-		variant
+		printablePathOf(opts.cwd ?? process.cwd(), resolved)
 	)
 	if (opts.allowUnsafe) warn(problem)
 	else throwBuildError(withAllowUnsafe(problem))

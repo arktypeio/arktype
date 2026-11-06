@@ -25,6 +25,7 @@ import {
 	ParseError,
 	printable,
 	readsOnlyData,
+	returnsReports,
 	throwError,
 	throwParseError,
 	type Fn
@@ -178,6 +179,7 @@ import {
 	isDefaultCheck,
 	isDynamic,
 	isLoop,
+	isRunAtLoad,
 	type InterpreterOptions,
 	ModuleNamespace,
 	type Read,
@@ -1379,6 +1381,8 @@ export class Precompiler {
 				nameOf(after[i]) === nameOf(before[i]) &&
 				readsOnlyData.has(after[i] as Fn) ===
 					readsOnlyData.has(before[i] as Fn) &&
+				returnsReports.has(after[i] as Fn) ===
+					returnsReports.has(before[i] as Fn) &&
 				isSameText(cells.byHole.get(before[i])!.text, after[i]) &&
 				sites.every(site =>
 					site.references.every(
@@ -1626,6 +1630,15 @@ export class Precompiler {
 				usage.shapes = false
 				this.restoreRuntimes(wrote, plan)
 			}
+		}
+		// each decision above weighs each call, so what they share is shared last
+		if (usage.combines) {
+			const shared = this.linkWritten(wrote.written, sources, {
+				exposesAllows: usage.readsAllows,
+				isOneChunk,
+				sharesChecks: true
+			})
+			return link.changed || shared.changed
 		}
 		return link.changed
 	}
@@ -2948,7 +2961,7 @@ export class Precompiler {
 				}
 			}
 		}
-		const config = inserted && this.configFirstOf(module.id, program)
+		const config = inserted && this.configFirstOf(module, program)
 		if (config && !this.inline)
 			inserted = `\nimport ${JSON.stringify(config)}${inserted}`
 		const end = importsEndOf(module.program)
@@ -2962,10 +2975,12 @@ export class Precompiler {
 
 	// a size build creates a module's validators as their module loads, where
 	// a site would run once all its imports had, one of which may load the
-	// config module. So it loads it ahead of them, if the module would anyway,
-	// or its program, as a build importing it nowhere fails as arktype does
+	// config module, or once something calls it, after any module of its
+	// program may have. So it loads it ahead of them, if every site would run
+	// after it, as one creating as its module loads ahead of it throws as
+	// arktype does
 	private configFirstOf(
-		id: string,
+		module: SourceModule,
 		program: ScannedProgram | undefined
 	): string | undefined {
 		const config = this.config
@@ -2973,14 +2988,15 @@ export class Precompiler {
 			config === undefined ||
 			this.standalone.optimize !== "size" ||
 			!this.configures ||
-			id === config
+			module.id === config
 		)
 			return
 		const isLoaded =
-			program ?
-				config in program.modules
-			:	this.importClosureOf(id).includes(config)
-		return isLoaded ? specifierOf(id, config) : undefined
+			this.importClosureOf(module.id).includes(config) ||
+			(!!program &&
+				config in program.modules &&
+				this.analysisOf(module).sites.every(site => site.deferred))
+		return isLoaded ? specifierOf(module.id, config) : undefined
 	}
 
 	// e.g. a site in `f` reading `Base`, which a cycle can reach first
@@ -3473,9 +3489,13 @@ export class Precompiler {
 			this.foldSite(site, name, factoriesBySite.get(site), folding)
 			folded.push(site)
 		}
-		for (const { name, reads } of bakes) {
+		for (const { name, reads, sites } of bakes) {
 			importFolded(undefined, name, prefix + name, undefined, folding)
 			for (const read of reads) bakeAt(s, module, read, prefix + name)
+			for (const site of sites ?? []) {
+				s.prependRight(site.start, `${prefix}${name}(`)
+				s.appendLeft(site.end, ")")
+			}
 		}
 		const { inputImports, kept, passed, read, fixedAt } = folding
 		// fixed at the first droppable site, as arktype does at its first Type
@@ -3543,6 +3563,7 @@ export class Precompiler {
 	): [validators: StandaloneModules, bakes: ImportedBake[]] {
 		const { namesBySite, exportsByName } = plan
 		let bakes: ImportedBake[] = []
+		let readsAlone = false
 		if (bakedAs) {
 			baked = bakedAs(
 				this.runtimeOfPlan(module, { ...plan, folded: [...plan.folded] })
@@ -3566,7 +3587,8 @@ export class Precompiler {
 						undefined
 					:	(exporter, name, value) =>
 							isBakeable(value) &&
-							this.exportedValueOf(exporter, name) === value
+							(name === undefined ||
+								this.exportedValueOf(exporter, name) === value)
 			}
 			baked = this.readingsIn(
 				program,
@@ -3577,13 +3599,28 @@ export class Precompiler {
 					])
 				)
 			).baked
-			if (program.importersBake) bakes = this.importedBakesOf(module, program)
+			if (program.importersBake) {
+				bakes = this.importedBakesOf(module, program)
+				readsAlone = true
+			}
 			for (const bake of bakes) exportsByName[bake.name] = bake.baked
 		}
 		const bakedByName: Record<string, BakedMembers> = {}
 		for (const [site, name] of namesBySite) {
 			const members = baked.get(siteKeyOf(module.id, site))
-			if (members) bakedByName[name] = members
+			if (!members) continue
+			// its equal in another module may be created first, so it's baked as
+			// what reads that is
+			if (readsAlone && isBakeable(site.value)) {
+				const bake: ImportedBake = {
+					name: `bake${bakes.length}`,
+					baked: { bakes: site.value, ...members },
+					reads: [],
+					sites: [site]
+				}
+				bakes.push(bake)
+				exportsByName[bake.name] = bake.baked
+			} else bakedByName[name] = members
 		}
 		for (;;) {
 			const refusalsByName: Record<string, string[]> = {}
@@ -3857,7 +3894,11 @@ export class Precompiler {
 		for (const [i, param] of (factory?.params ?? []).entries()) {
 			if (param.kind !== "function") continue
 			callbacks.push(i)
-			if (readsOnlyData.has(param.value as Fn)) proved.push(i)
+			if (
+				readsOnlyData.has(param.value as Fn) ||
+				returnsReports.has(param.value as Fn)
+			)
+				proved.push(i)
 		}
 		const parameterSpans = [
 			...spans.map((span, i): [Span, number] => [span, i]),
@@ -5648,6 +5689,7 @@ export class Precompiler {
 			defaultChecks: [],
 			aliases: [],
 			declarationStart: declarationStartOf(node),
+			deferred: !isRunAtLoad(node, module),
 			initializes: !!initializedOf(node),
 			introspection: undefined,
 			unavailableRead: undefined,
@@ -6332,11 +6374,42 @@ export class Precompiler {
 			module instanceof SourceModule &&
 			this.isTransformed(id) &&
 			this.importsArk(module.source, id) &&
-			this.analysisOf(module).sites.some(
-				site =>
-					site.status === "accepted" && site.declarationStart !== undefined
-			)
+			(this.analysisOf(module).sites.some(
+				site => site.status === "accepted" && !site.deferred
+			) ||
+				this.callsCreatorAtLoad(module))
 		)
+	}
+
+	// e.g. `make()` as it loads, where `make` is another module's, holding a site
+	// that module can't tell runs then
+	private callsCreatorAtLoad(module: SourceModule): boolean {
+		let calls = false
+		walk(module.program, node => {
+			if (node.type === "CallExpression" && isRunAtLoad(node, module)) {
+				const target = this.graph.functionOf(node.callee, module)
+				calls ||=
+					!!target &&
+					target[1] !== module &&
+					this.isTransformed(target[1].id) &&
+					this.createsOnCall(...target)
+			}
+			return !calls
+		})
+		return calls
+	}
+
+	// whether calling fn runs a site its module accepted, not in a function within
+	private createsOnCall(fn: FunctionNode, module: SourceModule): boolean {
+		return this.analysisOf(module).sites.some(site => {
+			if (site.status !== "accepted" || !contains(fn, site)) return false
+			let within = false
+			walk(fn, node => {
+				within ||= node !== fn && isFunctionNode(node) && contains(node, site)
+				return !within && contains(node, site)
+			})
+			return !within
+		})
 	}
 
 	// a module importing this one back may run before or after it
@@ -7667,6 +7740,10 @@ const anyIssues: IssueFeatures = {
 	traversesUnions: true,
 	readsKeySites: true,
 	runsArktype: true,
+	appliesValues: true,
+	transformsBranches: true,
+	failsInBranches: true,
+	discriminatesBooleans: true,
 	readsSummary: true,
 	readsErrors: true
 }
@@ -7682,6 +7759,7 @@ interface ImportedBake {
 	name: string
 	baked: StandaloneBake
 	reads: Node[]
+	sites?: Site[]
 }
 
 interface ProgramReadings {

@@ -482,7 +482,7 @@ export const transformed = (
 export const pipeOf = (node: BaseNode): TraversePipe =>
 	node.hasAlias ? pipe
 	: node.tfs ? pipeTransformed
-	: node.allowsCtx ? pipeChecked
+	: node.allowsCtx || node.reportsPred ? pipeChecked
 	: pipeApplied
 
 export type TraversePipe = (
@@ -529,7 +529,7 @@ const allowsPiped = (
 	data: unknown
 ): boolean => {
 	// Allows would detach a contextual node's predicates from this path
-	if (node.allowsCtx) return applyPiped(ctx, node, data)
+	if (node.allowsCtx || node.reportsPred) return applyPiped(ctx, node, data)
 	if (node.allows(data)) return true
 	applyPiped(ctx, node, data)
 	return false
@@ -620,6 +620,12 @@ export const allowsInBranch = (
 	node.checksCtx ?
 		allowsInBranchBy(ctx, node.tAllows, data, node)
 	:	node.allows(data)
+
+// what a callback that only returns its reports is passed where they go unread
+export const silentCtx = {
+	mustBe: (): false => false,
+	reject: (): false => false
+}
 
 // takes Allows, since a precompiled validator has no node
 export const allowsInBranchBy = (

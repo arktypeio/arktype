@@ -69,6 +69,9 @@ const manifests = ["type", "schema", "util", "aot"].map(dir =>
 // arktype's packages resolve to their source in this repo
 const conditions = ["ark-ts"]
 
+// what Setup aliases @ark/schema/runtime to, as the loader names it
+const runtimeShim = fromHere("..", "turbopackRuntime.ts")
+
 // a test's timeout can't stop a synchronous child, so the child's does
 const timeout = 60_000
 
@@ -856,7 +859,9 @@ console.log(Value, note, load, await import("#shared/lazy"))
 									if (request === "arktype" && !target)
 										throw new Error(`Can't resolve '${request}'`)
 									return host.resolve(
-										request === "arktype" ? target! : request,
+										request === "arktype" ? target!
+										: request === "@ark/schema/runtime" ? runtimeShim
+										: request,
 										join(dir, "main.ts")
 									)!
 								},
@@ -893,7 +898,7 @@ console.log(Value, note, load, await import("#shared/lazy"))
 			).equals(undefined)
 		})
 
-		it("fails where @ark/schema/runtime resolves other than its errors need", async () => {
+		it("fails where @ark/schema/runtime resolves other than to the runtime it writes", async () => {
 			const host = createNodeHost({ conditions })
 			const main = readFileSync(join(app, "main.ts"), "utf8")
 			// what the loader reports and warns where Turbopack resolves the schema runtime to `target`
@@ -922,23 +927,52 @@ console.log(Value, note, load, await import("#shared/lazy"))
 					)
 				})
 			const none = { errors: "none" } as const
-			attest(await outcomeOf("@ark/schema/runtime/none", none)).equals([])
-			attest(await outcomeOf("@ark/schema/runtime", none)).snap([
-				'@ark/schema/runtime resolves to ../../../schema/runtime.ts rather than @ark/schema/runtime/none, which a build with errors: "none" loads in its place. Add to turbopack.resolveAlias: {"@ark/schema/runtime":"@ark/schema/runtime/none"}, and install @ark/schema if your package manager doesn\'t hoist it, as pnpm doesn\'t, or set allowUnsafe: true to build anyway, with a warning.'
+			attest(await outcomeOf(runtimeShim, none)).equals([])
+			attest(await outcomeOf(runtimeShim)).equals([])
+			// the alias is alike for every option set, so one leaving it out fails too
+			attest(await outcomeOf("@ark/schema/runtime")).snap([
+				'@ark/schema/runtime resolves to ../../../schema/runtime.ts rather than @ark/aot/turbopack/runtime, which the loader writes as the runtime the build\'s options load. Add to turbopack.resolveAlias: {"@ark/schema/runtime":"@ark/aot/turbopack/runtime"}, or set allowUnsafe: true to build anyway, with a warning.'
 			])
 			attest(
-				await outcomeOf("@ark/schema/runtime", { ...none, allowUnsafe: true })
+				await outcomeOf("@ark/schema/runtime/none", {
+					...none,
+					allowUnsafe: true
+				})
 			).snap([
-				'@ark/schema/runtime resolves to ../../../schema/runtime.ts rather than @ark/schema/runtime/none, which a build with errors: "none" loads in its place. Add to turbopack.resolveAlias: {"@ark/schema/runtime":"@ark/schema/runtime/none"}, and install @ark/schema if your package manager doesn\'t hoist it, as pnpm doesn\'t.'
-			])
-			attest(await outcomeOf("@ark/schema/runtime")).equals([])
-			attest(await outcomeOf("@ark/schema/runtime/none")).snap([
-				'@ark/schema/runtime resolves to ../../../schema/runtimeNone.ts, a copy for a build with errors: "none" or optimizeErrors: "size". Remove its turbopack.resolveAlias, or set allowUnsafe: true to build anyway, with a warning.'
+				'@ark/schema/runtime resolves to ../../../schema/runtimeNone.ts rather than @ark/aot/turbopack/runtime, which the loader writes as the runtime the build\'s options load. Add to turbopack.resolveAlias: {"@ark/schema/runtime":"@ark/aot/turbopack/runtime"}.'
 			])
 			// shadow mode loads arktype, so leaves @ark/schema/runtime unchecked
 			attest(
 				await outcomeOf("@ark/schema/runtime", { ...none, shadow: true })
 			).equals([])
+		})
+
+		it("writes the runtime it aliases @ark/schema's to as the options load it", () => {
+			// as the loader writes it, re-exporting arktype's copy by a path no alias reaches
+			const shimOf = (opts: PrecompilePluginOptions) =>
+				turbopack.call(
+					{
+						resourcePath: runtimeShim,
+						rootContext: app,
+						getOptions: () => ({ ...opts, conditions, cwd: app }),
+						addDependency: () => {},
+						emitWarning: () => {}
+					},
+					readFileSync(runtimeShim, "utf8")
+				)
+			attest(shimOf({})).snap('export * from "../schema/runtime.ts"\n')
+			attest(shimOf({ errors: "none" })).snap(
+				'export * from "../schema/runtimeNone.ts"\n'
+			)
+			attest(shimOf({ optimize: "size" })).snap(
+				'export * from "../schema/runtimeLean.ts"\n'
+			)
+			attest(shimOf({ errors: "none", shadow: true })).snap(
+				'export * from "../schema/runtime.ts"\n'
+			)
+			// matched by the condition Setup gives the rule for JavaScript, as it
+			// exports nothing where the loader doesn't run
+			attest(/arktype/.test(readFileSync(runtimeShim, "utf8"))).equals(true)
 		})
 
 		describe("where Next.js leaves arktype external on the server", () => {
@@ -1003,7 +1037,8 @@ console.log(Value, note, load, await import("#shared/lazy"))
 										opts.runtime === "arktype" ?
 											"arktype"
 										:	"arktype/runtime"
-									:	request,
+									: request === "@ark/schema/runtime" ? runtimeShim
+									: request,
 									join(from, "main.ts")
 								)!
 							},

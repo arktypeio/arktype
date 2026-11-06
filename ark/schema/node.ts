@@ -33,7 +33,8 @@ import {
 	type dict,
 	type listable,
 	type mutable,
-	type requireKeys
+	type requireKeys,
+	returnsReports
 } from "@ark/util"
 import type { ResolvedConfig } from "./config.ts"
 import type {
@@ -381,6 +382,8 @@ export abstract class BaseNode<
 	declare hasMorph: boolean
 	/** whether it or a node it holds has a narrow that reads `ctx` */
 	declare ctxPred: boolean
+	/** whether it or a node it holds has a narrow a build proved reaches `ctx` only to return what it reports */
+	declare reportsPred: boolean
 	declare isCyclic: boolean
 	/** whether it or a node it holds is an alias */
 	declare hasAlias: boolean
@@ -477,7 +480,12 @@ export abstract class BaseNode<
 			// if a predicate accepts exactly one arg, we can safely skip passing context
 			// technically, a predicate could be written like `(data, ...[ctx]) => ctx.mustBe("malicious")`
 			// that would break here, but it feels like a pathological case and is better to let people optimize
-			if (arityOf(this.inner.predicate) !== 1) bits |= flagBits.ctxPred
+			if (arityOf(this.inner.predicate) !== 1) {
+				bits |=
+					returnsReports.has(this.inner.predicate) ?
+						flagBits.reportsPred
+					:	flagBits.ctxPred
+			}
 		} else if (this.is("alias"))
 			bits = flagBits.isCyclic | flagBits.hasAlias | flagBits.topAlias
 
@@ -1496,7 +1504,8 @@ const flagBits = {
 	ctxMorph: 128,
 	keptDesc: 256,
 	userCode: 512,
-	costly: 1024
+	costly: 1024,
+	reportsPred: 2048
 }
 
 for (const name in flagBits) {

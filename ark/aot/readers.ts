@@ -100,9 +100,14 @@ export interface ReaderProgram extends UsageProgram {
 	// false where the build doesn't read the whole program, so no field read is followed
 	whole: boolean
 	// where the build doesn't, whether each module importing a module's export
-	// bakes what it reads of it, as where the export is the validator itself
+	// bakes what it reads of it, as where the export is the validator itself.
+	// Without a name, of what it may hold as another module's equal Type
 	importersBake?:
-		| ((module: SourceModule, name: string, value: unknown) => boolean)
+		| ((
+				module: SourceModule,
+				name: string | undefined,
+				value: unknown
+		  ) => boolean)
 		| undefined
 }
 
@@ -793,17 +798,26 @@ class Follow {
 		else this.unfollowed.push(`${module.positionOf(node)} ${why}`)
 	}
 
-	// a frozen build reading a module at a time keys each interned Type by the
-	// members its module bakes, which where it may be compared to one another
-	// module creates are all an export would bake. A whole program merges
-	// what each site bakes, and an unfrozen build bakes them after interning
-	private get keysByMembers(): boolean {
+	// whether what it holds may tell it apart from an equal Type another module
+	// creates, which arktype returns as one value. A build reading a module at a
+	// time keys each interned Type by the members its module bakes: a frozen one
+	// bakes all an export would wherever it may be compared, and an unfrozen one
+	// bakes a hole-free Type's after interning, as its importers do, so only one
+	// holding a function, which no importer bakes onto, keeps what its own module
+	// reads. A whole program merges what each site bakes
+	private keysApart(held: Held, module: SourceModule): boolean {
 		const { program } = this.readers
-		return !program.whole && !program.importersBake
+		return (
+			!program.whole &&
+			(!program.importersBake ||
+				(!held.path.length &&
+					held.of === "type" &&
+					!program.importersBake(module, undefined, this.value)))
+		)
 	}
 
-	private isComparison(read: Node, module: SourceModule): boolean {
-		return this.keysByMembers && comparesIdentity(read, module)
+	private isComparison(read: Node, held: Held, module: SourceModule): boolean {
+		return comparesIdentity(read, module) && this.keysApart(held, module)
 	}
 
 	private readAt({ node, module, held }: Fact): void {
@@ -889,7 +903,8 @@ class Follow {
 					return
 				}
 				if (/^[!=]==?$/.test(parent.operator)) {
-					if (isValue && this.isComparison(operand, module)) lose("compares it")
+					if (isValue && this.isComparison(operand, held, module))
+						lose("compares it")
 					return
 				}
 				// `+` and arithmetic convert it to a primitive
@@ -926,7 +941,8 @@ class Follow {
 				return lose("passes it to a JSX element")
 			case "SwitchStatement":
 			case "SwitchCase":
-				if (isValue && this.isComparison(operand, module)) lose("compares it")
+				if (isValue && this.isComparison(operand, held, module))
+					lose("compares it")
 				return
 			case "UnaryExpression":
 			case "IfStatement":
@@ -1357,7 +1373,11 @@ class Follow {
 		if (key === "~standard") return { ...held, path: [], of: "standard" }
 		// e.g. `T.assert === U.assert`, each a value of the validator's own,
 		// which code holding one may compare
-		if (key in ownedMembers && this.keysByMembers && !isUsedInPlace(at)) {
+		if (
+			key in ownedMembers &&
+			this.keysApart(held, module) &&
+			!isUsedInPlace(at)
+		) {
 			this.lose(at, module, `holds its ${key}, which may be compared`)
 			return
 		}
@@ -1577,7 +1597,7 @@ class Follow {
 				if (index === 0 && isValue) this.lose(call, module, "lists its keys")
 				return true
 			case "Object.is":
-				if (isValue && this.isComparison(call.arguments[index], module))
+				if (isValue && this.isComparison(call.arguments[index], held, module))
 					this.lose(call, module, "compares it")
 				return true
 			case "Array.isArray":

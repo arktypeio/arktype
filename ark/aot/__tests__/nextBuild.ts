@@ -1,5 +1,3 @@
-import { resolvedVariantOf } from "@ark/aot/internal/host.ts"
-import { resolvePrecompileOptions } from "@ark/aot/internal/settings.ts"
 import type { PrecompilePluginOptions } from "@ark/aot/unplugin"
 import { fromHere } from "@ark/fs"
 import { spawnSync } from "node:child_process"
@@ -49,9 +47,6 @@ export interface NextBuilt {
 	// the chunks of the server that hold it
 	js: string
 }
-
-const variantOf = (options: PrecompilePluginOptions) =>
-	resolvedVariantOf(resolvePrecompileOptions(options))
 
 export const nextApp = (tag: string): string => join(appsDir, tag)
 
@@ -141,10 +136,6 @@ export const buildOnNext = (
 				.replace(
 					"turbopack: {",
 					`typescript: { ignoreBuildErrors: true },\n\tturbopack: {\n\t\troot: ${JSON.stringify(repo)},`
-				)
-				.replace(
-					"resolveAlias: {",
-					`resolveAlias: {${variantOf(options) ? `\n\t\t\t"@ark/schema/runtime": "@ark/schema/runtime/${variantOf(options)}",` : ""}`
 				)
 		:	`export default { bundlePagesRouterDependencies: true, typescript: { ignoreBuildErrors: true }, turbopack: { root: ${JSON.stringify(repo)} } }\n`
 	)

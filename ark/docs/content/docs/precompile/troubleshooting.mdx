@@ -97,7 +97,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`arktype resolves to more than one copy`**: one copy doesn't recognize another's Types and errors. The message names each copy and the file that reached it.
 
-**`arktype resolves to ... rather than arktype/runtime`** (Turbopack): add the `turbopack.resolveAlias` entries the message lists to your Next config. See [Next.js](/docs/precompile/setup#next).
+**`arktype resolves to ... rather than arktype/runtime`** or **`@ark/schema/runtime resolves to ...`** (Turbopack): add the `turbopack.resolveAlias` entries the message lists to your Next config. See [Next.js](/docs/precompile/setup#next).
 
 **`configure() is called, but the build has no config module`**: name the module that calls it as the build's [`config`](/docs/precompile/options#configuration) in `ark.json`, as `{ "precompile": { "config": "./src/arktype.config.ts" } }`.
 
@@ -152,6 +152,8 @@ A definition reading one of its Types, like `type({ email: Email })` with `Email
 **`The @ark/aot/turbopack loader can't read this project whole, because ...`**: `next build` [couldn't read your project](/docs/precompile/setup#next) up front, so each module holds its own validators. The build is right, but larger and slower to load. Remove what the message names, or set `prune: false` to build so without the warning.
 
 **`... which the @ark/aot/turbopack loader's read of the project didn't see, so a validator may lack what it reads`**: Turbopack built a module otherwise than `next build` read it, so a validator it left a member out of may be read for it. The message names the module and how it differs. Remove the difference, or set `prune: false`.
+
+**`next build` hangs, or panics with `turbo-tasks: an internal panic occurred`, once you remove the `@ark/schema/runtime` alias** (Turbopack): Next 16.4.1 hangs a build, with its build cache on, after one that resolved an import inside a dependency through an alias it no longer has, as removing the precompiler's setup does. Delete `.next/cache` once.
 
 **Turbopack builds a module as it did before you linked or patched arktype**: Turbopack's persistent cache keeps what the loader wrote until the module, a file it read, or the version of `arktype` or `@ark/aot` changes. A linked copy or a patch changes their code without the version, so delete `.next/cache` after changing either. The build's own cache, and webpack's and Rspack's, rebuild by themselves.
 

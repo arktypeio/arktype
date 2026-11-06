@@ -29,6 +29,7 @@ import { writesInPlace } from "@ark/schema/mutatesInput"
 import {
 	appendStringifiedKey,
 	arkKindOf,
+	cached,
 	constructorNameOf,
 	flatMorph,
 	functionNameOf,
@@ -90,6 +91,7 @@ import {
 	type ValidatorAttributes,
 	type ValidatorForm
 } from "./creators.ts"
+import { combines } from "./combinators.ts"
 import {
 	assertReportsIssues,
 	compiledForSize,
@@ -292,13 +294,32 @@ interface SharedUnit extends WritingScope {
 
 const writesByBaking = new WeakMap<Baking, Map<string, SharedWrite>>()
 
-// arktype compares what a node's meta holds by identity, its key by content
+// arktype compares what a node's meta holds by identity, its key by content. A
+// keyword's holds one object, wherever a Type reads it
 const holdsObjectInMeta = ({ meta }: BaseNode): boolean =>
 	Object.entries(meta).some(([k, v]) =>
 		(k === "examples" ? (v as unknown[]) : [v]).some(
-			value => typeof value === "object" && value !== null
+			value =>
+				typeof value === "object" &&
+				value !== null &&
+				!keywordMetaObjects().has(value)
 		)
 	)
+
+const keywordMetaObjects = cached(() => {
+	const objects = new Set<unknown>()
+	const read = (module: object) => {
+		for (const value of Object.values(module)) {
+			if (hasArkKind(value, "module")) read(value as object)
+			else if (hasArkKind(value, "root")) {
+				for (const node of value.references)
+					for (const held of Object.values(node.meta)) objects.add(held)
+			}
+		}
+	}
+	read($ark.ambient as never)
+	return objects
+})
 
 // the options writing a shared unit reads: not those writing an artifact's own
 // validators, nor compiledInputs, which picks the unit itself
@@ -964,7 +985,8 @@ export class StandaloneArtifact {
 
 	get comparedValues(): unknown[] {
 		return [
-			...this.comparedRoots,
+			// a default's own is read only by what checks it
+			...this.comparedRoots.filter(root => !this.defaultValues.has(root)),
 			...this.moduleNames.keys(),
 			...this.typedFnNames.keys(),
 			...this.declarations.valuesByRole.literal,
@@ -1142,7 +1164,9 @@ export class StandaloneArtifact {
 		return hashOf(
 			JSON.stringify([
 				named,
-				bakingKeyOf(this.baking),
+				// each module picks what's smallest for what it holds, and a
+				// validator behaves alike however it's written
+				bakingKeyOf({ ...this.baking, combines: false, shapes: false }),
 				[...form.members].sort(),
 				form.isTemplate,
 				called,
@@ -1569,11 +1593,23 @@ return namespace`
 		return unit.roots.map(root => {
 			const name = unit.names[root.id]
 			const shape = writing.shapesByName[name]
+			const isChecker = this.isCheckerNode(root)
+			const readsCtx =
+				this.baking.flattens &&
+				this.baking.detailsErrors &&
+				this.baking.combines &&
+				root.allowsCtx
 			return writeValue(
 				this.baking.hoisted,
 				`${name}Node`,
-				shape ?
-					`${this.readValue(unit.name)}[${returned.indexOf(shape)}]`
+				shape ? `${this.readValue(unit.name)}[${returned.indexOf(shape)}]`
+				: isChecker ?
+					`runtime.checkerNode(${this.traversalsOf(root, unit)[0]}${root.reportsPred ? ", true" : ""})`
+				: readsCtx ?
+					`runtime.ctxNode(${[
+						this.writeShapeFlags(root, unit),
+						...this.traversalsOf(root, unit)
+					].join(", ")})`
 				:	`runtime.freeze(${this.writeShape(
 						root,
 						this.readValue(`${name}Node`),
@@ -1582,10 +1618,25 @@ return namespace`
 							traversal =>
 								`${this.readValue(unit.name)}[${returned.indexOf(traversal)}]`
 						)
-					)})`
+					)})`,
+				!shape && (isChecker || readsCtx)
 			)
 		})
 	}
+	// a node only transforming by a checker declared beside it, all of it read off that
+	isCheckerNode(root: BaseRoot): boolean {
+		return (
+			this.baking.flattens &&
+			this.baking.detailsErrors &&
+			this.baking.combines &&
+			!this.baking.compiledInputs.has(root.hash) &&
+			combines(root) &&
+			shapeFlags.every(
+				flag => flag === "reportsPred" || !!root[flag] === (flag === "tfs")
+			)
+		)
+	}
+
 	// units differing only by their patterns share a template they pass them to
 	writeTemplateCall(
 		unit: RootUnit,
@@ -2916,7 +2967,8 @@ return namespace`
 			return [
 				{
 					params: "node",
-					apply: `(data, onFail) => node.allows(data) ? ${tfs ? "node.tTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${Traversal})`,
+					// a checker's transform is its node's too, as it reads ctx
+					apply: `(data, onFail) => node.allows(data) ? ${strategy === "transform" ? "node.tTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${Traversal})`,
 					args: shape,
 					local: !Traversal.startsWith("runtime.")
 				},
@@ -3348,6 +3400,25 @@ return namespace`
 		return shape
 	}
 
+	// what a node reading its ctx is told apart by
+	writeShapeFlags(node: BaseRoot, unit: RootUnit): string {
+		const entries = shapeFlags.flatMap(flag =>
+			flag !== "allowsCtx" && node[flag] ? [`${flag}: true`] : []
+		)
+		if (node.hasAlias) {
+			entries.unshift(
+				`id: ${JSON.stringify(unit.names[node.id])}`,
+				`trackedId: ${JSON.stringify(
+					unit.names[node.trackedId as NodeId] ??
+						throwParseError(
+							writeUnprecompilableMessage(`${node.expression}'s cycle`)
+						)
+				)}`
+			)
+		}
+		return `{ ${entries.join(", ")} }`
+	}
+
 	writeShape(
 		node: BaseRoot,
 		shape: string,
@@ -3763,7 +3834,8 @@ const shapeFlags = [
 	"hasAlias",
 	"tfs",
 	"allowsCtx",
-	"checksCtx"
+	"checksCtx",
+	"reportsPred"
 ] as const
 
 const isAny = (): boolean => true
