@@ -332,10 +332,14 @@ const replaceDataCalls = (
 // a shorter call's name and declaration cost what sharing saves, and gzip's matches
 // save most of a call written less often anyway. On ntwine, gz KB, min MB, import G:
 // at 2 calls of 90 116.8, 0.358, 0.179; at 5 of 64 116.2, 0.360, 0.179; none 116.6,
-// 0.381, 0.199. On 92 Types, gz KB: 7.62; 7.36; 7.35
-const minSharedCall = 64
+// 0.381, 0.199. On 92 Types, gz KB: 7.62; 7.36; 7.35. Smallest gz B since, at 5 of
+// 64 / 7 of 40: benchScale's mixed apps of 200 Types 11349 / 11195, 11131 / 10967,
+// 11283 / 11109, 50 and 10 within 8; board 92 6213 / 6191, 230 8730 / 8713, 1012
+// 21501 / 21504; ntwine 128945 / 129015. Shorter or rarer calls than that cost
+// again (at 7 of 32, 50 Types +40; at 3 of 64, +20)
+const minSharedCall = 40
 
-const minSharedCalls = 5
+const minSharedCalls = 7
 
 // a checker holding only data is the same wherever it's written, so what's
 // written more than once is made once. Each makes closures an import runs,
