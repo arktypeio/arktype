@@ -3672,6 +3672,37 @@ new Worker(new URL("./worker.js", import.meta.url))
 					)
 				})
 
+				it("names a cycle as a one-off build does after a watch build's edit elsewhere", async () => {
+					const m0 = (min: number) =>
+						`import { type } from "arktype"\n\nexport const Item0 = type({ count0: "number >= ${min}" })\nexport const samples0 = [[Item0, { count0: -1 }]]\n`
+					const root = fixture("watchedNames", {
+						"m0.js": m0(0),
+						"features.js": `import { scope } from "arktype"\n\nconst $ = scope({ node: { value: "number", "next?": "node" } }).export()\nexport const samples = [[$.node, { value: 1, next: { value: "2" } }]]\n`,
+						"main.js": `import { samples0 } from "./m0.js"\nimport { samples } from "./features.js"\n\nfor (const [t, d] of [...samples0, ...samples]) console.log(String(t(d)))\n`
+					})
+					const compiler = (compilers[name][0] as typeof webpack)(
+						configOf(name, root, {})
+					)
+					const bundles: string[] = []
+					await new Promise<void>((resolve, reject) => {
+						const watching = compiler.watch({}, (error, stats) => {
+							if (error) return reject(error)
+							if (stats?.hasErrors())
+								return reject(new Error(stats.toString("errors-only")))
+							bundles.push(
+								readFileSync(join(root, "out", name, "main.js"), "utf8")
+							)
+							if (bundles.length === 1)
+								writeFileSync(join(root, "m0.js"), m0(1000))
+							else watching!.close(() => resolve())
+						})
+					})
+					attest(output(bundles[1])).snap(`count0 must be at least 1000
+next.value must be a number
+`)
+					attest(bundles[1]).equals(await bundle(name, root))
+				})
+
 				it("prunes each of a multi-compiler's builds by its own reads", async () => {
 					const root = fixture("multi", {
 						"reads.js": readsStandard,
