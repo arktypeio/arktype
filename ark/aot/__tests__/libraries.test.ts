@@ -387,9 +387,9 @@ try {
 			"reader.js"
 		)
 		attest(out).snap(`Ada
-expression isn't baked into this validator, as the build saw no code read it. Set members["expression"] true in the precompile options.
-toJsonSchema isn't baked into this validator, as the build saw no code read it. Set members["toJsonSchema"] true in the precompile options.
-~standard.jsonSchema isn't baked into this validator, as the build saw no code read it. Set members["~standard.jsonSchema"] true in the precompile options.
+expression isn't precompiled: set members["expression"] true in the precompile options
+toJsonSchema isn't precompiled: set members["toJsonSchema"] true in the precompile options
+~standard.jsonSchema isn't precompiled: set members["~standard.jsonSchema"] true in the precompile options
 `)
 	})
 })

@@ -1244,7 +1244,7 @@ console.log(READ, String(User({ name: 5 })))
 					"prune: off, because define names local in local.expression, which may read a validator where no module's text shows it, so the build keeps every member of its validators. Set prune: false to build them whole without this warning."
 				])
 				const out = runBundle(await bundle({ preset: undefined }, options))
-				attest(out.stderr.includes("expression isn't baked")).equals(true)
+				attest(out.stderr.includes("expression isn't precompiled")).equals(true)
 			})
 
 			it("prunes where each names a literal or a global", async () => {
@@ -2024,10 +2024,19 @@ export { k${i}Allows }
 				Object.values(modules).find(code => code.includes(`const ${name} =`))!
 
 			it("is made once, each reading that", () => {
-				const { modules } = shared(often, 5)
+				const { modules } = shared(often, 7)
+				// its units are shared in turn, as long and as often written
 				attest(
-					Object.values(modules).filter(code => code.includes(`= ${often}`))
-						.length
+					Object.values(modules).filter(code =>
+						code.includes("= /* @__PURE__ */ runtime.optional(")
+					).length
+				).equals(1)
+				attest(
+					Object.values(modules).filter(code =>
+						code.includes(
+							'= /* @__PURE__ */ runtime.units(["first", "second"])'
+						)
+					).length
 				).equals(1)
 				attest(
 					moduleOf(modules, "k0Allows").includes("runtime.optional")
@@ -2036,9 +2045,9 @@ export { k${i}Allows }
 
 			it("is written where it's written less than a shared one costs", () => {
 				attest(
-					moduleOf(shared(often, 4).modules, "k0Allows").includes(often)
+					moduleOf(shared(often, 6).modules, "k0Allows").includes(often)
 				).equals(true)
-				const short = "/* @__PURE__ */ runtime.optional(runtime.string)"
+				const short = "/* @__PURE__ */ runtime.units([1, 2])"
 				attest(
 					moduleOf(shared(short, 9).modules, "k0Allows").includes(short)
 				).equals(true)
@@ -2047,7 +2056,7 @@ export { k${i}Allows }
 			it("is written where it reads what's declared beside it", () => {
 				const reads = `/* @__PURE__ */ runtime.optional(/* @__PURE__ */ runtime.props({ held, first: runtime.string, second: runtime.string }))`
 				attest(
-					moduleOf(shared(reads, 5).modules, "k0Allows").includes(reads)
+					moduleOf(shared(reads, 7).modules, "k0Allows").includes(reads)
 				).equals(true)
 			})
 
@@ -3059,7 +3068,7 @@ console.log(String(User({ name: 5 })))
 							spawnSync(process.execPath, {
 								input: js,
 								encoding: "utf8"
-							}).stderr.includes("expression isn't baked")
+							}).stderr.includes("expression isn't precompiled")
 						).equals(true)
 					})
 
@@ -3144,7 +3153,7 @@ console.log(use(), inlined())
 							spawnSync(process.execPath, {
 								input: js,
 								encoding: "utf8"
-							}).stderr.includes("expression isn't baked into this validator")
+							}).stderr.includes("expression isn't precompiled")
 						).equals(true)
 					})
 				})
@@ -3823,6 +3832,37 @@ new Worker(new URL("./worker.js", import.meta.url))
 					)
 				})
 
+				it("names a cycle as a one-off build does after a watch build's edit elsewhere", async () => {
+					const m0 = (min: number) =>
+						`import { type } from "arktype"\n\nexport const Item0 = type({ count0: "number >= ${min}" })\nexport const samples0 = [[Item0, { count0: -1 }]]\n`
+					const root = fixture("watchedNames", {
+						"m0.js": m0(0),
+						"features.js": `import { scope } from "arktype"\n\nconst $ = scope({ node: { value: "number", "next?": "node" } }).export()\nexport const samples = [[$.node, { value: 1, next: { value: "2" } }]]\n`,
+						"main.js": `import { samples0 } from "./m0.js"\nimport { samples } from "./features.js"\n\nfor (const [t, d] of [...samples0, ...samples]) console.log(String(t(d)))\n`
+					})
+					const compiler = (compilers[name][0] as typeof webpack)(
+						configOf(name, root, {})
+					)
+					const bundles: string[] = []
+					await new Promise<void>((resolve, reject) => {
+						const watching = compiler.watch({}, (error, stats) => {
+							if (error) return reject(error)
+							if (stats?.hasErrors())
+								return reject(new Error(stats.toString("errors-only")))
+							bundles.push(
+								readFileSync(join(root, "out", name, "main.js"), "utf8")
+							)
+							if (bundles.length === 1)
+								writeFileSync(join(root, "m0.js"), m0(1000))
+							else watching!.close(() => resolve())
+						})
+					})
+					attest(output(bundles[1])).snap(`count0 must be at least 1000
+next.value must be a number
+`)
+					attest(bundles[1]).equals(await bundle(name, root))
+				})
+
 				it("prunes each of a multi-compiler's builds by its own reads", async () => {
 					const root = fixture("multi", {
 						"reads.js": readsStandard,
@@ -4186,7 +4226,11 @@ console.log(String(User({ name: 5 })))
 			attest(
 				refusals(opts =>
 					turbopack.call(
-						{ getOptions: () => opts, resourcePath: "a.ts" } as never,
+						{
+							getOptions: () => opts,
+							resourcePath: "a.ts",
+							addDependency: () => {}
+						} as never,
 						""
 					)
 				)

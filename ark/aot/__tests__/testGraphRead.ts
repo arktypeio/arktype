@@ -1,7 +1,7 @@
 // webpack and Rspack read the program as they built it, so what they prune rests
 // on what that read sees: each scenario reads a validator's members in a way the
 // bundler itself decides, by a plugin, a loader, a context or an output format.
-// A pruned build either refuses, throws that a member isn't baked, or runs as
+// A pruned build either refuses, throws that a member isn't precompiled, or runs as
 // the same config's whole build.
 // [ARK_GRAPH_READ_ONLY=<scenario prefix>,...] [ARK_GRAPH_READ_BUNDLERS=webpack,rspack]
 // [ARK_GRAPH_READ_KEEP=<dir>] pnpm testGraphRead
@@ -642,7 +642,7 @@ const normalized = (out: string) =>
 
 // a member a build left out, which it says as it's read
 const isLoud = (out: string) =>
-	/isn't baked|reads? \w+, which a standalone validator lacks|Type<[^>]*>|can't be precompiled/.test(
+	/isn't precompiled: set members|reads? \w+, which a standalone validator lacks|Type<[^>]*>|can't be precompiled/.test(
 		out
 	)
 

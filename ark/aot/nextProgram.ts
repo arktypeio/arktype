@@ -4,14 +4,13 @@ import {
 	mkdirSync,
 	readdirSync,
 	readFileSync,
-	renameSync,
 	rmSync,
 	statSync,
 	writeFileSync
 } from "node:fs"
-import { createRequire, isBuiltin } from "node:module"
-import { dirname, extname, join, relative } from "node:path"
-import { setTimeout as sleep } from "node:timers/promises"
+import { isBuiltin } from "node:module"
+import { basename, dirname, extname, join, relative, sep } from "node:path"
+import { fileURLToPath } from "node:url"
 import type {
 	PrecompilePluginOptions,
 	RenderedDiagnostics,
@@ -24,13 +23,10 @@ import {
 	optedInPackagesOf,
 	printablePathOf,
 	realPathOf,
-	throwBuildError,
 	transformedFilterOf
 } from "./host.ts"
-import {
-	writeUnfinishedProgramMessage,
-	writeUnreadProgramMessage
-} from "./messages.ts"
+import { writeUnreadProgramMessage } from "./messages.ts"
+import { withEnvironment } from "./presets.ts"
 import {
 	importsOf,
 	isAsset,
@@ -39,16 +35,22 @@ import {
 	type ScannedProgram,
 	type ScannedUsage
 } from "./scan.ts"
+import {
+	refuseArktypeDependencies,
+	resolvePrecompileOptions,
+	withSettingsFile
+} from "./settings.ts"
 import { checkArktypeVersion } from "./version.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
 
-// Turbopack can't serve a module no file holds, and keeps what it first lists
-// of a directory for the whole build. So whatever its modules import must be
-// on disk before the first of them is answered, which is why a build reads its
-// program up front. The files go in node_modules/.bin/.ark, odd as that is for
-// modules, as it's the one place a build probed could resolve them from: there
-// as the build starts, and never listed by Turbopack. node_modules/.cache fails
-// on a new install, which lacks it, and Turbopack denies .next
+// Turbopack can't serve a module no file holds, and its build cache keeps what
+// it listed of a directory and read of a file from one build to the next. So
+// the read runs as Next loads next.config, before Turbopack starts, writing all
+// a build's modules import and every module's answer: what Turbopack restores
+// is then what this build's read wrote, and a file the read changed invalidates
+// what reads it, as any changed source does. The units go in
+// node_modules/.bin/.ark, odd as that is for modules, as a build resolves them
+// from there, and Turbopack denies .next
 const binOf = (root: string): string | undefined => {
 	for (let dir = root; ; dir = dirname(dir)) {
 		const bin = join(dir, "node_modules/.bin")
@@ -73,166 +75,120 @@ interface ProgramDone {
 	// why the build writes each module on its own
 	refused: string | undefined
 	warnings: string[]
-	// what it read from outside the tree that names it, by file
-	outside: Record<string, string>
-}
-
-export interface LoaderResolve {
-	(context: string, request: string): Promise<string>
 }
 
 const hashOf = (text: string) =>
 	createHash("sha256").update(text).digest("hex").slice(0, 24)
 
-const answerFileOf = (dir: string, id: string) =>
+export const answerFileOf = (dir: string, id: string): string =>
 	join(dir, `${hashOf(id)}.json`)
 
-// each process of the pool asks once
-const programs: Record<string, Promise<ReadProgramDir>> = {}
-
-export interface ReadProgramDir extends ProgramDone {
-	dir: string
-	// the process that read it reports what it found
-	isReader: boolean
-}
-
-export const programOf = (
-	root: string,
-	opts: PrecompilePluginOptions,
-	resolve: LoaderResolve
-): Promise<ReadProgramDir> =>
-	(programs[`${root}\0${JSON.stringify(opts)}`] ??= awaitProgram(
-		root,
-		opts,
-		resolve
-	))
-
-// every process of a build shares its parent, and a build starts by clearing
-// .next, so a build reads its project once and the next reads it again, the
-// precompiler's cache answering what didn't change
-const buildKeyOf = (
-	root: string,
-	opts: PrecompilePluginOptions,
-	tree: Tree
-) => {
-	const hash = createHash("sha256").update(JSON.stringify(opts))
-	try {
-		hash.update(`${statSync(join(root, ".next/package.json")).mtimeMs}`)
-	} catch {
-		// where distDir moved it, a build is known by what it reads
-	}
-	for (const id of tree.scripts) hash.update(id).update(readFileSync(id))
-	return `${process.ppid}-${hash.digest("hex").slice(0, 24)}`
-}
-
-const isOutsideUnchanged = ({ outside }: ProgramDone) => {
-	for (const id in outside) {
-		if (!existsSync(id) || hashOf(readFileSync(id, "utf8")) !== outside[id])
-			return false
-	}
-	return true
-}
+// where next.config's read names its directory for the loader processes
+// Turbopack starts, which inherit it from the process loading next.config
+const readEnv = "ARK_NEXT_READ"
 
 const programsDirOf = (root: string) =>
 	join(root, "node_modules/.cache/ark-programs")
 
+// one for each project and option set, kept from build to build so an answer
+// Turbopack's cache holds a module's output against stays the file it read
 export const programDirOf = (
 	root: string,
 	opts: PrecompilePluginOptions
-): string => join(programsDirOf(root), buildKeyOf(root, opts, treeOf(root)))
+): string => join(programsDirOf(root), hashOf(JSON.stringify(opts)))
 
-// as long as a read of the largest project would take, to fail what would hang
-const readTimeoutMs = 30 * 60_000
+export const doneFileOf = (dir: string): string => join(dir, "done.json")
 
-const awaitProgram = async (
+export interface ReadProgramDir {
+	dir: string
+	// why the build writes each module on its own
+	refused: string | undefined
+}
+
+// as next.config's wrapper read it for this build
+export const programOf = (
+	root: string,
+	opts: PrecompilePluginOptions
+): ReadProgramDir => {
+	const dir = programDirOf(root, opts)
+	const read = process.env[readEnv]
+	if (read !== dir) {
+		return {
+			dir,
+			refused: writeUnreadProgramMessage(
+				read === undefined ?
+					"next.config doesn't export its config through withPrecompile, which reads the project before Turbopack starts"
+				:	"next.config read it from another directory or with other loader options"
+			)
+		}
+	}
+	return {
+		dir,
+		...(JSON.parse(readFileSync(doneFileOf(dir), "utf8")) as Pick<
+			ReadProgramDir,
+			"refused"
+		>)
+	}
+}
+
+// whether next.config's wrapper read it for this build, under whatever options
+export const isProgramRead = (): boolean => process.env[readEnv] !== undefined
+
+// what `next build`'s config wrapper runs, as Next loads next.config
+export const readProgram = async (
 	root: string,
 	opts: PrecompilePluginOptions,
-	resolve: LoaderResolve
-): Promise<ReadProgramDir> => {
-	const tree = treeOf(root)
-	const base = programsDirOf(root)
-	const dir = join(base, buildKeyOf(root, opts, tree))
-	const done = join(dir, "done.json")
-	const lock = join(dir, "reading")
-	const refusedBy = (e: unknown): ProgramDone => ({
-		refused: writeUnreadProgramMessage(`reading it threw ${String(e)}`),
-		warnings: [],
-		outside: {}
-	})
-	try {
-		mkdirSync(dir, { recursive: true })
-	} catch (e) {
-		return { dir, isReader: true, ...refusedBy(e) }
+	{ aliases = {}, problem }: ReadSettings = {}
+): Promise<ReadProgramDir & ProgramDone> => {
+	const dir = programDirOf(root, opts)
+	mkdirSync(dir, { recursive: true })
+	// another option set's, whose answers a module's cached output may name
+	for (const name of readdirSync(dirname(dir))) {
+		if (name !== basename(dir) && !name.startsWith("warned-"))
+			rmSync(join(dirname(dir), name), { recursive: true, force: true })
 	}
-	const startedAt = Date.now()
-	while (Date.now() - startedAt < readTimeoutMs) {
-		if (existsSync(done)) {
-			const read = JSON.parse(readFileSync(done, "utf8")) as ProgramDone
-			if (isOutsideUnchanged(read)) return { dir, isReader: false, ...read }
-			rmSync(done, { force: true })
-		}
-		let isReader = true
-		try {
-			mkdirSync(lock)
-		} catch {
-			isReader = false
-		}
-		if (!isReader) {
-			if (!isHolderAlive(lock)) rmSync(lock, { recursive: true, force: true })
-			await sleep(20)
-			continue
-		}
-		// it may have finished as this process looked
-		if (existsSync(done)) {
-			rmSync(lock, { recursive: true, force: true })
-			continue
-		}
-		writeFileSync(join(lock, "pid"), `${process.pid}`)
-		removeFinishedPrograms(base, dir)
-		const read = await readAndWrite(root, opts, resolve, dir, tree).catch(
-			refusedBy
-		)
-		writeAtomically(done, JSON.stringify(read))
-		rmSync(lock, { recursive: true, force: true })
-		return { dir, isReader: true, ...read }
-	}
-	return throwBuildError(writeUnfinishedProgramMessage(readTimeoutMs / 60_000))
+	const done =
+		problem ?
+			refusalOf(problem)
+		:	await readAndWrite(root, opts, dir, treeOf(root), aliases).catch(
+				(e): ProgramDone => refusalOf(`reading it threw ${String(e)}`)
+			)
+	// its warnings aside, which each build reports anew
+	writeChanged(doneFileOf(dir), JSON.stringify({ refused: done.refused }))
+	process.env[readEnv] = dir
+	return { dir, ...done }
 }
 
-const isAlive = (pid: number) => {
-	try {
-		process.kill(pid, 0)
-		return true
-	} catch {
-		return false
+export interface ReadSettings {
+	// turbopack.resolveAlias's, for what Turbopack resolves otherwise than Node
+	aliases?: Record<string, unknown>
+	// what next.config sets that the read can't see past
+	problem?: string | undefined
+}
+
+const refusalOf = (reason: string): ProgramDone => ({
+	refused: writeUnreadProgramMessage(reason),
+	warnings: []
+})
+
+// left as it is where unchanged, so Turbopack's cache keeps what read it
+const writeChanged = (path: string, text: string) => {
+	if (existsSync(path) && readFileSync(path, "utf8") === text) return
+	writeFileSync(path, text)
+}
+
+// what an earlier build's read wrote that this one's doesn't
+const removeAllBut = (dir: string, kept: Set<string>) => {
+	for (const name of readdirSync(dir)) {
+		if (!kept.has(name))
+			rmSync(join(dir, name), { recursive: true, force: true })
 	}
 }
 
-const isHolderAlive = (lock: string) => {
-	try {
-		return isAlive(Number(readFileSync(join(lock, "pid"), "utf8")))
-	} catch {
-		// the holder hasn't written it yet, or has just finished
-		return true
-	}
-}
-
-const removeFinishedPrograms = (base: string, own: string) => {
-	for (const name of readdirSync(base)) {
-		const path = join(base, name)
-		if (path !== own && !isAlive(Number(name.split("-")[0])))
-			rmSync(path, { recursive: true, force: true })
-	}
-}
-
-const writeAtomically = (path: string, text: string) => {
-	const temp = `${path}.${process.pid}.tmp`
-	writeFileSync(temp, text)
-	renameSync(temp, path)
-}
-
-const skippedDirs = new Set([
-	"node_modules",
+// what a build writes, what it serves as it is and the project's tests, beside
+// the project's root. Below it, each of these names may be a route's, as
+// app/build/page.tsx is
+const skippedAtRoot = new Set([
 	"public",
 	"out",
 	"dist",
@@ -242,8 +198,17 @@ const skippedDirs = new Set([
 	"__mocks__"
 ])
 
-const unbuiltFile =
-	/\.d\.[cm]?ts$|\.(?:test|spec|stories|config)\.[cm]?[jt]sx?$/
+// a project's tests and their mocks, which only an import reaches outside the
+// routes, where app/ leaves a folder named with an underscore unrouted
+const testDirs = new Set(["__tests__", "__mocks__"])
+
+const routeDirs = ["app", "pages", "src/app", "src/pages"]
+
+const pagesDirs = ["pages", "src/pages"]
+
+const declarationFile = /\.d\.[cm]?ts$/
+
+const unbuiltFile = /\.(?:test|spec|stories|config)\.[cm]?[jt]sx?$/
 
 const scriptFile = /\.[cm]?[jt]sx?$/
 
@@ -255,51 +220,136 @@ interface Tree {
 	foreign: string | undefined
 }
 
-// what Next.js may reach without an import the read can see
+// what Next.js may reach without an import the read can see, which is more
+// than it routes: each of a project's scripts but what a build writes, its
+// tests and what sits beside them, which only an import reaches. Under app/,
+// Next routes a directory named with a dot, as app/.well-known/, and under
+// pages/, every script, as pages/__tests__/user.test.js. It follows a link
+// to a directory, so the read does too
 const treeOf = (root: string): Tree => {
 	const tree: Tree = { scripts: [], foreign: undefined }
-	const walk = (dir: string) => {
+	const scripts = new Set<string>()
+	// each directory as each kind it's walked as, as a link may lead into one
+	// walked otherwise, or around to one it's in
+	const walked = new Set<string>()
+	const routes = routeDirs.map(dir => join(root, dir))
+	const pages = pagesDirs.map(dir => join(root, dir))
+	const isUnder = (path: string, dirs: string[]) =>
+		dirs.some(dir => path === dir || path.startsWith(`${dir}${sep}`))
+	// a file reached through a link is read as Turbopack reads it, by where it is
+	const walk = (dir: string, isLinked: boolean) => {
+		const isRoot = dir === root
+		const isRoutes = isUnder(dir, routes)
+		const isPages = isUnder(dir, pages)
+		const key = `${isRoot}${isRoutes}${isPages}${realPathOf(dir)}`
+		if (walked.has(key)) return
+		walked.add(key)
 		for (const entry of readdirSync(dir, { withFileTypes: true })) {
-			if (entry.name.startsWith(".")) continue
 			const path = join(dir, entry.name)
-			if (entry.isDirectory()) {
-				if (!skippedDirs.has(entry.name)) walk(path)
-			} else if (entry.isFile()) {
+			const isLink = entry.isSymbolicLink()
+			const stats = isLink ? statOf(path) : entry
+			if (!stats || entry.name === "node_modules") continue
+			if (!isPages) {
+				if (entry.name.startsWith(".") && (isRoot || !isRoutes)) continue
+				if (isRoot && skippedAtRoot.has(entry.name)) continue
+			}
+			if (stats.isDirectory()) {
+				if (isPages || !testDirs.has(entry.name)) walk(path, isLinked || isLink)
+			} else if (stats.isFile()) {
 				if (scriptFile.test(entry.name)) {
-					if (!unbuiltFile.test(entry.name)) tree.scripts.push(path)
+					if (
+						!declarationFile.test(entry.name) &&
+						(isPages || !unbuiltFile.test(entry.name))
+					)
+						scripts.add(isLinked || isLink ? realPathOf(path) : path)
 				} else if (foreignFile.test(entry.name)) tree.foreign ??= path
 			}
 		}
 	}
-	walk(root)
-	tree.scripts.sort()
+	walk(root, false)
+	tree.scripts = [...scripts].sort()
 	return tree
 }
 
-// it imports arktype, which each process answering from a read needn't load
-const readConfigRules = () =>
-	createRequire(import.meta.url)(
-		`./pluginCalls${extname(import.meta.url)}`
-	) as typeof import("./pluginCalls.ts")
-
-const nextConfigFiles = [
-	"next.config.js",
-	"next.config.mjs",
-	"next.config.ts",
-	"next.config.mts",
-	"next.config.cjs"
-]
-
-// what next.config may do that the read can't see. It's read rather than run,
-// as only Next.js's own process expects to run it
-const nextConfigProblemOf = (root: string): string | undefined => {
-	const name = nextConfigFiles.find(name => existsSync(join(root, name)))
-	if (!name) return
-	const source = readFileSync(join(root, name), "utf8")
-	if (source.includes("pageExtensions"))
-		return `${name} sets pageExtensions, whose pages it can't read`
-	return readConfigRules().turbopackConfigProblemOf(join(root, name), source)
+// what a link points to, or nothing where it points nowhere
+const statOf = (path: string) => {
+	try {
+		return statSync(path)
+	} catch {
+		return undefined
+	}
 }
+
+export interface NextConfigLike {
+	pageExtensions?: unknown
+	turbopack?: { rules?: Record<string, unknown>; resolveAlias?: unknown }
+	experimental?: { swcPlugins?: unknown }
+}
+
+const pageExtensions = ["tsx", "ts", "jsx", "js"]
+
+// what next.config sets that has a build see a module otherwise than the read:
+// another loader in its rules, whose output's imports the read can't see, an
+// SWC plugin, which Turbopack runs after the loaders, this loader with two
+// sets of options, or pages of an extension it doesn't read. Else the options
+// its rules give this loader
+export const nextConfigReadOf = (
+	config: NextConfigLike,
+	isOwnLoader: (loader: string) => boolean
+): { problem: string } | { options: PrecompilePluginOptions } => {
+	if (
+		config.pageExtensions !== undefined &&
+		!(
+			Array.isArray(config.pageExtensions) &&
+			config.pageExtensions.every(extension =>
+				pageExtensions.includes(extension)
+			)
+		)
+	) {
+		return {
+			problem: "next.config sets pageExtensions, whose pages it can't read"
+		}
+	}
+	const swcPlugins = config.experimental?.swcPlugins
+	if (Array.isArray(swcPlugins) && swcPlugins.length) {
+		return {
+			problem:
+				"next.config runs SWC plugins after this loader, which may add reads it can't see"
+		}
+	}
+	const options = new Map<string, PrecompilePluginOptions>()
+	for (const item of loadersIn(Object.values(config.turbopack?.rules ?? {}))) {
+		const loader = typeof item === "string" ? item : item.loader
+		if (typeof loader !== "string")
+			return { problem: "next.config runs a loader it can't name" }
+		if (!isOwnLoader(loader)) {
+			return {
+				problem: `next.config runs ${loader}, which may add imports it can't see`
+			}
+		}
+		const given = (typeof item === "string" ? undefined : item.options) ?? {}
+		options.set(JSON.stringify(given), given as PrecompilePluginOptions)
+	}
+	if (options.size > 1) {
+		return {
+			problem: `next.config runs the loader with ${options.size} sets of options`
+		}
+	}
+	return { options: [...options.values()][0] ?? {} }
+}
+
+type LoaderItem = string | { loader: string; options?: unknown }
+
+// a rule's loaders, as `{ loaders: [] }`, `[]` or a list of either
+const loadersIn = (rules: unknown[]): LoaderItem[] =>
+	rules.flatMap(rule =>
+		Array.isArray(rule) ? loadersIn(rule)
+		: typeof rule === "string" ? [rule]
+		: typeof rule !== "object" || rule === null ? []
+		: "loader" in rule ? [rule as LoaderItem]
+		: "loaders" in rule && Array.isArray(rule.loaders) ? loadersIn(rule.loaders)
+		: []
+	)
 
 const directive =
 	/^(?:\s|\/\/.*|\/\*[\S\s]*?\*\/)*["']use (?:client|server)["']/
@@ -366,60 +416,62 @@ const withUnitFiles = (
 const readAndWrite = async (
 	root: string,
 	opts: PrecompilePluginOptions,
-	resolve: LoaderResolve,
 	dir: string,
-	{ scripts, foreign }: Tree
+	{ scripts, foreign }: Tree,
+	aliases: Record<string, unknown>
 ): Promise<ProgramDone> => {
-	const refusal = (reason: string): ProgramDone => ({
-		refused: writeUnreadProgramMessage(reason),
-		warnings: [],
-		outside: {}
-	})
 	checkArktypeVersion()
-	const problem = nextConfigProblemOf(root)
-	if (problem) return refusal(problem)
 	if (foreign) {
-		return refusal(
+		return refusalOf(
 			`${printablePathOf(root, foreign)} may import what it can't see`
 		)
 	}
 	const bin = binOf(root)
-	if (!bin) return refusal("no node_modules/.bin can hold its modules")
+	if (!bin) return refusalOf("no node_modules/.bin can hold its modules")
+	const host = createNodeHost(opts)
 	// a unit imports arktype's runtime from there, which must be the program's
-	const [fromUnits, fromRoot] = await Promise.all(
-		[dirname(dirname(bin)), root].map(from =>
-			resolve(from, "arktype/runtime").catch(() => undefined)
-		)
+	const [fromUnits, fromRoot] = [dirname(dirname(bin)), root].map(from =>
+		host.resolve("arktype/runtime", join(from, "index.js"))
 	)
 	if (fromUnits !== fromRoot)
-		return refusal(`${printablePathOf(root, bin)} resolves another arktype`)
+		return refusalOf(`${printablePathOf(root, bin)} resolves another arktype`)
 	const unitsDir = join(bin, ".ark", hashOf(root))
 	const transformedFilter = transformedFilterOf(
 		optedInPackagesOf(root, opts.dependencies)
 	)
 	const isTransformed = (id: string) =>
 		transformedFilter.include.test(id) && !transformedFilter.exclude.test(id)
-	const host = createNodeHost(opts)
 	let queried: string | undefined
+	// as Turbopack resolves, which loads next.config after this does: each
+	// module's loader call checks each of its imports in its own layer
+	const resolveFile = (specifier: string, importer: string) => {
+		const aliased = aliasOf(aliases, specifier)
+		const resolved =
+			aliased === undefined ?
+				host.resolve(specifier, importer)
+			:	host.resolve(aliased, join(root, "next.config.js"))
+		return resolved && realPathOf(resolved.split("?")[0])
+	}
 	const scanned = await scanProgram(
 		"next",
 		scripts.map(id => ({ id })),
 		{
 			resolve: async (specifier, importer) => {
 				if (isBuiltin(specifier)) return null
-				// not by Turbopack first, as it would answer for the layer of whichever
-				// module asked first, where each module's call checks its own
-				const resolved =
-					host.resolve(specifier, importer) ??
-					(await resolve(dirname(importer), specifier).catch(() => undefined))
-				if (resolved === undefined) return
-				const file = realPathOf(resolved.split("?")[0])
+				const query = specifier.indexOf("?")
+				const resolved = resolveFile(
+					query === -1 ? specifier : specifier.slice(0, query),
+					importer
+				)
+				// what Next serves of its own, holding no validator
+				if (resolved === undefined)
+					return nextOwnModules.has(specifier) ? null : undefined
 				// Turbopack builds a queried module apart, its validators held once
-				if (`${specifier}${resolved}`.includes("?") && !isAsset(resolved)) {
+				if (query !== -1 && !isAsset(resolved)) {
 					queried ??= `${printablePathOf(root, importer)} imports "${specifier}" with a query`
 					return null
 				}
-				return file
+				return resolved
 			},
 			readFile: id => {
 				try {
@@ -433,8 +485,8 @@ const readAndWrite = async (
 			cwd: root
 		}
 	)
-	if (typeof scanned === "string") return refusal(scanned)
-	if (queried) return refusal(queried)
+	if (typeof scanned === "string") return refusalOf(scanned)
+	if (queried) return refusalOf(queried)
 	const program = withRoots(scanned, root, scripts)
 	// what a module writes is a few imports, its validators created in the units.
 	// Each keeps its methods, whose getters throw for a member it lacks, as a
@@ -446,13 +498,10 @@ const readAndWrite = async (
 			members: { methods: true, ...opts.members }
 		}
 	})
-	const bundlerResolve = (specifier: string, importer: string) =>
-		resolve(dirname(importer), specifier).then(realPathOf, () => undefined)
+	const sentResolve = async (specifier: string, importer: string) =>
+		resolveFile(specifier, importer)
 	try {
-		const usage = (await send(
-			["scan", program],
-			bundlerResolve
-		)) as ScannedUsage
+		const usage = (await send(["scan", program], sentResolve)) as ScannedUsage
 		const warnings = [usage.unpruned, usage.lost].filter(
 			warning => warning !== undefined
 		)
@@ -471,25 +520,25 @@ const readAndWrite = async (
 						// a bundle's does, each module written on its own meanwhile
 						usage.written ? program.key : undefined
 					],
-					bundlerResolve
+					sentResolve
 				)) as TransformedModule | undefined
 			})
 		)
 		const units = unitsOf(written)
-		// what an earlier read of the project wrote, nothing the modules read
-		rmSync(unitsDir, { recursive: true, force: true })
 		mkdirSync(unitsDir, { recursive: true })
+		const unitNames = new Set<string>()
 		for (const specifier in units) {
-			writeFileSync(
-				join(unitsDir, unitNameOf(specifier)),
+			const name = unitNameOf(specifier)
+			unitNames.add(name)
+			writeChanged(
+				join(unitsDir, name),
 				withUnitFiles(units[specifier], unitsDir, unitsDir, units)
 			)
 		}
-		const inTree = new Set(scripts)
-		const outside: Record<string, string> = {}
+		removeAllBut(unitsDir, unitNames)
+		const answerNames = new Set([basename(doneFileOf(dir))])
 		for (const id in program.modules) {
 			const { source } = program.modules[id]
-			if (!inTree.has(id)) outside[id] = hashOf(source)
 			const module = written[id]
 			const targets = program.targets[id] ?? {}
 			const imports: Record<string, string | null> = {}
@@ -497,8 +546,10 @@ const readAndWrite = async (
 				if (!runtimeSpecifier.test(specifier))
 					imports[specifier] = targets[specifier] ?? null
 			}
-			writeFileSync(
-				answerFileOf(dir, id),
+			const answer = answerFileOf(dir, id)
+			answerNames.add(basename(answer))
+			writeChanged(
+				answer,
 				JSON.stringify({
 					sourceHash: hashOf(source),
 					code:
@@ -514,9 +565,30 @@ const readAndWrite = async (
 				} satisfies ProgramAnswer)
 			)
 		}
-		return { refused: undefined, warnings, outside }
+		removeAllBut(dir, answerNames)
+		return { refused: undefined, warnings }
 	} finally {
 		void send(["close"])
+	}
+}
+
+// what Next resolves of its own where a project hasn't installed it
+const nextOwnModules = new Set(["server-only", "client-only"])
+
+// turbopack.resolveAlias's target for an import, as `{ "@/": "./src/" }` or
+// `{ lib: "./src/lib.ts" }`, resolved from the project
+const aliasOf = (
+	aliases: Record<string, unknown>,
+	specifier: string
+): string | undefined => {
+	for (const from in aliases) {
+		const to = aliases[from]
+		if (typeof to !== "string") continue
+		if (specifier === from) return to
+		if (from.endsWith("/") && specifier.startsWith(from))
+			return to + specifier.slice(from.length)
+		if (from.endsWith("/*") && specifier.startsWith(from.slice(0, -1)))
+			return to.replace(/\*$/, "") + specifier.slice(from.length - 1)
 	}
 }
 
@@ -552,3 +624,80 @@ export const isSourceRead = (answer: ProgramAnswer, source: string): boolean =>
 
 export const isInProgram = ({ dir }: ReadProgramDir, id: string): boolean =>
 	existsSync(answerFileOf(dir, id))
+
+// with ark.json's, where prune: true would be ignored
+export const resolvedOptionsOf = (
+	set: PrecompilePluginOptions,
+	production: boolean
+): PrecompilePluginOptions => {
+	refuseArktypeDependencies(set, "Turbopack")
+	return resolvePrecompileOptions(
+		withEnvironment(
+			// Next loads a route's modules at its first request, none written as one
+			production ? { defers: "large", ...set } : set,
+			{ production, testing: false }
+		)
+	)
+}
+
+export const readsWith = (opts: PrecompilePluginOptions): boolean =>
+	opts.prune !== false && opts.runtime !== "arktype" && !opts.shadow
+
+// the files Next looks for beside next.config to run Babel, which Turbopack
+// does on each module after the loaders its rules name, as on what this one
+// wrote: so a plugin's reads of a validator, or code it passes one to, are
+// where the read can't see them
+const babelConfigFiles = [
+	".babelrc",
+	".babelrc.json",
+	".babelrc.js",
+	".babelrc.mjs",
+	".babelrc.cjs",
+	"babel.config.js",
+	"babel.config.json",
+	"babel.config.mjs",
+	"babel.config.cjs"
+]
+
+const babelProblemOf = (root: string) => {
+	const file = babelConfigFiles.find(name => existsSync(join(root, name)))
+	return (
+		file &&
+		`${file} has Next run Babel on each module after this loader, which may add reads it can't see`
+	)
+}
+
+// the read withPrecompile runs, under the options next.config gives the loader,
+// as each loader process resolves them
+export const readProjectWith = async (
+	root: string,
+	config: NextConfigLike,
+	given?: PrecompilePluginOptions
+): Promise<{
+	refused: string | undefined
+	warnings: string[]
+	opts: PrecompilePluginOptions
+}> => {
+	const read = nextConfigReadOf(config, isOwnLoader)
+	const opts = resolvedOptionsOf(
+		withSettingsFile(given ?? ("options" in read ? read.options : {})),
+		true
+	)
+	if (!readsWith(opts)) return { refused: undefined, warnings: [], opts }
+	const { refused, warnings } = await readProgram(root, opts, {
+		aliases: (config.turbopack?.resolveAlias ?? {}) as Record<string, unknown>,
+		problem: "problem" in read ? read.problem : babelProblemOf(root)
+	})
+	return { refused, warnings, opts }
+}
+
+const ownLoader = "@ark/aot/turbopack"
+
+// the loader's module, as a rule may name it by its path
+const loaderFile = fileURLToPath(
+	new URL(`./turbopack${extname(import.meta.url)}`, import.meta.url)
+)
+
+const isOwnLoader = (loader: string) =>
+	loader === ownLoader ||
+	(existsSync(loader) && realPathOf(loader) === realPathOf(loaderFile))

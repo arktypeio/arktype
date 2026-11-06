@@ -4,7 +4,8 @@ import {
 	writeExternalizedMessage,
 	writeMissedByProgramMessage,
 	writeNextExternalMessage,
-	writeTurbopackDependencyMessage
+	writeTurbopackDependencyMessage,
+	writeUnreadProgramMessage
 } from "@ark/aot/internal/messages.ts"
 import { spawnSync } from "node:child_process"
 import {
@@ -98,14 +99,23 @@ for (const [path, contents] of Object.entries(files)) {
 
 const next = createRequire(import.meta.url).resolve("next/dist/bin/next")
 
+// a flag building from what the last build left in .next, Turbopack's build
+// cache included, as a project's next build does
+const warm = "warm"
+
 const nextBuild = (config: string, ...flags: string[]) => {
 	writeFileSync(join(appDir, "next.config.js"), config)
-	rmSync(join(appDir, ".next"), { recursive: true, force: true })
-	const result = spawnSync(process.execPath, [next, "build", ...flags], {
-		cwd: appDir,
-		encoding: "utf8",
-		env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" }
-	})
+	if (!flags.includes(warm))
+		rmSync(join(appDir, ".next"), { recursive: true, force: true })
+	const result = spawnSync(
+		process.execPath,
+		[next, "build", ...flags.filter(flag => flag !== warm)],
+		{
+			cwd: appDir,
+			encoding: "utf8",
+			env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" }
+		}
+	)
 	if (result.error) throw result.error
 	return { status: result.status, output: result.stdout + result.stderr }
 }
@@ -222,7 +232,9 @@ assertRendered("Turbopack", nextBuild(turbopack))
 if (JSON.stringify(chunksOf()) !== cold)
 	throw new Error("Turbopack's warm build should write what its cold build did")
 
-console.log("▲ Building it with a module newly reading a member...")
+console.log(
+	"▲ Building it on Turbopack's build cache with a module newly reading a member..."
+)
 
 const readsPath = join(appDir, "app/reads.jsx")
 const reads = readFileSync(readsPath, "utf8")
@@ -230,13 +242,135 @@ writeFileSync(
 	readsPath,
 	reads.replace("typeof Age.assert", 'typeof Age["~standard"].validate')
 )
-assertRendered("Turbopack", nextBuild(turbopack))
+assertRendered("Turbopack", nextBuild(turbopack, warm))
 if (!emittedWith("~standard", join(appDir, ".next/static")).length) {
 	throw new Error(
 		"Turbopack's build should keep what a module edited since the last build reads"
 	)
 }
+const edited = JSON.stringify(chunksOf())
+assertRendered("Turbopack", nextBuild(turbopack))
+if (JSON.stringify(chunksOf()) !== edited) {
+	throw new Error(
+		"Turbopack's build on its cache should write what a build without it does"
+	)
+}
 writeFileSync(readsPath, reads)
+
+// the settings ark.json holds otherwise, as the loader's options, so ark.json
+// can be created and removed
+const settingsPath = join(appDir, "ark.json")
+const settings = readFileSync(settingsPath, "utf8")
+const withLoaderSettings = (config: string) =>
+	config
+		.split('loaders: ["@ark/aot/turbopack"]')
+		.join(
+			`loaders: [${JSON.stringify({ loader: "@ark/aot/turbopack", options: JSON.parse(settings).precompile })}]`
+		)
+const wrapped = "export default withPrecompile({"
+if (!turbopack.includes(wrapped))
+	throw new Error(`Found no ${wrapped} in ${setup}`)
+const errorsNone = '{ "precompile": { "errors": "none" } }'
+// the read, and each module on its own where next.config exports its config
+// bare, each kept past a build until a file it depends on changes, ark.json
+// among them, whether or not it was there
+for (const [how, config] of [
+	["read", turbopack],
+	[
+		"bare",
+		turbopack
+			.replace('import { withPrecompile } from "@ark/aot/turbopack"\n\n', "")
+			.replace(wrapped, "export default {")
+			.replace(/}\)\n$/, "}\n")
+	]
+]) {
+	console.log(
+		`▲ Building it on Turbopack's build cache as ark.json changes (${how})...`
+	)
+	const cached = withLoaderSettings(config)
+	rmSync(settingsPath)
+	assertRendered("Turbopack", build(cached))
+	const unset = JSON.stringify(chunksOf())
+	writeFileSync(settingsPath, errorsNone)
+	assertRendered("Turbopack", nextBuild(cached, warm))
+	const warmNone = JSON.stringify(chunksOf())
+	assertRendered("Turbopack", build(cached))
+	if (JSON.stringify(chunksOf()) !== warmNone) {
+		throw new Error(
+			`Turbopack's build on its cache should write what a build without it does once ark.json is written (${how})`
+		)
+	}
+	rmSync(settingsPath)
+	assertRendered("Turbopack", nextBuild(cached, warm))
+	if (JSON.stringify(chunksOf()) !== unset) {
+		throw new Error(
+			`Turbopack's build on its cache should write what a build without it does once ark.json is removed (${how})`
+		)
+	}
+	writeFileSync(settingsPath, settings)
+}
+
+console.log(
+	"▲ Building it with a Babel plugin adding reads after the loader (Turbopack)..."
+)
+
+// what Babel, which Next runs on each module after the loader once a config
+// names it, may add: each read and what it renders, a member it bakes only
+// where it sees code read it throwing that it isn't
+const babelReads: [read: string, renders: string][] = [
+	["typeof Age.assert", "function"],
+	['typeof Age["~standard"]', "object"],
+	["(f => f(Age))(age => typeof age.assert)", "function"],
+	["Age.expression", "expression isn't baked into this validator"],
+	["JSON.stringify(Age)", "toJSON isn't baked into this validator"]
+]
+const babelFiles: Record<string, string> = {
+	".babelrc": JSON.stringify({
+		presets: ["next/babel"],
+		plugins: ["./reads-plugin.cjs"]
+	}),
+	"reads-plugin.cjs": `module.exports = () => ({
+	visitor: {
+		StringLiteral(path) {
+			if (path.node.value !== "BABEL_READS") return
+			path.replaceWithSourceString(${JSON.stringify(
+				`[${babelReads.map(([read]) => `() => ${read}`).join(", ")}].map(read => { try { return String(read()) } catch (e) { return e.message.split(",")[0] } }).join(" | ")`
+			)})
+		}
+	}
+})
+`,
+	"src/babel.ts":
+		'import { Age } from "./age.ts"\n\nexport const babelReads = () => [typeof Age.allows, "BABEL_READS"].join(" | ")\n',
+	"app/babel/page.jsx":
+		'import { babelReads } from "../../src/babel.ts"\n\nexport default function Page() {\n\treturn <p>{babelReads()}</p>\n}\n'
+}
+for (const [path, contents] of Object.entries(babelFiles)) {
+	mkdirSync(dirname(join(appDir, path)), { recursive: true })
+	writeFileSync(join(appDir, path), contents)
+}
+const babel = build(turbopack)
+const babelPage = join(appDir, ".next/server/app/babel.html")
+const babelRendered = ["function", ...babelReads.map(([, renders]) => renders)]
+	.join(" | ")
+	.replace(/"/g, "&quot;")
+	.replace(/'/g, "&#x27;")
+if (
+	babel.status !== 0 ||
+	!babel.output.includes(
+		writeUnreadProgramMessage(
+			".babelrc has Next run Babel on each module after this loader, which may add reads it can't see"
+		)
+	) ||
+	!readFileSync(babelPage, "utf8").includes(`<p>${babelRendered}</p>`)
+) {
+	throw new Error(
+		`Turbopack should build each module on its own where Babel runs after the loader, rendering ${babelRendered} in ${babelPage}. It exited ${babel.status}:\n${babel.output}`
+	)
+}
+for (const path of Object.keys(babelFiles))
+	rmSync(join(appDir, path), { recursive: true, force: true })
+rmSync(join(appDir, "app/babel"), { recursive: true, force: true })
 
 console.log("▲ Building a route importing a module from beyond the project...")
 
@@ -338,8 +472,8 @@ assertFailsWith(
 	),
 	build(
 		turbopack.replace(
-			"export default {",
-			'export default {\n\tserverExternalPackages: ["reads-errors"],'
+			"withPrecompile({",
+			'withPrecompile({\n\tserverExternalPackages: ["reads-errors"],'
 		)
 	)
 )

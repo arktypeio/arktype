@@ -62,11 +62,13 @@ Others: `precompile.rollup()` (ahead of `@rollup/plugin-typescript`), `precompil
 
 ### Next.js
 
-Next 16 builds with Turbopack. Add a loader rule for each extension holding a definition or the config module, and one for JavaScript mentioning arktype, so a dependency that defines Types fails the build rather than at runtime. Then alias arktype's entries to the runtime:
+Next 16 builds with Turbopack. Export the config through `withPrecompile`, which reads the project before Turbopack starts so `next build` can prune. Add a loader rule for each extension holding a definition or the config module, and one for JavaScript mentioning arktype, so a dependency that defines Types fails the build rather than at runtime. Then alias arktype's entries to the runtime, and @ark/schema's runtime to the one the loader writes for your options:
 
 ```js
-// next.config.js (or the same object in next.config.ts)
-export default {
+// next.config.js (or the same in next.config.ts)
+import { withPrecompile } from "@ark/aot/turbopack"
+
+export default withPrecompile({
 	// for the pages router
 	bundlePagesRouterDependencies: true,
 	turbopack: {
@@ -87,7 +89,7 @@ export default {
 			"@ark/schema/runtime": "@ark/aot/turbopack/runtime"
 		}
 	}
-}
+})
 ```
 
 Next 15 builds with webpack, as does `next build --webpack`: push `precompile.webpack()` onto `config.plugins` in the `webpack` function instead.
@@ -181,6 +183,6 @@ Each build error names the file, line and column, then why, then the fix on its 
 Two messages concern `members`:
 
 - `prune: keeping assert, meta, ~standard and methods, because the validator at src/schemas.ts:7:9 is lost where ...` (a warning): the build kept the members it couldn't prove unread, as where a Type is passed to a function it can't resolve; the build is correct, only larger. To build without the warning, set each member it names under `members` in `ark.json`, `true` where code may read it, like `~standard` where a library validates with it, else `false`, e.g. `"precompile": { "members": { "assert": false, "meta": false, "~standard": true, "methods": false } }`.
-- `toJsonSchema isn't baked into this validator, as the build saw no code read it`, at runtime: code the build can't see read it, like code outside the bundle reading an entry's export; set that member true under `members`.
+- `toJsonSchema isn't precompiled`, at runtime: code the build can't see read it, like code outside the bundle reading an entry's export; set that member true under `members`.
 
 Every message and its fix: https://arktype.io/docs/precompile/troubleshooting.md.

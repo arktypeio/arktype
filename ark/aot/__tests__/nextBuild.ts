@@ -30,11 +30,11 @@ const config = /```js title="next\.config\.js"\n([\S\s]*?)^```$/m.exec(
 	setup
 )?.[1]
 if (!config) throw new Error("Found no next.config.js in Setup")
-const cacheOff = "turbopackFileSystemCacheForBuild: false"
-if (!config.includes(cacheOff)) throw new Error(`Found no ${cacheOff} in Setup`)
-const withCache = config.replace(
-	cacheOff,
-	"turbopackFileSystemCacheForBuild: true"
+const bundles = "bundlePagesRouterDependencies: true,"
+if (!config.includes(bundles)) throw new Error(`Found no ${bundles} in Setup`)
+const withoutCache = config.replace(
+	bundles,
+	`${bundles}\n\texperimental: { turbopackFileSystemCacheForBuild: false },`
 )
 
 export interface NextBuilt {
@@ -74,9 +74,12 @@ const messageOf = (output: string): string => {
 	)
 }
 
+// a loader's, or what withPrecompile reports as Next loads next.config
 const warningsOf = (output: string) =>
 	[
-		...output.matchAll(/^Error: (prune: .*|The @ark\/aot\/turbopack .*)$/gm)
+		...output.matchAll(
+			/^(?:Error:| ⚠) (prune: .*|The @ark\/aot\/turbopack .*)$/gm
+		)
 	].map(match => match[1])
 
 const jsIn = (dir: string): string =>
@@ -90,8 +93,8 @@ export interface NextBuildOptions {
 	// on what the app's last build left in .next and the precompiler's cache, as
 	// a project's next build is
 	warm?: boolean
-	// with Turbopack's build cache on, as Next has it unless set off
-	cache?: boolean
+	// with Turbopack's build cache off, which Next has on unless set off
+	cacheOff?: boolean
 }
 
 export const buildOnNext = (
@@ -100,7 +103,7 @@ export const buildOnNext = (
 	entries: string[],
 	// undefined for no loader, as arktype alone builds it
 	options: PrecompilePluginOptions | undefined,
-	{ warm, cache }: NextBuildOptions = {}
+	{ warm, cacheOff }: NextBuildOptions = {}
 ): NextBuilt => {
 	const dir = nextApp(tag)
 	if (warm && existsSync(dir)) {
@@ -130,9 +133,11 @@ export const buildOnNext = (
 	writeFileSync(
 		join(dir, "next.config.mjs"),
 		options ?
-			(cache ? withCache : config)
-				.split('"@ark/aot/turbopack"')
-				.join(JSON.stringify({ loader: "@ark/aot/turbopack", options }))
+			(cacheOff ? withoutCache : config)
+				.split('loaders: ["@ark/aot/turbopack"]')
+				.join(
+					`loaders: [${JSON.stringify({ loader: "@ark/aot/turbopack", options })}]`
+				)
 				.replace(
 					"turbopack: {",
 					`typescript: { ignoreBuildErrors: true },\n\tturbopack: {\n\t\troot: ${JSON.stringify(repo)},`

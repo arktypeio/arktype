@@ -51,7 +51,9 @@ Vitest runs your tests through the same plugin.
 **Next.js**
 
 ```js
-export default {
+import { withPrecompile } from "@ark/aot/turbopack"
+
+export default withPrecompile({
 	// for the pages router
 	bundlePagesRouterDependencies: true,
 	turbopack: {
@@ -72,7 +74,7 @@ export default {
 			"@ark/schema/runtime": "@ark/aot/turbopack/runtime"
 		}
 	}
-}
+})
 ```
 
 For `next build --webpack`, see [Next.js](https://arktype.io/docs/precompile/setup#next).
@@ -8116,7 +8118,7 @@ import { type } from "arktype"
 
 ## Other packages
 
-- **`@ark/aot`** has an entrypoint for each way to run it: `@ark/aot/unplugin` (`precompile.vite()`, `.rollup()`, `.webpack()` and the other bundlers), `@ark/aot/node` (`register()`), `@ark/aot/bun` (`precompile()`), `@ark/aot/turbopack` (a loader, and `@ark/aot/turbopack/runtime` for its alias) and `@ark/aot/eslint` (`configs.recommended`). It installs an `arktype-precompile` CLI for `--check` and `--declare`, and `@ark/aot` itself exports `Precompiler`, whose `analyze()` the CLI and ESLint rule run. It needs Node 22.12 or later, and `typescript` 5.5 to 6 for declarations. See [Setup](https://arktype.io/docs/precompile/setup).
+- **`@ark/aot`** has an entrypoint for each way to run it: `@ark/aot/unplugin` (`precompile.vite()`, `.rollup()`, `.webpack()` and the other bundlers), `@ark/aot/node` (`register()`), `@ark/aot/bun` (`precompile()`), `@ark/aot/turbopack` (a loader, `withPrecompile()` for `next.config` and `@ark/aot/turbopack/runtime` for its alias) and `@ark/aot/eslint` (`configs.recommended`). It installs an `arktype-precompile` CLI for `--check` and `--declare`, and `@ark/aot` itself exports `Precompiler`, whose `analyze()` the CLI and ESLint rule run. It needs Node 22.12 or later, and `typescript` 5.5 to 6 for declarations. See [Setup](https://arktype.io/docs/precompile/setup).
 - **`arkregex`** exports `regex`, which is also exported from `arktype`, and the `Regex` type.
 - **`@ark/attest`** exports `attest`, `bench`, `setup` and `teardown`, and installs an `attest` CLI. Install it as a dev dependency.
 - **`@ark/json-schema`** exports `jsonSchemaToType` and `JsonSchemaScope`.
