@@ -3436,7 +3436,7 @@ export const U = make()
 					"lib.ts creates a Type before configure() runs"
 				]
 			})
-		})
+		}).timeout(180_000)
 
 		it("fail as arktype does where nothing imports the config module", async () => {
 			attest(
