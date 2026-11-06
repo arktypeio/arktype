@@ -104,6 +104,20 @@ export const writeExternalizedMessage = (
 export const writeNextExternalMessage = (specifier: string): string =>
 	`Next.js leaves the pages router's dependencies external on the server, so it leaves ${specifier} ${loadedAtRuntime}. Add \`bundlePagesRouterDependencies: true\` to next.config.js, so Next.js bundles them as it does the app router's, and leave ${packageNameOf(specifier)} out of \`serverExternalPackages\`.`
 
+// a Turbopack build's read of the project, which it needn't have to be right
+export const writeUnreadProgramMessage = (reason: string): string =>
+	`The @ark/aot/turbopack loader can't read this project whole, because ${reason}, so each module holds its own validators, which is larger and slower to load. Set prune: false to build them so without this warning.`
+
+export const writeUnfinishedProgramMessage = (minutes: number): string =>
+	`The @ark/aot/turbopack loader's read of the project didn't finish in ${minutes} minutes. Set prune: false to have each module hold its own validators.`
+
+// a module Turbopack builds as the read didn't see it, whose reads no validator planned for
+export const writeMissedByProgramMessage = (
+	module: string,
+	reason: string
+): string =>
+	`${module} ${reason}, which the @ark/aot/turbopack loader's read of the project didn't see, so a validator may lack what it reads. Set prune: false to have each module hold its own validators.`
+
 export const writeUnreadServerExternalsMessage = (config: string): string =>
 	`The @ark/aot/turbopack loader reads \`serverExternalPackages\` from ${config} without running it, for a package importing arktype that Next.js would load past \`resolveAlias\`, and can't read one other than an array of string literals. Write it as one.`
 
@@ -268,6 +282,9 @@ export const markerHint =
 	"Put // @ark-runtime right before a definition arktype should run, or remove it."
 
 export const islandHint = `A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".`
+
+export const writeUnexportedRuntimeMessage = (name: string): string =>
+	`\`${name}\` is arktype's, which arktype/runtime doesn't export, so a standalone build can't load this module`
 
 export const runtimeImportHint = `Read it only in a definition the build precompiles or one marked // @ark-runtime, or build with runtime: "arktype".`
 

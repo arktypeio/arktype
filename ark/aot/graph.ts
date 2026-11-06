@@ -134,6 +134,9 @@ const arkExports = new Set(
 	)
 )
 
+export const isArktypeExport = (name: string): boolean =>
+	name in arktypeNamespacesBySpecifier.arktype
+
 export const isArkObject = (value: unknown): boolean =>
 	isArkValue(value) || value instanceof Callable || arkExports.has(value)
 
@@ -469,7 +472,8 @@ const readingMembersByGlobal: Record<string, string[]> = Object.setPrototypeOf(
 		console: ["log", "info", "warn", "error", "debug", "dir", "table"],
 		JSON: ["stringify"],
 		Number: ["parseInt", "parseFloat", "isInteger", "isSafeInteger"],
-		Object: ["keys", "is", "isFrozen", "isSealed", "getOwnPropertyNames"],
+		// not is, which compares identity, as equal Types share one in arktype
+		Object: ["keys", "isFrozen", "isSealed", "getOwnPropertyNames"],
 		Array: ["isArray"]
 	},
 	null

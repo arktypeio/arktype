@@ -113,6 +113,35 @@ contextualize(() => {
 		attest(joined).is(join)
 	})
 
+	it("writes a long top-level arrow as a function unless it reads its scope", async () => {
+		const long = "a".repeat(120)
+		const dir = writePackage({
+			"index.js": `export const block = (a, b) => { const joined = a + b; return joined + "${long}" };
+export const expression = async a => a + "${long}";
+export const short = a => a + 1;
+export const scoped = () => { const text = "${long}"; return typeof arguments };
+export const outer = () => { const inner = () => "${long}"; return inner };`
+		})
+		const fromOut = bundleIn(dir)
+		const js = readFileSync(join(dir, "out", "index.js"), "utf8")
+		attest(js.match(/^var \w+ = (?:async )?\S+/gm)).equals([
+			"var block = function",
+			"var expression = async function",
+			"var short = (a)",
+			"var scoped = ()",
+			"var outer = function"
+		])
+		const { block, expression, short, scoped, outer } = await import(
+			fromOut("index.js")
+		)
+		attest(block("x", "y")).equals(`xy${long}`)
+		attest(await expression("x")).equals(`x${long}`)
+		attest(short(1)).equals(2)
+		// as a function, it would have arguments of its own
+		attest(scoped()).equals("undefined")
+		attest(outer()()).equals(long)
+	})
+
 	it("names a self-referencing class", async () => {
 		const dir = writePackage({
 			"index.js": `export class K { static self = { K }; m(o) { return o.K } _K() {} }`

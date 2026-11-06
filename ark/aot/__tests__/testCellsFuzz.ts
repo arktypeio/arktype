@@ -4,11 +4,12 @@
 // modules, and a module run twice. Each module's `check` is one of `reads`,
 // reaching a validator through one of `wrappers`. Observes each result, what
 // the call did to its input, and each predicate call in order.
-// ARK_CELLS_FUZZ=<count>[:<seed>]|catalog[:<wrapper>[:static|dynamic|query]]
-// [ARK_CELLS_FUZZ_HOSTS=esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,chunks,chunks:smallest,modules,webpack,node,dev,emit]
+// ARK_CELLS_FUZZ=<count>[:<seed>]|twins|probes[:<prefix>]|catalog[:<wrapper>[:static|dynamic|query]]
+// [ARK_CELLS_FUZZ_HOSTS=esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,chunks,chunks:smallest,modules,webpack,webpack:smallest,rspack,rspack:smallest,node,dev,emit]
 // [ARK_CELLS_FUZZ_FAILURES=<dir>] pnpm testCellsFuzz
 import { fromHere } from "@ark/fs"
 import { precompile } from "@ark/aot/unplugin"
+import { rspack } from "@rspack/core"
 import { build as esbuild } from "esbuild"
 import fc from "fast-check"
 import { build as viteBuild, defaultClientConditions } from "vite"
@@ -18,6 +19,8 @@ import { mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { pathToFileURL } from "node:url"
+import { documented, probes } from "./cellsProbes.ts"
+import { throughArkBarrel } from "./arkBarrel.ts"
 import { tempDir } from "./utils.ts"
 
 const [countArg, seedArg, importingArg] = (
@@ -28,7 +31,7 @@ const failureDir =
 	join(tmpdir(), "ark-cells-fuzz-failures")
 const hosts = (
 	process.env.ARK_CELLS_FUZZ_HOSTS ??
-	"esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,chunks,chunks:smallest,modules,webpack,node,dev,emit"
+	"esbuild,esbuild:smallest,split,split:smallest,vite,vite:smallest,chunks,chunks:smallest,modules,webpack,webpack:smallest,rspack,rspack:smallest,node,dev,emit"
 ).split(",")
 
 // each is a module's `check`, % being the module's own number: the text of two
@@ -58,7 +61,7 @@ const fixedReads: Record<string, string> = {
 }
 
 // state: a run's own, which a second run can't share. A difference in how often
-// a narrow runs shows in these, so they're kept off traversals that differ in it (F4)
+// a narrow runs shows in these too
 const statefulReads: Record<string, string> = {
 	letCounter: `let calls = 0\nconst check = (s: string) => ++calls % 2 === 0 || s.length > %`,
 	letLimit: `let limit = %\nconst check = (s: string) => s.length > limit++`,
@@ -328,23 +331,20 @@ interface App {
 	readsAllows: boolean
 	// tallied apart: which Types are one instance differs by host (F2)
 	comparesIdentity: boolean
+	// each of twinDefinitions created exported in one module, unexported in main
+	twins?: true
+	// one of cellsProbes' programs, run as written, compared with arktype's own
+	// messages too
+	probe?: string
 }
 
 const readNames = Object.keys(reads)
 const wrapperNames = Object.keys(wrappers)
 
-const loopingWrappers = new Set(["array", "indexed", "cyclic"])
-
-const appModule: fc.Arbitrary<AppModule> = fc
-	.record({
-		read: fc.constantFrom(...readNames),
-		wrapper: fc.constantFrom(...wrapperNames)
-	})
-	.map(({ read, wrapper }) => ({
-		read,
-		wrapper:
-			read in statefulReads && loopingWrappers.has(wrapper) ? "prop" : wrapper
-	}))
+const appModule: fc.Arbitrary<AppModule> = fc.record({
+	read: fc.constantFrom(...readNames),
+	wrapper: fc.constantFrom(...wrapperNames)
+})
 
 const apps: fc.Arbitrary<App> = fc.record({
 	// half of them repeat the first module's text but for what % decides
@@ -375,7 +375,12 @@ export const stateful = (s: string) => ++box.n % 2 === 0 && s.length > 1
 export default 2
 `
 
-const filesOf = (app: App): Record<string, string> => {
+// each file of an app, whose imports of arktype reach it through a barrel where
+// the round asks
+const filesOf = (app: App): Record<string, string> =>
+	throughArkBarrel(ownFilesOf(app))
+
+const ownFilesOf = (app: App): Record<string, string> => {
 	const files: Record<string, string> = {
 		"package.json": `{ "type": "module" }\n`,
 		"setup.ts": `;(globalThis as any).calls = []\n`,
@@ -398,6 +403,15 @@ const filesOf = (app: App): Record<string, string> => {
 			},
 			include: ["*.ts"]
 		})
+	}
+	if (app.probe) return { ...files, ...probes[app.probe] }
+	if (app.twins) {
+		const names = Object.keys(twinDefinitions)
+		files["twin.ts"] = `import { type } from "arktype"
+export const double = (d: any) => (typeof d === "number" ? d * 2 : d)
+export const positive = (d: number) => d > 0
+${names.map(name => `export const ${name} = type(${twinDefinitions[name]})`).join("\n")}
+`
 	}
 	if (app.config !== "none") {
 		files["config.ts"] =
@@ -462,8 +476,11 @@ const filesOf = (app: App): Record<string, string> => {
 		return `[${local}, () => [${[...values, ...values, ...extra].join(", ")}]]`
 	})
 	const awaited = imports.filter(line => line.startsWith("const "))
+	const twinNames = app.twins ? Object.keys(twinDefinitions) : []
 	files["main.ts"] = `${staticImports.join("\n")}
+${app.twins ? `import { double, positive, ${twinNames.join(", ")} } from "./twin.ts"` : ""}
 ${awaited.join("\n")}
+${twinNames.map(name => `const ${name}Here = type(${twinDefinitions[name]})`).join("\n")}
 
 const { calls } = globalThis as any
 const printed = (value: unknown) =>
@@ -518,12 +535,24 @@ for (const [validator, inputs] of cases) {
 			`
 const validators = cases.map(([validator]) => validator)
 observations.push(new Set(validators).size)
-observations.push(validators.map(v => validators.indexOf(v)))`
+observations.push([...validators.map(v => validators.indexOf(v)), ${twinNames.map(name => `${name}Here === ${name}`).join(", ")}])`
 		:	""
 	}
 console.log(JSON.stringify(observations))
 `
 	return files
+}
+
+// a Type and its unexported twin in another module, which arktype returns as one
+const twinDefinitions: Record<string, string> = {
+	KeywordMorph: `"string.numeric.parse"`,
+	PropMorph: `{ a: "string.numeric.parse" }`,
+	ArrayMorph: `"string.numeric.parse[]"`,
+	HeldMorph: `["string", "=>", double]`,
+	HeldNarrow: `["number", ":", positive]`,
+	Keyword: `"string.email"`,
+	Plain: `{ a: "string" }`,
+	Strings: `"string[]"`
 }
 
 const sourceOfApp = (app: App) => {
@@ -703,24 +732,45 @@ const viteOutcome = async (
 	return { out: runBundle(join(out, "main.js"), dir) }
 }
 
+// webpack and Rspack read arktype's built output, and need a project's loader to
+// read a .ts module, as neither strips types itself
 const webpackOutcome = async (
 	dir: string,
-	plugin: boolean
+	label: string,
+	plugin: boolean,
+	bundler: "webpack" | "rspack"
 ): Promise<Outcome> => {
-	const out = join(dir, plugin ? "out-webpack" : "out-webpack-plain")
-	const compiler = webpack({
-		mode: "production",
+	const out = join(dir, `out-${label}`)
+	const config = {
+		mode: "production" as const,
 		context: dir,
 		entry: "./main.ts",
-		target: "node",
+		target: "node" as const,
 		experiments: { topLevelAwait: true },
 		output: { path: out, filename: "main.cjs" },
 		resolve: { extensions: [".ts", ".js", ".cjs"] },
-		plugins: plugin ? [precompile.webpack({ cwd: dir }) as never] : []
-	})
-	const errors = await new Promise<string | undefined>(resolve =>
+		module: {
+			rules: [{ test: /\.ts$/, loader: fromHere("stripTypesLoader.ts") }]
+		}
+	}
+	const compiler =
+		bundler === "webpack" ?
+			webpack({
+				...config,
+				plugins: plugin ? [precompile.webpack({ cwd: dir }) as never] : []
+			})
+		:	((rspack as (options: unknown) => unknown)({
+				...config,
+				plugins: plugin ? [precompile.rspack({ cwd: dir })] : []
+			}) as webpack.Compiler)
+	const errors = await new Promise<string | undefined>((resolve, reject) => {
+		const hung = setTimeout(
+			() => reject(new Error(`${bundler} hung building ${dir}`)),
+			300_000
+		)
 		compiler.run((error, stats) =>
-			compiler.close(() =>
+			compiler.close(() => {
+				clearTimeout(hung)
 				resolve(
 					error ? messageOf(error)
 					: stats?.hasErrors() ?
@@ -730,9 +780,9 @@ const webpackOutcome = async (
 							.join("\n")
 					:	undefined
 				)
-			)
+			})
 		)
-	)
+	})
 	if (errors) return { refused: errors }
 	return { out: runBundle(join(out, "main.cjs"), dir) }
 }
@@ -806,7 +856,8 @@ const outcomeOf = (
 		: kind === "modules" ? esbuildOutcome(dir, label, { plugin, prune: false })
 		: kind === "vite" ? viteOutcome(dir, label, plugin)
 		: kind === "chunks" ? viteOutcome(dir, label, plugin, true)
-		: kind === "webpack" ? webpackOutcome(dir, plugin)
+		: kind === "webpack" || kind === "rspack" ?
+			webpackOutcome(dir, label, plugin, kind)
 		: kind === "node" ? driver(dir, true)
 		: kind === "dev" ? driver(dir, false)
 		: emitOutcome(dir)
@@ -819,7 +870,8 @@ const bundlers = new Set([
 	"modules",
 	"vite",
 	"chunks",
-	"webpack"
+	"webpack",
+	"rspack"
 ])
 
 const observationsOf = (out: string): unknown[] | undefined => {
@@ -838,6 +890,7 @@ const normalized = (observation: unknown) =>
 		.replace(/ \(was (?:[^"\\]|\\.)*?\)(?=(?:\\+n)|\\*")/g, "")
 		.replace(/value at \[/g, "[")
 		.replace(/[\w$]+\.(?=[\w$]+ is not a function)/g, "")
+		.replace(/[\w$]+(?= is not iterable)/g, "value")
 		.replace(
 			/according to (?:an anonymous predicate|[\w$]+)/g,
 			"according to a predicate"
@@ -948,6 +1001,8 @@ const check = async (app: App): Promise<boolean> => {
 		dir
 	)
 	const fullExpected = observationsOf(expected)
+	if (app.twins)
+		console.log(`source: ${JSON.stringify(fullExpected?.slice(-1)[0])}`)
 	const withoutIdentity = (observations: unknown[] | undefined) =>
 		app.comparesIdentity ? observations?.slice(0, -2) : observations
 	const expectedObservations = withoutIdentity(fullExpected)
@@ -958,9 +1013,8 @@ const check = async (app: App): Promise<boolean> => {
 	let sound = true
 	for (const host of hosts) {
 		const tally = tallies[host]
-		// tsc doesn't rewrite a query, and webpack leaves a queried module's sites
-		// untransformed (F3)
-		if (/^(emit|webpack)/.test(host) && app.importing === "query") continue
+		// tsc doesn't rewrite a query
+		if (host === "emit" && app.importing === "query") continue
 		// only this layout names a chunk main can import again
 		if (app.importing === "again" && !host.startsWith("chunks")) continue
 		const outcome = await outcomeOf(host, dir, app)
@@ -979,6 +1033,8 @@ const check = async (app: App): Promise<boolean> => {
 				JSON.stringify(fullExpected.slice(-2))
 		)
 			tally.identities++
+		if (app.twins && observed)
+			console.log(`${host}: ${JSON.stringify(observed.slice(-1)[0])}`)
 		// an app crashing whole in arktype must crash in a build, or be refused
 		let mismatch =
 			!expectedObservations || !observations ?
@@ -991,6 +1047,17 @@ const check = async (app: App): Promise<boolean> => {
 			) ?
 				firstMismatch(expectedObservations, observations, verdictsOf)
 			:	undefined
+		// a probe reads its values whole, as arktype writes them, less what the
+		// docs say a standalone validator writes otherwise
+		if (app.probe && observations && expectedObservations) {
+			mismatch =
+				(
+					normalized(documented(observations)) !==
+					normalized(documented(expectedObservations))
+				) ?
+					firstMismatch(expectedObservations, observations, documented)
+				:	undefined
+		}
 		if (
 			!mismatch &&
 			observations &&
@@ -1006,6 +1073,10 @@ const check = async (app: App): Promise<boolean> => {
 			allFlips(expectedObservations, observations)
 		) {
 			tally.flips++
+			// F1 is fixed, so a flip is kept to read, though not counted unsound
+			console.error(
+				`\nFLIP (${host}): kept in ${keepFailure(app, `${host}-flip`, expected, outcome.out)}`
+			)
 			continue
 		}
 		if (!mismatch) {
@@ -1026,12 +1097,16 @@ const check = async (app: App): Promise<boolean> => {
 		// what the bundler alone builds otherwise isn't the plugin's
 		if (bundlers.has(host.split(":")[0])) {
 			const plain = await outcomeOf(host, dir, app, false)
-			const plainObservations = "out" in plain && observationsOf(plain.out)
+			// compared as the plugin's are, without what an app compares of identity
+			const plainObservations =
+				"out" in plain && withoutIdentity(observationsOf(plain.out))
 			if (
 				(observations &&
 					plainObservations &&
-					normalized(verdictsOf(plainObservations)) ===
-						normalized(verdictsOf(observations))) ||
+					(app.probe ?
+						normalized(plainObservations) === normalized(observations)
+					:	normalized(verdictsOf(plainObservations)) ===
+						normalized(verdictsOf(observations)))) ||
 				// a crash it builds alone too
 				(!observations &&
 					"out" in plain &&
@@ -1053,10 +1128,39 @@ const check = async (app: App): Promise<boolean> => {
 }
 
 const started = Date.now()
-if (countArg === "catalog") {
+if (countArg === "probes") {
+	for (const probe of Object.keys(probes)) {
+		if (seedArg && !probe.startsWith(seedArg)) continue
+		const sound = await check({
+			modules: [],
+			importing: "static",
+			writes: false,
+			config: "none",
+			configFirst: true,
+			readsAllows: false,
+			comparesIdentity: false,
+			probe
+		})
+		console.log(`probe ${probe}: ${sound ? "sound" : "UNSOUND"}`)
+	}
+} else if (countArg === "twins") {
+	await check({
+		modules: [{ read: "literal", wrapper: "narrow" }],
+		importing: "static",
+		writes: false,
+		config: "none",
+		configFirst: true,
+		readsAllows: false,
+		comparesIdentity: true,
+		twins: true
+	})
+} else if (countArg === "catalog") {
 	const wrapper = seedArg ?? "narrow"
 	for (const read of readNames) {
-		if (read in statefulReads && loopingWrappers.has(wrapper)) continue
+		// a chunk that took in the module holding its state makes it anew when run
+		// again, as the bundler laid it out, whole or pruned
+		if (importingArg === "again" && reads[read].includes("./shared.ts"))
+			continue
 		await check({
 			modules: [
 				{ read, wrapper },

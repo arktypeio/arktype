@@ -398,7 +398,8 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 		const byPerturbation: WorldResults[string] = (results[file.path] = {})
 		const source = isPrecompiled ? file.precompiled : file.original
 		const readsBindings = /\$arkSite\(\d+, \(\) => \[\(\)/.test(source)
-		const importsModules = /from "\.\.?\//.test(source)
+		// written bare where a build drops what only its sites read
+		const importsModules = /(?:from|import) "\.\.?\//.test(source)
 		for (const kind of manifest.perturbations ?? perturbations) {
 			if (
 				kind === "mock" || kind === "mockKind" || kind === "swap" ?
