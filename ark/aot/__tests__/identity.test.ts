@@ -320,6 +320,42 @@ console.log(A === SameA, A({ a: "" }), B({ b: "" }))
 		attest(js.includes("tablesByKey")).equals(false)
 	})
 
+	describe("compared beside one another module creates", () => {
+		// main's Type is its own, which the build may write with less than the
+		// one a.ts exports
+		const compares = (name: string, read: string) =>
+			it(name, async () => {
+				const root = fixture(`compared-${name.replace(/\W+/g, "-")}`, {
+					"a.ts": `import { type } from "arktype"\nexport const A = type({ a: "string" })\n`,
+					"main.ts": `import { type } from "arktype"\nimport { A } from "./a.ts"\nconst B = type({ a: "string" })\nconsole.log(${read})\n`
+				})
+				const plain = runPlain(root)
+				attest(plain.startsWith("true")).equals(true)
+				attest(run(await bundle(root, production))).equals(plain)
+				attest(
+					run(await bundle(root, production, { preset: "smallest" }))
+				).equals(plain)
+				attest(runModuleAtATime(root)).equals(plain)
+				attest(runModuleAtATime(root, "production")).equals(plain)
+			}).timeout(60_000)
+
+		compares("by Object.is", "Object.is(A, B)")
+		compares("by ===", "A === B")
+		compares("by !==", "!(B !== A)")
+		compares(
+			"by a switch",
+			"(() => { switch (B) { case A: return true } return false })()"
+		)
+		compares("in a function it's passed to", "((x, y) => x === y)(A, B)")
+		compares("by its assert", "A.assert === B.assert")
+		compares(
+			"by an assert held to compare later",
+			"(f => f === A.assert)(B.assert)"
+		)
+		compares("by its ~standard", `A["~standard"] === B["~standard"]`)
+		compares("where its module reads more of it", "A === B, B.expression")
+	})
+
 	describe("where no read compares them", () => {
 		const twoModules = (main: string, a = `type({ a: "string" })`) =>
 			fixture(`unread-${main.replace(/\W+/g, "-").slice(0, 40)}`, {
@@ -350,6 +386,11 @@ console.log(A === SameA, A({ a: "" }), B({ b: "" }))
 		reads(
 			"interns them where what they hold could be",
 			`console.log(A.allows === B.allows, A({ a: "" }))`,
+			true
+		)
+		reads(
+			"interns them where a method is read to be called elsewhere",
+			`console.log(A.assert === B.assert, A({ a: "" }))`,
 			true
 		)
 		reads(
