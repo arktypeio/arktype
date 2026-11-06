@@ -146,10 +146,13 @@ ${summary.join("\n")}
 `
 	}
 	const esbuild = sectionOf(
-		groups.filter(group => !group.startsWith("webpack "))
+		groups.filter(group => !/^(?:webpack|turbopack) /.test(group))
 	)
 	const webpack = sectionOf(
 		groups.filter(group => group.startsWith("webpack "))
+	)
+	const turbopack = sectionOf(
+		groups.filter(group => group.startsWith("turbopack "))
 	)
 	writeFileSync(
 		outPath,
@@ -165,6 +168,9 @@ ${esbuild}
 ## webpack, which minifies with terser
 
 ${webpack}
+## next build on Turbopack, a route's server output and first load, Next's own included
+
+${turbopack}
 ${
 	Object.keys(stored.failed ?? {}).length ?
 		`## Failed\n\nThese couldn't load or validate, so they're in no cell:\n\n${Object.entries(

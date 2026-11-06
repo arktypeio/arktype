@@ -29,19 +29,19 @@ A validator that compiles at runtime ships its compiler, and one that interprets
 
 **Runtime** (instructions per call, lower is better): moltar's parseSafe benchmark (validate, removing undeclared keys), run by us on Node 24, ArkType precompiled with the default options. Precompiled ArkType isn't in moltar's published results yet. Source: [moltar/typescript-runtime-type-benchmarks](https://github.com/moltar/typescript-runtime-type-benchmarks)
 
-- ArkType (precompiled): 184
+- ArkType (precompiled): 185
+- ArkType (dynamic): 200
 - @ts-runtypes: 209
 - Typia: 213
-- ArkType (dynamic): 216
 - ata-validator (AOT): 220
 
 **Bundle size** (bytes gzipped, lower is better): the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports an error for every invalid field. ArkType is precompiled with its default options in a production build. Zod Mini's form, as valibot.dev writes it, throws at its first parse; written so it runs, it is the same size within 20 B. Source: [the form from valibot.dev's comparison](https://valibot.dev/guides/comparison/)
 
-- ArkType (precompiled): 1,140
+- ArkType (precompiled): 1,007
 - Valibot: 1,547
 - Zod Mini: 5,127
 - Zod: 25,058
-- ArkType (dynamic): 82,946
+- ArkType (dynamic): 89,751
 
 In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled with its defaults, it reports an error for every invalid field of Valibot's own login form, with the form's messages, in a smaller bundle than Valibot. Each chart names its benchmark and the options ArkType was built with.
 
@@ -104,7 +104,7 @@ Precompiling moves creating your Types from your program's startup to your build
 - Vite's dev server loaded the app in a browser in 7.1 s rather than 1.1 s, and the page showed an edit to the module every Type in its copy imports in 2.6 s rather than 374 ms. Next's took 15.2 s rather than 4.1 s to load and 488 ms rather than 37 ms to show the edit.
 - esbuild's watch rebuild after that edit took 1.7 s rather than 57 ms, and 5.7 s rather than 60 ms for a production bundle, which reads the whole app again to leave out what no read needs.
 
-At 92 Types, the plugin added 1.0 s to Vite's production build, 1.3 s to esbuild's and 2.5 s to Next's, and 256 ms to an edit in Vite's dev server. Turbopack runs the loader in a pool of processes, once for the client and once for the server, so a Next build precompiles each module twice.
+At 92 Types, the plugin added 1.0 s to Vite's production build, 1.3 s to esbuild's and 2.5 s to Next's, and 256 ms to an edit in Vite's dev server. Turbopack runs the loader in a pool of processes, once for the client and once for the server. `next dev` precompiles each module for each, where one process of `next build` precompiles its project once.
 
 ## How a validator differs
 
@@ -136,7 +136,7 @@ In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates 
 arktype returns one Type for a scope's equal definitions, so `type("string[]") === type("string").array()`, in one module or across two. A precompiled program compares the same, including any function a Type holds, except:
 
 - A Type the build leaves to arktype, as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands), and its precompiled equal are two values.
-- A build that reads each module alone, as Turbopack, Node and `arktype-precompile --emit` do, and any build that doesn't [prune](https://arktype.io/docs/precompile/options#prune), gives two values for a Type holding a cycle and for one in a scope a function creates. Reading the whole program, as a production build on Vite, Rollup, Rolldown, esbuild, webpack or Rspack does, compares them as arktype does.
+- A build that reads each module alone, as Node and `arktype-precompile --emit` do, and any build that doesn't [prune](https://arktype.io/docs/precompile/options#prune), gives two values for a Type holding a cycle and for one in a scope a function creates. Reading the whole program, as a production build on Vite, Rollup, Rolldown, esbuild, webpack or Rspack does, or `next build` with Turbopack, compares them as arktype does.
 - A scope a function creates is created once, however often the function is called, so each call's Types are one value where arktype creates them anew.
 - A chunk imported again at runtime under another URL creates its functions anew, so arktype gives each run its own Type for a narrow the chunk defines. A validator holding a function the build proves can't differ between runs may be one value for both.
 
@@ -396,6 +396,8 @@ With Turbopack, the default, add the loader as a rule for each extension your de
 export default {
 	// for the pages router
 	bundlePagesRouterDependencies: true,
+	// so a build doesn't keep what an earlier one wrote for its own read
+	experimental: { turbopackFileSystemCacheForBuild: false },
 	turbopack: {
 		rules: {
 			"*.ts": { loaders: ["@ark/aot/turbopack"] },
@@ -421,6 +423,8 @@ The loader fails a module whose `arktype` imports resolve otherwise, naming the 
 The aliases also point a dependency's `arktype` imports at the runtime, so the `*.{js,mjs}` rule has the loader fail the build for a dependency that defines Types but doesn't [opt in](https://arktype.io/docs/precompile/advanced#libraries), and precompile one that does or that [`dependencies`](https://arktype.io/docs/precompile/options#dependencies) sets to `"aot"`. Turbopack can't run one dependency on arktype, so for one that creates Types from values it reads as it runs, like `drizzle-arktype`, build with webpack or with `runtime: "arktype"`. The loader reads only `import` and `export` declarations, so a CommonJS dependency that `require`s arktype throws `type is not a function` when it loads instead.
 
 On the pages router's server, Next otherwise leaves dependencies external, where the aliases don't reach, so Node would load arktype, for your code and for any dependency importing it, beside the runtime your validators use, and `out instanceof type.errors` would be false for their errors. `bundlePagesRouterDependencies` has Next bundle them, as it does the app router's, and the loader fails a module there without it. `transpilePackages: ["arktype"]` isn't enough, as a dependency left external still loads its own copy. Either router leaves external a package `serverExternalPackages` names, so the loader fails the build for one that imports arktype, reading the list from `next.config` without running it: name its packages as string literals.
+
+`next build` reads your project before it writes a module, through every script under it that nothing imports and each route, so it can [prune](https://arktype.io/docs/precompile/options#prune) and hold each validator once, in a file under `node_modules/.bin/.ark`. It checks each module as Turbopack builds it against what it read, for each layer of a route, and fails one that differs, naming it: a module a loader rewrote, or one whose import resolves to another file in that layer, as a `react-server` condition may. Where it can't read the project, it warns, naming why, and each module holds its own validators, as they do with `prune: false` and in `next dev`: for another loader in `turbopack.rules` or rules it can't read without running `next.config`, a file like `.mdx` that a loader compiles, a query on an import, an import it can't name, or Turbopack's build cache, which Next turns on by default and which would keep a module's output, written for an earlier build's read, past a change to another module. Setting `turbopackFileSystemCacheForBuild` to `false` as above turns it off, so each build compiles every module anew, the precompiler's own cache answering what didn't change.
 
 With webpack, which Next 15 builds with, as does `next build --webpack`, add the plugin, which fails the build where Next would leave arktype, or a package importing it, external:
 
@@ -788,7 +792,7 @@ precompile: baking each introspection member into the validator at src/router.ts
 
 It doesn't warn where it lost track only past a dependency's read at a key that dependency doesn't name, as in the MCP SDK, since every program using it would warn.
 
-A production bundle reads every module, so it follows a validator a module exports to its importers. One an entry, or a module a dependency imports, exports may be read by code outside the bundle, so the build bakes nothing for that code. A build reading one module at a time, like webpack and Rspack where they don't [prune](https://arktype.io/docs/precompile/options#prune), Turbopack, the Node and Bun drivers and `arktype-precompile --emit`, follows a validator through its module and into its dependencies. Each module importing one follows what it does with it the same way, and bakes what that reads into it where it's read, each introspection member where it loses track, as where it passes it to `registerTool`. One a module stores at a key, or exports inside an object, bakes each where it's created, as code in another module may read it. A [frozen](https://arktype.io/docs/precompile/options#freeze) validator takes nothing from its importers, so in development, as on a dev server, one a module exports bakes each where it's created. So a validator has at least what a production bundle bakes it in development, and a production build reading one module at a time bakes what a module reads of it there. A read the build doesn't transform, like one outside the bundle reading an entry's export, throws in production alone. A build reading one module at a time doesn't transform a module that loads its validators only by `require()`, so nothing it reads of them is baked: set each member it reads true.
+A production bundle reads every module, so it follows a validator a module exports to its importers. One an entry, or a module a dependency imports, exports may be read by code outside the bundle, so the build bakes nothing for that code. A build reading one module at a time, like webpack, Rspack and Turbopack where they don't [prune](https://arktype.io/docs/precompile/options#prune), the Node and Bun drivers and `arktype-precompile --emit`, follows a validator through its module and into its dependencies. Each module importing one follows what it does with it the same way, and bakes what that reads into it where it's read, each introspection member where it loses track, as where it passes it to `registerTool`. One a module stores at a key, or exports inside an object, bakes each where it's created, as code in another module may read it. A [frozen](https://arktype.io/docs/precompile/options#freeze) validator takes nothing from its importers, so in development, as on a dev server, one a module exports bakes each where it's created. So a validator has at least what a production bundle bakes it in development, and a production build reading one module at a time bakes what a module reads of it there. A read the build doesn't transform, like one outside the bundle reading an entry's export, throws in production alone. A build reading one module at a time doesn't transform a module that loads its validators only by `require()`, so nothing it reads of them is baked: set each member it reads true.
 
 Keep `assert` or `~standard` on validators you pass to a library. tRPC, for one, calls a validator that has neither as a plain parse function, so it passes on the errors the validator returns as if they were the parsed input.
 
@@ -872,7 +876,7 @@ prune: keeping assert, meta, ~standard and methods, because src/index.ts exports
 
 Setting each in `members` clears it, as the build then has no member left to decide. Where `NODE_ENV` is `production`, `arktype-precompile --check` prints the same warning for a bundle of the files it checks, but tests, stories and configs. It follows relative imports of scripts alone and reads no file as an entry, so it misses what an alias, a virtual module, a component or an entry's exports lead to.
 
-Vite, Rollup, Rolldown, esbuild, webpack and Rspack bundles prune, esbuild only where this plugin is the last, so no plugin loads a module after it reads it. `prune: true` also prunes a Rollup, Rolldown, esbuild, webpack or Rspack bundle that isn't for production, which the build can't tell. Turbopack, the Node and Bun drivers and `arktype-precompile` build every validator whole, and fail with `prune: true`, set in their options or `ark.json`, as does an esbuild build where a plugin follows this one.
+Vite, Rollup, Rolldown, esbuild, webpack and Rspack bundles and `next build` with Turbopack prune, esbuild only where this plugin is the last, so no plugin loads a module after it reads it. `prune: true` also prunes a Rollup, Rolldown, esbuild, webpack or Rspack bundle that isn't for production, which the build can't tell. The Node and Bun drivers and `arktype-precompile` build every validator whole, and fail with `prune: true`, set in their options or `ark.json`, as does an esbuild build where a plugin follows this one. `next dev` builds them whole under any setting.
 
 A Vite, Rollup or Rolldown build reads each module from its file, then reads the bundle again as it was built, and fails only where the built bundle reads a member it left out, naming the read, as where a plugin ahead of this one adds one. A plugin that rewrites a module without adding a read, like a Babel plugin or TanStack Router's code splitting, changes nothing. An esbuild build reads each module as it loads it, and fails where another plugin loaded one. A webpack or Rspack build reads a module as it reached the plugin, a loader ahead's work included, and each import a loader after it adds keeps every member of what that import reaches. Where such a loader adds a read of an introspection member, it builds as `prune: false` does, but it can't see one adding a read of another member through an import the module already had. Where it can't read a module, it builds as `prune: false` does, as no module was written yet. `prune: false` builds every validator whole, each unit a module of its own.
 
@@ -1079,6 +1083,8 @@ A definition reading one of its Types, like `type({ email: Email })` with `Email
 
 **`must be valid according to t`**, or `$ark.t` in a morph's `toJSON()`, where the function was anonymous: terser, which webpack minifies with, can inline the call a precompiled site makes and assign your function to a variable, which names it. It renames every function anyway unless told not to, so where a message names one, give it a name and set [`keep_fnames`](https://terser.org/docs/options/#compress-options). Validation is unaffected.
 
+**A narrow keeping state passes on Rspack where it fails elsewhere**, with or without precompiling: Rspack's minifier writes `const patterns = [/a/g]` and `s => patterns[0].test(s)` as `s => /a/g.test(s)`, a new regex at each call, so its `lastIndex` never advances. Bind the regex itself, as in `const re = /a/g`, or set `optimization.minimize` false.
+
 **`type is not a function`** at runtime: a module that defines a Type loaded `arktype/runtime` without being precompiled. Bun's driver and Turbopack replace `arktype` for every importer, so they can't fail for a module they don't load, like one another plugin supplies or, with Turbopack, one no loader rule matches. Define the Types it uses in a file they precompile. The same error comes from a call to a helper the build precompiles at each call, made from a module the build doesn't transform: call the helper where it does.
 
 **`toJsonSchema isn't baked into this validator, as the build saw no code read it`** at runtime, or the same for another introspection member: code the build didn't see read a member it didn't bake, like code outside the bundle reading a validator an entry exports. Set it true in [`members`](https://arktype.io/docs/precompile/options#members).
@@ -1086,6 +1092,10 @@ A definition reading one of its Types, like `type({ email: Email })` with `Email
 **`A standalone validator's JSON Schema takes only a target it was built with, and a fallback only where it was built to apply one`**: code passed `toJsonSchema()` options its baked schema can't apply. A validator applies a `fallback` where it also bakes `~standard.jsonSchema`, as where a library like hono-openapi converts it, or where [`members`](https://arktype.io/docs/precompile/options#members) sets `toJsonSchema`, so set it true where code the build doesn't see passes one. It still throws where arktype reads what a fallback returns other than to write a union, as for a `Date` with keys of its own or a symbol key. Build those with `runtime: "arktype"`.
 
 **`... was written by a build whose cache kept it in ..., where it no longer is`**: delete the bundler's cache to rebuild.
+
+**`The @ark/aot/turbopack loader can't read this project whole, because ...`**: `next build` [couldn't read your project](https://arktype.io/docs/precompile/setup#next) up front, so each module holds its own validators. The build is right, but larger and slower to load. Remove what the message names, or set `prune: false` to build so without the warning.
+
+**`... which the @ark/aot/turbopack loader's read of the project didn't see, so a validator may lack what it reads`**: Turbopack built a module otherwise than `next build` read it, so a validator it left a member out of may be read for it. The message names the module and how it differs. Remove the difference, or set `prune: false`.
 
 **Turbopack builds a module as it did before you linked or patched arktype**: Turbopack's persistent cache keeps what the loader wrote until the module, a file it read, or the version of `arktype` or `@ark/aot` changes. A linked copy or a patch changes their code without the version, so delete `.next/cache` after changing either. The build's own cache, and webpack's and Rspack's, rebuild by themselves.
 
@@ -1213,7 +1223,7 @@ A [production bundle](https://arktype.io/docs/precompile/options#prune) that rea
 
 ### Large modules on Turbopack
 
-Turbopack's production build reads one module at a time, so it can't write a program's code once. A route would spend its first request on Types it may never call, so a module writing a lot of code creates each validator's checks at its first call rather than as the module loads. A validator is still there from the import, with its identity and members, and what a Type reads from your code is read and checked on import, so nothing about when a guard fires changes. The cost is a few more instructions per call to read the check through a variable.
+Where `next build` [can't read its project whole](https://arktype.io/docs/precompile/setup#next), each module holds its own validators, so it can't write a program's code once. A route would spend its first request on Types it may never call, so a module writing a lot of code creates each validator's checks at its first call rather than as the module loads. A validator is still there from the import, with its identity and members, and what a Type reads from your code is read and checked on import, so nothing about when a guard fires changes. The cost is a few more instructions per call to read the check through a variable.
 
 [`lazy: false`](https://arktype.io/docs/precompile/options#lazy) and `optimize: "size"` leave a module as it is.
 

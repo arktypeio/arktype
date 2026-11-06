@@ -329,6 +329,35 @@ export const Exported = type({ b: "number" })
 			).equals(expected)
 		})
 
+		it("a barrel re-exporting what arktype/runtime lacks for sites to read, in and outside production", () => {
+			const body = `
+const types = scope({ user: { name: "string" } }).export()
+const Id = type("string")
+
+console.log(String(types.user({ name: 5 })), Id("x"))
+`
+			// match, which nothing reads
+			const named = `import { match, scope, type } from "./ark.ts"\n${body}`
+			for (const [shape, barrel, main] of [
+				["named", `export { match, scope, type } from "arktype"\n`, named],
+				["star", `export * from "arktype"\n`, named],
+				[
+					"renamed",
+					`export { match as ark_match, scope as ark_scope, type as ark_type } from "arktype"\n`,
+					`import { ark_match, ark_scope as scope, ark_type as type } from "./ark.ts"\n${body}`
+				]
+			]) {
+				const root = writeFixture(
+					{ "ark.ts": barrel, "main.ts": main },
+					fromHere("temp", "arkBarrel", shape)
+				)
+				for (const NODE_ENV of ["development", "production"]) {
+					const { stdout, stderr } = node(["main.ts"], {}, root, { NODE_ENV })
+					attest([stdout, stderr]).equals(["name must be a string x\n", ""])
+				}
+			}
+		})
+
 		it("import cycle", () => {
 			const expected = runPlain(cycle)
 			// a module reached before it loads creates lazily, even with lazy false

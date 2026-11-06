@@ -1,15 +1,15 @@
 {
 	"ArkType (precompiled, default)": {
-		"min": 2063,
-		"gzip": 1002
+		"min": 2142,
+		"gzip": 1026
 	},
 	"ArkType (precompiled, smallest)": {
-		"min": 1913,
-		"gzip": 995
+		"min": 1968,
+		"gzip": 996
 	},
 	"ArkType (dynamic)": {
-		"min": 269189,
-		"gzip": 85798
+		"min": 271827,
+		"gzip": 89767
 	},
 	"Valibot": {
 		"min": 3885,
@@ -24,8 +24,8 @@
 		"gzip": 5124
 	},
 	"typia (createValidate)": {
-		"min": 2800,
-		"gzip": 1252
+		"min": 2826,
+		"gzip": 1259
 	},
 	"TypeBox (TypeCompiler)": {
 		"min": 93298,
@@ -36,8 +36,8 @@
 		"gzip": 25697
 	},
 	"Effect Schema": {
-		"min": 269285,
-		"gzip": 83215
+		"min": 315735,
+		"gzip": 100089
 	},
 	"runtypes": {
 		"min": 16184,
@@ -52,8 +52,8 @@
 		"gzip": 13519
 	},
 	"Joi": {
-		"min": 173857,
-		"gzip": 54732
+		"min": 174815,
+		"gzip": 55083
 	},
 	"ajv (standalone, ajv-errors)": {
 		"min": 4550,

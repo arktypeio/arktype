@@ -1136,7 +1136,8 @@ export class StandaloneArtifact {
 	}
 
 	get internsAcrossModules(): boolean {
-		const { type } = this.factory!
+		// as never, as above: the docs' checker can't instantiate a factory's Type
+		const type = this.factory!.type as never
 		return (
 			hasArkKind(type, "root") &&
 			this.heldOf(keyOf(type)[1]).length > 0 &&

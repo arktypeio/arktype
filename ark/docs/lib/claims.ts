@@ -74,20 +74,22 @@ export interface BenchmarkChart {
  * Measured on Node 24.14.1 by the plan and harness in
  * ark/repo/bench/external, against moltar's typescript-runtime-type-benchmarks
  * at 499f3fb and schema-benchmarks at f1e6e8e. Its results/ holds the
- * instruction counts (counts-a306152ce.md, whose builds match the release's),
- * the sizes (login-5acd85130.json) and the pre-registered wall-clock run at
+ * instruction counts (counts-a306152ce.md; ArkType's recounted at 20710020e in
+ * arktype-20710020e.json), the sizes (login-20710020e.json) and the
+ * pre-registered wall-clock run at
  * f29b8d153 (wall-f29b8d153.md: 30 paired passes, Holm over H1-H4), where all
  * four hypotheses held. At the release candidate (wall.md) H1 had failed. Each
  * claim is scoped: precompiled or dynamic, valid or invalid data, with or
  * without errors. The headline's superlatives and the board's standings
  * instead follow the README's "Best average" rule over the independent suites
  * (lib/bench/leaderboard.ts), with ArkType as its default production build
- * throughout, its instruction-count and startup rows measured at 781130da3
- * and its size rows at 2c1a6a86e, whose runtime is 781130da3's.
+ * throughout, every one of its rows measured at 20710020e.
  */
 
 // moltar's typescript-runtime-type-benchmarks, perf instruction counts in
-// benny's call shape, the default build. By wall clock (H1, p 8.7e-7), it
+// benny's call shape, the default build: at 20710020e 184.6 on parseSafe, 66
+// on assertLoose, dynamic 199.6 (216 at a306152ce); rivals' counts are
+// a306152ce's. By wall clock at f29b8d153 (H1, p 8.7e-7), it
 // beat every rival within 25% of its instructions in 28-29 of 30 passes:
 // @ts-runtypes, Typia, ata-validator (AOT) and ata in about 0.83x their time,
 // rescript-schema in 0.90x and @sx3/gate in 0.92x.
@@ -101,10 +103,10 @@ export const speedChart: BenchmarkChart = {
 		href: "https://github.com/moltar/typescript-runtime-type-benchmarks"
 	},
 	bars: [
-		{ name: "ArkType (precompiled)", kind: "precompiled", value: 184 },
+		{ name: "ArkType (precompiled)", kind: "precompiled", value: 185 },
+		{ name: "ArkType (dynamic)", kind: "dynamic", value: 200 },
 		{ name: "@ts-runtypes", kind: "other", value: 209 },
 		{ name: "Typia", kind: "other", value: 213 },
-		{ name: "ArkType (dynamic)", kind: "dynamic", value: 216 },
 		{ name: "ata-validator (AOT)", kind: "other", value: 220 }
 	]
 }
@@ -114,11 +116,12 @@ export const speedChart: BenchmarkChart = {
 // password gets ArkType's one, where Valibot also says it's empty), in a
 // production build (esbuild's "production" condition), which prunes a
 // precompiled validator to what the form uses. Every bar is from
-// results/login-5acd85130.json: the default build
-// is 2494 / 1140 B min / gz, the "smallest" preset 1037. forms/, the size
-// suite in the README's "Best average", bundles the same form with the same
-// settings, but exporting a function that asserts rather than asserting once,
-// so its default build is 1158. The chart's earlier 1313 was "smallest" at
+// results/login-20710020e.json: the default build
+// is 2110 / 1007 B min / gz, the "smallest" preset 978 (at 5acd85130, 1140
+// and 1037). forms/, the size suite in the README's "Best average", bundles
+// the same form with the same settings, but exporting a function that asserts
+// rather than asserting once, so its default build is 1026
+// (results/newest/forms.json). The chart's earlier 1313 was "smallest" at
 // 89510709d, before builds pruned by usage. Zod Mini's form is valibot.dev's
 // code as written, which throws at its first parse on zod 4.6.7 (z.check
 // takes no schema); written to run (z.email(...).check(...)), it is 5107.
@@ -133,11 +136,11 @@ export const sizeChart: BenchmarkChart = {
 	},
 	axisMax: 26_000,
 	bars: [
-		{ name: "ArkType (precompiled)", kind: "precompiled", value: 1140 },
+		{ name: "ArkType (precompiled)", kind: "precompiled", value: 1007 },
 		{ name: "Valibot", kind: "other", value: 1547 },
 		{ name: "Zod Mini", kind: "other", value: 5127 },
 		{ name: "Zod", kind: "other", value: 25058 },
-		{ name: "ArkType (dynamic)", kind: "dynamic", value: 82946 }
+		{ name: "ArkType (dynamic)", kind: "dynamic", value: 89751 }
 	]
 }
 
@@ -147,14 +150,13 @@ export const sizeChart: BenchmarkChart = {
 // after its first validation of valid data, less a bundle that validates
 // nothing (ark/repo/bench/external/startup.ts). Planned before any count: 20
 // rounds, a two-sided sign test per library paired by round. Node 24 medians
-// at 781130da3 (results/startup-781130da3-node24.json): the default build had
-// the fewest on every app against every library run, 20 of 20 (p 1.9e-6), as
-// it had in 19-20 of 20 at 90d510484 and on Node 24 and 25 at 4fd880692. On
-// valibot.dev's login form it was 0.91M to Valibot's 2.37M, on shop 9.95M to
-// Valibot's 12.26M, and on the moltar app 0.95M to ajv's 1.43M. Typia wasn't
-// run at 781130da3 (its generated validators weren't built first), so the
-// rows there lack it; at 90d510484 it was the closest on moltar, 1.16M to
-// 1.05M, 19 of 20. No wall-clock run yet, so nothing says it starts faster.
+// at 20710020e (results/startup-20710020e-node24.json), Typia included: the
+// default build had the fewest on every app against every library, 20 of 20
+// (p 1.9e-6), as at 781130da3 and in 19-20 of 20 at 90d510484. On
+// valibot.dev's login form it was 0.88M to Valibot's 2.34M, on the login app
+// 0.87M to ajv's 1.86M, on shop 9.85M to Valibot's 12.16M, and on the moltar
+// app 0.98M to Typia's 1.15M. No wall-clock run yet, so nothing says it
+// starts faster.
 const startupChart: BenchmarkChart = {
 	title: "Cold start",
 	detail:
@@ -408,7 +410,7 @@ const sizeResultsBeating = (library: string) => {
 		rows.length === rowsOf("size").length ?
 			`${rows.length} size results`
 		:	`${rows.length} size results it's in`
-	return `${count} of the ${of}${largest[library] < largest.ArkType ? ", including the largest of ArkType's bundles among them" : ""}`
+	return `${count || "none"} of the ${of}${largest[library] < largest.ArkType ? ", including the largest of ArkType's bundles among them" : ""}`
 }
 
 const sizeRival = averageOf("size").other
@@ -479,12 +481,19 @@ const presetScaleRows = presetScale.series.flatMap(({ apps, seed, rows }) =>
 
 const presetScaleTypes = presetScaleRows.map(row => row.types)
 
+/** whether "smallest" gzips below Valibot on every row, which sizePreset needs */
+const presetScaleBacked =
+	presetScaleRows.length > 0 &&
+	presetScaleRows.every(row => row.smallest < row.valibot)
+
+const presetScaleText = `Big frontend? The "smallest" preset gzips smaller than Valibot at every scale we measured, ${Math.min(...presetScaleTypes)} to ${Math.max(...presetScaleTypes).toLocaleString("en-US")} Types.`
+
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
 	// each superlative names a category ArkType must claim
 	// (lib/bench/leaderboard.ts), as the check of the copy below holds. Size
-	// is the close one: ArkType 1.176 to Typia's 1.256 on results/newest/'s
-	// size rows (2c1a6a86e), and tieBand keeps the claim within 5% of the best
+	// is the close one: ArkType 1.163 to Typia's 1.256 on results/newest/'s
+	// size rows (20710020e), and tieBand keeps the claim within 5% of the best
 	headline:
 		leads("size") ?
 			"TypeScript's smallest, fastest validator."
@@ -502,29 +511,31 @@ export const claims = {
 	// the sentence under the docs' charts
 	chartsSummary:
 		"In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled with its defaults, it reports an error for every invalid field of Valibot's own login form, with the form's messages, in a smaller bundle than Valibot.",
-	// the product schema, valid data: 6005 vs 6003 instructions; by wall clock
+	// the product schema, valid data: 5951.05 instructions each at 20710020e,
+	// 10 reps (6005 vs 6003 at a306152ce); by wall clock at f29b8d153
 	// (H3), dynamic took 0.999x the default build's time and stayed under 1.05x
 	// in 24 of 30 passes (p 0.00072)
 	dynamicSpeed:
 		"In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType.",
-	// the default build in production, 1140 vs 1547 B gz, the form as written
+	// the default build in production, 1007 vs 1547 B gz, the form as written
 	loginSize:
-		"On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 1.14 kB gzipped against 1.55 kB.",
-	// moltar strict, dynamic, 2.2.9 to now: assertStrict 5326 -> 348,
-	// parseStrict 4277 -> 365 instructions (2.2.9's counts vary by 20-26%
-	// between reps, its ratios 10.2x to 17.1x); by wall clock (H4), 0.074x
+		"On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 1.01 kB gzipped against 1.55 kB.",
+	// moltar strict, dynamic, 2.2.9 to now at 20710020e: assertStrict 3857-4013
+	// -> 348, parseStrict 3835-4199 -> 367 instructions over two runs of 3 reps
+	// (10.4x to 11.5x); by wall clock at f29b8d153 (H4), 0.074x
 	// 2.2.9's time on assertStrict, under 0.2x in 30 of 30 passes
 	strictSpeedup:
 		"Dynamic ArkType validates moltar's strict cases about 10 times faster than 2.2.",
-	// 18 instructions, the harness floor; typia createIs 221
+	// 16 instructions at 20710020e, the harness floor; typia createIs 381
 	noInit:
 		"A precompiled Type costs nothing to create: it was built when you built.",
 	// `import { type } from "arktype"` by ark/repo/bench/bundle.ts's method
 	// (esbuild 0.25.10 bundle + minify, esm, neutral, "production", gzip) at
-	// 5acd85130: 82983 vs 2.2.9's 47797 B gz from npm (260519 vs 156116 min);
-	// sizeChart's dynamic bar, the login form, is 82946
+	// 20710020e: 89783 vs 2.2.9's 47797 B gz from npm (271466 vs 156116 min);
+	// 82983 at 5acd85130. sizeChart's dynamic bar, the login form at gzip
+	// level 9, is 89751
 	dynamicSize:
-		"Dynamic ArkType is 83.0 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.",
+		"Dynamic ArkType is 89.8 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.",
 	zodSpec: `faster than Zod 4 in ${zodScenarios} we ran`,
 	// the median, not the range: the largest ratio is a first-error row, and
 	// Zod has no first-error mode
@@ -552,7 +563,7 @@ export const claims = {
 	// what the board's superlatives average
 	boardNote: `${rankedBy}, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote} ${namingNote}`,
 	// startupChart's rivals, every one on the login row of the run it cites,
-	// 20 of 20 each; the form is 0.91M vs Valibot's 2.37M, 20 of 20
+	// 20 of 20 each; the form is 0.88M vs Valibot's 2.34M, 20 of 20
 	startupLogin: `On the homepage's login app, precompiled ArkType spends fewer instructions from import to its first validation than each of ${startupRivals}, in all 20 paired runs on Node 24.`,
 	// speedChart and H1
 	parseSafe:
@@ -564,15 +575,18 @@ export const claims = {
 	// default build skips; the full board adds our cold starts of whole apps
 	startupBasis: `${startupIsCreation ? `Each of the ${leaderboards.startup.rows} independent startup results times creating a schema, which a precompiled build does when it builds. ` : ""}Our own startup benchmarks time importing an app through its first validation (${fullLeaderboards.startup.rows - leaderboards.startup.rows} results), and with them ArkType is ${ordinal(placeOf("startup", fullLeaderboards).place)} for startup.`,
 	sizeAverage: averagesOf("size"),
-	// ArkType 1.176 to Typia's 1.256, Typia on 2 of the 3 suites; at
-	// 624a5d716's rows ArkType led by 1.3%, and at 808927feb's Typia had it,
+	// ArkType 1.163 to Typia's 1.256 at 20710020e, Typia on 2 of the 3
+	// suites; at 2c1a6a86e's rows 1.176, at 624a5d716's ArkType led by 1.3%,
+	// and at 808927feb's Typia had it,
 	// 1.256 to 1.297. The blog states it right after sizeAverage, which has
 	// the averages and the margin, so this adds only the results themselves
 	sizeClose: `Size is the close one: ${sizeRivalName} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`,
 	// the "smallest" preset for schema-heavy frontends, where the default
 	// build's lead at form scale (sizeAverage) doesn't carry: gzip bytes from
-	// lib/bench/presetScale.json, which the check below the claims holds
-	sizePreset: `Big frontend? The "smallest" preset gzips smaller than Valibot at every scale we measured, ${Math.min(...presetScaleTypes)} to ${Math.max(...presetScaleTypes).toLocaleString("en-US")} Types.`,
+	// lib/bench/presetScale.json, pending wherever a row has it at or above
+	// Valibot, so the home page and the blog leave it out
+	sizePreset:
+		presetScaleBacked ? presetScaleText : { pending: presetScaleText },
 	// benchSize, saas, whose one undiscriminated union is all that ships it: 5220 ->
 	// 5777 B gz under "smallest", 10275 -> 10880 by default; erasing what it reads from
 	// those bundles saves 492 and 556 B. login, moltar and shop hold none and don't
@@ -627,16 +641,6 @@ export const assertStandings = (copy: string, by: string) => {
 	}
 	if (/\bpick 3\b/i.test(copy))
 		for (const category of boardOrder) assertLeads(category, by)
-}
-
-const presetScaleLosses = presetScaleRows.filter(
-	row => row.smallest >= row.valibot
-)
-
-if (!presetScaleRows.length || presetScaleLosses.length) {
-	throw new Error(
-		`sizePreset claims the "smallest" preset is smaller than Valibot at any scale, but presetScale.json ${presetScaleRows.length ? `has it at or above Valibot on ${presetScaleLosses.map(row => row.label).join(", ")}` : "has no results"}`
-	)
 }
 
 const kbText = (bytes: number) =>

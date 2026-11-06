@@ -2,9 +2,9 @@
 // behaves as the same app built whole: each app's modules hand validators
 // around, store them and read them every way a program can, and both builds
 // run the same inputs through each read. ARK_PRUNE_FUZZ=<count>[:<seed>]
-// [ARK_PRUNE_FUZZ_BUNDLERS=esbuild,vite,webpack,rspack]
+// [ARK_PRUNE_FUZZ_BUNDLERS=esbuild,vite,webpack,rspack,turbopack]
 // [ARK_PRUNE_FUZZ_FAILURES=<dir>]
-// [ARK_PRUNE_FUZZ_DEBUG=1] pnpm testPruneFuzz
+// [ARK_FUZZ_SIDE_EFFECTS_FREE=1] [ARK_PRUNE_FUZZ_DEBUG=1] pnpm testPruneFuzz
 import { fromHere } from "@ark/fs"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { rspack } from "@rspack/core"
@@ -19,7 +19,9 @@ import {
 } from "vite"
 import webpack, { type Stats } from "webpack"
 import { spawnSync } from "node:child_process"
+import { createHash } from "node:crypto"
 import {
+	copyFileSync,
 	existsSync,
 	mkdirSync,
 	readdirSync,
@@ -44,6 +46,12 @@ import {
 	unnamedHoles,
 	type Node
 } from "./grammar.ts"
+import { throughArkBarrel } from "./arkBarrel.ts"
+import {
+	buildOnNext,
+	removeNextApps,
+	type NextBuildOptions
+} from "./nextBuild.ts"
 import { tempDir } from "./utils.ts"
 
 // <count>[:<seed>[:<path>]], the path replaying one of a seed's runs
@@ -63,7 +71,7 @@ const failureDir =
 // keeps an app whose whole build's refusal matches, to look into a refusal
 const keptInvalid = process.env.ARK_PRUNE_FUZZ_KEEP_INVALID
 
-type Bundler = "esbuild" | "vite" | "webpack" | "rspack"
+type Bundler = "esbuild" | "vite" | "webpack" | "rspack" | "turbopack"
 
 // how a site derives the validator it exports
 const wraps = {
@@ -662,7 +670,39 @@ const helperSources: Record<string, string> = {
 const specifierOfModule = (app: App, m: number) =>
 	app.validators.find(v => v.module === m)!.specifier
 
-const filesOf = (app: App): Record<string, string> => {
+// a program saying the rest of its modules are free of side effects, as a library's
+// package does, which has webpack defer what they re-export. Its config module
+// has one, which a bundler would otherwise drop, and which a Type says it needs
+const sideEffects =
+	process.env.ARK_FUZZ_SIDE_EFFECTS_FREE === "1" ?
+		{ sideEffects: ["./config.ts"] }
+	:	{}
+
+// each file of an app, whose imports of arktype reach it through a barrel where
+// the round asks
+const filesOf = (app: App): Record<string, string> =>
+	versionedByContent(throughArkBarrel(ownFilesOf(app)))
+
+// a dependency's version, which webpack's and Rspack's persistent caches take a
+// package in node_modules to be by, changes with what it holds, as a published
+// one's does: otherwise a warm build reads the last app's package as this one's
+const versionedByContent = (
+	files: Record<string, string>
+): Record<string, string> => {
+	const manifest = `node_modules/${dependencyPackage}/package.json`
+	const source = files[`node_modules/${dependencyPackage}/index.js`]
+	if (!files[manifest] || source === undefined) return files
+	const version = `1.0.${parseInt(createHash("sha1").update(source).digest("hex").slice(0, 8), 16)}`
+	return {
+		...files,
+		[manifest]: files[manifest].replace(
+			'"version":"1.0.0"',
+			`"version":"${version}"`
+		)
+	}
+}
+
+const ownFilesOf = (app: App): Record<string, string> => {
 	const files: Record<string, string> = {}
 	const modules = new Set(app.validators.map(v => v.module))
 	for (const m of modules) {
@@ -673,6 +713,7 @@ const filesOf = (app: App): Record<string, string> => {
 				name: dependencyPackage,
 				version: "1.0.0",
 				type: "module",
+				...sideEffects,
 				exports: "./index.js",
 				...(app.dependency === "optIn" && { ark: { aot: true } })
 			})
@@ -793,6 +834,7 @@ const filesOf = (app: App): Record<string, string> => {
 	files["package.json"] = JSON.stringify({
 		name: "prune-fuzz-app",
 		type: "module",
+		...sideEffects,
 		private: true,
 		dependencies: {
 			arktype: "*",
@@ -1042,12 +1084,30 @@ const buildWith = async (
 	app: App,
 	opts: PrecompileUnpluginOptions,
 	tag: string,
-	cacheDir?: string
+	// webpack's and Rspack's persistent cache, or how Next builds it again
+	cache?: string | NextBuildOptions
 ): Promise<Built> => {
 	const out = join(dir, `out-${bundler}-${tag}`)
 	rmSync(out, { recursive: true, force: true })
 	const warnings: string[] = []
 	try {
+		if (bundler === "turbopack") {
+			const built = buildOnNext(
+				dir,
+				tag,
+				entriesOf(dir, app).map(entry => basename(entry, ".ts")),
+				opts,
+				typeof cache === "object" ? cache : undefined
+			)
+			if (built.refused)
+				return { refused: built.refused, warnings: built.warnings, js: "", out }
+			mkdirSync(out, { recursive: true })
+			for (const entry in built.runners) {
+				// the runner's, named as the other bundlers name their entries
+				copyFileSync(built.runners[entry], join(out, `${entry}.cjs`))
+			}
+			return { warnings: built.warnings, js: built.js, out }
+		}
 		if (bundler === "esbuild") {
 			const result = await esbuild({
 				entryPoints: entriesOf(dir, app),
@@ -1065,7 +1125,14 @@ const buildWith = async (
 			})
 			warnings.push(...result.warnings.map(w => w.text))
 		} else if (bundler === "webpack" || bundler === "rspack") {
-			const compiler = compilerOf(bundler, dir, app, out, opts, cacheDir)
+			const compiler = compilerOf(
+				bundler,
+				dir,
+				app,
+				out,
+				opts,
+				typeof cache === "string" ? cache : undefined
+			)
 			const stats = await new Promise<Stats | undefined>((resolve, reject) => {
 				const hung = setTimeout(
 					() => reject(new Error(`${bundler} hung building ${dir}`)),
@@ -1164,11 +1231,16 @@ const unlikeBuildMessage = "is another Type, but was precompiled as"
 
 const typeErrorNames = /TypeError: .* (is not a (?:function|constructor))/g
 const chunkNames = /(?:chunk|types\d+)-[\w-]+\.js/g
-const outDirs = /out-(?:esbuild|vite|webpack|rspack)-(?:whole|pruned)/g
+const outDirs =
+	/out-(?:esbuild|vite|webpack|rspack|turbopack)-(?:whole|pruned)/g
 
 const runOut = (out: string, app: App) =>
 	["main", ...(app.entries === 2 ? ["other"] : [])]
-		.map(entry => runEntry(join(out, `${entry}.js`)))
+		.map(entry =>
+			runEntry(
+				join(out, `${entry}.${out.includes("out-turbopack-") ? "cjs" : "js"}`)
+			)
+		)
 		.join("\n")
 
 const runEntry = (file: string) => {
@@ -1239,7 +1311,26 @@ const tallies: Record<Bundler, Tally> = {
 		pruned: 0,
 		unsound: 0,
 		bytesSaved: 0
+	},
+	turbopack: {
+		invalid: {},
+		refused: {},
+		kept: 0,
+		pruned: 0,
+		unsound: 0,
+		bytesSaved: 0
 	}
+}
+
+const turbopackPanic = "turbo-tasks: an internal panic occurred"
+
+// what each next build draws anew, its id and its server actions' key
+const withoutBuildSecrets = (js: string) => {
+	const id = /static\/([\w-]+)\/_buildManifest/.exec(js)?.[1]
+	return (id ? js.split(id).join("BUILD_ID") : js).replace(
+		/encryptionKey\\": \\"[^\\]*/g,
+		'encryptionKey\\": \\"KEY'
+	)
 }
 
 const bump = (record: Record<string, number>, key: string) =>
@@ -1283,6 +1374,8 @@ const check = async (app: App): Promise<boolean> => {
 	const dir = writeApp(app)
 	let sound = true
 	for (const bundler of bundlers) {
+		// a rule running a loader besides this one has it write each module alone
+		if (bundler === "turbopack" && rewrites[app.rewrite]) continue
 		const tally = tallies[bundler]
 		const opts: PrecompileUnpluginOptions = {
 			...app.preset,
@@ -1345,6 +1438,47 @@ const check = async (app: App): Promise<boolean> => {
 			)
 			console.error(`\nUNSOUND (${bundler}): kept in ${kept}`)
 		}
+		if (bundler === "turbopack") {
+			// Next keeps what it built in .next, its build cache's included where
+			// it's on, under which the read is refused
+			const edited = writeEdit(app)
+			for (const cache of [false, true]) {
+				const tag = cache ? "edited-cached" : "edited"
+				const warm = await buildWith(bundler, edited, app, opts, tag, {
+					warm: true,
+					cache
+				})
+				const cold = await buildWith(bundler, edited, app, opts, tag, { cache })
+				// a crash of Turbopack's own, which its build cache sets off at times,
+				// not output a build gets wrong
+				if (
+					[warm, cold].some(built => built.refused?.includes(turbopackPanic))
+				) {
+					bump(tally.invalid, "Turbopack panicked")
+					continue
+				}
+				if (
+					(cold.refused ?? withoutBuildSecrets(cold.js)) !==
+					(warm.refused ?? withoutBuildSecrets(warm.js))
+				) {
+					tally.unsound++
+					sound = false
+					const kept = keepFailure(
+						app,
+						edited,
+						bundler,
+						cold,
+						warm,
+						cold.refused ?? "",
+						warm.refused ?? ""
+					)
+					console.error(
+						`\nWARM != COLD (${bundler}${cache ? ", its build cache on" : ""}): kept in ${kept}`
+					)
+				}
+			}
+			continue
+		}
 		if (bundler !== "webpack" && bundler !== "rspack") continue
 		// these two hosts keep what they built across builds
 		const edited = writeEdit(app)
@@ -1406,4 +1540,5 @@ for (const bundler of bundlers) {
 console.log(
 	`\n${count} apps from seed ${initialSeed} in ${Math.round((Date.now() - started) / 1000)}s${failures.length ? `\n${failures.length} unsound, kept in:\n${failures.join("\n")}` : ""}`
 )
+if (bundlers.includes("turbopack")) removeNextApps()
 process.exit(failures.length ? 1 : 0)

@@ -23,6 +23,7 @@ import {
 } from "./grammar.ts"
 import { lacks, testedOptions } from "./contract.ts"
 import { serialize, type Manifest } from "./perturbationWorker.ts"
+import { throughArkBarrel } from "./arkBarrel.ts"
 import {
 	buildPerturbed,
 	comparable,
@@ -1552,14 +1553,18 @@ const productionOptions: BuildOptions = {
 
 // a project of its own: under ark/aot the build would read a program as
 // arktype's own package, where a read off what may be a Type is allowed
+// a program's modules, whose imports of arktype reach it through a barrel where
+// the round asks, each on the line it was written
 const write = (program: Program, dir: string) => {
 	mkdirSync(dir, { recursive: true })
 	writeFileSync(join(dir, "package.json"), `{ "name": "generated" }`)
-	writeFileSync(join(dir, "containers.ts"), program.containers)
-	if (program.mutate) writeFileSync(join(dir, "mutate.ts"), program.mutate)
-	if (program.reexport)
-		writeFileSync(join(dir, "reexport.ts"), program.reexport)
-	writeFileSync(join(dir, "main.ts"), program.main.join("\n"))
+	const files = throughArkBarrel({
+		"containers.ts": program.containers,
+		"main.ts": program.main.join("\n"),
+		...(program.mutate && { "mutate.ts": program.mutate }),
+		...(program.reexport && { "reexport.ts": program.reexport })
+	})
+	for (const name in files) writeFileSync(join(dir, name), files[name])
 	return [join(dir, "main.ts")]
 }
 

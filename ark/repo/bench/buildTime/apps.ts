@@ -37,7 +37,7 @@ const offsetBounds = (source: string, offset: number) =>
 	)
 
 /** copies of the saas app's schemas, each Type validating a request in a handler */
-export const appOf = (size: Size, root: string): App => {
+export const appOf = (size: Size): App => {
 	const { domains, modules } = sizes[size]
 	const files: Record<string, string> = {}
 	const names: string[] = []
@@ -65,7 +65,6 @@ export const appOf = (size: Size, root: string): App => {
 	files["src/entry.ts"] = entryModule
 	files["index.html"] = indexHtml
 	files["vite.config.ts"] = viteConfig
-	files["next.config.ts"] = nextConfigOf(root)
 	files["app/layout.tsx"] = layoutModule
 	files["app/page.tsx"] = pageModule
 	files["esbuild.ts"] = esbuildModule
@@ -170,28 +169,35 @@ const plugins =
 export default defineConfig({ plugins, logLevel: "warn", clearScreen: false })
 `
 
-const nextConfigOf = (root: string) => `const root = ${JSON.stringify(root)}
-
-export default {
+// each arm's own, written as it runs (measure.ts): the plugin reads its
+// turbopack rules and build cache only as literals, so the plugin's arm can't
+// share a config that switches on PRECOMPILE
+export const nextConfigOf = (root: string, precompiled: boolean) =>
+	precompiled ?
+		`export default {
 	typescript: { ignoreBuildErrors: true },
 	devIndicators: false,
-	turbopack:
-		process.env.PRECOMPILE ?
-			{
-				root,
-				rules: {
-					"*.ts": { loaders: ["@ark/aot/turbopack"] },
-					"*.tsx": { loaders: ["@ark/aot/turbopack"] }
-				},
-				resolveAlias: {
-					arktype: "arktype/runtime",
-					"arktype/codecs": "arktype/runtime",
-					"arktype/config": "arktype/runtime",
-					"arktype/errors": "arktype/runtime",
-					"arktype/mutatesInput": "arktype/runtime"
-				}
-			}
-		:	{ root }
+	experimental: { turbopackFileSystemCacheForBuild: false },
+	turbopack: {
+		root: ${JSON.stringify(root)},
+		rules: {
+			"*.ts": { loaders: ["@ark/aot/turbopack"] },
+			"*.tsx": { loaders: ["@ark/aot/turbopack"] }
+		},
+		resolveAlias: {
+			arktype: "arktype/runtime",
+			"arktype/codecs": "arktype/runtime",
+			"arktype/config": "arktype/runtime",
+			"arktype/errors": "arktype/runtime",
+			"arktype/mutatesInput": "arktype/runtime"
+		}
+	}
+}
+`
+	:	`export default {
+	typescript: { ignoreBuildErrors: true },
+	devIndicators: false,
+	turbopack: { root: ${JSON.stringify(root)} }
 }
 `
 

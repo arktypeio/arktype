@@ -2,7 +2,7 @@ import { spawn, type ChildProcess } from "node:child_process"
 import { readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { setTimeout as sleep } from "node:timers/promises"
-import { editedCommon } from "./apps.ts"
+import { editedCommon, nextConfigOf } from "./apps.ts"
 
 export type Bundler = "esbuild" | "vite" | "next"
 
@@ -52,7 +52,14 @@ interface Started {
 }
 
 // a process group of its own, so a server's children stop with it
-const start = ({ app, precompiled }: Arm, args: string[]): Started => {
+const start = ({ app, bundler, precompiled }: Arm, args: string[]): Started => {
+	// apps live in <root>/apps/<size>, beside the packages they install
+	if (bundler === "next") {
+		writeFileSync(
+			join(app, "next.config.ts"),
+			nextConfigOf(join(app, "..", ".."), precompiled)
+		)
+	}
 	const child = spawn(process.execPath, args, {
 		cwd: app,
 		env: {
