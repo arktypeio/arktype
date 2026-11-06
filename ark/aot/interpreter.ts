@@ -76,9 +76,8 @@ import {
 	type ModuleGraph
 } from "./graph.ts"
 import type { SourceModule } from "./module.ts"
-import { proveFunction, runtimeParamsOf } from "./proofs.ts"
+import { isTransparent, proveFunction, runtimeParamsOf } from "./proofs.ts"
 import {
-	isTransparent,
 	unwrapChain,
 	operatorOf,
 	unwrapExpression,

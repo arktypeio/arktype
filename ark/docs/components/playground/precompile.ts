@@ -136,7 +136,7 @@ const holeNamerOf =
 	(f: Fn, i: number): Fn => {
 		const site = written[i]
 		if (!site.node.type.startsWith("Class"))
-			proveFunction(f, site.node as never)
+			proveFunction(f, site.node as never, true)
 		return Object.defineProperty(f, "name", { value: holeNameAt(site) })
 	}
 
