@@ -296,11 +296,9 @@ const nextConfigProblemOf = (root: string): string | undefined => {
 	const name = nextConfigFiles.find(name => existsSync(join(root, name)))
 	if (!name) return
 	const source = readFileSync(join(root, name), "utf8")
-	if (source.includes("turbopackFileSystemCacheForBuild"))
-		return `${name} sets turbopackFileSystemCacheForBuild, which keeps a module's output past a change to a module that reads it`
 	if (source.includes("pageExtensions"))
 		return `${name} sets pageExtensions, whose pages it can't read`
-	return readConfigRules().turbopackRulesProblemOf(join(root, name), source)
+	return readConfigRules().turbopackConfigProblemOf(join(root, name), source)
 }
 
 const directive =

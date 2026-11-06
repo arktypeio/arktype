@@ -6,7 +6,7 @@ import {
 } from "@ark/aot/internal/messages.ts"
 import { writeKeptMembersMessage } from "@ark/aot/internal/scan.ts"
 import { programDirOf, programOf } from "@ark/aot/internal/nextProgram.ts"
-import { turbopackRulesProblemOf } from "@ark/aot/internal/pluginCalls.ts"
+import { turbopackConfigProblemOf } from "@ark/aot/internal/pluginCalls.ts"
 import type { PrecompilePluginOptions } from "@ark/aot/unplugin"
 import turbopack, { type TurbopackLoaderContext } from "@ark/aot/turbopack"
 import {
@@ -22,8 +22,10 @@ import { writeFixture } from "./utils.ts"
 
 const conditions = ["ark-ts"]
 
+const cacheOff = "experimental: { turbopackFileSystemCacheForBuild: false }"
+
 const rules = (rule: string) =>
-	`export default { turbopack: { rules: { "*.ts": ${rule} } } }\n`
+	`export default { ${cacheOff}, turbopack: { rules: { "*.ts": ${rule} } } }\n`
 
 const ownRule = '{ loaders: ["@ark/aot/turbopack"] }'
 
@@ -342,6 +344,9 @@ contextualize(() => {
 		})
 	})
 
+	const cacheProblem =
+		"next.config.js leaves on Turbopack's build cache, which keeps a module's output past a build whose read writes it otherwise, unless it sets experimental.turbopackFileSystemCacheForBuild to false"
+
 	describe("a project it can't read whole", () => {
 		const refusals: [
 			name: string,
@@ -387,12 +392,12 @@ contextualize(() => {
 				"next.config.js doesn't export its turbopack.rules as literals"
 			],
 			[
-				"a cache keeping a module past a read's change",
+				"Turbopack's build cache, on by default",
 				{
 					"next.config.js":
-						'export default { experimental: { turbopackFileSystemCacheForBuild: true }, turbopack: { rules: { "*.ts": { loaders: ["@ark/aot/turbopack"] } } } }\n'
+						'export default { turbopack: { rules: { "*.ts": { loaders: ["@ark/aot/turbopack"] } } } }\n'
 				},
-				"next.config.js sets turbopackFileSystemCacheForBuild, which keeps a module's output past a change to a module that reads it"
+				cacheProblem
 			]
 		]
 
@@ -451,7 +456,7 @@ contextualize(() => {
 
 	describe("turbopack.rules", () => {
 		const problemOf = (config: string) =>
-			turbopackRulesProblemOf("/app/next.config.js", config)
+			turbopackConfigProblemOf("/app/next.config.js", config)
 
 		it("reads each shape of the loader it knows as this one", () => {
 			attest(problemOf(rules(ownRule))).equals(undefined)
@@ -484,6 +489,36 @@ contextualize(() => {
 			attest(
 				problemOf("export default { turbopack: { ...base, rules: {} } }\n")
 			).equals(unreadable)
+		})
+
+		it("refuses Turbopack's build cache unless it's set off", () => {
+			const withCache = (cache: string, after = "") =>
+				`const config = { experimental: { ${cache} }, turbopack: { rules: { "*.ts": ${ownRule} } } }\n${after}export default config\n`
+			attest(
+				problemOf(withCache("turbopackFileSystemCacheForBuild: true"))
+			).equals(cacheProblem)
+			attest(problemOf(withCache("other: true"))).equals(cacheProblem)
+			attest(
+				problemOf(withCache("turbopackFileSystemCacheForBuild: off"))
+			).equals(cacheProblem)
+			attest(
+				problemOf(
+					withCache("turbopackFileSystemCacheForBuild: false, ...shared")
+				)
+			).equals(cacheProblem)
+			attest(
+				problemOf(
+					withCache(
+						"turbopackFileSystemCacheForBuild: false",
+						"config.experimental.turbopackFileSystemCacheForBuild = true\n"
+					)
+				)
+			).equals(cacheProblem)
+			attest(
+				problemOf(
+					`// turbopackFileSystemCacheForBuild keeps outputs\n${withCache('"turbopackFileSystemCacheForBuild": false')}`
+				)
+			).equals(undefined)
 		})
 
 		it("refuses two sets of the loader's options", () => {

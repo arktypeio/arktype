@@ -210,10 +210,13 @@ const loaderOf = (value: Node): unknown => {
 		:	undefined
 }
 
-// why next.config's Turbopack rules may run a loader besides this one, whose
-// imports no read of the project sees, or run this one with two sets of options.
-// It's a config only Next.js can run, so what isn't literal can't be told apart
-export const turbopackRulesProblemOf = (
+// why next.config may have a build differ from the read of its project: its
+// Turbopack rules may run a loader besides this one, whose imports no read sees,
+// or run this one with two sets of options, and Turbopack's build cache, which
+// Next turns on by default, keeps a module's output, and what it lists of a
+// directory, past a build whose read writes them otherwise. It's a config only
+// Next.js can run, so what isn't literal can't be told apart
+export const turbopackConfigProblemOf = (
 	file: string,
 	source: string
 ): string | undefined => {
@@ -244,7 +247,25 @@ export const turbopackRulesProblemOf = (
 	}
 	if (options.size > 1)
 		return `${name} runs the loader with ${options.size} sets of options`
+	const experimental = literalPropertyOf(config, "experimental")
+	const cache =
+		experimental?.properties.every(property => property.type === "Property") &&
+		propertyOf(experimental, buildCache)
+	// named once, so not set again past the literal
+	let named = 0
+	walk(module.program, node => {
+		if (
+			(node.type === "Identifier" && node.name === buildCache) ||
+			(node.type === "Literal" && node.value === buildCache)
+		)
+			named++
+		return true
+	})
+	if (!cache || literalOf(cache) !== false || named !== 1)
+		return `${name} leaves on Turbopack's build cache, which keeps a module's output past a build whose read writes it otherwise, unless it sets experimental.${buildCache} to false`
 }
+
+const buildCache = "turbopackFileSystemCacheForBuild"
 
 // a rule's loaders, as `{ loaders: [] }`, `[]` or a list of either
 const loadersOf = (value: Node): readonly unknown[] | undefined => {

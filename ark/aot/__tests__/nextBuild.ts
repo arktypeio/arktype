@@ -5,6 +5,7 @@ import { fromHere } from "@ark/fs"
 import { spawnSync } from "node:child_process"
 import {
 	cpSync,
+	existsSync,
 	lstatSync,
 	mkdirSync,
 	readdirSync,
@@ -31,6 +32,12 @@ const config = /```js title="next\.config\.js"\n([\S\s]*?)^```$/m.exec(
 	setup
 )?.[1]
 if (!config) throw new Error("Found no next.config.js in Setup")
+const cacheOff = "turbopackFileSystemCacheForBuild: false"
+if (!config.includes(cacheOff)) throw new Error(`Found no ${cacheOff} in Setup`)
+const withCache = config.replace(
+	cacheOff,
+	"turbopackFileSystemCacheForBuild: true"
+)
 
 export interface NextBuilt {
 	refused: string | undefined
@@ -56,9 +63,11 @@ export const removeNextApps = (): void => {
 	})
 }
 
-// a build's own message, past what it says it failed building
+// a build's own message, past what it says it failed building, or the end of
+// what it wrote where it stopped otherwise, as for a crash
 const messageOf = (output: string): string => {
-	const failed = output.slice(output.indexOf("> Build error occurred"))
+	const at = output.indexOf("> Build error occurred")
+	const failed = at === -1 ? output.slice(-4000) : output.slice(at)
 	return (
 		failed
 			.split("\n")
@@ -82,16 +91,38 @@ const jsIn = (dir: string): string =>
 		.map(file => readFileSync(join(dir, file), "utf8"))
 		.join("\n")
 
+export interface NextBuildOptions {
+	// on what the app's last build left in .next and the precompiler's cache, as
+	// a project's next build is
+	warm?: boolean
+	// with Turbopack's build cache on, as Next has it unless set off
+	cache?: boolean
+}
+
 export const buildOnNext = (
 	sources: string,
 	tag: string,
 	entries: string[],
 	// undefined for no loader, as arktype alone builds it
-	options: PrecompilePluginOptions | undefined
+	options: PrecompilePluginOptions | undefined,
+	{ warm, cache }: NextBuildOptions = {}
 ): NextBuilt => {
 	const dir = nextApp(tag)
-	rmSync(dir, { recursive: true, force: true })
-	mkdirSync(dir, { recursive: true })
+	if (warm && existsSync(dir)) {
+		for (const name of readdirSync(dir)) {
+			if (name !== ".next" && name !== "node_modules")
+				rmSync(join(dir, name), { recursive: true, force: true })
+		}
+		for (const name of readdirSync(join(dir, "node_modules"))) {
+			if (name !== ".cache") {
+				rmSync(join(dir, "node_modules", name), {
+					recursive: true,
+					force: true
+				})
+			}
+		}
+	} else rmSync(dir, { recursive: true, force: true })
+	mkdirSync(join(dir, "node_modules"), { recursive: true })
 	cpSync(sources, dir, {
 		recursive: true,
 		dereference: true,
@@ -104,7 +135,7 @@ export const buildOnNext = (
 	writeFileSync(
 		join(dir, "next.config.mjs"),
 		options ?
-			config
+			(cache ? withCache : config)
 				.split('"@ark/aot/turbopack"')
 				.join(JSON.stringify({ loader: "@ark/aot/turbopack", options }))
 				.replace(

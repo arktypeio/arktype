@@ -46,7 +46,11 @@ import {
 	type Node
 } from "./grammar.ts"
 import { throughArkBarrel } from "./arkBarrel.ts"
-import { buildOnNext, removeNextApps } from "./nextBuild.ts"
+import {
+	buildOnNext,
+	removeNextApps,
+	type NextBuildOptions
+} from "./nextBuild.ts"
 import { tempDir } from "./utils.ts"
 
 // <count>[:<seed>[:<path>]], the path replaying one of a seed's runs
@@ -1060,7 +1064,8 @@ const buildWith = async (
 	app: App,
 	opts: PrecompileUnpluginOptions,
 	tag: string,
-	cacheDir?: string
+	// webpack's and Rspack's persistent cache, or how Next builds it again
+	cache?: string | NextBuildOptions
 ): Promise<Built> => {
 	const out = join(dir, `out-${bundler}-${tag}`)
 	rmSync(out, { recursive: true, force: true })
@@ -1071,7 +1076,8 @@ const buildWith = async (
 				dir,
 				tag,
 				entriesOf(dir, app).map(entry => basename(entry, ".ts")),
-				opts
+				opts,
+				typeof cache === "object" ? cache : undefined
 			)
 			if (built.refused)
 				return { refused: built.refused, warnings: built.warnings, js: "", out }
@@ -1099,7 +1105,14 @@ const buildWith = async (
 			})
 			warnings.push(...result.warnings.map(w => w.text))
 		} else if (bundler === "webpack" || bundler === "rspack") {
-			const compiler = compilerOf(bundler, dir, app, out, opts, cacheDir)
+			const compiler = compilerOf(
+				bundler,
+				dir,
+				app,
+				out,
+				opts,
+				typeof cache === "string" ? cache : undefined
+			)
 			const stats = await new Promise<Stats | undefined>((resolve, reject) => {
 				const hung = setTimeout(
 					() => reject(new Error(`${bundler} hung building ${dir}`)),
@@ -1289,6 +1302,17 @@ const tallies: Record<Bundler, Tally> = {
 	}
 }
 
+const turbopackPanic = "turbo-tasks: an internal panic occurred"
+
+// what each next build draws anew, its id and its server actions' key
+const withoutBuildSecrets = (js: string) => {
+	const id = /static\/([\w-]+)\/_buildManifest/.exec(js)?.[1]
+	return (id ? js.split(id).join("BUILD_ID") : js).replace(
+		/encryptionKey\\": \\"[^\\]*/g,
+		'encryptionKey\\": \\"KEY'
+	)
+}
+
 const bump = (record: Record<string, number>, key: string) =>
 	(record[key] = (record[key] ?? 0) + 1)
 
@@ -1393,6 +1417,47 @@ const check = async (app: App): Promise<boolean> => {
 				prunedOut
 			)
 			console.error(`\nUNSOUND (${bundler}): kept in ${kept}`)
+		}
+		if (bundler === "turbopack") {
+			// Next keeps what it built in .next, its build cache's included where
+			// it's on, under which the read is refused
+			const edited = writeEdit(app)
+			for (const cache of [false, true]) {
+				const tag = cache ? "edited-cached" : "edited"
+				const warm = await buildWith(bundler, edited, app, opts, tag, {
+					warm: true,
+					cache
+				})
+				const cold = await buildWith(bundler, edited, app, opts, tag, { cache })
+				// a crash of Turbopack's own, which its build cache sets off at times,
+				// not output a build gets wrong
+				if (
+					[warm, cold].some(built => built.refused?.includes(turbopackPanic))
+				) {
+					bump(tally.invalid, "Turbopack panicked")
+					continue
+				}
+				if (
+					(cold.refused ?? withoutBuildSecrets(cold.js)) !==
+					(warm.refused ?? withoutBuildSecrets(warm.js))
+				) {
+					tally.unsound++
+					sound = false
+					const kept = keepFailure(
+						app,
+						edited,
+						bundler,
+						cold,
+						warm,
+						cold.refused ?? "",
+						warm.refused ?? ""
+					)
+					console.error(
+						`\nWARM != COLD (${bundler}${cache ? ", its build cache on" : ""}): kept in ${kept}`
+					)
+				}
+			}
+			continue
 		}
 		if (bundler !== "webpack" && bundler !== "rspack") continue
 		// these two hosts keep what they built across builds
