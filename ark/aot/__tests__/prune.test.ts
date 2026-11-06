@@ -64,6 +64,18 @@ const types = `import { type } from "arktype"
 export const User = type({ name: "string" })
 `
 
+// a barrel re-exporting what arktype/runtime lacks, which only sites read
+const arkBarrel = (extension: string) => ({
+	[`ark${extension}`]: `export { scope, type } from "arktype"\n`,
+	[`main${extension}`]: `import { scope, type } from "./ark${extension}"
+
+const types = scope({ user: { name: "string" } }).export()
+const Id = type("string")
+
+console.log(String(types.user({ name: 5 })), Id("x"))
+`
+})
+
 // what a production build for size reads of a program from /main.ts, or the
 // errors failing its build
 const usageFrom = async (
@@ -1932,8 +1944,10 @@ console.log(out instanceof type.errors ? out.summary : out)
 				following = [],
 				lib = true,
 				onwarn,
-				define
+				define,
+				at = root
 			}: {
+				at?: string
 				plugins?: VitePlugin[]
 				following?: VitePlugin[]
 				lib?: boolean
@@ -1945,7 +1959,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 			process.env.NODE_ENV = "production"
 			try {
 				const config: InlineConfig = {
-					root,
+					root: at,
 					configFile: false,
 					logLevel: "silent",
 					...(define && { define }),
@@ -2021,6 +2035,16 @@ console.log(out instanceof type.errors ? out.summary : out)
 			// nor what reads an index, which no validator's issues hold
 			attest(whole.includes("`[${")).equals(true)
 			attest(pruned.includes("`[${")).equals(false)
+		})
+
+		it("builds a barrel re-exporting what arktype/runtime lacks for sites to read", async () => {
+			const barrel = writeFixture(
+				{ ...arkBarrel(".ts"), "index.html": "" },
+				fromHere("temp", "prunedViteBarrel")
+			)
+			attest(run(await bundle({}, { at: barrel }))).equals(
+				"name must be a string x\n"
+			)
 		})
 
 		it("leaves out what no read needs where a module accepts hot updates", async () => {
@@ -2625,6 +2649,13 @@ console.log(typeof User["~standard"].validate)
 								}
 							}
 						}
+
+				it("builds a barrel re-exporting what arktype/runtime lacks for sites to read", async () => {
+					const root = fixture("arkBarrel", arkBarrel(".js"))
+					attest(output(await bundle(name, root))).equals(
+						"name must be a string x\n"
+					)
+				})
 
 				describe("a define writing code no module's text holds", () => {
 					const reading = {
