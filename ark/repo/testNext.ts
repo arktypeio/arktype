@@ -98,14 +98,23 @@ for (const [path, contents] of Object.entries(files)) {
 
 const next = createRequire(import.meta.url).resolve("next/dist/bin/next")
 
+// a flag building from what the last build left in .next, Turbopack's build
+// cache included, as a project's next build does
+const warm = "warm"
+
 const nextBuild = (config: string, ...flags: string[]) => {
 	writeFileSync(join(appDir, "next.config.js"), config)
-	rmSync(join(appDir, ".next"), { recursive: true, force: true })
-	const result = spawnSync(process.execPath, [next, "build", ...flags], {
-		cwd: appDir,
-		encoding: "utf8",
-		env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" }
-	})
+	if (!flags.includes(warm))
+		rmSync(join(appDir, ".next"), { recursive: true, force: true })
+	const result = spawnSync(
+		process.execPath,
+		[next, "build", ...flags.filter(flag => flag !== warm)],
+		{
+			cwd: appDir,
+			encoding: "utf8",
+			env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" }
+		}
+	)
 	if (result.error) throw result.error
 	return { status: result.status, output: result.stdout + result.stderr }
 }
@@ -222,7 +231,9 @@ assertRendered("Turbopack", nextBuild(turbopack))
 if (JSON.stringify(chunksOf()) !== cold)
 	throw new Error("Turbopack's warm build should write what its cold build did")
 
-console.log("▲ Building it with a module newly reading a member...")
+console.log(
+	"▲ Building it on Turbopack's build cache with a module newly reading a member..."
+)
 
 const readsPath = join(appDir, "app/reads.jsx")
 const reads = readFileSync(readsPath, "utf8")
@@ -230,13 +241,73 @@ writeFileSync(
 	readsPath,
 	reads.replace("typeof Age.assert", 'typeof Age["~standard"].validate')
 )
-assertRendered("Turbopack", nextBuild(turbopack))
+assertRendered("Turbopack", nextBuild(turbopack, warm))
 if (!emittedWith("~standard", join(appDir, ".next/static")).length) {
 	throw new Error(
 		"Turbopack's build should keep what a module edited since the last build reads"
 	)
 }
+const edited = JSON.stringify(chunksOf())
+assertRendered("Turbopack", nextBuild(turbopack))
+if (JSON.stringify(chunksOf()) !== edited) {
+	throw new Error(
+		"Turbopack's build on its cache should write what a build without it does"
+	)
+}
 writeFileSync(readsPath, reads)
+
+// the settings ark.json holds otherwise, as the loader's options, so ark.json
+// can be created and removed
+const settingsPath = join(appDir, "ark.json")
+const settings = readFileSync(settingsPath, "utf8")
+const withLoaderSettings = (config: string) =>
+	config
+		.split('loaders: ["@ark/aot/turbopack"]')
+		.join(
+			`loaders: [${JSON.stringify({ loader: "@ark/aot/turbopack", options: JSON.parse(settings).precompile })}]`
+		)
+const wrapped = "export default withPrecompile({"
+if (!turbopack.includes(wrapped))
+	throw new Error(`Found no ${wrapped} in ${setup}`)
+const errorsNone = '{ "precompile": { "errors": "none" } }'
+// the read, and each module on its own where next.config exports its config
+// bare, each kept past a build until a file it depends on changes, ark.json
+// among them, whether or not it was there
+for (const [how, config] of [
+	["read", turbopack],
+	[
+		"bare",
+		turbopack
+			.replace('import { withPrecompile } from "@ark/aot/turbopack"\n\n', "")
+			.replace(wrapped, "export default {")
+			.replace(/}\)\n$/, "}\n")
+	]
+]) {
+	console.log(
+		`▲ Building it on Turbopack's build cache as ark.json changes (${how})...`
+	)
+	const cached = withLoaderSettings(config)
+	rmSync(settingsPath)
+	assertRendered("Turbopack", build(cached))
+	const unset = JSON.stringify(chunksOf())
+	writeFileSync(settingsPath, errorsNone)
+	assertRendered("Turbopack", nextBuild(cached, warm))
+	const warmNone = JSON.stringify(chunksOf())
+	assertRendered("Turbopack", build(cached))
+	if (JSON.stringify(chunksOf()) !== warmNone) {
+		throw new Error(
+			`Turbopack's build on its cache should write what a build without it does once ark.json is written (${how})`
+		)
+	}
+	rmSync(settingsPath)
+	assertRendered("Turbopack", nextBuild(cached, warm))
+	if (JSON.stringify(chunksOf()) !== unset) {
+		throw new Error(
+			`Turbopack's build on its cache should write what a build without it does once ark.json is removed (${how})`
+		)
+	}
+	writeFileSync(settingsPath, settings)
+}
 
 console.log("▲ Building a route importing a module from beyond the project...")
 
@@ -338,8 +409,8 @@ assertFailsWith(
 	),
 	build(
 		turbopack.replace(
-			"export default {",
-			'export default {\n\tserverExternalPackages: ["reads-errors"],'
+			"withPrecompile({",
+			'withPrecompile({\n\tserverExternalPackages: ["reads-errors"],'
 		)
 	)
 )

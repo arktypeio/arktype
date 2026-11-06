@@ -1318,7 +1318,7 @@ export const discriminate = ((
 	areBooleans?: 1,
 	fails?: FailingBranches
 ): Checker => {
-	// keyed by string, so no other value is a case
+	// keyed by each case's string, or boolean, so no other value is a case
 	const byValue = new Map<unknown, Checker | 1>(
 		discriminatesBooleans && areBooleans ?
 			[

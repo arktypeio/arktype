@@ -31,7 +31,7 @@ export const runtimeParamsOf = (fn: {
 		fn.params.slice(1)
 	:	fn.params
 
-const isNode = (value: unknown): value is Node =>
+export const isNode = (value: unknown): value is Node =>
 	typeof (value as Node | null)?.type === "string"
 
 const someNode = (node: Node, test: (node: Node) => boolean): boolean => {
@@ -154,7 +154,7 @@ export const proveFunction = (
 	fn: Fn,
 	node: FunctionNode,
 	// arktype compiles its own validators, knowing nothing of what a build reads
-	isStandalone = true
+	isStandalone: boolean
 ): void => {
 	if (readsOnlyItsArgument(node)) readsOnlyData.add(fn)
 	else if (isStandalone && returnsItsReports(node)) returnsReports.add(fn)

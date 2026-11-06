@@ -390,14 +390,14 @@ A production build reads each component as its framework compiles it, and each v
 
 ## Next.js
 
-With Turbopack, the default, add the loader as a rule for each extension your definitions and config module are in, and for JavaScript that mentions arktype, which checks your dependencies, then alias arktype's entries to the runtime, and @ark/schema's runtime to the one the loader writes for your options:
+With Turbopack, the default, export your config through `withPrecompile`, add the loader as a rule for each extension your definitions and config module are in, and for JavaScript that mentions arktype, which checks your dependencies, then alias arktype's entries to the runtime, and @ark/schema's runtime to the one the loader writes for your options:
 
 ```js
-export default {
+import { withPrecompile } from "@ark/aot/turbopack"
+
+export default withPrecompile({
 	// for the pages router
 	bundlePagesRouterDependencies: true,
-	// so a build doesn't keep what an earlier one wrote for its own read
-	experimental: { turbopackFileSystemCacheForBuild: false },
 	turbopack: {
 		rules: {
 			"*.ts": { loaders: ["@ark/aot/turbopack"] },
@@ -416,16 +416,16 @@ export default {
 			"@ark/schema/runtime": "@ark/aot/turbopack/runtime"
 		}
 	}
-}
+})
 ```
 
-The loader fails a module whose `arktype` imports resolve otherwise, naming the aliases to add. With `runtime: "arktype"` or `shadow: true`, leave the `arktype` aliases out, since the loader fails a module they resolve to the runtime. `@ark/aot/turbopack/runtime` re-exports the copy of @ark/schema's runtime your options load, like the one [`errors: "none"`](https://arktype.io/docs/precompile/options#errors) does, so the aliases stay alike as you change them. It reruns when a module's local imports change, and applies a changed configuration once the dev server restarts.
+`withPrecompile` also takes a function, as Next does. The loader fails a module whose `arktype` imports resolve otherwise, naming the aliases to add. With `runtime: "arktype"` or `shadow: true`, leave the `arktype` aliases out, since the loader fails a module they resolve to the runtime. `@ark/aot/turbopack/runtime` re-exports the copy of @ark/schema's runtime your options load, like the one [`errors: "none"`](https://arktype.io/docs/precompile/options#errors) does, so the aliases stay alike as you change them. It reruns when a module's local imports change, and applies a changed configuration once the dev server restarts.
 
 The aliases also point a dependency's `arktype` imports at the runtime, so the `*.{js,mjs}` rule has the loader fail the build for a dependency that defines Types but doesn't [opt in](https://arktype.io/docs/precompile/advanced#libraries), and precompile one that does or that [`dependencies`](https://arktype.io/docs/precompile/options#dependencies) sets to `"aot"`. Turbopack can't run one dependency on arktype, so for one that creates Types from values it reads as it runs, like `drizzle-arktype`, build with webpack or with `runtime: "arktype"`. The loader reads only `import` and `export` declarations, so a CommonJS dependency that `require`s arktype throws `type is not a function` when it loads instead.
 
 On the pages router's server, Next otherwise leaves dependencies external, where the aliases don't reach, so Node would load arktype, for your code and for any dependency importing it, beside the runtime your validators use, and `out instanceof type.errors` would be false for their errors. `bundlePagesRouterDependencies` has Next bundle them, as it does the app router's, and the loader fails a module there without it. `transpilePackages: ["arktype"]` isn't enough, as a dependency left external still loads its own copy. Either router leaves external a package `serverExternalPackages` names, so the loader fails the build for one that imports arktype, reading the list from `next.config` without running it: name its packages as string literals.
 
-`next build` reads your project before it writes a module, through every script under it that nothing imports and each route, so it can [prune](https://arktype.io/docs/precompile/options#prune) and hold each validator once, in a file under `node_modules/.bin/.ark`. It checks each module as Turbopack builds it against what it read, for each layer of a route, and fails one that differs, naming it: a module a loader rewrote, or one whose import resolves to another file in that layer, as a `react-server` condition may. Where it can't read the project, it warns, naming why, and each module holds its own validators, as they do with `prune: false` and in `next dev`: for another loader in `turbopack.rules` or rules it can't read without running `next.config`, a file like `.mdx` that a loader compiles, a query on an import, an import it can't name, or Turbopack's build cache, which Next turns on by default and which would keep a module's output, written for an earlier build's read, past a change to another module. Setting `turbopackFileSystemCacheForBuild` to `false` as above turns it off, so each build compiles every module anew, the precompiler's own cache answering what didn't change.
+`withPrecompile` has `next build` read your project as Next loads `next.config`, before Turbopack starts, through every script under it that nothing imports and each route, so it can [prune](https://arktype.io/docs/precompile/options#prune) and hold each validator once, in a file under `node_modules/.bin/.ark`. As the read writes only what changed, before Turbopack looks, Turbopack's build cache keeps from an earlier build only what this one's read left as it was. The read resolves imports as Node does, through your `tsconfig.json`'s `paths` and `turbopack.resolveAlias`, and the loader checks each module as Turbopack builds it against what it read, for each layer of a route, failing one that differs, naming it: a module a loader rewrote, or one whose import resolves to another file in that layer, as a `react-server` condition may. Where it can't read the project, it warns, naming why, and each module holds its own validators, as they do with `prune: false`, in `next dev` and without `withPrecompile`: for another loader in `turbopack.rules`, `pageExtensions`, a file like `.mdx` that a loader compiles, a query on an import, or an import it can't name.
 
 With webpack, which Next 15 builds with, as does `next build --webpack`, add the plugin, which fails the build where Next would leave arktype, or a package importing it, external:
 
@@ -689,7 +689,7 @@ The default build compiles each validator to the code that checks its Type faste
 | 200 Types | 37.4 KB | 11.2 KB | 11.3 KB |
 | 1,000 Types | 154 KB | 38.4 KB | 39.5 KB |
 
-What it costs is speed: the shared checkers validate more slowly than code compiled for each Type, and with [`lazy: false`](https://arktype.io/docs/precompile/options#lazy) the bundle creates every validator as it loads, so it starts more slowly too. The [benchmarks](https://arktype.io/#run) measure the default build. Choose `"smallest"` where your bundle holds more than a handful of Types and validates input as it arrives, like a frontend's forms and API responses. Keep the default for a server and for validation on a hot path. A program reading only [`.allows`](https://arktype.io/docs/type-api) gets each validator written as the function checking it, as the default writes it, so it's no larger built `"smallest"`.
+What it costs is speed: the shared checkers validate more slowly than code compiled for each Type, and with [`lazy: false`](https://arktype.io/docs/precompile/options#lazy) the bundle creates every validator as it loads, so it starts more slowly too. In our runs of moltar's benchmark, counting instructions per call, "smallest" is 4% slower than Valibot on parseSafe and 2.1-2.6x faster on the other three cases, while Zod 4 is 1.5-7.9x faster than it and the default build 13-46x faster. The [counts](https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md#the-smallest-presets-speed) name each version and the harness. The [benchmarks](https://arktype.io/#run) measure the default build. Choose `"smallest"` where your bundle holds more than a handful of Types and validates input as it arrives, like a frontend's forms and API responses. Keep the default for a server and for validation on a hot path. A program reading only [`.allows`](https://arktype.io/docs/type-api) gets each validator written as the function checking it, as the default writes it, so it's no larger built `"smallest"`.
 
 A [production bundle](https://arktype.io/docs/precompile/options#prune) built as one chunk by `"smallest"` also decides, from the Types it holds, how to write them smallest: checkers or compiled code, each validator declared once among the checkers others read, what many validators repeat made once, and common Types like `1 <= string <= 50`, `number.integer >= 0`, `string[] <= 10` and `string | null` as checkers of their own where enough of them repay that runtime. A Type that can't be written as a checker, like one in a cycle or a morph reading its `ctx`, stays compiled, and a bundle ships what morphs, aliases and narrows reading their `ctx` need only if it holds one.
 
