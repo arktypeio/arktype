@@ -76,6 +76,14 @@ console.log(String(types.user({ name: 5 })), Id("x"))
 `
 })
 
+// errors "none" fails through one module named for what it does, whose issue
+// is found once read only where the program calls a validator
+const callingFrom = (types: string) =>
+	`import { User } from "${types}"\n\nconsole.log(String(User({ name: 5 })))\n`
+
+const assertingFrom = (types: string) =>
+	`import { User } from "${types}"\n\ntry {\n\tUser.assert({ name: 5 })\n} catch (e) {\n\tconsole.log(e.message)\n}\n`
+
 // what a production build for size reads of a program from /main.ts, or the
 // errors failing its build
 const usageFrom = async (
@@ -1706,6 +1714,33 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 				await ctx.dispose()
 			}
 		})
+
+		it("writes again as a rebuild's edit changes how the program fails", async () => {
+			const files = writeFixture(
+				{ "types.ts": types, "main.ts": callingFrom("./types.ts") },
+				fromHere("temp", "prunedRebuiltFailure")
+			)
+			const main = join(files, "main.ts")
+			const options = (): BuildOptions => ({
+				entryPoints: [main],
+				bundle: true,
+				write: false,
+				format: "esm",
+				conditions,
+				logLevel: "silent",
+				plugins: [precompile.esbuild({ errors: "none", conditions })]
+			})
+			const ctx = await context(options())
+			try {
+				await ctx.rebuild()
+				writeFileSync(main, assertingFrom("./types.ts"))
+				const rebuilt = (await ctx.rebuild()).outputFiles![0].text
+				attest(run(rebuilt)).snap("is invalid\n")
+				attest(rebuilt).equals((await build(options())).outputFiles![0].text)
+			} finally {
+				await ctx.dispose()
+			}
+		})
 	})
 
 	describe("linking", () => {
@@ -2534,6 +2569,53 @@ console.log(out instanceof type.errors ? out.summary : out)
 			)
 			attest(run(pruned)).snap("Ada\nname must be a string\n")
 			attest(pruned.includes("~standard")).equals(false)
+		})
+
+		it("writes again as a watch build's edit changes how the program fails", async () => {
+			const files = writeFixture(
+				{ "types.ts": types, "main.ts": callingFrom("./types.ts") },
+				fromHere("temp", "prunedViteWatched")
+			)
+			const config = (outDir: string, watch: boolean): InlineConfig => ({
+				root: files,
+				configFile: false,
+				logLevel: "silent",
+				plugins: [precompile.vite({ conditions, errors: "none" })],
+				resolve: { conditions: [...conditions, ...defaultClientConditions] },
+				build: {
+					outDir,
+					minify: true,
+					lib: { entry: "main.ts", formats: ["es"], fileName: "main" },
+					watch: watch ? {} : null
+				}
+			})
+			const built = (outDir: string) =>
+				readFileSync(join(files, outDir, "main.js"), "utf8")
+			const { NODE_ENV } = process.env
+			process.env.NODE_ENV = "production"
+			try {
+				const watcher = (await viteBuild(
+					config("watched", true)
+				)) as Rolldown.RolldownWatcher
+				let ends = 0
+				await new Promise<void>((resolve, reject) =>
+					watcher.on("event", event => {
+						if (event.code === "ERROR") return reject(event.error)
+						if (event.code === "BUNDLE_END") void event.result.close()
+						if (event.code !== "END") return
+						if (++ends === 1)
+							writeFileSync(join(files, "main.ts"), assertingFrom("./types.ts"))
+						else resolve()
+					})
+				)
+				await watcher.close()
+				await viteBuild(config("built", false))
+				attest(run(built("watched"))).snap("is invalid\n")
+				attest(built("watched")).equals(built("built"))
+			} finally {
+				if (NODE_ENV === undefined) delete process.env.NODE_ENV
+				else process.env.NODE_ENV = NODE_ENV
+			}
 		})
 	})
 
@@ -3500,6 +3582,19 @@ new Worker(new URL("./worker.js", import.meta.url))
 					attest(await bundle(name, root, {}, config(cache))).equals(cold)
 				})
 
+				const calling = callingFrom("./types.js")
+				const asserting = assertingFrom("./types.js")
+
+				it("answers a build its cache kept as one with no cache, where an edit changes how the program fails", async () => {
+					const root = fixture("cachedFailure", { "main.js": calling })
+					const cache = cacheOf(root)
+					await bundle(name, root, { errors: "none" }, cache)
+					writeFileSync(join(root, "main.js"), asserting)
+					const edited = await bundle(name, root, { errors: "none" }, cache)
+					attest(output(edited)).snap("is invalid\n")
+					attest(edited).equals(await bundle(name, root, { errors: "none" }))
+				})
+
 				it("reads again as a watch build's file changes", async () => {
 					const root = fixture("watched", {
 						"reader.js": `import { User } from "./types.js"\n\nconsole.log(User({ name: "" }).name)\n`,
@@ -3523,6 +3618,31 @@ new Worker(new URL("./worker.js", import.meta.url))
 						})
 					})
 					attest(outputs).equals(["\n", "function\n"])
+				})
+
+				it("writes again as a watch build's edit changes how the program fails", async () => {
+					const root = fixture("watchedFailure", { "main.js": calling })
+					const compiler = (compilers[name][0] as typeof webpack)(
+						configOf(name, root, { errors: "none" })
+					)
+					const bundles: string[] = []
+					await new Promise<void>((resolve, reject) => {
+						const watching = compiler.watch({}, (error, stats) => {
+							if (error) return reject(error)
+							if (stats?.hasErrors())
+								return reject(new Error(stats.toString("errors-only")))
+							bundles.push(
+								readFileSync(join(root, "out", name, "main.js"), "utf8")
+							)
+							if (bundles.length === 1)
+								writeFileSync(join(root, "main.js"), asserting)
+							else watching!.close(() => resolve())
+						})
+					})
+					attest(output(bundles[1])).snap("is invalid\n")
+					attest(bundles[1]).equals(
+						await bundle(name, root, { errors: "none" })
+					)
 				})
 
 				it("prunes each of a multi-compiler's builds by its own reads", async () => {
