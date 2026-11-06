@@ -127,6 +127,7 @@ import {
 	importsValues,
 	isArk,
 	isArkObject,
+	isArktypeExport,
 	isComposingMember,
 	functionOfBinding,
 	mayReturnArk,
@@ -299,6 +300,7 @@ import {
 	markerHint,
 	nodePackageHint,
 	runtimeImportHint,
+	writeUnexportedRuntimeMessage,
 	dynamicImportHint,
 	unresolvedHint,
 	versionHint,
@@ -329,6 +331,7 @@ import {
 	keepImportedModules,
 	noValidators,
 	pruneArktypeImports,
+	pruneArktypeReexports,
 	writeConfigFixer,
 	writeImportsAhead,
 	writeUnitTable,
@@ -3483,8 +3486,8 @@ export class Precompiler {
 			imports[fixerSpecifier] = { default: `${prefix}fixConfig` }
 			s.appendLeft(fixedAt, `${prefix}fixConfig()\n`)
 		}
-		this.replaceArktypeImports(module, s, prefix, folded)
-		keepImportedModules(module, folded, kept, passed, s)
+		const pruned = this.replaceArktypeImports(module, s, prefix, folded)
+		keepImportedModules(module, folded, kept, passed, pruned, s)
 		this.runtimesById[module.id] = runtimeModuleOf(
 			module,
 			folded,
@@ -3798,7 +3801,7 @@ export class Precompiler {
 		s: MagicString,
 		prefix: string,
 		folded: Site[]
-	): void {
+	): ReadonlySet<Node> {
 		if (this.shadow) {
 			if (folded.length) {
 				s.prependLeft(
@@ -3808,14 +3811,29 @@ export class Precompiler {
 					:	`import { shadow as ${prefix}shadow } from "@ark/aot/shadow"\n`
 				)
 			}
-			return
+			return new Set()
 		}
 		// linkIslands leaves configure()'s import to the runtime
 		const linked = module.islands.filter(
 			island =>
 				!this.configureCallsOf(module).some(call => contains(island, call))
 		)
-		pruneArktypeImports(module, [...folded, ...linked], s)
+		pruneArktypeReexports(module, s, name => name in arktypeRuntime)
+		return pruneArktypeImports(
+			module,
+			[...folded, ...linked],
+			s,
+			({ local, imported }, isRead) => {
+				// one nothing reads fails to link only by a name arktype/runtime
+				// lacks, and is resolved only then, as a host answers each resolve
+				const name = exportNameOf(imported)
+				if (!isRead && (!isArktypeExport(name) || name in arktypeRuntime))
+					return false
+				const binding = module.scopes.bindingsById.get(local)!
+				const { kind } = this.graph.importOf(binding, module)
+				return kind === "arktype" || kind === "arktypeNamespace"
+			}
+		)
 	}
 
 	// arktype receives each span through a parameter, evaluated once
@@ -3889,7 +3907,7 @@ export class Precompiler {
 						module,
 						read.id,
 						"R4",
-						`\`${module.textOf(read.id)}\` is arktype's, which arktype/runtime doesn't export, so a standalone build can't load this module`,
+						writeUnexportedRuntimeMessage(module.textOf(read.id)),
 						[],
 						runtimeImportHint
 					)

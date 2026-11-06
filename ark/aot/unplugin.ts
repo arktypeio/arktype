@@ -632,6 +632,12 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			).getNativeBuildContext?.() ?? {}
 		return compilation && builtReads.get(compilation)
 	}
+	// what a pruned build's modules import is written for its program, as they
+	// are, so the bundler keeps none of it for the next build
+	const leaveUncached = (native: NativeBuild | undefined) => {
+		if (native?.compilation && builtReads.has(native.compilation))
+			native.loaderContext?.cacheable(false)
+	}
 	const answerBuilt = async (
 		bundler: BundlerCompiler,
 		compilation: BundlerCompilation,
@@ -756,7 +762,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		else foldedHelpersById.delete(fileOf(id))
 		for (const specifier in transformed.modules) {
 			const virtualId = virtual + specifier
-			if (virtualId in modules) continue
+			// one may be named for what it does, as `invalid` is, which another
+			// build's program writes otherwise, as its errors tier decides
+			if (modules[virtualId] === transformed.modules[specifier]) continue
 			modules[virtualId] = transformed.modules[specifier]
 			importersById[virtualId] = id
 			const dir = storeDirOf()
@@ -1316,9 +1324,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			},
 			// a virtual module loads synchronously, as webpack's cache reads it
 			handler(id) {
-				return issueFeaturesFile.test(id) ?
-						loadIssueFeatures(this)
-					:	loadModule(id)
+				if (issueFeaturesFile.test(id)) return loadIssueFeatures(this)
+				leaveUncached(this.getNativeBuildContext?.() as NativeBuild | undefined)
+				return loadModule(id)
 			}
 		},
 		// esbuild loads each module natively, as unplugin's adapter returns
@@ -1578,9 +1586,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 						})
 					compiler.webpack.NormalModule.getCompilationHooks(compilation)
 						.readResource.for("arktype")
-						.tap("arktype", context =>
-							loadModule(idOfResource(context.resource))
-						)
+						.tap("arktype", context => {
+							leaveUncached({ compilation, loaderContext: context })
+							return loadModule(idOfResource(context.resource))
+						})
 				}
 			)
 		},

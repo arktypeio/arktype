@@ -269,6 +269,9 @@ export const markerHint =
 
 export const islandHint = `A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".`
 
+export const writeUnexportedRuntimeMessage = (name: string): string =>
+	`\`${name}\` is arktype's, which arktype/runtime doesn't export, so a standalone build can't load this module`
+
 export const runtimeImportHint = `Read it only in a definition the build precompiles or one marked // @ark-runtime, or build with runtime: "arktype".`
 
 export const dynamicImportHint = `Import it with an import declaration, so the build precompiles what it defines, or build with runtime: "arktype".`

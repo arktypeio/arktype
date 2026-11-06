@@ -2077,6 +2077,32 @@ export const isAlsoType = (x: unknown) => x instanceof Type`).diagnostics.map(
 			])
 		})
 
+		it("an export arktype/runtime lacks, re-exported for sites to read", () => {
+			const barrel = `export { Type, type, scope as s } from "arktype"
+export { type Scope, match } from "arktype"
+export * from "arktype"`
+			const written = precompile(barrel)
+			attest(written.diagnostics).equals([])
+			attest(written.code).snap(`export { type } from "arktype"
+export { type Scope } from "arktype"
+export * from "arktype"`)
+			const main = precompile(
+				`import { s, type } from "./ark.ts"
+export const types = s({ a: "string" }).export()
+export const isType = (x: unknown) => x instanceof type`,
+				{ "/ark.ts": barrel }
+			)
+			attest(main.code.split("\n")[0]).equals('import { type } from "./ark.ts"')
+			// read outside a site, it's refused there
+			attest(
+				precompile(`import { s } from "./ark.ts"\nexport const read = s`, {
+					"/ark.ts": barrel
+				}).diagnostics.map(renderDiagnostic)
+			).snap([
+				'/main.ts:2:21  `s` is used outside a precompiled site\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+			])
+		})
+
 		it("a read off an import the build can't resolve", () => {
 			const source = `import { type } from "arktype"
 import { User, port } from "~/schemas"
