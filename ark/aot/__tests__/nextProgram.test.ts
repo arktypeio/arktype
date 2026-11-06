@@ -189,6 +189,19 @@ contextualize(() => {
 			])
 		})
 
+		it("warns of what it read once, not for each module it answers", async () => {
+			const dir = project({
+				"src/unused.ts":
+					'import { User } from "./user.ts"\n\nexport const Unused = User\n'
+			})
+			attest((await load(dir, "src/user.ts")).warnings).equals([
+				keptFor(
+					"src/unused.ts exports Unused, which code outside the bundle may read"
+				)
+			])
+			attest((await load(dir, "src/unused.ts")).warnings).equals([])
+		})
+
 		it("takes a route another module imports for an entry", async () => {
 			const dir = project({
 				"app/page.ts":
@@ -407,6 +420,8 @@ contextualize(() => {
 				const { out, warnings } = await load(dir, "src/user.ts")
 				attest(warnings).equals([writeUnreadProgramMessage(reason)])
 				attest(out?.includes("node_modules/.bin/.ark")).equals(false)
+				// once a build
+				attest((await load(dir, "src/user.ts")).warnings).equals([])
 			})
 		}
 
