@@ -283,14 +283,16 @@ const statOf = (path: string) => {
 export interface NextConfigLike {
 	pageExtensions?: unknown
 	turbopack?: { rules?: Record<string, unknown>; resolveAlias?: unknown }
+	experimental?: { swcPlugins?: unknown }
 }
 
 const pageExtensions = ["tsx", "ts", "jsx", "js"]
 
 // what next.config sets that has a build see a module otherwise than the read:
-// another loader in its rules, whose output's imports the read can't see, this
-// loader with two sets of options, or pages of an extension it doesn't read.
-// Else the options its rules give this loader
+// another loader in its rules, whose output's imports the read can't see, an
+// SWC plugin, which Turbopack runs after the loaders, this loader with two
+// sets of options, or pages of an extension it doesn't read. Else the options
+// its rules give this loader
 export const nextConfigReadOf = (
 	config: NextConfigLike,
 	isOwnLoader: (loader: string) => boolean
@@ -306,6 +308,13 @@ export const nextConfigReadOf = (
 	) {
 		return {
 			problem: "next.config sets pageExtensions, whose pages it can't read"
+		}
+	}
+	const swcPlugins = config.experimental?.swcPlugins
+	if (Array.isArray(swcPlugins) && swcPlugins.length) {
+		return {
+			problem:
+				"next.config runs SWC plugins after this loader, which may add reads it can't see"
 		}
 	}
 	const options = new Map<string, PrecompilePluginOptions>()
@@ -634,6 +643,30 @@ export const resolvedOptionsOf = (
 export const readsWith = (opts: PrecompilePluginOptions): boolean =>
 	opts.prune !== false && opts.runtime !== "arktype" && !opts.shadow
 
+// the files Next looks for beside next.config to run Babel, which Turbopack
+// does on each module after the loaders its rules name, as on what this one
+// wrote: so a plugin's reads of a validator, or code it passes one to, are
+// where the read can't see them
+const babelConfigFiles = [
+	".babelrc",
+	".babelrc.json",
+	".babelrc.js",
+	".babelrc.mjs",
+	".babelrc.cjs",
+	"babel.config.js",
+	"babel.config.json",
+	"babel.config.mjs",
+	"babel.config.cjs"
+]
+
+const babelProblemOf = (root: string) => {
+	const file = babelConfigFiles.find(name => existsSync(join(root, name)))
+	return (
+		file &&
+		`${file} has Next run Babel on each module after this loader, which may add reads it can't see`
+	)
+}
+
 // the read withPrecompile runs, under the options next.config gives the loader,
 // as each loader process resolves them
 export const readProjectWith = async (
@@ -653,7 +686,7 @@ export const readProjectWith = async (
 	if (!readsWith(opts)) return { refused: undefined, warnings: [], opts }
 	const { refused, warnings } = await readProgram(root, opts, {
 		aliases: (config.turbopack?.resolveAlias ?? {}) as Record<string, unknown>,
-		problem: "problem" in read ? read.problem : undefined
+		problem: "problem" in read ? read.problem : babelProblemOf(root)
 	})
 	return { refused, warnings, opts }
 }

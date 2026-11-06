@@ -498,6 +498,11 @@ contextualize(() => {
 				"a file another loader compiles",
 				{ "app/about/page.mdx": "# About\n" },
 				"app/about/page.mdx may import what it can't see"
+			],
+			[
+				"a Babel config",
+				{ "babel.config.json": '{ "presets": ["next/babel"] }\n' },
+				"babel.config.json has Next run Babel on each module after this loader, which may add reads it can't see"
 			]
 		]
 
@@ -593,6 +598,18 @@ contextualize(() => {
 			attest(readOf({ "*.ts": { loaders: ["other-loader", own] } })).equals({
 				problem:
 					"next.config runs other-loader, which may add imports it can't see"
+			})
+		})
+
+		it("refuses an SWC plugin, which runs after it", () => {
+			attest(
+				readOf({}, { experimental: { swcPlugins: [["plugin", {}]] } })
+			).equals({
+				problem:
+					"next.config runs SWC plugins after this loader, which may add reads it can't see"
+			})
+			attest(readOf({}, { experimental: { swcPlugins: [] } })).equals({
+				options: {}
 			})
 		})
 
