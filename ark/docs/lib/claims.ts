@@ -499,10 +499,18 @@ export const claims = {
 			"TypeScript's smallest, fastest validator."
 		:	"TypeScript's fastest validator.",
 	headlineNote: `${rankedBy}, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote} ${namingNote} A weekly job reruns the size benchmarks at each library's newest release.`,
-	// the fastest and the smallest builds differ: optimize "size" makes the
-	// product schema's valid data 2.2x slower
+	// the fastest and the smallest builds differ: on moltar's cases the default
+	// build takes 13-46x fewer instructions per call than "smallest"
+	// (smallestSpeed)
 	buildChoice:
 		"Build the fastest validator or the smallest from the same definitions.",
+	// moltar's cases in instructions per call on Node 24 at 3f6c3c32b,
+	// parseSafe / parseStrict / assertLoose / assertStrict: "smallest" 8605 /
+	// 4451 / 3179 / 4402, Valibot 1.5.0 8299 / 9533 / 8218 / 9450, Zod 4.6.7
+	// 1086 / 2171 / 2087 / 2101, the default build 217 / 337 / 69 / 332
+	// (ark/repo/bench/external/README.md, "The smallest preset's speed")
+	smallestSpeed:
+		'In our runs of moltar\'s benchmark, counting instructions per call, "smallest" is 4% slower than Valibot on parseSafe and 2.1-2.6x faster on the other three cases, while Zod 4 is 1.5-7.9x faster than it and the default build 13-46x faster.',
 	// the homepage's spec rows, each a fragment of a claim below
 	dynamicSpec:
 		"as fast as precompiled on valid data in our runs of schemabenchmarks.dev's benchmark",
