@@ -477,7 +477,7 @@ const inertMetaProperties = new Set([
 ])
 
 // arktype's own, which never import the program
-const runtimeSpecifier =
+export const runtimeSpecifier =
 	/^(?:arktype|@ark\/(?:schema|util))(?:\/|$)|^~arktype\//
 
 // a dependency the plugin leaves, read only for the program's modules it imports

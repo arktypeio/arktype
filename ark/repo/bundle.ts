@@ -1,5 +1,5 @@
 import { buildSync, type BuildOptions } from "esbuild"
-import { join } from "node:path"
+import { join, relative } from "node:path"
 import { ts } from "ts-morph"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
@@ -9,6 +9,7 @@ import {
 	walkPaths,
 	writeFile
 } from "../fs/index.ts"
+import { packagesByScope, repoDirs } from "./shared.ts"
 
 export const bundle = (): void => {
 	const modulePaths = walkPaths(fromCwd("out"), {
@@ -33,8 +34,9 @@ export const bundle = (): void => {
 		external: [issueFeaturesPath()]
 	} satisfies BuildOptions
 	// a module several entries import evaluates once only if they share one build
-	const { outputFiles } = buildSync({
+	const { outputFiles, metafile } = buildSync({
 		...opts,
+		metafile: true,
 		entryPoints: entryPoints.filter(
 			path =>
 				path !== issueFeaturesPath() &&
@@ -49,22 +51,65 @@ export const bundle = (): void => {
 			fromCwd("out", "shared", "issues.js"),
 			`export * from ${JSON.stringify(issues)}\n`
 		)
-		outputFiles.push(
-			...buildSync({ ...opts, entryPoints: [runtime], outfile: runtime })
-				.outputFiles
-		)
+		const variant = buildSync({
+			...opts,
+			entryPoints: [runtime],
+			outfile: runtime,
+			metafile: true
+		})
+		outputFiles.push(...variant.outputFiles)
+		Object.assign(metafile.outputs, variant.metafile.outputs)
 	}
 	const kept = [...developmentEntryPoints(process.cwd()), issueFeaturesPath()]
 	for (const path of modulePaths) if (!kept.includes(path)) rmRf(path)
+	const loaded = precompiledSources()
 	for (const file of outputFiles) {
+		const js = nameSelfReferencingClasses(
+			reexportImports(importingIssueFeatures(file.text))
+		)
+		const inputs = Object.keys(
+			metafile.outputs[relative(process.cwd(), file.path)]?.inputs ?? {}
+		)
 		writeFile(
 			file.path,
-			nameSelfReferencingClasses(
-				reexportImports(importingIssueFeatures(file.text))
-			)
+			inputs.some(input => loaded.has(sourceOf(input))) ? js : parsedLazily(js)
 		)
 	}
 }
+
+// the sources a precompiled program loads, through any package's runtime
+// entries, which keep their bytes as they're written
+const precompiledSources = (): Set<string> => {
+	const entries = Object.values(packagesByScope).flatMap(({ path, json }) =>
+		Object.entries(
+			json.exports as Record<string, { "ark-ts"?: unknown }>
+		).flatMap(([subpath, target]) => {
+			const source = target["ark-ts"] as string | { default: string }
+			return subpath.startsWith("./runtime") ?
+					[join(path, typeof source === "string" ? source : source.default)]
+				:	[]
+		})
+	)
+	const { metafile } = buildSync({
+		entryPoints: entries,
+		bundle: true,
+		format: "esm",
+		platform: "neutral",
+		conditions: ["ark-ts"],
+		absWorkingDir: repoDirs.root,
+		outdir: "out",
+		write: false,
+		metafile: true,
+		logLevel: "error"
+	})
+	return new Set(
+		Object.keys(metafile.inputs).map(input => join(repoDirs.root, input))
+	)
+}
+
+// the source tsc wrote an input of the bundle from
+const sourceOf = (input: string) =>
+	join(process.cwd(), input.replace(/^out\//, "").replace(/\.js$/, ".ts"))
 
 // what a program's issues may hold, an entry every chunk reading it shares,
 // kept as tsc writes it, so a bundler inlines its constants and a build
@@ -212,6 +257,71 @@ const reexportImports = (js: string): string => {
 		)
 	}
 	return applyEdits(js, edits)
+}
+
+// V8 parses an arrow function in full where its module is compiled, but only
+// preparses a function expression until it's called, so the arrows a module
+// defines outside any function are written as functions unless they read what
+// an arrow reads from its scope. Most of the library is never called by a
+// given program, and parsing it was most of what importing arktype cost: this
+// took an empty program's import from 88.8M instructions to 84.7M. A body
+// shorter than this parses in about the time its `function` and `return` cost
+// in bytes: converting every arrow saved no more and added 12.4 KB minified
+const lazilyParsedLength = 120
+
+const parsedLazily = (js: string): string => {
+	const edits: Edit[] = []
+	const visit = (node: ts.Node): void => {
+		if (ts.isArrowFunction(node)) {
+			if (
+				node.body.getEnd() - node.body.getStart() >= lazilyParsedLength &&
+				!readsScope(node)
+			)
+				edits.push(...asFunction(js, node))
+			return
+		}
+		// what's inside a function is preparsed with it
+		if (!ts.isFunctionLike(node) && !ts.isClassLike(node))
+			ts.forEachChild(node, visit)
+	}
+	visit(parse(js))
+	return applyEdits(js, edits)
+}
+
+// whether it reads this, arguments, super or new.target, which a function
+// would bind itself, or holds a class, which could
+const readsScope = (arrow: ts.ArrowFunction): boolean => {
+	const visit = (node: ts.Node): boolean =>
+		node.kind === ts.SyntaxKind.ThisKeyword ||
+		node.kind === ts.SyntaxKind.SuperKeyword ||
+		ts.isMetaProperty(node) ||
+		ts.isClassLike(node) ||
+		(ts.isIdentifier(node) && node.text === "arguments") ||
+		((!ts.isFunctionLike(node) || ts.isArrowFunction(node)) &&
+			!!ts.forEachChild(node, visit))
+	return !!ts.forEachChild(arrow, visit)
+}
+
+const asFunction = (js: string, arrow: ts.ArrowFunction): Edit[] => {
+	const isAsync = arrow.modifiers?.some(
+		modifier => modifier.kind === ts.SyntaxKind.AsyncKeyword
+	)
+	const start = isAsync ? arrow.modifiers![0].getEnd() : arrow.getStart()
+	const head = js.slice(start, arrow.equalsGreaterThanToken.getStart()).trim()
+	const edits: Edit[] = [
+		[
+			start,
+			arrow.equalsGreaterThanToken.getEnd(),
+			`${isAsync || /[\w$]/.test(js[start - 1]) ? " " : ""}function ${head[0] === "(" ? head : `(${head})`}`
+		]
+	]
+	if (!ts.isBlock(arrow.body)) {
+		edits.push(
+			[arrow.body.getStart(), arrow.body.getStart(), "{ return "],
+			[arrow.body.getEnd(), arrow.body.getEnd(), " }"]
+		)
+	}
+	return edits
 }
 
 // esbuild names a self-referencing class _X, as in `var X = class _X {...}`

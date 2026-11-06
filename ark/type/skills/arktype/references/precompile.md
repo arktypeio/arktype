@@ -83,7 +83,8 @@ export default {
 			"arktype/codecs": "arktype/runtime",
 			"arktype/config": "arktype/runtime",
 			"arktype/errors": "arktype/runtime",
-			"arktype/mutatesInput": "arktype/runtime"
+			"arktype/mutatesInput": "arktype/runtime",
+			"@ark/schema/runtime": "@ark/aot/turbopack/runtime"
 		}
 	}
 }

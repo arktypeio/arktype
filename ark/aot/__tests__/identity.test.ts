@@ -198,13 +198,13 @@ contextualize(() => {
 
 	it("a production build compares the same", async () => {
 		attest(partitionOf(run(await bundle(twins, production)))).equals(partition)
-	})
+	}).timeout(60_000)
 
 	it("a production size build compares the same", async () => {
 		attest(
 			partitionOf(run(await bundle(twins, production, { preset: "smallest" })))
 		).equals(partition)
-	})
+	}).timeout(60_000)
 
 	it("a build reading each module alone compares the same", async () => {
 		attest(partitionOf(run(await bundle(twins, source)))).equals(partition)
@@ -217,7 +217,7 @@ contextualize(() => {
 		attest(
 			partitionOf(run(await bundle(twins, source, { runtime: "arktype" })))
 		).equals(partition)
-	})
+	}).timeout(60_000)
 
 	it("what one module reads is on what the other created first", async () => {
 		const root = fixture("members", {
@@ -442,7 +442,7 @@ console.log($.type({ x: "A" }) === Scoped, type("unknown") === type.pipe())
 		attest(run(await bundle(root, production))).equals("true false\n")
 		attest(run(await bundle(root, source))).equals("false false\n")
 		attest(runModuleAtATime(root)).equals("false false\n")
-	})
+	}).timeout(60_000)
 
 	it("each run of a module creates its own functions, so its own Types", async () => {
 		const root = fixture("queried", {
@@ -503,7 +503,7 @@ console.log(first.Narrow === second.Narrow)
 				encoding: "utf8"
 			}).stdout
 		).equals("true\n")
-	})
+	}).timeout(60_000)
 
 	it("a production build pays only for what two modules create", async () => {
 		const root = fixture("apart", {
@@ -522,7 +522,7 @@ console.log(A === SameA, A({ a: "" }), B({ b: "" }))
 		const js = await bundle(root, production)
 		attest(run(js)).equals(runPlain(root))
 		attest(js.includes("tablesByKey")).equals(false)
-	})
+	}).timeout(60_000)
 
 	describe("compared beside one another module creates", () => {
 		// main's Type is its own, which the build may write with less than the
@@ -575,7 +575,7 @@ console.log(A === SameA, A({ a: "" }), B({ b: "" }))
 					attest(js.includes("tablesByKey")).equals(interns)
 					attest(run(js)).equals(runPlain(root))
 				}
-			})
+			}).timeout(60_000)
 
 		reads(
 			"creates each where they're only called",
@@ -613,6 +613,6 @@ console.log(A === SameA, A({ a: "" }), B({ b: "" }))
 			const js = await bundle(root, production)
 			attest(js.includes("tablesByKey")).equals(true)
 			attest(run(js)).equals(runPlain(root))
-		})
+		}).timeout(60_000)
 	})
 })

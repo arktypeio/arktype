@@ -100,7 +100,7 @@ const install = () => {
 		stdio: "inherit"
 	})
 	for (const size of sizeNames)
-		writeApp(appOf(size, workDir), join(workDir, "apps", size))
+		writeApp(appOf(size), join(workDir, "apps", size))
 }
 
 const arms = ["off", "on"] as const
@@ -264,7 +264,7 @@ const summarize = (commit: string) => {
 	const cells: Record<string, Stats> = {}
 	for (const [cell, times] of Object.entries(timesByCell))
 		cells[cell] = statsOf(times)
-	const apps = sizeNames.map(size => appOf(size, workDir))
+	const apps = sizeNames.map(size => appOf(size))
 	const summary = {
 		commit,
 		types: Object.fromEntries(

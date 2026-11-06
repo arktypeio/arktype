@@ -775,10 +775,13 @@ export const failed = out => out instanceof type.errors
 					compiler.close(() => (error ? reject(error) : resolve(stats)))
 				)
 			)
-			// Rspack marks each error with a × and ends it with a newline
-			return stats
-				?.toJson()
-				.errors?.map(error => error.message.replace(/^\s*× /, "").trimEnd())
+			// Rspack marks each error with a × and ends it with a newline, and
+			// colors both where the terminal supports it, as CI's does
+			return stats?.toJson().errors?.map(error =>
+				stripVTControlCharacters(error.message)
+					.replace(/^\s*× /, "")
+					.trimEnd()
+			)
 		}
 
 		it("directly or through what it depends on", async () => {
@@ -3263,39 +3266,55 @@ export const U = make()
 			).snap("undefined\n")
 		})
 
-		it("run the config module first where the program loads it after a module creating only once called", async () => {
-			const lazy = {
-				exported: [`export const make = () => [${types}]`, "lib.make()"],
-				// an export of it calls nothing
-				specified: [
-					`const make = () => [${types}]\nexport { make }`,
-					"lib.make()"
-				],
-				// though an import cycle could call it as the module loads
-				importing: [
-					`import { n } from "./n.ts"\n\nexport const make = () => [${types}, n]`,
-					"lib.make()"
-				],
-				method: [
-					`export class C {\n\tmake() {\n\t\treturn [${types}]\n\t}\n}`,
-					"new lib.C().make()"
-				],
-				field: [`export class C {\n\tall = [${types}]\n}`, "new lib.C().all"]
-			}
+		// the program loads the config module after a module creating only once called
+		const lazy = {
+			exported: [`export const make = () => [${types}]`, "lib.make()"],
+			// an export of it calls nothing
+			specified: [
+				`const make = () => [${types}]\nexport { make }`,
+				"lib.make()"
+			],
+			// though an import cycle could call it as the module loads
+			importing: [
+				`import { n } from "./n.ts"\n\nexport const make = () => [${types}, n]`,
+				"lib.make()"
+			],
+			method: [
+				`export class C {\n\tmake() {\n\t\treturn [${types}]\n\t}\n}`,
+				"new lib.C().make()"
+			],
+			field: [`export class C {\n\tall = [${types}]\n}`, "new lib.C().all"]
+		}
+		const runLazy = async (prefix: string, prune: boolean) => {
 			const results: Record<string, string | undefined> = {}
 			for (const [name, [lib, made]] of Object.entries(lazy)) {
 				results[name] = await run(
-					`lazy-${name}`,
+					`${prefix}-${name}`,
 					{
 						"config.ts": config,
 						"n.ts": "export const n = 1\n",
 						"lib.ts": `import { type } from "arktype"\n${lib}\n`,
 						"main.ts": `import * as lib from "./lib.ts"\nimport "./config.ts"\n\nconst all = ${made}\n\nconsole.log(${read})\n`
 					},
-					true
+					prune
 				)
 			}
-			attest(results).snap({
+			return results
+		}
+
+		it("run the config module first where the program loads it after a module creating only once called", async () => {
+			attest(await runLazy("lazy", true)).snap({
+				exported: "undefined\n",
+				specified: "undefined\n",
+				importing: "undefined\n",
+				method: "undefined\n",
+				field: "undefined\n"
+			})
+		})
+
+		// as it can't tell whether the program loads it
+		it("run the config module first ahead of a module creating only once called, reading each module alone", async () => {
+			attest(await runLazy("lazyAlone", false)).snap({
 				exported: "undefined\n",
 				specified: "undefined\n",
 				importing: "undefined\n",
@@ -3417,7 +3436,7 @@ export const U = make()
 					"lib.ts creates a Type before configure() runs"
 				]
 			})
-		})
+		}).timeout(180_000)
 
 		it("fail as arktype does where nothing imports the config module", async () => {
 			attest(

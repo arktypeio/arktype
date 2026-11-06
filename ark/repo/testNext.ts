@@ -2,6 +2,7 @@
 import {
 	withAllowUnsafe,
 	writeExternalizedMessage,
+	writeMissedByProgramMessage,
 	writeNextExternalMessage,
 	writeTurbopackDependencyMessage
 } from "@ark/aot/internal/messages.ts"
@@ -97,10 +98,9 @@ for (const [path, contents] of Object.entries(files)) {
 
 const next = createRequire(import.meta.url).resolve("next/dist/bin/next")
 
-const build = (config: string, ...flags: string[]) => {
+const nextBuild = (config: string, ...flags: string[]) => {
 	writeFileSync(join(appDir, "next.config.js"), config)
 	rmSync(join(appDir, ".next"), { recursive: true, force: true })
-	rmSync(join(appDir, "node_modules/.cache"), { recursive: true, force: true })
 	const result = spawnSync(process.execPath, [next, "build", ...flags], {
 		cwd: appDir,
 		encoding: "utf8",
@@ -108,6 +108,11 @@ const build = (config: string, ...flags: string[]) => {
 	})
 	if (result.error) throw result.error
 	return { status: result.status, output: result.stdout + result.stderr }
+}
+
+const build = (config: string, ...flags: string[]) => {
+	rmSync(join(appDir, "node_modules/.cache"), { recursive: true, force: true })
+	return nextBuild(config, ...flags)
 }
 
 const unwrittenMessage =
@@ -171,6 +176,149 @@ writeFileSync(
 )
 assertRendered("Turbopack", build(turbopack))
 
+// a member no read of the app's needs, which only a whole-program read can drop
+const emittedWith = (text: string, dir: string): string[] =>
+	readdirSync(dir, { recursive: true, encoding: "utf8" }).filter(file => {
+		const path = join(dir, file)
+		return (
+			file.endsWith(".js") &&
+			statSync(path).isFile() &&
+			readFileSync(path, "utf8").includes(text)
+		)
+	})
+
+const assertPruned = (bundler: string) => {
+	for (const compiler of ["server", "static"]) {
+		const whole = emittedWith("~standard", join(appDir, ".next", compiler))
+		if (whole.length) {
+			throw new Error(
+				`${bundler}'s ${compiler} build should prune what no module reads, but kept ~standard in ${whole.join(", ")}`
+			)
+		}
+	}
+}
+
+assertPruned("Turbopack")
+
+// what a build's chunks hold, whose names are hashes of it
+const chunksOf = () =>
+	["server/chunks", "static/chunks"].flatMap(dir =>
+		readdirSync(join(appDir, ".next", dir), {
+			recursive: true,
+			encoding: "utf8"
+		})
+			.filter(file => file.endsWith(".js"))
+			.sort()
+			.map(file => [
+				file,
+				readFileSync(join(appDir, ".next", dir, file), "utf8")
+			])
+	)
+
+console.log("▲ Building it again from what the last build stored...")
+
+const cold = JSON.stringify(chunksOf())
+assertRendered("Turbopack", nextBuild(turbopack))
+if (JSON.stringify(chunksOf()) !== cold)
+	throw new Error("Turbopack's warm build should write what its cold build did")
+
+console.log("▲ Building it with a module newly reading a member...")
+
+const readsPath = join(appDir, "app/reads.jsx")
+const reads = readFileSync(readsPath, "utf8")
+writeFileSync(
+	readsPath,
+	reads.replace("typeof Age.assert", 'typeof Age["~standard"].validate')
+)
+assertRendered("Turbopack", nextBuild(turbopack))
+if (!emittedWith("~standard", join(appDir, ".next/static")).length) {
+	throw new Error(
+		"Turbopack's build should keep what a module edited since the last build reads"
+	)
+}
+writeFileSync(readsPath, reads)
+
+console.log("▲ Building a route importing a module from beyond the project...")
+
+const sharedDir = join(appDir, "../next-shared")
+mkdirSync(sharedDir, { recursive: true })
+writeFileSync(
+	join(sharedDir, "shared.ts"),
+	'import { type } from "arktype"\n\nexport const Shared = type({ shared: "string" })\n'
+)
+mkdirSync(join(appDir, "app/shared"))
+writeFileSync(
+	join(appDir, "app/shared/page.jsx"),
+	'import { Shared } from "../../../next-shared/shared.ts"\n\nexport default function Page() {\n\treturn <p>{String(Shared.allows({ shared: "yes" }))}</p>\n}\n'
+)
+const beyond = build(turbopack)
+if (
+	beyond.status !== 0 ||
+	!readFileSync(join(appDir, ".next/server/app/shared.html"), "utf8").includes(
+		"<p>true</p>"
+	)
+) {
+	throw new Error(
+		`Turbopack should read a module from beyond the project. It exited ${beyond.status}:\n${beyond.output}`
+	)
+}
+rmSync(join(appDir, "app/shared"), { recursive: true })
+rmSync(sharedDir, { recursive: true })
+
+console.log(
+	"▲ Building a module whose import resolves apart in each of its layers..."
+)
+
+writeFileSync(
+	join(appDir, "package.json"),
+	JSON.stringify({
+		...JSON.parse(files["package.json"]),
+		imports: {
+			"#layered": {
+				"react-server": "./src/server.ts",
+				default: "./src/client.ts"
+			}
+		}
+	})
+)
+writeFileSync(
+	join(appDir, "src/server.ts"),
+	'import { type } from "arktype"\n\nexport const Layered = type("string")\n'
+)
+writeFileSync(
+	join(appDir, "src/client.ts"),
+	'import { type } from "arktype"\n\nexport const Layered = type("number")\n'
+)
+writeFileSync(
+	join(appDir, "src/layered.ts"),
+	'import { Layered } from "#layered"\n\nexport const layered = () => typeof Layered["~standard"]\n'
+)
+writeFileSync(
+	join(appDir, "app/layered.jsx"),
+	'"use client"\nimport { layered } from "../src/layered.ts"\n\nexport const Client = () => <b>{layered()}</b>\n'
+)
+mkdirSync(join(appDir, "app/layered"))
+writeFileSync(
+	join(appDir, "app/layered/page.jsx"),
+	'import { layered } from "../../src/layered.ts"\nimport { Client } from "../layered.jsx"\n\nexport default function Page() {\n\treturn <p>{layered()}<Client /></p>\n}\n'
+)
+assertFailsWith(
+	writeMissedByProgramMessage(
+		"src/layered.ts",
+		'imports "#layered" as src/server.ts'
+	),
+	build(turbopack)
+)
+writeFileSync(join(appDir, "package.json"), files["package.json"])
+for (const file of [
+	"src/server.ts",
+	"src/client.ts",
+	"src/layered.ts",
+	"app/layered.jsx"
+])
+	rmSync(join(appDir, file))
+rmSync(join(appDir, "app/layered"), { recursive: true })
+
 console.log(
 	"▲ Building it with Next leaving the pages router's dependencies external..."
 )
@@ -196,29 +344,11 @@ assertFailsWith(
 	)
 )
 
-// a member no read of the app's needs, which only a whole-program read can drop
-const emittedWith = (text: string, dir: string): string[] =>
-	readdirSync(dir, { recursive: true, encoding: "utf8" }).filter(file => {
-		const path = join(dir, file)
-		return (
-			file.endsWith(".js") &&
-			statSync(path).isFile() &&
-			readFileSync(path, "utf8").includes(text)
-		)
-	})
-
 console.log("▲ Building it with webpack...")
 
 assertRendered("webpack", build(webpack, "--webpack"))
 
-for (const compiler of ["server", "static"]) {
-	const whole = emittedWith("~standard", join(appDir, ".next", compiler))
-	if (whole.length) {
-		throw new Error(
-			`webpack's ${compiler} build should prune what no module reads, but kept ~standard in ${whole.join(", ")}`
-		)
-	}
-}
+assertPruned("webpack")
 
 console.log(
 	"▲ Building it with webpack, Next leaving the pages router's dependencies external..."
@@ -256,6 +386,10 @@ if (
 }
 
 rmSync(appDir, { recursive: true, force: true })
+rmSync(fileURLToPath(new URL("./node_modules/.bin/.ark", import.meta.url)), {
+	recursive: true,
+	force: true
+})
 
 console.log(
 	"✅ Next fails a dependency that defines a Type and precompiles one set to aot, and either bundler fails where Next leaves arktype external on the server"

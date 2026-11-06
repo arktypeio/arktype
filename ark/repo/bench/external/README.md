@@ -213,6 +213,53 @@ usage, as B1's 1779 was. The 1158 in "Best average" is the default build of
 `forms/arktype.ts`, the same form with the same esbuild settings, which
 exports a function that asserts where `login/arktype.ts` asserts once.
 
+At 20710020e (`results/login-20710020e.json`), the default build is 1007 B
+gzipped, the `"smallest"` preset 978 and dynamic ArkType 89751; Valibot 1547,
+Zod Mini 5127 and Zod 25058 are unchanged. Every other ArkType row was
+measured again on the same commit (`results/arktype-20710020e.json`,
+`results/startup-20710020e-node24.json`, Typia included, and
+`results/newest/`, every rival at its newest release of 2026-11-06), at
+1-minute loads of 6 to 12.
+
+## The smallest preset's speed
+
+`results/smallest-3f6c3c32b.json` holds B2, the `"smallest"` preset, on
+moltar's four cases at 3f6c3c32b, beside B1 and moltar's own Valibot and Zod
+cases (`cases/valibot.ts` and `cases/zod.ts` at 499f3fb), on Valibot 1.5.0
+and Zod 4.6.7. It was counted on 2026-11-06 from 14:08 to 14:11 UTC, at
+1-minute loads of 18 to 20, by `count.ts` over 3 reps on Node 24.14.1,
+pinned to cores 10-15, of the arms `moltar/smallest.ts` writes. Each runs
+`moltar/cjs/child.ts`'s call shape on moltar's data, without a clone of
+moltar's. On B1 it counts 217, 337, 69 and 332 instructions where moltar's
+harness counted 184.6, 339, 66 and 332 at 20710020e, whose B1 counts the
+same as 3f6c3c32b's here, so its rows can differ from that harness's by up
+to 18%. Medians, in instructions per call:
+
+| case         | B1 (default) | B2 (`"smallest"`) | Valibot | Zod 4 |
+| ------------ | -----------: | ----------------: | ------: | ----: |
+| parseSafe    |          217 |              8605 |    8299 |  1086 |
+| parseStrict  |          337 |              4451 |    9533 |  2171 |
+| assertLoose  |           69 |              3179 |    8218 |  2087 |
+| assertStrict |          332 |              4402 |    9450 |  2101 |
+
+B2 takes 4% more instructions than Valibot on parseSafe and 2.1-2.6x fewer
+on the other three, while Zod 4 takes 1.5-7.9x fewer than B2 and B1 13-46x
+fewer. Zod's counts vary by up to 9% between reps, every other arm's by
+under 1%. From the repo root, after `pnpm build`:
+
+```sh
+node ark/repo/bench/external/moltar/build.ts
+NODE24=<node 24.14.1> node ark/repo/bench/external/moltar/smallest.ts
+COUNT_ARMS=ark/repo/bench/external/out/smallestArms.json \
+	node ark/repo/bench/external/count.ts <out.json> 3 2
+```
+
+These replace B2's rows in `counts.json` (c42ee008c) and
+`counts-a306152ce.json`, which predate ca800dff2. From it, a checker can
+delete or reject a key it doesn't declare, so B2 writes `tSafe` and
+`tStrict` as checkers too, where it had compiled them, as it had compiled
+every Type at c42ee008c.
+
 ## The homepage's apps
 
 `bench/size.ts` sizes each of the homepage's apps as `bench/bundle.ts`
