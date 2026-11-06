@@ -1439,16 +1439,18 @@ const check = async (app: App): Promise<boolean> => {
 			console.error(`\nUNSOUND (${bundler}): kept in ${kept}`)
 		}
 		if (bundler === "turbopack") {
-			// Next keeps what it built in .next, its build cache's included where
-			// it's on, under which the read is refused
+			// Next keeps what it built in .next, its build cache's included unless
+			// it's set off
 			const edited = writeEdit(app)
-			for (const cache of [false, true]) {
-				const tag = cache ? "edited-cached" : "edited"
+			for (const cacheOff of [false, true]) {
+				const tag = cacheOff ? "edited-uncached" : "edited"
 				const warm = await buildWith(bundler, edited, app, opts, tag, {
 					warm: true,
-					cache
+					cacheOff
 				})
-				const cold = await buildWith(bundler, edited, app, opts, tag, { cache })
+				const cold = await buildWith(bundler, edited, app, opts, tag, {
+					cacheOff
+				})
 				// a crash of Turbopack's own, which its build cache sets off at times,
 				// not output a build gets wrong
 				if (
@@ -1473,7 +1475,7 @@ const check = async (app: App): Promise<boolean> => {
 						warm.refused ?? ""
 					)
 					console.error(
-						`\nWARM != COLD (${bundler}${cache ? ", its build cache on" : ""}): kept in ${kept}`
+						`\nWARM != COLD (${bundler}${cacheOff ? ", its build cache off" : ""}): kept in ${kept}`
 					)
 				}
 			}

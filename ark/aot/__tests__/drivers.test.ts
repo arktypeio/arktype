@@ -170,7 +170,7 @@ contextualize(function (this: Mocha.Suite) {
 		attest(JSON.parse(stdout)).equals([
 			["precompile"],
 			["register"],
-			["__esModule", "default"]
+			["__esModule", "default", "withPrecompile"]
 		])
 	})
 
