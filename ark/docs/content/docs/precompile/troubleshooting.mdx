@@ -139,6 +139,8 @@ A definition reading one of its Types, like `type({ email: Email })` with `Email
 
 **`must be valid according to t`**, or `$ark.t` in a morph's `toJSON()`, where the function was anonymous: terser, which webpack minifies with, can inline the call a precompiled site makes and assign your function to a variable, which names it. It renames every function anyway unless told not to, so where a message names one, give it a name and set [`keep_fnames`](https://terser.org/docs/options/#compress-options). Validation is unaffected.
 
+**A narrow keeping state passes on Rspack where it fails elsewhere**, with or without precompiling: Rspack's minifier writes `const patterns = [/a/g]` and `s => patterns[0].test(s)` as `s => /a/g.test(s)`, a new regex at each call, so its `lastIndex` never advances. Bind the regex itself, as in `const re = /a/g`, or set `optimization.minimize` false.
+
 **`type is not a function`** at runtime: a module that defines a Type loaded `arktype/runtime` without being precompiled. Bun's driver and Turbopack replace `arktype` for every importer, so they can't fail for a module they don't load, like one another plugin supplies or, with Turbopack, one no loader rule matches. Define the Types it uses in a file they precompile. The same error comes from a call to a helper the build precompiles at each call, made from a module the build doesn't transform: call the helper where it does.
 
 **`toJsonSchema isn't baked into this validator, as the build saw no code read it`** at runtime, or the same for another introspection member: code the build didn't see read a member it didn't bake, like code outside the bundle reading a validator an entry exports. Set it true in [`members`](/docs/precompile/options#members).
