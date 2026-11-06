@@ -27,6 +27,7 @@ import {
 	refusePrune,
 	resolvePrecompileOptions,
 	settingsFileOf,
+	settingsPathsOf,
 	withSettingsFile
 } from "./settings.ts"
 import {
@@ -119,6 +120,11 @@ export default function (
 	source: string
 ): string | undefined {
 	const given = this.getOptions()
+	// ark.json or package.json's "ark", which decide each module's output as
+	// next.config's options do, but which Turbopack's build cache sees change
+	// only as dependencies: one written since the last build too
+	for (const file of settingsPathsOf(given.cwd ?? process.cwd()))
+		this.addDependency(file)
 	refuseDeclare(given, "Turbopack")
 	let opts: PrecompilePluginOptions
 	try {
