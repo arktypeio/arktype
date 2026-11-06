@@ -182,14 +182,19 @@ export const nextConfigOf = (root: string, precompiled: boolean) =>
 		root: ${JSON.stringify(root)},
 		rules: {
 			"*.ts": { loaders: ["@ark/aot/turbopack"] },
-			"*.tsx": { loaders: ["@ark/aot/turbopack"] }
+			"*.tsx": { loaders: ["@ark/aot/turbopack"] },
+			"*.{js,mjs}": {
+				condition: { content: /arktype/ },
+				loaders: ["@ark/aot/turbopack"]
+			}
 		},
 		resolveAlias: {
 			arktype: "arktype/runtime",
 			"arktype/codecs": "arktype/runtime",
 			"arktype/config": "arktype/runtime",
 			"arktype/errors": "arktype/runtime",
-			"arktype/mutatesInput": "arktype/runtime"
+			"arktype/mutatesInput": "arktype/runtime",
+			"@ark/schema/runtime": "@ark/aot/turbopack/runtime"
 		}
 	}
 }
