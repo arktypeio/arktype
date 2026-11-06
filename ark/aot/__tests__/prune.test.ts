@@ -2739,6 +2739,32 @@ console.log(typeof User["~standard"].validate)
 					)
 				})
 
+				it("prints the name of a narrow an introspection reads, where nothing else reads its Type", async () => {
+					const root = fixture("introspectedNarrow", {
+						"types.js": `import { type } from "arktype"
+
+const isPositive = n => n > 0
+
+export const User = type({ age: type("number").narrow(isPositive) })
+`,
+						"main.js": `import { User } from "./types.js"
+
+console.log(User.expression)
+console.log(User.description)
+`
+					})
+					// a minifier inlining isPositive leaves arktype nothing to name
+					const js = await bundle(
+						name,
+						root,
+						{},
+						{ optimization: { minimize: false } }
+					)
+					attest(output(js)).snap(`{ age: number & isPositive }
+{ age: a number and valid according to isPositive }
+`)
+				})
+
 				describe("a define writing code no module's text holds", () => {
 					const reading = {
 						"main.js": `import { User } from "./types.js"
