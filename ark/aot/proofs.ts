@@ -39,29 +39,27 @@ const someNode = (node: Node, test: (node: Node) => boolean): boolean => {
 	for (const k in node) {
 		if (k === "parent") continue
 		const value = node[k as keyof Node] as unknown
-		if (someIn(Array.isArray(value) ? value : [value], test)) return true
+		for (const child of Array.isArray(value) ? value : [value])
+			if (isNode(child) && someNode(child, test)) return true
 	}
 	return false
 }
 
-const someIn = (
-	values: readonly unknown[],
-	test: (node: Node) => boolean
-): boolean => values.some(value => isNode(value) && someNode(value, test))
+const isArgumentsOrEval = (node: Node): boolean =>
+	node.type === "Identifier" &&
+	(node.name === "arguments" || node.name === "eval")
+
+// a param taking its argument as passed
+const takesItsArgument = (param: ParamPattern): boolean =>
+	param.type !== "AssignmentPattern" && param.type !== "RestElement"
 
 // nothing it runs can read an argument past its one param
 export const readsOnlyItsArgument = (fn: FunctionNode): boolean => {
 	const params = runtimeParamsOf(fn)
 	return (
 		params.length === 1 &&
-		params[0].type !== "AssignmentPattern" &&
-		params[0].type !== "RestElement" &&
-		!someNode(
-			fn,
-			node =>
-				node.type === "Identifier" &&
-				(node.name === "arguments" || node.name === "eval")
-		)
+		takesItsArgument(params[0]) &&
+		!someNode(fn, isArgumentsOrEval)
 	)
 }
 
@@ -70,7 +68,7 @@ const reportedKeys = new Set(["problem", "expected", "actual", "message"])
 // a report that reads nothing a ctx holds, so can't throw for lack of one
 const isPlainReport = (method: string, args: readonly Node[]): boolean => {
 	if (args.length !== 1) return false
-	const arg = args[0] as Node
+	const arg = args[0]
 	return (
 		arg.type === "TemplateLiteral" ||
 		(arg.type === "Literal" && typeof arg.value === "string") ||
@@ -98,8 +96,7 @@ const returnsItsReports = (fn: FunctionNode): boolean => {
 		fn.async ||
 		fn.generator ||
 		ctx.type !== "Identifier" ||
-		params[0].type === "AssignmentPattern" ||
-		params[0].type === "RestElement"
+		!takesItsArgument(params[0])
 	)
 		return false
 	const receivers = new Set<Node>()
@@ -140,11 +137,11 @@ const returnsItsReports = (fn: FunctionNode): boolean => {
 		!someNode(
 			fn,
 			node =>
-				node.type === "Identifier" &&
 				node !== ctx &&
-				(node.name === "arguments" ||
-					node.name === "eval" ||
-					(node.name === ctx.name && !receivers.has(node)))
+				(isArgumentsOrEval(node) ||
+					(node.type === "Identifier" &&
+						node.name === ctx.name &&
+						!receivers.has(node)))
 		)
 	)
 }

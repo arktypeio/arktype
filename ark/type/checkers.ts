@@ -824,8 +824,6 @@ export const failingClosedProps = ((
 		withCtx
 	)) satisfies Fn
 
-// a result of the keys it declares, in order; an instance is copied where it
-// must be, keeping its prototype
 const deletes = (declared: Props, data: any, out: any): any => {
 	for (const k of [
 		...Object.keys(data),
@@ -838,6 +836,8 @@ const deletes = (declared: Props, data: any, out: any): any => {
 	return out
 }
 
+// a result of the keys it declares, in order; an instance is copied where it
+// must be, keeping its prototype
 export const deletingProps = ((declared: Props): Checker => {
 	const checker = props(declared)
 	checker.t = data => {

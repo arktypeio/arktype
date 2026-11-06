@@ -1619,6 +1619,7 @@ return namespace`
 			)
 		})
 	}
+
 	// whether a node may be written as the checker declared beside it
 	get writesCheckerNodes(): boolean {
 		return (
