@@ -330,17 +330,22 @@ export const Exported = type({ b: "number" })
 		})
 
 		it("a barrel re-exporting what arktype/runtime lacks for sites to read, in and outside production", () => {
-			// match, which nothing reads
-			const main = `import { match, scope, type } from "./ark.ts"
-
+			const body = `
 const types = scope({ user: { name: "string" } }).export()
 const Id = type("string")
 
 console.log(String(types.user({ name: 5 })), Id("x"))
 `
-			for (const [shape, barrel] of [
-				["named", `export { match, scope, type } from "arktype"\n`],
-				["star", `export * from "arktype"\n`]
+			// match, which nothing reads
+			const named = `import { match, scope, type } from "./ark.ts"\n${body}`
+			for (const [shape, barrel, main] of [
+				["named", `export { match, scope, type } from "arktype"\n`, named],
+				["star", `export * from "arktype"\n`, named],
+				[
+					"renamed",
+					`export { match as ark_match, scope as ark_scope, type as ark_type } from "arktype"\n`,
+					`import { ark_match, ark_scope as scope, ark_type as type } from "./ark.ts"\n${body}`
+				]
 			]) {
 				const root = writeFixture(
 					{ "ark.ts": barrel, "main.ts": main },

@@ -64,10 +64,11 @@ const types = `import { type } from "arktype"
 export const User = type({ name: "string" })
 `
 
-// a barrel re-exporting what arktype/runtime lacks, which only sites read
+// a barrel re-exporting what arktype/runtime lacks, which only sites read, or,
+// renamed, nothing
 const arkBarrel = (extension: string) => ({
-	[`ark${extension}`]: `export { scope, type } from "arktype"\n`,
-	[`main${extension}`]: `import { scope, type } from "./ark${extension}"
+	[`ark${extension}`]: `export { match as ark_match, scope, type } from "arktype"\n`,
+	[`main${extension}`]: `import { ark_match, scope, type } from "./ark${extension}"
 
 const types = scope({ user: { name: "string" } }).export()
 const Id = type("string")
