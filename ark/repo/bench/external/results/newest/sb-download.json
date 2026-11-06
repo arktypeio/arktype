@@ -25,15 +25,15 @@
 			"fileName": "arktype/precompiled/download/index.ts",
 			"libraryName": "arktype/precompiled",
 			"version": "2.2.9",
-			"bytes": 6353,
-			"gzipBytes": 1879
+			"bytes": 6281,
+			"gzipBytes": 1771
 		},
 		{
 			"fileName": "typia/download/index.ts",
 			"libraryName": "typia",
-			"version": "15.2.1",
-			"bytes": 6997,
-			"gzipBytes": 1846
+			"version": "15.2.2",
+			"bytes": 7047,
+			"gzipBytes": 1854
 		},
 		{
 			"fileName": "valibot/download/index.ts",
@@ -270,15 +270,15 @@
 			"fileName": "arktype/download/index.ts",
 			"libraryName": "arktype",
 			"version": "2.2.9",
-			"bytes": 268617,
-			"gzipBytes": 83597
+			"bytes": 271482,
+			"gzipBytes": 87359
 		},
 		{
 			"fileName": "ata-validator/download/index.ts",
 			"libraryName": "ata-validator",
-			"version": "1.60.0",
-			"bytes": 490953,
-			"gzipBytes": 131096
+			"version": "1.63.1",
+			"bytes": 507201,
+			"gzipBytes": 136735
 		}
 	],
 	"unminified": [
@@ -300,8 +300,8 @@
 			"fileName": "arktype/precompiled/download/index.ts",
 			"libraryName": "arktype/precompiled",
 			"version": "2.2.9",
-			"bytes": 14500,
-			"gzipBytes": 2919
+			"bytes": 14250,
+			"gzipBytes": 2779
 		},
 		{
 			"fileName": "@remix-run/data-schema/download/index.ts",
@@ -320,9 +320,9 @@
 		{
 			"fileName": "typia/download/index.ts",
 			"libraryName": "typia",
-			"version": "15.2.1",
-			"bytes": 17142,
-			"gzipBytes": 3707
+			"version": "15.2.2",
+			"bytes": 18624,
+			"gzipBytes": 4054
 		},
 		{
 			"fileName": "decoders/download/index.ts",
@@ -552,15 +552,15 @@
 			"fileName": "arktype/download/index.ts",
 			"libraryName": "arktype",
 			"version": "2.2.9",
-			"bytes": 474255,
-			"gzipBytes": 117424
+			"bytes": 494782,
+			"gzipBytes": 126761
 		},
 		{
 			"fileName": "ata-validator/download/index.ts",
 			"libraryName": "ata-validator",
-			"version": "1.60.0",
-			"bytes": 852318,
-			"gzipBytes": 180449
+			"version": "1.63.1",
+			"bytes": 883323,
+			"gzipBytes": 188308
 		}
 	]
 }

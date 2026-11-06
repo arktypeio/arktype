@@ -1,12 +1,12 @@
 {
 	"ArkType (precompiled, default)": {
-		"empty": "email is missing\npassword is missing",
+		"empty": "email must be a string\npassword must be a string",
 		"blank": "The email address is badly formatted.\nPlease enter your email.\nYour password must have 8 characters or more.",
 		"invalid": "The email address is badly formatted.\nYour password must have 8 characters or more.",
 		"valid": "ok"
 	},
 	"ArkType (precompiled, smallest)": {
-		"empty": "email is missing\npassword is missing",
+		"empty": "email must be a string\npassword must be a string",
 		"blank": "The email address is badly formatted.\nPlease enter your email.\nYour password must have 8 characters or more.",
 		"invalid": "The email address is badly formatted.\nYour password must have 8 characters or more.",
 		"valid": "ok"

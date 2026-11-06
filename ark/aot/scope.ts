@@ -12,7 +12,9 @@ import {
 	type Program,
 	type PropertyDefinition
 } from "oxc-parser"
-import { runtimeParamsOf } from "./proofs.ts"
+import { isTransparent, runtimeParamsOf } from "./proofs.ts"
+
+export { isTransparent }
 
 export type BindingKind =
 	| "import"
@@ -583,19 +585,6 @@ export const typeKeys = {
 	superTypeArguments: 1,
 	implements: 1
 } as const satisfies KeySet
-
-const transparentKinds = {
-	TSAsExpression: 1,
-	TSSatisfiesExpression: 1,
-	TSTypeAssertion: 1,
-	TSNonNullExpression: 1,
-	TSInstantiationExpression: 1
-} as const satisfies KeySet
-
-type TransparentNode = Extract<Node, { type: keyof typeof transparentKinds }>
-
-export const isTransparent = (node: Node): node is TransparentNode =>
-	node.type in transparentKinds
 
 export const unwrapExpression = (node: Node): Node => {
 	while (isTransparent(node)) node = node.expression

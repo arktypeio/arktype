@@ -134,9 +134,6 @@ const arkExports = new Set(
 	)
 )
 
-export const isArktypeExport = (name: string): boolean =>
-	name in arktypeNamespacesBySpecifier.arktype
-
 export const isArkObject = (value: unknown): boolean =>
 	isArkValue(value) || value instanceof Callable || arkExports.has(value)
 
@@ -1323,6 +1320,14 @@ export class ModuleGraph {
 				if (!result.includes(dependency)) result.push(dependency)
 		}
 		return result
+	}
+
+	// whether an import's module resolves without asking a bundler
+	resolvesLocally(binding: Binding, module: SourceModule): boolean {
+		const { parent } = binding.declaration as { parent?: Node }
+		if (parent?.type !== "ImportDeclaration") return false
+		const target = this.resolve(parent.source.value, module, () => false)
+		return target instanceof SourceModule || target.kind !== "unresolved"
 	}
 
 	importOf(binding: Binding, module: SourceModule): ImportTarget {

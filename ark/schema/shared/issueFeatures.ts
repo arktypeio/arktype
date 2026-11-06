@@ -25,6 +25,18 @@ export const readsKeySites: boolean = true
 /** errors arktype's own runtime writes, whose summary a TraversalError reads */
 export const runsArktype: boolean = true
 
+/** a checker applying a value itself, holding a morph, an alias or a callback reading its ctx */
+export const appliesValues: boolean = true
+
+/** a union a branch of which transforms data */
+export const transformsBranches: boolean = true
+
+/** such a union whose transform can fail, holding a morph or an alias */
+export const failsInBranches: boolean = true
+
+/** a union told apart by a key holding a boolean */
+export const discriminatesBooleans: boolean = true
+
 /** an errors object's `summary` */
 export const readsSummary: boolean = true
 
