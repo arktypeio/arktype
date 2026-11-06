@@ -5,10 +5,11 @@ import {
 	readdirSync,
 	readFileSync,
 	rmSync,
+	statSync,
 	writeFileSync
 } from "node:fs"
 import { isBuiltin } from "node:module"
-import { basename, dirname, extname, join, relative } from "node:path"
+import { basename, dirname, extname, join, relative, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 import type {
 	PrecompilePluginOptions,
@@ -184,8 +185,10 @@ const removeAllBut = (dir: string, kept: Set<string>) => {
 	}
 }
 
-const skippedDirs = new Set([
-	"node_modules",
+// what a build writes, what it serves as it is and the project's tests, beside
+// the project's root. Below it, each of these names may be a route's, as
+// app/build/page.tsx is
+const skippedAtRoot = new Set([
 	"public",
 	"out",
 	"dist",
@@ -195,8 +198,17 @@ const skippedDirs = new Set([
 	"__mocks__"
 ])
 
-const unbuiltFile =
-	/\.d\.[cm]?ts$|\.(?:test|spec|stories|config)\.[cm]?[jt]sx?$/
+// a project's tests and their mocks, which only an import reaches outside the
+// routes, where app/ leaves a folder named with an underscore unrouted
+const testDirs = new Set(["__tests__", "__mocks__"])
+
+const routeDirs = ["app", "pages", "src/app", "src/pages"]
+
+const pagesDirs = ["pages", "src/pages"]
+
+const declarationFile = /\.d\.[cm]?ts$/
+
+const unbuiltFile = /\.(?:test|spec|stories|config)\.[cm]?[jt]sx?$/
 
 const scriptFile = /\.[cm]?[jt]sx?$/
 
@@ -208,25 +220,64 @@ interface Tree {
 	foreign: string | undefined
 }
 
-// what Next.js may reach without an import the read can see
+// what Next.js may reach without an import the read can see, which is more
+// than it routes: each of a project's scripts but what a build writes, its
+// tests and what sits beside them, which only an import reaches. Under app/,
+// Next routes a directory named with a dot, as app/.well-known/, and under
+// pages/, every script, as pages/__tests__/user.test.js. It follows a link
+// to a directory, so the read does too
 const treeOf = (root: string): Tree => {
 	const tree: Tree = { scripts: [], foreign: undefined }
-	const walk = (dir: string) => {
+	const scripts = new Set<string>()
+	// each directory as each kind it's walked as, as a link may lead into one
+	// walked otherwise, or around to one it's in
+	const walked = new Set<string>()
+	const routes = routeDirs.map(dir => join(root, dir))
+	const pages = pagesDirs.map(dir => join(root, dir))
+	const isUnder = (path: string, dirs: string[]) =>
+		dirs.some(dir => path === dir || path.startsWith(`${dir}${sep}`))
+	// a file reached through a link is read as Turbopack reads it, by where it is
+	const walk = (dir: string, isLinked: boolean) => {
+		const isRoot = dir === root
+		const isRoutes = isUnder(dir, routes)
+		const isPages = isUnder(dir, pages)
+		const key = `${isRoot}${isRoutes}${isPages}${realPathOf(dir)}`
+		if (walked.has(key)) return
+		walked.add(key)
 		for (const entry of readdirSync(dir, { withFileTypes: true })) {
-			if (entry.name.startsWith(".")) continue
 			const path = join(dir, entry.name)
-			if (entry.isDirectory()) {
-				if (!skippedDirs.has(entry.name)) walk(path)
-			} else if (entry.isFile()) {
+			const isLink = entry.isSymbolicLink()
+			const stats = isLink ? statOf(path) : entry
+			if (!stats || entry.name === "node_modules") continue
+			if (!isPages) {
+				if (entry.name.startsWith(".") && (isRoot || !isRoutes)) continue
+				if (isRoot && skippedAtRoot.has(entry.name)) continue
+			}
+			if (stats.isDirectory()) {
+				if (isPages || !testDirs.has(entry.name)) walk(path, isLinked || isLink)
+			} else if (stats.isFile()) {
 				if (scriptFile.test(entry.name)) {
-					if (!unbuiltFile.test(entry.name)) tree.scripts.push(path)
+					if (
+						!declarationFile.test(entry.name) &&
+						(isPages || !unbuiltFile.test(entry.name))
+					)
+						scripts.add(isLinked || isLink ? realPathOf(path) : path)
 				} else if (foreignFile.test(entry.name)) tree.foreign ??= path
 			}
 		}
 	}
-	walk(root)
-	tree.scripts.sort()
+	walk(root, false)
+	tree.scripts = [...scripts].sort()
 	return tree
+}
+
+// what a link points to, or nothing where it points nowhere
+const statOf = (path: string) => {
+	try {
+		return statSync(path)
+	} catch {
+		return undefined
+	}
 }
 
 export interface NextConfigLike {
