@@ -790,11 +790,11 @@ console.log(Value, note, load, await import("#shared/lazy"))
 		it("precompiles a module in either mode", () => {
 			const standalone = load(app, "schemas.ts")
 			attest(standalone.out).satisfies(
-				/^var \$ark\$exports0;\nfunction \$ark\$load0\(\) {/
+				/\nvar \$ark\$exports0;\nfunction \$ark\$load0\(\) {/
 			)
 			attest(standalone.dependencies).equals(["ark.ts", tsconfig, ...manifests])
 			attest(load(app, "schemas.ts", { runtime: "arktype" }).out).satisfies(
-				/^;\(\(registerPrecompiledUnits\) => {/
+				/\n;\(\(registerPrecompiledUnits\) => {/
 			)
 		})
 
@@ -818,7 +818,7 @@ console.log(Value, note, load, await import("#shared/lazy"))
 			attest(
 				load(dir, definesTypes, { dependencies: { "defines-types": "aot" } })
 					.out
-			).satisfies(/^var \$ark\$exports0;/)
+			).satisfies(/\nvar \$ark\$exports0;/)
 			const readsErrors = "node_modules/reads-errors/index.js"
 			attest(load(dir, readsErrors).out).equals(
 				readFileSync(join(dir, readsErrors), "utf8")

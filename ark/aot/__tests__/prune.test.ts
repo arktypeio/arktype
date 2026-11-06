@@ -1140,6 +1140,43 @@ console.log(User.allows({ name: 5 }), User.allows({ name: "Ada" }))
 			return outputFiles![0].text
 		}
 
+		describe("a define writing code no module's text holds", () => {
+			const reading = {
+				stdin: {
+					contents: `import { User } from "./types.ts"
+const local = User
+console.log(READ, String(User({ name: 5 })))
+`,
+					resolveDir: root
+				}
+			}
+
+			it("builds whole where one names a binding, so the read throws", async () => {
+				const options = { ...reading, define: { READ: "local.expression" } }
+				const warnings = await warningsOf({ preset: undefined }, options)
+				attest(warnings.map(({ text }) => text)).snap([
+					"prune: off, because define names local in local.expression, which may read a validator where no module's text shows it, so the build keeps every member of its validators. Set prune: false to build them whole without this warning."
+				])
+				const out = runBundle(await bundle({ preset: undefined }, options))
+				attest(out.stderr.includes("expression isn't baked")).equals(true)
+			})
+
+			it("prunes where each names a literal or a global", async () => {
+				const options = {
+					...reading,
+					define: {
+						READ: `"literal"`,
+						"process.env.NODE_ENV": `"production"`,
+						global: "globalThis"
+					}
+				}
+				attest(await warningsOf({ preset: undefined }, options)).equals([])
+				const js = await bundle({ preset: undefined }, options)
+				attest(js.includes("~standard")).equals(false)
+				attest(run(js)).equals("literal name must be a string\n")
+			})
+		})
+
 		const warningsOf = async (
 			opts: PrecompileUnpluginOptions,
 			{ plugins = [], ...options }: BuildOptions = {}
@@ -1700,10 +1737,10 @@ export const A = /* @__PURE__ */ $ark_create($ark_aAllows)
 			attest(linkedMain(main))
 				.snap(`import { aAllows as $ark_aAllows } from "~arktype/a"
 import { create as $ark_create } from "~arktype/create"
+import * as $ark_runtime from "arktype/runtime"
 
 export const A = /* @__PURE__ */ $ark_create(/* @__PURE__ */ $ark_runtime.props({ name: $ark_runtime.string }))
-
-import * as $ark_runtime from "arktype/runtime"`)
+`)
 		})
 
 		it("keeps a checker read twice", () => {
@@ -1758,22 +1795,22 @@ export const B = /* @__PURE__ */ $ark_create($ark_bAllows)
 				attest(normalized(`// ${declared[0]}\n${declared[1]}`))
 					.snap(`// ~arktype/a-#0
 import * as runtime from "arktype/runtime"
+import { create } from "~arktype/create"
 
 const aAllows = /* @__PURE__ */ create(/* @__PURE__ */ runtime.props({ name: runtime.string }))
 
 export { aAllows }
-
-import { create } from "~arktype/create"`)
+`)
 				attest(normalized(linked.sites["/main.ts"].code))
 					.snap(`import { aAllows as $ark_aAllows } from "~arktype/a-#0"
 import { create as $ark_create } from "~arktype/create"
+import * as $ark_runtime from "arktype/runtime"
 
 export { $ark_aAllows as A }
 import { bAllows as $ark_bAllows } from "~arktype/b-#1"
 
 export const B = /* @__PURE__ */ $ark_create(/* @__PURE__ */ $ark_runtime.props({ a: /* @__PURE__ */ $ark_runtime.allowsOf($ark_aAllows) }))
-
-import * as $ark_runtime from "arktype/runtime"`)
+`)
 			})
 
 			it("counts where validators don't", () => {
@@ -1782,13 +1819,13 @@ import * as $ark_runtime from "arktype/runtime"`)
 				attest(normalized(linked.sites["/main.ts"].code))
 					.snap(`import { aAllows as $ark_aAllows } from "~arktype/a"
 import { create as $ark_create } from "~arktype/create"
+import * as $ark_runtime from "arktype/runtime"
 
 export const A = /* @__PURE__ */ $ark_create($ark_aAllows)
 import { bAllows as $ark_bAllows } from "~arktype/b"
 
 export const B = /* @__PURE__ */ $ark_create(/* @__PURE__ */ $ark_runtime.props({ a: $ark_aAllows }))
-
-import * as $ark_runtime from "arktype/runtime"`)
+`)
 			})
 
 			it("keeps one two sites create validators from, each its own", () => {
@@ -1907,6 +1944,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 				following = [],
 				lib = true,
 				onwarn,
+				define,
 				at = root
 			}: {
 				at?: string
@@ -1914,6 +1952,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 				following?: VitePlugin[]
 				lib?: boolean
 				onwarn?: (warning: { message: string; plugin?: string }) => void
+				define?: Record<string, unknown>
 			} = {}
 		) => {
 			const { NODE_ENV } = process.env
@@ -1923,6 +1962,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 					root: at,
 					configFile: false,
 					logLevel: "silent",
+					...(define && { define }),
 					plugins: [
 						...plugins,
 						precompile.vite({ conditions, ...opts }),
@@ -1946,6 +1986,44 @@ console.log(out instanceof type.errors ? out.summary : out)
 				else process.env.NODE_ENV = NODE_ENV
 			}
 		}
+
+		describe("a define writing code no module's text holds", () => {
+			const warned = (warnings: string[]) => (warning: { message: string }) => {
+				warnings.push(warning.message)
+			}
+
+			it("builds whole where one names a binding", async () => {
+				const warnings: string[] = []
+				const js = await bundle(
+					{},
+					{ define: { UNUSED: "local.expression" }, onwarn: warned(warnings) }
+				)
+				attest(
+					warnings.some(warning =>
+						warning.includes("define names local in local.expression")
+					)
+				).equals(true)
+				attest(js.includes("~standard")).equals(true)
+			})
+
+			it("prunes where each names a literal, a global or plain data", async () => {
+				const warnings: string[] = []
+				const js = await bundle(
+					{},
+					{
+						define: {
+							LITERAL: `"literal"`,
+							GLOBAL: "globalThis",
+							DATA: { text: "two words" },
+							COUNT: 1
+						},
+						onwarn: warned(warnings)
+					}
+				)
+				attest(warnings.filter(warning => warning.includes("prune"))).equals([])
+				attest(js.includes("~standard")).equals(false)
+			})
+		})
 
 		it("leaves out of a production build what no read needs", async () => {
 			const pruned = await bundle()
@@ -2577,6 +2655,175 @@ console.log(typeof User["~standard"].validate)
 					attest(output(await bundle(name, root))).equals(
 						"name must be a string x\n"
 					)
+				})
+
+				describe("a define writing code no module's text holds", () => {
+					const reading = {
+						"main.js": `import { User } from "./types.js"
+const local = User
+
+console.log(READ, String(User({ name: 5 })))
+`
+					}
+
+					const defining = (root: string, definitions: object) => {
+						const warnings: string[] = []
+						return bundle(
+							name,
+							root,
+							{},
+							{
+								plugins: [
+									compilers[name][1]({ cwd: root }) as never,
+									new compilers[name][0].DefinePlugin(
+										definitions as never
+									) as never,
+									collecting(warnings) as never
+								]
+							}
+						).then(js => ({ js, warnings }))
+					}
+
+					it("builds whole where one names a binding", async () => {
+						const { js, warnings } = await defining(
+							fixture("define", reading),
+							{ READ: "local.expression" }
+						)
+						attest(
+							warnings.some(warning =>
+								warning.includes("define names local in local.expression")
+							)
+						).equals(true)
+						attest(js.includes("~standard")).equals(true)
+					})
+
+					it("reads code nested under a key", async () => {
+						const { warnings } = await defining(
+							fixture("defineNested", {
+								"main.js": `import { User } from "./types.js"
+
+console.log(READ.member, String(User({ name: 5 })))
+`
+							}),
+							{ READ: { member: "User.description" } }
+						)
+						attest(
+							warnings.some(warning =>
+								warning.includes("define names User in User.description")
+							)
+						).equals(true)
+					})
+
+					it("prunes beside ProvidePlugin, which names modules", async () => {
+						const root = fixture("provide", reading)
+						const warnings: string[] = []
+						const js = await bundle(
+							name,
+							root,
+							{},
+							{
+								plugins: [
+									compilers[name][1]({ cwd: root }) as never,
+									new compilers[name][0].DefinePlugin({
+										READ: JSON.stringify("literal")
+									}) as never,
+									new compilers[name][0].ProvidePlugin({
+										Provided: ["buffer", "Buffer"]
+									}) as never,
+									collecting(warnings) as never
+								]
+							}
+						)
+						attest(warnings).equals([])
+						attest(js.includes("~standard")).equals(false)
+					})
+
+					it("prunes where each names a literal or a global", async () => {
+						const { js, warnings } = await defining(
+							fixture("defineLiteral", reading),
+							{
+								READ: JSON.stringify("literal"),
+								"process.env.TEXT": JSON.stringify("two words"),
+								GLOBAL: "globalThis",
+								COUNT: 1,
+								NESTED: { ON: true }
+							}
+						)
+						attest(warnings).equals([])
+						attest(js.includes("~standard")).equals(false)
+						attest(output(js)).equals("literal name must be a string\n")
+					})
+				})
+
+				describe("a loader after the plugin's", () => {
+					const rewriting = (rewrite: (code: string) => string) => ({
+						module: {
+							rules: [
+								{
+									test: /main\.js$/,
+									loader: fromHere("rewriteLoader.ts"),
+									options: { rewrite }
+								}
+							]
+						}
+					})
+
+					it("builds whole where it adds a read, so the read throws", async () => {
+						const root = fixture("loaderAfter", {
+							"main.js": `import { User } from "./types.js"
+
+console.log(String(User({ name: 5 })))
+`
+						})
+						const warnings: string[] = []
+						const js = await bundle(
+							name,
+							root,
+							{},
+							{
+								...rewriting(code => `${code}console.log(User.expression)\n`),
+								plugins: [
+									compilers[name][1]({ cwd: root }) as never,
+									collecting(warnings) as never
+								]
+							}
+						)
+						attest(
+							warnings.some(warning =>
+								warning.includes(
+									"a loader after arktype's adds a read of expression to main.js"
+								)
+							)
+						).equals(true)
+						attest(
+							spawnSync(process.execPath, {
+								input: js,
+								encoding: "utf8"
+							}).stderr.includes("expression isn't baked")
+						).equals(true)
+					})
+
+					it("prunes where it moves a read without adding one", async () => {
+						const root = fixture("loaderAfterMoves", {
+							"main.js": `import { User } from "./types.js"
+
+console.log(User.expression, String(User({ name: 5 })))
+`
+						})
+						const js = await bundle(
+							name,
+							root,
+							{},
+							rewriting(
+								code =>
+									`const read = () => User.expression\n${code.replace("User.expression", "read()")}`
+							)
+						)
+						attest(js.includes("~standard")).equals(false)
+						attest(output(js)).equals(
+							"{ name: string } name must be a string\n"
+						)
+					})
 				})
 
 				describe("a module an inline loader request keeps from the plugin", () => {
@@ -3389,6 +3636,39 @@ new Worker(new URL("./worker.js", import.meta.url))
 			attest(
 				readFileSync(join(root, "out", "webpack", "child.js"), "utf8").includes(
 					"~standard"
+				)
+			).equals(true)
+		})
+
+		it("builds whole where a define's value is written at build time", async () => {
+			const root = writeFixture(
+				{
+					"types.js": types,
+					"main.js": `import { User } from "./types.js"
+
+console.log(READ, String(User({ name: 5 })))
+`
+				},
+				fromHere("temp", "prunedWebpack", "webpack", "runtimeValue")
+			)
+			const warnings: string[] = []
+			await bundle(
+				"webpack",
+				root,
+				{},
+				{
+					plugins: [
+						precompile.webpack({ cwd: root }) as never,
+						new webpack.DefinePlugin({
+							READ: webpack.DefinePlugin.runtimeValue(() => "User.expression")
+						}) as never,
+						collecting(warnings) as never
+					]
+				}
+			)
+			attest(
+				warnings.some(warning =>
+					warning.includes("define writes READ at build time")
 				)
 			).equals(true)
 		})

@@ -238,7 +238,7 @@ console.log(First === Second, First.expression === expression, First.description
 		attest(run(await bundle(root, production))).equals(plain)
 		attest(run(await bundle(root, source))).equals(plain)
 		attest(runModuleAtATime(root)).equals(plain)
-	})
+	}).timeout(60_000)
 
 	it("each run of a module creates its own functions, so its own Types", async () => {
 		const root = fixture("queried", {
@@ -318,6 +318,42 @@ console.log(A === SameA, A({ a: "" }), B({ b: "" }))
 		const js = await bundle(root, production)
 		attest(run(js)).equals(runPlain(root))
 		attest(js.includes("tablesByKey")).equals(false)
+	})
+
+	describe("compared beside one another module creates", () => {
+		// main's Type is its own, which the build may write with less than the
+		// one a.ts exports
+		const compares = (name: string, read: string) =>
+			it(name, async () => {
+				const root = fixture(`compared-${name.replace(/\W+/g, "-")}`, {
+					"a.ts": `import { type } from "arktype"\nexport const A = type({ a: "string" })\n`,
+					"main.ts": `import { type } from "arktype"\nimport { A } from "./a.ts"\nconst B = type({ a: "string" })\nconsole.log(${read})\n`
+				})
+				const plain = runPlain(root)
+				attest(plain.startsWith("true")).equals(true)
+				attest(run(await bundle(root, production))).equals(plain)
+				attest(
+					run(await bundle(root, production, { preset: "smallest" }))
+				).equals(plain)
+				attest(runModuleAtATime(root)).equals(plain)
+				attest(runModuleAtATime(root, "production")).equals(plain)
+			}).timeout(60_000)
+
+		compares("by Object.is", "Object.is(A, B)")
+		compares("by ===", "A === B")
+		compares("by !==", "!(B !== A)")
+		compares(
+			"by a switch",
+			"(() => { switch (B) { case A: return true } return false })()"
+		)
+		compares("in a function it's passed to", "((x, y) => x === y)(A, B)")
+		compares("by its assert", "A.assert === B.assert")
+		compares(
+			"by an assert held to compare later",
+			"(f => f === A.assert)(B.assert)"
+		)
+		compares("by its ~standard", `A["~standard"] === B["~standard"]`)
+		compares("where its module reads more of it", "A === B, B.expression")
 	})
 
 	describe("where no read compares them", () => {

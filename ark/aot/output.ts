@@ -128,7 +128,8 @@ export const inlineModules = (
 			.join("")}${load}();\n`
 	}
 	if (!declarations) return ""
-	s.prependLeft(firstStatementOf(module.program).start, declarations)
+	// on the right, so after the imports written there
+	s.prependRight(importsEndOf(module.program), `\n${declarations}`)
 	return Object.entries(importsBySource)
 		.map(([source, { namespace, isPassed, locals }]) => {
 			const from = JSON.stringify(source)
@@ -251,6 +252,63 @@ export const firstStatementOf = (program: Program): Program["body"][number] =>
 		statement =>
 			statement.type !== "ExpressionStatement" || !statement.directive
 	)!
+
+const runsNothing = (statement: Program["body"][number]): boolean => {
+	const declaration =
+		statement.type === "ExportNamedDeclaration" ?
+			statement.declaration
+		:	statement
+	if (!declaration) return true
+	switch (declaration.type) {
+		case "FunctionDeclaration":
+		case "TSDeclareFunction":
+		case "TSInterfaceDeclaration":
+		case "TSTypeAliasDeclaration":
+			return true
+		case "VariableDeclaration":
+			return declaration.declarations.every(
+				({ init }) => init?.type === "Literal"
+			)
+		default:
+			return false
+	}
+}
+
+const isImport = (statement: Program["body"][number]): boolean =>
+	statement.type === "ImportDeclaration" ||
+	statement.type === "ExportAllDeclaration" ||
+	(statement.type === "ExportNamedDeclaration" && !!statement.source)
+
+// where imports a module's code reads are written: after those it starts
+// with, or its directives or hashbang. A bundler hoists imports, but
+// TypeScript compiling to CommonJS ahead of it requires each where it stands,
+// so one written after code that reads it is required too late
+export const importsEndOf = (program: Program): number => {
+	let end = program.hashbang?.end ?? 0
+	for (const statement of program.body) {
+		if (
+			isImport(statement) ||
+			(statement.type === "ExpressionStatement" && statement.directive)
+		)
+			end = statement.end
+		else if (!runsNothing(statement)) break
+	}
+	return end
+}
+
+// writes imports where the module's code can read them
+export const writeImportsAhead = (
+	s: MagicString,
+	program: Program,
+	imports: string,
+	at = importsEndOf(program)
+): void => {
+	if (!imports) return
+	const lineEnd = s.original.indexOf("\n", at)
+	const rest = s.original.slice(at, lineEnd === -1 ? undefined : lineEnd)
+	// minified code can continue the import's line
+	s.prependLeft(at, rest.trim() ? `${imports}\n` : imports)
+}
 
 // entries whose exports only sites read, so a standalone build drops them
 const prunedSpecifiers: unknown[] = ["arktype", "arktype/codecs"]
