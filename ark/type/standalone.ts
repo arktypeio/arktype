@@ -383,7 +383,8 @@ const writeCreations = (
 				calls[names[i]] = created[position]
 			continue
 		}
-		const isShared = creation.indices.length > 1
+		const isShared =
+			new Set(creation.indices.map(i => types[names[i]])).size > 1
 		const body =
 			isShared ?
 				artifactOf(creation.indices).writeCreateBody(configured)

@@ -2496,7 +2496,7 @@ export class Interpreter {
 				throw this.calledAtDefinition(standIn, undefined)
 			}
 		})
-		proveFunction(proxy as Fn, closure.node)
+		proveFunction(proxy as Fn, closure.node, this.opts.runtime !== "arktype")
 		if (!closure.env) this.standInsByNode.set(closure.node, proxy)
 		return proxy
 	}
@@ -3067,6 +3067,73 @@ const runPointOf = (
 // e.g. a site in an exported function an import cycle can call early
 export const runsBeforeBody = (node: Node, module: SourceModule): boolean =>
 	runPointOf(node, module.program, module) <= module.program.start
+
+// whether its module is seen to run `node` as it loads: in a function only where
+// it calls it then, and in a constructor or an instance's field only where it
+// constructs one then. Not in a method, a function it passes elsewhere or one an
+// import cycle may call, as a build mustn't throw where arktype wouldn't
+export const isRunAtLoad = (node: Node, module: SourceModule): boolean =>
+	isRunAtLoadBy(node, module, new Set())
+
+const isRunAtLoadBy = (
+	node: Node,
+	module: SourceModule,
+	seen: Set<Node>
+): boolean => {
+	for (
+		let child = node, parent = node.parent;
+		parent;
+		child = parent, parent = parent.parent
+	) {
+		if (
+			(parent.type === "PropertyDefinition" ||
+				parent.type === "AccessorProperty") &&
+			parent.value === child &&
+			!parent.static
+		)
+			return isUsedAtLoad(parent.parent!.parent!, "NewExpression", module, seen)
+		if (!isFunctionNode(parent)) continue
+		// a generator's body runs once it's iterated, and an async one's past an
+		// await once every module has loaded
+		if (parent.async || parent.generator) return false
+		const [operand, operator] = operatorOf(parent)
+		// e.g. `(() => type(...))()`
+		if (operator?.type === "CallExpression" && operator.callee === operand)
+			return isRunAtLoadBy(operator, module, seen)
+		if (parent.parent?.type === "MethodDefinition") {
+			return (
+				parent.parent.kind === "constructor" &&
+				isUsedAtLoad(
+					parent.parent.parent!.parent!,
+					"NewExpression",
+					module,
+					seen
+				)
+			)
+		}
+		return isUsedAtLoad(parent, "CallExpression", module, seen)
+	}
+	return true
+}
+
+// whether its module calls a function or constructs a class as it loads
+const isUsedAtLoad = (
+	fn: Node,
+	as: "CallExpression" | "NewExpression",
+	module: SourceModule,
+	seen: Set<Node>
+): boolean => {
+	if (seen.has(fn)) return false
+	seen.add(fn)
+	return !!bindingOfFunction(fn, module)?.references.some(({ id }) => {
+		const [operand, operator] = operatorOf(id)
+		return (
+			operator?.type === as &&
+			operator.callee === operand &&
+			isRunAtLoadBy(operator, module, seen)
+		)
+	})
+}
 
 // e.g. `Base` read by an exported function declared above it
 const readsFirst = (

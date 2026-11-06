@@ -8,7 +8,14 @@ export type {
 	ErrorContextsByCode
 } from "./shared/errors.ts"
 export * from "./shared/enWriters.ts"
-export { listsUnions, traversesUnions } from "./shared/issueFeatures.ts"
+export {
+	appliesValues,
+	discriminatesBooleans,
+	failsInBranches,
+	listsUnions,
+	transformsBranches,
+	traversesUnions
+} from "./shared/issueFeatures.ts"
 export * from "./shared/issues.ts"
 export * from "./shared/listed.ts"
 export {

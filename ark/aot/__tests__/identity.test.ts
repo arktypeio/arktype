@@ -31,7 +31,7 @@ const bundle = async (
 	return outputFiles![0].text
 }
 
-// each module read alone, as webpack, Turbopack or Node would
+// each module read alone, as Turbopack or Node would
 const runModuleAtATime = (root: string, nodeEnv = "development") =>
 	spawnSync(
 		process.execPath,
@@ -239,6 +239,210 @@ console.log(First === Second, First.expression === expression, First.description
 		attest(run(await bundle(root, source))).equals(plain)
 		attest(runModuleAtATime(root)).equals(plain)
 	}).timeout(60_000)
+
+	it("a Type no export holds is one with its equal, however it's compared", async () => {
+		const definitions = {
+			Holding: `type("string").narrow(isLong)`,
+			HoldingElements: `type("string").narrow(isLong).array()`,
+			Piped: `type(["string", "=>", double])`,
+			Plain: `type("string[]")`,
+			PlainObject: `type({ a: "string" })`,
+			// a keyword holding a morph, whose meta holds an object
+			Keyword: `type("string.numeric.parse")`,
+			KeywordValue: `type({ a: "string.numeric.parse" })`,
+			KeywordElements: `type("string.numeric.parse[]")`,
+			Described: `type("string.numeric.parse").describe("parsed")`
+		}
+		const names = Object.keys(definitions)
+		const declared = (suffix: string, exports: string) =>
+			Object.entries(definitions)
+				.map(
+					([name, definition]) =>
+						`${exports}const ${name}${suffix} = ${definition}`
+				)
+				.join("\n")
+		const shared = `export const double = (d: any) => (typeof d === "number" ? d * 2 : d)
+export const isLong = (s: string) => s.length > 1
+`
+		const root = fixture("unexported", {
+			"package.json": `{ "type": "module" }\n`,
+			"tsconfig.json": JSON.stringify({
+				compilerOptions: {
+					target: "ES2022",
+					module: "NodeNext",
+					rewriteRelativeImportExtensions: true,
+					skipLibCheck: true,
+					types: [],
+					rootDir: ".",
+					outDir: "out"
+				},
+				include: ["*.ts"]
+			}),
+			"shared.ts": shared,
+			"other.ts": `import { type } from "arktype"
+import { double, isLong } from "./shared.ts"
+${declared("Other", "export ")}
+`,
+			"compared.ts": `import { type } from "arktype"
+import { double, isLong } from "./shared.ts"
+import { ${names.map(name => `${name}Other`).join(", ")} } from "./other.ts"
+${declared("", "")}
+console.log(${names.map(name => `${name} === ${name}Other`).join(", ")})
+`,
+			"switched.ts": `import { type } from "arktype"
+import { double, isLong } from "./shared.ts"
+import { ${names.map(name => `${name}Other`).join(", ")} } from "./other.ts"
+${declared("", "")}
+const isCase = (read: unknown, t: unknown) => {
+	switch (read) {
+		case t:
+			return true
+	}
+	return false
+}
+const inSwitch = (read: unknown) => {
+	switch (read) {
+${names.map(name => `		case ${name}:`).join("\n")}
+			return true
+	}
+	return false
+}
+console.log(${names.map(name => `inSwitch(${name}Other)`).join(", ")}, isCase(1, 1))
+`,
+			"held.ts": `import { type } from "arktype"
+import { double, isLong } from "./shared.ts"
+import { ${names.map(name => `${name}Other`).join(", ")} } from "./other.ts"
+${declared("", "")}
+const held = new Set<unknown>([${names.join(", ")}])
+console.log(${names.map(name => `held.has(${name}Other)`).join(", ")})
+`,
+			"read.ts": `import { type } from "arktype"
+import { double, isLong } from "./shared.ts"
+import { ${names.map(name => `${name}Other`).join(", ")} } from "./other.ts"
+${declared("", "")}
+const describe = (t: { description: string }) => t.description
+console.log(${names.map(name => `describe(${name})`).join(", ")})
+console.log(${names.map(name => `${name} === ${name}Other`).join(", ")})
+`,
+			"main.ts": `import "./compared.ts"
+import "./switched.ts"
+import "./held.ts"
+import "./read.ts"
+`
+		})
+		const plain = runPlain(root)
+		attest(plain.includes("false")).equals(false)
+		attest(run(await bundle(root, production))).equals(plain)
+		attest(run(await bundle(root, production, { prune: false }))).equals(plain)
+		attest(
+			run(await bundle(root, production, { preset: "smallest", prune: false }))
+		).equals(plain)
+		attest(runModuleAtATime(root)).equals(plain)
+		attest(runModuleAtATime(root, "production")).equals(plain)
+		attest(runEmitted(root)).equals(plain)
+	}).timeout(120_000)
+
+	it("a narrow's tuple is one with its equal alone in its module, beside two more", async () => {
+		const definitions = {
+			Number: `type(["number", ":", plainPred])`,
+			Empty: `type([[], ":", plainPred])`,
+			Strings: `type([["string"], ":", plainPred])`,
+			Keyed: `type([{ a: "string" }, ":", plainPred])`
+		}
+		const names = Object.keys(definitions) as (keyof typeof definitions)[]
+		const root = fixture("tupleNarrows", {
+			"package.json": `{ "type": "module" }\n`,
+			"shared.ts": `export const plainPred = (x: unknown) => x !== null\n`,
+			"containers.ts": `import { type } from "arktype"
+import { plainPred } from "./shared.ts"
+${names.map(name => `export const ${name}Twin = ${definitions[name]}`).join("\n")}
+`,
+			"main.ts": `import { type } from "arktype"
+import { plainPred } from "./shared.ts"
+import { ${names.map(name => `${name}Twin`).join(", ")} } from "./containers.ts"
+${names.map(name => `const ${name}A = ${definitions[name]}\nconst ${name}B = ${definitions[name]}`).join("\n")}
+console.log(${names.map(name => `${name}A === ${name}B, ${name}B === ${name}Twin`).join(", ")})
+`
+		})
+		const plain = runPlain(root)
+		attest(plain.includes("false")).equals(false)
+		attest(run(await bundle(root, production, { prune: false }))).equals(plain)
+		attest(runModuleAtATime(root, "production")).equals(plain)
+	}).timeout(120_000)
+
+	it("a Type is one with its equal however each module's smallest writes it", async () => {
+		const definition = `type("number[] | 'a' | null")`
+		const root = fixture("writtenApart", {
+			"package.json": `{ "type": "module" }\n`,
+			"other.ts": `import { type } from "arktype"
+export const Other = ${definition}
+`,
+			// holds enough that checkers repay their runtime, where the other doesn't
+			"main.ts": `import { type } from "arktype"
+import { Other } from "./other.ts"
+const T0 = type("string")
+${Array.from(
+	{ length: 8 },
+	(_, i) =>
+		`const T${i + 1} = type({ id: "string", left: T${i}.array(), right: T${i}.array() })`
+).join("\n")}
+console.log(${definition} === Other, T8.allows({}))
+`
+		})
+		attest(runPlain(root)).equals("true false\n")
+		attest(
+			run(await bundle(root, production, { preset: "smallest", prune: false }))
+		).equals("true false\n")
+	}).timeout(120_000)
+
+	it("an object a Type's meta holds keeps it from its equal, as a keyword's doesn't", async () => {
+		const definitions = {
+			Keyword: `type("string.date").describe("a date")`,
+			Named: `type("string").configure({ jsonSchema: {} } as never)`
+		}
+		const root = fixture("metaObjects", {
+			"package.json": `{ "type": "module" }\n`,
+			"other.ts": `import { type } from "arktype"
+export const KeywordOther = ${definitions.Keyword}
+export const NamedOther = ${definitions.Named}
+`,
+			"main.ts": `import { type } from "arktype"
+import { KeywordOther, NamedOther } from "./other.ts"
+console.log(${definitions.Keyword} === KeywordOther, ${definitions.Named} === NamedOther)
+`
+		})
+		attest(runPlain(root)).equals("true false\n")
+		attest(run(await bundle(root, production))).equals("true false\n")
+		attest(run(await bundle(root, production, { prune: false }))).equals(
+			"true false\n"
+		)
+		attest(runModuleAtATime(root)).equals("true false\n")
+		attest(runModuleAtATime(root, "production")).equals("true false\n")
+	}).timeout(120_000)
+
+	it("a build reading each module alone compares a function's scope otherwise, and a keyword reached two ways as arktype does", async () => {
+		const root = fixture("readAlone", {
+			"shared.ts": `import { scope } from "arktype"
+
+const make = () => scope({ A: "string[]" })
+export const $ = make()
+`,
+			"other.ts": `import { $ } from "./shared.ts"
+
+export const Scoped = $.type({ x: "A" })
+`,
+			"main.ts": `import { type } from "arktype"
+import { Scoped } from "./other.ts"
+import { $ } from "./shared.ts"
+
+console.log($.type({ x: "A" }) === Scoped, type("unknown") === type.pipe())
+`
+		})
+		attest(runPlain(root)).equals("true false\n")
+		attest(run(await bundle(root, production))).equals("true false\n")
+		attest(run(await bundle(root, source))).equals("false false\n")
+		attest(runModuleAtATime(root)).equals("false false\n")
+	})
 
 	it("each run of a module creates its own functions, so its own Types", async () => {
 		const root = fixture("queried", {

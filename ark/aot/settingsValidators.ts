@@ -17,13 +17,27 @@ var domainOf = data => {
 
 // ark/util/records.ts
 var hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k)
+var defineValue = (o, k, value) =>
+	Object.defineProperty(o, k, {
+		value,
+		writable: true,
+		enumerable: true,
+		configurable: true
+	})
+
+// ark/util/objectKinds.ts
+var isArray = /* @__PURE__ */ (() => Array.isArray)()
 
 // ark/schema/shared/issueFeatures.ts
 var reportsIndices = true
 var bracketsKeys = true
 var writesText = true
+var listsUnions = true
 var readsKeySites = true
 var runsArktype = true
+var appliesValues = true
+var transformsBranches = true
+var failsInBranches = true
 var readsSummary = true
 var readsErrors = true
 
@@ -108,6 +122,22 @@ var foundErrors = (apply, data, onFail, Ctx = Issues) => {
 	if (!errors._.length) errors._at({ code: "predicate" }, data)
 	return onFail ? onFail(errors) : errors
 }
+var mergeIssues = (errors, merged, prefix) => {
+	for (const issue of merged.issues) {
+		errors._.push(
+			listsUnions && issue._m ?
+				issue._m(prefix)
+			:	{
+					code: issue.code,
+					path: [...prefix, ...issue.path],
+					data: issue.data,
+					expected: issue.expected,
+					problem: issue.problem,
+					message: issue.message === messageOf(issue) ? void 0 : issue.message
+				}
+		)
+	}
+}
 var messageOf = issue => {
 	let path = ""
 	for (const k of issue.path) {
@@ -135,7 +165,84 @@ var ThrownIssues =
 		}
 	:	void 0
 
+// ark/schema/shared/transform.ts
+var TransformErrors = class _TransformErrors {
+	// a function, so a check can rule out other values by typeof
+	constructor(result, data) {
+		const errors = Object.setPrototypeOf(() => {}, _TransformErrors.prototype)
+		errors.entries = [{ reversedPath: [], result, data }]
+		return errors
+	}
+	addTo(gathered, key) {
+		if (key !== void 0)
+			for (const entry of this.entries) entry.reversedPath.push(key)
+		if (!gathered) return this
+		gathered.entries.push(...this.entries)
+		return gathered
+	}
+}
+var copyOf = data => {
+	if (isArray(data)) {
+		const copy = Array.prototype.slice.call(data)
+		const keys = Object.keys(data)
+		if (
+			keys.length !== copy.length ||
+			keys[copy.length - 1] !== `${copy.length - 1}`
+		) {
+			for (const k of keys) {
+				const index = +k >>> 0
+				if (`${index}` !== k || index >= copy.length)
+					defineValue(copy, k, data[k])
+			}
+		}
+		for (const k of Object.getOwnPropertySymbols(data)) {
+			if (Object.prototype.propertyIsEnumerable.call(data, k))
+				defineValue(copy, k, data[k])
+		}
+		return copy
+	}
+	const prototype = Object.getPrototypeOf(data)
+	if (prototype === Object.prototype) return { ...data }
+	return Object.prototype.toString.call(data) === "[object Object]" ?
+			Object.setPrototypeOf({ ...data }, prototype)
+		:	data
+}
+
+// ark/schema/shared/traversal.ts
+var errorsOf = ctx => (ctx._errors ??= ctx.createErrors())
+var receive = (ctx, data) => {
+	ctx.recv = data
+	ctx.recvAt = ctx.path.length
+}
+var addErrors = (ctx, errors) => {
+	if (errors === ctx._errors) return
+	const target = errorsOf(ctx)
+	if (target._merge) target._merge(errors, ctx.path)
+	else mergeIssues(target, errors, ctx.path)
+}
+var addMorphErrs = (ctx, errors, key) => {
+	const { path, recv, recvAt } = ctx
+	for (const { reversedPath, result, data } of errors.entries) {
+		ctx.path = [...path]
+		if (key !== void 0) ctx.path.push(key)
+		for (let i = reversedPath.length - 1; i >= 0; i--)
+			ctx.path.push(reversedPath[i])
+		receive(ctx, data)
+		addErrors(ctx, result)
+	}
+	ctx.path = path
+	ctx.recv = recv
+	ctx.recvAt = recvAt
+}
+
 // ark/type/checkers.ts
+var holdingMorphs = (t, held) => {
+	for (const checker of held) {
+		t.e ??= checker.t?.e
+		t.c ??= checker.t?.c
+	}
+	return t
+}
 var check = (code, description, test) => {
 	const checker = (data, ctx) => test(data) || !failsAt(ctx, checker, data)
 	checker.code = code
@@ -143,6 +250,8 @@ var check = (code, description, test) => {
 	checker.test = test
 	return checker
 }
+var wrapping = checker =>
+	Object.assign((data, ctx) => checker(data, ctx), checker)
 var stringCheck = /* @__PURE__ */ check(
 	"domain",
 	"a string",
@@ -205,15 +314,22 @@ var intersection = (
 	return checker
 }
 var optional = (checker, ...value) => {
-	const wrapped = (data, ctx) => checker(data, ctx)
+	const wrapped = wrapping(checker)
 	wrapped.o = 1
 	wrapped.d = value
-	wrapped.t = checker.t
 	return wrapped
 }
 var failsValue = (ctx, checker, data, k, value) =>
 	ctx?._at ?
-		(!checker.t || !checker(value)) && ctx._in(checker, data, k)
+		appliesValues && checker.e ? checker.e(ctx, checker, value, k)
+		: appliesValues && checker.t?.e ? checker.t.e(ctx, checker, value, k)
+		: (!checker.t ||
+				!(appliesValues && checker.a ?
+					// as arktype, a value reading its ctx is applied once where
+					// one only checks, as Allows does
+					!ctx.chkOnly && checker.a(value, ctx, k)
+				:	checker(value))) &&
+			ctx._in(checker, data, k)
 	:	!checker(value)
 var failsProps = (declared, data, ctx) => {
 	for (const k in declared) {
@@ -227,6 +343,14 @@ var failsProps = (declared, data, ctx) => {
 			return true
 	}
 	return false
+}
+var props = declared => {
+	const checker = (data, ctx) =>
+		objectCheck.test(data) ?
+			!failsProps(declared, data, ctx)
+		:	!failsAt(ctx, objectCheck, data)
+	checker.description = objectCheck.description
+	return checker
 }
 var closedProps = (declared, description = "removed") => {
 	const removed = siteOf("undeclared", description)
@@ -246,17 +370,189 @@ var closedProps = (declared, description = "removed") => {
 	checker.description = objectCheck.description
 	return checker
 }
+var recordOf = value => {
+	const checker = (data, ctx) => {
+		if (!objectCheck.test(data)) return !failsAt(ctx, objectCheck, data)
+		for (const k of Object.keys(data))
+			if (failsValue(ctx, value, data, k, data[k])) return false
+		return true
+	}
+	checker.description = objectCheck.description
+	return checker
+}
+var holdsValue = (checker, data, k) =>
+	checker.u ? data[k] !== void 0 : k in data
+var writtenProps = (declared, changing, data) => {
+	let out = data
+	for (const k in changing) {
+		const holds = k in data
+		const defaulted = changing[k].d
+		const value = holds ? changing[k].t?.(data[k]) : defaulted?.[0]
+		if (holds ? value !== void 0 && value !== data[k] : defaulted?.length) {
+			if (out === data) out = copyOf(data)
+			out[k] = value
+		}
+	}
+	if (out !== data) {
+		for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
+	}
+	return out
+}
+var isDefaulted = ({ d, w }) => !!(w || d?.length)
+var changingIn = declared => {
+	const changing = {}
+	for (const k in declared) {
+		const { t, d, w } = declared[k]
+		if (t || w || d?.length) changing[k] = declared[k]
+	}
+	return changing
+}
+var writtenValues = (declared, changing, data, values) => {
+	let out = data
+	let defaults = false
+	for (const k in changing) {
+		const checker = changing[k]
+		if (!holdsValue(checker, data, k)) {
+			defaults ||= isDefaulted(checker)
+			continue
+		}
+		if (!checker.t) continue
+		const value = values.transformed(checker.t, data[k], k)
+		if (Object.is(value, data[k])) continue
+		if (out === data) out = copyOf(data)
+		out[k] = value
+	}
+	if (defaults && !values.failed()) {
+		for (const k in changing) {
+			const checker = changing[k]
+			if (holdsValue(checker, data, k) || !isDefaulted(checker)) continue
+			if (out === data) out = copyOf(data)
+			if (checker.w) values.defaulted(checker.w, out)
+			else out[k] = checker.d[0]
+		}
+	}
+	if (out !== data) {
+		for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
+	}
+	return out
+}
+var deletes = (declared, data, out) => {
+	for (const k of [
+		...Object.keys(data),
+		...Object.getOwnPropertySymbols(data)
+	]) {
+		if (hasOwn(declared, k)) continue
+		if (out === data) out = copyOf(data)
+		delete out[k]
+	}
+	return out
+}
+var sited = (allows, declared, write, writes, removed, withCtx) => {
+	const checkers = Object.values(declared)
+	const walks = removed ? closedProps(declared, removed) : props(declared)
+	const checker = (data, ctx) =>
+		!objectCheck.test(data) ? !failsAt(ctx, objectCheck, data)
+		: ctx?._at ? walks(data, ctx)
+		: allows(data, checkers)
+	checker.description = objectCheck.description
+	if (!write) return checker
+	const changing = changingIn(declared)
+	const written = (data, values) => {
+		if (writes > 2) {
+			return Object.getPrototypeOf(data) === Object.prototype ?
+					write(data, checkers, values, copyOf)
+				:	deletes(
+						declared,
+						data,
+						values ?
+							writtenValues(declared, changing, data, values)
+						:	writtenProps(declared, changing, data)
+					)
+		}
+		const out = write(data, checkers, values, copyOf)
+		if (out !== data) {
+			for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
+		}
+		return out
+	}
+	checker.t =
+		writes % 2 ?
+			data => written(data)
+		:	readingValues(
+				(data, ctx) => {
+					const values = writtenFor(ctx)
+					try {
+						return values.resolved(data, written(data, values))
+					} finally {
+						freed(values)
+					}
+				},
+				checkers,
+				withCtx
+			)
+	return checker
+}
 var elementsOf = element => (data, ctx) => {
 	for (let i = 0; i < data.length; i++)
 		if (failsValue(ctx, element, data, i, data[i])) return false
 	return true
+}
+var Written = class {
+	constructor(ctx) {
+		this.ctx = ctx
+		this.issues = ctx?.errN
+		this.gathered = void 0
+	}
+	gather(errors, k) {
+		if (this.ctx) addMorphErrs(this.ctx, errors, k)
+		else this.gathered = errors.addTo(this.gathered, k)
+	}
+	failed() {
+		return this.gathered ?? this.ctx?.errN > this.issues
+	}
+	// what a t returns of out where a value failed: with no ctx, what failed
+	resolved(data, out) {
+		return this.gathered ?? (this.ctx?.errN > this.issues ? data : out)
+	}
+	transformed(t, value, k) {
+		let result
+		if (t.c) {
+			this.ctx.path.push(k)
+			result = t(value, this.ctx)
+			this.ctx.path.pop()
+		} else result = t(value)
+		if (result === value || !(result instanceof TransformErrors)) return result
+		this.gather(result, k)
+		return value
+	}
+	defaulted(write, out) {
+		const written = write(out, this.ctx)
+		if (written !== out) this.gather(written)
+	}
+}
+var writtenAtDepth = []
+var depth = 0
+var writtenFor = ctx => {
+	if (ctx) return new Written(ctx)
+	const values = (writtenAtDepth[depth] ??= new Written())
+	depth++
+	return values
+}
+var freed = values => {
+	if (values.ctx) return
+	depth--
+	values.gathered = void 0
+}
+var readingValues = (t, held, withCtx) => {
+	if (withCtx || held.some(({ w }) => w?.length === 2)) t.c = 1
+	return holdingMorphs(t, held)
 }
 var units = (
 	values,
 	code = "discriminant",
 	description = describeValues(values)
 ) => check(code, description, data => values.includes(data))
-var domains = (cases, description) => {
+var domains = (cases, description, fails) => {
 	const site = { code: "discriminant", description }
 	const caseOf = data =>
 		cases[
@@ -271,8 +567,12 @@ var domains = (cases, description) => {
 			:	!failsAt(ctx, site, data)
 	}
 	checker.description = description
-	if (Object.values(cases).some(branch => branch.t))
-		checker.t = data => caseOf(data).t?.(data) ?? data
+	if (transformsBranches && Object.values(cases).some(branch => branch.t)) {
+		checker.t =
+			failsInBranches && fails ?
+				fails(caseOf, Object.values(cases))
+			:	data => caseOf(data).t?.(data) ?? data
+	}
 	return checker
 }
 
@@ -283,8 +583,6 @@ var requiredSiteOf = description => ({
 	m: { code: "required", description }
 })
 var failsAt = (ctx, site, data, key) => !ctx?._at || ctx._at(site, data, key)
-var failsIn = (ctx, apply, data, key, missing) =>
-	ctx?._at ? ctx._in(apply, data, key, missing) : !apply(data[key])
 var checkedDefaultOf = ([id, holes]) => {
 	let table = checkedDefaults.next(id)
 	for (const hole of holes) table = table.next(hole)
@@ -328,148 +626,224 @@ var interned = (key, create, ...args) =>
 	intern(internedTable(key), [], () => create(...args))
 
 // <stdin>
-var intersectionkmdrl70pxuocb = [
-	/* @__PURE__ */ closedProps({
-		assert: /* @__PURE__ */ optional(booleanChecker),
-		meta: /* @__PURE__ */ optional(booleanChecker),
-		"~standard": /* @__PURE__ */ optional(booleanChecker),
-		methods: /* @__PURE__ */ optional(booleanChecker),
-		expression: /* @__PURE__ */ optional(booleanChecker),
-		description: /* @__PURE__ */ optional(booleanChecker),
-		json: /* @__PURE__ */ optional(booleanChecker),
-		toJSON: /* @__PURE__ */ optional(booleanChecker),
-		toJsonSchema: /* @__PURE__ */ optional(booleanChecker),
-		"~standard.jsonSchema": /* @__PURE__ */ optional(booleanChecker)
-	})
-]
-var intersection1pta4mn06i3i5b = /* @__PURE__ */ (() => {
-	const domainreo45i1f4q5lwAllows = stringCheck
-	const union1rtk4qn1iaivvlAllows = /* @__PURE__ */ units(["aot", "arktype"])
-	const intersection1pta4mn06i3i5bAllows = (data, ctx) => {
-		if (!(data instanceof Object || Object(data) === data)) {
-			return !failsAt(ctx, siteOf("domain", "an object"), data)
-		}
-		return structure19yllhw1t15lvkAllows(data, ctx)
-	}
-	const structure19yllhw1t15lvkAllows = (data, ctx) => {
-		const keys = Object.keys(data)
-		for (let i = 0; i < keys.length; i++) {
-			const k = keys[i]
-			if (domainreo45i1f4q5lwAllows(k)) {
-				if (
-					!(data[k] === "aot" || data[k] === "arktype") &&
-					failsIn(ctx, union1rtk4qn1iaivvlAllows, data, k)
-				) {
-					return false
+var intersectionnuqurd1csx8up = [
+	/* @__PURE__ */ sited(
+		(data, checkers) => {
+			if (
+				("assert" in data && !booleanChecker(data.assert)) ||
+				("meta" in data && !booleanChecker(data.meta)) ||
+				("~standard" in data && !booleanChecker(data["~standard"])) ||
+				("methods" in data && !booleanChecker(data.methods)) ||
+				("expression" in data && !booleanChecker(data.expression)) ||
+				("description" in data && !booleanChecker(data.description)) ||
+				("json" in data && !booleanChecker(data.json)) ||
+				("toJSON" in data && !booleanChecker(data.toJSON)) ||
+				("toJsonSchema" in data && !booleanChecker(data.toJsonSchema)) ||
+				("~standard.jsonSchema" in data &&
+					!booleanChecker(data["~standard.jsonSchema"]))
+			)
+				return false
+			for (const k in data)
+				switch (k) {
+					case "assert":
+					case "meta":
+					case "~standard":
+					case "methods":
+					case "expression":
+					case "description":
+					case "json":
+					case "toJSON":
+					case "toJsonSchema":
+					case "~standard.jsonSchema":
+						break
+					default:
+						if (Object.prototype.hasOwnProperty.call(data, k)) return false
 				}
-			}
-		}
-		return true
-	}
-	return [intersection1pta4mn06i3i5bAllows]
-})()
-var intersectionkhgw4e0or30fq = /* @__PURE__ */ ((
-	[intersectionkmdrl70pxuocbAllows],
-	[intersection1pta4mn06i3i5bAllows]
-) => {
-	const intersectionkhgw4e0or30fqAllows = /* @__PURE__ */ closedProps({
-		preset: /* @__PURE__ */ optional(
-			/* @__PURE__ */ units(["introspectable", "smallest"])
-		),
-		runtime: /* @__PURE__ */ optional(/* @__PURE__ */ unit("arktype")),
-		config: /* @__PURE__ */ optional(
-			/* @__PURE__ */ domains(
-				{
-					string: /* @__PURE__ */ intersection(
-						/* @__PURE__ */ check(
-							"domain",
-							"a module path or false",
-							stringCheck.test
+			return true
+		},
+		{
+			assert: /* @__PURE__ */ optional(booleanChecker),
+			meta: /* @__PURE__ */ optional(booleanChecker),
+			"~standard": /* @__PURE__ */ optional(booleanChecker),
+			methods: /* @__PURE__ */ optional(booleanChecker),
+			expression: /* @__PURE__ */ optional(booleanChecker),
+			description: /* @__PURE__ */ optional(booleanChecker),
+			json: /* @__PURE__ */ optional(booleanChecker),
+			toJSON: /* @__PURE__ */ optional(booleanChecker),
+			toJsonSchema: /* @__PURE__ */ optional(booleanChecker),
+			"~standard.jsonSchema": /* @__PURE__ */ optional(booleanChecker)
+		},
+		0,
+		0,
+		"removed"
+	)
+]
+var intersection1qem54n11w8grc = /* @__PURE__ */ (([
+	intersectionnuqurd1csx8upAllows
+]) => {
+	const intersection1qem54n11w8grcAllows = /* @__PURE__ */ sited(
+		(data, checkers) => {
+			if (
+				("preset" in data && !checkers[0](data.preset)) ||
+				("runtime" in data && !checkers[1](data.runtime)) ||
+				("config" in data && !checkers[2](data.config)) ||
+				("members" in data && !checkers[3](data.members)) ||
+				("errors" in data && !checkers[4](data.errors)) ||
+				("mutatesInput" in data && !checkers[5](data.mutatesInput)) ||
+				("optimize" in data && !checkers[6](data.optimize)) ||
+				("optimizeErrors" in data && !checkers[6](data.optimizeErrors)) ||
+				("jsonInput" in data && !booleanChecker(data.jsonInput)) ||
+				("bakedLimit" in data && !checkers[9](data.bakedLimit)) ||
+				("freeze" in data && !booleanChecker(data.freeze)) ||
+				("lazy" in data && !booleanChecker(data.lazy)) ||
+				("creationChecks" in data && !checkers[12](data.creationChecks)) ||
+				("shadow" in data && !booleanChecker(data.shadow)) ||
+				("prune" in data && !booleanChecker(data.prune)) ||
+				("allowUnsafe" in data && !booleanChecker(data.allowUnsafe)) ||
+				("conditions" in data && !checkers[16](data.conditions)) ||
+				("tsconfig" in data && !checkers[17](data.tsconfig)) ||
+				("dependencies" in data && !checkers[18](data.dependencies)) ||
+				("cwd" in data && !checkers[17](data.cwd)) ||
+				("inline" in data && !booleanChecker(data.inline)) ||
+				("declare" in data && !booleanChecker(data.declare)) ||
+				("defers" in data && !checkers[22](data.defers))
+			)
+				return false
+			for (const k in data)
+				switch (k) {
+					case "preset":
+					case "runtime":
+					case "config":
+					case "members":
+					case "errors":
+					case "mutatesInput":
+					case "optimize":
+					case "optimizeErrors":
+					case "jsonInput":
+					case "bakedLimit":
+					case "freeze":
+					case "lazy":
+					case "creationChecks":
+					case "shadow":
+					case "prune":
+					case "allowUnsafe":
+					case "conditions":
+					case "tsconfig":
+					case "dependencies":
+					case "cwd":
+					case "inline":
+					case "declare":
+					case "defers":
+						break
+					default:
+						if (Object.prototype.hasOwnProperty.call(data, k)) return false
+				}
+			return true
+		},
+		{
+			preset: /* @__PURE__ */ optional(
+				/* @__PURE__ */ units(["introspectable", "smallest"])
+			),
+			runtime: /* @__PURE__ */ optional(/* @__PURE__ */ unit("arktype")),
+			config: /* @__PURE__ */ optional(
+				/* @__PURE__ */ domains(
+					{
+						string: /* @__PURE__ */ intersection(
+							/* @__PURE__ */ check(
+								"domain",
+								"a module path or false",
+								stringCheck.test
+							),
+							[/* @__PURE__ */ minLength(1, "a module path or false")],
+							void 0,
+							"a string"
 						),
-						[/* @__PURE__ */ minLength(1, "a module path or false")],
-						void 0,
-						"a string"
+						boolean: /* @__PURE__ */ unit(false, "a module path or false")
+					},
+					"a module path or false"
+				)
+			),
+			members: /* @__PURE__ */ optional(intersectionnuqurd1csx8upAllows),
+			errors: /* @__PURE__ */ optional(
+				/* @__PURE__ */ units(["all", "first", "none"])
+			),
+			mutatesInput: /* @__PURE__ */ optional(
+				/* @__PURE__ */ units(["always", false, true])
+			),
+			optimize: /* @__PURE__ */ optional(
+				/* @__PURE__ */ units(["size", "speed"])
+			),
+			optimizeErrors: /* @__PURE__ */ optional(
+				/* @__PURE__ */ units(["size", "speed"])
+			),
+			jsonInput: /* @__PURE__ */ optional(booleanChecker),
+			bakedLimit: /* @__PURE__ */ optional(
+				/* @__PURE__ */ intersection(
+					/* @__PURE__ */ check(
+						"domain",
+						"the characters a site's baked introspection may total",
+						numberCheck.test
 					),
-					boolean: /* @__PURE__ */ unit(false, "a module path or false")
-				},
-				"a module path or false"
+					[
+						/* @__PURE__ */ divisor(
+							1,
+							"the characters a site's baked introspection may total"
+						),
+						/* @__PURE__ */ moreThan(
+							0,
+							"the characters a site's baked introspection may total"
+						)
+					],
+					void 0,
+					"a number"
+				)
+			),
+			freeze: /* @__PURE__ */ optional(booleanChecker),
+			lazy: /* @__PURE__ */ optional(booleanChecker),
+			creationChecks: /* @__PURE__ */ optional(
+				/* @__PURE__ */ units(["helpers", "none", "types"])
+			),
+			shadow: /* @__PURE__ */ optional(booleanChecker),
+			prune: /* @__PURE__ */ optional(booleanChecker),
+			allowUnsafe: /* @__PURE__ */ optional(booleanChecker),
+			conditions: /* @__PURE__ */ optional(
+				/* @__PURE__ */ intersection(
+					arrayCheck,
+					[],
+					/* @__PURE__ */ elementsOf(stringCheck)
+				)
+			),
+			tsconfig: /* @__PURE__ */ optional(
+				/* @__PURE__ */ intersection(
+					/* @__PURE__ */ check("domain", "a path", stringCheck.test),
+					[/* @__PURE__ */ minLength(1, "a path")],
+					void 0,
+					"a string"
+				)
+			),
+			dependencies: /* @__PURE__ */ optional(
+				/* @__PURE__ */ recordOf(/* @__PURE__ */ units(["aot", "arktype"]))
+			),
+			cwd: /* @__PURE__ */ optional(
+				/* @__PURE__ */ intersection(
+					/* @__PURE__ */ check("domain", "a path", stringCheck.test),
+					[/* @__PURE__ */ minLength(1, "a path")],
+					void 0,
+					"a string"
+				)
+			),
+			inline: /* @__PURE__ */ optional(booleanChecker),
+			declare: /* @__PURE__ */ optional(booleanChecker),
+			defers: /* @__PURE__ */ optional(
+				/* @__PURE__ */ units(["large", false, true])
 			)
-		),
-		members: /* @__PURE__ */ optional(intersectionkmdrl70pxuocbAllows),
-		errors: /* @__PURE__ */ optional(
-			/* @__PURE__ */ units(["all", "first", "none"])
-		),
-		mutatesInput: /* @__PURE__ */ optional(
-			/* @__PURE__ */ units(["always", false, true])
-		),
-		optimize: /* @__PURE__ */ optional(
-			/* @__PURE__ */ units(["size", "speed"])
-		),
-		optimizeErrors: /* @__PURE__ */ optional(
-			/* @__PURE__ */ units(["size", "speed"])
-		),
-		jsonInput: /* @__PURE__ */ optional(booleanChecker),
-		bakedLimit: /* @__PURE__ */ optional(
-			/* @__PURE__ */ intersection(
-				/* @__PURE__ */ check(
-					"domain",
-					"the characters a site's baked introspection may total",
-					numberCheck.test
-				),
-				[
-					/* @__PURE__ */ divisor(
-						1,
-						"the characters a site's baked introspection may total"
-					),
-					/* @__PURE__ */ moreThan(
-						0,
-						"the characters a site's baked introspection may total"
-					)
-				],
-				void 0,
-				"a number"
-			)
-		),
-		freeze: /* @__PURE__ */ optional(booleanChecker),
-		lazy: /* @__PURE__ */ optional(booleanChecker),
-		creationChecks: /* @__PURE__ */ optional(
-			/* @__PURE__ */ units(["helpers", "none", "types"])
-		),
-		shadow: /* @__PURE__ */ optional(booleanChecker),
-		prune: /* @__PURE__ */ optional(booleanChecker),
-		allowUnsafe: /* @__PURE__ */ optional(booleanChecker),
-		conditions: /* @__PURE__ */ optional(
-			/* @__PURE__ */ intersection(
-				arrayCheck,
-				[],
-				/* @__PURE__ */ elementsOf(stringCheck)
-			)
-		),
-		tsconfig: /* @__PURE__ */ optional(
-			/* @__PURE__ */ intersection(
-				/* @__PURE__ */ check("domain", "a path", stringCheck.test),
-				[/* @__PURE__ */ minLength(1, "a path")],
-				void 0,
-				"a string"
-			)
-		),
-		dependencies: /* @__PURE__ */ optional(intersection1pta4mn06i3i5bAllows),
-		cwd: /* @__PURE__ */ optional(
-			/* @__PURE__ */ intersection(
-				/* @__PURE__ */ check("domain", "a path", stringCheck.test),
-				[/* @__PURE__ */ minLength(1, "a path")],
-				void 0,
-				"a string"
-			)
-		),
-		inline: /* @__PURE__ */ optional(booleanChecker),
-		declare: /* @__PURE__ */ optional(booleanChecker),
-		defers: /* @__PURE__ */ optional(
-			/* @__PURE__ */ units(["large", false, true])
-		)
-	})
-	return [intersectionkhgw4e0or30fqAllows]
-})(intersectionkmdrl70pxuocb, intersection1pta4mn06i3i5b)
+		},
+		0,
+		0,
+		"removed"
+	)
+	return [intersection1qem54n11w8grcAllows]
+})(intersectionnuqurd1csx8up)
 var create12fpvlf14u2zct = ([allows], id, holes = []) => {
 	const validator = (data, pipedFromCtx, onFail) =>
 		allows(data) ?
@@ -482,121 +856,177 @@ var create12fpvlf14u2zct = ([allows], id, holes = []) => {
 	validator.allows = freeze(allows)
 	return holdHoles(freeze(validator), id, holes)
 }
-var intersection1cnx3xs05mypjy = /* @__PURE__ */ ((
-	[intersectionkmdrl70pxuocbAllows],
-	[intersection1pta4mn06i3i5bAllows]
-) => {
-	const intersection1cnx3xs05mypjyAllows = /* @__PURE__ */ closedProps({
-		preset: /* @__PURE__ */ optional(
-			/* @__PURE__ */ units(["introspectable", "smallest"])
-		),
-		runtime: /* @__PURE__ */ optional(/* @__PURE__ */ unit("arktype")),
-		config: /* @__PURE__ */ optional(
-			/* @__PURE__ */ domains(
-				{
-					string: /* @__PURE__ */ intersection(
-						/* @__PURE__ */ check(
-							"domain",
-							"a module path or false",
-							stringCheck.test
+var intersectioncv2raq0vis9zb = /* @__PURE__ */ (([
+	intersectionnuqurd1csx8upAllows
+]) => {
+	const intersectioncv2raq0vis9zbAllows = /* @__PURE__ */ sited(
+		(data, checkers) => {
+			if (
+				("preset" in data && !checkers[0](data.preset)) ||
+				("runtime" in data && !checkers[1](data.runtime)) ||
+				("config" in data && !checkers[2](data.config)) ||
+				("members" in data && !checkers[3](data.members)) ||
+				("errors" in data && !checkers[4](data.errors)) ||
+				("mutatesInput" in data && !checkers[5](data.mutatesInput)) ||
+				("optimize" in data && !checkers[6](data.optimize)) ||
+				("optimizeErrors" in data && !checkers[6](data.optimizeErrors)) ||
+				("jsonInput" in data && !booleanChecker(data.jsonInput)) ||
+				("bakedLimit" in data && !checkers[9](data.bakedLimit)) ||
+				("freeze" in data && !booleanChecker(data.freeze)) ||
+				("lazy" in data && !booleanChecker(data.lazy)) ||
+				("creationChecks" in data && !checkers[12](data.creationChecks)) ||
+				("shadow" in data && !booleanChecker(data.shadow)) ||
+				("prune" in data && !booleanChecker(data.prune)) ||
+				("allowUnsafe" in data && !booleanChecker(data.allowUnsafe)) ||
+				("conditions" in data && !checkers[16](data.conditions)) ||
+				("tsconfig" in data && !checkers[17](data.tsconfig)) ||
+				("dependencies" in data && !checkers[18](data.dependencies))
+			)
+				return false
+			for (const k in data)
+				switch (k) {
+					case "preset":
+					case "runtime":
+					case "config":
+					case "members":
+					case "errors":
+					case "mutatesInput":
+					case "optimize":
+					case "optimizeErrors":
+					case "jsonInput":
+					case "bakedLimit":
+					case "freeze":
+					case "lazy":
+					case "creationChecks":
+					case "shadow":
+					case "prune":
+					case "allowUnsafe":
+					case "conditions":
+					case "tsconfig":
+					case "dependencies":
+						break
+					default:
+						if (Object.prototype.hasOwnProperty.call(data, k)) return false
+				}
+			return true
+		},
+		{
+			preset: /* @__PURE__ */ optional(
+				/* @__PURE__ */ units(["introspectable", "smallest"])
+			),
+			runtime: /* @__PURE__ */ optional(/* @__PURE__ */ unit("arktype")),
+			config: /* @__PURE__ */ optional(
+				/* @__PURE__ */ domains(
+					{
+						string: /* @__PURE__ */ intersection(
+							/* @__PURE__ */ check(
+								"domain",
+								"a module path or false",
+								stringCheck.test
+							),
+							[/* @__PURE__ */ minLength(1, "a module path or false")],
+							void 0,
+							"a string"
 						),
-						[/* @__PURE__ */ minLength(1, "a module path or false")],
-						void 0,
-						"a string"
+						boolean: /* @__PURE__ */ unit(false, "a module path or false")
+					},
+					"a module path or false"
+				)
+			),
+			members: /* @__PURE__ */ optional(intersectionnuqurd1csx8upAllows),
+			errors: /* @__PURE__ */ optional(
+				/* @__PURE__ */ units(["all", "first", "none"])
+			),
+			mutatesInput: /* @__PURE__ */ optional(
+				/* @__PURE__ */ units(["always", false, true])
+			),
+			optimize: /* @__PURE__ */ optional(
+				/* @__PURE__ */ units(["size", "speed"])
+			),
+			optimizeErrors: /* @__PURE__ */ optional(
+				/* @__PURE__ */ units(["size", "speed"])
+			),
+			jsonInput: /* @__PURE__ */ optional(booleanChecker),
+			bakedLimit: /* @__PURE__ */ optional(
+				/* @__PURE__ */ intersection(
+					/* @__PURE__ */ check(
+						"domain",
+						"the characters a site's baked introspection may total",
+						numberCheck.test
 					),
-					boolean: /* @__PURE__ */ unit(false, "a module path or false")
-				},
-				"a module path or false"
+					[
+						/* @__PURE__ */ divisor(
+							1,
+							"the characters a site's baked introspection may total"
+						),
+						/* @__PURE__ */ moreThan(
+							0,
+							"the characters a site's baked introspection may total"
+						)
+					],
+					void 0,
+					"a number"
+				)
+			),
+			freeze: /* @__PURE__ */ optional(booleanChecker),
+			lazy: /* @__PURE__ */ optional(booleanChecker),
+			creationChecks: /* @__PURE__ */ optional(
+				/* @__PURE__ */ units(["helpers", "none", "types"])
+			),
+			shadow: /* @__PURE__ */ optional(booleanChecker),
+			prune: /* @__PURE__ */ optional(booleanChecker),
+			allowUnsafe: /* @__PURE__ */ optional(booleanChecker),
+			conditions: /* @__PURE__ */ optional(
+				/* @__PURE__ */ intersection(
+					arrayCheck,
+					[],
+					/* @__PURE__ */ elementsOf(stringCheck)
+				)
+			),
+			tsconfig: /* @__PURE__ */ optional(
+				/* @__PURE__ */ intersection(
+					/* @__PURE__ */ check("domain", "a path", stringCheck.test),
+					[/* @__PURE__ */ minLength(1, "a path")],
+					void 0,
+					"a string"
+				)
+			),
+			dependencies: /* @__PURE__ */ optional(
+				/* @__PURE__ */ recordOf(/* @__PURE__ */ units(["aot", "arktype"]))
 			)
-		),
-		members: /* @__PURE__ */ optional(intersectionkmdrl70pxuocbAllows),
-		errors: /* @__PURE__ */ optional(
-			/* @__PURE__ */ units(["all", "first", "none"])
-		),
-		mutatesInput: /* @__PURE__ */ optional(
-			/* @__PURE__ */ units(["always", false, true])
-		),
-		optimize: /* @__PURE__ */ optional(
-			/* @__PURE__ */ units(["size", "speed"])
-		),
-		optimizeErrors: /* @__PURE__ */ optional(
-			/* @__PURE__ */ units(["size", "speed"])
-		),
-		jsonInput: /* @__PURE__ */ optional(booleanChecker),
-		bakedLimit: /* @__PURE__ */ optional(
-			/* @__PURE__ */ intersection(
-				/* @__PURE__ */ check(
-					"domain",
-					"the characters a site's baked introspection may total",
-					numberCheck.test
-				),
-				[
-					/* @__PURE__ */ divisor(
-						1,
-						"the characters a site's baked introspection may total"
-					),
-					/* @__PURE__ */ moreThan(
-						0,
-						"the characters a site's baked introspection may total"
-					)
-				],
-				void 0,
-				"a number"
-			)
-		),
-		freeze: /* @__PURE__ */ optional(booleanChecker),
-		lazy: /* @__PURE__ */ optional(booleanChecker),
-		creationChecks: /* @__PURE__ */ optional(
-			/* @__PURE__ */ units(["helpers", "none", "types"])
-		),
-		shadow: /* @__PURE__ */ optional(booleanChecker),
-		prune: /* @__PURE__ */ optional(booleanChecker),
-		allowUnsafe: /* @__PURE__ */ optional(booleanChecker),
-		conditions: /* @__PURE__ */ optional(
-			/* @__PURE__ */ intersection(
-				arrayCheck,
-				[],
-				/* @__PURE__ */ elementsOf(stringCheck)
-			)
-		),
-		tsconfig: /* @__PURE__ */ optional(
-			/* @__PURE__ */ intersection(
-				/* @__PURE__ */ check("domain", "a path", stringCheck.test),
-				[/* @__PURE__ */ minLength(1, "a path")],
-				void 0,
-				"a string"
-			)
-		),
-		dependencies: /* @__PURE__ */ optional(intersection1pta4mn06i3i5bAllows)
-	})
-	return [intersection1cnx3xs05mypjyAllows]
-})(intersectionkmdrl70pxuocb, intersection1pta4mn06i3i5b)
-var intersection1nsti2l1hrsnfz = /* @__PURE__ */ (([
-	intersection1cnx3xs05mypjyAllows
+		},
+		0,
+		0,
+		"removed"
+	)
+	return [intersectioncv2raq0vis9zbAllows]
+})(intersectionnuqurd1csx8up)
+var intersection1jttf1r18pdz9x = /* @__PURE__ */ (([
+	intersectioncv2raq0vis9zbAllows
 ]) => {
-	const intersection1nsti2l1hrsnfzAllows = /* @__PURE__ */ closedProps({
+	const intersection1jttf1r18pdz9xAllows = /* @__PURE__ */ closedProps({
 		$schema: /* @__PURE__ */ optional(stringCheck),
-		precompile: /* @__PURE__ */ optional(intersection1cnx3xs05mypjyAllows)
+		precompile: /* @__PURE__ */ optional(intersectioncv2raq0vis9zbAllows)
 	})
-	return [intersection1nsti2l1hrsnfzAllows]
-})(intersection1cnx3xs05mypjy)
-var intersectionrbniyj0m4vezi = /* @__PURE__ */ (([
-	intersection1cnx3xs05mypjyAllows
+	return [intersection1jttf1r18pdz9xAllows]
+})(intersectioncv2raq0vis9zb)
+var intersection172uh0x1afmugh = /* @__PURE__ */ (([
+	intersectioncv2raq0vis9zbAllows
 ]) => {
-	const intersectionrbniyj0m4veziAllows = /* @__PURE__ */ closedProps({
-		precompile: /* @__PURE__ */ optional(intersection1cnx3xs05mypjyAllows),
+	const intersection172uh0x1afmughAllows = /* @__PURE__ */ closedProps({
+		precompile: /* @__PURE__ */ optional(intersectioncv2raq0vis9zbAllows),
 		aot: /* @__PURE__ */ optional(/* @__PURE__ */ unit(true))
 	})
-	return [intersectionrbniyj0m4veziAllows]
-})(intersection1cnx3xs05mypjy)
+	return [intersection172uh0x1afmughAllows]
+})(intersectioncv2raq0vis9zb)
 var created0
 var created1
 var created2
 var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
-				const validator0 = interned("1doqfip1m0up35", () =>
-					create12fpvlf14u2zct(intersectionkhgw4e0or30fq, "1xqe4zk0")
+				const validator0 = interned("ba2dyl0hxov64", () =>
+					create12fpvlf14u2zct(intersection1qem54n11w8grc, "1xqe4zk0")
 				)
 				return validator0
 			})())
@@ -605,8 +1035,8 @@ var get0 = () => {
 var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
-				const validator0 = interned("f3qzt51us2183", () =>
-					create12fpvlf14u2zct(intersection1nsti2l1hrsnfz, "1cl1eak0")
+				const validator0 = interned("131ktzb1yyv4fo", () =>
+					create12fpvlf14u2zct(intersection1jttf1r18pdz9x, "1cl1eak0")
 				)
 				return validator0
 			})())
@@ -615,8 +1045,8 @@ var get1 = () => {
 var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
-				const validator0 = interned("1vu7y420v3ybqc", () =>
-					create12fpvlf14u2zct(intersectionrbniyj0m4vezi, "1i9mlhj1")
+				const validator0 = interned("m6ykoq11dwob9", () =>
+					create12fpvlf14u2zct(intersection172uh0x1afmugh, "1i9mlhj1")
 				)
 				return validator0
 			})())
