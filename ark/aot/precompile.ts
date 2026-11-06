@@ -3582,13 +3582,11 @@ export class Precompiler {
 				resolve: () => undefined,
 				whole: false,
 				// a frozen validator takes no member its importer bakes
-				importersBake:
-					this.standalone.freeze ?
-						undefined
-					:	(exporter, name, value) =>
-							isBakeable(value) &&
-							this.exportedValueOf(exporter, name) === value,
-				equalsBake: this.standalone.freeze ? undefined : isBakeable
+				...(!this.standalone.freeze && {
+					importersBake: (exporter, name, value) =>
+						isBakeable(value) && this.exportedValueOf(exporter, name) === value,
+					equalsBake: isBakeable
+				})
 			}
 			baked = this.readingsIn(
 				program,
