@@ -1223,7 +1223,7 @@ console.log(READ, String(User({ name: 5 })))
 					"prune: off, because define names local in local.expression, which may read a validator where no module's text shows it, so the build keeps every member of its validators. Set prune: false to build them whole without this warning."
 				])
 				const out = runBundle(await bundle({ preset: undefined }, options))
-				attest(out.stderr.includes("expression isn't baked")).equals(true)
+				attest(out.stderr.includes("expression isn't precompiled")).equals(true)
 			})
 
 			it("prunes where each names a literal or a global", async () => {
@@ -2919,7 +2919,7 @@ console.log(String(User({ name: 5 })))
 							spawnSync(process.execPath, {
 								input: js,
 								encoding: "utf8"
-							}).stderr.includes("expression isn't baked")
+							}).stderr.includes("expression isn't precompiled")
 						).equals(true)
 					})
 
@@ -3004,7 +3004,7 @@ console.log(use(), inlined())
 							spawnSync(process.execPath, {
 								input: js,
 								encoding: "utf8"
-							}).stderr.includes("expression isn't baked into this validator")
+							}).stderr.includes("expression isn't precompiled")
 						).equals(true)
 					})
 				})

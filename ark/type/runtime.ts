@@ -237,7 +237,7 @@ export class Validator {
 
 export const lacks = (member: IntrospectionMember): Error =>
 	new Error(
-		`${member} isn't baked into this validator, as the build saw no code read it. Set members["${member}"] true in the precompile options.`
+		`${member} isn't precompiled: set members["${member}"] true in the precompile options`
 	)
 
 const getOwnPropertyDescriptors = /* @__PURE__ */ (() =>

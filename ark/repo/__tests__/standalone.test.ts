@@ -1309,7 +1309,7 @@ age must be a number`)
 			value: { name: "n", age: 1 }
 		})
 		attest(() => validator["~standard"].jsonSchema).throws(
-			'~standard.jsonSchema isn\'t baked into this validator, as the build saw no code read it. Set members["~standard.jsonSchema"] true in the precompile options.'
+			'~standard.jsonSchema isn\'t precompiled: set members["~standard.jsonSchema"] true in the precompile options'
 		)
 		// configured meta only, not a keyword's
 		attest(Id.meta).equals({})
@@ -1531,11 +1531,13 @@ age must be a number`)
 		const unbaked = ["json", "description", "expression", "toJSON"] as const
 		for (const member of unbaked) {
 			attest(() => validator[member]).throws(
-				`${member} isn't baked into this validator, as the build saw no code read it. Set members["${member}"] true in the precompile options.`
+				`${member} isn't precompiled: set members["${member}"] true in the precompile options`
 			)
 		}
 		// as it reads toJSON
-		attest(() => JSON.stringify({ validator })).throws("toJSON isn't baked")
+		attest(() => JSON.stringify({ validator })).throws(
+			"toJSON isn't precompiled"
+		)
 		attest(String(validator)).equals("Type")
 	})
 
@@ -3331,7 +3333,7 @@ export const Validating = type(["unknown", "unknown"]).pipe(([d, validate]) => v
 				{}
 			)
 			attest(() => unlisted(count.raw).expression).throws(
-				"expression isn't baked"
+				"expression isn't precompiled"
 			)
 		})
 

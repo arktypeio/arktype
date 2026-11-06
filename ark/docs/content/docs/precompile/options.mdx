@@ -131,7 +131,7 @@ The values are [arktype's `errors`](/docs/configuration#errors) option's, and a 
 `expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema`, the introspection members, are each baked into the validators the build sees code read it off, and set true or false, into every validator or none. Where it can't see one, `String(User)` without `expression` is `"Type"`, and reading another throws, naming the member and the setting, unless a [pruned](#prune) validator lacks `methods`, where it reads `undefined`:
 
 ```
-toJsonSchema isn't baked into this validator, as the build saw no code read it. Set members["toJsonSchema"] true in the precompile options.
+toJsonSchema isn't precompiled: set members["toJsonSchema"] true in the precompile options
 ```
 
 The build follows each validator from its definition to the code reading it: through bindings, calls, returns, callbacks, `await` and the objects and arrays holding it, into its dependencies' functions, like the MCP SDK's `registerTool`. A validator stored at an object's key, as a library registering one does, is followed to each read of that key by name in the package storing it, the packages depending on that one and the program. A branch a check of what the validator is rules out, like `schema["~standard"].vendor === "zod"`, isn't followed. So a validator only validated bakes none, and one hono-openapi converts bakes each, as it loses track in hono-openapi's converter. So does one an MCP tool's `inputSchema` holds, as the SDK reads objects at keys it doesn't name, any of which may hold it.
