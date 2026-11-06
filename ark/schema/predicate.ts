@@ -67,9 +67,10 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 
 	expression: string = baseNameOf(this.predicate)
 	tAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
-		// called detached, as compiled code calls it
+		// called detached, as compiled code calls it, and passed a ctx dropping
+		// what it reports where a build proved it returns only that
 		const predicate = this.predicate
-		return predicate(data, ctx as never)
+		return predicate(data, (this.reportsPred ? silentCtx : ctx) as never)
 	}
 
 	errorCtx: Predicate.ErrorContext = {
