@@ -245,6 +245,23 @@ console.log(JSON.stringify(User({ name: "abc" })))
 			})
 		}
 
+		const introspected = fixture("introspected", {
+			"name.ts": named,
+			"main.ts": `import { Name } from "./name.ts"
+
+console.log(Name.expression)
+console.log(Name.description)
+`
+		})
+		for (const [name, bundle] of Object.entries(bundlers)) {
+			it(`${name} keeps what sets a cell an introspection prints the name of, where nothing else reads its Type`, async () => {
+				attest(behaviorOf(await bundle(introspected), introspected))
+					.snap(`string & isLong
+a string and valid according to isLong
+`)
+			})
+		}
+
 		it("a minifier inlining what it can keeps what sets a cell", async () => {
 			attest(
 				behaviorOf(await esbuildBundle(read, {}, { minify: true }))
@@ -1392,6 +1409,41 @@ console.log(String(User({ name: "x" })))
 				{
 					plugins: [
 						rewriting(code => code.replace("isLong)", "s => s.length > 2)"))
+					]
+				}
+			).then(
+				() => "",
+				(e: Error) => e.message
+			)
+			attest(message.includes(writeUnscannedCellsMessage("name.ts"))).equals(
+				true
+			)
+		})
+
+		it("fails where a narrow no longer only returns what it reports", async () => {
+			const reporting = fixture("rewrittenReport", {
+				"name.ts": `import { type } from "arktype"
+
+const isLong = (s: string, ctx: any) => s.length > 2 || ctx.mustBe("long")
+
+export const Name = type("string").narrow(isLong)
+`,
+				"main.ts": `import { Name } from "./name.ts"
+
+console.log(String(Name("x")))
+`
+			})
+			const message = await viteBundle(
+				reporting,
+				{},
+				{
+					plugins: [
+						rewriting(code =>
+							code.replace(
+								'(s: string, ctx: any) => s.length > 2 || ctx.mustBe("long")',
+								'(s: string, ctx: any) => { ctx.seen = true; return s.length > 2 || ctx.mustBe("long") }'
+							)
+						)
 					]
 				}
 			).then(

@@ -8,13 +8,15 @@ import {
 	schemaScope,
 	writePrecompiledUnits,
 	type BaseScope,
+	type Traversal,
 	type UnionNode
 } from "@ark/schema"
 import {
 	flatMorph,
 	isPlainObjectOrArray,
 	isValidDate,
-	liftArray
+	liftArray,
+	returnsReports
 } from "@ark/util"
 import { keywords, scope, type } from "arktype"
 import * as keywordFunctions from "arktype/internal/keywords/functions.ts"
@@ -272,6 +274,31 @@ contextualize(() => {
 		attest(T(-1).toString()).snap("must be valid according to a (was -1)")
 		attest(isPrecompiled(units, Contextual.internal)).equals(false)
 		attest(Contextual(-1).toString()).snap("must be positive (was -1)")
+	})
+
+	it("misses a unit for a narrow reading ctx where a build proved it only returns its reports", async () => {
+		const units = await precompileUnits([
+			type("number").narrow(
+				named(
+					"isPositiveReporting",
+					(n: number, ctx) => n > 0 || ctx.reject("positive")
+				)
+			)
+		])
+		const isPositive = named(
+			"a",
+			(n: number, ctx: Traversal) => n > 0 || ctx.reject("positive")
+		)
+		// as a standalone build records it, so its node allows without a ctx
+		returnsReports.add(isPositive)
+		const T = type("number").narrow(isPositive)
+		attest(isPrecompiled(units, T.internal)).equals(false)
+		attest([T.allows(-1), T.allows(-1), T.allows(1)]).equals([
+			false,
+			false,
+			true
+		])
+		attest(T(-1).toString()).snap("must be positive (was -1)")
 	})
 
 	it("keys a unit without reading the arity of a function arktype doesn't call", async () => {

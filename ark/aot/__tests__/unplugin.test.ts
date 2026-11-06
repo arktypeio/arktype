@@ -775,10 +775,13 @@ export const failed = out => out instanceof type.errors
 					compiler.close(() => (error ? reject(error) : resolve(stats)))
 				)
 			)
-			// Rspack marks each error with a × and ends it with a newline
-			return stats
-				?.toJson()
-				.errors?.map(error => error.message.replace(/^\s*× /, "").trimEnd())
+			// Rspack marks each error with a × and ends it with a newline, and
+			// colors both where the terminal supports it, as CI's does
+			return stats?.toJson().errors?.map(error =>
+				stripVTControlCharacters(error.message)
+					.replace(/^\s*× /, "")
+					.trimEnd()
+			)
 		}
 
 		it("directly or through what it depends on", async () => {
@@ -3198,10 +3201,11 @@ export const U = make()
 	})
 
 	describe("a size build's validators, created as their module loads", () => {
-		const types = Array.from(
+		const list = Array.from(
 			{ length: 24 },
 			(_, i) => `type({ "a${i}?": "string", b${i}: "number" })`
-		).join(", ")
+		)
+		const types = list.join(", ")
 		const config =
 			'import { configure } from "arktype/config"\n\nconfigure({ exactOptionalPropertyTypes: false })\n'
 		const read = "all[0]({ a0: undefined, b0: 1 }).a0"
@@ -3262,18 +3266,160 @@ export const U = make()
 			).snap("undefined\n")
 		})
 
-		it("run the config module first where the program loads it after a module creating only in a function", async () => {
-			attest(
-				await run(
-					"lazy",
+		it("run the config module first where the program loads it after a module creating only once called", async () => {
+			const lazy = {
+				exported: [`export const make = () => [${types}]`, "lib.make()"],
+				// an export of it calls nothing
+				specified: [
+					`const make = () => [${types}]\nexport { make }`,
+					"lib.make()"
+				],
+				// though an import cycle could call it as the module loads
+				importing: [
+					`import { n } from "./n.ts"\n\nexport const make = () => [${types}, n]`,
+					"lib.make()"
+				],
+				method: [
+					`export class C {\n\tmake() {\n\t\treturn [${types}]\n\t}\n}`,
+					"new lib.C().make()"
+				],
+				field: [`export class C {\n\tall = [${types}]\n}`, "new lib.C().all"]
+			}
+			const results: Record<string, string | undefined> = {}
+			for (const [name, [lib, made]] of Object.entries(lazy)) {
+				results[name] = await run(
+					`lazy-${name}`,
 					{
 						"config.ts": config,
-						"lib.ts": `import { type } from "arktype"\n\nexport const make = () => [${types}]\n`,
-						"main.ts": `import { make } from "./lib.ts"\nimport "./config.ts"\n\nconst all = make()\n\nconsole.log(${read})\n`
+						"n.ts": "export const n = 1\n",
+						"lib.ts": `import { type } from "arktype"\n${lib}\n`,
+						"main.ts": `import * as lib from "./lib.ts"\nimport "./config.ts"\n\nconst all = ${made}\n\nconsole.log(${read})\n`
 					},
 					true
 				)
+			}
+			attest(results).snap({
+				exported: "undefined\n",
+				specified: "undefined\n",
+				importing: "undefined\n",
+				method: "undefined\n",
+				field: "undefined\n"
+			})
+		})
+
+		it("fail where the program loads it after a module calling another's factory as it loads", async () => {
+			const files = (main: string) => ({
+				"config.ts": config,
+				"lib.ts": `import { type } from "arktype"\n\nexport const make = () => [${types}]\n`,
+				"made.ts": `import { make } from "./lib.ts"\n\nexport const all = make()\n`,
+				"main.ts": main
+			})
+			attest(
+				await run(
+					"madeAhead",
+					files(
+						`import { all } from "./made.ts"\nimport "./config.ts"\n\nconsole.log(${read})\n`
+					),
+					true
+				).catch(
+					(e: { errors: { text: string }[] }) => e.errors[0].text.split("\n")[0]
+				)
+			).snap(
+				'main.ts:1:1  import { all } from "./made.ts" loads made.ts, which creates a Type, before the config module config.ts runs configure()'
+			)
+			// the factory's module first, as what calls it runs configured
+			attest(
+				await run(
+					"madeAfter",
+					files(
+						`import "./lib.ts"\nimport "./config.ts"\nimport { all } from "./made.ts"\n\nconsole.log(${read})\n`
+					),
+					true
+				)
 			).snap("undefined\n")
+		})
+
+		it("fail as arktype does where the program loads it after a module creating as it loads", async () => {
+			attest(
+				await run(
+					"unseenOrder",
+					{
+						"config.ts": config,
+						"lib.ts": `import { type } from "arktype"\n\n${Array.from(
+							{ length: 24 },
+							(_, i) =>
+								`export const T${i} = type({ "a${i}?": "string", b${i}: "number" })`
+						).join("\n")}\n`,
+						// no order the build can read, as it reads no query
+						"main.ts": `import { T0 } from "./lib.ts?v=1"\nimport "./config.ts"\n\nconsole.log(T0({ a0: undefined, b0: 1 }).a0)\n`
+					},
+					true
+				)
+			).snap("lib.ts creates a Type before configure() runs")
+		})
+
+		it("fail where the program loads it after a module creating as it loads, whatever the statement", async () => {
+			// none a declaration's first site
+			const atLoad = {
+				element: `export const all = [${types}]`,
+				declarator: `${list.map((t, i) => `export const X${i} = 1, T${i} = ${t}`).join("\n")}\nexport const all = [T0]`,
+				// beside sites in a function, which alone would run once it's called
+				exported: `export default ${list[0]}\nexport const make = () => [${list.slice(1)}]`,
+				// holding no Type the build reads, so what imports it isn't checked
+				statement: `export const all: unknown[] = []\n${list.map(t => `all.push(${t})`).join("\n")}`,
+				// in a function the module calls as it loads
+				called: `const make = () => [${types}]\nexport const all = make()`,
+				immediate: `export const all = (() => [${types}])()`,
+				// in a field of a class the module constructs as it loads
+				constructed: `class C {\n\tall = [${types}]\n}\n\nexport const { all } = new C()`
+			}
+			const results: Record<string, (string | undefined)[]> = {}
+			for (const [name, lib] of Object.entries(atLoad)) {
+				const filesOf = (specifier: string) => ({
+					"config.ts": config,
+					"lib.ts": `import { type } from "arktype"\n\n${lib}\n`,
+					"main.ts": `import * as lib from "${specifier}"\nimport "./config.ts"\n\nconst all = lib.all ?? [lib.default]\n\nconsole.log(${read})\n`
+				})
+				results[name] = [
+					// as it loads, through an import whose order the build can't read
+					await run(`unseen-${name}`, filesOf("./lib.ts?v=1"), true),
+					// as R3 where it can
+					await run(`seen-${name}`, filesOf("./lib.ts"), true).catch(
+						(e: { errors: { text: string }[] }) =>
+							e.errors[0].text.split("\n")[0]
+					)
+				]
+			}
+			attest(results).snap({
+				element: [
+					"lib.ts creates a Type before configure() runs",
+					'main.ts:1:1  import * as lib from "./lib.ts" loads lib.ts, which creates a Type, before the config module config.ts runs configure()'
+				],
+				declarator: [
+					"lib.ts creates a Type before configure() runs",
+					'main.ts:1:1  import * as lib from "./lib.ts" loads lib.ts, which creates a Type, before the config module config.ts runs configure()'
+				],
+				exported: [
+					"lib.ts creates a Type before configure() runs",
+					'main.ts:1:1  import * as lib from "./lib.ts" loads lib.ts, which creates a Type, before the config module config.ts runs configure()'
+				],
+				statement: [
+					"lib.ts creates a Type before configure() runs",
+					"lib.ts creates a Type before configure() runs"
+				],
+				called: [
+					"lib.ts creates a Type before configure() runs",
+					'main.ts:1:1  import * as lib from "./lib.ts" loads lib.ts, which creates a Type, before the config module config.ts runs configure()'
+				],
+				immediate: [
+					"lib.ts creates a Type before configure() runs",
+					'main.ts:1:1  import * as lib from "./lib.ts" loads lib.ts, which creates a Type, before the config module config.ts runs configure()'
+				],
+				constructed: [
+					"lib.ts creates a Type before configure() runs",
+					"lib.ts creates a Type before configure() runs"
+				]
+			})
 		})
 
 		it("fail as arktype does where nothing imports the config module", async () => {

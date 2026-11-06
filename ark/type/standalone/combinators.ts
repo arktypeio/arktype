@@ -1,8 +1,10 @@
 import {
+	hasArkKind,
 	isDecidedByAllows,
 	type BaseNode,
 	type BaseRoot,
 	type IntersectionNode,
+	type MorphNode,
 	type NodeCompiler,
 	type NodeId,
 	type nodeOfKind,
@@ -12,7 +14,7 @@ import {
 	type UnionNode,
 	type UnitNode
 } from "@ark/schema"
-import { domainOf, isWellFormedInteger } from "@ark/util"
+import { domainOf, isWellFormedInteger, returnsReports } from "@ark/util"
 import * as runtime from "../runtimeExports.ts"
 import {
 	basesOf,
@@ -44,28 +46,47 @@ export const combines = (node: BaseNode): boolean => {
 		combinableByNode.set(node, false)
 		combinable =
 			node.isRoot() &&
-			!node.hasAlias &&
-			!node.hasMorph &&
-			!node.allowsCtx &&
-			!node.tfCtx &&
+			!isInCycle(node) &&
 			calleesOf(node)?.every(isCallable) === true
 		combinableByNode.set(node, combinable)
 	}
 	return combinable
 }
 
-// a root a checker calls: another checker, or one with a unified Allows
-const isCallable = (node: BaseRoot): boolean => combines(node) || unifies(node)
+// a root a checker calls: another checker, one with a unified Allows, or one
+// holding an alias, read through what it compiles
+const isCallable = (node: BaseRoot): boolean =>
+	combines(node) || unifies(node) || node.hasAlias
+
+const inCycleByNode = new WeakMap<BaseNode, boolean>()
+
+// whether a node reaches itself through an alias, so data can reach it again
+const isInCycle = (node: BaseNode): boolean => {
+	if (!node.hasAlias) return false
+	let inCycle = inCycleByNode.get(node)
+	if (inCycle === undefined) {
+		const seen = new Set<BaseNode>()
+		const reaches = (from: BaseNode): boolean =>
+			from.references.some(reference => {
+				if (!reference.is("alias") || seen.has(reference)) return false
+				seen.add(reference)
+				const { resolution } = reference
+				return resolution.references.includes(node) || reaches(resolution)
+			})
+		inCycle = reaches(node)
+		inCycleByNode.set(node, inCycle)
+	}
+	return inCycle
+}
 
 // the roots a node's checker calls, if it can be written
 const calleesOf = (node: BaseNode): BaseRoot[] | undefined => {
 	if (node.is("domain") || node.is("proto")) return checkOf(node) && []
 	if (node.is("unit")) return unitSiteOf(node) && []
+	if (node.is("morph")) return morphCalleesOf(node)
 	if (node.is("intersection")) {
 		const predicates = node.inner.predicate ?? []
-		// a structure's issues stop its predicates, and the first failing predicate the rest
 		if (
-			predicates.length > (node.structure ? 0 : 1) ||
 			!predicates.every(predicateSiteOf) ||
 			!node.preStruct.every(checkOf) ||
 			(node.basis && !checkOf(node.basis))
@@ -96,6 +117,17 @@ const calleesOf = (node: BaseNode): BaseRoot[] | undefined => {
 	}
 }
 
+// the roots a morph's checker calls, where its steps read no ctx
+const morphCalleesOf = (node: MorphNode): BaseRoot[] | undefined => {
+	if (node.inverse) return
+	const callees: BaseRoot[] = []
+	for (const [i, step] of node.travMorphs.entries()) {
+		if (hasArkKind(step, "root") && !step.hasAlias) callees.push(step)
+		else if (hasArkKind(step, "root") || !node.contextFree[i]) return
+	}
+	return callees
+}
+
 const plainContextOf = (context: object): IssueContext | undefined =>
 	isInlineSite(context) && isDescribed(context) ? context : undefined
 
@@ -114,7 +146,7 @@ const checkOf = (node: BaseNode): IssueContext | undefined =>
 // a predicate that reads no ctx, keeping the description written for it unless
 // it names the function, which a callback's only has once it's called
 const predicateSiteOf = (node: BaseNode): IssueContext | undefined => {
-	if (!node.is("predicate") || !raisesNothing(node.predicate)) return
+	if (!node.is("predicate")) return
 	const site = issueSiteOf(node.failSite) as IssueContext
 	return (
 		!isDescribed(site) ? undefined
@@ -188,12 +220,16 @@ interface Cases {
 	// whether a miss is reported at the union's own path
 	isOwn: boolean
 	cases: Record<string, BaseRoot | true>
+	// whether its cases are true and false, rather than strings
+	areBooleans: boolean
 	// the branches lacking the key, which data holding no case is checked by
 	otherwise?: BaseRoot
 	site: IssueContext
 	// what data that isn't an object fails
 	missed: IssueContext
 }
+
+const isBooleanCase = (k: string) => k === "true" || k === "false"
 
 const discriminatedOf = (node: UnionNode): Cases | undefined => {
 	const discriminant = node.discriminant
@@ -202,7 +238,6 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 		discriminant.kind !== "unit" ||
 		discriminant.path.length !== 1 ||
 		typeof discriminant.path[0] !== "string" ||
-		discriminant.members ||
 		node.missLists
 	)
 		return
@@ -211,13 +246,16 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 	const { default: otherwise, ...keyed } = discriminant.cases
 	// branches lacking the key are tried by their Allows
 	if (otherwise === true || (otherwise && !allowsDecides(otherwise))) return
+	const areBooleans = Object.keys(keyed).every(isBooleanCase)
+	if (areBooleans && "default" in discriminant.cases) return
 	for (const k in keyed) {
-		if (!k.startsWith('"')) return
+		if (!areBooleans && !k.startsWith('"')) return
 		const value = JSON.parse(k) as string
-		if (isWellFormedInteger(value) || value === "__proto__") return
+		if (!areBooleans && (isWellFormedInteger(value) || value === "__proto__"))
+			return
 		const pruned = discriminant.cases[k]
 		// a case's checker doesn't check the key again, unless it can't be one
-		cases[value] =
+		cases[areBooleans ? k : value] =
 			pruned === true || combines(pruned) ?
 				pruned
 			:	unprunedOf(
@@ -252,6 +290,7 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 			key,
 			isOwn: node.missPath.length === 0,
 			cases,
+			areBooleans,
 			otherwise,
 			site,
 			missed
@@ -268,7 +307,6 @@ const domainCasesOf = (
 		!discriminant ||
 		discriminant.kind !== "domain" ||
 		discriminant.path.length ||
-		discriminant.members ||
 		node.missLists ||
 		"default" in discriminant.cases ||
 		!discriminantSiteOf(node)
@@ -302,7 +340,8 @@ const unprunedOf = (
 	isCase: (branch: BaseRoot) => boolean,
 	pruned: BaseRoot | true
 ): BaseRoot | true => {
-	if (pruned === true) return pruned
+	// a case of several branches is the union of what they're pruned to
+	if (pruned === true || pruned.is("union")) return pruned
 	const matched = node.branches.filter(isCase)
 	return matched.length === 1 ? matched[0] : pruned
 }
@@ -316,7 +355,14 @@ const isLiteralKey = (key: PropertyKey): key is string =>
 
 // a primitive default, written where its key is absent
 const isLiteralDefault = (prop: Optional.Node): boolean =>
-	!prop.defaultsUndefined && !prop.value.tfs && isPrinted(prop.default)
+	!prop.value.tfs && isPrinted(prop.default)
+
+// a default written by what checks its key, as a function's or one replacing
+// undefined is, rather than by what writes the literals of the keys beside it
+const writesByValues = (prop: Prop.Node): boolean =>
+	prop.is("optional") &&
+	prop.hasDef() &&
+	(prop.defaultsUndefined || !isLiteralDefault(prop))
 
 // what a key it rejects fails, as compiled code writes it
 const removedSiteOf = (structure: StructureNode): IssueContext | undefined =>
@@ -333,9 +379,13 @@ const structureCalleesOf = (
 ): BaseRoot[] | undefined => {
 	// its structural morph, if any, writes its defaults
 	if (
-		structure.index ||
 		structure.protoProps.length ||
-		(structure.handlesUndeclared === "reject" && !removedSiteOf(structure))
+		(structure.handlesUndeclared === "reject" && !removedSiteOf(structure)) ||
+		(structure.index &&
+			(structure.tfs ||
+				structure.sequence ||
+				structure.handlesUndeclared === "delete" ||
+				structure.index.some(({ signature }) => signature.hasAlias)))
 	)
 		return
 	const { sequence } = structure
@@ -355,12 +405,17 @@ const structureCalleesOf = (
 	for (const prop of structure.props) {
 		if (
 			!isLiteralKey(prop.key) ||
-			(prop.is("required") && !missesAsRequired(prop)) ||
-			(prop.is("optional") && prop.hasDef() && !isLiteralDefault(prop))
+			(prop.is("required") && !missesAsRequired(prop))
 		)
 			return
 	}
-	return structure.props.map(prop => prop.value)
+	return [
+		...structure.props.map(prop => prop.value),
+		...(structure.index?.flatMap(({ signature, value }) => [
+			signature,
+			value
+		]) ?? [])
+	]
 }
 
 // a missing key whose issue is required's alone, which props reports
@@ -372,6 +427,8 @@ const checkerDescriptionOf = (node: BaseNode): string | undefined => {
 	if (!combines(node)) return
 	if (node.is("domain") || node.is("proto")) return checkOf(node)!.description
 	if (node.is("unit")) return unitSiteOf(node)!.description
+	if (node.is("morph"))
+		return node.head ? checkerDescriptionOf(node.head) : undefined
 	if (node.is("intersection")) {
 		if (node.basis) return node.brief
 		const predicate = node.inner.predicate?.[0]
@@ -393,9 +450,10 @@ const checkerDescriptionOf = (node: BaseNode): string | undefined => {
 }
 
 export interface CombinatorCompiler extends NodeCompiler {
+	readonly link: { byId: Record<NodeId, BaseNode> }
 	// whether it writes intersections a shape checks as that shape
 	readonly shapes: boolean
-	refToId(id: NodeId, opts?: { kind: "Allows" }): string
+	refToId(id: NodeId, opts?: { kind: "Allows" | "Apply" }): string
 }
 
 const writeArgs = (...args: (string | undefined)[]): string => {
@@ -503,43 +561,249 @@ const writeKey = (key: string): string =>
 
 const writeObject = (entries: string[]): string => `{ ${entries.join(", ")} }`
 
+// a shape with this many keys that may be absent reads each at a site of its own,
+// as a walker's one site costs it far more than it does a compiled shape. So does
+// one whose transform can fail, which compiled code wrote at its own sites before
+// a checker could hold it
+const minSitedKeys = 8
+
+// whether a node's checker fails undefined, calling nothing to find out
+const failsUndefined = (node: BaseRoot): boolean =>
+	node.is("domain") || node.is("proto") ? true
+	: node.is("unit") ? node.unit !== undefined
+	: node.is("intersection") ? !!node.basis && failsUndefined(node.basis)
+	: node.is("union") ? node.branches.every(failsUndefined)
+	: node.is("morph") ? !!node.head && failsUndefined(node.head)
+	: false
+
+const writeAccess = (key: string): string => {
+	const written = writeKey(key)
+	return written === key ? `.${key}` : `[${written}]`
+}
+
+// false where a key's check fails, stopping at the first as a walker does, then
+// where data holds a key it rejects, for...in also reaching inherited keys
+const writeSitedAllows = (structure: StructureNode, refs: string[]): string => {
+	const fails = structure.inOrder
+		.map((prop, i) => {
+			const has = `${JSON.stringify(prop.key)} in data`
+			// keys holding the same check call the same checker
+			const checker =
+				/^runtime\.\w+$/.test(refs[i]) ?
+					refs[i]
+				:	`checkers[${refs.indexOf(refs[i])}]`
+			const fails = `!${checker}(data${writeAccess(prop.key as string)})`
+			return (
+				prop.is("optional") ? `(${has} && ${fails})`
+				: failsUndefined(prop.value) ? fails
+				: `(!(${has}) || ${fails})`
+			)
+		})
+		.join(" || ")
+	if (structure.handlesUndeclared !== "reject")
+		return `(data, checkers) => !(${fails})`
+	const declared = structure.inOrder
+		.map(prop => `case ${JSON.stringify(prop.key)}:`)
+		.join(" ")
+	return `(data, checkers) => { if (${fails}) return false; for (const k in data) switch (k) { ${declared} break; default: if (Object.prototype.hasOwnProperty.call(data, k)) return false; } return true; }`
+}
+
+// what a key reads through its checker's transform, where it has one
+const writeHeld = (prop: Prop.Node, i: number, failing: boolean): string => {
+	const read = `data${writeAccess(prop.key as string)}`
+	return (
+		!prop.value.tfs ? read
+		: failing ?
+			`values.transformed(checkers[${i}].t, ${read}, ${JSON.stringify(prop.key)})`
+		:	`checkers[${i}].t(${read})`
+	)
+}
+
+// whether a key a default writes holds a value
+const writeHolds = (prop: Prop.Node): string =>
+	prop.is("optional") && prop.defaultsUndefined ?
+		`data${writeAccess(prop.key as string)} !== void 0`
+	:	`${JSON.stringify(prop.key)} in data`
+
+// the keys data holds in arktype's order; a default written by a function holds
+// its key's place until each transform has run
+const writeSitedWrite = (
+	js: CombinatorCompiler,
+	structure: StructureNode,
+	failing: boolean
+): string => {
+	// keys written before any that may be absent are a literal's
+	const literal: string[] = []
+	const writes: string[] = []
+	const defaults: string[] = []
+	for (const [i, prop] of structure.inOrder.entries()) {
+		const key = prop.key as string
+		const access = writeAccess(key)
+		const held = writeHeld(prop, i, failing)
+		if (!prop.is("optional")) {
+			if (writes.length || access !== `.${key}`)
+				writes.push(`result${access} = ${held};`)
+			else literal.push(`${key}: ${held}`)
+			continue
+		}
+		const holds = writeHolds(prop)
+		if (!prop.hasDef()) writes.push(`if (${holds}) result${access} = ${held};`)
+		else if (isLiteralDefault(prop)) {
+			writes.push(
+				`result${access} = ${holds} ? ${held} : ${writeLiteral(js, prop.default)};`
+			)
+		} else {
+			writes.push(`result${access} = ${holds} ? ${held} : void 0;`)
+			defaults.push(
+				`if (!(${holds})) values.defaulted(checkers[${i}].w, result);`
+			)
+		}
+	}
+	return `(data, checkers, values) => { const result = { ${literal.join(", ")} }; ${writes.join(" ")} ${defaults.length ? `if (!values.failed()) { ${defaults.join(" ")} }` : ""} return result; }`
+}
+
+// a shape keeping the keys it doesn't declare copies data where one it declares
+// changes: in order where nothing can fail, else each transform, then each default
+// where none failed
+const writeSitedKeep = (
+	js: CombinatorCompiler,
+	structure: StructureNode,
+	failing: boolean
+): string => {
+	const transforms: string[] = []
+	const defaults: string[] = []
+	const out = "(out = out === data ? copy(data) : out)"
+	for (const [i, prop] of structure.inOrder.entries()) {
+		const access = writeAccess(prop.key as string)
+		const read = `data${access}`
+		const holds = writeHolds(prop)
+		const held = writeHeld(prop, i, failing)
+		if (prop.value.tfs) {
+			// data's allowed before it's transformed, so holds each key it requires
+			const guard = prop.is("optional") ? `${holds} && ` : ""
+			transforms.push(
+				failing ?
+					`if (${guard}!Object.is(v = ${held}, ${read})) ${out}${access} = v;`
+				:	`if (${guard}(v = ${held}) !== void 0 && v !== ${read}) ${out}${access} = v;`
+			)
+		}
+		if (!prop.is("optional") || !prop.hasDef()) continue
+		;(failing ? defaults : transforms).push(
+			isLiteralDefault(prop) ?
+				`if (!(${holds})) ${out}${access} = ${writeLiteral(js, prop.default)};`
+			:	`if (!(${holds})) values.defaulted(checkers[${i}].w, ${out});`
+		)
+	}
+	return `(data, checkers, values, copy) => { let out = data, v; ${transforms.join(" ")} ${defaults.length ? `if (!values.failed()) { ${defaults.join(" ")} }` : ""} return out; }`
+}
+
 const writeStructure = (
 	js: CombinatorCompiler,
 	structure: StructureNode
 ): string => {
-	const ref = (node: BaseNode) => readChecker(js, node)
+	const ref = (node: BaseRoot) => readValue(js, node)
 	if (structure.sequence) {
 		const element = structure.sequence.variadic!
 		return writeCall(
-			element.tfs ? "transformingElementsOf" : "elementsOf",
-			ref(element)
+			!element.tfs ? "elementsOf"
+			: element.hasAlias || element.hasMorph ? "failingElementsOf"
+			: "transformingElementsOf",
+			ref(element),
+			element.tfs && element.hasAlias ? "1" : undefined
 		)
 	}
+	const refs = structure.inOrder.map(prop => ref(prop.value))
 	// in arktype's order; a required key expects its value's brief, which its checker holds
-	const entries = structure.inOrder.map(prop => {
-		const checker = ref(prop.value)
+	const entries = structure.inOrder.map((prop, i) => {
+		const checker = refs[i]
 		const missing = missingDescriptionOf(issueSiteOf(prop.failSite))
 		return `${writeKey(prop.key as string)}: ${
 			prop.is("optional") ?
-				prop.hasDef() ?
-					writeCall("optional", checker, writeLiteral(js, prop.default))
-				:	writeCall("optional", checker)
+				!prop.hasDef() ? writeCall("optional", checker)
+				: isLiteralDefault(prop) ?
+					writeCall(
+						prop.defaultsUndefined ? "replacingUndefined" : "optional",
+						checker,
+						writeLiteral(js, prop.default)
+					)
+				:	writeCall(
+						"writtenBy",
+						checker,
+						prop.defMorph.length === 2 ?
+							`(data, ctx) => ${js.ref(prop.defMorph)}(data, ctx)`
+						:	`data => ${js.ref(prop.defMorph)}(data)`,
+						prop.defaultsUndefined ? "1" : undefined
+					)
 			: checkerDescriptionOf(prop.value) === missing ? checker
 			: writeCall("required", checker, JSON.stringify(missing))
 		}`
 	})
 	const declared = writeObject(entries)
-	if (structure.handlesUndeclared === "delete")
-		return writeCall("deletingProps", declared)
-	if (!structure.handlesUndeclared)
-		return writeCall(structure.tfs ? "transformingProps" : "props", declared)
+	if (structure.index) {
+		const [{ signature, value }] = structure.index
+		if (
+			structure.index.length === 1 &&
+			!entries.length &&
+			!structure.handlesUndeclared &&
+			signature.is("domain") &&
+			signature.domain === "string"
+		)
+			return writeCall("recordOf", ref(value))
+		return writeCall(
+			"indexed",
+			`[${structure.index.map(({ signature, value }) => `[${readChecker(js, signature)}, ${ref(value)}]`).join(", ")}]`,
+			entries.length ? declared : structure.handlesUndeclared && "void 0",
+			structure.handlesUndeclared &&
+				JSON.stringify(removedSiteOf(structure)!.description)
+		)
+	}
+	const withCtx = structure.hasAlias ? "1" : undefined
+	const failing =
+		structure.hasAlias ||
+		structure.hasMorph ||
+		structure.props.some(writesByValues)
+	if (failing || (structure.optional?.length ?? 0) >= minSitedKeys) {
+		const deletes = structure.handlesUndeclared === "delete"
+		return writeCall(
+			"sited",
+			writeSitedAllows(structure, refs),
+			declared,
+			deletes ? writeSitedWrite(js, structure, failing)
+			: structure.tfs ? writeSitedKeep(js, structure, failing)
+			: "0",
+			!structure.tfs ? "0" : `${(deletes ? 2 : 0) + (failing ? 2 : 1)}`,
+			structure.handlesUndeclared && !deletes ?
+				JSON.stringify(removedSiteOf(structure)!.description)
+			:	undefined,
+			withCtx
+		)
+	}
+	if (structure.handlesUndeclared === "delete") {
+		return writeCall(
+			failing ? "failingDeletingProps" : "deletingProps",
+			declared,
+			withCtx
+		)
+	}
+	if (!structure.handlesUndeclared) {
+		return writeCall(
+			!structure.tfs ? "props"
+			: failing ? "failingProps"
+			: "transformingProps",
+			declared,
+			withCtx
+		)
+	}
 	const removed = removedSiteOf(structure)!
 	return writeCall(
-		structure.tfs ? "transformingClosedProps" : "closedProps",
+		!structure.tfs ? "closedProps"
+		: failing ? "failingClosedProps"
+		: "transformingClosedProps",
 		declared,
 		removed.description === "removed" ?
 			undefined
-		:	JSON.stringify(removed.description)
+		:	JSON.stringify(removed.description),
+		withCtx
 	)
 }
 
@@ -551,6 +815,7 @@ const ownNodesOf = (node: BaseNode): BaseNode[] =>
 
 // a node whose checker would declare a value, as a pattern does its RegExp
 const declaresRef = (node: BaseNode): boolean =>
+	node.is("morph") ||
 	node.is("pattern") ||
 	node.is("predicate") ||
 	(node.is("proto") && node.proto !== Array) ||
@@ -640,26 +905,54 @@ const writeShape = (
 		if (rules?.[0] === 1)
 			return writeCall("integerRange", ...writeRules([rules[2], rules[1]]))
 	}
-	if (
-		checked === "runtime.arrayCheck" &&
-		structure?.sequence &&
-		!structure.sequence.variadic!.tfs
-	) {
-		const rules = rulesOf(preStruct, ["maxLength", "minLength"])
+	if (checked === "runtime.arrayCheck" && structure?.sequence) {
+		const element = structure.sequence.variadic!
+		const failing = element.hasAlias || element.hasMorph
+		const rules =
+			(!element.tfs || failing) &&
+			rulesOf(preStruct, ["maxLength", "minLength"])
 		if (rules) {
-			return writeCall(
-				"arrayOf",
-				readChecker(js, structure.sequence.variadic!),
-				...writeRules(rules)
-			)
+			return element.tfs ?
+					writeCall(
+						"failingArrayOf",
+						readValue(js, element),
+						...writeRules(rules),
+						element.hasAlias ? "1" : undefined
+					)
+				:	writeCall("arrayOf", readValue(js, element), ...writeRules(rules))
 		}
 	}
 }
 
-const readChecker = (js: CombinatorCompiler, node: BaseNode): string =>
-	isInlined(node) ?
-		writeCombinator(js, node)!
-	:	js.refToId(node.id, { kind: "Allows" })
+const readChecker = (js: CombinatorCompiler, node: BaseRoot): string =>
+	isInlined(node) ? writeCombinator(js, node)!
+	: node.hasAlias && !combines(node) ?
+		writeCall("compiled", js.ref(node), node.tfs ? "1" : undefined)
+	:	js.refToId(node.id, { kind: node.allowsCtx ? "Apply" : "Allows" })
+
+const readValue = (js: CombinatorCompiler, node: BaseRoot): string =>
+	node.hasAlias ?
+		writeCall(
+			"aliasedValue",
+			readChecker(js, node),
+			js.ref(node),
+			`${(node.entersAlias ? 1 : 0) | (node.tfsById ? 2 : 0)}`
+		)
+	:	readChecker(js, node)
+
+// a case read as the branch it was pruned from where that holds an alias
+const readCase = (
+	js: CombinatorCompiler,
+	node: BaseRoot,
+	member: BaseRoot | undefined
+): string =>
+	member?.hasAlias ?
+		writeCall(
+			"aliasedMember",
+			readChecker(js, node),
+			JSON.stringify(js.nameOf(member.id))
+		)
+	:	readChecker(js, node)
 
 /** a node's checker, if it combines */
 export const writeCombinator = (
@@ -667,6 +960,14 @@ export const writeCombinator = (
 	node: BaseNode
 ): string | undefined => {
 	if (!combines(node)) return
+	if (node.checksCtx) return writeCall("readingCtx", writeChecker(js, node))
+	return writeChecker(js, node)
+}
+
+const writeChecker = (
+	js: CombinatorCompiler,
+	node: BaseNode
+): string | undefined => {
 	if (node.is("domain") || node.is("proto")) return writeCheck(js, node)
 	if (node.is("unit")) {
 		return writeCall(
@@ -675,9 +976,34 @@ export const writeCombinator = (
 			unlessDerived(runtime.describeValues([node.unit]), unitSiteOf(node)!)
 		)
 	}
+	if (node.is("morph")) return writeMorph(js, node)
 	if (node.is("intersection")) return writeIntersectionCombinator(js, node)
 	if (node.is("union")) return writeUnionCombinator(js, node)
 }
+
+// a callback is read where it's called, as it may be set once this has loaded
+const writeMorph = (js: CombinatorCompiler, node: MorphNode): string =>
+	writeCall(
+		"morphing",
+		node.head ? readChecker(js, node.head) : "0",
+		`[${node.travMorphs
+			.slice(node.head ? 1 : 0)
+			.map(step => {
+				if (!hasArkKind(step, "root")) {
+					return isKeyword(step) ?
+							js.ref(step)
+						:	`data => ${js.ref(step)}(data)`
+				}
+				// a morph references only its last step
+				js.link.byId[step.id] ??= step
+				return writeCall(
+					"piped",
+					readChecker(js, step),
+					step.reportsPred ? "1" : undefined
+				)
+			})
+			.join(", ")}]`
+	)
 
 const writeIntersectionCombinator = (
 	js: CombinatorCompiler,
@@ -687,13 +1013,34 @@ const writeIntersectionCombinator = (
 	if (shape) return shape
 	const refinements = node.preStruct.map(child => writeCheck(js, child))
 	const structure = node.structure && writeStructure(js, node.structure)
-	const predicate = node.inner.predicate?.[0]
-	const within = structure ?? (predicate && writePredicate(js, predicate))
+	const predicates = node.inner.predicate?.map(predicate =>
+		writePredicate(js, predicate)
+	)
+	const narrowed =
+		predicates?.length === 1 ?
+			predicates[0]
+		:	predicates && writeCall("narrowedByEach", `[${predicates.join(", ")}]`)
+	const within =
+		structure && narrowed ?
+			writeCall(
+				"narrowedAfter",
+				(
+					node.structure!.hasAlias &&
+						node.structure!.tfs &&
+						!node.structure!.checksCtx
+				) ?
+					writeCall("holdingAlias", structure)
+				:	structure,
+				narrowed
+			)
+		:	(structure ?? narrowed)
 	// props check data is an object, as their basis would
 	if (
 		within &&
 		!refinements.length &&
-		(!node.basis || (node.structure?.props.length && isObjectCheck(node.basis)))
+		(!node.basis ||
+			((node.structure?.props.length || node.structure?.index) &&
+				isObjectCheck(node.basis)))
 	)
 		return within
 	return writeCall(
@@ -722,7 +1069,9 @@ const writePredicate = (
 		)
 	}
 	return writeCall(
-		"narrowedBy",
+		returnsReports.has(node.predicate) ? "narrowedWithCtx"
+		: raisesNothing(node.predicate) ? "narrowedBy"
+		: "narrowedInCtx",
 		`() => ${fn}`,
 		isNamedByItsFunction(node) ? undefined : (
 			JSON.stringify(predicateSiteOf(node)!.description)
@@ -730,12 +1079,20 @@ const writePredicate = (
 	)
 }
 
+const caseMember = (node: UnionNode, k: string): BaseRoot | undefined =>
+	(node.discriminant!.members as Record<string, BaseRoot> | undefined)?.[k]
+
 // a list of units, cases by domain, a discriminated union or a list of checkers
 const writeUnionCombinator = (
 	js: CombinatorCompiler,
 	node: UnionNode
 ): string => {
-	const ref = (node: BaseNode) => readChecker(js, node)
+	const ref = (branch: BaseRoot, k?: string) =>
+		readCase(js, branch, k === undefined ? undefined : caseMember(node, k))
+	const fails =
+		node.tfs && (node.hasMorph || node.hasAlias) ?
+			"runtime.failingBranches"
+		:	undefined
 	const units = unitListOf(node)
 	if (units) {
 		if (
@@ -758,9 +1115,12 @@ const writeUnionCombinator = (
 			([domain, branch]): [string, string] => [
 				domain,
 				// null and undefined are their domain's only value
-				branch === true || domain === "null" || domain === "undefined" ?
+				(
+					branch === true ||
+					(branch.is("unit") && (domain === "null" || domain === "undefined"))
+				) ?
 					"1"
-				:	ref(branch)
+				:	ref(branch, JSON.stringify(domain))
 			]
 		)
 		const { description } = discriminantSiteOf(node)!
@@ -769,7 +1129,7 @@ const writeUnionCombinator = (
 			domain !== "object" &&
 			!Object.values(domains).some(branch => branch !== true && branch.tfs) &&
 			cases.length === 2 &&
-			"null" in domains &&
+			cases.some(([k, branch]) => k === "null" && branch === "1") &&
 			description === runtime.nullableDescriptionOf(domain)
 		) {
 			return writeCall(
@@ -781,7 +1141,8 @@ const writeUnionCombinator = (
 		return writeCall(
 			"domains",
 			writeObject(cases.map(([domain, branch]) => `${domain}: ${branch}`)),
-			JSON.stringify(description)
+			JSON.stringify(description),
+			fails
 		)
 	}
 	const discriminated = discriminatedOf(node)
@@ -791,7 +1152,11 @@ const writeUnionCombinator = (
 		const cases = writeObject(
 			keys.map(k => {
 				const branch = discriminated.cases[k]
-				return `${writeKey(k)}: ${branch === true ? "1" : ref(branch)}`
+				return `${writeKey(k)}: ${
+					branch === true ? "1" : (
+						ref(branch, discriminated.areBooleans ? k : JSON.stringify(k))
+					)
+				}`
 			})
 		)
 		const missedArg =
@@ -805,7 +1170,8 @@ const writeUnionCombinator = (
 					JSON.stringify(key),
 					cases,
 					JSON.stringify(site.description),
-					missedArg
+					missedArg,
+					fails
 				)
 			:	writeCall(
 					"discriminate",
@@ -813,15 +1179,18 @@ const writeUnionCombinator = (
 					cases,
 					unlessDerived(runtime.describeValues(keys), site),
 					missedArg,
-					discriminated.isOwn ? "1" : undefined
+					discriminated.isOwn ? "1" : undefined,
+					discriminated.areBooleans ? "1" : undefined,
+					fails
 				)
 	}
 	return writeCall(
 		"union",
-		`[${node.branches.map(ref).join(", ")}]`,
+		`[${node.branches.map(branch => ref(branch)).join(", ")}]`,
 		JSON.stringify(checkerDescriptionOf(node)),
 		listsBranches(node) ?
 			listedIssueOf(node)
-		:	`runtime.ownIssue(runtime.siteOf("union", ${JSON.stringify(unionSiteOf(node)!.description)}))`
+		:	`runtime.ownIssue(runtime.siteOf("union", ${JSON.stringify(unionSiteOf(node)!.description)}))`,
+		fails
 	)
 }

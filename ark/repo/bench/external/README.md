@@ -213,6 +213,14 @@ usage, as B1's 1779 was. The 1158 in "Best average" is the default build of
 `forms/arktype.ts`, the same form with the same esbuild settings, which
 exports a function that asserts where `login/arktype.ts` asserts once.
 
+At 20710020e (`results/login-20710020e.json`), the default build is 1007 B
+gzipped, the `"smallest"` preset 978 and dynamic ArkType 89751; Valibot 1547,
+Zod Mini 5127 and Zod 25058 are unchanged. Every other ArkType row was
+measured again on the same commit (`results/arktype-20710020e.json`,
+`results/startup-20710020e-node24.json`, Typia included, and
+`results/newest/`, every rival at its newest release of 2026-11-06), at
+1-minute loads of 6 to 12.
+
 ## The homepage's apps
 
 `bench/size.ts` sizes each of the homepage's apps as `bench/bundle.ts`

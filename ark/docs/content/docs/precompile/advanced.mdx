@@ -116,7 +116,7 @@ A [production bundle](/docs/precompile/options#prune) that reads every module it
 
 ### Large modules on Turbopack
 
-Turbopack's production build reads one module at a time, so it can't write a program's code once. A route would spend its first request on Types it may never call, so a module writing a lot of code creates each validator's checks at its first call rather than as the module loads. A validator is still there from the import, with its identity and members, and what a Type reads from your code is read and checked on import, so nothing about when a guard fires changes. The cost is a few more instructions per call to read the check through a variable.
+Where `next build` [can't read its project whole](/docs/precompile/setup#next), each module holds its own validators, so it can't write a program's code once. A route would spend its first request on Types it may never call, so a module writing a lot of code creates each validator's checks at its first call rather than as the module loads. A validator is still there from the import, with its identity and members, and what a Type reads from your code is read and checked on import, so nothing about when a guard fires changes. The cost is a few more instructions per call to read the check through a variable.
 
 [`lazy: false`](/docs/precompile/options#lazy) and `optimize: "size"` leave a module as it is.
 

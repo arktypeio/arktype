@@ -99,8 +99,15 @@ BaseScope.prototype.fin = function <node extends BaseRoot>(
 	node: node,
 	jit = true
 ): node {
-	// a jitless scope leaves its roots uncompiled, as its tests expect
-	if (!jit || node.unitFn || node.hasAlias || this.cfg.jitless)
+	// a jitless scope leaves its roots uncompiled, as its tests expect, and only
+	// a standalone build, in this thread where a test runs one, holds what it proved
+	if (
+		!jit ||
+		node.unitFn ||
+		node.hasAlias ||
+		node.reportsPred ||
+		this.cfg.jitless
+	)
 		return fin.call(this, node, jit) as node
 	finalizedUnits.set(node, register([node]))
 	fin.call(this, node, jit)
@@ -135,7 +142,8 @@ BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 					if (
 						hasArkKind(resolution, "root") &&
 						!resolution.unitFn &&
-						!resolution.hasAlias
+						!resolution.hasAlias &&
+						!resolution.reportsPred
 					)
 						roots.push(resolution)
 				}
@@ -144,6 +152,7 @@ BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 						node.isRoot() &&
 						!node.unitFn &&
 						!node.hasAlias &&
+						!node.reportsPred &&
 						!roots.includes(node)
 					)
 						referenced.push(node)

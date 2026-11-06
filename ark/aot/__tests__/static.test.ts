@@ -2078,7 +2078,7 @@ export const isAlsoType = (x: unknown) => x instanceof Type`).diagnostics.map(
 		})
 
 		it("an export arktype/runtime lacks, re-exported for sites to read", () => {
-			const barrel = `export { Type, type, scope as s } from "arktype"
+			const barrel = `export { Type, type, scope as s, match as m } from "arktype"
 export { type Scope, match } from "arktype"
 export * from "arktype"`
 			const written = precompile(barrel)
@@ -2087,7 +2087,8 @@ export * from "arktype"`
 export { type Scope } from "arktype"
 export * from "arktype"`)
 			const main = precompile(
-				`import { s, type } from "./ark.ts"
+				// m, renamed, which nothing reads
+				`import { m, s, type } from "./ark.ts"
 export const types = s({ a: "string" }).export()
 export const isType = (x: unknown) => x instanceof type`,
 				{ "/ark.ts": barrel }

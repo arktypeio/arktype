@@ -36,6 +36,9 @@
 			"turbopack": [
 				"./out/turbopack.d.ts"
 			],
+			"turbopack/runtime": [
+				"./out/turbopackRuntime.d.ts"
+			],
 			"internal/*": [
 				"./out/*"
 			]
@@ -69,6 +72,10 @@
 		"./turbopack": {
 			"ark-ts": "./turbopack.ts",
 			"default": "./out/turbopack.js"
+		},
+		"./turbopack/runtime": {
+			"ark-ts": "./turbopackRuntime.ts",
+			"default": "./out/turbopackRuntime.js"
 		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
