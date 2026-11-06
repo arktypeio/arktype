@@ -161,14 +161,15 @@ export const writeAliasMessage = (
 			)
 		)}`
 
-// `resolved` is where @ark/schema/runtime resolves other than to the build's copy
-export const writeRuntimeAliasMessage = (
-	resolved: string,
-	variant: RuntimeVariant | undefined
-): string =>
-	variant ?
-		`@ark/schema/runtime resolves to ${resolved} rather than @ark/schema/runtime/${variant}, which a build with ${writeVariantOption(variant)} loads in its place. Add to turbopack.resolveAlias: ${JSON.stringify({ "@ark/schema/runtime": `@ark/schema/runtime/${variant}` })}, and install @ark/schema if your package manager doesn't hoist it, as pnpm doesn't.`
-	:	`@ark/schema/runtime resolves to ${resolved}, a copy for a build with errors: "none" or optimizeErrors: "size". Remove its turbopack.resolveAlias.`
+// `resolved` is where @ark/schema/runtime resolves other than to the module
+// the loader writes as the build's copy
+export const writeRuntimeAliasMessage = (resolved: string): string =>
+	`@ark/schema/runtime resolves to ${resolved} rather than ${runtimeShimSpecifier}, which the loader writes as the runtime the build's options load. Add to turbopack.resolveAlias: ${JSON.stringify({ "@ark/schema/runtime": runtimeShimSpecifier })}.`
+
+export const runtimeShimSpecifier = "@ark/aot/turbopack/runtime"
+
+export const writeUnresolvedSchemaRuntimeMessage = (entry: string): string =>
+	`${runtimeShimSpecifier} re-exports ${entry}, which doesn't resolve from arktype/runtime. Install arktype beside @ark/aot.`
 
 export const writeNodeVersionMessage = (
 	name: string,

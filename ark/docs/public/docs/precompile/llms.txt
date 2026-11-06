@@ -390,7 +390,7 @@ A production build reads each component as its framework compiles it, and each v
 
 ## Next.js
 
-With Turbopack, the default, add the loader as a rule for each extension your definitions and config module are in, and for JavaScript that mentions arktype, which checks your dependencies, then alias arktype's entries to the runtime:
+With Turbopack, the default, add the loader as a rule for each extension your definitions and config module are in, and for JavaScript that mentions arktype, which checks your dependencies, then alias arktype's entries to the runtime, and @ark/schema's runtime to the one the loader writes for your options:
 
 ```js
 export default {
@@ -412,13 +412,14 @@ export default {
 			"arktype/codecs": "arktype/runtime",
 			"arktype/config": "arktype/runtime",
 			"arktype/errors": "arktype/runtime",
-			"arktype/mutatesInput": "arktype/runtime"
+			"arktype/mutatesInput": "arktype/runtime",
+			"@ark/schema/runtime": "@ark/aot/turbopack/runtime"
 		}
 	}
 }
 ```
 
-The loader fails a module whose `arktype` imports resolve otherwise, naming the aliases to add. With `runtime: "arktype"` or `shadow: true`, leave the aliases out, since the loader fails a module they resolve to the runtime. It reruns when a module's local imports change, and applies a changed configuration once the dev server restarts.
+The loader fails a module whose `arktype` imports resolve otherwise, naming the aliases to add. With `runtime: "arktype"` or `shadow: true`, leave the `arktype` aliases out, since the loader fails a module they resolve to the runtime. `@ark/aot/turbopack/runtime` re-exports the copy of @ark/schema's runtime your options load, like the one [`errors: "none"`](https://arktype.io/docs/precompile/options#errors) does, so the aliases stay alike as you change them. It reruns when a module's local imports change, and applies a changed configuration once the dev server restarts.
 
 The aliases also point a dependency's `arktype` imports at the runtime, so the `*.{js,mjs}` rule has the loader fail the build for a dependency that defines Types but doesn't [opt in](https://arktype.io/docs/precompile/advanced#libraries), and precompile one that does or that [`dependencies`](https://arktype.io/docs/precompile/options#dependencies) sets to `"aot"`. Turbopack can't run one dependency on arktype, so for one that creates Types from values it reads as it runs, like `drizzle-arktype`, build with webpack or with `runtime: "arktype"`. The loader reads only `import` and `export` declarations, so a CommonJS dependency that `require`s arktype throws `type is not a function` when it loads instead.
 
@@ -675,8 +676,6 @@ precompile.vite({ preset: "smallest", members: { meta: false } })
 
 No preset changes what a program observes: none sets `errors`, `mutatesInput` or `jsonInput`, or drops a member some code may read, since the build can't see a member read by code it doesn't build, like a library reading `~standard`. A [production bundle](https://arktype.io/docs/precompile/options#prune) leaves out the members it proves nothing reads. With `runtime: "arktype"`, a preset sets nothing.
 
-With Turbopack, `"smallest"` needs the `@ark/schema/runtime` alias [`optimize: "size"`](https://arktype.io/docs/precompile/options#optimize-and-optimizeerrors) does.
-
 ### Choosing smallest
 
 The default build compiles each validator to the code that checks its Type fastest. `"smallest"` writes it as calls to a runtime of small checkers, shared by every validator, so each Type adds about what its definition says. The more Types a bundle holds, the more that saves:
@@ -754,17 +753,7 @@ Where `package.json` sets `"ark"` and an `ark.json` is beside it, the build fail
 
 `errors: "first"` stops each validation at the first issue it finds and returns it alone. Which of the data's issues that is isn't promised: the validator looks for whichever is cheapest to find, which may not be the one arktype finds first. `errors: "none"` returns errors holding one root issue with the code `"predicate"` and the message `is invalid`, so no check's description or message ships. It asks a narrow once, so one answering false and then true fails where arktype, asking again for its errors, returns the data. Those errors have no `throw()`, and `assert` throws a plain `Error` whose `cause` is the errors.
 
-The plugin and the Node and Bun drivers resolve `@ark/schema/runtime` to `@ark/schema/runtime/none` under `errors: "none"`, and a module importing any other `@ark/schema` entry, or a runtime island, fails the build. Turbopack needs an alias beside [the ones a standalone build needs](https://arktype.io/docs/precompile/setup#next), and its loader fails the build without it:
-
-```js
-export default {
-	turbopack: {
-		resolveAlias: { "@ark/schema/runtime": "@ark/schema/runtime/none" }
-	}
-}
-```
-
-Turbopack resolves the alias from the project, so with a package manager that doesn't hoist dependencies, like pnpm, install `@ark/schema` beside arktype.
+The plugin, the Node and Bun drivers and the Turbopack loader, through [the alias Setup names](https://arktype.io/docs/precompile/setup#next), resolve `@ark/schema/runtime` to `@ark/schema/runtime/none` under `errors: "none"`, and a module importing any other `@ark/schema` entry, or a runtime island, fails the build.
 
 The values are [arktype's `errors`](https://arktype.io/docs/configuration#errors) option's, and a program that also configures it must configure the same value.
 
@@ -810,7 +799,7 @@ precompile.vite({
 
 `optimizeErrors` writes errors the same way, and is `optimize` unless set. Errors written for size are the smallest a build can return, and reading their issues is slower, but they have the same `count`, `issues`, `summary`, `throw()`, `toJSON()` and `toString()` as other errors, and `instanceof type.errors` recognizes them.
 
-The build loads `@ark/schema/runtime/lean` in place of `@ark/schema/runtime` for them, or `@ark/schema/runtime/none-lean` with `errors: "none"`, and a runtime island fails the build, as under [`errors: "none"`](https://arktype.io/docs/precompile/options#errors). With Turbopack, alias `@ark/schema/runtime` to that entry as `errors: "none"` does.
+The build loads `@ark/schema/runtime/lean` in place of `@ark/schema/runtime` for them, or `@ark/schema/runtime/none-lean` with `errors: "none"`, and a runtime island fails the build, as under [`errors: "none"`](https://arktype.io/docs/precompile/options#errors).
 
 ### jsonInput
 
@@ -901,7 +890,7 @@ A package precompiled with `"aot"` is read as the program is, so a value it retu
 
 ### allowUnsafe
 
-`allowUnsafe: true` (`--allow-unsafe` for `--check`) reports as warnings the problems that may throw at runtime but that a build can still write output for: a dependency that imports arktype or ships precompiled validators, a module the build can't precompile importing arktype, a read off an import it can't resolve, an import that loads a Type before the config module, a Turbopack alias for `@ark/schema/runtime` that doesn't match `errors` and `optimizeErrors`, a package the build leaves external that loads arktype beside the runtime, and a definition that throws a ParseError. Each fails the build otherwise. It applies with `runtime: "arktype"` too, where a ParseError and a dependency shipping precompiled validators fail the build and the rest are warnings anyway.
+`allowUnsafe: true` (`--allow-unsafe` for `--check`) reports as warnings the problems that may throw at runtime but that a build can still write output for: a dependency that imports arktype or ships precompiled validators, a module the build can't precompile importing arktype, a read off an import it can't resolve, an import that loads a Type before the config module, a Turbopack alias for `@ark/schema/runtime` other than `@ark/aot/turbopack/runtime`, a package the build leaves external that loads arktype beside the runtime, and a definition that throws a ParseError. Each fails the build otherwise. It applies with `runtime: "arktype"` too, where a ParseError and a dependency shipping precompiled validators fail the build and the rest are warnings anyway.
 
 ### conditions and tsconfig
 
@@ -1041,7 +1030,7 @@ Each of these is reported by the build, or listed here where nothing can report 
 
 **`arktype resolves to more than one copy`**: one copy doesn't recognize another's Types and errors. The message names each copy and the file that reached it.
 
-**`arktype resolves to ... rather than arktype/runtime`** (Turbopack): add the `turbopack.resolveAlias` entries the message lists to your Next config. See [Next.js](https://arktype.io/docs/precompile/setup#next).
+**`arktype resolves to ... rather than arktype/runtime`** or **`@ark/schema/runtime resolves to ...`** (Turbopack): add the `turbopack.resolveAlias` entries the message lists to your Next config. See [Next.js](https://arktype.io/docs/precompile/setup#next).
 
 **`configure() is called, but the build has no config module`**: name the module that calls it as the build's [`config`](https://arktype.io/docs/precompile/options#configuration) in `ark.json`, as `{ "precompile": { "config": "./src/arktype.config.ts" } }`.
 
@@ -1096,6 +1085,8 @@ A definition reading one of its Types, like `type({ email: Email })` with `Email
 **`The @ark/aot/turbopack loader can't read this project whole, because ...`**: `next build` [couldn't read your project](https://arktype.io/docs/precompile/setup#next) up front, so each module holds its own validators. The build is right, but larger and slower to load. Remove what the message names, or set `prune: false` to build so without the warning.
 
 **`... which the @ark/aot/turbopack loader's read of the project didn't see, so a validator may lack what it reads`**: Turbopack built a module otherwise than `next build` read it, so a validator it left a member out of may be read for it. The message names the module and how it differs. Remove the difference, or set `prune: false`.
+
+**`next build` hangs, or panics with `turbo-tasks: an internal panic occurred`, once you remove the `@ark/schema/runtime` alias** (Turbopack): Next 16.4.1 hangs a build, with its build cache on, after one that resolved an import inside a dependency through an alias it no longer has, as removing the precompiler's setup does. Delete `.next/cache` once.
 
 **Turbopack builds a module as it did before you linked or patched arktype**: Turbopack's persistent cache keeps what the loader wrote until the module, a file it read, or the version of `arktype` or `@ark/aot` changes. A linked copy or a patch changes their code without the version, so delete `.next/cache` after changing either. The build's own cache, and webpack's and Rspack's, rebuild by themselves.
 
