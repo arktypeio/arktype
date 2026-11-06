@@ -127,6 +127,7 @@ import {
 	importsValues,
 	isArk,
 	isArkObject,
+	isArktypeExport,
 	isComposingMember,
 	functionOfBinding,
 	mayReturnArk,
@@ -3822,7 +3823,12 @@ export class Precompiler {
 			module,
 			[...folded, ...linked],
 			s,
-			({ local }) => {
+			({ local, imported }, isRead) => {
+				// one nothing reads fails to link only by a name arktype/runtime
+				// lacks, and is resolved only then, as a host answers each resolve
+				const name = exportNameOf(imported)
+				if (!isRead && (!isArktypeExport(name) || name in arktypeRuntime))
+					return false
 				const binding = module.scopes.bindingsById.get(local)!
 				const { kind } = this.graph.importOf(binding, module)
 				return kind === "arktype" || kind === "arktypeNamespace"

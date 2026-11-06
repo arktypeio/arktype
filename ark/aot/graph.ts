@@ -134,6 +134,9 @@ const arkExports = new Set(
 	)
 )
 
+export const isArktypeExport = (name: string): boolean =>
+	name in arktypeNamespacesBySpecifier.arktype
+
 export const isArkObject = (value: unknown): boolean =>
 	isArkValue(value) || value instanceof Callable || arkExports.has(value)
 

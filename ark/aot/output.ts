@@ -12,6 +12,7 @@ import {
 import MagicString from "magic-string"
 import type {
 	ImportDeclarationSpecifier,
+	ImportSpecifier,
 	MemberExpression,
 	Node,
 	Program,
@@ -321,7 +322,7 @@ export const pruneArktypeImports = (
 	module: SourceModule,
 	folded: Span[],
 	s: MagicString,
-	importsArktype: (specifier: ImportDeclarationSpecifier) => boolean
+	importsArktype: (specifier: ImportSpecifier, isRead: boolean) => boolean
 ): Set<Node> => {
 	const pruned = new Set<Node>()
 	// e.g. `import "arktype"`, written once however many imports it replaces
@@ -338,8 +339,10 @@ export const pruneArktypeImports = (
 				module.scopes.bindingsById.get(specifier.local)?.references ?? []
 			return (
 				references.some(({ id }) => !folded.some(site => contains(site, id))) ||
-				// one nothing reads stays unresolved, as a host resolving each import costs
-				(!isArktype && (!references.length || !importsArktype(specifier)))
+				(!isArktype &&
+					(specifier.type !== "ImportSpecifier" ||
+						specifier.importKind === "type" ||
+						!importsArktype(specifier, references.length > 0)))
 			)
 		})
 		if (kept.length === statement.specifiers.length) continue
