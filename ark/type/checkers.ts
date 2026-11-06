@@ -1311,6 +1311,25 @@ export const nullable = ((checker: Checker | 1, domain = "string"): Checker => {
 	return wrapped
 }) satisfies Fn
 
+// an object's checker or null, as domains writes them, smaller; what it
+// transforms is an object where it can't fail
+export const nullableObject = ((checker: Checker): Checker => {
+	const site: FailureSite = {
+		code: "discriminant",
+		description: "an object or null"
+	}
+	const wrapped: Checker = (data, ctx) =>
+		data === null ||
+		(objectCheck.test(data) ?
+			checker(data, ctx)
+		:	!failsAt(ctx as never, site, data))
+	wrapped.description = site.description
+	const { t } = checker
+	if (transformsBranches && t)
+		wrapped.t = data => (data === null ? data : (t(data) ?? data))
+	return wrapped
+}) satisfies Fn
+
 // a union of objects told apart by the string at one key
 export const discriminate = ((
 	key: string,
