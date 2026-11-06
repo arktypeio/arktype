@@ -42,8 +42,38 @@ const twins = [
 	`type("string | number[]")`,
 	`type({ a: "string | null" })`,
 	`type("string.ip")`,
-	`type({ kind: "'a'", x: "string" }).or({ kind: "'b'", y: "number" })`
+	`type({ kind: "'a'", x: "string" }).or({ kind: "'b'", y: "number" })`,
+	// holding a function, which a module alone holds through a cell
+	`type(["number", ":", positive])`,
+	`type(["string", "=>", double])`,
+	`type("string.numeric.parse")`,
+	`type({ a: "string.numeric.parse" })`
 ]
+
+const preds = `export const positive = (d: any) => typeof d !== "number" || d > 0
+export const double = (d: any) => (typeof d === "number" ? d * 2 : d)
+`
+
+// each module of an identity probe writing a twin imports what twins hold
+const withPreds = (
+	probes: Record<string, Record<string, string>>
+): Record<string, Record<string, string>> =>
+	Object.fromEntries(
+		Object.entries(probes).map(([name, files]) => [
+			name,
+			{
+				...Object.fromEntries(
+					Object.entries(files).map(([file, text]) => [
+						file,
+						file.endsWith(".ts") && /\b(?:positive|double)\b/.test(text) ?
+							`import { double, positive } from "./preds.ts"\n${text}`
+						:	text
+					])
+				),
+				"preds.ts": preds
+			}
+		])
+	)
 
 const twinsIn = (prefix: string, exported = true) =>
 	twins
@@ -391,8 +421,8 @@ ${printing}`
 )
 
 export const probes: Record<string, Record<string, string>> = {
-	...identityProbes,
-	...handoffProbes,
+	...withPreds(identityProbes),
+	...withPreds(handoffProbes),
 	...errorProbes,
 	...wholeProbes,
 	...barrelProbes,

@@ -1073,6 +1073,10 @@ const check = async (app: App): Promise<boolean> => {
 			allFlips(expectedObservations, observations)
 		) {
 			tally.flips++
+			// F1 is fixed, so a flip is kept to read, though not counted unsound
+			console.error(
+				`\nFLIP (${host}): kept in ${keepFailure(app, `${host}-flip`, expected, outcome.out)}`
+			)
 			continue
 		}
 		if (!mismatch) {
@@ -1093,7 +1097,9 @@ const check = async (app: App): Promise<boolean> => {
 		// what the bundler alone builds otherwise isn't the plugin's
 		if (bundlers.has(host.split(":")[0])) {
 			const plain = await outcomeOf(host, dir, app, false)
-			const plainObservations = "out" in plain && observationsOf(plain.out)
+			// compared as the plugin's are, without what an app compares of identity
+			const plainObservations =
+				"out" in plain && withoutIdentity(observationsOf(plain.out))
 			if (
 				(observations &&
 					plainObservations &&
