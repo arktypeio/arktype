@@ -2978,7 +2978,8 @@ export class Precompiler {
 	// config module, or once something calls it, after any module of its
 	// program may have. So it loads it ahead of them, if every site would run
 	// after it, as one creating as its module loads ahead of it throws as
-	// arktype does
+	// arktype does. A build reading each module alone can't tell whether its
+	// program loads the config module, so it's loaded as though it does
 	private configFirstOf(
 		module: SourceModule,
 		program: ScannedProgram | undefined
@@ -2993,8 +2994,7 @@ export class Precompiler {
 			return
 		const isLoaded =
 			this.importClosureOf(module.id).includes(config) ||
-			(!!program &&
-				config in program.modules &&
+			((!program || config in program.modules) &&
 				this.analysisOf(module).sites.every(site => site.deferred))
 		return isLoaded ? specifierOf(module.id, config) : undefined
 	}
