@@ -558,7 +558,8 @@ const build = async (
 	bundler: Bundler,
 	dir: string,
 	scenario: Scenario,
-	options: Record<string, unknown>
+	options: Record<string, unknown>,
+	withPlugin = true
 ): Promise<Outcome> => {
 	const lib = (bundler === "webpack" ? webpack : rspack) as typeof webpack
 	const out = join(dir, "out")
@@ -581,7 +582,10 @@ const build = async (
 		},
 		overrides
 	)
-	config.plugins = [...((overrides.plugins as never[]) ?? []), plugin]
+	config.plugins = [
+		...((overrides.plugins as never[]) ?? []),
+		...(withPlugin ? [plugin] : [])
+	]
 	const compiler = lib(config as never)
 	const failed = await new Promise<string | undefined>((resolve, reject) => {
 		const hung = setTimeout(
@@ -679,6 +683,18 @@ for (const [name, scenario] of Object.entries(scenarios)) {
 			if (isLoud(pruned.out)) {
 				console.log(`${label}: loud: ${pruned.out.trim().slice(0, 200)}`)
 				continue
+			}
+			// a whole build failing loudly where the pruned one reads what arktype
+			// does, as the bundler alone builds it with arktype
+			if (isLoud(whole.out)) {
+				const plain = await build(bundler, dir, scenario, preset, false)
+				if (
+					"out" in plain &&
+					normalized(plain.out) === normalized(pruned.out)
+				) {
+					console.log(`${label}: as arktype, where whole is loud`)
+					continue
+				}
 			}
 			unsound++
 			console.log(
