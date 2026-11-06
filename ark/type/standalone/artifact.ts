@@ -1114,16 +1114,38 @@ export class StandaloneArtifact {
 		body.push(...defaults.map(({ check }) => check), `return ${value}`)
 		const defaultKeys =
 			defaults.length ? `, [${defaults.map(({ key }) => key).join(", ")}]` : ""
-		return this.writeFactoryFunction(
-			index,
-			params,
-			configured,
-			holes ?
-				[
-					`return runtime.intern(${this.internTableOf(internedBy!)}, [${holes.join(", ")}], ${this.baking.defers ? "function ()" : "() =>"} {\n${body.filter(statement => statement).join("\n\n")}\n}${defaultKeys})`
-				]
-			:	body
-		)
+		if (!holes)
+			return this.writeFactoryFunction(index, params, configured, body)
+		const interned = `runtime.intern(${this.internTableOf(internedBy!)}, [${holes.join(", ")}], ${this.baking.defers ? "function ()" : "() =>"} {\n${body.filter(statement => statement).join("\n\n")}\n}${defaultKeys})`
+		// one holding none bakes as it's created
+		const bakedAfter =
+			this.internsAcrossModules &&
+			this.validatorFormOf(type as never).bakedAfter
+		return this.writeFactoryFunction(index, params, configured, [
+			`return ${bakedAfter ? `runtime.bakeInto(${interned}, ${this.writeBakedAfter(type as never, bakedAfter)})` : interned}`
+		])
+	}
+
+	// what this module reads of a Type holding holes, baked into the validator
+	// whichever module's factory created it. Its declarations are its own, as
+	// the factory's body runs only for the first
+	private writeBakedAfter(
+		root: BaseRoot,
+		bakedAfter: ReadonlySet<IntrospectionMember>
+	): string {
+		const { declarations, sharedWriters } = this
+		this.declarations = createDeclarations()
+		this.sharedWriters = new Map()
+		const attributes = `{ ${this.emitIntrospection(root, new Set(bakedAfter)).join(", ")} }`
+		const statements = [
+			...this.declarations.statements,
+			this.sharedWriterDeclarations
+		].filter(statement => statement)
+		this.declarations = declarations
+		this.sharedWriters = sharedWriters
+		return statements.length ?
+				`(() => {\n${statements.join("\n")}\nreturn ${attributes}\n})()`
+			:	attributes
 	}
 
 	// a factory's holes tell the validators of one key apart, whichever module
@@ -2165,14 +2187,16 @@ return namespace`
 			:	this.baking.members
 		// a build reading a module at a time bakes what each module reads of a
 		// Type where it reads it, as a module importing one does, so equal Types
-		// created apart key alike, as arktype returns them as one value
+		// created apart key alike, as arktype returns them as one value. One
+		// holding holes is baked where its factory interns it
 		const bakedAfter =
 			(
 				!isTemplate &&
 				!this.baking.interned &&
 				!this.baking.freezes &&
-				!this.heldOf(keyOf(root)[1]).length &&
-				this.internNameOf(root) !== undefined
+				(this.heldOf(keyOf(root)[1]).length ?
+					this.factory?.type === (root as never) && this.internsAcrossModules
+				:	this.internNameOf(root) !== undefined)
 			) ?
 				new Set(
 					introspectionMembers.filter(
