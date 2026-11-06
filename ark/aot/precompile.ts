@@ -325,11 +325,13 @@ import {
 import {
 	commaAfter,
 	firstStatementOf,
+	importsEndOf,
 	inlineModules,
 	keepImportedModules,
 	noValidators,
 	pruneArktypeImports,
 	writeConfigFixer,
+	writeImportsAhead,
 	writeUnitTable,
 	writeValidators
 } from "./output.ts"
@@ -1027,12 +1029,8 @@ export class Precompiler {
 		const [interned, baked] = this.internedIn(
 			plan,
 			readings.baked,
-			// every read is a call or a member holding nothing of its own, or two
-			// values for one Type can't be told apart
 			typeof used === "string" ||
-				used.has("allows") ||
-				used.has("meta") ||
-				used.has("~standard")
+				[...used].some(read => !readsNoIdentity.includes(read))
 		)
 		// a size build's units are already module constants
 		const flattens =
@@ -2692,8 +2690,9 @@ export class Precompiler {
 		// locals for virtual modules' exports, by specifier
 		const imports: Record<string, Record<string, string>> = {}
 		let issues: IssueFeatures | undefined
+		let inputImports = ""
 		if (this.mode === "standalone") {
-			issues = this.writeStandalone(
+			;[issues, inputImports] = this.writeStandalone(
 				module,
 				sites,
 				s,
@@ -2710,6 +2709,7 @@ export class Precompiler {
 			prefix,
 			modules,
 			imports,
+			inputImports,
 			program === undefined ? undefined : (
 				this.usagesByProgram.get(program)?.program
 			)
@@ -2795,7 +2795,8 @@ export class Precompiler {
 	}
 
 	// folds the module's sites into validators, then links its islands and
-	// marks its progress; returns the issue features its errors can hold
+	// marks its progress; returns the issue features its errors can hold and
+	// the imports of what its sites are passed
 	private writeStandalone(
 		module: SourceModule,
 		sites: Site[],
@@ -2805,7 +2806,7 @@ export class Precompiler {
 		imports: Record<string, Record<string, string>>,
 		diagnostics: Diagnostic[],
 		reads: ProgramReads
-	): IssueFeatures {
+	): [issues: IssueFeatures, inputImports: string] {
 		const [inputImports, written] = this.foldSites(
 			module,
 			sites,
@@ -2822,17 +2823,19 @@ export class Precompiler {
 		// esbuild loads stdin as written, which holding no site leaves it
 		if (this.mode === "standalone" && !module.id.includes("<stdin>."))
 			this.nameErrorsClass(module, sites, s, prefix)
-		for (const specifier in inputImports) {
-			const locals = inputImports[specifier]
-			s.append(
-				`\nimport { ${Object.keys(locals)
-					.map(name => `${name} as ${locals[name]}`)
-					.join(", ")} } from ${JSON.stringify(specifier)}`
-			)
-		}
 		if (module.id === this.config) this.stampConfiguration(module, s)
-		// an island's errors are arktype's, which may hold anything
-		return module.islands.length ? anyIssues : written
+		return [
+			// an island's errors are arktype's, which may hold anything
+			module.islands.length ? anyIssues : written,
+			Object.entries(inputImports)
+				.map(
+					([specifier, locals]) =>
+						`\nimport { ${Object.keys(locals)
+							.map(name => `${name} as ${locals[name]}`)
+							.join(", ")} } from ${JSON.stringify(specifier)}`
+				)
+				.join("")
+		]
 	}
 
 	// `type.errors` is `ArkErrors`, which leaves `type`, a frozen object holding
@@ -2876,8 +2879,11 @@ export class Precompiler {
 				}
 			}
 			if (read) {
-				s.append(
-					`\nimport { ArkErrors as ${name} } from ${JSON.stringify(statement.source.value)}`
+				writeImportsAhead(
+					s,
+					module.program,
+					`\nimport { ArkErrors as ${name} } from ${JSON.stringify(statement.source.value)}`,
+					statement.end
 				)
 			}
 		}
@@ -2925,6 +2931,7 @@ export class Precompiler {
 		prefix: string,
 		modules: Record<string, string>,
 		imports: Record<string, Record<string, string>>,
+		inputImports: string,
 		program: ScannedProgram | undefined
 	): void {
 		let inserted = ""
@@ -2950,19 +2957,16 @@ export class Precompiler {
 				}
 			}
 		}
-		if (!inserted) return
-		const config = this.configFirstOf(module, program)
+		const config = inserted && this.configFirstOf(module, program)
 		if (config && !this.inline)
 			inserted = `\nimport ${JSON.stringify(config)}${inserted}`
+		const end = importsEndOf(module.program)
 		const arktypeImport = this.arktypeImportOf(module)
-		if (!arktypeImport) return void s.append(inserted)
-		const lineEnd = module.source.indexOf("\n", arktypeImport.end)
-		const rest = module.source.slice(
-			arktypeImport.end,
-			lineEnd === -1 ? undefined : lineEnd
-		)
-		// minified code can continue the import's line
-		s.prependLeft(arktypeImport.end, rest.trim() ? `${inserted}\n` : inserted)
+		// beside arktype where it's imported among them
+		if (arktypeImport && arktypeImport.end <= end) {
+			writeImportsAhead(s, module.program, inputImports, end)
+			writeImportsAhead(s, module.program, inserted, arktypeImport.end)
+		} else writeImportsAhead(s, module.program, inputImports + inserted, end)
 	}
 
 	// a size build creates a module's validators as their module loads, where
@@ -7651,6 +7655,19 @@ const isReachedOnlyAtBuild = (
 					!site.references.some(reference => contains(reference, node)) &&
 					!(site.definition && contains(site.definition, node))))
 	)
+
+// reads that can't tell two values of one Type apart: a call, or a method
+// called where it's read (one read to call elsewhere is piped), each Type's
+// assert its own and its prototype's shared; and a call's errors, which hold
+// no Type. Any other read of one, or of what it holds, lets it escape where
+// code may compare it, so equal Types are one value as arktype's are
+const readsNoIdentity: UsedMember[] = [
+	"call",
+	"assert",
+	"methods",
+	"summary",
+	"errors"
+]
 
 // each may hand a program's code its errors, or throws them
 const readsErrorsWhole: UsedMember[] = ["errors", "assert", "methods", "piped"]

@@ -803,6 +803,7 @@ import { max } from "./limits.ts"
 import { reboxed } from "./reboxed.ts"
 import { shape } from "./shapes.ts"
 import * as limits from "./limits.ts"
+import { shape as $ark#6 } from "./shapes.ts"
 const trim = (s: string) => s.trim()
 const o = { name: "string", tags: ["string"] }
 const alias = o
@@ -815,8 +816,7 @@ export const Imports = ((shape: number) => $ark#5($ark#6, box))(1)
 export const Shadowed = (() => {
 	const o = 1
 	return type(alias.name)
-})()
-import { shape as $ark#6 } from "./shapes.ts"`)
+})()`)
 		})
 
 		it("inputs on an import cycle", () => {
@@ -895,12 +895,12 @@ export default (def: string) => def`,
 			attest(foldedCode(checked.code)).snap(`import { type } from "arktype"
 import single, { list } from "./helpers.ts"
 import * as helpers from "./helpers.ts"
+import { suffix as $ark#4 } from "./suffix.ts"
 const own = (def: string) => list(def)
 export const List = $ark#0(list)
 export const Own = $ark#2(list)
 export const Optional = $ark#3(helpers.optional, $ark#4)
-export const Single = type(single("string"))
-import { suffix as $ark#4 } from "./suffix.ts"`)
+export const Single = type(single("string"))`)
 			attest(build("/helpers.ts", "helpers").code)
 				.snap(`import { suffix } from "./suffix.ts"
 const base = (def: string) => \`\${def}[]\`
@@ -1192,17 +1192,18 @@ export const E = type("strng")`,
 				{},
 				{ inline: true }
 			)
+			// the modules run after the imports, as they read them
 			const lines = result.code.split("\n")
-			attest(normalized([lines[0], ...lines.slice(-12)])).snap([
-				"var $ark$exports0;",
-				"})($ark$0$fixConfig)) : $ark$exports2)",
-				"}",
-				"function $arkfixConfig(...args) {",
-				'return $ark$load2()["default"](...args)',
-				"}",
-				"$ark$load2();",
+			const declared = lines.indexOf("var $ark$exports0;")
+			attest(
+				normalized([...lines.slice(0, declared + 1), ...lines.slice(-7)])
+			).snap([
 				'import "arktype"',
 				'import { siteOf as $ark$0$siteOf, freeze as $ark$0$freeze, unreadCallErrors as $ark$0$unreadCallErrors, UnreadArkErrors as $ark$0$UnreadArkErrors, deepFreeze as $ark$0$deepFreeze, fixConfig as $ark$0$fixConfig, interned as $ark$0$interned, createValidatorWith as $ark$0$createValidatorWith, emptyMeta as $ark$0$emptyMeta, bakedJsonSchema as $ark$0$bakedJsonSchema, bakedStandardJsonSchema as $ark$0$bakedStandardJsonSchema, precompiledForArktype_$version as $ark$0$precompiledForArktype_$version, ParseError as $ark$0$ParseError } from "arktype/runtime"',
+				"var $ark$exports0;",
+				"}",
+				"$ark$load2();",
+				"",
 				'const Array = "shadowed"',
 				"$arkfixConfig()",
 				"export const T = /* @__PURE__ */ $ark#0()",
@@ -1219,12 +1220,13 @@ export const T = type("string[]")`,
 				{},
 				{ inline: true, runtime: "arktype" }
 			).code.split("\n")
-			attest([lines[0], ...lines.slice(-5)]).snap([
-				";((registerPrecompiledUnits) => {",
-				"})($ark$0$registerPrecompiledUnits);",
+			attest([...lines.slice(0, 4), ...lines.slice(-3)]).snap([
 				'import "./config.ts"',
 				'import { type } from "arktype"',
 				'import { registerPrecompiledUnits as $ark$0$registerPrecompiledUnits } from "arktype/internal/precompiled.js"',
+				";((registerPrecompiledUnits) => {",
+				"})($ark$0$registerPrecompiledUnits);",
+				"",
 				'export const T = type("string[]")'
 			])
 		})

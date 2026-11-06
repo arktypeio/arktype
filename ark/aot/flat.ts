@@ -11,6 +11,7 @@ import {
 	virtualSource
 } from "./link.ts"
 import { parseCode, SourceModule } from "./module.ts"
+import { writeImportsAhead } from "./output.ts"
 import {
 	exportNameOf,
 	isWriteTarget,
@@ -363,7 +364,11 @@ const flatSiteOf = (
 		} else {
 			const local = `${prefix}_${name}`
 			s.overwrite(start, end, local)
-			s.prepend(`import { ${name} as ${local} } from ${source}\n`)
+			writeImportsAhead(
+				s,
+				site.program,
+				`\nimport { ${name} as ${local} } from ${source}`
+			)
 		}
 	}
 	return s ?
@@ -1833,11 +1838,17 @@ const functionsDeclared = (body: string): string => {
 }
 
 const declaresFunction = ({ id, init }: VariableDeclarator): boolean =>
-	id.type === "Identifier" &&
-	init?.type === "FunctionExpression" &&
-	!init.id &&
-	!init.async &&
-	!init.generator
+	id.type === "Identifier" && !!init && isPlainFunction(init)
+
+// a function expression that neither names itself nor is async or a generator
+const isPlainFunction = (
+	node: Node
+): node is Node & { type: "FunctionExpression"; body: Node } =>
+	node.type === "FunctionExpression" &&
+	!node.id &&
+	!!node.body &&
+	!node.async &&
+	!node.generator
 
 // an Apply opens by checking data is an object, in a program of objects the text
 // it most repeats. Hot on a rejected call, V8 inlines each call as it read the text
@@ -1892,7 +1903,7 @@ const functionsAsArrows: UnitsPass = ({ code, program }, s) => {
 	for (const statement of program.body as Node[]) {
 		if (statement.type !== "VariableDeclaration") continue
 		for (const { init } of statement.declarations) {
-			if (init?.type !== "FunctionExpression" || init.id || !init.body) continue
+			if (!init || !isPlainFunction(init)) continue
 			let readsOwn = false
 			walk(init, node => {
 				if (
@@ -1902,7 +1913,7 @@ const functionsAsArrows: UnitsPass = ({ code, program }, s) => {
 					readsOwn = true
 				return !readsOwn
 			})
-			if (readsOwn || init.async || init.generator) continue
+			if (readsOwn) continue
 			s.overwrite(
 				init.start,
 				init.body.start,
@@ -1930,10 +1941,7 @@ const dropUnread: UnitsPass = ({ code, program, scopes }, s, body) => {
 		if (statement.type !== "VariableDeclaration") continue
 		const { declarations } = statement
 		const unread = declarations.map(declarator => {
-			const binding =
-				declarator.id.type === "Identifier" ?
-					scopes.bindingsById.get(declarator.id)
-				:	undefined
+			const binding = scopes.bindingsById.get(declarator.id)
 			if (
 				!binding ||
 				(declarator.init && !isPureExpression(declarator.init, code))
@@ -1997,10 +2005,7 @@ const inGzipOrder = (body: string): string => {
 		for (const declarator of statement.declarations) {
 			const text = `${statement.kind} ${textOf(declarator.start, declarator.end)}`
 			const { init } = declarator
-			if (
-				init?.type === "ArrowFunctionExpression" ||
-				init?.type === "FunctionExpression"
-			) {
+			if (init && isFunctionExpression(init)) {
 				functions.push([
 					body.slice(init.start, init.end).replace(unitName, "_"),
 					text

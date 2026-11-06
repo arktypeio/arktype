@@ -44,6 +44,13 @@ for (const data of [
 }
 console.log(User.allows({ name: "Ada", email: "ada@arktype.io" }))
 `,
+		"hashbang.ts": `#!/usr/bin/env node
+import { type } from "arktype"
+import { User } from "./types.ts"
+
+let Member = type({ user: User, rank: "number" })
+console.log(String(Member({ rank: 1 })))
+`,
 		// what a rewrite may import, as the React Compiler imports its runtime
 		"memo.ts": "export const memo = <t>(value: t): t => value\n"
 	},
@@ -316,6 +323,13 @@ export default Unread
 				js
 			)
 		attest(flat?.[1].includes("__PURE__")).equals(false)
+	})
+
+	it("keeps a hashbang first ahead of a creation it can't declare as an import", async () => {
+		const [js] = await bundle({}, { entryPoints: [join(root, "hashbang.ts")] })
+		attest(js.startsWith("#!/usr/bin/env node\n")).equals(true)
+		attest(run(js)).snap(`user must be an object
+`)
 	})
 
 	it("creates in the function a validator whose creator nothing else calls", async () => {

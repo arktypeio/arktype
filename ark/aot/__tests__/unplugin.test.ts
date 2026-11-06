@@ -3401,4 +3401,217 @@ try {
 			"pass a polyfilled builtin"
 		])
 	})
+
+	// TypeScript compiling to CommonJS requires each import where it stands,
+	// where a bundler reading ES modules would have hoisted it
+	describe("a loader compiling TypeScript to CommonJS", () => {
+		const transpiler = `const { createRequire } = require("node:module")
+const ts = createRequire(${JSON.stringify(fromHere("..", "package.json"))})("typescript-6")
+module.exports = source => ts.transpileModule(source, {
+	compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 }
+}).outputText
+`
+		const types = `import { type } from "arktype"
+export const U = type({ name: "string", "age?": "number" })
+`
+		const barreled = {
+			"package.json": `{ "type": "module", "sideEffects": false }`,
+			"types.ts": types,
+			"barrel.ts": `export * from "./types.ts"\n`
+		}
+		// has no arktype import, so what it bakes with is imported for it
+		const readsExpression = `import * as all from "./barrel.ts"
+console.log((all.U as any).expression)
+`
+		const readsErrors = `import { type } from "arktype"
+const out = type({ name: "string" })({ name: 1 })
+console.log(out instanceof type.errors, String(out))
+`
+		const programs: Record<
+			string,
+			[
+				files: Record<string, string>,
+				opts: PrecompileUnpluginOptions,
+				expected: string
+			]
+		> = {
+			"a namespace passed whole": [
+				{
+					...barreled,
+					"main.ts": `import * as all from "./barrel.ts"
+console.log(Object.keys(all), String((all.U as any)({ name: 1 })))
+`
+				},
+				{ prune: false },
+				"[ 'U' ] name must be a string\n"
+			],
+			"a namespace once it loads": [
+				{
+					...barreled,
+					"barrel.ts": `export { U } from "./types.ts"\n`,
+					"main.ts": `import("./barrel.ts").then(all => console.log(String((all.U as any)({ name: 1 }))))\n`
+				},
+				{ prune: false },
+				"name must be a string\n"
+			],
+			"an introspection member": [
+				{ ...barreled, "main.ts": readsExpression },
+				{},
+				"{ name: string, age?: number }\n"
+			],
+			"a namespace a barrel exports as a member": [
+				{
+					...barreled,
+					"barrel.ts": `export * as ns from "./types.ts"\n`,
+					"main.ts": `import { ns } from "./barrel.ts"
+console.log((ns.U as any).expression)
+`
+				},
+				{},
+				"{ name: string, age?: number }\n"
+			],
+			"a read above arktype's import": [
+				{
+					...barreled,
+					"main.ts": `${readsExpression}import { type } from "arktype"
+console.log(type({ a: "string" }).expression)
+`
+				},
+				{},
+				"{ name: string, age?: number }\n{ a: string }\n"
+			],
+			"a read above another import, which still loads after it": [
+				{
+					...barreled,
+					"other.ts": `console.log("other")\nexport const other = 1\n`,
+					"main.ts": `${readsExpression}import { other } from "./other.ts"\nconsole.log(other)\n`
+				},
+				{},
+				"{ name: string, age?: number }\nother\n1\n"
+			],
+			"imports split by types, which still load in order": [
+				{
+					...barreled,
+					"other.ts": `console.log("other")\nexport const other = 1\n`,
+					"main.ts": `type First = 1
+import * as all from "./barrel.ts"
+interface Second {}
+import { other } from "./other.ts"
+console.log((all.U as any).expression, other)
+`
+				},
+				{},
+				"other\n{ name: string, age?: number } 1\n"
+			],
+			"a directive, which stays first": [
+				{ ...barreled, "main.ts": `"use strict"\n${readsExpression}` },
+				{},
+				"{ name: string, age?: number }\n"
+			],
+			"a hashbang, which stays first": [
+				{ ...barreled, "main.ts": `#!/usr/bin/env node\n${readsExpression}` },
+				{},
+				"{ name: string, age?: number }\n"
+			],
+			"an input its site can't name": [
+				{
+					"suffix.ts": `export const suffix = "[]"\n`,
+					"helpers.ts": `import { suffix } from "./suffix.ts"
+export const list = (def: string) => def + suffix
+`,
+					"main.ts": `import { type } from "arktype"
+import { list } from "./helpers.ts"
+const L = type(list("string"))
+console.log(String(L(1)))
+`
+				},
+				{ prune: false },
+				"must be an array\n"
+			],
+			"a unit a size build links into a site": [
+				{
+					"a.ts": `import { type } from "arktype"
+export const A = type({ name: "string", "age?": "number" })
+export const a = A({ name: "a" })
+export const allowed = A.allows({ name: "b" })
+`,
+					"b.ts": `import { type } from "arktype"
+export const B = type({ title: "string", "n?": "number" })
+export const b = B({ title: "c" })
+`,
+					"c.ts": `import { type } from "arktype"
+import { A } from "./a.ts"
+export const C = type({ a: A, b: "boolean" })
+export const c = C({ a: { name: "d" }, b: true })
+export const unallowed = C.allows(1)
+`,
+					"main.ts": `import { A, a, allowed } from "./a.ts"
+import { B, b } from "./b.ts"
+import { C, c, unallowed } from "./c.ts"
+console.log(String(A({})), a, allowed, String(B({})), b, String(C({})), c, unallowed)
+`
+				},
+				{ preset: "smallest" },
+				"name must be a string { name: 'a' } true title must be a string { title: 'c' } a must be an object\nb must be boolean { a: { name: 'd' }, b: true } false\n"
+			],
+			"a read of type.errors, which reads the class it holds": [
+				{ "main.ts": readsErrors },
+				{},
+				"true name must be a string\n"
+			],
+			"a read of type.errors in a size build": [
+				{ "main.ts": readsErrors },
+				{ preset: "smallest" },
+				"true name must be a string\n"
+			],
+			"inlined modules, which load ahead of the code": [
+				{ ...barreled, "main.ts": readsExpression },
+				{ inline: true },
+				"{ name: string, age?: number }\n"
+			]
+		}
+		const compilers = {
+			webpack: [webpack, precompile.webpack],
+			Rspack: [rspack, precompile.rspack]
+		} as const
+		for (const name of Object.keys(compilers) as (keyof typeof compilers)[]) {
+			describe(name, () => {
+				for (const reads in programs) {
+					it(reads, async () => {
+						const [files, opts, expected] = programs[reads]
+						const root = writeFixture(
+							{ ...files, "transpile.cjs": transpiler },
+							fromHere("temp", "commonJsLoader", name, reads.replace(/ /g, "-"))
+						)
+						const [compile, plugin] = compilers[name]
+						const compiler = (compile as typeof webpack)({
+							mode: "production",
+							context: root,
+							entry: "./main.ts",
+							target: "node",
+							cache: false,
+							output: { path: join(root, "out"), filename: "main.cjs" },
+							module: {
+								rules: [{ test: /\.ts$/, loader: join(root, "transpile.cjs") }]
+							},
+							plugins: [plugin({ cwd: root, ...opts }) as never]
+						})
+						const stats = await new Promise<Stats | undefined>(
+							(resolve, reject) =>
+								compiler.run((error, stats) =>
+									compiler.close(() => (error ? reject(error) : resolve(stats)))
+								)
+						)
+						attest(stats?.toJson().errors).equals([])
+						const { stdout, stderr } = spawnSync(
+							process.execPath,
+							[join(root, "out", "main.cjs")],
+							{ encoding: "utf8" }
+						)
+						attest([stdout, stderr]).equals([expected, ""])
+					})
+				}
+			})
+		}
+	})
 })

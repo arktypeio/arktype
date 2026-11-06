@@ -1,10 +1,5 @@
 import { receiverPrefix } from "arktype/internal/standalone.ts"
-import type {
-	ImportDeclarationSpecifier,
-	Node,
-	Program,
-	Span
-} from "oxc-parser"
+import type { Node, Program, Span } from "oxc-parser"
 import { isFunctionNode, memberNameOf } from "./graph.ts"
 import type { SiteFactory } from "./fold.ts"
 import { parseCode, type SourceModule } from "./module.ts"
@@ -126,6 +121,9 @@ class UsageAnalysis {
 	private readExports = new Set<string>()
 	// e.g. `type.errors` in `out instanceof type.errors`
 	private errorsTests = new Set<Node>()
+	// each arktype export a module re-exports, as `name` re-exported `as`
+	private arkReexports: [runtime: RuntimeModule, as: string, name: string][] =
+		[]
 
 	constructor(program: UsageProgram) {
 		this.program = program
@@ -133,6 +131,8 @@ class UsageAnalysis {
 
 	analyze(): void {
 		for (const runtime of this.program.modules.values()) this.link(runtime)
+		for (const [runtime, as, name] of this.arkReexports)
+			this.readArkExport(runtime, as, name, new Set())
 		for (const runtime of this.program.modules.values()) {
 			if (runtime.holdsOther) {
 				escape(
@@ -147,6 +147,12 @@ class UsageAnalysis {
 	private link(runtime: RuntimeModule): void {
 		const { module } = runtime
 		const add = (specifier: string, edge: ImportEdge) => {
+			// e.g. `export * as ark from "arktype"`, whose errors class is read unfollowed
+			if (
+				(edge.kind === "whole" || edge.kind === "star") &&
+				isArkSpecifier(specifier)
+			)
+				this.used.add("errors")
 			const id = this.program.resolve(specifier, module.id)
 			if (id === undefined) return
 			const edges = this.edgesByTarget.get(id)
@@ -163,8 +169,15 @@ class UsageAnalysis {
 					)
 						continue
 					const binding = module.scopes.bindingsById.get(specifier.local)!
-					if (isArkSpecifier(statement.source.value))
-						this.readArkImport(specifier, binding, runtime)
+					if (isArkSpecifier(statement.source.value)) {
+						this.readArkImport(
+							specifier.type === "ImportSpecifier" ?
+								exportNameOf(specifier.imported)
+							:	undefined,
+							binding,
+							runtime
+						)
+					}
 					add(
 						statement.source.value,
 						specifier.type === "ImportNamespaceSpecifier" ?
@@ -184,6 +197,13 @@ class UsageAnalysis {
 				if (!statement.source || statement.exportKind === "type") continue
 				for (const specifier of statement.specifiers) {
 					if (specifier.exportKind === "type") continue
+					if (isArkSpecifier(statement.source.value)) {
+						this.arkReexports.push([
+							runtime,
+							exportNameOf(specifier.exported),
+							exportNameOf(specifier.local)
+						])
+					}
 					add(statement.source.value, {
 						kind: "reexport",
 						name: exportNameOf(specifier.local),
@@ -273,16 +293,51 @@ class UsageAnalysis {
 		})
 	}
 
-	// arktype's export, as what it may hand a program of the errors class
+	// arktype's export `name` re-exported as `as`, read where it's imported
+	private readArkExport(
+		runtime: RuntimeModule,
+		as: string,
+		name: string,
+		seen: Set<string>
+	): void {
+		const { id } = runtime.module
+		const key = `${id}\0${as}`
+		if (seen.has(key)) return
+		seen.add(key)
+		// code outside the bundle may read it
+		if (this.program.entries.has(id) || this.program.exposed.has(id))
+			this.used.add("errors")
+		for (const edge of this.edgesByTarget.get(id) ?? []) {
+			switch (edge.kind) {
+				case "named":
+					if (edge.name === as)
+						this.readArkImport(name, edge.binding, edge.importer)
+					break
+				case "reexport":
+					if (edge.name === as)
+						this.readArkExport(edge.importer, edge.as, name, seen)
+					break
+				case "star":
+					if (as !== "default")
+						this.readArkExport(edge.importer, as, name, seen)
+					break
+				case "input":
+					if (edge.name === as) this.used.add("errors")
+					break
+				// what reads a namespace or a whole module isn't followed
+				default:
+					this.used.add("errors")
+			}
+		}
+	}
+
+	// arktype's export, as what it may hand a program of the errors class, or
+	// undefined for its default or namespace
 	private readArkImport(
-		specifier: ImportDeclarationSpecifier,
+		name: string | undefined,
 		binding: Binding,
 		runtime: RuntimeModule
 	): void {
-		const name =
-			specifier.type === "ImportSpecifier" ?
-				exportNameOf(specifier.imported)
-			:	undefined
 		if (name !== "type" && name !== "ArkErrors") {
 			this.used.add("errors")
 			return

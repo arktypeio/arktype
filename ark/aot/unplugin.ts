@@ -1,4 +1,4 @@
-import { throwError, type KeySet } from "@ark/util"
+import { flatMorph, throwError, type KeySet } from "@ark/util"
 import {
 	existsSync,
 	mkdirSync,
@@ -85,6 +85,7 @@ import {
 	scanProgram,
 	unfoldedCallProblemOf,
 	unreadBuiltOf,
+	unreadDefineOf,
 	unseenProblemOf,
 	writeUnseenMessage,
 	writeUnprunedMessage,
@@ -639,11 +640,13 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		const warn = (warning: string) =>
 			compilation.warnings.push(new bundler.webpack.WebpackError(warning))
 		const resolve = compilerResolveOf(bundler)
-		const program = programAsBuilt(
-			`${++scans}`,
-			builtEntriesOf(compilation, read, isTransformedId),
-			{ isTransformed: isTransformedId, cwd: realCwd() }
-		)
+		const program =
+			definedProblemOf(bundler) ??
+			programAsBuilt(
+				`${++scans}`,
+				builtEntriesOf(compilation, read, isTransformedId),
+				{ isTransformed: isTransformedId, cwd: realCwd() }
+			)
 		const usage =
 			typeof program === "string" ?
 				writeUnprunedMessage(program)
@@ -814,6 +817,14 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		if (key) declarationsByApp.set(key, declarations)
 		return declarations
 	}
+	// what Vite or Rolldown write of their own, past each plugin's transform
+	let definedByBundler: Record<string, unknown> | undefined
+	// once, though each of an app's environments may find it
+	const warnOnce = (context: RollupContext, warning: string) => {
+		if (warnedOfScans.has(warning)) return
+		warnedOfScans.add(warning)
+		context.warn(warning)
+	}
 	// a production build reads the bundle from the first module it transforms
 	function rollupBuildStart(
 		this: RollupContext,
@@ -828,6 +839,8 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		pendingScans.delete(build)
 		othersByBuild.delete(build)
 		if (isServing || !prunesIn(!!environment?.production)) return
+		const unread = unreadDefineOf(definedByBundler)
+		if (unread) return warnOnce(this, writeUnprunedMessage(unread))
 		othersByBuild.set(build, new Map())
 		pendingScans.set(build, {
 			inputs: Object.values(options.input),
@@ -1417,6 +1430,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			},
 			// a factory checks its helpers against what Vitest's mocks replace
 			configResolved: config => {
+				// a value other than a string is written as JSON
+				definedByBundler = flatMorph(config.define ?? {}, (key, value) =>
+					typeof value === "string" ? [key, value] : []
+				)
 				const own = config.plugins.findIndex(({ name }) => name === "arktype")
 				if (
 					config.plugins.findIndex(({ name }) => name === tanstackSplitter) >
@@ -1487,12 +1504,8 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				)
 				if (problem) throwBuildError(problem)
 			}
-			// once, though each of an app's environments may find it
-			for (const warning of pendingScans.get(buildOf(this))?.warnings ?? []) {
-				if (error || warnedOfScans.has(warning)) continue
-				warnedOfScans.add(warning)
-				;(this as never as RollupContext).warn(warning)
-			}
+			for (const warning of pendingScans.get(buildOf(this))?.warnings ?? [])
+				if (!error) warnOnce(this as never, warning)
 			const scan = scansByBuild.get(buildOf(this))
 			// a read it didn't see may need what it left out, or a copy of a
 			// unit it declares in one function
@@ -1592,7 +1605,13 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			buildStart: rollupBuildStart,
 			shouldTransformCachedModule
 		},
-		rolldown: { options: checkInputExternal, buildStart: rollupBuildStart },
+		rolldown: {
+			options(options) {
+				definedByBundler = options.transform?.define
+				checkInputExternal.call(this, options as never)
+			},
+			buildStart: rollupBuildStart
+		},
 		bun: {
 			setup: build => {
 				const { conditions, external = [] } = build.config
@@ -1631,11 +1650,19 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				const isLast = plugins[plugins.length - 1]?.name === "arktype"
 				if (opts?.prune === true && !isLast)
 					throwBuildError(pruneBeforePluginMessage)
+				const unread = unreadDefineOf(build.initialOptions.define)
 				const program =
-					prunesIn(production) && isLast ? `${++scans}` : undefined
-				if (prunesIn(production) && !isLast) {
+					prunesIn(production) && isLast && !unread ? `${++scans}` : undefined
+				if (prunesIn(production) && (!isLast || unread)) {
 					build.onStart(() => ({
-						warnings: [{ text: writeUnprunedMessage(...unprunedBeforePlugin) }]
+						warnings: [
+							{
+								text:
+									unread ?
+										writeUnprunedMessage(unread)
+									:	writeUnprunedMessage(...unprunedBeforePlugin)
+							}
+						]
 					}))
 				}
 				const cwd = build.initialOptions.absWorkingDir ?? process.cwd()
@@ -1703,9 +1730,9 @@ interface BundleScan {
 	issues: IssueFeatures | undefined
 }
 
-// what a webpack or Rspack compilation has read of the modules it built
 const pluginName = "arktype"
 
+// what a webpack or Rspack compilation has read of the modules it built
 interface BuiltRead {
 	// each transformed module as it reached the plugin
 	loaded: LoadedSources
@@ -1743,6 +1770,13 @@ interface BuiltBundlerModule extends BuiltBlock {
 	loaders?: { loader: string; ident?: string }[]
 }
 
+interface DefinePluginLike {
+	definitions?: Record<string, unknown>
+	name?: string
+	_args?: Record<string, unknown>[]
+	constructor?: { name: string }
+}
+
 interface BuiltDependency {
 	request?: string | undefined
 	// webpack's, each undefined on Rspack: what a re-export exports
@@ -1759,6 +1793,20 @@ const builtIdOf = (module: BuiltBundlerModule): string | undefined => {
 	if (!resource || !isAbsolute(resource) || !isScriptModule(module)) return
 	const file = fileOf(resource)
 	return isAsset(file) ? undefined : file
+}
+
+// webpack's DefinePlugin holds its definitions, and Rspack's its arguments
+const definedProblemOf = ({ options }: BundlerCompiler) => {
+	for (const plugin of options.plugins ?? []) {
+		const { definitions, name, _args, constructor } = (plugin ??
+			{}) as DefinePluginLike
+		// by name, as a config may construct it from another copy of webpack,
+		// and not ProvidePlugin, which holds definitions of imports
+		if (constructor?.name !== "DefinePlugin" && name !== "DefinePlugin")
+			continue
+		const problem = unreadDefineOf(definitions ?? _args?.[0])
+		if (problem) return problem
+	}
 }
 
 // webpack leaves a side-effect-free module's re-exports unbuilt until a module
@@ -1865,7 +1913,9 @@ const builtEntriesOf = (
 				: module.originalSource?.()?.source().toString(),
 			transformed,
 			mappings: id && read.mappings.get(id),
-			imports: []
+			imports: [],
+			built:
+				transformed ? module.originalSource?.()?.source().toString() : undefined
 		}
 		built.set(module, of)
 		unbuilt.push([module, of])
@@ -2500,6 +2550,7 @@ interface BundlerCompiler {
 			| { type?: string; version?: string | undefined }
 			| undefined
 		mode?: string | undefined
+		plugins?: unknown[]
 	}
 	hooks: {
 		compilation: Tap<BundlerCompilation>
