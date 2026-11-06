@@ -140,7 +140,9 @@ const handoffProbes: Record<string, Record<string, string>> = {
 	}
 }
 
-// what can fail, unions among them, and data each fails differently
+// what can fail, unions among them, and data each fails differently. None
+// reads a callback's ctx or morphs, either of which keeps the errors whole for
+// the whole program
 const failing = [
 	`type({ a: "string", b: "number" })`,
 	`type({ a: "string | null" })`,
@@ -149,10 +151,16 @@ const failing = [
 	`type({ kind: "'a'", x: "string" }).or({ kind: "'b'", y: "number" })`,
 	`type({ nested: { deep: "string.email | null" } })`,
 	`type("(string | number)[]")`,
-	`type({ a: "string | number" }).pipe(o => o)`,
-	`type("string.numeric.parse | number")`,
-	`type({ a: "number | null" }).narrow((o, ctx) => o.a !== 5 || ctx.reject("not five"))`
+	`type({ a: "number | null" }).narrow(o => o.a !== 5)`
 ]
+
+// what keeps errors whole, each in a program of its own
+const wholeKeeping: Record<string, string> = {
+	piped: `type({ a: "string | number" }).pipe(o => o)`,
+	morphed: `type("string.numeric.parse | number")`
+}
+
+const ctxNarrow = `type({ a: "number | null" }).narrow((o, ctx) => o.a !== 5 || ctx.reject("not five"))`
 
 const inputs = [
 	`{}`,
@@ -196,7 +204,8 @@ const errorReads: Record<string, string> = {
 	imported: `observations.push(out instanceof ArkErrors ? out.summary : "ok")`,
 	logger: `observations.push(out instanceof type.errors ? log(out) : "ok")`,
 	held: `results.push(out)\nobservations.push(readHeld())`,
-	message: `observations.push(out instanceof type.errors ? (out as any).message : "ok")`
+	message: `observations.push(out instanceof type.errors ? (out as any).message : "ok")`,
+	constructed: `observations.push(String(new type.errors()), String(new ArkErrors()))`
 }
 
 const errorProbes = Object.fromEntries(
@@ -285,7 +294,8 @@ const errorBarrelReads: Record<string, string> = {
 	summary: `observations.push(out instanceof ERRORS ? out.summary : "ok")`,
 	string: `observations.push(out instanceof ERRORS ? String(out) : "ok")`,
 	issues: `observations.push(out instanceof ERRORS ? out.issues.map((i: any) => i.message) : "ok")`,
-	constructed: `observations.push(String(new (ERRORS as any)()))`
+	constructed: `observations.push(String(new ERRORS()))`,
+	printed: `observations.push(out instanceof ERRORS ? out.toString() : "ok")`
 }
 
 const barrelProbes = Object.fromEntries(
@@ -362,10 +372,27 @@ const documentedText = (text: string): unknown => {
 		:	text
 }
 
+const ctxProbes = Object.fromEntries(
+	Object.entries({ ...wholeKeeping, "ctx narrow": ctxNarrow }).map(
+		([name, def]) => [
+			`errors ${name}`,
+			{
+				"main.ts": `import { type } from "arktype"
+
+const T = ${def}
+${observing}
+${inputs.map(input => `observe(() => { const out = T(${input} as any); return out instanceof type.errors ? [out.summary, out.issues.map(i => i.message)] : "ok" })`).join("\n")}
+${printing}`
+			}
+		]
+	)
+)
+
 export const probes: Record<string, Record<string, string>> = {
 	...identityProbes,
 	...handoffProbes,
 	...errorProbes,
 	...wholeProbes,
-	...barrelProbes
+	...barrelProbes,
+	...ctxProbes
 }
