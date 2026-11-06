@@ -53,6 +53,8 @@ const twinsIn = (prefix: string, exported = true) =>
 // each compares A with B however code can, where $A and $B are the two
 const comparisons: Record<string, string> = {
 	strict: `$A === $B`,
+	strictThenMember: `[$A === $B, $B.expression]`,
+	objectIsThenMember: `[Object.is($A, $B), $A.description]`,
 	set: `new Set([$A, $B]).size`,
 	mapKey: `new Map<unknown, number>([[$A, 1]]).get($B)`,
 	includes: `[$A].includes($B)`,
