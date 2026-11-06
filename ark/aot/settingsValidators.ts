@@ -331,32 +331,30 @@ var failsValue = (ctx, checker, data, k, value) =>
 				:	checker(value))) &&
 			ctx._in(checker, data, k)
 	:	!checker(value)
-var failsProps = (declared, data, ctx) => {
-	for (const k in declared) {
-		const value = data[k]
-		if (
-			value === void 0 && !(k in data) ?
-				!declared[k].o &&
-				failsAt(ctx, requiredSiteOf(declared[k].description), data, k)
-			:	failsValue(ctx, declared[k], data, k, value)
-		)
-			return true
-	}
-	return false
-}
 var props = declared => {
-	const checker = (data, ctx) =>
-		objectCheck.test(data) ?
-			!failsProps(declared, data, ctx)
-		:	!failsAt(ctx, objectCheck, data)
+	const checker = (data, ctx) => {
+		if (!objectCheck.test(data)) return !failsAt(ctx, objectCheck, data)
+		for (const k in declared) {
+			const value = data[k]
+			if (
+				value === void 0 && !(k in data) ?
+					!declared[k].o &&
+					failsAt(ctx, requiredSiteOf(declared[k].description), data, k)
+				:	failsValue(ctx, declared[k], data, k, value)
+			)
+				return false
+		}
+		return true
+	}
 	checker.description = objectCheck.description
 	return checker
 }
 var closedProps = (declared, description = "removed") => {
 	const removed = siteOf("undeclared", description)
+	const walks = props(declared)
 	const checker = (data, ctx) => {
 		if (!objectCheck.test(data)) return !failsAt(ctx, objectCheck, data)
-		if (failsProps(declared, data, ctx)) return false
+		if (!walks(data, ctx)) return false
 		for (const k in data) {
 			if (
 				!hasOwn(declared, k) &&
