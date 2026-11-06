@@ -124,6 +124,7 @@ import {
 	contains,
 	declarationStartOf,
 	initializedOf,
+	isDeferred,
 	errorReaders,
 	importsValues,
 	isArk,
@@ -2971,9 +2972,10 @@ export class Precompiler {
 
 	// a size build creates a module's validators as their module loads, where
 	// a site would run once all its imports had, one of which may load the
-	// config module, or once a function runs, after any module of its program
-	// may have. So it loads it ahead of them, if the site would run after it, as
-	// one creating as its module loads ahead of it throws as arktype does
+	// config module, or once something calls it, after any module of its
+	// program may have. So it loads it ahead of them, if every site would run
+	// after it, as one creating as its module loads ahead of it throws as
+	// arktype does
 	private configFirstOf(
 		module: SourceModule,
 		program: ScannedProgram | undefined
@@ -2990,9 +2992,7 @@ export class Precompiler {
 			this.importClosureOf(module.id).includes(config) ||
 			(!!program &&
 				config in program.modules &&
-				this.analysisOf(module).sites.some(
-					site => site.declarationStart === undefined
-				))
+				this.analysisOf(module).sites.every(site => site.deferred))
 		return isLoaded ? specifierOf(module.id, config) : undefined
 	}
 
@@ -5665,6 +5665,7 @@ export class Precompiler {
 			defaultChecks: [],
 			aliases: [],
 			declarationStart: declarationStartOf(node),
+			deferred: isDeferred(node),
 			initializes: !!initializedOf(node),
 			introspection: undefined,
 			unavailableRead: undefined,
@@ -6348,8 +6349,7 @@ export class Precompiler {
 			this.isTransformed(id) &&
 			this.importsArk(module.source, id) &&
 			this.analysisOf(module).sites.some(
-				site =>
-					site.status === "accepted" && site.declarationStart !== undefined
+				site => site.status === "accepted" && !site.deferred
 			)
 		)
 	}

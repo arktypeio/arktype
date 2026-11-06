@@ -3198,10 +3198,11 @@ export const U = make()
 	})
 
 	describe("a size build's validators, created as their module loads", () => {
-		const types = Array.from(
+		const list = Array.from(
 			{ length: 24 },
 			(_, i) => `type({ "a${i}?": "string", b${i}: "number" })`
-		).join(", ")
+		)
+		const types = list.join(", ")
 		const config =
 			'import { configure } from "arktype/config"\n\nconfigure({ exactOptionalPropertyTypes: false })\n'
 		const read = "all[0]({ a0: undefined, b0: 1 }).a0"
@@ -3293,6 +3294,53 @@ export const U = make()
 					true
 				)
 			).snap("lib.ts creates a Type before configure() runs")
+		})
+
+		it("fail where the program loads it after a module creating as it loads, whatever the statement", async () => {
+			// none a declaration's first site
+			const atLoad = {
+				element: `export const all = [${types}]`,
+				declarator: `${list.map((t, i) => `export const X${i} = 1, T${i} = ${t}`).join("\n")}\nexport const all = [T0]`,
+				// beside sites in a function, which alone would run once it's called
+				exported: `export default ${list[0]}\nexport const make = () => [${list.slice(1)}]`,
+				// holding no Type the build reads, so what imports it isn't checked
+				statement: `export const all: unknown[] = []\n${list.map(t => `all.push(${t})`).join("\n")}`
+			}
+			const results: Record<string, (string | undefined)[]> = {}
+			for (const [name, lib] of Object.entries(atLoad)) {
+				const filesOf = (specifier: string) => ({
+					"config.ts": config,
+					"lib.ts": `import { type } from "arktype"\n\n${lib}\n`,
+					"main.ts": `import * as lib from "${specifier}"\nimport "./config.ts"\n\nconst all = lib.all ?? [lib.default]\n\nconsole.log(${read})\n`
+				})
+				results[name] = [
+					// as it loads, through an import whose order the build can't read
+					await run(`unseen-${name}`, filesOf("./lib.ts?v=1"), true),
+					// as R3 where it can
+					await run(`seen-${name}`, filesOf("./lib.ts"), true).catch(
+						(e: { errors: { text: string }[] }) =>
+							e.errors[0].text.split("\n")[0]
+					)
+				]
+			}
+			attest(results).snap({
+				element: [
+					"lib.ts creates a Type before configure() runs",
+					'main.ts:1:1  import * as lib from "./lib.ts" loads lib.ts, which creates a Type, before the config module config.ts runs configure()'
+				],
+				declarator: [
+					"lib.ts creates a Type before configure() runs",
+					'main.ts:1:1  import * as lib from "./lib.ts" loads lib.ts, which creates a Type, before the config module config.ts runs configure()'
+				],
+				exported: [
+					"lib.ts creates a Type before configure() runs",
+					'main.ts:1:1  import * as lib from "./lib.ts" loads lib.ts, which creates a Type, before the config module config.ts runs configure()'
+				],
+				statement: [
+					"lib.ts creates a Type before configure() runs",
+					"lib.ts creates a Type before configure() runs"
+				]
+			})
 		})
 
 		it("fail as arktype does where nothing imports the config module", async () => {
