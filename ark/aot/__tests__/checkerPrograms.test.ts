@@ -212,6 +212,16 @@ run(() => T({ b: 1 }))`,
 ${discRows("T", '{ ok: "true", a: "x" }')}
 run(() => T({ ok: "false", b: 1 }))
 run(() => T({ ok: true, a: "x" }))`,
+	discEscaped: `const T = type({ kind: type.unit('a"b'), x: "string" }).or({ kind: type.unit("c\\\\d"), y: "number" }).or({ kind: type.unit("e\\nf"), z: "boolean" })
+run(() => T({ kind: 'a"b', x: "s" }))
+run(() => T({ kind: "c\\\\d", y: 1 }))
+run(() => T({ kind: "e\\nf", z: true }))
+run(() => T({ kind: 'a"b', x: 1 }))
+run(() => T({ kind: "q" }))
+run(() => T.allows({ kind: 'a"b', x: "s" }))
+run(() => T.allows({ kind: "c\\\\d", y: 1 }))
+run(() => T.allows({ kind: "e\\nf", z: true }))
+${repaying}`,
 	indexPlain: `const T = type({ "[string]": "number" })
 ${indexRows("T")}`,
 	indexSymbol: `const T = type({ "[symbol]": "number" })
@@ -1039,6 +1049,7 @@ const themes: Record<string, [marker: string, names: string[]]> = {
 			"discBoolString",
 			"discBoolMissing",
 			"discStringTrue",
+			"discEscaped",
 			"indexPlain",
 			"indexSymbol",
 			"indexPattern",

@@ -255,7 +255,7 @@ const discriminatedOf = (node: UnionNode): Cases | undefined => {
 			return
 		const pruned = discriminant.cases[k]
 		// a case's checker doesn't check the key again, unless it can't be one
-		cases[k.replace(/^"|"$/g, "")] =
+		cases[areBooleans ? k : value] =
 			pruned === true || combines(pruned) ?
 				pruned
 			:	unprunedOf(
