@@ -81,18 +81,14 @@ class ReadIssues implements FailureContext {
 	}
 }
 
-const SummarizedIssues: new () => ReadIssues & { readonly summary: string } =
-	readsSummary ?
-		class extends ReadIssues {
+// one class where errors are read, as they read the summary too
+const Issues: new () => Issues = (
+	readsErrors ?
+		class ArkErrors extends ReadIssues {
 			get summary(): string {
 				return this.issues.map(issue => issue.message).join("\n")
 			}
-		}
-	:	(ReadIssues as never)
 
-const Issues: new () => Issues = (
-	readsErrors ?
-		class ArkErrors extends SummarizedIssues {
 			throw(): never {
 				throw new ThrownIssues(this as never)
 			}
@@ -105,7 +101,13 @@ const Issues: new () => Issues = (
 				return this.summary
 			}
 		}
-	:	SummarizedIssues) as never
+	: readsSummary ?
+		class extends ReadIssues {
+			get summary(): string {
+				return this.issues.map(issue => issue.message).join("\n")
+			}
+		}
+	:	ReadIssues) as never
 
 interface Issues extends ReadIssues {
 	/**
