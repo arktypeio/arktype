@@ -44,6 +44,7 @@ import {
 	defaultMembers,
 	holdsDefaults,
 	holdsObjectMeta,
+	holeNameIn,
 	holeNamePattern,
 	introspectionMembers,
 	isPlainLiteral,
@@ -5790,10 +5791,12 @@ export class Precompiler {
 		const { state } = candidate
 		const introspected = site.introspection?.type
 		for (const read of state.trace.reads) {
-			// introspection needs the Type only where a mock can replace it
+			// introspection needs the Type only where a mock can replace it or it
+			// prints a hole's name, which the Type's site sets or holds
 			if (
 				read.value === introspected &&
 				!read.path.length &&
+				holeNameIn(site.value) === undefined &&
 				!this.checkHelpers &&
 				!this.interpreter.isCheckedAtCreation(introspected, state.trace) &&
 				this.isInertRead(
