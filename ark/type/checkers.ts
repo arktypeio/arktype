@@ -705,7 +705,7 @@ const holdsValue = (checker: Checker, data: any, k: string): boolean =>
 
 // what a parent's t passes each value through, where one can fail
 interface WrittenValues {
-	transformed(checker: Checker, value: unknown, k: PropertyKey): unknown
+	transformed(t: Transform, value: unknown, k: PropertyKey): unknown
 	failed(): unknown
 	defaulted(write: DefaultWrite, out: any): void
 }
@@ -758,7 +758,7 @@ const writtenValues = (
 			continue
 		}
 		if (!checker.t) continue
-		const value = values.transformed(checker, data[k], k)
+		const value = values.transformed(checker.t, data[k], k)
 		if (Object.is(value, data[k])) continue
 		if (out === data) out = copyOf(data)
 		out[k] = value
@@ -873,7 +873,7 @@ export const failingDeletingProps = ((
 			for (const k in declared) {
 				const { t, d: defaulted, w } = declared[k]
 				if (holdsValue(declared[k], data, k))
-					result[k] = t ? values.transformed(declared[k], data[k], k) : data[k]
+					result[k] = t ? values.transformed(t, data[k], k) : data[k]
 				else if (defaulted?.length) result[k] = defaulted[0]
 				// holds its place among the keys, as each transform runs before it's written
 				else if (w) {
@@ -896,67 +896,74 @@ export const failingDeletingProps = ((
 	return checker
 }) satisfies Fn
 
+// what a shape's own text writes, where a transform can fail reading each
+// value through values
 type SitedWrite = (
 	data: any,
 	checkers: readonly Checker[],
-	value: (checker: Checker, value: unknown, k: string) => unknown,
-	defaults: number[]
+	values: WrittenValues | undefined,
+	copy: (data: any) => any
 ) => any
 
-// a shape of many keys that may be absent, reading each at a site of its own, as
-// one site reading them all finds each absent key by a generic lookup. Only what
-// looks for issues in data that failed still takes that site
+// a shape of many keys that may be absent, or whose transform can fail, reading
+// and writing each at a site of its own, as one site reading them all finds each
+// by a generic lookup. Only what looks for issues in data that failed still takes
+// that site
 export const sited = ((
 	allows: (data: any, checkers: readonly Checker[]) => boolean,
 	declared: Props,
-	// writes the keys it declares, where it deletes those it doesn't
 	write: SitedWrite | 0,
-	// 1 where it transforms, 2 where a transform can fail
-	writes: 0 | 1 | 2,
+	// 1 where it transforms, 2 where a transform can fail, 3 and 4 where it
+	// also deletes the keys it doesn't declare
+	writes: 0 | 1 | 2 | 3 | 4,
 	removed?: string,
 	withCtx?: 1
 ): Checker => {
 	const checkers = Object.values(declared)
 	const walks = removed ? closedProps(declared, removed) : props(declared)
-	const checker: Checker = (data: any, ctx: any) => {
-		if (ctx?._at || !objectCheck.test(data)) return walks(data, ctx)
-		if (!allows(data, checkers)) return false
-		if (removed) {
-			for (const k in data)
-				if (!hasOwn(declared, k) && hasOwn(data, k)) return false
-		}
-		return true
-	}
+	const checker: Checker = (data: any, ctx: any) =>
+		!objectCheck.test(data) ? !failsAt(ctx as never, objectCheck, data)
+		: ctx?._at ? walks(data, ctx)
+		: allows(data, checkers)
 	checker.description = objectCheck.description
+	if (!write) return checker
 	const changing = changingIn(declared)
-	const copied = (data: any, values?: WrittenValues) =>
-		values ?
-			writtenValues(declared, changing, data, values)
-		:	writtenProps(declared, changing, data)
-	const written =
-		write ?
-			(data: any, values?: WrittenValues) => {
-				if (Object.getPrototypeOf(data) !== Object.prototype)
-					return deletes(declared, data, copied(data, values))
-				const defaults: number[] = []
-				const result = write(
-					data,
-					checkers,
-					values ?
-						(checker, value, k) =>
-							checker.t ? values.transformed(checker, value, k) : value
-					:	({ t }, value) => (t ? t(value) : value),
-					defaults
-				)
-				if (defaults.length && !values!.failed())
-					for (const i of defaults) values!.defaulted(checkers[i].w!, result)
-				return result
-			}
-		:	copied
+	const written = (data: any, values?: WrittenValues) => {
+		// an instance is copied, keeping its prototype
+		if (writes > 2) {
+			return Object.getPrototypeOf(data) === Object.prototype ?
+					write(data, checkers, values, copyOf)
+				:	deletes(
+						declared,
+						data,
+						values ?
+							writtenValues(declared, changing, data, values)
+						:	writtenProps(declared, changing, data)
+					)
+		}
+		const out = write(data, checkers, values, copyOf)
+		// where data's copied, each key it declares that the copy lacks
+		if (out !== data)
+			for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
+		return out
+	}
 	checker.t =
-		writes === 2 ? failingValues(written, checkers, withCtx)
-		: writes ? data => written(data)
-		: undefined
+		writes % 2 ?
+			data => written(data)
+			// a t of its own, calling only what a shape writes, where failingValues'
+			// calls whatever any transform that can fail does
+		:	readingValues(
+				(data, ctx) => {
+					const values = writtenFor(ctx)
+					try {
+						return values.resolved(data, written(data, values))
+					} finally {
+						freed(values)
+					}
+				},
+				checkers,
+				withCtx
+			)
 	return checker
 }) satisfies Fn
 
@@ -983,13 +990,13 @@ export const transformingElementsOf = ((element: Checker): Checker => {
 	return checker
 }) satisfies Fn
 
-export const failingElementsOf = ((element: Checker, withCtx?: 1): Checker => {
-	const checker = elementsOf(element)
-	checker.t = failingValues(
+const failingElements = (element: Checker, withCtx?: 1): Transform =>
+	failingValues(
 		(data, values) => {
 			let out = data
+			const { t } = element
 			for (let i = 0; i < data.length; i++) {
-				const value = values.transformed(element, data[i], i)
+				const value = values.transformed(t!, data[i], i)
 				if (Object.is(value, data[i])) continue
 				if (out === data) out = copyOf(data)
 				out[i] = value
@@ -997,8 +1004,25 @@ export const failingElementsOf = ((element: Checker, withCtx?: 1): Checker => {
 			return out
 		},
 		[element],
-		withCtx
+		withCtx,
+		1
 	)
+
+export const failingElementsOf = ((element: Checker, withCtx?: 1): Checker => {
+	const checker = elementsOf(element)
+	checker.t = failingElements(element, withCtx)
+	return checker
+}) satisfies Fn
+
+// an array of element, which may fail to transform
+export const failingArrayOf = ((
+	element: Checker,
+	max?: number,
+	min?: number,
+	withCtx?: 1
+): Checker => {
+	const checker = arrayOf(element, max, min)
+	checker.t = failingElements(element, withCtx)
 	return checker
 }) satisfies Fn
 
@@ -1007,9 +1031,9 @@ export const failingElementsOf = ((element: Checker, withCtx?: 1): Checker => {
 class Written implements WrittenValues {
 	declare gathered: TransformErrors | undefined
 	declare ctx: any
-	declare issues: number
+	declare issues: number | undefined
 
-	constructor(ctx: any) {
+	constructor(ctx?: any) {
 		this.ctx = ctx
 		this.issues = ctx?.errN
 		this.gathered = undefined
@@ -1021,17 +1045,22 @@ class Written implements WrittenValues {
 	}
 
 	failed() {
-		return this.gathered ?? this.ctx?.errN > this.issues
+		return this.gathered ?? this.ctx?.errN > this.issues!
 	}
 
-	transformed({ t }: Checker, value: unknown, k: PropertyKey) {
+	// what a t returns of out where a value failed: with no ctx, what failed
+	resolved(data: unknown, out: unknown) {
+		return this.gathered ?? (this.ctx?.errN > this.issues! ? data : out)
+	}
+
+	transformed(t: Transform, value: unknown, k: PropertyKey) {
 		let result
-		if (t!.c) {
+		if (t.c) {
 			this.ctx.path.push(k)
-			result = t!(value, this.ctx)
+			result = t(value, this.ctx)
 			this.ctx.path.pop()
-		} else result = t!(value)
-		if (!(result instanceof TransformErrors)) return result
+		} else result = t(value)
+		if (result === value || !(result instanceof TransformErrors)) return result
 		this.gather(result, k)
 		return value
 	}
@@ -1042,20 +1071,53 @@ class Written implements WrittenValues {
 	}
 }
 
-const failingValues = (
-	write: WritesValues,
-	held: readonly Checker[],
-	withCtx?: 1
-): Transform => {
-	const t: Transform = (data, ctx) => {
-		const values = new Written(ctx)
-		const out = write(data, values)
-		return values.failed() ? (values.gathered ?? data) : out
-	}
-	// what holds an alias transforms with a ctx, whichever value transforms
+// a transform's Written: where there's no ctx, one for each depth of those
+// running within one another, so a call allocates none. One with a ctx is new,
+// as writing a ctx just created into an old Written costs more. Each t frees its
+// own in a finally, as a value's morph may throw
+const writtenAtDepth: Written[] = []
+let depth = 0
+
+const writtenFor = (ctx: any): Written => {
+	if (ctx) return new Written(ctx)
+	const values = (writtenAtDepth[depth] ??= new Written())
+	depth++
+	return values
+}
+
+// holding nothing it gathered while it's free
+const freed = (values: Written) => {
+	if (values.ctx) return
+	depth--
+	values.gathered = undefined
+}
+
+// what holds an alias transforms with a ctx, whichever value transforms
+const readingValues = (t: Transform, held: readonly Checker[], withCtx?: 1) => {
 	if (withCtx || held.some(({ w }) => w?.length === 2)) t.c = 1
 	return holdingMorphs(t, held)
 }
+
+const failingValues = (
+	write: WritesValues,
+	held: readonly Checker[],
+	withCtx?: 1,
+	// 1 where it writes an array's elements, which an empty one has none of
+	elements?: 1
+): Transform =>
+	readingValues(
+		(data, ctx) => {
+			if (elements && !data.length) return data
+			const values = writtenFor(ctx)
+			try {
+				return values.resolved(data, write(data, values))
+			} finally {
+				freed(values)
+			}
+		},
+		held,
+		withCtx
+	)
 
 // only transforming a value Apply finds valid finds its morphs' errors
 const applyMorphAt: ApplyAt = (ctx, checker, value, k) => {
@@ -1103,11 +1165,16 @@ export const morphing = ((
 ): Checker => {
 	const checker: Checker = (data, ctx) => !head || head(data, ctx)
 	if (head) checker.description = head.description
+	// read once, as a t reading them of whichever morph it is finds each by a
+	// generic lookup
+	const headT = head ? head.t : undefined
+	const headReadsCtx = headT?.c
+	const pipes = steps.map(step => step.p)
 	const t: Transform = (data, ctx) => {
 		let result = data
-		if (head && head.t) {
+		if (headT) {
 			const issues = ctx?.errN
-			result = transformedBy(head, data, ctx)
+			result = headReadsCtx ? headT(data, ctx) : headT(data)
 			if (result instanceof TransformErrors) {
 				if (!ctx) return result
 				addMorphErrs(ctx, result)
@@ -1115,10 +1182,11 @@ export const morphing = ((
 			}
 			if (ctx?.errN > issues) return data
 		}
-		for (const step of steps) {
+		for (let i = 0; i < steps.length; i++) {
+			const step = steps[i]
 			const morphed: any = step(result, ctx)
 			if (
-				step.p ?
+				pipes[i] ?
 					ctx._errors !== undefined && morphed === ctx._errors
 				:	morphed instanceof ArkErrors
 			) {
@@ -1131,7 +1199,7 @@ export const morphing = ((
 		return result
 	}
 	t.e = applyMorphAt
-	if (steps.some(step => step.p) || (head && head.t?.c)) t.c = 1
+	if (pipes.includes(1) || headReadsCtx) t.c = 1
 	checker.t = t
 	return checker
 }) satisfies Fn

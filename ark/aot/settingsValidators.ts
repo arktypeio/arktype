@@ -417,7 +417,7 @@ var writtenValues = (declared, changing, data, values) => {
 			continue
 		}
 		if (!checker.t) continue
-		const value = values.transformed(checker, data[k], k)
+		const value = values.transformed(checker.t, data[k], k)
 		if (Object.is(value, data[k])) continue
 		if (out === data) out = copyOf(data)
 		out[k] = value
@@ -450,45 +450,46 @@ var deletes = (declared, data, out) => {
 var sited = (allows, declared, write, writes, removed, withCtx) => {
 	const checkers = Object.values(declared)
 	const walks = removed ? closedProps(declared, removed) : props(declared)
-	const checker = (data, ctx) => {
-		if (ctx?._at || !objectCheck.test(data)) return walks(data, ctx)
-		if (!allows(data, checkers)) return false
-		if (removed) {
-			for (const k in data)
-				if (!hasOwn(declared, k) && hasOwn(data, k)) return false
-		}
-		return true
-	}
+	const checker = (data, ctx) =>
+		!objectCheck.test(data) ? !failsAt(ctx, objectCheck, data)
+		: ctx?._at ? walks(data, ctx)
+		: allows(data, checkers)
 	checker.description = objectCheck.description
+	if (!write) return checker
 	const changing = changingIn(declared)
-	const copied = (data, values) =>
-		values ?
-			writtenValues(declared, changing, data, values)
-		:	writtenProps(declared, changing, data)
-	const written =
-		write ?
-			(data, values) => {
-				if (Object.getPrototypeOf(data) !== Object.prototype)
-					return deletes(declared, data, copied(data, values))
-				const defaults = []
-				const result = write(
-					data,
-					checkers,
-					values ?
-						(checker2, value, k) =>
-							checker2.t ? values.transformed(checker2, value, k) : value
-					:	({ t }, value) => (t ? t(value) : value),
-					defaults
-				)
-				if (defaults.length && !values.failed())
-					for (const i of defaults) values.defaulted(checkers[i].w, result)
-				return result
-			}
-		:	copied
+	const written = (data, values) => {
+		if (writes > 2) {
+			return Object.getPrototypeOf(data) === Object.prototype ?
+					write(data, checkers, values, copyOf)
+				:	deletes(
+						declared,
+						data,
+						values ?
+							writtenValues(declared, changing, data, values)
+						:	writtenProps(declared, changing, data)
+					)
+		}
+		const out = write(data, checkers, values, copyOf)
+		if (out !== data) {
+			for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
+		}
+		return out
+	}
 	checker.t =
-		writes === 2 ? failingValues(written, checkers, withCtx)
-		: writes ? data => written(data)
-		: void 0
+		writes % 2 ?
+			data => written(data)
+		:	readingValues(
+				(data, ctx) => {
+					const values = writtenFor(ctx)
+					try {
+						return values.resolved(data, written(data, values))
+					} finally {
+						freed(values)
+					}
+				},
+				checkers,
+				withCtx
+			)
 	return checker
 }
 var elementsOf = element => (data, ctx) => {
@@ -509,14 +510,18 @@ var Written = class {
 	failed() {
 		return this.gathered ?? this.ctx?.errN > this.issues
 	}
-	transformed({ t }, value, k) {
+	// what a t returns of out where a value failed: with no ctx, what failed
+	resolved(data, out) {
+		return this.gathered ?? (this.ctx?.errN > this.issues ? data : out)
+	}
+	transformed(t, value, k) {
 		let result
 		if (t.c) {
 			this.ctx.path.push(k)
 			result = t(value, this.ctx)
 			this.ctx.path.pop()
 		} else result = t(value)
-		if (!(result instanceof TransformErrors)) return result
+		if (result === value || !(result instanceof TransformErrors)) return result
 		this.gather(result, k)
 		return value
 	}
@@ -525,12 +530,20 @@ var Written = class {
 		if (written !== out) this.gather(written)
 	}
 }
-var failingValues = (write, held, withCtx) => {
-	const t = (data, ctx) => {
-		const values = new Written(ctx)
-		const out = write(data, values)
-		return values.failed() ? (values.gathered ?? data) : out
-	}
+var writtenAtDepth = []
+var depth = 0
+var writtenFor = ctx => {
+	if (ctx) return new Written(ctx)
+	const values = (writtenAtDepth[depth] ??= new Written())
+	depth++
+	return values
+}
+var freed = values => {
+	if (values.ctx) return
+	depth--
+	values.gathered = void 0
+}
+var readingValues = (t, held, withCtx) => {
 	if (withCtx || held.some(({ w }) => w?.length === 2)) t.c = 1
 	return holdingMorphs(t, held)
 }
@@ -613,10 +626,10 @@ var interned = (key, create, ...args) =>
 	intern(internedTable(key), [], () => create(...args))
 
 // <stdin>
-var intersectionr7fa5i02hq5pc = [
+var intersectionnuqurd1csx8up = [
 	/* @__PURE__ */ sited(
-		(data, checkers) =>
-			!(
+		(data, checkers) => {
+			if (
 				("assert" in data && !booleanChecker(data.assert)) ||
 				("meta" in data && !booleanChecker(data.meta)) ||
 				("~standard" in data && !booleanChecker(data["~standard"])) ||
@@ -628,7 +641,26 @@ var intersectionr7fa5i02hq5pc = [
 				("toJsonSchema" in data && !booleanChecker(data.toJsonSchema)) ||
 				("~standard.jsonSchema" in data &&
 					!booleanChecker(data["~standard.jsonSchema"]))
-			),
+			)
+				return false
+			for (const k in data)
+				switch (k) {
+					case "assert":
+					case "meta":
+					case "~standard":
+					case "methods":
+					case "expression":
+					case "description":
+					case "json":
+					case "toJSON":
+					case "toJsonSchema":
+					case "~standard.jsonSchema":
+						break
+					default:
+						if (Object.prototype.hasOwnProperty.call(data, k)) return false
+				}
+			return true
+		},
 		{
 			assert: /* @__PURE__ */ optional(booleanChecker),
 			meta: /* @__PURE__ */ optional(booleanChecker),
@@ -646,12 +678,12 @@ var intersectionr7fa5i02hq5pc = [
 		"removed"
 	)
 ]
-var intersectiong64o0o0ukdr2c = /* @__PURE__ */ (([
-	intersectionr7fa5i02hq5pcAllows
+var intersection1qem54n11w8grc = /* @__PURE__ */ (([
+	intersectionnuqurd1csx8upAllows
 ]) => {
-	const intersectiong64o0o0ukdr2cAllows = /* @__PURE__ */ sited(
-		(data, checkers) =>
-			!(
+	const intersection1qem54n11w8grcAllows = /* @__PURE__ */ sited(
+		(data, checkers) => {
+			if (
 				("preset" in data && !checkers[0](data.preset)) ||
 				("runtime" in data && !checkers[1](data.runtime)) ||
 				("config" in data && !checkers[2](data.config)) ||
@@ -675,7 +707,39 @@ var intersectiong64o0o0ukdr2c = /* @__PURE__ */ (([
 				("inline" in data && !booleanChecker(data.inline)) ||
 				("declare" in data && !booleanChecker(data.declare)) ||
 				("defers" in data && !checkers[22](data.defers))
-			),
+			)
+				return false
+			for (const k in data)
+				switch (k) {
+					case "preset":
+					case "runtime":
+					case "config":
+					case "members":
+					case "errors":
+					case "mutatesInput":
+					case "optimize":
+					case "optimizeErrors":
+					case "jsonInput":
+					case "bakedLimit":
+					case "freeze":
+					case "lazy":
+					case "creationChecks":
+					case "shadow":
+					case "prune":
+					case "allowUnsafe":
+					case "conditions":
+					case "tsconfig":
+					case "dependencies":
+					case "cwd":
+					case "inline":
+					case "declare":
+					case "defers":
+						break
+					default:
+						if (Object.prototype.hasOwnProperty.call(data, k)) return false
+				}
+			return true
+		},
 		{
 			preset: /* @__PURE__ */ optional(
 				/* @__PURE__ */ units(["introspectable", "smallest"])
@@ -699,7 +763,7 @@ var intersectiong64o0o0ukdr2c = /* @__PURE__ */ (([
 					"a module path or false"
 				)
 			),
-			members: /* @__PURE__ */ optional(intersectionr7fa5i02hq5pcAllows),
+			members: /* @__PURE__ */ optional(intersectionnuqurd1csx8upAllows),
 			errors: /* @__PURE__ */ optional(
 				/* @__PURE__ */ units(["all", "first", "none"])
 			),
@@ -778,8 +842,8 @@ var intersectiong64o0o0ukdr2c = /* @__PURE__ */ (([
 		0,
 		"removed"
 	)
-	return [intersectiong64o0o0ukdr2cAllows]
-})(intersectionr7fa5i02hq5pc)
+	return [intersection1qem54n11w8grcAllows]
+})(intersectionnuqurd1csx8up)
 var create12fpvlf14u2zct = ([allows], id, holes = []) => {
 	const validator = (data, pipedFromCtx, onFail) =>
 		allows(data) ?
@@ -792,12 +856,12 @@ var create12fpvlf14u2zct = ([allows], id, holes = []) => {
 	validator.allows = freeze(allows)
 	return holdHoles(freeze(validator), id, holes)
 }
-var intersection14iv1st1nsrrgj = /* @__PURE__ */ (([
-	intersectionr7fa5i02hq5pcAllows
+var intersectioncv2raq0vis9zb = /* @__PURE__ */ (([
+	intersectionnuqurd1csx8upAllows
 ]) => {
-	const intersection14iv1st1nsrrgjAllows = /* @__PURE__ */ sited(
-		(data, checkers) =>
-			!(
+	const intersectioncv2raq0vis9zbAllows = /* @__PURE__ */ sited(
+		(data, checkers) => {
+			if (
 				("preset" in data && !checkers[0](data.preset)) ||
 				("runtime" in data && !checkers[1](data.runtime)) ||
 				("config" in data && !checkers[2](data.config)) ||
@@ -817,7 +881,35 @@ var intersection14iv1st1nsrrgj = /* @__PURE__ */ (([
 				("conditions" in data && !checkers[16](data.conditions)) ||
 				("tsconfig" in data && !checkers[17](data.tsconfig)) ||
 				("dependencies" in data && !checkers[18](data.dependencies))
-			),
+			)
+				return false
+			for (const k in data)
+				switch (k) {
+					case "preset":
+					case "runtime":
+					case "config":
+					case "members":
+					case "errors":
+					case "mutatesInput":
+					case "optimize":
+					case "optimizeErrors":
+					case "jsonInput":
+					case "bakedLimit":
+					case "freeze":
+					case "lazy":
+					case "creationChecks":
+					case "shadow":
+					case "prune":
+					case "allowUnsafe":
+					case "conditions":
+					case "tsconfig":
+					case "dependencies":
+						break
+					default:
+						if (Object.prototype.hasOwnProperty.call(data, k)) return false
+				}
+			return true
+		},
 		{
 			preset: /* @__PURE__ */ optional(
 				/* @__PURE__ */ units(["introspectable", "smallest"])
@@ -841,7 +933,7 @@ var intersection14iv1st1nsrrgj = /* @__PURE__ */ (([
 					"a module path or false"
 				)
 			),
-			members: /* @__PURE__ */ optional(intersectionr7fa5i02hq5pcAllows),
+			members: /* @__PURE__ */ optional(intersectionnuqurd1csx8upAllows),
 			errors: /* @__PURE__ */ optional(
 				/* @__PURE__ */ units(["all", "first", "none"])
 			),
@@ -907,26 +999,26 @@ var intersection14iv1st1nsrrgj = /* @__PURE__ */ (([
 		0,
 		"removed"
 	)
-	return [intersection14iv1st1nsrrgjAllows]
-})(intersectionr7fa5i02hq5pc)
-var intersection134gw5z1ow29ev = /* @__PURE__ */ (([
-	intersection14iv1st1nsrrgjAllows
+	return [intersectioncv2raq0vis9zbAllows]
+})(intersectionnuqurd1csx8up)
+var intersection1jttf1r18pdz9x = /* @__PURE__ */ (([
+	intersectioncv2raq0vis9zbAllows
 ]) => {
-	const intersection134gw5z1ow29evAllows = /* @__PURE__ */ closedProps({
+	const intersection1jttf1r18pdz9xAllows = /* @__PURE__ */ closedProps({
 		$schema: /* @__PURE__ */ optional(stringCheck),
-		precompile: /* @__PURE__ */ optional(intersection14iv1st1nsrrgjAllows)
+		precompile: /* @__PURE__ */ optional(intersectioncv2raq0vis9zbAllows)
 	})
-	return [intersection134gw5z1ow29evAllows]
-})(intersection14iv1st1nsrrgj)
-var intersection1pxmr4d0azyt6q = /* @__PURE__ */ (([
-	intersection14iv1st1nsrrgjAllows
+	return [intersection1jttf1r18pdz9xAllows]
+})(intersectioncv2raq0vis9zb)
+var intersection172uh0x1afmugh = /* @__PURE__ */ (([
+	intersectioncv2raq0vis9zbAllows
 ]) => {
-	const intersection1pxmr4d0azyt6qAllows = /* @__PURE__ */ closedProps({
-		precompile: /* @__PURE__ */ optional(intersection14iv1st1nsrrgjAllows),
+	const intersection172uh0x1afmughAllows = /* @__PURE__ */ closedProps({
+		precompile: /* @__PURE__ */ optional(intersectioncv2raq0vis9zbAllows),
 		aot: /* @__PURE__ */ optional(/* @__PURE__ */ unit(true))
 	})
-	return [intersection1pxmr4d0azyt6qAllows]
-})(intersection14iv1st1nsrrgj)
+	return [intersection172uh0x1afmughAllows]
+})(intersectioncv2raq0vis9zb)
 var created0
 var created1
 var created2
@@ -934,7 +1026,7 @@ var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
 				const validator0 = interned("ba2dyl0hxov64", () =>
-					create12fpvlf14u2zct(intersectiong64o0o0ukdr2c, "1xqe4zk0")
+					create12fpvlf14u2zct(intersection1qem54n11w8grc, "1xqe4zk0")
 				)
 				return validator0
 			})())
@@ -944,7 +1036,7 @@ var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
 				const validator0 = interned("131ktzb1yyv4fo", () =>
-					create12fpvlf14u2zct(intersection134gw5z1ow29ev, "1cl1eak0")
+					create12fpvlf14u2zct(intersection1jttf1r18pdz9x, "1cl1eak0")
 				)
 				return validator0
 			})())
@@ -954,7 +1046,7 @@ var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
 				const validator0 = interned("m6ykoq11dwob9", () =>
-					create12fpvlf14u2zct(intersection1pxmr4d0azyt6q, "1i9mlhj1")
+					create12fpvlf14u2zct(intersection172uh0x1afmugh, "1i9mlhj1")
 				)
 				return validator0
 			})())

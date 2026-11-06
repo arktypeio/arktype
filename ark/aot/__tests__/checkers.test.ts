@@ -648,6 +648,24 @@ run(() => Mixed({ x: "a", y: "b", z: " z " }))
 run(() => Mixed({ x: "a", y: "-1", z: " z ", o: "-2" }))
 run(() => Mixed({ x: 1, y: "b", z: " z ", o: 1 }))
 run(() => Positive.array()(["1", "x", "-1"]))
+run(() => Deep({ a: "1", list: [], nested: { b: "1" } }))
+const Few = Positive.array().atLeastLength(1).atMostLength(2)
+run(() => Few([]))
+run(() => Few(["1", "2", "3"]))
+run(() => type({ f: Few })({ f: ["1", "-1"] }))
+`
+		)
+
+		itRunsAsCompiled(
+			"transforms each value as its own where a morph within another throws",
+			`const Throws = type("string").pipe(function (s) { if (s === "throw") throw new Error("thrown"); return s })
+const Inner = type({ t: Throws, p: Parsed })
+const Catching = type("string").pipe(function (s) { try { return Inner({ t: s, p: "1" }) } catch (e) { return e.message } })
+const Outer = type({ c: Catching, p: Parsed, l: Parsed.array() })
+run(() => Outer({ c: "throw", p: "x", l: ["1", "x"] }))
+run(() => Outer({ c: "ok", p: "2", l: [] }))
+run(() => { try { return Inner({ t: "throw", p: "x" }) } catch (e) { return e.message } })
+run(() => Inner({ t: "ok", p: "x" }))
 `
 		)
 
@@ -674,6 +692,8 @@ run(() => type({ v: NoHead })({}))
 			`const Closed = type({ "+": "reject", a: Trim, "b?": Bounded })
 run(() => Closed({ a: " a ", b: "  " }))
 run(() => Closed({ a: 1, c: 1 }))
+run(() => Closed(Object.assign(Object.create({ c: 1 }), { a: " a " })))
+run(() => Closed(1))
 const Deleting = type({ "+": "delete", a: Trim, "b?": Bounded })
 run(() => Deleting({ a: " a ", c: 1 }))
 run(() => Deleting({ a: " a ", b: "  ", c: 1 }))

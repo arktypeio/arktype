@@ -562,7 +562,9 @@ const writeKey = (key: string): string =>
 const writeObject = (entries: string[]): string => `{ ${entries.join(", ")} }`
 
 // a shape with this many keys that may be absent reads each at a site of its own,
-// as a walker's one site costs it far more than it does a compiled shape
+// as a walker's one site costs it far more than it does a compiled shape. So does
+// one whose transform can fail, which compiled code wrote at its own sites before
+// a checker could hold it
 const minSitedKeys = 8
 
 // whether a node's checker fails undefined, calling nothing to find out
@@ -579,9 +581,10 @@ const writeAccess = (key: string): string => {
 	return written === key ? `.${key}` : `[${written}]`
 }
 
-// false where a key's check fails, stopping at the first as a walker does
-const writeSitedAllows = (structure: StructureNode, refs: string[]): string =>
-	`(data, checkers) => !(${structure.inOrder
+// false where a key's check fails, stopping at the first as a walker does, then
+// where data holds a key it rejects, for...in also reaching inherited keys
+const writeSitedAllows = (structure: StructureNode, refs: string[]): string => {
+	const fails = structure.inOrder
 		.map((prop, i) => {
 			const has = `${JSON.stringify(prop.key)} in data`
 			// keys holding the same check call the same checker
@@ -596,35 +599,103 @@ const writeSitedAllows = (structure: StructureNode, refs: string[]): string =>
 				: `(!(${has}) || ${fails})`
 			)
 		})
-		.join(" || ")})`
+		.join(" || ")
+	if (structure.handlesUndeclared !== "reject")
+		return `(data, checkers) => !(${fails})`
+	const declared = structure.inOrder
+		.map(prop => `case ${JSON.stringify(prop.key)}:`)
+		.join(" ")
+	return `(data, checkers) => { if (${fails}) return false; for (const k in data) switch (k) { ${declared} break; default: if (Object.prototype.hasOwnProperty.call(data, k)) return false; } return true; }`
+}
+
+// what a key reads through its checker's transform, where it has one
+const writeHeld = (prop: Prop.Node, i: number, failing: boolean): string => {
+	const read = `data${writeAccess(prop.key as string)}`
+	return (
+		!prop.value.tfs ? read
+		: failing ?
+			`values.transformed(checkers[${i}].t, ${read}, ${JSON.stringify(prop.key)})`
+		:	`checkers[${i}].t(${read})`
+	)
+}
+
+// whether a key a default writes holds a value
+const writeHolds = (prop: Prop.Node): string =>
+	prop.is("optional") && prop.defaultsUndefined ?
+		`data${writeAccess(prop.key as string)} !== void 0`
+	:	`${JSON.stringify(prop.key)} in data`
 
 // the keys data holds in arktype's order; a default written by a function holds
 // its key's place until each transform has run
 const writeSitedWrite = (
 	js: CombinatorCompiler,
-	structure: StructureNode
-): string =>
-	`(data, checkers, value, defaults) => { const result = {}; ${structure.inOrder
-		.map((prop, i) => {
-			const access = writeAccess(prop.key as string)
-			const read = `data${access}`
-			const held =
-				prop.value.tfs ?
-					`value(checkers[${i}], ${read}, ${JSON.stringify(prop.key)})`
-				:	read
-			if (!prop.is("optional")) return `result${access} = ${held};`
-			const holds =
-				prop.defaultsUndefined ?
-					`${read} !== void 0`
-				:	`${JSON.stringify(prop.key)} in data`
-			return (
-				!prop.hasDef() ? `if (${holds}) result${access} = ${held};`
-				: isLiteralDefault(prop) ?
-					`result${access} = ${holds} ? ${held} : ${writeLiteral(js, prop.default)};`
-				:	`if (${holds}) result${access} = ${held}; else { result${access} = void 0; defaults.push(${i}); }`
+	structure: StructureNode,
+	failing: boolean
+): string => {
+	// keys written before any that may be absent are a literal's
+	const literal: string[] = []
+	const writes: string[] = []
+	const defaults: string[] = []
+	for (const [i, prop] of structure.inOrder.entries()) {
+		const key = prop.key as string
+		const access = writeAccess(key)
+		const held = writeHeld(prop, i, failing)
+		if (!prop.is("optional")) {
+			if (writes.length || access !== `.${key}`)
+				writes.push(`result${access} = ${held};`)
+			else literal.push(`${key}: ${held}`)
+			continue
+		}
+		const holds = writeHolds(prop)
+		if (!prop.hasDef()) writes.push(`if (${holds}) result${access} = ${held};`)
+		else if (isLiteralDefault(prop)) {
+			writes.push(
+				`result${access} = ${holds} ? ${held} : ${writeLiteral(js, prop.default)};`
 			)
-		})
-		.join(" ")} return result; }`
+		} else {
+			writes.push(`result${access} = ${holds} ? ${held} : void 0;`)
+			defaults.push(
+				`if (!(${holds})) values.defaulted(checkers[${i}].w, result);`
+			)
+		}
+	}
+	return `(data, checkers, values) => { const result = { ${literal.join(", ")} }; ${writes.join(" ")} ${defaults.length ? `if (!values.failed()) { ${defaults.join(" ")} }` : ""} return result; }`
+}
+
+// a shape keeping the keys it doesn't declare copies data where one it declares
+// changes: in order where nothing can fail, else each transform, then each default
+// where none failed
+const writeSitedKeep = (
+	js: CombinatorCompiler,
+	structure: StructureNode,
+	failing: boolean
+): string => {
+	const transforms: string[] = []
+	const defaults: string[] = []
+	const out = "(out = out === data ? copy(data) : out)"
+	for (const [i, prop] of structure.inOrder.entries()) {
+		const access = writeAccess(prop.key as string)
+		const read = `data${access}`
+		const holds = writeHolds(prop)
+		const held = writeHeld(prop, i, failing)
+		if (prop.value.tfs) {
+			// data's allowed before it's transformed, so holds each key it requires
+			const guard = prop.is("optional") ? `${holds} && ` : ""
+			transforms.push(
+				failing ?
+					`if (${guard}!Object.is(v = ${held}, ${read})) ${out}${access} = v;`
+				:	`if (${guard}(v = ${held}) !== void 0 && v !== ${read}) ${out}${access} = v;`
+			)
+		}
+		if (!prop.is("optional") || !prop.hasDef()) continue
+		;(failing ? defaults : transforms).push(
+			isLiteralDefault(prop) ?
+				`if (!(${holds})) ${out}${access} = ${writeLiteral(js, prop.default)};`
+			:	`if (!(${holds})) values.defaulted(checkers[${i}].w, ${out});`
+		)
+	}
+	return `(data, checkers, values, copy) => { let out = data, v; ${transforms.join(" ")} ${defaults.length ? `if (!values.failed()) { ${defaults.join(" ")} }` : ""} return out; }`
+}
 
 const writeStructure = (
 	js: CombinatorCompiler,
@@ -691,16 +762,16 @@ const writeStructure = (
 		structure.hasAlias ||
 		structure.hasMorph ||
 		structure.props.some(writesByValues)
-	if ((structure.optional?.length ?? 0) >= minSitedKeys) {
+	if (failing || (structure.optional?.length ?? 0) >= minSitedKeys) {
 		const deletes = structure.handlesUndeclared === "delete"
 		return writeCall(
 			"sited",
 			writeSitedAllows(structure, refs),
 			declared,
-			deletes ? writeSitedWrite(js, structure) : "0",
-			!deletes && !structure.tfs ? "0"
-			: failing ? "2"
-			: "1",
+			deletes ? writeSitedWrite(js, structure, failing)
+			: structure.tfs ? writeSitedKeep(js, structure, failing)
+			: "0",
+			!structure.tfs ? "0" : `${(deletes ? 2 : 0) + (failing ? 2 : 1)}`,
 			structure.handlesUndeclared && !deletes ?
 				JSON.stringify(removedSiteOf(structure)!.description)
 			:	undefined,
@@ -834,18 +905,21 @@ const writeShape = (
 		if (rules?.[0] === 1)
 			return writeCall("integerRange", ...writeRules([rules[2], rules[1]]))
 	}
-	if (
-		checked === "runtime.arrayCheck" &&
-		structure?.sequence &&
-		!structure.sequence.variadic!.tfs
-	) {
-		const rules = rulesOf(preStruct, ["maxLength", "minLength"])
+	if (checked === "runtime.arrayCheck" && structure?.sequence) {
+		const element = structure.sequence.variadic!
+		const failing = element.hasAlias || element.hasMorph
+		const rules =
+			(!element.tfs || failing) &&
+			rulesOf(preStruct, ["maxLength", "minLength"])
 		if (rules) {
-			return writeCall(
-				"arrayOf",
-				readValue(js, structure.sequence.variadic!),
-				...writeRules(rules)
-			)
+			return element.tfs ?
+					writeCall(
+						"failingArrayOf",
+						readValue(js, element),
+						...writeRules(rules),
+						element.hasAlias ? "1" : undefined
+					)
+				:	writeCall("arrayOf", readValue(js, element), ...writeRules(rules))
 		}
 	}
 }
