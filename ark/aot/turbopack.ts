@@ -27,6 +27,7 @@ import {
 	refusePrune,
 	resolvePrecompileOptions,
 	settingsFileOf,
+	settingsPathsOf,
 	withSettingsFile
 } from "./settings.ts"
 import {
@@ -119,6 +120,11 @@ export default function (
 	source: string
 ): string | undefined {
 	const given = this.getOptions()
+	// ark.json or package.json's "ark", which decide each module's output as
+	// next.config's options do, but which Turbopack's build cache sees change
+	// only as dependencies: one written since the last build too
+	for (const file of settingsPathsOf(given.cwd ?? process.cwd()))
+		this.addDependency(file)
 	refuseDeclare(given, "Turbopack")
 	let opts: PrecompilePluginOptions
 	try {
@@ -214,6 +220,9 @@ const readsProgram = (
 	!!context.rootContext &&
 	!!packageRootOf("next", context.rootContext)
 
+// each read whose warnings a module has reported
+const warnedReads = new Set<string>()
+
 const answerFromProgram = async (
 	context: TurbopackLoaderContext,
 	source: string,
@@ -223,13 +232,17 @@ const answerFromProgram = async (
 	if (isProgramUnit(id)) return source
 	const resolve = context.getResolve!({})
 	const program = await programOf(context.rootContext!, opts, resolve)
-	if (program.isReader) {
+	// once a build, as the reader's process answers many of its modules, and
+	// Turbopack prints what each module warns of
+	if (program.isReader && !warnedReads.has(program.dir)) {
+		warnedReads.add(program.dir)
 		for (const warning of program.warnings)
 			context.emitWarning(new Error(warning))
+		if (program.refused && opts.prune !== true)
+			context.emitWarning(new Error(program.refused))
 	}
 	if (program.refused) {
 		if (opts.prune === true) throwBuildError(program.refused)
-		if (program.isReader) context.emitWarning(new Error(program.refused))
 		return answerAlone(context, source, opts)
 	}
 	const answer = programAnswerOf(program, id)

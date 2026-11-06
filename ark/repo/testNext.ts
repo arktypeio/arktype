@@ -98,14 +98,23 @@ for (const [path, contents] of Object.entries(files)) {
 
 const next = createRequire(import.meta.url).resolve("next/dist/bin/next")
 
+// a flag building from what the last build left in .next, Turbopack's build
+// cache included, as a project's next build does
+const warm = "warm"
+
 const nextBuild = (config: string, ...flags: string[]) => {
 	writeFileSync(join(appDir, "next.config.js"), config)
-	rmSync(join(appDir, ".next"), { recursive: true, force: true })
-	const result = spawnSync(process.execPath, [next, "build", ...flags], {
-		cwd: appDir,
-		encoding: "utf8",
-		env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" }
-	})
+	if (!flags.includes(warm))
+		rmSync(join(appDir, ".next"), { recursive: true, force: true })
+	const result = spawnSync(
+		process.execPath,
+		[next, "build", ...flags.filter(flag => flag !== warm)],
+		{
+			cwd: appDir,
+			encoding: "utf8",
+			env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" }
+		}
+	)
 	if (result.error) throw result.error
 	return { status: result.status, output: result.stdout + result.stderr }
 }
@@ -237,6 +246,45 @@ if (!emittedWith("~standard", join(appDir, ".next/static")).length) {
 	)
 }
 writeFileSync(readsPath, reads)
+
+console.log("▲ Building it on Turbopack's build cache as ark.json changes...")
+
+// where each module holds its own validators, kept past a build until a file
+// it depends on changes, ark.json among them, whether or not it was there
+const cacheOff = "turbopackFileSystemCacheForBuild: false"
+if (!turbopack.includes(cacheOff))
+	throw new Error(`Found no ${cacheOff} in ${setup}`)
+// the settings ark.json holds otherwise, as the loader's options, so ark.json
+// can be created and removed
+const settingsPath = join(appDir, "ark.json")
+const settings = readFileSync(settingsPath, "utf8")
+const cached = turbopack
+	.replace(cacheOff, "turbopackFileSystemCacheForBuild: true")
+	.split('loaders: ["@ark/aot/turbopack"]')
+	.join(
+		`loaders: [${JSON.stringify({ loader: "@ark/aot/turbopack", options: JSON.parse(settings).precompile })}]`
+	)
+const errorsNone = '{ "precompile": { "errors": "none" } }'
+rmSync(settingsPath)
+assertRendered("Turbopack", build(cached))
+const unset = JSON.stringify(chunksOf())
+writeFileSync(settingsPath, errorsNone)
+assertRendered("Turbopack", nextBuild(cached, warm))
+const warmNone = JSON.stringify(chunksOf())
+assertRendered("Turbopack", build(cached))
+if (JSON.stringify(chunksOf()) !== warmNone) {
+	throw new Error(
+		"Turbopack's build on its cache should write what a build without it does once ark.json is written"
+	)
+}
+rmSync(settingsPath)
+assertRendered("Turbopack", nextBuild(cached, warm))
+if (JSON.stringify(chunksOf()) !== unset) {
+	throw new Error(
+		"Turbopack's build on its cache should write what a build without it does once ark.json is removed"
+	)
+}
+writeFileSync(settingsPath, settings)
 
 console.log("▲ Building a route importing a module from beyond the project...")
 
