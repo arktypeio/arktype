@@ -342,6 +342,34 @@ import "./read.ts"
 		attest(runEmitted(root)).equals(plain)
 	}).timeout(120_000)
 
+	it("a narrow's tuple is one with its equal alone in its module, beside two more", async () => {
+		const definitions = {
+			Number: `type(["number", ":", plainPred])`,
+			Empty: `type([[], ":", plainPred])`,
+			Strings: `type([["string"], ":", plainPred])`,
+			Keyed: `type([{ a: "string" }, ":", plainPred])`
+		}
+		const names = Object.keys(definitions) as (keyof typeof definitions)[]
+		const root = fixture("tupleNarrows", {
+			"package.json": `{ "type": "module" }\n`,
+			"shared.ts": `export const plainPred = (x: unknown) => x !== null\n`,
+			"containers.ts": `import { type } from "arktype"
+import { plainPred } from "./shared.ts"
+${names.map(name => `export const ${name}Twin = ${definitions[name]}`).join("\n")}
+`,
+			"main.ts": `import { type } from "arktype"
+import { plainPred } from "./shared.ts"
+import { ${names.map(name => `${name}Twin`).join(", ")} } from "./containers.ts"
+${names.map(name => `const ${name}A = ${definitions[name]}\nconst ${name}B = ${definitions[name]}`).join("\n")}
+console.log(${names.map(name => `${name}A === ${name}B, ${name}B === ${name}Twin`).join(", ")})
+`
+		})
+		const plain = runPlain(root)
+		attest(plain.includes("false")).equals(false)
+		attest(run(await bundle(root, production, { prune: false }))).equals(plain)
+		attest(runModuleAtATime(root, "production")).equals(plain)
+	}).timeout(120_000)
+
 	it("a Type is one with its equal however each module's smallest writes it", async () => {
 		const definition = `type("number[] | 'a' | null")`
 		const root = fixture("writtenApart", {
