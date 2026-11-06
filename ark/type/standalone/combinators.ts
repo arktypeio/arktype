@@ -143,7 +143,7 @@ const discriminantSiteOf = (node: UnionNode): IssueContext | undefined =>
 const checkOf = (node: BaseNode): IssueContext | undefined =>
 	node.jsCond && plainSiteOf(node)
 
-// a predicate that reads no ctx, keeping the description written for it unless
+// a described predicate's site, keeping the description written for it unless
 // it names the function, which a callback's only has once it's called
 const predicateSiteOf = (node: BaseNode): IssueContext | undefined => {
 	if (!node.is("predicate")) return

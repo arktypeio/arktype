@@ -1594,11 +1594,7 @@ return namespace`
 			const name = unit.names[root.id]
 			const shape = writing.shapesByName[name]
 			const isChecker = this.isCheckerNode(root)
-			const readsCtx =
-				this.baking.flattens &&
-				this.baking.detailsErrors &&
-				this.baking.combines &&
-				root.allowsCtx
+			const readsCtx = this.writesCheckerNodes && root.allowsCtx
 			return writeValue(
 				this.baking.hoisted,
 				`${name}Node`,
@@ -1623,12 +1619,17 @@ return namespace`
 			)
 		})
 	}
+	// whether a node may be written as the checker declared beside it
+	get writesCheckerNodes(): boolean {
+		return (
+			this.baking.flattens && this.baking.detailsErrors && this.baking.combines
+		)
+	}
+
 	// a node only transforming by a checker declared beside it, all of it read off that
 	isCheckerNode(root: BaseRoot): boolean {
 		return (
-			this.baking.flattens &&
-			this.baking.detailsErrors &&
-			this.baking.combines &&
+			this.writesCheckerNodes &&
 			!this.baking.compiledInputs.has(root.hash) &&
 			combines(root) &&
 			shapeFlags.every(
