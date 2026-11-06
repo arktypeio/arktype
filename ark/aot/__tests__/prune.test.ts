@@ -4226,7 +4226,11 @@ console.log(String(User({ name: 5 })))
 			attest(
 				refusals(opts =>
 					turbopack.call(
-						{ getOptions: () => opts, resourcePath: "a.ts" } as never,
+						{
+							getOptions: () => opts,
+							resourcePath: "a.ts",
+							addDependency: () => {}
+						} as never,
 						""
 					)
 				)
