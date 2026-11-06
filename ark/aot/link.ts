@@ -341,6 +341,11 @@ const minSharedCall = 40
 
 const minSharedCalls = 7
 
+const writeImports = (names: Iterable<string>): string =>
+	[...names]
+		.map(name => `import { ${name} } from "~arktype/${name}"\n`)
+		.join("")
+
 // a checker holding only data is the same wherever it's written, so what's
 // written more than once is made once. Each makes closures an import runs,
 // which gzip's matches for its text don't save
@@ -377,10 +382,7 @@ const withSharedChecks = (
 			const code = shareIn(codes[specifier], imports)
 			if (code === codes[specifier]) continue
 			shared = true
-			codes[specifier] =
-				[...imports]
-					.map(name => `import { ${name} } from "~arktype/${name}"\n`)
-					.join("") + code
+			codes[specifier] = writeImports(imports) + code
 		}
 		for (const [name, call] of calls) {
 			const imports = importsOf.get(name) ?? new Set<string>()
@@ -394,9 +396,7 @@ const withSharedChecks = (
 	}
 	for (const [name, call] of calls) {
 		codes[`~arktype/${name}`] =
-			[...(importsOf.get(name) ?? [])]
-				.map(held => `import { ${held} } from "~arktype/${held}"\n`)
-				.join("") +
+			writeImports(importsOf.get(name)!) +
 			`import * as runtime from "arktype/runtime"\n\nconst ${name} = ${call}\n\nexport { ${name} }\n`
 	}
 	return codes

@@ -229,7 +229,7 @@ interface Cases {
 	missed: IssueContext
 }
 
-const isBooleanCase = (k: string) => k === "true" || k === "false"
+const isBooleanCase = (k: string): boolean => k === "true" || k === "false"
 
 const discriminatedOf = (node: UnionNode): Cases | undefined => {
 	const discriminant = node.discriminant
@@ -592,11 +592,11 @@ const writeSitedAllows = (structure: StructureNode, refs: string[]): string => {
 				/^runtime\.\w+$/.test(refs[i]) ?
 					refs[i]
 				:	`checkers[${refs.indexOf(refs[i])}]`
-			const fails = `!${checker}(data${writeAccess(prop.key as string)})`
+			const fail = `!${checker}(data${writeAccess(prop.key as string)})`
 			return (
-				prop.is("optional") ? `(${has} && ${fails})`
-				: failsUndefined(prop.value) ? fails
-				: `(!(${has}) || ${fails})`
+				prop.is("optional") ? `(${has} && ${fail})`
+				: failsUndefined(prop.value) ? fail
+				: `(!(${has}) || ${fail})`
 			)
 		})
 		.join(" || ")
