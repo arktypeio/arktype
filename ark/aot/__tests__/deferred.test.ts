@@ -3,6 +3,7 @@ import { Precompiler, type PrecompileOptions } from "@ark/aot"
 import { fromHere } from "@ark/fs"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { build } from "esbuild"
+import { spawnSync } from "node:child_process"
 import { join } from "node:path"
 import webpack from "webpack"
 import {
@@ -355,6 +356,49 @@ console.log("loaded", Keyed({ a: "a" }))
 		attest(status).equals(1)
 		attest(stdout).equals("")
 	})
+
+	// a unit read early, as where a module imports its cycle ahead of arktype,
+	// is read through a function, which a shared value's local mustn't shadow
+	for (const [shape, opts, cycle] of [
+		["deferred", { defers: true }, ""],
+		["read early", {}, 'import { tag } from "./cycle.ts"\n']
+	] as const) {
+		it(`creates a default a split program shares where it reads another unit, ${shape}`, async () => {
+			const root = rootOf({
+				"types.ts": `${cycle}import { type } from "arktype"
+const Item = type({ kind: "'a'", n: "number = 0" }).or({ kind: "'b'", m: "string" })
+export const A = type({ items: Item.array().default(() => []) })
+export const B = type({ other: "string", items: Item.array().default(() => []) })
+`,
+				"cycle.ts": `import { A } from "./types.ts"
+export const tag = "t"
+export const readA = () => A
+`,
+				"main.ts": `import { A, B } from "./types.ts"
+console.log(JSON.stringify([A({}), B({ other: "x" })]))
+`,
+				"second.ts": `import { A } from "./types.ts"
+console.log(A.allows({}))
+`
+			})
+			const outdir = join(root, "out")
+			await build({
+				entryPoints: [join(root, "main.ts"), join(root, "second.ts")],
+				bundle: true,
+				splitting: true,
+				outdir,
+				format: "esm",
+				conditions,
+				logLevel: "silent",
+				plugins: [precompile.esbuild({ conditions, cwd: root, ...opts })]
+			})
+			attest(
+				spawnSync(process.execPath, [join(outdir, "main.js")], {
+					encoding: "utf8"
+				}).stdout
+			).equals('[{"items":[]},{"other":"x","items":[]}]\n')
+		})
+	}
 
 	it("writes each module where one module is read at a time by what it writes alone", () => {
 		const ids = Object.keys(mixed).reverse()
