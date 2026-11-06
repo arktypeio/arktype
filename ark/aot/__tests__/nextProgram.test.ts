@@ -148,7 +148,7 @@ contextualize(() => {
 				{ cwd: dir, encoding: "utf8" }
 			)
 			attest(
-				stderr.includes("expression isn't baked into this validator")
+				stderr.includes("expression isn't precompiled: set members")
 			).equals(true)
 		})
 
