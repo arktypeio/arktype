@@ -14,10 +14,7 @@ import {
 	type BuiltModule,
 	type LoadedSources
 } from "@ark/aot/internal/scan.ts"
-import {
-	writeLaterLoaderReadMessage,
-	writeUnbuiltReadMessage
-} from "@ark/aot/internal/messages.ts"
+import { writeUnbuiltReadMessage } from "@ark/aot/internal/messages.ts"
 import {
 	pruneBeforePluginMessage,
 	writePruneHostMessage
@@ -3040,65 +3037,40 @@ console.log(READ.member, String(User({ name: 5 })))
 						}
 					})
 
-					// each read a Babel plugin after it might add, which it can't
-					// have seen as it read the module: a member it leaves out, an
-					// introspection member it bakes only where it sees one read,
-					// and code it passes the validator to
-					for (const [added, read, unseen] of [
-						[
-							"assert",
-							"typeof User.assert",
-							"a module reads assert of a validator"
-						],
-						[
-							"~standard",
-							'typeof User["~standard"]',
-							"a module reads ~standard of a validator"
-						],
-						[
-							"a function reading assert",
-							"(f => f(User))(u => typeof u.assert)",
-							"a module reads expression of a validator"
-						],
-						[
-							"expression",
-							"User.expression",
-							"a module reads expression of a validator"
-						],
-						[
-							"JSON.stringify",
-							"JSON.stringify(User)",
-							"a module reads toJSON of a validator"
-						]
-					]) {
-						it(`fails a build where it adds a read of ${added}`, async () => {
-							const root = fixture(`loaderAfter-${added.replace(/\W/g, "")}`, {
-								"main.js": `import { User } from "./types.js"
+					it("builds whole where it adds a read, so the read throws", async () => {
+						const root = fixture("loaderAfter", {
+							"main.js": `import { User } from "./types.js"
 
 console.log(String(User({ name: 5 })))
 `
-							})
-							const message = await bundle(
-								name,
-								root,
-								{},
-								rewriting(code => `${code}console.log(${read})\n`)
-							).then(
-								() => "it built",
-								(e: Error) => e.message
-							)
-							attest(
-								message.includes(
-									writeLaterLoaderReadMessage("main.js", unseen, [
-										relative(root, fromHere("rewriteLoader.ts")).replace(
-											/\\/g,
-											"/"
-										)
-									])
-								)
-							).equals(true)
 						})
-					}
+						const warnings: string[] = []
+						const js = await bundle(
+							name,
+							root,
+							{},
+							{
+								...rewriting(code => `${code}console.log(User.expression)\n`),
+								plugins: [
+									compilers[name][1]({ cwd: root }) as never,
+									collecting(warnings) as never
+								]
+							}
+						)
+						attest(
+							warnings.some(warning =>
+								warning.includes(
+									"a loader after arktype's adds a read of expression to main.js"
+								)
+							)
+						).equals(true)
+						attest(
+							spawnSync(process.execPath, {
+								input: js,
+								encoding: "utf8"
+							}).stderr.includes("expression isn't precompiled")
+						).equals(true)
+					})
 
 					it("prunes where it moves a read without adding one", async () => {
 						const root = fixture("loaderAfterMoves", {

@@ -67,8 +67,6 @@ import {
 	writeExternalizedMessage,
 	writeNextExternalMessage,
 	writeFilelessImportMessage,
-	writeLaterLoaderCommonJsMessage,
-	writeLaterLoaderReadMessage,
 	writeLoadedFirstMessage,
 	writeUncachedModuleMessage,
 	writeUnbuiltReadMessage,
@@ -98,7 +96,6 @@ import {
 	type Imports,
 	type LoadedSources,
 	type ScanEntry,
-	type ScannedModule,
 	type ScannedProgram,
 	type ScannedUsage
 } from "./scan.ts"
@@ -111,7 +108,6 @@ import {
 	settingsPathsOf,
 	withSettingsFile
 } from "./settings.ts"
-import type { UnseenBuilt } from "./precompile.ts"
 import { createAsyncPrecompiler, type BundlerResolve } from "./worker.ts"
 
 export type { PrecompilePluginOptions } from "./driver.ts"
@@ -650,17 +646,13 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		const warn = (warning: string) =>
 			compilation.warnings.push(new bundler.webpack.WebpackError(warning))
 		const resolve = compilerResolveOf(bundler)
-		const asBuilt =
+		const program =
 			definedProblemOf(bundler) ??
 			programAsBuilt(
 				`${++scans}`,
 				builtEntriesOf(compilation, read, isTransformedId),
 				{ isTransformed: isTransformedId, cwd: realCwd() }
 			)
-		const [program, built] =
-			typeof asBuilt === "string" ?
-				[asBuilt, {} as Record<string, string>]
-			:	withoutBuilt(asBuilt)
 		const usage =
 			typeof program === "string" ?
 				writeUnprunedMessage(program)
@@ -720,38 +712,6 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			)
 			if (unchanged) compilation.rebuildModule(unchanged as never, answered)
 		})
-		// what the loaders after it built of each module from what reached it,
-		// read once it wrote the program, as one may add a read it left out
-		if (
-			!scanned ||
-			typeof usage === "string" ||
-			!usage.verifies ||
-			!Object.keys(built).length
-		)
-			return
-		const unseen = (await requestResolving(resolve, "unseenBuilt", {
-			...scanned,
-			modules: flatMorph(scanned.modules, (id, module) => [
-				id,
-				built[id] === undefined ? module : { ...module, built: built[id] }
-			])
-		})) as UnseenBuilt | undefined
-		if (!unseen) return
-		const module =
-			unseen.id === undefined ?
-				undefined
-			:	modules.find(
-					({ resource }) => resource && fileOf(resource) === unseen.id
-				)
-		const path = unseen.id && printablePathOf(realCwd(), unseen.id)
-		const loaders = module ? loadersAfterPluginOf(module, realCwd()) : []
-		compilation.errors.push(
-			new bundler.webpack.WebpackError(
-				unseen.commonJs && path ?
-					writeLaterLoaderCommonJsMessage(path, loaders)
-				:	writeLaterLoaderReadMessage(path, unseen.read, loaders)
-			)
-		)
 	}
 	const rewrittenIn = async (
 		{ key, modules }: ScannedProgram,
@@ -944,7 +904,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			!transformedFilter.exclude.test(id))
 	// what another plugin writes, like a compiled Svelte component, is read once it's written
 	const unwrittenChecker: UnpluginOptions = {
-		name: checkerName,
+		name: "arktype:unwritten",
 		enforce: "post",
 		transform: {
 			// after each other plugin's, but before Vite's dev server writes each import as a URL
@@ -1277,77 +1237,6 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			}
 		)
 	}
-	// esbuild loads each module natively, as unplugin's adapter returns every
-	// watched file from each hook
-	const transformHook: UnpluginOptions["transform"] =
-		meta.framework === "esbuild" ?
-			undefined
-		:	{
-				filter: { id: transformedFilter },
-				async handler(code, id) {
-					const file = fileOf(id)
-					// a plugin ahead may have transpiled it, as Rollup's
-					// TypeScript plugin does, so its lines are read through
-					// their map
-					const map =
-						code === host.readFile(file) ?
-							undefined
-						:	((
-								this as {
-									getCombinedSourcemap?: () => { mappings: string }
-								}
-							).getCombinedSourcemap?.() ??
-							(
-								this.getNativeBuildContext?.() as
-									| { inputSourceMap?: { mappings: string } }
-									| undefined
-							)?.inputSourceMap)
-					const built = builtReadOf(this)
-					const { loaderContext } =
-						(this.getNativeBuildContext?.() as NativeBuild | undefined) ?? {}
-					if (built && !built.answering) {
-						addLoaded(built.loaded, file, code)
-						if (map) built.mappings.set(file, map.mappings)
-						// one the bundler keeps is read from its file
-						if (code !== host.readFile(file)) loaderContext?.cacheable(false)
-						return
-					}
-					const scan =
-						built ? undefined : (
-							await scanOf(this as never, file, code, map?.mappings)
-						)
-					if (scan) addLoaded(scan.loaded, file, code)
-					const transformed = await transform(
-						code,
-						id,
-						map?.mappings,
-						built ? built.program?.key : scan?.scanned.key,
-						bundlerResolveOf(this, isTransformedId)
-					)
-					if (!transformed) return
-					// what it's written as may change with any module of the
-					// program, and its imports with it, so the bundler keeps it as
-					// it is, which the next build reads
-					if (built && transformed.code !== undefined)
-						loaderContext?.cacheable(false)
-					for (const dependency of transformed.dependencies) {
-						if (dependency === file) continue
-						this.addWatchFile(dependency)
-						;(dependentsByFile[dependency] ??= new Set()).add(id)
-					}
-					reportDiagnostics(
-						namingTransformers(transformed),
-						warning => this.warn(warning),
-						throwBuildError
-					)
-					return (
-						transformed.code && {
-							code: transformed.code,
-							map: transformed.map
-						}
-					)
-				}
-			}
 	const plugin: UnpluginOptions = {
 		name: pluginName,
 		enforce: "pre",
@@ -1440,7 +1329,77 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				return loadModule(id)
 			}
 		},
-		transform: transformHook,
+		// esbuild loads each module natively, as unplugin's adapter returns
+		// every watched file from each hook
+		transform:
+			meta.framework === "esbuild" ?
+				undefined
+			:	{
+					filter: { id: transformedFilter },
+					async handler(code, id) {
+						const file = fileOf(id)
+						// a plugin ahead may have transpiled it, as Rollup's
+						// TypeScript plugin does, so its lines are read through
+						// their map
+						const map =
+							code === host.readFile(file) ?
+								undefined
+							:	((
+									this as {
+										getCombinedSourcemap?: () => { mappings: string }
+									}
+								).getCombinedSourcemap?.() ??
+								(
+									this.getNativeBuildContext?.() as
+										| { inputSourceMap?: { mappings: string } }
+										| undefined
+								)?.inputSourceMap)
+						const built = builtReadOf(this)
+						const { loaderContext } =
+							(this.getNativeBuildContext?.() as NativeBuild | undefined) ?? {}
+						if (built && !built.answering) {
+							addLoaded(built.loaded, file, code)
+							if (map) built.mappings.set(file, map.mappings)
+							// one the bundler keeps is read from its file
+							if (code !== host.readFile(file)) loaderContext?.cacheable(false)
+							return
+						}
+						const scan =
+							built ? undefined : (
+								await scanOf(this as never, file, code, map?.mappings)
+							)
+						if (scan) addLoaded(scan.loaded, file, code)
+						const transformed = await transform(
+							code,
+							id,
+							map?.mappings,
+							built ? built.program?.key : scan?.scanned.key,
+							bundlerResolveOf(this, isTransformedId)
+						)
+						if (!transformed) return
+						// what it's written as may change with any module of the
+						// program, and its imports with it, so the bundler keeps it as
+						// it is, which the next build reads
+						if (built && transformed.code !== undefined)
+							loaderContext?.cacheable(false)
+						for (const dependency of transformed.dependencies) {
+							if (dependency === file) continue
+							this.addWatchFile(dependency)
+							;(dependentsByFile[dependency] ??= new Set()).add(id)
+						}
+						reportDiagnostics(
+							namingTransformers(transformed),
+							warning => this.warn(warning),
+							throwBuildError
+						)
+						return (
+							transformed.code && {
+								code: transformed.code,
+								map: transformed.map
+							}
+						)
+					}
+				},
 		vite: {
 			buildStart: rollupBuildStart,
 			shouldTransformCachedModule,
@@ -1483,7 +1442,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				definedByBundler = flatMorph(config.define ?? {}, (key, value) =>
 					typeof value === "string" ? [key, value] : []
 				)
-				const own = config.plugins.findIndex(({ name }) => name === pluginName)
+				const own = config.plugins.findIndex(({ name }) => name === "arktype")
 				if (
 					config.plugins.findIndex(({ name }) => name === tanstackSplitter) >
 					own
@@ -1491,10 +1450,15 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					throwError(writeAheadOfSplitterMessage("tanstackRouter()"))
 				isServing = config.command === "serve"
 				transformersAhead = config.plugins
-					.slice(0, own)
-					.filter(plugin => plugin.transform && !isVitesOwn(plugin.name))
+					.slice(
+						0,
+						config.plugins.findIndex(plugin => plugin.name === "arktype")
+					)
+					.filter(
+						plugin =>
+							plugin.transform && !/^(?:vite|builtin|native):/.test(plugin.name)
+					)
 					.map(plugin => plugin.name)
-				const testing = !!process.env.VITEST && config.mode === "test"
 				resolveIn(!config.isProduction)
 				for (const [name, environment] of Object.entries(
 					config.environments ?? { ssr: { resolve: config.ssr } }
@@ -1514,6 +1478,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 						message => config.logger.warn(message)
 					)
 				}
+				const testing = !!process.env.VITEST && config.mode === "test"
 				setEnvironment({
 					production: config.command === "build" && !testing,
 					testing,
@@ -1776,11 +1741,6 @@ interface BundleScan {
 
 const pluginName = "arktype"
 
-const checkerName = "arktype:unwritten"
-
-// Vite's plugins, and Rolldown's it runs, which add no read of a validator
-const isVitesOwn = (name: string) => /^(?:vite|builtin|native):/.test(name)
-
 // what a webpack or Rspack compilation has read of the modules it built
 interface BuiltRead {
 	// each transformed module as it reached the plugin
@@ -1816,7 +1776,7 @@ interface BuiltBundlerModule extends BuiltBlock {
 	resource?: string
 	type?: string
 	originalSource?: () => { source: () => string | Buffer } | null
-	loaders?: BuiltLoader[]
+	loaders?: { loader: string; ident?: string }[]
 }
 
 interface DefinePluginLike {
@@ -1930,57 +1890,11 @@ const unbuiltReadOf = (
 // a request like `-!loader!./file` runs only the loader it names, so nothing the
 // plugin writes of it reaches the bundle, which reads it as it was built
 const loadsThroughPlugin = ({ loaders }: BuiltBundlerModule) =>
-	!!loaders?.some(isPluginLoader)
-
-const isPluginLoader = (loader: BuiltLoader) => isLoaderOf(loader, pluginName)
-
-const isLoaderOf = ({ ident, loader }: BuiltLoader, name: string) =>
-	// Rspack writes a loader's ident into its path
-	ident === name || loader.endsWith(`??${name}`)
-
-interface BuiltLoader {
-	loader: string
-	ident?: string
-}
-
-// the loaders a module runs after the plugin's, which webpack lists ahead of
-// it, each by its path from its package or the project
-const loadersAfterPluginOf = (
-	{ loaders = [] }: BuiltBundlerModule,
-	cwd: string
-): string[] => {
-	const own = loaders.findIndex(isPluginLoader)
-	return (
-		loaders
-			.slice(0, Math.max(own, 0))
-			// its own check of each module, which writes nothing
-			.filter(loader => !isLoaderOf(loader, checkerName))
-			.map(({ loader }) => {
-				const path = loader.split("?")[0]
-				const parts = path.split(/[/\\]node_modules[/\\]/)
-				const packaged = parts[parts.length - 1]
-				return (
-					packaged !== path ? packaged
-					: isAbsolute(path) ? printablePathOf(cwd, path)
-					: path).replace(/\\/g, "/")
-			})
+	!!loaders?.some(
+		({ ident, loader }) =>
+			// Rspack writes a loader's ident into its path
+			ident === pluginName || loader.endsWith(`??${pluginName}`)
 	)
-}
-
-// a program without each module as the loaders after the plugin built it,
-// which it reads only once it wrote the program
-const withoutBuilt = (
-	program: ScannedProgram
-): [program: ScannedProgram, built: Record<string, string>] => {
-	const built: Record<string, string> = {}
-	const modules: Record<string, ScannedModule> = {}
-	for (const id in program.modules) {
-		const { built: code, ...module } = program.modules[id]
-		modules[id] = module
-		if (code !== undefined) built[id] = code
-	}
-	return [{ ...program, modules }, built]
-}
 
 // each module a compilation's entries reach, as the plugin reads them
 const builtEntriesOf = (

@@ -15,7 +15,6 @@ import {
 	writeExternalizedMessage,
 	writeNextExternalMessage,
 	writeFilelessImportMessage,
-	writeLaterLoaderCommonJsMessage,
 	writeLoadedFirstMessage,
 	writePrecompiledDependencyMessage,
 	writeUncachedModuleMessage,
@@ -3728,44 +3727,24 @@ console.log(String(A({})), a, allowed, String(B({})), b, String(C({})), c, unall
 							fromHere("temp", "commonJsLoader", name, reads.replace(/ /g, "-"))
 						)
 						const [compile, plugin] = compilers[name]
-						const build = (opts: PrecompileUnpluginOptions) => {
-							const compiler = (compile as typeof webpack)({
-								mode: "production",
-								context: root,
-								entry: "./main.ts",
-								target: "node",
-								cache: false,
-								output: { path: join(root, "out"), filename: "main.cjs" },
-								module: {
-									rules: [
-										{ test: /\.ts$/, loader: join(root, "transpile.cjs") }
-									]
-								},
-								plugins: [plugin({ cwd: root, ...opts }) as never]
-							})
-							return new Promise<Stats | undefined>((resolve, reject) =>
+						const compiler = (compile as typeof webpack)({
+							mode: "production",
+							context: root,
+							entry: "./main.ts",
+							target: "node",
+							cache: false,
+							output: { path: join(root, "out"), filename: "main.cjs" },
+							module: {
+								rules: [{ test: /\.ts$/, loader: join(root, "transpile.cjs") }]
+							},
+							plugins: [plugin({ cwd: root, ...opts }) as never]
+						})
+						const stats = await new Promise<Stats | undefined>(
+							(resolve, reject) =>
 								compiler.run((error, stats) =>
 									compiler.close(() => (error ? reject(error) : resolve(stats)))
 								)
-							)
-						}
-						// a pruned build can't follow what the CommonJS the loader
-						// writes reads of a validator
-						if (opts.prune !== false) {
-							const errors =
-								(await build(opts))
-									?.toJson()
-									.errors?.map(({ message }) => message) ?? []
-							attest(errors.length).equals(1)
-							attest(
-								Object.keys(files).some(file =>
-									errors[0].includes(
-										writeLaterLoaderCommonJsMessage(file, ["transpile.cjs"])
-									)
-								)
-							).equals(true)
-						}
-						const stats = await build({ ...opts, prune: false })
+						)
 						attest(stats?.toJson().errors).equals([])
 						const { stdout, stderr } = spawnSync(
 							process.execPath,

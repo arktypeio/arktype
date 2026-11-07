@@ -62,7 +62,6 @@ import { SourceModule } from "./module.ts"
 import {
 	declaredIds,
 	exportNameOf,
-	isOwnEnumSeed,
 	isWriteTarget,
 	loadedSourceOf,
 	unwrapChain,
@@ -4114,8 +4113,7 @@ export class ModuleGraph {
 		this.holdings = result.holdings
 		try {
 			for (const reference of binding.references) {
-				if (reference.isWrite || isOwnEnumSeed(reference.id, module.scopes))
-					continue
+				if (reference.isWrite) continue
 				const write = this.mayWriteFrom(reference.id, module, held)
 				if (write) result.writes.push(write)
 			}

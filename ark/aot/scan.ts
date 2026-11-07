@@ -236,7 +236,7 @@ export interface BuiltModule {
 	mappings: string | undefined
 	imports: BuiltImport[]
 	// a transformed module as the loaders after the plugin built it, which
-	// may add a read the plugin didn't see
+	// write nothing the plugin reads
 	built?: string | undefined
 }
 
@@ -277,20 +277,15 @@ export const programAsBuilt = (
 						modules[id].transformed !== transformed))
 			)
 				return `it built ${pathOf(id)} from two codes`
+			const added = module.built && memberAddedIn(source, module.built)
+			if (added)
+				return `a loader after arktype's adds a read of ${added} to ${pathOf(id)}`
 			if (!(id in modules)) {
 				const { imports, unnamed } = importsOf(id, source)
 				if (unnamed?.reason === unparsed)
 					return `${positionIn(pathOf(id), source, unnamed.offset)} ${unparsed}`
 				namedBy.set(id, new Set(imports.map(([specifier]) => specifier)))
-				modules[id] = {
-					source,
-					transformed,
-					mappings,
-					// read again once the plugin wrote the program, for what the
-					// loaders after it add
-					...(module.built !== undefined &&
-						module.built !== source && { built: module.built })
-				}
+				modules[id] = { source, transformed, mappings }
 				targets[id] = {}
 			}
 		}
@@ -344,6 +339,26 @@ const isReadBuilt = (
 	host: Pick<ScanHost, "isTransformed">
 ): module is BuiltModule & { id: string } =>
 	module.id !== undefined && !isLeftDependency(module.id, host)
+
+// the words a read of an introspection member is written with, counted
+// wherever they are, as a loader may write `const { json } = User` as
+// `User.json`
+const memberNames = [
+	"expression",
+	"description",
+	"json",
+	"toJSON",
+	"toJsonSchema",
+	"jsonSchema"
+]
+
+// an introspection member that code holds more often than what it was built
+// from, as a loader writing a read of it would
+const memberAddedIn = (source: string, built: string) =>
+	memberNames.find(name => {
+		const word = new RegExp(`\\b${name}\\b`, "g")
+		return (built.match(word)?.length ?? 0) > (source.match(word)?.length ?? 0)
+	})
 
 // what a define may name without a module's binding being what it reads
 const definableGlobals = new Set([
@@ -783,8 +798,6 @@ export interface ScannedModule {
 	transformed: boolean
 	// how its lines map to its file's, where a plugin ahead of the host's transformed it
 	mappings?: string | undefined
-	// as the loaders after the plugin built it from source, as webpack's do
-	built?: string | undefined
 }
 
 export interface ScannedUsage {

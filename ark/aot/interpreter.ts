@@ -78,8 +78,6 @@ import {
 import type { SourceModule } from "./module.ts"
 import { isTransparent, proveFunction, runtimeParamsOf } from "./proofs.ts"
 import {
-	isOwnEnumSeed,
-	transpiledEnumOf,
 	unwrapChain,
 	operatorOf,
 	unwrapExpression,
@@ -1885,8 +1883,6 @@ export class Interpreter {
 	}
 
 	private evaluateCall(node: CallExpression, ctx: Context): unknown {
-		const transpiledEnum = this.transpiledEnumOf(node, ctx)
-		if (transpiledEnum) return transpiledEnum
 		const callee = this.calleeOf(node, ctx)
 		if (!("fn" in callee)) return callee
 		const { fn, receiver } = callee
@@ -1902,55 +1898,6 @@ export class Interpreter {
 			}
 		}
 		return this.call(fn, receiver, args, node, ctx)
-	}
-
-	// a TypeScript enum as a transpiler writes it, Vite's, esbuild's, SWC's
-	// and Babel's alike, the object it reads as the enum declared:
-	//
-	// let Color = function (Color) {
-	// 	Color["Red"] = "red"
-	// 	Color[Color["One"] = 1] = "One"
-	// 	return Color
-	// }({})
-	//
-	// its argument `{}`, or `Color || {}` where the binding it initializes is
-	// declared once, so nothing merges into it. Any other shape is a call
-	private transpiledEnumOf(
-		node: CallExpression,
-		ctx: Context
-	): Record<string, unknown> | DynamicValue | undefined {
-		const transpiled = transpiledEnumOf(node)
-		if (!transpiled) return
-		const { param, members, seed } = transpiled
-		// `Color || {}` reads the binding it initializes, which is undefined
-		// where nothing else declares it
-		if (seed && !isOwnEnumSeed(seed, ctx.module.scopes)) return
-		const isParam = (node: Node) =>
-			node.type === "Identifier" && node.name === param
-		if (!members.length) return
-		const result: Record<string, unknown> = {}
-		for (const [member, valueNode, isNumber] of members) {
-			let readsEnum = false
-			walk(valueNode, node => {
-				if (isParam(node)) readsEnum = true
-				return !readsEnum
-			})
-			// a transpiler writes each value the enum reads as its own
-			if (readsEnum)
-				return this.reject(valueNode, ctx, "reads the enum it defines")
-			const value = this.evaluate(valueNode, ctx)
-			if (isDynamic(value)) return value
-			if (typeof value !== (isNumber ? "number" : "string")) {
-				return this.reject(
-					valueNode,
-					ctx,
-					`is not a ${isNumber ? "number" : "string"}`
-				)
-			}
-			result[member] = value
-			if (isNumber) result[value as number] = member
-		}
-		return result
 	}
 
 	private calleeOf(
