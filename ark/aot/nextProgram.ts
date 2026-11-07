@@ -92,17 +92,13 @@ const programsDirOf = (root: string) =>
 
 // one for each project and option set, kept from build to build so an answer
 // Turbopack's cache holds a module's output against stays the file it read
-export const programDirOf = (
-	root: string,
-	opts: PrecompilePluginOptions
-): string => join(programsDirOf(root), hashOf(JSON.stringify(opts)))
+const programDirOf = (root: string, opts: PrecompilePluginOptions): string =>
+	join(programsDirOf(root), hashOf(JSON.stringify(opts)))
 
 export const doneFileOf = (dir: string): string => join(dir, "done.json")
 
-export interface ReadProgramDir {
+export interface ReadProgramDir extends Pick<ProgramDone, "refused"> {
 	dir: string
-	// why the build writes each module on its own
-	refused: string | undefined
 }
 
 // as next.config's wrapper read it for this build
@@ -125,7 +121,7 @@ export const programOf = (
 	return {
 		dir,
 		...(JSON.parse(readFileSync(doneFileOf(dir), "utf8")) as Pick<
-			ReadProgramDir,
+			ProgramDone,
 			"refused"
 		>)
 	}
@@ -135,11 +131,11 @@ export const programOf = (
 export const isProgramRead = (): boolean => process.env[readEnv] !== undefined
 
 // what `next build`'s config wrapper runs, as Next loads next.config
-export const readProgram = async (
+const readProgram = async (
 	root: string,
 	opts: PrecompilePluginOptions,
-	{ aliases = {}, problem }: ReadSettings = {}
-): Promise<ReadProgramDir & ProgramDone> => {
+	{ aliases, problem }: ReadSettings
+): Promise<ProgramDone> => {
 	const dir = programDirOf(root, opts)
 	mkdirSync(dir, { recursive: true })
 	// another option set's, whose answers a module's cached output may name
@@ -156,14 +152,14 @@ export const readProgram = async (
 	// its warnings aside, which each build reports anew
 	writeChanged(doneFileOf(dir), JSON.stringify({ refused: done.refused }))
 	process.env[readEnv] = dir
-	return { dir, ...done }
+	return done
 }
 
-export interface ReadSettings {
+interface ReadSettings {
 	// turbopack.resolveAlias's, for what Turbopack resolves otherwise than Node
-	aliases?: Record<string, unknown>
+	aliases: Record<string, unknown>
 	// what next.config sets that the read can't see past
-	problem?: string | undefined
+	problem: string | undefined
 }
 
 const refusalOf = (reason: string): ProgramDone => ({
@@ -185,18 +181,9 @@ const removeAllBut = (dir: string, kept: Set<string>) => {
 	}
 }
 
-// what a build writes, what it serves as it is and the project's tests, beside
-// the project's root. Below it, each of these names may be a route's, as
-// app/build/page.tsx is
-const skippedAtRoot = new Set([
-	"public",
-	"out",
-	"dist",
-	"build",
-	"coverage",
-	"__tests__",
-	"__mocks__"
-])
+// what a build writes and what it serves as it is, beside the project's root.
+// Below it, each of these names may be a route's, as app/build/page.tsx is
+const skippedAtRoot = new Set(["public", "out", "dist", "build", "coverage"])
 
 // a project's tests and their mocks, which only an import reaches outside the
 // routes, where app/ leaves a folder named with an underscore unrouted
@@ -442,8 +429,8 @@ const readAndWrite = async (
 	const isTransformed = (id: string) =>
 		transformedFilter.include.test(id) && !transformedFilter.exclude.test(id)
 	let queried: string | undefined
-	// as Turbopack resolves, which loads next.config after this does: each
-	// module's loader call checks each of its imports in its own layer
+	// as Turbopack resolves, through resolveAlias. Turbopack starts once this
+	// is done, so each module's loader call checks the read's against its own
 	const resolveFile = (specifier: string, importer: string) => {
 		const aliased = aliasOf(aliases, specifier)
 		const resolved =

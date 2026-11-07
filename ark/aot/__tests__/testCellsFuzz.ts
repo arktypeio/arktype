@@ -947,12 +947,19 @@ const bump = (record: Record<string, number>, key: string) =>
 const headOf = (message: string) => {
 	const lines = message.split("\n").filter(line => line.trim())
 	const line = lines.find(
-		l => !/^(threw )?Error: Build failed|^\[plugin |^exit \d+$/.test(l.trim())
+		l =>
+			!/^(threw )?Error: Build failed|^\[plugin |^exit \d+$|^(× )?Module build failed|^(ModuleBuildError|Error): Module build failed/.test(
+				l.trim()
+			)
 	)
-	return (line ?? lines[0] ?? JSON.stringify(message))
-		.replace(/\s+/g, " ")
-		.replace(/^\S+\.ts:\d+:\d+ /, "")
-		.slice(0, 120)
+	return (
+		(line ?? lines[0] ?? JSON.stringify(message))
+			.replace(/\s+/g, " ")
+			// Rspack draws its cause's tree
+			.replace(/^[\s×─╰▶]+/, "")
+			.replace(/^\S+\.ts(?:\?\S*)?:\d+:\d+ /, "")
+			.slice(0, 120)
+	)
 }
 
 const failures: string[] = []
