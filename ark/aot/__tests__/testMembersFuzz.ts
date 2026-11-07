@@ -6,7 +6,12 @@
 // arktype. ARK_MEMBERS_FUZZ=<count>[:<seed>[:<path>]]
 // [ARK_MEMBERS_FUZZ_HOSTS=esbuild,vite,modules,webpack,rspack,turbopack,node,dev,emit]
 // [ARK_MEMBERS_FUZZ_FAILURES=<dir>] [ARK_PRECOMPILE_OPTIONS=<json>]
-// [ARK_FUZZ_SIDE_EFFECTS_FREE=1] pnpm testMembersFuzz
+// [ARK_FUZZ_SIDE_EFFECTS_FREE=1] [ARK_MEMBERS_FUZZ_LATE=1] pnpm testMembersFuzz
+// ARK_MEMBERS_FUZZ_LATE=1 has a transform after arktype's write some readers'
+// reads, which the build's read of the source never sees: a Vite plugin listed
+// after precompile.vite(), a webpack or Rspack loader after arktype's, each at
+// an order the app draws, and Babel on Turbopack. Such a build bakes what a
+// late read needs, or the read throws that it isn't baked.
 import { fromHere } from "@ark/fs"
 import { Precompiler } from "@ark/aot"
 import { scanProgram } from "@ark/aot/internal/scan.ts"
@@ -21,6 +26,8 @@ import {
 	cpSync,
 	existsSync,
 	mkdirSync,
+	readdirSync,
+	readFileSync,
 	rmSync,
 	symlinkSync,
 	writeFileSync
@@ -29,6 +36,7 @@ import { tmpdir } from "node:os"
 import { dirname, join, posix } from "node:path"
 import { pathToFileURL } from "node:url"
 import { throughArkBarrel } from "./arkBarrel.ts"
+import { babelPlugin, lateApplied } from "./lateReadsLoader.ts"
 import { buildOnNext, removeNextApps } from "./nextBuild.ts"
 import { memoryHost, tempDir } from "./utils.ts"
 
@@ -50,8 +58,13 @@ const allHosts = [
 ] as const
 // slow enough, a Next build for each app, to be asked for by name
 type Host = (typeof allHosts)[number] | "turbopack"
+const late = process.env.ARK_MEMBERS_FUZZ_LATE === "1"
+// the hosts a transform can follow arktype's on
+const lateHosts = new Set<Host>(["vite", "webpack", "rspack", "turbopack"])
 const hosts = (process.env.ARK_MEMBERS_FUZZ_HOSTS?.split(",") ??
-	allHosts) as Host[]
+	(late ? ["vite", "webpack", "rspack"] : allHosts)) as Host[]
+if (late && hosts.some(host => !lateHosts.has(host)))
+	throw new Error(`No transform follows arktype's on ${hosts.join(", ")}`)
 const failureDir =
 	process.env.ARK_MEMBERS_FUZZ_FAILURES ??
 	join(tmpdir(), "ark-members-fuzz-failures")
@@ -414,7 +427,7 @@ interface Read {
 	fallback?: true
 }
 
-const reads: Record<string, Read> = {
+const memberReads: Record<string, Read> = {
 	description: { expr: s => `${s}.description`, needs: ["description"] },
 	expression: { expr: s => `${s}.expression`, needs: ["expression"] },
 	json: { expr: s => `${s}.json`, needs: ["json"] },
@@ -508,6 +521,20 @@ const reads: Record<string, Read> = {
 	}
 }
 
+// reads of members a pruned build leaves out where it sees none, which only a
+// late transform writes here, as the prune fuzzer reads them otherwise
+const prunedReads: Record<string, Read> = {
+	assert: { expr: s => `typeof ${s}.assert`, needs: [] },
+	standard: { expr: s => `typeof ${s}["~standard"]`, needs: [] },
+	passedAssert: {
+		expr: s => `(f => f(${s}))(u => typeof u.assert)`,
+		needs: []
+	}
+}
+
+const reads: Record<string, Read> =
+	late ? { ...memberReads, ...prunedReads } : memberReads
+
 type ReadName = keyof typeof reads
 
 const lib = `const registry = {}
@@ -552,23 +579,31 @@ interface Reader {
 	hops: HopName[]
 	steps: StepName[]
 	read: ReadName
+	// whether a transform after arktype's writes its read
+	late?: boolean
 }
+
+// where a late transform runs: on Vite, its plugin's enforce; on webpack and
+// Rspack, its rule's, each after arktype's of the same enforce
+type LateOrder = "pre" | "normal" | "post"
 
 interface App {
 	definitions: number[]
 	// whether the validators are a dependency's, which opts in
 	packaged: boolean
 	readers: Reader[]
+	lateOrder?: LateOrder
 }
 
 const nameArb = <names extends string>(record: Record<names, unknown>) =>
 	fc.constantFrom(...(Object.keys(record) as names[]))
 
-const readerArb = fc.record({
+const readerArb: fc.Arbitrary<Reader> = fc.record({
 	target: fc.nat({ max: 2 }),
 	hops: fc.array(nameArb(hops), { maxLength: 3 }),
 	steps: fc.array(nameArb(steps), { maxLength: 2 }),
-	read: nameArb(reads)
+	read: nameArb(reads),
+	...(late && { late: fc.boolean() })
 })
 
 const apps: fc.Arbitrary<App> = fc
@@ -578,8 +613,12 @@ const apps: fc.Arbitrary<App> = fc
 			maxLength: 3
 		}),
 		packaged: fc.nat({ max: 3 }).map(n => n === 0),
-		readers: fc.array(readerArb, { minLength: 1, maxLength: 4 })
+		readers: fc.array(readerArb, { minLength: 1, maxLength: 4 }),
+		...(late && {
+			lateOrder: fc.constantFrom<LateOrder>("pre", "normal", "post")
+		})
 	})
+	.filter(({ readers }) => !late || readers.some(reader => reader.late))
 	.filter(
 		// Node can't require() a module another reader is loading by import()
 		({ readers }) =>
@@ -622,11 +661,30 @@ const sideEffects =
 
 // each file of an app, whose imports of arktype reach it through a barrel where
 // the round asks
-const filesOf = (app: App): Record<string, string> =>
-	throughArkBarrel(ownFilesOf(app))
+// as written, or as the late transform leaves it, which the oracle runs
+const filesOf = (app: App, lateWritten = false): Record<string, string> =>
+	throughArkBarrel(ownFilesOf(app, lateWritten))
 
-const ownFilesOf = (app: App): Record<string, string> => {
+// each late reader's read, by the reader's index
+const lateReadsOf = (app: App): string[] =>
+	app.readers.map((reader, j) => {
+		const read = reads[reader.read]
+		return read.body ?
+				`(() => {\n${read.body("s").join("\n")}\n})()`
+			:	read.expr!("s", j)
+	})
+
+const ownFilesOf = (app: App, lateWritten: boolean): Record<string, string> => {
 	const files: Record<string, string> = {}
+	if (late && !lateWritten) {
+		files["late-reads.json"] = JSON.stringify(lateReadsOf(app))
+		files["late-reads.cjs"] = babelPlugin
+		files["late-order.json"] = JSON.stringify(app.lateOrder)
+		files[".babelrc"] = JSON.stringify({
+			presets: ["next/babel"],
+			plugins: ["./late-reads.cjs"]
+		})
+	}
 	if (app.packaged) {
 		files[`node_modules/${packageName}/package.json`] = JSON.stringify({
 			name: packageName,
@@ -685,12 +743,17 @@ const ownFilesOf = (app: App): Record<string, string> => {
 		files[`reader${j}.ts`] = [
 			`import { obs } from "./helpers.ts"`,
 			...(usesLib ? [`import * as lib from "lib"`] : []),
+			// used where only the late read uses it, as TypeScript drops an import
+			// it sees no use of before the transform writes one
+			...(usesLib && reader.late && !lateWritten ? [`void lib`] : []),
 			importOf(link),
 			"",
 			...lines,
 			...(read.setup?.(j) ?? []),
 			`const s = ${value}`,
-			read.body ?
+			reader.late && !lateWritten ?
+				`export const run = () => obs(() => "__ARK_LATE_${j}__")`
+			: read.body ?
 				[
 					`export const run = () =>`,
 					`\tobs(() => {`,
@@ -752,7 +815,7 @@ const sourceOfApp = (app: App) =>
 const root = tempDir("ark-members-fuzz-")
 let appCount = 0
 
-const writeApp = (app: App): string => {
+const writeApp = (app: App, lateWritten = false): string => {
 	const dir = join(root, `${appCount++}`)
 	rmSync(dir, { recursive: true, force: true })
 	mkdirSync(join(dir, "node_modules"), { recursive: true })
@@ -760,13 +823,49 @@ const writeApp = (app: App): string => {
 		fromHere("..", "..", "type"),
 		join(dir, "node_modules", "arktype")
 	)
-	const files = filesOf(app)
+	const files = filesOf(app, lateWritten)
 	for (const name in files) {
 		mkdirSync(dirname(join(dir, name)), { recursive: true })
 		writeFileSync(join(dir, name), files[name])
 	}
 	return dir
 }
+
+// the late transform as a Vite plugin listed after arktype's
+const lateVitePlugin = (dir: string, order: LateOrder) => {
+	const lateReads = JSON.parse(
+		readFileSync(join(dir, "late-reads.json"), "utf8")
+	)
+	return {
+		name: "late-reads",
+		...(order !== "normal" && { enforce: order }),
+		transform: (code: string, id: string) =>
+			/reader\d+\.ts$/.test(id) ? lateApplied(code, lateReads) : undefined
+	}
+}
+
+// and as a loader webpack and Rspack run after arktype's
+const lateRules = (dir: string, order: LateOrder) =>
+	existsSync(join(dir, "late-reads.json")) ?
+		[
+			{
+				test: /reader\d+\.ts$/,
+				...(order !== "normal" && { enforce: order }),
+				loader: fromHere("lateReadsLoader.ts"),
+				options: {
+					reads: JSON.parse(readFileSync(join(dir, "late-reads.json"), "utf8"))
+				}
+			}
+		]
+	:	[]
+
+// an app's late order, which a replayed app keeps beside it
+const lateOrderOf = (dir: string): LateOrder =>
+	existsSync(join(dir, "late-order.json")) ?
+		(JSON.parse(
+			readFileSync(join(dir, "late-order.json"), "utf8")
+		) as LateOrder)
+	:	"pre"
 
 const conditions = ["ark-ts", "production"]
 
@@ -861,8 +960,8 @@ const viteOutcome = async (dir: string, plugin: boolean): Promise<Outcome> => {
 			root: dir,
 			configFile: false,
 			logLevel: "silent",
-			plugins:
-				plugin ?
+			plugins: [
+				...(plugin ?
 					[
 						precompile.vite({
 							conditions: ["ark-ts"],
@@ -870,7 +969,9 @@ const viteOutcome = async (dir: string, plugin: boolean): Promise<Outcome> => {
 							...buildOptions
 						})
 					]
-				:	[],
+				:	[]),
+				...(late ? [lateVitePlugin(dir, lateOrderOf(dir))] : [])
+			],
 			resolve: { conditions: ["ark-ts", ...defaultClientConditions] },
 			build: {
 				write: true,
@@ -907,7 +1008,8 @@ const webpackOutcome = async (
 		entry: "./main.ts",
 		target: "node" as const,
 		output: { path: out, filename: "main.cjs" },
-		resolve: { extensions: [".ts", ".js", ".cjs"] }
+		resolve: { extensions: [".ts", ".js", ".cjs"] },
+		module: { rules: lateRules(dir, lateOrderOf(dir)) }
 	}
 	const compiler =
 		bundler === "webpack" ?
@@ -956,6 +1058,9 @@ const turbopackOutcome = (dir: string, plugin: boolean): Outcome => {
 		["main"],
 		plugin ? buildOptions : undefined
 	)
+	// whether the build read past Babel or gave the read up
+	if (late && plugin && built.warnings.length)
+		console.error(`WARNED (turbopack): ${built.warnings.join("\n")}`)
 	return built.refused ?
 			{ refused: built.refused }
 		:	{ out: runBundle(built.runners.main, dir) }
@@ -1038,11 +1143,11 @@ const observationsOf = (out: string): unknown[] | undefined => {
 	}
 }
 
-// a registered function's name differs between builds
+// a registered function's name differs between builds, as a minifier renames it
 const normalized = (observation: unknown) =>
-	JSON.stringify(observation)?.replace(/\$ark\.\w+?\$?\d+/g, "$ark.fn")
+	JSON.stringify(observation)?.replace(/\$ark\.\w+/g, "$ark.fn")
 
-const unbakedMessage = /isn't baked into this validator/
+const unbakedMessage = /isn't precompiled: set members/
 const fallbackMessage = /takes only a target it was built with/
 
 type Verdict =
@@ -1050,6 +1155,7 @@ type Verdict =
 	| "unsound"
 	| "unbakedThroughCommonJs"
 	| "fallbackUnbaked"
+	| "unbakedLate"
 	| "enumerated"
 	| "bundler"
 
@@ -1063,7 +1169,10 @@ const mismatchOf = (
 	const threw = (observed as { threw?: string } | undefined)?.threw ?? ""
 	const read = reads[reader.read]
 	if (
-		moduleAtATime.has(host) &&
+		// a build a late transform follows may read each module alone, as
+		// Turbopack's does under Babel, and a seen read through require() then
+		// throws as it does on a host reading one module at a time
+		(moduleAtATime.has(host) || late) &&
 		hopsOf(reader).includes("required") &&
 		(unbakedMessage.test(threw) ||
 			// toString's backstop, as converting it reads expression
@@ -1072,6 +1181,15 @@ const mismatchOf = (
 	)
 		return "unbakedThroughCommonJs"
 	if (read.fallback && fallbackMessage.test(threw)) return "fallbackUnbaked"
+	// a read written after the build read the module, as the docs have one
+	// the build can't see
+	if (
+		reader.late &&
+		(unbakedMessage.test(threw) ||
+			JSON.stringify(observed) ===
+				JSON.stringify(expected)?.replace(/Type<(?:[^"\\]|\\.)*>/g, "Type"))
+	)
+		return "unbakedLate"
 	if (read.enumerates) return "enumerated"
 	return "unsound"
 }
@@ -1081,6 +1199,7 @@ interface Tally {
 	unsound: number
 	unbakedThroughCommonJs: number
 	fallbackUnbaked: number
+	unbakedLate: number
 	enumerated: number
 	bundler: number
 	refused: Record<string, number>
@@ -1094,6 +1213,7 @@ const tallies = Object.fromEntries(
 			unsound: 0,
 			unbakedThroughCommonJs: 0,
 			fallbackUnbaked: 0,
+			unbakedLate: 0,
 			enumerated: 0,
 			bundler: 0,
 			refused: {}
@@ -1193,7 +1313,7 @@ const tallyOverbake = async (app: App) => {
 }
 
 const describeReader = (reader: Reader) =>
-	`hops ${hopsOf(reader).join(",") || "-"}, steps ${reader.steps.join(",") || "-"}, read ${reader.read}`
+	`hops ${hopsOf(reader).join(",") || "-"}, steps ${reader.steps.join(",") || "-"}, read ${reader.read}${reader.late ? " late" : ""}`
 
 // the error a run of a build crashed with
 const errorOf = (out: string) => /^\w*Error\b.*$/m.exec(out)?.[0]
@@ -1201,7 +1321,9 @@ const errorOf = (out: string) => /^\w*Error\b.*$/m.exec(out)?.[0]
 // whether each host's build of an app refuses it or runs it as arktype does
 const check = async (app: App): Promise<boolean> => {
 	const dir = writeApp(app)
-	const expected = run(["--conditions", "ark-ts", "main.ts"], dir)
+	const oracleDir = late ? writeApp(app, true) : dir
+	const expected = run(["--conditions", "ark-ts", "main.ts"], oracleDir)
+	if (late) rmSync(oracleDir, { recursive: true, force: true })
 	const expectedObservations = observationsOf(expected)
 	// an app arktype itself can't run says nothing of a build
 	if (!expectedObservations) {
@@ -1218,9 +1340,15 @@ const check = async (app: App): Promise<boolean> => {
 		const outcome = await outcomeOf(host, dir)
 		if ("refused" in outcome) {
 			bump(tally.refused, headOf(outcome.refused))
+			// whether the refusal is arktype's or the late transform's
+			if (late)
+				console.error(`REFUSED (${host}): ${outcome.refused.slice(0, 2000)}`)
 			continue
 		}
 		const observations = observationsOf(outcome.out)
+		// a late read left as its placeholder is the harness's, not the build's
+		if (late && /"__ARK_LATE_\d+__"/.test(outcome.out))
+			throw new Error(`harness: ${host} ran no late transform in ${dir}`)
 		const verdicts: Verdict[] =
 			observations ?
 				app.readers.map((reader, j) =>
@@ -1247,8 +1375,14 @@ const check = async (app: App): Promise<boolean> => {
 					if (
 						v === "unsound" &&
 						normalized(plainObservations[j]) === normalized(observations[j])
-					)
+					) {
 						verdicts[j] = "bundler"
+						if (late) {
+							console.error(
+								`BUNDLER (${host}): ${describeReader(app.readers[j])}\n  built: ${normalized(observations[j])?.slice(0, 300)}\n  arktype: ${normalized(expectedObservations[j])?.slice(0, 300)}`
+							)
+						}
+					}
 				}
 			}
 		}
@@ -1292,7 +1426,21 @@ if (replayed) {
 		fromHere("..", "..", "type"),
 		join(dir, "node_modules", "arktype")
 	)
-	const expected = run(["--conditions", "ark-ts", "main.ts"], dir)
+	// a late app's oracle runs its reads as the transform writes them
+	const oracleDir = join(root, "replay-oracle")
+	cpSync(dir, oracleDir, { recursive: true })
+	if (existsSync(join(dir, "late-reads.json"))) {
+		const lateReads = JSON.parse(
+			readFileSync(join(dir, "late-reads.json"), "utf8")
+		)
+		for (const name of readdirSync(oracleDir)) {
+			if (/^reader\d+\.ts$/.test(name)) {
+				const file = join(oracleDir, name)
+				writeFileSync(file, lateApplied(readFileSync(file, "utf8"), lateReads))
+			}
+		}
+	}
+	const expected = run(["--conditions", "ark-ts", "main.ts"], oracleDir)
 	console.log(`oracle:\n${expected}`)
 	for (const host of hosts) {
 		const outcome = await outcomeOf(host, dir)
@@ -1337,7 +1485,7 @@ while (remaining > 0) {
 for (const host of hosts) {
 	const t = tallies[host]
 	console.log(
-		`${host}: ${t.sound} sound, ${t.unsound} unsound, ${t.unbakedThroughCommonJs} unbaked through CommonJS, ${t.fallbackUnbaked} fallbacks unbaked, ${t.enumerated} enumerated, ${t.bundler} as the bundler alone builds them, refused: ${JSON.stringify(t.refused)}`
+		`${host}: ${t.sound} sound, ${t.unsound} unsound, ${t.unbakedThroughCommonJs} unbaked through CommonJS, ${t.fallbackUnbaked} fallbacks unbaked, ${t.unbakedLate} late reads unbaked, ${t.enumerated} enumerated, ${t.bundler} as the bundler alone builds them, refused: ${JSON.stringify(t.refused)}`
 	)
 }
 console.log(

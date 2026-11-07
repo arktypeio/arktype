@@ -190,11 +190,14 @@ print({ plain: null, refined: null, count: null, flag: null, object: null, writt
 print({ plain: "a", refined: "ab", count: 1, flag: true, object: { a: "a" }, written: {} })
 print({ plain: 1, refined: "a", count: 0, flag: 1, object: 1, written: 1 })
 print({ plain: {}, refined: 1, count: "a", flag: "a", object: {}, written: { a: "a" } })
+// a function is an object to arktype, so its keys are checked
+print({ plain: null, refined: null, count: null, flag: null, object: Object.assign(() => {}, { a: "a" }), written: Object.assign(() => {}, { a: "a" }) })
 ${repaying}
 `
 		)
 		const written = await bundle(root, smallest)
 		attest(written.includes("nullable(")).equals(true)
+		attest(written.includes("nullableObject(")).equals(true)
 		attest(behaviorOf(written)).equals(behaviorOf(await bundle(root)))
 	})
 
@@ -754,6 +757,27 @@ run(() => Message("  "))
 run(() => type({ m: Message })({ m: "  " }))
 `
 		)
+
+		// a size build compiles a unit it can't write as a checker, which is then
+		// read as compiled
+		for (const [name, opts] of Object.entries({
+			'with errors "first"': { errors: "first" },
+			"writing in place": { mutatesInput: true }
+		} as const)) {
+			it(`runs as arktype does in a size build ${name}`, async () => {
+				const root = fixture(
+					`morph-size-${name.replace(/\W+/g, "-")}`,
+					morphApp(`const Deep = type({ a: Trim, k: { s: "string.trim" } })
+run(() => Deep({ a: " a ", k: { s: 1 } }))
+run(() => Deep({ a: 1, k: { s: " s " } }))
+run(() => Deep({ a: " a ", k: { s: " s " } }))
+run(() => Trim(" t "))
+`)
+				)
+				const js = await bundle(root, { optimize: "size", ...opts })
+				attest(behaviorOf(js)).equals(expected(runPlain(root)))
+			})
+		}
 	})
 
 	describe("a key a checker doesn't declare", () => {

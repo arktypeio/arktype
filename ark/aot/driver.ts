@@ -104,6 +104,8 @@ export type PrecompileRequest =
 	  ]
 	| [kind: "scan", program: ScannedProgram]
 	| [kind: "unseen", program: ScannedProgram]
+	// a program holding what the loaders after the plugin built of each module
+	| [kind: "unseenBuilt", program: ScannedProgram]
 	| [kind: "program", program: ReadProgram]
 	| [kind: "check", source: string, id: string]
 	| [
@@ -395,10 +397,11 @@ const answerRequests = (
 			}
 			return usage
 		}
-		if (request[0] === "unseen") {
-			const [, program] = request
+		if (request[0] === "unseen" || request[0] === "unseenBuilt") {
+			const [kind, program] = request
 			const scan = scansByProgram[program.key]
-			const key = scan?.cache && keyOf(scan.key, { ...program, key: undefined })
+			const key =
+				scan?.cache && keyOf(scan.key, { ...program, key: undefined, kind })
 			// stored only where nothing reads what the scan left out
 			if (
 				key &&
@@ -407,7 +410,10 @@ const answerRequests = (
 			)
 				return
 			const scanning = scan ? scanned(scan) : viewing(tracked)
-			const unseen = scanning.precompiler.unseenIn(program)
+			const unseen =
+				kind === "unseen" ?
+					scanning.precompiler.unseenIn(program)
+				:	scanning.precompiler.unseenBuiltIn(program)
 			if (key && scan.isStored && unseen === undefined)
 				store(scanning, scan.cache!, key, null)
 			return unseen

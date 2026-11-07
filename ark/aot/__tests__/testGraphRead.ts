@@ -1,7 +1,7 @@
 // webpack and Rspack read the program as they built it, so what they prune rests
 // on what that read sees: each scenario reads a validator's members in a way the
 // bundler itself decides, by a plugin, a loader, a context or an output format.
-// A pruned build either refuses, throws that a member isn't baked, or runs as
+// A pruned build either refuses, throws that a member isn't precompiled, or runs as
 // the same config's whole build.
 // [ARK_GRAPH_READ_ONLY=<scenario prefix>,...] [ARK_GRAPH_READ_BUNDLERS=webpack,rspack]
 // [ARK_GRAPH_READ_KEEP=<dir>] pnpm testGraphRead
@@ -558,7 +558,8 @@ const build = async (
 	bundler: Bundler,
 	dir: string,
 	scenario: Scenario,
-	options: Record<string, unknown>
+	options: Record<string, unknown>,
+	withPlugin = true
 ): Promise<Outcome> => {
 	const lib = (bundler === "webpack" ? webpack : rspack) as typeof webpack
 	const out = join(dir, "out")
@@ -581,7 +582,10 @@ const build = async (
 		},
 		overrides
 	)
-	config.plugins = [...((overrides.plugins as never[]) ?? []), plugin]
+	config.plugins = [
+		...((overrides.plugins as never[]) ?? []),
+		...(withPlugin ? [plugin] : [])
+	]
 	const compiler = lib(config as never)
 	const failed = await new Promise<string | undefined>((resolve, reject) => {
 		const hung = setTimeout(
@@ -638,7 +642,7 @@ const normalized = (out: string) =>
 
 // a member a build left out, which it says as it's read
 const isLoud = (out: string) =>
-	/isn't baked|reads? \w+, which a standalone validator lacks|Type<[^>]*>|can't be precompiled/.test(
+	/isn't precompiled: set members|reads? \w+, which a standalone validator lacks|Type<[^>]*>|can't be precompiled/.test(
 		out
 	)
 
@@ -679,6 +683,18 @@ for (const [name, scenario] of Object.entries(scenarios)) {
 			if (isLoud(pruned.out)) {
 				console.log(`${label}: loud: ${pruned.out.trim().slice(0, 200)}`)
 				continue
+			}
+			// a whole build failing loudly where the pruned one reads what arktype
+			// does, as the bundler alone builds it with arktype
+			if (isLoud(whole.out)) {
+				const plain = await build(bundler, dir, scenario, preset, false)
+				if (
+					"out" in plain &&
+					normalized(plain.out) === normalized(pruned.out)
+				) {
+					console.log(`${label}: as arktype, where whole is loud`)
+					continue
+				}
 			}
 			unsound++
 			console.log(

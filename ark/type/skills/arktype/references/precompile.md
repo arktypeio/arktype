@@ -183,6 +183,6 @@ Each build error names the file, line and column, then why, then the fix on its 
 Two messages concern `members`:
 
 - `prune: keeping assert, meta, ~standard and methods, because the validator at src/schemas.ts:7:9 is lost where ...` (a warning): the build kept the members it couldn't prove unread, as where a Type is passed to a function it can't resolve; the build is correct, only larger. To build without the warning, set each member it names under `members` in `ark.json`, `true` where code may read it, like `~standard` where a library validates with it, else `false`, e.g. `"precompile": { "members": { "assert": false, "meta": false, "~standard": true, "methods": false } }`.
-- `toJsonSchema isn't baked into this validator, as the build saw no code read it`, at runtime: code the build can't see read it, like code outside the bundle reading an entry's export; set that member true under `members`.
+- `toJsonSchema isn't precompiled`, at runtime: code the build can't see read it, like code outside the bundle reading an entry's export; set that member true under `members`.
 
 Every message and its fix: https://arktype.io/docs/precompile/troubleshooting.md.

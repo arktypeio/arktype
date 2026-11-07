@@ -2,9 +2,11 @@
 import {
 	withAllowUnsafe,
 	writeExternalizedMessage,
+	writeLaterLoaderReadMessage,
 	writeMissedByProgramMessage,
 	writeNextExternalMessage,
-	writeTurbopackDependencyMessage
+	writeTurbopackDependencyMessage,
+	writeUnreadProgramMessage
 } from "@ark/aot/internal/messages.ts"
 import { spawnSync } from "node:child_process"
 import {
@@ -308,6 +310,86 @@ for (const [how, config] of [
 	}
 	writeFileSync(settingsPath, settings)
 }
+
+console.log(
+	"▲ Building it with a Babel plugin adding reads after the loader (Turbopack)..."
+)
+
+// what Babel, which Next runs on each module after the loader once a config
+// names it, may add: each read and what it renders, a member it bakes only
+// where it sees code read it throwing that it isn't
+const babelReads: [read: string, renders: string][] = [
+	["typeof Age.assert", "function"],
+	['typeof Age["~standard"]', "object"],
+	["(f => f(Age))(age => typeof age.assert)", "function"],
+	["Age.expression", "expression isn't precompiled"],
+	["JSON.stringify(Age)", "toJSON isn't precompiled"]
+]
+const babelFiles: Record<string, string> = {
+	".babelrc": JSON.stringify({
+		presets: ["next/babel"],
+		plugins: ["./reads-plugin.cjs"]
+	}),
+	"reads-plugin.cjs": `module.exports = () => ({
+	visitor: {
+		StringLiteral(path) {
+			if (path.node.value !== "BABEL_READS") return
+			path.replaceWithSourceString(${JSON.stringify(
+				`[${babelReads.map(([read]) => `() => ${read}`).join(", ")}].map(read => { try { return String(read()) } catch (e) { return e.message.split(":")[0] } }).join(" | ")`
+			)})
+		}
+	}
+})
+`,
+	"src/babel.ts":
+		'import { Age } from "./age.ts"\n\nexport const babelReads = () => [typeof Age.allows, "BABEL_READS"].join(" | ")\n',
+	"app/babel/page.jsx":
+		'import { babelReads } from "../../src/babel.ts"\n\nexport default function Page() {\n\treturn <p>{babelReads()}</p>\n}\n'
+}
+for (const [path, contents] of Object.entries(babelFiles)) {
+	mkdirSync(dirname(join(appDir, path)), { recursive: true })
+	writeFileSync(join(appDir, path), contents)
+}
+const babel = build(turbopack)
+const babelPage = join(appDir, ".next/server/app/babel.html")
+const babelRendered = ["function", ...babelReads.map(([, renders]) => renders)]
+	.join(" | ")
+	.replace(/"/g, "&quot;")
+	.replace(/'/g, "&#x27;")
+if (
+	babel.status !== 0 ||
+	!babel.output.includes(
+		writeUnreadProgramMessage(
+			".babelrc has Next run Babel on each module after this loader, which may add reads it can't see"
+		)
+	) ||
+	!readFileSync(babelPage, "utf8").includes(`<p>${babelRendered}</p>`)
+) {
+	throw new Error(
+		`Turbopack should build each module on its own where Babel runs after the loader, rendering ${babelRendered} in ${babelPage}. It exited ${babel.status}:\n${babel.output}`
+	)
+}
+console.log(
+	"▲ Building it with a Babel plugin adding reads after the loader (webpack)..."
+)
+
+// webpack builds each module from what reached the loader, so the plugin reads
+// what Babel built of it once it wrote the program, and fails on a read it adds
+assertFailsWith(
+	writeLaterLoaderReadMessage(
+		"src/babel.ts",
+		"a module reads expression of a validator",
+		[
+			"next/dist/build/webpack/loaders/next-flight-loader/index.js",
+			"next/dist/build/webpack/loaders/next-swc-loader.js",
+			"next/dist/build/babel/loader/index.js"
+		]
+	),
+	build(webpack, "--webpack")
+)
+for (const path of Object.keys(babelFiles))
+	rmSync(join(appDir, path), { recursive: true, force: true })
+rmSync(join(appDir, "app/babel"), { recursive: true, force: true })
 
 console.log("▲ Building a route importing a module from beyond the project...")
 
