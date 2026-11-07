@@ -236,7 +236,7 @@ export interface BuiltModule {
 	mappings: string | undefined
 	imports: BuiltImport[]
 	// a transformed module as the loaders after the plugin built it, which
-	// write nothing the plugin reads
+	// may add a read the plugin didn't see
 	built?: string | undefined
 }
 
@@ -277,15 +277,20 @@ export const programAsBuilt = (
 						modules[id].transformed !== transformed))
 			)
 				return `it built ${pathOf(id)} from two codes`
-			const added = module.built && memberAddedIn(source, module.built)
-			if (added)
-				return `a loader after arktype's adds a read of ${added} to ${pathOf(id)}`
 			if (!(id in modules)) {
 				const { imports, unnamed } = importsOf(id, source)
 				if (unnamed?.reason === unparsed)
 					return `${positionIn(pathOf(id), source, unnamed.offset)} ${unparsed}`
 				namedBy.set(id, new Set(imports.map(([specifier]) => specifier)))
-				modules[id] = { source, transformed, mappings }
+				modules[id] = {
+					source,
+					transformed,
+					mappings,
+					// read again once the plugin wrote the program, for what the
+					// loaders after it add
+					...(module.built !== undefined &&
+						module.built !== source && { built: module.built })
+				}
 				targets[id] = {}
 			}
 		}
@@ -339,26 +344,6 @@ const isReadBuilt = (
 	host: Pick<ScanHost, "isTransformed">
 ): module is BuiltModule & { id: string } =>
 	module.id !== undefined && !isLeftDependency(module.id, host)
-
-// the words a read of an introspection member is written with, counted
-// wherever they are, as a loader may write `const { json } = User` as
-// `User.json`
-const memberNames = [
-	"expression",
-	"description",
-	"json",
-	"toJSON",
-	"toJsonSchema",
-	"jsonSchema"
-]
-
-// an introspection member that code holds more often than what it was built
-// from, as a loader writing a read of it would
-const memberAddedIn = (source: string, built: string) =>
-	memberNames.find(name => {
-		const word = new RegExp(`\\b${name}\\b`, "g")
-		return (built.match(word)?.length ?? 0) > (source.match(word)?.length ?? 0)
-	})
 
 // what a define may name without a module's binding being what it reads
 const definableGlobals = new Set([
@@ -655,8 +640,7 @@ export const unseenProblemOf = (
 			// TanStack Router's code splitting does
 			return loaded.has(id) ?
 					writeUnseenMessage(
-						`it built ${pathOf(id)} from other code than it read, as a plugin ahead of arktype's rewrote it after it read its file`,
-						"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
+						`it built ${pathOf(id)} from other code than it read, as a plugin ahead of arktype's rewrote it after it read its file`
 					)
 				:	writeUnseenMessage(`another plugin loaded ${pathOf(id)}`)
 		}
@@ -770,10 +754,10 @@ export const writeUnscannedFlatMessage = (path: string): string =>
 	`A production build declares the units its validators read in one function, as it found reading the bundle's modules first, but it built ${path} from code it didn't read, whose validators would read copies of them. Build again, or set prune: false to build each unit as a module of its own.`
 
 export const writeUnscannedCellsMessage = (path: string): string =>
-	`A production build reads each function a module creates once from one variable, as it found reading the bundle's modules first, but another plugin rewrote ${path} after it read it, so it can't tell which function is which. List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to pass each validator the functions it reads.`
+	`A production build reads each function a module creates once from one variable, as it found reading the bundle's modules first, but another plugin rewrote ${path} after it read it, so it can't tell which function is which. Set prune: false to pass each validator the functions it reads.`
 
 export const unseenFlatMessage =
-	"A production build declares the units its validators read in one function, as it found reading the bundle's modules first, but the bundle it built reads a validator it found no read of, as another plugin wrote or rewrote a module after it read it, and that validator would read copies of them. List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build each unit as a module of its own."
+	"A production build declares the units its validators read in one function, as it found reading the bundle's modules first, but the bundle it built reads a validator it found no read of, as another plugin wrote or rewrote a module after it read it, and that validator would read copies of them. Set prune: false to build each unit as a module of its own."
 
 export interface ScannedProgram {
 	// names the bundle, so only its transforms apply what was read
@@ -798,6 +782,8 @@ export interface ScannedModule {
 	transformed: boolean
 	// how its lines map to its file's, where a plugin ahead of the host's transformed it
 	mappings?: string | undefined
+	// as the loaders after the plugin built it from source, as webpack's do
+	built?: string | undefined
 }
 
 export interface ScannedUsage {

@@ -490,3 +490,25 @@ export const islandValueMessage = (text: string): string =>
 
 export const unwrittenHint =
 	'Move it into a .ts or .js module of its own that this one imports, which the build precompiles, or build with runtime: "arktype".'
+
+// a read a loader after the plugin's adds to a module, which webpack builds
+// from what reached the plugin, so the read of the program didn't see it
+export const writeLaterLoaderReadMessage = (
+	module: string | undefined,
+	read: string,
+	loaders: string[]
+): string =>
+	`${loaders.length ? loaders.join(", ") : "A loader"} built ${module ?? "a module"} after arktype's loader read it, and the program as built reads what the build left out of its validators: ${read}. Run ${loaders.length > 1 ? "those loaders" : "it"} ahead of arktype's, or set prune: false to build each validator whole.`
+
+// a module a loader after the plugin's compiles to CommonJS, whose reads of
+// a validator the build can't follow
+export const writeLaterLoaderCommonJsMessage = (
+	module: string,
+	loaders: string[]
+): string =>
+	`${loaders.length ? loaders.join(", ") : "A loader"} ${loaders.length > 1 ? "compile" : "compiles"} ${module} to CommonJS after arktype's loader read it, so the build can't check what the program as built reads of its validators. Have ${loaders.length > 1 ? "them" : "it"} emit ES modules, as TypeScript's module: "esnext" does, or set prune: false to build each validator whole.`
+
+// a Vite plugin transforming modules after arktype's reads them, whose reads
+// of a validator a production build can't see
+export const writeAfterPluginMessage = (plugins: string[]): string =>
+	`${plugins.join(", ")} ${plugins.length > 1 ? "transform" : "transforms"} modules after arktype's plugin reads them, so a production build can't see a read of a validator ${plugins.length > 1 ? "they add" : "it adds"}. List precompile.vite() after ${plugins.length > 1 ? "them" : "it"}, last in plugins, or set prune: false to build each validator whole.`

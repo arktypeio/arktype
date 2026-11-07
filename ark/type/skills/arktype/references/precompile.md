@@ -33,10 +33,10 @@ export default {
 }
 ```
 
-Frameworks that build with Vite list it right after their own plugin and ahead of `react()`, a Babel plugin like the React Compiler's or another that rewrites modules:
+Frameworks that build with Vite list it last, after their own plugin, `react()` and any plugin that rewrites modules, as its transform runs after the others and a production build fails where one still runs after it:
 
 - SvelteKit: `plugins: [sveltekit(), precompile.vite()]` in `vite.config.ts`
-- TanStack Router: `plugins: [tanstackRouter(), precompile.vite(), react()]`, an order the build requires where it splits routes
+- TanStack Router: `plugins: [tanstackRouter(), react(), precompile.vite()]`, an order the build requires where it splits routes
 - Astro: `vite: { plugins: [precompile.vite()] }` in `astro.config`
 - Nuxt: `vite: { plugins: [precompile.vite()] }` and `nitro: { rollupConfig: { plugins: [precompile.rollup({ prune: process.env.NODE_ENV === "production" })] } }` in `nuxt.config.ts`, since Nitro bundles server routes and `shared/` itself with Rollup, which has no production mode to prune in
 

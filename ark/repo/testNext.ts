@@ -2,6 +2,7 @@
 import {
 	withAllowUnsafe,
 	writeExternalizedMessage,
+	writeLaterLoaderReadMessage,
 	writeMissedByProgramMessage,
 	writeNextExternalMessage,
 	writeTurbopackDependencyMessage,
@@ -368,6 +369,24 @@ if (
 		`Turbopack should build each module on its own where Babel runs after the loader, rendering ${babelRendered} in ${babelPage}. It exited ${babel.status}:\n${babel.output}`
 	)
 }
+console.log(
+	"▲ Building it with a Babel plugin adding reads after the loader (webpack)..."
+)
+
+// webpack builds each module from what reached the loader, so the plugin reads
+// what Babel built of it once it wrote the program, and fails on a read it adds
+assertFailsWith(
+	writeLaterLoaderReadMessage(
+		"src/babel.ts",
+		"a module reads expression of a validator",
+		[
+			"next/dist/build/webpack/loaders/next-flight-loader/index.js",
+			"next/dist/build/webpack/loaders/next-swc-loader.js",
+			"next/dist/build/babel/loader/index.js"
+		]
+	),
+	build(webpack, "--webpack")
+)
 for (const path of Object.keys(babelFiles))
 	rmSync(join(appDir, path), { recursive: true, force: true })
 rmSync(join(appDir, "app/babel"), { recursive: true, force: true })

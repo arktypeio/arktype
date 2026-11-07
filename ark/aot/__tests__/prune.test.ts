@@ -14,7 +14,11 @@ import {
 	type BuiltModule,
 	type LoadedSources
 } from "@ark/aot/internal/scan.ts"
-import { writeUnbuiltReadMessage } from "@ark/aot/internal/messages.ts"
+import {
+	writeAfterPluginMessage,
+	writeLaterLoaderReadMessage,
+	writeUnbuiltReadMessage
+} from "@ark/aot/internal/messages.ts"
 import {
 	pruneBeforePluginMessage,
 	writePruneHostMessage
@@ -1176,8 +1180,7 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 				)
 			).equals(
 				writeUnseenMessage(
-					"it built main.ts from other code than it read, as a plugin ahead of arktype's rewrote it after it read its file",
-					"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
+					"it built main.ts from other code than it read, as a plugin ahead of arktype's rewrote it after it read its file"
 				)
 			)
 		})
@@ -2530,7 +2533,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 			)
 			const expected = writeUnseenMessage(
 				"the bundle it built reads more than the modules it read: types.ts exports User, which a dependency may read. Another plugin wrote or rewrote a module after it read it",
-				"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
+				"Set prune: false to build them whole, or leave out the plugin adding the read"
 			)
 			attest(message.slice(-expected.length)).equals(expected)
 		})
@@ -2610,7 +2613,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 			)
 			const expected = writeUnseenMessage(
 				"the bundle it built reads more than the modules it read: a module reads assert of a validator. Another plugin wrote or rewrote a module after it read it",
-				"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
+				"Set prune: false to build them whole, or leave out the plugin adding the read"
 			)
 			attest(message.slice(-expected.length)).equals(expected)
 		})
@@ -2648,7 +2651,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 			)
 			const expected = writeUnseenMessage(
 				"the bundle it built reads more than the modules it read: a module reads expression of a validator. Another plugin wrote or rewrote a module after it read it",
-				"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
+				"Set prune: false to build them whole, or leave out the plugin adding the read"
 			)
 			attest(message.slice(-expected.length)).equals(expected)
 		})
@@ -2665,6 +2668,119 @@ console.log(out instanceof type.errors ? out.summary : out)
 			}
 			const pruned = await bundle({}, { plugins: [reformatting] })
 			attest(run(pruned)).snap("name must be a string\n")
+			attest(pruned.includes("~standard")).equals(false)
+		})
+
+		it("fails a production build where a plugin transforms modules after it", async () => {
+			const late: VitePlugin = {
+				name: "late",
+				enforce: "post",
+				transform: () => undefined
+			}
+			// listed ahead of it, its transform runs after every other
+			const lastOfAll: VitePlugin = {
+				name: "lastOfAll",
+				transform: { order: "post", handler: () => undefined }
+			}
+			for (const [plugins, following, named] of [
+				[[], [late], "late"],
+				[[lastOfAll], [], "lastOfAll"]
+			] as const) {
+				const message = await bundle(
+					{},
+					{ plugins: [...plugins], following: [...following] }
+				).then(
+					() => "",
+					(e: Error) => stripVTControlCharacters(e.message)
+				)
+				attest(message.includes(writeAfterPluginMessage([named]))).equals(true)
+			}
+			// building each validator whole, a read it can't see needs nothing
+			attest(run(await bundle({ prune: false }, { following: [late] }))).snap(
+				"name must be a string\n"
+			)
+		})
+
+		// each read a plugin might add, as a Babel plugin does, which runs ahead
+		// of arktype's transform wherever it's listed: a member it leaves out,
+		// and code it passes the validator to
+		for (const [added, read, unseen] of [
+			["assert", "typeof User.assert", "a module reads assert of a validator"],
+			[
+				"~standard",
+				'typeof User["~standard"]',
+				"a module reads ~standard of a validator"
+			],
+			[
+				"a function reading assert",
+				"(f => f(User))(u => typeof u.assert)",
+				"a module reads expression of a validator"
+			],
+			[
+				"JSON.stringify",
+				"JSON.stringify(User)",
+				"a module reads toJSON of a validator"
+			]
+		]) {
+			it(`fails a bundle where a plugin adds a read of ${added} to a module it read`, async () => {
+				const adding: VitePlugin = {
+					name: "adding",
+					transform: (code, id) =>
+						id.endsWith("/main.ts") ?
+							`${code}\nconsole.log(${read})\n`
+						:	undefined
+				}
+				const message = await bundle({}, { following: [adding] }).then(
+					() => "",
+					(e: Error) => stripVTControlCharacters(e.message)
+				)
+				const expected = writeUnseenMessage(
+					`the bundle it built reads more than the modules it read: ${unseen}. Another plugin wrote or rewrote a module after it read it`,
+					"Set prune: false to build them whole, or leave out the plugin adding the read"
+				)
+				attest(message.slice(-expected.length)).equals(expected)
+			})
+		}
+
+		it("bakes an introspection member a plugin adds a read of ahead of it", async () => {
+			const describing: VitePlugin = {
+				name: "describing",
+				transform: (code, id) =>
+					id.endsWith("/main.ts") ?
+						`${code}\nconsole.log(User.expression)\n`
+					:	undefined
+			}
+			const pruned = await bundle({}, { following: [describing] })
+			attest(run(pruned)).snap(`name must be a string
+{ name: string }
+`)
+			attest(pruned.includes("~standard")).equals(false)
+		})
+
+		it("prunes a component Vite's JSX transform wrote ahead of it", async () => {
+			const at = writeFixture(
+				{
+					"types.ts": types,
+					"view.tsx": `/** @jsxRuntime classic */
+/** @jsx h */
+import { User } from "./types.ts"
+
+const h = (_: unknown, props: { ok: boolean }) => props.ok
+const Field = () => null
+
+export const view = (data: unknown) => <Field ok={User.allows(data)} />
+`,
+					"main.ts": `import { User } from "./types.ts"
+import { view } from "./view.tsx"
+
+console.log(view({ name: "Ada" }), String(User({ name: 5 })))
+`
+				},
+				fromHere("temp", "prunedViteJsx")
+			)
+			const pruned = await bundle({}, { at })
+			attest(run(pruned)).snap(`true name must be a string
+`)
 			attest(pruned.includes("~standard")).equals(false)
 		})
 
@@ -3028,40 +3144,65 @@ console.log(READ.member, String(User({ name: 5 })))
 						}
 					})
 
-					it("builds whole where it adds a read, so the read throws", async () => {
-						const root = fixture("loaderAfter", {
-							"main.js": `import { User } from "./types.js"
+					// each read a Babel plugin after it might add, which it can't
+					// have seen as it read the module: a member it leaves out, an
+					// introspection member it bakes only where it sees one read,
+					// and code it passes the validator to
+					for (const [added, read, unseen] of [
+						[
+							"assert",
+							"typeof User.assert",
+							"a module reads assert of a validator"
+						],
+						[
+							"~standard",
+							'typeof User["~standard"]',
+							"a module reads ~standard of a validator"
+						],
+						[
+							"a function reading assert",
+							"(f => f(User))(u => typeof u.assert)",
+							"a module reads expression of a validator"
+						],
+						[
+							"expression",
+							"User.expression",
+							"a module reads expression of a validator"
+						],
+						[
+							"JSON.stringify",
+							"JSON.stringify(User)",
+							"a module reads toJSON of a validator"
+						]
+					]) {
+						it(`fails a build where it adds a read of ${added}`, async () => {
+							const root = fixture(`loaderAfter-${added.replace(/\W/g, "")}`, {
+								"main.js": `import { User } from "./types.js"
 
 console.log(String(User({ name: 5 })))
 `
-						})
-						const warnings: string[] = []
-						const js = await bundle(
-							name,
-							root,
-							{},
-							{
-								...rewriting(code => `${code}console.log(User.expression)\n`),
-								plugins: [
-									compilers[name][1]({ cwd: root }) as never,
-									collecting(warnings) as never
-								]
-							}
-						)
-						attest(
-							warnings.some(warning =>
-								warning.includes(
-									"a loader after arktype's adds a read of expression to main.js"
-								)
+							})
+							const message = await bundle(
+								name,
+								root,
+								{},
+								rewriting(code => `${code}console.log(${read})\n`)
+							).then(
+								() => "it built",
+								(e: Error) => e.message
 							)
-						).equals(true)
-						attest(
-							spawnSync(process.execPath, {
-								input: js,
-								encoding: "utf8"
-							}).stderr.includes("expression isn't baked")
-						).equals(true)
-					})
+							attest(
+								message.includes(
+									writeLaterLoaderReadMessage("main.js", unseen, [
+										relative(root, fromHere("rewriteLoader.ts")).replace(
+											/\\/g,
+											"/"
+										)
+									])
+								)
+							).equals(true)
+						})
+					}
 
 					it("prunes where it moves a read without adding one", async () => {
 						const root = fixture("loaderAfterMoves", {
@@ -4186,7 +4327,11 @@ console.log(String(User({ name: 5 })))
 			attest(
 				refusals(opts =>
 					turbopack.call(
-						{ getOptions: () => opts, resourcePath: "a.ts" } as never,
+						{
+							getOptions: () => opts,
+							resourcePath: "a.ts",
+							addDependency: () => {}
+						} as never,
 						""
 					)
 				)

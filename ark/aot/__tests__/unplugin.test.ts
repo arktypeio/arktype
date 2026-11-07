@@ -15,6 +15,7 @@ import {
 	writeExternalizedMessage,
 	writeNextExternalMessage,
 	writeFilelessImportMessage,
+	writeLaterLoaderCommonJsMessage,
 	writeLoadedFirstMessage,
 	writePrecompiledDependencyMessage,
 	writeUncachedModuleMessage,
@@ -1964,8 +1965,12 @@ console.log(
 		const rewrite: VitePlugin = {
 			name: "rewrite-config",
 			enforce: "pre",
+			// moving no code, so Vite's TypeScript transform's map still names
+			// each line as written
 			transform: (code, id) =>
-				id.endsWith("config.ts") ? code.replace("delete", "reject") : undefined
+				id.endsWith("config.ts") ?
+					{ code: code.replace("delete", "reject"), map: null }
+				:	undefined
 		}
 		const build = (plugins: (VitePlugin | VitePlugin[])[]) =>
 			viteBuild({
@@ -1983,16 +1988,18 @@ console.log(
 				}
 			)
 		const arktype = precompile.vite({ config: "config.ts", conditions })
-		attest(await build([rewrite, arktype]))
+		const message = await build([rewrite, arktype])
+		attest(message)
 			.snap(`config.ts:3:1  configure() is given other values than arktype in this thread already applied
   a module the configuration reads was given anew, as when it's edited while the build runs or a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set
   Restart the build to apply an edit to config.ts. If it wasn't edited, exclude it from rewrite-config, which transforms it, since the build configures arktype from the module as written and the program must configure it the same.`)
+		// its transform runs after every other plugin's wherever it's listed
 		attest(
 			await build([
 				precompile.vite({ config: "config.ts", conditions }),
 				rewrite
 			])
-		).equals("built")
+		).equals(message)
 	})
 
 	it("fails where a module it can't precompile imports arktype", async () => {
@@ -3031,7 +3038,8 @@ console.log(T.allows({ x: 1 }))
 				'import { type } from "arktype"\n\nexport const T = type(`number < ${Math.random()}`)\n'
 		})
 		const thrownBy = async (opts: PrecompileUnpluginOptions) => {
-			const [{ transform }] = precompile.raw(
+			// Vite's runs last, in a plugin of its own
+			const [, { transform }] = precompile.raw(
 				{ ...opts, cwd: root, conditions },
 				{ framework: "vite", versions: {} }
 			) as unknown as RawHooks[]
@@ -3727,24 +3735,44 @@ console.log(String(A({})), a, allowed, String(B({})), b, String(C({})), c, unall
 							fromHere("temp", "commonJsLoader", name, reads.replace(/ /g, "-"))
 						)
 						const [compile, plugin] = compilers[name]
-						const compiler = (compile as typeof webpack)({
-							mode: "production",
-							context: root,
-							entry: "./main.ts",
-							target: "node",
-							cache: false,
-							output: { path: join(root, "out"), filename: "main.cjs" },
-							module: {
-								rules: [{ test: /\.ts$/, loader: join(root, "transpile.cjs") }]
-							},
-							plugins: [plugin({ cwd: root, ...opts }) as never]
-						})
-						const stats = await new Promise<Stats | undefined>(
-							(resolve, reject) =>
+						const build = (opts: PrecompileUnpluginOptions) => {
+							const compiler = (compile as typeof webpack)({
+								mode: "production",
+								context: root,
+								entry: "./main.ts",
+								target: "node",
+								cache: false,
+								output: { path: join(root, "out"), filename: "main.cjs" },
+								module: {
+									rules: [
+										{ test: /\.ts$/, loader: join(root, "transpile.cjs") }
+									]
+								},
+								plugins: [plugin({ cwd: root, ...opts }) as never]
+							})
+							return new Promise<Stats | undefined>((resolve, reject) =>
 								compiler.run((error, stats) =>
 									compiler.close(() => (error ? reject(error) : resolve(stats)))
 								)
-						)
+							)
+						}
+						// a pruned build can't follow what the CommonJS the loader
+						// writes reads of a validator
+						if (opts.prune !== false) {
+							const errors =
+								(await build(opts))
+									?.toJson()
+									.errors?.map(({ message }) => message) ?? []
+							attest(errors.length).equals(1)
+							attest(
+								Object.keys(files).some(file =>
+									errors[0].includes(
+										writeLaterLoaderCommonJsMessage(file, ["transpile.cjs"])
+									)
+								)
+							).equals(true)
+						}
+						const stats = await build({ ...opts, prune: false })
 						attest(stats?.toJson().errors).equals([])
 						const { stdout, stderr } = spawnSync(
 							process.execPath,
