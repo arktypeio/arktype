@@ -1619,6 +1619,7 @@ return namespace`
 			)
 		})
 	}
+
 	// whether a node may be written as the checker declared beside it
 	get writesCheckerNodes(): boolean {
 		return (
@@ -3848,22 +3849,40 @@ const countedReference = new RegExp(
 	`^(${registryName.replace("$", "\\$")}\\.[\\w$]+?)\\$[1-9]\\d*$`
 )
 
-const uncountedJsonOf = (
-	json: unknown,
+// a cycle's reference is written by its node id, whose count orders the nodes
+// the process created alike before it (a watch build's worker counts on from
+// its last build), so each is numbered again by where the json first reaches it
+export const uncountedJsonOf = (json: unknown): unknown => {
 	// a node's json holds a reference's, however many times it's referenced
-	seen = new Map<unknown, unknown>()
-): unknown => {
-	if (typeof json === "string") return json.replace(countedReference, "$1")
-	if (!hasDomain(json, "object")) return json
-	let uncounted = seen.get(json)
-	if (!uncounted) {
-		uncounted =
-			Array.isArray(json) ?
-				json.map(v => uncountedJsonOf(v, seen))
-			:	flatMorph(json, (k, v) => [k, uncountedJsonOf(v, seen)])
-		seen.set(json, uncounted)
+	const seen = new Map<unknown, unknown>()
+	const renumbered = new Map<string, string>()
+	const counts: Record<string, number> = {}
+	const uncounted = (json: unknown): unknown => {
+		if (typeof json === "string") {
+			const id = json.slice(registryName.length + 1)
+			if (!json.startsWith(`${registryName}.`) || !$ark.nodesById[id as NodeId])
+				return json.replace(countedReference, "$1")
+			let written = renumbered.get(id)
+			if (!written) {
+				// a node id's prefix never ends in a digit
+				const prefix = id.replace(/\d+$/, "")
+				written = `${registryName}.${prefix}${(counts[prefix] = (counts[prefix] ?? 0) + 1)}`
+				renumbered.set(id, written)
+			}
+			return written
+		}
+		if (!hasDomain(json, "object")) return json
+		let result = seen.get(json)
+		if (!result) {
+			result =
+				Array.isArray(json) ?
+					json.map(uncounted)
+				:	flatMorph(json, (k, v) => [k, uncounted(v)])
+			seen.set(json, result)
+		}
+		return result
 	}
-	return uncounted
+	return uncounted(json)
 }
 
 type CheckedHole = [hole: unknown, kind: HoleKind, expression: string]

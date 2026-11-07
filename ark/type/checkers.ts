@@ -596,30 +596,30 @@ const failsValue = (
 			(ctx as FailureContext)._in(checker as CompactApply, data, k)
 	:	!checker(value)
 
-// keys checked in declared order; a missing key expects its checker's description
-const failsProps = (
-	declared: Props,
-	data: any,
-	ctx: FailureContext | number | undefined
-): boolean => {
-	for (const k in declared) {
-		const value = data[k]
-		if (
-			value === undefined && !(k in data) ?
-				!declared[k].o &&
-				failsAt(ctx as never, requiredSiteOf(declared[k].description), data, k)
-			:	failsValue(ctx, declared[k], data, k, value)
-		)
-			return true
-	}
-	return false
-}
-
+// keys checked in declared order; a missing key expects its checker's
+// description. A shape checking more than its keys walks them through this,
+// so a program of only props ships no function apart for the walk
 export const props = ((declared: Props): Checker => {
-	const checker: Checker = (data, ctx) =>
-		objectCheck.test(data) ?
-			!failsProps(declared, data, ctx)
-		:	!failsAt(ctx as never, objectCheck, data)
+	const checker: Checker = (data: any, ctx) => {
+		if (!objectCheck.test(data))
+			return !failsAt(ctx as never, objectCheck, data)
+		for (const k in declared) {
+			const value = data[k]
+			if (
+				value === undefined && !(k in data) ?
+					!declared[k].o &&
+					failsAt(
+						ctx as never,
+						requiredSiteOf(declared[k].description),
+						data,
+						k
+					)
+				:	failsValue(ctx, declared[k], data, k, value)
+			)
+				return false
+		}
+		return true
+	}
 	checker.description = objectCheck.description
 	return checker
 }) satisfies Fn
@@ -631,10 +631,11 @@ export const closedProps = ((
 	description = "removed"
 ): Checker => {
 	const removed = siteOf("undeclared", description)
+	const walks = props(declared)
 	const checker: Checker = (data: any, ctx) => {
 		if (!objectCheck.test(data))
 			return !failsAt(ctx as never, objectCheck, data)
-		if (failsProps(declared, data, ctx)) return false
+		if (!walks(data, ctx)) return false
 		for (const k in data) {
 			if (
 				!hasOwn(declared, k) &&
@@ -673,10 +674,11 @@ export const indexed = ((
 	removed?: string
 ): Checker => {
 	const site = removed === undefined ? undefined : siteOf("undeclared", removed)
+	const walks = props(declared)
 	const checker: Checker = (data: any, ctx) => {
 		if (!objectCheck.test(data))
 			return !failsAt(ctx as never, objectCheck, data)
-		if (failsProps(declared, data, ctx)) return false
+		if (!walks(data, ctx)) return false
 		for (const k of [
 			...Object.keys(data),
 			...Object.getOwnPropertySymbols(data)
@@ -781,20 +783,22 @@ const writtenValues = (
 // a t reading each value through what it's passed
 type WritesValues = (data: any, values: WrittenValues) => unknown
 
-const transformsProps = (declared: Props, checker: Checker): Checker => {
+// props writing what its keys transform or default; a closed shape passes its
+// own checker
+export const transformingProps = ((
+	declared: Props,
+	checker: Checker = props(declared)
+): Checker => {
 	const changing = changingIn(declared)
 	checker.t = data => writtenProps(declared, changing, data)
 	return checker
-}
-
-export const transformingProps = ((declared: Props): Checker =>
-	transformsProps(declared, props(declared))) satisfies Fn
+}) satisfies Fn
 
 export const transformingClosedProps = ((
 	declared: Props,
 	description?: string
 ): Checker =>
-	transformsProps(declared, closedProps(declared, description))) satisfies Fn
+	transformingProps(declared, closedProps(declared, description))) satisfies Fn
 
 const transformsFailing = (
 	declared: Props,
@@ -824,8 +828,6 @@ export const failingClosedProps = ((
 		withCtx
 	)) satisfies Fn
 
-// a result of the keys it declares, in order; an instance is copied where it
-// must be, keeping its prototype
 const deletes = (declared: Props, data: any, out: any): any => {
 	for (const k of [
 		...Object.keys(data),
@@ -838,6 +840,8 @@ const deletes = (declared: Props, data: any, out: any): any => {
 	return out
 }
 
+// a result of the keys it declares, in order; an instance is copied where it
+// must be, keeping its prototype
 export const deletingProps = ((declared: Props): Checker => {
 	const checker = props(declared)
 	checker.t = data => {
@@ -1304,6 +1308,25 @@ export const nullable = ((checker: Checker | 1, domain = "string"): Checker => {
 			checker === 1 || checker(data, ctx)
 		:	!failsAt(ctx as never, site, data))
 	wrapped.description = description
+	return wrapped
+}) satisfies Fn
+
+// an object's checker or null, as domains writes them, smaller; what it
+// transforms is an object where it can't fail
+export const nullableObject = ((checker: Checker): Checker => {
+	const site: FailureSite = {
+		code: "discriminant",
+		description: "an object or null"
+	}
+	const wrapped: Checker = (data, ctx) =>
+		data === null ||
+		(objectCheck.test(data) ?
+			checker(data, ctx)
+		:	!failsAt(ctx as never, site, data))
+	wrapped.description = site.description
+	const { t } = checker
+	if (transformsBranches && t)
+		wrapped.t = data => (data === null ? data : (t(data) ?? data))
 	return wrapped
 }) satisfies Fn
 

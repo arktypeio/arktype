@@ -479,14 +479,53 @@ const presetScaleRows = presetScale.series.flatMap(({ apps, seed, rows }) =>
 	}))
 )
 
-const presetScaleTypes = presetScaleRows.map(row => row.types)
+const listOf = (items: string[]): string =>
+	items.length < 3 ?
+		items.join(" and ")
+	:	`${items.slice(0, -1).join(", ")} and ${items.at(-1)}`
 
-/** whether "smallest" gzips below Valibot on every row, which sizePreset needs */
-const presetScaleBacked =
-	presetScaleRows.length > 0 &&
-	presetScaleRows.every(row => row.smallest < row.valibot)
+const scalesText = (types: number[]): string =>
+	listOf(types.map(n => n.toLocaleString("en-US")))
 
-const presetScaleText = `Big frontend? The "smallest" preset gzips smaller than Valibot at every scale we measured, ${Math.min(...presetScaleTypes)} to ${Math.max(...presetScaleTypes).toLocaleString("en-US")} Types.`
+const presetScaleTypes = [
+	...new Set(presetScaleRows.map(row => row.types))
+].sort((l, r) => l - r)
+
+// each scale where "smallest" gzips below Valibot on every seed and series, and
+// at the rest, how far its largest row is above Valibot's
+const presetScaleWins = presetScaleTypes.filter(types =>
+	presetScaleRows.every(
+		row => row.types !== types || row.smallest < row.valibot
+	)
+)
+
+const presetScaleLosses = presetScaleTypes.filter(
+	types => !presetScaleWins.includes(types)
+)
+
+// rounded up to a tenth, so the claim never reads a smaller margin than a row's
+const presetScaleExcess =
+	Math.ceil(
+		Math.max(
+			0,
+			...presetScaleRows
+				.filter(row => presetScaleLosses.includes(row.types))
+				.map(row => (row.smallest / row.valibot - 1) * 100)
+		) * 10
+	) / 10
+
+// where a scale loses, it's where arktype's formats are stricter than Valibot's:
+// with every RegExp stripped from both, "smallest" was the smaller at 50 Types
+// (5247 to 5297 and 5190 to 5227 B gz at 5373f183d's seeds 1 and 2), and its
+// patterns cost about 120 B more
+const presetScaleText =
+	!presetScaleTypes.length ?
+		`Big frontend? The "smallest" preset gzips about what Valibot does.`
+	: presetScaleLosses.length === 0 ?
+		`Big frontend? The "smallest" preset gzips smaller than Valibot at every scale we measured, ${scalesText([presetScaleTypes[0]])} to ${scalesText([presetScaleTypes.at(-1)!])} Types.`
+	: presetScaleWins.length === 0 ?
+		`Big frontend? The "smallest" preset gzips within ${presetScaleExcess}% of Valibot at every scale we measured, ${scalesText([presetScaleTypes[0]])} to ${scalesText([presetScaleTypes.at(-1)!])} Types, as ArkType's stricter formats, like ISO 8601 dates and UUID versions, ship longer patterns.`
+	:	`Big frontend? The "smallest" preset gzips smaller than Valibot at ${scalesText(presetScaleWins)} Types, and within ${presetScaleExcess}% at ${scalesText(presetScaleLosses)}, where ArkType's stricter formats, like ISO 8601 dates and UUID versions, ship longer patterns.`
 
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
@@ -591,10 +630,9 @@ export const claims = {
 	sizeClose: `Size is the close one: ${sizeRivalName} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`,
 	// the "smallest" preset for schema-heavy frontends, where the default
 	// build's lead at form scale (sizeAverage) doesn't carry: gzip bytes from
-	// lib/bench/presetScale.json, pending wherever a row has it at or above
-	// Valibot, so the home page and the blog leave it out
-	sizePreset:
-		presetScaleBacked ? presetScaleText : { pending: presetScaleText },
+	// lib/bench/presetScale.json, naming the scales it wins on every row and how
+	// close the rest come
+	sizePreset: presetScaleText,
 	// benchSize, saas, whose one undiscriminated union is all that ships it: 5220 ->
 	// 5777 B gz under "smallest", 10275 -> 10880 by default; erasing what it reads from
 	// those bundles saves 492 and 556 B. login, moltar and shop hold none and don't

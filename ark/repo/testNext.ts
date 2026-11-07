@@ -322,8 +322,8 @@ const babelReads: [read: string, renders: string][] = [
 	["typeof Age.assert", "function"],
 	['typeof Age["~standard"]', "object"],
 	["(f => f(Age))(age => typeof age.assert)", "function"],
-	["Age.expression", "expression isn't baked into this validator"],
-	["JSON.stringify(Age)", "toJSON isn't baked into this validator"]
+	["Age.expression", "expression isn't precompiled"],
+	["JSON.stringify(Age)", "toJSON isn't precompiled"]
 ]
 const babelFiles: Record<string, string> = {
 	".babelrc": JSON.stringify({
@@ -335,7 +335,7 @@ const babelFiles: Record<string, string> = {
 		StringLiteral(path) {
 			if (path.node.value !== "BABEL_READS") return
 			path.replaceWithSourceString(${JSON.stringify(
-				`[${babelReads.map(([read]) => `() => ${read}`).join(", ")}].map(read => { try { return String(read()) } catch (e) { return e.message.split(",")[0] } }).join(" | ")`
+				`[${babelReads.map(([read]) => `() => ${read}`).join(", ")}].map(read => { try { return String(read()) } catch (e) { return e.message.split(":")[0] } }).join(" | ")`
 			)})
 		}
 	}
