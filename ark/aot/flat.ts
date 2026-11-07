@@ -1539,6 +1539,7 @@ const writtenUnitsOf = (body: string, returned: string): WrittenUnits => {
 			shareObjectChecks
 		)
 	)
+	written = untilUnchanged(written, parse, writtenWhereRead)
 	written.body = functionsDeclared(inGzipOrder(written.body))
 	return written
 }
@@ -1709,6 +1710,185 @@ const inlineCalls: UnitsPass = ({ code, program, scopes }, s, body) => {
 			break
 		}
 	}
+}
+
+// a constant read once, where the units run once, is written where it's read: a
+// minified name is the one text gzip can't shrink, and a validator's read only
+// to be returned says nothing. A value moves only where it then runs as surely,
+// and in the same order with each impure call; a function read once moves with
+// the value it's passed in, as a traversal into its validator's creation
+const writtenWhereRead: UnitsPass = ({ code, program, scopes }, s, body) => {
+	const functions: [VariableDeclarator, Reference][] = []
+	const values: [VariableDeclarator, Reference][] = []
+	// where each impure statement or initializer runs
+	const impure = new Map<Node, number>()
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration") {
+			if (
+				statement.type !== "EmptyStatement" &&
+				(statement.type !== "ExpressionStatement" ||
+					!isPureExpression(statement.expression, code))
+			)
+				impure.set(statement, statement.start)
+			continue
+		}
+		for (const declarator of statement.declarations) {
+			const { id, init } = declarator
+			if (init && !isPureExpression(init, code))
+				impure.set(declarator, declarator.start)
+			const binding = scopes.bindingsById.get(id)
+			const [read] = binding?.references ?? []
+			if (
+				statement.kind !== "const" ||
+				!init ||
+				binding?.references.length !== 1 ||
+				read.isWrite ||
+				read.id.start < declarator.end
+			)
+				continue
+			if (isFunctionExpression(unwrapExpression(init))) {
+				if (isRunOnce(read.id)) functions.push([declarator, read])
+			} else if (isRunSurely(read.id)) values.push([declarator, read])
+		}
+	}
+	const moving = new Map<Reference, VariableDeclarator>()
+	// the last first, so one moving past another sees where it went
+	for (const [declarator, read] of values.reverse()) {
+		const passes =
+			[...impure].some(
+				([other, at]) =>
+					other !== declarator && declarator.end < at && at < read.id.start
+			) || callsBefore(topStatementOf(read.id), read.id, code)
+		if (passes) continue
+		moving.set(read, declarator)
+		if (impure.has(declarator)) impure.set(declarator, read.id.start)
+	}
+	if (!moving.size) return true
+	const isInMoved = spansContaining([...moving.values()].map(d => d.init!))
+	for (const [declarator, read] of functions)
+		if (isInMoved(read.id)) moving.set(read, declarator)
+	const reads = [...moving.keys()].sort((l, r) => l.id.start - r.id.start)
+	// a span's text with each read within it written as what it reads
+	const textOf = (start: number, end: number): string => {
+		let text = ""
+		for (const read of reads) {
+			if (read.id.start < start || read.id.end > end) continue
+			text += code.slice(start, read.id.start) + writtenAt(read)
+			start = read.id.end
+		}
+		return text + code.slice(start, end)
+	}
+	const writtenAt = (read: Reference) => {
+		const { init } = moving.get(read)!
+		const text = textOf(init!.start, init!.end)
+		const parent = read.id.parent
+		return (
+			parent?.type === "Property" && parent.shorthand ?
+				`${read.id.name}: ${text}`
+			: (
+				(parent?.type === "CallExpression" ||
+					parent?.type === "NewExpression") &&
+				parent.callee === read.id
+			) ?
+				`(${text})`
+			:	text
+		)
+	}
+	const moved = new Set(moving.values())
+	const isMoved = spansContaining([...moved].map(d => d.init!))
+	for (const read of reads) {
+		if (!isMoved(read.id))
+			s.overwrite(read.id.start, read.id.end, writtenAt(read))
+	}
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration") continue
+		const { declarations } = statement
+		let last = declarations.length - 1
+		while (last >= 0 && moved.has(declarations[last])) last--
+		if (last === -1) {
+			s.remove(statement.start, statementEndIn(body, statement))
+			continue
+		}
+		for (let i = 0; i < last; i++) {
+			if (moved.has(declarations[i]))
+				s.remove(declarations[i].start, declarations[i + 1].start)
+		}
+		if (last < declarations.length - 1) {
+			s.remove(
+				declarations[last].end,
+				statementEndIn(body, declarations[declarations.length - 1])
+			)
+		}
+	}
+	return true
+}
+
+// a function's read the units' own body runs, once, as no function, class or loop holds it
+const isRunOnce = (id: Node): boolean => {
+	for (let node = id.parent; node; node = node.parent) {
+		switch (node.type) {
+			case "ArrowFunctionExpression":
+			case "FunctionExpression":
+			case "FunctionDeclaration":
+			case "ClassBody":
+			case "ForStatement":
+			case "ForInStatement":
+			case "ForOfStatement":
+			case "WhileStatement":
+			case "DoWhileStatement":
+				return false
+		}
+	}
+	return true
+}
+
+// a value's read run once, and whenever its statement is, as an element, an argument or a property's value
+const isRunSurely = (id: Node): boolean => {
+	let child = id
+	for (let node = id.parent; node; child = node, node = node.parent) {
+		switch (node.type) {
+			case "ArrayExpression":
+			case "ObjectExpression":
+			case "ParenthesizedExpression":
+			case "ExpressionStatement":
+			case "VariableDeclaration":
+			case "Program":
+				continue
+			case "Property":
+				if (node.value !== child || node.computed) return false
+				continue
+			case "CallExpression":
+			case "NewExpression":
+				if (node.callee === child) return false
+				continue
+			case "VariableDeclarator":
+				if (node.init !== child) return false
+				continue
+			default:
+				return false
+		}
+	}
+	return true
+}
+
+const topStatementOf = (node: Node): Node => {
+	while (node.parent && node.parent.type !== "Program") node = node.parent
+	return node
+}
+
+// whether a statement calls something impure before it reads a value there
+const callsBefore = (statement: Node, read: Node, code: string): boolean => {
+	let calls = false
+	walk(statement, node => {
+		if (
+			(node.type === "CallExpression" || node.type === "NewExpression") &&
+			node.end <= read.start &&
+			!isPureExpression(node, code)
+		)
+			calls = true
+		return !isFunctionExpression(node)
+	})
+	return calls
 }
 
 // the last statement's span takes in the `;` and return the pass appends

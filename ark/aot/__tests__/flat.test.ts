@@ -719,6 +719,69 @@ export { unit }
 `)
 	})
 
+	it("writes a value read once where it's read, unless a call would run in another order", () => {
+		const unit = `import * as runtime from "arktype/runtime"
+
+const unit = /* @__PURE__ */ ((unitR0) => {
+const unitAllows = (data => unitR0(data))
+const unitApply = (data, ctx) => unitR0(data) || ctx.reject(data)
+const made = runtime.make([unitAllows, unitApply])
+const logged = runtime.log(made)
+const also = runtime.make([unitAllows])
+return [also, logged]
+})(runtime.isValidDate)
+
+export { unit }`
+		const flat = flattenBundle(
+			{
+				"site.js": `import { unit } from "~arktype/unit"\n\nexport const read = unit`
+			},
+			{ "~arktype/unit": unit },
+			{ modules: [], entries: ["site.js"], resolve: () => undefined },
+			false
+		)!
+		const [code] = Object.entries(flat.modules).flatMap(([specifier, code]) =>
+			specifier === "~arktype/unit" ? [] : [code]
+		)
+		// logged would run after also, and made inside logged's call
+		attest(code).snap(`import * as runtime from "arktype/runtime"
+
+const unit = /* @__NOINLINE__ */ (() => {
+const unitR0 = runtime.isValidDate
+
+const unitAllows = (data => unitR0(data))
+const unitApply = (data, ctx) => unitR0(data) || ctx.reject(data)
+const made = runtime.make([unitAllows, unitApply])
+const logged = runtime.log(made)
+
+return [runtime.make([unitAllows]), logged]
+})()
+
+export { unit }
+`)
+	})
+
+	it("creates each validator where it's returned, with the traversals only it reads", async () => {
+		const contents = `import { type } from "arktype"\nimport { Team, User } from "./types.ts"\n\nconst out = Team({ lead: {}, members: [] })\nconsole.log(out instanceof type.errors ? out.summary : "valid")\nconsole.log(User.allows({ name: "Ada", email: "ada@arktype.io" }))\n`
+		const options: BuildOptions = {
+			stdin: { contents, resolveDir: root, loader: "ts" }
+		}
+		const [js] = await bundle({}, options)
+		const [whole] = await bundle({ prune: false }, options)
+		attest(run(js)).snap(`lead.name must be a string
+lead.email must be a string
+true
+`)
+		attest(run(js)).equals(run(whole))
+		attest(/const \w+Validator\d* =/.test(js)).equals(false)
+		// Team's own traversals are written into its creation; those of Name,
+		// Email, User and User[], which others read too, keep their names
+		attest(declaredUnits(js)).equals(4)
+		attest(js).satisfies(
+			/return \[\w+\(\[\w+Allows, \w+Apply]\), \w+\(\[\(data, ctx\) =>/
+		)
+	})
+
 	it("drops a declaration read only by one it drops", () => {
 		const unit = `import * as runtime from "arktype/runtime"
 
