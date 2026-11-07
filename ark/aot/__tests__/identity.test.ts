@@ -59,6 +59,20 @@ const tsc = fromHere(
 	"tsc"
 )
 
+// what runEmitted's tsc reads
+const emittedConfig = JSON.stringify({
+	compilerOptions: {
+		target: "ES2022",
+		module: "NodeNext",
+		rewriteRelativeImportExtensions: true,
+		skipLibCheck: true,
+		types: [],
+		rootDir: ".",
+		outDir: "out"
+	},
+	include: ["*.ts"]
+})
+
 // as `tsc && arktype-precompile --emit` builds it
 const runEmitted = (root: string) => {
 	spawnSync(
@@ -127,18 +141,7 @@ const fixture = (name: string, files: Record<string, string>) =>
 
 const twins = fixture("twins", {
 	"package.json": `{ "type": "module" }\n`,
-	"tsconfig.json": JSON.stringify({
-		compilerOptions: {
-			target: "ES2022",
-			module: "NodeNext",
-			rewriteRelativeImportExtensions: true,
-			skipLibCheck: true,
-			types: [],
-			rootDir: ".",
-			outDir: "out"
-		},
-		include: ["*.ts"]
-	}),
+	"tsconfig.json": emittedConfig,
 	"shared.ts": `import { scope } from "arktype"
 export const isLong = (s: string) => s.length > 1
 export const isShort = (s: string) => s.length < 9
@@ -266,18 +269,7 @@ export const isLong = (s: string) => s.length > 1
 `
 		const root = fixture("unexported", {
 			"package.json": `{ "type": "module" }\n`,
-			"tsconfig.json": JSON.stringify({
-				compilerOptions: {
-					target: "ES2022",
-					module: "NodeNext",
-					rewriteRelativeImportExtensions: true,
-					skipLibCheck: true,
-					types: [],
-					rootDir: ".",
-					outDir: "out"
-				},
-				include: ["*.ts"]
-			}),
+			"tsconfig.json": emittedConfig,
 			"shared.ts": shared,
 			"other.ts": `import { type } from "arktype"
 import { double, isLong } from "./shared.ts"
@@ -558,6 +550,63 @@ console.log(A === SameA, A({ a: "" }), B({ b: "" }))
 		)
 		compares("by its ~standard", `A["~standard"] === B["~standard"]`)
 		compares("where its module reads more of it", "A === B, B.expression")
+	})
+
+	describe("holding a hole, compared beside one another module creates", () => {
+		// a.ts exports its Type, written with each member, where main.ts writes
+		// its own with what main.ts reads
+		const files = (main: string, definition: string) => ({
+			"package.json": `{ "type": "module" }\n`,
+			"tsconfig.json": emittedConfig,
+			"preds.ts": `export const positive = (d: any) => typeof d !== "number" || d > 0\n`,
+			"a.ts": `import { type } from "arktype"\nimport { positive } from "./preds.ts"\nexport const A = ${definition}\n`,
+			"main.ts": main
+		})
+		const outputsOf = async (root: string) => [
+			run(await bundle(root, production, { prune: false })),
+			run(await bundle(root, production, { preset: "smallest", prune: false })),
+			runModuleAtATime(root, "production"),
+			runEmitted(root)
+		]
+		const compares = (
+			name: string,
+			read: string,
+			definition = `type(["number", ":", positive])`
+		) =>
+			it(name, async () => {
+				const root = fixture(
+					`heldCompared-${name.replace(/\W+/g, "-")}`,
+					files(
+						`import { type } from "arktype"\nimport { A } from "./a.ts"\nimport { positive } from "./preds.ts"\nconst B = ${definition}\nconsole.log(${read})\n`,
+						definition
+					)
+				)
+				const plain = runPlain(root)
+				attest(plain).equals("true\n")
+				attest(await outputsOf(root)).equals([plain, plain, plain, plain])
+			}).timeout(120_000)
+
+		compares("by its ~standard", `A["~standard"] === B["~standard"]`)
+		compares("by its allows", "A.allows === B.allows")
+		compares(
+			"by its meta",
+			"A.meta === B.meta",
+			`type(["number", ":", positive]).describe("positive")`
+		)
+
+		it("keeps what a module read of it before creating its equal", async () => {
+			const definition = `type(["number", ":", positive])`
+			const root = fixture("heldRead", {
+				...files(
+					`import { A } from "./a.ts"\nimport { B, early } from "./b.ts"\nconsole.log(A === B, A["~standard"].jsonSchema === early)\n`,
+					definition
+				),
+				"b.ts": `import { type } from "arktype"\nimport { A } from "./a.ts"\nimport { positive } from "./preds.ts"\nexport const early = A["~standard"].jsonSchema\nexport const B = ${definition}\n`
+			})
+			const plain = runPlain(root)
+			attest(plain).equals("true true\n")
+			attest(await outputsOf(root)).equals([plain, plain, plain, plain])
+		}).timeout(120_000)
 	})
 
 	describe("where no read compares them", () => {

@@ -148,7 +148,10 @@ contextualize(() => {
 	let arktype: Observed
 	let standalone: Observed
 
-	before(async () => {
+	// bundles twice, the first build loading the compiler, which a loaded
+	// machine slows past mocha's default
+	before(async function () {
+		this.timeout(60_000)
 		;[arktype] = await bundled([])
 		let js: string
 		;[standalone, js] = await bundled([precompile.esbuild({ conditions })])
