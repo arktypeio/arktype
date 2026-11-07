@@ -1,6 +1,6 @@
 // writes ark/docs/lib/bench/scoreboard.json, what lib/claims.ts states about
 // whole apps, from a stored board (measure.ts board): each app's medians and,
-// for each precompiled build against each other arm, the two-sided sign test
+// for each of ArkType's arms against each other arm, the two-sided sign test
 // paired by round that the board's cells use
 // node scoreboard.ts results/<commit>.json
 import { readFileSync, writeFileSync } from "node:fs"
@@ -24,7 +24,8 @@ const stored: {
 	arms: Record<string, Arm>
 } = JSON.parse(readFileSync(resolve(process.argv[2]), "utf8"))
 
-const builds = ["precompiled", "smallest"]
+// ArkType's arms: its precompiled builds and plain arktype, without the plugin
+const builds = ["precompiled", "smallest", "arktype"]
 
 const counts = {
 	import: "importInstructions",

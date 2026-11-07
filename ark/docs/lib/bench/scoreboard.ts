@@ -11,6 +11,9 @@ import data from "./scoreboard.json" with { type: "json" }
 
 export type Build = "precompiled" | "smallest"
 
+/** ArkType's arms: its precompiled builds and plain arktype, without the plugin */
+export type Ours = Build | "arktype"
+
 export type Count = "import" | "first" | "hot"
 
 export type Measure = "gz" | Count
@@ -24,8 +27,8 @@ export type AppRow = {
 	narrows: boolean
 	/** each arm's bytes and median counts */
 	arms: Record<string, Record<Measure, number>>
-	/** each build's sign test against each other arm */
-	p: Partial<Record<Build, Record<string, Record<Count, number>>>>
+	/** each of ArkType's arms' sign test against each other arm */
+	p: Partial<Record<Ours, Record<string, Record<Count, number>>>>
 }
 
 export const scoreboard = data as Omit<

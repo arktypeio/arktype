@@ -745,6 +745,26 @@ const bigAppText = (row: AppRow) => {
 	return `On ntwine's packages/shared, the schemas of an open-source app and the code that reads them, bundled with esbuild: ${buildNames[size]} shipped ${kbText(row.arms[size].gz)} gzipped to Zod 4's ${kbText(zod.gz)} and Zod 3's ${kbText(zod3.gz)}, the version ntwine ships; ${start === size ? "it" : buildNames[start]} ran ${gigaText(row.arms[start].first)} instructions through its first validation to Zod 4's ${gigaText(zod.first)} and Zod 3's ${gigaText(zod3.first)}; and ${buildNames[hot]} validated a thread in ${Math.round(row.arms[hot].hot)} ns to Zod 4's ${Math.round(zod.hot)} and Zod 3's ${Math.round(zod3.hot)}.`
 }
 
+// plain arktype, without the plugin, against Zod 4, from import through the
+// first validation on the apps bundled with esbuild, the only host with a plain
+// arm. Deferred Types move it, so it renders only once it starts sooner on
+// every app; at adb8cd479 it ran 1.5-2.2x Zod 4's instructions
+const dynamicRows = [
+	...generatedRows,
+	...(scoreboard.ntwine.migration ? ntwineRows : [])
+].filter(row => row.host === "esbuild" && row.arms.arktype && row.arms.zod)
+
+const dynamicStartsFirst =
+	dynamicRows.length > 0 &&
+	dynamicRows.every(
+		row =>
+			row.arms.arktype.first < row.arms.zod.first &&
+			(row.p.arktype?.zod.first ?? 1) < 0.05
+	)
+
+const dynamicInitText = () =>
+	`Without the plugin, ArkType ran fewer instructions from import through its first validation than Zod 4 on every app we bundled with esbuild, ${dynamicRows.length} in all${dynamicRows.some(row => row.app === "ntwine") ? ", ntwine among them" : ""}, by ${percentText(Math.min(...dynamicRows.map(row => 1 - row.arms.arktype.first / row.arms.zod.first)))} or more, p ≤ ${Math.max(...dynamicRows.map(row => row.p.arktype!.zod.first)).toFixed(3)}.`
+
 const sizeRanks = rowsOf("size").map(
 	results =>
 		Object.values(results).filter(bytes => bytes < results.ArkType).length + 1
@@ -876,6 +896,16 @@ export const claims = {
 						bigAppText(ntwineBundled)
 					:	"On ntwine's packages/shared, the schemas of an open-source app and the code that reads them, precompiled ArkType ships less and starts sooner than Zod 4."
 			},
+	// dynamic startup against Zod 4 on the board's apps, pending until it
+	// leads on every one; dynamic bytes are a disclosure (dynamicSize), never
+	// a claim
+	dynamicInit:
+		dynamicStartsFirst ? dynamicInitText() : (
+			{
+				pending:
+					"Without the plugin, ArkType ran fewer instructions from import through its first validation than Zod 4 on every app we bundled with esbuild."
+			}
+		),
 	// speedChart and H1
 	parseSafe:
 		"On moltar's parseSafe benchmark, precompiled ArkType takes the fewest instructions per call, and by wall clock it was faster than each of the six libraries closest to it, Typia among them, in at least 28 of 30 paired runs.",

@@ -578,7 +578,7 @@ const results = {
 	rounds,
 	loads,
 	failed,
-	...(ntwineOn && { ntwine: ntwineSource() }),
+	...(ntwineOn && { ntwine: ntwineSource }),
 	arms: Object.fromEntries(
 		arms.map(arm => [
 			arm.name,
