@@ -696,16 +696,26 @@ const resolveCase = (
 		ctx.node.$
 	)
 
+	const isUndefinedCase =
+		typeof caseCtx.condition === "string" ?
+			caseCtx.condition === "undefined"
+		:	caseCtx.condition.hasKind("unit") && caseCtx.condition.unit === undefined
+
+	// at a nested path, the optionally chained discriminant is also undefined
+	// when the key is missing or a parent isn't an object, so matching it
+	// doesn't guarantee any of the constraints pruneDiscriminant would remove
+	const prune =
+		isUndefinedCase && ctx.location.path.length ?
+			(branch: BaseRoot) => branch
+		:	(branch: BaseRoot) => pruneDiscriminant(branch, ctx.location)
+
 	let resolvedEntries: BranchEntry[] | null = []
 	const nextDefaults: BranchEntry[] = []
 
 	for (let i = 0; i < ctx.defaultEntries.length; i++) {
 		const entry = ctx.defaultEntries[i]
 		if (caseCtx.branchIndices.includes(entry.originalIndex)) {
-			const pruned = pruneDiscriminant(
-				ctx.node.branches[entry.originalIndex],
-				ctx.location
-			)
+			const pruned = prune(ctx.node.branches[entry.originalIndex])
 			if (pruned === null) {
 				// if any branch of the union has no constraints (i.e. is
 				// unknown), the others won't affect the resolution type, but could still
@@ -730,7 +740,7 @@ const resolveCase = (
 			if (entry.branch.rawIn.overlaps(discriminantNode)) {
 				// include cases where an object not including the
 				// discriminant path might have that value present as an undeclared key
-				const overlapping = pruneDiscriminant(entry.branch, ctx.location)!
+				const overlapping = prune(entry.branch)!
 				resolvedEntries?.push({
 					originalIndex: entry.originalIndex,
 					branch: overlapping
