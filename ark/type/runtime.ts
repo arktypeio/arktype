@@ -271,8 +271,22 @@ export const bakeInto = <t>(
 				}
 			})
 		}
+		// another module's bake of any other member is what this one's would
+		// be, and code may already hold it
+		for (const member in attributes) {
+			if (
+				member !== "toJsonSchema" &&
+				Reflect.getOwnPropertyDescriptor(validator, member)
+			)
+				delete attributes[member as keyof typeof attributes]
+		}
 		own(validator, attributes)
-		if (standard) own(validator["~standard"], standard)
+		if (
+			standard &&
+			!Reflect.getOwnPropertyDescriptor(validator["~standard"], "jsonSchema")
+				?.value
+		)
+			own(validator["~standard"], standard)
 	}
 	return validator
 }

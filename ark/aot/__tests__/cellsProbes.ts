@@ -50,8 +50,11 @@ const twins = [
 	`type({ a: "string.numeric.parse" })`
 ]
 
+// named past a minifier, as an expression and a message print a function's name
 const preds = `export const positive = (d: any) => typeof d !== "number" || d > 0
 export const double = (d: any) => (typeof d === "number" ? d * 2 : d)
+Object.defineProperty(positive, "name", { value: "positive" })
+Object.defineProperty(double, "name", { value: "double" })
 `
 
 // each module of an identity probe writing a twin imports what twins hold

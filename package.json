@@ -45,6 +45,7 @@
 		"testMembersFuzz": "node --conditions ark-ts ./ark/aot/__tests__/testMembersFuzz.ts",
 		"testCellsFuzz": "node --conditions ark-ts ./ark/aot/__tests__/testCellsFuzz.ts",
 		"testGraphRead": "node --conditions ark-ts ./ark/aot/__tests__/testGraphRead.ts",
+		"testOptionsCache": "node --conditions ark-ts ./ark/aot/__tests__/testOptionsCache.ts",
 		"testIncremental": "node --conditions ark-ts ./ark/aot/__tests__/testIncremental.ts",
 		"testBigAppBudget": "node ./ark/repo/bench/bigapp/budget.ts",
 		"testAlgebra": "node --conditions ark-ts ./ark/type/__tests__/algebra/testAlgebra.ts",

@@ -80,11 +80,11 @@ export interface TurbopackLoaderContext {
 	addDependency(file: string): void
 	emitWarning(warning: Error): void
 	// absent where a host can't resolve as Turbopack does
-	getResolve?(
-		options: Record<string, unknown>
-	): (context: string, request: string) => Promise<string>
+	getResolve?(options: Record<string, unknown>): LoaderResolve
 	async?(): (error: Error | null, result?: string) => void
 }
+
+type LoaderResolve = (context: string, request: string) => Promise<string>
 
 const precompilersByOptions: Record<string, KeyedPrecompiler> = {}
 
@@ -116,11 +116,11 @@ export default function (
 	source: string
 ): string | undefined {
 	const given = this.getOptions()
+	const cwd = given.cwd ?? process.cwd()
 	// ark.json or package.json's "ark", which decide each module's output as
 	// next.config's options do, but which Turbopack's build cache sees change
 	// only as dependencies: one written since the last build too
-	for (const file of settingsPathsOf(given.cwd ?? process.cwd()))
-		this.addDependency(file)
+	for (const file of settingsPathsOf(cwd)) this.addDependency(file)
 	refuseDeclare(given, "Turbopack")
 	let opts: PrecompilePluginOptions
 	try {
@@ -129,7 +129,6 @@ export default function (
 		const set = withSettingsFile(given)
 		const settings = JSON.stringify(set)
 		if ((settingsByOptions[key] ??= settings) !== settings) {
-			const cwd = given.cwd ?? process.cwd()
 			throwBuildError(
 				writeChangedSettingsMessage(
 					printablePathOf(cwd, settingsFileOf(cwd) ?? join(cwd, "ark.json"))
@@ -201,8 +200,8 @@ const runtimeShimOf = (
 	return `export * from ${JSON.stringify(path.startsWith(".") ? path : `./${path}`)}\n`
 }
 
-// `next build` reads its modules whole, through what Turbopack resolves, where
-// `next dev` writes each as it's asked for
+// `next build` answers its modules from next.config's read of the project,
+// where `next dev` writes each as it's asked for
 const readsProgram = (
 	context: TurbopackLoaderContext,
 	opts: PrecompilePluginOptions
@@ -221,7 +220,6 @@ const answerFromProgram = async (
 ): Promise<string | undefined> => {
 	const id = context.resourcePath
 	if (isProgramUnit(id)) return source
-	const resolve = context.getResolve!({})
 	const program = programOf(context.rootContext!, opts)
 	// what Turbopack's build cache keeps its output against
 	context.addDependency(doneFileOf(program.dir))
@@ -254,7 +252,7 @@ const answerFromProgram = async (
 			)
 		)
 	}
-	await checkImports(context, program, answer!, resolve)
+	await checkImports(context, program, answer!)
 	return loadedOf(context, () => precompilerOf(opts), answer!, source, opts)
 }
 
@@ -317,17 +315,15 @@ export const withPrecompile =
 		return loaded
 	}
 
-type LoaderResolve = (context: string, request: string) => Promise<string>
-
 // Turbopack resolves a module's imports apart for each layer it builds it in,
 // the read's for the one that asked first
 const checkImports = async (
 	context: TurbopackLoaderContext,
 	program: ReadProgramDir,
-	answer: ProgramAnswer,
-	resolve: LoaderResolve
+	answer: ProgramAnswer
 ) => {
 	const id = context.resourcePath
+	const resolve = context.getResolve!({})
 	await Promise.all(
 		Object.entries(answer.imports).map(async ([specifier, read]) => {
 			const resolved = await resolve(dirname(id), specifier).then(
@@ -382,7 +378,7 @@ const answerAlone = (
 const resolvedAgain = async (
 	precompiler: KeyedPrecompiler,
 	keyed: PrecompiledKeyedModule,
-	resolve: (context: string, request: string) => Promise<string>,
+	resolve: LoaderResolve,
 	source: string,
 	id: string
 ): Promise<PrecompiledKeyedModule> => {
@@ -444,7 +440,7 @@ const loadedOf = (
 // and resolveAlias doesn't reach what it does
 const checkNextExternals = async (
 	context: TurbopackLoaderContext,
-	resolve: (context: string, request: string) => Promise<string>,
+	resolve: LoaderResolve,
 	opts: PrecompilePluginOptions,
 	warn: (warning: string) => void
 ) => {
@@ -523,7 +519,7 @@ const nextConfigFiles = [
 
 // Turbopack resolves arktype as `resolveAlias` says, which the loader can't change
 const checkAliases = async (
-	resolve: (context: string, request: string) => Promise<string>,
+	resolve: LoaderResolve,
 	importer: string,
 	specifiers: string[],
 	opts: PrecompilePluginOptions,

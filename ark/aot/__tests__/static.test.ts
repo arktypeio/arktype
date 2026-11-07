@@ -1750,6 +1750,48 @@ export const B = type((N as any).b ?? "boolean")`)
 			])
 		})
 
+		// as Vite's, esbuild's, SWC's and Babel's transforms write an enum, which
+		// a build reads where they ran ahead of it
+		it("TypeScript enums as a transpiler writes them", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+export let Color = /* @__PURE__ */ function(Color) {
+	Color["Red"] = "red";
+	Color["Blue"] = "blue";
+	return Color;
+}({});
+var Num = /* @__PURE__ */ ((Num2) => {
+	Num2[Num2["A"] = 0] = "A";
+	Num2[Num2["B"] = 5] = "B";
+	return Num2;
+})(Num || {});
+var Merged = ((Merged2) => {
+	Merged2["A"] = "a";
+	return Merged2;
+})(Merged || {});
+var Merged = ((Merged2) => {
+	Merged2["B"] = "b";
+	return Merged2;
+})(Merged || {});
+let Reads = function(Reads) {
+	Reads[Reads["A"] = 1] = "A";
+	Reads[Reads["B"] = Reads.A + 1] = "B";
+	return Reads;
+}({});
+export const A = type.valueOf(Color)
+export const B = type.valueOf(Num)
+export const C = type(\`'\${Num[5]}'\`)
+export const D = type.valueOf(Merged)
+export const E = type.valueOf(Reads)`)
+			).snap([
+				'25:18 accepted "blue" | "red"',
+				"26:18 accepted 0 | 5",
+				'27:18 accepted "B"',
+				"28:18 rejected\n  `Merged` is assigned at /main.ts:16:5, so its value at the site is not known",
+				'29:18 rejected\n  `Reads` is `function(Reads) { Reads[Reads["A"] = 1] = "A"; Reads[Reads[…` (/main.ts:20:5)\n  `Reads.A + 1` reads the enum it defines'
+			])
+		})
+
 		it("a var declared in a nested statement", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
