@@ -1042,7 +1042,7 @@ const observationsOf = (out: string): unknown[] | undefined => {
 const normalized = (observation: unknown) =>
 	JSON.stringify(observation)?.replace(/\$ark\.\w+?\$?\d+/g, "$ark.fn")
 
-const unbakedMessage = /isn't baked into this validator/
+const unbakedMessage = /isn't precompiled: set members/
 const fallbackMessage = /takes only a target it was built with/
 
 type Verdict =

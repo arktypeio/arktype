@@ -332,10 +332,19 @@ const replaceDataCalls = (
 // a shorter call's name and declaration cost what sharing saves, and gzip's matches
 // save most of a call written less often anyway. On ntwine, gz KB, min MB, import G:
 // at 2 calls of 90 116.8, 0.358, 0.179; at 5 of 64 116.2, 0.360, 0.179; none 116.6,
-// 0.381, 0.199. On 92 Types, gz KB: 7.62; 7.36; 7.35
-const minSharedCall = 64
+// 0.381, 0.199. On 92 Types, gz KB: 7.62; 7.36; 7.35. Smallest gz B since, at 5 of
+// 64 / 7 of 40: benchScale's mixed apps of 200 Types 11349 / 11195, 11131 / 10967,
+// 11283 / 11109, 50 and 10 within 8; board 92 6213 / 6191, 230 8730 / 8713, 1012
+// 21501 / 21504; ntwine 128945 / 129015. Shorter or rarer calls than that cost
+// again (at 7 of 32, 50 Types +40; at 3 of 64, +20)
+const minSharedCall = 40
 
-const minSharedCalls = 5
+const minSharedCalls = 7
+
+const writeImports = (names: Iterable<string>): string =>
+	[...names]
+		.map(name => `import { ${name} } from "~arktype/${name}"\n`)
+		.join("")
 
 // a checker holding only data is the same wherever it's written, so what's
 // written more than once is made once. Each makes closures an import runs,
@@ -373,10 +382,7 @@ const withSharedChecks = (
 			const code = shareIn(codes[specifier], imports)
 			if (code === codes[specifier]) continue
 			shared = true
-			codes[specifier] =
-				[...imports]
-					.map(name => `import { ${name} } from "~arktype/${name}"\n`)
-					.join("") + code
+			codes[specifier] = writeImports(imports) + code
 		}
 		for (const [name, call] of calls) {
 			const imports = importsOf.get(name) ?? new Set<string>()
@@ -390,9 +396,7 @@ const withSharedChecks = (
 	}
 	for (const [name, call] of calls) {
 		codes[`~arktype/${name}`] =
-			[...(importsOf.get(name) ?? [])]
-				.map(held => `import { ${held} } from "~arktype/${held}"\n`)
-				.join("") +
+			writeImports(importsOf.get(name)!) +
 			`import * as runtime from "arktype/runtime"\n\nconst ${name} = ${call}\n\nexport { ${name} }\n`
 	}
 	return codes

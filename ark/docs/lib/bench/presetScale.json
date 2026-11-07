@@ -1,18 +1,18 @@
 {
-	"commit": "3233d686b",
+	"commit": "5373f183d",
 	"apps": [
 		{
 			"app": "login",
 			"types": 1,
-			"default": 1330,
-			"smallest": 1168,
+			"default": 1484,
+			"smallest": 1275,
 			"valibot": 1678
 		},
 		{
 			"app": "shop",
 			"types": 23,
-			"default": 6219,
-			"smallest": 3384,
+			"default": 5649,
+			"smallest": 3632,
 			"valibot": 3626
 		}
 	],
@@ -23,26 +23,26 @@
 			"rows": [
 				{
 					"types": 10,
-					"default": 5116,
-					"smallest": 3138,
+					"default": 4663,
+					"smallest": 3312,
 					"valibot": 3415
 				},
 				{
 					"types": 50,
-					"default": 13421,
-					"smallest": 5398,
+					"default": 12505,
+					"smallest": 5574,
 					"valibot": 5509
 				},
 				{
 					"types": 200,
-					"default": 37381,
-					"smallest": 11153,
+					"default": 35765,
+					"smallest": 11185,
 					"valibot": 11283
 				},
 				{
 					"types": 1000,
-					"default": 153704,
-					"smallest": 38440,
+					"default": 149518,
+					"smallest": 38630,
 					"valibot": 39481
 				}
 			]
@@ -53,26 +53,26 @@
 			"rows": [
 				{
 					"types": 10,
-					"default": 5795,
-					"smallest": 3277,
+					"default": 5229,
+					"smallest": 3452,
 					"valibot": 3536
 				},
 				{
 					"types": 50,
-					"default": 14011,
-					"smallest": 5313,
+					"default": 12846,
+					"smallest": 5529,
 					"valibot": 5449
 				},
 				{
 					"types": 200,
-					"default": 38783,
-					"smallest": 10942,
+					"default": 36619,
+					"smallest": 10969,
 					"valibot": 11057
 				},
 				{
 					"types": 1000,
-					"default": 154771,
-					"smallest": 38401,
+					"default": 150311,
+					"smallest": 37028,
 					"valibot": 39354
 				}
 			]
@@ -83,26 +83,26 @@
 			"rows": [
 				{
 					"types": 10,
-					"default": 5544,
-					"smallest": 3223,
+					"default": 5041,
+					"smallest": 3433,
 					"valibot": 3471
 				},
 				{
 					"types": 50,
-					"default": 12424,
-					"smallest": 5347,
+					"default": 11775,
+					"smallest": 5551,
 					"valibot": 5539
 				},
 				{
 					"types": 200,
-					"default": 35976,
-					"smallest": 11063,
+					"default": 34565,
+					"smallest": 11097,
 					"valibot": 11263
 				},
 				{
 					"types": 1000,
-					"default": 158865,
-					"smallest": 38971,
+					"default": 154405,
+					"smallest": 37467,
 					"valibot": 40096
 				}
 			]
@@ -113,26 +113,26 @@
 			"rows": [
 				{
 					"types": 10,
-					"default": 2320,
-					"smallest": 1768,
+					"default": 2489,
+					"smallest": 1959,
 					"valibot": 2056
 				},
 				{
 					"types": 50,
-					"default": 5771,
-					"smallest": 3111,
+					"default": 6022,
+					"smallest": 3278,
 					"valibot": 3293
 				},
 				{
 					"types": 200,
-					"default": 17667,
-					"smallest": 6945,
+					"default": 17960,
+					"smallest": 7067,
 					"valibot": 7216
 				},
 				{
 					"types": 1000,
-					"default": 89058,
-					"smallest": 28400,
+					"default": 89640,
+					"smallest": 28100,
 					"valibot": 29014
 				}
 			]

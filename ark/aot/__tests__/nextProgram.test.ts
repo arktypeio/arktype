@@ -14,13 +14,15 @@ import type { PrecompilePluginOptions } from "@ark/aot/unplugin"
 import turbopack, { type TurbopackLoaderContext } from "@ark/aot/turbopack"
 import {
 	existsSync,
+	mkdirSync,
 	readdirSync,
 	readFileSync,
 	statSync,
+	symlinkSync,
 	writeFileSync
 } from "node:fs"
 import { spawnSync } from "node:child_process"
-import { dirname, join, resolve as resolvePath } from "node:path"
+import { dirname, join, relative, resolve as resolvePath } from "node:path"
 import { writeFixture } from "./utils.ts"
 
 const conditions = ["ark-ts"]
@@ -120,6 +122,12 @@ const unitsDirIn = (dir: string) => {
 	return join(ark, readdirSync(ark)[0])
 }
 
+// each unit it wrote, as one text
+const writtenIn = (dir: string) =>
+	readdirSync(unitsDirIn(dir))
+		.map(name => readFileSync(join(unitsDirIn(dir), name), "utf8"))
+		.join("\n")
+
 contextualize(() => {
 	describe("a `next build` reading its project", () => {
 		it("writes a module's validators to a file its code imports", async () => {
@@ -158,7 +166,7 @@ contextualize(() => {
 				{ cwd: dir, encoding: "utf8" }
 			)
 			attest(
-				stderr.includes("expression isn't baked into this validator")
+				stderr.includes("expression isn't precompiled: set members")
 			).equals(true)
 		})
 
@@ -250,6 +258,51 @@ contextualize(() => {
 			attest((await load(dir, "src/user.ts")).warnings).equals([
 				keptFor("src/a.ts exports A, which code outside the bundle may read")
 			])
+		})
+
+		it("reads a route under a directory a build at the root would write", async () => {
+			const dir = project({
+				"app/build/page.tsx":
+					'import { User } from "../../src/user.ts"\n\nexport default () => String(User.allows(1))\n'
+			})
+			attest((await load(dir, "app/build/page.tsx")).message).equals(undefined)
+		})
+
+		// JavaScript naming no validator, so no loader runs on it to say what
+		// the read missed
+		const reading = (file: string) =>
+			`import { User } from "${relative(dirname(file), "src/user.ts").replace(/\\/g, "/")}"\n\nexport const GET = () => Response.json(User["~standard"])\n`
+
+		for (const [name, file, isRead] of [
+			[
+				"a route under a directory named as a build's",
+				"app/docs/dist/route.js",
+				true
+			],
+			[
+				"a route under a directory named with a dot",
+				"app/.well-known/probe/route.js",
+				true
+			],
+			["a page among pages/'s tests", "pages/__tests__/probe.js", true],
+			["a page named as a test", "pages/probe.test.js", true],
+			["a build's output beside the root", "dist/route.js", false],
+			["tests app/ leaves unrouted", "app/__tests__/route.js", false]
+		] as const) {
+			it(`${isRead ? "reads" : "leaves unread"} ${name}`, async () => {
+				const dir = project({ [file]: reading(file) })
+				await load(dir, "src/user.ts")
+				attest(writtenIn(dir).includes("~standard")).equals(isRead)
+			})
+		}
+
+		it("reads a route a link leads to, as Next routes it", async () => {
+			// where it walks nothing else
+			const dir = project({ ".shared/route.js": reading(".shared/route.js") })
+			mkdirSync(join(dir, "app"), { recursive: true })
+			symlinkSync(join(dir, ".shared"), join(dir, "app/shared"), "junction")
+			await load(dir, "src/user.ts")
+			attest(writtenIn(dir).includes("~standard")).equals(true)
 		})
 
 		it("has what it writes import what it wrote", async () => {
@@ -445,6 +498,11 @@ contextualize(() => {
 				"a file another loader compiles",
 				{ "app/about/page.mdx": "# About\n" },
 				"app/about/page.mdx may import what it can't see"
+			],
+			[
+				"a Babel config",
+				{ "babel.config.json": '{ "presets": ["next/babel"] }\n' },
+				"babel.config.json has Next run Babel on each module after this loader, which may add reads it can't see"
 			]
 		]
 
@@ -540,6 +598,18 @@ contextualize(() => {
 			attest(readOf({ "*.ts": { loaders: ["other-loader", own] } })).equals({
 				problem:
 					"next.config runs other-loader, which may add imports it can't see"
+			})
+		})
+
+		it("refuses an SWC plugin, which runs after it", () => {
+			attest(
+				readOf({}, { experimental: { swcPlugins: [["plugin", {}]] } })
+			).equals({
+				problem:
+					"next.config runs SWC plugins after this loader, which may add reads it can't see"
+			})
+			attest(readOf({}, { experimental: { swcPlugins: [] } })).equals({
+				options: {}
 			})
 		})
 
