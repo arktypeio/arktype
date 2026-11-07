@@ -169,15 +169,15 @@ const plugins =
 export default defineConfig({ plugins, logLevel: "warn", clearScreen: false })
 `
 
-// each arm's own, written as it runs (measure.ts): the plugin reads its
-// turbopack rules and build cache only as literals, so the plugin's arm can't
-// share a config that switches on PRECOMPILE
+// each arm's own, written as it runs (measure.ts), the plugin's as Setup
+// writes it, so its build reads the project through withPrecompile
 export const nextConfigOf = (root: string, precompiled: boolean) =>
 	precompiled ?
-		`export default {
+		`import { withPrecompile } from "@ark/aot/turbopack"
+
+export default withPrecompile({
 	typescript: { ignoreBuildErrors: true },
 	devIndicators: false,
-	experimental: { turbopackFileSystemCacheForBuild: false },
 	turbopack: {
 		root: ${JSON.stringify(root)},
 		rules: {
@@ -197,7 +197,7 @@ export const nextConfigOf = (root: string, precompiled: boolean) =>
 			"@ark/schema/runtime": "@ark/aot/turbopack/runtime"
 		}
 	}
-}
+})
 `
 	:	`export default {
 	typescript: { ignoreBuildErrors: true },

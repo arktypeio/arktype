@@ -189,11 +189,11 @@ import {
 } from "./interpreter.ts"
 import { parseCode, SourceModule } from "./module.ts"
 import type { Preset } from "./presets.ts"
+import { isTransparent } from "./proofs.ts"
 import { closedTextOf, SameEachRun } from "./sameEachRun.ts"
 import { resolvePrecompileOptions } from "./settings.ts"
 import {
 	exportNameOf,
-	isTransparent,
 	isDiscarded,
 	isMemberRead,
 	isWriteTarget,
@@ -2978,7 +2978,8 @@ export class Precompiler {
 	// config module, or once something calls it, after any module of its
 	// program may have. So it loads it ahead of them, if every site would run
 	// after it, as one creating as its module loads ahead of it throws as
-	// arktype does
+	// arktype does. A build reading each module alone can't tell whether its
+	// program loads the config module, so it's loaded as though it does
 	private configFirstOf(
 		module: SourceModule,
 		program: ScannedProgram | undefined
@@ -2993,8 +2994,7 @@ export class Precompiler {
 			return
 		const isLoaded =
 			this.importClosureOf(module.id).includes(config) ||
-			(!!program &&
-				config in program.modules &&
+			((!program || config in program.modules) &&
 				this.analysisOf(module).sites.every(site => site.deferred))
 		return isLoaded ? specifierOf(module.id, config) : undefined
 	}
@@ -3587,8 +3587,8 @@ export class Precompiler {
 						undefined
 					:	(exporter, name, value) =>
 							isBakeable(value) &&
-							(name === undefined ||
-								this.exportedValueOf(exporter, name) === value)
+							this.exportedValueOf(exporter, name) === value,
+				equalsBake: this.standalone.freeze ? undefined : isBakeable
 			}
 			baked = this.readingsIn(
 				program,
@@ -4159,10 +4159,8 @@ export class Precompiler {
 			) {
 				if (!passed.has(reference.value)) reasons.push(islandValueMessage(text))
 				passed.add(reference.value)
-				for (const value of holes) read.add(value)
 				continue
 			}
-			for (const value of holes) read.add(value)
 			// a Type read before its site ran throws even where no site sets a cell
 			if (
 				!holes.length &&

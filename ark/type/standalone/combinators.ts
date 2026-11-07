@@ -143,7 +143,7 @@ const discriminantSiteOf = (node: UnionNode): IssueContext | undefined =>
 const checkOf = (node: BaseNode): IssueContext | undefined =>
 	node.jsCond && plainSiteOf(node)
 
-// a predicate that reads no ctx, keeping the description written for it unless
+// a described predicate's site, keeping the description written for it unless
 // it names the function, which a callback's only has once it's called
 const predicateSiteOf = (node: BaseNode): IssueContext | undefined => {
 	if (!node.is("predicate")) return
@@ -229,7 +229,7 @@ interface Cases {
 	missed: IssueContext
 }
 
-const isBooleanCase = (k: string) => k === "true" || k === "false"
+const isBooleanCase = (k: string): boolean => k === "true" || k === "false"
 
 const discriminatedOf = (node: UnionNode): Cases | undefined => {
 	const discriminant = node.discriminant
@@ -592,11 +592,11 @@ const writeSitedAllows = (structure: StructureNode, refs: string[]): string => {
 				/^runtime\.\w+$/.test(refs[i]) ?
 					refs[i]
 				:	`checkers[${refs.indexOf(refs[i])}]`
-			const fails = `!${checker}(data${writeAccess(prop.key as string)})`
+			const fail = `!${checker}(data${writeAccess(prop.key as string)})`
 			return (
-				prop.is("optional") ? `(${has} && ${fails})`
-				: failsUndefined(prop.value) ? fails
-				: `(!(${has}) || ${fails})`
+				prop.is("optional") ? `(${has} && ${fail})`
+				: failsUndefined(prop.value) ? fail
+				: `(!(${has}) || ${fail})`
 			)
 		})
 		.join(" || ")
@@ -1126,17 +1126,21 @@ const writeUnionCombinator = (
 		const { description } = discriminantSiteOf(node)!
 		const [domain, checker] = cases.find(([k]) => k !== "null")!
 		if (
-			domain !== "object" &&
-			!Object.values(domains).some(branch => branch !== true && branch.tfs) &&
+			!fails &&
 			cases.length === 2 &&
 			cases.some(([k, branch]) => k === "null" && branch === "1") &&
 			description === runtime.nullableDescriptionOf(domain)
 		) {
-			return writeCall(
-				"nullable",
-				checker,
-				domain === "string" ? undefined : JSON.stringify(domain)
-			)
+			if (domain === "object") return writeCall("nullableObject", checker)
+			if (
+				!Object.values(domains).some(branch => branch !== true && branch.tfs)
+			) {
+				return writeCall(
+					"nullable",
+					checker,
+					domain === "string" ? undefined : JSON.stringify(domain)
+				)
+			}
 		}
 		return writeCall(
 			"domains",

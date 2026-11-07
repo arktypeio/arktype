@@ -62,7 +62,6 @@ import { SourceModule } from "./module.ts"
 import {
 	declaredIds,
 	exportNameOf,
-	isTransparent,
 	isWriteTarget,
 	loadedSourceOf,
 	unwrapChain,
@@ -72,7 +71,7 @@ import {
 	type Binding,
 	type Reference
 } from "./scope.ts"
-import { runtimeParamsOf } from "./proofs.ts"
+import { isTransparent, runtimeParamsOf } from "./proofs.ts"
 
 export type FunctionNode = Function | ArrowFunctionExpression
 

@@ -14,8 +14,6 @@ import {
 } from "oxc-parser"
 import { isTransparent, runtimeParamsOf } from "./proofs.ts"
 
-export { isTransparent }
-
 export type BindingKind =
 	| "import"
 	| "const"

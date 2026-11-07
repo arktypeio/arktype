@@ -5,8 +5,11 @@ import {
 	writeUnreadProgramMessage
 } from "@ark/aot/internal/messages.ts"
 import { writeKeptMembersMessage } from "@ark/aot/internal/scan.ts"
-import { programDirOf, programOf } from "@ark/aot/internal/nextProgram.ts"
-import { turbopackConfigProblemOf } from "@ark/aot/internal/pluginCalls.ts"
+import {
+	nextConfigReadOf,
+	readProjectWith,
+	type NextConfigLike
+} from "@ark/aot/internal/nextProgram.ts"
 import type { PrecompilePluginOptions } from "@ark/aot/unplugin"
 import turbopack, { type TurbopackLoaderContext } from "@ark/aot/turbopack"
 import {
@@ -14,25 +17,19 @@ import {
 	mkdirSync,
 	readdirSync,
 	readFileSync,
+	statSync,
+	symlinkSync,
 	writeFileSync
 } from "node:fs"
 import { spawnSync } from "node:child_process"
-import { dirname, join, resolve as resolvePath } from "node:path"
+import { dirname, join, relative, resolve as resolvePath } from "node:path"
 import { writeFixture } from "./utils.ts"
 
 const conditions = ["ark-ts"]
 
-const cacheOff = "experimental: { turbopackFileSystemCacheForBuild: false }"
-
-const rules = (rule: string) =>
-	`export default { ${cacheOff}, turbopack: { rules: { "*.ts": ${rule} } } }\n`
-
-const ownRule = '{ loaders: ["@ark/aot/turbopack"] }'
-
 const project = (files: Record<string, string> = {}, root?: string) =>
 	writeFixture(
 		{
-			"next.config.js": rules(ownRule),
 			"node_modules/next/package.json": '{ "name": "next" }',
 			"node_modules/.bin/next": "",
 			"src/user.ts":
@@ -53,29 +50,43 @@ interface Loaded {
 	warnings: string[]
 }
 
-const load = (
+// as next.config's wrapper reads the project, then Turbopack loads a module
+const load = async (
 	dir: string,
 	file: string,
 	{
 		opts = {},
 		source = readFileSync(join(dir, file), "utf8"),
 		resolved = {},
-		arktypeFrom
+		arktypeFrom,
+		read = {},
+		sameBuild = false
 	}: {
 		opts?: PrecompilePluginOptions
 		source?: string
 		resolved?: Resolved
 		// a directory arktype/runtime resolves otherwise from, as a nested install's
 		arktypeFrom?: string | undefined
+		// next.config, as its wrapper reads it before Turbopack starts, or false
+		// for one exporting its config bare
+		read?: NextConfigLike | false
+		// a module of the build the last load read for, so not read again
+		sameBuild?: boolean
 	} = {}
-) =>
-	new Promise<Loaded>(settle => {
-		const warnings: string[] = []
+): Promise<Loaded> => {
+	const warnings: string[] = []
+	const given = { conditions, cwd: dir, ...opts }
+	// each loader process of a build finds the read before it
+	if (!sameBuild && read) {
+		const { refused, warnings: found } = await readProjectWith(dir, read, given)
+		warnings.push(...(refused ? [refused] : found))
+	} else if (!sameBuild) delete process.env.ARK_NEXT_READ
+	return new Promise<Loaded>(settle => {
 		const context: TurbopackLoaderContext = {
 			mode: "production",
 			rootContext: dir,
 			resourcePath: join(dir, file),
-			getOptions: () => ({ conditions, cwd: dir, ...opts }),
+			getOptions: () => given,
 			addDependency: () => {},
 			emitWarning: warning => warnings.push(warning.message),
 			getResolve: () => async (context, request) => {
@@ -102,6 +113,7 @@ const load = (
 			settle({ out: undefined, message: (e as Error).message, warnings })
 		}
 	})
+}
 
 const runtimeFile = join(import.meta.dirname, "../../type/runtime.ts")
 
@@ -109,6 +121,12 @@ const unitsDirIn = (dir: string) => {
 	const ark = join(dir, "node_modules/.bin/.ark")
 	return join(ark, readdirSync(ark)[0])
 }
+
+// each unit it wrote, as one text
+const writtenIn = (dir: string) =>
+	readdirSync(unitsDirIn(dir))
+		.map(name => readFileSync(join(unitsDirIn(dir), name), "utf8"))
+		.join("\n")
 
 contextualize(() => {
 	describe("a `next build` reading its project", () => {
@@ -148,7 +166,7 @@ contextualize(() => {
 				{ cwd: dir, encoding: "utf8" }
 			)
 			attest(
-				stderr.includes("expression isn't baked into this validator")
+				stderr.includes("expression isn't precompiled: set members")
 			).equals(true)
 		})
 
@@ -189,6 +207,21 @@ contextualize(() => {
 			])
 		})
 
+		it("warns of what it read once, not for each module it answers", async () => {
+			const dir = project({
+				"src/unused.ts":
+					'import { User } from "./user.ts"\n\nexport const Unused = User\n'
+			})
+			attest((await load(dir, "src/user.ts")).warnings).equals([
+				keptFor(
+					"src/unused.ts exports Unused, which code outside the bundle may read"
+				)
+			])
+			attest(
+				(await load(dir, "src/unused.ts", { sameBuild: true })).warnings
+			).equals([])
+		})
+
 		it("takes a route another module imports for an entry", async () => {
 			const dir = project({
 				"app/page.ts":
@@ -227,18 +260,49 @@ contextualize(() => {
 			])
 		})
 
-		it("takes over from a reader that died", async () => {
-			const dir = project()
-			const opts = { conditions, cwd: dir }
-			const lock = join(programDirOf(dir, opts), "reading")
-			mkdirSync(lock, { recursive: true })
-			// no process has this id
-			writeFileSync(join(lock, "pid"), "2147483646")
-			const { refused } = await programOf(dir, opts, async (_, request) => {
-				if (request === "arktype/runtime") return runtimeFile
-				throw new Error(`Can't resolve ${request}`)
+		it("reads a route under a directory a build at the root would write", async () => {
+			const dir = project({
+				"app/build/page.tsx":
+					'import { User } from "../../src/user.ts"\n\nexport default () => String(User.allows(1))\n'
 			})
-			attest(refused).equals(undefined)
+			attest((await load(dir, "app/build/page.tsx")).message).equals(undefined)
+		})
+
+		// JavaScript naming no validator, so no loader runs on it to say what
+		// the read missed
+		const reading = (file: string) =>
+			`import { User } from "${relative(dirname(file), "src/user.ts").replace(/\\/g, "/")}"\n\nexport const GET = () => Response.json(User["~standard"])\n`
+
+		for (const [name, file, isRead] of [
+			[
+				"a route under a directory named as a build's",
+				"app/docs/dist/route.js",
+				true
+			],
+			[
+				"a route under a directory named with a dot",
+				"app/.well-known/probe/route.js",
+				true
+			],
+			["a page among pages/'s tests", "pages/__tests__/probe.js", true],
+			["a page named as a test", "pages/probe.test.js", true],
+			["a build's output beside the root", "dist/route.js", false],
+			["tests app/ leaves unrouted", "app/__tests__/route.js", false]
+		] as const) {
+			it(`${isRead ? "reads" : "leaves unread"} ${name}`, async () => {
+				const dir = project({ [file]: reading(file) })
+				await load(dir, "src/user.ts")
+				attest(writtenIn(dir).includes("~standard")).equals(isRead)
+			})
+		}
+
+		it("reads a route a link leads to, as Next routes it", async () => {
+			// where it walks nothing else
+			const dir = project({ ".shared/route.js": reading(".shared/route.js") })
+			mkdirSync(join(dir, "app"), { recursive: true })
+			symlinkSync(join(dir, ".shared"), join(dir, "app/shared"), "junction")
+			await load(dir, "src/user.ts")
+			attest(writtenIn(dir).includes("~standard")).equals(true)
 		})
 
 		it("has what it writes import what it wrote", async () => {
@@ -254,6 +318,70 @@ contextualize(() => {
 			attest(
 				[out, ...written].some(code => code!.includes("~arktype/"))
 			).equals(false)
+		})
+	})
+
+	describe("a read Turbopack's build cache restores what it read of", () => {
+		const unitsOf = (dir: string) =>
+			Object.fromEntries(
+				readdirSync(unitsDirIn(dir)).map(name => [
+					name,
+					statSync(join(unitsDirIn(dir), name)).mtimeMs
+				])
+			)
+
+		it("leaves what it writes alike as it was", async () => {
+			const dir = project()
+			await load(dir, "src/user.ts")
+			const before = unitsOf(dir)
+			await load(dir, "src/user.ts")
+			attest(unitsOf(dir)).equals(before)
+		})
+
+		it("removes what an earlier build wrote that this one doesn't", async () => {
+			const dir = project({
+				"src/address.ts":
+					'import { type } from "arktype"\n\nexport const Address = type({ street: "string" })\n'
+			})
+			await load(dir, "src/user.ts")
+			const before = Object.keys(unitsOf(dir)).length
+			writeFileSync(join(dir, "src/address.ts"), "export const Address = 1\n")
+			await load(dir, "src/user.ts")
+			attest(Object.keys(unitsOf(dir)).length < before).equals(true)
+		})
+
+		it("writes each module on its own where next.config exports its config bare", async () => {
+			const dir = project()
+			const { out, warnings } = await load(dir, "src/user.ts", { read: false })
+			attest(warnings).equals([
+				writeUnreadProgramMessage(
+					"next.config doesn't export its config through withPrecompile, which reads the project before Turbopack starts"
+				)
+			])
+			attest(out?.includes("node_modules/.bin/.ark")).equals(false)
+			// once a build
+			attest((await load(dir, "src/user.ts", { read: false })).warnings).equals(
+				[]
+			)
+		})
+
+		it("resolves an import as turbopack.resolveAlias says", async () => {
+			const dir = project({
+				"app/page.ts":
+					'import { User } from "@/user.ts"\n\nexport const GET = (data: unknown) => Response.json(User.allows(data))\n'
+			})
+			const { warnings } = await load(dir, "src/user.ts", {
+				read: { turbopack: { resolveAlias: { "@/": "./src/" } } }
+			})
+			attest(warnings).equals([])
+		})
+
+		it("reads an import Next serves of its own as holding no validator", async () => {
+			const dir = project({
+				"src/server.ts":
+					'import "server-only"\nimport { User } from "./user.ts"\n\nexport const reads = User.assert\n'
+			})
+			attest((await load(dir, "src/user.ts")).warnings).equals([])
 		})
 	})
 
@@ -344,9 +472,6 @@ contextualize(() => {
 		})
 	})
 
-	const cacheProblem =
-		"next.config.js leaves on Turbopack's build cache, which keeps a module's output past a build whose read writes it otherwise, unless it sets experimental.turbopackFileSystemCacheForBuild to false"
-
 	describe("a project it can't read whole", () => {
 		const refusals: [
 			name: string,
@@ -375,29 +500,9 @@ contextualize(() => {
 				"app/about/page.mdx may import what it can't see"
 			],
 			[
-				"another loader",
-				{
-					"next.config.js": rules(
-						'{ loaders: ["other-loader", "@ark/aot/turbopack"] }'
-					)
-				},
-				"next.config.js runs other-loader, which may add imports it can't see"
-			],
-			[
-				"a config it can't read without running it",
-				{
-					"next.config.js":
-						'import wrap from "wrap"\nexport default wrap({ turbopack: {} })\n'
-				},
-				"next.config.js doesn't export its turbopack.rules as literals"
-			],
-			[
-				"Turbopack's build cache, on by default",
-				{
-					"next.config.js":
-						'export default { turbopack: { rules: { "*.ts": { loaders: ["@ark/aot/turbopack"] } } } }\n'
-				},
-				cacheProblem
+				"a Babel config",
+				{ "babel.config.json": '{ "presets": ["next/babel"] }\n' },
+				"babel.config.json has Next run Babel on each module after this loader, which may add reads it can't see"
 			]
 		]
 
@@ -407,14 +512,21 @@ contextualize(() => {
 				const { out, warnings } = await load(dir, "src/user.ts")
 				attest(warnings).equals([writeUnreadProgramMessage(reason)])
 				attest(out?.includes("node_modules/.bin/.ark")).equals(false)
+				// once a build
+				attest(
+					(await load(dir, "src/user.ts", { sameBuild: true })).warnings
+				).equals([])
 			})
 		}
 
 		it("writes each module on its own, given another arktype beside the files it would write", async () => {
 			const root = writeFixture({
 				"node_modules/.bin/next": "",
-				"apps/web/next.config.js": rules(ownRule),
 				"apps/web/node_modules/next/package.json": '{ "name": "next" }',
+				// the app's own, where the units resolve the root's
+				"apps/web/node_modules/arktype/package.json":
+					'{ "name": "arktype", "exports": { "./runtime": "./runtime.js" } }',
+				"apps/web/node_modules/arktype/runtime.js": "",
 				"apps/web/src/user.ts":
 					'import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n'
 			})
@@ -454,79 +566,71 @@ contextualize(() => {
 		})
 	})
 
-	describe("turbopack.rules", () => {
-		const problemOf = (config: string) =>
-			turbopackConfigProblemOf("/app/next.config.js", config)
+	describe("next.config", () => {
+		const own = "@ark/aot/turbopack"
+		const readOf = (
+			rules: Record<string, unknown>,
+			config: NextConfigLike = {}
+		) =>
+			nextConfigReadOf(
+				{ ...config, turbopack: { rules } },
+				loader => loader === own
+			)
 
-		it("reads each shape of the loader it knows as this one", () => {
-			attest(problemOf(rules(ownRule))).equals(undefined)
-			attest(problemOf(rules('["@ark/aot/turbopack"]'))).equals(undefined)
+		it("takes the loader's options from each shape of rule", () => {
+			const options = { config: "./ark-config.ts" }
+			attest(readOf({ "*.ts": { loaders: [own] } })).equals({ options: {} })
+			attest(readOf({ "*.ts": [own] })).equals({ options: {} })
 			attest(
-				problemOf(
-					rules('{ loaders: [{ loader: "@ark/aot/turbopack", options: {} }] }')
-				)
-			).equals(undefined)
-			attest(
-				problemOf(rules('{ loaders: [require.resolve("@ark/aot/turbopack")] }'))
-			).equals(undefined)
-			attest(
-				problemOf(
-					`const config = ${rules(ownRule).slice("export default ".length)}export default config\n`
-				)
-			).equals(undefined)
+				readOf({
+					"*.ts": { loaders: [{ loader: own, options }] },
+					"*.js": [
+						{
+							condition: { content: /arktype/ },
+							loaders: [{ loader: own, options }]
+						}
+					]
+				})
+			).equals({ options })
 		})
 
-		it("refuses what running it may change", () => {
-			const unreadable =
-				"next.config.js doesn't export its turbopack.rules as literals"
-			attest(problemOf(rules("{ loaders: list }"))).equals(unreadable)
-			attest(problemOf(rules("{ loaders: [...list] }"))).equals(unreadable)
-			attest(problemOf(rules("{ loaders: [pick()] }"))).equals(unreadable)
-			attest(problemOf("export default wrap({})\n")).equals(unreadable)
-			attest(
-				problemOf("export default { ...base, turbopack: { rules: {} } }\n")
-			).equals(unreadable)
-			attest(
-				problemOf("export default { turbopack: { ...base, rules: {} } }\n")
-			).equals(unreadable)
+		it("refuses another loader, whose output's imports it can't see", () => {
+			attest(readOf({ "*.ts": { loaders: ["other-loader", own] } })).equals({
+				problem:
+					"next.config runs other-loader, which may add imports it can't see"
+			})
 		})
 
-		it("refuses Turbopack's build cache unless it's set off", () => {
-			const withCache = (cache: string, after = "") =>
-				`const config = { experimental: { ${cache} }, turbopack: { rules: { "*.ts": ${ownRule} } } }\n${after}export default config\n`
+		it("refuses an SWC plugin, which runs after it", () => {
 			attest(
-				problemOf(withCache("turbopackFileSystemCacheForBuild: true"))
-			).equals(cacheProblem)
-			attest(problemOf(withCache("other: true"))).equals(cacheProblem)
-			attest(
-				problemOf(withCache("turbopackFileSystemCacheForBuild: off"))
-			).equals(cacheProblem)
-			attest(
-				problemOf(
-					withCache("turbopackFileSystemCacheForBuild: false, ...shared")
-				)
-			).equals(cacheProblem)
-			attest(
-				problemOf(
-					withCache(
-						"turbopackFileSystemCacheForBuild: false",
-						"config.experimental.turbopackFileSystemCacheForBuild = true\n"
-					)
-				)
-			).equals(cacheProblem)
-			attest(
-				problemOf(
-					`// turbopackFileSystemCacheForBuild keeps outputs\n${withCache('"turbopackFileSystemCacheForBuild": false')}`
-				)
-			).equals(undefined)
+				readOf({}, { experimental: { swcPlugins: [["plugin", {}]] } })
+			).equals({
+				problem:
+					"next.config runs SWC plugins after this loader, which may add reads it can't see"
+			})
+			attest(readOf({}, { experimental: { swcPlugins: [] } })).equals({
+				options: {}
+			})
 		})
 
 		it("refuses two sets of the loader's options", () => {
 			attest(
-				problemOf(
-					`export default { turbopack: { rules: { "*.ts": { loaders: [{ loader: "@ark/aot/turbopack", options: { a: 1 } }] }, "*.js": { loaders: ["@ark/aot/turbopack"] } } } }\n`
-				)
-			).equals("next.config.js runs the loader with 2 sets of options")
+				readOf({
+					"*.ts": { loaders: [{ loader: own, options: { a: 1 } }] },
+					"*.js": { loaders: [own] }
+				})
+			).equals({
+				problem: "next.config runs the loader with 2 sets of options"
+			})
+		})
+
+		it("refuses pages of an extension it doesn't read", () => {
+			attest(readOf({}, { pageExtensions: ["tsx", "ts"] })).equals({
+				options: {}
+			})
+			attest(readOf({}, { pageExtensions: ["tsx", "mdx"] })).equals({
+				problem: "next.config sets pageExtensions, whose pages it can't read"
+			})
 		})
 	})
 })

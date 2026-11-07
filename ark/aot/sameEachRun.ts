@@ -5,6 +5,7 @@ import { globalsByName } from "./builtins.ts"
 import { contains, heldAs, isFunctionNode, type ModuleGraph } from "./graph.ts"
 import { initOf, type Interpreter } from "./interpreter.ts"
 import type { SourceModule } from "./module.ts"
+import { isNode } from "./proofs.ts"
 import {
 	operatorOf,
 	typeKeys,
@@ -20,9 +21,6 @@ const fixedClasses = new Set(["Set", "Map", "TextEncoder"])
 const fixedGlobals = new Set(["undefined", "NaN", "Infinity"])
 
 type Located = [binding: Binding, module: SourceModule]
-
-const isNode = (value: unknown): value is Node =>
-	typeof (value as Node | null)?.type === "string"
 
 // what a function runs if it's written in another module, as JavaScript: undefined
 // if it reads anything but what it declares and globals a module a build writes

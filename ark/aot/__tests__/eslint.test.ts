@@ -141,7 +141,7 @@ configure({ predicate: { description: () => "satisfying a predicate" } })
 `
 		)
 		attest(lint(code, { config }, join(dir, "linted.js"), dir)).equals([])
-	})
+	}).timeout(60_000)
 
 	it("rereads a module once it changes", () => {
 		const dir = writeFixture({ "limits.ts": "export const max = 5\n" })

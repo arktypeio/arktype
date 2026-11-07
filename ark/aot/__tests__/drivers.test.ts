@@ -170,7 +170,7 @@ contextualize(function (this: Mocha.Suite) {
 		attest(JSON.parse(stdout)).equals([
 			["precompile"],
 			["register"],
-			["__esModule", "default"]
+			["__esModule", "default", "withPrecompile"]
 		])
 	})
 
@@ -185,7 +185,8 @@ contextualize(function (this: Mocha.Suite) {
 		)
 		const loader = {
 			getOptions: () => ({ declare: true }),
-			resourcePath: "a.ts"
+			resourcePath: "a.ts",
+			addDependency: () => {}
 		}
 		attest(() => turbopack.call(loader as never, "")).throws(
 			writeDeclareFrameworkMessage("Turbopack")
@@ -238,7 +239,7 @@ contextualize(function (this: Mocha.Suite) {
 			"--input-type=module",
 			"-e",
 			`const loads = [
-	async () => (await import("${aot("turbopack.ts")}")).default.call({ getOptions: () => ({}), resourcePath: "main.ts" }, ""),
+	async () => (await import("${aot("turbopack.ts")}")).default.call({ getOptions: () => ({}), resourcePath: "main.ts", addDependency: () => {} }, ""),
 	async () => (await import("${aot("unplugin.ts")}")).precompile.esbuild(),
 	// last, since its hooks would precompile what the others load
 	async () => (await import("${aot("node.ts")}")).register()
@@ -804,7 +805,14 @@ console.log(Value, note, load, await import("#shared/lazy"))
 			attest(standalone.out).satisfies(
 				/\nvar \$ark\$exports0;\nfunction \$ark\$load0\(\) {/
 			)
-			attest(standalone.dependencies).equals(["ark.ts", tsconfig, ...manifests])
+			attest(standalone.dependencies).equals([
+				// the project's settings, from the package holding the app
+				fromHere("..", "package.json"),
+				fromHere("..", "ark.json"),
+				"ark.ts",
+				tsconfig,
+				...manifests
+			])
 			attest(load(app, "schemas.ts", { runtime: "arktype" }).out).satisfies(
 				/\n;\(\(registerPrecompiledUnits\) => {/
 			)

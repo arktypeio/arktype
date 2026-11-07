@@ -123,6 +123,29 @@ export const json = () => T.json`
 		])
 	})
 
+	it("bakes json numbering a cycle's references by where it reaches them, not by the nodes the build made before", () => {
+		const source = `import { scope, type } from "arktype"
+const a = scope({ node: { a: "number", "next?": "node" } }).export()
+const b = scope({ node: { b: "number", "next?": "node" } }).export()
+export const T = type({ a: a.node, b: b.node })
+export const json = () => T.json`
+		// as a watch build's worker evaluates the program again
+		const jsonOf = () =>
+			Object.values(
+				new Precompiler(memoryHost({ "/main.ts": source })).precompile(
+					source,
+					"/main.ts"
+				).modules
+			)
+				.flatMap(module => module.split("\n"))
+				.filter(line => line.includes("runtime.deepFreeze("))
+		const first = jsonOf()
+		attest(jsonOf()).equals(first)
+		attest(normalized(first)).snap([
+			'const #0 = /* @__PURE__ */ (() => runtime.deepFreeze({ "required": [{ "key": "a", "value": { "required": [{ "key": "a", "value": "number" }], "optional": [{ "key": "next", "value": "$ark.node1" }], "domain": "object" } }, { "key": "b", "value": { "required": [{ "key": "b", "value": "number" }], "optional": [{ "key": "next", "value": "$ark.node2" }], "domain": "object" } }], "domain": "object" }))()'
+		])
+	})
+
 	it("bakes a string reading like a registered reference as written", () => {
 		const source = `import { type } from "arktype"
 export const T = type("'$ark.fn$9'").describe("$ark.fn$9")

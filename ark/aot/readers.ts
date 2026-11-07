@@ -100,15 +100,13 @@ export interface ReaderProgram extends UsageProgram {
 	// false where the build doesn't read the whole program, so no field read is followed
 	whole: boolean
 	// where the build doesn't, whether each module importing a module's export
-	// bakes what it reads of it, as where the export is the validator itself.
-	// Without a name, of what it may hold as another module's equal Type
+	// bakes what it reads of it, as where the export is the validator itself
 	importersBake?:
-		| ((
-				module: SourceModule,
-				name: string | undefined,
-				value: unknown
-		  ) => boolean)
+		| ((module: SourceModule, name: string, value: unknown) => boolean)
 		| undefined
+	// where they do, whether they bake what they read of a Type onto another
+	// module's equal one
+	equalsBake?: ((value: unknown) => boolean) | undefined
 }
 
 // what each validator's readers read of it, followed into its dependencies
@@ -805,19 +803,19 @@ class Follow {
 	// bakes a hole-free Type's after interning, as its importers do, so only one
 	// holding a function, which no importer bakes onto, keeps what its own module
 	// reads. A whole program merges what each site bakes
-	private keysApart(held: Held, module: SourceModule): boolean {
+	private keysApart(held: Held): boolean {
 		const { program } = this.readers
 		return (
 			!program.whole &&
-			(!program.importersBake ||
+			(!program.equalsBake ||
 				(!held.path.length &&
 					held.of === "type" &&
-					!program.importersBake(module, undefined, this.value)))
+					!program.equalsBake(this.value)))
 		)
 	}
 
 	private isComparison(read: Node, held: Held, module: SourceModule): boolean {
-		return comparesIdentity(read, module) && this.keysApart(held, module)
+		return comparesIdentity(read, module) && this.keysApart(held)
 	}
 
 	private readAt({ node, module, held }: Fact): void {
@@ -1373,11 +1371,7 @@ class Follow {
 		if (key === "~standard") return { ...held, path: [], of: "standard" }
 		// e.g. `T.assert === U.assert`, each a value of the validator's own,
 		// which code holding one may compare
-		if (
-			key in ownedMembers &&
-			this.keysApart(held, module) &&
-			!isUsedInPlace(at)
-		) {
+		if (key in ownedMembers && this.keysApart(held) && !isUsedInPlace(at)) {
 			this.lose(at, module, `holds its ${key}, which may be compared`)
 			return
 		}
