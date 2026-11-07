@@ -68,6 +68,15 @@ const arktypeSource = () =>
 	process.env[arktypeEnv] ??
 	(migrationSha && join(cloned(migrationSha), "packages", "shared", "src"))
 
+/**
+ * what the ntwine arms measure: its zod source's commit, and the migration's
+ * commit, or null where it was read from a checkout no reader can rerun
+ */
+export const ntwineSource = () => ({
+	repo: repoSha,
+	migration: (!process.env[arktypeEnv] && migrationSha) || null
+})
+
 /** the migration's source, if this machine has it */
 export const ntwineAvailable = (): boolean => {
 	const source = arktypeSource()
