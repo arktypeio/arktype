@@ -589,6 +589,125 @@ export const unwrapExpression = (node: Node): Node => {
 	return node
 }
 
+// a TypeScript enum as a transpiler writes it, Vite's, esbuild's, SWC's and
+// Babel's alike:
+//
+// let Color = function (Color) {
+// 	Color["Red"] = "red"
+// 	Color[Color["One"] = 1] = "One"
+// 	return Color
+// }({})
+//
+// each member, by name, with its value, a number mapped back to its name, and,
+// where the argument is `Color || {}`, the binding it reads. Any other call
+// is undefined
+export const transpiledEnumOf = (
+	call: Node
+):
+	| {
+			param: string
+			members: [name: string, value: Node, isNumber: boolean][]
+			seed: Node | undefined
+	  }
+	| undefined => {
+	if (call.type !== "CallExpression" || call.arguments.length !== 1) return
+	const fn = unwrapExpression(call.callee)
+	if (
+		(fn.type !== "FunctionExpression" &&
+			fn.type !== "ArrowFunctionExpression") ||
+		fn.async ||
+		fn.generator ||
+		fn.params.length !== 1 ||
+		fn.params[0].type !== "Identifier" ||
+		fn.body?.type !== "BlockStatement"
+	)
+		return
+	const param = fn.params[0].name
+	const isParam = (node: Node | null | undefined) =>
+		!!node && node.type === "Identifier" && node.name === param
+	const isEmpty = (node: Node) =>
+		node.type === "ObjectExpression" && !node.properties.length
+	const statements = fn.body.body
+	const last = statements[statements.length - 1]
+	if (last?.type !== "ReturnStatement" || !isParam(last.argument)) return
+	const arg = unwrapExpression(call.arguments[0])
+	let seed: Node | undefined
+	if (!isEmpty(arg)) {
+		if (
+			arg.type !== "LogicalExpression" ||
+			arg.operator !== "||" ||
+			arg.left.type !== "Identifier" ||
+			!isEmpty(unwrapExpression(arg.right))
+		)
+			return
+		seed = arg.left
+	}
+	// each member: `E["A"] = value`, or `E[E["A"] = value] = "A"` for a
+	// number
+	const members: [name: string, value: Node, isNumber: boolean][] = []
+	for (const statement of statements.slice(0, -1)) {
+		if (
+			statement.type !== "ExpressionStatement" ||
+			statement.expression.type !== "AssignmentExpression" ||
+			statement.expression.operator !== "="
+		)
+			return
+		const { left, right } = statement.expression
+		if (
+			left.type !== "MemberExpression" ||
+			!left.computed ||
+			!isParam(left.object)
+		)
+			return
+		const key = unwrapExpression(left.property)
+		if (key.type === "Literal" && typeof key.value === "string") {
+			members.push([key.value, right, false])
+			continue
+		}
+		if (key.type !== "AssignmentExpression" || key.operator !== "=") return
+		const named = unwrapExpression(key.left)
+		if (
+			named.type !== "MemberExpression" ||
+			!named.computed ||
+			!isParam(named.object)
+		)
+			return
+		const nameKey = unwrapExpression(named.property)
+		if (
+			nameKey.type !== "Literal" ||
+			typeof nameKey.value !== "string" ||
+			right.type !== "Literal" ||
+			right.value !== nameKey.value
+		)
+			return
+		members.push([nameKey.value, key.right, true])
+	}
+	return members.length ? { param, members, seed } : undefined
+}
+
+// `Color` in `let Color = function (Color) { … }(Color || {})`, which reads
+// the binding the enum initializes, undefined there where nothing else
+// declares or writes it, so passing it writes nothing it holds
+export const isOwnEnumSeed = (seed: Node, scopes: ModuleScopes): boolean => {
+	const or = seed.parent
+	const call = or?.parent
+	const declarator = call?.parent
+	if (
+		or?.type !== "LogicalExpression" ||
+		or.left !== seed ||
+		call?.type !== "CallExpression" ||
+		transpiledEnumOf(call)?.seed !== seed ||
+		declarator?.type !== "VariableDeclarator" ||
+		declarator.init !== call ||
+		declarator.id.type !== "Identifier" ||
+		seed.type !== "Identifier" ||
+		declarator.id.name !== seed.name
+	)
+		return false
+	const binding = scopes.bindingsById.get(declarator.id)
+	return !!binding && !binding.writes.length
+}
+
 // e.g. `T` for `(T as Type)!` or `T?.and`
 export const unwrapChain = (node: Node): Node => {
 	while (isTransparent(node) || node.type === "ChainExpression")

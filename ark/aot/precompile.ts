@@ -242,6 +242,7 @@ import {
 } from "./readers.ts"
 import {
 	isDead,
+	isSpan,
 	parseValidators,
 	passedReaderOf,
 	unprecompiled,
@@ -1650,6 +1651,88 @@ export class Precompiler {
 		if (!usage) return
 		if (usage.flat && this.readsReplacedIn(program, usage, usage.flat))
 			return unseenFlatMessage
+		const runtimes = this.builtRuntimesOf(program, usage)
+		if (typeof runtimes === "string") return writeUnseenMessage(runtimes)
+		const read = this.unseenReadIn(program, runtimes, usage)
+		return (
+			read &&
+			writeUnseenMessage(
+				`the bundle it built reads more than the modules it read: ${read}. Another plugin wrote or rewrote a module after it read it`,
+				"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
+			)
+		)
+	}
+
+	// what a bundle reads that its scan left out, as the loaders after the
+	// plugin built each module from what reached the plugin, as webpack's do:
+	// the read, and a module whose loaders' work makes it
+	unseenBuiltIn(program: ScannedProgram): UnseenBuilt | undefined {
+		const usage = this.usagesByProgram.get(program.key)
+		if (!usage) return
+		const runtimes = this.builtRuntimesOf(program, usage)
+		if (typeof runtimes === "string") return { id: undefined, read: runtimes }
+		const built = new Map<string, RuntimeModule>()
+		// each site of a module as built, by the key of the site it is in the
+		// module as the plugin wrote it, as their sites are in the same order
+		const keys = new Map<string, string>()
+		for (const id in program.modules) {
+			const { built: code, transformed } = program.modules[id]
+			if (code === undefined) continue
+			const written = runtimes.get(id)!
+			// it holds no import or export, so what it reads of a validator,
+			// through require() or exports, is beyond what the build follows
+			if (isCommonJs(this.add(id, code)))
+				return { id, read: "", commonJs: true }
+			const runtime =
+				transformed && this.isTransformed(id) && this.importsArk(code, id) ?
+					this.plannedRuntimeOf(code, id, undefined)
+				:	unprecompiled(this.graph.add(id, code))
+			if (!runtime) {
+				return {
+					id,
+					read: `${this.graph.pathOf(id)}, as the loaders after it built it, fails to precompile`
+				}
+			}
+			for (const kind of ["validators", "modules"] as const) {
+				if (runtime[kind].length !== written[kind].length) {
+					return {
+						id,
+						read: `${this.graph.pathOf(id)} creates ${runtime[kind].length} ${kind === "modules" ? "Modules" : kind} as the loaders after it built it, and ${written[kind].length} as it wrote it`
+					}
+				}
+				for (const [i, site] of runtime[kind].entries())
+					keys.set(siteKeyOf(id, site), siteKeyOf(id, written[kind][i]))
+			}
+			// a fold it would make of a read only the loaders after it wrote, like
+			// `User.expression`, stays a read in the bundle, which it never folded
+			built.set(id, { ...runtime, folded: foldsAlikeOf(runtime, written) })
+		}
+		const readWith = (ids: readonly string[]) =>
+			this.unseenReadIn(
+				program,
+				new Map([...runtimes, ...ids.map(id => [id, built.get(id)!] as const)]),
+				usage,
+				keys
+			)
+		const ids = [...built.keys()]
+		const read = readWith(ids)
+		if (!read) return
+		// the fewest modules as built, in order, that read it, the last of
+		// which adds the read
+		let [fewest, most] = [0, ids.length]
+		while (most - fewest > 1) {
+			const middle = (fewest + most) >> 1
+			if (readWith(ids.slice(0, middle))) most = middle
+			else fewest = middle
+		}
+		return { id: ids[most - 1], read: readWith(ids.slice(0, most)) ?? read }
+	}
+
+	// each module of a program as the host emitted it, or why one can't be read
+	private builtRuntimesOf(
+		program: ScannedProgram,
+		usage: ProgramUsage
+	): Map<string, RuntimeModule> | string {
 		const runtimes = new Map<string, RuntimeModule>()
 		for (const id in program.modules) {
 			const { source, transformed, mappings } = program.modules[id]
@@ -1659,28 +1742,36 @@ export class Precompiler {
 				runtimes.set(id, emitted)
 				continue
 			}
+			const planned = usage.planned.get(id)
+			if (planned?.module.source === source) {
+				runtimes.set(id, planned)
+				continue
+			}
 			if (
 				transformed &&
 				this.isTransformed(id) &&
 				this.importsArk(source, id)
 			) {
 				const runtime = this.plannedRuntimeOf(source, id, mappings)
-				if (!runtime) {
-					return writeUnseenMessage(
-						`${this.graph.pathOf(id)}, as it built it, fails to precompile`
-					)
-				}
+				if (!runtime)
+					return `${this.graph.pathOf(id)}, as it built it, fails to precompile`
 				runtimes.set(id, runtime)
 			} else runtimes.set(id, unprecompiled(this.graph.add(id, source)))
 		}
+		return runtimes
+	}
+
+	// what the modules read of a validator that it left out, as "a module
+	// reads assert of a validator", or where it loses track of one
+	private unseenReadIn(
+		program: ScannedProgram,
+		runtimes: ReadonlyMap<string, RuntimeModule>,
+		usage: ProgramUsage,
+		keys?: ReadonlyMap<string, string>
+	): string | undefined {
 		const used = this.usedIn(program, runtimes)
-		const unseen = (read: string) =>
-			writeUnseenMessage(
-				`the bundle it built reads more than the modules it read: ${read}. Another plugin wrote or rewrote a module after it read it`,
-				"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
-			)
-		const unbaked = this.unbakedIn(program, runtimes, usage)
-		if (unbaked) return unseen(`a module reads ${unbaked} of a validator`)
+		const unbaked = this.unbakedIn(program, runtimes, usage, keys)
+		if (unbaked) return `a module reads ${unbaked} of a validator`
 		const dropped = defaultMembers.filter(
 			member =>
 				usage.members[member] === false && this.members[member] === undefined
@@ -1690,17 +1781,16 @@ export class Precompiler {
 			return (
 					dropped.length || !usage.called || !usage.readsAllows || !usage.piped
 				) ?
-					unseen(used)
+					used
 				:	undefined
 		}
 		const read = dropped.find(member => used.has(member))
-		if (read) return unseen(`a module reads ${read} of a validator`)
-		if (!usage.called && used.has("call"))
-			return unseen("a module calls a validator")
+		if (read) return `a module reads ${read} of a validator`
+		if (!usage.called && used.has("call")) return "a module calls a validator"
 		if (!usage.readsAllows && used.has("allows"))
-			return unseen("a module reads a validator's allows")
+			return "a module reads a validator's allows"
 		if (!usage.piped && used.has("piped"))
-			return unseen("a module passes a validator a traversal")
+			return "a module passes a validator a traversal"
 	}
 
 	// an introspection member the bundle as built reads of a validator its
@@ -1708,13 +1798,16 @@ export class Precompiler {
 	private unbakedIn(
 		program: ScannedProgram,
 		runtimes: ReadonlyMap<string, RuntimeModule>,
-		usage: ProgramUsage
+		usage: ProgramUsage,
+		// each site's key as the plugin wrote it, by its key as built
+		keys?: ReadonlyMap<string, string>
 	): IntrospectionMember | undefined {
 		const { baked } = this.readingsIn({
 			...this.usageProgramOf(program, runtimes),
 			whole: true
 		})
-		for (const [key, { members }] of baked) {
+		for (const [builtKey, { members }] of baked) {
+			const key = keys?.get(builtKey) ?? builtKey
 			const id = key.slice(0, key.indexOf("\0"))
 			if (!(id in usage.sources)) continue
 			const written =
@@ -7746,6 +7839,61 @@ const anyIssues: IssueFeatures = {
 
 // a Type whose members a module importing it can bake, as it holds no value
 // only its own module has, like a narrow's function
+// a module a loader after the plugin built as CommonJS: one with no import or
+// export, which requires or exports through module or exports
+const isCommonJs = (module: SourceModule): boolean =>
+	!module.program.body.some(
+		statement =>
+			statement.type === "ImportDeclaration" ||
+			statement.type === "ExportNamedDeclaration" ||
+			statement.type === "ExportDefaultDeclaration" ||
+			statement.type === "ExportAllDeclaration"
+	) && /\b(?:require\s*\(|exports\b|module\.exports\b)/.test(module.source)
+
+// what a bundle as the loaders after the plugin built it reads that its scan
+// left out: the read, and a module whose loaders' work makes it, or that they
+// compiled to CommonJS, whose reads it can't follow
+export interface UnseenBuilt {
+	id: string | undefined
+	read: string
+	commonJs?: true
+}
+
+// the folds of a module as built that it made of the module as it wrote it:
+// each validator site, which the two hold in the same order, each other fold
+// whose text it folded there too, as a loader may move code, and, where as
+// many are left on each side, the rest in order, as one reprinting it, like
+// TypeScript's dropping `as any`, changes their text but not their number.
+// Any other is a read a loader added, which the bundle reads as it is
+const foldsAlikeOf = (built: RuntimeModule, written: RuntimeModule): Span[] => {
+	const textOf = ({ module }: RuntimeModule, { start, end }: Span) =>
+		module.source.slice(start, end).replace(/\s+/g, "").replace(/'/g, '"')
+	const isSite = (runtime: RuntimeModule, span: Span) =>
+		[...runtime.validators, ...runtime.modules].some(site => isSpan(span, site))
+	const unmatched = new Map<string, number>()
+	let writtenLeft = 0
+	for (const span of written.folded) {
+		if (isSite(written, span)) continue
+		const text = textOf(written, span)
+		unmatched.set(text, (unmatched.get(text) ?? 0) + 1)
+		writtenLeft++
+	}
+	const left: Span[] = []
+	const kept = built.folded.filter(span => {
+		if (isSite(built, span)) return true
+		const text = textOf(built, span)
+		const count = unmatched.get(text)
+		if (!count) {
+			left.push(span)
+			return false
+		}
+		unmatched.set(text, count - 1)
+		writtenLeft--
+		return true
+	})
+	return left.length === writtenLeft ? [...kept, ...left] : kept
+}
+
 const isBakeable = (value: unknown): value is BaseRoot =>
 	hasArkKind(value, "root") && !keyOf(value)[1].length
 
