@@ -1169,7 +1169,10 @@ const mismatchOf = (
 	const threw = (observed as { threw?: string } | undefined)?.threw ?? ""
 	const read = reads[reader.read]
 	if (
-		moduleAtATime.has(host) &&
+		// a build a late transform follows may read each module alone, as
+		// Turbopack's does under Babel, and a seen read through require() then
+		// throws as it does on a host reading one module at a time
+		(moduleAtATime.has(host) || late) &&
 		hopsOf(reader).includes("required") &&
 		(unbakedMessage.test(threw) ||
 			// toString's backstop, as converting it reads expression
