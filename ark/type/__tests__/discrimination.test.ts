@@ -581,4 +581,60 @@ contextualize(() => {
 			attest(T.allows({ a: 4 })).equals(false)
 		}
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1724
+	it("undefined case on a nested path keeps the object checks", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ k: "1", a: "2" }).or({ k: "3", a: "undefined" })
+
+			for (const data of [0, "s", null, undefined])
+				attest(T.allows(data)).equals(false)
+			attest(T(0).toString()).snap("must be an object (was a number)")
+			attest(T.allows({ k: 3 })).equals(false)
+			attest(T.allows({ k: 3, a: undefined })).equals(true)
+			attest(T.allows({ k: 1, a: 2 })).equals(true)
+		}
+	})
+
+	it("undefined case on a nested path requires the key", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ a: "2" }).or({ a: "undefined" })
+
+			attest(T.allows(0)).equals(false)
+			attest(T.allows({})).equals(false)
+			attest(T({}).toString()).satisfies(/^a must be .*\(was missing\)$/)
+			attest(T.allows({ a: undefined })).equals(true)
+			attest(T.allows({ a: 2 })).equals(true)
+
+			const Deep = $.type({ a: { b: "2" } }).or({ a: { b: "undefined" } })
+
+			attest(Deep.allows({})).equals(false)
+			attest(Deep.allows({ a: 0 })).equals(false)
+			attest(Deep.allows({ a: {} })).equals(false)
+			attest(Deep.allows({ a: { b: undefined } })).equals(true)
+		}
+	})
+
+	it("undefined domain case on a nested path keeps the object checks", () => {
+		const T = type({ a: "string" }).or({ a: "undefined" }).or({ a: "number" })
+
+		attest(T.internal.assertHasKind("union").discriminantJson).snap({
+			kind: "domain",
+			path: ["a"],
+			cases: {
+				'"number"': { required: [{ key: "a", value: "number" }] },
+				'"string"': true,
+				'"undefined"': {
+					required: [{ key: "a", value: { unit: "undefined" } }],
+					domain: "object"
+				}
+			}
+		})
+		attest(T.allows(0)).equals(false)
+		attest(T.allows({})).equals(false)
+		attest(T.allows({ a: undefined })).equals(true)
+		attest(T.allows({ a: "x" })).equals(true)
+	})
 })
