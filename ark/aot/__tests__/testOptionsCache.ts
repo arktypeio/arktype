@@ -271,10 +271,8 @@ const builtOn = async (
 		}
 	}
 	if (host === "next") {
-		const built = buildOnNext(dir, tag, ["main"], options as never, {
-			warm,
-			cache: true
-		})
+		// with Turbopack's build cache on, as Next has it
+		const built = buildOnNext(dir, tag, ["main"], options as never, { warm })
 		return built.refused ?
 				{ out: `refused ${built.refused.slice(0, 300)}` }
 			:	{ out: run([built.runners.main], dir), js: built.js }
@@ -320,7 +318,9 @@ for (const host of hosts) {
 			})
 			distinct.outputs.add(cold[name].out)
 			if (cold[name].js !== undefined) distinct.bundles.add(cold[name].js)
-			const outputs = warm.out === cold[name].out
+			// a refusal or a crash says nothing of the cache, so it fails the round
+			const outputs =
+				warm.out === cold[name].out && !/^(refused|exit) /.test(warm.out)
 			// Next names its chunks by hashes of what it built where, so only their
 			// length says what was written there
 			const bytes =
