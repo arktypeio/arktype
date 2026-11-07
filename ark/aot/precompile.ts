@@ -1658,7 +1658,7 @@ export class Precompiler {
 			read &&
 			writeUnseenMessage(
 				`the bundle it built reads more than the modules it read: ${read}. Another plugin wrote or rewrote a module after it read it`,
-				"Set prune: false to build them whole, or leave out the plugin adding the read"
+				"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
 			)
 		)
 	}
@@ -1700,9 +1700,8 @@ export class Precompiler {
 						read: `${this.graph.pathOf(id)} creates ${runtime[kind].length} ${kind === "modules" ? "Modules" : kind} as the loaders after it built it, and ${written[kind].length} as it wrote it`
 					}
 				}
-				for (const [i, site] of runtime[kind].entries()) {
+				for (const [i, site] of runtime[kind].entries())
 					keys.set(siteKeyOf(id, site), siteKeyOf(id, written[kind][i]))
-				}
 			}
 			// a fold it would make of a read only the loaders after it wrote, like
 			// `User.expression`, stays a read in the bundle, which it never folded

@@ -640,7 +640,8 @@ export const unseenProblemOf = (
 			// TanStack Router's code splitting does
 			return loaded.has(id) ?
 					writeUnseenMessage(
-						`it built ${pathOf(id)} from other code than it read, as a plugin ahead of arktype's rewrote it after it read its file`
+						`it built ${pathOf(id)} from other code than it read, as a plugin ahead of arktype's rewrote it after it read its file`,
+						"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
 					)
 				:	writeUnseenMessage(`another plugin loaded ${pathOf(id)}`)
 		}
@@ -754,10 +755,10 @@ export const writeUnscannedFlatMessage = (path: string): string =>
 	`A production build declares the units its validators read in one function, as it found reading the bundle's modules first, but it built ${path} from code it didn't read, whose validators would read copies of them. Build again, or set prune: false to build each unit as a module of its own.`
 
 export const writeUnscannedCellsMessage = (path: string): string =>
-	`A production build reads each function a module creates once from one variable, as it found reading the bundle's modules first, but another plugin rewrote ${path} after it read it, so it can't tell which function is which. Set prune: false to pass each validator the functions it reads.`
+	`A production build reads each function a module creates once from one variable, as it found reading the bundle's modules first, but another plugin rewrote ${path} after it read it, so it can't tell which function is which. List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to pass each validator the functions it reads.`
 
 export const unseenFlatMessage =
-	"A production build declares the units its validators read in one function, as it found reading the bundle's modules first, but the bundle it built reads a validator it found no read of, as another plugin wrote or rewrote a module after it read it, and that validator would read copies of them. Set prune: false to build each unit as a module of its own."
+	"A production build declares the units its validators read in one function, as it found reading the bundle's modules first, but the bundle it built reads a validator it found no read of, as another plugin wrote or rewrote a module after it read it, and that validator would read copies of them. List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build each unit as a module of its own."
 
 export interface ScannedProgram {
 	// names the bundle, so only its transforms apply what was read

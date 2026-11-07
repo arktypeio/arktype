@@ -66,7 +66,6 @@ import {
 	writeBundledExternalMessage,
 	writeExternalizedMessage,
 	writeNextExternalMessage,
-	writeAfterPluginMessage,
 	writeFilelessImportMessage,
 	writeLaterLoaderCommonJsMessage,
 	writeLaterLoaderReadMessage,
@@ -1441,8 +1440,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				return loadModule(id)
 			}
 		},
-		// Vite's runs last, in a plugin of its own
-		transform: meta.framework === "vite" ? undefined : transformHook,
+		transform: transformHook,
 		vite: {
 			buildStart: rollupBuildStart,
 			shouldTransformCachedModule,
@@ -1485,13 +1483,10 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				definedByBundler = flatMorph(config.define ?? {}, (key, value) =>
 					typeof value === "string" ? [key, value] : []
 				)
-				const own = config.plugins.findIndex(
-					({ name }) => name === lastTransformName
-				)
-				// listed ahead of it, as Setup shows
+				const own = config.plugins.findIndex(({ name }) => name === pluginName)
 				if (
 					config.plugins.findIndex(({ name }) => name === tanstackSplitter) >
-					config.plugins.findIndex(({ name }) => name === pluginName)
+					own
 				)
 					throwError(writeAheadOfSplitterMessage("tanstackRouter()"))
 				isServing = config.command === "serve"
@@ -1500,27 +1495,6 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					.filter(plugin => plugin.transform && !isVitesOwn(plugin.name))
 					.map(plugin => plugin.name)
 				const testing = !!process.env.VITEST && config.mode === "test"
-				// what transforms a module after this plugin reads it may add a
-				// read it can't see: one listed after it, or one whose transform
-				// runs last wherever it's listed
-				const after = config.plugins.filter((plugin, i) => {
-					const order =
-						typeof plugin.transform === "object" ?
-							plugin.transform.order
-						:	undefined
-					return (
-						!!plugin.transform &&
-						plugin.name !== unwrittenChecker.name &&
-						!isVitesOwn(plugin.name) &&
-						(i > own ? order !== "pre" : i < own && order === "post")
-					)
-				})
-				if (
-					own !== -1 &&
-					after.length &&
-					prunesIn(config.command === "build" && !testing)
-				)
-					throwError(writeAfterPluginMessage(after.map(({ name }) => name)))
 				resolveIn(!config.isProduction)
 				for (const [name, environment] of Object.entries(
 					config.environments ?? { ssr: { resolve: config.ssr } }
@@ -1752,19 +1726,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			}
 		}
 	}
-	// Vite's transform reads each module as every other plugin wrote it, Vite's
-	// own TypeScript and JSX transforms included, so none adds a read it can't
-	// see, while its other hooks run first
-	const lastTransform: UnpluginOptions = {
-		name: lastTransformName,
-		enforce: "post",
-		transform: transformHook
-	}
-	return (
-		meta.framework === "vite" ? [plugin, lastTransform, unwrittenChecker]
-		: meta.framework in checkingFrameworks ? [plugin, unwrittenChecker]
-		: plugin
-	)
+	return meta.framework in checkingFrameworks ?
+			[plugin, unwrittenChecker]
+		:	plugin
 })
 
 export const precompile: PrecompileUnplugin = {
@@ -1811,8 +1775,6 @@ interface BundleScan {
 }
 
 const pluginName = "arktype"
-
-const lastTransformName = "arktype:transform"
 
 const checkerName = "arktype:unwritten"
 

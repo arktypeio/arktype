@@ -1965,12 +1965,8 @@ console.log(
 		const rewrite: VitePlugin = {
 			name: "rewrite-config",
 			enforce: "pre",
-			// moving no code, so Vite's TypeScript transform's map still names
-			// each line as written
 			transform: (code, id) =>
-				id.endsWith("config.ts") ?
-					{ code: code.replace("delete", "reject"), map: null }
-				:	undefined
+				id.endsWith("config.ts") ? code.replace("delete", "reject") : undefined
 		}
 		const build = (plugins: (VitePlugin | VitePlugin[])[]) =>
 			viteBuild({
@@ -1988,18 +1984,16 @@ console.log(
 				}
 			)
 		const arktype = precompile.vite({ config: "config.ts", conditions })
-		const message = await build([rewrite, arktype])
-		attest(message)
+		attest(await build([rewrite, arktype]))
 			.snap(`config.ts:3:1  configure() is given other values than arktype in this thread already applied
   a module the configuration reads was given anew, as when it's edited while the build runs or a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set
   Restart the build to apply an edit to config.ts. If it wasn't edited, exclude it from rewrite-config, which transforms it, since the build configures arktype from the module as written and the program must configure it the same.`)
-		// its transform runs after every other plugin's wherever it's listed
 		attest(
 			await build([
 				precompile.vite({ config: "config.ts", conditions }),
 				rewrite
 			])
-		).equals(message)
+		).equals("built")
 	})
 
 	it("fails where a module it can't precompile imports arktype", async () => {
@@ -3038,8 +3032,7 @@ console.log(T.allows({ x: 1 }))
 				'import { type } from "arktype"\n\nexport const T = type(`number < ${Math.random()}`)\n'
 		})
 		const thrownBy = async (opts: PrecompileUnpluginOptions) => {
-			// Vite's runs last, in a plugin of its own
-			const [, { transform }] = precompile.raw(
+			const [{ transform }] = precompile.raw(
 				{ ...opts, cwd: root, conditions },
 				{ framework: "vite", versions: {} }
 			) as unknown as RawHooks[]

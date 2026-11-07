@@ -507,8 +507,3 @@ export const writeLaterLoaderCommonJsMessage = (
 	loaders: string[]
 ): string =>
 	`${loaders.length ? loaders.join(", ") : "A loader"} ${loaders.length > 1 ? "compile" : "compiles"} ${module} to CommonJS after arktype's loader read it, so the build can't check what the program as built reads of its validators. Have ${loaders.length > 1 ? "them" : "it"} emit ES modules, as TypeScript's module: "esnext" does, or set prune: false to build each validator whole.`
-
-// a Vite plugin transforming modules after arktype's reads them, whose reads
-// of a validator a production build can't see
-export const writeAfterPluginMessage = (plugins: string[]): string =>
-	`${plugins.join(", ")} ${plugins.length > 1 ? "transform" : "transforms"} modules after arktype's plugin reads them, so a production build can't see a read of a validator ${plugins.length > 1 ? "they add" : "it adds"}. List precompile.vite() after ${plugins.length > 1 ? "them" : "it"}, last in plugins, or set prune: false to build each validator whole.`

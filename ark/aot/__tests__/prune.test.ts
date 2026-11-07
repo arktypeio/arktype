@@ -15,7 +15,6 @@ import {
 	type LoadedSources
 } from "@ark/aot/internal/scan.ts"
 import {
-	writeAfterPluginMessage,
 	writeLaterLoaderReadMessage,
 	writeUnbuiltReadMessage
 } from "@ark/aot/internal/messages.ts"
@@ -1180,7 +1179,8 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 				)
 			).equals(
 				writeUnseenMessage(
-					"it built main.ts from other code than it read, as a plugin ahead of arktype's rewrote it after it read its file"
+					"it built main.ts from other code than it read, as a plugin ahead of arktype's rewrote it after it read its file",
+					"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
 				)
 			)
 		})
@@ -2542,7 +2542,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 			)
 			const expected = writeUnseenMessage(
 				"the bundle it built reads more than the modules it read: types.ts exports User, which a dependency may read. Another plugin wrote or rewrote a module after it read it",
-				"Set prune: false to build them whole, or leave out the plugin adding the read"
+				"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
 			)
 			attest(message.slice(-expected.length)).equals(expected)
 		})
@@ -2622,7 +2622,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 			)
 			const expected = writeUnseenMessage(
 				"the bundle it built reads more than the modules it read: a module reads assert of a validator. Another plugin wrote or rewrote a module after it read it",
-				"Set prune: false to build them whole, or leave out the plugin adding the read"
+				"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
 			)
 			attest(message.slice(-expected.length)).equals(expected)
 		})
@@ -2660,7 +2660,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 			)
 			const expected = writeUnseenMessage(
 				"the bundle it built reads more than the modules it read: a module reads expression of a validator. Another plugin wrote or rewrote a module after it read it",
-				"Set prune: false to build them whole, or leave out the plugin adding the read"
+				"List precompile.vite() right after your framework's plugin and ahead of react(), a Babel plugin or another that rewrites modules, or set prune: false to build them whole"
 			)
 			attest(message.slice(-expected.length)).equals(expected)
 		})
@@ -2677,119 +2677,6 @@ console.log(out instanceof type.errors ? out.summary : out)
 			}
 			const pruned = await bundle({}, { plugins: [reformatting] })
 			attest(run(pruned)).snap("name must be a string\n")
-			attest(pruned.includes("~standard")).equals(false)
-		})
-
-		it("fails a production build where a plugin transforms modules after it", async () => {
-			const late: VitePlugin = {
-				name: "late",
-				enforce: "post",
-				transform: () => undefined
-			}
-			// listed ahead of it, its transform runs after every other
-			const lastOfAll: VitePlugin = {
-				name: "lastOfAll",
-				transform: { order: "post", handler: () => undefined }
-			}
-			for (const [plugins, following, named] of [
-				[[], [late], "late"],
-				[[lastOfAll], [], "lastOfAll"]
-			] as const) {
-				const message = await bundle(
-					{},
-					{ plugins: [...plugins], following: [...following] }
-				).then(
-					() => "",
-					(e: Error) => stripVTControlCharacters(e.message)
-				)
-				attest(message.includes(writeAfterPluginMessage([named]))).equals(true)
-			}
-			// building each validator whole, a read it can't see needs nothing
-			attest(run(await bundle({ prune: false }, { following: [late] }))).snap(
-				"name must be a string\n"
-			)
-		})
-
-		// each read a plugin might add, as a Babel plugin does, which runs ahead
-		// of arktype's transform wherever it's listed: a member it leaves out,
-		// and code it passes the validator to
-		for (const [added, read, unseen] of [
-			["assert", "typeof User.assert", "a module reads assert of a validator"],
-			[
-				"~standard",
-				'typeof User["~standard"]',
-				"a module reads ~standard of a validator"
-			],
-			[
-				"a function reading assert",
-				"(f => f(User))(u => typeof u.assert)",
-				"a module reads expression of a validator"
-			],
-			[
-				"JSON.stringify",
-				"JSON.stringify(User)",
-				"a module reads toJSON of a validator"
-			]
-		]) {
-			it(`fails a bundle where a plugin adds a read of ${added} to a module it read`, async () => {
-				const adding: VitePlugin = {
-					name: "adding",
-					transform: (code, id) =>
-						id.endsWith("/main.ts") ?
-							`${code}\nconsole.log(${read})\n`
-						:	undefined
-				}
-				const message = await bundle({}, { following: [adding] }).then(
-					() => "",
-					(e: Error) => stripVTControlCharacters(e.message)
-				)
-				const expected = writeUnseenMessage(
-					`the bundle it built reads more than the modules it read: ${unseen}. Another plugin wrote or rewrote a module after it read it`,
-					"Set prune: false to build them whole, or leave out the plugin adding the read"
-				)
-				attest(message.slice(-expected.length)).equals(expected)
-			})
-		}
-
-		it("bakes an introspection member a plugin adds a read of ahead of it", async () => {
-			const describing: VitePlugin = {
-				name: "describing",
-				transform: (code, id) =>
-					id.endsWith("/main.ts") ?
-						`${code}\nconsole.log(User.expression)\n`
-					:	undefined
-			}
-			const pruned = await bundle({}, { following: [describing] })
-			attest(run(pruned)).snap(`name must be a string
-{ name: string }
-`)
-			attest(pruned.includes("~standard")).equals(false)
-		})
-
-		it("prunes a component Vite's JSX transform wrote ahead of it", async () => {
-			const at = writeFixture(
-				{
-					"types.ts": types,
-					"view.tsx": `/** @jsxRuntime classic */
-/** @jsx h */
-import { User } from "./types.ts"
-
-const h = (_: unknown, props: { ok: boolean }) => props.ok
-const Field = () => null
-
-export const view = (data: unknown) => <Field ok={User.allows(data)} />
-`,
-					"main.ts": `import { User } from "./types.ts"
-import { view } from "./view.tsx"
-
-console.log(view({ name: "Ada" }), String(User({ name: 5 })))
-`
-				},
-				fromHere("temp", "prunedViteJsx")
-			)
-			const pruned = await bundle({}, { at })
-			attest(run(pruned)).snap(`true name must be a string
-`)
 			attest(pruned.includes("~standard")).equals(false)
 		})
 
