@@ -757,6 +757,27 @@ run(() => Message("  "))
 run(() => type({ m: Message })({ m: "  " }))
 `
 		)
+
+		// a size build compiles a unit it can't write as a checker, which is then
+		// read as compiled
+		for (const [name, opts] of Object.entries({
+			'with errors "first"': { errors: "first" },
+			"writing in place": { mutatesInput: true }
+		} as const)) {
+			it(`runs as arktype does in a size build ${name}`, async () => {
+				const root = fixture(
+					`morph-size-${name.replace(/\W+/g, "-")}`,
+					morphApp(`const Deep = type({ a: Trim, k: { s: "string.trim" } })
+run(() => Deep({ a: " a ", k: { s: 1 } }))
+run(() => Deep({ a: 1, k: { s: " s " } }))
+run(() => Deep({ a: " a ", k: { s: " s " } }))
+run(() => Trim(" t "))
+`)
+				)
+				const js = await bundle(root, { optimize: "size", ...opts })
+				attest(behaviorOf(js)).equals(expected(runPlain(root)))
+			})
+		}
 	})
 
 	describe("a key a checker doesn't declare", () => {

@@ -91,12 +91,12 @@ import {
 	type ValidatorAttributes,
 	type ValidatorForm
 } from "./creators.ts"
-import { combines } from "./combinators.ts"
 import {
 	assertReportsIssues,
 	compiledForSize,
 	shapedForSize,
 	isChecker,
+	isCheckerIn,
 	jsonVariantOf,
 	refNameOf,
 	rootUnitsOf,
@@ -1593,7 +1593,7 @@ return namespace`
 		return unit.roots.map(root => {
 			const name = unit.names[root.id]
 			const shape = writing.shapesByName[name]
-			const isChecker = this.isCheckerNode(root)
+			const isChecker = this.isCheckerNode(root, unit)
 			const readsCtx = this.writesCheckerNodes && root.allowsCtx
 			return writeValue(
 				this.baking.hoisted,
@@ -1628,11 +1628,10 @@ return namespace`
 	}
 
 	// a node only transforming by a checker declared beside it, all of it read off that
-	isCheckerNode(root: BaseRoot): boolean {
+	isCheckerNode(root: BaseRoot, unit: RootUnit): boolean {
 		return (
 			this.writesCheckerNodes &&
-			!this.baking.compiledInputs.has(root.hash) &&
-			combines(root) &&
+			isCheckerIn(unit, root) &&
 			shapeFlags.every(
 				flag => flag === "reportsPred" || !!root[flag] === (flag === "tfs")
 			)

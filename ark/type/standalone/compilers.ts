@@ -634,6 +634,8 @@ const unitsByRootOf = (keyOf: UnitKeyOf) => {
 	return units
 }
 
+const variantsOfUnits = new WeakMap<RootUnit, number>()
+
 export const rootUnitsOf = (
 	root: BaseRoot,
 	variant = 0,
@@ -650,8 +652,10 @@ export const rootUnitsOf = (
 			}))
 		)
 		const base = baseVariantOf(variant)
-		if (base % 3 === 2 || base >= compiledForSize)
-			for (const unit of units) unifyMembers(unit)
+		for (const unit of units) {
+			variantsOfUnits.set(unit, variant)
+			if (base % 3 === 2 || base >= compiledForSize) unifyMembers(unit)
+		}
 	}
 	return units
 }
@@ -660,6 +664,11 @@ export const isChecker = (root: BaseRoot, variant: number): boolean =>
 	(compilers[baseVariantOf(variant)] === CombinatorCompiler ||
 		baseVariantOf(variant) === shapedForSize) &&
 	combines(root)
+
+// a unit is compiled by the variant of the root it was reached from, which
+// needn't be the one its own roots would pick
+export const isCheckerIn = (unit: RootUnit, root: BaseRoot): boolean =>
+	isChecker(root, variantsOfUnits.get(unit)!)
 
 // a pass can reach content-equal roots, which share a name but not a unit
 export const unitOf = (node: BaseNode, reader: RootUnit): RootUnit =>
