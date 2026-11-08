@@ -126,6 +126,24 @@ contextualize(() => {
 		attest(write()).equals(written)
 	})
 
+	it("writes a switch over data's domain as its cases' checks", () => {
+		const { code } = precompileStandalone({
+			T: type("string[] | number | undefined")
+		})
+		attest(code.includes(`"null" : "object"`)).equals(false)
+		attest(
+			code.includes(
+				`if ((typeof data === "object" ? data !== null : typeof data === "function"))`
+			)
+		).equals(true)
+	})
+
+	it("transforms an array whose items alone transform as its items", () => {
+		const Items = type({ a: "number = 0" }).array()
+		const { code } = precompileStandalone({ Items })
+		attest(code.includes("transformedSequence")).equals(false)
+	})
+
 	it("passes symbols and object units to compiled code", () => {
 		const key = Symbol("precompiledKey")
 		const Inner = type({ a: "string" })

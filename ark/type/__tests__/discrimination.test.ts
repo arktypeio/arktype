@@ -859,6 +859,39 @@ contextualize(() => {
 		attest(T(0).toString()).snap("must be an object")
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1724
+	it("undefined at a path beside another discriminant", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ k: "1", a: "2" }).or({ k: "3", a: "undefined" })
+
+			for (const data of [0, "s", null, undefined])
+				attest(T.allows(data)).equals(false)
+			attest(T(0).toString()).snap("must be an object (was a number)")
+			attest(T({ k: 3 }).toString()).snap(
+				"a must be undefined (was missing) or k must be 1 (was 3)"
+			)
+			attest(T({ k: 3, a: undefined })).equals({ k: 3, a: undefined })
+
+			const Domain = $.type({ k: "1", a: "string" })
+				.or({ k: "2", a: "undefined" })
+				.or({ k: "3", a: "number" })
+
+			attest(Domain.allows(0)).equals(false)
+			attest(Domain.allows({ k: 2 })).equals(false)
+			attest(Domain.allows({ k: 2, a: undefined })).equals(true)
+
+			const Deep = $.type({ k: "1", a: { b: "2" } }).or({
+				k: "3",
+				a: { b: "undefined" }
+			})
+
+			attest(Deep.allows({ k: 3, a: 0 })).equals(false)
+			attest(Deep.allows({ k: 3, a: {} })).equals(false)
+			attest(Deep.allows({ k: 3, a: { b: undefined } })).equals(true)
+		}
+	})
+
 	it("primitive with discriminant key", () => {
 		const $ = scope({})
 		const T = $.type({ length: "3", x: "string" }).or({
@@ -1153,6 +1186,22 @@ contextualize(() => {
 			b: "number"
 		})
 		attest(Tagged({ kind: "a", a: 5 }).toString()).snap("a must be a string")
+	})
+
+	// https://github.com/arktypeio/arktype/issues/961
+	it("jitless reports every error of the matching case", () => {
+		const T = scope({}, { jitless: true })
+			.type({ kind: "'a'", x: "string" })
+			.or({ kind: "'b'", nested: { "+": "reject", y: "number" } })
+			.or({ kind: "'c'", z: "boolean" })
+
+		attest(T.precompilation).equals(undefined)
+		attest(T({ kind: "b", nested: { y: "s", z: 1 } }).toString())
+			.snap(`nested.y must be a number (was a string)
+nested.z must be removed`)
+		attest(T({ kind: "q" }).toString()).snap(
+			'kind must be "a", "b" or "c" (was "q")'
+		)
 	})
 
 	it("describes a unit case once", () => {

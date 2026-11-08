@@ -99,6 +99,22 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("regex with flags", () => {
+			const T = type(/^\u{1F600}[a-z]$/iu)
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("regex range requiring u", () => {
+			const T = type(/^[😀-😂]$/u)
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("sticky regex", () => {
+			const T = type(/a/y)
+			attest(() => arkToArbitrary(T)).throws(
+				'Unable to use "stringMatching" against a regex using the flag y'
+			)
+		})
 		it("multiple regexes", () => {
 			const T = type("string.email").and("string.alpha")
 			attest(() => arkToArbitrary(T)).throws(
@@ -331,6 +347,11 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("symbol index signature with a string key", () => {
+			const T = type({ "[symbol]": "number", a: "string" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
 		it("contains alias", () => {
 			const example = {
 				user: {
@@ -368,6 +389,15 @@ contextualize(() => {
 			}).export()
 			assertProperty(arkToArbitrary($.dict), $.dict)
 			assertProperty(arkToArbitrary($.nested), $.nested)
+		})
+		it("cycle at an index signature value with no base case", () => {
+			// only an empty dictionary ends the cycle
+			const $ = scope({
+				dict: { "[string]": "dict" },
+				named: { "[/^x/]": "named", name: "string" }
+			}).export()
+			assertProperty(arkToArbitrary($.dict), $.dict)
+			assertProperty(arkToArbitrary($.named), $.named)
 		})
 		it("cycle through an optional element", () => {
 			// inferring an optional element that references its own tuple is circular

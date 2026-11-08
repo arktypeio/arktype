@@ -263,6 +263,29 @@ b must be A`)
 		attest(original.a).equals("x")
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1719
+	// not in the repo's lib yet, and absent from older Node versions CI runs
+	const Instant = (
+		globalThis as {
+			Temporal?: { Instant: new (epochNanoseconds: bigint) => object }
+		}
+	).Temporal?.Instant
+
+	if (Instant) {
+		it("passes a Temporal value through beside a transformed key", () => {
+			const T = type({ foo: "string.trim", at: type.instanceOf(Instant) })
+			const at = new Instant(0n)
+			const original = { foo: "  bar  ", at, extra: at }
+
+			const out = T.assert(original)
+
+			attest(out.at).is(at)
+			attest(out.at.toString()).equals("1970-01-01T00:00:00Z")
+			attest((out as typeof original).extra).is(at)
+			attest(original.foo).equals("  bar  ")
+		})
+	}
+
 	it("throws transforming a frozen builtin", () => {
 		const T = type(["Date", "&", { "a?": "string.trim" }])
 		const original = Object.freeze(Object.assign(new Date(5), { a: " x " }))

@@ -1048,18 +1048,32 @@ export const allowsUntracked = (
 	return exceeded ? undefined : allowed
 }
 
-// a transform relies on data being acyclic, which past the depth bound it isn't shown to be
+// a transform relies on data being acyclic, which past the depth bound it isn't
+// shown to be. As allowsUntracked, in one function: a cyclic root's Apply
+// inlines it, and a call and a try fewer leave TurboFan's budget to its callers
 export const allowsAcyclic = (
 	node: BaseNode,
 	data: unknown
 ): boolean | undefined => {
+	if (inProgress.definitions || inProgress.resolutions || node.checksCtx) return
 	const outerTracked = aliasVisits.tracked
+	const outerVisits = aliasVisits.count
+	const outerContinuation = continuation
+	const outerConfig = continuationConfig
 	aliasVisits.tracked = false
+	aliasVisits.count = 0
+	continuation = undefined
+	continuationConfig = node.$.cfg
 	try {
-		const allowed = allowsUntracked(node, data)
-		return aliasVisits.tracked ? undefined : allowed
+		const allowed = node.tAllows(data as never, 0)
+		return aliasVisits.count > maxAliasVisits || aliasVisits.tracked ?
+				undefined
+			:	allowed
 	} finally {
 		aliasVisits.tracked ||= outerTracked
+		aliasVisits.count = outerVisits
+		continuation = outerContinuation
+		continuationConfig = outerConfig
 	}
 }
 
