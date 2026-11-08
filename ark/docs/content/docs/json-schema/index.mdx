@@ -58,7 +58,7 @@ const User = jsonSchemaToType({
 })
 
 User.expression // "{ name: string, age?: number % 1 >= 0 }"
-// ArkErrors: age must be an integer (was 1.5)
+// ArkErrors: age must be an integer
 User({ name: "Ada", age: 1.5 })
 ```
 

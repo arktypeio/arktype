@@ -179,7 +179,7 @@ const User = type({ name: "string" }).configure(
 	{ kind: "domain", where: d => d.domain === "string" }
 )
 
-User({ name: 5 }).toString() // "name must be a name (was a number)"
+User({ name: 5 }).toString() // "name must be a name"
 ```
 
 See [metadata](https://arktype.io/docs/expressions#meta) for more on `configure`.
@@ -228,7 +228,7 @@ const User = rootSchema({
 	]
 })
 
-// ArkErrors: age must be non-negative (was -1)
+// ArkErrors: age must be non-negative
 User({ name: "Ada", age: -1 })
 ```
 
@@ -304,7 +304,7 @@ import { rootSchema } from "@ark/schema"
 const Positive = rootSchema({ domain: "number", min: 0 })
 
 Positive(5) // 5
-// ArkErrors: must be non-negative (was -1)
+// ArkErrors: must be non-negative
 Positive(-1)
 
 Positive.and(rootSchema({ domain: "number", max: 10 }))

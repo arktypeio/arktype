@@ -22,7 +22,7 @@ const toLabel = match({
 toLabel("abc") // "abc"
 toLabel(5) // "5.00"
 toLabel(5n) // "5n"
-// TraversalError: must be a string, a number or a bigint (was boolean)
+// TraversalError: must be a string, a number or a bigint
 toLabel(true)
 ```
 
@@ -48,7 +48,7 @@ const sizeOf = match({
 	default: "reject"
 })
 
-// ArkErrors: must be a string or a number (was boolean)
+// ArkErrors: must be a string or a number
 sizeOf(true)
 ```
 
@@ -88,7 +88,7 @@ const half = match.in("number | string").match({
 })
 
 half(4) // 2
-// ArkErrors: must be a number or a string (was boolean)
+// ArkErrors: must be a number or a string
 half(true)
 ```
 

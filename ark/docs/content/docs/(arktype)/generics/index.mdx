@@ -63,7 +63,7 @@ const types = scope({
 	BitBox: "Box<0, 1>"
 }).export()
 
-// ArkErrors: box must be 0 or 1 (was 2)
+// ArkErrors: box must be 0 or 1
 types.BitBox({ box: 2 })
 ```
 
@@ -77,7 +77,7 @@ const types = scope({
 	NumberTree: "Tree<number>"
 }).export()
 
-// ArkErrors: children[0].value must be a number (was a string)
+// ArkErrors: children[0].value must be a number
 types.NumberTree({ value: 1, children: [{ value: "2" }] })
 ```
 

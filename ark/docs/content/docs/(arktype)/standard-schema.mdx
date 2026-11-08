@@ -32,10 +32,10 @@ const Form = type({
 })
 // ---cut---
 const result = Form["~standard"].validate({ name: "Ada", age: "old" })
-// { issues: [{ path: ["age"], message: 'must be a well-formed integer string (was "old")', ... }] }
+// { issues: [{ path: ["age"], message: 'must be a well-formed integer string', ... }] }
 ```
 
-A union's problem lists each branch's path from the union's, like `b must be a string (was missing) or c must be a number (was missing)`. A configured [`problem`](/docs/configuration#problem) changes the issue's message, but a configured [`message`](/docs/configuration#message) doesn't. The issues are written as `validate` returns, so unlike an `ArkErrors` read later, they describe the data as it was validated.
+A union's problem lists each branch's path from the union's, like `b must be a string or c must be a number`. A configured [`problem`](/docs/configuration#problem) changes the issue's message, but a configured [`message`](/docs/configuration#message) doesn't. The issues are written as `validate` returns, so unlike an `ArkErrors` read later, they describe the data as it was validated.
 
 ArkType always validates synchronously. The spec allows a `Promise`, which is why the return type includes one.
 

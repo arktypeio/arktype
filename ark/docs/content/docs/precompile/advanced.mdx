@@ -125,7 +125,7 @@ Where `next build` [can't read its project whole](/docs/precompile/setup#next), 
 A union of objects is checked by one key where a key tells its branches apart. Among keys at the shallowest path, ArkType prefers one every branch holds, then the one with the most values. A branch without the key is checked in every case, and data matching no case reports through it as well as the key, so give each branch the key:
 
 ```ts
-// one switch on kind: { kind: "c" } fails with kind must be "a" or "b" (was "c")
+// one switch on kind: { kind: "c" } fails with kind must be "a" or "b"
 const Event = type({ kind: "'a'", x: "number" }).or({
 	kind: "'b'",
 	y: "string"

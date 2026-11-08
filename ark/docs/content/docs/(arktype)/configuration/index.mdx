@@ -98,7 +98,7 @@ What follows "must be" in a message. Other parts and the Type's `.description` r
 ```ts
 const Even = type("number % 2").describe("an even number")
 
-// ArkErrors: must be an even number (was 3)
+// ArkErrors: must be an even number
 Even(3)
 ```
 
@@ -112,34 +112,34 @@ const Password = type("string >= 8").configure({
 		ctx.code === "minLength" ? `${ctx.rule} characters or more` : "a password"
 })
 
-// ArkErrors: must be 8 characters or more (was length 5)
+// ArkErrors: must be 8 characters or more
 Password("ez123")
 
-// ArkErrors: must be a password (was a number)
+// ArkErrors: must be a password
 Password(12345678)
 ```
 
 ### actual
 
-What goes inside "(was …)". An empty string omits it. A function receives the data, then the error:
+What goes inside "(was …)". A message doesn't say what the value was unless an `actual` is configured, except a missing key's, which reads "(was missing)". An empty string omits it. A function receives the data, then the error:
 
 ```ts
-const Password = type("string >= 8").configure({ actual: "" })
+const Age = type("number <= 100").configure({ actual: data => `${data}` })
 
-// ArkErrors: must be at least length 8
-Password("ez123")
+// ArkErrors: must be at most 100 (was 101)
+Age(101)
 ```
 
 ### problem
 
-The whole sentence after the path, like "must be a string (was a number)", and the text a [Standard Schema](/docs/standard-schema) consumer, like a form library, shows beside a field as its issue's `message`. A union's problem lists each branch's path from its own. A function receives the error, including its `expected` and `actual`. It may not apply to the errors of a union:
+The whole sentence after the path, like "must be a string", and the text a [Standard Schema](/docs/standard-schema) consumer, like a form library, shows beside a field as its issue's `message`. A union's problem lists each branch's path from its own. A function receives the error, including its `expected` and `actual`. It may not apply to the errors of a union:
 
 ```ts
 const Name = type("string").configure({
-	problem: ctx => `${ctx.actual} isn't ${ctx.expected}`
+	problem: ctx => `isn't ${ctx.expected}`
 })
 
-// ArkErrors: a number isn't a string
+// ArkErrors: isn't a string
 Name(5)
 ```
 
@@ -154,11 +154,11 @@ const User = type({
 	message: ctx => `${ctx.propString || "(root)"}: ${ctx.problem}`
 })
 
-// ArkErrors: (root): must be an object (was a string)
+// ArkErrors: (root): must be an object
 User("ez123")
 
 // .configure applies only at the root, so the nested error is unchanged
-// ArkErrors: password must be at least length 8 (was 5)
+// ArkErrors: password must be at least length 8
 User({ password: "ez123" })
 ```
 
@@ -244,7 +244,7 @@ const User = type({
 	email: "string.email"
 })
 
-// ArkErrors: name must be text (was a number)
+// ArkErrors: name must be text
 //            email must be an email address (was definitely fake)
 User({ name: 5, email: "449 Canal St" })
 ```
@@ -291,7 +291,7 @@ const MyObj = type({
 // {}
 MyObj({})
 
-// ArkErrors: key must be a number (was undefined)
+// ArkErrors: key must be a number
 MyObj({ key: undefined })
 ```
 
@@ -336,7 +336,7 @@ MaybeNaN(Number.NaN)
 ```ts
 const Limit = type("number | number.Infinity")
 
-// ArkErrors: must be a number (was Infinity)
+// ArkErrors: must be a number
 type.number(Infinity)
 
 // Infinity
@@ -484,7 +484,7 @@ import { type } from "arktype"
 // string, since a failure throws instead of returning ArkErrors
 const data = type.string("foo")
 
-// TraversalError: must be a string (was a number)
+// TraversalError: must be a string
 type.string(5)
 ```
 

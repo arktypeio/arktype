@@ -82,8 +82,8 @@ const out = User({
 })
 
 if (out instanceof type.errors) {
-	// ArkErrors: device.platform must be "android" or "ios" (was "enigma")
-	//            device.versions[2] must be a number or a string (was a bigint)
+	// ArkErrors: device.platform must be "android" or "ios"
+	//            device.versions[2] must be a number or a string
 	console.error(out.summary)
 } else {
 	// out is narrowed to the validated User

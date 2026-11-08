@@ -41,7 +41,7 @@ A regex literal requires the string to match it. Like a `RegExp`, it is unanchor
 ```ts
 const AToZ = type("/^a.*z$/")
 
-// ArkErrors: must be matched by ^a.*z$ (was "abc")
+// ArkErrors: must be matched by ^a.*z$
 AToZ("abc")
 ```
 
@@ -52,7 +52,7 @@ AToZ("abc")
 ```ts
 const AToZ = type.string.matching(/^a.*z$/)
 
-// ArkErrors: must be matched by ^a.*z$ (was "abc")
+// ArkErrors: must be matched by ^a.*z$
 AToZ("abc")
 ```
 
@@ -127,7 +127,7 @@ A range sets both bounds at once, each inclusive or exclusive:
 // 4 to 6 digits
 const Pin = type("4 <= string.digits <= 6")
 
-// ArkErrors: must be at least length 4 (was 3)
+// ArkErrors: must be at least length 4
 Pin("123")
 ```
 
@@ -139,7 +139,7 @@ Pin("123")
 // 4 to 6 digits
 const Pin = type.keywords.string.digits.atLeastLength(4).atMostLength(6)
 
-// ArkErrors: must be at least length 4 (was 3)
+// ArkErrors: must be at least length 4
 Pin("123")
 ```
 
@@ -215,7 +215,7 @@ A range sets both bounds at once, each inclusive or exclusive:
 ```ts
 const Percentage = type("0 <= number <= 100")
 
-// ArkErrors: must be at most 100 (was 101)
+// ArkErrors: must be at most 100
 Percentage(101)
 ```
 
@@ -226,7 +226,7 @@ Percentage(101)
 ```ts
 const Percentage = type.number.atLeast(0).atMost(100)
 
-// ArkErrors: must be at most 100 (was 101)
+// ArkErrors: must be at most 100
 Percentage(101)
 ```
 
@@ -239,7 +239,7 @@ Percentage(101)
 ```ts
 const NonZero = type("number != 0")
 
-// ArkErrors: must be other than 0 (was 0)
+// ArkErrors: must be other than 0
 NonZero(0)
 ```
 
@@ -253,7 +253,7 @@ Constrain a number to a multiple of an integer with `%`:
 ```ts
 const Even = type("number % 2")
 
-// ArkErrors: must be even (was 3)
+// ArkErrors: must be even
 Even(3)
 ```
 
@@ -264,7 +264,7 @@ Even(3)
 ```ts
 const Even = type.number.divisibleBy(2)
 
-// ArkErrors: must be even (was 3)
+// ArkErrors: must be even
 Even(3)
 ```
 

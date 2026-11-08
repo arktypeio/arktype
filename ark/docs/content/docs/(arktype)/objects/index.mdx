@@ -108,7 +108,7 @@ const MyObj = type({
 // {}
 MyObj({})
 
-// ArkErrors: key must be a number (was undefined)
+// ArkErrors: key must be a number
 MyObj({ key: undefined })
 ```
 
@@ -202,7 +202,7 @@ const DataAttributes = type({
 	"[/^data-/]": "string"
 })
 
-// ArkErrors: value at ["data-id"] must be a string (was a number)
+// ArkErrors: ["data-id"] must be a string
 DataAttributes({ "data-id": 1 })
 ```
 
@@ -382,7 +382,7 @@ const Escaped = type({
 	"\\[id]?": "string"
 })
 
-// ArkErrors: value at ["isAdmin?"] must be boolean (was missing)
+// ArkErrors: ["isAdmin?"] must be boolean (was missing)
 Escaped({ "+": "x" })
 ```
 
@@ -983,7 +983,7 @@ const MyTuple = type(["...", type.number.array(), type.boolean, type.string])
 `Date` allows a valid `Date` instance. An invalid date, like `new Date("x")`, is rejected:
 
 ```ts
-// ArkErrors: must be a Date (was an invalid Date)
+// ArkErrors: must be a Date
 type.Date(new Date("x"))
 ```
 

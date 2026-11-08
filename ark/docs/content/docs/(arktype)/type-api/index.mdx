@@ -15,7 +15,7 @@ const User = type({ name: "string" })
 const out = User({ name: 5 })
 
 if (out instanceof type.errors) {
-	// name must be a string (was a number)
+	// name must be a string
 	console.error(out.summary)
 } else {
 	console.log(out.name)
@@ -52,7 +52,7 @@ Like `pipe`, but a morph that throws adds an error instead of throwing:
 const ParseJson = type("string").pipe.try(s => JSON.parse(s))
 
 ParseJson('{"a": 1}') // { a: 1 }
-// ArkErrors: must be valid according to an anonymous predicate (was aborted due to error: SyntaxError: ...)
+// ArkErrors: must be valid according to an anonymous predicate (SyntaxError: ...)
 ParseJson("{")
 ```
 
@@ -126,7 +126,7 @@ Each method adds a constraint you could also write in a [string definition](/doc
 ```ts
 const Username = type.string.matching("^[a-z]+$").atMostLength(16)
 
-// ArkErrors: must be matched by ^[a-z]+$ (was "ArkType")
+// ArkErrors: must be matched by ^[a-z]+$
 Username("ArkType")
 
 // Type<`a${string}z`>, inferred from the pattern
@@ -134,7 +134,7 @@ const AToZ = type.string.matching("^a.*z$")
 
 const Even = type.number.divisibleBy(2)
 
-// ArkErrors: must be even (was 3)
+// ArkErrors: must be even
 Even(3)
 ```
 

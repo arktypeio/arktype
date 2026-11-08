@@ -180,7 +180,7 @@ Build or start your dev server as you already do. `User` is now a standalone val
 age must be non-negative
 ```
 
-A precompiled error says what failed without printing the value, which arktype at runtime adds as `(was -1)`.
+A precompiled error reads as arktype's does at runtime: what failed, without printing the value.
 
 To see what the build makes of each definition without bundling, run:
 
@@ -301,8 +301,8 @@ const out = User({
 })
 
 if (out instanceof type.errors) {
-	// ArkErrors: device.platform must be "android" or "ios" (was "enigma")
-	//            device.versions[2] must be a number or a string (was a bigint)
+	// ArkErrors: device.platform must be "android" or "ios"
+	//            device.versions[2] must be a number or a string
 	console.error(out.summary)
 } else {
 	// out is narrowed to the validated User
@@ -387,8 +387,8 @@ const out = FavoriteNumbers({
 })
 
 if (out instanceof type.errors) {
-	// ArkErrors: even must be even (was 7)
-	//            odd must be odd (was 8)
+	// ArkErrors: even must be even
+	//            odd must be odd
 	console.error(out.summary)
 } else {
 	console.log(out.odd)
@@ -416,7 +416,7 @@ const parseJson = type("string").pipe((s): object => JSON.parse(s))
 // { ark: "type" }
 const out = parseJson('{ "ark": "type" }')
 
-// ArkErrors: must be a string (was an object)
+// ArkErrors: must be a string
 const badOut = parseJson(out)
 ```
 
@@ -435,9 +435,7 @@ const parseJson = type("string").pipe.try((s): object => JSON.parse(s))
 const out = parseJson('{ unquoted: "keys" }')
 
 if (out instanceof type.errors) {
-	// ArkErrors: must be valid according to an anonymous predicate (was aborted due to error:
-	//                SyntaxError: Expected property name or '}' in JSON at position 2 (line 1 column 3)
-	//            )
+	// ArkErrors: must be valid according to an anonymous predicate (SyntaxError: Expected property name or '}' in JSON at position 2 (line 1 column 3))
 	console.error(out.summary)
 }
 ```
@@ -454,8 +452,8 @@ const parseJson = type("string.json.parse").to({
 const out = parseJson('{ "name": true, "version": "v2.0.0" }')
 
 if (out instanceof type.errors) {
-	// ArkErrors: name must be a string (was boolean)
-	//            version must be a semantic version (see https://semver.org/) (was "v2.0.0")
+	// ArkErrors: name must be a string
+	//            version must be a semantic version (see https://semver.org/)
 	console.error(out.summary)
 } else {
 	// { name: string; version: string }
@@ -690,7 +688,7 @@ const User = type({
 const out = User({ name: "Alan", age: "not a number" })
 
 if (out instanceof type.errors) {
-	// ArkErrors: age must be a number (was a string)
+	// ArkErrors: age must be a number
 	console.error(out.summary)
 	// plain objects, each with its path, code and message
 	out.issues[0].path
@@ -818,7 +816,7 @@ server.registerTool(
 )
 ```
 
-Calling `greet` with `times: 99` returns an error result to the model with ArkType's message, `times must be at most 5 (was 99)`, so it knows what to fix.
+Calling `greet` with `times: 99` returns an error result to the model with ArkType's message, `times must be at most 5`, so it knows what to fix.
 
 A [precompiled](https://arktype.io/docs/precompile) validator ships `~standard.jsonSchema`, which the SDK reads to describe the tool, as the build sees the SDK read it.
 
@@ -1145,7 +1143,7 @@ Delete the hand-written TypeScript type that `z.lazy` needed; `typeof types.Filt
 
 **Brands.** `.brand("UserId")` or `"string#UserId"` infers `Brand<string, "UserId">`, which is not assignable to or from the old library's brand type. Change code that names the old brand type to `typeof UserId.infer`.
 
-**Errors.** Errors are values: `T(data)` returns the data or an `ArkErrors`, and `T.assert(data)` throws. To change a message, `.describe("a strong password")` gives `must be a strong password (was ...)`, and `.configure({ message: "Choose a stronger password" })` replaces the whole message. Zod's and Valibot's `description` is documentation, but ArkType's `.describe()` is what errors say the value must be, so keep documentation in a comment or `.configure({ title })`.
+**Errors.** Errors are values: `T(data)` returns the data or an `ArkErrors`, and `T.assert(data)` throws. To change a message, `.describe("a strong password")` gives `must be a strong password`, and `.configure({ message: "Choose a stronger password" })` replaces the whole message. Zod's and Valibot's `description` is documentation, but ArkType's `.describe()` is what errors say the value must be, so keep documentation in a comment or `.configure({ title })`.
 
 **Dates and formats.** `z.string().datetime()` rejects offsets and date-only strings unless configured; `string.date.iso` accepts both. In JSON Schema, `format` is an annotation and validates nothing unless the validator, like ajv with `ajv-formats`, checks it; `string.email` always validates.
 
@@ -1172,7 +1170,7 @@ To move a whole project off Zod, or another library below, work through it in th
 4. **Update call sites.**
    - `X.parse(data)` becomes `X.assert(data)`, which throws.
    - `X.safeParse(data)` becomes `const out = X(data)`, then check `out instanceof type.errors`. `parseAsync` and `safeParseAsync` become the same, since ArkType is synchronous.
-   - `ZodError` becomes `type.errors`, and `instanceof ZodError` becomes `instanceof type.errors`. Its `issues` keep their `path` and `message`, though a message names its path, like `email must be an email address (was "x")`, where Zod's says `Invalid email address`. `z.prettifyError(error)` becomes `out.summary`. `X.assert` throws a `TraversalError`, whose `arkErrors` holds them.
+   - `ZodError` becomes `type.errors`, and `instanceof ZodError` becomes `instanceof type.errors`. Its `issues` keep their `path` and `message`, though a message names its path, like `email must be an email address`, where Zod's says `Invalid email address`. `z.prettifyError(error)` becomes `out.summary`. `X.assert` throws a `TraversalError`, whose `arkErrors` holds them.
    - `error.flatten()` and `z.flattenError(error)` group messages by the first key of their path, so `tags[0]`'s are under `tags`. Group `out.issues` the same way, which also works in a [precompiled](https://arktype.io/docs/precompile) build, where `flatByPath` isn't available:
    - Don't add casts or `any`, not even `as unknown`. A helper typed with `z.ZodTypeAny` or `z.ZodSchema` takes `type.Any`. To keep the output type, use `<T extends type.Any>(schema: T): T["infer"]`, not `type.Any<t>`. A function that builds a schema from another becomes a generic, like `type("<t>", { data: "t" })`.
 
@@ -1227,7 +1225,7 @@ const argsSchema = {
 6. **Compare with the originals while Zod is still installed.** The project's tests check the schemas they use. Check the rest directly, and every schema if there's no `test` script: in a scratch file, import each original from a copy of its file (`git show HEAD:src/schemas.ts > scratch/schemas.zod.ts`) and its conversion, call both on the same inputs and compare which they accept and what they return. Use the project's fixtures or sample data where it has them, plus each case [Defaults that differ](https://arktype.io/docs/migrating#defaults-that-differ) lists: a missing key, a key present as `undefined`, an undeclared key, a wrong type, an empty string and a value at each bound. Fix each difference in the schema, then delete the scratch files. [How to convert](https://arktype.io/docs/migrating#how-to-convert) shows a check that their types match too.
 7. **Swap dependencies.** Remove `zod` and the packages that existed only for it, and add their replacements, with the project's package manager, like `pnpm remove zod` or `npm uninstall zod`. Editing `package.json` by hand leaves the lockfile stale, and some package managers then refuse to run scripts. If `arktype` is already a dependency, keep that version. Don't upgrade another dependency to a new major version, like the MCP SDK to v2, so it takes ArkType; keep Zod for it as the table says. If a dependency requires `zod` as a peer dependency, keep it installed for that dependency and say so.
 8. **Verify.** Run the `typecheck` and `test` scripts in `package.json` until both pass; `npx tsc` alone can miss a second tsconfig. Run the `build` script too, if there is one. If there's no `test` script, step 6's comparison is the behavior check, so say what it covered. Search again for imports of the old library, and check that every file importing `arktype`, `.js` files included, imports the config first if it creates a Type. Change a test only where it asserts the old library itself, like a Zod error message or `instanceof ZodError`. Never delete a test, weaken an assertion or change an expected value to match new output. The exception is a snapshot of generated JSON Schema, which ArkType writes in a canonical order: required keys, then optional ones, each sorted, and enum and union members sorted. Reorder such a snapshot only when order is its only difference.
-9. **Precompile, if asked.** Set it up as the skill's `references/precompile.md`, or [Precompile setup](https://arktype.io/docs/precompile/setup), says: add `@ark/aot` and the plugin for the bundler, name the config file from step 3 as `config` in `ark.json`, run `npx arktype-precompile --check src` until it accepts every definition, then run the `typecheck`, `test` and `build` scripts again. A precompiled validator's messages don't include the value, like `(was "x")`, so a test asserting ArkType's full message text changes with them. A library others install doesn't precompile itself: it publishes what `tsc` emits and [opts in](https://arktype.io/docs/precompile/advanced#libraries), so each app's build precompiles it. With `drizzle-arktype`, see [Precompile](https://arktype.io/docs/migrating#precompile) below.
+9. **Precompile, if asked.** Set it up as the skill's `references/precompile.md`, or [Precompile setup](https://arktype.io/docs/precompile/setup), says: add `@ark/aot` and the plugin for the bundler, name the config file from step 3 as `config` in `ark.json`, run `npx arktype-precompile --check src` until it accepts every definition, then run the `typecheck`, `test` and `build` scripts again. A library others install doesn't precompile itself: it publishes what `tsc` emits and [opts in](https://arktype.io/docs/precompile/advanced#libraries), so each app's build precompiles it. With `drizzle-arktype`, see [Precompile](https://arktype.io/docs/migrating#precompile) below.
 10. **Report** what still behaves differently, if anything, such as error message text, any snapshot you reordered, and any dependency you kept Zod for.
 
 ## How to convert
@@ -1459,8 +1457,8 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you read `ArkErrors` as an array, like `out[0]`, `out.length`, `out.map()` or `[...out]`? [Read `out.issues`](https://arktype.io/docs/upgrading#arkerrors-is-no-longer-an-array).
 - Do you call methods on an error, like `hasCode()`, `toString()` or `instanceof ArkError`? [Errors are plain objects](https://arktype.io/docs/upgrading#errors-are-plain-objects).
 - Do you switch on error `code`s, or configure text for `predicate`? See [undeclared](https://arktype.io/docs/upgrading#undeclared-keys-have-the-undeclared-code), [discriminant](https://arktype.io/docs/upgrading#union-misses-have-the-discriminant-code) and [notEqual](https://arktype.io/docs/upgrading#excluded-values-have-the-notequal-codes).
-- Do you snapshot or assert error messages, or their order? See [Errors](https://arktype.io/docs/upgrading#errors): objects, dates and union misses print differently, errors follow the order keys are declared, configured messages apply to more errors, described length bounds say "length", and [other messages changed](https://arktype.io/docs/upgrading#other-messages-that-changed).
-- Do you show the messages of Standard Schema issues, as a form library does? [They leave out the path](https://arktype.io/docs/upgrading#standard-schema-messages-leave-out-the-path).
+- Do you snapshot or assert error messages, or their order? See [Errors](https://arktype.io/docs/upgrading#errors): messages leave out the value, each failed check is its own error, `assert` throws the errors' summary, dates and union misses print differently, errors follow the order keys are declared, configured messages apply to more errors, and [other messages changed](https://arktype.io/docs/upgrading#other-messages-that-changed).
+- Do you show the messages of Standard Schema issues, as a form library does? [Each is its error's `problem`, which leaves out the path](https://arktype.io/docs/upgrading#standard-schema-messages-leave-out-the-path).
 - Do you configure an `expected`, `actual` or `message` writer? [Writers take the error](https://arktype.io/docs/upgrading#error-writers-receive-the-error-and-the-locale).
 - Do you call `configure()` after a Type is created, or pass a global-only option to a Scope? See [Configuration](https://arktype.io/docs/upgrading#configuration).
 - Do you use `number` for data that can be `Infinity`? [Allow it](https://arktype.io/docs/upgrading#number-rejects-infinity).
@@ -1519,7 +1517,7 @@ To ship less than before, [precompile](https://arktype.io/docs/intro/setup#add-t
 
 ### ArkErrors is no longer an array
 
-`ArkErrors` was an `Array` subclass. It's now a plain class whose `issues` is a plain array with one error per path. Indexing, iteration, `length` and array methods move to `issues`:
+`ArkErrors` was an `Array` subclass. It's now a plain class whose `issues` is a plain array with an error for each failed check. Indexing, iteration, `length` and array methods move to `issues`:
 
 ```ts
 const out = type({ name: "string" })({ name: 5 })
@@ -1554,15 +1552,17 @@ A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.error
 
 ### Standard Schema messages leave out the path
 
-A [Standard Schema](https://arktype.io/docs/standard-schema) failure is `{ issues }`, a plain array with a copy of each error whose `message` leaves its path out, since a consumer like a form library shows it beside the field or prints the path before it:
+A [Standard Schema](https://arktype.io/docs/standard-schema) failure is `{ issues }`, a plain array with a copy of each error whose `message` is the error's `problem`, which leaves its path out, since a consumer like a form library shows it beside the field or prints the path before it:
 
 ```ts
 const T = type({ name: "string > 1" })
 
-// [{ message: "must be at least length 2 (was 1)", path: ["name"], ... }]
+// [{ message: "must be at least length 2", path: ["name"], ... }]
 // before: "name must be at least length 2 (was 1)"
 T["~standard"].validate({ name: "x" })
 ```
+
+A union's or an intersection's `problem` writes the path of each error it lists from its own, like `b must be a string (was missing) or c must be a number (was missing)`, while its `message` still writes them whole. A configured `message` no longer reaches the issues, so move a `message` writer that customized them to [`problem`](https://arktype.io/docs/configuration#problem).
 
 Update snapshots of those messages, and read `summary` from the errors calling the Type returns for one line naming each path.
 
@@ -1588,24 +1588,65 @@ if (out instanceof type.errors) {
 
 `hasCode`, `flat`, `throw`, `toString`, `toJSON` and `toLocaleString` are gone from errors, so `error instanceof ArkError` is false and `` `${error}` `` is `[object Object]`. `path` is a plain array. An error's text is written when its `ArkErrors`' issues are first read, so a configured writer is called once per error. A Type that calls no narrow or morph may also find the issues themselves at that read, so [read them before the data you validated changes](https://arktype.io/docs/errors#arkerrors).
 
-### Objects print by their kind
+### Messages leave out the value
 
-An error's `actual` prints an object as `an object`, an array as `an array` and a function as `a function`, where it printed an object or array as compact JSON, a Date as its date and another instance by its class's name. A message no longer grows with the data, and nothing an object holds reaches a log through it:
+A message no longer says what the value was. An error's `actual` is `""` for every code but `required`, so a message ends with what was expected, and a missing key still says it was missing. A message no longer grows with the data, nothing the data holds reaches a log through it, and a Type's messages read as a [precompiled validator's](https://arktype.io/docs/precompile/validators#errors) do:
 
 ```ts
-// ArkErrors: must be "a" or "b" (was an object)
-// before: (was {"x":1})
+// ArkErrors: must be "a" or "b", before: must be "a" or "b" (was {"x":1})
 type("'a' | 'b'")({ x: 1 })
+
+// ArkErrors: name must be a string, before: name must be a string (was a number)
+type({ name: "string" })({ name: 5 })
+
+// ArkErrors: name must be a string (was missing), as before
+type({ name: "string" })({})
 ```
 
-A value an `instanceof` check rejects is described as a domain error describes it, or by its class's name if it's a builtin's instance:
+A key a union lists doesn't say it was missing: `a must be a string or b must be a number`. To print the value, configure [`actual`](https://arktype.io/docs/configuration#actual):
 
 ```ts
-// ArkErrors: must be a Date (was a number), before: (was number)
-type("Date")(5)
+// ArkErrors: must be at most 100 (was 101)
+type("number <= 100").configure({ actual: data => `${data}` })(101)
+```
 
-// ArkErrors: must be a Date (was Map), as before
-type("Date")(new Map())
+A union whose every branch rejects the value by its type, class or literal, like `Date | RegExp`, is one error with no `errors` of its own: `must be a Date or a RegExp`.
+
+### Each failed check is its own error
+
+Checks failing at one path were one `intersection` error listing them. Each is now its own error, in the order it failed:
+
+```ts
+// ArkErrors: must be matched by ^a
+//            must be non-empty
+// before: ("") must be...
+//   ◦ matched by ^a
+//   ◦ non-empty
+type("string > 0 & /^a/")("")
+```
+
+`issues.length` counts failed checks, so count paths with `flatByPath`, which lists each error at a path, or `byPath`, which keeps the first. Code switching on the `intersection` code, or reading an error's `errors` for an intersection's, reads each error instead.
+
+### assert throws the errors' summary
+
+The `TraversalError` `assert` and `throw()` raise has the errors' `summary` as its `message`, where several errors were written on lines starting with `•` after an empty first line:
+
+```ts
+// throws TraversalError: a must be a string (was missing)
+// b must be a number (was missing)
+// before: TraversalError:
+//   • a must be a string (was missing)
+//   • b must be a number (was missing)
+type({ a: "string", b: "number" }).assert({})
+```
+
+### Paths don't start with "value at"
+
+A message whose path started with a bracket began with `value at`. It no longer does, and a symbol key is written as `String` writes it:
+
+```ts
+// ArkErrors: [0] must be a string, before: value at [0] must be a string (was a number)
+type("string[]")([5])
 ```
 
 ### Undeclared keys have the undeclared code
@@ -1644,7 +1685,7 @@ Configure its text under `discriminant` instead of `predicate`.
 Where every object a union discriminated by type expects is an array, its `cases` holds `"Array"` in place of `"object"`, and its message says `an array`:
 
 ```ts
-// ArkErrors: must be a string or an array (was a number)
+// ArkErrors: must be a string or an array
 // before: must be a string or an object (was a number)
 type("string | string[]")(5)
 ```
@@ -1656,7 +1697,7 @@ A `switch` over `cases` must handle `"Array"`.
 `!=` excludes one value from a range, like `number != 0`, and unions of ranges one value apart reduce to it. Its errors have the codes `notEqual` and `notEqualLength`, so with `undeclared` and `discriminant`, an exhaustive `switch` over `ArkErrorCode`, or a `Record<ArkErrorCode, ...>`, must handle four new codes:
 
 ```ts
-// ArkErrors: must be other than 0 (was 0)
+// ArkErrors: must be other than 0
 type("number != 0")(0)
 ```
 
@@ -1665,14 +1706,14 @@ type("number != 0")(0)
 A discriminated union whose discriminant can't place the data, because the data can't hold it, or matches none of its values while some branches don't have its key, reports as an undiscriminated union does, listing each branch's error. Each path a union lists reads as its own error would:
 
 ```ts
-// ArkErrors: must be an object (was a number)
+// ArkErrors: must be an object
 // before: kind must be "circle" or "square" (was missing)
 type({ kind: "'circle'", r: "number" }).or({
 	kind: "'square'",
 	side: "number"
 })(5)
 
-// ArkErrors: value at [0] must be a number (was a string) or value at [1] must be a string (was a number)
+// ArkErrors: [0] must be a number or [1] must be a string
 // before: value at [0] must be a number (was a string) or [1] must be a string (was a number)
 type("number[] | string[]")(["a", 1])
 ```
@@ -1701,7 +1742,7 @@ Declared keys are still checked before an index signature's and undeclared keys,
 
 ### Configured messages apply to more errors
 
-A `message` configured on a pipe applies to errors validating its output, and a union or intersection whose failing branches or constraints were all configured with one `message` reports it:
+A `message` configured on a pipe applies to errors validating its output, and a union whose failing branches were all configured with one `message` reports it:
 
 ```ts
 const Port = type("string.numeric.parse | number")
@@ -1712,30 +1753,17 @@ const Port = type("string.numeric.parse | number")
 // before: must be at most 65535 (was 99999)
 Port("99999")
 
-const Email = type("string.email > 0").configure({
-	message: "Email is not valid"
-})
+const message = "Enter an email or a phone number"
+const Contact = type("string.email")
+	.configure({ message })
+	.or(type(/^\d{7,}$/).configure({ message }))
 
-// ArkErrors: Email is not valid
-// before: ("") must be...
-//   ◦ an email address
-//   ◦ non-empty
-Email("")
+// ArkErrors: Enter an email or a phone number
+// before: what each branch expected
+Contact("x")
 ```
 
-`Port.out` keeps its own errors. Constraints described alike are described once, so `type("string.email > 0", "@", "Email is not valid")("")` says `must be Email is not valid (was "")`.
-
-### Described length bounds say "length"
-
-A length bound with its own description or `expected` writes the length it was given as `length 5`, since the text replacing the bound's no longer says it's a length:
-
-```ts
-const Password = type("string >= 8").describe("a password")
-
-// ArkErrors: must be a password (was length 5)
-// before: must be a password (was 5)
-Password("ez123")
-```
+`Port.out` keeps its own errors. Each constraint an intersection fails is [its own error](https://arktype.io/docs/upgrading#each-failed-check-is-its-own-error), with its own message, so `type("string.email > 0").configure({ message: "Email is not valid" })("")` says `Email is not valid` twice.
 
 ### Error writers receive the error and the locale
 
@@ -1793,7 +1821,7 @@ const N = type("number")
 const T = type("string").pipe(s => N(s))
 
 // before: returned ArkErrors
-// throws TraversalError: must be a number (was a string)
+// throws TraversalError: must be a number
 T.assert("x")
 ```
 
@@ -1804,7 +1832,7 @@ Dates in descriptions and error messages are written in UTC instead of local tim
 ```ts
 const T = type("Date < d'2000-01-01T12:30:00Z'")
 
-// ArkErrors: must be January 1, 2000, 12:29:59.999 PM UTC or earlier (was June 1, 2001)
+// ArkErrors: must be January 1, 2000, 12:29:59.999 PM UTC or earlier
 // before, in New York: must be 7:29:59.999 AM, January 1, 2000 or earlier
 T(new Date("2001-06-01"))
 ```
@@ -1814,18 +1842,16 @@ T(new Date("2001-06-01"))
 Each was wrong or unclear, but a snapshot or message assertion may hold it:
 
 - `string.regex`: `must be a regex pattern (SyntaxError: Invalid regular expression: /(/: Unterminated group)`, before: the bare `SyntaxError: ...`.
-- A discriminated union's missing key: `kind must be "circle" or "square" (was missing)`, before: `(was undefined)`.
-- `{ foo: string } | { foo: number } | { foo: Function }` given `{ foo: null }`: `foo must be a number, a string or an object (was null)`, before: `foo must be an object, a number or a string (was null)`.
-- A key that must be `never`: `files must be never (was 1)`, before: `never`.
-- A length bound a description replaces: `must be a strong password (was length 1)`, before: `(was 1)`.
-- A described union: `must be a shape (was an object)`, where it listed its cases or its branches' errors.
-- An object `===` unit: `must be {} (was an object)`, before: `must be reference equal to {} (serialized to the same value)`.
-- A value inside `object.json` that JSON can't hold: `a must be a number, a string, an object, boolean or null (was a bigint)`, before: `a must be an object (was a bigint)`.
-- `number.safe` and other ranges given `Infinity`: `must be a number (was Infinity)`, before: their range error.
-- An arktype Type embedded through `~standard`: `user.age must be an integer (was 1.5)`, before: `user.age age must be ...`.
+- `{ foo: string } | { foo: number } | { foo: Function }` given `{ foo: null }`: `foo must be a number, a string or an object`, before: `foo must be an object, a number or a string (was null)`.
+- A key that must be `never`: `files must be never`, before: `never`.
+- A described union: `must be a shape`, where it listed its cases or its branches' errors.
+- An object `===` unit: `must be {}`, before: `must be reference equal to {} (serialized to the same value)`.
+- A value inside `object.json` that JSON can't hold: `a must be a number, a string, an object, boolean or null`, before: `a must be an object (was a bigint)`.
+- `number.safe` and other ranges given `Infinity`: `must be a number`, before: their range error.
+- An arktype Type embedded through `~standard`: `user.age must be an integer`, before: `user.age age must be ...`.
 - Keyword descriptions: `string.url` is `a URL string` (before: `a string and a URL string`), `string.creditCard` is `a credit card number` (before: repeated), and `string.lower` and `string.upper`'s outputs are `lowercase` and `uppercase` (before: `only lowercase letters`).
 - A `ToJsonSchemaError` starts with a sentence: `Can't convert "date" at user.createdAt to JSON Schema. Configure fallback.date to write it:`, then the context it printed before.
-- A default a morph's input rejects throws `ParseError: Default for flag must be "false" or "true" (was false)`, written from the input, where it threw `TraversalError: must be boolean (was false)` from the morph's description.
+- A default a morph's input rejects throws `ParseError: Default for flag must be "false" or "true"`, written from the input, where it threw `TraversalError: must be boolean (was false)` from the morph's description.
 - `ParseError`s for an indeterminate union or intersection of morphs end with a line saying how to fix it, and one for an intersection adding a key the other side deletes or rejects names that key on two more lines.
 - `ParseError`s name what they reject: `Token '>=' requires a right operand` for `"number >="` (before: `Expected an expression`), the narrow in `Intersection of "a" | "b" and isC results in an unsatisfiable type` (before: `and unknown`), and only the conflicting elements of an unsatisfiable tuple intersection.
 
@@ -1836,7 +1862,7 @@ Each was wrong or unclear, but a snapshot or message assertion may hold it:
 An object definition's `"@"` key is its description or meta object, as `"@"` is in a tuple expression. It was an ordinary key. Escape it as `"\\@"` to keep the key:
 
 ```ts
-// ArkErrors: must be a user (was a number)
+// ArkErrors: must be a user
 type({ "@": "a user", name: "string" })(5)
 
 // Type<{ "@": string }>
@@ -1868,7 +1894,7 @@ const parse = type("string.date.iso.parse")
 // before, in New York: 2025-01-01T17:00:00.000Z
 parse("2025-01-01T12:00")
 
-// ArkErrors: must be an ISO 8601 date or date-time (was "2025-02-29")
+// ArkErrors: must be an ISO 8601 date or date-time
 // before: 2025-03-01T00:00:00.000Z
 parse("2025-02-29")
 ```
@@ -1902,7 +1928,7 @@ type("0 < number < 10 & number != 5")
 `number` rejects `Infinity` and `-Infinity`, as it already rejected `NaN`:
 
 ```ts
-// ArkErrors: must be a number (was Infinity)
+// ArkErrors: must be a number
 // before: Infinity
 type.number(Infinity)
 ```
@@ -1918,7 +1944,7 @@ const T = type("number | number.Infinity | number.NegativeInfinity")
 `object.json` rejects an object whose prototype isn't `Object.prototype` or `null`, unless it's an array, so a `Map`, `Set`, `Date`, function or class instance, which `JSON.stringify` doesn't write as itself, fails anywhere in the data:
 
 ```ts
-// ArkErrors: at must be a plain object or array (was an object)
+// ArkErrors: at must be a plain object or array
 // before: { at: Date }
 type("object.json")({ at: new Date() })
 ```
@@ -1953,7 +1979,7 @@ An integer key from 4294967295 up can't be an array index, so `"+": "reject"` re
 ```ts
 const T = type("string[]").onUndeclaredKey("reject")
 
-// ArkErrors: value at ["4294967295"] must be removed, before: valid
+// ArkErrors: ["4294967295"] must be removed, before: valid
 T(Object.assign(["a"], { 4294967295: "b" }))
 ```
 
@@ -2248,7 +2274,7 @@ Other patterns infer what they match more exactly, which can widen or narrow an 
 
 - `prefixItems` makes its elements optional: `{ type: "array", prefixItems: [{ type: "string" }, { type: "number" }] }` is `[string?, number?, ...unknown[]]` and accepts `[]`, before: `[string, number, ...unknown[]]`.
 - `{ type: "object" }` rejects arrays.
-- A `uniqueItems` error reads `must be an array of unique items (was an array)`, before: `(was an array with 2 duplicates: 1, and 3)`.
+- A `uniqueItems` error reads `must be an array of unique items`, before: `(was an array with 2 duplicates: 1, and 3)`.
 - The `writeJsonSchema*Message` functions, like `writeJsonSchemaInsufficientKeysMessage`, are no longer exported.
 
 ## @ark/fast-check
@@ -2373,7 +2399,7 @@ A regex literal requires the string to match it. Like a `RegExp`, it is unanchor
 ```ts
 const AToZ = type("/^a.*z$/")
 
-// ArkErrors: must be matched by ^a.*z$ (was "abc")
+// ArkErrors: must be matched by ^a.*z$
 AToZ("abc")
 ```
 
@@ -2382,7 +2408,7 @@ AToZ("abc")
 ```ts
 const AToZ = type.string.matching(/^a.*z$/)
 
-// ArkErrors: must be matched by ^a.*z$ (was "abc")
+// ArkErrors: must be matched by ^a.*z$
 AToZ("abc")
 ```
 
@@ -2445,7 +2471,7 @@ A range sets both bounds at once, each inclusive or exclusive:
 // 4 to 6 digits
 const Pin = type("4 <= string.digits <= 6")
 
-// ArkErrors: must be at least length 4 (was 3)
+// ArkErrors: must be at least length 4
 Pin("123")
 ```
 
@@ -2455,7 +2481,7 @@ Pin("123")
 // 4 to 6 digits
 const Pin = type.keywords.string.digits.atLeastLength(4).atMostLength(6)
 
-// ArkErrors: must be at least length 4 (was 3)
+// ArkErrors: must be at least length 4
 Pin("123")
 ```
 
@@ -2527,7 +2553,7 @@ A range sets both bounds at once, each inclusive or exclusive:
 ```ts
 const Percentage = type("0 <= number <= 100")
 
-// ArkErrors: must be at most 100 (was 101)
+// ArkErrors: must be at most 100
 Percentage(101)
 ```
 
@@ -2536,7 +2562,7 @@ Percentage(101)
 ```ts
 const Percentage = type.number.atLeast(0).atMost(100)
 
-// ArkErrors: must be at most 100 (was 101)
+// ArkErrors: must be at most 100
 Percentage(101)
 ```
 
@@ -2545,7 +2571,7 @@ Percentage(101)
 ```ts
 const NonZero = type("number != 0")
 
-// ArkErrors: must be other than 0 (was 0)
+// ArkErrors: must be other than 0
 NonZero(0)
 ```
 
@@ -2558,7 +2584,7 @@ Constrain a number to a multiple of an integer with `%`:
 ```ts
 const Even = type("number % 2")
 
-// ArkErrors: must be even (was 3)
+// ArkErrors: must be even
 Even(3)
 ```
 
@@ -2567,7 +2593,7 @@ Even(3)
 ```ts
 const Even = type.number.divisibleBy(2)
 
-// ArkErrors: must be even (was 3)
+// ArkErrors: must be even
 Even(3)
 ```
 
@@ -2814,7 +2840,7 @@ const MyObj = type({
 > // {}
 > MyObj({})
 >
-> // ArkErrors: key must be a number (was undefined)
+> // ArkErrors: key must be a number
 > MyObj({ key: undefined })
 > ```
 >
@@ -2895,7 +2921,7 @@ const DataAttributes = type({
 	"[/^data-/]": "string"
 })
 
-// ArkErrors: value at ["data-id"] must be a string (was a number)
+// ArkErrors: ["data-id"] must be a string
 DataAttributes({ "data-id": 1 })
 ```
 
@@ -3055,7 +3081,7 @@ const Escaped = type({
 	"\\[id]?": "string"
 })
 
-// ArkErrors: value at ["isAdmin?"] must be boolean (was missing)
+// ArkErrors: ["isAdmin?"] must be boolean (was missing)
 Escaped({ "+": "x" })
 ```
 
@@ -3570,7 +3596,7 @@ const MyTuple = type(["...", type.number.array(), type.boolean, type.string])
 `Date` allows a valid `Date` instance. An invalid date, like `new Date("x")`, is rejected:
 
 ```ts
-// ArkErrors: must be a Date (was an invalid Date)
+// ArkErrors: must be a Date
 type.Date(new Date("x"))
 ```
 
@@ -3956,7 +3982,7 @@ Like its TypeScript counterpart, an intersection creates a `Type` that enforces 
 // an email address at arktype.io
 const ArkEmail = type("string.email & /@arktype\\.io$/")
 
-// ArkErrors: must be matched by @arktype\.io$ (was "a@b.com")
+// ArkErrors: must be matched by @arktype\.io$
 ArkEmail("a@b.com")
 ```
 
@@ -3966,7 +3992,7 @@ ArkEmail("a@b.com")
 // an email address at arktype.io
 const ArkEmail = type("string.email").and(/@arktype\.io$/)
 
-// ArkErrors: must be matched by @arktype\.io$ (was "a@b.com")
+// ArkErrors: must be matched by @arktype\.io$
 ArkEmail("a@b.com")
 ```
 
@@ -3976,7 +4002,7 @@ ArkEmail("a@b.com")
 // an email address at arktype.io
 const ArkEmail = type(["string.email", "&", /@arktype\.io$/])
 
-// ArkErrors: must be matched by @arktype\.io$ (was "a@b.com")
+// ArkErrors: must be matched by @arktype\.io$
 ArkEmail("a@b.com")
 ```
 
@@ -3986,7 +4012,7 @@ ArkEmail("a@b.com")
 // an email address at arktype.io
 const ArkEmail = type("string.email", "&", /@arktype\.io$/)
 
-// ArkErrors: must be matched by @arktype\.io$ (was "a@b.com")
+// ArkErrors: must be matched by @arktype\.io$
 ArkEmail("a@b.com")
 ```
 
@@ -4016,7 +4042,7 @@ A union allows a value that satisfies either operand. ArkType discriminates unio
 ```ts
 const StringOrNumber = type("string | number")
 
-// ArkErrors: must be a number or a string (was boolean)
+// ArkErrors: must be a number or a string
 StringOrNumber(true)
 ```
 
@@ -4025,7 +4051,7 @@ StringOrNumber(true)
 ```ts
 const StringOrNumber = type.string.or(type.number)
 
-// ArkErrors: must be a number or a string (was boolean)
+// ArkErrors: must be a number or a string
 StringOrNumber(true)
 ```
 
@@ -4034,7 +4060,7 @@ StringOrNumber(true)
 ```ts
 const StringOrNumber = type(["string", "|", "number"])
 
-// ArkErrors: must be a number or a string (was boolean)
+// ArkErrors: must be a number or a string
 StringOrNumber(true)
 ```
 
@@ -4043,7 +4069,7 @@ StringOrNumber(true)
 ```ts
 const StringOrNumber = type("string", "|", "number")
 
-// ArkErrors: must be a number or a string (was boolean)
+// ArkErrors: must be a number or a string
 StringOrNumber(true)
 ```
 
@@ -4147,7 +4173,7 @@ const Palindrome = type("string").narrow(
 	(s, ctx) => s === [...s].reverse().join("") || ctx.mustBe("a palindrome")
 )
 
-// ArkErrors: must be a palindrome (was "arktype")
+// ArkErrors: must be a palindrome
 Palindrome("arktype")
 ```
 
@@ -4160,7 +4186,7 @@ const Palindrome = type([
 	(s, ctx) => s === [...s].reverse().join("") || ctx.mustBe("a palindrome")
 ])
 
-// ArkErrors: must be a palindrome (was "arktype")
+// ArkErrors: must be a palindrome
 Palindrome("arktype")
 ```
 
@@ -4173,7 +4199,7 @@ const Palindrome = type(
 	(s, ctx) => s === [...s].reverse().join("") || ctx.mustBe("a palindrome")
 )
 
-// ArkErrors: must be a palindrome (was "arktype")
+// ArkErrors: must be a palindrome
 Palindrome("arktype")
 ```
 
@@ -4225,7 +4251,7 @@ const ShortNumeric = type("string.numeric.parse").filter(
 // 123
 ShortNumeric("123")
 
-// ArkErrors: must be at most 10 characters (was "12345678901")
+// ArkErrors: must be at most 10 characters
 ShortNumeric("12345678901")
 ```
 
@@ -4278,7 +4304,7 @@ A morph can return `ArkErrors` to fail validation, so a `Type` works as a morph:
 // Type<(In: string) => To<number>>
 const ParseEven = type("string.numeric.parse |> number % 2")
 
-// ArkErrors: must be even (was 3)
+// ArkErrors: must be even
 ParseEven("3")
 ```
 
@@ -4288,7 +4314,7 @@ ParseEven("3")
 // Type<(In: string) => To<number>>
 const ParseEven = type("string.numeric.parse").to("number % 2")
 
-// ArkErrors: must be even (was 3)
+// ArkErrors: must be even
 ParseEven("3")
 ```
 
@@ -4298,7 +4324,7 @@ ParseEven("3")
 // Type<(In: string) => To<number>>
 const ParseEven = type(["string.numeric.parse", "|>", "number % 2"])
 
-// ArkErrors: must be even (was 3)
+// ArkErrors: must be even
 ParseEven("3")
 ```
 
@@ -4308,7 +4334,7 @@ ParseEven("3")
 // Type<(In: string) => To<number>>
 const ParseEven = type("string.numeric.parse", "|>", "number % 2")
 
-// ArkErrors: must be even (was 3)
+// ArkErrors: must be even
 ParseEven("3")
 ```
 
@@ -4426,7 +4452,7 @@ const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
 len("foo") // 3
 len([1, 2]) // 2
 
-// TraversalError: value at [0] must be a string or an array (was boolean)
+// TraversalError: [0] must be a string or an array
 len(true)
 // TypeScript: Argument of type 'boolean' is not assignable to parameter of type 'string | unknown[]'.
 ```
@@ -4469,7 +4495,7 @@ const SpecialString = type("string").configure({
 // .describe() is shorthand for a description
 const SpecialNumber = type("number").describe("a special number")
 
-// ArkErrors: must be a special number (was a string)
+// ArkErrors: must be a special number
 SpecialNumber("five")
 ```
 
@@ -4487,7 +4513,7 @@ const SpecialString = type([
 // a string is shorthand for a description
 const SpecialNumber = type(["number", "@", "a special number"])
 
-// ArkErrors: must be a special number (was a string)
+// ArkErrors: must be a special number
 SpecialNumber("five")
 ```
 
@@ -4501,7 +4527,7 @@ const SpecialString = type("string", "@", {
 // a string is shorthand for a description
 const SpecialNumber = type("number", "@", "a special number")
 
-// ArkErrors: must be a special number (was a string)
+// ArkErrors: must be a special number
 SpecialNumber("five")
 ```
 
@@ -4513,7 +4539,7 @@ const User = type({
 	name: "string"
 })
 
-// ArkErrors: must be a user (was a number)
+// ArkErrors: must be a user
 User(5)
 ```
 
@@ -4535,7 +4561,7 @@ const Point = type({
 	"domain"
 )
 
-// ArkErrors: x must be a coordinate (was a string)
+// ArkErrors: x must be a coordinate
 Point({ x: "1", y: 2 })
 ```
 
@@ -4553,7 +4579,7 @@ const Point = type([
 	"domain"
 ])
 
-// ArkErrors: x must be a coordinate (was a string)
+// ArkErrors: x must be a coordinate
 Point({ x: "1", y: 2 })
 ```
 
@@ -4571,7 +4597,7 @@ const Point = type(
 	"domain"
 )
 
-// ArkErrors: x must be a coordinate (was a string)
+// ArkErrors: x must be a coordinate
 Point({ x: "1", y: 2 })
 ```
 
@@ -4674,7 +4700,7 @@ const toLabel = match({
 toLabel("abc") // "abc"
 toLabel(5) // "5.00"
 toLabel(5n) // "5n"
-// TraversalError: must be a string, a number or a bigint (was boolean)
+// TraversalError: must be a string, a number or a bigint
 toLabel(true)
 ```
 
@@ -4700,7 +4726,7 @@ const sizeOf = match({
 	default: "reject"
 })
 
-// ArkErrors: must be a string or a number (was boolean)
+// ArkErrors: must be a string or a number
 sizeOf(true)
 ```
 
@@ -4739,7 +4765,7 @@ const half = match.in("number | string").match({
 })
 
 half(4) // 2
-// ArkErrors: must be a number or a string (was boolean)
+// ArkErrors: must be a number or a string
 half(true)
 // TypeScript: Argument of type 'boolean' is not assignable to parameter of type 'string | number'.
 ```
@@ -4837,7 +4863,7 @@ const ms = EpochMs.encode(date)
 A codec is a Type. `.encode` is a Type too, from output to input, so it validates what it receives like any other Type:
 
 ```ts
-// ArkErrors: must be a Date (was a string)
+// ArkErrors: must be a Date
 const out = EpochMs.encode("0")
 ```
 
@@ -4967,7 +4993,7 @@ const OwnedGroup = Group.and({ ownerId: "Id" })
 ```ts
 const types = $.export()
 
-// ArkErrors: friends[1] must be a string (was a number)
+// ArkErrors: friends[1] must be a string
 types.User({ id: "99", friends: ["7", 8, "9"] })
 ```
 
@@ -5026,7 +5052,7 @@ const packageData: Package = {
 // arktype now depends on itself
 packageData.dependencies![0].dependencies = [packageData]
 
-// ArkErrors: contributors[0].email must be an email address (was "david@sharktypeio")
+// ArkErrors: contributors[0].email must be an email address
 types.Package(packageData)
 ```
 
@@ -5184,7 +5210,7 @@ const $ = scope({
 ```ts
 const $ = scope({ Even: "number % 2" }, { divisor: { expected: "even" } })
 
-// ArkErrors: must be even (was 3)
+// ArkErrors: must be even
 $.export().Even(3)
 ```
 
@@ -5263,7 +5289,7 @@ const types = scope({
 	BitBox: "Box<0, 1>"
 }).export()
 
-// ArkErrors: box must be 0 or 1 (was 2)
+// ArkErrors: box must be 0 or 1
 types.BitBox({ box: 2 })
 ```
 
@@ -5277,7 +5303,7 @@ const types = scope({
 	NumberTree: "Tree<number>"
 }).export()
 
-// ArkErrors: children[0].value must be a number (was a string)
+// ArkErrors: children[0].value must be a number
 types.NumberTree({ value: 1, children: [{ value: "2" }] })
 ```
 
@@ -5419,7 +5445,7 @@ const User = type({
 const out = User({ name: "Alan", age: 41.5 })
 
 if (out instanceof type.errors) {
-	// age must be an integer (was 41.5)
+	// age must be an integer
 	console.error(out.summary)
 } else {
 	// out is { name: string; age: number }
@@ -5437,7 +5463,7 @@ const Form = type({ age: "string.numeric.parse" })
 // { age: 41 }
 Form({ age: "41" })
 
-// ArkErrors: age must be a well-formed numeric string (was "forty")
+// ArkErrors: age must be a well-formed numeric string
 Form({ age: "forty" })
 ```
 
@@ -5451,7 +5477,7 @@ const Form = type({ age: "string.numeric.parse" })
 // { age: 41 }
 const form = Form.assert({ age: "41" })
 
-// TraversalError: age must be a well-formed numeric string (was "forty")
+// TraversalError: age must be a well-formed numeric string
 Form.assert({ age: "forty" })
 ```
 
@@ -5497,7 +5523,7 @@ const AtLeast6 = type("string.numeric.parse").to("number >= 6")
 // true, since "3" is a numeric string
 AtLeast6.allows("3")
 
-// ArkErrors: must be at least 6 (was 3)
+// ArkErrors: must be at least 6
 AtLeast6("3")
 ```
 
@@ -5511,7 +5537,7 @@ const User = type({ name: "string", age: "number" })
 const result = await User["~standard"].validate({ name: "David", age: "34" })
 
 if (result.issues) {
-	// must be a number (was a string)
+	// must be a number
 	console.log(result.issues[0].message)
 } else {
 	// { name: string; age: number }
@@ -5529,7 +5555,7 @@ To add your own check, use [`.narrow`](https://arktype.io/docs/expressions#narro
 
 ## ArkErrors
 
-A Type called with invalid data returns `ArkErrors`, which holds one error for each path that failed:
+A Type called with invalid data returns `ArkErrors`, which holds one error for each check that failed, in the order each failed:
 
 ```ts
 import { flatProblemsByPath, type } from "arktype"
@@ -5542,16 +5568,16 @@ const User = type({
 const out = User({ name: 5, age: -1 })
 
 if (out instanceof type.errors) {
-	// age must be non-negative (was -1)
-	// name must be a string (was a number)
+	// age must be non-negative
+	// name must be a string
 	console.error(out.summary)
 
-	// ["age must be non-negative (was -1)",
-	//  "name must be a string (was a number)"]
+	// ["age must be non-negative",
+	//  "name must be a string"]
 	out.issues.map(error => error.message)
 
-	// { age: ["must be non-negative (was -1)"],
-	//   name: ["must be a string (was a number)"] }
+	// { age: ["must be non-negative"],
+	//   name: ["must be a string"] }
 	flatProblemsByPath(out)
 }
 ```
@@ -5560,9 +5586,9 @@ if (out instanceof type.errors) {
 
 | member | what it is |
 | - | - |
-| `issues` | an array with one error per path, in the order each path first failed |
+| `issues` | an array with one error per failed check, in the order each failed |
 | `summary`, `toString()` | every error's message, one per line |
-| `count` | how many errors were added, more than `issues.length` when several failed at one path |
+| `count` | how many errors were added |
 | `toJSON()` | an array of each error's JSON, with its `propString` |
 | `toLocaleString(locale?)` | the summary in a [locale](https://arktype.io/docs/i18n#rendering-in-a-locale) |
 | `throw()` | throws a [`TraversalError`](https://arktype.io/docs/errors#traversalerror) |
@@ -5572,8 +5598,8 @@ if (out instanceof type.errors) {
 | function | what it returns |
 | - | - |
 | `firstIssue(out)` | the first error in `issues`, found [without the rest](https://arktype.io/docs/errors#finding-only-the-first) where it can be |
-| `byPath(out)` | an object mapping each path's `propString` to its error |
-| `flatByPath(out)` | like `byPath`, but each value is an array, with an `intersection` split into its errors |
+| `byPath(out)` | an object mapping each path's `propString` to its first error |
+| `flatByPath(out)` | like `byPath`, but each value is an array of every error at the path |
 | `flatProblemsByPath(out)` | like `flatByPath`, but with each error's `problem` |
 | `byAncestorPath(out)` | each failed path and its ancestors, with `""` for the root, mapped to every error at or below it |
 | `messageIn(error, locale)` | one error's message in a [locale](https://arktype.io/docs/i18n#rendering-in-a-locale) |
@@ -5585,7 +5611,7 @@ const User = type({ name: "string" })
 const form: Record<string, unknown> = { name: 5 }
 
 const out = User(form)
-// read now: name must be a string (was a number)
+// read now: name must be a string
 const summary = out instanceof type.errors ? out.summary : ""
 
 form.name = "Ada"
@@ -5605,7 +5631,7 @@ const User = type({ name: "string", age: "number >= 0" })
 
 const out = User({ name: 5, age: -1 })
 
-// age must be non-negative (was -1)
+// age must be non-negative
 if (out instanceof type.errors) console.error(firstIssue(out).message)
 ```
 
@@ -5626,20 +5652,19 @@ if (out instanceof type.errors) {
 	error.propString // "age"
 	error.data // -1
 	error.expected // "non-negative"
-	error.actual // "-1"
-	error.problem // "must be non-negative (was -1)"
-	error.message // "age must be non-negative (was -1)"
+	error.problem // "must be non-negative"
+	error.message // "age must be non-negative"
 
 	// narrow by code to read its own fields
 	if (error.code === "min") error.rule // 0
 }
 ```
 
-Its message is built from parts: `message` puts the path before `problem`, which reads "must be `expected` (was `actual`)". You can [configure each part](https://arktype.io/docs/configuration#error-messages).
+Its message is built from parts: `message` puts the path before `problem`, which reads "must be `expected`". It doesn't say what the value was, which `data` holds, unless an [`actual`](https://arktype.io/docs/configuration#actual) is configured, written as "(was `actual`)"; a missing key's reads "must be a string (was missing)". A union's `problem` writes the path of each error it lists from its own, and its `message` writes them whole. You can [configure each part](https://arktype.io/docs/configuration#error-messages).
 
 An error also has `meta`, the metadata of the Type that failed, and usually a `description`. It has no methods, so `JSON.stringify(error)` serializes its own keys, and `messageIn(error, locale)` writes its message in another locale.
 
-When several checks fail at one path, they are merged into one error with the code `intersection`. `flatByPath` splits it back up:
+When several checks fail at one path, each is its own error. `flatByPath` and `flatProblemsByPath` group them by path:
 
 ```ts
 import { flatProblemsByPath, type } from "arktype"
@@ -5647,12 +5672,11 @@ import { flatProblemsByPath, type } from "arktype"
 const out = type({ n: "number % 2 >= 2" })({ n: 1 })
 
 if (out instanceof type.errors) {
-	// n (1) must be...
-	//   ◦ even
-	//   ◦ at least 2
+	// n must be even
+	// n must be at least 2
 	console.error(out.summary)
 
-	// { n: ["must be even (was 1)", "must be at least 2 (was 1)"] }
+	// { n: ["must be even", "must be at least 2"] }
 	flatProblemsByPath(out)
 }
 ```
@@ -5677,8 +5701,7 @@ An error's `code` tells you its other fields:
 | `required` | `missing`, the missing value's type; `valueMeta`, its meta; and `missingValueDescription`, its English description |
 | `undeclared` | none; its `data` is the value of a key `"+": "reject"` disallows |
 | `discriminant` | `discriminantKind`, `cases`, `onKey` and `absent` |
-| `union` | `errors`, one per branch |
-| `intersection` | `errors`, one per check that failed at the path |
+| `union` | `errors`, one per branch, or none where each branch fails at what it is, like `Date \| RegExp` given `1`, which expects `a Date or a RegExp` |
 
 Each also has `data` and `path`, and `meta` unless `ctx` or `pipe.try` raised it. Built-in keywords with their own text, like `string.email`, set `meta.keyword` to their name.
 
@@ -5695,7 +5718,7 @@ const out = Shape({ kind: "triangle" })
 if (out instanceof type.errors) {
 	const error = out.issues[0]
 
-	// kind must be "circle" or "square" (was "triangle")
+	// kind must be "circle" or "square"
 	error.message
 
 	// ["circle", "square"]
@@ -5707,7 +5730,7 @@ A union reports `union` instead where its discriminant can't tell the branches a
 
 ## TraversalError
 
-`.assert`, `.from` and `ArkErrors`' `throw()` throw a `TraversalError`, which extends `Error`. A single error's message is its summary. Several are listed on their own lines after a leading newline:
+`.assert`, `.from` and `ArkErrors`' `throw()` throw a `TraversalError`, which extends `Error`. Its message is the errors' summary, one line per error:
 
 ```ts
 import { flatProblemsByPath, type, TraversalError } from "arktype"
@@ -5716,7 +5739,7 @@ try {
 	type({ a: "string", b: "number" }).assert({ a: 1, b: "x" })
 } catch (e) {
 	if (e instanceof TraversalError) {
-		// "\n  • a must be a string (was a number)\n  • b must be a number (was a string)"
+		// "a must be a string\nb must be a number"
 		e.message
 
 		// the ArkErrors, for structured access
@@ -5755,7 +5778,7 @@ const Even = type("number").narrow(
 	(n, ctx) => n % 2 === 0 || ctx.mustBe("even")
 )
 
-// ArkErrors: must be even (was 3)
+// ArkErrors: must be even
 Even(3)
 ```
 
@@ -5770,7 +5793,7 @@ const Json = type("string").pipe((s, ctx) => {
 	}
 })
 
-// ArkErrors: must be valid JSON (was "{")
+// ArkErrors: must be valid JSON
 Json("{")
 ```
 
@@ -5964,7 +5987,7 @@ What follows "must be" in a message. Other parts and the Type's `.description` r
 ```ts
 const Even = type("number % 2").describe("an even number")
 
-// ArkErrors: must be an even number (was 3)
+// ArkErrors: must be an even number
 Even(3)
 ```
 
@@ -5978,40 +6001,40 @@ const Password = type("string >= 8").configure({
 		ctx.code === "minLength" ? `${ctx.rule} characters or more` : "a password"
 })
 
-// ArkErrors: must be 8 characters or more (was length 5)
+// ArkErrors: must be 8 characters or more
 Password("ez123")
 
-// ArkErrors: must be a password (was a number)
+// ArkErrors: must be a password
 Password(12345678)
 ```
 
 ### actual
 
-What goes inside "(was …)". An empty string omits it. A function receives the data, then the error:
+What goes inside "(was …)". A message doesn't say what the value was unless an `actual` is configured, except a missing key's, which reads "(was missing)". An empty string omits it. A function receives the data, then the error:
 
 ```ts
-const Password = type("string >= 8").configure({ actual: "" })
+const Age = type("number <= 100").configure({ actual: data => `${data}` })
 
-// ArkErrors: must be at least length 8
-Password("ez123")
+// ArkErrors: must be at most 100 (was 101)
+Age(101)
 ```
 
 ### problem
 
-The whole sentence after the path, like "must be a string (was a number)". A function receives the error, including its `expected` and `actual`. It may not apply to the errors of a union:
+The whole sentence after the path, like "must be a string", and the text a [Standard Schema](https://arktype.io/docs/standard-schema) consumer, like a form library, shows beside a field as its issue's `message`. A union's problem lists each branch's path from its own. A function receives the error, including its `expected` and `actual`. It may not apply to the errors of a union:
 
 ```ts
 const Name = type("string").configure({
-	problem: ctx => `${ctx.actual} isn't ${ctx.expected}`
+	problem: ctx => `isn't ${ctx.expected}`
 })
 
-// ArkErrors: a number isn't a string
+// ArkErrors: isn't a string
 Name(5)
 ```
 
 ### message
 
-The whole message, including the path. A function receives the error, including its `problem`. It may not apply to the errors of a union:
+The whole message, including the path, read from the errors calling a Type returns, their `summary` and what `.assert()` throws. It doesn't reach Standard Schema issues, whose `message` is the [`problem`](https://arktype.io/docs/configuration#problem). A function receives the error, including its `problem`. It may not apply to the errors of a union:
 
 ```ts
 const User = type({
@@ -6020,11 +6043,11 @@ const User = type({
 	message: ctx => `${ctx.propString || "(root)"}: ${ctx.problem}`
 })
 
-// ArkErrors: (root): must be an object (was a string)
+// ArkErrors: (root): must be an object
 User("ez123")
 
 // .configure applies only at the root, so the nested error is unchanged
-// ArkErrors: password must be at least length 8 (was 5)
+// ArkErrors: password must be at least length 8
 User({ password: "ez123" })
 ```
 
@@ -6110,7 +6133,7 @@ const User = type({
 	email: "string.email"
 })
 
-// ArkErrors: name must be text (was a number)
+// ArkErrors: name must be text
 //            email must be an email address (was definitely fake)
 User({ name: 5, email: "449 Canal St" })
 ```
@@ -6157,7 +6180,7 @@ const MyObj = type({
 // {}
 MyObj({})
 
-// ArkErrors: key must be a number (was undefined)
+// ArkErrors: key must be a number
 MyObj({ key: undefined })
 ```
 
@@ -6202,7 +6225,7 @@ MaybeNaN(Number.NaN)
 ```ts
 const Limit = type("number | number.Infinity")
 
-// ArkErrors: must be a number (was Infinity)
+// ArkErrors: must be a number
 type.number(Infinity)
 
 // Infinity
@@ -6350,7 +6373,7 @@ import { type } from "arktype"
 // string, since a failure throws instead of returning ArkErrors
 const data = type.string("foo")
 
-// TraversalError: must be a string (was a number)
+// TraversalError: must be a string
 type.string(5)
 ```
 
@@ -6520,7 +6543,7 @@ if (out instanceof type.errors) {
 	// name muss eine Zeichenkette sein, ist aber eine Zahl
 	out.toLocaleString(de)
 	messageIn(out.issues[0], de)
-	// name must be a string (was a number)
+	// name must be a string
 	out.issues[0].message
 }
 ```
@@ -6753,14 +6776,14 @@ Form["~standard"].validate({ name: "Ada", age: "36" })
 // { value: { name: "Ada", age: 36 } }
 ```
 
-On failure, the result is `{ issues }`, one for each error in the [`ArkErrors`](https://arktype.io/docs/errors) you get from calling the Type. A library printing Standard Schema issues writes each issue's `path` before its `message`, so an issue at a path is a copy of its error whose message leaves the path out:
+On failure, the result is `{ issues }`, one for each error in the [`ArkErrors`](https://arktype.io/docs/errors) you get from calling the Type. A library printing Standard Schema issues writes each issue's `path` before its `message`, so each issue is a copy of its error whose message is the error's [`problem`](https://arktype.io/docs/configuration#problem), which leaves the path out:
 
 ```ts
 const result = Form["~standard"].validate({ name: "Ada", age: "old" })
-// { issues: [{ path: ["age"], message: 'must be a well-formed integer string (was "old")', ... }] }
+// { issues: [{ path: ["age"], message: 'must be a well-formed integer string', ... }] }
 ```
 
-A union's message lists each branch's path from the union's, like `b must be a string (was missing) or c must be a number (was missing)`. The issues are written as `validate` returns, so unlike an `ArkErrors` read later, they describe the data as it was validated.
+A union's problem lists each branch's path from the union's, like `b must be a string or c must be a number`. A configured [`problem`](https://arktype.io/docs/configuration#problem) changes the issue's message, but a configured [`message`](https://arktype.io/docs/configuration#message) doesn't. The issues are written as `validate` returns, so unlike an `ArkErrors` read later, they describe the data as it was validated.
 
 ArkType always validates synchronously. The spec allows a `Promise`, which is why the return type includes one.
 
@@ -7298,7 +7321,7 @@ const User = type({ name: "string" })
 const out = User({ name: 5 })
 
 if (out instanceof type.errors) {
-	// name must be a string (was a number)
+	// name must be a string
 	console.error(out.summary)
 } else {
 	console.log(out.name)
@@ -7702,7 +7725,7 @@ Like `pipe`, but a morph that throws adds an error instead of throwing:
 const ParseJson = type("string").pipe.try(s => JSON.parse(s))
 
 ParseJson('{"a": 1}') // { a: 1 }
-// ArkErrors: must be valid according to an anonymous predicate (was aborted due to error: SyntaxError: ...)
+// ArkErrors: must be valid according to an anonymous predicate (SyntaxError: ...)
 ParseJson("{")
 ```
 
@@ -7951,7 +7974,7 @@ Each method adds a constraint you could also write in a [string definition](http
 ```ts
 const Username = type.string.matching("^[a-z]+$").atMostLength(16)
 
-// ArkErrors: must be matched by ^[a-z]+$ (was "ArkType")
+// ArkErrors: must be matched by ^[a-z]+$
 Username("ArkType")
 
 // Type<`a${string}z`>, inferred from the pattern
@@ -7959,7 +7982,7 @@ const AToZ = type.string.matching("^a.*z$")
 
 const Even = type.number.divisibleBy(2)
 
-// ArkErrors: must be even (was 3)
+// ArkErrors: must be even
 Even(3)
 ```
 

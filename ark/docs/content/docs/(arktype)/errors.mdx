@@ -5,7 +5,7 @@ description: Read, serialize and throw the errors a Type returns for invalid dat
 
 ## ArkErrors
 
-A Type called with invalid data returns `ArkErrors`, which holds one error for each path that failed:
+A Type called with invalid data returns `ArkErrors`, which holds one error for each check that failed, in the order each failed:
 
 ```ts
 import { flatProblemsByPath, type } from "arktype"
@@ -18,38 +18,38 @@ const User = type({
 const out = User({ name: 5, age: -1 })
 
 if (out instanceof type.errors) {
-	// age must be non-negative (was -1)
-	// name must be a string (was a number)
+	// age must be non-negative
+	// name must be a string
 	console.error(out.summary)
 
-	// ["age must be non-negative (was -1)",
-	//  "name must be a string (was a number)"]
+	// ["age must be non-negative",
+	//  "name must be a string"]
 	out.issues.map(error => error.message)
 
-	// { age: ["must be non-negative (was -1)"],
-	//   name: ["must be a string (was a number)"] }
+	// { age: ["must be non-negative"],
+	//   name: ["must be a string"] }
 	flatProblemsByPath(out)
 }
 ```
 
 `ArkErrors` isn't an array. Its errors are in `issues`, so index them, iterate them or call array methods there.
 
-| member                    | what it is                                                                            |
-| ------------------------- | ------------------------------------------------------------------------------------- |
-| `issues`                  | an array with one error per path, in the order each path first failed                 |
-| `summary`, `toString()`   | every error's message, one per line                                                   |
-| `count`                   | how many errors were added, more than `issues.length` when several failed at one path |
-| `toJSON()`                | an array of each error's JSON, with its `propString`                                  |
-| `toLocaleString(locale?)` | the summary in a [locale](/docs/i18n#rendering-in-a-locale)                           |
-| `throw()`                 | throws a [`TraversalError`](#traversalerror)                                          |
+| member                    | what it is                                                         |
+| ------------------------- | ------------------------------------------------------------------ |
+| `issues`                  | an array with one error per failed check, in the order each failed |
+| `summary`, `toString()`   | every error's message, one per line                                |
+| `count`                   | how many errors were added                                         |
+| `toJSON()`                | an array of each error's JSON, with its `propString`               |
+| `toLocaleString(locale?)` | the summary in a [locale](/docs/i18n#rendering-in-a-locale)        |
+| `throw()`                 | throws a [`TraversalError`](#traversalerror)                       |
 
 `arktype` exports functions that read an `ArkErrors`, most grouping it by path:
 
 | function                   | what it returns                                                                                  |
 | -------------------------- | ------------------------------------------------------------------------------------------------ |
 | `firstIssue(out)`          | the first error in `issues`, found [without the rest](#finding-only-the-first) where it can be   |
-| `byPath(out)`              | an object mapping each path's `propString` to its error                                          |
-| `flatByPath(out)`          | like `byPath`, but each value is an array, with an `intersection` split into its errors          |
+| `byPath(out)`              | an object mapping each path's `propString` to its first error                                    |
+| `flatByPath(out)`          | like `byPath`, but each value is an array of every error at the path                             |
 | `flatProblemsByPath(out)`  | like `flatByPath`, but with each error's `problem`                                               |
 | `byAncestorPath(out)`      | each failed path and its ancestors, with `""` for the root, mapped to every error at or below it |
 | `messageIn(error, locale)` | one error's message in a [locale](/docs/i18n#rendering-in-a-locale)                              |
@@ -61,7 +61,7 @@ const User = type({ name: "string" })
 const form: Record<string, unknown> = { name: 5 }
 
 const out = User(form)
-// read now: name must be a string (was a number)
+// read now: name must be a string
 const summary = out instanceof type.errors ? out.summary : ""
 
 form.name = "Ada"
@@ -81,7 +81,7 @@ const User = type({ name: "string", age: "number >= 0" })
 
 const out = User({ name: 5, age: -1 })
 
-// age must be non-negative (was -1)
+// age must be non-negative
 if (out instanceof type.errors) console.error(firstIssue(out).message)
 ```
 
@@ -102,20 +102,19 @@ if (out instanceof type.errors) {
 	error.propString // "age"
 	error.data // -1
 	error.expected // "non-negative"
-	error.actual // "-1"
-	error.problem // "must be non-negative (was -1)"
-	error.message // "age must be non-negative (was -1)"
+	error.problem // "must be non-negative"
+	error.message // "age must be non-negative"
 
 	// narrow by code to read its own fields
 	if (error.code === "min") error.rule // 0
 }
 ```
 
-Its message is built from parts: `message` puts the path before `problem`, which reads "must be `expected` (was `actual`)". A union's or an intersection's `problem` writes the path of each error it lists from its own, and its `message` writes them whole. You can [configure each part](/docs/configuration#error-messages).
+Its message is built from parts: `message` puts the path before `problem`, which reads "must be `expected`". It doesn't say what the value was, which `data` holds, unless an [`actual`](/docs/configuration#actual) is configured, written as "(was `actual`)"; a missing key's reads "must be a string (was missing)". A union's `problem` writes the path of each error it lists from its own, and its `message` writes them whole. You can [configure each part](/docs/configuration#error-messages).
 
 An error also has `meta`, the metadata of the Type that failed, and usually a `description`. It has no methods, so `JSON.stringify(error)` serializes its own keys, and `messageIn(error, locale)` writes its message in another locale.
 
-When several checks fail at one path, they are merged into one error with the code `intersection`. `flatByPath` splits it back up:
+When several checks fail at one path, each is its own error. `flatByPath` and `flatProblemsByPath` group them by path:
 
 ```ts
 import { flatProblemsByPath, type } from "arktype"
@@ -123,12 +122,11 @@ import { flatProblemsByPath, type } from "arktype"
 const out = type({ n: "number % 2 >= 2" })({ n: 1 })
 
 if (out instanceof type.errors) {
-	// n (1) must be...
-	//   ◦ even
-	//   ◦ at least 2
+	// n must be even
+	// n must be at least 2
 	console.error(out.summary)
 
-	// { n: ["must be even (was 1)", "must be at least 2 (was 1)"] }
+	// { n: ["must be even", "must be at least 2"] }
 	flatProblemsByPath(out)
 }
 ```
@@ -153,8 +151,7 @@ An error's `code` tells you its other fields:
 | `required`                              | `missing`, the missing value's type; `valueMeta`, its meta; and `missingValueDescription`, its English description                                         |
 | `undeclared`                            | none; its `data` is the value of a key `"+": "reject"` disallows                                                                                           |
 | `discriminant`                          | `discriminantKind`, `cases`, `onKey` and `absent`                                                                                                          |
-| `union`                                 | `errors`, one per branch                                                                                                                                   |
-| `intersection`                          | `errors`, one per check that failed at the path                                                                                                            |
+| `union`                                 | `errors`, one per branch, or none where each branch fails at what it is, like `Date \| RegExp` given `1`, which expects `a Date or a RegExp`               |
 
 Each also has `data` and `path`, and `meta` unless `ctx` or `pipe.try` raised it. Built-in keywords with their own text, like `string.email`, set `meta.keyword` to their name.
 
@@ -171,7 +168,7 @@ const out = Shape({ kind: "triangle" })
 if (out instanceof type.errors) {
 	const error = out.issues[0]
 
-	// kind must be "circle" or "square" (was "triangle")
+	// kind must be "circle" or "square"
 	error.message
 
 	// ["circle", "square"]
@@ -183,7 +180,7 @@ A union reports `union` instead where its discriminant can't tell the branches a
 
 ## TraversalError
 
-`.assert`, `.from` and `ArkErrors`' `throw()` throw a `TraversalError`, which extends `Error`. A single error's message is its summary. Several are listed on their own lines after a leading newline:
+`.assert`, `.from` and `ArkErrors`' `throw()` throw a `TraversalError`, which extends `Error`. Its message is the errors' summary, one line per error:
 
 ```ts
 import { flatProblemsByPath, type, TraversalError } from "arktype"
@@ -192,7 +189,7 @@ try {
 	type({ a: "string", b: "number" }).assert({ a: 1, b: "x" })
 } catch (e) {
 	if (e instanceof TraversalError) {
-		// "\n  • a must be a string (was a number)\n  • b must be a number (was a string)"
+		// "a must be a string\nb must be a number"
 		e.message
 
 		// the ArkErrors, for structured access

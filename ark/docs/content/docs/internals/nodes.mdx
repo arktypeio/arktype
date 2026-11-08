@@ -144,7 +144,7 @@ const User = type({ name: "string" }).configure(
 	{ kind: "domain", where: d => d.domain === "string" }
 )
 
-User({ name: 5 }).toString() // "name must be a name (was a number)"
+User({ name: 5 }).toString() // "name must be a name"
 ```
 
 See [metadata](/docs/expressions#meta) for more on `configure`.

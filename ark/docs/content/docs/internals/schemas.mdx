@@ -43,7 +43,7 @@ const User = rootSchema({
 	]
 })
 
-// ArkErrors: age must be non-negative (was -1)
+// ArkErrors: age must be non-negative
 User({ name: "Ada", age: -1 })
 ```
 

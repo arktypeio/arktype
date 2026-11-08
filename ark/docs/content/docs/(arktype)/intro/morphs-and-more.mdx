@@ -14,7 +14,7 @@ const parseJson = type("string").pipe((s): object => JSON.parse(s))
 // { ark: "type" }
 const out = parseJson('{ "ark": "type" }')
 
-// ArkErrors: must be a string (was an object)
+// ArkErrors: must be a string
 const badOut = parseJson(out)
 ```
 
@@ -36,9 +36,7 @@ const parseJson = type("string").pipe.try((s): object => JSON.parse(s))
 const out = parseJson('{ unquoted: "keys" }')
 
 if (out instanceof type.errors) {
-	// ArkErrors: must be valid according to an anonymous predicate (was aborted due to error:
-	//                SyntaxError: Expected property name or '}' in JSON at position 2 (line 1 column 3)
-	//            )
+	// ArkErrors: must be valid according to an anonymous predicate (SyntaxError: Expected property name or '}' in JSON at position 2 (line 1 column 3))
 	console.error(out.summary)
 }
 ```
@@ -55,8 +53,8 @@ const parseJson = type("string.json.parse").to({
 const out = parseJson('{ "name": true, "version": "v2.0.0" }')
 
 if (out instanceof type.errors) {
-	// ArkErrors: name must be a string (was boolean)
-	//            version must be a semantic version (see https://semver.org/) (was "v2.0.0")
+	// ArkErrors: name must be a string
+	//            version must be a semantic version (see https://semver.org/)
 	console.error(out.summary)
 } else {
 	// { name: string; version: string }

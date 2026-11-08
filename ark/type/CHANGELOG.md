@@ -72,7 +72,7 @@ A validation that fails can leave writes in the objects of its input it found va
 ```ts
 const NonZero = type("number != 0")
 
-// ArkErrors: must be other than 0 (was 0)
+// ArkErrors: must be other than 0
 NonZero(0)
 ```
 
@@ -115,7 +115,7 @@ Objects with the same keys, alike but for one key's value, are one object whose 
 
 A merged `kind: "a" | "b"` still discriminates, since each value of a literal union is now a case of its own.
 
-Data invalid for a merged object is reported as for any other object rather than by the union: `{ x: 5 }` is `kind must be "a" or "b" (was missing)` and `x must be a string (was a number)`, where it was `kind must be "a" or "b" (was undefined)`. A message configured on the union now replaces only an error at the object itself, like `must be an object`, so it no longer replaces the error on `kind`.
+Data invalid for a merged object is reported as for any other object rather than by the union: `{ x: 5 }` is `kind must be "a" or "b" (was missing)` and `x must be a string`, where it was `kind must be "a" or "b" (was undefined)`. A message configured on the union now replaces only an error at the object itself, like `must be an object`, so it no longer replaces the error on `kind`.
 
 ### Reduce wide unions of objects faster
 
@@ -135,7 +135,7 @@ const User = type({
 	name: "string"
 })
 
-// ArkErrors: must be a user (was a number)
+// ArkErrors: must be a user
 User(5)
 ```
 
@@ -260,12 +260,12 @@ const out = type({ n: "number % 2" })({ n: 1 })
 
 if (out instanceof type.errors) {
 	// { data: 1, path: ["n"], code: "divisor", description: "even", meta: {}, rule: 2, propString: "n",
-	//   expected: "even", actual: "1", problem: "must be even (was 1)", message: "n must be even (was 1)" }
+	//   expected: "even", actual: "", problem: "must be even", message: "n must be even" }
 	out.issues[0]
 }
 ```
 
-`ArkErrors` was an `Array` subclass. It is now a plain class whose `issues` is a plain array with one error per path, in the order each path first failed. Indexing, iteration, `length` and array methods move to `issues`:
+`ArkErrors` was an `Array` subclass. It is now a plain class whose `issues` is a plain array with an error for each failed check, in the order each failed. Indexing, iteration, `length` and array methods move to `issues`:
 
 ```ts
 if (out instanceof type.errors) {
@@ -337,36 +337,75 @@ A Type reusing another at several keys was written out in full at each, so its `
 T.expression // { a: ...[], b: ...[], c: ...[], d: ...[], id: string }
 ```
 
-### Print objects in error messages by their kind
+### Leave the value out of error messages
 
-An error's `actual` prints an object as `an object`, an array as `an array` and a function as `a function`, where it printed an object or array as compact JSON, a Date as its date, a function as `Function(name)` and another instance by its class's name. A message no longer grows with the data, and nothing an object holds reaches a log through it. Primitives print as before, and `before`, `after`, `!=` and a Date literal, like `d'2020-01-01'` or one of `type.enumerated`'s Dates, still print the Date they rejected:
+A message no longer says what the value was. An error's `actual` is `""` for every code but `required`, whose `actual` is `missing`, so a message ends with what was expected, a missing key still says it was missing, and nothing the data holds reaches a log through a message. A Type's errors read as a [precompiled validator's](https://arktype.io/docs/precompile/validators#errors) do, which can't print the value without growing every bundle:
 
 ```ts
-// previously must be "a" or "b" (was {"x":1}), now (was an object)
+// previously must be "a" or "b" (was {"x":1}), now must be "a" or "b"
 type("'a' | 'b'")({ x: 1 })
 
-// previously must be valid according to an anonymous predicate (was [1,2]), now (was an array)
-type("number[]").narrow(() => false)([1, 2])
+// previously name must be a string (was a number), now name must be a string
+type({ name: "string" })({ name: 5 })
+
+// name must be a string (was missing), as before
+type({ name: "string" })({})
 ```
 
-A `===` unit no longer says an object it rejected serializes like its own:
+A key a union lists, like `a must be a string or b must be a number`, doesn't say it was missing. Configure `actual` to write the value where you want it, as a Type does with any writer:
+
+```ts
+// must be at most 100 (was 101)
+type("number <= 100").configure({ actual: data => `${data}` })(101)
+```
+
+A union whose every branch rejects the value by its type, class or literal at the union's own path, like `Date | RegExp`, lists what it expects as one error with no `errors` of its own, `must be a Date or a RegExp`. A `===` unit no longer says an object it rejected serializes like its own:
 
 ```ts
 // previously must be reference equal to {} (serialized to the same value)
-// now must be {} (was an object)
+// now must be {}
 type("===", {})({})
 ```
 
-`de` prints them as `ein Objekt`, `ein Array` and `eine Funktion`.
+A `pipe.try` morph that threw, `string.regex` and the keyword parse errors still say what was thrown, like `must be valid according to an anonymous predicate (SyntaxError: ...)`, since that's what explains them. A thrown value `String` can't write, like a null-prototype object, is left out, where it was printed as an object would be.
 
-### Say a length is a length when a description replaces its bound
+### Report each failed check as its own error
 
-A length bound's `actual` is the bare length, which its own text explains (`must be at least length 8 (was 1)`). Where a description or configured `expected` replaces that text, the length is now named:
+Checks failing at one path were one `intersection` error listing each, so its message spanned lines. Each is now its own error, in the order it failed, as a precompiled validator reports them:
 
 ```ts
-// previously must be a strong password (was 1), now (was length 1)
-type("string >= 8").describe("a strong password")("x")
+// previously ("") must be...
+//   ◦ matched by ^a
+//   ◦ non-empty
+// now must be matched by ^a
+//     must be non-empty
+type("string > 0 & /^a/")("")
 ```
+
+`issues` holds every error, so count them by path, not by entry. `byPath` keeps the first error at each path, and `flatByPath` and `flatProblemsByPath` list each. A `never` error at a path keeps its place beside the others there.
+
+### Write paths without `value at`
+
+A message whose path began with a bracket was prefixed with `value at`. It's now written as any other path, and a symbol key is written as `String` writes it:
+
+```ts
+// previously value at [0] must be a string, now [0] must be a string
+type("string[]")([5])
+```
+
+### Throw the errors' `summary` from `assert`
+
+The `TraversalError` `assert` and `throw()` raise has its errors' `summary` as its `message`, one line per error, where several errors were each written on a line starting with `•`, after an empty first line:
+
+```ts
+// previously "\n  • a must be a string (was missing)\n  • b must be a number (was missing)"
+// now "a must be a string (was missing)\nb must be a number (was missing)"
+type({ a: "string", b: "number" }).assert({})
+```
+
+### Write an error `ctx.reject` raises from what it was given
+
+An error `ctx.reject` or `ctx.error` raises with a `code` but no `expected` or `description` says `must be valid`, and `expected`, `actual`, `problem` or `message` keys in its `meta` are ignored, so pass them to `ctx.reject` itself. An `actual` passed to it is still written, like `must be even (was 3)`.
 
 ### Accept only plain objects and arrays in `object.json`
 
@@ -374,7 +413,7 @@ type("string >= 8").describe("a strong password")("x")
 
 ```ts
 // was: { at: Date }
-// now: ArkErrors: at must be a plain object or array (was an object)
+// now: ArkErrors: at must be a plain object or array
 type("object.json")({ at: new Date() })
 ```
 
@@ -390,7 +429,7 @@ Its values are its `jsonData` alias, so its `description` is `{ [string]: $jsonD
 
 ```ts
 // was: ArkErrors: a must be an object (was a bigint)
-// now: ArkErrors: a must be a number, a string, an object, boolean or null (was a bigint)
+// now: ArkErrors: a must be a number, a string, an object, boolean or null
 type("object.json")({ a: 1n })
 ```
 
@@ -437,7 +476,7 @@ const T = type.or(
 
 // was: ArkErrors: type must be "c" or "d" (was "e")
 //      val3 must be a number (was missing)
-// now: ArkErrors: type must be "c", "d", "a" or "b" (was "e")
+// now: ArkErrors: type must be "c", "d", "a" or "b"
 T({ type: "e" })
 ```
 
@@ -454,7 +493,7 @@ const Shape = type({ kind: "'circle'", r: "number" }).or({
 })
 
 // was: ArkErrors: kind must be "circle" or "square" (was missing)
-// now: ArkErrors: must be an object (was a number)
+// now: ArkErrors: must be an object
 Shape(5)
 
 const Event = type({ id: "0", k1: "number" })
@@ -462,11 +501,11 @@ const Event = type({ id: "0", k1: "number" })
 	.or({ name: "string" })
 
 // was: ArkErrors: name must be a string (was missing)
-// now: ArkErrors: id must be 0 or 1 (was 5) or name must be a string (was missing)
+// now: ArkErrors: id must be 0 or 1 or name must be a string (was missing)
 Event({ id: 5 })
 
 // was: ArkErrors: must be a Date (was an object)
-// now: ArkErrors: a must be 1 or 2 (was missing) or must be a Date (was an object)
+// now: ArkErrors: a must be 1 or 2 (was missing) or must be a Date
 type("Date").or({ a: "1" }).or({ a: "2" })({})
 ```
 
@@ -483,21 +522,21 @@ const sizeOf = match({
 })
 
 // was: TraversalError: must be a string or an array (was boolean)
-// now: TraversalError: must be a number, a bigint, a string or an array (was boolean)
+// now: TraversalError: must be a number, a bigint, a string or an array
 sizeOf(true)
 ```
 
-Data whose discriminant matches a value is still reported only against the branches that allow it, and a miss of a key the data could hold is still one `discriminant` error, like `kind must be "circle" or "square" (was "triangle")`.
+Data whose discriminant matches a value is still reported only against the branches that allow it, and a miss of a key the data could hold is still one `discriminant` error, like `kind must be "circle" or "square"`.
 
-Given `{ foo: null }`, `{ foo: string } | { foo: number } | { foo: Function }` says `foo must be a number, a string or an object (was null)`, where it said `foo must be an object, a number or a string (was null)`.
+Given `{ foo: null }`, `{ foo: string } | { foo: number } | { foo: Function }` says `foo must be a number, a string or an object`, where it said `foo must be an object, a number or a string (was null)`.
 
 ### Write each path a union lists as its own error would be
 
-A union failing at several paths prefixed only the first with `value at` when it began with a bracket. Each path now reads as its own error would:
+A union failing at several paths prefixed only the first with `value at` when it began with a bracket. Each path now reads as its own error would, without `value at`:
 
 ```ts
 // was: ArkErrors: value at [0] must be a number (was a string) or [1] must be a string (was a number)
-// now: ArkErrors: value at [0] must be a number (was a string) or value at [1] must be a string (was a number)
+// now: ArkErrors: [0] must be a number or [1] must be a string
 type("number[] | string[]")(["a", 1])
 ```
 
@@ -507,7 +546,7 @@ Each value a path allows is listed once, though a missing key's value is itself 
 const T = type({ a: "1 | 2", b: "string" }).or({ a: "2 | 3", c: "number" })
 
 // was: ArkErrors: a must be 1 or 2 or 2 or 3 (was missing)
-// now: ArkErrors: a must be 1, 2 or 3 (was missing)
+// now: ArkErrors: a must be 1, 2 or 3
 T({})
 ```
 
@@ -529,23 +568,22 @@ Port("99999")
 
 The output's own Type, `Port.out`, keeps its errors, description and JSON Schema.
 
-### Surface a message every failing branch or constraint was configured with
+### Surface a message every failing branch was configured with
 
-A union or intersection error was written from what its errors expected, even when each was configured with the same `message`. It now surfaces that message (#1492, #1412):
+A union error was written from what its branches expected, even when each was configured with the same `message`. It now surfaces that message (#1492, #1412):
 
 ```ts
-const Email = type("string.email > 0").configure({
-	message: "Email is not valid"
-})
+const message = "Enter an email or a phone number"
+const Contact = type("string.email")
+	.configure({ message })
+	.or(type(/^\d{7,}$/).configure({ message }))
 
-// was: ArkErrors: ("") must be...
-//        ◦ an email address
-//        ◦ non-empty
-// now: ArkErrors: Email is not valid
-Email("")
+// was: ArkErrors: what each branch expected, then (was "x")
+// now: ArkErrors: Enter an email or a phone number
+Contact("x")
 ```
 
-Errors whose messages differ, or that weren't all configured with one, are still written from what they expected, as is a union or intersection configured with a message of its own. A message `ctx.reject` supplied counts as configured.
+Branches whose messages differ, or that weren't all configured with one, are still written from what they expected, as is a union configured with a message of its own. A message `ctx.reject` supplied counts as configured. Each constraint an intersection fails is its own error with its own message, so `type("string.email > 0").configure({ message: "Email is not valid" })("")` has two errors saying `Email is not valid`.
 
 ### Keep defaults in `~standard.jsonSchema.input`
 
@@ -563,32 +601,13 @@ T["~standard"].jsonSchema.input({ target: "draft-2020-12" })
 
 Thanks to @ybai08 for #1695.
 
-### Describe what an `instanceof` check rejected as a domain check does
-
-A proto error's `actual` was a bare domain or class name, while a domain error's names the domain with an article. It now names a primitive or plain object as a domain error does. A builtin's instance is still named by its class, without an article that would be a guess:
-
-```ts
-// was: ArkErrors: must be a Date (was number)
-// now: ArkErrors: must be a Date (was a number)
-type("Date")(5)
-
-// was: ArkErrors: must be an array (was object)
-// now: ArkErrors: must be an array (was an object)
-type("string[]")({})
-
-// ArkErrors: must be a Date (was Map), as before
-type("Date")(new Map())
-```
-
-`de` already wrote these with its nouns.
-
 ### Say "an array" where a union's object branches are arrays
 
 A union discriminated by domain described its object case as `an object`, even when every branch it reached was an array. It now says `an array`, and its error's `cases` holds `"Array"` in place of `"object"`:
 
 ```ts
 // was: ArkErrors: must be a string or an object (was a number)
-// now: ArkErrors: must be a string or an array (was a number)
+// now: ArkErrors: must be a string or an array
 type("string | string[]")(5)
 ```
 
@@ -634,7 +653,7 @@ const Flag = type("'true' | 'false'")
 	.describe("boolean")
 
 // was: TraversalError: must be boolean (was false)
-// now: ParseError: Default for flag must be "false" or "true" (was false)
+// now: ParseError: Default for flag must be "false" or "true"
 type({ flag: [Flag, "=", false] })
 ```
 
@@ -810,7 +829,7 @@ const m = match
 	.default("reject")
 
 // previously b must be removed or a number (was {"a":"x","b":"y"})
-// now b must be removed or a number (was "y")
+// now b must be removed or a number
 m({ a: "x", b: "y" })
 ```
 
@@ -828,7 +847,7 @@ const out = type("number | null")("x")
 if (out instanceof type.errors) {
 	// previously "predicate", now "discriminant"
 	out.issues[0].code
-	// previously is invalid, now must be a number or null (was a string)
+	// previously is invalid, now must be a number or null
 	out.summary
 }
 ```
@@ -856,13 +875,13 @@ Configure its text with `discriminant` instead of `predicate`. Its message is un
 
 ```ts
 // previously must be "a", "b" or "c" (was "d")
-// now must be a letter (was "d")
+// now must be a letter
 type("'a' | 'b' | 'c'").configure({ expected: "a letter" })("d")
 
 const T = type({ v: Shape }).or({ v: { kind: "string >= 9" } })
 
 // previously (was {"kind":"triangle"})
-// now v.kind must be "circle", "square" or at least length 9 (was "triangle")
+// now v.kind must be "circle", "square" or at least length 9
 T({ v: { kind: "triangle" } })
 ```
 
@@ -1375,7 +1394,7 @@ const $ = scope({
 	c: { d: "even" }
 })
 
-$.export() // throws ParseError: Default for b must be valid according to an anonymous predicate (was 1)
+$.export() // throws ParseError: Default for b must be valid according to an anonymous predicate
 // previously { even, a: undefined, c: undefined }, now throws the same ParseError
 $.export()
 ```
@@ -1385,7 +1404,7 @@ $.export()
 `Date` and its bounds threw a `TypeError` validating an object like `Object.create(Date.prototype)`, since `Date.prototype`'s methods throw on it. They now reject it:
 
 ```ts
-// previously threw "this is not a Date object", now "must be a Date (was an object)"
+// previously threw "this is not a Date object", now "must be a Date"
 type("Date")(Object.create(Date.prototype))
 ```
 
@@ -1414,7 +1433,7 @@ const types = scope({
 	t: { listed: "string[]", a: "string | number", "[listed]": "string" }
 }).export()
 
-// previously parsing t threw a TypeError, now "a must be a string (was a number)"
+// previously parsing t threw a TypeError, now "a must be a string"
 types.t({ listed: ["a"], a: 1 })
 ```
 
@@ -1462,7 +1481,7 @@ const T = type({
 })
 
 // previously 'b must be a number (was a string)\na must be short (was "x")'
-// now 'a must be short (was "x")\nb must be a number (was a string)'
+// now 'a must be short\nb must be a number'
 T({ a: "x", b: "1" }).toString()
 ```
 
@@ -1484,7 +1503,7 @@ const types = scope({
 // previously true, now false
 types.union.allows({ x: { v: "a", self: { v: 1 } }, z: "z", b: "b" })
 
-// previously valid, now b must be an object (was a number)
+// previously valid, now b must be an object
 types.node({ a: 5, b: 5 }).toString()
 
 const { nested } = scope(
@@ -1706,11 +1725,11 @@ const types = scope(
 	custom
 ).export()
 
-// previously "must be a custom number (was a string)", now "must be a number (was a string)"
+// previously "must be a custom number (was a string)", now "must be a number"
 types.ref("x").toString()
-// previously "must be a number (was a string)", now "must be a custom number (was a string)"
+// previously "must be a number (was a string)", now "must be a custom number"
 types.int("x").toString()
-// previously "a must be a number (was a string)", now "a must be a custom number (was a string)"
+// previously "a must be a number (was a string)", now "a must be a custom number"
 type({ a: lib.x })({ a: "x" }).toString()
 ```
 
@@ -1778,7 +1797,7 @@ Messages, `expression` and ParseErrors print a function or symbol by its name al
 const tag = Symbol("tag")
 
 // previously "must be Symbol(tag2) (was 5)" if other symbols described as tag were named first
-// now "must be Symbol(tag) (was 5)"
+// now "must be Symbol(tag)"
 type.unit(tag)(5).toString()
 
 // previously { $ark.tag: string }, now { Symbol(tag): string }
@@ -1792,7 +1811,7 @@ type({ [tag]: "string" }).expression
 `number` rejects `Infinity` and `-Infinity` by default, as it already rejects `NaN` (#1598):
 
 ```ts
-// previously Infinity, now ArkErrors: must be a number (was Infinity)
+// previously Infinity, now ArkErrors: must be a number
 type.number(Infinity)
 ```
 
@@ -1802,9 +1821,9 @@ Allow them everywhere with `configure({ numberAllowsInfinity: true })`, or in on
 const T = type("number | number.Infinity | number.NegativeInfinity")
 ```
 
-A type whose range already excluded an infinite value, like `number.safe`, now reports `must be a number (was Infinity)` instead of its range error.
+A type whose range already excluded an infinite value, like `number.safe`, now reports `must be a number` instead of its range error.
 
-So their output stays a `number`, `string.numeric.parse` rejects a string too large for a finite number, like `"1e400"`, with `must be finite (was "1e400")`, and `string.json.parse` rejects JSON holding one. Either parses it to `Infinity` where `numberAllowsInfinity` is configured. `string.json.parse`'s output is any JSON value, where it was declared an object or array though `"5"` parsed to `5`.
+So their output stays a `number`, `string.numeric.parse` rejects a string too large for a finite number, like `"1e400"`, with `must be finite`, and `string.json.parse` rejects JSON holding one. Either parses it to `Infinity` where `numberAllowsInfinity` is configured. `string.json.parse`'s output is any JSON value, where it was declared an object or array though `"5"` parsed to `5`.
 
 ### Remove the `clone` option
 
@@ -1915,7 +1934,7 @@ When a type's root was a morph (or a union of morphs) that returned `ArkErrors`,
 const N = type("number")
 const T = type("string").pipe(s => N(s))
 
-// previously returned ArkErrors, now throws TraversalError: must be a number (was a string)
+// previously returned ArkErrors, now throws TraversalError: must be a number
 T.assert("x")
 ```
 
@@ -1954,7 +1973,7 @@ const T = type({
 	a: type("string").pipe((s, ctx) => (ctx.error("not ok"), ctx.errors))
 })
 
-// previously ran out of memory, now a must be not ok (was "x")
+// previously ran out of memory, now a must be not ok
 T({ a: "x" }).toString()
 ```
 
@@ -1981,7 +2000,7 @@ T({ s: "b" }).toString()
 ```ts
 const s = Symbol("s")
 
-// valid, instead of ArkErrors: value at [Symbol(s)] must be removed
+// valid, instead of ArkErrors: [Symbol(s)] must be removed
 type({ "+": "reject", a: "string" })({ a: "x", [s]: 1 })
 
 // { a: "x" }, instead of { a: "x", [s]: 1 }
@@ -2036,7 +2055,7 @@ An array's length is at most 4294967295, so an integer key from 4294967295 up is
 ```ts
 const T = type("string[]").onUndeclaredKey("reject")
 
-// previously valid, now ArkErrors: value at ["4294967295"] must be removed
+// previously valid, now ArkErrors: ["4294967295"] must be removed
 T(Object.assign(["a"], { 4294967295: "b" }))
 ```
 
@@ -2377,9 +2396,9 @@ const T = type({ x: type({ a: "string" }).or({ b: "number" }) })
 const error = T({ x: { a: 1, b: "" } }).issues[0]
 
 // previously "x.a must be a string (was a number) or x.b must be a number (was a string)"
-// now "a must be a string (was a number) or b must be a number (was a string)"
+// now "a must be a string or b must be a number"
 error.problem
-// "x.a must be a string (was a number) or x.b must be a number (was a string)", as before
+// "x.a must be a string or x.b must be a number", as before
 error.message
 ```
 
@@ -2423,7 +2442,7 @@ const User = type({ age: "number.integer" })
 const T = type({ user: { "~standard": User["~standard"] } })
 
 // previously user.age age must be an integer (was 1.5)
-// now user.age must be an integer (was 1.5)
+// now user.age must be an integer
 T({ user: { age: 1.5 } })
 ```
 
@@ -2437,7 +2456,7 @@ const T = scope({}, { jitless: true })
 	.narrow((n, ctx) => n % 2 === 0 || ctx.reject("divisible by 2"))
 	.narrow((n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3"))
 
-// previously "(1) must be...\n  ◦ divisible by 2\n  ◦ divisible by 3", now "must be divisible by 2 (was 1)"
+// previously "(1) must be...\n  ◦ divisible by 2\n  ◦ divisible by 3", now "must be divisible by 2"
 T(1).toString()
 ```
 
@@ -2450,7 +2469,7 @@ const $ = scope({}, { jitless: true })
 const T = $.type({ kind: "'a'", a: "string" }).or({ kind: "'b'", b: "number" })
 
 // previously a must be a string (was a number) or b must be a number (was missing)
-// now a must be a string (was a number)
+// now a must be a string
 T({ kind: "a", a: 1 }).toString()
 ```
 
@@ -2488,7 +2507,7 @@ const T = scope(
 ).type({ a: "string" })
 lang = "de"
 
-// previously "a must be de:string (was a number)", now "a must be en:string (was a number)"
+// previously "a must be de:string (was a number)", now "a must be en:string"
 T({ a: 5 }).toString()
 ```
 
@@ -2499,7 +2518,7 @@ A default was checked by calling its type, which applied a configured `onFail`. 
 ```ts
 const $ = scope({}, { onFail: () => 0 })
 
-// previously accepted the default, now ParseError: Default for a must be a number (was a string)
+// previously accepted the default, now ParseError: Default for a must be a number
 $.type({ a: ["number", "=", "5"] })
 ```
 
@@ -2511,7 +2530,7 @@ A function default was called once while its type was defined, to check its resu
 const T = type({ count: ["number", "=", () => readCount()] })
 
 // previously called readCount once when T was defined, now only when T({}) applies the default
-// previously { count: "3" } if readCount() returned "3", now ArkErrors: count must be a number (was a string)
+// previously { count: "3" } if readCount() returned "3", now ArkErrors: count must be a number
 T({})
 ```
 
@@ -2650,7 +2669,7 @@ The message of an error from `never` was only `never`:
 const T = type({ "files?": "never" })
 
 // was: never
-// now: files must be never (was 1)
+// now: files must be never
 T({ files: 1 }).toString()
 ```
 
@@ -2668,7 +2687,7 @@ type("string.url").description
 type("string.creditCard").description
 
 // was: must be valid according to predicate (was "é")
-// now: must be NFC-normalized unicode (was "é")
+// now: must be NFC-normalized unicode
 type("string.normalize.NFC.preformatted")("é").toString()
 ```
 
@@ -2711,13 +2730,13 @@ A described union listed its cases instead when data missed every one of them (#
 const Primitive = type("string | number").describe("a primitive")
 
 // was: must be a number or a string (was an object)
-// now: must be a primitive (was an object)
+// now: must be a primitive
 Primitive({}).toString()
 
 const AorB = type({ a: "string" }).or({ b: "number" }).describe("an a or a b")
 
 // was: a must be a string (was missing) or b must be a number (was missing)
-// now: must be an a or a b (was an object)
+// now: must be an a or a b
 AorB({}).toString()
 
 const Shape = type({ kind: "'circle'", r: "number" })
@@ -2725,11 +2744,11 @@ const Shape = type({ kind: "'circle'", r: "number" })
 	.describe("a shape")
 
 // was: kind must be "circle" or "square" (was "triangle")
-// now: must be a shape (was an object)
+// now: must be a shape
 Shape({ kind: "triangle" }).toString()
 ```
 
-Its error is at the union's own path, with the union's value as `data`. Its `(was …)` is what its branches' errors there agree on, like `3` for a described union of string lengths, or else the value's kind. Data whose discriminant matches a case is still reported against that case's branches, like `r must be a number (was missing)`.
+Its error is at the union's own path, with the union's value as `data`. Data whose discriminant matches a case is still reported against that case's branches, like `r must be a number (was missing)`.
 
 When a union isn't described but one of its branches is, a miss of the value itself lists the branches as an undiscriminated union's does:
 
@@ -2737,11 +2756,11 @@ When a union isn't described but one of its branches is, a miss of the value its
 const Count = type("string").or(type("number").describe("a count"))
 
 // was: must be a number or a string (was an object)
-// now: must be a count or a string (was an object)
+// now: must be a count or a string
 Count({}).toString()
 ```
 
-A miss at a key of a union whose branches alone are described still lists the key's cases, like `kind must be "circle" or "square" (was "triangle")`, as an undiscriminated union lists its branches' errors at the key.
+A miss at a key of a union whose branches alone are described still lists the key's cases, like `kind must be "circle" or "square"`, as an undiscriminated union lists its branches' errors at the key.
 
 ### Name the comparator missing its right operand
 
@@ -2758,20 +2777,6 @@ type("5 <")
 ```
 
 The type error for `"number >="` is the same message, where it was a union of keyword completions.
-
-### Write constraints described alike once
-
-An intersection error listed each failed constraint's description, so constraints under one configured description repeated it (#1412). Each description is now listed once, and a single one is written as a plain `must be`:
-
-```ts
-const Email = type("string.email > 0", "@", "Email is not valid")
-
-// was: ("") must be...
-//   ◦ Email is not valid
-//   ◦ Email is not valid
-// now: must be Email is not valid (was "")
-Email("").toString()
-```
 
 ### Reject a generic definition at a parameterized scope key
 
@@ -2886,21 +2891,6 @@ A Date literal, or a range allowing one Date, threw a RangeError for an invalid 
 type("d'2000-01-01'").allows(new Date(NaN))
 ```
 
-### Say a missing discriminant key "was missing"
-
-A discriminated union's error for a key the data lacks reads `(was missing)`, as a required key's does:
-
-```ts
-const Shape = type({ kind: "'circle'", r: "number" }).or({
-	kind: "'square'",
-	side: "number"
-})
-
-// previously kind must be "circle" or "square" (was undefined)
-// now kind must be "circle" or "square" (was missing)
-Shape({}).toString()
-```
-
 ### Read `string.date.iso.parse`'s dates in UTC
 
 `string.date.iso.parse` reads an ISO date or date-time without an offset as UTC, so one string is one instant on every machine, where it read them in local time. Week dates, basic formats like `"20250101"`, fractional hours and hour-only offsets, which its pattern accepts but which parsed to an Invalid Date, now parse, and a date that doesn't exist fails rather than rolling over:
@@ -2915,7 +2905,7 @@ parse("2025-01-01T12:00")
 parse("20250101")
 
 // previously 2025-03-01T00:00:00.000Z
-// now ArkErrors: must be an ISO 8601 date or date-time (was "2025-02-29")
+// now ArkErrors: must be an ISO 8601 date or date-time
 parse("2025-02-29")
 ```
 
@@ -2927,7 +2917,7 @@ Its description, and `string.date.iso`'s, is "an ISO 8601 date or date-time", wh
 // previously 2020-01-01T17:00:00.000Z in New York, now 2020-01-01T12:00:00.000Z
 type("string.date.parse")("2020-01-01T12:00")
 
-// previously 2025-03-02T00:00:00.000Z, now ArkErrors: must be a parsable date (was "2025-02-30")
+// previously 2025-03-02T00:00:00.000Z, now ArkErrors: must be a parsable date
 type("string.date.parse")("2025-02-30")
 ```
 
@@ -2994,7 +2984,7 @@ Reading the errors of a union failing at a key like `constructor` or `toString` 
 
 ```ts
 // previously TypeError: to.push is not a function
-// now constructor must be an email address or a UUID (was "x")
+// now constructor must be an email address or a UUID
 type({ constructor: "string.email | string.uuid" })({
 	constructor: "x"
 }).toString()

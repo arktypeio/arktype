@@ -52,7 +52,7 @@ const $ = scope({
 // ---cut---
 const types = $.export()
 
-// ArkErrors: friends[1] must be a string (was a number)
+// ArkErrors: friends[1] must be a string
 types.User({ id: "99", friends: ["7", 8, "9"] })
 ```
 
@@ -129,7 +129,7 @@ const packageData: Package = {
 // arktype now depends on itself
 packageData.dependencies![0].dependencies = [packageData]
 
-// ArkErrors: contributors[0].email must be an email address (was "david@sharktypeio")
+// ArkErrors: contributors[0].email must be an email address
 types.Package(packageData)
 ```
 
@@ -296,7 +296,7 @@ const $ = scope({
 ```ts
 const $ = scope({ Even: "number % 2" }, { divisor: { expected: "even" } })
 
-// ArkErrors: must be even (was 3)
+// ArkErrors: must be even
 $.export().Even(3)
 ```
 

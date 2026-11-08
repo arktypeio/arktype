@@ -18,7 +18,7 @@ const User = type({
 const out = User({ name: "Alan", age: -1 })
 
 if (out instanceof type.errors) {
-	// age must be non-negative (was -1)
+	// age must be non-negative
 	console.error(out.summary)
 } else {
 	// { name: string; age?: number }

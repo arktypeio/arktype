@@ -63,7 +63,7 @@ const User = jsonSchemaToType({
 })
 
 User.expression // "{ name: string, age?: number % 1 >= 0 }"
-// ArkErrors: age must be an integer (was 1.5)
+// ArkErrors: age must be an integer
 User({ name: "Ada", age: 1.5 })
 ```
 
@@ -486,7 +486,7 @@ const User = jsonSchemaToType({
 
 User.expression // "{ name: string, age?: number % 1 >= 0 }"
 User({ name: "Ada" }) // { name: "Ada" }
-// ArkErrors: age must be an integer (was 1.5)
+// ArkErrors: age must be an integer
 User({ name: "Ada", age: 1.5 })
 ```
 
@@ -627,7 +627,7 @@ const Slug = {
 ```ts
 import { JsonSchemaScope } from "@ark/json-schema"
 
-// ArkErrors: minimum must be a number (was a string)
+// ArkErrors: minimum must be a number
 JsonSchemaScope.NumberSchema({ type: "number", minimum: "0" })
 ```
 
@@ -695,7 +695,7 @@ const T = jsonSchemaToType({
 })
 
 T.allows("a") // true
-// ArkErrors: must be other than 0 (was 0)
+// ArkErrors: must be other than 0
 T(0)
 ```
 

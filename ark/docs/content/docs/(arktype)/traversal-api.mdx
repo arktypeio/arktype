@@ -10,7 +10,7 @@ const Even = type("number").narrow(
 	(n, ctx) => n % 2 === 0 || ctx.mustBe("even")
 )
 
-// ArkErrors: must be even (was 3)
+// ArkErrors: must be even
 Even(3)
 ```
 
@@ -25,7 +25,7 @@ const Json = type("string").pipe((s, ctx) => {
 	}
 })
 
-// ArkErrors: must be valid JSON (was "{")
+// ArkErrors: must be valid JSON
 Json("{")
 ```
 

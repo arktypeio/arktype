@@ -33,7 +33,7 @@ const EpochMs = codec("number.integer", "Date", {
 	encode: d => d.getTime()
 })
 // ---cut---
-// ArkErrors: must be a Date (was a string)
+// ArkErrors: must be a Date
 const out = EpochMs.encode("0")
 ```
 

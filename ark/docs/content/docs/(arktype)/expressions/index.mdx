@@ -40,7 +40,7 @@ Like its TypeScript counterpart, an intersection creates a `Type` that enforces 
 // an email address at arktype.io
 const ArkEmail = type("string.email & /@arktype\\.io$/")
 
-// ArkErrors: must be matched by @arktype\.io$ (was "a@b.com")
+// ArkErrors: must be matched by @arktype\.io$
 ArkEmail("a@b.com")
 ```
 
@@ -52,7 +52,7 @@ ArkEmail("a@b.com")
 // an email address at arktype.io
 const ArkEmail = type("string.email").and(/@arktype\.io$/)
 
-// ArkErrors: must be matched by @arktype\.io$ (was "a@b.com")
+// ArkErrors: must be matched by @arktype\.io$
 ArkEmail("a@b.com")
 ```
 
@@ -64,7 +64,7 @@ ArkEmail("a@b.com")
 // an email address at arktype.io
 const ArkEmail = type(["string.email", "&", /@arktype\.io$/])
 
-// ArkErrors: must be matched by @arktype\.io$ (was "a@b.com")
+// ArkErrors: must be matched by @arktype\.io$
 ArkEmail("a@b.com")
 ```
 
@@ -76,7 +76,7 @@ ArkEmail("a@b.com")
 // an email address at arktype.io
 const ArkEmail = type("string.email", "&", /@arktype\.io$/)
 
-// ArkErrors: must be matched by @arktype\.io$ (was "a@b.com")
+// ArkErrors: must be matched by @arktype\.io$
 ArkEmail("a@b.com")
 ```
 
@@ -114,7 +114,7 @@ A union allows a value that satisfies either operand. ArkType discriminates unio
 ```ts
 const StringOrNumber = type("string | number")
 
-// ArkErrors: must be a number or a string (was boolean)
+// ArkErrors: must be a number or a string
 StringOrNumber(true)
 ```
 
@@ -125,7 +125,7 @@ StringOrNumber(true)
 ```ts
 const StringOrNumber = type.string.or(type.number)
 
-// ArkErrors: must be a number or a string (was boolean)
+// ArkErrors: must be a number or a string
 StringOrNumber(true)
 ```
 
@@ -136,7 +136,7 @@ StringOrNumber(true)
 ```ts
 const StringOrNumber = type(["string", "|", "number"])
 
-// ArkErrors: must be a number or a string (was boolean)
+// ArkErrors: must be a number or a string
 StringOrNumber(true)
 ```
 
@@ -147,7 +147,7 @@ StringOrNumber(true)
 ```ts
 const StringOrNumber = type("string", "|", "number")
 
-// ArkErrors: must be a number or a string (was boolean)
+// ArkErrors: must be a number or a string
 StringOrNumber(true)
 ```
 
@@ -273,7 +273,7 @@ const Palindrome = type("string").narrow(
 	(s, ctx) => s === [...s].reverse().join("") || ctx.mustBe("a palindrome")
 )
 
-// ArkErrors: must be a palindrome (was "arktype")
+// ArkErrors: must be a palindrome
 Palindrome("arktype")
 ```
 
@@ -288,7 +288,7 @@ const Palindrome = type([
 	(s, ctx) => s === [...s].reverse().join("") || ctx.mustBe("a palindrome")
 ])
 
-// ArkErrors: must be a palindrome (was "arktype")
+// ArkErrors: must be a palindrome
 Palindrome("arktype")
 ```
 
@@ -303,7 +303,7 @@ const Palindrome = type(
 	(s, ctx) => s === [...s].reverse().join("") || ctx.mustBe("a palindrome")
 )
 
-// ArkErrors: must be a palindrome (was "arktype")
+// ArkErrors: must be a palindrome
 Palindrome("arktype")
 ```
 
@@ -359,7 +359,7 @@ const ShortNumeric = type("string.numeric.parse").filter(
 // 123
 ShortNumeric("123")
 
-// ArkErrors: must be at most 10 characters (was "12345678901")
+// ArkErrors: must be at most 10 characters
 ShortNumeric("12345678901")
 ```
 
@@ -423,7 +423,7 @@ A morph can return `ArkErrors` to fail validation, so a `Type` works as a morph:
 // Type<(In: string) => To<number>>
 const ParseEven = type("string.numeric.parse |> number % 2")
 
-// ArkErrors: must be even (was 3)
+// ArkErrors: must be even
 ParseEven("3")
 ```
 
@@ -435,7 +435,7 @@ ParseEven("3")
 // Type<(In: string) => To<number>>
 const ParseEven = type("string.numeric.parse").to("number % 2")
 
-// ArkErrors: must be even (was 3)
+// ArkErrors: must be even
 ParseEven("3")
 ```
 
@@ -447,7 +447,7 @@ ParseEven("3")
 // Type<(In: string) => To<number>>
 const ParseEven = type(["string.numeric.parse", "|>", "number % 2"])
 
-// ArkErrors: must be even (was 3)
+// ArkErrors: must be even
 ParseEven("3")
 ```
 
@@ -459,7 +459,7 @@ ParseEven("3")
 // Type<(In: string) => To<number>>
 const ParseEven = type("string.numeric.parse", "|>", "number % 2")
 
-// ArkErrors: must be even (was 3)
+// ArkErrors: must be even
 ParseEven("3")
 ```
 
@@ -603,7 +603,7 @@ const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
 len("foo") // 3
 len([1, 2]) // 2
 
-// TraversalError: value at [0] must be a string or an array (was boolean)
+// TraversalError: [0] must be a string or an array
 len(true)
 ```
 
@@ -646,7 +646,7 @@ const SpecialString = type("string").configure({
 // .describe() is shorthand for a description
 const SpecialNumber = type("number").describe("a special number")
 
-// ArkErrors: must be a special number (was a string)
+// ArkErrors: must be a special number
 SpecialNumber("five")
 ```
 
@@ -666,7 +666,7 @@ const SpecialString = type([
 // a string is shorthand for a description
 const SpecialNumber = type(["number", "@", "a special number"])
 
-// ArkErrors: must be a special number (was a string)
+// ArkErrors: must be a special number
 SpecialNumber("five")
 ```
 
@@ -682,7 +682,7 @@ const SpecialString = type("string", "@", {
 // a string is shorthand for a description
 const SpecialNumber = type("number", "@", "a special number")
 
-// ArkErrors: must be a special number (was a string)
+// ArkErrors: must be a special number
 SpecialNumber("five")
 ```
 
@@ -698,7 +698,7 @@ const User = type({
 	name: "string"
 })
 
-// ArkErrors: must be a user (was a number)
+// ArkErrors: must be a user
 User(5)
 ```
 
@@ -721,7 +721,7 @@ const Point = type({
 	"domain"
 )
 
-// ArkErrors: x must be a coordinate (was a string)
+// ArkErrors: x must be a coordinate
 Point({ x: "1", y: 2 })
 ```
 
@@ -741,7 +741,7 @@ const Point = type([
 	"domain"
 ])
 
-// ArkErrors: x must be a coordinate (was a string)
+// ArkErrors: x must be a coordinate
 Point({ x: "1", y: 2 })
 ```
 
@@ -761,7 +761,7 @@ const Point = type(
 	"domain"
 )
 
-// ArkErrors: x must be a coordinate (was a string)
+// ArkErrors: x must be a coordinate
 Point({ x: "1", y: 2 })
 ```
 

@@ -16,7 +16,7 @@ const User = type({
 const out = User({ name: "Alan", age: 41.5 })
 
 if (out instanceof type.errors) {
-	// age must be an integer (was 41.5)
+	// age must be an integer
 	console.error(out.summary)
 } else {
 	// out is { name: string; age: number }
@@ -34,7 +34,7 @@ const Form = type({ age: "string.numeric.parse" })
 // { age: 41 }
 Form({ age: "41" })
 
-// ArkErrors: age must be a well-formed numeric string (was "forty")
+// ArkErrors: age must be a well-formed numeric string
 Form({ age: "forty" })
 ```
 
@@ -48,7 +48,7 @@ const Form = type({ age: "string.numeric.parse" })
 // { age: 41 }
 const form = Form.assert({ age: "41" })
 
-// TraversalError: age must be a well-formed numeric string (was "forty")
+// TraversalError: age must be a well-formed numeric string
 Form.assert({ age: "forty" })
 ```
 
@@ -95,7 +95,7 @@ const AtLeast6 = type("string.numeric.parse").to("number >= 6")
 // true, since "3" is a numeric string
 AtLeast6.allows("3")
 
-// ArkErrors: must be at least 6 (was 3)
+// ArkErrors: must be at least 6
 AtLeast6("3")
 ```
 
@@ -109,7 +109,7 @@ const User = type({ name: "string", age: "number" })
 const result = await User["~standard"].validate({ name: "David", age: "34" })
 
 if (result.issues) {
-	// must be a number (was a string)
+	// must be a number
 	console.log(result.issues[0].message)
 } else {
 	// { name: string; age: number }
