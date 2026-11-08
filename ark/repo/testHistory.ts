@@ -31,7 +31,10 @@ const chainLength = Number(opts.chain)
 const files =
 	positionals.length ? positionals : (
 		globSync(
-			"ark/{fast-check,json-schema,regex,schema,sets,type}/__tests__/**/*.test.ts"
+			"ark/{fast-check,json-schema,regex,schema,sets,type}/__tests__/**/*.test.ts",
+			// the worker sets $ark.eagerTypes, so what this suite asserts about
+			// building a Type at its first read can't hold there
+			{ exclude: ["ark/type/__tests__/deferred.test.ts"] }
 		).sort()
 	)
 
