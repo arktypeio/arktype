@@ -251,7 +251,14 @@ const innerToJsonSchemaByKind: {
 } = {
 	alias: (node, ctx) => toJsonSchemaRecurse(node.resolution, ctx),
 	union: (node, ctx) => {
-		const branchGroups = branchGroupsOf(node)
+		let branchGroups = branchGroupsOf(node)
+		// JSON has no undefined, so no input can match an undefined branch,
+		// and an input schema is exactly what's left without it. Output and
+		// root schemas keep it for fallback.unit: data with an undefined
+		// required key serializes without that key, which no schema listing
+		// it in required accepts.
+		if (ctx.io === "in")
+			branchGroups = branchGroups.filter(group => !group.hasUnit(undefined))
 		const nonNull = branchGroups.filter(branch => !branch.hasUnit(null))
 		return nonNull.length === branchGroups.length ?
 				branchGroupsToJsonSchema(node, branchGroups, ctx)

@@ -353,6 +353,33 @@ contextualize(() => {
 		)
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1462
+	it("an input schema drops undefined, which JSON can't send", () => {
+		const T = type({
+			a: "string | undefined",
+			b: "(number | undefined)[]",
+			c: "boolean | null | undefined"
+		})
+		attest(T["~standard"].jsonSchema.input({ target: "draft-2020-12" })).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			properties: {
+				a: { type: "string" },
+				b: { type: "array", items: { type: "number" } },
+				c: { anyOf: [{ type: "boolean" }, { type: "null" }] }
+			},
+			required: ["a", "b", "c"]
+		})
+		// serialized output can drop a's key, so required can't describe it
+		attest(
+			T["~standard"].jsonSchema.output({ target: "draft-2020-12" }).properties
+		).snap({
+			a: { anyOf: [{ type: "string" }, {}] },
+			b: { type: "array", items: { anyOf: [{ type: "number" }, {}] } },
+			c: { anyOf: [{}, { type: "boolean" }, { type: "null" }] }
+		})
+	})
+
 	it("fits JSONSchema7 and Record<string, unknown> without a cast", () => {
 		const schema = type({ a: "string[]", "b?": "1 | 2" }).toJsonSchema({
 			target: "draft-07"
