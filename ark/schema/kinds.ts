@@ -1,10 +1,8 @@
 import {
 	domainDescriptions,
-	domainOf,
 	flatMorph,
 	objectKindDescriptions,
 	printable,
-	printKind,
 	withAlphabetizedKeys,
 	type array
 } from "@ark/util"
@@ -123,15 +121,6 @@ const listCases: Locale.ExpectedWriter<"discriminant"> = (e, locale) =>
 		:	e.cases.map(unit => printable(unit, { ownDataOnly: true }))
 	)
 
-const describeDiscriminant: Locale.ActualWriter<"discriminant"> = (
-	data,
-	e,
-	locale
-) =>
-	e.absent ? "missing"
-	: e.discriminantKind === "domain" ? locale.nouns[domainOf(data)]
-	: printKind(data)
-
 export const en: Locale.Complete = {
 	...(flatMorph(nodeImplementationsByKind, (kind, { ownErr, defaults }) =>
 		ownErr ? [kind, enWritersOf(kind, defaults)] : []
@@ -143,7 +132,7 @@ export const en: Locale.Complete = {
 	discriminant: {
 		expected: listCases,
 		problem: errorWriters.problem,
-		actual: describeDiscriminant
+		actual: errorWriters.actual
 	},
 	...enInfo,
 	cite: text => text,
@@ -160,7 +149,8 @@ export const en: Locale.Complete = {
 		never: "never"
 	},
 	keywordPhrases: {},
-	actual: errorWriters.actual,
+	// what a value was isn't written, as a standalone validator's text doesn't
+	actual: () => errorWriters.actual,
 	problem: errorWriters.problem,
 	message: errorWriters.message
 }

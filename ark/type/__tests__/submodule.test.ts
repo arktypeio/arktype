@@ -102,9 +102,7 @@ contextualize.each(
 			attest(dateFrom("05-21-1993")).instanceOf(Date)
 			attest(dateFrom(new Date())).instanceOf(Date)
 
-			attest(dateFrom("foobar").toString()).snap(
-				'must be a parsable date (was "foobar")'
-			)
+			attest(dateFrom("foobar").toString()).snap("must be a parsable date")
 		})
 
 		it("allows unbound module in scope", () => {

@@ -100,7 +100,7 @@ contextualize(() => {
 
 		attest<[string, number]>(T.t)
 		attest(T.expression).snap("[string, number]")
-		attest(T(["foo"]).toString()).snap("must be exactly length 2 (was 1)")
+		attest(T(["foo"]).toString()).snap("must be exactly length 2")
 	})
 
 	it("empty tuple", () => {

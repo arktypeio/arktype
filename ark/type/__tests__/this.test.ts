@@ -94,7 +94,7 @@ contextualize(() => {
 		attest(T({ a: "foo" })).snap({ a: "foo" })
 		attest(T({ b: { a: "bar" } })).snap({ b: { a: "bar" } })
 		attest(T({ b: { b: {} } }).toString()).snap(
-			"a must be a string (was missing), b.a must be a string (was missing), b.b.a must be a string (was missing) or b.b.b must be an object (was missing)"
+			"a must be a string, b.a must be a string, b.b.a must be a string or b.b.b must be an object"
 		)
 	})
 
@@ -106,7 +106,7 @@ contextualize(() => {
 		attest(T({ a: "foo" })).snap({ a: "foo" })
 		attest(T({ b: { a: "bar" } })).snap({ b: { a: "bar" } })
 		attest(T({ b: { b: {} } }).toString()).snap(
-			"a must be a string (was missing), b.a must be a string (was missing), b.b.a must be a string (was missing) or b.b.b must be an object (was missing)"
+			"a must be a string, b.a must be a string, b.b.a must be a string or b.b.b must be an object"
 		)
 	})
 
@@ -127,7 +127,7 @@ contextualize(() => {
 			children: [{ name: "b" }]
 		})
 		attest(T({ name: "a", children: [{ name: 5 as never }] }).toString()).snap(
-			"children[0].name must be a string (was a number)"
+			"children[0].name must be a string"
 		)
 	})
 
@@ -156,7 +156,7 @@ contextualize(() => {
 			children: [{ name: "b" }]
 		})
 		attest(T({ name: "a", children: [{ name: 5 }] }).toString()).snap(
-			"children[0].name must be a string (was a number)"
+			"children[0].name must be a string"
 		)
 	})
 
@@ -165,7 +165,7 @@ contextualize(() => {
 
 		attest(T.t).type.toString.snap("{ name: string; children?: cyclic[] }")
 		attest(T({ name: "a", children: [{ name: 5 }] }).toString()).snap(
-			"children[0].name must be a string (was a number)"
+			"children[0].name must be a string"
 		)
 	})
 
@@ -179,7 +179,7 @@ contextualize(() => {
 			children: { b: { name: "b" } }
 		})
 		attest(T({ name: "a", children: { b: { name: 5 } } }).toString()).snap(
-			"children.b.name must be a string (was a number)"
+			"children.b.name must be a string"
 		)
 	})
 
@@ -191,7 +191,7 @@ contextualize(() => {
 
 		attest(T.allows({ name: "a", child: { name: "b" } })).equals(true)
 		attest(T({ name: "a", child: { name: 5 } }).toString()).snap(
-			"child.name must be a string (was a number)"
+			"child.name must be a string"
 		)
 	})
 
@@ -206,7 +206,7 @@ contextualize(() => {
 			next: { name: "b" }
 		})
 		attest(T({ name: "a", next: '{"name":1}' }).toString()).snap(
-			"next.name must be a string (was a number)"
+			"next.name must be a string"
 		)
 	})
 

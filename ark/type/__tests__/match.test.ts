@@ -39,7 +39,7 @@ contextualize(() => {
 		const getBad = () => sizeOf(true)
 		attest<() => never>(getBad)
 		attest(getBad).throws.snap(
-			"TraversalError: must be a number, a bigint, a string or an array (was boolean)"
+			"TraversalError: must be a number, a bigint, a string or an array"
 		)
 	})
 
@@ -97,7 +97,7 @@ contextualize(() => {
 		const getBad = () => matcher(null)
 		attest<() => never>(getBad)
 		attest(getBad).throws.snap(
-			"TraversalError: must be a string, a number or boolean (was null)"
+			"TraversalError: must be a string, a number or boolean"
 		)
 	})
 
@@ -206,7 +206,7 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => matcher(true))
-			.throws.snap("TraversalError: must be a string or a number (was boolean)")
+			.throws.snap("TraversalError: must be a string or a number")
 			.type.errors(
 				"Argument of type 'boolean' is not assignable to parameter of type 'string | number'"
 			)
@@ -228,7 +228,7 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => matcher(true))
-			.throws.snap("TraversalError: must be a number or a string (was boolean)")
+			.throws.snap("TraversalError: must be a number or a string")
 			.type.errors(
 				"Argument of type 'boolean' is not assignable to parameter of type 'string | number'"
 			)
@@ -335,7 +335,7 @@ contextualize(() => {
 
 			// @ts-expect-error
 			attest(() => m({}))
-				.throws.snap("TraversalError: n must be 0 or 1 (was missing)")
+				.throws.snap("TraversalError: n must be 0 or 1")
 				.type.errors.snap(
 					"Argument of type '{}' is not assignable to parameter of type '{ n: 0; } | { n: 1; }'."
 				)
@@ -530,7 +530,7 @@ contextualize(() => {
 		}>(T.t)
 		attest(T.expression).snap("{ foo: (In: string) => Out<unknown> }")
 		attest(T({ foo: "foo" })).equals({ foo: 3 })
-		attest(T({ foo: 5 }).toString()).snap("foo must be a string (was a number)")
+		attest(T({ foo: 5 }).toString()).snap("foo must be a string")
 	})
 
 	it("morph key", () => {
@@ -740,7 +740,7 @@ contextualize(() => {
 		attest(b).equals(3)
 		// @ts-expect-error
 		attest(() => discriminateValue({ oneValue: 3 }))
-			.throws.snap("TraversalError: id must be 1 or 2 (was missing)")
+			.throws.snap("TraversalError: id must be 1 or 2")
 			.type.errors("Property 'id' is missing in type '{ oneValue: number; }'")
 	})
 
@@ -754,7 +754,7 @@ contextualize(() => {
 		attest(m("foo")).equals(3)
 		attest(m(3)).equals(3)
 		// can access directly since it has no overlap with input
-		attest(m(null).summary).snap("must be a string or a number (was null)")
+		attest(m(null).summary).snap("must be a string or a number")
 	})
 
 	it("docs example 2", () => {
@@ -770,7 +770,7 @@ contextualize(() => {
 		attest(sizeOf("abc")).equals(3)
 		attest(sizeOf({ name: "David", length: 5 })).equals(5)
 		attest(() => sizeOf(null)).throws.snap(
-			"TraversalError: must be a string, a number, a bigint or an object (was null)"
+			"TraversalError: must be a string, a number, a bigint or an object"
 		)
 	})
 
@@ -795,7 +795,7 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(exclaimFoo({ foo: 5 }).toString())
-			.snap("foo must be a string (was a number)")
+			.snap("foo must be a string")
 			.type.errors("Type 'number' is not assignable to type 'string'")
 	})
 
@@ -818,7 +818,7 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => fooToLength({ foo: 5 }))
-			.throws("foo must be a string (was a number)")
+			.throws("foo must be a string")
 			.type.errors("Type 'number' is not assignable to type 'string'")
 	})
 
@@ -875,7 +875,7 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => discriminate({ kind: "d", value: "d" }))
-			.throws.snap('TraversalError: kind must be "a", "b" or "c" (was "d")')
+			.throws.snap('TraversalError: kind must be "a", "b" or "c"')
 			.type.errors(`Type '"d"' is not assignable`)
 	})
 
@@ -912,9 +912,7 @@ contextualize(() => {
 		})
 		attest<"number" | ArkErrors>(kindOf("number")).equals("number")
 		attest(kindOf("string[]")).equals("string[]")
-		attest(kindOf("5").toString()).snap(
-			'must be "number" or "string[]" (was "5")'
-		)
+		attest(kindOf("5").toString()).snap('must be "number" or "string[]"')
 	})
 
 	it("string cases no default", () => {

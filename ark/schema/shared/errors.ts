@@ -1,6 +1,7 @@
 import {
 	appendStringifiedKey,
 	conflatenateAll,
+	hasOwn,
 	pathAt,
 	printSymbol,
 	stringifyPath,
@@ -26,6 +27,7 @@ import type { UndeclaredErrorContext } from "../structure/structure.ts"
 import type { NodeKind } from "./implement.ts"
 import type { Locale } from "./locale.ts"
 import { writeMessage } from "./errorWriters.ts"
+import { describeBranches } from "./utils.ts"
 import {
 	ArkErrors as BaseArkErrors,
 	messageOf,
@@ -78,23 +80,14 @@ export declare namespace ArkErrors {
 	export type Handler<returns = unknown> = (errors: ArkErrors) => returns
 }
 
-// paths are scanned rather than indexed below this many
-const maxScannedLength = 8
-
 /**
- * The errors returned by a Type on invalid input.
- *
- * Subsequent errors added at an existing path are merged into an
- * intersection error.
+ * The errors returned by a Type on invalid input, one issue for each failed
+ * check in the order each failed, as a standalone validator returns them.
  */
 export class ArkErrors extends BaseArkErrors {
-	// grouped by path only when read
 	declare _: ArkError[]
-	declare private grouped: ArkError[]
-	declare private groupedCount: number
-	// errors by the string of their path, once there are enough to index
-	declare private index: Record<string, ArkError> | undefined
-	declare private written: boolean
+	// how many of the errors added have been written
+	declare private writtenCount: number
 	declare private locale: Locale | undefined
 	declare private config: ResolvedConfig
 
@@ -105,10 +98,7 @@ export class ArkErrors extends BaseArkErrors {
 
 	/** @internal resets the fields its constructor sets */
 	_init(config: ResolvedConfig): void {
-		this.grouped = []
-		this.groupedCount = 0
-		this.index = undefined
-		this.written = true
+		this.writtenCount = 0
 		this.locale = undefined
 		this.config = config
 	}
@@ -119,15 +109,15 @@ export class ArkErrors extends BaseArkErrors {
 	}
 
 	/**
-	 * One error per path, in the order each path first failed, each with its
-	 * text written in the locale selected when they were first read.
+	 * Each error, in the order it was added, with its text written in the
+	 * locale selected when they were first read.
 	 */
 	override get issues(): readonly ArkError[] {
-		const issues = this._i
-		if (this.written) return issues
-		this.written = true
+		const issues = this._
+		if (this.writtenCount === issues.length) return issues
 		const locale = this.selectedLocale
-		for (const error of issues) writeError(error, this.config, locale)
+		while (this.writtenCount < issues.length)
+			writeError(issues[this.writtenCount++], this.config, locale)
 		return issues
 	}
 
@@ -138,17 +128,10 @@ export class ArkErrors extends BaseArkErrors {
 
 	/** @internal the first of issues, found with the rest */
 	_firstGrouped(): ArkError | undefined {
-		const added = this._
-		const first = added[0]
-		// the rest are grouped only once another shares the first's path
-		if (this.groupedCount === 0 && first && isFirstAloneAtPath(added)) {
+		const first = this._[0]
+		if (first && this.writtenCount === 0)
 			writeError(first, this.config, this.selectedLocale)
-			return first
-		}
-		const grouped = this._i[0]
-		if (grouped && !this.written)
-			writeError(grouped, this.config, this.selectedLocale)
-		return grouped
+		return first
 	}
 
 	private get selectedLocale(): Locale {
@@ -162,11 +145,6 @@ export class ArkErrors extends BaseArkErrors {
 		return summarize(this.issues)
 	}
 
-	/** @internal a thrown error's message, listing each error apart */
-	get _t(): string {
-		return writeTraversalMessage(this.issues)
-	}
-
 	override toJSON(): JsonArray {
 		return this.issues.map(jsonOf)
 	}
@@ -177,7 +155,7 @@ export class ArkErrors extends BaseArkErrors {
 	toLocaleString(locale?: Locale): string {
 		// Array.prototype.toLocaleString passes each element a tag
 		if (!isLocale(locale)) return this.summary
-		return summarize(this._i.map(error => writtenIn(error, locale)))
+		return summarize(this._.map(error => writtenIn(error, locale)))
 	}
 
 	/** @internal */
@@ -197,81 +175,10 @@ export class ArkErrors extends BaseArkErrors {
 		return this.config
 	}
 
-	/** @internal the errors grouped by path, without their text */
+	/** @internal the errors, without their text */
 	get _i(): ArkError[] {
-		const added = this._
-		if (this.groupedCount === added.length) return this.grouped
-		this.written = false
-		while (this.groupedCount < added.length)
-			this.group(added[this.groupedCount++])
-		return this.grouped
+		return this._
 	}
-
-	private group(error: ArkError): void {
-		const existing = this.errorAt(error)
-		if (!existing) {
-			if (this.grouped.length) this.grouped.push(error)
-			else this.grouped = [error]
-			if (this.index) this.index[pathKeyOf(error)] = error
-			return
-		}
-		// If the existing error is an error for a value constrained to "never",
-		// then we don't want to intersect the error messages.
-		if (existing.code === "union" && existing.errors.length === 0) return
-
-		// If the new error is an error for a value constrained to "never",
-		// then we want to override any existing errors.
-		const errorIntersection: ArkError =
-			error.code === "union" && error.errors.length === 0 ?
-				error
-			:	stampError(
-					{
-						data: existing.data,
-						// an error added with its own path isn't at ctx.path
-						path: [...existing.path],
-						code: "intersection",
-						errors: [
-							...(existing.code === "intersection" ?
-								existing.errors
-							:	[existing]),
-							...(error.code === "intersection" ? error.errors : [error])
-						]
-					} as never,
-					this.config
-				)
-		const grouped = this.grouped
-		grouped[grouped.indexOf(existing)] = errorIntersection
-		if (this.index) this.index[pathKeyOf(error)] = errorIntersection
-	}
-
-	private errorAt(error: ArkError): ArkError | undefined {
-		const { grouped } = this
-		const { path } = error
-		if (this.index || grouped.length >= maxScannedLength) {
-			this.index ??= indexByPath(grouped)
-			const indexed = this.index[pathKeyOf(error)]
-			// distinct symbols can print alike, so an indexed error may be elsewhere
-			if (!indexed || pathEquals(indexed.path, path)) return indexed
-		}
-		// an error at an existing path usually follows the last one added
-		for (let i = grouped.length - 1; i >= 0; i--)
-			if (pathEquals(grouped[i].path, path)) return grouped[i]
-	}
-}
-
-const pathKeyOf = (error: ArkError): string =>
-	(error.propString ??= stringifyPath(error.path))
-
-const indexByPath = (issues: ArkError[]): Record<string, ArkError> => {
-	const byPath: Record<string, ArkError> = Object.create(null)
-	for (const error of issues) byPath[pathKeyOf(error)] = error
-	return byPath
-}
-
-const isFirstAloneAtPath = (errors: readonly ArkError[]) => {
-	for (let i = 1; i < errors.length; i++)
-		if (pathEquals(errors[i].path, errors[0].path)) return false
-	return true
 }
 
 // compared from the end, where paths usually differ
@@ -568,6 +475,27 @@ export class ArkTraversal extends Traversal {
 				:	{ ...input, code: "predicate" }
 			:	{ code: "predicate", expected: input }
 		if (!("data" in errCtx)) errCtx.data = this.data
+		// as a standalone validator raises it: a code of its own expects only
+		// what's supplied, not what its rule describes, and meta's text isn't
+		// written
+		if (
+			errCtx.code !== "predicate" &&
+			errCtx.expected === undefined &&
+			(errCtx as { description?: string }).description === undefined &&
+			(errCtx as { morph?: unknown }).morph === undefined
+		)
+			errCtx.expected = "valid"
+		const meta = errCtx.meta
+		if (
+			meta &&
+			(meta.expected !== undefined ||
+				meta.actual !== undefined ||
+				meta.problem !== undefined ||
+				meta.message !== undefined)
+		) {
+			const { expected, actual, problem, message, ...rest } = meta
+			errCtx.meta = rest
+		}
 		return errorFromContext(this, errCtx)
 	}
 }
@@ -602,22 +530,45 @@ export const errorFromUnion = (
 	errors: readonly ArkError[],
 	meta: ArkEnv.meta,
 	data: unknown
-): ArkError =>
-	ctx.addError(
-		stampError(
-			{
-				data,
-				path: pathAt(ctx.path),
-				code: "union",
-				errors: flattenUnion(errors),
-				meta,
-				// a description written for it is its text, as it is a standalone build's
-				...(meta.description !== undefined &&
-					meta.keyword === undefined && { description: meta.description })
-			} as never,
-			ctx.config
-		)
+): ArkError => {
+	const path = pathAt(ctx.path)
+	const flat = flattenUnion(errors)
+	// a description written for it is its text, as it is a standalone build's
+	const isDescribed =
+		meta.description !== undefined && meta.keyword === undefined
+	const atBases =
+		!isDescribed &&
+		meta.expected === undefined &&
+		meta.problem === undefined &&
+		meta.message === undefined &&
+		flat.length !== 0 &&
+		flat.every(e => failsAtBasis(e, path))
+	const error = stampError(
+		{
+			data,
+			path,
+			code: "union",
+			errors: atBases ? [] : flat,
+			// what it lists says what it expects, as a validator's, never its actual
+			meta:
+				atBases && meta.actual !== undefined ? { ...meta, actual: "" } : meta,
+			...(isDescribed && { description: meta.description })
+		} as never,
+		ctx.config
 	)
+	if (atBases) basesByUnion.set(error, flat)
+	return ctx.addError(error)
+}
+
+// a union whose every branch fails at its basis, at the union's own path,
+// holds no errors and expects what the bases are, as a standalone validator's
+const basesByUnion = new WeakMap<ArkError, readonly ArkError[]>()
+
+const failsAtBasis = (error: ArkError, path: array<PropertyKey>): boolean =>
+	(error.code === "domain" ||
+		error.code === "proto" ||
+		error.code === "unit") &&
+	pathEquals(error.path, path)
 
 /**
  * Writes an error's text in `locale`, as its errors would be written if it
@@ -855,6 +806,15 @@ const writeAtPaths = (
 	locale: Locale
 ): void => {
 	error.propString ??= stringifyPath(error.path)
+	const bases = basesByUnion.get(error)
+	if (bases && error.expected === undefined) {
+		const expected: string[] = []
+		for (const e of bases) {
+			writeError(e, config, locale)
+			if (!expected.includes(e.expected)) expected.push(e.expected)
+		}
+		error.expected = describeBranches(expected)
+	}
 	if (error.code === "union" || error.code === "intersection") {
 		for (const e of error.errors) {
 			// usually at its own path, whose string is then written once
@@ -975,7 +935,15 @@ export const unwrittenError = (
 	copy.path = prefix ? [...prefix, ...error.path] : [...error.path]
 	if (error.code === "union" || error.code === "intersection")
 		copy.errors = error.errors.map(e => unwrittenError(e, prefix, config))
-	return stampError(copy as never, config, input)
+	const stamped = stampError(copy as never, config, input)
+	const bases = basesByUnion.get(error)
+	if (bases) {
+		basesByUnion.set(
+			stamped,
+			bases.map(e => unwrittenError(e, prefix, config))
+		)
+	}
+	return stamped
 }
 
 const writtenKeys = {
@@ -1025,30 +993,26 @@ export const firstIssue = (errors: ArkErrors): ArkError =>
 	errors._first ?? errors.issues[0]
 
 /**
- * Errors by the string of their path.
+ * The first error at each path, by the string of the path.
  */
 export const byPath = (errors: ArkErrors): Record<string, ArkError> => {
 	const result: Record<string, ArkError> = Object.create(null)
-	for (const error of errors.issues) result[error.propString] = error
+	for (const error of errors.issues) result[error.propString] ??= error
 	return result
 }
 
 /**
- * {@link byPath} flattened so that each value is an array of errors at that path.
- *
- * ✅ Since "intersection" errors will be flattened to their constituent `errors`,
- * they will never be directly present in this representation.
+ * Each path's errors, by the string of the path.
  */
 export const flatByPath = (errors: ArkErrors): Record<string, ArkError[]> =>
-	recordByPath(errors, flat)
+	recordByPath(errors, error => error)
 
 /**
- * {@link byPath} flattened so that each value is an array of problem strings at that path.
+ * Each path's problems, by the string of the path.
  */
 export const flatProblemsByPath = (
 	errors: ArkErrors
-): Record<string, string[]> =>
-	recordByPath(errors, error => flat(error).map(e => e.problem))
+): Record<string, string[]> => recordByPath(errors, error => error.problem)
 
 /**
  * All path strings at which errors are present mapped to the errors occuring
@@ -1059,12 +1023,11 @@ export const byAncestorPath = (
 ): Record<string, ArkError[]> => {
 	const result: Record<string, ArkError[]> = Object.create(null)
 	for (const error of errors.issues) {
-		const errorsAtPath = flat(error)
 		let propString = ""
-		;(result[propString] ??= []).push(...errorsAtPath)
+		;(result[propString] ??= []).push(error)
 		for (const k of error.path) {
 			propString = appendStringifiedKey(propString, k)
-			;(result[propString] ??= []).push(...errorsAtPath)
+			;(result[propString] ??= []).push(error)
 		}
 	}
 	return result
@@ -1074,14 +1037,14 @@ export const byAncestorPath = (
 const recordByPath = <v>(
 	errors: ArkErrors,
 	valueOf: (error: ArkError) => v
-): Record<string, v> => {
-	const result: Record<string, v> = {}
+): Record<string, v[]> => {
+	const result: Record<string, v[]> = {}
 	for (const error of errors.issues) {
-		if (error.propString !== "__proto__")
-			result[error.propString] = valueOf(error)
+		const k = error.propString
+		if (hasOwn(result, k)) result[k].push(valueOf(error))
 		else {
-			Object.defineProperty(result, "__proto__", {
-				value: valueOf(error),
+			Object.defineProperty(result, k, {
+				value: [valueOf(error)],
 				enumerable: true,
 				writable: true,
 				configurable: true
@@ -1090,17 +1053,6 @@ const recordByPath = <v>(
 	}
 	return result
 }
-
-const flat = (error: ArkError): ArkError[] =>
-	error.code === "intersection" ? [...error.errors] : [error]
-
-const writeTraversalMessage = (issues: readonly ArkError[]): string =>
-	issues.length === 1 ?
-		issues[0].message
-	:	"\n" + issues.map(e => `  • ${indent(e)}`).join("\n")
-
-const indent = (error: ArkError): string =>
-	error.message.split("\n").join("\n  ")
 
 export interface DerivableErrorContext<
 	code extends ArkErrorCode = ArkErrorCode

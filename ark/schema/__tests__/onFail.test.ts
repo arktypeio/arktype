@@ -10,7 +10,7 @@ contextualize(() => {
 			"self"
 		)
 		attest(s(5)).equals("foo")
-		attest(s.traverse(5)?.toString()).snap("must be a string (was a number)")
+		attest(s.traverse(5)?.toString()).snap("must be a string")
 	})
 
 	it("assert always throws ArkErrors", () => {

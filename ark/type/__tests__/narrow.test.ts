@@ -16,7 +16,7 @@ contextualize(() => {
 		attest<number>(Odd.infer)
 		attest(Odd.json).equals({ domain: "number", predicate: [isOddRef] })
 		attest(Odd(1)).equals(1)
-		attest(Odd(2).toString()).snap("must be valid according to isOdd (was 2)")
+		attest(Odd(2).toString()).snap("must be valid according to isOdd")
 	})
 
 	it("error references its predicate", () => {
@@ -25,7 +25,7 @@ contextualize(() => {
 		const error = (Odd(2) as type.errors).issues[0]
 		if (error.code !== "predicate") throw new Error()
 		attest(error.predicate).is(isOdd)
-		attest(error.message).snap("must be valid according to isOdd (was 2)")
+		attest(error.message).snap("must be valid according to isOdd")
 	})
 
 	it("calls a predicate without a receiver", () => {
@@ -39,7 +39,7 @@ contextualize(() => {
 	it("implicit problem anonymous", () => {
 		const Even = type("number", ":", n => n % 2 === 0)
 		attest(Even(1).toString()).snap(
-			"must be valid according to an anonymous predicate (was 1)"
+			"must be valid according to an anonymous predicate"
 		)
 	})
 
@@ -49,7 +49,7 @@ contextualize(() => {
 			":",
 			(n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3")
 		])
-		attest(DivisibleBy3(1).toString()).snap("must be divisible by 3 (was 1)")
+		attest(DivisibleBy3(1).toString()).snap("must be divisible by 3")
 	})
 
 	it("chained narrows", () => {
@@ -65,9 +65,9 @@ contextualize(() => {
 
 		attest<number>(DivisibleBy30.t)
 
-		attest(DivisibleBy30(1).toString()).snap("must be divisible by 2 (was 1)")
-		attest(DivisibleBy30(2).toString()).snap("must be divisible by 3 (was 2)")
-		attest(DivisibleBy30(6).toString()).snap("must be divisible by 5 (was 6)")
+		attest(DivisibleBy30(1).toString()).snap("must be divisible by 2")
+		attest(DivisibleBy30(2).toString()).snap("must be divisible by 3")
+		attest(DivisibleBy30(6).toString()).snap("must be divisible by 5")
 		attest(DivisibleBy30(30)).equals(30)
 	})
 
@@ -103,9 +103,8 @@ contextualize(() => {
 			b: number
 		}>(AbEqual.infer)
 		attest(AbEqual({ a: 1, b: 1 })).equals({ a: 1, b: 1 })
-		attest(AbEqual({ a: 1, b: 2 }).toString())
-			.snap(`a must be equal to b (was an object)
-b must be equal to a (was an object)`)
+		attest(AbEqual({ a: 1, b: 2 }).toString()).snap(`a must be equal to b
+b must be equal to a`)
 	})
 
 	it("functional predicate", () => {
@@ -137,9 +136,7 @@ b must be equal to a (was an object)`)
 		])
 		attest<string>(Palindrome.t)
 		attest(Palindrome("dad")).snap("dad")
-		attest(Palindrome("david").toString()).snap(
-			'must be a palindrome (was "david")'
-		)
+		attest(Palindrome("david").toString()).snap("must be a palindrome")
 	})
 
 	it("narrows the output type of a morph", () => {
@@ -161,7 +158,7 @@ b must be equal to a (was an object)`)
 
 		attest(T("12345")).snap(5)
 		attest(T("1234").toString()).snap(
-			"must be valid according to _narrowMorphOutputNarrow (was 4)"
+			"must be valid according to _narrowMorphOutputNarrow"
 		)
 	})
 
@@ -340,7 +337,7 @@ b must be equal to a (was an object)`)
 			(v, ctx) => Array.isArray(v) || ctx.reject({ problem: "custom" })
 		)
 		attest(T(function foo() {}).toString()).snap(
-			"must be valid according to an anonymous predicate or an array (was a function)"
+			"must be valid according to an anonymous predicate or an array"
 		)
 	})
 
@@ -351,7 +348,7 @@ b must be equal to a (was an object)`)
 		)
 		const out = Odd(2)
 		input.expected = "even"
-		attest(out.toString()).snap("must be odd (was 2)")
+		attest(out.toString()).snap("must be odd")
 	})
 
 	it("unknown is narrowable", () => {
@@ -375,7 +372,7 @@ b must be equal to a (was an object)`)
 
 		attest(T({ kind: "a", value: "1" })).snap({ kind: "a", value: 1 })
 		attest(T({ kind: "a", value: "-1" }).toString()).snap(
-			"value must be positive (was -1)"
+			"value must be positive"
 		)
 	})
 
@@ -383,7 +380,7 @@ b must be equal to a (was an object)`)
 		const T = type("bigint[]").narrow(
 			(arr, ctx) => new Set(arr).size === arr.length || ctx.mustBe("unique")
 		)
-		attest(T([1n, 0n, 1n]).toString()).snap("must be unique (was an array)")
+		attest(T([1n, 0n, 1n]).toString()).snap("must be unique")
 	})
 
 	it("calls a predicate once per value", () => {
@@ -397,7 +394,7 @@ b must be equal to a (was an object)`)
 			other: type("number").narrow((n, ctx) => n > 0 || ctx.mustBe("positive"))
 		})
 		attest(T({ values: [1, -1, 2], other: 5 }).toString()).snap(
-			"values[1] must be valid according to an anonymous predicate (was -1)"
+			"values[1] must be valid according to an anonymous predicate"
 		)
 		// Allows stops at -1, then Apply checks each value once
 		attest(callCount).equals(5)
@@ -416,9 +413,7 @@ b must be equal to a (was an object)`)
 		const data = { a: "a", b: "b" }
 		attest(T(data)).is(data)
 		attest(calls.splice(0)).equals(["b"])
-		attest(T({ a: "a", b: "long" }).toString()).snap(
-			'b must be short (was "long")'
-		)
+		attest(T({ a: "a", b: "long" }).toString()).snap("b must be short")
 		attest(calls).equals(["b", "b"])
 	})
 
@@ -448,9 +443,7 @@ b must be equal to a (was an object)`)
 			),
 			z: "string < 2"
 		})
-		attest(T({ a: -1, b: "bad", z: "q" }).toString()).snap(
-			'b must be good (was "bad")'
-		)
+		attest(T({ a: -1, b: "bad", z: "q" }).toString()).snap("b must be good")
 	})
 
 	it("names a narrow that rejects every literal", () => {

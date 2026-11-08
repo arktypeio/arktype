@@ -7,8 +7,8 @@ import { run, writeFixture } from "./utils.ts"
 
 const conditions = ["ark-ts"]
 
-// each input's issues as code, path, data and expected, and their messages but
-// for what the value was, which only arktype writes; or what it's morphed to
+// each input's issues as code, path, data and expected, and their messages,
+// which a validator writes as arktype does; or what it's morphed to
 const observe = `const observed: Record<string, unknown[]> = {}
 const observe = (name: string, T: (data: unknown) => unknown, ...inputs: unknown[]) => {
 	observed[name] = inputs.map(data => {
@@ -17,7 +17,7 @@ const observe = (name: string, T: (data: unknown) => unknown, ...inputs: unknown
 			out instanceof type.errors ?
 				[
 					out.issues.map(({ code, path, data, expected }) => ({ code, path, data, expected })),
-					out.issues.map(issue => issue.message.replace(/ \\(was [^]*\\)$/, "")).join("\\n")
+					out.issues.map(issue => issue.message).join("\\n")
 				]
 			: Array.isArray(out) && "index" in out ?
 				[...out, out.index, (out as RegExpExecArray).groups]
@@ -176,7 +176,7 @@ contextualize(() => {
 						expected: "valid according to readJson"
 					}
 				],
-				"must be valid according to readJson"
+				"must be valid according to readJson (SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2))"
 			],
 			[
 				[{ code: "domain", path: [], data: 5, expected: "a string" }],
@@ -207,7 +207,7 @@ contextualize(() => {
 						expected: "valid according to an anonymous predicate"
 					}
 				],
-				"must be valid according to an anonymous predicate"
+				"must be valid according to an anonymous predicate (no)"
 			]
 		])
 	})
@@ -230,7 +230,7 @@ contextualize(() => {
 						expected: "valid according to readJson"
 					}
 				],
-				"payload must be non-empty\njson must be valid according to readJson"
+				"payload must be non-empty\njson must be valid according to readJson (SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2))"
 			],
 			[
 				[
@@ -252,7 +252,7 @@ contextualize(() => {
 						expected: "a string"
 					}
 				],
-				"payload must be a string"
+				"payload must be a string (was missing)"
 			]
 		])
 	})
@@ -265,11 +265,8 @@ contextualize(() => {
 		])
 	})
 
-	// arktype's message starts with "value at", as any does whose path starts
-	// with a bracket
 	it("a key that isn't an identifier is bracketed", () => {
-		const issuesOf = (observed: Observed) => (observed.Keyed[0] as unknown[])[0]
-		attest(issuesOf(standalone)).equals(issuesOf(arktype))
+		attest(standalone.Keyed).equals(arktype.Keyed)
 		attest(standalone.Keyed[0]).snap([
 			[{ code: "domain", path: ["first-name"], data: 1, expected: "a string" }],
 			'["first-name"] must be a string'
@@ -280,7 +277,7 @@ contextualize(() => {
 		attest(standalone.Payload[3]).equals(arktype.Payload[3])
 		attest(standalone.Payload[3]).snap([
 			[{ code: "required", path: ["payload"], data: {}, expected: "a string" }],
-			"payload must be a string"
+			"payload must be a string (was missing)"
 		])
 	})
 
@@ -297,7 +294,7 @@ contextualize(() => {
 						expected: "valid according to readJson"
 					}
 				],
-				"must be valid according to readJson"
+				"must be valid according to readJson (SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2))"
 			]
 		])
 	})

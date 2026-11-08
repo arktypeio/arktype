@@ -284,9 +284,7 @@ contextualize(() => {
 			}
 		>(T.t)
 
-		attest(T({ name: "foo" }).toString()).snap(
-			"must be an array (was an object)"
-		)
+		attest(T({ name: "foo" }).toString()).snap("must be an array")
 		const arrayWithProps = Object.assign([], { name: "foo" })
 		attest(T(arrayWithProps)).equals(arrayWithProps)
 	})

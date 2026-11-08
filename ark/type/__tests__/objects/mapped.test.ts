@@ -402,7 +402,7 @@ contextualize(() => {
 			type: [1]
 		})
 		attest(T({ name: "number", type: ["1"] }).toString()).snap(
-			"type[0] must be a number (was a string)"
+			"type[0] must be a number"
 		)
 	})
 

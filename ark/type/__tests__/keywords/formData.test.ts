@@ -46,10 +46,9 @@ contextualize(() => {
 		data.set("file", null)
 		data.append("tags", file)
 
-		attest(parseUserForm(data).toString())
-			.snap(`email must be an email address (was "david")
-file must be a File instance (was a string)
-tags[2] must be a string (was an object)`)
+		attest(parseUserForm(data).toString()).snap(`email must be an email address
+file must be a File instance
+tags[2] must be a string`)
 	})
 
 	it("keys named like Object.prototype members", () => {

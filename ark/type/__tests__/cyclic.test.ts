@@ -21,9 +21,7 @@ contextualize(() => {
 
 		nested(data)
 		attest(data).equals([[1], [2]])
-		attest(nested([[{}]]).toString()).snap(
-			"value at [0][0] must be an array (was an object)"
-		)
+		attest(nested([[{}]]).toString()).snap("[0][0] must be an array")
 	})
 
 	it("rejects an object a failed union branch reached", () => {
@@ -36,9 +34,7 @@ contextualize(() => {
 		const data = { x: { v: "a", self: { v: 1 } }, z: "z", b: "b" }
 
 		attest(types.union.allows(data)).equals(false)
-		attest(types.union(data).toString()).snap(
-			"x.self.v must be a string (was a number)"
-		)
+		attest(types.union(data).toString()).snap("x.self.v must be a string")
 	})
 
 	it("checks each primitive where it's reached", () => {
@@ -46,9 +42,7 @@ contextualize(() => {
 			.node
 
 		attest(node.allows({ a: 5, b: 5 })).equals(false)
-		attest(node({ a: 5, b: 5 }).toString()).snap(
-			"b must be an object (was a number)"
-		)
+		attest(node({ a: 5, b: 5 }).toString()).snap("b must be an object")
 	})
 
 	it("object shared by undiscriminated union", () => {
@@ -64,7 +58,7 @@ contextualize(() => {
 
 		attest(types.union.allows(data)).equals(false)
 		attest(types.union(data).toString()).equals(
-			`${path}a must be a string (was a number) or ${path}b must be a number (was a string)`
+			`${path}a must be a string or ${path}b must be a number`
 		)
 	})
 
@@ -73,7 +67,7 @@ contextualize(() => {
 		const data: { v: unknown; next?: unknown } = { v: "x" }
 		data.next = data
 
-		attest(node(data).toString()).snap("v must be a number (was a string)")
+		attest(node(data).toString()).snap("v must be a number")
 	})
 
 	it("cyclic object once through an equivalent root", () => {
@@ -99,7 +93,7 @@ contextualize(() => {
 			"v must be a number (was missing)",
 			"v must be a number (was missing)"
 		])
-		attest(String(u(r))).snap("v must be a number (was a string)")
+		attest(String(u(r))).snap("v must be a number")
 	})
 
 	it("invalid object reached by more than one path", () => {
@@ -160,15 +154,12 @@ contextualize(() => {
 		attest(cases.map(([t, data]) => [t.allows(data), String(t(data))])).snap([
 			[
 				false,
-				'dependencies[0].dependencies[0].contributors[0].email must be an email address (was "david@sharktypeio")'
+				"dependencies[0].dependencies[0].contributors[0].email must be an email address"
 			],
-			[
-				false,
-				"e0[0].e0[0].e0[0].e0[0].e0[1].v must be a number (was a string)"
-			],
-			[false, "e0[0].v must be a number (was a string)"],
-			[false, "v must be a number (was a string)"],
-			[false, "e[0].e[0].e[0].n must be a number (was a string)"]
+			[false, "e0[0].e0[0].e0[0].e0[0].e0[1].v must be a number"],
+			[false, "e0[0].v must be a number"],
+			[false, "v must be a number"],
+			[false, "e[0].e[0].e[0].n must be a number"]
 		])
 	})
 
@@ -185,7 +176,7 @@ contextualize(() => {
 			attest(types.list(data)).equals(data)
 			last.v = "x" as never
 			attest(types.list(data).toString()).equals(
-				`${"next.".repeat(length - 1)}v must be a number (was a string)`
+				`${"next.".repeat(length - 1)}v must be a number`
 			)
 		}
 		for (const length of [1000, 1001]) {
@@ -195,7 +186,7 @@ contextualize(() => {
 			attest(types.tree(data)).equals(data)
 			kids[length - 1].v = "x" as never
 			attest(types.tree(data).toString()).equals(
-				`kids[${length - 1}].v must be a number (was a string)`
+				`kids[${length - 1}].v must be a number`
 			)
 		}
 	})
@@ -292,7 +283,7 @@ contextualize(() => {
 
 		attest(T(null) === data).equals(true)
 		data.v = "x"
-		attest(T(null).toString()).snap("v must be a number (was a string)")
+		attest(T(null).toString()).snap("v must be a number")
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1630
@@ -336,7 +327,7 @@ contextualize(() => {
 
 		attest(node.allows(data)).equals(true)
 		attest(node({ ...data, nodes: [{ type: "b" }] }).toString()).snap(
-			"nodes[0].nodes must be an array (was missing) or edits must be undefined (was an object)"
+			"nodes[0].nodes must be an array or edits must be undefined"
 		)
 	})
 
@@ -355,7 +346,7 @@ contextualize(() => {
 			inner: { next: {} }
 		})
 		attest(types.box({ inner: '{ "next": { "bad": 1 } }' }).toString()).snap(
-			"inner.next must be good (was an object)"
+			"inner.next must be good"
 		)
 	})
 
@@ -374,7 +365,7 @@ contextualize(() => {
 		attest(types.box({})).equals({ inner: { v: "x" } })
 		attest(() =>
 			scope({ list: { next: "list | null = 5" } } as never).export()
-		).throws("Default for next must be an object or null (was a number)")
+		).throws("Default for next must be an object or null")
 	})
 
 	// https://github.com/arktypeio/arktype/issues/924
@@ -385,11 +376,9 @@ contextualize(() => {
 		data.next = data
 
 		attest(type({ node })({ node: data }).toString()).snap(
-			'node.kind must be "node" (was "x")'
+			'node.kind must be "node"'
 		)
-		attest(node.array()([data]).toString()).snap(
-			'value at [0].kind must be "node" (was "x")'
-		)
+		attest(node.array()([data]).toString()).snap('[0].kind must be "node"')
 	})
 
 	// https://github.com/arktypeio/arktype/issues/944
@@ -407,10 +396,10 @@ contextualize(() => {
 			b: { a: { n: 2 } }
 		})
 		attest(types.a.out({ n: 1, b: { a: { n: "2" } } }).toString()).snap(
-			"b.a.n must be a number (was a string)"
+			"b.a.n must be a number"
 		)
 		attest(types.node.out({ n: 1, next: { n: "2" } }).toString()).snap(
-			"next.n must be a number (was a string)"
+			"next.n must be a number"
 		)
 	})
 
@@ -418,7 +407,7 @@ contextualize(() => {
 		const t = type("string.json.parse |> this" as never)
 
 		attest(t(JSON.stringify(JSON.stringify([1]))).toString()).snap(
-			"must be a string (was an object)"
+			"must be a string"
 		)
 		attest(t.out.allows("x")).equals(false)
 	})
@@ -436,7 +425,7 @@ contextualize(() => {
 			"next.extra must be removed"
 		)
 		attest(described({ v: "a", next: 5 }).toString()).snap(
-			"next must be a described node (was a number)"
+			"next must be a described node"
 		)
 	})
 
@@ -486,7 +475,7 @@ contextualize(() => {
 		)
 		attest(
 			String(x.onDeepUndeclaredKey("reject")({ p0: [1, { p0: [2] }] }))
-		).snap('p0["1"] must be a number (was an object)')
+		).snap('p0["1"] must be a number')
 		attest(
 			tagged.u
 				.onDeepUndeclaredKey("reject")({
@@ -799,7 +788,7 @@ contextualize(() => {
 				i1: { p2: ["a1", "=", null] },
 				a1: { "p0?": "null | i1", "p2?": "null" }
 			}).export()
-		).throws("Default for p2 must be an object (was null)")
+		).throws("Default for p2 must be an object")
 		attest(() =>
 			scope({
 				"g0<p0>": "(p0 | g0<a0>)[]",
@@ -1174,7 +1163,7 @@ contextualize(() => {
 			kids: { b: { n: "b", kids: {} } }
 		})
 		attest(node({ n: "a", kids: { b: { n: 1, kids: {} } } }).toString()).snap(
-			"kids.b.n must be a string (was a number)"
+			"kids.b.n must be a string"
 		)
 	})
 
@@ -1194,7 +1183,7 @@ contextualize(() => {
 		attest<Json>(json.infer)
 		attest(json({ a: [1, { b: null }] })).equals({ a: [1, { b: null }] })
 		attest(String(json({ a: undefined }))).snap(
-			"a must be a number, a string, an object, boolean or null (was undefined) or must be an array (was an object)"
+			"a must be a number, a string, an object, boolean or null or must be an array"
 		)
 	})
 
@@ -1209,7 +1198,7 @@ contextualize(() => {
 			"{ n: string, kids?: Partial<$partial> }"
 		)
 		attest(types.partial({ n: "a", kids: { kids: 5 } }).toString()).snap(
-			"kids.kids must be an object (was a number)"
+			"kids.kids must be an object"
 		)
 		attest(types.omitted.allows({ n: "a", kids: { n: 1, kids: {} } })).equals(
 			true
@@ -1230,9 +1219,7 @@ contextualize(() => {
 		}).export()
 
 		attest(types.a.expression).snap("{ y?: g<$a> }")
-		attest(String(types.a({ y: { x: 5 } }))).snap(
-			"y.x must be an object (was a number)"
-		)
+		attest(String(types.a({ y: { x: 5 } }))).snap("y.x must be an object")
 		attest(() =>
 			scope({
 				// @ts-expect-error
@@ -1282,7 +1269,7 @@ contextualize(() => {
 			types
 				.strings({ value: "a", next: { value: "b", next: { value: 1 } } })
 				.toString()
-		).snap("next.next.value must be a string (was a number)")
+		).snap("next.next.value must be a string")
 		attest(types.alternate("'off'", "'on'")).is(alternate)
 		attest(alternate.expression).snap(
 			'{ order: ["off", "on"], swap?: { order: ["on", "off"], swap?: alternate<"off", "on"> } }'
@@ -1292,8 +1279,8 @@ contextualize(() => {
 				order: ["off", "on"],
 				swap: { order: ["on", "off"], swap: { order: ["on", "off"] } }
 			}).toString()
-		).snap(`swap.swap.order[0] must be "off" (was "on")
-swap.swap.order[1] must be "on" (was "off")`)
+		).snap(`swap.swap.order[0] must be "off"
+swap.swap.order[1] must be "on"`)
 	})
 
 	it("generic instantiated as another in any order", () => {
@@ -1312,9 +1299,7 @@ swap.swap.order[1] must be "on" (was "off")`)
 		const data = { p1: { p1: { p0: 1 } } }
 
 		attest(first.a3.equals(last.a3)).equals(true)
-		attest(String(first.a3(data))).snap(
-			"p1.p1.p0 must be an object (was a number)"
-		)
+		attest(String(first.a3(data))).snap("p1.p1.p0 must be an object")
 		attest(String(last.a3(data))).equals(String(first.a3(data)))
 	})
 
@@ -1350,7 +1335,7 @@ swap.swap.order[1] must be "on" (was "off")`)
 			next: { value: 1 }
 		})
 		attest(root({ value: 0, next: { value: "1" } }).toString()).snap(
-			"next.value must be a number (was a string)"
+			"next.value must be a number"
 		)
 	})
 
@@ -1402,7 +1387,7 @@ swap.swap.order[1] must be "on" (was "off")`)
 		} as never).export() as never
 
 		attest(a.expression).snap("{ [string]: $a }")
-		attest(String(a({ x: 1 }))).snap("x must be an object (was a number)")
+		attest(String(a({ x: 1 }))).snap("x must be an object")
 		attest(list.a.expression).snap("$a[]")
 		attest(list.a.allows([[[]]])).equals(true)
 	})
@@ -1502,7 +1487,7 @@ swap.swap.order[1] must be "on" (was "off")`)
 			p: { q: {} },
 			q: { q: {} }
 		})
-		attest(String(n({ p: 5 }))).snap("p must be an object (was a number)")
+		attest(String(n({ p: 5 }))).snap("p must be an object")
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1476
@@ -1607,7 +1592,7 @@ swap.swap.order[1] must be "on" (was "off")`)
 
 		attest(t({ v: "a", next: { v: "b" } })).equals({ v: "a", next: { v: "b" } })
 		attest(t({ v: "a", next: { v: 1 } }).toString()).snap(
-			"next.v must be a string (was a number)"
+			"next.v must be a string"
 		)
 		attest("pwned" in globalThis).equals(false)
 	})

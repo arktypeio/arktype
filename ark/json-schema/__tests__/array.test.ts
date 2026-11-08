@@ -53,7 +53,7 @@ contextualize(() => {
 			maxContains: 1
 		} as never)
 		attest(() => T.assert([1, 2])).throws.snap(
-			"TraversalError: must be an array with exactly 1 item that is a number (was an array)"
+			"TraversalError: must be an array with exactly 1 item that is a number"
 		)
 	})
 
@@ -67,7 +67,7 @@ contextualize(() => {
 			])
 		).equals(true)
 		attest(() => T.assert([{ foo: "string" }, { foo: "string" }])).throws.snap(
-			"TraversalError: must be an array of unique items (was an array)"
+			"TraversalError: must be an array of unique items"
 		)
 	})
 })

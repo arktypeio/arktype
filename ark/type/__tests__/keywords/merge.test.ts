@@ -86,7 +86,7 @@ contextualize(() => {
 			.merge({ "b?": type("string").describe("an ID") })
 
 		attest<{ a?: string; b?: string }>(T.t)
-		attest(T({ b: 1 }).toString()).snap("b must be an ID (was a number)")
+		attest(T({ b: 1 }).toString()).snap("b must be an ID")
 	})
 
 	it("non-object operand", () => {

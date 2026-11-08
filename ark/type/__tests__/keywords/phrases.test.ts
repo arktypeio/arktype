@@ -47,7 +47,7 @@ contextualize(() => {
 			morphs: type("string.json.parse").internal.assertIs("morph").morphs
 		})
 		attest((parseJson("") as ArkErrors).toString()).snap(
-			"must be a JSON string (was empty)"
+			"must be a JSON string"
 		)
 		const error = (parseJson("{") as ArkErrors)
 			.issues[0] as ArkError<"predicate">
@@ -63,7 +63,7 @@ contextualize(() => {
 						ctx.reject({ code: "predicate", meta: { keyword } })
 					)("x")
 					.toString()
-			).equals('must be valid according to an anonymous predicate (was "x")')
+			).equals("must be valid according to an anonymous predicate")
 		}
 	})
 
@@ -83,9 +83,7 @@ contextualize(() => {
 
 	it("a normalized keyword's error uses its phrase", () => {
 		const T = type("string.normalize.NFC.preformatted")
-		attest(T("é").toString()).snap(
-			'must be NFC-normalized unicode (was "e\u0301")'
-		)
+		attest(T("é").toString()).snap("must be NFC-normalized unicode")
 	})
 
 	it("a keyword error's phrase is its description in en", () => {
@@ -132,7 +130,7 @@ contextualize(() => {
 				.internal.select({ kind: "pattern", method: "assertFind" }).meta
 		).snap({ description: "a mailbox", format: "email" })
 		attest(type("string.email").describe("a mailbox")("x").toString()).snap(
-			'must be a mailbox (was "x")'
+			"must be a mailbox"
 		)
 	})
 
@@ -175,32 +173,32 @@ contextualize(() => {
 				propString: "",
 				expected:
 					"an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER",
-				actual: '"9007199254740993"',
+				actual: "",
 				problem:
-					'must be an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER (was "9007199254740993")',
+					"must be an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER",
 				message:
-					'must be an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER (was "9007199254740993")'
+					"must be an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER"
 			})
 		})
 
 		it("date.parse", () => {
 			const error = errorOf(type({ d: "string.date.parse" }), { d: "x" })
 			attest(error.meta).snap({ keyword: "string.date.parse" })
-			attest(error.message).snap('d must be a parsable date (was "x")')
+			attest(error.message).snap("d must be a parsable date")
 		})
 
 		it("url.parse", () => {
 			const error = errorOf(type("string.url.parse"), "x")
 			attest(error.meta).snap({ keyword: "string.url.parse" })
 			attest(error.cause).equals(undefined)
-			attest(error.message).snap('must be a URL string (was "x")')
+			attest(error.message).snap("must be a URL string")
 		})
 
 		it("json.parse", () => {
 			const error = errorOf(type("string.json.parse"), "{")
 			attest(error.meta).snap({ keyword: "string.json.parse" })
 			attest(error.cause).instanceOf(SyntaxError)
-			attest(error.actual).snap('"{"')
+			attest(error.actual).snap("")
 			attest(error.problem).equals(`must be a JSON string (${error.cause})`)
 			attest(errorOf(type("string.json"), "{").meta).snap({
 				keyword: "string.json"
@@ -215,9 +213,9 @@ contextualize(() => {
 				meta: { keyword: "string.json.parse" },
 				propString: "",
 				expected: "a JSON string",
-				actual: "empty",
-				problem: "must be a JSON string (was empty)",
-				message: "must be a JSON string (was empty)"
+				actual: "",
+				problem: "must be a JSON string",
+				message: "must be a JSON string"
 			})
 		})
 

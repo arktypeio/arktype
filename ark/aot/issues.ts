@@ -1,4 +1,4 @@
-import { hasArkKind, type ArkError, type ArkErrors } from "@ark/schema"
+import { hasArkKind, type ArkErrors } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import type { ArkIssue } from "@ark/schema/runtime"
 
@@ -18,32 +18,10 @@ export const keptIssuesOf = (
 		.map(({ code, path, data }) => ({ code, path: [...path], data }))
 		.sort((l, r) => (sortKeyOf(l) < sortKeyOf(r) ? -1 : 1))
 
-// each issue a validator keeps
-export const keptOf = (errors: ArkErrors, grouped = true): ArkIssue[] => {
-	const added: readonly ArkIssue[] = grouped ? errors.issues : errors._
-	const issues = added.flatMap((issue): readonly ArkIssue[] =>
-		issue.code === "intersection" ?
-			(issue as ArkError<"intersection">).errors
-		:	[issue]
-	)
-	// arktype keeps one never issue per path
-	const neverByPath = new Map<string, ArkIssue>()
-	for (const issue of issues) {
-		const key = pathKeyOf(issue.path)
-		if (isNever(issue) && !neverByPath.has(key)) neverByPath.set(key, issue)
-	}
-	return issues.filter(
-		issue =>
-			!grouped || (neverByPath.get(pathKeyOf(issue.path)) ?? issue) === issue
-	)
-}
-
-// a union of no branches
-const isNever = (issue: ArkIssue) =>
-	issue.code === "union" &&
-	("errors" in issue ?
-		(issue as ArkError<"union">).errors.length === 0
-	:	issue.expected === "never" || issue.expected === undefined)
+// each issue a validator keeps, as arktype keeps every one added
+export const keptOf = (errors: ArkErrors, grouped = true): ArkIssue[] => [
+	...(grouped ? errors.issues : errors._)
+]
 
 // a TraversalError's errors, or the cause of an errors "none" assertion
 export const thrownErrorsOf = (thrown: unknown): ArkErrors | undefined =>

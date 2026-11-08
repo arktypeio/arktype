@@ -882,13 +882,10 @@ const observationsOf = (out: string): unknown[] | undefined => {
 	}
 }
 
-// a build's messages, from which a minifier renames a function and a standalone
-// validator documents dropping what a value was
+// a build's messages, from which a minifier renames a function
 const normalized = (observation: unknown) =>
 	JSON.stringify(observation)
 		?.replace(/\$ark\.\w+?\$?\d+/g, "$ark.fn")
-		.replace(/ \(was (?:[^"\\]|\\.)*?\)(?=(?:\\+n)|\\*")/g, "")
-		.replace(/value at \[/g, "[")
 		.replace(/[\w$]+\.(?=[\w$]+ is not a function)/g, "")
 		.replace(/[\w$]+(?= is not iterable)/g, "value")
 		.replace(

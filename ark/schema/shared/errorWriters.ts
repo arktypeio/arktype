@@ -1,63 +1,29 @@
-import {
-	describeCollapsibleDate,
-	domainDescriptions,
-	domainOf,
-	isDotAccessible,
-	printKind,
-	type requireKeys
-} from "@ark/util"
+import type { requireKeys } from "@ark/util"
 import type { ErrorConfig } from "../config.ts"
 import type { Declaration, Inner } from "../kinds.ts"
 import type { BaseErrorContext } from "./declare.ts"
-import type {
-	ActualWriter,
-	ArkError,
-	ArkErrorCode,
-	MessageWriter,
-	ProblemWriter
-} from "./errors.ts"
-import {
-	writeDomainActual,
-	writeLengthActual,
-	writeMinLengthActual,
-	writeNotEqualActual,
-	writeProblem,
-	writeProtoActual,
-	writeUnitActual,
-	writeUnitProblem
-} from "./enWriters.ts"
+import type { ArkErrorCode, MessageWriter, ProblemWriter } from "./errors.ts"
+import { writeProblem, writeUnitProblem } from "./enWriters.ts"
 import type { NodeKind } from "./implement.ts"
-import {
-	actualAtPathOf,
-	alternativesOf,
-	describeCause,
-	distinctExpectedOf,
-	keywordWriterOf,
-	type Locale
-} from "./locale.ts"
+import { distinctExpectedOf, keywordWriterOf, type Locale } from "./locale.ts"
+import { writeListed } from "./listed.ts"
 import { describePredicate } from "./traversal.ts"
-import { describeBranches, describeCases } from "./utils.ts"
+import { describeCases } from "./utils.ts"
 
-export const writeMessage: MessageWriter = ctx => {
-	const propString = ctx.propString
-	if (propString === "") return ctx.problem
-	// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-	return startsWithBracket(ctx.path) ?
-			`value at ${propString} ${ctx.problem}`
-		:	`${propString} ${ctx.problem}`
-}
+// a path starting with a bracket, like [0] or ["key!"], is written as is, as
+// a standalone validator writes it
+export const writeMessage: MessageWriter = ctx =>
+	ctx.propString === "" ? ctx.problem : `${ctx.propString} ${ctx.problem}`
 
-// read from the first key: indexing the string, written by concatenation, would flatten it
-const startsWithBracket = (path: readonly PropertyKey[]): boolean =>
-	typeof path[0] !== "string" || !isDotAccessible(path[0])
-
-// one writer per slot for each kind that doesn't write its own
+// one writer per slot for each kind that doesn't write its own. A message
+// doesn't say what the value was, as a standalone validator's can't without
+// shipping a printer, unless an actual is configured; a missing key's does
 export const errorWriters: {
-	actual: ActualWriter
+	actual: string
 	problem: ProblemWriter
 	message: MessageWriter
 } = {
-	actual: printKind,
+	actual: "",
 	problem: writeProblem,
 	message: writeMessage
 }
@@ -65,11 +31,11 @@ export const errorWriters: {
 export const errorWritersByCode: {
 	[code in ArkErrorCode]: errorWritersOf<code>
 } = {
-	after: { actual: describeCollapsibleDate },
-	before: { actual: describeCollapsibleDate },
+	after: {},
+	before: {},
 	divisor: {},
-	domain: { actual: writeDomainActual },
-	exactLength: { actual: writeLengthActual },
+	domain: {},
+	exactLength: {},
 	intersection: {
 		expected: source => {
 			const expected = distinctExpectedOf(source.errors)
@@ -83,33 +49,28 @@ export const errorWritersByCode: {
 			:	`(${ctx.actual}) must be...\n${ctx.expected}`
 	},
 	max: {},
-	maxLength: { actual: writeLengthActual },
+	maxLength: {},
 	min: {},
-	minLength: { actual: writeMinLengthActual },
-	notEqual: { actual: writeNotEqualActual },
-	notEqualLength: { actual: writeLengthActual },
+	minLength: {},
+	notEqual: {},
+	notEqualLength: {},
 	pattern: {},
 	// a keyword's phrase writes only the errors it raises through ctx
 	predicate: {
 		// error contexts from ctx.reject have neither a description nor a predicate
 		expected: ctx => ctx.description ?? describePredicate(ctx),
-		actual: (data, ctx, info) => {
-			const locale = info as Locale
-			const actual =
-				ctx.predicate === undefined ?
-					keywordWriterOf(ctx, locale, "actual")
-				:	undefined
-			return (
-				actual === undefined ?
-					ctx.morph ?
-						`aborted due to error:\n    ${describeCause(ctx.cause)}\n`
-					:	printKind(data)
-				: typeof actual === "string" ? actual
-				: actual(data, ctx, locale)
-			)
-		},
 		problem: (ctx, info) => {
 			const locale = info as Locale
+			// what a pipe.try morph threw is written beside what it expected
+			if (ctx.morph && ctx.cause !== undefined) {
+				try {
+					return `must be ${ctx.expected} (${String(ctx.cause)})`
+				} catch {
+					// a cause String can't write, like a null-prototype object, is
+					// left out, as a standalone validator leaves it
+					return `must be ${ctx.expected}`
+				}
+			}
 			const problem =
 				ctx.cause === undefined ?
 					undefined
@@ -121,52 +82,30 @@ export const errorWritersByCode: {
 			)
 		}
 	},
-	proto: { actual: writeProtoActual },
+	proto: {},
 	required: {
 		expected: ctx => ctx.missingValueDescription,
 		actual: () => "missing"
 	},
 	union: {
-		expected: (ctx, locale) => {
-			if (ctx.description !== undefined) return ctx.description
-			const path = ctx.errors[0]?.propString
-			// a union's branches usually fail at one path, so they needn't be grouped
-			if (ctx.errors.length && ctx.errors.every(e => e.propString === path))
-				return describeAtPath(ctx.errors, locale)
-			const errorsAtPaths: ArkError[][] = []
-			for (const error of ctx.errors) {
-				const errorsAtPath = errorsAtPaths.find(
-					errors => errors[0].propString === error.propString
-				)
-				if (errorsAtPath) errorsAtPath.push(error)
-				else errorsAtPaths.push([error])
-			}
-			return describeBranches(
-				errorsAtPaths.map(errors => describeAtPath(errors, locale))
-			)
-		},
-		// data that may be large is printed by its kind
-		actual: (data, ctx) => actualAtPathOf(ctx) ?? printKind(data),
+		// written as a standalone validator lists its branches' first issues
+		expected: ctx =>
+			ctx.description ??
+			(ctx.errors.length ? writeListed(ctx.errors) : "never"),
 		// its text is its errors', unless it has none, like never, or a description
 		problem: (ctx, info) =>
 			listsErrors(ctx) ? ctx.expected : writeProblem(ctx, info),
 		message: (ctx, info) =>
 			listsErrors(ctx) ? ctx.problem : writeMessage(ctx, info)
 	},
-	unit: {
-		actual: writeUnitActual,
-		problem: writeUnitProblem
-	},
+	unit: { problem: writeUnitProblem },
 	undeclared: {
 		expected: "removed",
 		actual: ""
 	},
 	discriminant: {
 		expected: e => e.description ?? describeCases(e),
-		actual: (data, e) =>
-			e.absent ? "missing"
-			: e.discriminantKind === "domain" ? domainDescriptions[domainOf(data)]
-			: printKind(data)
+		actual: ""
 	}
 }
 
@@ -174,36 +113,6 @@ const listsErrors = (ctx: {
 	errors: readonly unknown[]
 	description?: string
 }): boolean => ctx.errors.length !== 0 && ctx.description === undefined
-
-const describeAtPath = (
-	errors: readonly ArkError[],
-	locale: Locale.Info
-): string => {
-	const path = errors[0].propString
-	const branchesAtPath: string[] = []
-	for (const e of errors) {
-		// a standalone build's locale is en's info alone, which names no alternatives
-		const alternatives =
-			"cite" in locale ? alternativesOf(e, locale as Locale) : [e.expected]
-		for (const branch of alternatives)
-			if (!branchesAtPath.includes(branch)) branchesAtPath.push(branch)
-	}
-
-	const expected = describeBranches(branchesAtPath)
-	// if there are multiple actual descriptions that differ,
-	// just fall back to printing the data, which is the most specific
-	const firstActual = errors[0].actual
-	const actual =
-		errors.every(e => e.actual === firstActual) ? firstActual : (
-			printKind(errors[0].data)
-		)
-	// each path is written as its own error's message would write it
-	const subject =
-		path === "" ? ""
-		: path[0] === "[" ? `value at ${path} `
-		: `${path} `
-	return `${subject}must be ${expected}${actual && ` (was ${actual})`}`
-}
 
 export type errorWritersOf<code extends ArkErrorCode> = requireKeys<
 	ErrorConfig<code>,

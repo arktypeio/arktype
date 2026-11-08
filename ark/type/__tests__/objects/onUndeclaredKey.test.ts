@@ -77,7 +77,7 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 			maxLength: 1
 		})
 		attest(T([0])).equals([0])
-		attest(T([0, 1]).toString()).snap("must be at most length 1 (was 2)")
+		attest(T([0, 1]).toString()).snap("must be at most length 1")
 		const Empty = type({ "+": "reject" }).and("number[]")
 		attest(Empty.json).snap({
 			undeclared: "reject",
@@ -232,7 +232,7 @@ a.token is undeclared on a side that rejects undeclared keys.`)
 			attest(O({ a: true, b: true, c: false })).snap({ a: true, b: true })
 			// can handle missing keys
 			attest(O({ a: true }).toString()).snap(
-				"a must be a string (was boolean) or b must be true (was missing)"
+				"a must be a string or b must be true"
 			)
 		})
 
@@ -283,7 +283,7 @@ c must be removed`)
 				ordered: true
 			} as never)
 			attest((T({ a: "x", b: "y" }) as type.errors).summary).snap(
-				'b must be removed or a number (was "y")'
+				"b must be removed or a number"
 			)
 		})
 
@@ -363,9 +363,7 @@ c must be removed`)
 		it("reject array key", () => {
 			const O = type({ "+": "reject", a: "string[]" })
 			attest(O({ a: ["shawn"] })).snap({ a: ["shawn"] })
-			attest(O({ a: [2] }).toString()).snap(
-				"a[0] must be a string (was a number)"
-			)
+			attest(O({ a: [2] }).toString()).snap("a[0] must be a string")
 			attest(O({ b: ["shawn"] }).toString())
 				.snap(`a must be an array (was missing)
 b must be removed`)
@@ -389,14 +387,10 @@ b must be removed`)
 			attest(Object.keys(Deleted(greatest))).equals(["0", "4294967294"])
 			const past = listing("4294967295")
 			attest(Rejected.allows(past)).equals(false)
-			attest(Rejected(past).toString()).snap(
-				'value at ["4294967295"] must be removed'
-			)
+			attest(Rejected(past).toString()).snap('["4294967295"] must be removed')
 			attest(Deleted(past)).equals(["a"])
 			const named = Object.assign(["a"], { 4294967295: "b" })
-			attest(Rejected(named).toString()).snap(
-				'value at ["4294967295"] must be removed'
-			)
+			attest(Rejected(named).toString()).snap('["4294967295"] must be removed')
 			attest(Deleted(named)).equals(["a"])
 		})
 
@@ -437,7 +431,7 @@ b must be removed`)
 				"reject"
 			)
 			attest(O({ a: 2, b: true }).toString()).snap(
-				"a must be a string or removed (was 2)"
+				"a must be a string or removed"
 			)
 		})
 	})

@@ -46,9 +46,7 @@ contextualize(() => {
 		attest(Object.keys(refs).filter(k => refs[k].deref())).equals([])
 		const T = type({ collected: "string", n: "number > 5" })
 		attest(T({ collected: "a", n: 6 })).equals({ collected: "a", n: 6 })
-		attest(T({ collected: "a", n: 5 }).toString()).snap(
-			"n must be more than 5 (was 5)"
-		)
+		attest(T({ collected: "a", n: 5 }).toString()).snap("n must be more than 5")
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1676
@@ -92,9 +90,7 @@ contextualize(() => {
 		const ref = capture()
 		await collectTarget(ref)
 		attest(ref.deref()).equals(undefined)
-		attest(Inner({ inner: 5 }).toString()).snap(
-			"inner must be a string (was a number)"
-		)
+		attest(Inner({ inner: 5 }).toString()).snap("inner must be a string")
 	})
 
 	it("referenced this-cyclic root", async () => {
@@ -104,7 +100,7 @@ contextualize(() => {
 		await collect()
 		attest(
 			Extended({ name: "a", next: { name: "b", next: { name: 1 } } }).toString()
-		).snap("next.next.name must be a string (was a number)")
+		).snap("next.next.name must be a string")
 	})
 
 	it("keeps cyclic scope types", async () => {
@@ -112,7 +108,7 @@ contextualize(() => {
 		const types = $.export()
 		await collect()
 		attest(types.node({ value: "a", next: { value: 1 } }).toString()).snap(
-			"next.value must be a string (was a number)"
+			"next.value must be a string"
 		)
 		attest($.type("node[]")([{ value: "a", next: { value: "b" } }])).equals([
 			{ value: "a", next: { value: "b" } }

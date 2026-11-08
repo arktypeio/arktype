@@ -28,7 +28,7 @@ contextualize(() => {
 			decode: s => s.length,
 			encode: n => n as never
 		})
-		attest(Length.encode(5).toString()).snap("must be a string (was a number)")
+		attest(Length.encode(5).toString()).snap("must be a string")
 	})
 
 	it("nested", () => {
@@ -40,7 +40,7 @@ contextualize(() => {
 		})
 		attest(
 			Event.encode({ name: "launch", at: new Date(1), end: 2 }).toString()
-		).snap("end must be a Date (was a number)")
+		).snap("end must be a Date")
 	})
 
 	it("array", () => {
@@ -83,9 +83,7 @@ a must be a number (was missing)`)
 			on: 0,
 			reason: "off"
 		})
-		attest(T.encode({ on: "maybe" }).toString()).snap(
-			'on must be boolean (was "maybe")'
-		)
+		attest(T.encode({ on: "maybe" }).toString()).snap("on must be boolean")
 	})
 
 	it("cyclic", () => {
@@ -110,7 +108,7 @@ a must be a number (was missing)`)
 		const Positive = EpochMs.narrow(d => d.getTime() > 0)
 		attest(Positive.encode(new Date(1))).equals(1)
 		attest(Positive.encode(new Date(0)).toString()).snap(
-			"must be valid according to an anonymous predicate (was an object)"
+			"must be valid according to an anonymous predicate"
 		)
 	})
 
@@ -120,7 +118,7 @@ a must be a number (was missing)`)
 			encode: (n, ctx) => (n < 0n ? ctx.error("non-negative") : `${n}`)
 		})
 		attest(type({ n: Natural }).encode({ n: -1n }).toString()).snap(
-			"n must be non-negative (was -1n)"
+			"n must be non-negative"
 		)
 	})
 
@@ -180,7 +178,7 @@ a must be a number (was missing)`)
 	it("format keywords encode formatted strings", () => {
 		const T = type("string.trim")
 		attest(T.encode("a")).equals("a")
-		attest(T.encode(" a ").toString()).snap('must be trimmed (was " a ")')
+		attest(T.encode(" a ").toString()).snap("must be trimmed")
 		// a multi-line string round-trips
 		attest(T.encode(T.assert(" a\nb "))).snap("a\nb")
 	})

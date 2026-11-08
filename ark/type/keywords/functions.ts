@@ -4,7 +4,6 @@ import {
 	hasOwn,
 	isDigitCode,
 	iso8601Matcher,
-	printable,
 	type Fn,
 	type Json
 } from "@ark/util"
@@ -335,11 +334,7 @@ export const isRegexPattern = (s: string, ctx: Traversal): boolean => {
 /** en's phrases of the keywords that write the errors they raise through ctx */
 export const raisedErrorPhrases = {
 	"string.json": { noun: jsonString, problem: jsonProblem },
-	"string.json.parse": {
-		noun: jsonString,
-		actual: data => (data === "" ? "empty" : printable(data)),
-		problem: jsonProblem
-	},
+	"string.json.parse": { noun: jsonString, problem: jsonProblem },
 	"string.regex": {
 		noun: regexPattern,
 		problem: (e, locale) =>

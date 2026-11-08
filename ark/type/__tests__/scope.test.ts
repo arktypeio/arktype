@@ -261,7 +261,7 @@ contextualize(() => {
 			a: { b: "c = 1" },
 			c: { x: "a" }
 		})
-		const message = "Default for b must be an object (was a number)"
+		const message = "Default for b must be an object"
 		attest(() => $.export()).throws(message)
 		attest(() => $.export()).throws(message)
 	})
@@ -278,7 +278,7 @@ contextualize(() => {
 			c: { d: "even" }
 		})
 		const message =
-			"Default for b must be valid according to an anonymous predicate (was 1)"
+			"Default for b must be valid according to an anonymous predicate"
 		attest(() => $.export()).throws(message)
 		attest(() => $.export()).throws(message)
 		attest(() => $.export("c")).throws(message)
@@ -349,7 +349,7 @@ contextualize(() => {
 
 			attest(types.a(a)).equals(a)
 			attest(types.a({ b: { a: { b: { a: 5 } } } }).toString()).snap(
-				"b.a.b.a must be an object (was a number)"
+				"b.a.b.a must be an object"
 			)
 
 			// Type hint displays as "..." on hitting cycle (or any if "noErrorTruncation" is true)
@@ -435,7 +435,7 @@ contextualize(() => {
 			data.contributors[0].email = "ssalbdivad"
 			// https://github.com/arktypeio/arktype/issues/924
 			attest(types.package(data).toString()).snap(
-				'contributors[0].email must be an email address (was "ssalbdivad")'
+				"contributors[0].email must be an email address"
 			)
 		})
 
@@ -447,7 +447,7 @@ contextualize(() => {
 				p => !p.dependencies?.some(d => d.name === p.name)
 			])
 			attest(nonSelfDependent(data).toString()).snap(
-				"must be valid according to an anonymous predicate (was an object)"
+				"must be valid according to an anonymous predicate"
 			)
 		})
 
@@ -522,7 +522,7 @@ b.c.c must be an object (was missing)`)
 			attest(types.a(valid)).equals(valid)
 
 			attest(types.a({ b: { a: { b: { a: 4 } } } }).toString()).snap(
-				"b.a.b.a must be 3 (was 4)"
+				"b.a.b.a must be 3"
 			)
 
 			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: cyclic } }")
@@ -629,9 +629,7 @@ b.c.c must be an object (was missing)`)
 		}).export()
 		attest(types.valueOf(["a"])).equals(["a"])
 		attest(types.toLocaleString(1)).equals(1)
-		attest(types.valueOf([1]).toString()).snap(
-			"value at [0] must be a string (was a number)"
-		)
+		attest(types.valueOf([1]).toString()).snap("[0] must be a string")
 		attest(() =>
 			// @ts-expect-error
 			scope({ a: "constructor" }).export()
@@ -651,13 +649,9 @@ b.c.c must be an object (was missing)`)
 			"box<valueOf>": { v: "valueOf" },
 			x: "box<string>"
 		}).export()
-		attest(types.x({ v: 1 }).toString()).snap(
-			"v must be a string (was a number)"
-		)
+		attest(types.x({ v: 1 }).toString()).snap("v must be a string")
 		const Box = generic("toString")({ v: "toString" })
-		attest(Box("number")({ v: "a" }).toString()).snap(
-			"v must be a number (was a string)"
-		)
+		attest(Box("number")({ v: "a" }).toString()).snap("v must be a number")
 	})
 
 	it("keywords and aliases keep Object.prototype", () => {
@@ -680,9 +674,7 @@ b.c.c must be an object (was missing)`)
 
 	it("scope frozen before its first parse", () => {
 		const $ = Object.freeze(scope({}))
-		attest($.type("string")(5).toString()).snap(
-			"must be a string (was a number)"
-		)
+		attest($.type("string")(5).toString()).snap("must be a string")
 		attest($.type.and({ a: "string" }, { b: "number" }).expression).snap(
 			"{ a: string, b: number }"
 		)
@@ -696,12 +688,8 @@ b.c.c must be an object (was missing)`)
 				{ name: "frozen" }
 			)
 		) as never
-		attest(Frozen.root(5).toString()).snap(
-			"must be a frozen root (was a number)"
-		)
+		attest(Frozen.root(5).toString()).snap("must be a frozen root")
 		const parser = Object.freeze(scope({}).type)
-		attest(parser.number("x").toString()).snap(
-			"must be a number (was a string)"
-		)
+		attest(parser.number("x").toString()).snap("must be a number")
 	})
 })

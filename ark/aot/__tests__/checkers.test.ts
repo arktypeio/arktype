@@ -129,9 +129,9 @@ integer must be an integer
 even must be even
 third must be a multiple of 3
 optional must be a UUID
-id must be a string
-ip must be a string
-list must be an array
+id must be a string (was missing)
+ip must be a string (was missing)
+list must be an array (was missing)
 id must be a UUID
 ip must be an IP address
 list[0] must be a string
@@ -161,10 +161,10 @@ console.log(JSON.stringify(Unlike["~standard"].validate({ id: 1 })))
 			attest(written).equals(behaviorOf(await bundle(root)))
 			attest(written)
 				.snap(`[{"code":"union","path":["ip"],"data":"x","errors":[{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"},{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"}],"message":"ip must be an IP address","expected":"must be an IP address"}]
-[{"code":"union","path":["ip"],"data":1,"errors":[{"code":"domain","path":["ip"],"data":1,"expected":"an IP address","message":"ip must be an IP address"},{"code":"domain","path":["ip"],"data":1,"expected":"an IP address","message":"ip must be an IP address"}],"message":"ip must be an IP address","expected":"must be an IP address"}]
+[{"code":"union","path":["ip"],"data":1,"errors":[],"message":"ip must be an IP address","expected":"an IP address"}]
 [{"code":"union","path":["id"],"data":"x","errors":[{"code":"pattern","path":["id"],"data":"x","expected":"an email address","message":"id must be an email address"},{"code":"pattern","path":["id"],"data":"x","expected":"a UUID","message":"id must be a UUID"}],"message":"id must be an email address or a UUID","expected":"must be an email address or a UUID"}]
 {"issues":[{"code":"union","path":["ip"],"data":"x","errors":[{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"},{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"}],"message":"must be an IP address","expected":"must be an IP address"}]}
-{"issues":[{"code":"union","path":["id"],"data":1,"errors":[{"code":"domain","path":["id"],"data":1,"expected":"a string","message":"id must be a string"},{"code":"domain","path":["id"],"data":1,"expected":"a UUID","message":"id must be a UUID"}],"message":"must be a string or a UUID","expected":"must be a string or a UUID"}]}
+{"issues":[{"code":"union","path":["id"],"data":1,"errors":[],"message":"must be a string or a UUID","expected":"a string or a UUID"}]}
 `)
 		})
 	})
@@ -351,11 +351,11 @@ described must be long
 too short
 bare must be valid according to isLong
 missing must be valid according to isLong
-named must be a string
-anonymous must be a string
-described must be a string
-configured must be a string
-bare must be present
+named must be a string (was missing)
+anonymous must be a string (was missing)
+described must be a string (was missing)
+configured must be a string (was missing)
+bare must be present (was missing)
 `
 			attest(behaviorOf(await bundle(root))).equals(expected)
 			attest(behaviorOf(await bundle(root, smallest))).equals(expected)
@@ -438,9 +438,7 @@ console.log(String(N("x")), N.allows("x"), String(type({ a: N })({ a: "x" })), g
 			// a node's and what holds it: a unit keyed by flags arktype's node won't
 			// have is one nothing reads, so isn't written
 			attest(js.split("~arktype/units/").length - 2).equals(2)
-			attest(behaviorOf(js)).equals(
-				'must be long (was "x") false a must be long (was "x") 5\n'
-			)
+			attest(behaviorOf(js)).equals("must be long false a must be long 5\n")
 		})
 
 		itRunsAsUnproved(
@@ -573,9 +571,8 @@ const Positive = Parsed.to("number > 0")
 ${body}
 ${repaying}
 `
-		// a compiled build's messages lack what a value was, and in a lean bundle "value at"
-		const expected = (plain: string) =>
-			plain.replace(/ \(was [^)]*\)/g, "").replace(/value at \[/g, "[")
+		// a compiled build's messages are arktype's
+		const expected = (plain: string) => plain
 
 		const itRunsAsCompiled = (name: string, body: string) =>
 			it(name, async () => {
@@ -901,7 +898,7 @@ const Piped = type("string.json.parse").pipe(T)
 const show = (out: unknown) =>
 	console.log(
 		out instanceof type.errors ?
-			out.summary.replace(/ \\(was .*\\)/, "")
+			out.summary
 		:	JSON.stringify(out),
 		JSON.stringify(paths.splice(0))
 	)
@@ -957,7 +954,7 @@ run(() => Deep.allows({ a: { b: { c: { d: { e: "x" } } } } }))
 const show = (out: unknown) =>
 	console.log(
 		out instanceof type.errors ?
-			out.summary.replace(/ \\(was .*?\\)/g, "")
+			out.summary
 		:	[JSON.stringify(out), Object(out).constructor?.name, Object.keys(Object(out))]
 	)
 ${body}

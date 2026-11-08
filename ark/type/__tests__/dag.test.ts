@@ -58,16 +58,14 @@ contextualize(() => {
 		const T = levels(5)
 		attest(T(deepest(5))).equals(deepest(5))
 		attest(T(deepest(5, 0)).toString()).snap(
-			"d[0].d[0].d[0].d[0].d[0].name must be a string (was a number)"
+			"d[0].d[0].d[0].d[0].d[0].name must be a string"
 		)
 	})
 
 	it("orders the cases of a union of types reused at each level", () => {
 		const T = levels(5)
 		const Kinds = type({ kind: "'b'", b: T }).or({ kind: "'a'", a: T })
-		attest(Kinds({ kind: "c" }).toString()).snap(
-			'kind must be "a" or "b" (was "c")'
-		)
+		attest(Kinds({ kind: "c" }).toString()).snap('kind must be "a" or "b"')
 	})
 
 	it("precompiles a type reused at each level", () => {

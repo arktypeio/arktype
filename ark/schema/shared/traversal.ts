@@ -346,17 +346,30 @@ export class Traversal extends InternalTraversal {
 			],
 			data: "data" in supplied ? supplied.data : this.data,
 			// a keyword raises its errors with the description of what it checks
+			// a code of its own is written without what its rule describes
 			expected:
 				supplied.expected ??
 				supplied.description ??
 				(code === "predicate" || supplied.morph ?
 					describePredicate(supplied)
-				:	undefined)
+				:	"valid")
 		}
 		if (supplied.problem !== undefined) issue.problem = supplied.problem
-		// a keyword's phrase writes the SyntaxError it caught, as string.json's
-		else if (supplied.cause !== undefined && supplied.meta?.keyword)
-			issue.problem = `must be ${issue.expected} (${supplied.cause})`
+		// a keyword's phrase writes the SyntaxError it caught, as string.json's,
+		// and a pipe.try morph what it threw
+		else if (
+			supplied.cause !== undefined &&
+			(supplied.meta?.keyword || supplied.morph)
+		) {
+			try {
+				issue.problem = `must be ${issue.expected} (${String(supplied.cause)})`
+			} catch {
+				// a cause String can't write, like a null-prototype object, is left out
+			}
+		}
+		// what the value was is written only where it's supplied
+		else if (supplied.actual)
+			issue.problem = `must be ${issue.expected} (was ${supplied.actual})`
 		if (supplied.message !== undefined) issue.message = supplied.message
 		return this.addError(issue) as never
 	}
@@ -381,6 +394,7 @@ type SuppliedIssue = {
 	data?: unknown
 	expected?: string
 	description?: string
+	actual?: string
 	problem?: string
 	message?: string
 	morph?: Morph

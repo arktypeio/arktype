@@ -350,9 +350,9 @@ console.log(type("'a' | 'b'").exclude("'b'") === type("'a'"))`)
 		attest(isUnread(t)).equals(true)
 		attest(t).is(base.configure({ expected: "e" }))
 		attest(t({ configured: 1 }).toString()).equals(
-			"configured must be a string (was a number)"
+			"configured must be a string"
 		)
-		attest(t(1).toString()).equals("must be e (was a number)")
+		attest(t(1).toString()).equals("must be e")
 		attest(isUnread(base.configure({ description: "d" }, "self"))).equals(false)
 	})
 
@@ -393,9 +393,7 @@ console.log(Object.hasOwn(t, "kind"), t === type("string.trim").to("string <= 1"
 	it("pipe.try is on a Type that's unread", () => {
 		const t = type("'tried'").pipe.try(s => JSON.parse(s))
 		attest(t("tried").toString()).snap(
-			`must be valid according to an anonymous predicate (was aborted due to error:
-    SyntaxError: Unexpected token 'i', "tried" is not valid JSON
-)`
+			"must be valid according to an anonymous predicate (SyntaxError: Unexpected token 'i', \"tried\" is not valid JSON)"
 		)
 	})
 

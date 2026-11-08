@@ -183,9 +183,9 @@ id must be a string (was missing)`)
 
 	it("an optional key's issue keeps its place among required ones", () => {
 		const T = type({ "a?": "string", b: "string", "c?": "string" })
-		attest(T({ a: 1, c: 1 }).toString()).snap(`a must be a string (was a number)
+		attest(T({ a: 1, c: 1 }).toString()).snap(`a must be a string
 b must be a string (was missing)
-c must be a string (was a number)`)
+c must be a string`)
 	})
 
 	it("types declaring keys in other orders report their own, whichever came first", () => {
@@ -245,10 +245,9 @@ a must be a string (was missing)`)
 
 	it("declared keys are reported before an index signature's", () => {
 		const T = type({ "[/^x/]": "number", b: "string", a: "string" })
-		attest(T({ x: "x", a: 1, b: 1 }).toString())
-			.snap(`b must be a string (was a number)
-a must be a string (was a number)
-x must be a number (was a string)`)
+		attest(T({ x: "x", a: 1, b: 1 }).toString()).snap(`b must be a string
+a must be a string
+x must be a number`)
 	})
 
 	it("morphs run and report as keys are declared", () => {
@@ -259,9 +258,8 @@ x must be a number (was a string)`)
 				return ctx.error(`valid for ${k}`)
 			})
 		const T = type({ b: failing("b"), a: failing("a") })
-		attest(T({ a: "", b: "" }).toString()).snap(
-			'b must be valid for b (was "")\na must be valid for a (was "")'
-		)
+		attest(T({ a: "", b: "" }).toString()).snap(`b must be valid for b
+a must be valid for a`)
 		attest(calls).snap(["b", "a"])
 	})
 })

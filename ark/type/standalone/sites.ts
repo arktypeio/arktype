@@ -289,9 +289,10 @@ export interface IssueContext extends SiteContext {
 	}
 }
 
+// a configured actual is written in the problem, which a Standard Schema issue
+// says, so it's kept even where a configured message holds it
 const keepsOf = (isCustom: (k: DescribingKey) => boolean): number =>
-	+isCustom("expected") |
-	(+(isCustom("problem") || (isCustom("actual") && !isCustom("message"))) << 1)
+	+isCustom("expected") | (+(isCustom("problem") || isCustom("actual")) << 1)
 
 // arktype passes a writer of these each branch's errors, which issues don't hold
 const unwritableCodes = new Set<ArkErrorCode>([

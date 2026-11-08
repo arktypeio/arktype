@@ -56,9 +56,7 @@ contextualize(() => {
 				}
 			})
 			attest(T([])).equals(["a"])
-			attest(String(T(["b", 1]))).equals(
-				"value at [1] must be a string (was a number)"
-			)
+			attest(String(T(["b", 1]))).equals("[1] must be a string")
 		})
 	})
 

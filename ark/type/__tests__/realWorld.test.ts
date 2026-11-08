@@ -98,8 +98,8 @@ contextualize(() => {
 			score: 0
 		})
 
-		attest(out.toString()).snap(`email must be an email address (was "")
-tags must be at least length 3 (was 2)`)
+		attest(out.toString()).snap(`email must be an email address
+tags must be at least length 3`)
 	})
 
 	it("multiple refinement errors", () => {
@@ -126,11 +126,11 @@ tags must be at least length 3 (was 2)`)
 
 		const out = Schema(data)
 
-		attest(out.toString()).snap(`email must be an email address (was "")
-tags must be at least length 3 (was 2)
-score must be non-negative (was -1)
-date must be a Date (was undefined)
-nospace must be matched by ^\\S*$ (was "One space")
+		attest(out.toString()).snap(`email must be an email address
+tags must be at least length 3
+score must be non-negative
+date must be a Date
+nospace must be matched by ^\\S*$
 extra must be a string or null (was missing)`)
 	})
 
@@ -178,9 +178,7 @@ extra must be a string or null (was missing)`)
 			key: "  This is too long  "
 		})
 
-		attest(outWithMorph.toString()).snap(
-			"key must be at most length 4 (was 20)"
-		)
+		attest(outWithMorph.toString()).snap("key must be at most length 4")
 
 		const withoutMorph = type({
 			key: type("3<=string<=4")
@@ -190,9 +188,7 @@ extra must be a string or null (was missing)`)
 			key: "  This is too long  "
 		})
 
-		attest(outWithoutMorph.toString()).snap(
-			"key must be at most length 4 (was 20)"
-		)
+		attest(outWithoutMorph.toString()).snap("key must be at most length 4")
 	})
 
 	it("cross scope reference", () => {
@@ -361,11 +357,11 @@ extra must be a string or null (was missing)`)
 			first_name: "Bob"
 		})
 		attest(CreatePatientInput({ first_name: " John  " }).toString()).snap(
-			"first_name must be at most length 3 (was 4)"
+			"first_name must be at most length 3"
 		)
 
 		attest(CreatePatientInput({ first_name: 5 }).toString()).snap(
-			"first_name must be a string or null (was a number)"
+			"first_name must be a string or null"
 		)
 	})
 
@@ -455,7 +451,7 @@ extra must be a string or null (was missing)`)
 			bar: 5
 		})
 		attest(test.svgMap({ "./f.svg": "123a" }).toString()).snap(
-			'value at ["./f.svg"] must be only digits 0-9 (was "123a")'
+			'["./f.svg"] must be only digits 0-9'
 		)
 	})
 
@@ -516,7 +512,7 @@ extra must be a string or null (was missing)`)
 			box: { box: { box: {} } }
 		})
 		attest(box({ box: { box: { box: "whoops" } } })?.toString()).snap(
-			"box.box.box must be an object (was a string)"
+			"box.box.box must be an object"
 		)
 	})
 
@@ -532,9 +528,7 @@ extra must be a string or null (was missing)`)
 		const T = types.Schema.pipe(o => JSON.stringify(o))
 
 		attest(T({ items: {} })).snap('{"items":{}}')
-		attest(T({ items: null }).toString()).snap(
-			"items must be an object (was null)"
-		)
+		attest(T({ items: null }).toString()).snap("items must be an object")
 	})
 
 	it("terse missing key error", () => {
@@ -696,7 +690,7 @@ extra must be a string or null (was missing)`)
 
 		attest(Amount("1000")).equals(1000n)
 		attest(Amount("-5").toString()).snap(
-			"must be valid according to validatePositiveBigint (was -5n)"
+			"must be valid according to validatePositiveBigint"
 		)
 	})
 
@@ -906,7 +900,7 @@ extra must be a string or null (was missing)`)
 					type: "whoops"
 				}
 			}).toString()
-		).snap('additionalItems.type must be "boolean" or "null" (was "whoops")')
+		).snap('additionalItems.type must be "boolean" or "null"')
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1127
@@ -967,7 +961,7 @@ extra must be a string or null (was missing)`)
 		// well, even if it's less efficient
 		const Letter = type("string").pipe(s => Letters(s))
 
-		attest(Letter("d").toString()).snap('must be "a", "b" or "c" (was "d")')
+		attest(Letter("d").toString()).snap('must be "a", "b" or "c"')
 	})
 
 	it(".in types are always unionable", () => {
@@ -1382,9 +1376,9 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		if (!(out instanceof type.errors)) throw new AssertionError({})
 
 		attest(out.issues.length).equals(3)
-		attest(out.summary).snap(`date1 must be a parsable date (was "")
-date2 must be a parsable date (was "")
-date3 must be a parsable date (was "")`)
+		attest(out.summary).snap(`date1 must be a parsable date
+date2 must be a parsable date
+date3 must be a parsable date`)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1188
@@ -1508,7 +1502,7 @@ date3 must be a parsable date (was "")`)
 
 		attest(Node(data)).equals(data)
 		attest(Node({ type: "array", item: { type: "nope" } }).toString()).snap(
-			'item.type must be "array", "number" or "unit" (was "nope")'
+			'item.type must be "array", "number" or "unit"'
 		)
 	})
 

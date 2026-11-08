@@ -158,7 +158,7 @@ contextualize(() => {
 		})
 		attest(tree.errors).snap([
 			"(main)/api.mdx: description must be a string (was missing)",
-			'(main)/hidden.mdx: icon must be "Advanced" or "New" (was "Old")'
+			'(main)/hidden.mdx: icon must be "Advanced" or "New"'
 		])
 	})
 

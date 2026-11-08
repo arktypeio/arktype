@@ -7834,7 +7834,6 @@ const anyIssues: IssueFeatures = {
 	rewritesUnions: true,
 	traversesUnions: true,
 	readsKeySites: true,
-	runsArktype: true,
 	appliesValues: true,
 	transformsBranches: true,
 	failsInBranches: true,

@@ -53,7 +53,7 @@ contextualize(() => {
 		const Box = type({ box: "this | undefined" })
 		attest(Box({ box: { box: undefined } })).snap({ box: { box: undefined } })
 		attest(Box({ box: { box: 5 } }).toString()).snap(
-			"box.box must be an object or undefined (was a number)"
+			"box.box must be an object or undefined"
 		)
 	})
 
@@ -65,12 +65,12 @@ contextualize(() => {
 
 		const Unit = type.unit(bareTag)
 		attest(Unit.expression).snap("Symbol(bareTag)")
-		attest(Unit(5).toString()).snap("must be Symbol(bareTag) (was 5)")
+		attest(Unit(5).toString()).snap("must be Symbol(bareTag)")
 
 		const Keyed = type({ [bareTag]: "string" })
 		attest(Keyed.expression).snap("{ Symbol(bareTag): string }")
 		attest(Keyed({ [bareTag]: 5 }).toString()).snap(
-			"value at [Symbol(bareTag)] must be a string (was a number)"
+			"[Symbol(bareTag)] must be a string"
 		)
 
 		attest(() => type("'a'").narrow(isBare)).throws(
@@ -85,7 +85,7 @@ contextualize(() => {
 
 		const T = type("number").narrow(check2).or(type("number").narrow(check))
 		attest(T(-3).toString()).snap(
-			"must be valid according to check or valid according to check2 (was -3)"
+			"must be valid according to check or valid according to check2"
 		)
 	})
 
@@ -98,7 +98,7 @@ contextualize(() => {
 		})
 
 		attest(T({ [l]: "x", [r]: "y" }).toString())
-			.snap(`value at [Symbol(alike)] must be a number (was a string)
-value at [Symbol(alike)] must be bad (was "y")`)
+			.snap(`[Symbol(alike)] must be a number
+[Symbol(alike)] must be bad`)
 	})
 })

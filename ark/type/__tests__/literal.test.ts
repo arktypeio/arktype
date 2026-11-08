@@ -24,7 +24,7 @@ contextualize(() => {
 			// same with ick- don't use it
 			const ick = Symbol("ick")
 
-			attest(T(ick).toString()).snap("must be Symbol(ism) (was Symbol(ick))")
+			attest(T(ick).toString()).snap("must be Symbol(ism)")
 		})
 
 		it("anonymous symbol", () => {
@@ -35,7 +35,7 @@ contextualize(() => {
 			const T = type(["===", anon])
 			attest<typeof anon>(T.infer)
 			attest(T(anon)).equals(anon)
-			attest(T("test").toString()).equals(`must be ${anonName} (was "test")`)
+			attest(T("test").toString()).equals(`must be ${anonName}`)
 		})
 
 		it("branches", () => {
@@ -80,14 +80,14 @@ contextualize(() => {
 			'{"a":1,"b":"(getter)","toJSON":"Function(toJSON)"}'
 		)
 		attest(T({}).toString()).snap(
-			'must be {"a":1,"b":"(getter)","toJSON":"Function(toJSON)"} (was an object)'
+			'must be {"a":1,"b":"(getter)","toJSON":"Function(toJSON)"}'
 		)
 		const { U } = scope(
 			{ U: [{ k: ["===", o] }, "|", { k: "'b'", v: "number" }] },
 			{ jitless: true }
 		).export()
 		attest(U({ k: "c" }).toString()).snap(
-			'k must be {"a":1,"b":"(getter)","toJSON":"Function(toJSON)"} or "b" (was "c")'
+			'k must be {"a":1,"b":"(getter)","toJSON":"Function(toJSON)"} or "b"'
 		)
 		attest(calls).equals(0)
 	})
@@ -128,7 +128,7 @@ contextualize(() => {
 			attest(T.json).equals(type.keywords.number.NaN.json)
 			attest(T.expression).snap("NaN")
 			attest(T(Number.NaN)).equals(Number.NaN)
-			attest(T(0).toString()).snap("must be NaN (was 0)")
+			attest(T(0).toString()).snap("must be NaN")
 		})
 
 		it("Infinity and -Infinity", () => {
@@ -137,9 +137,7 @@ contextualize(() => {
 			attest(T.expression).snap("-Infinity | Infinity")
 			attest(T(Number.POSITIVE_INFINITY)).equals(Number.POSITIVE_INFINITY)
 			attest(T(Number.NEGATIVE_INFINITY)).equals(Number.NEGATIVE_INFINITY)
-			attest(T(1e308).toString()).snap(
-				"must be -Infinity or Infinity (was 1e+308)"
-			)
+			attest(T(1e308).toString()).snap("must be -Infinity or Infinity")
 		})
 
 		it("is not a limit", () => {

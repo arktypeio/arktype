@@ -6,7 +6,7 @@ contextualize(() => {
 		const User = type({ "@": "a user", name: "string" })
 		attest<{ name: string }>(User.infer)
 		attest(User.json).equals(type({ name: "string" }, "@", "a user").json)
-		attest(User(5).toString()).snap("must be a user (was a number)")
+		attest(User(5).toString()).snap("must be a user")
 	})
 
 	it("meta object", () => {
@@ -27,7 +27,7 @@ contextualize(() => {
 	it("applies only to its own object", () => {
 		const T = type({ a: { "@": "an a", b: "string" } })
 		attest(T.description).snap("{ a: an a }")
-		attest(T({ a: 5 }).toString()).snap("a must be an a (was a number)")
+		attest(T({ a: 5 }).toString()).snap("a must be an a")
 	})
 
 	it("description ending in ?", () => {

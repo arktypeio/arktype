@@ -49,7 +49,7 @@ contextualize(() => {
 
 	it("never error at a path", () => {
 		const T = type({ "files?": "never" })
-		attest(T({ files: 1 }).toString()).snap("files must be never (was 1)")
+		attest(T({ files: 1 }).toString()).snap("files must be never")
 	})
 
 	it("never in union", () => {

@@ -65,18 +65,16 @@ contextualize(() => {
 
 			attest(T({ code: "123456" })).snap({ code: "123456" })
 			attest(T({ code: "foo" }).toString()).snap(
-				"code must be exactly length 6 (was 3)"
+				"code must be exactly length 6"
 			)
 		})
 
 		it("length named in actual when text replaces the bound's", () => {
 			const Password = type("string >= 8").describe("a strong password")
-			attest(Password("x").toString()).snap(
-				"must be a strong password (was length 1)"
-			)
+			attest(Password("x").toString()).snap("must be a strong password")
 			attest(Password("").toString()).snap("must be a strong password")
 			const Pair = type("string[] == 2").configure({ expected: "a pair" })
-			attest(Pair(["a"]).toString()).snap("must be a pair (was length 1)")
+			attest(Pair(["a"]).toString()).snap("must be a pair")
 		})
 
 		it("== length from narrowing a length range", () => {
@@ -453,7 +451,7 @@ contextualize(() => {
 			attest(T.json).snap({ domain: "number", notEqual: [0] })
 			attest(T.expression).snap("number != 0")
 			attest(T(1)).equals(1)
-			attest(T(0).toString()).snap("must be other than 0 (was 0)")
+			attest(T(0).toString()).snap("must be other than 0")
 		})
 
 		it("length", () => {
@@ -461,16 +459,14 @@ contextualize(() => {
 			attest<string>(T.infer)
 			attest(T.json).snap({ domain: "string", notEqualLength: [3] })
 			attest(T("ab")).equals("ab")
-			attest(T("abc").toString()).snap("must be other than length 3 (was 3)")
+			attest(T("abc").toString()).snap("must be other than length 3")
 		})
 
 		it("array length", () => {
 			const T = type("string[] != 2")
 			attest<string[]>(T.infer)
 			attest(T.expression).snap("string[] != 2")
-			attest(T(["a", "b"]).toString()).snap(
-				"must be other than length 2 (was 2)"
-			)
+			attest(T(["a", "b"]).toString()).snap("must be other than length 2")
 		})
 
 		it("zero length is non-empty", () => {
@@ -483,7 +479,7 @@ contextualize(() => {
 			attest(T.expression).snap("Date != d'2000-05-03T00:00:00.000Z'")
 			attest(T(new Date("2000-05-04"))).instanceOf(Date)
 			attest(T(new Date("2000-05-03")).toString()).snap(
-				"must be other than May 3, 2000 (was May 3, 2000)"
+				"must be other than May 3, 2000"
 			)
 		})
 
@@ -785,13 +781,13 @@ contextualize(() => {
 				.describe("below -1")
 				.or(type("number > -1").describe("above -1"))
 			attest(T.expression).snap("number > -1 | number < -1")
-			attest(T(-1).toString()).snap("must be above -1 or below -1 (was -1)")
+			attest(T(-1).toString()).snap("must be above -1 or below -1")
 		})
 
 		it("keep a described unit", () => {
 			const T = type("number > 0").or(type("0").describe("zero"))
 			attest(T.expression).snap("number > 0 | 0")
-			attest(T(-1).toString()).snap("must be positive or zero (was -1)")
+			attest(T(-1).toString()).snap("must be positive or zero")
 		})
 
 		it("keep a shared constraint's differing description", () => {
@@ -803,9 +799,7 @@ contextualize(() => {
 				{ domain: "number", min: { rule: -1, exclusive: true } }
 			])
 			attest(T.expression).snap("number > -1 | number < -1")
-			attest(T.traverse("x")?.toString()).snap(
-				"must be a number or real (was a string)"
-			)
+			attest(T.traverse("x")?.toString()).snap("must be a number or real")
 		})
 
 		it("merge a shared description", () => {
@@ -813,7 +807,7 @@ contextualize(() => {
 				.describe("x")
 				.or(type("number > -1").describe("x"))
 			attest(T.expression).snap("number != -1")
-			attest(T(-1).toString()).snap("must be x (was -1)")
+			attest(T(-1).toString()).snap("must be x")
 		})
 	})
 

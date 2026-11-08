@@ -532,18 +532,12 @@ const thrownKeptOf = (e: unknown): KeptIssue[] | undefined => {
 	return errors && keptOf(errors)
 }
 
-// a default's ParseError, minus what its value was
-const keptParseMessageOf = (message: string): string =>
-	message.startsWith("Default") ?
-		message.replace(/ \(was .*\)$/gm, "")
-	:	message
-
 const messageOf = (e: unknown) => {
 	const issues = thrownKeptOf(e)
 	return (
 		issues ? `TraversalError: ${JSON.stringify(serializeIssues(issues))}`
 		: e instanceof Error ?
-			`${e.constructor.name}: ${detailsErrors ? keptParseMessageOf(e.message) : undetailedDefaultOf(e.message)}`
+			`${e.constructor.name}: ${detailsErrors ? e.message : undetailedDefaultOf(e.message)}`
 		:	String(e)
 	)
 }
@@ -563,18 +557,13 @@ const serializeIssues = (issues: KeptIssue[]) =>
 		...(detailsErrors && { data: serialize(data) })
 	}))
 
-// what a union's issues say, without what no message of a validator's does, as
-// issues kept apart read: arktype groups what's at one path, which never takes over
+// what a union's issues say, which a validator writes as arktype does
 const unionTextsOf = (errors: ArkErrors): string[] =>
 	!detailsErrors || firstIssue ?
 		[]
 	:	eachKeptOf(errors as never)
 			.filter(issue => issue.code === "union")
-			.map(({ message }) =>
-				message!
-					.replace(/ \(was (?:"(?:[^"\\]|\\.)*"|[^)])*\)/g, "")
-					.replace(/(^|, | or )value at /g, "$1")
-			)
+			.map(({ message }) => message!)
 			.sort()
 
 const samples = (): unknown[] => [

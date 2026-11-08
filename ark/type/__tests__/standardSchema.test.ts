@@ -27,7 +27,7 @@ contextualize(() => {
 
 		attest(Array.isArray(badStandardOut.issues)).equals(true)
 		attest(badStandardOut.issues.map(issue => issue.message)).snap([
-			"must be a string (was a number)"
+			"must be a string"
 		])
 		attest(badStandardOut.issues[0].path).equals(["foo"])
 	})
@@ -46,9 +46,9 @@ contextualize(() => {
 		}
 		attest(textOf(type({ y: { z: "string >= 2" } }), { y: { z: "a" } })).snap([
 			{
-				problem: "must be at least length 2 (was 1)",
-				message: "y.z must be at least length 2 (was 1)",
-				issue: "must be at least length 2 (was 1)"
+				problem: "must be at least length 2",
+				message: "y.z must be at least length 2",
+				issue: "must be at least length 2"
 			}
 		])
 		// a union's problem writes its branches' paths from its own
@@ -58,12 +58,9 @@ contextualize(() => {
 			})
 		).snap([
 			{
-				problem:
-					"a must be a string (was a number) or b must be a number (was a string)",
-				message:
-					"x.a must be a string (was a number) or x.b must be a number (was a string)",
-				issue:
-					"a must be a string (was a number) or b must be a number (was a string)"
+				problem: "a must be a string or b must be a number",
+				message: "x.a must be a string or x.b must be a number",
+				issue: "a must be a string or b must be a number"
 			}
 		])
 		// a message writer reaches only the message
@@ -72,9 +69,9 @@ contextualize(() => {
 		})
 		attest(textOf(type({ y: Messaged }), { y: "a" })).snap([
 			{
-				problem: "must be at least length 2 (was 1)",
+				problem: "must be at least length 2",
 				message: "y is too short",
-				issue: "must be at least length 2 (was 1)"
+				issue: "must be at least length 2"
 			}
 		])
 		const Problemed = type("string >= 2").configure({ problem: "is too short" })
@@ -92,7 +89,7 @@ contextualize(() => {
 		const Wrapped = type({ user: { "~standard": User["~standard"] } })
 
 		attest(Wrapped({ user: { age: 1.5 } }).toString()).snap(
-			"user.age must be an integer (was 1.5)"
+			"user.age must be an integer"
 		)
 
 		const Other = type({
@@ -114,9 +111,7 @@ contextualize(() => {
 			type({ x: { "~standard": Union["~standard"] } })({
 				x: { a: {} }
 			}).toString()
-		).snap(
-			"x.a b must be a string (was missing) or c must be a number (was missing)"
-		)
+		).snap("x.a b must be a string or c must be a number")
 	})
 
 	it("an embedded Standard Schema's empty issues fail", () => {

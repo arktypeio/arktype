@@ -58,9 +58,7 @@ contextualize(() => {
 			})
 			attest(O({ a: "" })).equals({ a: "", foo: 5, bar: 5, baz: 5 })
 			attest(O({ bar: 4 }).toString()).snap("a must be a string (was missing)")
-			attest(O({ a: "", bar: "" }).toString()).snap(
-				"bar must be a number (was a string)"
-			)
+			attest(O({ a: "", bar: "" }).toString()).snap("bar must be a number")
 		})
 
 		// https://github.com/arktypeio/arktype/issues/1335
@@ -104,7 +102,7 @@ contextualize(() => {
 
 			attest(O({})).snap({ boo: false })
 			attest(O({ boo: true })).snap({ boo: true })
-			attest(O({ boo: 5 }).toString()).snap("boo must be boolean (was 5)")
+			attest(O({ boo: 5 }).toString()).snap("boo must be boolean")
 		})
 
 		it("validated default in scope", () => {
@@ -185,9 +183,7 @@ contextualize(() => {
 				// @ts-expect-error
 				type({ foo: "string", bar: ["number", "=", "5"] })
 			)
-				.throws.snap(
-					"ParseError: Default for bar must be a number (was a string)"
-				)
+				.throws.snap("ParseError: Default for bar must be a number")
 				.type.errors(
 					"Type 'string' is not assignable to type 'defaultFor<number>'."
 				)
@@ -206,16 +202,14 @@ contextualize(() => {
 					]
 				})({}).toString()
 			)
-				.snap("foo.foo must be true (was false)")
+				.snap("foo.foo must be true")
 				.type.errors.snap("Type 'false' is not assignable to type 'true'.")
 		})
 
 		it("unassignable default string", () => {
 			// @ts-expect-error
 			attest(() => type({ foo: "number = true" }))
-				.throws.snap(
-					"ParseError: Default for foo must be a number (was boolean)"
-				)
+				.throws.snap("ParseError: Default for foo must be a number")
 				.type.errors("Default value true must be assignable to number")
 		})
 
@@ -224,9 +218,7 @@ contextualize(() => {
 				attest(() =>
 					// @ts-expect-error
 					scope({}, { onFail }).type({ a: ["number", "=", "5"] })
-				).throws.snap(
-					"ParseError: Default for a must be a number (was a string)"
-				)
+				).throws.snap("ParseError: Default for a must be a number")
 			}
 		})
 
@@ -257,7 +249,7 @@ contextualize(() => {
 			attest(ProcessForm({ bool_value: "on" })).snap({ bool_value: true })
 
 			attest(ProcessForm({ bool_value: true }).toString()).snap(
-				"bool_value must be a string (was boolean)"
+				"bool_value must be a string"
 			)
 		})
 
@@ -364,7 +356,7 @@ contextualize(() => {
 			attest(() =>
 				type({ n: [type("number").narrow(isEven), "=", 3] })
 			).throws.snap(
-				"ParseError: Default for n must be valid according to isEven (was 3)"
+				"ParseError: Default for n must be valid according to isEven"
 			)
 		})
 
@@ -490,9 +482,7 @@ contextualize(() => {
 		it("incorrect default type", () => {
 			// @ts-expect-error
 			attest(() => type({ foo: "string", bar: "number = true" }))
-				.throws.snap(
-					"ParseError: Default for bar must be a number (was boolean)"
-				)
+				.throws.snap("ParseError: Default for bar must be a number")
 				.type.errors("Default value true must be assignable to number")
 		})
 
@@ -683,9 +673,7 @@ contextualize(() => {
 			// [] is assignable only to array/tuple input types
 			// @ts-expect-error
 			attest(() => type({ foo: "number = []" }))
-				.throws.snap(
-					"ParseError: Default for foo must be a number (was an object)"
-				)
+				.throws.snap("ParseError: Default for foo must be a number")
 				.type.errors("Default value [] must be assignable to number")
 		})
 
@@ -747,18 +735,14 @@ contextualize(() => {
 			// {} is assignable only to object input types
 			// @ts-expect-error
 			attest(() => type({ foo: "number = {}" }))
-				.throws.snap(
-					"ParseError: Default for foo must be a number (was an object)"
-				)
+				.throws.snap("ParseError: Default for foo must be a number")
 				.type.errors("Default value {} must be assignable to number")
 		})
 
 		it("empty object default rejects array base", () => {
 			// @ts-expect-error
 			attest(() => type({ foo: "string[] = {}" }))
-				.throws.snap(
-					"ParseError: Default for foo must be an array (was an object)"
-				)
+				.throws.snap("ParseError: Default for foo must be an array")
 				.type.errors("Default value {} must be assignable to string[]")
 		})
 	})
@@ -813,9 +797,7 @@ contextualize(() => {
 					// @ts-expect-error
 					() => type({ foo: ["number", "=", true] })
 				)
-					.throws.snap(
-						"ParseError: Default for foo must be a number (was boolean)"
-					)
+					.throws.snap("ParseError: Default for foo must be a number")
 					.type.errors.snap(
 						"Type 'boolean' is not assignable to type 'defaultFor<number>'."
 					)
@@ -826,9 +808,7 @@ contextualize(() => {
 					// @ts-expect-error
 					() => type({ foo: ["number[]", "=", true] })
 				)
-					.throws.snap(
-						"ParseError: Default for foo must be an array (was boolean)"
-					)
+					.throws.snap("ParseError: Default for foo must be an array")
 					.type.errors.snap(
 						"Type 'boolean' is not assignable to type '() => number[]'."
 					)
@@ -839,9 +819,7 @@ contextualize(() => {
 					// @ts-expect-error
 					() => type({ foo: [{ bar: "false" }, "=", true] })
 				)
-					.throws.snap(
-						"ParseError: Default for foo must be an object (was boolean)"
-					)
+					.throws.snap("ParseError: Default for foo must be an object")
 					.type.errors.snap(
 						"Type 'boolean' is not assignable to type '() => { bar: false; }'."
 					)
@@ -853,7 +831,7 @@ contextualize(() => {
 					() => type({ foo: [["number[]", "|", "string"], "=", true] })
 				)
 					.throws.snap(
-						"ParseError: Default for foo must be a string or an array (was boolean)"
+						"ParseError: Default for foo must be a string or an array"
 					)
 					.type.errors.snap(
 						"Type 'boolean' is not assignable to type 'defaultFor<string | number[]>'."
@@ -866,9 +844,7 @@ contextualize(() => {
 					// @ts-expect-error
 					() => type("number[]", "|", "string").default(true)
 				)
-					.throws.snap(
-						"ParseError: Default must be a string or an array (was boolean)"
-					)
+					.throws.snap("ParseError: Default must be a string or an array")
 					.type.errors.snap(
 						"Argument of type 'boolean' is not assignable to parameter of type 'defaultFor<string | number[]>'."
 					)
@@ -885,9 +861,7 @@ contextualize(() => {
 				const T = type({
 					foo: type("number[]", "|", "string").default((() => true) as never)
 				})
-				attest(T({}).toString()).snap(
-					"foo must be a string or an array (was boolean)"
-				)
+				attest(T({}).toString()).snap("foo must be a string or an array")
 			})
 		})
 
@@ -895,7 +869,7 @@ contextualize(() => {
 			it("string", () => {
 				// @ts-expect-error
 				attest(() => type({ foo: ["string.numeric.parse = true"] }))
-					.throws("must be a string (was boolean)")
+					.throws("must be a string")
 					.type.errors(
 						"Default value true must be assignable to string.numeric.parse"
 					)
@@ -904,7 +878,7 @@ contextualize(() => {
 			it("tuple", () => {
 				// @ts-expect-error
 				attest(() => type({ foo: ["string.numeric.parse", "=", true] }))
-					.throws("must be a string (was boolean)")
+					.throws("must be a string")
 					.type.errors(
 						"Type 'boolean' is not assignable to type 'defaultFor<string>'."
 					)
@@ -917,7 +891,7 @@ contextualize(() => {
 						{}
 					).toString()
 				)
-					.snap("foo must be a string (was boolean)")
+					.snap("foo must be a string")
 					.type.errors("Type 'boolean' is not assignable to type 'string'.")
 			})
 
@@ -925,7 +899,7 @@ contextualize(() => {
 				const Numtos = type("number").pipe(s => `${s}`)
 				// @ts-expect-error
 				attest(() => type({ foo: [Numtos, "=", true] }))
-					.throws("must be a number (was boolean)")
+					.throws("must be a number")
 					.type.errors(
 						"Type 'boolean' is not assignable to type 'defaultFor<number>'."
 					)
@@ -935,7 +909,7 @@ contextualize(() => {
 				const Numtos = type("number").pipe(s => `${s}`)
 				// @ts-expect-error
 				attest(type({ foo: [Numtos, "=", () => true] })({}).toString())
-					.snap("foo must be a number (was boolean)")
+					.snap("foo must be a number")
 					.type.errors("Type 'boolean' is not assignable to type 'number'.")
 			})
 
@@ -945,7 +919,7 @@ contextualize(() => {
 					.describe("boolean")
 				// @ts-expect-error
 				attest(() => type({ flag: [Flag, "=", false] })).throws.snap(
-					'ParseError: Default for flag must be "false" or "true" (was false)'
+					'ParseError: Default for flag must be "false" or "true"'
 				)
 			})
 
@@ -955,7 +929,7 @@ contextualize(() => {
 					.pipe(s => s === "true")
 				// @ts-expect-error
 				attest(() => type({ flag: [Flag, "=", false] })).throws.snap(
-					"ParseError: Default for flag must be a flag (was false)"
+					"ParseError: Default for flag must be a flag"
 				)
 			})
 		})
@@ -1057,12 +1031,12 @@ contextualize(() => {
 		it("checks the returned value", () => {
 			// @ts-expect-error
 			attest(type({ foo: ["number", "=", () => "bar"] })({}).toString())
-				.snap("foo must be a number (was a string)")
+				.snap("foo must be a number")
 				.type.errors("Type 'string' is not assignable to type 'number'.")
 
 			// @ts-expect-error
 			attest(type({ foo: ["number[]", "=", () => "bar"] })({}).toString())
-				.snap("foo must be an array (was a string)")
+				.snap("foo must be an array")
 				.type.errors.snap("Type 'string' is not assignable to type 'number[]'.")
 
 			attest(
@@ -1071,7 +1045,7 @@ contextualize(() => {
 					{}
 				).toString()
 			)
-				.snap("foo.a must be a number (was a string)")
+				.snap("foo.a must be a number")
 				.type.errors.snap("Type 'string' is not assignable to type 'number'.")
 		})
 
@@ -1091,7 +1065,7 @@ contextualize(() => {
 			attest(calls).equals(0)
 			// @ts-expect-error
 			attest(() => type({ a: "number = []" })).throws.snap(
-				"ParseError: Default for a must be a number (was an object)"
+				"ParseError: Default for a must be a number"
 			)
 		})
 
@@ -1101,17 +1075,13 @@ contextualize(() => {
 			const factory = () => (calls++ ? "x" : 1) as never
 			const T = $.type({ a: ["number", "=", factory] })
 			attest(T({})).equals({ a: 1 })
-			attest(T({}).toString()).snap("a must be a number (was a string)")
+			attest(T({}).toString()).snap("a must be a number")
 
 			const Deleting = $.type({ "+": "delete", a: ["number", "=", factory] })
-			attest(Deleting({ b: 1 }).toString()).snap(
-				"a must be a number (was a string)"
-			)
+			attest(Deleting({ b: 1 }).toString()).snap("a must be a number")
 
 			const Tuple = $.type([["number", "=", factory]])
-			attest(Tuple([]).toString()).snap(
-				"value at [0] must be a number (was a string)"
-			)
+			attest(Tuple([]).toString()).snap("[0] must be a number")
 		})
 
 		it("morphs the returned value", () => {
@@ -1196,8 +1166,8 @@ contextualize(() => {
 					// @ts-expect-error
 					.default(() => ["a"])
 			})
-			attest(T({}).toString()).snap(`bar[0] must be a number (was a string)
-baz[0] must be a number (was a string)`)
+			attest(T({}).toString()).snap(`bar[0] must be a number
+baz[0] must be a number`)
 		})
 
 		it("default object", () => {
@@ -1228,7 +1198,7 @@ baz[0] must be a number (was a string)`)
 				// @ts-expect-error
 				bar: type({ foo: "number" }).default(() => ({ foo: "foostr" }))
 			})
-			attest(T({}).toString()).snap("bar.foo must be a number (was a string)")
+			attest(T({}).toString()).snap("bar.foo must be a number")
 		})
 	})
 

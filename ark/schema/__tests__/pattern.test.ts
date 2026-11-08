@@ -324,9 +324,7 @@ contextualize(() => {
 				type: "string",
 				pattern: pattern.source
 			})
-			attest(T("x")?.toString()).equals(
-				`must be matched by ${pattern.source} (was "x")`
-			)
+			attest(T("x")?.toString()).equals(`must be matched by ${pattern.source}`)
 		}
 	})
 

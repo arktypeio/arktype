@@ -157,9 +157,7 @@ contextualize(() => {
 		attest(T.expression).equals('"a\\nb\\u0001"')
 		attest(type.raw(T.expression).equals(T)).equals(true)
 		attest(T("a\nb\u0001")).equals("a\nb\u0001")
-		attest(T("a\\nb\\u0001").toString()).snap(
-			'must be "a\\nb\\u0001" (was "a\\\\nb\\\\u0001")'
-		)
+		attest(T("a\\nb\\u0001").toString()).snap('must be "a\\nb\\u0001"')
 	})
 
 	it("reads other escapes as written", () => {

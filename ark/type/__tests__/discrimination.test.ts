@@ -92,9 +92,7 @@ contextualize(() => {
 			color: "blue"
 		})
 
-		attest(twoMissingKeys.toString()).snap(
-			'climate must be "dry" or "wet" (was missing)'
-		)
+		attest(twoMissingKeys.toString()).snap('climate must be "dry" or "wet"')
 
 		attest(discriminantJsonOf(climate.internal.assertIs("union"))).snap({
 			kind: "unit",
@@ -127,27 +125,25 @@ contextualize(() => {
 	// https://github.com/arktypeio/arktype/issues/963
 	it("described union discriminated by its value", () => {
 		const Primitive = type("string | number").describe("a primitive")
-		attest(Primitive({}).toString()).snap("must be a primitive (was an object)")
+		attest(Primitive({}).toString()).snap("must be a primitive")
 		const Letter = type("'a' | 'b' | 'c'").describe("a letter")
-		attest(Letter("d").toString()).snap('must be a letter (was "d")')
+		attest(Letter("d").toString()).snap("must be a letter")
 	})
 
 	it("described branches discriminated by their value", () => {
 		const T = type("string < 2")
 			.describe("short")
 			.or(type("number").describe("a count"))
-		attest(T({}).toString()).snap("must be a count or short (was an object)")
+		attest(T({}).toString()).snap("must be a count or short")
 	})
 
 	it("described union discriminated at a key", () => {
 		const Shape = type({ kind: "'circle'", r: "number" })
 			.or({ kind: "'square'", s: "number" })
 			.describe("a shape")
-		attest(Shape({ kind: "triangle" }).toString()).snap(
-			"must be a shape (was an object)"
-		)
+		attest(Shape({ kind: "triangle" }).toString()).snap("must be a shape")
 		attest(type({ shape: Shape })({ shape: {} }).toString()).snap(
-			"shape must be a shape (was an object)"
+			"shape must be a shape"
 		)
 	})
 
@@ -156,8 +152,8 @@ contextualize(() => {
 			.or({ id: "1", k2: "number" })
 			.or({ name: "string" })
 			.describe("an event")
-		attest(Event({}).toString()).snap("must be an event (was an object)")
-		attest(Event(5).toString()).snap("must be an event (was a number)")
+		attest(Event({}).toString()).snap("must be an event")
+		attest(Event(5).toString()).snap("must be an event")
 	})
 
 	it("described branches discriminated at a key", () => {
@@ -165,7 +161,7 @@ contextualize(() => {
 			.describe("a circle")
 			.or(type({ kind: "'square'", s: "number" }).describe("a square"))
 		attest(Shape({ kind: "triangle" }).toString()).snap(
-			'kind must be "circle" or "square" (was "triangle")'
+			'kind must be "circle" or "square"'
 		)
 	})
 
@@ -174,7 +170,7 @@ contextualize(() => {
 			.or({ kind: "'b'", channel: "'read' | 'write'", y: "number" })
 			.or({ kind: "'c'", z: "boolean" })
 		attest(T.internal.assertIs("union").discriminant?.path).snap(["kind"])
-		attest(T({ kind: "c", z: 1 }).toString()).snap("z must be boolean (was 1)")
+		attest(T({ kind: "c", z: 1 }).toString()).snap("z must be boolean")
 	})
 
 	it("cases include units no pair of branches was told apart by", () => {
@@ -191,10 +187,10 @@ contextualize(() => {
 			"default"
 		])
 		attest(T({ g: "y", id: 4 }).toString()).snap(
-			"d must be a string (was missing) or e must be a string (was missing)"
+			"d must be a string or e must be a string"
 		)
 		attest(T({ id: 5 }).toString()).snap(
-			"id must be 1, 2 or 4 (was 5) or e must be a string (was missing)"
+			"id must be 1, 2 or 4 or e must be a string"
 		)
 	})
 
@@ -204,7 +200,7 @@ contextualize(() => {
 			.or({ g: "'y'", v: "boolean", d: "string" })
 			.or({ e: "string" })
 		attest(T({ g: "y", v: true }).toString()).snap(
-			"d must be a string (was missing) or e must be a string (was missing)"
+			"d must be a string or e must be a string"
 		)
 	})
 
@@ -359,9 +355,7 @@ contextualize(() => {
 		attest(T.allows({ [s]: -1 })).equals(false)
 
 		attest(T({ [s]: 1 })).equals({ [s]: 1 })
-		attest(T({ [s]: 2 }).toString()).snap(
-			"value at [Symbol(lobmyS)] must be 0 or 1 (was 2)"
-		)
+		attest(T({ [s]: 2 }).toString()).snap("[Symbol(lobmyS)] must be 0 or 1")
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1100
@@ -373,9 +367,7 @@ contextualize(() => {
 		attest(Company(null)).equals(null)
 		attest(Company({ id: 1 })).equals({ id: 1 })
 		attest(Company("foo")).equals("foo")
-		attest(Company(5)?.toString()).snap(
-			"must be a string, an object or null (was a number)"
-		)
+		attest(Company(5)?.toString()).snap("must be a string, an object or null")
 	})
 
 	it("differing inner discriminated paths", () => {
@@ -405,7 +397,7 @@ contextualize(() => {
 		attest(Union({ innerB: { id: 2 } })).equals({ innerB: { id: 2 } })
 
 		attest(Union({})?.toString()).snap(
-			"innerA must be an object (was missing) or innerB must be an object (was missing)"
+			"innerA must be an object or innerB must be an object"
 		)
 	})
 
@@ -608,13 +600,13 @@ contextualize(() => {
 
 	it("describes an object case only arrays reach as an array", () => {
 		attest(type("string | string[]")(5).toString()).snap(
-			"must be a string or an array (was a number)"
+			"must be a string or an array"
 		)
 		attest(type("string | string[] | Date")(5).toString()).snap(
-			"must be a string or an object (was a number)"
+			"must be a string or an object"
 		)
 		attest(type({ a: "string | number[]" })({ a: true }).toString()).snap(
-			"a must be a string or an array (was boolean)"
+			"a must be a string or an array"
 		)
 	})
 
@@ -646,7 +638,7 @@ contextualize(() => {
 			}
 		})
 		attest(T({ type: "e" }).toString()).snap(
-			'type must be "c", "d", "a" or "b" (was "e")'
+			'type must be "c", "d", "a" or "b"'
 		)
 		attest(T({ type: "d" }).toString()).snap(
 			"val3 must be a number (was missing)"
@@ -660,7 +652,7 @@ contextualize(() => {
 			tag: "'b' | 'c'",
 			bc: "string"
 		})
-		attest(T({}).toString()).snap('tag must be "a", "b" or "c" (was missing)')
+		attest(T({}).toString()).snap('tag must be "a", "b" or "c"')
 		attest(T({ tag: "c" }).toString()).snap("bc must be a string (was missing)")
 	})
 
@@ -706,9 +698,7 @@ contextualize(() => {
 		})
 		attest(T({ k: "b", n: 1 })).equals({ k: "b", n: 1 })
 		attest(T({ k: "b", n: "x" })).equals({ k: "b", n: "x" })
-		attest(T({ k: "b" }).toString()).snap(
-			"n must be a number or a string (was missing)"
-		)
+		attest(T({ k: "b" }).toString()).snap("n must be a number or a string")
 	})
 
 	it("dimscrinate literal undefined value", () => {
@@ -776,7 +766,7 @@ contextualize(() => {
 				layout: "",
 				children: [{ type: "BChild", children: [] }]
 			}).toString()
-		).snap("layout must be an array (was a string)")
+		).snap("layout must be an array")
 	})
 
 	it("discriminates neither a date nor NaN", () => {
@@ -787,10 +777,10 @@ contextualize(() => {
 		attest(T(epoch)).equals(epoch)
 		attest(T({ a: Number.NaN })).equals({ a: Number.NaN })
 		attest(T({ a: new Date(0).toISOString() }).toString()).snap(
-			'a must be January 1, 1970, NaN, 1 or 2 (was "1970-01-01T00:00:00.000Z")'
+			"a must be January 1, 1970, NaN, 1 or 2"
 		)
 		attest($.type.enumerated(Number.NaN, "a", true)("c").toString()).snap(
-			'must be NaN, "a" or true (was "c")'
+			'must be NaN, "a" or true'
 		)
 	})
 
@@ -816,7 +806,7 @@ contextualize(() => {
 		const T = type(["null", "|>", { a: ["string", "=>", s => s.length] }]).or(
 			"object"
 		)
-		attest(T(null)?.toString()).snap("must be an object (was null)")
+		attest(T(null)?.toString()).snap("must be an object")
 		// the head pruned entirely, the case's input is unknown
 		const Keyed = type([
 			{ k: "'a'" },
@@ -866,7 +856,7 @@ contextualize(() => {
 		attest(T({ kind: "c" }).toString()).snap(
 			"v must be undefined or 2 (was missing)"
 		)
-		attest(T(0).toString()).snap("must be an object (was a number)")
+		attest(T(0).toString()).snap("must be an object")
 	})
 
 	it("primitive with discriminant key", () => {
@@ -877,7 +867,7 @@ contextualize(() => {
 		})
 
 		attest(T({ length: 3, x: "" })).equals({ length: 3, x: "" })
-		attest(T("abc").toString()).snap("must be an object (was a string)")
+		attest(T("abc").toString()).snap("must be an object")
 	})
 
 	it("object and symbol cases", () => {
@@ -887,9 +877,7 @@ contextualize(() => {
 		const T = $.type({ a: $.enumerated(o, sym, 1) })
 
 		attest(T({ a: o })).equals({ a: o })
-		attest(T({ a: {} }).toString()).snap(
-			"a must be 1, {} or Symbol(sym) (was an object)"
-		)
+		attest(T({ a: {} }).toString()).snap("a must be 1, {} or Symbol(sym)")
 	})
 
 	it("rejected prop reads", () => {
@@ -904,7 +892,7 @@ contextualize(() => {
 				},
 				enumerable: true
 			})
-			attest(T({ v }).toString()).equals("v.a must be a string (was a number)")
+			attest(T({ v }).toString()).equals("v.a must be a string")
 			return count
 		}
 		const A = $.type({ a: "string" })
@@ -922,7 +910,7 @@ contextualize(() => {
 		attest(T.allows({ a: "x" })).equals(true)
 		attest(T({ a: "x" })).equals({ a: "x" })
 		attest(T({ kind: "b", a: "y" }).toString()).snap(
-			'kind must be "a" (was "b") or a must be "x" (was "y")'
+			'kind must be "a" or a must be "x"'
 		)
 	})
 
@@ -934,8 +922,8 @@ contextualize(() => {
 		})
 
 		it("can't hold the discriminant", () => {
-			attest(Shape(5).toString()).snap("must be an object (was a number)")
-			attest(Shape(null).toString()).snap("must be an object (was null)")
+			attest(Shape(5).toString()).snap("must be an object")
+			attest(Shape(null).toString()).snap("must be an object")
 			const error = (Shape(5) as type.errors).issues[0]
 			attest(error.code).equals("union")
 		})
@@ -945,20 +933,16 @@ contextualize(() => {
 				v: { kind: "'b'", y: "number" },
 				w: "string"
 			})
-			attest(T({}).toString()).snap("v must be an object (was missing)")
-			attest(T({ v: 5 }).toString()).snap("v must be an object (was a number)")
+			attest(T({}).toString()).snap("v must be an object")
+			attest(T({ v: 5 }).toString()).snap("v must be an object")
 			// a parent that is an object still misses at the key
-			attest(T({ v: {} }).toString()).snap(
-				'v.kind must be "a" or "b" (was missing)'
-			)
+			attest(T({ v: {} }).toString()).snap('v.kind must be "a" or "b"')
 		})
 
 		it("isn't an array at an element discriminant", () => {
 			const T = $.type(["'a'", "string"]).or(["'b'", "number"])
-			attest(T({}).toString()).snap("must be an array (was an object)")
-			attest(T([]).toString()).snap(
-				'value at [0] must be "a" or "b" (was missing)'
-			)
+			attest(T({}).toString()).snap("must be an array")
+			attest(T([]).toString()).snap('[0] must be "a" or "b"')
 		})
 
 		it("reaches a default case", () => {
@@ -966,14 +950,14 @@ contextualize(() => {
 				.or({ id: "1", k2: "number" })
 				.or({ name: "string" })
 			attest(Event({}).toString()).snap(
-				"id must be 0 or 1 (was missing) or name must be a string (was missing)"
+				"id must be 0 or 1 or name must be a string"
 			)
 			attest(Event({ id: 5 }).toString()).snap(
-				"id must be 0 or 1 (was 5) or name must be a string (was missing)"
+				"id must be 0 or 1 or name must be a string"
 			)
 			// a case still reports only the branches it allows
 			attest(Event({ id: 0 }).toString()).snap(
-				"k1 must be a number (was missing) or name must be a string (was missing)"
+				"k1 must be a number or name must be a string"
 			)
 			const error = (Event({ id: 5 }) as type.errors).issues[0]
 			attest(
@@ -987,16 +971,14 @@ contextualize(() => {
 		it("reaches a default case at its own value", () => {
 			const T = $.type("'a' | 'b' | 'c'").or("string > 5")
 			attest(T("d").toString()).snap(
-				'must be "a", "b", "c" or at least length 6 (was "d")'
+				'must be "a", "b", "c" or at least length 6'
 			)
 		})
 
 		it("reaches a default case of another basis", () => {
 			const T = $.type("Date").or({ a: "1" }).or({ a: "2" })
-			attest(T({ a: 3 }).toString()).snap(
-				"a must be 1 or 2 (was 3) or must be a Date (was an object)"
-			)
-			attest(T(5).toString()).snap("must be an object or a Date (was a number)")
+			attest(T({ a: 3 }).toString()).snap("a must be 1 or 2 or must be a Date")
+			attest(T(5).toString()).snap("must be an object or a Date")
 		})
 
 		it("in a cyclic union", () => {
@@ -1005,9 +987,7 @@ contextualize(() => {
 				Group: { type: "'group'", parts: "Part[]" },
 				Part: "Field | Group"
 			}).type({ parts: "Part[]" })
-			attest(T({ parts: [5] }).toString()).snap(
-				"parts[0] must be an object (was a number)"
-			)
+			attest(T({ parts: [5] }).toString()).snap("parts[0] must be an object")
 		})
 	})
 
@@ -1019,7 +999,7 @@ contextualize(() => {
 				b: "number"
 			})
 			const errors = T({ k: 3.5 }) as type.errors
-			attest(errors.summary).snap("k must be 1.5 or 2.5 (was 3.5)")
+			attest(errors.summary).snap("k must be 1.5 or 2.5")
 			attest(errors.toJSON()[0]).snap({
 				data: 3.5,
 				path: ["k"],
@@ -1031,9 +1011,9 @@ contextualize(() => {
 				meta: {},
 				propString: "k",
 				expected: "1.5 or 2.5",
-				actual: "3.5",
-				problem: "must be 1.5 or 2.5 (was 3.5)",
-				message: "k must be 1.5 or 2.5 (was 3.5)"
+				actual: "",
+				problem: "must be 1.5 or 2.5",
+				message: "k must be 1.5 or 2.5"
 			})
 		})
 
@@ -1042,14 +1022,14 @@ contextualize(() => {
 			const T = $.type("string | number | bigint").or({ a: "1" })
 			const errors = T(Symbol("domainCase")) as type.errors
 			attest(errors.summary).snap(
-				"must be a bigint, a number, a string or an object (was a symbol)"
+				"must be a bigint, a number, a string or an object"
 			)
 			const error = errors.issues[0]
 			if (error.code !== "discriminant") throw new Error()
 			attest(error.discriminantKind).equals("domain")
 			attest(error.cases).equals(["bigint", "number", "string", "object"])
 			attest((T(true) as type.errors).summary).snap(
-				"must be a bigint, a number, a string or an object (was boolean)"
+				"must be a bigint, a number, a string or an object"
 			)
 		})
 
@@ -1070,7 +1050,7 @@ contextualize(() => {
 			)
 			const errors = T("z") as type.errors
 			attest(errors.summary).snap(
-				'must be 1, {}, Symbol(unitCase), -Infinity, 2n, "a", undefined, null or true (was "z")'
+				'must be 1, {}, Symbol(unitCase), -Infinity, 2n, "a", undefined, null or true'
 			)
 			const error = errors.issues[0]
 			if (error.code !== "discriminant") throw new Error()
@@ -1099,11 +1079,8 @@ contextualize(() => {
 				if (error.code !== "discriminant") throw new Error()
 				return [error.absent, error.message]
 			}
-			attest(absent({})).snap([true, 'k must be "a" or "b" (was missing)'])
-			attest(absent({ k: undefined })).snap([
-				false,
-				'k must be "a" or "b" (was undefined)'
-			])
+			attest(absent({})).snap([true, 'k must be "a" or "b"'])
+			attest(absent({ k: undefined })).snap([false, 'k must be "a" or "b"'])
 			// each has its own key so they aren't merged into one v
 			const Nested = $.type({ v: { k: "'a'", x: "string" }, "a?": "1" })
 				.or({ v: { k: "'b'", y: "number" }, "b?": "1" })
@@ -1125,14 +1102,14 @@ contextualize(() => {
 			})
 			const T = $.type({ v: $.type("object").pipe(o => Disc(o)) })
 			const error = (T({ v: { k: "c" } }) as type.errors).issues[0]
-			attest(error.message).snap('v.k must be "a" or "b" (was "c")')
+			attest(error.message).snap('v.k must be "a" or "b"')
 			attest(error.propString).equals("v.k")
 		})
 
 		it("serialize with bigint cases", () => {
 			const T = type({ k: "1n", a: "string" }).or({ k: "2n", b: "number" })
 			attest(JSON.parse(JSON.stringify(T({ k: "x" })))[0].message).snap(
-				'k must be 1n or 2n (was "x")'
+				"k must be 1n or 2n"
 			)
 		})
 
@@ -1147,7 +1124,7 @@ contextualize(() => {
 				"w?": "string"
 			})
 			attest(T({ v: { k: "c" } }).toString()).snap(
-				'v.k must be "a", "b" or at least length 5 (was "c")'
+				'v.k must be "a", "b" or at least length 5'
 			)
 		})
 
@@ -1168,22 +1145,14 @@ contextualize(() => {
 	it("jitless describes cases as compiled", () => {
 		const $ = scope({})
 		const StringOrFile = $.type("string | File")
-		attest(StringOrFile(5).toString()).snap(
-			"must be a string or an object (was a number)"
-		)
-		attest(StringOrFile({}).toString()).snap(
-			"must be a File instance (was an object)"
-		)
-		attest($.type("'b' | 1 | 'a'")(2).toString()).snap(
-			'must be 1, "a" or "b" (was 2)'
-		)
+		attest(StringOrFile(5).toString()).snap("must be a string or an object")
+		attest(StringOrFile({}).toString()).snap("must be a File instance")
+		attest($.type("'b' | 1 | 'a'")(2).toString()).snap('must be 1, "a" or "b"')
 		const Tagged = $.type({ kind: "'a'", a: "string" }).or({
 			kind: "'b'",
 			b: "number"
 		})
-		attest(Tagged({ kind: "a", a: 5 }).toString()).snap(
-			"a must be a string (was a number)"
-		)
+		attest(Tagged({ kind: "a", a: 5 }).toString()).snap("a must be a string")
 	})
 
 	it("describes a unit case once", () => {
@@ -1197,7 +1166,7 @@ contextualize(() => {
 		const $ = scope({})
 		const T = $.type({ k: $.type.unit(unit) }).or({ k: "'b'", v: "number" })
 		attest(T({ k: "c" }).toString()).snap(
-			'k must be {"toJSON":"Function(toJSON)"} or "b" (was "c")'
+			'k must be {"toJSON":"Function(toJSON)"} or "b"'
 		)
 		const callsOnFirstMiss = calls
 		T({ k: "c" })

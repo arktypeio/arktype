@@ -185,9 +185,8 @@ supplied`)
 			"extra"
 		)
 		errors._merge!(merged, ["owner"])
-		attest(errors.summary).snap(`owner.name (1) must be...
-  ◦ a string
-  ◦ is missing
+		attest(errors.summary).snap(`owner.name must be a string
+owner.name is missing
 owner.extra must be removed`)
 	})
 

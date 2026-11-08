@@ -12,7 +12,7 @@ it("validates", () => {
 		adult: true
 	})
 	attest(User({ name: "Ada", age: 200 }).toString()).snap(
-		"age must be valid according to an anonymous predicate (was 200)"
+		"age must be valid according to an anonymous predicate"
 	)
 })
 

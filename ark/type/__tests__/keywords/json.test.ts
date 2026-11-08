@@ -17,7 +17,7 @@ contextualize(() => {
 	it("string.json", () => {
 		const parseJson = type("string.json")
 		attest(parseJson('{"a": "hello"}')).snap('{"a": "hello"}')
-		attest(parseJson(123).toString()).snap("must be a string (was a number)")
+		attest(parseJson(123).toString()).snap("must be a string")
 
 		attest(parseJson("{").toString()).equals(expectedSyntaxErrorProblem)
 	})
@@ -26,7 +26,7 @@ contextualize(() => {
 		const parseJson = type("string.json.parse")
 
 		attest(parseJson('{"a": "hello"}')).snap({ a: "hello" })
-		attest(parseJson(123)?.toString()).snap("must be a string (was a number)")
+		attest(parseJson(123)?.toString()).snap("must be a string")
 
 		attest(parseJson("{")?.toString()).equals(expectedSyntaxErrorProblem)
 	})

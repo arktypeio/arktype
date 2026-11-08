@@ -99,11 +99,40 @@ export const writeFromPath = (
 		:	errors
 	)
 
+// a union whose every branch fails at its basis, at the union's own path, is
+// reported by what the bases are, holding no errors, as arktype's is
+const basesIssueOf = (
+	path: PropertyKey[],
+	data: unknown,
+	errors: readonly ArkIssue[],
+	describe: (expected: string[]) => string
+): ArkIssue | undefined => {
+	for (const { code, path: at } of errors) {
+		if (
+			(code !== "domain" && code !== "proto" && code !== "unit") ||
+			at.length !== path.length ||
+			at.some((k, i) => k !== path[i])
+		)
+			return
+	}
+	const expected = describe(errors.map(error => error.expected!))
+	return new ListedIssue(
+		path.slice(),
+		data,
+		[],
+		messageOf({ path, expected } as never),
+		expected
+	)
+}
+
 // its readers, what pipes a validator and Standard Schema, only call what an
 // issue holds, so name nothing a bundler would then keep where a program has
-// no such reader or no union
+// no such reader or no union. Branches whose checks are all described alike
+// describe their bases alike, so they're described by the first one's, leaving
+// out what lists them
 const issueWriterOf = (
-	write: (errors: readonly ArkIssue[]) => string
+	write: (errors: readonly ArkIssue[]) => string,
+	describeBases: (expected: string[]) => string
 ): UnionIssueOf =>
 	rewritesUnions ?
 		(() => {
@@ -123,12 +152,14 @@ const issueWriterOf = (
 					)
 				}
 
-				// as if data at its path were validated alone
-				_r(): string {
+				// its paths written from its own, as arktype's union's problem is,
+				// so a Standard Schema issue says it as if validated alone
+				get problem(): string {
 					return this.expected
 				}
 			}
 			return (path, data, errors) =>
+				basesIssueOf(path, data, errors, describeBases) ??
 				new RewrittenIssue(
 					path.slice(),
 					data,
@@ -138,6 +169,7 @@ const issueWriterOf = (
 				)
 		})()
 	:	(path, data, errors) =>
+			basesIssueOf(path, data, errors, describeBases) ??
 			new ListedIssue(
 				path.slice(),
 				data,
@@ -146,8 +178,12 @@ const issueWriterOf = (
 				writeFromPath(path, errors, write)
 			)
 
-export const listedIssue: UnionIssueOf =
-	/* @__PURE__ */ issueWriterOf(writeListed)
+export const listedIssue: UnionIssueOf = /* @__PURE__ */ issueWriterOf(
+	writeListed,
+	writeBranches
+)
 
-export const alikeIssue: UnionIssueOf =
-	/* @__PURE__ */ issueWriterOf(writeAlike)
+export const alikeIssue: UnionIssueOf = /* @__PURE__ */ issueWriterOf(
+	writeAlike,
+	expected => expected[0]
+)

@@ -1930,10 +1930,7 @@ console.log(
 		const expected = runPlain(root)
 		attest(JSON.parse(expected)).snap([
 			{ name: "Ada" },
-			[
-				"name must be a string (was a number)",
-				'email must be an email address (was "x")'
-			],
+			["name must be a string", "email must be an email address"],
 			["must be a string (was missing)"]
 		])
 		// the dependency's Types are arktype's, and only Email is precompiled
@@ -3696,7 +3693,7 @@ console.log(String(A({})), a, allowed, String(B({})), b, String(C({})), c, unall
 `
 				},
 				{ preset: "smallest" },
-				"name must be a string { name: 'a' } true title must be a string { title: 'c' } a must be an object\nb must be boolean { a: { name: 'd' }, b: true } false\n"
+				"name must be a string (was missing) { name: 'a' } true title must be a string (was missing) { title: 'c' } a must be an object (was missing)\nb must be boolean (was missing) { a: { name: 'd' }, b: true } false\n"
 			],
 			"a read of type.errors, which reads the class it holds": [
 				{ "main.ts": readsErrors },

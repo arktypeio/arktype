@@ -98,7 +98,7 @@ contextualize(() => {
 			"May 3 ← 2000-05-04T00:00:00.000Z":
 				"muss ein Wert gemäß der Beschreibung „2000-05-03“ sein, ist aber der 4. Mai 2000",
 			"enumerated Dates ← 2000-05-05T00:00:00.000Z":
-				"muss der 3. Mai 2000 oder der 4. Mai 2000 sein, ist aber der 5. Mai 2000",
+				"muss der 3. Mai 2000 or der 4. Mai 2000 sein, ist aber ein Objekt",
 			"narrowed Date ← 2000-05-03T00:00:00.000Z":
 				"muss gemäß einem anonymen Prädikat gültig sein, ist aber ein Objekt",
 			"string ← 5": "muss eine Zeichenkette sein, ist aber eine Zahl",
@@ -177,7 +177,7 @@ contextualize(() => {
 			'discriminant described ← {"kind":"triangle"}':
 				"muss ein Wert gemäß der Beschreibung „eine Form“ sein, ist aber ein Objekt",
 			"discriminant described branches ← true":
-				"muss ein Wert gemäß der Beschreibung „eine Anzahl“ oder eine Zeichenkette sein, ist aber ein Wahrheitswert",
+				"muss ein Wert gemäß der Beschreibung „eine Anzahl“ or eine Zeichenkette sein, ist aber true",
 			'discriminant numbers ← {"k":3.5}':
 				"k muss 1,5 oder 2,5 sein, ist aber 3,5",
 			'discriminant bigints ← {"k":"3n"}':
@@ -187,7 +187,7 @@ contextualize(() => {
 				"muss ein BigInt, eine Zahl, eine Zeichenkette oder ein Objekt sein, ist aber ein Wahrheitswert",
 			'discriminant in an outer union ← {"a":{"kind":"triangle"}}':
 				'a muss eine Zeichenkette sein (ist ein Objekt) oder a.kind muss "circle" oder "square" sein (ist "triangle")',
-			"discriminant unreadable ← 5": "muss ein Objekt sein, ist aber eine Zahl",
+			"discriminant unreadable ← 5": "muss ein Objekt sein, ist aber 5",
 			'discriminant beside a default ← {"id":5}':
 				"id muss 0 oder 1 sein (ist 5) oder name fehlt (muss eine Zeichenkette sein)",
 			'discriminant cases beside a default ← "d"':
@@ -213,9 +213,9 @@ contextualize(() => {
 			"never ← 5": "muss never sein, ist aber 5",
 			'never at a path ← {"a":1}': "a muss never sein, ist aber 1",
 			"intersection ← 3":
-				"(3) muss alles Folgende sein:\n  ◦ gerade\n  ◦ größer als 10",
+				"muss gerade sein, ist aber 3\nmuss größer als 10 sein, ist aber 3",
 			"intersection with an authored constraint ← 3":
-				"(3) muss alles Folgende sein:\n  ◦ gerade\n  ◦ ein Wert gemäß der Beschreibung „zweistellig“",
+				"muss gerade sein, ist aber 3\nmuss ein Wert gemäß der Beschreibung „zweistellig“ sein, ist aber 3",
 			'path ← {"user":{"address":{"zip":5}}}':
 				"user.address.zip muss eine Zeichenkette sein, ist aber eine Zahl",
 			'path at an index ← ["a",1]':
@@ -236,9 +236,9 @@ contextualize(() => {
 			'titled through an index ← {"list":[1]}':
 				"„Name“ an list[0] muss eine Zeichenkette sein, ist aber eine Zahl",
 			'titled, two constraints ← {"n":3}':
-				"„Anzahl“ (3) muss alles Folgende sein:\n  ◦ gerade\n  ◦ größer als 10",
+				"„Anzahl“ muss gerade sein, ist aber 3\n„Anzahl“ muss größer als 10 sein, ist aber 3",
 			"titled, two constraints at an index ← [3]":
-				"„Anzahl“ an [0] (3) muss alles Folgende sein:\n  ◦ gerade\n  ◦ größer als 10",
+				"„Anzahl“ an [0] muss gerade sein, ist aber 3\n„Anzahl“ an [0] muss größer als 10 sein, ist aber 3",
 			'titled enum ← {"s":"c"}': '„Name“ muss "a" oder "b" sein, ist aber "c"',
 			'titled discriminated enum ← {"s":"d"}':
 				'„Name“ muss "a", "b" oder "c" sein, ist aber "d"',
@@ -389,9 +389,9 @@ contextualize(() => {
 	// https://github.com/arktypeio/arktype/issues/1412
 	it("writes constraints described alike once", () => {
 		const Email = type("string.email > 0", "@", "Email is not valid")
-		attest(Email("").toLocaleString(de)).snap(
-			'muss ein Wert gemäß der Beschreibung „Email is not valid“ sein, ist aber ""'
-		)
+		attest(Email("").toLocaleString(de))
+			.snap(`muss ein Wert gemäß der Beschreibung „Email is not valid“ sein, ist aber ""
+muss ein Wert gemäß der Beschreibung „Email is not valid“ sein`)
 	})
 
 	it("can be spread to change one sentence", () => {

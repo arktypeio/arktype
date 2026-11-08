@@ -54,11 +54,10 @@ contextualize(() => {
 		// the first data is checked uncompiled
 		T({ n: null, s: undefined })
 		attest(T({ n: null, s: undefined })).equals({ n: null, s: undefined })
-		attest(T({ n: 0, s: "" }).toString()).snap(`n must be positive (was 0)
+		attest(T({ n: 0, s: "" }).toString()).snap(`n must be positive
 s must be non-empty`)
-		attest(T({ n: "1", s: null }).toString())
-			.snap(`n must be a number or null (was a string)
-s must be a string or undefined (was null)`)
+		attest(T({ n: "1", s: null }).toString()).snap(`n must be a number or null
+s must be a string or undefined`)
 	})
 
 	it("boolean is a union of true | false", () => {
@@ -83,31 +82,25 @@ s must be a string or undefined (was null)`)
 
 		attest(
 			TypeABC([{ objB: "text b" }, "test a", { objC: "text c" }]).toString()
-		).snap(
-			"value at [2].objB must be a string (was missing) or value at [0].objC must be a string (was missing)"
-		)
+		).snap("[2].objB must be a string or [0].objC must be a string")
 
 		attest(
 			TypeABC(["test a", { objB: "text b" }, { objC: "text c" }]).toString()
-		).snap(
-			"value at [2].objB must be a string (was missing) or value at [0] must be an object (was a string)"
-		)
+		).snap("[2].objB must be a string or [0] must be an object")
 	})
 
 	it("writes each path as its own error would", () => {
 		attest(type("number[] | string[]")(["a", 1]).toString()).snap(
-			"value at [0] must be a number (was a string) or value at [1] must be a string (was a number)"
+			"[0] must be a number or [1] must be a string"
 		)
 		attest(type(["number", "number"]).or(["string"])([1]).toString()).snap(
-			"must be exactly length 2 (was 1) or value at [0] must be a string (was a number)"
+			"must be exactly length 2 or [0] must be a string"
 		)
 	})
 
 	it("lists a branch failing at a never key", () => {
 		const T = type({ "[string]": "null", "a?": "string" }).or("null[]")
-		attest(T({ a: "" }).toString()).snap(
-			'a must be never (was "") or must be an array (was an object)'
-		)
+		attest(T({ a: "" }).toString()).snap("a must be never or must be an array")
 	})
 
 	it("lists each value a missing key allows once", () => {
@@ -115,24 +108,20 @@ s must be a string or undefined (was null)`)
 			a: "string",
 			c: "number"
 		})
-		attest(T({}).toString()).snap(
-			"a must be a string or a number (was missing)"
-		)
+		attest(T({}).toString()).snap("a must be a string or a number")
 		const Units = type({ a: "1 | 2", b: "string" }).or({
 			a: "2 | 3",
 			c: "number"
 		})
-		attest(Units({}).toString()).snap("a must be 1, 2 or 3 (was missing)")
+		attest(Units({}).toString()).snap("a must be 1, 2 or 3")
 	})
 
 	it("described", () => {
 		const T = type({ a: "string" }).or({ b: "number" }).describe("an a or a b")
-		attest(T({}).toString()).snap("must be an a or a b (was an object)")
-		attest(T(5).toString()).snap("must be an a or a b (was a number)")
+		attest(T({}).toString()).snap("must be an a or a b")
+		attest(T(5).toString()).snap("must be an a or a b")
 		const Lengths = type("string < 2 | string > 5").describe("short or long")
-		attest(Lengths("abc").toString()).snap(
-			"must be short or long (was length 3)"
-		)
+		attest(Lengths("abc").toString()).snap("must be short or long")
 	})
 
 	it("length stress", () => {
@@ -393,7 +382,7 @@ s must be a string or undefined (was null)`)
 			})
 			attest(T.expression).snap('{ kind: "a" | "b", x: string }')
 			attest(T({ x: 5 }).toString()).snap(`kind must be "a" or "b" (was missing)
-x must be a string (was a number)`)
+x must be a string`)
 		})
 
 		it("keep branches differing in two keys", () => {
@@ -485,7 +474,7 @@ x must be a string (was a number)`)
 				.describe("an A")
 				.or(type({ a: "number" }).describe("a B"))
 			attest(T.expression).snap("{ a: number } | { a: string }")
-			attest(T(5).toString()).snap("must be a B or an A (was a number)")
+			attest(T(5).toString()).snap("must be a B or an A")
 		})
 
 		it("merge a shared description", () => {
@@ -493,7 +482,7 @@ x must be a string (was a number)`)
 				.describe("an AB")
 				.or(type({ a: "number" }).describe("an AB"))
 			attest(T.expression).snap("{ a: number | string }")
-			attest(T(5).toString()).snap("must be an AB (was a number)")
+			attest(T(5).toString()).snap("must be an AB")
 		})
 	})
 

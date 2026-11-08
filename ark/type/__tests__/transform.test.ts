@@ -36,7 +36,7 @@ contextualize(() => {
 
 		const original = { foo: "  bar  ", inner: { a: "a" }, n: "1" }
 
-		attest(T(original).toString()).snap("n must be a number (was a string)")
+		attest(T(original).toString()).snap("n must be a number")
 		attest(original).snap({ foo: "  bar  ", inner: { a: "a" }, n: "1" })
 	})
 
@@ -173,11 +173,11 @@ contextualize(() => {
 		const B = $.type("string").pipe((s, ctx) => ctx.error("B"))
 
 		const T = $.type({ "[string]": A, "[/^a/]": B })
-		attest(T({ ab: "x", b: "y" }).toString()).snap(`ab must be A (was "x")
-b must be A (was "y")`)
+		attest(T({ ab: "x", b: "y" }).toString()).snap(`ab must be A
+b must be A`)
 
 		const U = $.type({ a: A }).and({ "[string]": B })
-		attest(U({ a: "x" }).toString()).snap('a must be A (was "x")')
+		attest(U({ a: "x" }).toString()).snap("a must be A")
 	})
 
 	it("shared object at two paths", () => {
@@ -340,7 +340,7 @@ b must be A (was "y")`)
 			{ b: 1 },
 			{ a: { value: " a " }, c: { value: { d: "2020-01-01" } } }
 		)
-		attest(T(original).toString()).snap("b must be a string (was a number)")
+		attest(T(original).toString()).snap("b must be a string")
 	})
 
 	it("hidden props and accessors", () => {
@@ -380,7 +380,7 @@ b must be A (was "y")`)
 		attest(out.bar).equals("y")
 		attest(
 			T(Object.assign([" a ", 1], { foo: " x ", bar: "y" })).toString()
-		).snap("value at [1] must be a string (was a number)")
+		).snap("[1] must be a string")
 	})
 
 	it("array with undeclared props", () => {
@@ -421,7 +421,7 @@ b must be A (was "y")`)
 			y: "number"
 		})
 		const out = T({ x: Object.assign(["s"], { b: "kept" }), y: "bad" })
-		attest(out.toString()).snap("y must be a number (was a string)")
+		attest(out.toString()).snap("y must be a number")
 	})
 
 	it("union of array props with shared defaults", () => {
@@ -447,7 +447,7 @@ b must be A (was "y")`)
 			x: Object.defineProperty({}, "c", { value: "s" }),
 			y: "bad"
 		})
-		attest(out.toString()).snap("y must be a number (was a string)")
+		attest(out.toString()).snap("y must be a number")
 	})
 
 	it("branch morph errors with ctx", () => {
@@ -460,15 +460,11 @@ b must be A (was "y")`)
 			cyclic: { a: "parsed | tree" }
 		}).export()
 
-		attest(types.contextual("x").toString()).snap(
-			"must be a number (was a string)"
-		)
+		attest(types.contextual("x").toString()).snap("must be a number")
 		attest(types.contextual.array()(["x"]).toString()).snap(
-			"value at [0] must be a number (was a string)"
+			"[0] must be a number"
 		)
-		attest(types.cyclic({ a: "x" }).toString()).snap(
-			"a must be a number (was a string)"
-		)
+		attest(types.cyclic({ a: "x" }).toString()).snap("a must be a number")
 	})
 
 	it("piped contextual node", () => {
@@ -493,7 +489,7 @@ b must be A (was "y")`)
 			length: 1
 		})
 		attest(T({ password: "pw", confirm: "pw", length: "" }).toString()).snap(
-			"length must be valid according to an anonymous predicate (was 0)"
+			"length must be valid according to an anonymous predicate"
 		)
 		attest(paths).equals([["length"], ["length"]])
 	})
@@ -534,9 +530,7 @@ b must be A (was "y")`)
 		})
 		const T = $.type({ n: Positive, s: "string.trim" })
 
-		attest(T({ n: -1, s: " x " }).toString()).snap(
-			"n must be positive (was -1)"
-		)
+		attest(T({ n: -1, s: " x " }).toString()).snap("n must be positive")
 		attest(Positive.allows(-1)).equals(false)
 	})
 
@@ -546,7 +540,7 @@ b must be A (was "y")`)
 
 		attest(T({ payload: JSON.stringify(payload) })).equals({ payload })
 		attest(T({ payload: JSON.stringify(payload), n: "1" }).toString()).snap(
-			"n must be a number (was a string)"
+			"n must be a number"
 		)
 	})
 
@@ -582,10 +576,9 @@ b must be A (was "y")`)
 			b: "number"
 		})
 
-		attest(T({ a: "x", b: 1 }).toString()).snap('a must be short (was "x")')
-		attest(T({ a: "x", b: "1" }).toString()).snap(
-			'a must be short (was "x")\nb must be a number (was a string)'
-		)
+		attest(T({ a: "x", b: 1 }).toString()).snap("a must be short")
+		attest(T({ a: "x", b: "1" }).toString()).snap(`a must be short
+b must be a number`)
 	})
 
 	it("morph errors in aliased branch", () => {
@@ -597,14 +590,13 @@ b must be A (was "y")`)
 			}
 		}).export()
 
-		attest($.node({ v: "a", next: { v: "b", next: null } }).toString()).snap(
-			'v must be short (was "a")\nnext.v must be short (was "b")'
-		)
-		attest(
-			$.node({ v: "a", next: { v: "b", next: null }, z: "1" }).toString()
-		).snap(
-			'v must be short (was "a")\nnext.v must be short (was "b")\nz must be a number (was a string)'
-		)
+		attest($.node({ v: "a", next: { v: "b", next: null } }).toString())
+			.snap(`v must be short
+next.v must be short`)
+		attest($.node({ v: "a", next: { v: "b", next: null }, z: "1" }).toString())
+			.snap(`v must be short
+next.v must be short
+z must be a number`)
 	})
 
 	it("skips morphs after failed pipe", () => {
@@ -625,7 +617,7 @@ b must be A (was "y")`)
 			}
 		)
 
-		attest(T("x").toString()).snap('must be valid inner (was "x")')
+		attest(T("x").toString()).snap("must be valid inner")
 		attest(calls).equals(["before", "inner"])
 	})
 
@@ -650,7 +642,7 @@ b must be A (was "y")`)
 			s: "s"
 		})
 		attest(T({ o: { a: -5, b: 1 }, s: 1 }).toString()).snap(
-			"s must be a string (was a number)"
+			"s must be a string"
 		)
 		attest(callCount).equals(0)
 	})
@@ -770,10 +762,9 @@ b must be A (was "y")`)
 				c: "number"
 			})
 
-			attest(T({ a: "x", b: "b", c: "y" }).toString())
-				.snap(`a must be a number (was a string)
-b must be short (was "b")
-c must be a number (was a string)`)
+			attest(T({ a: "x", b: "b", c: "y" }).toString()).snap(`a must be a number
+b must be short
+c must be a number`)
 			attest(counts).equals([1])
 		})
 
@@ -802,9 +793,9 @@ c must be a number (was a string)`)
 					p: '{"c":"c","n":"x"}',
 					k: "x"
 				}).toString()
-			).snap(`u.n must be positive or negative (was 0)
-p.n must be a number (was a string)
-k must be a number (was a string)`)
+			).snap(`u.n must be positive or negative
+p.n must be a number
+k must be a number`)
 			attest(calls).equals([])
 		})
 
@@ -823,12 +814,12 @@ k must be a number (was a string)`)
 			})
 
 			attest(T({ o: { a: "a", n: 0 }, k: "x" }).toString())
-				.snap(`o must be valid according to an anonymous predicate (was an object)
-k must be a number (was a string)`)
+				.snap(`o must be valid according to an anonymous predicate
+k must be a number`)
 			attest(calls).equals([])
 			attest(T({ o: { a: "a", n: "x" }, k: "x" }).toString())
-				.snap(`o.n must be a number (was a string)
-k must be a number (was a string)`)
+				.snap(`o.n must be a number
+k must be a number`)
 			attest(calls).equals(["a"])
 		})
 
@@ -844,7 +835,7 @@ k must be a number (was a string)`)
 			})
 
 			attest(T({ xa: "long", b: "b" }).toString()).snap(
-				"xa must be at most length 2 (was 4)"
+				"xa must be at most length 2"
 			)
 			attest(calls).equals(["b"])
 		})
@@ -856,9 +847,7 @@ k must be a number (was a string)`)
 				o: { d: ["string", "=", () => `${++calls}`] }
 			})
 
-			attest(T({ a: "x", o: {} }).toString()).snap(
-				"a must be a number (was a string)"
-			)
+			attest(T({ a: "x", o: {} }).toString()).snap("a must be a number")
 			attest(calls).equals(1)
 		})
 	})

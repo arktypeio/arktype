@@ -140,7 +140,7 @@ contextualize(() => {
 
 	it("prints an object equal to the unit by its kind", () => {
 		const T = type("===", {})
-		attest(T({}).toString()).snap("must be {} (was an object)")
+		attest(T({}).toString()).snap("must be {}")
 	})
 
 	it("error in obj that has tuple that writes error at proper path", () => {
@@ -214,7 +214,7 @@ contextualize(() => {
 		const O = type({ "a?": "string" })
 		attest(O({ a: "a" })).snap({ a: "a" })
 		attest(O({})).snap({})
-		attest(O({ a: 1 }).toString()).snap("a must be a string (was a number)")
+		attest(O({ a: 1 }).toString()).snap("a must be a string")
 	})
 
 	it("optional symbol", () => {
@@ -259,7 +259,7 @@ contextualize(() => {
 		attest(ProcessForm({ bool_value: "on" })).snap({ bool_value: true })
 
 		attest(ProcessForm({ bool_value: true }).toString()).snap(
-			"bool_value must be a string (was boolean)"
+			"bool_value must be a string"
 		)
 	})
 

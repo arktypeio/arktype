@@ -1,17 +1,14 @@
 import { fromHere } from "@ark/fs"
 import {
-	ArkErrors,
 	hasArkKind,
 	holeNameMarker,
 	schemaScope,
-	suppliedText,
-	type ArkError,
 	ToJsonSchema,
+	type ArkErrors,
 	type BaseRoot,
 	type BaseScope
 } from "@ark/schema"
-import { writeMessage } from "@ark/schema/internal"
-import { messageOf, problemOf, type ArkIssue } from "@ark/schema/runtime"
+import type { ArkIssue } from "@ark/schema/runtime"
 import { hasDomain, ParseError } from "@ark/util"
 import {
 	introspectionMembers,
@@ -60,9 +57,6 @@ import {
 	traverse
 } from "./contract.ts"
 import { issuesFrom, tempDir } from "./utils.ts"
-
-// compared with errors "all", as errors "first" reports one of arktype's issues
-const comparesExpecteds = detailsErrors && !firstIssue
 
 // compares a Type with its precompiled validators on each call's outcome
 
@@ -471,171 +465,62 @@ const isEqual = (l: unknown, r: unknown, read = false): boolean => {
 	}
 }
 
-// a copied error, e.g. a union branch's, has no source to read
-const suppliedTextOf = (
-	error: ArkError,
-	k: "expected" | "message" | "problem"
-) => {
-	try {
-		return suppliedText(error, k)
-	} catch {
-		return undefined
+interface WrittenIssue {
+	at: string
+	expected: unknown
+	message: unknown
+	problem?: unknown
+	errors?: WrittenIssue[]
+}
+
+// each issue's text as a program reads it, in order, which a validator writes
+// exactly as arktype does. A union's branches are listed where it has any; a
+// validator's issue holds a problem only where text sets one, its message
+// writing the problem either way. Neither's actual is compared, since a
+// validator's issue has none: what a configured actual or a missing key
+// writes is in the problem
+const writtenIssueOf = (issue: ArkIssue): WrittenIssue => ({
+	at: `${pathKeyOf(issue.path)}\0${issue.code}`,
+	expected: issue.expected,
+	message: issue.message,
+	...(issue.problem !== undefined && { problem: issue.problem }),
+	...(issue.errors?.length && { errors: issue.errors.map(writtenIssueOf) })
+})
+
+// what a program reads of its errors: each issue's text and the summary
+const writtenOf = (errors: ArkErrors, grouped = true) => {
+	const issues: readonly ArkIssue[] = errors.issues
+	return {
+		// a first-issue build's added issue, which the one it keeps is
+		written: (grouped ? issues : errors._).map(writtenIssueOf),
+		summary: errors.summary
 	}
 }
 
-// text a meta or a callback writes, which a validator writes as arktype does
-const textsOf = (errors: ArkErrors, grouped = true) => {
-	const isArktype = errors instanceof ArkErrors
-	// reading issues writes every error's text
-	const written: readonly ArkIssue[] = errors.issues
-	const added = grouped ? written : errors._
-	return added
-		.flatMap((issue): readonly ArkIssue[] =>
-			issue.code === "intersection" ?
-				(issue as ArkError<"intersection">).errors
-			:	[issue]
-		)
-		.flatMap(issue => {
-			const text: { at: string; message?: string; problem?: string } = {
-				at: `${pathKeyOf(issue.path)}\0${issue.code}`
-			}
-			if (isArktype) {
-				const error = issue as ArkError
-				const meta: Record<string, unknown> = error.meta ?? {}
-				// a validator's issue merged into arktype's errors keeps its problem
-				const isMerged =
-					meta.problem === meta.expected ||
-					meta.problem ===
-						problemOf({
-							code: error.code,
-							path: error.path,
-							data: error.data,
-							expected: meta.expected as never
-						})
-				const isMessaged =
-					(meta.message !== undefined && meta.message !== writeMessage) ||
-					suppliedTextOf(error, "message") !== undefined
-				// a keyword's phrase writes the SyntaxError it caught, as a validator does
-				const writesCause =
-					meta.keyword !== undefined &&
-					(error as { cause?: unknown }).cause !== undefined
-				if (
-					(meta.problem !== undefined && !isMerged) ||
-					suppliedTextOf(error, "problem") !== undefined ||
-					writesCause ||
-					(!isMessaged &&
-						meta.problem === undefined &&
-						(typeof meta.actual === "function" ||
-							(typeof meta.actual === "string" && meta.actual !== "")))
-				)
-					text.problem = error.problem
-				if (isMessaged) text.message = error.message
-			} else {
-				if (issue.problem !== undefined) text.problem = issue.problem
-				// a union's text is compared where it's expected
-				if (
-					!issue._r &&
-					issue.message !== messageOf({ ...issue, message: undefined })
-				)
-					text.message = issue.message!
-			}
-			return Object.keys(text).length > 1 ? [text] : []
-		})
-		.sort((l, r) => (l.at < r.at ? -1 : 1))
-}
-
-// what each issue expects, at its path and code, where a validator's issue is
-// written alike: not an issue a callback raised without an expected, whose
-// callback it doesn't hold, nor a union's, whose message says what it expects;
-// a missing key expects its value's brief. Its message is compared too, without
-// what a validator's never says: what the value was, and "value at" before an
-// index path
-const expectedsOf = (errors: ArkErrors) =>
-	keptOf(errors)
-		.map(issue => {
-			const expected =
-				issue.code === "union" ? "union"
-				: !(errors instanceof ArkErrors) ? (issue.expected ?? null)
-				: raisesUnexpected(issue as ArkError) ? null
-				: issue.expected
-			return {
-				at: `${pathKeyOf(issue.path)}\0${issue.code}`,
-				expected,
-				message:
-					expected === null || raisesNever(issue) ?
-						null
-					:	messageWithoutActual(issue.message!)
-			}
-		})
-		.sort((l, r) => (l.at < r.at ? -1 : 1))
-
-// arktype writes a symbol's description only where it's an identifier
-const messageWithoutActual = (message: string): string =>
-	withoutWas(message)
-		.replace(/(^|, | or )value at /g, "$1")
-		.replace(/\[Symbol\([^)]*\)]/g, "[Symbol]")
-
-// what a value was, which a build's text doesn't say, may hold quotes and parens
-const withoutWas = (message: string): string => {
-	const marker = " (was "
-	let written = ""
-	let from = 0
-	for (
-		let at = message.indexOf(marker);
-		at !== -1;
-		at = message.indexOf(marker, from)
-	) {
-		written += message.slice(from, at)
-		from = at + marker.length
-		let depth = 1
-		let isQuoted = false
-		while (depth && from < message.length) {
-			const char = message[from++]
-			if (isQuoted) {
-				if (char === "\\") from++
-				else if (char === '"') isQuoted = false
-			} else if (char === '"') isQuoted = true
-			else if (char === "(") depth++
-			else if (char === ")") depth--
+// arktype's problem where a validator's issue holds one
+const maskProblems = (arktype: unknown, precompiled: unknown): unknown => {
+	if (!hasDomain(arktype, "object") || !hasDomain(precompiled, "object"))
+		return arktype
+	const written = (arktype as { written?: WrittenIssue[] }).written
+	const compared = (precompiled as { written?: WrittenIssue[] }).written
+	if (!written || !compared || written.length !== compared.length)
+		return arktype
+	const masked = (l: WrittenIssue, r: WrittenIssue): WrittenIssue => {
+		const { problem, errors, ...rest } = l
+		return {
+			...rest,
+			...(r.problem !== undefined && { problem }),
+			...(errors && {
+				errors:
+					r.errors?.length === errors.length ?
+						errors.map((e, i) => masked(e, r.errors![i]))
+					:	errors
+			})
 		}
 	}
-	return written + message.slice(from)
-}
-
-// a check's error holds its description, which a raised one doesn't unless
-// pipe.try raised it, describing it by its morph
-const raisesUnexpected = (error: ArkError) =>
-	error.code !== "predicate" &&
-	error.code !== "union" &&
-	error.description === undefined &&
-	(error as { morph?: unknown }).morph === undefined &&
-	suppliedTextOf(error, "expected") === undefined
-
-// a callback's union of no branches has no text, as the docs say; a `never`'s
-// is compared by unionText.test.ts
-const raisesNever = (issue: { code: string; errors?: readonly unknown[] }) =>
-	issue.code === "union" && issue.errors?.length === 0
-
-// a validator's expected and message where arktype's are written from what
-// it doesn't hold
-const maskExpecteds = (arktype: unknown, precompiled: unknown): unknown => {
-	if (!hasDomain(arktype, "object") || !hasDomain(precompiled, "object"))
-		return precompiled
-	const expecteds = (
-		arktype as { expecteds?: { expected: unknown; message: unknown }[] }
-	).expecteds
-	const compared = (precompiled as { expecteds?: { expected: unknown }[] })
-		.expecteds
-	if (!expecteds || !compared || expecteds.length !== compared.length)
-		return precompiled
 	return {
-		...precompiled,
-		expecteds: compared.map((entry, i) =>
-			expecteds[i].expected === null ?
-				{ ...entry, expected: null, message: null }
-			: expecteds[i].message === null ? { ...entry, message: null }
-			: entry
-		)
+		...arktype,
+		written: written.map((issue, i) => masked(issue, compared[i]))
 	}
 }
 
@@ -645,8 +530,7 @@ const observe = (run: () => unknown, input: unknown): unknown => {
 		return isErrors(result) ?
 				{
 					issues: keptIssuesOf(result, !firstIssue),
-					...(detailsErrors && { texts: textsOf(result, !firstIssue) }),
-					...(comparesExpecteds && { expecteds: expectedsOf(result) })
+					...writtenOf(result, !firstIssue)
 				}
 			:	{ out: result, isInput: result === input }
 	} catch (e) {
@@ -658,9 +542,9 @@ const observe = (run: () => unknown, input: unknown): unknown => {
 		return issues ?
 				{
 					threw: "TraversalError",
+					message: (e as Error).message,
 					issues,
-					...(detailsErrors && { texts: textsOf(errors!, !firstIssue) }),
-					...(comparesExpecteds && { expecteds: expectedsOf(errors!) })
+					...writtenOf(errors!, !firstIssue)
 				}
 			:	{
 					threw: String(e),
@@ -837,7 +721,18 @@ const standardOutcomeOf = (t: Validator, input: unknown): unknown => {
 	const issues = keptIssuesOf({ issues: result.issues } as never)
 	const errors: any = traverse(t, cloneInput(input))
 	return isErrors(errors) && isEqual(issues, keptIssuesOf(errors)) ?
-			{ failedWithItsErrors: true }
+			{
+				failedWithItsErrors: true,
+				// a consumer prefixes each message with its path, as written
+				...(!firstIssue && {
+					messages: result.issues.map(
+						(issue: { message: string; path?: PropertyKey[] }) => [
+							issue.message,
+							issue.path?.map(String)
+						]
+					)
+				})
+			}
 		:	{ issues }
 }
 
@@ -961,24 +856,22 @@ const withReported = (observation: any, issues: unknown[]) =>
 		{ ...observation, issues }
 	:	{ ...observation, out: { ...observation.out, issues } }
 
-// errors "all"'s observation with only an alike issue, and its texts, at the
+// errors "all"'s observation with only an alike issue, and its text, at the
 // path of the one reported
 const withAlike = (observation: any, alike: any, reported: any) => {
 	const withIssue = withReported(observation, [reported])
-	if (!observation.texts) return withIssue
-	const from = `${pathKeyOf(alike.path)}\0`
-	const to = `${pathKeyOf(reported.path)}\0`
-	// another issue at the same path, like a pattern beside a minLength, isn't
-	// the one reported, but an intersection's are its own
-	const isAlike = (at: string) =>
-		alike.code === "intersection" ?
-			at.startsWith(from)
-		:	at === from + alike.code
+	if (!observation.written) return withIssue
+	const from = `${pathKeyOf(alike.path)}\0${alike.code}`
+	const to = `${pathKeyOf(reported.path)}\0${alike.code}`
+	const issue = observation.written.find(
+		(written: WrittenIssue) => written.at === from
+	)
+	if (!issue) return withIssue
 	return {
 		...withIssue,
-		texts: observation.texts.flatMap((text: { at: string }) =>
-			isAlike(text.at) ? [{ ...text, at: to + text.at.slice(from.length) }] : []
-		)
+		...("message" in observation && { message: issue.message }),
+		written: [{ ...issue, at: to }],
+		summary: issue.message
 	}
 }
 
@@ -1040,13 +933,13 @@ const agrees = (input: unknown, expected: Call, call: Call): boolean =>
 	firstIssue ?
 		reportsOneOf(input, expected, call)
 	:	isEqual(
-			expected,
 			Object.fromEntries(
-				Object.entries(call).map(([k, observed]) => [
+				Object.entries(expected).map(([k, observed]) => [
 					k,
-					maskExpecteds(expected[k as keyof Call], observed)
+					maskProblems(observed, call[k as keyof Call])
 				])
-			)
+			),
+			call
 		)
 
 const observeCalls = (node: BaseRoot, inputs: unknown[]) =>

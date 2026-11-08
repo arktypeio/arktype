@@ -9,20 +9,18 @@ contextualize(() => {
 	it("root", () => {
 		const Uuid = type("string.uuid")
 		attest(Uuid(validUuidV4)).equals(validUuidV4)
-		attest(Uuid("1234").toString()).snap('must be a UUID (was "1234")')
+		attest(Uuid("1234").toString()).snap("must be a UUID")
 	})
 
 	it("version subtype", () => {
 		const Uuidv4 = type("string.uuid.v4")
 
 		attest(Uuidv4(validUuidV4)).equals(validUuidV4)
-		attest(Uuidv4("1234").toString()).snap('must be a UUIDv4 (was "1234")')
+		attest(Uuidv4("1234").toString()).snap("must be a UUIDv4")
 
 		attest(keywords.string.uuid.v5(validUuidV5)).equals(validUuidV5)
 
-		attest(Uuidv4(validUuidV5).toString()).equals(
-			'must be a UUIDv4 (was "f70b8242-dd57-5e6b-b0b7-649d997140a0")'
-		)
+		attest(Uuidv4(validUuidV5).toString()).equals("must be a UUIDv4")
 	})
 
 	it("JSON Schema pattern accepts uppercase like the runtime check", () => {
@@ -57,10 +55,10 @@ contextualize(() => {
 	it("rejects partial matches", () => {
 		const Uuid = type("string.uuid")
 		attest(Uuid("dbb1e8e0-40fc-4c14-87eb-61b25d166a1b extra").toString()).snap(
-			'must be a UUID (was "dbb1e8e0-40fc-4c14-87eb-61b25d166a1b extra")'
+			"must be a UUID"
 		)
 		attest(Uuid("prefix dbb1e8e0-40fc-4c14-87eb-61b25d166a1b").toString()).snap(
-			'must be a UUID (was "prefix dbb1e8e0-40fc-4c14-87eb-61b25d166a1b")'
+			"must be a UUID"
 		)
 	})
 })

@@ -675,7 +675,6 @@ export const Fields = { even: Even, name: type("string") }
 				rewritesUnions: true,
 				traversesUnions: false,
 				readsKeySites: true,
-				runsArktype: false,
 				appliesValues: false,
 				transformsBranches: false,
 				failsInBranches: false,
@@ -695,7 +694,6 @@ export const Fields = { even: Even, name: type("string") }
 				rewritesUnions: true,
 				traversesUnions: false,
 				readsKeySites: false,
-				runsArktype: false,
 				appliesValues: false,
 				transformsBranches: false,
 				failsInBranches: false,
@@ -718,7 +716,6 @@ export const Fields = { even: Even, name: type("string") }
 				rewritesUnions: true,
 				traversesUnions: true,
 				readsKeySites: true,
-				runsArktype: false,
 				appliesValues: false,
 				transformsBranches: false,
 				failsInBranches: false,
@@ -802,7 +799,6 @@ export const Fields = { even: Even, name: type("string") }
 				rewritesUnions: true,
 				traversesUnions: false,
 				readsKeySites: true,
-				runsArktype: false,
 				appliesValues: false,
 				transformsBranches: false,
 				failsInBranches: false,
@@ -1363,9 +1359,8 @@ age must be a number
 			attest(asserted.includes("._t")).equals(false)
 			// arktype's own errors write a TraversalError's message
 			const island = await bundleOf("island.ts")
-			attest(run(island)).snap(`
-  • name must be a string (was a number)
-  • age must be a number (was a string)
+			attest(run(island)).snap(`name must be a string
+age must be a number
 `)
 			attest(island.includes("._t")).equals(true)
 			// an entry's export is read whole, in a bundle flattening nothing

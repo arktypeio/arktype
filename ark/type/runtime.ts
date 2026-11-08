@@ -12,7 +12,6 @@ import {
 	FirstIssues,
 	issueAt,
 	issuesOf,
-	listsUnions,
 	mergeIssues,
 	problemOf,
 	runtimeConfig,
@@ -125,15 +124,9 @@ export {
 	Traversal,
 	TraversalError,
 	tryMorph,
-	writeDomainActual,
-	writeLengthActual,
-	writeMinLengthActual,
-	writeNotEqualActual,
 	writeProblem,
-	writeProtoActual,
 	writeNullableJsonSchema,
 	writeUnionJsonSchema,
-	writeUnitActual,
 	writeUnitProblem,
 	type ArkError
 } from "@ark/schema/runtime"
@@ -300,10 +293,7 @@ export const standardResultOf = (
 			issues: (out._i ? (out.issues as ArkIssue[]) : out._).map(issue => ({
 				...issue,
 				// arktype's errors hold their problem whether or not a site writes text
-				message:
-					listsUnions && issue._r ?
-						issue._r()
-					:	(issue.problem ?? problemOf(issue))
+				message: issue.problem ?? problemOf(issue)
 			})) as StandardSchemaV1.Issue[]
 		}
 	:	{ value: out }
@@ -790,9 +780,7 @@ export const ownIssue = ((site: FailureSite): UnionIssueOf =>
 			const expected = (issue.expected =
 				path.length ? writeFromPath(path, errors, writeListed) : listed)
 			// what it lists is its problem unless one is configured, as arktype's is
-			defineProperty(issue, "_r", {
-				value: () => issue.problem ?? expected
-			})
+			issue.problem ??= expected
 		}
 		issue.errors = errors
 		return issue
@@ -807,8 +795,13 @@ export const failsListed = ((
 	issueOf: UnionIssueOf
 ): boolean | undefined => {
 	const path = traversesUnions ? (ctx._p ?? ctx.path) : ctx._p
-	// a shared object reports one issue to each branch reaching it, listed once
-	const errors = [...new Set(firsts.flatMap(first => first.errors ?? first))]
+	// a shared object reports one issue to each branch reaching it, listed once;
+	// a union listing none, like one of bases, is its own
+	const errors = [
+		...new Set(
+			firsts.flatMap(first => (first.errors?.length ? first.errors : first))
+		)
+	]
 	const issue = issueOf(path, data, errors)
 	if (traversesUnions && !ctx._p) ctx.addError(issue)
 	else ctx._.push(issue)

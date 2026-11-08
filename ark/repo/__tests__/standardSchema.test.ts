@@ -51,8 +51,8 @@ contextualize(() => {
 		})
 
 		attest(invalid).instanceOf(type.errors)
-		attest(invalid.toString()).snap(`name must be a string (was a number)
-age must be a number (was a string)
+		attest(invalid.toString()).snap(`name must be a string
+age must be a number
 address.streetNumber invalid input: expected number, received string
 address.streetName invalid input: expected string, received undefined`)
 	})

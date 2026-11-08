@@ -134,9 +134,7 @@ contextualize(() => {
 		attest(types.a.expression).snap("{ b: { a: $a } }")
 		attest(types.b.expression).snap("{ a: $a }")
 		attest(types.a(data)).equals(data)
-		attest(String(types.a({ b: { a: 5 } }))).snap(
-			"b.a must be an object (was a number)"
-		)
+		attest(String(types.a({ b: { a: 5 } }))).snap("b.a must be an object")
 	})
 
 	it("thunk referenced while parsing", () => {
@@ -146,16 +144,14 @@ contextualize(() => {
 		} as never)
 		const { w }: Record<string, Type> = $.export() as never
 		attest(w.expression).snap("string | { v: string, w?: $w }")
-		attest(String(w({ v: "x", w: { v: 1 } }))).snap(
-			"w.v must be a string (was a number)"
-		)
+		attest(String(w({ v: "x", w: { v: 1 } }))).snap("w.v must be a string")
 
 		const withDefault: Scope = scope({
 			w: () => withDefault.type({ x: ["a", "=", () => ({ n: 5 })] } as never),
 			a: { "n?": "a", "w?": "w" }
 		} as never)
 		const { w: defaulted }: Record<string, Type> = withDefault.export() as never
-		attest(String(defaulted({}))).snap("x.n must be an object (was a number)")
+		attest(String(defaulted({}))).snap("x.n must be an object")
 
 		const throwing: Scope = scope({
 			w: () => throwing.type({ a: "a", b: "bad" } as never),

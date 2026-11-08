@@ -22,9 +22,6 @@ export const traversesUnions: boolean = true
 /** a key's site, holding its value's context */
 export const readsKeySites: boolean = true
 
-/** errors arktype's own runtime writes, whose summary a TraversalError reads */
-export const runsArktype: boolean = true
-
 /** a checker applying a value itself, holding a morph, an alias or a callback reading its ctx */
 export const appliesValues: boolean = true
 

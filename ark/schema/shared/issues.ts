@@ -7,7 +7,6 @@ import {
 	readsErrors,
 	readsSummary,
 	reportsIndices,
-	runsArktype,
 	writesText
 } from "./issueFeatures.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
@@ -27,8 +26,6 @@ export interface ArkIssue {
 	errors?: readonly ArkIssue[]
 	/** @internal a union's, its text written again at a path before its own */
 	_m?(prefix: array<PropertyKey>): ArkIssue
-	/** @internal a union's text, as if data at its path were validated alone */
-	_r?(): string
 }
 
 type WrittenIssue = ArkIssue & { message: string }
@@ -197,8 +194,6 @@ interface Issues extends ReadIssues {
 	_merge?(merged: Issues, prefix: array<PropertyKey>): void
 	/** @internal arktype's errors, grouped by path */
 	readonly _i?: ArkIssue[]
-	/** @internal arktype's TraversalError message, one line per error */
-	readonly _t?: string
 }
 
 declare namespace Issues {
@@ -324,10 +319,14 @@ export const messageOf = (issue: ArkIssue): string => {
 	return (path && path + " ") + problemOf(issue)
 }
 
-// an undeclared key's site says what's expected
+// an undeclared key's site says what's expected. Only a missing key's says
+// what the value was, since writing any other value would ship a printer
 export const problemOf = (issue: ArkIssue): string =>
 	(writesText ? issue.problem : undefined) ??
-	(issue.expected !== undefined ? "must be " + issue.expected
+	(issue.expected !== undefined ?
+		"must be " +
+		issue.expected +
+		(issue.code === "required" ? " (was missing)" : "")
 	: issue.code === "required" ? "is missing"
 	: "is invalid")
 
@@ -343,7 +342,7 @@ const ThrownIssues: new (errors: Issues) => ThrownIssues = (
 			declare arkErrors: Issues
 
 			constructor(errors: Issues) {
-				super((runsArktype ? errors._t : undefined) ?? errors.summary)
+				super(errors.summary)
 
 				// assigned, as a field's initializer compiles where the class is defined
 				this.name = "TraversalError"

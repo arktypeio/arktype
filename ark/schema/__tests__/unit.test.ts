@@ -13,8 +13,8 @@ contextualize(() => {
 		const T = rootSchema({ unit: "foo" })
 		attest(T.json).snap({ unit: "foo" })
 		attest(T("foo")).equals("foo")
-		attest(T("bar")?.toString()).snap('must be "foo" (was "bar")')
-		attest(T(5)?.toString()).snap('must be "foo" (was 5)')
+		attest(T("bar")?.toString()).snap('must be "foo"')
+		attest(T(5)?.toString()).snap('must be "foo"')
 	})
 	it("treats equivalent dates as equal", () => {
 		const L = rootSchema({ unit: new Date(1337) })

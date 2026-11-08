@@ -34,7 +34,6 @@ var bracketsKeys = true
 var writesText = true
 var listsUnions = true
 var readsKeySites = true
-var runsArktype = true
 var appliesValues = true
 var transformsBranches = true
 var failsInBranches = true
@@ -151,14 +150,17 @@ var messageOf = issue => {
 }
 var problemOf = issue =>
 	(writesText ? issue.problem : void 0) ??
-	(issue.expected !== void 0 ? "must be " + issue.expected
+	(issue.expected !== void 0 ?
+		"must be " +
+		issue.expected +
+		(issue.code === "required" ? " (was missing)" : "")
 	: issue.code === "required" ? "is missing"
 	: "is invalid")
 var ThrownIssues =
 	readsErrors ?
 		class TraversalError extends Error {
 			constructor(errors) {
-				super((runsArktype ? errors._t : void 0) ?? errors.summary)
+				super(errors.summary)
 				this.name = "TraversalError"
 				Object.defineProperty(this, "arkErrors", { value: errors })
 			}

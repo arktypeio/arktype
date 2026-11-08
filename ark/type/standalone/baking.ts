@@ -340,7 +340,6 @@ export interface IssueFeatures {
 	rewritesUnions: boolean
 	traversesUnions: boolean
 	readsKeySites: boolean
-	runsArktype: boolean
 	appliesValues: boolean
 	transformsBranches: boolean
 	failsInBranches: boolean
@@ -357,7 +356,6 @@ export const noIssueFeatures: IssueFeatures = {
 	rewritesUnions: false,
 	traversesUnions: false,
 	readsKeySites: false,
-	runsArktype: false,
 	appliesValues: false,
 	transformsBranches: false,
 	failsInBranches: false,

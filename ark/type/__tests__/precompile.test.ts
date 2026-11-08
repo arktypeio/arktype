@@ -141,11 +141,9 @@ contextualize(() => {
 			defaulted: key
 		})
 		attest(T({ [key]: "c" }).toString()).snap(
-			'value at [Symbol(precompiledKey)] must be "b" or "a" (was "c")'
+			'[Symbol(precompiledKey)] must be "b" or "a"'
 		)
-		attest(T({ [key]: "b", n: "x" }).toString()).snap(
-			"n must be a number (was a string)"
-		)
+		attest(T({ [key]: "b", n: "x" }).toString()).snap("n must be a number")
 	})
 
 	it("exports every keyword's predicates and morphs", () => {
@@ -205,7 +203,7 @@ contextualize(() => {
 		const T = scope({}, config).type(def)
 		attest(isPrecompiled(units, T.internal)).equals(true)
 		attest(T({ precompiledDescribed: 5 }).toString()).snap(
-			"precompiledDescribed must be a custom domain (was a number)"
+			"precompiledDescribed must be a custom domain"
 		)
 		attest(observe(T, 5)).equals(observe(Jit, 5))
 	})
@@ -220,7 +218,7 @@ contextualize(() => {
 		})
 		attest(isPrecompiled(units, Changed.internal)).equals(false)
 		attest(Changed({ precompiledOptional: "x" }).toString()).snap(
-			"precompiledOptional must be a number (was a string)"
+			"precompiledOptional must be a number"
 		)
 		attest(isPrecompiled(units, Undefinable.internal)).equals(false)
 		attest(Undefinable.allows({ precompiledOptional: undefined })).equals(true)
@@ -258,7 +256,7 @@ contextualize(() => {
 		attest(isPrecompiled(units, T.internal)).equals(true)
 		attest(T(-1)).equals(-1)
 		attest(T(1).toString()).snap(
-			"must be valid according to isSignedPrecompiled (was 1)"
+			"must be valid according to isSignedPrecompiled"
 		)
 	})
 
@@ -271,9 +269,9 @@ contextualize(() => {
 			named("a", (n: number, ctx) => n > 0 || ctx.reject("positive"))
 		)
 		attest(isPrecompiled(units, T.internal)).equals(true)
-		attest(T(-1).toString()).snap("must be valid according to a (was -1)")
+		attest(T(-1).toString()).snap("must be valid according to a")
 		attest(isPrecompiled(units, Contextual.internal)).equals(false)
-		attest(Contextual(-1).toString()).snap("must be positive (was -1)")
+		attest(Contextual(-1).toString()).snap("must be positive")
 	})
 
 	it("misses a unit for a narrow reading ctx where a build proved it only returns its reports", async () => {
@@ -298,7 +296,7 @@ contextualize(() => {
 			false,
 			true
 		])
-		attest(T(-1).toString()).snap("must be positive (was -1)")
+		attest(T(-1).toString()).snap("must be positive")
 	})
 
 	it("keys a unit without reading the arity of a function arktype doesn't call", async () => {
@@ -349,7 +347,7 @@ contextualize(() => {
 		const T = type("Date").narrow((d: Date) => d.getUTCFullYear() > 2000)
 		attest(isPrecompiled(units, T.internal)).equals(false)
 		attest(T(new Date("1990-01-01T00:00:00.000Z")).toString()).snap(
-			"must be valid according to an anonymous predicate (was an object)"
+			"must be valid according to an anonymous predicate"
 		)
 	})
 
@@ -380,7 +378,7 @@ contextualize(() => {
 		const T = scope({}).type(def)
 		attest(
 			T({ precompiledValue: "a", next: { precompiledValue: 1 } }).toString()
-		).snap("next.precompiledValue must be a string (was a number)")
+		).snap("next.precompiledValue must be a string")
 	})
 
 	it("a definition resolving aliases leaves a union's cases until it's used", () => {
@@ -391,9 +389,7 @@ contextualize(() => {
 		})
 		const union = T.internal as UnionNode
 		attest(union.caseNodes.length).equals(0)
-		attest(T({ kind: "c" }).toString()).snap(
-			'kind must be "a" or "b" (was "c")'
-		)
+		attest(T({ kind: "c" }).toString()).snap('kind must be "a" or "b"')
 		attest(union.caseNodes.length).equals(2)
 	})
 })

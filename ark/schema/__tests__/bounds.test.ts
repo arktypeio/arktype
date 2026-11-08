@@ -29,17 +29,17 @@ contextualize(() => {
 		})
 
 		attest(T.traverse(numericCases.lessThanMin)?.toString()).snap(
-			"must be more than 5 (was 4)"
+			"must be more than 5"
 		)
 		attest(T.traverse(numericCases.equalToExclusiveMin)?.toString()).snap(
-			"must be more than 5 (was 5)"
+			"must be more than 5"
 		)
 		attest(T.traverse(numericCases.between)).equals(numericCases.between)
 		attest(T.traverse(numericCases.equalToInclusiveMax)).equals(
 			numericCases.equalToInclusiveMax
 		)
 		attest(T.traverse(numericCases.greaterThanMax)?.toString()).snap(
-			"must be at most 10 (was 11)"
+			"must be at most 10"
 		)
 	})
 
@@ -51,17 +51,17 @@ contextualize(() => {
 		})
 
 		attest(T.traverse(lengthCases.lessThanMin)?.toString()).snap(
-			"must be at least length 6 (was 4)"
+			"must be at least length 6"
 		)
 		attest(T.traverse(lengthCases.equalToExclusiveMin)?.toString()).snap(
-			"must be at least length 6 (was 5)"
+			"must be at least length 6"
 		)
 		attest(T.traverse(lengthCases.between)).equals(lengthCases.between)
 		attest(T.traverse(lengthCases.equalToInclusiveMax)).equals(
 			lengthCases.equalToInclusiveMax
 		)
 		attest(T.traverse(lengthCases.greaterThanMax)?.toString()).snap(
-			"must be at most length 10 (was 11)"
+			"must be at most length 10"
 		)
 	})
 
@@ -73,17 +73,17 @@ contextualize(() => {
 		})
 
 		attest(T.traverse(dateCases.lessThanMin)?.toString()).snap(
-			"must be January 1, 1970, 12:00:00.006 AM UTC or later (was January 1, 1970, 12:00:00.004 AM UTC)"
+			"must be January 1, 1970, 12:00:00.006 AM UTC or later"
 		)
 		attest(T.traverse(dateCases.equalToExclusiveMin)?.toString()).snap(
-			"must be January 1, 1970, 12:00:00.006 AM UTC or later (was January 1, 1970, 12:00:00.005 AM UTC)"
+			"must be January 1, 1970, 12:00:00.006 AM UTC or later"
 		)
 		attest(T.traverse(dateCases.between)).equals(dateCases.between)
 		attest(T.traverse(dateCases.equalToInclusiveMax)).equals(
 			dateCases.equalToInclusiveMax
 		)
 		attest(T.traverse(dateCases.greaterThanMax)?.toString()).snap(
-			"must be January 1, 1970, 12:00:00.010 AM UTC or earlier (was January 1, 1970, 12:00:00.011 AM UTC)"
+			"must be January 1, 1970, 12:00:00.010 AM UTC or earlier"
 		)
 	})
 

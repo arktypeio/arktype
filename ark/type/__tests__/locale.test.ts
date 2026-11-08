@@ -246,9 +246,7 @@ contextualize(() => {
 					expected: ctx => `a number at ${ctx.propString} (not ${ctx.data})`
 				})
 			})
-			attest(T({ a: "x" }).toString()).snap(
-				"a must be a number at a (not x) (was a string)"
-			)
+			attest(T({ a: "x" }).toString()).snap("a must be a number at a (not x)")
 		})
 
 		it("contexts narrow by code", () => {
@@ -287,11 +285,11 @@ contextualize(() => {
 				}
 			)
 			attest($.type("'a' | 'b' | 'c'")("d").toString()).snap(
-				'must be <a>, <b> or <c> (was "d")'
+				"must be <a>, <b> or <c>"
 			)
 			attest(
 				$.type("string | number | bigint").or({ a: "1" })(true).toString()
-			).snap("must be bigint, number, string and object (was boolean)")
+			).snap("must be bigint, number, string and object")
 		})
 
 		it("a locale writer narrows discriminant cases", () => {
@@ -355,7 +353,7 @@ b isn't allowed`)
 				$.type("number")
 					.narrow((n, ctx) => n > 0 || ctx.mustBe("positive"))(-1)
 					.toString()
-			).snap("undefined: must be positive (was -1)")
+			).snap("undefined: must be positive")
 			attest(
 				(ctx: MessageContext) =>
 					// @ts-expect-error
@@ -416,7 +414,7 @@ b isn't allowed`)
 			attest(messageIn(error, xx)).snap(
 				"k ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
 			)
-			attest(errors.summary).snap("k must be a string (was a number)")
+			attest(errors.summary).snap("k must be a string")
 			attest(errors.toLocaleString()).equals(errors.summary)
 			// Array.prototype.toLocaleString passes each element its tag
 			attest([errors].toLocaleString("de")).equals(errors.summary)
@@ -456,9 +454,9 @@ b isn't allowed`)
 				" ⟦message⟧ ⟦problem⟧  ⟦exactLength⟧ ⟦actual⟧⟦or⟧ ⟦minLength⟧ ⟦actual⟧ ⟦actual⟧"
 			)
 			const intersection = type("(number % 2) & (number > 3)")(1) as ArkErrors
-			attest(intersection.toLocaleString(xx)).snap(
-				" ⟦message⟧ ⟦problem⟧ ⟦divisor⟧⟦and⟧⟦min⟧ ⟦actual⟧"
-			)
+			attest(intersection.toLocaleString(xx))
+				.snap(` ⟦message⟧ ⟦problem⟧ ⟦divisor⟧ ⟦actual⟧
+ ⟦message⟧ ⟦problem⟧ ⟦min⟧ ⟦actual⟧`)
 		})
 
 		it("static", () => {
@@ -466,9 +464,7 @@ b isn't allowed`)
 				attest($ark.cfg!.locale).is(xx)
 				const errors = scope({}).type("string")(5) as ArkErrors
 				attest(errors.toString()).snap(" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧")
-				attest(errors.toLocaleString(en)).snap(
-					"must be a string (was a number)"
-				)
+				attest(errors.toLocaleString(en)).snap("must be a string")
 				// including errors from Types parsed before it was configured
 				attest(type("string")(5).toString()).snap(
 					" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
@@ -492,13 +488,13 @@ b isn't allowed`)
 						type("(string >= 3) | (string <= 0)")("a") as ArkErrors
 					const errors = errorsOf()
 					attest(errors.toString()).snap(
-						"must be exactly length 0 or at least length 3 (was 1)"
+						"must be exactly length 0 or at least length 3"
 					)
 					locale = xx
 					calls = 0
 					// errors keep the locale their first read selected
 					attest(errors.toString()).snap(
-						"must be exactly length 0 or at least length 3 (was 1)"
+						"must be exactly length 0 or at least length 3"
 					)
 					attest(calls).equals(0)
 					const localized = errorsOf()
@@ -508,7 +504,7 @@ b isn't allowed`)
 					// once for the errors, which their children share
 					attest(calls).equals(1)
 					attest(localized.toLocaleString(en)).snap(
-						"must be exactly length 0 or at least length 3 (was 1)"
+						"must be exactly length 0 or at least length 3"
 					)
 					attest(calls).equals(1)
 				}
@@ -520,12 +516,12 @@ b isn't allowed`)
 				const summaryOf = () => type("string")(5).toString()
 				attest(summaryOf()).snap(" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧")
 				reconfigure({ locale: en })
-				attest(summaryOf()).snap("must be a string (was a number)")
+				attest(summaryOf()).snap("must be a string")
 				reconfigure({ locale: xx })
 				attest(summaryOf()).snap(" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧")
 				reconfigure({ locale: () => xx })
 				reconfigure({ locale: undefined } as never)
-				attest(summaryOf()).snap("must be a string (was a number)")
+				attest(summaryOf()).snap("must be a string")
 			})
 		})
 
@@ -575,10 +571,9 @@ c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
 							return (e as TraversalError).message
 						}
 					}, 1)
-				).snap(`
-  • a ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧
-  • b ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧
-  • c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
+				).snap(`a ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧
+b ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧
+c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
 			})
 		})
 
@@ -590,9 +585,7 @@ c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
 					}
 				},
 				() => {
-					attest(type("string")(5).toString()).snap(
-						"must be a string (was a number)"
-					)
+					attest(type("string")(5).toString()).snap("must be a string")
 					let thrown: unknown
 					try {
 						type("string").assert(5)
@@ -600,9 +593,7 @@ c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
 						thrown = e
 					}
 					attest(thrown).instanceOf(TraversalError)
-					attest((thrown as TraversalError).message).snap(
-						"must be a string (was a number)"
-					)
+					attest((thrown as TraversalError).message).snap("must be a string")
 				}
 			)
 		})
@@ -629,7 +620,7 @@ c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
 					])
 				).snap([
 					"k ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧",
-					"k must be a string (was a number)",
+					"k must be a string",
 					"k ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
 				])
 			} finally {
@@ -767,10 +758,10 @@ c ⟦message⟧ ⟦problem⟧ ⟦cite⟧ unit 1⟦or⟧⟦cite⟧ unit 2 ⟦actu
 			} as const
 			const data = { k: 5, j: 0, m: 5 }
 			const rendered = (type(def)(data) as ArkErrors).toLocaleString(partial)
-			attest(rendered).snap(`k must be <string> (was 5)
+			attest(rendered).snap(`k must be <string>
 j <min>
 l must be boolean (was missing)
-m must be a bigint (was 5)`)
+m must be a bigint`)
 			attest(
 				withConfig({ locale: partial }, () =>
 					scope({}).type(def)(data).toString()
@@ -818,7 +809,7 @@ m must be a bigint (was 5)`)
 			const def = { k: ["number", "=", "x"] } as never
 			withConfig({ locale: xx }, () =>
 				attest(() => scope({}).type(def)).throws.snap(
-					"ParseError: Default for k must be a number (was a string)"
+					"ParseError: Default for k must be a number"
 				)
 			)
 		})
@@ -832,15 +823,15 @@ m must be a bigint (was 5)`)
 			const locale: Locale = { ...xx, union }
 			const errors = type({ a: "string" }).or({ b: "number" })({}) as ArkErrors
 			attest(withConfig({ locale }, () => errors.issues[0].expected)).snap(
-				"a must be a string (was missing) or b must be a number (was missing)"
+				"a must be a string or b must be a number"
 			)
 			attest(errors.toLocaleString(locale)).snap(
-				" ⟦message⟧ ⟦problem⟧ a must be a string (was missing) or b must be a number (was missing) ⟦actual⟧"
+				" ⟦message⟧ ⟦problem⟧ a must be a string or b must be a number ⟦actual⟧"
 			)
 			// an untyped locale without the code at all
 			const { union: __, ...untyped } = xx
 			attest(errors.toLocaleString(untyped as {} as Locale)).snap(
-				"a must be a string (was missing) or b must be a number (was missing)"
+				"a must be a string or b must be a number"
 			)
 		})
 
@@ -974,7 +965,6 @@ m must be a bigint (was 5)`)
 				"divisor",
 				"domain",
 				"exactLength",
-				"intersection",
 				"max",
 				"maxLength",
 				"min",

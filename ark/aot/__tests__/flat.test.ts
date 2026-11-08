@@ -121,7 +121,7 @@ contextualize(function (this: Mocha.Suite) {
 lead.name must be non-empty
 lead.email must be an email address
 members[0].name must be a string
-members[0].email must be a string
+members[0].email must be a string (was missing)
 true
 `)
 		attest(run(flat)).equals(run(whole))
@@ -210,8 +210,8 @@ console.log(${Array.from({ length: types }, (_, i) => `String(T${i}(${i % 2 ? "5
 			attest(run(js)).equals(run((await bundle({ prune: false }, options))[0]))
 			attest(run(js).split("\n").slice(0, 4).join("\n")).snap(`must be an object
 lead must be an object
-lead.name must be a string
-members[0].name must be a string`)
+lead.name must be a string (was missing)
+members[0].name must be a string (was missing)`)
 		})
 	})
 
@@ -340,7 +340,7 @@ export default Unread
 	it("keeps a hashbang first ahead of a creation it can't declare as an import", async () => {
 		const [js] = await bundle({}, { entryPoints: [join(root, "hashbang.ts")] })
 		attest(js.startsWith("#!/usr/bin/env node\n")).equals(true)
-		attest(run(js)).snap(`user must be an object
+		attest(run(js)).snap(`user must be an object (was missing)
 `)
 	})
 
@@ -354,8 +354,8 @@ export default Unread
 			{ prune: false },
 			{ stdin: { contents, resolveDir: root, loader: "ts" } }
 		)
-		attest(run(js)).snap(`lead.name must be a string
-lead.email must be a string
+		attest(run(js)).snap(`lead.name must be a string (was missing)
+lead.email must be a string (was missing)
 `)
 		attest(run(js)).equals(run(whole))
 		attest(js.includes("{ 0: allows")).equals(false)
@@ -387,8 +387,8 @@ lead.email must be a string
 			fromHere("temp", "flatAsserted")
 		)
 		const [js] = await bundle({}, { entryPoints: [join(files, "main.ts")] })
-		attest(run(js)).snap(`lead.name must be a string
-lead.email must be a string
+		attest(run(js)).snap(`lead.name must be a string (was missing)
+lead.email must be a string (was missing)
 `)
 		attest(js.includes("var Team =")).equals(false)
 	})
@@ -487,7 +487,7 @@ for (const data of [{ name: "Ada" }, {}]) {
 		const [js] = await bundle({}, options)
 		const [whole] = await bundle({ prune: false }, options)
 		attest(run(js)).snap(`{ name: 'Ada' }
-name must be a string
+name must be a string (was missing)
 `)
 		attest(run(js)).equals(run(whole))
 		attest(/\.assert\b|\bassert:/.test(js)).equals(false)
@@ -780,8 +780,8 @@ export { unit }
 		}
 		const [js] = await bundle({}, options)
 		const [whole] = await bundle({ prune: false }, options)
-		attest(run(js)).snap(`lead.name must be a string
-lead.email must be a string
+		attest(run(js)).snap(`lead.name must be a string (was missing)
+lead.email must be a string (was missing)
 true
 `)
 		attest(run(js)).equals(run(whole))

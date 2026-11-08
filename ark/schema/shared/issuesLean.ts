@@ -246,10 +246,13 @@ export const messageOf = (issue: ArkIssue): string => {
 	return (path && path + " ") + problemOf(issue)
 }
 
-// an undeclared key's site says what's expected
+// an undeclared key's site says what's expected, as issues.ts's problemOf
 export const problemOf = (issue: ArkIssue): string =>
 	(writesText ? issue.problem : undefined) ??
-	(issue.expected !== undefined ? "must be " + issue.expected
+	(issue.expected !== undefined ?
+		"must be " +
+		issue.expected +
+		(issue.code === "required" ? " (was missing)" : "")
 	: issue.code === "required" ? "is missing"
 	: "is invalid")
 

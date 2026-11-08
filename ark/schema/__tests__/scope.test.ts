@@ -98,9 +98,7 @@ contextualize(() => {
 		attest(types.b(b)).equals(b)
 		attest(types.b.allows(b)).equals(true)
 		attest(types.b.allows(almostB)).equals(false)
-		attest(types.b(almostB)?.toString()).snap(
-			"a.b.a.b must be an object (was a string)"
-		)
+		attest(types.b(almostB)?.toString()).snap("a.b.a.b must be an object")
 	})
 
 	it("allows multiple scopes with the same name without collision", () => {
@@ -125,14 +123,14 @@ contextualize(() => {
 				{ id }
 			)
 			attest(Obj({ a: "s" })).equals({ a: "s" })
-			attest(String(Obj({ a: 1 }))).equals("a must be a string (was a number)")
+			attest(String(Obj({ a: 1 }))).equals("a must be a string")
 
 			const Morph = schemaScope({}).parse(
 				{ in: "string", morphs: [(s: string) => s.length] },
 				{ id }
 			)
 			attest(Morph("s")).equals(1)
-			attest(String(Morph(1))).equals("must be a string (was a number)")
+			attest(String(Morph(1))).equals("must be a string")
 		}
 	})
 

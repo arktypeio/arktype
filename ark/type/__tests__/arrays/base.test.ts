@@ -12,13 +12,9 @@ contextualize(() => {
 		attest(T.allows(["foo", "bar"])).equals(true)
 		attest(T(["foo", "bar"])).snap(["foo", "bar"])
 		attest(T.allows(["foo", "bar", 5])).equals(false)
-		attest(T(["foo", "bar", 5]).toString()).snap(
-			"value at [2] must be a string (was a number)"
-		)
+		attest(T(["foo", "bar", 5]).toString()).snap("[2] must be a string")
 		attest(T.allows([5, "foo", "bar"])).equals(false)
-		attest(T([5, "foo", "bar"]).toString()).snap(
-			"value at [0] must be a string (was a number)"
-		)
+		attest(T([5, "foo", "bar"]).toString()).snap("[0] must be a string")
 	})
 
 	it("nested", () => {
@@ -29,13 +25,9 @@ contextualize(() => {
 		attest(T.allows([["foo"]])).equals(true)
 		attest(T([["foo"]])).snap([["foo"]])
 		attest(T.allows(["foo"])).equals(false)
-		attest(T(["foo"]).toString()).snap(
-			"value at [0] must be an array (was a string)"
-		)
+		attest(T(["foo"]).toString()).snap("[0] must be an array")
 		attest(T.allows([["foo", 5]])).equals(false)
-		attest(T([["foo", 5]]).toString()).snap(
-			"value at [0][1] must be a string (was a number)"
-		)
+		attest(T([["foo", 5]]).toString()).snap("[0][1] must be a string")
 	})
 
 	it("tuple expression", () => {
@@ -69,8 +61,7 @@ contextualize(() => {
 
 	it("multiple errors", () => {
 		const StringArray = type("string[]")
-		attest(StringArray([1, 2]).toString())
-			.snap(`value at [0] must be a string (was a number)
-value at [1] must be a string (was a number)`)
+		attest(StringArray([1, 2]).toString()).snap(`[0] must be a string
+[1] must be a string`)
 	})
 })

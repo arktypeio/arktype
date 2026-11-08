@@ -233,7 +233,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 		})
 
 		it("not where a first-issue validator finds another issue", () => {
-			attest(outcomes.reordered).snap("a[0] must be a string (was a number)")
+			attest(outcomes.reordered).snap("a[0] must be a string")
 		})
 	})
 })

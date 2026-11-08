@@ -26,7 +26,7 @@ contextualize(() => {
 		const out = T(5)
 		attest<string | type.errors>(out).equals("5")
 		const result = T("foo")
-		attest(result.toString()).snap("must be a number (was a string)")
+		attest(result.toString()).snap("must be a number")
 	})
 
 	it("calls a morph without a receiver", () => {
@@ -150,7 +150,7 @@ contextualize(() => {
 			const badOut = ParseJson("{ unquoted: true }")
 
 			attest(badOut.toString()).satisfies(
-				/^must be valid according to an anonymous predicate \(was aborted due to error:\n {4}SyntaxError:/
+				/^must be valid according to an anonymous predicate \(SyntaxError: /
 			)
 		})
 
@@ -162,29 +162,29 @@ contextualize(() => {
 			attest(error.morph).is(parseJson)
 			attest(error.cause instanceof SyntaxError).equals(true)
 			attest(error.predicate).equals(undefined)
-			attest(error.message).equals(
-				`must be valid according to parseJson (was aborted due to error:\n    ${error.cause}\n)`
+			attest(error.message).snap(
+				"must be valid according to parseJson (SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2))"
 			)
 		})
 
-		it("try errors print any thrown value", () => {
+		it("try errors print a thrown value String can write", () => {
 			const throwing = (thrown: unknown) =>
 				type("string").pipe.try(() => {
 					throw thrown
 				})("x") as type.errors
-			attest(throwing(Symbol("thrown")).issues[0].actual).snap(
-				"aborted due to error:\n    Symbol(thrown)\n"
+			attest(throwing(Symbol("thrown")).issues[0].problem).snap(
+				"must be valid according to an anonymous predicate (Symbol(thrown))"
 			)
-			attest(throwing(Object.create(null)).issues[0].actual).snap(
-				"aborted due to error:\n    {}\n"
+			attest(throwing(Object.create(null)).issues[0].problem).snap(
+				"must be valid according to an anonymous predicate"
 			)
 			const cyclic: any = new Error("cyclic")
 			cyclic.self = cyclic
-			attest(JSON.parse(JSON.stringify(throwing(cyclic)))[0].actual).snap(
-				"aborted due to error:\n    Error: cyclic\n"
+			attest(JSON.parse(JSON.stringify(throwing(cyclic)))[0].problem).snap(
+				"must be valid according to an anonymous predicate (Error: cyclic)"
 			)
-			attest(JSON.parse(JSON.stringify(throwing(5n)))[0].actual).snap(
-				"aborted due to error:\n    5\n"
+			attest(JSON.parse(JSON.stringify(throwing(5n)))[0].problem).snap(
+				"must be valid according to an anonymous predicate (5)"
 			)
 		})
 
@@ -201,7 +201,7 @@ contextualize(() => {
 				.type("string")
 				.pipe.try(s => JSON.parse(s))
 			attest(ParseJson("{").toString()).snap(
-				"must be valid according to an anonymous predicate (was {, which threw SyntaxError)"
+				"must be valid according to an anonymous predicate (SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2))"
 			)
 		})
 
@@ -243,7 +243,7 @@ contextualize(() => {
 
 		const out = T(true)
 		attest<boolean | type.errors>(out).equals(false)
-		attest(T(1).toString()).snap("must be boolean (was 1)")
+		attest(T(1).toString()).snap("must be boolean")
 	})
 
 	it("unit branches", () => {
@@ -261,7 +261,7 @@ contextualize(() => {
 		})
 
 		attest(T(0)).equals(1)
-		attest(T(3).toString()).snap("must be 0, 1 or 2 (was 3)")
+		attest(T(3).toString()).snap("must be 0, 1 or 2")
 	})
 
 	it("unit branch a morph's input overlaps, jitless", () => {
@@ -271,7 +271,7 @@ contextualize(() => {
 		attest(T("a")).equals("a")
 		attest(T("")).equals("")
 		attest(T("https://a.b")).instanceOf(URL)
-		attest(T("x").toString()).snap('must be a URL string (was "x")')
+		attest(T("x").toString()).snap("must be a URL string")
 	})
 
 	it("type instance reference", () => {
@@ -370,9 +370,7 @@ contextualize(() => {
 		attest<(In: string) => Out<boolean>>(inefficientStringIsEmpty.t)
 		attest(inefficientStringIsEmpty("")).equals(true)
 		attest(inefficientStringIsEmpty("foo")).equals(false)
-		attest(inefficientStringIsEmpty(0).toString()).snap(
-			"must be a string (was a number)"
-		)
+		attest(inefficientStringIsEmpty(0).toString()).snap("must be a string")
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1023
@@ -454,7 +452,7 @@ contextualize(() => {
 		)
 		attest<(In: number) => Out<number>>(divide100By.t)
 		attest(divide100By(5)).equals(20)
-		attest(divide100By(0).toString()).snap("must be non-zero (was 0)")
+		attest(divide100By(0).toString()).snap("must be non-zero")
 	})
 
 	it("stops at a morph returning any error its ctx.error added", () => {
@@ -467,9 +465,8 @@ contextualize(() => {
 			},
 			() => piped++
 		)
-		attest(T("x").toString()).snap(`("x") must be...
-  ◦ a letter
-  ◦ a digit`)
+		attest(T("x").toString()).snap(`must be a letter
+must be a digit`)
 		attest(piped).equals(0)
 	})
 
@@ -487,7 +484,7 @@ contextualize(() => {
 				return "received"
 			}
 		)
-		attest(T("x").toString()).snap('must be a letter (was "x")')
+		attest(T("x").toString()).snap("must be a letter")
 		attest(received).is(added)
 	})
 
@@ -507,16 +504,11 @@ contextualize(() => {
 			return o
 		}, $.type("node"))
 		const out = T({ s: "b" }) as ArkErrors
-		attest(out.summary).snap(`s (an object) must be...
-  ◦ own
-  ◦ matched by ^a
-  ◦ at least length 5`)
+		attest(out.summary).snap(`s must be own
+s must be matched by ^a
+s must be at least length 5`)
 		attest(flatProblemsByPath(out)).snap({
-			s: [
-				"must be own (was an object)",
-				'must be matched by ^a (was "b")',
-				"must be at least length 5 (was 1)"
-			]
+			s: ["must be own", "must be matched by ^a", "must be at least length 5"]
 		})
 	})
 
@@ -558,7 +550,7 @@ contextualize(() => {
 		const T = type({ v: ["string", "=>", () => Either({})] })
 
 		attest(T({ v: "x" }).toString()).snap(
-			"v.a must be a string (was missing) or v.b must be a string (was missing)"
+			"v.a must be a string or v.b must be a string"
 		)
 	})
 
@@ -569,7 +561,7 @@ contextualize(() => {
 		const Outer = $.type({ a: ["object", "=>", o => Middle(o)] })
 		const out = Outer({ a: { b: { c: "x" } } }) as ArkErrors
 
-		attest(out.toString()).snap("a.b.c must be a number (was a string)")
+		attest(out.toString()).snap("a.b.c must be a number")
 		attest(out.issues[0].path).snap(["a", "b", "c"])
 	})
 
@@ -902,9 +894,7 @@ contextualize(() => {
 		])
 		attest<(In: string) => Out<number>>(ParsedInt.t)
 		attest(ParsedInt("5")).snap(5)
-		attest(ParsedInt("five").toString()).snap(
-			'must be an integer string (was "five")'
-		)
+		attest(ParsedInt("five").toString()).snap("must be an integer string")
 	})
 
 	it("nullable return", () => {
@@ -1188,9 +1178,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		})
 		attest(T({ foo: 1 })).snap([1])
 		attest(T({ bar: 1 })).snap([1])
-		attest(T({ baz: 2 }).toString()).snap(
-			"bar must be 1 (was missing) or foo must be 1 (was missing)"
-		)
+		attest(T({ baz: 2 }).toString()).snap("bar must be 1 or foo must be 1")
 	})
 	it("allows undiscriminated union if morphs at path are equal", () => {
 		const T = type({ l: "1", n: "string.numeric.parse" }, "|", {
@@ -1210,9 +1198,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		attest(T({ l: 1, n: "234" })).snap({ l: 1, n: 234 })
 		attest(T({ r: 1, n: "234" })).snap({ r: 1, n: 234 })
 		attest(T({ l: 1, r: 1, n: "234" })).snap({ l: 1, r: 1, n: 234 })
-		attest(T({ n: "234" }).toString()).snap(
-			"l must be 1 (was missing) or r must be 1 (was missing)"
-		)
+		attest(T({ n: "234" }).toString()).snap("l must be 1 or r must be 1")
 	})
 	it("fails on indiscriminable morph in nested union", () => {
 		const indiscriminable = () =>
@@ -1459,10 +1445,8 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		const N = type("number")
 		const $ = scope({})
 		const T = $.type("string").pipe(s => N(s))
-		attest(() => T.assert("x")).throws("must be a number (was a string)")
-		attest(() => T.or("boolean").assert("x")).throws(
-			"must be a number (was a string)"
-		)
+		attest(() => T.assert("x")).throws("must be a number")
+		attest(() => T.or("boolean").assert("x")).throws("must be a number")
 	})
 
 	// https://github.com/arktypeio/arktype/pull/1464

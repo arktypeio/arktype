@@ -35,13 +35,8 @@ const outputOf = (args: string[], options: object) => {
 	return `${stdout}${stderr.match(/^\w*Error\b.*$/m)?.[0] ?? ""}`
 }
 
-// what a build's messages lack: what a value was, and "value at" before a bracket
-const comparable = (text: string) =>
-	text
-		.replace(/ \(was [^)]*\)/g, "")
-		.replace(/value at \[/g, "[")
-		.replace(/TraversalError \\n {2}• /g, "TraversalError ")
-		.replace(/\\n {2}• /g, "\\n")
+// a build's messages are arktype's, so its output is compared as is
+const comparable = (text: string) => text
 
 const builds: Record<string, PrecompileUnpluginOptions> = {
 	smallest: { preset: "smallest" },

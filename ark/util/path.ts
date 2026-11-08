@@ -2,7 +2,7 @@ import type { array } from "./arrays.ts"
 import { throwParseError } from "./errors.ts"
 import type { noInfer } from "./generics.ts"
 import type { requireKeys } from "./records.ts"
-import { isDotAccessible, printSymbol } from "./serialize.ts"
+import { isDotAccessible } from "./serialize.ts"
 
 export type StringifyPathOptions<stringifiable = PropertyKey> = requireKeys<
 	{
@@ -44,7 +44,8 @@ export const appendStringifiedKey: AppendStringifiedKeyFn = ((
 		case "number":
 			return `${path}[${prop}]`
 		case "symbol":
-			return `${path}[${(opts?.stringifySymbol ?? printSymbol)(prop)}]`
+			// as String writes it, its description whole
+			return `${path}[${(opts?.stringifySymbol ?? String)(prop)}]`
 	}
 	// printed by its type, so stringifying a path needs no printer
 	return opts?.stringifyNonKey ?

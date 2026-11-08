@@ -25,7 +25,7 @@ contextualize(() => {
 		const T = jsonSchemaToType({ not: { type: "string", maxLength: 3 } })
 		attest(T.allows("1234")).equals(true)
 		attest(() => T.assert("123")).throws.snap(
-			'TraversalError: must be other than a string and at most length 3 (was "123")'
+			"TraversalError: must be other than a string and at most length 3"
 		)
 	})
 
@@ -35,7 +35,7 @@ contextualize(() => {
 		})
 		attest(T.expression).snap('string >= 10 | "foo"')
 		attest(() => T.assert("bar")).throws.snap(
-			'TraversalError: must be at least length 10 or "foo" (was "bar")'
+			'TraversalError: must be at least length 10 or "foo"'
 		)
 	})
 

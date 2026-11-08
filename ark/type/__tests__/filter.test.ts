@@ -23,11 +23,9 @@ contextualize(() => {
 
 		attest(ParseLongNumber("123456")).snap(123456)
 		attest(ParseLongNumber("123").toString()).snap(
-			'must be valid according to stringIsLong (was "123")'
+			"must be valid according to stringIsLong"
 		)
-		attest(ParseLongNumber(123456).toString()).snap(
-			"must be a string (was a number)"
-		)
+		attest(ParseLongNumber(123456).toString()).snap("must be a string")
 	})
 
 	it("predicate inferred on input", () => {
@@ -51,10 +49,8 @@ contextualize(() => {
 
 		attest(ParseIntegerLike("123456")).snap(123456)
 		attest(ParseIntegerLike("3.14159").toString()).snap(
-			'must be valid according to stringIsIntegerLike (was "3.14159")'
+			"must be valid according to stringIsIntegerLike"
 		)
-		attest(ParseIntegerLike(123456).toString()).snap(
-			"must be a string (was a number)"
-		)
+		attest(ParseIntegerLike(123456).toString()).snap("must be a string")
 	})
 })

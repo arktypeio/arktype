@@ -43,7 +43,7 @@ contextualize(() => {
 		attest(T.expression).snap("[string?, number?]")
 		attest(T([])).equals([])
 		attest(T(["foo"])).equals(["foo"])
-		attest(T({}).toString()).snap("must be an array (was an object)")
+		attest(T({}).toString()).snap("must be an array")
 	})
 
 	it("array is unaffected", () => {
@@ -55,9 +55,7 @@ contextualize(() => {
 
 		attest<(string | undefined)[]>(T.t)
 		attest(T.expression).snap("string[]")
-		attest(T([undefined]).toString()).snap(
-			"value at [0] must be a string (was undefined)"
-		)
+		attest(T([undefined]).toString()).snap("[0] must be a string")
 	})
 
 	it("preserves defaultable elements", () => {

@@ -5,8 +5,7 @@ import { build } from "esbuild"
 import { join } from "node:path"
 import { run, runPlain, writeFixture } from "./utils.ts"
 
-// a build's validators write a union's text as arktype does, but for what no
-// message of theirs says: what the value was, and `value at` before a bracket
+// a build's validators write a union's text exactly as arktype does
 
 // arktype's packages resolve to their source in this repo
 const source = ["ark-ts"]
@@ -170,6 +169,17 @@ const behaviors: Record<string, string> = {
 		standard(type({ k: Inner.configure({ problem: "bad" }) }), { k: {} })
 		standard(type({ k: Inner.configure({ message: "whole" }) }), { k: {} })
 	`,
+	"lists a description holding `or` as written, as a validator's text alone does": `
+		show(type({ v: type("string|number").describe("a thing or other") }).or({ v: "boolean", w: "number" }), { v: null })
+	`,
+	"expects what a code a narrow raises without text is, as valid": `
+		show(type({ a: type("string").narrow((s, ctx) => ctx.reject({ code: "minLength", rule: 5 } as never)) }).or({ b: "string" }), { a: "x" })
+		show(type("string").narrow((s, ctx) => ctx.reject({ code: "minLength", rule: 5 } as never)), "x")
+	`,
+	"expects a union of bases without `must be`": `
+		console.log(index, type("Date|RegExp")(1).issues[0].expected)
+		console.log(index, type({ o: "Date|RegExp" })({ o: 1 }).issues[0].expected)
+	`,
 	"holds each branch's first issue": `
 		const listing = (t: any, input: unknown) =>
 			console.log(index, JSON.stringify(t(input).issues.map((issue: any) => [issue.code, issue.path, issue.expected, issue.message, issue.errors.map((e: any) => [e.code, e.path, e.expected, e.message])])))
@@ -187,7 +197,7 @@ const standard = (t: any, input: unknown) =>
 const show = (t: any, ...inputs: unknown[]) => {
 	for (const input of inputs) {
 		const out = t(input)
-		console.log(index, JSON.stringify([input, out instanceof type.errors ? out.summary : "ok"]))
+		console.log(index, JSON.stringify([input, out instanceof type.errors ? [out.summary, out.issues.map((issue: any) => [issue.code, issue.path.map(String), issue.expected, issue.message])] : "ok"]))
 	}
 }
 let index = 0
@@ -219,9 +229,6 @@ const bundle = async (
 	return outputFiles![0].text
 }
 
-const withoutValues = (text: string) =>
-	text.replace(/ \(was [^)]*\)/g, "").replace(/value at /g, "")
-
 const rowsOf = (out: string, index: number) =>
 	out.split("\n").filter(line => line.startsWith(`${index} `))
 
@@ -236,7 +243,7 @@ contextualize(function (this: Mocha.Suite) {
 	let plain: string
 
 	before(async () => {
-		plain = withoutValues(runPlain(root))
+		plain = runPlain(root)
 		builds.push(
 			["production", run(await bundle(root, production))],
 			["smallest", run(await bundle(root, production, { preset: "smallest" }))],
@@ -254,33 +261,4 @@ contextualize(function (this: Mocha.Suite) {
 				attest([name, ...rowsOf(out, index)]).equals([name, ...expected])
 		})
 	}
-
-	const rowOf = async (name: string, row: string) => {
-		const rooted = writeFixture(
-			{ "main.ts": appOf({ [name]: row }) },
-			fromHere("temp", "unionText", name.replace(/\W/g, ""))
-		)
-		return rowsOf(run(await bundle(rooted, production)), 0)
-	}
-
-	// each that's documented, as what a build can't tell from text alone
-	it("lists a description holding `or` as its alternatives beside another's", async () => {
-		const Described = `type("string|number").describe("a thing or other")`
-		const row = `show(type({ v: ${Described} }).or({ v: "boolean", w: "number" }), { v: null })`
-		attest(await rowOf("description", row)).snap([
-			'0 [{"v":null},"v must be boolean, a thing or other"]'
-		])
-	})
-
-	it("lists a code a narrow raises without text as valid", async () => {
-		const row = `show(type({ a: type("string").narrow((s, ctx) => ctx.reject({ code: "minLength", rule: 5 } as never)) }).or({ b: "string" }), { a: "x" })`
-		attest(await rowOf("code", row)).snap([
-			'0 [{"a":"x"},"a must be valid or b must be a string"]'
-		])
-	})
-
-	it("expects a union of bases without `must be`", async () => {
-		const row = `console.log(index, type("Date|RegExp")(1).issues[0].expected)`
-		attest(await rowOf("bases", row)).snap(["0 a Date or a RegExp"])
-	})
 })

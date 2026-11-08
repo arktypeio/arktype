@@ -16,7 +16,7 @@ contextualize(() => {
 			divisor: 3
 		})
 		attest(n.traverse(6)).snap(6)
-		attest(n.traverse(7)?.toString()).snap("must be a multiple of 3 (was 7)")
+		attest(n.traverse(7)?.toString()).snap("must be a multiple of 3")
 	})
 
 	it("at path", () => {
@@ -32,7 +32,7 @@ contextualize(() => {
 		})
 		attest(o.traverse({ foo: 6 })).snap({ foo: 6 })
 		attest(o.traverse({ foo: 7 })?.toString()).snap(
-			"foo must be a multiple of 3 (was 7)"
+			"foo must be a multiple of 3"
 		)
 	})
 
@@ -42,9 +42,7 @@ contextualize(() => {
 			sequence: "number"
 		})
 		attest(T.traverse([5])).snap([5])
-		attest(T.traverse([5, "five"])?.toString()).snap(
-			"value at [1] must be a number (was a string)"
-		)
+		attest(T.traverse([5, "five"])?.toString()).snap("[1] must be a number")
 	})
 
 	it("custom description integrated with error", () => {
@@ -54,7 +52,7 @@ contextualize(() => {
 		})
 		attest(superSpecialBigint.description).snap("my special bigint")
 		attest(superSpecialBigint.traverse(5)?.toString()).snap(
-			"must be my special bigint (was a number)"
+			"must be my special bigint"
 		)
 	})
 
@@ -67,7 +65,7 @@ contextualize(() => {
 		attest(evenNumber.description).snap("an even number")
 		// since the error is from the divisor constraint which didn't have a
 		// description, it is unchanged
-		attest(evenNumber.traverse(5)?.toString()).snap("must be even (was 5)")
+		attest(evenNumber.traverse(5)?.toString()).snap("must be even")
 	})
 
 	it("can configure error writers at a node level", () => {
@@ -118,7 +116,7 @@ contextualize(() => {
 		const superSpecialNumber = types.superSpecialNumber
 		attest(superSpecialNumber.description).snap("my special number")
 		attest(superSpecialNumber("five")?.toString()).snap(
-			"must be my special number (was a string)"
+			"must be my special number"
 		)
 	})
 
@@ -217,40 +215,28 @@ contextualize(() => {
 			{
 				data: 1,
 				path: ["n"],
-				code: "intersection",
-				errors: [
-					{
-						data: 1,
-						path: ["n"],
-						code: "divisor",
-						description: "even",
-						meta: {},
-						rule: 2,
-						propString: "n",
-						expected: "even",
-						actual: "1",
-						problem: "must be even (was 1)",
-						message: "n must be even (was 1)"
-					},
-					{
-						data: 1,
-						path: ["n"],
-						code: "min",
-						description: "at least 2",
-						meta: {},
-						rule: 2,
-						propString: "n",
-						expected: "at least 2",
-						actual: "1",
-						problem: "must be at least 2 (was 1)",
-						message: "n must be at least 2 (was 1)"
-					}
-				],
+				code: "divisor",
+				description: "even",
+				meta: {},
+				rule: 2,
 				propString: "n",
-				expected: "  ◦ even\n  ◦ at least 2",
-				actual: "1",
-				problem: "(1) must be...\n  ◦ even\n  ◦ at least 2",
-				message: "n (1) must be...\n  ◦ even\n  ◦ at least 2"
+				expected: "even",
+				actual: "",
+				problem: "must be even",
+				message: "n must be even"
+			},
+			{
+				data: 1,
+				path: ["n"],
+				code: "min",
+				description: "at least 2",
+				meta: {},
+				rule: 2,
+				propString: "n",
+				expected: "at least 2",
+				actual: "",
+				problem: "must be at least 2",
+				message: "n must be at least 2"
 			}
 		])
 	})
@@ -261,7 +247,7 @@ contextualize(() => {
 
 		const messages = result.issues?.map(issue => issue.message)
 		// a consumer prefixes the path itself
-		attest(messages).snap(["(1) must be...\n  ◦ even\n  ◦ at least 2"])
+		attest(messages).snap(["must be even", "must be at least 2"])
 		attest(messages instanceof ArkErrors).equals(false)
 
 		const parsed = JSON.parse(
@@ -269,9 +255,9 @@ contextualize(() => {
 		) as { issues: unknown[]; messages: string[] }
 
 		attest(parsed.issues).equals(
-			(JSON.parse(JSON.stringify(errors)) as object[]).map(issue => ({
+			(JSON.parse(JSON.stringify(errors)) as object[]).map((issue, i) => ({
 				...issue,
-				message: messages![0]
+				message: messages![i]
 			}))
 		)
 		attest(parsed.messages).equals(messages!)
@@ -289,9 +275,9 @@ contextualize(() => {
 					rule: 2,
 					propString: "n",
 					expected: "even",
-					actual: "1",
-					problem: "must be even (was 1)",
-					message: "n must be even (was 1)"
+					actual: "",
+					problem: "must be even",
+					message: "n must be even"
 				},
 				{
 					data: 1,
@@ -302,23 +288,22 @@ contextualize(() => {
 					rule: 2,
 					propString: "n",
 					expected: "at least 2",
-					actual: "1",
-					problem: "must be at least 2 (was 1)",
-					message: "n must be at least 2 (was 1)"
+					actual: "",
+					problem: "must be at least 2",
+					message: "n must be at least 2"
 				}
 			]
 		})
 	})
 
 	it("summary", () => {
-		attest(errors.summary).snap(`n (1) must be...
-  ◦ even
-  ◦ at least 2`)
+		attest(errors.summary).snap(`n must be even
+n must be at least 2`)
 	})
 
 	it("flatProblemsByPath", () => {
 		attest(flatProblemsByPath(errors)).snap({
-			n: ["must be even (was 1)", "must be at least 2 (was 1)"]
+			n: ["must be even", "must be at least 2"]
 		})
 	})
 })

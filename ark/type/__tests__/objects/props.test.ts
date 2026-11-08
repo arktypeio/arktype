@@ -79,8 +79,7 @@ contextualize(() => {
 		const T = type({ "a b": "string", a: "number" })
 
 		attest(T.expression).snap("{ a: number, a b: string }")
-		attest(T({}).toString())
-			.snap(`value at ["a b"] must be a string (was missing)
+		attest(T({}).toString()).snap(`["a b"] must be a string (was missing)
 a must be a number (was missing)`)
 		// where JSON escapes a character, its order and the code units' differ
 		const keys = type({

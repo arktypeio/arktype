@@ -27,7 +27,7 @@ contextualize(() => {
 			m: "number"
 		})
 		const input = { inner: { n: "1" }, m: "2" }
-		attest(T(input).toString()).snap("m must be a number (was a string)")
+		attest(T(input).toString()).snap("m must be a number")
 		attest(input as object).snap({ inner: { n: 1 }, m: "2" })
 	})
 
@@ -47,9 +47,7 @@ contextualize(() => {
 			b: { n: "number" }
 		})
 		const shared = { n: "1" }
-		attest(T({ a: shared, b: shared }).toString()).snap(
-			"b.n must be a number (was a string)"
-		)
+		attest(T({ a: shared, b: shared }).toString()).snap("b.n must be a number")
 		attest(shared).snap({ n: "1" })
 	})
 
@@ -147,7 +145,7 @@ contextualize(() => {
 		const input = { n: "3" }
 		attest(T(input) as object).is(input)
 		attest(input as object).snap({ n: 3 })
-		attest(T("x").toString()).snap("must be an object (was a string)")
+		attest(T("x").toString()).snap("must be an object")
 	})
 
 	it("checks its first data before it has compiled code, as a Type copying does", () => {
@@ -205,8 +203,8 @@ contextualize(() => {
 			.pipe(o => o)
 			.array()
 		attest(T([{ v: "x" }, { v: 1 }, { v: "y" }]).toString())
-			.snap(`value at [0].v must be a number (was a string)
-value at [2].v must be a number (was a string)`)
+			.snap(`[0].v must be a number
+[2].v must be a number`)
 	})
 
 	it("copies an object it deletes undeclared keys from", () => {

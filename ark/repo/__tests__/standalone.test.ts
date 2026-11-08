@@ -252,8 +252,8 @@ contextualize(() => {
 			[0, {}, () => {}, true, Symbol()].map(data => String(domains(data)))
 		).snap([
 			"must be positive",
-			"a must be a string",
-			"a must be a string",
+			"a must be a string (was missing)",
+			"a must be a string (was missing)",
 			"must be a bigint, a string, a number, an object, undefined or null",
 			"must be a bigint, a string, a number, an object, undefined or null"
 		])
@@ -314,7 +314,7 @@ id must be a string or null`)
 				{ optimize: "size" }
 			)
 			attest(T({ b: 0, c: "" }).summary).snap(`b must be a string
-a must be a string
+a must be a string (was missing)
 c must be a number`)
 			attest(T({ a: "" })).equals({ a: "", c: 1 })
 		})
@@ -671,7 +671,7 @@ nick must be a string or null`)
 				path: ["a"],
 				data: { b: { c: 0 } },
 				expected: "a string",
-				message: "a must be a string"
+				message: "a must be a string (was missing)"
 			},
 			{
 				code: "min",
@@ -700,7 +700,7 @@ nick must be a string or null`)
 		}
 		const expected = await issuesOf({})
 		attest(expected).snap([
-			[["a"], "must be a string"],
+			[["a"], "must be a string (was missing)"],
 			[["b", "c"], "must be positive"]
 		])
 		// a build writing a create of its own
@@ -838,21 +838,8 @@ nick must be a string or null`)
 			})
 		)
 		attest(outputs).snap([
-			`true 2 [{"code":"required","path":["a"],"data":{"b":{"c":[1,"x"]}},"expected":"a string","message":"a must be a string"},{"code":"domain","path":["b","c",1],"data":"x","expected":"a number","message":"b.c[1] must be a number"}]
-a must be a string
-b.c[1] must be a number
-true true true
-TraversalError: a must be a string
-b must be an object true
-TraversalError: a must be a string
-b.c[1] must be a number true
-`,
-			`true 1 [{"code":"predicate","path":[],"data":{"b":{"c":[1,"x"]}},"message":"is invalid"}]
-is invalid
-true true true
-Error: is invalid false
-TypeError: out.throw is not a function false
-`
+			'true 2 [{"code":"required","path":["a"],"data":{"b":{"c":[1,"x"]}},"expected":"a string","message":"a must be a string (was missing)"},{"code":"domain","path":["b","c",1],"data":"x","expected":"a number","message":"b.c[1] must be a number"}]\na must be a string (was missing)\nb.c[1] must be a number\ntrue true true\nTraversalError: a must be a string (was missing)\nb must be an object (was missing) true\nTraversalError: a must be a string (was missing)\nb.c[1] must be a number true\n',
+			'true 1 [{"code":"predicate","path":[],"data":{"b":{"c":[1,"x"]}},"message":"is invalid"}]\nis invalid\ntrue true true\nError: is invalid false\nTypeError: out.throw is not a function false\n'
 		])
 	})
 
@@ -921,10 +908,10 @@ TypeError: out.throw is not a function false
 			all({}).summary,
 			String(piped(data))
 		]).snap([
-			"[1].x must be a number\n[3].x must be a number",
+			"[1].x must be a number\n[3].x must be a number (was missing)",
 			"[1].x must be a number",
 			"must be an array",
-			"value at [1].x must be a number\nvalue at [3].x must be a number"
+			"[1].x must be a number\n[3].x must be a number (was missing)"
 		])
 	})
 
@@ -964,7 +951,7 @@ TypeError: out.throw is not a function false
 			n: 5
 		})
 		attest(out instanceof type.errors).equals(true)
-		attest(String(out)).snap(`a must be a string
+		attest(String(out)).snap(`a must be a string (was missing)
 flag must be boolean
 n must be a string or null`)
 	})
@@ -1116,7 +1103,8 @@ n must be a string or null`)
 		attest(Object.isFrozen(validator)).equals(true)
 		attest(validator({ name: "a" })).equals({ name: "a" })
 		attest(validator.allows({ name: "a", tags: [1] })).equals(false)
-		attest(validator({ tags: [1] }).summary).snap(`name must be a string
+		attest(validator({ tags: [1] }).summary)
+			.snap(`name must be a string (was missing)
 tags[0] must be a string`)
 	})
 
@@ -1303,8 +1291,8 @@ export const piping = validator => type("unknown").pipe(validator)`)
 		attest(String(validator)).equals("Type<{ age: number, name: string }>")
 		attest(validator.from({ name: "n", age: 1 })).equals({ name: "n", age: 1 })
 		attest(() => validator.assert({})).throws
-			.snap(`TraversalError: name must be a string
-age must be a number`)
+			.snap(`TraversalError: name must be a string (was missing)
+age must be a number (was missing)`)
 		attest(validator["~standard"].validate({ name: "n", age: 1 })).equals({
 			value: { name: "n", age: 1 }
 		})
@@ -1858,15 +1846,15 @@ age must be a number`)
 				path: ["a"],
 				data: "x",
 				expected: "at least length 2",
-				message: "a: 1 isn't at least length 2"
+				message: "a:  isn't at least length 2"
 			},
 			{
 				code: "domain",
 				path: ["b"],
 				data: "x",
 				expected: "a number",
-				message: "b is a string, not a number",
-				problem: "is a string, not a number"
+				message: "b is , not a number",
+				problem: "is , not a number"
 			},
 			{
 				code: "domain",

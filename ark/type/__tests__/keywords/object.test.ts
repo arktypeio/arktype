@@ -21,9 +21,7 @@ contextualize(() => {
 		}
 		const { D } = scope({ D: "Date" }).export()
 		attest(D.allows(new Date(0))).equals(true)
-		attest(D(new Date(Number.NaN)).toString()).equals(
-			"must be a Date (was an invalid Date)"
-		)
+		attest(D(new Date(Number.NaN)).toString()).equals("must be a Date")
 		attest(D.allows(new NaNTime(0))).equals(true)
 	})
 
@@ -37,9 +35,9 @@ contextualize(() => {
 
 			attest(Json({})).equals({})
 			attest(Json([])).equals([])
-			attest(Json(5)?.toString()).snap("must be an object (was a number)")
+			attest(Json(5)?.toString()).snap("must be an object")
 			attest(Json({ foo: [5n] })?.toString()).snap(
-				'foo["0"] must be a number, a string, an object, boolean or null (was a bigint)'
+				'foo["0"] must be a number, a string, an object, boolean or null'
 			)
 		})
 
@@ -49,16 +47,16 @@ contextualize(() => {
 
 			attest(Json(empty)).equals(empty)
 			attest(Json(new Map())?.toString()).snap(
-				"must be a plain object or array (was an object)"
+				"must be a plain object or array"
 			)
 			attest(Json(new (class Point {})())?.toString()).snap(
-				"must be a plain object or array (was an object)"
+				"must be a plain object or array"
 			)
 			attest(Json({ at: new Date() })?.toString()).snap(
-				"at must be a plain object or array (was an object)"
+				"at must be a plain object or array"
 			)
 			attest(Json([() => {}])?.toString()).snap(
-				'value at ["0"] must be a plain object or array (was a function)'
+				'["0"] must be a plain object or array'
 			)
 		})
 
@@ -98,7 +96,7 @@ contextualize(() => {
 
 			// this error kind of sucks, should have more discriminant context
 			attest(stringify({ foo: undefined }).toString()).snap(
-				"foo must be a number, a string, an object, boolean or null (was undefined)"
+				"foo must be a number, a string, an object, boolean or null"
 			)
 
 			// has declared out
@@ -116,11 +114,9 @@ contextualize(() => {
 			attest(liftNumberArray(5)).equals([5])
 			attest(liftNumberArray([5])).equals([5])
 			attest(liftNumberArray("five").toString()).snap(
-				"must be a number or an array (was a string)"
+				"must be a number or an array"
 			)
-			attest(liftNumberArray(["five"]).toString()).snap(
-				"value at [0] must be a number (was a string)"
-			)
+			attest(liftNumberArray(["five"]).toString()).snap("[0] must be a number")
 		})
 
 		it("invoked", () => {

@@ -4,7 +4,6 @@ import {
 	writeUnboundableMessage,
 	writeUnresolvableMessage
 } from "@ark/schema"
-import { printable } from "@ark/util"
 import { scope, type } from "arktype"
 import { writeOptionalIndexKeyMessage } from "arktype/internal/parser/objectLiteral.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
@@ -24,10 +23,9 @@ contextualize(() => {
 		const validWithSymbol = { a: "a", [Symbol()]: null }
 		attest(validWithSymbol).equals(validWithSymbol)
 
-		attest(O({ a: 1 }).toString()).snap("a must be a string (was a number)")
-		attest(O({ a: true, b: false }).toString())
-			.snap(`a must be a string (was boolean)
-b must be a string (was boolean)`)
+		attest(O({ a: 1 }).toString()).snap("a must be a string")
+		attest(O({ a: true, b: false }).toString()).snap(`a must be a string
+b must be a string`)
 	})
 
 	it("symbol index", () => {
@@ -43,12 +41,12 @@ b must be a string (was boolean)`)
 		attest(O({ a: 999 })).unknown.snap({ a: 999 })
 
 		const zildjian = Symbol()
-		const zildjianName = printable(zildjian)
+		const zildjianName = String(zildjian)
 
 		// I've been dope, suspenseful with a pencil
 		// Ever since...
 		const prince = Symbol()
-		const princeName = printable(prince)
+		const princeName = String(prince)
 
 		attest(O({ [zildjian]: 1, [prince]: 1 })).equals({
 			[zildjian]: 1,
@@ -58,11 +56,11 @@ b must be a string (was boolean)`)
 		attest({ a: 0, [zildjian]: 1 }).equals({ a: 0, [zildjian]: 1 })
 
 		attest(O({ [zildjian]: 0 }).toString()).equals(
-			`value at [${zildjianName}] must be 1 (was 0)`
+			`[${zildjianName}] must be 1`
 		)
 		attest(O({ [prince]: null, [zildjian]: undefined }).toString())
-			.snap(`value at [${princeName}] must be 1 (was null)
-value at [${zildjianName}] must be 1 (was undefined)`)
+			.snap(`[${princeName}] must be 1
+[${zildjianName}] must be 1`)
 	})
 
 	it("enumerable indexed union", () => {
@@ -100,7 +98,7 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 
 		const sym = Symbol()
 
-		const symName = printable(sym)
+		const symName = String(sym)
 
 		const validWithStringsAndSymbols = {
 			str: "string",
@@ -114,8 +112,8 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 				str: 100,
 				[sym]: "💯"
 			}).toString()
-		).equals(`str must be a string (was a number)
-value at [${symName}] must be a number (was a string)`)
+		).equals(`str must be a string
+[${symName}] must be a number`)
 	})
 
 	it("all key kinds", () => {
@@ -140,8 +138,8 @@ value at [${symName}] must be a number (was a string)`)
 				other: 0n
 			}).toString()
 		).snap(`required must be "foo" (was missing)
-optional must be "bar" (was "wrongString")
-other must be a string (was a bigint)`)
+optional must be "bar"
+other must be a string`)
 	})
 
 	it("index key from scope", () => {
@@ -199,7 +197,7 @@ other must be a string (was a bigint)`)
 		attest<{ [x: string]: string | number; a: number }>(T.infer)
 		attest(T({ a: "1", b: "b" })).equals({ a: 1, b: "b" })
 		attest(T({ a: "one" }).toString()).snap(
-			'a must be a well-formed numeric string (was "one")'
+			"a must be a well-formed numeric string"
 		)
 		attest(T({ b: "b" }).toString()).snap("a must be a string (was missing)")
 	})
@@ -227,7 +225,7 @@ other must be a string (was a bigint)`)
 		})
 
 		attest(T({ kind: { bogus: true }, p0: true }).toString()).snap(
-			'kind.p2 must be an object (was missing) or kind must be "c" (was an object)'
+			'kind.p2 must be an object or kind must be "c"'
 		)
 	})
 
@@ -240,9 +238,7 @@ other must be a string (was a bigint)`)
 		const data = { ab: 1, x: 2 }
 		attest(T(data)).equals(data)
 		attest(T.allows(data)).equals(true)
-		attest(T({ ab: "1", x: 2 }).toString()).snap(
-			"ab must be a number (was a string)"
-		)
+		attest(T({ ab: "1", x: 2 }).toString()).snap("ab must be a number")
 		attest(T.onUndeclaredKey("reject")(data).toString()).snap(
 			"x must be removed"
 		)
@@ -260,9 +256,7 @@ other must be a string (was a bigint)`)
 		)
 		const T = $.type({ a: "number" }).and($.type.Record(K, "string"))
 		attest(T.allows({ a: 1, ab: 2, abcdefg: "x" })).equals(true)
-		attest(T({ a: 1, abcdefg: 2 }).toString()).snap(
-			"abcdefg must be a string (was a number)"
-		)
+		attest(T({ a: 1, abcdefg: 2 }).toString()).snap("abcdefg must be a string")
 	})
 
 	it("checks a declared key against a signature reading ctx's root", () => {
@@ -281,16 +275,14 @@ other must be a string (was a bigint)`)
 		attest(types.t(data)).unknown.equals(data)
 		attest(T(data)).unknown.equals(data)
 		attest(types.t({ listed: ["a"], a: 1 }).toString()).snap(
-			"a must be a string (was a number)"
+			"a must be a string"
 		)
-		attest(T({ listed: ["a"], a: 1 }).toString()).snap(
-			"a must be a string (was a number)"
-		)
+		attest(T({ listed: ["a"], a: 1 }).toString()).snap("a must be a string")
 		attest(
 			type("string")
 				.or(T)({ listed: ["a"], a: 1 })
 				.toString()
-		).snap("a must be a string (was a number)")
+		).snap("a must be a string")
 	})
 
 	it("intersction with right required", () => {
