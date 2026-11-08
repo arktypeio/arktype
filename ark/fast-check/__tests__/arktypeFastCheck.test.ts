@@ -99,6 +99,22 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("regex with flags", () => {
+			const T = type(/^\u{1F600}[a-z]$/iu)
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("regex range requiring u", () => {
+			const T = type(/^[😀-😂]$/u)
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("sticky regex", () => {
+			const T = type(/a/y)
+			attest(() => arkToArbitrary(T)).throws(
+				'Unable to use "stringMatching" against a regex using the flag y'
+			)
+		})
 		it("multiple regexes", () => {
 			const T = type("string.email").and("string.alpha")
 			attest(() => arkToArbitrary(T)).throws(
