@@ -956,11 +956,22 @@ A Type deleting undeclared keys starts its copy as an object literal of nulls, a
 
 ### Build a Type when it's first read
 
-`type()` builds no nodes for a definition it can prove won't throw, so importing a program costs little more than its bytes. The first read of a Type builds it, and it's then what it would have been. Anything else, or any config but `exactOptionalPropertyTypes` and `jitless`, parses at the call as it always did, and throws there.
+`type()` builds no nodes for a definition it can prove won't throw, so importing a program costs little more than its bytes. The first read of a Type builds it, and it's then what it would have been. Anything else, or any config but `exactOptionalPropertyTypes` and `jitless`, parses at the call as it always did, and throws there. Once any Type has been built, a string definition parses at its call.
 
-`type.unit`, `type.enumerated`, `type.Record` and the `array`, `narrow`, `pipe`, `or`, `and`, `exclude`, `to`, `default`, `optional`, `describe`, `configure`, `onUndeclaredKey` and bound methods defer the same way when they can't throw.
+`type.unit`, `type.enumerated`, `type.or`, `type.Record` and the `array`, `narrow`, `pipe`, `or`, `and`, `exclude`, `to`, `default`, `optional`, `describe`, `configure`, `onUndeclaredKey` and bound methods defer the same way when they can't throw.
 
-Before its first read, `Object.keys()`, `Object.hasOwn()` and `Object.getPrototypeOf()` see a Type's function alone, and `type.Record` is a function standing for its generic. Equal definitions are one Type before they're read, but `===` no longer finds one written two ways equal, as with `type("string")` and `type.keywords.string.root`, or a definition parsed before any node exists and an equal one reached by a form that isn't scanned, as with `type("string[]")` then `type(["string", "[]"])`. Once any node exists, a string definition parses at its call.
+Until a Type's first read:
+
+- Reflecting on its own keys, as `Object.keys()`, `Object.hasOwn()`, `Object.getOwnPropertyDescriptor()`, `Reflect.ownKeys()`, `for...in` and spreading it do, sees only a function's `length` and `name`.
+- `key in T` answers for a key a Type holds itself as it would for `type.object`, so `"structure" in type({ a: "string" })` is `false` and `"domain" in type("string | number")` is `true`.
+- `Object.getPrototypeOf()` returns a prototype every unread Type shares, not its kind's. `instanceof` reads it, so it answers as before.
+- `Object.freeze()`, `Object.seal()` and `Object.preventExtensions()` make its first read throw a `TypeError`, where they made it throw once it compiled.
+
+Whether or not it's read:
+
+- `type.Record` is a function that calls and reads through to the `Record` generic, so it isn't `type.keywords.Record`, and its own keys and prototype are a function's. Calling it, reading its members and `instanceof` see the generic.
+- Equal definitions written alike are one Type, as are spellings normalized alike: union order, `.array()` and `[]`, `type.string` and `"string"`, and `type.unit(5)` and `"5"`. Other spellings of one Type can be two equal Types, depending on which is created and read first, as with `type("string")` then `type.keywords.string.root`, `type("'b'")` then `type('"b"')`, `type("string[]")` then `type(["string", "[]"])`, or a prop written as a string and then as a Type. `/a/` and `"string & /a/"` are always two.
+- A union of morphs whose inputs overlap throws at the same call, but its message can name its Left and Right branches the other way around.
 
 ### Compile and discriminate a Type when it's first used
 

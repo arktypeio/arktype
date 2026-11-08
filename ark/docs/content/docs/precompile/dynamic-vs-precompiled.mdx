@@ -22,7 +22,7 @@ it generates.
 
 ## Equal definitions
 
-arktype returns one Type for a scope's equal definitions, so `type("string[]") === type("string").array()`, in one module or across two. A precompiled program compares the same, including any function a Type holds, except:
+arktype returns one Type for a scope's equal definitions written alike, and for spellings it normalizes alike, so `type("string[]") === type("string").array()`, in one module or across two. [Other spellings](/docs/upgrading#types-are-built-when-theyre-first-read) of one Type can be two equal Types. A precompiled program compares the same, including any function a Type holds, except:
 
 - A Type the build leaves to arktype, as a [runtime island](/docs/precompile/advanced#runtime-islands), and its precompiled equal are two values.
 - A build that reads each module alone, as Node and `arktype-precompile --emit` do, and any build that doesn't [prune](/docs/precompile/options#prune), gives two values for a Type holding a cycle and for one in a scope a function creates. Reading the whole program, as a production build on Vite, Rollup, Rolldown, esbuild, webpack or Rspack does, or `next build` with Turbopack, compares them as arktype does.
