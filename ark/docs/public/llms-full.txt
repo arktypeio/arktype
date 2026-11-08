@@ -1471,6 +1471,7 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you use function defaults, or morphs on defaults? [They run on each call](https://arktype.io/docs/upgrading#defaults-run-each-time-theyre-applied).
 - Do you chain two right bounds, like `number < 5 < 6`? [Group them](https://arktype.io/docs/upgrading#a-second-right-bound-throws).
 - Do you embed an async Standard Schema, like a Zod schema with an async refinement? [It throws](https://arktype.io/docs/upgrading#standard-schemas-must-validate-synchronously).
+- Do you reflect on a Type's own keys or prototype, freeze a Type, compare `type.Record` to the generic, or compare Types written two ways with `===`? [Types are built when they're first read](https://arktype.io/docs/upgrading#types-are-built-when-theyre-first-read).
 - Do you store or snapshot `toJsonSchema()`, `.expression` or `.json`, or convert `NaN` or `Infinity` literals to JSON Schema? See [Output](https://arktype.io/docs/upgrading#output).
 - Do you rely on what `.required()`, `.map()` or arkregex infer, or reference a Type allowing `undefined` at a key without `exactOptionalPropertyTypes`? See [Inference](https://arktype.io/docs/upgrading#inference) and [ArkRegex](https://arktype.io/docs/upgrading#arkregex).
 - Do you use `@ark/schema` without `arktype`? [Import `arksets`](https://arktype.io/docs/upgrading#arkschema).
@@ -2123,6 +2124,26 @@ Built-in keywords set `meta.keyword` on the constraints they add, so a [locale](
 // before: the pattern's meta was its description, "an email address"
 type("string.email").json
 ```
+
+## Introspection
+
+### Types are built when they're first read
+
+`type()` builds a definition it can prove won't throw when the Type is first read, by a call or any member, rather than when it's defined. Until then, reflecting on the Type itself sees a function:
+
+```ts
+const User = type({ name: "string" })
+
+Object.keys(User) // [], before: its node's keys
+User.expression // "{ name: string }", which builds it
+Object.keys(User) // its node's keys
+```
+
+- `Object.keys()`, `Object.hasOwn()`, `Object.getOwnPropertyDescriptor()`, `Reflect.ownKeys()`, `for...in` and spreading see only a function's `length` and `name`, and `key in User` answers for a key the Type holds itself as it would for `type.object`.
+- `Object.getPrototypeOf()` returns a prototype every unread Type shares. `instanceof` builds the Type, so it answers as before.
+- `Object.freeze()`, `Object.seal()` and `Object.preventExtensions()` make the first read throw a `TypeError`, where they made the Type throw once it compiled.
+- `type.Record` is a function that calls and reads through to the `Record` generic, so `type.Record === type.keywords.Record` is `false`.
+- Two spellings of one Type can be two equal Types, depending on which is created and read first, as with `type("string")` and `type.keywords.string.root`, or `type("'b'")` and `type('"b"')`, and `/a/` and `"string & /a/"` always are. Definitions written alike are still one Type, as are union order, `.array()` and `[]`, and `type.string` and `"string"`.
 
 ## Output
 
