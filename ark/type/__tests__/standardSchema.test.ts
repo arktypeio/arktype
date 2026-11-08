@@ -32,21 +32,59 @@ contextualize(() => {
 		attest(badStandardOut.issues[0].path).equals(["foo"])
 	})
 
-	it("an issue's message leaves its path to the consumer", () => {
-		const T = type({ a: type({ b: "string" }).or({ c: "number" }) })
-		const out = T["~standard"].validate({
-			a: {}
-		}) as StandardSchemaV1.FailureResult
-		attest(out.issues.map(issue => [issue.path, issue.message])).snap([
-			[
-				["a"],
-				"b must be a string (was missing) or c must be a number (was missing)"
-			]
+	it("an issue's message is its error's problem, which leaves its path to the consumer", () => {
+		const textOf = (T: type.Any, data: unknown) => {
+			const errors = T(data) as type.errors
+			const { issues } = T["~standard"].validate(
+				data
+			) as StandardSchemaV1.FailureResult
+			return errors.issues.map((error, i) => ({
+				problem: error.problem,
+				message: error.message,
+				issue: issues[i].message
+			}))
+		}
+		attest(textOf(type({ y: { z: "string >= 2" } }), { y: { z: "a" } })).snap([
+			{
+				problem: "must be at least length 2 (was 1)",
+				message: "y.z must be at least length 2 (was 1)",
+				issue: "must be at least length 2 (was 1)"
+			}
 		])
-		// its errors still start with their path
-		attest(T({ a: {} }).toString()).snap(
-			"a.b must be a string (was missing) or a.c must be a number (was missing)"
-		)
+		// a union's problem writes its branches' paths from its own
+		attest(
+			textOf(type({ x: type({ a: "string" }).or({ b: "number" }) }), {
+				x: { a: 1, b: "" }
+			})
+		).snap([
+			{
+				problem:
+					"a must be a string (was a number) or b must be a number (was a string)",
+				message:
+					"x.a must be a string (was a number) or x.b must be a number (was a string)",
+				issue:
+					"a must be a string (was a number) or b must be a number (was a string)"
+			}
+		])
+		// a message writer reaches only the message
+		const Messaged = type("string >= 2").configure({
+			message: ctx => `${ctx.propString} is too short`
+		})
+		attest(textOf(type({ y: Messaged }), { y: "a" })).snap([
+			{
+				problem: "must be at least length 2 (was 1)",
+				message: "y is too short",
+				issue: "must be at least length 2 (was 1)"
+			}
+		])
+		const Problemed = type("string >= 2").configure({ problem: "is too short" })
+		attest(textOf(type({ y: Problemed }), { y: "a" })).snap([
+			{
+				problem: "is too short",
+				message: "y is too short",
+				issue: "is too short"
+			}
+		])
 	})
 
 	it("nested standard schema issues", () => {

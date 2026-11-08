@@ -17,7 +17,7 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you call methods on an error, like `hasCode()`, `toString()` or `instanceof ArkError`? [Errors are plain objects](#errors-are-plain-objects).
 - Do you switch on error `code`s, or configure text for `predicate`? See [undeclared](#undeclared-keys-have-the-undeclared-code), [discriminant](#union-misses-have-the-discriminant-code) and [notEqual](#excluded-values-have-the-notequal-codes).
 - Do you snapshot or assert error messages, or their order? See [Errors](#errors): objects, dates and union misses print differently, errors follow the order keys are declared, configured messages apply to more errors, described length bounds say "length", and [other messages changed](#other-messages-that-changed).
-- Do you show the messages of Standard Schema issues, as a form library does? [They leave out the path](#standard-schema-messages-leave-out-the-path).
+- Do you show the messages of Standard Schema issues, as a form library does? [Each is its error's `problem`, which leaves out the path](#standard-schema-messages-leave-out-the-path).
 - Do you configure an `expected`, `actual` or `message` writer? [Writers take the error](#error-writers-receive-the-error-and-the-locale).
 - Do you call `configure()` after a Type is created, or pass a global-only option to a Scope? See [Configuration](#configuration).
 - Do you use `number` for data that can be `Infinity`? [Allow it](#number-rejects-infinity).
@@ -111,7 +111,7 @@ A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.error
 
 ### Standard Schema messages leave out the path
 
-A [Standard Schema](/docs/standard-schema) failure is `{ issues }`, a plain array with a copy of each error whose `message` leaves its path out, since a consumer like a form library shows it beside the field or prints the path before it:
+A [Standard Schema](/docs/standard-schema) failure is `{ issues }`, a plain array with a copy of each error whose `message` is the error's `problem`, which leaves its path out, since a consumer like a form library shows it beside the field or prints the path before it:
 
 ```ts
 const T = type({ name: "string > 1" })
@@ -120,6 +120,8 @@ const T = type({ name: "string > 1" })
 // before: "name must be at least length 2 (was 1)"
 T["~standard"].validate({ name: "x" })
 ```
+
+A union's or an intersection's `problem` writes the path of each error it lists from its own, like `b must be a string (was missing) or c must be a number (was missing)`, while its `message` still writes them whole. A configured `message` no longer reaches the issues, so move a `message` writer that customized them to [`problem`](/docs/configuration#problem).
 
 Update snapshots of those messages, and read `summary` from the errors calling the Type returns for one line naming each path.
 
