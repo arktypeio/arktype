@@ -1,17 +1,17 @@
 {
-	"commit": "5373f183d",
+	"commit": "0f351dfc9",
 	"apps": [
 		{
 			"app": "login",
 			"types": 1,
-			"default": 1484,
+			"default": 1482,
 			"smallest": 1275,
 			"valibot": 1678
 		},
 		{
 			"app": "shop",
 			"types": 23,
-			"default": 5649,
+			"default": 5494,
 			"smallest": 3632,
 			"valibot": 3626
 		}
@@ -23,25 +23,25 @@
 			"rows": [
 				{
 					"types": 10,
-					"default": 4663,
+					"default": 4542,
 					"smallest": 3312,
 					"valibot": 3415
 				},
 				{
 					"types": 50,
-					"default": 12505,
+					"default": 12087,
 					"smallest": 5574,
 					"valibot": 5509
 				},
 				{
 					"types": 200,
-					"default": 35765,
+					"default": 35081,
 					"smallest": 11185,
 					"valibot": 11283
 				},
 				{
 					"types": 1000,
-					"default": 149518,
+					"default": 147359,
 					"smallest": 38630,
 					"valibot": 39481
 				}
@@ -53,25 +53,25 @@
 			"rows": [
 				{
 					"types": 10,
-					"default": 5229,
+					"default": 5145,
 					"smallest": 3452,
 					"valibot": 3536
 				},
 				{
 					"types": 50,
-					"default": 12846,
+					"default": 12502,
 					"smallest": 5529,
 					"valibot": 5449
 				},
 				{
 					"types": 200,
-					"default": 36619,
+					"default": 35753,
 					"smallest": 10969,
 					"valibot": 11057
 				},
 				{
 					"types": 1000,
-					"default": 150311,
+					"default": 147585,
 					"smallest": 37028,
 					"valibot": 39354
 				}
@@ -83,25 +83,25 @@
 			"rows": [
 				{
 					"types": 10,
-					"default": 5041,
-					"smallest": 3433,
+					"default": 4950,
+					"smallest": 3434,
 					"valibot": 3471
 				},
 				{
 					"types": 50,
-					"default": 11775,
+					"default": 11299,
 					"smallest": 5551,
 					"valibot": 5539
 				},
 				{
 					"types": 200,
-					"default": 34565,
+					"default": 33550,
 					"smallest": 11097,
 					"valibot": 11263
 				},
 				{
 					"types": 1000,
-					"default": 154405,
+					"default": 151704,
 					"smallest": 37467,
 					"valibot": 40096
 				}
@@ -113,25 +113,25 @@
 			"rows": [
 				{
 					"types": 10,
-					"default": 2489,
+					"default": 2416,
 					"smallest": 1959,
 					"valibot": 2056
 				},
 				{
 					"types": 50,
-					"default": 6022,
+					"default": 5731,
 					"smallest": 3278,
 					"valibot": 3293
 				},
 				{
 					"types": 200,
-					"default": 17960,
+					"default": 17061,
 					"smallest": 7067,
 					"valibot": 7216
 				},
 				{
 					"types": 1000,
-					"default": 89640,
+					"default": 85083,
 					"smallest": 28100,
 					"valibot": 29014
 				}
