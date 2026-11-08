@@ -867,10 +867,8 @@ contextualize(() => {
 
 			for (const data of [0, "s", null, undefined])
 				attest(T.allows(data)).equals(false)
-			attest(T(0).toString()).snap("must be an object (was a number)")
-			attest(T({ k: 3 }).toString()).snap(
-				"a must be undefined (was missing) or k must be 1 (was 3)"
-			)
+			attest(T(0).toString()).snap("must be an object")
+			attest(T({ k: 3 }).toString()).snap("a must be undefined or k must be 1")
 			attest(T({ k: 3, a: undefined })).equals({ k: 3, a: undefined })
 
 			const Domain = $.type({ k: "1", a: "string" })
@@ -1197,11 +1195,9 @@ contextualize(() => {
 
 		attest(T.precompilation).equals(undefined)
 		attest(T({ kind: "b", nested: { y: "s", z: 1 } }).toString())
-			.snap(`nested.y must be a number (was a string)
+			.snap(`nested.y must be a number
 nested.z must be removed`)
-		attest(T({ kind: "q" }).toString()).snap(
-			'kind must be "a", "b" or "c" (was "q")'
-		)
+		attest(T({ kind: "q" }).toString()).snap('kind must be "a", "b" or "c"')
 	})
 
 	it("describes a unit case once", () => {
