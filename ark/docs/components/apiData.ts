@@ -637,7 +637,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "const NotOdd = type(\"number % 2\").configure({ description: \"not odd\" })\n// all constraints at the root are affected\nconst odd = NotOdd(3) // must be not odd (was 3)\nconst nonNumber = NotOdd(\"two\") // must be not odd (was a string)\n\nconst NotOddBox = type({\n   // we should have referenced notOdd or added meta here\n   notOdd: \"number % 2\",\n// but instead chained from the root object\n}).configure({ description: \"not odd\" })\n// error message at path notOdd is not affected\nconst oddProp = NotOddBox({ notOdd: 3 }) // notOdd must be even (was 3)\n// error message at root is affected, leading to a misleading description\nconst nonObject = NotOddBox(null) // must be not odd (was null)"
+            "example": "const NotOdd = type(\"number % 2\").configure({ description: \"not odd\" })\n// all constraints at the root are affected\nconst odd = NotOdd(3) // must be not odd\nconst nonNumber = NotOdd(\"two\") // must be not odd\n\nconst NotOddBox = type({\n   // we should have referenced notOdd or added meta here\n   notOdd: \"number % 2\",\n// but instead chained from the root object\n}).configure({ description: \"not odd\" })\n// error message at path notOdd is not affected\nconst oddProp = NotOddBox({ notOdd: 3 }) // notOdd must be even\n// error message at root is affected, leading to a misleading description\nconst nonObject = NotOddBox(null) // must be not odd"
         },
         {
             "group": "Metadata",
@@ -671,7 +671,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "const AToZ = type(/^a.*z$/).describe(\"a string like 'a...z'\")\nconst good = AToZ(\"alcatraz\") // \"alcatraz\"\n// ArkErrors: must be a string like 'a...z' (was \"albatross\")\nconst badPattern = AToZ(\"albatross\")"
+            "example": "const AToZ = type(/^a.*z$/).describe(\"a string like 'a...z'\")\nconst good = AToZ(\"alcatraz\") // \"alcatraz\"\n// ArkErrors: must be a string like 'a...z'\nconst badPattern = AToZ(\"albatross\")"
         }
     ],
     "Composition": [

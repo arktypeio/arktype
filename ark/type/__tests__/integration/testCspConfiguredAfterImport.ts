@@ -14,6 +14,6 @@ cases({
 	validates: () => {
 		const O = type({ a: "string" })
 		strictEqual(O.precompilation, undefined)
-		strictEqual(O({ a: 5 }).toString(), "a must be a string (was a number)")
+		strictEqual(O({ a: 5 }).toString(), "a must be a string")
 	}
 })

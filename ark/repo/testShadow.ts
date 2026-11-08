@@ -78,13 +78,13 @@ it("returns what arktype returns", () => {
 	expect(Title("x")).toBe("x")
 	expect(Title("x".repeat(121))).toBeInstanceOf(type.errors)
 	expect(Count(1)).toBe(1)
-	expect(String(Count("x"))).toBe("must be a number (was a string)")
+	expect(String(Count("x"))).toBe("must be a number")
 	expect(Email("ada@example.com")).toBe("ada@example.com")
-	expect(String(Email("x"))).toBe('must be an email address (was "x")')
+	expect(String(Email("x"))).toBe('must be an email address')
 	expect(Trimmed(" ada ")).toBe("ada")
 	expect(User({ name: "Ada", age: 36 })).toEqual({ name: "Ada", age: 36 })
 	expect(String(User({ name: "Ada", age: -1 }))).toBe(
-		"age must be non-negative (was -1)"
+		"age must be non-negative"
 	)
 })
 `

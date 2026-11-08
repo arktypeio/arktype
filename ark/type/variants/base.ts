@@ -206,8 +206,8 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * @example
 	 * const NotOdd = type("number % 2").configure({ description: "not odd" })
 	 * // all constraints at the root are affected
-	 * const odd = NotOdd(3) // must be not odd (was 3)
-	 * const nonNumber = NotOdd("two") // must be not odd (was a string)
+	 * const odd = NotOdd(3) // must be not odd
+	 * const nonNumber = NotOdd("two") // must be not odd
 	 *
 	 * const NotOddBox = type({
 	 *    // we should have referenced notOdd or added meta here
@@ -215,9 +215,9 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * // but instead chained from the root object
 	 * }).configure({ description: "not odd" })
 	 * // error message at path notOdd is not affected
-	 * const oddProp = NotOddBox({ notOdd: 3 }) // notOdd must be even (was 3)
+	 * const oddProp = NotOddBox({ notOdd: 3 }) // notOdd must be even
 	 * // error message at root is affected, leading to a misleading description
-	 * const nonObject = NotOddBox(null) // must be not odd (was null)
+	 * const nonObject = NotOddBox(null) // must be not odd
 	 */
 	configure: NodeSelector.SelectableFn<TypeMeta.MappableInput, this>
 
@@ -230,7 +230,7 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * @example
 	 * const AToZ = type(/^a.*z$/).describe("a string like 'a...z'")
 	 * const good = AToZ("alcatraz") // "alcatraz"
-	 * // ArkErrors: must be a string like 'a...z' (was "albatross")
+	 * // ArkErrors: must be a string like 'a...z'
 	 * const badPattern = AToZ("albatross")
 	 */
 	describe: NodeSelector.SelectableFn<string, this>

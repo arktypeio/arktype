@@ -22,20 +22,14 @@ cases({
 		strictEqual(T.allows({ source: 1 }), true)
 		strictEqual(
 			T({ source: true }).toString(),
-			"source must be a number or a string (was boolean)"
+			"source must be a number or a string"
 		)
 	},
 	describesClassesNamedLikeMissingGlobals: () => {
 		class Blob {}
 		class Headers {}
-		strictEqual(
-			type("Date")(new Blob()).toString(),
-			"must be a Date (was an object)"
-		)
-		strictEqual(
-			type("Date")(new Headers()).toString(),
-			"must be a Date (was an object)"
-		)
+		strictEqual(type("Date")(new Blob()).toString(), "must be a Date")
+		strictEqual(type("Date")(new Headers()).toString(), "must be a Date")
 	},
 	rejectsKeywordsOfMissingGlobals: () => {
 		const message = writeUnresolvableMessage("Blob")

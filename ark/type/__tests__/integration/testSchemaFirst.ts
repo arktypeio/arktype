@@ -16,7 +16,7 @@ cases({
 	intrinsicsParsedWithTheEngine: () => {
 		strictEqual(
 			String(type("object.json")({ a: 1n })),
-			"a must be a number, a string, an object, boolean or null (was a bigint)"
+			"a must be a number, a string, an object, boolean or null"
 		)
 		strictEqual(intrinsic.jsonPrimitive.is("union"), true)
 		strictEqual(
@@ -27,12 +27,12 @@ cases({
 	intrinsicsParsedWithTheGlobalConfig: () => {
 		strictEqual(
 			intrinsic.number.traverse("x")?.toString(),
-			"must be a configured domain (was a string)"
+			"must be a configured domain"
 		)
 		strictEqual(intrinsic.string.description, "a configured domain")
 		strictEqual(
 			schemaScope({}).schema("symbol").traverse("x")?.toString(),
-			"must be a configured domain (was a string)"
+			"must be a configured domain"
 		)
 	}
 })

@@ -15,6 +15,6 @@ cases({
 				tag: "test",
 				message: ctx => `${ctx.propString}: ${ctx.problem}`
 			}),
-			"a: must be a number (was a string)"
+			"a: must be a number"
 		)
 })

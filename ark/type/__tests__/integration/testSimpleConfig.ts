@@ -26,21 +26,18 @@ cases({
 	shallowLeafKeyword: () => {
 		const expected = config.keywords.null.description
 		strictEqual(type.null.description, expected)
-		strictEqual(
-			type.null(undefined)?.toString(),
-			`must be ${expected} (was undefined)`
-		)
+		strictEqual(type.null(undefined)?.toString(), `must be ${expected}`)
 	},
 	shallowModuleKeyword: () => {
 		const expected = config.keywords.string.description
 		strictEqual(type.string.description, expected)
-		strictEqual(type.string(5).toString(), `must be ${expected} (was a number)`)
+		strictEqual(type.string(5).toString(), `must be ${expected}`)
 	},
 	deepModuleKeyword: () => {
 		const numeric = type.keywords.string.numeric.root
 		const expected = config.keywords["string.numeric"].description
 		strictEqual(numeric.description, expected)
-		strictEqual(numeric("abc").toString(), `must be ${expected} (was "abc")`)
+		strictEqual(numeric("abc").toString(), `must be ${expected}`)
 		// configured text replaces the keyword's phrase
 		strictEqual(
 			numeric.internal.select({ kind: "pattern", method: "assertFind" }).meta
@@ -52,7 +49,7 @@ cases({
 		const pretrimmed = type.keywords.string.trim.preformatted
 		const expected = config.keywords["string.trim.preformatted"].description
 		strictEqual(pretrimmed.description, expected)
-		strictEqual(pretrimmed(" ").toString(), `must be ${expected} (was " ")`)
+		strictEqual(pretrimmed(" ").toString(), `must be ${expected}`)
 	},
 	scopeNamedLikeObjectPrototypeMember: () => {
 		const types = scope({ root: "string" }, { name: "valueOf" }).export()
