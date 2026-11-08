@@ -234,7 +234,19 @@ const getDictionaryArbitrary = (node: nodeOfKind<"index">, ctx: Ctx) => {
 	const valueArbitrary = buildArbitrary(node.value as never, ctx)
 
 	//signatureArbitrary can be a symbol or string arbitrary
-	return fc.dictionary(signatureArbitrary as never, valueArbitrary)
+	const dictionaryArbitrary = fc.dictionary(
+		signatureArbitrary as never,
+		valueArbitrary
+	)
+	// in a cycle, a value with no base case of its own, e.g. { "[string]": "node" },
+	// only terminates in an empty dictionary, so past maxDepth this yields {}
+	return ctx.tieStack.length ?
+			fc.oneof(
+				{ maxDepth: 2, depthIdentifier: `id:${node.id}` },
+				{ arbitrary: fc.constant({}), weight: 1 },
+				{ arbitrary: dictionaryArbitrary, weight: 2 }
+			)
+		:	dictionaryArbitrary
 }
 
 const buildArrayArbitrary = (

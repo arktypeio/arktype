@@ -374,6 +374,15 @@ contextualize(() => {
 			assertProperty(arkToArbitrary($.dict), $.dict)
 			assertProperty(arkToArbitrary($.nested), $.nested)
 		})
+		it("cycle at an index signature value with no base case", () => {
+			// only an empty dictionary ends the cycle
+			const $ = scope({
+				dict: { "[string]": "dict" },
+				named: { "[/^x/]": "named", name: "string" }
+			}).export()
+			assertProperty(arkToArbitrary($.dict), $.dict)
+			assertProperty(arkToArbitrary($.named), $.named)
+		})
 		it("cycle through an optional element", () => {
 			// inferring an optional element that references its own tuple is circular
 			const { pair }: { pair: type.Any } = scope({
