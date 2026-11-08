@@ -532,6 +532,34 @@ const modulesRunApart = ({ entries, targets }: ScannedProgram): Set<string> => {
 	return apart
 }
 
+// whether every root reaching a site reaches all of them, so any chunk a
+// bundler splits the program into at its entries holds each site or none.
+// import() splits where a host chooses, so it's never one chunk's
+const sitesChunkTogether = (
+	{ entries, exposed, targets, dynamicImports }: ScannedProgram,
+	sites: readonly string[]
+): boolean => {
+	if (dynamicImports.length) return false
+	const isSite = new Set(sites)
+	for (const root of new Set([...entries, ...exposed])) {
+		const seen = new Set([root])
+		const layer = [root]
+		let reached = 0
+		while (layer.length) {
+			const id = layer.pop()!
+			if (isSite.has(id)) reached++
+			for (const specifier in targets[id]) {
+				const target = targets[id][specifier]
+				if (seen.has(target)) continue
+				seen.add(target)
+				layer.push(target)
+			}
+		}
+		if (reached && reached !== isSite.size) return false
+	}
+	return true
+}
+
 const runsAsItsModuleLoads = (read: Node): boolean => {
 	for (let node = read.parent; node; node = node.parent)
 		if (isFunctionNode(node) || node.type === "ClassBody") return false
@@ -1039,7 +1067,9 @@ export class Precompiler {
 		)
 		// a size build's units are already module constants
 		const flattens =
-			!!program.isOneChunk &&
+			(!!program.isOneChunk ||
+				(!program.keepsUnitsApart &&
+					sitesChunkTogether(program, precompiled))) &&
 			!this.inline &&
 			this.standalone.optimize === "speed" &&
 			this.defers !== true

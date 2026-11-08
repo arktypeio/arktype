@@ -14,8 +14,9 @@ import {
 	type Rolldown
 } from "vite"
 import { parseSync } from "oxc-parser"
+import { mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { run, writeFixture } from "./utils.ts"
+import { run, runPlain, writeFixture } from "./utils.ts"
 
 // arktype's packages resolve to their source in this repo
 const conditions = ["ark-ts", "production"]
@@ -52,7 +53,17 @@ let Member = type({ user: User, rank: "number" })
 console.log(String(Member({ rank: 1 })))
 `,
 		// what a rewrite may import, as the React Compiler imports its runtime
-		"memo.ts": "export const memo = <t>(value: t): t => value\n"
+		"memo.ts": "export const memo = <t>(value: t): t => value\n",
+		"again.ts": `import "./main.ts"\n`,
+		"lazy.ts": `import { User } from "./types.ts"
+
+const { Later } = await import("./later.ts")
+console.log(User.allows({ name: "Ada", email: "ada@arktype.io" }), Later.allows(1))
+`,
+		"later.ts": `import { type } from "arktype"
+
+export const Later = type("number")
+`
 	},
 	fromHere("temp", "flat")
 )
@@ -546,9 +557,39 @@ console.log(User.allows({ name: "Ada" }), User.assert({ name: "Ada" }))
 		)
 	})
 
-	it("keeps each unit a module of its own where entries split", async () => {
+	it("keeps each unit a module of its own where an entry reaches only some sites", async () => {
 		const options: BuildOptions = {
 			entryPoints: [join(root, "main.ts"), join(root, "types.ts")],
+			outdir: join(root, "out"),
+			splitting: true
+		}
+		const split = await bundle({}, options)
+		attest(split.some(js => factoryParam.test(js))).equals(true)
+	})
+
+	it("declares in one function the units of split entries each reaching every site", async () => {
+		const outdir = join(root, "split")
+		const { outputFiles } = await build({
+			entryPoints: [join(root, "main.ts"), join(root, "again.ts")],
+			outdir,
+			splitting: true,
+			bundle: true,
+			write: false,
+			format: "esm",
+			conditions,
+			logLevel: "silent",
+			plugins: [precompile.esbuild({ conditions })]
+		})
+		attest(outputFiles.some(file => factoryParam.test(file.text))).equals(false)
+		mkdirSync(outdir, { recursive: true })
+		for (const file of outputFiles) writeFileSync(file.path, file.text)
+		const [whole] = await bundle({ prune: false })
+		attest(runPlain(outdir, "again.js")).equals(run(whole))
+	})
+
+	it("keeps each unit a module of its own where import() loads a site", async () => {
+		const options: BuildOptions = {
+			entryPoints: [join(root, "lazy.ts")],
 			outdir: join(root, "out"),
 			splitting: true
 		}
