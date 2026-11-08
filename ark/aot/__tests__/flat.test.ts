@@ -198,6 +198,12 @@ console.log(${Array.from({ length: types }, (_, i) => `String(T${i}(${i % 2 ? "5
 			attest(/\w+Allows = /.test(js)).equals(false)
 		})
 
+		it("builds once each site of literals it writes often enough", async () => {
+			const [js] = await bundle({}, options)
+			attest(js.match(/keySiteOf\("domain", "a string"\)/g)?.length).equals(1)
+			attest(run(js)).equals(run((await bundle({ prune: false }, options))[0]))
+		})
+
 		it("reports what isn't an object from one check each Apply calls", async () => {
 			const [js] = await bundle({}, options)
 			attest(js.match(/"domain", "an object"/g)?.length).equals(1)
@@ -207,6 +213,12 @@ lead must be an object
 lead.name must be a string
 members[0].name must be a string`)
 		})
+	})
+
+	it("builds a site of literals where it fails in a program writing it rarely", async () => {
+		const [js] = await bundle()
+		attest(/const site\d+ = /.test(js)).equals(false)
+		attest(js).satisfies(/_at\(siteOf\("minLength", "non-empty"\), data\)/)
 	})
 
 	it("writes a program of less text as arrows, holding its checks in place", async () => {

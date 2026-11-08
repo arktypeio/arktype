@@ -1539,6 +1539,7 @@ const writtenUnitsOf = (body: string, returned: string): WrittenUnits => {
 			shareObjectChecks
 		)
 	)
+	written = untilUnchanged(written, parse, shareSites)
 	written = untilUnchanged(written, parse, writtenWhereRead)
 	written.body = functionsDeclared(inGzipOrder(written.body))
 	return written
@@ -2029,6 +2030,62 @@ const isPlainFunction = (
 	!!node.body &&
 	!node.async &&
 	!node.generator
+
+// a site of literals is built where it fails, as gzip writes its text's repeats
+// in fewer bytes than a name. One written often enough is built once, so the
+// text a load parses shrinks and a failing call allocates none
+const shareSites: UnitsPass = ({ code, program }, s) => {
+	const callsByText = new Map<string, Span[]>()
+	walk(program, node => {
+		if (
+			node.type !== "CallExpression" ||
+			node.callee.type !== "MemberExpression" ||
+			node.callee.object.type !== "Identifier" ||
+			node.callee.object.name !== "runtime" ||
+			node.callee.property.type !== "Identifier" ||
+			!siteCreators.has(node.callee.property.name) ||
+			!node.arguments.every(arg => arg.type === "Literal")
+		)
+			return true
+		pushTo(callsByText, code.slice(node.start, node.end), node)
+		return false
+	})
+	const shared = [...callsByText].filter(
+		([, calls]) => calls.length >= minSharedSites
+	)
+	// a creator first called as the program loads compiles there, so what
+	// its sites save must repay that
+	const savedByCreator = new Map<string, number>()
+	for (const [text, calls] of shared) {
+		const creator = creatorOf(text)
+		savedByCreator.set(
+			creator,
+			(savedByCreator.get(creator) ?? 0) +
+				(calls.length - 1) * (text.length - creator.length)
+		)
+	}
+	const declarations: string[] = []
+	for (const [text, calls] of shared) {
+		if (savedByCreator.get(creatorOf(text))! < minSavedBySites) continue
+		const name = nameFreeIn(code, `site${declarations.length}`)
+		declarations.push(`const ${name} = /* @__PURE__ */ ${text}\n`)
+		for (const { start, end } of calls) s.overwrite(start, end, name)
+	}
+	if (declarations.length) s.prependRight(0, declarations.join(""))
+	return true
+}
+
+const siteCreators = new Set(["siteOf", "requiredSiteOf", "keySiteOf"])
+
+const creatorOf = (siteCall: string) => siteCall.slice(0, siteCall.indexOf("("))
+
+// shared from 16 calls, gz at 8 / 16 / 32 (B, against none): 92 Types +19 / -9 /
+// -2, 1012 -594 / -594 / -461, ntwine -540 / -499 / -419
+const minSharedSites = 16
+
+// shared, shop's 725 B of sites cost its load 30 K instructions more than they
+// saved, a92's 4.7 KB saved 150 K
+const minSavedBySites = 1024
 
 // an Apply opens by checking data is an object, in a program of objects the text
 // it most repeats. Hot on a rejected call, V8 inlines each call as it read the text
