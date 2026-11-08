@@ -639,18 +639,33 @@ const appScope = `On apps we generated of ${Math.min(...appTypes).toLocaleString
 
 const appRivalsText = `${list(everyAppRival.map(library => appLibraryNames[library]))} on every app${everyAppRival.length < appRivals.length ? `, ${list(appRivals.filter(library => !everyAppRival.includes(library)).map(library => appLibraryNames[library]))} on some` : ""}`
 
-/** "46 Types through webpack, with and without narrows" */
-const appsText = (rows: AppRow[]) =>
-	list(
-		[...new Set(rows.map(row => `${row.host} ${row.app}`))].map(key => {
-			const of = rows.filter(row => `${row.host} ${row.app}` === key)
-			return `${Number(of[0].app).toLocaleString("en-US")} Types through ${hostNames[of[0].host]}${
-				of.length === 2 ? ", with and without narrows"
-				: of[0].narrows ? " with narrows"
-				: ""
-			}`
-		})
+/** "11 and 46 Types through webpack with narrows" */
+const appsText = (rows: AppRow[]) => {
+	const groups = new Map<
+		string,
+		{ host: Host; variant: string; types: number[] }
+	>()
+	for (const key of new Set(rows.map(row => `${row.host} ${row.app}`))) {
+		const of = rows.filter(row => `${row.host} ${row.app}` === key)
+		const variant =
+			of.length === 2 ? ", with and without narrows"
+			: of[0].narrows ? " with narrows"
+			: ""
+		const group = groups.get(`${of[0].host}${variant}`) ?? {
+			host: of[0].host,
+			variant,
+			types: []
+		}
+		group.types.push(Number(of[0].app))
+		groups.set(`${of[0].host}${variant}`, group)
+	}
+	return list(
+		[...groups.values()].map(
+			({ host, variant, types }) =>
+				`${list(types.map(n => n.toLocaleString("en-US")))} Types through ${hostNames[host]}${variant}`
+		)
 	)
+}
 
 const coverageText = ({ won, lost }: Sweep) =>
 	lost.length ?
@@ -667,8 +682,8 @@ const thinnestAmong = (sweep: Sweep, measure: Measure, rows: AppRow[]) =>
 
 const appSpeedSweep = sweepOf(generatedRows, "precompiled", "hot")
 
-// nanoseconds per call on a shared machine, so read as ratios: at adb8cd479
-// the closest was z.compile at 92 Types
+// nanoseconds per call on a shared machine, so read as ratios: at 19a959e8a
+// the closest was z.compile at 92 Types with narrows, 1.68x
 const appSpeedText = () =>
 	`${appScope}, the default build validated faster on ${appSpeedSweep.lost.length ? `${appSpeedSweep.won.length} of ${generatedRows.length}` : "every one"} than every other library measured on it (${appRivalsText})${appSpeedSweep.lost.length ? `, though not on ${appsText(appSpeedSweep.lost)}` : ""}, by ${timesText(1 / (1 - appSpeedSweep.thinnest))} or more: nanoseconds per call over ${scoreboard.rounds} paired runs on a shared machine, p ≤ ${appSpeedSweep.p.toFixed(3)}.`
 
@@ -736,19 +751,27 @@ const kbText = (bytes: number) =>
 
 const gigaText = (instructions: number) => `${(instructions / 1e9).toFixed(3)}G`
 
+/** ntwine through the other hosts where Zod 4 ships less than either build: webpack tree-shakes Zod's namespace */
+const ntwineZodSmaller = ntwineRows.filter(
+	row =>
+		row.host !== "esbuild" &&
+		row.arms.zod &&
+		row.arms[lowerBuildOf(row, "gz")].gz > row.arms.zod.gz
+)
+
 // Zod 3 is what ntwine ships; its source runs unchanged on Zod 4, the other arm
 const bigAppText = (row: AppRow) => {
 	const size = lowerBuildOf(row, "gz")
 	const start = lowerBuildOf(row, "first")
 	const hot = lowerBuildOf(row, "hot")
 	const { zod, zod3 } = row.arms
-	return `On ntwine's packages/shared, the schemas of an open-source app and the code that reads them, bundled with esbuild: ${buildNames[size]} shipped ${kbText(row.arms[size].gz)} gzipped to Zod 4's ${kbText(zod.gz)} and Zod 3's ${kbText(zod3.gz)}, the version ntwine ships; ${start === size ? "it" : buildNames[start]} ran ${gigaText(row.arms[start].first)} instructions through its first validation to Zod 4's ${gigaText(zod.first)} and Zod 3's ${gigaText(zod3.first)}; and ${buildNames[hot]} validated a thread in ${Math.round(row.arms[hot].hot)} ns to Zod 4's ${Math.round(zod.hot)} and Zod 3's ${Math.round(zod3.hot)}.`
+	return `On ntwine's packages/shared, the schemas of an open-source app and the code that reads them, bundled with esbuild: ${buildNames[size]} shipped ${kbText(row.arms[size].gz)} gzipped to Zod 4's ${kbText(zod.gz)} and Zod 3's ${kbText(zod3.gz)}, the version ntwine ships; ${start === size ? "it" : buildNames[start]} ran ${gigaText(row.arms[start].first)} instructions through its first validation to Zod 4's ${gigaText(zod.first)} and Zod 3's ${gigaText(zod3.first)}; and ${buildNames[hot]} validated a thread ${timesText(zod.hot / row.arms[hot].hot)} as fast as Zod 4 and ${timesText(zod3.hot / row.arms[hot].hot)} as fast as Zod 3, in nanoseconds per call over ${scoreboard.rounds} paired runs on a shared machine, p ≤ ${Math.max(row.p[hot]!.zod.hot, row.p[hot]!.zod3.hot).toFixed(3)}.${ntwineZodSmaller.length ? ` Zod 4 ships less ${list(ntwineZodSmaller.map(other => `through ${hostNames[other.host]} (${kbText(other.arms.zod.gz)} to ${kbText(other.arms[lowerBuildOf(other, "gz")].gz)})`))}.` : ""}`
 }
 
 // plain arktype, without the plugin, against Zod 4, from import through the
 // first validation on the apps bundled with esbuild, the only host with a plain
 // arm. Deferred Types move it, so it renders only once it starts sooner on
-// every app; at adb8cd479 it ran 1.5-2.2x Zod 4's instructions
+// every app; at 19a959e8a it ran 1.5-2.2x Zod 4's instructions
 const dynamicRows = [
 	...generatedRows,
 	...(scoreboard.ntwine.migration ? ntwineRows : [])
