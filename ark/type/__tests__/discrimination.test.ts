@@ -1186,6 +1186,22 @@ contextualize(() => {
 		)
 	})
 
+	// https://github.com/arktypeio/arktype/issues/961
+	it("jitless reports every error of the matching case", () => {
+		const T = scope({}, { jitless: true })
+			.type({ kind: "'a'", x: "string" })
+			.or({ kind: "'b'", nested: { "+": "reject", y: "number" } })
+			.or({ kind: "'c'", z: "boolean" })
+
+		attest(T.precompilation).equals(undefined)
+		attest(T({ kind: "b", nested: { y: "s", z: 1 } }).toString())
+			.snap(`nested.y must be a number (was a string)
+nested.z must be removed`)
+		attest(T({ kind: "q" }).toString()).snap(
+			'kind must be "a", "b" or "c" (was "q")'
+		)
+	})
+
 	it("describes a unit case once", () => {
 		let calls = 0
 		const unit = {
