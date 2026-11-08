@@ -4,6 +4,7 @@ import {
 	hasArkKind,
 	isNode,
 	mergeConfigs,
+	silentCtx,
 	ToJsonSchema,
 	type BaseNode,
 	type BaseRoot,
@@ -379,7 +380,9 @@ export class Interpreter {
 	private dynamicFree = new WeakSet<object>()
 	private opaqueByDynamic = new WeakMap<DynamicValue, object>()
 	private validators = new WeakSet<object>()
-	private arkObjects = new WeakSet<object>()
+	// what arktype created, whose members a call reads, and the ctx it passes a
+	// narrow proven to return only what it reports, deciding a unit by it
+	private arkObjects = new WeakSet<object>([silentCtx])
 	private opaqueStandInsByValue = new WeakMap<object, StandIn>()
 	// each site evaluated to the value, whose module may refuse it
 	private sitesByValue = new WeakMap<object, SiteState[]>()
@@ -2621,7 +2624,11 @@ export class Interpreter {
 			if (isDynamic(result)) throw result
 			return result
 		}
-		const converted = this.toArktype(result)
+		// a callback arktype passes data, like a narrow deciding a unit, returns
+		// data it reads, if only for its truthiness, which no stand-in holds
+		const converted = this.toArktype(
+			args.length && isDynamic(result) ? result.asOperand() : result
+		)
 		if (isDynamic(converted)) {
 			throw converted.hasCode("unsupported") ? converted : (
 					this.calledAtDefinition(standIn, converted)

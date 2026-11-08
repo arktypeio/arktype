@@ -17,6 +17,8 @@ type Suite = {
 	id: string
 	label: string
 	rows: { id: string; results: Record<string, number> }[]
+	/** startup.ts's rounds, each running every arm in turn, and by app, in how many ArkType ran fewer instructions than each library */
+	paired?: { rounds: number; wins: Record<string, Record<string, number>> }
 }
 
 const suites = data.suites as Suite[]
@@ -133,6 +135,20 @@ export const fullLeaderboards = leaderboardsOf(() => true)
 export const resultsOf = (suiteId: string, rowId: string) =>
 	suites.find(s => s.id === suiteId)!.rows.find(row => row.id === rowId)!
 		.results
+
+/** startup.ts's paired rounds, if its results recorded them */
+export const startupPaired = suites.find(s => s.id === "startup")?.paired
+
+/** a two-sided sign test's p for one side winning `wins` of `rounds` pairs */
+export const pairedP = (wins: number, rounds: number) => {
+	let tail = 0
+	let choose = 1
+	for (let k = 0; k <= Math.min(wins, rounds - wins); k++) {
+		tail += choose
+		choose = (choose * (rounds - k)) / (k + 1)
+	}
+	return Math.min(1, (2 * tail) / 2 ** rounds)
+}
 
 /** each row's results across a category's independent suites */
 export const rowsOf = (category: CategoryId) =>

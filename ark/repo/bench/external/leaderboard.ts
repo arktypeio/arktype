@@ -248,6 +248,34 @@ const startupRows = byCase(
 		])
 )
 
+// in how many rounds ArkType's default build ran fewer instructions than each
+// library on each app, every arm of a round running in turn
+const startupSamples: Record<string, number[]> = startup.samples
+const startupPaired = {
+	rounds: startup.loads.length,
+	wins: Object.fromEntries(
+		startupRows.map(({ id }) => {
+			const ours = startupSamples[`${id} arktype default`]
+			return [
+				id,
+				Object.fromEntries(
+					Object.entries(startupSamples)
+						.filter(
+							([key]) =>
+								key.startsWith(`${id} `) &&
+								!otherBuild.test(key.slice(id.length + 1)) &&
+								key !== `${id} arktype default`
+						)
+						.map(([key, theirs]) => [
+							nameOf(key.slice(id.length + 1)),
+							ours.filter((n, i) => n < theirs[i]).length
+						])
+				)
+			]
+		})
+	)
+}
+
 const appsOf = (
 	byApp: Record<string, Record<string, number | Record<string, number>>>,
 	key: string
@@ -391,7 +419,8 @@ const suites = [
 		label: "startup.ts",
 		unit: "instructions beyond the baseline",
 		source: sources.startup,
-		rows: startupRows
+		rows: startupRows,
+		paired: startupPaired
 	},
 	{
 		category: "startup",

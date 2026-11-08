@@ -3778,4 +3778,75 @@ console.log(String(A({})), a, allowed, String(B({})), b, String(C({})), c, unall
 			})
 		}
 	})
+
+	// as SWC's loader does on Next's webpack build, it drops the types that
+	// told the build a parameter holds no Type, so the module as built is one
+	// it would refuse, but no validator reaches what it read
+	describe("a loader compiling TypeScript to ES modules after it", () => {
+		const transpiler = `const { createRequire } = require("node:module")
+const ts = createRequire(${JSON.stringify(fromHere("..", "package.json"))})("typescript-6")
+module.exports = source => ts.transpileModule(source, {
+	compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 }
+}).outputText
+`
+		const compilers = {
+			webpack: [webpack, precompile.webpack],
+			Rspack: [rspack, precompile.rspack]
+		} as const
+		for (const name of Object.keys(compilers) as (keyof typeof compilers)[]) {
+			it(`prunes a module whose types it drops on ${name}`, async () => {
+				const root = writeFixture(
+					{
+						"package.json": `{ "type": "module", "sideEffects": false }`,
+						"header.ts": `import { type } from "arktype"
+
+export const Title = type("string")
+
+export interface Described {
+	describe: string
+}
+
+export function header(input: Described) {
+	return input.describe
+}
+`,
+						"main.ts": `import { type } from "arktype"
+import { header, Title } from "./header.ts"
+
+const User = type({ name: "string" })
+
+console.log(header({ describe: "read" }), String(User({ name: 1 })), Title("t"))
+`,
+						"transpile.cjs": transpiler
+					},
+					fromHere("temp", "esmLoader", name)
+				)
+				const [compile, plugin] = compilers[name]
+				const compiler = (compile as typeof webpack)({
+					mode: "production",
+					context: root,
+					entry: "./main.ts",
+					target: "node",
+					cache: false,
+					output: { path: join(root, "out"), filename: "main.cjs" },
+					module: {
+						rules: [{ test: /\.ts$/, loader: join(root, "transpile.cjs") }]
+					},
+					plugins: [plugin({ cwd: root }) as never]
+				})
+				const stats = await new Promise<Stats | undefined>((resolve, reject) =>
+					compiler.run((error, stats) =>
+						compiler.close(() => (error ? reject(error) : resolve(stats)))
+					)
+				)
+				attest(stats?.toJson().errors).equals([])
+				const { stdout } = spawnSync(
+					process.execPath,
+					[join(root, "out", "main.cjs")],
+					{ encoding: "utf8" }
+				)
+				attest(stdout).equals("read name must be a string t\n")
+			})
+		}
+	})
 })

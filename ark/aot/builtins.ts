@@ -1,4 +1,4 @@
-import { arkKind, hasArkKind } from "@ark/schema"
+import { arkKind, hasArkKind, silentCtx } from "@ark/schema"
 import { builtinConstructors, hasDomain } from "@ark/util"
 
 type ObjectArg = "object" | "callback" | "RegExp"
@@ -184,6 +184,9 @@ definePure(JSON, "JSON", ["stringify"], {
 })
 definePure(Symbol, "Symbol", ["for"])
 definePure(Math, "Math", ["abs", "ceil", "floor", "round", "max", "min"])
+// what the ctx arktype passes a narrow proven to return only what it reports
+// answers, whatever it's passed
+definePure(silentCtx, "ctx", ["mustBe", "reject"], { objects: ["object"] })
 
 export const pureConstructors = new Map<Function, PureBuiltin>([
 	[RegExp, { name: "RegExp", objects: ["RegExp", undefined] }],

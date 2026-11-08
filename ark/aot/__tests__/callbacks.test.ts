@@ -124,11 +124,17 @@ const E = type({ a: type("string").narrow(isLong) }).configure({ description: "s
 			statusesOf(`import { type } from "arktype"
 const A = type("'a' | 'b'").narrow(s => s === "a")
 const B = type("'a' | 'b'").narrow(s => ${nonStatic})
-const C = type("string").narrow(s => ${nonStatic})`)
+const C = type("string").narrow(s => ${nonStatic})
+const D = type("'a' | 0").narrow((d, ctx) => typeof d !== "number" || d > 0 || ctx.reject("positive"))
+import { isPositive } from "pkg"
+const E = type("'a' | 0").narrow(d => typeof d !== "number" || isPositive(d))`)
 		).snap([
 			'2:11 accepted "a"',
 			'3:11 rejected\n  arktype calls a function (/main.ts:3:36) while defining the type, so it must be a static helper\n  a function (/main.ts:3:36) is not a static helper: it runs `let result = "string"` (/main.ts:4:2), where a static helper declares only consts before one `return`',
-			"7:11 accepted string & fn$hole_bvgui20gqfe3l"
+			"7:11 accepted string & fn$hole_bvgui20gqfe3l",
+			// arktype decides each unit by calling the narrow, so the build must too
+			'11:11 accepted "a"',
+			"13:11 rejected\n  arktype calls a function (/main.ts:13:34) while defining the type, so it must be a static helper\n  `pkg` is a package the build does not read"
 		])
 	})
 

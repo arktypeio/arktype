@@ -1539,6 +1539,8 @@ const writtenUnitsOf = (body: string, returned: string): WrittenUnits => {
 			shareObjectChecks
 		)
 	)
+	written = untilUnchanged(written, parse, shareSites)
+	written = untilUnchanged(written, parse, writtenWhereRead)
 	written.body = functionsDeclared(inGzipOrder(written.body))
 	return written
 }
@@ -1711,6 +1713,185 @@ const inlineCalls: UnitsPass = ({ code, program, scopes }, s, body) => {
 	}
 }
 
+// a constant read once, where the units run once, is written where it's read: a
+// minified name is the one text gzip can't shrink, and a validator's read only
+// to be returned says nothing. A value moves only where it then runs as surely,
+// and in the same order with each impure call; a function read once moves with
+// the value it's passed in, as a traversal into its validator's creation
+const writtenWhereRead: UnitsPass = ({ code, program, scopes }, s, body) => {
+	const functions: [VariableDeclarator, Reference][] = []
+	const values: [VariableDeclarator, Reference][] = []
+	// where each impure statement or initializer runs
+	const impure = new Map<Node, number>()
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration") {
+			if (
+				statement.type !== "EmptyStatement" &&
+				(statement.type !== "ExpressionStatement" ||
+					!isPureExpression(statement.expression, code))
+			)
+				impure.set(statement, statement.start)
+			continue
+		}
+		for (const declarator of statement.declarations) {
+			const { id, init } = declarator
+			if (init && !isPureExpression(init, code))
+				impure.set(declarator, declarator.start)
+			const binding = scopes.bindingsById.get(id)
+			const [read] = binding?.references ?? []
+			if (
+				statement.kind !== "const" ||
+				!init ||
+				binding?.references.length !== 1 ||
+				read.isWrite ||
+				read.id.start < declarator.end
+			)
+				continue
+			if (isFunctionExpression(unwrapExpression(init))) {
+				if (isRunOnce(read.id)) functions.push([declarator, read])
+			} else if (isRunSurely(read.id)) values.push([declarator, read])
+		}
+	}
+	const moving = new Map<Reference, VariableDeclarator>()
+	// the last first, so one moving past another sees where it went
+	for (const [declarator, read] of values.reverse()) {
+		const passes =
+			[...impure].some(
+				([other, at]) =>
+					other !== declarator && declarator.end < at && at < read.id.start
+			) || callsBefore(topStatementOf(read.id), read.id, code)
+		if (passes) continue
+		moving.set(read, declarator)
+		if (impure.has(declarator)) impure.set(declarator, read.id.start)
+	}
+	if (!moving.size) return true
+	const isInMoved = spansContaining([...moving.values()].map(d => d.init!))
+	for (const [declarator, read] of functions)
+		if (isInMoved(read.id)) moving.set(read, declarator)
+	const reads = [...moving.keys()].sort((l, r) => l.id.start - r.id.start)
+	// a span's text with each read within it written as what it reads
+	const textOf = (start: number, end: number): string => {
+		let text = ""
+		for (const read of reads) {
+			if (read.id.start < start || read.id.end > end) continue
+			text += code.slice(start, read.id.start) + writtenAt(read)
+			start = read.id.end
+		}
+		return text + code.slice(start, end)
+	}
+	const writtenAt = (read: Reference) => {
+		const { init } = moving.get(read)!
+		const text = textOf(init!.start, init!.end)
+		const parent = read.id.parent
+		return (
+			parent?.type === "Property" && parent.shorthand ?
+				`${read.id.name}: ${text}`
+			: (
+				(parent?.type === "CallExpression" ||
+					parent?.type === "NewExpression") &&
+				parent.callee === read.id
+			) ?
+				`(${text})`
+			:	text
+		)
+	}
+	const moved = new Set(moving.values())
+	const isMoved = spansContaining([...moved].map(d => d.init!))
+	for (const read of reads) {
+		if (!isMoved(read.id))
+			s.overwrite(read.id.start, read.id.end, writtenAt(read))
+	}
+	for (const statement of program.body as Node[]) {
+		if (statement.type !== "VariableDeclaration") continue
+		const { declarations } = statement
+		let last = declarations.length - 1
+		while (last >= 0 && moved.has(declarations[last])) last--
+		if (last === -1) {
+			s.remove(statement.start, statementEndIn(body, statement))
+			continue
+		}
+		for (let i = 0; i < last; i++) {
+			if (moved.has(declarations[i]))
+				s.remove(declarations[i].start, declarations[i + 1].start)
+		}
+		if (last < declarations.length - 1) {
+			s.remove(
+				declarations[last].end,
+				statementEndIn(body, declarations[declarations.length - 1])
+			)
+		}
+	}
+	return true
+}
+
+// a function's read the units' own body runs, once, as no function, class or loop holds it
+const isRunOnce = (id: Node): boolean => {
+	for (let node = id.parent; node; node = node.parent) {
+		switch (node.type) {
+			case "ArrowFunctionExpression":
+			case "FunctionExpression":
+			case "FunctionDeclaration":
+			case "ClassBody":
+			case "ForStatement":
+			case "ForInStatement":
+			case "ForOfStatement":
+			case "WhileStatement":
+			case "DoWhileStatement":
+				return false
+		}
+	}
+	return true
+}
+
+// a value's read run once, and whenever its statement is, as an element, an argument or a property's value
+const isRunSurely = (id: Node): boolean => {
+	let child = id
+	for (let node = id.parent; node; child = node, node = node.parent) {
+		switch (node.type) {
+			case "ArrayExpression":
+			case "ObjectExpression":
+			case "ParenthesizedExpression":
+			case "ExpressionStatement":
+			case "VariableDeclaration":
+			case "Program":
+				continue
+			case "Property":
+				if (node.value !== child || node.computed) return false
+				continue
+			case "CallExpression":
+			case "NewExpression":
+				if (node.callee === child) return false
+				continue
+			case "VariableDeclarator":
+				if (node.init !== child) return false
+				continue
+			default:
+				return false
+		}
+	}
+	return true
+}
+
+const topStatementOf = (node: Node): Node => {
+	while (node.parent && node.parent.type !== "Program") node = node.parent
+	return node
+}
+
+// whether a statement calls something impure before it reads a value there
+const callsBefore = (statement: Node, read: Node, code: string): boolean => {
+	let calls = false
+	walk(statement, node => {
+		if (
+			(node.type === "CallExpression" || node.type === "NewExpression") &&
+			node.end <= read.start &&
+			!isPureExpression(node, code)
+		)
+			calls = true
+		return !isFunctionExpression(node)
+	})
+	return calls
+}
+
 // the last statement's span takes in the `;` and return the pass appends
 const statementEndIn = (body: string, statement: Node): number =>
 	Math.min(statement.end, body.length)
@@ -1849,6 +2030,62 @@ const isPlainFunction = (
 	!!node.body &&
 	!node.async &&
 	!node.generator
+
+// a site of literals is built where it fails, as gzip writes its text's repeats
+// in fewer bytes than a name. One written often enough is built once, so the
+// text a load parses shrinks and a failing call allocates none
+const shareSites: UnitsPass = ({ code, program }, s) => {
+	const callsByText = new Map<string, Span[]>()
+	walk(program, node => {
+		if (
+			node.type !== "CallExpression" ||
+			node.callee.type !== "MemberExpression" ||
+			node.callee.object.type !== "Identifier" ||
+			node.callee.object.name !== "runtime" ||
+			node.callee.property.type !== "Identifier" ||
+			!siteCreators.has(node.callee.property.name) ||
+			!node.arguments.every(arg => arg.type === "Literal")
+		)
+			return true
+		pushTo(callsByText, code.slice(node.start, node.end), node)
+		return false
+	})
+	const shared = [...callsByText].filter(
+		([, calls]) => calls.length >= minSharedSites
+	)
+	// a creator first called as the program loads compiles there, so what
+	// its sites save must repay that
+	const savedByCreator = new Map<string, number>()
+	for (const [text, calls] of shared) {
+		const creator = creatorOf(text)
+		savedByCreator.set(
+			creator,
+			(savedByCreator.get(creator) ?? 0) +
+				(calls.length - 1) * (text.length - creator.length)
+		)
+	}
+	const declarations: string[] = []
+	for (const [text, calls] of shared) {
+		if (savedByCreator.get(creatorOf(text))! < minSavedBySites) continue
+		const name = nameFreeIn(code, `site${declarations.length}`)
+		declarations.push(`const ${name} = /* @__PURE__ */ ${text}\n`)
+		for (const { start, end } of calls) s.overwrite(start, end, name)
+	}
+	if (declarations.length) s.prependRight(0, declarations.join(""))
+	return true
+}
+
+const siteCreators = new Set(["siteOf", "requiredSiteOf", "keySiteOf"])
+
+const creatorOf = (siteCall: string) => siteCall.slice(0, siteCall.indexOf("("))
+
+// shared from 16 calls, gz at 8 / 16 / 32 (B, against none): 92 Types +19 / -9 /
+// -2, 1012 -594 / -594 / -461, ntwine -540 / -499 / -419
+const minSharedSites = 16
+
+// shared, shop's 725 B of sites cost its load 30 K instructions more than they
+// saved, a92's 4.7 KB saved 150 K
+const minSavedBySites = 1024
 
 // an Apply opens by checking data is an object, in a program of objects the text
 // it most repeats. Hot on a rejected call, V8 inlines each call as it read the text

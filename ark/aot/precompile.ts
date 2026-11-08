@@ -1685,7 +1685,7 @@ export class Precompiler {
 				return { id, read: "", commonJs: true }
 			const runtime =
 				transformed && this.isTransformed(id) && this.importsArk(code, id) ?
-					this.plannedRuntimeOf(code, id, undefined)
+					this.plannedRuntimeOf(code, id, undefined, true)
 				:	unprecompiled(this.graph.add(id, code))
 			if (!runtime) {
 				return {
@@ -2125,7 +2125,13 @@ export class Precompiler {
 	private plannedRuntimeOf(
 		source: string,
 		id: string,
-		mappings: string | undefined
+		mappings: string | undefined,
+		// planned where it refuses code too, as what a loader after the plugin
+		// built of a module, which the bundle doesn't run as precompiled: a
+		// site it refuses stays code that runs, and a refused read, like one
+		// TypeScript's types told it was of no Type, is followed as the reads
+		// of each validator reach it
+		refusing = false
 	): RuntimeModule | undefined {
 		const module = this.add(id, source, mappings)
 		this.configuration ??= this.applyConfiguration()
@@ -2138,7 +2144,7 @@ export class Precompiler {
 			prefix,
 			diagnostics
 		)
-		if (diagnostics.some(d => d.severity === "error")) return
+		if (!refusing && diagnostics.some(d => d.severity === "error")) return
 		return this.runtimeOfPlan(module, { namesBySite, factoriesBySite, folded })
 	}
 
