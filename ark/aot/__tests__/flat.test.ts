@@ -429,8 +429,8 @@ valid
 		attest(run(js)).equals(run(whole))
 		// the number branch's Apply is its case of the union's, and null's
 		// case has nothing left to check, in Allows as in Apply
-		attest(js.match(/case "number": {/g)?.length).equals(1)
-		attest(js.match(/case "null":\s+return true/g)?.length).equals(2)
+		attest(js.match(/if \(typeof data === "number"\) {\s+{/g)?.length).equals(1)
+		attest(js.match(/data === null\) {\s+return true/g)?.length).equals(2)
 	})
 
 	it("writes a primitive its one call passes where its parameter is read", async () => {

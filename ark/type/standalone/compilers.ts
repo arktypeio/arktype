@@ -39,6 +39,21 @@ import {
 } from "./sites.ts"
 import { runtimeKeyOf } from "./values.ts"
 
+// what each case of a switch over data's domain stands for
+const domainChecks = new Map<string, string>([
+	...["bigint", "boolean", "number", "string", "symbol", "undefined"].map(
+		(domain): [string, string] => [
+			`case "${domain}"`,
+			`typeof data === "${domain}"`
+		]
+	),
+	['case "null"', "data === null"],
+	[
+		'case "object"',
+		'(typeof data === "object" ? data !== null : typeof data === "function")'
+	]
+])
+
 class StandaloneCompiler extends TraversalCompiler {
 	override readonly reportsFirst: boolean = false
 	// named for its content as compiled, before the size forms that follow from it
@@ -46,6 +61,44 @@ class StandaloneCompiler extends TraversalCompiler {
 
 	unifies(node: BaseNode): boolean {
 		return unifies(node)
+	}
+
+	// a switch over data's domain as its cases' checks: TurboFan lowers each to a
+	// type test, where it compares the strings of a domain it can't fold. A size
+	// build returns them as one expression; a speed build returns each case on
+	// its own, where a flat function can write a function it calls in place
+	override switch(
+		on: string,
+		cases: readonly SwitchCase[],
+		otherwise: string
+	): this {
+		if (
+			this.naming ||
+			on !==
+				compileDomainOf(
+					"data",
+					cases.map(([label]) => label)
+				) ||
+			cases.some(([label]) => !domainChecks.has(label))
+		)
+			return super.switch(on, cases, otherwise)
+		const checked: [check: string, returned: string][] = []
+		let matched: string[] = []
+		for (const [i, [label, returned]] of cases.entries()) {
+			matched.push(domainChecks.get(label)!)
+			// a case returning what the next one does is checked with it
+			if (cases[i + 1]?.[1] === returned) continue
+			checked.push([matched.join(" || "), returned])
+			matched = []
+		}
+		if (this.shortest) {
+			return this.return(
+				`${checked.map(([check, returned]) => `${check} ? ${returned} : `).join("")}${otherwise}`
+			)
+		}
+		for (const [check, returned] of checked)
+			this.if(check, () => this.return(returned))
+		return this.return(otherwise)
 	}
 
 	// terser and swc inline a function called once as a closure per call, slowing its caller
@@ -494,54 +547,12 @@ class UnifiedFirstIssueCompiler extends UnifiedCompiler {
 	override readonly reportsFirst = true
 }
 
-// what each case of a switch over data's domain stands for
-const domainChecks = new Map<string, string>([
-	...["bigint", "boolean", "number", "string", "symbol", "undefined"].map(
-		(domain): [string, string] => [
-			`case "${domain}"`,
-			`typeof data === "${domain}"`
-		]
-	),
-	['case "null"', "data === null"],
-	[
-		'case "object"',
-		'(typeof data === "object" ? data !== null : typeof data === "function")'
-	]
-])
-
-// writes Allows' checks as the returns they stand for, and a domain switch as its cases' checks
+// writes Allows' checks as the returns they stand for
 const forSize = (compiler: typeof StandaloneCompiler) =>
 	class extends compiler {
 		override readonly shortest: boolean = !this.naming
 		// a literal of the values a copy holds is shorter than one of nulls
 		override readonly copiesValues: boolean = this.shortest
-
-		override switch(
-			on: string,
-			cases: readonly SwitchCase[],
-			otherwise: string
-		): this {
-			if (
-				!this.shortest ||
-				on !==
-					compileDomainOf(
-						"data",
-						cases.map(([label]) => label)
-					) ||
-				cases.some(([label]) => !domainChecks.has(label))
-			)
-				return super.switch(on, cases, otherwise)
-			let checks = ""
-			let matched: string[] = []
-			for (const [i, [label, returned]] of cases.entries()) {
-				matched.push(domainChecks.get(label)!)
-				// a case returning what the next one does is checked with it
-				if (cases[i + 1]?.[1] === returned) continue
-				checks += `${matched.join(" || ")} ? ${returned} : `
-				matched = []
-			}
-			return this.return(`${checks}${otherwise}`)
-		}
 	}
 
 // a detailed size build writes each node it can as a checker, whose Apply is its Allows

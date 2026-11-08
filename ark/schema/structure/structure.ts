@@ -1106,6 +1106,19 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.sequence?.tfs) transformedChildren.push(this.sequence)
 		transformedChildren.push(...this.defaultable)
 		js.initTf(transformedChildren)
+		// a transform of its sequence alone, copying nothing else, returns what that returns
+		if (
+			transformedChildren.length === 1 &&
+			transformedChildren[0] === this.sequence &&
+			!this.slicesSeq &&
+			!this.sequence.defaultables &&
+			!this.inOrder.length &&
+			!deletes &&
+			!js.checksErrs
+		) {
+			js.return(js.inv(this.sequence, { arg: "data" }))
+			return
+		}
 		if (
 			transformedChildren.length >= 2 &&
 			transformedChildren.length === this.defaultable.length

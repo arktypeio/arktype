@@ -1067,9 +1067,7 @@ export class Precompiler {
 		)
 		// a size build's units are already module constants
 		const flattens =
-			(!!program.isOneChunk ||
-				(!program.keepsUnitsApart &&
-					sitesChunkTogether(program, precompiled))) &&
+			(!!program.isOneChunk || sitesChunkTogether(program, precompiled)) &&
 			!this.inline &&
 			this.standalone.optimize === "speed" &&
 			this.defers !== true
