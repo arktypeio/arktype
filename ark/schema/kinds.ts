@@ -35,12 +35,13 @@ import {
 	type ArkErrorCode,
 	type ErrorContextsByCode
 } from "./shared/errors.ts"
-import type {
-	ConstraintKind,
-	NodeKind,
-	OpenNodeKind,
-	UnknownAttachmentsInput,
-	UnknownNodeImplementation
+import {
+	rootKinds,
+	type ConstraintKind,
+	type NodeKind,
+	type OpenNodeKind,
+	type UnknownAttachmentsInput,
+	type UnknownNodeImplementation
 } from "./shared/implement.ts"
 import { describeMissing, type Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
@@ -221,6 +222,18 @@ export const nodeClassesByKind: Record<
 	sequence: Sequence.Node,
 	structure: Structure.Node
 } satisfies Record<NodeKind, typeof BaseNode<any>> as never
+
+const hasInstance = Function.prototype[Symbol.hasInstance]
+
+// whichever kind a Type deferred until it's read is, asking is a read
+for (const kind of rootKinds) {
+	Object.defineProperty(nodeClassesByKind[kind], Symbol.hasInstance, {
+		value(this: Function, v: unknown) {
+			if (typeof v === "function") void (v as { kind?: unknown }).kind
+			return hasInstance.call(this, v)
+		}
+	})
+}
 
 interface NodesByKind extends BoundNodesByKind {
 	alias: Alias.Node

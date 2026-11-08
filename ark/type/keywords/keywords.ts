@@ -37,6 +37,7 @@ import type { BaseType } from "../variants/base.ts"
 import { builtinDefinitions, type arkBuiltins } from "./builtins.ts"
 import { prototypeDefinitions, type arkPrototypes } from "./constructors.ts"
 import { number } from "./number.ts"
+import { deferDefinition, deferredRecord } from "../deferred.ts"
 import { string } from "./string.ts"
 import {
 	object,
@@ -107,17 +108,25 @@ defineProperties($arkTypeRegistry.ambient, arkExports)
 const typeAttachments = {} as Ark.boundTypeAttachments<any>
 
 for (const [k, resolve] of Object.entries({
-	string: () => arkExports.string.root,
-	number: () => arkExports.number.root,
-	bigint: () => arkExports.bigint,
-	boolean: () => arkExports.boolean,
-	symbol: () => arkExports.symbol,
-	undefined: () => arkExports.undefined,
-	null: () => arkExports.null,
-	object: () => arkExports.object.root,
+	string: () =>
+		deferDefinition("string", ark.internal as never) ?? arkExports.string.root,
+	number: () =>
+		deferDefinition("number", ark.internal as never) ?? arkExports.number.root,
+	bigint: () =>
+		deferDefinition("bigint", ark.internal as never) ?? arkExports.bigint,
+	boolean: () =>
+		deferDefinition("boolean", ark.internal as never) ?? arkExports.boolean,
+	symbol: () =>
+		deferDefinition("symbol", ark.internal as never) ?? arkExports.symbol,
+	undefined: () =>
+		deferDefinition("undefined", ark.internal as never) ?? arkExports.undefined,
+	null: () => deferDefinition("null", ark.internal as never) ?? arkExports.null,
+	object: () =>
+		deferDefinition("object", ark.internal as never) ?? arkExports.object.root,
 	unknown: () => arkExports.unknown.root,
-	false: () => arkExports.false,
-	true: () => arkExports.true,
+	false: () =>
+		deferDefinition("false", ark.internal as never) ?? arkExports.false,
+	true: () => deferDefinition("true", ark.internal as never) ?? arkExports.true,
 	never: () => arkExports.never,
 	arrayIndex: () => arkExports.Array.index,
 	Key: () => arkExports.Key,
@@ -135,6 +144,14 @@ export const type: TypeParser<{}> = defineProperties(
 	// registry when their TypeParsers are instantiated
 	typeAttachments
 ) as never
+
+Object.defineProperty(type, "Record", {
+	value: deferredRecord(
+		ark.internal as never,
+		() => arkExports.Record as never
+	),
+	enumerable: true
+})
 
 export declare namespace type {
 	export interface cast<to> {

@@ -954,6 +954,25 @@ precompile.vite({ errors: "first" })
 
 A Type deleting undeclared keys starts its copy as an object literal of nulls, as a precompiled build does unless it's built for size, so V8 stores each fraction it copies in place rather than allocating a box for it. Parsing moltar's benchmark object with `onDeepUndeclaredKey("delete")` allocates 128 bytes per call where it allocated 144, in 0.88x the cycles.
 
+### Build a Type when it's first read
+
+`type()` builds no nodes for a definition it can prove won't throw, so importing a program costs little more than its bytes. The first read of a Type builds it, and it's then what it would have been. Anything else, or any config but `exactOptionalPropertyTypes` and `jitless`, parses at the call as it always did, and throws there. Once any Type has been built, a string definition parses at its call.
+
+`type.unit`, `type.enumerated`, `type.or`, `type.Record` and the `array`, `narrow`, `pipe`, `or`, `and`, `exclude`, `to`, `default`, `optional`, `describe`, `configure`, `onUndeclaredKey` and bound methods defer the same way when they can't throw.
+
+Until a Type's first read:
+
+- Reflecting on its own keys, as `Object.keys()`, `Object.hasOwn()`, `Object.getOwnPropertyDescriptor()`, `Reflect.ownKeys()`, `for...in` and spreading it do, sees only a function's `length` and `name`.
+- `key in T` answers for a key a Type holds itself as it would for `type.object`, so `"structure" in type({ a: "string" })` is `false` and `"domain" in type("string | number")` is `true`.
+- `Object.getPrototypeOf()` returns a prototype every unread Type shares, not its kind's. `instanceof` reads it, so it answers as before.
+- `Object.freeze()`, `Object.seal()` and `Object.preventExtensions()` make its first read throw a `TypeError`, where they made it throw once it compiled.
+
+Whether or not it's read:
+
+- `type.Record` is a function that calls and reads through to the `Record` generic, so it isn't `type.keywords.Record`, and its own keys and prototype are a function's. Calling it, reading its members and `instanceof` see the generic.
+- Equal definitions written alike are one Type, as are spellings normalized alike: union order, `.array()` and `[]`, `type.string` and `"string"`, and `type.unit(5)` and `"5"`. Other spellings of one Type can be two equal Types, depending on which is created and read first, as with `type("string")` then `type.keywords.string.root`, `type("'b'")` then `type('"b"')`, `type("string[]")` then `type(["string", "[]"])`, or a prop written as a string and then as a Type. `/a/` and `"string & /a/"` are always two.
+- A union of morphs whose inputs overlap throws at the same call, but its message can name its Left and Right branches the other way around.
+
 ### Compile and discriminate a Type when it's first used
 
 A Type is compiled the second time it's called or its `allows` is called, or when its `precompilation` is read, rather than when it's defined, so Types a program defines but never calls aren't compiled and one it checks once is checked without compiling. A narrow or morph reading `ctx` sees the same `path` and `data` either way: uncompiled, a narrow on an array's element read the array's path, and compiled, a narrow under a key whose value deletes undeclared keys read a path missing that key when other data was invalid. A scope's exports are compiled the same way, so `@ark/schema`'s scope `precompilation` is undefined unless the scope is cyclic. A Type referencing an alias still resolves it where it's defined, so an error resolving the alias is thrown there, but it compiles once it's used like any other. Checking a default as it's defined, or anything else a definition asks of another Type, doesn't count as a use of that Type.

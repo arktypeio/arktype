@@ -51,6 +51,7 @@ export * from "./structure/required.ts"
 export * from "./structure/sequence.ts"
 export * from "./structure/structure.ts"
 export {
+	bindPrecompiledUnits,
 	precompileInPlace,
 	precompileRootUnits,
 	registerPrecompiledUnits,

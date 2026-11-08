@@ -1,4 +1,5 @@
 import {
+	$ark,
 	applyCyclic,
 	ArkTraversal,
 	hasArkKind,
@@ -20,6 +21,9 @@ import {
 	thrownIssuesOf,
 	type KeptIssue
 } from "./issues.ts"
+
+// it compares what each site does at its call, holding what arktype returns
+$ark.eagerTypes = true
 
 shareConfig(configure)
 
