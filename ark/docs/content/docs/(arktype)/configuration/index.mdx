@@ -132,7 +132,7 @@ Password("ez123")
 
 ### problem
 
-The whole sentence after the path, like "must be a string (was a number)". A function receives the error, including its `expected` and `actual`. It may not apply to the errors of a union:
+The whole sentence after the path, like "must be a string (was a number)", and the text a [Standard Schema](/docs/standard-schema) consumer, like a form library, shows beside a field as its issue's `message`. A union's problem lists each branch's path from its own. A function receives the error, including its `expected` and `actual`. It may not apply to the errors of a union:
 
 ```ts
 const Name = type("string").configure({
@@ -145,7 +145,7 @@ Name(5)
 
 ### message
 
-The whole message, including the path. A function receives the error, including its `problem`. It may not apply to the errors of a union:
+The whole message, including the path, read from the errors calling a Type returns, their `summary` and what `.assert()` throws. It doesn't reach Standard Schema issues, whose `message` is the [`problem`](#problem). A function receives the error, including its `problem`. It may not apply to the errors of a union:
 
 ```ts
 const User = type({

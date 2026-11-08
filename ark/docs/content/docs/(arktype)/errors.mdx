@@ -111,7 +111,7 @@ if (out instanceof type.errors) {
 }
 ```
 
-Its message is built from parts: `message` puts the path before `problem`, which reads "must be `expected` (was `actual`)". You can [configure each part](/docs/configuration#error-messages).
+Its message is built from parts: `message` puts the path before `problem`, which reads "must be `expected` (was `actual`)". A union's or an intersection's `problem` writes the path of each error it lists from its own, and its `message` writes them whole. You can [configure each part](/docs/configuration#error-messages).
 
 An error also has `meta`, the metadata of the Type that failed, and usually a `description`. It has no methods, so `JSON.stringify(error)` serializes its own keys, and `messageIn(error, locale)` writes its message in another locale.
 

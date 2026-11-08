@@ -2346,7 +2346,23 @@ result.issues[0].message
 result.issues[0].path
 ```
 
-An issue at a path is a copy of its error with that message. A union's lists each branch's path from the union's, like `b must be a string (was missing) or c must be a number (was missing)`. `validate` returns `{ issues }` rather than the `ArkErrors`, whose own errors and `summary` still start with their paths. A precompiled validator's issues are written the same way, unless their message was configured.
+Each issue is a copy of its error whose message is the error's `problem`, the text after its path. A configured `problem` changes it, but a configured `message`, whether global, for a Scope, by `.configure` or a locale's, no longer reaches the issues, only the errors calling a Type returns, their `summary` and what `.assert()` throws, so move a `message` writer that customized them to `problem`. `validate` returns `{ issues }` rather than the `ArkErrors`, whose own errors and `summary` still start with their paths. A precompiled validator's issues are written the same way.
+
+### Write a union's problem from its own path
+
+A union's or an intersection's `problem`, and its `expected` where that lists its errors, writes each error's path from its own, like Standard Schema messages do. Its `message` is unchanged, writing them whole:
+
+```ts
+const T = type({ x: type({ a: "string" }).or({ b: "number" }) })
+
+const error = T({ x: { a: 1, b: "" } }).issues[0]
+
+// previously "x.a must be a string (was a number) or x.b must be a number (was a string)"
+// now "a must be a string (was a number) or b must be a number (was a string)"
+error.problem
+// "x.a must be a string (was a number) or x.b must be a number (was a string)", as before
+error.message
+```
 
 ### Throw for a global-only option passed to a Scope
 
