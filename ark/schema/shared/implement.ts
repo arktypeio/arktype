@@ -361,6 +361,7 @@ export interface UnknownAttachments {
 export interface UnknownAttachmentsInput
 	extends Omit<UnknownAttachments, "kv" | "metaJson"> {
 	readonly metaJson: object | undefined
+	readonly shell?: { fn: Function; c: object } | undefined
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>

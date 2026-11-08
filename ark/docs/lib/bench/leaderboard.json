@@ -636,7 +636,45 @@
 						"TypeBox": 207229112.5
 					}
 				}
-			]
+			],
+			"paired": {
+				"rounds": 20,
+				"wins": {
+					"form": {
+						"Valibot": 20,
+						"Zod": 20,
+						"Zod (compiled)": 20,
+						"Zod Mini": 20
+					},
+					"login": {
+						"Valibot": 20,
+						"Zod": 20,
+						"Zod (compiled)": 20,
+						"Zod Mini": 20,
+						"Typia": 20,
+						"ajv": 20,
+						"TypeBox": 20
+					},
+					"moltar": {
+						"Valibot": 20,
+						"Zod": 20,
+						"Zod (compiled)": 20,
+						"Zod Mini": 20,
+						"Typia": 20,
+						"ajv": 20,
+						"TypeBox": 20
+					},
+					"shop": {
+						"Valibot": 20,
+						"Zod": 20,
+						"Zod (compiled)": 20,
+						"Zod Mini": 20,
+						"Typia": 20,
+						"ajv": 20,
+						"TypeBox": 20
+					}
+				}
+			}
 		},
 		{
 			"category": "startup",

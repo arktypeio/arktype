@@ -552,6 +552,14 @@ one ArkType could claim, and applied to speed and startup alike the same day.
 least half that suite's rows. It's ranked in a category only if it has a
 counted score in at least half of the category's suites.
 
+**Claiming.** The site states that ArkType is first in a category only
+where it's first by this rule on the headline's suites and on every suite,
+ours included, so that our own benchmarks can't contradict a claim. Startup
+needs one more thing, since its independent rows time only creating a
+schema: on each of `startup.ts`'s apps, the default build must run fewer
+instructions than every library, by median and by a two-sided sign test over
+the rounds paired by run (p < 0.05).
+
 **Use.** `ark/repo/bench/external/leaderboard.ts` gathers every row into
 `ark/docs/lib/bench/leaderboard.json`; `ark/docs/lib/claims.ts` computes the
 scores from it and throws if the headline claims a category ArkType can't

@@ -18,6 +18,7 @@ import {
 	type conform
 } from "@ark/util"
 import type { distill } from "./attributes.ts"
+import { deferDefinition, deferUnion, deferUnits } from "./deferred.ts"
 import type { DeclarationParser } from "./declare.ts"
 import type { FnParser } from "./fn.ts"
 import type {
@@ -235,11 +236,14 @@ export class InternalTypeParser extends Callable<
 			schema: $.schema as never,
 			// this won't be defined during bootstrapping, but externally always will be
 			keywords: $.ambient as never,
-			unit: $.unit,
-			enumerated: $.enumerated,
+			unit: ((value: unknown) =>
+				deferUnits([value], $) ?? $.unit(value)) as never,
+			enumerated: ((...values: unknown[]) =>
+				deferUnits(values, $) ?? $.enumerated(...values)) as never,
 			instanceOf: $.instanceOf,
 			valueOf: $.valueOf,
-			or: $.or,
+			or: ((...branches: unknown[]) =>
+				deferUnion(branches, $) ?? ($.or as any)(...branches)) as never,
 			and: $.and,
 			merge: $.merge,
 			pipe: $.pipe,
@@ -249,7 +253,7 @@ export class InternalTypeParser extends Callable<
 			(...args) => {
 				if (args.length === 1) {
 					// treat as a simple definition
-					return $.parse(args[0])
+					return deferDefinition(args[0], $) ?? $.parse(args[0])
 				}
 				if (
 					args.length === 2 &&

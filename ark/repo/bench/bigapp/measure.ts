@@ -39,7 +39,7 @@ import {
 } from "../../../aot/__tests__/nextBuild.ts"
 import type { PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { bundle, type Bundled } from "./bundle.ts"
-import { ntwineArms, ntwineThread } from "./ntwine.ts"
+import { ntwineArms, ntwineSource, ntwineThread } from "./ntwine.ts"
 
 const args = process.argv.slice(2)
 const flag = (name: string) =>
@@ -578,6 +578,7 @@ const results = {
 	rounds,
 	loads,
 	failed,
+	...(ntwineOn && { ntwine: ntwineSource }),
 	arms: Object.fromEntries(
 		arms.map(arm => [
 			arm.name,

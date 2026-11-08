@@ -59,11 +59,13 @@ Math.random = () => {
 	return ((t ^ (t >>> 14)) >>> 0) / 4294967296
 }
 
-const { ArkErrors, GenericRoot, hasArkKind, isNode, nodeClassesByKind } =
+const { $ark, ArkErrors, GenericRoot, hasArkKind, isNode, nodeClassesByKind } =
 	await import("@ark/schema")
 const { Callable } = await import("@ark/util")
 await import("arksets")
 const { scope } = await import("arktype")
+// what it observes is the definition, so that's at its call
+$ark.eagerTypes = true
 
 const workerUrl = import.meta.url
 

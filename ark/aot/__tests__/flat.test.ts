@@ -14,8 +14,9 @@ import {
 	type Rolldown
 } from "vite"
 import { parseSync } from "oxc-parser"
+import { mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { run, writeFixture } from "./utils.ts"
+import { run, runPlain, writeFixture } from "./utils.ts"
 
 // arktype's packages resolve to their source in this repo
 const conditions = ["ark-ts", "production"]
@@ -52,7 +53,17 @@ let Member = type({ user: User, rank: "number" })
 console.log(String(Member({ rank: 1 })))
 `,
 		// what a rewrite may import, as the React Compiler imports its runtime
-		"memo.ts": "export const memo = <t>(value: t): t => value\n"
+		"memo.ts": "export const memo = <t>(value: t): t => value\n",
+		"again.ts": `import "./main.ts"\n`,
+		"lazy.ts": `import { User } from "./types.ts"
+
+const { Later } = await import("./later.ts")
+console.log(User.allows({ name: "Ada", email: "ada@arktype.io" }), Later.allows(1))
+`,
+		"later.ts": `import { type } from "arktype"
+
+export const Later = type("number")
+`
 	},
 	fromHere("temp", "flat")
 )
@@ -198,6 +209,12 @@ console.log(${Array.from({ length: types }, (_, i) => `String(T${i}(${i % 2 ? "5
 			attest(/\w+Allows = /.test(js)).equals(false)
 		})
 
+		it("builds once each site of literals it writes often enough", async () => {
+			const [js] = await bundle({}, options)
+			attest(js.match(/keySiteOf\("domain", "a string"\)/g)?.length).equals(1)
+			attest(run(js)).equals(run((await bundle({ prune: false }, options))[0]))
+		})
+
 		it("reports what isn't an object from one check each Apply calls", async () => {
 			const [js] = await bundle({}, options)
 			attest(js.match(/"domain", "an object"/g)?.length).equals(1)
@@ -207,6 +224,12 @@ lead must be an object
 lead.name must be a string
 members[0].name must be a string`)
 		})
+	})
+
+	it("builds a site of literals where it fails in a program writing it rarely", async () => {
+		const [js] = await bundle()
+		attest(/const site\d+ = /.test(js)).equals(false)
+		attest(js).satisfies(/_at\(siteOf\("minLength", "non-empty"\), data\)/)
 	})
 
 	it("writes a program of less text as arrows, holding its checks in place", async () => {
@@ -534,9 +557,39 @@ console.log(User.allows({ name: "Ada" }), User.assert({ name: "Ada" }))
 		)
 	})
 
-	it("keeps each unit a module of its own where entries split", async () => {
+	it("keeps each unit a module of its own where an entry reaches only some sites", async () => {
 		const options: BuildOptions = {
 			entryPoints: [join(root, "main.ts"), join(root, "types.ts")],
+			outdir: join(root, "out"),
+			splitting: true
+		}
+		const split = await bundle({}, options)
+		attest(split.some(js => factoryParam.test(js))).equals(true)
+	})
+
+	it("declares in one function the units of split entries each reaching every site", async () => {
+		const outdir = join(root, "split")
+		const { outputFiles } = await build({
+			entryPoints: [join(root, "main.ts"), join(root, "again.ts")],
+			outdir,
+			splitting: true,
+			bundle: true,
+			write: false,
+			format: "esm",
+			conditions,
+			logLevel: "silent",
+			plugins: [precompile.esbuild({ conditions })]
+		})
+		attest(outputFiles.some(file => factoryParam.test(file.text))).equals(false)
+		mkdirSync(outdir, { recursive: true })
+		for (const file of outputFiles) writeFileSync(file.path, file.text)
+		const [whole] = await bundle({ prune: false })
+		attest(runPlain(outdir, "again.js")).equals(run(whole))
+	})
+
+	it("keeps each unit a module of its own where import() loads a site", async () => {
+		const options: BuildOptions = {
+			entryPoints: [join(root, "lazy.ts")],
 			outdir: join(root, "out"),
 			splitting: true
 		}
@@ -717,6 +770,69 @@ return [unitAllows, unitApply]
 
 export { unit }
 `)
+	})
+
+	it("writes a value read once where it's read, unless a call would run in another order", () => {
+		const unit = `import * as runtime from "arktype/runtime"
+
+const unit = /* @__PURE__ */ ((unitR0) => {
+const unitAllows = (data => unitR0(data))
+const unitApply = (data, ctx) => unitR0(data) || ctx.reject(data)
+const made = runtime.make([unitAllows, unitApply])
+const logged = runtime.log(made)
+const also = runtime.make([unitAllows])
+return [also, logged]
+})(runtime.isValidDate)
+
+export { unit }`
+		const flat = flattenBundle(
+			{
+				"site.js": `import { unit } from "~arktype/unit"\n\nexport const read = unit`
+			},
+			{ "~arktype/unit": unit },
+			{ modules: [], entries: ["site.js"], resolve: () => undefined },
+			false
+		)!
+		const [code] = Object.entries(flat.modules).flatMap(([specifier, code]) =>
+			specifier === "~arktype/unit" ? [] : [code]
+		)
+		// logged would run after also, and made inside logged's call
+		attest(code).snap(`import * as runtime from "arktype/runtime"
+
+const unit = /* @__NOINLINE__ */ (() => {
+const unitR0 = runtime.isValidDate
+
+const unitAllows = (data => unitR0(data))
+const unitApply = (data, ctx) => unitR0(data) || ctx.reject(data)
+const made = runtime.make([unitAllows, unitApply])
+const logged = runtime.log(made)
+
+return [runtime.make([unitAllows]), logged]
+})()
+
+export { unit }
+`)
+	})
+
+	it("creates each validator where it's returned, with the traversals only it reads", async () => {
+		const contents = `import { type } from "arktype"\nimport { Team, User } from "./types.ts"\n\nconst out = Team({ lead: {}, members: [] })\nconsole.log(out instanceof type.errors ? out.summary : "valid")\nconsole.log(User.allows({ name: "Ada", email: "ada@arktype.io" }))\n`
+		const options: BuildOptions = {
+			stdin: { contents, resolveDir: root, loader: "ts" }
+		}
+		const [js] = await bundle({}, options)
+		const [whole] = await bundle({ prune: false }, options)
+		attest(run(js)).snap(`lead.name must be a string
+lead.email must be a string
+true
+`)
+		attest(run(js)).equals(run(whole))
+		attest(/const \w+Validator\d* =/.test(js)).equals(false)
+		// Team's own traversals are written into its creation; those of Name,
+		// Email, User and User[], which others read too, keep their names
+		attest(declaredUnits(js)).equals(4)
+		attest(js).satisfies(
+			/return \[\w+\(\[\w+Allows, \w+Apply]\), \w+\(\[\(data, ctx\) =>/
+		)
 	})
 
 	it("drops a declaration read only by one it drops", () => {

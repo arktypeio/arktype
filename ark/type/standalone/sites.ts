@@ -351,15 +351,19 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 		return issueContext
 	}
 	// a union with no description writes what's configured as its whole message,
-	// expecting what its branches do unless that's what's configured
+	// expecting what its branches do unless that's what's configured. Its
+	// problem, what a Standard Schema issue says, is what's configured for it or
+	// as its expected, else what it lists
 	if (
 		code === "union" &&
 		(meta.description === undefined || meta.keyword !== undefined)
 	) {
-		const own = custom.message ?? custom.problem ?? custom.expected
+		const problem = custom.problem ?? custom.expected
+		const own = custom.message ?? problem
 		if (typeof own === "string") {
 			issueContext.message = own
 			if (custom.expected === undefined) issueContext.description = undefined
+			if (typeof problem === "string") issueContext.problem = problem
 			return issueContext
 		}
 	}

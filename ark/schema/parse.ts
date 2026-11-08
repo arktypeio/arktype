@@ -170,7 +170,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 
 				// a node already keyed with the meta it would get needs no key written
 				if (
-					reduced.c.keyed &&
+					reduced.c.key &&
 					isEmptyObject(reduced.meta) &&
 					isEmptyObject(meta)
 				) {
@@ -225,7 +225,16 @@ export type CreateNodeInput = {
 	meta: ArkEnv.meta
 	$: BaseScope
 	ignoreCache?: true
+	shell?: DeferredShell | undefined
 }
+
+export interface DeferredShell {
+	fn: Function
+	c: object
+}
+
+/** the id of the node created last, so a deferred Type can tell it reached a new one */
+export let lastCreated: string | undefined
 
 export const createNode = ({
 	id,
@@ -234,7 +243,8 @@ export const createNode = ({
 	inner,
 	meta,
 	$,
-	ignoreCache
+	ignoreCache,
+	shell
 }: CreateNodeInput): BaseNode => {
 	// serialized as the node is created, so meta that can't be throws here
 	const metaJson = isEmptyObject(meta) ? undefined : metaJsonOf(meta)
@@ -276,7 +286,8 @@ export const createNode = ({
 		inner,
 		meta,
 		metaJson,
-		children
+		children,
+		shell
 	}
 
 	const node = composing(() =>
@@ -284,9 +295,10 @@ export const createNode = ({
 	)
 
 	if (key) {
-		node.c.keyed = true
+		node.c.key = key
 		$.nodesByKey.set(key, node)
 	}
+	lastCreated = node.id
 	return node
 }
 

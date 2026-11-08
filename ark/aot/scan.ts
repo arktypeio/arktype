@@ -775,6 +775,8 @@ export interface ScannedProgram {
 	// runtime may import unseen
 	exposed: string[]
 	isOneChunk?: boolean
+	// a host whose units stay modules of their own however its chunks split
+	keepsUnitsApart?: boolean
 }
 
 export interface ScannedModule {

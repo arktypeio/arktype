@@ -58,6 +58,8 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 		  ) => boolean)
 		| undefined
 	reached?: CacheReach | undefined
+	// set by a tool comparing or recording what a Type's definition does at its call
+	eagerTypes?: boolean | undefined
 	// installed by @ark/schema/errors
 	errorModes?: Record<"first" | "none", RootApplyRuntime>
 }

@@ -626,28 +626,12 @@ export const errorFromUnion = (
 export const messageIn = (error: ArkError, locale: Locale): string =>
 	writtenIn(error, locale).message
 
-/** errors as Standard Schema issues, whose consumers prefix their path */
+/**
+ * errors as Standard Schema issues, whose consumers show each beside its path,
+ * so each says its problem
+ */
 export const standardIssuesOf = (errors: ArkErrors): readonly ArkError[] =>
-	errors.issues.map(error =>
-		error.path.length === 0 ?
-			error
-		:	{ ...error, message: messageFromPath(error) }
-	)
-
-// an error's message, as if the data at its path were validated alone
-const messageFromPath = (error: ArkError): string => {
-	const config = ErrorSource.configOf(error)
-	const copy = unwrittenError(error)
-	unprefix(copy, error.path.length)
-	writeError(copy, config, renderer?.select(config) ?? config.locale)
-	return copy.message
-}
-
-const unprefix = (error: ArkError, depth: number): void => {
-	error.path = error.path.slice(depth)
-	if (error.code === "union" || error.code === "intersection")
-		for (const e of error.errors) unprefix(e, depth)
-}
+	errors.issues.map(error => ({ ...error, message: error.problem }))
 
 /** an issue errors "none" added, written in en as saying its data is invalid */
 export const invalidError = (
@@ -835,12 +819,47 @@ const writeError = (
 	config: ResolvedConfig,
 	locale: Locale
 ): void => {
+	writeAtPaths(error, config, locale)
+	writeRelative(error, config, locale)
+}
+
+// a union's or intersection's problem is about its own value, and is what its
+// Standard Schema issue says beside its path, so the paths of its errors are
+// written from its own; its message, written first, keeps them whole
+const writeRelative = (
+	error: ArkError,
+	config: ResolvedConfig,
+	locale: Locale
+): void => {
+	if (error.code !== "union" && error.code !== "intersection") return
+	for (const e of error.errors) writeRelative(e, config, locale)
+	if (error.path.length === 0) return
+	// written as if the data at its path were validated alone
+	const relative = unwrittenError(error)
+	unprefix(relative, error.path.length)
+	writeAtPaths(relative, config, locale)
+	error.expected = relative.expected
+	error.problem = relative.problem
+}
+
+const unprefix = (error: ArkError, depth: number): void => {
+	error.path = error.path.slice(depth)
+	if (error.code === "union" || error.code === "intersection")
+		for (const e of error.errors) unprefix(e, depth)
+}
+
+// each error's text, any path in it written whole
+const writeAtPaths = (
+	error: ArkError,
+	config: ResolvedConfig,
+	locale: Locale
+): void => {
 	error.propString ??= stringifyPath(error.path)
 	if (error.code === "union" || error.code === "intersection") {
 		for (const e of error.errors) {
 			// usually at its own path, whose string is then written once
 			if (pathEquals(e.path, error.path)) e.propString ??= error.propString
-			writeError(e, config, locale)
+			writeAtPaths(e, config, locale)
 		}
 		const shared =
 			(error.meta?.message ?? config[error.code].message) ===
@@ -931,7 +950,8 @@ const writtenIn = (error: ArkError, locale: Locale): ArkError => {
 	if (!renderer && locale !== config.locale)
 		return throwError(unrenderedLocaleMessage)
 	const copy = unwrittenError(error)
-	writeError(copy, config, locale)
+	// only its message is read
+	writeAtPaths(copy, config, locale)
 	return copy
 }
 

@@ -14,13 +14,13 @@ import {
 	issuesOf,
 	listsUnions,
 	mergeIssues,
-	messageOf,
 	problemOf,
 	runtimeConfig,
 	supportedJsonSchemaTargets,
 	throwOnDefault,
 	traversesUnions,
 	validateStandardJsonSchemaTarget,
+	writeFromPath,
 	writeListed,
 	type ArkError,
 	type ArkErrorCode,
@@ -291,25 +291,20 @@ export const bakeInto = <t>(
 	return validator
 }
 
-// a Standard Schema consumer prefixes each message with its path, so a pathed issue needs none
+// a Standard Schema consumer shows each issue beside its path, so it says its problem
 export const standardResultOf = (
 	out: unknown
 ): StandardSchemaV1.Result<unknown> =>
 	out instanceof ArkErrors ?
 		{
-			issues: (out._i ? (out.issues as ArkIssue[]) : out._).map(issue =>
-				(
-					issue.path.length &&
-					((listsUnions && issue._r) ||
-						issue.message === undefined ||
-						issue.message === messageOf(issue))
-				) ?
-					{
-						...issue,
-						message: listsUnions && issue._r ? issue._r() : problemOf(issue)
-					}
-				:	((issue.message ??= messageOf(issue)), issue)
-			) as StandardSchemaV1.Issue[]
+			issues: (out._i ? (out.issues as ArkIssue[]) : out._).map(issue => ({
+				...issue,
+				// arktype's errors hold their problem whether or not a site writes text
+				message:
+					listsUnions && issue._r ?
+						issue._r()
+					:	(issue.problem ?? problemOf(issue))
+			})) as StandardSchemaV1.Issue[]
 		}
 	:	{ value: out }
 
@@ -790,7 +785,15 @@ export const ownIssue = ((site: FailureSite): UnionIssueOf =>
 	(path, data, errors) => {
 		const issue = issueAt(path, site, data, undefined)
 		const listed = writeListed(errors)
-		issue.expected ??= listed
+		if (issue.expected === undefined) {
+			// its errors' paths written from its own, as arktype's union expects
+			const expected = (issue.expected =
+				path.length ? writeFromPath(path, errors, writeListed) : listed)
+			// what it lists is its problem unless one is configured, as arktype's is
+			defineProperty(issue, "_r", {
+				value: () => issue.problem ?? expected
+			})
+		}
 		issue.errors = errors
 		return issue
 	}) satisfies Fn

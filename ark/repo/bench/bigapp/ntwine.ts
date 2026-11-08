@@ -13,13 +13,12 @@ import { join } from "node:path"
 
 // A real app measured beside the generated ones: ntwine's packages/shared, about
 // 360 schemas with their logic, whose index re-exports every Type so nothing
-// prunes. Nothing of it is vendored. Its zod source is cloned at a pinned commit
-// and its arktype migration, not yet public, is read from a checkout.
+// prunes. Nothing of it is vendored: each arm is cloned from the public repo,
+// its zod source at the commit before the migration and its arktype source at
+// the migration (branch zod-to-arktype), which links the arktype under test.
 
-const repoSha = "c3d4209563837606699b76cf51d99feba32b179a"
-// ntwine's commit holding the migration, once it lands, in place of the env var
-const migrationSha: string | undefined = undefined
-const arktypeEnv = "BIGAPP_NTWINE_ARKTYPE"
+const repoSha = "f150195582ee6385abc56ba261b2f0248a841187"
+const migrationSha = "e284592d41c2b97114a26d71b23ceac15277abbd"
 
 const root = join(import.meta.dirname, "..", "..", "..", "..")
 const cache = join(root, "node_modules", ".cache", "bigapp")
@@ -58,35 +57,34 @@ const installDeps = () => {
 			dependencies: { yaml: "2.9.0", zod: "3.25.76" }
 		})
 	)
-	execSync("pnpm i --ignore-workspace --prefer-offline", {
+	execSync("pnpm i --ignore-workspace --ignore-pnpmfile --prefer-offline", {
 		cwd: cache,
 		stdio: "pipe"
 	})
 }
 
-const arktypeSource = () =>
-	process.env[arktypeEnv] ??
-	(migrationSha && join(cloned(migrationSha), "packages", "shared", "src"))
+/** the ntwine commits the arms measure, before and after the migration */
+export const ntwineSource = { repo: repoSha, migration: migrationSha }
 
-/** the migration's source, if this machine has it */
-export const ntwineAvailable = (): boolean => {
-	const source = arktypeSource()
-	return !!source && existsSync(join(source, "index.ts"))
-}
+/** whether both commits and their dependencies are already here, so a check can read them offline */
+export const ntwineCloned = (): boolean =>
+	[repoSha, migrationSha].every(sha =>
+		existsSync(join(cache, `ntwine-${sha}`))
+	) && existsSync(join(cache, "node_modules", "yaml"))
 
-export const ntwineMissing = `${arktypeEnv} must name the src of ntwine's packages/shared, migrated to arktype`
+export const ntwineMissing =
+	"ntwine isn't cloned here; `pnpm benchBigApp ntwine` clones it"
 
 const zod4 = join(import.meta.dirname, "..", "..", "node_modules", "zod")
 
 export const ntwineArms = (dir: string) => {
-	if (!ntwineAvailable()) throw new Error(ntwineMissing)
 	installDeps()
 	const zodSource = join(cloned(repoSha), "packages", "shared", "src")
 	// under the repo, since the plugin leaves node_modules alone, and resolving
 	// this workspace's arktype
 	rmSync(dir, { recursive: true, force: true })
 	mkdirSync(join(dir, "node_modules"), { recursive: true })
-	const source = arktypeSource()!
+	const source = join(cloned(migrationSha), "packages", "shared", "src")
 	for (const file of readdirSync(source)) {
 		if (file.endsWith(".ts") && !file.endsWith(".test.ts"))
 			cpSync(join(source, file), join(dir, file))

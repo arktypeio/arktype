@@ -24,8 +24,10 @@ import {
 	leadDependsOn,
 	leads,
 	measured,
+	pairedP,
 	resultsOf,
 	rowsOf,
+	startupPaired,
 	tieBand,
 	ties,
 	unnamed,
@@ -34,6 +36,22 @@ import {
 	type CategoryId,
 	type Standing
 } from "./bench/leaderboard.ts"
+import {
+	bestRivalOf,
+	bestSweepOf,
+	generatedComplete,
+	generatedRows,
+	marginOf,
+	ntwineRows,
+	rivalsOf,
+	scoreboard,
+	sweepOf,
+	type AppRow,
+	type Build,
+	type Host,
+	type Measure,
+	type Sweep
+} from "./bench/scoreboard.ts"
 import buildTime from "./bench/buildTime.json" with { type: "json" }
 import presetScale from "./bench/presetScale.json" with { type: "json" }
 
@@ -240,8 +258,40 @@ const wording = {
 
 const boardOrder = ["speed", "startup", "size"] as const satisfies CategoryId[]
 
+// startup.ts, ours: instructions from import through the first validation of
+// whole apps, net of an empty bundle, in rounds that each run every arm
+const startupWins = startupPaired?.wins ?? {}
+const startupRounds = startupPaired?.rounds ?? 0
+const startupApps = Object.keys(startupWins)
+
+/** whether the default build started an app with fewer instructions than a library: the lower median, in a significant share of paired rounds */
+const startsBefore = (app: string, library: string) =>
+	resultsOf("startup", app).ArkType < resultsOf("startup", app)[library] &&
+	pairedP(startupWins[app][library], startupRounds) < 0.05
+
+/**
+ * whether the default build started every app before every library, which
+ * "Quickest to start" needs as well as the board's standing: the independent
+ * startup rows time only creating a schema, which a precompiled build skips
+ */
+const startsFirst =
+	startupApps.length > 0 &&
+	startupApps.every(app =>
+		Object.keys(startupWins[app]).every(library => startsBefore(app, library))
+	)
+
+/**
+ * whether ArkType may claim a category: first by the board's rule on the
+ * independent suites and, so that our own benchmarks can't contradict it, on
+ * every suite; and for startup, startsFirst
+ */
+const claimsLead = (category: CategoryId) =>
+	leads(category) &&
+	isFirst(fullLeaderboards[category], "ArkType") &&
+	(category !== "startup" || startsFirst)
+
 /** the categories ArkType may claim, the only ones the board states a win in */
-const led = boardOrder.filter(leads)
+const led = boardOrder.filter(claimsLead)
 
 /** whether ArkType may claim every category the board shows, the only time it may say "Pick 3" */
 export const leadsEvery = led.length === boardOrder.length
@@ -420,13 +470,6 @@ const sizeRivalName = nameOr(
 	leads("size") && !ties("size") ? "the next best" : "another library"
 )
 
-/** the startup chart's rivals, each on the login row of the run it cites: "ajv, Valibot, Zod Mini, Zod, Zod (compiled) and TypeBox" */
-const startupRivals = list(
-	startupChart.bars
-		.filter(bar => bar.kind !== "precompiled")
-		.map(bar => bar.name)
-)
-
 /** each category's results on the independent suites, for the headline's notes, and what startup's measure */
 const independentResults = `${list(
 	boardOrder.map(
@@ -527,14 +570,248 @@ const presetScaleText =
 		`Big frontend? The "smallest" preset gzips within ${presetScaleExcess}% of Valibot at every scale we measured, ${scalesText([presetScaleTypes[0]])} to ${scalesText([presetScaleTypes.at(-1)!])} Types, as ArkType's stricter formats, like ISO 8601 dates and UUID versions, ship longer patterns.`
 	:	`Big frontend? The "smallest" preset gzips smaller than Valibot at ${scalesText(presetScaleWins)} Types, and within ${presetScaleExcess}% at ${scalesText(presetScaleLosses)}, where ArkType's stricter formats, like ISO 8601 dates and UUID versions, ship longer patterns.`
 
+/** a fraction as a percent, rounded down so it never reads larger than measured */
+const percentText = (fraction: number) =>
+	`${(Math.floor(fraction * 1000) / 10).toFixed(1)}%`
+
+/** a ratio, rounded down: "1.56x" */
+const timesText = (ratio: number) =>
+	`${(Math.floor(ratio * 100) / 100).toFixed(2)}x`
+
+const startupLibraries = [
+	...new Set(startupApps.flatMap(app => Object.keys(startupWins[app])))
+]
+
+const fewestRounds = Math.min(
+	...startupApps.flatMap(app => Object.values(startupWins[app]))
+)
+
+// the smallest margin over the best other library on any app: 15% on
+// moltar, to Typia, at 20710020e
+const startupThinnest = Math.min(
+	...startupApps.map(app => {
+		const { ArkType, ...others } = resultsOf("startup", app)
+		return 1 - ArkType / Math.min(...Object.values(others))
+	})
+)
+
+const startupAppsText =
+	startsFirst ?
+		`On each of the ${startupApps.length} apps in our startup benchmark, precompiled ArkType's default build ran fewer instructions from import through its first validation than every other library measured on it (${list(startupLibraries)}), by ${percentText(startupThinnest)} or more, in ${fewestRounds === startupRounds ? `all ${startupRounds}` : `at least ${fewestRounds} of ${startupRounds}`} paired runs on Node 24.`
+	:	{
+			pending:
+				"On each app in our startup benchmark, precompiled ArkType's default build ran fewer instructions from import through its first validation than every other library measured on it."
+		}
+
+/**
+ * Whole apps, from the bigapp board (lib/bench/scoreboard.ts): its generated
+ * apps, which anyone can rebuild, and ntwine, stated only once its migration
+ * has a public commit
+ */
+const hostNames: Record<Host, string> = {
+	esbuild: "esbuild",
+	webpack: "webpack",
+	turbopack: "Next on Turbopack"
+}
+
+const appLibraryNames: Record<string, string> = {
+	zod: "Zod 4",
+	zodCompiled: "z.compile",
+	zod3: "Zod 3",
+	valibot: "Valibot",
+	ajv: "ajv"
+}
+
+const buildNames: Record<Build, string> = {
+	precompiled: "the default build",
+	smallest: 'the "smallest" preset'
+}
+
+const appTypes = generatedRows.map(row => Number(row.app))
+
+const appRivals = [...new Set(generatedRows.flatMap(rivalsOf))]
+
+const everyAppRival = appRivals.filter(library =>
+	generatedRows.every(row => library in row.arms)
+)
+
+const appScope = `On apps we generated of ${Math.min(...appTypes).toLocaleString("en-US")} to ${Math.max(...appTypes).toLocaleString("en-US")} Types, built with ${list([...new Set(generatedRows.map(row => hostNames[row.host]))])}`
+
+const appRivalsText = `${list(everyAppRival.map(library => appLibraryNames[library]))} on every app${everyAppRival.length < appRivals.length ? `, ${list(appRivals.filter(library => !everyAppRival.includes(library)).map(library => appLibraryNames[library]))} on some` : ""}`
+
+/** "11 and 46 Types through webpack with narrows" */
+const appsText = (rows: AppRow[]) => {
+	const groups = new Map<
+		string,
+		{ host: Host; variant: string; types: number[] }
+	>()
+	for (const key of new Set(rows.map(row => `${row.host} ${row.app}`))) {
+		const of = rows.filter(row => `${row.host} ${row.app}` === key)
+		const variant =
+			of.length === 2 ? ", with and without narrows"
+			: of[0].narrows ? " with narrows"
+			: ""
+		const group = groups.get(`${of[0].host}${variant}`) ?? {
+			host: of[0].host,
+			variant,
+			types: []
+		}
+		group.types.push(Number(of[0].app))
+		groups.set(`${of[0].host}${variant}`, group)
+	}
+	return list(
+		[...groups.values()].map(
+			({ host, variant, types }) =>
+				`${list(types.map(n => n.toLocaleString("en-US")))} Types through ${hostNames[host]}${variant}`
+		)
+	)
+}
+
+const coverageText = ({ won, lost }: Sweep) =>
+	lost.length ?
+		`${won.length} of those ${won.length + lost.length} apps`
+	:	"every one of those apps"
+
+/** the thinnest margin a sweep won by among some of its apps */
+const thinnestAmong = (sweep: Sweep, measure: Measure, rows: AppRow[]) =>
+	Math.min(
+		...sweep.won
+			.filter(row => rows.includes(row))
+			.map(row => marginOf(row, sweep.build, measure))
+	)
+
+const appSpeedSweep = sweepOf(generatedRows, "precompiled", "hot")
+
+// nanoseconds per call on a shared machine, so read as ratios: at 19a959e8a
+// the closest was z.compile at 92 Types with narrows, 1.68x
+const appSpeedText = () =>
+	`${appScope}, the default build validated faster on ${appSpeedSweep.lost.length ? `${appSpeedSweep.won.length} of ${generatedRows.length}` : "every one"} than every other library measured on it (${appRivalsText})${appSpeedSweep.lost.length ? `, though not on ${appsText(appSpeedSweep.lost)}` : ""}, by ${timesText(1 / (1 - appSpeedSweep.thinnest))} or more: nanoseconds per call over ${scoreboard.rounds} paired runs on a shared machine, p ≤ ${appSpeedSweep.p.toFixed(3)}.`
+
+const appStartupSweep = bestSweepOf(generatedRows, "first")
+
+const bundledRows = generatedRows.filter(row => row.host !== "turbopack")
+
+const nextRows = generatedRows.filter(row => row.host === "turbopack")
+
+// instructions, which load doesn't move; a Next route's count is mostly
+// Next's own startup, about 552M of an empty route's
+const appStartupText = () => {
+	const { build, lost } = appStartupSweep
+	const fastest = sweepOf(generatedRows, "precompiled", "first")
+	return `From import through its first validation, ${buildNames[build]} ran fewer instructions than every other library on ${coverageText(appStartupSweep)}${lost.length ? `, not on ${appsText(lost)}` : ""}, by ${percentText(thinnestAmong(appStartupSweep, "first", bundledRows))} or more through ${list([...new Set(bundledRows.map(row => hostNames[row.host]))])}${nextRows.some(row => !lost.includes(row)) ? ` and by ${percentText(thinnestAmong(appStartupSweep, "first", nextRows))} or more on Turbopack, where Next's own startup is in every count` : ""}, p ≤ ${appStartupSweep.p.toFixed(3)}${build === "smallest" ? `; the default build did on ${fastest.won.length} of them` : ""}.`
+}
+
+const appSizeSweep = bestSweepOf(generatedRows, "gz")
+
+// bytes are exact, so margins are in bytes: the thinnest win, and where the
+// size build loses, the most the best other library ships less by
+const appSizeText = () => {
+	const { build, won, lost } = appSizeSweep
+	const bytesBelow = (row: AppRow) =>
+		row.arms[bestRivalOf(row, "gz")].gz - row.arms[build].gz
+	const zodRatios = generatedRows.map(
+		row => row.arms.zod.gz / row.arms[build].gz
+	)
+	const defaultRatios = generatedRows.map(
+		row => row.arms.precompiled.gz / row.arms.smallest.gz
+	)
+	return `With ${buildNames[build]}, its bundle was smaller than every other library's on ${coverageText(appSizeSweep)}, by ${Math.min(...won.map(bytesBelow))} B or more${
+		lost.length ?
+			`; on ${appsText(lost)}, ${list([...new Set(lost.map(row => appLibraryNames[bestRivalOf(row, "gz")]))])}'s was smaller, by up to ${Math.max(...lost.map(row => -bytesBelow(row)))} B (${(Math.ceil(Math.max(...lost.map(row => -bytesBelow(row) / row.arms[build].gz)) * 1000) / 10).toFixed(1)}%)`
+		:	""
+	}. ${
+		zodRatios.every(ratio => ratio > 1) ?
+			`It shipped less than Zod 4 on every one, by ${timesText(Math.min(...zodRatios))} to ${timesText(Math.max(...zodRatios))}.`
+		:	`It shipped less than Zod 4 on ${zodRatios.filter(ratio => ratio > 1).length} of ${zodRatios.length}.`
+	}${build === "smallest" ? ` The default build, the fastest, shipped ${timesText(Math.min(...defaultRatios))} to ${timesText(Math.max(...defaultRatios))} what "smallest" did.` : ""}`
+}
+
+/** the generated apps' claims, pending with their draft unless the board has every arm of each */
+const appClaim = (text: () => string, draft: string): Claim<string> =>
+	generatedComplete ? text() : { pending: draft }
+
+const ntwineBundled = ntwineRows.find(
+	row =>
+		row.host === "esbuild" &&
+		row.arms.precompiled &&
+		row.arms.zod &&
+		row.arms.zod3
+)
+
+/** the precompiled build with less of a measure on an app */
+const lowerBuildOf = (row: AppRow, measure: Measure): Build =>
+	row.arms.smallest?.[measure] < row.arms.precompiled[measure] ?
+		"smallest"
+	:	"precompiled"
+
+const kbText = (bytes: number) =>
+	bytes < 100_000 ?
+		`${(bytes / 1000).toFixed(1)} KB`
+	:	`${Math.round(bytes / 1000)} KB`
+
+const gigaText = (instructions: number) => `${(instructions / 1e9).toFixed(3)}G`
+
+/** ntwine through the other hosts where Zod 4 ships less than either build: webpack tree-shakes Zod's namespace */
+const ntwineZodSmaller = ntwineRows.filter(
+	row =>
+		row.host !== "esbuild" &&
+		row.arms.zod &&
+		row.arms[lowerBuildOf(row, "gz")].gz > row.arms.zod.gz
+)
+
+// Zod 3 is what ntwine ships; its source runs unchanged on Zod 4, the other arm
+const bigAppText = (row: AppRow) => {
+	const size = lowerBuildOf(row, "gz")
+	const start = lowerBuildOf(row, "first")
+	const hot = lowerBuildOf(row, "hot")
+	const { zod, zod3 } = row.arms
+	return `On ntwine's packages/shared, the schemas of an open-source app and the code that reads them, bundled with esbuild: ${buildNames[size]} shipped ${kbText(row.arms[size].gz)} gzipped to Zod 4's ${kbText(zod.gz)} and Zod 3's ${kbText(zod3.gz)}, the version ntwine ships; ${start === size ? "it" : buildNames[start]} ran ${gigaText(row.arms[start].first)} instructions through its first validation to Zod 4's ${gigaText(zod.first)} and Zod 3's ${gigaText(zod3.first)}; and ${buildNames[hot]} validated a thread ${timesText(zod.hot / row.arms[hot].hot)} as fast as Zod 4 and ${timesText(zod3.hot / row.arms[hot].hot)} as fast as Zod 3, in nanoseconds per call over ${scoreboard.rounds} paired runs on a shared machine, p ≤ ${Math.max(row.p[hot]!.zod.hot, row.p[hot]!.zod3.hot).toFixed(3)}.${ntwineZodSmaller.length ? ` Zod 4 ships less ${list(ntwineZodSmaller.map(other => `through ${hostNames[other.host]} (${kbText(other.arms.zod.gz)} to ${kbText(other.arms[lowerBuildOf(other, "gz")].gz)})`))}.` : ""}`
+}
+
+// plain arktype, without the plugin, against Zod 4, from import through the
+// first validation on the apps bundled with esbuild, the only host with a plain
+// arm. Deferred Types move it, so it renders only once it starts sooner on
+// every app; at 19a959e8a it ran 1.5-2.2x Zod 4's instructions
+const dynamicRows = [
+	...generatedRows,
+	...(scoreboard.ntwine.migration ? ntwineRows : [])
+].filter(row => row.host === "esbuild" && row.arms.arktype && row.arms.zod)
+
+const dynamicStartsFirst =
+	dynamicRows.length > 0 &&
+	dynamicRows.every(
+		row =>
+			row.arms.arktype.first < row.arms.zod.first &&
+			(row.p.arktype?.zod.first ?? 1) < 0.05
+	)
+
+const dynamicInitText = () =>
+	`Without the plugin, ArkType ran fewer instructions from import through its first validation than Zod 4 on every app we bundled with esbuild, ${dynamicRows.length} in all${dynamicRows.some(row => row.app === "ntwine") ? ", ntwine among them" : ""}, by ${percentText(Math.min(...dynamicRows.map(row => 1 - row.arms.arktype.first / row.arms.zod.first)))} or more, p ≤ ${Math.max(...dynamicRows.map(row => row.p.arktype!.zod.first)).toFixed(3)}.`
+
+const sizeRanks = rowsOf("size").map(
+	results =>
+		Object.values(results).filter(bytes => bytes < results.ArkType).length + 1
+)
+
+const sizeFirsts = sizeRanks.filter(rank => rank === 1).length
+
+/** where the default build places on the size results it isn't first on: "2nd on each" */
+const sizePlacesText = () => {
+	const places = sizeRanks.filter(rank => rank > 1)
+	return places.every(rank => rank === places[0]) ?
+			`${ordinal(places[0])} on ${sizeFirsts ? "the rest" : "each"}`
+		:	`${list(places.map(ordinal))} on ${sizeFirsts ? "the rest" : "them"}`
+}
+
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
-	// each superlative names a category ArkType must claim
-	// (lib/bench/leaderboard.ts), as the check of the copy below holds. Size
-	// is the close one: ArkType 1.163 to Typia's 1.256 on results/newest/'s
-	// size rows (20710020e), and tieBand keeps the claim within 5% of the best
+	// each superlative names a category ArkType must claim (claimsLead), as
+	// the check of the copy below holds. Size is the close one: ArkType 1.163
+	// to Typia's 1.256 on results/newest/'s size rows (20710020e), 2nd on each
+	// of the 3, and with our own apps counted ajv's 1.326 to ArkType's 1.333,
+	// inside tieBand
 	headline:
-		leads("size") ?
+		claimsLead("size") ?
 			"TypeScript's smallest, fastest validator."
 		:	"TypeScript's fastest validator.",
 	headlineNote: `${rankedBy}, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote} ${namingNote} A weekly job reruns the size benchmarks at each library's newest release.`,
@@ -596,7 +873,10 @@ export const claims = {
 	// the hero's third superlative, after the headline's two: with them it
 	// says ArkType leads every category, so the blog post's check below holds
 	// each lead, and the one after oneBuild that one build holds them all
-	pickThree: "Quickest to start, too.",
+	pickThree:
+		claimsLead("startup") ?
+			"Quickest to start, too."
+		:	{ pending: "Quickest to start, too." },
 	// the blog post's answer to "pick 2", stated only while ArkType leads all
 	// three, and draft otherwise
 	pickThreeLine: leadsEvery ? "Pick 3." : { pending: "Pick 3." },
@@ -609,9 +889,46 @@ export const claims = {
 		:	led.map(category => wording[category].phrase).join(" "),
 	// what the board's superlatives average
 	boardNote: `${rankedBy}, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote} ${namingNote}`,
-	// startupChart's rivals, every one on the login row of the run it cites,
-	// 20 of 20 each; the form is 0.88M vs Valibot's 2.34M, 20 of 20
-	startupLogin: `On the homepage's login app, precompiled ArkType spends fewer instructions from import to its first validation than each of ${startupRivals}, in all 20 paired runs on Node 24.`,
+	// startup.ts's apps, each library measured on it, from leaderboard.json's
+	// startup rows and their paired rounds; pending unless every app beats
+	// every library
+	startupApps: startupAppsText,
+	// the bigapp board's generated apps: hot path, startup and size, each
+	// computed from lib/bench/scoreboard.json, so a rerun tightens or loosens
+	// the wording with the data
+	appSpeed: appClaim(
+		appSpeedText,
+		"On apps we generated of 11 to 1,012 Types, the default build validated faster than every other library measured on them."
+	),
+	appStartup: appClaim(
+		appStartupText,
+		"From import through its first validation, precompiled ArkType ran fewer instructions than every other library on every one of those apps."
+	),
+	appSize: appClaim(
+		appSizeText,
+		'With the "smallest" preset, its bundle was smaller than every other library\'s on every one of those apps.'
+	),
+	// ntwine, a real app: pending until the board measured its migration at
+	// a public commit (ark/repo/bench/bigapp/ntwine.ts's migrationSha)
+	bigApp:
+		ntwineBundled && scoreboard.ntwine.migration ?
+			bigAppText(ntwineBundled)
+		:	{
+				pending:
+					ntwineBundled ?
+						bigAppText(ntwineBundled)
+					:	"On ntwine's packages/shared, the schemas of an open-source app and the code that reads them, precompiled ArkType ships less and starts sooner than Zod 4."
+			},
+	// dynamic startup against Zod 4 on the board's apps, pending until it
+	// leads on every one; dynamic bytes are a disclosure (dynamicSize), never
+	// a claim
+	dynamicInit:
+		dynamicStartsFirst ? dynamicInitText() : (
+			{
+				pending:
+					"Without the plugin, ArkType ran fewer instructions from import through its first validation than Zod 4 on every app we bundled with esbuild."
+			}
+		),
 	// speedChart and H1
 	parseSafe:
 		"On moltar's parseSafe benchmark, precompiled ArkType takes the fewest instructions per call, and by wall clock it was faster than each of the six libraries closest to it, Typia among them, in at least 28 of 30 paired runs.",
@@ -627,7 +944,7 @@ export const claims = {
 	// and at 808927feb's Typia had it,
 	// 1.256 to 1.297. The blog states it right after sizeAverage, which has
 	// the averages and the margin, so this adds only the results themselves
-	sizeClose: `Size is the close one: ${sizeRivalName} ships less than the default build on ${sizeResultsBeating(sizeRival.library)}.`,
+	sizeClose: `Size is the close one: the default build ships the least on ${sizeFirsts ? `${sizeFirsts} of the ${sizeRanks.length}` : `none of the ${sizeRanks.length}`} size results${sizeFirsts < sizeRanks.length ? `, placing ${sizePlacesText()}` : ""}, and ${sizeRivalName} ships less than it on ${sizeResultsBeating(sizeRival.library)}.`,
 	// the "smallest" preset for schema-heavy frontends, where the default
 	// build's lead at form scale (sizeAverage) doesn't carry: gzip bytes from
 	// lib/bench/presetScale.json, naming the scales it wins on every row and how
@@ -669,6 +986,16 @@ export const headlineMethod = {
 }
 
 const assertLeads = (category: CategoryId, by: string) => {
+	if (!isFirst(fullLeaderboards[category], "ArkType")) {
+		throw new Error(
+			`${by} claims ArkType is best on ${category}, but with our own benchmarks counted its average is more than ${tieMargin} above the best: ${JSON.stringify(fullLeaderboards[category].standings.slice(0, 5))}`
+		)
+	}
+	if (category === "startup" && !startsFirst) {
+		throw new Error(
+			`${by} claims ArkType starts first, but our startup benchmark has a library it didn't start every app before: ${JSON.stringify(startupWins)}`
+		)
+	}
 	if (!leads(category)) {
 		throw new Error(
 			`${by} claims ArkType is best on ${category}, but ${leaderboards[category].standings[0].library} has the best average, and ArkType's is more than ${tieMargin} above it: ${JSON.stringify(leaderboards[category].standings.slice(0, 5))}`
@@ -688,11 +1015,6 @@ export const assertStandings = (copy: string, by: string) => {
 	if (/\bpick 3\b/i.test(copy))
 		for (const category of boardOrder) assertLeads(category, by)
 }
-
-const kbText = (bytes: number) =>
-	bytes < 100_000 ?
-		`${(bytes / 1000).toFixed(1)} KB`
-	:	`${Math.round(bytes / 1000)} KB`
 
 const typesText = (types: number) =>
 	`${types.toLocaleString("en-US")} ${types === 1 ? "Type" : "Types"}`
@@ -967,7 +1289,7 @@ export const assertNamesWellKnown = (copy: string, by: string) => {
 }
 
 for (const [id, claim] of Object.entries(claims))
-	assertNamesWellKnown(draftOf(claim), id)
+	assertNamesWellKnown(draftOf<string>(claim), id)
 assertNamesWellKnown(draftOf(pickThreeTable.title), "pickThreeTable")
 
 // the names the board and the Pick 3 table show
