@@ -331,6 +331,11 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("symbol index signature with a string key", () => {
+			const T = type({ "[symbol]": "number", a: "string" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
 		it("contains alias", () => {
 			const example = {
 				user: {
