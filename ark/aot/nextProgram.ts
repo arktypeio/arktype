@@ -370,14 +370,7 @@ const withRoots = (
 		entries.push(id)
 		reach(id)
 	}
-	// flat units measured slower here on a big validator, whose optimized code
-	// spends TurboFan's inlining budget on fewer, bigger callees
-	return {
-		...scanned,
-		entries: entries.sort(),
-		isOneChunk: false,
-		keepsUnitsApart: true
-	}
+	return { ...scanned, entries: entries.sort(), isOneChunk: false }
 }
 
 const unitsOf = (written: Record<string, TransformedModule | undefined>) => {
