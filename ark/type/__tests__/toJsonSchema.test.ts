@@ -447,6 +447,20 @@ contextualize(() => {
 		})
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1469
+	it("jsonSchema meta replaces a regex's pattern", () => {
+		const T = type("/^a/").configure({
+			jsonSchema: { type: "string", pattern: "^b" }
+		})
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "string",
+			pattern: "^b"
+		})
+		// configures JSON Schema only, so validation still uses the regex
+		attest(T.allows("a")).equals(true)
+		attest(T.allows("b")).equals(false)
+	})
+
 	it("jsonSchema meta isn't configured on references", () => {
 		const T = type("string | number").configure({
 			jsonSchema: { type: ["string", "number"] }
