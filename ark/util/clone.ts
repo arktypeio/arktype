@@ -18,12 +18,26 @@ const _clone = (input: unknown, seen: Map<unknown, unknown> | null): any => {
 	if (builtinConstructorName === "Date")
 		return new Date((input as Date).getTime())
 
-	// we don't try and clone other prototypes here since this we can't guarantee arrow functions attached to the object
-	// are rebound in case they reference `this` (see https://x.com/colinhacks/status/1818422039210049985)
-	if (builtinConstructorName && builtinConstructorName !== "Array") return input
+	const inputIsArray = isArray(input)
+
+	// Anything else with its own toString tag is a builtin, a host object or a
+	// subclass of one (Map, URL, a typed array, DataView, Temporal.Instant,
+	// including those from another realm or a polyfill). Their state lives in
+	// internal slots a property copy can't carry, so the copy would throw
+	// "incompatible receiver" on its first method call
+	// (https://github.com/arktypeio/arktype/issues/1719). Return them as is,
+	// the same rule copyOf in @ark/schema's transform.ts follows.
+	// An ordinary class instance is tagged [object Object], so it is still
+	// copied with its prototype. One that keeps state in #private fields can't
+	// be told apart and still breaks.
+	if (
+		!inputIsArray &&
+		Object.prototype.toString.call(input) !== "[object Object]"
+	)
+		return input
 
 	const cloned =
-		isArray(input) ? input.slice() : Object.create(Object.getPrototypeOf(input))
+		inputIsArray ? input.slice() : Object.create(Object.getPrototypeOf(input))
 
 	const propertyDescriptors = Object.getOwnPropertyDescriptors(input)
 
