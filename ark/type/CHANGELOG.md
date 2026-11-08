@@ -601,6 +601,34 @@ T["~standard"].jsonSchema.input({ target: "draft-2020-12" })
 
 Thanks to @ybai08 for #1695.
 
+### Drop `undefined` from `~standard.jsonSchema.input`
+
+JSON can't send `undefined`, but `~standard.jsonSchema.input` wrote it as `{}`, which accepts any value. An input schema now leaves it out of a union, so the key stays required and accepts only the union's other branches (#1462):
+
+```ts
+const T = type({ a: "string | undefined" })
+
+// was: { a: { anyOf: [{ type: "string" }, {}] } }
+// now: { a: { type: "string" } }
+T["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+```
+
+`output` and `toJsonSchema()` still pass a required key's `undefined` to `fallback.unit`, since output with `a: undefined` serializes without `a`.
+
+Thanks to @SynthLuvr for #1715.
+
+### Check the key of an `undefined` case in a discriminated union
+
+A union discriminated on a key that is `undefined` in one branch, like `type({ k: "1", a: "2" }).or({ k: "3", a: "undefined" })`, threw a `TypeError` for data that isn't an object and accepted `{ k: 3 }` without `a`. A union is now discriminated on `undefined` only at its root, so the branch checks that its data is an object with the key (#1724).
+
+Thanks to @RClaudiuM for #1725.
+
+### Keep `Temporal` values intact through a morph
+
+A Type with a morph copied its input, rebuilding objects like `Temporal.Instant`, `DataView` or `URLSearchParams` without the internal state their methods read, so the first method call threw. A morph now copies only what it changes and leaves those objects as they are, and `deepClone` from `@ark/util` returns them as is (#1719).
+
+Thanks to @louisss1016 for #1722.
+
 ### Say "an array" where a union's object branches are arrays
 
 A union discriminated by domain described its object case as `an object`, even when every branch it reached was an array. It now says `an array`, and its error's `cases` holds `"Array"` in place of `"object"`:
