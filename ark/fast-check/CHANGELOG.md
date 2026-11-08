@@ -26,7 +26,13 @@ Thanks to @lprnmns for #1705.
 
 ### Generate cyclic index signatures, like `object.json`
 
-A cyclic Type whose object has only an index signature, like `object.json` or `scope({ tree: { "[string]": "tree | number" } })`, threw fast-check's `Tie has not been initialized`. It now generates.
+A cyclic Type whose object has only an index signature, like `object.json` or `scope({ tree: { "[string]": "tree | number" } })`, threw fast-check's `Tie has not been initialized`. It now generates, and one with no other way out, like `scope({ node: { "[string]": "node" } })`, generates dictionaries that empty out as they nest rather than overflowing the stack.
+
+### Keep a regex's flags when generating strings
+
+A pattern's flags were dropped, so `type(/^\u{1F600}[a-z]$/u)` generated strings it rejects and a range that needs `u`, like `/^[😀-😂]$/u`, threw `Range out of order`. Flags now reach fast-check, except `i`, which it doesn't support and a matching string doesn't need. A sticky (`y`) or `v` pattern throws fast-check's error rather than generating strings the Type rejects (#1720).
+
+Thanks to @RaphaelFakhri for #1721.
 
 ### Generate cycles through arrays and tuples
 
