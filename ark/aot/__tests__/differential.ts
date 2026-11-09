@@ -9,7 +9,7 @@ import {
 	type BaseScope
 } from "@ark/schema"
 import type { ArkIssue } from "@ark/schema/runtime"
-import { hasDomain, ParseError } from "@ark/util"
+import { hasDomain, ParseError, stringifyPath } from "@ark/util"
 import {
 	introspectionMembers,
 	keyOf,
@@ -467,7 +467,7 @@ const isEqual = (l: unknown, r: unknown, read = false): boolean => {
 
 interface WrittenIssue {
 	at: string
-	expected: unknown
+	expected?: unknown
 	message: unknown
 	problem?: unknown
 	errors?: WrittenIssue[]
@@ -478,10 +478,11 @@ interface WrittenIssue {
 // validator's issue holds a problem only where text sets one, its message
 // writing the problem either way. Neither's actual is compared, since a
 // validator's issue has none: what a configured actual or a missing key
-// writes is in the problem
+// writes is in the problem. Errors "none" promises only its one issue's
+// message, which is arktype's, not what that issue expects
 const writtenIssueOf = (issue: ArkIssue): WrittenIssue => ({
 	at: `${pathKeyOf(issue.path)}\0${issue.code}`,
-	expected: issue.expected,
+	...(detailsErrors && { expected: issue.expected }),
 	message: issue.message,
 	...(issue.problem !== undefined && { problem: issue.problem }),
 	...(issue.errors?.length && { errors: issue.errors.map(writtenIssueOf) })
@@ -867,13 +868,35 @@ const withAlike = (observation: any, alike: any, reported: any) => {
 		(written: WrittenIssue) => written.at === from
 	)
 	if (!issue) return withIssue
+	// the message at the path reported, as arktype writes its own there
+	const prop = stringifyPath(reported.path as PropertyKey[])
+	const message =
+		from === to ? issue.message
+		: prop ? `${prop} ${issue.problem}`
+		: issue.problem
 	return {
 		...withIssue,
-		...("message" in observation && { message: issue.message }),
-		written: [{ ...issue, at: to }],
-		summary: issue.message
+		...("message" in observation && { message }),
+		written: [{ ...issue, at: to, message }],
+		summary: message
 	}
 }
+
+// errors "first" reports one of arktype's issues, but a union's is written
+// from its branches' first issues, which a first-issue build finds in its
+// own order, so only where it is is compared
+const withoutUnionText = (observation: any) =>
+	(
+		observation?.written?.length === 1 &&
+		observation.written[0].at.endsWith("\0union")
+	) ?
+		{
+			...observation,
+			written: [{ at: observation.written[0].at }],
+			summary: undefined,
+			...("message" in observation && { message: undefined })
+		}
+	:	observation
 
 const valueAt = (input: unknown, path: readonly PropertyKey[]): unknown =>
 	path.reduce((value: any, k) => value?.[k], input)
@@ -917,9 +940,11 @@ const reportsOneOf = (input: unknown, all: Call, first: Call): boolean =>
 		const alike =
 			issues?.length === 1 &&
 			added?.find(issue => isAlikeIssue(input, issue, issues[0]))
-		return alike ?
-				isEqual(withAlike(observed, alike, issues[0]), reported)
-			:	isEqual(observed, reported)
+		const expected = alike ? withAlike(observed, alike, issues[0]) : observed
+		return isEqual(
+			withoutUnionText(maskProblems(expected, reported)),
+			withoutUnionText(reported)
+		)
 	})
 
 // what a precompiled call is compared with: under errors "first", arktype's
