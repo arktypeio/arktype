@@ -3225,7 +3225,7 @@ export const U = make()
 			return (
 				stdout ||
 				stderr
-					.split("\n")
+					.split(/\r?\n/)
 					.find(line => line.includes("configure"))
 					?.replace(/^.*ParseError]: /, "")
 			)

@@ -3119,7 +3119,8 @@ console.log(User.expression, String(User({ name: 5 })))
 				})
 
 				describe("a module an inline loader request keeps from the plugin", () => {
-					const identity = fromHere("identityLoader.ts")
+					// a request's path, which a string literal can't hold with backslashes
+					const identity = fromHere("identityLoader.ts").replace(/\\/g, "/")
 
 					for (const prefix of ["-!", "!!", "!"]) {
 						it(`reads what ${prefix} imports reads, as it can't write it`, async () => {

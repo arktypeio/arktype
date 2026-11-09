@@ -416,7 +416,7 @@ contextualize(function (this: Mocha.Suite) {
 					const { registerHooks, syncBuiltinESMExports } = await import(
 						"node:module"
 					)
-					const { basename, dirname, join } = await import("node:path")
+					const { basename, dirname, join, sep } = await import("node:path")
 					const { fileURLToPath } = await import("node:url")
 					const loaded = new Set<string>()
 					registerHooks({
@@ -459,7 +459,7 @@ contextualize(function (this: Mocha.Suite) {
 							const text = read(path, ...rest)
 							return (
 									typeof path === "string" &&
-										path.startsWith(`${root}/`) &&
+										path.startsWith(`${root}${sep}`) &&
 										/\.[jt]s$/.test(path)
 								) ?
 									`${text}\n// changed`
