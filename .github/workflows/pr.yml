@@ -78,7 +78,9 @@ jobs:
   differential:
     needs: core
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # the full-text errors tiers compare every call in each layout, about an
+    # hour on a runner
+    timeout-minutes: 120
     strategy:
       matrix:
         # the build's options: mutatesInput with each errors mode, size builds,
