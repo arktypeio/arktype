@@ -14,8 +14,8 @@ cases({
 		strictEqual($ark.cfg!.locale.cite, en.cite)
 	},
 	rendersInTheLocale: () => {
-		strictEqual(type("string")(5).toString(), "<string>! (5)")
-		strictEqual(type({ k: "string" })({ k: 5 }).toString(), "k <string>! (5)")
+		strictEqual(type("string")(5).toString(), "<string>!")
+		strictEqual(type({ k: "string" })({ k: 5 }).toString(), "k <string>!")
 	},
 	describesInEnglish: () => {
 		strictEqual(type("string").description, "a string")
