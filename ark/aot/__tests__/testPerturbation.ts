@@ -475,8 +475,9 @@ const reportedOf = (expected: unknown, actual: unknown): unknown => {
 	)
 }
 
-// whether the worlds must agree on what else a value is. A site that threw, as a
-// creation check may, created nothing another could be. A program compares what
+// whether the worlds must agree on what else a value is. A site that threw in
+// either world, as a creation check or a default's narrow may, created nothing
+// another could be, and its own disagreement says so. A program compares what
 // it reads as a value, as what it observes does, which gets one validator, but
 // this wraps each site, where a validator that's only called or read holds what
 // that site reads, so only what's merged counts. A site run again returns one
@@ -489,6 +490,7 @@ const comparesIdentity = (
 	actuals: Record<string, Observation>
 ): boolean => {
 	if (actuals[observed.sameAs as string]?.threw !== undefined) return false
+	if (observations[actual?.sameAs as string]?.threw !== undefined) return false
 	const [id, occurrence] = key.split(":")
 	if (occurrence === undefined) return true
 	const merged = actual?.sameAs as string | undefined

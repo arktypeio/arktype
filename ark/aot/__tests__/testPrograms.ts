@@ -35,7 +35,8 @@ import {
 
 // generated programs run as written and precompiled in standalone and
 // cache mode, unchanged and under each of testPerturbation's perturbations:
-// ARK_PRECOMPILE_PROGRAMS=<count>[:<seed>] pnpm testPrograms
+// ARK_PRECOMPILE_PROGRAMS=<count>[:<seed>[:<path>]] pnpm testPrograms
+// (a failure's reported path replays just its counterexample)
 
 interface Fragment {
 	// containers.ts exports, which a perturbation can mock or swap
@@ -1950,8 +1951,9 @@ const reportOf = (world: string, disagreements: Disagreement[]): string[] => {
 	)
 }
 
-const [runs = 20, seed = 1] =
+const [runs = 20, seed = 1, ...pathSegments] =
 	process.env.ARK_PRECOMPILE_PROGRAMS?.split(":").map(Number) ?? []
+const path = pathSegments.length ? pathSegments.join(":") : undefined
 
 const out = fromHere("temp", "programs", `${seed}`)
 
@@ -2172,6 +2174,44 @@ contextualize(() => {
 		).equals(undefined)
 	})
 
+	it("compares no identity with a site that threw only as written", () => {
+		// a default whose narrow rejected it where arktype checked it, which the
+		// build checked earlier for the same node, so the site after merges with
+		// it precompiled and is new as written
+		const threw = "ParseError: Default must be valid according to atMost0"
+		const type = { expression: "[(number & atMost0) = 1]" }
+		const { disagreements } = compareWorlds(
+			{
+				manifest: { files: [{ path: "main.ts" }] },
+				sitesById: { 1: "main.ts:8:26", 2: "main.ts:10:26" },
+				errors: [],
+				errorsByPath: {}
+			} as never,
+			{
+				"main.ts": {
+					none: {
+						"1:0": { threw },
+						"0.1": { threw },
+						"2:0": type,
+						"0.2": { ...type, sameAs: "2:0" }
+					}
+				}
+			},
+			{
+				"main.ts": {
+					none: {
+						"1:0": type,
+						"0.1": { ...type, sameAs: "1:0" },
+						"2:0": { ...type, sameAs: "1:0" },
+						"0.2": { ...type, sameAs: "1:0" }
+					}
+				}
+			}
+		)
+		// only where it threw, which the narrow's exclusion allows
+		attest(disagreements.map(d => d.site)).snap(["main.ts:8:26", "0.1"])
+	})
+
 	it("agree through the build", async () => {
 		rmSync(out, { recursive: true, force: true })
 		const counts: Counts = {
@@ -2194,7 +2234,7 @@ contextualize(() => {
 					)
 				).equals([])
 			}),
-			{ numRuns: runs, seed, errorWithCause: true }
+			{ numRuns: runs, seed, ...(path && { path }), errorWithCause: true }
 		)
 		if (process.env.ARK_PRECOMPILE_PROGRAMS) console.log(counts)
 		attest(counts.precompiledSites > counts.sites / 2).equals(true)
