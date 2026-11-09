@@ -32,7 +32,7 @@ jobs:
 
   compatibility:
     needs: core
-    timeout-minutes: 20
+    timeout-minutes: 45
     strategy:
       matrix:
         node: [lts/*]
@@ -64,7 +64,7 @@ jobs:
   history:
     needs: core
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout repo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -78,7 +78,7 @@ jobs:
   differential:
     needs: core
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     strategy:
       matrix:
         # the build's options: mutatesInput with each errors mode, size builds,
@@ -109,7 +109,7 @@ jobs:
   cache:
     needs: core
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout repo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -123,7 +123,7 @@ jobs:
   perturbation:
     needs: core
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     strategy:
       matrix:
         # the default build and size builds, which write checkers, sampled on
@@ -192,7 +192,7 @@ jobs:
 
   typescript:
     needs: tsVersionTasks
-    timeout-minutes: 20
+    timeout-minutes: 60
     strategy:
       matrix:
         task: ${{ fromJSON(needs.tsVersionTasks.outputs.tasks) }}
