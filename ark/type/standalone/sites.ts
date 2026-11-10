@@ -7,6 +7,7 @@ import {
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
+	describesData,
 	errorWriters,
 	errorWritersByCode,
 	type FailureSite,
@@ -284,15 +285,33 @@ export interface IssueContext extends SiteContext {
 	written?: {
 		context: object
 		writers: Writer[]
-		// 1 if the issue takes expected, 2 if problem
+		// 1 if the issue takes expected, 2 if problem, 4 if its actual
+		// describes its data, which a default problem leaves out
 		keeps: number
 	}
 }
 
 // a configured actual is written in the problem, which a Standard Schema issue
 // says, so it's kept even where a configured message holds it
-const keepsOf = (isCustom: (k: DescribingKey) => boolean): number =>
-	+isCustom("expected") | (+(isCustom("problem") || isCustom("actual")) << 1)
+const keepsOf = (
+	isCustom: (k: DescribingKey) => boolean,
+	describes: boolean
+): number =>
+	+isCustom("expected") |
+	(+(isCustom("problem") || isCustom("actual")) << 1) |
+	(+describes << 2)
+
+// what a default actual writes: what arktype describes data with, where a
+// configured problem or message reads it, shipped as the runtime's
+const describerOf = (
+	writer: unknown,
+	readsActual: boolean
+): Writer | undefined => {
+	if (!describesData(writer)) return
+	if (!readsActual) return ""
+	// e.g. a union's or a predicate's, which describe a site's data by its kind
+	return runtimeKeyOf(writer as Fn) ? (writer as Fn) : runtime.printKind
+}
 
 // arktype passes a writer of these each branch's errors, which issues don't hold
 const unwritableCodes = new Set<ArkErrorCode>([
@@ -324,7 +343,15 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 		!unwritableCodes.has(code) &&
 		Object.values(custom).some(writer => typeof writer === "function")
 	) {
+		const readsActual =
+			typeof custom.problem === "function" ||
+			typeof custom.message === "function"
+		const describer =
+			custom.actual === undefined ?
+				describerOf(defaults.actual, readsActual)
+			:	undefined
 		const writerOf = (k: DescribingKey): Writer => {
+			if (k === "actual" && describer !== undefined) return describer
 			const writer = custom[k] ?? defaults[k]
 			if (typeof writer !== "function") return writer as Writer
 			if (writer === custom[k]) {
@@ -347,7 +374,7 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 				writerOf("problem"),
 				custom.message === undefined ? undefined : writerOf("message")
 			],
-			keeps: keepsOf(k => custom[k] !== undefined)
+			keeps: keepsOf(k => custom[k] !== undefined, !!describer)
 		}
 		return issueContext
 	}
@@ -402,7 +429,16 @@ export const raisedWritersByCode = (): [
 		const defaults: Record<string, unknown> = $ark.defaultConfig[code]
 		const isCustom = (k: DescribingKey) => configured[k] !== defaults[k]
 		if (!describingKeys.some(isCustom)) continue
+		const describer =
+			isCustom("actual") ? undefined : (
+				describerOf(
+					defaults.actual,
+					(isCustom("problem") && typeof configured.problem === "function") ||
+						(isCustom("message") && typeof configured.message === "function")
+				)
+			)
 		const writerOf = (k: DescribingKey): Writer => {
+			if (k === "actual" && describer !== undefined) return describer
 			const writer = configured[k]
 			if (isCustom(k)) {
 				return typeof writer === "function" ?
@@ -417,7 +453,11 @@ export const raisedWritersByCode = (): [
 			// e.g. a missing key's
 			return (writer as Fn)(undefined, { code }, locale) as string
 		}
-		written.push([code, describingKeys.map(writerOf), keepsOf(isCustom)])
+		written.push([
+			code,
+			describingKeys.map(writerOf),
+			keepsOf(isCustom, !!describer)
+		])
 	}
 	return written
 }

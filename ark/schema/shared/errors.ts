@@ -26,7 +26,8 @@ import type { DiscriminantErrorContext } from "../roots/union.ts"
 import type { UndeclaredErrorContext } from "../structure/structure.ts"
 import type { NodeKind } from "./implement.ts"
 import type { Locale } from "./locale.ts"
-import { writeMessage } from "./errorWriters.ts"
+import { describeActual } from "./enWriters.ts"
+import { describesData, writeMessage } from "./errorWriters.ts"
 import { describeBranches } from "./utils.ts"
 import {
 	ArkErrors as BaseArkErrors,
@@ -188,7 +189,7 @@ const pathEquals = (l: array<PropertyKey>, r: array<PropertyKey>) => {
 	return true
 }
 
-// keeps the text a standalone validator wrote
+// keeps the text a standalone validator wrote; its actual describes its data
 export const errorOfIssue = (
 	issue: ArkIssue & { message: string },
 	prefix: array<PropertyKey>,
@@ -197,7 +198,6 @@ export const errorOfIssue = (
 	const problem = problemOf(issue)
 	const meta: ArkEnv.meta = {
 		expected: issue.expected ?? problem,
-		actual: "",
 		problem,
 		message: issue.message === messageOf(issue) ? writeMessage : issue.message
 	}
@@ -860,17 +860,27 @@ export const writeText = (
 	const expected = meta?.expected ?? writers.expected
 	error.expected ??=
 		typeof expected === "function" ? expected(error as never, locale) : expected
-	const actual = meta?.actual ?? writers.actual
-	error.actual ??=
-		typeof actual === "function" ?
-			actual(error.data as never, error as never, locale)
-		:	actual
+	error.actual ??= writeActual(error, meta?.actual ?? writers.actual, locale)
 	const problem = meta?.problem ?? writers.problem
 	error.problem ??=
 		typeof problem === "function" ? problem(error as never, locale) : problem
 	const message = meta?.message ?? writers.message
 	error.message ??=
 		typeof message === "function" ? message(error as never, locale) : message
+}
+
+/**
+ * an error's actual, noting one that describes its data, which en's messages
+ * leave out, so a configured writer still reads what the data was
+ */
+export const writeActual = (
+	error: ArkError,
+	actual: string | ActualWriter<never>,
+	locale: Locale.Info
+): string => {
+	if (typeof actual === "string") return actual
+	if (describesData(actual)) describeActual(error)
+	return actual(error.data as never, error as never, locale)
 }
 
 // registered by arktype/i18n

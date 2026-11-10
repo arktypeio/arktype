@@ -956,6 +956,17 @@ flag must be boolean
 n must be a string or null`)
 	})
 
+	it("issues into a morph's traversal describe their data", async () => {
+		const { T } = await load({ T: type({ a: "string", b: "string | null" }) })
+		const out = type("unknown").pipe((data, ctx) => T(data, ctx))({ b: 5 })
+		attest(
+			(out as type.errors).issues.map(error => [error.message, error.actual])
+		).snap([
+			["a must be a string (was missing)", "missing"],
+			["b must be a string or null", "5"]
+		])
+	})
+
 	it("issues into a validator's traversal", async () => {
 		let Inner: (data: unknown, ctx: Traversal) => unknown = () => {}
 		const wrap = standIn(
@@ -1837,24 +1848,22 @@ age must be a number (was missing)`)
 		])
 		const input = { a: "x", b: "x", c: "y", d: "z" }
 		const errors = create(message, problem, actual, expected)(input)
-		attest(errors.issues[0].message).equals(
-			(T(input) as type.errors).issues[0].message
-		)
+		attest(errors.summary).equals((T(input) as type.errors).summary)
 		attest(errors.issues).snap([
 			{
 				code: "minLength",
 				path: ["a"],
 				data: "x",
 				expected: "at least length 2",
-				message: "a:  isn't at least length 2"
+				message: "a: 1 isn't at least length 2"
 			},
 			{
 				code: "domain",
 				path: ["b"],
 				data: "x",
 				expected: "a number",
-				message: "b is , not a number",
-				problem: "is , not a number"
+				message: "b is a string, not a number",
+				problem: "is a string, not a number"
 			},
 			{
 				code: "domain",
@@ -1872,6 +1881,47 @@ age must be a number (was missing)`)
 				message: "d must be a number, as written"
 			}
 		])
+	})
+
+	it("a configured writer reads what the data was, as arktype's does", async () => {
+		const problem = standIn(
+			(ctx: ProblemContext) => `isn't ${ctx.expected} (${ctx.actual})`,
+			"problem"
+		)
+		// the default problem it reads leaves out what the data was
+		const message = standIn(
+			(ctx: MessageContext) =>
+				`${ctx.propString}: ${ctx.problem} [${ctx.actual}]`,
+			"message"
+		)
+		const T = type({
+			domain: type("string").configure({ problem }),
+			length: type("string >= 2").configure({ problem }),
+			unit: type("'x'").configure({ problem }),
+			proto: type("Date").configure({ problem }),
+			after: type("Date > d'2000-01-01'").configure({ problem }),
+			min: type("number >= 1").configure({ message })
+		})
+		const create = await loadFactory(T, [
+			["function", "`problem`", problem],
+			["function", "`message`", message]
+		])
+		const input = {
+			domain: 5,
+			length: "x",
+			unit: "y",
+			proto: [],
+			after: new Date(0),
+			min: 0
+		}
+		const errors = create(problem, message)(input)
+		attest(errors.summary).equals((T(input) as type.errors).summary)
+		attest(errors.summary).snap(`domain isn't a string (a number)
+length isn't at least length 2 (1)
+unit isn't "x" ("y")
+proto isn't a Date (Array)
+after isn't January 1, 2000, 12:00:00.001 AM UTC or later (January 1, 1970)
+min: must be at least 1 [0]`)
 	})
 
 	it("writes text when its errors are first read", async () => {

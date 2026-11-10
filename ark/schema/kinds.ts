@@ -1,8 +1,10 @@
 import {
 	domainDescriptions,
+	domainOf,
 	flatMorph,
 	objectKindDescriptions,
 	printable,
+	printKind,
 	withAlphabetizedKeys,
 	type array
 } from "@ark/util"
@@ -27,7 +29,11 @@ import { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
 import type { BaseNodeInput } from "./shared/declare.ts"
 import { enInfo } from "./shared/enWriters.ts"
-import { errorWriters, errorWritersByCode } from "./shared/errorWriters.ts"
+import {
+	errorWriters,
+	errorWritersByCode,
+	registerDescriber
+} from "./shared/errorWriters.ts"
 import {
 	ArkErrors,
 	type ArkErrorCode,
@@ -121,6 +127,17 @@ const listCases: Locale.ExpectedWriter<"discriminant"> = (e, locale) =>
 		:	e.cases.map(unit => printable(unit, { ownDataOnly: true }))
 	)
 
+const describeDiscriminant: Locale.ActualWriter<"discriminant"> = (
+	data,
+	e,
+	locale
+) =>
+	e.absent ? "missing"
+	: e.discriminantKind === "domain" ? locale.nouns[domainOf(data)]
+	: printKind(data)
+
+registerDescriber(describeDiscriminant)
+
 export const en: Locale.Complete = {
 	...(flatMorph(nodeImplementationsByKind, (kind, { ownErr, defaults }) =>
 		ownErr ? [kind, enWritersOf(kind, defaults)] : []
@@ -132,7 +149,7 @@ export const en: Locale.Complete = {
 	discriminant: {
 		expected: listCases,
 		problem: errorWriters.problem,
-		actual: errorWriters.actual
+		actual: describeDiscriminant
 	},
 	...enInfo,
 	cite: text => text,
@@ -149,8 +166,7 @@ export const en: Locale.Complete = {
 		never: "never"
 	},
 	keywordPhrases: {},
-	// what a value was isn't written, as a standalone validator's text doesn't
-	actual: () => errorWriters.actual,
+	actual: errorWriters.actual,
 	problem: errorWriters.problem,
 	message: errorWriters.message
 }

@@ -267,7 +267,7 @@ c must be removed`)
 				meta: {},
 				propString: "b",
 				expected: "removed",
-				actual: "",
+				actual: "1",
 				problem: "must be removed",
 				message: "b must be removed"
 			})

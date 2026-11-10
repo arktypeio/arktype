@@ -7,6 +7,7 @@ import type {
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	ArkErrors,
+	describeActual,
 	enInfo,
 	errorsOf,
 	FirstIssues,
@@ -124,9 +125,14 @@ export {
 	Traversal,
 	TraversalError,
 	tryMorph,
+	writeDomainActual,
+	writeLengthActual,
+	writeNotEqualActual,
 	writeProblem,
+	writeProtoActual,
 	writeNullableJsonSchema,
 	writeUnionJsonSchema,
+	writeUnitActual,
 	writeUnitProblem,
 	type ArkError
 } from "@ark/schema/runtime"
@@ -663,7 +669,8 @@ type Writer = string | Fn | undefined
 
 const defineProperty = /* @__PURE__ */ (() => Object.defineProperty)()
 
-// written once first read; keeps is 1 if the issue takes expected, 2 if problem
+// written once first read; keeps is 1 if the issue takes expected, 2 if
+// problem, 4 if its actual describes its data, which a default problem leaves out
 const writeIssue = (
 	issue: ArkIssue,
 	context: Record<string, unknown>,
@@ -685,7 +692,11 @@ const writeIssue = (
 		const write = (writer: Writer, ...args: unknown[]): unknown =>
 			typeof writer === "function" ? writer(...args, enInfo) : writer
 		error.expected = context.expected ?? write(expected, error) ?? text.expected
-		error.actual = context.actual ?? write(actual, issue.data, error)
+		if (context.actual !== undefined) error.actual = context.actual
+		else {
+			if (keeps & 4) describeActual(error)
+			error.actual = write(actual, issue.data, error)
+		}
 		error.problem = context.problem ?? write(problem, error)
 		if (keeps & 1) text.expected = error.expected
 		if (keeps & 2) text.problem = error.problem

@@ -6,6 +6,7 @@ import {
 	suppliedText,
 	unrenderedLocaleMessage,
 	unwrittenError,
+	writeActual,
 	writeText,
 	type ArkError
 } from "./errors.ts"
@@ -129,9 +130,8 @@ const writeSlot = (
 		slot === "expected" ?
 			locale.cite(config)
 		:	config
-	: slot === "actual" ?
-		config(error.data as never, error as never, locale as never)
-	:	config(error as never, locale as never)
+	: slot === "actual" ? writeActual(error, config as never, locale)
+	: config(error as never, locale as never)
 
 const localeWriter = (
 	error: ArkError,
@@ -189,11 +189,11 @@ const writeInEn = (
 	const expected = configOf(error, "expected", config)
 	error.expected ??= writeExpected(error, expected as never, defaultLocale)
 	if (last === "expected") return
-	const actual = configOf(error, "actual", config)
-	error.actual ??=
-		typeof actual === "string" ? actual : (
-			actual(error.data as never, error as never, defaultLocale as never)
-		)
+	error.actual ??= writeActual(
+		error,
+		configOf(error, "actual", config) as never,
+		defaultLocale
+	)
 }
 
 const writeExpected = (

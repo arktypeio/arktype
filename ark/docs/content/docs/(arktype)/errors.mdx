@@ -102,6 +102,7 @@ if (out instanceof type.errors) {
 	error.propString // "age"
 	error.data // -1
 	error.expected // "non-negative"
+	error.actual // "-1"
 	error.problem // "must be non-negative"
 	error.message // "age must be non-negative"
 
@@ -110,7 +111,7 @@ if (out instanceof type.errors) {
 }
 ```
 
-Its message is built from parts: `message` puts the path before `problem`, which reads "must be `expected`". It doesn't say what the value was, which `data` holds, unless an [`actual`](/docs/configuration#actual) is configured, written as "(was `actual`)"; a missing key's reads "must be a string (was missing)". A union's `problem` writes the path of each error it lists from its own, and its `message` writes them whole. You can [configure each part](/docs/configuration#error-messages).
+Its message is built from parts: `message` puts the path before `problem`, which reads "must be `expected`". It doesn't say what the value was, which `data` holds and `actual` describes, like "-1" or "a string", unless an [`actual`](/docs/configuration#actual) is configured, written as "(was `actual`)"; a missing key's reads "must be a string (was missing)". A union's `problem` writes the path of each error it lists from its own, and its `message` writes them whole. You can [configure each part](/docs/configuration#error-messages).
 
 An error also has `meta`, the metadata of the Type that failed, and usually a `description`. It has no methods, so `JSON.stringify(error)` serializes its own keys, and `messageIn(error, locale)` writes its message in another locale.
 

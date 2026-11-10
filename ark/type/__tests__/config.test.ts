@@ -240,7 +240,7 @@ Email is not valid`)
 			attest(out instanceof type.errors).equals(true)
 			attest(out.toString()).snap("is invalid")
 			attest(JSON.stringify(out)).snap(
-				'[{"data":{"a":1,"b":"2"},"path":[],"code":"predicate","expected":"valid","problem":"is invalid","propString":"","actual":"","message":"is invalid"}]'
+				'[{"data":{"a":1,"b":"2"},"path":[],"code":"predicate","expected":"valid","problem":"is invalid","propString":"","actual":"an object","message":"is invalid"}]'
 			)
 		})
 
@@ -270,7 +270,7 @@ Email is not valid`)
 					expected: "valid",
 					problem: "is invalid",
 					propString: "",
-					actual: "",
+					actual: '"x"',
 					message: "is invalid"
 				}
 			])
@@ -307,7 +307,7 @@ Email is not valid`)
 					expected: "valid",
 					problem: "is invalid",
 					propString: "",
-					actual: "",
+					actual: "5",
 					message: "is invalid"
 				}
 			])
@@ -693,6 +693,15 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		)
 	})
 
+	it("an error's actual describes its data, which its message leaves out", () => {
+		const error = (type({ age: "number" })({ age: "5" }) as type.errors)
+			.issues[0]
+		attest([error.actual, error.message]).snap([
+			"a string",
+			"age must be a number"
+		])
+	})
+
 	it("docs actual example", () => {
 		// avoid logging "was supersecret" for password
 		const Password = type("string >= 8", "@", { actual: () => "" })
@@ -719,7 +728,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		})
 		// ArkErrors: (root): a string isn't an object
 		const out1 = User("ez123")
-		attest(out1.toString()).snap("(root):  isn't an object")
+		attest(out1.toString()).snap("(root): a string isn't an object")
 		// but `.configure` only applies shallowly, so the nested error isn't changed!
 		// ArkErrors: password must be at least length 8
 		const out2 = User({ password: "ez123" })

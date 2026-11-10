@@ -221,7 +221,7 @@ contextualize(() => {
 				rule: 2,
 				propString: "n",
 				expected: "even",
-				actual: "",
+				actual: "1",
 				problem: "must be even",
 				message: "n must be even"
 			},
@@ -234,7 +234,7 @@ contextualize(() => {
 				rule: 2,
 				propString: "n",
 				expected: "at least 2",
-				actual: "",
+				actual: "1",
 				problem: "must be at least 2",
 				message: "n must be at least 2"
 			}
@@ -275,7 +275,7 @@ contextualize(() => {
 					rule: 2,
 					propString: "n",
 					expected: "even",
-					actual: "",
+					actual: "1",
 					problem: "must be even",
 					message: "n must be even"
 				},
@@ -288,7 +288,7 @@ contextualize(() => {
 					rule: 2,
 					propString: "n",
 					expected: "at least 2",
-					actual: "",
+					actual: "1",
 					problem: "must be at least 2",
 					message: "n must be at least 2"
 				}

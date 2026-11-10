@@ -149,7 +149,7 @@ if (out instanceof type.errors) {
 
 ### Messages leave out the value
 
-A message no longer says what the value was. An error's `actual` is `""` for every code but `required`, so a message ends with what was expected, and a missing key still says it was missing. A message no longer grows with the data, nothing the data holds reaches a log through it, and a Type's messages read as a [precompiled validator's](/docs/precompile/validators#errors) do:
+A message no longer says what the value was. An error's `actual` still describes its data, and a `problem` or `message` you configure still reads it, but only a missing key's message writes it, so a message ends with what was expected, and a missing key still says it was missing. A message no longer grows with the data, nothing the data holds reaches a log through it, and a Type's messages read as a [precompiled validator's](/docs/precompile/validators#errors) do:
 
 ```ts
 // ArkErrors: must be "a" or "b", before: must be "a" or "b" (was {"x":1})

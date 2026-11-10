@@ -66,7 +66,7 @@ contextualize(() => {
 				}
 			}
 		).export()
-		attest(types.isEven(3).toString()).snap(" % 2 !== 0")
+		attest(types.isEven(3).toString()).snap("3 % 2 !== 0")
 	})
 
 	it("domains", () => {
@@ -554,7 +554,7 @@ d must be a number`)
 			domain: "string",
 			propString: "[Symbol(tag)]",
 			expected: "a string",
-			actual: "",
+			actual: "a number",
 			problem: "must be a string",
 			message: "[Symbol(tag)] must be a string"
 		})
@@ -627,7 +627,7 @@ b must be a number`)
     domain: 'string',
     propString: 'a',
     expected: 'a string',
-    actual: '',
+    actual: 'a number',
     problem: 'must be a string',
     message: 'a must be a string'
   }
@@ -646,7 +646,7 @@ b must be a number`)
 				problem: "is invalid",
 				code: "predicate",
 				propString: "",
-				actual: "",
+				actual: "an object",
 				message: "is invalid"
 			}
 		])

@@ -1042,7 +1042,7 @@ contextualize(() => {
 				meta: {},
 				propString: "k",
 				expected: "1.5 or 2.5",
-				actual: "",
+				actual: "3.5",
 				problem: "must be 1.5 or 2.5",
 				message: "k must be 1.5 or 2.5"
 			})

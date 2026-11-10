@@ -772,6 +772,24 @@ m must be a bigint`)
 			).equals(rendered)
 		})
 
+		it("a locale's own problem reads what the data was, which en's leaves out", () => {
+			const errors = type({ k: "string", n: "number" })({ k: 5, n: "5" })
+			const own = {
+				tag: "own",
+				domain: { expected: (e: Locale.ExpectedContext<"domain">) => e.domain },
+				problem: (e: { expected: string; actual: string }) =>
+					`${e.expected}! (${e.actual})`
+			} as {} as Locale
+			const inherited = { tag: "inherited", domain: own.domain } as {} as Locale
+			attest([
+				(errors as ArkErrors).toLocaleString(own),
+				(errors as ArkErrors).toLocaleString(inherited)
+			]).snap([
+				'k string! (5)\nn number! ("5")',
+				"k must be string\nn must be number"
+			])
+		})
+
 		it("a slot configured as undefined renders through the locale", () => {
 			const config = { domain: { expected: undefined } } as never
 			const errors = scope({}, config).type("number")("x") as ArkErrors

@@ -173,7 +173,7 @@ contextualize(() => {
 				propString: "",
 				expected:
 					"an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER",
-				actual: "",
+				actual: '"9007199254740993"',
 				problem:
 					"must be an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER",
 				message:
@@ -198,7 +198,7 @@ contextualize(() => {
 			const error = errorOf(type("string.json.parse"), "{")
 			attest(error.meta).snap({ keyword: "string.json.parse" })
 			attest(error.cause).instanceOf(SyntaxError)
-			attest(error.actual).snap("")
+			attest(error.actual).snap('"{"')
 			attest(error.problem).equals(`must be a JSON string (${error.cause})`)
 			attest(errorOf(type("string.json"), "{").meta).snap({
 				keyword: "string.json"
@@ -213,7 +213,7 @@ contextualize(() => {
 				meta: { keyword: "string.json.parse" },
 				propString: "",
 				expected: "a JSON string",
-				actual: "",
+				actual: '""',
 				problem: "must be a JSON string",
 				message: "must be a JSON string"
 			})

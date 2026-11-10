@@ -121,7 +121,7 @@ Password(12345678)
 
 ### actual
 
-What goes inside "(was …)". A message doesn't say what the value was unless an `actual` is configured, except a missing key's, which reads "(was missing)". An empty string omits it. A function receives the data, then the error:
+What goes inside "(was …)". A message doesn't say what the value was unless an `actual` is configured, except a missing key's, which reads "(was missing)", though an error's `actual` still describes its data, like "5" or "an object", for a `problem` or `message` you write. An empty string omits it. A function receives the data, then the error:
 
 ```ts
 const Age = type("number <= 100").configure({ actual: data => `${data}` })

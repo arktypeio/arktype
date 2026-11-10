@@ -260,7 +260,7 @@ const out = type({ n: "number % 2" })({ n: 1 })
 
 if (out instanceof type.errors) {
 	// { data: 1, path: ["n"], code: "divisor", description: "even", meta: {}, rule: 2, propString: "n",
-	//   expected: "even", actual: "", problem: "must be even", message: "n must be even" }
+	//   expected: "even", actual: "1", problem: "must be even", message: "n must be even" }
 	out.issues[0]
 }
 ```
@@ -339,7 +339,7 @@ T.expression // { a: ...[], b: ...[], c: ...[], d: ...[], id: string }
 
 ### Leave the value out of error messages
 
-A message no longer says what the value was. An error's `actual` is `""` for every code but `required`, whose `actual` is `missing`, so a message ends with what was expected, a missing key still says it was missing, and nothing the data holds reaches a log through a message. A Type's errors read as a [precompiled validator's](https://arktype.io/docs/precompile/validators#errors) do, which can't print the value without growing every bundle:
+A message no longer says what the value was. An error's `actual` still describes its data, like `5` or `a number`, but only a missing key's message writes it, as `(was missing)`, so a message ends with what was expected and nothing the data holds reaches a log through a message. A `problem` or `message` you configure reads `actual` as before. A Type's errors read as a [precompiled validator's](https://arktype.io/docs/precompile/validators#errors) do, which can't print the value without growing every bundle:
 
 ```ts
 // previously must be "a" or "b" (was {"x":1}), now must be "a" or "b"
