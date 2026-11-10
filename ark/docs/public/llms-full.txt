@@ -1590,7 +1590,7 @@ if (out instanceof type.errors) {
 
 ### Messages leave out the value
 
-A message no longer says what the value was. An error's `actual` is `""` for every code but `required`, so a message ends with what was expected, and a missing key still says it was missing. A message no longer grows with the data, nothing the data holds reaches a log through it, and a Type's messages read as a [precompiled validator's](https://arktype.io/docs/precompile/validators#errors) do:
+A message no longer says what the value was. An error's `actual` still describes its data, and a `problem` or `message` you configure still reads it, but only a missing key's message writes it, so a message ends with what was expected, and a missing key still says it was missing. A message no longer grows with the data, nothing the data holds reaches a log through it, and a Type's messages read as a [precompiled validator's](https://arktype.io/docs/precompile/validators#errors) do:
 
 ```ts
 // ArkErrors: must be "a" or "b", before: must be "a" or "b" (was {"x":1})
@@ -5652,6 +5652,7 @@ if (out instanceof type.errors) {
 	error.propString // "age"
 	error.data // -1
 	error.expected // "non-negative"
+	error.actual // "-1"
 	error.problem // "must be non-negative"
 	error.message // "age must be non-negative"
 
@@ -5660,7 +5661,7 @@ if (out instanceof type.errors) {
 }
 ```
 
-Its message is built from parts: `message` puts the path before `problem`, which reads "must be `expected`". It doesn't say what the value was, which `data` holds, unless an [`actual`](https://arktype.io/docs/configuration#actual) is configured, written as "(was `actual`)"; a missing key's reads "must be a string (was missing)". A union's `problem` writes the path of each error it lists from its own, and its `message` writes them whole. You can [configure each part](https://arktype.io/docs/configuration#error-messages).
+Its message is built from parts: `message` puts the path before `problem`, which reads "must be `expected`". It doesn't say what the value was, which `data` holds and `actual` describes, like "-1" or "a string", unless an [`actual`](https://arktype.io/docs/configuration#actual) is configured, written as "(was `actual`)"; a missing key's reads "must be a string (was missing)". A union's `problem` writes the path of each error it lists from its own, and its `message` writes them whole. You can [configure each part](https://arktype.io/docs/configuration#error-messages).
 
 An error also has `meta`, the metadata of the Type that failed, and usually a `description`. It has no methods, so `JSON.stringify(error)` serializes its own keys, and `messageIn(error, locale)` writes its message in another locale.
 
@@ -6010,7 +6011,7 @@ Password(12345678)
 
 ### actual
 
-What goes inside "(was …)". A message doesn't say what the value was unless an `actual` is configured, except a missing key's, which reads "(was missing)". An empty string omits it. A function receives the data, then the error:
+What goes inside "(was …)". A message doesn't say what the value was unless an `actual` is configured, except a missing key's, which reads "(was missing)", though an error's `actual` still describes its data, like "5" or "an object", for a `problem` or `message` you write. An empty string omits it. A function receives the data, then the error:
 
 ```ts
 const Age = type("number <= 100").configure({ actual: data => `${data}` })
@@ -7498,8 +7499,8 @@ add metadata to shallow references
 ```ts
 const NotOdd = type("number % 2").configure({ description: "not odd" })
 // all constraints at the root are affected
-const odd = NotOdd(3) // must be not odd (was 3)
-const nonNumber = NotOdd("two") // must be not odd (was a string)
+const odd = NotOdd(3) // must be not odd
+const nonNumber = NotOdd("two") // must be not odd
 
 const NotOddBox = type({
    // we should have referenced notOdd or added meta here
@@ -7507,9 +7508,9 @@ const NotOddBox = type({
 // but instead chained from the root object
 }).configure({ description: "not odd" })
 // error message at path notOdd is not affected
-const oddProp = NotOddBox({ notOdd: 3 }) // notOdd must be even (was 3)
+const oddProp = NotOddBox({ notOdd: 3 }) // notOdd must be even
 // error message at root is affected, leading to a misleading description
-const nonObject = NotOddBox(null) // must be not odd (was null)
+const nonObject = NotOddBox(null) // must be not odd
 ```
 
 ### `describe`
@@ -7522,7 +7523,7 @@ add description to shallow references
 ```ts
 const AToZ = type(/^a.*z$/).describe("a string like 'a...z'")
 const good = AToZ("alcatraz") // "alcatraz"
-// ArkErrors: must be a string like 'a...z' (was "albatross")
+// ArkErrors: must be a string like 'a...z'
 const badPattern = AToZ("albatross")
 ```
 
