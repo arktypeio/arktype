@@ -108,15 +108,32 @@ const nextBuild = (config: string, ...flags: string[]) => {
 	writeFileSync(join(appDir, "next.config.js"), config)
 	if (!flags.includes(warm))
 		rmSync(join(appDir, ".next"), { recursive: true, force: true })
-	const result = spawnSync(
-		process.execPath,
-		[next, "build", ...flags.filter(flag => flag !== warm)],
-		{
-			cwd: appDir,
-			encoding: "utf8",
-			env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" }
+	const run = () =>
+		spawnSync(
+			process.execPath,
+			[next, "build", ...flags.filter(flag => flag !== warm)],
+			{
+				cwd: appDir,
+				encoding: "utf8",
+				env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" },
+				// a build takes seconds; on macOS runners one has hung until the
+				// job's limit, so a hung build says where and runs once more
+				timeout: 180_000,
+				killSignal: "SIGKILL"
+			}
+		)
+	let result = run()
+	if (result.signal === "SIGKILL") {
+		console.log(
+			`▲ next build hung for 3 minutes, so it runs again. Its output:\n${result.stdout}${result.stderr}`
+		)
+		result = run()
+		if (result.signal === "SIGKILL") {
+			throw new Error(
+				`next build hung twice. Its output:\n${result.stdout}${result.stderr}`
+			)
 		}
-	)
+	}
 	if (result.error) throw result.error
 	return { status: result.status, output: result.stdout + result.stderr }
 }
