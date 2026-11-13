@@ -83,11 +83,7 @@ const keeps: [what: string, how: string][] = [
 /** what the guide can't make identical, so the page says it before the agent's summary does */
 const costs: [zod: string, ark: string][] = [
 	["an async .refine()", "runs after validation: ArkType is synchronous"],
-	["Zod's default messages", "ArkType's, like must be an email address"],
-	[
-		"no build step",
-		"a larger bundle than Zod's, so precompile what ships to a browser"
-	]
+	["Zod's default messages", "ArkType's, like must be an email address"]
 ]
 
 /** migrating with the skill: one command, one prompt, the guide it follows */
@@ -219,11 +215,6 @@ export const Migrate = () => (
 		<p className="note">
 			{"// "}
 			<ClaimText claim={claims.zodMigration} />
-		</p>
-		<p className="note">
-			{"// no plugin yet? ArkType "}
-			<ClaimText claim={claims.dynamicZodSpec} />
-			{"; a smaller bundle and a lighter start are what the plugin adds"}
 		</p>
 	</section>
 )

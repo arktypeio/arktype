@@ -133,16 +133,6 @@ const Address = z.object({ street: z.string(), city: z.string() })
 const User = type({ name: "string", address: Address })
 ```
 
-### The plugin can wait
-
-A migration leaves you on `type()`, which needs no build step. Against Zod 4, before you add the plugin:
-
-- **Validation**: <Claim id="dynamicAppSpeed" />
-- **Startup**: <Claim id="dynamicZodStartup" />
-- **Size**: <Claim id="dynamicZodSize" />
-
-Startup and size are what [the plugin](#the-build-step-is-your-agents-job) is for.
-
 ### Or start without switching
 
 [ArkSets](/docs/sets) runs ArkType's set theory on the Zod schemas you already have. In CI, `isSubset` tells you whether a change to an API schema still accepts everything the old one did:
@@ -170,7 +160,6 @@ The [guide](/docs/migrating) your agent follows maps each Zod API and covers eac
 - **Validation is synchronous.** An async `.refine()` moves out of the schema, to run after validation.
 - **A check across keys runs last.** A `.narrow()` on an object runs once every key is valid, where Zod 4 also runs a `.refine()` when a key fails a check like `.min()`. A form shows `Passwords must match` once its fields pass.
 - **Default messages are ArkType's**, like `must be an email address` where Zod says `Invalid email address`. Messages you wrote don't change.
-- **Without the plugin, `arktype` is a larger bundle than `zod`**, since it ships a parser for its definitions. [The plugin can wait](#the-plugin-can-wait) has both sizes. In a browser, precompile.
 
 ## The build step is your agent's job
 
@@ -250,8 +239,6 @@ Each result below is scoped to a single benchmark, and [Speed and size](/docs/pr
 - <Claim id="speedScope" />
 - <Claim id="noInit" />
 - <Claim id="startupApps" />
-- <Claim id="zodStartup" />
-- <Claim id="zodSize" />
 
 On whole apps, written alike in each library:
 

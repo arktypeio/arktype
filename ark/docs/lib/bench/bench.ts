@@ -31,8 +31,6 @@ export type Scenario = {
 	iqrNs: Record<string, [number, number]>
 	standaloneVs: Record<string, Verdict>
 	standaloneFirstVs?: Record<string, Verdict>
-	/** plain arktype's verdicts, its JIT's: no run has stored them yet, only its medians */
-	arktypeVs?: Record<string, Verdict>
 	/** the same comparisons' verdicts in the other runs that day */
 	replication: Record<string, Tally>
 }
@@ -682,36 +680,24 @@ export const benchFacts = () => {
 
 export type BenchFacts = ReturnType<typeof benchFacts>
 
-/**
- * The default build, or with `arm` plain arktype, against one library on
- * every scenario with a paired verdict for the two. A comparison of medians
- * alone has no verdict, so it isn't counted.
- */
-export const versusLibrary = (
-	key: string,
-	arm: "standalone" | "arktype" = "standalone"
-) => {
-	const measured = bench.scenarios.flatMap(s => {
-		const v = s[`${arm}Vs`]?.[key]
-		return v ? [{ s, v }] : []
-	})
-	const lost = measured
-		.filter(({ v }) => v.verdict === "loss")
-		.map(({ s }) => s)
+/** the default build against one library on every scenario it ran */
+export const versusLibrary = (key: string) => {
+	const measured = bench.scenarios.filter(s => s.standaloneVs[key])
+	const lost = measured.filter(s => s.standaloneVs[key].verdict === "loss")
 	return {
 		count: measured.length,
-		wins: measured.filter(({ v }) => v.verdict === "win").length,
+		wins: measured.filter(s => s.standaloneVs[key].verdict === "win").length,
 		lost,
 		/** "items morph and moltar morph" */
 		losses: list(lost.map(scenarioName)),
 		/** each scenario's ratio of the library's median to ArkType's, so above 1 is ArkType faster */
-		rows: measured.map(({ s, v }) => ({
+		rows: measured.map(s => ({
 			name: scenarioName(s),
-			speedup: v.speedup,
-			verdict: v.verdict,
+			speedup: s.standaloneVs[key].speedup,
+			verdict: s.standaloneVs[key].verdict,
 			/** the library's median per call, then ArkType's */
 			ns: formatNs(s.medianNs[key]),
-			oursNs: formatNs(s.medianNs[arm])
+			oursNs: formatNs(s.medianNs.standalone)
 		}))
 	}
 }

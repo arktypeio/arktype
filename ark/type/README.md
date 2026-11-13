@@ -118,7 +118,6 @@ These are the differences a migration has to handle. The guide covers each, and 
 - **Validation is synchronous.** An async `.refine()` moves out of the schema, to run after validation.
 - **A check across keys runs last.** A `.narrow()` on an object runs once every key is valid, where Zod 4 also runs a `.refine()` when a key fails a check like `.min()`.
 - **Default error text is ArkType's.** `must be an email address` where Zod says `Invalid email address`. Messages you wrote are unchanged.
-- **Without precompiling, `arktype` is a larger bundle than `zod`**, since it ships a parser for its definitions. In a browser, [precompile](#precompile). The announcement has [how it measured against Zod 4 without the plugin](https://arktype.io/docs/blog/3.0#the-plugin-can-wait): validation speed, startup and size.
 
 <details>
 <summary><b>Zod to ArkType, the common cases</b></summary>
