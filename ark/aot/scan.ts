@@ -243,6 +243,10 @@ export interface BuiltModule {
 export interface BuiltImport {
 	// undefined where nothing names it, like what a bundler's plugin adds
 	specifier: string | undefined
+	// what its importer's text names it by, where the bundler built the import
+	// under another request, as Next.js does one of a package whose entry it
+	// builds for the names imported from it
+	named?: string | undefined
 	isDynamic: boolean
 	target: BuiltModule
 }
@@ -276,7 +280,7 @@ export const programAsBuilt = (
 					(modules[id].source !== source ||
 						modules[id].transformed !== transformed))
 			)
-				return `it built ${pathOf(id)} ${twoCodes}`
+				return `it built ${pathOf(id)} from two codes`
 			if (!(id in modules)) {
 				const { imports, unnamed } = importsOf(id, source)
 				if (unnamed?.reason === unparsed)
@@ -294,7 +298,12 @@ export const programAsBuilt = (
 				targets[id] = {}
 			}
 		}
-		for (const { specifier, isDynamic, target } of module.imports) {
+		for (const {
+			specifier,
+			named = specifier,
+			isDynamic,
+			target
+		} of module.imports) {
 			if (specifier !== undefined && runtimeSpecifier.test(specifier)) {
 				// a generated module's reads are as unknown as a dependency's
 				const imported = (arkImports[module.id ?? ""] ??= [])
@@ -309,13 +318,17 @@ export const programAsBuilt = (
 				isImportedByDependency = true
 				continue
 			}
-			if (specifier === undefined || !namedBy.get(module.id)!.has(specifier))
+			if (named === undefined || !namedBy.get(module.id)!.has(named))
 				exposed.add(target.id)
 			if (specifier === undefined) continue
 			const resolved = targets[module.id]
-			if (specifier in resolved && resolved[specifier] !== target.id)
-				return `${pathOf(module.id)} imports "${specifier}" as both ${pathOf(resolved[specifier])} and ${pathOf(target.id)}`
-			resolved[specifier] = target.id
+			// by the request it was built under too, which the module as the
+			// loaders after the plugin built it names
+			for (const name of new Set([specifier, named!])) {
+				if (name in resolved && resolved[name] !== target.id)
+					return `${pathOf(module.id)} imports "${name}" as both ${pathOf(resolved[name])} and ${pathOf(target.id)}`
+				resolved[name] = target.id
+			}
 		}
 	}
 	const read = [...new Set(entries.filter(isRead).map(({ id }) => id))]
@@ -680,24 +693,6 @@ const reachingOf = (
 	}
 	return reaching
 }
-
-// how a reason ends where the bundle holds one file as modules of different code
-export const twoCodes = "from two codes"
-
-// Next.js's optimizePackageImports, which builds a listed package's entry
-// once for each set of names imported from it
-export const writeBarrelUnprunedMessage = (
-	packages: readonly string[]
-): string =>
-	writeUnprunedMessage(
-		`Next.js built the entry of ${listOf(packages)} once for each set of names imported from it, as \`experimental.optimizePackageImports\` has it do`,
-		`Take ${packages.length === 1 ? "it" : "each"} out of \`optimizePackageImports\`, so the build reads the bundle whole and prunes, or set prune: false to build them whole without this warning.`
-	)
-
-const listOf = (names: readonly string[]): string =>
-	names.length < 2 ?
-		names.join("")
-	:	`${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`
 
 export const writeUnprunedMessage = (
 	reason: string,

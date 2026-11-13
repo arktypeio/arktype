@@ -90,8 +90,6 @@ import {
 	unreadDefineOf,
 	unseenProblemOf,
 	writeUnseenMessage,
-	twoCodes,
-	writeBarrelUnprunedMessage,
 	writeUnprunedMessage,
 	writeUnscannedFlatMessage,
 	type BuiltImport,
@@ -665,7 +663,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			:	withoutBuilt(asBuilt)
 		const usage =
 			typeof program === "string" ?
-				unprunedMessageOf(program, compilation)
+				writeUnprunedMessage(program)
 			:	await (
 					requestResolving(resolve, "scan", program) as Promise<ScannedUsage>
 				).catch(unreadMessageOf)
@@ -1307,6 +1305,14 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					const built = builtReadOf(this)
 					const { loaderContext } =
 						(this.getNativeBuildContext?.() as NativeBuild | undefined) ?? {}
+					// some of its file's re-exports, which a program is read
+					// whole without: it's read as its file
+					if (
+						built &&
+						loaderContext?._module &&
+						isBarrelModule(loaderContext._module)
+					)
+						return
 					if (built && !built.answering) {
 						addLoaded(built.loaded, file, code)
 						if (map) built.mappings.set(file, map.mappings)
@@ -1801,7 +1807,7 @@ interface NativeBuild {
 	compilation?: object
 	loaderContext?: {
 		cacheable: (flag: boolean) => void
-		_module?: { type?: string }
+		_module?: { type?: string; matchResource?: string }
 	}
 }
 
@@ -1853,37 +1859,16 @@ const builtIdOf = (module: BuiltBundlerModule): string | undefined => {
 // file as several modules: `__barrel_optimize__?names=a,b!=!<file>`
 const barrelRequest = "__barrel_optimize__"
 
-// each package a module of whose is built so beside another of the same file
-const rebuiltBarrelPackagesOf = ({ modules }: BundlerCompilation): string[] => {
-	const countsByFile = new Map<string, number>()
-	const barrels = new Set<string>()
-	for (const {
-		resource,
-		matchResource
-	} of modules as Iterable<BuiltBundlerModule>) {
-		if (!resource || !isAbsolute(resource)) continue
-		const file = fileOf(resource)
-		countsByFile.set(file, (countsByFile.get(file) ?? 0) + 1)
-		if (matchResource?.includes(barrelRequest)) barrels.add(file)
-	}
-	return [
-		...new Set(
-			[...barrels].flatMap(file =>
-				countsByFile.get(file)! > 1 ? (packageOfFile(file) ?? []) : []
-			)
-		)
-	].sort()
-}
+const isBarrelModule = ({ matchResource }: { matchResource?: string }) =>
+	!!matchResource?.includes(barrelRequest)
 
-const unprunedMessageOf = (
-	reason: string,
-	compilation: BundlerCompilation
-): string => {
-	const packages =
-		reason.endsWith(twoCodes) ? rebuiltBarrelPackagesOf(compilation) : []
-	return packages.length ?
-			writeBarrelUnprunedMessage(packages)
-		:	writeUnprunedMessage(reason)
+// the specifier a module's text names, of the request Next.js builds its
+// import under: `__barrel_optimize__?names=a,b!=!pkg` for `pkg`
+const unbarreled = (request: string): string => {
+	const named = request.lastIndexOf("!=!")
+	return named !== -1 && request.includes(barrelRequest) ?
+			request.slice(named + 3)
+		:	request
 }
 
 // webpack's DefinePlugin holds its definitions, and Rspack's its arguments
@@ -2037,7 +2022,13 @@ const builtEntriesOf = (
 		const known = built.get(module)
 		if (known) return known
 		const id = builtIdOf(module)
-		const transformed = !!id && isTransformed(id) && loadsThroughPlugin(module)
+		// one of the modules Next.js builds a listed package's entry as holds
+		// some of the file's re-exports and nothing else, so it's read as its
+		// file, which names each, and each import it was built with resolves
+		// what the file names so
+		const isBarrel = isBarrelModule(module)
+		const transformed =
+			!!id && isTransformed(id) && (isBarrel || loadsThroughPlugin(module))
 		const of: BuiltModule = {
 			id,
 			source:
@@ -2052,7 +2043,9 @@ const builtEntriesOf = (
 			mappings: id && read.mappings.get(id),
 			imports: [],
 			built:
-				transformed ? module.originalSource?.()?.source().toString() : undefined
+				transformed && !isBarrel ?
+					module.originalSource?.()?.source().toString()
+				:	undefined
 		}
 		built.set(module, of)
 		unbuilt.push([module, of])
@@ -2079,12 +2072,25 @@ const builtEntriesOf = (
 				| null
 				| undefined
 			return module ?
-					{ specifier: dependency.request, isDynamic, target: builtOf(module) }
+					{
+						specifier: dependency.request,
+						named: dependency.request && unbarreled(dependency.request),
+						isDynamic,
+						target: builtOf(module)
+					}
 				:	[]
 		}),
 		...blocks.flatMap(block => importsIn(block, true))
 	]
-	for (const [module, of] of unbuilt) of.imports = importsIn(module, false)
+	for (const [module, of] of unbuilt) {
+		const imports = importsIn(module, false)
+		// where its file is no barrel, Next.js builds it as a re-export of
+		// the file itself
+		of.imports =
+			isBarrelModule(module) ?
+				imports.filter(({ target }) => target.id !== of.id)
+			:	imports
+	}
 	return entries
 }
 

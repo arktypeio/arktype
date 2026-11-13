@@ -3578,45 +3578,67 @@ console.log(User({ name: "" }).name, suffixed)
 					attest(js).equals(await bundle(name, root, { prune: false }, config))
 				})
 
-				it("names Next.js's optimizePackageImports where it builds a package's entry for each set of names", async () => {
-					const root = fixture("barrels", {
-						// as next-barrel-loader writes a listed package's entry
-						"barrel.ts": `export default function (this: { getOptions(): { names: string[] } }) {
-	return this.getOptions().names.map(name => \`export { \${name} } from "./\${name}.js"\`).join("\\n")
+				// as Next.js builds a package `experimental.optimizePackageImports`
+				// lists: its SWC loader, after the plugin's, writes each import of
+				// the package's entry as a request for the names it takes, and
+				// next-barrel-loader builds that request as those re-exports alone,
+				// or, where the entry isn't a barrel, as a re-export of the file
+				const builtThroughBarrels = async (
+					test: string,
+					files: Record<string, string>
+				) => {
+					const root = fixture(test, {
+						"optimize.ts": `export default (source: string) =>
+	source.replace(
+		/\\{ ([^}]*) \\} from "(\\.\\/ui\\/index\\.js)"/g,
+		(_, names: string, entry: string) =>
+			\`{ \${names} } from "__barrel_optimize__?names=\${names.split(", ").join(",")}!=!\${entry}"\`
+	)
+`,
+						"barrel.ts": `import { readFileSync } from "node:fs"
+
+export default function (this: { resourcePath: string; getOptions(): { names: string[] } }) {
+	const entry = readFileSync(this.resourcePath, "utf8")
+	const reExports = this.getOptions().names.map(
+		name => new RegExp(\`export \\\\{ \${name} \\\\} from "[^"]*"\`).exec(entry)?.[0]
+	)
+	return reExports.includes(undefined) ?
+			\`export * from \${JSON.stringify(this.resourcePath)}\`
+		:	reExports.join("\\n")
 }
 `,
 						"ui/package.json": `{ "name": "ui", "type": "module" }`,
-						"ui/index.js": `export { a } from "./a.js"\nexport { b } from "./b.js"\n`,
 						"ui/a.js": `export const a = 1\n`,
 						"ui/b.js": `export const b = 2\n`,
-						"other.js": `export { b } from "__barrel_optimize__?names=b!=!./ui/index.js"\n`,
-						"types.js": `import { type } from "arktype"
-
-export const User = type({ name: "string" })
-`,
-						"main.js": `import { a } from "__barrel_optimize__?names=a!=!./ui/index.js"
+						"other.js": `export { b } from "./ui/index.js"\n`,
+						"main.js": `import { type } from "arktype"
+import { a, User } from "./ui/index.js"
 import { b } from "./other.js"
-import { User } from "./types.js"
 
-console.log(User({ name: "" }).name, a, b)
-`
+const out = User({ name: 5 })
+console.log(out instanceof type.errors ? out.summary : out, a, b)
+`,
+						...files
 					})
-					const barrelRule = {
-						test: /__barrel_optimize__/,
-						use: ({ resourceQuery }: { resourceQuery: string }) => [
-							{
-								loader: join(root, "barrel.ts"),
-								// as Next.js names each, so the bundler builds one for each set of names
-								ident: `barrel:${resourceQuery}`,
-								options: {
-									names: resourceQuery.slice("?names=".length).split(",")
+					const rules = [
+						{
+							test: /__barrel_optimize__/,
+							use: ({ resourceQuery }: { resourceQuery: string }) => [
+								{
+									loader: join(root, "barrel.ts"),
+									// as Next.js names each, so the bundler builds one for each set of names
+									ident: `barrel:${resourceQuery}`,
+									options: {
+										names: resourceQuery.slice("?names=".length).split(",")
+									}
 								}
-							}
-						]
-					}
+							]
+						},
+						{ test: /(?:main|other)\.js$/, loader: join(root, "optimize.ts") }
+					]
 					const stats = await built(
 						(compilers[name][0] as typeof webpack)(
-							configOf(name, root, {}, { module: { rules: [barrelRule] } })
+							configOf(name, root, {}, { module: { rules } })
 						)
 					)
 					const { errors, warnings } = stats!.toJson({
@@ -3625,14 +3647,55 @@ console.log(User({ name: "" }).name, a, b)
 						warnings: true
 					})
 					attest(errors).equals([])
-					// Rspack marks a warning and ends its line
-					attest(
-						warnings?.map(({ message }) => message.trim().replace(/^⚠ /, ""))
-					).equals([
-						"prune: off, because Next.js built the entry of ui once for each set of names imported from it, as `experimental.optimizePackageImports` has it do, so the build keeps every member of its validators. Take it out of `optimizePackageImports`, so the build reads the bundle whole and prunes, or set prune: false to build them whole without this warning."
-					])
-					const js = readFileSync(join(root, "out", name, "main.js"), "utf8")
-					attest(output(js)).equals(" 1 2\n")
+					attest(warnings).equals([])
+					return readFileSync(join(root, "out", name, "main.js"), "utf8")
+				}
+
+				it("prunes a validator read through the modules Next.js's optimizePackageImports builds a package's entry as", async () => {
+					const js = await builtThroughBarrels("barrels", {
+						"ui/index.js": `export { a } from "./a.js"\nexport { b } from "./b.js"\nexport { User } from "./user.js"\n`,
+						"ui/user.js": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+`
+					})
+					attest(output(js)).equals("name must be a string 1 2\n")
+					attest(js.includes("~standard")).equals(false)
+				})
+
+				it("keeps a member a module reads off a validator it imports through one of them", async () => {
+					const js = await builtThroughBarrels("barrels-read", {
+						"ui/index.js": `export { a } from "./a.js"\nexport { b } from "./b.js"\nexport { User } from "./user.js"\n`,
+						"ui/user.js": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+`,
+						"other.js": `import { User } from "./ui/index.js"
+
+export { b } from "./ui/index.js"
+export const validate = User["~standard"].validate
+`,
+						"main.js": `import { a, User } from "./ui/index.js"
+import { b, validate } from "./other.js"
+
+console.log(User.allows({ name: "" }), validate({ name: 5 }).issues[0].message, a, b)
+`
+					})
+					attest(output(js)).equals("true must be a string 1 2\n")
+					attest(js.includes("assert")).equals(false)
+				})
+
+				it("prunes a validator defined by an entry optimizePackageImports lists that isn't a barrel", async () => {
+					const js = await builtThroughBarrels("barrels-entry", {
+						"ui/index.js": `import { type } from "arktype"
+
+export { a } from "./a.js"
+export const b = 2
+export const User = type({ name: "string" })
+`
+					})
+					attest(output(js)).equals("name must be a string 1 2\n")
+					attest(js.includes("~standard")).equals(false)
 				})
 
 				const queried = {
