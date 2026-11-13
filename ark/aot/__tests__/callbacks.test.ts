@@ -46,7 +46,7 @@ const E = scope({ a: "number" }, { domain: { description: () => ${nonStatic} } }
 const F = type("string").pipe(s => s.length).toJsonSchema({ fallback: ctx => ${nonStatic} })`
 		attest(statusesOf(source)[0]).snap(`2:11 rejected
   arktype calls a function (/main.ts:2:16) while defining the type, so it must be a static helper
-  a function (/main.ts:2:16) is not a static helper: it runs \`let result = "string"\` (/main.ts:3:2), where a static helper declares only consts before one \`return\``)
+  a function (/main.ts:2:16) is not a static helper: it runs \`let result = "string"\` (/main.ts:3:2), where a static helper holds only consts, \`if\`s that return and a final \`return\``)
 		attest(
 			analyze(source).sites.map(site => `${site.line} ${site.status}`)
 		).snap([
@@ -119,6 +119,29 @@ const E = type({ a: type("string").narrow(isLong) }).configure({ description: "s
   Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.`)
 	})
 
+	it("a narrow a union's unit calls and its other branches keep", () => {
+		const source = `import { type, type Traversal } from "arktype"
+const isSet = (data: unknown, ctx: Traversal) => {
+	if (data === undefined || data === null) {
+		return ctx.reject({ message: "required" })
+	}
+	return true
+}
+const A = type("string | undefined").narrow(isSet)
+const B = type({ a: type("string > 0").or(type.undefined).narrow(isSet) })
+const C = type("string | undefined").narrow(s => ${nonStatic})`
+		// arktype calls it to decide \`undefined\`, which the build does in its
+		// place, and the validator receives it to check each string
+		attest(statusesOf(source)).snap([
+			"8:11 accepted string & isSet$hole_bq3vr207pu92u",
+			"9:11 accepted { a: string >= 1 & isSet$hole_bq3vr207pu92u }",
+			'10:11 rejected\n  arktype calls a function (/main.ts:10:45) while defining the type, so it must be a static helper\n  a function (/main.ts:10:45) is not a static helper: it runs `let result = "string"` (/main.ts:11:2), where a static helper holds only consts, `if`s that return and a final `return`'
+		])
+		attest(diagnosticsOf(source).map(d => d.split("\n")[0])).snap([
+			'/main.ts:10:11  type("string | undefined").narrow(s => { let result = "stri… cannot be precompiled'
+		])
+	})
+
 	it("narrows on literal values", () => {
 		attest(
 			statusesOf(`import { type } from "arktype"
@@ -130,7 +153,7 @@ import { isPositive } from "pkg"
 const E = type("'a' | 0").narrow(d => typeof d !== "number" || isPositive(d))`)
 		).snap([
 			'2:11 accepted "a"',
-			'3:11 rejected\n  arktype calls a function (/main.ts:3:36) while defining the type, so it must be a static helper\n  a function (/main.ts:3:36) is not a static helper: it runs `let result = "string"` (/main.ts:4:2), where a static helper declares only consts before one `return`',
+			'3:11 rejected\n  arktype calls a function (/main.ts:3:36) while defining the type, so it must be a static helper\n  a function (/main.ts:3:36) is not a static helper: it runs `let result = "string"` (/main.ts:4:2), where a static helper holds only consts, `if`s that return and a final `return`',
 			"7:11 accepted string & fn$hole_bvgui20gqfe3l",
 			// arktype decides each unit by calling the narrow, so the build must too
 			'11:11 accepted "a"',

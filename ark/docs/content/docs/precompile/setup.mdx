@@ -139,7 +139,7 @@ export default {
 
 ts-loader is handed modules the plugin already precompiled, which import validators TypeScript can't see, so it only transpiles them. Check types with `tsc --noEmit`, or `fork-ts-checker-webpack-plugin`, which reads your sources.
 
-A production build reads each module again as the loaders after the plugin built it, to fail where one adds a read of a validator, so they must emit ES modules: where your tsconfig sets `module` to `"commonjs"`, a pruned build fails, naming the loader, as it can't follow what CommonJS reads. Set `module` to `"esnext"`, or `prune: false`.
+A production build reads each module again as the loaders after the plugin built it, to fail where one adds a read of a validator, so they must emit ES modules: where your tsconfig sets `module` to `"commonjs"`, a pruned build fails, naming the loader, as it can't follow what CommonJS reads. Set `module` to `"esnext"`, or `prune: false`. A module that was CommonJS as it reached the plugin, like a workspace package tsc built, passes as it is, since the build keeps each member of what such a module loads with `require()`.
 
 </Tab>
 <Tab value="Rspack">
@@ -244,20 +244,20 @@ A build keeps each module it precompiles in `node_modules/.cache/ark`, in the di
 
 With Vite, list `precompile.vite()` right after your framework's plugin, and ahead of `react()`, a Babel plugin like the React Compiler's or another that rewrites modules, so the build reads your modules as you wrote them. Each line was checked with a production build of a small app, on SvelteKit 3.1, Astro 7.4, Nuxt 4.6, React Router 8.5, TanStack Router 1.168, Cloudflare's Vite plugin 1.65 with Wrangler 4.153, and Metro 0.87:
 
-| Framework            | Setup                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SvelteKit            | `plugins: [sveltekit(), precompile.vite()]` in `vite.config.ts`                                                                                                                                                                                                                                                                                                                                                             |
-| Astro                | `vite: { plugins: [precompile.vite()] }` in `astro.config.ts`                                                                                                                                                                                                                                                                                                                                                               |
-| Nuxt                 | `vite: { plugins: [precompile.vite()] }` and `nitro: { rollupConfig: { plugins: [precompile.rollup({ prune: process.env.NODE_ENV === "production" })] } }` in `nuxt.config.ts`. Nitro bundles server routes and `shared/` itself, with Rollup, so without the second it ships arktype whole, and as Rollup has no production mode, `prune` has `nuxt build` [prune](/docs/precompile/options#prune) them but not `nuxt dev` |
-| React Router (Remix) | `plugins: [reactRouter(), precompile.vite()]` in `vite.config.ts`                                                                                                                                                                                                                                                                                                                                                           |
-| TanStack Router      | `plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), precompile.vite(), react()]` in `vite.config.ts`. Its code splitting moves a route's component into a module of its own after the plugins ahead of it run, so the build fails where arktype's plugin comes first                                                                                                                                   |
-| Next.js              | See [Next.js](#next)                                                                                                                                                                                                                                                                                                                                                                                                        |
-| Cloudflare Workers   | With `@cloudflare/vite-plugin`, `plugins: [cloudflare(), precompile.vite()]` in `vite.config.ts`. Wrangler bundles with esbuild but takes no plugins, so without Vite, build the worker with esbuild and `precompile.esbuild()` from Wrangler's `build.command`, and point `main` at its output. Workers don't let arktype compile a validator as it runs, which a precompiled one doesn't need                             |
-| Monorepos            | Nothing extra. A workspace package linked into `node_modules`, as pnpm, npm, Yarn and Bun workspaces link it, resolves to its own directory, so the build precompiles it with the program                                                                                                                                                                                                                                   |
-| Jest                 | Not supported. See [Test runners](#test-runners)                                                                                                                                                                                                                                                                                                                                                                            |
-| Deno                 | A bundler plugin works under Deno, e.g. `deno run -A npm:vite build` with `precompile.vite()`. There's no driver, so `deno run` on your source loads arktype unprecompiled                                                                                                                                                                                                                                                  |
-| React Native (Metro) | Not supported. Metro caches each module by its own text, so a module whose validators are written from a Type it imports would keep them after that Type changed. Precompile the modules defining your Types as a package of their own, with `tsc && arktype-precompile --emit` ([Build with tsc](#tsc)), and import that package, rather than `arktype`, from the app                                                      |
-| Parcel               | Not supported. Bundle with a [supported bundler](#bundlers)                                                                                                                                                                                                                                                                                                                                                                 |
+| Framework            | Setup                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SvelteKit            | `plugins: [sveltekit(), precompile.vite()]` in `vite.config.ts`                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Astro                | `vite: { plugins: [precompile.vite()] }` in `astro.config.ts`                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Nuxt                 | `vite: { plugins: [precompile.vite()] }` and `nitro: { rollupConfig: { plugins: [precompile.rollup({ prune: process.env.NODE_ENV === "production" })] } }` in `nuxt.config.ts`. Nitro bundles server routes and `shared/` itself, with Rollup, so without the second it ships arktype whole, and as Rollup has no production mode, `prune` has `nuxt build` [prune](/docs/precompile/options#prune) them but not `nuxt dev`                                           |
+| React Router (Remix) | `plugins: [reactRouter(), precompile.vite()]` in `vite.config.ts`                                                                                                                                                                                                                                                                                                                                                                                                     |
+| TanStack Router      | `plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), precompile.vite(), react()]` in `vite.config.ts`. Its code splitting moves a route's component into a module of its own after the plugins ahead of it run, so the build fails where arktype's plugin comes first                                                                                                                                                                             |
+| Next.js              | See [Next.js](#next)                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Cloudflare Workers   | With `@cloudflare/vite-plugin`, `plugins: [cloudflare(), precompile.vite()]` in `vite.config.ts`. Wrangler bundles with esbuild but takes no plugins, so without Vite, build the worker with esbuild and `precompile.esbuild()` from Wrangler's `build.command`, and point `main` at its output. Workers don't let arktype compile a validator as it runs, which a precompiled one doesn't need                                                                       |
+| Monorepos            | Nothing extra. A workspace package linked into `node_modules`, as pnpm, npm, Yarn and Bun workspaces link it, resolves to its own directory, so the build precompiles it with the program. It reads what the package's `exports` point at: its TypeScript source, ES modules, or the CommonJS tsc built it to, whose `exports.a = ...`, `export *` and `export * as` it reads as tsc writes them. See [Next.js with webpack in a monorepo](#next-monorepo) for an app |
+| Jest                 | Not supported. See [Test runners](#test-runners)                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Deno                 | A bundler plugin works under Deno, e.g. `deno run -A npm:vite build` with `precompile.vite()`. There's no driver, so `deno run` on your source loads arktype unprecompiled                                                                                                                                                                                                                                                                                            |
+| React Native (Metro) | Not supported. Metro caches each module by its own text, so a module whose validators are written from a Type it imports would keep them after that Type changed. Precompile the modules defining your Types as a package of their own, with `tsc && arktype-precompile --emit` ([Build with tsc](#tsc)), and import that package, rather than `arktype`, from the app                                                                                                |
+| Parcel               | Not supported. Bundle with a [supported bundler](#bundlers)                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 Define your Types in `.ts` or `.js` modules. A component another plugin compiles, like a Svelte, Vue or Astro component or an MDX page, can call a validator or read its `.allows` and `.assert`, but the build can't write a validator inside it. So a read there that only a precompiled site could serve, like `.description` or `.omit()`, or that a validator lacks, like `.errors`, fails the build, or the dev server's request for the component, naming the read. Move it into a module the component imports, e.g. as a function the component calls.
 
@@ -317,6 +317,46 @@ export default {
 	}
 }
 ```
+
+### Next.js with webpack in a monorepo [#next-monorepo]
+
+For an app in a workspace, on the pages router, whose `next.config.js` is CommonJS, this is the whole setup. Node 22.12 or later loads the plugin with `require`:
+
+```js title="next.config.js"
+// @noErrors
+const { precompile } = require("@ark/aot/unplugin")
+
+module.exports = {
+	// bundles arktype on the pages router's server, leaving its other
+	// dependencies external, as bundlePagesRouterDependencies wouldn't
+	transpilePackages: [
+		"arktype",
+		"@ark/schema",
+		"@ark/util",
+		"arkregex",
+		"arksets"
+	],
+	webpack: config => {
+		config.plugins.push(precompile.webpack())
+		return config
+	}
+}
+```
+
+Add the five to a `transpilePackages` you already set, and the plugin to a `webpack` function you already have, before it returns. The plugin reads each module Next leaves external, and fails the build, naming the package to add, where one still loads arktype. `bundlePagesRouterDependencies: true` bundles every dependency instead, and is what Turbopack needs.
+
+Check the app before its first build, from its directory, which takes seconds where the build takes minutes:
+
+```sh
+npx arktype-precompile --check
+```
+
+Nothing else is set for the workspace:
+
+- A workspace package is precompiled with the app, whether its `exports` point at TypeScript source or at what tsc built. The build reads a CommonJS module as tsc writes it, so a definition can read a const object a built package exports, like `type.enumerated(...Object.values(Plan.Enum))`, or call a helper it exports. [Troubleshooting](/docs/precompile/troubleshooting#reads) covers the exports it can't read.
+- An alias in `tsconfig.json`'s `paths`, like `@app/*`, resolves for every file under that tsconfig, including a test its `include` leaves out.
+- `experimental.optimizePackageImports` rewrites the entry of each package it lists for each importer, so the build can't read the bundle as one program. It warns `prune: off, because Next.js built the entry of ... once for each set of names imported from it`, naming each package, and builds every validator whole, which can cost more than arktype did. Take those packages out of the list to [prune](/docs/precompile/options#prune), or keep the optimization with `prune: false` and the [`members`](/docs/precompile/options#members) no code reads set to `false`.
+- A build that prunes refuses a definition reading an object that a package built to CommonJS shares between its modules, since `require()` hands each the whole module: `` `Plan` is exported by ..., which ... loads with require(), so code the build doesn't follow may write it ``. `prune: false` builds it, checking the value as the validator is created, so an app whose definitions read such a package's enums keeps `prune: false`.
 
 ## Node [#node]
 

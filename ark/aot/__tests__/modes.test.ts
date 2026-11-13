@@ -5,7 +5,7 @@ import { isRuntimeExport } from "@ark/aot/internal/graph.ts"
 import { configuredThreadMessage } from "@ark/aot/internal/messages.ts"
 import * as arktype from "arktype"
 import { type } from "arktype"
-import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
+import * as arktypeRuntime from "arktype/runtime"
 import {
 	analyze,
 	diagnosticsOf,
@@ -73,7 +73,7 @@ configure({ exactOptionalPropertyTypes: false })`
 				})
 			).snap([
 				"export const schema = $ark($ark)",
-				"a JSON Schema whose configured writer the build can't evaluate can't be precompiled to a standalone validator: arktype calls `date` (/config.ts:5:109) while defining the type, so it must be a static helper: `date` (/config.ts:5:109) is not a static helper: it runs `let { base } = ctx;` (/config.ts:5:118), where a static helper declares only consts before one `return`",
+				"a JSON Schema whose configured writer the build can't evaluate can't be precompiled to a standalone validator: arktype calls `date` (/config.ts:5:109) while defining the type, so it must be a static helper: `date` (/config.ts:5:109) is not a static helper: it runs `let { base } = ctx;` (/config.ts:5:118), where a static helper holds only consts, `if`s that return and a final `return`",
 				"a JSON Schema whose configured writer reads `flags.strict`, which the program can change, can't be precompiled to a standalone validator",
 				"a JSON Schema whose configured writer reads `shared.version`, which the program can change, can't be precompiled to a standalone validator"
 			])

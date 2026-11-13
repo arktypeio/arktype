@@ -1,4 +1,4 @@
-import { printable, throwError } from "@ark/util"
+import { printable, stringifyPath, throwError } from "@ark/util"
 import { existsSync, readFileSync } from "node:fs"
 import { basename, dirname, join, resolve } from "node:path"
 import type { PrecompilePluginOptions } from "./driver.ts"
@@ -15,6 +15,7 @@ import { definedOf, withPreset } from "./presets.ts"
 import * as validators from "./settingsValidators.ts"
 
 interface Issue {
+	path: PropertyKey[]
 	message: string
 	data: unknown
 }
@@ -25,7 +26,8 @@ type Validator = (
 	onFail: null
 ) => { issues: readonly Issue[] } | object
 
-// the validators read no configuration, so a program's configure() runs after
+// the validators read no configuration, so a program's configure() runs after.
+// An issue's message names no path, so each is written after its option's
 const validate = (
 	getValidator: () => Validator,
 	data: unknown,
@@ -35,7 +37,10 @@ const validate = (
 	if (!("issues" in out)) return
 	throw new Error(
 		out.issues
-			.map(issue => `${where}${issue.message} (was ${printable(issue.data)})`)
+			.map(issue => {
+				const option = stringifyPath(issue.path)
+				return `${where}${option && `${option} `}${issue.message} (was ${printable(issue.data)})`
+			})
 			.join("\n")
 	)
 }

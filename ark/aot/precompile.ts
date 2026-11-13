@@ -35,7 +35,9 @@ import { ark, configure } from "arktype"
 import "arktype/errors"
 import "arktype/mutatesInput"
 import type { HoleKind, IntrospectionMember } from "arktype/internal/runtime.ts"
-import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
+// by its entry, as a program loads it: built, a path under arktype/internal is
+// arktype's own exports, with type, scope and match
+import * as arktypeRuntime from "arktype/runtime"
 import {
 	appendPath,
 	cellSetterOf,
@@ -172,6 +174,7 @@ import {
 	changeableDepthOf,
 	createSiteState,
 	findDynamic,
+	holderLabelOf,
 	inferredNameOf,
 	Interpreter,
 	isCall,
@@ -261,6 +264,7 @@ import {
 	isCoveredBy,
 	isFoldable,
 	isFolded,
+	holdsHole,
 	isHeld,
 	isWithin,
 	keyedMethodOf,
@@ -290,6 +294,7 @@ import {
 	isUnstaticHelperReason,
 	configuredThreadMessage,
 	copiesHint,
+	composedRefusalHint,
 	derivedHint,
 	frozenHint,
 	hintsByRule,
@@ -308,6 +313,7 @@ import {
 	unresolvedHint,
 	versionHint,
 	writeVersionHint,
+	writeComposedRuntimeHint,
 	writeConfiguredOptionHint,
 	writeConflictHint,
 	writeErrorReaderHint,
@@ -716,6 +722,8 @@ export class Precompiler {
 	private componentsById: Record<string, number> = Object.create(null)
 	private exportsArkByModule = new WeakMap<SourceModule, boolean>()
 	private analysesByModule = new WeakMap<SourceModule, ModuleAnalysis>()
+	// the sites of each module being analyzed
+	private sitesByAnalyzing = new WeakMap<SourceModule, Site[]>()
 	// whether a site of the program read whole reads a Type off a holder
 	private readsOffHolders: boolean | undefined
 	private sameEachRun: SameEachRun | undefined
@@ -1704,13 +1712,19 @@ export class Precompiler {
 		// module as the plugin wrote it, as their sites are in the same order
 		const keys = new Map<string, string>()
 		for (const id in program.modules) {
-			const { built: code, transformed } = program.modules[id]
+			const { built: code, source, transformed } = program.modules[id]
 			if (code === undefined) continue
 			const written = runtimes.get(id)!
+			// one that reached the plugin as CommonJS, like a workspace package
+			// tsc built, reads no more as built: the scan left each member in
+			// what it loads with require()
+			const wasCommonJs = isCommonJs(this.add(id, source))
 			// it holds no import or export, so what it reads of a validator,
 			// through require() or exports, is beyond what the build follows
-			if (isCommonJs(this.add(id, code)))
+			if (isCommonJs(this.add(id, code))) {
+				if (wasCommonJs) continue
 				return { id, read: "", commonJs: true }
+			}
 			const runtime =
 				transformed && this.isTransformed(id) && this.importsArk(code, id) ?
 					this.plannedRuntimeOf(code, id, undefined, true)
@@ -4637,7 +4651,7 @@ export class Precompiler {
 			} else if (
 				(target.kind === "binding" || target.kind === "expression") &&
 				target.module.id === input.file &&
-				(target.kind === "binding" ? target.name : "default") === input.name
+				(target.name ?? "default") === input.name
 			) {
 				importing.push({
 					expression: binding.name,
@@ -4682,21 +4696,62 @@ export class Precompiler {
 		rule: "R1" | "R2" | "unsupported",
 		reasons = site.reasons,
 		// why it's refused, whose innermost value the hint names
-		dynamic?: DynamicValue
+		dynamic?: DynamicValue,
+		// the site's expression, read for what an island of it would compose
+		node?: Node
 	): Diagnostic {
 		const keyed = keyedMethodOf(site)
+		const hint =
+			keyed && rule === "unsupported" ?
+				writeKeyedHint(module.snippetOf(site), this.keyHoldingOf(site, module))
+			:	(configuredHintOf(reasons) ??
+				(rule === "R1" && dynamic ?
+					writeStaticHint(innermostSnippetOf(dynamic, site, module))
+				:	undefined))
 		return this.diagnostic(
 			module,
 			site,
 			rule,
 			`${module.snippetOf(site)} ${rule === "unsupported" ? "can't be precompiled yet" : "cannot be precompiled"}`,
 			reasons.map(reason => this.sourceNamed(reason, site, module)),
-			keyed && rule === "unsupported" ?
-				writeKeyedHint(module.snippetOf(site), this.keyHoldingOf(site, module))
-			:	(configuredHintOf(reasons) ??
-					(rule === "R1" && dynamic ?
-						writeStaticHint(innermostSnippetOf(dynamic, site, module))
-					:	undefined))
+			this.composedHintOf(hint, node, module) ?? hint
+		)
+	}
+
+	// the hint for a refused definition composing other Types: where one of
+	// them is refused, its report is the one to act on, and where the build
+	// precompiles them, marking this one would hand arktype their validators
+	private composedHintOf(
+		hint: string | undefined,
+		node: Node | undefined,
+		module: SourceModule
+	): string | undefined {
+		if (!node) return
+		let composes = false
+		let refused = false
+		walk(node, child => {
+			if (refused) return false
+			if (child.type !== "Identifier") return true
+			const reference = module.scopes.byId.get(child)
+			const binding = reference?.binding
+			if (
+				!binding ||
+				contains(node, binding.id) ||
+				this.graph.arkExportOf(reference, module)
+			)
+				return true
+			const kind = this.graph.kindOf(child, module)
+			if (!isArk(kind) && !mayReturnArk(kind)) return true
+			composes = true
+			// e.g. `User` in `type({ user: User })`, itself refused
+			refused = isArk(kind) && this.isRefusedDefinition(binding, module)
+			return true
+		})
+		return (
+			refused ? composedRefusalHint
+			: composes && hint?.includes("// @ark-runtime") ?
+				writeComposedRuntimeHint(hint)
+			:	undefined
 		)
 	}
 
@@ -4977,6 +5032,7 @@ export class Precompiler {
 			configureStart: this.configureStartOf(module)
 		}
 		const { sites, diagnostics } = analyzing
+		this.sitesByAnalyzing.set(module, sites)
 		const refusals = new Map<unknown, Node>()
 		this.refusalsByModule.set(module, refusals)
 		for (const candidate of candidates) {
@@ -5042,9 +5098,18 @@ export class Precompiler {
 		}
 		// nothing runs what they hold unless the build reports it
 		const isQuiet = (span: Span) => quiet.some(fn => contains(fn, span))
+		// e.g. `type({ data: item })` in `(item: Type) => type({ data: item })`,
+		// evaluated holding `item` as a Standard Schema, which each call replaces
+		const holdsParam = (site: Site) => {
+			const candidate = candidatesBySite.get(site)
+			return !!candidate && !!this.heldParamOf(candidate.state)
+		}
 		return {
 			sites: sites
-				.filter(site => site.status === "accepted" || !isQuiet(site))
+				.filter(
+					site =>
+						!isQuiet(site) || (site.status === "accepted" && !holdsParam(site))
+				)
 				.sort((l, r) => l.start - r.start),
 			diagnostics: diagnostics
 				.filter(
@@ -5527,10 +5592,27 @@ export class Precompiler {
 		return candidates
 	}
 
+	// a call to a helper is a site where the build folds the helper's calls,
+	// and where it composes what the call returns, like `base().or("number")`,
+	// which is a site as what composes a Type is, the call running as written
 	private foldsCallsTo(call: SiteCandidate): boolean {
-		if (!this.calledParamOf(...call.callee!)) return false
+		if (!this.calledParamOf(...call.callee!) && !this.composesCall(call))
+			return false
 		this.interpreter.sitesByNode.set(call.state.node, call.state)
 		return true
+	}
+
+	// e.g. `base().or("number")` for `base`, but not `base()` alone, nor
+	// `getScope().type("a")`, as a Scope or Generic is precompiled only where
+	// the build sees each read of it
+	private composesCall(candidate: SiteCandidate): boolean {
+		const call = operatorOf(candidate.root)[1]
+		return (
+			call?.type === "CallExpression" &&
+			candidate.state.node !== call &&
+			contains(candidate.state.node, call) &&
+			isOnlyType(this.graph.kindOf(call, candidate.state.module))
+		)
 	}
 
 	// e.g. `max` in `const text = (max: number) => type(`string <= ${max}`)`,
@@ -5565,7 +5647,9 @@ export class Precompiler {
 			)
 				continue
 			if (!(candidate.isSite ??= this.settle(candidate))) continue
-			const param = paramOf(rejectionOf(candidate.state))
+			const param =
+				paramOf(rejectionOf(candidate.state)) ??
+				this.heldParamOf(candidate.state)
 			if (param) {
 				result = { module, read: candidate.state.node, param }
 				break
@@ -5609,6 +5693,23 @@ export class Precompiler {
 		})
 		this.calledParamsByFn.set(fn, result)
 		return result
+	}
+
+	// e.g. `item` in `(item: Type) => type({ data: item })`, which the site
+	// could hold only as a Standard Schema that isn't a Type, so each call is
+	// precompiled with the Type it passes, as one reading a param's value is
+	private heldParamOf(state: SiteState): Binding | undefined {
+		for (const hole of state.holes) {
+			const standIn = this.standInOf(hole)
+			if (
+				standIn?.kind !== "opaque" ||
+				!standIn.dynamic ||
+				!this.interpreter.checkedAsSchema(state, standIn)
+			)
+				continue
+			const param = paramOf(standIn.dynamic)
+			if (param) return param
+		}
 	}
 
 	private settle(candidate: SiteCandidate): boolean {
@@ -5914,10 +6015,7 @@ export class Precompiler {
 		for (const [declaring, holder, depth] of state.trace.holders) {
 			const elsewhere = this.graph.elsewhereOf(declaring, holder, depth)
 			if (!elsewhere) continue
-			const name =
-				holder === "default" ?
-					`the default export of ${declaring.path}`
-				:	`\`${holder.name}\``
+			const name = holderLabelOf(declaring, holder)
 			const why =
 				elsewhere.kind === "loose" ?
 					new DynamicValue(
@@ -6283,7 +6381,16 @@ export class Precompiler {
 			end: node.end,
 			value,
 			kind: standIn?.kind ?? "symbol",
-			isCalledAtDefinition: this.interpreter.calledIn(candidate.state, value)
+			// arktype's own call of a function the value keeps, like a narrow
+			// deciding a union's unit, is answered by the function its factory
+			// receives, so only a call from code arktype ran leaves it unknown
+			isCalledAtDefinition:
+				this.interpreter.calledIn(candidate.state, value, false) ||
+				(this.interpreter.calledIn(candidate.state, value, true) &&
+					!holdsHole(
+						candidate.state.introspection?.type ?? candidate.state.value,
+						value
+					))
 		}
 	}
 
@@ -6304,7 +6411,8 @@ export class Precompiler {
 					: rejection?.hasCode("callback") ? "R2"
 					: "R1",
 					site.reasons,
-					rejection
+					rejection,
+					node
 				)
 			]
 		}
@@ -7003,6 +7111,57 @@ export class Precompiler {
 		return result
 	}
 
+	// why a const or import a read composes isn't precompiled, where the
+	// build refused the site defining it, e.g. `User` in `User.array()`
+	private refusedDefinitionOf(
+		object: Node,
+		module: SourceModule
+	): DynamicValue | undefined {
+		const id = unwrapChain(object)
+		const binding =
+			id.type === "Identifier" ? module.scopes.byId.get(id)?.binding : undefined
+		if (!binding || !this.isRefusedDefinition(binding, module)) return
+		return findDynamic(
+			this.interpreter.exportValue({ kind: "expression", module, node: id })
+				.value
+		)
+	}
+
+	private isRefusedDefinition(
+		binding: Binding,
+		module: SourceModule,
+		seen = new Set<Binding>()
+	): boolean {
+		if (seen.has(binding)) return false
+		seen.add(binding)
+		if (binding.kind === "import") {
+			const target = this.graph.importOf(binding, module)
+			return (
+				target.kind === "binding" &&
+				this.isRefusedDefinition(target.binding, target.module, seen)
+			)
+		}
+		const declaration = binding.declaration
+		const init =
+			binding.kind === "const" && declaration.type === "VariableDeclarator" ?
+				declaration.init
+			:	undefined
+		if (!init) return false
+		// a module being analyzed has judged each of its sites by now
+		let sites = this.sitesByAnalyzing.get(module)
+		if (!sites) {
+			if (!this.analysesByModule.has(module) && !this.analyzing.has(module))
+				this.analysisOf(module)
+			sites = this.analysesByModule.get(module)?.sites
+		}
+		return !!sites?.some(
+			site =>
+				site.status === "rejected" &&
+				site.start >= init.start &&
+				site.end <= init.end
+		)
+	}
+
 	private unavailableReadDiagnosticOf(
 		[node, read, object, isUnsureRead]: UnavailableRead,
 		unavailable: UnavailableRead[],
@@ -7060,6 +7219,22 @@ export class Precompiler {
 			:	undefined
 		// a callback, like `map`'s, isn't one a Generic can replace
 		const generic = param?.fn ? param : undefined
+		// e.g. `User.array()` where `User`'s definition is refused, so nothing
+		// could cover the read: its report is the one to act on
+		const refused =
+			!isUnsure && !dropped && read !== undefined && !isSettled ?
+				this.refusedDefinitionOf(object, module)
+			:	undefined
+		if (refused) {
+			return this.diagnostic(
+				module,
+				node,
+				"R1",
+				`${module.snippetOf(node)} composes \`${module.snippetOf(object)}\`, which can't be precompiled`,
+				chainOf(refused),
+				composedRefusalHint
+			)
+		}
 		return this.diagnostic(
 			module,
 			node,
@@ -7168,7 +7343,7 @@ export class Precompiler {
 		return result
 	}
 
-	// e.g. `flatProblemsByPath(out)`, which the program can write from `out.issues`
+	// e.g. `flatMessagesByPath(out)`, which the program can write from `out.issues`
 	private errorReaderDiagnostic(
 		module: SourceModule,
 		name: string,

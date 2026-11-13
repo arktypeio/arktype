@@ -116,7 +116,7 @@ export const errorReaders: Record<string, 1> = Object.setPrototypeOf(
 		byAncestorPath: 1,
 		byPath: 1,
 		flatByPath: 1,
-		flatProblemsByPath: 1,
+		flatMessagesByPath: 1,
 		messageIn: 1
 	} satisfies { [name in ArkExportName]?: 1 },
 	null
@@ -1042,7 +1042,9 @@ export type ImportTarget =
 	| { kind: "arktypeNamespace"; specifier: string; value: object }
 	| { kind: "binding"; module: SourceModule; binding: Binding; name: string }
 	| { kind: "namespace"; module: SourceModule }
-	| { kind: "expression"; module: SourceModule; node: Node }
+	// `name` is what a module exports an expression as, where it isn't its
+	// default export: e.g. `exports.a = { b: 1 }`, as tsc writes CommonJS
+	| { kind: "expression"; module: SourceModule; node: Node; name?: string }
 	| { kind: "json"; id: string; value: unknown }
 	| { kind: "unresolved"; message: string }
 	| { kind: "package"; message: string }
@@ -1106,7 +1108,7 @@ export class ModuleGraph {
 	private importersById: Map<string, ImporterEdge[]> | undefined
 	private elsewhereByHolder = new WeakMap<
 		object,
-		Map<number, Elsewhere | null>
+		Map<number | string, Elsewhere | null>
 	>()
 	private importsById: Record<string, string[]> = Object.create(null)
 	private optsInByPackage: Record<string, boolean> = Object.create(null)
@@ -1386,7 +1388,7 @@ export class ModuleGraph {
 							this.importOf(entry.binding, module)
 						:	{ kind: "binding", module, binding: entry.binding, name }
 				case "expression":
-					return { kind: "expression", module, node: entry.node }
+					return { kind: "expression", module, node: entry.node, name }
 				case "reexport":
 				case "namespace": {
 					const target = this.resolve(entry.specifier, module)
@@ -1421,7 +1423,10 @@ export class ModuleGraph {
 		}
 		return {
 			kind: "unresolved",
-			message: `${module.path} has no export \`${name}\``
+			message:
+				module.scopes.isCommonJs ?
+					writeUnreadCommonJsMessage(module.path, name)
+				:	`${module.path} has no export \`${name}\``
 		}
 	}
 
@@ -2061,9 +2066,9 @@ export class ModuleGraph {
 		const queried = this.queriedOf(root.name, module, kindOfKey)
 		if (!queried) return
 		let [kind, value] = queried
-		for (const [i, name] of names.entries()) {
-			if (i === names.length - 1 && isArk(kind) && name in inferenceMembers)
-				return kinds.data
+		for (const name of names) {
+			// e.g. `typeof User.infer.address`, as much data as `typeof User.infer`
+			if (isArk(kind) && name in inferenceMembers) return kinds.data
 			// e.g. the Type `schemas.User` for `typeof schemas.User.infer`
 			const literal =
 				value && this.literalOf(value.node, value.module, value.kindOfKey)
@@ -3685,6 +3690,9 @@ export class ModuleGraph {
 					)
 			}
 		} else [read, objects] = this.reflectionOf(node, module) ?? [undefined, []]
+		// e.g. `User.infer`, which only types a value: a Type reads undefined
+		// for it, as a validator does
+		if (typeof read === "string" && read in inferenceMembers) return
 		// a validator prints its expression as its string
 		if (read === "toString" && !lacked.has(read)) read = "expression"
 		const object = objects.find(object => isOnlyType(kindOf(object)))
@@ -4164,28 +4172,32 @@ export class ModuleGraph {
 		this.elsewhereByHolder = new WeakMap()
 	}
 
-	// where another module of the program may write the value a binding, or a
-	// module's default export, holds `depth` levels down: through an import of
-	// it, of an alias exported in its place or of a module re-exporting it
+	// where another module of the program may write the value a binding, or an
+	// expression a module exports under a name (its default export, or what
+	// CommonJS sets `exports.name` to), holds `depth` levels down: through an
+	// import of it, of an alias exported in its place or of a module
+	// re-exporting it
 	elsewhereOf(
 		module: SourceModule,
-		holder: Binding | "default",
+		holder: Binding | string,
 		depth: number
 	): Elsewhere | undefined {
 		if (!this.view) return
-		const key = holder === "default" ? module : holder
+		const isName = typeof holder === "string"
+		const key = isName ? module : holder
 		let byDepth = this.elsewhereByHolder.get(key)
 		if (!byDepth) this.elsewhereByHolder.set(key, (byDepth = new Map()))
-		let result = byDepth.get(depth)
+		const depthKey = isName ? `${depth}:${holder}` : depth
+		let result = byDepth.get(depthKey)
 		if (result === undefined) {
 			const held = heldAs(depth)
 			result =
 				this.findElsewhere(
-					holder === "default" ?
-						[[module, "default", held]]
+					isName ?
+						[[module, holder, held]]
 					:	this.exportsHolding(holder, module, held)
 				) ?? null
-			byDepth.set(depth, result)
+			byDepth.set(depthKey, result)
 		}
 		return result ?? undefined
 	}
@@ -5383,6 +5395,14 @@ const arkTypeNames: Record<string, 1> = Object.setPrototypeOf(
 	null
 )
 
+// a module tsc didn't write, or an export it writes as statements that run,
+// like an enum's
+export const writeUnreadCommonJsMessage = (
+	path: string,
+	name: string
+): string =>
+	`${path} is CommonJS, which the build reads only where it sets \`exports.${name}\` once, to a value, as tsc writes \`export const ${name} = ...\``
+
 const importedNameOf = (
 	module: SourceModule,
 	name: string
@@ -5418,30 +5438,112 @@ export const isFunctionNode = (node: Node): node is FunctionNode =>
 export const staticBodyOf = (fn: FunctionNode): Node | undefined => {
 	if (fn.async || fn.generator || !fn.body) return
 	if (fn.body.type !== "BlockStatement") return fn.body
-	const statements = statementsOf(fn.body)
-	const last = statements[statements.length - 1]
-	return last?.type === "ReturnStatement" && !unstaticStatementOf(fn) ?
-			(last.argument ?? undefined)
-		:	undefined
+	const body = blockBodyOf(fn.body)
+	return isNode(body) ? body : undefined
 }
 
-// e.g. `if (max > 10)`, where a static helper declares only consts before it returns
+// e.g. `let max = 10`, where a static helper declares consts, then returns,
+// from `if`s too
 export const unstaticStatementOf = (fn: FunctionNode): Node | undefined => {
 	if (fn.body?.type !== "BlockStatement") return
-	const statements = statementsOf(fn.body)
-	return statements.find((statement, i) =>
-		i === statements.length - 1 ?
-			statement.type !== "ReturnStatement"
-		:	!isDeclaredBeforeReturn(statement)
-	)
+	const body = blockBodyOf(fn.body)
+	return isNode(body) ? undefined : body.unstatic
 }
 
-export const staticConstsOf = (fn: FunctionNode): VariableDeclarator[] =>
-	fn.body?.type === "BlockStatement" ?
-		fn.body.body.flatMap(statement =>
+// its consts, each declared before the first `if` or `return`
+export const staticConstsOf = (fn: FunctionNode): VariableDeclarator[] => {
+	if (fn.body?.type !== "BlockStatement") return []
+	const statements = statementsOf(fn.body)
+	const first = statements.findIndex(
+		statement => !isDeclaredBeforeReturn(statement)
+	)
+	return statements
+		.slice(0, first === -1 ? undefined : first)
+		.flatMap(statement =>
 			statement.type === "VariableDeclaration" ? statement.declarations : []
 		)
-	:	[]
+}
+
+// the statement keeping a body from being static, if one does
+type Unstatic = { unstatic: Node | undefined }
+
+const isNode = (body: Node | Unstatic): body is Node => "type" in body
+
+// each conditional written for a body's `if`s, which is no node of its module
+const guardedBodies = new WeakSet<Node>()
+
+const blockBodies = new WeakMap<FunctionBody, Node | Unstatic>()
+
+const blockBodyOf = (block: FunctionBody): Node | Unstatic => {
+	let body = blockBodies.get(block)
+	if (!body) {
+		const statements = statementsOf(block)
+		const first = statements.findIndex(
+			statement => !isDeclaredBeforeReturn(statement)
+		)
+		const last = statements[statements.length - 1]
+		body =
+			first === -1 ?
+				{ unstatic: last }
+				// a body ending without a `return` returns undefined
+			:	returnedFrom(statements, first, () => ({ unstatic: last }))
+		blockBodies.set(block, body)
+	}
+	return body
+}
+
+// what the statements from `i` return: the argument of a `return`, or, for
+// `if (test) return a` ahead of it, the conditional `test ? a : rest` those
+// statements are another way to write, which the build evaluates as one.
+// `rest` is what follows them, where they end without returning
+const returnedFrom = (
+	statements: readonly Node[],
+	i: number,
+	rest: () => Node | Unstatic
+): Node | Unstatic => {
+	if (i === statements.length) return rest()
+	const statement = statements[i]
+	if (statement.type === "ReturnStatement") {
+		return (
+			!statement.argument ? { unstatic: statement }
+				// what follows a `return` never runs, so it's not what the author meant
+			: i < statements.length - 1 ? { unstatic: statements[i + 1] }
+			: statement.argument
+		)
+	}
+	if (statement.type !== "IfStatement") return { unstatic: statement }
+	let following: Node | Unstatic | undefined
+	const follow = () => (following ??= returnedFrom(statements, i + 1, rest))
+	const consequent = returnedBy(statement.consequent, follow)
+	if (!isNode(consequent)) return consequent
+	const alternate =
+		statement.alternate ? returnedBy(statement.alternate, follow) : follow()
+	if (!isNode(alternate)) return alternate
+	// each branch returned, so what follows never runs
+	if (!following && i < statements.length - 1)
+		return { unstatic: statements[i + 1] }
+	const guarded = {
+		type: "ConditionalExpression",
+		test: statement.test,
+		consequent,
+		alternate,
+		start: statement.start,
+		end: statement.end
+	} as Node
+	guardedBodies.add(guarded)
+	return guarded
+}
+
+// what an `if`'s branch returns, which declares nothing of its own
+const returnedBy = (
+	branch: Node,
+	rest: () => Node | Unstatic
+): Node | Unstatic =>
+	returnedFrom(
+		branch.type === "BlockStatement" ? branch.body : [branch],
+		0,
+		rest
+	)
 
 const statementsOf = (body: FunctionBody) =>
 	body.body.filter(
@@ -5454,8 +5556,12 @@ const isDeclaredBeforeReturn = (statement: Node): boolean =>
 	:	statement.type === "TSTypeAliasDeclaration" ||
 		statement.type === "TSInterfaceDeclaration"
 
-const returnedOf = (fn: FunctionNode): Node | undefined =>
-	isStatic(fn) ? staticBodyOf(fn) : onlyReturnOf(fn)
+// the one expression it returns, which what its `if`s choose among isn't
+const returnedOf = (fn: FunctionNode): Node | undefined => {
+	if (!isStatic(fn)) return onlyReturnOf(fn)
+	const body = staticBodyOf(fn)!
+	return guardedBodies.has(body) ? undefined : body
+}
 
 const membersOf = (literal: Node): (ObjectPropertyKind | ClassElement)[] =>
 	literal.type === "ObjectExpression" ? literal.properties

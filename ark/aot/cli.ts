@@ -138,7 +138,12 @@ for (const [name, { type, values: taken }] of options) {
 	if (value === undefined) continue
 	if (typeof value === "boolean") opts[name] = value
 	else if (type === "array") opts[name] = value.split(",")
-	else if (type === "object") {
+	else if (type === "number") {
+		// read as its number, which the option's validator then checks
+		const count = value.trim() === "" ? Number.NaN : Number(value)
+		if (Number.isNaN(count)) fail(`--${flag} must be a number (was ${value})`)
+		opts[name] = count
+	} else if (type === "object") {
 		try {
 			opts[name] = JSON.parse(value)
 		} catch {

@@ -632,7 +632,7 @@ const apps: fc.Arbitrary<App> = validators
 
 const helperSources: Record<string, string> = {
 	tell: `export const tell = o => o instanceof type.errors ? { summary: o.summary } : { value: o }`,
-	issuesOf: `export const issuesOf = o => o instanceof type.errors ? o.issues.map(i => ({ code: i.code, path: i.path, expected: i.expected, problem: i.problem, message: i.message, data: i.data })) : { value: o }`,
+	issuesOf: `export const issuesOf = o => o instanceof type.errors ? o.issues.map(i => ({ code: i.code, path: i.path, expected: i.expected, message: i.message, data: i.data })) : { value: o }`,
 	countOf: `export const countOf = o => o instanceof type.errors ? o.count : { value: o }`,
 	thrown: `export const thrown = f => {
 	try {

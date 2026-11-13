@@ -160,11 +160,11 @@ console.log(JSON.stringify(Unlike["~standard"].validate({ id: 1 })))
 			const written = behaviorOf(await bundle(root, smallest))
 			attest(written).equals(behaviorOf(await bundle(root)))
 			attest(written)
-				.snap(`[{"code":"union","path":["ip"],"data":"x","errors":[{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"},{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"}],"message":"ip must be an IP address","expected":"must be an IP address"}]
-[{"code":"union","path":["ip"],"data":1,"errors":[],"message":"ip must be an IP address","expected":"an IP address"}]
-[{"code":"union","path":["id"],"data":"x","errors":[{"code":"pattern","path":["id"],"data":"x","expected":"an email address","message":"id must be an email address"},{"code":"pattern","path":["id"],"data":"x","expected":"a UUID","message":"id must be a UUID"}],"message":"id must be an email address or a UUID","expected":"must be an email address or a UUID"}]
-{"issues":[{"code":"union","path":["ip"],"data":"x","errors":[{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"},{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"}],"message":"must be an IP address","expected":"must be an IP address"}]}
-{"issues":[{"code":"union","path":["id"],"data":1,"errors":[],"message":"must be a string or a UUID","expected":"a string or a UUID"}]}
+				.snap(`[{"code":"union","path":["ip"],"data":"x","errors":[{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"must be an IP address"},{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"must be an IP address"}],"expected":"must be an IP address","message":"must be an IP address"}]
+[{"code":"union","path":["ip"],"data":1,"errors":[],"expected":"an IP address","message":"must be an IP address"}]
+[{"code":"union","path":["id"],"data":"x","errors":[{"code":"pattern","path":["id"],"data":"x","expected":"an email address","message":"must be an email address"},{"code":"pattern","path":["id"],"data":"x","expected":"a UUID","message":"must be a UUID"}],"expected":"must be an email address or a UUID","message":"must be an email address or a UUID"}]
+{"issues":[{"code":"union","path":["ip"],"data":"x","errors":[{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"must be an IP address"},{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"must be an IP address"}],"expected":"must be an IP address","message":"must be an IP address"}]}
+{"issues":[{"code":"union","path":["id"],"data":1,"errors":[],"expected":"a string or a UUID","message":"must be a string or a UUID"}]}
 `)
 		})
 	})
@@ -345,16 +345,18 @@ console.log(String(T({})))
 ${repaying}
 `
 			)
+			// a message written out for a key's value is set apart from its
+			// path, and is the missing key's too
 			const expected = `named must be valid according to isLong
 anonymous must be valid according to an anonymous predicate
 described must be long
-too short
+configured: too short
 bare must be valid according to isLong
 missing must be valid according to isLong
 named must be a string (was missing)
 anonymous must be a string (was missing)
 described must be a string (was missing)
-configured must be a string (was missing)
+configured: too short
 bare must be present (was missing)
 `
 			attest(behaviorOf(await bundle(root))).equals(expected)
@@ -483,7 +485,7 @@ run(() => Above({ p: "abc", q: "abc" }))
 run(() => Above({ p: "x", q: "x" }))
 `,
 			reporting(
-				`${long} ? true : ctx.reject({ problem: \`short by \${3 - s.length}\` })`
+				`${long} ? true : ctx.reject({ message: \`short by \${3 - s.length}\` })`
 			)
 		)
 
@@ -521,14 +523,14 @@ run(() => T.allows({ a: "x", b: { c: "abc" } }))
 		}
 
 		for (const [name, narrow] of Object.entries({
-			"ignoring what it returns": `function (s: string, ctx: any) { if (s.length > 2) return true; ctx.reject({ problem: "short" }); return true }`,
+			"ignoring what it returns": `function (s: string, ctx: any) { if (s.length > 2) return true; ctx.reject({ message: "short" }); return true }`,
 			"holding what it returns": `function (s: string, ctx: any) { const reported = s.length > 2 || ctx.mustBe("long"); return reported }`,
 			"before what it returns": `(s: string, ctx: any) => ctx.mustBe("long") || s.length > 2`,
 			"in a function of its own": `(s: string, ctx: any) => [1].every(() => s.length > 2 || ctx.mustBe("long"))`,
 			"through error, which returns what it adds": `(s: string, ctx: any) => s.length > 2 || ctx.error("long")`,
 			"through a key it computes": `(s: string, ctx: any) => s.length > 2 || ctx["mustBe"]("long")`,
 			"reading it for its report": `(s: string, ctx: any) => s.length > 2 || ctx.mustBe(ctx.path.join())`,
-			"with a path a report can't spread": `(s: string, ctx: any) => s.length > 2 || ctx.reject({ relativePath: 1, problem: "short" })`,
+			"with a path a report can't spread": `(s: string, ctx: any) => s.length > 2 || ctx.reject({ relativePath: 1, message: "short" })`,
 			"as an async function, whose promise passes": `async (s: string, ctx: any) => s.length > 2 || ctx.mustBe("long")`,
 			"past what arguments hold": `function (s: string, ctx: any) { return s.length > 2 || arguments[1].mustBe("long") }`
 		})) {

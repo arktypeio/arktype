@@ -101,8 +101,30 @@ export const writeExternalizedMessage = (
 ): string =>
 	`The build's \`${option}\` option leaves ${specifier} ${loadedAtRuntime}. Remove ${packageNameOf(specifier)} from \`${option}\`.`
 
-export const writeNextExternalMessage = (specifier: string): string =>
-	`Next.js leaves the pages router's dependencies external on the server, so it leaves ${specifier} ${loadedAtRuntime}. Add \`bundlePagesRouterDependencies: true\` to next.config.js, so Next.js bundles them as it does the app router's, and leave ${packageNameOf(specifier)} out of \`serverExternalPackages\`.`
+// each package arktype loads, which Next.js bundles one by one
+const arktypePackages = [
+	"arktype",
+	"@ark/schema",
+	"@ark/util",
+	"arkregex",
+	"arksets"
+]
+
+export const writeNextExternalMessage = (
+	specifier: string,
+	// whether the build reads each module Next.js leaves external, as
+	// webpack's does, so it fails one that still loads arktype
+	readsExternals = false
+): string => {
+	const name = packageNameOf(specifier)
+	const transpiled = [
+		...(arktypePackages.includes(name) ? [] : [name]),
+		...arktypePackages
+	]
+		.map(name => JSON.stringify(name))
+		.join(", ")
+	return `Next.js leaves the pages router's dependencies external on the server, so it leaves ${specifier} ${loadedAtRuntime}. Add \`bundlePagesRouterDependencies: true\` to next.config.js, so Next.js bundles them as it does the app router's, ${readsExternals ? `or add ${transpiled} to \`transpilePackages\`, so it bundles only those, ` : ""}and leave ${name} out of \`serverExternalPackages\`.`
+}
 
 // a Turbopack build's read of the project, which it needn't have to be right
 export const writeUnreadProgramMessage = (reason: string): string =>
@@ -247,7 +269,7 @@ export const derivedHint = `If it isn't a Type, read it off a value the build ca
 
 export const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 	R1: "Standalone builds construct every Type at build time. Make it static, or put // @ark-runtime on the line before it, so arktype defines it at runtime.",
-	R2: "arktype runs this callback while defining the type, so the build computes its result. Make it a static helper: one expression, or consts and one `return`, in the static subset.",
+	R2: "arktype runs this callback while defining the type, so the build computes its result. Make it a static helper: one expression, or consts, `if`s that return and a final `return`, in the static subset.",
 	R3: "The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
 	R4: `Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".`,
 	unsupported:
@@ -316,6 +338,24 @@ export const writeStaticHint = (
 	dynamic &&
 	`Replace \`${dynamic}\` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.`
 
+// a refused definition an island can't take over, as arktype would be handed
+// the validators the build wrote for the Types it composes
+const composedIslandNote =
+	"A // @ark-runtime island can't define this one alone, as what it composes is precompiled."
+
+const islandClause =
+	", or put // @ark-runtime on the line before the definition, so arktype defines it at runtime."
+
+// the hint for it, from one that offers an island
+export const writeComposedRuntimeHint = (hint: string): string =>
+	hint.endsWith(islandClause) ?
+		`${hint.slice(0, -islandClause.length)}, or build with runtime: "arktype", so arktype defines it at runtime. ${composedIslandNote}`
+	:	`Build with runtime: "arktype", so arktype defines it at runtime, or define it from values the build can read, moving what varies into a narrow or morph, which runs as data is validated. ${composedIslandNote}`
+
+// e.g. `User.array()` where `User`'s own definition is refused
+export const composedRefusalHint =
+	"Fix the definition it composes, as that one's report says, and the build precompiles this one with it."
+
 export const writeNoConfigHint = (path: string): string =>
 	`Name this module as the build's config in ark.json: { "precompile": { "config": ${JSON.stringify(/^\.{0,2}\//.test(path) ? path : `./${path}`)} } }`
 
@@ -381,7 +421,7 @@ export const isUnstaticHelperReason = (reason: string): boolean =>
 	unstaticHelperPattern.test(reason)
 
 const writeHelperBodyFix = (fn: string): string =>
-	`write ${fn} as one expression, or as consts and one \`return\`, so the build precompiles each call with the values it's passed`
+	`write ${fn} as one expression, or as consts, \`if\`s that return and a final \`return\`, so the build precompiles each call with the values it's passed`
 
 export const writeOpaqueHelperHint = (reasons: string[]): string => {
 	const fn = reasons
@@ -420,6 +460,12 @@ const textHints: [
 	[
 		/^`.+` is written at .+, so its value at the site is not known$/,
 		"Write the value whole in its literal. Where it differs by case, define a Type for each case and choose one at runtime."
+	],
+	[
+		// only a build reading the bundle whole refuses it, as a package tsc
+		// built to CommonJS has it do for what two of its modules share
+		/, so code the build doesn't follow may write it$/,
+		"Write the value in the definition, or set prune: false to build each validator whole, which checks the value it read as the validator is created."
 	],
 	[
 		/^`(.+)` is a package the build does not read, though (?:it|(.+)) imports arktype$/,

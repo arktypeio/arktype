@@ -347,6 +347,9 @@ class Readers {
 			const runtime = this.runtimesByModule.get(module)
 			walk(module.program, node => {
 				if (runtime && isDead(node, runtime)) return false
+				// a type's computed key, like `[Tab.a]` in an interface, has no
+				// parent, as nothing reads it as the program runs
+				if (node.type === "MemberExpression" && !node.parent) return false
 				if (node.type === "MemberExpression" && !isWriteTarget(node))
 					add(memberNameOf(node), { node, module })
 				else if (node.type === "ObjectPattern") {

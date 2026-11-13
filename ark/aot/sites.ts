@@ -8,6 +8,7 @@ import {
 } from "@ark/util"
 import {
 	isTypedFn,
+	keyOf,
 	type DefaultCheck,
 	type Foldable,
 	type ScopeAlias,
@@ -510,4 +511,11 @@ export const isHeld = (
 	interpreter: Interpreter
 ): boolean =>
 	!interpreter.calledIn(site, hole, true) ||
-	registeredNameOf(hole as object) !== undefined
+	registeredNameOf(hole as object) !== undefined ||
+	holdsHole(site.introspection?.type ?? site.value, hole)
+
+// e.g. the narrow of `type("string | undefined").narrow(isSet)`, which arktype
+// calls to decide `undefined` and keeps to check each string
+export const holdsHole = (value: unknown, hole: unknown): boolean =>
+	(hasArkKind(value, "root") || hasArkKind(value, "module")) &&
+	keyOf(value)[1].includes(hole)

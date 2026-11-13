@@ -1,6 +1,18 @@
 {
 	"name": "@ark/aot",
-	"description": "Precompiles arktype definitions at build time",
+	"description": "Precompiles arktype definitions when you build, so no parser ships and nothing compiles at runtime",
+	"keywords": [
+		"arktype",
+		"typescript",
+		"validation",
+		"precompile",
+		"aot",
+		"vite",
+		"rollup",
+		"webpack",
+		"esbuild",
+		"unplugin"
+	],
 	"version": "0.0.1",
 	"license": "MIT",
 	"author": {

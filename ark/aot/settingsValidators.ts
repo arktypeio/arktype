@@ -76,7 +76,10 @@ var ReadIssues = class {
 			expected: context.description,
 			message: context.x
 		}
-		if (writesText) context.text?.(issue)
+		if (writesText) {
+			customIssue(issue, context.c)
+			context.text?.(issue)
+		}
 		if (key !== void 0) path.pop()
 		this._.push(issue)
 		return void 0
@@ -95,8 +98,7 @@ var SummarizedIssues =
 		class extends ReadIssues {
 			get summary() {
 				let summary = ""
-				for (const issue of this._)
-					summary += (summary && "\n") + (issue.message ??= messageOf(issue))
+				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
 				return summary
 			}
 		}
@@ -126,18 +128,27 @@ var mergeIssues = (errors, merged, prefix) => {
 		errors._.push(
 			listsUnions && issue._m ?
 				issue._m(prefix)
-			:	{
-					code: issue.code,
-					path: [...prefix, ...issue.path],
-					data: issue.data,
-					expected: issue.expected,
-					problem: issue.problem,
-					message: issue.message === messageOf(issue) ? void 0 : issue.message
-				}
+			:	movedIssue(issue, [...prefix, ...issue.path])
 		)
 	}
 }
-var messageOf = issue => {
+var customIssue = (issue, c) =>
+	writesText && c !== issue._c ?
+		Object.defineProperty(issue, "_c", { value: c, configurable: true })
+	:	issue
+var customOf = issue => (writesText ? issue._c : void 0)
+var movedIssue = (issue, path) =>
+	customIssue(
+		{
+			code: issue.code,
+			path,
+			data: issue.data,
+			expected: issue.expected,
+			message: issue.message
+		},
+		customOf(issue)
+	)
+var pathOf = issue => {
 	let path = ""
 	for (const k of issue.path) {
 		path +=
@@ -146,16 +157,21 @@ var messageOf = issue => {
 				`[${JSON.stringify(k) ?? String(k)}]`
 			:	(path && ".") + String(k)
 	}
-	return (path && path + " ") + problemOf(issue)
+	return path
 }
-var problemOf = issue =>
-	(writesText ? issue.problem : void 0) ??
-	(issue.expected !== void 0 ?
+var lineOf = issue => {
+	if (listsUnions && issue._l !== void 0) return issue._l
+	const message = (issue.message ??= messageOf(issue))
+	const path = pathOf(issue)
+	return path ? path + (customOf(issue) ? ": " : " ") + message : message
+}
+var messageOf = issue =>
+	issue.expected !== void 0 ?
 		"must be " +
 		issue.expected +
 		(issue.code === "required" ? " (was missing)" : "")
 	: issue.code === "required" ? "is missing"
-	: "is invalid")
+	: "is invalid"
 var ThrownIssues =
 	readsErrors ?
 		class TraversalError extends Error {
@@ -1056,7 +1072,7 @@ export { get1 as ArkJson, get2 as PackageArk, get0 as PrecompileOptions }
 
 export const cliOptions = {
 	allowUnsafe: { type: "boolean", values: "true|false" },
-	bakedLimit: { type: "string", values: "path" },
+	bakedLimit: { type: "number", values: "number" },
 	conditions: { type: "array", values: "a,b" },
 	config: { type: "string", values: "path|false" },
 	creationChecks: { type: "string", values: "helpers|none|types" },

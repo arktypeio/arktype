@@ -276,7 +276,7 @@ precompile.vite({ config: "./config.ts" })
 
 The build evaluates the argument, which must be static, and precompiles every definition under it. `onFail` can be any function.
 
-A `message`, `problem`, `expected` or `actual` configured for a code, or on a Type with `.configure()` or its meta, as a string or a function, is written as arktype writes it. What a standalone validator can't write fails the build, each with its fix:
+A `message`, `expected` or `actual` configured for a code, or on a Type with `.configure()` or its meta, as a string or a function, is written as arktype writes it. What a standalone validator can't write fails the build, each with its fix:
 
 - a locale
 - a function writing a union's or a discriminated union's text, which arktype passes each branch's errors: configure the text as a string

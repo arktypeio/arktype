@@ -7,7 +7,7 @@ import { run, writeFixture } from "./utils.ts"
 
 const conditions = ["ark-ts"]
 
-// each input's issues as code, path, data and expected, and their messages,
+// each input's issues as code, path, data and expected, and their summary,
 // which a validator writes as arktype does; or what it's morphed to
 const observe = `const observed: Record<string, unknown[]> = {}
 const observe = (name: string, T: (data: unknown) => unknown, ...inputs: unknown[]) => {
@@ -17,7 +17,7 @@ const observe = (name: string, T: (data: unknown) => unknown, ...inputs: unknown
 			out instanceof type.errors ?
 				[
 					out.issues.map(({ code, path, data, expected }) => ({ code, path, data, expected })),
-					out.issues.map(issue => issue.message).join("\\n")
+					out.summary
 				]
 			: Array.isArray(out) && "index" in out ?
 				[...out, out.index, (out as RegExpExecArray).groups]
@@ -28,7 +28,30 @@ const observe = (name: string, T: (data: unknown) => unknown, ...inputs: unknown
 
 const root = writeFixture(
 	{
-		"types.ts": `import { type } from "arktype"
+		"types.ts": `import { type, type Traversal } from "arktype"
+import { Plan, exists } from "./built/index.js"
+
+// a required field as a form writes it: arktype calls the narrow to decide
+// undefined, and keeps it to check each string
+const isSet = (data: unknown, ctx: Traversal) => {
+	if (!exists(data)) {
+		return ctx.reject({ message: "This field is required" })
+	}
+	return true
+}
+export const Required = type({
+	name: type("string > 0").or(type.undefined).narrow(isSet),
+	plan: type.enumerated(...Object.values(Plan.Enum))
+})
+
+const Address = type({ line1: "string" })
+// passes an address left as saved, which only the narrow reads
+const unlessSaved = (saved: string | undefined) =>
+	Address.narrow((a, ctx) => a.line1 === saved || a.line1.length > 0 || ctx.reject("a first line"))
+const accountOf = (address: typeof Address) => type({ address, owner: "string > 0" })
+export const Account = accountOf(Address)
+export const editAccount = (saved: string | undefined) => accountOf(unlessSaved(saved))
+export const editAddress = (saved: string | undefined) => unlessSaved(saved).or("undefined")
 
 const readJson = (s: string): unknown => JSON.parse(s)
 const decode = (s: string) => atob(s)
@@ -98,13 +121,73 @@ export const Trimmed = type({ first: trimmed("a first name"), last: trimmed("a l
 	\`\${ctx.propString || "it"} must \${ctx.expected}\`
 export const config = { message }
 `,
+		// as tsc emits a workspace package's entry
+		"built/package.json": `{ "name": "built", "main": "index.js" }`,
+		"built/index.js": `"use strict";
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) exports[p] = m[p];
+};
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.enums = void 0;
+exports.exists = exists;
+exports.enums = __importStar(require("./all"));
+__exportStar(require("./enums"), exports);
+function exists(val) {
+    return val !== undefined && val !== null;
+}
+`,
+		"built/all.js": `"use strict";
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) exports[p] = m[p];
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./enums"), exports);
+`,
+		// reads the package's enum through the namespace it exports
+		"billed.ts": `import { type } from "arktype"
+import { enums } from "./built/index.js"
+
+const plans = () => Object.values(enums.Plan.Enum)
+export const Billed = type({ plan: type.enumerated(...plans()) })
+`,
+		// and through a helper, so its module imports what the helper read
+		"quoted.ts": `import { type } from "arktype"
+import { plansOf } from "./plans.ts"
+
+export const Quoted = type({ plan: type.enumerated(...plansOf()) })
+`,
+		"plans.ts": `import { enums } from "./built/index.js"
+
+export const plansOf = () => Object.values(enums.Plan.Enum)
+`,
+		"built/enums.js": `"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Plan = void 0;
+exports.Plan = { Enum: { free: "free", pro: "pro" } };
+`,
 		"main.ts": `import { type } from "arktype"
-import { Either, Json, Keyed, Nested, Parsed, Payload, Refused, Reported, Version, Versioned } from "./types.ts"
+import { Account, Either, Json, Keyed, Nested, Parsed, Payload, Refused, Reported, Required, Version, Versioned, editAccount, editAddress } from "./types.ts"
 import { Pair, Post } from "./scoped.ts"
 import { Change, Id, Labeled, Named, Trimmed } from "./held.ts"
+import { Billed } from "./billed.ts"
+import { Quoted } from "./quoted.ts"
 
 ${observe}
 
+observe("Required", Required, { name: "a", plan: "pro" }, { name: undefined, plan: "team" }, { name: "" })
+observe("Billed", Billed, { plan: "pro" }, { plan: "team" })
+observe("Quoted", Quoted, { plan: "free" }, { plan: 1 })
+observe("Account", Account, { address: { line1: "a" }, owner: "o" }, { address: { line1: 1 }, owner: "" })
+observe("Edited", editAccount(""), { address: { line1: "" }, owner: "o" }, { address: { line1: 1 }, owner: "" })
+observe("EditedOther", editAccount("saved"), { address: { line1: "saved" }, owner: "o" }, { address: { line1: "" }, owner: "o" })
+observe("EditedAddress", editAddress("x"), undefined, { line1: "x" }, { line1: "" })
 observe("Parsed", Parsed, '{"a":1}', "{", 5)
 observe("Refused", Refused, "ok", "no")
 observe("Reported", Reported, "a", "")
@@ -163,6 +246,144 @@ contextualize(() => {
 		attest(standalone[name]).equals(arktype[name])
 		return attest(standalone[name])
 	}
+
+	it("a narrow a union's unit calls and the rest keep, reading a CommonJS module", () => {
+		observed("Required").snap([
+			{ name: "a", plan: "pro" },
+			[
+				[
+					{ code: "domain", path: ["name"], expected: "a string" },
+					{
+						code: "discriminant",
+						path: ["plan"],
+						data: "team",
+						expected: '"free" or "pro"'
+					}
+				],
+				'name must be a string\nplan must be "free" or "pro"'
+			],
+			[
+				[
+					{
+						code: "minLength",
+						path: ["name"],
+						data: "",
+						expected: "non-empty"
+					},
+					{
+						code: "required",
+						path: ["plan"],
+						data: { name: "" },
+						expected: '"free" or "pro"'
+					}
+				],
+				'name must be non-empty\nplan must be "free" or "pro" (was missing)'
+			]
+		])
+	})
+
+	it("what a CommonJS module exports through a namespace, where a site or its helper reads it", () => {
+		observed("Billed").snap([
+			{ plan: "pro" },
+			[
+				[
+					{
+						code: "discriminant",
+						path: ["plan"],
+						data: "team",
+						expected: '"free" or "pro"'
+					}
+				],
+				'plan must be "free" or "pro"'
+			]
+		])
+		observed("Quoted").snap([
+			{ plan: "free" },
+			[
+				[
+					{
+						code: "discriminant",
+						path: ["plan"],
+						data: 1,
+						expected: '"free" or "pro"'
+					}
+				],
+				'plan must be "free" or "pro"'
+			]
+		])
+	})
+
+	it("a Type a helper is passed, static or built around a function a call creates", () => {
+		observed("Account").snap([
+			{ address: { line1: "a" }, owner: "o" },
+			[
+				[
+					{
+						code: "domain",
+						path: ["address", "line1"],
+						data: 1,
+						expected: "a string"
+					},
+					{
+						code: "minLength",
+						path: ["owner"],
+						data: "",
+						expected: "non-empty"
+					}
+				],
+				"address.line1 must be a string\nowner must be non-empty"
+			]
+		])
+		observed("Edited").snap([
+			{ address: { line1: "" }, owner: "o" },
+			[
+				[
+					{
+						code: "domain",
+						path: ["address", "line1"],
+						data: 1,
+						expected: "a string"
+					},
+					{
+						code: "minLength",
+						path: ["owner"],
+						data: "",
+						expected: "non-empty"
+					}
+				],
+				"address.line1 must be a string\nowner must be non-empty"
+			]
+		])
+		observed("EditedOther").snap([
+			{ address: { line1: "saved" }, owner: "o" },
+			[
+				[
+					{
+						code: "predicate",
+						path: ["address"],
+						data: { line1: "" },
+						expected: "a first line"
+					}
+				],
+				"address must be a first line"
+			]
+		])
+		observed("EditedAddress").snap([
+			null,
+			{ line1: "x" },
+			[
+				[
+					{
+						code: "predicate",
+						path: [],
+						data: { line1: "" },
+						expected: "a first line"
+					}
+				],
+				"must be a first line"
+			]
+		])
+	})
 
 	it("pipe.try's morph returning or throwing an Error", () => {
 		observed("Parsed").snap([

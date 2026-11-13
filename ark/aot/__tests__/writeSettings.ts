@@ -19,6 +19,9 @@ interface OptionSchema {
 	anyOf?: OptionSchema[]
 }
 
+const isNumeric = (schema: OptionSchema) =>
+	schema.type === "integer" || schema.type === "number"
+
 // what the CLI's usage says an option takes, whose strings are all paths
 const valuesOf = (schema: OptionSchema): string =>
 	schema.anyOf ? schema.anyOf.map(valuesOf).join("|")
@@ -27,6 +30,7 @@ const valuesOf = (schema: OptionSchema): string =>
 	: schema.type === "boolean" ? "true|false"
 	: schema.type === "array" ? "a,b"
 	: schema.type === "object" ? "json"
+	: isNumeric(schema) ? "number"
 	: "path"
 
 // a flag for each option, parsed as its schema's type
@@ -48,7 +52,8 @@ const cliOptionsOf = () =>
 						schema.type === "object"
 					) ?
 						schema.type
-					:	"string",
+					: isNumeric(schema) ? "number"
+					: "string",
 				values: valuesOf(schema)
 			}
 		])

@@ -172,6 +172,20 @@ contextualize(function (this: Mocha.Suite) {
 			attest(await droppedReading("User.allows({})")).equals(everyMember)
 		})
 
+		it("at a key it's stored at, past a type's computed key, which nothing reads as the program runs", async () => {
+			attest(
+				await droppedReading(
+					`const keys = { a: "a" } as const
+interface Named {
+	[keys.a]: string
+}
+const forms: { schema?: typeof User } = {}
+forms.schema = User
+console.log(forms.schema?.allows({} satisfies Partial<Named>))`
+				)
+			).equals(everyMember)
+		})
+
 		it("through a const choosing between validators", async () => {
 			const admin = {
 				"/admin.ts": `import { type } from "arktype"\n\nexport const Admin = type({ name: "string", role: "'admin'" })`
@@ -1300,7 +1314,7 @@ console.log(READ, String(User({ name: 5 })))
 					"flagged.ts": `import { type } from "arktype"
 
 const Flagged = type({ name: "string" }).narrow((_, ctx) =>
-	ctx.reject({ path: ["flags", 0], problem: "is unset" })
+	ctx.reject({ path: ["flags", 0], message: "Set a flag." })
 )
 
 console.log(Flagged({ name: "Ada" }).toString())
@@ -1347,9 +1361,10 @@ console.log(User({ name: 5 }).toString())
 			const keyed = await bundleOf("keyed.ts")
 			attest(run(keyed)).snap('["first-name"] must be a string\n')
 			attest(keyed.includes("JSON.stringify(")).equals(true)
-			// a callback may raise an issue at any path, with any text
+			// a callback may raise an issue at any path, with any text, which a
+			// colon sets apart from its path
 			const flagged = await bundleOf("flagged.ts")
-			attest(run(flagged)).snap("flags[0] is unset\n")
+			attest(run(flagged)).snap("flags[0]: Set a flag.\n")
 			attest(flagged.includes("`[${")).equals(true)
 			attest(flagged.includes(".text?.(")).equals(true)
 			const asserted = await bundleOf("asserted.ts")
@@ -3561,6 +3576,63 @@ console.log(User({ name: "" }).name, suffixed)
 					const js = readFileSync(join(root, "out", name, "main.js"), "utf8")
 					attest(output(js)).snap(" true\n")
 					attest(js).equals(await bundle(name, root, { prune: false }, config))
+				})
+
+				it("names Next.js's optimizePackageImports where it builds a package's entry for each set of names", async () => {
+					const root = fixture("barrels", {
+						// as next-barrel-loader writes a listed package's entry
+						"barrel.ts": `export default function (this: { getOptions(): { names: string[] } }) {
+	return this.getOptions().names.map(name => \`export { \${name} } from "./\${name}.js"\`).join("\\n")
+}
+`,
+						"ui/package.json": `{ "name": "ui", "type": "module" }`,
+						"ui/index.js": `export { a } from "./a.js"\nexport { b } from "./b.js"\n`,
+						"ui/a.js": `export const a = 1\n`,
+						"ui/b.js": `export const b = 2\n`,
+						"other.js": `export { b } from "__barrel_optimize__?names=b!=!./ui/index.js"\n`,
+						"types.js": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+`,
+						"main.js": `import { a } from "__barrel_optimize__?names=a!=!./ui/index.js"
+import { b } from "./other.js"
+import { User } from "./types.js"
+
+console.log(User({ name: "" }).name, a, b)
+`
+					})
+					const barrelRule = {
+						test: /__barrel_optimize__/,
+						use: ({ resourceQuery }: { resourceQuery: string }) => [
+							{
+								loader: join(root, "barrel.ts"),
+								// as Next.js names each, so the bundler builds one for each set of names
+								ident: `barrel:${resourceQuery}`,
+								options: {
+									names: resourceQuery.slice("?names=".length).split(",")
+								}
+							}
+						]
+					}
+					const stats = await built(
+						(compilers[name][0] as typeof webpack)(
+							configOf(name, root, {}, { module: { rules: [barrelRule] } })
+						)
+					)
+					const { errors, warnings } = stats!.toJson({
+						all: false,
+						errors: true,
+						warnings: true
+					})
+					attest(errors).equals([])
+					// Rspack marks a warning and ends its line
+					attest(
+						warnings?.map(({ message }) => message.trim().replace(/^⚠ /, ""))
+					).equals([
+						"prune: off, because Next.js built the entry of ui once for each set of names imported from it, as `experimental.optimizePackageImports` has it do, so the build keeps every member of its validators. Take it out of `optimizePackageImports`, so the build reads the bundle whole and prunes, or set prune: false to build them whole without this warning."
+					])
+					const js = readFileSync(join(root, "out", name, "main.js"), "utf8")
+					attest(output(js)).equals(" 1 2\n")
 				})
 
 				const queried = {

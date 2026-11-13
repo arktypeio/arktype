@@ -52,6 +52,9 @@ export const scriptExtensions = [
 	".cjs"
 ]
 
+const isRelativeOrAbsolute = (specifier: string): boolean =>
+	/^\.{0,2}\//.test(specifier) || isAbsolute(specifier)
+
 export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 	const resolveOptions: NapiResolveOptions = {
 		conditionNames: opts?.conditions ?? nodeConditions,
@@ -80,6 +83,8 @@ export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 			: dir === dirname(dir) ? undefined
 			: tsconfigIn(dirname(dir)))
 	}
+	// each tsconfig's resolver for a file its `include` leaves out
+	const resolversByTsconfig: Record<string, ResolverFactory> = {}
 	return {
 		resolve: (specifier, importer) => {
 			if (!isAbsolute(importer)) return
@@ -88,6 +93,26 @@ export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 			if (result.error && /tsconfig/i.test(result.error)) {
 				resolverWithoutTsconfig ??= resolver.cloneWithOptions(resolveOptions)
 				result = resolverWithoutTsconfig.resolveFileSync(importer, specifier)
+			}
+			// e.g. `@app/schemas` from tests/user.test.ts, where tsconfig.json
+			// includes only src: TypeScript applies its `paths` to no file outside
+			// `include`, but esbuild, Bun and a bundler's alias for the same
+			// names apply them to every file under it, so the nearest's are tried
+			if (!result.path && !opts?.tsconfig && !isRelativeOrAbsolute(specifier)) {
+				const tsconfig = tsconfigIn(dirname(importer))
+				if (tsconfig) {
+					try {
+						// a resolver of its own, as a clone shares what the first found
+						const outside = (resolversByTsconfig[tsconfig] ??=
+							new ResolverFactory({
+								...resolveOptions,
+								tsconfig: { configFile: tsconfig, references: "auto" }
+							})).resolveFileSync(importer, specifier)
+						if (outside.path) result = outside
+					} catch {
+						// one it can't load, which resolves nothing
+					}
+				}
 			}
 			// it keeps an importer's 8.3 names, which another importer may not have
 			return result.path && realPathOf(result.path)

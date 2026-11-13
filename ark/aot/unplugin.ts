@@ -90,6 +90,8 @@ import {
 	unreadDefineOf,
 	unseenProblemOf,
 	writeUnseenMessage,
+	twoCodes,
+	writeBarrelUnprunedMessage,
 	writeUnprunedMessage,
 	writeUnscannedFlatMessage,
 	type BuiltImport,
@@ -516,7 +518,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 								).length > 0),
 						specifier =>
 							dependsOnNext(bundler.context) ?
-								writeNextExternalMessage(specifier)
+								writeNextExternalMessage(specifier, true)
 							:	writeExternalizedMessage(specifier, "externals"),
 						message =>
 							compilation.warnings.push(
@@ -663,7 +665,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			:	withoutBuilt(asBuilt)
 		const usage =
 			typeof program === "string" ?
-				writeUnprunedMessage(program)
+				unprunedMessageOf(program, compilation)
 			:	await (
 					requestResolving(resolve, "scan", program) as Promise<ScannedUsage>
 				).catch(unreadMessageOf)
@@ -1814,6 +1816,8 @@ interface BuiltBlock {
 interface BuiltBundlerModule extends BuiltBlock {
 	// only a module with a file has one, a query on it naming another module
 	resource?: string
+	// what its rules matched in place of its file, as `a.css!=!loader!./a.js` has
+	matchResource?: string
 	type?: string
 	originalSource?: () => { source: () => string | Buffer } | null
 	loaders?: BuiltLoader[]
@@ -1842,6 +1846,44 @@ const builtIdOf = (module: BuiltBundlerModule): string | undefined => {
 	if (!resource || !isAbsolute(resource) || !isScriptModule(module)) return
 	const file = fileOf(resource)
 	return isAsset(file) ? undefined : file
+}
+
+// Next.js's optimizePackageImports builds a package's entry as a module of
+// re-exports for each set of names imported from it, so the bundle holds one
+// file as several modules: `__barrel_optimize__?names=a,b!=!<file>`
+const barrelRequest = "__barrel_optimize__"
+
+// each package a module of whose is built so beside another of the same file
+const rebuiltBarrelPackagesOf = ({ modules }: BundlerCompilation): string[] => {
+	const countsByFile = new Map<string, number>()
+	const barrels = new Set<string>()
+	for (const {
+		resource,
+		matchResource
+	} of modules as Iterable<BuiltBundlerModule>) {
+		if (!resource || !isAbsolute(resource)) continue
+		const file = fileOf(resource)
+		countsByFile.set(file, (countsByFile.get(file) ?? 0) + 1)
+		if (matchResource?.includes(barrelRequest)) barrels.add(file)
+	}
+	return [
+		...new Set(
+			[...barrels].flatMap(file =>
+				countsByFile.get(file)! > 1 ? (packageOfFile(file) ?? []) : []
+			)
+		)
+	].sort()
+}
+
+const unprunedMessageOf = (
+	reason: string,
+	compilation: BundlerCompilation
+): string => {
+	const packages =
+		reason.endsWith(twoCodes) ? rebuiltBarrelPackagesOf(compilation) : []
+	return packages.length ?
+			writeBarrelUnprunedMessage(packages)
+		:	writeUnprunedMessage(reason)
 }
 
 // webpack's DefinePlugin holds its definitions, and Rspack's its arguments

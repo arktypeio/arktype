@@ -63,7 +63,7 @@ export const readsOnlyItsArgument = (fn: FunctionNode): boolean => {
 	)
 }
 
-const reportedKeys = new Set(["problem", "expected", "actual", "message"])
+const reportedKeys = new Set(["expected", "actual", "message"])
 
 // a report that reads nothing a ctx holds, so can't throw for lack of one
 const isPlainReport = (method: string, args: readonly Node[]): boolean => {

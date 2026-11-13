@@ -126,7 +126,7 @@ export interface Trace {
 
 export type Holder = [
 	module: SourceModule,
-	holder: Binding | "default",
+	holder: Binding | string,
 	depth: number
 ]
 
@@ -184,6 +184,9 @@ interface Call {
 // a stand-in itself is arktype checking whether it's a Standard Schema, as a
 // definition holds it
 type Reached = DefaultCheck | ScopeAlias | Call | StandIn
+
+export const hookCallReason =
+	"calls a hook, whose result is known only as a component renders"
 
 export const isCall = (reached: Reached): reached is Call =>
 	"standIn" in reached
@@ -290,7 +293,7 @@ const exportRootOf = (
 ): InputRoot => ({
 	kind: "export",
 	file: target.module.id,
-	name: target.kind === "binding" ? target.name : "default",
+	name: target.name ?? "default",
 	importer
 })
 
@@ -1185,9 +1188,7 @@ export class Interpreter {
 			((target.kind === "binding" &&
 				this.writtenIn(target.binding, target.module, depth, ctx)) ||
 				this.writtenThroughThis(
-					target.kind === "binding" ?
-						`\`${target.binding.name}\``
-					:	`the default export of ${target.module.path}`,
+					exportLabelOf(target),
 					result.value as object,
 					depth,
 					ctx
@@ -1863,9 +1864,7 @@ export class Interpreter {
 					((target.kind === "binding" &&
 						this.writtenIn(target.binding, target.module, depth, ctx)) ||
 						this.writtenThroughThis(
-							target.kind === "binding" ?
-								`\`${target.binding.name}\``
-							:	`the default export of ${target.module.path}`,
+							exportLabelOf(target),
 							result.value as object,
 							depth,
 							ctx
@@ -2044,11 +2043,20 @@ export class Interpreter {
 					}
 					return result
 				}
+				// e.g. `useAccount()`, a hook by its name, whose result no way of
+				// writing it makes static
+				const isHook =
+					!!standIn.closure &&
+					/^use[\dA-Z]/.test(declaredNameOf(standIn.closure.node) ?? "")
 				return this.reject(
 					node,
 					ctx,
-					"calls a function the build does not interpret",
-					standIn.closure && this.notStaticHelper(standIn),
+					isHook ? hookCallReason : (
+						"calls a function the build does not interpret"
+					),
+					isHook || !standIn.closure ?
+						undefined
+					:	this.notStaticHelper(standIn),
 					"opaque"
 				)
 			}
@@ -2437,7 +2445,27 @@ export class Interpreter {
 		)
 		if (params[params.length - 1]?.type !== "RestElement")
 			unread.push(...args.slice(params.length))
-		return this.dynamicIn(unread)?.asOperand() ?? result
+		const dynamic = this.dynamicIn(unread)
+		// e.g. `saved` in `(saved: Address) => Address.narrow(a => !isSame(a,
+		// saved))`, which only the function the call creates reads, as it
+		// validates: a site holding that function receives it from the call, so
+		// the call runs as written, with what it's passed
+		return dynamic && !this.holdsFunctionOf(result, env) ?
+				dynamic.asOperand()
+			:	result
+	}
+
+	// whether a value holds a function a call created, which closes over the
+	// call's parameters
+	private holdsFunctionOf(value: unknown, env: Environment): boolean {
+		for (const hole of this.holesIn(value)) {
+			if (
+				hasDomain(hole, "object") &&
+				this.standIns.get(hole)?.closure?.env === env
+			)
+				return true
+		}
+		return false
 	}
 
 	// as findDynamic, remembering containers that hold none
@@ -2580,8 +2608,9 @@ export class Interpreter {
 	}
 
 	// whether arktype called it while defining the site's value, or code it
-	// ran did, as the site or a cache entry it reused reached
-	calledIn(site: SiteState, value: unknown, isDirect?: true): boolean {
+	// ran did, as the site or a cache entry it reused reached. `isDirect` asks
+	// for arktype's own calls alone, or, where false, for those of code it ran
+	calledIn(site: SiteState, value: unknown, isDirect?: boolean): boolean {
 		const standIn = hasDomain(value, "object") && this.standIns.get(value)
 		return (
 			!!standIn &&
@@ -2589,7 +2618,7 @@ export class Interpreter {
 				reached =>
 					isCall(reached) &&
 					reached.standIn === standIn &&
-					(reached.isDirect || !isDirect)
+					(isDirect === undefined || reached.isDirect === isDirect)
 			)
 		)
 	}
@@ -2650,8 +2679,8 @@ export class Interpreter {
 				fn.async ? "it's async"
 				: fn.generator ? "it's a generator"
 				: statement ?
-					`it ${isLast ? "ends with" : "runs"} \`${module.snippetOf(statement)}\` (${module.positionOf(statement)}), where a static helper declares only consts before one \`return\``
-				:	"its body is not one expression, or consts and one `return`"
+					`it ${isLast ? "ends with" : "runs"} \`${module.snippetOf(statement)}\` (${module.positionOf(statement)}), where a static helper holds only consts, \`if\`s that return and a final \`return\``
+				:	"its body is not one expression, or consts, `if`s that return and a final `return`"
 			}`
 		)
 	}
@@ -3066,17 +3095,30 @@ const addHoldersOf = (into: Trace, from: Trace) => {
 	for (const holder of from.holders) addHolder(into, ...holder)
 }
 
+// e.g. `exports.a` of a CommonJS module, read as its name is
+export const holderLabelOf = (
+	module: SourceModule,
+	holder: Binding | string
+): string =>
+	holder === "default" ? `the default export of ${module.path}`
+	: typeof holder === "string" ? `\`${holder}\``
+	: `\`${holder.name}\``
+
+const exportLabelOf = (
+	target: Extract<ImportTarget, { kind: "binding" | "expression" }>
+): string => holderLabelOf(...holderOf(target))
+
 const holderOf = (
 	target: Extract<ImportTarget, { kind: "binding" | "expression" }>
-): [module: SourceModule, holder: Binding | "default"] => [
+): [module: SourceModule, holder: Binding | string] => [
 	target.module,
-	target.kind === "binding" ? target.binding : "default"
+	target.kind === "binding" ? target.binding : (target.name ?? "default")
 ]
 
 const addHolder = (
 	trace: Trace,
 	module: SourceModule,
-	holder: Binding | "default",
+	holder: Binding | string,
 	depth: number
 ) => {
 	const added = trace.holders.find(([m, h]) => m === module && h === holder)
