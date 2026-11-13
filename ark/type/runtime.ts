@@ -1098,6 +1098,60 @@ export const describeShape = (value: unknown): string => {
 		:	`an empty ${kind}`
 }
 
+/**
+ * What a plain object or array of primitives holds, as 53 bits: what kind it
+ * is, then each own key and its value as Object.is tells it from another. A
+ * build writes it for what a site read whole, like an enum's values, in place
+ * of each key and value, which would name them all again
+ */
+export const digestOf = (value: object): string => {
+	let low = 0xdeadbeef
+	let high = 0x41c6ce57
+	// a part's end is mixed in too, so no two splits of one text agree
+	const add = (part: string) => {
+		for (let i = 0; i <= part.length; i++) {
+			const code = i < part.length ? part.charCodeAt(i) : 0x10ffff
+			low = Math.imul(low ^ code, 2654435761)
+			high = Math.imul(high ^ code, 1597334677)
+		}
+	}
+	const prototype = prototypeOf(value)
+	add(
+		Array.isArray(value) ? "array"
+		: prototype === Object.prototype ? "object"
+		: prototype === null ? "null"
+		: "instance"
+	)
+	for (const k of Reflect.ownKeys(value)) {
+		if (k === "length" && Array.isArray(value)) continue
+		const v: unknown = Reflect.get(value, k)
+		add(String(k))
+		add(typeof v)
+		add(Object.is(v, -0) ? "-0" : String(v))
+	}
+	low =
+		Math.imul(low ^ (low >>> 16), 2246822507) ^
+		Math.imul(high ^ (high >>> 13), 3266489909)
+	high =
+		Math.imul(high ^ (high >>> 16), 2246822507) ^
+		Math.imul(low ^ (low >>> 13), 3266489909)
+	return (4294967296 * (2097151 & high) + (low >>> 0)).toString(36)
+}
+
+export const writeDigestMismatchMessage = <label extends string>(
+	label: label
+): `${label} holds other keys or values than it was precompiled with` =>
+	`${label} holds other keys or values than it was precompiled with`
+
+export const checkDigest = (
+	value: unknown,
+	expected: string,
+	label: string
+): void => {
+	if (!hasDomain(value, "object") || digestOf(value) !== expected)
+		throwError(writeDigestMismatchMessage(label))
+}
+
 export const checkFacts = (
 	actual: HoleFact,
 	expected: HoleFact,

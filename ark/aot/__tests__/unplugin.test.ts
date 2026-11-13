@@ -2789,6 +2789,57 @@ console.log(T.allows({ x: "abc" }))
 		)
 	})
 
+	it("a list a site reads whole, which a production build checks by a digest", async () => {
+		const site = `const T = type({ currency: type.enumerated(...currencies) })
+console.log(T.allows({ currency: "ALL" }), T.allows({ currency: "USD" }))
+`
+		const root = writeFixture(
+			{
+				"containers.ts": `export const currencies = ["AED", "AFN", "ALL", "AMD"]
+`,
+				"main.ts": `import { type } from "arktype"
+import { currencies } from "./containers.ts"
+${site}`,
+				"written.ts": `import { type } from "arktype"
+import { currencies } from "./containers.ts"
+const loaded = await import("./containers.ts")
+loaded.currencies[2] = "XXX"
+${site}`
+			},
+			fromHere("temp", "digestedHolder")
+		)
+		const build = (opts: PrecompileUnpluginOptions, entry = "main.ts") =>
+			esbuild({
+				entryPoints: [join(root, entry)],
+				bundle: true,
+				write: false,
+				format: "esm",
+				conditions: [...conditions, "production"],
+				logLevel: "silent",
+				plugins: [precompile.esbuild({ cwd: root, conditions, ...opts })]
+			}).then(({ outputFiles }) => outputFiles[0].text)
+		const checksOf = (js: string) =>
+			js
+				.match(/^ +check(?:Digest|Facts|Input)\(.*$/gm)
+				?.map(line => line.trim())
+		const js = await build({})
+		attest(checksOf(js)).snap([
+			'checkDigest(p0, "1cl1e3qjbc7", "`currencies`");'
+		])
+		attest(run(js)).equals("true false\n")
+		attest(thrownBy(await build({}, "written.ts"))).equals(
+			"`currencies` holds other keys or values than it was precompiled with"
+		)
+		// what checks each Type it receives names each value too
+		attest(checksOf(await build({ creationChecks: "types" }))).snap([
+			'checkFacts(describeShape(p0), "an array of length 4", "`currencies`");',
+			'checkInput(p0[0], "AED", "`currencies[0]`");',
+			'checkInput(p0[1], "AFN", "`currencies[1]`");',
+			'checkInput(p0[2], "ALL", "`currencies[2]`");',
+			'checkInput(p0[3], "AMD", "`currencies[3]`");'
+		])
+	})
+
 	it("a Type read off a holder", async () => {
 		const root = writeFixture(
 			{

@@ -347,6 +347,27 @@ const sharedWritesOf = (baking: Baking): Map<string, SharedWrite> => {
 	return writes
 }
 
+// a plain object or array holding only primitives a digest tells apart, at
+// enough keys that it's smaller than a check of each
+const isDigestible = (value: object): boolean => {
+	if (!isPlainLiteral(value)) return false
+	const keys = Reflect.ownKeys(value).filter(
+		k => !(k === "length" && Array.isArray(value))
+	)
+	return (
+		keys.length >= 4 &&
+		keys.every(k => {
+			const v: unknown = Reflect.get(value, k)
+			return (
+				typeof k === "string" &&
+				typeof v !== "symbol" &&
+				typeof v !== "function" &&
+				!hasDomain(v, "object")
+			)
+		})
+	)
+}
+
 const printedHolesByUnit = new WeakMap<RootUnit, string | null>()
 
 const firstHoleName = new RegExp(holeNamePattern.source)
@@ -852,6 +873,15 @@ export class StandaloneArtifact {
 			throwParseError(
 				writeUnprecompilableMessage(`${printable(value)} read from ${label}`)
 			)
+		}
+		// a build leaving out what it verified checks one read whole, like an
+		// enum's values, by a digest of its keys and values, as naming each to
+		// say which changed writes them all again, each with its label
+		if (!this.baking.checksTypes && isDigestible(value)) {
+			this.checks.push(
+				`runtime.checkDigest(${expression}, ${JSON.stringify(runtime.digestOf(value))}, ${JSON.stringify(label)})`
+			)
+			return
 		}
 		this.checks.push(
 			`runtime.checkFacts(runtime.describeShape(${expression}), ${JSON.stringify(runtime.describeShape(value))}, ${JSON.stringify(label)})`
