@@ -23,7 +23,7 @@ Form["~standard"].validate({ name: "Ada", age: "36" })
 // { value: { name: "Ada", age: 36 } }
 ```
 
-On failure, the result is `{ issues }`, one for each error in the [`ArkErrors`](/docs/errors) you get from calling the Type. A library printing Standard Schema issues writes each issue's `path` before its `message`, so each issue is a copy of its error whose message is the error's [`problem`](/docs/configuration#problem), which leaves the path out:
+On failure, the result is `{ issues }`, one for each error in the [`ArkErrors`](/docs/errors) you get from calling the Type. Each issue's `message` is its error's, which never names the error's own path, since a library printing Standard Schema issues writes each issue's `path` before its `message` or shows it beside the field:
 
 ```ts
 const Form = type({
@@ -35,7 +35,18 @@ const result = Form["~standard"].validate({ name: "Ada", age: "old" })
 // { issues: [{ path: ["age"], message: 'must be a well-formed integer string', ... }] }
 ```
 
-A union's problem lists each branch's path from the union's, like `b must be a string or c must be a number`. A configured [`problem`](/docs/configuration#problem) changes the issue's message, but a configured [`message`](/docs/configuration#message) doesn't. The issues are written as `validate` returns, so unlike an `ArkErrors` read later, they describe the data as it was validated.
+A union's message lists each branch's path from the union's, like `b must be a string or c must be a number`. A [`message`](/docs/configuration#message) you configure, or pass to `ctx.reject`, is the issue's message as you wrote it, so it's what a form shows:
+
+```ts
+const Signup = type({
+	email: type("string.email").configure({ message: "Enter a valid email" })
+})
+
+Signup["~standard"].validate({ email: "x" })
+// { issues: [{ path: ["email"], message: "Enter a valid email", ... }] }
+```
+
+The issues are written as `validate` returns, so unlike an `ArkErrors` read later, they describe the data as it was validated.
 
 ArkType always validates synchronously. The spec allows a `Promise`, which is why the return type includes one.
 

@@ -1,6 +1,6 @@
 ---
 title: Integrations
-description: Use a Type directly with tRPC, oRPC, Drizzle, React Hook Form, Hono, the MCP SDK and the AI SDK.
+description: Use a Type directly with tRPC, oRPC, Drizzle, React Hook Form, Hono, Fastify, the MCP SDK, the AI SDK and the OpenAI and Anthropic SDKs.
 ---
 
 Most libraries on this page accept a [Standard Schema](/docs/standard-schema), so you pass a Type as-is with no adapter. Where a library also publishes an ArkType-specific adapter, its section shows the Standard Schema route first.
@@ -27,7 +27,28 @@ export const appRouter = t.router({
 })
 ```
 
-Invalid input is rejected with a `BAD_REQUEST` error before the resolver runs.
+Invalid input is rejected with a `BAD_REQUEST` error before the resolver runs. Its `cause` is the [`TraversalError`](/docs/errors#traversalerror), so an `errorFormatter` can send each field's messages to the client:
+
+```ts
+import { initTRPC } from "@trpc/server"
+import { flatMessagesByPath, TraversalError } from "arktype"
+
+const t = initTRPC.create({
+	errorFormatter: ({ shape, error }) => ({
+		...shape,
+		data: {
+			...shape.data,
+			// { name: ["must be a string"] }
+			fieldErrors:
+				error.cause instanceof TraversalError ?
+					flatMessagesByPath(error.cause.arkErrors)
+				:	null
+		}
+	})
+})
+```
+
+A [precompiled](/docs/precompile/validators#errors) build doesn't have `flatMessagesByPath`, so there, group `error.cause.arkErrors.issues` by `path`.
 
 ## oRPC
 
@@ -101,7 +122,7 @@ import { type } from "arktype"
 import { useForm } from "react-hook-form"
 
 const User = type({
-	name: "string > 0",
+	name: ["string > 0", "@", { message: "Name is required" }],
 	age: "number.integer >= 0"
 })
 
@@ -109,9 +130,11 @@ export const useUserForm = () =>
 	useForm({ resolver: standardSchemaResolver(User) })
 ```
 
+Each field's error holds its issue's `message`, which never names the field: `errors.name.message` is the [`message`](/docs/configuration#message) configured above, and `errors.age.message` is ArkType's own, like `must be an integer`.
+
 The form's field values are typed from the Type's input, and `handleSubmit` receives its output. If you pass type arguments to `useForm` yourself, pass all three: `useForm<typeof User.inferIn, unknown, typeof User.infer>`.
 
-The same package exports `arktypeResolver` from `@hookform/resolvers/arktype`, which behaves the same. `@hookform/resolvers` lists `arktype@^2` as an optional peer dependency, so npm refuses to install it beside a later major version of ArkType, whichever resolver you import, until you [override the peer](/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2). pnpm warns, and bun installs it as is.
+The same package exports `arktypeResolver` from `@hookform/resolvers/arktype`, which behaves the same from version 5. In versions 3 and 4 it [throws on invalid values](/docs/upgrading#adapters-written-for-arktype-2) beside ArkType 3. `@hookform/resolvers` lists `arktype@^2` as an optional peer dependency, so npm refuses to install it beside a later major version of ArkType, whichever resolver you import, until you [override the peer](/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2). pnpm warns, and bun installs it as is.
 
 ## Hono
 
@@ -135,9 +158,85 @@ app.post("/users", sValidator("json", User), c => {
 })
 ```
 
-Invalid requests get a 400 response with the issues as JSON. [`@hono/arktype-validator`](https://github.com/honojs/middleware/tree/main/packages/arktype-validator) provides an equivalent `arktypeValidator`, with a required peer dependency on `arktype@^2`, so npm needs the same [override](/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2) to install it.
+Invalid requests get a 400 response with the request's data and its issues as JSON, and each issue holds the value it rejected as [`data`](/docs/errors#arkerror). To choose what the response says, return it from a hook:
+
+```ts
+import { sValidator } from "@hono/standard-validator"
+import { type } from "arktype"
+import { Hono } from "hono"
+
+const User = type({
+	name: "string",
+	age: "number.integer >= 0"
+})
+
+const app = new Hono()
+// ---cut---
+app.post(
+	"/users",
+	sValidator("json", User, (result, c) => {
+		if (!result.success)
+			return c.json(
+				result.error.map(({ path, message }) => ({ path, message })),
+				400
+			)
+	}),
+	c => c.json(c.req.valid("json"))
+)
+```
+
+[`@hono/arktype-validator`](https://github.com/honojs/middleware/tree/main/packages/arktype-validator) has an `arktypeValidator` written for ArkType 2. Beside ArkType 3, version 2.0.1 answers an invalid `header` with a 500 where `sValidator` answers 400, and its required peer dependency on `arktype@^2` needs an [override](/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2) to install with npm, so use `sValidator` [until it's updated](/docs/upgrading#adapters-written-for-arktype-2).
 
 To generate an OpenAPI document from your routes, [`hono-openapi`](https://github.com/rhinobase/hono-openapi) has a `validator` that accepts a Type, and a `resolver` for describing responses with one.
+
+## Fastify
+
+[Fastify](https://fastify.dev/docs/latest/Reference/Type-Providers/) validates with any function it's given, so two compilers and a type provider make a route's `schema` take Types:
+
+```ts
+// @noErrors
+import { type } from "arktype"
+import Fastify, {
+	type FastifySchemaCompiler,
+	type FastifySerializerCompiler,
+	type FastifyTypeProvider
+} from "fastify"
+
+interface ArkTypeProvider extends FastifyTypeProvider {
+	validator: this["schema"] extends type.Any ? this["schema"]["infer"] : unknown
+	serializer: this["schema"] extends type.Any ? this["schema"]["inferIn"]
+	:	unknown
+}
+
+const validatorCompiler: FastifySchemaCompiler<type.Any> =
+	({ schema }) =>
+	data => {
+		const out = schema(data)
+		return out instanceof type.errors ?
+				{ error: new Error(out.summary) }
+			:	{ value: out }
+	}
+
+const serializerCompiler: FastifySerializerCompiler<type.Any> =
+	({ schema }) =>
+	data =>
+		JSON.stringify(schema.assert(data))
+
+const app = Fastify()
+	.setValidatorCompiler(validatorCompiler)
+	.setSerializerCompiler(serializerCompiler)
+	.withTypeProvider<ArkTypeProvider>()
+
+const User = type({ name: "string", age: "number.integer >= 0" })
+
+app.post(
+	"/users",
+	{ schema: { body: User, response: { 201: User } } },
+	async (request, reply) => reply.code(201).send(request.body)
+)
+```
+
+An invalid `body`, `querystring`, `params` or `headers` gets Fastify's 400, with the errors' [summary](/docs/errors#summary-lines) as its `message`, like `age must be non-negative`. A response is validated before it's sent, and one that fails is a 500. Where Fastify's own serializer leaves out keys the schema doesn't list, a Type sends them unless it [deletes undeclared keys](/docs/configuration#onundeclaredkey).
 
 ## MCP SDK
 
@@ -225,16 +324,103 @@ import { type } from "arktype"
 
 const weather = tool({
 	description: "Get the weather in a city",
-	inputSchema: type({ city: "string" }),
+	inputSchema: type({
+		city: type("string").describe("the name of a city")
+	}),
 	execute: async ({ city }) => ({ city, celsius: 21 })
 })
 ```
 
 The model sees the JSON Schema from [`~standard.jsonSchema`](/docs/standard-schema#standard-json-schema), and the AI SDK validates its response with the Type. Parts of a Type with no JSON Schema equivalent, like a `narrow`, aren't described to the model, but its response is still checked against them. Structured output arrives as JSON, so use `string.date.iso.parse` rather than `Date` for a date.
 
+`.describe()` writes a field's `description` in that JSON Schema, which tells the model what the field means. The same text is what the field's errors say it must be, like `city must be the name of a city`. On a Type with checks, like `"1 <= number.integer <= 7"`, `.describe(text, "self")` leaves each check its own error.
+
+## OpenAI SDK
+
+The [OpenAI SDK](https://github.com/openai/openai-node) has helpers that take a Type in `openai/helpers/standard-schema`, from version 6.49. For structured output:
+
+```ts
+// @noErrors
+import { type } from "arktype"
+import OpenAI from "openai"
+import { standardResponseFormat } from "openai/helpers/standard-schema"
+
+const Recipe = type({
+	name: "string",
+	ingredients: type({ name: "string", amount: "string" }).array(),
+	notes: "string | null"
+})
+
+const openai = new OpenAI()
+
+const completion = await openai.chat.completions.parse({
+	model: "gpt-6.1-sol",
+	messages: [{ role: "user", content: "Write a recipe for toast." }],
+	response_format: standardResponseFormat(Recipe, "recipe")
+})
+
+// typed as Recipe's output, or null
+const recipe = completion.choices[0]?.message.parsed
+```
+
+`standardTextFormat` does the same for `responses.parse`, and `standardFunction` and `standardResponsesFunction` take a Type as a tool's `parameters`. Each sends the Type's JSON Schema with `strict: true` and validates what the model returns with the Type, so an invalid response throws an `OpenAIError` listing its errors, like `Standard Schema validation failed: servings: must be at most 12`.
+
+Strict mode needs every key required. A Type with an optional key or a default throws when a helper is given it, with a message about `.optional()`: write the key as required and allow `null`, like `notes` above.
+
+## Anthropic SDK
+
+The [Anthropic SDK](https://github.com/anthropics/anthropic-sdk-typescript) has helpers that take a Type in `@anthropic-ai/sdk/helpers/beta/standard-schema`, from version 0.121. For structured output and for a tool the SDK runs:
+
+```ts
+// @noErrors
+import Anthropic from "@anthropic-ai/sdk"
+import {
+	betaStandardSchemaOutputFormat,
+	betaStandardSchemaTool
+} from "@anthropic-ai/sdk/helpers/beta/standard-schema"
+import { type } from "arktype"
+
+const client = new Anthropic()
+
+const Recipe = type({
+	name: "string",
+	ingredients: type({ name: "string", amount: "string" }).array(),
+	notes: "string | null"
+})
+
+const message = await client.beta.messages.parse({
+	model: "claude-opus-5-5",
+	max_tokens: 16000,
+	messages: [{ role: "user", content: "Write a recipe for toast." }],
+	output_config: { format: betaStandardSchemaOutputFormat(Recipe) }
+})
+
+// typed as Recipe's output, or null
+const recipe = message.parsed_output
+
+const search = betaStandardSchemaTool({
+	name: "search",
+	description: "Search recipes by keyword",
+	inputSchema: type({
+		query: type("string > 0").describe("what to search for", "self"),
+		"limit?": "1 <= number.integer <= 50"
+	}),
+	run: async ({ query, limit = 10 }) => `${limit} recipes matching ${query}`
+})
+
+const final = await client.beta.messages.toolRunner({
+	model: "claude-opus-5-5",
+	max_tokens: 16000,
+	messages: [{ role: "user", content: "Find me a toast recipe." }],
+	tools: [search]
+})
+```
+
+Both send the Type's JSON Schema and validate with the Type. A response that fails throws an `AnthropicError` listing its errors. A tool call that fails isn't run: the runner returns the errors to the model as the tool's result, like `query: must be non-empty`, so it can call again.
+
 ## Precompiled validators
 
-A [precompiled](/docs/precompile) validator validates through Standard Schema as a Type does, so tRPC, oRPC, Hono's validators, React Hook Form, TanStack Form and Router, Elysia, t3-env and Next.js server actions take one with nothing to set. The build bakes a JSON Schema into each validator it sees a library convert, so the MCP SDK, the AI SDK, Elysia's `@elysiajs/openapi`, hono-openapi and oRPC's `OpenAPIGenerator` with `@orpc/arktype` need nothing set either, as [`members`](/docs/precompile/options#members) describes. A library that defines Types itself needs [`dependencies`](/docs/precompile/options#dependencies) set:
+A [precompiled](/docs/precompile) validator validates through Standard Schema as a Type does, so tRPC, oRPC, Hono's validators, React Hook Form, TanStack Form and Router, Elysia, t3-env and Next.js server actions take one with nothing to set. The build bakes a JSON Schema into each validator it sees a library convert, so the MCP SDK, the AI SDK, the OpenAI and Anthropic SDKs' helpers, Elysia's `@elysiajs/openapi`, hono-openapi and oRPC's `OpenAPIGenerator` with `@orpc/arktype` need nothing set either, as [`members`](/docs/precompile/options#members) describes. A library that defines Types itself needs [`dependencies`](/docs/precompile/options#dependencies) set:
 
 | Library                                                       | Set in `ark.json` (or `package.json`'s `"ark"` key)                  |
 | ------------------------------------------------------------- | -------------------------------------------------------------------- |

@@ -3,7 +3,7 @@ title: Agents
 description: Help Claude Code, Codex, Cursor and other coding agents write ArkType.
 ---
 
-Every error ArkType reports names its fix: `tsc`'s as a definition is written, a [precompiled](/docs/precompile) build's and validation's. An agent can close each loop on its own, which is also why precompiling costs little with one: the build step is one more loop it already runs.
+Every error ArkType reports names its fix, whether it comes from `tsc` as a definition is written, from a [precompiled](/docs/precompile) build or from validation. An agent can close each loop on its own, which is also why precompiling costs little with one: the build step is one more loop it already runs.
 
 ## Skill
 
@@ -15,7 +15,7 @@ npx skills add arktypeio/arktype
 
 This installs the skill from the repository's default branch, which tracks the latest release. The `arktype` package also includes the skill at `skills/arktype/SKILL.md`, so tools like [skills-npm](https://github.com/antfu/skills-npm) can link the copy that matches your installed version.
 
-Agents read two references the skill links when a task needs them: the [migration guide](/docs/migrating), when they convert schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema, and a precompile guide with the setup for each bundler, Next.js and test runner and the fix for each build error.
+Agents read two references the skill links when a task needs them: the [migration guide](/docs/migrating), when they convert schemas from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema or JSON Schema, and a precompile guide with the setup for each bundler, Next.js and test runner and the fix for each build error. To upgrade from ArkType 2, the skill sends them to [Upgrading](/docs/upgrading): ask for `Upgrade this project to ArkType 3`.
 
 ## Migrate from Zod
 
@@ -88,5 +88,7 @@ server.registerTool(
 ```
 
 Calling `greet` with `times: 99` returns an error result to the model with ArkType's message, `times must be at most 5`, so it knows what to fix.
+
+The [AI SDK](/docs/integrations#ai-sdk), the [OpenAI SDK](/docs/integrations#openai-sdk) and the [Anthropic SDK](/docs/integrations#anthropic-sdk) take a Type for a tool's input or a structured output too.
 
 A [precompiled](/docs/precompile) validator ships `~standard.jsonSchema`, which the SDK reads to describe the tool, as the build sees the SDK read it.

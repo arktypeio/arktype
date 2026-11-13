@@ -15,7 +15,7 @@ Then ask your agent:
 Migrate this project from Zod to ArkType.
 ```
 
-The skill includes this page, and your agent works through [Migrating a project](#migrating-a-project): it converts each schema where it is, keeping what it accepts, rejects and returns, updates the code that calls it and swaps integrations like `zodResolver`. Before removing `zod`, it compares each schema your tests don't cover with its Zod original on the same inputs, then runs your typecheck and tests. Where a dependency accepts only Zod, like the MCP SDK before v2, it keeps Zod for that call. Its summary lists anything that still behaves differently, like error message text.
+It follows [Migrating a project](#migrating-a-project): it converts each schema where it is, keeps what it accepts, rejects and returns, swaps integrations like `zodResolver`, compares the result with the Zod originals on the same inputs and runs your typecheck and tests. Its summary lists anything that still behaves differently, like the text of an error message.
 
 To [precompile](/docs/precompile) in the same pass, ask for both:
 
@@ -23,11 +23,11 @@ To [precompile](/docs/precompile) in the same pass, ask for both:
 Migrate this project from Zod to ArkType and precompile it.
 ```
 
-To convert by hand, start with the example below, then the [Zod table](#zod) and [Defaults that differ](#defaults-that-differ).
+To convert by hand, start with the example below, then find each API in the [Zod tables](#zod).
 
 ## Zod side by side
 
-A Zod schema and its ArkType equivalent:
+A Zod schema:
 
 ```ts
 // ---cut-start---
@@ -36,7 +36,7 @@ declare const data: unknown
 import { z } from "zod"
 
 const User = z.object({
-	name: z.string().min(1),
+	name: z.string().min(1, "Name is required"),
 	email: z.email(),
 	age: z.number().int().nonnegative().optional(),
 	role: z.enum(["admin", "member"]).default("member")
@@ -46,22 +46,22 @@ type User = z.infer<typeof User>
 
 const result = User.safeParse(data)
 
-if (!result.success) console.error(result.error.issues)
+if (!result.success) console.error(z.prettifyError(result.error))
 ```
+
+The same in ArkType:
 
 ```ts
 // ---cut-start---
 declare const data: unknown
 // ---cut-end---
+import "./arktype.config.ts"
 import { type } from "arktype"
 
 const User = type({
-	// z.object() removes undeclared keys
-	"+": "delete",
-	name: "string >= 1",
+	name: ["string >= 1", "@", { message: "Name is required" }],
 	email: "string.email",
-	// .optional() accepts undefined too
-	"age?": "number.integer >= 0 | undefined",
+	"age?": "number.integer >= 0",
 	role: "'admin' | 'member' = 'member'"
 })
 
@@ -69,74 +69,258 @@ type User = typeof User.infer
 
 const out = User(data)
 
-if (out instanceof type.errors) console.error(out.issues)
+if (out instanceof type.errors) console.error(out.summary)
 ```
 
-`.parse(data)` is `User.assert(data)`. The [Zod table](#zod) maps the rest of the API, and [Defaults that differ](#defaults-that-differ) lists what to write where the two libraries' defaults disagree, like `"+": "delete"` above. One the example leaves as is: Zod also applies `role`'s default when the key is present as `undefined`, which ArkType rejects.
+Two of Zod's defaults differ from ArkType's, and the config file it imports sets both for every Type in the project:
+
+```ts title="arktype.config.ts"
+import { configure } from "arktype/config"
+
+configure({
+	// z.object() removes undeclared keys, where ArkType keeps them
+	onUndeclaredKey: "delete",
+	// .optional() accepts undefined and .default() replaces it,
+	// where ArkType's optional keys and defaults are for missing keys only
+	exactOptionalPropertyTypes: false
+})
+```
+
+Import it before anything creates a Type. To convert one schema without it, say both in the definition: `"+": "delete"` in each object, and `"age?": "number.integer >= 0 | undefined"`. [Defaults that differ](#defaults-that-differ) has every default to check, for each library.
 
 ## Zod
 
-Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like `z.string().optional()`, and `z.string().check(z.minLength(1))` like `z.string().min(1)`.
+The ArkType column assumes [the two options above](#zod-side-by-side). In a string, `T` stands for a keyword or expression, as in `"string | null"`. A string can't name a variable, so for a Type in one, use the chained form, like `T.or("null")` or `T.array()`, or put the Type itself where the string would go, as in `{ "[string]": T }`.
 
-| Zod                                                     | ArkType                                                                              |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `z.string()`, `z.number()`, `z.boolean()`, `z.null()`   | `"string"`, `"number"`, `"boolean"`, `"null"`                                        |
-| `z.bigint()`, `z.symbol()`, `z.undefined()`, `z.void()` | `"bigint"`, `"symbol"`, `"undefined"`, `"undefined"`                                 |
-| `z.unknown()`, `z.any()`, `z.never()`                   | `"unknown"`, `"unknown.any"`, `"never"`                                              |
-| `z.literal("a")`, `z.literal(0.5)`                      | `"'a'"`, `"0.5"`                                                                     |
-| `z.enum(["a", "b"])`                                    | `"'a' \| 'b'"` or `type.enumerated("a", "b")`                                        |
-| `z.nativeEnum(E)`, `z.enum(E)`                          | `type.valueOf(E)`                                                                    |
-| `z.object({ ... })`                                     | `type({ ... })`, nested objects as plain objects                                     |
-| `.optional()` on a property                             | `"key?": "T \| undefined"`                                                           |
-| `.optional()` anywhere else                             | `"T \| undefined"` or `T.or("undefined")`                                            |
-| `.nullable()`, `.nullish()`                             | `"T \| null"`, `"key?": "T \| null \| undefined"`                                    |
-| `.default(x)` on a property                             | `key: "number = 0"` or `key: T.default(x)`                                           |
-| `.catch(x)`                                             | a `.pipe()` that returns `x` for invalid input, see [Fallbacks](#semantics-to-check) |
-| `z.array(T)`, `.min(1)`, `.nonempty()`                  | `"T[]"` or `T.array()`, `"string[] >= 1"`                                            |
-| `z.array(T).min(1)`, `T` a Type in a variable           | `T.array().atLeastLength(1)`                                                         |
-| `z.tuple([A, B])`, `.rest(C)`                           | `[A, B]`, `[A, B, "...", "C[]"]`                                                     |
-| `z.union([A, B])`, `A.or(B)`, `z.discriminatedUnion`    | `A.or(B)`, `"A \| B"`                                                                |
-| `z.intersection(A, B)`, `A.and(B)`                      | `A.and(B)`                                                                           |
-| `z.record(z.string(), T)`                               | `"Record<string, T>"` or `{ "[string]": T }`                                         |
-| `z.record(z.enum(["a", "b"]), T)`, `z.partialRecord`    | `{ a: T, b: T }`, `{ "a?": T, "b?": T }`                                             |
-| `z.set(T)`, `z.map(K, V)`                               | `"Set"`, `"Map"`, with a `.narrow()` that checks the entries                         |
-| `.extend({ ... })`, `.merge(B)`                         | `.merge({ ... })`                                                                    |
-| `.pick`, `.omit`, `.partial`, `.required`, `.keyof`     | same names                                                                           |
-| `.array()`, `.readonly()`                               | same names                                                                           |
-| `.strict()`, `z.strictObject`                           | `"+": "reject"`                                                                      |
-| `.passthrough()`, `z.looseObject`                       | the default                                                                          |
-| `.strip()`, the default `z.object`                      | `"+": "delete"`                                                                      |
-| `.catchall(T)`                                          | `"[/^(?!a$\|b$)/]": T`, `a` and `b` the declared keys                                |
-| `z.lazy(() => T)`                                       | a scope or `this`                                                                    |
-| `.min(n)` / `.max(n)` / `.length(n)` on strings         | `"string >= n"`, `"string <= n"`, `"string == n"`                                    |
-| `.nonempty()` on strings                                | `"string > 0"`                                                                       |
-| `.startsWith("a")`, `.endsWith("a")`, `.includes("a")`  | `/^a/`, `/a$/`, `/a/`, escaping regex characters                                     |
-| `.int()`                                                | `"number.integer & number.safe"`, or `"number.integer"` in Zod 3                     |
-| `.positive()`, `.nonnegative()`, `.gt(n)`               | `"number > 0"`, `"number >= 0"`, `"number > n"`                                      |
-| `.min(n)` / `.max(n)` / `.lt(n)` on numbers             | `"number >= n"`, `"number <= n"`, `"number < n"`                                     |
-| `.multipleOf(n)`                                        | `"number % n"`                                                                       |
-| `.email()`, `.url()`, `.uuid()`, `.regex(r)`            | `"string.email"`, `"string.url"`, `"string.uuid"`, `/r/`                             |
-| `.ip()` (Zod 3), `z.ipv4()`, `z.ipv6()`                 | `"string.ip"`, `"string.ip.v4"`, `"string.ip.v6"`                                    |
-| `.datetime()`, `z.iso.datetime()`                       | `"string.date.iso"`                                                                  |
-| `.trim()`, `.toLowerCase()`, `.toUpperCase()`           | `"string.trim"`, `"string.lower"`, `"string.upper"`                                  |
-| `z.date()`, `z.instanceof(C)`                           | `"Date"`, `type.instanceOf(C)`                                                       |
-| `.refine(fn, msg)`, `.superRefine(fn)`                  | `.narrow((v, ctx) => fn(v) \|\| ctx.reject({ message: msg }))`                       |
-| `.transform(fn)`, `.pipe(T)`                            | `.pipe(fn)`, `.to(T)`                                                                |
-| `z.preprocess(fn, T)`                                   | `type("unknown").pipe(fn).to(T)`                                                     |
-| `z.coerce.number()`, `z.coerce.date()`                  | `type("unknown").pipe(Number).to("number")`, see [Coercion](#semantics-to-check)     |
-| `z.coerce.string()`, `z.coerce.boolean()`               | `type("unknown").pipe(String)`, `type("unknown").pipe(Boolean)`                      |
-| `z.custom<T>(fn)`                                       | `type("unknown").narrow((v): v is T => fn(v))`                                       |
-| `.brand<"Id">()`                                        | `.brand("Id")` or `"string#Id"`                                                      |
-| `.describe(text)`, `.meta({ title })`                   | a comment or `.configure({ title: text })`                                           |
-| `{ message }`, `{ error }`, `required_error`            | `.configure({ message })`, or `.describe(...)` for "must be ..."                     |
-| `z.infer`, `z.output`, `z.input`                        | `typeof T.infer`, `typeof T.inferIn`                                                 |
-| `const T: z.ZodType<X> = ...`                           | no annotation: delete `X` and use `typeof T.infer`                                   |
-| `.parse(x)`, `.safeParse(x)`                            | `T.assert(x)`, `T(x)` then `instanceof type.errors`                                  |
-| `.parseAsync(x)`, `.safeParseAsync(x)`                  | the same, since ArkType is synchronous                                               |
-| `ZodError`, `error.issues`                              | `type.errors`, `out.issues`                                                          |
-| `z.prettifyError(error)`                                | `out.summary`                                                                        |
-| `error.flatten()`, `z.flattenError(error)`              | `out.issues` grouped by key, see [Update call sites](#migrating-a-project)           |
-| `z.ZodTypeAny` in a helper's signature                  | `type.Any`                                                                           |
+Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like `z.string().optional()`, `z.string().check(z.minLength(1))` like `z.string().min(1)`, `z._default(T, x)` like `T.default(x)`, `z.extend(A, { ... })` like `A.extend({ ... })` and `z.safeParse(T, x)` like `T.safeParse(x)`.
+
+### Primitives and literals
+
+| Zod                                                                   | ArkType                                                     |
+| --------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `z.string()`, `z.number()`, `z.boolean()`, `z.bigint()`, `z.symbol()` | `"string"`, `"number"`, `"boolean"`, `"bigint"`, `"symbol"` |
+| `z.null()`, `z.undefined()`, `z.void()`                               | `"null"`, `"undefined"`, `"undefined"`                      |
+| `z.unknown()`, `z.any()`, `z.never()`                                 | `"unknown"`, `"unknown.any"`, `"never"`                     |
+| `z.date()`, `z.instanceof(C)`                                         | `"Date"`, `type.instanceOf(C)`                              |
+| `z.literal("a")`, `z.literal(0.5)`, `z.literal(true)`                 | `"'a'"`, `"0.5"`, `"true"`                                  |
+| `z.enum(["a", "b"])`, `z.literal(["a", "b"])`                         | `"'a' \| 'b'"` or `type.enumerated("a", "b")`               |
+| `z.enum(values)`, `values` an `as const` array                        | `type.enumerated(...values)`                                |
+| `z.nativeEnum(E)`, `z.enum(E)`                                        | `type.valueOf(E)`                                           |
+| `z.json()`                                                            | `"string \| number \| boolean \| null \| object.json"`      |
+
+### Strings
+
+| Zod                                                    | ArkType                                                                              |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `.min(n)`, `.max(n)`, `.length(n)`                     | `"string >= n"`, `"string <= n"`, `"string == n"`                                    |
+| `.min(1).max(100)`, `.nonempty()`                      | `"1 <= string <= 100"`, `"string > 0"`                                               |
+| `z.email()`, `z.url()`, `z.uuid()`, `z.base64()`       | `"string.email"`, `"string.url"`, `"string.uuid"`, `"string.base64"`                 |
+| `z.string().email()` and the other chained formats     | the same keywords                                                                    |
+| `.regex(/^a/)`                                         | `/^a/`, or `"/^a/"` in a string                                                      |
+| `.startsWith("a")`, `.endsWith("a")`, `.includes("a")` | `/^a/`, `/a$/`, `/a/`, escaping regex characters                                     |
+| `z.ipv4()`, `z.ipv6()`, `.ip()` (Zod 3)                | `"string.ip.v4"`, `"string.ip.v6"`, `"string.ip"`                                    |
+| `z.creditCard()`                                       | `"string.creditCard"`, which rejects spaces and hyphens                              |
+| `z.iso.datetime()`, `.datetime()`, `z.iso.date()`      | `"string.date.iso"`, which accepts more; see [Dates and formats](#dates-and-formats) |
+| `.trim()`, `.toLowerCase()`, `.toUpperCase()`          | `"string.trim"`, `"string.lower"`, `"string.upper"`                                  |
+| `.trim().min(1)`, a check after a transform            | `type("string.trim").to("string >= 1")`                                              |
+
+### Numbers
+
+| Zod                                                              | ArkType                                                                                      |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `.int()`, `z.int()`                                              | `"number.integer & number.safe"`, or `"number.integer"` in Zod 3                             |
+| `.positive()`, `.nonnegative()`, `.negative()`, `.nonpositive()` | `"number > 0"`, `"number >= 0"`, `"number < 0"`, `"number <= 0"`                             |
+| `.gt(n)`, `.gte(n)` or `.min(n)`                                 | `"number > n"`, `"number >= n"`                                                              |
+| `.lt(n)`, `.lte(n)` or `.max(n)`                                 | `"number < n"`, `"number <= n"`                                                              |
+| `.int().min(1).max(5)`                                           | `"1 <= number.integer <= 5"`                                                                 |
+| `.multipleOf(5)`, `.step(5)`                                     | `"number % 5"`, for an integer divisor                                                       |
+| `.multipleOf(0.01)`                                              | `.narrow((n, ctx) => Math.round(n * 100) / 100 === n \|\| ctx.mustBe("a multiple of 0.01"))` |
+| `.finite()`                                                      | `"number"`, which already rejects `Infinity` and `NaN`                                       |
+| `.safe()` (Zod 3)                                                | `"number.safe"`                                                                              |
+
+### Objects
+
+| Zod                                                     | ArkType                                                                                            |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `z.object({ ... })`                                     | `type({ ... })`, nested objects as plain objects                                                   |
+| `.optional()` on a property                             | `"key?": "T"`, or `key: T.optional()` for a Type in a variable                                     |
+| `.optional()` anywhere else                             | `"T \| undefined"` or `T.or("undefined")`                                                          |
+| `.exactOptional()`, `.exactPartial()`                   | `"key?": "T"`, `.partial()`, without `exactOptionalPropertyTypes: false` in the config             |
+| `.nullable()`, `.nullish()`                             | `"T \| null"`, `"key?": "T \| null"`                                                               |
+| `.default(x)` on a property                             | `key: "number = 0"` or `key: T.default(x)`                                                         |
+| `.default([])`, `.default({})`                          | `key: "string[] = []"`, `key: "object = {}"`, or `key: T.default(() => [])` for a Type: a function |
+| `.default(x)` anywhere else, like one env variable's    | `type("T \| undefined").pipe(v => v ?? x)`: a default belongs to a key                             |
+| `.catch(x)`                                             | a `.pipe()` that returns `x` for invalid input, see [Fallbacks](#fallbacks)                        |
+| `.extend({ ... })`, `.safeExtend({ ... })`, `.merge(B)` | `.merge({ ... })`, `.merge(B)`                                                                     |
+| `.pick({ a: true })`, `.omit({ a: true })`              | `.pick("a")`, `.omit("a")`                                                                         |
+| `.partial()`, `.required()`, `.keyof()`                 | same names                                                                                         |
+| `.required()` on keys that were optional or defaulted   | `.merge()` them in without `?`: its keys still take `undefined` once configured, and lose defaults |
+| `.deepPartial()` (Zod 3), `z.deepPartial(T)`            | no equivalent: call `.partial()` on each nested object's Type                                      |
+| any of those on a schema with a `.refine()`             | on the object before its `.narrow()`, see [Composing objects](#composing-objects)                  |
+| `T.shape.a`, `Object.keys(T.shape)`                     | `T.get("a")`, `T.props.map(prop => prop.key)`                                                      |
+| `z.object({ a: T.shape.a, b: B })`, to reuse a key      | `T.pick("a").merge({ b: B })`: `T.get("a")` is `a`'s Type without its `?` or default               |
+| `.strict()`, `z.strictObject`                           | `"+": "reject"` in the object, or `T.onUndeclaredKey("reject")`                                    |
+| `.passthrough()`, `.loose()`, `z.looseObject`           | `"+": "ignore"` in the object, or `T.onUndeclaredKey("ignore")`                                    |
+| the same, where code reads the extra keys               | `"[string]": "unknown"` beside it, which infers the index signature Zod's type had                 |
+| `.strip()`, the default `z.object`                      | the default once configured, or `"+": "delete"`                                                    |
+| `.catchall(T)`                                          | `"[/^(?!a$\|b$)/]": T`, `a` and `b` the declared keys                                              |
+
+### Arrays, tuples and records
+
+| Zod                                                  | ArkType                                                                             |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `z.array(z.string())`, `z.array(T)`                  | `"string[]"`, `T.array()` for a Type in a variable                                  |
+| `.min(1)` or `.nonempty()`, `.max(5)`, `.length(2)`  | `"string[] >= 1"`, `"string[] <= 5"`, `"string[] == 2"`                             |
+| the same after `T.array()`                           | `.atLeastLength(1)`, `.atMostLength(5)`, `.exactlyLength(2)`                        |
+| `z.tuple([A, B])`, `.rest(C)`                        | `[A, B]`, `[A, B, "...", "C[]"]`                                                    |
+| `z.tuple([A, B.optional()])`                         | `[A, "B?"]`, or `[A, "(B \| undefined)?"]` to accept `undefined` in its place       |
+| `z.record(z.string(), T)`                            | `"Record<string, T>"` or `{ "[string]": T }`                                        |
+| an array given to `z.record(z.string(), T)`          | passes if its elements are `T`: see [Defaults that differ](#defaults-that-differ)   |
+| `z.record(z.enum(["a", "b"]), T)`, `z.partialRecord` | `{ "+": "reject", a: T, b: T }`, the same with `"a?"` and `"b?"`                    |
+| `z.record(z.string().regex(/^[A-Z_]+$/), T)`         | `{ "+": "reject", "[/^[A-Z_]+$/]": T }`, since Zod rejects a key that doesn't match |
+| `z.set(T)`, `z.map(K, V)`                            | `"Set"`, `"Map"` and a `.narrow()` on the entries, typed `(s): s is Set<T> =>`      |
+| `.readonly()`                                        | `.readonly()`                                                                       |
+
+### Unions and recursion
+
+| Zod                                    | ArkType                                                                        |
+| -------------------------------------- | ------------------------------------------------------------------------------ |
+| `z.union([A, B])`, `A.or(B)`           | `A.or(B)`, `"string \| number"`                                                |
+| `z.discriminatedUnion("kind", [A, B])` | `A.or(B)`: ArkType finds the discriminant itself                               |
+| `z.union([Item, z.array(Item)])`       | a `.pipe()` that picks the branch, see [Unions of objects](#unions-of-objects) |
+| `z.intersection(A, B)`, `A.and(B)`     | `A.and(B)`                                                                     |
+| `z.lazy(() => T)`, a getter            | `"this"` or a scope, see [Recursion](#recursion-needs-no-annotation)           |
+
+### Refinements and transforms
+
+| Zod                                                           | ArkType                                                                                                            |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `.refine(fn, "Message")`                                      | `.narrow((v, ctx) => fn(v) \|\| ctx.reject({ message: "Message" }))`                                               |
+| `.refine(fn, { message, path: ["key"] })`                     | the same, with `ctx.reject({ message, relativePath: ["key"] })`                                                    |
+| `.superRefine(fn)`, `.check(fn)`, several `addIssue`s         | `ctx.error({ message, relativePath })` for each, see [Refinements](#refinements)                                   |
+| `.transform(fn)`, `.pipe(T)`                                  | `.pipe(fn)`, `.to(T)`                                                                                              |
+| a transform that fails: `ctx.addIssue(...)`, `return z.NEVER` | `.pipe((v, ctx) => ok ? result : ctx.error({ message }))`                                                          |
+| `z.preprocess(fn, T)`                                         | `type("unknown").pipe(fn).to(T)`                                                                                   |
+| `z.coerce.number()`, `z.coerce.date()`                        | `type("unknown").pipe(Number).to("number")`, see [Coercion](#coercion-is-a-parse)                                  |
+| `z.coerce.string()`, `z.coerce.boolean()`                     | `type("unknown").pipe(String)`, `type("unknown").pipe(Boolean)`                                                    |
+| `z.stringbool()`                                              | a `.pipe()` over the strings you accept, see [Coercion](#coercion-is-a-parse)                                      |
+| `z.custom<T>(fn)`, `z.custom<T>(fn, "Message")`               | `type("unknown").narrow((v): v is T => fn(v))`, then `.configure({ message: "Message" })`                          |
+| `.brand<"Id">()`                                              | `.brand("Id")` or `"string#Id"`                                                                                    |
+| `z.codec(In, Out, { decode, encode })`                        | `codec(In, Out, { decode, encode })` from `arktype/codecs`                                                         |
+| `T.decode(x)`, `T.encode(x)`, `T.safeEncode(x)`               | `T.assert(x)`, `T.encode.assert(x)`, `T.encode(x)`                                                                 |
+| `z.input(T)`, `z.output(T)`, as schemas                       | `T.in`, `T.out`                                                                                                    |
+| `.describe(text)`, `.meta({ description })`                   | `.describe(text)` where a model or an OpenAPI document reads it, else a comment; see [Descriptions](#descriptions) |
+
+### Error messages
+
+Every row is in [Custom messages](#custom-messages), with what each says.
+
+| Zod                                                | ArkType                                                                            |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `.min(1, "Name is required")`, `{ message }`       | `["string >= 1", "@", { message: "Name is required" }]` as a key's value           |
+| the same, on a Type                                | `type("string >= 1").configure({ message: "Name is required" })`                   |
+| `.min(8, "Too short").regex(r, "Add a number")`    | `.configure({ message: "Too short" }, "minLength")`, then the same for `"pattern"` |
+| `z.string({ error: "Enter a name" })`              | `["string", "@", { message: "Enter a name" }]`, which a missing key says too       |
+| `required_error`, `invalid_type_error` (Zod 3)     | `.configure({ message }, "self")`, `.configure({ message }, "domain")`             |
+| `.refine(fn, "Message")`                           | `ctx.reject({ message: "Message" })`                                               |
+| `error: issue => ...`, `z.config({ customError })` | `message: error => ...`, or [by code](/docs/configuration#by-code) in `configure`  |
+| `errorMap`, `z.setErrorMap(fn)` (Zod 3)            | the same: `message: error => ...` on the Type, or by code in `configure`           |
+
+### Types and parsing
+
+| Zod                                                       | ArkType                                                                                |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `z.infer<typeof T>`, `z.output`, `z.input`                | `typeof T.infer`, `typeof T.infer`, `typeof T.inferIn`                                 |
+| `const T: z.ZodType<X> = ...`                             | no annotation: delete `X` and use `typeof T.infer`, or the next row to keep `X`        |
+| `satisfies z.ZodType<X>`, `z.toZod<X>()`: `X` must stay   | [`type.declare<X>().type({ ... })`](/docs/declare)                                     |
+| `z.ZodType`, `z.ZodTypeAny` in a helper's signature       | `type.Any`                                                                             |
+| `schema: z.ZodType<X>`, any schema that returns `X`       | `schema: { assert: (data: unknown) => X }`: see [step 4](#migrating-a-project)         |
+| `T.parse(x)`                                              | `T.assert(x)`                                                                          |
+| `T.safeParse(x)`, then `result.success` and `result.data` | `const out = T(x)`, then `out instanceof type.errors`, else `out` is the data          |
+| `.parseAsync(x)`, `.safeParseAsync(x)`                    | the same, since ArkType is synchronous                                                 |
+| `T.validate(x)`, `z.validate(T, x)`                       | `T.allows(x)`                                                                          |
+| `z.compile(T)`                                            | `T`: a Type compiles itself, and a build can [precompile](#precompile) it              |
+| `result.error.issues`, `issue.path`, `issue.message`      | `out.issues`, `issue.path`, `issue.message`                                            |
+| `error.errors` (Zod 3), `z.ZodIssue`, `z.ZodError` types  | `out.issues`, and the types `ArkError` and `ArkErrors` from `arktype`                  |
+| `issue.code`, like `"too_small"`                          | `issue.code`, with [ArkType's codes](#issue-codes), like `"minLength"`                 |
+| `catch (e) { if (e instanceof ZodError) ... }`            | `e instanceof TraversalError`, whose `e.arkErrors.issues` holds them                   |
+| `z.prettifyError(error)`                                  | `out.summary`                                                                          |
+| `error.flatten()`, `z.flattenError(error)`                | group `out.issues` by key, see [Update call sites](#migrating-a-project)               |
+| `z.treeifyError(error)`, `error.format()`                 | build the tree from each issue's `path`, see [Update call sites](#migrating-a-project) |
+
+### Issue codes
+
+Code that reads `issue.code`, like an API's error translator or a `customError` map, needs ArkType's [codes](/docs/errors#error-codes):
+
+| Zod                                          | ArkType                                                                                    |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `invalid_type`                               | `required`, `domain`, `proto` or `discriminant`, as below                                  |
+| `invalid_value`                              | `unit` for one literal, `discriminant` for several                                         |
+| `invalid_union`                              | `discriminant`, or `union` where neither a type nor a literal key tells the branches apart |
+| `too_small`, `too_big` for a number          | `min`, `max`                                                                               |
+| `too_small`, `too_big` for a string or array | `minLength`, `maxLength`, or `exactLength` for `.length(n)` and a tuple                    |
+| `too_small`, `too_big` for a `Date`          | `after`, `before`                                                                          |
+| `not_multiple_of`, `.int()`'s `invalid_type` | `divisor`                                                                                  |
+| `invalid_format`                             | `pattern`, or `predicate` for `string.url`                                                 |
+| `unrecognized_keys`                          | `undeclared`, an issue for each key, at the key                                            |
+| `custom`                                     | `predicate`                                                                                |
+
+A `z.union()` of objects often reports one `invalid_union` issue at the union's own path, with each branch's issues inside it. Here a literal key like `type` picks the branch, as in a `z.discriminatedUnion()`, so the issues are that branch's own, each at its own path, and a value that matches no branch gets a `discriminant` issue at that key.
+
+Zod's `minimum` and `maximum` are `issue.rule`. A wrong type is `required` for a missing key, `domain` for a primitive or an object, `proto` for an array, a `Date` or another class, and `discriminant` where the value may also be `null` or `undefined`, which is a boolean's and an enum's code too. So one message for every wrong type, as a `customError` gives `invalid_type`, is configured under four codes:
+
+```ts title="arktype.config.ts"
+import { configure } from "arktype/config"
+
+const wrongType = { message: "Wrong type" }
+
+configure({
+	onUndeclaredKey: "delete",
+	exactOptionalPropertyTypes: false,
+	required: wrongType,
+	domain: wrongType,
+	proto: wrongType,
+	discriminant: {
+		// "unit" for a boolean or an enum, which literals tell apart
+		message: error =>
+			error.discriminantKind === "domain" ?
+				"Wrong type"
+			:	`Expected ${error.expected}`
+	}
+})
+```
+
+A [precompiled](/docs/precompile) build takes a function for the table's other codes, but only a string for `discriminant` and `union`, so a boolean's or an enum's miss says it too, and no message for `predicate`: pass a narrow's text to `ctx.reject()`.
+
+### Less common
+
+| Zod                                                           | ArkType                                                                                    |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `z.hex()`, `z.base64url()`, `z.uuidv4()`                      | `"string.hex"`, `"string.base64.url"`, `"string.uuid.v4"`                                  |
+| `z.nanoid()`, `z.ulid()`, `z.cuid2()`, `z.e164()`, `z.guid()` | no keyword: a regex, like the one Zod exports as `z.regexes.ulid`                          |
+| `z.iso.time()`, `z.iso.duration()`                            | the same, from `z.regexes.time({})` and `z.regexes.duration`                               |
+| `z.hostname()`, `z.cidrv4()`, `z.cidrv6()`                    | the same, from `z.regexes.hostname`, `z.regexes.cidrv4` and `z.regexes.cidrv6`             |
+| `z.httpUrl()`                                                 | `type("string.url").and(/^https?:\/\//i)`                                                  |
+| `.lowercase()`, `.uppercase()`, `.normalize()`                | `"string.lower.preformatted"`, `"string.upper.preformatted"`, `"string.normalize"`         |
+| `z.templateLiteral(["user-", z.number()])`                    | a regex, like `/^user-\d+$/`                                                               |
+| `z.int32()`, `z.uint32()`                                     | `"-2147483648 <= number.integer <= 2147483647"`, `"0 <= number.integer <= 4294967295"`     |
+| `z.nan()`                                                     | `"number.NaN"`                                                                             |
+| `z.bigint().min(5n)`                                          | `"bigint"` with a `.narrow()`                                                              |
+| `z.file()`, with `.max(n)` or `.mime(type)`                   | `"File"`, with a `.narrow()` on its `size` and `type`                                      |
+| `z.promise(T)`, `z.function()`                                | `"Promise"`, `"Function"`                                                                  |
+| `z.xor([A, B])`                                               | a `.pipe()` that calls both and rejects unless one passes                                  |
+| `.prefault(x)`                                                | `.default(x)`, which is an input as `.prefault()`'s is                                     |
+| `.overwrite(fn)`                                              | `.pipe(fn)`                                                                                |
+| `.nonoptional()`                                              | the key without its `?`                                                                    |
+| `.unwrap()` on a nullable or optional schema                  | `T.exclude("null")`, `T.exclude("undefined")`                                              |
+| `T.element` on an array, `T.valueType` on a record            | keep that Type in a `const`: `T.get(0)` and `T.get("key")` add `undefined` to it           |
+| `.isOptional()`, `.isNullable()`                              | `T.allows(undefined)`, `T.allows(null)`                                                    |
+| `T.options`, `T.enum.a` on a `z.enum`                         | `T.select("unit").map(u => u.unit)`, or keep the values in an `as const` array of your own |
+| `schema instanceof z.ZodObject`                               | `T.extends("object")`                                                                      |
+| `.meta({ title, examples })`, a registry                      | `.configure({ title, examples })`, read back from `T.meta`                                 |
+| `z.config(z.locales.de())`                                    | `configure({ locale: de })`, see [i18n](/docs/i18n); only `en` and `de` ship               |
+| `zfd.formData({ ... })` from `zod-form-data`                  | `type("FormData.parse").to({ ... })`, see [Form data](#form-data)                          |
+| `z.fromJSONSchema(schema)`                                    | `jsonSchemaToType(schema)` from [`@ark/json-schema`](/docs/json-schema/from-json-schema)   |
 
 ## Defaults that differ
 
@@ -150,11 +334,28 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `number` accepts `NaN`                        | no                 | no                 | no       | no                    | no                   | no                        | yes           |
 | An array where an object is expected          | accepted           | rejected           | accepted | rejected              | rejected             | rejected                  | rejected      |
 | Empty string for a plain string               | accepted           | accepted           | accepted | accepted              | rejected if required | rejected                  | accepted      |
+| Arrays and objects in the output are copies   | only if changed    | yes                | yes      | returns a boolean     | only if changed      | yes                       | yes           |
 
-What to write when the old behavior matters:
+Two global options cover the first three rows, set with `configure` from `arktype/config` in a file imported before anything creates a Type:
+
+```ts title="arktype.config.ts"
+import { configure } from "arktype/config"
+
+configure({
+	// remove undeclared keys, as Zod, Valibot and Effect do
+	onUndeclaredKey: "delete",
+	// accept undefined at an optional key and replace it with a key's default,
+	// as Zod, Valibot, Yup, Joi and Effect do
+	exactOptionalPropertyTypes: false
+})
+```
+
+Set `exactOptionalPropertyTypes: false` only if your `tsconfig.json` doesn't turn TypeScript's option of that name on: with it on, the types ArkType infers leave out the `undefined` its optional keys would accept.
+
+To change one Type instead:
 
 ```ts
-// remove undeclared keys like Zod, Valibot and Effect, for this object only
+// remove undeclared keys, for this object only
 const Stripped = type({ "+": "delete", name: "string" })
 
 // reject them like Joi or Zod's .strict()
@@ -176,39 +377,39 @@ const Measurement = type(
 )
 
 // reject an array, which matches an object whose keys are all optional
+// (and comes back with its elements deleted, as undeclared keys), or a
+// Record whose values its elements are
 const Filters = type({ "limit?": "number", "cursor?": "string" }).narrow(
-	(o, ctx) => !Array.isArray(o) || ctx.reject("an object")
+	(o, ctx) => !Array.isArray(o) || ctx.mustBe("an object")
 )
 
 // count a string's length in code points, like Zod 4.5's .min(1).max(32)
 const Title = type("string").narrow((s, ctx) => {
 	const length = [...s].length
-	return (length >= 1 && length <= 32) || ctx.reject("1 to 32 characters")
+	return (length >= 1 && length <= 32) || ctx.mustBe("1 to 32 characters")
 })
 ```
 
-`"+"` applies to its own object, not to nested ones, and `.merge()` takes it from the object merged in, so repeat it there. To remove undeclared keys everywhere, as Zod does, set `onUndeclaredKey: "delete"` with `configure` from `arktype/config`, in a file imported before anything imports `arktype`.
-
-Either way, an object that deletes keys transforms its input, so a union of such objects needs a key that tells them apart, like a literal `type`. Without one, data with both objects' keys could come out as either, so the union throws a `ParseError`. Where the old schema has no such key, delete outside the union. The result keeps every key either object declares, where Zod keeps only those of the first object that matches:
-
-```ts
-// z.union([z.object({ uri, text }), z.object({ uri, blob })])
-const Contents = type({ "+": "ignore", uri: "string", text: "string" })
-	.or({ "+": "ignore", uri: "string", blob: "string" })
-	.to({ "+": "delete", uri: "string", "text?": "string", "blob?": "string" })
-```
+`"+"` applies to its own object, not to nested ones, and `.merge()` takes it from the object merged in, so repeat it there. The global option covers every object.
 
 With `"delete"` or `"reject"`, from `"+"` or `configure`, an object's undeclared keys are `never`, so `.and()` with an object that has other keys throws. Add keys with `.merge()`.
 
+A Type's output shares what it didn't change with its input. An object that deletes undeclared keys is a new one, but an array of strings, a `Map`, a `Set` or a `"+": "ignore"` object is the caller's own, where Zod returned a copy. Code that sorts or pushes to a parsed array now changes the input too, so copy it first, as in `[...out.tags].sort()`.
+
 ## Semantics to check
 
-**Transforms run in order.** `.pipe(fn)` transforms after validation, `.to(definition)` validates the result, and a `.narrow()` after a `.pipe()` sees the transformed value, like Zod's `.transform().refine()`. A narrow on an object whose properties transform sees the transformed properties.
+### Transforms run in order
+
+`.pipe(fn)` transforms after validation, `.to(definition)` validates the result, and a `.narrow()` after a `.pipe()` sees the transformed value, like Zod's `.transform().refine()`. A narrow on an object whose properties transform sees the transformed properties.
 
 ```ts
-// Zod: z.string().transform(s => s.length).refine(n => n > 2)
+// Zod: z.string().transform(s => s.length).refine(n => n > 2, "Too short")
 const Length = type("string")
 	.pipe(s => s.length)
-	.narrow(n => n > 2)
+	.narrow((n, ctx) => n > 2 || ctx.reject({ message: "Too short" }))
+
+// Zod: z.string().trim().toLowerCase().email()
+const Email = type("string.trim").to("string.lower").to("string.email")
 
 // Zod: z.preprocess(v => (typeof v === "string" ? v.split(",") : v), z.array(z.string()))
 const Tags = type("string | string[]")
@@ -216,7 +417,9 @@ const Tags = type("string | string[]")
 	.to("string[]")
 ```
 
-**Coercion is a parse.** ArkType never converts a value unless the definition says so, so write the conversion the old library did. `string.numeric.parse`, `string.integer.parse`, `string.date.parse`, `string.json.parse` and `string.url.parse` accept only strings, and accept fewer of them than `Number()` or `new Date()`:
+### Coercion is a parse
+
+ArkType never converts a value unless the definition says so, so write the conversion the old library did. `string.numeric.parse`, `string.integer.parse`, `string.date.parse`, `string.json.parse` and `string.url.parse` accept only strings, and accept fewer of them than `Number()` or `new Date()`:
 
 ```ts
 // z.coerce.number(), which is Number(value) for any input
@@ -224,7 +427,11 @@ const Count = type("unknown").pipe(Number).to("number")
 
 // z.coerce.number().int().positive().default(8080) in an object
 const Server = type({
-	port: type("unknown").pipe(Number).to("number.integer > 0").default(8080)
+	port: type("unknown")
+		// the default covers a missing key, and this one that's undefined
+		.pipe(v => Number(v === undefined ? 8080 : v))
+		.to("number.integer > 0")
+		.default(8080)
 })
 
 // z.coerce.date(), which is new Date(value) for any input, so null is 1970-01-01
@@ -237,22 +444,173 @@ const When = type("unknown")
 // stricter, for strings only: rejects " 1", "0x10" and ""
 const Page = type("string.numeric.parse")
 
-// z.stringbool() accepts "true", "1", "yes", "on" and their opposites; write the set you need
+// z.stringbool() accepts "true", "1", "yes", "on", "y" and "enabled", their
+// opposites, and any casing of them; write the set you need
 const Flag = type("'true' | 'false'").pipe(s => s === "true")
 ```
 
-**Refinements with a path or several errors.** A `.narrow()` returns `true` or calls `ctx.reject()`, which takes a `path` and a full `message`. To report several errors, call `ctx.error()` for each, then return `true`:
+- A default is an input, so a transform's default is what it parses, as Zod's `.prefault()` is: `z.stringbool().default(false)` is `Flag.default("false")`.
+- `unknown` includes `undefined`, so a coercion at an optional or defaulted key is handed a key that's present as `undefined`, as `process.env`'s may be, where Zod's `.optional()` and `.default()` answer first. Return it or the default from the pipe, as `Server` does: `z.coerce.number().optional()` is `"limit?": type("unknown").pipe(v => (v === undefined ? v : Number(v))).to("number | undefined")`.
+
+### Form data
+
+`schema.safeParse(Object.fromEntries(formData))` stays `T(Object.fromEntries(formData))`. `type("FormData.parse")` takes the `FormData` itself and keeps a repeated key's values as an array, so it replaces `zod-form-data`:
 
 ```ts
-// Zod: .superRefine((d, ctx) => ctx.addIssue({ code: "custom", message: "...", path: ["end"] }))
+// zfd.formData({ name: zfd.text(), age: zfd.numeric(), agree: zfd.checkbox(), tags: zfd.repeatable() })
+const Signup = type("FormData.parse").to({
+	// zfd.text(): an empty field is rejected
+	name: "string > 0",
+	// zfd.numeric(), without the padded strings like " 7 " that Number() reads
+	age: "string.numeric.parse",
+	// zfd.checkbox(): "on" when checked, missing when not
+	agree: type("'on' | undefined")
+		.pipe(v => v === "on")
+		.default(undefined),
+	// zfd.repeatable(): one value arrives as a string, none as a missing key
+	tags: type("string | string[] | undefined")
+		.pipe(v =>
+			v === undefined ? []
+			: typeof v === "string" ? [v]
+			: v
+		)
+		.default(undefined)
+})
+```
+
+### Refinements
+
+A `.narrow()` returns `true`, or `ctx.reject()` with the `message` Zod's held. Its `relativePath` is Zod's `path`, from the value being narrowed. Don't pass that as `path`, which is from the root of the data, so it's wrong once the object is nested or in an array:
+
+```ts
+// Zod: .refine(d => d.start <= d.end, { message: "End must not be before start", path: ["end"] })
 const Range = type({ start: "number", end: "number" }).narrow(
 	(d, ctx) =>
 		d.start <= d.end ||
-		ctx.reject({ message: "end must not be before start", path: ["end"] })
+		ctx.reject({
+			message: "End must not be before start",
+			relativePath: ["end"]
+		})
 )
 ```
 
-**Fallbacks.** ArkType has no `.catch()`. Zod's `.catch(x)` returns `x` for any invalid input, so validate inside a `.pipe()` and return `x` on errors. The default covers a missing key, which `.catch()` also replaces:
+To report several errors, as a `.superRefine()` calling `ctx.addIssue()` more than once does, call `ctx.error()` for each, then return `true`:
+
+```ts
+const Order = type({ quantity: "number", price: "number" }).narrow((d, ctx) => {
+	if (d.quantity < 1)
+		ctx.error({ message: "Order at least one", relativePath: ["quantity"] })
+	if (d.price < 0)
+		ctx.error({ message: "Price can't be negative", relativePath: ["price"] })
+	return true
+})
+```
+
+- A narrow that returns `false` without `ctx.reject()` says `must be valid according to an anonymous predicate`, so always reject with text.
+- A narrow on an object runs only once every key is valid. Zod 4 runs a `.refine()` even when a key fails a check like `.min()`, though not when one is missing or of the wrong type, so its issue could join theirs.
+- A narrow never rejects a literal with its own text. ArkType calls it on each literal the Type allows, like `true`, `false`, `null`, `undefined` or `'a'`, when the Type is defined, and removes those it rejects, so `z.boolean().refine(v => v, "Accept the terms")` written as a narrow says `must be true`. Write the values the Type allows, with the message: `["true", "@", { message: "Accept the terms" }]`, which also infers `true` where Zod inferred `boolean`.
+
+### Custom messages
+
+A custom Zod message becomes a `message`: one whole sentence, shown as you wrote it. An issue's `message` holds it without its path, as Zod's `issue.message` did, and `summary` and a thrown `TraversalError` write the path and a colon before it:
+
+```ts
+// Zod: z.object({ name: z.string().min(1, "Name is required") })
+const Named = type({
+	// or type("string >= 1").configure({ message: "Name is required" })
+	name: ["string >= 1", "@", { message: "Name is required" }]
+})
+
+const out = Named({ name: "" })
+
+if (out instanceof type.errors) {
+	// "Name is required", as Zod's issue.message was
+	out.issues[0].message
+	// "name: Name is required"
+	out.summary
+}
+```
+
+A library reading the Type through [Standard Schema](/docs/standard-schema), like TanStack Form, react-hook-form's `standardSchemaResolver` or tRPC, gets the same `message` on each issue, beside its `path`.
+
+- **Only `message` takes a sentence.** `ctx.reject("a valid zip code")`, `ctx.mustBe("a valid zip code")`, `.describe("a valid zip code")`, `expected` and a string after `"@"` each take what the value must be, so they read `must be a valid zip code`. A Zod message passed to one reads `must be Enter a valid zip code`.
+- **It covers the whole value.** A string `message` is written for any value the Type rejects, of the wrong type included, and for a key that's absent: `Named({})` also says `Name is required`. Configure the key's whole value, last, after any `.pipe()` or `.to()`.
+- **With `| null` or `| undefined`, configure the union.** `["string.email | null", "@", { message }]` says the message for any value it rejects. A message on one branch, as in `Email.configure({ message }).or("null")`, is lost for a value of the wrong type, which reads `must be a string or null`. With `exactOptionalPropertyTypes: false`, an optional or defaulted key's value is such a union, so where the message must cover the wrong type too, as a Zod `z.string({ error })` does, write `undefined` into it: `"email?": ["string.email | undefined", "@", { message }]`. Always write a boolean's, a literal's or an enum's message on the union, as in `"role?": ["'admin' | 'user' | undefined", "@", { message }]`: a wrong value is their only error, so a message on `Role` alone is never said beside `null` or `undefined`.
+- **A parse keyword's own failure keeps its text.** A `message` on `string.date.parse`, `string.url.parse` or `string.json.parse` is said for a value that isn't a string, but a string that doesn't parse still reads `must be a parsable date`. Check the string, then convert it: `type("string.date").pipe(s => new Date(s)).configure({ message })`, or `"string.url"` with `new URL(s)`. For JSON, call `JSON.parse` in a `.pipe()` and report its failure with `ctx.error({ message })`.
+- **For a message per check, name the check.** A second argument to `.configure()`, or a fourth element of the `"@"` tuple, is the [code](/docs/errors#error-codes) of the errors the message is for, like `minLength`, `pattern`, `min` or `divisor`:
+
+```ts
+// Zod: z.string().min(8, "Use 8 or more characters").regex(/[0-9]/, "Include a number")
+const Password = type("string >= 8 & /[0-9]/")
+	.configure({ message: "Use 8 or more characters" }, "minLength")
+	.configure({ message: "Include a number" }, "pattern")
+
+const Account = type({
+	// only an empty name says it, as in Zod
+	name: ["string >= 1", "@", { message: "Name is required" }, "minLength"],
+	password: Password
+})
+```
+
+A value of the wrong type, or a missing key, then says ArkType's own text, like `must be a string`, as it said Zod's. To give those their own messages, as Zod 3's `required_error` and `invalid_type_error` do, name `"self"` for a missing key and `"domain"` for a value of the wrong type:
+
+```ts
+// Zod 3: z.string({ required_error: "SKU is required", invalid_type_error: "SKU must be text" })
+//           .regex(/^[A-Z]{3}-\d{4}$/, "SKU looks like ABC-1234")
+const Sku = type(/^[A-Z]{3}-\d{4}$/)
+	.configure({ message: "SKU is required" }, "self")
+	.configure({ message: "SKU must be text" }, "domain")
+	.configure({ message: "SKU looks like ABC-1234" }, "pattern")
+```
+
+- Zod says `required_error` for a key given `undefined` too, which here is a value of the wrong type. To keep that, write `"domain"`'s message as `error => (error.data === undefined ? "SKU is required" : "SKU must be text")`.
+- A code names every check of that kind in the Type, a nested key's included, so configure a key's value rather than the object around it.
+- A `message` configured without a code replaces those configured before it, so configure the whole value first and its checks after.
+- Two checks with one code share its message, like two patterns, or an array's length and its elements', which are both `minLength`. Configure each as its own Type and intersect them: `HasDigit.and(HasCapital)`, or `Tags` below.
+- A function, like Zod 4's `error: issue => ...`, receives the error: `error.data` is Zod's `issue.input`, and once `error.code === "min"` is checked, `error.rule` is its `issue.minimum`. A missing key doesn't say a function's message, so give `"self"` a string.
+- After a `.pipe()` or `.to()`, a code doesn't reach the Type the output is checked with, so configure that Type before passing it to `.to()`. A message for the whole value, or for `"self"`, on the transformed Type replaces the ones inside it, so use one there only where a single message is enough.
+
+When several checks fail at once, ArkType reports a pattern before a length, whichever was written first, where Zod reports them as written. A form that shows the first message for a field would then say `Enter a valid email` for an empty one, or `Include a number` for a password that's too short. To keep what the form said first:
+
+- A format already rejects an empty string, so leave out the `.min(1)` and choose the text from the value, as `Email` does.
+- Where a length comes before a pattern, write the pattern as a `.narrow()`, which runs once the length passes, as `Password` does.
+
+```ts
+// Zod: z.string().min(1, "Email is required").email("Enter a valid email")
+const Email = type("string.email").configure(
+	{
+		message: error =>
+			error.data === "" ? "Email is required" : "Enter a valid email"
+	},
+	"pattern"
+)
+
+// Zod: z.string().min(8, "Use 8 or more characters").regex(/[0-9]/, "Include a number")
+const Password = type("string >= 8")
+	.configure({ message: "Use 8 or more characters" }, "minLength")
+	.narrow(
+		(s, ctx) => /[0-9]/.test(s) || ctx.reject({ message: "Include a number" })
+	)
+
+// Zod: z.string().trim().min(1, "Name is required").max(50, "Name is too long")
+const Name = type("string.trim").to(
+	type("0 < string <= 50")
+		.configure({ message: "Name is required" }, "minLength")
+		.configure({ message: "Name is too long" }, "maxLength")
+)
+
+// Zod: z.array(z.string().min(1, "Tag can't be empty")).min(1, "Add at least one tag")
+const Tag = type("string >= 1").configure({ message: "Tag can't be empty" })
+const Tags = type("unknown[] >= 1")
+	.configure({ message: "Add at least one tag" }, "minLength")
+	.and(Tag.array())
+```
+
+Through react-hook-form's resolvers, these four show the same message for each field as their Zod originals.
+
+### Fallbacks
+
+ArkType has no `.catch()`. Zod's `.catch(x)` returns `x` for any invalid input, so validate inside a `.pipe()` and return `x` on errors. The default covers a missing key, which `.catch()` also replaces:
 
 ```ts
 const Count = type("number")
@@ -268,58 +626,304 @@ const Settings = type({
 })
 ```
 
-**Discriminated unions are plain unions.** ArkType finds the discriminant itself, so `z.discriminatedUnion("type", [A, B])`, `v.variant("type", [...])` and `Schema.Union(A, B)` are `A.or(B)`, or `"A | B"` in a scope.
+The key's input type is `unknown`, where `z.input` gave the inner schema's.
 
-**Recursion needs no annotation.** Replace `z.lazy`, `v.lazy`, `Type.Recursive`, `yup.lazy`, `Joi.link` and `Schema.suspend` with a scope, or `this` for a type that refers to itself:
+### Unions of objects
+
+ArkType finds a union's discriminant itself, so `z.discriminatedUnion("type", [A, B])`, `v.variant("type", [...])` and `Schema.Union(A, B)` are `A.or(B)`, or `"A | B"` in a scope.
+
+An object transforms its input when it deletes undeclared keys, by `"+": "delete"` or the global option, or when one of its keys has a default or a transform. A union can't hold a transform whose input another branch also accepts: it throws a `ParseError` saying the union is indeterminate, since such data could come out as either. Objects a literal key tells apart, like `kind: "'card'"` and `kind: "'bank'"`, never overlap. These do:
+
+- two objects with no such key, like `{ uri, text }` and `{ uri, blob }`
+- an object beside an array, a `Date` or another class's instance, which could hold the object's keys, as in `Item.or(Item.array())`
+- a `Record` beside an array
+
+For those, choose the branch in a `.pipe()`, which infers the union of what they return:
+
+```ts
+const Item = type({ "+": "delete", id: "string" })
+const Items = Item.array()
+
+// z.union([Item, z.array(Item)])
+const OneOrMany = type("object").pipe(v =>
+	Array.isArray(v) ? Items(v) : Item(v)
+)
+
+const Text = type({ "+": "delete", uri: "string", text: "string" })
+const Blob = type({ "+": "delete", uri: "string", blob: "string" })
+
+// z.union([Text, Blob]), which takes the first branch that matches
+const Contents = type("object").pipe(v => {
+	const text = Text(v)
+	return text instanceof type.errors ? Blob(v) : text
+})
+```
+
+The errors are those of the branch the pipe ran, at the union's path.
+
+Where objects delete undeclared keys, a `.narrow()` or `.pipe()` on a union of them reports differently once `null` or `undefined` joins it, as `.or("null")` or an optional key does. Its errors become one `union` issue at the union's path, like `radius must be a number or must be undefined`, which has neither the failing key's path nor a message from a branch's own `.narrow()`. Refine from the object that holds the key instead:
+
+```ts
+const Shape = type({ kind: "'circle'", radius: "number" }).or({
+	kind: "'square'",
+	side: "number"
+})
+
+const fits = (shape: typeof Shape.infer) =>
+	shape.kind === "circle" ? shape.radius <= 10 : shape.side <= 20
+
+// Zod: z.object({ shape: Shape.refine(fits, "Too big").optional() })
+const Drawing = type({ "shape?": Shape }).narrow(
+	(drawing, ctx) =>
+		drawing.shape === undefined ||
+		fits(drawing.shape) ||
+		ctx.reject({ message: "Too big", relativePath: ["shape"] })
+)
+```
+
+### Recursion needs no annotation
+
+Replace `z.lazy`, a Zod 4 getter, `v.lazy`, `Type.Recursive`, `yup.lazy`, `Joi.link` and `Schema.suspend` with `this`, for a type that refers to itself, or a scope, for types that refer to each other:
 
 ```ts
 const Category = type({ name: "string", subcategories: "this[]" })
 
 const types = scope({
-	Json: "string | number | boolean | null | Json[] | JsonObject",
-	JsonObject: { "[string]": "Json" },
-	Filter: { "[string]": "Json | Filter" }
+	User: { name: "string", "posts?": "Post[]" },
+	Post: { title: "string", author: "User" }
 }).export()
 ```
 
-Delete the hand-written TypeScript type that `z.lazy` needed; `typeof types.Filter.infer` replaces it.
+Inside a scope, `type()` can't see the scope's names, so write a refinement or a transform there as a tuple: `["Post[]", ":", (posts, ctx) => ...]` for a `.narrow()`, `["string", "=>", s => s.trim()]` for a `.pipe()`.
 
-**Composing objects.** `.merge()` replaces keys like Zod's `.extend()`, `v.object({ ...a.entries })` or `Type.Composite`. `.and()` intersects, and throws when a key's types conflict. `.pick()`, `.omit()`, `.partial()`, `.required()` and `.keyof()` keep their names.
+Delete the hand-written TypeScript type that `z.lazy` needed; `typeof Category.infer` and `typeof types.Post.infer` replace it. Keep it where the module's declarations are emitted, as for a published package or a TypeScript project reference: a `.d.ts` holds `any` in place of the cycle, so [declare the Type with the type you wrote](/docs/scopes#cyclic-types), `type.declare<Category>().type({ ... })`. For JSON data, use the `object.json` keyword rather than a recursive type of your own: `z.json()` is `"string | number | boolean | null | object.json"`.
 
-**Records with literal keys.** `Record<"a" | "b", T>` must be written as named keys, `{ a: T, b: T }` (add `?` for Zod v3, whose enum-keyed records are partial). An index signature like `"[string]": "number"` applies to every key, including declared ones. Zod's `.catchall(T)` applies only to undeclared keys, so leave the declared ones out of a regex index signature: `z.object({ name: z.string() }).catchall(z.number())` is `type({ name: "string", "[/^(?!name$)/]": "number" })`.
+### Composing objects
 
-**Brands.** `.brand("UserId")` or `"string#UserId"` infers `Brand<string, "UserId">`, which is not assignable to or from the old library's brand type. Change code that names the old brand type to `typeof UserId.infer`.
+`.merge()` replaces keys like Zod's `.extend()` or `v.object({ ...a.entries })`. `.and()` intersects, like `Type.Composite`, and throws when a key's types conflict. `.pick()` and `.omit()` take key names, as in `.pick("name", "email")`. Like Zod's, they and `.partial()` keep an object's `"+"`, so a `.strict()` object's are strict too, where `.merge()` takes `"+"` from the object merged in.
 
-**Errors.** Errors are values: `T(data)` returns the data or an `ArkErrors`, and `T.assert(data)` throws. To change a message, `.describe("a strong password")` gives `must be a strong password`, and `.configure({ message: "Choose a stronger password" })` replaces the whole message. Zod's and Valibot's `description` is documentation, but ArkType's `.describe()` is what errors say the value must be, so keep documentation in a comment or `.configure({ title })`.
+A `.narrow()` on an object doesn't survive them. `.merge()`, a `"..."` spread, `.pick()`, `.omit()` and `.partial()` take the object's keys and leave its narrow behind, so a refinement Zod's `.extend()` kept no longer runs. Where the object also deletes undeclared keys, they throw instead: `merge operand must be an object (was (In: { ... }) => To<...>)`. Either way, keep the keys in a Type of their own, derive from that, and add the narrow last:
 
-**Dates and formats.** `z.string().datetime()` rejects offsets and date-only strings unless configured; `string.date.iso` accepts both. In JSON Schema, `format` is an annotation and validates nothing unless the validator, like ajv with `ajv-formats`, checks it; `string.email` always validates.
+```ts
+import { type, type Traversal } from "arktype"
 
-**Synchronous only.** ArkType doesn't await. Move an async `refine`, Yup `test` or Joi `external` out of the schema and run it after validation.
+const passwordsMatch = (
+	d: { password: string; confirm: string },
+	ctx: Traversal
+) =>
+	d.password === d.confirm ||
+	ctx.reject({ message: "Passwords must match", relativePath: ["confirm"] })
+
+const Credentials = type({ password: "string >= 8", confirm: "string" })
+
+const Signup = Credentials.narrow(passwordsMatch)
+
+// Zod: Signup.extend({ email: z.email() }), which keeps Signup's refinement
+const Invite = Credentials.merge({ email: "string.email" }).narrow(
+	passwordsMatch
+)
+```
+
+### Schema factories
+
+A function that builds a schema from another becomes a [generic](/docs/generics). Where it called `.omit()`, `.pick()`, `.partial()`, `.required()` or `.extend()` on its parameter, the generic's body uses `Omit`, `Pick`, `Partial`, `Required` or `Merge`, since the `Type<t>` a TypeScript function is passed has no object methods until `t` is known:
+
+```ts
+// Zod: const page = <T extends z.ZodType>(item: T) =>
+//   z.object({ items: z.array(item), total: z.number() })
+const Page = type("<t>", { items: "t[]", total: "number" })
+
+// Zod: const crud = <T extends z.ZodObject>(S: T) =>
+//   ({ create: S.omit({ id: true }), update: S.partial().required({ id: true }) })
+const Create = type("<t extends object>", "Omit<t, 'id'>")
+const Update = type(
+	"<t extends object>",
+	"Merge<Partial<Omit<t, 'id'>>, Pick<t, 'id'>>"
+)
+
+const Task = type({
+	id: "string.uuid",
+	title: "string",
+	done: "boolean = false"
+})
+
+const TaskPage = Page(Task)
+const TaskCreate = Create(Task)
+const TaskUpdate = Update(Task)
+
+// { id: string; title?: string; done?: boolean }
+type TaskUpdate = typeof TaskUpdate.infer
+```
+
+A function that reads an object schema's keys, as one iterating `schema.shape` did, takes `Type<Record<string, unknown>>` and reads its `props`, each with its `key`, whether it's `required` or `optional` as its `kind`, and its Type as `value`.
+
+### Records with literal keys
+
+Write `z.record(z.enum(["a", "b"]), T)` as named keys, with `"+": "reject"`, since Zod rejects a key outside the enum rather than removing it: `{ "+": "reject", a: T, b: T }`. Add `?` to each key for `z.partialRecord`, and for Zod 3, whose enum-keyed records are partial.
+
+Where the keys are in an array, or the shape is built at runtime as `z.object(Object.fromEntries(...))` built it, build the definition the same way and pass it to `type.raw`, which takes any definition and infers nothing, then give it its type: `type.raw(Object.fromEntries(FLAGS.map(flag => [flag, "boolean"]))).as<Record<Flag, boolean>>()`. `type()` infers `unknown` from an object built that way and rejects a `string` variable.
+
+An index signature like `"[string]": "number"` applies to every key, including declared ones. Zod's `.catchall(T)` applies only to undeclared keys, so leave the declared ones out of a regex index signature: `z.object({ name: z.string() }).catchall(z.number())` is `type({ name: "string", "[/^(?!name$)/]": "number" })`.
+
+### Brands
+
+`.brand("UserId")` or `"string#UserId"` infers `Brand<string, "UserId">`, which is not assignable to or from the old library's brand type. Change code that names the old brand type to `typeof UserId.infer`.
+
+### Errors are values
+
+`T(data)` returns the data or an `ArkErrors`, and `T.assert(data)` throws a `TraversalError`. To change what an error says, `.describe("a strong password")` gives `must be a strong password`, and `.configure({ message: "Choose a stronger password" })` replaces that sentence; see [Custom messages](#custom-messages).
+
+### Descriptions
+
+Zod's and Valibot's `description` only documents. `z.toJSONSchema` writes it as `description`, which is how a model reads what a tool's parameter or a field of structured output means, and what an OpenAPI document shows. ArkType's `.describe(text)` writes the same `description`, so keep it wherever a model or an OpenAPI generator reads the schema. It's also what errors say the value must be:
+
+```ts
+// Zod: z.object({ limit: z.number().min(1).max(50).describe("Maximum number of results") })
+const Search = type({
+	limit: type("1 <= number <= 50").describe("Maximum number of results")
+})
+
+// limit: { type: "number", description: "Maximum number of results", maximum: 50, minimum: 1 }
+Search.toJsonSchema()
+
+// limit must be Maximum number of results
+const out = Search({ limit: 99 })
+```
+
+To keep each check's own error, like `limit must be at most 50`, describe the value alone: `.describe(text, "self")`. Use it in a tool's `inputSchema`, on a value with checks or keys of its own, like a range, a format, an array or an object. With [the two options above](#zod-side-by-side), a description on `"self"` is left out of `.in`, `.out` and output schemas, like an MCP tool's `outputSchema`, and of an optional or defaulted union of literals.
+
+Where nothing reads the JSON Schema, keep the text in a comment, or in `.configure({ title: text })`, which errors don't say and JSON Schema writes as `title`.
+
+A string `message` or `expected` configured on a whole value is written into the JSON Schema too, as a keyword of that name, so a model provider is sent it and a strict validator like Ajv rejects the schema. A message for one check, like `.configure({ message }, "minLength")`, isn't written, and neither is a function.
+
+### OpenAPI documents
+
+The registry of `@asteasolutions/zod-to-openapi` becomes a `components` object you write, a `$ref` wherever a registered schema was used, and a parameter for each key of a `query` or `params` object:
+
+```ts
+import { type, type JsonSchema, type ToJsonSchema } from "arktype"
+
+const openapi: ToJsonSchema.Options = {
+	target: "openapi-3.0",
+	fallback: {
+		// a transformed value, like a coerced query parameter, as what it becomes
+		morph: (ctx: ToJsonSchema.MorphContext) => ctx.out ?? ctx.base
+	}
+}
+
+// registry.register("User", User)
+const User = type({ id: "string.uuid", name: "string" })
+const UserRef = User.configure({
+	jsonSchema: { $ref: "#/components/schemas/User" }
+})
+
+// items: { $ref: "#/components/schemas/User" }
+const UserPage = type({ items: UserRef.array(), total: "number" })
+
+const components = {
+	User: User.toJsonSchema(openapi),
+	UserPage: UserPage.toJsonSchema(openapi)
+}
+
+const isObject = (s: JsonSchema): s is JsonSchema.Object => s.type === "object"
+
+// request: { query: ListQuery } is parameters(ListQuery.toJsonSchema(openapi), "query")
+const parameters = (object: JsonSchema, where: "query" | "path") => {
+	if (!isObject(object)) return []
+	return Object.entries(object.properties ?? {}).map(([name, property]) => ({
+		name,
+		in: where,
+		required: object.required?.includes(name) ?? false,
+		schema: property
+	}))
+}
+```
+
+With `onUndeclaredKey: "delete"`, each object's schema says `additionalProperties: false`, which zod-to-openapi left out, and `.in` and `.out` write a registered schema in full where `toJsonSchema()` writes its `$ref`.
+
+Call `toJsonSchema(openapi)` on each Type by name, as above, rather than in a function that takes any Type. A [precompiled](/docs/precompile) build can't tell which Types such a function converts, and where objects delete undeclared keys, its call throws for a Type holding a `$ref`.
+
+`hono-openapi` takes `UserRef` the same way, in `resolver(UserRef)` and `validator("json", UserRef)`. Name each schema in the document it builds: `openAPIRouteHandler(app, { documentation: { components: { schemas: { User: (await resolver(User).toOpenAPISchema()).schema } } } })`. It converts each Type itself, so a coerced key, whose input is `unknown`, is written without a type there until it's given a schema, before its `.default()`: `.configure({ jsonSchema: { type: "integer", minimum: 1, maximum: 100 } })`.
+
+### Dates and formats
+
+`z.iso.datetime()` and `z.string().datetime()` require a `Z` and, from Zod 4.5, seconds, and `z.iso.date()` a date alone. `string.date.iso` accepts all of those, and offsets and date-times without one, so intersect a pattern to keep rejecting them:
+
+```ts
+// z.iso.datetime()
+const Instant = type("string.date.iso").and(/T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/)
+
+// z.iso.datetime({ offset: true })
+const Zoned = type("string.date.iso").and(
+	/T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/
+)
+
+// z.iso.date()
+const Day = type("string.date.iso").and(/^\d{4}-\d{2}-\d{2}$/)
+```
+
+Zod 3, and Zod 4 before 4.5, also take `2025-01-01T10:00Z`, so write the seconds as optional there: `/T\d{2}:\d{2}(:\d{2}(\.\d+)?)?Z$/`.
+
+Valibot's `v.isoDate()` is `Day` and `v.isoTimestamp()` is `Zoned`. Its `v.isoDateTime()` takes only minutes and no offset, like `2025-01-01T10:00`, so its pattern is `/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/`.
+
+`string.date.iso` checks the format, not the calendar, so `2020-02-30` passes, where Zod and `string.date.iso.parse` reject it.
+
+JSON Schema has one `pattern` for a string, so `toJsonSchema()` throws for these, and the schema a tool reads through Standard Schema keeps only the second. Where one is converted, say what to write, as Zod does: `Instant.configure({ jsonSchema: { type: "string", format: "date-time" } })`, or `format: "date"` for `Day`.
+
+In JSON Schema, `format` is an annotation and validates nothing unless the validator, like ajv with `ajv-formats`, checks it; `string.email` always validates.
+
+### Synchronous only
+
+ArkType doesn't await, so there's no `parseAsync`. An async `.narrow()` is a type error. An async `.pipe()` type-checks, but its promise is the output: validation has passed by the time it settles, so an error it reports after an `await` is lost. Move an async `refine` or `transform`, Yup `test` or Joi `external` out of the schema, run it on the validated data, and report its failure in the shape the caller reads:
+
+```ts
+import { type, flatMessagesByPath } from "arktype"
+
+const isTaken = async (name: string) => name === "admin"
+
+// Zod: username: z.string().min(3)
+//   .refine(async name => !(await isTaken(name)), "Username is taken")
+const Signup = type({ username: "string >= 3", email: "string.email" })
+
+const signup = async (data: unknown) => {
+	const out = Signup(data)
+	if (out instanceof type.errors)
+		return { ok: false as const, errors: flatMessagesByPath(out) }
+	if (await isTaken(out.username))
+		return { ok: false as const, errors: { username: ["Username is taken"] } }
+	return { ok: true as const, data: out }
+}
+```
+
+Zod runs an async check beside the other keys' checks, so it reports a taken username along with an invalid email. This reports the email alone, then the username once the rest is valid.
 
 ## Migrating a project
 
 To move a whole project off Zod, or another library below, work through it in this order.
 
-1. **Take stock.** Find every import of the old library (`zod`, `zod/v4`, `zod/mini`) and of packages built on it, like `@hookform/resolvers/zod` or `zod-to-json-schema`, and every use of the schemas, including files that call `.safeParse()` or read `.shape` without importing the library. Run the project's `typecheck` and `test` scripts once, so you know what passes before you start. If `package.json` has no `test` script, step 6 is how you'll check behavior.
-2. **Convert each schema in place.** Keep its name, its file and what it takes and returns, so imports and call sites keep working: a `.transform()` stays in the schema as a `.pipe()`, not in its callers. `z.infer<typeof X>` and `z.output` become `typeof X.infer`, and `z.input` becomes `typeof X.inferIn`.
-3. **Keep behavior identical.** The migrated schemas should accept, reject and return what the old ones did. These rules are for Zod, and [Defaults that differ](#defaults-that-differ) has them for the other libraries:
-   - `z.object()` removes undeclared keys, and so should the migrated objects, even where the code reads only declared keys, since parsed data often reaches a database or a response whole. Call `configure({ onUndeclaredKey: "delete" })` from `arktype/config` in one file, like `src/arktype.config.ts`, and import it first in every file that creates a Type, so it applies whichever file loads first, tests included. If the project [precompiles](/docs/precompile), also name that file as the build's `config` in [`ark.json`](/docs/precompile/setup#ark-json), which the CLI and test drivers read as the bundler does. Then `.passthrough()` and `z.looseObject()` become `"+": "ignore"`, and `.strict()` becomes `"+": "reject"`.
-   - Without that setting, write `"+": "delete"` in every object instead, nested ones included. `.merge()` takes `"+"` from the object merged in, so write `.merge({ "+": "delete", ... })`; with the global setting, merged objects keep deleting.
-   - A union of such objects throws a `ParseError` saying it's indeterminate unless a key tells them apart. Follow [Defaults that differ](#defaults-that-differ) for it, and keep the global setting: `"+": "ignore"` belongs only on the union's branches.
-   - `.optional()` also accepts `undefined`, so write `"key?": "T | undefined"`. Before Zod 4.4, any key whose schema accepts `undefined` may be missing, so a `z.unknown()` key is `"key?": "unknown"`; from 4.4, only `.optional()` and defaults let a key be missing, so it stays `key: "unknown"`. Check the version the project installs. In Zod 4, `.default(x).optional()` still fills in `x`, so it's `key: T.default(x)`.
-   - `z.any()` is `"unknown.any"`, or `"key?": "unknown.any"` as a key before Zod 4.4. It infers `any` as Zod's did, so refinements that read its properties type-check without casts.
-   - Translate coercions and refinements literally, as in [Coercion is a parse](#semantics-to-check). `z.coerce.number()` takes any input, `null` included, so its input stays `"unknown"`, in a tool's input schema too. Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them. A `.refine()` after a `.transform()` is a `.narrow()` after a `.pipe()`: `.to("number > 0")` would also check the type, and `number` rejects `Infinity` and `NaN`. An object's `.refine()` stays on that object as a `.narrow()`, not in a second schema. Zod 4 runs it even when a key fails a check like `.min()` or `.regex()`, though not when one is missing or of the wrong type, so its issue joins theirs; a narrow runs only once every key is valid.
-   - Zod 4.6's `.url()` trims its input, accepts what `URL.canParse` accepts and returns the trimmed string without tabs or line breaks; Zod 4.1's returned it as given. `string.url` checks with `URL.canParse` too but doesn't trim, so where the output is kept, write `type("string").pipe(s => s.trim().replace(/[\t\n\r]/g, "")).to("string.url")`.
-   - From Zod 4.5, a string's `.min()`, `.max()` and `.length()` count code points, so an emoji counts once. ArkType's bounds count UTF-16 code units, as `.length` does, so it counts twice. Where text may hold such characters, check the count in a `.narrow()`, as [below](#defaults-that-differ).
-   - `z.object()` rejects an array, which ArkType accepts as an object whose declared keys are all optional. Where every key is optional, reject arrays with a `.narrow()`, as [below](#defaults-that-differ).
-   - `string.email` and Zod 4's `z.email()` disagree on some addresses: Zod rejects `a..b@x.co` and `.a@x.co` and accepts `a'b@x.co`, and ArkType does the opposite. Where that matters, keep Zod's pattern as a regex.
-   - Keep custom messages. `.min(1, "Name is required")` becomes `type("string >= 1").configure({ message: "Name is required" })`.
+1. **Take stock.** Find every import of the old library (`zod`, `zod/v4`, `zod/mini`) and of packages built on it, like `@hookform/resolvers/zod` or `zod-to-json-schema`, and every use of the schemas, including files that call `.safeParse()` or read `.shape` without importing the library. Run the project's `typecheck` and `test` scripts once, so you know what passes before you start. If `package.json` has no `test` script, step 6 is how you'll check behavior. ArkType ships ES modules only, where Zod also ships CommonJS, so a CommonJS project needs a Node that can `require` one: 20.19, 22.12 or later, as [Setup](/docs/intro/setup#configure-typescript) says.
+2. **Set Zod's defaults.** Write the config file from [Zod side by side](#zod-side-by-side), like `src/arktype.config.ts`, and import it first in every file that creates a Type, so it applies whichever file loads first, tests included. Every object then removes undeclared keys, even where the code reads only declared ones, since parsed data often reaches a database or a response whole.
+   - Don't call `configure()` in a package others install, or in a project that already has ArkType Types of its own. It's global, so it would change those Types too, and in an app that installs the package it throws, `configure() must be called before any Type is created`, if the app created one first. There, create the converted Types with `$.type()`, from `const $ = scope({}, { exactOptionalPropertyTypes: false })`, and write `"+": "delete"` in each object, nested ones included.
+   - If `tsconfig.json` sets `exactOptionalPropertyTypes`, leave that option out of the config and write each `.optional()` key as `"key?": "T | undefined"`, and each `.default()` as [Defaults that differ](#defaults-that-differ) shows.
+   - If the project [precompiles](/docs/precompile), also name the file as the build's `config` in [`ark.json`](/docs/precompile/setup#ark-json), which the CLI and test drivers read as the bundler does.
+   - If `package.json` sets `"sideEffects": false`, list the config file there instead, like `"sideEffects": ["./src/arktype.config.ts"]`. A bundler otherwise drops the import, and the built app runs without the config while unbundled tests pass.
+   - Migrating from another library? Set what its column of [Defaults that differ](#defaults-that-differ) says instead.
+3. **Convert each schema in place,** using the [tables](#zod). Keep its name, its file and what it takes and returns, so imports and call sites keep working: a `.transform()` stays in the schema as a `.pipe()`, not in its callers. The migrated schemas should accept, reject and return what the old ones did:
+   - **Objects.** `.passthrough()` and `z.looseObject()` are `"+": "ignore"`, and `.strict()` is `"+": "reject"`. A union throws a `ParseError` saying it's indeterminate where one of its objects overlaps another branch, like a second object with no literal key to tell them apart, or an array of the same object: write it as [Unions of objects](#unions-of-objects) shows. A `.merge()`, `.pick()`, `.omit()` or `.partial()` goes before the object's `.narrow()`, as in [Composing objects](#composing-objects).
+   - **Optional keys.** Before Zod 4.4, any key whose schema accepts `undefined` may be missing, so a `z.unknown()` key is `"key?": "unknown"` and a `z.any()` key is `"key?": "unknown.any"`; from 4.4, only `.optional()` and defaults let a key be missing, so they stay `key: "unknown"`. Check the version the project installs. In Zod 4, `.default(x).optional()` still fills in `x`, as does `.partial()` on a key with a default, so it's `key: T.default(x)`. In Zod 3 neither does: write the first as `"key?": "T"`, and for the second, call `.partial()` on a Type of the keys without their defaults, and `.merge()` the defaults into the full object. `"unknown.any"` infers `any` as Zod's did, so refinements that read its properties type-check without casts.
+   - **Coercions and refinements,** literally, as in [Coercion is a parse](#coercion-is-a-parse). `z.coerce.number()` takes any input, `null` included, so its input stays `"unknown"`, in a tool's input schema too. Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them. A `.refine()` after a `.transform()` is a `.narrow()` after a `.pipe()`: `.to("number > 0")` would also check the type, and `number` rejects `Infinity` and `NaN`. An object's `.refine()` stays on that object as a `.narrow()`, not in a second schema, with its `path` as `relativePath`. A `.refine()` that only rejects a literal, like `z.boolean().refine(v => v, "Accept the terms")`, becomes that literal with a `message`; [Refinements](#refinements) has both.
+   - **Custom messages,** each as a `message`, as in [Custom messages](#custom-messages): `.min(1, "Name is required")` is `["string >= 1", "@", { message: "Name is required" }]` as a key's value, a value with a message for each of several checks names each check, and a `.refine(fn, "...")` message is `ctx.reject({ message: "..." })`. Never pass a Zod message to `ctx.reject()` as a string, to `ctx.mustBe()`, to `.describe()` or as `expected`, each of which writes `must be` before it.
+   - **Descriptions.** A `.describe(text)` on a schema given to a model or an OpenAPI generator, like a tool's `inputSchema`, stays one, as [Descriptions](#descriptions) shows, so the JSON Schema they read keeps it. Anywhere else it's a comment.
+   - **Strings.** Zod 4's `.url()` accepts what `URL.canParse` accepts and returns the string trimmed, and by 4.6 without the tabs and line breaks inside it, which 4.1 kept. `string.url` checks with `URL.canParse` too but returns the string as given, so where the output is kept, write `type("string").pipe(s => s.trim().replace(/[\t\n\r]/g, "")).to("string.url")`. From Zod 4.5, `.min()`, `.max()` and `.length()` count code points, so an emoji counts once, where ArkType's bounds count UTF-16 code units, as `.length` does: where text may hold such characters, check the count in a `.narrow()`, as in [Defaults that differ](#defaults-that-differ). `string.email` and Zod 4's `z.email()` disagree on some addresses: Zod rejects `a..b@x.co` and `.a@x.co` and accepts `a'b@x.co`, and ArkType does the opposite. Where that matters, keep Zod's pattern as a regex.
+   - **Arrays as objects.** `z.object()` and `z.record()` reject an array, which ArkType accepts as a `Record`, or as an object whose declared keys are all optional. Where every key is optional, reject arrays with a `.narrow()`, as in [Defaults that differ](#defaults-that-differ).
 4. **Update call sites.**
-   - `X.parse(data)` becomes `X.assert(data)`, which throws.
-   - `X.safeParse(data)` becomes `const out = X(data)`, then check `out instanceof type.errors`. `parseAsync` and `safeParseAsync` become the same, since ArkType is synchronous.
-   - `ZodError` becomes `type.errors`, and `instanceof ZodError` becomes `instanceof type.errors`. Its `issues` keep their `path` and `message`, though a message names its path, like `email must be an email address`, where Zod's says `Invalid email address`. `z.prettifyError(error)` becomes `out.summary`. `X.assert` throws a `TraversalError`, whose `arkErrors` holds them.
-   - `error.flatten()` and `z.flattenError(error)` group messages by the first key of their path, so `tags[0]`'s are under `tags`. Group `out.issues` the same way, which also works in a [precompiled](/docs/precompile) build, where `flatByPath` isn't available:
-   - Don't add casts or `any`, not even `as unknown`. A helper typed with `z.ZodTypeAny` or `z.ZodSchema` takes `type.Any`. To keep the output type, use `<T extends type.Any>(schema: T): T["infer"]`, not `type.Any<t>`. A function that builds a schema from another becomes a generic, like `type("<t>", { data: "t" })`.
+   - `X.parse(data)` becomes `X.assert(data)`, which throws a `TraversalError`. In a `catch`, `e instanceof ZodError` becomes `e instanceof TraversalError`, imported from `arktype`, `e.name === "ZodError"` becomes `e.name === "TraversalError"`, and `e.issues` becomes `e.arkErrors.issues`. A handler that sent the error whole, like `res.json(e)`, sent Zod's issues with it, where a `TraversalError` serializes as its `name` alone: send each issue's `path` and `message`.
+   - `X.safeParse(data)` becomes `const out = X(data)`. `!result.success` becomes `out instanceof type.errors`, `result.error` is `out`, and `result.data` is `out` once that check has failed. `parseAsync` and `safeParseAsync` become the same, since ArkType is synchronous.
+   - An issue keeps its `path` and `message`, which leaves out the path as Zod's does, like `must be an email address` where Zod's says `Invalid email address`. Its `code` is one of ArkType's, so code that switches on `"too_small"` or `"invalid_type"` needs [the codes they become](#issue-codes). `z.prettifyError(error)` becomes `out.summary`, which names each path, like `email must be an email address`, as does `fromError(error).message` from `zod-validation-error`; a caught `TraversalError`'s `message` is that summary already.
+   - An issue also holds the rejected value as `data`, which Zod's leaves out unless `reportInput` is set. Where code logs issues or returns them to a client, as `c.json(result.error)` does, send each issue's `path` and `message` instead, so a password that failed a check isn't written out.
+   - `z.infer<typeof X>` and `z.output` become `typeof X.infer`, and `z.input` becomes `typeof X.inferIn`.
+   - Don't add casts or `any`, not even `as unknown`. A helper typed with `z.ZodType`, `z.ZodTypeAny` or `z.ZodSchema` takes `type.Any`. One typed by what its schema returns, like `<T>(schema: z.ZodType<T>): T` or a `class Repo<T>`, keeps `T` and names what it calls: `schema: { assert: (data: unknown) => T }`, or `schema: (data: unknown) => T | ArkErrors` where it calls the Type. Every Type whose output is `T` fits, and call sites keep their type arguments. A `type.Any<T>` isn't that: its `T` isn't the output type once a Type has a default or a transform. Where the helper needs the Type itself, use `<S extends type.Any>(schema: S): S["infer"]`; there `schema(data)` is `any`, so annotate it: `const out: S["infer"] | type.errors = schema(data)`. A function that builds a schema from another, like `<T extends z.ZodType>(s: T) => s.nullable()`, becomes a generic, like `type("<t>", "t | null")`, as in [Schema factories](#schema-factories). Written as a method call on a `type.Any` parameter, `s.or("null")` type-checks and infers `any`.
+   - `error.flatten()` and `z.flattenError(error)` group messages by the first key of their path, so `tags[0]`'s are under `tags`. A `.strict()` object's unrecognized key is a form error in Zod, and in ArkType an error at that key, `must be removed`. Group `out.issues` the same way, which also works in a [precompiled](/docs/precompile) build, where `flatByPath` isn't available, and build `z.treeifyError(error)`'s tree from each issue's `path`:
 
 ```ts
 // ---cut-start---
@@ -332,29 +936,60 @@ for (const issue of out.issues) {
 	if (issue.path.length === 0) formErrors.push(issue.message)
 	else (fieldErrors[String(issue.path[0])] ??= []).push(issue.message)
 }
+
+// z.treeifyError(error)
+type Tree = {
+	errors: string[]
+	properties?: Record<string, Tree>
+	items?: Tree[]
+}
+const tree: Tree = { errors: [] }
+for (const issue of out.issues) {
+	let node = tree
+	for (const key of issue.path) {
+		node =
+			typeof key === "number" ?
+				((node.items ??= [])[key] ??= { errors: [] })
+			:	((node.properties ??= {})[String(key)] ??= { errors: [] })
+	}
+	node.errors.push(issue.message)
+}
 ```
 
 5. **Swap integrations.** Most accept an ArkType type directly, through [Standard Schema](/docs/standard-schema):
 
-| With Zod                                                     | With ArkType                                                                                                                                        |
-| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `zodResolver(schema)` (react-hook-form)                      | `standardSchemaResolver(schema)` from `@hookform/resolvers/standard-schema`                                                                         |
-| tRPC `.input(schema)`, `@t3-oss/env-*`, TanStack Form        | the same call, given the ArkType type                                                                                                               |
-| AI SDK 6+ `tool({ inputSchema })`, MCP SDK v2 `registerTool` | the same call, given the ArkType type, which also supplies the JSON Schema                                                                          |
-| AI SDK 5 `tool({ inputSchema })`                             | `jsonSchema<typeof T.infer>(T.toJsonSchema(), { validate })`, where `validate` returns `{ success: true, value }` or `{ success: false, error }`    |
-| `zValidator` from `@hono/zod-validator`                      | `sValidator` from `@hono/standard-validator`, whose hook's `result.error` is the issue array, not `{ issues }`, and a path segment may be `{ key }` |
-| `@hono/zod-openapi`                                          | `hono-openapi`: `describeRoute`, `validator` and `resolver`                                                                                         |
-| `zod-to-json-schema`, `z.toJSONSchema(schema)`               | `schema.toJsonSchema()`                                                                                                                             |
-| `@asteasolutions/zod-to-openapi`                             | `schema.toJsonSchema({ target: "openapi-3.0" })` for each Schema Object in your OpenAPI document; see below                                         |
-| `drizzle-zod`                                                | `drizzle-arktype`                                                                                                                                   |
-| a library that accepts only Zod                              | keep Zod for that call, and say so                                                                                                                  |
+| With Zod                                                                                                                | With ArkType                                                                                                                                                                                                                                                                                      |
+| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `zodResolver(schema)` (react-hook-form)                                                                                 | `standardSchemaResolver(schema)` from `@hookform/resolvers/standard-schema`                                                                                                                                                                                                                       |
+| tRPC `.input(schema)`, TanStack Form, next-safe-action `.inputSchema(schema)`, OpenAI Agents SDK `tool({ parameters })` | the same call, given the ArkType type                                                                                                                                                                                                                                                             |
+| `validateSearch: zodValidator(schema)` (TanStack Router)                                                                | `validateSearch: T`, with no adapter; the adapter's `fallback(schema, x)` is a [fallback](#fallbacks)                                                                                                                                                                                             |
+| `createEnv` from `@t3-oss/env-*`                                                                                        | the same call, with a Type for each variable. Each is validated alone and gets `undefined` when unset, so use the rows for [`.optional()` and `.default(x)` anywhere else](#objects)                                                                                                              |
+| a tRPC `errorFormatter` checking `error.cause instanceof ZodError`                                                      | `error.cause instanceof TraversalError`; for `error.cause.flatten()`, group `error.cause.arkErrors.issues` as step 4 shows, or send `flatMessagesByPath(error.cause.arkErrors)`, keyed by each full path                                                                                          |
+| AI SDK 6+ `tool({ inputSchema })`, MCP SDK v2 `registerTool`                                                            | the same call, given the ArkType type, which also supplies the JSON Schema                                                                                                                                                                                                                        |
+| AI SDK 5 `tool({ inputSchema })`                                                                                        | `jsonSchema<typeof T.infer>(T.toJsonSchema(), { validate })`, where `validate` returns `{ success: true, value }` or `{ success: false, error }`                                                                                                                                                  |
+| `zodResponseFormat`, `zodTextFormat`, `zodFunction` (OpenAI SDK)                                                        | `standardResponseFormat`, `standardTextFormat`, `standardFunction` from `openai/helpers/standard-schema`, there from 6.49. Write a key with a default as required, without it, as [OpenAI SDK](/docs/integrations#openai-sdk) says. An invalid response throws an `OpenAIError`, not a `ZodError` |
+| `zodOutputFormat`, `betaZodTool` (Anthropic SDK)                                                                        | `betaStandardSchemaOutputFormat`, passed to `client.beta.messages.parse`, and `betaStandardSchemaTool`, from `@anthropic-ai/sdk/helpers/beta/standard-schema`, there from 0.121; see [Anthropic SDK](/docs/integrations#anthropic-sdk)                                                            |
+| LangChain `tool(fn, { schema })`                                                                                        | `schema: T.toJsonSchema()`, with `T.assert(input)` in the function. Given the Type itself, `tool()` type-checks, then throws a `TypeError` each time the tool runs                                                                                                                                |
+| `zValidator` from `@hono/zod-validator`                                                                                 | `sValidator` from `@hono/standard-validator`, whose hook's `result.error` is the issue array, not `{ issues }`, and a path segment may be `{ key }`                                                                                                                                               |
+| `zod4(schema)`, `zod4Client(schema)` (Superforms)                                                                       | `standard(T, { jsonSchema: T.toJsonSchema() })`, `standardClient(T)` from `sveltekit-superforms/adapters`                                                                                                                                                                                         |
+| `fastify-type-provider-zod`                                                                                             | a validator compiler, a serializer compiler and a type provider of your own, as [Fastify](/docs/integrations#fastify) shows                                                                                                                                                                       |
+| `@hono/zod-openapi`                                                                                                     | `hono-openapi`: `describeRoute`, `validator` and `resolver`; for a schema named with `.openapi("User")`, see [OpenAPI documents](#openapi-documents)                                                                                                                                              |
+| `zod-to-json-schema`, `z.toJSONSchema(schema)`                                                                          | `schema.toJsonSchema()`, which leaves a key with a default out of `required` where Zod lists it; for `{ io: "input" }`, `schema.in.toJsonSchema()`                                                                                                                                                |
+| `@asteasolutions/zod-to-openapi`                                                                                        | `schema.toJsonSchema({ target: "openapi-3.0" })` for each Schema Object in your OpenAPI document; see [OpenAPI documents](#openapi-documents)                                                                                                                                                     |
+| `drizzle-zod`                                                                                                           | `drizzle-arktype`                                                                                                                                                                                                                                                                                 |
+| `zod-fast-check`, `@anatine/zod-mock`, `zocker` (test data from a schema)                                               | `arkToArbitrary(T)` from [`@ark/fast-check`](/docs/fast-check), which generates the Type's input and lists what it can't generate; `fc.sample(arkToArbitrary(T), 1)[0]` is one value                                                                                                              |
+| a library that accepts only Zod                                                                                         | keep Zod for that call, and say so                                                                                                                                                                                                                                                                |
 
 With npm, `@hookform/resolvers`, `@t3-oss/env-core` and other packages that peer on `arktype@^2` make installs fail with `ERESOLVE` until they widen their range. For each package the error names, add an [override](/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2) rather than passing `--force` or `--legacy-peer-deps`.
 
+For a library the table doesn't list, pass it the Type, then call it once with invalid data before relying on it: type-checking isn't proof, as LangChain's `tool()` shows. If the invalid data isn't rejected with the Type's errors, keep Zod for that call.
+
+Take the Standard Schema route in the table over an adapter written for arktype 2. `@hono/arktype-validator`, Superforms' `arktype()`, `arktypeResolver` before `@hookform/resolvers` 5, `@arkenv/core` and `@typeschema/arktype` [fail on invalid input](/docs/upgrading#adapters-written-for-arktype-2) until they're updated.
+
 Without casts:
 
-- `toJsonSchema()` returns a `JsonSchema`, the type to give the document's Schema Objects (`import type { JsonSchema } from "arktype"`). Build path and query parameters from an object type's `.props`, which lists each key, whether it's required, and its Type.
-- A `fallback` declared apart from the `toJsonSchema()` call is a `ToJsonSchema.FallbackOption` (`import type { ToJsonSchema } from "arktype"`).
+- `toJsonSchema()` returns a `JsonSchema`, the type to give the document's Schema Objects (`import type { JsonSchema } from "arktype"`).
+- A `fallback` declared apart from the `toJsonSchema()` call is a `ToJsonSchema.FallbackOption` (`import type { ToJsonSchema } from "arktype"`). A [precompiled](/docs/precompile) build also needs each handler's parameter annotated there, like `(ctx: ToJsonSchema.MorphContext)`.
 - The MCP SDK finds a prompt argument's completer through Zod's `.shape`, so give `argsSchema` one, as below.
 
 ```ts
@@ -372,11 +1007,11 @@ const argsSchema = {
 }
 ```
 
-6. **Compare with the originals while Zod is still installed.** The project's tests check the schemas they use. Check the rest directly, and every schema if there's no `test` script: in a scratch file, import each original from a copy of its file (`git show HEAD:src/schemas.ts > scratch/schemas.zod.ts`) and its conversion, call both on the same inputs and compare which they accept and what they return. Use the project's fixtures or sample data where it has them, plus each case [Defaults that differ](#defaults-that-differ) lists: a missing key, a key present as `undefined`, an undeclared key, a wrong type, an empty string and a value at each bound. Fix each difference in the schema, then delete the scratch files. [How to convert](#how-to-convert) shows a check that their types match too.
+6. **Compare with the originals while Zod is still installed.** The project's tests check the schemas they use. Check the rest directly, and every schema if there's no `test` script: in a scratch file, import each original from a copy of its file (`git show HEAD:src/schemas.ts > scratch/schemas.zod.ts`) and its conversion, call both on the same inputs and compare which they accept and what they return. Use the project's fixtures or sample data where it has them, plus each case [Defaults that differ](#defaults-that-differ) lists: a missing key, a key present as `undefined`, an undeclared key, a wrong type, an array in place of an object, an empty string and a value at each bound. Fix each difference in the schema, then delete the scratch files. [How to convert](#how-to-convert) shows a check that their types match too.
 7. **Swap dependencies.** Remove `zod` and the packages that existed only for it, and add their replacements, with the project's package manager, like `pnpm remove zod` or `npm uninstall zod`. Editing `package.json` by hand leaves the lockfile stale, and some package managers then refuse to run scripts. If `arktype` is already a dependency, keep that version. Don't upgrade another dependency to a new major version, like the MCP SDK to v2, so it takes ArkType; keep Zod for it as the table says. If a dependency requires `zod` as a peer dependency, keep it installed for that dependency and say so.
-8. **Verify.** Run the `typecheck` and `test` scripts in `package.json` until both pass; `npx tsc` alone can miss a second tsconfig. Run the `build` script too, if there is one. If there's no `test` script, step 6's comparison is the behavior check, so say what it covered. Search again for imports of the old library, and check that every file importing `arktype`, `.js` files included, imports the config first if it creates a Type. Change a test only where it asserts the old library itself, like a Zod error message or `instanceof ZodError`. Never delete a test, weaken an assertion or change an expected value to match new output. The exception is a snapshot of generated JSON Schema, which ArkType writes in a canonical order: required keys, then optional ones, each sorted, and enum and union members sorted. Reorder such a snapshot only when order is its only difference.
-9. **Precompile, if asked.** Set it up as the skill's `references/precompile.md`, or [Precompile setup](/docs/precompile/setup), says: add `@ark/aot` and the plugin for the bundler, name the config file from step 3 as `config` in `ark.json`, run `npx arktype-precompile --check src` until it accepts every definition, then run the `typecheck`, `test` and `build` scripts again. A library others install doesn't precompile itself: it publishes what `tsc` emits and [opts in](/docs/precompile/advanced#libraries), so each app's build precompiles it. With `drizzle-arktype`, see [Precompile](#precompile) below.
-10. **Report** what still behaves differently, if anything, such as error message text, any snapshot you reordered, and any dependency you kept Zod for.
+8. **Verify.** Run the `typecheck` and `test` scripts in `package.json` until both pass; `npx tsc` alone can miss a second tsconfig. Run the `build` script too, if there is one. If Jest fails with `Must use import to load ES Module`, naming arktype, [have it transform arktype's packages](/docs/faq#why-does-jest-say-must-use-import-to-load-es-module), which ship ES modules only. If there's no `test` script, step 6's comparison is the behavior check, so say what it covered. Search again for imports of the old library, and check that every file importing `arktype`, `.js` files included, imports the config first if it creates a Type. Change a test only where it asserts the old library itself, like a Zod error message, an issue `code` or `instanceof ZodError`. Never delete a test, weaken an assertion or change an expected value to match new output. The exception is a snapshot of generated JSON Schema, which ArkType writes in a canonical order: required keys, then optional ones, each sorted, and enum and union members sorted. Reorder such a snapshot only when order is its only difference.
+9. **Precompile, if asked.** Set it up as the skill's `references/precompile.md`, or [Precompile setup](/docs/precompile/setup), says: add `@ark/aot` and the plugin for the bundler, name the config file from step 2 as `config` in `ark.json`, run `npx arktype-precompile --check src` until it accepts every definition, then run the `typecheck`, `test` and `build` scripts again. A library others install doesn't precompile itself: it publishes what `tsc` emits and [opts in](/docs/precompile/advanced#libraries), so each app's build precompiles it. With `drizzle-arktype`, see [Precompile](#precompile) below.
+10. **Report** what still behaves differently, if anything, such as error message text, any snapshot you reordered, and any dependency you kept Zod for. Where the code ships to a browser and wasn't precompiled, say that arktype's parser now ships with it, which [precompiling](#precompile) removes.
 
 ## How to convert
 
@@ -421,6 +1056,8 @@ const User = type({ name: "string", address: Address })
 
 A Valibot schema embeds the same way. Yup's validates asynchronously, so it can't.
 
+An embedded schema validates, but ArkType [can't see inside it](/docs/standard-schema#other-validators-in-a-definition): the JSON Schema a tool or an OpenAPI generator reads from the Type is `{}` at that key, and `toJsonSchema()` throws there. Convert a schema those read all at once.
+
 ## Precompile
 
 Once your schemas are Types, [add `@ark/aot`](/docs/intro/setup#add-the-plugin) to your bundler, so each Type ships as a standalone validator with no parser. Your definitions don't change.
@@ -443,58 +1080,80 @@ To see what's left, run `npx arktype-precompile --check`, which lists each defin
 
 ## Valibot
 
-| Valibot                                                     | ArkType                                                                                                                                                              |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `v.object`, `v.looseObject`, `v.strictObject`               | `"+": "delete"`, the default, `"+": "reject"`                                                                                                                        |
-| `v.objectWithRest(entries, rest)`                           | an index signature, `"[string]": ...`                                                                                                                                |
-| `v.optional(T)`, `v.exactOptional(T)`                       | `"key?": "T \| undefined"`, `"key?": "T"`                                                                                                                            |
-| `v.optional(T, default)`                                    | `"key": "T = default"`, which applies it only where the key is missing; Valibot also applies it to `undefined`, so see [Defaults that differ](#defaults-that-differ) |
-| `v.nullable(T)`, `v.nullish(T)`                             | `"T \| null"`, `"key?": "T \| null \| undefined"`                                                                                                                    |
-| `v.picklist(["a", "b"])`, `v.enum(E)`                       | `"'a' \| 'b'"`, `type.valueOf(E)`                                                                                                                                    |
-| `v.union`, `v.variant("type", [...])`, `v.intersect`        | `A.or(B)`, `A.or(B)`, `A.and(B)`                                                                                                                                     |
-| `v.array`, `v.tuple`, `v.tupleWithRest`, `v.record`         | `"T[]"`, `[A, B]`, `[A, "...", "B[]"]`, `"Record<string, T>"`                                                                                                        |
-| `v.lazy`                                                    | a scope or `this`                                                                                                                                                    |
-| `v.pipe(v.string(), v.email(), v.maxLength(255))`           | `"string.email <= 255"`                                                                                                                                              |
-| `v.minLength`, `v.maxLength`, `v.length`, `v.nonEmpty`      | `"string >= n"`, `"string <= n"`, `"string == n"`, `"string > 0"`                                                                                                    |
-| `v.minValue`, `v.maxValue`, `v.integer`, `v.multipleOf`     | `"number >= n"`, `"number <= n"`, `"number.integer"`, `"number % n"`                                                                                                 |
-| `v.url`, `v.uuid`, `v.isoDateTime`, `v.regex(r)`            | `"string.url"`, `"string.uuid"`, `"string.date.iso"`, `/r/`                                                                                                          |
-| `v.trim()`, `v.toLowerCase()`, `v.toNumber()`, `v.toDate()` | `"string.trim"`, `"string.lower"`, `"string.numeric.parse"`, `"string.date.parse"`                                                                                   |
-| `v.check(fn, msg)`, `v.rawCheck`                            | `.narrow((x, ctx) => fn(x) \|\| ctx.reject({ message: msg }))`                                                                                                       |
-| `v.forward(v.partialCheck(...), ["key"])`                   | `.narrow(...)` with `ctx.reject({ path: ["key"] })`                                                                                                                  |
-| `v.transform(fn)`                                           | `.pipe(fn)`                                                                                                                                                          |
-| `v.brand("Id")`                                             | `.brand("Id")`                                                                                                                                                       |
-| `v.instance(C)`, `v.date()`, `v.custom(fn)`                 | `type.instanceOf(C)`, `"Date"`, `type("unknown").narrow(fn)`                                                                                                         |
-| `v.fallback(T, x)`                                          | none; handle the `ArkErrors` result                                                                                                                                  |
-| `v.InferOutput`, `v.InferInput`                             | `typeof T.infer`, `typeof T.inferIn`                                                                                                                                 |
-| `v.parse(S, x)`, `v.safeParse(S, x)`                        | `T.assert(x)`, `T(x)`                                                                                                                                                |
+Valibot's defaults are Zod's: `v.object` removes undeclared keys, and `v.optional` accepts `undefined` and replaces it with its default. Set [the same two options](#zod-side-by-side), which the ArkType column assumes. [Semantics to check](#semantics-to-check) applies too, with Valibot's names for Zod's.
+
+| Valibot                                                                  | ArkType                                                                                                                           |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `v.object`, `v.looseObject`, `v.strictObject`                            | the default once configured, `"+": "ignore"`, `"+": "reject"`                                                                     |
+| `v.objectWithRest(entries, rest)`                                        | `"[/^(?!a$\|b$)/]": rest`, `a` and `b` the declared keys                                                                          |
+| `v.optional(T)`, `v.optional(T, default)`                                | `"key?": "T"`, `key: "T = default"`                                                                                               |
+| `v.exactOptional(T)`                                                     | `"key?": "T"`, without `exactOptionalPropertyTypes: false` in the config                                                          |
+| `v.nullable(T)`, `v.nullish(T)`                                          | `"T \| null"`, `"key?": "T \| null"`                                                                                              |
+| `v.literal("a")`, `v.picklist(["a", "b"])`, `v.enum(E)`                  | `"'a'"`, `"'a' \| 'b'"`, `type.valueOf(E)`                                                                                        |
+| `v.partial(S)`, `v.required(S)`, `v.keyof(S)`                            | `T.partial()`, `T.required()`, `T.keyof()`                                                                                        |
+| `v.pick(S, ["a"])`, `v.omit(S, ["a"])`                                   | `T.pick("a")`, `T.omit("a")`                                                                                                      |
+| `v.union`, `v.variant("type", [...])`, `v.intersect`                     | `A.or(B)`, `A.or(B)`, `A.and(B)`                                                                                                  |
+| `v.array`, `v.strictTuple`, `v.tupleWithRest`, `v.record`                | `"T[]"`, `[A, B]`, `[A, "...", "B[]"]`, `"Record<string, T>"`                                                                     |
+| `v.tuple`, which removes extra elements                                  | `[A, B]`, which rejects them                                                                                                      |
+| `v.lazy`                                                                 | a scope or `this`                                                                                                                 |
+| `v.pipe(v.string(), v.email(), v.maxLength(255))`                        | `"string.email <= 255"`                                                                                                           |
+| `v.minLength`, `v.maxLength`, `v.length`, `v.nonEmpty`                   | `"string >= n"`, `"string <= n"`, `"string == n"`, `"string > 0"`                                                                 |
+| `v.minValue`, `v.maxValue`, `v.integer`, `v.multipleOf`                  | `"number >= n"`, `"number <= n"`, `"number.integer"`, `"number % n"`                                                              |
+| `v.url`, `v.uuid`, `v.regex(r)`                                          | `"string.url"`, `"string.uuid"`, `/r/`                                                                                            |
+| `v.isoDate`, `v.isoDateTime`, `v.isoTimestamp`                           | `"string.date.iso"` with a pattern for each, see [Dates and formats](#dates-and-formats)                                          |
+| `v.trim()`, `v.toLowerCase()`, `v.toNumber()`, `v.toDate()`              | `"string.trim"`, `"string.lower"`, `"string.numeric.parse"`, `"string.date.parse"`                                                |
+| `v.string("Message")`, `v.email("Message")`, `v.minLength(8, "Message")` | a `message` for each check, by its code: see [Custom messages](#custom-messages)                                                  |
+| `v.check(fn, msg)`, `v.rawCheck`                                         | `.narrow((x, ctx) => fn(x) \|\| ctx.reject({ message: msg }))`                                                                    |
+| `v.forward(v.partialCheck(...), ["key"])`                                | `.narrow(...)` with `ctx.reject({ message, relativePath: ["key"] })`, which runs only once every key is valid                     |
+| `v.transform(fn)`                                                        | `.pipe(fn)`                                                                                                                       |
+| `v.brand("Id")`                                                          | `.brand("Id")`                                                                                                                    |
+| `v.description(text)`, `v.title(text)` in a pipe                         | `.describe(text)` where a model or an OpenAPI document reads it, see [Descriptions](#descriptions); `.configure({ title: text })` |
+| `v.instance(C)`, `v.date()`, `v.custom(fn)`                              | `type.instanceOf(C)`, `"Date"`, `type("unknown").narrow(fn)`                                                                      |
+| `v.fallback(T, x)`                                                       | a `.pipe()` that returns `x` for invalid input, see [Fallbacks](#fallbacks)                                                       |
+| `v.InferOutput`, `v.InferInput`, `v.GenericSchema`                       | `typeof T.infer`, `typeof T.inferIn`, `type.Any`                                                                                  |
+| `v.parse(S, x)`, `v.safeParse(S, x)`, `v.is(S, x)`                       | `T.assert(x)`, `T(x)`, `T.allows(x)`                                                                                              |
+| `v.isValiError(e)`                                                       | `e instanceof TraversalError`, whose `e.arkErrors.issues` holds the issues                                                        |
+| `v.flatten(issues).nested`                                               | group `out.issues` by `issue.path.join(".")`                                                                                      |
+
+`v.partial()` leaves a key with a default missing, where `.partial()` fills it in: call it on a Type of the keys without their defaults, and `.merge()` the defaults into the full object.
 
 ## TypeBox
 
-TypeBox schemas are JSON Schema, so [JSON Schema](#json-schema-and-ajv) also applies.
+TypeBox schemas are JSON Schema, so [JSON Schema](#json-schema-and-ajv) also applies. `Type.Optional` and `Type.Partial` accept a key present as `undefined`, and `Value.Default` replaces it: write `| undefined` at each key, or [configure](#defaults-that-differ) `exactOptionalPropertyTypes: false`.
 
-| TypeBox                                                        | ArkType                                                |
-| -------------------------------------------------------------- | ------------------------------------------------------ |
-| `Type.Object({...})`, `{ additionalProperties: false }`        | `type({...})`, `"+": "reject"`                         |
-| `Type.Optional(T)`                                             | `"key?": "T \| undefined"`                             |
-| `Type.String({ minLength, maxLength, pattern })`               | `"1 <= string <= 255"`, `/pattern/`                    |
-| `Type.String({ format: "email" })`                             | `"string.email"`                                       |
-| `Type.Number({ minimum, exclusiveMaximum })`, `Type.Integer()` | `"0 <= number < 10"`, `"number.integer"`               |
-| `Type.Literal`, `Type.Union`, `Type.Enum(E)`                   | `"'a'"`, `A.or(B)`, `type.valueOf(E)`                  |
-| `Type.Array(T, { minItems })`, `Type.Tuple`                    | `"T[] >= 1"`, `[A, B]`                                 |
-| `Type.Record(Type.String(), T)`                                | `"Record<string, T>"`                                  |
-| `Type.Intersect`, `Type.Composite`                             | `A.and(B)`, `A.merge(B)`                               |
-| `Type.Partial`, `Type.Pick`, `Type.Omit`, `Type.KeyOf`         | `.partial()`, `.pick()`, `.omit()`, `.keyof()`         |
-| `Type.Recursive(This => ...)`                                  | `this` or a scope                                      |
-| `Type.Date()`, `Type.Unknown()`, `Type.Any()`                  | `"Date"`, `"unknown"`, `"unknown.any"`                 |
-| `Type.Transform(T).Decode(f).Encode(g)`                        | `codec(T, Out, { decode: f, encode: g })`              |
-| `Value.Decode(T, x)`, `Value.Encode(T, x)`                     | `T.assert(x)`, `T.encode.assert(x)`                    |
-| `{ default: x }` with `Value.Default`                          | `"key": "T = x"`                                       |
-| `Static<typeof T>`, `StaticDecode`, `StaticEncode`             | `typeof T.infer`, `typeof T.infer`, `typeof T.inferIn` |
-| `Value.Check(T, x)`, `Value.Parse`, `TypeCompiler.Compile`     | `T.allows(x)`, `T.assert(x)`, nothing to compile       |
+Names are `@sinclair/typebox` 0.34's. TypeBox 1, the `typebox` package, renames some: `Type.Recursive` is `Type.Cyclic`, `Type.Transform` is `Type.Codec`, `Type.Composite` is `Type.Evaluate` of a `Type.Intersect`, and `TypeCompiler.Compile` is `Compile` from `typebox/compile`.
+
+| TypeBox                                                        | ArkType                                                                                                      |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `Type.Object({...})`, `{ additionalProperties: false }`        | `type({...})`, `"+": "reject"`                                                                               |
+| `Type.Optional(T)`                                             | `"key?": "T \| undefined"`                                                                                   |
+| `Type.String({ minLength, maxLength, pattern })`               | `"1 <= string <= 255"`, `/pattern/`                                                                          |
+| `Type.String({ format: "email" })`                             | `"string.email"`                                                                                             |
+| `Type.String({ description, title, examples })`                | `.describe(text)`, see [Descriptions](#descriptions); `.configure({ title, examples })`                      |
+| `Type.Number({ minimum, exclusiveMaximum })`, `Type.Integer()` | `"0 <= number < 10"`, `"number.integer"`                                                                     |
+| `Type.Literal`, `Type.Union`, `Type.Enum(E)`                   | `"'a'"`, `A.or(B)`, `type.valueOf(E)`                                                                        |
+| `Type.Array(T, { minItems })`, `Type.Tuple`                    | `"T[] >= 1"`, `[A, B]`                                                                                       |
+| `Type.Record(Type.String(), T)`                                | `"Record<string, T>"`                                                                                        |
+| `Type.Intersect`, `Type.Composite`                             | `A.and(B)` for both: a key in both must satisfy both                                                         |
+| `Type.Partial`, `Type.Pick`, `Type.Omit`, `Type.KeyOf`         | `.partial()`, `.pick()`, `.omit()`, `.keyof()`                                                               |
+| `Type.Recursive(This => ...)`                                  | `this` or a scope                                                                                            |
+| `Type.Date()`, `Type.Unknown()`, `Type.Any()`                  | `"Date"`, `"unknown"`, `"unknown.any"`                                                                       |
+| `Type.Transform(T).Decode(f).Encode(g)`                        | `codec(T, Out, { decode: f, encode: g })`                                                                    |
+| `Value.Decode(T, x)`, `Value.Encode(T, x)`                     | `T.assert(x)`, `T.encode.assert(x)`                                                                          |
+| `{ default: x }` with `Value.Default`                          | `"key": "T = x"`                                                                                             |
+| `Static<typeof T>`, `StaticDecode`, `StaticEncode`             | `typeof T.infer`, `typeof T.infer`, `typeof T.inferIn`                                                       |
+| `Value.Check(T, x)`, `Value.Parse`, `TypeCompiler.Compile`     | `T.allows(x)`, `T.assert(x)`, nothing to compile                                                             |
+| `Value.Errors(T, x)`                                           | `T(x)`, then `out.issues`, each with a `path` like `["tags", 1, "label"]` where TypeBox's is `/tags/1/label` |
 
 ## Yup
 
-Yup converts values unless `.strict()`, and treats a field as optional unless `.required()`. Translate what the data actually is: a form posting strings needs `"string.numeric.parse"` where Yup's `number()` converted. Like Joi, Yup applies a default to a key present as `undefined`, where `"key": "T = x"` rejects it; [Defaults that differ](#defaults-that-differ) has the pattern that keeps it.
+Yup does more to a value before checking it than ArkType does:
+
+- It converts values unless `.strict()`. Translate what the data actually is: a form posting strings needs `"string.numeric.parse"` where `number()` converted.
+- A field is optional unless `.required()`, which for a string also rejects `""`.
+- It applies a default to a key present as `undefined`, where `"key": "T = x"` rejects it. [Defaults that differ](#defaults-that-differ) has the pattern that keeps it. Yup 1 leaves a key given `undefined` out of what it returns, where a Type that accepts it returns it.
+- `.email()` and `.url()` pass an empty string, so a field that isn't `.required()` is `"string.email | ''"`.
+- It reads a date string without an offset in local time, where `string.date.parse` reads it as UTC.
 
 | Yup                                                   | ArkType                                                                                                                                     |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -505,6 +1164,9 @@ Yup converts values unless `.strict()`, and treats a field as optional unless `.
 | `.email()`, `.url()`, `.uuid()`, `.matches(r)`        | `"string.email"`, `"string.url"`, `"string.uuid"`, `/r/`                                                                                    |
 | `.min(n)`, `.max(n)`, `.length(n)` on strings, arrays | `"string >= n"`, `"T[] <= n"`, `"string == n"`                                                                                              |
 | `.integer()`, `.positive()`, `.moreThan(n)`           | `"number.integer"`, `"number > 0"`, `"number > n"`                                                                                          |
+| `number()`, `date()` reading strings                  | `"number \| string.numeric.parse"`, `"Date \| string.date.parse"`                                                                           |
+| `.required("m")`, `.typeError("m")`, `.min(n, "m")`   | `.configure({ message: "m" }, "self")`, then `"domain"`, then `"minLength"` or `"min"` for a number; see below                              |
+| `.concat(S)`, `.pick(["a"])`, `.omit(["a"])`          | `.merge(S)`, `.pick("a")`, `.omit("a")`                                                                                                     |
 | `.trim()`, `.lowercase()`                             | `"string.trim"`, `"string.lower"`                                                                                                           |
 | `.oneOf(["a", "b"])`                                  | `"'a' \| 'b'"`                                                                                                                              |
 | `array().of(T)`, `tuple([A, B])`                      | `T.array()`, `[A, B]`                                                                                                                       |
@@ -513,85 +1175,159 @@ Yup converts values unless `.strict()`, and treats a field as optional unless `.
 | `.transform(fn)`                                      | `.pipe(fn)`                                                                                                                                 |
 | `.when("other", ...)`                                 | a union of the cases, or a `.narrow()` on the object                                                                                        |
 | `lazy`                                                | a scope or `this`                                                                                                                           |
-| `.noUnknown()`, `stripUnknown: true`                  | `"+": "reject"`, `"+": "delete"`                                                                                                            |
+| `.noUnknown()`, `stripUnknown: true`                  | `"+": "delete"` for both, since `.noUnknown()` removes the keys too, and `"+": "reject"` where it's validated with `strict: true`           |
 | `InferType<typeof S>`                                 | `typeof T.infer`                                                                                                                            |
 | `validateSync(x)`, `isValidSync(x)`, `validate(x)`    | `T.assert(x)`, `T.allows(x)`, `T(x)`                                                                                                        |
+| `error.inner`, each with a `path` and `message`       | `out.issues`, or `flatMessagesByPath(out)`, keyed by paths written like Yup's, such as `tags[1].name`                                       |
+| `yupResolver(S)` (react-hook-form)                    | `standardSchemaResolver(T)` from `@hookform/resolvers/standard-schema`                                                                      |
+| Formik's `validationSchema: S`                        | `validate`, as below                                                                                                                        |
+
+`.required("m")` says `m` for a missing key, for `undefined` and, on a string, for `""`, before any other check. Configure `m` for each, choosing an empty string's text from the value as [Custom messages](#custom-messages) shows:
+
+```ts
+// yup.string().required("Email is required").email("Enter a valid email")
+const Email = type("string.email")
+	.configure(
+		{
+			message: error =>
+				error.data === "" ? "Email is required" : "Enter a valid email"
+		},
+		"pattern"
+	)
+	.configure({ message: "Email is required" }, "self")
+	.configure({ message: "Email is required" }, "domain")
+```
+
+A field that transforms, like one with `.trim()` or a `number()` reading strings, says ArkType's text for a missing key unless one message covers its whole value.
+
+Formik reads errors nested like the values. Its `setIn` builds that from each issue's path, as its `yupToFormErrors` does:
+
+```ts
+// @noErrors
+import { type } from "arktype"
+import { getIn, setIn } from "formik"
+
+const Form = type({ name: "string > 0", tags: "string[]" })
+
+const validate = (values: unknown) => {
+	const out = Form(values)
+	let errors = {}
+	if (out instanceof type.errors)
+		for (const issue of out.issues) {
+			const path = issue.path.join(".")
+			if (!getIn(errors, path)) errors = setIn(errors, path, issue.message)
+		}
+	return errors
+}
+```
 
 ## Joi
 
-Joi rejects undeclared keys, rejects empty strings, and converts strings to numbers, booleans and dates unless `convert: false`. ArkType reads an ISO date-time without an offset as UTC, where Joi reads it in local time. Joi also applies a default to a key present as `undefined`; see [Defaults that differ](#defaults-that-differ). It infers no types, so `typeof T.infer` replaces the interfaces written next to Joi schemas.
+Joi rejects undeclared keys, rejects empty strings, and converts strings to numbers, booleans and dates unless `convert: false`. ArkType reads an ISO date-time without an offset as UTC, where Joi reads it in local time. Joi also applies a default to a key present as `undefined`; see [Defaults that differ](#defaults-that-differ). It infers no types, so `typeof T.infer` replaces the interfaces written next to Joi schemas. `validate` reports the first error unless `abortEarly: false`, where a Type reports every one. Joi's conversions take a little more than the rows below: `Joi.boolean()` reads `"TRUE"` and `Joi.number()` reads `" 2"`.
 
-| Joi                                            | ArkType                                                                        |
-| ---------------------------------------------- | ------------------------------------------------------------------------------ |
-| `Joi.object({...})`, `.unknown(true)`          | `type({ "+": "reject", ... })`, `type({...})`                                  |
-| `Joi.string()` (optional), `.required()`       | `"key?": "string > 0 \| undefined"`, `"key": "string > 0"`                     |
-| `.allow("")`, `.allow(null)`                   | `"string"`, `"string \| null"`                                                 |
-| `.valid("a", "b")`                             | `"'a' \| 'b'"`                                                                 |
-| `.email()`, `.uri()`, `.guid()`, `.pattern(r)` | `"string.email"`, `"string.url"`, `"string.uuid"`, `/r/`                       |
-| `.min(n)`, `.max(n)`, `.length(n)`             | `"string >= n"`, `"string <= n"`, `"string == n"`                              |
-| `Joi.number().integer().positive()`            | `"number.integer > 0"`                                                         |
-| `Joi.number()` reading strings                 | `"number \| string.numeric.parse"`                                             |
-| `Joi.boolean()` reading strings                | `type("boolean \| 'true' \| 'false'").pipe(v => v === true \|\| v === "true")` |
-| `Joi.date()`, `Joi.date().iso()`               | `"Date \| string.date.parse"`, `"string.date.iso.parse"`                       |
-| `Joi.array().items(T)`, `.min(1)`              | `T.array()`, `"T[] >= 1"`                                                      |
-| `.unique()`                                    | `.narrow((a, ctx) => new Set(a).size === a.length \|\| ctx.reject("unique"))`  |
-| `Joi.alternatives().try(A, B)`                 | `A.or(B)`                                                                      |
-| `.default(x)`                                  | `"key": "T = x"`                                                               |
-| `.custom(fn)`                                  | `.narrow()` or `.pipe()`                                                       |
-| `.messages({...})`                             | `.configure({ message })`                                                      |
-| `Joi.link("#id")`                              | a scope or `this`                                                              |
-| `.when(...)`                                   | a union of the cases, or a `.narrow()` on the object                           |
-| `schema.validate(x)`, `.attempt(x, schema)`    | `T(x)`, `T.assert(x)`                                                          |
+| Joi                                                                                 | ArkType                                                                                                                |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `Joi.object({...})`, `.unknown(true)`                                               | `type({ "+": "reject", ... })`, `type({...})`                                                                          |
+| `Joi.string()` (optional), `.required()`                                            | `"key?": "string > 0 \| undefined"`, `"key": "string > 0"`                                                             |
+| `.allow("")`, `.allow(null)`                                                        | `"string"`, `"string \| null"`                                                                                         |
+| `.valid("a", "b")`                                                                  | `"'a' \| 'b'"`                                                                                                         |
+| `.email()`, `.uri()`, `.guid()`, `.pattern(r)`                                      | `"string.email"`, `"string.url"`, `"string.uuid"`, `/r/`                                                               |
+| `.alphanum()`, `.token()`, `.hex()`, `.ip()`, `.isoDate()`                          | `"string.alphanumeric > 0"`, `/^\w+$/`, `"string.hex"`, `"string.ip"`, `"string.date.iso"`                             |
+| `.trim()`, `.lowercase()`, `.uppercase()`                                           | `"string.trim"`, `"string.lower"`, `"string.upper"`, each with `.to("string > 0")`                                     |
+| `.min(n)`, `.max(n)`, `.length(n)`                                                  | `"string >= n"`, `"string <= n"`, `"string == n"`                                                                      |
+| `Joi.number().integer().positive()`                                                 | `"number.integer > 0"`                                                                                                 |
+| `Joi.number()` reading strings                                                      | `"number \| string.numeric.parse"`                                                                                     |
+| `Joi.boolean()` reading strings                                                     | `type("boolean \| 'true' \| 'false'").pipe(v => v === true \|\| v === "true")`                                         |
+| `Joi.date()`, `Joi.date().iso()`                                                    | `"Date \| string.date.parse"`, `"string.date.iso.parse"`                                                               |
+| `Joi.date()` reading milliseconds                                                   | `type("number.epoch").pipe(n => new Date(n))`                                                                          |
+| `Joi.array().items(T)`, `.min(1)`                                                   | `T.array()`, `"T[] >= 1"`                                                                                              |
+| `.unique()`                                                                         | `.narrow((a, ctx) => new Set(a).size === a.length \|\| ctx.reject("unique"))`                                          |
+| `Joi.alternatives().try(A, B)`                                                      | `A.or(B)`                                                                                                              |
+| `.default(x)`                                                                       | `"key": "T = x"`                                                                                                       |
+| `.custom(fn)`                                                                       | `.narrow()` or `.pipe()`                                                                                               |
+| `.messages({ "any.required": m })`, `"string.base"`, `"string.min"`, `"number.min"` | `.configure({ message: m }, "self")`, then `"domain"`, `"minLength"`, `"min"`; see [Custom messages](#custom-messages) |
+| `Joi.link("#id")`                                                                   | a scope or `this`                                                                                                      |
+| `.when(...)`                                                                        | a union of the cases, or a `.narrow()` on the object                                                                   |
+| `Joi.valid(Joi.ref("a"))`, `.with("a", "b")`, `.xor("a", "b")`, `.or("a", "b")`     | a `.narrow()` on the object that compares the keys or checks which are present                                         |
+| `Joi.any()`, `.forbidden()`                                                         | `"unknown"`, `"key?": "never"`                                                                                         |
+| `{ stripUnknown: true }`                                                            | `"+": "delete"` in each object, or `configure({ onUndeclaredKey: "delete" })`                                          |
+| `schema.validate(x)`, `.attempt(x, schema)`                                         | `T(x)`, `T.assert(x)`                                                                                                  |
 
 ## Effect Schema
 
-Names are Effect 3's. Effect 4 renames some: `Schema.filter` is `Schema.check`, `Schema.transform` is `Schema.decodeTo` and `Schema.Enums` is `Schema.Enum`.
+Effect 4 renamed much of Effect 3's Schema API, so each row gives both. In Effect 4, an `is…` check or `makeFilter` goes inside `S.check(...)`.
 
-| Effect Schema                                                   | ArkType                                                              |
-| --------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `Schema.Struct({...})`                                          | `type({ "+": "delete", ... })`                                       |
-| `Schema.optional(T)`, `Schema.optionalWith(T, { exact: true })` | `"key?": "T \| undefined"`, `"key?": "T"`                            |
-| `Schema.optionalWith(T, { default: () => x })`                  | `"key": "T = x"`                                                     |
-| `Schema.NullOr`, `Schema.NullishOr`                             | `"T \| null"`, `"T \| null \| undefined"`                            |
-| `Schema.Literal("a", "b")`, `Schema.Enums(E)`                   | `"'a' \| 'b'"`, `type.valueOf(E)`                                    |
-| `Schema.Union(A, B)`, `Schema.TaggedStruct`                     | `A.or(B)`, an object with a literal `_tag`                           |
-| `Schema.Array`, `Schema.NonEmptyArray`, `Schema.Tuple`          | `"T[]"`, `"T[] >= 1"`, `[A, B]`                                      |
-| `Schema.Record({ key: Schema.String, value: T })`               | `"Record<string, T>"`                                                |
-| `Schema.suspend(() => T)`                                       | a scope or `this`                                                    |
-| `Schema.Int`, `Schema.Positive`, `Schema.between(a, b)`         | `"number.integer"`, `"number > 0"`, `"a <= number <= b"`             |
-| `Schema.minLength`, `Schema.pattern(r)`, `Schema.UUID`          | `"string >= n"`, `/r/`, `"string.uuid"`                              |
-| `Schema.NumberFromString`, `Schema.DateFromString`              | `"string.numeric.parse"`, `"string.date.parse"`                      |
-| `Schema.Trim`, `Schema.Lowercase`, `Schema.parseJson(T)`        | `"string.trim"`, `"string.lower"`, `type("string.json.parse").to(T)` |
-| `Schema.filter(fn)`                                             | `.narrow(fn)`                                                        |
-| `Schema.transform(From, To, { decode, encode })`                | `codec(From, To, { decode, encode })`                                |
-| `Schema.brand("Id")`                                            | `.brand("Id")`                                                       |
-| `Schema.Type<typeof S>`, `Schema.Encoded<typeof S>`             | `typeof T.infer`, `typeof T.inferIn`                                 |
-| `Schema.decodeUnknownSync`, `decodeUnknownEither`               | `T.assert(x)`, `T(x)`                                                |
-| `Schema.encodeSync`, `encodeEither`                             | `T.encode.assert(x)`, `T.encode(x)`                                  |
-| `onExcessProperty: "error"`                                     | `"+": "reject"`                                                      |
+Three defaults differ in both versions:
+
+- **`Schema.Number` allows `NaN` and `Infinity`**, which `"number"` rejects, like `Schema.Finite`. To keep them, write `"number | number.NaN | number.Infinity | number.NegativeInfinity"`.
+- **A default without `exact` fills a key present as `undefined`**, where `"key": "T = x"` rejects it. That is `optionalWith(T, { default })` in Effect 3 and `withDecodingDefault` in Effect 4. [Defaults that differ](#defaults-that-differ) has the pattern that keeps it.
+- **`string.numeric.parse` is stricter than `NumberFromString`**, which reads `" 1 "` and `"0x10"`. In Effect 4 it also turns `"abc"` into `NaN`, and `FiniteFromString` reads `""` as `0`.
+
+| Effect 3                                                    | Effect 4                                                                             | ArkType                                                                       |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `Schema.Struct({...})`                                      | same                                                                                 | `type({ "+": "delete", ... })`                                                |
+| `Schema.optional(T)`                                        | same                                                                                 | `"key?": "T \| undefined"`                                                    |
+| `Schema.optionalWith(T, { exact: true })`                   | `Schema.optionalKey(T)`                                                              | `"key?": "T"`                                                                 |
+| `Schema.optionalWith(T, { default: () => x, exact: true })` | `T.pipe(Schema.withDecodingDefaultKey(Effect.succeed(x)))`                           | `"key": "T = x"`                                                              |
+| `Schema.NullOr(T)`, `Schema.NullishOr(T)`                   | same                                                                                 | `"T \| null"`, `"T \| null \| undefined"`                                     |
+| `Schema.Literal("a", "b")`                                  | `Schema.Literals(["a", "b"])`                                                        | `"'a' \| 'b'"`                                                                |
+| `Schema.Enums(E)`                                           | `Schema.Enum(E)`                                                                     | `type.valueOf(E)`                                                             |
+| `Schema.Union(A, B)`                                        | `Schema.Union([A, B])`                                                               | `A.or(B)`                                                                     |
+| `Schema.TaggedStruct("A", {...})`                           | same                                                                                 | an object with `_tag: "'A'"`                                                  |
+| `Schema.Array(T)`, `Schema.NonEmptyArray(T)`                | same                                                                                 | `"T[]"`, `"T[] >= 1"`                                                         |
+| `Schema.Tuple(A, B)`                                        | `Schema.Tuple([A, B])`                                                               | `[A, B]`                                                                      |
+| `Schema.Record({ key: Schema.String, value: T })`           | `Schema.Record(Schema.String, T)`                                                    | `"Record<string, T>"`                                                         |
+| `Schema.suspend(() => T)`                                   | same                                                                                 | a scope or `this`                                                             |
+| `Schema.Finite`, `Schema.Int`                               | same                                                                                 | `"number"`, `"number.integer"`                                                |
+| `Schema.Positive`                                           | `Schema.isGreaterThan(0)`                                                            | `"number > 0"`                                                                |
+| `Schema.between(a, b)`                                      | `Schema.isBetween({ minimum: a, maximum: b })`                                       | `"a <= number <= b"`                                                          |
+| `Schema.minLength(n)`, `Schema.pattern(r)`                  | `Schema.isMinLength(n)`, `Schema.isPattern(r)`                                       | `"string >= n"`, `/r/`                                                        |
+| `Schema.UUID`                                               | `Schema.isUUID()`                                                                    | `"string.uuid"`                                                               |
+| `Schema.NumberFromString`                                   | `Schema.FiniteFromString`                                                            | `"string.numeric.parse"`                                                      |
+| `Schema.Date`                                               | `Schema.DateFromString`                                                              | `"string.date.parse"`                                                         |
+| `Schema.ValidDateFromSelf`                                  | `Schema.Date`                                                                        | `"Date"`                                                                      |
+| `Schema.Trim`, `Schema.Lowercase`                           | `Schema.Trim`, `SchemaTransformation.toLowerCase()`                                  | `"string.trim"`, `"string.lower"`                                             |
+| `Schema.parseJson(T)`                                       | `Schema.fromJsonString(T)`                                                           | `type("string.json.parse").to(T)`                                             |
+| `Schema.filter(fn)`                                         | `Schema.makeFilter(fn)`                                                              | `.narrow(fn)`                                                                 |
+| `Schema.transform(From, To, { decode, encode })`            | `From.pipe(Schema.decodeTo(To, SchemaTransformation.transform({ decode, encode })))` | `codec(From, To, { decode, encode })`                                         |
+| `Schema.brand("Id")`                                        | same                                                                                 | `.brand("Id")`                                                                |
+| `S.annotations({ description, title })`                     | `S.annotate({ description, title })`                                                 | `.describe(text)`, see [Descriptions](#descriptions); `.configure({ title })` |
+| `typeof S.Type`, `typeof S.Encoded`                         | same                                                                                 | `typeof T.infer`, `typeof T.inferIn`                                          |
+| `Schema.decodeUnknownSync(S)(x)`                            | same                                                                                 | `T.assert(x)`                                                                 |
+| `Schema.decodeUnknownEither(S)(x)`                          | `Schema.decodeUnknownResult(S)(x)`                                                   | `T(x)`                                                                        |
+| `Schema.encodeSync(S)(x)`, `Schema.encodeEither(S)(x)`      | `Schema.encodeSync(S)(x)`, `Schema.encodeResult(S)(x)`                               | `T.encode.assert(x)`, `T.encode(x)`                                           |
+| `onExcessProperty: "error"`                                 | same                                                                                 | `"+": "reject"`                                                               |
 
 `codec` comes from `arktype/codecs`, and importing it is what makes `.encode` available. A `Schema.Class` becomes a Type plus, if you need methods, your own class constructed from its output.
+
+To move one schema at a time, wrap an Effect schema as a [Standard Schema](/docs/standard-schema) and use it in a definition: `Schema.standardSchemaV1(S)` in Effect 3, `Schema.toStandardSchemaV1(S)` in Effect 4.
 
 ## JSON Schema and ajv
 
 To keep a schema as JSON, convert it at runtime with `jsonSchemaToType` from `@ark/json-schema`; it accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with `format` as an annotation. To rewrite it as definitions:
 
-| JSON Schema                                              | ArkType                                                                |
-| -------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `{ type: "string", minLength: 1, maxLength: 255 }`       | `"1 <= string <= 255"`                                                 |
-| `{ type: "string", pattern: "^a" }`                      | `/^a/`                                                                 |
-| `{ type: "integer", minimum: 0, exclusiveMaximum: 10 }`  | `"0 <= number.integer < 10"`                                           |
-| `{ multipleOf: 5 }`                                      | `"number % 5"`                                                         |
-| `{ enum: ["a", "b"] }`, `{ const: "a" }`                 | `"'a' \| 'b'"`, `"'a'"`                                                |
-| `{ type: ["string", "null"] }`, `anyOf`, `oneOf`         | `"string \| null"`, `A.or(B)`                                          |
-| `allOf`                                                  | `A.and(B)`                                                             |
-| `properties` with `required`                             | keys, with `?` on those not required                                   |
-| `additionalProperties: false`, `additionalProperties: T` | `"+": "reject"`, `"[string]": "T \| A"`, `A` the declared keys' types  |
-| `patternProperties: { "^x-": T }`                        | `"[/^x-/]": T`                                                         |
-| `{ type: "array", items: T, minItems: 1 }`               | `"T[] >= 1"`                                                           |
-| `prefixItems`                                            | `[A, B]`                                                               |
-| `$defs` with `$ref`                                      | a scope                                                                |
-| `format: "email"`, `"uuid"`, `"date-time"`, `"uri"`      | `"string.email"`, `"string.uuid"`, `"string.date.iso"`, `"string.url"` |
-| `default`                                                | `"key": "T = x"`                                                       |
+| JSON Schema                                             | ArkType                                                                |
+| ------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `{ type: "string", minLength: 1, maxLength: 255 }`      | `"1 <= string <= 255"`                                                 |
+| `{ type: "string", pattern: "^a" }`                     | `/^a/`                                                                 |
+| `{ type: "integer", minimum: 0, exclusiveMaximum: 10 }` | `"0 <= number.integer < 10"`                                           |
+| `{ multipleOf: 5 }`                                     | `"number % 5"`                                                         |
+| `{ multipleOf: 0.01 }`, `uniqueItems: true`             | a `.narrow()`, as for Zod's `.multipleOf(0.01)` and Joi's `.unique()`  |
+| `{ enum: ["a", "b"] }`, `{ const: "a" }`                | `"'a' \| 'b'"`, `"'a'"`                                                |
+| `{ type: ["string", "null"] }`, `anyOf`                 | `"string \| null"`, `A.or(B)`                                          |
+| `oneOf`                                                 | `A.or(B)`, which also accepts data matching both                       |
+| `allOf`                                                 | `A.and(B)`                                                             |
+| `properties` with `required`                            | keys, with `?` on those not required                                   |
+| `additionalProperties: false`                           | `"+": "reject"`                                                        |
+| `additionalProperties: T`                               | `"[/^(?!a$\|b$)/]": T`, `a` and `b` the declared keys                  |
+| `patternProperties: { "^x-": T }`                       | `"[/^x-/]": T`                                                         |
+| `{ type: "array", items: T, minItems: 1 }`              | `"T[] >= 1"`                                                           |
+| `prefixItems: [A, B]`                                   | `["A?", "B?", "...", "unknown[]"]`: shorter and longer arrays pass     |
+| the same with `items: false` and `minItems: 2`          | `[A, B]`                                                               |
+| `$defs` with `$ref`                                     | a scope                                                                |
+| `format: "email"`, `"uuid"`, `"date-time"`, `"uri"`     | `"string.email"`, `"string.uuid"`, `"string.date.iso"`, `"string.url"` |
+| `default`                                               | `"key": "T = x"`                                                       |
+
+With `ajv-formats`, `date-time` requires a time and an offset, which `string.date.iso` doesn't: intersect a pattern, as in [Dates and formats](#dates-and-formats).
 
 ajv options map too: `removeAdditional` is `"+": "delete"`, `useDefaults` is a default in the definition, and `coerceTypes` is a parse keyword like `string.numeric.parse`. `T.toJsonSchema()` converts back.

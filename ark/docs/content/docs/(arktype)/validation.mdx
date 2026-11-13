@@ -101,7 +101,7 @@ AtLeast6("3")
 
 ## Standard Schema
 
-Every Type implements [Standard Schema](/docs/standard-schema), so libraries that accept one can validate with it through `~standard.validate`. ArkType validates synchronously, and a failure result is `{ issues }`, a copy of each error in the `ArkErrors` whose `message` [leaves out its path](/docs/standard-schema#validation):
+Every Type implements [Standard Schema](/docs/standard-schema), so libraries that accept one can validate with it through `~standard.validate`. ArkType validates synchronously, and a failure result is `{ issues }`, each error in the `ArkErrors`, whose `message` [leaves out its path](/docs/standard-schema#validation):
 
 ```ts
 const User = type({ name: "string", age: "number" })

@@ -46,7 +46,7 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 ## ArkType: Interop
 
 - [Standard Schema](https://arktype.io/docs/standard-schema.md): Pass a Type to any library that accepts a Standard Schema, and use other validators inside an ArkType definition.
-- [Integrations](https://arktype.io/docs/integrations.md): Use a Type directly with tRPC, oRPC, Drizzle, React Hook Form, Hono, the MCP SDK and the AI SDK.
+- [Integrations](https://arktype.io/docs/integrations.md): Use a Type directly with tRPC, oRPC, Drizzle, React Hook Form, Hono, Fastify, the MCP SDK, the AI SDK and the OpenAI and Anthropic SDKs.
 - [fast-check](https://arktype.io/docs/fast-check.md): Generate test data from a Type for property-based tests with @ark/fast-check.
 - [Ecosystem](https://arktype.io/docs/ecosystem.md): Community projects built on ArkType, for environment variables, Drizzle codegen and binary serialization.
 

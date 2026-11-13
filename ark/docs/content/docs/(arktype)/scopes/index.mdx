@@ -143,6 +143,22 @@ TypeScript shows an anonymous cycle as `...`, or as `any` if `noErrorTruncation`
 
 </Callout>
 
+A declaration file is the exception. In the `.d.ts` TypeScript emits for a module that exports a cyclic Type, as for a published package or a project reference, the cycle is written as `any`, and that's what code importing it gets. There, name the type yourself and [declare](/docs/declare) the Type with it:
+
+```ts
+export interface Category {
+	name: string
+	subcategories: Category[]
+}
+
+export const Category = type.declare<Category>().type({
+	name: "string",
+	subcategories: "this[]"
+})
+```
+
+For a scope's alias, annotate the export: `export const Post: Type<Post> = type(types.Post)`.
+
 ## Visibility
 
 Aliases prefixed with `#` are private. They can be referenced in the scope, but are not exported:

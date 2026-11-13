@@ -31,7 +31,7 @@ The VS Code extensions, "ArkType" and "ArkThemes", are on the [Editor](/docs/edi
 | `arktype/runtime`                           | what [precompiled](/docs/precompile) validators run on. A build resolves `arktype` to it; you don't import it yourself                                                      |
 | `arktype/config`                            | `configure`, before anything else from `arktype` is imported                                                                                                                |
 | `arktype/locales/en`, `arktype/locales/de`  | the `en` and `de` [locales](/docs/i18n)                                                                                                                                     |
-| `arktype/i18n`                              | helpers for [writing a locale](/docs/i18n#writing-a-locale): `listPattern`, `isolate`, `labelOf`, `groupByPath`, `describeCause`, `describeMissing`, `writeKeywordExpected` |
+| `arktype/i18n`                              | helpers that [a locale](/docs/i18n) uses: `listPattern`, `isolate`, `labelOf`, `groupByPath`, `printedActualOf`, `describeCause`, `describeMissing`, `writeKeywordExpected` |
 | `arktype/internal`, `arktype/internal/*.ts` | every module's exports, for tools built on ArkType. Not semver-stable.                                                                                                      |
 
 `arktype` exports:
@@ -39,7 +39,8 @@ The VS Code extensions, "ArkType" and "ArkThemes", are on the [Editor](/docs/edi
 - `type`, `scope`, `match`, `generic`, `declare`, `define` and `fn` to define Types, and `keywords` and `ark`, the keywords as a module and as a scope.
 - `regex`, the same function `arkregex` exports.
 - `Type`, `Module` and `Generic` to check a value with `instanceof`, and `Hkt` to write a [higher-kinded generic](/docs/generics#hkt).
-- `ArkErrors`, `ArkError`, `TraversalError` and `ParseError`, the [errors](/docs/errors) ArkType returns and throws, and `Traversal`, the type of the `ctx` a [narrow or morph](/docs/traversal-api) receives.
+- `ArkErrors`, `TraversalError` and `ParseError`, the [errors](/docs/errors) ArkType returns and throws, `ArkError`, the type of one issue, and `Traversal`, the type of the `ctx` a [narrow or morph](/docs/traversal-api) receives.
+- `byPath`, `flatByPath`, `flatMessagesByPath`, `byAncestorPath`, `firstIssue` and `messageIn`, which [read an `ArkErrors`](/docs/errors#arkerrors).
 - `annotatingFallback`, a [JSON Schema fallback](/docs/json-schema/to-json-schema#annotatingfallback), and `inferred`, the symbol key a Type's inferred type is declared under.
 - types such as `Out`, `Brand`, `Json`, `JsonSchema`, `ArkErrorCode`, `Locale`, `Scope`, `BaseType` and `inferDefinition`/`validateDefinition` for [wrapping `type`](/docs/generics#external).
 

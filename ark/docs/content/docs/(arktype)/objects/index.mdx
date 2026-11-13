@@ -282,6 +282,8 @@ Both act on string keys: `"reject"` checks only an object's string keys, and `"d
 
 `"delete"`'s output lists the declared keys in the order the definition declares them, as Zod does, then any keys matching an index signature in the input's order.
 
+Deleting keys makes an object a [morph](/docs/expressions#pipe), so a union holding one throws a `ParseError` if another branch accepts the same data, as an array, a `Date` or a second object with no literal key to tell them apart does. [Unions of objects](/docs/migrating#unions-of-objects) shows how to write such a union.
+
 `.onDeepUndeclaredKey()` applies the same behavior to every nested object:
 
 ```ts
@@ -552,7 +554,7 @@ const PartialUser = type({
 	.narrow(user => user.email?.includes("@") ?? true)
 ```
 
-A root [morph](/docs/expressions#pipe) can't be reduced to properties, so transforming a type like `type({ name: "string" }).pipe(user => user)` throws a `ParseError` instead of dropping it.
+A root [morph](/docs/expressions#pipe) can't be reduced to properties, so transforming a type like `type({ name: "string" }).pipe(user => user)` throws a `ParseError` instead of dropping it: `partial operand must be an object (was (In: { name: string }) => Out<...>)`. An object that [deletes undeclared keys](#properties-undeclared) is a morph too, so once it has a narrow, these methods throw. Call them first, then add the narrow, as above.
 
 </Callout>
 

@@ -33,6 +33,10 @@ type.number.allows(Number.NaN)
 	and `configure` can be imported from either `"arktype"` or `"arktype/config"`.
 </Callout>
 
+Global config belongs to the app. A package others install shouldn't call `configure`: it would change the app's own Types, or throw there if the app created one first. Give a package's Types their options in a [scope](#scope) or in [each Type](#type).
+
+If your `package.json` sets `"sideEffects": false`, a bundler leaves out an import made only for its side effects, so the bundle runs without your config. List the file there instead: `"sideEffects": ["./src/config.ts"]`.
+
 ### Scope
 
 Pass config as the second argument to `scope` or `type.module`. It applies to every Type parsed in that scope:
@@ -55,15 +59,16 @@ $.type({ age: "number <= 100" })({ age: 101 })
 `.configure` adds [metadata](/docs/expressions#meta), like a `description` or [error parts](#error-messages), to a Type. It applies wherever that Type is referenced, but not to the Types inside it:
 
 ```ts
-// don't print the password
-const Password = type("string >= 8").configure({ actual: "" })
+const Password = type("string >= 8").configure({
+	message: "Use 8 or more characters"
+})
 
 const User = type({
 	email: "string.email",
 	password: Password
 })
 
-// ArkErrors: password must be at least length 8
+// ArkErrors: password: Use 8 or more characters
 User({ email: "david@arktype.io", password: "ez123" })
 ```
 
@@ -89,7 +94,25 @@ A Type's own options are its [metadata](/docs/expressions#meta), including the [
 
 ## Error messages
 
-Each error message is built from parts. Configure the part you want to change, and ArkType keeps composing the rest, including messages for unions and intersections. `expected`, `actual`, `problem` and `message` each take a string or a function. See [Errors](/docs/errors) for what an error contains.
+There are two ways to change what an error says:
+
+- **Templated**: configure what the value was expected to be, with a [`description`](#description) or [`expected`](#expected), and what it was, with [`actual`](#actual). ArkType writes "must be `expected`", lists it where a union's error lists its branches' and writes the path before it in a summary.
+- **Custom**: configure a [`message`](#message), one whole sentence shown as written wherever the error is read.
+
+```ts
+const User = type({
+	name: "string",
+	age: type("number >= 18").configure({ expected: "an adult's age" }),
+	email: type("string.email").configure({ message: "Enter a valid email" })
+})
+
+// ArkErrors: name must be a string
+//            age must be an adult's age
+//            email: Enter a valid email
+User({ name: 5, age: 3, email: "x" })
+```
+
+`expected`, `actual` and `message` each take a string or a function. See [Errors](/docs/errors) for what an error contains.
 
 ### description
 
@@ -121,7 +144,7 @@ Password(12345678)
 
 ### actual
 
-What goes inside "(was …)". A message doesn't say what the value was unless an `actual` is configured, except a missing key's, which reads "(was missing)", though an error's `actual` still describes its data, like "5" or "an object", for a `problem` or `message` you write. An empty string omits it. A function receives the data, then the error:
+What a message ends with, as "(was …)". By default only a missing key's does, with "(was missing)": a message leaves out what the value was, though every error's `actual` still describes its data, like "5" or "an object", for a `message` function to read. Configure a string, or a function of the data, then the error, to write one:
 
 ```ts
 const Age = type("number <= 100").configure({ actual: data => `${data}` })
@@ -130,39 +153,88 @@ const Age = type("number <= 100").configure({ actual: data => `${data}` })
 Age(101)
 ```
 
-### problem
-
-The whole sentence after the path, like "must be a string", and the text a [Standard Schema](/docs/standard-schema) consumer, like a form library, shows beside a field as its issue's `message`. A union's problem lists each branch's path from its own. A function receives the error, including its `expected` and `actual`. It may not apply to the errors of a union:
-
-```ts
-const Name = type("string").configure({
-	problem: ctx => `isn't ${ctx.expected}`
-})
-
-// ArkErrors: isn't a string
-Name(5)
-```
-
 ### message
 
-The whole message, including the path, read from the errors calling a Type returns, their `summary` and what `.assert()` throws. It doesn't reach Standard Schema issues, whose `message` is the [`problem`](#problem). A function receives the error, including its `problem`. It may not apply to the errors of a union:
+One whole sentence in place of "must be `expected`". It's the error's `message`, so it's what a [Standard Schema](/docs/standard-schema) consumer, like a form library, shows beside a field, and a summary writes it after the error's path and a colon:
 
 ```ts
-const User = type({
-	password: "string >= 8"
-}).configure({
-	message: ctx => `${ctx.propString || "(root)"}: ${ctx.problem}`
+const Signup = type({
+	email: type("string.email").configure({ message: "Enter a valid email" })
 })
 
-// ArkErrors: (root): must be an object
-User("ez123")
+const out = Signup({ email: "x" })
 
-// .configure applies only at the root, so the nested error is unchanged
-// ArkErrors: password must be at least length 8
-User({ password: "ez123" })
+if (out instanceof type.errors) {
+	// email: Enter a valid email
+	out.summary
+
+	// Enter a valid email
+	out.issues[0].message
+}
+
+// a missing key says what its value's message does
+// ArkErrors: email: Enter a valid email
+Signup({})
 ```
 
-Each function also receives the active [locale](/docs/i18n#your-own-messages) as its last argument, so it can write its text in the language a message is read in.
+A message is never composed into another error's, and it applies to the Type it's configured on:
+
+- A union's error lists what its branches expected, not their messages, unless every failing branch has the same message, which the union's error then says.
+- A message on a union replaces what it lists. To say what a union must be instead, [describe](#description) it: `type({ a: "string" }).or({ b: "number" }).describe("a shape")` says `must be a shape`.
+- A message on a [pipe](/docs/expressions#pipe) is also the message of the errors validating its output.
+- A missing key says the message of its whole value, so configure that last, after any `.pipe()` or `.to()`.
+- A message doesn't apply to the Types inside its own, so one on an object is what data that isn't an object says, and each key keeps its own.
+- A message is what every check of its Type says. For one check's alone, pass that check's [error code](/docs/errors#error-codes) as a [selector](/docs/expressions#meta):
+
+```ts
+const Password = type("string >= 8 & /[0-9]/")
+	.configure({ message: "Use 8 or more characters" }, "minLength")
+	.configure({ message: "Include a number" }, "pattern")
+
+// ArkErrors: Include a number
+//            Use 8 or more characters
+Password("short")
+
+// ArkErrors: must be a string
+Password(5)
+```
+
+`"domain"` selects a value of the wrong type, and `"self"` the Type's own node, whose message a missing key says:
+
+```ts
+const Sku = type(/^[A-Z]{3}-\d{4}$/)
+	.configure({ message: "SKU is required" }, "self")
+	.configure({ message: "SKU must be text" }, "domain")
+
+const Product = type({ sku: Sku })
+
+// ArkErrors: sku: SKU is required
+Product({})
+
+// ArkErrors: sku: SKU must be text
+Product({ sku: 5 })
+
+// ArkErrors: sku must be matched by ^[A-Z]{3}-\d{4}$
+Product({ sku: "x" })
+```
+
+A code selects every check of that kind in the Type, a nested key's included, so configure a key's value rather than the object around it. A message configured without a selector replaces those configured before it, so configure it first.
+
+A function receives the error, including its `expected` and `actual`. A summary writes its text after the path and a colon as it does a string's, but a missing key doesn't say it:
+
+```ts
+const Email = type("string.email").configure({
+	message: ctx => `Enter ${ctx.expected}`
+})
+
+// ArkErrors: Enter an email address
+Email("x")
+
+// ArkErrors: Enter a string
+Email(5)
+```
+
+Each function also receives the active [locale](/docs/i18n#your-own-messages) as its last argument, so it can write its text in the language a message is read in. A [locale](/docs/i18n#writing-a-locale) also decides how a summary places a path before a message.
 
 ### By code
 
@@ -174,7 +246,7 @@ const mod = type.module(
 	{
 		divisor: {
 			expected: ctx => `% ${ctx.rule} !== 0`,
-			problem: ctx => `${ctx.actual} ${ctx.expected}`
+			message: ctx => `${ctx.actual} ${ctx.expected}`
 		}
 	}
 )
@@ -188,10 +260,10 @@ A key that `"+": "reject"` disallows has the code `undeclared`:
 ```ts
 const $ = scope(
 	{ User: { "+": "reject", name: "string" } },
-	{ undeclared: { problem: "isn't allowed" } }
+	{ undeclared: { message: "This key isn't allowed" } }
 )
 
-// ArkErrors: age isn't allowed
+// ArkErrors: age: This key isn't allowed
 $.export().User({ name: "Alice", age: 42 })
 ```
 
@@ -212,7 +284,7 @@ configure({ locale: de })
 import "./config.ts"
 import { type } from "arktype"
 
-// ArkErrors: muss eine Zeichenkette sein, ist aber eine Zahl
+// ArkErrors: muss eine Zeichenkette sein
 type.string(5)
 ```
 
@@ -295,7 +367,7 @@ MyObj({})
 MyObj({ key: undefined })
 ```
 
-Add `| undefined` to keys that should accept it. If your tsconfig doesn't enable `exactOptionalPropertyTypes`, you can set ArkType's to `false` to match:
+Add `| undefined` to keys that should accept it. If your tsconfig doesn't enable `exactOptionalPropertyTypes`, you can set ArkType's to `false` to match, which is also how Zod and [most other validators](/docs/migrating#defaults-that-differ) treat optional keys and defaults:
 
 ```ts title="config.ts"
 import { configure } from "arktype/config"

@@ -21,14 +21,15 @@ To allow them everywhere, configure `numberAllowsInfinity` or `numberAllowsNaN` 
 
 ## Why can't I index `ArkErrors` like an array?
 
-`ArkErrors` isn't an `Array`. Its errors are in `issues`, one per path:
+`ArkErrors` isn't an `Array`. Its errors are in `issues`, one for each check that failed:
 
 ```ts
 const out = type({ name: "string" })({})
 
 if (out instanceof type.errors) {
-	// ArkError: name must be a string (was missing)
+	// the error at name
 	out.issues[0]
+	// ["must be a string (was missing)"]
 	out.issues.map(e => e.message)
 	for (const error of out.issues) console.log(error.path)
 }
@@ -36,9 +37,42 @@ if (out instanceof type.errors) {
 
 See [Errors](/docs/errors) for everything an error carries.
 
+## Why does my error say `must be Enter a valid email`?
+
+A string passed to `.describe()`, `ctx.reject()` or `ctx.mustBe()`, or configured as `expected`, is what the value must be, so ArkType writes "must be" before it. A whole sentence is a [`message`](/docs/configuration#message):
+
+```ts
+const Email = type("string.email").configure({ message: "Enter a valid email" })
+
+const Zip = type("string").narrow(
+	(s, ctx) =>
+		/^\d{5}$/.test(s) || ctx.reject({ message: "Enter a 5-digit zip" })
+)
+```
+
+## Why does my optional key reject `undefined`?
+
+An optional key may be missing, but a key that's present must hold a value its definition allows, as with TypeScript's `exactOptionalPropertyTypes`. Add `| undefined` to the value, or set [`exactOptionalPropertyTypes: false`](/docs/configuration#exactoptionalpropertytypes) to accept `undefined` at every optional key, as Zod does.
+
 ## Why isn't my configuration applied?
 
 Global config is fixed when the first Type is created, by a definition or by reading a keyword like `type.number`. Calling `configure` after that throws a `ParseError`: `configure() must be called before any Type is created, so import the module calling it before any module that creates one`. Put it in its own file. See [Configuration](/docs/configuration).
+
+## Why does Jest say `Must use import to load ES Module`?
+
+ArkType and its dependencies ship ES modules only, and Jest runs tests as CommonJS, so a test that imports arktype fails, naming `node_modules/arktype/out/index.js`. Have Jest transform those packages, with a transform that reads JavaScript, like ts-jest's `js-with-ts` preset:
+
+```js title="jest.config.js"
+module.exports = {
+	preset: "ts-jest/presets/js-with-ts",
+	// arktype and its dependencies ship ES modules only
+	transformIgnorePatterns: [
+		"/node_modules/(?!(\\.pnpm|arktype|arkregex|arksets|@ark)/)"
+	]
+}
+```
+
+`\\.pnpm` is for pnpm's layout, where each package is under `node_modules/.pnpm`. On Node 24.9 or later, a Jest that can `require` an ES module, like 30.5, needs no transform: run it with `NODE_OPTIONS=--experimental-vm-modules`.
 
 ## Does a morph change my input?
 
@@ -75,20 +109,23 @@ That means dynamic ArkType parses your definitions at runtime, so it ships a par
 
 Coming from Zod, most APIs have a direct equivalent:
 
-| Zod                         | ArkType                                  |
-| --------------------------- | ---------------------------------------- |
-| `z.object({ ... })`         | `type({ ... })`                          |
-| `.optional()` on a property | `"key?": ...`                            |
-| `.default(value)`           | `"number = 0"` as a property value       |
-| `z.enum(["a", "b"])`        | `"'a' \| 'b'"`                           |
-| `z.array(T)`                | `T.array()` or `"string[]"`              |
-| `z.infer<typeof T>`         | `typeof T.infer`                         |
-| `T.parse(data)`             | `T.assert(data)`                         |
-| `T.safeParse(data)`         | `T(data)`, then `instanceof type.errors` |
-| `.refine(fn)`               | `.narrow(fn)`                            |
-| `.transform(fn)`            | `.pipe(fn)`                              |
+| Zod                           | ArkType                                                              |
+| ----------------------------- | -------------------------------------------------------------------- |
+| `z.object({ ... })`           | `type({ ... })`                                                      |
+| `.optional()` on a property   | `"key?": ...`                                                        |
+| `.default(value)`             | `"number = 0"` as a property value                                   |
+| `z.enum(["a", "b"])`          | `"'a' \| 'b'"`                                                       |
+| `z.array(T)`                  | `T.array()` or `"string[]"`                                          |
+| `z.infer<typeof T>`           | `typeof T.infer`                                                     |
+| `T.parse(data)`               | `T.assert(data)`                                                     |
+| `T.safeParse(data)`           | `T(data)`, then `instanceof type.errors`                             |
+| `.min(1, "Name is required")` | `["string >= 1", "@", { message: "Name is required" }]`              |
+| `.refine(fn, "Message")`      | `.narrow((v, ctx) => fn(v) \|\| ctx.reject({ message: "Message" }))` |
+| `.transform(fn)`              | `.pipe(fn)`                                                          |
 
-All three implement [Standard Schema](/docs/standard-schema), so a library that accepts one of them accepts the others.
+[Migrating](/docs/migrating) maps the rest of Zod's API, and Valibot's, and has a prompt that migrates a project for you.
+
+All three implement [Standard Schema](/docs/standard-schema), so a library that accepts one of them accepts the others, and you can [adopt ArkType one schema at a time](/docs/migrating#adopt-incrementally).
 
 ## Why isn't my wrapper generic working?
 
@@ -137,13 +174,11 @@ In both cases, we've explicitly annotated the return type we want and used some 
 
 </Callout>
 
-For anything more complex, you'll have to rely on your understanding of type manipulation. Tracing your way through ArkType's internal types may uncover helpful patterns, and you may find friendly folks [in our Discord](https://arktype.io/discord) willing to lend a hand.
-
-We can't guarantee your generics will behave the way you expect, since that depends on how TypeScript infers them in your code rather than on ArkType's API.
+How a generic of your own infers depends on TypeScript rather than on ArkType's API. For anything these patterns don't cover, ask [in our Discord](https://arktype.io/discord).
 
 ## What's up with your type/Type casing?
 
-You might have noticed in our documentation we use PascalCase for some Types and camelCase for others:
+These docs use PascalCase for some Types and camelCase for others:
 
 ```ts
 const User = type({
@@ -158,24 +193,8 @@ const parseJson = type("string.json.parse").to({
 })
 ```
 
-Types that only validate are named like TypeScript types. Types that transform their input behave like functions, so they're named like functions.
-
-This distinction evolved from the rules we use for casing our internal TypeScript types:
-
-- Use `PascalCase` for...
-  - Entities/non-generic types (e.g. `User`, `SomeData`)
-  - Generic types with noun names, like `Array<t>`. As a rule of thumb, your generic should be named this way if all its parameters have defaults (unfortunately TS's built-in `Array` type doesn't have a default parameter, but it probably should have been `unknown`!)
-
-- Use `camelCase` for...
-  - Generic types with verb names like `inferDomain<t>`. Types named this way should generally have at least one required parameter.
-  - Parameter names, e.g. `t` in `Array<t>`
-
-If you don't like this, feel free to use whatever casing rules best suit your repo. It doesn't affect your Types or scope aliases.
+Types that only validate are named like TypeScript types. Types that transform their input behave like functions, so they're named like functions. Casing doesn't affect your Types or scope aliases, so use whatever rules suit your repo.
 
 ## Is there a way to create an async morph?
 
-Other than handling it as a promise on the output object, no.
-
-As it stands, it doesn't seem worth the significant complexity it would add to morphs in the type system.
-
-If you have a compelling use case, let us know on [this GitHub issue](https://github.com/arktypeio/arktype/issues/462).
+No. A morph can return a promise as its output, but ArkType doesn't await it, so run async checks after validation. If you have a use case for more, add it to [this GitHub issue](https://github.com/arktypeio/arktype/issues/462).

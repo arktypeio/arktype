@@ -3,21 +3,43 @@ title: Upgrading
 description: What to change when upgrading from ArkType 2.2, with each breaking change before and after.
 ---
 
-Each section is one change since 2.2.9, with code that behaves differently before and after it. The full list of changes, including fixes and new features, is in the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [@ark/fast-check](https://github.com/arktypeio/arktype/blob/main/ark/fast-check/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md).
+Each section is one change since 2.2.9, with code that behaves differently before and after it. With the [ArkType skill](/docs/agents#skill) installed, your agent can make them: ask it to `Upgrade this project to ArkType 3`.
+
+## At a glance
+
+The changes most code meets are to errors. The [checklist](#checklist) covers the rest.
+
+| 2.2                                                                                                  | 3.0                                                                                                                   |
+| ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `out[0]`, `out.length`, `out.map(fn)`, `for (const e of out)`                                        | [the same on `out.issues`](#arkerrors-is-no-longer-an-array)                                                          |
+| `error.message`, for text that names its path                                                        | [`out.summary`](#message-leaves-out-the-path-and-problem-is-gone), a line per error                                   |
+| `error.problem`                                                                                      | [`error.message`](#message-leaves-out-the-path-and-problem-is-gone)                                                   |
+| `{ problem: "isn't allowed" }` in config or `ctx.reject()`                                           | [`{ message: "This key isn't allowed" }`](#custom-messages-are-written-after-their-path), a whole sentence            |
+| `out.byPath`, `out.flatByPath`, `out.flatProblemsByPath`                                             | [`byPath(out)`, `flatByPath(out)`, `flatMessagesByPath(out)`](#arkerrors-is-no-longer-an-array)                       |
+| `out.message`, `out.toTraversalError()`                                                              | [`out.summary`, `new TraversalError(out)`](#arkerrors-is-no-longer-an-array)                                          |
+| `error.hasCode("min")`, `error instanceof ArkError`                                                  | [`error.code === "min"`, and `ArkError` is only a type](#errors-are-plain-objects)                                    |
+| `ctx.errors.add(error)`                                                                              | [`ctx.error(...)` or `ctx.reject(...)`](#arkerrors-is-no-longer-an-array)                                             |
+| `message: ctx => ...`, reading `ctx.problem`                                                         | [`message: (error, locale) => ...`](#error-writers-receive-the-error-and-the-locale), from `error.expected`           |
+| a snapshot ending `(was a number)`                                                                   | [the same text without it](#messages-leave-out-the-value)                                                             |
+| `configure()` after a Type exists, `clone`                                                           | [a config file imported first](#configure-before-any-type-is-created); [remove `clone`](#the-clone-option-is-removed) |
+| `@hono/arktype-validator`, Superforms' `arktype()`, `arktypeResolver` before `@hookform/resolvers` 5 | [the library's Standard Schema entry point](#adapters-written-for-arktype-2), until the adapter is updated            |
 
 ## Checklist
 
-Go down the list. Each question your code answers yes to links to what to change.
+Go down the list. Each question your code answers yes to links to what to change. Fixes and new features are in each package's CHANGELOG: [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [@ark/fast-check](https://github.com/arktypeio/arktype/blob/main/ark/fast-check/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md).
 
 - Do you install with npm, beside a package that peers on `arktype@^2`, like `@hookform/resolvers` or `@t3-oss/env-core`? [Override its peer](#npm-refuses-packages-that-peer-on-arktype-2).
+- Do you use `arktypeResolver` from `@hookform/resolvers` 3 or 4, `@hono/arktype-validator`, `sveltekit-superforms`, `@arkenv/core` or `@typeschema/arktype`? [Each fails on invalid input](#adapters-written-for-arktype-2), and all but ArkEnv have a replacement that works today.
 - Do you keep a package that depends on arktype 2 itself, like `@ark/json-schema@0.0.13`? [Its Types are Standard Schemas](#packages-that-depend-on-arktype-2).
+- Do you run Jest with `transformIgnorePatterns` naming arktype's packages? [Add `arksets`](#jest-transforms-need-arksets).
 - Do you ship arktype to a browser without a build step that precompiles? [It's larger](#unprecompiled-arktype-is-larger).
 - Do you install `@ark/type`, `@ark/regex` or an `@arktype/*` package? [Rename it](#package-names).
 - Do you read `ArkErrors` as an array, like `out[0]`, `out.length`, `out.map()` or `[...out]`? [Read `out.issues`](#arkerrors-is-no-longer-an-array).
 - Do you call methods on an error, like `hasCode()`, `toString()` or `instanceof ArkError`? [Errors are plain objects](#errors-are-plain-objects).
 - Do you switch on error `code`s, or configure text for `predicate`? See [undeclared](#undeclared-keys-have-the-undeclared-code), [discriminant](#union-misses-have-the-discriminant-code) and [notEqual](#excluded-values-have-the-notequal-codes).
+- Do you read an error's `message` or `problem`, or configure either, in `.configure()`, `configure()`, a Scope or `ctx.reject()`? [`message` leaves out the path, and `problem` is gone](#message-leaves-out-the-path-and-problem-is-gone), and [a message you configure is written after its path](#custom-messages-are-written-after-their-path).
 - Do you snapshot or assert error messages, or their order? See [Errors](#errors): messages leave out the value, each failed check is its own error, `assert` throws the errors' summary, dates and union misses print differently, errors follow the order keys are declared, configured messages apply to more errors, and [other messages changed](#other-messages-that-changed).
-- Do you show the messages of Standard Schema issues, as a form library does? [Each is its error's `problem`, which leaves out the path](#standard-schema-messages-leave-out-the-path).
+- Do you show the messages of Standard Schema issues, as a form library does? [Each leaves out the path](#standard-schema-messages-leave-out-the-path).
 - Do you configure an `expected`, `actual` or `message` writer? [Writers take the error](#error-writers-receive-the-error-and-the-locale).
 - Do you call `configure()` after a Type is created, or pass a global-only option to a Scope? See [Configuration](#configuration).
 - Do you use `number` for data that can be `Infinity`? [Allow it](#number-rejects-infinity).
@@ -39,7 +61,7 @@ Go down the list. Each question your code answers yes to links to what to change
 
 ### npm refuses packages that peer on arktype 2
 
-Some packages list `arktype@^2` as a peer dependency, like `@hookform/resolvers`, `@t3-oss/env-core`, `@standard-community/standard-json`, `xsschema`, `@regle/schemas`, `@typeschema/arktype`, `@hono/arktype-validator` and `@arkenv/core`. npm won't install one beside a later major version of `arktype`, even where its peer is optional: `npm install arktype@latest` only warns, but each install after it, `npm ci` included, fails with `ERESOLVE`. Until a package widens its range, point its peer at your `arktype` in `package.json`, one entry for each package the error names:
+Some packages list `arktype@^2` as a peer dependency, like `@hookform/resolvers` (from 5.4.1), `@t3-oss/env-core`, `@t3-oss/env-nextjs`, `@t3-oss/env-nuxt`, `sveltekit-superforms`, `@standard-community/standard-json` and `@standard-community/standard-openapi` (which `hono-openapi` installs), `xsschema`, `@regle/schemas`, `@tanstack/arktype-adapter`, `@typeschema/arktype`, `@hono/arktype-validator` and `@arkenv/core`. npm won't install one beside a later major version of `arktype`, even where its peer is optional: `npm install arktype@latest` only warns, but each install after it, `npm ci` included, fails with `ERESOLVE`. Until a package widens its range, point its peer at your `arktype` in `package.json`, one entry for each package the error names:
 
 ```json title="package.json"
 {
@@ -60,9 +82,66 @@ peerDependencyRules:
     arktype: "3"
 ```
 
+An override only lets a package install. [Adapters written for arktype 2](#adapters-written-for-arktype-2) says which then work.
+
+### Adapters written for arktype 2
+
+An adapter that reads [`ArkErrors` as an array](#arkerrors-is-no-longer-an-array) still type-checks and still passes valid data, then fails on the first invalid input. One that validates through [Standard Schema](/docs/standard-schema) reads only `~standard`, so it is unaffected, and most of these libraries ship one. Each row but the last was run on the versions it names:
+
+| Package                                                                                                                | Beside arktype 3                                                                                             | Use                                                                                                                                                                                                    |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `@hookform/resolvers` 5.0.0, 5.9.1, 6.0.2, 7.0.6                                                                       | works: `arktypeResolver` validates through Standard Schema                                                   | `arktypeResolver` or `standardSchemaResolver`, which return the same errors                                                                                                                            |
+| `@hookform/resolvers` 4.1.3                                                                                            | `arktypeResolver` throws `TypeError: Cannot read properties of undefined (reading 'join')` on invalid values | `standardSchemaResolver` from `@hookform/resolvers/standard-schema`, there since 4.0.0, or upgrade to 5                                                                                                |
+| `@hookform/resolvers` 3.10.0                                                                                           | `arktypeResolver` throws a `TypeError` ending `forEach is not a function` on invalid values                  | upgrade to 5 or later, which needs `react-hook-form@7.55`; version 3 has no `standardSchemaResolver`                                                                                                   |
+| `@hono/arktype-validator` 2.0.1                                                                                        | an invalid `header` is a 500, `TypeError: out.map is not a function`; `json` and `query` still respond 400   | `sValidator` from [`@hono/standard-validator`](/docs/integrations#hono)                                                                                                                                |
+| `sveltekit-superforms` 3.1.0                                                                                           | `arktype()` and `arktypeClient()` throw `TypeError: result is not iterable` on an invalid form               | `standard(T, { jsonSchema: T.toJsonSchema() })` and `standardClient(T)` from `sveltekit-superforms/adapters`, with a [`fallback`](/docs/json-schema/to-json-schema#fallbacks) for a `Date` or `bigint` |
+| `@arkenv/core` 1.0.0-rc.4, `arkenv` 0.7.3                                                                              | an invalid environment throws `TypeError: Cannot convert undefined or null to object` in place of its report | nothing yet: a valid environment loads, so only the report of what's wrong is lost                                                                                                                     |
+| `@typeschema/arktype` 0.14.0                                                                                           | `validate` returns `{ success: false, issues: [] }`, and `assert` throws without saying why                  | pass the Type itself wherever the library accepts a Standard Schema                                                                                                                                    |
+| `@t3-oss/env-core` 0.13.11, `@tanstack/arktype-adapter` 1.167.0                                                        | work, `presets-arktype` included                                                                             | as before                                                                                                                                                                                              |
+| `@standard-community/standard-json` 0.4.0, `xsschema` 1.0.0-beta.8                                                     | work: they call `toJsonSchema()` and `~standard`                                                             | as before                                                                                                                                                                                              |
+| `hono-openapi` 1.5.0, with `@standard-community/standard-json` 0.3.7 and `@standard-community/standard-openapi` 0.2.11 | works: `validator`, `resolver` and the generated document                                                    | as before                                                                                                                                                                                              |
+| `@regle/schemas` 1.29.5, `@t3-oss/env-nextjs` and `@t3-oss/env-nuxt` 0.13.11                                           | untested; `@regle/schemas` has no code specific to arktype, and the other two wrap `@t3-oss/env-core`        | as before                                                                                                                                                                                              |
+
+The error text is V8's, as Node and Chrome write it. `@hookform/resolvers` 3, 4 and 5.0 to 5.4.0 don't peer on arktype, so npm installs them beside arktype 3 without an error. From version 5, and through `standardSchemaResolver`, a field error's `type` is `""`, where `arktypeResolver` 3 and 4 set it to the error's `code`. The `errors` a `@hono/arktype-validator` hook receives is the `ArkErrors`, so a hook that reads it as an array needs [`errors.issues`](#arkerrors-is-no-longer-an-array) too.
+
+`sValidator` answers an invalid request with `{ data, error, success }`, where `arktypeValidator` answered `{ success, errors }`. To keep that body for clients that read it, return it from the hook:
+
+```ts
+import { sValidator } from "@hono/standard-validator"
+import { type } from "arktype"
+import { Hono } from "hono"
+
+const User = type({ name: "string", age: "number.integer >= 0" })
+
+const app = new Hono()
+
+app.post(
+	"/users",
+	sValidator("json", User, (result, c) => {
+		if (!result.success)
+			return c.json({ success: false, errors: result.error }, 400)
+	}),
+	c => c.json(c.req.valid("json"))
+)
+```
+
 ### Packages that depend on arktype 2
 
 A package that depends on arktype 2 itself, like `@ark/json-schema@0.0.13`, installs its own copy. A Type it returns works in a definition, `.pipe()` or `.to()` as a [Standard Schema](/docs/standard-schema), validating with its own copy, and `toJsonSchema()` writes what that copy's converter does, throwing where that can't stand for the Type, as for one with a morph. A module or Generic from it used in a Scope, or a Type passed to `type.schema()`, throws a `ParseError`: upgrade the package, or override its `arktype`.
+
+### Jest transforms need arksets
+
+`arktype` now imports `arksets`, which ships ES modules only, as arktype's other packages do. A Jest config that lists them in `transformIgnorePatterns` so they're transformed fails with `Must use import to load ES Module`, naming `arksets/out/internal.js`, until it lists that one too:
+
+```js title="jest.config.js"
+module.exports = {
+	preset: "ts-jest/presets/js-with-ts",
+	transformIgnorePatterns: [
+		// before: "/node_modules/(?!(\\.pnpm|arktype|arkregex|@ark)/)"
+		"/node_modules/(?!(\\.pnpm|arktype|arkregex|arksets|@ark)/)"
+	]
+}
+```
 
 ## Bundle size
 
@@ -92,26 +171,86 @@ if (out instanceof type.errors) {
 
 `Array.isArray(out)` is now `false`, and `[].concat(out)` nests the errors instead of spreading them, so pass `out.issues`. A [Standard Schema](/docs/standard-schema) failure is no longer the `ArkErrors`, but `{ issues }`, as [below](#standard-schema-messages-leave-out-the-path).
 
-`ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()`, `toString()` and `toLocaleString(locale)`. `message` and `toTraversalError()` are gone: read `summary`, and call `throw()`. `byPath`, `flatByPath`, `flatProblemsByPath` and `byAncestorPath` are functions `arktype` exports:
+`ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()` and `toString()`, and gains [`toLocaleString(locale)`](/docs/i18n#rendering-in-a-locale). `message` and `toTraversalError()` are gone: read `summary`, and call `throw()`, or construct the error with `new TraversalError(out)`. `byPath`, `flatByPath` and `byAncestorPath` are functions `arktype` exports, as is `flatProblemsByPath`, now named `flatMessagesByPath`:
 
 ```ts
-import { flatProblemsByPath, type } from "arktype"
+import { flatMessagesByPath, type } from "arktype"
 
 const out = type({ name: "string" })({ name: 5 })
 
 if (out instanceof type.errors) {
 	// before: out.flatProblemsByPath
-	flatProblemsByPath(out)
+	flatMessagesByPath(out)
 }
 ```
 
-A [precompiled](/docs/precompile/validators#errors) build's `arktype/runtime` doesn't export them, and its errors have no `propString` or `problem`, so there group `out.issues` by `issue.path` instead.
+It lists each error's `message`, so a key with a `message` you configured holds that text, where `flatProblemsByPath` held what ArkType would have written.
+
+A [precompiled](/docs/precompile/validators#errors) build's `arktype/runtime` doesn't export them, and its errors have no `propString`, so there group `out.issues` by `issue.path` instead.
 
 A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.errors.add`.
 
+### message leaves out the path, and problem is gone
+
+An error's `problem` held its text without its path, like `must be a string`, and its `message` wrote the path before it. `message` is now that text, and `problem` is gone from errors, `.configure()`, `configure()`, Scope configs, `ctx.reject()` and `ctx.error()`. An `ArkErrors`' `summary` still names each error's path:
+
+```ts
+const out = type({ name: "string" })({ name: 5 })
+
+if (out instanceof type.errors) {
+	// "must be a string"
+	// before: "name must be a string (was a number)", with "must be a string (was a number)" as its problem
+	out.issues[0].message
+
+	// "name must be a string"
+	out.summary
+}
+```
+
+- Read `message` where you read `problem`.
+- Where you read `message` for text naming its path, read `summary`, which has a line for each error. For one error's line, call [`messageIn(error, en)`](#errors-are-plain-objects), with `en` from `arktype/locales/en`, rather than joining `error.propString` and `error.message`: a line has a colon after the path of a `message` you configured, and no path at the root.
+- Rename each `problem` you configure or pass to `ctx.reject()` to `message`, then check how it reads [after its path](#custom-messages-are-written-after-their-path). One TypeScript can't see, in JavaScript or behind a cast, throws `problem was removed in 3.0; write message`.
+
+### Custom messages are written after their path
+
+A `message` you configure, or pass to `ctx.reject()`, was the error's whole text, replacing its path too. It's still the error's `message` as you wrote it, but its line of a `summary`, and of what `assert` throws, now writes the path and a colon before it:
+
+```ts
+const Signup = type({
+	email: type("string.email").configure({ message: "Enter a valid email" })
+})
+
+const out = Signup({ email: "x" })
+
+if (out instanceof type.errors) {
+	// "Enter a valid email", as before
+	out.issues[0].message
+
+	// "email: Enter a valid email", before: "Enter a valid email"
+	out.summary
+}
+```
+
+An error at the root has no path, so its line is still its message alone.
+
+- Text that was a `problem`, written to follow the path, like `isn't allowed`, reads `age: isn't allowed` as a `message`. Write it as a sentence, like `This key isn't allowed`, or configure [`expected`](/docs/configuration#expected) instead, which reads `age must be ...`.
+- A `message` function no longer receives `problem`. It writes one sentence from the error's `expected` and `actual`, without the path.
+- How a line places a path is no longer a Type's or a code's to configure. A function like `` ctx => `${ctx.propString}: ${ctx.problem}` `` becomes the `line` of a [locale](/docs/i18n#writing-a-locale), which writes every error's line:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+import "arktype/i18n"
+import { en } from "arktype/locales/en"
+
+configure({
+	// name → must be a string
+	locale: { ...en, line: ctx => `${ctx.propString} → ${ctx.message}` }
+})
+```
+
 ### Standard Schema messages leave out the path
 
-A [Standard Schema](/docs/standard-schema) failure is `{ issues }`, a plain array with a copy of each error whose `message` is the error's `problem`, which leaves its path out, since a consumer like a form library shows it beside the field or prints the path before it:
+A [Standard Schema](/docs/standard-schema) failure is `{ issues }`, a plain array of the errors rather than the `ArkErrors`. Each issue's `message` [leaves its path out](#message-leaves-out-the-path-and-problem-is-gone), since a consumer like a form library shows it beside the field or prints the path before it:
 
 ```ts
 const T = type({ name: "string > 1" })
@@ -121,13 +260,13 @@ const T = type({ name: "string > 1" })
 T["~standard"].validate({ name: "x" })
 ```
 
-A union's or an intersection's `problem` writes the path of each error it lists from its own, like `b must be a string (was missing) or c must be a number (was missing)`, while its `message` still writes them whole. A configured `message` no longer reaches the issues, so move a `message` writer that customized them to [`problem`](/docs/configuration#problem).
+A union's `message` writes the path of each error it lists from its own, like `b must be a string or c must be a number`. A `message` you configure, or pass to `ctx.reject()`, reaches the issues as you wrote it, as before. Pass a sentence to a narrow as `ctx.reject({ message: "Enter a valid zip code" })`, since `ctx.reject("a valid zip code")` is what the value must be and reads `must be a valid zip code`.
 
 Update snapshots of those messages, and read `summary` from the errors calling the Type returns for one line naming each path.
 
 ### Errors are plain objects
 
-The errors in `issues` are plain objects without getters or methods, holding the keys their JSON had plus `propString`, before `expected`, so serialized issues, like the `errors` `@hono/arktype-validator` responds with, include it. `ArkError` is exported only as a type, which comparing `code` narrows as `hasCode` did, and `messageIn` writes one in a locale:
+The errors in `issues` are plain objects without getters or methods, holding the keys their JSON had, without `problem` and with `propString` before `expected`, so serialized issues, like the `errors` `@hono/arktype-validator` responds with, include it. `ArkError` is exported only as a type, which comparing `code` narrows as `hasCode` did, and `messageIn` writes one's line of a summary in a locale:
 
 ```ts
 import { messageIn, type } from "arktype"
@@ -139,17 +278,17 @@ if (out instanceof type.errors) {
 	for (const error of out.issues) {
 		// before: error.hasCode("divisor")
 		if (error.code === "divisor") console.log(error.rule)
-		// before: error.toLocaleString(de)
+		// new: this error's line of the summary, in German
 		messageIn(error, de)
 	}
 }
 ```
 
-`hasCode`, `flat`, `throw`, `toString`, `toJSON` and `toLocaleString` are gone from errors, so `error instanceof ArkError` is false and `` `${error}` `` is `[object Object]`. `path` is a plain array. An error's text is written when its `ArkErrors`' issues are first read, so a configured writer is called once per error. A Type that calls no narrow or morph may also find the issues themselves at that read, so [read them before the data you validated changes](/docs/errors#arkerrors).
+`hasCode`, `transform`, `flat`, `throw`, `toString` and `toJSON` are gone from errors, so `error instanceof ArkError` is false and `` `${error}` `` is `[object Object]`. `path` is a plain array. An error's text is written when its `ArkErrors`' issues are first read, so a configured writer is called once per error. A Type that calls no narrow or morph may also find the issues themselves at that read, so [read them before the data you validated changes](/docs/errors#read-errors-before-the-data-changes).
 
 ### Messages leave out the value
 
-A message no longer says what the value was. An error's `actual` still describes its data, and a `problem` or `message` you configure still reads it, but only a missing key's message writes it, so a message ends with what was expected, and a missing key still says it was missing. A message no longer grows with the data, nothing the data holds reaches a log through it, and a Type's messages read as a [precompiled validator's](/docs/precompile/validators#errors) do:
+A message no longer says what the value was. An error's `actual` still describes its data, and a `message` you configure still reads it, but only a missing key's message writes it, so a message ends with what was expected, and a missing key still says it was missing. A message no longer grows with the data, nothing the data holds reaches a log through it, and a Type's messages read as a [precompiled validator's](/docs/precompile/validators#errors) do:
 
 ```ts
 // ArkErrors: must be "a" or "b", before: must be "a" or "b" (was {"x":1})
@@ -266,7 +405,7 @@ A discriminated union whose discriminant can't place the data, because the data 
 
 ```ts
 // ArkErrors: must be an object
-// before: kind must be "circle" or "square" (was missing)
+// before: kind must be "circle" or "square" (was undefined)
 type({ kind: "'circle'", r: "number" }).or({
 	kind: "'square'",
 	side: "number"
@@ -291,9 +430,8 @@ const User = type({ name: "string", age: "number", "nick?": "string" })
 const out = User({ nick: 0 })
 
 if (out instanceof type.errors) {
-	// "name must be a string (was missing)"
-	// before: "age must be a number (was missing)"
-	firstIssue(out).message
+	// ["name"], before: ["age"]
+	firstIssue(out).path
 }
 ```
 
@@ -301,7 +439,7 @@ Declared keys are still checked before an index signature's and undeclared keys,
 
 ### Configured messages apply to more errors
 
-A `message` configured on a pipe applies to errors validating its output, and a union whose failing branches were all configured with one `message` reports it:
+A `message` configured on a pipe applies to errors validating its output, a union whose failing branches were all configured with one `message` reports it, and a missing key says the `message` its value is configured with, if it's a string:
 
 ```ts
 const Port = type("string.numeric.parse | number")
@@ -320,13 +458,21 @@ const Contact = type("string.email")
 // ArkErrors: Enter an email or a phone number
 // before: what each branch expected
 Contact("x")
+
+const Signup = type({
+	name: type("string > 0").configure({ message: "Name is required" })
+})
+
+// ArkErrors: name: Name is required
+// before: name must be a string (was missing)
+Signup({})
 ```
 
 `Port.out` keeps its own errors. Each constraint an intersection fails is [its own error](#each-failed-check-is-its-own-error), with its own message, so `type("string.email > 0").configure({ message: "Email is not valid" })("")` says `Email is not valid` twice.
 
 ### Error writers receive the error and the locale
 
-An `expected` writer receives the error rather than its context, an `actual` writer receives `(data, error, locale)`, and every writer receives the [locale](/docs/i18n) last. In an `expected` writer, `meta` may be `undefined`, since an error from `ctx.reject` has none:
+An `expected` or `message` writer receives the error rather than its context, an `actual` writer receives `(data, error, locale)`, and every writer receives the [locale](/docs/i18n) last. In an `expected` writer, `meta` may be `undefined`, since an error from `ctx.reject` has none:
 
 ```ts title="config.ts"
 import { configure } from "arktype/config"
@@ -400,6 +546,8 @@ T(new Date("2001-06-01"))
 
 Each was wrong or unclear, but a snapshot or message assertion may hold it:
 
+- `string.date.iso` and `string.date.iso.parse`: `must be an ISO 8601 date or date-time`, before: `must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date`.
+- A missing `string.uuid` key: `id must be a string (was missing)`, before: `id must be a string or a UUID (was missing)`.
 - `string.regex`: `must be a regex pattern (SyntaxError: Invalid regular expression: /(/: Unterminated group)`, before: the bare `SyntaxError: ...`.
 - `{ foo: string } | { foo: number } | { foo: Function }` given `{ foo: null }`: `foo must be a number, a string or an object`, before: `foo must be an object, a number or a string (was null)`.
 - A key that must be `never`: `files must be never`, before: `never`.
@@ -592,7 +740,7 @@ type({ "\\[k]?": "string" })
 
 ### The clone option is removed
 
-Transforming no longer clones the input first. Output shares every value nothing transformed with the input, and a morph receives the validated value itself, so a morph that mutates its argument mutates your data. Remove `clone` from your config.
+Transforming no longer clones the input first. Output shares every value nothing transformed with the input, and a morph receives the validated value itself, so a morph that mutates its argument mutates your data. Remove `clone` from your config: `configure()` now throws for an option it doesn't have, here `configure() has no option 'clone'`.
 
 ```ts
 const T = type({ a: "string.trim", b: { c: "string" } })
@@ -739,6 +887,7 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 
 - `jsonSchema` meta is the Type's JSON Schema, replacing what its constraints imply, where it was written into the schema as an ordinary `jsonSchema` key. See [Your own schema](/docs/json-schema/to-json-schema#your-own-schema).
 - Unions of ranges that overlap, meet or leave out one value, and of objects alike but for one key's value, are one range or object: `1 < number < 10 | 10 <= number < 100` is `1 < number < 100`, `number < 0 | number > 0` is `number != 0`, and `{ kind: "a", x: string } | { kind: "b", x: string }` is `{ kind: "a" | "b", x: string }`.
+- `string.uuid` is one pattern, so its JSON Schema is `{ type: "string", format: "uuid", pattern: "..." }`, before: an `anyOf` of the pattern and the nil and max UUIDs as `const`s.
 - `string.date.iso` writes `format: "date-time"` beside its `pattern`, whose groups no longer capture, and a format keyword constrained further keeps its `format`: `"string.email < 255"` writes `format: "email"`, before: none. The [CHANGELOG](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md#write-string-keywords-formats-in-json-schema) lists each keyword's.
 - A union of literals with configured meta becomes `enum`: `type("'a' | 'b'").configure({ title: "Letter" }).toJsonSchema()` is `{ type: "string", enum: ["a", "b"], title: "Letter" }` instead of an `anyOf` of `const`s.
 - A literal's JSON Schema has its `type` beside its `const` or `enum`: `'a' | 'b'` is `{ type: "string", enum: ["a", "b"] }`, and `'a' | 'b' | null` is `{ anyOf: [{ type: "string", enum: ["a", "b"] }, { type: "null" }] }`.

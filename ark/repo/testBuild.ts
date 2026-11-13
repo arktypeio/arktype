@@ -371,7 +371,7 @@ const inspectedOutput = await undetailedLogsOf(
 
 if (
 	inspectedOutput.replace(/\s+/g, " ") !==
-	"[ { code: 'predicate', path: [], data: { a: 1 }, message: 'is invalid' } ] "
+	"ArkErrors { summary: 'is invalid', issues: [ { code: 'predicate', path: [], data: { a: 1 }, message: 'is invalid' } ] } "
 ) {
 	throw new Error(
 		`⚠️  A development build logs its errors as ${JSON.stringify(inspectedOutput)}.`
