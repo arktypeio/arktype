@@ -1525,8 +1525,10 @@ export const T5 = type({ x: H5.a })`
 				"9:19 rejected\n  `H2` is imported from /containers.ts\n  `H2` is written at /mutate.ts:10:1, so its value at the site is not known",
 				"10:19 rejected\n  `H3` is imported from /containers.ts\n  `H3` is written at /mutate.ts:11:1, so its value at the site is not known",
 				"11:19 rejected\n  the default export of /containers.ts is written at /mutate.ts:12:1, so its value at the site is not known",
-				"12:19 rejected\n  `L` is imported from /loose.ts\n  `L` is exported by /loose.ts, which /main.ts:6:28 loads with import(), so code the build doesn't follow may write it",
-				"13:19 rejected\n  `H4` is imported from /containers.ts\n  `H4` is exported by /reexport.ts, which /main.ts:6:50 loads with import(), so code the build doesn't follow may write it",
+				// what an import() loads may be written by code the build doesn't
+				// follow, which the site's factory checks for as it's created
+				"12:19 accepted { x: string }",
+				"13:19 accepted { x: string }",
 				"14:19 accepted { x: string }"
 			])
 			// a module read alone can't see them

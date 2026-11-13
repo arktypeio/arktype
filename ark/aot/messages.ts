@@ -462,12 +462,6 @@ const textHints: [
 		"Write the value whole in its literal. Where it differs by case, define a Type for each case and choose one at runtime."
 	],
 	[
-		// only a build reading the bundle whole refuses it, as a package tsc
-		// built to CommonJS has it do for what two of its modules share
-		/, so code the build doesn't follow may write it$/,
-		"Write the value in the definition, or set prune: false to build each validator whole, which checks the value it read as the validator is created."
-	],
-	[
 		/^`(.+)` is a package the build does not read, though (?:it|(.+)) imports arktype$/,
 		(specifier, name = specifier) =>
 			`Precompile ${name} with the program: in ark.json (or package.json's "ark" key), set "precompile": { "dependencies": { "${name}": "aot" } }, or "arktype" in place of "aot" where it defines Types from values known only at runtime.`

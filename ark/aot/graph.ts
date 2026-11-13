@@ -1007,14 +1007,13 @@ interface Located {
 export interface ProgramView {
 	ids: readonly string[]
 	resolve: (specifier: string, importer: string) => string | undefined
-	// why code the build doesn't read may import each module, e.g. an import()
-	loose: ReadonlyMap<string, string>
 }
 
-// where a value another module may write is written, or why it may be
-export type Elsewhere =
-	| { kind: "written"; node: Node; module: SourceModule }
-	| { kind: "loose"; exporter: SourceModule; why: string }
+// where another module writes a value, or may
+export interface Elsewhere {
+	node: Node
+	module: SourceModule
+}
 
 // what holds a value its binding holds, as an alias or a default export
 type Holding =
@@ -4209,8 +4208,12 @@ export class ModuleGraph {
 			const key = `${exporter.id}\0${name}\0${held.depth}:${held.copied}`
 			if (seen.has(key)) continue
 			seen.add(key)
-			const why = this.view!.loose.get(exporter.id)
-			if (why) return { kind: "loose", exporter, why }
+			// code the build doesn't follow may write it too: what loads its
+			// module with require() or import(), as tsc's CommonJS does every
+			// import, a dependency, or a read of a namespace re-exporting it.
+			// The site's factory checks each value it read as it creates the
+			// validator, as a build reading one module at a time relies on, so
+			// only a write the build sees refuses the site
 			for (const edge of this.importersOf(exporter.id)) {
 				switch (edge.kind) {
 					case "reexport":
@@ -4219,12 +4222,6 @@ export class ModuleGraph {
 					case "star":
 						if (name !== "default") exports.push([edge.module, name, held])
 						break
-					case "whole":
-						return {
-							kind: "loose",
-							exporter,
-							why: `${edge.module.positionOf(edge.node)} re-exports as a namespace`
-						}
 					case "import": {
 						if (edge.name !== "*" && edge.name !== name) break
 						const write =
@@ -4239,7 +4236,6 @@ export class ModuleGraph {
 							:	this.mayWritesOf(edge.binding, edge.module, held)[0]
 						if (write) {
 							return {
-								kind: "written",
 								node: write,
 								module: this.moduleOfNode(write) ?? edge.module
 							}

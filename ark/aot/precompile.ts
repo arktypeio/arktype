@@ -925,31 +925,14 @@ export class Precompiler {
 	}
 
 	private viewOf(program: ReadProgram): ProgramView {
-		const loose = new Map<string, string>()
 		const resolve = (specifier: string, importer: string) =>
 			program.targets?.[importer]?.[specifier] ??
 			this.graph.host.resolve(specifier, importer)
 		for (const id in program.modules) {
 			const { source, mappings } = program.modules[id]
-			const module = this.add(id, source, mappings)
-			walk(module.program, node => {
-				const specifier = loadedSpecifierOf(node)
-				const target =
-					typeof specifier === "string" ? resolve(specifier, id) : undefined
-				if (target !== undefined && !loose.has(target)) {
-					loose.set(
-						target,
-						`${module.positionOf(node)} loads with ${node.type === "ImportExpression" ? "import()" : "require()"}`
-					)
-				}
-				return true
-			})
+			this.add(id, source, mappings)
 		}
-		for (const id of program.dynamicImports ?? [])
-			if (!loose.has(id)) loose.set(id, "the bundle loads with import()")
-		for (const id of program.exposed ?? [])
-			if (!loose.has(id)) loose.set(id, "a dependency may import unseen")
-		return { ids: Object.keys(program.modules), resolve, loose }
+		return { ids: Object.keys(program.modules), resolve }
 	}
 
 	// what a bundle's validators are read for, so its next transforms leave out what no read needs
@@ -6016,18 +5999,11 @@ export class Precompiler {
 			const elsewhere = this.graph.elsewhereOf(declaring, holder, depth)
 			if (!elsewhere) continue
 			const name = holderLabelOf(declaring, holder)
-			const why =
-				elsewhere.kind === "loose" ?
-					new DynamicValue(
-						elsewhere.exporter,
-						elsewhere.exporter.program,
-						`${name} is exported by ${elsewhere.exporter.path}, which ${elsewhere.why}, so code the build doesn't follow may write it`
-					)
-				:	new DynamicValue(
-						elsewhere.module,
-						elsewhere.node,
-						`${name} ${this.graph.isEscape(elsewhere.node) ? "reaches code the build doesn't follow" : "is written"} at ${elsewhere.module.positionOf(elsewhere.node)}, so its value at the site is not known`
-					)
+			const why = new DynamicValue(
+				elsewhere.module,
+				elsewhere.node,
+				`${name} ${this.graph.isEscape(elsewhere.node) ? "reaches code the build doesn't follow" : "is written"} at ${elsewhere.module.positionOf(elsewhere.node)}, so its value at the site is not known`
+			)
 			return declaring === state.module || holder === "default" ?
 					why
 				:	new DynamicValue(

@@ -2753,13 +2753,20 @@ import { H } from "./containers.ts"
 export const load = () => import("./containers.ts")
 const T = type({ x: \`string <= \${H.limit}\` })
 console.log(T.allows({ x: "abc" }), T.allows({ x: "abcd" }))
+`,
+				"written.ts": `import { type } from "arktype"
+import { H } from "./containers.ts"
+const { H: loaded } = await import("./containers.ts")
+loaded.limit = 4
+const T = type({ x: \`string <= \${H.limit}\` })
+console.log(T.allows({ x: "abc" }))
 `
 			},
 			fromHere("temp", "looseHolder")
 		)
-		const build = (opts: PrecompileUnpluginOptions) =>
+		const build = (opts: PrecompileUnpluginOptions, entry = "main.ts") =>
 			esbuild({
-				entryPoints: [join(root, "main.ts")],
+				entryPoints: [join(root, entry)],
 				bundle: true,
 				write: false,
 				format: "esm",
@@ -2770,12 +2777,15 @@ console.log(T.allows({ x: "abc" }), T.allows({ x: "abcd" }))
 				({ outputFiles }) => outputFiles[0].text,
 				(e: { errors: { text: string }[] }) => e.errors.map(e => e.text)
 			)
-		// a pruned build reads the whole program, and names the option that doesn't
-		attest(await build({})).equals([
-			"main.ts:4:11  type({ x: `string <= ${H.limit}` }) cannot be precompiled\n  `H` is imported from containers.ts\n  `H` is exported by containers.ts, which main.ts:3:27 loads with import(), so code the build doesn't follow may write it\n  Write the value in the definition, or set prune: false to build each validator whole, which checks the value it read as the validator is created."
-		])
+		// a pruned build reads the whole program, and where it can't tell that
+		// nothing writes the value, precompiles the site as a build reading one
+		// module does: its factory checks the value it read
+		attest(run((await build({})) as string)).equals("true false\n")
 		attest(run((await build({ prune: false })) as string)).equals(
 			"true false\n"
+		)
+		attest(thrownBy((await build({}, "written.ts")) as string)).equals(
+			"`H.limit` is 4, but was precompiled as 3"
 		)
 	})
 
