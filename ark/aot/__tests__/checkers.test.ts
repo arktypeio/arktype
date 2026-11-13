@@ -1,6 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
+import { type } from "arktype"
+import { precompileStandalone } from "arktype/internal/standalone.ts"
 import { build } from "esbuild"
 import { spawnSync } from "node:child_process"
 import { join } from "node:path"
@@ -1067,6 +1069,33 @@ show(T({ literal: "x" }))`)}`
 			const js = await bundle(root, { ...smallest, config: "config.ts" })
 			attest(js.includes(" sited(")).equals(true)
 			attest(behaviorOf(js)).equals(runPlain(root))
+		})
+	})
+
+	describe("a root in a cycle", () => {
+		it("compiles a root `this` names, so cyclic data stops at the alias depth", () => {
+			// `this` resolves to a node equal to the root, not the root itself. A
+			// checker's Allows passes no depth on, so one written for it would
+			// follow cyclic data until the stack overflows
+			const { code } = precompileStandalone(
+				{ T: type({ foo: { bar: "this" } }) },
+				{ configured: false, optimize: "size" }
+			)
+			attest(code.includes("runtime.sited(")).equals(false)
+			const root = writeFixture(
+				{
+					"artifact.js": code,
+					"main.ts": `import { T } from "./artifact.js"
+
+const cyclic: any = { foo: {} }
+cyclic.foo.bar = cyclic
+const validator = T()
+console.log(validator.allows(cyclic), validator(cyclic) === cyclic, validator.allows({ foo: { bar: { foo: 1 } } }))
+`
+				},
+				fromHere("temp", "checkers", "cyclic-root")
+			)
+			attest(runPlain(root)).equals("true true false\n")
 		})
 	})
 })

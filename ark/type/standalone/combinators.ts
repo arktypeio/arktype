@@ -71,7 +71,14 @@ const isInCycle = (node: BaseNode): boolean => {
 				if (!reference.is("alias") || seen.has(reference)) return false
 				seen.add(reference)
 				const { resolution } = reference
-				return resolution.references.includes(node) || reaches(resolution)
+				// by id, as `this` resolves to a node equal to the root it's
+				// written in yet not that one, which reading it as outside its
+				// own cycle would write as a checker, whose Allows restarts the
+				// alias depth each time data reaches it again
+				return (
+					resolution.references.some(reached => reached.id === node.id) ||
+					reaches(resolution)
+				)
 			})
 		inCycle = reaches(node)
 		inCycleByNode.set(node, inCycle)
