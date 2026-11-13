@@ -26,7 +26,8 @@ import {
 import { claims, draftOf } from "../../lib/claims.ts"
 import { defineMetadata, tagline } from "../metadata.ts"
 
-const lede = `${draftOf(claims.headline)} ${draftOf(claims.pickThree)} The build step is your agent's job: every error it reports says what to change.`
+// the announcement's description ends the same way, so a shared link to either reads alike
+const lede = `${draftOf(claims.headline)} ${draftOf(claims.pickThree)} The build step is your agent's job, and so is migrating from Zod.`
 
 const title = `ArkType · ${tagline}`
 
@@ -85,8 +86,8 @@ const Item = type({
 const out = User({ name: "Ada", email: "ada@", role: "owner" })
 
 if (out instanceof type.errors) console.error(out.summary)
-// ArkErrors: email must be an email address (was "ada@")
-//            role must be "admin" or "member" (was "owner")`,
+// email must be an email address
+// role must be "admin" or "member"`,
 	mcp: `import { McpServer } from "@modelcontextprotocol/server"
 
 const server = new McpServer({ name: "greeter", version: "1.0.0" })
@@ -116,7 +117,7 @@ Six.expression // "number % 6"`,
 	morph: `const Port = type("string.integer.parse").to("0 < number <= 65535")
 
 Port("8080") // 8080
-// ArkErrors: must be at most 65535 (was 80000)
+// ArkErrors: must be at most 65535
 Port("80000")`,
 	discriminate: `const Shape = type({
 	kind: "'circle'",
@@ -271,7 +272,7 @@ export default function HomePage() {
 								how we measured ↓
 							</a>{" "}
 							Your <span className="decl c-teal">agent</span> sets up the build,
-							and every error it reports says what to change.
+							and migrates you from Zod with one prompt.
 						</p>
 						<div className="ctas rise" style={rise(2)}>
 							<Link className="btn btn-gold" href="/docs/intro/setup">
@@ -280,9 +281,9 @@ export default function HomePage() {
 									→
 								</span>
 							</Link>
-							<Link className="btn" href="/docs/precompile/setup">
-								Set up precompile
-							</Link>
+							<a className="btn" href="#migrate">
+								Migrate from Zod
+							</a>
 							<CopyCommand
 								text="npx skills add arktypeio/arktype"
 								label="Copy the command that adds the ArkType skill to your agent"
@@ -345,8 +346,8 @@ export default function HomePage() {
 					<p className="deck">
 						TypeScript's own type system parses every definition, so a typo
 						fails <code>tsc</code> where it was written and the message is the
-						fix. At runtime, bad input comes back as errors that say where, what
-						was expected and what arrived.
+						fix. At runtime, bad input comes back as errors that say where and
+						what was expected.
 					</p>
 					<div className="pair2">
 						<figure className="code-card">
@@ -398,10 +399,11 @@ export default function HomePage() {
 								/>
 								<HomeCode code={snippets.runtime} />
 							</figure>
-							<h3>Runtime errors say what arrived</h3>
+							<h3>Runtime errors say what was expected</h3>
 							<p>
-								Each issue names its path, what was expected and what was there.
-								Hand <code>out.summary</code> back to a person or a model as is.
+								Each issue has its path, a <code>code</code> and a message that
+								says what was expected without printing the value. Hand{" "}
+								<code>out.summary</code> back to a person or a model as is.
 							</p>
 						</div>
 						<div>
@@ -421,7 +423,7 @@ export default function HomePage() {
 									</div>
 									<div className="m">
 										Input validation error: Invalid arguments for tool greet:
-										times: must be at most 5 (was 99)
+										times: must be at most 5
 									</div>
 								</div>
 							</figure>
@@ -515,7 +517,7 @@ export default function HomePage() {
 								<li className="t-out t-rt" data-step="5">
 									query must be non-empty
 									<br />
-									limit must be at most 50 (was 99)
+									limit must be at most 50
 								</li>
 								<li className="t-say" data-step="6">
 									<span className="t-dot is-say" />

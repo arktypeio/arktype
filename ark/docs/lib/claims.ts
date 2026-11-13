@@ -216,6 +216,15 @@ const zodCompiledLosses =
 	:	`. z.compile was faster on ${zodCompiled.losses}`
 const bench = benchFacts()
 
+// plain arktype, its JIT, on the same scenarios. benchData.json has its
+// medians but paired verdicts for the precompiled arms only (standaloneVs),
+// and the passes behind them weren't kept, so this counts no scenario until a
+// run stores arktypeVs as well. By medians alone at 808927feb plain arktype
+// had the lower one in 32 of 32 against Zod 4, by a median of 8.7× and 1.5× at
+// the least (first moltar), and in 32 of 32 against z.compile, by a median of
+// 3× and 1.29× at the least (morph)
+const dynamicZod = versusLibrary("zod", "arktype")
+
 /** the median of a library's ratios to the default build across the scenarios both ran */
 export const medianOf = ({ rows }: LibraryVersus) => {
 	const ratios = rows.map(row => row.speedup).sort((l, r) => l - r)
@@ -578,6 +587,20 @@ const percentText = (fraction: number) =>
 const timesText = (ratio: number) =>
 	`${(Math.floor(ratio * 100) / 100).toFixed(2)}x`
 
+/** a ratio, rounded up, for a multiple that counts against ArkType: "3.59x" */
+const timesUpText = (ratio: number) =>
+	`${(Math.ceil(ratio * 100) / 100).toFixed(2)}x`
+
+/** "1.54x to 2.12x", each end rounded down */
+const timesRange = (ratios: number[]) => {
+	const least = timesText(Math.min(...ratios))
+	const most = timesText(Math.max(...ratios))
+	return least === most ? least : `${least} to ${most}`
+}
+
+/** a sign test's p, rounded up so it never reads stronger than measured */
+const pText = (p: number) => (Math.ceil(p * 1000) / 1000).toFixed(3)
+
 const startupLibraries = [
 	...new Set(startupApps.flatMap(app => Object.keys(startupWins[app])))
 ]
@@ -602,6 +625,63 @@ const startupAppsText =
 			pending:
 				"On each app in our startup benchmark, precompiled ArkType's default build ran fewer instructions from import through its first validation than every other library measured on it."
 		}
+
+// the same benchmark against Zod 4 alone, classic zod 4.6.7: at 20710020e
+// 49.47x fewer on valibot.dev's login form (0.88M to 43.70M), 49.80x on the
+// login app, 54.39x on moltar and 10.34x on shop (9.84M to 101.86M), fewer in
+// 20 of 20 paired runs on each (p 1.9e-6). Instructions, not time: no
+// wall-clock run says it starts sooner
+const zodStartupApps = startupApps.filter(app => "Zod" in startupWins[app])
+
+const zodStartupText =
+	(
+		zodStartupApps.length > 0 &&
+		zodStartupApps.every(app => startsBefore(app, "Zod"))
+	) ?
+		`From import through its first validation, precompiled ArkType's default build ran fewer instructions than Zod 4 on each of the ${zodStartupApps.length} apps in our startup benchmark, by ${timesRange(
+			zodStartupApps.map(app => {
+				const { ArkType, Zod } = resultsOf("startup", app)
+				return Zod / ArkType
+			})
+		)}, in ${
+			zodStartupApps.every(app => startupWins[app].Zod === startupRounds) ?
+				`all ${startupRounds}`
+			:	`at least ${Math.min(...zodStartupApps.map(app => startupWins[app].Zod))} of ${startupRounds}`
+		} paired runs on Node 24.`
+	:	{
+			pending:
+				"From import through its first validation, precompiled ArkType's default build ran fewer instructions than Zod 4 on each app in our startup benchmark."
+		}
+
+/** a bar of sizeChart, the login form as valibot.dev writes it, in gzipped bytes */
+const formBytes = (name: string) => {
+	const bar = sizeChart.bars.find(bar => bar.name === name)
+	if (!bar?.value) throw new Error(`sizeChart has no bar for ${name}`)
+	return bar.value
+}
+
+/** the form's bytes as loginSize writes them: "1.01 kB", "25.1 kB" */
+const formSizeText = (bytes: number) =>
+	`${(bytes / 1000).toFixed(bytes < 10_000 ? 2 : 1)} kB`
+
+const formSizes = {
+	precompiled: formBytes("ArkType (precompiled)"),
+	dynamic: formBytes("ArkType (dynamic)"),
+	zod: formBytes("Zod"),
+	zodMini: formBytes("Zod Mini")
+}
+
+// zodSize and dynamicZodSize word an order of the chart's bars, so a rerun
+// that changes it has to change them
+if (
+	formSizes.precompiled >= formSizes.zodMini ||
+	formSizes.zodMini >= formSizes.zod ||
+	formSizes.zod >= formSizes.dynamic
+) {
+	throw new Error(
+		`zodSize and dynamicZodSize say the login form's bundles are, smallest first, precompiled ArkType's, Zod Mini's, Zod 4's and dynamic ArkType's, but sizeChart has ${JSON.stringify(formSizes)}`
+	)
+}
 
 /**
  * Whole apps, from the bigapp board (lib/bench/scoreboard.ts): its generated
@@ -685,7 +765,7 @@ const appSpeedSweep = sweepOf(generatedRows, "precompiled", "hot")
 // nanoseconds per call on a shared machine, so read as ratios: at 19a959e8a
 // the closest was z.compile at 92 Types with narrows, 1.68x
 const appSpeedText = () =>
-	`${appScope}, the default build validated faster on ${appSpeedSweep.lost.length ? `${appSpeedSweep.won.length} of ${generatedRows.length}` : "every one"} than every other library measured on it (${appRivalsText})${appSpeedSweep.lost.length ? `, though not on ${appsText(appSpeedSweep.lost)}` : ""}, by ${timesText(1 / (1 - appSpeedSweep.thinnest))} or more: nanoseconds per call over ${scoreboard.rounds} paired runs on a shared machine, p ≤ ${appSpeedSweep.p.toFixed(3)}.`
+	`${appScope}, the default build validated faster on ${appSpeedSweep.lost.length ? `${appSpeedSweep.won.length} of ${generatedRows.length}` : "every one"} than every other library measured on it (${appRivalsText})${appSpeedSweep.lost.length ? `, though not on ${appsText(appSpeedSweep.lost)}` : ""}, by ${timesText(1 / (1 - appSpeedSweep.thinnest))} or more: nanoseconds per call over ${scoreboard.rounds} paired runs on a shared machine, p ≤ ${pText(appSpeedSweep.p)}.`
 
 const appStartupSweep = bestSweepOf(generatedRows, "first")
 
@@ -698,7 +778,7 @@ const nextRows = generatedRows.filter(row => row.host === "turbopack")
 const appStartupText = () => {
 	const { build, lost } = appStartupSweep
 	const fastest = sweepOf(generatedRows, "precompiled", "first")
-	return `From import through its first validation, ${buildNames[build]} ran fewer instructions than every other library on ${coverageText(appStartupSweep)}${lost.length ? `, not on ${appsText(lost)}` : ""}, by ${percentText(thinnestAmong(appStartupSweep, "first", bundledRows))} or more through ${list([...new Set(bundledRows.map(row => hostNames[row.host]))])}${nextRows.some(row => !lost.includes(row)) ? ` and by ${percentText(thinnestAmong(appStartupSweep, "first", nextRows))} or more on Turbopack, where Next's own startup is in every count` : ""}, p ≤ ${appStartupSweep.p.toFixed(3)}${build === "smallest" ? `; the default build did on ${fastest.won.length} of them` : ""}.`
+	return `From import through its first validation, ${buildNames[build]} ran fewer instructions than every other library on ${coverageText(appStartupSweep)}${lost.length ? `, not on ${appsText(lost)}` : ""}, by ${percentText(thinnestAmong(appStartupSweep, "first", bundledRows))} or more through ${list([...new Set(bundledRows.map(row => hostNames[row.host]))])}${nextRows.some(row => !lost.includes(row)) ? ` and by ${percentText(thinnestAmong(appStartupSweep, "first", nextRows))} or more on Turbopack, where Next's own startup is in every count` : ""}, p ≤ ${pText(appStartupSweep.p)}${build === "smallest" ? `; the default build did on ${fastest.won.length} of them` : ""}.`
 }
 
 const appSizeSweep = bestSweepOf(generatedRows, "gz")
@@ -765,7 +845,7 @@ const bigAppText = (row: AppRow) => {
 	const start = lowerBuildOf(row, "first")
 	const hot = lowerBuildOf(row, "hot")
 	const { zod, zod3 } = row.arms
-	return `On ntwine's packages/shared, the schemas of an open-source app and the code that reads them, bundled with esbuild: ${buildNames[size]} shipped ${kbText(row.arms[size].gz)} gzipped to Zod 4's ${kbText(zod.gz)} and Zod 3's ${kbText(zod3.gz)}, the version ntwine ships; ${start === size ? "it" : buildNames[start]} ran ${gigaText(row.arms[start].first)} instructions through its first validation to Zod 4's ${gigaText(zod.first)} and Zod 3's ${gigaText(zod3.first)}; and ${buildNames[hot]} validated a thread ${timesText(zod.hot / row.arms[hot].hot)} as fast as Zod 4 and ${timesText(zod3.hot / row.arms[hot].hot)} as fast as Zod 3, in nanoseconds per call over ${scoreboard.rounds} paired runs on a shared machine, p ≤ ${Math.max(row.p[hot]!.zod.hot, row.p[hot]!.zod3.hot).toFixed(3)}.${ntwineZodSmaller.length ? ` Zod 4 ships less ${list(ntwineZodSmaller.map(other => `through ${hostNames[other.host]} (${kbText(other.arms.zod.gz)} to ${kbText(other.arms[lowerBuildOf(other, "gz")].gz)})`))}.` : ""}`
+	return `On ntwine's packages/shared, the schemas of an open-source app and the code that reads them, bundled with esbuild: ${buildNames[size]} shipped ${kbText(row.arms[size].gz)} gzipped to Zod 4's ${kbText(zod.gz)} and Zod 3's ${kbText(zod3.gz)}, the version ntwine ships; ${start === size ? "it" : buildNames[start]} ran ${gigaText(row.arms[start].first)} instructions through its first validation to Zod 4's ${gigaText(zod.first)} and Zod 3's ${gigaText(zod3.first)}; and ${buildNames[hot]} validated a thread ${timesText(zod.hot / row.arms[hot].hot)} as fast as Zod 4 and ${timesText(zod3.hot / row.arms[hot].hot)} as fast as Zod 3, in nanoseconds per call over ${scoreboard.rounds} paired runs on a shared machine, p ≤ ${pText(Math.max(row.p[hot]!.zod.hot, row.p[hot]!.zod3.hot))}.${ntwineZodSmaller.length ? ` Zod 4 ships less ${list(ntwineZodSmaller.map(other => `through ${hostNames[other.host]} (${kbText(other.arms.zod.gz)} to ${kbText(other.arms[lowerBuildOf(other, "gz")].gz)})`))}.` : ""}`
 }
 
 // plain arktype, without the plugin, against Zod 4, from import through the
@@ -786,7 +866,70 @@ const dynamicStartsFirst =
 	)
 
 const dynamicInitText = () =>
-	`Without the plugin, ArkType ran fewer instructions from import through its first validation than Zod 4 on every app we bundled with esbuild, ${dynamicRows.length} in all${dynamicRows.some(row => row.app === "ntwine") ? ", ntwine among them" : ""}, by ${percentText(Math.min(...dynamicRows.map(row => 1 - row.arms.arktype.first / row.arms.zod.first)))} or more, p ≤ ${Math.max(...dynamicRows.map(row => row.p.arktype!.zod.first)).toFixed(3)}.`
+	`Without the plugin, ArkType ran fewer instructions from import through its first validation than Zod 4 on every app we bundled with esbuild, ${dynamicRows.length} in all${dynamicRows.some(row => row.app === "ntwine") ? ", ntwine among them" : ""}, by ${percentText(Math.min(...dynamicRows.map(row => 1 - row.arms.arktype.first / row.arms.zod.first)))} or more, p ≤ ${pText(Math.max(...dynamicRows.map(row => row.p.arktype!.zod.first)))}.`
+
+const amongDynamicRows = `${dynamicRows.length} in all${dynamicRows.some(row => row.app === "ntwine") ? ", ntwine among them" : ""}`
+
+// the disclosure dynamicInit's draft would replace: plain arktype's
+// instructions through its first validation as a multiple of Zod 4's on those
+// apps, whichever way it falls. At 19a959e8a 1.50x on ntwine and 1.76x to 2.19x
+// on the generated apps, more in 9 of 9 rounds on each
+const dynamicStartupText = () => {
+	const multiples = dynamicRows.map(
+		row => row.arms.arktype.first / row.arms.zod.first
+	)
+	return `Without the plugin, ArkType ran ${timesText(Math.min(...multiples))} to ${timesUpText(Math.max(...multiples))} the instructions Zod 4 did from import through its first validation on the apps we bundled with esbuild, ${amongDynamicRows}, p ≤ ${pText(Math.max(...dynamicRows.map(row => row.p.arktype!.zod.first)))}.`
+}
+
+// the same apps' hot path, nanoseconds per validation once warm, where plain
+// arktype is ahead: at 19a959e8a the faster in 9 of 9 rounds on each, by 1.65x
+// on ntwine and 8.38x to 15.31x on the generated apps, and against z.compile
+// in 8 or 9 of 9 on all but 230 Types with narrows, 7 of 9 (p 0.18)
+const dynamicHot = (row: AppRow, library: string) => ({
+	app: row.app,
+	/** the library's nanoseconds per call over plain arktype's */
+	speedup: row.arms[library].hot / row.arms.arktype.hot,
+	p: row.p.arktype?.[library].hot ?? 1
+})
+
+type DynamicHot = ReturnType<typeof dynamicHot>
+
+/** the lower median, in a significant share of paired runs */
+const isFasterThan = ({ speedup, p }: DynamicHot) => speedup > 1 && p < 0.05
+
+const speedups = (rows: DynamicHot[]) =>
+	timesRange(rows.map(row => row.speedup))
+
+const dynamicZodHot = dynamicRows.map(row => dynamicHot(row, "zod"))
+
+const dynamicValidatesFirst =
+	dynamicZodHot.length > 0 && dynamicZodHot.every(isFasterThan)
+
+/** plain arktype against z.compile on the apps with both, a tie being p ≥ 0.05 */
+const dynamicCompiledText = () => {
+	const rows = dynamicRows
+		.filter(row => row.arms.zodCompiled)
+		.map(row => dynamicHot(row, "zodCompiled"))
+	if (!rows.length) return ""
+	const won = rows.filter(isFasterThan)
+	const lost = rows.filter(({ speedup, p }) => speedup < 1 && p < 0.05)
+	const tied = rows.length - won.length - lost.length
+	const rest = [
+		...(lost.length ? [`slower on ${lost.length}`] : []),
+		...(tied ? [`tied on ${tied}`] : [])
+	]
+	return ` Against z.compile it was faster on ${won.length === rows.length ? "every one" : `${won.length} of the ${rows.length}`} at p < 0.05${won.length ? `, by ${speedups(won)}` : ""}${rest.length ? `, and ${list(rest)}` : ""}.`
+}
+
+const dynamicAppSpeedText = () => {
+	const ntwine = dynamicZodHot.filter(row => row.app === "ntwine")
+	const generated = dynamicZodHot.filter(row => row.app !== "ntwine")
+	return `Without the plugin, ArkType validated faster than Zod 4 on every app we bundled with esbuild, ${dynamicRows.length} in all: by ${
+		ntwine.length && generated.length ?
+			`${speedups(ntwine)} on ntwine's packages/shared and by ${speedups(generated)} on the ${generated.length} we generated`
+		:	speedups(dynamicZodHot)
+	}, in nanoseconds per call over ${scoreboard.rounds} paired runs on a shared machine, p ≤ ${pText(Math.max(...dynamicZodHot.map(row => row.p)))}.${dynamicCompiledText()}`
+}
 
 const sizeRanks = rowsOf("size").map(
 	results =>
@@ -864,6 +1007,26 @@ export const claims = {
 	// the median, not the range: the largest ratio is a first-error row, and
 	// Zod has no first-error mode
 	zodSpeed: `Precompiled ArkType was faster than Zod 4 in ${zodScenarios} of our benchmark, by a median of ${medianOf(zod)}, and faster than Zod 4's z.compile in ${zodCompiled.wins} of ${zodCompiled.count}, by a median of ${medianOf(zodCompiled)}${zodCompiledLosses}.`,
+	// the same benchmark without the plugin: a draft until its data has plain
+	// arktype's paired verdicts (dynamicZod). dynamicAppSpeed is the tested one
+	dynamicZodSpeed:
+		(
+			dynamicZod.count === bench.scenarioCount &&
+			dynamicZod.wins === dynamicZod.count
+		) ?
+			`Without the plugin, ArkType was faster than Zod 4 in all ${dynamicZod.count} scenarios of our benchmark, by a median of ${medianOf(dynamicZod)}.`
+		:	{
+				pending:
+					"Without the plugin, ArkType was faster than Zod 4 in every scenario of our benchmark."
+			},
+	// startupApps against Zod 4 alone
+	zodStartup: zodStartupText,
+	// sizeChart's bars: 1007 B to Zod 4's 25058 and Zod Mini's 5127, whose form
+	// throws as valibot.dev writes it and is 5107 written to run
+	zodSize: `On valibot.dev's login form, precompiled ArkType's default build ships ${formSizeText(formSizes.precompiled)} gzipped, less than Zod 4's ${formSizeText(formSizes.zod)} by ${timesText(formSizes.zod / formSizes.precompiled)}, and less than Zod Mini's ${formSizeText(formSizes.zodMini)}.`,
+	// the same chart's dynamic bar, 89751 B: a disclosure beside dynamicSize,
+	// for copy that tells a Zod user what they ship before they precompile
+	dynamicZodSize: `Without the plugin, ArkType's bundle is ${timesUpText(formSizes.dynamic / formSizes.zod)} Zod 4's on valibot.dev's login form, ${formSizeText(formSizes.dynamic)} gzipped against ${formSizeText(formSizes.zod)}, so precompile what ships to a browser.`,
 	// the error rows from benchData.json
 	speedScope: `It isn't the fastest at everything. On the rows that report errors for invalid data, ajv was faster on ${bench.ajvFasterCount} of ${bench.errorCount}.`,
 	// a promise, not a rate: what makes it true is the skill's guide, which
@@ -929,6 +1092,32 @@ export const claims = {
 					"Without the plugin, ArkType ran fewer instructions from import through its first validation than Zod 4 on every app we bundled with esbuild."
 			}
 		),
+	// what those instructions are now, stated whichever way they fall
+	dynamicZodStartup:
+		dynamicRows.length ? dynamicStartupText() : (
+			{
+				pending:
+					"Without the plugin, ArkType ran more instructions than Zod 4 from import through its first validation on the apps we bundled with esbuild."
+			}
+		),
+	// plain arktype's validation speed against Zod 4 on those apps, the one
+	// measure it leads Zod 4 on without the plugin: dynamicZodStartup and
+	// dynamicZodSize are the other two, so copy that cites this cites them
+	dynamicAppSpeed:
+		dynamicValidatesFirst ?
+			dynamicAppSpeedText()
+		:	{
+				pending:
+					"Without the plugin, ArkType validated faster than Zod 4 on every app we bundled with esbuild."
+			},
+	// the homepage's fragment of dynamicAppSpeed
+	dynamicZodSpec:
+		dynamicValidatesFirst ?
+			`validated faster than Zod 4 on all ${dynamicRows.length} apps we bundled without the plugin`
+		:	{
+				pending:
+					"validated faster than Zod 4 on every app we bundled without the plugin"
+			},
 	// speedChart and H1
 	parseSafe:
 		"On moltar's parseSafe benchmark, precompiled ArkType takes the fewest instructions per call, and by wall clock it was faster than each of the six libraries closest to it, Typia among them, in at least 28 of 30 paired runs.",

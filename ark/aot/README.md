@@ -31,4 +31,10 @@ List what the build can't precompile before you switch:
 npx arktype-precompile --check "src/**/*.ts"
 ```
 
-See [arktype.io/docs/precompile](https://arktype.io/docs/precompile) for everything else, including what a build checks, its options, and the Node, Bun and Turbopack drivers.
+To have a coding agent set it up, add the skill, which has the setup for each bundler and the fix for each build error:
+
+```sh
+npx skills add arktypeio/arktype
+```
+
+See [arktype.io/docs/precompile](https://arktype.io/docs/precompile) for everything else, including the [benchmarks](https://arktype.io/docs/precompile#speed-and-size) and [build times](https://arktype.io/docs/precompile#build-time), what a build checks, its options, and the Node, Bun and Turbopack drivers.

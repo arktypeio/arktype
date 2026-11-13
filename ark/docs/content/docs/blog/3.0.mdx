@@ -1,6 +1,6 @@
 ---
 title: Announcing ArkType 3.0
-description: "Fast, small and quick to start: pick 3. The build step is your agent's job."
+description: "Fast, small and quick to start: pick 3. The build step is your agent's job, and so is migrating from Zod."
 ogImage: blog/3.0.png
 date: 2026-10-26 # the release sets this, and blog/index.mdx's date, to the day it publishes
 ---
@@ -17,9 +17,11 @@ We recently asked which of the three you care about most. Trick question.
 
 **<Headline />** <Claim id="pickThree" /> [How we measured ↓](#the-numbers)
 
-If speed was never your issue, you're in good company. We hear that a lot, and it's fair: ArkType was always about the DX. Definitions read like the types you'd write anyway, `tsc` checks them as you type and errors say what went wrong.
+- **What's new**: ArkType [precompiles](#the-build-step-is-your-agents-job). One plugin turns each Type into a standalone validator when you build, and your definitions don't change.
+- **Against Zod**: <Claim id="zodSpeed" /> Startup and size are [below](#the-numbers).
+- **What switching costs**: [one command and one prompt](#switching-from-zod). Your schemas keep their names, your messages keep their text and libraries that accept Standard Schema take them as they took Zod's. What doesn't carry over [is listed too](#what-a-migration-has-to-handle).
 
-Precompiled, your definitions and the types they infer don't change. You just stop paying for them in speed, startup or size.
+If speed was never your issue, you're in good company. We hear that a lot, and it's fair: ArkType was always about the DX. Definitions read like the types you'd write anyway, `tsc` checks them as you type and errors say what went wrong.
 
 ```ts
 const User = type({
@@ -31,6 +33,144 @@ const User = type({
 // { name: string; email: string; age?: number }
 type User = typeof User.infer
 ```
+
+Precompiled, your definitions and the types they infer don't change. You just stop paying for them in speed, startup or size.
+
+## Switching from Zod
+
+Add the [skill](/docs/agents#skill):
+
+```bash
+npx skills add arktypeio/arktype
+```
+
+Then ask your agent:
+
+```
+Migrate this project from Zod to ArkType.
+```
+
+<Claim id="zodMigration" /> Before it removes `zod`, it runs each schema your
+tests don't cover against its Zod original on the same inputs. Where a
+dependency accepts only Zod, like MCP SDK v1, it keeps Zod for that call and
+tells you. Add "and precompile it" to do both in one pass.
+
+A schema before:
+
+```ts
+import { z } from "zod"
+
+const Signup = z.object({
+	email: z.email("Enter a valid email"),
+	password: z.string().min(8, "Use 8 or more characters"),
+	role: z.enum(["admin", "member"])
+})
+
+type Signup = z.infer<typeof Signup>
+```
+
+And after:
+
+```ts
+import { type } from "arktype"
+
+const Signup = type({
+	email: ["string.email", "@", { message: "Enter a valid email" }],
+	password: ["string >= 8", "@", { message: "Use 8 or more characters" }],
+	role: "'admin' | 'member'"
+})
+
+type Signup = typeof Signup.infer
+```
+
+Your agent sets `onUndeclaredKey: "delete"` once, so objects keep removing undeclared keys as `z.object()` does.
+
+### Your messages work the way they did in Zod
+
+A `message` is one whole sentence, shown exactly as you wrote it wherever the error is read, a form library reading the Type through Standard Schema included. It never includes its path, as Zod's `issue.message` doesn't, and `summary` writes the path before it for a log:
+
+```ts
+const Signup = type({
+	email: ["string.email", "@", { message: "Enter a valid email" }],
+	password: ["string >= 8", "@", { message: "Use 8 or more characters" }],
+	role: "'admin' | 'member'"
+})
+// ---cut---
+const out = Signup({ email: "x", password: "short", role: "admin" })
+
+if (out instanceof type.errors) {
+	// ["Enter a valid email", "Use 8 or more characters"]
+	out.issues.map(issue => issue.message)
+	// email: Enter a valid email
+	// password: Use 8 or more characters
+	out.summary
+}
+
+// what a form library reads: the paths and messages the Zod schema returns
+Signup["~standard"].validate({ email: "x", password: "short", role: "admin" })
+// { issues: [
+//     { path: ["email"], message: "Enter a valid email", ... },
+//     { path: ["password"], message: "Use 8 or more characters", ... }
+// ] }
+```
+
+A missing key says its value's `message` too, so it's the `required_error` as well. A `.refine()`'s message becomes `ctx.reject({ message, path })` in a `.narrow()`.
+
+### Your libraries take the Type as they took the schema
+
+Every Type is a [Standard Schema](/docs/standard-schema) that writes its own JSON Schema. tRPC, TanStack Form and `@t3-oss/env` take it in the same call, react-hook-form takes it through `standardSchemaResolver`, and the AI SDK from v6 and the MCP SDK from v2 take it as a tool's `inputSchema`. [Swap integrations](/docs/migrating#migrating-a-project) lists each library's change, where there is one.
+
+### You don't have to finish
+
+A Zod schema works inside an ArkType definition, so you can convert one file at a time and leave shared schemas for last:
+
+```ts
+import { z } from "zod"
+
+// not converted yet
+const Address = z.object({ street: z.string(), city: z.string() })
+
+const User = type({ name: "string", address: Address })
+```
+
+### The plugin can wait
+
+A migration leaves you on `type()`, which needs no build step. Against Zod 4, before you add the plugin:
+
+- **Validation**: <Claim id="dynamicAppSpeed" />
+- **Startup**: <Claim id="dynamicZodStartup" />
+- **Size**: <Claim id="dynamicZodSize" />
+
+Startup and size are what [the plugin](#the-build-step-is-your-agents-job) is for.
+
+### Or start without switching
+
+[ArkSets](/docs/sets) runs ArkType's set theory on the Zod schemas you already have. In CI, `isSubset` tells you whether a change to an API schema still accepts everything the old one did:
+
+```ts
+import { isSubset } from "arksets"
+import { z } from "zod"
+
+const v1 = z.object({ id: z.string(), age: z.number().int().min(0) })
+const v2 = z.object({ id: z.string(), age: z.number().optional() })
+
+// v2 accepts everything v1 did, so the change is backwards compatible
+isSubset(v1, v2) // true
+// but not the other way around: v2 accepts { id: "a" }
+isSubset(v2, v1) // false
+```
+
+It reads a schema from Zod 4.2 or later as the JSON Schema it writes, so it sees what JSON Schema can express, which leaves out refinements and transforms.
+
+### What a migration has to handle
+
+The [guide](/docs/migrating) your agent follows maps each Zod API and covers each of these, and its summary lists anything it couldn't keep identical.
+
+- **Defaults differ.** Besides undeclared keys, Zod's `.optional()` accepts `undefined`, where ArkType reads an optional key as TypeScript's `exactOptionalPropertyTypes` does, so the migration writes `"key?": "T | undefined"`. [Defaults that differ](/docs/migrating#defaults-that-differ) has every row.
+- **Validation is synchronous.** An async `.refine()` moves out of the schema, to run after validation.
+- **A check across keys runs last.** A `.narrow()` on an object runs once every key is valid, where Zod 4 also runs a `.refine()` when a key fails a check like `.min()`. A form shows `Passwords must match` once its fields pass.
+- **Default messages are ArkType's**, like `must be an email address` where Zod says `Invalid email address`. Messages you wrote don't change.
+- **Without the plugin, `arktype` is a larger bundle than `zod`**, since it ships a parser for its definitions. [The plugin can wait](#the-plugin-can-wait) has both sizes. In a browser, precompile.
 
 ## The build step is your agent's job
 
@@ -79,33 +219,16 @@ export default {
 
 ### The skill
 
-```bash
-npx skills add arktypeio/arktype
-```
-
-An agent's training always lags a release. The [skill](/docs/agents#skill) teaches it current syntax, how it maps to TypeScript, the mistakes to avoid and how to work in a precompiled project. Every docs page is also Markdown at its URL plus `.md`, and [/llms.txt](https://arktype.io/llms.txt) indexes them.
-
-### Migrating from Zod
-
-With the skill installed:
-
-```
-Migrate this project from Zod to ArkType.
-```
-
-<Claim id="zodMigration" /> Where a dependency accepts only Zod, like MCP SDK
-v1, it keeps Zod for that call and tells you. Add "and precompile it" to do both
-in one pass. The [migration guide](/docs/migrating) it follows maps each Zod API
-and every default that differs.
+An agent's training always lags a release. `npx skills add arktypeio/arktype` adds the [skill](/docs/agents#skill), which teaches it current syntax, how it maps to TypeScript, the mistakes to avoid and how to work in a precompiled project. Every docs page is also Markdown at its URL plus `.md`, and [/llms.txt](https://arktype.io/llms.txt) indexes them.
 
 ### What it costs
 
 - **A build step**: the plugin, set up once, and [the time each build takes](/docs/precompile#build-time).
 - **Definitions known only at runtime** fail a standalone build. Keep them dynamic as [runtime islands](/docs/precompile/advanced#runtime-islands), or build with `runtime: "arktype"`.
-- **A standalone validator** validates, asserts and is a Standard Schema, but doesn't compose or introspect at runtime, its messages don't print the value and it has no locales. `runtime: "arktype"` keeps the whole Type API.
+- **A standalone validator** validates, asserts and is a Standard Schema, but doesn't compose or introspect at runtime and has no locales. `runtime: "arktype"` keeps the whole Type API.
 - **Without the plugin**: <Claim id="dynamicSize" />
 
-Below is everything else that's new. If you're upgrading, [Upgrading](/docs/upgrading) lists what breaks.
+If you're upgrading from 2.2, [Upgrading](/docs/upgrading) lists what breaks.
 
 ## The numbers
 
@@ -127,6 +250,8 @@ Each result below is scoped to a single benchmark, and [Speed and size](/docs/pr
 - <Claim id="speedScope" />
 - <Claim id="noInit" />
 - <Claim id="startupApps" />
+- <Claim id="zodStartup" />
+- <Claim id="zodSize" />
 
 On whole apps, written alike in each library:
 
@@ -209,9 +334,9 @@ Parse keywords like `string.date.iso.parse` encode back to strings, and codecs [
 - **Fewer errors**: [`errors`](/docs/configuration#errors) `"first"` stops at the first error, and `"none"` returns one saying the data is invalid. `mutatesInput` writes what a Type transforms into its input instead of copying it. Each is installed by its own import, so a program that doesn't choose one doesn't ship it.
 - **Dynamic Types do less work**: a Type compiles when it's first used, and one without narrows or morphs finds its errors' issues only when they're first read. <Claim id="strictSpeedup" /> <Claim id="dynamicInit" ifBacked />
 - **Syntax**: [`!=`](/docs/primitives#number-ranges) excludes one value, unions of ranges merge where they can, and an object's [`"@"`](/docs/expressions#meta) key holds its description or meta.
-- **ArkSets**: [ArkSets](/docs/sets) brings the same set theory to a Type, a Standard JSON Schema like Zod's or plain JSON Schema. `isSubset(v1, v2)` tells you whether a new version of an API schema still accepts everything the old one did.
+- **ArkSets**: [ArkSets](/docs/sets) brings the same set theory to a Type, a Standard JSON Schema like Zod's or plain JSON Schema: relate them, [as above](#or-start-without-switching), intersect them, find a union's discriminant or write any of them as JSON Schema.
 - **JSON Schema**: every Type is a [Standard Schema](/docs/standard-schema) that writes its own JSON Schema, and a precompiled one keeps it where its build sees code read it, so the MCP SDK, the AI SDK and OpenAPI generators get it with [nothing to set](/docs/precompile/options#members). [`toJsonSchema`](/docs/json-schema/to-json-schema) writes draft 2020-12, draft-07 or OpenAPI 3.0, and [`jsonSchemaToType`](/docs/json-schema/from-json-schema) accepts what a JSON Schema 2020-12 validator does, except that lengths count UTF-16 code units.
-- **Errors as data**: an `ArkErrors`' `issues` are plain objects discriminated by `code`, and a message never prints the value, so it never leaks what the data holds into a log.
+- **Errors as data**: an `ArkErrors`' `issues` are plain objects discriminated by `code`. An issue's `message` leaves out its path, which `summary` writes before it, and one you configure is [shown as you wrote it](#your-messages-work-the-way-they-did-in-zod). ArkType's own English messages don't print the value, so they don't put what the data holds into a log.
 - **A new home**: every docs page reads as Markdown for your agent, every code sample shows the types TypeScript infers, and the [playground](/playground) runs the real parser in your browser.
 
 [Upgrading](/docs/upgrading) lists each breaking change with what to write instead, and the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md) have the rest.

@@ -10,7 +10,7 @@ declare const data: unknown
 import { z } from "zod"
 
 const User = z.object({
-	name: z.string().min(1),
+	name: z.string().min(1, "Name is required"),
 	email: z.email(),
 	age: z.number().int().nonnegative().optional()
 })
@@ -26,7 +26,7 @@ declare const data: unknown
 import { type } from "arktype"
 
 const User = type({
-	name: "string > 0",
+	name: ["string > 0", "@", { message: "Name is required" }],
 	email: "string.email",
 	"age?": "number.integer >= 0 | undefined"
 })
@@ -57,7 +57,37 @@ const differs: [zod: string, ark: string][] = [
 		'configure({ onUndeclaredKey: "delete" }), once'
 	],
 	[".optional() also accepts undefined", '"age?": "… | undefined"'],
-	["safeParse returns { success }", "check instanceof type.errors"]
+	["safeParse returns { success }", "check instanceof type.errors"],
+	[
+		'.min(1, "Name is required") is a sentence',
+		"{ message }, never .describe(), which writes must be before it"
+	]
+]
+
+/** what a Zod user keeps, each from the guide: Custom messages, Swap integrations, Adopt incrementally */
+const keeps: [what: string, how: string][] = [
+	[
+		"a message you wrote",
+		"shown as written, without its path, as Zod's issue.message was"
+	],
+	[
+		"tRPC, TanStack Form, react-hook-form",
+		"take the Type through Standard Schema, and read the same path and message"
+	],
+	[
+		"schemas you haven't converted",
+		"a Zod schema works inside an ArkType definition"
+	]
+]
+
+/** what the guide can't make identical, so the page says it before the agent's summary does */
+const costs: [zod: string, ark: string][] = [
+	["an async .refine()", "runs after validation: ArkType is synchronous"],
+	["Zod's default messages", "ArkType's, like must be an email address"],
+	[
+		"no build step",
+		"a larger bundle than Zod's, so precompile what ships to a browser"
+	]
 ]
 
 /** migrating with the skill: one command, one prompt, the guide it follows */
@@ -74,7 +104,8 @@ export const Migrate = () => (
 		<p className="deck">
 			The ArkType skill teaches your agent the syntax and the mistakes to avoid,
 			and links a migration guide: the workflow, a table for each library and
-			every default that differs. Then precompiling is one plugin in the bundler
+			every default that differs. Your schemas keep their names and your
+			messages keep their text. Then precompiling is one plugin in the bundler
 			you already run.
 		</p>
 		<ol className="moves" data-reveal>
@@ -161,9 +192,38 @@ export const Migrate = () => (
 				</dl>
 			</div>
 		</div>
+		<div className="guide">
+			<div>
+				<h3>What you keep</h3>
+				<dl className="differs">
+					{keeps.map(([what, how]) => (
+						<div key={what}>
+							<dt>{what}</dt>
+							<dd>{how}</dd>
+						</div>
+					))}
+				</dl>
+			</div>
+			<div>
+				<h3>What it costs</h3>
+				<dl className="differs">
+					{costs.map(([from, to]) => (
+						<div key={from}>
+							<dt>{from}</dt>
+							<dd>{to}</dd>
+						</div>
+					))}
+				</dl>
+			</div>
+		</div>
 		<p className="note">
 			{"// "}
 			<ClaimText claim={claims.zodMigration} />
+		</p>
+		<p className="note">
+			{"// no plugin yet? ArkType "}
+			<ClaimText claim={claims.dynamicZodSpec} />
+			{"; a smaller bundle and a lighter start are what the plugin adds"}
 		</p>
 	</section>
 )

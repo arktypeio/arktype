@@ -3,7 +3,7 @@ import { create, type Font } from "fontkit"
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { decompress } from "wawoff2"
-import { leaderboards, type CategoryId } from "./bench/leaderboard.ts"
+import { leaderboards, leads, type CategoryId } from "./bench/leaderboard.ts"
 import {
 	assertNamesWellKnown,
 	assertStandings,
@@ -306,8 +306,11 @@ const homeCard = () => {
 			x + 22,
 			cardTop + 18
 		)
+		// the board's rule (claims.ts's standingOf): an average within the tie
+		// band of the best counts as first, so the card under "Pick 3" can't
+		// read "2nd" where the homepage reads "1st"
 		const placed = block(
-			[[ordinal(place), styles.place]],
+			[[leads(id) ? "1st" : ordinal(place), styles.place]],
 			x + 22,
 			label.bottom + 8,
 			{ lineHeight: 58 }

@@ -29,7 +29,11 @@ export const metadata: Metadata = {
 		"schema",
 		"type-safe",
 		"validator",
-		"syntax"
+		"syntax",
+		"precompiled validation",
+		"Standard Schema",
+		"JSON Schema",
+		"migrate from Zod"
 	],
 	icons: {
 		icon: "/image/favicon.svg"
