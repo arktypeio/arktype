@@ -32,6 +32,7 @@ Breaking, with what to write instead:
 - A class as a definition, like `{ createdAt: Date }`, is a type error, as it already threw. Write `type.instanceOf(MyClass)` or a keyword like `"Date"`.
 - Unprecompiled, `arktype` bundles larger than 2.2.9. Precompile to ship less.
 - An adapter that reads `ArkErrors` as an array, like `@hono/arktype-validator` or `@hookform/resolvers` before 5, fails on invalid input. Use the library's Standard Schema entry point.
+- `toJsonSchema()` leaves out a configured `expected`, `actual` or `message`, which it wrote as keywords of those names when they were strings.
 - Install `arktype`, not `@ark/type`. A program using `@ark/schema` without `arktype` imports `arksets` first.
 
 ### Complete a string definition faster

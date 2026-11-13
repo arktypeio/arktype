@@ -173,6 +173,9 @@ const toResolvedJsonSchema = (
 	for (const k in node.meta) {
 		// keyword identifies arktype's own phrase, which JSON Schema has no key for
 		if (k === "keyword" || k === "jsonSchema") continue
+		// these word arktype's own errors: a JSON Schema reader has no use for
+		// them, and a strict validator rejects the unknown keywords
+		if (k === "expected" || k === "actual" || k === "message") continue
 		const v = (node.meta as dict)[k]
 		// JSON can't represent a function like a message writer
 		if (typeof v === "function" && k !== "default") continue

@@ -404,6 +404,24 @@ contextualize(() => {
 		)
 	})
 
+	it("leaves out the words configured for errors", () => {
+		const t = type({
+			email: type("string >= 1").configure({
+				message: "Enter an email",
+				title: "Email"
+			}),
+			age: type("number").configure({ expected: "an age", actual: "" })
+		})
+		attest(t.toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: {
+				age: { type: "number" },
+				email: { type: "string", title: "Email", minLength: 1 }
+			},
+			required: ["age", "email"]
+		})
+	})
+
 	it("an empty object has empty properties", () => {
 		attest(type({}).toJsonSchema({ target: "openapi-3.0" })).snap({
 			type: "object",
