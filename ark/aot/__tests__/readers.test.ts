@@ -342,6 +342,132 @@ globalThis.T = type("string")
 		])
 	})
 
+	// a module tsc emitted as CommonJS, re-exporting another's exports
+	const tscReexport = `"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./environment.js"), exports);
+`
+
+	const heldAtKey = (imported: string) => `import { type } from "arktype"
+import { env } from "${imported}"
+
+const schemas = {}
+schemas.user = type({ name: "string" })
+console.log(schemas.user({ name: env }))
+`
+
+	it("follows a field past the helpers tsc copies a CommonJS module's exports with", async () => {
+		attest(
+			await bakedFrom({
+				"/lib/environment.js": `"use strict";\nObject.defineProperty(exports, "__esModule", { value: true });\nexports.env = void 0;\nexports.env = "production";\n`,
+				"/lib/index.js": tscReexport,
+				"/main.ts": heldAtKey("./lib/index.js")
+			})
+		).snap(["main.ts:5:16 bakes nothing (fields)"])
+	})
+
+	it("follows a field past the helpers SWC copies a CommonJS module's exports with", async () => {
+		attest(
+			await bakedFrom({
+				"/lib/environment.js": `"use strict";\nObject.defineProperty(exports, "__esModule", { value: true });\nexports.env = void 0;\nexports.env = "production";\n`,
+				// \`export * as all from "./environment.js"\` and \`export * from\` it
+				"/lib/index.js": `"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+Object.defineProperty(exports, "all", {
+    enumerable: true,
+    get: function() {
+        return _environment;
+    }
+});
+const _environment = /*#__PURE__*/ _interop_require_wildcard(_export_star(require("./environment.js"), exports));
+function _export_star(from, to) {
+    Object.keys(from).forEach(function(k) {
+        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
+            Object.defineProperty(to, k, {
+                enumerable: true,
+                get: function() {
+                    return from[k];
+                }
+            });
+        }
+    });
+    return from;
+}
+function _getRequireWildcardCache(nodeInterop) {
+    if (typeof WeakMap !== "function") return null;
+    var cacheBabelInterop = new WeakMap();
+    var cacheNodeInterop = new WeakMap();
+    return (_getRequireWildcardCache = function(nodeInterop) {
+        return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
+    })(nodeInterop);
+}
+function _interop_require_wildcard(obj, nodeInterop) {
+    if (!nodeInterop && obj && obj.__esModule) {
+        return obj;
+    }
+    if (obj === null || typeof obj !== "object" && typeof obj !== "function") {
+        return {
+            default: obj
+        };
+    }
+    var cache = _getRequireWildcardCache(nodeInterop);
+    if (cache && cache.has(obj)) {
+        return cache.get(obj);
+    }
+    var newObj = {
+        __proto__: null
+    };
+    var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor;
+    for(var key in obj){
+        if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) {
+            var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null;
+            if (desc && (desc.get || desc.set)) {
+                Object.defineProperty(newObj, key, desc);
+            } else {
+                newObj[key] = obj[key];
+            }
+        }
+    }
+    newObj.default = obj;
+    if (cache) {
+        cache.set(obj, newObj);
+    }
+    return newObj;
+}
+`,
+				"/main.ts": heldAtKey("./lib/index.js")
+			})
+		).snap(["main.ts:5:16 bakes nothing (fields)"])
+	})
+
+	it("bakes every member where a function reads an object's descriptors by a key it's passed", async () => {
+		attest(
+			await bakedFrom({
+				"/lib/index.js": `export const env = "production"\n\nexport const copy = (o, m, k) =>\n\tObject.defineProperty(o, k, Object.getOwnPropertyDescriptor(m, k))\n`,
+				"/main.ts": heldAtKey("./lib/index.js")
+			})
+		).snap([
+			"main.ts:5:16 bakes expression, description, json, toJSON, toJsonSchema, ~standard.jsonSchema (lost)",
+			"precompile: baking each introspection member into the validator at main.ts:5:16, because lib/index.js:4:30 reads its descriptors. Set expression, description, json, toJSON, toJsonSchema and ~standard.jsonSchema in members, each false where no code reads it, to build without this warning."
+		])
+	})
+
 	it("bakes every member where a CommonJS module exports it", async () => {
 		attest(
 			await bakedFrom({
