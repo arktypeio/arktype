@@ -29,6 +29,7 @@ export default tseslint.config(
 			"**/examples/**/*",
 			// programs and fixtures the tests write
 			"ark/aot/__tests__/temp/**/*",
+			"ark/repo/temp/**/*",
 			// schemabenchmarks.dev's files, linted by its clone
 			"ark/repo/bench/external/sb/precompiled/**/*"
 		]
