@@ -2,7 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	ArkErrors,
 	flatByPath,
-	flatProblemsByPath,
+	flatMessagesByPath,
 	rootSchema,
 	schemaScope,
 	type ArkError,
@@ -73,8 +73,7 @@ contextualize(() => {
 			meta: {
 				description: "custom description",
 				actual: data => `custom actual ${data}`,
-				problem: ctx => `custom problem ${ctx.expected} ${ctx.actual}`,
-				message: ctx => `custom message ${ctx.problem}`
+				message: ctx => `custom message ${ctx.expected} ${ctx.actual}`
 			},
 			domain: "number"
 		})
@@ -82,8 +81,32 @@ contextualize(() => {
 		const out = customNumber("foo") as ArkErrors
 
 		attest(out.summary).snap(
-			"custom message custom problem custom description custom actual foo"
+			"custom message custom description custom actual foo"
 		)
+	})
+
+	it("a summary's line is a message after its path, a configured one after a colon", () => {
+		const o = rootSchema({
+			domain: "object",
+			required: [
+				{ key: "a", value: "number" },
+				{
+					key: "b",
+					value: { domain: "number", meta: { message: "Enter a number" } }
+				}
+			]
+		})
+		const out = o({ a: "", b: "" }) as ArkErrors
+		attest(out.summary).snap(`a must be a number
+b: Enter a number`)
+		attest(out.issues.map(e => e.message)).snap([
+			"must be a number",
+			"Enter a number"
+		])
+		attest(flatMessagesByPath(out)).snap({
+			a: ["must be a number"],
+			b: ["Enter a number"]
+		})
 	})
 
 	it("can configure errors by kind at a scope level", () => {
@@ -93,14 +116,13 @@ contextualize(() => {
 				domain: {
 					expected: inner => `custom expected ${inner.domain}`,
 					actual: data => `custom actual ${data}`,
-					problem: ctx => `custom problem ${ctx.expected} ${ctx.actual}`,
-					message: ctx => `custom message ${ctx.problem}`
+					message: ctx => `custom message ${ctx.expected} ${ctx.actual}`
 				}
 			}
 		).export()
 		const superSpecialString = types.superSpecialString
 		attest(superSpecialString(5)?.toString()).snap(
-			"custom message custom problem custom expected string custom actual 5"
+			"custom message custom expected string custom actual 5"
 		)
 	})
 
@@ -139,7 +161,6 @@ contextualize(() => {
 				actual: "",
 				code: "predicate",
 				propString: "",
-				problem: "must be a greeting",
 				message: "must be a greeting"
 			}
 		])
@@ -158,7 +179,6 @@ contextualize(() => {
 			"propString",
 			"expected",
 			"actual",
-			"problem",
 			"message"
 		])
 		attest(`${issue}`).equals("[object Object]")
@@ -222,8 +242,7 @@ contextualize(() => {
 				propString: "n",
 				expected: "even",
 				actual: "1",
-				problem: "must be even",
-				message: "n must be even"
+				message: "must be even"
 			},
 			{
 				data: 1,
@@ -235,8 +254,7 @@ contextualize(() => {
 				propString: "n",
 				expected: "at least 2",
 				actual: "1",
-				problem: "must be at least 2",
-				message: "n must be at least 2"
+				message: "must be at least 2"
 			}
 		])
 	})
@@ -246,7 +264,8 @@ contextualize(() => {
 		if (!("issues" in result)) throw new Error("expected validation failure")
 
 		const messages = result.issues?.map(issue => issue.message)
-		// a consumer prefixes the path itself
+		// each is its error's message, so a consumer prefixes the path itself
+		attest(messages).equals(errors.issues.map(e => e.message))
 		attest(messages).snap(["must be even", "must be at least 2"])
 		attest(messages instanceof ArkErrors).equals(false)
 
@@ -254,12 +273,7 @@ contextualize(() => {
 			JSON.stringify({ issues: result.issues, messages })
 		) as { issues: unknown[]; messages: string[] }
 
-		attest(parsed.issues).equals(
-			(JSON.parse(JSON.stringify(errors)) as object[]).map((issue, i) => ({
-				...issue,
-				message: messages![i]
-			}))
-		)
+		attest(parsed.issues).equals(JSON.parse(JSON.stringify(errors)))
 		attest(parsed.messages).equals(messages!)
 	})
 
@@ -276,8 +290,7 @@ contextualize(() => {
 					propString: "n",
 					expected: "even",
 					actual: "1",
-					problem: "must be even",
-					message: "n must be even"
+					message: "must be even"
 				},
 				{
 					data: 1,
@@ -289,8 +302,7 @@ contextualize(() => {
 					propString: "n",
 					expected: "at least 2",
 					actual: "1",
-					problem: "must be at least 2",
-					message: "n must be at least 2"
+					message: "must be at least 2"
 				}
 			]
 		})
@@ -301,8 +313,8 @@ contextualize(() => {
 n must be at least 2`)
 	})
 
-	it("flatProblemsByPath", () => {
-		attest(flatProblemsByPath(errors)).snap({
+	it("flatMessagesByPath", () => {
+		attest(flatMessagesByPath(errors)).snap({
 			n: ["must be even", "must be at least 2"]
 		})
 	})

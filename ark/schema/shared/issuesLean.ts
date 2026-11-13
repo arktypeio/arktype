@@ -1,7 +1,9 @@
 import type { array } from "@ark/util"
+import type { ArkErrorCode } from "./errors.ts"
 import type {
 	ArkIssue,
 	CompactApply,
+	Custom,
 	FailureContext,
 	FailureSite,
 	SiteContext
@@ -58,7 +60,10 @@ class ReadIssues implements FailureContext {
 			expected: context.description,
 			message: context.x
 		}
-		if (writesText) context.text?.(issue)
+		if (writesText) {
+			customIssue(issue, context.c)
+			context.text?.(issue)
+		}
 		if (key !== undefined) path.pop()
 		this._.push(issue)
 		// only errors stopping at the first issue stop at this one
@@ -86,7 +91,7 @@ const Issues: new () => Issues = (
 	readsErrors ?
 		class ArkErrors extends ReadIssues {
 			get summary(): string {
-				return this.issues.map(issue => issue.message).join("\n")
+				return this._.map(lineOf).join("\n")
 			}
 
 			throw(): never {
@@ -104,7 +109,7 @@ const Issues: new () => Issues = (
 	: readsSummary ?
 		class extends ReadIssues {
 			get summary(): string {
-				return this.issues.map(issue => issue.message).join("\n")
+				return this._.map(lineOf).join("\n")
 			}
 		}
 	:	ReadIssues) as never
@@ -158,7 +163,10 @@ export const issueAt = (
 		expected: context.description,
 		message: context.x
 	}
-	if (writesText) context.text?.(issue)
+	if (writesText) {
+		customIssue(issue, context.c)
+		context.text?.(issue)
+	}
 	if (key !== undefined) path.pop()
 	return issue
 }
@@ -220,21 +228,45 @@ export const mergeIssues = (
 		errors._.push(
 			listsUnions && issue._m ?
 				issue._m(prefix)
-			:	{
-					code: issue.code,
-					path: [...prefix, ...issue.path],
-					data: issue.data,
-					expected: issue.expected,
-					problem: issue.problem,
-					message:
-						issue.message === messageOf(issue) ? undefined : issue.message
-				}
+			:	movedIssue(issue, [...prefix, ...issue.path])
 		)
 	}
 }
 
+// notes how an issue's message was configured, as issues.ts does
+export const customIssue = <issue extends ArkIssue>(
+	issue: issue,
+	c: Custom | undefined
+): issue =>
+	writesText && c !== issue._c ?
+		Object.defineProperty(issue, "_c", { value: c, configurable: true })
+	:	issue
+
+export const customOf = (issue: ArkIssue): Custom | undefined =>
+	writesText ? issue._c : undefined
+
+export const templatedIssue = <issue extends ArkIssue>(issue: issue): issue =>
+	customIssue(issue, undefined)
+
+export const isCustomIssue = (issue: ArkIssue): boolean =>
+	customOf(issue) !== undefined
+
+export const movedIssue = (issue: ArkIssue, path: PropertyKey[]): ArkIssue =>
+	customIssue(
+		{
+			code: issue.code,
+			path,
+			data: issue.data,
+			expected: issue.expected,
+			message: issue.message
+		},
+		customOf(issue)
+	)
+
 // the path as issues.ts writes it
-export const messageOf = (issue: ArkIssue): string => {
+export const pathOf = (issue: {
+	readonly path: readonly PropertyKey[]
+}): string => {
 	let path = ""
 	for (const k of issue.path) {
 		path +=
@@ -243,18 +275,28 @@ export const messageOf = (issue: ArkIssue): string => {
 				`[${JSON.stringify(k) ?? String(k)}]`
 			:	(path && ".") + String(k)
 	}
-	return (path && path + " ") + problemOf(issue)
+	return path
 }
 
-// an undeclared key's site says what's expected, as issues.ts's problemOf
-export const problemOf = (issue: ArkIssue): string =>
-	(writesText ? issue.problem : undefined) ??
-	(issue.expected !== undefined ?
+// an issue's line of a summary, as issues.ts's lineOf
+export const lineOf = (issue: ArkIssue): string => {
+	if (listsUnions && issue._l !== undefined) return issue._l
+	const message = (issue.message ??= messageOf(issue))
+	const path = pathOf(issue)
+	return path ? path + (customOf(issue) ? ": " : " ") + message : message
+}
+
+// an undeclared key's site says what's expected, as issues.ts's messageOf
+export const messageOf = (issue: {
+	readonly code?: ArkErrorCode
+	readonly expected?: string | undefined
+}): string =>
+	issue.expected !== undefined ?
 		"must be " +
 		issue.expected +
 		(issue.code === "required" ? " (was missing)" : "")
 	: issue.code === "required" ? "is missing"
-	: "is invalid")
+	: "is invalid"
 
 interface ThrownIssues extends Error {
 	readonly name: "TraversalError"

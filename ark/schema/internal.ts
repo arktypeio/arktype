@@ -9,6 +9,8 @@ export * from "./runtime.ts"
 export * from "./shared/errorModes.ts"
 export * from "./shared/inPlace.ts"
 export * from "./shared/issueFeatures.ts"
+// what @ark/schema/i18n exports of it
+export { printedActualOf } from "./shared/enWriters.ts"
 export * from "./shared/errorWriters.ts"
 export * from "./shared/rootApply.ts"
 export * from "./structure/shared.ts"

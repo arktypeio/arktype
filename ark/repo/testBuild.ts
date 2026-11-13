@@ -21,6 +21,19 @@ registerHooks({
 await import("arktype/config")
 const { scope, type } = await import("arktype")
 
+// a lookbehind in a regex literal is an early error before Safari 16.4, so one
+// in a module the main entry loads fails the whole import there
+for (const url of loadedUrls) {
+	if (
+		url.startsWith("file:") &&
+		/\(\?<[!=]/.test(readFileSync(fileURLToPath(url), "utf8"))
+	) {
+		throw new Error(
+			`⚠️  Importing arktype loads ${url}, which has a regex lookbehind.`
+		)
+	}
+}
+
 console.log(
 	"📦 Checking that each built package's entries share one set of modules...\n"
 )
@@ -123,24 +136,26 @@ for (const pkg of packages) {
 		if (resolve(`${name}/${path}`) !== internalPath)
 			throw new Error(`⚠️  ${name}/${path} isn't ${name}/internal.`)
 	}
-	const internalNames = exportedNamesOf(internalPath)
+	const namesByPath: Record<string, Set<string>> = {}
 	for (const module of modulesOf(pkg)) {
-		// these also export @ark/schema's runtime, which internal can't
-		if (
-			name === "arktype" &&
-			(module === "runtime" ||
-				module === "runtimeDevelopment" ||
-				module === "runtimeExports" ||
-				module === "checkers")
-		)
-			continue
-		for (const exportedName of exportedNamesOf(
+		// arktype/runtime under the "development" condition, which nothing
+		// imports by a path
+		if (name === "arktype" && module === "runtimeDevelopment") continue
+		const moduleNames = exportedNamesOf(
 			fileURLToPath(fromPackage(pkg, `out/${module}.js`))
-		)) {
-			if (!internalNames.has(exportedName)) {
-				throw new Error(
-					`⚠️  ${name}/internal lacks ${module}'s ${exportedName}.`
-				)
+		)
+		// a deep import loads internal, or an entry the package names for the
+		// module, as arktype does its runtime, which exports @ark/schema's
+		// runtime under names internal exports arktype's own by
+		for (const path of [`internal/${module}.ts`, `internal/${module}.js`]) {
+			const loaded = resolve(`${name}/${path}`)
+			const loadedNames = (namesByPath[loaded] ??= exportedNamesOf(loaded))
+			for (const exportedName of moduleNames) {
+				if (!loadedNames.has(exportedName)) {
+					throw new Error(
+						`⚠️  ${name}/${path} loads ${loaded}, which lacks ${module}'s ${exportedName}.`
+					)
+				}
 			}
 		}
 	}
@@ -360,6 +375,47 @@ if (
 ) {
 	throw new Error(
 		`⚠️  A development build logs its errors as ${JSON.stringify(inspectedOutput)}.`
+	)
+}
+
+// the build keeps, of a barrel's re-exports of arktype, what arktype/runtime
+// exports, which it must ask of that entry: built, a path under
+// arktype/internal loads arktype's own exports, match and scope among them,
+// so the barrel would link only from source. Run as published, by Node's driver
+const barrel = fileURLToPath(new URL("temp/barrel/", import.meta.url))
+mkdirSync(barrel, { recursive: true })
+writeFileSync(
+	`${barrel}ark.ts`,
+	`export { match, scope, type } from "arktype"\n`
+)
+writeFileSync(
+	`${barrel}main.ts`,
+	`import { match, scope, type } from "./ark.ts"
+
+const types = scope({ user: { name: "string" } }).export()
+const Id = type("string")
+
+console.log(String(types.user({ name: 5 })), Id("x"))
+`
+)
+
+const nodeDriver = pathToFileURL(
+	createRequire(import.meta.url).resolve("@ark/aot/node")
+)
+
+const barrelRun = spawnSync(
+	process.execPath,
+	[
+		"--import",
+		`data:text/javascript,import { register } from "${nodeDriver}"; register(${JSON.stringify({ cwd: barrel })})`,
+		"main.ts"
+	],
+	{ cwd: barrel, encoding: "utf8", timeout: 60_000 }
+)
+
+if (barrelRun.stdout !== "name must be a string x\n") {
+	throw new Error(
+		`⚠️  A barrel re-exporting what arktype/runtime lacks logs ${JSON.stringify(barrelRun.stdout)} run by the built Node driver:\n${barrelRun.stderr}`
 	)
 }
 

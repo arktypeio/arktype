@@ -882,6 +882,34 @@ contextualize(() => {
 		})
 	})
 
+	it("names a JSON Schema definition by its alias, digits included", () => {
+		const { v2 } = scope({
+			v2: { "next?": "v2", "prev?": "v1_0", "node?": "node" },
+			v1_0: { "next?": "v1_0" },
+			node: { "next?": "node" }
+		}).export()
+
+		attest(v2.toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			$ref: "#/$defs/v2",
+			$defs: {
+				v2: {
+					type: "object",
+					properties: {
+						next: { $ref: "#/$defs/v2" },
+						node: { $ref: "#/$defs/node" },
+						prev: { $ref: "#/$defs/v1_0" }
+					}
+				},
+				node: {
+					type: "object",
+					properties: { next: { $ref: "#/$defs/node" } }
+				},
+				v1_0: { type: "object", properties: { next: { $ref: "#/$defs/v1_0" } } }
+			}
+		})
+	})
+
 	// https://github.com/arktypeio/arktype/issues/928
 	it("compares cyclic types by their unfolding", () => {
 		const types = scope({

@@ -397,6 +397,20 @@ contextualize(() => {
 			)
 		})
 
+		it("a type argument to Array, by how an array is written", () => {
+			// @ts-expect-error
+			attest(() => type({ tags: "Array<string>" })).throwsAndHasTypeError(
+				"Comparator < must be followed by a corresponding literal (was string). Array isn't generic here: write an array of strings as string[]"
+			)
+			// a length bound isn't one
+			attest(type("Array < 5").expression).snap("Array <= 4")
+			// nor is a keyword that isn't Array
+			// @ts-expect-error
+			attest(() => type("Map<string, number>")).throws.snap(
+				"ParseError: Comparator < must be followed by a corresponding literal (was string)"
+			)
+		})
+
 		it("non-literal right bound after a space", () => {
 			// @ts-expect-error
 			attest(() => type("number < string")).throwsAndHasTypeError(

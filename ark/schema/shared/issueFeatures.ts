@@ -7,7 +7,7 @@ export const reportsIndices: boolean = true
 /** a key in an issue's path that isn't an identifier, like a record's */
 export const bracketsKeys: boolean = true
 
-/** text a site writes from the program's config, like a problem */
+/** text a site writes from the program's config, or a message configured or supplied as a sentence */
 export const writesText: boolean = true
 
 /** a union's issue listing its branches', written again where its path changes */

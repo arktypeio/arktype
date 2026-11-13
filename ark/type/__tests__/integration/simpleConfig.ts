@@ -17,5 +17,6 @@ export const config = configure({
 			description: "a configured trimmed string"
 		}
 	},
+	divisor: { message: ctx => `Enter a multiple of ${ctx.rule}` },
 	onUndeclaredKey: "delete"
 })

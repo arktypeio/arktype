@@ -8,6 +8,7 @@ import {
 import { ArkErrors as LeanErrors } from "@ark/schema/internal/shared/issuesLean.ts"
 import {
 	ArkErrors,
+	customIssue,
 	FirstIssues,
 	InternalTraversal,
 	mergeIssues,
@@ -56,7 +57,7 @@ contextualize(() => {
 				path: ["name"],
 				data: {},
 				expected: undefined,
-				message: "name is missing"
+				message: "is missing"
 			}
 		])
 	})
@@ -68,7 +69,7 @@ contextualize(() => {
 				path: ["name"],
 				data: 1,
 				expected: "a string",
-				message: "name must be a string"
+				message: "must be a string"
 			}
 		])
 	})
@@ -114,7 +115,7 @@ contextualize(() => {
 				path: ["item", "kind"],
 				data: "c",
 				expected: '"a" or "b"',
-				message: 'item.kind must be "a" or "b"'
+				message: 'must be "a" or "b"'
 			}
 		])
 	})
@@ -154,23 +155,55 @@ a[0].b must be a string
 		attest(ctx._errors!._).equals(errors._)
 	})
 
-	it("keeps a supplied message when merging", () => {
+	it("keeps a supplied message when merging, set apart from its path", () => {
 		const inner = new ArkErrors()
 		user({}, inner)
-		inner._.push({
-			code: "predicate",
-			path: [],
-			data: 1,
-			expected: undefined,
-			message: "supplied"
-		})
+		inner._.push(
+			customIssue(
+				{
+					code: "predicate",
+					path: [],
+					data: 1,
+					expected: undefined,
+					message: "supplied"
+				},
+				1
+			)
+		)
 		// read before it's merged
 		attest(inner.summary).snap(`name is missing
 supplied`)
 		const outer = new ArkErrors()
 		mergeIssues(outer, inner, ["owner"])
 		attest(outer.summary).snap(`owner.name is missing
-supplied`)
+owner: supplied`)
+		attest(outer.issues.map(issue => issue.message)).equals([
+			"is missing",
+			"supplied"
+		])
+	})
+
+	it("writes a site's message by how it was configured", () => {
+		const errors = new ArkErrors()
+		const at = (c?: 1 | 2) =>
+			errors._at(
+				{ code: "domain", description: "a string", x: "said", c },
+				{
+					k: 1
+				},
+				"k"
+			)
+		at()
+		at(1)
+		at(2)
+		attest(errors.summary).snap(`k said
+k: said
+k: said`)
+		attest(errors.issues.map(issue => issue.message)).equals([
+			"said",
+			"said",
+			"said"
+		])
 	})
 
 	it("merges validator issues into arktype errors", () => {

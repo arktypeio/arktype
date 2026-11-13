@@ -7,6 +7,7 @@ import {
 } from "@ark/schema"
 import type { promisable } from "@ark/util"
 import { scope, type } from "arktype"
+import { en } from "arktype/locales/en"
 
 contextualize(() => {
 	it("validation conforms to spec", () => {
@@ -32,56 +33,47 @@ contextualize(() => {
 		attest(badStandardOut.issues[0].path).equals(["foo"])
 	})
 
-	it("an issue's message is its error's problem, which leaves its path to the consumer", () => {
+	it("an issue's message is its error's message, which leaves its path to the consumer", () => {
 		const textOf = (T: type.Any, data: unknown) => {
 			const errors = T(data) as type.errors
 			const { issues } = T["~standard"].validate(
 				data
 			) as StandardSchemaV1.FailureResult
-			return errors.issues.map((error, i) => ({
-				problem: error.problem,
-				message: error.message,
-				issue: issues[i].message
-			}))
-		}
-		attest(textOf(type({ y: { z: "string >= 2" } }), { y: { z: "a" } })).snap([
-			{
-				problem: "must be at least length 2",
-				message: "y.z must be at least length 2",
-				issue: "must be at least length 2"
+			return {
+				summary: errors.summary,
+				errors: errors.issues.map(error => error.message),
+				issues: issues.map(issue => issue.message)
 			}
-		])
-		// a union's problem writes its branches' paths from its own
+		}
+		attest(textOf(type({ y: { z: "string >= 2" } }), { y: { z: "a" } })).snap({
+			summary: "y.z must be at least length 2",
+			errors: ["must be at least length 2"],
+			issues: ["must be at least length 2"]
+		})
+		// a union's message writes its branches' paths from its own
 		attest(
 			textOf(type({ x: type({ a: "string" }).or({ b: "number" }) }), {
 				x: { a: 1, b: "" }
 			})
-		).snap([
-			{
-				problem: "a must be a string or b must be a number",
-				message: "x.a must be a string or x.b must be a number",
-				issue: "a must be a string or b must be a number"
-			}
-		])
-		// a message writer reaches only the message
-		const Messaged = type("string >= 2").configure({
-			message: ctx => `${ctx.propString} is too short`
+		).snap({
+			summary: "x.a must be a string or x.b must be a number",
+			errors: ["a must be a string or b must be a number"],
+			issues: ["a must be a string or b must be a number"]
 		})
-		attest(textOf(type({ y: Messaged }), { y: "a" })).snap([
-			{
-				problem: "must be at least length 2",
-				message: "y is too short",
-				issue: "must be at least length 2"
-			}
-		])
-		const Problemed = type("string >= 2").configure({ problem: "is too short" })
-		attest(textOf(type({ y: Problemed }), { y: "a" })).snap([
-			{
-				problem: "is too short",
-				message: "y is too short",
-				issue: "is too short"
-			}
-		])
+		const Configured = type("string >= 2").configure({ message: "Too short" })
+		attest(textOf(type({ y: Configured }), { y: "a" })).snap({
+			summary: "y: Too short",
+			errors: ["Too short"],
+			issues: ["Too short"]
+		})
+		const Rejecting = type("string").narrow(
+			(s, ctx) => s.length >= 2 || ctx.reject({ message: "Too short" })
+		)
+		attest(textOf(type({ y: Rejecting }), { y: "a" })).snap({
+			summary: "y: Too short",
+			errors: ["Too short"],
+			issues: ["Too short"]
+		})
 	})
 
 	it("nested standard schema issues", () => {
@@ -104,7 +96,19 @@ contextualize(() => {
 			}
 		})
 
-		attest(Other({ user: {} }).toString()).snap("user.age expected an integer")
+		const Configured = type({
+			age: type("number.integer").configure({ message: "Enter your age" })
+		})
+		attest(
+			type({ user: { "~standard": Configured["~standard"] } })({
+				user: { age: 1.5 }
+			}).toString()
+		).snap("user.age: Enter your age")
+
+		// another library's message is a sentence of its own
+		const out = Other({ user: {} }) as type.errors
+		attest(out.summary).snap("user.age: Expected an integer")
+		attest(out.issues[0].message).snap("Expected an integer")
 
 		const Union = type({ a: type({ b: "string" }).or({ c: "number" }) })
 		attest(
@@ -162,9 +166,12 @@ contextualize(() => {
 				user: { id: "a" },
 				thunk: { id: "b" }
 			})
-			attest(T({ user: {}, thunk: { id: 1 } }).toString()).snap(
+			// what arktype 2 wrote from what it expected follows its path
+			const out = T({ user: {}, thunk: { id: 1 } }) as type.errors
+			attest(out.summary).snap(
 				"user.id must be a string\nthunk.id must be a string"
 			)
+			attest(out.toLocaleString(en)).equals(out.summary)
 		})
 
 		it("methods parse a Type as a Standard Schema", () => {
@@ -176,6 +183,46 @@ contextualize(() => {
 			const Node = scope({ node: { id: "string", "next?": "node" } }).export()
 				.node
 			attest(Node.equals(Foreign)).equals(false)
+		})
+
+		it("an arktype 3 Type answers whether an issue of its own is custom", () => {
+			const custom = { message: "Enter a valid email", path: ["email"] }
+			const Foreign3 = Object.setPrototypeOf(
+				Object.assign((data: unknown) => data, {
+					"~standard": {
+						version: 1,
+						vendor: "arktype",
+						validate: () => ({
+							issues: [{ message: "must be a string", path: ["id"] }, custom]
+						}),
+						// as another copy's Type answers for the errors only it can read
+						_c: (issue: object) => issue === custom
+					}
+				}),
+				{ " arkKind": "root" }
+			) as type.cast<{ id: string; email: string }>
+			attest(type({ user: Foreign3 })({ user: {} }).toString()).snap(
+				"user.id must be a string\nuser.email: Enter a valid email"
+			)
+			// this copy's own errors, read only as a Standard Schema's issues
+			const Own = type({
+				id: "string",
+				email: type("string.email").configure({
+					message: "Enter a valid email"
+				})
+			})
+			const T = type({ user: { "~standard": Own["~standard"] } })
+			attest(T({ user: { id: 1, email: 1 } }).toString()).snap(
+				"user.id must be a string\nuser.email: Enter a valid email"
+			)
+		})
+
+		it("a union read as a Standard Schema's at the root keeps its listing", () => {
+			const Own = type({ shape: type({ a: "string" }).or({ b: "number" }) })
+			const T = type({ "~standard": Own["~standard"] })
+			attest(T({ shape: {} }).toString()).snap(
+				"shape.a must be a string or shape.b must be a number"
+			)
 		})
 
 		const ownJsonSchema = (

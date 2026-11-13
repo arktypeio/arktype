@@ -5,7 +5,7 @@ export {
 	byPath,
 	flatByPath,
 	firstIssue,
-	flatProblemsByPath,
+	flatMessagesByPath,
 	messageIn,
 	Traversal,
 	TraversalError,

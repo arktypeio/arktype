@@ -6,6 +6,7 @@ import {
 	distinctExpectedOf,
 	groupByPath,
 	labelOf,
+	printedActualOf,
 	writeKeywordExpected
 } from "@ark/schema/i18n"
 import {
@@ -90,10 +91,15 @@ const printKind = (data: unknown, locale: Locale): string =>
 	: typeof data !== "object" || data === null ? print(data, locale)
 	: locale.nouns[Array.isArray(data) ? "Array" : "object"]
 
-const was = (actual: string) => actual && `, ist aber ${actual}`
+// an error's actual describes its data, so a message says what the value was
+// only where an actual is configured or supplied, as en's do
+const was = (e: { readonly actual: string }) => {
+	const actual = printedActualOf(e)
+	return actual && `, ist aber ${actual}`
+}
 
-const mustBe = (expected: string, actual: string) =>
-	`muss ${expected} sein${was(actual)}`
+const mustBe = (expected: string, e: { readonly actual: string }) =>
+	`muss ${expected} sein${was(e)}`
 
 // what a missing key or discriminant was
 const absent = "nicht vorhanden"
@@ -139,24 +145,21 @@ const lengthActual: Locale.ActualWriter<LengthCode> = (data, e, locale) =>
 	: "leer"
 
 // a value that must be nonempty is negated, and a nonempty array is counted by what it contains
-const lengthProblem: Locale.ProblemWriter<LengthCode> = (e, locale) => {
+const lengthMessage: Locale.MessageWriter<LengthCode> = (e, locale) => {
 	if (e.code === "minLength" && e.rule === 1)
-		return `darf nicht leer sein${was(e.actual)}`
-	if (typeof e.data === "string")
-		return mustBe(lengthExpected(e, locale), e.actual)
+		return `darf nicht leer sein${was(e)}`
+	if (typeof e.data === "string") return mustBe(lengthExpected(e, locale), e)
 	const rule =
 		e.rule === 0 ?
 			"muss leer sein"
 		:	`muss ${lengthBounds[e.code]} ${elements(e.rule, locale)} enthalten`
-	return e.data.length && e.actual === lengthActual(e.data, e, locale) ?
-			`${rule}, enthält aber ${elements(e.data.length, locale)}`
-		:	`${rule}${was(e.actual)}`
+	return `${rule}${was(e)}`
 }
 
 const lengthWriters = {
 	expected: lengthExpected,
 	actual: lengthActual,
-	problem: lengthProblem
+	message: lengthMessage
 }
 
 // a path like [0] or ["a b"] needs a noun to be a subject
@@ -183,10 +186,10 @@ const bound: Locale.ExpectedWriter<"min" | "max"> = (e, locale) =>
 	:	`${e.exclusive ? "kleiner als" : "höchstens"} ${locale.number(e.rule)}`
 
 // "muss nicht" means "need not", so an inclusive bound of 0 is negated by "darf"
-const boundProblem: Locale.ProblemWriter<"min" | "max"> = (e, locale) =>
+const boundMessage: Locale.MessageWriter<"min" | "max"> = (e, locale) =>
 	e.rule === 0 && !e.exclusive ?
-		`darf nicht ${e.code === "min" ? "negativ" : "positiv"} sein${was(e.actual)}`
-	:	mustBe(bound(e, locale), e.actual)
+		`darf nicht ${e.code === "min" ? "negativ" : "positiv"} sein${was(e)}`
+	:	mustBe(bound(e, locale), e)
 
 const dateWriters = (relation: string) => {
 	const expected: Locale.ExpectedWriter<"before" | "after"> = (e, locale) =>
@@ -194,7 +197,7 @@ const dateWriters = (relation: string) => {
 	return {
 		expected,
 		actual: (data, e, locale) => print(data, locale),
-		problem: (e, locale) => mustBe(expected(e, locale), e.actual)
+		message: (e, locale) => mustBe(expected(e, locale), e)
 	} satisfies Locale.CodeWriters<"before" | "after">
 }
 
@@ -230,10 +233,10 @@ const describeProto = (proto: Function, locale: Locale) => {
 }
 
 // a JSON keyword's error carries the SyntaxError JSON.parse threw as its cause
-const jsonProblem: Locale.ProblemWriter = (e, locale) =>
+const jsonMessage: Locale.MessageWriter = (e, locale) =>
 	e.code === "predicate" && e.cause !== undefined ?
 		`muss eine JSON-Zeichenkette sein (${describeCause(e.cause)})`
-	:	locale.problem(e, locale)
+	:	locale.message(e, locale)
 
 const epoch = "ein gültiger Unix-Zeitstempel als ganze Zahl"
 
@@ -270,11 +273,11 @@ const keywordPhrases = {
 	"string.ip": "eine IP-Adresse",
 	"string.ip.v4": "eine IPv4-Adresse",
 	"string.ip.v6": "eine IPv6-Adresse",
-	"string.json": { noun: "eine JSON-Zeichenkette", problem: jsonProblem },
+	"string.json": { noun: "eine JSON-Zeichenkette", message: jsonMessage },
 	"string.json.parse": {
 		noun: "eine JSON-Zeichenkette",
 		actual: (data, e, locale) => (data === "" ? "leer" : print(data, locale)),
-		problem: jsonProblem
+		message: jsonMessage
 	},
 	"string.lower.preformatted": "kleingeschrieben",
 	"string.normalize.NFC.preformatted": "NFC-normalisiert",
@@ -285,10 +288,10 @@ const keywordPhrases = {
 	"string.numeric.parse": "endlich",
 	"string.regex": {
 		noun: "ein Regex-Muster",
-		problem: (e, locale) =>
+		message: (e, locale) =>
 			e.code === "predicate" && e.cause !== undefined ?
 				`muss ein Regex-Muster sein (${describeCause(e.cause)})`
-			:	locale.problem(e, locale)
+			:	locale.message(e, locale)
 	},
 	"string.semver": "eine semantische Version (siehe https://semver.org/)",
 	"string.trim.preformatted": "ohne Leerraum am Anfang und Ende",
@@ -371,18 +374,16 @@ export const de: Locale.Complete = {
 	},
 	keywordPhrases,
 	actual: (data, e, locale) => printKind(data, locale),
-	problem: e => mustBe(e.expected, e.actual),
-	message: (e, locale) =>
-		e.path.length === 0 ?
-			e.problem
-		:	`${subjectOf(e.propString, labelOf(e), locale)} ${e.problem}`,
+	message: e => mustBe(e.expected, e),
+	line: (e, locale) =>
+		`${subjectOf(e.propString, labelOf(e), locale)}${e.custom ? ":" : ""} ${e.message}`,
 	domain: {
 		expected: (e, locale) => locale.nouns[e.domain],
 		actual: (data, e, locale) =>
 			typeof data === "number" && !Number.isFinite(data) ?
 				`${data}`
 			:	locale.nouns[domainOf(data)],
-		problem: (e, locale) => mustBe(locale.nouns[e.domain], e.actual)
+		message: (e, locale) => mustBe(locale.nouns[e.domain], e)
 	},
 	unit: {
 		expected: (e, locale) => print(e.unit, locale),
@@ -390,11 +391,11 @@ export const de: Locale.Complete = {
 			data instanceof Date && isValidDate(data) ?
 				theDate(data, locale)
 			:	printKind(data, locale),
-		problem: (e, locale) => {
+		message: (e, locale) => {
 			const unit = print(e.unit, locale)
-			return unit === e.actual ?
+			return unit === printedActualOf(e) ?
 					`muss referenzgleich mit ${unit} sein (wird zum selben Wert serialisiert)`
-				:	mustBe(unit, e.actual)
+				:	mustBe(unit, e)
 		}
 	},
 	proto: {
@@ -404,7 +405,7 @@ export const de: Locale.Complete = {
 				locale.nouns[objectKindOrDomainOf(data)]
 			: timeOf(data) === undefined ? locale.nouns.object
 			: "ein ungültiges Date-Objekt",
-		problem: (e, locale) => mustBe(describeProto(e.proto, locale), e.actual)
+		message: (e, locale) => mustBe(describeProto(e.proto, locale), e)
 	},
 	union: {
 		expected: (e, locale) => {
@@ -416,46 +417,56 @@ export const de: Locale.Complete = {
 						group.propString &&
 						`${subjectOf(group.propString, group.label, locale)} `
 					const expected = locale.list(group.expected, "or")
-					const actual = group.actual ?? printKind(group.data, locale)
 					// a missing key reads as its own error does
-					if (actual === absent)
+					if (group.actual === absent)
 						return `${subject}fehlt (muss ${expected} sein)`
+					// what the value was, if each error at the path would say so
+					const actual =
+						(
+							group.actual !== undefined &&
+							e.errors.every(
+								error =>
+									error.propString !== group.propString ||
+									printedActualOf(error) === group.actual
+							)
+						) ?
+							group.actual
+						:	""
 					// beside other paths, a comma would blur where each one's text ends
-					return groups.length === 1 ?
-							`${subject}${mustBe(expected, actual)}`
-						:	`${subject}muss ${expected} sein${actual && ` (ist ${actual})`}`
+					return `${subject}muss ${expected} sein${
+						actual &&
+						(groups.length === 1 ? `, ist aber ${actual}` : ` (ist ${actual})`)
+					}`
 				}),
 				"or"
 			)
 		},
 		actual: (data, e, locale) => actualAtPathOf(e) ?? printKind(data, locale),
-		problem: e => (e.errors.length ? e.expected : mustBe(e.expected, e.actual)),
-		message: (e, locale) =>
-			e.errors.length === 0 ? locale.message(e, locale) : e.problem
+		message: e => (e.errors.length ? e.expected : mustBe(e.expected, e))
 	},
 	intersection: {
 		expected: e =>
 			distinctExpectedOf(e.errors).length > 1 ?
 				`  ◦ ${distinctExpectedOf(e.errors).join("\n  ◦ ")}`
 			:	e.errors[0].expected,
-		problem: e =>
+		message: e =>
 			distinctExpectedOf(e.errors).length > 1 ?
-				`(${e.actual}) muss alles Folgende sein:\n${e.expected}`
-			:	mustBe(e.expected, e.actual)
+				`(${printedActualOf(e)}) muss alles Folgende sein:\n${e.expected}`
+			:	mustBe(e.expected, e)
 	},
-	min: { expected: bound, problem: boundProblem },
-	max: { expected: bound, problem: boundProblem },
+	min: { expected: bound, message: boundMessage },
+	max: { expected: bound, message: boundMessage },
 	minLength: lengthWriters,
 	maxLength: lengthWriters,
 	exactLength: lengthWriters,
 	divisor: {
 		expected: (e, locale) => divisorOf(e.rule, locale),
-		problem: (e, locale) => mustBe(divisorOf(e.rule, locale), e.actual)
+		message: (e, locale) => mustBe(divisorOf(e.rule, locale), e)
 	},
 	pattern: {
 		expected: (e, locale) => `passend zum Muster ${locale.verbatim(e.rule)}`,
-		problem: (e, locale) =>
-			`muss dem Muster ${locale.verbatim(e.rule)} entsprechen${was(e.actual)}`
+		message: (e, locale) =>
+			`muss dem Muster ${locale.verbatim(e.rule)} entsprechen${was(e)}`
 	},
 	before: dateWriters("spätestens"),
 	after: dateWriters("frühestens"),
@@ -464,7 +475,7 @@ export const de: Locale.Complete = {
 		expected: (e, locale) =>
 			`ungleich ${print(e.rule, locale).replace(/^der /, "dem ")}`,
 		actual: (data, e, locale) => print(data, locale),
-		problem: e => mustBe(e.expected, e.actual)
+		message: e => mustBe(e.expected, e)
 	},
 	notEqualLength: {
 		expected: (e, locale) =>
@@ -473,12 +484,12 @@ export const de: Locale.Complete = {
 			:	`kein Array mit ${elements(e.rule, locale, true)}`,
 		actual: (data, e, locale) => length(data.length, data, locale),
 		// "muss nicht" means "need not"
-		problem: (e, locale) =>
+		message: (e, locale) =>
 			`darf nicht ${
 				typeof e.data === "string" ?
 					`${length(e.rule, e.data, locale)} sein`
 				:	`${elements(e.rule, locale)} enthalten`
-			}${was(e.actual)}`
+			}${was(e)}`
 	},
 	predicate: {
 		expected: predicateOf,
@@ -486,8 +497,8 @@ export const de: Locale.Complete = {
 			e.morph ?
 				`wegen eines Fehlers abgebrochen:\n    ${describeCause(e.cause)}`
 			:	printKind(data, locale),
-		problem: (e, locale) => {
-			if (!e.morph) return mustBe(predicateOf(e, locale), e.actual)
+		message: (e, locale) => {
+			if (!e.morph) return mustBe(predicateOf(e, locale), e)
 			const name = e.morph.name && `von ${locale.verbatim(e.morph.name)} `
 			return `konnte ${name}nicht verarbeitet werden:\n    ${describeCause(e.cause)}`
 		}
@@ -495,7 +506,7 @@ export const de: Locale.Complete = {
 	required: {
 		expected: (e, locale) => describeMissing(e.missing, locale),
 		actual: absent,
-		problem: (e, locale) =>
+		message: (e, locale) =>
 			e.missing.code === "intersection" ?
 				"fehlt"
 			:	`fehlt (muss ${describeMissing(e.missing, locale)} sein)`
@@ -503,7 +514,7 @@ export const de: Locale.Complete = {
 	undeclared: {
 		expected: "entfernt",
 		actual: "",
-		problem: "ist nicht erlaubt"
+		message: "ist nicht erlaubt"
 	},
 	discriminant: {
 		expected: casesOf,
@@ -511,9 +522,9 @@ export const de: Locale.Complete = {
 			e.absent ? absent
 			: e.discriminantKind === "domain" ? locale.nouns[domainOf(data)]
 			: printKind(data, locale),
-		problem: (e, locale) =>
+		message: (e, locale) =>
 			e.absent ?
 				`fehlt (muss ${casesOf(e, locale)} sein)`
-			:	mustBe(casesOf(e, locale), e.actual)
+			:	mustBe(casesOf(e, locale), e)
 	}
 }

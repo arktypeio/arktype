@@ -1,6 +1,7 @@
 import { omit, stringifyPath, throwError } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
 import {
+	configuredMessageOf,
 	defaultConfig,
 	registerLocaleRenderer,
 	suppliedText,
@@ -10,12 +11,13 @@ import {
 	writeText,
 	type ArkError
 } from "./errors.ts"
+import { describeActual } from "./enWriters.ts"
 import { keywordWriterOf, writeKeywordExpected, type Locale } from "./locale.ts"
 import { $ark } from "./registry.ts"
 
 type LocaleSelector = () => Locale | undefined
 
-type ErrorSlot = "expected" | "actual" | "problem" | "message"
+type ErrorSlot = "expected" | "actual" | "message"
 
 type SlotConfig = string | ((...args: never[]) => string)
 
@@ -79,7 +81,6 @@ const write = (error: ArkError, config: ResolvedConfig, locale: Locale) => {
 			:	writeSlot(error, "expected", expected, locale)
 	}
 	error.actual ??= render(error, "actual", expected, cited, config, locale)
-	error.problem ??= render(error, "problem", expected, cited, config, locale)
 	error.message ??= render(error, "message", expected, cited, config, locale)
 }
 
@@ -92,12 +93,16 @@ const render = (
 	locale: Locale
 ): string => {
 	const slotConfig = configOf(error, slot, config)
+	const isDefault = slotConfig === defaultConfig[error.code][slot]
+	// a locale's own actual describes the data as en's does, so its messages
+	// can leave it out through printedActualOf. A missing key's isn't, since
+	// its message says it was missing
+	if (isDefault && slot === "actual" && error.code !== "required")
+		describeActual(error)
 	return writeSlot(
 		error,
 		slot,
-		slotConfig === defaultConfig[error.code][slot] ?
-			localeWriter(error, slot, expected, cited, locale)
-		:	slotConfig,
+		isDefault ? localeWriter(error, slot, expected, cited, locale) : slotConfig,
 		locale
 	)
 }
@@ -107,7 +112,7 @@ const configOf = (
 	slot: ErrorSlot,
 	config: ResolvedConfig
 ): SlotConfig =>
-	error.meta?.[slot] ??
+	(slot === "message" ? configuredMessageOf(error) : error.meta?.[slot]) ??
 	config[error.code][slot] ??
 	defaultConfig[error.code][slot]
 
@@ -146,15 +151,21 @@ const localeWriter = (
 	}
 	const writer = locale[error.code][slot]
 	if (writer === undefined) return locale[slot]
-	// union and intersection frame their children's text, unless they cite their own description
-	if (error.code === "union" || error.code === "intersection")
-		return cited === undefined || slot === "actual" ? writer : locale[slot]
-	// a code's own problem frames its locale's expected, not a keyword's phrase or authored text
-	if (slot !== "problem") return writer
+	// union and intersection frame their children's text, unless they cite
+	// their own description, or a union what it's configured to expect, which
+	// is written after `must be` and its path as any error's is
+	if (error.code === "union" || error.code === "intersection") {
+		const framesErrors =
+			cited === undefined &&
+			(error.code === "intersection" || error.meta?.expected === undefined)
+		return framesErrors || slot === "actual" ? writer : locale[slot]
+	}
+	// a code's own message frames its locale's expected, not a keyword's phrase or authored text
+	if (slot !== "message") return writer
 	return (
 			cited !== undefined || expected !== defaultConfig[error.code].expected
 		) ?
-			locale.problem
+			locale.message
 		:	writer
 }
 

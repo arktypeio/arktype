@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	assertNodeKind,
-	flatProblemsByPath,
+	flatMessagesByPath,
 	intrinsic,
 	registeredReference,
 	writeInvalidOperandMessage,
@@ -172,18 +172,18 @@ contextualize(() => {
 				type("string").pipe.try(() => {
 					throw thrown
 				})("x") as type.errors
-			attest(throwing(Symbol("thrown")).issues[0].problem).snap(
+			attest(throwing(Symbol("thrown")).issues[0].message).snap(
 				"must be valid according to an anonymous predicate (Symbol(thrown))"
 			)
-			attest(throwing(Object.create(null)).issues[0].problem).snap(
+			attest(throwing(Object.create(null)).issues[0].message).snap(
 				"must be valid according to an anonymous predicate"
 			)
 			const cyclic: any = new Error("cyclic")
 			cyclic.self = cyclic
-			attest(JSON.parse(JSON.stringify(throwing(cyclic)))[0].problem).snap(
+			attest(JSON.parse(JSON.stringify(throwing(cyclic)))[0].message).snap(
 				"must be valid according to an anonymous predicate (Error: cyclic)"
 			)
-			attest(JSON.parse(JSON.stringify(throwing(5n)))[0].problem).snap(
+			attest(JSON.parse(JSON.stringify(throwing(5n)))[0].message).snap(
 				"must be valid according to an anonymous predicate (5)"
 			)
 		})
@@ -507,7 +507,7 @@ must be a digit`)
 		attest(out.summary).snap(`s must be own
 s must be matched by ^a
 s must be at least length 5`)
-		attest(flatProblemsByPath(out)).snap({
+		attest(flatMessagesByPath(out)).snap({
 			s: ["must be own", "must be matched by ^a", "must be at least length 5"]
 		})
 	})

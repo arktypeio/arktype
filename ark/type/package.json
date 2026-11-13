@@ -1,9 +1,24 @@
 {
 	"name": "arktype",
 	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
+	"keywords": [
+		"typescript",
+		"validation",
+		"validator",
+		"schema",
+		"runtime",
+		"types",
+		"inference",
+		"type-safe",
+		"parser",
+		"standard-schema",
+		"json-schema",
+		"precompile"
+	],
 	"version": "2.2.9",
 	"arkAotVersion": "0.0.1",
 	"license": "MIT",
+	"homepage": "https://arktype.io",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/arktypeio/arktype.git",
@@ -127,6 +142,34 @@
 		"./internal/arktype.js": {
 			"ark-ts": "./index.ts",
 			"default": "./out/index.js"
+		},
+		"./internal/runtime.ts": {
+			"ark-ts": "./runtime.ts",
+			"default": "./out/runtime.js"
+		},
+		"./internal/runtime.js": {
+			"ark-ts": "./runtime.ts",
+			"default": "./out/runtime.js"
+		},
+		"./internal/runtimeExports.ts": {
+			"ark-ts": "./runtimeExports.ts",
+			"types": "./out/runtimeExports.d.ts",
+			"default": "./out/runtime.js"
+		},
+		"./internal/runtimeExports.js": {
+			"ark-ts": "./runtimeExports.ts",
+			"types": "./out/runtimeExports.d.ts",
+			"default": "./out/runtime.js"
+		},
+		"./internal/checkers.ts": {
+			"ark-ts": "./checkers.ts",
+			"types": "./out/checkers.d.ts",
+			"default": "./out/runtime.js"
+		},
+		"./internal/checkers.js": {
+			"ark-ts": "./checkers.ts",
+			"types": "./out/checkers.d.ts",
+			"default": "./out/runtime.js"
 		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",

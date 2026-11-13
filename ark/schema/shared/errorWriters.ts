@@ -2,23 +2,18 @@ import { domainDescriptions, domainOf, type requireKeys } from "@ark/util"
 import type { ErrorConfig } from "../config.ts"
 import type { Declaration, Inner } from "../kinds.ts"
 import type { BaseErrorContext } from "./declare.ts"
-import type {
-	ActualWriter,
-	ArkErrorCode,
-	MessageWriter,
-	ProblemWriter
-} from "./errors.ts"
+import type { ActualWriter, ArkErrorCode, MessageWriter } from "./errors.ts"
 import {
 	describeCollapsibleDate,
 	printedActualOf,
 	printKind,
 	writeDomainActual,
 	writeLengthActual,
+	writeMessage,
 	writeNotEqualActual,
-	writeProblem,
 	writeProtoActual,
 	writeUnitActual,
-	writeUnitProblem
+	writeUnitMessage
 } from "./enWriters.ts"
 import type { NodeKind } from "./implement.ts"
 import {
@@ -32,22 +27,16 @@ import { writeListed } from "./listed.ts"
 import { describePredicate } from "./traversal.ts"
 import { describeCases } from "./utils.ts"
 
-// a path starting with a bracket, like [0] or ["key!"], is written as is, as
-// a standalone validator writes it
-export const writeMessage: MessageWriter = ctx =>
-	ctx.propString === "" ? ctx.problem : `${ctx.propString} ${ctx.problem}`
-
 // one writer per slot for each kind that doesn't write its own. An error's
 // actual describes its data, but a message doesn't say what the value was, as
 // a standalone validator's can't without shipping a printer, unless an actual
-// is configured; a missing key's does
+// is configured; a missing key's does. No message names its error's own path,
+// which a summary writes before it
 export const errorWriters: {
 	actual: ActualWriter
-	problem: ProblemWriter
 	message: MessageWriter
 } = {
 	actual: printKind,
-	problem: writeProblem,
 	message: writeMessage
 }
 
@@ -66,9 +55,9 @@ export const errorWritersByCode: {
 					expected[0]
 				:	`  ◦ ${expected.join("\n  ◦ ")}`
 		},
-		problem: (ctx, info) =>
+		message: (ctx, info) =>
 			distinctExpectedOf(ctx.errors).length === 1 ?
-				writeProblem(ctx, info)
+				writeMessage(ctx, info)
 			:	`(${printedActualOf(ctx)}) must be...\n${ctx.expected}`
 	},
 	max: {},
@@ -86,7 +75,7 @@ export const errorWritersByCode: {
 			ctx.morph ?
 				`aborted due to error:\n    ${describeCause(ctx.cause)}\n`
 			:	printKind(data),
-		problem: (ctx, info) => {
+		message: (ctx, info) => {
 			const locale = info as Locale
 			// what a pipe.try morph threw is written beside what it expected
 			if (ctx.morph && ctx.cause !== undefined) {
@@ -98,14 +87,14 @@ export const errorWritersByCode: {
 					return `must be ${ctx.expected}`
 				}
 			}
-			const problem =
+			const message =
 				ctx.cause === undefined ?
 					undefined
-				:	keywordWriterOf(ctx, locale, "problem")
+				:	keywordWriterOf(ctx, locale, "message")
 			return (
-				problem === undefined ? locale.problem(ctx, locale)
-				: typeof problem === "string" ? problem
-				: problem(ctx, locale)
+				message === undefined ? locale.message(ctx, locale)
+				: typeof message === "string" ? message
+				: message(ctx, locale)
 			)
 		}
 	},
@@ -121,13 +110,12 @@ export const errorWritersByCode: {
 			(ctx.errors.length ? writeListed(ctx.errors) : "never"),
 		// data that may be large is described by its kind
 		actual: (data, ctx) => actualAtPathOf(ctx) ?? printKind(data),
-		// its text is its errors', unless it has none, like never, or a description
-		problem: (ctx, info) =>
-			listsErrors(ctx) ? ctx.expected : writeProblem(ctx, info),
+		// its text is its errors', unless it has none, like never, or says what
+		// it is or expects itself
 		message: (ctx, info) =>
-			listsErrors(ctx) ? ctx.problem : writeMessage(ctx, info)
+			listsErrors(ctx) ? ctx.expected : writeMessage(ctx, info)
 	},
-	unit: { actual: writeUnitActual, problem: writeUnitProblem },
+	unit: { actual: writeUnitActual, message: writeUnitMessage },
 	undeclared: { expected: "removed" },
 	discriminant: {
 		expected: e => e.description ?? describeCases(e),
@@ -162,10 +150,20 @@ export const registerDescriber = (writer: object): void => {
 export const describesData = (writer: unknown): boolean =>
 	dataDescribers.has(writer)
 
-const listsErrors = (ctx: {
+/**
+ * @internal whether a union's text is its errors', each naming its own path,
+ * rather than what's written of the union itself: it has none to list, like
+ * never, or says what it is or expects, by a description or a configured
+ * expected, which is written after `must be` and its path as any is
+ */
+export const listsErrors = (ctx: {
 	errors: readonly unknown[]
 	description?: string
-}): boolean => ctx.errors.length !== 0 && ctx.description === undefined
+	meta?: { expected?: unknown }
+}): boolean =>
+	ctx.errors.length !== 0 &&
+	ctx.description === undefined &&
+	ctx.meta?.expected === undefined
 
 export type errorWritersOf<code extends ArkErrorCode> = requireKeys<
 	ErrorConfig<code>,

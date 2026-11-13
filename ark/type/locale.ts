@@ -23,11 +23,10 @@ export declare namespace Locale {
 	export type ActualWriter<code extends ArkErrorCode = ArkErrorCode> =
 		BaseLocale.ActualWriter<code>
 
-	export type ProblemWriter<code extends ArkErrorCode = ArkErrorCode> =
-		BaseLocale.ProblemWriter<code>
-
 	export type MessageWriter<code extends ArkErrorCode = ArkErrorCode> =
 		BaseLocale.MessageWriter<code>
+
+	export type LineWriter = BaseLocale.LineWriter
 
 	export type KeywordPhrase = BaseLocale.KeywordPhrase
 

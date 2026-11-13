@@ -43,7 +43,7 @@ const writeErrorBuilder = (context: object): string => {
 	return `${body} }\n`
 }
 
-const writtenSlots = ["propString", "expected", "actual", "problem", "message"]
+const writtenSlots = ["propString", "expected", "actual", "message"]
 
 registerBuilderCompiler(context =>
 	tryJit(

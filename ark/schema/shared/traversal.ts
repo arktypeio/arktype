@@ -21,9 +21,10 @@ import type {
 } from "./errors.ts"
 import {
 	ArkErrors as BaseArkErrors,
+	customIssue,
+	customOf,
 	issueAt,
 	mergeIssues,
-	messageOf,
 	type ArkIssue,
 	type CompactApply,
 	type FailureContext,
@@ -238,15 +239,11 @@ export class InternalTraversal implements FailureContext {
 				target._.push(
 					listsUnions && issue._m ?
 						issue._m(this.path)
-					:	{
-							...issue,
-							path: [...this.path, ...issue.path],
-							// read by a callback at the old path, so rewritten unless supplied
-							message:
-								issue.message && issue.message === messageOf(issue) ?
-									undefined
-								:	issue.message
-						}
+						// its message, which names no path, is as a callback read it
+					:	customIssue(
+							{ ...issue, path: [...this.path, ...issue.path] },
+							customOf(issue)
+						)
 				)
 			}
 		}
@@ -354,7 +351,13 @@ export class Traversal extends InternalTraversal {
 					describePredicate(supplied)
 				:	"valid")
 		}
-		if (supplied.problem !== undefined) issue.problem = supplied.problem
+		// a message supplied is a sentence of its own, set apart from its path,
+		// unless it's arktype's for data it only knows is invalid
+		if (supplied.message !== undefined) {
+			issue.message = supplied.message
+			if (supplied.message !== "is invalid" || supplied.expected !== "valid")
+				customIssue(issue, 1)
+		}
 		// a keyword's phrase writes the SyntaxError it caught, as string.json's,
 		// and a pipe.try morph what it threw
 		else if (
@@ -362,15 +365,14 @@ export class Traversal extends InternalTraversal {
 			(supplied.meta?.keyword || supplied.morph)
 		) {
 			try {
-				issue.problem = `must be ${issue.expected} (${String(supplied.cause)})`
+				issue.message = `must be ${issue.expected} (${String(supplied.cause)})`
 			} catch {
 				// a cause String can't write, like a null-prototype object, is left out
 			}
 		}
 		// what the value was is written only where it's supplied
 		else if (supplied.actual)
-			issue.problem = `must be ${issue.expected} (was ${supplied.actual})`
-		if (supplied.message !== undefined) issue.message = supplied.message
+			issue.message = `must be ${issue.expected} (was ${supplied.actual})`
 		return this.addError(issue) as never
 	}
 }
@@ -395,7 +397,6 @@ type SuppliedIssue = {
 	expected?: string
 	description?: string
 	actual?: string
-	problem?: string
 	message?: string
 	morph?: Morph
 	cause?: unknown

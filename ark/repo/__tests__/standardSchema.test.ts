@@ -53,8 +53,8 @@ contextualize(() => {
 		attest(invalid).instanceOf(type.errors)
 		attest(invalid.toString()).snap(`name must be a string
 age must be a number
-address.streetNumber invalid input: expected number, received string
-address.streetName invalid input: expected string, received undefined`)
+address.streetNumber: Invalid input: expected number, received string
+address.streetName: Invalid input: expected string, received undefined`)
 	})
 
 	it("accepts zod schema passed directly to type", () => {
@@ -96,10 +96,10 @@ address.streetName invalid input: expected string, received undefined`)
 
 		attest(invalid).instanceOf(type.errors)
 		attest(invalid.toString())
-			.snap(`id invalid input: expected number, received string
-username invalid input: expected string, received number
-email invalid email address
-isActive invalid input: expected boolean, received string`)
+			.snap(`id: Invalid input: expected number, received string
+username: Invalid input: expected string, received number
+email: Invalid email address
+isActive: Invalid input: expected boolean, received string`)
 	})
 
 	it("accepts zod schema with transformation", () => {
@@ -155,16 +155,16 @@ isActive invalid input: expected boolean, received string`)
 
 		attest(invalid).instanceOf(type.errors)
 		attest(invalid.toString())
-			.snap(`name invalid input: expected string, received number
-category invalid option: expected one of "electronics"|"books"|"clothing"`)
+			.snap(`name: Invalid input: expected string, received number
+category: Invalid option: expected one of "electronics"|"books"|"clothing"`)
 	})
 
 	it("prefixes issues without a path with the path of the schema", () => {
 		const T = type({ age: z.number(), nickname: v.string() })
 
 		attest(T({ age: "5", nickname: 5 }).toString())
-			.snap(`age invalid input: expected number, received string
-nickname invalid type: Expected string but received 5`)
+			.snap(`age: Invalid input: expected number, received string
+nickname: Invalid type: Expected string but received 5`)
 	})
 
 	// like Effect's Schema.standardSchemaV1
@@ -184,7 +184,7 @@ nickname invalid type: Expected string but received 5`)
 
 		attest<{ age: number }>(T.infer)
 		attest(T({ age: 5 })).equals({ age: 5 })
-		attest(T({ age: "5" }).toString()).snap("age expected number")
+		attest(T({ age: "5" }).toString()).snap("age: Expected number")
 	})
 
 	it("throws if validation is async", () => {

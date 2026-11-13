@@ -278,6 +278,15 @@ contextualize(() => {
 		)
 	})
 
+	it("misses a unit for a key that reads like another registered name", async () => {
+		// only the count differs, which the key drops from a registered name
+		const units = await precompileUnits([type({ '"$ark.is$1': "string" })])
+		const T = type({ '"$ark.is$2': "string" })
+		attest(isPrecompiled(units, T.internal)).equals(false)
+		attest(T.allows({ '"$ark.is$2': "" })).equals(true)
+		attest(T.allows({ '"$ark.is$1': "" })).equals(false)
+	})
+
 	it("binds a unit for a function a minifier renamed, unless its arity changed", async () => {
 		const units = await precompileUnits([
 			type("number").narrow(named("isPositivePrecompiled", n => n > 0))

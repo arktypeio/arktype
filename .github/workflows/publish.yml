@@ -26,8 +26,11 @@ jobs:
         id: version
         run: echo "prerelease=$(node -p 'require("./ark/type/package.json").version.includes("-")')" >> "$GITHUB_OUTPUT"
 
+  # after release, so a publish that fails, like a stable arktype while the
+  # homepage's benchmark is a preview, or npm refusing a package, leaves the
+  # site as it is. A push that publishes nothing passes release and deploys
   update-gh-pages:
-    needs: version
+    needs: [version, release]
     if: needs.version.outputs.prerelease == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 20

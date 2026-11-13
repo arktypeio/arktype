@@ -19,7 +19,7 @@ import type { BoundModule, Module } from "../module.ts"
 import type {
 	inferDefinition,
 	instantiateDefinition,
-	validateDefinition
+	validateDefinitionArgument
 } from "../parser/definition.ts"
 import {
 	$arkTypeRegistry,
@@ -160,11 +160,11 @@ export declare namespace type {
 
 	export type errors = ArkErrors
 
-	export type validate<def, $ = {}, args = bindThis<def>> = validateDefinition<
+	export type validate<
 		def,
-		$,
-		args
-	>
+		$ = {},
+		args = bindThis<def>
+	> = validateDefinitionArgument<def, $, args>
 
 	export type instantiate<
 		def,

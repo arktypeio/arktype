@@ -7,15 +7,17 @@ import type {
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	ArkErrors,
+	customIssue,
 	describeActual,
 	enInfo,
 	errorsOf,
 	FirstIssues,
+	isCustomIssue,
 	issueAt,
 	issuesOf,
 	mergeIssues,
-	problemOf,
 	runtimeConfig,
+	sharedMessageOf,
 	supportedJsonSchemaTargets,
 	throwOnDefault,
 	traversesUnions,
@@ -27,6 +29,7 @@ import {
 	type ArkErrorInput,
 	type ArkIssue,
 	type CompactApply,
+	type Custom,
 	type UnionIssueOf,
 	type FailHandler,
 	type FailureContext,
@@ -127,13 +130,13 @@ export {
 	tryMorph,
 	writeDomainActual,
 	writeLengthActual,
+	writeMessage,
 	writeNotEqualActual,
-	writeProblem,
 	writeProtoActual,
 	writeNullableJsonSchema,
 	writeUnionJsonSchema,
 	writeUnitActual,
-	writeUnitProblem,
+	writeUnitMessage,
 	type ArkError
 } from "@ark/schema/runtime"
 export {
@@ -290,19 +293,12 @@ export const bakeInto = <t>(
 	return validator
 }
 
-// a Standard Schema consumer shows each issue beside its path, so it says its problem
+// a Standard Schema consumer shows each issue beside its path, which its
+// message doesn't name, so each is its error's own
 export const standardResultOf = (
 	out: unknown
 ): StandardSchemaV1.Result<unknown> =>
-	out instanceof ArkErrors ?
-		{
-			issues: (out._i ? (out.issues as ArkIssue[]) : out._).map(issue => ({
-				...issue,
-				// arktype's errors hold their problem whether or not a site writes text
-				message: issue.problem ?? problemOf(issue)
-			})) as StandardSchemaV1.Issue[]
-		}
-	:	{ value: out }
+	out instanceof ArkErrors ? { issues: out.issues } : { value: out }
 
 // shorter at each site than a literal
 export const siteOf = ((
@@ -650,38 +646,41 @@ export const type: { errors: typeof ArkErrors } = /* @__PURE__ */ freeze({
 export const canParseUrl = ((s: string): boolean =>
 	URL.canParse(s)) satisfies Fn
 
-// a site whose problem is configured, and maybe its message
-export const problemSiteOf = ((
+// a site whose message is configured as a sentence, set apart from its path:
+// for its Type, or as c says, 2 for its code
+export const customSiteOf = ((
 	code: ArkErrorCode,
 	description: string | undefined,
-	message: string | undefined,
-	problem: string
-): SiteContext => ({
-	code,
-	description,
-	x: message,
-	text: issue => {
-		issue.problem = problem
-	}
-})) satisfies Fn
+	message: string,
+	c: Custom = 1
+): SiteContext => ({ code, description, x: message, c })) satisfies Fn
 
 type Writer = string | Fn | undefined
 
 const defineProperty = /* @__PURE__ */ (() => Object.defineProperty)()
 
-// written once first read; keeps is 1 if the issue takes expected, 2 if
-// problem, 4 if its actual describes its data, which a default problem leaves out
+// written once first read; keeps is 1 if the issue takes expected, 4 if its
+// actual describes its data, which a default message leaves out, and 2 or 8
+// if its message is configured for its Type or for its code
 const writeIssue = (
 	issue: ArkIssue,
 	context: Record<string, unknown>,
-	[expected, actual, problem, message]: readonly Writer[],
+	[expected, actual, message]: readonly Writer[],
 	keeps: number
 ): void => {
 	const text: Record<string, unknown> = {
 		expected: issue.expected,
-		message: issue.message
+		// one supplied where it's raised, which is noted there
+		message: context.message
 	}
-	if (keeps & 2) text.problem = issue.problem
+	if (text.message === undefined) {
+		customIssue(
+			issue,
+			keeps & 2 ? 1
+			: keeps & 8 ? 2
+			: undefined
+		)
+	}
 	const writeText = () => {
 		const error: Record<string, unknown> = {
 			data: issue.data,
@@ -697,9 +696,7 @@ const writeIssue = (
 			if (keeps & 4) describeActual(error)
 			error.actual = write(actual, issue.data, error)
 		}
-		error.problem = context.problem ?? write(problem, error)
 		if (keeps & 1) text.expected = error.expected
-		if (keeps & 2) text.problem = error.problem
 		text.message ??= write(message, error)
 		for (const k in text) {
 			defineProperty(issue, k, {
@@ -785,14 +782,15 @@ export const failsIn = ((
 export const ownIssue = ((site: FailureSite): UnionIssueOf =>
 	(path, data, errors) => {
 		const issue = issueAt(path, site, data, undefined)
+		// writes each error's message, as arktype's union does
 		const listed = writeListed(errors)
-		if (issue.expected === undefined) {
-			// its errors' paths written from its own, as arktype's union expects
-			const expected = (issue.expected =
-				path.length ? writeFromPath(path, errors, writeListed) : listed)
-			// what it lists is its problem unless one is configured, as arktype's is
-			issue.problem ??= expected
-		}
+		// its errors' paths written from its own, as arktype's union expects
+		issue.expected ??=
+			path.length ? writeFromPath(path, errors, writeListed) : listed
+		// a message its errors share is its own, as arktype's union's is, unless
+		// one is configured for it
+		const shared = isCustomIssue(issue) ? undefined : sharedMessageOf(errors)
+		if (shared !== undefined) customIssue(issue, 1).message = shared
 		issue.errors = errors
 		return issue
 	}) satisfies Fn

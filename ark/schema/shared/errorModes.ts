@@ -6,6 +6,7 @@ import {
 	isArkError,
 	type ArkError
 } from "./errors.ts"
+import { lineOf } from "./issues.ts"
 import { $ark } from "./registry.ts"
 import { rootApplyRuntime, type RootApplyRuntime } from "./rootApply.ts"
 import { Traversal, type FailHandler } from "./traversal.ts"
@@ -45,10 +46,10 @@ export class UndetailedErrors extends ArkErrors {
 		return this.issues[0]
 	}
 
+	// an issue ctx added below the root is named by its path, as any is
 	override get summary(): string {
 		return this._.reduce(
-			(summary, issue) =>
-				summary + (summary && "\n") + (issue.message ?? "is invalid"),
+			(summary, issue) => summary + (summary && "\n") + lineOf(issue),
 			""
 		)
 	}

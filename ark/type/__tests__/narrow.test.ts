@@ -9,7 +9,7 @@ import { scope, type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
-	it("implicit problem", () => {
+	it("implicit message", () => {
 		const isOdd = (n: number) => n % 2 === 1
 		const isOddRef = registeredReference(isOdd)
 		const Odd = type(["number", ":", isOdd])
@@ -36,14 +36,14 @@ contextualize(() => {
 		attest(T.allows(1)).equals(true)
 	})
 
-	it("implicit problem anonymous", () => {
+	it("implicit message anonymous", () => {
 		const Even = type("number", ":", n => n % 2 === 0)
 		attest(Even(1).toString()).snap(
 			"must be valid according to an anonymous predicate"
 		)
 	})
 
-	it("explicit problem", () => {
+	it("explicit expected", () => {
 		const DivisibleBy3 = type([
 			"number",
 			":",
@@ -81,7 +81,7 @@ contextualize(() => {
 		)
 	})
 
-	it("problem at path", () => {
+	it("errors at paths", () => {
 		const AbEqual = type([
 			{
 				a: "number",
@@ -127,7 +127,7 @@ b must be equal to a`)
 		}).type.errors("Type 'boolean' is not assignable to type 'string'.")
 	})
 
-	it("narrow problem", () => {
+	it("narrow rejecting with what it expected", () => {
 		const Palindrome = type([
 			"string",
 			":",
@@ -334,11 +334,67 @@ b must be equal to a`)
 	// https://github.com/arktypeio/arktype/issues/1667
 	it("reject without expected in non-discriminated union", () => {
 		const T = type("string[] | Function").narrow(
-			(v, ctx) => Array.isArray(v) || ctx.reject({ problem: "custom" })
+			(v, ctx) => Array.isArray(v) || ctx.reject({ message: "custom" })
 		)
 		attest(T(function foo() {}).toString()).snap(
 			"must be valid according to an anonymous predicate or an array"
 		)
+	})
+
+	it("mustBe writes what it expected after its path", () => {
+		const Long = type("string").narrow(
+			(s, ctx) => s.length > 2 || ctx.mustBe("longer")
+		)
+		attest(Long("a").toString()).snap("must be longer")
+		const out = type({ name: Long })({ name: "a" }) as type.errors
+		attest(out.summary).snap("name must be longer")
+		attest(out.issues[0].message).snap("must be longer")
+	})
+
+	it("reject with expected and actual writes them after its path", () => {
+		const Long = type("string").narrow(
+			(s, ctx) =>
+				s.length > 2 ||
+				ctx.reject({ expected: "longer", actual: `${s.length}` })
+		)
+		attest(type({ name: Long })({ name: "a" }).toString()).snap(
+			"name must be longer (was 1)"
+		)
+	})
+
+	it("reject with a message writes it after its path and a colon", () => {
+		const Long = type("string").narrow(
+			(s, ctx) => s.length > 2 || ctx.reject({ message: "Enter a longer name" })
+		)
+		attest(Long("a").toString()).snap("Enter a longer name")
+		const out = type({ name: Long })({ name: "a" }) as type.errors
+		attest(out.summary).snap("name: Enter a longer name")
+		attest(out.issues[0].message).snap("Enter a longer name")
+	})
+
+	it("reject with a message at a relative path", () => {
+		const Signup = type({ password: "string", repeat: "string" }).narrow(
+			(d, ctx) =>
+				d.password === d.repeat ||
+				ctx.reject({
+					message: "Passwords don't match",
+					relativePath: ["repeat"]
+				})
+		)
+		attest(
+			type({ user: Signup })({
+				user: { password: "a", repeat: "b" }
+			}).toString()
+		).snap("user.repeat: Passwords don't match")
+	})
+
+	it("reject has no problem", () => {
+		attest(() =>
+			type("string").narrow((s, ctx) =>
+				// @ts-expect-error
+				ctx.reject({ problem: "is too short" })
+			)
+		).type.errors("'problem' does not exist")
 	})
 
 	it("reject keeps the text it was given", () => {

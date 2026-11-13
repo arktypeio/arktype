@@ -38,35 +38,55 @@ export const throwOnDefault = (errors: ArkErrors): never => {
 	) => Error)("is invalid", { cause: errors })
 }
 
-// a merged issue names its path, as a default's check reports the key
+// a merged issue is at its path, which a summary names, as a default's check
+// reports the key
 export const mergeIssues = (
 	errors: ArkErrors,
 	merged: ArkErrors,
 	prefix: array<PropertyKey>
 ): void => {
-	for (const issue of merged._) {
-		const path = [...prefix, ...issue.path]
-		errors._.push({ ...issue, path, message: messageAt(path) })
-	}
+	for (const issue of merged._)
+		errors._.push(movedIssue(issue, [...prefix, ...issue.path]))
 }
 
-const messageAt = (path: PropertyKey[]): string => {
+export const movedIssue = (issue: ArkIssue, path: PropertyKey[]): ArkIssue => ({
+	...issue,
+	path
+})
+
+// as issues.ts writes a path
+export const pathOf = (issue: {
+	readonly path: readonly PropertyKey[]
+}): string => {
 	let at = ""
-	for (const k of path) {
-		// as issues.ts writes a path
+	for (const k of issue.path) {
 		at +=
 			bracketsKeys && !/^[$_a-z][\w$]*$/i.test(String(k)) ?
 				`[${JSON.stringify(k) ?? String(k)}]`
 			: typeof k === "number" ? `[${k}]`
 			: (at && ".") + String(k)
 	}
-	return at ? `${at} is invalid` : "is invalid"
+	return at
 }
 
 // wherever an issue is, it says only that data is invalid
 export const messageOf = (): string => "is invalid"
 
-export { messageOf as problemOf }
+// an issue's line of a summary: that it's invalid, after its path
+export const lineOf = (issue: ArkIssue): string => {
+	const at = pathOf(issue)
+	return (at && at + " ") + (issue.message ?? "is invalid")
+}
+
+// no message is configured where none is written
+export const customIssue = <issue extends ArkIssue>(issue: issue): issue =>
+	issue
+
+export const customOf = (): undefined => undefined
+
+export const isCustomIssue = (): boolean => false
+
+export { customIssue as templatedIssue }
 
 // what arktype's Apply reports into a piped ctx, replaced by the root issue
 const issueOf = (path: PropertyKey[]): ArkIssue => ({

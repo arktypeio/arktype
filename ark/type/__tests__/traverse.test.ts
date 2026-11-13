@@ -6,7 +6,7 @@ import {
 	byPath,
 	firstIssue,
 	flatByPath,
-	flatProblemsByPath,
+	flatMessagesByPath,
 	scope,
 	type,
 	type ArkErrorCode,
@@ -56,13 +56,13 @@ contextualize(() => {
 		)
 	})
 
-	it("customized built-in problem", () => {
+	it("customized built-in message", () => {
 		const types = scope(
 			{ isEven: "number%2" },
 			{
 				divisor: {
 					expected: ctx => `% ${ctx.rule} !== 0`,
-					problem: ctx => `${ctx.actual} ${ctx.expected}`
+					message: ctx => `${ctx.actual} ${ctx.expected}`
 				}
 			}
 		).export()
@@ -316,6 +316,21 @@ b must be a number`)
 		attest((out as ArkErrors).count).equals(2)
 	})
 
+	it("errors a morph returns keep a custom message's colon at its key", () => {
+		const Inner = type({
+			email: type("string.email").configure({ message: "Enter a valid email" }),
+			age: type("number").narrow(
+				(n, ctx) => n >= 0 || ctx.reject({ message: "Enter your age" })
+			),
+			name: "string"
+		})
+		const Outer = type({ user: type("object").pipe(o => Inner(o)) })
+		attest(Outer({ user: { email: "x", age: -1, name: 1 } }).toString())
+			.snap(`user.email: Enter a valid email
+user.age: Enter your age
+user.name must be a string`)
+	})
+
 	it("byAncestorPath is the same whenever it's read", () => {
 		const expectedByAncestorPath = (errors: ArkErrors) =>
 			flatMorph(byAncestorPath(errors), (k, v) => [k, v.map(e => e.expected)])
@@ -388,7 +403,7 @@ b must be a number`)
 
 		attest(out.count).equals(46)
 		attest(out.issues.length).equals(46)
-		attest(out.issues.slice(40).map(e => e.message)).snap([
+		attest(out.summary.split("\n").slice(40)).snap([
 			"k[3] must be q",
 			"k[39] must be r",
 			"[Symbol(alike)] must be s",
@@ -397,26 +412,43 @@ b must be a number`)
 			"[Symbol(alike)] must be v"
 		])
 		// distinct symbols print alike, so their errors share a path string
-		attest(flatProblemsByPath(out)["[Symbol(alike)]"]).snap([
+		attest(flatMessagesByPath(out)["[Symbol(alike)]"]).snap([
 			"must be s",
 			"must be t",
 			"must be v"
 		])
-		attest(flatProblemsByPath(out)["k[3]"]).snap(["must be p3", "must be q"])
+		attest(flatMessagesByPath(out)["k[3]"]).snap(["must be p3", "must be q"])
 	})
 
 	it("flattens errors by path into plain objects", () => {
 		const out = type({ ["__proto__"]: "string", a: "string" })(
 			JSON.parse('{ "__proto__": 1, "a": 2 }')
 		) as ArkErrors
-		const problems = flatProblemsByPath(out)
-		attest(Object.getPrototypeOf(problems)).is(Object.prototype)
+		const messages = flatMessagesByPath(out)
+		attest(Object.getPrototypeOf(messages)).is(Object.prototype)
 		attest(Object.getPrototypeOf(flatByPath(out))).is(Object.prototype)
-		attest(Object.entries(problems)).snap([
+		attest(Object.entries(messages)).snap([
 			["__proto__", ["must be a string"]],
 			["a", ["must be a string"]]
 		])
 		attest(Object.keys(flatByPath(out))).equals(["__proto__", "a"])
+	})
+
+	it("flatMessagesByPath holds each message without its path", () => {
+		const T = type({
+			email: type("string.email").configure({ message: "Enter a valid email" }),
+			age: "number.integer >= 0",
+			tags: "string[]"
+		})
+		const out = T({ email: "x", age: -0.5, tags: [1] }) as ArkErrors
+		attest(flatMessagesByPath(out)).snap({
+			email: ["Enter a valid email"],
+			age: ["must be an integer", "must be non-negative"],
+			"tags[0]": ["must be a string"]
+		})
+		attest(flatMessagesByPath(type("string")(5) as ArkErrors)).snap({
+			"": ["must be a string"]
+		})
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1149
@@ -555,8 +587,7 @@ d must be a number`)
 			propString: "[Symbol(tag)]",
 			expected: "a string",
 			actual: "a number",
-			problem: "must be a string",
-			message: "[Symbol(tag)] must be a string"
+			message: "must be a string"
 		})
 	})
 
@@ -576,7 +607,7 @@ d must be a number`)
 			a: 0,
 			b: "b"
 		}) as ArkErrors
-		attest(firstIssue(out).message).snap("a must be a string")
+		attest(firstIssue(out).message).snap("must be a string")
 		attest(out._[1].message as string | undefined).equals(undefined)
 		attest(out.issues[0]).equals(firstIssue(out))
 		attest(out.summary).snap(`a must be a string
@@ -588,7 +619,7 @@ b must be a number`)
 			a: "abc",
 			b: "b"
 		}) as ArkErrors
-		attest(firstIssue(out).message).snap("a must be matched by ^x")
+		attest(firstIssue(out).message).snap("must be matched by ^x")
 		attest(firstIssue(out)).equals(out.issues[0])
 	})
 
@@ -601,7 +632,7 @@ b must be a number`)
 			a: -1,
 			c: "x"
 		}) as ArkErrors
-		attest(firstIssue(out).message).snap("a must be positive")
+		attest(firstIssue(out).message).snap("must be positive")
 		attest(out._.map(e => e.path.join("."))).equals(["a", "c", "a", "c"])
 		attest(firstIssue(out)).equals(out.issues[0])
 	})
@@ -615,23 +646,27 @@ b must be a number`)
 		attest(firstIssue(out)).is(out.issues[0])
 	})
 
-	it("inspected errors print their issues", () => {
+	it("inspected errors print their name, summary and issues", () => {
 		const out = type({ a: "string" })({ a: 1 })
-		attest(inspect(out)).snap(`[
-  {
-    data: 1,
-    path: [ 'a' ],
-    code: 'domain',
-    description: 'a string',
-    meta: {},
-    domain: 'string',
-    propString: 'a',
-    expected: 'a string',
-    actual: 'a number',
-    problem: 'must be a string',
-    message: 'a must be a string'
-  }
-]`)
+		attest(inspect(out)).snap(`ArkErrors {
+  summary: 'a must be a string',
+  issues: [
+    {
+      data: 1,
+      path: [ 'a' ],
+      code: 'domain',
+      description: 'a string',
+      meta: {},
+      domain: 'string',
+      propString: 'a',
+      expected: 'a string',
+      actual: 'a number',
+      message: 'must be a string'
+    }
+  ]
+}`)
+		// past the depth printed, they're named as a class instance is
+		attest(inspect([out], { depth: 0 })).snap("[ [ArkErrors] ]")
 	})
 
 	it("issues of data made valid before they're read", () => {
@@ -643,11 +678,10 @@ b must be a number`)
 				data: { a: "a" },
 				path: [],
 				expected: "valid",
-				problem: "is invalid",
+				message: "is invalid",
 				code: "predicate",
 				propString: "",
-				actual: "an object",
-				message: "is invalid"
+				actual: "an object"
 			}
 		])
 	})

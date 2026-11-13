@@ -23,8 +23,9 @@ import {
 } from "@ark/util"
 import type { distill, Out } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
+import type { validateDefinition } from "./parser/definition.ts"
 import type { BaseCompletions } from "./parser/string.ts"
-import type { InternalScope } from "./scope.ts"
+import type { bindThis, InternalScope } from "./scope.ts"
 import type { Inferred } from "./variants/base.ts"
 
 type MatchParserContext<input = unknown> = {
@@ -254,20 +255,28 @@ type DefaultMethod<ctx extends MatchParserContext> = <
 	def: def
 ) => finalizeMatchParser<ctx, def>
 
+// a case's definition is a key of match's parameter, not a parameter itself, so
+// it doesn't need type.validate, which costs 13 more instantiations
+type validateCase<def, ctx extends MatchParserContext> = validateDefinition<
+	def,
+	ctx["$"],
+	bindThis<def>
+>
+
 type validateCases<cases, ctx extends MatchParserContext> = {
 	[def in keyof cases]?: def extends "default" ? DefaultCase<ctx>
 	: def extends number ? (In: inferCaseArg<`${def}`, ctx, "out">) => unknown
-	: def extends type.validate<def, ctx["$"]> ?
+	: def extends validateCase<def, ctx> ?
 		(In: inferCaseArg<def, ctx, "out">) => unknown
-	:	type.validate<def, ctx["$"]>
+	:	validateCase<def, ctx>
 }
 
 type errorCases<cases, ctx extends MatchParserContext> = {
 	[def in keyof cases]?: def extends "default" ? DefaultCase<ctx>
 	: def extends number ? (In: inferCaseArg<`${def}`, ctx, "out">) => unknown
-	: def extends type.validate<def, ctx["$"]> ?
+	: def extends validateCase<def, ctx> ?
 		(In: inferCaseArg<def, ctx, "out">) => unknown
-	:	ErrorType<type.validate<def, ctx["$"]>>
+	:	ErrorType<validateCase<def, ctx>>
 } & {
 	[k in BaseCompletions<ctx["$"], {}>]?: (
 		In: inferCaseArg<k, ctx, "out">

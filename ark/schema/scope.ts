@@ -24,6 +24,7 @@ import {
 	type show
 } from "@ark/util"
 import {
+	assertNoProblemConfig,
 	mergeConfigs,
 	resolveGlobalConfig,
 	type ArkSchemaConfig,
@@ -303,6 +304,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			if ((config as ArkSchemaConfig | undefined)?.[k] !== undefined)
 				throwParseError(writeGlobalOnlyConfigMessage(k))
 		}
+		assertNoProblemConfig(config as ArkSchemaConfig | undefined)
 
 		const aliasEntries = Object.entries(def).map(entry =>
 			this.preparseEntry(...entry)

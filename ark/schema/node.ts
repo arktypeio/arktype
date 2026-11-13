@@ -19,6 +19,7 @@ import {
 	stringifyPath,
 	throwError,
 	throwInternalError,
+	throwParseError,
 	unset,
 	type Dict,
 	type Entry,
@@ -109,7 +110,8 @@ import {
 	isIoFinal,
 	isNode,
 	isResolutionFinal,
-	printSelfAsThis
+	printSelfAsThis,
+	removedProblemMessage
 } from "./shared/utils.ts"
 import type { Sequence } from "./structure/sequence.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
@@ -1443,6 +1445,10 @@ export abstract class BaseNode<
 		selector: NodeSelector = "references"
 	): this {
 		const normalized = NodeSelector.normalize(selector)
+
+		// 2.x's slot, which a cast or JavaScript still passes
+		if (typeof meta === "object" && "problem" in meta)
+			throwParseError(removedProblemMessage)
 
 		// a JSON Schema describes the node it's configured on, not its references
 		if (

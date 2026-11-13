@@ -327,7 +327,7 @@ a must be a number (was missing)`)
 				name: $.type("string").configure({ title: "Name" })
 			})
 			const error = requiredError(T)
-			attest(error.message).snap("name must be a string (was missing)")
+			attest(error.message).snap("must be a string (was missing)")
 			attest(error.missing).snap({
 				code: "domain",
 				description: "a string",
@@ -415,8 +415,7 @@ a must be a number (was missing)`)
 					propString: "amount",
 					expected: "0n or 1n",
 					actual: "missing",
-					problem: "must be 0n or 1n (was missing)",
-					message: "amount must be 0n or 1n (was missing)"
+					message: "must be 0n or 1n (was missing)"
 				}
 			])
 		})

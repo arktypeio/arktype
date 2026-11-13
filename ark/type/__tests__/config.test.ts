@@ -3,12 +3,19 @@ import {
 	$ark,
 	configureAfterTypeMessage,
 	writeMissingImportMessage,
-	rootSchema
+	rootSchema,
+	type StandardSchemaV1
 } from "@ark/schema"
 import { configure, messageIn, scope, type } from "arktype"
 import "arktype/errors"
 import { en } from "arktype/locales/en"
 import { withConfig } from "./locales/withConfig.ts"
+
+// each issue's message, as a Standard Schema consumer reads it
+const standardMessagesOf = (T: type.Any, data: unknown) =>
+	(T["~standard"].validate(data) as StandardSchemaV1.FailureResult).issues.map(
+		issue => issue.message
+	)
 
 contextualize(() => {
 	it("a sequence's writer runs as it's created, before its errors", () => {
@@ -95,12 +102,11 @@ contextualize(() => {
 		const CustomOne = type("1", "@", {
 			expected: ctx => `custom expected ${ctx.description}`,
 			actual: data => `custom actual ${data}`,
-			problem: ctx => `custom problem ${ctx.expected} ${ctx.actual}`,
-			message: ctx => `custom message ${ctx.problem}`
+			message: ctx => `custom message ${ctx.expected} ${ctx.actual}`
 		})
 		attest<1>(CustomOne.infer)
 		attest(CustomOne(2).toString()).snap(
-			"custom message custom problem custom expected 1 custom actual 2"
+			"custom message custom expected 1 custom actual 2"
 		)
 	})
 
@@ -108,23 +114,51 @@ contextualize(() => {
 		const CustomTwo = type("2", "@", {
 			expected: "2",
 			actual: "something else",
-			problem: "was terrible",
-			message: "root was terrible"
+			message: "was terrible"
 		})
 		attest<2>(CustomTwo.infer)
-		attest(CustomTwo(1).toString()).snap("root was terrible")
+		attest(CustomTwo(1).toString()).snap("was terrible")
+	})
+
+	it("problem isn't a slot", () => {
+		// @ts-expect-error
+		attest(() => type("2").configure({ problem: "was terrible" })).type.errors(
+			"'problem' does not exist"
+		)
+		// @ts-expect-error
+		attest(() => type("2", "@", { problem: "was terrible" })).type.errors(
+			"'problem' does not exist"
+		)
+		attest(() =>
+			// @ts-expect-error
+			scope({}, { domain: { problem: "was terrible" } })
+		).type.errors("'problem' does not exist")
+	})
+
+	it("problem throws what replaced it where a cast or JavaScript passes it", () => {
+		attest(() =>
+			type("2").configure({ problem: "was terrible" } as never)
+		).throws.snap("ParseError: problem was removed in 3.0; write message")
+		const Rejecting = type("number").narrow((n, ctx) =>
+			ctx.reject({ problem: "was terrible" } as never)
+		)
+		attest(() => Rejecting(2)).throws.snap(
+			"Error: problem was removed in 3.0; write message"
+		)
+		attest(() =>
+			scope({}, { domain: { problem: "was terrible" } } as never)
+		).throws.snap("ParseError: problem was removed in 3.0; write message")
 	})
 
 	it("node writer config works on nested constraint", () => {
 		const CustomEven = type("number % 2", "@", {
 			expected: ctx => `custom expected ${ctx.description}`,
 			actual: data => `custom actual ${data}`,
-			problem: ctx => `custom problem ${ctx.expected} ${ctx.actual}`,
-			message: ctx => `custom message ${ctx.problem}`
+			message: ctx => `custom message ${ctx.expected} ${ctx.actual}`
 		})
 		attest<number>(CustomEven.infer)
 		attest(CustomEven(3).toString()).snap(
-			"custom message custom problem custom expected even custom actual 3"
+			"custom message custom expected even custom actual 3"
 		)
 	})
 
@@ -134,16 +168,16 @@ contextualize(() => {
 			[{ k: "'a'", a: "string" }, "|", { k: "'b'", b: "number" }],
 			"@",
 			{
-				message: ctx => `custom message ${ctx.problem}`
+				message: ctx => `custom message ${ctx.expected}`
 			}
 		)
 		attest(Discriminated({ k: "c" }).toString()).snap(
-			'custom message must be "a" or "b"'
+			'k: custom message "a" or "b"'
 		)
 		const Indiscriminable = $.type(
 			[{ a: "string" }, "|", { b: "number" }],
 			"@",
-			{ message: ctx => `custom message ${ctx.problem}` }
+			{ message: ctx => `custom message ${ctx.expected}` }
 		)
 		attest<{ a: string } | { b: number }>(Indiscriminable.infer)
 		attest(Indiscriminable({}).toString()).snap(
@@ -151,11 +185,74 @@ contextualize(() => {
 		)
 	})
 
+	it("an error's summary line is its message at the root", () => {
+		attest(type("string")(5).toString()).snap("must be a string")
+		attest(
+			type("string").configure({ message: "Enter some text" })(5).toString()
+		).snap("Enter some text")
+	})
+
+	it("a templated message's summary line follows its path", () => {
+		const out = type({ name: "string", tags: "string[]" })({
+			name: 5,
+			tags: [0]
+		}) as type.errors
+		attest(out.summary).snap(`name must be a string
+tags[0] must be a string`)
+		attest(out.issues.map(e => e.message)).snap([
+			"must be a string",
+			"must be a string"
+		])
+	})
+
+	it("a custom message's summary line follows its path and a colon", () => {
+		const T = type({
+			email: type("string.email").configure({
+				message: "Enter a valid email"
+			})
+		})
+		const out = T({ email: "x" }) as type.errors
+		attest(out.summary).snap("email: Enter a valid email")
+		attest(out.issues[0].message).snap("Enter a valid email")
+		attest(() => T.assert({ email: "x" })).throws.snap(
+			"TraversalError: email: Enter a valid email"
+		)
+	})
+
+	it("a custom message writer's summary line follows its path and a colon", () => {
+		const Even = type("number % 2").configure({
+			message: ctx => `${ctx.actual} is not ${ctx.expected}`
+		})
+		attest(type({ counts: Even.array() })({ counts: [2, 3] }).toString()).snap(
+			"counts[1]: 3 is not even"
+		)
+	})
+
+	it("a missing key takes its value's custom message", () => {
+		const T = type({
+			name: type("string").configure({ message: "Name is required" })
+		})
+		const out = T({}) as type.errors
+		attest(out.summary).snap("name: Name is required")
+		attest(out.issues[0].message).snap("Name is required")
+		attest(out.issues[0].code).equals("required")
+	})
+
+	it("a missing key doesn't take its value's message writer", () => {
+		const T = type({
+			name: type("string").configure({
+				message: ctx => `Name can't be ${ctx.actual}`
+			})
+		})
+		attest(T({ name: 5 }).toString()).snap("name: Name can't be a number")
+		attest(T({}).toString()).snap("name must be a string (was missing)")
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1479
 	it("message config on a pipe applies to its output's errors", () => {
 		const Port = type("string.numeric.parse | number")
 			.to("0 < number <= 65535")
-			.configure({ message: ctx => `invalid port (${ctx.problem})` })
+			.configure({ message: ctx => `invalid port (must be ${ctx.expected})` })
 		attest(Port("abc").toString()).snap(
 			"invalid port (must be a well-formed numeric string)"
 		)
@@ -163,15 +260,27 @@ contextualize(() => {
 			"invalid port (must be at most 65535)"
 		)
 		attest(type({ port: Port })({ port: 99999 }).toString()).snap(
-			"invalid port (must be at most 65535)"
+			"port: invalid port (must be at most 65535)"
 		)
 		// its output keeps its own description and JSON Schema
 		attest(Port.out.description).snap("positive and at most 65535")
 		attest(Port.out.json).equals(type("0 < number <= 65535").json)
 	})
 
+	it("a pipe's message is its input's, its output's and its missing key's", () => {
+		const Name = type("string.trim")
+			.to("string > 0")
+			.configure({ message: "Name is required" })
+		const T = type({ name: Name })
+		attest(T({ name: 5 }).toString()).snap("name: Name is required")
+		attest(T({ name: "  " }).toString()).snap("name: Name is required")
+		attest(T({}).toString()).snap("name: Name is required")
+		attest(standardMessagesOf(T, { name: "  " })).snap(["Name is required"])
+		attest(Name.out.description).snap("a string and non-empty")
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1492
-	it("union errors with one configured message surface it", () => {
+	it("branches reduced to one configured message surface it", () => {
 		const Dates = type("string[] > 0").configure({
 			message: "Dates are required"
 		})
@@ -179,12 +288,97 @@ contextualize(() => {
 			"kind?": "'b'",
 			dates: Dates
 		})
-		attest(T({ dates: [] }).toString()).snap("Dates are required")
+		attest(T({ dates: [] }).toString()).snap("dates: Dates are required")
 		const Differing = type({ "kind?": "'a'", dates: Dates }).or({
 			"kind?": "'b'",
 			dates: type("string[] > 0").configure({ message: "Add a date" })
 		})
 		attest(Differing({ dates: [] }).toString()).snap("dates must be non-empty")
+	})
+
+	it("a union's configured message is written after its path and a colon", () => {
+		const Shape = type({ a: "string" })
+			.or({ b: "number" })
+			.configure({ message: "Pick a shape" })
+		const T = type({ shape: Shape })
+		attest(Shape({}).toString()).snap("Pick a shape")
+		attest(T({ shape: {} }).toString()).snap("shape: Pick a shape")
+		attest(standardMessagesOf(T, { shape: {} })).snap(["Pick a shape"])
+	})
+
+	it("a union's configured message writer reads its errors from its own path", () => {
+		const Shape = type({ a: "string" })
+			.or({ b: "number" })
+			.configure({ message: ctx => `Pick a shape (${ctx.expected})` })
+		const out = type({ shape: Shape })({ shape: {} }) as type.errors
+		attest(out.summary).snap(
+			"shape: Pick a shape (a must be a string or b must be a number)"
+		)
+		attest(out.issues[0].message).snap(
+			"Pick a shape (a must be a string or b must be a number)"
+		)
+		attest(out.toLocaleString(en)).equals(out.summary)
+		attest(messageIn(out.issues[0], en)).equals(out.summary)
+	})
+
+	it("a union's configured expected is written after must be and its path", () => {
+		const Shape = type({ a: "string" })
+			.or({ b: "number" })
+			.configure({ expected: "an a or b" })
+		attest(Shape({}).toString()).snap("must be an a or b")
+		const out = type({ shape: Shape })({ shape: {} }) as type.errors
+		attest(out.summary).snap("shape must be an a or b")
+		attest(out.issues[0].message).snap("must be an a or b")
+		attest(out.issues[0].expected).snap("an a or b")
+	})
+
+	it("a union's message writer runs once, at its whole path", () => {
+		const labels: Record<string, string> = { count: "Count", choice: "Choice" }
+		const paths: string[] = []
+		const message = (ctx: { propString: string }) => {
+			paths.push(ctx.propString)
+			return `${labels[ctx.propString]} is wrong`
+		}
+		const T = type({
+			count: type("number").configure({ message }),
+			choice: type({ a: "string" }).or({ b: "number" }).configure({ message })
+		})
+		attest(T({ count: "x", choice: {} }).toString()).snap(`count: Count is wrong
+choice: Choice is wrong`)
+		attest(paths).snap(["count", "choice"])
+	})
+
+	it("a union listing its branches' errors writes each whole path", () => {
+		const T = type({ shape: type({ a: "string" }).or({ b: "number" }) })
+		const out = T({ shape: {} }) as type.errors
+		attest(out.summary).snap(
+			"shape.a must be a string or shape.b must be a number"
+		)
+		// its message is about the value at its path
+		attest(out.issues[0].message).snap(
+			"a must be a string or b must be a number"
+		)
+	})
+
+	it("union errors with one configured message surface it", () => {
+		const message = "Enter an email or a phone number"
+		const Contact = type("string.email")
+			.configure({ message })
+			.or(type("string.digits").configure({ message }))
+		const T = type({ contact: Contact })
+		attest(Contact("x").toString()).snap("Enter an email or a phone number")
+		attest(T({ contact: "x" }).toString()).snap(
+			"contact: Enter an email or a phone number"
+		)
+		attest(standardMessagesOf(T, { contact: "x" })).snap([
+			"Enter an email or a phone number"
+		])
+		const Differing = type("string.email")
+			.configure({ message })
+			.or(type("string.digits").configure({ message: "Enter a phone number" }))
+		attest(Differing("x").toString()).snap(
+			"must be only digits 0-9 or an email address"
+		)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1412
@@ -194,6 +388,21 @@ contextualize(() => {
 		})
 		attest(Email("").toString()).snap(`Email is not valid
 Email is not valid`)
+	})
+
+	it("a message configured for a code is custom", () => {
+		const $ = scope({}, { domain: { message: "Wrong kind of value" } })
+		const out = $.type({ name: "string", age: "number >= 0" })({
+			name: 5,
+			age: -1
+		}) as type.errors
+		attest(out.summary).snap(`name: Wrong kind of value
+age must be non-negative`)
+		attest(out.issues.map(e => e.message)).snap([
+			"Wrong kind of value",
+			"must be non-negative"
+		])
+		attest($.type("string")(5).toString()).snap("Wrong kind of value")
 	})
 
 	it("applies config to shallow descendants", () => {
@@ -240,14 +449,14 @@ Email is not valid`)
 			attest(out instanceof type.errors).equals(true)
 			attest(out.toString()).snap("is invalid")
 			attest(JSON.stringify(out)).snap(
-				'[{"data":{"a":1,"b":"2"},"path":[],"code":"predicate","expected":"valid","problem":"is invalid","propString":"","actual":"an object","message":"is invalid"}]'
+				'[{"data":{"a":1,"b":"2"},"path":[],"code":"predicate","expected":"valid","message":"is invalid","propString":"","actual":"an object"}]'
 			)
 		})
 
 		it("none's error has every field an error rejecting data has", () => {
 			const out = none.type({ a: "string" })({}) as type.errors
 			const rejected = type("object").narrow((data, ctx) =>
-				ctx.reject({ expected: "valid", problem: "is invalid" })
+				ctx.reject({ expected: "valid", message: "is invalid" })
 			)({}) as type.errors
 			attest(out.issues[0]).equals(rejected.issues[0])
 			attest(messageIn(out.issues[0], en)).snap("is invalid")
@@ -268,10 +477,9 @@ Email is not valid`)
 					path: [],
 					code: "predicate",
 					expected: "valid",
-					problem: "is invalid",
+					message: "is invalid",
 					propString: "",
-					actual: '"x"',
-					message: "is invalid"
+					actual: '"x"'
 				}
 			])
 		})
@@ -285,13 +493,13 @@ Email is not valid`)
 		})
 
 		it("none writes an error a morph reads", () => {
-			let problem: string | undefined
+			let message: string | undefined
 			const T = none.type("string").pipe((s, ctx) => {
 				ctx.error("short")
-				problem = ctx.errors.issues[0].problem
+				message = ctx.errors.issues[0].message
 			})
 			attest(String(T("x"))).snap("is invalid")
-			attest(problem).snap("is invalid")
+			attest(message).snap("is invalid")
 		})
 
 		it("none assert and ~standard", () => {
@@ -305,10 +513,9 @@ Email is not valid`)
 					path: [],
 					code: "predicate",
 					expected: "valid",
-					problem: "is invalid",
+					message: "is invalid",
 					propString: "",
-					actual: "5",
-					message: "is invalid"
+					actual: "5"
 				}
 			])
 		})
@@ -686,6 +893,38 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		attest(T({ a: 5 }).toString()).equals("a must be en:string")
 	})
 
+	it("configure rejects an option it lacks beside one it has", () => {
+		attest(() =>
+			// @ts-expect-error
+			configure({ jitless: true, onUndeclaredKeys: "reject" })
+		)
+			.throws.snap(
+				"ParseError: configure() has no option 'onUndeclaredKeys'. Did you mean 'onUndeclaredKey'?"
+			)
+			.type.errors.snap(
+				"Type '\"reject\"' is not assignable to type '\"configure() has no option 'onUndeclaredKeys'​\"'."
+			)
+		// with nothing near it to suggest
+		// @ts-expect-error
+		attest(() => configure({ jitless: true, strict: true })).throws.snap(
+			"ParseError: configure() has no option 'strict'"
+		)
+	})
+
+	it("configure rejects another library's word for onUndeclaredKey", () => {
+		// @ts-expect-error
+		attest(() => configure({ onUndeclaredKey: "strip" })).throws.snap(
+			"ParseError: onUndeclaredKey must be 'reject', 'delete', or 'ignore' (was \"strip\")"
+		)
+	})
+
+	it("configure's result is typed as what it was given", () => {
+		// read as `typeof config.onFail` to declare ArkEnv's onFail
+		attest(
+			() => configure({ onFail: errors => errors.throw() }).onFail
+		).type.toString.snap("() => (errors: ArkErrors) => never")
+	})
+
 	it("configure after a type is created", () => {
 		type("string")
 		attest(() => configure({ numberAllowsNaN: true })).throws(
@@ -696,10 +935,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 	it("an error's actual describes its data, which its message leaves out", () => {
 		const error = (type({ age: "number" })({ age: "5" }) as type.errors)
 			.issues[0]
-		attest([error.actual, error.message]).snap([
-			"a string",
-			"age must be a number"
-		])
+		attest([error.actual, error.message]).snap(["a string", "must be a number"])
 	})
 
 	it("docs actual example", () => {
@@ -723,12 +959,11 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		const User = type({
 			password: "string >= 8"
 		}).configure({
-			message: ctx =>
-				`${ctx.propString || "(root)"}: ${ctx.actual} isn't ${ctx.expected}`
+			message: ctx => `${ctx.actual} isn't ${ctx.expected}`
 		})
-		// ArkErrors: (root): a string isn't an object
+		// ArkErrors: a string isn't an object
 		const out1 = User("ez123")
-		attest(out1.toString()).snap("(root): a string isn't an object")
+		attest(out1.toString()).snap("a string isn't an object")
 		// but `.configure` only applies shallowly, so the nested error isn't changed!
 		// ArkErrors: password must be at least length 8
 		const out2 = User({ password: "ez123" })

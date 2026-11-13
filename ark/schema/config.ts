@@ -1,6 +1,8 @@
 import {
+	editsBetween,
 	envHasCsp,
 	hasDomain,
+	hasOwn,
 	printable,
 	throwParseError,
 	type ArkRegistry,
@@ -22,11 +24,11 @@ import {
 	type ArkErrorCode,
 	type ArkErrors,
 	type ExpectedConfig,
-	type MessageConfig,
-	type ProblemConfig
+	type MessageConfig
 } from "./shared/errors.ts"
 import {
 	isNodeKind,
+	nodeKinds,
 	type DescriptionWriter,
 	type NodeKind
 } from "./shared/implement.ts"
@@ -36,6 +38,7 @@ import { $ark } from "./shared/registry.ts"
 import type { SetEngine } from "./shared/sets.ts"
 import type { InPlaceTransforms } from "./shared/transform.ts"
 import { ToJsonSchema } from "./shared/toJsonSchema.ts"
+import { removedProblemMessage } from "./shared/utils.ts"
 import type { UndeclaredKeyBehavior } from "./structure/structure.ts"
 
 export interface ArkSchemaRegistry extends ArkRegistry {
@@ -87,7 +90,6 @@ type nodeConfigForKind<kind extends NodeKind> = Readonly<
 export type ErrorConfig<code extends ArkErrorCode = ArkErrorCode> = {
 	expected?: ExpectedConfig<code>
 	actual?: ActualConfig<code>
-	problem?: ProblemConfig<code>
 	message?: MessageConfig<code>
 }
 
@@ -101,7 +103,6 @@ export type NodeConfig<kind extends NodeKind = NodeKind> =
 export interface UnknownErrorConfigs {
 	expected?: ExpectedConfig
 	actual?: ActualConfig
-	problem?: ProblemConfig
 	message?: MessageConfig
 }
 
@@ -118,7 +119,89 @@ export type ResolvedUnknownNodeConfig = requireKeys<
 // dedicated config entrypoint, in which case we don't want to reinitialize it
 $ark.config ??= {}
 
+// every option but a node kind's, which adding one to ArkSchemaConfig fails
+// to compile without
+const optionNames = {
+	undeclared: 1,
+	discriminant: 1,
+	jitless: 1,
+	onUndeclaredKey: 1,
+	numberAllowsNaN: 1,
+	numberAllowsInfinity: 1,
+	dateAllowsInvalid: 1,
+	exactOptionalPropertyTypes: 1,
+	onFail: 1,
+	errors: 1,
+	mutatesInput: 1,
+	keywords: 1,
+	toJsonSchema: 1,
+	locale: 1
+} satisfies Record<Exclude<keyof ArkSchemaConfig, NodeKind>, 1>
+
+export const writeUnknownConfigOptionMessage = <name extends string>(
+	name: name
+): writeUnknownConfigOptionMessage<name> =>
+	`configure() has no option '${name}'`
+
+export type writeUnknownConfigOptionMessage<name extends string> =
+	`configure() has no option '${name}'`
+
+// the option a mistyped one is nearest to, within two edits
+const nearestOptionTo = (name: string): string | undefined => {
+	let nearest: string | undefined
+	let fewest = 3
+	for (const option of [...Object.keys(optionNames), ...nodeKinds]) {
+		const edits = editsBetween(name.toLowerCase(), option.toLowerCase())
+		if (edits < fewest) [nearest, fewest] = [option, edits]
+	}
+	return nearest
+}
+
+const undeclaredKeyBehaviors = { reject: 1, delete: 1, ignore: 1 }
+
+export const writeInvalidUndeclaredKeyBehaviorMessage = (
+	actual: unknown
+): string =>
+	`onUndeclaredKey must be 'reject', 'delete', or 'ignore' (was ${printable(actual)})`
+
+/**
+ * @internal throws for 2.x's `problem` in a code's config, which a cast or
+ * JavaScript still passes, and which would otherwise be kept and never read
+ */
+export const assertNoProblemConfig = (
+	config: ArkSchemaConfig | undefined
+): void => {
+	for (const k in config) {
+		const ofCode: unknown = config[k as never]
+		if (
+			(isNodeKind(k) || k === "undeclared" || k === "discriminant") &&
+			hasDomain(ofCode, "object") &&
+			"problem" in ofCode
+		)
+			throwParseError(removedProblemMessage)
+	}
+}
+
 export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
+	assertNoProblemConfig(config)
+	// a misspelled option would otherwise be kept and never read
+	for (const k in config) {
+		if (isNodeKind(k) || hasOwn(optionNames, k)) continue
+		const nearest = nearestOptionTo(k)
+		throwParseError(
+			writeUnknownConfigOptionMessage(k) +
+				(nearest ? `. Did you mean '${nearest}'?` : "")
+		)
+	}
+	// as is another library's word for one, like "strip"
+	if (
+		config.onUndeclaredKey !== undefined &&
+		!hasOwn(undeclaredKeyBehaviors, config.onUndeclaredKey)
+	) {
+		throwParseError(
+			writeInvalidUndeclaredKeyBehaviorMessage(config.onUndeclaredKey)
+		)
+	}
 	if (config.locale !== undefined && !hasDomain(config.locale, "object"))
 		throwParseError(writeInvalidLocaleMessage(config.locale))
 	const merged = mergeConfigs($ark.config, config)

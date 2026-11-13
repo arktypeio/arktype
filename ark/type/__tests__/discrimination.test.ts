@@ -1043,8 +1043,7 @@ contextualize(() => {
 				propString: "k",
 				expected: "1.5 or 2.5",
 				actual: "3.5",
-				problem: "must be 1.5 or 2.5",
-				message: "k must be 1.5 or 2.5"
+				message: "must be 1.5 or 2.5"
 			})
 		})
 
@@ -1110,8 +1109,8 @@ contextualize(() => {
 				if (error.code !== "discriminant") throw new Error()
 				return [error.absent, error.message]
 			}
-			attest(absent({})).snap([true, 'k must be "a" or "b"'])
-			attest(absent({ k: undefined })).snap([false, 'k must be "a" or "b"'])
+			attest(absent({})).snap([true, 'must be "a" or "b"'])
+			attest(absent({ k: undefined })).snap([false, 'must be "a" or "b"'])
 			// each has its own key so they aren't merged into one v
 			const Nested = $.type({ v: { k: "'a'", x: "string" }, "a?": "1" })
 				.or({ v: { k: "'b'", y: "number" }, "b?": "1" })
@@ -1132,15 +1131,15 @@ contextualize(() => {
 				y: "number"
 			})
 			const T = $.type({ v: $.type("object").pipe(o => Disc(o)) })
-			const error = (T({ v: { k: "c" } }) as type.errors).issues[0]
-			attest(error.message).snap('v.k must be "a" or "b"')
-			attest(error.propString).equals("v.k")
+			const errors = T({ v: { k: "c" } }) as type.errors
+			attest(errors.summary).snap('v.k must be "a" or "b"')
+			attest(errors.issues[0].propString).equals("v.k")
 		})
 
 		it("serialize with bigint cases", () => {
 			const T = type({ k: "1n", a: "string" }).or({ k: "2n", b: "number" })
 			attest(JSON.parse(JSON.stringify(T({ k: "x" })))[0].message).snap(
-				"k must be 1n or 2n"
+				"must be 1n or 2n"
 			)
 		})
 
@@ -1166,10 +1165,10 @@ contextualize(() => {
 					.or({ kind: "'b'", y: "number" })
 			const Configured = define({
 				discriminant: {
-					problem: ctx => `isn't one of ${ctx.cases.length}`
+					message: ctx => `Pick one of ${ctx.cases.length}`
 				}
 			})
-			attest(Configured({ kind: "c" }).toString()).snap("kind isn't one of 2")
+			attest(Configured({ kind: "c" }).toString()).snap("kind: Pick one of 2")
 		})
 	})
 

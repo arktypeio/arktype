@@ -110,12 +110,11 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	// a configured message is its output's errors' too
 	get travMorphs(): array<Morph | BaseRoot> {
 		const { message } = this.meta
-		return (this._traversedMorphs ??=
-			message === undefined ?
-				this.morphs
-			:	this.morphs.map((morph, i) =>
-					i && hasArkKind(morph, "root") ? morph.configure({ message }) : morph
-				))
+		if (this._traversedMorphs) return this._traversedMorphs
+		if (message === undefined) return (this._traversedMorphs = this.morphs)
+		return (this._traversedMorphs = this.morphs.map((morph, i) =>
+			i && hasArkKind(morph, "root") ? morph.configure({ message }) : morph
+		))
 	}
 
 	// the node a morph pipes to isn't a child, so its aliases are included here

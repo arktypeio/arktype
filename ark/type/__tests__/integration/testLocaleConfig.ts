@@ -14,8 +14,9 @@ cases({
 		strictEqual($ark.cfg!.locale.cite, en.cite)
 	},
 	rendersInTheLocale: () => {
-		// its problem reads what the data was, though en's leaves it out
+		// its message reads what the data was, though en's leaves it out
 		strictEqual(type("string")(5).toString(), "<string>! (5)")
+		// its line is en's, which it lacks, and a locale's message isn't custom
 		strictEqual(type({ k: "string" })({ k: 5 }).toString(), "k <string>! (5)")
 	},
 	describesInEnglish: () => {

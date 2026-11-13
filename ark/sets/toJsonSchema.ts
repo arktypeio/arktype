@@ -135,8 +135,10 @@ export const toJsonSchemaRecurse = (
 const refTo = (name: string, ctx: JsonSchemaContext): JsonSchema.Ref =>
 	({ $ref: refPrefixByTarget[ctx.target] + name }) as JsonSchema.Ref
 
-// the alias a cyclic definition's id starts with, without the count after it
-const nameOfId = (id: string): string => id.replace(/(?<=\d)_\d+$|\d+$/, "")
+// the alias a cyclic definition's id starts with, without the count after it,
+// which follows an underscore where the alias ends in a digit. No lookbehind:
+// one in a literal fails the whole module to parse before Safari 16.4
+const nameOfId = (id: string): string => id.replace(/(\d)_\d+$|\d+$/, "$1")
 
 // an input or output is named by the alias it was read from; an alias of an
 // anonymous value, like a union holding an alias, names nothing

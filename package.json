@@ -23,7 +23,6 @@
 		"build": "pnpm -r --filter !\"@ark/docs\" build",
 		"buildRepo": "pnpm rmBuild && pnpm build && pnpm buildDocs",
 		"buildDocs": "pnpm -r --filter \"@ark/docs\" build",
-		"buildCjs": "ARKTYPE_CJS=1 pnpm -r build",
 		"rmBuild": "pnpm -r exec rm -rf out",
 		"ts": "node ./ark/repo/ts.ts",
 		"testRepoWithBenches": "pnpm typecheckRepo && pnpm testRepo && pnpm bench && pnpm testTypedLoose && pnpm testTsCompat && pnpm testTsVersions",
@@ -86,7 +85,6 @@
 		"knip": "knip",
 		"bump": "ts ./ark/repo/bump.ts",
 		"ci:publish": "ts ./ark/repo/publish.ts",
-		"publishExtension": "cd ark/dark && pnpm publishExtension",
 		"upDeps": "pnpm up -r --latest"
 	},
 	"devDependencies": {

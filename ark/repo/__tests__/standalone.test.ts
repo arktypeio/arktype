@@ -5,7 +5,6 @@ import {
 	type ArkSchemaConfig,
 	type ExpectedContext,
 	type MessageContext,
-	type ProblemContext,
 	writeInvalidJsonSchemaTargetMessage,
 	type ToJsonSchema,
 	type Traversal
@@ -671,14 +670,14 @@ nick must be a string or null`)
 				path: ["a"],
 				data: { b: { c: 0 } },
 				expected: "a string",
-				message: "a must be a string (was missing)"
+				message: "must be a string (was missing)"
 			},
 			{
 				code: "min",
 				path: ["b", "c"],
 				data: 0,
 				expected: "positive",
-				message: "b.c must be positive"
+				message: "must be positive"
 			}
 		])
 		attest(errors.toJSON()).is(errors.issues)
@@ -790,18 +789,14 @@ nick must be a string or null`)
 				readsOf(() => items.summary)
 			],
 			firstItem: runtime.firstIssue(items).message
-		}).snap({
-			reads: [0, 2],
-			itemReads: [2, 8],
-			firstItem: "[1].a must be a string"
-		})
+		}).snap({ reads: [0, 2], itemReads: [2, 8], firstItem: "must be a string" })
 		const first = runtime.firstIssue(errors)
 		attest(first).snap({
 			code: "domain",
 			path: ["a"],
 			data: 0,
 			expected: "a string",
-			message: "a must be a string"
+			message: "must be a string"
 		})
 		attest(errors.issues[0]).equals(first)
 		// kept, as issues are once read
@@ -838,7 +833,7 @@ nick must be a string or null`)
 			})
 		)
 		attest(outputs).snap([
-			'true 2 [{"code":"required","path":["a"],"data":{"b":{"c":[1,"x"]}},"expected":"a string","message":"a must be a string (was missing)"},{"code":"domain","path":["b","c",1],"data":"x","expected":"a number","message":"b.c[1] must be a number"}]\na must be a string (was missing)\nb.c[1] must be a number\ntrue true true\nTraversalError: a must be a string (was missing)\nb must be an object (was missing) true\nTraversalError: a must be a string (was missing)\nb.c[1] must be a number true\n',
+			'true 2 [{"code":"required","path":["a"],"data":{"b":{"c":[1,"x"]}},"expected":"a string","message":"must be a string (was missing)"},{"code":"domain","path":["b","c",1],"data":"x","expected":"a number","message":"must be a number"}]\na must be a string (was missing)\nb.c[1] must be a number\ntrue true true\nTraversalError: a must be a string (was missing)\nb must be an object (was missing) true\nTraversalError: a must be a string (was missing)\nb.c[1] must be a number true\n',
 			'true 1 [{"code":"predicate","path":[],"data":{"b":{"c":[1,"x"]}},"message":"is invalid"}]\nis invalid\ntrue true true\nError: is invalid false\nTypeError: out.throw is not a function false\n'
 		])
 	})
@@ -962,9 +957,41 @@ n must be a string or null`)
 		attest(
 			(out as type.errors).issues.map(error => [error.message, error.actual])
 		).snap([
-			["a must be a string (was missing)", "missing"],
-			["b must be a string or null", "5"]
+			["must be a string (was missing)", "missing"],
+			["must be a string or null", "5"]
 		])
+	})
+
+	it("issues a Type reads as a Standard Schema's keep their lines", async () => {
+		const { Keyed, Shaped } = await load({
+			Keyed: type({
+				email: type("string.email").configure({
+					message: "Enter a valid email"
+				}),
+				name: "string"
+			}),
+			Shaped: type({ shape: type({ a: "string" }).or({ b: "number" }) })
+		})
+		attest(type({ user: Keyed })({ user: { email: 1, name: 1 } }).toString())
+			.snap(`user.email: Enter a valid email
+user.name must be a string`)
+		// a union listing its branches' errors names their whole paths
+		attest(type({ user: Shaped })({ user: { shape: {} } }).toString()).snap(
+			"user.shape.a must be a string or user.shape.b must be a number"
+		)
+	})
+
+	it("a union's configured expected is written after must be and its path", async () => {
+		const Shape = type({ a: "string" })
+			.or({ b: "number" })
+			.configure({ expected: "an a or b" })
+		const { T } = await load({ T: type({ shape: Shape }) })
+		const out = T({ shape: {} })
+		attest(out.summary).equals("shape must be an a or b")
+		attest(out.issues[0].message).equals("must be an a or b")
+		attest(
+			String(T["~standard"].validate({ shape: {} }).issues[0].message)
+		).equals("must be an a or b")
 	})
 
 	it("issues into a validator's traversal", async () => {
@@ -1821,13 +1848,8 @@ age must be a number (was missing)`)
 
 	it("configured writers", async () => {
 		const message = standIn(
-			(ctx: MessageContext) =>
-				`${ctx.propString}: ${ctx.actual} isn't ${ctx.expected}`,
+			(ctx: MessageContext) => `${ctx.actual} isn't ${ctx.expected}`,
 			"message"
-		)
-		const problem = standIn(
-			(ctx: ProblemContext) => `is ${ctx.actual}, not ${ctx.expected}`,
-			"problem"
 		)
 		const actual = standIn((data: unknown) => typeof data, "actual")
 		const expected = standIn(
@@ -1836,92 +1858,83 @@ age must be a number (was missing)`)
 		)
 		const T = type({
 			a: type("string > 1").configure({ message }),
-			b: type("number").configure({ problem }),
+			b: type("number").configure({ message, actual }),
 			c: type("number").configure({ actual }),
 			d: type("number").configure({ expected })
 		})
 		const create = await loadFactory(T, [
 			["function", "`message`", message],
-			["function", "`problem`", problem],
 			["function", "`actual`", actual],
 			["function", "`expected`", expected]
 		])
 		const input = { a: "x", b: "x", c: "y", d: "z" }
-		const errors = create(message, problem, actual, expected)(input)
+		const errors = create(message, actual, expected)(input)
 		attest(errors.summary).equals((T(input) as type.errors).summary)
+		// a message is a sentence set apart from its path, unlike one written
+		// from what's expected
+		attest(errors.summary).snap(`a: 1 isn't at least length 2
+b: string isn't a number
+c must be a number (was string)
+d must be a number, as written`)
 		attest(errors.issues).snap([
 			{
 				code: "minLength",
 				path: ["a"],
 				data: "x",
 				expected: "at least length 2",
-				message: "a: 1 isn't at least length 2"
+				message: "1 isn't at least length 2"
 			},
 			{
 				code: "domain",
 				path: ["b"],
 				data: "x",
 				expected: "a number",
-				message: "b is a string, not a number",
-				problem: "is a string, not a number"
+				message: "string isn't a number"
 			},
 			{
 				code: "domain",
 				path: ["c"],
 				data: "y",
 				expected: "a number",
-				message: "c must be a number (was string)",
-				problem: "must be a number (was string)"
+				message: "must be a number (was string)"
 			},
 			{
 				code: "domain",
 				path: ["d"],
 				data: "z",
 				expected: "a number, as written",
-				message: "d must be a number, as written"
+				message: "must be a number, as written"
 			}
 		])
 	})
 
 	it("a configured writer reads what the data was, as arktype's does", async () => {
-		const problem = standIn(
-			(ctx: ProblemContext) => `isn't ${ctx.expected} (${ctx.actual})`,
-			"problem"
-		)
-		// the default problem it reads leaves out what the data was
 		const message = standIn(
-			(ctx: MessageContext) =>
-				`${ctx.propString}: ${ctx.problem} [${ctx.actual}]`,
+			(ctx: MessageContext) => `isn't ${ctx.expected} (${ctx.actual})`,
 			"message"
 		)
 		const T = type({
-			domain: type("string").configure({ problem }),
-			length: type("string >= 2").configure({ problem }),
-			unit: type("'x'").configure({ problem }),
-			proto: type("Date").configure({ problem }),
-			after: type("Date > d'2000-01-01'").configure({ problem }),
-			min: type("number >= 1").configure({ message })
+			domain: type("string").configure({ message }),
+			length: type("string >= 2").configure({ message }),
+			unit: type("'x'").configure({ message }),
+			proto: type("Date").configure({ message }),
+			after: type("Date > d'2000-01-01'").configure({ message })
 		})
-		const create = await loadFactory(T, [
-			["function", "`problem`", problem],
-			["function", "`message`", message]
-		])
+		const create = await loadFactory(T, [["function", "`message`", message]])
 		const input = {
 			domain: 5,
 			length: "x",
 			unit: "y",
 			proto: [],
-			after: new Date(0),
-			min: 0
+			after: new Date(0)
 		}
-		const errors = create(problem, message)(input)
+		const errors = create(message)(input)
 		attest(errors.summary).equals((T(input) as type.errors).summary)
-		attest(errors.summary).snap(`domain isn't a string (a number)
-length isn't at least length 2 (1)
-unit isn't "x" ("y")
-proto isn't a Date (Array)
-after isn't January 1, 2000, 12:00:00.001 AM UTC or later (January 1, 1970)
-min: must be at least 1 [0]`)
+		attest(errors.summary).snap(`domain: isn't a string (a number)
+length: isn't at least length 2 (1)
+unit: isn't "x" ("y")
+proto: isn't a Date (Array)
+after: isn't January 1, 2000, 12:00:00.001 AM UTC or later (January 1, 1970)`)
 	})
 
 	it("writes text when its errors are first read", async () => {
@@ -1931,7 +1944,7 @@ min: must be at least 1 [0]`)
 		const create = await loadFactory(T, [["function", "`write`", write]])
 		const errors = create(write)({ a: 1 })
 		attest([errors.count, calls]).equals([1, 0])
-		attest(errors.summary).equals("1")
+		attest(errors.summary).equals("a: 1")
 		attest(errors.issues[0].message).equals("1")
 		attest(calls).equals(1)
 	})
@@ -1949,16 +1962,13 @@ min: must be at least 1 [0]`)
 			Piped: type("string.numeric.parse")
 				.to("number < 3")
 				.configure({ message: "Enter a number below 3." }),
-			Problem: type({
-				a: type("string").configure({ problem: "is no string" })
+			Message: type({
+				a: type("string").configure({ message: "Enter text." })
 			}),
-			Indexed: type(
-				type("string").configure({ problem: "is no string" }),
-				"[]"
-			),
+			Indexed: type(type("string").configure({ message: "Enter text." }), "[]"),
 			Actual: type({ a: type("string").configure({ actual: "not text" }) }),
 			Missing: type({ a: "string" }).configure(
-				{ message: "a is required" },
+				{ message: "Required." },
 				"required"
 			),
 			Indiscriminable: type({ a: "string" })
@@ -1986,39 +1996,42 @@ min: must be at least 1 [0]`)
 		}
 		const validators = await load(types)
 		const described = { a: { v: "s" }, b: { v: "s" } }
-		attest(
-			textOf(validators, [
-				["Login", { email: "x", password: "" }],
-				["Login", null],
-				["Piped", "5"],
-				["Problem", { a: 1 }],
-				["Indexed", [1]],
-				["Actual", { a: 1 }],
-				["Missing", {}],
-				["Missing", { a: 1 }],
-				["Indiscriminable", {}],
-				["Discriminated", { k: "c" }],
-				["Keyed", { a: true }],
-				["Undeclared", { a: "", b: 1 }],
-				["Intersected", "b"],
-				["OwnFirst", described],
-				["KeptAfter", described],
-				["KeptFirst", described],
-				["OwnAfter", described]
-			])
-		).snap([
-			"Enter your email.\npassword must be at least length 8",
+		const cases: [string, unknown][] = [
+			["Login", { email: "x", password: "" }],
+			["Login", null],
+			["Piped", "5"],
+			["Message", { a: 1 }],
+			// a missing key says what's written out for its value
+			["Message", {}],
+			["Indexed", [1]],
+			["Actual", { a: 1 }],
+			["Missing", {}],
+			["Missing", { a: 1 }],
+			["Indiscriminable", {}],
+			["Discriminated", { k: "c" }],
+			["Keyed", { a: true }],
+			["Undeclared", { a: "", b: 1 }],
+			["Intersected", "b"],
+			["OwnFirst", described],
+			["KeptAfter", described],
+			["KeptFirst", described],
+			["OwnAfter", described]
+		]
+		attest(textOf(validators, cases)).equals(textOf(types, cases))
+		attest(textOf(validators, cases)).snap([
+			"email: Enter your email.\npassword must be at least length 8",
 			"Enter your login.",
 			"Enter a number below 3.",
-			"a is no string",
-			"[0] is no string",
+			"a: Enter text.",
+			"a: Enter text.",
+			"[0]: Enter text.",
 			"a must be a string (was not text)",
-			"a is required",
+			"a: Required.",
 			"a must be a string",
 			"neither",
-			"unknown kind",
-			"no a",
-			"no extra keys",
+			"k: unknown kind",
+			"a: no a",
+			"b: no extra keys",
 			"must be matched by ^a\nmust be at least length 5",
 			"a.v must be a number",
 			"a.v must be a custom number",
@@ -2026,13 +2039,13 @@ min: must be at least 1 [0]`)
 			"b.v must be a number"
 		])
 		attest(String(validators.Piped("5"))).equals(String(types.Piped("5")))
-		attest(validators.Problem({ a: 1 }).issues[0]).snap({
+		// no message names its path, which a summary writes before it
+		attest(validators.Message({ a: 1 }).issues[0]).snap({
 			code: "domain",
 			path: ["a"],
 			data: 1,
 			expected: "a string",
-			message: "a is no string",
-			problem: "is no string"
+			message: "Enter text."
 		})
 	})
 
@@ -2049,9 +2062,9 @@ min: must be at least 1 [0]`)
 			)
 		const arktype = issuesOf(types)
 		attest(arktype).snap([
-			'{"code":"undeclared","path":["o","b"],"expected":"removed","message":"o.b must be removed"}',
-			'{"code":"undeclared","path":["c"],"expected":"removed","message":"c must be removed"}',
-			'{"code":"undeclared","path":["d"],"expected":"gone","message":"d must be gone"}'
+			'{"code":"undeclared","path":["o","b"],"expected":"removed","message":"must be removed"}',
+			'{"code":"undeclared","path":["c"],"expected":"removed","message":"must be removed"}',
+			'{"code":"undeclared","path":["d"],"expected":"gone","message":"must be gone"}'
 		])
 		attest(issuesOf(await load(types))).equals(arktype)
 		attest(
@@ -2066,7 +2079,7 @@ min: must be at least 1 [0]`)
 				expected: "more than 3",
 				meta: {
 					actual: (data, ctx, locale) => locale.number(data as number),
-					problem: (ctx, locale) =>
+					message: (ctx, locale) =>
 						`${locale.tag}: ${ctx.expected} (${ctx.actual})`
 				}
 			})
@@ -2887,7 +2900,7 @@ export const Validating = type(["unknown", "unknown"]).pipe(([d, validate]) => v
 		]).snap([
 			"must be a string",
 			"must be a string",
-			"muss eine Zeichenkette sein, ist aber eine Zahl",
+			"muss eine Zeichenkette sein",
 			"must be a string",
 			"must be a string"
 		])

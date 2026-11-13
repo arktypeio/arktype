@@ -1,13 +1,23 @@
-// arktype/runtime under the "development" condition: Node prints issues, and a
-// Type's member a validator never has throws where read
+// arktype/runtime under the "development" condition: Node prints errors by
+// name, and a Type's member a validator never has throws where read
 import { ArkErrors, Validator, type UnavailableMember } from "./runtime.ts"
 
+// as @ark/schema's kinds.ts prints the errors arktype returns
 Object.defineProperty(
 	ArkErrors.prototype,
 	Symbol.for("nodejs.util.inspect.custom"),
 	{
-		value(this: ArkErrors) {
-			return this.issues
+		value(
+			this: ArkErrors,
+			depth: number | null,
+			options: object,
+			inspect?: (value: unknown, options: object) => string
+		) {
+			const shown = { summary: this.summary, issues: this.issues }
+			if (typeof inspect !== "function") return shown
+			if (depth !== null && depth < 0) return "[ArkErrors]"
+			// one level more, so an issue prints as deep as it did in a bare array
+			return `ArkErrors ${inspect(shown, { ...options, depth: depth === null ? null : depth + 1 })}`
 		}
 	}
 )

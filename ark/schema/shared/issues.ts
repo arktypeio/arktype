@@ -20,10 +20,14 @@ export interface ArkIssue {
 	path: PropertyKey[]
 	data: unknown
 	expected: string | undefined
-	problem?: string | undefined
+	/** what failed, without the path it failed at, which a summary writes */
 	message?: string | undefined
 	/** a union's: each branch's first issue */
 	errors?: readonly ArkIssue[]
+	/** @internal a union's line of a summary, naming its errors' paths whole */
+	readonly _l?: string | undefined
+	/** @internal how its message was configured, as SiteContext.c says */
+	readonly _c?: Custom | undefined
 	/** @internal a union's, its text written again at a path before its own */
 	_m?(prefix: array<PropertyKey>): ArkIssue
 }
@@ -34,8 +38,14 @@ type WrittenIssue = ArkIssue & { message: string }
 export interface SiteContext {
 	code: ArkErrorCode
 	description?: string | undefined
-	/** the message configured for the site */
+	/** the message configured for the site, which names no path */
 	x?: string | undefined
+	/**
+	 * how x was configured, where a summary doesn't write it after its path as
+	 * what's expected: 1 as its Type's message and 2 as its code's, each a
+	 * sentence a colon sets apart
+	 */
+	c?: Custom | undefined
 	/** writes other text configured for the site onto its issue */
 	text?: (issue: ArkIssue) => void
 }
@@ -120,7 +130,10 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 			expected: context.description,
 			message: context.x
 		}
-		if (writesText) context.text?.(issue)
+		if (writesText) {
+			customIssue(issue, context.c)
+			context.text?.(issue)
+		}
 		if (key !== undefined) path.pop()
 		this._.push(issue)
 		// only errors stopping at the first issue stop at this one
@@ -150,8 +163,7 @@ const SummarizedIssues: new () => ReadIssues & { readonly summary: string } =
 		class extends ReadIssues {
 			get summary(): string {
 				let summary = ""
-				for (const issue of this._)
-					summary += (summary && "\n") + (issue.message ??= messageOf(issue))
+				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
 				return summary
 			}
 		}
@@ -275,13 +287,16 @@ export const issueAt = (
 		expected: context.description,
 		message: context.x
 	}
-	if (writesText) context.text?.(issue)
+	if (writesText) {
+		customIssue(issue, context.c)
+		context.text?.(issue)
+	}
 	return issue
 }
 
 export const throwOnDefault: Issues.Handler = errors => errors.throw()
 
-// a merged issue's message is rewritten at its path unless supplied
+// a merged issue's message, which names no path, is as it was
 export const mergeIssues = (
 	errors: Issues,
 	merged: Issues,
@@ -291,23 +306,65 @@ export const mergeIssues = (
 		errors._.push(
 			listsUnions && issue._m ?
 				issue._m(prefix)
-			:	{
-					code: issue.code,
-					path: [...prefix, ...issue.path],
-					data: issue.data,
-					expected: issue.expected,
-					problem: issue.problem,
-					message:
-						issue.message === messageOf(issue) ? undefined : issue.message
-				}
+			:	movedIssue(issue, [...prefix, ...issue.path])
 		)
 	}
 }
 
-// the path as arktype's stringifyPath writes it: a key that isn't an
-// identifier is bracketed and quoted, as an index or a symbol (which has no
-// JSON) is bracketed
-export const messageOf = (issue: ArkIssue): string => {
+/** @internal how a message was configured: see SiteContext.c */
+export type Custom = 1 | 2
+
+/**
+ * @internal notes how an issue's message was configured, which a summary
+ * writes it by. Defined on the issue so it isn't enumerable, as only what its
+ * readers see is, and so another copy of this module reads it, as arktype's
+ * does of a validator's bundled apart from it and of another copy's errors
+ */
+export const customIssue = <issue extends ArkIssue>(
+	issue: issue,
+	c: Custom | undefined
+): issue =>
+	writesText && c !== issue._c ?
+		Object.defineProperty(issue, "_c", { value: c, configurable: true })
+	:	issue
+
+/** @internal how an issue's message was configured, if it was */
+export const customOf = (issue: ArkIssue): Custom | undefined =>
+	writesText ? issue._c : undefined
+
+/**
+ * @internal notes that a message supplied for an issue was written from what
+ * it expected, like one read from another copy of arktype, so a summary
+ * writes it after its path
+ */
+export const templatedIssue = <issue extends ArkIssue>(issue: issue): issue =>
+	customIssue(issue, undefined)
+
+/** @internal whether an issue's message is a sentence configured or supplied for it */
+export const isCustomIssue = (issue: ArkIssue): boolean =>
+	customOf(issue) !== undefined
+
+/** @internal an issue at another path, saying what it did */
+export const movedIssue = (issue: ArkIssue, path: PropertyKey[]): ArkIssue =>
+	customIssue(
+		{
+			code: issue.code,
+			path,
+			data: issue.data,
+			expected: issue.expected,
+			message: issue.message
+		},
+		customOf(issue)
+	)
+
+/**
+ * @internal the path as arktype's stringifyPath writes it: a key that isn't
+ * an identifier is bracketed and quoted, as an index or a symbol (which has no
+ * JSON) is bracketed
+ */
+export const pathOf = (issue: {
+	readonly path: readonly PropertyKey[]
+}): string => {
 	let path = ""
 	for (const k of issue.path) {
 		path +=
@@ -316,19 +373,34 @@ export const messageOf = (issue: ArkIssue): string => {
 				`[${JSON.stringify(k) ?? String(k)}]`
 			:	(path && ".") + String(k)
 	}
-	return (path && path + " ") + problemOf(issue)
+	return path
 }
 
-// an undeclared key's site says what's expected. Only a missing key's says
+/**
+ * @internal an issue's line of a summary: its message after its path, one
+ * configured or supplied as a sentence after a colon. A union listing its
+ * branches' issues names each one's path instead
+ */
+export const lineOf = (issue: ArkIssue): string => {
+	if (listsUnions && issue._l !== undefined) return issue._l
+	const message = (issue.message ??= messageOf(issue))
+	const path = pathOf(issue)
+	return path ? path + (customOf(issue) ? ": " : " ") + message : message
+}
+
+// what an issue says where no message is configured for it, naming no path.
+// An undeclared key's site says what's expected. Only a missing key's says
 // what the value was, since writing any other value would ship a printer
-export const problemOf = (issue: ArkIssue): string =>
-	(writesText ? issue.problem : undefined) ??
-	(issue.expected !== undefined ?
+export const messageOf = (issue: {
+	readonly code?: ArkErrorCode
+	readonly expected?: string | undefined
+}): string =>
+	issue.expected !== undefined ?
 		"must be " +
 		issue.expected +
 		(issue.code === "required" ? " (was missing)" : "")
 	: issue.code === "required" ? "is missing"
-	: "is invalid")
+	: "is invalid"
 
 interface ThrownIssues extends Error {
 	readonly name: "TraversalError"
