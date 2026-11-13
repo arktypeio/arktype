@@ -85,37 +85,46 @@ export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 	}
 	// each tsconfig's resolver for a file its `include` leaves out
 	const resolversByTsconfig: Record<string, ResolverFactory> = {}
-	return {
-		resolve: (specifier, importer) => {
-			if (!isAbsolute(importer)) return
-			let result = resolver.resolveFileSync(importer, specifier)
-			// a tsconfig the resolver can't load fails every resolution
-			if (result.error && /tsconfig/i.test(result.error)) {
-				resolverWithoutTsconfig ??= resolver.cloneWithOptions(resolveOptions)
-				result = resolverWithoutTsconfig.resolveFileSync(importer, specifier)
-			}
-			// e.g. `@app/schemas` from tests/user.test.ts, where tsconfig.json
-			// includes only src: TypeScript applies its `paths` to no file outside
-			// `include`, but esbuild, Bun and a bundler's alias for the same
-			// names apply them to every file under it, so the nearest's are tried
-			if (!result.path && !opts?.tsconfig && !isRelativeOrAbsolute(specifier)) {
-				const tsconfig = tsconfigIn(dirname(importer))
-				if (tsconfig) {
-					try {
-						// a resolver of its own, as a clone shares what the first found
-						const outside = (resolversByTsconfig[tsconfig] ??=
-							new ResolverFactory({
-								...resolveOptions,
-								tsconfig: { configFile: tsconfig, references: "auto" }
-							})).resolveFileSync(importer, specifier)
-						if (outside.path) result = outside
-					} catch {
-						// one it can't load, which resolves nothing
-					}
+	// the resolver keeps what it found of a file, there or not, for as long as
+	// it lives, so an answer is kept as long: following a program's validators
+	// asks for the same one thousands of times, each a realpath
+	const resolved = new Map<string, string | undefined>()
+	const resolve = (specifier: string, importer: string): string | undefined => {
+		if (!isAbsolute(importer)) return
+		let result = resolver.resolveFileSync(importer, specifier)
+		// a tsconfig the resolver can't load fails every resolution
+		if (result.error && /tsconfig/i.test(result.error)) {
+			resolverWithoutTsconfig ??= resolver.cloneWithOptions(resolveOptions)
+			result = resolverWithoutTsconfig.resolveFileSync(importer, specifier)
+		}
+		// e.g. `@app/schemas` from tests/user.test.ts, where tsconfig.json
+		// includes only src: TypeScript applies its `paths` to no file outside
+		// `include`, but esbuild, Bun and a bundler's alias for the same
+		// names apply them to every file under it, so the nearest's are tried
+		if (!result.path && !opts?.tsconfig && !isRelativeOrAbsolute(specifier)) {
+			const tsconfig = tsconfigIn(dirname(importer))
+			if (tsconfig) {
+				try {
+					// a resolver of its own, as a clone shares what the first found
+					const outside = (resolversByTsconfig[tsconfig] ??=
+						new ResolverFactory({
+							...resolveOptions,
+							tsconfig: { configFile: tsconfig, references: "auto" }
+						})).resolveFileSync(importer, specifier)
+					if (outside.path) result = outside
+				} catch {
+					// one it can't load, which resolves nothing
 				}
 			}
-			// it keeps an importer's 8.3 names, which another importer may not have
-			return result.path && realPathOf(result.path)
+		}
+		// it keeps an importer's 8.3 names, which another importer may not have
+		return result.path && realPathOf(result.path)
+	}
+	return {
+		resolve: (specifier, importer) => {
+			const key = `${importer}\0${specifier}`
+			if (!resolved.has(key)) resolved.set(key, resolve(specifier, importer))
+			return resolved.get(key)
 		},
 		readFile,
 		tsconfigOf: importer =>
