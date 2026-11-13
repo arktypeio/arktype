@@ -4,7 +4,11 @@ import { createRequire } from "node:module"
 import { visitorKeys, type Node } from "oxc-parser"
 import { SourceModule } from "./module.ts"
 import { typeKeys, type Binding } from "./scope.ts"
-import { minifiedLengthOf, runtimeReadsOf } from "./smaller.ts"
+import {
+	minifiedLengthKeepingStrings,
+	minifiedLengthOf,
+	runtimeReadsOf
+} from "./smaller.ts"
 
 // resolved as the precompiler's own arktype resolves it
 let runtimeFile: string | undefined
@@ -29,9 +33,60 @@ export const minifiedSizeOf = ({
  * reaches of its modules and the runtime, each declaration once, as a bundler
  * drops what nothing reads, like the Apply of a validator read only for allows
  */
-export const programSizeOf = (
-	written: Record<string, Pick<StandaloneModules, "code" | "modules">>
-): number => {
+export const programSizeOf = (written: WrittenModules): number => {
+	const { code, reached } = programReachOf(written)
+	let length = code
+	for (const declared of reached) length += declared.length
+	return length
+}
+
+/**
+ * about how many times the length of arktype a minifier leaves of a program's
+ * validators and the runtime they read: more than once, and the program is
+ * larger precompiled than creating its Types as it runs
+ */
+export const validatorsToArktypeOf = (written: WrittenModules): number => {
+	let validators = 0
+	for (const declared of programReachOf(written).reached)
+		validators += textLengthOf(declared)
+	return validators / arktypeSizeOf()
+}
+
+// what a bundle that isn't precompiled holds of arktype, as `type` reaches
+// nearly each of its declarations
+let arktypeSize: number | undefined
+
+const arktypeSizeOf = () => {
+	if (arktypeSize === undefined) {
+		arktypeSize = 0
+		const file = resolvedFileOf("arktype", import.meta.url)
+		for (const declared of reachedBy(file, ["type"]))
+			arktypeSize += textLengthOf(declared)
+		arktypeSize *= sourceToWritten
+	}
+	return arktypeSize
+}
+
+// a declaration's length with each string's text, as two programs compared
+// may differ in how much of each is messages
+const textLengthOf = (declared: Declared): number =>
+	(declared.textLength ??= minifiedLengthKeepingStrings(declared.text))
+
+// what the estimate leaves of arktype's source, next to what a minifier does,
+// over what it leaves of the code a build writes, whose names are short
+// already. Measured on esbuild and webpack bundles of 400 to 1600 number
+// ranges, and on a Next.js app of 231 validators with a message for each field
+const sourceToWritten = 1.4
+
+type WrittenModules = Record<
+	string,
+	Pick<StandaloneModules, "code" | "modules">
+>
+
+// a program's code's length, and what that reaches of its modules and the runtime
+const programReachOf = (
+	written: WrittenModules
+): { code: number; reached: Set<Declared> } => {
 	const program = `\0${++programs}:`
 	for (const id in written) {
 		for (const specifier in written[id].modules)
@@ -57,8 +112,7 @@ export const programSizeOf = (
 	for (const declared of reached) text += declared.text
 	for (const declared of reachedBy(runtimeFileOf(), runtimeReadsOf(text)))
 		reached.add(declared)
-	for (const declared of reached) length += declared.length
-	return length
+	return { code: length, reached }
 }
 
 // a program's modules, read by the specifiers its code imports them by
@@ -135,6 +189,8 @@ interface Declared {
 	module: SourceModule
 	text: string
 	length: number
+	// its length with each string's text
+	textLength?: number
 	reads?: Declared[]
 }
 
@@ -154,15 +210,17 @@ const moduleAt = (file: string, source?: string): SourceModule => {
 		file
 	))
 	const { bindings } = module.scopes.root
+	// each name a pattern declares is one declaration, counted once
+	const byDeclaration = new Map<Node, Declared>()
 	for (const name in bindings) {
 		const binding = bindings[name]
-		const text = javaScriptOf(module, binding.declaration)
-		declaredByBinding.set(binding, {
-			binding,
-			module,
-			text,
-			length: minifiedLengthOf(text)
-		})
+		let declared = byDeclaration.get(binding.declaration)
+		if (!declared) {
+			const text = javaScriptOf(module, binding.declaration)
+			declared = { binding, module, text, length: minifiedLengthOf(text) }
+			byDeclaration.set(binding.declaration, declared)
+		}
+		declaredByBinding.set(binding, declared)
 	}
 	return module
 }

@@ -489,7 +489,7 @@ const readAndWrite = async (
 		resolveFile(specifier, importer)
 	try {
 		const usage = (await send(["scan", program], sentResolve)) as ScannedUsage
-		const warnings = [usage.unpruned, usage.lost].filter(
+		const warnings = [usage.unpruned, usage.lost, usage.larger].filter(
 			warning => warning !== undefined
 		)
 		const written: Record<string, TransformedModule | undefined> = {}

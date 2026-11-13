@@ -1140,6 +1140,44 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 		})
 	})
 
+	describe("validators larger than arktype", () => {
+		// 48 Types of 48 keys, each a range no other is, so no two share a unit
+		const ranges = `import { type } from "arktype"
+
+${Array.from(
+	{ length: 48 },
+	(_, i) =>
+		`const T${i} = type({ ${Array.from({ length: 48 }, (_, j) => `k${j}: "number < ${i * 48 + j + 1}"`).join(", ")} })`
+).join("\n")}
+
+console.log(${Array.from({ length: 48 }, (_, i) => `T${i}({})`).join(", ")})
+`
+
+		const largerFrom = async (opts: PrecompileOptions) => {
+			const usage = await usageFrom(
+				{ "/main.ts": ranges },
+				{ preset: undefined, ...opts }
+			)
+			return typeof usage === "string" || Array.isArray(usage) ?
+					usage
+				:	usage.larger
+		}
+
+		it("warns where they're compiled for speed with optimize unset", async () => {
+			attest(await largerFrom({})).snap(
+				'precompile: this build\'s validators, each compiled to check fastest, are about 1.5 times the size of arktype, which they replace, so the bundle is larger than one creating its Types as it runs. Set preset: "smallest" to write them as calls to checkers they share, or optimize: "speed" to build without this warning.'
+			)
+		})
+
+		it("writes them as checkers without it under the smallest preset", async () => {
+			attest(await largerFrom({ preset: "smallest" })).equals(undefined)
+		})
+
+		it("builds without it where optimize is set to speed", async () => {
+			attest(await largerFrom({ optimize: "speed" })).equals(undefined)
+		})
+	})
+
 	describe("ids", () => {
 		it("names each module as the precompiler does", async () => {
 			const files: Record<string, string> = {

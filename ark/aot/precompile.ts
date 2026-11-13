@@ -220,6 +220,7 @@ import {
 } from "./flat.ts"
 import {
 	writeKeptMembersMessage,
+	writeLargerMessage,
 	writeLostMessage,
 	writeUnprunedMessage,
 	unseenFlatMessage,
@@ -346,7 +347,7 @@ import {
 	writeUnitTable,
 	writeValidators
 } from "./output.ts"
-import { programSizeOf } from "./runtimeSize.ts"
+import { programSizeOf, validatorsToArktypeOf } from "./runtimeSize.ts"
 import {
 	combinesChecks,
 	shapesPayIn,
@@ -702,6 +703,9 @@ export class Precompiler {
 	private variant: RuntimeVariant | undefined
 	private mutatesInput: MutatesInput | undefined
 	private standalone: StandaloneOptions
+	// whether nothing chose what its validators are compiled for, so a program
+	// they leave larger than arktype would is one to say so of
+	private optimizeUnset: boolean
 	private configuration: Configuration | undefined
 	private loadedBeforeConfigure: string[] | undefined
 	private configureCallsByModule = new WeakMap<SourceModule, CallExpression[]>()
@@ -788,6 +792,7 @@ export class Precompiler {
 			jsonInput: opts.jsonInput,
 			bakedLimit: opts.bakedLimit
 		}
+		this.optimizeUnset = opts.optimize === undefined
 		this.lackedMembers = new Set(
 			defaultMembers.flatMap(member =>
 				this.members[member] !== false ? []
@@ -1116,6 +1121,7 @@ export class Precompiler {
 			:	undefined
 		usage.written = written
 		const issues = this.issuesOf(program, written, used)
+		const timesArktype = this.optimizeUnset ? validatorsToArktypeOf(written) : 0
 		return {
 			dropped,
 			linked,
@@ -1136,6 +1142,7 @@ export class Precompiler {
 				narrowsIssues(issues),
 			unpruned,
 			lost: readings.lost.length ? writeLostMessage(readings.lost) : undefined,
+			larger: timesArktype > 1 ? writeLargerMessage(timesArktype) : undefined,
 			baked: readings.decisions,
 			issues
 		}

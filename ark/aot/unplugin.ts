@@ -2168,7 +2168,9 @@ interface ProgramScan<read> {
 }
 
 const warningsOf = (usage: ScannedUsage): string[] =>
-	[usage.unpruned, usage.lost].filter(warning => warning !== undefined)
+	[usage.unpruned, usage.lost, usage.larger].filter(
+		warning => warning !== undefined
+	)
 
 const unreadMessageOf = (e: unknown): string =>
 	writeUnprunedMessage(`reading the bundle's modules threw ${String(e)}`)
