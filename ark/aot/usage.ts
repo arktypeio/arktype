@@ -65,6 +65,8 @@ export interface UsageProgram {
 	entries: ReadonlySet<string>
 	// e.g. a module a framework's runtime imports, as its exports are read
 	exposed: ReadonlySet<string>
+	// whether what a computed import() or require() may load is among them
+	exposesLoaded?: boolean
 	modules: ReadonlyMap<string, RuntimeModule>
 	// the module a specifier resolves to, if the program holds it
 	resolve: (specifier: string, importer: string) => string | undefined
@@ -247,11 +249,13 @@ class UsageAnalysis {
 			}
 			if (id.name !== "require") continue
 			const [operand, parent] = operatorOf(id)
-			const specifier =
-				parent?.type === "CallExpression" && parent.callee === operand ?
-					literalOf(parent.arguments[0])
-				:	undefined
+			const isCalled =
+				parent?.type === "CallExpression" && parent.callee === operand
+			const specifier = isCalled ? literalOf(parent.arguments[0]) : undefined
 			if (specifier === undefined) {
+				// each module it may load is one code outside the program may
+				// read any way, as the bundler that built them has it
+				if (isCalled && this.program.exposesLoaded) continue
 				return escape(
 					`${module.positionOf(id)} reads require other than to call it with a string`
 				)
@@ -266,6 +270,7 @@ class UsageAnalysis {
 			if (node.type === "ImportExpression") {
 				const specifier = literalOf(node.source)
 				if (specifier === undefined) {
+					if (this.program.exposesLoaded) return true
 					return escape(
 						`${module.positionOf(node)} imports a module by a computed specifier`
 					)

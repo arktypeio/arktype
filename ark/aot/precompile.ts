@@ -1930,6 +1930,7 @@ export class Precompiler {
 		return {
 			entries: new Set(program.entries),
 			exposed: new Set(program.exposed),
+			exposesLoaded: !!program.exposesLoaded,
 			modules,
 			resolve: (specifier, importer) => program.targets[importer]?.[specifier]
 		}

@@ -344,6 +344,9 @@ export const programAsBuilt = (
 		),
 		dynamicImports: [...dynamicImports].sort(),
 		exposed: [...exposed].sort(),
+		// the bundler built a module for each file a computed specifier can
+		// name, which a module of its own with no file imports
+		exposesLoaded: true,
 		isOneChunk:
 			entries.length === 1 &&
 			read.length === 1 &&
@@ -787,6 +790,10 @@ export interface ScannedProgram {
 	// each module with no file, like a framework's virtual module, which its
 	// runtime may import unseen
 	exposed: string[]
+	// whether each module an import() or require() of a computed specifier
+	// may load is among `exposed`, as where a bundler built the program and
+	// with it a module for each file such a specifier can name
+	exposesLoaded?: boolean
 	isOneChunk?: boolean
 }
 

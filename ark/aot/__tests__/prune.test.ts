@@ -3888,6 +3888,87 @@ new Worker(new URL("./worker.js", import.meta.url))
 					).equals(true)
 				})
 
+				// the bundler built a module for each file the specifier can name,
+				// so the build reads what they export rather than give up
+				const computedImport = (page: string) => ({
+					"pages/shown.js": page,
+					"main.js": `import { User } from "./types.js"
+
+const load = name => import(\`./pages/\${name}.js\`)
+load("shown").then(page =>
+	console.log(User({ name: "" }).name, typeof page.shown)
+)
+`
+				})
+
+				const outputOfSplit = async (root: string) => {
+					const warnings: string[] = []
+					const stats = await built(
+						(compilers[name][0] as typeof webpack)(
+							configOf(
+								name,
+								root,
+								{},
+								{
+									output: {
+										path: join(root, "out", name),
+										filename: "main.cjs",
+										chunkFilename: "[name].cjs"
+									},
+									plugins: [
+										compilers[name][1]({ cwd: root }) as never,
+										collecting(warnings)
+									]
+								}
+							)
+						)
+					)
+					if (stats?.hasErrors()) throw new Error(stats.toString("errors-only"))
+					const dir = join(root, "out", name)
+					return {
+						// Rspack marks a warning and ends its line
+						warnings: warnings.map(warning =>
+							warning.trim().replace(/^⚠ /, "")
+						),
+						keepsStandard: readdirSync(dir).some(file =>
+							readFileSync(join(dir, file), "utf8").includes("~standard")
+						),
+						stdout: spawnSync(process.execPath, ["main.cjs"], {
+							cwd: dir,
+							encoding: "utf8"
+						}).stdout
+					}
+				}
+
+				it("prunes past an import() of a computed specifier where what it may load exports no validator", async () => {
+					const root = fixture(
+						"computedImport",
+						computedImport(`export const shown = true\n`)
+					)
+					attest(await outputOfSplit(root)).equals({
+						warnings: [],
+						keepsStandard: false,
+						stdout: " boolean\n"
+					})
+				})
+
+				it("keeps each member where an import() of a computed specifier may load a validator", async () => {
+					const root = fixture(
+						"computedImport-validator",
+						computedImport(`import { type } from "arktype"
+
+export const shown = type({ shown: "string" })
+`)
+					)
+					attest(await outputOfSplit(root)).equals({
+						warnings: [
+							"prune: keeping assert, meta, ~standard and methods, because pages/shown.js exports shown, which a dependency may read. Set assert, meta, ~standard and methods in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning."
+						],
+						keepsStandard: true,
+						stdout: " function\n"
+					})
+				})
+
 				it("answers a build its cache kept as one with no cache, whichever file a read moved to", async () => {
 					const root = fixture("cached", {
 						"reader.js": `import { User } from "./types.js"\n\nconsole.log(User({ name: "" }).name)\n`,
