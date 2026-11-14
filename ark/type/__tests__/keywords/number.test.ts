@@ -1,13 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema } from "@ark/schema"
+import { rootSchema, schemaScope } from "@ark/schema"
 import { type } from "arktype"
 
 contextualize(() => {
 	it("integer", () => {
 		const Integer = type("number.integer")
 		attest(Integer(123)).equals(123)
-		attest(Integer("123").toString()).snap("must be a number (was a string)")
-		attest(Integer(12.12).toString()).snap("must be an integer (was 12.12)")
+		attest(Integer("123").toString()).snap("must be a number")
+		attest(Integer(12.12).toString()).snap("must be an integer")
 	})
 
 	it("epoch", () => {
@@ -20,16 +20,16 @@ contextualize(() => {
 
 		// invalid
 		attest(Epoch("foo").toString()).snap(
-			"must be a number representing a Unix timestamp (was a string)"
+			"must be a number representing a Unix timestamp"
 		)
 		attest(Epoch(1.5).toString()).snap(
-			"must be an integer representing a Unix timestamp (was 1.5)"
+			"must be an integer representing a Unix timestamp"
 		)
 		attest(Epoch(-8640000000000001).toString()).snap(
-			"must be a Unix timestamp after -8640000000000000 (was -8640000000000001)"
+			"must be a Unix timestamp after -8640000000000000"
 		)
 		attest(Epoch(8640000000000001).toString()).snap(
-			"must be a Unix timestamp before 8640000000000000 (was 8640000000000001)"
+			"must be a Unix timestamp before 8640000000000000"
 		)
 	})
 
@@ -41,24 +41,111 @@ contextualize(() => {
 		attest(Safe.allows(0)).equals(true)
 		attest(Safe.allows(0.5)).equals(true)
 		attest(Safe(Number.MAX_SAFE_INTEGER + 1).toString()).snap(
-			"must be at most 9007199254740991 (was 9007199254740992)"
+			"must be at most 9007199254740991"
 		)
 		attest(Safe(Number.MIN_SAFE_INTEGER - 1).toString()).snap(
-			"must be at least -9007199254740991 (was -9007199254740992)"
+			"must be at least -9007199254740991"
 		)
-		attest(Safe(Infinity).toString()).snap(
-			"must be at most 9007199254740991 (was Infinity)"
-		)
-		attest(Safe(-Infinity).toString()).snap(
-			"must be at least -9007199254740991 (was -Infinity)"
-		)
-		attest(Safe(NaN).toString()).snap("must be a number (was NaN)")
+		attest(Safe(Infinity).toString()).snap("must be a number")
+		attest(Safe(-Infinity).toString()).snap("must be a number")
+		attest(Safe(NaN).toString()).snap("must be a number")
+	})
+
+	it("safe equals its range", () => {
+		attest(
+			type("number.safe").equals(
+				"-9007199254740991 <= number <= 9007199254740991"
+			)
+		).equals(true)
+	})
+
+	it("disallowing non-finite values like config is the default", () => {
+		const T = rootSchema({
+			domain: "number",
+			numberAllowsNaN: false,
+			numberAllowsInfinity: false
+		})
+		attest(T.json).snap({ domain: "number" })
+		attest(T.equals(type.number)).equals(true)
 	})
 
 	it("doesn't allow NaN by default", () => {
 		attest(type.number.allows(Number.NaN)).equals(false)
-		attest(type.number(Number.NaN).toString()).snap(
-			"must be a number (was NaN)"
+		attest(type.number(Number.NaN).toString()).snap("must be a number")
+	})
+
+	it("allows Infinity in a union with number.Infinity", () => {
+		const T = type("number | number.Infinity")
+		attest(T.expression).snap("number | Infinity")
+		attest(T.allows(Number.POSITIVE_INFINITY)).equals(true)
+		attest(T(Number.NEGATIVE_INFINITY).toString()).snap(
+			"must be a number or Infinity"
+		)
+	})
+
+	it("numberAllowsInfinity", () => {
+		const T = rootSchema({ domain: "number", numberAllowsInfinity: true })
+		attest(T.expression).snap("number | Infinity | -Infinity")
+		attest(T.allows(Number.POSITIVE_INFINITY)).equals(true)
+		attest(T.allows(Number.NEGATIVE_INFINITY)).equals(true)
+		attest(T.allows(Number.NaN)).equals(false)
+	})
+
+	it("non-finite allowances on non-number", () => {
+		attest(() =>
+			rootSchema({ domain: "string", numberAllowsNaN: true } as never)
+		).throws.snap(
+			'ParseError: numberAllowsNaN may only be specified with domain "number" (was string)'
+		)
+		attest(() =>
+			rootSchema({ domain: "string", numberAllowsInfinity: true } as never)
+		).throws.snap(
+			'ParseError: numberAllowsInfinity may only be specified with domain "number" (was string)'
+		)
+	})
+
+	it("intersection allows non-finite values allowed by both", () => {
+		const Infinite = rootSchema({
+			domain: "number",
+			numberAllowsInfinity: true
+		})
+		const NaNable = rootSchema({ domain: "number", numberAllowsNaN: true })
+		const Both = rootSchema({
+			domain: "number",
+			numberAllowsNaN: true,
+			numberAllowsInfinity: true
+		})
+		attest(Infinite.and(Both).json).equals(Infinite.json)
+		attest(Both.and(NaNable).json).equals(NaNable.json)
+		const Neither = Infinite.and(NaNable)
+		attest(Neither.allows(Number.POSITIVE_INFINITY)).equals(false)
+		attest(Neither.allows(Number.NaN)).equals(false)
+		attest(Neither.allows(0)).equals(true)
+	})
+
+	it("non-finite checks are consistent without jit", () => {
+		const $ = schemaScope({
+			finite: "number",
+			nanable: { domain: "number", numberAllowsNaN: true },
+			infinitable: { domain: "number", numberAllowsInfinity: true },
+			nonFinite: {
+				domain: "number",
+				numberAllowsNaN: true,
+				numberAllowsInfinity: true
+			}
+		}).export()
+		const allowed = (data: unknown) =>
+			[$.finite, $.nanable, $.infinitable, $.nonFinite].map(T => T.allows(data))
+		attest(allowed(0)).equals([true, true, true, true])
+		attest(allowed(Number.NaN)).equals([false, true, false, true])
+		attest(allowed(Number.POSITIVE_INFINITY)).equals([false, false, true, true])
+		attest(allowed(Number.NEGATIVE_INFINITY)).equals([false, false, true, true])
+		attest(allowed("0")).equals([false, false, false, false])
+		attest($.infinitable.traverse(Number.NaN)?.toString()).equals(
+			"must be a number"
+		)
+		attest($.nanable.traverse(Number.POSITIVE_INFINITY)?.toString()).equals(
+			"must be a number"
 		)
 	})
 
@@ -67,23 +154,19 @@ contextualize(() => {
 		attest(NumberOrNull(5)).equals(5)
 		attest(NumberOrNull(null)).equals(null)
 		attest(NumberOrNull.allows(Number.NaN)).equals(false)
-		attest(NumberOrNull(Number.NaN)?.toString()).snap(
-			"must be a number (was NaN)"
-		)
+		attest(NumberOrNull(Number.NaN)?.toString()).snap("must be a number")
 
 		attest(type("number | string")(Number.NaN).toString()).snap(
-			"must be a number (was NaN)"
+			"must be a number"
 		)
 		attest(type("number > 0 | null")(Number.NaN)?.toString()).snap(
-			"must be a number (was NaN)"
+			"must be a number"
 		)
 
 		const Prop = type({ a: "number" }).or({ a: "string" })
 		attest(Prop({ a: 5 })).equals({ a: 5 })
 		attest(Prop.allows({ a: Number.NaN })).equals(false)
-		attest(Prop({ a: Number.NaN }).toString()).snap(
-			"a must be a number (was NaN)"
-		)
+		attest(Prop({ a: Number.NaN }).toString()).snap("a must be a number")
 	})
 
 	it("doesn't allow NaN in discriminated unions jitless", () => {
@@ -96,13 +179,9 @@ contextualize(() => {
 		)
 		attest(types.NumberOrNull.precompilation).equals(undefined)
 		attest(types.NumberOrNull.allows(Number.NaN)).equals(false)
-		attest(types.NumberOrNull(Number.NaN)?.toString()).snap(
-			"must be a number or null (was NaN)"
-		)
+		attest(types.NumberOrNull(Number.NaN)?.toString()).snap("must be a number")
 		attest(types.Prop.allows({ a: Number.NaN })).equals(false)
-		attest(types.Prop({ a: Number.NaN }).toString()).snap(
-			"a must be a number or a string (was NaN)"
-		)
+		attest(types.Prop({ a: Number.NaN }).toString()).snap("a must be a number")
 	})
 
 	it("allows number.NaN in discriminated unions", () => {
@@ -129,24 +208,22 @@ contextualize(() => {
 		const Nan = type("number.NaN")
 
 		attest(Nan.allows(Number.NaN)).equals(true)
-		attest(Nan(0).toString()).snap("must be NaN (was 0)")
+		attest(Nan(0).toString()).snap("must be NaN")
 	})
 
 	it("PositiveInfinity", () => {
 		const Inf = type("number.Infinity")
 		attest(Inf.allows(Number.POSITIVE_INFINITY)).equals(true)
-		attest(Inf(0).toString()).snap("must be Infinity (was 0)")
-		attest(Inf(Number.NEGATIVE_INFINITY).toString()).snap(
-			"must be Infinity (was -Infinity)"
-		)
+		attest(Inf(0).toString()).snap("must be Infinity")
+		attest(Inf(Number.NEGATIVE_INFINITY).toString()).snap("must be Infinity")
 	})
 
 	it("NegativeInfinity", () => {
 		const NegInf = type("number.NegativeInfinity")
 		attest(NegInf.allows(Number.NEGATIVE_INFINITY)).equals(true)
-		attest(NegInf(0).toString()).snap("must be -Infinity (was 0)")
+		attest(NegInf(0).toString()).snap("must be -Infinity")
 		attest(NegInf(Number.POSITIVE_INFINITY).toString()).snap(
-			"must be -Infinity (was Infinity)"
+			"must be -Infinity"
 		)
 	})
 })

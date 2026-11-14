@@ -55,7 +55,7 @@ contextualize(() => {
 		const T = type({ a: "string" })
 		attest(T.assert({ a: "1" })).equals({ a: "1" })
 		attest(() => T.assert({ a: 1 })).throws.snap(
-			"TraversalError: a must be a string (was a number)"
+			"TraversalError: a must be a string"
 		)
 	})
 
@@ -228,9 +228,11 @@ contextualize(() => {
 
 		attest<(data: unknown) => string>(assert)
 		attest(assert("foo")).equals("foo")
-		attest(() => assert(5)).throws.snap(
-			"TraversalError: must be a string (was a number)"
-		)
+		attest(() => assert(5)).throws.snap("TraversalError: must be a string")
+	})
+
+	it("is unbound", () => {
+		attest(type("string").name).equals("")
 	})
 
 	it("toString()", () => {
@@ -249,7 +251,7 @@ contextualize(() => {
 			]
 		})
 		attest(T.expression).snap(
-			"{ [string]: number | Array, a: 1, c: [string <= 4 & >= 1, boolean?, ...number[]], d: [(In: string) => Out<unknown>, number % 2 & < 100 & > 0, ...bigint[], (In: /^a.*z$/) => Out</^[a-z]*$/>[]], b?: 2 }"
+			"{ [string]: number | Array, a: 1, c: [1 <= string <= 4, boolean?, ...number[]], d: [(In: string) => Out<unknown>, 0 < number % 2 < 100, ...bigint[], (In: /^a.*z$/) => Out</^[^A-Z]*$/>[]], b?: 2 }"
 		)
 		attest(`${T}`).equals(`Type<${T.expression}>`)
 	})

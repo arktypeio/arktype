@@ -25,6 +25,16 @@ bench(
 	fakeCallOptions
 ).mark()
 
+let resource: { value: number } | undefined
+
+bench("bench call with hooks", () => resource!.value, {
+	...fakeCallOptions,
+	hooks: {
+		beforeCall: () => (resource = { value: 1 }),
+		afterCall: () => (resource = undefined)
+	}
+}).median()
+
 type makeComplexType<S extends string> =
 	S extends `${infer head}${infer tail}` ? head | tail | makeComplexType<tail>
 	:	S
@@ -43,5 +53,13 @@ bench(
 )
 	.mean()
 	.types()
+
+bench(
+	"bench async call and type",
+	async () => ({}) as makeComplexType<"antidisestablishmentarianism">,
+	fakeCallOptions
+)
+	.mean()
+	.then(assertions => assertions.types())
 
 bench("empty", () => {}).types()

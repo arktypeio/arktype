@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { scope, type } from "arktype"
+import { keywords, scope, type } from "arktype"
 
 contextualize(() => {
 	it("parsed", () => {
@@ -19,6 +19,15 @@ contextualize(() => {
 
 		attest<typeof types.expected.t>(types.actual.t)
 		attest(types.actual.expression).equals(types.expected.expression)
+	})
+
+	it("invoked", () => {
+		const T = keywords.Omit({ a: "string", b: "number" }, "'b'").and({
+			c: "string"
+		})
+
+		attest<{ a: string; c: string }>(T.t)
+		attest(T.expression).snap("{ a: string, c: string }")
 	})
 
 	it("chained", () => {

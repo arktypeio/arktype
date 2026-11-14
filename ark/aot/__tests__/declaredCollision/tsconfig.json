@@ -1,0 +1,17 @@
+{
+	"compilerOptions": {
+		"strict": true,
+		"skipLibCheck": true,
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"allowImportingTsExtensions": true,
+		"rewriteRelativeImportExtensions": true,
+		"customConditions": ["ark-ts"],
+		"lib": ["ESNext", "DOM"],
+		"types": [],
+		"rootDir": "src",
+		"outDir": "out"
+	},
+	"include": ["src"]
+}

@@ -1,0 +1,9 @@
+{
+	"sb initialization|||@paseri/compiler": [15.917935, 15.98836, 15.95665],
+	"sb initialization|||ajv (standalone)": [19.93734, 19.986445, 19.971005],
+	"sb initialization|||arktype (precompiled)": [
+		15.953845, 15.884735, 16.001345
+	],
+	"sb initialization|||zod-compiler": [15.920535, 15.972395, 15.942605],
+	"sb initialization|||typia (createIs)": [381.209325, 381.654725, 381.113635]
+}

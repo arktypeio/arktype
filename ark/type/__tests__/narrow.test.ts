@@ -1,34 +1,55 @@
 import { attest, contextualize } from "@ark/attest"
-import { registeredReference } from "@ark/schema"
+import {
+	registeredReference,
+	writeUnsatisfiableExpressionError,
+	type Traversal
+} from "@ark/schema"
 import type { equals } from "@ark/util"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
-	it("implicit problem", () => {
+	it("implicit message", () => {
 		const isOdd = (n: number) => n % 2 === 1
 		const isOddRef = registeredReference(isOdd)
 		const Odd = type(["number", ":", isOdd])
 		attest<number>(Odd.infer)
 		attest(Odd.json).equals({ domain: "number", predicate: [isOddRef] })
 		attest(Odd(1)).equals(1)
-		attest(Odd(2).toString()).snap("must be valid according to isOdd (was 2)")
+		attest(Odd(2).toString()).snap("must be valid according to isOdd")
 	})
 
-	it("implicit problem anonymous", () => {
+	it("error references its predicate", () => {
+		const isOdd = (n: number) => n % 2 === 1
+		const Odd = type("number").narrow(isOdd)
+		const error = (Odd(2) as type.errors).issues[0]
+		if (error.code !== "predicate") throw new Error()
+		attest(error.predicate).is(isOdd)
+		attest(error.message).snap("must be valid according to isOdd")
+	})
+
+	it("calls a predicate without a receiver", () => {
+		const T = type("number").narrow(function (this: unknown) {
+			return this === undefined
+		})
+		attest(T(1)).equals(1)
+		attest(T.allows(1)).equals(true)
+	})
+
+	it("implicit message anonymous", () => {
 		const Even = type("number", ":", n => n % 2 === 0)
 		attest(Even(1).toString()).snap(
-			"must be valid according to an anonymous predicate (was 1)"
+			"must be valid according to an anonymous predicate"
 		)
 	})
 
-	it("explicit problem", () => {
+	it("explicit expected", () => {
 		const DivisibleBy3 = type([
 			"number",
 			":",
 			(n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3")
 		])
-		attest(DivisibleBy3(1).toString()).snap("must be divisible by 3 (was 1)")
+		attest(DivisibleBy3(1).toString()).snap("must be divisible by 3")
 	})
 
 	it("chained narrows", () => {
@@ -44,13 +65,23 @@ contextualize(() => {
 
 		attest<number>(DivisibleBy30.t)
 
-		attest(DivisibleBy30(1).toString()).snap("must be divisible by 2 (was 1)")
-		attest(DivisibleBy30(2).toString()).snap("must be divisible by 3 (was 2)")
-		attest(DivisibleBy30(6).toString()).snap("must be divisible by 5 (was 6)")
+		attest(DivisibleBy30(1).toString()).snap("must be divisible by 2")
+		attest(DivisibleBy30(2).toString()).snap("must be divisible by 3")
+		attest(DivisibleBy30(6).toString()).snap("must be divisible by 5")
 		attest(DivisibleBy30(30)).equals(30)
 	})
 
-	it("problem at path", () => {
+	// a precompiled build describes a narrow at runtime, so it can't merge two
+	it("describes each anonymous narrow", () => {
+		const T = type("number")
+			.narrow(n => n > 0)
+			.narrow(n => n < 10)
+		attest(T.description).snap(
+			"a number and valid according to an anonymous predicate and valid according to an anonymous predicate"
+		)
+	})
+
+	it("errors at paths", () => {
 		const AbEqual = type([
 			{
 				a: "number",
@@ -72,9 +103,8 @@ contextualize(() => {
 			b: number
 		}>(AbEqual.infer)
 		attest(AbEqual({ a: 1, b: 1 })).equals({ a: 1, b: 1 })
-		attest(AbEqual({ a: 1, b: 2 }).toString()).snap(
-			'a must be equal to b (was {"a":1,"b":2})\nb must be equal to a (was {"a":1,"b":2})'
-		)
+		attest(AbEqual({ a: 1, b: 2 }).toString()).snap(`a must be equal to b
+b must be equal to a`)
 	})
 
 	it("functional predicate", () => {
@@ -97,7 +127,7 @@ contextualize(() => {
 		}).type.errors("Type 'boolean' is not assignable to type 'string'.")
 	})
 
-	it("narrow problem", () => {
+	it("narrow rejecting with what it expected", () => {
 		const Palindrome = type([
 			"string",
 			":",
@@ -106,25 +136,21 @@ contextualize(() => {
 		])
 		attest<string>(Palindrome.t)
 		attest(Palindrome("dad")).snap("dad")
-		attest(Palindrome("david").toString()).snap(
-			'must be a palindrome (was "david")'
-		)
+		attest(Palindrome("david").toString()).snap("must be a palindrome")
 	})
 
 	it("narrows the output type of a morph", () => {
+		const _narrowMorphOutputMorph = (s: string) => s.length
+		const _narrowMorphOutputNarrow = (n: number): n is 5 => n === 5
 		const T = type("string")
-			.pipe(function _narrowMorphOutputMorph(s) {
-				return s.length
-			})
-			.narrow(function _narrowMorphOutputNarrow(n): n is 5 {
-				return n === 5
-			})
+			.pipe(_narrowMorphOutputMorph)
+			.narrow(_narrowMorphOutputNarrow)
 
 		attest(T.json).snap({
-			in: "string",
 			morphs: [
-				"$ark._narrowMorphOutputMorph",
-				{ predicate: ["$ark._narrowMorphOutputNarrow"] }
+				"string",
+				registeredReference(_narrowMorphOutputMorph),
+				{ predicate: [registeredReference(_narrowMorphOutputNarrow)] }
 			]
 		})
 
@@ -132,13 +158,64 @@ contextualize(() => {
 
 		attest(T("12345")).snap(5)
 		attest(T("1234").toString()).snap(
-			"must be valid according to _narrowMorphOutputNarrow (was 4)"
+			"must be valid according to _narrowMorphOutputNarrow"
 		)
 	})
 
 	it("expression", () => {
 		const T = type("string", ":", (s): s is `f${string}` => s[0] === "f")
 		attest<`f${string}`>(T.infer)
+		attest(T.expression).snap("string & fn")
+	})
+
+	it("is written by its name after what it narrows", () => {
+		const isLong = (s: string) => s.length > 2
+		attest(type("string").narrow(isLong).expression).snap("string & isLong")
+		attest(type("string").narrow(isLong).array().expression).snap(
+			"(string & isLong)[]"
+		)
+		attest(type("number > 5").narrow(n => n % 2 === 0).expression).snap(
+			"number > 5 & fn"
+		)
+		attest(type("unknown").narrow(isLong as never).expression).snap("isLong")
+		attest(type({ a: "string" }).narrow(isLong as never).expression).snap(
+			"{ a: string } & isLong"
+		)
+		attest(type({ a: "string" }).narrow(isLong as never).description).snap(
+			"{ a: a string }"
+		)
+	})
+
+	it("is written by its keyword", () => {
+		attest(type("string.date").expression).snap("string.date")
+		attest(type("string.date[]").expression).snap("string.date[]")
+		attest(type("string.date & string.url > 5").expression).snap(
+			"string.date & string.url >= 6"
+		)
+		attest(type("string.creditCard").expression).snap("string.creditCard")
+		attest(type("string.creditCard | number").expression).snap(
+			"number | string.creditCard"
+		)
+		attest(type("string.creditCard").description).snap("a credit card number")
+		attest(
+			type.raw(type("string.date").expression).equals("string.date")
+		).equals(true)
+	})
+
+	it("can't narrow a morph in a tuple expression", () => {
+		const toLength = (s: string) => s.length
+		const isEven = (n: number) => n % 2 === 0
+		// @ts-expect-error
+		attest(() => type([["string", "=>", toLength], ":", isEven]))
+			.throws("Predicate operand must be unknown (was a morph)")
+			.type.errors("Predicate operand must be unknown (was a morph)")
+		// @ts-expect-error
+		attest(() => type(["string", "=>", toLength], ":", isEven))
+			.throws("Predicate operand must be unknown (was a morph)")
+			.type.errors("Predicate operand must be unknown (was a morph)")
+		attest(() =>
+			scope({ b: [["b", "=>", toLength], ":", isEven] } as never).export()
+		).throws.snap("ParseError: Predicate operand must be unknown (was a morph)")
 	})
 
 	it("narrows the output type of an morph within a single type", () => {
@@ -166,8 +243,7 @@ contextualize(() => {
 		attest<string>(A.infer)
 
 		attest(A.json).snap({
-			in: { domain: "bigint", predicate: [predicateId] },
-			morphs: [morphId]
+			morphs: [{ domain: "bigint", predicate: [predicateId] }, morphId]
 		})
 	})
 
@@ -258,18 +334,86 @@ contextualize(() => {
 	// https://github.com/arktypeio/arktype/issues/1667
 	it("reject without expected in non-discriminated union", () => {
 		const T = type("string[] | Function").narrow(
-			(v, ctx) => Array.isArray(v) || ctx.reject({ problem: "custom" })
+			(v, ctx) => Array.isArray(v) || ctx.reject({ message: "custom" })
 		)
 		attest(T(function foo() {}).toString()).snap(
-			"must be valid according to an anonymous predicate or an array (was Function(foo))"
+			"must be valid according to an anonymous predicate or an array"
 		)
+	})
+
+	it("mustBe writes what it expected after its path", () => {
+		const Long = type("string").narrow(
+			(s, ctx) => s.length > 2 || ctx.mustBe("longer")
+		)
+		attest(Long("a").toString()).snap("must be longer")
+		const out = type({ name: Long })({ name: "a" }) as type.errors
+		attest(out.summary).snap("name must be longer")
+		attest(out.issues[0].message).snap("must be longer")
+	})
+
+	it("reject with expected and actual writes them after its path", () => {
+		const Long = type("string").narrow(
+			(s, ctx) =>
+				s.length > 2 ||
+				ctx.reject({ expected: "longer", actual: `${s.length}` })
+		)
+		attest(type({ name: Long })({ name: "a" }).toString()).snap(
+			"name must be longer (was 1)"
+		)
+	})
+
+	it("reject with a message writes it after its path and a colon", () => {
+		const Long = type("string").narrow(
+			(s, ctx) => s.length > 2 || ctx.reject({ message: "Enter a longer name" })
+		)
+		attest(Long("a").toString()).snap("Enter a longer name")
+		const out = type({ name: Long })({ name: "a" }) as type.errors
+		attest(out.summary).snap("name: Enter a longer name")
+		attest(out.issues[0].message).snap("Enter a longer name")
+	})
+
+	it("reject with a message at a relative path", () => {
+		const Signup = type({ password: "string", repeat: "string" }).narrow(
+			(d, ctx) =>
+				d.password === d.repeat ||
+				ctx.reject({
+					message: "Passwords don't match",
+					relativePath: ["repeat"]
+				})
+		)
+		attest(
+			type({ user: Signup })({
+				user: { password: "a", repeat: "b" }
+			}).toString()
+		).snap("user.repeat: Passwords don't match")
+	})
+
+	it("reject has no problem", () => {
+		attest(() =>
+			type("string").narrow((s, ctx) =>
+				// @ts-expect-error
+				ctx.reject({ problem: "is too short" })
+			)
+		).type.errors("'problem' does not exist")
+	})
+
+	it("reject keeps the text it was given", () => {
+		const input = { code: "predicate" as const, expected: "odd" }
+		const Odd = type("number").narrow(
+			(n, ctx) => n % 2 === 1 || ctx.reject(input)
+		)
+		const out = Odd(2)
+		input.expected = "even"
+		attest(out.toString()).snap("must be odd")
 	})
 
 	it("unknown is narrowable", () => {
 		const unknownPredicate854 = () => true
 		const T = type("unknown").narrow(unknownPredicate854)
 		attest(T.t).type.toString.snap("unknown")
-		attest(T.json).snap({ predicate: ["$ark.unknownPredicate854"] })
+		attest(T.json).snap({
+			predicate: [registeredReference(unknownPredicate854)]
+		})
 	})
 
 	it("preserves piped union branch narrows through an intersection", () => {
@@ -284,7 +428,7 @@ contextualize(() => {
 
 		attest(T({ kind: "a", value: "1" })).snap({ kind: "a", value: 1 })
 		attest(T({ kind: "a", value: "-1" }).toString()).snap(
-			"value must be positive (was -1)"
+			"value must be positive"
 		)
 	})
 
@@ -292,15 +436,88 @@ contextualize(() => {
 		const T = type("bigint[]").narrow(
 			(arr, ctx) => new Set(arr).size === arr.length || ctx.mustBe("unique")
 		)
-		attest(T([1n, 0n, 1n]).toString()).snap("must be unique (was [1n,0n,1n])")
+		attest(T([1n, 0n, 1n]).toString()).snap("must be unique")
 	})
 
-	it("prints nested undefined in errors", () => {
-		const T = type("unknown[]").narrow(
-			(arr, ctx) => !arr.includes(undefined) || ctx.mustBe("fully defined")
+	it("calls a predicate once per value", () => {
+		let callCount = 0
+		const Positive = type("number").narrow(n => {
+			callCount++
+			return n > 0
+		})
+		const T = type({
+			values: Positive.array(),
+			other: type("number").narrow((n, ctx) => n > 0 || ctx.mustBe("positive"))
+		})
+		attest(T({ values: [1, -1, 2], other: 5 }).toString()).snap(
+			"values[1] must be valid according to an anonymous predicate"
 		)
-		attest(T([1, undefined]).toString()).snap(
-			"must be fully defined (was [1,undefined])"
+		// Allows stops at -1, then Apply checks each value once
+		attest(callCount).equals(5)
+	})
+
+	it("checks data before applying a predicate reading ctx", () => {
+		const calls: string[] = []
+		const $ = scope({})
+		const T = $.type({
+			a: "string",
+			b: $.type("string").narrow((s, ctx) => {
+				calls.push(ctx.path.join("."))
+				return s.length < 3 || ctx.mustBe("short")
+			})
+		})
+		const data = { a: "a", b: "b" }
+		attest(T(data)).is(data)
+		attest(calls.splice(0)).equals(["b"])
+		attest(T({ a: "a", b: "long" }).toString()).snap("b must be short")
+		attest(calls).equals(["b", "b"])
+	})
+
+	it("union after failed branch predicate", () => {
+		const notBad = (o: object, ctx: Traversal) =>
+			!("bad" in o) || ctx.mustBe("not bad")
+		const data = { x: { bad: 1 }, y: "s" }
+		const T = type({ x: type("object").narrow(notBad) }).or({ y: "string" })
+
+		attest(T.allows(data)).equals(true)
+		attest(T(data)).equals(data)
+		const types = scope({
+			c: [{ "p?": "c" }, ":", notBad],
+			u: [{ x: "c" }, "|", { y: "string" }]
+		}).export()
+		attest(types.u.allows(data)).equals(true)
+	})
+
+	it("failed branch predicate leaves its key off ctx.path", () => {
+		const $ = scope({})
+		const Positive = $.type("number").narrow(
+			(n, ctx) => n > 0 || ctx.mustBe("positive")
+		)
+		const T = $.type({ a: Positive, z: "string > 3" }).or({
+			b: $.type("string").pipe((s, ctx) =>
+				s === "bad" ? ctx.error("good") : s
+			),
+			z: "string < 2"
+		})
+		attest(T({ a: -1, b: "bad", z: "q" }).toString()).snap("b must be good")
+	})
+
+	it("names a narrow that rejects every literal", () => {
+		const _isNarrowedC = (s: string) => s === "c"
+		attest(() => type("'a' | 'b'").narrow(_isNarrowedC)).throws(
+			writeUnsatisfiableExpressionError(
+				'Intersection of "a" | "b" and _isNarrowedC'
+			)
+		)
+		attest(() =>
+			type("'a' | 'b'").and(type("string").narrow(_isNarrowedC))
+		).throws(
+			writeUnsatisfiableExpressionError(
+				'Intersection of "a" | "b" and string & _isNarrowedC'
+			)
+		)
+		attest(() => type("'b'").narrow(_isNarrowedC)).throws(
+			writeUnsatisfiableExpressionError('Intersection of "b" and _isNarrowedC')
 		)
 	})
 })

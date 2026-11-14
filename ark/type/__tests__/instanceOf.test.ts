@@ -4,6 +4,25 @@ import { type } from "arktype"
 import { writeInvalidConstructorMessage } from "arktype/internal/parser/tupleExpressions.ts"
 
 contextualize(() => {
+	it("describes what data was by its domain, or a class by its name", () => {
+		const T = type("Date")
+		attest(T(5).toString()).snap("must be a Date")
+		attest(T({}).toString()).snap("must be a Date")
+		attest(T(new Map()).toString()).snap("must be a Date")
+	})
+
+	it("typed array keywords", () => {
+		const T = type("Int8Array | BigUint64Array")
+		attest<Int8Array | BigUint64Array>(T.infer)
+		attest(T.expression).snap("BigUint64Array | Int8Array")
+		attest(type("Int8Array").equals("TypedArray.Int8")).equals(true)
+		const data = new Int8Array(1)
+		attest(T(data)).equals(data)
+		attest(T(new Uint8Array(1)).toString()).snap(
+			"must be a BigUint64Array or an Int8Array"
+		)
+	})
+
 	describe("tuple expression", () => {
 		it("base", () => {
 			const T = type(["instanceof", Error])
@@ -13,8 +32,8 @@ contextualize(() => {
 			const e = new Error()
 			attest(T(e)).equals(e)
 			attest(T(e)).equals(e)
-			attest(T({}).toString()).snap("must be an Error (was object)")
-			attest(T(undefined).toString()).snap("must be an Error (was undefined)")
+			attest(T({}).toString()).snap("must be an Error")
+			attest(T(undefined).toString()).snap("must be an Error")
 		})
 
 		it("fluent", () => {
@@ -33,9 +52,7 @@ contextualize(() => {
 			// inferred as Error? Disabling this check for now, seems like an anomaly.
 			// attest<TypeError>(T.infer)
 			attest(T(e)).equals(e)
-			attest(T(new Error()).toString()).snap(
-				"must be an instance of TypeError (was Error)"
-			)
+			attest(T(new Error()).toString()).snap("must be an instance of TypeError")
 		})
 		it("abstract", () => {
 			abstract class Base {
@@ -72,9 +89,7 @@ contextualize(() => {
 			attest(Ark.in.infer).type.toString("ArkClass")
 			const a = new ArkClass()
 			attest(Ark(a)).equals(a)
-			attest(Ark({}).toString()).snap(
-				"must be an instance of ArkClass (was object)"
-			)
+			attest(Ark({}).toString()).snap("must be an instance of ArkClass")
 		})
 		it("bidirectional checks doesn't break pipe inference", () => {
 			const T = type({

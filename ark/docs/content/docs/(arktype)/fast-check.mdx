@@ -1,0 +1,83 @@
+---
+title: fast-check
+description: Generate test data from a Type for property-based tests with @ark/fast-check.
+---
+
+`@ark/fast-check` turns a Type into a [fast-check](https://fast-check.dev) arbitrary, so your property-based tests generate data from the same definition you validate with. It works with fast-check 3 and 4.
+
+<InstallationTabs pkg="@ark/fast-check fast-check" dev />
+
+## Generating data
+
+`arkToArbitrary` takes a Type and returns an arbitrary:
+
+```ts
+import { arkToArbitrary } from "@ark/fast-check"
+import { type } from "arktype"
+import * as fc from "fast-check"
+
+const User = type({
+	name: "string > 0",
+	age: "number.integer >= 0",
+	"email?": "string.email",
+	tags: "string[] <= 3"
+})
+
+const users = arkToArbitrary(User)
+
+// every generated user still validates after a JSON round trip
+fc.assert(
+	fc.property(users, user => User.allows(JSON.parse(JSON.stringify(user))))
+)
+```
+
+The arbitrary is typed `fc.Arbitrary<unknown>`. To use generated values as your Type's data, cast it:
+
+```ts
+import { arkToArbitrary } from "@ark/fast-check"
+import * as fc from "fast-check"
+
+const User = type({
+	name: "string > 0",
+	age: "number.integer >= 0"
+})
+// ---cut---
+const users = arkToArbitrary(User) as fc.Arbitrary<typeof User.inferIn>
+```
+
+Values are generated for the Type's input. For a morph like `string.trim`, you get strings that haven't been trimmed yet. Checks that run inside a morph aren't seen, so a morph that can fail rejects some of what's generated.
+
+## What's supported
+
+These generate only valid data:
+
+- `string`, `number`, `bigint`, `boolean`, `symbol`, `null`, `undefined`, `unknown`, literals and unions
+- number ranges, `number.integer` and divisors like `number % 3`
+- string length bounds, or a single regex such as `string.email`, `string.uuid` or your own
+- objects with required, optional and index signature keys
+- arrays with a minimum, maximum or exact length, and tuples with optional or variadic elements
+- cyclic types, like a `this` reference, a recursive scope alias or `object.json`
+- `Date`, with or without bounds, and `Set`, whose elements can be any value
+
+These throw when you call `arkToArbitrary`:
+
+- instances of any class other than `Array`, `Date` and `Set`, including `Map`, `Function`, `Promise`, typed arrays and `type.instanceOf(MyClass)`
+- regexes with a lookahead, which fast-check can't generate from. Several keywords use one, including `string.numeric`, `string.integer`, `string.date.iso` and their `.parse` variants.
+- more than one regex on a string, like `string.email & string.alpha`
+- a regex with a length bound, like `string.email < 50`
+
+These are ignored, so the arbitrary generates data your Type rejects:
+
+- `narrow` predicates, and keywords implemented as predicates rather than regexes, like `string.url`, `string.json` and `string.date`, including their `.parse` variants
+
+When the Type accepts a reasonable share of what the arbitrary generates, filter out the rest:
+
+```ts
+import { arkToArbitrary } from "@ark/fast-check"
+
+const Even = type("number.integer").narrow(n => n % 2 === 0)
+
+const evens = arkToArbitrary(Even).filter(n => Even.allows(n))
+```
+
+When it doesn't, fast-check gives up after too many rejected values, and you'll need to write that arbitrary yourself.

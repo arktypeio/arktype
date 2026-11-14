@@ -1,52 +1,38 @@
 ---
-title: Integration
+title: Custom assertions
+description: Read the type data attest collects from your own assertion functions.
 ---
 
-### Setup
+If you're a library author who wants type data in your own assertions rather than through `attest`, tell `setup` which function names to analyze with `attestAliases`.
 
-If you're a library author wanting to integrate type into your own assertions instead of using the `attest` API, you'll need to call `setup` with a list of `attestAliases` to ensure type data is collected from your own functions:
+## Setup
 
 ```ts
 import { setup } from "@ark/attest"
 
-// attest will only collect type data from functions with names listed in `attestAliases`
-setup({ attestAliases: ["yourCustomAssert"] })
-
-// There are many other config options, but some are primarily internal- use others at your own risk!
+// replaces the default ["attest", "attestInternal"], so keep "attest" if you use it
+setup({ attestAliases: ["attest", "yourCustomAssert"] })
 ```
 
-You'll need to make sure that setup with whatever aliases you need before the first test runs. As part of the setup process, attest will search for the specified assertion calls and cache their types in a temporary file that will be referenced during test execution.
+`setup` has to run with these aliases before the first test. It finds every call to them in your project and writes their types to `.attest/assertions.json`, so assertions in any test process can read them without starting TypeScript.
 
-This ensures that type assertions can be made across processes without creating a new TSServer instance for each.
+## Type data
 
-### TS Versions
+<AnchorAliases apis />
 
-Attest analyzes your project with whichever version of `typescript` is installed. To test multiple versions, run your suite once per version, e.g. via a CI matrix that installs each version before running tests.
-
-TypeScript 7.1+ is supported via its native API. Type assertions, completions, JSDoc, benches and the CLI work the same way, with a few differences:
-
-- Instantiation counts are measured by running `tsc --extendedDiagnostics --singleThreaded` per bench. Since `tsc` fully checks the bench's dependencies before measuring it, work a bench shares with them isn't attributed to the bench, so counts run lower than with TypeScript 5/6, by as much as most of the count for a bench whose cost is mostly shared with its dependencies, and baselines should be recorded separately.
-- Type strings, union ordering and error elaboration can differ from earlier versions, so snapshots may need to be updated when switching.
-- Benches write temporary copies beside their source files while measuring, so they need a writable source directory.
-
-### APIs
-
-The most flexible attest APIs are `getTypeAssertionAtPosition` and `caller`.
-
-Here's an example of how you might use them in your own API:
+`caller` returns the position your function was called from, and `getTypeAssertionAtPosition` returns the data `setup` recorded for the call there:
 
 ```ts
 import { caller, getTypeAssertionAtPosition } from "@ark/attest"
 
 export const yourCustomAssert = <expectedType>(actualValue: expectedType) => {
-	const position = caller()
-	const assertion = getTypeAssertionAtPosition(position)
+	const assertion = getTypeAssertionAtPosition(caller())
 	const actual = assertion.args[0]
-	// relationship of the actual value's type to the expected type arg
+	// how the value's type relates to the expected type argument
 	const relationship = actual.relationships.typeArgs[0]
 	if (relationship === undefined) {
 		throw new Error(
-			`yourCustomAssert requires a type arg representing the expected type, e.g. 'yourCustomAssert<"foo">("foo")'`
+			`yourCustomAssert requires an expected type, e.g. yourCustomAssert<"foo">("foo")`
 		)
 	}
 	if (relationship !== "equality") {
@@ -57,18 +43,55 @@ export const yourCustomAssert = <expectedType>(actualValue: expectedType) => {
 }
 ```
 
-A user might then use `yourCustomAssert` like this:
+A user might then call it like this:
 
 ```ts
-// @noErrors
+// @filename: your-package.d.ts
+declare module "your-package" {
+	export const yourCustomAssert: <expectedType>(
+		actualValue: expectedType
+	) => void
+}
+// @filename: index.ts
+// ---cut---
 import { yourCustomAssert } from "your-package"
 
-// Ok
+// passes
 yourCustomAssert<"foo">(`${"f"}oo` as const)
-// Error: `Expected boolean, got true with relationship subtype`
+// throws "Expected boolean, got true with relationship subtype"
 yourCustomAssert<boolean>(true)
-// Error: `Expected 5, got number with relationship supertype`
+// throws "Expected 5, got number with relationship supertype"
+// @ts-expect-error
 yourCustomAssert<5>(2 + 3)
 ```
 
-Please don't hesitate to open a GitHub [issue](https://github.com/arktypeio/arktype/issues/new/choose) or [discussion](https://github.com/arktypeio/arktype/discussions/new/choose) or reach out on [ArkType's Discord](https://arktype.io/discord) if you have any questions or feedback- we'd love to hear from you! ⛵
+The data for each call (`TypeAssertionData`) has:
+
+- `args` and `typeArgs`: for each argument and type argument, its `type` as TypeScript displays it, and `relationships.args` and `relationships.typeArgs`, how it relates to each argument and type argument: `"subtype"`, `"supertype"`, `"equality"` or `"none"`
+- `errors`: the messages of the type errors reported for the call
+- `completions`: the completions of each string literal in the first argument
+- `jsdoc`: the JSDoc of the first argument, if any
+- `location`: the call's start and end `{ line, char }`
+
+If your assertion is called through a helper of yours, `caller()` returns the position of the call in the helper. Pass `caller({ upStackBy: 4 })` to look one call further up the stack, or a `skip` function that returns `true` for each position to move past, e.g. `caller({ skip: position => position.method === "yourHelper" })`.
+
+## Instantiations
+
+A call to `.instantiations` on an alias, e.g. `yourCustomAssert.instantiations()`, records the instantiations contributed by the test it's in. `getBenchAssertionAtPosition` returns that count:
+
+```ts
+declare const yourCustomAssert: { instantiations: (max: number) => void }
+// ---cut---
+import { caller, getBenchAssertionAtPosition } from "@ark/attest"
+
+yourCustomAssert.instantiations = (max: number) => {
+	const { count } = getBenchAssertionAtPosition(caller())
+	if (count > max) throw new Error(`${count} instantiations exceeds ${max}`)
+}
+```
+
+## Without setup
+
+`writeAssertionData(path)` type-checks your project and writes the type data to `path`, as `setup` does without deleting `.attest` or recording config. Assertions read it from `.attest/assertions.json`.
+
+For questions or feedback, open an [issue](https://github.com/arktypeio/arktype/issues/new/choose) or [discussion](https://github.com/arktypeio/arktype/discussions/new/choose) on GitHub, or ask on [ArkType's Discord](https://arktype.io/discord).

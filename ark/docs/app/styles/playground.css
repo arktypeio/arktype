@@ -1,0 +1,246 @@
+/* the playground's panels, loaded by app/playground/page.tsx */
+.glass-container,
+.monaco-editor {
+	box-shadow: var(--shadow-panel);
+	backdrop-filter: blur(16px);
+	/* without this Monaco adds a 1px outline at the top of the editor */
+	outline-width: 0px !important;
+}
+
+.monaco-editor,
+.overflow-guard {
+	border-radius: 16px;
+}
+
+/* the playground's precompiled tab */
+.precompiled {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	p {
+		margin: 0;
+	}
+	code {
+		font-family: var(--mono);
+	}
+	[data-stale] {
+		opacity: 0.55;
+		transition: opacity var(--t-micro);
+	}
+}
+
+.pc-head {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	align-items: center;
+	gap: 10px 16px;
+}
+
+.pc-seg {
+	display: inline-flex;
+	padding: 3px;
+	border-radius: var(--r-pill);
+	border: 1px solid var(--line);
+	background: var(--sunk);
+	button {
+		font: 400 12.5px / 1 var(--mono);
+		color: var(--ink-3);
+		padding: 7px 12px;
+		border-radius: var(--r-pill);
+		cursor: pointer;
+		transition:
+			color var(--t-micro),
+			background var(--t-ui) var(--ease-out);
+		&:hover {
+			color: var(--ink-2);
+		}
+		&[aria-checked="true"] {
+			background: var(--raised);
+			color: var(--ink);
+			box-shadow: 0 0 0 1px var(--line);
+		}
+	}
+}
+
+.pc-size {
+	font: 400 12.5px / 1.2 var(--mono);
+	color: var(--ink-3);
+}
+
+.pc-gz {
+	color: var(--gold);
+	font-size: 16px;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.pc-split {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	font-size: 12.5px;
+	color: var(--ink-3);
+}
+
+/* the validator's share of what ships, then the runtime's */
+.pc-bar {
+	display: grid;
+	gap: 2px;
+	height: 4px;
+	border-radius: 2px;
+	overflow: hidden;
+	transition: grid-template-columns var(--t-reveal) var(--ease-out);
+	i:first-child {
+		background: var(--gold);
+	}
+	i:last-child {
+		background: var(--bar);
+	}
+}
+
+.pc-refusal {
+	font-size: 13px;
+	color: var(--red-text);
+}
+
+.pc-foot,
+.pc-note {
+	font-size: 12.5px;
+	color: var(--ink-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.precompiled [data-stale],
+	.pc-seg button,
+	.pc-bar {
+		transition: none;
+	}
+}
+
+/* the play button on the blog's autoplay demo */
+@media (prefers-reduced-motion: no-preference) {
+	.wiggle-animation {
+		animation: wiggle 4s ease-in-out infinite;
+		transform-origin: center center;
+	}
+}
+
+@keyframes wiggle {
+	0%,
+	87.5%,
+	100% {
+		rotate: 0deg;
+	}
+	88.5% {
+		rotate: 1.5deg;
+	}
+	89.5% {
+		rotate: -0.5deg;
+	}
+	90.5% {
+		rotate: -1.5deg;
+	}
+	91.5% {
+		rotate: 1deg;
+	}
+	92.5% {
+		rotate: 1.5deg;
+	}
+	93.5% {
+		rotate: -1deg;
+	}
+	94.5% {
+		rotate: -0.5deg;
+	}
+	96% {
+		rotate: 0.25deg;
+	}
+	98% {
+		rotate: 0deg;
+	}
+}
+
+/* Pick 3: rows fade in, every other library's marks land, then ArkType's,
+   one per category, and a glint crosses its row; html[data-motion] holds the
+   start until the table is seen */
+@media (prefers-reduced-motion: no-preference) {
+	:root[data-motion] .home {
+		.p3:not([data-play]) {
+			tbody tr,
+			.p3-table .p3-mark {
+				opacity: 0;
+			}
+		}
+		.p3[data-play] {
+			tbody tr {
+				animation: rise-fade 0.3s ease-out both;
+				animation-delay: calc(var(--r) * 0.06s);
+			}
+			.p3-table .p3-mark {
+				animation: stamp-in 0.42s var(--ease-pop) both;
+				animation-delay: var(--at);
+			}
+			tr.is-ours {
+				background-image: linear-gradient(
+					90deg,
+					transparent,
+					color-mix(in oklab, var(--gold) 22%, transparent),
+					transparent
+				);
+				background-repeat: no-repeat;
+				background-size: 40% 100%;
+				animation:
+					rise-fade 0.3s ease-out both,
+					p3-glint 0.7s ease-out 1.45s both;
+			}
+		}
+	}
+}
+@keyframes p3-glint {
+	from {
+		background-position-x: -80%;
+	}
+	to {
+		background-position-x: 180%;
+	}
+}
+
+@media (max-width: 760px) {
+	.home {
+		.p3 {
+			padding: 18px 10px 14px;
+		}
+		.p3-head {
+			padding-inline: 6px;
+		}
+		.p3-table {
+			font-size: 12.5px;
+			th,
+			td {
+				padding: 10px 4px;
+			}
+			:is(th, td):first-child {
+				width: 24%;
+				padding-left: 6px;
+			}
+		}
+		.p3-cell {
+			gap: 5px;
+		}
+		.p3-mark {
+			width: 15px;
+			height: 15px;
+			svg {
+				width: 9px;
+				height: 9px;
+			}
+		}
+		.p3-foot {
+			padding-inline: 6px;
+			a {
+				margin-left: 0;
+			}
+		}
+	}
+}

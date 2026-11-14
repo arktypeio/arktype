@@ -1,0 +1,100 @@
+---
+title: Types
+description: The Regex type and its members, plus regex.infer, regex.parse, regex.validate and regex.as.
+---
+
+## `Regex`
+
+`regex()` returns a `RegExp` typed as `Regex<pattern, ctx>`, where `pattern` is the strings it matches and `ctx` is an object with optional `flags`, `captures` and `names`. `Regex` extends `RegExp`, so it can be passed anywhere a `RegExp` is expected.
+
+| Member               | Type                               |
+| -------------------- | ---------------------------------- |
+| `infer`              | `pattern`                          |
+| `inferCaptures`      | the positional captures as a tuple |
+| `inferNamedCaptures` | the named captures as an object    |
+| `inferExecArray`     | what `.exec()` returns on a match  |
+| `flags`              | the flags string, like `"gi"`      |
+| `test(s)`            | narrows `s` to `pattern`           |
+| `exec(s)`            | `inferExecArray \| null`           |
+
+The `infer` members exist only in types: read them with `typeof`. At runtime they're `undefined`.
+
+```ts
+import { regex } from "arkregex"
+
+const date = regex("^(?<year>\\d{4})-(?<month>\\d{2})$")
+
+type Pattern = typeof date.infer
+//   ^? `${number}-${number}`
+
+type Captures = typeof date.inferCaptures
+//   ^? [`${number}`, `${number}`]
+
+type Names = typeof date.inferNamedCaptures
+//   ^? { year: `${number}`; month: `${number}` }
+```
+
+`Regex<pattern>` as a parameter type accepts any expression whose inferred type is assignable to `pattern`. A `Regex` with no arguments accepts any `regex()` result, but not a plain `RegExp`:
+
+```ts
+// @errors: 2345
+import { regex, type Regex } from "arkregex"
+
+const majorMinor = (r: Regex<`${number}.${number}`>) => r
+
+const version = regex("^(\\d{1,3})\\.(\\d{1,3})$")
+const tag = regex("^v(\\d{1,3})$")
+
+majorMinor(version)
+
+majorMinor(tag) // Regex<`v${number}`, ...> is not assignable to Regex<`${number}.${number}`>
+```
+
+## `regex.infer`
+
+Infers the pattern of an expression without creating one. An optional second argument passes flags:
+
+```ts
+import { regex } from "arkregex"
+
+type Version = regex.infer<"^(\\d{1,3})\\.(\\d{1,3})$">
+//   ^? `${number}.${number}`
+
+type Ok = regex.infer<"^ok$", "i">
+//   ^? "ok" | "oK" | "Ok" | "OK"
+```
+
+## `regex.parse` and `regex.validate`
+
+`regex.parse` gives the full `Regex` type, or the error message if the expression is invalid. `regex.validate` is the parameter type `regex` uses to report that message. Together they let you write your own wrappers:
+
+```ts
+import { regex } from "arkregex"
+
+const anchored = <src extends string>(
+	src: regex.validate<src>
+): regex.parse<`^${src}$`> => regex.as(`^${src}$`) as never
+
+const ab = anchored("a(b)")
+//    ^? Regex<"ab", { captures: ["b"] }>
+```
+
+## `regex.as`
+
+If an expression is too long or complex for TypeScript to infer (e.g. you see `Type instantiation is excessively deep`), or uses syntax ArkRegex [rejects](/docs/regex/errors#what-isnt-checked), type it yourself with `regex.as`. It skips parsing and validation entirely:
+
+```ts
+import { regex } from "arkregex"
+
+const version = regex.as<`v${number}`, { captures: [`${number}`] }>("^v(\\d+)$")
+//    ^? Regex<`v${number}`, { captures: [`${number}`] }>
+```
+
+The flags argument isn't read for types. If you pass flags, declare them in `ctx` too, so `.flags` and `.exec()` are typed to match:
+
+```ts
+const newline = regex.as<"\n", { flags: "g" }>("^\\cJ$", "g")
+//    ^? Regex<"\n", { flags: "g" }>
+```
+
+With no type arguments, `regex.as` returns `Regex<string>`.

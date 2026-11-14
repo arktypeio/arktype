@@ -41,7 +41,7 @@ export type TraitComposition = <
 
 // even though the value we attach will be identical, we use this so classes
 // won't be treated as instanceof a Trait
-const implementedTraits = noSuggest("implementedTraits")
+const implementedTraits = /* @__PURE__ */ noSuggest("implementedTraits")
 
 export const hasTrait =
 	(traitClass: Constructor) =>

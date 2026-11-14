@@ -1,30 +1,48 @@
-import { genericNode, intrinsic, node } from "@ark/schema"
 import {
+	genericNode,
+	intrinsic,
+	isResolvable,
+	node,
+	type BaseRoot
+} from "@ark/schema"
+import {
+	cached,
 	Hkt,
+	throwParseError,
 	type Json,
 	type Key,
 	type omit,
 	type pick,
-	type show
+	type show,
+	type Thunk
 } from "@ark/util"
-import type { To } from "../attributes.ts"
+import type { required, To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
-import { Scope } from "../scope.ts"
+import { keywordModule } from "../scope.ts"
+import { stringifyJson } from "./functions.ts"
 
-export const arkTsKeywords: arkTsKeywords = Scope.module({
-	bigint: intrinsic.bigint,
-	boolean: intrinsic.boolean,
-	false: intrinsic.false,
-	never: intrinsic.never,
-	null: intrinsic.null,
-	number: intrinsic.number,
-	object: intrinsic.object,
-	string: intrinsic.string,
-	symbol: intrinsic.symbol,
-	true: intrinsic.true,
-	unknown: intrinsic.unknown,
-	undefined: intrinsic.undefined
-}) as never
+export const tsKeywordDefinitions: Record<
+	keyof arkTsKeywords.$,
+	Thunk<BaseRoot>
+> = {
+	bigint: () => intrinsic.bigint,
+	boolean: () => intrinsic.boolean,
+	false: () => intrinsic.false,
+	never: () => intrinsic.never,
+	null: () => intrinsic.null,
+	number: () => intrinsic.number,
+	object: () => intrinsic.object,
+	string: () => intrinsic.string,
+	symbol: () => intrinsic.symbol,
+	true: () => intrinsic.true,
+	unknown: () => intrinsic.unknown,
+	undefined: () => intrinsic.undefined
+}
+
+export const arkTsKeywords: arkTsKeywords = /* @__PURE__ */ keywordModule(
+	tsKeywordDefinitions,
+	{ name: "ts" }
+) as never
 
 export type arkTsKeywords = Module<arkTsKeywords.$>
 
@@ -47,15 +65,15 @@ export declare namespace arkTsKeywords {
 	}
 }
 
-export const unknown = Scope.module(
+export const unknown: Module<unknown.$> = keywordModule(
 	{
-		root: intrinsic.unknown,
-		any: intrinsic.unknown
+		root: () => intrinsic.unknown,
+		any: () => intrinsic.unknown
 	},
 	{
 		name: "unknown"
 	}
-)
+) as never
 
 export declare namespace unknown {
 	export type submodule = Submodule<$>
@@ -66,19 +84,19 @@ export declare namespace unknown {
 	}
 }
 
-export const json = Scope.module(
+export const json: Module<json.$> = keywordModule(
 	{
-		root: intrinsic.jsonObject,
-		stringify: node("morph", {
-			in: intrinsic.jsonObject,
-			morphs: (data: Json) => JSON.stringify(data),
-			declaredOut: intrinsic.string
-		})
+		root: () => intrinsic.jsonObject,
+		stringify: () =>
+			node("morph", {
+				morphs: [intrinsic.jsonObject, stringifyJson],
+				declaredOut: intrinsic.string
+			})
 	},
 	{
 		name: "object.json"
 	}
-)
+) as never
 
 export declare namespace json {
 	export type submodule = Submodule<$>
@@ -89,15 +107,15 @@ export declare namespace json {
 	}
 }
 
-export const object = Scope.module(
+export const object: Module<object.$> = keywordModule(
 	{
-		root: intrinsic.object,
+		root: () => intrinsic.object,
 		json
 	},
 	{
 		name: "object"
 	}
-)
+) as never
 
 export declare namespace object {
 	export type submodule = Submodule<$>
@@ -108,22 +126,26 @@ export declare namespace object {
 	}
 }
 
-class RecordHkt extends Hkt<[Key, unknown]> {
+export class RecordHkt extends Hkt<[Key, unknown]> {
 	declare body: Record<this[0], this[1]>
+	// nominal, so no other Hkt is inferred as a Record
+	declare private record: true
 
 	description =
 		'instantiate an object from an index signature and corresponding value type like `Record("string", "number")`'
 }
 
-const Record = genericNode(["K", intrinsic.key], "V")(
-	args => ({
-		domain: "object",
-		index: {
-			signature: args.K,
-			value: args.V
-		}
-	}),
-	RecordHkt
+const Record = cached(() =>
+	genericNode(["K", intrinsic.key], "V")(
+		args => ({
+			domain: "object",
+			index: {
+				signature: args.K,
+				value: args.V
+			}
+		}),
+		RecordHkt
+	)
 )
 
 class PickHkt extends Hkt<[object, Key]> {
@@ -133,9 +155,11 @@ class PickHkt extends Hkt<[object, Key]> {
 		'pick a set of properties from an object like `Pick(User, "name | age")`'
 }
 
-const Pick = genericNode(["T", intrinsic.object], ["K", intrinsic.key])(
-	args => args.T.pick(args.K as never),
-	PickHkt
+const Pick = cached(() =>
+	genericNode(["T", intrinsic.object], ["K", intrinsic.key])(
+		args => args.T.pick(args.K as never),
+		PickHkt
+	)
 )
 
 class OmitHkt extends Hkt<[object, Key]> {
@@ -145,9 +169,11 @@ class OmitHkt extends Hkt<[object, Key]> {
 		'omit a set of properties from an object like `Omit(User, "age")`'
 }
 
-const Omit = genericNode(["T", intrinsic.object], ["K", intrinsic.key])(
-	args => args.T.omit(args.K as never),
-	OmitHkt
+const Omit = cached(() =>
+	genericNode(["T", intrinsic.object], ["K", intrinsic.key])(
+		args => args.T.omit(args.K as never),
+		OmitHkt
+	)
 )
 
 class PartialHkt extends Hkt<[object]> {
@@ -157,21 +183,19 @@ class PartialHkt extends Hkt<[object]> {
 		"make all named properties of an object optional like `Partial(User)`"
 }
 
-const Partial = genericNode(["T", intrinsic.object])(
-	args => args.T.partial(),
-	PartialHkt
+const Partial = cached(() =>
+	genericNode(["T", intrinsic.object])(args => args.T.partial(), PartialHkt)
 )
 
 class RequiredHkt extends Hkt<[object]> {
-	declare body: show<Required<this[0]>>
+	declare body: show<required<this[0]>>
 
 	description =
 		"make all named properties of an object required like `Required(User)`"
 }
 
-const Required = genericNode(["T", intrinsic.object])(
-	args => args.T.required(),
-	RequiredHkt
+const Required = cached(() =>
+	genericNode(["T", intrinsic.object])(args => args.T.required(), RequiredHkt)
 )
 
 class ExcludeHkt extends Hkt<[unknown, unknown]> {
@@ -180,9 +204,21 @@ class ExcludeHkt extends Hkt<[unknown, unknown]> {
 	description = 'exclude branches of a union like `Exclude("boolean", "true")`'
 }
 
-const Exclude = genericNode("T", "U")(
-	args => args.T.exclude(args.U),
-	ExcludeHkt
+const filterBranches = (
+	operator: "Exclude" | "Extract",
+	t: BaseRoot,
+	u: BaseRoot
+): BaseRoot =>
+	!isResolvable(t) || !isResolvable(u) ?
+		throwParseError(writeUnresolvedFilterMessage(operator))
+	: operator === "Exclude" ? t.exclude(u)
+	: t.extract(u)
+
+const Exclude = cached(() =>
+	genericNode("T", "U")(
+		args => filterBranches("Exclude", args.T, args.U),
+		ExcludeHkt
+	)
 )
 
 class ExtractHkt extends Hkt<[unknown, unknown]> {
@@ -192,12 +228,14 @@ class ExtractHkt extends Hkt<[unknown, unknown]> {
 		'extract branches of a union like `Extract("0 | false | 1", "number")`'
 }
 
-const Extract = genericNode("T", "U")(
-	args => args.T.extract(args.U),
-	ExtractHkt
+const Extract = cached(() =>
+	genericNode("T", "U")(
+		args => filterBranches("Extract", args.T, args.U),
+		ExtractHkt
+	)
 )
 
-export const arkTsGenerics: arkTsGenerics.module = Scope.module({
+export const tsGenericDefinitions = {
 	Exclude,
 	Extract,
 	Omit,
@@ -205,7 +243,12 @@ export const arkTsGenerics: arkTsGenerics.module = Scope.module({
 	Pick,
 	Record,
 	Required
-}) as never
+}
+
+export const arkTsGenerics: arkTsGenerics.module =
+	/* @__PURE__ */ keywordModule(tsGenericDefinitions, {
+		name: "ts.generics"
+	}) as never
 
 export declare namespace arkTsGenerics {
 	export type module = Module<arkTsGenerics.$>
@@ -213,12 +256,20 @@ export declare namespace arkTsGenerics {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		Exclude: typeof Exclude.t
-		Extract: typeof Extract.t
-		Omit: typeof Omit.t
-		Partial: typeof Partial.t
-		Pick: typeof Pick.t
-		Record: typeof Record.t
-		Required: typeof Required.t
+		Exclude: ReturnType<typeof Exclude>["t"]
+		Extract: ReturnType<typeof Extract>["t"]
+		Omit: ReturnType<typeof Omit>["t"]
+		Partial: ReturnType<typeof Partial>["t"]
+		Pick: ReturnType<typeof Pick>["t"]
+		Record: ReturnType<typeof Record>["t"]
+		Required: ReturnType<typeof Required>["t"]
 	}
 }
+
+export const writeUnresolvedFilterMessage = <operator extends string>(
+	operator: operator
+): writeUnresolvedFilterMessage<operator> =>
+	`${operator} can't filter a type still being defined`
+
+export type writeUnresolvedFilterMessage<operator extends string> =
+	`${operator} can't filter a type still being defined`

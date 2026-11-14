@@ -21,33 +21,31 @@ export const getPossiblyWeightedArray = (
 		)
 	:	arrArbitrary
 
+const isOmittable = (element: SequenceTuple[number]) =>
+	element.kind === "optionals" || element.kind === "defaultables"
+
 export const spreadVariadicElements = (
 	tupleArbitraries: fc.Arbitrary<unknown>[],
 	tupleElements: SequenceTuple
 ): fc.Arbitrary<unknown[]> =>
-	fc.tuple(...tupleArbitraries).chain(arr => {
-		const arrayWithoutOptionals = []
-		const arrayWithOptionals = []
-
-		for (const i in arr) {
-			if (tupleElements[i].kind === "variadic") {
-				const generatedValuesArray = (arr[i] as unknown[]).map(val =>
-					fc.constant(val)
-				)
-				arrayWithoutOptionals.push(...generatedValuesArray)
-				arrayWithOptionals.push(...generatedValuesArray)
-			} else if (tupleElements[i].kind === "optionals")
-				arrayWithOptionals.push(fc.constant(arr[i]))
-			else {
-				arrayWithoutOptionals.push(fc.constant(arr[i]))
-				arrayWithOptionals.push(fc.constant(arr[i]))
-			}
-		}
-		if (arrayWithOptionals.length !== arrayWithoutOptionals.length) {
-			return fc.oneof(
-				fc.tuple(...arrayWithoutOptionals),
-				fc.tuple(...arrayWithOptionals)
+	fc.nat(tupleElements.filter(isOmittable).length).chain(omittablesIncluded => {
+		// omitting an element omits every element after it, so those are never
+		// generated, e.g. a cyclic optional element
+		let end = 0
+		let omittablesSeen = 0
+		while (
+			end < tupleElements.length &&
+			!(
+				isOmittable(tupleElements[end]) &&
+				omittablesSeen++ === omittablesIncluded
 			)
-		}
-		return fc.tuple(...arrayWithOptionals)
+		)
+			end++
+		return fc
+			.tuple(...tupleArbitraries.slice(0, end))
+			.map(values =>
+				values.flatMap((value, i) =>
+					tupleElements[i].kind === "variadic" ? (value as unknown[]) : [value]
+				)
+			)
 	})

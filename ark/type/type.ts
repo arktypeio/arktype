@@ -1,22 +1,24 @@
 import {
 	ArkErrors,
 	BaseRoot,
+	finalizeExport,
 	GenericRoot,
 	type BaseParseOptions,
 	type Morph,
 	type NodeSelector,
-	type Predicate,
 	type RootSchema,
 	type TypeMeta
 } from "@ark/schema"
 import {
 	Callable,
+	defineLazily,
 	Hkt,
 	type Constructor,
 	type array,
 	type conform
 } from "@ark/util"
 import type { distill } from "./attributes.ts"
+import { deferDefinition, deferUnion, deferUnits } from "./deferred.ts"
 import type { DeclarationParser } from "./declare.ts"
 import type { FnParser } from "./fn.ts"
 import type {
@@ -35,19 +37,78 @@ import type {
 	NaryPipeParser,
 	NaryUnionParser
 } from "./nary.ts"
+import type { validateDefinition } from "./parser/definition.ts"
 import type {
 	ArgTwoOperator,
 	IndexZeroOperator,
-	TupleInfixOperator
+	TupleInfixOperator,
+	validatePredicate
 } from "./parser/tupleExpressions.ts"
-import type {
-	InternalScope,
-	ModuleParser,
-	Scope,
-	ScopeParser
+import {
+	$arkTypeRegistry,
+	type bindThis,
+	type InternalScope,
+	type ModuleParser,
+	type Scope,
+	type ScopeParser
 } from "./scope.ts"
 import type { BaseType } from "./variants/base.ts"
 import type { instantiateType } from "./variants/instantiate.ts"
+
+/**
+ * What the arguments of `type`'s second signature are checked against, wherever
+ * that has to be computed from them.
+ *
+ * It's an interface with annotated variance for the reason
+ * `validateDefinitionArgument` goes through one: completing a string
+ * argument has TypeScript infer from each parameter's type to itself, and an
+ * alias met there with a type parameter among its arguments has its variance
+ * measured. `validateParameterString`, `parseValidGenericParams` and
+ * `type.infer` each reach the whole string parser that way, at 450-670ms a
+ * completion on TypeScript 6. Indexed by a key that's deferred until `zero` is
+ * known, nothing in here is visited.
+ *
+ * The rest parameter's tuples are properties too, rather than written around
+ * an indexed property in the signature. The first call of that form then costs
+ * fewer instantiations than it did without any of this (about 2,500 against
+ * 3,000 for `type("string", "|>", "unknown")`, and against 13,500 with a morph),
+ * where a tuple in the signature costs more (3,600). Each later call costs 20 to
+ * 95 more, the price of the interface. Their elements are indexed again because
+ * TypeScript also infers to a tuple's element type from the string being
+ * completed.
+ */
+export interface ValidatedArgs<
+	in out zero,
+	in out one,
+	in out rest extends array,
+	in out $
+> {
+	params: zero extends ParameterString ? validateParameterString<zero, $>
+	:	never
+	body: zero extends ParameterString ?
+		validateDefinition<
+			one,
+			$,
+			baseGenericConstraints<parseValidGenericParams<zero, $>>
+		>
+	:	never
+	predicate: validatePredicate<
+		type.infer<zero, $>,
+		distill.In<type.infer<zero, $>>
+	>
+	morph: Morph<distill.Out<type.infer<zero, $>>, unknown>
+	operand: validateDefinition<rest[0], $, bindThis<rest[0]>>
+	predicateRest: [
+		ValidatedArgs<zero, one, rest, $>[zero extends unknown ? "predicate"
+		:	never]
+	]
+	morphRest: [
+		ValidatedArgs<zero, one, rest, $>[zero extends unknown ? "morph" : never]
+	]
+	operandRest: [
+		ValidatedArgs<zero, one, rest, $>[zero extends unknown ? "operand" : never]
+	]
+}
 
 /** The convenience properties attached to `type` */
 export type TypeParserAttachments =
@@ -68,7 +129,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 
 	/**
 	 * Create a {@link Generic} from a parameter string and body definition, or a
-	 * {@link Type} from a [tuple expression](http://localhost:3000/docs/expressions)
+	 * {@link Type} from a [tuple expression](https://arktype.io/docs/expressions)
 	 * spread as this function's arguments.
 	 *
 	 * @param params A string like "<t, n extends number>" specifying the
@@ -91,15 +152,12 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 			Generic<parseValidGenericParams<zero, $>, one, $>
 		:	type.instantiate<[zero, one, ...rest], $>
 	>(
-		_0: zero extends ParameterString ? validateParameterString<zero, $>
+		_0: zero extends ParameterString ?
+			ValidatedArgs<zero, one, rest, $>[zero extends unknown ? "params" : never]
 		: zero extends IndexZeroOperator ? zero
 		: type.validate<zero, $>,
 		_1: zero extends ParameterString ?
-			type.validate<
-				one,
-				$,
-				baseGenericConstraints<parseValidGenericParams<zero, $>>
-			>
+			ValidatedArgs<zero, one, rest, $>[zero extends unknown ? "body" : never]
 		: zero extends "keyof" ? type.validate<one, $>
 		: zero extends "instanceof" ? conform<one, Constructor>
 		: zero extends "===" ? conform<one, unknown>
@@ -108,11 +166,15 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 		: zero extends "===" ? rest
 		: zero extends "instanceof" ? conform<rest, readonly Constructor[]>
 		: one extends TupleInfixOperator ?
-			one extends ":" ? [Predicate<distill.In<type.infer<zero, $>>>]
-			: one extends "=>" ? [Morph<distill.Out<type.infer<zero, $>>, unknown>]
-			: one extends "|>" ? [type.validate<rest[0], $>]
+			one extends ":" ?
+				ValidatedArgs<zero, one, rest, $>[zero extends unknown ? "predicateRest"
+				:	never]
+			: one extends "=>" ?
+				ValidatedArgs<zero, one, rest, $>[zero extends unknown ? "morphRest"
+				:	never]
 			: one extends "@" ? [TypeMeta.MappableInput, NodeSelector?]
-			: [type.validate<rest[0], $>]
+			: ValidatedArgs<zero, one, rest, $>[zero extends unknown ? "operandRest"
+				:	never]
 		:	[]
 	): r extends infer _ ? _ : never
 
@@ -201,7 +263,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 * const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
 	 * len("foo") // 3
 	 * // TypeScript: boolean is not assignable to string | unknown[]
-	 * // Runtime (throws): must be a string or an object (was boolean)
+	 * // Runtime (throws): [0] must be a string or an array
 	 * len(true)
 	 */
 	fn: FnParser<$>
@@ -212,39 +274,38 @@ export class InternalTypeParser extends Callable<
 	TypeParserAttachments
 > {
 	constructor($: InternalScope) {
-		const attach: TypeParserAttachments = Object.assign(
-			{
-				errors: ArkErrors,
-				hkt: Hkt,
-				$: $ as never,
-				raw: $.parse as never,
-				module: $.constructor.module,
-				scope: $.constructor.scope,
-				declare: $.declare as never,
-				define: $.define as never,
-				match: $.match as never,
-				generic: $.generic as never,
-				schema: $.schema as never,
-				// this won't be defined during bootstrapping, but externally always will be
-				keywords: $.ambient as never,
-				unit: $.unit,
-				enumerated: $.enumerated,
-				instanceOf: $.instanceOf,
-				valueOf: $.valueOf,
-				or: $.or,
-				and: $.and,
-				merge: $.merge,
-				pipe: $.pipe,
-				fn: $.fn as never
-			} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>,
-			// also won't be defined during bootstrapping
-			$.ambientAttachments!
-		)
+		const attach = {
+			errors: ArkErrors,
+			hkt: Hkt,
+			$: $ as never,
+			raw: $.parse as never,
+			module: $.constructor.module,
+			scope: $.constructor.scope,
+			declare: $.declare as never,
+			define: $.define as never,
+			match: $.match as never,
+			generic: $.generic as never,
+			schema: $.schema as never,
+			// this won't be defined during bootstrapping, but externally always will be
+			keywords: $.ambient as never,
+			unit: ((value: unknown) =>
+				deferUnits([value], $) ?? $.unit(value)) as never,
+			enumerated: ((...values: unknown[]) =>
+				deferUnits(values, $) ?? $.enumerated(...values)) as never,
+			instanceOf: $.instanceOf,
+			valueOf: $.valueOf,
+			or: ((...branches: unknown[]) =>
+				deferUnion(branches, $) ?? ($.or as any)(...branches)) as never,
+			and: $.and,
+			merge: $.merge,
+			pipe: $.pipe,
+			fn: $.fn as never
+		} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>
 		super(
 			(...args) => {
 				if (args.length === 1) {
 					// treat as a simple definition
-					return $.parse(args[0])
+					return deferDefinition(args[0], $) ?? $.parse(args[0])
 				}
 				if (
 					args.length === 2 &&
@@ -270,10 +331,18 @@ export class InternalTypeParser extends Callable<
 				// part of the API as specified by the associated types
 				return $.parse(args)
 			},
-			{
-				attach
-			}
+			{ attach: attach as never }
 		)
+		// also won't be defined during bootstrapping
+		const typeAttachments = $arkTypeRegistry.typeAttachments
+		const resolve = (k: string) => {
+			const bound = $.bindKw(
+				typeAttachments![k as never] as BaseRoot | GenericRoot
+			)
+			// a resolved scope has already compiled the nodes bound before it
+			return $.resolved ? finalizeExport($, bound) : bound
+		}
+		for (const k in typeAttachments) defineLazily(this, k, resolve)
 	}
 }
 

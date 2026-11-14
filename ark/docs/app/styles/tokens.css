@@ -1,0 +1,221 @@
+/* design tokens: ArkDark on :root, ArkLight where the theme is light.
+   Components read these by name; a restyle should only need to change values
+   here. layout.tsx sets data-theme before first paint, from the visitor's
+   choice or their system's. */
+
+/* the monospace fallback next/font can't measure, sized to Cascadia Code so
+   the swap doesn't reflow */
+@font-face {
+	font-family: "Cascadia Fallback";
+	src: local("Menlo"), local("DejaVu Sans Mono"), local("Consolas");
+	size-adjust: 97.32%;
+	ascent-override: 95.32%;
+	descent-override: 24.08%;
+	line-gap-override: 0%;
+}
+
+:root {
+	color-scheme: dark;
+
+	/* surfaces, darkest to lightest */
+	--sunk: #05080f;
+	--bg: #080d17;
+	--code-bg: #060c18;
+	--surface: #0c1320;
+	--raised: #111a2b;
+
+	/* ink: three tiers, all >= 5.5:1 on --bg */
+	--ink: #eeeeee;
+	--ink-2: #b6bacb;
+	--ink-3: #888899;
+
+	/* the one accent */
+	--gold: #f5cf8f;
+	--gold-hi: #f7e1b1;
+	--on-gold: #1a1205;
+	/* gold as a fill: buttons and ArkType's bars */
+	--gold-fill: var(--gold);
+	--gold-fill-hi: var(--gold-hi);
+	/* what gold glows with: nothing, on parchment */
+	--gold-glow: rgb(245 207 143);
+
+	/* structure */
+	--copper: #ba7e41;
+	--rule: color-mix(in oklab, var(--copper) 22%, transparent);
+	--rule-soft: color-mix(in oklab, var(--copper) 13%, transparent);
+	--line: color-mix(in oklab, var(--ink) 9%, transparent);
+
+	/* semantic: links, focus, logo, ok, type errors, runtime errors */
+	--sky: #80cff8;
+	--blue: #408fde;
+	--brand: #085b92;
+	--teal: #40decc;
+	--teal-ink: #9ff2e6;
+	--violet: #9558f8;
+	--violet-text: #b18cff;
+	--violet-ink: #d4bcff;
+	--red: #f85858;
+	--red-text: #ff8a8a;
+	--red-ink: #ffb4b4;
+
+	/* chart: gold is ArkType, everything else one neutral */
+	--bar: color-mix(in oklab, var(--ink-3) 62%, var(--bg));
+	--bar-faster: var(--ink-2);
+
+	/* popovers are solid: frost let code read through in Chromium */
+	--popover-bg: var(--raised);
+	--popover-border: color-mix(in oklab, var(--sky) 22%, transparent);
+
+	--shadow-pop:
+		0 1px 0 rgb(255 255 255 / 0.06) inset, 0 18px 40px -12px rgb(0 0 0 / 0.75),
+		0 0 0 1px rgb(5 8 15 / 0.6), 0 0 36px -10px rgb(64 143 222 / 0.4);
+	--shadow-card:
+		0 1px 0 rgb(255 255 255 / 0.04) inset, 0 30px 60px -30px rgb(0 0 0 / 0.7),
+		0 0 80px -30px rgb(64 143 222 / 0.3);
+	--shadow-drawer: 30px 0 60px -20px rgb(0 0 0 / 0.7);
+	--shadow-cta: 0 8px 28px -10px rgb(245 207 143 / 0.55);
+	--shadow-deep: 0 30px 60px -30px rgb(0 0 0 / 0.8);
+	--shadow-panel:
+		0 10px 15px 0 rgb(0 0 0 / 0.3), 0 15px 30px 0 rgb(0 0 0 / 0.22);
+
+	/* what a card's top catches: blue light here, paper white in ArkLight */
+	--tint: var(--blue);
+
+	/* the homepage's backdrop: two soft glows under a film grain */
+	--glow-a: rgb(64 143 222 / 0.17);
+	--glow-b: rgb(245 207 143 / 0.075);
+	--grain: 0.05;
+	--scrim: rgb(3 6 12 / 0.62);
+
+	/* the release banner's drifting bands */
+	--banner-ray: rgb(64 143 222 / 0.3);
+
+	/* type */
+	--sans: var(--font-atkinson), system-ui, sans-serif;
+	--mono: var(--font-cascadia), "Cascadia Fallback", ui-monospace, monospace;
+	--cursive: var(--font-cursive), var(--mono);
+	--fs-display: clamp(3.25rem, 2.1rem + 4.6vw, 6.25rem);
+	--fs-h2-home: clamp(2rem, 1.4rem + 2vw, 3.25rem);
+	--fs-lede: clamp(1.2rem, 1.05rem + 0.7vw, 1.6rem);
+	--fs-h1-docs: 2.6rem;
+	--fs-h2-docs: 1.75rem;
+	--fs-h3-docs: 1.2rem;
+	--fs-body-docs: 16.5px;
+	--fs-body-home: 17px;
+	--fs-code: 13.5px;
+	--fs-label: 12.5px;
+
+	/* layout */
+	--top: 60px;
+	--side: 268px;
+	--tocw: 224px;
+	--column: 48rem;
+	--measure: 40rem;
+
+	--r-xs: 4px;
+	--r-sm: 6px;
+	--r-md: 10px;
+	--r-lg: 14px;
+	--r-pill: 999px;
+
+	/* motion */
+	--ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+	--ease-pop: cubic-bezier(0.16, 1, 0.3, 1);
+	--t-pop-in: 0.14s;
+	--t-pop-out: 0.09s;
+	--t-micro: 0.16s;
+	--t-ui: 0.24s;
+	--t-drawer: 0.32s;
+	--t-reveal: 0.42s;
+	--t-enter: 0.52s;
+	--t-draw: 0.7s;
+
+	--z-sticky-sub: 20;
+	--z-menu: 30;
+	--z-nav: 60;
+	--z-qi: 70;
+	--z-scrim: 80;
+	--z-drawer: 90;
+	--z-grain: 100;
+	--z-skip: 200;
+}
+
+/* ArkLight: ssalbdivad.com's parchment. Every ink and accent clears 4.5:1 on
+   --bg, --surface and --code-bg; the accents are ArkDark's hues, darkened
+   along themselves until they do. */
+:root[data-theme="light"] {
+	color-scheme: light;
+
+	--sunk: #f1ecc8;
+	--bg: #f9f5d7;
+	--code-bg: #fdfbec;
+	--surface: #fdfbec;
+	--raised: #ffffff;
+
+	--ink: #14213d;
+	--ink-2: #2e4775;
+	--ink-3: #5e5e70;
+
+	--gold: #844c13;
+	--gold-hi: #6e3f10;
+	--on-gold: #1a1205;
+	--gold-fill: #ecbd6f;
+	--gold-fill-hi: #f2cb86;
+	--gold-glow: transparent;
+
+	--copper: #925514;
+	--rule: color-mix(in oklab, var(--copper) 26%, transparent);
+	--rule-soft: color-mix(in oklab, var(--copper) 15%, transparent);
+	--line: color-mix(in oklab, var(--ink) 13%, transparent);
+
+	--sky: #0063b1;
+	--blue: #07538e;
+	--teal: #036c61;
+	--teal-ink: #025c53;
+	--violet: #7d45e0;
+	--violet-text: #6d35d6;
+	--violet-ink: #5a2bb8;
+	--red: #c42b2b;
+	--red-text: #b42323;
+	--red-ink: #9e1f1f;
+
+	--bar: color-mix(in oklab, var(--ink-3) 55%, var(--bg));
+	--bar-faster: var(--ink-2);
+
+	--popover-bg: var(--raised);
+	--popover-border: color-mix(in oklab, var(--sky) 25%, transparent);
+
+	--shadow-pop:
+		0 1px 0 rgb(255 255 255 / 0.6) inset,
+		0 18px 40px -16px rgb(20 33 61 / 0.35), 0 0 0 1px rgb(20 33 61 / 0.06);
+	--shadow-card:
+		0 1px 0 rgb(255 255 255 / 0.7) inset,
+		0 30px 60px -30px rgb(20 33 61 / 0.28), 0 0 0 1px rgb(20 33 61 / 0.03);
+	--shadow-drawer: 30px 0 60px -20px rgb(20 33 61 / 0.3);
+	--shadow-cta: 0 8px 24px -10px rgb(202 132 46 / 0.6);
+	--shadow-deep: 0 30px 60px -30px rgb(20 33 61 / 0.3);
+	--shadow-panel:
+		0 10px 15px 0 rgb(20 33 61 / 0.08), 0 15px 30px 0 rgb(20 33 61 / 0.1);
+
+	--tint: #ffffff;
+
+	/* warm, not blue: a blue glow over parchment reads as a grey-green cast */
+	--glow-a: rgb(202 132 46 / 0.06);
+	--glow-b: rgb(202 132 46 / 0.1);
+	--grain: 0;
+	--scrim: rgb(52 38 14 / 0.24);
+
+	--banner-ray: rgb(236 189 111 / 0.4);
+}
+
+@media (max-width: 900px) {
+	:root {
+		--top: 56px;
+	}
+}
+
+@media (max-width: 1280px) {
+	:root {
+		--side: 240px;
+	}
+}

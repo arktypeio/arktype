@@ -1,6 +1,7 @@
 import type {
 	BaseParseContext,
 	BaseRoot,
+	TypeMeta,
 	UndeclaredKeyBehavior
 } from "@ark/schema"
 import {
@@ -38,11 +39,9 @@ export const parseProperty = (
 	ctx: BaseParseContext
 ): ParsedProperty => {
 	if (isArray(def)) {
-		if (def[1] === "=")
-			return [ctx.$.parseOwnDefinitionFormat(def[0], ctx), "=", def[2]]
+		if (def[1] === "=") return [ctx.$.parseOwn(def[0], ctx), "=", def[2]]
 
-		if (def[1] === "?")
-			return [ctx.$.parseOwnDefinitionFormat(def[0], ctx), "?"]
+		if (def[1] === "?") return [ctx.$.parseOwn(def[0], ctx), "?"]
 	}
 
 	// string-embedded defaults/optionals are handled by the string parser
@@ -50,7 +49,9 @@ export const parseProperty = (
 }
 
 export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =
-	[def] extends [anyOrNever] ?
+	// validateInnerDefinition returns any or never as is
+	keyKind extends "required" ? validateInnerDefinition<def, $, args>
+	: [def] extends [anyOrNever] ?
 		/** this extra [anyOrNever] check is required to ensure that nested `type` invocations
 		 * like the following are not prematurely validated by the outer call:
 		 *
@@ -72,7 +73,7 @@ export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =
 				>
 		:	validateInnerDefinition<def, $, args>
 	: keyKind extends "undeclared" ? UndeclaredKeyBehavior
-	: keyKind extends "required" ? validateInnerDefinition<def, $, args>
+	: keyKind extends "meta" ? TypeMeta.Collapsible
 	: // check to ensure we don't have an optional or defaultable value on
 	// an already optional or index key
 	def extends OptionalPropertyDefinition ?

@@ -6,9 +6,7 @@ import {
 	type ParsedAttestConfig
 } from "../config.ts"
 import { chainableNoOpProxy } from "../utils.ts"
-import { await1K } from "./await1k.ts"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.ts"
-import { call1K } from "./call1k.ts"
 import {
 	createTimeComparison,
 	createTimeMeasure,
@@ -37,11 +35,7 @@ export interface Bench extends BenchFn {
 const benchFn: BenchFn = (name, fn, options) => {
 	const qualifiedPath = [...currentSuitePath, name]
 	console.log(`🏌️  ${qualifiedPath.join("/")}`)
-	const ctx = getBenchCtx(
-		qualifiedPath,
-		fn.constructor.name === "AsyncFunction",
-		options
-	)
+	const ctx = getBenchCtx(qualifiedPath, options)
 
 	if (!benchHasRun) {
 		rmRf(ctx.cfg.cacheDir)
@@ -86,21 +80,44 @@ export const stats = {
 	}
 }
 
+const sampleMs = 0.2
+const warmupMs = 500
+
+let loopCount = 0
+
+const AsyncFunction = (async () => {}).constructor as FunctionConstructor
+
+// a unique source per loop keeps V8 from sharing feedback between benches
+const createLoop = (
+	isAsync: boolean
+): ((fn: () => unknown, n: number) => unknown) =>
+	new (isAsync ? AsyncFunction : Function)(
+		"fn",
+		"n",
+		`// bench loop ${loopCount++}
+let result
+for (let i = 0; i < n; i++) result = ${isAsync ? "await " : ""}fn()
+return result`
+	) as never
+
 class ResultCollector {
 	results: number[] = []
-	private benchStart = performance.now()
+	callsPerSample = 1
 	private bounds: Required<UntilOptions>
+	private isWarm = false
+	private phaseEnd: number
 	private lastInvocationStart: number
 	private ctx: BenchContext
 
 	constructor(ctx: BenchContext) {
 		this.ctx = ctx
-		// By default, will run for either 5 seconds or 100_000 call sets (of 1000 calls), whichever comes first
+		// By default, will sample for either 5 seconds or 100_000 samples, whichever comes first
 		this.bounds = {
 			ms: 5000,
 			count: 100_000,
 			...ctx.options.until
 		}
+		this.phaseEnd = performance.now() + Math.min(warmupMs, this.bounds.ms)
 		this.lastInvocationStart = -1
 	}
 
@@ -110,43 +127,70 @@ class ResultCollector {
 	}
 
 	stop() {
-		this.results.push((performance.now() - this.lastInvocationStart) / 1000)
+		const end = performance.now()
+		const ms = end - this.lastInvocationStart
 		this.ctx.options.hooks?.afterCall?.()
+		if (this.isWarm) this.results.push(ms / this.callsPerSample)
+		else if (end < this.phaseEnd) {
+			if (ms < sampleMs / 2) this.callsPerSample *= 2
+		} else {
+			this.callsPerSample = Math.max(
+				1,
+				Math.round((this.callsPerSample * sampleMs) / (ms || 1e-3))
+			)
+			this.isWarm = true
+			this.phaseEnd = end + this.bounds.ms
+		}
 	}
 
 	done() {
-		const metMsTarget = performance.now() - this.benchStart >= this.bounds.ms
-		const metCountTarget = this.results.length >= this.bounds.count
-		return metMsTarget || metCountTarget
+		return (
+			this.isWarm &&
+			(performance.now() >= this.phaseEnd ||
+				this.results.length >= this.bounds.count)
+		)
 	}
 }
 
-const loopCalls = (fn: () => void, ctx: BenchContext) => {
+const warnIfUnused = (result: unknown, ctx: BenchContext) => {
+	if (result === undefined) {
+		console.warn(
+			`⚠️  ${ctx.qualifiedName} returned undefined. Return the result it computes so V8 can't optimize the work away.`
+		)
+	}
+}
+
+const loopCalls = (fn: () => unknown, ctx: BenchContext) => {
+	const loop = createLoop(false)
 	const collector = new ResultCollector(ctx)
+	let result: unknown
 	while (!collector.done()) {
 		collector.start()
-		// we use a function like this to make 1k explicit calls to the function
-		// to avoid certain optimizations V8 makes when looping
-		call1K(fn)
+		result = loop(fn, collector.callsPerSample)
 		collector.stop()
 	}
+	warnIfUnused(result, ctx)
 	return collector.results
 }
 
-const loopAsyncCalls = async (fn: () => Promise<void>, ctx: BenchContext) => {
+const loopAsyncCalls = async (fn: () => unknown, ctx: BenchContext) => {
+	const loop = createLoop(true)
 	const collector = new ResultCollector(ctx)
+	let result: unknown
 	while (!collector.done()) {
 		collector.start()
-		await await1K(fn)
+		result = await loop(fn, collector.callsPerSample)
 		collector.stop()
 	}
+	warnIfUnused(result, ctx)
 	return collector.results
 }
 
 export class BenchAssertions<
 	Fn extends BenchableFunction,
 	NextAssertions = BenchTypeAssertions,
-	ReturnedAssertions = Fn extends () => Promise<void> ? Promise<NextAssertions>
+	ReturnedAssertions = Fn extends () => PromiseLike<unknown> ?
+		Promise<NextAssertions>
 	:	NextAssertions
 > {
 	private label: string
@@ -172,8 +216,8 @@ export class BenchAssertions<
 
 	private callTimesSync() {
 		if (!this.lastCallTimes) {
-			this.lastCallTimes = loopCalls(this.fn as never, this.ctx)
-			this.lastCallTimes.sort()
+			this.lastCallTimes = loopCalls(this.fn, this.ctx)
+			this.lastCallTimes.sort((l, r) => l - r)
 		}
 		this.applyCallTimeHooks()
 		return this.lastCallTimes
@@ -181,8 +225,8 @@ export class BenchAssertions<
 
 	private async callTimesAsync() {
 		if (!this.lastCallTimes) {
-			this.lastCallTimes = await loopAsyncCalls(this.fn as never, this.ctx)
-			this.lastCallTimes.sort()
+			this.lastCallTimes = await loopAsyncCalls(this.fn, this.ctx)
+			this.lastCallTimes.sort((l, r) => l - r)
 		}
 		this.applyCallTimeHooks()
 		return this.lastCallTimes
@@ -247,21 +291,31 @@ export class BenchAssertions<
 			Record<StatName, Measure<TimeUnit>> | undefined
 		:	Measure<TimeUnit> | undefined
 	) {
-		if (this.ctx.isAsync) {
-			return new Promise(resolve => {
-				this.callTimesAsync().then(
-					callTimes => {
-						resolve(this.createAssertion(name, baseline, callTimes))
-					},
-					e => {
-						this.addUnhandledBenchException(e)
-						resolve(chainableNoOpProxy)
-					}
-				)
-			})
-		}
 		let assertions = chainableNoOpProxy
+		const { hooks } = this.ctx.options
 		try {
+			hooks?.beforeCall?.()
+			// fn may return a Promise without being an async function
+			const firstResult = this.fn() as PromiseLike<unknown> | undefined
+			if (typeof firstResult?.then === "function") {
+				return new Promise(resolve => {
+					Promise.resolve(firstResult)
+						.then(() => {
+							hooks?.afterCall?.()
+							return this.callTimesAsync()
+						})
+						.then(
+							callTimes => {
+								resolve(this.createAssertion(name, baseline, callTimes))
+							},
+							e => {
+								this.addUnhandledBenchException(e)
+								resolve(chainableNoOpProxy)
+							}
+						)
+				})
+			}
+			hooks?.afterCall?.()
 			assertions = this.createAssertion(name, baseline, this.callTimesSync())
 		} catch (e) {
 			this.addUnhandledBenchException(e)
@@ -325,7 +379,6 @@ export type BenchContext = {
 	benchCallPosition: SourcePosition
 	lastSnapCallPosition: SourcePosition | undefined
 	lastSnapFunctionName: string | undefined
-	isAsync: boolean
 }
 
 export type BenchableFunction = () => unknown | Promise<unknown>
@@ -346,7 +399,6 @@ process.on("beforeExit", () => {
 
 export const getBenchCtx = (
 	qualifiedPath: string[],
-	isAsync: boolean = false,
 	options: BenchOptions = {}
 ): BenchContext => ({
 	qualifiedPath,
@@ -356,6 +408,5 @@ export const getBenchCtx = (
 	benchCallPosition: caller(),
 	lastSnapCallPosition: undefined,
 	lastSnapFunctionName: undefined,
-	isAsync,
 	assertionStack: getCallStack({ offset: 1 }).join("\n")
 })

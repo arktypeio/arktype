@@ -1,10 +1,20 @@
 "use client"
 
 import { ArrowRightLeftIcon, ExpandIcon } from "lucide-react"
+import dynamic from "next/dynamic"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "./Button.tsx"
-import { Playground } from "./playground/Playground.tsx"
 import { defaultPlaygroundCode } from "./playground/utils.ts"
+
+// Monaco, TypeScript and onigasm load only once someone switches to the
+// playground, never with the page
+const Playground = dynamic(
+	() => import("./playground/Playground.tsx").then(module => module.Playground),
+	{
+		ssr: false,
+		loading: () => <p className="playground-loading">Loading playground…</p>
+	}
+)
 
 export type AutoplayDemoProps = React.DetailedHTMLProps<
 	React.VideoHTMLAttributes<HTMLVideoElement>,
@@ -81,11 +91,10 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 					margin: "0 auto"
 				}}
 			>
-				<Playground initialValue={defaultPlaygroundCode} />
+				{showPlayground && <Playground initialValue={defaultPlaygroundCode} />}
 			</div>
 			<div className="absolute top-2.5 right-5 flex gap-2 z-60">
 				<Button
-					variant="outline"
 					wiggle={!showPlayground}
 					className="hidden md:flex"
 					onClick={() => setShowPlayground(!showPlayground)}
@@ -107,7 +116,6 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 
 				{showPlayground && (
 					<Button
-						variant="outline"
 						size="sm"
 						href="/playground"
 						aria-label="Open Full Playground"
@@ -116,11 +124,6 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 					</Button>
 				)}
 			</div>
-
-			<p className="caption">
-				Type-level feedback with each keystroke-{" "}
-				<b>no plugins or build steps required</b>.
-			</p>
 		</div>
 	)
 }

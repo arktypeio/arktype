@@ -1,5 +1,6 @@
 import type { BaseParseContext, BaseRoot } from "@ark/schema"
 import {
+	isEmptyObject,
 	isKeyOf,
 	type requireKeys,
 	type Scanner,
@@ -14,10 +15,11 @@ import { parseOperator } from "../shift/operator/operator.ts"
 import type { FinalizingLookahead, InfixToken } from "../shift/tokens.ts"
 import { parseUntilFinalizer } from "../string.ts"
 import {
+	checkWrittenIntersection,
 	type BranchOperator,
 	type Comparator,
 	invertedComparators,
-	type MinComparator,
+	type MaxComparator,
 	minComparators,
 	type OpenLeftBound,
 	type StringifiablePrefixOperator,
@@ -28,9 +30,12 @@ import {
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
-	leftBound: OpenLeftBound | null
+	/** the bound before the operand, like `5 <` in `5 < n`, until its right side is parsed */
+	lBound: OpenLeftBound | null
 	intersection: BaseRoot | null
 	union: BaseRoot | null
+	/** the units a union starts with, built together as their union only sorts and dedupes them */
+	units: BaseRoot[] | null
 	pipe: BaseRoot | null
 }
 
@@ -40,19 +45,23 @@ export class RuntimeState {
 	root: BaseRoot | undefined
 	branches: BranchState = {
 		prefixes: [],
-		leftBound: null,
+		lBound: null,
 		intersection: null,
 		union: null,
+		units: null,
 		pipe: null
 	}
 	finalizer: FinalizingLookahead | undefined
 	groups: BranchState[] = []
+	// a right bound's root and the operand it bounded, until the next operand
+	rightBounded: { root: BaseRoot; operand: BaseRoot } | undefined
 
-	scanner: Scanner
+	/** what it's parsing, scanned up to its next token */
+	sc: Scanner
 	ctx: BaseParseContext
 
-	constructor(scanner: Scanner, ctx: BaseParseContext) {
-		this.scanner = scanner
+	constructor(sc: Scanner, ctx: BaseParseContext) {
+		this.sc = sc
 		this.ctx = ctx
 	}
 
@@ -74,8 +83,8 @@ export class RuntimeState {
 		return value
 	}
 
-	constrainRoot(...args: Parameters<BaseRoot<any>["constrain"]>): void {
-		this.root = this.root!.constrain(args[0], args[1])
+	constrainRoot(...args: Parameters<BaseRoot<any>["rawConstrain"]>): void {
+		this.root = this.root!.rawConstrain(args[0], args[1])
 	}
 
 	finalize(finalizer: FinalizingLookahead): void {
@@ -90,17 +99,17 @@ export class RuntimeState {
 		if (!isKeyOf(invertedComparator, minComparators))
 			return this.error(writeUnpairableComparatorMessage(comparator))
 
-		if (this.branches.leftBound) {
+		if (this.branches.lBound) {
 			return this.error(
 				writeMultipleLeftBoundsMessage(
-					this.branches.leftBound.limit,
-					this.branches.leftBound.comparator,
+					this.branches.lBound.limit,
+					this.branches.lBound.comparator,
 					limit,
 					invertedComparator
 				)
 			)
 		}
-		this.branches.leftBound = {
+		this.branches.lBound = {
 			comparator: invertedComparator,
 			limit
 		}
@@ -110,19 +119,20 @@ export class RuntimeState {
 		this.assertRangeUnset()
 
 		if (this.branches.pipe) {
-			this.pushRootToBranch("|>")
+			this.pushRootBranch("|>")
 			this.root = this.branches.pipe
 			return
 		}
 
-		if (this.branches.union) {
-			this.pushRootToBranch("|")
-			this.root = this.branches.union
+		if (this.branches.union || this.branches.units) {
+			this.pushRootBranch("|")
+			this.unionUnits()
+			this.root = this.branches.union!
 			return
 		}
 
 		if (this.branches.intersection) {
-			this.pushRootToBranch("&")
+			this.pushRootBranch("&")
 			this.root = this.branches.intersection
 			return
 		}
@@ -133,13 +143,12 @@ export class RuntimeState {
 	finalizeGroup(): void {
 		this.finalizeBranches()
 		const topBranchState = this.groups.pop()
-		if (!topBranchState) {
-			return this.error(
-				writeUnmatchedGroupCloseMessage(")", this.scanner.unscanned)
-			)
-		}
+		if (!topBranchState)
+			return this.error(writeUnmatchedGroupCloseMessage(")", this.sc.unscanned))
 
 		this.branches = topBranchState
+		// a group's root can be bounded, as an expression prints a range
+		this.rightBounded = undefined
 	}
 
 	addPrefix(prefix: StringifiablePrefixOperator): void {
@@ -156,32 +165,53 @@ export class RuntimeState {
 		}
 	}
 
-	pushRootToBranch(token: BranchOperator): void {
+	private unionUnits(): void {
+		const units = this.branches.units
+		if (!units) return
+		this.branches.units = null
+		this.branches.union =
+			units.length === 1 ?
+				units[0]
+			:	units[0].$.node("union", { branches: units as never })
+	}
+
+	pushRootBranch(token: BranchOperator): void {
 		this.assertRangeUnset()
 		this.applyPrefixes()
 		const root = this.root!
 		this.root = undefined
 
-		this.branches.intersection =
-			this.branches.intersection?.rawAnd(root) ?? root
+		const l = this.branches.intersection
+		this.branches.intersection = l?.rawAnd(root) ?? root
+		if (l) checkWrittenIntersection(this.branches.intersection, l, root)
 
 		if (token === "&") return
 
-		this.branches.union =
-			this.branches.union?.rawOr(this.branches.intersection) ??
-			this.branches.intersection
+		const operand = this.branches.intersection
 		this.branches.intersection = null
+		if (
+			!this.branches.union &&
+			operand.is("unit") &&
+			isEmptyObject(operand.meta)
+		)
+			(this.branches.units ??= []).push(operand)
+		else {
+			this.unionUnits()
+			this.branches.union = this.branches.union?.rawOr(operand) ?? operand
+		}
 
 		if (token === "|") return
 
+		this.unionUnits()
+
 		this.branches.pipe =
-			this.branches.pipe?.rawPipeOnce(this.branches.union) ??
+			this.branches.pipe?.rawPipeOnce(this.branches.union!) ??
 			this.branches.union
 		this.branches.union = null
 	}
 
 	parseUntilFinalizer(): RootedRuntimeState {
-		return parseUntilFinalizer(new RuntimeState(this.scanner, this.ctx))
+		return parseUntilFinalizer(new RuntimeState(this.sc, this.ctx))
 	}
 
 	parseOperator(this: RootedRuntimeState): void {
@@ -189,15 +219,16 @@ export class RuntimeState {
 	}
 
 	parseOperand(): void {
+		this.rightBounded = undefined
 		return parseOperand(this)
 	}
 
 	private assertRangeUnset() {
-		if (this.branches.leftBound) {
+		if (this.branches.lBound) {
 			return this.error(
 				writeOpenRangeMessage(
-					this.branches.leftBound.limit,
-					this.branches.leftBound.comparator
+					this.branches.lBound.limit,
+					this.branches.lBound.comparator
 				)
 			)
 		}
@@ -207,30 +238,33 @@ export class RuntimeState {
 		this.groups.push(this.branches)
 		this.branches = {
 			prefixes: [],
-			leftBound: null,
+			lBound: null,
 			union: null,
+			units: null,
 			intersection: null,
 			pipe: null
 		}
 	}
 
 	previousOperator():
-		| MinComparator
+		| MaxComparator
 		| StringifiablePrefixOperator
 		| InfixToken
 		| undefined {
 		return (
-			this.branches.leftBound?.comparator ??
+			// left bounds are stored inverted, as they'd be written on the right
+			(this.branches.lBound &&
+				invertedComparators[this.branches.lBound.comparator]) ??
 			this.branches.prefixes[this.branches.prefixes.length - 1] ??
 			(this.branches.intersection ? "&"
-			: this.branches.union ? "|"
+			: this.branches.union || this.branches.units ? "|"
 			: this.branches.pipe ? "|>"
 			: undefined)
 		)
 	}
 
 	shiftedBy(count: number): this {
-		this.scanner.jumpForward(count)
+		this.sc.jumpForward(count)
 		return this
 	}
 }

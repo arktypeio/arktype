@@ -1,8 +1,13 @@
 import type { arkKind, TypeMeta } from "@ark/schema"
 import type { Ark } from "./keywords/keywords.ts"
+import type { Locale } from "./locale.ts"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { configureSchema, type ArkSchemaConfig } from "@ark/schema/config"
-import type { anyOrNever } from "@ark/util"
+import {
+	configureSchema,
+	type ArkSchemaConfig,
+	type writeUnknownConfigOptionMessage
+} from "@ark/schema/config"
+import type { anyOrNever, ErrorMessage } from "@ark/util"
 
 export type KeywordConfig = {
 	[k in keyof Ark.flat as parseConfigurableFlatAlias<
@@ -19,10 +24,19 @@ type parseConfigurableFlatAlias<k extends string, v> =
 
 export interface ArkConfig extends ArkSchemaConfig {
 	keywords?: KeywordConfig
+	locale?: Locale | (() => Locale | undefined)
 }
 
-export const configure: <config extends ArkConfig>(config: config) => config =
-	configureSchema as never
+// inferred, so `typeof config.onFail` is what was passed. An option ArkConfig
+// lacks is an error at its key, as it would be were the parameter ArkConfig
+export const configure: <config extends ArkConfig>(
+	config: validateConfig<config>
+) => config = configureSchema as never
+
+type validateConfig<config> = {
+	[k in keyof config]: k extends keyof ArkConfig ? config[k]
+	:	ErrorMessage<writeUnknownConfigOptionMessage<k & string>>
+}
 
 declare global {
 	export interface ArkEnv {

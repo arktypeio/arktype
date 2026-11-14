@@ -1,0 +1,1274 @@
+{
+	"count": {
+		"parseSafe arktype-b1": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/cases.ts",
+				"arktype-b1",
+				"parseSafe"
+			]
+		},
+		"parseSafe arktype-b2": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/cases.ts",
+				"arktype-b2",
+				"parseSafe"
+			]
+		},
+		"parseSafe arktype-dynamic": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/cases.ts",
+				"arktype-dynamic",
+				"parseSafe"
+			]
+		},
+		"parseSafe @ts-runtypes": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ts-runtypes",
+				"@ts-runtypes",
+				"parseSafe"
+			]
+		},
+		"parseSafe typia": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"typia",
+				"typia",
+				"parseSafe"
+			]
+		},
+		"parseSafe @sx3/gate": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"sx3-gate",
+				"@sx3/gate",
+				"parseSafe"
+			]
+		},
+		"parseSafe rescript-schema": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"rescript-schema",
+				"rescript-schema",
+				"parseSafe"
+			]
+		},
+		"parseSafe ata-(ahead-of-time)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ata-aot",
+				"ata-(ahead-of-time)",
+				"parseSafe"
+			]
+		},
+		"parseSafe ata": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ata",
+				"ata",
+				"parseSafe"
+			]
+		},
+		"parseSafe zod (compiled)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"zod",
+				"zod (compiled)",
+				"parseSafe"
+			]
+		},
+		"parseSafe paseri-(ahead-of-time)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"paseri-aot",
+				"paseri-(ahead-of-time)",
+				"parseSafe"
+			]
+		},
+		"parseSafe sury": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"sury",
+				"sury",
+				"parseSafe"
+			]
+		},
+		"parseSafe spectypes": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"spectypes",
+				"spectypes",
+				"parseSafe"
+			]
+		},
+		"parseSafe pure-parse (JIT compiled)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"pure-parse",
+				"pure-parse (JIT compiled)",
+				"parseSafe"
+			]
+		},
+		"assertLoose arktype-b1": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/cases.ts",
+				"arktype-b1",
+				"assertLoose"
+			]
+		},
+		"assertLoose arktype-b2": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/cases.ts",
+				"arktype-b2",
+				"assertLoose"
+			]
+		},
+		"assertLoose arktype-dynamic": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/cases.ts",
+				"arktype-dynamic",
+				"assertLoose"
+			]
+		},
+		"assertLoose @ts-runtypes": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ts-runtypes",
+				"@ts-runtypes",
+				"assertLoose"
+			]
+		},
+		"assertLoose typia": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"typia",
+				"typia",
+				"assertLoose"
+			]
+		},
+		"assertLoose @sx3/gate": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"sx3-gate",
+				"@sx3/gate",
+				"assertLoose"
+			]
+		},
+		"assertLoose rescript-schema": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"rescript-schema",
+				"rescript-schema",
+				"assertLoose"
+			]
+		},
+		"assertLoose ata-(ahead-of-time)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ata-aot",
+				"ata-(ahead-of-time)",
+				"assertLoose"
+			]
+		},
+		"assertLoose ata": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ata",
+				"ata",
+				"assertLoose"
+			]
+		},
+		"assertLoose zod (compiled)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"zod",
+				"zod (compiled)",
+				"assertLoose"
+			]
+		},
+		"assertLoose paseri-(ahead-of-time)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"paseri-aot",
+				"paseri-(ahead-of-time)",
+				"assertLoose"
+			]
+		},
+		"assertLoose sury": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"sury",
+				"sury",
+				"assertLoose"
+			]
+		},
+		"assertLoose spectypes": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"spectypes",
+				"spectypes",
+				"assertLoose"
+			]
+		},
+		"assertLoose pure-parse (JIT compiled)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"pure-parse",
+				"pure-parse (JIT compiled)",
+				"assertLoose"
+			]
+		},
+		"assertLoose ts-runtime-checks": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ts-runtime-checks",
+				"ts-runtime-checks",
+				"assertLoose"
+			]
+		},
+		"assertLoose @sinclair/typebox-(just-in-time)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"sinclair-typebox-just-in-time",
+				"@sinclair/typebox-(just-in-time)",
+				"assertLoose"
+			]
+		},
+		"assertLoose @sinclair/typebox-(ahead-of-time)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"sinclair-typebox-ahead-of-time",
+				"@sinclair/typebox-(ahead-of-time)",
+				"assertLoose"
+			]
+		},
+		"assertLoose type-predicate-generator": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"type-predicate-generator",
+				"type-predicate-generator",
+				"assertLoose"
+			]
+		},
+		"assertLoose stnl (just-in-time)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"stnl",
+				"stnl (just-in-time)",
+				"assertLoose"
+			]
+		},
+		"assertLoose ts-auto-guard": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ts-auto-guard",
+				"ts-auto-guard",
+				"assertLoose"
+			]
+		},
+		"assertLoose @sinclair/typemap/valibot": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"sinclair-typemap-valibot",
+				"@sinclair/typemap/valibot",
+				"assertLoose"
+			]
+		},
+		"assertLoose ajv": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ajv",
+				"ajv",
+				"assertLoose"
+			]
+		},
+		"assertStrict arktype-b1": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/cases.ts",
+				"arktype-b1",
+				"assertStrict"
+			]
+		},
+		"assertStrict arktype-b2": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/cases.ts",
+				"arktype-b2",
+				"assertStrict"
+			]
+		},
+		"assertStrict arktype-dynamic": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/cases.ts",
+				"arktype-dynamic",
+				"assertStrict"
+			]
+		},
+		"assertStrict @ts-runtypes": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ts-runtypes",
+				"@ts-runtypes",
+				"assertStrict"
+			]
+		},
+		"assertStrict typia": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"typia",
+				"typia",
+				"assertStrict"
+			]
+		},
+		"assertStrict @sx3/gate": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"sx3-gate",
+				"@sx3/gate",
+				"assertStrict"
+			]
+		},
+		"assertStrict rescript-schema": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"rescript-schema",
+				"rescript-schema",
+				"assertStrict"
+			]
+		},
+		"assertStrict ata-(ahead-of-time)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ata-aot",
+				"ata-(ahead-of-time)",
+				"assertStrict"
+			]
+		},
+		"assertStrict ata": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ata",
+				"ata",
+				"assertStrict"
+			]
+		},
+		"assertStrict zod (compiled)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"zod",
+				"zod (compiled)",
+				"assertStrict"
+			]
+		},
+		"assertStrict paseri-(ahead-of-time)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"paseri-aot",
+				"paseri-(ahead-of-time)",
+				"assertStrict"
+			]
+		},
+		"assertStrict sury": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"sury",
+				"sury",
+				"assertStrict"
+			]
+		},
+		"assertStrict spectypes": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"spectypes",
+				"spectypes",
+				"assertStrict"
+			]
+		},
+		"assertStrict ts-runtime-checks": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ts-runtime-checks",
+				"ts-runtime-checks",
+				"assertStrict"
+			]
+		},
+		"assertStrict @sinclair/typebox-(just-in-time)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"sinclair-typebox-just-in-time",
+				"@sinclair/typebox-(just-in-time)",
+				"assertStrict"
+			]
+		},
+		"assertStrict @sinclair/typebox-(ahead-of-time)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"sinclair-typebox-ahead-of-time",
+				"@sinclair/typebox-(ahead-of-time)",
+				"assertStrict"
+			]
+		},
+		"assertStrict @sinclair/typemap/valibot": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"sinclair-typemap-valibot",
+				"@sinclair/typemap/valibot",
+				"assertStrict"
+			]
+		},
+		"assertStrict ajv": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ajv",
+				"ajv",
+				"assertStrict"
+			]
+		},
+		"parseStrict arktype-b1": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/cases.ts",
+				"arktype-b1",
+				"parseStrict"
+			]
+		},
+		"parseStrict arktype-b2": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/cases.ts",
+				"arktype-b2",
+				"parseStrict"
+			]
+		},
+		"parseStrict arktype-dynamic": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/cases.ts",
+				"arktype-dynamic",
+				"parseStrict"
+			]
+		},
+		"parseStrict @ts-runtypes": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ts-runtypes",
+				"@ts-runtypes",
+				"parseStrict"
+			]
+		},
+		"parseStrict typia": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"typia",
+				"typia",
+				"parseStrict"
+			]
+		},
+		"parseStrict @sx3/gate": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"sx3-gate",
+				"@sx3/gate",
+				"parseStrict"
+			]
+		},
+		"parseStrict rescript-schema": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"rescript-schema",
+				"rescript-schema",
+				"parseStrict"
+			]
+		},
+		"parseStrict ata-(ahead-of-time)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ata-aot",
+				"ata-(ahead-of-time)",
+				"parseStrict"
+			]
+		},
+		"parseStrict ata": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ata",
+				"ata",
+				"parseStrict"
+			]
+		},
+		"parseStrict zod (compiled)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"zod",
+				"zod (compiled)",
+				"parseStrict"
+			]
+		},
+		"parseStrict paseri-(ahead-of-time)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"paseri-aot",
+				"paseri-(ahead-of-time)",
+				"parseStrict"
+			]
+		},
+		"parseStrict sury": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"sury",
+				"sury",
+				"parseStrict"
+			]
+		},
+		"parseStrict spectypes": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"spectypes",
+				"spectypes",
+				"parseStrict"
+			]
+		},
+		"parseStrict pure-parse (JIT compiled)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"pure-parse",
+				"pure-parse (JIT compiled)",
+				"parseStrict"
+			]
+		},
+		"parseStrict ts-runtime-checks": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ts-runtime-checks",
+				"ts-runtime-checks",
+				"parseStrict"
+			]
+		},
+		"parseStrict @sinclair/typebox-(just-in-time)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"sinclair-typebox-just-in-time",
+				"@sinclair/typebox-(just-in-time)",
+				"parseStrict"
+			]
+		},
+		"assertStrict arktype-2.2.9": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/cases.ts",
+				"arktype-2.2.9",
+				"assertStrict"
+			]
+		},
+		"parseStrict arktype-2.2.9": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/cases.ts",
+				"arktype-2.2.9",
+				"parseStrict"
+			]
+		},
+		"sb valid b1": {
+			"cwd": "/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/sb",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/sb/child.ts",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/sb/out/b1.mjs",
+				"valid"
+			]
+		},
+		"sb valid dynamic": {
+			"cwd": "/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/sb",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/sb/child.ts",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/sb/out/dynamic.mjs",
+				"valid"
+			]
+		}
+	},
+	"wall": {
+		"parseSafe arktype-b1": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/cases.ts",
+				"arktype-b1",
+				"parseSafe"
+			]
+		},
+		"parseSafe @ts-runtypes": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ts-runtypes",
+				"@ts-runtypes",
+				"parseSafe"
+			]
+		},
+		"parseSafe typia": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"typia",
+				"typia",
+				"parseSafe"
+			]
+		},
+		"parseSafe ata-(ahead-of-time)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ata-aot",
+				"ata-(ahead-of-time)",
+				"parseSafe"
+			]
+		},
+		"parseSafe ata": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ata",
+				"ata",
+				"parseSafe"
+			]
+		},
+		"parseSafe rescript-schema": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"rescript-schema",
+				"rescript-schema",
+				"parseSafe"
+			]
+		},
+		"parseSafe @sx3/gate": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"sx3-gate",
+				"@sx3/gate",
+				"parseSafe"
+			]
+		},
+		"assertLoose arktype-b1": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/cases.ts",
+				"arktype-b1",
+				"assertLoose"
+			]
+		},
+		"assertLoose ts-runtime-checks": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ts-runtime-checks",
+				"ts-runtime-checks",
+				"assertLoose"
+			]
+		},
+		"assertLoose ts-auto-guard": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ts-auto-guard",
+				"ts-auto-guard",
+				"assertLoose"
+			]
+		},
+		"assertLoose type-predicate-generator": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"type-predicate-generator",
+				"type-predicate-generator",
+				"assertLoose"
+			]
+		},
+		"assertLoose @sinclair/typebox-(ahead-of-time)": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"sinclair-typebox-ahead-of-time",
+				"@sinclair/typebox-(ahead-of-time)",
+				"assertLoose"
+			]
+		},
+		"assertLoose typia": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"typia",
+				"typia",
+				"assertLoose"
+			]
+		},
+		"assertLoose @ts-runtypes": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"ts-runtypes",
+				"@ts-runtypes",
+				"assertLoose"
+			]
+		},
+		"sb valid b1": {
+			"cwd": "/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/sb",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/sb/child.ts",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/sb/out/b1.mjs",
+				"valid"
+			]
+		},
+		"sb valid dynamic": {
+			"cwd": "/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/sb",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/sb/child.ts",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/sb/out/dynamic.mjs",
+				"valid"
+			]
+		},
+		"assertStrict arktype-dynamic": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/cases.ts",
+				"arktype-dynamic",
+				"assertStrict"
+			]
+		},
+		"assertStrict arktype-2.2.9": {
+			"cwd": "/home/ssalb/rest/typescript-runtime-type-benchmarks",
+			"node": "/home/ssalb/.nvm/versions/node/v24.14.1/bin/node",
+			"args": [
+				"--no-experimental-strip-types",
+				"-r",
+				"ts-node/register/transpile-only",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/child.ts",
+				"/home/ssalb/rest/typescript-runtime-type-benchmarks",
+				"/home/ssalb/arktype/.ntwine/worktrees/claims/ark/repo/bench/external/moltar/cjs/cases.ts",
+				"arktype-2.2.9",
+				"assertStrict"
+			]
+		}
+	}
+}

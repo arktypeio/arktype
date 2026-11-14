@@ -1,0 +1,17 @@
+{
+	"name": "@ark/bench-forms",
+	"private": true,
+	"type": "module",
+	"dependencies": {
+		"@sinclair/typebox": "0.34.52",
+		"ajv": "8.20.0",
+		"ajv-errors": "3.0.0",
+		"ajv-formats": "3.0.1",
+		"effect": "4.0.6",
+		"joi": "18.3.0",
+		"runtypes": "7.0.5",
+		"superstruct": "2.0.2",
+		"valibot": "1.5.0",
+		"yup": "1.7.1"
+	}
+}

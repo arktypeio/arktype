@@ -1,8 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	writeUnclosedGroupMessage,
-	writeUnmatchedGroupCloseMessage,
-	type WhitespaceChar
+	writeUnmatchedGroupCloseMessage
 } from "@ark/util"
 import { regex, type Regex } from "arkregex"
 import { emptyCharacterSetMessage } from "arkregex/internal/charset.ts"
@@ -226,7 +225,21 @@ contextualize(() => {
 		// https://github.com/arktypeio/arktype/issues/1625
 		it("* over a digit class allows the empty string", () => {
 			const S = regex("^(\\d*)$")
-			attest<Regex<"" | `${number}`, { captures: ["" | `${number}`] }>>(S)
+			attest<Regex<string, { captures: [string] }>>(S)
+		})
+
+		// https://github.com/arktypeio/arktype/issues/1663
+		it("unbounded digits overflow ${number}", () => {
+			const S = regex("^\\d+$")
+			attest<Regex<string, {}>>(S)
+			attest<Regex<`${number}`, {}>>(regex("^\\d{1,3}$"))
+		})
+
+		it("bounded union including digits keeps its other branches", () => {
+			const S = regex("^(?:a|\\d){2}$")
+			attest<
+				Regex<"aa" | `${number}${number}` | `${number}a` | `a${number}`, {}>
+			>(S)
 		})
 
 		it("? over a digit class allows the empty string", () => {
@@ -475,6 +488,29 @@ contextualize(() => {
 			)
 		})
 
+		it("escaped backspace", () => {
+			const S = regex("^[\\b]$")
+			attest<Regex<"\b", {}>>(S).type.toString.snap('Regex<"\\b", {}>')
+		})
+
+		it("escapes unnecessary outside a set", () => {
+			const S = regex("^[\\/\\n.]$")
+			attest<Regex<"/" | "\n" | ".", {}>>(S)
+		})
+
+		it("legacy octal escape", () => {
+			const S = regex("^[\\1]$")
+			attest<Regex<string, {}>>(S)
+		})
+
+		it("identity escape with the u flag", () => {
+			attest<Regex<"a", {}>>(regex("^[\\a]$"))
+			// @ts-expect-error
+			attest(() => regex("^[\\a]$", "u")).type.errors(
+				writeUnnecessaryEscapeMessage("a")
+			)
+		})
+
 		it("shorthand", () => {
 			const S = regex("^a[\\d]$")
 			attest<Regex<`a${number}`, {}>>(S).type.toString.snap(
@@ -515,7 +551,9 @@ contextualize(() => {
 
 		it("\\s", () => {
 			const S = regex("^a\\sc$")
-			attest<Regex<`a${WhitespaceChar}c`, {}>>(S)
+			attest<Regex<`a${string}c`, {}>>(S).type.toString.snap(
+				"Regex<`a${string}c`, {}>"
+			)
 		})
 
 		it("\\W", () => {
@@ -788,6 +826,47 @@ contextualize(() => {
 			>(S)
 		})
 
+		it("named captures in multiple branches", () => {
+			// https://github.com/arktypeio/arktype/issues/1530
+			const S = regex("^(?:(?<a>1)|(?<b>2)|(?<c>3))$")
+			attest<
+				Regex<
+					"1" | "2" | "3",
+					{
+						captures:
+							| ["1", undefined, undefined]
+							| [undefined, "2", undefined]
+							| [undefined, undefined, "3"]
+						names:
+							| { a: "1"; b: undefined; c: undefined }
+							| { a: undefined; b: "2"; c: undefined }
+							| { a: undefined; b: undefined; c: "3" }
+					}
+				>
+			>(S)
+		})
+
+		it("capture following captures in multiple branches", () => {
+			const S = regex("^(?:(a)|(b)(c))(d)$")
+			attest<
+				Regex<
+					"ad" | "bcd",
+					{
+						captures:
+							| ["a", undefined, undefined, "d"]
+							| [undefined, "b", "c", "d"]
+					}
+				>
+			>(S).type.toString.snap(`Regex<
+	"ad" | "bcd",
+	{
+		captures:
+			| [undefined, "b", "c", "d"]
+			| ["a", undefined, undefined, "d"]
+	}
+>`)
+		})
+
 		it("empty start branch", () => {
 			const S = regex("^|b$")
 			attest<Regex<string, {}>>(S).type.toString.snap("Regex<string, {}>")
@@ -874,6 +953,36 @@ contextualize(() => {
 					}
 				>
 			>(S)
+		})
+
+		it("reference to group in previous branch", () => {
+			const S = regex("^(?:(a)|(b)\\1)$")
+			attest<
+				Regex<
+					"a" | "b",
+					{
+						captures: ["a", undefined] | [undefined, "b"]
+					}
+				>
+			>(S).type.toString.snap(`Regex<
+	"a" | "b",
+	{ captures: [undefined, "b"] | ["a", undefined] }
+>`)
+		})
+
+		it("reference within later branch", () => {
+			const S = regex("^(?:(a)|(b)\\2)$")
+			attest<
+				Regex<
+					"a" | "bb",
+					{
+						captures: ["a", undefined] | [undefined, "b"]
+					}
+				>
+			>(S).type.toString.snap(`Regex<
+	"a" | "bb",
+	{ captures: [undefined, "b"] | ["a", undefined] }
+>`)
 		})
 
 		it("anchored ref", () => {
@@ -1171,6 +1280,19 @@ contextualize(() => {
 			attest<Regex<"abc", {}>>(S)
 		})
 
+		// https://github.com/arktypeio/arktype/issues/1532
+		it("captures in a lookahead are counted", () => {
+			const S = regex("^(?=(a))a(b)$")
+			attest<Regex<"ab", { captures: ["a", "b"] }>>(S)
+		})
+
+		it("captures in a negative lookaround are undefined", () => {
+			const S = regex("^(?<!(?<x>c))a(b)$")
+			attest<
+				Regex<"ab", { captures: [undefined, "b"]; names: { x: undefined } }>
+			>(S)
+		})
+
 		it("quantified lookahead", () => {
 			// @ts-expect-error
 			attest(() => regex("^a(?=b)?b$")).type.errors(
@@ -1213,6 +1335,26 @@ contextualize(() => {
 		it("i", () => {
 			const S = regex("^aB$", "i")
 			attest<Regex<"aB" | "ab" | "Ab" | "AB", { flags: "i" }>>(S)
+		})
+
+		// https://github.com/arktypeio/arktype/issues/1533
+		it("i with several branches", () => {
+			const S = regex("^(?:relay|relai|point)$", "i")
+			type anyCase<s extends string> =
+				s extends `${infer head}${infer tail}` ?
+					`${Lowercase<head> | Uppercase<head>}${anyCase<tail>}`
+				:	""
+			attest<Regex<anyCase<"relay" | "relai" | "point">, { flags: "i" }>>(S)
+		})
+
+		it("m", () => {
+			const S = regex("^abc$", "m")
+			attest<Regex<`${string}abc${string}`, { flags: "m" }>>(S)
+		})
+
+		it("m allows anchors mid-pattern", () => {
+			const S = regex("a$\n^b", "m")
+			attest<Regex<`${string}a\nb${string}`, { flags: "m" }>>(S)
 		})
 	})
 
@@ -1355,9 +1497,9 @@ contextualize(() => {
 
 		attest<
 			Regex<
-				`${number}.${number}.${number}`,
+				`${string}.${string}.${string}`,
 				{
-					captures: [`${number}`, `${number}`, `${number}`]
+					captures: [string, string, string]
 				}
 			>
 		>(S)

@@ -77,10 +77,11 @@ export const domainDescriptions = {
 	symbol: "a symbol"
 } as const satisfies Record<Domain, string>
 
-export const jsTypeOfDescriptions = {
-	...domainDescriptions,
-	function: "a function"
-} as const satisfies Record<JsTypeOf, string>
+export const jsTypeOfDescriptions = /* @__PURE__ */ Object.assign(
+	{},
+	domainDescriptions,
+	{ function: "a function" } as const
+) satisfies Record<JsTypeOf, string>
 
 export type domainDescriptions = typeof domainDescriptions
 

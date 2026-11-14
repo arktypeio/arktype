@@ -7,6 +7,10 @@ import type { State, s } from "./state.ts"
 
 type LookaroundChar = "=" | "!"
 
+type lookaroundKindOf<char extends LookaroundChar> =
+	char extends "=" ? State.UnnamedCaptureKind.lookaround
+	:	State.UnnamedCaptureKind.negativeLookaround
+
 export type ModifiableFlag = "i" | "m" | "s"
 
 export type parseGroup<s extends State, unscanned extends string> =
@@ -20,9 +24,8 @@ type parseNonCapturingGroup<s extends State, unscanned extends string> =
 	unscanned extends Scanner.shift<infer lookahead, infer next> ?
 		lookahead extends ":" ?
 			s.pushGroup<s, State.UnnamedCaptureKind.noncapturing, next, undefined>
-		: // for now, lookarounds don't affect inference
-		lookahead extends LookaroundChar ?
-			s.pushGroup<s, State.UnnamedCaptureKind.lookaround, next, undefined>
+		: lookahead extends LookaroundChar ?
+			s.pushGroup<s, lookaroundKindOf<lookahead>, next, undefined>
 		: lookahead extends "<" ? parseNamedGroupOrLookbehind<s, next>
 		: shiftModifiers<unscanned> extends (
 			ShiftedModifiers<infer flags, infer negated, infer following>
@@ -141,9 +144,10 @@ type writeInvalidModifierMessage<char extends string> =
 	`Modifier flag ${char} must be 'i', 'm' or 's'`
 
 type parseNamedGroupOrLookbehind<s extends State, unscanned extends string> =
-	unscanned extends Scanner.shift<LookaroundChar, infer next> ?
-		// for now, lookarounds don't affect inference
-		s.pushGroup<s, State.UnnamedCaptureKind.lookaround, next, undefined>
+	unscanned extends (
+		Scanner.shift<infer char extends LookaroundChar, infer next>
+	) ?
+		s.pushGroup<s, lookaroundKindOf<char>, next, undefined>
 	: shiftNamedGroup<unscanned> extends (
 		Scanner.shiftResult<infer name, infer following>
 	) ?

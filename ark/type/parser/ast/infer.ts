@@ -37,13 +37,15 @@ export type InferredAst<t = unknown, def extends string = string> = [
 
 export type inferExpression<ast, $, args> =
 	ast extends array ?
-		ast extends InferredAst<infer resolution> ? resolution
-		: ast extends DefAst<infer def> ? inferDefinition<def, $, args>
-		: ast extends GenericInstantiationAst<infer g, infer argAsts> ?
-			inferGenericInstantiation<g, argAsts, $, args>
-		: ast[1] extends "[]" ? inferExpression<ast[0], $, args>[]
+		ast extends [infer resolution, "inferred", unknown] ? resolution
+		: ast[1] extends "def" ? inferDefinition<ast[0], $, args>
 		: ast[1] extends "|" ?
 			inferExpression<ast[0], $, args> | inferExpression<ast[2], $, args>
+		: ast[1] extends "[]" ? inferExpression<ast[0], $, args>[]
+		: ast[1] extends Comparator ?
+			ast[0] extends LimitLiteral ?
+				inferExpression<ast[2], $, args>
+			:	inferExpression<ast[0], $, args>
 		: ast[1] extends "&" ?
 			inferIntersection<
 				inferExpression<ast[0], $, args>,
@@ -60,12 +62,9 @@ export type inferExpression<ast, $, args> =
 				withDefault<inferExpression<ast[0], $, args>, defaultValue>
 			:	never
 		: ast[1] extends "#" ? type.brand<inferExpression<ast[0], $, args>, ast[2]>
-		: ast[1] extends Comparator ?
-			ast[0] extends LimitLiteral ?
-				inferExpression<ast[2], $, args>
-			:	inferExpression<ast[0], $, args>
-		: ast[1] extends "%" ? inferExpression<ast[0], $, args>
-		: ast[1] extends "?" ? inferExpression<ast[0], $, args>
+		: ast[1] extends "%" | "?" ? inferExpression<ast[0], $, args>
+		: ast extends GenericInstantiationAst<infer g, infer argAsts> ?
+			inferGenericInstantiation<g, argAsts, $, args>
 		: ast[0] extends "keyof" ? arkKeyOf<inferExpression<ast[1], $, args>>
 		: never
 	:	never

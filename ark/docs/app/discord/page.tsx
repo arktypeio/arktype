@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { defineMetadata } from "../metadata.ts"
 
 export const metadata = defineMetadata({
-	title: "ArkType Discord",
+	title: "Discord",
 	ogImage: "ogDiscord.png"
 })
 

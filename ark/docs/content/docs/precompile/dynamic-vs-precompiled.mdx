@@ -1,0 +1,38 @@
+---
+title: Dynamic vs Precompiled
+description: The same definitions, run two ways.
+---
+
+Every ArkType definition can run dynamically, created by `type()` at runtime, or [precompiled](/docs/precompile), constructed when you build. It infers the same type either way, so you can switch at any time.
+
+<Claim id="dynamicSpeed" /> What precompiling removes is everything around a
+Type's checks: the parser, the time it takes to create each Type, and the code
+it generates.
+
+|                           | Dynamic                                              | Precompiled                                                                      | Precompiled with `runtime: "arktype"`        |
+| ------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------- |
+| Build step                | none                                                 | a bundler plugin or driver                                                       | a bundler plugin or driver                   |
+| Ships arktype's parser    | yes                                                  | no, only `arktype/runtime`                                                       | yes                                          |
+| Generates code at runtime | yes, unless [`jitless`](/docs/configuration#jitless) | never                                                                            | only for Types the build couldn't precompile |
+| Composing at runtime      | the whole Type API                                   | inside definitions, which the build evaluates                                    | the whole Type API                           |
+| Introspection members     | all                                                  | those the build sees read, or [`members`](/docs/precompile/options#members) sets | all                                          |
+| Error messages            | say what was expected and what the value was         | say what was expected, and any text configured for them                          | say what was expected and what the value was |
+| [Locales](/docs/i18n)     | yes                                                  | no                                                                               | yes                                          |
+| Equal definitions         | one Type                                             | one validator, [but for a few cases](#equal-definitions)                         | one Type                                     |
+
+## Equal definitions
+
+arktype returns one Type for a scope's equal definitions written alike, and for spellings it normalizes alike, so `type("string[]") === type("string").array()`, in one module or across two. [Other spellings](/docs/upgrading#types-are-built-when-theyre-first-read) of one Type can be two equal Types. A precompiled program compares the same, including any function a Type holds, except:
+
+- A Type the build leaves to arktype, as a [runtime island](/docs/precompile/advanced#runtime-islands), and its precompiled equal are two values.
+- A build that reads each module alone, as Node and `arktype-precompile --emit` do, and any build that doesn't [prune](/docs/precompile/options#prune), gives two values for a Type holding a cycle and for one in a scope a function creates. Reading the whole program, as a production build on Vite, Rollup, Rolldown, esbuild, webpack or Rspack does, or `next build` with Turbopack, compares them as arktype does.
+- A scope a function creates is created once, however often the function is called, so each call's Types are one value where arktype creates them anew.
+- A chunk imported again at runtime under another URL creates its functions anew, so arktype gives each run its own Type for a narrow the chunk defines. A validator holding a function the build proves can't differ between runs may be one value for both.
+
+## Which to use
+
+Precompile an app you bundle. Its validators ship without a parser or a JIT, and the build reports anything it can't precompile with the fix. See [Setup](/docs/precompile/setup), and [Speed and size](/docs/precompile#speed-and-size) for the numbers.
+
+Stay dynamic where there's no build, like a script or a REPL, or where definitions are only known at runtime. A standalone build can also leave those to arktype as [runtime islands](/docs/precompile/advanced#runtime-islands).
+
+Build with `runtime: "arktype"` while you migrate, or where a program composes or introspects Types at runtime but still benefits from skipping the compile step.

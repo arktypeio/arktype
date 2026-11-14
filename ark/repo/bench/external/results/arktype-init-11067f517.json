@@ -1,0 +1,12 @@
+{
+	"measured": "lane/loop-init 11067f517 (build 91d3e2e20): schemabenchmarks.dev initialization with the arm reading its schema, as sb-counts-init-11067f517.json; Sury build and parse once, as sury-counts-init-91d3e2e20.json",
+	"sbCounts": {
+		"sb initialization|||arktype (precompiled)": [
+			15.953845, 15.884735, 16.001345
+		]
+	},
+	"suryCounts": {
+		"sury build ArkType": [101.906195, 101.92073, 102.074625],
+		"sury parse ArkType": [84.952815, 84.979465, 84.990095]
+	}
+}

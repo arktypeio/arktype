@@ -1,11 +1,14 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
+	annotatingFallback,
 	intrinsic,
+	registeredReference,
 	rootSchema,
 	rootSchemaScope,
 	schemaScope,
 	type BaseRoot,
+	type JsonSchema,
 	type ToJsonSchema
 } from "@ark/schema"
 import type { omit } from "@ark/util"
@@ -37,7 +40,7 @@ contextualize(() => {
 	})
 
 	it("boolean", () => {
-		attest(toJsonSchema($ark.intrinsic.boolean)).snap({
+		attest(toJsonSchema($ark.kw.boolean)).snap({
 			type: "boolean"
 		})
 	})
@@ -85,110 +88,22 @@ contextualize(() => {
 		})
 	})
 
-	it("object", () => {
+	it("string or symbol index", () => {
 		const node = rootSchema({
 			domain: "object",
-			required: [
-				{
-					key: "foo",
-					value: "string"
-				},
-				{ key: "bar", value: "number" }
-			],
-			optional: [
-				{
-					key: "baz",
-					value: { unit: 1 }
-				}
-			],
-			index: {
-				signature: "string",
-				value: $ark.intrinsic.jsonPrimitive
-			}
+			index: { signature: ["string", "symbol"], value: "number" }
 		})
-		attest(toJsonSchema(node)).snap({
-			type: "object",
-			properties: {
-				bar: { type: "number" },
-				foo: { type: "string" },
-				baz: { const: 1 }
-			},
-			required: ["bar", "foo"],
-			additionalProperties: {
-				anyOf: [
-					{ type: "number" },
-					{ type: "string" },
-					{ type: "boolean" },
-					{ type: "null" }
-				]
-			}
-		})
+		attest(
+			toJsonSchema(node, { fallback: { symbolKey: ctx => ctx.base } })
+		).snap({ type: "object", additionalProperties: { type: "number" } })
 	})
 
-	it("pattern index", () => {
+	it("pattern flags that don't change what it matches", () => {
 		const node = rootSchema({
-			domain: "object",
-			index: {
-				signature: {
-					domain: "string",
-					pattern: ".*"
-				},
-				value: "number"
-			}
+			domain: "string",
+			pattern: [{ rule: "^.$", flags: "gu" }]
 		})
-		attest(toJsonSchema(node)).snap({
-			type: "object",
-			patternProperties: { ".*": { type: "number" } }
-		})
-	})
-
-	it("variadic array", () => {
-		const node = rootSchema({
-			proto: Array,
-			sequence: { domain: "string" },
-			minLength: 1,
-			maxLength: 5
-		})
-		const jsonSchema = toJsonSchema(node)
-		attest(jsonSchema).snap({
-			type: "array",
-			items: { type: "string" },
-			minItems: 1,
-			maxItems: 5
-		})
-	})
-
-	it("fixed length tuple", () => {
-		const node = rootSchema({
-			proto: Array,
-			sequence: {
-				prefix: [{ domain: "string" }, { domain: "number" }]
-			}
-		})
-		const jsonSchema = toJsonSchema(node)
-		attest(jsonSchema).snap({
-			type: "array",
-			minItems: 2,
-			prefixItems: [{ type: "string" }, { type: "number" }],
-			items: false
-		})
-	})
-
-	it("prefixed array", () => {
-		const node = rootSchema({
-			proto: Array,
-			sequence: {
-				prefix: [{ domain: "string" }, { domain: "number" }],
-				variadic: { unit: 1 }
-			}
-		})
-		const jsonSchema = toJsonSchema(node)
-		attest(jsonSchema).snap({
-			type: "array",
-			minItems: 2,
-			prefixItems: [{ type: "string" }, { type: "number" }],
-			items: { const: 1 }
-		})
+		attest(toJsonSchema(node)).snap({ type: "string", pattern: "^.$" })
 	})
 
 	it("preserves meta", () => {
@@ -226,27 +141,30 @@ contextualize(() => {
 			properties: {
 				bar: { type: "number", title: "bar", examples: [1337, 7331] },
 				foo: { type: "string", description: "a foo" },
-				baz: { const: 1, deprecated: true }
+				baz: { type: "number", const: 1, deprecated: true }
 			},
 			required: ["bar", "foo"]
 		})
 	})
 
 	it("cyclic", () => {
-		const schema = toJsonSchema($ark.intrinsic.jsonObject)
+		// JSON Schema can't require a plain object
+		const schema = toJsonSchema($ark.kw.jsonObject, {
+			fallback: { predicate: ctx => ctx.base }
+		})
 
 		attest(schema).snap({
-			$ref: "#/$defs/intersection11",
+			type: "object",
+			additionalProperties: { $ref: "#/$defs/jsonData" },
 			$defs: {
-				intersection11: {
-					type: "object",
-					additionalProperties: { $ref: "#/$defs/jsonData1" }
-				},
-				jsonData1: {
+				jsonData: {
 					anyOf: [
-						{ $ref: "#/$defs/intersection11" },
 						{ type: "number" },
 						{ type: "string" },
+						{
+							type: "object",
+							additionalProperties: { $ref: "#/$defs/jsonData" }
+						},
 						{ type: "boolean" },
 						{ type: "null" }
 					]
@@ -255,32 +173,60 @@ contextualize(() => {
 		})
 	})
 
-	it("unions of literal values as enums", () => {
-		const Bit = rootSchemaScope.units([0, 1])
-
-		attest(toJsonSchema(Bit)).snap({ enum: [0, 1] })
-	})
-
-	it("unions of literal values with metadata not enums", () => {
-		const Bit = rootSchema([
-			{ unit: 0 },
-			{ unit: 1, "meta.description": "one" }
-		])
-
-		attest(toJsonSchema(Bit)).snap({
-			anyOf: [{ const: 0 }, { const: 1, description: "one" }]
-		})
-	})
-
-	it("includes default for primitive prop", () => {
-		const T = rootSchema({
+	it("toJsonSchemaRecurse", () => {
+		const node = rootSchema({
 			domain: "object",
-			optional: [{ key: "foo", value: "number", default: 0 }]
+			required: [{ key: "a", value: "string" }]
 		})
-		attest(toJsonSchema(T)).snap({
+		const ctx = node.$.cfg.toJsonSchema
+		attest(node.toJsonSchemaRecurse(ctx)).snap({
 			type: "object",
-			properties: { foo: { type: "number", default: 0 } }
+			properties: { a: { type: "string" } },
+			required: ["a"]
 		})
+		attest(node.toJsonSchemaRecurse({ ...ctx, useRefs: true })).equals({
+			$ref: "#/$defs/intersection"
+		})
+		attest(
+			rootSchema("string").toJsonSchemaRecurse({ ...ctx, useRefs: true })
+		).equals({ type: "string" })
+	})
+
+	it("$defs in reference order", () => {
+		const node = rootSchema([
+			{
+				domain: "object",
+				required: [
+					{ key: "k", value: { unit: "a" } },
+					{
+						key: "a",
+						value: {
+							domain: "object",
+							required: [{ key: "x", value: "string" }]
+						}
+					}
+				]
+			},
+			{
+				domain: "object",
+				required: [
+					{ key: "k", value: { unit: "b" } },
+					{
+						key: "b",
+						value: {
+							domain: "object",
+							required: [{ key: "y", value: "number" }]
+						}
+					}
+				]
+			}
+		])
+		const defs = toJsonSchema(node, { useRefs: true }).$defs!
+		attest(
+			Object.values(defs).map(def =>
+				Object.keys((def as JsonSchema.Object).properties ?? def)
+			)
+		).snap([["anyOf"], ["a", "k"], ["x"], ["b", "k"], ["y"]])
 	})
 
 	it("includes default for object prop", () => {
@@ -316,21 +262,6 @@ contextualize(() => {
 		})
 	})
 
-	it("it includes object default for tuple", () => {
-		const T = rootSchema({
-			proto: "Array",
-			sequence: {
-				defaultables: [["Array", () => []]]
-			}
-		})
-
-		attest(toJsonSchema(T)).snap({
-			type: "array",
-			prefixItems: [{ type: "array", default: [] }],
-			items: false
-		})
-	})
-
 	it("includes object default from meta", () => {
 		const T = rootSchema({
 			proto: "Array",
@@ -345,39 +276,6 @@ contextualize(() => {
 		})
 	})
 
-	it("includes nested object default from meta", () => {
-		const T = rootSchema({
-			domain: "object",
-			required: [{ key: "a", value: "number" }],
-			meta: { default: { a: 1 } }
-		})
-
-		attest(toJsonSchema(T)).snap({
-			type: "object",
-			properties: { a: { type: "number" } },
-			required: ["a"],
-			default: { a: 1 }
-		})
-	})
-
-	it("includes custom object meta", () => {
-		const T = rootSchema({
-			domain: "number",
-			meta: { "x-unit": { name: "ms" } } as never
-		})
-
-		attest<object>(toJsonSchema(T)).snap({
-			type: "number",
-			"x-unit": { name: "ms" }
-		})
-	})
-
-	it("null generated as type instead of const", () => {
-		const T = rootSchema({ unit: null })
-
-		attest(toJsonSchema(T)).snap({ type: "null" })
-	})
-
 	describe("unjsonifiable", () => {
 		it("arrayObject", () => {
 			const T = rootSchema({
@@ -388,7 +286,9 @@ contextualize(() => {
 				required: [{ key: "extra", value: "string" }]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "arrayObject" to JSON Schema. Configure fallback.arrayObject to write it:
+{
     code: "arrayObject",
     base: {
         type: "array",
@@ -419,7 +319,9 @@ contextualize(() => {
 				}
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "arrayPostfix" to JSON Schema. Configure fallback.arrayPostfix to write it:
+{
     code: "arrayPostfix",
     base: {
         type: "array",
@@ -448,7 +350,9 @@ contextualize(() => {
 				]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "defaultValue" at foo to JSON Schema. Configure fallback.defaultValue to write it:
+{
     code: "defaultValue",
     base: {},
     value: 0n
@@ -461,10 +365,13 @@ contextualize(() => {
 				meta: { default: { a: 0n } }
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "defaultValue" to JSON Schema. Configure fallback.defaultValue to write it:
+{
     code: "defaultValue",
     base: {
-        type: "object"
+        type: "object",
+        properties: {}
     },
     value: {
         a: 0n
@@ -481,29 +388,12 @@ contextualize(() => {
 			attest(() => T.toJsonSchema()).throws("defaultValue")
 		})
 
-		it("functional default", () => {
-			const T = rootSchema({
-				domain: "object",
-				optional: [
-					{
-						key: "foo",
-						value: {},
-						default: () => 0n
-					}
-				]
-			})
-
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
-    code: "defaultValue",
-    base: {},
-    value: 0n
-}`)
-		})
-
 		it("domain", () => {
 			const T = rootSchema("bigint")
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "domain" to JSON Schema. Configure fallback.domain to write it:
+{
     code: "domain",
     base: {},
     domain: "bigint"
@@ -516,12 +406,51 @@ contextualize(() => {
 				morphs: [(s: string) => Number.parseInt(s)]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "morph" to JSON Schema. Configure fallback.morph to write it:
+{
     code: "morph",
     base: {
         type: "string"
     },
     out: null
+}`)
+		})
+
+		it("indexKey", () => {
+			const T = rootSchema({
+				domain: "object",
+				required: [{ key: "abcd", value: "string" }],
+				index: {
+					signature: { domain: "string", maxLength: 3 },
+					value: "number"
+				},
+				undeclared: "reject"
+			})
+
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "indexKey" to JSON Schema. Configure fallback.indexKey to write it:
+{
+    code: "indexKey",
+    base: {
+        type: "object",
+        properties: {
+            abcd: {
+                type: "string"
+            }
+        },
+        required: [
+            "abcd"
+        ],
+        additionalProperties: false
+    },
+    key: {
+        type: "string",
+        maxLength: 3
+    },
+    value: {
+        type: "number"
+    }
 }`)
 		})
 
@@ -531,13 +460,51 @@ contextualize(() => {
 				pattern: ["^a", "z$"]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "patternIntersection" to JSON Schema. Configure fallback.patternIntersection to write it:
+{
     code: "patternIntersection",
     base: {
         type: "string",
         pattern: "^a"
     },
     pattern: "z$"
+}`)
+		})
+
+		it("patternFlags", () => {
+			const T = rootSchema({
+				domain: "string",
+				pattern: [{ rule: "^a", flags: "i" }]
+			})
+
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "patternFlags" to JSON Schema. Configure fallback.patternFlags to write it:
+{
+    code: "patternFlags",
+    base: {
+        type: "string"
+    },
+    pattern: "^a",
+    flags: "i"
+}`)
+		})
+
+		it("patternFlags with u in draft-07", () => {
+			const T = rootSchema({
+				domain: "string",
+				pattern: [{ rule: "^.$", flags: "u" }]
+			})
+
+			attest(() => T.toJsonSchema({ target: "draft-07" })).throws
+				.snap(`ToJsonSchemaError: Can't convert "patternFlags" to JSON Schema. Configure fallback.patternFlags to write it:
+{
+    code: "patternFlags",
+    base: {
+        type: "string"
+    },
+    pattern: "^.$",
+    flags: "u"
 }`)
 		})
 
@@ -549,7 +516,9 @@ contextualize(() => {
 				}
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "predicate" to JSON Schema. Configure fallback.predicate to write it:
+{
     code: "predicate",
     base: {
         type: "string"
@@ -563,7 +532,9 @@ contextualize(() => {
 				proto: Map
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "proto" to JSON Schema. Configure fallback.proto to write it:
+{
     code: "proto",
     base: {},
     proto: Function(Map)
@@ -576,15 +547,28 @@ contextualize(() => {
 				required: [{ key: Symbol("zildjian"), value: "string" }]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(
-				"TypeError: Cannot convert a Symbol value to a string"
-			)
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "symbolKey" at [Symbol(zildjian)] to JSON Schema. Configure fallback.symbolKey to write it:
+{
+    code: "symbolKey",
+    base: {
+        type: "object",
+        properties: {}
+    },
+    key: Symbol(zildjian),
+    value: {
+        type: "string"
+    },
+    optional: false
+}`)
 		})
 
 		it("unit", () => {
 			const T = rootSchema({ unit: undefined })
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "unit" to JSON Schema. Configure fallback.unit to write it:
+{
     code: "unit",
     base: {},
     unit: undefined
@@ -603,28 +587,174 @@ contextualize(() => {
 						proto: () => ({ type: "object" })
 					}
 				})
-			).throws.snap(`ToJsonSchemaError: {
+			).throws
+				.snap(`ToJsonSchemaError: Can't convert "date" to JSON Schema. Configure fallback.date to write it:
+{
     code: "date",
     base: {}
 }`)
 		})
+	})
 
-		it("before", () => {
+	describe("annotatingFallback", () => {
+		// x-arktype-* keywords aren't part of the JsonSchema type
+		const annotated = (T: BaseRoot): object =>
+			toJsonSchema(T, { fallback: annotatingFallback })
+
+		it("predicates", () => {
+			const isEven = (n: number) => n % 2 === 0
+			const isPositive = (n: number) => n > 0
 			const T = rootSchema({
-				proto: "Date",
-				before: new Date("06-01-2000")
+				domain: "number",
+				predicate: [isEven, isPositive]
 			})
 
-			attest(() =>
-				T.toJsonSchema({
-					fallback: {
-						proto: () => ({ type: "object" })
-					}
-				})
-			).throws.snap(`ToJsonSchemaError: {
-    code: "date",
-    base: {}
-}`)
+			attest(annotated(T)).snap({
+				type: "number",
+				"x-arktype-predicates": [
+					registeredReference(isEven),
+					registeredReference(isPositive)
+				]
+			})
+		})
+
+		it("bigint, undefined and Map", () => {
+			attest(annotated(rootSchema("bigint"))).snap({
+				"x-arktype-domain": "bigint"
+			})
+			attest(annotated(rootSchema({ unit: undefined }))).snap({
+				"x-arktype-unit": "undefined"
+			})
+			attest(annotated(rootSchema({ proto: Map }))).snap({
+				"x-arktype-proto": "Map"
+			})
+		})
+
+		it("morph", () => {
+			const T = rootSchema({
+				in: "string",
+				morphs: [(s: string) => Number.parseInt(s)]
+			})
+
+			attest(annotated(T)).snap({ type: "string", "x-arktype-out": null })
+		})
+
+		it("patterns", () => {
+			const T = rootSchema({
+				domain: "string",
+				pattern: ["^a", "z$", "m"]
+			})
+
+			attest(annotated(T)).snap({
+				type: "string",
+				pattern: "^a",
+				allOf: [{ pattern: "m" }, { pattern: "z$" }]
+			})
+		})
+
+		it("pattern flags", () => {
+			const T = rootSchema({
+				domain: "string",
+				pattern: ["z$", { rule: "^a", flags: "i" }]
+			})
+
+			attest(annotated(T)).snap({
+				type: "string",
+				"x-arktype-patterns": [{ rule: "^a", flags: "i" }],
+				pattern: "z$"
+			})
+		})
+
+		it("index key", () => {
+			const T = rootSchema({
+				domain: "object",
+				index: {
+					signature: { domain: "string", maxLength: 3 },
+					value: "number"
+				}
+			})
+
+			attest(annotated(T)).snap({
+				type: "object",
+				"x-arktype-index": [
+					{ key: { type: "string", maxLength: 3 }, value: { type: "number" } }
+				]
+			})
+		})
+
+		it("symbol keys", () => {
+			const zildjian = Symbol("zildjian")
+			const T = rootSchema({
+				domain: "object",
+				required: [
+					{ key: "name", value: "string" },
+					{ key: zildjian, value: "number" }
+				],
+				index: [{ signature: "symbol", value: "number" }]
+			})
+
+			attest(annotated(T)).snap({
+				type: "object",
+				properties: { name: { type: "string" } },
+				"x-arktype-symbolKeys": [
+					{
+						key: registeredReference(zildjian),
+						value: { type: "number" },
+						optional: false
+					},
+					{ key: null, value: { type: "number" }, optional: false }
+				],
+				required: ["name"]
+			})
+		})
+
+		it("date range", () => {
+			const T = rootSchema({
+				proto: "Date",
+				after: new Date("2000-01-01T00:00:00.000Z"),
+				before: new Date("2000-06-01T00:00:00.000Z")
+			})
+
+			attest(annotated(T)).snap({
+				"x-arktype-proto": "Date",
+				"x-arktype-before": "2000-06-01T00:00:00.000Z",
+				"x-arktype-after": "2000-01-01T00:00:00.000Z"
+			})
+		})
+
+		it("postfix and array props", () => {
+			const T = rootSchema({
+				proto: "Array",
+				sequence: {
+					variadic: "number",
+					postfix: ["string"]
+				},
+				required: [{ key: "extra", value: "string" }]
+			})
+
+			attest(annotated(T)).snap({
+				type: "array",
+				minItems: 1,
+				items: { type: "number" },
+				"x-arktype-postfix": [{ type: "string" }],
+				"x-arktype-object": {
+					type: "object",
+					properties: { extra: { type: "string" } },
+					required: ["extra"]
+				}
+			})
+		})
+
+		it("default", () => {
+			const T = rootSchema({
+				domain: "object",
+				optional: [{ key: "foo", value: {}, default: 0n }]
+			})
+
+			attest(annotated(T)).snap({
+				type: "object",
+				properties: { foo: { default: "0n" } }
+			})
 		})
 	})
 
@@ -662,6 +792,47 @@ contextualize(() => {
 			})
 		})
 
+		it("morph index key", () => {
+			const T = rootSchema({
+				domain: "object",
+				index: [
+					{
+						signature: {
+							in: { domain: "string", pattern: "^\\d+$" },
+							morphs: [(s: string) => Number.parseInt(s)]
+						},
+						value: "string"
+					},
+					{
+						signature: {
+							in: { domain: "string", meta: "a key" },
+							morphs: [(s: string) => s.trim()]
+						},
+						value: "number"
+					}
+				]
+			})
+
+			const expected: JsonSchema = {
+				type: "object",
+				patternProperties: {
+					"": { type: "number" },
+					"^\\d+$": { type: "string" }
+				}
+			}
+
+			attest(toJsonSchema(T, { fallback: { morph: ctx => ctx.base } })).equals(
+				expected
+			)
+			attest(
+				toJsonSchema(T, { fallback: { morph: ctx => ctx.out ?? ctx.base } })
+			).equals(expected)
+			attest(
+				toJsonSchema(T, { useRefs: true, fallback: { morph: ctx => ctx.base } })
+					.$defs!.intersection
+			).equals(expected)
+		})
+
 		it("date supercedes proto", () => {
 			const T = rootSchema({
 				proto: "Date"
@@ -678,30 +849,6 @@ contextualize(() => {
 			})
 
 			attest(schema).snap({ type: "string", format: "date-time" })
-		})
-
-		it("date range with fallback", () => {
-			const T = rootSchema({
-				proto: "Date",
-				before: new Date("06-01-2000")
-			})
-
-			const schema = toJsonSchema(T, {
-				fallback: {
-					proto: () => ({ type: "object" }),
-					date: ctx => ({
-						type: "string",
-						format: "date-time",
-						description: `before ${ctx.before?.toISOString()}`
-					})
-				}
-			})
-
-			attest(schema).snap({
-				type: "string",
-				format: "date-time",
-				description: "before 2000-06-01T04:00:00.000Z"
-			})
 		})
 
 		it("scope config", () => {

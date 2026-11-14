@@ -16,3 +16,7 @@ The parts of ArkType's type system that exist in TS (i.e. not runtime-only const
   - Index: all keys that satisfy an index type must have values satisfying the corresponding value type
 
 In this system, `L` extends/subtypes/is assignable to `R` if and only if the intersection `L & R` is equal to `L`.
+
+## Docs
+
+`@ark/schema` isn't semver-stable. See [arktype.io/docs/internals](https://arktype.io/docs/internals) for its node kinds, schemas, `rootSchema` and `schemaScope`, and how it relates to `arksets` and `arktype`.

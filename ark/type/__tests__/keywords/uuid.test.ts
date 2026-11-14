@@ -9,20 +9,18 @@ contextualize(() => {
 	it("root", () => {
 		const Uuid = type("string.uuid")
 		attest(Uuid(validUuidV4)).equals(validUuidV4)
-		attest(Uuid("1234").toString()).snap('must be a UUID (was "1234")')
+		attest(Uuid("1234").toString()).snap("must be a UUID")
 	})
 
 	it("version subtype", () => {
 		const Uuidv4 = type("string.uuid.v4")
 
 		attest(Uuidv4(validUuidV4)).equals(validUuidV4)
-		attest(Uuidv4("1234").toString()).snap('must be a UUIDv4 (was "1234")')
+		attest(Uuidv4("1234").toString()).snap("must be a UUIDv4")
 
 		attest(keywords.string.uuid.v5(validUuidV5)).equals(validUuidV5)
 
-		attest(Uuidv4(validUuidV5).toString()).equals(
-			'must be a UUIDv4 (was "f70b8242-dd57-5e6b-b0b7-649d997140a0")'
-		)
+		attest(Uuidv4(validUuidV5).toString()).equals("must be a UUIDv4")
 	})
 
 	it("JSON Schema pattern accepts uppercase like the runtime check", () => {
@@ -30,11 +28,8 @@ contextualize(() => {
 
 		const Uuid = type("string.uuid")
 		attest(Uuid(upper)).equals(upper)
-		const uuidSchema = Uuid.toJsonSchema() as {
-			anyOf: { pattern?: string }[]
-		}
-		const versionedPattern = uuidSchema.anyOf[0].pattern!
-		attest(new RegExp(versionedPattern, "u").test(upper)).equals(true)
+		const uuidPattern = (Uuid.toJsonSchema() as { pattern: string }).pattern
+		attest(new RegExp(uuidPattern, "u").test(upper)).equals(true)
 
 		const Uuidv4 = type("string.uuid.v4")
 		attest(Uuidv4(upper)).equals(upper)
@@ -42,13 +37,28 @@ contextualize(() => {
 		attest(new RegExp(v4Pattern, "u").test(upper)).equals(true)
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1481
+	it("index signature keys are all optional", () => {
+		attest(type({ "[string.uuid]": "number" })({})).snap({})
+	})
+
+	it("version subtype JSON Schema format", () => {
+		attest(type("string.uuid.v4").toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "string",
+			pattern:
+				"^[\\dA-Fa-f]{8}-[\\dA-Fa-f]{4}-4[\\dA-Fa-f]{3}-[89ABab][\\dA-Fa-f]{3}-[\\dA-Fa-f]{12}$",
+			format: "uuid"
+		})
+	})
+
 	it("rejects partial matches", () => {
 		const Uuid = type("string.uuid")
 		attest(Uuid("dbb1e8e0-40fc-4c14-87eb-61b25d166a1b extra").toString()).snap(
-			'must be a UUID (was "dbb1e8e0-40fc-4c14-87eb-61b25d166a1b extra")'
+			"must be a UUID"
 		)
 		attest(Uuid("prefix dbb1e8e0-40fc-4c14-87eb-61b25d166a1b").toString()).snap(
-			'must be a UUID (was "prefix dbb1e8e0-40fc-4c14-87eb-61b25d166a1b")'
+			"must be a UUID"
 		)
 	})
 })

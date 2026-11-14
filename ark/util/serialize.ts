@@ -1,8 +1,17 @@
 import type { array } from "./arrays.ts"
 import { domainOf, type Primitive } from "./domain.ts"
+import { throwInternalError } from "./errors.ts"
+import {
+	constructorNameOf,
+	expressionOf,
+	functionNameOf,
+	isDate,
+	ownEntriesOf,
+	toJsonMethodOf
+} from "./facts.ts"
+import { isArray, objectKindOf } from "./objectKinds.ts"
 import { serializePrimitive, type SerializablePrimitive } from "./primitive.ts"
-import { stringAndSymbolicEntriesOf, type dict } from "./records.ts"
-import { isDotAccessible, register } from "./registry.ts"
+import type { dict } from "./records.ts"
 
 export type SerializationOptions = {
 	onCycle?: (value: object) => string
@@ -10,6 +19,8 @@ export type SerializationOptions = {
 	onFunction?: (value: Function) => string
 	onUndefined?: string
 	onBigInt?: (value: bigint) => string
+	// describes accessors instead of calling them; also skips toJSON but a Date's
+	onAccessor?: (descriptor: PropertyDescriptor) => string
 }
 
 export type JsonStructure = JsonObject | JsonArray
@@ -55,6 +66,8 @@ type snapshotPrimitive<t> = t extends symbol ? `Symbol(${string})` : t
 export type PrintableOptions = {
 	indent?: number
 	quoteKeys?: boolean
+	// print own data properties without running accessors or toJSON
+	ownDataOnly?: boolean
 }
 
 export const print = (data: unknown, opts?: PrintableOptions): void =>
@@ -64,17 +77,19 @@ export const printable = (data: unknown, opts?: PrintableOptions): string => {
 	switch (domainOf(data)) {
 		case "object":
 			const o = data as dict
-			const ctorName = o.constructor?.name ?? "Object"
+			const ctorName = constructorNameOf(o) ?? "Object"
+			const serializationOpts =
+				opts?.ownDataOnly ? ownDataPrintableOpts : printableOpts
 			return (
 				ctorName === "Object" || ctorName === "Array" ?
 					opts?.quoteKeys === false ?
-						stringifyUnquoted(o, opts?.indent ?? 0, "")
+						stringifyUnquoted(o, opts?.indent ?? 0, "", serializationOpts)
 					:	JSON.stringify(
-							_serialize(o, printableOpts, []),
+							_serialize(o, serializationOpts, []),
 							null,
 							opts?.indent
 						).replace(quotedMarkedValue, "$1")
-				:	stringifyUnquoted(o, opts?.indent ?? 0, "")
+				:	stringifyUnquoted(o, opts?.indent ?? 0, "", serializationOpts)
 			)
 		case "symbol":
 			return printableOpts.onSymbol(data as symbol)
@@ -83,34 +98,45 @@ export const printable = (data: unknown, opts?: PrintableOptions): string => {
 	}
 }
 
+// errors print an object by its kind, so its contents never reach a message
+export const printKind = (data: unknown): string =>
+	typeof data === "function" ? "a function"
+	: typeof data === "symbol" ? printSymbol(data)
+	: typeof data !== "object" || data === null ?
+		serializePrimitive(data as SerializablePrimitive)
+	: isArray(data) ? "an array"
+	: "an object"
+
 const stringifyUnquoted = (
 	value: unknown,
 	indent: number,
-	currentIndent: string
+	currentIndent: string,
+	opts: SerializationOptions
 ): string => {
 	if (typeof value === "function") return printableOpts.onFunction(value)
+	if (typeof value === "symbol") return printableOpts.onSymbol(value)
 	if (typeof value !== "object" || value === null)
 		return serializePrimitive(value as never)
 
 	const nextIndent = currentIndent + " ".repeat(indent)
 
-	if (Array.isArray(value)) {
+	if (isArray(value)) {
 		if (value.length === 0) return "[]"
 		const items = value
-			.map(item => stringifyUnquoted(item, indent, nextIndent))
+			.map(item => stringifyUnquoted(item, indent, nextIndent, opts))
 			.join(",\n" + nextIndent)
 		return indent ? `[\n${nextIndent}${items}\n${currentIndent}]` : `[${items}]`
 	}
 
-	const ctorName = value.constructor?.name ?? "Object"
+	const ctorName = constructorNameOf(value) ?? "Object"
 
 	if (ctorName === "Object") {
-		const keyValues = stringAndSymbolicEntriesOf(value).map(([key, val]) => {
+		const keyValues = ownEntriesOf(value, opts).map(([key, val]) => {
 			const stringifiedKey =
 				typeof key === "symbol" ? printableOpts.onSymbol(key)
 				: isDotAccessible(key) ? key
 				: JSON.stringify(key)
-			const stringifiedValue = stringifyUnquoted(val, indent, nextIndent)
+			const stringifiedValue = stringifyUnquoted(val, indent, nextIndent, opts)
 			return `${nextIndent}${stringifiedKey}: ${stringifiedValue}`
 		})
 
@@ -121,31 +147,32 @@ const stringifyUnquoted = (
 			:	`{${keyValues.join(", ")}}`
 	}
 
-	if (value instanceof Date) return describeCollapsibleDate(value)
+	if (isDate(value)) return describeCollapsibleDate(value)
 
-	if ("expression" in value && typeof value.expression === "string")
-		return value.expression
-
-	return ctorName
+	return expressionOf(value) ?? ctorName
 }
 
-// private use character that JSON.stringify leaves unescaped
-const unquotedMarker = "\uE000"
+export const printSymbol = (symbol: symbol): string =>
+	`Symbol(${baseNameOfSymbol(symbol)})`
 
+// bigints and undefined are prefixed with U+E000, which JSON.stringify leaves
+// unescaped, so printable can strip the quotes it adds: [1n] not ["1n"]. A
+// literal, since a bundler would keep a template over a shared binding, and
+// all it reaches, in every build importing @ark/util
 const printableOpts = {
 	onCycle: () => "(cycle)",
-	onSymbol: v => `Symbol(${register(v)})`,
-	onFunction: v => `Function(${register(v)})`,
-	// prefix bigints and undefined with a marker so printable can strip the
-	// quotes JSON.stringify adds, e.g. [1n, undefined] not ["1n", "undefined"]
-	onBigInt: n => `${unquotedMarker}${n}n`,
-	onUndefined: `${unquotedMarker}undefined`
+	onSymbol: printSymbol,
+	onFunction: v => `Function(${baseNameOf(v)})`,
+	onBigInt: n => `\uE000${n}n`,
+	onUndefined: "\uE000undefined"
 } satisfies SerializationOptions
 
-const quotedMarkedValue = new RegExp(
-	`"${unquotedMarker}(-?\\d+n|undefined)"`,
-	"g"
-)
+const ownDataPrintableOpts = /* @__PURE__ */ Object.assign({}, printableOpts, {
+	onAccessor: (descriptor: PropertyDescriptor) =>
+		descriptor.get ? "(getter)" : "(setter)"
+}) satisfies SerializationOptions
+
+const quotedMarkedValue = /"\uE000(-?\d+n|undefined)"/g
 
 const _serialize = (
 	data: unknown,
@@ -155,26 +182,23 @@ const _serialize = (
 	switch (domainOf(data)) {
 		case "object": {
 			const o = data as object
-			if ("toJSON" in o && typeof o.toJSON === "function") return o.toJSON()
+			const toJson =
+				!opts.onAccessor || isDate(o) ? toJsonMethodOf(o) : undefined
+			if (toJson) return Reflect.apply(toJson, o, [])
 			if (typeof o === "function") return printableOpts.onFunction(o)
 
 			if (seen.includes(o)) return "(cycle)"
 
 			const nextSeen = [...seen, o]
-			if (Array.isArray(o))
-				return o.map(item => _serialize(item, opts, nextSeen))
+			if (isArray(o)) return o.map(item => _serialize(item, opts, nextSeen))
 
-			if (o instanceof Date) return o.toDateString()
+			if (isDate(o)) return o.toDateString()
 
 			const result: Record<string, unknown> = {}
-			for (const k in o) result[k] = _serialize((o as any)[k], opts, nextSeen)
-
-			for (const s of Object.getOwnPropertySymbols(o)) {
-				result[opts.onSymbol?.(s as symbol) ?? s.toString()] = _serialize(
-					(o as any)[s],
-					opts,
-					nextSeen
-				)
+			for (const [k, v] of ownEntriesOf(o, opts)) {
+				result[
+					typeof k === "symbol" ? (opts.onSymbol?.(k) ?? k.toString()) : k
+				] = _serialize(v, opts, nextSeen)
 			}
 
 			return result
@@ -196,28 +220,18 @@ const _serialize = (
  * Converts a Date instance to a human-readable description relative to its precision
  */
 export const describeCollapsibleDate = (date: Date): string => {
-	const year = date.getFullYear()
-	const month = date.getMonth()
-	const dayOfMonth = date.getDate()
-	const hours = date.getHours()
-	const minutes = date.getMinutes()
-	const seconds = date.getSeconds()
-	const milliseconds = date.getMilliseconds()
+	const year = date.getUTCFullYear()
+	const month = date.getUTCMonth()
+	const dayOfMonth = date.getUTCDate()
+	const hours = date.getUTCHours()
+	const minutes = date.getUTCMinutes()
+	const seconds = date.getUTCSeconds()
+	const milliseconds = date.getUTCMilliseconds()
 
-	if (
-		month === 0 &&
-		dayOfMonth === 1 &&
-		hours === 0 &&
-		minutes === 0 &&
-		seconds === 0 &&
-		milliseconds === 0
-	)
-		return `${year}`
-
-	const datePortion = `${months[month]} ${dayOfMonth}, ${year}`
-
+	// a bare year would read as the whole year, so it's never collapsed past
+	// its day
 	if (hours === 0 && minutes === 0 && seconds === 0 && milliseconds === 0)
-		return datePortion
+		return `${months[month]} ${dayOfMonth}, ${year}`
 
 	const h = hours % 12 || 12
 	const suffix = hours < 12 ? " AM" : " PM"
@@ -229,7 +243,7 @@ export const describeCollapsibleDate = (date: Date): string => {
 
 	if (milliseconds) timePortion += `.${pad(milliseconds, 3)}`
 
-	return `${timePortion + suffix}, ${datePortion}`
+	return `${months[month]} ${dayOfMonth}, ${year}, ${timePortion + suffix} UTC`
 }
 
 const months = [
@@ -249,3 +263,46 @@ const months = [
 
 const pad = (value: number, length: number) =>
 	String(value).padStart(length, "0")
+
+// cached, since the same keys recur
+const dotAccessibleKeys = new Map<string, boolean>()
+
+export const isDotAccessible = (keyName: string): boolean => {
+	let accessible = dotAccessibleKeys.get(keyName)
+	if (accessible === undefined) {
+		accessible = /^[$A-Z_a-z][\w$]*$/.test(keyName)
+		// bounded, since keys can come from data
+		if (keyName.length <= 64) {
+			if (dotAccessibleKeys.size === 1024) dotAccessibleKeys.clear()
+			dotAccessibleKeys.set(keyName, accessible)
+		}
+	}
+	return accessible
+}
+
+export const baseNameOf = (value: object | symbol): string => {
+	switch (typeof value) {
+		case "object": {
+			if (value === null) break
+
+			const prefix = objectKindOf(value) ?? "object"
+			// convert to camelCase
+			return prefix[0].toLowerCase() + prefix.slice(1)
+		}
+		case "function":
+			const name = functionNameOf(value)
+			return isDotAccessible(name) ? name : "fn"
+		case "symbol":
+			return baseNameOfSymbol(value)
+	}
+	return throwInternalError(
+		`Unexpected attempt to register serializable value of type ${domainOf(
+			value
+		)}`
+	)
+}
+
+const baseNameOfSymbol = (symbol: symbol): string =>
+	symbol.description && isDotAccessible(symbol.description) ?
+		symbol.description
+	:	"symbol"

@@ -1,0 +1,654 @@
+/* code blocks, result lines, twoslash and the quickinfo */
+
+/* ===== ArkLight =====
+   Code is highlighted with both themes: ArkDark inline, ArkLight in each
+   token's --shiki-light. Ties the result lines below, which win. */
+
+:root[data-theme="light"] pre.shiki,
+:root[data-theme="light"] pre.shiki span[style] {
+	color: var(--shiki-light) !important;
+}
+
+/* ===== frame ===== */
+
+.cb {
+	position: relative;
+	min-width: 0;
+	margin: 1.3rem 0 1.6rem;
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
+	background: var(--code-bg);
+}
+
+.cb-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	height: 40px;
+	padding: 0 6px 0 14px;
+	border-bottom: 1px solid var(--line);
+}
+
+.cb-title {
+	overflow: hidden;
+	font: 400 var(--fs-label) / 1 var(--mono);
+	color: var(--ink-3);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* ===== copy ===== */
+
+.cb-copy {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	height: 28px;
+	padding: 0 8px;
+	border-radius: var(--r-sm);
+	font: 400 12px / 1 var(--mono);
+	color: var(--ink-3);
+	cursor: pointer;
+	transition:
+		color var(--t-micro),
+		background-color var(--t-micro),
+		opacity var(--t-micro);
+}
+
+.cb-copy:hover {
+	color: var(--ink);
+	background: color-mix(in oklab, var(--ink) 6%, transparent);
+}
+
+.cb-copy svg {
+	width: 14px;
+	height: 14px;
+}
+
+/* every face shares one cell, so the button never changes width */
+.copy-face {
+	display: inline-grid;
+	place-items: center;
+}
+
+.copy-face > * {
+	grid-area: 1 / 1;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	transition:
+		opacity var(--t-pop-in),
+		translate 0.2s var(--ease-out);
+}
+
+.copy-done {
+	color: var(--teal);
+	opacity: 0;
+	translate: 0 4px;
+}
+
+.cb-copy[data-state="copied"] .copy-idle {
+	opacity: 0;
+	translate: 0 -4px;
+}
+
+.cb-copy[data-state="copied"] .copy-done {
+	opacity: 1;
+	translate: none;
+}
+
+/* with no header, copy floats over the code until it's wanted */
+.cb > .cb-copy {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	z-index: 1;
+	background: var(--code-bg);
+	opacity: 0;
+}
+
+.cb:hover > .cb-copy,
+.cb > .cb-copy:focus-visible,
+.cb > .cb-copy[data-state="copied"] {
+	opacity: 1;
+}
+
+@media (hover: none) {
+	.cb > .cb-copy {
+		opacity: 1;
+	}
+}
+
+/* ===== code ===== */
+
+.cb pre.shiki {
+	--pre-x: 20px;
+	margin: 0;
+	padding: 16px var(--pre-x);
+	/* result lines size to the visible block (100cqw), not the longest line */
+	container-type: inline-size;
+	overflow-x: auto;
+	border-radius: inherit;
+	font: 400 var(--fs-code) / 1.72 var(--mono);
+	font-feature-settings: "calt";
+	tab-size: 4;
+	background: transparent !important;
+}
+
+.cb pre.shiki:focus-visible {
+	outline-offset: -2px;
+}
+
+.cb-head ~ pre.shiki,
+.cb-head ~ .tab-panel pre.shiki {
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+}
+
+pre.shiki code {
+	display: block;
+	min-width: max-content;
+	font: inherit;
+}
+
+/* top-aligned, or an empty line's baseline would add a descender's height */
+pre.shiki .line {
+	display: inline-block;
+	min-width: 100%;
+	min-height: 1lh;
+	vertical-align: top;
+}
+
+/* terminals read literally: no ligatures */
+pre.shiki[data-lang="bash"] {
+	font-feature-settings: "calt" 0;
+	font-variant-ligatures: none;
+}
+
+/* the completion list hangs below its line, past the frame */
+.completions-block,
+.completions-block pre.shiki {
+	overflow: visible;
+}
+
+.completions-block pre.shiki code {
+	padding-bottom: 2rem;
+}
+
+/* ===== result lines: // ArkErrors:, // ParseError:, // TypeScript: =====
+   Each is exactly as wide as the visible block and pinned while the code
+   scrolls sideways, so a long message wraps with a hanging indent instead
+   of widening the block. Sticky insets count from the pre's content box. */
+
+pre.shiki .line.error-line,
+.twoslash-error-line,
+.query-block {
+	position: sticky;
+	left: calc(-1 * var(--pre-x));
+	width: calc(100cqw + 2 * var(--pre-x));
+	min-width: 0;
+	margin-inline: calc(-1 * var(--pre-x));
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+
+pre.shiki .line.error-line,
+.twoslash-error-line {
+	padding: 1px var(--pre-x) 1px calc(var(--pre-x) - 2px + 3ch);
+	text-indent: -3ch;
+}
+
+pre.shiki .line.error-line span {
+	font-family: var(--mono) !important;
+	font-style: normal !important;
+}
+
+pre.shiki .line.error-line.runtime {
+	background: color-mix(in oklab, var(--red) 9%, transparent);
+	box-shadow: inset 2px 0 0 color-mix(in oklab, var(--red) 70%, transparent);
+}
+
+pre.shiki .line.error-line.runtime span {
+	color: var(--red-ink) !important;
+}
+
+pre.shiki .line.error-line.compile,
+.twoslash-error-line {
+	background: color-mix(in oklab, var(--violet) 11%, transparent);
+	box-shadow: inset 2px 0 0 var(--violet);
+}
+
+pre.shiki .line.error-line.compile span,
+.twoslash-error-line {
+	color: var(--violet-ink) !important;
+}
+
+/* the line twoslash adds under an @errors line, below its squiggle */
+.twoslash-error-line {
+	display: block;
+	margin-block: 2px 4px;
+	padding-block: 4px;
+	font-size: 12.5px;
+	line-height: 1.55;
+}
+
+.twoslash-error {
+	padding-bottom: 2px;
+	background: url("/image/errorSquiggle.svg") repeat-x left bottom / 6px 3px;
+	-webkit-box-decoration-break: clone;
+	box-decoration-break: clone;
+}
+
+/* @log, @warn and friends */
+.twoslash-tag-line {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+	padding: 2px 0;
+	color: var(--sky);
+}
+
+.twoslash-tag-line .twoslash-tag-icon {
+	width: 1.1em;
+}
+
+/* ===== ^? results: in flow, under the line they describe ===== */
+
+.query-block {
+	display: block;
+	margin-top: 2px;
+	padding: 6px var(--pre-x) 6px calc(var(--pre-x) - 2px);
+	background: color-mix(in oklab, var(--sky) 7%, transparent);
+	box-shadow: inset 2px 0 0 color-mix(in oklab, var(--sky) 70%, transparent);
+}
+
+.query-block::before {
+	content: "// ^?";
+	display: block;
+	margin-bottom: 2px;
+	font: 400 11px / 1.4 var(--mono);
+	color: color-mix(in oklab, var(--sky) 70%, transparent);
+}
+
+.query-block .twoslash-popup-code {
+	display: block;
+}
+
+.query-block pre.shiki {
+	margin: 0;
+	padding: 0;
+	overflow: visible;
+	font-size: inherit;
+	white-space: pre-wrap;
+}
+
+.query-block pre.shiki code,
+.query-block pre.shiki .line {
+	min-width: 0;
+}
+
+.query-block span {
+	font-family: var(--mono) !important;
+	font-style: normal !important;
+}
+
+/* shrink-to-fit there would collapse to 0 */
+.query-block pre.shiki,
+.qi pre.shiki,
+.twoslash-popup-container pre.shiki {
+	container-type: normal;
+}
+
+/* ===== hover tokens ===== */
+
+.twoslash-popup-container {
+	display: none;
+}
+
+.twoslash-hover {
+	border-radius: 3px;
+	cursor: help;
+	text-decoration: underline dotted
+		color-mix(in oklab, currentColor 45%, transparent);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 4px;
+	transition: background-color var(--t-micro);
+}
+
+.twoslash-hover:hover,
+.twoslash-hover[data-open] {
+	background: color-mix(in oklab, var(--sky) 12%, transparent);
+	text-decoration-color: transparent;
+}
+
+.twoslash-hover:focus-visible {
+	outline-offset: 2px;
+}
+
+.twoslash-query-persisted {
+	text-decoration: none;
+}
+
+.twoslash-highlighted {
+	margin: -1px -3px;
+	padding: 1px 2px;
+	border: 1px solid color-mix(in oklab, var(--gold) 35%, transparent);
+	border-radius: var(--r-xs);
+	background: color-mix(in oklab, var(--gold) 12%, transparent);
+}
+
+/* sourced numbers in prose */
+.tok {
+	all: unset;
+	border-radius: 3px;
+	cursor: help;
+	text-decoration: underline dotted
+		color-mix(in oklab, currentColor 50%, transparent);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 4px;
+	transition: background-color var(--t-micro);
+}
+
+.tok:hover,
+.tok[data-open] {
+	background: color-mix(in oklab, var(--sky) 12%, transparent);
+}
+
+.tok:focus-visible {
+	outline: 2px solid var(--blue);
+	outline-offset: 2px;
+}
+
+/* ===== the quickinfo (components/TwoslashPopups.tsx) ===== */
+
+.qi {
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: var(--z-qi);
+	max-width: min(520px, calc(100vw - 24px));
+	padding: 10px 14px;
+	border: 1px solid var(--popover-border);
+	border-radius: var(--r-md);
+	background: var(--popover-bg);
+	box-shadow: var(--shadow-pop);
+	font: 400 13px / 1.6 var(--mono);
+	color: var(--ink);
+	opacity: 0;
+	translate: 0 4px;
+	scale: 0.98;
+	transform-origin: top left;
+	visibility: hidden;
+	pointer-events: none;
+	transition:
+		opacity var(--t-pop-out) ease-in,
+		translate var(--t-pop-out) ease-in,
+		scale var(--t-pop-out) ease-in,
+		visibility 0s var(--t-pop-out);
+}
+
+.qi[data-side="top"] {
+	transform-origin: bottom left;
+}
+
+.qi[data-open] {
+	opacity: 1;
+	translate: none;
+	scale: none;
+	visibility: visible;
+	pointer-events: auto;
+	transition:
+		opacity var(--t-pop-in) var(--ease-pop),
+		translate var(--t-pop-in) var(--ease-pop),
+		scale var(--t-pop-in) var(--ease-pop);
+}
+
+.qi-body {
+	max-height: min(28rem, 60vh);
+	overflow: auto;
+	overscroll-behavior: contain;
+}
+
+.qi-caret {
+	position: absolute;
+	top: -5px;
+	left: var(--caret-x, 18px);
+	width: 9px;
+	height: 9px;
+	border-top: 1px solid var(--popover-border);
+	border-left: 1px solid var(--popover-border);
+	background: var(--popover-bg);
+	rotate: 45deg;
+}
+
+.qi[data-side="top"] .qi-caret {
+	top: auto;
+	bottom: -5px;
+	rotate: 225deg;
+}
+
+.qi .twoslash-popup-code {
+	display: block;
+}
+
+.qi pre.shiki {
+	margin: 0;
+	padding: 0;
+	overflow: visible;
+	font-size: 13px;
+	line-height: 1.6;
+	white-space: pre-wrap;
+	background: transparent !important;
+}
+
+.qi pre.shiki code,
+.qi pre.shiki .line {
+	min-width: 0;
+}
+
+.qi .twoslash-popup-docs {
+	margin-top: 8px;
+	padding-top: 8px;
+	border-top: 1px solid var(--rule-soft);
+	font: 400 13.5px / 1.5 var(--sans);
+	color: var(--ink-2);
+	white-space: normal;
+}
+
+.qi .twoslash-popup-docs p + p {
+	margin-top: 0.4rem;
+}
+
+.qi .twoslash-popup-docs code {
+	font-family: var(--mono);
+	font-size: 0.92em;
+}
+
+/* RuntimeErrors.summary shows the error text itself */
+.qi .twoslash-popup-docs pre {
+	white-space: pre-wrap;
+	color: var(--red-ink);
+}
+
+.qi .twoslash-popup-docs-tags {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.qi .twoslash-popup-docs-tag-name {
+	margin-right: 0.5em;
+	font-family: var(--cursive);
+	font-style: italic;
+	font-feature-settings: "ss01";
+	color: var(--copper);
+}
+
+.qi .qi-foot {
+	display: flex;
+	justify-content: space-between;
+	gap: 16px;
+	margin-top: 8px;
+	font-size: 11px;
+	color: var(--ink-3);
+}
+
+/* phones: docked to the bottom, always in view */
+@media (max-width: 760px) {
+	.qi {
+		top: auto !important;
+		right: 12px;
+		bottom: max(12px, env(safe-area-inset-bottom));
+		left: 12px !important;
+		max-width: none;
+	}
+
+	.qi-body {
+		max-height: 50vh;
+	}
+
+	.qi-caret {
+		display: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.qi,
+	.qi[data-open] {
+		translate: none;
+		scale: none;
+	}
+
+	.copy-face > * {
+		transition: none;
+	}
+}
+
+/* ===== completions ("// ^|") ===== */
+
+.twoslash-completion-cursor {
+	position: relative;
+}
+
+.twoslash-completion-list {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	width: 15rem;
+	margin: 3px 0 0 -1px;
+	padding: 4px;
+	transform: translateY(1.2em);
+	border: 1px solid var(--popover-border);
+	border-radius: var(--r-sm);
+	background: var(--raised);
+	box-shadow: var(--shadow-pop);
+	font-size: 0.8rem;
+	list-style: none;
+}
+
+.twoslash-completion-list::before {
+	content: "";
+	position: absolute;
+	top: -1.6em;
+	left: -1px;
+	width: 2px;
+	height: 1.4em;
+	background: var(--ink-3);
+}
+
+/* the list hangs from the cursor, unless that would run past the frame: a
+   phone screen's edge, say. Then it pins inside the frame's right edge, and
+   the caret stays on the cursor. */
+@supports (position-try-fallbacks: --a) {
+	.completions-block .twoslash-completion-cursor {
+		position: static;
+		anchor-name: --completion-cursor;
+		anchor-scope: --completion-cursor;
+	}
+
+	.completions-block .twoslash-completion-cursor::before {
+		content: "";
+		display: inline-block;
+		width: 2px;
+		height: 1.4em;
+		margin-right: -2px;
+		vertical-align: text-bottom;
+		background: var(--ink-3);
+	}
+
+	.completions-block .twoslash-completion-list {
+		position-anchor: --completion-cursor;
+		position-try-fallbacks: --completion-inside;
+		top: anchor(bottom);
+		left: anchor(left);
+		max-width: calc(100% - 2 * var(--pre-x));
+		margin: 3px 0 0 -1px;
+		transform: none;
+	}
+
+	.completions-block .twoslash-completion-list::before {
+		content: none;
+	}
+}
+
+@position-try --completion-inside {
+	left: auto;
+	right: var(--pre-x);
+}
+
+.twoslash-completion-list li {
+	display: flex;
+	align-items: center;
+	gap: 0.3em;
+	overflow: hidden;
+}
+
+.twoslash-completions-icon {
+	flex: none;
+	width: 1em;
+	color: var(--ink-3);
+}
+
+.twoslash-completions-unmatched {
+	color: var(--ink-3);
+}
+
+.twoslash-completion-list .deprecated {
+	text-decoration: line-through;
+	opacity: 0.5;
+}
+
+/* the playground's results */
+.colorized-code {
+	margin: 0;
+	padding: 0.75rem;
+	overflow: auto;
+	border-radius: var(--r-sm);
+	background: var(--code-bg);
+	font-size: 0.85rem;
+}
+
+/* ===== phones: code runs edge to edge, except inside other boxes ===== */
+
+@media (max-width: 900px) {
+	.cb pre.shiki {
+		font-size: 12.5px;
+	}
+
+	.prose > .cb,
+	.prose > .tabs .cb,
+	.prose > .tabs > .tabs-bar {
+		margin-inline: -20px;
+		border-inline: 0;
+		border-radius: 0;
+	}
+
+	.prose > .tabs > .tabs-bar {
+		padding-inline: 14px;
+	}
+}

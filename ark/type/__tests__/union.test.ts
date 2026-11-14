@@ -36,6 +36,30 @@ contextualize(() => {
 		attest(T.json).equals(Expected.json)
 	})
 
+	it("compiled allows checks each of two domains", () => {
+		const T = type("number | null")
+		// the first data is checked uncompiled
+		T.allows(null)
+		attest([null, 0, NaN, undefined, "0"].map(v => T.allows(v))).equals([
+			true,
+			true,
+			false,
+			false,
+			false
+		])
+	})
+
+	it("compiled apply of one domain or a unit it allows", () => {
+		const T = type({ n: "number > 0 | null", s: "string > 0 | undefined" })
+		// the first data is checked uncompiled
+		T({ n: null, s: undefined })
+		attest(T({ n: null, s: undefined })).equals({ n: null, s: undefined })
+		attest(T({ n: 0, s: "" }).toString()).snap(`n must be positive
+s must be non-empty`)
+		attest(T({ n: "1", s: null }).toString()).snap(`n must be a number or null
+s must be a string or undefined`)
+	})
+
 	it("boolean is a union of true | false", () => {
 		const T = type("true|false")
 		attest(T.infer).type.toString("boolean")
@@ -58,15 +82,46 @@ contextualize(() => {
 
 		attest(
 			TypeABC([{ objB: "text b" }, "test a", { objC: "text c" }]).toString()
-		).snap(
-			"value at [2].objB must be a string (was missing) or [0].objC must be a string (was missing)"
-		)
+		).snap("[2].objB must be a string or [0].objC must be a string")
 
 		attest(
 			TypeABC(["test a", { objB: "text b" }, { objC: "text c" }]).toString()
-		).snap(
-			"value at [2].objB must be a string (was missing) or [0] must be an object (was a string)"
+		).snap("[2].objB must be a string or [0] must be an object")
+	})
+
+	it("writes each path as its own error would", () => {
+		attest(type("number[] | string[]")(["a", 1]).toString()).snap(
+			"[0] must be a number or [1] must be a string"
 		)
+		attest(type(["number", "number"]).or(["string"])([1]).toString()).snap(
+			"must be exactly length 2 or [0] must be a string"
+		)
+	})
+
+	it("lists a branch failing at a never key", () => {
+		const T = type({ "[string]": "null", "a?": "string" }).or("null[]")
+		attest(T({ a: "" }).toString()).snap("a must be never or must be an array")
+	})
+
+	it("lists each value a missing key allows once", () => {
+		const T = type({ a: "string | number", b: "string" }).or({
+			a: "string",
+			c: "number"
+		})
+		attest(T({}).toString()).snap("a must be a string or a number")
+		const Units = type({ a: "1 | 2", b: "string" }).or({
+			a: "2 | 3",
+			c: "number"
+		})
+		attest(Units({}).toString()).snap("a must be 1, 2 or 3")
+	})
+
+	it("described", () => {
+		const T = type({ a: "string" }).or({ b: "number" }).describe("an a or a b")
+		attest(T({}).toString()).snap("must be an a or a b")
+		attest(T(5).toString()).snap("must be an a or a b")
+		const Lengths = type("string < 2 | string > 5").describe("short or long")
+		attest(Lengths("abc").toString()).snap("must be short or long")
 	})
 
 	it("length stress", () => {
@@ -290,5 +345,212 @@ contextualize(() => {
 			],
 			meta: "My custom type"
 		})
+	})
+
+	it("branches described like Object.prototype members", () => {
+		const T = type("string")
+			.describe("constructor")
+			.or(type("number").describe("valueOf"))
+		attest(T.description).snap("valueOf or constructor")
+	})
+
+	it("orders units by when they were registered", () => {
+		const symbols = Array.from({ length: 11 }, () => Symbol("orderedUnit"))
+		for (const symbol of symbols) type.unit(symbol)
+		const T = type.enumerated(...[...symbols].reverse())
+		attest(T.internal.branches.map(branch => branch.json)).equals(
+			symbols.map(symbol => type.unit(symbol).json)
+		)
+	})
+
+	it("orders strings holding $ and digits by code unit", () => {
+		const T = type("'$2' | '$10' | '$ark.fn$9' | '$ark.fn$10'")
+		attest(T.expression).snap('"$10" | "$2" | "$ark.fn$10" | "$ark.fn$9"')
+	})
+
+	describe("objects alike but for one key", () => {
+		it("merge into the union of its values", () => {
+			const T = type({ a: "string" }).or({ a: "number" })
+			attest<{ a: string } | { a: number }>(T.infer)
+			attest(T.json).equals(type({ a: "string | number" }).json)
+		})
+
+		it("merge a discriminant", () => {
+			const T = type({ kind: "'a'", x: "string" }).or({
+				kind: "'b'",
+				x: "string"
+			})
+			attest(T.expression).snap('{ kind: "a" | "b", x: string }')
+			attest(T({ x: 5 }).toString()).snap(`kind must be "a" or "b" (was missing)
+x must be a string`)
+		})
+
+		it("keep branches differing in two keys", () => {
+			const T = type({ kind: "'a'", x: "string" }).or({
+				kind: "'b'",
+				x: "number"
+			})
+			attest(T.expression).snap(
+				'{ kind: "a", x: string } | { kind: "b", x: number }'
+			)
+		})
+
+		it("keep a key only one has", () => {
+			const T = type({ a: "string" }).or({ a: "number", b: "string" })
+			attest(T.expression).snap("{ a: number, b: string } | { a: string }")
+		})
+
+		it("merge required and optional to optional", () => {
+			const T = type({ a: "string" }).or({ "a?": "number" })
+			attest(T.expression).snap("{ a?: number | string }")
+			attest(T({})).equals({})
+		})
+
+		it("merge a key optional on one side among others", () => {
+			const T = type({ a: "string", b: "number" }).or({
+				"a?": "boolean",
+				b: "number"
+			})
+			attest(T.expression).snap("{ b: number, a?: string | false | true }")
+		})
+
+		it("keep a default to its branch", () => {
+			const T = type({ a: "string" }).or({ a: "number = 5" })
+			attest(T.expression).snap("{ a: number = 5 } | { a: string }")
+			attest(T({})).equals({ a: 5 })
+		})
+
+		it("merge morphs", () => {
+			const T = type({ a: "string.numeric.parse" }).or({ a: "number" })
+			attest(T.json).equals(type({ a: "string.numeric.parse | number" }).json)
+			attest(T({ a: "5" })).equals({ a: 5 })
+		})
+
+		it("merge nested", () => {
+			const T = type({ a: { b: "string" } }).or({ a: { b: "number" } })
+			attest(T.expression).snap("{ a: { b: number | string } }")
+		})
+
+		it("reduce merged values", () => {
+			const T = type({ a: "0 < number < 5" }).or({ a: "5 <= number < 10" })
+			attest(T.expression).snap("{ a: 0 < number < 10 }")
+		})
+
+		it("merge alike undeclared keys", () => {
+			const T = type({ "+": "reject", a: "string" }).or({
+				"+": "reject",
+				a: "number"
+			})
+			attest(T.expression).snap(
+				"{ a: number | string, + (undeclared): reject }"
+			)
+		})
+
+		it("keep differing undeclared keys", () => {
+			const T = type({ "+": "reject", a: "string" }).or({ a: "number" })
+			attest(T.expression).snap(
+				"{ a: number } | { a: string, + (undeclared): reject }"
+			)
+		})
+
+		it("keep an array and an object", () => {
+			const T = type({ a: "string" }).or(type({ a: "number" }).and("string[]"))
+			attest(T.expression).snap("{ a: number } & string[] | { a: string }")
+		})
+
+		it("keep ordered unions", () => {
+			const T = rootSchema({
+				branches: [
+					{ domain: "object", required: { key: "a", value: "string" } },
+					{ domain: "object", required: { key: "a", value: "number" } }
+				],
+				ordered: true
+			})
+			attest(T.expression).snap("{ a: string } | { a: number }")
+		})
+
+		it("keep differing descriptions", () => {
+			const T = type({ a: "string" })
+				.describe("an A")
+				.or(type({ a: "number" }).describe("a B"))
+			attest(T.expression).snap("{ a: number } | { a: string }")
+			attest(T(5).toString()).snap("must be a B or an A")
+		})
+
+		it("merge a shared description", () => {
+			const T = type({ a: "string" })
+				.describe("an AB")
+				.or(type({ a: "number" }).describe("an AB"))
+			attest(T.expression).snap("{ a: number | string }")
+			attest(T(5).toString()).snap("must be an AB")
+		})
+	})
+
+	it("a chain of units is the union its parts would be", () => {
+		attest(type("'a'|'b'|'c'").internal).equals(
+			type("('a'|'b')|'c'").internal as never
+		)
+		attest(type("'c'|'a'|'b'").expression).snap('"a" | "b" | "c"')
+		attest(type("'a'|'b'|'a'").expression).snap('"a" | "b"')
+		attest(type("'a'|'a'").expression).snap('"a"')
+		// what follows the units joins the union they make
+		attest(type("'a'|'b'|string").expression).snap("string")
+		attest(type("string|'a'|'b'").expression).snap("string")
+		attest(type("'a'|'b'&string|1").expression).snap('"a" | "b" | 1')
+		attest(type("'a'|'b'|>string").expression).snap('"a" | "b"')
+		attest(type("('a'|'b')[]|'c'|'d'").expression).snap(
+			'("a" | "b")[] | "c" | "d"'
+		)
+	})
+
+	it("units missing their right operand", () => {
+		attest(() => type("'a'|" as never)).throws(
+			writeMissingRightOperandMessage("|")
+		)
+		attest(() => type("'a'|'b'|" as never)).throws(
+			writeMissingRightOperandMessage("|")
+		)
+		attest(() => type("'a'||'b'" as never)).throws(
+			writeMissingRightOperandMessage("|", "|'b'")
+		)
+	})
+
+	it("a class's Symbol.hasInstance can allow a unit of any domain", () => {
+		class Nullish {
+			static [Symbol.hasInstance](data: unknown) {
+				return data === null || data === undefined
+			}
+		}
+		attest(type.instanceOf(Nullish).or("null").expression).snap("Nullish")
+		attest(type.instanceOf(Nullish).or("5").expression).snap("Nullish | 5")
+		attest(
+			type({ a: type.instanceOf(Nullish) }).or({ a: "null" }).expression
+		).snap("{ a: Nullish }")
+	})
+
+	it("a discriminant doesn't skip a predicate an earlier key tests", () => {
+		const tested: unknown[] = []
+		const T = type({ a: "'x'", b: "1" }).or({
+			a: type("string").narrow(s => {
+				tested.push(s)
+				return true
+			}),
+			b: "2"
+		})
+		attest(tested).snap(["x"])
+		attest(T({ a: "x", b: 1 })).snap({ a: "x", b: 1 })
+	})
+
+	it("equal units keep one branch however they're written", () => {
+		const units = (...branches: unknown[]) =>
+			type.schema(branches.map(unit => ({ unit })) as never).expression
+		attest(units("a", "b", "a")).snap('"a" | "b"')
+		attest(units(1, 2, 1, 2)).snap("1 | 2")
+		attest(units(new Date(0), new Date(0))).snap("d'1970-01-01T00:00:00.000Z'")
+		// a described unit sorts after its undescribed copy, which is the one kept
+		attest(
+			type.schema([{ unit: "a", meta: "first" }, { unit: "a" }] as never)
+				.description
+		).snap('"a"')
 	})
 })

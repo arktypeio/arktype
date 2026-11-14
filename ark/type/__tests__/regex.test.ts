@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { intrinsic, writeInvalidOperandMessage } from "@ark/schema"
-import { regex, type Type, type } from "arktype"
+import { regex, scope, type Regex, type Type, type } from "arktype"
 
 contextualize(() => {
 	describe("intersection", () => {
@@ -64,6 +64,25 @@ contextualize(() => {
 			const B = type(new RegExp("a", "ig"))
 			attest(A.json).equals(B.json)
 		})
+
+		it("g and y flags keep no state between checks", () => {
+			const $ = scope({})
+			const G = $.type(/a/g)
+			attest([G.allows("a"), G.allows("a"), G.allows("ba")]).equals([
+				true,
+				true,
+				true
+			])
+			attest(G("a")).equals("a")
+			attest(G("a")).equals("a")
+
+			const Y = $.type(/a/y)
+			attest([Y.allows("a"), Y.allows("a"), Y.allows("ba")]).equals([
+				true,
+				true,
+				false
+			])
+		})
 	})
 
 	describe("chained", () => {
@@ -95,8 +114,12 @@ contextualize(() => {
 	})
 
 	it("arkregex integration", () => {
+		const Email = regex("^.*@.*$")
+
+		attest<Regex<`${string}@${string}`>>(Email)
+
 		const T = type({
-			email: regex("^.*@.*$")
+			email: Email
 		})
 
 		attest(T.expression).snap("{ email: /^.*@.*$/ }")
@@ -139,6 +162,13 @@ contextualize(() => {
 			const T = type("/^a\\/b$/")
 			attest(T.json).snap({ domain: "string", pattern: ["^a/b$"] })
 			attest(T.allows("a/b")).equals(true)
+		})
+
+		it("escaped terminator in a class", () => {
+			const T = type("/^[\\/]$/")
+			attest(T.json).snap({ domain: "string", pattern: ["^[/]$"] })
+			attest(T.expression).snap("/^[\\/]$/")
+			attest(type.raw(T.expression).json).equals(T.json)
 		})
 	})
 })

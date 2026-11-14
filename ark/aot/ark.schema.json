@@ -1,0 +1,84 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"$schema": { "type": "string" },
+		"precompile": {
+			"type": "object",
+			"properties": {
+				"allowUnsafe": { "type": "boolean" },
+				"bakedLimit": {
+					"type": "integer",
+					"description": "the characters a site's baked introspection may total",
+					"exclusiveMinimum": 0
+				},
+				"conditions": { "type": "array", "items": { "type": "string" } },
+				"config": {
+					"anyOf": [
+						{
+							"type": "string",
+							"description": "a module path or false",
+							"minLength": 1
+						},
+						{
+							"type": "boolean",
+							"const": false,
+							"description": "a module path or false"
+						}
+					],
+					"description": "a module path or false"
+				},
+				"creationChecks": {
+					"type": "string",
+					"enum": ["helpers", "none", "types"]
+				},
+				"dependencies": {
+					"type": "object",
+					"additionalProperties": {
+						"type": "string",
+						"enum": ["aot", "arktype"]
+					}
+				},
+				"errors": { "type": "string", "enum": ["all", "first", "none"] },
+				"freeze": { "type": "boolean" },
+				"jsonInput": { "type": "boolean" },
+				"lazy": { "type": "boolean" },
+				"members": {
+					"type": "object",
+					"properties": {
+						"assert": { "type": "boolean" },
+						"description": { "type": "boolean" },
+						"expression": { "type": "boolean" },
+						"json": { "type": "boolean" },
+						"meta": { "type": "boolean" },
+						"methods": { "type": "boolean" },
+						"toJSON": { "type": "boolean" },
+						"toJsonSchema": { "type": "boolean" },
+						"~standard": { "type": "boolean" },
+						"~standard.jsonSchema": { "type": "boolean" }
+					},
+					"additionalProperties": false
+				},
+				"mutatesInput": {
+					"anyOf": [
+						{ "type": "string", "const": "always" },
+						{ "type": "boolean" }
+					]
+				},
+				"optimize": { "type": "string", "enum": ["size", "speed"] },
+				"optimizeErrors": { "type": "string", "enum": ["size", "speed"] },
+				"preset": { "type": "string", "enum": ["introspectable", "smallest"] },
+				"prune": { "type": "boolean" },
+				"runtime": { "type": "string", "const": "arktype" },
+				"shadow": { "type": "boolean" },
+				"tsconfig": {
+					"type": "string",
+					"description": "a path",
+					"minLength": 1
+				}
+			},
+			"additionalProperties": false
+		}
+	},
+	"additionalProperties": false
+}

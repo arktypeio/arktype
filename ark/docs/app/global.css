@@ -1,339 +1,162 @@
 @import "tailwindcss";
-@import "fumadocs-ui/css/ocean.css";
-@import "fumadocs-ui/css/preset.css";
+@import "./styles/tokens.css";
+@import "./styles/shell.css";
+@import "./styles/prose.css";
+@import "./styles/code.css";
+@import "./styles/components.css";
+@import "./styles/bench.css";
 
-@source '../node_modules/fumadocs-ui/dist/**/*.js';
-
-@font-face {
-	font-family: "Cascadia Mono";
-	src:
-		local("Cascadia Mono"),
-		url("https://fonts.cdnfonts.com/s/37910/CascadiaMono.woff") format("woff");
-}
-
+/* lets the homepage and playground's utility classes read the tokens */
 @theme {
-	--color-background: var(--color-fd-background);
-	--color-foreground: var(--color-fd-foreground);
-	--color-muted: var(--color-fd-muted);
-	--color-muted-foreground: var(--color-fd-muted-foreground);
-	--color-popover: var(--color-fd-popover);
-	--color-popover-foreground: var(--color-fd-popover-foreground);
-	--color-card: var(--color-fd-card);
-	--color-card-foreground: var(--color-fd-card-foreground);
-	--color-border: var(--color-fd-border);
-	--color-primary: var(--color-fd-primary);
-	--color-primary-foreground: var(--color-fd-primary-foreground);
-	--color-secondary: var(--color-fd-secondary);
-	--color-secondary-foreground: var(--color-fd-secondary-foreground);
-	--color-accent: var(--color-fd-accent);
-	--color-accent-foreground: var(--color-fd-accent-foreground);
-	--color-ring: var(--color-fd-ring);
-	--color-highlight: #f5cf8f;
+	--color-ink: var(--ink);
+	--font-sans: var(--sans);
+	--font-mono: var(--mono);
 }
 
-/** the * ensures this overrides the variable definitions from shiki*/
-:root * {
-	--background: 207 100% 9%;
-	--hover-glow: 0.5rem 0.5rem 2rem 0 rgba(31, 38, 135, 0.37);
-
-	/* Based on ArkDark ErrorLens */
-	--ark-green: #40decc;
-	--ark-error: #9558f8;
-	--ark-success: #40decca0;
-	--ark-runtime-error: #f85858;
-
-	/** @shikijs/twoslash/style-rich.css overrides */
-	--twoslash-border-color: #ba7e4127;
-	--twoslash-underline-color: currentColor;
-	--twoslash-highlighted-border: #c37d0d50;
-	--twoslash-highlighted-bg: #c37d0d20;
-	--twoslash-popup-bg: transparent;
-	--twoslash-popup-color: inherit;
-	--twoslash-popup-shadow: var(--shadow);
-	--twoslash-docs-color: #888;
-	--twoslash-docs-font: sans-serif;
-	--twoslash-code-font: inherit;
-	--twoslash-code-font-size: 1em;
-	--twoslash-matched-color: inherit;
-	--twoslash-unmatched-color: #888;
-	--twoslash-cursor-color: #888;
-	--twoslash-error-color: var(--ark-error);
-	--twoslash-error-bg: #9558f818;
-	--twoslash-warn-color: #c37d0d;
-	--twoslash-warn-bg: #c37d0d20;
-	--twoslash-tag-color: #3772cf;
-	--twoslash-tag-bg: #3772cf20;
-	--twoslash-tag-warn-color: var(--twoslash-warn-color);
-	--twoslash-tag-warn-bg: var(--twoslash-warn-bg);
-	--twoslash-tag-annotate-color: #1ba673;
-	--twoslash-tag-annotate-bg: #1ba67320;
+html {
+	background: var(--bg);
+	color: var(--ink);
+	font-family: var(--sans);
+	-webkit-text-size-adjust: 100%;
+	-webkit-font-smoothing: antialiased;
+	scroll-padding-top: calc(var(--top) + 24px);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-	* {
-		scroll-behavior: smooth;
-	}
-}
-
-pre,
-code {
-	font-family: "Cascadia Mono", monospace;
-}
-
-/* hack to avoid max-height on fuma codeblocks */
-@layer utilities {
-	.max-h-\[600px\] {
-		max-height: unset;
-	}
-}
-
-.fd-codeblock.twoslash {
-	border-radius: 1.5rem !important;
-}
-
-pre.shiki,
-.twoslash-popup-container {
-	border-radius: 1rem;
-	border-color: #ba7e4127;
-	border-width: 1px;
-	overflow-x: visible !important;
-}
-
-/** should match arkDarkTheme.colors["editor.background"] */
-.bg-fd-secondary\/50 {
-	background-color: #0006;
-}
-
-/** avoid border on hover: 
-    https://github.com/arktypeio/arktype/issues/1217 */
-.twoslash-popup-container pre.shiki,
-figure.shiki {
-	background-color: unset !important;
-}
-
-div.twoslash-popup-container {
-	border-radius: 1rem;
-	background: #001323aa;
-	backdrop-filter: blur(8px);
-	box-shadow: var(--hover-glow);
-}
-
-/** .error.highlighted matches error lines explicitly added in the snippet
-    source via [!code error] */
-
-.error.highlighted {
-	position: relative;
-	padding: 4px;
-	background-color: var(--twoslash-error-bg);
-	border-left: 3px solid var(--ark-error);
-	padding-right: 16px;
-	margin: 0.2em 0;
-	min-width: 100%;
-	width: max-content;
-}
-
-.error.highlighted > span {
-	color: var(--twoslash-error-color) !important;
-}
-
-.error.highlighted.runtime-error {
-	background-color: #f8585822;
-	border-left: 3px solid var(--ark-runtime-error);
-}
-
-.error.highlighted.runtime-error > span {
-	color: var(--ark-runtime-error) !important;
-}
-
-/** .twoslash-error matches errors added by twoslash itself, e.g. type errors */
-.twoslash .twoslash-error {
-	/* Override the built-in error squiggle to match our theme */
-	background: url("/image/errorSquiggle.svg") repeat-x bottom left;
-}
-
-.twoslash .twoslash-popup-code {
-	white-space: pre;
-}
-
-/* avoid double padding + border */
-/* matches popups rendered from react (on the home page) */
-.shiki .shiki,
-/* matches popups rendered from mdx (on most docs pages) */ 
-.twoslash-popup-container pre.p-4 {
-	padding: 0px;
-	border-width: 0px;
-}
-
-/** display runtime errors on hover */
-.twoslash .twoslash-popup-docs {
-	color: var(--ark-runtime-error);
-	font-size: small;
-	white-space: pre;
-}
-
-/** avoid empty lines being rendered with 0 height */
-.twoslash .line {
-	min-height: 20px;
-}
-
-.completions-block code {
-	padding-bottom: 2rem;
-}
-
-/** avoid a janky white outline on hovers: 
-    https://github.com/arktypeio/arktype/issues/1217 */
-:focus-visible {
-	outline: none;
-}
-
-/* Firefox specific rules */
-@-moz-document url-prefix() {
-	/* The backdrop-filter above doesn't work by default yet on Firefox so we do this instead  */
-	.twoslash .twoslash-hover:hover .twoslash-popup-container {
-		background: #001323ee;
-	}
-}
-
-/* allow us to inject a badge at order 1 */
-#nd-sidebar .lucide-chevron-down {
-	order: 2;
-}
-
-#nd-home-layout,
-#nd-nav {
-	overflow: hidden;
-	transition: margin-top 0.3s ease;
-}
-
-/* if release banner is visible, add top offset to home navbar and layout equal to its height */
-:root:has(.release-banner:not([hidden]):not(.hidden)) #nd-home-layout,
-:root:has(.release-banner:not([hidden]):not(.hidden)) #nd-nav {
-	margin-top: 3.5rem;
-}
-
-.glass-container,
-.monaco-editor {
-	box-shadow:
-		0 10px 15px 0 rgba(0, 0, 0, 0.3),
-		0 15px 30px 0 rgba(0, 0, 0, 0.22);
-	backdrop-filter: blur(16px);
-	/* without this Monaco ends up adding a 1px outline at the top of the editor for some reason */
-	outline-width: 0px !important;
-}
-
-.monaco-editor,
-.overflow-guard {
-	border-radius: 16px;
-}
-
-/* Chrome/Safari/Edge scrollbar styling */
-::-webkit-scrollbar {
-	width: 8px;
-	height: 8px;
-	background-color: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-	background-color: rgba(255, 255, 255, 0.1);
-	border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-	background-color: rgba(255, 255, 255, 0.2);
-}
-
-::-webkit-scrollbar-track {
-	background: transparent;
-}
-
-/* Firefox scrollbar styling */
-* {
-	scrollbar-width: thin;
-	scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-}
-
-.wiggle-animation {
-	animation: wiggle 4s ease-in-out infinite;
-	transform-origin: center center;
-}
-
-@keyframes wiggle {
-	0%,
-	87.5%,
-	100% {
-		transform: rotate(0deg);
-	}
-	88.5% {
-		transform: rotate(1.5deg);
-	}
-	89.5% {
-		transform: rotate(-0.5deg);
-	}
-	90.5% {
-		transform: rotate(-1.5deg);
-	}
-	91.5% {
-		transform: rotate(1deg);
-	}
-	92.5% {
-		transform: rotate(1.5deg);
-	}
-	93.5% {
-		transform: rotate(-1deg);
-	}
-	94.5% {
-		transform: rotate(-0.5deg);
-	}
-	96% {
-		transform: rotate(0.25deg);
-	}
-	98% {
-		transform: rotate(0deg);
-	}
+body {
+	min-height: 100dvh;
+	display: flex;
+	flex-direction: column;
+	background: var(--bg);
 }
 
 h1,
 h2,
 h3,
-h4,
-h5,
-h6,
-.hero-tagline {
-	font-family: var(--font-raleway);
+h4 {
+	text-wrap: balance;
 }
 
-body {
-	font-family: var(--font-atkinson);
+p {
+	text-wrap: pretty;
 }
 
-#nd-docs-layout h1 {
-	margin-bottom: 0.5rem !important;
-	font-size: 2.75rem !important;
+code,
+kbd,
+pre,
+samp {
+	font-family: var(--mono);
+	font-variant-ligatures: contextual;
 }
 
-.docs-body h2 {
-	margin-top: 0.3rem;
-	margin-bottom: 0.3rem;
-	font-size: 2.25rem !important;
+kbd {
+	display: inline-flex;
+	align-items: center;
+	height: 20px;
+	padding: 0 6px;
+	border-radius: var(--r-xs);
+	border: 1px solid var(--line);
+	background: color-mix(in oklab, var(--ink) 5%, transparent);
+	font: 400 11px / 1 var(--mono);
+	color: var(--ink-3);
 }
 
-.docs-body h3 {
-	margin-top: 0.2rem;
-	margin-bottom: 0.2rem;
-	font-size: 1.75rem !important;
+/* the italic is its own family so pages without emphasis never load it */
+:where(em, i, cite, dfn):not(:where(code, pre, kbd, samp) *) {
+	font-family: var(--font-atkinson-italic), var(--sans);
 }
 
-.docs-body h4 {
-	font-size: 1.5rem !important;
-	color: #ffffffbf;
+/* ArkDark's cursive: declared names in code, and anything marked .decl */
+pre.shiki span[style*="color:#80CFF8"],
+.decl {
+	font-family: var(--cursive);
+	font-style: italic;
+	font-weight: 400;
+	font-feature-settings: "ss01", "calt";
 }
 
-.docs-body h5 {
-	font-size: 1.25rem !important;
-	color: #ffffffcf;
+:focus-visible {
+	outline: 2px solid var(--blue);
+	outline-offset: 3px;
+	border-radius: var(--r-sm);
 }
 
-.docs-body h6 {
-	font-size: 1rem !important;
-	color: #ffffffdf;
+::selection {
+	background: color-mix(in oklab, var(--gold) 30%, transparent);
+}
+
+* {
+	scrollbar-width: thin;
+	scrollbar-color: var(--line) transparent;
+}
+
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+/* ===== theme switch (components/shell/ThemeToggle.tsx) ===== */
+
+/* what reads differently per theme, like the toggle's icon */
+:root[data-theme="light"] .only-dark,
+:root:not([data-theme="light"]) .only-light {
+	display: none;
+}
+
+/* the snapshot must be the final colors, not a frame of a color fade */
+html[data-switching] *,
+html[data-switching] *::before,
+html[data-switching] *::after {
+	transition: none !important;
+}
+
+/* a circular reveal from the toggle; --vt-r reaches the farthest corner */
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+	animation: theme-reveal 0.52s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@keyframes theme-reveal {
+	from {
+		clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 0));
+	}
+	to {
+		clip-path: circle(var(--vt-r, 150vmax) at var(--vt-x, 50%) var(--vt-y, 0));
+	}
+}
+
+@keyframes pop-in {
+	from {
+		opacity: 0;
+		translate: 0 4px;
+		scale: 0.98;
+	}
+}
+
+@keyframes fade-in {
+	from {
+		opacity: 0;
+	}
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	html {
+		scroll-behavior: smooth;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	@keyframes pop-in {
+		from {
+			opacity: 0;
+		}
+	}
 }

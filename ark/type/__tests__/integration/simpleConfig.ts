@@ -2,6 +2,7 @@ import { configure } from "arktype/config"
 
 export const config = configure({
 	numberAllowsNaN: true,
+	numberAllowsInfinity: true,
 	keywords: {
 		null: {
 			description: "configured null"
@@ -16,5 +17,6 @@ export const config = configure({
 			description: "a configured trimmed string"
 		}
 	},
+	divisor: { message: ctx => `Enter a multiple of ${ctx.rule}` },
 	onUndeclaredKey: "delete"
 })

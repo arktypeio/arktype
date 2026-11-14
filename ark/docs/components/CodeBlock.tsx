@@ -1,46 +1,29 @@
 import { throwInternalError, type propwiseXor } from "@ark/util"
-import { cx } from "class-variance-authority"
-import type { HighlightOptions } from "fumadocs-core/highlight"
-import { Popup, PopupContent, PopupTrigger } from "fumadocs-twoslash/ui"
-import {
-	CodeBlock as FumaCodeBlock,
-	Pre
-} from "fumadocs-ui/components/codeblock"
+import type { Element } from "hast"
 import { toJsxRuntime } from "hast-util-to-jsx-runtime"
 import { Fragment, jsx, jsxs } from "react/jsx-runtime"
-import { getSingletonHighlighter } from "shiki"
-import { shikiConfig, type BuiltinLang } from "../lib/shiki.ts"
+import { highlight } from "../lib/content/highlight.ts"
+import type { HighlightLang } from "../lib/shiki.ts"
 import type { SnippetId } from "../lib/writeSnippetsEntrypoint.ts"
+import { CodeFrame, TokensPre } from "./mdx/CodeFrame.tsx"
 import snippetContentsById from "./snippets/contentsById.ts"
 
 export type CodeBlockProps = {
 	/** @default "ts" */
-	lang?: BuiltinLang
-	style?: React.CSSProperties
-	className?: string
+	lang?: HighlightLang
+	title?: string
 	includesCompletions?: boolean
-	decorators?: CodeBlockDecorator[]
 } & propwiseXor<{ children: string }, { fromFile: SnippetId }>
 
-export type CodeBlockDecorator = "@noErrors"
-
-// preload languages for shiki
-// https://github.com/fuma-nama/fumadocs/issues/1095
-const highlighter = await getSingletonHighlighter({
-	langs: shikiConfig.langs,
-	themes: [shikiConfig.themes.dark]
-})
-
-export const CodeBlock: React.FC<CodeBlockProps> = ({
+/** highlights code from a string or a snippet file, for use outside Markdown code fences */
+export const CodeBlock = async ({
 	lang = "ts",
+	title,
 	children,
 	fromFile,
-	style,
-	className,
-	includesCompletions,
-	decorators
-}) => {
-	let src = children ?? snippetContentsById[fromFile!]
+	includesCompletions
+}: CodeBlockProps) => {
+	const src = children ?? snippetContentsById[fromFile!]
 
 	if (!src) {
 		throwInternalError(
@@ -50,58 +33,20 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
 		)
 	}
 
-	if (decorators)
-		for (const d of decorators) if (!src.includes(d)) src = `// ${d}\n${src}`
-
-	const highlighted = highlight(lang, src)
-
 	return (
-		<FumaCodeBlock
-			className={cx(
-				className,
-				includesCompletions ? "completions-block" : undefined
-			)}
-			keepBackground
-			style={style}
+		<CodeFrame
+			title={title}
+			className={includesCompletions ? "completions-block" : undefined}
 		>
-			{highlighted}
-		</FumaCodeBlock>
+			{await highlightToJsx(src, lang)}
+		</CodeFrame>
 	)
 }
 
-const components: HighlightOptions["components"] = {
-	// rounded none is for syntax tabs
-	pre: ({ className, children, ...props }) => (
-		<Pre className={cx(className, "!rounded-none")} {...props}>
-			{children}
-		</Pre>
-	),
-	CodeBlock
-}
+/** highlighted code as a bare `pre`, for frames that hold more than one */
+export const highlightToJsx = async (code: string, lang: HighlightLang) =>
+	preToJsx(await highlight(code, { lang }))
 
-// overriding these custom components allows hovers to render
-// correctly in code blocks outside markdown (e.g. on the home page)
-Object.assign(components, {
-	Popup,
-	PopupContent,
-	PopupTrigger
-})
-
-const highlight = (lang: BuiltinLang, contents: string) => {
-	try {
-		const hast = highlighter.codeToHast(contents, {
-			...shikiConfig,
-			lang
-		})
-
-		return toJsxRuntime(hast, {
-			Fragment,
-			jsx,
-			jsxs,
-			components
-		})
-	} catch (e) {
-		console.error(`Failed to transform the following code:\n${contents}`)
-		throw e
-	}
-}
+/** a highlighted `pre` as JSX, its tokens set as HTML */
+export const preToJsx = (pre: Element) =>
+	toJsxRuntime(pre, { Fragment, jsx, jsxs, components: { pre: TokensPre } })

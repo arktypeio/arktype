@@ -1,0 +1,6 @@
+{
+	"title": "ArkRegex",
+	"description": "Regular expressions with inferred types",
+	"root": true,
+	"pages": ["index", "inference", "errors", "types", "arktype", "faq"]
+}

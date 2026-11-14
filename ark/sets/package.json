@@ -1,0 +1,68 @@
+{
+	"name": "arksets",
+	"description": "Set algebra for schemas in any format: relate, combine and convert arktype Types, Standard JSON Schemas and JSON Schemas",
+	"version": "0.0.1",
+	"license": "MIT",
+	"author": {
+		"name": "David Blass",
+		"email": "david@arktype.io",
+		"url": "https://arktype.io"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/arktypeio/arktype.git",
+		"directory": "ark/sets"
+	},
+	"type": "module",
+	"main": "./out/index.js",
+	"types": "./out/index.d.ts",
+	"typesVersions": {
+		"*": {
+			"internal": [
+				"./out/internal.d.ts"
+			],
+			"internal/*": [
+				"./out/*"
+			]
+		}
+	},
+	"exports": {
+		".": {
+			"ark-ts": "./index.ts",
+			"default": "./out/index.js"
+		},
+		"./internal": {
+			"ark-ts": "./internal.ts",
+			"default": "./out/internal.js"
+		},
+		"./internal/*.ts": {
+			"ark-ts": "./*.ts",
+			"types": "./out/*.d.ts",
+			"default": "./out/internal.js"
+		},
+		"./internal/*.js": {
+			"ark-ts": "./*.ts",
+			"types": "./out/*.d.ts",
+			"default": "./out/internal.js"
+		}
+	},
+	"files": [
+		"out"
+	],
+	"scripts": {
+		"build": "ts ../repo/build.ts",
+		"test": "ts ../repo/testPackage.ts",
+		"tnt": "ts ../repo/testPackage.ts --skipTypes"
+	},
+	"dependencies": {
+		"@ark/schema": "workspace:*",
+		"@ark/util": "workspace:*"
+	},
+	"devDependencies": {
+		"ajv": "8.20.0",
+		"fast-check": "3.23.2"
+	},
+	"publishConfig": {
+		"access": "public"
+	}
+}

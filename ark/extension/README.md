@@ -10,7 +10,7 @@
 
 </div>
 
-We're building a 1:1 validator for TypeScript! Check out our core project [on GitHub](https://github.com/arktypeio/arktype)!
+[ArkType](https://arktype.io) is TypeScript's 1:1 validator, optimized from editor to runtime. [Get started](https://arktype.io/docs/intro/setup), or see the project [on GitHub](https://github.com/arktypeio/arktype).
 
 ## Features
 
@@ -21,6 +21,8 @@ We're building a 1:1 validator for TypeScript! Check out our core project [on Gi
 - inline type error summaries optimized for ArkType via [ErrorLens](https://github.com/usernamehw/vscode-error-lens)
 
 ![errorLens](https://raw.githubusercontent.com/arktypeio/arktype/refs/heads/main/ark/extension/errorLens.png)
+
+See [arktype.io/docs/editor](https://arktype.io/docs/editor) for the settings it changes and the JetBrains and Neovim alternatives.
 
 ## Contributing
 

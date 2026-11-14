@@ -7,8 +7,8 @@ const User = type({
 })
 
 interface RuntimeErrors extends ArkErrors {
-	/**platform must be "android" or "ios" (was "enigma")
-versions[2] must be a number or a string (was bigint)*/
+	/**platform must be "android" or "ios"
+versions[2] must be a number or a string*/
 	summary: string
 }
 

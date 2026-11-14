@@ -1,5 +1,6 @@
 import {
 	intrinsic,
+	throwOnDefault,
 	type ArkErrors,
 	type BaseRoot,
 	type Morph,
@@ -22,8 +23,9 @@ import {
 } from "@ark/util"
 import type { distill, Out } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
+import type { validateDefinition } from "./parser/definition.ts"
 import type { BaseCompletions } from "./parser/string.ts"
-import type { InternalScope } from "./scope.ts"
+import type { bindThis, InternalScope } from "./scope.ts"
 import type { Inferred } from "./variants/base.ts"
 
 type MatchParserContext<input = unknown> = {
@@ -238,7 +240,6 @@ interface ChainableMatchParser<ctx extends MatchParserContext> {
 	match: CaseMatchParser<ctx>
 	default: DefaultMethod<ctx>
 	at: AtParser<ctx>
-	/** @experimental */
 	strings: StringsParser<ctx>
 }
 
@@ -254,23 +255,28 @@ type DefaultMethod<ctx extends MatchParserContext> = <
 	def: def
 ) => finalizeMatchParser<ctx, def>
 
+// a case's definition is a key of match's parameter, not a parameter itself, so
+// it doesn't need type.validate, which costs 13 more instantiations
+type validateCase<def, ctx extends MatchParserContext> = validateDefinition<
+	def,
+	ctx["$"],
+	bindThis<def>
+>
+
 type validateCases<cases, ctx extends MatchParserContext> = {
-	[def in
-		| keyof cases
-		| BaseCompletions<ctx["$"], {}, "default">]?: def extends "default" ?
-		DefaultCase<ctx>
+	[def in keyof cases]?: def extends "default" ? DefaultCase<ctx>
 	: def extends number ? (In: inferCaseArg<`${def}`, ctx, "out">) => unknown
-	: def extends type.validate<def, ctx["$"]> ?
+	: def extends validateCase<def, ctx> ?
 		(In: inferCaseArg<def, ctx, "out">) => unknown
-	:	type.validate<def, ctx["$"]>
+	:	validateCase<def, ctx>
 }
 
 type errorCases<cases, ctx extends MatchParserContext> = {
 	[def in keyof cases]?: def extends "default" ? DefaultCase<ctx>
 	: def extends number ? (In: inferCaseArg<`${def}`, ctx, "out">) => unknown
-	: def extends type.validate<def, ctx["$"]> ?
+	: def extends validateCase<def, ctx> ?
 		(In: inferCaseArg<def, ctx, "out">) => unknown
-	:	ErrorType<type.validate<def, ctx["$"]>>
+	:	ErrorType<validateCase<def, ctx>>
 } & {
 	[k in BaseCompletions<ctx["$"], {}>]?: (
 		In: inferCaseArg<k, ctx, "out">
@@ -293,7 +299,7 @@ type finalizeMatchParser<
 		Match<ctx["input"], ctx["cases"]>
 	:	never
 
-export interface Match<In = any, cases extends Morph[] = Morph[]>
+export interface Match<in out In = any, in out cases extends Morph[] = Morph[]>
 	extends Inferred<
 		(In: Morph.In<cases[number]>) => Out<ReturnType<cases[number]>>
 	> {
@@ -425,7 +431,7 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		if (typeof defaultCase === "function")
 			this.case(intrinsic.unknown, defaultCase)
 
-		const schema: mutable<Union.Schema> = {
+		const schema: mutable<Union.Input> = {
 			branches: this.branches,
 			ordered: true
 		}
@@ -435,12 +441,12 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 
 		const cases = this.$.node("union", schema)
 
-		if (!this.in) return this.$.finalize(cases) as never
+		if (!this.in) return this.$.fin(cases) as never
 
 		let inputValidatedCases = this.in.pipe(cases)
 
 		if (defaultCase === "never" || defaultCase === "assert") {
-			inputValidatedCases = inputValidatedCases.configureReferences(
+			inputValidatedCases = inputValidatedCases.configureRefs(
 				{
 					onFail: throwOnDefault
 				},
@@ -448,11 +454,9 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 			)
 		}
 
-		return this.$.finalize(inputValidatedCases) as never
+		return this.$.fin(inputValidatedCases) as never
 	}
 }
-
-export const throwOnDefault: ArkErrors.Handler = errors => errors.throw()
 
 export const chainedAtMessage = `A key matcher must be specified before the first case i.e. match.at('foo') or match.in<object>().at('bar')`
 export type chainedAtMessage = typeof chainedAtMessage

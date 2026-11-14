@@ -1,0 +1,924 @@
+import { attest, contextualize } from "@ark/attest"
+import { fromHere } from "@ark/fs"
+import { flattenBundle } from "@ark/aot/internal/flat.ts"
+import {
+	unseenFlatMessage,
+	writeUnscannedFlatMessage
+} from "@ark/aot/internal/scan.ts"
+import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
+import { build, type BuildOptions, type Plugin } from "esbuild"
+import {
+	build as viteBuild,
+	defaultClientConditions,
+	type Plugin as VitePlugin,
+	type Rolldown
+} from "vite"
+import { parseSync } from "oxc-parser"
+import { mkdirSync, writeFileSync } from "node:fs"
+import { join } from "node:path"
+import { run, runPlain, writeFixture } from "./utils.ts"
+
+// arktype's packages resolve to their source in this repo
+const conditions = ["ark-ts", "production"]
+
+const types = `import { type } from "arktype"
+
+export const Name = type("string > 0")
+export const Email = type("string.email")
+export const User = type({ name: Name, email: Email })
+export const Team = type({ lead: User, members: User.array() })
+export const Unread = type({ zebra: Team })
+`
+
+const root = writeFixture(
+	{
+		"types.ts": types,
+		"main.ts": `import { type } from "arktype"
+import { Team, User } from "./types.ts"
+
+for (const data of [
+	{ lead: { name: "Ada", email: "ada@arktype.io" }, members: [] },
+	{ lead: { name: "", email: "ada" }, members: [{ name: 5 }] }
+]) {
+	const out = Team(data)
+	console.log(out instanceof type.errors ? out.summary : "valid")
+}
+console.log(User.allows({ name: "Ada", email: "ada@arktype.io" }))
+`,
+		"hashbang.ts": `#!/usr/bin/env node
+import { type } from "arktype"
+import { User } from "./types.ts"
+
+let Member = type({ user: User, rank: "number" })
+console.log(String(Member({ rank: 1 })))
+`,
+		// what a rewrite may import, as the React Compiler imports its runtime
+		"memo.ts": "export const memo = <t>(value: t): t => value\n",
+		"again.ts": `import "./main.ts"\n`,
+		"lazy.ts": `import { User } from "./types.ts"
+
+const { Later } = await import("./later.ts")
+console.log(User.allows({ name: "Ada", email: "ada@arktype.io" }), Later.allows(1))
+`,
+		"later.ts": `import { type } from "arktype"
+
+export const Later = type("number")
+`
+	},
+	fromHere("temp", "flat")
+)
+
+const bundle = async (
+	opts: PrecompileUnpluginOptions = {},
+	{ plugins = [], ...options }: BuildOptions = {}
+) => {
+	const { outputFiles } = await build({
+		...(!options.stdin && { entryPoints: [join(root, "main.ts")] }),
+		bundle: true,
+		write: false,
+		format: "esm",
+		conditions,
+		logLevel: "silent",
+		plugins: [precompile.esbuild({ conditions, ...opts }), ...plugins],
+		...options
+	})
+	return outputFiles!.map(file => file.text)
+}
+
+// a factory's parameter destructuring a unit it reads
+const factoryParam = /{ 0: \w+Allows/
+
+// each unit's allows, declared once unless a validator reads a copy
+const declaredUnits = (js: string) =>
+	js.match(/\bfunction \w+Allows\(|\w+Allows = /g)?.length
+
+// Vite reads its mode from NODE_ENV
+const viteBundle = async (
+	opts: PrecompileUnpluginOptions,
+	plugins: VitePlugin[] = []
+) => {
+	const { NODE_ENV } = process.env
+	process.env.NODE_ENV = "production"
+	try {
+		const result = (await viteBuild({
+			root,
+			configFile: false,
+			logLevel: "silent",
+			plugins: [
+				...plugins,
+				precompile.vite({ conditions: ["ark-ts"], ...opts })
+			],
+			resolve: { conditions: ["ark-ts", ...defaultClientConditions] },
+			build: {
+				write: false,
+				minify: false,
+				lib: { entry: "main.ts", formats: ["es"] }
+			}
+		})) as Rolldown.RolldownOutput[]
+		return result[0].output.find(chunk => chunk.type === "chunk")!.code
+	} finally {
+		if (NODE_ENV === undefined) delete process.env.NODE_ENV
+		else process.env.NODE_ENV = NODE_ENV
+	}
+}
+
+contextualize(function (this: Mocha.Suite) {
+	// each case bundles with esbuild, which a loaded machine slows past mocha's default
+	this.timeout(60_000)
+	it("declares the units of a one-chunk production bundle in one function", async () => {
+		const [flat] = await bundle()
+		const [whole] = await bundle({ prune: false })
+		attest(run(flat)).snap(`valid
+lead.name must be non-empty
+lead.email must be an email address
+members[0].name must be a string
+members[0].email must be a string (was missing)
+true
+`)
+		attest(run(flat)).equals(run(whole))
+		attest(factoryParam.test(whole)).equals(true)
+		attest(factoryParam.test(flat)).equals(false)
+	})
+
+	it("writes once a function two Types' traversals write alike", async () => {
+		const root = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const Short = type({ name: "string <= 10", tag: "string = 'none'" })
+const Long = type({ name: "string <= 20", tag: "string = 'none'" })
+
+console.log(JSON.stringify([Short({ name: "Ada" }), Long({ name: "Ada" })]))
+console.log(String(Short({ name: "a".repeat(11) })))
+console.log(JSON.stringify(Long({ name: "a".repeat(11) })))
+`
+			},
+			fromHere("temp", "flatMerged")
+		)
+		const { outputFiles } = await build({
+			entryPoints: [join(root, "main.ts")],
+			bundle: true,
+			write: false,
+			format: "esm",
+			platform: "node",
+			conditions,
+			absWorkingDir: root,
+			plugins: [precompile.esbuild({ cwd: root })]
+		})
+		const js = outputFiles[0].text
+		attest(run(js))
+			.snap(`[{"name":"Ada","tag":"none"},{"name":"Ada","tag":"none"}]
+name must be at most length 10
+{"name":"aaaaaaaaaaa","tag":"none"}
+`)
+		attest(js.match(/\.tag = "none"/g)?.length).equals(1)
+	})
+
+	it("reads a node's parts directly", async () => {
+		const [js] = await bundle()
+		attest(/\[\w+(?:, \w+)*]\[\d]/.test(js)).equals(false)
+		attest(run(js)).equals(run((await bundle({ prune: false }))[0]))
+	})
+
+	describe("a program of more text than its arrows cost V8 to read", () => {
+		const types = 60
+		const files = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const Lead = type({ name: "string" })
+const Team = type({ lead: Lead, members: Lead.array() })
+${Array.from(
+	{ length: types },
+	(_, i) =>
+		`const T${i} = type({ a${i}: "string", b${i}: "number", c${i}: "boolean", d${i}: "string[]" })`
+).join("\n")}
+
+for (const data of [5, { lead: 5, members: [] }, { lead: {}, members: [{}] }])
+	console.log(String(Team(data)))
+console.log(${Array.from({ length: types }, (_, i) => `String(T${i}(${i % 2 ? "5" : "{}"}))`).join(", ")})
+`
+			},
+			fromHere("temp", "flatBig")
+		)
+		const options: BuildOptions = { entryPoints: [join(files, "main.ts")] }
+
+		it("declares its functions", async () => {
+			const [js] = await bundle({}, options)
+			attest(/\bfunction \w+Allows\(/.test(js)).equals(true)
+			attest(/\w+Allows = /.test(js)).equals(false)
+		})
+
+		it("builds once each site of literals it writes often enough", async () => {
+			const [js] = await bundle({}, options)
+			attest(js.match(/keySiteOf\("domain", "a string"\)/g)?.length).equals(1)
+			attest(run(js)).equals(run((await bundle({ prune: false }, options))[0]))
+		})
+
+		it("reports what isn't an object from one check each Apply calls", async () => {
+			const [js] = await bundle({}, options)
+			attest(js.match(/"domain", "an object"/g)?.length).equals(1)
+			attest(run(js)).equals(run((await bundle({ prune: false }, options))[0]))
+			attest(run(js).split("\n").slice(0, 4).join("\n")).snap(`must be an object
+lead must be an object
+lead.name must be a string (was missing)
+members[0].name must be a string (was missing)`)
+		})
+	})
+
+	it("builds a site of literals where it fails in a program writing it rarely", async () => {
+		const [js] = await bundle()
+		attest(/const site\d+ = /.test(js)).equals(false)
+		attest(js).satisfies(/_at\(siteOf\("minLength", "non-empty"\), data\)/)
+	})
+
+	it("writes a program of less text as arrows, holding its checks in place", async () => {
+		const [js] = await bundle()
+		attest(/\bfunction \w+(?:Allows|Apply)\(/.test(js)).equals(false)
+		attest(/\w+Allows = \(/.test(js)).equals(true)
+		attest(/\binstanceof Object\b/.test(js)).equals(true)
+		attest(run(js)).equals(run((await bundle({ prune: false }))[0]))
+	})
+
+	it("leaves out of the function a unit only a dropped validator reads", async () => {
+		const [js] = await bundle(
+			{},
+			{
+				stdin: {
+					contents: `import { Team } from "./types.ts"\n\nconsole.log(Team({}))\n`,
+					resolveDir: root,
+					loader: "ts"
+				}
+			}
+		)
+		attest(factoryParam.test(js)).equals(false)
+		attest(js.includes("zebra")).equals(false)
+	})
+
+	it("keeps annotated a validator only an unread object literal holds", async () => {
+		const holding = writeFixture(
+			{
+				"types.ts": `${types}export const schemas = { team: Team, unread: Unread } as const\n`
+			},
+			fromHere("temp", "flatHolding")
+		)
+		const [js] = await bundle(
+			{},
+			{
+				stdin: {
+					contents: `import { Team } from "./types.ts"\n\nconsole.log(Team({}))\n`,
+					resolveDir: holding,
+					loader: "ts"
+				}
+			}
+		)
+		attest(js.includes("zebra")).equals(false)
+	})
+
+	it("keeps annotated a validator only an unread holder in another module imports", async () => {
+		const holding = writeFixture(
+			{
+				"types.ts": types,
+				"schemas.ts": `import { Team, Unread } from "./types.ts"
+
+export const schemas = { team: Team, unread: Unread }
+export const greet = () => "hi"
+`
+			},
+			fromHere("temp", "flatImportedHolder")
+		)
+		const [js] = await bundle(
+			{},
+			{
+				stdin: {
+					contents: `import { Team } from "./types.ts"\nimport { greet } from "./schemas.ts"\n\nconsole.log(Team({}), greet())\n`,
+					resolveDir: holding,
+					loader: "ts"
+				}
+			}
+		)
+		attest(js.includes("zebra")).equals(false)
+	})
+
+	it("keeps annotated a validator only an unread default export names", async () => {
+		const holding = writeFixture(
+			{
+				"types.ts": types,
+				"unread.ts": `import { type } from "arktype"
+import { Team } from "./types.ts"
+
+const Unread = type({ zebra: Team })
+
+export const greet = () => "hi"
+export default Unread
+`
+			},
+			fromHere("temp", "flatDefault")
+		)
+		const [js] = await bundle(
+			{},
+			{
+				stdin: {
+					contents: `import { Team } from "./types.ts"\nimport { greet } from "./unread.ts"\n\nconsole.log(Team({}), greet())\n`,
+					resolveDir: holding,
+					loader: "ts"
+				}
+			}
+		)
+		attest(js.includes("zebra")).equals(false)
+	})
+
+	it("returns what kept code reads, annotating nothing a bundler keeps", async () => {
+		const [js] = await bundle(
+			{},
+			{
+				stdin: {
+					contents: `import { Team } from "./types.ts"\n\nconsole.log(Team({}))\n`,
+					resolveDir: root,
+					loader: "ts"
+				}
+			}
+		)
+		// Team's units read User's, Name's and Email's, whose validators it drops
+		// esbuild annotates the function's call itself, as Rolldown doesn't
+		const flat =
+			/^var \w+ = (?:\(\s*\/\* @__NOINLINE__ \*\/\s*)?(?:\/\* @__PURE__ \*\/ )?\(\(\) => {$([\S\s]*?)^\s*}\)\(\)\s*\)?;$/m.exec(
+				js
+			)
+		attest(flat?.[1].includes("__PURE__")).equals(false)
+	})
+
+	it("keeps a hashbang first ahead of a creation it can't declare as an import", async () => {
+		const [js] = await bundle({}, { entryPoints: [join(root, "hashbang.ts")] })
+		attest(js.startsWith("#!/usr/bin/env node\n")).equals(true)
+		attest(run(js)).snap(`user must be an object (was missing)
+`)
+	})
+
+	it("creates in the function a validator whose creator nothing else calls", async () => {
+		const contents = `import { Team } from "./types.ts"\n\nconsole.log(Team({ lead: {}, members: [] }).summary)\n`
+		const [js] = await bundle(
+			{},
+			{ stdin: { contents, resolveDir: root, loader: "ts" } }
+		)
+		const [whole] = await bundle(
+			{ prune: false },
+			{ stdin: { contents, resolveDir: root, loader: "ts" } }
+		)
+		attest(run(js)).snap(`lead.name must be a string (was missing)
+lead.email must be a string (was missing)
+`)
+		attest(run(js)).equals(run(whole))
+		attest(js.includes("{ 0: allows")).equals(false)
+		attest(js.includes("var Team =")).equals(false)
+		// the Allows its creator was passed, now called by name
+		attest(/\/\* @__NOINLINE__ \*\/\s+\w+Allows\(data\) \?/.test(js)).equals(
+			true
+		)
+	})
+
+	it("creates in the function validators whose creator others call", async () => {
+		const [js] = await bundle()
+		const [whole] = await bundle({ prune: false })
+		attest(run(js)).equals(run(whole))
+		attest(js.includes("var Team =")).equals(false)
+		attest(js.includes("var User =")).equals(false)
+		attest(js.match(/\({ 0: allows, 1: apply }\) =>/g)?.length).equals(1)
+	})
+
+	it("creates in the function a validator under a type assertion", async () => {
+		const files = writeFixture(
+			{
+				"types.ts": types.replace(
+					"export const Team = type(",
+					"export const Team = <type.Any>type("
+				),
+				"main.ts": `import { Team } from "./types.ts"\n\nconsole.log(String(Team({ lead: {}, members: [] })))\n`
+			},
+			fromHere("temp", "flatAsserted")
+		)
+		const [js] = await bundle({}, { entryPoints: [join(files, "main.ts")] })
+		attest(run(js)).snap(`lead.name must be a string (was missing)
+lead.email must be a string (was missing)
+`)
+		attest(js.includes("var Team =")).equals(false)
+	})
+
+	it("writes a function its one call passes its parameters where it's called", async () => {
+		const files = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const Discount = type({ discount: "number > 0 | null | undefined" })
+
+for (const discount of [0, "0", null]) {
+	const out = Discount({ discount })
+	console.log(out instanceof type.errors ? out.summary : "valid")
+}
+`
+			},
+			fromHere("temp", "flatInlined")
+		)
+		const options: BuildOptions = { entryPoints: [join(files, "main.ts")] }
+		const [js] = await bundle({}, options)
+		const [whole] = await bundle({ prune: false }, options)
+		attest(run(js)).snap(`discount must be positive
+discount must be a number, undefined or null
+valid
+`)
+		attest(run(js)).equals(run(whole))
+		// the number branch's Apply is its case of the union's, and null's
+		// case has nothing left to check, in Allows as in Apply
+		attest(js.match(/if \(typeof data === "number"\) {\s+{/g)?.length).equals(1)
+		attest(js.match(/data === null\) {\s+return true/g)?.length).equals(2)
+	})
+
+	it("writes a primitive its one call passes where its parameter is read", async () => {
+		const files = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const Email = type("string.email")
+
+const out = Email("ada")
+
+if (out instanceof type.errors) console.log(out.summary)
+`
+			},
+			fromHere("temp", "flatPrimitive")
+		)
+		const [js] = await bundle({}, { entryPoints: [join(files, "main.ts")] })
+		attest(run(js)).snap(`must be an email address
+`)
+		attest(js).satisfies(/"pattern", "an email address"/)
+		attest(/const \w+ = "an email address"/.test(js)).equals(false)
+	})
+
+	it("reads a unit declared as another of the units as that one", async () => {
+		const files = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const User = type({ name: "string", role: "string = 'member'" })
+
+console.log(User({ name: "Ada" }))
+`
+			},
+			fromHere("temp", "flatAlias")
+		)
+		const [js] = await bundle({}, { entryPoints: [join(files, "main.ts")] })
+		attest(run(js)).snap(`{ name: 'Ada', role: 'member' }
+`)
+		// the object's Transform is its structure's
+		attest(js).satisfies(/structure\w+Transform\(data\)/)
+		attest(/intersection\w+Transform/.test(js)).equals(false)
+	})
+
+	it("creates as its assert a validator read only for it", async () => {
+		const files = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const User = type({ name: "string" })
+
+const check = (data: unknown) => User.assert(data)
+
+for (const data of [{ name: "Ada" }, {}]) {
+	try {
+		console.log(check(data))
+	} catch (e) {
+		console.log((e as Error).message)
+	}
+}
+`
+			},
+			fromHere("temp", "flatAssert")
+		)
+		const options: BuildOptions = { entryPoints: [join(files, "main.ts")] }
+		const [js] = await bundle({}, options)
+		const [whole] = await bundle({ prune: false }, options)
+		attest(run(js)).snap(`{ name: 'Ada' }
+name must be a string (was missing)
+`)
+		attest(run(js)).equals(run(whole))
+		attest(/\.assert\b|\bassert:/.test(js)).equals(false)
+	})
+
+	it("creates as its allows a validator read only for it", async () => {
+		const files = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const User = type({ name: "string" })
+
+console.log(User.allows({ name: "Ada" }), User.allows({}))
+`,
+				"both.ts": `import { type } from "arktype"
+
+const User = type({ name: "string" })
+
+console.log(User.allows({ name: "Ada" }), User.assert({ name: "Ada" }))
+`
+			},
+			fromHere("temp", "flatAllows")
+		)
+		const [js] = await bundle({}, { entryPoints: [join(files, "main.ts")] })
+		attest(run(js)).snap("true false\n")
+		attest(/\.allows\b|\ballows:/.test(js)).equals(false)
+		// a validator whose reads differ in what they read stays their object
+		const [both] = await bundle({}, { entryPoints: [join(files, "both.ts")] })
+		attest(run(both)).snap("true { name: 'Ada' }\n")
+		attest(/\ballows:/.test(both)).equals(true)
+	})
+
+	it("fails a module another plugin loaded reading a unit it declares in one function", async () => {
+		const [whole] = await bundle({ prune: false }, { minify: false })
+		const unit = /\/\/ arktype:(~arktype\/intersection\w+)/.exec(whole)![1]
+		const loader: Plugin = {
+			name: "loader",
+			setup: build =>
+				build.onLoad({ filter: /[/\\]main\.ts$/ }, () => ({
+					contents: `export * from ${JSON.stringify(unit)}\n`,
+					loader: "ts",
+					resolveDir: root
+				}))
+		}
+		const result = await build({
+			entryPoints: [join(root, "main.ts")],
+			bundle: true,
+			write: false,
+			format: "esm",
+			conditions,
+			logLevel: "silent",
+			plugins: [loader, precompile.esbuild({ conditions, cwd: root })]
+		}).catch((e: { errors: { text: string }[] }) => e)
+		attest("errors" in result && result.errors.map(error => error.text)).equals(
+			[writeUnscannedFlatMessage("main.ts")]
+		)
+	})
+
+	it("keeps each unit a module of its own where an entry reaches only some sites", async () => {
+		const options: BuildOptions = {
+			entryPoints: [join(root, "main.ts"), join(root, "types.ts")],
+			outdir: join(root, "out"),
+			splitting: true
+		}
+		const split = await bundle({}, options)
+		attest(split.some(js => factoryParam.test(js))).equals(true)
+	})
+
+	it("declares in one function the units of split entries each reaching every site", async () => {
+		const outdir = join(root, "split")
+		const { outputFiles } = await build({
+			entryPoints: [join(root, "main.ts"), join(root, "again.ts")],
+			outdir,
+			splitting: true,
+			bundle: true,
+			write: false,
+			format: "esm",
+			conditions,
+			logLevel: "silent",
+			plugins: [precompile.esbuild({ conditions })]
+		})
+		attest(outputFiles.some(file => factoryParam.test(file.text))).equals(false)
+		mkdirSync(outdir, { recursive: true })
+		for (const file of outputFiles) writeFileSync(file.path, file.text)
+		const [whole] = await bundle({ prune: false })
+		attest(runPlain(outdir, "again.js")).equals(run(whole))
+	})
+
+	it("keeps each unit a module of its own where import() loads a site", async () => {
+		const options: BuildOptions = {
+			entryPoints: [join(root, "lazy.ts")],
+			outdir: join(root, "out"),
+			splitting: true
+		}
+		const split = await bundle({}, options)
+		attest(split.some(js => factoryParam.test(js))).equals(true)
+	})
+
+	it("declares the units of a one-chunk Vite build in one function", async () => {
+		const flat = await viteBundle({})
+		const whole = await viteBundle({ prune: false })
+		attest(run(flat)).equals(run(whole))
+		attest(factoryParam.test(whole)).equals(true)
+		attest(factoryParam.test(flat)).equals(false)
+	})
+
+	describe("a module a plugin ahead of arktype's rewrote after the scan read it", () => {
+		const rewriting = (
+			file: string,
+			rewrite: (code: string) => string
+		): VitePlugin => ({
+			name: "rewriting",
+			enforce: "pre",
+			transform: (code, id) =>
+				id.endsWith(`/${file}`) ? rewrite(code) : undefined
+		})
+
+		it("reads the units from the function, writing the helpers that read them anew", async () => {
+			const opts = { creationChecks: "helpers" } as const
+			const flat = await viteBundle(opts)
+			// its helpers are written for its source, so they're modules the scan didn't write
+			const rewritten = await viteBundle(opts, [
+				rewriting("types.ts", code => code.split("\n").join("\n\n"))
+			])
+			attest(run(rewritten)).equals(run(flat))
+			attest(declaredUnits(rewritten)).equals(declaredUnits(flat))
+		})
+
+		it("reads the units from the function where the rewrite imports a module the scan didn't", async () => {
+			const flat = await viteBundle({})
+			const rewritten = await viteBundle({}, [
+				rewriting(
+					"types.ts",
+					code =>
+						`import { memo } from "./memo.ts"\n${code}export const cached = memo(0)\n`
+				)
+			])
+			attest(run(rewritten)).equals(run(flat))
+			attest(declaredUnits(rewritten)).equals(declaredUnits(flat))
+		})
+
+		it("fails where it keeps a validator whose units the scan found no read of", async () => {
+			const result = await viteBundle({}, [
+				rewriting("types.ts", code => `${code}\nconsole.log(Unread({}))\n`)
+			]).catch((e: Error) => e)
+			attest(
+				result instanceof Error &&
+					result.message.includes(writeUnscannedFlatMessage("types.ts"))
+			).equals(true)
+		})
+
+		it("fails where another module it reads no unit in keeps such a validator", async () => {
+			// main.ts creates no validator, so it's written as it was, but its
+			// read keeps Unread, which reads copies of Team's units
+			const message = await viteBundle({}, [
+				rewriting(
+					"main.ts",
+					code =>
+						`${code.replace("{ Team, User }", "{ Team, Unread, User }")}\nconsole.log(Unread({ zebra: 5 }) instanceof type.errors)\n`
+				)
+			]).then(
+				() => "",
+				(e: Error) => e.message
+			)
+			attest(message.includes(unseenFlatMessage)).equals(true)
+		})
+	})
+
+	it("declares a unit however its array is written", () => {
+		// errors "none" writes a unit without its Apply, e.g. [allows, ]
+		const arrays = [
+			"[(data => data > 0), ]",
+			"[(data => data < 9) /* , */ ]",
+			"[(data => data !== 5), // apply\n]",
+			"[(data => data % 2 === 0) , (data => data) ,]"
+		]
+		const modules: Record<string, string> = {
+			"~arktype/date": `import * as runtime from "arktype/runtime"
+
+const date = /* @__PURE__ */ ((dateR0) => {
+const dateAllows = (data => data instanceof Date && dateR0(data))
+return [dateAllows, ]
+})(runtime.isValidDate)
+
+export { date }`
+		}
+		for (const [i, array] of arrays.entries()) {
+			modules[`~arktype/unit${i}`] =
+				`const unit${i} = ${array}\n\nexport { unit${i} }`
+		}
+		const names = ["date", ...arrays.map((_, i) => `unit${i}`)]
+		const site = `${names.map(name => `import { ${name} } from "~arktype/${name}"`).join("\n")}
+
+export const read = [${names.join(", ")}]`
+		const flat = flattenBundle(
+			{ "site.js": site },
+			modules,
+			{ modules: [], entries: ["site.js"], resolve: () => undefined },
+			false
+		)!
+		const written = Object.keys(flat.modules).filter(
+			specifier => !(specifier in modules)
+		)
+		attest(written.length).equals(1)
+		const code = flat.modules[written[0]]
+		attest(parseSync("flat.js", code, { sourceType: "module" }).errors).equals(
+			[]
+		)
+		attest(code).snap(`import * as runtime from "arktype/runtime"
+
+const [date, unit0, unit1, unit2, unit3] = /* @__NOINLINE__ */ (() => {
+const dateR0 = runtime.isValidDate
+
+const dateAllows = (data => data instanceof Date && dateR0(data))
+
+const unit0Allows = (data => data > 0)
+const unit1Allows = (data => data < 9) /* , */ 
+const unit2Allows = (data => data !== 5)
+const unit3Allows = (data => data % 2 === 0) , unit3Apply = (data => data) 
+return [[dateAllows], [unit0Allows], [unit1Allows], [unit2Allows], [unit3Allows, unit3Apply]]
+})()
+
+export { date, unit0, unit1, unit2, unit3 }
+`)
+	})
+
+	it("writes in place a once-called function its function declares last", () => {
+		const unit = `import * as runtime from "arktype/runtime"
+
+const unit = /* @__PURE__ */ ((unitR0) => {
+const unitAllows = (data => unitR0(data))
+const unitApply = (data, ctx) => {
+	if (unitR0(data)) return true
+	return unitFails(data, ctx)
+}
+const unitFails = (data, ctx) => {
+	return !ctx.failsAt(runtime.siteOf("proto", "a Date"), data)
+}
+return [unitAllows, unitApply]
+})(runtime.isValidDate)
+
+export { unit }`
+		const flat = flattenBundle(
+			{
+				"site.js": `import { unit } from "~arktype/unit"\n\nexport const read = unit`
+			},
+			{ "~arktype/unit": unit },
+			{ modules: [], entries: ["site.js"], resolve: () => undefined },
+			false
+		)!
+		const [code] = Object.entries(flat.modules).flatMap(([specifier, code]) =>
+			specifier === "~arktype/unit" ? [] : [code]
+		)
+		attest(code).snap(`import * as runtime from "arktype/runtime"
+
+const unit = /* @__NOINLINE__ */ (() => {
+const unitR0 = runtime.isValidDate
+
+const unitAllows = (data => unitR0(data))
+const unitApply = (data, ctx) => {
+	if (unitR0(data)) return true
+	{
+	return !ctx.failsAt(runtime.siteOf("proto", "a Date"), data)
+}
+}
+
+return [unitAllows, unitApply]
+})()
+
+export { unit }
+`)
+	})
+
+	it("writes a value read once where it's read, unless a call would run in another order", () => {
+		const unit = `import * as runtime from "arktype/runtime"
+
+const unit = /* @__PURE__ */ ((unitR0) => {
+const unitAllows = (data => unitR0(data))
+const unitApply = (data, ctx) => unitR0(data) || ctx.reject(data)
+const made = runtime.make([unitAllows, unitApply])
+const logged = runtime.log(made)
+const also = runtime.make([unitAllows])
+return [also, logged]
+})(runtime.isValidDate)
+
+export { unit }`
+		const flat = flattenBundle(
+			{
+				"site.js": `import { unit } from "~arktype/unit"\n\nexport const read = unit`
+			},
+			{ "~arktype/unit": unit },
+			{ modules: [], entries: ["site.js"], resolve: () => undefined },
+			false
+		)!
+		const [code] = Object.entries(flat.modules).flatMap(([specifier, code]) =>
+			specifier === "~arktype/unit" ? [] : [code]
+		)
+		// logged would run after also, and made inside logged's call
+		attest(code).snap(`import * as runtime from "arktype/runtime"
+
+const unit = /* @__NOINLINE__ */ (() => {
+const unitR0 = runtime.isValidDate
+
+const unitAllows = (data => unitR0(data))
+const unitApply = (data, ctx) => unitR0(data) || ctx.reject(data)
+const made = runtime.make([unitAllows, unitApply])
+const logged = runtime.log(made)
+
+return [runtime.make([unitAllows]), logged]
+})()
+
+export { unit }
+`)
+	})
+
+	it("creates each validator where it's returned, with the traversals only it reads", async () => {
+		const contents = `import { type } from "arktype"\nimport { Team, User } from "./types.ts"\n\nconst out = Team({ lead: {}, members: [] })\nconsole.log(out instanceof type.errors ? out.summary : "valid")\nconsole.log(User.allows({ name: "Ada", email: "ada@arktype.io" }))\n`
+		const options: BuildOptions = {
+			stdin: { contents, resolveDir: root, loader: "ts" }
+		}
+		const [js] = await bundle({}, options)
+		const [whole] = await bundle({ prune: false }, options)
+		attest(run(js)).snap(`lead.name must be a string (was missing)
+lead.email must be a string (was missing)
+true
+`)
+		attest(run(js)).equals(run(whole))
+		attest(/const \w+Validator\d* =/.test(js)).equals(false)
+		// Team's own traversals are written into its creation; those of Name,
+		// Email, User and User[], which others read too, keep their names
+		attest(declaredUnits(js)).equals(4)
+		attest(js).satisfies(
+			/return \[\w+\(\[\w+Allows, \w+Apply]\), \w+\(\[\(data, ctx\) =>/
+		)
+	})
+
+	it("drops a declaration read only by one it drops", () => {
+		const unit = `import * as runtime from "arktype/runtime"
+
+const unit = /* @__PURE__ */ ((unitR0) => {
+const unitAllows = (data => unitR0(data))
+const unitChecked = (data => unitR0(data) && data.getTime() > 0)
+const unitUnread = (data => unitChecked(data.value))
+return [unitAllows]
+})(runtime.isValidDate)
+
+export { unit }`
+		const flat = flattenBundle(
+			{
+				"site.js": `import { unit } from "~arktype/unit"\n\nexport const read = unit`
+			},
+			{ "~arktype/unit": unit },
+			{ modules: [], entries: ["site.js"], resolve: () => undefined },
+			false
+		)!
+		const [code] = Object.entries(flat.modules).flatMap(([specifier, code]) =>
+			specifier === "~arktype/unit" ? [] : [code]
+		)
+		attest(code).snap(`import * as runtime from "arktype/runtime"
+
+const unit = /* @__NOINLINE__ */ (() => {
+const unitR0 = runtime.isValidDate
+
+const unitAllows = (data => unitR0(data))
+
+return [unitAllows]
+})()
+
+export { unit }
+`)
+	})
+
+	describe("a module built from code its scan didn't read", () => {
+		// resolves reader.ts as the scan reads it, then as another module
+		const swapping = (to: string): Plugin => {
+			let res = 0
+			return {
+				name: "swap",
+				setup: build =>
+					build.onResolve({ filter: /reader\.ts$/ }, () => ({
+						path: join(files, res++ ? to : "reader.ts")
+					}))
+			}
+		}
+
+		const files = writeFixture(
+			{
+				"types.ts": types,
+				// an entry's export, read in ways the scan can't see, so it drops nothing
+				"reader.ts": `export { Team as read } from "./types.ts"\n`,
+				// a copy of User, whose units the bundle declares in one function
+				"copying.ts": `import { type } from "arktype"\n\nexport const read = type({ name: "string > 0", email: "string.email" })\n`,
+				"other.ts": `import { type } from "arktype"\n\nexport const read = type({ id: "number.integer" })\n`,
+				"main.ts": `export { read } from "./reader.ts"\n`
+			},
+			fromHere("temp", "flatUnscanned")
+		)
+
+		const bundleSwapping = (to: string) =>
+			build({
+				entryPoints: [join(files, "main.ts")],
+				absWorkingDir: files,
+				bundle: true,
+				write: false,
+				format: "esm",
+				conditions,
+				logLevel: "silent",
+				plugins: [swapping(to), precompile.esbuild({ conditions, cwd: files })]
+			}).catch((e: { errors: { text: string }[] }) => e)
+
+		it("fails where its validators would read a copy of a unit", async () => {
+			const result = await bundleSwapping("copying.ts")
+			attest(result.errors.map(error => error.text)).equals([
+				`copying.ts:1:1  ${writeUnscannedFlatMessage("copying.ts")}`
+			])
+		})
+
+		it("builds where they read none", async () => {
+			const result = await bundleSwapping("other.ts")
+			attest(result.errors).equals([])
+		})
+	})
+})

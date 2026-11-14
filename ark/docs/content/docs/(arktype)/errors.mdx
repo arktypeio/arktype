@@ -1,0 +1,242 @@
+---
+title: Errors
+description: Read, serialize and throw the errors a Type returns for invalid data.
+---
+
+## ArkErrors
+
+A Type called with invalid data returns `ArkErrors`, which holds one error for each check that failed, in the order each failed:
+
+```ts
+import { flatMessagesByPath, type } from "arktype"
+
+const User = type({
+	name: "string",
+	age: "number >= 0"
+})
+
+const out = User({ name: 5, age: -1 })
+
+if (out instanceof type.errors) {
+	// name must be a string
+	// age must be non-negative
+	console.error(out.summary)
+
+	// ["must be a string",
+	//  "must be non-negative"]
+	out.issues.map(error => error.message)
+
+	// { name: ["must be a string"],
+	//   age: ["must be non-negative"] }
+	flatMessagesByPath(out)
+}
+```
+
+`ArkErrors` isn't an array. Its errors are in `issues`, so index them, iterate them or call array methods there. Log `out.summary` or `out.issues` rather than `out`: its own fields are internal, and those are what a browser console shows.
+
+| member                    | what it is                                                         |
+| ------------------------- | ------------------------------------------------------------------ |
+| `issues`                  | an array with one error per failed check, in the order each failed |
+| `summary`, `toString()`   | a line for each error: its message after its path                  |
+| `count`                   | how many errors were added                                         |
+| `toJSON()`                | an array of each error's JSON, with its `propString`               |
+| `toLocaleString(locale?)` | the summary in a [locale](/docs/i18n#rendering-in-a-locale)        |
+| `throw()`                 | throws a [`TraversalError`](#traversalerror)                       |
+
+`arktype` exports functions that read an `ArkErrors`, most grouping it by path:
+
+| function                   | what it returns                                                                                  |
+| -------------------------- | ------------------------------------------------------------------------------------------------ |
+| `firstIssue(out)`          | the first error in `issues`, found [without the rest](#finding-only-the-first) where it can be   |
+| `byPath(out)`              | an object mapping each path's `propString` to its first error                                    |
+| `flatByPath(out)`          | like `byPath`, but each value is an array of every error at the path                             |
+| `flatMessagesByPath(out)`  | like `flatByPath`, but with each error's `message`                                               |
+| `byAncestorPath(out)`      | each failed path and its ancestors, with `""` for the root, mapped to every error at or below it |
+| `messageIn(error, locale)` | one error's line of the summary, path first, in a [locale](/docs/i18n#rendering-in-a-locale)     |
+
+A [precompiled](/docs/precompile/validators#errors) build has `firstIssue` but not the others, and fails on a call to one, naming it. There, group `out.issues` by each error's `path`.
+
+To change what an error says, see [Error messages](/docs/configuration#error-messages).
+
+### Summary lines
+
+`summary` writes one line for each error:
+
+| error                                                | its line                            | example                                        |
+| ---------------------------------------------------- | ----------------------------------- | ---------------------------------------------- |
+| at the root                                          | its message                         | `must be an object`                            |
+| below the root                                       | its path, then its message          | `name must be a string`                        |
+| with a [custom message](/docs/configuration#message) | its path, a colon, then its message | `email: Enter a valid email`                   |
+| a union listing its branches' errors                 | its message, with each path whole   | `k.a must be a string or k.b must be a number` |
+
+### Read errors before the data changes
+
+A Type that calls no narrow or morph may find its errors only when `issues` or `summary` is first read, so rejecting data costs little more than the check that rejected it. They describe the data as it is at that read: if it changed since it was validated, so do they, and data that no longer fails holds one root issue, `is invalid`. Read `summary` or `issues` before the data can change, as reactive form state or an Immer draft can, or anything can across an `await`:
+
+```ts
+const User = type({ name: "string" })
+const form: Record<string, unknown> = { name: 5 }
+
+const out = User(form)
+// read now: name must be a string
+const summary = out instanceof type.errors ? out.summary : ""
+
+form.name = "Ada"
+// read only now, out.summary would be "is invalid"
+```
+
+A getter or `Proxy` trap the check reads runs again at that read, and what it throws is thrown there. Each error's text is written at that first read too.
+
+### Finding only the first
+
+Where a form shows one error at a time, read it with `firstIssue`. Errors that haven't found their issues yet, like those of a Type that calls no narrow or morph or of a [precompiled](/docs/precompile) validator, find only that one, reading the data until it fails, so the rest cost nothing until `issues` or `summary` is read:
+
+```ts
+import { firstIssue, type } from "arktype"
+
+const User = type({ name: "string", age: "number >= 0" })
+
+const out = User({ name: 5, age: -1 })
+
+// must be a string
+if (out instanceof type.errors) console.error(firstIssue(out).message)
+```
+
+It's the error `issues[0]` holds. Unlike [`errors: "first"`](/docs/configuration#errors), it leaves the rest to be found, and it's the first a full validation finds, not whichever is cheapest.
+
+## ArkError
+
+Each error in `issues` is a plain object, typed as `ArkError`, describing what failed at one path:
+
+```ts
+const out = type({ age: "number >= 0" })({ age: -1 })
+
+if (out instanceof type.errors) {
+	const error = out.issues[0]
+
+	error.code // "min"
+	error.path // ["age"]
+	error.propString // "age"
+	error.data // -1
+	error.expected // "non-negative"
+	error.actual // "-1"
+	error.message // "must be non-negative"
+
+	// narrow by code to read its own fields
+	if (error.code === "min") error.rule // 0
+}
+```
+
+Its `message`:
+
+- reads "must be `expected`", or is the [`message`](/docs/configuration#message) you configured or passed to `ctx.reject`, as you wrote it.
+- never names the error's own path, which a form shows as the field beside it and a summary writes before it.
+- doesn't say what the value was. `data` holds that and `actual` describes it, like "-1" or "a string". Only a missing key's message, `must be a string (was missing)`, or one with an [`actual`](/docs/configuration#actual) configured, ends with "(was `actual`)".
+- for a union, writes the path of each error it lists from the union's own, like `a must be a string or b must be a number`.
+
+An error also has `meta`, the metadata of the Type that failed, and usually a `description`. It has no methods, so `JSON.stringify(error)` serializes its own keys, `data` included, and `messageIn(error, locale)` writes its line of a summary in another locale.
+
+Since `data` is the rejected value, a password or a token is in the errors you serialize, whether `JSON.stringify(out)`, a logged `out.issues` or the issues a library returns through [Standard Schema](/docs/standard-schema). To leave it out, send each error's `path` and `message`, or `flatMessagesByPath(out)`.
+
+When several checks fail at one path, each is its own error. `flatByPath` and `flatMessagesByPath` group them by path:
+
+```ts
+import { flatMessagesByPath, type } from "arktype"
+
+const out = type({ n: "number % 2 >= 2" })({ n: 1 })
+
+if (out instanceof type.errors) {
+	// n must be even
+	// n must be at least 2
+	console.error(out.summary)
+
+	// { n: ["must be even", "must be at least 2"] }
+	flatMessagesByPath(out)
+}
+```
+
+## Error codes
+
+An error's `code` tells you its other fields:
+
+| code                                    | fields                                                                                                                                                     |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain`                                | `domain`, like `"string"`                                                                                                                                  |
+| `unit`                                  | `unit`, the expected value                                                                                                                                 |
+| `proto`                                 | `proto`, the expected constructor                                                                                                                          |
+| `min`, `max`                            | `rule`, and `exclusive` when the bound is exclusive                                                                                                        |
+| `minLength`, `maxLength`, `exactLength` | `rule`                                                                                                                                                     |
+| `divisor`                               | `rule`                                                                                                                                                     |
+| `pattern`                               | `rule` (the regex source) and `flags`                                                                                                                      |
+| `before`, `after`                       | `rule`, a `Date`                                                                                                                                           |
+| `notEqual`                              | `rule`, a number or `Date`                                                                                                                                 |
+| `notEqualLength`                        | `rule`                                                                                                                                                     |
+| `predicate`                             | `predicate` when a narrow returns `false`; `morph` and what it threw as `cause` for `pipe.try`; `meta.keyword` and sometimes `cause` for a keyword's parse |
+| `required`                              | `missing`, the missing value's type; `valueMeta`, its meta; and `missingValueDescription`, its English description                                         |
+| `undeclared`                            | none; its `data` is the value of a key `"+": "reject"` disallows                                                                                           |
+| `discriminant`                          | `discriminantKind`, `cases`, `onKey` and `absent`                                                                                                          |
+| `union`                                 | `errors`, one per branch, or none where each branch fails at what it is, like `Date \| RegExp` given `1`, which expects `a Date or a RegExp`               |
+
+Each also has `data` and `path`, and `meta` unless `ctx` or `pipe.try` raised it. Built-in keywords with their own text, like `string.email`, set `meta.keyword` to their name.
+
+`discriminant` is a miss of a union ArkType checks by switching on a domain or a literal value: branches with different domains, like `number | null`, two or more literals, like `boolean` or `"a" | "b"`, or objects with a discriminant key. Its `data` is the discriminant's value, and `cases` lists the values or domains it expected, with `"Array"` in place of `"object"` where every object it expected is an array:
+
+```ts
+const Shape = type({ kind: "'circle'", r: "number" }).or({
+	kind: "'square'",
+	side: "number"
+})
+
+const out = Shape({ kind: "triangle" })
+
+if (out instanceof type.errors) {
+	const error = out.issues[0]
+
+	// must be "circle" or "square"
+	error.message
+
+	// ["circle", "square"]
+	if (error.code === "discriminant") error.cases
+}
+```
+
+A union reports `union` instead where its discriminant can't tell the branches apart: an undiscriminated union; data that can't hold the discriminant, like `5` for a union of objects; and data matching none of the discriminant's values when some branches don't have its key, whose `errors` hold the miss beside those branches' errors.
+
+## TraversalError
+
+`.assert`, `.from` and `ArkErrors`' `throw()` throw a `TraversalError`, which extends `Error`. Its message is the errors' summary, one line per error:
+
+```ts
+import { flatMessagesByPath, type, TraversalError } from "arktype"
+
+try {
+	type({ a: "string", b: "number" }).assert({ a: 1, b: "x" })
+} catch (e) {
+	if (e instanceof TraversalError) {
+		// "a must be a string\nb must be a number"
+		e.message
+
+		// the ArkErrors, for structured access
+		flatMessagesByPath(e.arkErrors)
+	}
+}
+```
+
+`arkErrors` is non-enumerable, so loggers that print an error's own properties skip it.
+
+## ParseError
+
+A `ParseError` is thrown when a definition is invalid, as the Type is created rather than when it validates. TypeScript reports the same mistakes in your editor, so you'll usually see one only for definitions TypeScript can't check, like strings built at runtime:
+
+```ts
+import { ParseError, type } from "arktype"
+
+const def: string = "string | numbr"
+
+try {
+	type.raw(def)
+} catch (e) {
+	// 'numbr' is unresolvable. Did you mean 'number'?
+	if (e instanceof ParseError) console.error(e.message)
+}
+```

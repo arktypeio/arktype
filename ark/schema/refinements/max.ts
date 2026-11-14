@@ -1,16 +1,13 @@
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
-	parseExclusiveKey,
 	type BaseRangeInner,
 	type UnknownExpandedRangeSchema
 } from "./range.ts"
@@ -21,22 +18,20 @@ export declare namespace Max {
 		exclusive?: true
 	}
 
-	export interface NormalizedSchema extends UnknownExpandedRangeSchema {
+	export interface ExpandedSchema extends UnknownExpandedRangeSchema {
 		rule: number
 	}
 
-	export type Schema = NormalizedSchema | number
+	export type Schema = ExpandedSchema | number
 
 	export interface ErrorContext extends BaseErrorContext<"max">, Inner {}
 
 	export interface Declaration
 		extends declareNode<{
 			kind: "max"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
 			inner: Inner
 			prerequisite: number
-			errorContext: ErrorContext
+			errorCtx: ErrorContext
 		}> {}
 
 	export type Node = MaxNode
@@ -45,46 +40,29 @@ export declare namespace Max {
 const implementation: nodeImplementationOf<Max.Declaration> =
 	implementNode<Max.Declaration>({
 		kind: "max",
-		collapsibleKey: "rule",
-		hasAssociatedError: true,
+		bareKey: "rule",
+		ownErr: true,
 		keys: {
 			rule: {},
-			exclusive: parseExclusiveKey
+			exclusive: {}
 		},
-		normalize: schema =>
-			typeof schema === "number" ? { rule: schema } : schema,
 		defaults: {
 			description: node => {
 				if (node.rule === 0) return node.exclusive ? "negative" : "non-positive"
 				return `${node.exclusive ? "less than" : "at most"} ${node.rule}`
 			}
 		},
-		intersections: {
-			max: (l, r) => (l.isStricterThan(r) ? l : r),
-			min: (max, min, ctx) =>
-				max.overlapsRange(min) ?
-					max.overlapIsUnit(min) ?
-						ctx.$.node("unit", { unit: max.rule })
-					:	null
-				:	Disjoint.init("range", max, min)
-		},
-		obviatesBasisDescription: true
+		coversNoun: true
 	})
 
 export class MaxNode extends BaseRange<Max.Declaration> {
-	impliedBasis: BaseRoot = $ark.intrinsic.number.internal
+	implied: BaseRoot = $ark.kw.number.internal
 
-	traverseAllows: TraverseAllows<number> =
+	tAllows: TraverseAllows<number> =
 		this.exclusive ? data => data < this.rule : data => data <= this.rule
-
-	reduceJsonSchema(schema: JsonSchema.Numeric): JsonSchema.Numeric {
-		if (this.exclusive) schema.exclusiveMaximum = this.rule
-		else schema.maximum = this.rule
-		return schema
-	}
 }
 
 export const Max = {
-	implementation,
+	impl: implementation,
 	Node: MaxNode
 }

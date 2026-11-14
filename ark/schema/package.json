@@ -15,22 +15,112 @@
 	"type": "module",
 	"main": "./out/index.js",
 	"types": "./out/index.d.ts",
+	"typesVersions": {
+		"*": {
+			"codecs": [
+				"./out/codecs.d.ts"
+			],
+			"config": [
+				"./out/config.d.ts"
+			],
+			"errors": [
+				"./out/errors.d.ts"
+			],
+			"i18n": [
+				"./out/i18n.d.ts"
+			],
+			"issueFeatures": [
+				"./out/shared/issueFeatures.d.ts"
+			],
+			"mutatesInput": [
+				"./out/mutatesInput.d.ts"
+			],
+			"runtime": [
+				"./out/runtime.d.ts"
+			],
+			"runtime/none": [
+				"./out/runtimeNone.d.ts"
+			],
+			"runtime/none-lean": [
+				"./out/runtimeNoneLean.d.ts"
+			],
+			"runtime/lean": [
+				"./out/runtimeLean.d.ts"
+			],
+			"internal": [
+				"./out/internal.d.ts"
+			],
+			"internal/*": [
+				"./out/*"
+			]
+		}
+	},
 	"exports": {
 		".": {
 			"ark-ts": "./index.ts",
 			"default": "./out/index.js"
 		},
+		"./codecs": {
+			"ark-ts": "./codecs.ts",
+			"default": "./out/codecs.js"
+		},
 		"./config": {
+			"ark-ts": "./config.ts",
+			"default": "./out/config.js"
+		},
+		"./errors": {
+			"ark-ts": "./errors.ts",
+			"default": "./out/errors.js"
+		},
+		"./i18n": {
+			"ark-ts": "./i18n.ts",
+			"default": "./out/i18n.js"
+		},
+		"./mutatesInput": {
+			"ark-ts": "./mutatesInput.ts",
+			"default": "./out/mutatesInput.js"
+		},
+		"./runtime": {
+			"ark-ts": "./runtime.ts",
+			"default": "./out/runtime.js"
+		},
+		"./runtime/none": {
+			"ark-ts": "./runtimeNone.ts",
+			"default": "./out/runtimeNone.js"
+		},
+		"./runtime/none-lean": {
+			"ark-ts": "./runtimeNoneLean.ts",
+			"default": "./out/runtimeNoneLean.js"
+		},
+		"./runtime/lean": {
+			"ark-ts": "./runtimeLean.ts",
+			"default": "./out/runtimeLean.js"
+		},
+		"./issueFeatures": {
+			"ark-ts": "./shared/issueFeatures.ts",
+			"default": "./out/shared/issueFeatures.js"
+		},
+		"./internal": {
+			"ark-ts": "./internal.ts",
+			"default": "./out/internal.js"
+		},
+		"./internal/config.ts": {
+			"ark-ts": "./config.ts",
+			"default": "./out/config.js"
+		},
+		"./internal/config.js": {
 			"ark-ts": "./config.ts",
 			"default": "./out/config.js"
 		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
-			"default": "./out/*.js"
+			"types": "./out/*.d.ts",
+			"default": "./out/internal.js"
 		},
 		"./internal/*.js": {
 			"ark-ts": "./*.ts",
-			"default": "./out/*.js"
+			"types": "./out/*.d.ts",
+			"default": "./out/internal.js"
 		}
 	},
 	"files": [

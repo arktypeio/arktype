@@ -1,5 +1,4 @@
-import { execSync } from "node:child_process"
-import { baseDiagnosticTscCmd } from "./shared.ts"
+import { getDiagnosticTscOutput } from "./shared.ts"
 
 export const stats = (args: string[]): void => {
 	const packageDirs = args.length ? args : [process.cwd()]
@@ -7,10 +6,7 @@ export const stats = (args: string[]): void => {
 		console.log(`⏳ Gathering type perf data for ${packageDir}...`)
 		let output: string
 		try {
-			output = execSync(baseDiagnosticTscCmd, {
-				cwd: packageDir,
-				stdio: "pipe"
-			}).toString()
+			output = getDiagnosticTscOutput(packageDir)
 		} catch (e: any) {
 			output = e.stdout?.toString() ?? ""
 			output += e.stderr?.toString() ?? ""

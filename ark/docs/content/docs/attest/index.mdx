@@ -1,32 +1,32 @@
 ---
-title: Setup
+title: Getting started
+description: Install attest and run its setup and teardown around your tests.
 ---
 
-Attest is a testing library that makes your TypeScript types available at runtime, giving you access to precise type-level assertions and performance benchmarks.
+Attest is a testing library that makes your TypeScript types available at runtime. A test can assert on a value's type, the type errors and completions of an expression, and the type instantiations a block costs, next to ordinary value assertions. Assertions work from Vitest, Mocha, Jest or any runner with global setup and teardown hooks.
 
-Assertions are framework agnostic and can be seamlessly integrated with your existing Vitest, Jest, or Mocha tests.
+Benches run as plain scripts. They report how many type instantiations a block contributes, which is deterministic for a given TypeScript version, and how long a call takes.
 
-Benchmarks can run from anywhere and will deterministically report the number of type instantiations contributed by the contents of the `bench` call.
-
-If you've ever wondered how ArkType can guarantee identical behavior between its runtime and static parser implementations and highly optimized editor performance, Attest is your answer⚡
+ArkType uses attest to check that its runtime parser and its types agree, and to keep its editor performance from regressing.
 
 ## Installation
 
 <InstallationTabs pkg="@ark/attest" dev />
 
 <Callout type="info">
-	This package is still in alpha! Your feedback will help us iterate toward a
-	stable 1.0.
+	attest is still in alpha, so its API can change between minor versions. Your
+	feedback will help us iterate toward a stable 1.0.
 </Callout>
+
+If you're upgrading, [Upgrading](/docs/upgrading#attest) lists the changes to benches.
 
 ## Global setup
 
-To use attest's type assertions, you'll need to call its setup and cleanup methods before your first test and after your last test, respectively. This usually involves some kind of globalSetup/globalTeardown config.
+Type assertions need `setup` to run once before your tests and `teardown` once after them.
 
-<Callout type="warn">
-	If you run your tests in watch mode or otherwise iteratively during dev, you
-	will want to enable [`skipTypes`](/docs/attest/options#skiptypes).
-</Callout>
+`setup` type-checks your project once and writes what each `attest` call needs, like its argument's type and the type errors in it, to `.attest/assertions.json`. Assertions read that file rather than starting TypeScript in every test worker. `teardown` (also exported as `cleanup`) writes the snapshots your tests populated or updated back into your source files when the run exits.
+
+Add `.attest` to your `.gitignore`.
 
 ### Vitest
 
@@ -44,9 +44,11 @@ export default defineConfig({
 ```ts title="setupVitest.ts"
 import { setup } from "@ark/attest"
 
-// config options can be passed here
+// setup returns teardown, which Vitest calls after the last test
 export default () => setup({})
 ```
+
+Vitest rejects command-line flags it doesn't know, so pass attest [options](/docs/attest/options) to it as `ATTEST_` environment variables. Its own `-u` flag works, and updates attest's snapshots along with Vitest's.
 
 ### Mocha
 
@@ -59,12 +61,63 @@ export default () => setup({})
 ```ts title="setupMocha.ts"
 import { setup, teardown } from "@ark/attest"
 
-// config options can be passed here
 export const mochaGlobalSetup = () => setup({})
 
 export const mochaGlobalTeardown = teardown
 ```
 
-You should also add `.attest` to your repository's `.gitignore` file.
+### Jest
 
-Bun support is currently pending [them supporting @prettier/sync for type formatting](https://github.com/oven-sh/bun/issues/10768). If this is a problem for you, please 👍 that issue so they prioritize it!
+```js title="jest.config.js"
+export default {
+	globalSetup: "./setupJest.ts",
+	globalTeardown: "./teardownJest.ts"
+}
+```
+
+```ts title="setupJest.ts"
+import { setup } from "@ark/attest"
+
+export default () => setup({})
+```
+
+```ts title="teardownJest.ts"
+import { teardown } from "@ark/attest"
+
+export default teardown
+```
+
+`@ark/attest` is an ES module, so Jest has to run with ES module support, e.g. ts-jest with `useESM` and `NODE_OPTIONS=--experimental-vm-modules`.
+
+### Bun
+
+```ts title="setupBun.ts"
+import { setup } from "@ark/attest"
+
+setup({})
+```
+
+```bash
+bun test --preload ./setupBun.ts
+```
+
+You can also list the file under `preload` in the `[test]` section of `bunfig.toml`.
+
+Under `bun test`, assertions compare against existing snapshots, but new or updated snapshots aren't written: attest writes them when the process exits, and `bun test` doesn't emit Node's `exit` event.
+
+## Iterating quickly
+
+Type-checking the project is the slow part of `setup`. Two options cut it down:
+
+- [`skipTypes`](/docs/attest/options#skiptypes) skips the check along with every type assertion, for when you're only changing runtime code.
+- [`onlyNamedTestFiles`](/docs/attest/options#onlynamedtestfiles) checks only the test files you name on the command line.
+
+## TypeScript versions
+
+Attest analyzes your project with whichever `typescript` it resolves, which is normally your own install since it's a peer dependency. To test several versions, run your suite once per version, e.g. in a CI matrix that installs each one.
+
+TypeScript 7.1+ is supported through its native API. 7.0.x throws an error asking you to upgrade. Under TypeScript 7:
+
+- Instantiation counts come from running `tsc --extendedDiagnostics --singleThreaded` per bench. `tsc` fully checks a bench's dependencies before measuring it, so work the bench shares with them isn't counted, and counts can run lower than on TypeScript 5 or 6. Re-record bench baselines when you switch.
+- Type strings, union ordering and error elaboration can differ, so some snapshots need updating when you switch.
+- Benches write temporary `.attest-*` copies beside their source files while measuring, so the source directory has to be writable.
