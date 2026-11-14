@@ -726,6 +726,10 @@ export const writeLostMessage = (lost: readonly string[]): string =>
 export const writeLargerMessage = (times: number): string =>
 	`precompile: this build's validators, each compiled to check fastest, are about ${times.toFixed(1)} times the size of arktype, which they replace, so the bundle is larger than one creating its Types as it runs. Set preset: "smallest" to write them as calls to checkers they share, or optimize: "speed" to build without this warning.`
 
+// where the build wrote them for size itself, as a browser loads the bundle
+export const writeChoseSizeMessage = (times: number): string =>
+	`precompile: compiled to check fastest, this bundle's validators would be about ${times.toFixed(1)} times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.`
+
 // a folded helper's call runs only where the plugin transforms it
 export const unfoldedCallProblemOf = (
 	foldedHelpersById: ReadonlyMap<string, string[]>,
@@ -828,7 +832,11 @@ export interface ScannedUsage {
 	unpruned?: string | undefined
 	// the warning where it baked every introspection member, having lost track of a read
 	lost?: string | undefined
-	// the warning where its validators outweigh the arktype they replace
+	// about how many times the size of arktype, which they replace, its
+	// validators are, where that's more than once and nothing set what they're
+	// compiled for
+	timesArktype?: number | undefined
+	// what a host warns of that: that they're larger, or that it wrote them for size
 	larger?: string | undefined
 	// what each validator bakes of the introspection members members leaves to
 	// it, as code reading it reads them

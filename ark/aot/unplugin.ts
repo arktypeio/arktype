@@ -79,7 +79,7 @@ import {
 	withAllowUnsafe
 } from "./messages.ts"
 import type { IssueFeatures } from "arktype/internal/standalone.ts"
-import { withEnvironment, type Environment } from "./presets.ts"
+import { definedOf, withEnvironment, type Environment } from "./presets.ts"
 import {
 	addLoaded,
 	isAsset,
@@ -89,6 +89,8 @@ import {
 	unreadBuiltOf,
 	unreadDefineOf,
 	unseenProblemOf,
+	writeChoseSizeMessage,
+	writeLargerMessage,
 	writeUnseenMessage,
 	writeUnprunedMessage,
 	writeUnscannedFlatMessage,
@@ -169,6 +171,36 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			.catch(rethrowAsBuildError)
 	const request = (...message: PrecompileRequest) =>
 		requestResolving(undefined, ...message)
+	// a production bundle's scan. With nothing set for what its validators
+	// are compiled for, one they'd leave larger than arktype would is written
+	// for size where a browser loads it, read again by a worker with that
+	// set, and warned of where the bundler doesn't say what it builds for. A
+	// server's is left compiled, as its size is no one's wait
+	const scanChoosing = async (
+		resolve: BundlerResolve | undefined,
+		program: ScannedProgram
+	): Promise<ScannedUsage> => {
+		const usage = (await requestResolving(
+			resolve,
+			"scan",
+			program
+		)) as ScannedUsage
+		const times = usage.timesArktype
+		if (times === undefined || environment?.browser === false) return usage
+		if (environment?.browser === undefined)
+			return { ...usage, larger: writeLargerMessage(times) }
+		// errors stay as they were written, as written for size they'd load a
+		// runtime a runtime island can't build with
+		chosen = {
+			optimize: "size",
+			...(opts?.optimizeErrors === undefined && { optimizeErrors: "speed" })
+		}
+		updateWorker()
+		return {
+			...((await requestResolving(resolve, "scan", program)) as ScannedUsage),
+			larger: writeChoseSizeMessage(times)
+		}
+	}
 	const replace = (send: ReturnType<typeof create>) => {
 		void send(["close"])
 		return create()
@@ -176,14 +208,25 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	const restart = () => {
 		precompiler = precompiler.then(replace)
 	}
+	// what a build chose where its options left it to: validators written for
+	// size, where a browser loads the bundle and they'd outweigh arktype compiled
+	let chosen: PrecompileUnpluginOptions = {}
 	const updateWorker = () => {
-		const updated = environment ? withEnvironment(set, environment) : set
+		// what's set, in the call or ark.json, isn't chosen over
+		const chose = { ...chosen, ...definedOf(set) }
+		const updated = environment ? withEnvironment(chose, environment) : chose
 		if (JSON.stringify(updated) === JSON.stringify(workerOptions)) return
 		workerOptions = updated
 		restart()
 	}
 	const setEnvironment = (bundlerEnvironment: Environment) => {
-		environment = bundlerEnvironment
+		// compilers sharing the plugin, as Rsbuild's environments do, that
+		// build one for a browser and one for a server share its worker, so
+		// what loads the bundle is unknown
+		environment =
+			environment && environment.browser !== bundlerEnvironment.browser ?
+				{ ...bundlerEnvironment, browser: undefined }
+			:	bundlerEnvironment
 		updateWorker()
 	}
 	// a changed file or configuration may need a new worker
@@ -664,9 +707,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		const usage =
 			typeof program === "string" ?
 				writeUnprunedMessage(program)
-			:	await (
-					requestResolving(resolve, "scan", program) as Promise<ScannedUsage>
-				).catch(unreadMessageOf)
+			:	await scanChoosing(resolve, program).catch(unreadMessageOf)
 		const scanned =
 			(
 				typeof program !== "string" &&
@@ -916,12 +957,8 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				!transformedFilter.exclude.test(id),
 			id => arrivalOf(pending, id),
 			id => pending.mappings.get(id),
-			async scanned =>
-				(await requestResolving(
-					bundlerResolveOf(context, isTransformedId),
-					"scan",
-					scanned
-				)) as ScannedUsage,
+			scanned =>
+				scanChoosing(bundlerResolveOf(context, isTransformedId), scanned),
 			realCwd()
 		)
 			.catch(
@@ -1084,12 +1121,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				path =>
 					transformedFilter.include.test(path) &&
 					!transformedFilter.exclude.test(path),
-				async scanned =>
-					(await requestResolving(
-						esbuildResolve,
-						"scan",
-						scanned
-					)) as ScannedUsage,
+				scanned => scanChoosing(esbuildResolve, scanned),
 				realCwd()
 			).catch(
 				(e: unknown): ProgramScan<[ScannedProgram, ScannedUsage]> => ({
@@ -1525,7 +1557,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				setEnvironment({
 					production: config.command === "build" && !testing,
 					testing,
-					serving: isServing
+					serving: isServing,
+					// a build of each environment at once shares the plugin
+					browser: config.builder ? undefined : !config.build.ssr
 				})
 			}
 		},
@@ -1670,7 +1704,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				// as esbuild, Bun.build has no mode, but may resolve for production
 				setEnvironment({
 					production: [conditions].flat().includes("production"),
-					testing: false
+					testing: false,
+					// Bun.build's target is a browser unless set
+					browser: (build.config.target ?? "browser") === "browser"
 				})
 				// Bun leaves what `external` names to itself, asking no plugin
 				checkExternal(
@@ -1694,7 +1730,12 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				// esbuild has no mode, but a build may resolve for production
 				const production =
 					!!build.initialOptions.conditions?.includes("production")
-				setEnvironment({ production, testing: false })
+				setEnvironment({
+					production,
+					testing: false,
+					// esbuild's platform is a browser unless set
+					browser: (build.initialOptions.platform ?? "browser") === "browser"
+				})
 				build.onDispose(restart)
 				const esbuildResolve = esbuildResolverOf(build)
 				const plugins = build.initialOptions.plugins ?? []
@@ -2696,6 +2737,7 @@ interface BundlerCompiler {
 			| undefined
 		mode?: string | undefined
 		plugins?: unknown[]
+		target?: string | string[] | false | undefined
 	}
 	hooks: {
 		compilation: Tap<BundlerCompilation>
@@ -2742,8 +2784,20 @@ const compilerResolveOf = (compiler: BundlerCompiler): BundlerResolve => {
 // webpack and Rspack build for production where no mode is set
 const environmentOf = (compiler: BundlerCompiler): Environment => ({
 	production: (compiler.options.mode ?? "production") === "production",
-	testing: false
+	testing: false,
+	browser: targetsBrowser(compiler.options.target)
 })
+
+// "web", a browserslist query or neither set, which webpack and Rspack read
+// as one or the other; unknown where it's set false, for a plugin to decide
+const targetsBrowser = (
+	target: BundlerCompiler["options"]["target"]
+): boolean | undefined =>
+	target === false ? undefined
+	: target === undefined ? true
+	: [target]
+			.flat()
+			.some(name => name === "web" || name.startsWith("browserslist"))
 
 interface FarmConfig {
 	root?: string | undefined

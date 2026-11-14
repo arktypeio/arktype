@@ -29,6 +29,9 @@ export interface Environment {
 	testing: boolean
 	// a dev server, which loads each module a page imports on its own
 	serving?: boolean
+	// whether a browser loads the bundle, so its size is what its users wait
+	// on, or undefined where the bundler doesn't say what it builds for
+	browser?: boolean | undefined
 }
 
 // a production build leaves out runtime checks, a test checks helpers too, and

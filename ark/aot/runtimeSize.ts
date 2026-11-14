@@ -43,12 +43,20 @@ export const programSizeOf = (written: WrittenModules): number => {
 /**
  * about how many times the length of arktype a minifier leaves of a program's
  * validators and the runtime they read: more than once, and the program is
- * larger precompiled than creating its Types as it runs
+ * larger precompiled than creating its Types as it runs. A module one
+ * function replaced, declaring its unit there, is still written, and isn't counted
  */
-export const validatorsToArktypeOf = (written: WrittenModules): number => {
+export const validatorsToArktypeOf = (
+	written: WrittenModules,
+	replaced: ReadonlySet<string>
+): number => {
 	let validators = 0
-	for (const declared of programReachOf(written).reached)
-		validators += textLengthOf(declared)
+	for (const declared of programReachOf(written).reached) {
+		// a program's module is read as `\0<program>:<specifier>`
+		const { id } = declared.module
+		if (!id.startsWith("\0") || !replaced.has(id.slice(id.indexOf(":") + 1)))
+			validators += textLengthOf(declared)
+	}
 	return validators / arktypeSizeOf()
 }
 

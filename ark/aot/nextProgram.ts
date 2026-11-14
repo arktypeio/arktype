@@ -32,6 +32,7 @@ import {
 	isAsset,
 	runtimeSpecifier,
 	scanProgram,
+	writeLargerMessage,
 	type ScannedProgram,
 	type ScannedUsage
 } from "./scan.ts"
@@ -489,9 +490,15 @@ const readAndWrite = async (
 		resolveFile(specifier, importer)
 	try {
 		const usage = (await send(["scan", program], sentResolve)) as ScannedUsage
-		const warnings = [usage.unpruned, usage.lost, usage.larger].filter(
-			warning => warning !== undefined
-		)
+		// one read holds the server's modules with the browser's, so it can't
+		// write the browser's alone for size
+		const warnings = [
+			usage.unpruned,
+			usage.lost,
+			usage.timesArktype === undefined ?
+				undefined
+			:	writeLargerMessage(usage.timesArktype)
+		].filter(warning => warning !== undefined)
 		const written: Record<string, TransformedModule | undefined> = {}
 		await Promise.all(
 			Object.keys(program.modules).map(async id => {

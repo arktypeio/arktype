@@ -220,7 +220,6 @@ import {
 } from "./flat.ts"
 import {
 	writeKeptMembersMessage,
-	writeLargerMessage,
 	writeLostMessage,
 	writeUnprunedMessage,
 	unseenFlatMessage,
@@ -1121,7 +1120,10 @@ export class Precompiler {
 			:	undefined
 		usage.written = written
 		const issues = this.issuesOf(program, written, used)
-		const timesArktype = this.optimizeUnset ? validatorsToArktypeOf(written) : 0
+		const timesArktype =
+			this.optimizeUnset ?
+				validatorsToArktypeOf(written, new Set(usage.flat?.replaced))
+			:	0
 		return {
 			dropped,
 			linked,
@@ -1142,7 +1144,7 @@ export class Precompiler {
 				narrowsIssues(issues),
 			unpruned,
 			lost: readings.lost.length ? writeLostMessage(readings.lost) : undefined,
-			larger: timesArktype > 1 ? writeLargerMessage(timesArktype) : undefined,
+			timesArktype: timesArktype > 1 ? timesArktype : undefined,
 			baked: readings.decisions,
 			issues
 		}

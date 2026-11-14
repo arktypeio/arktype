@@ -67,6 +67,19 @@ const types = `import { type } from "arktype"
 export const User = type({ name: "string" })
 `
 
+// 48 Types of 48 keys, each a range no other is, so no two share a unit:
+// compiled, they outweigh arktype
+const ranges = `import { type } from "arktype"
+
+${Array.from(
+	{ length: 48 },
+	(_, i) =>
+		`const T${i} = type({ ${Array.from({ length: 48 }, (_, j) => `k${j}: "number < ${i * 48 + j + 1}"`).join(", ")} })`
+).join("\n")}
+
+console.log(${Array.from({ length: 48 }, (_, i) => `T${i}({})`).join(", ")})
+`
+
 // a barrel re-exporting what arktype/runtime lacks, which only sites read, or,
 // renamed, nothing
 const arkBarrel = (extension: string) => ({
@@ -1141,40 +1154,70 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 	})
 
 	describe("validators larger than arktype", () => {
-		// 48 Types of 48 keys, each a range no other is, so no two share a unit
-		const ranges = `import { type } from "arktype"
-
-${Array.from(
-	{ length: 48 },
-	(_, i) =>
-		`const T${i} = type({ ${Array.from({ length: 48 }, (_, j) => `k${j}: "number < ${i * 48 + j + 1}"`).join(", ")} })`
-).join("\n")}
-
-console.log(${Array.from({ length: 48 }, (_, i) => `T${i}({})`).join(", ")})
-`
-
-		const largerFrom = async (opts: PrecompileOptions) => {
+		// about how many times arktype's size a scan says they are, if more than once
+		const timesFrom = async (opts: PrecompileOptions) => {
 			const usage = await usageFrom(
 				{ "/main.ts": ranges },
 				{ preset: undefined, ...opts }
 			)
 			return typeof usage === "string" || Array.isArray(usage) ?
 					usage
-				:	usage.larger
+				:	usage.timesArktype?.toFixed(1)
 		}
 
-		it("warns where they're compiled for speed with optimize unset", async () => {
-			attest(await largerFrom({})).snap(
-				'precompile: this build\'s validators, each compiled to check fastest, are about 1.5 times the size of arktype, which they replace, so the bundle is larger than one creating its Types as it runs. Set preset: "smallest" to write them as calls to checkers they share, or optimize: "speed" to build without this warning.'
-			)
+		it("sizes them where they're compiled for speed with optimize unset", async () => {
+			attest(await timesFrom({})).snap("1.5")
 		})
 
-		it("writes them as checkers without it under the smallest preset", async () => {
-			attest(await largerFrom({ preset: "smallest" })).equals(undefined)
+		it("doesn't under the smallest preset, which writes them as checkers", async () => {
+			attest(await timesFrom({ preset: "smallest" })).equals(undefined)
 		})
 
-		it("builds without it where optimize is set to speed", async () => {
-			attest(await largerFrom({ optimize: "speed" })).equals(undefined)
+		it("doesn't where optimize is set to speed", async () => {
+			attest(await timesFrom({ optimize: "speed" })).equals(undefined)
+		})
+
+		const conditions = ["ark-ts", "production"]
+		const root = writeFixture({ "main.ts": ranges }, fromHere("temp", "larger"))
+		// a production bundle's warnings and code
+		const built = async (
+			opts: PrecompileUnpluginOptions,
+			options: BuildOptions = {}
+		) => {
+			const { outputFiles, warnings } = await build({
+				entryPoints: [join(root, "main.ts")],
+				absWorkingDir: root,
+				bundle: true,
+				write: false,
+				format: "esm",
+				minify: true,
+				conditions,
+				logLevel: "silent",
+				plugins: [precompile.esbuild({ conditions, ...opts })],
+				...options
+			})
+			return [warnings.map(({ text }) => text), outputFiles![0].text] as const
+		}
+
+		it("writes them for size where a browser loads the bundle, as optimize: size would", async () => {
+			const [warnings, js] = await built({})
+			attest(warnings).snap([
+				'precompile: compiled to check fastest, this bundle\'s validators would be about 1.5 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
+			])
+			const [setWarnings, setJs] = await built({
+				optimize: "size",
+				optimizeErrors: "speed"
+			})
+			attest(setWarnings).equals([])
+			attest(js === setJs).equals(true)
+		})
+
+		it("leaves a server's compiled, saying nothing", async () => {
+			const node = { platform: "node" } as const
+			const [warnings, js] = await built({}, node)
+			attest(warnings).equals([])
+			const [, compiled] = await built({ optimize: "speed" }, node)
+			attest(js === compiled).equals(true)
 		})
 	})
 
@@ -4005,6 +4048,38 @@ export const shown = type({ shown: "string" })
 						keepsStandard: true,
 						stdout: " function\n"
 					})
+				})
+
+				it("writes validators that would outweigh arktype for size where its target is a browser", async () => {
+					const root = fixture("larger", { "main.js": ranges })
+					const warningsOf = async (config: object) => {
+						const warnings: string[] = []
+						const stats = await built(
+							(compilers[name][0] as typeof webpack)(
+								configOf(
+									name,
+									root,
+									{},
+									{
+										...config,
+										plugins: [
+											compilers[name][1]({ cwd: root }) as never,
+											collecting(warnings)
+										]
+									}
+								)
+							)
+						)
+						if (stats?.hasErrors())
+							throw new Error(stats.toString("errors-only"))
+						// Rspack marks a warning and ends its line
+						return warnings.map(warning => warning.trim().replace(/^⚠ /, ""))
+					}
+					attest(await warningsOf({ target: "web" })).equals([
+						'precompile: compiled to check fastest, this bundle\'s validators would be about 1.5 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
+					])
+					// a server's are left compiled
+					attest(await warningsOf({ target: "node" })).equals([])
 				})
 
 				it("answers a build its cache kept as one with no cache, whichever file a read moved to", async () => {
