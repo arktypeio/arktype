@@ -432,6 +432,8 @@ class Follow {
 	}
 
 	push(node: Node, module: SourceModule, held: Held): void {
+		// lost, it keeps each member whatever else reads it
+		if (this.lost.length) return
 		if (held.path.length > maxDepth) {
 			return this.lose(
 				node,
@@ -458,7 +460,7 @@ class Follow {
 	run(): void {
 		for (
 			let fact = this.pending.pop();
-			fact && this.facts <= maxFacts;
+			fact && this.facts <= maxFacts && !this.lost.length;
 			fact = this.pending.pop()
 		) {
 			this.quiet = !!fact.held.quiet
@@ -1015,6 +1017,7 @@ class Follow {
 		}
 		const { quiet } = this
 		for (const { node, module } of this.readers.fieldReadsOf(anyKey)) {
+			if (this.lost.length) break
 			if (owner !== undefined && !this.readers.mayRead(module, owner)) continue
 			this.quiet = quiet || !!dependencyOf(module.id)
 			const read: Held = this.quiet ? { ...fieldHeld, quiet: true } : fieldHeld
