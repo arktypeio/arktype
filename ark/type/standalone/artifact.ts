@@ -1449,7 +1449,12 @@ return namespace`
 		const links = writing.own.map(root => {
 			const shape = writing.shapesByName[unit.names[root.id]]
 			returned.push(shape)
-			return `runtime.freeze(runtime.assign(${shape}, ${this.writeShape(root, shape, unit, this.traversalsOf(root, unit))}))`
+			return this.writeFilledShape(
+				root,
+				shape,
+				unit,
+				this.traversalsOf(root, unit)
+			)
 		})
 		const [moduleDeclarations, scope] =
 			this.baking.flattens ?
@@ -3442,7 +3447,7 @@ return namespace`
 		const shape = this.declareConst(node, "shape", "{}")
 		const traversals = unit.traversals.flat()
 		this.links.push(
-			`runtime.freeze(runtime.assign(${shape}, ${this.writeShape(
+			this.writeFilledShape(
 				node,
 				shape,
 				unit,
@@ -3450,9 +3455,28 @@ return namespace`
 					traversal =>
 						`${this.localNamesByUnit.get(unit)}[${traversals.indexOf(traversal)}]`
 				)
-			)}))`
+			)
 		)
 		return shape
+	}
+
+	// a shape declared before the traversals that read it, filled once they're
+	// declared. A size build has the runtime fill one reading its ctx, as each
+	// would otherwise write the same members and the function answering allows
+	writeFilledShape(
+		node: BaseRoot,
+		shape: string,
+		unit: RootUnit,
+		traversals: string[]
+	): string {
+		if (
+			this.baking.shortest &&
+			this.baking.detailsErrors &&
+			node.allowsCtx &&
+			traversals[1]
+		)
+			return `runtime.ctxNode(${this.writeShapeFlags(node, unit)}, ${traversals[0]}, ${traversals[1]}, ${traversals[2] ?? "void 0"}, ${shape})`
+		return `runtime.freeze(runtime.assign(${shape}, ${this.writeShape(node, shape, unit, traversals)}))`
 	}
 
 	// what a node reading its ctx is told apart by

@@ -1270,23 +1270,27 @@ export const checkerNode = ((checker: Checker, reportsPred?: true) =>
 		allows: checker
 	})) satisfies Fn
 
-// a node read past its allows, by a cycle or a callback reading its ctx
+// a node read past its allows, by a cycle or a callback reading its ctx. One
+// its own traversals read is declared before them, and filled here
 export const ctxNode = ((
 	flags: object,
 	tAllows: Checker,
 	tApply: Checker,
-	tTransform?: Transform
+	tTransform?: Transform,
+	declared: object = {}
 ) => {
-	const node: any = Object.freeze({
-		...flags,
-		allowsCtx: true,
-		tAllows,
-		tApply,
-		tTransform,
-		allows: (data: unknown) =>
-			allowsUntracked(node, data) ?? allowsInContext(node, data, runtimeConfig),
-		$: runtimeScope
-	})
+	const node: any = Object.freeze(
+		Object.assign(declared, flags, {
+			allowsCtx: true,
+			tAllows,
+			tApply,
+			tTransform,
+			allows: (data: unknown) =>
+				allowsUntracked(node, data) ??
+				allowsInContext(node, data, runtimeConfig),
+			$: runtimeScope
+		})
+	)
 	return node
 }) satisfies Fn
 

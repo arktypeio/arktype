@@ -267,6 +267,51 @@ amount: Enter an amount.
 		})
 	})
 
+	it("has the runtime fill a node its own traversals read, where a callback reads its ctx", async () => {
+		// a definition holding what a call returns is made by a factory, which
+		// declares each node before the traversals reading it
+		const root = fixture(
+			"ctx-shape",
+			`import { type } from "arktype"
+
+const print = (out: unknown) =>
+	console.log(out instanceof type.errors ? out.issues.map(issue => \`\${issue.code} \${issue.path.join(".")}: \${issue.message}\`).join("\\n") : JSON.stringify(out))
+const evenOver = (min: number) =>
+	type("number").narrow((n, ctx) => (n > min && n % 2 === 0) || ctx.mustBe(\`even and over \${min}\`))
+const Limited = type({ name: "string", count: evenOver(2) }).narrow(
+	(data, ctx) => data.count < 10 || ctx.reject({ message: "Too many.", path: ["count"] })
+)
+print(Limited({}))
+print(Limited({ name: "n", count: 3 }))
+print(Limited({ name: "n", count: 12 }))
+print(Limited({ name: "n", count: 4 }))
+print(Limited.allows({ name: "n", count: 4 }))
+print(Limited.allows({ name: "n", count: 12 }))
+print(type({ items: Limited.array() })({ items: [{ name: "n", count: 4 }, { name: 1, count: 12 }] }))
+${repaying}
+`
+		)
+		// as arktype prints them
+		const expected = `required name: must be a string (was missing)
+required count: must be a number (was missing)
+predicate count: must be even and over 2
+predicate count: Too many.
+{"name":"n","count":4}
+true
+false
+domain items.1.name: must be a string
+`
+		attest(behaviorOf(await bundle(root))).equals(expected)
+		const checkers = await bundle(root, smallest)
+		attest(behaviorOf(checkers)).equals(expected)
+		// neither shape writes its own members or the function answering allows
+		attest(checkers.match(/ctxNode\({[^}]*}, [^)]*, shape\d+\)/g)).equals([
+			"ctxNode({ checksCtx: true, reportsPred: true }, traversals1[0], traversals1[1], void 0, shape0)",
+			"ctxNode({ checksCtx: true, reportsPred: true }, traversals2[0], traversals2[1], void 0, shape0)"
+		])
+		attest(checkers.includes("allowsUntracked(shape")).equals(false)
+	})
+
 	describe("a union's issue", () => {
 		const printed = `const printIssues = (out: unknown) => console.log(JSON.stringify(out instanceof type.errors ? out.issues : out))
 
