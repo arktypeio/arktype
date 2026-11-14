@@ -1315,12 +1315,14 @@ export class ModuleGraph {
 	}
 
 	dependenciesOf(id: string): string[] {
-		const result = [id]
-		for (let i = 0; i < result.length; i++) {
-			for (const dependency of this.importsById[result[i]] ?? [])
-				if (!result.includes(dependency)) result.push(dependency)
+		// a Set iterates in insertion order, entries added as it goes included,
+		// and a program read whole reaches thousands
+		const result = new Set([id])
+		for (const reached of result) {
+			for (const dependency of this.importsById[reached] ?? [])
+				result.add(dependency)
 		}
-		return result
+		return [...result]
 	}
 
 	// whether an import's module resolves without asking a bundler

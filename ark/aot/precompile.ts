@@ -723,6 +723,9 @@ export class Precompiler {
 	> = Object.create(null)
 	// each module's import cycle (SCC), numbered as found
 	private componentsById: Record<string, number> = Object.create(null)
+	// whether a module's text imports reach it again, as its source had it
+	private onCycleById: Record<string, [source: string, isOnCycle: boolean]> =
+		Object.create(null)
 	private exportsArkByModule = new WeakMap<SourceModule, boolean>()
 	private analysesByModule = new WeakMap<SourceModule, ModuleAnalysis>()
 	// the sites of each module being analyzed
@@ -2339,6 +2342,7 @@ export class Precompiler {
 		if (files.length) {
 			this.namesArkById = Object.create(null)
 			this.componentsById = Object.create(null)
+			this.onCycleById = Object.create(null)
 			this.loadedBeforeConfigure = undefined
 		}
 		// a build's, which the next scans and reports again
@@ -2492,16 +2496,19 @@ export class Precompiler {
 		importsOf = (id: string) =>
 			this.textImportsOf(this.graph.host.readFile(id) ?? "", id)
 	): string[] {
-		const result = [id]
-		for (let i = 0; i < result.length; i++) {
-			for (const target of importsOf(result[i]))
-				if (!result.includes(target)) result.push(target)
-		}
-		return result
+		// in the order reached: a Set iterates what's added as it goes
+		const result = new Set([id])
+		for (const reached of result)
+			for (const target of importsOf(reached)) result.add(target)
+		return [...result]
 	}
 
-	// read from text, so type-only imports count
+	// read from text, so type-only imports count. Each input of each site asks
+	// it of its module, and the answer reads every module that one reaches, so
+	// it's kept until a file changes
 	private isOnCycle(module: SourceModule): boolean {
+		const cached = this.onCycleById[module.id]
+		if (cached?.[0] === module.source) return cached[1]
 		let isOnCycle = false
 		this.textClosureOf(module.id, id => {
 			const imports = this.textImportsOf(
@@ -2511,6 +2518,7 @@ export class Precompiler {
 			isOnCycle ||= imports.includes(module.id)
 			return imports
 		})
+		this.onCycleById[module.id] = [module.source, isOnCycle]
 		return isOnCycle
 	}
 

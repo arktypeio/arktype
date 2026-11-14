@@ -1402,6 +1402,33 @@ console.log(Value, note, load, await import("#shared/lazy"))
 			attest(answers[1]).equals(fresh.answers[0])
 		})
 
+		it("answers anew once another module's change closes an import cycle through it", async () => {
+			const app =
+				'import { g } from "./g.ts"\nexport function viaG() { return g({ b: "number" }) }\n'
+			const dir = writeFixture({
+				"main.ts":
+					'import { type } from "arktype"\nimport { viaG } from "./app.ts"\n\nexport const G = type(viaG())\n',
+				"app.ts": app,
+				"g.ts":
+					'export function g(extra: object) { return { a: "string", ...extra } }\n'
+			})
+			// main.ts is unchanged, and whether it's on a cycle is kept by its source
+			const { answers } = await watched(dir, [
+				() => writeFileSync(join(dir, "app.ts"), `import "./main.ts"\n${app}`)
+			])
+			rmSync(join(dir, "node_modules"), { recursive: true, force: true })
+			const fresh = await watched(dir, [])
+			const errorsOf = (answer: unknown) =>
+				(JSON.parse(answer as string) as TransformedModule).errors.map(
+					error => error.split("\n")[1]
+				)
+			attest(errorsOf(answers[0])).equals([])
+			attest(errorsOf(answers[1])).equals([
+				"  importing `g` from g.ts here could run it earlier than the program does, as main.ts is on an import cycle"
+			])
+			attest(answers[1]).equals(fresh.answers[0])
+		})
+
 		it("asks for a new thread once its settings change", async () => {
 			const dir = writeFixture({
 				"main.ts":
