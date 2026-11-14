@@ -3,6 +3,7 @@ import {
 	listedIssue,
 	type ArkErrorCode,
 	type CompactApply,
+	type Custom,
 	type FailureContext,
 	type FailureSite,
 	type SiteContext
@@ -59,6 +60,10 @@ export interface Checker {
 	a?: ((data: unknown, ctx: any, k?: PropertyKey) => boolean) | undefined
 	/** where it holds an alias, how a key applies it */
 	e?: ApplyAt
+	/** the message a key it's the value of says where the key is missing, if its own */
+	x?: string | undefined
+	/** how x was configured, as a site's c says */
+	c?: Custom | undefined
 }
 
 type DefaultWrite = (data: any, ctx?: any) => unknown
@@ -566,12 +571,61 @@ export const replacingUndefined = ((
 	return wrapped
 }) satisfies Fn
 
-// a required key's checker whose description isn't what the key expects where missing
+// a required key's checker whose description isn't what the key expects where
+// missing, which says no message of its own
 export const required = ((checker: Checker, description: string): Checker => {
 	const wrapped = wrapping(checker)
 	wrapped.description = description
+	wrapped.x = undefined
 	return wrapped
 }) satisfies Fn
+
+// a required key's checker where the missing key says a message of its own,
+// configured for its value's Type, or as c says, 2 for the code
+export const sayingMissing = ((
+	checker: Checker,
+	message: string,
+	c: Custom = 1,
+	description = checker.description
+): Checker => {
+	const wrapped = wrapping(checker)
+	wrapped.description = description
+	wrapped.x = message
+	wrapped.c = c
+	return wrapped
+}) satisfies Fn
+
+// a checker each of whose sites says the message configured for its Type, as
+// does the key it's the value of where missing. It checks no key's value, so
+// each site it's passed is its own: the checker of a field is the one a field
+// checking the same shares, and only its message is the field's
+export const saying = ((checker: Checker, message: string): Checker => {
+	const said: Checker = (data, ctx: any) => {
+		const at = ctx?._at
+		if (!at || at === stops) return checker(data, ctx)
+		ctx._at = (site: SiteContext, data: unknown) =>
+			at.call(
+				ctx,
+				{ code: site.code, description: site.description, x: message, c: 1 },
+				data
+			)
+		try {
+			return checker(data, ctx)
+		} finally {
+			ctx._at = at
+		}
+	}
+	Object.assign(said, checker)
+	said.x = message
+	said.c = 1
+	return said
+}) satisfies Fn
+
+// what a missing key fails: required's, expecting its value's brief
+const missingSiteOf = ({ description, x, c }: Checker): FailureSite =>
+	x === undefined ?
+		requiredSiteOf(description)
+	:	{ m: { code: "required", description, x, c } }
 
 type Props = Record<string, Checker>
 
@@ -608,12 +662,7 @@ export const props = ((declared: Props): Checker => {
 			if (
 				value === undefined && !(k in data) ?
 					!declared[k].o &&
-					failsAt(
-						ctx as never,
-						requiredSiteOf(declared[k].description),
-						data,
-						k
-					)
+					failsAt(ctx as never, missingSiteOf(declared[k]), data, k)
 				:	failsValue(ctx, declared[k], data, k, value)
 			)
 				return false

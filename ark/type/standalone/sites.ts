@@ -143,6 +143,7 @@ export const addIssueFeatures = (
 	for (const unit of units) {
 		for (const [, source] of unit.members) {
 			if (addsUnionIssue.test(source)) features.listsUnions = true
+			if (saysMessage.test(source)) features.writesText = true
 			if (appliesValue.test(source)) features.appliesValues = true
 			if (discriminatesBoolean.test(source))
 				features.discriminatesBooleans = true
@@ -170,6 +171,9 @@ const discriminatesBoolean =
 // what adds a union's issue of its branches'
 const addsUnionIssue =
 	/runtime\.(?:failsBranches|failsListed|union|discriminateOr)\(/
+
+// a checker saying a message set apart from its path, which its issue notes
+const saysMessage = /runtime\.saying(?:Missing)?\(/
 
 // a message set apart from its path, or text written from the program's
 // config, each noted or set by a call on its issue

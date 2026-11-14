@@ -337,6 +337,10 @@ var optional = (checker, ...value) => {
 	wrapped.d = value
 	return wrapped
 }
+var missingSiteOf = ({ description, x, c }) =>
+	x === void 0 ?
+		requiredSiteOf(description)
+	:	{ m: { code: "required", description, x, c } }
 var failsValue = (ctx, checker, data, k, value) =>
 	ctx?._at ?
 		appliesValues && checker.e ? checker.e(ctx, checker, value, k)
@@ -356,8 +360,7 @@ var props = declared => {
 			const value = data[k]
 			if (
 				value === void 0 && !(k in data) ?
-					!declared[k].o &&
-					failsAt(ctx, requiredSiteOf(declared[k].description), data, k)
+					!declared[k].o && failsAt(ctx, missingSiteOf(declared[k]), data, k)
 				:	failsValue(ctx, declared[k], data, k, value)
 			)
 				return false

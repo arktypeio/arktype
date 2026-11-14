@@ -141,6 +141,132 @@ list[0] must be a string
 		})
 	})
 
+	describe("a message configured for a Type", () => {
+		// each issue's code, what it expects and its message, then the summary
+		const printing = `const print = (out: unknown) =>
+	console.log(out instanceof type.errors ? out.issues.map(issue => \`\${issue.code} \${issue.expected}: \${issue.message}\`).join("\\n") + "\\n" + out.summary : JSON.stringify(out))`
+
+		it("is said by the checker of what its field checks, at each site and where the key is missing", async () => {
+			const root = fixture(
+				"says",
+				`import { type } from "arktype"
+
+${printing}
+const Form = type({
+	name: type("string > 0").configure({ message: "Name is required." }),
+	nickname: type("string > 0").configure({ message: "Nickname is required." }),
+	agreed: type("boolean").configure({ message: "Agree to continue." }),
+	plan: type("'free' | 'paid'").configure({ message: "Pick a plan." }),
+	"note?": type("string <= 3").configure({ message: "Note is too long." }),
+	plain: "string > 0"
+})
+print(Form({}))
+print(Form({ name: "", nickname: 1, agreed: "yes", plan: "pro", note: "long", plain: "" }))
+print(Form({ name: "a", nickname: "b", agreed: true, plan: "paid", plain: "p" }))
+print(type({ form: Form }).or({ form: "null" })({ form: { name: "" } }))
+${repaying}
+`
+			)
+			// as arktype prints them
+			const expected = `required a string: Name is required.
+required a string: Nickname is required.
+required boolean: Agree to continue.
+required "free" or "paid": Pick a plan.
+required a string: must be a string (was missing)
+name: Name is required.
+nickname: Nickname is required.
+agreed: Agree to continue.
+plan: Pick a plan.
+plain must be a string (was missing)
+minLength non-empty: Name is required.
+domain a string: Nickname is required.
+discriminant boolean: Agree to continue.
+discriminant "free" or "paid": Pick a plan.
+maxLength at most length 3: Note is too long.
+minLength non-empty: must be non-empty
+name: Name is required.
+nickname: Nickname is required.
+agreed: Agree to continue.
+plan: Pick a plan.
+note: Note is too long.
+plain must be non-empty
+{"name":"a","nickname":"b","agreed":true,"plan":"paid","plain":"p"}
+minLength non-empty: Name is required.
+required a string: Nickname is required.
+required boolean: Agree to continue.
+required "free" or "paid": Pick a plan.
+required a string: must be a string (was missing)
+form.name: Name is required.
+form.nickname: Nickname is required.
+form.agreed: Agree to continue.
+form.plan: Pick a plan.
+form.plain must be a string (was missing)
+`
+			attest(behaviorOf(await bundle(root))).equals(expected)
+			const checkers = await bundle(root, smallest)
+			attest(behaviorOf(checkers)).equals(expected)
+			// each field is a checker saying its message, none compiled with sites of its own
+			attest(checkers.match(/saying\(/g)?.length).equals(5)
+			attest(checkers.includes("customSiteOf(")).equals(false)
+			attest(checkers.includes("sayingMissing(")).equals(false)
+		})
+
+		it("is said by each check it's configured for where its root checks keys or calls a narrow", async () => {
+			const root = fixture(
+				"says-checks",
+				`import { type } from "arktype"
+
+${printing}
+const isEven = (n: number) => n % 2 === 0
+const Form = type({
+	tags: type("string[] > 0").configure({ message: "Add a tag." }),
+	owner: type({ id: "string", "age?": "number" }).configure({ message: "Pick an owner." }),
+	amount: type("number >= 0").configure({ message: "Enter an amount." }).narrow(isEven)
+})
+print(Form({}))
+print(Form({ tags: [], owner: 1, amount: -1 }))
+print(Form({ tags: [1], owner: { age: "1" }, amount: 1 }))
+print(Form({ tags: 1, owner: { id: "a" }, amount: "1" }))
+print(Form({ tags: ["a"], owner: { id: "a" }, amount: 2 }))
+${repaying}
+`
+			)
+			// as arktype prints them: what a field holds keeps its own text
+			const expected = `required an array: Add a tag.
+required an object: Pick an owner.
+required a number: must be a number (was missing)
+tags: Add a tag.
+owner: Pick an owner.
+amount must be a number (was missing)
+minLength non-empty: Add a tag.
+domain an object: Pick an owner.
+min non-negative: Enter an amount.
+tags: Add a tag.
+owner: Pick an owner.
+amount: Enter an amount.
+domain a string: must be a string
+required a string: must be a string (was missing)
+domain a number: must be a number
+predicate valid according to isEven: must be valid according to isEven
+tags[0] must be a string
+owner.id must be a string (was missing)
+owner.age must be a number
+amount must be valid according to isEven
+proto an array: Add a tag.
+domain a number: Enter an amount.
+tags: Add a tag.
+amount: Enter an amount.
+{"tags":["a"],"owner":{"id":"a"},"amount":2}
+`
+			attest(behaviorOf(await bundle(root))).equals(expected)
+			const checkers = await bundle(root, smallest)
+			attest(behaviorOf(checkers)).equals(expected)
+			attest(checkers.includes("customSiteOf(")).equals(false)
+			// the missing key of a field whose checks say it, not its checker
+			attest(checkers.match(/sayingMissing\(/g)?.length).equals(2)
+		})
+	})
+
 	describe("a union's issue", () => {
 		const printed = `const printIssues = (out: unknown) => console.log(JSON.stringify(out instanceof type.errors ? out.issues : out))
 

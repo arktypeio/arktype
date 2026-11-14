@@ -29,7 +29,6 @@ import {
 	isKeyword,
 	issueContextOf,
 	issueSiteOf,
-	missingDescriptionOf,
 	raisesNothing,
 	type IssueContext
 } from "./sites.ts"
@@ -47,11 +46,62 @@ export const combines = (node: BaseNode): boolean => {
 		combinable =
 			node.isRoot() &&
 			!isInCycle(node) &&
-			calleesOf(node)?.every(isCallable) === true
+			(says(node) || calleesOf(node)?.every(isCallable) === true)
 		combinableByNode.set(node, combinable)
 	}
 	return combinable
 }
+
+// a root's message, and the root without it
+interface Said {
+	message: string
+	plain: BaseRoot
+}
+
+const saidByNode = new WeakMap<BaseNode, Said>()
+
+// whether a root is written as the checker of what it is without the message
+// configured for it, which that says at each of its sites. So a form's fields
+// share the checker of what they check, each holding only its own message
+const says = (node: BaseRoot): boolean => {
+	const { message } = node.meta
+	if (
+		typeof message !== "string" ||
+		!node.references.every(reference => saysAt(reference, message))
+	)
+		return false
+	const plain = node.configure(
+		({ message: _, ...meta }: ArkEnv.meta) => meta,
+		"shallow"
+	)
+	// each root it reaches is written where it's read, as no other unit declares it
+	if (
+		!combines(plain) ||
+		!plain.references.every(
+			reference =>
+				reference.meta.message === undefined &&
+				(reference === plain || !reference.isRoot() || isInlined(reference))
+		)
+	)
+		return false
+	saidByNode.set(node, { message, plain })
+	return true
+}
+
+// a node whose site is one its checker is passed, saying the message its root
+// does: no key's value, whose site is another root's, nor what a callback or a
+// union of its branches' issues reports apart
+const saysAt = (node: BaseNode, message: string): boolean =>
+	node.meta.message === message &&
+	(node.is("predicate") ? raisesNothing(node.predicate)
+	: node.is("union") ? node.discriminant?.path.length === 0
+	: !node.is("alias") &&
+		!node.is("morph") &&
+		!node.is("structure") &&
+		!node.is("required") &&
+		!node.is("optional") &&
+		!node.is("index") &&
+		!node.is("sequence"))
 
 // a root a checker calls: another checker, one with a unified Allows, or one
 // holding an alias, read through what it compiles
@@ -147,8 +197,15 @@ const unionSiteOf = (node: UnionNode): IssueContext | undefined =>
 const discriminantSiteOf = (node: UnionNode): IssueContext | undefined =>
 	plainContextOf(discriminantContextOf(node))
 
-const checkOf = (node: BaseNode): IssueContext | undefined =>
-	node.jsCond && plainSiteOf(node)
+// a check's site: plain, or saying a message configured for its Type, which
+// its check is wrapped to say where its root's checker can't say it for each
+const checkOf = (node: BaseNode): IssueContext | undefined => {
+	if (!node.jsCond) return
+	const site = issueSiteOf(node.failSite)
+	return isInlineSite(site) && (isDescribed(site) || site.c === 1) ?
+			site
+		:	undefined
+}
 
 // a described predicate's site, keeping the description written for it unless
 // it names the function, which a callback's only has once it's called
@@ -425,13 +482,28 @@ const structureCalleesOf = (
 	]
 }
 
-// a missing key whose issue is required's alone, which props reports
+// what a missing key fails where props reports it: required's alone, as
+// described, or saying a message configured as a sentence
+const missingOf = (prop: Prop.Node): IssueContext | undefined => {
+	const { m: missing } = issueSiteOf(prop.failSite) as { m?: IssueContext }
+	return (
+			missing &&
+				missing.code === "required" &&
+				isInlineSite(missing) &&
+				(isDescribed(missing) || missing.c)
+		) ?
+			missing
+		:	undefined
+}
+
 const missesAsRequired = (prop: Prop.Node): boolean =>
-	missingDescriptionOf(issueSiteOf(prop.failSite)) !== undefined
+	missingOf(prop) !== undefined
 
 // what props reports where a checked value's key is missing; undefined where compiled
 const checkerDescriptionOf = (node: BaseNode): string | undefined => {
 	if (!combines(node)) return
+	const said = saidByNode.get(node)
+	if (said) return checkerDescriptionOf(said.plain)
 	if (node.is("domain") || node.is("proto")) return checkOf(node)!.description
 	if (node.is("unit")) return unitSiteOf(node)!.description
 	if (node.is("morph"))
@@ -505,12 +577,24 @@ const isObjectCheck = (node: BaseNode): boolean => {
 	return (
 		node.is("domain") &&
 		node.domain === "object" &&
+		site.message === undefined &&
 		site.code === runtime.objectCheck.code &&
 		site.description === runtime.objectCheck.description
 	)
 }
 
 const writeCheck = (js: CombinatorCompiler, node: BaseNode): string => {
+	const { message } = checkOf(node)!
+	const check = writeDescribedCheck(js, node)
+	return message === undefined ? check : (
+			writeCall("saying", check, JSON.stringify(message))
+		)
+}
+
+const writeDescribedCheck = (
+	js: CombinatorCompiler,
+	node: BaseNode
+): string => {
 	const site = checkOf(node)!
 	const condition = node.jsCond!(js, "data")!
 	const constant = constantChecks[condition]
@@ -704,6 +788,28 @@ const writeSitedKeep = (
 	return `(data, checkers, values, copy) => { let out = data, v; ${transforms.join(" ")} ${defaults.length ? `if (!values.failed()) { ${defaults.join(" ")} }` : ""} return out; }`
 }
 
+// a required key's checker, wrapped where what the missing key expects or says
+// isn't what its value's checker does
+const writeRequired = (prop: Prop.Node, checker: string): string => {
+	const { description, message, c } = missingOf(prop)!
+	const held = checkerDescriptionOf(prop.value)
+	const said = combines(prop.value) ? saidByNode.get(prop.value) : undefined
+	if (message === undefined) {
+		return held === description && !said ?
+				checker
+			:	writeCall("required", checker, JSON.stringify(description))
+	}
+	if (held === description && said?.message === message && c === 1)
+		return checker
+	return writeCall(
+		"sayingMissing",
+		checker,
+		JSON.stringify(message),
+		c === 1 ? undefined : `${c}`,
+		held === description ? undefined : JSON.stringify(description)
+	)
+}
+
 const writeStructure = (
 	js: CombinatorCompiler,
 	structure: StructureNode
@@ -720,10 +826,10 @@ const writeStructure = (
 		)
 	}
 	const refs = structure.inOrder.map(prop => ref(prop.value))
-	// in arktype's order; a required key expects its value's brief, which its checker holds
+	// in arktype's order; a required key expects its value's brief, and says its
+	// value's message, each of which its checker holds
 	const entries = structure.inOrder.map((prop, i) => {
 		const checker = refs[i]
-		const missing = missingDescriptionOf(issueSiteOf(prop.failSite))
 		return `${writeKey(prop.key as string)}: ${
 			prop.is("optional") ?
 				!prop.hasDef() ? writeCall("optional", checker)
@@ -741,8 +847,7 @@ const writeStructure = (
 						:	`data => ${js.ref(prop.defMorph)}(data)`,
 						prop.defaultsUndefined ? "1" : undefined
 					)
-			: checkerDescriptionOf(prop.value) === missing ? checker
-			: writeCall("required", checker, JSON.stringify(missing))
+			:	writeRequired(prop, checker)
 		}`
 	})
 	const declared = writeObject(entries)
@@ -883,6 +988,7 @@ const rulesOf = (
 			typeof rule !== "number" ||
 			exclusive ||
 			!site ||
+			site.message !== undefined ||
 			site.code !== kinds[i] ||
 			site.description !== ruleCheckOf(kinds[i], rule).description
 		)
@@ -967,6 +1073,14 @@ export const writeCombinator = (
 	node: BaseNode
 ): string | undefined => {
 	if (!combines(node)) return
+	const said = saidByNode.get(node)
+	if (said) {
+		return writeCall(
+			"saying",
+			writeCombinator(js, said.plain),
+			JSON.stringify(said.message)
+		)
+	}
 	if (node.checksCtx) return writeCall("readingCtx", writeChecker(js, node))
 	return writeChecker(js, node)
 }
