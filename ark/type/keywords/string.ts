@@ -213,9 +213,16 @@ export type DateOptions = {
 
 // ISO 8601 date/time modernized from https://github.com/validatorjs/validator.js/blob/master/src/lib/isISO8601.js
 // Based on https://tc39.es/ecma262/#sec-date-time-string-format, the T
-// delimiter for date/time is mandatory. Regex from validator.js strict matcher:
+// delimiter for date/time is mandatory. Regex from validator.js strict matcher,
+// extended so that calendar dates must exist (like validator.js's strict mode):
+// - the leading lookahead rejects YYYY-02-29 unless YYYY is a leap year
+//   (divisible by 4 and not by 100, or divisible by 400)
+// - the month alternation allows days 01-31, 01-30 or 01-29 per month
+// It stays a single regex (no predicate) so toJsonSchema can emit it as a
+// `pattern`. The number of capture groups is unchanged, so the \3 (date
+// separator) and \17 (time separator) backreferences still line up.
 export const iso8601Matcher =
-	/^([+-]?\d{4}(?!\d{2}\b))((-?)((0[1-9]|1[0-2])(\3([12]\d|0[1-9]|3[01]))?|W([0-4]\d|5[0-3])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6])))(T((([01]\d|2[0-3])((:?)[0-5]\d)?|24:?00)([,.]\d+(?!:))?)?(\17[0-5]\d([,.]\d+)?)?([Zz]|([+-])([01]\d|2[0-3]):?([0-5]\d)?)?)?)?$/
+	/^(?![+-]?(?!(?:\d\d(?:0[48]|[2468][048]|[13579][26])|(?:[02468][048]|[13579][26])00))\d{4}-?02-?29)([+-]?\d{4}(?!\d{2}\b))((-?)((?=(0[1-9]|1[0-2]))(?:(?:0[13578]|1[02])(\3(?:0[1-9]|[12]\d|3[01]))?|(?:0[469]|11)(?:\3(?:0[1-9]|[12]\d|30))?|02(?:\3(0[1-9]|1\d|2\d))?)|W([0-4]\d|5[0-3])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6])))(T((([01]\d|2[0-3])((:?)[0-5]\d)?|24:?00)([,.]\d+(?!:))?)?(\17[0-5]\d([,.]\d+)?)?([Zz]|([+-])([01]\d|2[0-3]):?([0-5]\d)?)?)?)?$/
 
 type ParsedDayParts = {
 	y?: string
