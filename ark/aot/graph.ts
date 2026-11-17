@@ -5545,8 +5545,29 @@ const returnedBy = (
 
 const statementsOf = (body: FunctionBody) =>
 	body.body.filter(
-		statement => !("directive" in statement && statement.directive)
+		statement =>
+			!("directive" in statement && statement.directive) &&
+			!isInferenceCheck(statement)
 	)
+
+// e.g. `schema.infer satisfies User;`, which checks what a Type infers as
+// TypeScript reads it and does nothing as it runs: `infer` is undefined on a
+// Type and on a validator alike
+const isInferenceCheck = (statement: Node): boolean => {
+	if (statement.type !== "ExpressionStatement") return false
+	let checked: Node = statement.expression
+	while (checked.type === "ParenthesizedExpression")
+		checked = checked.expression
+	if (checked.type !== "TSSatisfiesExpression") return false
+	const read: Node = checked.expression
+	return (
+		read.type === "MemberExpression" &&
+		!read.computed &&
+		read.object.type === "Identifier" &&
+		read.property.type === "Identifier" &&
+		read.property.name in inferenceMembers
+	)
+}
 
 const isDeclaredBeforeReturn = (statement: Node): boolean =>
 	statement.type === "VariableDeclaration" ?

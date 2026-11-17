@@ -59,6 +59,27 @@ const F = type("string").pipe(s => s.length).toJsonSchema({ fallback: ctx => ${n
 		])
 	})
 
+	it("a static helper may check what its Type infers", () => {
+		const source = `import { type } from "arktype"
+type Range = { min: number }
+const checked = (min: number) => {
+	const t = type({ min: \`number >= \${min}\` })
+	t.infer satisfies Range
+	return t
+}
+const read = (min: number) => {
+	const t = type({ min: \`number >= \${min}\` })
+	t.expression satisfies string
+	return t
+}
+const A = checked(1)
+const B = read(1)`
+		attest(statusesOf(source)).snap([
+			"9:12 rejected\n  `min` is a parameter of read (/main.ts:8:15); its value is known only at runtime",
+			"13:11 accepted { min: number >= 1 }"
+		])
+	})
+
 	it("hkt bodies", () => {
 		attest(
 			statusesOf(`import { type, generic, Hkt } from "arktype"
