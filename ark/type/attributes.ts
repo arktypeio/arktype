@@ -6,6 +6,7 @@ import {
 	type Brand,
 	type brand,
 	type Hkt,
+	type inferred,
 	type intersectArrays,
 	type isSafelyMappable,
 	type merge,
@@ -383,7 +384,11 @@ export type inferIntersection<l, r> = normalizeMorphDistribution<
 >
 
 export type inferMorph<t, morph extends Morph> =
-	morph extends type.cast<infer tMorph> ? inferPipe<t, tMorph>
+	// a Type's [inferred] is required, where type.cast's is optional, so
+	// inferring through the cast drops undefined without
+	// exactOptionalPropertyTypes
+	morph extends { [inferred]: infer tMorph } ? inferPipe<t, tMorph>
+	: morph extends type.cast<infer tMorph> ? inferPipe<t, tMorph>
 	: inferMorphOut<morph> extends infer out ? (In: distill.In<t>) => Out<out>
 	: never
 

@@ -77,6 +77,25 @@ assertEquals<
 	{ age: number | undefined; ages: [number | undefined] }
 >()
 
+// a Type piped to is read the same way, so it kept its undefined only with
+// exactOptionalPropertyTypes
+export const PipedToAge = type("unknown").pipe(Age)
+
+assertEquals<typeof PipedToAge.infer, number | undefined>()
+
+export const ToAge = type("unknown").to(Age)
+
+assertEquals<typeof ToAge.infer, number | undefined>()
+
+// a cast has no required marker to read, so it's still read through the
+// optional one
+export const Cast = type({
+	c: {} as type.cast<{ a: 1 }>,
+	u: {} as type.cast<string | undefined>
+})
+
+assertEquals<typeof Cast.infer, { c: { a: 1 }; u: string | undefined }>()
+
 const boxOf = type("<t>", { box: "t" })
 export const StringBox = boxOf("string")
 
