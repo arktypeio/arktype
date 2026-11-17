@@ -108,6 +108,12 @@ contextualize(() => {
 		attest.instantiations([249815, "instantiations"])
 	})
 
+	// parsing "'foo'[]" alone is ~817, so the passing check itself costs ~34
+	it("passing satisfies check", () => {
+		type("'foo'[]") satisfies Type<string[]>
+		attest.instantiations([851, "instantiations"])
+	})
+
 	it("type.Any allows arbitrary scope", () => {
 		const foo = scope({
 			foo: "string"
