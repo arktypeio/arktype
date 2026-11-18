@@ -59,7 +59,7 @@ contextualize(() => {
 		attest(tOut.expression).equals(Expected.expression)
 	})
 
-	it("compiles the node a morph pipes to with its Type", () => {
+	it("compiled code of a Type includes the node a morph pipes to", () => {
 		const T = type({ compiledWith: "string.numeric.parse" }).to({
 			compiledWith: "number > 41"
 		})

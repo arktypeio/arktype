@@ -488,7 +488,7 @@ b must be equal to a`)
 		attest(types.u.allows(data)).equals(true)
 	})
 
-	it("a compiled union allows by a branch whose narrow reads ctx", () => {
+	it("compiled code of a union allows by a branch whose narrow reads ctx", () => {
 		const T = type({ a: "number" })
 			.narrow((o, ctx) => o.a % 2 === 0 || ctx.mustBe("even"))
 			.or(
