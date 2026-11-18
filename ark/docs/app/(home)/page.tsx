@@ -259,9 +259,8 @@ const Agentic = () => (
 		deck={
 			<>
 				A typo fails <code>tsc</code> where it was written, and the message is
-				the fix, so your agent never leaves the loop for a docs lookup. The
-				session is scripted around real output from <code>tsc</code> and
-				ArkType.
+				the fix. The session is scripted around real output from{" "}
+				<code>tsc</code> and ArkType.
 			</>
 		}
 		aside={
@@ -565,11 +564,11 @@ export default function HomePage() {
 							<span className="one">{heroLine}</span>
 						</h1>
 						<p className="lede rise" style={rise(1)}>
-							<ClaimText claim={claims.pickThree} />
+							<ClaimText claim={claims.pickThree} /> One plugin to precompile.
+							One prompt to switch from Zod.
 							<a className="how" href="#board-note">
 								how we measured ↓
-							</a>{" "}
-							One plugin to precompile. One prompt to switch from Zod.
+							</a>
 						</p>
 						<div className="ctas rise" style={rise(2)}>
 							<Link className="btn btn-gold" href="/docs/intro/setup">

@@ -860,23 +860,6 @@
 		color: var(--ink-2);
 		max-width: 40ch;
 	}
-	.b-pre {
-		margin-top: 56px;
-		padding-top: 28px;
-		border-top: 1px solid var(--rule-soft);
-		h3 {
-			font: 740 1.5rem / 1.15 var(--sans);
-			letter-spacing: -0.02em;
-		}
-		p {
-			margin: 10px 0 0;
-			color: var(--ink-2);
-			max-width: 60ch;
-		}
-		.facts {
-			max-width: 900px;
-		}
-	}
 	.facts {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -906,17 +889,6 @@
 		}
 	}
 
-	/* 04: the agent transcript and its setup rows */
-	.agents {
-		display: grid;
-		grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-		gap: 56px;
-		margin-top: 44px;
-		align-items: start;
-		> * {
-			min-width: 0;
-		}
-	}
 	.term-body {
 		list-style: none;
 		margin: 0;
@@ -1043,15 +1015,6 @@
 			color: var(--sky);
 		}
 	}
-	.rows-title {
-		margin: 0 0 14px;
-		font: 400 13px / 1 var(--mono);
-		color: var(--ink-3);
-		&::before {
-			content: "// ";
-			color: var(--copper);
-		}
-	}
 	.rows {
 		border-top: 1px solid var(--rule-soft);
 	}
@@ -1159,12 +1122,6 @@
 		}
 	}
 
-	/* 07: sets */
-	.ex-pair {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		gap: 16px;
-	}
 	.examples {
 		display: grid;
 		margin-top: 44px;
@@ -1405,9 +1362,6 @@
 		.figs {
 			grid-template-columns: auto minmax(0, 1fr);
 		}
-		.agents {
-			grid-template-columns: minmax(0, 1fr);
-		}
 	}
 }
 
@@ -1441,9 +1395,6 @@
 			h1 {
 				margin: 16px 0 18px;
 			}
-		}
-		.ex-pair {
-			grid-template-columns: minmax(0, 1fr);
 		}
 		.live-body {
 			--fs: 13.5;
@@ -1614,13 +1565,6 @@
 			color: var(--ink-3);
 			text-decoration-thickness: 0.07em;
 		}
-	}
-	/* each card's rows on one subgrid, so numbers, bars and claims line up */
-	.cards {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 0 16px;
-		margin: 44px 0 1.6rem;
 	}
 	.card {
 		position: relative;
@@ -2055,30 +1999,6 @@
 		font: 400 11.5px / 1.5 var(--mono);
 		color: var(--ink-3);
 	}
-	.card-foot {
-		align-self: end;
-	}
-	.card-src {
-		justify-self: start;
-		display: inline-block;
-		margin-top: 10px;
-		font: 400 12px / 1.4 var(--mono);
-		color: var(--sky);
-		text-decoration: none;
-		&::after {
-			content: "↗" / "";
-			margin-left: 0.3em;
-			display: inline-block;
-			transition: translate var(--t-micro) var(--ease-out);
-		}
-		&:hover {
-			text-decoration: underline;
-			text-underline-offset: 3px;
-		}
-		&:hover::after {
-			translate: 2px -2px;
-		}
-	}
 
 	.hero a.one {
 		width: fit-content;
@@ -2090,61 +2010,6 @@
 		&:hover {
 			text-decoration-color: color-mix(in oklab, var(--gold) 45%, transparent);
 		}
-	}
-
-	/* 05: what "optimized for agentic dev" means, each a link to its proof */
-	.proofs {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 16px;
-		margin: 40px 0 0;
-		padding: 0;
-		list-style: none;
-		a {
-			display: grid;
-			align-content: start;
-			gap: 6px;
-			height: 100%;
-			padding: 20px 22px;
-			border-radius: var(--r-lg);
-			border: 1px solid var(--rule-soft);
-			background: color-mix(in oklab, var(--surface) 70%, transparent);
-			text-decoration: none;
-			transition:
-				border-color var(--t-ui),
-				translate var(--t-ui) var(--ease-out);
-			&:hover {
-				border-color: color-mix(in oklab, var(--gold) 38%, transparent);
-				translate: 0 -2px;
-			}
-		}
-		.n {
-			font: 400 12px / 1.4 var(--mono);
-			color: var(--copper);
-			&::after {
-				content: " ↓" / "";
-				color: var(--ink-3);
-			}
-		}
-		b {
-			font: 700 18px / 1.3 var(--sans);
-			letter-spacing: -0.01em;
-		}
-		a > span:last-child {
-			font-size: 14.5px;
-			line-height: 1.5;
-			color: var(--ink-3);
-		}
-		code {
-			font-size: 0.92em;
-			color: var(--gold);
-		}
-	}
-	.sub {
-		margin: 88px 0 0;
-		font: 750 clamp(1.6rem, 1.25rem + 1.1vw, 2.2rem) / 1.12 var(--sans);
-		letter-spacing: -0.025em;
-		max-width: 26ch;
 	}
 
 	/* 01: why now */
@@ -2356,32 +2221,6 @@
 		font: 700 13px / 1 var(--mono);
 		box-shadow: 0 0 0 4px color-mix(in oklab, var(--gold) 14%, transparent);
 	}
-	.convert {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr);
-		align-items: stretch;
-		margin-top: 24px;
-		.code-card > pre.shiki {
-			--pre-x: 20px;
-			padding: 18px var(--pre-x);
-			font-size: 13.5px;
-		}
-	}
-	.convert-arrow {
-		display: grid;
-		place-items: center;
-		span {
-			display: inline-grid;
-			place-items: center;
-			width: 32px;
-			height: 32px;
-			border-radius: 50%;
-			border: 1px solid var(--rule);
-			background: var(--bg);
-			color: var(--gold);
-			font: 400 16px / 1 var(--mono);
-		}
-	}
 	.guide {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -2558,7 +2397,6 @@
 			.card-check,
 			.card-num,
 			.lane.is-ours .lane-val,
-			.is-startup .lane-val,
 			.spot {
 				opacity: 0;
 			}
@@ -2573,17 +2411,6 @@
 				0 0.07em;
 		}
 		.board[data-play] {
-			/* startup snaps, size packs (Board.tsx times each lane's --at) */
-			.is-startup {
-				.lane-bar,
-				.lane-val {
-					animation: snap 0.24s var(--ease-pop) both;
-					animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--at));
-				}
-				.lane-val {
-					animation-name: rise-fade;
-				}
-			}
 			.is-size .lane-bar {
 				animation: pack 0.75s cubic-bezier(0.6, 0, 0.2, 1) both;
 				animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--at));
@@ -2622,11 +2449,11 @@
 			}
 			/* a place lands as ArkType finishes (HomeEffects copies the race's --won) */
 			.card-num:is(
-				[data-suffix="st"],
-				[data-suffix="nd"],
-				[data-suffix="rd"],
-				[data-suffix="th"]
-			) {
+					[data-suffix="st"],
+					[data-suffix="nd"],
+					[data-suffix="rd"],
+					[data-suffix="th"]
+				) {
 				transform-origin: 0 80%;
 				animation: place-in 0.5s var(--ease-pop) both;
 				animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--won, 0.9s));
@@ -2675,19 +2502,13 @@
 
 @media (max-width: 1080px) {
 	.home {
-		.cards {
-			grid-template-columns: minmax(0, 1fr);
-			gap: 16px;
-			max-width: 640px;
-		}
 		.card {
 			grid-row: auto;
 			grid-template-rows: none;
 		}
 		.sides,
 		.moves,
-		.guide,
-		.proofs {
+		.guide {
 			grid-template-columns: minmax(0, 1fr);
 		}
 		.proof-body li {
@@ -2719,17 +2540,6 @@
 		}
 		.receipt {
 			grid-template-columns: minmax(0, 1fr);
-		}
-		.convert {
-			grid-template-columns: minmax(0, 1fr);
-			gap: 8px;
-			.code-card > pre.shiki {
-				--pre-x: 16px;
-				font-size: 12.5px;
-			}
-		}
-		.convert-arrow span {
-			rotate: 90deg;
 		}
 		.differs div {
 			grid-template-columns: minmax(0, 1fr);

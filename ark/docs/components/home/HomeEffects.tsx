@@ -204,9 +204,12 @@ const runLaps = (figure: HTMLElement) => {
 	const lanes = [...figure.querySelectorAll<HTMLElement>(".lap-count")].map(
 		el => ({ el, lap: Number(el.dataset.lap), shown: -1 })
 	)
+	const toggle = figure.querySelector<HTMLButtonElement>(".laps-toggle")
 	let elapsed = 0
 	let last = performance.now()
 	let frame = 0
+	let seen = false
+	let stopped = false
 	const tick = (now: number) => {
 		elapsed += (now - last) / 1000
 		last = now
@@ -218,18 +221,33 @@ const runLaps = (figure: HTMLElement) => {
 		}
 		frame = requestAnimationFrame(tick)
 	}
-	const observer = new IntersectionObserver(([entry]) => {
+	/** the race runs while it is on screen and nobody has stopped it */
+	const sync = () => {
 		cancelAnimationFrame(frame)
-		if (entry.isIntersecting) {
+		if (seen && !stopped) {
 			delete figure.dataset.paused
 			last = performance.now()
 			frame = requestAnimationFrame(tick)
 		} else figure.dataset.paused = ""
+	}
+	const observer = new IntersectionObserver(([entry]) => {
+		seen = entry.isIntersecting
+		sync()
 	})
 	observer.observe(figure)
+	const onToggle = () => {
+		stopped = !stopped
+		if (toggle) {
+			toggle.setAttribute("aria-pressed", String(stopped))
+			toggle.textContent = stopped ? "play" : "pause"
+		}
+		sync()
+	}
+	toggle?.addEventListener("click", onToggle)
 	return () => {
 		cancelAnimationFrame(frame)
 		observer.disconnect()
+		toggle?.removeEventListener("click", onToggle)
 	}
 }
 
@@ -251,12 +269,11 @@ const holdBytes = (figure: HTMLElement) => {
 	// the wider number's width, held, so counting never moves what follows
 	num.style.minWidth = `${num.getBoundingClientRect().width}px`
 	return () => {
+		// as landing.css lets the blocks go: from a second in, evenly, for two more
 		const start = performance.now() + 1000
 		const frame = (now: number) => {
-			const t = Math.max(0, Math.min((now - start) / 1700, 1))
-			// fast, then slow: most of the bytes are gone early
-			num.textContent =
-				t === 1 ? final : kbText(from * (to / from) ** (1 - (1 - t) ** 2))
+			const t = Math.max(0, Math.min((now - start) / 2000, 1))
+			num.textContent = t === 1 ? final : kbText(from + (to - from) * t)
 			if (t < 1) requestAnimationFrame(frame)
 		}
 		requestAnimationFrame(frame)

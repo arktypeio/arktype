@@ -323,6 +323,31 @@
 			text-align: right;
 		}
 	}
+	/* shown once the race is running: until then there is nothing to pause */
+	.laps-toggle {
+		visibility: hidden;
+		margin: -3px 0;
+		padding: 3px 9px;
+		border-radius: var(--r-pill);
+		border: 1px solid var(--line);
+		background: none;
+		font: inherit;
+		color: var(--ink-2);
+		cursor: pointer;
+		transition:
+			color var(--t-micro),
+			border-color var(--t-micro);
+		&:hover {
+			color: var(--ink);
+			border-color: color-mix(in oklab, var(--ink) 28%, transparent);
+		}
+	}
+	.laps-th {
+		visibility: hidden;
+	}
+	.laps[data-play] :is(.laps-toggle, .laps-th) {
+		visibility: visible;
+	}
 	.laps ol {
 		display: grid;
 		gap: 15px;
@@ -836,6 +861,52 @@
 		gap: 12px;
 		margin-top: 28px;
 	}
+	/* what switching buys, against Zod: the three numbers the page led with */
+	.gains {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0;
+		margin: 48px 0 0;
+		border-top: 1px solid var(--rule-soft);
+		> div {
+			padding: 18px 20px 4px 0;
+		}
+		> div + div {
+			padding-left: 20px;
+			border-left: 1px solid var(--rule-soft);
+		}
+		dt {
+			font: 400 12px / 1.3 var(--mono);
+			color: var(--ink-3);
+			a {
+				color: inherit;
+				text-decoration: none;
+				&::before {
+					content: "vs Zod 4 · ";
+				}
+				&:hover {
+					color: var(--sky);
+				}
+			}
+		}
+		dd {
+			margin: 8px 0 0;
+			font-size: 15px;
+			line-height: 1.45;
+			color: var(--ink-2);
+		}
+		b {
+			display: block;
+			margin-bottom: 2px;
+			font: 800 clamp(1.7rem, 1.3rem + 1.2vw, 2.4rem) / 1.05 var(--sans);
+			letter-spacing: -0.035em;
+			color: var(--gold);
+			white-space: nowrap;
+		}
+	}
+	.gains + .drills {
+		margin-top: 20px;
+	}
 	.morph-stack {
 		position: relative;
 		display: grid;
@@ -937,6 +1008,11 @@
 	to {
 		translate: 0 0;
 		opacity: 0;
+	}
+}
+@keyframes lane-wake {
+	from {
+		opacity: 0.4;
 	}
 }
 @keyframes lamp-on {
@@ -1069,6 +1145,10 @@
 		}
 
 		.boot[data-play] {
+			.boot-name {
+				animation: lane-wake 0.3s ease-out both;
+				animation-delay: calc(0.3s + var(--at));
+			}
 			.boot-bar {
 				animation: boot-grow var(--at) linear 0.3s both;
 			}
@@ -1092,7 +1172,7 @@
 
 		.bytes[data-play] .byte.is-parser {
 			animation: byte-leave 0.5s ease-in both;
-			animation-delay: calc(1s + var(--k) * 1.5s);
+			animation-delay: calc(1s + var(--k) * 1.6s);
 		}
 
 		.compile[data-play] {
@@ -1192,6 +1272,14 @@
 		}
 		.compile .code-card > pre.shiki {
 			font-size: 12.5px;
+		}
+		.gains {
+			grid-template-columns: minmax(0, 1fr);
+			> div + div {
+				padding-left: 0;
+				border-left: 0;
+				border-top: 1px solid var(--rule-soft);
+			}
 		}
 	}
 }

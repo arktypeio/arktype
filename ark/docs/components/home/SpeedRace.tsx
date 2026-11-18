@@ -13,15 +13,15 @@ type RaceLane = {
 
 /**
  * Seconds ArkType's runner takes to cross its lane. Every other lane's takes
- * its ratio times as long, so at 15× a crossing is about five seconds.
+ * its ratio times as long, so at 15× a crossing is about four seconds.
  */
-const lap = 0.34
+const lap = 0.27
 
 /**
  * The share of a lane a runner's streak covers: ArkType's is long, as
  * anything that fast blurs, and a slow library's is a dot
  */
-const streak = (ratio: number) => Math.max(0.03, 0.5 / ratio)
+const streak = (ratio: number) => Math.max(0.03, 0.4 / ratio)
 
 /**
  * ArkType and each library the board compares it to, at that library's
@@ -43,8 +43,8 @@ const lanes = (): RaceLane[] => [
 
 /**
  * A lap is one validation. Each runner crosses at its library's median
- * speed, and HomeEffects counts the laps as they finish and pauses the race
- * off screen. Without motion it reads as bars: each lane's fill is its
+ * speed, and HomeEffects counts the laps as they finish, pauses the race off
+ * screen and wires the button that stops it. Without motion it reads as bars: each lane's fill is its
  * throughput relative to ArkType's.
  */
 export const SpeedRace = () => {
@@ -59,10 +59,16 @@ export const SpeedRace = () => {
 				.map(lane => `${lane.name} ${lane.text}`)
 				.join(", ")}`}
 		>
-			<div className="laps-head" aria-hidden>
-				<span>library</span>
-				<span>laps</span>
-				<span>time per call</span>
+			<div className="laps-head">
+				<span>
+					<button className="laps-toggle" type="button" aria-pressed="false">
+						pause
+					</button>
+				</span>
+				<span className="laps-th" aria-hidden>
+					laps
+				</span>
+				<span aria-hidden>time per call</span>
 			</div>
 			<ol>
 				{all.map(lane => (

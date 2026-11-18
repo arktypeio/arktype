@@ -1,7 +1,8 @@
 import type { CSSProperties } from "react"
 import { withBase } from "../../lib/basePath.ts"
-import { claims } from "../../lib/claims.ts"
+import { claims, medianOf, sizeChart } from "../../lib/claims.ts"
 import { ClaimText } from "../mdx/Claim.tsx"
+import { categoryOf, startupFacts } from "./boardFacts.ts"
 import { CopyCommand } from "./CopyCommand.tsx"
 import { Drill, Drills, Point } from "./Drill.tsx"
 import { HomeCode } from "./HomeCode.tsx"
@@ -123,6 +124,54 @@ const Conversion = () => (
 	</figure>
 )
 
+/** kilobytes to three figures, as the size section writes them */
+const kb = (name: string) => {
+	const bar = sizeChart.bars.find(bar => bar.name === name)
+	if (!bar || bar.value === null)
+		throw new Error(`sizeChart has no ${name} bar`)
+	return (bar.value / 1000).toPrecision(3)
+}
+
+/**
+ * What the sections above measured against Zod, in one row beside the ask
+ * to switch: each number is the one its section leads with, and links there
+ */
+const Gains = () => {
+	const [zod] = categoryOf("speed").versus
+	return (
+		<dl className="gains" aria-label="Against Zod 4, as measured above">
+			<div>
+				<dt>
+					<a href="#run">validation</a>
+				</dt>
+				<dd>
+					<b>{medianOf(zod.versus)}</b> faster, at the median of{" "}
+					{zod.versus.count} scenarios
+				</dd>
+			</div>
+			<div>
+				<dt>
+					<a href="#start">cold start</a>
+				</dt>
+				<dd>
+					<b>{startupFacts().zodRatio}</b> less startup work, on the login app
+				</dd>
+			</div>
+			<div>
+				<dt>
+					<a href="#size">bundle</a>
+				</dt>
+				<dd>
+					<b>
+						{kb("Zod")} → {kb("ArkType (precompiled)")} kB
+					</b>{" "}
+					gzipped, on a login form
+				</dd>
+			</div>
+		</dl>
+	)
+}
+
 type PairsProps = {
 	pairs: [from: string, to: string][]
 }
@@ -179,6 +228,7 @@ export const Migrate = () => (
 		}
 		figure={<Conversion />}
 	>
+		<Gains />
 		<Drills>
 			<Drill
 				title="What your agent follows"
