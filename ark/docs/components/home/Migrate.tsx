@@ -148,7 +148,7 @@ export const Migrate = () => (
 		id="migrate"
 		n="08"
 		kicker="migrate"
-		title="Leave Zod in one prompt."
+		title="Migrate your schemas with one prompt."
 		layout="split"
 		aside={
 			<ol className="moves">

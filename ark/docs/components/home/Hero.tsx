@@ -14,7 +14,7 @@ import { categoryOf, heroStats } from "./boardFacts.ts"
 export const heroLine = "Optimized for agents and humans."
 
 /** what the build step and the migration each cost, which is the pitch */
-export const heroLede = "One Vite plugin. One prompt to leave Zod."
+export const heroLede = "One Vite plugin. One prompt to migrate from Zod."
 
 const rise = (i: number) => ({ "--i": i }) as CSSProperties
 
