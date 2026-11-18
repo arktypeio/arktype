@@ -626,7 +626,7 @@ In a [production bundle](https://arktype.io/docs/precompile/options#prune), a na
 
 ## What a validator has
 
-Besides being called, a validator has `allows()`, and by default `assert()`, `meta`, `~standard`, `traverse()`, `from()` and `toString()`. `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` are baked as arktype returns them, each into the validators the build sees code read it off, its dependencies' included, so the MCP SDK, the AI SDK, Elysia's OpenAPI plugin, hono-openapi and oRPC's converter get a JSON Schema with nothing to set. The [`members`](https://arktype.io/docs/precompile/options#members) option bakes one into every validator or none instead, and says how the build decides. A read the build sees in the program, like `User.expression`, is replaced by its value either way. Reading one a validator lacks throws, naming the member and the setting, or reads `undefined` where a [production bundle](https://arktype.io/docs/precompile/options#prune) left out the validator's methods.
+Besides being called, a validator has `allows()`, and by default `assert()`, `meta`, `~standard`, `traverse()`, `from()` and `toString()`. `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` are baked as arktype returns them, each into the validators the build sees code read it off, its dependencies' included, so the MCP SDK, the AI SDK, Elysia's OpenAPI plugin, hono-openapi and oRPC's converter get a JSON Schema with nothing to set. The [`members`](https://arktype.io/docs/precompile/options#members) option bakes one into every validator or none instead, and says how the build decides. A read the build sees in the program, like `User.expression`, is replaced by its value either way. Reading one a validator lacks reads `undefined`, and where `arktype/runtime` resolves under the [`"development"` condition](https://arktype.io/docs/precompile/validators#errors), throws instead, naming the member and the setting.
 
 It lacks the methods that compose or relate a Type, like `.and`, `.or`, `.in` or `.extends`. The build fails where it sees one read outside a definition it precompiles, including off a value it lost track of after a Type reached it, and, once for each import, off an import it can't resolve:
 
@@ -656,7 +656,7 @@ A validator returns errors of its own, instances of `type.errors` and of `arktyp
 - [`firstIssue(out)`](https://arktype.io/docs/errors#finding-only-the-first) finds only the first issue of errors that haven't found theirs, stopping where the data first fails.
 - A `message`, `expected` or `actual` configured for a code or on a Type is written as arktype writes it. A build configured with what a validator can't write, like a locale, [fails with its fix](https://arktype.io/docs/precompile/options#configuration).
 - They aren't instances of `@ark/schema`'s `ArkErrors`, so the build fails where a module imports that one.
-- `console.log` prints them by name, as `ArkErrors { summary, issues }`, where `arktype/runtime` resolves under the `"development"` condition: Vite's dev server, Vitest, webpack's development mode, and Node or esbuild given `--conditions=development`. A production build ships nothing for it.
+- `console.log` prints them by name, as `ArkErrors { summary, issues }`, where `arktype/runtime` resolves under the `"development"` condition: Vite's dev server, Vitest, webpack's development mode, and Node or esbuild given `--conditions=development`. There, reading an introspection member a validator's build didn't bake also throws, with the [`members`](https://arktype.io/docs/precompile/options#members) setting that bakes it. A production build ships nothing for either.
 
 The [`errors`](https://arktype.io/docs/precompile/options#errors) option ships less: one issue, or one saying the data is invalid.
 
@@ -677,7 +677,7 @@ To leave only some definitions to arktype in a standalone build, mark them as [r
 - The build doesn't see a Type reach a value through `arguments`, a generator, `Reflect.get`, `import()` or a namespace read at a runtime key, nor a direct `eval` or `with` changing a binding a definition reads. A Type it never sees reach a value is missed: calling a member it lacks throws, and reading one reads `undefined`.
 - The build fails where it sees a Type's keys listed, as by `Object.keys(User)`, `for...in` or a spread, since a validator's differ. Where it can't tell a Type reaches the value, as through `await`, `import()` or a `Proxy`, the keys listed are the validator's.
 - A module importing neither arktype nor a module exporting a Type isn't checked, so a member one of its functions reads off a Type passed to it is missed. Annotating the parameter with arktype's `Type` has the build check it.
-- Inside a function the build can't see every call to, like an exported function, a method or a callback, reading `expression`, `description`, `json`, `toJSON()` or `toJsonSchema()` off a parameter isn't checked, since it's usually some other object's. Passed a Type, such a read reads the member the build bakes where it follows the Type there, and throws where it doesn't. Annotate the parameter with arktype's `Type` so the build checks it, or mark the Type's definition as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands). The same goes for a field an exported class's constructor sets from a parameter, read off an instance, and for a Vue template reading a Type that `setup()` or `data()` exposes from a `<script lang="ts">` block; script setup and a plain `<script>` are checked.
+- Inside a function the build can't see every call to, like an exported function, a method or a callback, reading `expression`, `description`, `json`, `toJSON()` or `toJsonSchema()` off a parameter isn't checked, since it's usually some other object's. Passed a Type, such a read reads the member the build bakes where it follows the Type there, and where it doesn't, reads `undefined`, or throws in development. Annotate the parameter with arktype's `Type` so the build checks it, or mark the Type's definition as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands). The same goes for a field an exported class's constructor sets from a parameter, read off an instance, and for a Vue template reading a Type that `setup()` or `data()` exposes from a `<script lang="ts">` block; script setup and a plain `<script>` are checked.
 - A definition whose branches arktype orders by the names of the functions they hold, like `type.instanceOf(Cat).or(type.instanceOf(Dog))`, is reported, since a minifier can rename them.
 - A definition holding a function a parameter holds, or resolving a Scope alias a thunk defines whose Type holds one, is reported. Mark it as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands).
 - A definition holding a Standard Schema that isn't a Type, like a Zod schema, is reported. Define the schema with ArkType, or mark the definition as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands).
@@ -811,7 +811,7 @@ The values are [arktype's `errors`](https://arktype.io/docs/configuration#errors
 
 `members` decides what a validator has besides validating. `assert`, `meta`, `~standard` and `methods` (`traverse()`, `from()` and `toString()`) default to true. A dropped one reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`.
 
-`expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema`, the introspection members, are each baked into the validators the build sees code read it off, and set true or false, into every validator or none. Where it can't see one, `String(User)` without `expression` is `"Type"`, and reading another throws, naming the member and the setting, unless a [pruned](https://arktype.io/docs/precompile/options#prune) validator lacks `methods`, where it reads `undefined`:
+`expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema`, the introspection members, are each baked into the validators the build sees code read it off, and set true or false, into every validator or none. Where it can't see one, `String(User)` without `expression` is `"Type"`, and another reads `undefined`. Where `arktype/runtime` resolves under the [`"development"` condition](https://arktype.io/docs/precompile/validators#errors), reading it throws instead, naming the member and the setting, unless the validator lacks `methods`:
 
 ```
 toJsonSchema isn't precompiled: set members["toJsonSchema"] true in the precompile options
@@ -1399,7 +1399,7 @@ A definition reading one of its Types, like `type({ email: Email })` with `Email
 
 **`type is not a function`** at runtime: a module that defines a Type loaded `arktype/runtime` without being precompiled. Bun's driver and Turbopack replace `arktype` for every importer, so they can't fail for a module they don't load, like one another plugin supplies or, with Turbopack, one no loader rule matches. Define the Types it uses in a file they precompile. The same error comes from a call to a helper the build precompiles at each call, made from a module the build doesn't transform: call the helper where it does.
 
-**`toJsonSchema isn't precompiled`** at runtime, or the same for another introspection member: code the build didn't see read a member it didn't bake, like code outside the bundle reading a validator an entry exports. Set it true in [`members`](https://arktype.io/docs/precompile/options#members).
+**`toJsonSchema isn't precompiled`** at runtime in development, or the same for another introspection member: code the build didn't see read a member it didn't bake, like code outside the bundle reading a validator an entry exports. Set it true in [`members`](https://arktype.io/docs/precompile/options#members). A production build throws nothing there: the member reads `undefined`, so what fails is the code calling it, as `toJsonSchema is not a function`.
 
 **`A standalone validator's JSON Schema takes only a target it was built with, and a fallback only where it was built to apply one`**: code passed `toJsonSchema()` options its baked schema can't apply. A validator applies a `fallback` where it also bakes `~standard.jsonSchema`, as where a library like hono-openapi converts it, or where [`members`](https://arktype.io/docs/precompile/options#members) sets `toJsonSchema`, so set it true where code the build doesn't see passes one. It still throws where arktype reads what a fallback returns other than to write a union, as for a `Date` with keys of its own or a symbol key. Build those with `runtime: "arktype"`.
 
@@ -1436,6 +1436,8 @@ A definition reading one of its Types, like `type({ email: Email })` with `Email
 **`@ark/aot's precompiler stopped before it answered`**: the precompiler runs in a worker thread, and a module the process preloads into every thread, usually through `NODE_OPTIONS`, threw there. The message names the preloads `NODE_OPTIONS` lists. Pass the module to `node` as a flag instead, as `node --import ./setup.ts`, which stays out of the precompiler's thread, or return from it early where `isMainThread` from `node:worker_threads` is false. The worker's error isn't printed, since the build stops first; the message gives a one-line `node -e` command that starts a worker under the same `NODE_OPTIONS` and prints it, with its stack.
 
 **`No tsconfig.json is in ... or a directory above it`** (`--emit`, `--declare` or `declare: true`): create the file the message names, as `{ "compilerOptions": { "rootDir": "src", "outDir": "dist" }, "include": ["src"] }`, or name the one `tsc` builds with as `--tsconfig`, or as `"tsconfig"` in `ark.json`.
+
+**`warning: Api is declared with any where its type refers to itself, which TypeScript can't write`** (`--declare` or `declare: true`): a [cyclic](https://arktype.io/docs/precompile/advanced#cyclic-types) Type's declaration was left to TypeScript, which writes `any` where its type recurs, so code importing it gets `any` there. It's a warning, and the declarations are written. `--declare` names a cycle where a top-level `const`, default export or function infers the Type, Scope or Module, so bind one a class's member or a generic function holds to a `const` of its own, like `const types = scope({ ... }).export()`, and export a class a cyclic definition names with `instanceof`. Otherwise, annotate the declaration with a type you write.
 
 # Advanced
 
@@ -1486,11 +1488,13 @@ The marker applies to the statement or expression after it. arktype then ships b
 
 ## Declarations
 
-A package whose types others read can declare its Types once, so its consumers don't infer arktype definitions:
+If you ship types derived from arktype, as a published package does, declare them with `--declare` rather than `tsc`, so consumers don't infer arktype definitions. For a [cyclic scope](https://arktype.io/docs/precompile/advanced#cyclic-types), it's the only way to ship them:
 
 ```sh
 npx arktype-precompile --declare
 ```
+
+It only writes declarations, so it needs no bundler, and the validators it declares can stay dynamic.
 
 This writes what `tsc --emitDeclarationOnly` would for the nearest `tsconfig.json`, or the one `--tsconfig` names, except that each Type, Scope and Module is declared through its shape in one `~arktype.d.ts` at the declarations' root, named once and referenced wherever another shape holds it:
 
@@ -1506,7 +1510,96 @@ export type User = {
 }
 ```
 
-A consumer's type-check then reads each Type's shape rather than inferring its definition. A shape TypeScript can't name where a consumer resolves it, like a class its module doesn't export, is left to TypeScript's own declaration. The CLI exits with 1 where TypeScript reports an error, after writing what it emitted.
+A consumer's type-check then reads each Type's shape rather than inferring its definition.
+
+It declares a Type, Scope or Module this way wherever a module's top-level declaration infers one: a `const`, each name of a destructured one, a default export, a key of an object and what a function returns. A shape TypeScript can't name where a consumer resolves it, like a class its module doesn't export, is left to TypeScript's own declaration, as are a class's members. The CLI exits with 1 where TypeScript reports an error, after writing what it emitted.
+
+A declaration that holds a Type's data rather than the Type references the same names. `tsc` writes the shape out again wherever a library's type holds it, like the `input` of a tRPC procedure:
+
+```ts
+// router.ts
+export const appRouter = t.router({
+	createUser: t.procedure.input(User).mutation(({ input }) => ({
+		message: `Created ${input.name}`
+	}))
+})
+
+// router.d.ts, from tsc
+export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
+	{
+		/* ... */
+	},
+	import("@trpc/server").TRPCDecorateCreateRouterOptions<{
+		createUser: import("@trpc/server").TRPCMutationProcedure<{
+			input: {
+				name: string
+				age: number
+			}
+			output: {
+				message: string
+			}
+			meta: object
+		}>
+	}>
+>
+
+// router.d.ts, from --declare
+export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
+	{
+		/* ... */
+	},
+	import("@trpc/server").TRPCDecorateCreateRouterOptions<{
+		createUser: import("@trpc/server").TRPCMutationProcedure<{
+			input: import("./~arktype.js").User
+			output: {
+				message: string
+			}
+			meta: object
+		}>
+	}>
+>
+```
+
+A Type with a [morph](https://arktype.io/docs/intro/morphs-and-more) or a default has an input and an output that differ from its shape, so a declaration holding one names it `SignupIn` or `SignupOut` beside `Signup`. A type a library derives from a Type's, as Hono does for what `c.json` returns, isn't the Type's own and stays as TypeScript wrote it, as does a literal union or a global like `Date`.
+
+If your tsconfig sets `declaration`, run `--declare` after `tsc`, which writes the same files. Under `isolatedDeclarations`, TypeScript reports each export without an annotation and declares none of its module, from `--declare` as from `tsc`.
+
+### Cyclic types
+
+TypeScript can't write a type that refers to itself unless the type has a name, and the type arktype infers for a [cyclic](https://arktype.io/docs/scopes#cyclic-types) alias has none. So for a module exporting one, `tsc` writes `any` where the type recurs, which is what code importing it gets, or, depending on its version, fails with `TS5088: The inferred type of 'types' references a type with a cyclic structure which cannot be trivially serialized` ([microsoft/TypeScript#64656](https://github.com/microsoft/TypeScript/issues/64656)). `--declare` names each cycle for its alias in the scope:
+
+```ts
+// types.ts
+export const types = scope({
+	User: { name: "string", "friends?": "User[]" },
+	Group: { members: "User[]", "parent?": "Group" }
+}).export()
+
+// types.d.ts
+export declare const types: import("arktype").Module<
+	import("./~arktype.js").types
+>
+
+// ~arktype.d.ts
+export type types = {
+	User: User
+	Group: Group
+}
+export type User = {
+	name: string
+	friends?: User[] | undefined
+}
+export type Group = {
+	members: User[]
+	parent?: Group | undefined
+}
+```
+
+A name another shape has is numbered, like `User$2` for a second scope's `User`, and a Type that recurs through [`this`](https://arktype.io/docs/expressions#this) is named for its const. Code that reads a cyclic Type's data is declared with the same names, as `(data: unknown) => types.User.assert(data)` is with `User`.
+
+Where `tsc` reports TS5088, turn `declaration` off in the tsconfig it builds your JavaScript with, since `--declare` writes the declarations.
+
+A cycle `--declare` leaves to TypeScript is still declared with `any`. The CLI [warns of each](https://arktype.io/docs/precompile/troubleshooting) without failing, as in `src/api.ts: warning: Api is declared with any where its type refers to itself`.
 
 The bundler plugin emits the same files with a Rollup, Rolldown, Vite, webpack, Rspack or Rsbuild build that neither watches nor serves:
 
