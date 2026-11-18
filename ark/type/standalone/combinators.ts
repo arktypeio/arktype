@@ -14,8 +14,6 @@ import {
 	type UnionNode,
 	type UnitNode
 } from "@ark/schema"
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { keyPatternsBySource } from "@ark/schema/internal"
 import { domainOf, isWellFormedInteger, returnsReports } from "@ark/util"
 import * as runtime from "../runtimeExports.ts"
 import {
@@ -76,18 +74,11 @@ const says = (node: BaseRoot): boolean => {
 		({ message: _, ...meta }: ArkEnv.meta) => meta,
 		"shallow"
 	)
-	// each root it reaches is written where it's read, as no other unit declares it
 	if (
 		!combines(plain) ||
-		!plain.references.every(
-			reference =>
-				reference.meta.message === undefined &&
-				(reference === plain || !reference.isRoot() || isInlined(reference))
-		)
+		!plain.references.every(reference => reference.meta.message === undefined)
 	)
 		return false
-	// its patterns are none of the node's, whose unit is named by what it reads
-	keyPatternsBySource(plain)
 	saidByNode.set(node, { message, plain })
 	return true
 }
@@ -1079,9 +1070,15 @@ export const writeCombinator = (
 	if (!combines(node)) return
 	const said = saidByNode.get(node)
 	if (said) {
+		// what it is without its message is no node of its own, nor are the
+		// roots that reads, so each is reached here: written in place where
+		// small, and otherwise the unit every root that is one reads, as each
+		// field checking a UUID reads one RegExp
+		for (const reference of said.plain.references)
+			if (reference.isRoot()) js.link.byId[reference.id] ??= reference
 		return writeCall(
 			"saying",
-			writeCombinator(js, said.plain),
+			readChecker(js, said.plain),
 			JSON.stringify(said.message)
 		)
 	}

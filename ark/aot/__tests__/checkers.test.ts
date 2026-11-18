@@ -333,6 +333,44 @@ from: Enter an email.
 			attest(checkers.match(/"Enter an email\."/g)?.length).equals(1)
 			attest(checkers.match(/@\[/g)?.length).equals(1)
 		})
+
+		it("is said over the one checker of a keyword, whatever each Type says of it", async () => {
+			const root = fixture(
+				"says-keyword",
+				`import { type } from "arktype"
+
+${printing}
+const Order = type({
+	id: "string.uuid",
+	customerId: type("string.uuid").configure({ message: "Choose a customer." }),
+	"couponId?": type("string.uuid").configure({ message: "That coupon isn't valid." }),
+	"code?": type(/^a+$/).or("number").configure({ message: "Enter a number, or all a." })
+})
+print(Order({ id: "a", customerId: "b", couponId: 1, code: "ab" }))
+print(Order({ id: "f47ac10b-58cc-4372-a567-0e02b2c3d479" }))
+${repaying}
+`
+			)
+			// as arktype prints them
+			const expected = `pattern a UUID: must be a UUID
+pattern a UUID: Choose a customer.
+domain a UUID: That coupon isn't valid.
+pattern matched by ^a+$: Enter a number, or all a.
+id must be a UUID
+customerId: Choose a customer.
+couponId: That coupon isn't valid.
+code: Enter a number, or all a.
+required a string: Choose a customer.
+customerId: Choose a customer.
+`
+			attest(behaviorOf(await bundle(root))).equals(expected)
+			const checkers = await bundle(root, smallest)
+			attest(behaviorOf(checkers)).equals(expected)
+			// each message wraps the checker the key with none reads, whose RegExp
+			// is written once, and the union's wraps one reading its branch's
+			attest(checkers.match(/\[89ABab]/g)?.length).equals(1)
+			attest(checkers.match(/saying\(/g)?.length).equals(3)
+		})
 	})
 
 	it("has the runtime fill a node its own traversals read, where a callback reads its ctx", async () => {

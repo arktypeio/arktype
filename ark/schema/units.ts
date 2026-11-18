@@ -1078,22 +1078,7 @@ const referenceOf = (node: BaseNode, id: NodeId): BaseNode | undefined => {
 	}
 }
 
-const patternsWrittenInPlace = new WeakSet<RegExp>()
-
-// a root written in another's place, as one is without the message configured
-// for it, holds patterns no node of the root being named does. Each RegExp is
-// still arktype's own, so it's keyed by its source like the named root's
-export const keyPatternsBySource = (written: BaseNode): void => {
-	for (const reference of written.references) {
-		if (reference.is("pattern")) {
-			patternsWrittenInPlace.add(reference.instance)
-			patternsWrittenInPlace.add(reference.tested)
-		}
-	}
-}
-
 const isPatternInstanceIn = (node: BaseNode, value: RegExp): boolean => {
-	if (patternsWrittenInPlace.has(value)) return true
 	for (const id in node.byId) {
 		const reference = node.byId[id]
 		if (
