@@ -2,7 +2,7 @@
  * Bundle size as an app's Types grow, for the homepage's size drill-down:
  * per corpus, each arm's gzipped bytes at each scale, and where ArkType's
  * builds stop being the smaller one. The chart and its table read only
- * `sizeScale`, so denser data (more corpora, scales or arms) replaces it
+ * `sizeCurves`, so denser data (more corpora, scales or arms) replaces it
  * below without touching either.
  *
  * A corpus is one kind of schema, measured at several scales. What a
@@ -17,33 +17,33 @@
 import { generatedRows, scoreboard, type AppRow } from "./scoreboard.ts"
 
 /** gold for ArkType's builds, neutral for every other library */
-export type SizeArmKind = "default" | "smallest" | "dynamic" | "other"
+export type CurveArmKind = "default" | "smallest" | "dynamic" | "other"
 
-export type SizeArm = {
+export type CurveArm = {
 	/** the arm's key in each point's `gz` */
 	id: string
 	label: string
-	kind: SizeArmKind
+	kind: CurveArmKind
 	/** how its line is drawn, so two arms of a kind never read alike */
 	line: "solid" | "dashed" | "dotted"
 }
 
 /** each arm's gzipped bytes, absent where it wasn't measured */
-export type SizeBytes = Record<string, number>
+export type CurveBytes = Record<string, number>
 
-export type SizePoint = {
+export type CurvePoint = {
 	/** how many Types the app defines */
 	types: number
 	/** the app the chart draws */
-	gz: SizeBytes
+	gz: CurveBytes
 	/**
 	 * the same scale measured another way, like with narrows on shared Types: a
 	 * build counts as smaller at a scale only if it is in `gz` and in each
 	 */
-	variants: SizeBytes[]
+	variants: CurveBytes[]
 }
 
-export type SizeCorpus = {
+export type CurveCorpus = {
 	id: string
 	/** the corpus in a few words, as a heading */
 	label: string
@@ -54,17 +54,17 @@ export type SizeCorpus = {
 	/** what `variants` vary, in a phrase: "with narrows" */
 	variant: string
 	/** in the order the chart's key lists them */
-	arms: SizeArm[]
+	arms: CurveArm[]
 	/** ascending by `types` */
-	points: SizePoint[]
+	points: CurvePoint[]
 }
 
-export type SizeScale = {
+export type SizeCurves = {
 	commit: string
-	corpora: SizeCorpus[]
+	corpora: CurveCorpus[]
 }
 
-const arms: SizeArm[] = [
+const arms: CurveArm[] = [
 	{ id: "arktype", label: "ArkType, dynamic", kind: "dynamic", line: "dotted" },
 	{ id: "zod", label: "Zod 4", kind: "other", line: "solid" },
 	{
@@ -82,7 +82,7 @@ const arms: SizeArm[] = [
 	}
 ]
 
-const bytesOf = (row: AppRow): SizeBytes =>
+const bytesOf = (row: AppRow): CurveBytes =>
 	Object.fromEntries(
 		arms
 			.filter(arm => arm.id in row.arms)
@@ -91,7 +91,7 @@ const bytesOf = (row: AppRow): SizeBytes =>
 
 const bundled = generatedRows.filter(row => row.host === "esbuild")
 
-export const sizeScale: SizeScale = {
+export const sizeCurves: SizeCurves = {
 	commit: scoreboard.commit,
 	corpora: [
 		{
@@ -117,9 +117,9 @@ export const sizeScale: SizeScale = {
 	]
 }
 
-export type SizeCutoff = {
-	ours: SizeArm
-	rival: SizeArm
+export type CurveCutoff = {
+	ours: CurveArm
+	rival: CurveArm
 	/** the scales, of those both were measured at, where ours is the smaller however it was measured */
 	smallerAt: number[]
 	/** where it is the smaller measured one way and not another */
@@ -133,23 +133,24 @@ export type SizeCutoff = {
  * scale. A cutoff lies between the last scale in `smallerAt` and the first
  * above it that isn't; nothing is interpolated.
  */
-export const sizeCutoffs = ({ arms, points }: SizeCorpus): SizeCutoff[] =>
+export const curveCutoffs = ({ arms, points }: CurveCorpus): CurveCutoff[] =>
 	arms
 		.filter(arm => arm.kind !== "other")
 		.flatMap(ours =>
 			arms
 				.filter(arm => arm.kind === "other")
 				.map(rival => {
-					const has = (bytes: SizeBytes) =>
+					const has = (bytes: CurveBytes) =>
 						ours.id in bytes && rival.id in bytes
-					const smaller = (bytes: SizeBytes) => bytes[ours.id] < bytes[rival.id]
+					const smaller = (bytes: CurveBytes) =>
+						bytes[ours.id] < bytes[rival.id]
 					const both = points.filter(point => has(point.gz))
 					/** how many of the ways a scale was measured have ours the smaller */
-					const share = (point: SizePoint) => {
+					const share = (point: CurvePoint) => {
 						const ways = [point.gz, ...point.variants.filter(has)]
 						return ways.filter(smaller).length / ways.length
 					}
-					const typesOf = (of: SizePoint[]) => of.map(point => point.types)
+					const typesOf = (of: CurvePoint[]) => of.map(point => point.types)
 					return {
 						ours,
 						rival,

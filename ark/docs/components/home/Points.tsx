@@ -7,7 +7,7 @@ import {
 	type BenchFacts
 } from "../../lib/bench/bench.ts"
 import { generatedRows } from "../../lib/bench/scoreboard.ts"
-import { sizeScale } from "../../lib/bench/sizeScale.ts"
+import { sizeCurves } from "../../lib/bench/sizeCurves.ts"
 import { claims, isPending, medianOf, sizeChart } from "../../lib/claims.ts"
 import { BenchmarkChart } from "../mdx/BenchmarkChart.tsx"
 import { ClaimText, PresetSizeTable } from "../mdx/Claim.tsx"
@@ -17,7 +17,7 @@ import { ByteGrid } from "./ByteGrid.tsx"
 import { ColdStart } from "./ColdStart.tsx"
 import { Compile } from "./Compile.tsx"
 import { Drill, Drills, Point } from "./Drill.tsx"
-import { SizeScaleChart } from "./SizeScaleChart.tsx"
+import { SizeCurveChart } from "./SizeCurveChart.tsx"
 import { SpeedRace } from "./SpeedRace.tsx"
 import { Loops, Proof, proofCount } from "./WhyNow.tsx"
 
@@ -336,11 +336,11 @@ export const Size = () => (
 				title="As your app grows"
 				hint="where each build stops being the smaller"
 			>
-				{sizeScale.corpora.map(corpus => (
-					<SizeScaleChart
+				{sizeCurves.corpora.map(corpus => (
+					<SizeCurveChart
 						key={corpus.id}
 						corpus={corpus}
-						commit={sizeScale.commit}
+						commit={sizeCurves.commit}
 					/>
 				))}
 			</Drill>

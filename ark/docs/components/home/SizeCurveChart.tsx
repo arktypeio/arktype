@@ -1,10 +1,10 @@
 import type { CSSProperties } from "react"
 import {
-	sizeCutoffs,
-	type SizeArm,
-	type SizeCorpus,
-	type SizeCutoff
-} from "../../lib/bench/sizeScale.ts"
+	curveCutoffs,
+	type CurveArm,
+	type CurveCorpus,
+	type CurveCutoff
+} from "../../lib/bench/sizeCurves.ts"
 
 /** "2.6 kB", "51.5 kB", "114 kB" */
 const kb = (bytes: number) => `${(bytes / 1000).toPrecision(3)} kB`
@@ -49,7 +49,7 @@ const spreadLabels = (ends: { id: string; y: number }[]) => {
 
 type ScalePlot = {
 	arms: {
-		arm: SizeArm
+		arm: CurveArm
 		/** each measured point, as shares of the plot from its top left */
 		dots: { types: number; bytes: number; x: number; y: number }[]
 	}[]
@@ -58,7 +58,7 @@ type ScalePlot = {
 	labels: Map<string, number>
 }
 
-const plotOf = ({ arms, points }: SizeCorpus): ScalePlot => {
+const plotOf = ({ arms, points }: CurveCorpus): ScalePlot => {
 	const bytes = points.flatMap(point => Object.values(point.gz))
 	const [lo, hi] = [Math.min(...bytes) / 1.25, Math.max(...bytes) * 1.25]
 	const [first, last] = [points[0].types, points.at(-1)!.types]
@@ -91,7 +91,7 @@ const scalesText = (types: number[]) =>
 	:	`${typesText(types[0])} to ${typesText(types.at(-1)!)}`
 
 type CutoffProps = {
-	cutoff: SizeCutoff
+	cutoff: CurveCutoff
 	/** what the scale's variants vary */
 	variant: string
 }
@@ -121,8 +121,8 @@ const Cutoff = ({ cutoff, variant }: CutoffProps) => {
 	)
 }
 
-export type SizeScaleChartProps = {
-	corpus: SizeCorpus
+export type SizeCurveChartProps = {
+	corpus: CurveCorpus
 	/** the commit it was measured at */
 	commit: string
 }
@@ -133,14 +133,13 @@ export type SizeScaleChartProps = {
  * table, and each build's cutoffs: the scales it is the smaller at, on this
  * corpus alone. Reads only its `corpus`, so new data needs no change here.
  */
-export const SizeScaleChart = ({ corpus, commit }: SizeScaleChartProps) => {
-	const scale = corpus
+export const SizeCurveChart = ({ corpus, commit }: SizeCurveChartProps) => {
 	const plot = plotOf(corpus)
 	return (
 		<figure className="scale">
 			<h3 className="scale-title">{corpus.label}</h3>
 			<div className="scale-key" aria-hidden>
-				{scale.arms.map(arm => (
+				{corpus.arms.map(arm => (
 					<span key={arm.id} className={`is-${arm.kind} is-${arm.line}`}>
 						<i />
 						{arm.label}
@@ -150,7 +149,7 @@ export const SizeScaleChart = ({ corpus, commit }: SizeScaleChartProps) => {
 			<div
 				className="scale-plot"
 				role="img"
-				aria-label={`Gzipped bundle size as an app grows from ${typesText(scale.points[0].types)} to ${typesText(scale.points.at(-1)!.types)} Types, on log axes. Every value is in the table below.`}
+				aria-label={`Gzipped bundle size as an app grows from ${typesText(corpus.points[0].types)} to ${typesText(corpus.points.at(-1)!.types)} Types, on log axes. Every value is in the table below.`}
 			>
 				{plot.yTicks.map(tick => (
 					<span
@@ -221,7 +220,7 @@ export const SizeScaleChart = ({ corpus, commit }: SizeScaleChartProps) => {
 					<thead>
 						<tr>
 							<th scope="col">gzipped bundle</th>
-							{scale.points.map(point => (
+							{corpus.points.map(point => (
 								<th key={point.types} scope="col">
 									{typesText(point.types)} Types
 								</th>
@@ -229,10 +228,10 @@ export const SizeScaleChart = ({ corpus, commit }: SizeScaleChartProps) => {
 						</tr>
 					</thead>
 					<tbody>
-						{scale.arms.map(arm => (
+						{corpus.arms.map(arm => (
 							<tr key={arm.id} className={`is-${arm.kind}`}>
 								<th scope="row">{arm.label}</th>
-								{scale.points.map(point => (
+								{corpus.points.map(point => (
 									<td key={point.types}>
 										{arm.id in point.gz ? kb(point.gz[arm.id]) : "—"}
 									</td>
@@ -246,17 +245,17 @@ export const SizeScaleChart = ({ corpus, commit }: SizeScaleChartProps) => {
 				<b>On this corpus only.</b> {corpus.scope}
 			</p>
 			<ul className="cutoffs">
-				{sizeCutoffs(scale).map(cutoff => (
+				{curveCutoffs(corpus).map(cutoff => (
 					<Cutoff
 						key={`${cutoff.ours.id} ${cutoff.rival.id}`}
 						cutoff={cutoff}
-						variant={scale.variant}
+						variant={corpus.variant}
 					/>
 				))}
 			</ul>
 			<figcaption>
-				{scale.source[0].toUpperCase()}
-				{scale.source.slice(1)}, at {commit}.
+				{corpus.source[0].toUpperCase()}
+				{corpus.source.slice(1)}, at {commit}.
 			</figcaption>
 		</figure>
 	)
