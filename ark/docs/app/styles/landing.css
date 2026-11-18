@@ -1318,8 +1318,9 @@
 		width: 14px;
 		height: 14px;
 		border-radius: 2px;
-		background: var(--lit);
-		box-shadow: inset 2px 0 0 var(--lit-edge);
+		/* the lit lines' gold, at a strength a 14px square can carry */
+		background: color-mix(in oklab, var(--gold) 34%, transparent);
+		box-shadow: inset 3px 0 0 var(--gold);
 		transition: opacity var(--t-ui);
 	}
 	.mirror-out {
@@ -1771,11 +1772,24 @@
 			padding-inline: var(--gutter);
 			overflow-x: auto;
 			scrollbar-width: none;
+			/* the row runs off the screen: it fades at each edge that has more
+			   past it (HomeEffects names them), so a chip cut there reads as
+			   more to scroll to, not as a row that doesn't fit */
+			--fade-start: 0px;
+			--fade-end: 72px;
 			mask: linear-gradient(
 				90deg,
-				#000 calc(100% - 40px),
-				transparent calc(100% - 4px)
+				transparent,
+				#000 var(--fade-start),
+				#000 calc(100% - var(--fade-end)),
+				transparent
 			);
+			&[data-more]:not([data-more~="end"]) {
+				--fade-end: 0px;
+			}
+			&[data-more~="start"] {
+				--fade-start: 72px;
+			}
 			&::-webkit-scrollbar {
 				display: none;
 			}

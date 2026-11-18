@@ -109,8 +109,17 @@ const playWhenSeen = (
 }
 
 /**
+ * Where a count starts, as a share of where it lands. From zero, the first
+ * half second of the hero read "0× less work to start": a frame nobody
+ * should be able to screenshot. From here every frame is a number the
+ * measurement supports, only smaller than the one it rests on.
+ */
+const countFrom = 0.7
+
+/**
  * A number counting up to its prerendered value after `delay` ms. It reads
- * zero from the start, so it never shows its final value and then drops.
+ * its starting share at once, so it never shows its final value and then
+ * drops.
  */
 const countUp = (el: HTMLElement, delay: number, seconds: number) => {
 	const to = Number(el.dataset.to)
@@ -119,13 +128,14 @@ const countUp = (el: HTMLElement, delay: number, seconds: number) => {
 	const final = el.textContent
 	// the final width, held, so counting never moves what follows
 	el.style.minWidth = `${el.getBoundingClientRect().width}px`
-	el.textContent = `${(0).toFixed(decimals)}${suffix}`
+	const from = to * countFrom
+	el.textContent = `${from.toFixed(decimals)}${suffix}`
 	const start = performance.now() + delay
 	const frame = (now: number) => {
 		const t = Math.max(0, Math.min((now - start) / (seconds * 1000), 1))
 		el.textContent =
 			t === 1 ? final : (
-				`${(to * (1 - (1 - t) ** 3)).toFixed(decimals)}${suffix}`
+				`${(from + (to - from) * (1 - (1 - t) ** 3)).toFixed(decimals)}${suffix}`
 			)
 		if (t < 1) requestAnimationFrame(frame)
 	}
@@ -458,6 +468,36 @@ const wireDrills = () => {
 	}
 }
 
+/**
+ * A chip row that scrolls sideways (a phone's) fades at whichever edge has
+ * more chips past it, and only there: `data-more` names the edges, and
+ * landing.css fades them. Before this runs, and without scripts, the row
+ * fades at its end, where the rest always starts out.
+ */
+const wireChipRows = () => {
+	const rows = [...document.querySelectorAll<HTMLElement>(".drill-chips")]
+	const mark = (row: HTMLElement) => {
+		const past = row.scrollLeft > 4
+		const ahead = row.scrollLeft + row.clientWidth < row.scrollWidth - 4
+		row.dataset.more = [past ? "start" : "", ahead ? "end" : ""]
+			.join(" ")
+			.trim()
+	}
+	const onScroll = (e: Event) => mark(e.currentTarget as HTMLElement)
+	const onResize = () => {
+		for (const row of rows) mark(row)
+	}
+	for (const row of rows) {
+		mark(row)
+		row.addEventListener("scroll", onScroll, { passive: true })
+	}
+	addEventListener("resize", onResize, { passive: true })
+	return () => {
+		for (const row of rows) row.removeEventListener("scroll", onScroll)
+		removeEventListener("resize", onResize)
+	}
+}
+
 const wireProof = () =>
 	playWhenSeen(document.querySelector<HTMLElement>("[data-proof]"), 0.45)
 
@@ -608,6 +648,7 @@ export const HomeEffects = () => {
 			wireStats(),
 			wireStages(),
 			wireDrills(),
+			wireChipRows(),
 			wireSpots(),
 			wireProof(),
 			wirePickThree()
