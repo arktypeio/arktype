@@ -225,19 +225,15 @@ If you're upgrading from 2.2, [Upgrading](/docs/upgrading) lists what breaks.
 - 🧊 <Claim id="startupAverage" />
 - 📦 <Claim id="sizeAverage" />
 
-Each score divides a library's results by the best on each row, then takes the geometric mean per benchmark and across them, so lower is better. <Claim id="sizeClose" />
+Each is a library's average multiple of the best result, so lower is better. <Claim id="sizeClose" />
 
 <HeadlineNote />
-
-- <Claim id="benchmarkOwners" />
-- <Claim id="startupBasis" />
-- <Claim id="leaveOneOut" />
 
 <p>
 	<Claim id="zodSpeed" /> <Claim id="speedScope" />
 </p>
 
-The homepage has each benchmark with its method and where it stops holding: [speed](/#run), [startup](/#start) and [size](/#size).
+[Benchmarks](/docs/precompile/benchmarks) has how each was measured, who wrote it and where the numbers stop holding.
 
 ## `@ark/aot`
 
@@ -255,31 +251,9 @@ ArkType reduces every definition to a normalized set of constraints, so it knows
 - **Redundant checks disappear.** `number > 0` intersected with `number >= 10` is one check, `number >= 10`.
 - **Contradictions never ship.** `{ id: string }` intersected with `{ id: number }` throws a ParseError, which fails the build rather than shipping a validator that rejects everything.
 
-```ts
-const Shape = type({
-	kind: "'circle'",
-	radius: "number > 0"
-}).or({
-	kind: "'square'",
-	side: "number > 0"
-})
-```
+Edit the definition, and the precompiler runs on what you type:
 
-Precompiled, `Shape` checks data like this, its helpers inlined:
-
-```js
-// @noErrors
-// ---cut---
-data => {
-	switch (data?.kind) {
-		case "circle":
-			return Number.isFinite(data.radius) && data.radius > 0
-		case "square":
-			return Number.isFinite(data.side) && data.side > 0
-	}
-	return false
-}
-```
+<LivePrecompile />
 
 ArkType isn't the first validator to compile. Typia also generates checks from your TypeScript types at build time, and it specializes some unions. The difference is that ArkType normalizes your constraints with its own set theory, so definitions are reduced, intersected and discriminated before any code is written.
 

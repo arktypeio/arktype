@@ -18,7 +18,7 @@ export default {
 
 [Setup](/docs/precompile/setup) covers every bundler, test runner and Next.
 
-The cost is a build step. [Every error it reports names its fix](#with-agents), so an agent can run it.
+A precompiled validator accepts and rejects what the Type it replaces does, with the same error messages. The cost is a build step. [Every error it reports names its fix](#with-agents), so an agent can run it.
 
 ## Speed and size
 
@@ -68,9 +68,9 @@ Precompiling moves creating your Types from your program's startup to your build
 - <Claim id="buildTimeDev" />
 - <Claim id="buildTimeWatch" />
 
-<Claim id="buildTimeMedium" /> Turbopack runs the loader in a pool of processes,
-once for the client and once for the server. `next dev` precompiles each module
-for each, where one process of `next build` precompiles its project once.
+<Claim id="buildTimeMedium" />
+
+[Benchmarks](/docs/precompile/benchmarks) has how every number here was measured.
 
 ## How a validator differs
 

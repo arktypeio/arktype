@@ -91,6 +91,15 @@ Declarations read the compiler API of TypeScript 5.5 to 6 from the optional `typ
 npm i -D typescript-6@npm:typescript@6
 ```
 
+## Equal definitions
+
+arktype returns one Type for a scope's equal definitions written alike, and for spellings it normalizes alike. [Other spellings](/docs/upgrading#types-are-built-when-theyre-first-read) of one Type can be two equal Types. A precompiled program compares the same, including any function a Type holds, except:
+
+- A Type the build leaves to arktype, as a [runtime island](/docs/precompile/advanced#runtime-islands), and its precompiled equal are two values.
+- A build that reads each module alone, as Node and `arktype-precompile --emit` do, and any build that doesn't [prune](/docs/precompile/options#prune), gives two values for a Type holding a cycle and for one in a scope a function creates. Reading the whole program, as a production build on Vite, Rollup, Rolldown, esbuild, webpack or Rspack does, or `next build` with Turbopack, compares them as arktype does.
+- A scope a function creates is created once, however often the function is called, so each call's Types are one value where arktype creates them anew.
+- A chunk imported again at runtime under another URL creates its functions anew, so arktype gives each run its own Type for a narrow the chunk defines. A validator holding a function the build proves can't differ between runs may be one value for both. A webpack or Rspack runtime keeps each module it ran and runs none again, so a build on either asks for no such proof of a function a module declares as it runs, except in a file the bundle holds as two modules, like one built in two layers. It assumes a module that ran is never run again: with `output.strictModuleErrorHandling`, a module required again after its run threw runs twice, and a validator its first run created then reads the functions of the second.
+
 ## Optimizations
 
 What a build writes, and the [options](/docs/precompile/options) that change it.

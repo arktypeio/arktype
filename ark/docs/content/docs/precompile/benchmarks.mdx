@@ -1,0 +1,96 @@
+---
+title: Benchmarks
+description: How ArkType's speed, startup and size numbers were measured, where it loses and how to rerun them.
+---
+
+Every number on this site comes from a benchmark in the repo. This page has what each one measures, who wrote it, where ArkType doesn't win and how to rerun it.
+
+## The board
+
+The homepage ranks validators in three categories by their average result across other projects' public benchmarks:
+
+- <Claim id="speedAverage" />
+- <Claim id="startupAverage" />
+- <Claim id="sizeAverage" />
+
+Each score divides a library's results by the best on each row, then takes the geometric mean per benchmark and across them, so lower is better and 1 is the best result everywhere.
+
+<HeadlineNote />
+
+- <Claim id="benchmarkOwners" />
+- <Claim id="startupBasis" />
+- <Claim id="leaveOneOut" />
+
+<Claim id="sizeClose" />
+
+## Validation speed
+
+<p>
+	<Claim id="zodSpeed" /> <Claim id="speedScope" />
+</p>
+
+The homepage's speed numbers are from this benchmark. Each panel is one scenario, and the table under them has every one:
+
+<BenchmarkChart />
+
+Beyond it:
+
+- <Claim id="parseSafe" />
+- <Claim id="appSpeed" />
+- <Claim id="bigApp" />
+
+## Startup
+
+The startup numbers count CPU instructions, which a busy machine doesn't move. They aren't seconds.
+
+- <Claim id="startupApps" />
+- <Claim id="appStartup" />
+
+### Against dynamic ArkType
+
+<JitComparison />
+
+## Bundle size
+
+<p>
+	<Claim id="loginSize" /> <Claim id="dynamicSize" />
+</p>
+
+<Claim id="appSize" />
+
+[Size at scale](/docs/precompile/size-at-scale) has how each build's bundle grows with the number of Types in it, and where each is the smallest.
+
+## Build time
+
+[Build time](/docs/precompile#build-time) has what precompiling adds to a production build, a dev server and a rebuild.
+
+## Precompiled against dynamic
+
+A precompiled validator has to return what dynamic ArkType returns, with the same messages. These are the checks every change to the precompiler passes:
+
+| Check                   | What it holds                                                                                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm testDifferential` | Every Type ArkType's own test suites call, precompiled in each layout, returns what dynamic ArkType returns on every input the suites passed it.                    |
+| `pnpm testPerturbation` | Change what the build read before the program runs, like a key, an export or a prototype: the precompiled program throws as it starts or still agrees with ArkType. |
+| `pnpm testPrograms`     | Generated programs agree run as written and precompiled, unchanged and under every perturbation.                                                                    |
+| `pnpm testPruneParity`  | A production bundle missing what no code reads validates every input as one built whole does, once negative controls show the check catches a dropped check.        |
+| `pnpm testHistory`      | Each test sees the same thing fresh, twice in one process and after a random sample of the others.                                                                  |
+| `pnpm testEnvironments` | A program prints the same in other time zones and locales, on Bun, Deno, Chromium and Firefox.                                                                      |
+
+In your own project, [shadow mode](/docs/precompile/advanced#shadow-mode) runs your tests against both and fails wherever they disagree.
+
+## Rerun them
+
+From a clean checkout, after `pnpm i && pnpm build`:
+
+| Script                | What it reruns                                                         |
+| --------------------- | ---------------------------------------------------------------------- |
+| `pnpm benchExternal`  | The board: each external benchmark, cloned at the commit it was run on |
+| `pnpm benchValidate`  | The speed benchmark above                                              |
+| `pnpm benchImport`    | The homepage's cold start                                              |
+| `pnpm benchSize`      | The homepage's app sizes                                               |
+| `pnpm benchSizeScale` | [Size at scale](/docs/precompile/size-at-scale)                        |
+| `pnpm benchBigApp`    | The generated apps and ntwine                                          |
+| `pnpm benchBuildTime` | [Build time](/docs/precompile#build-time)                              |
+
+The [benchmarks' README](https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md) has what each needs installed, the rule the board's averages follow and every run's results.

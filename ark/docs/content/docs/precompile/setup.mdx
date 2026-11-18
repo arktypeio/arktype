@@ -302,6 +302,8 @@ On the pages router's server, Next otherwise leaves dependencies external, where
 
 `withPrecompile` has `next build` read your project as Next loads `next.config`, before Turbopack starts, through every script under it that nothing imports and each route, so it can [prune](/docs/precompile/options#prune) and hold each validator once, in a file under `node_modules/.bin/.ark`. As the read writes only what changed, before Turbopack looks, Turbopack's build cache keeps from an earlier build only what this one's read left as it was. The read resolves imports as Node does, through your `tsconfig.json`'s `paths` and `turbopack.resolveAlias`, and the loader checks each module as Turbopack builds it against what it read, for each layer of a route, failing one that differs, naming it: a module a loader rewrote, or one whose import resolves to another file in that layer, as a `react-server` condition may. Where it can't read the project, it warns, naming why, and each module holds its own validators, as they do with `prune: false`, in `next dev` and without `withPrecompile`: for another loader in `turbopack.rules`, a Babel config like `.babelrc` or `experimental.swcPlugins`, which Turbopack runs after the loader, `pageExtensions`, a file like `.mdx` that a loader compiles, a query on an import, or an import it can't name.
 
+Turbopack runs the loader in a pool of processes, once for the client and once for the server. `next dev` precompiles each module for each, where one process of `next build` precompiles its project once.
+
 With webpack, which Next 15 builds with, as does `next build --webpack`, add the plugin, which fails the build where Next would leave arktype, or a package importing it, external:
 
 ```js title="next.config.js"
