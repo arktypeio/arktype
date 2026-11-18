@@ -18,7 +18,18 @@ pnpm benchExternal <suite> --newest # its rivals at their newest releases, kept 
 pnpm benchValidate # the homepage's speed rows
 pnpm benchSize # the homepage's app sizes
 pnpm benchImport # the homepage's cold start
+pnpm benchBoard --fresh # the homepage board's numbers, published beside what those runs measured
 ```
+
+`benchBoard` prints each of the homepage board's three graphs by the rule in
+`ark/docs/lib/bench/units.ts`, which is the code the site draws them with:
+the geometric mean of each library's results, in the unit they were measured
+in, over the largest set of other projects' results that ArkType, Zod and
+three more named libraries all ran, and its place among every library that
+ran all of them. Under them it prints our own benchmark's speed, cold start
+and app sizes the same way. With `--fresh` each table has a second column
+from `out/fresh/leaderboard.json`, `bench/out/validate.json`, `import.json`
+and `size.json`, wherever a run above has written one.
 
 `<suite>` is `moltar`, `sb`, `sury`, `ata`, `form`, `startup`, `size` or
 `all`, where `size` is the form and the download and bundle rows of

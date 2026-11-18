@@ -79,6 +79,7 @@
 		"benchBuildTime": "node ./ark/repo/bench/buildTime/registered.ts",
 		"benchBigApp": "node ./ark/repo/bench/bigapp/measure.ts",
 		"benchExternal": "node ./ark/repo/bench/external/reproduce.ts",
+		"benchBoard": "node ./ark/repo/bench/board.ts",
 		"benchScoreboard": "pnpm benchTypia && pnpm benchSize && pnpm benchImport && pnpm benchValidate",
 		"benchRegex": "ts ./ark/regex/__tests__/regex.bench.ts",
 		"scratch": "ts ./ark/repo/scratch.ts",
