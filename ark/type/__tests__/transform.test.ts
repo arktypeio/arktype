@@ -897,6 +897,30 @@ k must be a number`)
 			])
 		})
 
+		it("writes a default where its key is declared, after an optional key or not", () => {
+			const T = type({
+				"+": "delete",
+				a: "string",
+				b: "number = 5",
+				"c?": "string",
+				d: "boolean = false"
+			})
+			// b follows only required keys, d an optional one
+			attest(Object.entries(T.assert({ a: "a", z: 1 }))).equals([
+				["a", "a"],
+				["b", 5],
+				["d", false]
+			])
+			attest(
+				Object.entries(T.assert({ z: 1, d: true, c: "c", b: 0, a: "a" }))
+			).equals([
+				["a", "a"],
+				["b", 0],
+				["c", "c"],
+				["d", true]
+			])
+		})
+
 		it("inherited Object.prototype key", () => {
 			const T = type({
 				"+": "delete",

@@ -1400,15 +1400,26 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			return i === -1 ? `out${js.prop(prop.key)}` : `transformed${i}`
 		}
 		const [literal, added] = this.resultLayout
-		const literalOf = (valueOf: (prop: Prop.Node) => string) =>
-			`{ ${literal.map(prop => `${typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]` : prop.serializedKey}: ${valueOf(prop)}`).join(", ")} }`
+		const literalOf = (
+			props: array<Prop.Node>,
+			valueOf: (prop: Prop.Node) => string
+		) =>
+			`{ ${props.map(prop => `${typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]` : prop.serializedKey}: ${valueOf(prop)}`).join(", ")} }`
 		// a literal's __proto__ is its prototype, which null would make null
 		if (js.copiesValues || this.declaresKey("__proto__"))
-			js.const("result", literalOf(outputOf))
+			js.const("result", literalOf(literal, outputOf))
 		else {
+			// a key with a plain default is written whether data holds it or not,
+			// so where it follows the literal's keys it has a slot there too:
+			// added after, it's the key each result grows a store to hold
+			const slots = [...literal]
+			for (const prop of added) {
+				if (!hasPlainDefault(prop)) break
+				slots.push(prop)
+			}
 			js.const(
 				"result",
-				literalOf(() => "null")
+				literalOf(slots, () => "null")
 			)
 			for (const prop of literal)
 				js.line(`result${js.prop(prop.key)} = ${outputOf(prop)}`)
@@ -1595,7 +1606,7 @@ export const compileDefault = (
 	node: Optional.Node.withDefault,
 	out: string
 ): NodeCompiler => {
-	if (typeof node.default !== "function" && !node.value.tfs) {
+	if (hasPlainDefault(node)) {
 		return js.line(
 			`${out}${js.prop(node.key)} = ${serializeDefault(js, node.default)}`
 		)
@@ -1607,6 +1618,10 @@ export const compileDefault = (
 		out
 	)
 }
+
+// one compileDefault writes as a value, calling nothing
+const hasPlainDefault = (node: Prop.Node): boolean =>
+	node.hasDef() && typeof node.default !== "function" && !node.value.tfs
 
 // -0 would serialize as 0
 const serializeDefault = (js: NodeCompiler, value: unknown): string =>
