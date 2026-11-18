@@ -1245,9 +1245,18 @@ export class StandaloneArtifact {
 		return hashOf(
 			JSON.stringify([
 				named,
-				// each module picks what's smallest for what it holds, and a
-				// validator behaves alike however it's written
-				bakingKeyOf({ ...this.baking, combines: false, shapes: false }),
+				// each module picks what's smallest for what it holds, and each
+				// site what it's optimized for, and a validator behaves alike
+				// however it's written
+				bakingKeyOf({
+					...this.baking,
+					combines: false,
+					shapes: false,
+					shortest: false,
+					flattens: false,
+					defersIssues: false,
+					strategy: ""
+				}),
 				[...form.members].sort(),
 				form.isTemplate,
 				called,
@@ -1420,9 +1429,9 @@ return namespace`
 	}
 
 	specifierOf(name: string): string {
-		return `~arktype/${this.baking.defers ? "deferred/" : ""}${
-			this.baking.hoisted ? "hoisted/" : ""
-		}${name}`
+		return `~arktype/${this.baking.strategy && `${this.baking.strategy}/`}${
+			this.baking.defers ? "deferred/" : ""
+		}${this.baking.hoisted ? "hoisted/" : ""}${name}`
 	}
 
 	readValue(name: string): string {

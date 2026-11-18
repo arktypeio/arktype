@@ -708,10 +708,10 @@ var intersectionnuqurd1csx8up = [
 		"removed"
 	)
 ]
-var intersection1qem54n11w8grc = /* @__PURE__ */ (([
+var intersection413gu20zqkl0a = /* @__PURE__ */ (([
 	intersectionnuqurd1csx8upAllows
 ]) => {
-	const intersection1qem54n11w8grcAllows = /* @__PURE__ */ sited(
+	const intersection413gu20zqkl0aAllows = /* @__PURE__ */ sited(
 		(data, checkers) => {
 			if (
 				("preset" in data && !checkers[0](data.preset)) ||
@@ -722,21 +722,23 @@ var intersection1qem54n11w8grc = /* @__PURE__ */ (([
 				("mutatesInput" in data && !checkers[5](data.mutatesInput)) ||
 				("optimize" in data && !checkers[6](data.optimize)) ||
 				("optimizeErrors" in data && !checkers[6](data.optimizeErrors)) ||
+				("strategies" in data && !checkers[8](data.strategies)) ||
+				("schemas" in data && !checkers[9](data.schemas)) ||
 				("jsonInput" in data && !booleanChecker(data.jsonInput)) ||
-				("bakedLimit" in data && !checkers[9](data.bakedLimit)) ||
+				("bakedLimit" in data && !checkers[11](data.bakedLimit)) ||
 				("freeze" in data && !booleanChecker(data.freeze)) ||
 				("lazy" in data && !booleanChecker(data.lazy)) ||
-				("creationChecks" in data && !checkers[12](data.creationChecks)) ||
+				("creationChecks" in data && !checkers[14](data.creationChecks)) ||
 				("shadow" in data && !booleanChecker(data.shadow)) ||
 				("prune" in data && !booleanChecker(data.prune)) ||
 				("allowUnsafe" in data && !booleanChecker(data.allowUnsafe)) ||
-				("conditions" in data && !checkers[16](data.conditions)) ||
-				("tsconfig" in data && !checkers[17](data.tsconfig)) ||
-				("dependencies" in data && !checkers[18](data.dependencies)) ||
-				("cwd" in data && !checkers[17](data.cwd)) ||
+				("conditions" in data && !checkers[18](data.conditions)) ||
+				("tsconfig" in data && !checkers[19](data.tsconfig)) ||
+				("dependencies" in data && !checkers[20](data.dependencies)) ||
+				("cwd" in data && !checkers[19](data.cwd)) ||
 				("inline" in data && !booleanChecker(data.inline)) ||
 				("declare" in data && !booleanChecker(data.declare)) ||
-				("defers" in data && !checkers[22](data.defers))
+				("defers" in data && !checkers[24](data.defers))
 			)
 				return false
 			for (const k in data)
@@ -749,6 +751,8 @@ var intersection1qem54n11w8grc = /* @__PURE__ */ (([
 					case "mutatesInput":
 					case "optimize":
 					case "optimizeErrors":
+					case "strategies":
+					case "schemas":
 					case "jsonInput":
 					case "bakedLimit":
 					case "freeze":
@@ -805,6 +809,22 @@ var intersection1qem54n11w8grc = /* @__PURE__ */ (([
 			),
 			optimizeErrors: /* @__PURE__ */ optional(
 				/* @__PURE__ */ units(["size", "speed"])
+			),
+			strategies: /* @__PURE__ */ optional(
+				/* @__PURE__ */ recordOf(
+					/* @__PURE__ */ closedProps({
+						optimize: /* @__PURE__ */ optional(
+							/* @__PURE__ */ units(["size", "speed"])
+						)
+					})
+				)
+			),
+			schemas: /* @__PURE__ */ optional(
+				/* @__PURE__ */ recordOf(
+					/* @__PURE__ */ intersection(stringCheck, [
+						/* @__PURE__ */ minLength(1)
+					])
+				)
 			),
 			jsonInput: /* @__PURE__ */ optional(booleanChecker),
 			bakedLimit: /* @__PURE__ */ optional(
@@ -872,7 +892,7 @@ var intersection1qem54n11w8grc = /* @__PURE__ */ (([
 		0,
 		"removed"
 	)
-	return [intersection1qem54n11w8grcAllows]
+	return [intersection413gu20zqkl0aAllows]
 })(intersectionnuqurd1csx8up)
 var create12fpvlf14u2zct = ([allows], id, holes = []) => {
 	const validator = (data, pipedFromCtx, onFail) =>
@@ -886,10 +906,10 @@ var create12fpvlf14u2zct = ([allows], id, holes = []) => {
 	validator.allows = freeze(allows)
 	return holdHoles(freeze(validator), id, holes)
 }
-var intersectioncv2raq0vis9zb = /* @__PURE__ */ (([
+var intersection19kglfa0jrw93p = /* @__PURE__ */ (([
 	intersectionnuqurd1csx8upAllows
 ]) => {
-	const intersectioncv2raq0vis9zbAllows = /* @__PURE__ */ sited(
+	const intersection19kglfa0jrw93pAllows = /* @__PURE__ */ sited(
 		(data, checkers) => {
 			if (
 				("preset" in data && !checkers[0](data.preset)) ||
@@ -900,17 +920,19 @@ var intersectioncv2raq0vis9zb = /* @__PURE__ */ (([
 				("mutatesInput" in data && !checkers[5](data.mutatesInput)) ||
 				("optimize" in data && !checkers[6](data.optimize)) ||
 				("optimizeErrors" in data && !checkers[6](data.optimizeErrors)) ||
+				("strategies" in data && !checkers[8](data.strategies)) ||
+				("schemas" in data && !checkers[9](data.schemas)) ||
 				("jsonInput" in data && !booleanChecker(data.jsonInput)) ||
-				("bakedLimit" in data && !checkers[9](data.bakedLimit)) ||
+				("bakedLimit" in data && !checkers[11](data.bakedLimit)) ||
 				("freeze" in data && !booleanChecker(data.freeze)) ||
 				("lazy" in data && !booleanChecker(data.lazy)) ||
-				("creationChecks" in data && !checkers[12](data.creationChecks)) ||
+				("creationChecks" in data && !checkers[14](data.creationChecks)) ||
 				("shadow" in data && !booleanChecker(data.shadow)) ||
 				("prune" in data && !booleanChecker(data.prune)) ||
 				("allowUnsafe" in data && !booleanChecker(data.allowUnsafe)) ||
-				("conditions" in data && !checkers[16](data.conditions)) ||
-				("tsconfig" in data && !checkers[17](data.tsconfig)) ||
-				("dependencies" in data && !checkers[18](data.dependencies))
+				("conditions" in data && !checkers[18](data.conditions)) ||
+				("tsconfig" in data && !checkers[19](data.tsconfig)) ||
+				("dependencies" in data && !checkers[20](data.dependencies))
 			)
 				return false
 			for (const k in data)
@@ -923,6 +945,8 @@ var intersectioncv2raq0vis9zb = /* @__PURE__ */ (([
 					case "mutatesInput":
 					case "optimize":
 					case "optimizeErrors":
+					case "strategies":
+					case "schemas":
 					case "jsonInput":
 					case "bakedLimit":
 					case "freeze":
@@ -975,6 +999,22 @@ var intersectioncv2raq0vis9zb = /* @__PURE__ */ (([
 			),
 			optimizeErrors: /* @__PURE__ */ optional(
 				/* @__PURE__ */ units(["size", "speed"])
+			),
+			strategies: /* @__PURE__ */ optional(
+				/* @__PURE__ */ recordOf(
+					/* @__PURE__ */ closedProps({
+						optimize: /* @__PURE__ */ optional(
+							/* @__PURE__ */ units(["size", "speed"])
+						)
+					})
+				)
+			),
+			schemas: /* @__PURE__ */ optional(
+				/* @__PURE__ */ recordOf(
+					/* @__PURE__ */ intersection(stringCheck, [
+						/* @__PURE__ */ minLength(1)
+					])
+				)
 			),
 			jsonInput: /* @__PURE__ */ optional(booleanChecker),
 			bakedLimit: /* @__PURE__ */ optional(
@@ -1029,34 +1069,34 @@ var intersectioncv2raq0vis9zb = /* @__PURE__ */ (([
 		0,
 		"removed"
 	)
-	return [intersectioncv2raq0vis9zbAllows]
+	return [intersection19kglfa0jrw93pAllows]
 })(intersectionnuqurd1csx8up)
-var intersection1jttf1r18pdz9x = /* @__PURE__ */ (([
-	intersectioncv2raq0vis9zbAllows
+var intersection1upqj9817d2cda = /* @__PURE__ */ (([
+	intersection19kglfa0jrw93pAllows
 ]) => {
-	const intersection1jttf1r18pdz9xAllows = /* @__PURE__ */ closedProps({
+	const intersection1upqj9817d2cdaAllows = /* @__PURE__ */ closedProps({
 		$schema: /* @__PURE__ */ optional(stringCheck),
-		precompile: /* @__PURE__ */ optional(intersectioncv2raq0vis9zbAllows)
+		precompile: /* @__PURE__ */ optional(intersection19kglfa0jrw93pAllows)
 	})
-	return [intersection1jttf1r18pdz9xAllows]
-})(intersectioncv2raq0vis9zb)
-var intersection172uh0x1afmugh = /* @__PURE__ */ (([
-	intersectioncv2raq0vis9zbAllows
+	return [intersection1upqj9817d2cdaAllows]
+})(intersection19kglfa0jrw93p)
+var intersection1edczbo1pwpl8e = /* @__PURE__ */ (([
+	intersection19kglfa0jrw93pAllows
 ]) => {
-	const intersection172uh0x1afmughAllows = /* @__PURE__ */ closedProps({
-		precompile: /* @__PURE__ */ optional(intersectioncv2raq0vis9zbAllows),
+	const intersection1edczbo1pwpl8eAllows = /* @__PURE__ */ closedProps({
+		precompile: /* @__PURE__ */ optional(intersection19kglfa0jrw93pAllows),
 		aot: /* @__PURE__ */ optional(/* @__PURE__ */ unit(true))
 	})
-	return [intersection172uh0x1afmughAllows]
-})(intersectioncv2raq0vis9zb)
+	return [intersection1edczbo1pwpl8eAllows]
+})(intersection19kglfa0jrw93p)
 var created0
 var created1
 var created2
 var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
-				const validator0 = interned("ba2dyl0hxov64", () =>
-					create12fpvlf14u2zct(intersection1qem54n11w8grc, "1xqe4zk0")
+				const validator0 = interned("7qd91k0wat9zr", () =>
+					create12fpvlf14u2zct(intersection413gu20zqkl0a, "17vslil0")
 				)
 				return validator0
 			})())
@@ -1065,8 +1105,8 @@ var get0 = () => {
 var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
-				const validator0 = interned("131ktzb1yyv4fo", () =>
-					create12fpvlf14u2zct(intersection1jttf1r18pdz9x, "1cl1eak0")
+				const validator0 = interned("1orik1i0k3lqwh", () =>
+					create12fpvlf14u2zct(intersection1upqj9817d2cda, "1q1d3q40")
 				)
 				return validator0
 			})())
@@ -1075,8 +1115,8 @@ var get1 = () => {
 var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
-				const validator0 = interned("m6ykoq11dwob9", () =>
-					create12fpvlf14u2zct(intersection172uh0x1afmugh, "1i9mlhj1")
+				const validator0 = interned("1awjt4i15qfutx", () =>
+					create12fpvlf14u2zct(intersection1edczbo1pwpl8e, "1glka7t0")
 				)
 				return validator0
 			})())
@@ -1106,6 +1146,8 @@ export const cliOptions = {
 	preset: { type: "string", values: "introspectable|smallest" },
 	prune: { type: "boolean", values: "true|false" },
 	runtime: { type: "string", values: "arktype" },
+	schemas: { type: "object", values: "json" },
 	shadow: { type: "boolean", values: "true|false" },
+	strategies: { type: "object", values: "json" },
 	tsconfig: { type: "string", values: "path" }
 }

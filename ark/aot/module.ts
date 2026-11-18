@@ -14,6 +14,7 @@ import {
 	type SourceMapSegment
 } from "@jridgewell/sourcemap-codec"
 import { ModuleScopes, walk } from "./scope.ts"
+import { markedStrategyOf, strategyMarker } from "./strategies.ts"
 
 export class SourceModule {
 	id: string
@@ -27,6 +28,9 @@ export class SourceModule {
 	islands: Node[]
 	// markers no node follows
 	strayMarkers: Comment[] = []
+	// nodes a `// @ark-strategy <name>` comment leads, with the name
+	strategyMarks: StrategyMark[]
+	strayStrategyMarkers: Comment[] = []
 	private lineStarts: number[] | undefined
 	// where a tool that transpiled the source before the build maps its lines
 	private mappings: SourceMapMappings | undefined
@@ -47,7 +51,23 @@ export class SourceModule {
 		this.scopes = new ModuleScopes(this.program)
 		this.islands =
 			source.includes(islandMarker) ?
-				islandsOf(this.program, source, result.comments, this.strayMarkers)
+				markedBy(
+					this.program,
+					source,
+					result.comments,
+					this.strayMarkers,
+					comment => comment === islandMarker || undefined
+				).map(([node]) => node)
+			:	[]
+		this.strategyMarks =
+			source.includes(strategyMarker) ?
+				markedBy(
+					this.program,
+					source,
+					result.comments,
+					this.strayStrategyMarkers,
+					markedStrategyOf
+				).map(([node, name, comment]) => ({ node, name, comment }))
 			:	[]
 	}
 
@@ -150,18 +170,28 @@ export const langOf = (id: string): Lang =>
 
 const islandMarker = "@ark-runtime"
 
-const islandsOf = (
+export interface StrategyMark {
+	node: Node
+	// what follows the marker, which may name no strategy
+	name: string
+	comment: Comment
+}
+
+// each node a line comment a marker reads leads, with what it read of it
+const markedBy = <read>(
 	program: Program,
 	source: string,
 	comments: Comment[],
-	strays: Comment[]
-): Node[] => {
-	const result: Node[] = []
+	strays: Comment[],
+	readMarker: (comment: string) => read | undefined
+): [node: Node, read: read, comment: Comment][] => {
+	const result: [node: Node, read: read, comment: Comment][] = []
 	const whitespace = /\s*/y
 	for (let i = 0; i < comments.length; i++) {
 		const comment = comments[i]
-		if (comment.type !== "Line" || comment.value.trim() !== islandMarker)
-			continue
+		const read =
+			comment.type === "Line" ? readMarker(comment.value.trim()) : undefined
+		if (read === undefined) continue
 		let start = comment.end
 		for (let j = i + 1; ; j++) {
 			whitespace.lastIndex = start
@@ -176,7 +206,7 @@ const islandsOf = (
 			if (node.start === start && node.type !== "Program") island = node
 			return !island && node.start <= start && start < node.end
 		})
-		if (island) result.push(island)
+		if (island) result.push([island, read, comment])
 		else strays.push(comment)
 	}
 	return result

@@ -15,7 +15,7 @@ precompile.vite({
 })
 ```
 
-`errors`, `mutatesInput`, `members`, `optimize`, `optimizeErrors`, `freeze`, `lazy`, `creationChecks`, `jsonInput`, `bakedLimit`, `shadow`, `prune` and `dependencies` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
+`errors`, `mutatesInput`, `members`, `optimize`, `optimizeErrors`, `strategies`, `schemas`, `freeze`, `lazy`, `creationChecks`, `jsonInput`, `bakedLimit`, `shadow`, `prune` and `dependencies` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
 
 ## Presets
 
@@ -40,7 +40,7 @@ The default build compiles each validator to the code that checks its Type faste
 
 <PresetSizeTable />
 
-What it costs is speed: the shared checkers validate more slowly than code compiled for each Type, and with [`lazy: false`](#lazy) the bundle creates every validator as it loads, so it starts more slowly too. <Claim id="smallestSpeed" /> The [counts](https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md#the-smallest-presets-speed) name each version and the harness. The [benchmarks](/#run) measure the default build. Choose `"smallest"` where your bundle holds more than a handful of Types and validates input as it arrives, like a frontend's forms and API responses. Keep the default for a server and for validation on a hot path. A program reading only [`.allows`](/docs/type-api) gets each validator written as the function checking it, as the default writes it, so it's no larger built `"smallest"`.
+What it costs is speed: the shared checkers validate more slowly than code compiled for each Type, and with [`lazy: false`](#lazy) the bundle creates every validator as it loads, so it starts more slowly too. <Claim id="smallestSpeed" /> The [counts](https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md#the-smallest-presets-speed) name each version and the harness. The [benchmarks](/#run) measure the default build. Choose `"smallest"` where your bundle holds more than a handful of Types and validates input as it arrives, like a frontend's forms and API responses. Keep the default for a server and for validation on a hot path. A program with both chooses [for each definition](#strategies-and-schemas). A program reading only [`.allows`](/docs/type-api) gets each validator written as the function checking it, as the default writes it, so it's no larger built `"smallest"`.
 
 Compiled code grows with each Type, and arktype doesn't, so a program with enough Types, or Types large enough, is larger compiled than it would be shipping arktype. A [production bundle](#prune) built with `optimize` unset estimates that from the code it wrote. Where its validators would outweigh arktype and a browser loads the bundle, as esbuild's `platform`, a webpack or Rspack compiler's `target`, Bun's `target` or a Vite client build says, the build writes them as `optimize: "size"` does instead, reading the bundle a second time, and warns that it did. It keeps the errors `optimizeErrors: "speed"` writes unless you set that, and leaves `lazy` as it was, so `"smallest"` is smaller still. A server's bundle stays compiled, as nothing downloads it. A build that can't tell what loads its bundle only warns: Turbopack's, whose one read holds the server's modules with the browser's, a Vite build of several environments, and a Rollup or Rolldown build. Set `optimize: "size"` or `"smallest"` to build so without the warning or the second read, or `optimize: "speed"` to keep them compiled. [Size at scale](/docs/precompile/size-at-scale) measures each build, dynamic arktype and other libraries as an app's Types grow, with and without messages and narrows.
 
@@ -79,7 +79,7 @@ The plugin, the Node and Bun drivers, Turbopack, `arktype-precompile` and the ES
 }
 ```
 
-It takes each option but `cwd`, `inline` and `declare`, and resolves `config` and `tsconfig` against its own directory. An option given in a call overrides it, `members` and `dependencies` key by key, and a preset fills in only what neither sets. A dependency's `ark.json` isn't read, as the program's options build every package. The build reads the file as it starts, and fails on an option it sets wrongly, naming the file and key:
+It takes each option but `cwd`, `inline` and `declare`, and resolves `config`, `tsconfig` and each key of [`schemas`](#strategies-and-schemas) against its own directory. An option given in a call overrides it, `members`, `dependencies`, `strategies` and `schemas` key by key, and a preset fills in only what neither sets. A dependency's `ark.json` isn't read, as the program's options build every package. The build reads the file as it starts, and fails on an option it sets wrongly, naming the file and key:
 
 ```
 /app/ark.json: precompile.optimize must be "size" or "speed" (was "small")
@@ -155,6 +155,79 @@ precompile.vite({
 `optimizeErrors` writes errors the same way, and is `optimize` unless set. Errors written for size are the smallest a build can return, and reading their issues is slower, but they have the same `count`, `issues`, `summary`, `throw()`, `toJSON()` and `toString()` as other errors, and `instanceof type.errors` recognizes them.
 
 The build loads `@ark/schema/runtime/lean` in place of `@ark/schema/runtime` for them, or `@ark/schema/runtime/none-lean` with `errors: "none"`, and a runtime island fails the build, as under [`errors: "none"`](#errors).
+
+### strategies and schemas
+
+`optimize` is one choice for a whole build. `schemas` makes it for each definition: it maps a module, or one of a module's declarations, to the name of a strategy, and the build writes each validator as its strategy says. Every build has two strategies: `"fastest"` writes a validator as `optimize: "speed"` does, and `"smallest"` as `optimize: "size"` does. A definition no key matches is written as the build's own `optimize` or preset says. So a bundle that validates forms and also validates on a hot path can build `"smallest"` and compile that path alone:
+
+```ts
+import { precompile } from "@ark/aot/unplugin"
+// ---cut---
+precompile.vite({
+	preset: "smallest",
+	schemas: {
+		// each Type a request handler validates with
+		"src/server/**": "fastest",
+		// one declaration of a module
+		"src/schemas/money.ts#Money": "fastest"
+	}
+})
+```
+
+A build left compiled writes the Types of its forms as checkers the other way around:
+
+```json title="ark.json"
+{
+	"precompile": {
+		"schemas": { "src/forms/**": "smallest" }
+	}
+}
+```
+
+A key is a path from [`cwd`](#cwd), or from its own directory in `ark.json`, written with `/`. In it, `*` stands for any part of a name, `**` for any directories, `?` for one character and `{a,b}` for either, and a directory stands for every module under it. A `#` and a name after the path choose for one of the module's top-level declarations, by its own name, a name it's exported under, or `default`, and so for each definition inside it.
+
+`strategies` names your own, each for what you'd change at once:
+
+```ts
+import { precompile } from "@ark/aot/unplugin"
+// ---cut---
+precompile.vite({
+	strategies: {
+		hot: { optimize: "speed" },
+		cold: { optimize: "size" }
+	},
+	schemas: {
+		"src/server/**": "hot",
+		"src/forms/**": "cold"
+	}
+})
+```
+
+A strategy sets `optimize` alone, and one that sets nothing writes as the build's own does. `"fastest"` and `"smallest"` can't be defined again. Every other option stays the build's: `optimizeErrors`, which follows the build's own `optimize` unless set, `errors`, `members`, `lazy` and the rest are the same for each validator.
+
+A marker chooses for the statement or expression after it, as [`// @ark-runtime`](/docs/precompile/advanced#runtime-islands) does, so a choice can stay beside its definition:
+
+```ts
+import { type } from "arktype"
+// ---cut---
+// @ark-strategy fastest
+export const Money = type({ amount: "number > 0", currency: "string == 3" })
+```
+
+Where more than one chooses for a definition, the most specific does: a key naming its declaration, then a marker, then a key naming its module's path, then a glob, and of two globs the one writing more of the path before its first wildcard. Two globs writing as much that choose otherwise fail the build, naming both and the module. What chooses for a definition overrides `optimize`, a preset and the size a build [chooses for a browser's bundle](#choosing-smallest), each of which decides only what nothing chose for. That build's estimate weighs only the validators nothing chose for, too.
+
+A strategy writes a definition's whole validator, the Types it composes included, whatever their own definitions are written as. With `Money` written `"fastest"` and a form's `Order` holding it written `"smallest"`, `Money`'s checks are written twice: compiled for `Money`, and as checkers within `Order`. A bundle with validators of both kinds also holds what each reads of the runtime. So choosing costs size where Types written differently compose each other, and on a few Types it can cost more than it saves.
+
+Two definitions of one Type, like `type({ id: "string" })` written twice, are one validator, as they're one Type to arktype. Within a module it's written as the fastest of their strategies, and across modules as the definition created first is.
+
+A [production bundle](#prune) written as one chunk declares in one function the units the build's own options compile, and not those a key or marker compiles. With [`lazy: false`](#lazy), it declares the units written for size in one module, those of the build's own options apart from those a key or marker chose. `lazy` is the build's for every validator, so a compiled build choosing `"smallest"` for its forms writes them smaller with `lazy: false`, as the `"smallest"` preset sets.
+
+The build fails on a name that isn't a strategy, a key matching no file and a key naming a declaration that holds no definition, each naming the nearest that would do, and on a key naming or a marker on a definition [`// @ark-runtime`](/docs/precompile/advanced#runtime-islands) leaves to arktype. Where `schemas` has a key, `arktype-precompile --check` prints after each definition what it's written with and what chose that, and fails a key whose modules define nothing:
+
+```
+src/forms/order.ts:4:22  accepted  optimize: "size"
+src/server/money.ts:3:22  accepted  fastest by schemas["src/server/**"]
+```
 
 ### jsonInput
 

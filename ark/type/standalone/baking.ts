@@ -150,6 +150,10 @@ export interface StandaloneOptions {
 	holdsIds?: boolean | undefined
 	mutatesInput?: MutatesInput | undefined
 	optimize?: Optimization | undefined
+	// names what a build writes unlike the rest of its validators, as those it
+	// optimizes otherwise: a unit's name is its content's, however it's written,
+	// so the modules they share are written apart under it
+	strategy?: string | undefined
 	// trust data to hold only own, enumerable keys, as JSON.parse's output does
 	jsonInput?: boolean | undefined
 	// declare functions, so an import cycle can call them early
@@ -228,6 +232,8 @@ export interface Baking extends ValidatorReads {
 	jsonInput: boolean
 	hoisted: boolean
 	shortest: boolean
+	// "" unless the build writes other validators otherwise
+	strategy: string
 	// whether a validator's traversals are created at its first call
 	defers: boolean
 	flattens: boolean
@@ -468,6 +474,7 @@ export const bakingOf = (
 		jsonInput: opts.jsonInput === true,
 		hoisted: opts.hoisted === true,
 		shortest: opts.optimize === "size",
+		strategy: opts.strategy ?? "",
 		defers:
 			opts.defers === true && opts.lazy !== false && opts.optimize !== "size",
 		flattens: opts.optimize === "size" && opts.hoisted !== true && isModular,

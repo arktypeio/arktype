@@ -85,6 +85,18 @@ const reporterOf = (
 					mutatesInput: { enum: [false, true, "always"] },
 					optimize: { enum: ["speed", "size"] },
 					optimizeErrors: { enum: ["speed", "size"] },
+					strategies: {
+						type: "object",
+						additionalProperties: {
+							type: "object",
+							properties: { optimize: { enum: ["speed", "size"] } },
+							additionalProperties: false
+						}
+					},
+					schemas: {
+						type: "object",
+						additionalProperties: { type: "string" }
+					},
 					jsonInput: { type: "boolean" },
 					bakedLimit: { type: "integer", minimum: 1 },
 					shadow: { type: "boolean" },

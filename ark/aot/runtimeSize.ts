@@ -9,6 +9,7 @@ import {
 	minifiedLengthOf,
 	runtimeReadsOf
 } from "./smaller.ts"
+import { strategyOfSpecifier } from "./strategies.ts"
 
 // resolved as the precompiler's own arktype resolves it
 let runtimeFile: string | undefined
@@ -51,7 +52,9 @@ export const validatorsToArktypeOf = (
 	replaced: ReadonlySet<string>
 ): number => {
 	let validators = 0
-	for (const declared of programReachOf(written).reached) {
+	// what a key or marker chose a strategy for is as its program asked, so
+	// only what the build's own options write is weighed
+	for (const declared of programReachOf(written, true).reached) {
 		// a program's module is read as `\0<program>:<specifier>`
 		const { id } = declared.module
 		if (!id.startsWith("\0") || !replaced.has(id.slice(id.indexOf(":") + 1)))
@@ -86,14 +89,18 @@ const textLengthOf = (declared: Declared): number =>
 // ranges, and on a Next.js app of 231 validators with a message for each field
 const sourceToWritten = 1.4
 
-type WrittenModules = Record<
-	string,
-	Pick<StandaloneModules, "code" | "modules">
->
+interface WrittenModule extends Pick<StandaloneModules, "code" | "modules"> {
+	// each local a site reads a validator by whose strategy its program chose
+	chosen?: readonly string[] | undefined
+}
 
-// a program's code's length, and what that reaches of its modules and the runtime
+type WrittenModules = Record<string, WrittenModule>
+
+// a program's code's length, and what that reaches of its modules and the
+// runtime, from every validator or only those its program chose no strategy for
 const programReachOf = (
-	written: WrittenModules
+	written: WrittenModules,
+	unchosenOnly = false
 ): { code: number; reached: Set<Declared> } => {
 	const program = `\0${++programs}:`
 	for (const id in written) {
@@ -109,7 +116,8 @@ const programReachOf = (
 			length += minifiedLengthOf(code)
 			text += code
 			const site = moduleAt(program + id, code)
-			for (const declared of reachedBy(site.id, importedNamesOf(site)))
+			const chosen = unchosenOnly ? (written[id].chosen ?? []) : undefined
+			for (const declared of reachedBy(site.id, importedNamesOf(site, chosen)))
 				reached.add(declared)
 		}
 	} finally {
@@ -127,13 +135,23 @@ const programReachOf = (
 const virtualSources = new Map<string, string>()
 let programs = 0
 
-// what a site imports from a program's modules, each by its local name
-const importedNamesOf = (site: SourceModule): string[] =>
+// what a site imports from a program's modules, each by its local name, but
+// for what its program chose a strategy for, where those are named: what
+// another strategy's modules declare, and the build's own a site reads by one
+// of those locals
+const importedNamesOf = (
+	site: SourceModule,
+	chosen?: readonly string[]
+): string[] =>
 	Object.keys(site.scopes.root.bindings).filter(name => {
 		const binding = site.scopes.root.bindings[name]
+		if (binding.kind !== "import") return false
+		const id = declaredAs(binding)?.module.id
+		if (!id?.startsWith("\0")) return false
 		return (
-			binding.kind === "import" &&
-			declaredAs(binding)?.module.id.startsWith("\0")
+			!chosen ||
+			(!chosen.includes(name) &&
+				!strategyOfSpecifier(id.slice(id.indexOf(":") + 1)))
 		)
 	})
 

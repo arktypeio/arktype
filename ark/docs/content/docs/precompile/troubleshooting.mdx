@@ -65,6 +65,14 @@ The reason **`calls a hook, whose result is known only as a component renders`**
 
 **`` `// @ark-runtime` marks nothing ``**, **`` `const x = 1` is marked // @ark-runtime but doesn't use arktype ``** or **`... is marked // @ark-runtime inside a definition the build precompiles`**: a [runtime island](/docs/precompile/advanced#runtime-islands) marker leaves nothing to arktype. Put `// @ark-runtime` right before a definition arktype should run, or remove it. `allowUnsafe` doesn't change this.
 
+**`schemas["..."] matches no file`**, **`... names Money, which declares no definition here`**, **`... matches ..., which holds no definition`** or **`` `// @ark-strategy` marks no definition ``**: a key of [`schemas`](/docs/precompile/options#strategies-and-schemas) or a strategy marker chooses for nothing. Name the module or the top-level declaration holding the definition, as the message's `Did you mean` does where one is close, or remove it.
+
+**`... names the strategy "...", which isn't one`**: a key or marker names a strategy the build lacks. Name `"fastest"`, `"smallest"` or one `strategies` defines.
+
+**`schemas["..."] and schemas["..."] both match ..., and neither names more of its path`**: two globs choose different strategies for a module, and each writes as much of its path before its first wildcard. Name the module in a key of its own, or write more of its path in one of them.
+
+**`... chooses a strategy for a definition // @ark-runtime leaves to arktype`**: arktype creates a [runtime island](/docs/precompile/advanced#runtime-islands)'s Type as the program runs, so the build writes no validator for a strategy to decide. Remove the marker or the key naming it.
+
 ## Reads
 
 **`` `type` is used outside a precompiled site ``**: a standalone build doesn't ship arktype, so a call that creates a Type must be a definition the build precompiles. Move it into one, or build with `runtime: "arktype"`.
