@@ -435,6 +435,27 @@ b must be A`)
 		).equals(Object.assign(["a"], { slice: 1 }))
 	})
 
+	it("array copy holds each enumerable own key as a value read once", () => {
+		const s = Symbol("s")
+		const quiet = Symbol("quiet")
+		let reads = 0
+		const original = Object.defineProperties([" a "], {
+			hidden: { value: 1 },
+			[quiet]: { value: 2 },
+			[s]: { value: 3, enumerable: true },
+			read: { get: () => ++reads, enumerable: true }
+		})
+		const out = type("string.trim[]").assert(original)
+		attest(Reflect.ownKeys(out)).equals(["0", "length", "read", s])
+		attest(Object.getOwnPropertyDescriptor(out, "read")).equals({
+			value: 1,
+			writable: true,
+			enumerable: true,
+			configurable: true
+		})
+		attest(reads).equals(1)
+	})
+
 	it("array props with shared defaults", () => {
 		const $ = scope({})
 		const T = $.type({

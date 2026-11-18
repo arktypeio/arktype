@@ -1,4 +1,4 @@
-import { defineValue, hasDomain, hasOwn, isArray, type Key } from "@ark/util"
+import { hasDomain, hasOwn, isArray, type Key } from "@ark/util"
 import type { BaseNode, RootApply } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { ArkErrors } from "./issues.ts"
@@ -61,22 +61,20 @@ export const copyOf = (data: object): object => {
 	if (isArray(data)) {
 		const copy: unknown[] = Array.prototype.slice.call(data)
 		const keys = Object.keys(data)
-		// an array's own keys list its indices first, which slice copies
-		if (
-			keys.length !== copy.length ||
-			keys[copy.length - 1] !== `${copy.length - 1}`
-		) {
-			for (const k of keys) {
-				const index = +k >>> 0
-				if (`${index}` !== k || index >= copy.length)
-					defineValue(copy, k, data[k as never])
-			}
-		}
-		for (const k of Object.getOwnPropertySymbols(data)) {
-			if (Object.prototype.propertyIsEnumerable.call(data, k))
-				defineValue(copy, k, data[k as never])
-		}
-		return copy
+		// an array's own keys list its indices first, which slice copies, and
+		// are all the usual array holds. Each key one holds besides is defined
+		// from its spread, which reads the enumerable own keys in their order,
+		// as a value of its own. An empty array's is spread too, to no keys
+		return (
+				keys.length !== copy.length ||
+					keys[copy.length - 1] !== `${copy.length - 1}` ||
+					Object.getOwnPropertySymbols(data).length
+			) ?
+				Object.defineProperties(
+					copy,
+					Object.getOwnPropertyDescriptors({ ...data })
+				)
+			:	copy
 	}
 	const prototype = Object.getPrototypeOf(data)
 	if (prototype === Object.prototype) return { ...data }

@@ -17,13 +17,6 @@ var domainOf = data => {
 
 // ark/util/records.ts
 var hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k)
-var defineValue = (o, k, value) =>
-	Object.defineProperty(o, k, {
-		value,
-		writable: true,
-		enumerable: true,
-		configurable: true
-	})
 
 // ark/util/objectKinds.ts
 var isArray = /* @__PURE__ */ (() => Array.isArray)()
@@ -238,21 +231,16 @@ var copyOf = data => {
 	if (isArray(data)) {
 		const copy = Array.prototype.slice.call(data)
 		const keys = Object.keys(data)
-		if (
-			keys.length !== copy.length ||
-			keys[copy.length - 1] !== `${copy.length - 1}`
-		) {
-			for (const k of keys) {
-				const index = +k >>> 0
-				if (`${index}` !== k || index >= copy.length)
-					defineValue(copy, k, data[k])
-			}
-		}
-		for (const k of Object.getOwnPropertySymbols(data)) {
-			if (Object.prototype.propertyIsEnumerable.call(data, k))
-				defineValue(copy, k, data[k])
-		}
-		return copy
+		return (
+				keys.length !== copy.length ||
+					keys[copy.length - 1] !== `${copy.length - 1}` ||
+					Object.getOwnPropertySymbols(data).length
+			) ?
+				Object.defineProperties(
+					copy,
+					Object.getOwnPropertyDescriptors({ ...data })
+				)
+			:	copy
 	}
 	const prototype = Object.getPrototypeOf(data)
 	if (prototype === Object.prototype) return { ...data }
