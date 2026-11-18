@@ -263,10 +263,11 @@ const sharedModulesOf = (
 		}
 		for (const read of readsOf(text)) reach(read)
 	}
+	// what one site alone reaches a bundler writes into it anyway: one module
+	// of it is what a call written in two of its units is declared once in
 	const bySites = new Map<string, string[]>()
 	for (const [specifier, sites] of sitesReaching) {
-		if (sites.size < 2 || common.has(specifier) || !isDeclarable(specifier))
-			continue
+		if (common.has(specifier) || !isDeclarable(specifier)) continue
 		const key = [...sites].sort((l, r) => l - r).join()
 		const units = bySites.get(key)
 		if (units) units.push(specifier)
@@ -291,13 +292,15 @@ const sharedModulesOf = (
 		const order =
 			declarations && orderOf(declarations, declarations.declared.keys())
 		if (!order) continue
-		const code = [
-			...declarations.imported.values(),
-			...declarations.statements,
-			...order.map(name => declarations.declared.get(name)!.text),
-			// what each exported, one it only imports among them
-			`export { ${[...declarations.exported].join(", ")} }`
-		].join("\n")
+		const code = withCallsOnce(
+			[
+				...declarations.imported.values(),
+				...declarations.statements,
+				...order.map(name => declarations.declared.get(name)!.text),
+				// what each exported, one it only imports among them
+				`export { ${[...declarations.exported].join(", ")} }`
+			].join("\n")
+		)
 		const specifier = `~arktype/${hashOf(code)}`
 		shared.modules[specifier] = code
 		for (const unit of units) shared.declaredIn[unit] = specifier
@@ -305,10 +308,92 @@ const sharedModulesOf = (
 	if (!Object.keys(shared.modules).length) return
 	Object.assign(shared.codes, shared.modules)
 	for (const key in codes) {
-		if (!(key in shared.declaredIn))
-			shared.codes[key] = withRenamed(codes[key], shared.declaredIn)
+		if (!(key in shared.declaredIn)) {
+			shared.codes[key] = withCallsOnce(
+				withRenamed(codes[key], shared.declaredIn)
+			)
+		}
 	}
 	return shared
+}
+
+const pureMarker = "/* @__PURE__ */ "
+
+// A call written twice is shorter declared from about 18 characters, but gzip
+// already writes the second as a match, so a name for it only adds to what's
+// compressed: the shorter the call, the more. On an app of 128 modules writing
+// validators, minified B / gzip B of its units and runtime: none 96743 / 28694;
+// from 96 93588 / 28834; 64 93141 / 28871; 48 93151 / 29060; 18 92989 / 29184
+const minOnceCall = 64
+
+// The runtime makes the same checker of the same text, and nothing writes to
+// one once it's made, so a call a module writes more than once is declared
+// once, before the first statement reading it. Each occurrence must read only
+// what the module declares or imports, or what the call itself binds, and one
+// in a function not called as its statement runs must hold data alone: what
+// else it names may not be set until the function's called
+const withCallsOnce = (code: string): string => {
+	for (let pass = 0; pass < maxPasses; pass++) {
+		const module = new SourceModule("once.js", code, "once.js")
+		if (module.parseErrors.length) return code
+		const { scopes } = module
+		const readsOnlyModule = (start: number, end: number) =>
+			scopes.references.every(
+				({ id, binding }) =>
+					id.start < start ||
+					id.end > end ||
+					!binding ||
+					binding.scope === scopes.root ||
+					(start <= binding.id.start && binding.id.end <= end)
+			)
+		const found = new Map<string, [start: number, end: number, at: number][]>()
+		for (const statement of module.program.body) {
+			if (statement.type === "ImportDeclaration") continue
+			walk(statement, node => {
+				const start = node.start - pureMarker.length
+				if (
+					node.type === "CallExpression" &&
+					code.startsWith(pureRuntimeCall, start) &&
+					node.end - node.start >= minOnceCall
+				) {
+					const call = code.slice(start, node.end)
+					if (
+						isDeferred(node, statement) ?
+							holdsOnlyData(call)
+						:	readsOnlyModule(start, node.end)
+					) {
+						const calls = found.get(call)
+						if (calls) calls.push([start, node.end, statement.start])
+						else found.set(call, [[start, node.end, statement.start]])
+					}
+				}
+				return true
+			})
+		}
+		const edits = new MagicString(code)
+		const covered: [start: number, end: number][] = []
+		// the longest first, as what it holds is then written once with it
+		for (const [call, calls] of [...found].sort(
+			([l], [r]) => r.length - l.length
+		)) {
+			const free = calls.filter(
+				([start]) => !covered.some(([from, to]) => from <= start && start < to)
+			)
+			const name = `once${hashOf(call)}`
+			if (free.length < 2 || name in scopes.root.bindings) continue
+			edits.prependLeft(
+				Math.min(...free.map(([, , at]) => at)),
+				`const ${name} = ${call}\n`
+			)
+			for (const [start, end] of free) {
+				edits.overwrite(start, end, name)
+				covered.push([start, end])
+			}
+		}
+		if (!covered.length) return code
+		code = edits.toString()
+	}
+	return code
 }
 
 // each of the names after what it reads as it's declared, or undefined where

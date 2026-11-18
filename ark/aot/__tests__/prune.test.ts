@@ -2163,6 +2163,35 @@ export { dAllows, setD }
 					"// ~arktype/d\nlet d\n\nfunction setD() {\n\td = arguments[0]\n}\n\nconst dAllows = data => d(data)\n\nexport { dAllows, setD }\n"
 				])
 			})
+
+			it("declare a call two of them write once, unless a function reads a name in it", () => {
+				const shape = `/* @__PURE__ */ runtime.props({ a: aAllows, name: runtime.string, title: runtime.string })`
+				const unit = (name: string, allows: string) =>
+					`import * as runtime from "arktype/runtime"
+import { aAllows } from "~arktype/a"
+
+const ${name}Allows = ${allows}
+
+export { ${name}Allows }
+`
+				const { modules } = linked(8, {
+					"~arktype/b": unit("b", `/* @__PURE__ */ runtime.optional(${shape})`),
+					"~arktype/c": unit(
+						"c",
+						`/* @__PURE__ */ runtime.elementsOf(${shape})`
+					),
+					// called once `aAllows` may be another: left as written
+					"~arktype/e": unit("e", `data => ${shape}(data)`)
+				})
+				attest(printed(modules)[1]).snap(`// ~arktype/#1
+import * as runtime from "arktype/runtime"
+import { aAllows as aAllows } from "~arktype/#0"
+const #2 = /* @__PURE__ */ runtime.props({ a: aAllows, name: runtime.string, title: runtime.string })
+const bAllows = /* @__PURE__ */ runtime.optional(#2)
+const cAllows = /* @__PURE__ */ runtime.elementsOf(#2)
+const eAllows = data => /* @__PURE__ */ runtime.props({ a: aAllows, name: runtime.string, title: runtime.string })(data)
+export { bAllows, cAllows, eAllows }`)
+			})
 		})
 
 		describe("a checker a program writes often", () => {
