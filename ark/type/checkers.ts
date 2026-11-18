@@ -28,7 +28,6 @@ import {
 	pipeApplied,
 	pipeChecked,
 	pipeTransformed,
-	requiredSiteOf,
 	runtimeConfig,
 	runtimeScope,
 	silentCtx,
@@ -234,8 +233,9 @@ export const compiled = ((node: AliasedNode, transforms?: 1): Checker => {
 	return checker
 }) satisfies Fn
 
-const wrapping = (checker: Checker): Checker =>
-	Object.assign((data: unknown, ctx?: any) => checker(data, ctx), checker)
+// a copy of a checker, holding what it says also, that leaves it as it was
+const wrapping = (checker: Checker, also?: Partial<Checker>): Checker =>
+	Object.assign((data: unknown, ctx?: any) => checker(data, ctx), checker, also)
 
 // tracked as what holds its id, which a unit's shape fills in once it's created
 const resolvedBy = (node: { id: string }, t: Transform): Transform => {
@@ -607,12 +607,8 @@ export const intersection = ((
 }) satisfies Fn
 
 // written as value where value is passed, even undefined
-export const optional = ((checker: Checker, ...value: [unknown?]): Checker => {
-	const wrapped = wrapping(checker)
-	wrapped.o = 1
-	wrapped.d = value
-	return wrapped
-}) satisfies Fn
+export const optional = ((checker: Checker, ...value: [unknown?]): Checker =>
+	wrapping(checker, { o: 1, d: value })) satisfies Fn
 
 // a default that's a function's, or that its value transforms, read where it's
 // written as it may be declared once this has loaded
@@ -638,12 +634,8 @@ export const replacingUndefined = ((
 
 // a required key's checker whose description isn't what the key expects where
 // missing, which says no message of its own
-export const required = ((checker: Checker, description: string): Checker => {
-	const wrapped = wrapping(checker)
-	wrapped.description = description
-	wrapped.x = undefined
-	return wrapped
-}) satisfies Fn
+export const required = ((checker: Checker, description: string): Checker =>
+	wrapping(checker, { description, x: undefined })) satisfies Fn
 
 // a required key's checker where the missing key says a message of its own,
 // configured for its value's Type, or as c says, 2 for the code
@@ -652,13 +644,7 @@ export const sayingMissing = ((
 	message: string,
 	c: Custom = 1,
 	description = checker.description
-): Checker => {
-	const wrapped = wrapping(checker)
-	wrapped.description = description
-	wrapped.x = message
-	wrapped.c = c
-	return wrapped
-}) satisfies Fn
+): Checker => wrapping(checker, { description, x: message, c })) satisfies Fn
 
 // a checker each of whose sites says the message configured for its Type, as
 // does the key it's the value of where missing. It checks no key's value, so
@@ -687,10 +673,11 @@ export const saying = ((checker: Checker, message: string): Checker => {
 }) satisfies Fn
 
 // what a missing key fails: required's, expecting its value's brief
-const missingSiteOf = ({ description, x, c }: Checker): FailureSite =>
-	x === undefined ?
-		requiredSiteOf(description)
-	:	{ m: { code: "required", description, x, c } }
+// One that says no message of its own notes none as configured, whatever the
+// checker it copies does
+const missingSiteOf = ({ description, x, c }: Checker): FailureSite => ({
+	m: { code: "required", description, x, c: x === undefined ? x : c }
+})
 
 type Props = Record<string, Checker>
 
