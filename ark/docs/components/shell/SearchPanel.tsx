@@ -12,6 +12,7 @@ import {
 	type KeyboardEvent,
 	type ReactNode
 } from "react"
+import { withBase, withoutBase } from "../../lib/basePath.ts"
 import type { SearchIndex } from "../../lib/content/search.ts"
 import { SearchInput } from "./SearchInput.tsx"
 
@@ -53,7 +54,7 @@ const compact = (text: string) => text.replaceAll(/[\s-]/g, "")
 let loading: Promise<Loaded> | undefined
 
 export const load = (): Promise<Loaded> =>
-	(loading ??= fetch("/search.json")
+	(loading ??= fetch(withBase("/search.json"))
 		.then(res => res.json() as Promise<SearchIndex>)
 		.then(index => {
 			const names = index.pages.map(page => ({
@@ -149,7 +150,7 @@ const boostOf = ({ index, names }: Loaded, query: string, home: number) => {
 
 /** the section of the page being read, or ArkType's outside the docs */
 const homeSectionOf = ({ index }: Loaded) => {
-	const path = location.pathname.replace(/\/$/, "")
+	const path = withoutBase(location.pathname).replace(/\/$/, "")
 	return index.pages.find(page => page.url === path)?.section ?? 0
 }
 
@@ -385,7 +386,7 @@ export const SearchPanel = ({
 						</>
 					)}
 					also in{" "}
-					<a className="link" href="/llms.txt">
+					<a className="link" href={withBase("/llms.txt")}>
 						llms.txt
 					</a>
 				</span>

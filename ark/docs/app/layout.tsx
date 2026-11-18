@@ -7,6 +7,7 @@ import {
 import { SearchDialog } from "../components/shell/SearchDialog.tsx"
 import { themeColors, themeScript } from "../components/shell/theme.ts"
 import { TwoslashPopups } from "../components/TwoslashPopups.tsx"
+import { basePath, withBase } from "../lib/basePath.ts"
 import { hashRedirects } from "../lib/content/redirects.ts"
 import { Analytics } from "./analytics.tsx"
 import { atkinson, atkinsonItalic, cascadia, cascadiaCursive } from "./fonts.ts"
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
 		"syntax"
 	],
 	icons: {
-		icon: "/image/favicon.svg"
+		icon: withBase("/image/favicon.svg")
 	}
 }
 
@@ -49,7 +50,7 @@ export const viewport: Viewport = {
 // follows a link to a section that moved before the old page shows, and marks
 // persisted tab choices and the platform so CSS picks them and nothing shifts
 // when the page hydrates
-const prepaint = `${themeScript}${bannerScript}try{var t=location.hash&&${JSON.stringify(hashRedirects)}[location.pathname.replace(/(.)\\/$/,"$1")+location.hash.toLowerCase()];if(t)location.replace(t);var d=document.documentElement;if(/Mac|iPhone|iPad/.test(navigator.platform))d.dataset.mac="";var s=new URLSearchParams(location.search).get("syntax")||localStorage.getItem("ark-syntax");if(s)d.dataset.syntax=s;for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf("ark-tabs:")===0)d.setAttribute("data-tab-"+k.slice(9),localStorage.getItem(k))}}catch(e){}`
+const prepaint = `${themeScript}${bannerScript}try{var t=location.hash&&${JSON.stringify(hashRedirects)}[location.pathname.slice(${basePath.length}).replace(/(.)\\/$/,"$1")+location.hash.toLowerCase()];if(t)location.replace(${JSON.stringify(basePath)}+t);var d=document.documentElement;if(/Mac|iPhone|iPad/.test(navigator.platform))d.dataset.mac="";var s=new URLSearchParams(location.search).get("syntax")||localStorage.getItem("ark-syntax");if(s)d.dataset.syntax=s;for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf("ark-tabs:")===0)d.setAttribute("data-tab-"+k.slice(9),localStorage.getItem(k))}}catch(e){}`
 
 export default function RootLayout({ children }: { children: ReactNode }) {
 	return (

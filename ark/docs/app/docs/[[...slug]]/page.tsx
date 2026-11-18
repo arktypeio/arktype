@@ -23,7 +23,8 @@ import {
 } from "../../../lib/content/pageTree.ts"
 import { repoArkDir } from "../../../lib/content/paths.ts"
 import { redirects, redirectTarget } from "../../../lib/content/redirects.ts"
-import { defineMetadata } from "../../metadata.ts"
+import { withBase } from "../../../lib/basePath.ts"
+import { defineMetadata, siteUrl } from "../../metadata.ts"
 import { lastUpdatedOf } from "./lastUpdated.ts"
 
 type Props = { params: Promise<{ slug?: string[] }> }
@@ -96,7 +97,7 @@ export default async function DocsPage({ params }: Props) {
 	const { body } = parseMdx(readFileSync(page.path, "utf8"))
 	const { Content, toc } = await compileMdx(body)
 	const entries = page.frontmatter.toc === false ? [] : toc
-	const markdownUrl = `${page.url}.md`
+	const markdownUrl = withBase(`${page.url}.md`)
 	const editUrl = `https://github.com/arktypeio/arktype/edit/main/${relative(`${repoArkDir}/..`, page.path).split(sep).join("/")}`
 	// a post's last commit would read as when it was written
 	const isPost = section.id === "blog" && page.url !== section.url
@@ -105,7 +106,7 @@ export default async function DocsPage({ params }: Props) {
 		<>
 			<div hidden data-nosnippet>
 				Reading this as an agent? This page is Markdown at {markdownUrl}. Index
-				of every page: https://arktype.io/llms.txt
+				of every page: {siteUrl}/llms.txt
 			</div>
 			<TopNav
 				section={section.id}

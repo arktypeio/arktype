@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { withBase } from "../../lib/basePath.ts"
 import { getPageTree } from "../../lib/content/docs.ts"
 import { Brand } from "./Brand.tsx"
 import { docsSectionsOf } from "./sections.ts"
@@ -40,7 +41,7 @@ export const SiteFooter = () => (
 				{tools.map(link => (
 					<li key={link.title}>
 						{link.href.endsWith(".txt") ?
-							<a href={link.href}>{link.title}</a>
+							<a href={withBase(link.href)}>{link.title}</a>
 						:	<Link href={link.href} prefetch={false}>
 								{link.title}
 							</Link>

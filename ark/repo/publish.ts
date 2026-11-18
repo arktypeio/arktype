@@ -76,6 +76,8 @@ const releaseFlagsOf = ({ pkg }: Release) =>
 	: pkg.scope === "type" ? "--latest"
 	: "--latest=false"
 
+// a prerelease's docs deploy under its major, e.g. arktype.io/3, beside the
+// stable docs, which publish.yml rebuilds from the latest stable tag
 const deploysSite = !isPrerelease(packagesByScope.type.version)
 
 if (dryRun) {
@@ -103,7 +105,7 @@ if (dryRun) {
 	)
 	// publish.yml's version job decides the same way
 	console.log(
-		`\nsite: ${deploysSite ? "deploys" : `not deployed, since ${packagesByScope.type.name}@${packagesByScope.type.version} is a prerelease`}`
+		`\nsite: ${deploysSite ? "deploys" : `deploys the latest stable docs, with ${packagesByScope.type.name}@${packagesByScope.type.version}'s at /${packagesByScope.type.version.split(".")[0]}`}`
 	)
 } else {
 	for (const { tag } of toTag) shell(`git tag --force ${tag}`)
