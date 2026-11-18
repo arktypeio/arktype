@@ -48,6 +48,8 @@ type Field =
 interface Narrow {
 	helper?: string
 	test?: string
+	/** what an integer must be a multiple of, where that's its test */
+	step?: number
 	message: string
 }
 
@@ -342,9 +344,14 @@ export const synthOf = (
 			return { helper, message: `${label} must not ${mustNot}.` }
 		}
 		if (field.kind === "integer") {
-			const step = decorPick(steps)
+			// no greater than its maximum, so some integer satisfies both
+			const { max } = field
+			const step = decorPick(
+				steps.filter(step => max === undefined || step <= max)
+			)
 			return {
 				test: `value % ${step} === 0`,
+				step,
 				message: `${label} must be a multiple of ${step}.`
 			}
 		}
@@ -380,6 +387,15 @@ export const synthOf = (
 		if (options.narrows && decor() < options.narrows) {
 			const narrow = narrowOf(prop.field, label)
 			if (narrow) prop.narrow = narrow
+			// a default its own narrow rejects is a ParseError in ArkType and a
+			// value Valibot rejects, so a default of 1 becomes the step itself,
+			// which is within the field's bounds
+			if (
+				narrow?.step &&
+				typeof prop.default === "number" &&
+				prop.default % narrow.step
+			)
+				prop.default = narrow.step
 		}
 	}
 

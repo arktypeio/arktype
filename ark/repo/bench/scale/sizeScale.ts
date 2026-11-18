@@ -12,8 +12,10 @@
 // narrows a schema, the rates of the production app this was first measured
 // on. "messages" and "narrows" have one of the two each, to say what each costs.
 //
-// Before sizing anything, agree.ts checks that each corpus is the same app in
-// every library: its schemas accept and reject the same values.
+// Before sizing anything, agree.ts creates each corpus's largest app in every
+// library, ArkType dynamically, and checks its schemas accept and reject the
+// same values. A smaller app of a seed is the first schemas of its largest, so
+// that covers every schema sized.
 //
 // Writes ark/docs/lib/bench/sizeScale.json, whose fits and crossovers
 // ark/docs/lib/bench/sizeScale.ts derives, so the page follows a new run.
@@ -24,13 +26,12 @@
 //
 // usage: pnpm benchSizeScale
 //        BENCH_SCALES=1,50 BENCH_SEEDS=1 pnpm benchSizeScale (a part of it, written to ark/repo/bench/out/sizeScale.json)
-import { execSync } from "node:child_process"
+import { execFileSync, execSync } from "node:child_process"
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { createRequire } from "node:module"
 import { dirname, join } from "node:path"
 import { brotliCompressSync, gzipSync } from "node:zlib"
 import { format, resolveConfig } from "prettier"
-import { agreementOf } from "./agree.ts"
 import { bundleOf, scaleBuilds, type ScaleBuild } from "./build.ts"
 import {
 	modulesOf,
@@ -106,12 +107,37 @@ const writeApp = (
 	return app
 }
 
-// each corpus is one app in every library before any of it is sized
+// Each seed's largest app is created in every library and is one app in each
+// before any of it is sized, in a process of its own, as thousands of schemas
+// in four libraries are more than this one should keep. A definition a library
+// throws on stops the run here.
 for (const corpus of corpora) {
-	const dir = join(out, `agree-${corpus.id}`)
-	writeApp(dir, corpus, 1, 300)
-	console.log(corpus.id, "agrees in each library on", await agreementOf(dir))
-	rmSync(dir, { recursive: true, force: true })
+	for (const seed of seeds) {
+		const largest = Math.max(...scales)
+		const dir = join(out, `agree-${corpus.id}-${seed}`)
+		const app = writeApp(dir, corpus, seed, largest)
+		for (const schemas of scales) {
+			if (
+				!app.arktype.startsWith(synthOf(schemas, seed, corpus.options).arktype)
+			) {
+				throw new Error(
+					`${corpus.id} seed ${seed} at ${schemas} isn't the first schemas of its app of ${largest}, so checking that one doesn't check it`
+				)
+			}
+		}
+		const agreement = execFileSync(
+			process.execPath,
+			[join(import.meta.dirname, "agree.ts"), dir],
+			{ encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] }
+		)
+		console.log(
+			corpus.id,
+			seed,
+			"is one app in each library:",
+			agreement.trim()
+		)
+		rmSync(dir, { recursive: true, force: true })
+	}
 }
 
 const rowOf = async (

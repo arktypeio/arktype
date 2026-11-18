@@ -1,13 +1,20 @@
-// Whether an app synth.ts wrote is the same app in each library: every schema
-// of each is given values it should accept and values it shouldn't, and the
-// four must answer alike. A library missing a check would ship less for it,
-// so sizeScale.ts runs this before it measures.
+// Whether an app synth.ts wrote is the same app in each library, and one that
+// runs: it imports each library's modules, which creates every schema, ArkType
+// dynamically, and gives each schema values it should accept and values it
+// shouldn't. The four must answer alike, and all must accept the ones made to
+// be valid. A library missing a check would ship less for it, and sizing
+// bundles runs none of them, so sizeScale.ts runs this on every app it sizes:
+// a definition ArkType throws on, like a default its own narrow rejects, fails
+// here and not in a reader's build.
 //
 // The values are read off Valibot's schemas, the only ones that say what
-// they're made of without their library's internals: for each schema, one
-// that satisfies it, then that one with each key in turn of the wrong type,
-// then with every plain string or every number replaced by one a narrow may
-// reject.
+// they're made of without their library's internals. For each schema: one
+// that satisfies it, that one without its optional keys, so each library
+// fills in its defaults, then with each key in turn of the wrong type, then
+// with every plain string or every number replaced by one a narrow may reject.
+//
+// usage: node ark/repo/bench/scale/agree.ts <an app's directory>
+import { type } from "arktype"
 import { join } from "node:path"
 import type { SynthLibrary } from "./synth.ts"
 
@@ -23,6 +30,8 @@ type Shape = {
 }
 
 type Action = { type: string; requirement?: unknown }
+
+type Valibot = typeof import("valibot")
 
 // what satisfies each of synth.ts's patterns, by its source
 const matches: Record<string, string> = {
@@ -48,32 +57,36 @@ const stringOf = (actions: Action[]): string => {
 	return pattern ? matches[(pattern.requirement as RegExp).source] : plain
 }
 
-// a value the schema accepts, but for a narrow, or with the key at `broken` of
-// a type it doesn't
-const valueOf = (
-	schema: Shape,
-	broken: string | undefined,
-	path: string
-): unknown => {
-	const isBroken = broken === path
+// the first is a multiple of every step a narrow asks for, and the rest are
+// within a smaller maximum
+const numbers = [100, 50, 10, 5, 0, 1]
+
+/** how a value is made: the key to give the wrong type, and whether optional keys are left out */
+type Making = {
+	v: Valibot
+	broken?: string
+	required?: boolean
+}
+
+// a value the schema accepts, or with the key at `broken` of a type it doesn't
+const valueOf = (schema: Shape, making: Making, path: string): unknown => {
+	const isBroken = making.broken === path
 	switch (schema.type) {
 		case "object":
 			return Object.fromEntries(
-				Object.entries(schema.entries!).map(([key, entry]) => [
-					key,
-					valueOf(
-						entry.type === "optional" ? entry.wrapped! : entry,
-						broken,
-						`${path}.${key}`
-					)
-				])
+				Object.entries(schema.entries!).flatMap(([key, entry]) =>
+					entry.type !== "optional" ?
+						[[key, valueOf(entry, making, `${path}.${key}`)]]
+					: making.required ? []
+					: [[key, valueOf(entry.wrapped!, making, `${path}.${key}`)]]
+				)
 			)
 		case "variant":
-			return valueOf(schema.options![0] as Shape, broken, path)
+			return valueOf(schema.options![0] as Shape, making, path)
 		case "nullable":
-			return isBroken ? 5 : valueOf(schema.wrapped!, broken, path)
+			return isBroken ? 5 : valueOf(schema.wrapped!, making, path)
 		case "array":
-			return isBroken ? plain : [valueOf(schema.item!, broken, `${path}[]`)]
+			return isBroken ? plain : [valueOf(schema.item!, making, `${path}[]`)]
 		case "picklist":
 			return isBroken ? "none of them" : schema.options![0]
 		case "literal":
@@ -81,9 +94,12 @@ const valueOf = (
 		case "boolean":
 			return isBroken ? "yes" : true
 		case "number": {
-			const min = schema.pipe?.find(action => action.type === "min_value")
-			// a multiple of each step a narrow may ask for
-			return isBroken ? "1" : Math.max((min?.requirement as number) ?? 0, 100)
+			if (isBroken) return "1"
+			// its bounds and any narrow are Valibot's to say
+			const value = numbers.find(n => making.v.is(schema as never, n))
+			if (value === undefined)
+				throw new Error(`no integer satisfies the field at ${path}`)
+			return value
 		}
 		case "string":
 			return isBroken ? 5 : stringOf(schema.pipe ?? [])
@@ -134,14 +150,24 @@ const replaced = (value: unknown, by: string | number): unknown =>
 	:	value
 
 export type Agreement = {
+	/** the schemas each library created */
+	schemas: number
 	/** how many values every library accepted and how many every one rejected */
 	accepted: number
 	rejected: number
 }
 
+/** a value a schema is given, and whether it's one made to satisfy it */
+type Case = {
+	value: unknown
+	valid?: boolean
+}
+
 /**
- * Checks the app in `dir` and returns how many values its schemas were given,
- * throwing at the first that one library accepts and another rejects
+ * Creates the app in `dir` in each library and returns how many values its
+ * schemas were given, throwing where creating one throws, at the first value
+ * one library accepts and another rejects, and at one made to be valid that
+ * any rejects
  */
 export const agreementOf = async (dir: string): Promise<Agreement> => {
 	const load = (library: SynthLibrary) => import(join(dir, `${library}.ts`))
@@ -153,32 +179,42 @@ export const agreementOf = async (dir: string): Promise<Agreement> => {
 	])
 	const v = await import("valibot")
 	const z = await import("zod/mini")
-	const result = { accepted: 0, rejected: 0 }
-	for (const name of Object.keys(valibot)) {
+	const names = Object.keys(valibot)
+	const result = { schemas: names.length, accepted: 0, rejected: 0 }
+	for (const name of names) {
 		const schema: Shape = valibot[name]
-		const valid = valueOf(schema, undefined, "")
-		const values = [
-			valid,
-			{},
-			null,
-			...keysOf(schema).map(key => valueOf(schema, `.${key}`, "")),
-			...narrowed.map(by => replaced(valid, by))
+		const valid = valueOf(schema, { v }, "")
+		const cases: Case[] = [
+			{ value: valid, valid: true },
+			{ value: valueOf(schema, { v, required: true }, ""), valid: true },
+			{ value: {} },
+			{ value: null },
+			...keysOf(schema).map(key => ({
+				value: valueOf(schema, { v, broken: `.${key}` }, "")
+			})),
+			...narrowed.map(by => ({ value: replaced(valid, by) }))
 		]
-		for (const value of values) {
+		for (const { value, valid } of cases) {
 			// each its own copy, as a default is written into what's validated
 			const answers: Record<SynthLibrary, boolean> = {
-				arktype: arktype[name].allows(structuredClone(value)),
-				valibot: v.is(valibot[name], structuredClone(value)),
+				arktype: !(
+					arktype[name](structuredClone(value)) instanceof type.errors
+				),
+				valibot: v.safeParse(valibot[name], structuredClone(value)).success,
 				zod: zod[name].safeParse(structuredClone(value)).success,
 				zodMini: z.safeParse(zodMini[name], structuredClone(value)).success
 			}
-			if (new Set(Object.values(answers)).size > 1) {
+			const accepting = Object.values(answers).filter(Boolean).length
+			if (accepting % 4 || (valid && !accepting)) {
 				throw new Error(
-					`${name} in ${dir} isn't one schema in each library: given ${JSON.stringify(value)}, whether each accepts it is ${JSON.stringify(answers)}`
+					`${name} in ${dir} ${valid ? "should accept" : "isn't one schema in each library: given"} ${JSON.stringify(value)}, and whether each accepts it is ${JSON.stringify(answers)}`
 				)
 			}
-			result[answers.arktype ? "accepted" : "rejected"]++
+			result[accepting ? "accepted" : "rejected"]++
 		}
 	}
 	return result
 }
+
+if (process.argv[1] === import.meta.filename)
+	console.log(JSON.stringify(await agreementOf(process.argv[2])))
