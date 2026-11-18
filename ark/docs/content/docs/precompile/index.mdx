@@ -18,7 +18,7 @@ export default {
 
 [Setup](/docs/precompile/setup) covers every bundler, test runner and Next.
 
-The cost is a build step. [Every error it reports names its fix](#with-agents), so an agent can run it.
+A precompiled validator accepts and rejects what the Type it replaces does, with the same error messages. The cost is a build step. [Every error it reports names its fix](#with-agents), so an agent can run it.
 
 ## Speed and size
 
@@ -37,31 +37,11 @@ ArkType reduces every Type to a normalized set of constraints, so it knows which
 - **Redundant checks disappear.** `number > 0` intersected with `number >= 10` is `number >= 10`, one check, and a branch never rechecks the key it was chosen by.
 - **Contradictions never ship.** `{ id: string }` intersected with `{ id: number }` throws a ParseError, which fails the build rather than shipping a validator that rejects everything.
 
-```ts
-const Shape = type({
-	kind: "'circle'",
-	radius: "number > 0"
-}).or({
-	kind: "'square'",
-	side: "number > 0"
-})
-```
+### What ships
 
-Precompiled, `Shape` checks data like this, its helpers inlined:
+Edit the definition, and the precompiler runs on what you type:
 
-```ts
-// @noErrors
-// ---cut---
-data => {
-	switch (data?.kind) {
-		case "circle":
-			return Number.isFinite(data.radius) && data.radius > 0
-		case "square":
-			return Number.isFinite(data.side) && data.side > 0
-	}
-	return false
-}
-```
+<LivePrecompile />
 
 ## With agents
 
@@ -88,9 +68,9 @@ Precompiling moves creating your Types from your program's startup to your build
 - <Claim id="buildTimeDev" />
 - <Claim id="buildTimeWatch" />
 
-<Claim id="buildTimeMedium" /> Turbopack runs the loader in a pool of processes,
-once for the client and once for the server. `next dev` precompiles each module
-for each, where one process of `next build` precompiles its project once.
+<Claim id="buildTimeMedium" />
+
+[Benchmarks](/docs/precompile/benchmarks) has how every number here was measured.
 
 ## How a validator differs
 

@@ -4,9 +4,12 @@ import { MainAutoplayDemo } from "../AutoplayDemo.tsx"
 import { CodeBlock } from "../CodeBlock.tsx"
 import { InstallationTabs } from "../InstallationTabs.tsx"
 import { KeywordTable } from "../KeywordTable.tsx"
+import { Compile } from "../precompile/Compile.tsx"
 import { RuntimeBenchmarksGraph } from "../RuntimeBenchmarksGraph.tsx"
 import { SyntaxTab, SyntaxTabs } from "../SyntaxTabs.tsx"
 import { ApiMember, ApiMembers } from "./ApiMembers.tsx"
+import { BenchmarkChart } from "./BenchmarkChart.tsx"
+import { JitComparison } from "./Benchmarks.tsx"
 import { Callout } from "./Callout.tsx"
 import {
 	Claim,
@@ -44,6 +47,8 @@ export const mdxComponents: MDXComponents = {
 	AnchorAliases,
 	ApiMember,
 	ApiMembers,
+	// every scenario of the speed benchmark, with its method
+	BenchmarkChart,
 	Callout,
 	Claim,
 	ClaimCharts,
@@ -51,8 +56,11 @@ export const mdxComponents: MDXComponents = {
 	HeadlineNote,
 	CodeBlock,
 	InstallationTabs,
+	JitComparison,
 	KeywordTable,
 	LinkCard,
+	// a definition and what the build writes for it, editable
+	LivePrecompile: Compile,
 	// the demo itself is small; the playground behind it loads only when opened
 	MainAutoplayDemo,
 	PresetSizeTable,

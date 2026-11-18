@@ -680,6 +680,33 @@ export const benchFacts = () => {
 
 export type BenchFacts = ReturnType<typeof benchFacts>
 
+export type JitComparison = {
+	/** how the two compare once running */
+	summary: string
+	header: string[]
+	rows: string[][]
+	/** what was measured, and when */
+	note: string
+}
+
+/** a precompiled build against dynamic ArkType, which compiles at runtime: speed once running, then what startup and the bundle cost */
+export const jitComparison = (): JitComparison => {
+	const facts = benchFacts()
+	return {
+		summary: `On valid data, the precompiled build is ${facts.versusJit.replaceAll("ArkType's JIT", "dynamic ArkType")}. The bigger change is everything before the first call.`,
+		header: ["Login form app", "Precompiled", "Dynamic"],
+		rows: [
+			["Cold start", facts.coldStandalone, facts.coldJit],
+			[
+				"Bundle, gzipped",
+				facts.sizeStandalone.replace("KB", "kB"),
+				facts.sizeJit.replace("KB", "kB")
+			]
+		],
+		note: benchNotes().at(-1)!.replaceAll("the JIT", "dynamic ArkType")
+	}
+}
+
 /** the default build against one library on every scenario it ran */
 export const versusLibrary = (key: string) => {
 	const measured = bench.scenarios.filter(s => s.standaloneVs[key])

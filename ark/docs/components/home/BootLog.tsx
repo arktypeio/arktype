@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react"
 import { formatRatio } from "../../lib/bench/bench.ts"
-import { startupFacts } from "./boardFacts.ts"
+import { incumbent, startupFacts } from "./boardFacts.ts"
 
 /** seconds the costliest library's start takes to play */
 const sweep = 6
@@ -52,7 +52,12 @@ export const BootLog = () => {
 				{bars.map(bar => (
 					<li
 						key={bar.name}
-						className={bar === ours ? "boot-lane is-ours" : "boot-lane"}
+						className={
+							bar === ours ? "boot-lane is-ours"
+							: bar.name === incumbent ?
+								"boot-lane is-incumbent"
+							:	"boot-lane"
+						}
 						style={
 							{
 								"--v": bar.value,

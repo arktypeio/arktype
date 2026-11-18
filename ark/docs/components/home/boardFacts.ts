@@ -1,7 +1,12 @@
 import { formatRatio, list } from "../../lib/bench/bench.ts"
-import { isWellKnown, rowsOf } from "../../lib/bench/leaderboard.ts"
+import {
+	isWellKnown,
+	leaderboards,
+	rowsOf
+} from "../../lib/bench/leaderboard.ts"
 import { ntwineRows } from "../../lib/bench/scoreboard.ts"
 import {
+	averageText,
 	categories,
 	medianOf,
 	ordinal,
@@ -151,3 +156,142 @@ export const bigAppLine = () => {
  * figures write them ("kB"). The numbers and the words are the source's.
  */
 export const kB = (text: string) => text.replaceAll(" KB", " kB")
+
+/** where the site says how every number on the homepage was measured */
+export const methodHref = "/docs/precompile/benchmarks"
+
+/** an average as a multiple of the best result: "1.252×", "19.7×", "13.8k×" */
+export const multiple = (score: number) =>
+	score < 10 ? `${averageText(score)}×`
+	: score < 1e3 ? `${score.toPrecision(3)}×`
+	: score < 1e6 ? `${(score / 1e3).toPrecision(3)}k×`
+	: `${(score / 1e6).toPrecision(3)}M×`
+
+/** the library every graph on the page keeps in view, wherever it places */
+export const incumbent = "Zod"
+
+export type BoardBar = {
+	library: string
+	/** its best average, as a multiple of the best result */
+	score: number
+	/** its place among every library ranked, named on the site or not: "4th" */
+	place: string
+	kind: "ours" | "rival" | "incumbent"
+	/** drawn only where there is room for every rival: a phone keeps the best one */
+	wide?: true
+}
+
+/** how many libraries are ranked between the incumbent and the last bar drawn above it */
+export type BoardGap = {
+	/** with every rival drawn */
+	wide: number
+	/** with only the best rival drawn, as on a phone */
+	narrow: number
+}
+
+export type BoardGraph = {
+	id: Category["id"]
+	title: string
+	/** how many results its averages are over */
+	results: number
+	/** how many libraries it ranks */
+	ranked: number
+	bars: BoardBar[]
+	skipped: BoardGap
+}
+
+const graphTitles: Record<Category["id"], string> = {
+	speed: "Validation speed",
+	startup: "Startup",
+	size: "Bundle size"
+}
+
+/** the rivals drawn under ArkType before the graph skips to the incumbent */
+const rivalsDrawn = 3
+
+/**
+ * The board, a graph a category: ArkType, the best of the other libraries
+ * the site names, and Zod, which most readers are choosing against, at
+ * whatever place it holds. Scores and places are the leaderboard's own
+ * (lib/bench/leaderboard.ts), every library counted; ArkType's place is the
+ * one lib/claims.ts gives it, "1st" only where it may claim it.
+ */
+export const boardGraphs = (): BoardGraph[] =>
+	categories.map(category => {
+		const { standings, rows } = leaderboards[category.id]
+		const placeOf = (library: string) =>
+			library === "ArkType" ?
+				category.place
+			:	ordinal(standings.findIndex(s => s.library === library) + 1)
+		const indexOf = (library: string) =>
+			standings.findIndex(s => s.library === library)
+		const barOf = (library: string, kind: BoardBar["kind"]): BoardBar => ({
+			library,
+			score: standings[indexOf(library)].score,
+			place: placeOf(library),
+			kind
+		})
+		const rivals = standings
+			.filter(s => s.library !== "ArkType" && isWellKnown(s.library))
+			.slice(0, rivalsDrawn)
+			.map(s => s.library)
+		const at = indexOf(incumbent)
+		// from the incumbent up to the nearest of these, not counting either
+		const gapAbove = (drawn: string[]) =>
+			at - Math.max(...drawn.map(indexOf).filter(index => index < at), -1) - 1
+		const apart = !rivals.includes(incumbent)
+		return {
+			id: category.id,
+			title: graphTitles[category.id],
+			results: rows,
+			ranked: standings.length,
+			bars: [
+				barOf("ArkType", "ours"),
+				...rivals.map(
+					(library, i): BoardBar =>
+						library === incumbent ? barOf(library, "incumbent")
+						: i === 0 ? barOf(library, "rival")
+						: { ...barOf(library, "rival"), wide: true }
+				),
+				...(apart ? [barOf(incumbent, "incumbent")] : [])
+			],
+			skipped: {
+				wide: gapAbove(["ArkType", ...rivals]),
+				narrow: gapAbove(["ArkType", ...rivals.slice(0, 1)])
+			}
+		}
+	})
+
+export type SpeedBar = {
+	name: string
+	/** how many times ArkType's time per call its is, at the median scenario */
+	median: number
+	/** that, as the claims state it: "15×" */
+	text: string
+	/** its closest scenario and its farthest: "3×", "259×" */
+	closest: string
+	farthest: string
+	/** scenarios it was slower on, of those both ran */
+	slower: number
+	of: number
+}
+
+/**
+ * Each rival on the homepage's benchmark as one number and its spread: the
+ * median scenario, the closest and the farthest, and how many it lost. All
+ * from the per-scenario ratios the claims' medians are taken from, each
+ * truncated as every ratio on the page is.
+ */
+export const speedBars = (): SpeedBar[] =>
+	categoryOf("speed").versus.map(({ name, versus }) => {
+		const ratios = versus.rows.map(row => row.speedup)
+		return {
+			name,
+			median: parseFloat(medianOf(versus)),
+			text: medianOf(versus),
+			closest: formatRatio(Math.min(...ratios)),
+			farthest: formatRatio(Math.max(...ratios)),
+			slower: versus.wins,
+			of: versus.count
+		}
+	})

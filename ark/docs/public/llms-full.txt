@@ -9543,7 +9543,7 @@ const User = type({
 })
 ```
 
-[Precompiled](https://arktype.io/docs/precompile), it ships no parser. Precompiled ArkType was faster than Zod 4 in all 32 scenarios of our benchmark, by a median of 15×, and faster than Zod 4's z.compile in 32 of 32, by a median of 5.3×. On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 1.01 kB gzipped against 1.55 kB. The [homepage](https://arktype.io/#board) has each benchmark with its method.
+[Precompiled](https://arktype.io/docs/precompile), it ships no parser. Precompiled ArkType was faster than Zod 4 in all 32 scenarios of our benchmark, by a median of 15×, and faster than Zod 4's z.compile in 32 of 32, by a median of 5.3×. On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 1.01 kB gzipped against 1.55 kB. [Benchmarks](https://arktype.io/docs/precompile/benchmarks) has how each was measured.
 
 Without the plugin, arktype parses definitions at runtime, so it ships its parser. Dynamic ArkType is 89.8 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.
 

@@ -16,7 +16,9 @@ import { toMarkdown } from "mdast-util-to-markdown"
 import { visit } from "unist-util-visit"
 import { siteUrl } from "../../app/metadata.ts"
 import { installCommand } from "../../components/installCommand.ts"
+import { shapeEmitted, shapeSource } from "../../components/precompile/shape.ts"
 import snippetContentsById from "../../components/snippets/contentsById.ts"
+import { benchNotes, benchTable, jitComparison } from "../bench/bench.ts"
 import {
 	claims,
 	draftOf,
@@ -334,6 +336,35 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 						}
 					]
 				} satisfies Paragraph
+			]
+		case "BenchmarkChart": {
+			const { head, rows } = benchTable()
+			return [
+				table(
+					head,
+					rows.map(row => [
+						row.scenario,
+						...row.cells,
+						row.fastestOther,
+						row.versus
+					])
+				),
+				...benchNotes().map(note => paragraph(note))
+			]
+		}
+		case "JitComparison": {
+			const { summary, header, rows, note } = jitComparison()
+			return [paragraph(summary), table(header, rows), paragraph(note)]
+		}
+		case "LivePrecompile":
+			return [
+				{ type: "code", lang: "ts", value: shapeSource },
+				paragraph("What ships for it, as the precompiler emits it:"),
+				{
+					type: "code",
+					lang: "js",
+					value: [shapeEmitted.main, ...shapeEmitted.helpers].join("\n\n")
+				}
 			]
 		case "PresetSizeTable":
 			return [

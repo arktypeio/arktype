@@ -38,8 +38,8 @@ type StepProps = {
 	children: string
 }
 
-/** a stage of the build, numbered in the order the figure plays them */
-export const Step = ({ n, children }: StepProps) => (
+/** a stage of the build, numbered in the order it happens */
+const Step = ({ n, children }: StepProps) => (
 	<span className="compile-step">
 		<b>{n}</b>
 		{children}
@@ -199,7 +199,7 @@ export const CompileLive = ({
 				style={{ "--rows": linesOf(source) + 1 } as CSSProperties}
 			>
 				<figcaption>
-					<Step n={2}>write a Type</Step>
+					<Step n={1}>write a Type</Step>
 					<span className="compile-file">
 						shape.ts
 						{editing ?
@@ -240,7 +240,6 @@ export const CompileLive = ({
 						{input}
 					</div>
 				}
-				<span className="compile-scan" aria-hidden />
 				<footer>
 					<span>
 						{editing ?
@@ -272,7 +271,7 @@ export const CompileLive = ({
 				data-pending={pending ? "" : undefined}
 			>
 				<figcaption>
-					<Step n={3}>what ships</Step>
+					<Step n={2}>what ships</Step>
 					<span>
 						{result.ok ?
 							"as emitted · names shortened"
