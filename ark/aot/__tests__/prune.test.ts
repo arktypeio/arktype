@@ -3038,13 +3038,19 @@ console.log(out instanceof type.errors ? out.summary : out)
 		const output = (js: string, cwd?: string) =>
 			spawnSync(process.execPath, { input: js, encoding: "utf8", cwd }).stdout
 
-		// the warnings a build ends with
+		// the warnings a build ends with, each as its text alone: Rspack marks one
+		// `⚠ ` and ends its line, and where its output is colored, as on a CI
+		// runner, wraps the mark in escapes and adds an entry holding only a reset
 		const collecting = (warnings: string[]) => ({
 			apply: (compiler: webpack.Compiler) =>
 				compiler.hooks.done.tap("collecting", stats => {
 					for (const { message } of stats.toJson({ all: false, warnings: true })
-						.warnings ?? [])
-						warnings.push(message)
+						.warnings ?? []) {
+						const text = stripVTControlCharacters(message)
+							.trim()
+							.replace(/^⚠ /, "")
+						if (text) warnings.push(text)
+					}
 				})
 		})
 
@@ -4170,10 +4176,7 @@ load("shown").then(page =>
 					if (stats?.hasErrors()) throw new Error(stats.toString("errors-only"))
 					const dir = join(root, "out", name)
 					return {
-						// Rspack marks a warning and ends its line
-						warnings: warnings.map(warning =>
-							warning.trim().replace(/^⚠ /, "")
-						),
+						warnings,
 						keepsStandard: readdirSync(dir).some(file =>
 							readFileSync(join(dir, file), "utf8").includes("~standard")
 						),
@@ -4235,8 +4238,7 @@ export const shown = type({ shown: "string" })
 						)
 						if (stats?.hasErrors())
 							throw new Error(stats.toString("errors-only"))
-						// Rspack marks a warning and ends its line
-						return warnings.map(warning => warning.trim().replace(/^⚠ /, ""))
+						return warnings
 					}
 					attest(await warningsOf({ target: "web" })).equals([
 						'precompile: compiled to check fastest, this bundle\'s validators would be about 1.5 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
