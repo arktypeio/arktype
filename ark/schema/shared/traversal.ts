@@ -878,13 +878,16 @@ export const exitResolution = (
 		if (assumedFrom < res.assumedFrom) res.assumedFrom = assumedFrom
 		return true
 	}
-	// settle each result that assumed this one
-	for (let i = frame.assumedLength; i < assumed.length; i += 2) {
-		const assumedStates = assumed[i] as Map<unknown, ResolutionState>
-		if (valid) assumedStates.set(assumed[i + 1], true)
-		else assumedStates.delete(assumed[i + 1])
+	// settle each result that assumed this one. Most data has none, and an
+	// array's length is set by a call even where it's the length it has
+	if (assumed.length !== frame.assumedLength) {
+		for (let i = frame.assumedLength; i < assumed.length; i += 2) {
+			const assumedStates = assumed[i] as Map<unknown, ResolutionState>
+			if (valid) assumedStates.set(assumed[i + 1], true)
+			else assumedStates.delete(assumed[i + 1])
+		}
+		assumed.length = frame.assumedLength
 	}
-	assumed.length = frame.assumedLength
 	states.set(data, state)
 	if (typeof state === "object" && state.reported) res.invalid ??= state
 	return valid
