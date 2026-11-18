@@ -2041,6 +2041,31 @@ export const B = /* @__PURE__ */ $ark_create(/* @__PURE__ */ $ark_runtime.props(
 				attest(linked.unexposed).equals(0)
 				attest(linked.modules["~arktype/a"]).equals(units["~arktype/a"])
 			})
+
+			it("stays the one a unit reads where a bundle is linked again, as its site names it", () => {
+				// two sites create from b, so b stays a unit, reading the validator a is
+				const twice = `${code}export const C = /* @__PURE__ */ $ark_create($ark_bAllows)\n`
+				const linked = linkedWith(twice, true)
+				const again = linkBundle(
+					{
+						"/main.ts": {
+							source: "export const A = type({})",
+							code: linked.sites["/main.ts"].code
+						}
+					},
+					linked.modules,
+					{ exposesAllows: true }
+				)
+				// the site's `export { $ark_aAllows as A }` reads it too, so no copy
+				// of what creates it is written into b
+				const modules = again?.modules ?? linked.modules
+				const [, b] = Object.entries(modules).find(([specifier]) =>
+					specifier.startsWith("~arktype/b")
+				)!
+				attest(b.match(/const bAllows = .*/)?.[0]).snap(
+					"const bAllows = /* @__PURE__ */ runtime.props({ a: /* @__PURE__ */ runtime.allowsOf(aAllows) })"
+				)
+			})
 		})
 
 		it("declares a one-chunk bundle's units in one module, as its sites read them", () => {

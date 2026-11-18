@@ -968,6 +968,8 @@ class Linker {
 			const into = statementOf(read.reference.id)
 			if (
 				read.unit.isSite !== intoSites ||
+				// a name a site exports can't be written as what declares it
+				read.reference.id.parent?.type === "ExportSpecifier" ||
 				written.has(statementOf(binding.declaration)) ||
 				!this.inline(owner, binding, read)
 			)
@@ -1172,7 +1174,9 @@ class Linker {
 	private read(unit: Unit, reference: Reference): void {
 		const binding = reference.binding
 		if (!binding || binding.scope !== unit.module.scopes.root) return
-		if (reference.id.parent?.type === "ExportSpecifier") return
+		// a unit's own list of what it declares reads none of it, where a site's
+		// names a validator the app reads, as one a link before this declared
+		if (reference.id.parent?.type === "ExportSpecifier" && !unit.isSite) return
 		const declared = this.declarationOf(unit, binding)
 		if (!declared) return
 		const [owner, declaration] = declared
