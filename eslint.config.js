@@ -27,6 +27,8 @@ export default tseslint.config(
 			"**/*scratch.ts",
 			"**/scratch/**/*",
 			"**/examples/**/*",
+			// ntwine's worktrees, each a checkout of this repo linted as its own
+			".ntwine/**/*",
 			// programs and fixtures the tests write
 			"ark/aot/__tests__/temp/**/*",
 			"ark/repo/temp/**/*",

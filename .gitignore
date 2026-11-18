@@ -15,6 +15,9 @@ next-env.d.ts
 .attest
 tsconfig.build.json
 coverage
+# ntwine's worktrees and thread state, checkouts of this repo that prettier
+# would otherwise walk (it reads this file, not the .gitignore inside)
+.ntwine
 # generated per-page Markdown, see ark/docs/lib/writeMarkdown.ts
 ark/docs/public/docs/**/*.md
 # bundled from ark/docs/components/home/ark.worker.ts, see ark/docs/lib/writeLiveWorker.ts
