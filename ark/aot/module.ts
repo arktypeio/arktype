@@ -98,12 +98,34 @@ const parse = (id: string, source: string, lang: Lang) =>
 // a buffer reserving 6 GiB of address space, which Windows commits
 let readsRaw = process.platform !== "win32" && rawTransferSupported()
 
+// Raw transfer ends the process, with a panic nothing here can catch ("out of
+// memory" in oxc_allocator), on a module of several thousand import
+// declarations: in oxc-parser 0.153.0, 4,500 are read and 5,000 aren't,
+// whatever they import. A module of 2,000 definitions a default build wrote
+// imports about 6,000 units, each on a line of its own. Its tree is read as
+// JSON, which reads any number: this many mentions of `import` is well under
+// what fails, and a text too short to hold them isn't searched
+const maxRawImports = 2048
+
+const importsWithinRaw = (source: string): boolean => {
+	// `import"a";`, the shortest there is
+	if (source.length < maxRawImports * 10) return true
+	let mentions = 0
+	for (
+		let at = source.indexOf("import");
+		at !== -1;
+		at = source.indexOf("import", at + 6)
+	)
+		if (++mentions > maxRawImports) return false
+	return true
+}
+
 export const parseCode = (
 	id: string,
 	source: string,
 	options: ParserOptions
 ): ParseResult => {
-	if (readsRaw) {
+	if (readsRaw && importsWithinRaw(source)) {
 		try {
 			return parseSync(id, source, {
 				...options,
