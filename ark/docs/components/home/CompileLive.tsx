@@ -199,6 +199,13 @@ export const CompileLive = ({
 					</div>
 				}
 				<span className="compile-scan" aria-hidden />
+				<footer>
+					<span>
+						{editing ?
+							"compiled as you type"
+						:	"change it: the real precompiler runs in this tab"}
+					</span>
+				</footer>
 			</figure>
 			<figure
 				className="code-card glow compile-out"

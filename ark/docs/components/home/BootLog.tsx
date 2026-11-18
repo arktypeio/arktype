@@ -28,6 +28,7 @@ export const BootLog = () => {
 				<span>
 					<span className="p">$</span> node login-app.js
 				</span>
+				<span className="boot-unit">CPU instructions run</span>
 				<button className="boot-replay" type="button">
 					replay
 				</button>

@@ -448,6 +448,11 @@
 			border-color: color-mix(in oklab, var(--ink) 28%, transparent);
 		}
 	}
+	/* over the lanes' counts, which it names */
+	.boot-unit {
+		margin-left: auto;
+		color: var(--ink-2);
+	}
 	/* shown once something is running: until then there is nothing to stop */
 	.count:not([data-play]) .count-toggle,
 	.boot:not([data-play]) .boot-replay {
@@ -1693,7 +1698,14 @@
 		}
 		/* room for the running title's second line, so starting never moves the lanes */
 		.count-head {
-			min-height: 36px;
+			align-items: flex-start;
+		}
+		.count-title {
+			min-height: 2lh;
+		}
+		/* the caption names the unit where the head has no room to */
+		.boot-unit {
+			display: none;
 		}
 		.boot-lane {
 			grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
@@ -1724,6 +1736,17 @@
 		.scale-end,
 		.scale-x.is-tight {
 			display: none;
+		}
+		/* three columns of numbers beside a label that may wrap, so none is off the card */
+		.scale-table.is-preset {
+			font-size: 12.5px;
+			th,
+			td {
+				padding: 9px 6px;
+			}
+			:is(th, td):first-child {
+				white-space: normal;
+			}
 		}
 		.cutoffs li {
 			grid-template-columns: minmax(0, 1fr);

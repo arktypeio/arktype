@@ -94,8 +94,7 @@ export const SpeedCount = () => {
 				))}
 			</ol>
 			<figcaption>
-				slowed to read · each library at its median time per call across the{" "}
-				{count} scenarios
+				slowed to read · each library at its median across the {count} scenarios
 			</figcaption>
 		</figure>
 	)
