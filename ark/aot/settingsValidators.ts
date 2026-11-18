@@ -70,9 +70,8 @@ var ReadIssues = class {
 		const depth2 = path.length
 		let context = (readsKeySites ? site.v : void 0) ?? site
 		let at
-		if (key === void 0) {
-			at = depth2 === 0 ? [] : path.slice()
-		} else {
+		if (key === void 0) at = depth2 === 0 ? [] : path.slice()
+		else {
 			const value = data[key]
 			if (value === void 0 && site.m && (absent || !(key in data)))
 				context = site.m

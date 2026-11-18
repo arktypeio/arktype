@@ -143,9 +143,8 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		let context = (readsKeySites ? site.v : undefined) ?? (site as SiteContext)
 		// copied by its length where it's short, as a slice is a call
 		let at: PropertyKey[]
-		if (key === undefined) {
-			at = depth === 0 ? [] : path.slice()
-		} else {
+		if (key === undefined) at = depth === 0 ? [] : path.slice()
+		else {
 			// read first, as only a value that's undefined can be a missing key's,
 			// and whether a key any site passes is in data is a call
 			const value = (data as Keyed)[key]
