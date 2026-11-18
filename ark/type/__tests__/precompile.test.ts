@@ -138,6 +138,24 @@ contextualize(() => {
 		).equals(true)
 	})
 
+	it("reports a key holding a union of units at the key, not through the union's Apply", () => {
+		const { code } = precompileStandalone({
+			T: type({ flag: "boolean", kind: "'a' | 'b'", "maybe?": "boolean" })
+		})
+		attest(
+			code.includes(
+				`data.flag === false || data.flag === true || !ctx._at(runtime.keySiteOf("discriminant", "boolean"), data, "flag")`
+			)
+		).equals(true)
+		attest(
+			code.includes(
+				`!ctx._at(runtime.keySiteOf("discriminant", "\\"a\\" or \\"b\\""), data, "kind")`
+			)
+		).equals(true)
+		// an optional key's is still applied
+		attest(code.match(/ctx\._in\(/g)?.length).equals(1)
+	})
+
 	it("transforms an array whose items alone transform as its items", () => {
 		const Items = type({ a: "number = 0" }).array()
 		const { code } = precompileStandalone({ Items })

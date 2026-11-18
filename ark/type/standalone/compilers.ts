@@ -259,6 +259,12 @@ class StandaloneCompiler extends TraversalCompiler {
 		const { value, errorCtx } = prop as nodeOfKind<"required">
 		if (reportsItself(value) && expectsItsBases(value))
 			return this.siteRef(unionKeySiteOf(value.failSite, errorCtx))
+		// as does a union of units, like a boolean, which only misses
+		if (onlyMisses(value)) {
+			return this.siteRef(
+				issueSiteOf({ v: discriminantTextOf(value), m: errorCtx } as never)
+			)
+		}
 	}
 
 	// unless its issue reads its branches'
@@ -277,12 +283,34 @@ const isDecidedByKeywords = (node: BaseNode): boolean =>
 		reference => !reference.is("predicate") || isKeyword(reference.predicate)
 	)
 
+const discriminantTexts = new WeakMap<UnionNode, TextContext>()
+
+// one for each union, as a site is found by its context
+const discriminantTextOf = (node: UnionNode): TextContext => {
+	let text = discriminantTexts.get(node)
+	if (!text) {
+		text = {
+			code: "discriminant",
+			description: node.discDesc,
+			meta: node.discMeta
+		}
+		discriminantTexts.set(node, text)
+	}
+	return text
+}
+
 export const discriminantContextOf = (node: UnionNode): IssueContext =>
-	issueContextOf({
-		code: "discriminant",
-		description: node.discDesc,
-		meta: node.discMeta
-	})
+	issueContextOf(discriminantTextOf(node))
+
+// a union told apart by its own value whose every case is a unit: its Apply
+// reports only that no case matched, as one issue where it's read
+const onlyMisses = (value: BaseNode): value is UnionNode =>
+	value.is("union") &&
+	!!value.discriminant &&
+	value.discriminant.path.length === 0 &&
+	!value.missLists &&
+	!value.hasAlias &&
+	Object.values(value.discriminant.cases).every(c => c === true)
 
 // arktype writes a union's text from its branches' first issues unless it's
 // written its own
