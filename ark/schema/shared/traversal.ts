@@ -197,10 +197,13 @@ export class InternalTraversal implements FailureContext {
 		key: PropertyKey,
 		missing?: FailureSite
 	): boolean | undefined {
-		if (missing && !(key in (data as object)))
+		// read first, as only a value that's undefined can be a missing key's,
+		// and whether a key any site passes is in data is a call
+		const value = (data as Record<PropertyKey, unknown>)[key]
+		if (value === undefined && missing && !(key in (data as object)))
 			return this._at(missing, data, key)
 		this.path.push(key)
-		const continues = apply((data as Record<PropertyKey, unknown>)[key], this)
+		const continues = apply(value, this)
 		this.path.pop()
 		return !continues
 	}

@@ -74,6 +74,17 @@ contextualize(() => {
 		])
 	})
 
+	it("reports a key holding undefined as its value, not as missing", () => {
+		const owner: CompactApply = (data, ctx) =>
+			!ctx._in(user, data, "owner", { m: { code: "required" } })
+		const errors = new ArkErrors()
+		user({ name: undefined }, errors)
+		owner({ owner: undefined }, errors)
+		attest(errors.summary).equals(
+			"name must be a string\nowner must be an object"
+		)
+	})
+
 	it("pops each key it pushes", () => {
 		const users: CompactApply = (data, ctx) => {
 			const list = data as unknown[]

@@ -113,19 +113,46 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		return this._ as WrittenIssue[]
 	}
 
-	/** @internal */
-	_at(site: FailureSite, data: unknown, key?: PropertyKey): true | undefined {
+	/**
+	 * @internal `absent` is passed only by _in, which has found the key missing
+	 */
+	_at(
+		site: FailureSite,
+		data: unknown,
+		key?: PropertyKey,
+		absent?: boolean
+	): true | undefined {
 		// a key's site reports the missing key or its value
 		const path = this._p
+		const depth = path.length
 		let context = (readsKeySites ? site.v : undefined) ?? (site as SiteContext)
-		if (key !== undefined) {
-			path.push(key)
-			if (site.m && !(key in (data as object))) context = site.m
-			else data = (data as Keyed)[key]
+		// copied by its length where it's short, as a slice is a call
+		let at: PropertyKey[]
+		if (key === undefined) {
+			at = depth === 0 ? [] : path.slice()
+		} else {
+			// read first, as only a value that's undefined can be a missing key's,
+			// and whether a key any site passes is in data is a call
+			const value = (data as Keyed)[key]
+			if (
+				value === undefined &&
+				site.m &&
+				(absent || !(key in (data as object)))
+			)
+				context = site.m
+			else data = value
+			// a key pushed onto [] would have it hold 17
+			if (depth === 0) at = [key]
+			else if (depth === 1) at = [path[0], key]
+			else {
+				path.push(key)
+				at = path.slice()
+				path.pop()
+			}
 		}
 		const issue: ArkIssue = {
 			code: context.code,
-			path: path.slice(),
+			path: at,
 			data,
 			expected: context.description,
 			message: context.x
@@ -134,8 +161,10 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 			customIssue(issue, context.c)
 			context.text?.(issue)
 		}
-		if (key !== undefined) path.pop()
-		this._.push(issue)
+		// its first issue is all most data has, and a push onto [] holds 17
+		const issues = this._
+		if (issues.length) issues.push(issue)
+		else this._ = [issue]
 		// only errors stopping at the first issue stop at this one
 		return undefined
 	}
@@ -147,10 +176,11 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		key: PropertyKey,
 		missing?: FailureSite
 	): boolean | undefined {
-		if (missing && !(key in (data as object)))
-			return this._at(missing, data, key)
+		const value = (data as Keyed)[key]
+		if (value === undefined && missing && !(key in (data as object)))
+			return this._at(missing, data, key, true)
 		this._p.push(key)
-		const continues = apply((data as Keyed)[key], this)
+		const continues = apply(value, this)
 		this._p.pop()
 		return !continues
 	}
@@ -223,8 +253,13 @@ export class FirstIssues extends Issues {
 		return true
 	}
 
-	override _at(site: FailureSite, data: unknown, key?: PropertyKey): true {
-		super._at(site, data, key)
+	override _at(
+		site: FailureSite,
+		data: unknown,
+		key?: PropertyKey,
+		absent?: boolean
+	): true {
+		super._at(site, data, key, absent)
 		return true
 	}
 }
@@ -279,8 +314,11 @@ export const issueAt = (
 ): ArkIssue => {
 	let context = (readsKeySites ? site.v : undefined) ?? (site as SiteContext)
 	if (key !== undefined) {
-		if (site.m && !(key in (data as object))) context = site.m
-		else data = (data as Keyed)[key]
+		// read first, as only a value that's undefined can be a missing key's
+		const value = (data as Keyed)[key]
+		if (value === undefined && site.m && !(key in (data as object)))
+			context = site.m
+		else data = value
 	}
 	const issue: ArkIssue = {
 		code: context.code,
