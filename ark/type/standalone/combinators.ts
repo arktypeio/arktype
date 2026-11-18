@@ -1267,10 +1267,30 @@ const writeUnionCombinator = (
 				)
 			}
 		}
+		// what the runtime describes from its cases is omitted, where each
+		// checker's description is known
+		const described = Object.entries(domains).map(
+			(
+				[domain, branch],
+				i
+			): [string, { description: string | undefined } | 1] => [
+				domain,
+				cases[i][1] === "1" ?
+					1
+				:	{ description: checkerDescriptionOf(branch as BaseRoot) }
+			]
+		)
 		return writeCall(
 			"domains",
 			writeObject(cases.map(([domain, branch]) => `${domain}: ${branch}`)),
-			JSON.stringify(description),
+			(
+				described.every(
+					([, branch]) => branch === 1 || branch.description !== undefined
+				) &&
+					runtime.describeDomains(Object.fromEntries(described)) === description
+			) ?
+				undefined
+			:	JSON.stringify(description),
 			fails
 		)
 	}

@@ -499,12 +499,14 @@ export const arrayOf = ((
 const printValue = (value: unknown): string =>
 	typeof value === "string" ? JSON.stringify(value) : `${value}`
 
-// values as arktype lists them, e.g. "a", "b" or "c"
-export const describeValues = (values: readonly unknown[]): string => {
-	const printed = values.map(printValue)
+const listed = (printed: string[]): string => {
 	const last = printed.pop()!
 	return printed.length ? `${printed.join(", ")} or ${last}` : last
 }
+
+// values as arktype lists them, e.g. "a", "b" or "c"
+export const describeValues = (values: readonly unknown[]): string =>
+	listed(values.map(printValue))
 
 export const unit = ((
 	value: unknown,
@@ -1314,10 +1316,26 @@ export const units = ((
 ): Checker =>
 	check(code, description, data => values.includes(data))) satisfies Fn
 
+// cases as arktype lists them, e.g. an object or undefined: a domain deciding
+// alone by its name, another by what its checker describes
+export const describeDomains = (
+	cases: Record<string, { description?: string | undefined } | 1>
+): string =>
+	listed(
+		Object.keys(cases).map(domain => {
+			const branch = cases[domain]
+			return (
+				branch !== 1 ? `${branch.description}`
+				: domain === "undefined" || domain === "null" ? domain
+				: `${domain === "object" ? "an" : "a"} ${domain}`
+			)
+		})
+	)
+
 // a union told apart by data's domain, which a branch of 1 alone decides
 export const domains = ((
 	cases: Record<string, Checker | 1>,
-	description: string,
+	description = describeDomains(cases),
 	fails?: FailingBranches
 ): Checker => {
 	const site: FailureSite = { code: "discriminant", description }

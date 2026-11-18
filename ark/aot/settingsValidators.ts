@@ -298,11 +298,11 @@ var divisor = (
 ) => check("divisor", description, data => data % rule === 0)
 var printValue = value =>
 	typeof value === "string" ? JSON.stringify(value) : `${value}`
-var describeValues = values => {
-	const printed = values.map(printValue)
+var listed = printed => {
 	const last = printed.pop()
 	return printed.length ? `${printed.join(", ")} or ${last}` : last
 }
+var describeValues = values => listed(values.map(printValue))
 var unit = (value, description = printValue(value)) =>
 	check("unit", description, data => data === value)
 var booleanChecker = /* @__PURE__ */ check(
@@ -571,7 +571,18 @@ var units = (
 	code = "discriminant",
 	description = describeValues(values)
 ) => check(code, description, data => values.includes(data))
-var domains = (cases, description, fails) => {
+var describeDomains = cases =>
+	listed(
+		Object.keys(cases).map(domain => {
+			const branch = cases[domain]
+			return (
+				branch !== 1 ? `${branch.description}`
+				: domain === "undefined" || domain === "null" ? domain
+				: `${domain === "object" ? "an" : "a"} ${domain}`
+			)
+		})
+	)
+var domains = (cases, description = describeDomains(cases), fails) => {
 	const site = { code: "discriminant", description }
 	const caseOf = data =>
 		cases[

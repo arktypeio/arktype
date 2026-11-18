@@ -141,6 +141,41 @@ list[0] must be a string
 		})
 	})
 
+	it("describes a union told apart by domain from its cases", async () => {
+		const root = fixture(
+			"domains",
+			`import { type } from "arktype"
+
+const T = type({
+	text: "string | undefined",
+	list: "string[] | undefined",
+	shape: type({ x: "number" }).or("undefined"),
+	count: "number > 0 | undefined | null",
+	either: "string | number[]"
+})
+console.log(String(T({ text: 1, list: 1, shape: 1, count: "1", either: true })))
+console.log(String(T({ text: undefined, list: [1], shape: { x: "1" }, count: 0, either: [""] })))
+${repaying}
+`
+		)
+		// as arktype prints them
+		const expected = `text must be a string or undefined
+list must be an array or undefined
+shape must be an object or undefined
+count must be a number, undefined or null
+either must be a string or an array
+list[0] must be a string
+shape.x must be a number
+count must be positive
+either[0] must be a number
+`
+		attest(behaviorOf(await bundle(root))).equals(expected)
+		const checkers = await bundle(root, smallest)
+		attest(behaviorOf(checkers)).equals(expected)
+		// each read from what its cases describe, none written
+		attest(checkers.match(/ or (?:undefined|null|an array)"/g)).equals(null)
+	})
+
 	describe("a message configured for a Type", () => {
 		// each issue's code, what it expects and its message, then the summary
 		const printing = `const print = (out: unknown) =>
