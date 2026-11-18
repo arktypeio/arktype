@@ -603,6 +603,15 @@ export class TraversalCompiler extends NodeCompiler {
 		return super.traversal(node, kind)
 	}
 
+	// a node passed as a value has its traversals read from it, as the node a
+	// morph pipes to does. One a root's unit would leave uncompiled since
+	// nothing invokes it is compiled with the unit, or each read walks its nodes
+	override ref(value: object | symbol): string {
+		if (isNode(value) && !value.unitFn && this.link.unreached.delete(value))
+			this.link.reached.push(value)
+		return super.ref(value)
+	}
+
 	reach(node: BaseNode): void {
 		if (!this.link.byId[node.id]) {
 			this.link.byId[node.id] = node

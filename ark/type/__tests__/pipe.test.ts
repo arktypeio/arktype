@@ -5,7 +5,8 @@ import {
 	intrinsic,
 	registeredReference,
 	writeInvalidOperandMessage,
-	type ArkErrors
+	type ArkErrors,
+	type BaseRoot
 } from "@ark/schema"
 import {
 	discriminantJsonOf,
@@ -56,6 +57,22 @@ contextualize(() => {
 
 		attest<typeof Expected.t>(tOut.t)
 		attest(tOut.expression).equals(Expected.expression)
+	})
+
+	it("compiles the node a morph pipes to with its Type", () => {
+		const T = type({ compiledWith: "string.numeric.parse" }).to({
+			compiledWith: "number > 41"
+		})
+		const morphs = T.internal.assertIs("morph").travMorphs
+		const to = morphs[morphs.length - 1] as BaseRoot
+		attest(to.unitFn).equals(undefined)
+		// a Type compiles at its second call
+		T({ compiledWith: "42" })
+		attest(T({ compiledWith: "42" })).equals({ compiledWith: 42 })
+		attest(typeof to.unitFn).equals("function")
+		attest(T({ compiledWith: "41" }).toString()).snap(
+			"compiledWith must be more than 41"
+		)
 	})
 
 	describe("to string syntax", () => {
