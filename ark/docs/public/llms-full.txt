@@ -16,7 +16,7 @@ npm install arktype
 npm install -D @ark/aot
 ```
 
-`arktype` is a dependency and `@ark/aot` a dev dependency. `arktype` defines and validates Types. [`@ark/aot`](https://arktype.io/docs/precompile) precompiles them when you build, so arktype's parser never ships and nothing compiles at runtime. Skip it for a script or REPL with no build step: every Type works without it.
+`arktype` defines and validates Types. [`@ark/aot`](https://arktype.io/docs/precompile), a dev dependency, precompiles them when you build, so arktype's parser never ships and nothing compiles at runtime. Skip it for a script or REPL: every Type works without it.
 
 ## Define a Type
 
@@ -180,7 +180,7 @@ Build or start your dev server as you already do. `User` is now a standalone val
 age must be non-negative
 ```
 
-A precompiled error reads as arktype's does at runtime: what failed, without printing the value.
+A precompiled error reads as arktype's does at runtime.
 
 To see what the build makes of each definition without bundling, run:
 
@@ -769,7 +769,7 @@ export default {
 
 > Help Claude Code, Codex, Cursor and other coding agents write ArkType.
 
-Every error ArkType reports names its fix, whether it comes from `tsc` as a definition is written, from a [precompiled](https://arktype.io/docs/precompile) build or from validation. An agent can close each loop on its own, which is also why precompiling costs little with one: the build step is one more loop it already runs.
+Every error ArkType reports names its fix: from `tsc` as a definition is written, from a [precompiled](https://arktype.io/docs/precompile) build and from validation. An agent closes each loop on its own, the build step included.
 
 ## Skill
 
@@ -807,7 +807,7 @@ Every page of these docs is available as Markdown by adding `.md` to its URL, e.
 
 ## Precompile
 
-A [precompiled](https://arktype.io/docs/precompile) build reports each definition it can't precompile with its file, line and column, the reason and the fix. [With agents](https://arktype.io/docs/precompile#with-agents) shows one and the tools that shorten the loop: `arktype-precompile --check`, the ESLint rule and shadow mode. [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting) lists the fix for each report.
+A [precompiled](https://arktype.io/docs/precompile) build reports each definition it can't precompile with its file, line, reason and fix. [With agents](https://arktype.io/docs/precompile#with-agents) shows one and the tools that shorten the loop, and [Troubleshooting](https://arktype.io/docs/precompile/troubleshooting) lists the fix for each report.
 
 ## AGENTS.md
 
@@ -9513,7 +9513,7 @@ Yes. ArkType ships English and German, and you can write a locale for any other 
 
 ## How does ArkType compare to Zod or Valibot?
 
-All three validate at runtime and infer TypeScript types. The main difference is how you write a definition: ArkType uses TypeScript's own syntax, while Zod and Valibot use function calls.
+All three validate at runtime, infer TypeScript types and implement [Standard Schema](https://arktype.io/docs/standard-schema), so a library that accepts one accepts the others. ArkType writes a definition in TypeScript's own syntax, where Zod and Valibot use function calls:
 
 ```ts
 // z.object({ name: z.string(), age: z.number().int().min(0).optional() })
@@ -9523,27 +9523,11 @@ const User = type({
 })
 ```
 
-That means dynamic ArkType parses your definitions at runtime, so it ships a parser, and its bundle is larger than Zod's or Valibot's. [Precompiled](https://arktype.io/docs/precompile), it ships no parser. On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 1.01 kB gzipped against 1.55 kB.
+[Precompiled](https://arktype.io/docs/precompile), it ships no parser. Precompiled ArkType was faster than Zod 4 in all 32 scenarios of our benchmark, by a median of 15×, and faster than Zod 4's z.compile in 32 of 32, by a median of 5.3×. On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 1.01 kB gzipped against 1.55 kB. The [homepage](https://arktype.io/#board) has each benchmark with its method.
 
-Coming from Zod, most APIs have a direct equivalent:
+Without the plugin, arktype parses definitions at runtime, so it ships its parser. Dynamic ArkType is 89.8 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.
 
-| Zod | ArkType |
-| - | - |
-| `z.object({ ... })` | `type({ ... })` |
-| `.optional()` on a property | `"key?": ...` |
-| `.default(value)` | `"number = 0"` as a property value |
-| `z.enum(["a", "b"])` | `"'a' \| 'b'"` |
-| `z.array(T)` | `T.array()` or `"string[]"` |
-| `z.infer<typeof T>` | `typeof T.infer` |
-| `T.parse(data)` | `T.assert(data)` |
-| `T.safeParse(data)` | `T(data)`, then `instanceof type.errors` |
-| `.min(1, "Name is required")` | `["string >= 1", "@", { message: "Name is required" }]` |
-| `.refine(fn, "Message")` | `.narrow((v, ctx) => fn(v) \|\| ctx.reject({ message: "Message" }))` |
-| `.transform(fn)` | `.pipe(fn)` |
-
-[Migrating](https://arktype.io/docs/migrating) maps the rest of Zod's API, and Valibot's, and has a prompt that migrates a project for you.
-
-All three implement [Standard Schema](https://arktype.io/docs/standard-schema), so a library that accepts one of them accepts the others, and you can [adopt ArkType one schema at a time](https://arktype.io/docs/migrating#adopt-incrementally).
+[Migrating](https://arktype.io/docs/migrating) maps Zod's API and Valibot's row by row, and has a prompt that migrates a project for you. You can also [adopt ArkType one schema at a time](https://arktype.io/docs/migrating#adopt-incrementally).
 
 ## Why isn't my wrapper generic working?
 
