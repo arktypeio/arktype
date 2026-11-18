@@ -1178,6 +1178,17 @@ export class Precompiler {
 				false
 			:	this.linkProgram(program, plan, usage, wrote)
 		const { written, runtimes } = wrote
+		// one function declares the units of each validator it flattens, those a
+		// key or marker chose with the rest, which are told apart only as written
+		// before it: the rest weigh no more than either, so the lesser is theirs
+		const unflattened =
+			(
+				flattens &&
+				this.optimizeUnset &&
+				Object.values(written).some(module => module.chosen)
+			) ?
+				{ ...written }
+			:	undefined
 		usage.flat =
 			flattens ?
 				this.flattenWritten(written, plan.sources, program, runtimes)
@@ -1186,7 +1197,12 @@ export class Precompiler {
 		const issues = this.issuesOf(program, written, used)
 		const timesArktype =
 			this.optimizeUnset ?
-				validatorsToArktypeOf(written, new Set(usage.flat?.replaced))
+				Math.min(
+					validatorsToArktypeOf(written, new Set(usage.flat?.replaced)),
+					unflattened && usage.flat ?
+						validatorsToArktypeOf(unflattened, new Set())
+					:	Infinity
+				)
 			:	0
 		return {
 			dropped,
@@ -2945,10 +2961,8 @@ export class Precompiler {
 		const { sites, diagnostics } = this.analysisOf(module)
 		diagnostics.push(...this.checkConfigOrder(module))
 		diagnostics.push(...this.copyDiagnosticsOf(module))
-		if (this.mode === "standalone") {
-			this.strategies.checkFiles()
+		if (this.mode === "standalone")
 			diagnostics.push(...this.chooseStrategies(module, sites))
-		}
 		const prefix = prefixOf(source, id)
 		const modules: Record<string, string> = {}
 		// locals for virtual modules' exports, by specifier
@@ -3766,15 +3780,21 @@ export class Precompiler {
 		const foldingNamed = (name: string) =>
 			foldings[written.findIndex(({ names }) => names.has(name))] ?? unwritten
 		const choosesHere = this.choosesIn(module)
-		const chosen: string[] = []
+		// each local a site whose strategy was chosen reads, and each another does
+		const chosen = new Set<string>()
+		const unchosen = new Set<string>()
 		for (const [site, name] of namesBySite) {
 			const folding = foldingNamed(name)
 			this.foldSite(site, name, factoriesBySite.get(site), folding)
 			folded.push(site)
 			if (!choosesHere) continue
 			const strategy = this.strategyOf(module, site)
-			if (!isKeyConflict(strategy) && strategy.name !== undefined)
-				chosen.push(prefix + (folding.validators.folds[name]?.[0] ?? name))
+			const read =
+				!isKeyConflict(strategy) && strategy.name !== undefined ?
+					chosen
+				:	unchosen
+			for (const local of foldedLocalsOf(folding.validators, name, prefix))
+				read.add(local)
 		}
 		for (const { name, reads, sites } of bakes) {
 			importFolded(
@@ -3826,7 +3846,12 @@ export class Precompiler {
 				issues[feature] ||= validators.issues[feature]
 			}
 		}
-		return [inputImports, issues, chosen]
+		return [
+			inputImports,
+			issues,
+			// what both read is weighed, as the rest is
+			[...chosen].filter(local => !unchosen.has(local))
+		]
 	}
 
 	// the config a module's validators are stamped with, where the build configures one
@@ -4208,6 +4233,27 @@ export class Precompiler {
 				)
 			})
 		)
+	}
+
+	// each key of schemas that chooses for a definition of a module, which
+	// --check tells from one that chooses for none
+	choosingKeysOf(id: string, sites: readonly Span[]): string[] {
+		const module = this.graph.moduleOf(id)
+		if (this.mode !== "standalone" || !(module instanceof SourceModule))
+			return []
+		const declarations = declarationsOf(module)
+		return this.strategies
+			.keysOf(id)
+			.filter(key =>
+				key.declaration === undefined ?
+					sites.length > 0
+				:	declarations.some(
+						declaration =>
+							declaration.names.includes(key.declaration!) &&
+							sites.some(site => contains(declaration, site))
+					)
+			)
+			.map(key => key.key)
 	}
 
 	// whether a key or marker chooses for any of a module's definitions
@@ -8241,8 +8287,19 @@ interface Configuration {
 
 let threadConfiguration: Configuration | undefined
 
-// arktype can't change its configuration once set
-// undefined where nothing changed
+// each local a site reads its validator by: the validator's, or where it's
+// created in place, what creates it and each unit it's passed
+const foldedLocalsOf = (
+	validators: Pick<StandaloneModules, "folds" | "calls">,
+	name: string,
+	prefix: string
+): string[] => {
+	const created = validators.calls[name]
+	return created ?
+			created.flatMap(read => (read[0] === '"' ? [] : `${prefix}_${read}`))
+		:	[prefix + (validators.folds[name]?.[0] ?? name)]
+}
+
 // what a link declares anew it names for its content alone, so a strategy's
 // are named under it again, apart from the build's own
 const nameUnder = (strategy: string, linked: LinkedBundle): void => {
@@ -8271,6 +8328,8 @@ const nameUnder = (strategy: string, linked: LinkedBundle): void => {
 		}
 }
 
+// arktype can't change its configuration once set
+// undefined where nothing changed
 const mapOf = (s: MagicString, id: string): SourceMap | undefined =>
 	s.hasChanged() ?
 		s.generateMap({ source: id, includeContent: true, hires: "boundary" })

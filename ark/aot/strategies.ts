@@ -1,6 +1,6 @@
 import { editsBetween, hasOwn } from "@ark/util"
 import type { Optimization } from "arktype/internal/standalone.ts"
-import { readdirSync, statSync } from "node:fs"
+import { readdirSync, realpathSync, statSync } from "node:fs"
 import { isAbsolute, join, relative, resolve, sep } from "node:path"
 import type { Node, Span } from "oxc-parser"
 import type { SourceModule } from "./module.ts"
@@ -286,15 +286,19 @@ const scriptFile = /\.(?:[cm]?[jt]s|[jt]sx|svelte|vue|astro|mdx)$/
 
 const skippedDir = /^(?:node_modules|\.git)$/
 
-// whether a file a key could choose for is there, read no further than the
-// directory its pattern names before its first wildcard
-const matchesFile = (key: SchemaKey, cwd: string): boolean => {
-	if (!key.isGlob)
-		return !!statSync(resolve(cwd, key.pattern), {
-			throwIfNoEntry: false
-		})
-	const literal = key.pattern.slice(0, key.specificity)
-	const base = literal.slice(0, literal.lastIndexOf("/") + 1)
+// each file a key could choose for, read no further than the directory its
+// pattern names before its first wildcard
+function* filesMatching(key: SchemaKey, cwd: string): Generator<string> {
+	let base: string
+	if (key.isGlob) {
+		const literal = key.pattern.slice(0, key.specificity)
+		base = literal.slice(0, literal.lastIndexOf("/") + 1)
+	} else {
+		const stats = statSync(resolve(cwd, key.pattern), { throwIfNoEntry: false })
+		if (!stats) return
+		if (!stats.isDirectory()) return yield resolve(cwd, key.pattern)
+		base = `${key.pattern}/`
+	}
 	// a pattern entering node_modules names what it holds
 	const skips = (name: string) =>
 		skippedDir.test(name) && !key.pattern.includes(name)
@@ -310,11 +314,17 @@ const matchesFile = (key: SchemaKey, cwd: string): boolean => {
 			const path = dir + entry.name
 			if (entry.isDirectory()) {
 				if (!skips(entry.name)) pending.push(`${path}/`)
-			} else if (scriptFile.test(entry.name) && key.matches(path)) return true
+			} else if (scriptFile.test(entry.name) && key.matches(path))
+				yield resolve(cwd, path)
 		}
 	}
-	return false
 }
+
+export const writeDefinitionlessKeyMessage = (
+	key: string,
+	files: readonly string[]
+): string =>
+	`${keyText(key)} matches ${files.length === 1 ? `${files[0]}, which holds no definition` : `${files.length} files, none of which holds a definition`}, so it chooses for nothing. Name the modules that define the Types it's for, or remove it.`
 
 // the key with the first of its path's names that isn't there as the nearest that is
 const nearestKeyTo = (key: SchemaKey, cwd: string): string | undefined => {
@@ -352,7 +362,6 @@ export class SchemaStrategies {
 	private strategies: Record<string, Strategy>
 	private cwd: string | undefined
 	private byPath: Record<string, SchemaKey[]> = Object.create(null)
-	private checkedFiles = false
 	// what a definition no key or marker chooses for is written for
 	readonly defaultOptimize: Optimization
 
@@ -398,19 +407,34 @@ export class SchemaStrategies {
 
 	// a path as keys name it: from cwd, or whole where it's elsewhere
 	private pathOf(id: string): string[] {
-		const file = slashed(id.replace(/[#?].*$/, ""))
-		if (this.cwd === undefined) return [file]
-		const fromCwd = slashed(relative(this.cwd, file))
-		return isAbsolute(fromCwd) ? [file] : [fromCwd, file]
+		let file = id.replace(/[#?].*$/, "")
+		if (this.cwd === undefined) return [slashed(file)]
+		let fromCwd = relative(this.cwd, file)
+		// e.g. an id through a symlink to cwd, which is its real path
+		if (fromCwd.startsWith("..")) {
+			try {
+				file = realpathSync(file)
+				fromCwd = relative(this.cwd, file)
+			} catch {}
+		}
+		return isAbsolute(fromCwd) ?
+				[slashed(file)]
+			:	[slashed(fromCwd), slashed(file)]
 	}
 
 	/** each key matching a module, the most specific first */
 	keysOf(id: string): SchemaKey[] {
-		return (this.byPath[id] ??= this.keys
-			.filter(key => this.pathOf(id).some(path => key.matches(path)))
-			.sort((l, r) =>
-				l.specificity === r.specificity ? 0 : r.specificity - l.specificity
-			))
+		if (!this.keys.length) return this.keys
+		let matching = this.byPath[id]
+		if (!matching) {
+			const paths = this.pathOf(id)
+			matching = this.byPath[id] = this.keys
+				.filter(key => paths.some(path => key.matches(path)))
+				.sort((l, r) =>
+					l.specificity === r.specificity ? 0 : r.specificity - l.specificity
+				)
+		}
+		return matching
 	}
 
 	/**
@@ -455,18 +479,40 @@ export class SchemaStrategies {
 
 	/**
 	 * fails where a key matches no file, as a mistyped one would otherwise
-	 * choose for nothing. Read once a module is analyzed, as only then is cwd
-	 * the bundler's root
+	 * choose for nothing
 	 */
 	checkFiles(): void {
-		if (this.checkedFiles || this.cwd === undefined) return
-		this.checkedFiles = true
+		if (this.cwd === undefined) return
 		for (const key of this.keys) {
-			if (matchesFile(key, this.cwd)) continue
+			if (!filesMatching(key, this.cwd).next().done) continue
 			throw new Error(
 				writeUnmatchedKeyMessage(key.key, this.cwd, nearestKeyTo(key, this.cwd))
 			)
 		}
+	}
+
+	/**
+	 * each key that chooses for nothing among the files a check read: one
+	 * matching no file but those, none of which a key naming it found a
+	 * definition in
+	 */
+	definitionlessIn(
+		checked: ReadonlySet<string>,
+		// the keys choosing for a definition of some file
+		choosing: ReadonlySet<string>
+	): string[] {
+		const { cwd } = this
+		if (cwd === undefined) return []
+		return this.keys.flatMap(key => {
+			if (choosing.has(key.key)) return []
+			const files = [...filesMatching(key, cwd)]
+			return files.length && files.every(file => checked.has(file)) ?
+					writeDefinitionlessKeyMessage(
+						key.key,
+						files.map(file => slashed(relative(cwd, file)))
+					)
+				:	[]
+		})
 	}
 }
 
