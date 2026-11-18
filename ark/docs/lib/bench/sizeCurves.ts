@@ -2,19 +2,24 @@
  * Bundle size as an app's Types grow, for the homepage's size drill-down:
  * per corpus, each arm's gzipped bytes at each scale, and where ArkType's
  * builds are the smaller one. The chart, its table and its cutoff lines read
- * only `sizeCurves`, so denser data (more corpora, scales or arms) replaces
- * it below without touching any of them.
+ * only `sizeCurves`.
  *
  * A corpus is one kind of schema, measured at several scales. What a
  * library ships per schema depends on what the schema holds, so a result on
- * one corpus says nothing about another: schemas with a custom message on
- * most fields are a different corpus from schemas with none.
+ * one corpus says nothing about another: Types with a message on a third of
+ * their fields are a different corpus from Types with none.
  *
- * Today there is one, the bigapp board's generated apps bundled with
- * esbuild, the only host that also measures plain arktype
- * (lib/bench/scoreboard.ts).
+ * The data is the size-at-scale measurement's (lib/bench/sizeScale.ts,
+ * `pnpm benchSizeScale`): the mean of its seeds at each count, and its own
+ * sentence for each standing, which carries the seeds' range.
  */
-import { generatedRows, scoreboard, type AppRow } from "./scoreboard.ts"
+import {
+	sizeScale,
+	sizeStandingText,
+	sizeTexts,
+	type SizeBuild,
+	type SizeCorpusId
+} from "./sizeScale.ts"
 
 /** gold for ArkType's builds, neutral for every other library */
 export type CurveArmKind = "default" | "smallest" | "dynamic" | "other"
@@ -68,11 +73,14 @@ export type SizeCurves = {
 	corpora: CurveCorpus[]
 }
 
-const arms: CurveArm[] = [
-	{ id: "arktype", label: "ArkType, dynamic", kind: "dynamic", line: "dotted" },
+type BuildArm = CurveArm & { id: SizeBuild }
+
+const arms: BuildArm[] = [
+	{ id: "dynamic", label: "ArkType, dynamic", kind: "dynamic", line: "dotted" },
 	{ id: "zod", label: "Zod 4", kind: "other", line: "solid" },
+	{ id: "zodMini", label: "Zod Mini", kind: "other", line: "dotted" },
 	{
-		id: "precompiled",
+		id: "default",
 		label: "ArkType, default build",
 		kind: "default",
 		line: "solid"
@@ -86,92 +94,55 @@ const arms: CurveArm[] = [
 	}
 ]
 
-/** a scale as the board measured it: as drawn, and again with narrows on its shared Types */
-type MeasuredPoint = CurvePoint & { withNarrows: CurveBytes[] }
+const source = `synthetic apps of distinct Types, written alike in each library and bundled whole by esbuild, tree-shaken and minified; each number is the mean of ${sizeScale.seeds.length} apps generated from different seeds`
 
-const bytesOf = (row: AppRow): CurveBytes =>
-	Object.fromEntries(
-		arms
-			.filter(arm => arm.id in row.arms)
-			.map(arm => [arm.id, row.arms[arm.id].gz])
-	)
-
-const bundled = generatedRows.filter(row => row.host === "esbuild")
-
-const measured: MeasuredPoint[] = bundled
-	.filter(row => !row.narrows)
-	.map(row => ({
-		types: Number(row.app),
-		gz: bytesOf(row),
-		withNarrows: bundled
-			.filter(other => other.app === row.app && other.narrows)
-			.map(bytesOf)
-	}))
-	.sort((l, r) => l.types - r.types)
-
-const measuredArms = arms.filter(arm => bundled.some(row => arm.id in row.arms))
-
-const countText = (types: number) => types.toLocaleString("en-US")
-
-const scalesText = (types: number[]) =>
-	types.length === 1 ?
-		countText(types[0])
-	:	`${countText(types[0])} to ${countText(types.at(-1)!)}`
-
-/**
- * One of ArkType's builds against another library, scale by scale. It is
- * the smaller at a scale only if it is as drawn and with narrows; a cutoff
- * lies between the last scale it is smaller at and the first it isn't, and
- * nothing is interpolated.
- */
-const whereOf = (ours: CurveArm, rival: CurveArm): string => {
-	const has = (bytes: CurveBytes) => ours.id in bytes && rival.id in bytes
-	const smaller = (bytes: CurveBytes) => bytes[ours.id] < bytes[rival.id]
-	/** how many of the ways a scale was measured have ours the smaller */
-	const share = (point: MeasuredPoint) => {
-		const ways = [point.gz, ...point.withNarrows.filter(has)]
-		return ways.filter(smaller).length / ways.length
-	}
-	const both = measured.filter(point => has(point.gz))
-	const typesOf = (of: MeasuredPoint[]) => of.map(point => point.types)
-	const smallerAt = typesOf(both.filter(point => share(point) === 1))
-	const mixedAt = typesOf(
-		both.filter(point => share(point) > 0 && share(point) < 1)
-	)
-	const largerAt = typesOf(both.filter(point => share(point) === 0))
-	if (!mixedAt.length && !largerAt.length)
-		return "smaller at every scale measured"
-	if (!mixedAt.length && !smallerAt.length)
-		return "larger at every scale measured"
-	return [
-		smallerAt.length && `smaller at ${scalesText(smallerAt)} Types`,
-		mixedAt.length &&
-			`at ${scalesText(mixedAt)}, smaller as drawn and larger with narrows`,
-		largerAt.length && `larger at ${scalesText(largerAt)}`
-	]
-		.filter(Boolean)
-		.join("; ")
+type CorpusText = {
+	id: SizeCorpusId
+	label: string
+	scope: string
 }
 
+const corpusOf = ({ id, label, scope }: CorpusText): CurveCorpus => ({
+	id,
+	label,
+	source,
+	scope,
+	arms,
+	points: sizeScale.scales.map((types, i) => ({
+		types,
+		gz: Object.fromEntries(
+			arms.map(arm => [
+				arm.id,
+				sizeScale.corpora[id].series[arm.id].points[i].gzip
+			])
+		)
+	})),
+	cutoffs: arms
+		.filter(arm => arm.kind === "default" || arm.kind === "smallest")
+		.flatMap(ours =>
+			arms
+				.filter(arm => arm.kind === "other")
+				.map(rival => ({
+					ours,
+					rival,
+					where: sizeStandingText(id, ours.id, rival.id, "gzip")
+				}))
+		)
+})
+
 export const sizeCurves: SizeCurves = {
-	commit: scoreboard.commit,
+	commit: sizeScale.commit,
 	corpora: [
-		{
+		corpusOf({
 			id: "models",
 			label: "Data models",
-			source:
-				"apps we generated from our startup benchmark's SaaS schemas, each Type validating a request in a handler, bundled and minified with esbuild as a production build",
 			scope:
-				"These schemas carry no custom messages, and narrows only where a line below says so. Form-like schemas, with a message on most fields, are a separate corpus: what a library ships per schema differs there, so these cutoffs don't carry over to it.",
-			arms: measuredArms,
-			points: measured.map(({ types, gz }) => ({ types, gz })),
-			cutoffs: measuredArms
-				.filter(arm => arm.kind !== "other")
-				.flatMap(ours =>
-					measuredArms
-						.filter(arm => arm.kind === "other")
-						.map(rival => ({ ours, rival, where: whereOf(ours, rival) }))
-				)
-		}
+				"These Types have no message or narrow of their own, as an API's models don't. Forms, below, are a separate corpus, and a result here doesn't carry over to it."
+		}),
+		corpusOf({
+			id: "forms",
+			label: "Forms",
+			scope: `In these Types, ${sizeTexts.formsRates}. A result here doesn't carry over to models, above.`
+		})
 	]
 }
