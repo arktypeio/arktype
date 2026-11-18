@@ -242,7 +242,7 @@ export const Size = () => (
 				<PresetRows />
 				<p className="note">
 					{
-						"// these are other apps than Valibot's login form above, measured on schemas without custom messages or narrows; form-like schemas are a separate corpus, and these results don't carry over to it"
+						"// these are other apps than Valibot's login form above, and their schemas have no custom messages or narrows; these results don't carry over to apps of forms, which we measured separately"
 					}
 				</p>
 				<p className="drill-p">
