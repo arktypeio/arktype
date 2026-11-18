@@ -68,7 +68,7 @@ jobs:
       - name: Build the stable docs
         if: needs.version.outputs.prerelease == 'true'
         run: |
-          tag=$(git tag --list 'arktype@*' --sort=-version:refname | grep -v -- - | head -n 1)
+          tag=$(git tag --list 'arktype@*' --sort=-version:refname | grep -v -e - | head -n 1)
           echo "serving the docs of $tag at the root and this commit's at $BASE_PATH"
           git worktree add "$RUNNER_TEMP/stable" "$tag"
           cd "$RUNNER_TEMP/stable"
