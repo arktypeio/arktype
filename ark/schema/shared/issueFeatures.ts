@@ -42,3 +42,6 @@ export const readsSummary: boolean = true
 
 /** an errors object read other than by its issues or summary: thrown, printed or passed on */
 export const readsErrors: boolean = true
+
+/** a validator holding its expression, which printing one reads: no issue's, but found by a build and written as they are */
+export const holdsExpression: boolean = true

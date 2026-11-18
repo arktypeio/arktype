@@ -2403,8 +2403,10 @@ return namespace`
 	): string[] {
 		const members: string[] = []
 		const bakes = (member: IntrospectionMember) => baked.has(member)
-		if (bakes("expression"))
+		if (bakes("expression")) {
+			this.baking.issues.holdsExpression = true
 			members.push(`expression: ${this.emitExpression(root)}`)
+		}
 		if (bakes("description"))
 			members.push(`description: ${this.emitDescription(root)}`)
 		if (bakes("json") || bakes("toJSON")) {

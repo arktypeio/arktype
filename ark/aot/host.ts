@@ -433,8 +433,13 @@ export const writeIssueFeatures = (issues: IssueFeatures): string =>
 		.map(([name, holds]) => `export const ${name} = ${holds}\n`)
 		.join("")
 
+// holdsExpression aside: it follows from the members a build bakes, which a
+// read it didn't see is checked against already
 export const narrowsIssues = (issues: IssueFeatures | undefined): boolean =>
-	!!issues && Object.values(issues).includes(false)
+	!!issues &&
+	Object.entries(issues).some(
+		([name, holds]) => !holds && name !== "holdsExpression"
+	)
 
 // not a virtual module like Rolldown's `\0rolldown/runtime.js`
 export const transformedId = /^[^\0].*\.(?:[cm]?[jt]s|[jt]sx)$/

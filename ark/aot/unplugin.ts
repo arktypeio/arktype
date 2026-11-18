@@ -28,6 +28,11 @@ import type {
 	TransformedModule
 } from "./driver.ts"
 import {
+	issueFeatureReader,
+	namesIssueFeature,
+	writeIssueFeaturesInto
+} from "./features.ts"
+import {
 	appendSourceMap,
 	createDevelopmentHost,
 	createNodeHost,
@@ -595,13 +600,24 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		return (modules[id] = stored[1])
 	}
 	// a pruned build's issue features, once its scan has read every validator
-	const loadIssueFeatures = async (context: unknown) => {
+	const issueFeaturesOf = async (context: unknown) => {
 		const built = builtReadOf(context)
-		if (built) return built.issues && writeIssueFeatures(built.issues)
+		if (built) return built.issues
 		const build = buildOf(context)
 		const pending = pendingScans.get(build)
-		const scan = pending ? await pending.scanned : scansByBuild.get(build)
-		if (scan?.issues) return writeIssueFeatures(scan.issues)
+		return (pending ? await pending.scanned : scansByBuild.get(build))?.issues
+	}
+	// the constants' module, or a runtime module with each read of one written
+	// as what it is, so the bundle needs no minifier to fold them
+	const loadIssueFeatures = async (context: unknown, id: string) => {
+		const issues = await issueFeaturesOf(context)
+		if (!issues) return
+		if (issueFeaturesFile.test(id)) return writeIssueFeatures(issues)
+		const file = id.split("?")[0]
+		const code = readFile(file)
+		return code === undefined ? undefined : (
+				writeIssueFeaturesInto(file, code, issues)
+			)
 	}
 	// Vite's transforming plugins ahead of this one, which a new config module names
 	let transformersAhead: string[] = []
@@ -732,6 +748,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			const file = fileOf(resource)
 			return (
 				issueFeaturesFile.test(file) ||
+				// built again whatever it read, as a cache may hold each written
+				// for a program that was pruned and is no longer
+				readsIssueFeatures(file) ||
 				(rewritten ? rewritten.has(file) : isTransformedId(file))
 			)
 		})
@@ -1469,13 +1488,14 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					...((
 						meta.framework in pruningFrameworks && meta.framework !== "esbuild"
 					) ?
-						[issueFeaturesFile]
+						[issueFeaturesFile, issueFeatureReader]
 					:	[])
 				]
 			},
 			// a virtual module loads synchronously, as webpack's cache reads it
 			handler(id) {
-				if (issueFeaturesFile.test(id)) return loadIssueFeatures(this)
+				if (!id.startsWith(`${virtual}~arktype/`))
+					return loadIssueFeatures(this, id)
 				leaveUncached(this.getNativeBuildContext?.() as NativeBuild | undefined)
 				return loadModule(id)
 			}
@@ -1863,6 +1883,15 @@ interface NativeBuild {
 		cacheable: (flag: boolean) => void
 		_module?: { type?: string; matchResource?: string }
 	}
+}
+
+// a runtime module naming an issue feature, whose reads of it the build
+// writes once it has read the program
+const readsIssueFeatures = (file: string): boolean => {
+	if (!issueFeatureReader.test(file)) return false
+	// as its file has it: what a cache kept of an earlier build names none
+	const code = readFile(file)
+	return code !== undefined && namesIssueFeature(code)
 }
 
 const isScriptModule = ({ type }: { type?: string }) =>
