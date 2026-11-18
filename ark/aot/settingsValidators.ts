@@ -45,7 +45,9 @@ var ReadIssues = class {
 	// assigned, as a target lowering class fields defines each with a helper
 	constructor() {
 		this._ = []
-		this._p = []
+		const path = [this]
+		path.pop()
+		this._p = path
 	}
 	/**
 	 * The number of issues.

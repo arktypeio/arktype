@@ -104,7 +104,13 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	// assigned, as a target lowering class fields defines each with a helper
 	constructor() {
 		this._ = []
-		this._p = []
+		// empty, with room for one key, which is as deep as most failing data
+		// goes: a push onto [] makes room for 17, the largest thing a failing
+		// call allocated. It holds this to be removed, as a literal of constants
+		// shares its store until it's written to, and is then copied
+		const path: PropertyKey[] = [this as never]
+		path.pop()
+		this._p = path
 	}
 
 	/**
