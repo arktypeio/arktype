@@ -1668,7 +1668,8 @@ export class Precompiler {
 			const shared = this.linkWritten(wrote.written, sources, {
 				exposesAllows: usage.readsAllows,
 				isOneChunk,
-				sharesChecks: true
+				sharesChecks: true,
+				sharesUnits: !isOneChunk
 			})
 			return link.changed || shared.changed
 		}

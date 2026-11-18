@@ -34,6 +34,8 @@ export interface LinkOptions {
 	isOneChunk?: boolean
 	// its units are checkers, so what they call may be shared
 	sharesChecks?: boolean
+	// its chunks are many, so the units most of its modules read are one module
+	sharesUnits?: boolean
 }
 
 interface LinkPass {
@@ -51,7 +53,8 @@ export const linkBundle = (
 	{
 		exposesAllows = false,
 		isOneChunk = false,
-		sharesChecks = false
+		sharesChecks = false,
+		sharesUnits = false
 	}: LinkOptions = {}
 ): LinkedBundle | undefined => {
 	let codes = sharesChecks ? withSharedChecks(modules) : modules
@@ -73,8 +76,19 @@ export const linkBundle = (
 	})
 	codes = linker.codes()
 	const one = isOneChunk ? oneModuleOf(codes, linker.siteTexts()) : undefined
-	const renamed = one?.renamed ?? renamedOf(codes, modules)
+	const common =
+		sharesUnits && !one ? commonModuleOf(codes, linker.siteTexts()) : undefined
+	if (common) codes = common.codes
+	const renamed =
+		one?.renamed ??
+		renamedOf(
+			codes,
+			common ? { ...modules, [common.specifier]: common.code } : modules
+		)
 	if (!renamed) return
+	// a site reads what the module declares from it, under whatever it's named
+	for (const specifier of common?.declared ?? [])
+		renamed[specifier] = renamed[common!.specifier] ?? common!.specifier
 	const linked: LinkedBundle = {
 		sites: {},
 		modules: {},
@@ -111,6 +125,8 @@ interface Declarations {
 	imported: Map<string, string>
 	// statements run for their effect, like one reading the runtime's version
 	statements: Set<string>
+	// each name a unit exports, declared or imported
+	exported: Set<string>
 }
 
 // one module of what the sites read, each after what it reads; a unit must
@@ -169,6 +185,113 @@ const oneModuleOf = (
 	return { specifier, code, renamed }
 }
 
+interface CommonModule {
+	specifier: string
+	code: string
+	// each unit it declares
+	declared: string[]
+	// the rest, reading it, and it
+	codes: Record<string, string>
+}
+
+// a bundler that splits a bundle into chunks copies a module too small for a
+// chunk of its own into each chunk reading it, as webpack and Rspack do, and
+// what most validators read is a few small units: what creates one, a check
+// like a string's of some length. Declared in one module, they're copied where
+// the runtime they read is, which a chunk the others load already holds. This
+// many readers repay naming it in each
+const minCommonReaders = 8
+
+// one module of the units enough others read, with what those read, or
+// undefined where fewer than two are
+const commonModuleOf = (
+	codes: Record<string, string>,
+	siteTexts: string[]
+): CommonModule | undefined => {
+	const readsOf = (code: string) =>
+		new Set(
+			[...code.matchAll(virtualSource)]
+				.map(match => match[1])
+				.filter(specifier => specifier in codes)
+		)
+	const readers: Record<string, number> = {}
+	for (const code of [...Object.values(codes), ...siteTexts])
+		for (const read of readsOf(code)) readers[read] = (readers[read] ?? 0) + 1
+	// a unit declaring a function, as a cell does its setter, stays its own
+	const linkable = new Map<string, boolean>()
+	const isLinkable = (specifier: string): boolean => {
+		if (!linkable.has(specifier)) {
+			linkable.set(specifier, false)
+			linkable.set(
+				specifier,
+				!!declarationsOf({ [specifier]: codes[specifier] }) &&
+					[...readsOf(codes[specifier])].every(isLinkable)
+			)
+		}
+		return linkable.get(specifier)!
+	}
+	const declared = new Set<string>()
+	const declare = (specifier: string) => {
+		if (declared.has(specifier)) return
+		declared.add(specifier)
+		for (const read of readsOf(codes[specifier])) declare(read)
+	}
+	for (const specifier in readers) {
+		if (readers[specifier] >= minCommonReaders && isLinkable(specifier))
+			declare(specifier)
+	}
+	if (declared.size < 2) return
+	const declarations = declarationsOf(
+		Object.fromEntries(
+			[...declared].map(specifier => [specifier, codes[specifier]])
+		)
+	)
+	if (!declarations) return
+	const order = orderOf(declarations, declarations.declared.keys())
+	if (!order) return
+	const code = [
+		...declarations.imported.values(),
+		...declarations.statements,
+		...order.map(name => declarations.declared.get(name)!.text),
+		// what each exported, one it only imports among them
+		`export { ${[...declarations.exported].join(", ")} }`
+	].join("\n")
+	const specifier = `~arktype/${hashOf(code)}`
+	const renamed = Object.fromEntries(
+		[...declared].map(unit => [unit, specifier])
+	)
+	const rest: Record<string, string> = { [specifier]: code }
+	for (const key in codes)
+		if (!declared.has(key)) rest[key] = withRenamed(codes[key], renamed)
+	return { specifier, code, declared: [...declared], codes: rest }
+}
+
+// each of the names after what it reads as it's declared, or undefined where
+// two read each other so
+const orderOf = (
+	{ declared, imported }: Declarations,
+	names: Iterable<string>
+): string[] | undefined => {
+	const order: string[] = []
+	const states = new Map<string, "visiting" | "done">()
+	const visit = (name: string): "done" | "cycle" | undefined => {
+		const declaration = declared.get(name)
+		if (!declaration) return imported.has(name) ? "done" : undefined
+		const state = states.get(name)
+		if (state) return state === "done" ? "done" : "cycle"
+		states.set(name, "visiting")
+		for (const [read, isEager] of declaration.reads) {
+			const visited = visit(read)
+			if (!visited || (visited === "cycle" && isEager)) return
+		}
+		states.set(name, "done")
+		order.push(name)
+		return "done"
+	}
+	for (const name of names) if (visit(name) !== "done") return
+	return order
+}
+
 // what each unit declares, imports and runs, where every unit is linkable
 const declarationsOf = (
 	codes: Record<string, string>
@@ -176,6 +299,7 @@ const declarationsOf = (
 	const declared = new Map<string, Declared>()
 	const imported = new Map<string, string>()
 	const statements = new Set<string>()
+	const exported = new Set<string>()
 	for (const key in codes) {
 		const module = new SourceModule(`${key}.js`, codes[key], key)
 		if (module.parseErrors.length) return
@@ -210,6 +334,7 @@ const declarationsOf = (
 						exportNameOf(specifier.exported) !== exportNameOf(specifier.local)
 					)
 						return
+					exported.add(exportNameOf(specifier.local))
 				}
 			} else if (
 				statement.type === "VariableDeclaration" ||
@@ -237,6 +362,8 @@ const declarationsOf = (
 					)
 						reads.push([binding.name, !isDeferred(id, declaration)])
 				}
+				if (statement.type === "ExportNamedDeclaration")
+					exported.add(declarator.id.name)
 				declared.set(declarator.id.name, {
 					text: source.slice(declaration.start, declaration.end),
 					reads
@@ -251,7 +378,7 @@ const declarationsOf = (
 		}
 	}
 	for (const name of declared.keys()) if (imported.has(name)) return
-	return { declared, imported, statements }
+	return { declared, imported, statements, exported }
 }
 
 // each named import of a site, which the precompiler writes on one line

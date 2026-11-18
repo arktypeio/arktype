@@ -2081,6 +2081,64 @@ export { $ark_aAllows as A }
 `)
 		})
 
+		describe("units many modules read, in a bundle of many chunks", () => {
+			// each of count modules creating a validator from `a`, and each of
+			// the first seven from `b`
+			const linked = (count: number) =>
+				linkBundle(
+					Object.fromEntries(
+						Array.from({ length: count }, (_, i) => [
+							`/m${i}.ts`,
+							{
+								source: "export const A = type({})",
+								code: `${main}${
+									i < 7 ?
+										`import { bAllows as $ark_bAllows } from "~arktype/b"\n\nexport const B = /* @__PURE__ */ $ark_create($ark_bAllows)\n`
+									:	""
+								}`
+							}
+						])
+					),
+					{
+						...units,
+						"~arktype/b": units["~arktype/a"].replaceAll("aAllows", "bAllows")
+					},
+					{ sharesUnits: true }
+				)!
+
+			it("are declared in one module, which each reads them from", () => {
+				const { modules, sites } = linked(8)
+				attest(
+					normalized(
+						Object.entries(modules).map(
+							([specifier, code]) => `// ${specifier}\n${code}`
+						)
+					)
+				).snap([
+					'// ~arktype/#0\nimport * as runtime from "arktype/runtime"\nconst aAllows = /* @__PURE__ */ runtime.props({ name: runtime.string })\nconst create = allows => data => allows(data)\nexport { aAllows, create }',
+					'// ~arktype/b\nimport * as runtime from "arktype/runtime"\n\nconst bAllows = /* @__PURE__ */ runtime.props({ name: runtime.string })\n\nexport { bAllows }\n'
+				])
+				// one seven modules read is left its own
+				attest(normalized(sites["/m0.ts"].code))
+					.snap(`import { aAllows as $ark_aAllows } from "~arktype/#0"
+import { create as $ark_create } from "~arktype/#0"
+
+export const A = /* @__PURE__ */ $ark_create($ark_aAllows)
+import { bAllows as $ark_bAllows } from "~arktype/b"
+
+export const B = /* @__PURE__ */ $ark_create($ark_bAllows)
+`)
+			})
+
+			it("stay their own where fewer read them", () => {
+				attest(Object.keys(linked(7).modules).sort()).equals([
+					"~arktype/a",
+					"~arktype/b",
+					"~arktype/create"
+				])
+			})
+		})
+
 		describe("a checker a program writes often", () => {
 			const often =
 				'/* @__PURE__ */ runtime.optional(/* @__PURE__ */ runtime.units(["first", "second"]))'
