@@ -2082,9 +2082,12 @@ export { $ark_aAllows as A }
 		})
 
 		describe("units many modules read, in a bundle of many chunks", () => {
+			const reading = (name: string) =>
+				`import { ${name}Allows as $ark_${name}Allows } from "~arktype/${name}"\n\nexport const ${name.toUpperCase()} = /* @__PURE__ */ $ark_create($ark_${name}Allows)\n`
+
 			// each of count modules creating a validator from `a`, and each of
-			// the first seven from `b`
-			const linked = (count: number) =>
+			// the first seven from the others
+			const linked = (count: number, others: Record<string, string>) =>
 				linkBundle(
 					Object.fromEntries(
 						Array.from({ length: count }, (_, i) => [
@@ -2093,32 +2096,34 @@ export { $ark_aAllows as A }
 								source: "export const A = type({})",
 								code: `${main}${
 									i < 7 ?
-										`import { bAllows as $ark_bAllows } from "~arktype/b"\n\nexport const B = /* @__PURE__ */ $ark_create($ark_bAllows)\n`
+										Object.keys(others)
+											.map(specifier => reading(specifier.slice(9)))
+											.join("")
 									:	""
 								}`
 							}
 						])
 					),
-					{
-						...units,
-						"~arktype/b": units["~arktype/a"].replaceAll("aAllows", "bAllows")
-					},
+					{ ...units, ...others },
 					{ sharesUnits: true }
 				)!
 
-			it("are declared in one module, which each reads them from", () => {
-				const { modules, sites } = linked(8)
-				attest(
-					normalized(
-						Object.entries(modules).map(
-							([specifier, code]) => `// ${specifier}\n${code}`
-						)
+			const printed = (modules: Record<string, string>) =>
+				normalized(
+					Object.entries(modules).map(
+						([specifier, code]) => `// ${specifier}\n${code}`
 					)
-				).snap([
+				)
+
+			const b = units["~arktype/a"].replaceAll("aAllows", "bAllows")
+
+			it("are declared in one module, which each reads them from", () => {
+				const { modules, sites } = linked(8, { "~arktype/b": b })
+				// one seven modules read, the only unit they alone reach, is left
+				attest(printed(modules)).snap([
 					'// ~arktype/#0\nimport * as runtime from "arktype/runtime"\nconst aAllows = /* @__PURE__ */ runtime.props({ name: runtime.string })\nconst create = allows => data => allows(data)\nexport { aAllows, create }',
 					'// ~arktype/b\nimport * as runtime from "arktype/runtime"\n\nconst bAllows = /* @__PURE__ */ runtime.props({ name: runtime.string })\n\nexport { bAllows }\n'
 				])
-				// one seven modules read is left its own
 				attest(normalized(sites["/m0.ts"].code))
 					.snap(`import { aAllows as $ark_aAllows } from "~arktype/#0"
 import { create as $ark_create } from "~arktype/#0"
@@ -2130,11 +2135,32 @@ export const B = /* @__PURE__ */ $ark_create($ark_bAllows)
 `)
 			})
 
-			it("stay their own where fewer read them", () => {
-				attest(Object.keys(linked(7).modules).sort()).equals([
-					"~arktype/a",
-					"~arktype/b",
-					"~arktype/create"
+			it("are declared with each unit the same sites reach, reading what more reach from its module", () => {
+				const { modules } = linked(8, {
+					"~arktype/b": b,
+					"~arktype/c": `import * as runtime from "arktype/runtime"
+import { aAllows } from "~arktype/a"
+
+const cAllows = /* @__PURE__ */ runtime.props({ a: aAllows })
+
+export { cAllows }
+`,
+					// one declaring a function, as a cell does its setter, stays apart
+					"~arktype/d": `let d
+
+function setD() {
+	d = arguments[0]
+}
+
+const dAllows = data => d(data)
+
+export { dAllows, setD }
+`
+				})
+				attest(printed(modules)).snap([
+					'// ~arktype/#0\nimport * as runtime from "arktype/runtime"\nconst aAllows = /* @__PURE__ */ runtime.props({ name: runtime.string })\nconst create = allows => data => allows(data)\nexport { aAllows, create }',
+					'// ~arktype/#1\nimport * as runtime from "arktype/runtime"\nimport { aAllows as aAllows } from "~arktype/#0"\nconst bAllows = /* @__PURE__ */ runtime.props({ name: runtime.string })\nconst cAllows = /* @__PURE__ */ runtime.props({ a: aAllows })\nexport { bAllows, cAllows }',
+					"// ~arktype/d\nlet d\n\nfunction setD() {\n\td = arguments[0]\n}\n\nconst dAllows = data => d(data)\n\nexport { dAllows, setD }\n"
 				])
 			})
 		})

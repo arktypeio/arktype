@@ -76,19 +76,18 @@ export const linkBundle = (
 	})
 	codes = linker.codes()
 	const one = isOneChunk ? oneModuleOf(codes, linker.siteTexts()) : undefined
-	const common =
-		sharesUnits && !one ? commonModuleOf(codes, linker.siteTexts()) : undefined
-	if (common) codes = common.codes
+	const shared =
+		sharesUnits && !one ? sharedModulesOf(codes, linker.siteTexts()) : undefined
+	if (shared) codes = shared.codes
 	const renamed =
 		one?.renamed ??
-		renamedOf(
-			codes,
-			common ? { ...modules, [common.specifier]: common.code } : modules
-		)
+		renamedOf(codes, shared ? { ...modules, ...shared.modules } : modules)
 	if (!renamed) return
-	// a site reads what the module declares from it, under whatever it's named
-	for (const specifier of common?.declared ?? [])
-		renamed[specifier] = renamed[common!.specifier] ?? common!.specifier
+	// a site reads what a module declares from it, under whatever it's named
+	for (const specifier in shared?.declaredIn) {
+		const module = shared!.declaredIn[specifier]
+		renamed[specifier] = renamed[module] ?? module
+	}
 	const linked: LinkedBundle = {
 		sites: {},
 		modules: {},
@@ -185,12 +184,12 @@ const oneModuleOf = (
 	return { specifier, code, renamed }
 }
 
-interface CommonModule {
-	specifier: string
-	code: string
-	// each unit it declares
-	declared: string[]
-	// the rest, reading it, and it
+interface SharedModules {
+	// each module declaring units, by its specifier
+	modules: Record<string, string>
+	// the module declaring each unit one does
+	declaredIn: Record<string, string>
+	// the rest, reading them, and them
 	codes: Record<string, string>
 }
 
@@ -202,12 +201,15 @@ interface CommonModule {
 // many readers repay naming it in each
 const minCommonReaders = 8
 
-// one module of the units enough others read, with what those read, or
-// undefined where fewer than two are
-const commonModuleOf = (
+// the units enough others read as one module, with what those read, and each
+// set of units the same sites reach as one: a bundler writes a module two
+// others read apart from both, with a wrapper and a read of it in each, which
+// units always loaded together needn't each pay. Undefined where no two share
+// a module
+const sharedModulesOf = (
 	codes: Record<string, string>,
 	siteTexts: string[]
-): CommonModule | undefined => {
+): SharedModules | undefined => {
 	const readsOf = (code: string) =>
 		new Set(
 			[...code.matchAll(virtualSource)]
@@ -218,52 +220,95 @@ const commonModuleOf = (
 	for (const code of [...Object.values(codes), ...siteTexts])
 		for (const read of readsOf(code)) readers[read] = (readers[read] ?? 0) + 1
 	// a unit declaring a function, as a cell does its setter, stays its own
+	const declarable = new Map<string, boolean>()
+	const isDeclarable = (specifier: string): boolean => {
+		let result = declarable.get(specifier)
+		if (result === undefined) {
+			result = !!declarationsOf({ [specifier]: codes[specifier] })
+			declarable.set(specifier, result)
+		}
+		return result
+	}
 	const linkable = new Map<string, boolean>()
 	const isLinkable = (specifier: string): boolean => {
 		if (!linkable.has(specifier)) {
 			linkable.set(specifier, false)
 			linkable.set(
 				specifier,
-				!!declarationsOf({ [specifier]: codes[specifier] }) &&
+				isDeclarable(specifier) &&
 					[...readsOf(codes[specifier])].every(isLinkable)
 			)
 		}
 		return linkable.get(specifier)!
 	}
-	const declared = new Set<string>()
+	const common = new Set<string>()
 	const declare = (specifier: string) => {
-		if (declared.has(specifier)) return
-		declared.add(specifier)
+		if (common.has(specifier)) return
+		common.add(specifier)
 		for (const read of readsOf(codes[specifier])) declare(read)
 	}
 	for (const specifier in readers) {
 		if (readers[specifier] >= minCommonReaders && isLinkable(specifier))
 			declare(specifier)
 	}
-	if (declared.size < 2) return
-	const declarations = declarationsOf(
-		Object.fromEntries(
-			[...declared].map(specifier => [specifier, codes[specifier]])
+	// each site reaching a unit, through whichever units read it
+	const sitesReaching = new Map<string, Set<number>>()
+	for (const [i, text] of siteTexts.entries()) {
+		const reach = (specifier: string) => {
+			let sites = sitesReaching.get(specifier)
+			if (!sites) sitesReaching.set(specifier, (sites = new Set()))
+			if (sites.has(i)) return
+			sites.add(i)
+			for (const read of readsOf(codes[specifier])) reach(read)
+		}
+		for (const read of readsOf(text)) reach(read)
+	}
+	const bySites = new Map<string, string[]>()
+	for (const [specifier, sites] of sitesReaching) {
+		if (sites.size < 2 || common.has(specifier) || !isDeclarable(specifier))
+			continue
+		const key = [...sites].sort((l, r) => l - r).join()
+		const units = bySites.get(key)
+		if (units) units.push(specifier)
+		else bySites.set(key, [specifier])
+	}
+	// a unit reads only what at least its sites reach, so each set after those
+	// more sites reach imports modules already named
+	const sets = [
+		[...common],
+		...[...bySites.values()].sort(
+			(l, r) => sitesReaching.get(r[0])!.size - sitesReaching.get(l[0])!.size
 		)
-	)
-	if (!declarations) return
-	const order = orderOf(declarations, declarations.declared.keys())
-	if (!order) return
-	const code = [
-		...declarations.imported.values(),
-		...declarations.statements,
-		...order.map(name => declarations.declared.get(name)!.text),
-		// what each exported, one it only imports among them
-		`export { ${[...declarations.exported].join(", ")} }`
-	].join("\n")
-	const specifier = `~arktype/${hashOf(code)}`
-	const renamed = Object.fromEntries(
-		[...declared].map(unit => [unit, specifier])
-	)
-	const rest: Record<string, string> = { [specifier]: code }
-	for (const key in codes)
-		if (!declared.has(key)) rest[key] = withRenamed(codes[key], renamed)
-	return { specifier, code, declared: [...declared], codes: rest }
+	]
+	const shared: SharedModules = { modules: {}, declaredIn: {}, codes: {} }
+	for (const units of sets) {
+		if (units.length < 2) continue
+		const declarations = declarationsOf(
+			Object.fromEntries(
+				units.map(unit => [unit, withRenamed(codes[unit], shared.declaredIn)])
+			)
+		)
+		const order =
+			declarations && orderOf(declarations, declarations.declared.keys())
+		if (!order) continue
+		const code = [
+			...declarations.imported.values(),
+			...declarations.statements,
+			...order.map(name => declarations.declared.get(name)!.text),
+			// what each exported, one it only imports among them
+			`export { ${[...declarations.exported].join(", ")} }`
+		].join("\n")
+		const specifier = `~arktype/${hashOf(code)}`
+		shared.modules[specifier] = code
+		for (const unit of units) shared.declaredIn[unit] = specifier
+	}
+	if (!Object.keys(shared.modules).length) return
+	Object.assign(shared.codes, shared.modules)
+	for (const key in codes) {
+		if (!(key in shared.declaredIn))
+			shared.codes[key] = withRenamed(codes[key], shared.declaredIn)
+	}
+	return shared
 }
 
 // each of the names after what it reads as it's declared, or undefined where
