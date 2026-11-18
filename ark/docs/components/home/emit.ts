@@ -27,8 +27,15 @@ const another = /^\s*(?:export\s+)?(?:const|let|var|function|import)\b/m
 
 const oneDeclaration = "This file is one declaration: const Shape = type(…)"
 
-/** a check as the default build writes it */
+/** a check as the default build writes it, where other checks are in scope beside it */
 const check = /^const (\w+)Allows = function \(data, ctx\) {[\S\s]*?\n }$/gm
+
+/**
+ * A check that calls no other, written as the first of an unnamed pair with
+ * its `Apply` twin: `const name = [function (data, ctx) {…}, function …]`
+ */
+const pair =
+	/^const (\w+) = \[function \(data, ctx\) {([\S\s]*?)\n }, function \(data, ctx\) {[\S\s]*?\n }]$/gm
 
 /** a check written once for several nodes that differ only in their constants */
 const template =
@@ -38,8 +45,12 @@ const template =
 const instance =
 	/^const (\w+) = (?:\/\* @__\w+__ \*\/ )*(template\w+)\((.*)\)$/gm
 
-/** the group the validator is created with: its check is the Type's own */
-const root = /createValidatorWith\(\s*\w+,\s*(\w+),/
+/**
+ * The group the validator is created with, or the first of them where it is
+ * handed several (an array's own, then its element's): its check is the
+ * Type's own
+ */
+const root = /createValidatorWith\(\s*\w+,\s*\[?(\w+)/
 
 const called = /\b(\w+)Allows\b/g
 
@@ -95,15 +106,27 @@ const argumentsOf = (text: string) => {
 	return args
 }
 
+type Template = {
+	params: string[]
+	body: string
+}
+
 /**
- * Every check in a written module, by the name it is called by. A templated
- * check is written once and called through each node's copy, so it is given
- * here once per copy, under that copy's name, with the copy's constants
- * where the template's parameters were: what the copy runs.
+ * Every check in a written module, by the name it is called by, each as a
+ * named function: the form most are written in, and the one a reader can
+ * follow a call to.
+ *
+ * Two are written otherwise and are given that form here, their bodies
+ * untouched. A check that calls no other is the first of an unnamed pair,
+ * and is given under the name the pair is bound to, which is the name its
+ * callers reach it by. A templated check is written once and called through
+ * each node's copy, so it is given once per copy, under that copy's name,
+ * with the copy's constants where the template's parameters were: what the
+ * copy runs.
  */
 const checksOf = (code: string) => {
 	const checks = new Map<string, string>()
-	const templates = new Map<string, { params: string[]; body: string }>()
+	const templates = new Map<string, Template>()
 	const untemplated = code.replaceAll(template, (_, name, params, body) => {
 		templates.set(name, {
 			params: params.split(",").map((param: string) => param.trim()),
@@ -126,6 +149,8 @@ const checksOf = (code: string) => {
 			:	own
 		checks.set(name, filled.replace("templateAllows", `${name}Allows`))
 	}
+	for (const [, name, body] of untemplated.matchAll(pair))
+		checks.set(name, `const ${name}Allows = function (data, ctx) {${body}\n }`)
 	for (const [written, name] of untemplated.matchAll(check))
 		checks.set(name, written)
 	return checks
@@ -173,7 +198,8 @@ export const emit = (source: string): CompileResult => {
 	const [, name, expression] = match
 	let exported: unknown
 	try {
-		// the text as typed, with nothing in scope but `type`
+		// the reader's own text, run where they typed it: `type` is the one
+		// name it is handed
 		exported = new Function("type", `"use strict"; return (${expression})`)(
 			type
 		)
