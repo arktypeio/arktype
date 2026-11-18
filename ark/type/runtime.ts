@@ -1143,10 +1143,13 @@ export const writeDigestMismatchMessage = <label extends string>(
 ): `${label} holds other keys or values than it was precompiled with` =>
 	`${label} holds other keys or values than it was precompiled with`
 
+// what a check says of a value a build written for size doesn't name
+const unnamed = "A value a validator reads"
+
 export const checkDigest = (
 	value: unknown,
 	expected: string,
-	label: string
+	label: string = unnamed
 ): void => {
 	if (!hasDomain(value, "object") || digestOf(value) !== expected)
 		throwError(writeDigestMismatchMessage(label))
@@ -1155,7 +1158,7 @@ export const checkDigest = (
 export const checkFacts = (
 	actual: HoleFact,
 	expected: HoleFact,
-	label: string
+	label: string = unnamed
 ): void => {
 	if (actual !== expected) {
 		throwError(
@@ -1180,8 +1183,8 @@ const describeFact = (fact: HoleFact): string =>
 export const checkIdentity = (
 	value: unknown,
 	expected: unknown,
-	label: string,
-	expectedLabel: string
+	label: string = unnamed,
+	expectedLabel = "another it reads"
 ): void => {
 	if (value !== expected)
 		throwError(writeIdentityMismatchMessage(label, expectedLabel))
@@ -1217,7 +1220,7 @@ export const checkDefault = (
 export const checkInput = (
 	value: unknown,
 	expected: unknown,
-	label: string
+	label: string = unnamed
 ): void => {
 	if (!is(value, expected)) {
 		throwError(
@@ -1240,7 +1243,10 @@ export const checkProgress = (
 		throw new ReferenceError(`Cannot access '${name}' before initialization`)
 }
 
-export const checkFunction = (value: unknown, label: string): void => {
+export const checkFunction = (
+	value: unknown,
+	label: string = unnamed
+): void => {
 	if (typeof value !== "function") {
 		throwError(
 			writeCreationMismatchMessage(label, describeValue(value), "a function")
@@ -1251,7 +1257,7 @@ export const checkFunction = (value: unknown, label: string): void => {
 // a value holding a cell a validator reads, set only once its site has run
 export const checkHeld = (
 	value: unknown,
-	label = "A value a validator reads",
+	label: string = unnamed,
 	kind: "Type" | "Module" | "Scope" | "Generic" = "Type"
 ): void => {
 	if (value === undefined) {
@@ -1283,7 +1289,7 @@ export const holdHoles = (<value extends object>(
 export const holesOf = ((
 	holder: unknown,
 	id: string,
-	label: string,
+	label: string = unnamed,
 	kind: "Type" | "Module" | "Scope" | "Generic" = "Type"
 ): readonly unknown[] => {
 	const created = holesByValue.get(holder as object)
@@ -1302,7 +1308,7 @@ export const holesOf = ((
 // a factory's check of a value it receives
 export const receiverOf = ((
 	id: string,
-	label: string,
+	label?: string,
 	kind?: "Module" | "Scope" | "Generic"
 ) =>
 	((holder: unknown): readonly unknown[] =>

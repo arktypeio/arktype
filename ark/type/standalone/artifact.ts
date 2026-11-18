@@ -665,7 +665,7 @@ export class StandaloneArtifact {
 				classesOf(hole => hole)
 			)
 			this.checks.push(
-				`runtime.checkFacts(runtime.factOfHole(${expression}${kind === "function" ? "" : `, "${kind}"`}${kind === "class" ? classesArg : ""}), ${JSON.stringify(expected)}, ${JSON.stringify(this.holeLabels.get(hole))})`
+				`runtime.checkFacts(runtime.factOfHole(${expression}${kind === "function" ? "" : `, "${kind}"`}${kind === "class" ? classesArg : ""}), ${JSON.stringify(expected)}${this.labelArg(this.holeLabels.get(hole))})`
 			)
 		}
 	}
@@ -690,7 +690,7 @@ export class StandaloneArtifact {
 				this.holeExpressions.get(hole) !== this.holeExpressions.get(first)
 			) {
 				this.checks.push(
-					`runtime.checkFacts(${printedNameOf(hole)}, ${printedNameOf(first)}, ${JSON.stringify(this.holeLabels.get(hole))})`
+					`runtime.checkFacts(${printedNameOf(hole)}, ${printedNameOf(first)}${this.labelArg(this.holeLabels.get(hole))})`
 				)
 			}
 		}
@@ -726,12 +726,21 @@ export class StandaloneArtifact {
 			if (typeof hole === "function" && read(hole) === name) return hole
 	}
 
+	// what names a value where a check of it throws, written after the check's
+	// other arguments. A build written for size leaves it out: its checks
+	// throw as often, saying "A value a validator reads" for what another names
+	labelArg(label: string | undefined, after = ""): string {
+		return this.baking.shortest ?
+				after && `, undefined${after}`
+			:	`, ${JSON.stringify(label)}${after}`
+	}
+
 	// a hole received twice is checked by identity
 	receiveHole(hole: unknown, expression: string, label: string): boolean {
 		const received = this.holeExpressions.get(hole)
 		if (received) {
 			this.checks.push(
-				`runtime.checkIdentity(${expression}, ${received}, ${JSON.stringify(label)}, ${JSON.stringify(this.holeLabels.get(hole))})`
+				`runtime.checkIdentity(${expression}, ${received}${this.labelArg(label, this.labelArg(this.holeLabels.get(hole)))})`
 			)
 			return false
 		}
@@ -755,7 +764,7 @@ export class StandaloneArtifact {
 		if (!this.isComparedId(id))
 			throwInternalError(`Comparing ${label}, whose id the scan didn't read`)
 		const kind = hasArkKind(value, "root") ? "" : `, "${kindNameOf(value)}"`
-		const args = `${writeId(id)}, ${JSON.stringify(label)}${kind}`
+		const args = `${writeId(id)}${this.labelArg(label, kind)}`
 		const name = `${receiverPrefix}${hashOf(`runtime.holesOf(holder, ${args})`)}`
 		this.importName(
 			this.share(
@@ -818,7 +827,7 @@ export class StandaloneArtifact {
 				// a cell it reads is set by then only if what holds it has run,
 				// and arktype would throw reading it even where no site sets one
 				this.checks.push(
-					`runtime.checkHeld(${expression}, ${JSON.stringify(label)}${isType ? "" : `, "${kindNameOf(value)}"`})`
+					`runtime.checkHeld(${expression}${this.labelArg(label, isType ? "" : `, "${kindNameOf(value)}"`)})`
 				)
 			} else if (allHoles.length)
 				this.heldReads.push(`runtime.checkHeld(${expression})`)
@@ -836,7 +845,7 @@ export class StandaloneArtifact {
 		// e.g. a helper an import cycle left unset
 		if (!path.length && typeof value === "function") {
 			this.checks.push(
-				`runtime.checkFunction(${expression}, ${JSON.stringify(label)})`
+				`runtime.checkFunction(${expression}${this.labelArg(label)})`
 			)
 			return
 		}
@@ -856,7 +865,7 @@ export class StandaloneArtifact {
 				)
 			}
 			this.checks.push(
-				`runtime.checkInput(${expression}, ${this.emit(value)}, ${JSON.stringify(label)})`
+				`runtime.checkInput(${expression}, ${this.emit(value)}${this.labelArg(label)})`
 			)
 			return
 		}
@@ -879,12 +888,12 @@ export class StandaloneArtifact {
 		// say which changed writes them all again, each with its label
 		if (!this.baking.checksTypes && isDigestible(value)) {
 			this.checks.push(
-				`runtime.checkDigest(${expression}, ${JSON.stringify(runtime.digestOf(value))}, ${JSON.stringify(label)})`
+				`runtime.checkDigest(${expression}, ${JSON.stringify(runtime.digestOf(value))}${this.labelArg(label)})`
 			)
 			return
 		}
 		this.checks.push(
-			`runtime.checkFacts(runtime.describeShape(${expression}), ${JSON.stringify(runtime.describeShape(value))}, ${JSON.stringify(label)})`
+			`runtime.checkFacts(runtime.describeShape(${expression}), ${JSON.stringify(runtime.describeShape(value))}${this.labelArg(label)})`
 		)
 		if (!isPlainLiteral(value)) return
 		for (const k of Reflect.ownKeys(value)) {

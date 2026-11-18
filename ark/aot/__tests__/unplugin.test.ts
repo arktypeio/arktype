@@ -2838,6 +2838,13 @@ ${site}`
 			'checkInput(p0[2], "ALL", "`currencies[2]`");',
 			'checkInput(p0[3], "AMD", "`currencies[3]`");'
 		])
+		// one written for size checks as much, and doesn't hold what names it
+		const small = await build({ optimize: "size" })
+		attest(checksOf(small)).snap(['checkDigest(p0, "1cl1e3qjbc7");'])
+		attest(run(small)).equals("true false\n")
+		attest(thrownBy(await build({ optimize: "size" }, "written.ts"))).equals(
+			"A value a validator reads holds other keys or values than it was precompiled with"
+		)
 	})
 
 	it("a Type read off a holder", async () => {
