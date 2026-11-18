@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react"
 import { sizeChart, type BenchmarkBar } from "../../lib/claims.ts"
+import { incumbent } from "./boardFacts.ts"
 
 /** gzipped bytes a block stands for */
 const block = 250
@@ -33,7 +34,10 @@ type RivalRowProps = {
 }
 
 const RivalRow = ({ name, bytes, i }: RivalRowProps) => (
-	<li className="byte-row" style={{ "--i": i } as CSSProperties}>
+	<li
+		className={name === incumbent ? "byte-row is-incumbent" : "byte-row"}
+		style={{ "--i": i } as CSSProperties}
+	>
 		<span className="byte-name">{name}</span>
 		<span className="byte-size">{kbDigits(bytes)} kB</span>
 		<span className="byte-grid" aria-hidden>

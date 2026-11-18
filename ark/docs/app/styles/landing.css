@@ -12,6 +12,14 @@
 	--lit: color-mix(in oklab, var(--gold) 13%, transparent);
 	--lit-edge: color-mix(in oklab, var(--gold) 70%, transparent);
 	--add: color-mix(in oklab, var(--teal) 13%, transparent);
+	/* Zod, wherever a graph keeps it in view: a red quiet enough to sit beside
+	   the greys, so the page's one contrast is gold against it */
+	--zod: color-mix(
+		in oklab,
+		color-mix(in oklab, var(--red) 82%, var(--ink-3)) 66%,
+		var(--bg)
+	);
+	--zod-ink: color-mix(in oklab, var(--red-text) 80%, var(--ink-2));
 	--panel: linear-gradient(
 		180deg,
 		color-mix(in oklab, var(--surface) 90%, var(--tint) 10%),
@@ -96,10 +104,375 @@
 		}
 	}
 
-	/* ---------- the board: the title, then the table that backs it ---------- */
-	.board > .p3 {
+	/* read by a screen reader, not drawn */
+	.vh {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	/* ---------- the board: the title, then a graph a category ---------- */
+	.graphs {
+		margin: 32px 0 0;
+		padding: 26px 28px 18px;
+		border-radius: var(--r-lg);
+		border: 1px solid var(--rule);
+		background: var(--panel);
+		box-shadow: var(--shadow-card);
+	}
+	.graphs-head {
+		h3 {
+			margin: 0;
+			font: 800 clamp(1.5rem, 1.1rem + 1.2vw, 2.1rem) / 1.1 var(--sans);
+			letter-spacing: -0.03em;
+		}
+		p {
+			margin: 8px 0 0;
+			font-size: 14px;
+			color: var(--ink-2);
+		}
+	}
+	.graphs-row {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0 44px;
+		margin-top: 26px;
+	}
+	.graph {
+		min-width: 0;
+		h4 {
+			margin: 0;
+			font: 700 18px / 1.2 var(--sans);
+			letter-spacing: -0.01em;
+			color: var(--ink);
+		}
+		ol {
+			display: grid;
+			gap: 13px;
+			margin: 18px 0 0;
+			padding: 0;
+			list-style: none;
+		}
+	}
+	.graph-of {
+		margin: 4px 0 0;
+		font: 400 13px / 1.4 var(--mono);
+		color: var(--ink-2);
+	}
+	.graph-lane {
+		display: grid;
+		grid-template-columns: 4.5ch minmax(0, 1fr) auto;
+		grid-template-areas:
+			"place name val"
+			"track track track";
+		align-items: center;
+		gap: 6px 8px;
+		font: 400 13.5px / 1.2 var(--mono);
+		color: var(--ink-2);
+	}
+	.graph-place {
+		grid-area: place;
+		font-variant-numeric: tabular-nums;
+	}
+	.graph-name {
+		grid-area: name;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		color: var(--ink);
+	}
+	.graph-val {
+		grid-area: val;
+		text-align: right;
+		font-variant-numeric: tabular-nums;
+	}
+	.graph-track {
+		grid-area: track;
+		position: relative;
+		height: 9px;
+		border-radius: 3px;
+		background: color-mix(in oklab, var(--ink) 5%, transparent);
+		/* 1×: the best result on every benchmark */
+		&::after {
+			content: "";
+			position: absolute;
+			inset: -3px auto -3px 25%;
+			width: 1px;
+			background: color-mix(in oklab, var(--ink) 24%, transparent);
+		}
+	}
+	.graph-bar {
+		position: absolute;
+		inset: 0 auto 0 0;
+		width: max(4px, calc(var(--w) * 100%));
+		border-radius: inherit;
+		background: var(--bar);
+		transform-origin: left;
+	}
+	/* ArkType's lane: the one a glance lands on */
+	.graph-lane.is-ours {
+		gap: 9px 8px;
+		margin: 0 -12px;
+		padding: 11px 12px 13px;
+		border-radius: 12px;
+		background: color-mix(in oklab, var(--gold-fill) 7%, transparent);
+		box-shadow: inset 0 0 0 1px
+			color-mix(in oklab, var(--gold-fill) 30%, transparent);
+		.graph-place {
+			justify-self: start;
+			padding: 3px 7px;
+			border-radius: var(--r-pill);
+			background: var(--gold-fill);
+			font-weight: 700;
+			font-size: 12.5px;
+			color: var(--on-gold);
+		}
+		.graph-name {
+			font-weight: 700;
+			font-size: 16px;
+			color: var(--gold);
+		}
+		.graph-val {
+			font-weight: 700;
+			font-size: 16px;
+			color: var(--gold);
+		}
+		.graph-track {
+			height: 16px;
+		}
+		.graph-bar {
+			background: linear-gradient(
+				90deg,
+				color-mix(in oklab, var(--gold-fill) 70%, var(--copper)),
+				var(--gold-fill)
+			);
+			box-shadow: 0 0 18px 0
+				color-mix(in oklab, var(--gold-glow) 60%, transparent);
+		}
+	}
+	.graph-lane.is-incumbent {
+		.graph-place,
+		.graph-name,
+		.graph-val {
+			color: var(--zod-ink);
+		}
+		.graph-bar {
+			background: var(--zod);
+		}
+	}
+	/* an average past the axis: drawn to the end and cut, twice, so it can't
+	   be read as a length */
+	.graph-lane.is-cut .graph-bar {
+		width: 100%;
+		mask: linear-gradient(
+			105deg,
+			#000 0 86%,
+			transparent 86% 88.5%,
+			#000 88.5% 91%,
+			transparent 91% 93.5%,
+			#000 93.5%
+		);
+	}
+	.graph-gap {
+		padding-left: calc(4.5ch + 8px);
+		font: 400 12.5px / 1 var(--mono);
+		color: var(--ink-3);
+		&::before {
+			content: "⋮";
+			margin-right: 1ch;
+		}
+	}
+	/* a phone draws the best rival only, and counts the rest as skipped */
+	.gap-narrow,
+	.graph-gap.is-narrow {
+		display: none;
+	}
+	.graph-axis {
+		position: relative;
+		height: 16px;
+		margin-top: 9px;
+		font: 400 12px / 1 var(--mono);
+		color: var(--ink-3);
+		span {
+			position: absolute;
+			left: calc(var(--x) * 100%);
+			translate: -50% 0;
+			&:last-child {
+				translate: -100% 0;
+			}
+		}
+	}
+	.graph-note {
+		margin: 12px 0 0;
+		font: 400 13px / 1.5 var(--mono);
+		color: var(--ink-2);
+	}
+	.graphs-foot {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px 22px;
+		margin: 22px 0 0;
+		padding-top: 14px;
+		border-top: 1px dashed var(--rule-soft);
+		font: 400 13px / 1.5 var(--mono);
+		color: var(--ink-2);
+		a {
+			margin-left: auto;
+			color: var(--sky);
+		}
+	}
+	.graph-cut-key {
+		display: inline-block;
+		width: 26px;
+		height: 8px;
+		margin-right: 0.5ch;
+		border-radius: 2px;
+		background: var(--bar);
+		mask: linear-gradient(
+			105deg,
+			#000 0 48%,
+			transparent 48% 58%,
+			#000 58% 68%,
+			transparent 68% 78%,
+			#000 78%
+		);
+	}
+	.board .p3 {
 		max-width: none;
-		margin-top: 32px;
+		margin-top: 18px;
+	}
+
+	/* ---------- every scenario, a bar a library at its median ---------- */
+	.card.is-medians {
+		max-width: 760px;
+		.race {
+			margin-top: 0;
+			padding-top: 0;
+			border-top: 0;
+			row-gap: 16px;
+		}
+		.lane {
+			grid-template-areas:
+				"name val"
+				"track track"
+				"sub sub";
+			font-size: 13.5px;
+		}
+		.lane-val b {
+			color: var(--ink);
+		}
+		.lane-track {
+			height: 10px;
+		}
+		.lane-sub {
+			grid-area: sub;
+			font-size: 12.5px;
+			color: var(--ink-2);
+		}
+		.lane.is-ours .lane-bar {
+			min-width: 5px;
+		}
+		.lane.is-incumbent {
+			.lane-name,
+			.lane-val,
+			.lane-val b {
+				color: var(--zod-ink);
+			}
+			.lane-bar {
+				background: var(--zod);
+			}
+		}
+	}
+
+	/* ---------- 05: what precompiling promises, and the error that keeps it ---------- */
+	.guarantee {
+		margin: 0;
+		border-radius: var(--r-lg);
+		border: 1px solid var(--rule);
+		background: var(--panel);
+		box-shadow: var(--shadow-card);
+		overflow: hidden;
+		figcaption {
+			padding: 11px 22px;
+			border-top: 1px solid var(--rule-soft);
+			font: 400 13px / 1.5 var(--mono);
+			color: var(--ink-2);
+		}
+	}
+	.guarantee-plugin {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px 6px;
+		margin: 0;
+		padding: 11px 22px;
+		border-bottom: 1px solid var(--rule-soft);
+		background: var(--add);
+		font: 400 13.5px / 1.5 var(--mono);
+		font-variant-ligatures: none;
+		color: var(--ink);
+		.diff-mark {
+			width: auto;
+			margin-right: 1ch;
+		}
+	}
+	.guarantee-add {
+		margin-left: auto;
+		white-space: nowrap;
+	}
+	.guarantee-file {
+		color: var(--ink-2);
+	}
+	.guarantee-body {
+		padding: 24px 24px 22px;
+		h3 {
+			margin: 0;
+			font: 800 clamp(1.4rem, 1.1rem + 0.9vw, 1.85rem) / 1.12 var(--sans);
+			letter-spacing: -0.03em;
+		}
+		p {
+			max-width: 58ch;
+			margin: 10px 0 0;
+			font-size: 16px;
+			line-height: 1.55;
+			color: var(--ink-2);
+		}
+	}
+	/* the build's error, as it prints it */
+	.diag {
+		margin: 18px 0 0;
+		padding: 14px 16px;
+		border-radius: var(--r-md);
+		border: 1px solid var(--line);
+		background: var(--sunk);
+		font: 400 13px / 1.65 var(--mono);
+		font-variant-ligatures: none;
+		tab-size: 2;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		color: var(--ink);
+	}
+	.diag-at {
+		color: var(--sky);
+	}
+	.diag-what {
+		color: var(--red-ink);
+	}
+	/* each reason and the fix on a line of its own, wrapping under itself */
+	.diag-why,
+	.diag-fix {
+		display: block;
+		padding-left: 2ch;
+	}
+	.diag-why {
+		color: var(--ink-2);
+	}
+	.diag-keep {
+		white-space: nowrap;
 	}
 	.board > .drills {
 		margin-top: 18px;
@@ -139,39 +512,6 @@
 		.point:is(.is-split, .is-flip) .point-copy {
 			position: sticky;
 			top: calc(var(--top) + 36px);
-		}
-	}
-	/* a headline with its sentence beside it, over a figure the page's width */
-	.point.is-stack .point-words {
-		display: grid;
-		grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
-		column-gap: 64px;
-		align-items: end;
-		h2 {
-			grid-row: span 2;
-			max-width: 14ch;
-			font-size: clamp(2.5rem, 1.5rem + 3.2vw, 4.4rem);
-			line-height: 0.98;
-			letter-spacing: -0.04em;
-		}
-		.deck {
-			margin-top: 0;
-		}
-	}
-	/* the number beside the headline, over a figure the page's width */
-	.point.is-band .point-copy {
-		display: grid;
-		grid-template-columns: auto minmax(0, 1fr);
-		column-gap: 56px;
-		align-items: end;
-		.sec-label {
-			grid-column: 1 / -1;
-		}
-		.stat {
-			max-width: 22rem;
-		}
-		h2 {
-			margin-top: 0;
 		}
 	}
 	.point-ctas {
@@ -312,12 +652,6 @@
 			font: 700 17px / 1.3 var(--sans);
 			letter-spacing: -0.01em;
 		}
-		.board-note:first-of-type {
-			margin-top: 14px;
-		}
-		.board-note + .board-note {
-			margin-top: 10px;
-		}
 		.sides,
 		.proof,
 		.pair2,
@@ -380,14 +714,6 @@
 			translate: none;
 			border-color: var(--rule);
 			box-shadow: var(--shadow-card);
-		}
-		.card-margin {
-			margin-top: 0;
-		}
-		&.is-size .race {
-			margin-top: 0;
-			padding-top: 0;
-			border-top: 0;
 		}
 	}
 
@@ -503,9 +829,19 @@
 		height: 4px;
 		margin-top: 10px;
 		border-radius: 2px;
-		background: linear-gradient(var(--ink-3), var(--ink-3)) no-repeat 0 0 /
-			max(3px, calc(100% / var(--ratio))) 100%
+		background: linear-gradient(
+				var(--lane, var(--ink-3)),
+				var(--lane, var(--ink-3))
+			)
+			no-repeat 0 0 / max(3px, calc(100% / var(--ratio))) 100%
 			color-mix(in oklab, var(--ink) 5%, transparent);
+	}
+	/* Zod's lane in every figure: the same quiet red as on the board */
+	:is(.count-lane, .boot-lane, .byte-row).is-incumbent {
+		--lane: var(--zod);
+		:is(.count-name, .count-num, .boot-name, .byte-name) {
+			color: var(--zod-ink);
+		}
 	}
 	.count-lane.is-ours {
 		padding-top: 2px;
@@ -589,7 +925,7 @@
 		position: absolute;
 		inset: 0 auto 0 0;
 		width: max(3px, calc(var(--v) / var(--max) * 100%));
-		background: var(--ink-3);
+		background: var(--lane, var(--ink-3));
 		transform-origin: left;
 	}
 	/* where ArkType finished, on every lane still running past it */
@@ -670,7 +1006,7 @@
 		width: var(--b);
 		height: var(--b);
 		border-radius: 2px;
-		background: var(--byte-idle);
+		background: var(--lane, var(--byte-idle));
 	}
 	.byte-row.is-ours {
 		grid-template-areas:
@@ -730,140 +1066,6 @@
 	.byte.is-parser {
 		display: none;
 	}
-
-	/* the size drill-down: bytes against Types */
-	.scale {
-		max-width: 900px;
-		margin: 16px 0 0;
-		figcaption {
-			margin-top: 14px;
-			font: 400 13px / 1.55 var(--mono);
-			color: var(--ink-2);
-		}
-	}
-	.scale-title {
-		margin: 0 0 14px;
-	}
-	.scale-scope {
-		max-width: 78ch;
-		margin: 20px 0 0;
-		font-size: 14.5px;
-		line-height: 1.55;
-		color: var(--ink-2);
-		b {
-			color: var(--ink);
-			font-weight: 600;
-		}
-	}
-	.scale-key {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px 20px;
-		font: 400 13px / 1.4 var(--mono);
-		color: var(--ink-2);
-		> span {
-			display: inline-flex;
-			align-items: center;
-			gap: 8px;
-		}
-		i {
-			width: 22px;
-			border-top: 2px solid var(--ink-3);
-		}
-	}
-	.scale-key .is-default i,
-	.scale-key .is-smallest i,
-	.scale-key .is-dynamic i {
-		border-top-color: var(--gold-fill);
-	}
-	.scale-key .is-dashed i {
-		border-top-style: dashed;
-	}
-	.scale-key .is-dotted i {
-		border-top-style: dotted;
-	}
-	.scale-plot {
-		position: relative;
-		height: 340px;
-		margin: 22px 178px 34px 58px;
-		svg {
-			position: absolute;
-			inset: 0;
-			width: 100%;
-			height: 100%;
-			overflow: visible;
-		}
-		line {
-			stroke: color-mix(in oklab, var(--ink) 8%, transparent);
-			stroke-width: 1;
-			vector-effect: non-scaling-stroke;
-		}
-		polyline {
-			fill: none;
-			stroke: var(--ink-3);
-			stroke-width: 2;
-			stroke-linejoin: round;
-			vector-effect: non-scaling-stroke;
-			&:is(.is-default, .is-smallest, .is-dynamic) {
-				stroke: var(--gold-fill);
-			}
-			&.is-dashed {
-				stroke-dasharray: 6 5;
-			}
-			&.is-dotted {
-				stroke-dasharray: 1 6;
-				stroke-linecap: round;
-				stroke-width: 2.5;
-			}
-		}
-	}
-	.scale-dot {
-		position: absolute;
-		left: var(--x);
-		top: var(--y);
-		width: 8px;
-		height: 8px;
-		margin: -4px 0 0 -4px;
-		border-radius: 50%;
-		background: var(--ink-3);
-		box-shadow: 0 0 0 2px var(--bg);
-		&:is(.is-default, .is-smallest, .is-dynamic) {
-			background: var(--gold-fill);
-		}
-	}
-	.scale-end,
-	.scale-x,
-	.scale-y {
-		position: absolute;
-		font: 400 11px / 1 var(--mono);
-		color: var(--ink-3);
-		white-space: nowrap;
-	}
-	.scale-end {
-		left: calc(100% + 14px);
-		top: var(--y);
-		translate: 0 -50%;
-		font-size: 12px;
-		color: var(--ink-2);
-		&:is(.is-default, .is-smallest, .is-dynamic) {
-			color: var(--ink);
-		}
-	}
-	.scale-y {
-		right: calc(100% + 10px);
-		top: var(--y);
-		translate: 0 -50%;
-	}
-	.scale-x {
-		top: calc(100% + 10px);
-		left: var(--x);
-		translate: -50% 0;
-	}
-	.scale-axis {
-		margin: 0 0 18px;
-		font: 400 13px / 1.4 var(--mono);
-		color: var(--ink-2);
-	}
 	.scale-rows {
 		overflow-x: auto;
 	}
@@ -897,301 +1099,6 @@
 		td {
 			color: var(--ink-2);
 		}
-		tr:is(.is-default, .is-smallest, .is-dynamic) {
-			th {
-				color: var(--gold);
-			}
-			td {
-				color: var(--ink);
-			}
-		}
-	}
-	.cutoffs {
-		margin: 14px 0 0;
-		padding: 0;
-		list-style: none;
-		border-top: 1px solid var(--rule-soft);
-		li {
-			display: grid;
-			grid-template-columns: minmax(0, 23rem) minmax(0, 1fr);
-			gap: 2px 20px;
-			padding: 9px 0;
-			border-bottom: 1px solid var(--rule-soft);
-			font-size: 14.5px;
-			color: var(--ink-2);
-		}
-		b {
-			color: var(--ink);
-			font-weight: 600;
-		}
-		.cut-where {
-			font: 400 13px / 1.5 var(--mono);
-		}
-	}
-
-	/* ---------- 02: the plugin, a definition, and what the build makes of it ---------- */
-	.compile {
-		display: grid;
-		grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-		grid-template-areas:
-			"config config"
-			"in out";
-		gap: 18px 22px;
-		.code-card {
-			display: flex;
-			flex-direction: column;
-		}
-		.code-card pre.shiki {
-			font-size: 14px;
-			line-height: 1.75;
-		}
-		.code-card > figcaption {
-			color: var(--ink-2);
-		}
-		.code-card > footer {
-			font-size: 13px;
-			color: var(--ink-2);
-			code {
-				color: var(--gold);
-			}
-		}
-	}
-	/* step 1 is two lines, so it is a strip: its name, then the lines, in a row */
-	.compile .compile-config {
-		grid-area: config;
-		flex-direction: row;
-		overflow: hidden;
-		> figcaption {
-			flex: none;
-			gap: 20px;
-			border-bottom: 0;
-			border-right: 1px solid var(--rule-soft);
-		}
-		.diff {
-			flex: 1;
-			display: flex;
-			flex-wrap: wrap;
-			padding: 0;
-			> span {
-				flex: 1 1 auto;
-				display: flex;
-				align-items: center;
-				padding-block: 10px;
-			}
-		}
-	}
-	.compile-in {
-		grid-area: in;
-		overflow: hidden;
-	}
-	.compile-out {
-		grid-area: out;
-		> footer {
-			flex-wrap: wrap;
-			row-gap: 4px;
-		}
-	}
-	.compile-source,
-	.compile-result {
-		flex: 1;
-		min-width: 0;
-	}
-	/* the definition is the reader's to change: a press on it starts the precompiler.
-	   It and the field that replaces it hold one more line than the definition has,
-	   so neither starting to edit nor adding a field moves what is under the card. */
-	.compile-in {
-		--edit-fs: 14px;
-		--edit-lh: 1.75;
-		--edit-h: calc(var(--rows) * var(--edit-lh) * var(--edit-fs) + 32px);
-	}
-	.compile-source {
-		cursor: text;
-		min-height: var(--edit-h);
-	}
-	/* at the card's foot, however tall its neighbour makes it */
-	.compile-in > footer {
-		flex-wrap: wrap;
-		margin-top: auto;
-	}
-	/* edits to try, one press each */
-	.compile-tries {
-		display: inline-flex;
-		flex-wrap: wrap;
-		gap: 6px;
-	}
-	.compile-try {
-		padding: 3px 10px;
-		border-radius: var(--r-pill);
-		border: 1px solid var(--line);
-		background: transparent;
-		font: inherit;
-		color: var(--ink-2);
-		cursor: pointer;
-		transition:
-			color var(--t-micro),
-			border-color var(--t-micro);
-		&:hover {
-			color: var(--ink);
-			border-color: color-mix(in oklab, var(--ink) 30%, transparent);
-		}
-		&[aria-pressed="true"] {
-			color: var(--gold);
-			border-color: color-mix(in oklab, var(--gold) 55%, transparent);
-		}
-	}
-	.compile-file {
-		display: inline-flex;
-		align-items: center;
-		gap: 12px;
-	}
-	.compile-act {
-		padding: 3px 10px;
-		border-radius: var(--r-pill);
-		border: 1px solid color-mix(in oklab, var(--gold) 45%, transparent);
-		background: color-mix(in oklab, var(--gold) 8%, transparent);
-		font: inherit;
-		color: var(--gold);
-		cursor: pointer;
-		transition: background var(--t-micro);
-		&:hover {
-			background: color-mix(in oklab, var(--gold) 16%, transparent);
-		}
-	}
-	/* the field that replaces the highlighted definition, in its place and its metrics */
-	.compile-edit {
-		flex: none;
-		display: block;
-		box-sizing: border-box;
-		width: 100%;
-		height: var(--edit-h);
-		margin: 0;
-		padding: 16px 20px;
-		border: 0;
-		outline: 0;
-		resize: none;
-		background: transparent;
-		font: 400 var(--edit-fs) / var(--edit-lh) var(--mono);
-		font-variant-ligatures: none;
-		tab-size: 2;
-		white-space: pre;
-		overflow: auto;
-		color: var(--ink);
-		caret-color: var(--gold);
-	}
-	.compile-in[data-editing] {
-		border-color: color-mix(in oklab, var(--gold) 45%, transparent);
-	}
-	/* what the precompiler wrote: the Type's own check at the figure's size */
-	.compile-real {
-		margin: 0;
-		padding: 22px 24px 10px;
-		font: 400 clamp(13.5px, 0.6rem + 0.5vw, 16px) / 1.8 var(--mono);
-		font-variant-ligatures: none;
-		tab-size: 2;
-		white-space: pre-wrap;
-		overflow-wrap: anywhere;
-		color: var(--ink);
-	}
-	/* a long line wraps under itself, past its own indent, and never runs off the card */
-	.js-line {
-		display: block;
-		padding-left: 6ch;
-		text-indent: -6ch;
-	}
-	/* the checks that one calls, a press away */
-	.compile-helpers {
-		> summary {
-			display: flex;
-			align-items: center;
-			gap: 1ch;
-			width: fit-content;
-			margin: 0 14px 12px;
-			padding: 6px 10px;
-			border-radius: var(--r-pill);
-			font: 400 13px / 1.3 var(--mono);
-			color: var(--gold);
-			cursor: pointer;
-			list-style: none;
-			&::-webkit-details-marker {
-				display: none;
-			}
-			&::after {
-				content: "▸";
-				transition: rotate var(--t-micro);
-			}
-			&:hover {
-				background: color-mix(in oklab, var(--gold) 9%, transparent);
-			}
-		}
-		&[open] > summary::after {
-			rotate: 90deg;
-		}
-		.compile-real {
-			padding-block: 4px 14px;
-			font-size: 13px;
-			line-height: 1.65;
-			color: var(--ink-2);
-		}
-	}
-	.compile-fail {
-		margin: 0;
-		padding: 22px 24px;
-		font: 400 14px / 1.6 var(--mono);
-		color: var(--red-ink);
-		overflow-wrap: anywhere;
-	}
-	.compile-result {
-		transition: opacity 0.2s 0.25s;
-	}
-	/* a fixed window onto whatever was written, so typing never moves the page */
-	.compile-out[data-live] .compile-result {
-		height: 27rem;
-		flex: none;
-		overflow: auto;
-	}
-	.js-str {
-		color: var(--teal-ink);
-	}
-	.js-kw {
-		color: var(--copper);
-	}
-	.js-num {
-		color: var(--sky);
-	}
-	/* the checks shown are for an earlier definition; dimmed only if the answer is slow */
-	.compile-out[data-pending] .compile-result {
-		opacity: 0.55;
-	}
-	/* a stage of the build, numbered in the order it plays */
-	.compile-step {
-		display: inline-flex;
-		align-items: center;
-		gap: 9px;
-		color: var(--ink);
-		b {
-			display: inline-grid;
-			place-items: center;
-			width: 20px;
-			height: 20px;
-			border-radius: 50%;
-			background: var(--gold-fill);
-			color: var(--on-gold) !important;
-			font: 700 11.5px / 1 var(--mono) !important;
-		}
-	}
-	.diff {
-		display: grid;
-		margin: 0;
-		padding: 14px 0;
-		font: 400 13.5px / 1.75 var(--mono);
-		font-variant-ligatures: none;
-		tab-size: 2;
-		color: var(--ink-2);
-		overflow-x: auto;
-		> span {
-			padding-right: 20px;
-			white-space: pre;
-		}
 	}
 	.diff-mark {
 		display: inline-block;
@@ -1200,31 +1107,6 @@
 		color: var(--teal);
 		user-select: none;
 	}
-	.diff-add {
-		background: var(--add);
-		color: var(--ink);
-	}
-	/* the band of light that reads the source, top to bottom */
-	.compile-scan {
-		position: absolute;
-		inset: 44px 0 0;
-		overflow: hidden;
-		pointer-events: none;
-		&::before {
-			content: "";
-			position: absolute;
-			inset: 0;
-			opacity: 0;
-			background: linear-gradient(
-					180deg,
-					transparent,
-					color-mix(in oklab, var(--gold) 16%, transparent) 88%,
-					var(--gold)
-				)
-				top / 100% 45% no-repeat;
-		}
-	}
-
 	/* ---------- one card, one file, before and after ---------- */
 	.point .moves {
 		grid-template-columns: minmax(0, 1fr);
@@ -1299,13 +1181,7 @@
 			outline-offset: 1px;
 		}
 	}
-
-	/* ---------- 06: the interface, then the Type, then a bad payload ---------- */
-	.write-pair {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		gap: 22px;
-	}
+	/* ---------- 05: the interface, then the Type, then a bad payload ---------- */
 	.mirror {
 		--code-fs: 14.5px;
 		--code-lh: 1.8;
@@ -1536,6 +1412,9 @@
 
 		/* each figure at its start, until it is seen */
 		[data-stage]:not([data-play]) {
+			.graph-bar {
+				scale: 0 1;
+			}
 			.boot-bar {
 				scale: 0 1;
 			}
@@ -1545,21 +1424,6 @@
 			}
 			.boot-lane::after {
 				opacity: 0;
-			}
-			&.compile {
-				.compile-step b {
-					background: transparent;
-					color: var(--ink-3) !important;
-					box-shadow: inset 0 0 0 1px var(--ink-3);
-				}
-				.diff-add {
-					opacity: 0;
-				}
-				/* what ships is there from the first frame, unlit until the definition is read */
-				.compile-result,
-				.compile-out > footer {
-					opacity: 0.32;
-				}
 			}
 			&.morph .morph-pane.is-ark {
 				clip-path: inset(0 0 100% 0);
@@ -1571,6 +1435,12 @@
 			.mirror-run {
 				opacity: 0;
 			}
+		}
+
+		/* the board's bars arrive a row at a time, ArkType's first in each graph */
+		.graphs[data-play] .graph-bar {
+			animation: boot-grow 0.7s var(--ease-out) calc(0.15s + var(--row) * 0.09s)
+				both;
 		}
 
 		.boot[data-play] {
@@ -1628,37 +1498,6 @@
 			animation-delay: calc(0.15s + var(--i) * 0.16s);
 		}
 
-		/* 1: the plugin. 2: the definition, read. 3: what ships, lit as the
-		   reading reaches it. Under two seconds, start to finish. */
-		.compile[data-play] {
-			.compile-config .compile-step b {
-				animation: step-on 0.35s var(--ease-pop) 0.1s both;
-			}
-			.diff-add {
-				animation: add-in 0.3s var(--ease-out) 0.2s both;
-				& ~ .diff-add {
-					animation-delay: 0.4s;
-				}
-			}
-			.compile-in .compile-step b {
-				animation: step-on 0.35s var(--ease-pop) 0.6s both;
-			}
-			.compile-scan::before {
-				animation: scan-down 0.75s cubic-bezier(0.5, 0, 0.5, 1) 0.7s both;
-			}
-			.compile-out .compile-step b {
-				animation: step-on 0.35s var(--ease-pop) 1.3s both;
-			}
-			.compile-result,
-			.compile-out > footer {
-				animation: light-up 0.4s ease-out 1.35s both;
-			}
-			/* the stages are done: the definition is the reader's now */
-			.compile-act {
-				animation: act-pulse 0.9s ease-in-out 2.2s 2;
-			}
-		}
-
 		.morph[data-play] {
 			.morph-pane.is-ark {
 				animation: wipe-ark 1.3s cubic-bezier(0.5, 0, 0.3, 1) 0.5s backwards;
@@ -1687,19 +1526,6 @@
 		}
 		.point.is-flip .point-main .point-copy {
 			order: 0;
-		}
-		.point.is-stack .point-words {
-			grid-template-columns: minmax(0, 1fr);
-			.deck {
-				margin-top: 18px;
-			}
-		}
-		.compile {
-			grid-template-columns: minmax(0, 1fr);
-			grid-template-areas: "config" "in" "out";
-		}
-		.write-pair {
-			grid-template-columns: minmax(0, 1fr);
 		}
 		.hero-foot {
 			flex-basis: 100%;
@@ -1749,8 +1575,55 @@
 		.hero .ctas {
 			margin-top: 18px;
 		}
-		.board > .p3 {
+		/* a graph a row: each keeps the card's width for its bars */
+		.graphs {
 			margin-top: 24px;
+			padding: 20px 16px 14px;
+		}
+		.graphs-row {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 30px;
+			margin-top: 22px;
+		}
+		.graph ol {
+			gap: 11px;
+			margin-top: 14px;
+		}
+		.graph-lane.is-ours {
+			margin: 0 -8px;
+			padding: 10px 8px 12px;
+		}
+		.graph-lane.is-wide,
+		.gap-wide {
+			display: none;
+		}
+		.gap-narrow {
+			display: inline;
+		}
+		.graph-gap.is-narrow {
+			display: block;
+		}
+		.graphs-foot a {
+			margin-left: 0;
+		}
+		.guarantee-plugin,
+		.guarantee figcaption {
+			padding-inline: 16px;
+		}
+		.guarantee-add {
+			margin-left: 0;
+		}
+		.guarantee-body {
+			padding: 20px 16px 18px;
+		}
+		.diag {
+			padding: 12px;
+			font-size: 12px;
+		}
+		.point-ctas {
+			flex-wrap: wrap;
+		}
+		.board .p3 {
 			padding: 18px 14px 14px;
 		}
 		/* four columns in a phone's width: the marks and gaps give way first */
@@ -1778,12 +1651,6 @@
 		}
 		.point-main {
 			gap: 30px;
-		}
-		.point.is-band .point-copy {
-			grid-template-columns: minmax(0, 1fr);
-			h2 {
-				margin-top: 28px;
-			}
 		}
 		.point-caveat {
 			margin-top: 22px;
@@ -1833,11 +1700,6 @@
 		.drill-panel {
 			padding: 20px 16px 22px;
 		}
-		/* a parse error wraps to three lines at this width: room for it, so the
-		   card doesn't grow under a reader who has scrolled on mid-ghost */
-		.verdict {
-			min-height: 4.5em;
-		}
 		.count,
 		.boot,
 		.bytes {
@@ -1876,14 +1738,6 @@
 				"head head"
 				"grid grid";
 		}
-		.scale-plot {
-			height: 260px;
-			margin: 22px 22px 34px 50px;
-		}
-		.scale-end,
-		.scale-x.is-tight {
-			display: none;
-		}
 		/* three columns of numbers beside a label that may wrap, so none is off the card */
 		.scale-table.is-preset {
 			font-size: 12.5px;
@@ -1894,37 +1748,6 @@
 			:is(th, td):first-child {
 				white-space: normal;
 			}
-		}
-		.cutoffs li {
-			grid-template-columns: minmax(0, 1fr);
-		}
-		/* a phone keeps the one line that is the plugin: the rest of the file is
-		   scrolling between the reader and what ships */
-		.compile .compile-config {
-			flex-direction: column;
-			> figcaption {
-				border-right: 0;
-				border-bottom: 1px solid var(--rule-soft);
-			}
-			.diff > span:not([data-key]) {
-				display: none;
-			}
-		}
-		.compile-real {
-			padding: 16px 16px 8px;
-			font-size: 12.5px;
-			line-height: 1.7;
-		}
-		.compile-helpers {
-			> summary {
-				margin-inline: 6px;
-			}
-			.compile-real {
-				font-size: 12px;
-			}
-		}
-		.diff {
-			font-size: 12px;
 		}
 		.diff-mark {
 			width: 2.5ch;
@@ -1948,21 +1771,6 @@
 		}
 		.closer-go > * {
 			flex: 1 1 100%;
-		}
-	}
-}
-
-/* a field under 16px makes iOS zoom the page when it takes focus. The
-   definition is set at the field's size too, so starting to edit moves nothing. */
-@media (max-width: 760px), (pointer: coarse) {
-	.home {
-		.compile-in {
-			--edit-fs: 16px;
-			--edit-lh: 1.5;
-		}
-		.compile .compile-in pre.shiki {
-			font-size: 16px !important;
-			line-height: 1.5 !important;
 		}
 	}
 }

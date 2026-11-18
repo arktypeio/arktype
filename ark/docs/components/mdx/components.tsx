@@ -4,6 +4,7 @@ import { MainAutoplayDemo } from "../AutoplayDemo.tsx"
 import { CodeBlock } from "../CodeBlock.tsx"
 import { InstallationTabs } from "../InstallationTabs.tsx"
 import { KeywordTable } from "../KeywordTable.tsx"
+import { Compile } from "../precompile/Compile.tsx"
 import { RuntimeBenchmarksGraph } from "../RuntimeBenchmarksGraph.tsx"
 import { SyntaxTab, SyntaxTabs } from "../SyntaxTabs.tsx"
 import { ApiMember, ApiMembers } from "./ApiMembers.tsx"
@@ -53,6 +54,8 @@ export const mdxComponents: MDXComponents = {
 	InstallationTabs,
 	KeywordTable,
 	LinkCard,
+	// a definition and what the build writes for it, editable
+	LivePrecompile: Compile,
 	// the demo itself is small; the playground behind it loads only when opened
 	MainAutoplayDemo,
 	PresetSizeTable,

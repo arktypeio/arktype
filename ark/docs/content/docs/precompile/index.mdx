@@ -37,31 +37,11 @@ ArkType reduces every Type to a normalized set of constraints, so it knows which
 - **Redundant checks disappear.** `number > 0` intersected with `number >= 10` is `number >= 10`, one check, and a branch never rechecks the key it was chosen by.
 - **Contradictions never ship.** `{ id: string }` intersected with `{ id: number }` throws a ParseError, which fails the build rather than shipping a validator that rejects everything.
 
-```ts
-const Shape = type({
-	kind: "'circle'",
-	radius: "number > 0"
-}).or({
-	kind: "'square'",
-	side: "number > 0"
-})
-```
+### What ships
 
-Precompiled, `Shape` checks data like this, its helpers inlined:
+Edit the definition, and the precompiler runs on what you type:
 
-```ts
-// @noErrors
-// ---cut---
-data => {
-	switch (data?.kind) {
-		case "circle":
-			return Number.isFinite(data.radius) && data.radius > 0
-		case "square":
-			return Number.isFinite(data.side) && data.side > 0
-	}
-	return false
-}
-```
+<LivePrecompile />
 
 ## With agents
 

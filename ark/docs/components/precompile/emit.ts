@@ -1,6 +1,6 @@
 /**
  * What the precompiler writes for one declaration, laid out to be read. The
- * homepage's precompile figure calls this twice: at build, for the Shape it
+ * precompile page's figure calls this twice: at build, for the Shape it
  * opens on, and in a worker, for whatever the reader types. One function
  * for both is what makes the two agree: pressing "edit it live" without
  * changing a character shows the code that was already there.

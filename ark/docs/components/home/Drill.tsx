@@ -110,7 +110,7 @@ export const Stat = ({ value, unit, href }: StatProps) => {
 		:	<p className="stat">{body}</p>
 }
 
-export type PointLayout = "split" | "flip" | "stack" | "band"
+export type PointLayout = "split" | "flip"
 
 export type PointProps = {
 	id: string
@@ -124,11 +124,7 @@ export type PointProps = {
 	stat?: StatProps
 	/** what proves the point: its animation */
 	figure: ReactNode
-	/**
-	 * `split`: copy beside the figure. `flip`: the figure first. `stack`: copy
-	 * over a wide figure. `band`: the number beside the headline, over a wide
-	 * figure, for a point that takes half the height.
-	 */
+	/** `split`: copy beside the figure. `flip`: the figure first. */
 	layout?: PointLayout
 	/** under the copy, like a command or a link */
 	aside?: ReactNode
@@ -147,7 +143,7 @@ export const Point = ({
 	deck,
 	stat,
 	figure,
-	layout = "stack",
+	layout = "split",
 	aside,
 	caveat,
 	children

@@ -1,15 +1,13 @@
-import type { CSSProperties } from "react"
-import { withBase } from "../../lib/basePath.ts"
+import Link from "next/link"
 import { claims, isPending } from "../../lib/claims.ts"
-import { ClaimText } from "../mdx/Claim.tsx"
-import { bigAppLine, kB } from "./boardFacts.ts"
+import { bigAppLine } from "./boardFacts.ts"
 import { CopyCommand } from "./CopyCommand.tsx"
 import { Drill, Drills, Point } from "./Drill.tsx"
 import { HomeCode } from "./HomeCode.tsx"
 
 // The two panes accept and reject the same inputs: run against 26 of them,
 // valid and invalid at every bound, before this was written. Messages and
-// optional keys, where a literal translation goes wrong, are the drill-down's.
+// optional keys, where a literal translation goes wrong, are the guide's.
 const zod = `import { z } from "zod"
 
 const Item = z.object({
@@ -41,34 +39,6 @@ const Order = type({
 })
 
 type Order = typeof Order.infer`
-
-/** the guide's steps, as the agent works through them */
-const steps = [
-	"take stock",
-	"convert each schema in place",
-	"keep behavior identical",
-	"update call sites",
-	"swap integrations",
-	"compare with Zod",
-	"swap dependencies",
-	"typecheck and test",
-	"precompile, if asked",
-	"report what differs"
-]
-
-/** what a literal translation would get wrong, from the guide's "Defaults that differ" */
-const differs: [zod: string, ark: string][] = [
-	[
-		"z.object() removes undeclared keys",
-		'configure({ onUndeclaredKey: "delete" }), once'
-	],
-	[".optional() also accepts undefined", '"age?": "… | undefined"'],
-	["safeParse returns { success }", "check instanceof type.errors"],
-	[
-		'.min(1, "Name is required") is a sentence',
-		"{ message }, never .describe(), which writes must be before it"
-	]
-]
 
 /** what a Zod user keeps, each from the guide: Custom messages, Swap integrations, Adopt incrementally */
 const keeps: [what: string, how: string][] = [
@@ -146,7 +116,7 @@ const Pairs = ({ pairs }: PairsProps) => (
 export const Migrate = () => (
 	<Point
 		id="migrate"
-		n="08"
+		n="07"
 		kicker="migrate"
 		title="Migrate your schemas with one prompt."
 		layout="split"
@@ -176,48 +146,23 @@ export const Migrate = () => (
 			</ol>
 		}
 		figure={<Conversion />}
-	>
-		<Drills name="migrate">
-			{!isPending(claims.bigApp) && (
-				<Drill
-					chip="on a real app"
-					verdict={
-						bigAppLine() ??
-						"One app's schemas, on Zod 3, Zod 4 and ArkType: what each shipped, started and ran."
-					}
-				>
-					<p className="drill-p">{kB(claims.bigApp)}</p>
-				</Drill>
-			)}
-			<Drill
-				chip="what your agent follows"
-				verdict={
-					<>
-						<ClaimText claim={claims.zodMigration} />
-					</>
-				}
-			>
-				<ol className="steps-flow">
-					{steps.map((step, i) => (
-						<li key={step} style={{ "--i": i } as CSSProperties}>
-							{step}
-						</li>
-					))}
-				</ol>
-				<p className="guide-p">
-					The same guide covers Valibot, TypeBox, Yup, Joi, Effect Schema and
-					JSON Schema.{" "}
-					<a className="link" href={withBase("/docs/migrating")}>
-						Read the guide
-					</a>
+		caveat={
+			!isPending(claims.bigApp) &&
+			bigAppLine() && (
+				<p className="loses">
+					<b>A real app, migrated.</b> {bigAppLine()}
 				</p>
-			</Drill>
-			<Drill
-				chip="where a literal translation goes wrong"
-				verdict={`${differs.length} of Zod's defaults differ from ArkType's, and the guide converts each.`}
-			>
-				<Pairs pairs={differs} />
-			</Drill>
+			)
+		}
+	>
+		<Drills
+			name="migrate"
+			links={
+				<Link className="drill-link" href="/docs/migrating">
+					the migration guide →
+				</Link>
+			}
+		>
 			<Drill
 				chip="what you keep, what it costs"
 				verdict="Messages you wrote and the libraries that read your schemas carry over. Async refinements and Zod's default error text don't."

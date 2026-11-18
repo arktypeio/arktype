@@ -4,7 +4,7 @@ import { preview } from "../../lib/bench/bench.ts"
 import { claims, medianOf } from "../../lib/claims.ts"
 import { ClaimText } from "../mdx/Claim.tsx"
 import { BoardTitle } from "./Board.tsx"
-import { categoryOf, heroStats } from "./boardFacts.ts"
+import { categoryOf, heroStats, methodHref } from "./boardFacts.ts"
 
 /**
  * The hero's second line, after the headline lib/claims.ts guards. It states
@@ -95,7 +95,7 @@ export const Hero = ({ title }: HeroProps) => {
 				<span className="hero-foot">
 					{medianOf(zodCompiled.versus)} faster than Zod's own{" "}
 					<code>z.compile</code> at the median, too ·{" "}
-					<a href="#board-note">how we measured ↓</a>
+					<Link href={methodHref}>how we measured →</Link>
 				</span>
 			</div>
 		</section>

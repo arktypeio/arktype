@@ -1,5 +1,5 @@
 /**
- * The homepage's precompile figure, live: emit.ts, which the build ran on
+ * The precompile page's figure, live: emit.ts, which the build ran on
  * the figure's own Shape, run on the declaration the reader edits. Nothing
  * loads it until they do.
  */

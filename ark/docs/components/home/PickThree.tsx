@@ -1,14 +1,8 @@
+import Link from "next/link"
 import type { CSSProperties } from "react"
-import { averageText, pickThreeTable, tieMargin } from "../../lib/claims.ts"
-import { ClaimText } from "../mdx/Claim.tsx"
+import { pickThreeTable, tieMargin } from "../../lib/claims.ts"
+import { methodHref, multiple } from "./boardFacts.ts"
 import { CheckIcon } from "./icons.tsx"
-
-/** an average as a multiple of the best result: "1.252×", "19.7×", "13.8k×" */
-const multiple = (score: number) =>
-	score < 10 ? `${averageText(score)}×`
-	: score < 1e3 ? `${score.toPrecision(3)}×`
-	: score < 1e6 ? `${(score / 1e3).toPrecision(3)}k×`
-	: `${(score / 1e6).toPrecision(3)}M×`
 
 /** ArkType's marks land last, after every other row's */
 const markDelay = (row: number, column: number) =>
@@ -16,16 +10,12 @@ const markDelay = (row: number, column: number) =>
 
 /** each library's best average in every category, marked where it counts as first */
 export const PickThree = () => (
-	<figure className="p3" id="pick3" aria-labelledby="pick3-title" data-pick3>
-		<figcaption className="p3-head">
-			<h3 id="pick3-title">
-				<ClaimText claim={pickThreeTable.title} />
-			</h3>
-			<p>Average multiple of the best result. Lower is better.</p>
-			{pickThreeTable.startupNote && (
-				<p className="p3-startup">{pickThreeTable.startupNote}</p>
-			)}
-		</figcaption>
+	<figure
+		className="p3"
+		id="pick3"
+		aria-label="Each library's average multiple of the best result, by category"
+		data-pick3
+	>
 		<table className="p3-table">
 			<thead>
 				<tr>
@@ -90,7 +80,7 @@ export const PickThree = () => (
 			</span>
 			<span>— not ranked: in under half its benchmarks</span>
 			<span>{pickThreeTable.shown}</span>
-			<a href="#board-note">how we measured ↓</a>
+			<Link href={methodHref}>how we measured →</Link>
 		</p>
 	</figure>
 )

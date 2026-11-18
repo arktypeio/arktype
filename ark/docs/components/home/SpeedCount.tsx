@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react"
 import { medianOf } from "../../lib/claims.ts"
-import { categoryOf } from "./boardFacts.ts"
+import { categoryOf, incumbent } from "./boardFacts.ts"
 
 type CountLane = {
 	name: string
@@ -73,7 +73,12 @@ export const SpeedCount = () => {
 				{all.map(lane => (
 					<li
 						key={lane.name}
-						className={lane.ours ? "count-lane is-ours" : "count-lane"}
+						className={
+							lane.ours ? "count-lane is-ours"
+							: lane.name === incumbent ?
+								"count-lane is-incumbent"
+							:	"count-lane"
+						}
 						style={
 							{
 								"--ratio": lane.ratio,

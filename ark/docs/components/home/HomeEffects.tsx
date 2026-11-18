@@ -142,65 +142,6 @@ const countUp = (el: HTMLElement, delay: number, seconds: number) => {
 	requestAnimationFrame(frame)
 }
 
-/** the speed drill-down's dots: the one nearest the pointer grows and names its scenario */
-const wireSpots = () => {
-	const card = document.querySelector<HTMLElement>(".card.is-solo.is-speed")
-	if (!card) return
-	let hot: HTMLElement | undefined
-	const tipOf = (el: Element) =>
-		el.closest(".spread-plot")?.querySelector<HTMLElement>(".spot-tip")
-	const clear = () => {
-		if (!hot) return
-		hot.classList.remove("is-hot")
-		tipOf(hot)!.hidden = true
-		hot = undefined
-	}
-	const onPointer = (e: PointerEvent) => {
-		const plot =
-			e.target instanceof Element ? e.target.closest(".spread-plot") : null
-		if (!plot) return clear()
-		let nearest: HTMLElement | undefined
-		let distance = 16
-		for (const spot of plot.querySelectorAll<HTMLElement>(".spot")) {
-			const r = spot.getBoundingClientRect()
-			const d = Math.hypot(
-				r.x + r.width / 2 - e.clientX,
-				r.y + r.height / 2 - e.clientY
-			)
-			if (d < distance) [nearest, distance] = [spot, d]
-		}
-		if (nearest === hot) return
-		clear()
-		if (!nearest) return
-		hot = nearest
-		hot.classList.add("is-hot")
-		const tip = tipOf(hot)!
-		const name = document.createElement("b")
-		name.textContent = hot.dataset.name!
-		const verdict = document.createElement("span")
-		verdict.className = "v"
-		verdict.textContent = hot.dataset.verdict!
-		tip.replaceChildren(name, hot.dataset.ns!, verdict)
-		tip.hidden = false
-		// above the dot, kept inside the plot
-		const area = plot.getBoundingClientRect()
-		const dot = hot.getBoundingClientRect()
-		const left = Math.min(
-			Math.max(dot.x + dot.width / 2 - area.x - tip.offsetWidth / 2, 0),
-			area.width - tip.offsetWidth
-		)
-		tip.style.translate = `${left}px ${dot.y - area.y - tip.offsetHeight - 12}px`
-	}
-	card.addEventListener("pointermove", onPointer)
-	card.addEventListener("pointerdown", onPointer)
-	card.addEventListener("pointerleave", clear)
-	return () => {
-		card.removeEventListener("pointermove", onPointer)
-		card.removeEventListener("pointerdown", onPointer)
-		card.removeEventListener("pointerleave", clear)
-	}
-}
-
 /** "Pick 2" is struck out of the title, wherever the title is, once it is seen */
 const wireBoard = () =>
 	playWhenSeen(document.querySelector<HTMLElement>("[data-board]"), 0.3)
@@ -498,9 +439,6 @@ const wireChipRows = () => {
 	}
 }
 
-const wireProof = () =>
-	playWhenSeen(document.querySelector<HTMLElement>("[data-proof]"), 0.45)
-
 const wirePickThree = () =>
 	playWhenSeen(document.querySelector<HTMLElement>("[data-pick3]"), 0.5)
 
@@ -649,8 +587,6 @@ export const HomeEffects = () => {
 			wireStages(),
 			wireDrills(),
 			wireChipRows(),
-			wireSpots(),
-			wireProof(),
 			wirePickThree()
 		]
 		return () => {

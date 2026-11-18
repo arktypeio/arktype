@@ -1,12 +1,12 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Board, BoardNote } from "../../components/home/Board.tsx"
+import { Board } from "../../components/home/Board.tsx"
+import { BoardGraphs } from "../../components/home/BoardGraphs.tsx"
 import {
 	CopyCommand,
 	InstallButton
 } from "../../components/home/CopyCommand.tsx"
 import { Drill, Drills, Point } from "../../components/home/Drill.tsx"
-import { evaluate } from "../../components/home/evaluate.ts"
 import {
 	Hero,
 	heroLede,
@@ -15,7 +15,6 @@ import {
 } from "../../components/home/Hero.tsx"
 import { HomeCode, PlainCode } from "../../components/home/HomeCode.tsx"
 import { HomeEffects } from "../../components/home/HomeEffects.tsx"
-import { LiveType } from "../../components/home/LiveType.tsx"
 import { Migrate } from "../../components/home/Migrate.tsx"
 import { PickThree } from "../../components/home/PickThree.tsx"
 import {
@@ -24,10 +23,8 @@ import {
 	Speed,
 	Startup
 } from "../../components/home/Points.tsx"
-import { ClaimText } from "../../components/mdx/Claim.tsx"
 import { BoatLane } from "../../components/shell/BoatLane.tsx"
 import { SiteFooter } from "../../components/shell/SiteFooter.tsx"
-import { withBase } from "../../lib/basePath.ts"
 import { claims, draftOf } from "../../lib/claims.ts"
 import { defineMetadata, tagline } from "../metadata.ts"
 
@@ -52,15 +49,6 @@ export const metadata: Metadata = {
 	title: { absolute: title }
 }
 
-// two checks that reduce to one: no other validator's page can show that
-const liveDefinition = "number % 2 & number % 3"
-const liveArg = "9"
-
-/** every prefix of the live definition, parsed by the real parser at build */
-const ghostStates = Array.from(liveDefinition, (_, i) =>
-	evaluate(liveDefinition.slice(0, i + 1), liveArg)
-)
-
 const snippets = {
 	ts: `interface User {
 	name: string
@@ -74,60 +62,12 @@ const snippets = {
 	"age?": "number.integer >= 0",
 	role: "'admin' | 'member'"
 })`,
-	editor: `// @errors: 2322
-const Item = type({
-	id: "string",
-	price: "number | strin",
-	tags: "(string | number)[",
-	status: "'draft' | 'live"
-})`,
-	runtime: `const User = type({
-	name: "string",
-	email: "string.email",
-	"age?": "number.integer >= 0",
-	role: "'admin' | 'member'"
-})
-// ---cut---
-const out = User({ name: "Ada", email: "ada@", role: "owner" })
-
-if (out instanceof type.errors) console.error(out.summary)
-// email must be an email address
-// role must be "admin" or "member"`,
-	mcp: `import { McpServer } from "@modelcontextprotocol/server"
-
-const server = new McpServer({ name: "greeter", version: "1.0.0" })
-// ---cut---
-server.registerTool(
-	"greet",
-	{
-		description: "Greet someone by name",
-		inputSchema: type({
-			name: "string",
-			"times?": "1 <= number.integer <= 5"
-		})
-	},
-	async ({ name, times = 1 }) => ({
-		content: [{ type: "text", text: \`Hi, \${name}! \`.repeat(times) }]
-	})
-)`,
 	agent: `import { type } from "arktype"
 
 export const SearchArgs = type({
 	query: "string > 0",
 	"limit?": "1 <= number.int <= 50"
-})`,
-	reduce: `const Six = type("number % 2 & number % 3")
-
-Six.expression // "number % 6"`,
-	morph: `const Port = type("string.integer.parse").to("0 < number <= 65535")
-
-Port("8080") // 8080
-// ArkErrors: must be at most 65535
-Port("80000")`,
-	extends: `const Email = type("string.email")
-
-Email.extends("string") // true
-type("string").extends(Email) // false`
+})`
 }
 
 const integrations = [
@@ -139,37 +79,6 @@ const integrations = [
 	["MCP SDK", "/docs/integrations#mcp-sdk"],
 	["AI SDK", "/docs/integrations#ai-sdk"]
 ]
-
-type TerminalProps = {
-	title: string
-	label: string
-	children: React.ReactNode
-}
-
-const Terminal = ({ title, label, children }: TerminalProps) => (
-	<figure className="term" aria-label={label}>
-		<div className="term-bar">
-			<span className="dots" aria-hidden>
-				<i />
-				<i />
-				<i />
-			</span>
-			<span>{title}</span>
-		</div>
-		<pre className="out">{children}</pre>
-	</figure>
-)
-
-const Caption = ({ name, kind, aside }: Record<string, string>) => (
-	<figcaption>
-		<span>
-			<b>{name}</b>
-			<span className="dot">·</span>
-			{kind}
-		</span>
-		<span>{aside}</span>
-	</figcaption>
-)
 
 /** an agent's session, scripted around what tsc and ArkType really print; HomeEffects plays its steps in order */
 const Transcript = () => (
@@ -249,13 +158,13 @@ const Transcript = () => (
 	</figure>
 )
 
-/** 07: what an agent reads back, as a session that fixes itself from the error */
+/** 06: what an agent reads back, as a session that fixes itself from the error */
 const Agentic = () => (
 	<Point
 		id="agentic"
-		n="07"
+		n="06"
 		kicker="agents"
-		layout="split"
+		layout="flip"
 		title="Every error names its fix."
 		deck={
 			<>
@@ -277,172 +186,15 @@ const Agentic = () => (
 		}
 		figure={<Transcript />}
 	>
-		<Drills name="agentic">
-			<Drill
-				id="errors"
-				chip="in your editor"
-				verdict="Your editor's feedback is your agent's feedback: the same three errors, two readers."
-			>
-				<p className="drill-p">
-					TypeScript's own type system parses every definition, so a typo fails{" "}
-					<code>tsc</code> where it was written and the message is the fix.
-				</p>
-				<div className="pair2">
-					<figure className="code-card">
-						<Caption name="your editor" kind="item.ts" aside="ErrorLens" />
-						<HomeCode code={snippets.editor} />
-					</figure>
-					<Terminal
-						title="your agent's terminal"
-						label="The same errors as tsc prints them"
-					>
-						<span className="p">$</span> tsc --noEmit
-						{"\n"}
-						<span className="loc">item.ts:5:2</span>{" "}
-						<span className="dim">- error TS2322:</span>{" "}
-						<span className="err">
-							Type '"number | strin"' is not assignable to type '"number |
-							string"'.
-						</span>
-						{"\n"}
-						<span className="loc">item.ts:6:2</span>{" "}
-						<span className="dim">- error TS2322:</span>{" "}
-						<span className="err">
-							Type '"(string | number)["' is not assignable to type '"Missing
-							expected ']'"'.
-						</span>
-						{"\n"}
-						<span className="loc">item.ts:7:2</span>{" "}
-						<span className="dim">- error TS2322:</span>{" "}
-						<span className="err">
-							Type '"'draft' | 'live"' is not assignable to type '"'live
-							requires a closing single-quote"'.
-						</span>
-						{"\n\n"}
-						<span className="dim">Found 3 errors in the same file.</span>
-					</Terminal>
-				</div>
-				<p className="pair-note">
-					{
-						"// same three errors, two readers: each message is the type the string was checked against, so the fix is in the error, not in a docs lookup"
-					}
-				</p>
-			</Drill>
-			<Drill
-				chip="at runtime, and in MCP"
-				verdict="A runtime error says what was expected, and a Type is a tool's input schema with no wrapper."
-			>
-				<div className="pair2">
-					<div>
-						<figure className="code-card">
-							<Caption
-								name="out.summary"
-								kind="at runtime"
-								aside="real ArkErrors"
-							/>
-							<HomeCode code={snippets.runtime} />
-						</figure>
-						<h3>Runtime errors say what was expected</h3>
-						<p>
-							Each issue has its path, a <code>code</code> and a message that
-							says what was expected without printing the value. Hand{" "}
-							<code>out.summary</code> back to a person or a model as is.
-						</p>
-					</div>
-					<div>
-						<figure className="code-card">
-							<Caption
-								name="an MCP tool"
-								kind="greet.ts"
-								aside="the type is the inputSchema"
-							/>
-							<HomeCode code={snippets.mcp} />
-							<div className="tool-result" role="note">
-								<div className="h">
-									<span>
-										tool_result · greet({'{ name: "Ada", times: 99 }'})
-									</span>
-									<b>isError</b>
-								</div>
-								<div className="m">
-									Input validation error: Invalid arguments for tool greet:
-									times: must be at most 5
-								</div>
-							</div>
-						</figure>
-						<h3>Tool inputs, without a wrapper</h3>
-						<p>
-							A <code>Type</code> is a Standard Schema that can describe itself
-							as JSON Schema, so v2 of the MCP TypeScript SDK takes it as a
-							tool's <code>inputSchema</code>. A bad call comes back as a
-							message the model can act on. Precompiled, set{" "}
-							<a href={withBase("/docs/integrations#precompiled-validators")}>
-								one option
-							</a>{" "}
-							so the build keeps its JSON Schema.
-						</p>
-					</div>
-				</div>
-			</Drill>
-			<Drill
-				id="setup"
-				chip="docs your agent reads"
-				verdict="A skill, every page as Markdown and one line in AGENTS.md."
-			>
-				<div className="rows">
-					<div className="row">
-						<span className="idx">01</span>
-						<h3>The skill</h3>
-						<p>
-							Current syntax, how it maps to TypeScript, and the mistakes to
-							avoid. It also ships inside the <code>arktype</code> package,
-							matched to your installed version.
-						</p>
-						<div className="act">
-							<CopyCommand
-								text="npx skills add arktypeio/arktype"
-								label="Copy skill install command"
-							>
-								<span className="p">$</span> npx skills add arktypeio/arktype
-							</CopyCommand>
-						</div>
-					</div>
-					<div className="row">
-						<span className="idx">02</span>
-						<h3>Every page as Markdown</h3>
-						<p>
-							Add <code>.md</code> to any docs URL.{" "}
-							<a className="link" href={withBase("/llms.txt")}>
-								/llms.txt
-							</a>{" "}
-							lists every page. Results are written as comments, so nothing
-							hides behind a hover.
-						</p>
-						<div className="act">
-							<a className="url" href={withBase("/docs/expressions.md")}>
-								arktype.io/docs/expressions
-								<span className="md">.md</span>
-							</a>
-						</div>
-					</div>
-					<div className="row">
-						<span className="idx">03</span>
-						<h3>One line in AGENTS.md</h3>
-						<p>
-							When an agent adds validation to your project later, this keeps it
-							on ArkType.
-						</p>
-						<div className="act">
-							<CopyCommand
-								text="Validate untrusted input with ArkType. Docs: https://arktype.io/llms.txt"
-								label="Copy AGENTS.md line"
-							>
-								Validate untrusted input with ArkType. Docs: arktype.io/llms.txt
-							</CopyCommand>
-						</div>
-					</div>
-				</div>
-			</Drill>
+		<Drills
+			name="agentic"
+			links={
+				<Link className="drill-link" href="/docs/agents">
+					ArkType for agents →
+				</Link>
+			}
+		>
+			{null}
 		</Drills>
 	</Point>
 )
@@ -501,20 +253,18 @@ const Mirror = () => (
 	</figure>
 )
 
-/** 06: the syntax, as the TypeScript type it replaces, beside the parser to try it on */
+/** 05: the syntax, as the TypeScript type it replaces */
 const Write = () => (
 	<Point
 		id="write"
-		n="06"
+		n="05"
 		kicker="write"
+		layout="split"
 		title="Same type. Now it runs."
 		deck="TypeScript syntax, in a string. The inferred type is the one you'd have written."
 		figure={
 			<>
-				<div className="write-pair">
-					<Mirror />
-					<LiveType ghost={ghostStates} arg={liveArg} />
-				</div>
+				<Mirror />
 				<div className="works">
 					<span className="lbl">
 						{"// works with anything that takes Standard Schema"}
@@ -528,55 +278,15 @@ const Write = () => (
 			</>
 		}
 	>
-		<Drills name="write">
-			<Drill
-				chip="types as sets"
-				verdict="ArkType reduces every definition to a normalized set of constraints, so it knows which Types overlap, which contain others and which can never be satisfied."
-			>
-				<p className="drill-p">
-					Precompiled, it applies all of that in your build: a contradiction
-					like <code>{"{ id: string }"}</code> and{" "}
-					<code>{"{ id: number }"}</code> fails the build instead of shipping a
-					validator that rejects everything.
-				</p>
-				<div className="examples">
-					<div className="ex">
-						<div>
-							<h3>Reduced before it runs</h3>
-							<p>
-								Divisible by 2 and by 3 is divisible by 6, so that's the check
-								that runs.
-							</p>
-						</div>
-						<figure className="code-card">
-							<HomeCode code={snippets.reduce} />
-						</figure>
-					</div>
-					<div className="ex">
-						<div>
-							<h3>Parse, then constrain</h3>
-							<p>
-								Morphs transform validated input, and the output is validated
-								too.
-							</p>
-						</div>
-						<figure className="code-card">
-							<HomeCode code={snippets.morph} />
-						</figure>
-					</div>
-					<div className="ex">
-						<div>
-							<h3>Assignability at runtime</h3>
-							<p>
-								Ask whether one type extends another, the way TypeScript does.
-							</p>
-						</div>
-						<figure className="code-card">
-							<HomeCode code={snippets.extends} />
-						</figure>
-					</div>
-				</div>
-			</Drill>
+		<Drills
+			name="write"
+			links={
+				<Link className="drill-link" href="/playground">
+					try it in the playground →
+				</Link>
+			}
+		>
+			{null}
 		</Drills>
 	</Point>
 )
@@ -589,7 +299,7 @@ export default function HomePage() {
 			</noscript>
 			<div className="wrap">
 				<Hero title={heroTitle} />
-				<Board titled={heroTitle === "claim"} table={<PickThree />}>
+				<Board titled={heroTitle === "claim"} table={<BoardGraphs />}>
 					<Drills
 						name="board"
 						links={
@@ -599,23 +309,17 @@ export default function HomePage() {
 						}
 					>
 						<Drill
-							chip="how it's ranked"
-							verdict="Other projects' public benchmarks, one rule for every library."
+							chip="as a table"
+							verdict="Every category's average, a library a row."
 						>
-							<p className="drill-p">
-								<ClaimText claim={claims.benchmarkOwners} />
-							</p>
-							<BoardNote />
-							<p className="board-note">
-								<ClaimText claim={claims.leaveOneOut} />
-							</p>
+							<PickThree />
 						</Drill>
 					</Drills>
 				</Board>
-				<Precompile />
 				<Speed />
 				<Size />
 				<Startup />
+				<Precompile />
 				<Write />
 				<Agentic />
 				<Migrate />
