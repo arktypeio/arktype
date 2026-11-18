@@ -1647,6 +1647,85 @@ ${repaying}
 		attest(behaviorOf(await bundle(root, smallest))).equals(runPlain(root))
 	})
 
+	it("writes a ctx's propString as arktype writes a path: a key, an index, a key that isn't an identifier and a symbol", async () => {
+		const root = fixture(
+			"ctxPropString",
+			`import { type } from "arktype"
+
+const tag = Symbol("tag")
+const seen: string[] = []
+const isValid = (value: unknown, ctx: any) => {
+	seen.push(ctx.propString)
+	return value !== "bad" || ctx.mustBe("valid")
+}
+const Leaf = type("string").narrow(isValid)
+const T = type({
+	plain: Leaf,
+	"a key": Leaf,
+	items: Leaf.array(),
+	nested: { "0": Leaf, [tag]: Leaf },
+	record: { "[string]": Leaf }
+})
+const show = (out: unknown) =>
+	console.log(
+		out instanceof type.errors ?
+			out.summary
+		:	JSON.stringify(out),
+		JSON.stringify(seen.splice(0).sort())
+	)
+show(Leaf("a"))
+show(
+	T({
+		plain: "a",
+		"a key": "b",
+		items: ["c", "bad"],
+		nested: { "0": "d", [tag]: "e" },
+		record: { "x y": "f", z: "bad" }
+	})
+)
+${repaying}
+`
+		)
+		const dynamic = runPlain(root)
+		attest(dynamic).snap(`"a" [""]
+items[1] must be valid
+record.z must be valid ["[\\"a key\\"]","[\\"a key\\"]","items[0]","items[0]","items[1]","items[1]","nested[\\"0\\"]","nested[Symbol(tag)]","plain","plain","record.z","record[\\"x y\\"]"]
+`)
+		attest(behaviorOf(await bundle(root, smallest))).equals(dynamic)
+		attest(behaviorOf(await bundle(root))).equals(dynamic)
+	})
+
+	it("writes a ctx's propString where no key of the program is bracketed and its narrow only tests", async () => {
+		const root = fixture(
+			"ctxPropStringPlain",
+			`import { type } from "arktype"
+
+const seen: string[] = []
+const isShort = (value: string, ctx: any) => {
+	seen.push(ctx.propString)
+	return ctx.propString.length < 9 && value.length < 3
+}
+const T = type({ a: { b: type("string").narrow(isShort) }, c: "number" })
+const show = (out: unknown) =>
+	console.log(
+		out instanceof type.errors ?
+			out.summary
+		:	JSON.stringify(out),
+		JSON.stringify(seen.splice(0))
+	)
+show(T({ a: { b: "ok" }, c: 1 }))
+show(T({ a: { b: "long" }, c: "1" }))
+${repaying}
+`
+		)
+		const dynamic = runPlain(root)
+		attest(dynamic).snap(`{"a":{"b":"ok"},"c":1} ["a.b"]
+a.b must be valid according to isShort
+c must be a number ["a.b","a.b"]
+`)
+		attest(behaviorOf(await bundle(root, smallest))).equals(dynamic)
+	})
+
 	it("checks a transforming key a pipe reaches before applying it where no callback reads ctx", async () => {
 		const root = fixture(
 			"checkedByPipe",

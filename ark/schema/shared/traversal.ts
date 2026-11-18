@@ -5,7 +5,6 @@ import {
 	isThunk,
 	noSuggest,
 	objectKindOf,
-	stringifyPath,
 	type array
 } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
@@ -25,6 +24,7 @@ import {
 	customOf,
 	issueAt,
 	mergeIssues,
+	pathOf,
 	type ArkIssue,
 	type CompactApply,
 	type FailureContext,
@@ -299,7 +299,9 @@ export class Traversal extends InternalTraversal {
 	 * @propString
 	 */
 	get propString(): string {
-		return stringifyPath(this.path)
+		// as an issue's path is written, by what a build keeps to write one: a
+		// callback holding this is what has a build bracket keys and indices
+		return pathOf(this)
 	}
 
 	/**
