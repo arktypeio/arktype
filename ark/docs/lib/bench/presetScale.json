@@ -1,10 +1,10 @@
 {
-	"commit": "c9b6f7a2f",
+	"commit": "a99c68a21",
 	"apps": [
 		{
 			"app": "login",
 			"types": 1,
-			"default": 1565,
+			"default": 1564,
 			"smallest": 1251,
 			"valibot": 1678
 		},
@@ -60,7 +60,7 @@
 				{
 					"types": 50,
 					"default": 12894,
-					"smallest": 5530,
+					"smallest": 5528,
 					"valibot": 5449
 				},
 				{
@@ -90,7 +90,7 @@
 				{
 					"types": 50,
 					"default": 11646,
-					"smallest": 5543,
+					"smallest": 5544,
 					"valibot": 5539
 				},
 				{
@@ -132,7 +132,7 @@
 				{
 					"types": 1000,
 					"default": 92230,
-					"smallest": 28082,
+					"smallest": 28081,
 					"valibot": 29014
 				}
 			]
