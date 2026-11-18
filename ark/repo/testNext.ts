@@ -524,8 +524,10 @@ console.log(
 	"▲ Building it with webpack, Next leaving the pages router's dependencies external..."
 )
 
+// the webpack plugin reads each module Next leaves external, so its message
+// also offers `transpilePackages` for the ones that load arktype
 assertFailsWith(
-	withAllowUnsafe(writeNextExternalMessage("reads-errors")),
+	withAllowUnsafe(writeNextExternalMessage("reads-errors", true)),
 	build(withoutBundling(webpack), "--webpack")
 )
 
