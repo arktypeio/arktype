@@ -11,7 +11,7 @@ import { evaluate } from "../../components/home/evaluate.ts"
 import { HomeCode, PlainCode } from "../../components/home/HomeCode.tsx"
 import { HomeEffects } from "../../components/home/HomeEffects.tsx"
 import { LiveType } from "../../components/home/LiveType.tsx"
-import { Migrate } from "../../components/home/Migrate.tsx"
+import { Gains, Migrate } from "../../components/home/Migrate.tsx"
 import { PickThree } from "../../components/home/PickThree.tsx"
 import {
 	NextTag,
@@ -580,6 +580,9 @@ export default function HomePage() {
 							<a className="btn" href="#migrate">
 								Migrate from Zod
 							</a>
+						</div>
+						<div className="hero-gains">
+							<Gains />
 						</div>
 					</div>
 					<LiveType ghost={ghostStates} arg={liveArg} />

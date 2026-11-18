@@ -487,7 +487,7 @@
 		position: absolute;
 		inset: 0 auto 0 0;
 		width: calc(var(--v) / var(--max) * 100%);
-		background: var(--bar);
+		background: var(--ink-3);
 		transform-origin: left;
 	}
 	.boot-lane.is-ours {
@@ -911,6 +911,16 @@
 	.gains + .drills {
 		margin-top: 20px;
 	}
+	/* the hero's copy of them, for a screen too narrow to hold the board in its first view */
+	.hero-gains {
+		display: none;
+	}
+	.point h2 .hl {
+		display: block;
+	}
+	.point.is-stack h2 {
+		max-width: 26ch;
+	}
 	.morph-stack {
 		position: relative;
 		display: grid;
@@ -1215,6 +1225,40 @@
 			grid-template-columns: minmax(0, 1fr);
 			max-width: 640px;
 		}
+		.hero-gains {
+			display: block;
+			.gains {
+				margin-top: 32px;
+				grid-template-columns: repeat(3, minmax(0, 1fr));
+				&::before {
+					content: "// against Zod 4";
+					grid-column: 1 / -1;
+					padding-top: 14px;
+					font: 400 12px / 1.3 var(--mono);
+					color: var(--ink-3);
+				}
+				dt {
+					display: none;
+				}
+				> div {
+					padding-top: 10px;
+				}
+				> div + div {
+					padding-left: 14px;
+					border-left: 1px solid var(--rule-soft);
+					border-top: 0;
+				}
+				dt a::before {
+					content: none;
+				}
+				dd {
+					font-size: 13px;
+				}
+				b {
+					font-size: 1.45rem;
+				}
+			}
+		}
 		.compile {
 			grid-template-columns: minmax(0, 1fr);
 		}
@@ -1283,6 +1327,26 @@
 				padding-left: 0;
 				border-left: 0;
 				border-top: 1px solid var(--rule-soft);
+			}
+		}
+		/* a row each: the number, then what it is of */
+		.hero-gains .gains {
+			grid-template-columns: minmax(0, 1fr);
+			> div,
+			> div + div {
+				padding: 8px 0 0;
+				border: 0;
+			}
+			dd {
+				display: flex;
+				align-items: baseline;
+				gap: 10px;
+				margin: 0;
+			}
+			b {
+				flex: none;
+				min-width: 3ch;
+				margin: 0;
 			}
 		}
 	}
