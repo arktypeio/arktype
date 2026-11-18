@@ -43,6 +43,9 @@ export type BranchTraversal = {
 	errN: number
 }
 
+// what a traversal in no branch holds: every one's, so never written to
+const noBranches: BranchTraversal[] = []
+
 export class InternalTraversal implements FailureContext {
 	/**
 	 * #### the path being validated or morphed
@@ -99,7 +102,7 @@ export class InternalTraversal implements FailureContext {
 		this._errors = undefined
 		this.root = root
 		this.config = config
-		this.branches = []
+		this.branches = noBranches
 		this.res = undefined
 		this.isTree = true
 		this.tfdById = undefined
@@ -144,10 +147,11 @@ export class InternalTraversal implements FailureContext {
 
 	/** starts counting a union branch's errors */
 	pushBr(): void {
-		this.branches.push({
-			error: undefined,
-			errN: 0
-		})
+		const branch: BranchTraversal = { error: undefined, errN: 0 }
+		// its first is all most unions nest, and a push onto [] makes room for
+		// 17. Once popped, the array still has room for the next
+		if (this.branches === noBranches) this.branches = [branch]
+		else this.branches.push(branch)
 	}
 
 	/** stops counting the innermost union branch's errors, returning it */
