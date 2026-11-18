@@ -1,9 +1,17 @@
 import { throwParseError } from "./errors.ts"
-import { anchoredRegex, RegexPatterns } from "./strings.ts"
 
 export type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
 export type NumberLiteral<n extends number = number> = `${n}`
+
+/** a number written as its TypeScript name, which has no literal type */
+export type NonFiniteNumberLiteral = keyof typeof nonFiniteNumbers
+
+export const nonFiniteNumbers = {
+	NaN,
+	Infinity,
+	"-Infinity": -Infinity
+}
 
 export type BigintLiteral<n extends bigint = bigint> = `${n}n`
 
@@ -22,30 +30,6 @@ export type NonNegativeIntegerLiteral<n extends bigint = bigint> =
  *      a precise literal type will be inferred (in TS4.8+).
  */
 
-const anchoredNegativeZeroPattern = /^-0\.?0*$/.source
-const positiveIntegerPattern = /[1-9]\d*/.source
-const looseDecimalPattern = /\.\d+/.source
-const strictDecimalPattern = /\.\d*[1-9]/.source
-
-type CreateNumberMatcherOptions = {
-	decimalPattern: string
-	allowDecimalOnly: boolean
-}
-
-const createNumberMatcher = (opts: CreateNumberMatcherOptions) =>
-	anchoredRegex(
-		RegexPatterns.negativeLookahead(anchoredNegativeZeroPattern) +
-			RegexPatterns.nonCapturingGroup(
-				"-?" +
-					RegexPatterns.nonCapturingGroup(
-						RegexPatterns.nonCapturingGroup("0|" + positiveIntegerPattern) +
-							RegexPatterns.nonCapturingGroup(opts.decimalPattern) +
-							"?"
-					) +
-					(opts.allowDecimalOnly ? "|" + opts.decimalPattern + "?" : "")
-			)
-	)
-
 /**
  *  Matches a well-formatted numeric expression according to the following rules:
  *    1. Must include an integer portion (i.e. '.321' must be written as '0.321')
@@ -53,27 +37,59 @@ const createNumberMatcher = (opts: CreateNumberMatcherOptions) =>
  *    3. If the value includes a decimal, its last digit may not be 0
  *    4. The value may not be "-0"
  */
-export const wellFormedNumberMatcher: RegExp = createNumberMatcher({
-	decimalPattern: strictDecimalPattern,
-	allowDecimalOnly: false
-})
+export const wellFormedNumberMatcher: RegExp =
+	// sources are public (keywords, JSON Schema), so keep their groups
+	// eslint-disable-next-line unicorn/better-regex
+	/^(?:(?!^-0\.?0*$)(?:-?(?:(?:0|[1-9]\d*)(?:\.\d*[1-9])?)))$/
 
-export const isWellFormedNumber: RegExp["test"] =
-	wellFormedNumberMatcher.test.bind(wellFormedNumberMatcher)
+export const isWellFormedNumber: RegExp["test"] = s =>
+	wellFormedNumberMatcher.test(s)
 
 /**
  * Similar to wellFormedNumber but more permissive in the following ways:
  *
  *  - Allows numbers without an integer portion like ".5" (well-formed equivalent is "0.5")
  *  - Allows decimals with trailing zeroes like "0.10" (well-formed equivalent is "0.1")
+ *  - Allows an exponent like "5.7e-10", as Number() does
  */
-export const numericStringMatcher: RegExp = createNumberMatcher({
-	decimalPattern: looseDecimalPattern,
-	allowDecimalOnly: true
-})
+export const numericStringMatcher: RegExp =
+	// eslint-disable-next-line unicorn/better-regex
+	/^(?:(?!^-0\.?0*(?:[Ee][+-]?\d+)?$)(?:-?(?:(?:0|[1-9]\d*)(?:\.\d+)?)|\.\d+?)(?:[Ee][+-]?\d+)?)$/
 
-export const isNumericString =
-	numericStringMatcher.test.bind(numericStringMatcher)
+export const isDigitCode = (code: number): boolean => code >= 48 && code <= 57
+
+// numericStringMatcher's language, read without the RegExp
+export const isNumericString = (s: string): boolean => {
+	let i = 0
+	// past the end, charCodeAt is NaN, which is no character's code
+	let code = s.charCodeAt(0)
+	const isNegative = code === 45
+	if (isNegative) code = s.charCodeAt(++i)
+	// whether each digit before the exponent is 0, since "-0" is excluded
+	let isZero = true
+	if (code === 48) code = s.charCodeAt(++i)
+	else if (code > 48 && code <= 57) {
+		isZero = false
+		do code = s.charCodeAt(++i)
+		while (isDigitCode(code))
+	} else if (isNegative || code !== 46) return false
+	if (code === 46) {
+		code = s.charCodeAt(++i)
+		if (!isDigitCode(code)) return false
+		do {
+			if (code !== 48) isZero = false
+			code = s.charCodeAt(++i)
+		} while (isDigitCode(code))
+	}
+	if (code === 69 || code === 101) {
+		code = s.charCodeAt(++i)
+		if (code === 43 || code === 45) code = s.charCodeAt(++i)
+		if (!isDigitCode(code)) return false
+		do code = s.charCodeAt(++i)
+		while (isDigitCode(code))
+	}
+	return i === s.length && !(isNegative && isZero)
+}
 
 export const numberLikeMatcher = /^-?\d*\.?\d*$/
 const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
@@ -83,19 +99,24 @@ const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
  *    1. must begin with an integer, the first digit of which cannot be 0 unless the entire value is 0
  *    2. The value may not be "-0"
  */
-export const wellFormedIntegerMatcher: RegExp = anchoredRegex(
-	RegexPatterns.negativeLookahead("^-0$") +
-		"-?" +
-		RegexPatterns.nonCapturingGroup(
-			RegexPatterns.nonCapturingGroup("0|" + positiveIntegerPattern)
-		)
-)
+export const wellFormedIntegerMatcher: RegExp =
+	// eslint-disable-next-line unicorn/better-regex
+	/^(?:(?!^-0$)-?(?:(?:0|[1-9]\d*)))$/
 
-export const isWellFormedInteger: RegExp["test"] =
-	wellFormedIntegerMatcher.test.bind(wellFormedIntegerMatcher)
+// wellFormedIntegerMatcher's language, read without the RegExp
+export const isWellFormedInteger = (s: string): boolean => {
+	const length = s.length
+	let i = s.charCodeAt(0) === 45 ? 1 : 0
+	const code = s.charCodeAt(i)
+	// 0 is the one integer starting with 0, and "-0" is excluded
+	if (code === 48) return length === 1
+	if (!(code > 48 && code <= 57)) return false
+	while (++i < length) if (!isDigitCode(s.charCodeAt(i))) return false
+	return true
+}
 
 export const integerLikeMatcher = /^-?\d+$/
-const isIntegerLike = integerLikeMatcher.test.bind(integerLikeMatcher)
+const isIntegerLike = (s: string) => integerLikeMatcher.test(s)
 
 type NumericLiteralKind = "number" | "bigint" | "integer"
 
@@ -264,4 +285,20 @@ export const nearestFloat = (n: number, direction: "+" | "-" = "+"): number => {
 	} else if (u32[0]-- === 0) u32[1]--
 
 	return f64[0]
+}
+
+// String writes a number below 1e-6 or from 1e21 with an exponent
+export const printDecimal = (n: number): string => {
+	const [mantissa, exponent] = `${n}`.split("e")
+	if (exponent === undefined) return mantissa
+	const sign = mantissa[0] === "-" ? "-" : ""
+	const [whole, fraction = ""] = mantissa.slice(sign.length).split(".")
+	const digits = whole + fraction
+	const point = whole.length + Number(exponent)
+	return (
+		sign +
+		(point <= 0 ? `0.${"0".repeat(-point)}${digits}`
+		: point >= digits.length ? digits + "0".repeat(point - digits.length)
+		: `${digits.slice(0, point)}.${digits.slice(point)}`)
+	)
 }

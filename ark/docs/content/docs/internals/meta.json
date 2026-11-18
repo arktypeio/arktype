@@ -1,0 +1,6 @@
+{
+	"title": "Internals",
+	"description": "The schema layer under ArkType",
+	"root": true,
+	"pages": ["index", "nodes", "schemas", "sets"]
+}

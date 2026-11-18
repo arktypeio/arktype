@@ -1,0 +1,347 @@
+{
+	"ata verdict-valid|user|ata (compiled)": [
+		1286.3390076640878, 1286.352944713696, 1286.34637478342
+	],
+	"ata verdict-valid|user|ata": [
+		1519.4360903749784, 1519.3400654258319, 1519.347796221775
+	],
+	"ata verdict-valid|user|ata-validator/lite": [
+		4234.118523127199, 4266.179130180969, 4266.959848400814
+	],
+	"ata verdict-valid|user|ajv": [
+		2368.4500675675677, 2368.374775436356, 2368.354756085141
+	],
+	"ata verdict-valid|user|@exodus/schemasafe": [
+		1909.8010392482033, 1909.3305951125176, 1909.3992595591542
+	],
+	"ata verdict-valid|user|typebox": [
+		1578.0461023710277, 1464.0060080183275, 1577.8782741915188
+	],
+	"ata verdict-valid|user|typia": [
+		2891.4297922705314, 2891.850978246711, 2891.7192210767466
+	],
+	"ata verdict-valid|user|@cfworker/json-schema": [
+		45451.490876369324, 45464.89450980392, 45714.08553333333
+	],
+	"ata verdict-valid|user|typebox (Value.Check)": [
+		4890.42385988398, 4966.894648526077, 4890.871237579043
+	],
+	"ata verdict-valid|user|valibot": [
+		5737.356265038924, 5755.682450835791, 5763.168147332354
+	],
+	"ata verdict-valid|user|zod": [
+		6651.89524702561, 6615.793545400239, 6654.306274887605
+	],
+	"ata verdict-valid|user|arktype": [
+		930.2954349433919, 930.2892532408912, 930.2900590463458
+	],
+	"ata verdict-valid|order|ata": [
+		6684.47733281893, 6678.6680350877195, 6676.365418569254
+	],
+	"ata verdict-valid|order|ata (compiled)": [
+		6381.271549439348, 6381.500265619155, 6379.486805111821
+	],
+	"ata verdict-valid|order|ata-validator/lite": [
+		39118.48836043361, 39117.88432748538, 39273.44246031746
+	],
+	"ata verdict-valid|order|ajv": [
+		19729.790788530467, 19730.899327217125, 19723.132444444444
+	],
+	"ata verdict-valid|order|@exodus/schemasafe": [
+		30025.679953703704, 30028.132541666666, 30028.553094233474
+	],
+	"ata verdict-valid|order|typia": [
+		23515.239303030303, 23130.38996124031, 22966.82918803419
+	],
+	"ata verdict-valid|order|typebox": [
+		14978.078607918264, 14975.544468253967, 14992.700683127572
+	],
+	"ata verdict-valid|order|@cfworker/json-schema": [
+		461213.1722222222, 449299.49888888886, 452608.686
+	],
+	"ata verdict-valid|order|typebox (Value.Check)": [
+		93389.92578431373, 92471.30551111112, 93410.91082304527
+	],
+	"ata verdict-valid|order|zod": [
+		56479.508390022675, 56840.62960960961, 56845.27357357358
+	],
+	"ata verdict-valid|order|arktype": [
+		6891.501692261367, 6975.117050572167, 6975.82364096996
+	],
+	"ata verdict-valid|order|valibot": [
+		55556.29307070707, 55573.97103359173, 55457.9072899729
+	],
+	"ata verdict-valid|config|ata (compiled)": [
+		411102.2925925926, 410311.93611111114, 409710.64166666666
+	],
+	"ata verdict-valid|config|ata": [
+		369475.9800925926, 422085.2211111111, 411566.6583333333
+	],
+	"ata verdict-valid|config|ata-validator/lite": [
+		548364.8744444444, 544899.2351449275, 546596.6065972223
+	],
+	"ata verdict-valid|config|ajv": [
+		621006.7204545455, 623200.4716666667, 585493.1275
+	],
+	"ata verdict-valid|config|@exodus/schemasafe": [
+		578351.7368055555, 828381.3555555556, 611166.0166666667
+	],
+	"ata verdict-invalid|user|ata": [
+		2699.055847847848, 2679.0757809983897, 2741.8066286239014
+	],
+	"ata verdict-valid|config|@cfworker/json-schema": [
+		8448772.558333334, 8457708.154166667, 8482914.816666666
+	],
+	"ata verdict-invalid|user|ata (compiled)": [
+		1414.4477836298377, 1406.9512840949344, 1430.9573990469025
+	],
+	"ata verdict-invalid|user|ata-validator/lite": [
+		5468.281849782744, 5415.535975378788, 5421.204832793959
+	],
+	"ata verdict-invalid|user|ajv": [
+		1329.0171915361364, 1336.4684966592429, 1328.7340733068645
+	],
+	"ata verdict-invalid|user|@exodus/schemasafe": [
+		1548.6171785331755, 1552.8598450854702, 1552.3351653891307
+	],
+	"ata verdict-invalid|user|@cfworker/json-schema": [
+		91808.48096618358, 91750.48, 91210.25935672515
+	],
+	"ata verdict-invalid|user|typia": [
+		2374.9617107309487, 2380.464154964277, 2373.3683768307455
+	],
+	"ata verdict-invalid|user|typebox": [
+		1469.0775822851153, 1470.4129508196722, 1470.3392480298382
+	],
+	"ata verdict-invalid|user|typebox (Value.Check)": [
+		3456.725301741596, 3494.6441961805554, 3469.069158794422
+	],
+	"ata verdict-invalid|user|zod": [
+		18666.266626262626, 16553.237208672086, 18193.640909090907
+	],
+	"ata verdict-invalid|user|valibot": [
+		29414.690317460318, 29210.978562091503, 29238.07216931217
+	],
+	"ata verdict-invalid|user|arktype": [
+		732.9000745624362, 750.9994906610569, 743.6282699872999
+	],
+	"ata verdict-invalid|order|ata": [
+		3938.457559300874, 3938.3442532557497, 3954.455201358564
+	],
+	"ata verdict-invalid|order|ata (compiled)": [
+		3723.699945935869, 3736.7038867603237, 3732.3832116294793
+	],
+	"ata verdict-invalid|order|ata-validator/lite": [
+		16774.84527001862, 16829.809714506173, 16777.098897777778
+	],
+	"ata verdict-invalid|order|@exodus/schemasafe": [
+		13190.658113113113, 13326.936117724868, 13301.462172043011
+	],
+	"ata verdict-invalid|order|ajv": [
+		6715.075266666667, 6710.33821129326, 6723.880792567311
+	],
+	"ata verdict-invalid|order|@cfworker/json-schema": [
+		193624.58159722222, 193049.96393162393, 193655.35962962962
+	],
+	"ata verdict-invalid|order|typia": [
+		8453.434463937621, 8455.086591538158, 8465.116319758672
+	],
+	"ata verdict-invalid|order|typebox": [
+		5323.833619846261, 5075.23606060606, 5048.665564789166
+	],
+	"ata verdict-invalid|order|typebox (Value.Check)": [
+		35120.549529411765, 35140.107006535945, 35036.22958974359
+	],
+	"ata verdict-invalid|order|zod": [
+		72692.5115079365, 71014.25168582375, 72981.48398148148
+	],
+	"ata verdict-invalid|order|valibot": [
+		62084.748574879224, 62144.81529292929, 62213.09981981982
+	],
+	"ata verdict-invalid|order|arktype": [
+		2399.8596081588835, 2380.1106695645544, 2382.5156950067476
+	],
+	"ata verdict-invalid|config|ata": [
+		633934.9229166667, 704360.7541666667, 626719.9877450981
+	],
+	"ata verdict-invalid|config|ata (compiled)": [
+		678199.3381944444, 634715.4006666667, 697890.0912037037
+	],
+	"ata verdict-invalid|config|ata-validator/lite": [
+		226009.28166666668, 222148.92322222222, 226205.4773148148
+	],
+	"ata verdict-invalid|config|@exodus/schemasafe": [
+		1025110.5144444444, 636861.4379166666, 1023948.6628205128
+	],
+	"ata verdict-invalid|config|ajv": [
+		737160.5672222222, 581719.1235294117, 1318515.1820512821
+	],
+	"ata verdict-invalid|config|@cfworker/json-schema": [
+		4023690.0597222224, 4027570.7583333333, 4046220.7666666666
+	],
+	"ata errors-invalid|user|ata": [
+		8416.67672542735, 8473.871979621543, 8496.841556712963
+	],
+	"ata errors-invalid|user|ata (compiled)": [
+		5685.274712262063, 5679.417697507393, 5623.684468775345
+	],
+	"ata errors-invalid|user|ata-validator/lite": [
+		11168.184778972522, 11193.763295238095, 11165.845752561072
+	],
+	"ata errors-invalid|user|ata richErrors:false": [
+		3010.2233321698664, 3078.7469074728438, 3012.7678321995463
+	],
+	"ata errors-invalid|user|ajv": [
+		3354.477736862294, 3333.0826338413444, 3344.6778968253966
+	],
+	"ata errors-invalid|user|@exodus/schemasafe": [
+		4012.810715499923, 3991.974354005168, 4010.7040788398695
+	],
+	"ata errors-invalid|user|@cfworker/json-schema": [
+		114752.87567901234, 114890.48938271606, 114775.72414814815
+	],
+	"ata errors-invalid|user|typia": [
+		8875.53438247012, 8887.37548583878, 8860.068460704608
+	],
+	"ata errors-invalid|user|typebox": [
+		19838.300657407406, 19845.794567901234, 19793.487632850243
+	],
+	"ata errors-invalid|user|typebox (Value.Check)": [
+		22301.863290598292, 22149.394534534535, 22052.99545953361
+	],
+	"ata errors-invalid|user|zod": [
+		29445.984488017428, 38196.61951388889, 30414.378421052632
+	],
+	"ata errors-invalid|user|valibot": [
+		29339.64631111111, 29184.81734204793, 29222.92867208672
+	],
+	"ata errors-invalid|user|arktype": [
+		3552.4451690821256, 3532.5220249221184, 3552.3150320336813
+	],
+	"ata errors-invalid|order|ata": [
+		15401.143934760448, 15463.787185877467, 15434.0331013431
+	],
+	"ata errors-invalid|order|ata (compiled)": [
+		24440.140673400674, 24387.13119949495, 24362.908565400845
+	],
+	"ata errors-invalid|order|ata-validator/lite": [
+		71686.50322916667, 71711.23444444445, 71460.79537037037
+	],
+	"ata errors-invalid|order|ata richErrors:false": [
+		7924.6972679738565, 7987.963163926258, 7946.348831236897
+	],
+	"ata errors-invalid|order|ajv": [
+		20862.528272569445, 20853.947733686065, 20862.115425425425
+	],
+	"ata errors-invalid|order|@exodus/schemasafe": [
+		41401.75795795796, 41208.86908675799, 40964.20646630237
+	],
+	"ata errors-invalid|order|@cfworker/json-schema": [
+		457741.1276190476, 454856.3146296296, 456167.94933333335
+	],
+	"ata errors-invalid|order|typia": [
+		41819.57925925926, 42026.717277777774, 42193.161592592594
+	],
+	"ata errors-invalid|order|typebox": [
+		208376.3525925926, 208964.49212962962, 209493.20402777777
+	],
+	"ata errors-invalid|order|typebox (Value.Check)": [
+		241993.227, 241942.52333333335, 242555.5526984127
+	],
+	"ata errors-invalid|order|zod": [
+		88226.07713450292, 90629.92177777778, 91468.8011904762
+	],
+	"ata errors-invalid|order|valibot": [
+		62159.875757575755, 62274.281164021166, 62203.69906810036
+	],
+	"ata errors-invalid|order|arktype": [
+		11435.82021978022, 11494.873096774194, 11444.961611111112
+	],
+	"ata errors-invalid|config|ata": [
+		1371436.6805555555, 1375984.7366666666, 1384988.5533333332
+	],
+	"ata errors-invalid|config|ata (compiled)": [
+		1563054.8933333333, 1575648.2183333333, 1594221.60625
+	],
+	"ata errors-invalid|config|ata-validator/lite": [
+		802706.5872807017, 793489.2019607843, 779682.180952381
+	],
+	"ata errors-invalid|config|ata richErrors:false": [
+		1238633.1375, 1247065.212878788, 1236149.7177083334
+	],
+	"ata errors-invalid|config|@exodus/schemasafe": [
+		1419302.598611111, 1419489.901388889, 1419735.94
+	],
+	"ata errors-invalid|config|ajv": [
+		1341877.0666666667, 1287904.080952381, 1170723.0319444444
+	],
+	"ata errors-invalid|config|@cfworker/json-schema": [
+		8205626.741666666, 8194452.705555555, 8239530.941666666
+	],
+	"ata blocked-verdict-valid|user|ata": [
+		4233.720563868107, 4267.303333333333, 4267.145958719136
+	],
+	"ata blocked-verdict-valid|user|ata (compiled)": [
+		1286.341113519589, 1286.343669015357, 1286.3444780500256
+	],
+	"ata blocked-verdict-valid|user|ata-validator/lite": [
+		4266.962536103743, 4267.318832254585, 4267.595966822188
+	],
+	"ata blocked-verdict-valid|user|@cfworker/json-schema": [
+		45316.03238095238, 45326.57621468927, 45422.936880341884
+	],
+	"ata blocked-verdict-valid|user|typia": [
+		2891.052237373737, 2891.314494695701, 2890.9500316764133
+	],
+	"ata blocked-verdict-valid|user|zod": [
+		9864.444837662337, 9842.709692577953, 9893.202807017544
+	],
+	"ata blocked-verdict-valid|user|typebox (Value.Check)": [
+		4966.5256056466305, 4852.097024087024, 4927.637653581725
+	],
+	"ata blocked-verdict-valid|user|valibot": [
+		5750.036004415011, 5747.665112433862, 5749.900852999017
+	],
+	"ata blocked-verdict-valid|user|arktype": [
+		930.2967230318884, 930.2958807911855, 930.2969616487455
+	],
+	"ata blocked-verdict-valid|order|ata (compiled)": [
+		6388.055352733686, 6382.523263888889, 6468.0666151582045
+	],
+	"ata blocked-verdict-valid|order|ata": [
+		39633.278581871346, 39521.56527777778, 39118.25950819672
+	],
+	"ata blocked-verdict-valid|order|ata-validator/lite": [
+		38662.099462962964, 38696.97755555555, 39116.85754716981
+	],
+	"ata blocked-verdict-valid|order|@cfworker/json-schema": [
+		460674.0261111111, 459725.32481481484, 449534.18155555555
+	],
+	"ata blocked-verdict-valid|order|typia": [
+		24002.265145631067, 22588.65420724095, 23100.08077294686
+	],
+	"ata blocked-verdict-valid|order|typebox (Value.Check)": [
+		94071.09892473118, 94532.11925925926, 94234.15503703704
+	],
+	"ata blocked-verdict-valid|order|zod": [
+		104999.84735042736, 104220.52186507937, 104824.58259259259
+	],
+	"ata blocked-verdict-valid|order|arktype": [
+		6889.190674157303, 6890.358729359082, 6969.2043278688525
+	],
+	"ata blocked-verdict-valid|order|valibot": [
+		55474.19690058479, 55665.784844444446, 55527.29231884058
+	],
+	"ata blocked-verdict-valid|config|ata": [
+		538463.9475308642, 545987.0035714286, 571955.0496212121
+	],
+	"ata blocked-verdict-valid|config|ata (compiled)": [
+		454057.06388888886, 413858.4337962963, 531859.545
+	],
+	"ata blocked-verdict-valid|config|ata-validator/lite": [
+		533988.9505952381, 548728.5682098765, 548190.0746031746
+	],
+	"ata blocked-verdict-valid|config|@cfworker/json-schema": [
+		8437755.994444445, 8436002.313888889, 8531766.597222222
+	]
+}

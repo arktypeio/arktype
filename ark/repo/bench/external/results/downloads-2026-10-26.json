@@ -1,0 +1,68 @@
+{
+	"source": "https://api.npmjs.org/downloads/point/last-week/<package>",
+	"week": "2026-10-16 to 2026-10-22",
+	"libraries": {
+		"ajv": { "packages": ["ajv"], "downloads": 249308485 },
+		"Zod (compiled)": { "packages": ["zod"], "downloads": 221643257 },
+		"Zod": { "packages": ["zod"], "downloads": 221643257 },
+		"Zod Mini": { "packages": ["zod"], "downloads": 221643257 },
+		"Zod 3": { "packages": ["zod"], "downloads": 221643257 },
+		"TypeBox": {
+			"packages": ["@sinclair/typebox", "typebox"],
+			"downloads": 81996242
+		},
+		"Effect Schema": { "packages": ["effect"], "downloads": 31551008 },
+		"Joi": { "packages": ["joi"], "downloads": 15736800 },
+		"Valibot": { "packages": ["valibot"], "downloads": 14436274 },
+		"Yup": { "packages": ["yup"], "downloads": 7451643 },
+		"@cfworker/json-schema": {
+			"packages": ["@cfworker/json-schema"],
+			"downloads": 6709707
+		},
+		"Superstruct": { "packages": ["superstruct"], "downloads": 4325353 },
+		"@exodus/schemasafe": {
+			"packages": ["@exodus/schemasafe"],
+			"downloads": 2815227
+		},
+		"io-ts": { "packages": ["io-ts"], "downloads": 1780315 },
+		"ArkType": { "packages": ["arktype"], "downloads": 1445087 },
+		"@sapphire/shapeshift": {
+			"packages": ["@sapphire/shapeshift"],
+			"downloads": 1000634
+		},
+		"sury": { "packages": ["sury"], "downloads": 269129 },
+		"Typia": { "packages": ["typia"], "downloads": 211406 },
+		"runtypes": { "packages": ["runtypes"], "downloads": 147816 },
+		"pure-parse": { "packages": ["pure-parse"], "downloads": 45285 },
+		"zod-compiler": { "packages": ["zod-compiler"], "downloads": 40310 },
+		"@remix-run/data-schema": {
+			"packages": ["@remix-run/data-schema"],
+			"downloads": 32295
+		},
+		"decoders": { "packages": ["decoders"], "downloads": 18035 },
+		"rescript-schema": { "packages": ["rescript-schema"], "downloads": 12657 },
+		"ts-auto-guard": { "packages": ["ts-auto-guard"], "downloads": 10319 },
+		"ata": { "packages": ["ata-validator"], "downloads": 3913 },
+		"@sinclair/typemap/valibot": {
+			"packages": ["@sinclair/typemap"],
+			"downloads": 1971
+		},
+		"spectypes": { "packages": ["spectypes"], "downloads": 534 },
+		"ts-runtime-checks": {
+			"packages": ["ts-runtime-checks"],
+			"downloads": 294
+		},
+		"stnl": { "packages": ["stnl"], "downloads": 97 },
+		"type-predicate-generator": {
+			"packages": ["type-predicate-generator"],
+			"downloads": 87
+		},
+		"@sx3/gate": { "packages": ["@sx3/gate"], "downloads": 19 },
+		"@railway-ts/pipelines": {
+			"packages": ["@railway-ts/pipelines"],
+			"downloads": 14
+		},
+		"@ts-runtypes": { "packages": ["@ts-runtypes/core"], "downloads": 9 },
+		"paseri": { "packages": [], "downloads": 0 }
+	}
+}

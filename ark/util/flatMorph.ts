@@ -84,9 +84,13 @@ export const flatMorph: FlatMorph = (
 	const inputIsArray = Array.isArray(o)
 	let outputShouldBeArray = false
 
-	for (const [i, entry] of Object.entries(o).entries()) {
+	const entries = Object.entries(o)
+	for (let i = 0; i < entries.length; i++) {
+		const entry = entries[i]
 		const mapped =
-			inputIsArray ? flatMapEntry(i, entry[1]) : flatMapEntry(...entry, i)
+			inputIsArray ?
+				flatMapEntry(i, entry[1])
+			:	flatMapEntry(entry[0], entry[1], i)
 
 		outputShouldBeArray ||= typeof mapped[0] === "number"
 
@@ -99,7 +103,9 @@ export const flatMorph: FlatMorph = (
 				// so it doesn't get spread when the result is flattened
 			:	[mapped as GroupableEntry]
 
-		for (const [k, v] of flattenedEntries) {
+		for (let j = 0; j < flattenedEntries.length; j++) {
+			const k = flattenedEntries[j][0]
+			const v = flattenedEntries[j][1]
 			if (typeof k === "object") result[k.group] = append(result[k.group], v)
 			else result[k] = v
 		}

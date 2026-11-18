@@ -1,0 +1,5 @@
+{
+	"sb initialization|||ajv (standalone)": [19.963915, 19.96226, 20.01568],
+	"sb initialization|||zod-compiler": [15.950635, 16.05155, 16.05867],
+	"sb initialization|||@paseri/compiler": [15.992465, 16.056545, 15.877475]
+}

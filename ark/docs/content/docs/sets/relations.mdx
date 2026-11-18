@@ -1,0 +1,90 @@
+---
+title: Relations
+description: Check whether schemas in any format are subsets of each other, equal or disjoint, and intersect, union or convert them.
+---
+
+## isSubset, isEqual and isDisjoint
+
+| function           | `true` means                               |
+| ------------------ | ------------------------------------------ |
+| `isSubset(l, r)`   | every value `l` accepts, `r` accepts       |
+| `isEqual(l, r)`    | `l` and `r` accept exactly the same values |
+| `isDisjoint(l, r)` | no value is accepted by both               |
+
+```ts
+import { isDisjoint, isEqual, isSubset } from "arksets"
+
+isEqual({ type: "integer", minimum: 0 }, type("number.integer >= 0")) // true
+
+isSubset({ enum: ["a", "b"] }, { type: "string", maxLength: 1 }) // true
+
+isDisjoint({ type: "string", maxLength: 2 }, { type: "string", minLength: 3 }) // true
+```
+
+They're sound for what each schema is read as: `true` is a proof. A Type is read exactly and a JSON Schema as [Keyword support](/docs/json-schema/support) describes. A Standard JSON Schema is read as the JSON Schema it writes, so what that can't express, like zod's refinements, transforms and `undefined`, is invisible, and `true` proves the relation only for those JSON Schemas: `isSubset(z.string(), z.string().refine(s => s === "x"))` is `true`.
+
+`false` means the relation couldn't be proven, either because it doesn't hold or because a schema checks something the algebra can't reason about. Those are the JSON Schema keywords [Keyword support](/docs/json-schema/support) lists as opaque, like `not`, `uniqueItems` and `if`, and a Type's [`narrow`](/docs/expressions#narrow) predicates:
+
+```ts
+import { isSubset } from "arksets"
+
+// true, but not provable through `not`
+isSubset({ type: "string" }, { not: { type: "number" } }) // false
+```
+
+An opaque keyword is still compared with itself, so a schema with `uniqueItems: true` and a `maxItems` is a subset of one with only `uniqueItems: true`.
+
+## intersect and union
+
+`intersect` returns a Root of the values every schema accepts. It's `never` if they're disjoint, and `unknown` if you pass none:
+
+```ts
+import { intersect } from "arksets"
+
+const Percent = intersect(type("number.integer"), { minimum: 0, maximum: 100 })
+
+Percent.expression // "0 <= number % 1 <= 100"
+
+intersect({ type: "string" }, type("number")).expression // "never"
+```
+
+`union` returns a Root of the values any schema accepts. A branch another branch already accepts is dropped, and unions of objects are [discriminated](/docs/sets/discriminate) as ArkType's own are:
+
+```ts
+import { union } from "arksets"
+
+union({ type: "string" }, { type: "string", minLength: 1 }, type("number"))
+	.expression // "number | string"
+```
+
+## toJsonSchema
+
+`toJsonSchema` writes the JSON Schema of any schema, so it converts a schema from any format to JSON Schema, or normalizes one JSON Schema into another:
+
+```ts
+import { toJsonSchema } from "arksets"
+
+toJsonSchema({
+	$defs: { Name: { type: "string" } },
+	allOf: [{ $ref: "#/$defs/Name" }, { minLength: 2 }]
+})
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "string",
+	"minLength": 2
+}
+```
+
+It takes the same options as a Type's [`toJsonSchema()`](/docs/json-schema/to-json-schema) and throws the same way. A JSON Schema keyword `arksets` checks opaquely, like `uniqueItems`, has no JSON Schema of its own once it's read, so handle its `predicate` [fallback](/docs/json-schema/to-json-schema#fallback-codes):
+
+```ts
+import { toJsonSchema } from "arksets"
+
+toJsonSchema(
+	{ type: "array", uniqueItems: true },
+	{ fallback: { predicate: ctx => ({ ...ctx.base, uniqueItems: true }) } }
+)
+```

@@ -32,12 +32,14 @@ export const repoDirs = {
 }
 
 export const packageScopes = [
+	"aot",
 	"attest",
 	"fast-check",
 	"fs",
 	"json-schema",
 	"regex",
 	"schema",
+	"sets",
 	"type",
 	"util"
 ] as const
@@ -74,3 +76,63 @@ export const packagesByScope = flatMorph(
 )
 
 export const packages = Object.values(packagesByScope)
+
+const workspaceDependenciesOf = (pkg: ArkPackage) =>
+	Object.keys({
+		...pkg.json.dependencies,
+		...pkg.json.optionalDependencies,
+		...pkg.json.peerDependencies
+	}).flatMap(name => packages.filter(dependency => dependency.name === name))
+
+const installedDependenciesOf = (pkg: ArkPackage) =>
+	Object.keys({ ...pkg.json.dependencies, ...pkg.json.optionalDependencies })
+
+const dependencyOrder: ArkPackage[] = []
+
+const addToDependencyOrder = (pkg: ArkPackage, dependents: ArkPackage[]) => {
+	if (dependencyOrder.includes(pkg)) return
+	if (dependents.includes(pkg)) {
+		throwInternalError(
+			`${[...dependents, pkg].map(({ name }) => name).join(" -> ")} is a cycle`
+		)
+	}
+	for (const dependency of workspaceDependenciesOf(pkg))
+		addToDependencyOrder(dependency, [...dependents, pkg])
+	dependencyOrder.push(pkg)
+}
+
+for (const pkg of packages) addToDependencyOrder(pkg, [])
+
+// arktype and whatever installs it, e.g. @ark/attest
+const installsType = new Set([packagesByScope.type.name])
+for (const pkg of dependencyOrder) {
+	if (installedDependenciesOf(pkg).some(name => installsType.has(name)))
+		installsType.add(pkg.name)
+}
+
+/**
+ * each package after those it depends on, so none is installable before them,
+ * and arktype after every package that doesn't install it. A peer needn't be
+ * on npm first, so a run that fails partway leaves latest at the previous
+ * arktype rather than at one whose docs name a package that isn't out yet,
+ * like @ark/aot.
+ */
+export const publishOrder: ArkPackage[] = [
+	...dependencyOrder.filter(pkg => !installsType.has(pkg.name)),
+	...dependencyOrder.filter(pkg => installsType.has(pkg.name))
+]
+
+/** the versions of a package on npm, none if it isn't there yet */
+export const publishedVersionsOf = async (name: string): Promise<string[]> => {
+	const response = await fetch(
+		`https://registry.npmjs.org/${name.replace("/", "%2f")}`,
+		{ headers: { accept: "application/vnd.npm.install-v1+json" } }
+	)
+	if (response.status === 404) return []
+	if (!response.ok)
+		throw new Error(`npm responded ${response.status} for ${name}`)
+	const { versions } = (await response.json()) as {
+		versions: Record<string, unknown>
+	}
+	return Object.keys(versions)
+}

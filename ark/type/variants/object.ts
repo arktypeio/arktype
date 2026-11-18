@@ -19,14 +19,15 @@ import type {
 	show,
 	toArkKey
 } from "@ark/util"
-import type { Default, withDefault } from "../attributes.ts"
+import type { Default, required, withDefault } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { ArrayType } from "./array.ts"
 import type { BaseType } from "./base.ts"
 import type { instantiateType } from "./instantiate.ts"
 
 /** @ts-ignore cast variance */
-interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
+interface Type<out t extends object = object, in out $ = {}>
+	extends BaseType<t, $> {
 	readonly(): t extends array ? ArrayType<{ readonly [i in keyof t]: t[i] }, $>
 	:	Type<{ readonly [k in keyof t]: t[k] }, $>
 
@@ -104,7 +105,7 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 	 * narrow, filter or metadata on this `Type` is not carried over
 	 * ({@link https://arktype.io/docs/objects#properties-structural | docs})
 	 *
-	 * @example type({ a: "1", b: "2" }).merge({ b: "3", c: "4" }) // Type<{ a: 1, b: 3, c: 4 }>
+	 * @example type({ a: "1", b: "2" }).merge({ b: "3", c: "4" }) // Type<{ a: 1; b: 3; c: 4 }>
 	 */
 	merge<
 		const def,
@@ -113,8 +114,9 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 	>(
 		def: type.validate<def, $> &
 			// if you can figure out a way to avoid inlining this without
-			// breaking autocomplete and validation, do it!
-			(inferredDef extends object ? unknown
+			// breaking autocomplete and validation, do it! checking inferredDef
+			// instead fails to infer def from a call like .describe() within it
+			(type.infer<def, $> extends object ? unknown
 			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredDef]>)
 	): r extends infer _ ? _ : never
 
@@ -128,9 +130,9 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 	 * 🔗 like TS's `Required`, an array or tuple base is preserved and
 	 * applied to its elements, e.g. `type(["string", "number"]).required()`
 	 *
-	 * @example const T = type({ "foo?"": "string" }).required() // Type<{ foo: string }>
+	 * @example const T = type({ "foo?": "string" }).required() // Type<{ foo: string }>
 	 */
-	required(): Type<{ [k in keyof t]-?: t[k] }, $>
+	required(): Type<show<required<t>>, $>
 
 	/**
 	 * Create a copy of this `Type` with all properties optional.
@@ -142,7 +144,7 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 	 * 🔗 like TS's `Partial`, an array or tuple base is preserved and
 	 * applied to its elements, e.g. `type(["string", "number"]).partial()`
 	 *
-	 * @example: const T = type({ foo: "string" }).optional() // Type<{ foo?: string }>
+	 * @example const T = type({ foo: "string" }).partial() // Type<{ foo?: string }>
 	 */
 	partial(): Type<{ [k in keyof t]?: t[k] }, $>
 
@@ -158,7 +160,7 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 	 */
 	map<
 		transformed extends listable<MappedTypeProp>,
-		r = Type<constructMapped<t, transformed>, $>
+		r = Type<mapped<t, transformed, $>, $>
 	>(
 		// v isn't used directly here but helps TS infer a precise type for transformed
 		flatMapEntry: (entry: typePropOf<t, $>) => transformed
@@ -166,15 +168,18 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 
 	/**
 	 * List of property info of this `Type<object>`.
-	 * @example type({ foo: "string = "" }).props // [{ kind: "required", key: "foo", value: Type<string>, default: "" }]
+	 * @example type({ foo: "string = 'x'" }).props // [{ kind: "optional", key: "foo", value: Type<string>, default: "x" }]
 	 */
 	props: array<typePropOf<t, $>>
 }
 
+// each branch's props, since a union's are mapped per branch
 type typePropOf<o, $> =
-	keyof o extends infer k ?
-		k extends keyof o ?
-			typeProp<o, k, $>
+	o extends unknown ?
+		keyof o extends infer k ?
+			k extends keyof o ?
+				typeProp<o, k, $>
+			:	never
 		:	never
 	:	never
 
@@ -231,6 +236,33 @@ type OptionalMappedTypeProp<k extends Key, v> = merge<
 		default?: v
 	}
 >
+
+// a union is mapped per branch, each built from the props it can produce
+type mapped<t, transformed extends listable<MappedTypeProp>, $> =
+	[t] extends [intersectUnion<t>] ? constructMapped<t, transformed>
+	:	mappedBranches<
+			t,
+			transformed extends array ? transformed[number] : transformed,
+			typePropOf<t, $>,
+			t extends unknown ? keyof t : never,
+			$
+		>
+
+type mappedBranches<branch, prop, entry, key, $> =
+	branch extends unknown ?
+		constructMapped<branch, branchPropsOf<branch, prop, entry, key, $>>
+	:	never
+
+// the branch's own props as they were, other props at its keys, and props at keys no branch has
+type branchPropsOf<branch, prop, entry, key, $> =
+	| Extract<prop, typePropOf<branch, $>>
+	| (Exclude<prop, entry> extends infer p ?
+			p extends { key: infer k } ?
+				k extends keyof branch ? p
+				: k extends key ? never
+				: p
+			:	never
+	  :	never)
 
 type constructMapped<t, transformed extends listable<MappedTypeProp>> = show<
 	intersectUnion<

@@ -44,11 +44,7 @@ const snippetIds = [
 	"clarityAndConcision",
 	"deepIntrospectability",
 	"intrinsicOptimization",
-	"unparalleledDx",
-	"nestedTypeInScopeError",
-	"readableErrors",
-	"assignability",
-	"reduction"
+	"unparalleledDx"
 ] as const
 
 export type SnippetId = (typeof snippetIds)[number]

@@ -1,0 +1,270 @@
+/* the body of a docs page */
+
+.prose {
+	font-size: var(--fs-body-docs);
+	line-height: 1.7;
+	color: var(--ink-2);
+}
+
+/* about 68 characters a line for reading; code, callouts, tables and API
+   rows take the whole column */
+.prose > :is(p, ul, ol, h2, h3, h4, h5, h6, blockquote) {
+	max-width: var(--measure);
+}
+
+.prose > :first-child {
+	margin-top: 0;
+}
+
+.prose :is(p, ul, ol, blockquote) {
+	margin: 0 0 1.05rem;
+}
+
+.prose li > :is(p, ul, ol) {
+	margin-bottom: 0.4rem;
+}
+
+.prose :is(h2, h3, h4, h5, h6) {
+	position: relative;
+	color: var(--ink);
+	text-wrap: balance;
+}
+
+.prose h2 {
+	margin: 3.4rem 0 0.9rem;
+	font-size: var(--fs-h2-docs);
+	font-weight: 740;
+	letter-spacing: -0.025em;
+	line-height: 1.15;
+}
+
+.prose h3 {
+	margin: 2.4rem 0 0.6rem;
+	font-size: var(--fs-h3-docs);
+	font-weight: 720;
+	letter-spacing: -0.012em;
+	line-height: 1.3;
+}
+
+.prose :is(h4, h5, h6) {
+	margin: 1.8rem 0 0.5rem;
+	font-size: 1.05rem;
+	font-weight: 700;
+	line-height: 1.35;
+}
+
+.prose :is(h2, h3, h4, h5, h6) code {
+	font-size: 0.9em;
+}
+
+.anchor {
+	position: absolute;
+	left: -1.1em;
+	padding-right: 0.3em;
+	font-weight: 400;
+	color: var(--ink-3);
+	text-decoration: none;
+	opacity: 0;
+	transition: opacity var(--t-micro);
+}
+
+:is(h2, h3, h4, h5, h6):hover > .anchor {
+	opacity: 1;
+}
+
+/* ===== inline ===== */
+
+.prose
+	a:where(
+		:not(.card, .anchor, .api-title a, .cb a, [role="tab"], .table-scroll th a)
+	) {
+	color: var(--sky);
+	text-decoration: underline;
+	text-decoration-color: color-mix(in oklab, var(--sky) 35%, transparent);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 3px;
+	transition: text-decoration-color var(--t-micro);
+}
+
+.prose a:where(:not(.card, .anchor, .api-title a)):hover {
+	text-decoration-color: var(--sky);
+}
+
+.prose a[data-external]::after {
+	content: "↗" / "";
+	display: inline-block;
+	margin-left: 0.1em;
+	font-size: 0.8em;
+	transition: translate var(--t-micro) var(--ease-out);
+}
+
+.prose a[data-external]:hover::after {
+	translate: 1px -1px;
+}
+
+.prose strong {
+	color: var(--ink);
+	font-weight: 700;
+}
+
+.prose code:not(pre code, .api-sig, .kw-name) {
+	padding: 0.1em 0.38em;
+	border-radius: var(--r-xs);
+	background: color-mix(in oklab, var(--ink) 7%, transparent);
+	font-size: 0.88em;
+	color: var(--ink);
+	overflow-wrap: anywhere;
+}
+
+.prose a code:not(pre code, .api-sig) {
+	color: inherit;
+}
+
+/* ===== lists ===== */
+
+.prose :is(ul, ol) {
+	padding-left: 1.4rem;
+}
+
+.prose ul {
+	list-style: disc;
+}
+
+.prose ol {
+	list-style: decimal;
+}
+
+.prose li + li {
+	margin-top: 0.35rem;
+}
+
+.prose li::marker {
+	color: var(--ink-3);
+}
+
+/* ===== blocks ===== */
+
+.prose blockquote {
+	padding-left: 1rem;
+	border-left: 2px solid var(--rule);
+}
+
+.prose hr {
+	margin: 2.5rem 0;
+	border: 0;
+	border-top: 1px solid var(--line);
+}
+
+.prose :is(img, video) {
+	max-width: 100%;
+	border-radius: var(--r-md);
+}
+
+.prose details:not(.api-ex) {
+	margin: 1.3rem 0 1.6rem;
+}
+
+.prose details:not(.api-ex) > summary {
+	color: var(--ink-2);
+	list-style: none;
+	cursor: pointer;
+	transition: color var(--t-micro);
+}
+
+.prose details:not(.api-ex) > summary::-webkit-details-marker {
+	display: none;
+}
+
+.prose details:not(.api-ex) > summary::before {
+	content: "▸" / "";
+	display: inline-block;
+	margin-right: 8px;
+	color: var(--ink-3);
+	transition: rotate var(--t-micro) var(--ease-out);
+}
+
+.prose details[open]:not(.api-ex) > summary::before {
+	rotate: 90deg;
+}
+
+.prose details:not(.api-ex) > summary:hover {
+	color: var(--ink);
+}
+
+.prose details[open]:not(.api-ex) > summary {
+	margin-bottom: 0.8rem;
+}
+
+/* ===== tables ===== */
+
+.table-scroll {
+	margin: 1.3rem 0 1.6rem;
+	overflow-x: auto;
+	border: 1px solid var(--line);
+	border-radius: var(--r-md);
+}
+
+.table-scroll:focus-visible {
+	outline-offset: -2px;
+}
+
+.table-scroll table {
+	width: 100%;
+	border-collapse: separate;
+	border-spacing: 0;
+	font-size: 14.5px;
+	line-height: 1.55;
+}
+
+.table-scroll :is(th, td) {
+	padding: 9px 14px;
+	border-bottom: 1px solid var(--line);
+	text-align: left;
+	vertical-align: top;
+}
+
+.table-scroll th {
+	background: var(--surface);
+	font: 400 11.5px / 1.4 var(--mono);
+	color: var(--ink-3);
+	white-space: nowrap;
+}
+
+.table-scroll td {
+	height: 40px;
+	color: var(--ink-2);
+}
+
+/* code in a cell keeps its shape; the table scrolls instead */
+.prose .table-scroll td code {
+	white-space: nowrap;
+	overflow-wrap: normal;
+}
+
+/* past the first column, a long one may break at its spaces so the table
+   fits a desktop column; phones scroll instead */
+@media (min-width: 901px) {
+	.prose .table-scroll td + td code {
+		white-space: normal;
+	}
+}
+
+.table-scroll tbody tr:last-child td {
+	border-bottom: 0;
+}
+
+@media (max-width: 900px) {
+	.prose {
+		font-size: 16px;
+	}
+
+	.prose h2 {
+		font-size: 1.5rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.prose a[data-external]:hover::after {
+		translate: none;
+	}
+}

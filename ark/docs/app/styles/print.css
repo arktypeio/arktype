@@ -1,0 +1,129 @@
+/* a docs page on paper: the article, its code and its links, no chrome */
+@media print {
+	:root {
+		--bg: #fff;
+		--ink: #111;
+		--ink-2: #222;
+		--ink-3: #555;
+		--line: #ccc;
+		--surface: #f4f4f4;
+		--raised: #fff;
+		--sky: #0b5394;
+	}
+
+	html,
+	body {
+		background: #fff;
+		color: #111;
+	}
+
+	.banner,
+	.topbar,
+	.docs-sidebar,
+	.scrim,
+	.docs-toc,
+	.mtoc,
+	.copy-page,
+	.cb-copy,
+	.pager,
+	.page-foot,
+	dialog.search,
+	.skip,
+	.anchor,
+	[role="tab"][aria-selected="false"] {
+		display: none !important;
+	}
+
+	.layout {
+		display: block;
+		max-width: none;
+		padding: 0;
+	}
+
+	.docs-main {
+		padding: 0;
+	}
+
+	.docs-article,
+	.prose,
+	.prose > * {
+		max-width: none;
+	}
+
+	.docs {
+		font-size: 11pt;
+	}
+
+	.callout,
+	.api-row {
+		break-inside: avoid;
+		border-color: #ccc;
+		background: #fafafa;
+	}
+
+	.co-type {
+		color: var(--ink-3);
+	}
+
+	/* closed disclosures, like Type API's examples, print open */
+	details::details-content {
+		content-visibility: visible;
+	}
+
+	details > summary::before {
+		rotate: 90deg;
+	}
+
+	/* code stays ArkDark: its token colours are inline and only read on dark,
+	   so the ink on its frame, title and tabs does too */
+	.cb {
+		--ink: #eeeeee;
+		--ink-2: #b6bacb;
+		--ink-3: #888899;
+		--line: color-mix(in oklab, #eeeeee 9%, transparent);
+		--sky: #80cff8;
+		break-inside: avoid;
+		background: #060c18 !important;
+		print-color-adjust: exact;
+		-webkit-print-color-adjust: exact;
+	}
+
+	/* paper is narrower than the phone breakpoint, but has no edge to bleed to */
+	.prose > .cb,
+	.prose > .tabs .cb,
+	.api-ex .cb {
+		margin-inline: 0;
+		border-inline: 1px solid var(--line);
+		border-radius: var(--r-md);
+	}
+
+	.prose > .tabs > .tabs-bar {
+		margin-inline: 0;
+		padding-inline: 0;
+	}
+
+	.api-row {
+		margin-inline: 0;
+	}
+
+	/* ArkLight on paper, whichever theme was on screen */
+	pre.shiki,
+	pre.shiki span[style] {
+		color: var(--shiki-light) !important;
+	}
+
+	pre.shiki {
+		white-space: pre-wrap;
+		overflow: visible;
+	}
+
+	pre.shiki code {
+		min-width: 0;
+	}
+
+	.prose a[href^="http"]::after {
+		content: " (" attr(href) ")";
+		font-size: 0.85em;
+		color: #555;
+	}
+}

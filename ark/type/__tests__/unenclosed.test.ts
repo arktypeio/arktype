@@ -20,6 +20,17 @@ contextualize(() => {
 				writeUnresolvableMessage("HUH")
 			)
 		})
+
+		it("unresolvable Object.prototype member", () => {
+			// @ts-expect-error
+			attest(() => type("toString")).throwsAndHasTypeError(
+				writeUnresolvableMessage("toString")
+			)
+			// @ts-expect-error
+			attest(() => type("string.toString")).throwsAndHasTypeError(
+				writeUnresolvableMessage("string.toString")
+			)
+		})
 	})
 
 	describe("number", () => {

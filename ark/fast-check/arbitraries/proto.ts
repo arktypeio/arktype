@@ -7,7 +7,7 @@ import type { DomainInputNode } from "./domain.ts"
 
 export const buildProtoArbitrary: BuildProtoArbitrary = {
 	Array: (node, ctx) =>
-		node.hasKind("proto") ?
+		node.is("proto") ?
 			fc.array(fc.anything())
 		:	buildStructureArbitrary(node as never, ctx),
 	Set: () => fc.uniqueArray(fc.anything()).map(arr => new Set(arr)),

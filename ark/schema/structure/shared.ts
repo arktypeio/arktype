@@ -1,11 +1,6 @@
-import {
-	registeredReference,
-	type RegisteredReference
-} from "../shared/registry.ts"
-
 export const arrayIndexSource = `^(?:0|[1-9]\\d*)$`
 
-export const arrayIndexMatcher = new RegExp(arrayIndexSource)
+export const arrayIndexMatcher = /* @__PURE__ */ new RegExp(arrayIndexSource)
 
-export const arrayIndexMatcherReference: RegisteredReference =
-	registeredReference(arrayIndexMatcher)
+// 2 ** 32 - 1; larger integer keys are properties, not indices
+export const maxArrayLength = 4294967295

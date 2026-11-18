@@ -2,6 +2,7 @@ import { configure } from "arktype/config"
 
 export const config = configure({
 	numberAllowsNaN: true,
+	numberAllowsInfinity: true,
 	keywords: {
 		null: {
 			description: "configured null"

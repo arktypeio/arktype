@@ -1,0 +1,137 @@
+name: leaderboard
+
+# Every Monday, reruns the independent suites that measure bundle size (the
+# login form, schemabenchmarks.dev's download and Sury's bundle) with each
+# rival at its newest release and ArkType at main, and checks the site's
+# claims against the standings they give. It pushes nothing: the site keeps
+# the standings it was published with, dated as measured. If a claim no longer
+# holds, such as a lead lost by more than the tie band, it opens an issue, or
+# updates the open one, for a maintainer to rerun and republish. The speed and
+# startup suites count instructions with perf, which needs hardware counters
+# hosted runners don't expose, so they're rerun by hand
+# (ark/repo/bench/external/README.md, "Reproduce").
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: leaderboard
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  rerun:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # schemabenchmarks.dev runs on its own .node-version
+      - name: Setup Node 26
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 26.12.1
+
+      - name: Locate Node 26
+        run: echo "NODE26=$(command -v node)" >> "$GITHUB_ENV"
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+        with:
+          node: 24.14.1
+
+      - name: Locate Node 24
+        run: echo "NODE24=$(command -v node)" >> "$GITHUB_ENV"
+
+      - name: Claims before
+        run: node ark/docs/lib/bench/headline.ts > "$RUNNER_TEMP/before.md" 2>&1 || true
+
+      # ttsc's first Go build of typia's plugin can fail, so a failed run is
+      # tried once more
+      - name: Rerun the size suites
+        run: pnpm benchExternal size --newest || pnpm benchExternal size --newest
+
+      - name: Check the claims
+        id: claims
+        continue-on-error: true
+        run: node ark/docs/lib/bench/headline.ts > "$RUNNER_TEMP/after.md" 2>&1
+
+      - name: Standings
+        run: |
+          node ark/repo/bench/external/standings.ts > "$RUNNER_TEMP/standings.txt"
+          {
+            echo "### Claims"
+            echo
+            cat "$RUNNER_TEMP/after.md"
+            echo
+            echo "### Standings"
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/standings.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the results
+        if: always()
+        run: |
+          kept="$RUNNER_TEMP/leaderboard"
+          mkdir -p "$kept"
+          cp -r ark/docs/lib/bench/leaderboard.json ark/repo/bench/external/results/newest "$kept"
+          cp "$RUNNER_TEMP"/{before.md,after.md,standings.txt} "$kept" 2> /dev/null || true
+
+      - name: Upload the results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: leaderboard
+          path: ${{ runner.temp }}/leaderboard
+
+      - name: Open or update an issue
+        if: steps.claims.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: "bench: a claim isn't backed by the weekly rerun's standings"
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            echo "@ssalbdivad The weekly rerun of the size suites, each rival at its newest release and ArkType at ${GITHUB_SHA::9}, doesn't back a claim on the site. Change the copy in \`ark/docs/lib/claims.ts\` or rerun and republish."
+            echo
+            echo "[Run]($RUN), with its results as the \`leaderboard\` artifact."
+            echo
+            echo "### Claims after"
+            echo
+            cat "$RUNNER_TEMP/after.md"
+            echo
+            echo "### Claims before"
+            echo
+            cat "$RUNNER_TEMP/before.md"
+            echo
+            echo "### Standings"
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/standings.txt"
+            echo '```'
+          } > "$RUNNER_TEMP/issue.md"
+          number=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$number" ]; then
+            gh issue edit "$number" --body-file "$RUNNER_TEMP/issue.md"
+          else
+            gh issue create --title "$TITLE" --body-file "$RUNNER_TEMP/issue.md"
+          fi
+
+      - name: Fail on an unbacked claim
+        if: steps.claims.outcome == 'failure'
+        run: |
+          cat "$RUNNER_TEMP/after.md"
+          echo "::error::A claim on the site isn't backed by the new standings"
+          exit 1

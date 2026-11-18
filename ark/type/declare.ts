@@ -1,6 +1,8 @@
+import type { TypeMeta, UndeclaredKeyBehavior } from "@ark/schema"
 import type {
 	anyOrNever,
 	array,
+	Backslash,
 	equals,
 	ErrorMessage,
 	ErrorType,
@@ -16,6 +18,7 @@ import type {
 	TerminalObjectDefinition,
 	ThunkCast
 } from "./parser/definition.ts"
+import type { MetaKey } from "./parser/objectLiteral.ts"
 import type { OptionalPropertyDefinition } from "./parser/property.ts"
 import type { TupleExpression } from "./parser/tupleExpressions.ts"
 import type { bindThis } from "./scope.ts"
@@ -83,17 +86,58 @@ type validateObjectInference<
 	args,
 	ctx extends DeclareContext
 > = show<
-	{
-		[k in requiredKeyOf<declared>]: k extends keyof def ?
-			validateInference<def[k], declared[k], $, args, ctx>
-		:	declared[k]
-	} & {
-		[k in optionalKeyOf<declared> & string as declaredOptionalKeySuggestion<
-			k,
-			def
-		>]: declaredOptionalValueSuggestion<def, k, declared, $, args, ctx>
-	}
+	([keyof declared & MetaKey] extends [never] ?
+		validateDeclaredKeys<def, declared, $, args, ctx>
+	:	validateEscapedDeclaredKeys<def, declared, $, args, ctx>) &
+		DeclaredObjectSettings
 >
+
+type validateDeclaredKeys<
+	def extends object,
+	declared,
+	$,
+	args,
+	ctx extends DeclareContext
+> = {
+	[k in requiredKeyOf<declared>]: k extends keyof def ?
+		validateInference<def[k], declared[k], $, args, ctx>
+	:	declared[k]
+} & {
+	[k in optionalKeyOf<declared> & string as declaredOptionalKeySuggestion<
+		k,
+		def
+	>]: declaredOptionalValueSuggestion<def, k, declared, $, args, ctx>
+}
+
+// a declared key that is also a special key has to be escaped to be a prop.
+// checking each key for that costs enough that only a declaration with one pays it
+type validateEscapedDeclaredKeys<
+	def extends object,
+	declared,
+	$,
+	args,
+	ctx extends DeclareContext
+> = {
+	[k in requiredKeyOf<declared> as declaredKey<k>]: declaredKey<k> extends (
+		keyof def
+	) ?
+		validateInference<def[declaredKey<k>], declared[k], $, args, ctx>
+	:	declared[k]
+} & {
+	// an escaped key can only be optional through its value
+	[k in optionalKeyOf<declared> & string as k extends MetaKey ? declaredKey<k>
+	:	declaredOptionalKeySuggestion<k, def>]: k extends MetaKey ?
+		declaredEscapedOptionalValueSuggestion<def, k, declared, $, args, ctx>
+	:	declaredOptionalValueSuggestion<def, k, declared, $, args, ctx>
+}
+
+// settings that don't affect inference, so any declared object can have them
+type DeclaredObjectSettings = {
+	"@"?: TypeMeta.Collapsible
+	"+"?: UndeclaredKeyBehavior
+}
+
+type declaredKey<k> = k extends MetaKey ? `${Backslash}${k}` : k
 
 type declaredOptionalKeySuggestion<k extends string, def> =
 	k extends keyof def ?
@@ -101,6 +145,24 @@ type declaredOptionalKeySuggestion<k extends string, def> =
 			k
 		:	`${k}?`
 	:	`${k}?`
+
+type declaredEscapedOptionalValueSuggestion<
+	def,
+	k extends keyof declared & MetaKey,
+	declared,
+	$,
+	args,
+	ctx extends DeclareContext
+> =
+	def[declaredKey<k> & keyof def] extends OptionalPropertyDefinition ?
+		validateInference<
+			def[declaredKey<k> & keyof def],
+			Required<declared>[k],
+			$,
+			args,
+			ctx
+		>
+	:	OptionalPropertyDefinition
 
 type declaredOptionalValueSuggestion<
 	def,

@@ -1,0 +1,148 @@
+---
+title: Overview
+description: Read arktype Types, Standard JSON Schemas and JSON Schemas as sets of values, relate and combine them, and write them back out as JSON Schema.
+---
+
+`arksets` treats a schema as the set of values it accepts. It reads schemas from any format, relates and combines them with the same algebra ArkType reduces its own Types with, and writes the result back out as JSON Schema:
+
+```ts
+import { intersect, isSubset, toJsonSchema } from "arksets"
+
+const V1 = {
+	type: "object",
+	properties: {
+		id: { type: "string" },
+		age: { type: "integer", minimum: 0 }
+	},
+	required: ["id", "age"]
+} as const
+
+const V2 = type({ id: "string", "age?": "number" })
+
+// V2 is backwards compatible: it accepts everything V1 did
+isSubset(V1, V2) // true
+// but not the other way around: V2 accepts { id: "a" }
+isSubset(V2, V1) // false
+
+const Capped = intersect(V2, {
+	type: "object",
+	properties: { age: { maximum: 120 } }
+})
+
+Capped.expression // "{ id: string, age?: number <= 120 }"
+
+toJsonSchema(Capped)
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"id": { "type": "string" },
+		"age": { "type": "number", "maximum": 120 }
+	},
+	"required": ["id"]
+}
+```
+
+Use it to check that a new version of an API schema still accepts what the old one did, to find out whether two schemas can ever accept the same value, to merge schemas from different libraries into one, or to normalize any of them to JSON Schema.
+
+## Installation
+
+<InstallationTabs pkg="arksets" />
+
+`arktype` depends on `arksets` already, but only imports [the engine](#the-engine). Install it yourself to import the functions on these pages.
+
+## Schemas
+
+Every function takes a `Schema`, which can be any of:
+
+- a **Root**: an `@ark/schema` node, which every arktype Type is. It's read losslessly, never through JSON Schema.
+- a **[Standard JSON Schema](https://standardschema.dev/json-schema)**: a schema whose `~standard` has `jsonSchema`, like one from zod 4.2.0 or later. `arksets` reads its draft 2020-12 JSON Schema, so what that can't express, like zod's refinements, transforms and `undefined`, is invisible to every function here. Pass any other library's schema as its JSON Schema, like `z.toJSONSchema(schema)` before zod 4.2.0.
+- a **JSON Schema**: an object or a boolean, read as [Keyword support](/docs/json-schema/support) describes.
+
+Every argument can be in a different format. Results that are sets are Roots, so you can validate with them, print them and pass them back in:
+
+```ts
+import { intersect } from "arksets"
+
+const Port = intersect({ type: "integer" }, type("number >= 1024"))
+
+Port.expression // "number % 1 >= 1024"
+Port(8080) // 8080
+Port.allows(80) // false
+```
+
+## parse
+
+`parse` reads a schema into a Root. Every other function calls it on its arguments, so you only need it to read a schema with options:
+
+```ts
+import { parse } from "arksets"
+
+const Query = type({
+	page: type("string").pipe(s => Number(s), type("number.integer >= 1"))
+})
+
+parse(Query).expression // "{ page: string }"
+parse(Query, { io: "out" }).expression // "{ page: number % 1 >= 1 }"
+```
+
+| option | default           | effect                                                                                        |
+| ------ | ----------------- | --------------------------------------------------------------------------------------------- |
+| `io`   | `"in"`            | which side of a schema that transforms to read: what it accepts, or what it outputs (`"out"`) |
+| `root` | the schema itself | the document a JSON Schema's `#/...` refs resolve against, like an OpenAPI document           |
+
+```ts
+import { parse } from "arksets"
+
+const openApi = {
+	components: {
+		schemas: {
+			User: {
+				type: "object",
+				properties: { name: { type: "string" } },
+				required: ["name"]
+			}
+		}
+	}
+}
+
+const User = parse({ $ref: "#/components/schemas/User" }, { root: openApi })
+
+User.allows({ name: "Ada" }) // true
+```
+
+A schema object is read once per `io` and cached, so passing the same object to many functions doesn't read it again.
+
+`parse` throws a `ParseError` for anything that isn't one of the three formats, for a Standard Schema that doesn't implement Standard JSON Schema or whose `~standard.jsonSchema` throws, like zod's for `z.date()` (the library's error is its `cause`), and for a JSON Schema it can't read exactly, like one with a remote `$ref` or `unevaluatedProperties`.
+
+## arktype Types and JSON Schema
+
+ArkType's `object` includes arrays, like TypeScript's. JSON Schema's `"object"` excludes them. An arktype Type is read with its own meaning, so it accepts values a JSON Schema with the same properties doesn't:
+
+```ts
+import { isSubset } from "arksets"
+
+const User = type({ name: "string" })
+
+const JsonUser = {
+	type: "object",
+	properties: { name: { type: "string" } },
+	required: ["name"]
+} as const
+
+isSubset(JsonUser, User) // true
+// User accepts Object.assign([], { name: "" })
+isSubset(User, JsonUser) // false
+isSubset(User.toJsonSchema(), JsonUser) // true
+```
+
+To compare a Type with JSON's meaning, pass its `.toJsonSchema()`.
+
+## The engine
+
+Importing `arksets` also installs the set algebra `@ark/schema` reduces nodes and discriminates unions with, and that `.and()`, `.extends()`, `.toJsonSchema()` and the other relational methods use. `arktype` installs it from `arksets/internal`, so these functions stay out of its bundle. [Set algebra](/docs/internals/sets) describes what `@ark/schema` does without it.
+
+`arksets/internal` exports the engine's own functions for `@ark/schema` and `arktype`. Like `@ark/schema`, it isn't semver-stable.

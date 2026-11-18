@@ -1,6 +1,12 @@
-import { printable, throwInternalError } from "@ark/util"
+import {
+	constructorNameOf,
+	expressionOf,
+	printable,
+	throwInternalError
+} from "@ark/util"
 import type { type } from "arktype"
 import * as assert from "node:assert/strict"
+import { isDeepStrictEqual } from "node:util"
 import type { TypeRelationshipAssertionData } from "../cache/getCachedAssertions.ts"
 import type { AssertionContext } from "./attest.ts"
 
@@ -73,6 +79,92 @@ export const versionableAssertion =
 		} else fn(expected, actual, ctx)
 	}
 
+// node:assert prints the values of a failed deepStrictEqual in full, which
+// for a live graph like a Type's exhausts memory (#1287), so only plain data
+// gets its diff
+const isPlainData = (value: unknown, seen = new Set<object>()): boolean => {
+	if (typeof value === "function") return false
+	if (typeof value !== "object" || value === null || seen.has(value))
+		return true
+	seen.add(value)
+	const proto: unknown = Object.getPrototypeOf(value)
+	if (proto === Date.prototype || proto === RegExp.prototype) return true
+	if (proto === Map.prototype || proto === Set.prototype) {
+		for (const entry of (value as Map<unknown, unknown>).entries())
+			if (!isPlainData(entry, seen)) return false
+		return true
+	}
+	if (proto !== Object.prototype && proto !== Array.prototype && proto !== null)
+		return false
+	return Reflect.ownKeys(value).every(k => {
+		const descriptor = Object.getOwnPropertyDescriptor(value, k)!
+		return "value" in descriptor && isPlainData(descriptor.value, seen)
+	})
+}
+
+const maxPrintedDepth = 10
+
+// within plain objects and arrays, other objects print as they would at the
+// root, by their expression or constructor
+const printableCopyOf = (value: unknown, depth: number): unknown => {
+	if (typeof value === "function") return expressionOf(value) ?? value
+	if (typeof value !== "object" || value === null) return value
+	const proto: unknown = Object.getPrototypeOf(value)
+	if (proto === Array.prototype) {
+		return depth === maxPrintedDepth ? "[...]" : (
+				(value as unknown[]).map(item => printableCopyOf(item, depth + 1))
+			)
+	}
+	if (proto === Object.prototype || proto === null) {
+		return depth === maxPrintedDepth ? "{...}" : (
+				Object.fromEntries(
+					Object.entries(value).map(([k, v]) => [
+						k,
+						printableCopyOf(v, depth + 1)
+					])
+				)
+			)
+	}
+	return depth ?
+			(expressionOf(value) ?? constructorNameOf(value) ?? "Object")
+		:	value
+}
+
+// a Type or node prints as its expression, unquoted unless nested
+const printFailed = (value: unknown): string => {
+	const copy = printableCopyOf(value, 0)
+	return typeof copy === "string" && typeof value !== "string" ?
+			copy
+		:	printable(copy)
+}
+
+const throwUnequal = (
+	message: string,
+	expected: unknown,
+	actual: unknown
+): never => {
+	const serializedExpected = printFailed(expected)
+	const serializedActual = printFailed(actual)
+	throw new assert.AssertionError({
+		message: `${message}
+Expected: ${serializedExpected}
+Actual: ${serializedActual}`,
+		expected: serializedExpected,
+		actual: serializedActual
+	})
+}
+
+const isReference = (value: unknown) =>
+	typeof value === "function" || (typeof value === "object" && value !== null)
+
+export const assertIs = (expected: unknown, actual: unknown): void => {
+	if (Object.is(actual, expected)) return
+	if (isReference(expected) || isReference(actual))
+		throwUnequal("Expected values to be reference-equal:", expected, actual)
+
+	assert.equal(actual, expected)
+}
+
 const unversionedAssertEquals: AssertFn = (expected, actual, ctx) => {
 	if (expected === actual) return
 
@@ -83,18 +175,20 @@ const unversionedAssertEquals: AssertFn = (expected, actual, ctx) => {
 			typeof actual === "object" &&
 			actual !== null
 		) {
-			if (expected.constructor === actual.constructor)
+			if (expected.constructor !== actual.constructor) {
+				throwUnequal(
+					"Objects did not have the same constructor:",
+					expected,
+					actual
+				)
+			} else if (isPlainData(expected) && isPlainData(actual))
 				assert.deepStrictEqual(actual, expected)
-			else {
-				const serializedExpected = printable(expected)
-				const serializedActual = printable(actual)
-				throw new assert.AssertionError({
-					message: `Objects did not have the same constructor:
-Expected: ${serializedExpected}
-Actual: ${serializedActual}`,
-					expected: serializedExpected,
-					actual: serializedActual
-				})
+			else if (!isDeepStrictEqual(actual, expected)) {
+				throwUnequal(
+					"Expected values to be strictly deep-equal:",
+					expected,
+					actual
+				)
 			}
 		} else if (
 			typeof expected === "object" ||
@@ -102,15 +196,11 @@ Actual: ${serializedActual}`,
 			typeof actual === "function" ||
 			typeof actual === "function"
 		) {
-			const serializedExpected = printable(expected)
-			const serializedActual = printable(actual)
-			throw new assert.AssertionError({
-				message: `Assertion including at least one function or object was not between reference equal items
-Expected: ${serializedExpected}
-Actual: ${serializedActual}`,
-				expected: serializedExpected,
-				actual: serializedActual
-			})
+			throwUnequal(
+				"Assertion including at least one function or object was not between reference equal items",
+				expected,
+				actual
+			)
 			// guaranteed to be two primitives at this point
 		} else assert.equal(actual, expected)
 	} catch (e: any) {

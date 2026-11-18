@@ -6,7 +6,8 @@ import type {
 import type { BaseType } from "./base.ts"
 
 /** @ts-ignore cast variance */
-interface Type<out t extends number = number, $ = {}> extends BaseType<t, $> {
+interface Type<out t extends number = number, in out $ = {}>
+	extends BaseType<t, $> {
 	divisibleBy(schema: Divisor.Schema): this
 
 	atLeast(schema: InclusiveNumericRangeSchema): this

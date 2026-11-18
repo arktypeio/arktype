@@ -9,10 +9,13 @@ import type { StringType } from "./string.ts"
 export type instantiateType<t, $> =
 	// all branches have to conform to a single basis type those methods to be available
 	[t] extends [anyOrNever] ? BaseType<t, $>
-	: [t] extends [object] ?
-		[t] extends [array] ? ArrayType<t, $>
-		: [t] extends [Date] ? DateType<t, $>
-		: ObjectType<t, $>
+	: [t] extends [object] ? instantiateObjectType<t, $>
 	: [t] extends [string] ? StringType<t, $>
 	: [t] extends [number] ? NumberType<t, $>
 	: BaseType<t, $>
+
+// a nested [array] check on t would resolve every member of an array t
+type instantiateObjectType<t extends object, $> =
+	[t] extends [array] ? ArrayType<t, $>
+	: [t] extends [Date] ? DateType<t, $>
+	: ObjectType<t, $>

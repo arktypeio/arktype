@@ -43,7 +43,7 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => len(1)).throws.snap(
-			"TraversalError: value at [0] must be a string or an object (was a number)"
+			"TraversalError: [0] must be a string or an array"
 		)
 	})
 
@@ -58,7 +58,7 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => len(1)).throws.snap(
-			"TraversalError: value at [0] must be a string or an object (was a number)"
+			"TraversalError: [0] must be a string or an array"
 		)
 	})
 
@@ -323,7 +323,7 @@ contextualize(() => {
 
 		attest(len("foo")).equals(3)
 		attest(() => len(1)).throws.snap(
-			"TraversalError: value at [0] must be a string or an object (was a number)"
+			"TraversalError: [0] must be a string or an array"
 		)
 	})
 
@@ -437,7 +437,7 @@ contextualize(() => {
 
 			// @ts-expect-error
 			attest(() => f(null))
-				.throws.snap("TraversalError: value at [0] must be a string (was null)")
+				.throws.snap("TraversalError: [0] must be a string")
 				.type.errors.snap(
 					"Argument of type 'null' is not assignable to parameter of type 'string'."
 				)
@@ -493,7 +493,7 @@ contextualize(() => {
 
 			attest(safe("arktype", 2.2)).snap("arktype@2.2 is safe AF.")
 			attest(() => safe("shitescript", "*" as any)).throws.snap(
-				"TraversalError: value at [1] must be a number (was a string)"
+				"TraversalError: [1] must be a number"
 			)
 		})
 

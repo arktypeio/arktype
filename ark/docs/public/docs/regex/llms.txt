@@ -1,0 +1,664 @@
+# ArkRegex
+
+> Regular expressions with inferred types
+
+# Overview
+
+> Install ArkRegex and see what it infers from the strings you already pass to new RegExp().
+
+`regex` takes the same arguments as `new RegExp()` and returns a `RegExp` typed with the strings it matches, its captures and its flags:
+
+```ts
+import { regex } from "arkregex"
+
+const ok = regex("^ok$", "i")
+// const ok: Regex<"ok" | "oK" | "Ok" | "OK", {
+//     flags: "i";
+// }>
+
+const date = regex("^(\\d{4})-(\\d{2})-(\\d{2})$")
+// const date: Regex<`${number}-${number}-${number}`, {
+//     captures: [`${number}`, `${number}`, `${number}`];
+// }>
+```
+
+`.exec()` returns typed captures:
+
+```ts
+import { regex } from "arkregex"
+
+const date = regex("^(?<year>\\d{4})-(?<month>\\d{2})$")
+
+const match = date.exec("2026-10")
+
+if (match) {
+	const month = match.groups.month
+	// const month: `${number}`
+}
+```
+
+At runtime, `regex(src, flags)` is `new RegExp(src, flags)`. The result is a plain `RegExp`, and `Regex` exists only in your types, so the package adds one function to your bundle.
+
+## Installation
+
+```bash
+npm install arkregex
+```
+
+Performs best with TypeScript 5.9 or later, including TypeScript 7.
+
+If you're upgrading, [Upgrading](https://arktype.io/docs/upgrading#arkregex) lists what changed in inference.
+
+## Features
+
+- **Types**: infers the strings an expression matches, its positional and named captures and its flags. See [Inference](https://arktype.io/docs/regex/inference).
+- **Syntax**: parses the syntax `new RegExp()` accepts, including named groups, lookarounds, backreferences, modifiers and Unicode properties. A few valid patterns are rejected and a few invalid ones aren't caught; see [what isn't checked](https://arktype.io/docs/regex/errors#what-isnt-checked).
+- **Errors**: mistakes like an unclosed group or a reference to a group that doesn't exist are [type errors](https://arktype.io/docs/regex/errors).
+- **No runtime cost**: the only code that runs is `new RegExp()`.
+
+## Syntax highlighting
+
+The [ArkType extension](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) highlights the expression inside `regex` calls.
+
+## ArkType
+
+`arktype` re-exports `regex` and the `Regex` type, so if you use ArkType you don't need to install `arkregex` separately:
+
+```ts
+import { regex, type Regex } from "arktype"
+```
+
+ArkType also uses ArkRegex to infer its own regex literals, so `type("/^\\d{5}$/")` infers ``Type<`${number}`>``. See [ArkType](https://arktype.io/docs/regex/arktype).
+
+# Inference
+
+> The type ArkRegex infers for each part of a regular expression.
+
+Each `Regex` carries the strings it matches, its captures and its flags. Where an exact type would be impractical, ArkRegex widens to `string` or `` `${number}` ``, so the inferred type is meant to include every string the expression matches. A few patterns currently infer a narrower type than that; they're listed under [known gaps](https://arktype.io/docs/regex/faq#known-gaps).
+
+| Syntax | Infers |
+| - | - |
+| `abc` | `"abc"` |
+| no `^` or `$` | the type padded with `` `${string}` `` on that side |
+| `a\|b` | `"a" \| "b"` |
+| `?`, `{2}`, `{2,3}` | every allowed repetition |
+| `+`, `{2,}` | the required repetitions followed by `` `${string}` `` |
+| `*` | `""`, or one repetition followed by `` `${string}` `` |
+| `\d`, `[0-9]` | `` `${number}` `` |
+| `[abc]` | `"a" \| "b" \| "c"` |
+| `.`, `\w`, `\W`, `\s`, `\S`, `\D`, `\p{…}`, `[^…]`, ranges like `[a-z]` | `string` |
+| `\b`, `\B`, `(?=…)`, `(?!…)`, `(?<=…)`, `(?<!…)` | nothing |
+| `(…)`, `(?<name>…)` | the group's type, plus a capture |
+| `\1`, `\k<name>` | whatever the referenced group matched |
+| `(?i:…)`, `(?-i:…)` | the letters inside with or without their case variants |
+| an escaped character like `\.` | the character itself |
+
+Lazy quantifiers like `+?` infer the same type as their greedy versions.
+
+## Anchors
+
+An expression without `^` or `$` can match anywhere in a string, so its type is padded with `` `${string}` ``:
+
+```ts
+import { regex } from "arkregex"
+
+const unanchored = regex("abc")
+// const unanchored: Regex<`${string}abc${string}`, {}>
+
+const anchored = regex("^abc$")
+// const anchored: Regex<"abc", {}>
+```
+
+## Unions
+
+```ts
+const color = regex("^(red|green|blue)$")
+// const color: Regex<"red" | "green" | "blue", {
+//     captures: ["red"] | ["blue"] | ["green"];
+// }>
+```
+
+A branch can be empty:
+
+```ts
+const signed = regex("^(-|)1$")
+// const signed: Regex<"1" | "-1", {
+//     captures: ["-"] | [""];
+// }>
+```
+
+## Quantifiers
+
+Bounded quantifiers expand into every allowed repetition, so a large bound like `{0,60}` produces a union of 61 strings:
+
+```ts
+const range = regex("^a{2,3}$")
+// const range: Regex<"aa" | "aaa", {}>
+
+const optional = regex("^colou?r$")
+// const optional: Regex<"color" | "colour", {}>
+```
+
+Unbounded quantifiers keep the required repetitions and end in `` `${string}` ``. A `*` can also match nothing, so it adds `""`:
+
+```ts
+const atLeastTwo = regex("^a{2,}$")
+// const atLeastTwo: Regex<`aa${string}`, {}>
+
+const zeroOrMore = regex("^a*$")
+// const zeroOrMore: Regex<"" | `a${string}`, {}>
+```
+
+A bounded run of digits becomes `` `${number}` ``, plus `""` if it can repeat zero times. An unbounded run like `\d+` becomes `string`, since a long enough run of digits isn't a finite number:
+
+```ts
+const version = regex("^(\\d{1,3})\\.(\\d{1,3})$")
+// const version: Regex<`${number}.${number}`, {
+//     captures: [`${number}`, `${number}`];
+// }>
+
+const short = regex("^\\d{0,3}$")
+// const short: Regex<`${number}` | "", {}>
+
+const digits = regex("^\\d+$")
+// const digits: Regex<string, {}>
+```
+
+## Character sets
+
+A set of literal characters becomes a union of them, and a digit range becomes `` `${number}` ``. Any other range widens to `string`, since listing its characters would produce large unions:
+
+```ts
+const abc = regex("^[abc]$")
+// const abc: Regex<"a" | "b" | "c", {}>
+
+const digit = regex("^[0-9]$")
+// const digit: Regex<`${number}`, {}>
+
+const hex = regex("^[0-9a-f]+$")
+// const hex: Regex<string, {}>
+```
+
+Negated sets like `[^abc]` and classes like `.`, `\w`, `\s` and `\p{L}` also widen to `string`.
+
+## Escapes
+
+Write a regex escape like `\d` or `\.` with two backslashes in a JS string, and a character a JS string can represent itself, like a newline or `é`, with one. An escaped character infers as itself:
+
+```ts
+const price = regex("^\\$\\d+\\.\\d{2}$")
+// const price: Regex<`$${string}.${number}`, {}>
+
+const tab = regex("^a\tb$")
+// const tab: Regex<"a\tb", {}>
+```
+
+Writing `"\\n"` where `"\n"` would do is an [error](https://arktype.io/docs/regex/errors#escapes).
+
+## Captures
+
+Positional captures are inferred as a tuple. A group that may not participate in a match captures `undefined`:
+
+```ts
+const maybeB = regex("^a(b)?$")
+// const maybeB: Regex<"a" | "ab", {
+//     captures: ["b"] | [undefined];
+// }>
+```
+
+Captures are correlated with the branch that matched. A group in a branch that didn't match is `undefined`, so each tuple lines up with what `.exec()` returns:
+
+```ts
+const ab = regex("^(?:(a)|(b))$")
+
+type Captures = typeof ab.inferCaptures
+// type Captures = [undefined, "b"] | ["a", undefined]
+```
+
+## Named captures
+
+```ts
+const date = regex("^(?<year>\\d{4})-(?<month>\\d{2})-(?<day>\\d{2})$")
+
+type Names = typeof date.inferNamedCaptures
+// type Names = {
+//     year: `${number}`;
+//     month: `${number}`;
+//     day: `${number}`;
+// }
+```
+
+Named captures are correlated across branches the same way:
+
+```ts
+const unit = regex("^(?:(?<px>\\d+)px|(?<em>\\d+)em)$")
+
+type Names = typeof unit.inferNamedCaptures
+// type Names = {
+//     px: undefined;
+//     em: string;
+// } | {
+//     px: string;
+//     em: undefined;
+// }
+```
+
+## Backreferences
+
+A backreference matches the same string its group did, so it repeats that branch of the group's type:
+
+```ts
+const double = regex("^(a|b)\\1$")
+// const double: Regex<"bb" | "aa", {
+//     captures: ["a"] | ["b"];
+// }>
+
+const quoted = regex("^(?<q>'|\")x\\k<q>$")
+// const quoted: Regex<"\"x\"" | "'x'", {
+//     captures: ["'"] | ["\""];
+//     names: {
+//         q: "\"";
+//     } | {
+//         q: "'";
+//     };
+// }>
+```
+
+## Lookarounds
+
+Lookarounds and word boundaries check a position without consuming characters, so they don't change the type:
+
+```ts
+const getter = regex("^get(?=[A-Z])\\w+$")
+// const getter: Regex<`get${string}`, {}>
+```
+
+## Flags
+
+Flags are inferred, and `i` expands every letter to both cases:
+
+```ts
+const ok = regex("^ok$", "i")
+// const ok: Regex<"ok" | "oK" | "Ok" | "OK", {
+//     flags: "i";
+// }>
+```
+
+Flags must be written in alphabetical order (`"gi"`, not `"ig"`), the same order `RegExp#flags` returns them in. See [why](https://arktype.io/docs/regex/faq#why-is-my-flags-string-an-error).
+
+Modifiers apply `i` to part of an expression, or remove it:
+
+```ts
+const title = regex("^(?i:a)b$")
+// const title: Regex<"ab" | "Ab", {}>
+
+const strict = regex("^(?-i:a)b$", "i")
+// const strict: Regex<"ab" | "aB", {
+//     flags: "i";
+// }>
+```
+
+The `s` flag doesn't change inference, since `.` already infers `string`. The `m` flag is a [known gap](https://arktype.io/docs/regex/faq#known-gaps).
+
+## `.test()`
+
+`.test()` narrows its input to the expression's type:
+
+```ts
+const color = regex("^(red|green|blue)$")
+
+declare const input: string
+
+if (color.test(input)) {
+	const narrowed = input
+	// const narrowed: "red" | "green" | "blue"
+}
+```
+
+Only rely on the `true` branch. In the `false` branch, TypeScript removes the whole inferred type from the input, which also removes strings that didn't match whenever the type was widened. See [known gaps](https://arktype.io/docs/regex/faq#known-gaps).
+
+## `.exec()`
+
+`.exec()` returns a typed match, including `groups` and, with the `d` flag, `indices`:
+
+```ts
+const date = regex("^(?<year>\\d{4})-(?<month>\\d{2})-(?<day>\\d{2})$", "d")
+
+const match = date.exec("2026-10-07")
+
+if (match) {
+	const year = match.groups.year
+	// const year: `${number}`
+
+	const [start, end] = match.indices.groups.year
+	// const start: number
+}
+```
+
+Its type is [`inferExecArray`](https://arktype.io/docs/regex/types#regex).
+
+# Errors
+
+> Which mistakes in an expression are type errors, and which aren't checked.
+
+If `regex` can't parse an expression, the argument is a type error with a message saying why:
+
+```ts
+import { regex } from "arkregex"
+
+regex("a(b") // Missing )
+
+regex("+a") // Quantifier + requires a preceding token
+
+regex("(?<a>x)\\k<b>") // Group b does not exist
+```
+
+Most of these would also throw from `new RegExp()`. The rest are valid at runtime but rejected, usually because they're likely a mistake, like an anchor in the middle of a pattern. The others are listed under [what isn't checked](https://arktype.io/docs/regex/errors#what-isnt-checked).
+
+| Message | Example | `new RegExp()` |
+| - | - | - |
+| `Missing )`, `Missing ]`, `Missing >` | `"a(b"` | throws |
+| `Unmatched ) before b` | `"a)b"` | throws |
+| `Quantifier + requires a preceding token` | `"+a"` | throws |
+| `A regex cannot end with \` | `"a\\"` | throws |
+| `Capture group <> requires a name` | `"(?<>a)"` | throws |
+| `literal ? must be escaped at the start of a group` | `"(?i)"` | throws |
+| `Modifier flag x must be 'i', 'm' or 's'` | `"(?x:a)"` | throws |
+| `Modifier i cannot appear multiple times in a single group` | `"(?ii:a)"` | throws |
+| `Modifiers can include at most one '-' to negate subsequent flags` | `"(?i-m-s:a)"` | throws |
+| `- must be followed by the modifier flag to negate ('i', 'm' or 's')` | `"(?-:a)"` | throws |
+| `Group b does not exist` | `"(?<a>x)\\k<b>"` | throws |
+| `Group 2 does not exist` | `"(a)\\2"` | throws with `u` or `v`; otherwise `\2` is an octal escape |
+| `\k must be followed by a named reference like <name>` | `"\\ka"` | throws with `u`, `v` or a named group; otherwise matches `ka` |
+| `\p must be followed by a property like \p{Emoji_Presentation}` | `"\\p"` | throws with `u` or `v`; otherwise matches `p` |
+| `Quantifier {1.5} must use natural numbers` | `"a{1.5}"` | throws with `u` or `v`; otherwise matches the text `a{1.5}` |
+| `Escape preceding q is unnecessary and should be removed.` | `"\\q"` | throws with `u` or `v`; otherwise matches `q` |
+| `Reference to incomplete group '1' has no effect` | `"(a\\1)"` | valid; the reference matches `""` |
+| `Anchor ^ may not appear mid-pattern` | `"a^b"` | valid |
+| `Empty character set [] is unsatisfiable` | `"[]"` | valid; never matches |
+| `\n should be specified with a single backslash like regex('\n')` | `"\\n"` | valid |
+| `\cX notation is not supported. Use hex (\x) or unicode (\u) instead.` | `"\\cJ"` | valid |
+
+## Escapes
+
+Escaping a character with no special meaning is an error, as is writing a character a JS string can represent itself with a regex escape. Write `"\n"`, `"\t"`, `"\x41"` or `"\u00e9"` with one backslash:
+
+```ts
+import { regex } from "arkregex"
+
+regex("\\q") // Escape preceding q is unnecessary and should be removed.
+
+regex("\\n") // \n should be specified with a single backslash like regex('\n')
+```
+
+## What isn't checked
+
+Some valid patterns are rejected:
+
+- `\cX` control escapes, and `\/`, which a string doesn't need (write `/`).
+- `\}`, which the `u` and `v` flags require outside a character class. Write `[}]` instead.
+- `^` or `$` in the middle of a pattern, even with the `m` flag.
+- A reference to a group defined later, like `"\\k<a>(?<a>x)"`.
+- Flags out of alphabetical order, like `"ig"`. Write `"gi"`.
+
+Some patterns that `new RegExp()` throws on aren't caught:
+
+- Ranges out of order, like `"[z-a]"`.
+- Duplicate group names in the same branch, like `"(?<a>x)(?<a>y)"`.
+- Syntax that only throws with the `u` or `v` flag, like `"\\-"`, `"\\p{Foo}"` or `"a{1,b}"`.
+
+Quantifier bounds out of order, like `"a{2,1}"`, are an error, but only `Type instantiation is excessively deep and possibly infinite`.
+
+The `v` flag's nested classes and set operations, like `[[a-z]--[aeiou]]`, aren't parsed. They aren't errors, but see [known gaps](https://arktype.io/docs/regex/faq#known-gaps).
+
+## Escape hatch
+
+To use a pattern ArkRegex rejects or can't infer, type it yourself with [`regex.as`](https://arktype.io/docs/regex/types#regexas).
+
+# Types
+
+> The Regex type and its members, plus regex.infer, regex.parse, regex.validate and regex.as.
+
+## `Regex`
+
+`regex()` returns a `RegExp` typed as `Regex<pattern, ctx>`, where `pattern` is the strings it matches and `ctx` is an object with optional `flags`, `captures` and `names`. `Regex` extends `RegExp`, so it can be passed anywhere a `RegExp` is expected.
+
+| Member | Type |
+| - | - |
+| `infer` | `pattern` |
+| `inferCaptures` | the positional captures as a tuple |
+| `inferNamedCaptures` | the named captures as an object |
+| `inferExecArray` | what `.exec()` returns on a match |
+| `flags` | the flags string, like `"gi"` |
+| `test(s)` | narrows `s` to `pattern` |
+| `exec(s)` | `inferExecArray \| null` |
+
+The `infer` members exist only in types: read them with `typeof`. At runtime they're `undefined`.
+
+```ts
+import { regex } from "arkregex"
+
+const date = regex("^(?<year>\\d{4})-(?<month>\\d{2})$")
+
+type Pattern = typeof date.infer
+// type Pattern = `${number}-${number}`
+
+type Captures = typeof date.inferCaptures
+// type Captures = [`${number}`, `${number}`]
+
+type Names = typeof date.inferNamedCaptures
+// type Names = {
+//     year: `${number}`;
+//     month: `${number}`;
+// }
+```
+
+`Regex<pattern>` as a parameter type accepts any expression whose inferred type is assignable to `pattern`. A `Regex` with no arguments accepts any `regex()` result, but not a plain `RegExp`:
+
+```ts
+import { regex, type Regex } from "arkregex"
+
+const majorMinor = (r: Regex<`${number}.${number}`>) => r
+
+const version = regex("^(\\d{1,3})\\.(\\d{1,3})$")
+const tag = regex("^v(\\d{1,3})$")
+
+majorMinor(version)
+
+majorMinor(tag) // Regex<`v${number}`, ...> is not assignable to Regex<`${number}.${number}`>
+```
+
+## `regex.infer`
+
+Infers the pattern of an expression without creating one. An optional second argument passes flags:
+
+```ts
+import { regex } from "arkregex"
+
+type Version = regex.infer<"^(\\d{1,3})\\.(\\d{1,3})$">
+// type Version = `${number}.${number}`
+
+type Ok = regex.infer<"^ok$", "i">
+// type Ok = "OK" | "Ok" | "oK" | "ok"
+```
+
+## `regex.parse` and `regex.validate`
+
+`regex.parse` gives the full `Regex` type, or the error message if the expression is invalid. `regex.validate` is the parameter type `regex` uses to report that message. Together they let you write your own wrappers:
+
+```ts
+import { regex } from "arkregex"
+
+const anchored = <src extends string>(
+	src: regex.validate<src>
+): regex.parse<`^${src}$`> => regex.as(`^${src}$`) as never
+
+const ab = anchored("a(b)")
+// const ab: Regex<"ab", {
+//     captures: ["b"];
+// }>
+```
+
+## `regex.as`
+
+If an expression is too long or complex for TypeScript to infer (e.g. you see `Type instantiation is excessively deep`), or uses syntax ArkRegex [rejects](https://arktype.io/docs/regex/errors#what-isnt-checked), type it yourself with `regex.as`. It skips parsing and validation entirely:
+
+```ts
+import { regex } from "arkregex"
+
+const version = regex.as<`v${number}`, { captures: [`${number}`] }>("^v(\\d+)$")
+// const version: Regex<`v${number}`, {
+//     captures: [`${number}`];
+// }>
+```
+
+The flags argument isn't read for types. If you pass flags, declare them in `ctx` too, so `.flags` and `.exec()` are typed to match:
+
+```ts
+const newline = regex.as<"\n", { flags: "g" }>("^\\cJ$", "g")
+// const newline: Regex<"\n", {
+//     flags: "g";
+// }>
+```
+
+With no type arguments, `regex.as` returns `Regex<string>`.
+
+# ArkType
+
+> How ArkType infers its regex literals and accepts regex() values as definitions.
+
+`arktype` uses ArkRegex to infer its regex literals, and re-exports `regex` and the `Regex` type, so there's nothing extra to install:
+
+```ts
+import { regex, type } from "arktype"
+
+const ZipCode = type("/^\\d{5}$/")
+// const ZipCode: Type<`${number}`, {}>
+```
+
+Like `new RegExp()`, a regex literal matches anywhere in a string unless you anchor it with `^` and `$`, and its type is padded to match:
+
+```ts
+const HasAbc = type("/abc/")
+// const HasAbc: Type<`${string}abc${string}`, {}>
+```
+
+## Flags
+
+A regex literal in a string definition can't have flags:
+
+```ts
+type("/^ok$/i") // 'i' is not allowed here
+```
+
+To use flags, pass a `regex()` value instead.
+
+## `regex()` definitions
+
+A `Regex` can be used directly as a definition, with or without flags:
+
+```ts
+const Ok = type(regex("^ok$", "i"))
+// const Ok: Type<"ok" | "oK" | "Ok" | "OK", {}>
+
+const Address = type({
+	street: "string",
+	zip: regex("^\\d{5}(-\\d{4})?$")
+})
+
+type Address = typeof Address.infer
+// type Address = {
+//     street: string;
+//     zip: `${number}` | `${number}-${number}`;
+// }
+```
+
+A native `RegExp` like `/^ok$/i` is also a valid definition, but infers `string`: TypeScript gives `/…/` literals no type beyond `RegExp`.
+
+## e(x)ec mode
+
+Prefix a regex literal with `x` to validate the string and then parse it into the result of `.exec()`. The definition is a [morph](https://arktype.io/docs/intro/morphs-and-more) from the string to its match:
+
+```ts
+const Birthday = type("x/^(?<month>\\d{2})-(?<day>\\d{2})-(?<year>\\d{4})$/")
+
+type Input = typeof Birthday.inferIn
+// type Input = `${number}-${number}-${number}`
+
+const match = Birthday.assert("05-21-1993")
+
+const month = match.groups.month
+// const month: `${number}`
+```
+
+At runtime, `month` is `"05"`.
+
+See [string patterns](https://arktype.io/docs/primitives#string-patterns) for how regex literals fit with ArkType's other string constraints.
+
+# FAQ
+
+> Why some expressions infer string or fail to infer, and the cases ArkRegex currently gets wrong.
+
+## Why is a range like `[a-z]` inferred as `string`?
+
+A range of letters would need a union with a member for every combination of characters, which grows too fast for TypeScript to handle. Digit ranges like `[0-9]` become `` `${number}` `` instead, and small sets like `[abc]` become a union:
+
+```ts
+import { regex } from "arkregex"
+
+const lower = regex("^[a-z]{3}$")
+// const lower: Regex<string, {}>
+
+const abc = regex("^[abc]$")
+// const abc: Regex<"a" | "b" | "c", {}>
+```
+
+## Which patterns infer the wrong type?
+
+An inferred type is meant to include every string the expression matches. These currently don't:
+
+- `\d` next to an unanchored start or end of a pattern, or followed by `.` or `\w` at the end of a group, infers only `` `${number}` ``. `regex("\\d")` and ArkType's `type("/\\d/")` both infer `` `${number}` ``, but match `"abc1"`.
+- A bounded run of more than 308 digits, like `\d{309}`, infers `` `${number}` ``, which can't hold a number that large. An unbounded run like `\d+` infers `string`.
+- The `i` flag isn't applied to character sets, and a backreference repeats its group's exact case: `regex("^[ab]$", "i")` infers `"a" | "b"` but matches `"A"`, and `regex("^(a)\\1$", "i")` infers `"aa" | "AA"` but matches `"aA"`.
+- The `v` flag's nested classes and set operations, like `[[a-z]--[aeiou]]`, aren't parsed.
+
+`.test()` narrows its input in both branches, so the `false` branch removes strings that didn't match whenever the inferred type was widened:
+
+```ts
+import { regex } from "arkregex"
+
+const digit = regex("^\\d$")
+
+declare const input: "1" | "12"
+
+if (!digit.test(input)) {
+	const rest = input
+	// const rest: never
+}
+```
+
+`"12"` doesn't match, but `"12"` is a `` `${number}` ``, so it's removed. The same happens with the `g` and `y` flags, where `.test()` starts from `lastIndex` and can return `false` for a string that matches.
+
+## Why is my flags string an error?
+
+Flags must be in alphabetical order, the order `RegExp#flags` returns them in. Write `"gi"`, not `"ig"`.
+
+## Why can't it infer my long RegExp?
+
+If your expression is especially long or complex, TypeScript won't be able to infer it. Bounded quantifiers expand into every allowed repetition, so `[ab]{20}` alone produces `Expression produces a union type that is too complex to represent`.
+
+If your types start to slow down or you see an error like that or `Type instantiation is excessively deep and possibly infinite`, type the expression yourself with [`regex.as`](https://arktype.io/docs/regex/types#regexas).
+
+## Why does `regex` take a string instead of a `/…/` literal?
+
+TypeScript gives a `/…/` literal the type `RegExp`, with no record of its source, so there's nothing to infer from. A string literal keeps its exact text.
+
+## Are `match`, `replace` and `matchAll` typed?
+
+No. `.test()` and `.exec()` are typed, but string methods like `"abc".match(re)` use TypeScript's standard `RegExp` types.
+
+## How is it tested?
+
+ArkRegex's types are [tested](https://github.com/arktypeio/arktype/blob/main/ark/regex/__tests__/regex.test.ts) and [benchmarked](https://github.com/arktypeio/arktype/blob/main/ark/regex/__tests__/regex.bench.ts) with [Attest](https://arktype.io/docs/attest).
+
+If anything doesn't behave how you'd expect, please [create an issue](https://github.com/arktypeio/arktype/issues/new).

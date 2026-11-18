@@ -2,7 +2,8 @@ import { bench } from "@ark/attest"
 import { match, type } from "arktype"
 
 bench.baseline(() => {
-	type("never")
+	// resolve the keywords the benches use, as any program's first Type would
+	type("never | string | number | boolean | symbol | object")
 	match.case("never", () => {}).default("assert")
 	match({
 		never: () => {},
@@ -16,7 +17,7 @@ bench("case(3, define)", () =>
 		.case("-2", n => `${n}` as const)
 		.case("-3", n => `${n}` as const)
 		.default("assert")
-).types([2130, "instantiations"])
+).types([1497, "instantiations"])
 
 bench("case(10, define)", () =>
 	match
@@ -31,7 +32,7 @@ bench("case(10, define)", () =>
 		.case("8", n => `${n}` as const)
 		.case("9", n => `${n}` as const)
 		.default("assert")
-).types([7768, "instantiations"])
+).types([5585, "instantiations"])
 
 bench("match.in<t> cases define and invoke", () => {
 	const matcher = match
@@ -45,7 +46,7 @@ bench("match.in<t> cases define and invoke", () => {
 	const one = matcher(4)
 	const two = matcher(true)
 	return [zero, one, two]
-}).types([2715, "instantiations"])
+}).types([2736, "instantiations"])
 
 bench("record(3, define)", () =>
 	match({
@@ -54,7 +55,7 @@ bench("record(3, define)", () =>
 		"22": n => `${n}` as const,
 		default: "assert"
 	})
-).types([2483, "instantiations"])
+).types([2001, "instantiations"])
 
 bench("record(10, define)", () =>
 	match({
@@ -70,7 +71,7 @@ bench("record(10, define)", () =>
 		"-9n": n => `${n}` as const,
 		default: "assert"
 	})
-).types([7150, "instantiations"])
+).types([5284, "instantiations"])
 
 bench("record.in<t> define and invoke", () => {
 	const matcher = match.in<string | number | boolean>().match({
@@ -84,7 +85,7 @@ bench("record.in<t> define and invoke", () => {
 	const one = matcher(4)
 	const two = matcher(true)
 	return [zero, one, two]
-}).types([3396, "instantiations"])
+}).types([2684, "instantiations"])
 
 const invokedCases3 = match
 	.case("31", n => `${n}` as const)
@@ -96,7 +97,7 @@ bench("case(3, invoke)", () => {
 	invokedCases3(31)
 	invokedCases3(32)
 	invokedCases3(33)
-}).types([438, "instantiations"])
+}).types([443, "instantiations"])
 
 const invokedCases10 = match
 	.case("0n", n => `${n}` as const)
@@ -115,10 +116,10 @@ bench("case(10, invoke first)", () => {
 	invokedCases10(0n)
 	invokedCases10(1n)
 	invokedCases10(2n)
-}).types([1039, "instantiations"])
+}).types([1044, "instantiations"])
 
 bench("case(10, invoke last)", () => {
 	invokedCases10(7n)
 	invokedCases10(8n)
 	invokedCases10(9n)
-}).types([1038, "instantiations"])
+}).types([1043, "instantiations"])

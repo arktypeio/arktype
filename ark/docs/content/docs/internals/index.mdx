@@ -1,0 +1,34 @@
+---
+title: Architecture
+description: How ArkType is split into @ark/util, @ark/schema, arksets and arktype, and what each package owns.
+---
+
+<Callout type="warn" title="Not semver-stable">
+
+`@ark/schema` and `arksets/internal` change whenever `arktype` needs them to, so anything on these pages can break in a minor or patch release. That includes `.internal`, `select` and the schema format. If you import either directly, install the exact versions your `arktype` depends on. `arksets`' own functions are documented in [ArkSets](/docs/sets).
+
+</Callout>
+
+ArkType is four packages, each built on the one before it:
+
+| package       | owns                                                                                                                             | depends on                 |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| `@ark/util`   | Utilities every package shares, like `ParseError`, `Json` and the registry that lets compiled validators reference functions     |                            |
+| `@ark/schema` | Nodes: the schema format, node kinds, scopes, validation and the compiler behind it, `ArkErrors`, config and locales             | `@ark/util`                |
+| `arksets`     | Set algebra over nodes: intersecting them, reducing them as they're created, discriminating unions and generating JSON Schema    | `@ark/schema`              |
+| `arktype`     | The definition syntax (`"string > 5"`, object literals, tuple expressions), its type inference, `type`, `scope` and the keywords | all three, plus `arkregex` |
+
+When you call `type("string > 5")`, `arktype` parses the string into an `@ark/schema` node, `arksets` reduces it as it's created, and the node compiles itself into a validator. The Type you get back is that node:
+
+```ts
+const T = type("string > 5")
+
+T.json // { domain: "string", minLength: 6 }
+T.internal.kind // "intersection"
+```
+
+`arktype` imports `arksets` itself, so you never install or import `@ark/schema` or `arksets` to use ArkType. They're documented here for three cases:
+
+- **Inspecting a Type.** Read its node kinds, its `.json` and its references with [`select`](/docs/internals/nodes#select).
+- **Building a Type from data instead of syntax**, such as a converter from another schema format. Pass a schema to [`type.schema` or `rootSchema`](/docs/internals/schemas).
+- **Using `@ark/schema` without `arktype`.** Import `arksets` yourself, or see [what works without it](/docs/internals/sets).

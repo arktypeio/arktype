@@ -8,7 +8,6 @@ import {
 } from "@ark/util"
 import prettier from "@prettier/sync"
 import { type } from "arktype"
-import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
 import type { Completions } from "../cache/getCachedAssertions.ts"
 import {
@@ -24,6 +23,7 @@ import {
 	TypeAssertionMapping,
 	assertEqualOrMatching,
 	assertEquals,
+	assertIs,
 	assertSatisfies,
 	callAssertedFunction,
 	getThrownMessage,
@@ -86,7 +86,7 @@ export class ChainableAssertions implements AssertionRecord {
 	}
 
 	is(expected: unknown): this {
-		assert.equal(this.unversionedActual, expected)
+		assertIs(expected, this.unversionedActual)
 		return this
 	}
 

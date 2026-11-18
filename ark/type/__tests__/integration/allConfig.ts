@@ -53,6 +53,39 @@ configure({
 		WeakSet: {
 			description: "configured"
 		},
+		Int8Array: {
+			description: "configured"
+		},
+		Uint8Array: {
+			description: "configured"
+		},
+		Uint8ClampedArray: {
+			description: "configured"
+		},
+		Int16Array: {
+			description: "configured"
+		},
+		Uint16Array: {
+			description: "configured"
+		},
+		Int32Array: {
+			description: "configured"
+		},
+		Uint32Array: {
+			description: "configured"
+		},
+		Float32Array: {
+			description: "configured"
+		},
+		Float64Array: {
+			description: "configured"
+		},
+		BigInt64Array: {
+			description: "configured"
+		},
+		BigUint64Array: {
+			description: "configured"
+		},
 		ArrayBuffer: {
 			description: "configured"
 		},

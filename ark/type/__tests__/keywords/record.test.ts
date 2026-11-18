@@ -4,7 +4,7 @@ import {
 	writeIndivisibleMessage,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
-import { keywords, type } from "arktype"
+import { keywords, scope, type } from "arktype"
 
 contextualize(() => {
 	it("parsed", () => {
@@ -22,6 +22,25 @@ contextualize(() => {
 
 		attest(T.json).equals(Expected.json)
 		attest<typeof Expected.t>(T.t)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1600
+	it("invoked then piped to a definition", () => {
+		const T = type
+			.Record("string", "boolean")
+			.pipe(o => Object.keys(o))
+			.to("string[] > 0")
+
+		attest<string[]>(T.infer)
+		attest(T({ a: true })).equals(["a"])
+	})
+
+	it("invoked from a scope", () => {
+		const $ = scope({ flag: "boolean" })
+		const T = $.type.Record("string", "flag").or("flag[]")
+
+		attest(T.expression).snap("{ [string]: boolean } | boolean[]")
+		attest(T([true])).equals([true])
 	})
 
 	it("invoked validation error", () => {

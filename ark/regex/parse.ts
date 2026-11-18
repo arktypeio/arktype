@@ -1,4 +1,4 @@
-import type { Backslash, ErrorMessage, Scanner } from "@ark/util"
+import type { Backslash, contains, ErrorMessage, Scanner } from "@ark/util"
 import type { parseCharset } from "./charset.ts"
 import type { parseEscape } from "./escape.ts"
 import type { parseGroup } from "./group.ts"
@@ -20,7 +20,11 @@ export type next<s extends State> =
 		lookahead extends "." ? s.shiftQuantifiable<s, string, unscanned>
 		: lookahead extends Backslash ? parseEscape<s, unscanned>
 		: lookahead extends "|" ? s.finalizeBranch<s, unscanned>
-		: lookahead extends Anchor ? s.anchor<s, AnchorMarker<lookahead>, unscanned>
+		: lookahead extends Anchor ?
+			// with m, ^ and $ also match at line breaks, so they don't anchor the pattern
+			contains<s["flags"], "m"> extends true ?
+				s.shiftQuantifiable<s, "", unscanned>
+			:	s.anchor<s, AnchorMarker<lookahead>, unscanned>
 		: lookahead extends "(" ? parseGroup<s, unscanned>
 		: lookahead extends ")" ? s.popGroup<s, unscanned>
 		: lookahead extends QuantifyingChar ?

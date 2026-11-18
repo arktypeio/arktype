@@ -5,6 +5,7 @@ import Editor, { useMonaco } from "@monaco-editor/react"
 import { type } from "arktype"
 import type * as Monaco from "monaco-editor"
 import { loadWASM } from "onigasm"
+import { withBase } from "../../lib/basePath.ts"
 import React, {
 	useCallback,
 	useEffect,
@@ -12,11 +13,12 @@ import React, {
 	useState,
 	type RefObject
 } from "react"
+import { useTheme } from "../shell/ThemeToggle.tsx"
 import { setupCompletionProvider } from "./completions.ts"
 import { setupErrorLens } from "./errorLens.ts"
 import { executeCode, type ExecutionResult } from "./execute.ts"
 import { formatEditor } from "./format.ts"
-import { setupTextmateGrammar, theme } from "./highlights.ts"
+import { editorThemes, setupTextmateGrammar } from "./highlights.ts"
 import { setupHoverProvider } from "./hovers.ts"
 import { ParseResult } from "./ParseResult.tsx"
 import { RestoreDefault } from "./RestoreDefault.tsx"
@@ -36,7 +38,7 @@ let tsLanguageServiceInstance: Monaco.languages.typescript.TypeScriptWorker | nu
 
 const onigasmLoaded =
 	globalThis.window &&
-	loadWASM("/onigasm.wasm").catch(e => {
+	loadWASM(withBase("/onigasm.wasm")).catch(e => {
 		if (!String(e).includes("subsequent calls are not allowed")) throw e
 	})
 
@@ -46,7 +48,8 @@ const setupMonaco = async (
 ): Promise<Monaco.languages.typescript.TypeScriptWorker> => {
 	if (!monacoInitialized) {
 		await onigasmLoaded
-		monaco.editor.defineTheme("arkdark", theme)
+		for (const [name, theme] of Object.entries(editorThemes))
+			monaco.editor.defineTheme(name, theme)
 		if (!tsLanguageServiceInstance) {
 			const ts = await getInitializedTypeScriptService(
 				monaco,
@@ -63,12 +66,16 @@ const setupMonaco = async (
 	return tsLanguageServiceInstance!
 }
 
-const stripTypes = async (): Promise<string | undefined> => {
-	if (!tsLanguageServiceInstance) return
-
+const stripTypes = async (
+	monaco: typeof Monaco
+): Promise<string | undefined> => {
 	try {
-		const emitOutput =
-			await tsLanguageServiceInstance.getEmitOutput(editorFileUri)
+		// a worker client syncs the model as it's created, so a kept one would
+		// emit the code as it was then
+		const worker = await (
+			await monaco.languages.typescript.getTypeScriptWorker()
+		)(monaco.Uri.parse(editorFileUri))
+		const emitOutput = await worker.getEmitOutput(editorFileUri)
 		if (emitOutput.outputFiles.length) return emitOutput.outputFiles[0].text
 	} catch (e) {
 		console.error("Error transforming .ts to .js:", e)
@@ -76,6 +83,10 @@ const stripTypes = async (): Promise<string | undefined> => {
 }
 
 type LoadingState = "unloaded" | "loading" | "loaded"
+
+// below 900px the results stack under the editor
+const resultsGrid =
+	"grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,3fr)_minmax(0,2fr)] min-[900px]:grid-cols-[minmax(0,1fr)_min(600px,45%)] min-[900px]:grid-rows-1"
 
 export interface PlaygroundProps {
 	initialValue?: string
@@ -135,17 +146,16 @@ export const Playground = ({
 
 	const validateNow = useCallback(
 		async (code: string) => {
-			if (!tsLanguageServiceInstance) return
+			if (!tsLanguageServiceInstance || !monaco) return
 
 			setCurrentCode(code)
-			const stripped = await stripTypes()
+			const stripped = await stripTypes(monaco)
 
 			if (!stripped) return
 
-			const result = executeCode(stripped)
-			setValidationResult(result)
+			setValidationResult({ ...executeCode(stripped), source: code })
 		},
-		[tsLanguageServiceInstance]
+		[tsLanguageServiceInstance, monaco]
 	)
 
 	const shareCode = useCallback(() => {
@@ -175,16 +185,8 @@ export const Playground = ({
 
 	return (
 		<div
-			className={className}
-			style={{
-				display: "grid",
-				gridTemplateColumns: withResults ? "minmax(400px, 1fr) 600px" : "1fr",
-				gap: "1rem",
-				width: "100%",
-				height: "100%",
-				alignItems: "stretch",
-				...style
-			}}
+			className={`grid h-full w-full items-stretch gap-4 ${withResults ? resultsGrid : ""} ${className ?? ""}`}
+			style={style}
 		>
 			{loadingState === "loaded" && monaco ?
 				<>
@@ -226,6 +228,7 @@ const PlaygroundEditor = React.memo(
 		shareCode,
 		withResults
 	}: PlaygroundEditorProps) => {
+		const theme = useTheme()
 		const handleChange = useCallback(
 			(code: string | undefined) => {
 				if (code !== undefined) validateNow(code)
@@ -268,7 +271,7 @@ const PlaygroundEditor = React.memo(
 					defaultLanguage="typescript"
 					defaultValue={defaultValue}
 					path={editorFileUri}
-					theme="arkdark"
+					theme={theme === "light" ? "arklight" : "arkdark"}
 					options={{
 						minimap: { enabled: false },
 						scrollBeyondLastLine: false,
@@ -278,7 +281,8 @@ const PlaygroundEditor = React.memo(
 						automaticLayout: true,
 						cursorBlinking: "smooth",
 						cursorSmoothCaretAnimation: "on",
-						fontFamily: "'Cascadia Code',Consolas,'Courier New',monospace",
+						// next/font hashes the family name, so read it from the page
+						fontFamily: `${getComputedStyle(document.documentElement).getPropertyValue("--font-cascadia")}, monospace`,
 						padding: {
 							top: 16
 						}
@@ -314,7 +318,7 @@ const PlaygroundLoader = () => (
 const PlaygroundResults = (result: PlaygroundResultsProps) => (
 	<div className="flex flex-col h-full gap-4">
 		<div className="flex-[2] min-h-0">
-			<ParseResult {...result} />
+			<ParseResult {...result} source={result.source ?? ""} />
 		</div>
 		<div className="flex-[1] min-h-0">
 			<TraverseResult {...result} />

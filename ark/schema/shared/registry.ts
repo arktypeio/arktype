@@ -1,4 +1,9 @@
-import { register, registry, type NonNegativeIntegerLiteral } from "@ark/util"
+import {
+	nameOf,
+	register,
+	registry,
+	type NonNegativeIntegerLiteral
+} from "@ark/util"
 import type { ArkSchemaRegistry } from "../config.ts"
 
 let _registryName = "$ark"
@@ -17,6 +22,9 @@ export const reference = (name: string): RegisteredReference =>
 export const registeredReference = (
 	value: object | symbol
 ): RegisteredReference => reference(register(value))
+
+export const namedReference = (value: object | symbol): RegisteredReference =>
+	reference(nameOf(value))
 
 export type RegisteredReference<to extends string = string> =
 	`$ark${"" | NonNegativeIntegerLiteral}.${to}`

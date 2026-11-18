@@ -1,11 +1,12 @@
 {
 	"title": "Integrations",
 	"pages": [
-		"[Standard Schema](/docs/integrations#standard-schema)",
-		"[JSON Schema](/docs/integrations#json-schema)",
 		"[tRPC](/docs/integrations#trpc)",
-		"[drizzle](/docs/integrations#drizzle)",
-		"[react-hook-form](/docs/integrations#react-hook-form)",
-		"[hono](/docs/integrations#hono)"
+		"[oRPC](/docs/integrations#orpc)",
+		"[Drizzle](/docs/integrations#drizzle)",
+		"[React Hook Form](/docs/integrations#react-hook-form)",
+		"[Hono](/docs/integrations#hono)",
+		"[MCP SDK](/docs/integrations#mcp-sdk)",
+		"[AI SDK](/docs/integrations#ai-sdk)"
 	]
 }

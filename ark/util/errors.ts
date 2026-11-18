@@ -1,3 +1,4 @@
+import type { Fn } from "./functions.ts"
 import type { brand } from "./generics.ts"
 import type { CastableBase } from "./records.ts"
 
@@ -24,7 +25,9 @@ export const throwParseError: (message: string) => never = message =>
  *  TypeScript won't suggest strings beginning with a space as properties.
  *  Useful for symbol-like string properties.
  */
-export const noSuggest = <s extends string>(s: s): noSuggest<s> => ` ${s}`
+// parenthesized (kept by `satisfies`) so it compiles eagerly
+export const noSuggest = (<s extends string>(s: s): noSuggest<s> =>
+	` ${s}`) satisfies Fn
 
 /**
  *  TypeScript won't suggest strings beginning with a space as properties.

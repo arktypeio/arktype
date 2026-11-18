@@ -17,13 +17,9 @@ contextualize(() => {
 			attest(T.allows(["foo", "bar"])).equals(true)
 			attest(T(["foo", "bar"])).snap(["foo", "bar"])
 			attest(T.allows(["foo", "bar", 5])).equals(false)
-			attest(T(["foo", "bar", 5]).toString()).snap(
-				"value at [2] must be a string (was a number)"
-			)
+			attest(T(["foo", "bar", 5]).toString()).snap("[2] must be a string")
 			attest(T.allows([5, "foo", "bar"])).equals(false)
-			attest(T([5, "foo", "bar"]).toString()).snap(
-				"value at [0] must be a string (was a number)"
-			)
+			attest(T([5, "foo", "bar"]).toString()).snap("[0] must be a string")
 		})
 
 		it("nested", () => {
@@ -34,13 +30,9 @@ contextualize(() => {
 			attest(T.allows([["foo"]])).equals(true)
 			attest(T([["foo"]])).snap([["foo"]])
 			attest(T.allows(["foo"])).equals(false)
-			attest(T(["foo"]).toString()).snap(
-				"value at [0] must be an array (was string)"
-			)
+			attest(T(["foo"]).toString()).snap("[0] must be an array")
 			attest(T.allows([["foo", 5]])).equals(false)
-			attest(T([["foo", 5]]).toString()).snap(
-				"value at [0][1] must be a string (was a number)"
-			)
+			attest(T([["foo", 5]]).toString()).snap("[0][1] must be a string")
 		})
 
 		it("tuple expression", () => {
@@ -61,6 +53,12 @@ contextualize(() => {
 			attest(T.expression).snap("{ a: string }[]")
 		})
 
+		it("never", () => {
+			const T = type("never[]")
+			attest<never[]>(T.infer)
+			attest(T.expression).snap("never[]")
+		})
+
 		it("incomplete token", () => {
 			// @ts-expect-error
 			attest(() => type("string[")).throwsAndHasTypeError(
@@ -76,7 +74,7 @@ contextualize(() => {
 			attest(T.expression).snap("[]")
 			attest(T.json).snap({ proto: "Array", exactLength: 0 })
 			attest(T([])).equals([])
-			attest(T([1]).toString()).snap("must be exactly length 0 (was 1)")
+			attest(T([1]).toString()).snap("must be exactly length 0")
 		})
 
 		it("shallow", () => {
@@ -85,19 +83,16 @@ contextualize(() => {
 			attest(T.allows(["", 0])).equals(true)
 			attest(T(["", 0])).snap(["", 0])
 			attest(T.allows([true, 0])).equals(false)
-			attest(T([true, 0]).toString()).snap(
-				"value at [0] must be a string (was boolean)"
-			)
+			attest(T([true, 0]).toString()).snap("[0] must be a string")
 			attest(T.allows([0, false])).equals(false)
-			attest(T([0, false]).toString())
-				.snap(`value at [0] must be a string (was a number)
-value at [1] must be a number (was boolean)`)
+			attest(T([0, false]).toString()).snap(`[0] must be a string
+[1] must be a number`)
 			// too short
 			attest(T.allows([""])).equals(false)
-			attest(T([""]).toString()).snap("must be exactly length 2 (was 1)")
+			attest(T([""]).toString()).snap("must be exactly length 2")
 			// too long
 			attest(T.allows(["", 0, 1])).equals(false)
-			attest(T(["", 0, 1]).toString()).snap("must be exactly length 2 (was 3)")
+			attest(T(["", 0, 1]).toString()).snap("must be exactly length 2")
 			// non-array
 			attest(
 				T.allows({
@@ -112,7 +107,7 @@ value at [1] must be a number (was boolean)`)
 					0: "",
 					1: 0
 				}).toString()
-			).snap("must be an array (was object)")
+			).snap("must be an array")
 		})
 
 		it("nested", () => {
@@ -133,9 +128,7 @@ value at [1] must be a number (was boolean)`)
 			attest(T(valid)).equals(valid)
 			const invalid = [["", 0], [{ a: 0n, b: [undefined] }]]
 			attest(T.allows(invalid)).equals(false)
-			attest(T(invalid).toString()).snap(
-				"value at [1][0].b[0] must be null (was undefined)"
-			)
+			attest(T(invalid).toString()).snap("[1][0].b[0] must be null")
 		})
 
 		it("optional tuple", () => {
@@ -143,12 +136,8 @@ value at [1] must be a number (was boolean)`)
 			attest<[string?]>(T.infer)
 			attest(T([])).equals([])
 			attest(T(["foo"])).equals(["foo"])
-			attest(T([5]).toString()).snap(
-				"value at [0] must be a string (was a number)"
-			)
-			attest(T(["foo", "bar"]).toString()).snap(
-				"must be at most length 1 (was 2)"
-			)
+			attest(T([5]).toString()).snap("[0] must be a string")
+			attest(T(["foo", "bar"]).toString()).snap("must be at most length 1")
 		})
 
 		it("optional string-embedded tuple", () => {
@@ -270,6 +259,71 @@ value at [1] must be a number (was boolean)`)
 		})
 	})
 
+	describe("length bounds", () => {
+		it("min", () => {
+			const T = type("number[] > 1")
+			attest(T.expression).snap("number[] >= 2")
+			attest(T.description).snap("number[] at least length 2")
+		})
+
+		it("max", () => {
+			const T = type("number[] < 5")
+			attest(T.expression).snap("number[] <= 4")
+			attest(T.description).snap("number[] at most length 4")
+		})
+
+		it("range", () => {
+			const T = type("0 < number[] <= 5")
+			attest(T.expression).snap("1 <= number[] <= 5")
+			attest(T.description).snap("number[] at most length 5 and non-empty")
+			attest(type.raw(T.expression).json).equals(T.json)
+		})
+
+		it("exact", () => {
+			const T = type("number[] == 1")
+			attest(T.expression).snap("number[] == 1")
+			attest(T.description).snap("number[] exactly length 1")
+		})
+
+		it("implied by tuple", () => {
+			attest(type(["number"]).expression).snap("[number]")
+			attest(type(["number", "number?"]).expression).snap("[number, number?]")
+			attest(type(["string", "...", "number[]"]).expression).snap(
+				"[string, ...number[]]"
+			)
+		})
+
+		it("narrower than tuple", () => {
+			const T = type(["number", "number?"]).and("unknown[] == 1")
+			attest(T.expression).snap("[number, number?] == 1")
+			attest(T.description).snap("[number, number?] exactly length 1")
+			attest(
+				type(["string", "...", "number[]"]).and("unknown[] > 3").expression
+			).snap("[string, ...number[]] >= 4")
+		})
+
+		it("minimum variadic length", () => {
+			const T = type(["number", "...", "number[]"])
+			attest(T.expression).snap("number[] >= 1")
+			attest(type("number[] > 0").expression).equals(T.expression)
+		})
+
+		it("with props", () => {
+			const T = type({ foo: "string" }).and("number[] > 1")
+			attest(T.expression).snap("{ foo: string } & number[] >= 2")
+		})
+
+		it("nested", () => {
+			attest(type("number[] > 1").array().expression).snap("(number[] >= 2)[]")
+			attest(type(["number"]).array().expression).snap("[number][]")
+		})
+
+		it("union", () => {
+			const T = type("number[] > 1 | string[] < 1")
+			attest(T.expression).snap("number[] >= 2 | string[] == 0")
+		})
+	})
+
 	it("reduces minLength", () => {
 		const T = type(["number", "number", "...", "number[]", "number"])
 		const Expected = type("number[]>=3")
@@ -278,9 +332,28 @@ value at [1] must be a number (was boolean)`)
 
 	it("multiple errors", () => {
 		const StringArray = type("string[]")
-		attest(StringArray([1, 2]).toString())
-			.snap(`value at [0] must be a string (was a number)
-value at [1] must be a string (was a number)`)
+		attest(StringArray([1, 2]).toString()).snap(`[0] must be a string
+[1] must be a string`)
+	})
+
+	it("reports each element of a pattern's array at the check it failed", () => {
+		const Patterns = type(/^a+$/).array()
+		// a Type is compiled when it's used again
+		Patterns([])
+		attest(Patterns([1, "b", "a"]).toString()).snap(`[0] must be a string
+[1] must be matched by ^a+$`)
+	})
+
+	it("remembers the string a pattern rejected, not one read after it", () => {
+		const Patterns = type(/^a+$/).array()
+		Patterns([])
+		let reads = 0
+		const shifting = Object.defineProperty([], 0, {
+			get: () => (reads++ ? "a" : "b"),
+			enumerable: true
+		})
+		attest(Patterns.allows(shifting)).equals(false)
+		attest(Patterns(["a", 5]).toString()).snap("[1] must be a string")
 	})
 
 	it("accepts arrays from another realm", () => {
@@ -294,7 +367,7 @@ value at [1] must be a string (was a number)`)
 		// Don't use .equals on the array itself — foreign-realm arrays have a
 		// different constructor, which attest treats as unequal.
 		const result = T(foreign)
-		attest(result === foreign).equals(true)
+		attest(result).is(foreign)
 		attest([...(result as number[])]).equals([1, 2, 3])
 	})
 })

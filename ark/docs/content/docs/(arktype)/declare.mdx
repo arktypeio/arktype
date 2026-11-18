@@ -1,12 +1,11 @@
 ---
 title: Declare
+description: Define a Type that must match an existing TypeScript type exactly.
 ---
 
-If your ArkType definitions are your source of truth, it's easy to infer out the type with an expression like `type User = typeof User.infer`.
+If your ArkType definitions are your source of truth, infer your TypeScript types from them: `type User = typeof User.infer`.
 
-But what if you need to define a Type matching a pre-existing external type?
-
-The `declare` API allows just that, with autocomplete for object keys and clear, type-level errors for mismatches:
+If the TypeScript type comes first, `type.declare` checks that a definition matches it. Object keys are autocompleted, and a definition that is too wide _or_ too narrow is a type error:
 
 ```ts
 // @errors: 2322
@@ -19,32 +18,38 @@ const T = type.declare<Expected>().type({
 
 const Bad = type.declare<Expected>().type({
 	a: "string",
-	// will error if the inferred type is too wide *or* too narrow
+	// narrower than number
 	"b?": "1"
 })
 ```
 
-Optionality can also be expressed via the property value instead of the key:
+Optionality can also be expressed in the value instead of the key:
 
 ```ts
 type Expected = { a: string; b?: number }
 
 const T = type.declare<Expected>().type({
 	a: "string",
-	// equivalent to "b?": "number"
+	// same as "b?": "number"
 	b: "number?"
 })
 ```
 
-### `side`
+`declare` works with any definition, not only objects:
 
-If your Type contains morphs or default values, its input and output will be inferred differently.
+```ts
+const Name = type.declare<string>().type("string")
 
-You can see this represented when you hover a Type like `string.numeric.parse` and see `(In: string) => To<number>`.
+const Entry = type.declare<[string, number]>().type(["string", "number"])
+```
 
-By default, `declare` does not allow the type you define to include morphs (unless you explicitly add them to the declared generic argument).
+To reference your own aliases, use the `declare` method of your [scope](/docs/scopes), like `$.declare<User>().type(...)`.
 
-Passing a `side` config to `declare` can change this behavior:
+## `side`
+
+A Type with morphs or defaults has different input and output types. For example, `string.numeric.parse` accepts a `string` and returns a `number`.
+
+By default, `declare` compares your definition to the declared type as a whole, so a morph only matches if the declared type includes it. To compare only the input or output, pass `{ side: "in" }` or `{ side: "out" }`:
 
 ```ts
 // @errors: 2322
@@ -55,7 +60,7 @@ const Bad = type.declare<Expected>().type({
 	"b?": "number"
 })
 
-// passing a config object like { side: "in" | "out" } to validate that side
+// the output must match Expected
 const T = type.declare<Expected, { side: "out" }>().type({
 	a: "string.numeric.parse",
 	"b?": "number"

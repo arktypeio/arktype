@@ -14,7 +14,7 @@ defaults:
 jobs:
   core:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     steps:
       - name: Checkout repo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -27,9 +27,12 @@ jobs:
       - name: prChecks
         run: pnpm prChecks
 
+      - name: Test jitless
+        run: pnpm testJitless
+
   compatibility:
     needs: core
-    timeout-minutes: 20
+    timeout-minutes: 45
     strategy:
       matrix:
         node: [lts/*]
@@ -58,6 +61,20 @@ jobs:
       - name: Test
         run: pnpm testRepo
 
+  history:
+    needs: core
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Test history independence
+        run: pnpm testHistory --jobs 4
+
   tsVersionTasks:
     needs: core
     runs-on: ubuntu-latest
@@ -76,7 +93,7 @@ jobs:
 
   typescript:
     needs: tsVersionTasks
-    timeout-minutes: 20
+    timeout-minutes: 60
     strategy:
       matrix:
         task: ${{ fromJSON(needs.tsVersionTasks.outputs.tasks) }}
@@ -94,7 +111,10 @@ jobs:
         run: pnpm testTsVersions ${{ matrix.task }}
 
   prChecks:
-    needs: [compatibility, typescript]
+    needs:
+      - compatibility
+      - typescript
+      - history
     timeout-minutes: 1
     runs-on: ubuntu-latest
     steps:

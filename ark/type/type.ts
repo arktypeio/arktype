@@ -1,22 +1,24 @@
 import {
 	ArkErrors,
 	BaseRoot,
+	finalizeExport,
 	GenericRoot,
 	type BaseParseOptions,
 	type Morph,
 	type NodeSelector,
-	type Predicate,
 	type RootSchema,
 	type TypeMeta
 } from "@ark/schema"
 import {
 	Callable,
+	defineLazily,
 	Hkt,
 	type Constructor,
 	type array,
 	type conform
 } from "@ark/util"
 import type { distill } from "./attributes.ts"
+import { deferDefinition, deferUnion, deferUnits } from "./deferred.ts"
 import type { DeclarationParser } from "./declare.ts"
 import type { FnParser } from "./fn.ts"
 import type {
@@ -38,13 +40,15 @@ import type {
 import type {
 	ArgTwoOperator,
 	IndexZeroOperator,
-	TupleInfixOperator
+	TupleInfixOperator,
+	validatePredicate
 } from "./parser/tupleExpressions.ts"
-import type {
-	InternalScope,
-	ModuleParser,
-	Scope,
-	ScopeParser
+import {
+	$arkTypeRegistry,
+	type InternalScope,
+	type ModuleParser,
+	type Scope,
+	type ScopeParser
 } from "./scope.ts"
 import type { BaseType } from "./variants/base.ts"
 import type { instantiateType } from "./variants/instantiate.ts"
@@ -108,7 +112,13 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 		: zero extends "===" ? rest
 		: zero extends "instanceof" ? conform<rest, readonly Constructor[]>
 		: one extends TupleInfixOperator ?
-			one extends ":" ? [Predicate<distill.In<type.infer<zero, $>>>]
+			one extends ":" ?
+				[
+					validatePredicate<
+						type.infer<zero, $>,
+						distill.In<type.infer<zero, $>>
+					>
+				]
 			: one extends "=>" ? [Morph<distill.Out<type.infer<zero, $>>, unknown>]
 			: one extends "|>" ? [type.validate<rest[0], $>]
 			: one extends "@" ? [TypeMeta.MappableInput, NodeSelector?]
@@ -201,7 +211,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 * const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
 	 * len("foo") // 3
 	 * // TypeScript: boolean is not assignable to string | unknown[]
-	 * // Runtime (throws): must be a string or an object (was boolean)
+	 * // Runtime (throws): [0] must be a string or an array
 	 * len(true)
 	 */
 	fn: FnParser<$>
@@ -212,39 +222,38 @@ export class InternalTypeParser extends Callable<
 	TypeParserAttachments
 > {
 	constructor($: InternalScope) {
-		const attach: TypeParserAttachments = Object.assign(
-			{
-				errors: ArkErrors,
-				hkt: Hkt,
-				$: $ as never,
-				raw: $.parse as never,
-				module: $.constructor.module,
-				scope: $.constructor.scope,
-				declare: $.declare as never,
-				define: $.define as never,
-				match: $.match as never,
-				generic: $.generic as never,
-				schema: $.schema as never,
-				// this won't be defined during bootstrapping, but externally always will be
-				keywords: $.ambient as never,
-				unit: $.unit,
-				enumerated: $.enumerated,
-				instanceOf: $.instanceOf,
-				valueOf: $.valueOf,
-				or: $.or,
-				and: $.and,
-				merge: $.merge,
-				pipe: $.pipe,
-				fn: $.fn as never
-			} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>,
-			// also won't be defined during bootstrapping
-			$.ambientAttachments!
-		)
+		const attach = {
+			errors: ArkErrors,
+			hkt: Hkt,
+			$: $ as never,
+			raw: $.parse as never,
+			module: $.constructor.module,
+			scope: $.constructor.scope,
+			declare: $.declare as never,
+			define: $.define as never,
+			match: $.match as never,
+			generic: $.generic as never,
+			schema: $.schema as never,
+			// this won't be defined during bootstrapping, but externally always will be
+			keywords: $.ambient as never,
+			unit: ((value: unknown) =>
+				deferUnits([value], $) ?? $.unit(value)) as never,
+			enumerated: ((...values: unknown[]) =>
+				deferUnits(values, $) ?? $.enumerated(...values)) as never,
+			instanceOf: $.instanceOf,
+			valueOf: $.valueOf,
+			or: ((...branches: unknown[]) =>
+				deferUnion(branches, $) ?? ($.or as any)(...branches)) as never,
+			and: $.and,
+			merge: $.merge,
+			pipe: $.pipe,
+			fn: $.fn as never
+		} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>
 		super(
 			(...args) => {
 				if (args.length === 1) {
 					// treat as a simple definition
-					return $.parse(args[0])
+					return deferDefinition(args[0], $) ?? $.parse(args[0])
 				}
 				if (
 					args.length === 2 &&
@@ -270,10 +279,18 @@ export class InternalTypeParser extends Callable<
 				// part of the API as specified by the associated types
 				return $.parse(args)
 			},
-			{
-				attach
-			}
+			{ attach: attach as never }
 		)
+		// also won't be defined during bootstrapping
+		const typeAttachments = $arkTypeRegistry.typeAttachments
+		const resolve = (k: string) => {
+			const bound = $.bindKw(
+				typeAttachments![k as never] as BaseRoot | GenericRoot
+			)
+			// a resolved scope has already compiled the nodes bound before it
+			return $.resolved ? finalizeExport($, bound) : bound
+		}
+		for (const k in typeAttachments) defineLazily(this, k, resolve)
 	}
 }
 

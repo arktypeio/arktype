@@ -1,31 +1,28 @@
 import { InternalPrimitiveConstraint } from "../constraint.ts"
 import type { BaseRoot } from "../roots/root.ts"
+import type { NodeCompiler } from "../shared/compile.ts"
 import type {
 	BaseErrorContext,
-	BaseNormalizedSchema,
+	BaseNodeInput,
 	declareNode
 } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
-import { ToJsonSchema } from "../shared/toJsonSchema.ts"
-import type { TraverseAllows } from "../shared/traversal.ts"
-import { createLengthRuleParser, type LengthBoundableData } from "./range.ts"
+import { assertLengthRule, type LengthBoundableData } from "./range.ts"
 
 export declare namespace ExactLength {
 	export interface Inner {
 		readonly rule: number
 	}
 
-	export interface NormalizedSchema extends BaseNormalizedSchema {
+	export interface ExpandedSchema extends BaseNodeInput {
 		readonly rule: number
 	}
 
-	export type Schema = NormalizedSchema | number
+	export type Schema = ExpandedSchema | number
 
 	export interface ErrorContext
 		extends BaseErrorContext<"exactLength">,
@@ -33,11 +30,9 @@ export declare namespace ExactLength {
 
 	export type Declaration = declareNode<{
 		kind: "exactLength"
-		schema: Schema
-		normalizedSchema: NormalizedSchema
 		inner: Inner
 		prerequisite: LengthBoundableData
-		errorContext: ErrorContext
+		errorCtx: ErrorContext
 	}>
 
 	export type Node = ExactLengthNode
@@ -46,66 +41,37 @@ export declare namespace ExactLength {
 const implementation: nodeImplementationOf<ExactLength.Declaration> =
 	implementNode<ExactLength.Declaration>({
 		kind: "exactLength",
-		collapsibleKey: "rule",
+		bareKey: "rule",
 		keys: {
-			rule: {
-				parse: createLengthRuleParser("exactLength")
-			}
+			rule: {}
 		},
-		normalize: schema =>
-			typeof schema === "number" ? { rule: schema } : schema,
-		hasAssociatedError: true,
+		ownErr: true,
 		defaults: {
-			description: node => `exactly length ${node.rule}`,
-			actual: data => `${data.length}`
-		},
-		intersections: {
-			exactLength: (l, r, ctx) =>
-				Disjoint.init(
-					"unit",
-					ctx.$.node("unit", { unit: l.rule }),
-					ctx.$.node("unit", { unit: r.rule }),
-					{ path: ["length"] }
-				),
-			minLength: (exactLength, minLength) =>
-				exactLength.rule >= minLength.rule ?
-					exactLength
-				:	Disjoint.init("range", exactLength, minLength),
-			maxLength: (exactLength, maxLength) =>
-				exactLength.rule <= maxLength.rule ?
-					exactLength
-				:	Disjoint.init("range", exactLength, maxLength)
+			description: node => `exactly length ${node.rule}`
 		}
 	})
 
 export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLength.Declaration> {
-	traverseAllows: TraverseAllows<LengthBoundableData> = data =>
-		data.length === this.rule
-
-	readonly compiledCondition: string = `data.length === ${this.rule}`
-	readonly compiledNegation: string = `data.length !== ${this.rule}`
-	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable.internal
-	readonly expression: string = `== ${this.rule}`
-
-	reduceJsonSchema(
-		schema: JsonSchema.LengthBoundable
-	): JsonSchema.LengthBoundable {
-		switch (schema.type) {
-			case "string":
-				schema.minLength = this.rule
-				schema.maxLength = this.rule
-				return schema
-			case "array":
-				schema.minItems = this.rule
-				schema.maxItems = this.rule
-				return schema
-			default:
-				return ToJsonSchema.throwInternalOperandError("exactLength", schema)
-		}
+	constructor(
+		...args: ConstructorParameters<typeof InternalPrimitiveConstraint>
+	) {
+		super(...args)
+		assertLengthRule("exactLength", this.rule)
 	}
+
+	tAllows(data: LengthBoundableData): boolean {
+		return data.length === this.rule
+	}
+
+	jsCond(js: NodeCompiler, data: string): string {
+		return `${data}.length === ${this.rule}`
+	}
+
+	readonly implied: BaseRoot = $ark.kw.lengthBoundable.internal
+	readonly expression: string = `== ${this.rule}`
 }
 
 export const ExactLength = {
-	implementation,
+	impl: implementation,
 	Node: ExactLengthNode
 }

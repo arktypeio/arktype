@@ -1,13 +1,16 @@
 {
 	"title": "Type API",
 	"pages": [
-		"[from](/docs/type-api#from)",
-		"[in / out](/docs/type-api#in--out)",
-		"[extends](/docs/type-api#extends)",
-		"[equals](/docs/type-api#equals)",
-		"[overlaps](/docs/type-api#overlaps)",
-		"[extract / exclude](/docs/type-api#extract--exclude)",
-		"[distribute](/docs/type-api#distribute)",
-		"[toJsonSchema](/docs/type-api#tojsonschema)"
+		"[validation](/docs/type-api#validation)",
+		"[inference](/docs/type-api#inference)",
+		"[metadata](/docs/type-api#metadata)",
+		"[composition](/docs/type-api#composition)",
+		"[narrows and morphs](/docs/type-api#narrows-and-morphs)",
+		"[comparison](/docs/type-api#comparison)",
+		"[objects](/docs/type-api#objects)",
+		"[constraints](/docs/type-api#constraints)",
+		"[serialization](/docs/type-api#serialization)",
+		"[introspection](/docs/type-api#introspection)",
+		"[members of type](/docs/type-api#members-of-type)"
 	]
 }

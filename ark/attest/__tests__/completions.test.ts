@@ -13,6 +13,10 @@ type Ark = {
 	ark: "type"
 }
 
+type Ref = {
+	$ref: "#/a" | "#/b"
+}
+
 type Arks = {
 	ark: "string" | "semver" | "symbol"
 }
@@ -26,6 +30,11 @@ contextualize(() => {
 		attest({ ark: "t" } as Ark).completions({ t: ["type"] })
 		//@ts-expect-error
 		attest({ ark: "ty" } as Ark).completions({ ty: ["type"] })
+	})
+
+	it("punctuation", () => {
+		// @ts-expect-error
+		attest({ $ref: "#/" } as Ref).completions({ "#/": ["#/a", "#/b"] })
 	})
 
 	it(".type.completions", () => {

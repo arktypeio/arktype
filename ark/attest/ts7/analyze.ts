@@ -194,8 +194,13 @@ const getCompletions = (
 			)?.entries ?? []
 
 		completions[prefix] = entries
-			// names of optional properties are suffixed with "?"
-			.map(entry => entry.filterText ?? entry.name)
+			// names of optional properties are suffixed with "?", but a string's
+			// filter text can be just its last word, like "/a" for "#/a"
+			.map(entry =>
+				entry.filterText && entry.name.startsWith(entry.filterText) ?
+					entry.filterText
+				:	entry.name
+			)
 			.filter(name => name.startsWith(prefix) && name.length > prefix.length)
 	}
 

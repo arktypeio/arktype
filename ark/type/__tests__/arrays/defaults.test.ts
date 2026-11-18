@@ -1,5 +1,4 @@
 import { attest, contextualize } from "@ark/attest"
-import { Traversal } from "@ark/schema"
 import { type } from "arktype"
 import { defaultablePostOptionalMessage } from "arktype/internal/parser/tupleLiteral.ts"
 
@@ -15,10 +14,8 @@ contextualize(() => {
 		})
 		attest(T([])).equals([5])
 		attest(T([1])).equals([1])
-		attest(T([null]).toString()).snap(
-			"value at [0] must be a number (was null)"
-		)
-		attest(T([1, 2]).toString()).snap("must be at most length 1 (was 2)")
+		attest(T([null]).toString()).snap("[0] must be a number")
+		attest(T([1, 2]).toString()).snap("must be at most length 1")
 	})
 
 	it("string", () => {
@@ -32,12 +29,8 @@ contextualize(() => {
 		})
 		attest(T([])).equals(["foo"])
 		attest(T(["bar"])).snap(["bar"])
-		attest(T([false]).toString()).snap(
-			"value at [0] must be a string (was boolean)"
-		)
-		attest(T(["foo", "bar"]).toString()).snap(
-			"must be at most length 1 (was 2)"
-		)
+		attest(T([false]).toString()).snap("[0] must be a string")
+		attest(T(["foo", "bar"]).toString()).snap("must be at most length 1")
 	})
 
 	it("defaults following prefix", () => {
@@ -54,9 +47,7 @@ contextualize(() => {
 		attest(T(["", 7])).equals(["", 7])
 
 		attest(T([]).toString()).snap("must be non-empty")
-		attest(T(["foo", "bar"]).toString()).snap(
-			"value at [1] must be a number (was a string)"
-		)
+		attest(T(["foo", "bar"]).toString()).snap("[1] must be a number")
 	})
 
 	it("defaults preceding variadic", () => {
@@ -82,9 +73,7 @@ contextualize(() => {
 		attest(T([]).toString()).snap("must be non-empty")
 		// all positional elements including optionals
 		// must be specified before variadic elements
-		attest(T([5, 5]).toString()).snap(
-			"value at [1] must be a string (was a number)"
-		)
+		attest(T([5, 5]).toString()).snap("[1] must be a string")
 	})
 
 	it("empty array default in tuple literal", () => {
@@ -140,15 +129,7 @@ contextualize(() => {
 
 	it("compiled defaults use correct values", () => {
 		const T = type(["string = 'foo'"])
-		const internal = T.internal
 
-		// Call traverseApply directly with a Traversal context
-		// This exercises the JIT-compiled code path
-		const data: string[] = []
-		const ctx = new Traversal(data, internal.$.resolvedConfig)
-		internal.traverseApply(data, ctx)
-		const result = ctx.finalize(null)
-
-		attest(result).equals(["foo"])
+		attest(T([])).equals(["foo"])
 	})
 })

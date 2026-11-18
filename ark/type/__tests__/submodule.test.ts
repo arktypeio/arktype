@@ -13,6 +13,7 @@ import {
 	type Submodule,
 	type Type
 } from "arktype"
+import { spawnSync } from "node:child_process"
 
 contextualize.each(
 	"submodule",
@@ -101,9 +102,7 @@ contextualize.each(
 			attest(dateFrom("05-21-1993")).instanceOf(Date)
 			attest(dateFrom(new Date())).instanceOf(Date)
 
-			attest(dateFrom("foobar").toString()).snap(
-				'must be a parsable date (was "foobar")'
-			)
+			attest(dateFrom("foobar").toString()).snap("must be a parsable date")
 		})
 
 		it("allows unbound module in scope", () => {
@@ -414,6 +413,29 @@ contextualize.each(
 					foo: "a.b.c.d.e.f.g."
 				})
 			).completions({ "a.b.c.d.e.f.g.": ["a.b.c.d.e.f.g.alias"] })
+		})
+
+		it("a keyword read through a scope's aliases resolves as through arktype", () => {
+			// a keyword module's member read before arktype resolves the keyword
+			// resolves it in the module's own scope; writing its expression there
+			// reads the keyword again through arktype's, still resolving, and the
+			// member held that placeholder alias, which every later definition
+			// referencing the keyword then printed as `$parse`
+			const { status, stdout, stderr } = spawnSync(
+				process.execPath,
+				["--conditions", "ark-ts", "--input-type=module"],
+				{
+					cwd: import.meta.dirname,
+					encoding: "utf8",
+					input: `import { type } from "arktype"
+type.keywords.bigint.$.aliases.string.numeric.parse
+console.log(type(["string.numeric.parse", "[]"]).expression)`
+				}
+			)
+			if (status) throw new Error(stderr)
+			attest(stdout.trim()).equals(
+				type(["string.numeric.parse", "[]"]).expression
+			)
 		})
 	}
 )

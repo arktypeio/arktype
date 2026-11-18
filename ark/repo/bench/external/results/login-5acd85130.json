@@ -1,0 +1,38 @@
+{
+	"arktype b1": {
+		"min": 2494,
+		"gzip": 1140
+	},
+	"arktype b2": {
+		"min": 2058,
+		"gzip": 1037
+	},
+	"arktype b2 (development)": {
+		"min": 2890,
+		"gzip": 1453
+	},
+	"arktype b1 (optimizeErrors size)": {
+		"min": 2351,
+		"gzip": 1107
+	},
+	"arktype dynamic": {
+		"min": 260852,
+		"gzip": 82946
+	},
+	"valibot": {
+		"min": 3859,
+		"gzip": 1547
+	},
+	"zodMini": {
+		"min": 14345,
+		"gzip": 5127
+	},
+	"zod": {
+		"min": 85052,
+		"gzip": 25058
+	},
+	"ajv standalone (first error, no messages)": {
+		"min": 1813,
+		"gzip": 624
+	}
+}

@@ -1,0 +1,140 @@
+{
+	"measured": "lane/claims-update e89151ef9 (ArkType's source = lane/integrate fea8e68e0), every ArkType row by claim-all-work/finalrun.ts; moltar's are the medians moltar.log prints",
+	"moltar": {
+		"assertLoose arktype-b1": [66],
+		"assertStrict arktype-b1": [332],
+		"parseSafe arktype-b1": [184.6],
+		"parseStrict arktype-b1": [339]
+	},
+	"form": {
+		"ArkType (precompiled, default)": {
+			"min": 2551,
+			"gzip": 1168
+		}
+	},
+	"homepageSize": {
+		"login": {
+			"standalone": {
+				"min": 3177,
+				"gzip": 1484
+			}
+		},
+		"moltar": {
+			"standalone": {
+				"min": 3796,
+				"gzip": 1501
+			}
+		},
+		"shop": {
+			"standalone": {
+				"min": 25140,
+				"gzip": 6665
+			}
+		},
+		"saas": {
+			"standalone": {
+				"min": 55687,
+				"gzip": 11633
+			}
+		}
+	},
+	"sbCounts": {
+		"sb initialization|||arktype (precompiled)": [
+			42.469365, 42.351695, 42.42325
+		],
+		"sb validation|valid||arktype (precompiled)": [
+			6057.06023, 6057.04128, 6057.059235
+		],
+		"sb standard|valid|allErrors|arktype (precompiled)": [
+			6227.61205, 6221.245505, 6227.57924
+		],
+		"sb parsing|valid|allErrors|arktype (precompiled)": [
+			6090.619155, 6090.60993, 6090.669265
+		],
+		"sb validation|invalid||arktype (precompiled)": [
+			33.46342, 33.523, 33.416345
+		],
+		"sb parsing|invalid|allErrors|arktype (precompiled)": [
+			151.39321, 148.24221, 151.394255
+		],
+		"sb string|valid|date-time|arktype (precompiled)": [
+			484.873475, 484.87996, 484.802385
+		],
+		"sb standard|invalid|allErrors|arktype (precompiled)": [
+			21601.420380281692, 21608.562427244582, 21611.34478205128
+		],
+		"sb string|valid|email|arktype (precompiled)": [
+			653.465345, 653.46001, 653.47065
+		],
+		"sb string|valid|url|arktype (precompiled)": [
+			755.42622, 755.4598, 755.505715
+		],
+		"sb string|valid|uuid|arktype (precompiled)": [
+			1144.472795, 1144.462585, 1144.475055
+		],
+		"sb string|valid|ipv4|arktype (precompiled)": [
+			227.47541, 227.561385, 227.472235
+		],
+		"sb string|valid|ipv6|arktype (precompiled)": [
+			814.48125, 814.474655, 814.48002
+		],
+		"sb string|invalid|email|arktype (precompiled)": [
+			380.440005, 380.458555, 380.460075
+		],
+		"sb string|invalid|date-time|arktype (precompiled)": [
+			41.470625, 41.48012, 41.52814
+		],
+		"sb string|invalid|url|arktype (precompiled)": [
+			374.514955, 374.4637, 374.41323
+		],
+		"sb string|invalid|ipv4|arktype (precompiled)": [
+			43.503825, 43.4708, 43.47125
+		],
+		"sb string|invalid|uuid|arktype (precompiled)": [
+			23.53631, 23.506225, 23.46114
+		],
+		"sb string|invalid|ipv6|arktype (precompiled)": [
+			47.469915, 47.47161, 47.521295
+		]
+	},
+	"sbDownload": {
+		"bytes": 7062,
+		"gzipBytes": 2062
+	},
+	"suryCounts": {
+		"sury parse ArkType": [85.00007, 84.994335, 85.00117],
+		"sury build ArkType": [103.996975, 104.11043, 103.998185]
+	},
+	"surySize": {
+		"ArkType schema": {
+			"min": 2956,
+			"gzip": 1112
+		}
+	},
+	"ataCounts": {
+		"ata verdict-valid|user|arktype": [
+			930.2959637569473, 930.2962372655431, 930.2968538674729
+		],
+		"ata verdict-valid|order|arktype": [
+			6867.403425591657, 6872.778467583497, 6880.490474945534
+		],
+		"ata verdict-invalid|user|arktype": [
+			758.2744620783297, 765.9040323362975, 751.0076884358878
+		],
+		"ata verdict-invalid|order|arktype": [
+			2354.2089675461416, 2362.8445065948486, 2371.537991271526
+		],
+		"ata errors-invalid|user|arktype": [
+			3745.253762352374, 3771.8542488343, 3812.0511419200952
+		],
+		"ata errors-invalid|order|arktype": [
+			12084.866900826446, 12093.341549833094, 12084.465280808081
+		],
+		"ata blocked-verdict-valid|user|arktype": [
+			930.2968475018642, 930.2961204316899, 930.2947637568424
+		],
+		"ata blocked-verdict-valid|order|arktype": [
+			6870.925084779573, 6876.177435078757, 6871.907063959834
+		]
+	}
+}

@@ -17,7 +17,7 @@ export const RestoreDefault = ({
 			<button
 				className={cx(
 					"absolute top-4 right-16 p-2 rounded-lg cursor-pointer",
-					"bg-blue-900/50 hover:bg-blue-900 transition-colors",
+					"editor-icon-btn bg-blue-900/50 hover:bg-blue-900 transition-colors",
 					"text-white/70 hover:text-white",
 					"backdrop-blur-sm",
 					className

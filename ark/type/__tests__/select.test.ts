@@ -60,7 +60,7 @@ contextualize(() => {
 					{
 						kind: "domain",
 						// tuple expression syntax doesn't support narrowing d from kind here
-						where: d => d.assertHasKind("domain").domain === "string"
+						where: d => d.assertIs("domain").domain === "string"
 					}
 				])
 
@@ -77,7 +77,7 @@ contextualize(() => {
 					{
 						kind: "domain",
 						// args expression syntax doesn't support narrowing d from kind here
-						where: d => d.assertHasKind("domain").domain === "string"
+						where: d => d.assertIs("domain").domain === "string"
 					}
 				)
 

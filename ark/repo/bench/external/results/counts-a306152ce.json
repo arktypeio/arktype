@@ -1,0 +1,92 @@
+{
+	"parseSafe arktype-b1": [184.899435, 184.3736505, 184.3752695],
+	"parseSafe arktype-b2": [206.683073, 206.951296, 206.968045],
+	"parseSafe arktype-dynamic": [216.361342, 216.6378085, 216.3681605],
+	"parseSafe @ts-runtypes": [208.9415115, 208.9563165, 208.6783995],
+	"parseSafe typia": [212.956315, 212.684012, 212.9438655],
+	"parseSafe @sx3/gate": [233.368407, 233.365734, 233.633086],
+	"parseSafe rescript-schema": [233.629745, 233.893602, 233.6342445],
+	"parseSafe ata-(ahead-of-time)": [219.6865665, 219.67759, 219.683682],
+	"parseSafe ata": [223.950865, 223.68666, 223.6858305],
+	"parseSafe paseri-(ahead-of-time)": [257.697032, 257.7047, 257.9664325],
+	"parseSafe zod (compiled)": [250.36335, 250.368707, 250.3660395],
+	"parseSafe sury": [269.637951, 269.634999, 269.632921],
+	"parseSafe spectypes": [369.997325, 370.2688435, 370.0169635],
+	"parseSafe pure-parse (JIT compiled)": [550.677191, 550.681038, 550.95688],
+	"assertLoose arktype-b1": [66.011759, 66.017224, 66.0157685],
+	"assertLoose arktype-dynamic": [85.021332, 85.016979, 85.019872],
+	"assertLoose @ts-runtypes": [83.010784, 83.0138355, 83.010691],
+	"assertLoose arktype-b2": [3244.2891595, 3220.0813895, 3220.3550555],
+	"assertLoose typia": [82.0188935, 82.022274, 82.0179575],
+	"assertLoose @sx3/gate": [132.01314, 132.0147375, 132.012166],
+	"assertLoose rescript-schema": [130.008431, 130.0143125, 130.01444],
+	"assertLoose ata-(ahead-of-time)": [94.0167055, 94.014747, 94.02053],
+	"assertLoose ata": [94.013325, 94.019699, 94.0139245],
+	"assertLoose zod (compiled)": [473.0126425, 473.0147685, 473.014435],
+	"assertLoose paseri-(ahead-of-time)": [97.0116555, 97.010349, 97.0146955],
+	"assertLoose sury": [166.017835, 166.0109445, 166.0139015],
+	"assertLoose spectypes": [94.0110985, 94.013537, 94.009615],
+	"assertLoose pure-parse (JIT compiled)": [199.011833, 199.014915, 199.0132],
+	"assertLoose ts-runtime-checks": [74.0122145, 74.0179705, 74.0140355],
+	"assertLoose @sinclair/typebox-(just-in-time)": [
+		109.01035, 109.0107985, 109.015845
+	],
+	"assertLoose @sinclair/typebox-(ahead-of-time)": [
+		82.0091675, 82.016567, 82.018285
+	],
+	"assertLoose type-predicate-generator": [79.0186265, 79.0173375, 79.016375],
+	"assertLoose stnl (just-in-time)": [100.014549, 100.018377, 100.015401],
+	"assertLoose ts-auto-guard": [78.01192, 78.0135255, 78.014461],
+	"assertLoose @sinclair/typemap/valibot": [
+		141.017513, 141.0101605, 141.0173965
+	],
+	"assertLoose ajv": [293.0177165, 293.2820365, 293.014342],
+	"assertStrict arktype-b1": [332.015314, 332.017162, 332.0132425],
+	"assertStrict arktype-b2": [421.019712, 421.01513, 421.0146055],
+	"assertStrict arktype-dynamic": [348.011954, 348.016198, 348.015394],
+	"assertStrict @ts-runtypes": [296.014203, 296.0158235, 296.0155],
+	"assertStrict typia": [324.3219105, 324.321255, 324.3224695],
+	"assertStrict @sx3/gate": [408.014802, 408.0182865, 408.01113],
+	"assertStrict rescript-schema": [510.017535, 510.0172045, 510.0219075],
+	"assertStrict ata-(ahead-of-time)": [292.0169795, 292.015563, 292.013357],
+	"assertStrict ata": [301.0181545, 301.01588, 301.018966],
+	"assertStrict paseri-(ahead-of-time)": [343.0196595, 341.017118, 343.0213865],
+	"assertStrict zod (compiled)": [746.0147995, 746.013988, 746.0144435],
+	"assertStrict sury": [536.009969, 536.0128755, 536.0161155],
+	"assertStrict ts-runtime-checks": [425.0169515, 425.014946, 425.011802],
+	"assertStrict spectypes": [480.691378, 480.950774, 480.9554395],
+	"assertStrict @sinclair/typebox-(just-in-time)": [
+		361.590322, 361.598092, 361.3240105
+	],
+	"assertStrict @sinclair/typebox-(ahead-of-time)": [
+		331.3328335, 331.324935, 331.58796
+	],
+	"assertStrict @sinclair/typemap/valibot": [
+		390.3258335, 390.0537235, 390.3157025
+	],
+	"assertStrict ajv": [645.0228865, 645.0135405, 645.286766],
+	"parseStrict arktype-b1": [339.0155245, 339.0161585, 339.014774],
+	"parseStrict arktype-b2": [449.695061, 449.691917, 449.425726],
+	"parseStrict arktype-dynamic": [365.0200615, 365.010935, 365.0148315],
+	"parseStrict @ts-runtypes": [302.014651, 302.015899, 302.020068],
+	"parseStrict typia": [334.583892, 334.5860605, 334.587081],
+	"parseStrict @sx3/gate": [415.012926, 415.01497, 415.013764],
+	"parseStrict rescript-schema": [521.0107905, 521.010704, 521.012484],
+	"parseStrict ata-(ahead-of-time)": [297.01417, 297.0159605, 297.0130275],
+	"parseStrict ata": [302.0111945, 302.0151055, 302.0178565],
+	"parseStrict paseri-(ahead-of-time)": [354.0149535, 354.014474, 354.0160465],
+	"parseStrict zod (compiled)": [610.6303585, 610.888331, 610.361777],
+	"parseStrict sury": [538.0148235, 538.012572, 538.0162625],
+	"parseStrict spectypes": [488.6804365, 488.9510045, 488.6854955],
+	"parseStrict pure-parse (JIT compiled)": [
+		1682.533717, 1674.271506, 1656.2728815
+	],
+	"parseStrict ts-runtime-checks": [428.0210655, 428.0154015, 428.023005],
+	"parseStrict @sinclair/typebox-(just-in-time)": [
+		372.329751, 372.592097, 372.316841
+	],
+	"sb valid b1": [6002.180445, 6003.15432, 6004.298885],
+	"assertStrict arktype-2.2.9": [5963.0063365, 4741.1049645, 5325.833395],
+	"sb valid dynamic": [6005.32442, 6005.213275, 6002.17348],
+	"parseStrict arktype-2.2.9": [4276.822433, 3731.006685, 4458.9312925]
+}

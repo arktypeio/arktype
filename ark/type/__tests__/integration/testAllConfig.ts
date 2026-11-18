@@ -6,12 +6,15 @@ import { ark } from "arktype"
 import { AssertionError } from "node:assert"
 import { cases } from "./util.ts"
 
+// keywords resolve on first reference
+ark.export()
+
 cases({
 	allResolutionsHaveMatchingQualifiedName: () => {
 		const mismatches = flatMorph(
-			ark.internal.resolutions,
+			ark.internal.res,
 			(qualifiedName, resolution, i: number) => {
-				if (!resolution || typeof resolution === "string") return []
+				if (!resolution || hasArkKind(resolution, "context")) return []
 				if (hasArkKind(resolution, "generic")) return []
 				if (qualifiedName.endsWith(".root")) return []
 				if (resolution.description !== "configured") return [i, qualifiedName]

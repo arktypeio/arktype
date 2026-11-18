@@ -8,6 +8,6 @@ cases({
 	throwsOnFail: () => {
 		throws(() => {
 			type.string(5)
-		}, "must be a string (was number)")
+		}, /must be a string/)
 	}
 })

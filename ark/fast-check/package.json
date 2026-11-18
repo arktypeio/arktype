@@ -1,6 +1,6 @@
 {
 	"name": "@ark/fast-check",
-	"version": "0.0.21",
+	"version": "0.0.22-beta.0",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -37,14 +37,17 @@
 		"test": "node ../repo/testPackage.ts"
 	},
 	"dependencies": {
-		"arktype": "workspace:*",
 		"@ark/schema": "workspace:*",
 		"@ark/util": "workspace:*"
+	},
+	"devDependencies": {
+		"arktype": "workspace:*"
 	},
 	"publishConfig": {
 		"access": "public"
 	},
 	"peerDependencies": {
-		"fast-check": "3"
+		"arktype": "workspace:*",
+		"fast-check": "3 || 4"
 	}
 }

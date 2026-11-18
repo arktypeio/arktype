@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { arkToArbitrary } from "@ark/fast-check/internal/arktypeFastCheck.ts"
 import { scope, type } from "arktype"
-import { type Arbitrary, assert, property } from "fast-check"
+import { type Arbitrary, assert, property, sample } from "fast-check"
 import { describe } from "mocha"
 
 contextualize(() => {
@@ -45,6 +45,11 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("not equal", () => {
+			const T = type("0 <= number.integer <= 5 & number != 1")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
 		it("divisible", () => {
 			const T = type("number%2")
 			const arbitrary = arkToArbitrary(T)
@@ -74,6 +79,11 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("not equal length", () => {
+			const T = type("string <= 2 & string != 1")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
 		it("bounded string", () => {
 			const T = type("string < 5")
 			const arbitrary = arkToArbitrary(T)
@@ -88,6 +98,22 @@ contextualize(() => {
 			const T = type("string.email")
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
+		})
+		it("regex with flags", () => {
+			const T = type(/^\u{1F600}[a-z]$/iu)
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("regex range requiring u", () => {
+			const T = type(/^[😀-😂]$/u)
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("sticky regex", () => {
+			const T = type(/a/y)
+			attest(() => arkToArbitrary(T)).throws(
+				'Unable to use "stringMatching" against a regex using the flag y'
+			)
 		})
 		it("multiple regexes", () => {
 			const T = type("string.email").and("string.alpha")
@@ -147,6 +173,12 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("unsupported class", () => {
+			class Foo {}
+			attest(() => arkToArbitrary(type.instanceOf(Foo))).throws(
+				"Foo instances can't be generated"
+			)
+		})
 	})
 
 	describe("array", () => {
@@ -172,6 +204,11 @@ contextualize(() => {
 		})
 		it("bounded array", () => {
 			const T = type("3<number[]<=5")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("exact length", () => {
+			const T = type("string[] == 2")
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
@@ -218,6 +255,16 @@ contextualize(() => {
 			const T = type(["number", "string>2?"])
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
+		})
+		it("variadic after an omitted optional", () => {
+			const T = type(["string", "boolean?", "boolean?", "...", "number[]"])
+			const lengths = new Set(
+				sample(arkToArbitrary(T), { numRuns: 200, seed: 1 }).map(
+					data => (data as unknown[]).length
+				)
+			)
+			attest([1, 2, 3, 4].every(length => lengths.has(length))).equals(true)
+			return assertProperty(arkToArbitrary(T), T)
 		})
 	})
 
@@ -279,6 +326,32 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("index signature with optional key", () => {
+			const T = type({ "[/^x/]": "number", y: "string", "z?": "boolean" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("index signature matching an optional key", () => {
+			const T = type({ "[/^b$/]": "number", "b?": "number < 0" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		// declared keys were dropped when a structure had an index signature
+		it("declared key overlapping the index signature value", () => {
+			const T = type({ "[string]": "0 < number < 10", a: "number.integer" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("optional key disjoint from the index signature value", () => {
+			const T = type({ "[string]": "number", "a?": "string" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("symbol index signature with a string key", () => {
+			const T = type({ "[symbol]": "number", a: "string" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
 		it("contains alias", () => {
 			const example = {
 				user: {
@@ -302,6 +375,44 @@ contextualize(() => {
 			attest(() => arkToArbitrary($.arf2)).throws(
 				"Infinitely deep cycles are not supported."
 			)
+		})
+		it("required cycle with a union to end it", () => {
+			const { linked } = scope({
+				linked: { value: "string.trim", next: "linked | null" }
+			}).export()
+			return assertProperty(arkToArbitrary(linked), linked)
+		})
+		it("cycle at an index signature or array root", () => {
+			const $ = scope({
+				dict: { "[string]": "dict | string" },
+				nested: "(nested | number)[]"
+			}).export()
+			assertProperty(arkToArbitrary($.dict), $.dict)
+			assertProperty(arkToArbitrary($.nested), $.nested)
+		})
+		it("cycle at an index signature value with no base case", () => {
+			// only an empty dictionary ends the cycle
+			const $ = scope({
+				dict: { "[string]": "dict" },
+				named: { "[/^x/]": "named", name: "string" }
+			}).export()
+			assertProperty(arkToArbitrary($.dict), $.dict)
+			assertProperty(arkToArbitrary($.named), $.named)
+		})
+		it("cycle through an optional element", () => {
+			// inferring an optional element that references its own tuple is circular
+			const { pair }: { pair: type.Any } = scope({
+				pair: ["string", "pair?"]
+			} as never).export() as never
+			return assertProperty(arkToArbitrary(pair), pair)
+		})
+		it("overlapping index signatures", () => {
+			const T = type({ "[/^x-/]": "string", "[string]": "string | number" })
+			return assertProperty(arkToArbitrary(T), T)
+		})
+		it("object.json", () => {
+			const T = type("object.json")
+			assertProperty(arkToArbitrary(T), T)
 		})
 		it("unknown array with additional props", () => {
 			const T = type({ name: "string" }).and("unknown[]")
@@ -331,8 +442,12 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("no invalid Date", () => {
+			const dates = sample(arkToArbitrary(type("Date")), 10_000) as Date[]
+			attest(dates.filter(d => Number.isNaN(d.getTime()))).equals([])
+		})
 		it("bounded date", () => {
-			const T = type("d'2001/10/10'<Date<=d'2005/10/10'")
+			const T = type("d'2001-10-10'<Date<=d'2005-10-10'")
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})

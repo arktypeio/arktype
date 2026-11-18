@@ -94,7 +94,7 @@ contextualize(() => {
 		attest(T({ a: "foo" })).snap({ a: "foo" })
 		attest(T({ b: { a: "bar" } })).snap({ b: { a: "bar" } })
 		attest(T({ b: { b: {} } }).toString()).snap(
-			"a must be a string (was missing), b.a must be a string (was missing) or b.b must be b.b.a must be a string (was missing) or b.b.b must be an object (was missing) (was {})"
+			"a must be a string, b.a must be a string, b.b.a must be a string or b.b.b must be an object"
 		)
 	})
 
@@ -106,7 +106,7 @@ contextualize(() => {
 		attest(T({ a: "foo" })).snap({ a: "foo" })
 		attest(T({ b: { a: "bar" } })).snap({ b: { a: "bar" } })
 		attest(T({ b: { b: {} } }).toString()).snap(
-			"a must be a string (was missing), b.a must be a string (was missing) or b.b must be b.b.a must be a string (was missing) or b.b.b must be an object (was missing) (was {})"
+			"a must be a string, b.a must be a string, b.b.a must be a string or b.b.b must be an object"
 		)
 	})
 
@@ -127,7 +127,7 @@ contextualize(() => {
 			children: [{ name: "b" }]
 		})
 		attest(T({ name: "a", children: [{ name: 5 as never }] }).toString()).snap(
-			"children[0].name must be a string (was a number)"
+			"children[0].name must be a string"
 		)
 	})
 
@@ -156,7 +156,7 @@ contextualize(() => {
 			children: [{ name: "b" }]
 		})
 		attest(T({ name: "a", children: [{ name: 5 }] }).toString()).snap(
-			"children[0].name must be a string (was a number)"
+			"children[0].name must be a string"
 		)
 	})
 
@@ -165,22 +165,21 @@ contextualize(() => {
 
 		attest(T.t).type.toString.snap("{ name: string; children?: cyclic[] }")
 		attest(T({ name: "a", children: [{ name: 5 }] }).toString()).snap(
-			"children[0].name must be a string (was a number)"
+			"children[0].name must be a string"
 		)
 	})
 
 	it("Record of this", () => {
 		const T = type({ name: "string", "children?": "Record<string, this>" })
 
-		attest(T.t).type.toString.snap(
-			"{ name: string; children?: Record<string, cyclic> }"
-		)
+		type Expected = { name: string; children?: Record<string, Expected> }
+		attest<Expected>(T.t)
 		attest(T({ name: "a", children: { b: { name: "b" } } })).snap({
 			name: "a",
 			children: { b: { name: "b" } }
 		})
 		attest(T({ name: "a", children: { b: { name: 5 } } }).toString()).snap(
-			"children.b.name must be a string (was a number)"
+			"children.b.name must be a string"
 		)
 	})
 
@@ -192,7 +191,81 @@ contextualize(() => {
 
 		attest(T.allows({ name: "a", child: { name: "b" } })).equals(true)
 		attest(T({ name: "a", child: { name: 5 } }).toString()).snap(
-			"child.name must be a string (was a number)"
+			"child.name must be a string"
 		)
+	})
+
+	it("prop piped to this", () => {
+		const T = type({
+			name: "string",
+			"next?": "string.json.parse |> this"
+		})
+
+		attest(T({ name: "a", next: '{"name":"b"}' })).equals({
+			name: "a",
+			next: { name: "b" }
+		})
+		attest(T({ name: "a", next: '{"name":1}' }).toString()).snap(
+			"next.name must be a string"
+		)
+	})
+
+	it("prints this at the top of its own type", () => {
+		const T = type({ v: "number", "next?": "this" })
+
+		attest(T.expression).snap("{ v: number, next?: this }")
+		attest(T.description).snap("{ v: a number, next?: this }")
+		attest(T.toString()).snap("Type<{ v: number, next?: this }>")
+	})
+
+	it("parses its printed expression back", () => {
+		const T = type("string | this[]")
+
+		attest(T.expression).snap("string | this[]")
+		attest(type(T.expression as "string | this[]").equals(T)).equals(true)
+	})
+
+	it("prints a name where nested", () => {
+		const T = type({ v: "number", "next?": "this" })
+
+		attest(type({ a: T }).expression).snap(
+			"{ a: { v: number, next?: typegszdr00kec5od } }"
+		)
+		attest(T.array().expression).snap(
+			"{ v: number, next?: typegszdr00kec5od }[]"
+		)
+		attest(type({ a: T }).description).snap(
+			"{ a: { v: a number, next?: typegszdr00kec5od } }"
+		)
+	})
+
+	it("description writer reads a name where nested", () => {
+		const $ = scope(
+			{},
+			{
+				required: {
+					description: node =>
+						`${String(node.key)} is ${node.value.description}`
+				}
+			}
+		)
+		const T = $.type({ v: "number", "next?": "this" })
+
+		attest($.type({ a: T }).description).snap(
+			"{ a is { v is a number, next?: typegszdr00kec5od } }"
+		)
+	})
+
+	it("calls a thunk in its definition twice", () => {
+		let calls = 0
+		type({
+			a: () => {
+				calls++
+				return type("string")
+			},
+			"next?": "this"
+		})
+
+		attest(calls).equals(2)
 	})
 })

@@ -1,65 +1,135 @@
 ---
 title: Benches
+description: Measure the type instantiations and runtime of a block of code against a baseline stored inline.
 ---
 
-Benches are run separately from tests and don't require any special setup. If the below file was `benches.ts`, you could run it using something like `node benches.ts` or `tsx benches.ts`:
+A bench file is a plain script that needs no `setup`. Run it with `node benches.ts`, which strips the types on Node 22.18+, or any TypeScript runner. The first run writes each result into its call as the baseline, and later runs compare against it.
+
+## Type benches
+
+`.types()` counts the type instantiations of checking a bench's function and of evaluating the type it returns as fully as displaying it would. TypeScript defers the members of types like mapped types until something reads them, so return the result you want measured.
 
 ```ts title="benches.ts"
 import { bench } from "@ark/attest"
 
-// Combinatorial template literals often result in expensive types- let's benchmark this one!
+// combinatorial template literals are often expensive
 type makeComplexType<s extends string> =
 	s extends `${infer head}${infer tail}` ? head | tail | makeComplexType<tail>
 	:	s
 
-bench("bench type", () => {
+bench("short string", () => {
 	return {} as makeComplexType<"defenestration">
-	// This is an inline snapshot that will be populated or compared when you run the file
-}).types([169, "instantiations"])
+}).types([163, "instantiations"])
 
-bench("bench runtime and type", () => {
+// about twice the count for twice the length, so the type is O(n)
+bench("long string", () => {
 	return {} as makeComplexType<"antidisestablishmentarianism">
-})
-	// Average time it takes the function execute
-	.mean([2, "ms"])
-	// Seems like our type is O(n) with respect to the length of the input- not bad!
-	.types([337, "instantiations"])
+}).types([317, "instantiations"])
 ```
+
+A count is deterministic for a given TypeScript version and code. These were measured with TypeScript 6.0.3.
 
 ## Baseline expressions
 
-If you're benchmarking an API, you'll need to include a "baseline expression" so that instantiations created when your API is initially invoked don't add noise to the individual tests.
-
-Here's an example of what that looks like:
+A bench's count is what its block adds to checking the rest of the file with every bench removed. The first call to an API instantiates types that later calls reuse, so without a baseline, each bench pays for that work. Put it in `bench.baseline`, which does nothing at runtime but stays in the file attest checks.
 
 ```ts
 import { bench } from "@ark/attest"
 import { type } from "arktype"
 
-// baseline expression
-type("boolean")
+bench.baseline(() => type("never"))
 
-bench("single-quoted", () => {
-	const _ = type("'nineteen characters'")
-	// would be 2697 without baseline
-}).types([610, "instantiations"])
+bench("single-quoted", () => type("'nineteen characters'")).types([
+	731,
+	"instantiations"
+])
 
-bench("keyword", () => {
-	const _ = type("string")
-	// would be 2507 without baseline
-}).types([356, "instantiations"])
+bench("keyword", () => type("string")).types([511, "instantiations"])
 ```
 
+On TypeScript 6.0.3, these benches count 13484 and 13408 without the baseline.
+
 <Callout type="warn">
-	Be sure your baseline expression is not identical to an expression you are
-	using in any of your benchmarks. If it is, the individual benchmarks will
-	reuse its cached types, leading to reduced (or 0) instantiations.
+	Don't bench an expression identical to your baseline expression. The bench
+	would reuse the baseline's cached types and count fewer instantiations, or
+	none.
 </Callout>
+
+## Runtime benches
+
+`.median()` records the median time of a call, picking `ns`, `us`, `ms` or `s` on the first run.
+
+```ts
+import { bench } from "@ark/attest"
+import { type } from "arktype"
+
+// an export, so V8 can't treat the input as a constant
+export const data = { name: "Alan Turing", age: 41 }
+
+const User = type({ name: "string", age: "number.integer" })
+
+// the first run writes a result like [4.22, "ns"]
+bench("validate user", () => User(data)).median()
+```
+
+To measure what you mean to:
+
+- Return the result the bench computes. Each bench runs in a loop compiled for it alone, so V8 can inline it and drop any work whose result is unused. attest warns if a bench returns `undefined`.
+- Read inputs from an export rather than a literal or a local `const`, so V8 can't fold work on constant inputs. This matters most for small functions like a primitive check.
+- Prefer `.median()`, which is robust to the GC pauses and preemption that skew `.mean()`. `.mark()` records both.
+- Benches in a process share the code of the library they call, so a bench can read faster or slower depending on which benches ran before it. Only compare results between runs of the same file in the same order.
+
+Timings depend on the machine, so treat a runtime baseline as specific to the machine that recorded it.
+
+A runtime assertion can chain `.types()` to check the same bench's instantiations, as in `bench(...).median().types()`.
+
+### Options
+
+```ts
+import { bench } from "@ark/attest"
+
+export const items: number[] = []
+
+bench("push", () => items.push(1), {
+	// stop sampling after 1 second or 10,000 samples, whichever comes first
+	until: { ms: 1000, count: 10_000 },
+	// runs outside the timed section, after each sample
+	hooks: { afterCall: () => (items.length = 0) }
+}).median()
+```
+
+After a warmup of 500ms (or `until.ms`, if shorter), attest samples for 5 seconds or 100,000 samples, whichever comes first. A sample times as many calls as fit in about 0.2ms, so `hooks` run once per sample, not once per call.
+
+### Async benches
+
+A bench that returns a promise is awaited on every call, and its runtime assertion returns a promise:
+
+```ts
+import { bench } from "@ark/attest"
+
+export const bytes = new TextEncoder().encode("Alan Turing")
+
+await bench("sha-256", () => crypto.subtle.digest("SHA-256", bytes)).median()
+```
+
+## Running one bench
+
+`--filter` runs only the bench with that exact name:
+
+```bash
+node benches.ts --filter keyword
+```
+
+## Updating baselines
+
+Pass `--updateSnapshots` (or `-u`) to rewrite every baseline in the file with the new results. A result more than `benchPercentThreshold` under its baseline prints 📉 as a reminder to record a new one.
 
 ## Thresholds
 
-If you'd like to fail in CI above a threshold, you can add flags like the following (default value is 20%, but it will not throw unless `--benchErrorOnThresholdExceeded` is set):
+A result fails if it exceeds its baseline by more than `benchPercentThreshold` (20% by default). The bench prints 📈 when it runs, and the file prints ❌ for each failure when it exits, with exit code 1. [`attest.instantiations`](/docs/attest/assertions#instantiations) throws inside its test instead.
+
+`benchErrorOnThresholdExceeded` decides which results fail. It's `true` (all) by default and can be `false`, `"types"` or `"runtime"`. Timings vary between runs and counts don't, so to fail only type benches:
 
 ```bash
-tsx ./p99/within-limit/p99-tall-simple.bench.ts --benchErrorOnThresholdExceeded --benchPercentThreshold 10
+node benches.ts --benchErrorOnThresholdExceeded types --benchPercentThreshold 10
 ```

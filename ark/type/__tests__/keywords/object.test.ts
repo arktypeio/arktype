@@ -1,6 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import type { Json } from "@ark/util"
-import { keywords, type } from "arktype"
+import { keywords, scope, type, type Json } from "arktype"
 import type { To } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
@@ -14,6 +13,18 @@ contextualize(() => {
 		attest(type("Date").infer).type.toString.snap("Date")
 	})
 
+	it("invalid Date", () => {
+		class NaNTime extends Date {
+			override getTime() {
+				return Number.NaN
+			}
+		}
+		const { D } = scope({ D: "Date" }).export()
+		attest(D.allows(new Date(0))).equals(true)
+		attest(D(new Date(Number.NaN)).toString()).equals("must be a Date")
+		attest(D.allows(new NaNTime(0))).equals(true)
+	})
+
 	describe("json", () => {
 		it("root", () => {
 			const Json = type("object.json")
@@ -24,10 +35,56 @@ contextualize(() => {
 
 			attest(Json({})).equals({})
 			attest(Json([])).equals([])
-			attest(Json(5)?.toString()).snap("must be an object (was a number)")
+			attest(Json(5)?.toString()).snap("must be an object")
 			attest(Json({ foo: [5n] })?.toString()).snap(
-				'foo["0"] must be an object (was a bigint)'
+				'foo["0"] must be a number, a string, an object, boolean or null'
 			)
+		})
+
+		it("plain objects and arrays only", () => {
+			const Json = type("object.json")
+			const empty = Object.create(null)
+
+			attest(Json(empty)).equals(empty)
+			attest(Json(new Map())?.toString()).snap(
+				"must be a plain object or array"
+			)
+			attest(Json(new (class Point {})())?.toString()).snap(
+				"must be a plain object or array"
+			)
+			attest(Json({ at: new Date() })?.toString()).snap(
+				"at must be a plain object or array"
+			)
+			attest(Json([() => {}])?.toString()).snap(
+				'["0"] must be a plain object or array'
+			)
+		})
+
+		it("JSON Schema needs a predicate fallback", () => {
+			const Json = type("object.json")
+
+			attest(() => Json.toJsonSchema()).throws("predicate")
+			attest(
+				Json.toJsonSchema({ fallback: { predicate: ctx => ctx.base } })
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				additionalProperties: { $ref: "#/$defs/jsonData" },
+				$defs: {
+					jsonData: {
+						anyOf: [
+							{ type: "number" },
+							{ type: "string" },
+							{
+								type: "object",
+								additionalProperties: { $ref: "#/$defs/jsonData" }
+							},
+							{ type: "boolean" },
+							{ type: "null" }
+						]
+					}
+				}
+			})
 		})
 
 		it("stringify", () => {
@@ -39,7 +96,7 @@ contextualize(() => {
 
 			// this error kind of sucks, should have more discriminant context
 			attest(stringify({ foo: undefined }).toString()).snap(
-				"foo must be an object (was undefined)"
+				"foo must be a number, a string, an object, boolean or null"
 			)
 
 			// has declared out
@@ -57,11 +114,9 @@ contextualize(() => {
 			attest(liftNumberArray(5)).equals([5])
 			attest(liftNumberArray([5])).equals([5])
 			attest(liftNumberArray("five").toString()).snap(
-				"must be a number or an object (was a string)"
+				"must be a number or an array"
 			)
-			attest(liftNumberArray(["five"]).toString()).snap(
-				"value at [0] must be a number (was a string)"
-			)
+			attest(liftNumberArray(["five"]).toString()).snap("[0] must be a number")
 		})
 
 		it("invoked", () => {

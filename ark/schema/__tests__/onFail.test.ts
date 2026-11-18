@@ -3,18 +3,18 @@ import { intrinsic } from "@ark/schema"
 
 contextualize(() => {
 	it("traverse always returns ArkErrors", () => {
-		const s = intrinsic.string.configureReferences(
+		const s = intrinsic.string.configureRefs(
 			{
 				onFail: () => "foo"
 			},
 			"self"
 		)
 		attest(s(5)).equals("foo")
-		attest(s.traverse(5)?.toString()).snap("must be a string (was a number)")
+		attest(s.traverse(5)?.toString()).snap("must be a string")
 	})
 
 	it("assert always throws ArkErrors", () => {
-		const n = intrinsic.number.configureReferences(
+		const n = intrinsic.number.configureRefs(
 			{
 				onFail: () => "foo"
 			},
@@ -24,7 +24,7 @@ contextualize(() => {
 	})
 
 	it("passed onFail overrides meta", () => {
-		const b = intrinsic.bigint.configureReferences(
+		const b = intrinsic.bigint.configureRefs(
 			{
 				onFail: () => "foo"
 			},
