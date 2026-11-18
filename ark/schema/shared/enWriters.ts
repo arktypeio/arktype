@@ -42,6 +42,20 @@ export const describeActual = (ctx: object): void => {
 	if (!DescribedActual.has(ctx)) new DescribedActual(ctx)
 }
 
+/**
+ * describeActual for a ctx whose actual is yet to be written, which is
+ * described already only where its actual was cleared since. It isn't asked
+ * first: V8 caches no answer for a private field an object lacks, so asking
+ * cost an error more than stamping it does
+ */
+export const describeUnwrittenActual = (ctx: object): void => {
+	try {
+		new DescribedActual(ctx)
+	} catch {
+		// stamped already
+	}
+}
+
 /** the actual en's messages say a value was: one configured or supplied */
 export const printedActualOf = (ctx: { readonly actual: string }): string =>
 	DescribedActual.has(ctx) ? "" : ctx.actual

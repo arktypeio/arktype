@@ -26,7 +26,12 @@ import type { DiscriminantErrorContext } from "../roots/union.ts"
 import type { UndeclaredErrorContext } from "../structure/structure.ts"
 import type { NodeKind } from "./implement.ts"
 import type { Locale } from "./locale.ts"
-import { describeActual, writeLine } from "./enWriters.ts"
+import {
+	describeActual,
+	describeUnwrittenActual,
+	writeLine,
+	writeMessage
+} from "./enWriters.ts"
 import { describesData, listsErrors } from "./errorWriters.ts"
 import { describeBranches, removedProblemMessage } from "./utils.ts"
 import {
@@ -1068,16 +1073,41 @@ export const writeText = (
 ): void => {
 	const writers = config[code]
 	const meta = error.meta
-	const expected = meta?.expected ?? writers.expected
-	error.expected ??=
-		typeof expected === "function" ? expected(error as never, locale) : expected
-	error.actual ??= writeActual(error, meta?.actual ?? writers.actual, locale)
-	const message =
-		meta?.message ??
-		(code === "required" ? configuredMessageOf(error) : undefined) ??
-		writers.message
-	error.message ??=
-		typeof message === "function" ? message(error as never, locale) : message
+	// each slot is read once and kept, where reading back what was just
+	// written is another read no error's shape caches
+	let expected: string | undefined = error.expected
+	if (expected === undefined || expected === null) {
+		const configured = meta?.expected ?? writers.expected
+		error.expected = expected =
+			typeof configured === "function" ?
+				configured(error as never, locale)
+			:	configured
+	}
+	// whether its actual was described here, which en's message then leaves out
+	let described = false
+	if (error.actual === undefined || error.actual === null) {
+		const configured: string | ActualWriter<never> =
+			meta?.actual ?? writers.actual
+		if (typeof configured === "string") error.actual = configured
+		else {
+			if (describesData(configured)) {
+				describeUnwrittenActual(error)
+				described = true
+			}
+			error.actual = configured(error.data as never, error as never, locale)
+		}
+	}
+	if (error.message === undefined || error.message === null) {
+		const message =
+			meta?.message ??
+			(code === "required" ? configuredMessageOf(error) : undefined) ??
+			writers.message
+		error.message =
+			// en's own, written as it writes one whose actual describes its data
+			message === writeMessage && described ? `must be ${expected}`
+			: typeof message === "function" ? message(error as never, locale)
+			: message
+	}
 }
 
 /**

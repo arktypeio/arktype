@@ -614,6 +614,16 @@ d must be a number`)
 b must be a number`)
 	})
 
+	it("writes a first issue's actual again once it's cleared", () => {
+		// a pipe's errors are found at once, so the first is written with the rest too
+		const out = type({ a: "string" }).pipe(o => o)({ a: 0 }) as ArkErrors
+		const first = firstIssue(out)
+		attest(first.actual).snap("a number")
+		first.actual = undefined as never
+		attest(out.issues[0]).equals(first)
+		attest([first.actual, out.summary]).snap(["a number", "a must be a string"])
+	})
+
 	it("firstIssue intersects the errors at its path", () => {
 		const out = type({ a: "string >= 5", b: "number" }).and({ a: /^x/ })({
 			a: "abc",
