@@ -380,17 +380,48 @@ export const rejecting = ((passes: (data: any) => unknown, message: string) =>
 	(data: unknown, ctx: any) =>
 		passes(data) || ctx.reject({ message })) satisfies Fn
 
+// what `ctx.reject({ message })` raises: a predicate's issue expecting what an
+// unnamed one does, saying the message as its own. No code's configured text
+// writes a predicate's raised issue, so it's this under any configuration
+const rejectedSiteOf = (message: string): SiteContext => ({
+	code: "predicate",
+	description: "valid according to an anonymous predicate",
+	x: message,
+	c: 1
+})
+
 /**
- * the checker of that narrow, written where a unit reads it. Nothing names
- * the callback, which is described here so nothing a minifier holds it in can
+ * the checker of that narrow, written where a unit reads it as its test and
+ * its message: data failing the test fails at the site its ctx would reject
+ * at, so it reads no ctx, and its root no Traversal
  */
 export const rejectsWith = ((
 	passes: (data: any) => unknown,
 	message: string,
-	description: string = describePredicate({})
+	description?: string
 ): Checker => {
-	const narrow = rejecting(passes, message)
-	return narrowedWithCtx(() => narrow, description)
+	const site = rejectedSiteOf(message)
+	const checker: Checker = (data, ctx) =>
+		!!passes(data) || !failsAt(ctx as never, site, data)
+	checker.description = description
+	return checker
+}) satisfies Fn
+
+/**
+ * the checker of one a build proved of that shape but holds as a function:
+ * the only ctx it's passed is one whose `reject` fails at that site
+ */
+export const narrowedRejecting = ((
+	read: () => (data: any, ctx: any) => unknown,
+	description?: string
+): Checker => {
+	const checker: Checker = (data, ctx) =>
+		!!read()(data, {
+			reject: (input: { message: string }) =>
+				!failsAt(ctx as never, rejectedSiteOf(input.message), data)
+		})
+	checker.description = description
+	return checker
 }) satisfies Fn
 
 /** the checker a validator is created from, as a call a bundler may drop */

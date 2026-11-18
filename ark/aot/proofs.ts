@@ -1,4 +1,10 @@
-import { readsOnlyData, returnsReports, type Fn, type KeySet } from "@ark/util"
+import {
+	readsOnlyData,
+	returnsReports,
+	testsOrRejects,
+	type Fn,
+	type KeySet
+} from "@ark/util"
 import type {
 	ArrowFunctionExpression,
 	Function,
@@ -146,6 +152,93 @@ const returnsItsReports = (fn: FunctionNode): boolean => {
 	)
 }
 
+/** what a narrow of the commonest shape tests of its data, and says */
+export interface RejectingParts {
+	// the parameter it tests
+	data: Node & { name: string; start: number; end: number }
+	test: Node & { start: number; end: number }
+	// the message, a string's literal
+	message: Node & { start: number; end: number }
+}
+
+const unwrapped = (node: Node): Node => {
+	while (isTransparent(node)) node = node.expression
+	return node
+}
+
+// A narrow written `(data, ctx) => test || ctx.reject({ message: "..." })`, or
+// `test ? true : ctx.reject(...)`, as most reporting a message of their own
+// are: what it tests, which names its ctx nowhere, and the message. Only its
+// truthiness is read, so the two are one. All it asks of its ctx is to reject
+// with that message, which is a predicate's issue saying it, at the path and
+// of the data it was passed
+export const rejectingPartsOf = (fn: Node): RejectingParts | undefined => {
+	if (
+		fn.type !== "ArrowFunctionExpression" ||
+		fn.async ||
+		fn.params.length !== 2
+	)
+		return
+	const [data, ctx] = fn.params
+	if (data.type !== "Identifier" || ctx.type !== "Identifier") return
+	const returned =
+		fn.body.type !== "BlockStatement" ? fn.body
+		: fn.body.body.length === 1 && fn.body.body[0].type === "ReturnStatement" ?
+			fn.body.body[0].argument
+		:	undefined
+	const body = returned && unwrapped(returned)
+	const [test, report] =
+		body?.type === "LogicalExpression" && body.operator === "||" ?
+			[body.left, body.right]
+		: (
+			body?.type === "ConditionalExpression" &&
+			body.consequent.type === "Literal" &&
+			body.consequent.value === true
+		) ?
+			[body.test, body.alternate]
+		:	[]
+	if (!test || !report) return
+	const call = unwrapped(report)
+	if (
+		call.type !== "CallExpression" ||
+		call.optional ||
+		call.arguments.length !== 1 ||
+		call.callee.type !== "MemberExpression" ||
+		call.callee.computed ||
+		call.callee.optional ||
+		call.callee.property.name !== "reject" ||
+		call.callee.object.type !== "Identifier" ||
+		call.callee.object.name !== ctx.name
+	)
+		return
+	const [input] = call.arguments
+	if (input.type !== "ObjectExpression" || input.properties.length !== 1) return
+	const [property] = input.properties
+	if (
+		property.type !== "Property" ||
+		property.kind !== "init" ||
+		property.computed ||
+		property.shorthand ||
+		property.key.type !== "Identifier" ||
+		property.key.name !== "message" ||
+		property.value.type !== "Literal" ||
+		typeof property.value.value !== "string"
+	)
+		return
+	// what it tests can't reach its ctx: by name, which misses nothing a
+	// binding would find, nor through what a direct eval reads
+	if (
+		someNode(
+			test,
+			node =>
+				isArgumentsOrEval(node) ||
+				(node.type === "Identifier" && node.name === ctx.name)
+		)
+	)
+		return
+	return { data, test, message: property.value }
+}
+
 /** notes what a function a build wouldn't run can read, as it's created */
 export const proveFunction = (
 	fn: Fn,
@@ -154,5 +247,8 @@ export const proveFunction = (
 	isStandalone: boolean
 ): void => {
 	if (readsOnlyItsArgument(node)) readsOnlyData.add(fn)
-	else if (isStandalone && returnsItsReports(node)) returnsReports.add(fn)
+	else if (isStandalone && returnsItsReports(node)) {
+		returnsReports.add(fn)
+		if (rejectingPartsOf(node)) testsOrRejects.add(fn)
+	}
 }

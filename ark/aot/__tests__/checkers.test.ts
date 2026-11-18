@@ -809,7 +809,45 @@ false
 		attest(checkers.match(/\brejectsWith\(/g)?.length).equals(3)
 		attest(/\brejectsWith\(isSlug, "Use lowercase/.test(checkers)).equals(true)
 		attest(/sethole|\bheld\(/.test(checkers)).equals(false)
+		// and each fails at a site, so nothing its root is passed is a Traversal
+		attest(/\bclass Traversal\b/.test(checkers)).equals(false)
 	})
+
+	// what a narrow that reports is run through, whatever it's proved of
+	const atEachDepth = `const Deep = type({
+	a: N,
+	"b?": N,
+	c: { d: N, e: { f: N, g: "string = 'x'" } },
+	list: N.array()
+})
+const good = { a: "abc", c: { d: "abc", e: { f: "abc" } }, list: ["abc"] }
+run(() => Deep(good))
+run(() => Deep({ ...good, a: "x" }))
+run(() => Deep({ ...good, b: "x" }))
+run(() => Deep({ ...good, c: { d: "x", e: { f: "x" } } }))
+run(() => Deep({ ...good, list: ["abc", "x", "y"] }))
+run(() => Deep({ list: [] }))
+run(() => Deep.allows({ ...good, c: { d: "x", e: { f: "abc" } } }))
+run(() => ["abc", "x"].filter(N.allows))
+run(() => N("x"))
+run(() => N.allows("x"))
+`
+	const inEachUnion = `const Nullable = type({ v: N.or("null") })
+run(() => Nullable({ v: "x" }))
+run(() => Nullable({ v: null }))
+const Keyed = type({ k: "'a'", v: N }).or({ k: "'b'", v: N, w: N })
+run(() => Keyed({ k: "b", v: "x", w: "y" }))
+run(() => Keyed({ k: "c", v: "x" }))
+const Unkeyed = type({ k: "'a'", v: N, w: N }).or({ v: "number", w: N })
+run(() => Unkeyed({ k: "a", v: "x", w: "y" }))
+run(() => Unkeyed({ v: 1, w: "abc" }))
+const Piped = N.pipe(s => s.length)
+run(() => Piped("abc"))
+run(() => Piped("x"))
+const Above = type({ p: Piped, q: N })
+run(() => Above({ p: "abc", q: "abc" }))
+run(() => Above({ p: "x", q: "x" }))
+`
 
 	describe("a narrow that reaches its ctx only to return what it reports", () => {
 		// the same callback either way: holding its ctx leaves it unproved
@@ -842,45 +880,13 @@ console.log(String(N("x")), N.allows("x"), String(type({ a: N })({ a: "x" })), g
 
 		itRunsAsUnproved(
 			"runs as often at each depth, reporting where it fails",
-			`const Deep = type({
-	a: N,
-	"b?": N,
-	c: { d: N, e: { f: N, g: "string = 'x'" } },
-	list: N.array()
-})
-const good = { a: "abc", c: { d: "abc", e: { f: "abc" } }, list: ["abc"] }
-run(() => Deep(good))
-run(() => Deep({ ...good, a: "x" }))
-run(() => Deep({ ...good, b: "x" }))
-run(() => Deep({ ...good, c: { d: "x", e: { f: "x" } } }))
-run(() => Deep({ ...good, list: ["abc", "x", "y"] }))
-run(() => Deep({ list: [] }))
-run(() => Deep.allows({ ...good, c: { d: "x", e: { f: "abc" } } }))
-run(() => ["abc", "x"].filter(N.allows))
-run(() => N("x"))
-run(() => N.allows("x"))
-`,
+			atEachDepth,
 			reporting(`${long} || ctx.mustBe("long")`)
 		)
 
 		itRunsAsUnproved(
 			"runs as often in each kind of union, and above a morph",
-			`const Nullable = type({ v: N.or("null") })
-run(() => Nullable({ v: "x" }))
-run(() => Nullable({ v: null }))
-const Keyed = type({ k: "'a'", v: N }).or({ k: "'b'", v: N, w: N })
-run(() => Keyed({ k: "b", v: "x", w: "y" }))
-run(() => Keyed({ k: "c", v: "x" }))
-const Unkeyed = type({ k: "'a'", v: N, w: N }).or({ v: "number", w: N })
-run(() => Unkeyed({ k: "a", v: "x", w: "y" }))
-run(() => Unkeyed({ v: 1, w: "abc" }))
-const Piped = N.pipe(s => s.length)
-run(() => Piped("abc"))
-run(() => Piped("x"))
-const Above = type({ p: Piped, q: N })
-run(() => Above({ p: "abc", q: "abc" }))
-run(() => Above({ p: "x", q: "x" }))
-`,
+			inEachUnion,
 			reporting(
 				`${long} ? true : ctx.reject({ message: \`short by \${3 - s.length}\` })`
 			)
@@ -947,6 +953,118 @@ tell(() => type({ s: N }).allows({ s: "x" }))
 				const js = await bundle(root, smallest)
 				attest(js.includes("narrowedWithCtx(")).equals(false)
 				attest(behaviorOf(await bundle(root))).equals(whole)
+				attest(behaviorOf(js)).equals(whole)
+			})
+		}
+	})
+
+	describe("a narrow that tests its data or rejects with a message", () => {
+		const long = "s.length > (globalThis.limit ?? 2)"
+		// the same callback either way: holding its ctx leaves it unproved
+		const rejecting: [string, string, string] = [
+			`(s: string, ctx: any) => (globalThis.calls++, ${long}) || ctx.reject({ message: "Too short." })`,
+			`(s: string, ctx: any) => { const held = ctx; globalThis.calls++; return ${long} || held.reject({ message: "Too short." }) }`,
+			"narrowedRejecting("
+		]
+
+		itRunsAsUnproved(
+			"fails where its ctx would reject, at each depth",
+			atEachDepth,
+			rejecting
+		)
+
+		itRunsAsUnproved(
+			"fails where its ctx would reject in each kind of union, and above a morph",
+			inEachUnion,
+			rejecting
+		)
+
+		// an alias's code is compiled, and passes it the ctx its root made
+		itRunsAsUnproved(
+			"rejects through its root's ctx where a cycle holds it",
+			`const Tree = type({ name: N, "children?": "this[]" })
+run(() => Tree({ name: "abc", children: [{ name: "x" }, { name: "abc", children: [{ name: "y" }] }] }))
+run(() => Tree({ name: "x" }))
+const Holder = type({ tree: Tree, n: N })
+run(() => Holder({ tree: { name: "x", children: [{ name: "y" }] }, n: "z" }))
+run(() => Holder({ tree: { name: "abc" }, n: "abc" }))
+run(() => Holder.allows({ tree: { name: "abc", children: [{ name: "x" }] }, n: "abc" }))
+`,
+			rejecting
+		)
+
+		itRunsAsUnproved(
+			"says its own message under one configured for its Type, which what it narrows says",
+			`const Said = N.configure({ message: "Configured." })
+const T = type({ s: Said, "t?": Said })
+run(() => T({ s: "x" }))
+run(() => T({ s: 1 }))
+run(() => T({}))
+run(() => T({ s: "abc", t: "y" }))
+run(() => Said("x"))
+`,
+			rejecting
+		)
+
+		for (const errors of ["first", "none"] as const) {
+			it(`behaves as unproved with errors "${errors}"`, async () => {
+				const source = `const T = type({ a: N, b: { c: N } })
+run(() => T({ a: "abc", b: { c: "abc" } }))
+run(() => T({ a: "x", b: { c: "x" } }))
+run(() => T.allows({ a: "x", b: { c: "abc" } }))
+`
+				const of = async (form: string, dir: string) =>
+					behaviorOf(
+						await bundle(
+							fixture(`rejecting-${errors}-${dir}`, appOf(form, source)),
+							{ ...smallest, errors }
+						)
+					)
+				attest(await of(rejecting[0], "proved")).equals(
+					await of(rejecting[1], "unproved")
+				)
+			})
+		}
+
+		it("needs no Traversal", async () => {
+			const js = await bundle(
+				fixture(
+					"rejecting-noTraversal",
+					appOf(
+						rejecting[0],
+						`run(() => type({ s: N, "t?": N.array() })({ s: "x", t: ["abc", "y"] }))`
+					)
+				),
+				smallest
+			)
+			attest(js.includes("narrowedRejecting(")).equals(true)
+			attest(/\bclass Traversal\b/.test(js)).equals(false)
+			attest(behaviorOf(js)).snap(`s: Too short.
+t[1]: Too short. 4
+`)
+		})
+
+		for (const [name, narrow] of Object.entries({
+			"reading its ctx in what it tests": `(s: string, ctx: any) => (ctx.path.length < 9 && s.length > 2) || ctx.reject({ message: "short" })`,
+			"with a message it writes as it runs": `(s: string, ctx: any) => s.length > 2 || ctx.reject({ message: \`short by \${3 - s.length}\` })`,
+			"with more than a message": `(s: string, ctx: any) => s.length > 2 || ctx.reject({ message: "short", expected: "long" })`,
+			"through mustBe": `(s: string, ctx: any) => s.length > 2 || ctx.mustBe("long")`,
+			"after a statement of its own": `(s: string, ctx: any) => { const length = s.length; return length > 2 || ctx.reject({ message: "short" }) }`
+		})) {
+			it(`rejects ${name}, so is passed its root's ctx`, async () => {
+				const root = fixture(
+					`rejecting-${name.replace(/\W+/g, "-")}`,
+					appOf(
+						narrow,
+						`run(() => type({ s: N })({ s: "abc" }))
+run(() => type({ s: N })({ s: "x" }))
+run(() => type({ s: N }).allows({ s: "x" }))
+`
+					)
+				)
+				const whole = behaviorOf(await bundle(root, { prune: false }))
+				const js = await bundle(root, smallest)
+				attest(js.includes("narrowedRejecting(")).equals(false)
 				attest(behaviorOf(js)).equals(whole)
 			})
 		}

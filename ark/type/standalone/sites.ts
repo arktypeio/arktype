@@ -20,11 +20,12 @@ import {
 	hasDomain,
 	isDotAccessible,
 	readsOnlyData,
+	testsOrRejects,
 	throwParseError
 } from "@ark/util"
 import * as runtime from "../runtimeExports.ts"
 import type { IssueFeatures } from "./baking.ts"
-import { rootUnitsOf } from "./compilers.ts"
+import { isCheckerIn, rootUnitsOf } from "./compilers.ts"
 import { printedHoleNamePattern } from "./keys.ts"
 import { declares, writtenSelectedOf } from "./units.ts"
 import {
@@ -114,6 +115,14 @@ export const addIssueFeatures = (
 	units: readonly RootUnit[],
 	written: readonly BaseNode[]
 ): void => {
+	// what a unit declares where one of its roots is compiled, whose code passes
+	// a narrow its ctx: one only checkers call that tests its data or rejects
+	// with a message is passed one of theirs, and fails at a site
+	const compiled = new Set(
+		units.flatMap(unit =>
+			unit.roots.every(root => isCheckerIn(unit, root)) ? [] : unit.declared
+		)
+	)
 	for (const node of written) {
 		if (node.is("sequence")) features.reportsIndices = true
 		else if (node.is("structure")) {
@@ -129,7 +138,9 @@ export const addIssueFeatures = (
 				features.bracketsKeys = true
 		} else if (
 			node.is("morph") ||
-			(node.is("predicate") && !raisesNothing(node.predicate))
+			(node.is("predicate") &&
+				!raisesNothing(node.predicate) &&
+				(compiled.has(node) || !testsOrRejects.has(node.predicate)))
 		) {
 			features.reportsIndices = true
 			features.bracketsKeys = true
@@ -173,7 +184,7 @@ const addsUnionIssue =
 	/runtime\.(?:failsBranches|failsListed|union|discriminateOr)\(/
 
 // a checker saying a message set apart from its path, which its issue notes
-const saysMessage = /runtime\.saying(?:Missing)?\(/
+const saysMessage = /runtime\.(?:saying(?:Missing)?|narrowedRejecting)\(/
 
 // a message set apart from its path, or text written from the program's
 // config, each noted or set by a call on its issue

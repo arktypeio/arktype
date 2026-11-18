@@ -5,7 +5,7 @@ import { globalsByName } from "./builtins.ts"
 import { contains, heldAs, isFunctionNode, type ModuleGraph } from "./graph.ts"
 import { initOf, type Interpreter } from "./interpreter.ts"
 import type { SourceModule } from "./module.ts"
-import { isNode } from "./proofs.ts"
+import { isNode, rejectingPartsOf } from "./proofs.ts"
 import {
 	operatorOf,
 	typeKeys,
@@ -115,83 +115,27 @@ export interface Rejecting {
 	message: string
 }
 
-// A narrow written `(data, ctx) => test || ctx.reject({ message: "..." })`, or
-// `test ? true : ctx.reject(...)`, as most reporting a message of their own
-// are: what it tests of data alone, and the message, which a call can hold in
-// place of the function. Only its truthiness is read, so the two are one
+// what `rejectingPartsOf` reads of a narrow, as a call can hold it in place
+// of the function
 export const rejectingOf = (
 	fn: Node,
 	module: SourceModule
 ): Rejecting | undefined => {
-	if (
-		fn.type !== "ArrowFunctionExpression" ||
-		fn.async ||
-		fn.params.length !== 2 ||
-		fn.params[0].type !== "Identifier" ||
-		fn.params[1].type !== "Identifier"
-	)
-		return
-	const [data, ctx] = fn.params
-	const returned =
-		fn.body.type !== "BlockStatement" ? fn.body
-		: fn.body.body.length === 1 && fn.body.body[0].type === "ReturnStatement" ?
-			fn.body.body[0].argument
-		:	undefined
-	const body = returned && unwrapExpression(returned)
-	const [test, report] =
-		body?.type === "LogicalExpression" && body.operator === "||" ?
-			[body.left, body.right]
-		: (
-			body?.type === "ConditionalExpression" &&
-			body.consequent.type === "Literal" &&
-			body.consequent.value === true
-		) ?
-			[body.test, body.alternate]
-		:	[]
-	if (!test || !report) return
-	const call = unwrapExpression(report)
-	const [input] = call.type === "CallExpression" ? call.arguments : []
-	const [property] = input?.type === "ObjectExpression" ? input.properties : []
-	const isParam = (node: Node, param: Node) =>
-		node.type === "Identifier" &&
-		module.scopes.byId.get(node)?.binding?.id === param
-	if (
-		call.type !== "CallExpression" ||
-		call.optional ||
-		call.arguments.length !== 1 ||
-		call.callee.type !== "MemberExpression" ||
-		call.callee.computed ||
-		call.callee.optional ||
-		call.callee.property.name !== "reject" ||
-		!isParam(call.callee.object, ctx) ||
-		input?.type !== "ObjectExpression" ||
-		input.properties.length !== 1 ||
-		property?.type !== "Property" ||
-		property.kind !== "init" ||
-		property.computed ||
-		property.shorthand ||
-		property.key.type !== "Identifier" ||
-		property.key.name !== "message" ||
-		property.value.type !== "Literal" ||
-		typeof property.value.value !== "string"
-	)
-		return
-	// what it tests reads ctx nowhere
-	let readsCtx = false
-	walk(test, node => {
-		readsCtx ||= isParam(node, ctx)
-		return !readsCtx
-	})
-	if (readsCtx) return
+	const parts = rejectingPartsOf(fn)
+	if (!parts) return
+	const { data, test, message } = parts
+	// nothing binds a name between the parameter and what its body tests
+	const isData = (node: Node) =>
+		node.type === "Identifier" && node.name === data.name
 	const tested = unwrapExpression(test)
 	const callee =
 		(
 			tested.type === "CallExpression" &&
 			!tested.optional &&
 			tested.callee.type === "Identifier" &&
-			!isParam(tested.callee, data) &&
+			!isData(tested.callee) &&
 			tested.arguments.length === 1 &&
-			isParam(tested.arguments[0], data)
+			isData(tested.arguments[0])
 		) ?
 			tested.callee
 		:	undefined
@@ -199,7 +143,7 @@ export const rejectingOf = (
 		data: data.name,
 		test,
 		callee,
-		message: module.source.slice(property.value.start, property.value.end)
+		message: module.source.slice(message.start, message.end)
 	}
 }
 

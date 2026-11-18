@@ -44,6 +44,7 @@ import {
 	ParseError,
 	printable,
 	prototypeOf,
+	testsOrRejects,
 	throwInternalError,
 	throwParseError,
 	unset,
@@ -1865,24 +1866,23 @@ return namespace`
 		return refs.length ?
 				fn.replace(
 					new RegExp(
-						`(runtime\\.narrowed(By|WithCtx)\\(\\(\\) => )?\\b(${refs.join("|")})\\b`,
+						`(runtime\\.narrowed(By|WithCtx|Rejecting)\\(\\(\\) => )?\\b(${refs.join("|")})\\b`,
 						"g"
 					),
 					(
 						_,
 						narrows: string | undefined,
-						kind: "By" | "WithCtx" | undefined,
+						kind: "By" | "WithCtx" | "Rejecting" | undefined,
 						ref: string
 					) => {
 						const cell = narrowedBy[ref]
 						if (!cell) return `${narrows ?? ""}${cellReads[ref]}`
 						const held =
-							kind === "WithCtx" ?
+							kind === "By" ?
+								cell.rejects === undefined && `runtime.narrowed(${cell.text}`
+							:	kind &&
 								cell.rejects !== undefined &&
 								`runtime.rejectsWith(${cell.rejects}`
-							:	kind === "By" &&
-								cell.rejects === undefined &&
-								`runtime.narrowed(${cell.text}`
 						if (!held) return `${narrows ?? ""}${this.readCell(cell)}`
 						for (const specifier in cell.imports) {
 							for (const name of cell.imports[specifier])
@@ -2922,11 +2922,21 @@ return namespace`
 		opts: RootApplyOptions
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
 		const { asValidator, readsAllows, unconfigured, throws } = opts
+		// a checker transforms by its t, so each is created alike
+		const checks = isChecker(root, this.variantOf(root))
+		// a narrow that only tests its data or rejects with a message is passed a
+		// ctx of its checker's, which fails at a site as a check does. Each a
+		// checker reaches is written as one, but through an alias, whose compiled
+		// code passes it the root's ctx
+		const sitesRejections =
+			checks && this.baking.detailsErrors && !root.hasAlias
 		const callbacks = declares(
 			root,
 			node =>
 				node.is("morph") ||
-				(node.is("predicate") && !raisesNothing(node.predicate))
+				(node.is("predicate") &&
+					!raisesNothing(node.predicate) &&
+					!(sitesRejections && testsOrRejects.has(node.predicate)))
 		)
 		if (!this.baking.detailsErrors) {
 			return this.emitUndetailedApply(
@@ -2985,8 +2995,6 @@ return namespace`
 				:	"runtime.applyRejected"
 			:	this.emit(rootApplyRuntime[param])
 		const strategy = root.applyMode
-		// a checker transforms by its t, so each is created alike
-		const checks = isChecker(root, this.variantOf(root))
 		// an undiscriminated union's Transform finds its branch; a checker's t trusts its Allows
 		const isArrow =
 			!root.hasAlias &&

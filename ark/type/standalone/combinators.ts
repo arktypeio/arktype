@@ -14,7 +14,12 @@ import {
 	type UnionNode,
 	type UnitNode
 } from "@ark/schema"
-import { domainOf, isWellFormedInteger, returnsReports } from "@ark/util"
+import {
+	domainOf,
+	isWellFormedInteger,
+	returnsReports,
+	testsOrRejects
+} from "@ark/util"
 import * as runtime from "../runtimeExports.ts"
 import {
 	basesOf,
@@ -1245,7 +1250,9 @@ const writePredicate = (
 		)
 	}
 	return writeCall(
-		returnsReports.has(node.predicate) ? "narrowedWithCtx"
+		// passed a ctx of its own, which reports at a site as a check does
+		testsOrRejects.has(node.predicate) ? "narrowedRejecting"
+		: returnsReports.has(node.predicate) ? "narrowedWithCtx"
 		: raisesNothing(node.predicate) ? "narrowedBy"
 		: "narrowedInCtx",
 		`() => ${fn}`,

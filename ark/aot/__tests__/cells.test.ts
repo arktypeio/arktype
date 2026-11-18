@@ -1178,12 +1178,12 @@ console.log(User.allows({ name: "x" }), User.allows({ name: "abc" }))
 		moves(
 			"holds one that tests its data or rejects with a message as the test and the message",
 			`(s, ctx) => s.length > 2 || ctx.reject({ message: "Too short." })`,
-			/\brejecting\(\(?s\)? => \(?s\.length > 2\)?, "Too short\."\)/
+			/\brejectsWith\(\(?s\)? => \(?s\.length > 2\)?, "Too short\."\)/
 		)
 		moves(
 			"holds one written as a conditional the same way",
 			`(s: string, ctx) => { return s.length > 2 ? true : ctx.reject({ message: 'Too short.' }) }`,
-			/\brejecting\(\(?s\)? => \(?s\.length > 2\)?, ["']Too short\.["']\)/
+			/\brejectsWith\(\(?s\)? => \(?s\.length > 2\)?, ["']Too short\.["']\)/
 		)
 		// what it returns without a report is described by its name, which is none
 		moves(
@@ -1209,7 +1209,7 @@ console.log(User.allows({ name: "x" }), User.allows({ name: "abc" }))
 				const js = await bundle(root, { preset: "smallest" })
 				attest(setsCell(js)).equals(false)
 				// the function it calls, by the name its module declares it under
-				attest(/\brejecting\(\w+, "Too short\."\)/.test(js)).equals(true)
+				attest(/\brejectsWith\(\w+, "Too short\."\)/.test(js)).equals(true)
 				attest(behaviorOf(js)).equals(
 					behaviorOf(
 						await esbuildBundle(root, { preset: "smallest", prune: false })
