@@ -163,7 +163,9 @@ const SummarizedIssues: new () => ReadIssues & { readonly summary: string } =
 		class extends ReadIssues {
 			get summary(): string {
 				let summary = ""
-				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
+				// its first line isn't added to "", as a string added is a call
+				for (const issue of this._)
+					summary = summary ? summary + "\n" + lineOf(issue) : lineOf(issue)
 				return summary
 			}
 		}
@@ -366,15 +368,36 @@ export const pathOf = (issue: {
 	readonly path: readonly PropertyKey[]
 }): string => {
 	let path = ""
+	// one expression, as a bundler folds a flag only where one reads it
 	for (const k of issue.path) {
-		path +=
-			reportsIndices && typeof k === "number" ? `[${k}]`
-			: bracketsKeys && !/^[$_a-z][\w$]*$/i.test(String(k)) ?
-				`[${JSON.stringify(k) ?? String(k)}]`
-			:	(path && ".") + String(k)
+		path =
+			reportsIndices && typeof k === "number" ? path + `[${k}]`
+			: bracketsKeys && !isIdentifier(k) ?
+				path + `[${JSON.stringify(k) ?? String(k)}]`
+				// a string isn't passed to String, which is a call
+			:	(path && path + ".") + (typeof k === "string" ? k : String(k))
 	}
 	return path
 }
+
+let identifiers: Map<string, boolean> | undefined
+
+// matching a key costs several times what finding it does, and most keys a
+// path holds are a schema's own, so few. Data's, like a record's, aren't, so
+// only the first 1024 are remembered. A function only where a build's flag
+// leaves it, as a bundler drops one in a branch it folds
+const isIdentifier: (k: PropertyKey) => boolean =
+	bracketsKeys ?
+		k => {
+			if (typeof k !== "string") return /^[$_a-z][\w$]*$/i.test(String(k))
+			let result = (identifiers ??= new Map()).get(k)
+			if (result === undefined) {
+				result = /^[$_a-z][\w$]*$/i.test(k)
+				if (identifiers.size < 1024) identifiers.set(k, result)
+			}
+			return result
+		}
+	:	(undefined as never)
 
 /**
  * @internal an issue's line of a summary: its message after its path, one
