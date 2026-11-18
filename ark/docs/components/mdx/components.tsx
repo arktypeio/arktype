@@ -19,6 +19,15 @@ import { Pre } from "./CodeFrame.tsx"
 import { Heading } from "./Heading.tsx"
 import { Link } from "./Link.tsx"
 import { LinkCard } from "./LinkCard.tsx"
+import {
+	SizeScaleChart,
+	SizeScaleCosts,
+	SizeScaleCrossovers,
+	SizeScaleFits,
+	SizeScaleParagraph,
+	SizeScaleTable,
+	SizeScaleText
+} from "./SizeScale.tsx"
 import { Table } from "./Table.tsx"
 import { Tab, Tabs } from "./Tabs.tsx"
 
@@ -49,6 +58,14 @@ export const mdxComponents: MDXComponents = {
 	PresetSizeTable,
 	// the 2.0 post's chart
 	RuntimeBenchmarksGraph,
+	// bundle size at scale, from lib/bench/sizeScale.ts
+	SizeScaleChart,
+	SizeScaleCosts,
+	SizeScaleCrossovers,
+	SizeScaleFits,
+	SizeScaleParagraph,
+	SizeScaleTable,
+	SizeScaleText,
 	SyntaxTab,
 	SyntaxTabs,
 	Tab,
