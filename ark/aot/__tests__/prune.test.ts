@@ -706,6 +706,7 @@ export const Fields = { even: Even, name: type("string") }
 				transformsBranches: false,
 				failsInBranches: false,
 				discriminatesBooleans: false,
+				entersMissing: false,
 				readsSummary: true,
 				readsErrors: true,
 				namesFix: false
@@ -726,6 +727,7 @@ export const Fields = { even: Even, name: type("string") }
 				transformsBranches: false,
 				failsInBranches: false,
 				discriminatesBooleans: false,
+				entersMissing: true,
 				readsSummary: true,
 				readsErrors: true,
 				namesFix: false
@@ -749,6 +751,7 @@ export const Fields = { even: Even, name: type("string") }
 				transformsBranches: false,
 				failsInBranches: false,
 				discriminatesBooleans: false,
+				entersMissing: false,
 				readsSummary: true,
 				readsErrors: true,
 				namesFix: false
@@ -782,6 +785,22 @@ export const Fields = { even: Even, name: type("string") }
 							.map(([k]) => k)
 					:	issues
 			}
+
+			it("no key entered with the site it's missing at, which only compiled code passes", async () => {
+				const entersMissing = async (main: string) => {
+					const issues = await issuesOf(main)
+					return (
+						typeof issues === "object" &&
+						!Array.isArray(issues) &&
+						issues.entersMissing
+					)
+				}
+				const one = `import { type } from "arktype"\n\nexport const T = type({ a: { b: "string" } })\n`
+				attest(await entersMissing(`${one}${repaying}\n`)).equals(false)
+				// too few to repay checkers, so compiled, which applies a's value
+				// at its key
+				attest(await entersMissing(one)).equals(true)
+			})
 
 			it("nothing of a morph where none's held", async () => {
 				attest(await heldBy(`type({ a: "string" })`)).equals([])
@@ -833,6 +852,7 @@ export const Fields = { even: Even, name: type("string") }
 				transformsBranches: false,
 				failsInBranches: false,
 				discriminatesBooleans: false,
+				entersMissing: false,
 				readsSummary: true,
 				readsErrors: true,
 				namesFix: false

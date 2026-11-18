@@ -34,6 +34,9 @@ export const failsInBranches: boolean = true
 /** a union told apart by a key holding a boolean */
 export const discriminatesBooleans: boolean = true
 
+/** a key entered with the site it fails at where missing, which a compiled validator passes and a checker doesn't */
+export const entersMissing: boolean = true
+
 /** an errors object's `summary` */
 export const readsSummary: boolean = true
 

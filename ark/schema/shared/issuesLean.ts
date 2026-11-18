@@ -10,6 +10,7 @@ import type {
 } from "./issues.ts"
 import {
 	bracketsKeys,
+	entersMissing,
 	listsUnions,
 	readsErrors,
 	readsKeySites,
@@ -77,12 +78,15 @@ class ReadIssues implements FailureContext {
 		key: PropertyKey,
 		missing?: FailureSite
 	): boolean | undefined {
-		if (missing && !(key in (data as object)))
-			return this._at(missing, data, key)
-		this._p.push(key)
-		const continues = apply((data as Keyed)[key], this)
-		this._p.pop()
-		return !continues
+		let continues: boolean
+		// one expression, so a build whose validators pass no missing site
+		// folds away what reads one
+		return entersMissing && missing && !(key in (data as object)) ?
+				this._at(missing, data, key)
+			:	(this._p.push(key),
+				(continues = apply((data as Keyed)[key], this)),
+				this._p.pop(),
+				!continues)
 	}
 }
 
