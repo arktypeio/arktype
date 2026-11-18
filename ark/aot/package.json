@@ -1,7 +1,7 @@
 {
 	"name": "@ark/aot",
 	"description": "Precompiles arktype definitions at build time",
-	"version": "0.0.1",
+	"version": "0.0.1-beta.0",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
