@@ -1,8 +1,11 @@
 import type { CSSProperties } from "react"
 import type { CurveArm, CurveCorpus } from "../../lib/bench/sizeCurves.ts"
 
-/** "2.6 kB", "51.5 kB", "114 kB" */
-const kb = (bytes: number) => `${(bytes / 1000).toPrecision(3)} kB`
+/** "2.60 kB", "51.5 kB", "114 kB", "5.69 MB" */
+const kb = (bytes: number) =>
+	bytes < 999_500 ?
+		`${(bytes / 1000).toPrecision(3)} kB`
+	:	`${(bytes / 1_000_000).toPrecision(3)} MB`
 
 const typesText = (types: number) => types.toLocaleString("en-US")
 
@@ -21,6 +24,23 @@ const logTicks = (min: number, max: number) => {
 			if (power * step >= min && power * step <= max) ticks.push(power * step)
 	}
 	return ticks
+}
+
+/** the least a share of the plot's width two scale labels may sit apart on a phone */
+const tickGap = 0.14
+
+/**
+ * The scales whose labels a narrow plot drops: working back from the
+ * largest, any within `tickGap` of the last one kept
+ */
+const tightTicks = (xs: number[]) => {
+	const tight = new Set<number>()
+	let kept = Infinity
+	for (const x of [...xs].reverse()) {
+		if (kept - x < tickGap) tight.add(x)
+		else kept = x
+	}
+	return tight
 }
 
 /** the least a share of the plot's height two end labels may sit apart */
@@ -48,7 +68,7 @@ type ScalePlot = {
 		/** each measured point, as shares of the plot from its top left */
 		dots: { types: number; bytes: number; x: number; y: number }[]
 	}[]
-	xTicks: { types: number; x: number }[]
+	xTicks: { types: number; x: number; tight: boolean }[]
 	yTicks: { bytes: number; y: number }[]
 	labels: Map<string, number>
 }
@@ -59,6 +79,7 @@ const plotOf = ({ arms, points }: CurveCorpus): ScalePlot => {
 	const [first, last] = [points[0].types, points.at(-1)!.types]
 	const x = (types: number) => Math.log(types / first) / Math.log(last / first)
 	const y = (value: number) => 1 - Math.log(value / lo) / Math.log(hi / lo)
+	const tight = tightTicks(points.map(point => x(point.types)))
 	const plotted = arms.map(arm => ({
 		arm,
 		dots: points
@@ -72,7 +93,11 @@ const plotOf = ({ arms, points }: CurveCorpus): ScalePlot => {
 	}))
 	return {
 		arms: plotted,
-		xTicks: points.map(point => ({ types: point.types, x: x(point.types) })),
+		xTicks: points.map(point => ({
+			types: point.types,
+			x: x(point.types),
+			tight: tight.has(x(point.types))
+		})),
 		yTicks: logTicks(lo, hi).map(value => ({ bytes: value, y: y(value) })),
 		labels: spreadLabels(
 			plotted.map(({ arm, dots }) => ({ id: arm.id, y: dots.at(-1)!.y }))
@@ -164,7 +189,7 @@ export const SizeCurveChart = ({ corpus, commit }: SizeCurveChartProps) => {
 				{plot.xTicks.map(tick => (
 					<span
 						key={tick.types}
-						className="scale-x"
+						className={tick.tight ? "scale-x is-tight" : "scale-x"}
 						style={{ "--x": pct(tick.x) } as CSSProperties}
 					>
 						{typesText(tick.types)}
@@ -178,10 +203,10 @@ export const SizeCurveChart = ({ corpus, commit }: SizeCurveChartProps) => {
 				<table className="scale-table">
 					<thead>
 						<tr>
-							<th scope="col">gzipped bundle</th>
+							<th scope="col">gzipped, by Types</th>
 							{corpus.points.map(point => (
 								<th key={point.types} scope="col">
-									{typesText(point.types)} Types
+									{typesText(point.types)}
 								</th>
 							))}
 						</tr>

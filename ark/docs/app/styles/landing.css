@@ -1329,9 +1329,10 @@
 		}
 		.scale-plot {
 			height: 260px;
-			margin: 22px 10px 34px 50px;
+			margin: 22px 22px 34px 50px;
 		}
-		.scale-end {
+		.scale-end,
+		.scale-x.is-tight {
 			display: none;
 		}
 		.cutoffs li {
