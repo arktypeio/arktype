@@ -643,6 +643,122 @@
 	white-space: nowrap;
 }
 
+/* ===== bundle size at scale (SizeScaleChart) ===== */
+
+/* a library's hue for each line, its builds told apart by their dashes. Each
+   set of three is apart for color-blind readers and at least 3:1 on its
+   theme's --surface. */
+.size-chart {
+	--sc-arktype: #c98500;
+	--sc-valibot: #199e70;
+	--sc-zod: #9085e9;
+	margin: 1.5rem 0;
+	padding: 1.25rem;
+	border: 1px solid var(--rule);
+	border-radius: var(--r-md);
+	background: var(--surface);
+}
+
+:root[data-theme="light"] .size-chart {
+	--sc-arktype: #b97700;
+	--sc-zod: #6250d6;
+}
+
+.size-chart figcaption {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 1rem;
+	margin-bottom: 0.75rem;
+}
+
+.size-chart > svg {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
+.sc-arktype {
+	--sc-stroke: var(--sc-arktype);
+}
+
+.sc-valibot {
+	--sc-stroke: var(--sc-valibot);
+}
+
+.sc-zod {
+	--sc-stroke: var(--sc-zod);
+}
+
+.sc-line {
+	fill: none;
+	stroke: var(--sc-stroke);
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+/* ringed in the surface, so a dot reads where lines cross it */
+.sc-dot {
+	fill: var(--sc-stroke);
+	stroke: var(--surface);
+	stroke-width: 1.5;
+}
+
+.sc-grid {
+	stroke: var(--line);
+	stroke-width: 1;
+}
+
+.sc-tick {
+	fill: var(--ink-3);
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+	text-anchor: end;
+}
+
+.sc-tick-x {
+	text-anchor: middle;
+}
+
+.sc-axis {
+	text-anchor: start;
+}
+
+.sc-legend,
+.prose .sc-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem 1.25rem;
+	margin: 0.75rem 0 0;
+	padding: 0;
+	list-style: none;
+	color: var(--ink-2);
+	font-size: 0.85rem;
+}
+
+.sc-legend li,
+.prose .sc-legend li {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin: 0;
+	padding: 0;
+}
+
+.sc-legend svg {
+	width: 28px;
+	height: 8px;
+	flex: none;
+}
+
+.sc-note,
+.prose .sc-note {
+	margin: 0.75rem 0 0;
+	color: var(--ink-3);
+	font-size: 0.85rem;
+}
+
 /* components/Button.tsx's outline glows white over the demo video; on
    parchment, where the playground replaces it, it's a solid pill instead */
 :root[data-theme="light"] .glow-btn {

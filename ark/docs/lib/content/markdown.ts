@@ -30,6 +30,17 @@ import {
 	type Claim,
 	type ClaimId
 } from "../claims.ts"
+import {
+	sizeCostTable,
+	sizeCrossoverTableOf,
+	sizeFitTableOf,
+	sizeTableOf,
+	sizeTexts,
+	type SizeCorpusId,
+	type SizeMetric,
+	type SizeTable,
+	type SizeTextId
+} from "../bench/sizeScale.ts"
 import { keywordRowsByTable, type KeywordTableName } from "../keywords.ts"
 import { twoslashLangs, twoslashOptions } from "../shiki.ts"
 import { expandComponents } from "./expand.ts"
@@ -174,6 +185,8 @@ const table = (
 		}))
 	}))
 })
+
+const sizeTable = ({ header, rows }: SizeTable) => table(header, rows)
 
 const claimMarkdown = (claim: Claim<string>) =>
 	`${draftOf(claim)}${isPending(claim) ? " (pending)" : ""}`
@@ -339,6 +352,35 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 					])
 				)
 			]
+		case "SizeScaleParagraph":
+		case "SizeScaleText": {
+			const text = sizeTexts[attr(node, "id") as SizeTextId]
+			return (
+				!text ? []
+				: node.type === "mdxJsxTextElement" ? [{ type: "text", value: text }]
+				: [paragraph(text)]
+			)
+		}
+		case "SizeScaleTable":
+			return [
+				sizeTable(
+					sizeTableOf(
+						attr(node, "corpus") as SizeCorpusId,
+						attr(node, "metric") as SizeMetric
+					)
+				)
+			]
+		case "SizeScaleFits":
+			return [sizeTable(sizeFitTableOf(attr(node, "corpus") as SizeCorpusId))]
+		case "SizeScaleCrossovers":
+			return [
+				sizeTable(sizeCrossoverTableOf(attr(node, "corpus") as SizeCorpusId))
+			]
+		case "SizeScaleCosts":
+			return [sizeTable(sizeCostTable)]
+		// its numbers are the table's after it
+		case "SizeScaleChart":
+			return []
 		case "ClaimCharts":
 			return [
 				...[speedChart, sizeChart].flatMap(claimChartMarkdown),

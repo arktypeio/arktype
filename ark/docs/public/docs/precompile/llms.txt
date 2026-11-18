@@ -142,7 +142,7 @@ arktype returns one Type for a scope's equal definitions written alike, and for 
 
 ## Which to use
 
-Precompile an app you bundle. Its validators ship without a parser or a JIT, and the build reports anything it can't precompile with the fix. See [Setup](https://arktype.io/docs/precompile/setup), and [Speed and size](https://arktype.io/docs/precompile#speed-and-size) for the numbers.
+Precompile an app you bundle. Its validators ship without a parser or a JIT, and the build reports anything it can't precompile with the fix. See [Setup](https://arktype.io/docs/precompile/setup), [Speed and size](https://arktype.io/docs/precompile#speed-and-size) for the numbers, and [Size at scale](https://arktype.io/docs/precompile/size-at-scale) for what each mode costs as an app's Types grow.
 
 Stay dynamic where there's no build, like a script or a REPL, or where definitions are only known at runtime. A standalone build can also leave those to arktype as [runtime islands](https://arktype.io/docs/precompile/advanced#runtime-islands).
 
@@ -733,7 +733,7 @@ The default build compiles each validator to the code that checks its Type faste
 
 What it costs is speed: the shared checkers validate more slowly than code compiled for each Type, and with [`lazy: false`](https://arktype.io/docs/precompile/options#lazy) the bundle creates every validator as it loads, so it starts more slowly too. In our runs of moltar's benchmark, counting instructions per call, "smallest" is 4% slower than Valibot on parseSafe and 2.1-2.6x faster on the other three cases, while Zod 4 is 1.5-7.9x faster than it and the default build 13-46x faster. The [counts](https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md#the-smallest-presets-speed) name each version and the harness. The [benchmarks](https://arktype.io/#run) measure the default build. Choose `"smallest"` where your bundle holds more than a handful of Types and validates input as it arrives, like a frontend's forms and API responses. Keep the default for a server and for validation on a hot path. A program reading only [`.allows`](https://arktype.io/docs/type-api) gets each validator written as the function checking it, as the default writes it, so it's no larger built `"smallest"`.
 
-Compiled code grows with each Type, and arktype doesn't, so a program with enough Types, or Types large enough, is larger compiled than it would be shipping arktype. A [production bundle](https://arktype.io/docs/precompile/options#prune) built with `optimize` unset estimates that from the code it wrote. Where its validators would outweigh arktype and a browser loads the bundle, as esbuild's `platform`, a webpack or Rspack compiler's `target`, Bun's `target` or a Vite client build says, the build writes them as `optimize: "size"` does instead, reading the bundle a second time, and warns that it did. It keeps the errors `optimizeErrors: "speed"` writes unless you set that, and leaves `lazy` as it was, so `"smallest"` is smaller still. A server's bundle stays compiled, as nothing downloads it. A build that can't tell what loads its bundle only warns: Turbopack's, whose one read holds the server's modules with the browser's, a Vite build of several environments, and a Rollup or Rolldown build. Set `optimize: "size"` or `"smallest"` to build so without the warning or the second read, or `optimize: "speed"` to keep them compiled.
+Compiled code grows with each Type, and arktype doesn't, so a program with enough Types, or Types large enough, is larger compiled than it would be shipping arktype. A [production bundle](https://arktype.io/docs/precompile/options#prune) built with `optimize` unset estimates that from the code it wrote. Where its validators would outweigh arktype and a browser loads the bundle, as esbuild's `platform`, a webpack or Rspack compiler's `target`, Bun's `target` or a Vite client build says, the build writes them as `optimize: "size"` does instead, reading the bundle a second time, and warns that it did. It keeps the errors `optimizeErrors: "speed"` writes unless you set that, and leaves `lazy` as it was, so `"smallest"` is smaller still. A server's bundle stays compiled, as nothing downloads it. A build that can't tell what loads its bundle only warns: Turbopack's, whose one read holds the server's modules with the browser's, a Vite build of several environments, and a Rollup or Rolldown build. Set `optimize: "size"` or `"smallest"` to build so without the warning or the second read, or `optimize: "speed"` to keep them compiled. [Size at scale](https://arktype.io/docs/precompile/size-at-scale) measures each build, dynamic arktype and other libraries as an app's Types grow, with and without messages and narrows.
 
 A [production bundle](https://arktype.io/docs/precompile/options#prune) built as one chunk by `"smallest"` also decides, from the Types it holds, how to write them smallest: checkers or compiled code, each validator declared once among the checkers others read, what many validators repeat made once, and common Types like `1 <= string <= 50`, `number.integer >= 0`, `string[] <= 10` and `string | null` as checkers of their own where enough of them repay that runtime. A Type that can't be written as a checker, like one in a cycle or a morph reading its `ctx`, stays compiled, and a bundle ships what morphs, aliases and narrows reading their `ctx` need only if it holds one.
 
@@ -975,6 +975,200 @@ The build fails where a module that creates a Type is imported before the config
 `config: false`, the default in a [production build](https://arktype.io/docs/precompile/options#production-builds), says the program never calls `configure()`, so the build fails wherever it does. A program that calls it names its module as `config`, which overrides the default.
 
 A program configuring `errors` or `mutatesInput` builds with the same value. Configured otherwise by `configure()`, the build fails once, at the call, and for a Scope, at each definition whose Types it configures. The build also fails where `configure()` sets either without the config module importing `arktype/errors` or `arktype/mutatesInput`, as arktype throws creating a Type without it.
+
+# Size at scale
+
+> What each Type adds to a bundle, dynamic and precompiled, and where each is the smaller.
+
+A bundle pays for validation twice: once for the library, and again for each Type. ArkType's two modes split that differently.
+
+- **Dynamic** arktype ships its parser and compiler, a fixed cost, and each Type adds only its definition.
+- **Precompiled**, neither ships, so the fixed cost is small, and each Type adds its validator: checks compiled for it by default, or with [`preset: "smallest"`](https://arktype.io/docs/precompile/options#choosing-smallest), what shared checkers read.
+
+So which is smaller depends on how many Types a bundle holds, and on what they hold. This page measures both, with Valibot and Zod beside them, from 1 to 5,000 Types.
+
+## What's measured
+
+Each app is modules of 25 Types, no two alike, written the same way in each library and bundled whole by esbuild 0.25.10, tree-shaken and minified, with ArkType 3.0.0-beta.0 (d87cdd289), Valibot 1.5.0 and Zod 4.6.7. Every number is the mean of 3 apps generated from different seeds. A library whose schemas have no methods, like Valibot or Zod Mini, is bundled with the functions that validate with them.
+
+Each app is written twice:
+
+- **Models** are objects of ids, bounded strings, formats, integers, enums, optional keys, defaults, arrays, references to each other and discriminated unions, as an API's requests and responses are. None has a message or a function of its own.
+- **Forms** are the same Types, where 35% of their fields that aren't references or arrays have a message of their own and 25% of their plain strings and integers a narrow, about 1.8 messages and 0.5 narrows a Type. Those are the rates we counted in a production frontend's forms.
+
+```ts
+import { type } from "arktype"
+
+const isTrimmed = (s: string) => s === s.trim()
+
+const Contact = type({
+	// a message of its own
+	email: type("string.email").configure({ message: "Enter your work email." }),
+	// a narrow, with its message
+	name: type("1 <= string <= 100").narrow(
+		(value, ctx) =>
+			isTrimmed(value) ||
+			ctx.reject({ message: "Name can't start or end with a space." })
+	)
+})
+```
+
+The default build here is the compiled one a server gets. Building for a browser, it [writes its validators for size](https://arktype.io/docs/precompile/options#choosing-smallest) once they'd outweigh arktype.
+
+[`pnpm benchSizeScale`](https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/scale/sizeScale.ts) reruns every number on this page.
+
+## Models
+
+| Types | "smallest" | Default | Dynamic | Valibot | Zod | Zod Mini |
+| - | - | - | - | - | - | - |
+| 1 | 1.5 KB | 1.8 KB | 97.3 KB | 1.9 KB | 25.5 KB | 6.1 KB |
+| 10 | 3.4 KB | 4.9 KB | 97.9 KB | 3.5 KB | 28.0 KB | 10.2 KB |
+| 50 | 5.6 KB | 11.9 KB | 100 KB | 5.5 KB | 29.9 KB | 12.2 KB |
+| 100 | 7.6 KB | 19.8 KB | 102 KB | 7.5 KB | 31.9 KB | 14.2 KB |
+| 250 | 12.8 KB | 41.0 KB | 108 KB | 13.0 KB | 37.2 KB | 19.8 KB |
+| 500 | 21.2 KB | 75.7 KB | 117 KB | 22.2 KB | 46.1 KB | 28.9 KB |
+| 1,000 | 37.7 KB | 143 KB | 135 KB | 39.8 KB | 63.3 KB | 46.9 KB |
+| 2,500 | 85.5 KB | 343 KB | 191 KB | 93.3 KB | 116 KB | 99.8 KB |
+| 5,000 | 165 KB | 673 KB | 283 KB | 182 KB | 202 KB | 188 KB |
+
+With one Type of a model, the "smallest" build gzips to 1.5 KB and the default build to 1.8 KB, where dynamic arktype is 97.3 KB, Valibot 1.9 KB, Zod Mini 6.1 KB and Zod 25.5 KB.
+
+Against Valibot on models, "smallest" gzips smaller at 10 Types, by up to 2.0%; larger at 50 to 100 Types, by 0.4% to 2.0%; smaller at 250 to 5,000 Types, by 1.5% to 10%. In raw bytes it's smaller at every count measured from 10 to 5,000 Types, by 21% to 38%.
+
+On models, "smallest" gzips smaller at every count measured, and each Type adds 32.7 B to it and 36.9 B to dynamic arktype, so more Types only widen its lead. The default build gzips smaller until about 920 Types, as each Type adds 136 B to it and 36.9 B to dynamic arktype: it's the smaller at 500 and the larger at 1,000, and the seeds' lines cross between 900 and 930.
+
+Before compression:
+
+| Types | "smallest" | Default | Dynamic | Valibot | Zod | Zod Mini |
+| - | - | - | - | - | - | - |
+| 1 | 3.2 KB | 4.2 KB | 291 KB | 5.1 KB | 86.7 KB | 17.8 KB |
+| 10 | 7.7 KB | 19.1 KB | 293 KB | 10.6 KB | 95.8 KB | 32.3 KB |
+| 50 | 14.4 KB | 64.3 KB | 302 KB | 18.7 KB | 104 KB | 40.3 KB |
+| 100 | 21.3 KB | 117 KB | 313 KB | 28.8 KB | 114 KB | 50.1 KB |
+| 250 | 38.9 KB | 263 KB | 347 KB | 58.5 KB | 144 KB | 79.0 KB |
+| 500 | 70.0 KB | 508 KB | 403 KB | 109 KB | 196 KB | 128 KB |
+| 1,000 | 134 KB | 996 KB | 517 KB | 211 KB | 300 KB | 228 KB |
+| 2,500 | 324 KB | 2,464 KB | 861 KB | 520 KB | 614 KB | 528 KB |
+| 5,000 | 646 KB | 4,916 KB | 1,438 KB | 1,039 KB | 1,144 KB | 1,035 KB |
+
+## Forms
+
+| Types | "smallest" | Default | Dynamic | Valibot | Zod | Zod Mini |
+| - | - | - | - | - | - | - |
+| 1 | 2.0 KB | 2.3 KB | 97.3 KB | 1.9 KB | 25.5 KB | 6.2 KB |
+| 10 | 5.7 KB | 7.4 KB | 98.3 KB | 3.9 KB | 28.3 KB | 10.7 KB |
+| 50 | 10.0 KB | 18.6 KB | 101 KB | 6.9 KB | 31.2 KB | 13.8 KB |
+| 100 | 14.4 KB | 30.6 KB | 104 KB | 9.8 KB | 34.1 KB | 16.8 KB |
+| 250 | 27.5 KB | 63.6 KB | 113 KB | 18.1 KB | 42.4 KB | 25.4 KB |
+| 500 | 48.1 KB | 116 KB | 129 KB | 32.0 KB | 56.4 KB | 39.7 KB |
+| 1,000 | 88.8 KB | 218 KB | 159 KB | 59.8 KB | 84.7 KB | 67.7 KB |
+| 2,500 | 210 KB | 512 KB | 249 KB | 142 KB | 168 KB | 152 KB |
+| 5,000 | 414 KB | 997 KB | 400 KB | 280 KB | 308 KB | 296 KB |
+
+On forms, "smallest" gzips larger at every count measured from 10 to 5,000 Types, by 43% to 55%. In raw bytes it's larger at every count measured from 10 to 5,000 Types, by 27% to 72%.
+
+On forms, "smallest" gzips smaller until about 4,300 Types, as each Type adds 82.3 B to it and 60.3 B to dynamic arktype: it's the smaller at 2,500 and the larger at 5,000, and the seeds' lines cross between 4,200 and 4,500. In raw bytes it's smaller at every count measured, by 0.7% at 5,000, though each Type adds 464 B to it and 405 B to dynamic arktype, so as they grow from there the two would meet near 5,400 Types. The default build gzips smaller until about 590 Types, as each Type adds 204 B to it and 60.3 B to dynamic arktype: it's the smaller at 500 and the larger at 1,000, and the seeds' lines cross between 570 and 600.
+
+Before compression:
+
+| Types | "smallest" | Default | Dynamic | Valibot | Zod | Zod Mini |
+| - | - | - | - | - | - | - |
+| 1 | 4.8 KB | 5.6 KB | 292 KB | 5.3 KB | 86.8 KB | 18.1 KB |
+| 10 | 15.6 KB | 28.9 KB | 295 KB | 11.8 KB | 97.0 KB | 34.2 KB |
+| 50 | 38.3 KB | 104 KB | 311 KB | 24.4 KB | 111 KB | 47.6 KB |
+| 100 | 62.8 KB | 191 KB | 330 KB | 39.4 KB | 127 KB | 63.8 KB |
+| 250 | 137 KB | 445 KB | 388 KB | 85.5 KB | 179 KB | 113 KB |
+| 500 | 254 KB | 865 KB | 488 KB | 164 KB | 266 KB | 198 KB |
+| 1,000 | 480 KB | 1,696 KB | 690 KB | 324 KB | 445 KB | 371 KB |
+| 2,500 | 1,162 KB | 4,122 KB | 1,299 KB | 804 KB | 982 KB | 892 KB |
+| 5,000 | 2,308 KB | 8,130 KB | 2,326 KB | 1,617 KB | 1,894 KB | 1,775 KB |
+
+Compressed with brotli, "smallest" on models is within 1.3% either way at 10 Types; larger at 50 to 100 Types, by 2.0% to 2.8%; within 0.5% either way at 250 Types; smaller at 500 Types, by 2.0% to 2.1%; within 3.2% either way at 1,000 Types; smaller at 2,500 to 5,000 Types, by 2.7% to 4.5%. On forms it's larger at every count measured from 10 to 5,000 Types, by 44% to 59%.
+
+## What each Type adds
+
+A bundle's bytes are close to a line: what it costs before its first Type, then the same again for each one. On models:
+
+| Build | Fixed, gzip | Each Type, gzip | Fixed, raw | Each Type, raw |
+| - | - | - | - | - |
+| ArkType precompiled, "smallest" | 4.4 KB | 32.7 B (32.6 to 32.8) | 8.5 KB | 125 B (125 to 126) |
+| ArkType precompiled, default | 6.4 KB | 136 B (132 to 139) | 19.3 KB | 977 B (957 to 1,000) |
+| ArkType dynamic | 98.3 KB | 36.9 B (36.7 to 37.2) | 289 KB | 229 B (228 to 231) |
+| Valibot | 4.0 KB | 35.9 B (35.5 to 36.3) | 8.2 KB | 204 B (203 to 206) |
+| Zod | 28.5 KB | 34.8 B (34.6 to 35.2) | 92.5 KB | 209 B (207 to 211) |
+| Zod Mini | 10.8 KB | 35.7 B (35.5 to 36.1) | 29.8 KB | 199 B (197 to 201) |
+
+On forms:
+
+| Build | Fixed, gzip | Each Type, gzip | Fixed, raw | Each Type, raw |
+| - | - | - | - | - |
+| ArkType precompiled, "smallest" | 6.3 KB | 82.3 B (81.8 to 82.8) | 17.4 KB | 464 B (463 to 464) |
+| ArkType precompiled, default | 10.9 KB | 204 B (200 to 208) | 28.0 KB | 1,650 B (1,629 to 1,688) |
+| ArkType dynamic | 98.4 KB | 60.3 B (59.9 to 60.9) | 287 KB | 405 B (401 to 411) |
+| Valibot | 4.3 KB | 55.2 B (54.8 to 56.0) | 7.3 KB | 317 B (315 to 322) |
+| Zod | 28.5 KB | 55.8 B (55.4 to 56.5) | 90.6 KB | 357 B (353 to 362) |
+| Zod Mini | 11.1 KB | 56.8 B (56.3 to 57.5) | 28.7 KB | 344 B (341 to 349) |
+
+Each line is fitted to the counts from 100 Types up, where growth is steady, and is within 5.7% of every mean it's fitted to. The range after each Type's bytes is the seeds', each fitted alone.
+
+## What a message and a narrow cost
+
+Forms differ from models by their messages and narrows, so an app with only one of the two says what each adds:
+
+| Build | A message, gzip | A message, raw | A narrow, gzip | A narrow, raw |
+| - | - | - | - | - |
+| ArkType precompiled, "smallest" | 10.2 B | 76.9 B | 46.8 B | 228 B |
+| ArkType precompiled, default | 18.4 B | 198 B | 58.8 B | 540 B |
+| ArkType dynamic | 9.1 B | 69.3 B | 14.4 B | 95.3 B |
+| Valibot | 7.6 B | 45.4 B | 11.5 B | 59.5 B |
+| Zod | 8.5 B | 63.1 B | 11.5 B | 64.0 B |
+| Zod Mini | 8.6 B | 63.1 B | 11.7 B | 60.2 B |
+
+At 5,000 Types, a message adds 10.2 B gzipped to a "smallest" bundle and 7.6 B to Valibot's, and a narrow adds 46.8 B and 11.5 B.
+
+With messages alone, "smallest" gzips larger at every count measured from 10 to 5,000 Types, by 1.5% to 11%. With narrows alone, it gzips larger at every count measured from 10 to 5,000 Types, by 34% to 44%.
+
+Taking each alone and adding nothing for the two together, a "smallest" bundle of 5,000 Types gzips smaller than Valibot's while it has fewer than about one narrow in every 9 Types, or fewer than about 1.4 messages a Type and no narrows.
+
+## Where each is smaller
+
+Each count is where the lines between the two measured counts around it meet. On models:
+
+| Build | Against | Gzip | Raw |
+| - | - | - | - |
+| "smallest" | Valibot | smaller until about 23, larger until about 130, then smaller | smaller at every count |
+| "smallest" | Zod | smaller at every count | smaller at every count |
+| "smallest" | Zod Mini | smaller at every count | smaller at every count |
+| "smallest" | Dynamic | smaller at every count | smaller at every count |
+| Default | Valibot | larger from 10 | larger from 10 |
+| Default | Zod | smaller until about 210, then larger | smaller until about 96, then larger |
+| Default | Zod Mini | smaller until about 53, then larger | smaller until about 24, then larger |
+| Default | Dynamic | smaller until about 920, then larger | smaller until about 360, then larger |
+
+On forms:
+
+| Build | Against | Gzip | Raw |
+| - | - | - | - |
+| "smallest" | Valibot | larger at every count | larger from 10 |
+| "smallest" | Zod | smaller until about 840, then larger | smaller until about 630, then larger |
+| "smallest" | Zod Mini | smaller until about 180, then larger | smaller until about 110, then larger |
+| "smallest" | Dynamic | smaller until about 4,300, then larger | smaller at every count; as they grow from 5,000, they'd cross near 5,400 |
+| Default | Valibot | larger at every count | larger at every count |
+| Default | Zod | smaller until about 120, then larger | smaller until about 54, then larger |
+| Default | Zod Mini | smaller until about 26, then larger | smaller until about 13, then larger |
+| Default | Dynamic | smaller until about 590, then larger | smaller until about 210, then larger |
+
+## Which to choose
+
+Precompile a bundle a browser loads, with [`"smallest"`](https://arktype.io/docs/precompile/options#choosing-smallest) once it holds more than a handful of Types. Built "smallest", a bundle gzips smaller than it would shipping arktype at every count measured on models and until about 4,300 Types on forms. What it saves is arktype's fixed cost, which a page pays before it validates anything.
+
+A bundle only outgrows that saving holding about 4,300 Types of forms at once. A frontend that large is split by route, so a page loads the runtime and the validators its own chunks import, where arktype's parser sits in the first chunk any page loads. What loads thousands of Types at once is a server, and nothing downloads a server.
+
+Keep the default build for a server and for validation on a hot path, where each validator's own compiled code is [what makes it fast](https://arktype.io/docs/precompile#speed-and-size). The default build gzips smaller than dynamic arktype until about 920 Types on models and until about 590 Types on forms, and in raw bytes until about 360 Types on models and until about 210 Types on forms. A bundle with both kinds of Type [chooses for each definition](https://arktype.io/docs/precompile/options#strategies-and-schemas).
+
+What a Type holds moves these counts more than how many there are. Gzipped, a narrow costs a "smallest" bundle 4.0x what it costs Valibot's, and a message 1.3x. If bytes are all you're choosing by, compare the rows nearest your app above.
+
+[Dynamic vs Precompiled](https://arktype.io/docs/precompile/dynamic-vs-precompiled#which-to-use) covers when to stay dynamic for reasons other than size.
 
 # Troubleshooting
 
