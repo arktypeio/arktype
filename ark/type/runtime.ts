@@ -1171,6 +1171,21 @@ export const checkFacts = (
 	}
 }
 
+// a function's fact alone, its arity, so a program whose holes are functions
+// ships nothing of what tells a class or a symbol from the one a build read
+export const checkArity = (
+	value: unknown,
+	expected: number,
+	label?: string
+): void =>
+	checkFacts(
+		typeof value !== "function" || isValidator(value) ?
+			describeValue(value)
+		:	Math.min(value.length, 2),
+		expected,
+		label
+	)
+
 const describeFact = (fact: HoleFact): string =>
 	typeof fact === "string" ? fact : (
 		`a function of ${

@@ -7,6 +7,7 @@ import {
 	renderDiagnostic
 } from "@ark/aot"
 import { scope, type } from "arktype"
+import { checkArity } from "arktype/internal/runtime.ts"
 import { introspectionMembers } from "arktype/internal/standalone.ts"
 import { readFileSync } from "node:fs"
 import {
@@ -1113,10 +1114,22 @@ export const Labeled = $ark#6(labels)`)
 				'runtime.checkIdentity(holes3[0], p0, "`local.confirm`\'s hole 0", "`isX as never` (/main.ts:10:43)")',
 				'runtime.checkFacts(runtime.describeShape(p0), "an object with keys name", "`fields`")',
 				'runtime.checkFacts(runtime.describeShape(p1), "an object with keys message", "`config`")',
-				'runtime.checkFacts(runtime.factOfHole(p1["message"]), 1, "`config.message`")',
+				'runtime.checkArity(p1["message"], 1, "`config.message`")',
 				'runtime.checkFacts(runtime.describeShape(p0), "an object with keys message", "`labels`")',
-				'runtime.checkFacts(runtime.factOfHole(p0["message"]), 1, "`labels.message`")'
+				'runtime.checkArity(p0["message"], 1, "`labels.message`")'
 			])
+		})
+
+		it("checks a function it's passed by its arity, as arktype reads one of two or more alike", () => {
+			checkArity((a: unknown, b: unknown) => a === b, 2)
+			checkArity((a: unknown, b: unknown, c: unknown) => a === b && b === c, 2)
+			attest(() => checkArity((a: unknown) => a, 2, "`fn`")).throws(
+				"`fn` is a function of 1 parameter, but was precompiled as a function of 2 or more parameters"
+			)
+			// neither a function nor named, as a build written for size leaves it
+			attest(() => checkArity(undefined, 1)).throws(
+				"A value a validator reads is undefined, but was precompiled as a function of 1 parameter"
+			)
 		})
 
 		it("reads a function a helper call created through what holds it", () => {

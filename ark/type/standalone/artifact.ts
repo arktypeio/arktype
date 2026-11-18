@@ -665,8 +665,11 @@ export class StandaloneArtifact {
 				kind,
 				classesOf(hole => hole)
 			)
+			const label = this.labelArg(this.holeLabels.get(hole))
 			this.checks.push(
-				`runtime.checkFacts(runtime.factOfHole(${expression}${kind === "function" ? "" : `, "${kind}"`}${kind === "class" ? classesArg : ""}), ${JSON.stringify(expected)}${this.labelArg(this.holeLabels.get(hole))})`
+				kind === "function" && typeof expected === "number" ?
+					`runtime.checkArity(${expression}, ${expected}${label})`
+				:	`runtime.checkFacts(runtime.factOfHole(${expression}${kind === "function" ? "" : `, "${kind}"`}${kind === "class" ? classesArg : ""}), ${JSON.stringify(expected)}${label})`
 			)
 		}
 	}
