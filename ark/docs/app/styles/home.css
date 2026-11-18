@@ -1099,8 +1099,12 @@
 			height: 11px;
 		}
 	}
-	.p3-none {
+	.p3-none,
+	.p3-place {
 		color: var(--ink-3);
+	}
+	.p3-place {
+		font-size: 12.5px;
 	}
 	.p3-foot {
 		display: flex;

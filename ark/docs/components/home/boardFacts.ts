@@ -1,12 +1,20 @@
 import { formatRatio, list } from "../../lib/bench/bench.ts"
 import {
 	isWellKnown,
+	isWrittenByUs,
 	leaderboards,
 	rowsOf
 } from "../../lib/bench/leaderboard.ts"
 import { ntwineRows } from "../../lib/bench/scoreboard.ts"
 import {
-	averageText,
+	incumbent,
+	ownFigures,
+	placeAmong,
+	sourcesOf,
+	unitBoards,
+	type UnitBoard
+} from "../../lib/bench/units.ts"
+import {
 	categories,
 	medianOf,
 	ordinal,
@@ -116,8 +124,9 @@ export const heroStats = (): HeroStat[] => {
  * the section then prints the claim itself.
  */
 export const sizeCloseLine = () => {
-	const { leads, ties, average } = categoryOf("size")
-	if (!leads || ties || !isWellKnown(average.other.library)) return
+	const { average } = categoryOf("size")
+	const [best] = leaderboards.size.standings
+	if (best.library !== "ArkType" || !isWellKnown(average.other.library)) return
 	const ranks = rowsOf("size").map(
 		results =>
 			Object.values(results).filter(bytes => bytes < results.ArkType).length + 1
@@ -160,28 +169,29 @@ export const kB = (text: string) => text.replaceAll(" KB", " kB")
 /** where the site says how every number on the homepage was measured */
 export const methodHref = "/docs/precompile/benchmarks"
 
-/** an average as a multiple of the best result: "1.252×", "19.7×", "13.8k×" */
-export const multiple = (score: number) =>
-	score < 10 ? `${averageText(score)}×`
-	: score < 1e3 ? `${score.toPrecision(3)}×`
-	: score < 1e6 ? `${(score / 1e3).toPrecision(3)}k×`
-	: `${(score / 1e6).toPrecision(3)}M×`
-
-/** the library every graph on the page keeps in view, wherever it places */
-export const incumbent = "Zod"
+export { incumbent }
 
 export type BoardBar = {
 	library: string
-	/** its best average, as a multiple of the best result */
-	score: number
-	/** its place among every library ranked, named on the site or not: "4th" */
-	place: string
 	kind: "ours" | "rival" | "incumbent"
+	/** its place among every library that ran the graph's results: "4th" */
+	place: string
+	/** its mean in the graph's unit: "2,863", "1.52 kB" */
+	text: string
+	/** the same library on our own benchmark, where it is on it: "794 ns" */
+	beside?: string
+	/** ArkType's lane only, the line under its bar */
+	sub?: string
+	/** its length as a share of the axis */
+	w: number
+	/** whether its mean is past the end of the axis */
+	cut: boolean
 	/** drawn only where there is room for every rival: a phone keeps the best one */
 	wide?: true
+	/** how many libraries place between it and the lane drawn above it */
+	gap: BoardGap
 }
 
-/** how many libraries are ranked between the incumbent and the last bar drawn above it */
 export type BoardGap = {
 	/** with every rival drawn */
 	wide: number
@@ -189,15 +199,29 @@ export type BoardGap = {
 	narrow: number
 }
 
+export type BoardTick = {
+	/** its share of the axis */
+	at: number
+	label: string
+}
+
+export type BoardBadge = {
+	/** ArkType's place across every result of the category, in plain order: "1st" */
+	place: string
+	/** what that place is among: "of 10 across all 43 results…" */
+	text: string
+}
+
 export type BoardGraph = {
 	id: Category["id"]
 	title: string
-	/** how many results its averages are over */
-	results: number
-	/** how many libraries it ranks */
-	ranked: number
+	/** unit · where the results are from */
+	caption: string
 	bars: BoardBar[]
-	skipped: BoardGap
+	ticks: BoardTick[]
+	/** ArkType's mean as a share of the axis, marked on every track */
+	mark: number
+	badge: BoardBadge
 }
 
 const graphTitles: Record<Category["id"], string> = {
@@ -206,61 +230,208 @@ const graphTitles: Record<Category["id"], string> = {
 	size: "Bundle size"
 }
 
-/** the rivals drawn under ArkType before the graph skips to the incumbent */
-const rivalsDrawn = 3
+const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`
+
+/** "2 other projects' benchmarks", "1 other project's benchmark" */
+const otherProjects = (n: number) =>
+	n === 1 ? "1 other project's benchmark" : `${n} other projects' benchmarks`
 
 /**
- * The board, a graph a category: ArkType, the best of the other libraries
- * the site names, and Zod, which most readers are choosing against, at
- * whatever place it holds. Scores and places are the leaderboard's own
- * (lib/bench/leaderboard.ts), every library counted; ArkType's place is the
- * one lib/claims.ts gives it, "1st" only where it may claim it.
+ * unit · where its results are from: how many, from how many other projects'
+ * benchmarks. A graph that averages a result whose code for each library we
+ * wrote names its sources instead, since "other projects' benchmarks" would
+ * count that one as something it isn't.
+ */
+export const captionOf = (board: UnitBoard) => {
+	const sources = sourcesOf(board)
+	const from =
+		sources.some(source => isWrittenByUs(source.label)) ?
+			list(sources.map(source => source.label))
+		:	`${count(board.rows.length, "result")} from ${otherProjects(sources.length)}`
+	return `${board.unit} · ${from}`
+}
+
+/**
+ * The line under ArkType's bar: the same build on our own benchmark, in the
+ * unit most readers think in. Size has none, being in kilobytes already.
+ */
+const subOf = (board: UnitBoard) => {
+	const own = ownFigures[board.id].ArkType
+	if (!own) return
+	return board.id === "speed" ?
+			`${own.text} · ${own.rate} validations a second on our benchmark`
+		:	`${own.text} from import to first validation on our apps`
+}
+
+/**
+ * ArkType's place on the pooled board, which ranks every library across every
+ * result of the category by its average ratio to each result's best, in
+ * plain order. A graph that already averages every result of its category
+ * has no wider board to be placed on, and states its own place and how many
+ * libraries it is among.
+ */
+const badgeOf = (id: Category["id"], board: UnitBoard): BoardBadge => {
+	const { rows, suites, standings } = leaderboards[id]
+	if (rows === board.rows.length) {
+		const ours = board.standings.find(s => s.library === "ArkType")!
+		return {
+			place: ordinal(ours.place),
+			text: `of the ${board.standings.length} libraries that ran ${rows === 2 ? "both results" : `all ${rows} results`}`
+		}
+	}
+	const ours = standings.find(s => s.library === "ArkType")!
+	const independent = suites.filter(label => !isWrittenByUs(label)).length
+	return {
+		place: ordinal(
+			placeAmong(
+				standings.map(s => s.score),
+				ours.score
+			)
+		),
+		text: `of ${standings.length} across all ${rows} ${
+			independent === suites.length ?
+				`results from ${otherProjects(suites.length)}`
+			:	`public ${id} results`
+		}`
+	}
+}
+
+/**
+ * The axis reaches the best rival's bar, and past it any bar under this many
+ * times the shortest. A longer one is drawn to the end of the axis and cut:
+ * its number, printed beside it, is its length.
+ */
+const cutBeyond = 16
+
+/** the lengths an axis may have, as multiples of a power of ten: each has round quarters */
+const axisSteps = [1, 1.2, 1.6, 2, 2.4, 3.2, 4, 6, 8, 10]
+
+/** the shortest axis with round quarters that holds `value` */
+const axisOver = (value: number) => {
+	const power = 10 ** Math.floor(Math.log10(value))
+	return axisSteps.map(step => step * power).find(max => max >= value)!
+}
+
+/**
+ * The board, a graph a category, by lib/bench/units.ts's rule: the results
+ * are other projects' benchmarks, each bar the geometric mean of a library's
+ * results in the unit they were measured in, and each place among every
+ * library that ran all of them. The lanes are ArkType, the best three of the
+ * other libraries the site names, and Zod, which most readers are choosing
+ * against, wherever it places.
  */
 export const boardGraphs = (): BoardGraph[] =>
 	categories.map(category => {
-		const { standings, rows } = leaderboards[category.id]
-		const placeOf = (library: string) =>
-			library === "ArkType" ?
-				category.place
-			:	ordinal(standings.findIndex(s => s.library === library) + 1)
+		const board = unitBoards[category.id]
 		const indexOf = (library: string) =>
-			standings.findIndex(s => s.library === library)
-		const barOf = (library: string, kind: BoardBar["kind"]): BoardBar => ({
-			library,
-			score: standings[indexOf(library)].score,
-			place: placeOf(library),
-			kind
-		})
-		const rivals = standings
-			.filter(s => s.library !== "ArkType" && isWellKnown(s.library))
-			.slice(0, rivalsDrawn)
-			.map(s => s.library)
-		const at = indexOf(incumbent)
-		// from the incumbent up to the nearest of these, not counting either
-		const gapAbove = (drawn: string[]) =>
-			at - Math.max(...drawn.map(indexOf).filter(index => index < at), -1) - 1
-		const apart = !rivals.includes(incumbent)
+			board.standings.findIndex(s => s.library === library)
+		const [bestRival] = board.lanes.filter(
+			library => library !== "ArkType" && library !== incumbent
+		)
+		const narrow = board.lanes.filter(
+			library =>
+				library === "ArkType" || library === incumbent || library === bestRival
+		)
+		// how many places lie between a lane and the one drawn above it
+		const gapIn = (drawn: string[], library: string) => {
+			const at = drawn.indexOf(library)
+			return at > 0 ? indexOf(library) - indexOf(drawn[at - 1]) - 1 : 0
+		}
+		const values = board.lanes.map(
+			library => board.standings[indexOf(library)].value
+		)
+		const [shortest, next] = values.toSorted((l, r) => l - r)
+		const max = axisOver(
+			Math.max(next, ...values.filter(value => value < shortest * cutBeyond))
+		)
 		return {
 			id: category.id,
 			title: graphTitles[category.id],
-			results: rows,
-			ranked: standings.length,
-			bars: [
-				barOf("ArkType", "ours"),
-				...rivals.map(
-					(library, i): BoardBar =>
-						library === incumbent ? barOf(library, "incumbent")
-						: i === 0 ? barOf(library, "rival")
-						: { ...barOf(library, "rival"), wide: true }
-				),
-				...(apart ? [barOf(incumbent, "incumbent")] : [])
-			],
-			skipped: {
-				wide: gapAbove(["ArkType", ...rivals]),
-				narrow: gapAbove(["ArkType", ...rivals.slice(0, 1)])
-			}
+			caption: captionOf(board),
+			bars: board.lanes.map((library): BoardBar => {
+				const { value, place } = board.standings[indexOf(library)]
+				const kind =
+					library === "ArkType" ? "ours"
+					: library === incumbent ? "incumbent"
+					: "rival"
+				const sub = kind === "ours" ? subOf(board) : undefined
+				const beside =
+					kind === "ours" ? undefined : ownFigures[board.id][library]?.text
+				return {
+					library,
+					kind,
+					place: ordinal(place),
+					text: board.format(value),
+					...(beside ? { beside } : {}),
+					...(sub ? { sub } : {}),
+					w: Math.min(value, max) / max,
+					cut: value > max,
+					...(narrow.includes(library) ? {} : { wide: true }),
+					gap: {
+						wide: gapIn(board.lanes, library),
+						narrow: narrow.includes(library) ? gapIn(narrow, library) : 0
+					}
+				}
+			}),
+			ticks: [0.25, 0.5, 0.75, 1].map(at => ({
+				at,
+				label: board.tick(max * at, at === 1)
+			})),
+			mark: board.standings[indexOf("ArkType")].value / max,
+			badge: badgeOf(category.id, board)
 		}
 	})
+
+export type BoardTableCell = {
+	/** "2nd" */
+	place: string
+	/** its mean in the graph's unit: "2,863" */
+	text: string
+	first: boolean
+}
+
+export type BoardTableRow = {
+	library: string
+	/** null where it didn't run every result the graph averages */
+	cells: Record<Category["id"], BoardTableCell | null>
+}
+
+/**
+ * Every number on the board, a library a row: each library the site names
+ * that a graph ranks, in the order the graphs first rank it, with its mean
+ * and its place in each graph. Places count every library, named or not.
+ */
+export const boardTable = (): BoardTableRow[] => {
+	const ids = categories.map(category => category.id)
+	const libraries = [
+		...new Set(ids.flatMap(id => unitBoards[id].standings.map(s => s.library)))
+	].filter(isWellKnown)
+	return libraries.map(library => ({
+		library,
+		cells: Object.fromEntries(
+			ids.map(id => {
+				const board = unitBoards[id]
+				const standing = board.standings.find(s => s.library === library)
+				return [
+					id,
+					standing ?
+						{
+							place: ordinal(standing.place),
+							text: board.format(standing.value),
+							first: standing.place === 1
+						}
+					:	null
+				]
+			})
+		) as BoardTableRow["cells"]
+	}))
+}
+
+/** a graph's caption for the table's column: "CPU instructions per validation" */
+export const boardUnits = (): Record<Category["id"], string> =>
+	Object.fromEntries(
+		categories.map(category => [category.id, unitBoards[category.id].unit])
+	) as Record<Category["id"], string>
 
 export type SpeedBar = {
 	name: string

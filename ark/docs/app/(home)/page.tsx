@@ -11,7 +11,7 @@ import { Hero, heroLede, heroLine } from "../../components/home/Hero.tsx"
 import { HomeCode, PlainCode } from "../../components/home/HomeCode.tsx"
 import { HomeEffects } from "../../components/home/HomeEffects.tsx"
 import { Migrate } from "../../components/home/Migrate.tsx"
-import { PickThree } from "../../components/home/PickThree.tsx"
+import { BoardTable } from "../../components/home/BoardTable.tsx"
 import {
 	Precompile,
 	Size,
@@ -298,9 +298,9 @@ export default function HomePage() {
 					>
 						<Drill
 							chip="as a table"
-							verdict="Every category's average, a library a row."
+							verdict="Every number on the board, a library a row."
 						>
-							<PickThree />
+							<BoardTable />
 						</Drill>
 					</Drills>
 				</Board>

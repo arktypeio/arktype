@@ -38,7 +38,7 @@ export type Leaderboard = {
 	standings: Standing[]
 }
 
-const geomean = (values: readonly number[]) =>
+export const geomean = (values: readonly number[]) =>
 	Math.exp(values.reduce((sum, v) => sum + Math.log(v), 0) / values.length)
 
 const suiteScores = (suite: Suite) => {
@@ -135,6 +135,26 @@ export const fullLeaderboards = leaderboardsOf(() => true)
 export const resultsOf = (suiteId: string, rowId: string) =>
 	suites.find(s => s.id === suiteId)!.rows.find(row => row.id === rowId)!
 		.results
+
+export type ResultRow = { id: string; results: Record<string, number> }
+
+/** every row of a suite, by the suite's id */
+export const rowsOfSuite = (suiteId: string): ResultRow[] => {
+	const suite = suites.find(s => s.id === suiteId)
+	if (!suite) throw new Error(`No leaderboard suite has the id ${suiteId}`)
+	return suite.rows
+}
+
+export type SuiteRow = ResultRow & {
+	/** the suite it is a row of, by label: "schemabenchmarks.dev" */
+	suite: string
+}
+
+/** every row of a category's independent suites, each with its suite's label */
+export const independentRowsOf = (category: CategoryId): SuiteRow[] =>
+	suites
+		.filter(s => s.category === category && independentSuites(s))
+		.flatMap(s => s.rows.map(row => ({ ...row, suite: s.label })))
 
 /** startup.ts's paired rounds, if its results recorded them */
 export const startupPaired = suites.find(s => s.id === "startup")?.paired
