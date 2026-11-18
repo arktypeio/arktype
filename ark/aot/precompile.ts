@@ -1732,9 +1732,11 @@ export class Precompiler {
 		// a size build's units, where the bundle is one chunk, are one module
 		const isOneChunk =
 			!!program.isOneChunk && this.standalone.optimize === "size"
+		const sharesCreators = !!usage.combines
 		let link = this.linkWritten(wrote.written, sources, {
 			exposesAllows: usage.readsAllows,
-			isOneChunk
+			isOneChunk,
+			sharesCreators
 		})
 		// a unit a site creates its validator from is declared as that
 		// validator where validators expose allows
@@ -1745,7 +1747,8 @@ export class Precompiler {
 				Object.assign(wrote, exposed)
 				link = this.linkWritten(wrote.written, sources, {
 					exposesAllows: true,
-					isOneChunk
+					isOneChunk,
+					sharesCreators
 				})
 			} else {
 				usage.readsAllows = false
@@ -1761,7 +1764,8 @@ export class Precompiler {
 				shaped &&
 				this.linkWritten(shaped.written, sources, {
 					exposesAllows: usage.readsAllows,
-					isOneChunk
+					isOneChunk,
+					sharesCreators
 				})
 			if (shaped && shapedLink && shapesPayIn(shaped.written)) {
 				Object.assign(wrote, shaped)
@@ -1777,6 +1781,7 @@ export class Precompiler {
 				exposesAllows: usage.readsAllows,
 				isOneChunk,
 				sharesChecks: true,
+				sharesCreators,
 				sharesUnits: !isOneChunk
 			})
 			return link.changed || shared.changed

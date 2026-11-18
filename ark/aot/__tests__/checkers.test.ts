@@ -813,6 +813,64 @@ false
 		attest(/\bclass Traversal\b/.test(checkers)).equals(false)
 	})
 
+	it("writes once what creates a validator, whichever way its root finds its issues", async () => {
+		const root = fixture(
+			"one-creator",
+			`import { type } from "arktype"
+
+const show = (out: unknown) => console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
+const Plain = type({ name: "string" })
+const Rejecting = type({ name: type("string").narrow((s, ctx) => s.length > 2 || ctx.reject({ message: "Too short." })) })
+const Reporting = type({ name: type("string").narrow((s, ctx) => s.length > 2 || ctx.mustBe("long")) })
+// a getter valid when asked again: a root with a narrow passes its data, as
+// arktype does, where one without fails it as a whole
+const once = () => { let reads = 0; return { get name() { return reads++ ? "abc" : 1 } } }
+for (const T of [Plain, Rejecting, Reporting]) {
+	show(T({ name: "abc" }))
+	show(T({ name: "x" }))
+	show(T({ name: 1 }))
+	show(T({}))
+	show(T(once()))
+	try { T.assert({ name: 1 }) } catch (e) { console.log(e.message) }
+}
+${repaying}
+`
+		)
+		const whole = behaviorOf(await bundle(root, { prune: false }))
+		const js = await bundle(root, smallest)
+		// arktype's but for that one line of a root without a narrow
+		attest(
+			behaviorOf(js)
+				.split("\n")
+				.filter(line => line !== "is invalid")
+		).equals(whole.split("\n").filter((_, i) => i !== 4))
+		attest(behaviorOf(js)).snap(`{"name":"abc"}
+{"name":"x"}
+name must be a string
+name must be a string (was missing)
+is invalid
+name must be a string
+{"name":"abc"}
+name: Too short.
+name must be a string
+name must be a string (was missing)
+{"name":"abc"}
+name must be a string
+{"name":"abc"}
+name must be long
+name must be a string
+name must be a string (was missing)
+{"name":"abc"}
+name must be a string
+`)
+		attest(js.match(/vendor: "arktype"/g)?.length).equals(1)
+		for (const finder of ["foundErrors", "applyIssues", "applyErrors"]) {
+			attest(
+				new RegExp(`[=,] ${finder}\\b|\\b${finder}\\(apply, `).test(js)
+			).equals(true)
+		}
+	})
+
 	// what a narrow that reports is run through, whatever it's proved of
 	const atEachDepth = `const Deep = type({
 	a: N,

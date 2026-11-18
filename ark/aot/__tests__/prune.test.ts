@@ -2354,6 +2354,117 @@ export { k${i}Allows }
 			})
 		})
 
+		describe("creators alike but for what finds a root's issues", () => {
+			const creator = (name: string, takes: string, found: string) =>
+				`import * as runtime from "arktype/runtime"
+
+const ${name} = (${takes}, meta = runtime.emptyMeta) => {
+	const validator = (data, _, onFail) => allows(data) ? data : ${found}
+	validator.assert = data => allows(data) ? data : ${found.replace("onFail", "runtime.throwOnDefault")}
+	validator.meta = meta
+	return validator
+}
+
+export { ${name} }
+`
+			const found = "runtime.foundErrors(allows, data, onFail)"
+			const applied = "runtime.applyIssues(allows, data, onFail)"
+			const traversed =
+				"runtime.applyErrors(allows, data, runtime.runtimeConfig, onFail, runtime.Traversal)"
+			const linkedWith = (
+				creators: Record<string, string>,
+				sharesCreators = true
+			) =>
+				linkBundle(
+					{
+						"/main.ts": {
+							source: "export const A = type({})",
+							code: `import { aAllows as $ark_aAllows } from "~arktype/a"
+${Object.keys(creators)
+	.map(
+		specifier =>
+			`import { ${specifier.slice(9)} as $ark_${specifier.slice(9)} } from "${specifier}"\n`
+	)
+	.join("")}${Object.keys(creators)
+								.map(
+									(specifier, i) =>
+										`export const A${i} = /* @__PURE__ */ $ark_${specifier.slice(9)}($ark_aAllows)\nexport const B${i} = /* @__PURE__ */ $ark_${specifier.slice(9)}($ark_aAllows)\n`
+								)
+								.join("")}`
+						}
+					},
+					{ ...units, ...creators },
+					{ sharesCreators }
+				)
+			const declarationsIn = (modules: Record<string, string>) =>
+				Object.values(modules)
+					.flatMap(code => code.match(/^const create\w+ = .*$/gm) ?? [])
+					.sort()
+
+			it("are written once, each other passing the first what it finds them with", () => {
+				const { modules } = linkedWith({
+					"~arktype/createFound": creator("createFound", "allows", found),
+					"~arktype/createApplied": creator("createApplied", "allows", applied),
+					"~arktype/createListed": creator("createListed", "[allows]", applied),
+					"~arktype/createTraversed": creator(
+						"createTraversed",
+						"allows",
+						traversed
+					)
+				})!
+				attest(declarationsIn(modules)).snap([
+					"const createApplied = (allows, meta = runtime.emptyMeta, found = runtime.applyIssues) => {",
+					"const createFound = (allows, meta = runtime.emptyMeta) => createApplied(allows, meta, runtime.foundErrors)",
+					"const createListed = ([allows], meta = runtime.emptyMeta) => createApplied(allows, meta, runtime.applyIssues)",
+					"const createTraversed = (allows, meta = runtime.emptyMeta) => createApplied(allows, meta, (apply, data, onFail) => runtime.applyErrors(apply, data, runtime.runtimeConfig, onFail, runtime.Traversal))"
+				])
+				// each call of what found them, its assert's too, is the one passed
+				const first = Object.values(modules).find(code =>
+					code.includes("const createApplied = ")
+				)!
+				attest(first.match(/\bfound\(allows, data, [\w.]+\)/g)).snap([
+					"found(allows, data, onFail)",
+					"found(allows, data, runtime.throwOnDefault)"
+				])
+				attest(/runtime\.applyIssues\(/.test(first)).equals(false)
+			})
+
+			it("are left where they differ otherwise, or the build isn't one of checkers", () => {
+				const creators = {
+					"~arktype/createFound": creator("createFound", "allows", found),
+					"~arktype/createApplied": creator("createApplied", "allows", applied)
+				}
+				const written = [
+					"const createApplied = (allows, meta = runtime.emptyMeta) => {",
+					"const createFound = (allows, meta = runtime.emptyMeta) => {"
+				]
+				attest(declarationsIn(linkedWith(creators, false)!.modules)).equals(
+					written
+				)
+				// one taking its root's Apply too finds its issues with that
+				const unlike = {
+					...creators,
+					"~arktype/createApplied": creator(
+						"createApplied",
+						"allows, apply",
+						"runtime.applyIssues(apply, data, onFail)"
+					)
+				}
+				attest(declarationsIn(linkedWith(unlike)!.modules)).equals([
+					"const createApplied = (allows, apply, meta = runtime.emptyMeta) => {",
+					written[1]
+				])
+				// and one alone is written as it was
+				attest(
+					declarationsIn(
+						linkedWith({
+							"~arktype/createFound": creators["~arktype/createFound"]
+						})!.modules
+					)
+				).equals([written[1]])
+			})
+		})
+
 		it("renames a module it writes into, which another may read unlinked", () => {
 			const b = `import * as runtime from "arktype/runtime"
 import { aAllows } from "~arktype/a"

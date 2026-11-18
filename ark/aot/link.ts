@@ -34,6 +34,8 @@ export interface LinkOptions {
 	isOneChunk?: boolean
 	// its units are checkers, so what they call may be shared
 	sharesChecks?: boolean
+	// its validators are created from checkers, by functions much alike
+	sharesCreators?: boolean
 	// its chunks are many, so the units most of its modules read are one module
 	sharesUnits?: boolean
 }
@@ -54,10 +56,12 @@ export const linkBundle = (
 		exposesAllows = false,
 		isOneChunk = false,
 		sharesChecks = false,
+		sharesCreators = false,
 		sharesUnits = false
 	}: LinkOptions = {}
 ): LinkedBundle | undefined => {
-	let codes = sharesChecks ? withSharedChecks(modules) : modules
+	const created = sharesCreators ? withOneCreator(modules) : modules
+	let codes = sharesChecks ? withSharedChecks(created) : created
 	const siteCodes = Object.fromEntries(
 		Object.entries(sites).map(([id, site]) => [id, site.code])
 	)
@@ -720,6 +724,90 @@ const writeImports = (names: Iterable<string>): string =>
 	[...names]
 		.map(name => `import { ${name} } from "~arktype/${name}"\n`)
 		.join("")
+
+// what a creator's validator is passed to fail with: a name, or one condition
+const failArgument = String.raw`(\((?:[^()]|\([^()]*\))*\)|[\w.]+)`
+
+// each way a creator's validator finds the issues of data its Allows rejected
+const foundCall = new RegExp(
+	String.raw`\bruntime\.(foundErrors|applyIssues)\(allows, data, ${failArgument}\)|\bruntime\.applyErrors\(allows, data, runtime\.runtimeConfig, ${failArgument}, runtime\.Traversal\)`,
+	"g"
+)
+
+const applyingErrors =
+	"(apply, data, onFail) => runtime.applyErrors(apply, data, runtime.runtimeConfig, onFail, runtime.Traversal)"
+
+// the module of a creator taking its root's Allows, itself or in an array
+const creatorModule =
+	/^import \* as runtime from "arktype\/runtime"\n\nconst (create\w+) = \((\[allows]|allows)((?:, \w+(?: = [\w.]+)?)*)\) => {\n([\S\s]*)\n}\n\nexport { \1 }\n$/
+
+interface Creator {
+	specifier: string
+	name: string
+	// how it takes its root's Allows: `allows` or `[allows]`
+	takes: string
+	// its other params, as written after that one
+	rest: string
+	// its body, calling `found` where it finds a root's issues
+	body: string
+	// what it found them with
+	finder: string
+}
+
+// A program's validators are created by a few functions alike but for what
+// finds a root's issues, which depends on whether it runs a narrow and whether
+// one reads its ctx, and for taking its Allows in an array. Each is a dozen
+// lines no minifier shares, so those of one body are written once: the first
+// takes what finds the issues, by default its own, and each other passes it
+// its own. A program with one of them is written as it was
+const withOneCreator = (
+	modules: Record<string, string>
+): Record<string, string> => {
+	const alike = new Map<string, Creator[]>()
+	for (const specifier of Object.keys(modules).sort()) {
+		const match = creatorModule.exec(modules[specifier])
+		if (!match) continue
+		const [, name, takes, rest, written] = match
+		const finders = new Set<string>()
+		const body = written.replace(
+			foundCall,
+			(_, finder?: string, failing?: string, traversed?: string) => {
+				finders.add(finder ? `runtime.${finder}` : applyingErrors)
+				return `found(allows, data, ${failing ?? traversed})`
+			}
+		)
+		if (finders.size !== 1 || /\bfound\b/.test(written)) continue
+		const creator: Creator = {
+			specifier,
+			name,
+			takes,
+			rest,
+			body,
+			finder: [...finders][0]
+		}
+		const key = `${rest}\n${body}`
+		const creators = alike.get(key)
+		if (creators) creators.push(creator)
+		else alike.set(key, [creator])
+	}
+	const codes = { ...modules }
+	const runtime = `import * as runtime from "arktype/runtime"\n\n`
+	for (const creators of alike.values()) {
+		if (creators.length < 2) continue
+		// one taking the Allows itself is passed no array made for the call
+		const first =
+			creators.find(creator => creator.takes === "allows") ?? creators[0]
+		const others = creators.filter(creator => creator !== first)
+		codes[first.specifier] =
+			`${runtime}const ${first.name} = (${first.takes}${first.rest}, found = ${first.finder}) => {\n${first.body}\n}\n\nexport { ${first.name} }\n`
+		const passed = `${first.takes}${first.rest.replace(/ = [\w.]+/g, "")}`
+		for (const { specifier, name, takes, rest, finder } of others) {
+			codes[specifier] =
+				`import { ${first.name} } from ${JSON.stringify(first.specifier)}\n${runtime}const ${name} = (${takes}${rest}) => ${first.name}(${passed}, ${finder})\n\nexport { ${name} }\n`
+		}
+	}
+	return codes
+}
 
 // a checker holding only data is the same wherever it's written, so what's
 // written more than once is made once. Each makes closures an import runs,
