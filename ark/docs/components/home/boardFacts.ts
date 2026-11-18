@@ -121,7 +121,7 @@ export const sizeCloseLine = () => {
 		ranks.every(rank => rank === ranks[0]) ?
 			`${ordinal(ranks[0])} on each one`
 		:	`${list(ranks.map(ordinal))} on them`
-	return `Smallest on average across ${ranks.length} public size results (${formatRatio(average.score)} the best; ${average.other.library} ${formatRatio(average.other.score)}), and ${places}.`
+	return `Smallest on average across the ${ranks.length} size results (${formatRatio(average.score)} the best; ${average.other.library} ${formatRatio(average.other.score)}), and ${places}.`
 }
 
 /**
