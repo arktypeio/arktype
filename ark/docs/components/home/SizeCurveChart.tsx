@@ -1,10 +1,5 @@
 import type { CSSProperties } from "react"
-import {
-	curveCutoffs,
-	type CurveArm,
-	type CurveCorpus,
-	type CurveCutoff
-} from "../../lib/bench/sizeCurves.ts"
+import type { CurveArm, CurveCorpus } from "../../lib/bench/sizeCurves.ts"
 
 /** "2.6 kB", "51.5 kB", "114 kB" */
 const kb = (bytes: number) => `${(bytes / 1000).toPrecision(3)} kB`
@@ -83,42 +78,6 @@ const plotOf = ({ arms, points }: CurveCorpus): ScalePlot => {
 			plotted.map(({ arm, dots }) => ({ id: arm.id, y: dots.at(-1)!.y }))
 		)
 	}
-}
-
-const scalesText = (types: number[]) =>
-	types.length === 1 ?
-		typesText(types[0])
-	:	`${typesText(types[0])} to ${typesText(types.at(-1)!)}`
-
-type CutoffProps = {
-	cutoff: CurveCutoff
-	/** what the scale's variants vary */
-	variant: string
-}
-
-/** where one of ArkType's builds is the smaller, read off the measured scales */
-const Cutoff = ({ cutoff, variant }: CutoffProps) => {
-	const { ours, rival, smallerAt, mixedAt, largerAt } = cutoff
-	const parts = [
-		smallerAt.length && `smaller at ${scalesText(smallerAt)} Types`,
-		mixedAt.length &&
-			`at ${scalesText(mixedAt)}, smaller as drawn and larger ${variant}`,
-		largerAt.length && `larger at ${scalesText(largerAt)}`
-	].filter(Boolean)
-	return (
-		<li className={`is-${ours.kind}`}>
-			<span className="cut-pair">
-				<b>{ours.label}</b> against {rival.label}
-			</span>
-			<span className="cut-where">
-				{!mixedAt.length && !largerAt.length ?
-					"smaller at every scale measured"
-				: !mixedAt.length && !smallerAt.length ?
-					"larger at every scale measured"
-				:	parts.join("; ")}
-			</span>
-		</li>
-	)
 }
 
 export type SizeCurveChartProps = {
@@ -245,12 +204,13 @@ export const SizeCurveChart = ({ corpus, commit }: SizeCurveChartProps) => {
 				<b>On this corpus only.</b> {corpus.scope}
 			</p>
 			<ul className="cutoffs">
-				{curveCutoffs(corpus).map(cutoff => (
-					<Cutoff
-						key={`${cutoff.ours.id} ${cutoff.rival.id}`}
-						cutoff={cutoff}
-						variant={corpus.variant}
-					/>
+				{corpus.cutoffs.map(({ ours, rival, where }) => (
+					<li key={`${ours.id} ${rival.id}`} className={`is-${ours.kind}`}>
+						<span className="cut-pair">
+							<b>{ours.label}</b> against {rival.label}
+						</span>
+						<span className="cut-where">{where}</span>
+					</li>
 				))}
 			</ul>
 			<figcaption>

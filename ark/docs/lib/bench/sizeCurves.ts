@@ -1,9 +1,9 @@
 /**
  * Bundle size as an app's Types grow, for the homepage's size drill-down:
  * per corpus, each arm's gzipped bytes at each scale, and where ArkType's
- * builds stop being the smaller one. The chart and its table read only
- * `sizeCurves`, so denser data (more corpora, scales or arms) replaces it
- * below without touching either.
+ * builds are the smaller one. The chart, its table and its cutoff lines read
+ * only `sizeCurves`, so denser data (more corpora, scales or arms) replaces
+ * it below without touching any of them.
  *
  * A corpus is one kind of schema, measured at several scales. What a
  * library ships per schema depends on what the schema holds, so a result on
@@ -34,13 +34,18 @@ export type CurveBytes = Record<string, number>
 export type CurvePoint = {
 	/** how many Types the app defines */
 	types: number
-	/** the app the chart draws */
 	gz: CurveBytes
+}
+
+/** one of ArkType's builds against another library, on one corpus */
+export type CurveCutoff = {
+	ours: CurveArm
+	rival: CurveArm
 	/**
-	 * the same scale measured another way, like with narrows on shared Types: a
-	 * build counts as smaller at a scale only if it is in `gz` and in each
+	 * where ours is the smaller and where it isn't, in words that state no
+	 * more than was measured: "smaller at 11 to 230 Types; larger at 1,012"
 	 */
-	variants: CurveBytes[]
+	where: string
 }
 
 export type CurveCorpus = {
@@ -51,12 +56,11 @@ export type CurveCorpus = {
 	source: string
 	/** what its schemas hold and don't, which is what its results are scoped to */
 	scope: string
-	/** what `variants` vary, in a phrase: "with narrows" */
-	variant: string
 	/** in the order the chart's key lists them */
 	arms: CurveArm[]
 	/** ascending by `types` */
 	points: CurvePoint[]
+	cutoffs: CurveCutoff[]
 }
 
 export type SizeCurves = {
@@ -82,6 +86,9 @@ const arms: CurveArm[] = [
 	}
 ]
 
+/** a scale as the board measured it: as drawn, and again with narrows on its shared Types */
+type MeasuredPoint = CurvePoint & { withNarrows: CurveBytes[] }
+
 const bytesOf = (row: AppRow): CurveBytes =>
 	Object.fromEntries(
 		arms
@@ -90,6 +97,61 @@ const bytesOf = (row: AppRow): CurveBytes =>
 	)
 
 const bundled = generatedRows.filter(row => row.host === "esbuild")
+
+const measured: MeasuredPoint[] = bundled
+	.filter(row => !row.narrows)
+	.map(row => ({
+		types: Number(row.app),
+		gz: bytesOf(row),
+		withNarrows: bundled
+			.filter(other => other.app === row.app && other.narrows)
+			.map(bytesOf)
+	}))
+	.sort((l, r) => l.types - r.types)
+
+const measuredArms = arms.filter(arm => bundled.some(row => arm.id in row.arms))
+
+const countText = (types: number) => types.toLocaleString("en-US")
+
+const scalesText = (types: number[]) =>
+	types.length === 1 ?
+		countText(types[0])
+	:	`${countText(types[0])} to ${countText(types.at(-1)!)}`
+
+/**
+ * One of ArkType's builds against another library, scale by scale. It is
+ * the smaller at a scale only if it is as drawn and with narrows; a cutoff
+ * lies between the last scale it is smaller at and the first it isn't, and
+ * nothing is interpolated.
+ */
+const whereOf = (ours: CurveArm, rival: CurveArm): string => {
+	const has = (bytes: CurveBytes) => ours.id in bytes && rival.id in bytes
+	const smaller = (bytes: CurveBytes) => bytes[ours.id] < bytes[rival.id]
+	/** how many of the ways a scale was measured have ours the smaller */
+	const share = (point: MeasuredPoint) => {
+		const ways = [point.gz, ...point.withNarrows.filter(has)]
+		return ways.filter(smaller).length / ways.length
+	}
+	const both = measured.filter(point => has(point.gz))
+	const typesOf = (of: MeasuredPoint[]) => of.map(point => point.types)
+	const smallerAt = typesOf(both.filter(point => share(point) === 1))
+	const mixedAt = typesOf(
+		both.filter(point => share(point) > 0 && share(point) < 1)
+	)
+	const largerAt = typesOf(both.filter(point => share(point) === 0))
+	if (!mixedAt.length && !largerAt.length)
+		return "smaller at every scale measured"
+	if (!mixedAt.length && !smallerAt.length)
+		return "larger at every scale measured"
+	return [
+		smallerAt.length && `smaller at ${scalesText(smallerAt)} Types`,
+		mixedAt.length &&
+			`at ${scalesText(mixedAt)}, smaller as drawn and larger with narrows`,
+		largerAt.length && `larger at ${scalesText(largerAt)}`
+	]
+		.filter(Boolean)
+		.join("; ")
+}
 
 export const sizeCurves: SizeCurves = {
 	commit: scoreboard.commit,
@@ -100,65 +162,16 @@ export const sizeCurves: SizeCurves = {
 			source:
 				"apps we generated from our startup benchmark's SaaS schemas, each Type validating a request in a handler, bundled and minified with esbuild as a production build",
 			scope:
-				"These schemas carry no custom messages, and narrows only in the variant. Form-like schemas, with a message on most fields, are a separate corpus: what a library ships per schema differs there, so these cutoffs don't carry over to it.",
-			variant: "with narrows",
-			arms: arms.filter(arm => bundled.some(row => arm.id in row.arms)),
-			points: bundled
-				.filter(row => !row.narrows)
-				.map(row => ({
-					types: Number(row.app),
-					gz: bytesOf(row),
-					variants: bundled
-						.filter(other => other.app === row.app && other.narrows)
-						.map(bytesOf)
-				}))
-				.sort((l, r) => l.types - r.types)
+				"These schemas carry no custom messages, and narrows only where a line below says so. Form-like schemas, with a message on most fields, are a separate corpus: what a library ships per schema differs there, so these cutoffs don't carry over to it.",
+			arms: measuredArms,
+			points: measured.map(({ types, gz }) => ({ types, gz })),
+			cutoffs: measuredArms
+				.filter(arm => arm.kind !== "other")
+				.flatMap(ours =>
+					measuredArms
+						.filter(arm => arm.kind === "other")
+						.map(rival => ({ ours, rival, where: whereOf(ours, rival) }))
+				)
 		}
 	]
 }
-
-export type CurveCutoff = {
-	ours: CurveArm
-	rival: CurveArm
-	/** the scales, of those both were measured at, where ours is the smaller however it was measured */
-	smallerAt: number[]
-	/** where it is the smaller measured one way and not another */
-	mixedAt: number[]
-	/** and where it isn't the smaller */
-	largerAt: number[]
-}
-
-/**
- * Each of ArkType's builds against each other library on a corpus, scale by
- * scale. A cutoff lies between the last scale in `smallerAt` and the first
- * above it that isn't; nothing is interpolated.
- */
-export const curveCutoffs = ({ arms, points }: CurveCorpus): CurveCutoff[] =>
-	arms
-		.filter(arm => arm.kind !== "other")
-		.flatMap(ours =>
-			arms
-				.filter(arm => arm.kind === "other")
-				.map(rival => {
-					const has = (bytes: CurveBytes) =>
-						ours.id in bytes && rival.id in bytes
-					const smaller = (bytes: CurveBytes) =>
-						bytes[ours.id] < bytes[rival.id]
-					const both = points.filter(point => has(point.gz))
-					/** how many of the ways a scale was measured have ours the smaller */
-					const share = (point: CurvePoint) => {
-						const ways = [point.gz, ...point.variants.filter(has)]
-						return ways.filter(smaller).length / ways.length
-					}
-					const typesOf = (of: CurvePoint[]) => of.map(point => point.types)
-					return {
-						ours,
-						rival,
-						smallerAt: typesOf(both.filter(point => share(point) === 1)),
-						mixedAt: typesOf(
-							both.filter(point => share(point) > 0 && share(point) < 1)
-						),
-						largerAt: typesOf(both.filter(point => share(point) === 0))
-					}
-				})
-		)
