@@ -102,8 +102,10 @@ export const ByteGrid = () => {
 					)}
 				</span>
 				<span className="bytes-key" aria-hidden>
-					<span className="key-kept">the checks your form needs</span>
-					<span className="key-parser">the parser, left at build</span>
+					<span className="key-kept">what ships</span>
+					<span className="key-parser">
+						arktype's parser and compiler, left at build
+					</span>
 				</span>
 			</div>
 			<ol className="bytes-rivals">

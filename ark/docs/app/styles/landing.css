@@ -137,6 +137,10 @@
 		margin-top: 48px;
 		border-top: 1px solid var(--rule-soft);
 	}
+	.drill,
+	.drill-body [id] {
+		scroll-margin-top: calc(var(--top) + 20px);
+	}
 	.drill {
 		border-bottom: 1px solid var(--rule-soft);
 		> summary {

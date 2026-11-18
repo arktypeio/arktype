@@ -31,7 +31,7 @@ export type SizePoint = {
 	/** the app the chart draws */
 	gz: SizeBytes
 	/**
-	 * the same scale measured another way, like with a narrow on each Type: a
+	 * the same scale measured another way, like with narrows on shared Types: a
 	 * build counts as smaller at a scale only if it is in `gz` and in each
 	 */
 	variants: SizeBytes[]
@@ -40,7 +40,7 @@ export type SizePoint = {
 export type SizeScale = {
 	/** what was bundled, and how, in a sentence */
 	source: string
-	/** what `variants` vary, in a phrase: "with a narrow on each Type" */
+	/** what `variants` vary, in a phrase: "with narrows" */
 	variant: string
 	commit: string
 	/** in the order the chart's key lists them */
@@ -79,7 +79,7 @@ const bundled = generatedRows.filter(row => row.host === "esbuild")
 export const sizeScale: SizeScale = {
 	source:
 		"apps we generated from our startup benchmark's SaaS schemas, each Type validating a request in a handler, bundled and minified with esbuild as a production build",
-	variant: "with a narrow on each Type",
+	variant: "with narrows",
 	commit: scoreboard.commit,
 	arms: arms.filter(arm => bundled.some(row => arm.id in row.arms)),
 	points: bundled

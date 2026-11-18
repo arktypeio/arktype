@@ -350,10 +350,7 @@ export const Size = () => (
 					</Link>
 				</p>
 			</Drill>
-			<Drill
-				title="The close call"
-				hint="size is the category we lead by least"
-			>
+			<Drill title="The close call" hint="size is the close one">
 				<p className="drill-p">
 					<ClaimText claim={claims.sizeAverage} />{" "}
 					<ClaimText claim={claims.sizeClose} />{" "}

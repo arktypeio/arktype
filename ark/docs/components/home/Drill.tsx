@@ -15,7 +15,8 @@ export type DrillProps = {
  * `<details>`, so it opens without JS, and find-in-page reaches inside it.
  */
 export const Drill = ({ title, hint, id, children }: DrillProps) => (
-	<details className="drill" id={id}>
+	// a browser opens the one a hash lands in before React hydrates
+	<details className="drill" id={id} suppressHydrationWarning>
 		<summary>
 			<span className="drill-mark" aria-hidden />
 			<span className="drill-title">{title}</span>

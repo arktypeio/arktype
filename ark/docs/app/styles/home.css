@@ -2447,13 +2447,13 @@
 				animation: rise-fade 0.3s ease-out both;
 				animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--won));
 			}
-			/* a place lands as ArkType finishes (HomeEffects copies the race's --won) */
+			/* a place lands once its tile's --won has passed (landing.css sets it) */
 			.card-num:is(
-					[data-suffix="st"],
-					[data-suffix="nd"],
-					[data-suffix="rd"],
-					[data-suffix="th"]
-				) {
+				[data-suffix="st"],
+				[data-suffix="nd"],
+				[data-suffix="rd"],
+				[data-suffix="th"]
+			) {
 				transform-origin: 0 80%;
 				animation: place-in 0.5s var(--ease-pop) both;
 				animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--won, 0.9s));

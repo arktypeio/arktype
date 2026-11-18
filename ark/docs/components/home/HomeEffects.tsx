@@ -134,7 +134,7 @@ const countUp = (el: HTMLElement, delay: number, seconds: number) => {
 
 /** the speed drill-down's dots: the one nearest the pointer grows and names its scenario */
 const wireSpots = () => {
-	const card = document.querySelector<HTMLElement>(".card.is-speed")
+	const card = document.querySelector<HTMLElement>(".card.is-solo.is-speed")
 	if (!card) return
 	let hot: HTMLElement | undefined
 	const tipOf = (el: Element) =>
@@ -318,18 +318,18 @@ const wireHash = () => {
 		const id = decodeURIComponent(location.hash.slice(1))
 		const target = id ? document.getElementById(id) : null
 		if (!target) return
-		const closed: HTMLDetailsElement[] = []
+		const within: HTMLDetailsElement[] = []
 		for (
 			let details = target.closest("details");
 			details;
 			details = details.parentElement?.closest("details") ?? null
 		)
-			if (!details.open) closed.push(details)
-		if (target instanceof HTMLDetailsElement && !target.open)
-			closed.push(target)
-		if (!closed.length) return
-		for (const details of closed) details.open = true
-		target.scrollIntoView()
+			within.push(details)
+		if (!within.length) return
+		for (const details of within) details.open = true
+		// the browser may have opened it already, having scrolled to where
+		// the target wasn't yet
+		requestAnimationFrame(() => target.scrollIntoView())
 	}
 	open()
 	addEventListener("hashchange", open)
