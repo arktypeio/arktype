@@ -1,9 +1,14 @@
 /**
- * A synthetic app of n object schemas, written the same way in ArkType and
- * Valibot. Its shapes follow the homepage's shop and saas apps: ids, bounded
- * strings, formats, bounded integers, enums, optional keys with and without
- * defaults, nullables, references to the schemas before, arrays, and every
- * 8th schema a union discriminated by "kind".
+ * A synthetic app of n object schemas, written the same way in ArkType,
+ * Valibot, Zod and Zod Mini. Its shapes follow the homepage's shop and saas
+ * apps: ids, bounded strings, formats, bounded integers, enums, optional keys
+ * with and without defaults, nullables, references to the schemas before,
+ * arrays, and every 8th schema a union discriminated by "kind".
+ *
+ * `messages` and `narrows` then write it as an app of forms: a field with a
+ * message of its own, and a string or integer checked by a function. Both draw
+ * from a generator of their own, so an app has the same schemas with and
+ * without them.
  */
 export interface SynthOptions {
 	/** limits fields to these kinds */
@@ -14,11 +19,20 @@ export interface SynthOptions {
 	nonNullable?: boolean
 	/** no unions */
 	noUnions?: boolean
+	/** the share of fields, other than references and arrays, with a message of their own */
+	messages?: number
+	/** the share of unformatted strings and integers a function also checks, with its message */
+	narrows?: number
 }
 
 export interface SynthApp {
 	arktype: string
 	valibot: string
+	zod: string
+	zodMini: string
+	/** how many of its fields have a message of their own, and how many a narrow */
+	messages: number
+	narrows: number
 }
 
 type Field =
@@ -30,12 +44,21 @@ type Field =
 	| { kind: "ref"; to: number }
 	| { kind: "array"; of: Field; max?: number | undefined }
 
+/** a helper each module declares, or a test of `value` written where it's used */
+interface Narrow {
+	helper?: string
+	test?: string
+	message: string
+}
+
 interface Prop {
 	key: string
 	field: Field
 	optional?: boolean
 	nullable?: boolean
 	default?: unknown
+	message?: string
+	narrow?: Narrow
 }
 
 type Schema =
@@ -190,7 +213,53 @@ const patterns = [
 	/^[A-Z]{2}\d{2}[\dA-Z]{11,30}$/
 ]
 
+// the functions a narrow names, declared by each module that has one
+const helpers = {
+	string: {
+		notBlank: {
+			source: "(s: string) => s.trim().length > 0",
+			mustNot: "be blank"
+		},
+		isTrimmed: {
+			source: "(s: string) => s === s.trim()",
+			mustNot: "start or end with a space"
+		},
+		isSingleLine: {
+			source: '(s: string) => !s.includes("\\n")',
+			mustNot: "span more than one line"
+		},
+		isPrintable: {
+			source: "(s: string) => !/[\\u0000-\\u001f]/.test(s)",
+			mustNot: "contain control characters"
+		}
+	},
+	integer: {
+		isSafe: {
+			source: "(n: number) => Number.isSafeInteger(n)",
+			mustNot: "be too large to count"
+		}
+	}
+} as const
+
+const helpersSource =
+	Object.values(helpers)
+		.flatMap(group => Object.entries(group))
+		.map(([name, { source }]) => `const ${name} = ${source}`)
+		.join("\n") + "\n"
+
+const prefixes = ["_", "-", ".", "#"]
+const reserved = ["admin", "root", "system", "support", "null", "test"]
+const fragments = ["  ", "<", "://", "@"]
+const steps = [5, 10, 25, 100]
+
 const pascal = (s: string) => s[0].toUpperCase() + s.slice(1)
+
+// "billingEmail2" as "billing email 2"
+const spaced = (key: string) =>
+	key
+		.replace(/([a-z])([\dA-Z])/g, "$1 $2")
+		.replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")
+		.toLowerCase()
 
 const camel = (s: string) => s[0].toLowerCase() + s.slice(1)
 
@@ -213,6 +282,106 @@ export const synthOf = (
 	const pick = <t>(items: readonly t[]): t =>
 		items[Math.floor(random() * items.length)]
 	const chance = (p: number) => random() < p
+
+	// what messages and narrows draw from, so neither moves a schema's shape
+	let decorState = (seed ^ 0x9e3779b9) >>> 0
+	const decor = () => {
+		decorState = (decorState + 0x6d2b79f5) >>> 0
+		let t = decorState
+		t = Math.imul(t ^ (t >>> 15), t | 1)
+		t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+		return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+	}
+	const decorPick = <t>(items: readonly t[]): t =>
+		items[Math.floor(decor() * items.length)]
+
+	// half name their schema, as a form's messages do where a field's name alone
+	// wouldn't say enough: "Invoice title" beside "Title"
+	const labelOf = (key: string, schema: string) =>
+		pascal(decor() < 0.5 ? `${spaced(schema)} ${spaced(key)}` : spaced(key))
+
+	const messageOf = (field: Field, label: string): string | undefined => {
+		switch (field.kind) {
+			case "string":
+				return (
+					field.min !== undefined && field.max !== undefined ?
+						`${label} must be ${field.min} to ${field.max} characters.`
+					: field.max !== undefined ?
+						`${label} must be at most ${field.max} characters.`
+					:	`${label} must be text.`
+				)
+			case "email":
+				return `${label} must be a valid email address.`
+			case "uuid":
+				return `${label} is not a valid ID.`
+			case "url":
+				return `${label} must be a valid URL.`
+			case "date":
+				return `${label} must be a date and time.`
+			case "boolean":
+				return `${label} must be on or off.`
+			case "number":
+				return `${label} must be a number.`
+			case "integer":
+				return field.max !== undefined ?
+						`${label} must be a whole number from ${field.min} to ${field.max}.`
+					:	`${label} must be a whole number of at least ${field.min}.`
+			case "enum":
+				return `Choose one of the options for ${label.toLowerCase()}.`
+			case "pattern":
+				return `${label} is not in the expected format.`
+		}
+	}
+
+	const narrowOf = (field: Field, label: string): Narrow | undefined => {
+		if (field.kind !== "string" && field.kind !== "integer") return
+		if (decor() < 0.5) {
+			const [helper, { mustNot }] = decorPick(
+				Object.entries(helpers[field.kind])
+			)
+			return { helper, message: `${label} must not ${mustNot}.` }
+		}
+		if (field.kind === "integer") {
+			const step = decorPick(steps)
+			return {
+				test: `value % ${step} === 0`,
+				message: `${label} must be a multiple of ${step}.`
+			}
+		}
+		const roll = decor()
+		if (roll < 0.34) {
+			const prefix = decorPick(prefixes)
+			return {
+				test: `!value.startsWith(${JSON.stringify(prefix)})`,
+				message: `${label} must not start with ${JSON.stringify(prefix)}.`
+			}
+		}
+		if (roll < 0.67) {
+			const word = decorPick(reserved)
+			return {
+				test: `value.toLowerCase() !== ${JSON.stringify(word)}`,
+				message: `${label} must not be ${JSON.stringify(word)}.`
+			}
+		}
+		const fragment = decorPick(fragments)
+		return {
+			test: `!value.includes(${JSON.stringify(fragment)})`,
+			message: `${label} must not contain ${JSON.stringify(fragment)}.`
+		}
+	}
+
+	const decorate = (prop: Prop, schema: string) => {
+		if (!options.messages && !options.narrows) return
+		const label = labelOf(prop.key, schema)
+		if (options.messages && decor() < options.messages) {
+			const message = messageOf(prop.field, label)
+			if (message) prop.message = message
+		}
+		if (options.narrows && decor() < options.narrows) {
+			const narrow = narrowOf(prop.field, label)
+			if (narrow) prop.narrow = narrow
+		}
+	}
 
 	const schemas: Schema[] = []
 
@@ -302,7 +471,8 @@ export const synthOf = (
 	const propsOf = (
 		count: number,
 		withId: boolean,
-		withDefaults: boolean
+		withDefaults: boolean,
+		schema: string
 	): Prop[] => {
 		const taken = new Set<string>()
 		const props: Prop[] = []
@@ -331,6 +501,7 @@ export const synthOf = (
 					field.kind === "ref")
 			)
 				prop.nullable = true
+			decorate(prop, schema)
 			props.push(prop)
 		}
 		return props
@@ -344,7 +515,7 @@ export const synthOf = (
 		usedNames.add(name)
 		if (i % 8 === 7 && !options.noUnions) {
 			const branches = Array.from({ length: int(2, 4) }, () =>
-				propsOf(int(2, 5), false, false)
+				propsOf(int(2, 5), false, false, name)
 			)
 			schemas.push({ kind: "union", name, branches })
 		} else {
@@ -352,16 +523,26 @@ export const synthOf = (
 			schemas.push({
 				kind: "object",
 				name,
-				props: propsOf(count, chance(0.8), true)
+				props: propsOf(count, chance(0.8), true, name)
 			})
 		}
 	}
 
+	const props = schemas.flatMap(s =>
+		s.kind === "object" ? s.props : s.branches.flat()
+	)
 	return {
-		arktype: arktypeOf(schemas),
-		valibot: valibotOf(schemas)
+		arktype: arktypeOf(schemas, !!options.narrows),
+		valibot: valibotOf(schemas, !!options.narrows),
+		zod: zodOf(schemas, !!options.narrows),
+		zodMini: zodMiniOf(schemas, !!options.narrows),
+		messages: props.filter(p => p.message).length,
+		narrows: props.filter(p => p.narrow).length
 	}
 }
+
+const narrowFunctionOf = ({ helper, test }: Narrow) =>
+	helper ?? `value => ${test}`
 
 const kindsOf = (schema: Schema & { kind: "union" }) =>
 	schema.branches.map(
@@ -374,7 +555,7 @@ const kindProp = (kind: string): Prop => ({
 	field: { kind: "enum", values: [kind] }
 })
 
-const arktypeOf = (schemas: Schema[]) => {
+const arktypeOf = (schemas: Schema[], withHelpers: boolean) => {
 	const stringOf = (f: Field): string | undefined => {
 		switch (f.kind) {
 			case "string":
@@ -403,7 +584,28 @@ const arktypeOf = (schemas: Schema[]) => {
 				return f.values.map(v => `'${v}'`).join(" | ")
 		}
 	}
-	const valueOf = ({ field, nullable, default: value }: Prop): string => {
+	// a field with a message or a narrow is a Type of its own, which a
+	// definition's string can't configure
+	const decoratedOf = (prop: Prop): string => {
+		const { field, nullable, message, narrow } = prop
+		const s = stringOf(field)
+		const base = `type(${s === undefined ? String((field as Field & { kind: "pattern" }).pattern) : JSON.stringify(s)})`
+		const configured =
+			message ?
+				`${base}.configure({ message: ${JSON.stringify(message)} })`
+			:	base
+		const narrowed =
+			narrow ?
+				`${configured}.narrow((value, ctx) => ${narrow.helper ? `${narrow.helper}(value)` : narrow.test} || ctx.reject({ message: ${JSON.stringify(narrow.message)} }))`
+			:	configured
+		const nulled = nullable ? `${narrowed}.or("null")` : narrowed
+		return prop.default === undefined ?
+				nulled
+			:	`${nulled}.default(${JSON.stringify(prop.default)})`
+	}
+	const valueOf = (prop: Prop): string => {
+		const { field, nullable, default: value } = prop
+		if (prop.message || prop.narrow) return decoratedOf(prop)
 		const s = stringOf(field)
 		if (s !== undefined) {
 			const defaultSuffix =
@@ -423,7 +625,11 @@ const arktypeOf = (schemas: Schema[]) => {
 	}
 	const objectOf = (props: Prop[]) =>
 		`type({ ${props.map(p => `${JSON.stringify(p.key + (p.optional && p.default === undefined ? "?" : ""))}: ${valueOf(p)}`).join(", ")} })`
-	const lines = [`import { type } from "arktype"`, ""]
+	const lines = [
+		`import { type } from "arktype"`,
+		...(withHelpers ? ["", helpersSource.trimEnd()] : []),
+		""
+	]
 	for (const s of schemas) {
 		if (s.kind === "object")
 			lines.push(`export const ${s.name} = ${objectOf(s.props)}`)
@@ -440,42 +646,80 @@ const arktypeOf = (schemas: Schema[]) => {
 	return lines.join("\n") + "\n"
 }
 
-const valibotOf = (schemas: Schema[]) => {
-	const fieldOf = (f: Field): string => {
+const valibotOf = (schemas: Schema[], withHelpers: boolean) => {
+	// a message is the last argument of the check it's for, or of the schema
+	// where nothing checks it, and where two checks would repeat it,
+	// v.message() sets it for both
+	const checkedOf = (
+		base: string,
+		checks: (message: string) => string[],
+		{ message, narrow }: Pick<Prop, "message" | "narrow">
+	): string => {
+		const plain = checks("")
+		const narrowCheck =
+			narrow ?
+				[
+					`v.check(${narrowFunctionOf(narrow)}, ${JSON.stringify(narrow.message)})`
+				]
+			:	[]
+		const pipeOf = (schema: string, actions: string[]) =>
+			actions.length ? `v.pipe(${[schema, ...actions].join(", ")})` : schema
+		if (!message) return pipeOf(`v.${base}()`, [...plain, ...narrowCheck])
+		const text = JSON.stringify(message)
+		if (plain.length === 0) return pipeOf(`v.${base}(${text})`, narrowCheck)
+		if (plain.length === 1)
+			return pipeOf(`v.${base}()`, [...checks(text), ...narrowCheck])
+		return pipeOf(
+			`v.message(${pipeOf(`v.${base}()`, plain)}, ${text})`,
+			narrowCheck
+		)
+	}
+	// "" for a check without a message, else its argument
+	const arg = (message: string) => (message ? `, ${message}` : "")
+	const fieldOf = (
+		f: Field,
+		decor: Pick<Prop, "message" | "narrow"> = {}
+	): string => {
 		switch (f.kind) {
-			case "string": {
-				const checks = [
-					f.min !== undefined && `v.minLength(${f.min})`,
-					f.max !== undefined && `v.maxLength(${f.max})`
-				].filter(Boolean)
-				return checks.length ?
-						`v.pipe(v.string(), ${checks.join(", ")})`
-					:	"v.string()"
-			}
+			case "string":
+				return checkedOf(
+					"string",
+					m => [
+						...(f.min !== undefined ? [`v.minLength(${f.min}${arg(m)})`] : []),
+						...(f.max !== undefined ? [`v.maxLength(${f.max}${arg(m)})`] : [])
+					],
+					decor
+				)
 			case "email":
-				return "v.pipe(v.string(), v.email())"
+				return checkedOf("string", m => [`v.email(${m})`], decor)
 			case "uuid":
-				return "v.pipe(v.string(), v.uuid())"
+				return checkedOf("string", m => [`v.uuid(${m})`], decor)
 			case "url":
-				return "v.pipe(v.string(), v.url())"
+				return checkedOf("string", m => [`v.url(${m})`], decor)
 			case "date":
-				return "v.pipe(v.string(), v.isoTimestamp())"
+				return checkedOf("string", m => [`v.isoTimestamp(${m})`], decor)
 			case "boolean":
-				return "v.boolean()"
+				return checkedOf("boolean", () => [], decor)
 			case "number":
-				return "v.number()"
-			case "integer": {
-				const checks = [
-					"v.integer()",
-					`v.minValue(${f.min})`,
-					f.max !== undefined && `v.maxValue(${f.max})`
-				].filter(Boolean)
-				return `v.pipe(v.number(), ${checks.join(", ")})`
-			}
+				return checkedOf("number", () => [], decor)
+			case "integer":
+				return checkedOf(
+					"number",
+					m => [
+						`v.integer(${m})`,
+						`v.minValue(${f.min}${arg(m)})`,
+						...(f.max !== undefined ? [`v.maxValue(${f.max}${arg(m)})`] : [])
+					],
+					decor
+				)
 			case "enum":
-				return `v.picklist(${JSON.stringify(f.values)})`
+				return `v.picklist(${JSON.stringify(f.values)}${decor.message ? `, ${JSON.stringify(decor.message)}` : ""})`
 			case "pattern":
-				return `v.pipe(v.string(), v.regex(${f.pattern}))`
+				return checkedOf(
+					"string",
+					m => [`v.regex(${f.pattern}${arg(m)})`],
+					decor
+				)
 			case "ref":
 				return schemas[f.to].name
 			case "array":
@@ -485,14 +729,19 @@ const valibotOf = (schemas: Schema[]) => {
 		}
 	}
 	const valueOf = (p: Prop) => {
-		const s = p.nullable ? `v.nullable(${fieldOf(p.field)})` : fieldOf(p.field)
+		const field = fieldOf(p.field, p)
+		const s = p.nullable ? `v.nullable(${field})` : field
 		return p.optional ?
 				`v.optional(${s}${p.default !== undefined ? `, ${JSON.stringify(p.default)}` : ""})`
 			:	s
 	}
 	const entriesOf = (props: Prop[]) =>
 		props.map(p => `${JSON.stringify(p.key)}: ${valueOf(p)}`).join(", ")
-	const lines = [`import * as v from "valibot"`, ""]
+	const lines = [
+		`import * as v from "valibot"`,
+		...(withHelpers ? ["", helpersSource.trimEnd()] : []),
+		""
+	]
 	for (const s of schemas) {
 		if (s.kind === "object")
 			lines.push(`export const ${s.name} = v.object({ ${entriesOf(s.props)} })`)
@@ -508,4 +757,211 @@ const valibotOf = (schemas: Schema[]) => {
 		}
 	}
 	return lines.join("\n") + "\n"
+}
+
+/** how Zod and Zod Mini each write what a field is made of */
+interface ZodDialect {
+	module: string
+	/** a schema with its checks, each written as zod/mini's function is: `z.minLength(1)` */
+	checked: (schema: string, checks: string[]) => string
+	integer: (message: string) => string
+	wrapped: (wrapper: "nullable" | "optional", schema: string) => string
+	defaulted: (schema: string, value: string) => string
+}
+
+const zodDialect: ZodDialect = {
+	module: "zod",
+	// z.minLength(1) as .min(1), z.refine(f) as .refine(f)
+	checked: (schema, checks) =>
+		schema +
+		checks
+			.map(
+				check =>
+					`.${check.slice(2).replace(/^(min|max)(?:Length|imum)\(/, "$1(")}`
+			)
+			.join(""),
+	integer: message => `z.number().int(${message})`,
+	wrapped: (wrapper, schema) => `${schema}.${wrapper}()`,
+	defaulted: (schema, value) => `${schema}.default(${value})`
+}
+
+const zodMiniDialect: ZodDialect = {
+	module: "zod/mini",
+	checked: (schema, checks) =>
+		checks.length ? `${schema}.check(${checks.join(", ")})` : schema,
+	integer: message => `z.int(${message})`,
+	wrapped: (wrapper, schema) => `z.${wrapper}(${schema})`,
+	defaulted: (schema, value) => `z._default(${schema}, ${value})`
+}
+
+// Zod has no message for a schema's every check, so each check takes it
+const zodWith =
+	({ module, checked, integer, wrapped, defaulted }: ZodDialect) =>
+	(schemas: Schema[], withHelpers: boolean) => {
+		const fieldOf = (
+			f: Field,
+			{ message, narrow }: Pick<Prop, "message" | "narrow"> = {}
+		): string => {
+			const text = message ? JSON.stringify(message) : ""
+			const arg = text ? `, ${text}` : ""
+			const refined = (schema: string, checks: string[] = []) =>
+				checked(schema, [
+					...checks,
+					...(narrow ?
+						[
+							`z.refine(${narrowFunctionOf(narrow)}, ${JSON.stringify(narrow.message)})`
+						]
+					:	[])
+				])
+			switch (f.kind) {
+				case "string": {
+					const checks = [
+						...(f.min !== undefined ? [`z.minLength(${f.min}${arg})`] : []),
+						...(f.max !== undefined ? [`z.maxLength(${f.max}${arg})`] : [])
+					]
+					return refined(`z.string(${checks.length ? "" : text})`, checks)
+				}
+				case "email":
+					return refined(`z.email(${text})`)
+				case "uuid":
+					return refined(`z.uuid(${text})`)
+				case "url":
+					return refined(`z.url(${text})`)
+				case "date":
+					return refined(`z.iso.datetime(${text})`)
+				case "boolean":
+					return refined(`z.boolean(${text})`)
+				case "number":
+					return refined(`z.number(${text})`)
+				case "integer":
+					return refined(integer(text), [
+						`z.minimum(${f.min}${arg})`,
+						...(f.max !== undefined ? [`z.maximum(${f.max}${arg})`] : [])
+					])
+				case "enum":
+					return `z.enum(${JSON.stringify(f.values)}${arg})`
+				case "pattern":
+					return refined("z.string()", [`z.regex(${f.pattern}${arg})`])
+				case "ref":
+					return schemas[f.to].name
+				case "array":
+					return checked(
+						`z.array(${fieldOf(f.of)})`,
+						f.max ? [`z.maxLength(${f.max})`] : []
+					)
+			}
+		}
+		const valueOf = (p: Prop) => {
+			const field = fieldOf(p.field, p)
+			const s = p.nullable ? wrapped("nullable", field) : field
+			return (
+				!p.optional ? s
+				: p.default !== undefined ? defaulted(s, JSON.stringify(p.default))
+				: wrapped("optional", s)
+			)
+		}
+		const entriesOf = (props: Prop[]) =>
+			props.map(p => `${JSON.stringify(p.key)}: ${valueOf(p)}`).join(", ")
+		const lines = [
+			`import * as z from "${module}"`,
+			...(withHelpers ? ["", helpersSource.trimEnd()] : []),
+			""
+		]
+		for (const s of schemas) {
+			if (s.kind === "object") {
+				lines.push(
+					`export const ${s.name} = z.object({ ${entriesOf(s.props)} })`
+				)
+			} else {
+				const kinds = kindsOf(s)
+				const branches = s.branches.map(
+					(branch, i) =>
+						`z.object({ kind: z.literal(${JSON.stringify(kinds[i])}), ${entriesOf(branch)} })`
+				)
+				lines.push(
+					`export const ${s.name} = z.discriminatedUnion("kind", [${branches.join(", ")}])`
+				)
+			}
+		}
+		return lines.join("\n") + "\n"
+	}
+
+const zodOf = zodWith(zodDialect)
+
+const zodMiniOf = zodWith(zodMiniDialect)
+
+export type SynthLibrary = "arktype" | "valibot" | "zod" | "zodMini"
+
+export const synthLibraries: readonly SynthLibrary[] = [
+	"arktype",
+	"valibot",
+	"zod",
+	"zodMini"
+]
+
+const exported = "export const "
+
+/**
+ * An app's source as modules of `perModule` schemas, by each module's path
+ * from the app's directory: `arktype.ts`, exporting what each of
+ * `arktype/m0.ts`, `arktype/m1.ts`… defines, which import the schemas they
+ * refer to and the helpers their narrows name from `arktype/helpers.ts`. An
+ * app's schemas are a line each, so its modules are its lines.
+ */
+export const modulesOf = (
+	library: SynthLibrary,
+	source: string,
+	perModule: number
+): Record<string, string> => {
+	const lines = source.trimEnd().split("\n")
+	const [libraryImport] = lines
+	const definitions = lines.filter(line => line.startsWith(exported))
+	const nameOf = (line: string) =>
+		line.slice(exported.length, line.indexOf(" ="))
+	const moduleOf = new Map(
+		definitions.map((line, i) => [nameOf(line), Math.floor(i / perModule)])
+	)
+	const helperNames = Object.values(helpers).flatMap(group =>
+		Object.keys(group)
+	)
+	const files: Record<string, string> = {}
+	const count = Math.ceil(definitions.length / perModule)
+	for (let m = 0; m < count; m++) {
+		const body = definitions
+			.slice(m * perModule, (m + 1) * perModule)
+			.join("\n")
+		// a schema's name within a string is a word of a key or a message
+		const code = body.replace(/"(?:[^"\\]|\\.)*"/g, '""')
+		const identifiers = new Set(code.match(/\b[A-Za-z]\w*\b/g))
+		const importsBy: Record<string, string[]> = {}
+		for (const name of identifiers) {
+			const from = moduleOf.get(name)
+			if (from !== undefined && from !== m)
+				(importsBy[`m${from}`] ??= []).push(name)
+		}
+		const used = helperNames.filter(name => identifiers.has(name))
+		if (used.length) importsBy.helpers = used
+		files[`${library}/m${m}.ts`] =
+			[
+				libraryImport,
+				...Object.entries(importsBy).map(
+					([from, names]) =>
+						`import { ${names.join(", ")} } from "./${from}.ts"`
+				),
+				"",
+				body
+			].join("\n") + "\n"
+	}
+	if (source.includes(helpersSource)) {
+		files[`${library}/helpers.ts`] = helpersSource.replace(
+			/^const /gm,
+			exported
+		)
+	}
+	files[`${library}.ts`] =
+		Array.from(
+			{ length: count },
+			(_, m) => `export * from "./${library}/m${m}.ts"`
+		).join("\n") + "\n"
+	return files
 }
