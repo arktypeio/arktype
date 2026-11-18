@@ -2829,13 +2829,14 @@ console.log(out instanceof type.errors ? out.summary : out)
 		const output = (js: string, cwd?: string) =>
 			spawnSync(process.execPath, { input: js, encoding: "utf8", cwd }).stdout
 
-		// the warnings a build ends with
+		// the warnings a build ends with, without the colors Rspack writes them
+		// in where CI is set
 		const collecting = (warnings: string[]) => ({
 			apply: (compiler: webpack.Compiler) =>
 				compiler.hooks.done.tap("collecting", stats => {
 					for (const { message } of stats.toJson({ all: false, warnings: true })
 						.warnings ?? [])
-						warnings.push(message)
+						warnings.push(stripVTControlCharacters(message))
 				})
 		})
 
