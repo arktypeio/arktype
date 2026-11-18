@@ -51,11 +51,13 @@ The marker applies to the statement or expression after it. arktype then ships b
 
 ## Declarations
 
-A package whose types others read can declare its Types once, so its consumers don't infer arktype definitions:
+If you ship types derived from arktype, as a published package does, declare them with `--declare` rather than `tsc`, so consumers don't infer arktype definitions. For a [cyclic scope](#cyclic-types), it's the only way to ship them:
 
 ```sh
 npx arktype-precompile --declare
 ```
+
+It only writes declarations, so it needs no bundler, and the validators it declares can stay dynamic.
 
 This writes what `tsc --emitDeclarationOnly` would for the nearest `tsconfig.json`, or the one `--tsconfig` names, except that each Type, Scope and Module is declared through its shape in one `~arktype.d.ts` at the declarations' root, named once and referenced wherever another shape holds it:
 
@@ -73,7 +75,48 @@ export type User = {
 }
 ```
 
-A consumer's type-check then reads each Type's shape rather than inferring its definition. A shape TypeScript can't name where a consumer resolves it, like a class its module doesn't export, is left to TypeScript's own declaration. The CLI exits with 1 where TypeScript reports an error, after writing what it emitted.
+A consumer's type-check then reads each Type's shape rather than inferring its definition.
+
+It declares a Type, Scope or Module this way wherever a module's top-level declaration infers one: a `const`, each name of a destructured one, a default export, a key of an object and what a function returns. A shape TypeScript can't name where a consumer resolves it, like a class its module doesn't export, is left to TypeScript's own declaration, as are a class's members and a generic function. The CLI exits with 1 where TypeScript reports an error, after writing what it emitted.
+
+### Cyclic types
+
+TypeScript can't write a type that refers to itself unless the type has a name, and the type arktype infers for a [cyclic](/docs/scopes#cyclic-types) alias has none. So for a module exporting one, `tsc` writes `any` where the type recurs, which is what code importing it gets, or, depending on its version, fails with `TS5088: The inferred type of 'types' references a type with a cyclic structure which cannot be trivially serialized` ([microsoft/TypeScript#64656](https://github.com/microsoft/TypeScript/issues/64656)). `--declare` names each cycle for its alias in the scope:
+
+```ts
+// @noErrors
+// ---cut---
+// types.ts
+export const types = scope({
+	User: { name: "string", "friends?": "User[]" },
+	Group: { members: "User[]", "parent?": "Group" }
+}).export()
+
+// types.d.ts
+export declare const types: import("arktype").Module<
+	import("./~arktype.js").types
+>
+
+// ~arktype.d.ts
+export type types = {
+	User: User
+	Group: Group
+}
+export type User = {
+	name: string
+	friends?: User[] | undefined
+}
+export type Group = {
+	members: User[]
+	parent?: Group | undefined
+}
+```
+
+A name another shape has is numbered, like `User$2` for a second scope's `User`, and a Type that recurs through [`this`](/docs/expressions#this) is named for its const. Code that reads a cyclic Type's data is declared with the same names, as `(data: unknown) => types.User.assert(data)` is with `User`.
+
+Where `tsc` reports TS5088, turn `declaration` off in the tsconfig it builds your JavaScript with, since `--declare` writes the declarations.
+
+A cycle `--declare` leaves to TypeScript is still declared with `any`. The CLI [warns of each](/docs/precompile/troubleshooting) without failing, as in `src/api.ts: warning: Api is declared with any where its type refers to itself`.
 
 The bundler plugin emits the same files with a Rollup, Rolldown, Vite, webpack, Rspack or Rsbuild build that neither watches nor serves:
 

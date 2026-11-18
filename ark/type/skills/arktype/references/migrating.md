@@ -782,7 +782,7 @@ const types = scope({
 
 Inside a scope, `type()` can't see the scope's names, so write a refinement or a transform there as a tuple: `["Post[]", ":", (posts, ctx) => ...]` for a `.narrow()`, `["string", "=>", s => s.trim()]` for a `.pipe()`.
 
-Delete the hand-written TypeScript type that `z.lazy` needed; `typeof Category.infer` and `typeof types.Post.infer` replace it. Keep it where the module's declarations are emitted, as for a published package or a TypeScript project reference: a `.d.ts` holds `any` in place of the cycle, so [declare the Type with the type you wrote](https://arktype.io/docs/scopes#cyclic-types), `type.declare<Category>().type({ ... })`. For JSON data, use the `object.json` keyword rather than a recursive type of your own: `z.json()` is `"string | number | boolean | null | object.json"`.
+Delete the hand-written TypeScript type that `z.lazy` needed; `typeof Category.infer` and `typeof types.Post.infer` replace it. Where the module's declarations are emitted, as for a published package or a TypeScript project reference, `tsc` can't write the cycle in a `.d.ts`, so emit them with [`arktype-precompile --declare`](https://arktype.io/docs/precompile/advanced#cyclic-types), or keep the type and [declare the Type with it](https://arktype.io/docs/scopes#cyclic-types), `type.declare<Category>().type({ ... })`. For JSON data, use the `object.json` keyword rather than a recursive type of your own: `z.json()` is `"string | number | boolean | null | object.json"`.
 
 ### Composing objects
 

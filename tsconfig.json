@@ -34,8 +34,9 @@
 		"**/*.scratch.ts",
 		// programs and fixtures the tests write, untyped by design
 		"./ark/aot/__tests__/temp",
-		// its cyclic scopes have inferred types TypeScript 7 can't declare
+		// their cyclic scopes have inferred types TypeScript 7 can't declare
 		"./ark/aot/__tests__/declared",
+		"./ark/aot/__tests__/declaredCycles",
 		// its global classes would conflict with those of @types/node
 		"./ark/repo/tsCompat/workers.d.ts",
 		// run inside external benchmarks, against their sources and installs

@@ -3,6 +3,7 @@ import { fromHere } from "@ark/fs"
 import { emitDeclarations } from "@ark/aot/internal/declare.ts"
 import { spawnSync } from "node:child_process"
 import {
+	existsSync,
 	mkdirSync,
 	readdirSync,
 	readFileSync,
@@ -18,6 +19,53 @@ const tsPath = (path: string) => path.split("\\").join("/")
 
 const declared = fromHere("declared")
 const layouts = fromHere("declaredLayouts")
+const cycles = fromHere("declaredCycles")
+
+type OwnDeclarations = {
+	version: string
+	// each export a TS5088 names, by its module
+	cyclicByModule: Record<string, string[]>
+	// how many times each declaration file writes `/*elided*/ any`
+	elidedByFile: Record<string, number>
+}
+
+// what `tsc --emitDeclarationOnly` of the TypeScript at a path makes of the cycles
+const ownDeclarationsOf = (typescript: string): OwnDeclarations => {
+	const out = join(cycles, "out")
+	try {
+		const tsc = spawnSync(
+			process.execPath,
+			[
+				join(typescript, "bin", "tsc"),
+				"--declaration",
+				"--emitDeclarationOnly"
+			],
+			{ cwd: cycles, encoding: "utf8" }
+		)
+		const cyclicByModule: Record<string, string[]> = {}
+		for (const [, module, name] of tsc.stdout.matchAll(
+			/^src\/(\w+)\.ts\(.*error TS5088: The inferred type of '(.+)' references/gm
+		))
+			(cyclicByModule[module] ??= []).push(name)
+		const elidedByFile: Record<string, number> = {}
+		// TypeScript writes no declaration for a module it reports
+		for (const file of existsSync(out) ? readdirSync(out).sort() : []) {
+			const elided = readFileSync(join(out, file), "utf8").split(
+				"/*elided*/ any"
+			)
+			if (elided.length > 1) elidedByFile[file] = elided.length - 1
+		}
+		return {
+			version: JSON.parse(
+				readFileSync(join(typescript, "package.json"), "utf8")
+			).version,
+			cyclicByModule,
+			elidedByFile
+		}
+	} finally {
+		rmSync(out, { recursive: true, force: true })
+	}
+}
 
 const specifiersByLayout = (tsconfig: string) => {
 	const declarations = emitDeclarations({ cwd: layouts, tsconfig })
@@ -103,7 +151,7 @@ const inexactExportsOf = (fixture: string, checks: Record<string, string>) => {
 }
 
 contextualize(() => {
-	const { files, errors } = emitDeclarations({ cwd: declared })
+	const { files, errors, diagnostics } = emitDeclarations({ cwd: declared })
 	const declaredFile = (file: string) =>
 		files[tsPath(join(declared, "out", file))]
 	const declarationsOf = (file: string, ...names: string[]) =>
@@ -150,24 +198,24 @@ export type Team = {
 `)
 	})
 
-	it("names a cycle by its key", () => {
+	it("names a cycle by its alias, whatever key reads it", () => {
 		attest(
 			shapesOf(
 				"Dashed",
-				"the_head",
+				"link",
 				"Keyword",
-				"$string",
+				"tree",
 				"Holder",
 				"$object",
 				"Linked",
 				"node"
 			)
 		).snap(`export type Dashed = {
-    "the-head": the_head;
+    "the-head": link;
 };
 export type Keyword = {
-    string: $string;
-    default: $string;
+    string: tree;
+    default: tree;
 };
 export type $object = {
     a: string;
@@ -178,12 +226,12 @@ export type Holder = {
 export type Linked = {
     head: node;
 };
-export type the_head = {
-    next?: the_head | undefined;
+export type link = {
+    next?: link | undefined;
 };
-export type $string = {
+export type tree = {
     value: boolean;
-    child?: $string | undefined;
+    child?: tree | undefined;
 };
 export type node = {
     value: number;
@@ -260,6 +308,14 @@ export declare const Expanded: import("arktype/internal/variants/object.ts").Obj
 export declare const Annotated: BaseType<{
     a: string;
 }>;`)
+	})
+
+	it("warns of a cycle left to TypeScript, which declares it as any", () => {
+		// Sessions' cycle holds a class its module doesn't export
+		attest(errors).equals(0)
+		attest(diagnostics)
+			.snap(`src/shapes.ts: warning: Sessions is declared with any where its type refers to itself, which TypeScript can't write. Bind the Type, Scope or Module it holds to a top-level const, export each class its definition names, or annotate Sessions.
+`)
 	})
 
 	it("names globals, Node and augmented types", () => {
@@ -482,4 +538,182 @@ export type Elements = [string, number?];
 	it("CLI declarations under exactOptionalPropertyTypes", () => {
 		attest(inexactExportsOf(fromHere("declaredExact"), {})).snap([])
 	}).timeout(120000)
+
+	describe("cyclic scopes", () => {
+		// since microsoft/TypeScript#64461, in 7.1's beta. 7.0 wrote `any` as 6
+		// does, and so would a 7.1 that reverts it
+		it("the repo's TypeScript reports each export reading a cycle and declares none", () => {
+			attest(
+				ownDeclarationsOf(
+					fromHere("..", "..", "..", "node_modules", "typescript")
+				)
+			).snap({
+				version: "7.1.0-beta",
+				cyclicByModule: {
+					default: ["default"],
+					destructured: ["{ post, author }"],
+					held: ["schemas", "makeTree"],
+					module: ["types", "parseUser", "firstFriend"],
+					names: ["admins", "guests", "Dashed", "Keyword", "$", "Tree"]
+				},
+				elidedByFile: {}
+			})
+		}).timeout(120000)
+
+		it("TypeScript 6 declares each cycle as any", () => {
+			attest(
+				ownDeclarationsOf(fromHere("..", "node_modules", "typescript-6"))
+			).snap({
+				version: "6.0.3",
+				cyclicByModule: {},
+				elidedByFile: {
+					"default.d.ts": 1,
+					"destructured.d.ts": 6,
+					"held.d.ts": 2,
+					"module.d.ts": 5,
+					"names.d.ts": 9
+				}
+			})
+		}).timeout(120000)
+
+		const declarations = emitDeclarations({ cwd: cycles })
+		const cyclesFile = (file: string) =>
+			declarations.files[tsPath(join(cycles, "out", file))]
+
+		it("declares a Module, the function parsing with it and one returning its data", () => {
+			attest([declarations.errors, declarations.diagnostics]).equals([0, ""])
+			attest(cyclesFile("module.d.ts"))
+				.snap(`export declare const types: import("arktype").Module<import("./~arktype.js").types>;
+export declare const parseUser: (data: unknown) => import("./~arktype.js").user;
+export declare function firstFriend(data: typeof types.user.infer, fallback?: string): string | import("./~arktype.js").user | undefined;
+`)
+		})
+
+		it("declares destructured exports, a default export, a key's Module and a returned Type", () => {
+			attest(
+				["destructured.d.ts", "default.d.ts", "held.d.ts"]
+					.map(cyclesFile)
+					.join("")
+			)
+				.snap(`export declare const post: import("arktype").Type<import("./~arktype.js").post, import("./~arktype.js").postScope>, author: import("arktype").Type<import("./~arktype.js").author, import("./~arktype.js").postScope>;
+declare const _default: import("arktype").Module<import("./~arktype.js").$default>;
+export default _default;
+export declare const schemas: {
+    version: number;
+    types: import("arktype").Module<import("./~arktype.js").types$2>;
+};
+export declare const makeTree: () => import("arktype").Type<import("./~arktype.js").makeTree>;
+`)
+		})
+
+		// `user` is three scopes' alias, and `types` two Modules' name
+		it("names each cycle as its scope does, numbering a name another shape took", () => {
+			attest(cyclesFile("~arktype.d.ts"))
+				.snap(`// the shapes of this build's Types, Scopes and Modules
+export type $default = {
+    folder: folder;
+};
+export type post = {
+    title: string;
+    author: author;
+};
+export type postScope = {
+    post: post;
+    author: author;
+};
+export type author = {
+    name: string;
+    posts?: post[] | undefined;
+};
+export type types = {
+    user: user;
+    group: group;
+};
+export type admins = {
+    user: user$2;
+};
+export type guests = {
+    user: user$3;
+};
+export type Dashed = {
+    head: the_link;
+};
+export type DashedScope = {
+    "the-link": the_link;
+};
+export type Keyword = {
+    root: $new;
+};
+export type KeywordScope = {
+    new: $new;
+};
+export type $ = {
+    "#node": node;
+    list: {
+        head: node;
+    };
+};
+export type Tree = {
+    value: number;
+    children?: Tree[] | undefined;
+};
+export type folder = {
+    name: string;
+    folders?: folder[] | undefined;
+};
+export type user = {
+    name: string;
+    friends?: user[] | undefined;
+};
+export type group = {
+    members: user[];
+    parent?: group | undefined;
+};
+export type user$2 = {
+    role: "admin";
+    reports?: user$2[] | undefined;
+};
+export type user$3 = {
+    invitedBy?: user$3 | undefined;
+};
+export type the_link = {
+    next?: the_link | undefined;
+};
+export type $new = {
+    value: boolean;
+    child?: $new | undefined;
+};
+export type node = {
+    value: number;
+    next?: node | undefined;
+};
+export type types$2 = {
+    comment: comment;
+};
+export type comment = {
+    body: string;
+    replies?: comment[] | undefined;
+};
+export type makeTree = {
+    value: number;
+    children?: makeTree[] | undefined;
+};
+`)
+		})
+
+		it("CLI declarations read as their sources", () => {
+			attest(
+				inexactExportsOf(cycles, {
+					"destructured.post":
+						"eq<inferOf<typeof destructuredDeclared.post>, inferOf<typeof destructuredSource.post>>",
+					"destructured.author":
+						"eq<inferOf<typeof destructuredDeclared.author>, inferOf<typeof destructuredSource.author>>",
+					"default.default":
+						"eq<typeof defaultDeclared.default, typeof defaultSource.default>",
+					"module.firstFriend":
+						"eq<typeof moduleDeclared.firstFriend, typeof moduleSource.firstFriend>"
+				})
+			).snap([])
+		}).timeout(120000)
+	})
 })

@@ -305,6 +305,8 @@ const post = types.Post({ title: "Hello", author: { name: "Ada" } })
 
 Don't wrap definitions inside a scope with `type()`. They're resolved within the scope, and `type()` would resolve them globally, so an alias there is `unresolvable`. For a `.narrow()` or a `.pipe()` inside a scope, write a tuple: `["Tag[]", ":", (tags, ctx) => ...]` or `["string", "=>", s => s.trim()]`. For JSON data, use the built-in `"string | number | boolean | null | object.json"` rather than a recursive type of your own.
 
+TypeScript can't write an inferred cycle in a `.d.ts`: `tsc` declares it as `any`, or fails with `TS5088`. In a package or project whose declarations are emitted, write them with `npx arktype-precompile --declare` (from `@ark/aot`) instead, which names each cycle for its alias and changes nothing at runtime. See https://arktype.io/docs/precompile/advanced.md.
+
 ## Extra keys
 
 By default, keys a definition doesn't declare are allowed and left in the output. To reject or remove them for one object, use `"+"`:
