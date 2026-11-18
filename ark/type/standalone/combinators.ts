@@ -933,7 +933,10 @@ const declaresRef = (node: BaseNode): boolean =>
 	(node.is("proto") && node.proto !== Array) ||
 	(node.is("union") && !!discriminatedOf(node))
 
-const maxInlinedNodes = 8
+// A string's or number's rules, which are one call. More would inline an
+// object of a few keys, one of them reading another Type's checker, into each
+// Type holding it, where reading the validator its own Type creates is a name
+const maxInlinedNodes = 4
 
 const maxInlinedObjectNodes = 24
 
