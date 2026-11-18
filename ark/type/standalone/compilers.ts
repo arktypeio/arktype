@@ -473,6 +473,9 @@ const reportsApart = (reference: BaseNode): boolean =>
 // a detailed size build's traversals: a unifying node's Apply is its Allows,
 // reporting only to a ctx
 class UnifiedCompiler extends StandaloneCompiler {
+	// failsIn passes ctx only what a size build's reads
+	override readonly readsApplied = true
+
 	override refToId(id: NodeId, opts?: ReferenceOptions): string {
 		const node = this.link.byId[id]
 		return super.refToId(
@@ -553,6 +556,8 @@ const forSize = (compiler: typeof StandaloneCompiler) =>
 		override readonly shortest: boolean = !this.naming
 		// a literal of the values a copy holds is shorter than one of nulls
 		override readonly copiesValues: boolean = this.shortest
+		// named as it's written, too
+		override readonly readsApplied = true
 	}
 
 // a detailed size build writes each node it can as a checker, whose Apply is its Allows

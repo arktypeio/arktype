@@ -281,6 +281,9 @@ export abstract class NodeCompiler extends CompiledFunction<
 	declare readonly copiesValues?: boolean
 	// trusted to hold only own, enumerable keys, as JSON.parse's output does
 	declare readonly jsonInput?: boolean
+	// whether the ctx it reports to reads the value it applies at a key, as a
+	// build for size leaves it to
+	declare readonly readsApplied?: boolean
 	/** whether the transform it compiles checks for errors a transformed child added */
 	checksErrs = false
 
@@ -391,6 +394,19 @@ export abstract class NodeCompiler extends CompiledFunction<
 		return `ctx.${method === "failsAt" ? "_at" : "_in"}(${args})`
 	}
 
+	// what _in takes after data: the key, the site it's missing at and its
+	// value. Read where it's compiled, a value's key is a constant, where ctx
+	// reads data by whatever key any site passes, which V8 can only look up
+	applied(key: string, value: string, missing?: string): string {
+		return (
+			this.shortest || this.readsApplied ?
+				missing === undefined ?
+					key
+				:	`${key}, ${missing}`
+			:	`${key}, ${missing ?? "void 0"}, ${value}`
+		)
+	}
+
 	// a case returning what the next one does falls through to it
 	switch(on: string, cases: readonly SwitchCase[], otherwise: string): this {
 		return this.block(`switch(${on})`, () => {
@@ -483,7 +499,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		// a refined basis Allows rejected failed its basis or its refinement
 		if (checksAllowsFirst && isRefinedBasis(node))
 			return `${allows}${this.fails("failsAt", `${node.basis!.jsCond(this, value)} ? ${this.site(node.preStruct[0])} : ${this.site(node.basis!)}, data, ${key}`)}`
-		return `${allows}${this.fails("failsIn", `${this.traversal(node, "Apply")}, ${this.data}, ${key}`)}`
+		return `${allows}${this.fails("failsIn", `${this.traversal(node, "Apply")}, ${this.data}, ${this.applied(key, value)}`)}`
 	}
 
 	// a cyclic value is applied inline

@@ -362,9 +362,10 @@ const firstPathTraversalOf = (Base: typeof Traversal): FirstPathTraversal => {
 			apply: CompactApply,
 			data: unknown,
 			key: PropertyKey,
-			missing?: FailureSite
+			missing?: FailureSite,
+			value?: unknown
 		): boolean | undefined {
-			const stops = super._in(apply, data, key, missing)
+			const stops = super._in(apply, data, key, missing, value)
 			if (
 				this.stopsElsewhere &&
 				this.firstPath !== undefined &&

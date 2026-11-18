@@ -85,6 +85,23 @@ contextualize(() => {
 		)
 	})
 
+	it("applies the value it's passed for a key, reading one that's undefined", () => {
+		const applied: unknown[] = []
+		const applies: CompactApply = value => (applied.push(value), true)
+		const required: FailureSite = { m: { code: "required" } }
+		const errors = new ArkErrors()
+		const ctx = new InternalTraversal(undefined, {} as never)
+		for (const reported of [errors, ctx]) {
+			reported._in(applies, { a: 1 }, "a", required, 1)
+			reported._in(applies, { a: 2 }, "a", required, undefined)
+			reported._in(applies, { a: undefined }, "a", required, undefined)
+			reported._in(applies, {}, "a", required, undefined)
+		}
+		attest(applied).equals([1, 2, undefined, 1, 2, undefined])
+		attest(ctx._errors!._).equals(errors._)
+		attest(errors.summary).equals("a is missing")
+	})
+
 	it("pops each key it pushes", () => {
 		const users: CompactApply = (data, ctx) => {
 			const list = data as unknown[]

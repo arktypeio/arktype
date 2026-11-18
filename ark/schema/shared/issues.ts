@@ -73,7 +73,9 @@ export type CompactApply = (data: unknown, ctx: FailureContext) => boolean
  * where a compact Apply reports failures; each returns whether to stop. A
  * minifier keeps property names, and compiled code calls these at each
  * failure, so they're named short: _at fails a site (failsAt), _in applies
- * data's value at a key (failsIn)
+ * data's value at a key (failsIn). Code compiled for speed passes _in the
+ * value too, read where its key is a constant; a value that's undefined is
+ * read from data, as one not passed is
  */
 export interface FailureContext {
 	_at(site: FailureSite, data: unknown, key?: PropertyKey): boolean | undefined
@@ -81,7 +83,8 @@ export interface FailureContext {
 		apply: CompactApply,
 		data: unknown,
 		key: PropertyKey,
-		missing?: FailureSite
+		missing?: FailureSite,
+		value?: unknown
 	): boolean | undefined
 }
 
@@ -174,9 +177,10 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		apply: CompactApply,
 		data: unknown,
 		key: PropertyKey,
-		missing?: FailureSite
+		missing?: FailureSite,
+		value?: unknown
 	): boolean | undefined {
-		const value = (data as Keyed)[key]
+		if (value === undefined) value = (data as Keyed)[key]
 		if (value === undefined && missing && !(key in (data as object)))
 			return this._at(missing, data, key, true)
 		this._p.push(key)
