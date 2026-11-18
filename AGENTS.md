@@ -17,7 +17,8 @@ pnpm i && pnpm build # install and build all packages
 pnpm test # run tests without type checking
 pnpm testFiles ark/type/__tests__/brand.test.ts # run and type check only the named test files
 pnpm typecheckRepo # incremental typecheck of the whole repo
-pnpm prChecks # lint, build, typecheck and test (run before PRs)
+pnpm prChecks # lint, build, typecheck and test, except @ark/aot (run before PRs)
+pnpm testAot # @ark/aot's tests, which prChecks leaves out; aot.yml runs them and its other suites on demand
 ```
 
 Tests and typechecking read each package's source through the `ark-ts` condition, so neither needs `pnpm build`. Pass test files to `pnpm testFiles` before any flags, e.g. `pnpm testFiles a.test.ts --skipTypes`. `pnpm testTyped a.test.ts` runs every test, because mocha adds named files to the configured spec.
