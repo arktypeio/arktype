@@ -23,6 +23,7 @@ import {
 	provenance,
 	type BenchFacts
 } from "../../lib/bench/bench.ts"
+import { withBase } from "../../lib/basePath.ts"
 import { claims, draftOf } from "../../lib/claims.ts"
 import { defineMetadata, tagline } from "../metadata.ts"
 
@@ -433,7 +434,7 @@ export default function HomePage() {
 								itself as JSON Schema, so v2 of the MCP TypeScript SDK takes it
 								as a tool's <code>inputSchema</code>. A bad call comes back as a
 								message the model can act on. Precompiled, set{" "}
-								<a href="/docs/integrations#precompiled-validators">
+								<a href={withBase("/docs/integrations#precompiled-validators")}>
 									one option
 								</a>{" "}
 								so the build keeps its JSON Schema.
@@ -553,14 +554,14 @@ export default function HomePage() {
 									<h3>Every page as Markdown</h3>
 									<p>
 										Add <code>.md</code> to any docs URL.{" "}
-										<a className="link" href="/llms.txt">
+										<a className="link" href={withBase("/llms.txt")}>
 											/llms.txt
 										</a>{" "}
 										lists every page. Results are written as comments, so
 										nothing hides behind a hover.
 									</p>
 									<div className="act">
-										<a className="url" href="/docs/expressions.md">
+										<a className="url" href={withBase("/docs/expressions.md")}>
 											arktype.io/docs/expressions
 											<span className="md">.md</span>
 										</a>

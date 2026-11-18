@@ -1,6 +1,6 @@
 {
 	"name": "@ark/json-schema",
-	"version": "0.0.13",
+	"version": "0.0.15-beta.0",
 	"license": "MIT",
 	"authors": [
 		{

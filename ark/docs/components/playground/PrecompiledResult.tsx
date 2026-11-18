@@ -5,6 +5,7 @@ import prettierPluginEstree from "prettier/plugins/estree"
 import prettierPluginTypeScript from "prettier/plugins/typescript"
 import prettier from "prettier/standalone"
 import { useEffect, useRef, useState, type KeyboardEvent } from "react"
+import { withBase } from "../../lib/basePath.ts"
 import { reducedMotion } from "../motion.ts"
 import { ColorizedCode } from "./ColorizedCode.tsx"
 import { writePrecompiled } from "./precompile.ts"
@@ -26,7 +27,7 @@ const pending = new Map<number, (response: PrecompileResponse) => void>()
 
 const measure = (written: string[]): Promise<PrecompileResponse> => {
 	if (!worker) {
-		worker = new Worker(precompileWorkerUrl, { type: "module" })
+		worker = new Worker(withBase(precompileWorkerUrl), { type: "module" })
 		worker.onmessage = ({ data }: MessageEvent<PrecompileResponse>) => {
 			pending.get(data.id)?.(data)
 			pending.delete(data.id)

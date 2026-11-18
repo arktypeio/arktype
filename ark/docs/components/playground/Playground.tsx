@@ -5,6 +5,7 @@ import Editor, { useMonaco } from "@monaco-editor/react"
 import { type } from "arktype"
 import type * as Monaco from "monaco-editor"
 import { loadWASM } from "onigasm"
+import { withBase } from "../../lib/basePath.ts"
 import React, {
 	useCallback,
 	useEffect,
@@ -37,7 +38,7 @@ let tsLanguageServiceInstance: Monaco.languages.typescript.TypeScriptWorker | nu
 
 const onigasmLoaded =
 	globalThis.window &&
-	loadWASM("/onigasm.wasm").catch(e => {
+	loadWASM(withBase("/onigasm.wasm")).catch(e => {
 		if (!String(e).includes("subsequent calls are not allowed")) throw e
 	})
 

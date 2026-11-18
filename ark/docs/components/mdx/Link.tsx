@@ -1,5 +1,6 @@
 import NextLink from "next/link"
 import type { ComponentProps } from "react"
+import { withBase } from "../../lib/basePath.ts"
 
 export const isExternal = (href: string) =>
 	/^https?:\/\//.test(href) && !href.startsWith("https://arktype.io/")
@@ -32,7 +33,7 @@ export const Link = ({
 
 	return (
 		<a
-			href={href}
+			href={withBase(href)}
 			{...(isExternal(href) && {
 				target: "_blank",
 				rel: "noreferrer",

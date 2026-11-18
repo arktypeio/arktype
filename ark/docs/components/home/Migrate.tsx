@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react"
+import { withBase } from "../../lib/basePath.ts"
 import { claims } from "../../lib/claims.ts"
 import { ClaimText } from "../mdx/Claim.tsx"
 import { CopyCommand } from "./CopyCommand.tsx"
@@ -128,7 +129,7 @@ export const Migrate = () => (
 			<li style={{ "--i": 2 } as CSSProperties}>
 				<span className="move-n">3</span>
 				<h3>Precompile</h3>
-				<a className="url" href="/docs/precompile/setup">
+				<a className="url" href={withBase("/docs/precompile/setup")}>
 					plugins: [precompile.vite()]
 				</a>
 			</li>
@@ -171,7 +172,7 @@ export const Migrate = () => (
 				<p className="guide-p">
 					The same guide covers Valibot, TypeBox, Yup, Joi, Effect Schema and
 					JSON Schema.{" "}
-					<a className="link" href="/docs/migrating">
+					<a className="link" href={withBase("/docs/migrating")}>
 						Read the guide
 					</a>
 				</p>

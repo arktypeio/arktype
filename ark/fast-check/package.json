@@ -1,6 +1,6 @@
 {
 	"name": "@ark/fast-check",
-	"version": "0.0.20",
+	"version": "0.0.22-beta.0",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",

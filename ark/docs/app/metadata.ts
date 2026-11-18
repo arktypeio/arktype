@@ -1,7 +1,9 @@
 import type { Metadata } from "next"
+import { basePath } from "../lib/basePath.ts"
 import { claims, draftOf } from "../lib/claims.ts"
 
-export const siteUrl = "https://arktype.io"
+/** where the site is served, with its base path, e.g. https://arktype.io/3 */
+export const siteUrl = `https://arktype.io${basePath}`
 
 /** the homepage's headline, which claims.ts checks against the benchmarks */
 export const tagline = draftOf(claims.headline).replace(/\.$/, "")
@@ -30,6 +32,9 @@ export const defineMetadata = ({
 	...(title && { title }),
 	description,
 	...(url && { alternates: { canonical: url } }),
+	// a prerelease's docs at arktype.io/3 stay out of search results, which
+	// should keep sending readers to the stable docs
+	...(basePath && { robots: { index: false, follow: false } }),
 	openGraph: {
 		title: sharedTitle,
 		description,

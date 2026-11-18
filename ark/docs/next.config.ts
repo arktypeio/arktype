@@ -2,6 +2,7 @@ import type { NextConfig } from "next"
 import { mkdtempSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { basePath } from "./lib/basePath.ts"
 import { writeLiveWorker } from "./lib/writeLiveWorker.ts"
 import { writeMarkdown } from "./lib/writeMarkdown.ts"
 import { writeOgImages } from "./lib/writeOgImages.ts"
@@ -40,6 +41,8 @@ const config: NextConfig = {
 	staticPageGenerationTimeout: 1800,
 	// the site is a static export served from GitHub Pages
 	output: "export",
+	// a prerelease's docs are served under arktype.io/3 (see lib/basePath.ts)
+	...(basePath && { basePath }),
 	images: {
 		unoptimized: true
 	}

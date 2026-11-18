@@ -1,6 +1,6 @@
 # arktype
 
-## Unreleased
+## 3.0.0-beta.0
 
 ### Summary
 
@@ -3193,6 +3193,24 @@ A predicate where a definition goes, like `{ name: (s: string) => s.length > 0 }
 ### Load in Safari before 16.4
 
 Two regular expressions used a lookbehind, which Safari before 16.4 can't parse, so importing `arktype` there threw a `SyntaxError`, as 2.x didn't. Neither does now.
+
+## 2.2.10
+
+### Print a nested `undefined` unquoted in error messages
+
+A value printed in an error message showed a nested `undefined` as a string, so `{ a: undefined }` read the same as `{ a: "undefined" }`:
+
+```ts
+const T = type("unknown[]").narrow(
+	(arr, ctx) => !arr.includes(undefined) || ctx.mustBe("fully defined")
+)
+
+// was: must be fully defined (was [1,"undefined"])
+// now: must be fully defined (was [1,undefined])
+T([1, undefined]).toString()
+```
+
+Thanks to @youdie006 (#1717).
 
 ## 2.2.9
 

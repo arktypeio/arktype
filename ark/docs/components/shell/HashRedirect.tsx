@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect } from "react"
+import { withoutBase } from "../../lib/basePath.ts"
 import { hashRedirectTarget } from "../../lib/content/redirects.ts"
 
 /** follows links to sections that moved to another page */
@@ -11,7 +12,10 @@ export const HashRedirect = () => {
 
 	useEffect(() => {
 		const follow = () => {
-			const target = hashRedirectTarget(location.pathname, location.hash)
+			const target = hashRedirectTarget(
+				withoutBase(location.pathname),
+				location.hash
+			)
 			if (target) router.replace(target)
 		}
 		follow()

@@ -555,7 +555,14 @@ if (
 	)
 }
 
-rmSync(appDir, { recursive: true, force: true })
+// on Windows, a build's workers can hold the app's files open briefly after
+// it exits, which fails the removal with EPERM, so it retries
+rmSync(appDir, {
+	recursive: true,
+	force: true,
+	maxRetries: 10,
+	retryDelay: 200
+})
 rmSync(fileURLToPath(new URL("./node_modules/.bin/.ark", import.meta.url)), {
 	recursive: true,
 	force: true

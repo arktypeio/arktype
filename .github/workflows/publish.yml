@@ -12,28 +12,32 @@ on:
 permissions: {}
 
 jobs:
-  # a prerelease (an arktype version like X.Y.Z-rc.1) publishes under next and
-  # leaves the site as it is, so its docs don't go live before it's stable
+  # a prerelease (an arktype version like X.Y.Z-beta.0) publishes under next,
+  # and its docs are served at arktype.io/<major> beside the stable docs, which
+  # stay at the root, so they don't replace them before it's stable
   version:
     runs-on: ubuntu-latest
     outputs:
       prerelease: ${{ steps.version.outputs.prerelease }}
+      basePath: ${{ steps.version.outputs.basePath }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Check for a prerelease
         id: version
-        run: echo "prerelease=$(node -p 'require("./ark/type/package.json").version.includes("-")')" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "prerelease=$(node -p 'require("./ark/type/package.json").version.includes("-")')" >> "$GITHUB_OUTPUT"
+          echo "basePath=$(node -p 'const v = require("./ark/type/package.json").version; v.includes("-") ? `/${v.split(".")[0]}` : ""')" >> "$GITHUB_OUTPUT"
 
   # after release, so a publish that fails, like a stable arktype while the
   # homepage's benchmark is a preview, or npm refusing a package, leaves the
   # site as it is. A push that publishes nothing passes release and deploys
   update-gh-pages:
     needs: [version, release]
-    if: needs.version.outputs.prerelease == 'false'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # a prerelease builds the docs twice: its own and the latest stable's
+    timeout-minutes: 45
     permissions:
       contents: read
     steps:
@@ -54,9 +58,31 @@ jobs:
           path: ark/docs/node_modules/.cache/ark-docs
           key: docs-twoslash-${{ hashFiles('ark/*/out/**/*.d.ts', 'ark/docs/lib/shiki.ts', 'ark/docs/package.json') }}
 
+      # under a prerelease's base path, e.g. /3 (see ark/docs/lib/basePath.ts)
       - name: Build docs
         run: pnpm buildDocs
         env:
+          NEXT_PUBLIC_POSTHOG_KEY: phc_vKr7tmA1TyRlKm9zm5TWVmrTWAybJ2fCk66FtZG49Om
+          NEXT_PUBLIC_POSTHOG_HOST: https://us.i.posthog.com
+          NEXT_PUBLIC_BASE_PATH: ${{ needs.version.outputs.basePath }}
+
+      # Pages serves one artifact, so a prerelease's deploy also rebuilds the
+      # root from the latest stable arktype's tag, as that release built it
+      - name: Build the stable docs
+        if: needs.version.outputs.prerelease == 'true'
+        run: |
+          tag=$(git tag --list 'arktype@*' --sort=-version:refname | grep -v -e - | head -n 1)
+          echo "serving the docs of $tag at the root and this commit's at $BASE_PATH"
+          git worktree add "$RUNNER_TEMP/stable" "$tag"
+          cd "$RUNNER_TEMP/stable"
+          pnpm install --frozen-lockfile
+          pnpm build
+          pnpm install --frozen-lockfile
+          pnpm buildDocs
+          mv "$GITHUB_WORKSPACE/ark/docs/out" "ark/docs/out${BASE_PATH}"
+          mv ark/docs/out "$GITHUB_WORKSPACE/ark/docs/out"
+        env:
+          BASE_PATH: ${{ needs.version.outputs.basePath }}
           NEXT_PUBLIC_POSTHOG_KEY: phc_vKr7tmA1TyRlKm9zm5TWVmrTWAybJ2fCk66FtZG49Om
           NEXT_PUBLIC_POSTHOG_HOST: https://us.i.posthog.com
 
@@ -109,3 +135,6 @@ jobs:
         run: pnpm ci:publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # npm logs why a trusted publishing (OIDC) token exchange failed only
+          # at verbose; without it, a refused exchange surfaces as a bare E404
+          NPM_CONFIG_LOGLEVEL: verbose

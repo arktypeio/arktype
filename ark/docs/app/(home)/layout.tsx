@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { HomeNav } from "../../components/home/HomeNav.tsx"
+import { siteUrl } from "../metadata.ts"
 import "../styles/home.css"
 
 // runs before first paint, when motion is welcome: html[data-motion] holds
@@ -15,8 +16,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
 			<script dangerouslySetInnerHTML={{ __html: prepaint }} />
 			<div hidden data-nosnippet>
 				Reading this as an agent? Every docs page is Markdown: add .md to its
-				URL. Index: https://arktype.io/llms.txt. Skill: npx skills add
-				arktypeio/arktype
+				URL. Index: {siteUrl}/llms.txt. Skill: npx skills add arktypeio/arktype
 			</div>
 			<HomeNav />
 			<main id="main">{children}</main>

@@ -1,3 +1,4 @@
+import { withBase } from "../../lib/basePath.ts"
 import {
 	liveWorkerUrl,
 	type LiveRequest,
@@ -96,7 +97,7 @@ export const startLiveEngine = ({
 		queued = []
 		ready = false
 		try {
-			worker = new Worker(liveWorkerUrl, { type: "module" })
+			worker = new Worker(withBase(liveWorkerUrl), { type: "module" })
 		} catch {
 			fallBack()
 			return

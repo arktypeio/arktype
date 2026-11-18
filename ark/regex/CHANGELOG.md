@@ -1,6 +1,6 @@
 # arkregex
 
-## Unreleased
+## 0.0.16-beta.0
 
 ### infer capture indices across alternation branches
 

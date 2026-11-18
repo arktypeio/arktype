@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { NotFoundSearch } from "../components/shell/NotFoundSearch.tsx"
+import { withBase } from "../lib/basePath.ts"
 import { TopNav } from "../components/shell/TopNav.tsx"
 
 export const metadata = { title: "Not found" }
@@ -23,7 +24,7 @@ export default function NotFound() {
 						<Link href="/docs/cheat-sheet">Cheat sheet</Link>
 					</li>
 					<li>
-						<a href="/llms.txt">llms.txt</a>
+						<a href={withBase("/llms.txt")}>llms.txt</a>
 					</li>
 				</ul>
 			</main>

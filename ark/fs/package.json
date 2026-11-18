@@ -1,6 +1,6 @@
 {
 	"name": "@ark/fs",
-	"version": "0.56.8",
+	"version": "0.57.0-beta.0",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
