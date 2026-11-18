@@ -1197,7 +1197,7 @@ At 5,000 Types, a message adds 7.4 B gzipped to a "smallest" bundle and 7.6 B to
 
 With messages alone, "smallest" gzips larger at 10 to 250 Types, by 0.2% to 4.1%; smaller at 500 to 5,000 Types, by 2.0% to 8.3%. With narrows alone, it gzips larger at 10 to 250 Types, by 0.7% to 5.6%; smaller at 500 to 5,000 Types, by 1.1% to 7.6%.
 
-At 5,000 Types, a message or a narrow costs "smallest" no more than it costs Valibot, so neither moves which is smaller.
+At 5,000 Types, a message costs "smallest" no more than it costs Valibot, so of the two only narrows can cost it its lead: taking them alone, a "smallest" bundle gzips smaller than Valibot's while it has fewer than about 3.7 narrows a Type.
 
 ## Where each is smaller
 
@@ -1229,11 +1229,11 @@ On forms:
 
 ## Which to choose
 
-Precompile a bundle a browser loads, with [`"smallest"`](https://arktype.io/docs/precompile/options#choosing-smallest) once it holds more than a handful of Types. Built "smallest", a bundle gzips smaller than it would shipping arktype at every count measured on models and at every count measured on forms. What it saves is arktype's fixed cost, which a page pays before it validates anything.
+Precompile a bundle a browser loads, with [`"smallest"`](https://arktype.io/docs/precompile/options#choosing-smallest) once it holds more than a handful of Types. Built "smallest", a bundle gzips smaller than it would shipping arktype at every count measured, on models and on forms. What it saves is arktype's fixed cost, which a page pays before it validates anything.
 
 Keep the default build for a server and for validation on a hot path, where each validator's own compiled code is [what makes it fast](https://arktype.io/docs/precompile#speed-and-size). The default build gzips smaller than dynamic arktype until about 920 Types on models and until about 650 Types on forms, and in raw bytes until about 360 Types on models and until about 220 Types on forms. A bundle with both kinds of Type [chooses for each definition](https://arktype.io/docs/precompile/options#strategies-and-schemas).
 
-What a Type holds moves these counts more than how many there are. Gzipped, a narrow costs a "smallest" bundle 1.0x what it costs Valibot's, and a message 0.9x. If bytes are all you're choosing by, compare the rows nearest your app above.
+What a Type holds moves these counts more than how many there are. Gzipped, a narrow costs a "smallest" bundle 1.1x what it costs Valibot's, and a message 0.97x. If bytes are all you're choosing by, compare the rows nearest your app above.
 
 [Dynamic vs Precompiled](https://arktype.io/docs/precompile/dynamic-vs-precompiled#which-to-use) covers when to stay dynamic for reasons other than size.
 

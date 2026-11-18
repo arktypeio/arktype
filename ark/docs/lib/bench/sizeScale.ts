@@ -612,22 +612,41 @@ export const sizeBreakEven = {
 	messages: breakEvenOf("message")
 }
 
+// how many a Type a build can hold and still lead, rounded down, so the lead
+// reads as lasting no longer than it measured: 3.78 as "3.7 narrows a Type",
+// 0.3 as "one narrow in every 4 Types"
 const rateText = (rate: number, one: string, many: string) =>
 	rate < 1 ?
-		`one ${one} in every ${Math.floor(1 / rate)} Types`
-	:	`${rate.toFixed(1)} ${many} a Type`
+		`one ${one} in every ${Math.ceil(1 / rate)} Types`
+	:	`${(Math.floor(rate * 10) / 10).toFixed(1)} ${many} a Type`
+
+// whether more of something can cost "smallest" its lead: its break-even is a
+// count only where one costs it more than it costs Valibot
+const hasBreakEven = (rate: number) => rate > 0 && Number.isFinite(rate)
 
 const breakEvenText = (() => {
 	const { narrows, messages } = sizeBreakEven
-	const lead =
-		largestOf("models", "smallest", "gzip") <
+	const at = typesText(sizeScaleLargest)
+	if (
+		largestOf("models", "smallest", "gzip") >=
 		largestOf("models", "valibot", "gzip")
-	if (!lead || narrows <= 0 || messages <= 0) {
-		return lead ?
-				`At ${typesText(sizeScaleLargest)}, a message or a narrow costs "smallest" no more than it costs Valibot, so neither moves which is smaller.`
-			:	`At ${typesText(sizeScaleLargest)}, "smallest" gzips larger than Valibot before any message or narrow.`
-	}
-	return `Taking each alone and adding nothing for the two together, a "smallest" bundle of ${typesText(sizeScaleLargest)} gzips smaller than Valibot's while it has fewer than about ${rateText(narrows, "narrow", "narrows")}, or fewer than about ${rateText(messages, "message", "messages")} and no narrows.`
+	)
+		return `At ${at}, "smallest" gzips larger than Valibot before any message or narrow.`
+	if (hasBreakEven(narrows) && hasBreakEven(messages))
+		return `Taking each alone and adding nothing for the two together, a "smallest" bundle of ${at} gzips smaller than Valibot's while it has fewer than about ${rateText(narrows, "narrow", "narrows")}, or fewer than about ${rateText(messages, "message", "messages")} and no narrows.`
+	if (!hasBreakEven(narrows) && !hasBreakEven(messages))
+		return `At ${at}, a message or a narrow costs "smallest" no more than it costs Valibot, so neither moves which is smaller.`
+	// one of the two costs "smallest" more than it costs Valibot and the other
+	// doesn't, so only the first can cost it its lead
+	const [free, costly, rate] =
+		hasBreakEven(narrows) ?
+			(["message", "narrows", rateText(narrows, "narrow", "narrows")] as const)
+		:	([
+				"narrow",
+				"messages",
+				rateText(messages, "message", "messages")
+			] as const)
+	return `At ${at}, a ${free} costs "smallest" no more than it costs Valibot, so of the two only ${costly} can cost it its lead: taking them alone, a "smallest" bundle gzips smaller than Valibot's while it has fewer than about ${rate}.`
 })()
 
 // which of a precompiled build and dynamic arktype is smaller as Types grow
@@ -658,29 +677,40 @@ const dynamicText = (
 	return sizeStandingText(corpus, build, "dynamic", metric)
 }
 
-// "at every count measured on models and until about 4,300 Types on forms"
-const untilText = (build: SizeBuild, metric: SizeMetric) =>
-	listText(
-		(["models", "forms"] as const).map(corpus => {
-			const { crossings, smallerAtLargest } = sizeCrossoverOf(
-				corpus,
-				build,
-				"dynamic",
-				metric
-			)
-			return (
-				!crossings.length && smallerAtLargest === build ?
-					`at every count measured on ${corpus}`
-				: crossings.length === 1 && smallerAtLargest === "dynamic" ?
+// "at every count measured on models and until about 4,300 Types on forms",
+// or where it's the smaller throughout both, "at every count measured, on
+// models and on forms"
+const untilText = (build: SizeBuild, metric: SizeMetric) => {
+	const untils = (["models", "forms"] as const).map(corpus => {
+		const { crossings, smallerAtLargest } = sizeCrossoverOf(
+			corpus,
+			build,
+			"dynamic",
+			metric
+		)
+		return {
+			corpus,
+			isEvery: !crossings.length && smallerAtLargest === build,
+			until:
+				crossings.length === 1 && smallerAtLargest === "dynamic" ?
 					`until about ${aboutText(crossings[0].at)} Types on ${corpus}`
 				:	`on ${corpus}, ${sizeStandingText(corpus, build, "dynamic", metric)}`
+		}
+	})
+	return untils.every(({ isEvery }) => isEvery) ?
+			`at every count measured, ${listText(untils.map(({ corpus }) => `on ${corpus}`))}`
+		:	listText(
+				untils.map(({ corpus, isEvery, until }) =>
+					isEvery ? `at every count measured on ${corpus}` : until
+				)
 			)
-		})
-	)
+}
 
-// a build's cost over another's, rounded down: "4.0x"
+// a build's cost over another's, to the nearest of two significant figures:
+// "4.0x", 1.09 as "1.1x" and 0.97 as "0.97x". Rounding down, as this did, read
+// 1.09 as "1.0x" and 0.97 as "0.9x", each better for "smallest" than measured
 const timesText = (ratio: number) =>
-	`${(Math.floor(ratio * 10) / 10).toFixed(1)}x`
+	`${ratio < 99.5 ? ratio.toPrecision(2) : countText(Math.round(ratio))}x`
 
 const costRatio = (per: "message" | "narrow") =>
 	sizeScale.marginal.smallest[per].gzip / sizeScale.marginal.valibot[per].gzip
