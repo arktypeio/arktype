@@ -1147,7 +1147,8 @@ const observationsOf = (out: string): unknown[] | undefined => {
 const normalized = (observation: unknown) =>
 	JSON.stringify(observation)?.replace(/\$ark\.\w+/g, "$ark.fn")
 
-const unbakedMessage = /isn't precompiled: set members/
+// a build written for size says no more than its first half
+const unbakedMessage = /isn't precompiled(?:: set members|$)/
 const fallbackMessage = /takes only a target it was built with/
 
 type Verdict =

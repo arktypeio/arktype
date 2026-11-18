@@ -16,6 +16,7 @@ import {
 	issueAt,
 	issuesOf,
 	mergeIssues,
+	namesFix,
 	runtimeConfig,
 	sharedMessageOf,
 	supportedJsonSchemaTargets,
@@ -237,9 +238,12 @@ export class Validator {
 	}
 }
 
+// a build written for size says what's missing and leaves the fix to the docs
 export const lacks = (member: IntrospectionMember): Error =>
 	new Error(
-		`${member} isn't precompiled: set members["${member}"] true in the precompile options`
+		namesFix ?
+			`${member} isn't precompiled: set members["${member}"] true in the precompile options`
+		:	`${member} isn't precompiled`
 	)
 
 const getOwnPropertyDescriptors = /* @__PURE__ */ (() =>

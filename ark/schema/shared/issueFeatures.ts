@@ -39,3 +39,6 @@ export const readsSummary: boolean = true
 
 /** an errors object read other than by its issues or summary: thrown, printed or passed on */
 export const readsErrors: boolean = true
+
+/** a member a build didn't bake naming the option that bakes it where it's read, which a build written for size leaves out */
+export const namesFix: boolean = true

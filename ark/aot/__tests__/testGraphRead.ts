@@ -640,9 +640,10 @@ const normalized = (out: string) =>
 		"according to a predicate"
 	)
 
-// a member a build left out, which it says as it's read
+// a member a build left out, which it says as it's read, one written for size
+// without the setting
 const isLoud = (out: string) =>
-	/isn't precompiled: set members|reads? \w+, which a standalone validator lacks|Type<[^>]*>|can't be precompiled/.test(
+	/isn't precompiled(?:: set members|\b)|reads? \w+, which a standalone validator lacks|Type<[^>]*>|can't be precompiled/.test(
 		out
 	)
 

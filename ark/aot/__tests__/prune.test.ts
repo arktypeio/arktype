@@ -707,7 +707,8 @@ export const Fields = { even: Even, name: type("string") }
 				failsInBranches: false,
 				discriminatesBooleans: false,
 				readsSummary: true,
-				readsErrors: true
+				readsErrors: true,
+				namesFix: false
 			})
 			attest(
 				await issuesOf(
@@ -726,7 +727,8 @@ export const Fields = { even: Even, name: type("string") }
 				failsInBranches: false,
 				discriminatesBooleans: false,
 				readsSummary: true,
-				readsErrors: true
+				readsErrors: true,
+				namesFix: false
 			})
 		})
 
@@ -748,7 +750,8 @@ export const Fields = { even: Even, name: type("string") }
 				failsInBranches: false,
 				discriminatesBooleans: false,
 				readsSummary: true,
-				readsErrors: true
+				readsErrors: true,
+				namesFix: false
 			})
 		})
 
@@ -831,7 +834,8 @@ export const Fields = { even: Even, name: type("string") }
 				failsInBranches: false,
 				discriminatesBooleans: false,
 				readsSummary: true,
-				readsErrors: true
+				readsErrors: true,
+				namesFix: false
 			})
 		})
 	})
@@ -1384,6 +1388,27 @@ console.log(READ, String(User({ name: 5 })))
 				attest(run(pruned)).equals(run(whole))
 				attest(pruned.includes("~standard")).equals(false)
 			}
+		})
+
+		it("names the fix where a member it didn't bake is read, unless written for size", async () => {
+			// code outside the bundle reads what an entry exports
+			const exporting = {
+				format: "iife",
+				globalName: "lib",
+				stdin: {
+					contents: `export { User } from "./types.ts"`,
+					resolveDir: root
+				},
+				footer: { js: "lib.User.expression" }
+			} as const
+			const thrownBy = async (opts: PrecompileUnpluginOptions) =>
+				/^Error: .*$/m.exec(
+					runBundle(await bundle(opts, exporting)).stderr
+				)?.[0]
+			attest(await thrownBy({ preset: undefined })).snap(
+				'Error: expression isn\'t precompiled: set members["expression"] true in the precompile options'
+			)
+			attest(await thrownBy({})).snap("Error: expression isn't precompiled")
 		})
 
 		it("drops what reads what no validator's issues hold", async () => {

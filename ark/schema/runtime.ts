@@ -13,6 +13,7 @@ export {
 	discriminatesBooleans,
 	failsInBranches,
 	listsUnions,
+	namesFix,
 	transformsBranches,
 	traversesUnions
 } from "./shared/issueFeatures.ts"

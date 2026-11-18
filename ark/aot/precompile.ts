@@ -8658,7 +8658,8 @@ const anyIssues: IssueFeatures = {
 	failsInBranches: true,
 	discriminatesBooleans: true,
 	readsSummary: true,
-	readsErrors: true
+	readsErrors: true,
+	namesFix: true
 }
 
 // a Type whose members a module importing it can bake, as it holds no value
