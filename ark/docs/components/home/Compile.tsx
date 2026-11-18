@@ -1,3 +1,4 @@
+import { CompileLive, Step } from "./CompileLive.tsx"
 import { HomeCode, PlainCode } from "./HomeCode.tsx"
 
 const source = `const Shape = type({
@@ -28,25 +29,13 @@ const config: [line: string, added: boolean][] = [
 	["})", false]
 ]
 
-type StepProps = {
-	n: number
-	children: string
-}
-
-/** a stage of the build, numbered in the order the figure plays them */
-const Step = ({ n, children }: StepProps) => (
-	<span className="compile-step">
-		<b>{n}</b>
-		{children}
-	</span>
-)
-
 /**
  * The whole build step, in the order it happens: the two lines that add the
  * plugin, a definition, and what the build makes of it (the union's
  * discriminator found, one switch, each branch checking only what's left).
  * landing.css plays the three in turn once the figure is seen; the markup is
- * all three, finished.
+ * all three, finished. The definition can then be edited, and CompileLive
+ * runs the precompiler itself on what the reader types.
  */
 export const Compile = () => (
 	<div className="compile" data-stage="compile">
@@ -66,26 +55,11 @@ export const Compile = () => (
 				))}
 			</pre>
 		</figure>
-		<figure className="code-card compile-in">
-			<figcaption>
-				<Step n={2}>write a Type</Step>
-				<span>shape.ts</span>
-			</figcaption>
-			<HomeCode code={source} />
-			<span className="compile-scan" aria-hidden />
-		</figure>
-		<figure className="code-card glow compile-out">
-			<figcaption>
-				<Step n={3}>what ships</Step>
-				<span>Shape's check, helpers inlined</span>
-			</figcaption>
-			<PlainCode code={emitted} />
-			<footer>
-				<span>
-					{emitted.split("\n").length} lines of plain JavaScript · no parser, no{" "}
-					<code>new Function</code>
-				</span>
-			</footer>
-		</figure>
+		<CompileLive
+			source={source}
+			input={<HomeCode code={source} />}
+			output={<PlainCode code={emitted} />}
+			lines={emitted.split("\n").length}
+		/>
 	</div>
 )

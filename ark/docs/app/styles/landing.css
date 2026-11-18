@@ -551,7 +551,7 @@
 	}
 	/* cut into ticks of a million instructions each */
 	.boot-track {
-		--tick: calc(100% / var(--max) * 1000000);
+		--tick: calc(100% / var(--max));
 		grid-area: track;
 		position: relative;
 		height: 12px;
@@ -891,8 +891,7 @@
 			display: flex;
 			flex-direction: column;
 		}
-		.code-card > pre.shiki {
-			flex: 1;
+		.code-card pre.shiki {
 			font-size: 14px;
 			line-height: 1.75;
 		}
@@ -916,11 +915,98 @@
 	}
 	.compile-out {
 		grid-area: out;
-		> pre.shiki {
+		pre.shiki {
 			font-size: clamp(14px, 0.6rem + 0.55vw, 16.5px) !important;
 			line-height: 1.85 !important;
 			padding-block: 24px;
 		}
+	}
+	.compile-source,
+	.compile-result {
+		flex: 1;
+		min-width: 0;
+	}
+	/* the definition is the reader's to change: a press on it starts the precompiler */
+	.compile-source {
+		cursor: text;
+	}
+	.compile-file {
+		display: inline-flex;
+		align-items: center;
+		gap: 12px;
+	}
+	.compile-act {
+		padding: 3px 10px;
+		border-radius: var(--r-pill);
+		border: 1px solid color-mix(in oklab, var(--gold) 45%, transparent);
+		background: color-mix(in oklab, var(--gold) 8%, transparent);
+		font: inherit;
+		color: var(--gold);
+		cursor: pointer;
+		transition: background var(--t-micro);
+		&:hover {
+			background: color-mix(in oklab, var(--gold) 16%, transparent);
+		}
+	}
+	/* the field that replaces the highlighted definition, in its place and its metrics */
+	.compile-edit {
+		flex: 1;
+		display: block;
+		width: 100%;
+		margin: 0;
+		padding: 16px 20px;
+		border: 0;
+		outline: 0;
+		resize: none;
+		background: transparent;
+		font: 400 14px / 1.75 var(--mono);
+		font-variant-ligatures: none;
+		tab-size: 2;
+		white-space: pre;
+		overflow-x: auto;
+		color: var(--ink);
+		caret-color: var(--gold);
+	}
+	.compile-in[data-editing] {
+		border-color: color-mix(in oklab, var(--gold) 45%, transparent);
+	}
+	/* what the precompiler wrote, as it wrote it */
+	.compile-real {
+		margin: 0;
+		padding: 20px 24px;
+		font: 400 13px / 1.65 var(--mono);
+		font-variant-ligatures: none;
+		tab-size: 2;
+		color: var(--ink);
+	}
+	.compile-fail {
+		margin: 0;
+		padding: 22px 24px;
+		font: 400 14px / 1.6 var(--mono);
+		color: var(--red-ink);
+		overflow-wrap: anywhere;
+	}
+	.compile-result {
+		transition: opacity 0.2s 0.25s;
+	}
+	/* a fixed window onto whatever was written, so typing never moves the page */
+	.compile-out[data-live] .compile-result {
+		height: 27rem;
+		flex: none;
+		overflow: auto;
+	}
+	.js-str {
+		color: var(--teal-ink);
+	}
+	.js-kw {
+		color: var(--copper);
+	}
+	.js-num {
+		color: var(--sky);
+	}
+	/* the checks shown are for an earlier definition; dimmed only if the answer is slow */
+	.compile-out[data-pending] .compile-result {
+		opacity: 0.55;
 	}
 	/* a stage of the build, numbered in the order it plays */
 	.compile-step {
@@ -1271,6 +1357,11 @@
 		translate: 0 10px;
 	}
 }
+@keyframes act-pulse {
+	50% {
+		box-shadow: 0 0 0 5px var(--lit);
+	}
+}
 @keyframes panel-in {
 	from {
 		opacity: 0;
@@ -1404,6 +1495,10 @@
 			}
 			.compile-out > footer {
 				animation: lit-in 0.4s ease-out 5.6s both;
+			}
+			/* the stages are done: the definition is the reader's now */
+			.compile-act {
+				animation: act-pulse 0.9s ease-in-out 6.2s 2;
 			}
 		}
 
@@ -1589,10 +1684,15 @@
 			grid-template-columns: minmax(0, 1fr);
 		}
 		/* what ships, whole: its lines wrap under themselves instead of running off */
-		.compile .code-card > pre.shiki {
+		.compile .code-card pre.shiki,
+		.compile-edit {
 			font-size: 12.5px !important;
 		}
-		.compile-out > pre.shiki {
+		.compile-real {
+			padding: 16px;
+			font-size: 12px;
+		}
+		.compile-out pre.shiki {
 			padding-block: 16px;
 			line-height: 1.7 !important;
 			&,

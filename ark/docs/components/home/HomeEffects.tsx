@@ -323,7 +323,8 @@ const runBoot = (figure: HTMLElement) => {
 					el.textContent = final
 					lane.dataset.done = ""
 				} else {
-					el.textContent = `${(reached / 1e6).toFixed(2)}M`
+					// in the unit its total is written in: "0.87M"
+					el.textContent = `${reached.toFixed(2)}${final?.replace(/^[\d.]+/, "")}`
 					running = true
 				}
 			}

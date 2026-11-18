@@ -47,7 +47,7 @@ export const BootLog = () => {
 						<span className="boot-name">{bar.name}</span>
 						<span className="boot-status">
 							<span className="boot-run" aria-hidden>
-								starting
+								{bar === ours ? "importing" : "building schemas"}
 							</span>
 							<span className="boot-done">✓ first validation</span>
 						</span>
