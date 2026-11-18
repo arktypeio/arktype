@@ -796,8 +796,18 @@ const writeError = (
 	config: ResolvedConfig,
 	locale: Locale
 ): void => {
-	writeAtPaths(error, config, locale)
-	writeRelative(error, config, locale)
+	const code = error.code
+	if (code === "union" || code === "intersection") {
+		writeAtPaths(error, config, locale)
+		writeRelative(error, config, locale)
+		return
+	}
+	// any other holds no errors and no bases, so it's written once at its path:
+	// what writeAtPaths does for it, without reading its code again for each
+	// question only a union or intersection answers
+	error.propString ??= stringifyPath(error.path)
+	if (renderer && locale !== renderer.en) renderer.write(error, config, locale)
+	else writeText(error, config, locale, code)
 }
 
 // the line of a union that lists its errors' whole paths, held as a
@@ -1051,15 +1061,21 @@ const sharedMessageOf = (errors: readonly ArkError[]): string | undefined => {
 export const writeText = (
 	error: ArkError,
 	config: ResolvedConfig,
-	locale: Locale
+	locale: Locale,
+	// read once by a caller that has, as an error's shape differs by its code,
+	// so no read of one is cached where errors of many codes are written
+	code: ArkErrorCode = error.code
 ): void => {
-	const writers = config[error.code]
+	const writers = config[code]
 	const meta = error.meta
 	const expected = meta?.expected ?? writers.expected
 	error.expected ??=
 		typeof expected === "function" ? expected(error as never, locale) : expected
 	error.actual ??= writeActual(error, meta?.actual ?? writers.actual, locale)
-	const message = configuredMessageOf(error) ?? writers.message
+	const message =
+		meta?.message ??
+		(code === "required" ? configuredMessageOf(error) : undefined) ??
+		writers.message
 	error.message ??=
 		typeof message === "function" ? message(error as never, locale) : message
 }
