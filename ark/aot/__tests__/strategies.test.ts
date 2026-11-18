@@ -606,15 +606,21 @@ export const Cold = type({ amount: "number > 0", currency: "string == 3" })
 				check([], {
 					cwd: root,
 					preset: "smallest",
-					schemas: {
-						// a directory, as each module it holds
-						"src/server": "fastest",
-						"src/forms/order.ts#Order": "smallest"
-					}
+					// a directory, as each module it holds
+					schemas: { "src/server": "fastest" }
 				}).lines
 			).snap([
-				'src/forms/order.ts:4:22  accepted  smallest by schemas["src/forms/order.ts#Order"]',
+				'src/forms/order.ts:4:22  accepted  optimize: "size"',
 				'src/server/money.ts:3:22  accepted  fastest by schemas["src/server"]',
+				"2 sites in 3 files: 2 accepted (100.0%)"
+			])
+		})
+
+		it("says nothing of them where nothing chooses", () => {
+			const root = writeFixture(app)
+			attest(check([], { cwd: root, preset: "smallest" }).lines).snap([
+				"src/forms/order.ts:4:22  accepted",
+				"src/server/money.ts:3:22  accepted",
 				"2 sites in 3 files: 2 accepted (100.0%)"
 			])
 		})

@@ -4100,8 +4100,9 @@ export class Precompiler {
 		return optimizeBySite
 	}
 
-	// says of each site what it's written with, where a key or marker chooses
-	// for any in its module, and reports what one chooses that it can't:
+	// says of each site what it's written with, where a key chooses for any
+	// module or a marker for one of its own, and reports what one chooses that
+	// it can't:
 	// nothing, as a key naming no declaration does, or what another as specific
 	// chooses otherwise, or how arktype creates an island's Type
 	private chooseStrategies(module: SourceModule, sites: Site[]): Diagnostic[] {
@@ -4115,7 +4116,18 @@ export class Precompiler {
 				strategyMarkerHint
 			)
 		)
-		if (!this.choosesIn(module)) return result
+		if (!this.choosesIn(module)) {
+			// where schemas chooses for any module, each site says what it's
+			// written with, so a key that was meant to match one shows it doesn't
+			if (this.strategies.keys.length) {
+				const { default: unchosen, defaultOptimize } = this.strategies
+				for (const site of sites) {
+					if (site.status === "accepted")
+						site.strategy = writeStrategyLabel(unchosen, defaultOptimize)
+				}
+			}
+			return result
+		}
 		for (const mark of module.strategyMarks) {
 			if (!this.strategies.has(mark.name)) {
 				result.push(
