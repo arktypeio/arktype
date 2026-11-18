@@ -1296,6 +1296,15 @@ export const ctxNode = ((
 	return node
 }) satisfies Fn
 
+// one of a checker reading its ctx, which only checks: its Allows is its
+// Apply's, and all that tells it apart is whether a predicate of its reports
+export const readingCtxNode = ((tApply: Checker, reportsPred?: true) =>
+	ctxNode(
+		reportsPred ? { checksCtx: true, reportsPred } : { checksCtx: true },
+		allowsReadingCtx(tApply),
+		tApply
+	)) satisfies Fn
+
 // a union's transform where a branch's can fail, holding a morph or an alias
 export const failingBranches = ((
 	branchOf: (data: any) => Checker | 1,

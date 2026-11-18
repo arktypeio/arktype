@@ -279,6 +279,13 @@ export const isCreatedByRuntime = (
 export const writeLazyRead = (name: string, initial: string): string =>
 	`(${name} === undefined ? (${name} = ${initial}) : ${name})`
 
+// whether a module declares an object for each table its factories intern
+// in, which the runtime keys the table by, rather than a variable the first
+// call sets: what a build written for size reads, unless an import cycle can
+// call a factory before its module ran
+export const internsByHolder = (baking: Baking): boolean =>
+	baking.shortest && !baking.hoisted
+
 export const writeValue = (
 	hoisted: boolean,
 	name: string,

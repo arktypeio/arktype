@@ -57,6 +57,7 @@ import {
 	failureSources,
 	introspectionMembers,
 	invalidErrorsOf,
+	internsByHolder,
 	isCreatedByRuntime,
 	wholeReads,
 	writeFixConfig,
@@ -1155,7 +1156,7 @@ export class StandaloneArtifact {
 			defaults.length ? `, [${defaults.map(({ key }) => key).join(", ")}]` : ""
 		if (!holes)
 			return this.writeFactoryFunction(index, params, configured, body)
-		const interned = `runtime.intern(${this.internTableOf(internedBy!)}, [${holes.join(", ")}], ${this.baking.defers ? "function ()" : "() =>"} {\n${body.filter(statement => statement).join("\n\n")}\n}${defaultKeys})`
+		const interned = `runtime.${this.internsByHolder ? "internIn" : "intern"}(${this.internTableOf(internedBy!)}, [${holes.join(", ")}], ${this.baking.defers ? "function ()" : "() =>"} {\n${body.filter(statement => statement).join("\n\n")}\n}${defaultKeys})`
 		// one holding none bakes as it's created
 		const bakedAfter =
 			this.internsAcrossModules &&
@@ -1191,9 +1192,20 @@ export class StandaloneArtifact {
 	// created each; a validator holding none is interned where it's written
 	private internTableOf(internedBy: number): string {
 		const type = this.factory!.type as never
-		return this.internsAcrossModules ?
+		return (
+			this.internsAcrossModules ?
 				`runtime.internedTable(${JSON.stringify(this.internKeyOf(type, this.validatorFormOf(type)))})`
-			:	writeLazyRead(`interned${internedBy}`, "runtime.internTable()")
+			: this.internsByHolder ? `interned${internedBy}`
+			: writeLazyRead(`interned${internedBy}`, "runtime.internTable()")
+		)
+	}
+
+	// whether a factory's table is what an object its module declares keys in
+	// the runtime, as a build written for size reads it: a factory it writes
+	// is a const, which nothing reaches before its module declared the object,
+	// so the table needn't be created by whichever call comes first
+	get internsByHolder(): boolean {
+		return internsByHolder(this.baking) && !this.internsAcrossModules
 	}
 
 	get internsAcrossModules(): boolean {
@@ -1667,12 +1679,8 @@ return namespace`
 				shape ? `${this.readValue(unit.name)}[${returned.indexOf(shape)}]`
 				: isChecker ?
 					`runtime.checkerNode(${this.traversalsOf(root, unit)[0]}${root.reportsPred ? ", true" : ""})`
-				: readsCtx ?
-					`runtime.ctxNode(${[
-						this.writeShapeFlags(root, unit),
-						...this.traversalsOf(root, unit)
-					].join(", ")})`
-				:	`runtime.freeze(${this.writeShape(
+				: readsCtx ? this.writeCtxNode(root, unit)
+				: `runtime.freeze(${this.writeShape(
 						root,
 						this.readValue(`${name}Node`),
 						unit,
@@ -1684,6 +1692,28 @@ return namespace`
 				!shape && (isChecker || readsCtx)
 			)
 		})
+	}
+
+	// a node reading its ctx, from its flags and traversals. Nearly each is of
+	// a checker that only checks, whose Allows is declared from its Apply, so
+	// the runtime creates that one's node from its Apply alone, and the Allows
+	// is declared only for what else reads it
+	writeCtxNode(root: BaseRoot, unit: RootUnit): string {
+		const flags = this.writeShapeFlags(root, unit)
+		const traversals = this.traversalsOf(root, unit)
+		const [allows, apply] = traversals
+		const reportsPred = flags === "{ checksCtx: true, reportsPred: true }"
+		return (
+				traversals.length === 2 &&
+					(reportsPred || flags === "{ checksCtx: true }") &&
+					unit.members.some(
+						([name, source]) =>
+							name === allows &&
+							source === `/* @__PURE__ */ runtime.allowsReadingCtx(${apply})`
+					)
+			) ?
+				`runtime.readingCtxNode(${apply}${reportsPred ? ", true" : ""})`
+			:	`runtime.ctxNode(${[flags, ...traversals].join(", ")})`
 	}
 
 	// whether a node may be written as the checker declared beside it

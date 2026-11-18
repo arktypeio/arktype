@@ -1360,6 +1360,16 @@ export const intern = <value>(
 	return (table.value ??= create()) as value
 }
 
+const tablesByHolder = /* @__PURE__ */ new InternTable()
+
+// as intern, in the table of an object a module declares for it
+export const internIn = <value>(
+	holder: object,
+	holes: readonly unknown[],
+	create: () => value,
+	defaults?: readonly DefaultKey[]
+): value => intern(tablesByHolder.next(holder), holes, create, defaults)
+
 // what a key names, created by whichever module reaches it first
 export const interned = <value, args extends unknown[]>(
 	key: string,

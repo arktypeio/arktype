@@ -380,6 +380,75 @@ domain items.1.name: must be a string
 		attest(checkers.includes("allowsUntracked(shape")).equals(false)
 	})
 
+	it("creates the node of a checker whose callback reads its ctx from its Apply", async () => {
+		const root = fixture(
+			"ctx-node",
+			`import { type } from "arktype"
+
+const print = (out: unknown) =>
+	console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
+const Counted = type({ count: "number" }).narrow(
+	(data, ctx) => data.count < 10 || ctx.reject({ message: "Too many.", path: ["count"] })
+)
+const Listed = type({ items: Counted.array() })
+print(Counted({ count: 12 }))
+print(Counted.allows({ count: 4 }))
+print(Listed({ items: [{ count: 4 }, { count: 12 }] }))
+print(Listed.allows({ items: [{ count: 12 }] }))
+${repaying}
+`
+		)
+		// as arktype prints them
+		const expected = `count: Too many.
+true
+count: Too many.
+false
+`
+		attest(behaviorOf(await bundle(root))).equals(expected)
+		const checkers = await bundle(root, smallest)
+		attest(behaviorOf(checkers)).equals(expected)
+		// neither its flags nor an Allows written from its Apply
+		attest(
+			checkers
+				.match(/\b(?:readingCtxNode|ctxNode)\(\w+Apply\b[^)]*\)/g)
+				?.map(node => node.replace(/\w+Apply/, "Apply"))
+		).equals(["readingCtxNode(Apply)", "readingCtxNode(Apply)"])
+	})
+
+	it("returns what a factory created before for the same function, keyed by an object its module declares", async () => {
+		const root = fixture(
+			"intern-holder",
+			`import { type } from "arktype"
+
+// each call's narrow reads its own min, so a Type holding one is passed it
+const over = (min: number) => type("number").narrow(n => n > min)
+const Low = over(2)
+const A = type({ n: Low })
+const B = type({ n: Low })
+const C = type({ n: over(4) })
+console.log(A === B, A === C)
+console.log(A.allows({ n: 3 }), C.allows({ n: 3 }))
+${repaying}
+`
+		)
+		// as arktype compares them
+		const expected = "true false\ntrue false\n"
+		attest(behaviorOf(await bundle(root))).equals(expected)
+		const checkers = await bundle(root, smallest)
+		attest(behaviorOf(checkers)).equals(expected)
+		attest(
+			checkers.match(/\binterned\d* = .*$|\bintern\w*\(interned\d*/gm)
+		).snap([
+			"interned0 = {};",
+			"interned1 = {};",
+			"interned2 = {};",
+			"internIn(interned0",
+			"internIn(interned1",
+			"internIn(interned1",
+			"internIn(interned2"
+		])
+	})
+
 	describe("a union's issue", () => {
 		const printed = `const printIssues = (out: unknown) => console.log(JSON.stringify(out instanceof type.errors ? out.issues : out))
 
