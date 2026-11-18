@@ -8,26 +8,34 @@ import {
 } from "../../lib/bench/bench.ts"
 import { generatedRows } from "../../lib/bench/scoreboard.ts"
 import { sizeCurves } from "../../lib/bench/sizeCurves.ts"
-import { claims, isPending, medianOf, sizeChart } from "../../lib/claims.ts"
+import {
+	claims,
+	isPending,
+	medianOf,
+	presetSizeRows,
+	sizeChart
+} from "../../lib/claims.ts"
 import { BenchmarkChart } from "../mdx/BenchmarkChart.tsx"
-import { ClaimText, PresetSizeTable } from "../mdx/Claim.tsx"
+import { ClaimText } from "../mdx/Claim.tsx"
 import { AverageLine, SizeStandings, SpeedSpread } from "./Board.tsx"
-import { categoryOf, startupFacts } from "./boardFacts.ts"
+import {
+	categoryOf,
+	loginKb,
+	startupFacts,
+	zodSizeRatio
+} from "./boardFacts.ts"
+import { BootLog } from "./BootLog.tsx"
 import { ByteGrid } from "./ByteGrid.tsx"
-import { ColdStart } from "./ColdStart.tsx"
 import { Compile } from "./Compile.tsx"
 import { Drill, Drills, Point } from "./Drill.tsx"
 import { SizeCurveChart } from "./SizeCurveChart.tsx"
-import { SpeedRace } from "./SpeedRace.tsx"
+import { SpeedCount } from "./SpeedCount.tsx"
 import { Loops, Proof, proofCount } from "./WhyNow.tsx"
 
 /** the generated apps' sizes in Types, ascending */
 const appTypes = [...new Set(generatedRows.map(row => Number(row.app)))].sort(
 	(l, r) => l - r
 )
-
-export const NextTag = () =>
-	preview && <span className="next-tag">next release</span>
 
 /** "2 of 13 valid-data scenarios", or "all 13 scenarios" while no library is faster on any */
 const validShare = (facts: BenchFacts) =>
@@ -132,45 +140,147 @@ const Losses = ({ facts }: FactsProps) => {
 	)
 }
 
-/** 02: validation speed, as a race at each library's median */
+/** 02: the build step, as the plugin, a definition and what the build makes of it */
+export const Precompile = () => (
+	<Point
+		id="precompile"
+		n="02"
+		kicker="precompile"
+		title="Your type in. Plain JavaScript out."
+		deck={
+			<>
+				One Vite plugin. No parser, no <code>new Function</code>. Your
+				definitions don't change.
+			</>
+		}
+		figure={<Compile />}
+		aside={
+			<div className="ctas point-ctas">
+				<Link className="btn" href="/docs/precompile/setup">
+					Set up precompile{" "}
+					<span className="arrow" aria-hidden>
+						→
+					</span>
+				</Link>
+			</div>
+		}
+	>
+		<Drills name="precompile">
+			<Drill
+				chip="what the build costs"
+				verdict="A build takes longer: precompiling moves creating your Types from your program's startup to your build."
+			>
+				<p className="drill-p">
+					<ClaimText claim={claims.buildTimeApp} />
+				</p>
+				<ul className="drill-list">
+					<li>
+						<ClaimText claim={claims.buildTimeProduction} />
+					</li>
+					<li>
+						<ClaimText claim={claims.buildTimeDev} />
+					</li>
+					<li>
+						<ClaimText claim={claims.buildTimeWatch} />
+					</li>
+					<li>
+						<ClaimText claim={claims.buildTimeMedium} />
+					</li>
+				</ul>
+			</Drill>
+			<Drill
+				chip="what it can't do"
+				verdict="A precompiled validator doesn't compose or introspect at runtime."
+			>
+				<p className="drill-p">
+					It validates, asserts and implements Standard Schema as the Type it
+					replaces does, and lacks methods like <code>.and</code> and{" "}
+					<code>.extends</code>. The build fails wherever it sees your program
+					rely on what a validator lacks. If you need the whole Type API at
+					runtime, build with <code>runtime: "arktype"</code>.{" "}
+					<Link className="link" href="/docs/precompile/dynamic-vs-precompiled">
+						Dynamic vs precompiled
+					</Link>
+				</p>
+			</Drill>
+			<Drill
+				chip="how we know it's right"
+				verdict={`${proofCount} suites every change to the output has to agree with.`}
+			>
+				<Proof />
+			</Drill>
+			<Drill
+				id="why"
+				chip="why a build step now"
+				verdict="Agents don't mind a build step."
+			>
+				<Loops />
+			</Drill>
+		</Drills>
+	</Point>
+)
+
+/** 03: validation speed, as validations finished at each library's median */
 export const Speed = () => {
 	const facts = benchFacts()
 	const [zod, zodCompiled] = categoryOf("speed").versus
+	const swept = zod.versus.wins === zod.versus.count
+	const sweptCompiled = zodCompiled.versus.wins === zodCompiled.versus.count
 	return (
 		<Point
 			id="run"
-			n="02"
+			n="03"
 			kicker="run"
-			tag={<NextTag />}
 			layout="split"
 			stat={{
 				value: medianOf(zod.versus),
 				unit: "faster than Zod 4, at the median scenario"
 			}}
 			title={
-				<>
-					Precompiled, it was <ClaimText claim={claims.zodSpec} />.
-				</>
+				swept ?
+					`${zod.versus.count} scenarios against Zod 4. ${zod.versus.wins} wins.`
+				:	<>
+						Precompiled, it was <ClaimText claim={claims.zodSpec} />.
+					</>
 			}
 			deck={
-				<>
-					And faster than Zod 4's <code>z.compile</code> in{" "}
-					{zodCompiled.versus.wins} of {zodCompiled.versus.count}, by a median
-					of {medianOf(zodCompiled.versus)}. Each lap is one validation.
-				</>
+				sweptCompiled ?
+					<>
+						{medianOf(zodCompiled.versus)} faster than Zod's own{" "}
+						<code>z.compile</code> at the median, too.
+					</>
+				:	<>
+						And faster than Zod 4's <code>z.compile</code> in{" "}
+						{zodCompiled.versus.wins} of {zodCompiled.versus.count}, by a median
+						of {medianOf(zodCompiled.versus)}.
+					</>
 			}
-			figure={<SpeedRace />}
+			figure={<SpeedCount />}
+			caveat={
+				<p className="loses">
+					<b>Where it loses.</b> <ClaimText claim={claims.speedScope} />
+				</p>
+			}
 		>
-			<Drills>
+			<Drills name="run">
 				<Drill
-					title="Every scenario, as a dot"
-					hint={`${zod.versus.count} scenarios against each library`}
+					chip={`all ${zod.versus.count} scenarios`}
+					verdict={
+						swept ?
+							"Each dot is a scenario. Against Zod 4, none is left of ArkType's line."
+						:	"Each dot is a scenario, at its ratio to ArkType's time."
+					}
 				>
 					<SpeedSpread />
 				</Drill>
 				<Drill
-					title="Where ArkType isn't the fastest"
-					hint="ajv, when the hot path reports errors"
+					chip="where we lose"
+					verdict={
+						<>
+							ajv is faster where the hot path reports errors: on{" "}
+							{facts.ajvFasterCount} of {facts.errorCount} such rows.
+						</>
+					}
 				>
 					<p className="drill-p">
 						We raced it against the ahead-of-time compilers (typia, TypeBox,
@@ -191,12 +301,13 @@ export const Speed = () => {
 					</p>
 				</Drill>
 				<Drill
-					title="On whole apps, and other projects' benchmarks"
-					hint="generated apps, ntwine, moltar"
+					chip="whole apps"
+					verdict={
+						<>
+							<AverageLine id="speed" />.
+						</>
+					}
 				>
-					<p className="drill-p">
-						<AverageLine id="speed" />.
-					</p>
 					<p className="drill-p">
 						<ClaimText claim={claims.parseSafe} />
 					</p>
@@ -212,8 +323,8 @@ export const Speed = () => {
 					)}
 				</Drill>
 				<Drill
-					title="Every panel, the table and the method"
-					hint={`${facts.scenarioCount} scenarios, ${provenance.passes} passes each`}
+					chip="every panel, and the method"
+					verdict={`${facts.scenarioCount} scenarios, the median of ${provenance.passes} fresh-process passes each.`}
 				>
 					<BenchmarkChart animate />
 				</Drill>
@@ -222,20 +333,126 @@ export const Speed = () => {
 	)
 }
 
-/** 03: cold start, as a sweep every library's bar grows along until it is ready */
+/** the "smallest" preset's table, its apps named so none reads as Valibot's login form */
+const presetAppNames: Record<string, string> = {
+	"a login form": "our startup benchmark's login app",
+	"a shop": "its shop app"
+}
+
+const PresetRows = () => (
+	<div className="scale-rows">
+		<table className="scale-table is-preset">
+			<thead>
+				<tr>
+					<th scope="col">gzipped production bundle</th>
+					<th scope="col">default</th>
+					<th scope="col">"smallest"</th>
+					<th scope="col">Valibot</th>
+				</tr>
+			</thead>
+			<tbody>
+				{presetSizeRows.map(row => {
+					const [app, types] = row.label.split(", ")
+					return (
+						<tr key={row.label}>
+							<th scope="row">
+								{types ? `${presetAppNames[app] ?? app}, ${types}` : row.label}
+							</th>
+							{[row.default, row.smallest, row.valibot].map((size, i) => (
+								<td key={i}>{size.replace(" KB", " kB")}</td>
+							))}
+						</tr>
+					)
+				})}
+			</tbody>
+		</table>
+	</div>
+)
+
+/** 04: bundle size, as the blocks a precompiled build leaves behind */
+export const Size = () => (
+	<Point
+		id="size"
+		n="04"
+		kicker="ship"
+		layout="flip"
+		stat={{
+			value: zodSizeRatio(),
+			unit: "smaller than Zod 4, on Valibot's own login form"
+		}}
+		title="Ship the checks, not the parser."
+		deck={`Valibot's own login form, messages included: ${loginKb("ArkType (precompiled)")} kB gzipped. Valibot ships ${loginKb("Valibot")}. Zod ships ${loginKb("Zod")}.`}
+		figure={<ByteGrid />}
+	>
+		<Drills name="size">
+			<Drill
+				chip="as your app grows"
+				verdict="One login form is the fixed cost. As an app's Types grow, which library ships less depends on the build you choose and on what the schemas hold."
+			>
+				{sizeCurves.corpora.map(corpus => (
+					<SizeCurveChart
+						key={corpus.id}
+						corpus={corpus}
+						commit={sizeCurves.commit}
+					/>
+				))}
+			</Drill>
+			<Drill
+				chip={'the "smallest" preset'}
+				verdict={<ClaimText claim={claims.buildChoice} />}
+			>
+				<p className="drill-p">
+					<ClaimText claim={claims.sizePreset} />
+				</p>
+				<PresetRows />
+				<p className="note">
+					{
+						"// these are other apps than Valibot's login form above, measured on schemas without custom messages or narrows; form-like schemas are a separate corpus, and these results don't carry over to it"
+					}
+				</p>
+				<p className="drill-p">
+					<ClaimText claim={claims.smallestSpeed} />{" "}
+					<Link className="link" href="/docs/precompile/options">
+						The options
+					</Link>
+				</p>
+			</Drill>
+			<Drill
+				chip="the close call"
+				verdict={<ClaimText claim={claims.sizeClose} />}
+			>
+				<p className="drill-p">
+					<ClaimText claim={claims.sizeAverage} />{" "}
+					<ClaimText claim={claims.leaveOneOut} />
+				</p>
+				<SizeStandings />
+				<p className="drill-p">
+					<ClaimText claim={claims.dynamicSize} />
+				</p>
+				<p className="note">
+					{"// the blocks above: "}
+					<ClaimText claim={sizeChart.detail} />
+				</p>
+			</Drill>
+		</Drills>
+	</Point>
+)
+
+/** 05: cold start, as a boot log every library runs at once */
 export const Startup = () => {
 	const facts = benchFacts()
-	const { zodRatio, valibotPercent } = startupFacts()
+	const { zodRatio, valibotPercent, rivals, category } = startupFacts()
+	const zod = rivals.find(bar => bar.name === "Zod")!
+	const zodCompiled = rivals.find(bar => bar.name === "Zod (compiled)")
 	return (
 		<Point
 			id="start"
-			n="03"
+			n="05"
 			kicker="start"
-			tag={<NextTag />}
-			layout="split"
+			layout="band"
 			stat={{
 				value: zodRatio,
-				unit: "less startup work than Zod, on the login app"
+				unit: "less work to start than Zod 4, on a login app"
 			}}
 			title="Nothing to parse at startup."
 			deck={
@@ -244,12 +461,22 @@ export const Startup = () => {
 					{valibotPercent}% less work than Valibot.
 				</>
 			}
-			figure={<ColdStart />}
+			figure={<BootLog />}
+			caveat={
+				zodCompiled &&
+				zodCompiled.value > zod.value && (
+					<p className="loses">
+						<b>Compiling Zod costs it startup.</b> Zod (compiled) ran{" "}
+						{category.format(zodCompiled.value)} instructions to Zod's{" "}
+						{category.format(zod.value)}.
+					</p>
+				)
+			}
 		>
-			<Drills>
+			<Drills name="start">
 				<Drill
-					title="Every app we start, against every library"
-					hint="instructions, not seconds"
+					chip="every app we start"
+					verdict="These count CPU instructions, which a busy machine doesn't move. They aren't seconds."
 				>
 					<p className="drill-p">
 						<ClaimText claim={claims.startupApps} />
@@ -262,31 +489,19 @@ export const Startup = () => {
 							<ClaimText claim={claims.appStartup} />
 						</p>
 					)}
-					<p className="note">
-						{
-							"// these count instructions, which a busy machine doesn't move; they aren't seconds"
-						}
-					</p>
 				</Drill>
 				<Drill
-					title="What the independent benchmarks time"
-					hint="creating a schema"
+					chip="other projects' benchmarks"
+					verdict={<ClaimText claim={claims.startupAverage} />}
 				>
-					<p className="drill-p">
-						<AverageLine id="startup" />.
-					</p>
 					<p className="drill-p">
 						<ClaimText claim={claims.startupBasis} />
 					</p>
 				</Drill>
 				<Drill
-					title="Against ArkType's own JIT"
-					hint="what precompiling removes"
+					chip="against ArkType's own JIT"
+					verdict={`On valid data the precompiled build is ${facts.versusJit}. The bigger change is everything before the first call.`}
 				>
-					<p className="drill-p">
-						On valid data the precompiled build is {facts.versusJit}. The bigger
-						change is everything before the first call.
-					</p>
 					<dl className="facts">
 						<div>
 							<dt>cold start, login form app</dt>
@@ -318,147 +533,3 @@ export const Startup = () => {
 		</Point>
 	)
 }
-
-/** 04: bundle size, as the blocks a precompiled build leaves behind */
-export const Size = () => (
-	<Point
-		id="size"
-		n="04"
-		kicker="ship"
-		tag={<NextTag />}
-		layout="split"
-		title="Ship the checks, not the parser."
-		deck={<ClaimText claim={claims.loginSize} />}
-		figure={<ByteGrid />}
-	>
-		<Drills>
-			<Drill
-				title="As your app grows"
-				hint="where each build stops being the smaller"
-			>
-				{sizeCurves.corpora.map(corpus => (
-					<SizeCurveChart
-						key={corpus.id}
-						corpus={corpus}
-						commit={sizeCurves.commit}
-					/>
-				))}
-			</Drill>
-			<Drill
-				title='The "smallest" preset, and what it costs'
-				hint="bytes for speed"
-			>
-				<p className="drill-p">
-					<ClaimText claim={claims.buildChoice} />{" "}
-					<ClaimText claim={claims.sizePreset} />
-				</p>
-				<PresetSizeTable />
-				<p className="note">
-					{
-						"// measured on schemas without custom messages or narrows; form-like schemas are a separate corpus, and these results don't carry over to it"
-					}
-				</p>
-				<p className="drill-p">
-					<ClaimText claim={claims.smallestSpeed} />{" "}
-					<Link className="link" href="/docs/precompile/options">
-						The options
-					</Link>
-				</p>
-			</Drill>
-			<Drill title="The close call" hint="size is the close one">
-				<p className="drill-p">
-					<ClaimText claim={claims.sizeAverage} />{" "}
-					<ClaimText claim={claims.sizeClose} />{" "}
-					<ClaimText claim={claims.leaveOneOut} />
-				</p>
-				<SizeStandings />
-				<p className="drill-p">
-					<ClaimText claim={claims.dynamicSize} />
-				</p>
-				<p className="note">
-					{"// the blocks above: "}
-					<ClaimText claim={sizeChart.detail} />
-				</p>
-			</Drill>
-		</Drills>
-	</Point>
-)
-
-/** 05: the build step, as a definition and what the build makes of it */
-export const Precompile = () => (
-	<Point
-		id="precompile"
-		n="05"
-		kicker="precompile"
-		tag={<NextTag />}
-		title={
-			<>
-				One plugin.{" "}
-				<span className="hl" id="why">
-					Agents don't mind a build step.
-				</span>
-			</>
-		}
-		deck="Precompiled validators have always been faster and smaller. What they cost was a build step, and your agent runs that now. Your definitions don't change."
-		figure={<Compile />}
-		aside={
-			<div className="ctas point-ctas">
-				<Link className="btn" href="/docs/precompile/setup">
-					Set up precompile{" "}
-					<span className="arrow" aria-hidden>
-						→
-					</span>
-				</Link>
-			</div>
-		}
-	>
-		<Drills>
-			<Drill title="What the build costs" hint="build time, measured">
-				<p className="drill-p">
-					Precompiling moves creating your Types from your program's startup to
-					your build, so a build takes longer.{" "}
-					<ClaimText claim={claims.buildTimeApp} />
-				</p>
-				<ul className="drill-list">
-					<li>
-						<ClaimText claim={claims.buildTimeProduction} />
-					</li>
-					<li>
-						<ClaimText claim={claims.buildTimeDev} />
-					</li>
-					<li>
-						<ClaimText claim={claims.buildTimeWatch} />
-					</li>
-					<li>
-						<ClaimText claim={claims.buildTimeMedium} />
-					</li>
-				</ul>
-			</Drill>
-			<Drill
-				title="What a precompiled validator can't do"
-				hint="compose or introspect at runtime"
-			>
-				<p className="drill-p">
-					A standalone validator validates, asserts and implements Standard
-					Schema as the Type it replaces does. It doesn't compose or introspect:
-					it lacks methods like <code>.and</code> and <code>.extends</code>. The
-					build fails wherever it sees your program rely on what a validator
-					lacks. If you need the whole Type API at runtime, build with{" "}
-					<code>runtime: "arktype"</code>.{" "}
-					<Link className="link" href="/docs/precompile/dynamic-vs-precompiled">
-						Dynamic vs precompiled
-					</Link>
-				</p>
-			</Drill>
-			<Drill
-				title="How we know the output is right"
-				hint={`${proofCount} suites it has to agree with`}
-			>
-				<Proof />
-			</Drill>
-			<Drill title="Why a build step is fine now" hint="whose loop it taxes">
-				<Loops />
-			</Drill>
-		</Drills>
-	</Point>
-)

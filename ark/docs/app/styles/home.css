@@ -260,31 +260,16 @@
 
 	/* ---------- hero ---------- */
 	.hero {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 520px);
-		gap: 64px;
-		/* start, not center: a font swap in one column can't re-center the other */
-		align-items: start;
-		padding: 52px 0 32px;
-		> * {
-			min-width: 0;
-		}
+		padding: 44px 0 0;
 		h1 {
-			margin: 22px 0 26px;
-			font: 800 var(--fs-display) / 0.95 var(--sans);
+			margin: 22px 0 0;
+			font: 800 clamp(2.1rem, 1.2rem + 2.9vw, 3.9rem) / 1.02 var(--sans);
 			letter-spacing: -0.045em;
 		}
 		.one {
-			display: inline-block;
+			display: block;
+			margin-top: 0.1em;
 			color: var(--gold);
-		}
-		h1.is-long {
-			font-size: clamp(2.4rem, 1.5rem + 2.3vw, 3.75rem);
-			line-height: 1.02;
-			.one {
-				display: block;
-				margin-top: 0.12em;
-			}
 		}
 	}
 	.eyebrow {
@@ -1351,23 +1336,12 @@
 
 @media (max-width: 1080px) {
 	.home {
-		.hero {
-			grid-template-columns: minmax(0, 1fr);
-			gap: 48px;
-			padding-top: 48px;
-		}
 		.nav-sub {
 			display: none;
 		}
 		.figs {
 			grid-template-columns: auto minmax(0, 1fr);
 		}
-	}
-}
-
-@media (min-width: 1081px) {
-	.home .hero .live {
-		margin-top: 72px;
 	}
 }
 
@@ -1390,10 +1364,9 @@
 			justify-content: center;
 		}
 		.hero {
-			padding: 28px 0 8px;
-			gap: 40px;
+			padding: 24px 0 0;
 			h1 {
-				margin: 16px 0 18px;
+				margin-top: 16px;
 			}
 		}
 		.live-body {
@@ -1518,10 +1491,6 @@
 			margin: 0;
 		}
 	}
-	.lede {
-		max-width: 34ch;
-		margin-bottom: 36px;
-	}
 	/* an invitation to check the numbers, quiet beside the claim it backs */
 	.how {
 		margin-left: 0.6ch;
@@ -1543,14 +1512,15 @@
 
 	/* the board: a measured win in each category */
 	.board {
-		margin-top: 56px;
+		margin-top: 60px;
 		scroll-margin-top: calc(var(--top) + 24px);
 	}
 	.board-head {
 		position: relative;
+		/* one line at the page's width, so the first screen ends on it */
 		h2 {
-			margin: 14px 0 0;
-			font: 800 clamp(2.4rem, 1.3rem + 3.4vw, 4.6rem) / 1 var(--sans);
+			margin: 0;
+			font: 800 clamp(2.2rem, 0.9rem + 2.9vw, 3.35rem) / 1.04 var(--sans);
 			letter-spacing: -0.045em;
 		}
 		.phrase {
@@ -2405,7 +2375,7 @@
 			}
 		}
 		/* the struck phrase's line is drawn in, so it starts as a background */
-		.board-head s {
+		[data-board] s {
 			text-decoration-color: transparent;
 			background: linear-gradient(currentColor, currentColor) no-repeat 0 50% /
 				0 0.07em;
@@ -2458,9 +2428,9 @@
 				animation: place-in 0.5s var(--ease-pop) both;
 				animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--won, 0.9s));
 			}
-			.board-head s {
-				animation: strike 0.3s var(--ease-out) 0.72s both;
-			}
+		}
+		[data-board][data-play] s {
+			animation: strike 0.3s var(--ease-out) 0.72s both;
 		}
 		/* only the marks wait dimmed: the checks stay readable before they run */
 		.proof:not([data-play]) .proof-body .tick {
@@ -2483,19 +2453,19 @@
 			}
 		}
 	}
-	:root[data-motion] .home .board .phrase {
+	:root[data-motion] .home [data-board] .phrase {
 		animation: rise var(--t-enter) var(--ease-pop) both;
 		animation-delay: calc(var(--i) * 90ms);
 		animation-play-state: paused;
 	}
-	:root[data-motion] .home .board[data-play] .phrase {
+	:root[data-motion] .home [data-board][data-play] .phrase {
 		animation-play-state: running;
 	}
 	/* a beat for the struck phrase, then its line, then the phrase after it */
-	:root[data-motion] .home .board-head:has(s) .phrase:has(> s) {
+	:root[data-motion] .home [data-board]:has(s) .phrase:has(> s) {
 		animation-delay: 0.42s;
 	}
-	:root[data-motion] .home .board-head .phrase:has(> s) ~ .phrase {
+	:root[data-motion] .home [data-board] .phrase:has(> s) ~ .phrase {
 		animation-delay: 1.05s;
 	}
 }
@@ -2523,7 +2493,7 @@
 @media (max-width: 760px) {
 	.home {
 		.board {
-			margin-top: 64px;
+			margin-top: 56px;
 		}
 		.card {
 			padding: 18px 16px 16px;

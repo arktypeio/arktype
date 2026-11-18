@@ -9,7 +9,6 @@ import {
 	headlineMethod,
 	isPending,
 	leadsEvery,
-	medianOf,
 	standingsAsOf,
 	tieMargin,
 	type Category,
@@ -17,8 +16,7 @@ import {
 	type StandingCategory
 } from "../../lib/claims.ts"
 import { ClaimText } from "../mdx/Claim.tsx"
-import { categoryOf, startupFacts } from "./boardFacts.ts"
-import { CheckIcon } from "./icons.tsx"
+import { categoryOf } from "./boardFacts.ts"
 
 /** a scenario's dot, and the closest two dots' centers may come, in px */
 const dot = { size: 5.5, clear: 6.5 }
@@ -84,42 +82,6 @@ const verdictOf = (name: string, speedup: number, verdict: string) =>
 	: `${name} ${formatRatio(1 / speedup)} faster`
 
 const round = (n: number) => Math.round(n * 1000) / 1000
-
-/** the big number, counted up to by HomeEffects in its own precision */
-const Big = ({ value, unit }: { value: string; unit: string }) => {
-	const [, digits, suffix] = /^([\d.]+)(.*)$/.exec(value)!
-	return (
-		<p className="card-big">
-			<span
-				className="card-num"
-				data-to={digits}
-				data-decimals={digits.split(".")[1]?.length ?? 0}
-				data-suffix={suffix}
-			>
-				{value}
-			</span>
-			<span className="card-unit">{unit}</span>
-		</p>
-	)
-}
-
-/** ArkType's place by best average, the same in every card so "Pick 3" reads at a glance */
-const Place = ({ category }: { category: Category }) => (
-	<Big value={category.place} unit={`of ${category.ranked} libraries`} />
-)
-
-const Head = ({ category }: { category: Category }) => (
-	<header className="card-head">
-		{category.leads && (
-			<span className="card-check" aria-hidden>
-				<CheckIcon />
-			</span>
-		)}
-		<h3 id={`card-${category.id}`} className="card-label">
-			{category.label}
-		</h3>
-	</header>
-)
 
 /** a best average, as a multiple of the best result: "1.252×" */
 const multiple = (score: number) => `${averageText(score)}×`
@@ -329,95 +291,59 @@ const titlePhrases = () => {
 		:	phrases
 }
 
-/** where each tile's proof is, further down the page */
-const proofs: Record<Category["id"], { href: string; label: string }> = {
-	speed: { href: "#run", label: "watch the race" },
-	startup: { href: "#start", label: "watch it start" },
-	size: { href: "#size", label: "count the bytes" }
-}
-
-/** the one margin a tile states, each worded as the board's cards always have */
-const Margin = ({ category }: { category: Category }) => {
-	if (category.id === "speed") {
-		const [zod] = category.versus
-		return (
-			<>
-				<b>
-					{zod.versus.wins}/{zod.versus.count}
-				</b>{" "}
-				scenarios faster than Zod, by a median of <b>{medianOf(zod.versus)}</b>
-			</>
-		)
-	}
-	if (category.id === "startup") {
-		const { zodRatio, valibotPercent } = startupFacts()
-		return (
-			<>
-				<b>{zodRatio}</b> {category.margin} Zod and <b>{valibotPercent}%</b>{" "}
-				less than Valibot on the login app
-			</>
-		)
-	}
-	return <Average category={category} of="the smallest bundle" />
-}
+/** the board's title, a phrase at a time, "Pick 2." struck out as it lands */
+export const BoardTitle = () => (
+	<span
+		className={
+			isPending(claims.boardTitle) ? "board-title pending-claim" : "board-title"
+		}
+	>
+		{titlePhrases().map((phrase, i) => (
+			<Fragment key={phrase}>
+				{i > 0 && " "}
+				<span
+					className="phrase"
+					style={{ "--i": i } as CSSProperties}
+					aria-hidden={phrase === pickTwo || undefined}
+				>
+					{phrase === pickTwo ?
+						<s>{phrase}</s>
+					:	phrase}
+				</span>
+			</Fragment>
+		))}
+	</span>
+)
 
 export type BoardProps = {
+	/** false where the hero already carries the title */
+	titled: boolean
+	/** the proof of the title: every library's averages */
+	table: ReactNode
 	/** the board's drill-downs */
 	children: ReactNode
 }
 
 /**
- * ArkType's place in each category and the one margin that says why, every
- * number from lib/claims.ts. Each tile's proof is its own section below; how
- * the places are ranked is the drill-down passed as `children`.
+ * "Pick 3", and the table that backs it: each library's best average in
+ * every category, from lib/claims.ts. How the averages are ranked is the
+ * drill-down passed as `children`.
  */
-export const Board = ({ children }: BoardProps) => (
+export const Board = ({ titled, table, children }: BoardProps) => (
 	<section
-		className="board"
+		className={titled ? "board" : "board is-untitled"}
 		id="board"
-		aria-labelledby="board-title"
-		data-board
+		aria-labelledby={titled ? "board-title" : undefined}
+		aria-label={titled ? undefined : draftOf(claims.boardTitle)}
 	>
-		<div className="board-head">
-			<h2
-				id="board-title"
-				className={isPending(claims.boardTitle) ? "pending-claim" : undefined}
-			>
-				{titlePhrases().map((phrase, i) => (
-					<Fragment key={phrase}>
-						{i > 0 && " "}
-						<span
-							className="phrase"
-							style={{ "--i": i } as CSSProperties}
-							aria-hidden={phrase === pickTwo || undefined}
-						>
-							{phrase === pickTwo ?
-								<s>{phrase}</s>
-							:	phrase}
-						</span>
-					</Fragment>
-				))}
-			</h2>
-		</div>
-		<div className="tiles">
-			{categories.map((category, i) => (
-				<article
-					key={category.id}
-					className={`card tile is-${category.id}`}
-					style={{ "--i": i } as CSSProperties}
-					aria-labelledby={`card-${category.id}`}
-				>
-					<Head category={category} />
-					<Place category={category} />
-					<p className="card-margin">
-						<Margin category={category} />
-					</p>
-					<a className="tile-more" href={proofs[category.id].href}>
-						{proofs[category.id].label}
-					</a>
-				</article>
-			))}
-		</div>
+		{titled && (
+			<div className="board-head" data-board>
+				<h2 id="board-title">
+					<BoardTitle />
+				</h2>
+			</div>
+		)}
+		{table}
 		{children}
 	</section>
 )

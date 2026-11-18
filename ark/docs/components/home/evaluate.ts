@@ -163,8 +163,28 @@ const show = (v: unknown): string =>
 			.map(([k, x]) => `${JSON.stringify(k)}:${show(x)}`)
 			.join(",")}}`
 
+/**
+ * An object or a tuple typed into the string, as TypeScript would write it.
+ * In ArkType those are values, each of whose leaves is a string like this
+ * one, so the parser's own "'{' is unresolvable" would read as a bug.
+ */
+const literalHint = (def: string) =>
+	/^\s*\{/.test(def) ?
+		'an object is written as a value, not in the string: type({ a: "string" })'
+	: /^\s*\[/.test(def) ?
+		'a tuple is written as a value, not in the string: type(["string", "number"])'
+	:	undefined
+
 /** parses `def` with the real parser, then validates `arg` against it */
 export const evaluate = (def: string, arg: string): LiveState => {
+	const hint = literalHint(def)
+	if (hint)
+		return {
+			def,
+			ok: false,
+			message: hint,
+			out: "// this line takes one string definition"
+		}
 	let T: ReturnType<typeof define>
 	try {
 		T = define(def)

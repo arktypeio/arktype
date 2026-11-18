@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import type { CSSProperties } from "react"
 import { Board, BoardNote } from "../../components/home/Board.tsx"
 import {
 	CopyCommand,
@@ -8,13 +7,18 @@ import {
 } from "../../components/home/CopyCommand.tsx"
 import { Drill, Drills, Point } from "../../components/home/Drill.tsx"
 import { evaluate } from "../../components/home/evaluate.ts"
+import {
+	Hero,
+	heroLede,
+	heroLine,
+	type HeroProps
+} from "../../components/home/Hero.tsx"
 import { HomeCode, PlainCode } from "../../components/home/HomeCode.tsx"
 import { HomeEffects } from "../../components/home/HomeEffects.tsx"
 import { LiveType } from "../../components/home/LiveType.tsx"
-import { Gains, Migrate } from "../../components/home/Migrate.tsx"
+import { Migrate } from "../../components/home/Migrate.tsx"
 import { PickThree } from "../../components/home/PickThree.tsx"
 import {
-	NextTag,
 	Precompile,
 	Size,
 	Speed,
@@ -28,13 +32,13 @@ import { claims, draftOf } from "../../lib/claims.ts"
 import { defineMetadata, tagline } from "../metadata.ts"
 
 /**
- * The hero's second line, after the headline lib/claims.ts guards. It states
- * no number, so it lives here; the candidates it was elected from are in the
- * commit that added it.
+ * What the first screen is titled with. `claim` is the headline lib/claims.ts
+ * guards, and the board under it keeps its own title. `board` leads with that
+ * title instead ("Pick 2" struck out), and the board goes untitled.
  */
-const heroLine = "Optimized for agents and humans."
+const heroTitle: HeroProps["title"] = "claim"
 
-const lede = `${draftOf(claims.headline)} ${draftOf(claims.pickThree)} ${heroLine} One plugin to precompile, one prompt to switch from Zod.`
+const lede = `${draftOf(claims.headline)} ${heroLine} ${heroLede}`
 
 const title = `ArkType · ${tagline}`
 
@@ -48,15 +52,14 @@ export const metadata: Metadata = {
 	title: { absolute: title }
 }
 
-const liveDefinition = "number.integer >= 0"
-const liveArg = "-1"
+// two checks that reduce to one: no other validator's page can show that
+const liveDefinition = "number % 2 & number % 3"
+const liveArg = "9"
 
 /** every prefix of the live definition, parsed by the real parser at build */
 const ghostStates = Array.from(liveDefinition, (_, i) =>
 	evaluate(liveDefinition.slice(0, i + 1), liveArg)
 )
-
-const rise = (i: number) => ({ "--i": i }) as CSSProperties
 
 const snippets = {
 	ts: `interface User {
@@ -70,10 +73,7 @@ const snippets = {
 	email: "string.email",
 	"age?": "number.integer >= 0",
 	role: "'admin' | 'member'"
-})
-
-type User = typeof User.infer
-//   ^?`,
+})`,
 	editor: `// @errors: 2322
 const Item = type({
 	id: "string",
@@ -218,7 +218,9 @@ const Transcript = () => (
 			<li className="t-diff" data-step="3">
 				<span className="d-del">{'-\t"limit?": "1 <= number.int <= 50"'}</span>
 				<span className="d-add">
-					{'+\t"limit?": "1 <= number.integer <= 50"'}
+					{'+\t"limit?": "1 <= '}
+					<span className="fix-target">number.integer</span>
+					{' <= 50"'}
 				</span>
 			</li>
 			<li className="t-call" data-step="4">
@@ -240,27 +242,25 @@ const Transcript = () => (
 				<br />
 				limit must be at most 50
 			</li>
-			<li className="t-say" data-step="6">
-				<span className="t-dot is-say" />
-				Bad calls now come back with a message the model can act on.
-			</li>
 		</ol>
+		<figcaption className="term-foot">
+			scripted around real output from tsc and ArkType
+		</figcaption>
 	</figure>
 )
 
-/** 06: what an agent reads back, as a session that fixes itself from the error */
+/** 07: what an agent reads back, as a session that fixes itself from the error */
 const Agentic = () => (
 	<Point
 		id="agentic"
-		n="06"
-		kicker="agentic DX"
+		n="07"
+		kicker="agents"
 		layout="split"
 		title="Every error names its fix."
 		deck={
 			<>
-				A typo fails <code>tsc</code> where it was written, and the message is
-				the fix. The session is scripted around real output from{" "}
-				<code>tsc</code> and ArkType.
+				A typo fails <code>tsc</code> where it was written. The message is the
+				fix.
 			</>
 		}
 		aside={
@@ -277,11 +277,11 @@ const Agentic = () => (
 		}
 		figure={<Transcript />}
 	>
-		<Drills>
+		<Drills name="agentic">
 			<Drill
 				id="errors"
-				title="Your editor's feedback is your agent's feedback"
-				hint="the same three errors, two readers"
+				chip="in your editor"
+				verdict="Your editor's feedback is your agent's feedback: the same three errors, two readers."
 			>
 				<p className="drill-p">
 					TypeScript's own type system parses every definition, so a typo fails{" "}
@@ -329,8 +329,8 @@ const Agentic = () => (
 				</p>
 			</Drill>
 			<Drill
-				title="Runtime errors, and tool inputs without a wrapper"
-				hint="out.summary, MCP"
+				chip="at runtime, and in MCP"
+				verdict="A runtime error says what was expected, and a Type is a tool's input schema with no wrapper."
 			>
 				<div className="pair2">
 					<div>
@@ -386,8 +386,8 @@ const Agentic = () => (
 			</Drill>
 			<Drill
 				id="setup"
-				title="Docs your agent reads"
-				hint="a skill, Markdown pages, one line in AGENTS.md"
+				chip="docs your agent reads"
+				verdict="A skill, every page as Markdown and one line in AGENTS.md."
 			>
 				<div className="rows">
 					<div className="row">
@@ -447,38 +447,74 @@ const Agentic = () => (
 	</Point>
 )
 
-/** 07: the syntax, as the TypeScript type it mirrors */
+/** a payload that breaks both of the lines TypeScript can't check */
+const badUser = '{ name: "Ada", email: "ada@", age: -1, role: "admin" }'
+
+/**
+ * An interface and the Type that replaces it, line for line, in one card:
+ * landing.css wipes from one to the other on first view and lights the two
+ * lines that gained a check, and the tabs show either on request.
+ */
+const Mirror = () => (
+	<figure className="code-card glow morph mirror" data-stage="morph">
+		<figcaption>
+			<span>
+				<b>user.ts</b>
+				<span className="dot">·</span>the same six lines
+			</span>
+			<span
+				className="morph-tabs"
+				role="radiogroup"
+				aria-label="Show user.ts as"
+			>
+				<label>
+					<input type="radio" name="mirror" value="zod" />
+					<span>TypeScript</span>
+				</label>
+				<label>
+					<input type="radio" name="mirror" value="ark" defaultChecked />
+					<span>ArkType</span>
+				</label>
+			</span>
+		</figcaption>
+		<div className="morph-stack">
+			<div className="morph-pane is-zod">
+				<HomeCode code={snippets.ts} />
+			</div>
+			<div className="morph-pane is-ark">
+				<HomeCode code={snippets.ark} />
+				<span className="mirror-lit" aria-hidden />
+			</div>
+			<span className="morph-line" aria-hidden />
+		</div>
+		<div className="mirror-run">
+			<p className="mirror-note">
+				<span className="mirror-key" aria-hidden />
+				two lines TypeScript can't check, now checked
+			</p>
+			<pre className="mirror-out">
+				<span className="mirror-call">{`User(${badUser})`}</span>
+				<span className="mirror-err">email must be an email address</span>
+				<span className="mirror-err">age must be non-negative</span>
+			</pre>
+		</div>
+	</figure>
+)
+
+/** 06: the syntax, as the TypeScript type it replaces, beside the parser to try it on */
 const Write = () => (
 	<Point
 		id="write"
-		n="07"
+		n="06"
 		kicker="write"
 		title="Same type. Now it runs."
-		deck="Definitions use TypeScript's names, operators and optional keys, written as strings and objects. The type ArkType infers is the one you would have written by hand."
+		deck="TypeScript syntax, in a string. The inferred type is the one you'd have written."
 		figure={
 			<>
-				<div className="twin-code">
-					<figure className="code-card">
-						<Caption name="user.ts" kind="TypeScript" aside="types only" />
-						<HomeCode code={snippets.ts} />
-					</figure>
-					<div className="eq" aria-hidden>
-						<span>≡</span>
-						<span>≡</span>
-						<span>+</span>
-						<span>+</span>
-						<span>≡</span>
-						<span>≡</span>
-					</div>
-					<figure className="code-card glow">
-						<Caption name="user.ts" kind="ArkType" aside="types and runtime" />
-						<HomeCode code={snippets.ark} />
-					</figure>
+				<div className="write-pair">
+					<Mirror />
+					<LiveType ghost={ghostStates} arg={liveArg} />
 				</div>
-				<p className="note">
-					{"// the two lines TypeScript can't check, ArkType can: "}
-					<code>string.email</code> and <code>number.integer &gt;= 0</code>
-				</p>
 				<div className="works">
 					<span className="lbl">
 						{"// works with anything that takes Standard Schema"}
@@ -492,16 +528,14 @@ const Write = () => (
 			</>
 		}
 	>
-		<Drills>
+		<Drills name="write">
 			<Drill
-				title="Types as sets, reduced before they ship"
-				hint="reduce, morph, extends"
+				chip="types as sets"
+				verdict="ArkType reduces every definition to a normalized set of constraints, so it knows which Types overlap, which contain others and which can never be satisfied."
 			>
 				<p className="drill-p">
-					ArkType reduces every definition to a normalized set of constraints,
-					so it knows which Types overlap, which are subtypes of others and
-					which can never be satisfied. Precompiled, it applies all of that in
-					your build: a contradiction like <code>{"{ id: string }"}</code> and{" "}
+					Precompiled, it applies all of that in your build: a contradiction
+					like <code>{"{ id: string }"}</code> and{" "}
 					<code>{"{ id: number }"}</code> fails the build instead of shipping a
 					validator that rejects everything.
 				</p>
@@ -550,70 +584,30 @@ const Write = () => (
 export default function HomePage() {
 	return (
 		<>
+			<noscript>
+				<style>{".home .drill-panel[hidden]{display:block!important}"}</style>
+			</noscript>
 			<div className="wrap">
-				<section className="hero" aria-labelledby="hero-title">
-					<div>
-						<div className="eyebrow rise" style={rise(0)}>
-							<b>arktype</b> {"//"} TypeScript's 1:1 validator
-							<Link className="eyebrow-new" href="/docs/precompile">
-								precompiled <NextTag />
-							</Link>
-						</div>
-						<h1 id="hero-title" className="rise-fade is-long">
-							<ClaimText claim={claims.headline} />{" "}
-							<span className="one">{heroLine}</span>
-						</h1>
-						<p className="lede rise" style={rise(1)}>
-							<ClaimText claim={claims.pickThree} /> One plugin to precompile.
-							One prompt to switch from Zod.
-							<a className="how" href="#board-note">
-								how we measured ↓
-							</a>
-						</p>
-						<div className="ctas rise" style={rise(2)}>
-							<Link className="btn btn-gold" href="/docs/intro/setup">
-								Get started{" "}
-								<span className="arrow" aria-hidden>
-									→
-								</span>
-							</Link>
-							<a className="btn" href="#migrate">
-								Migrate from Zod
-							</a>
-						</div>
-						<div className="hero-gains">
-							<Gains />
-						</div>
-					</div>
-					<LiveType ghost={ghostStates} arg={liveArg} />
-				</section>
-
-				<Board>
-					<Drills>
+				<Hero title={heroTitle} />
+				<Board titled={heroTitle === "claim"} table={<PickThree />}>
+					<Drills name="board">
 						<Drill
-							title="Every library's averages, side by side"
-							hint="who else is first in any"
-						>
-							<PickThree />
-						</Drill>
-						<Drill
-							title="How the places are ranked"
-							hint="other projects' benchmarks, one rule"
+							chip="how it's ranked"
+							verdict={<ClaimText claim={claims.benchmarkOwners} />}
 						>
 							<BoardNote />
 							<p className="board-note">
-								<ClaimText claim={claims.benchmarkOwners} />{" "}
 								<ClaimText claim={claims.leaveOneOut} />
 							</p>
 						</Drill>
 					</Drills>
 				</Board>
-				<Speed />
-				<Startup />
-				<Size />
 				<Precompile />
-				<Agentic />
+				<Speed />
+				<Size />
+				<Startup />
 				<Write />
+				<Agentic />
 				<Migrate />
 			</div>
 
@@ -624,13 +618,8 @@ export default function HomePage() {
 						Start with your first type.{" "}
 						<span className="hl">Or your agent's first prompt.</span>
 					</h2>
-					<div className="closer-agent">
-						<CopyCommand
-							text="npx skills add arktypeio/arktype"
-							label="Copy skill install command"
-						>
-							<span className="p">$</span> npx skills add arktypeio/arktype
-						</CopyCommand>
+					<div className="closer-go">
+						<InstallButton />
 						<CopyCommand
 							text="Migrate this project from Zod to ArkType."
 							label="Copy migration prompt"
@@ -638,18 +627,6 @@ export default function HomePage() {
 							<span className="p">›</span> Migrate this project from Zod to
 							ArkType.
 						</CopyCommand>
-					</div>
-					<div className="ctas">
-						<InstallButton />
-						<Link className="btn" href="/docs/intro/setup">
-							Get started{" "}
-							<span className="arrow" aria-hidden>
-								→
-							</span>
-						</Link>
-						<Link className="btn" href="/docs/precompile/setup">
-							Set up precompile
-						</Link>
 					</div>
 					<SiteFooter />
 				</div>

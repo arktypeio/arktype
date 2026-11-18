@@ -1,20 +1,111 @@
 /* the homepage's points, loaded after home.css, whose tokens and cards these
-   build on: a point's layout and its big number, the drill-downs that hold
-   its data (components/home/Drill.tsx), and each point's figure. Every
-   figure's markup is its final state; html[data-motion], set before first
-   paint, holds it at its start until HomeEffects marks it [data-play]. */
+   build on: the first screen's numbers, a point's layouts and its big
+   number, the drill-downs that hold its data (components/home/Drill.tsx),
+   and each point's figure. Every figure's markup is its final state;
+   html[data-motion], set before first paint, holds it at its start until
+   HomeEffects marks it [data-play]. */
 
 .home {
 	/* a block the parser leaves behind, before it goes: through a variable,
 	   since the CSS pipeline drops keyframes that use color-mix() */
-	--byte-full: color-mix(in oklab, var(--gold-fill) 38%, var(--bg));
-	--byte-ghost: color-mix(in oklab, var(--ink) 10%, transparent);
-	--via-glow: color-mix(in oklab, var(--gold) 16%, transparent);
+	--byte-idle: color-mix(in oklab, var(--ink-3) 46%, var(--bg));
+	--lit: color-mix(in oklab, var(--gold) 13%, transparent);
+	--lit-edge: color-mix(in oklab, var(--gold) 70%, transparent);
+	--add: color-mix(in oklab, var(--teal) 13%, transparent);
 	--panel: linear-gradient(
 		180deg,
 		color-mix(in oklab, var(--surface) 90%, var(--tint) 10%),
 		var(--surface) 55%
 	);
+
+	/* ---------- the first screen: the claim, then its three numbers ---------- */
+	.hero-stats {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0 40px;
+		margin: 40px 0 0;
+	}
+	.hero-stat {
+		display: grid;
+		justify-items: start;
+		align-content: start;
+		min-width: 0;
+		color: inherit;
+		text-decoration: none;
+		.stat-num {
+			font-size: clamp(4.6rem, 1.6rem + 7.4vw, 8.6rem);
+			transition: text-shadow var(--t-ui);
+		}
+		&:hover .stat-num {
+			text-shadow: 0 0 60px
+				color-mix(in oklab, var(--gold-glow) 60%, transparent);
+		}
+	}
+	.hero-stat-what {
+		margin-top: 14px;
+		font: 400 clamp(1.05rem, 0.9rem + 0.5vw, 1.35rem) / 1.25 var(--sans);
+		letter-spacing: -0.015em;
+		color: var(--ink-2);
+		b {
+			color: var(--ink);
+			font-weight: 700;
+		}
+	}
+	.hero-stat-scope {
+		margin-top: 6px;
+		font: 400 13px / 1.45 var(--mono);
+		color: var(--ink-2);
+		opacity: 0.86;
+	}
+	.hero .lede {
+		max-width: none;
+		margin: 36px 0 0;
+		color: var(--ink);
+	}
+	.hero .ctas {
+		align-items: center;
+		margin-top: 22px;
+	}
+	.hero-foot {
+		margin-left: 10px;
+		font: 400 13px / 1.5 var(--mono);
+		color: var(--ink-2);
+		code {
+			color: var(--gold);
+		}
+		a {
+			color: var(--sky);
+			white-space: nowrap;
+		}
+	}
+	/* the other first screen: the board's title as the headline */
+	.hero h1.hero-pick {
+		font-size: clamp(2.5rem, 1.1rem + 4.6vw, 5.4rem);
+		line-height: 0.98;
+		.phrase {
+			display: inline-block;
+			white-space: nowrap;
+		}
+		.phrase:last-child {
+			color: var(--gold);
+		}
+		s {
+			color: var(--ink-3);
+			text-decoration-thickness: 0.07em;
+		}
+	}
+
+	/* ---------- the board: the title, then the table that backs it ---------- */
+	.board > .p3 {
+		max-width: none;
+		margin-top: 32px;
+	}
+	.board > .drills {
+		margin-top: 18px;
+	}
+	.board.is-untitled {
+		margin-top: 56px;
+	}
 
 	/* ---------- a point: copy, figure, drill-downs ---------- */
 	.point {
@@ -23,32 +114,80 @@
 	.point-main {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
-		gap: 44px;
-	}
-	.point.is-split .point-main {
-		grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-		gap: 64px;
-		align-items: center;
+		gap: 40px;
 	}
 	.point-copy,
-	.point-figure {
+	.point-figure,
+	.point-words {
 		min-width: 0;
 	}
-	.point-figure > .twin-code {
-		margin-top: 0;
+	/* copy beside the figure, both from the top */
+	.point:is(.is-split, .is-flip) .point-main {
+		grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+		gap: 64px;
+		align-items: start;
+	}
+	.point.is-flip .point-main {
+		grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+		.point-copy {
+			order: 1;
+		}
+	}
+	/* beside a figure taller than it, the copy stays with the reader */
+	@media (min-width: 1081px) {
+		.point:is(.is-split, .is-flip) .point-copy {
+			position: sticky;
+			top: calc(var(--top) + 36px);
+		}
+	}
+	/* a headline with its sentence beside it, over a figure the page's width */
+	.point.is-stack .point-words {
+		display: grid;
+		grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+		column-gap: 64px;
+		align-items: end;
+		h2 {
+			grid-row: span 2;
+			max-width: 14ch;
+			font-size: clamp(2.5rem, 1.5rem + 3.2vw, 4.4rem);
+			line-height: 0.98;
+			letter-spacing: -0.04em;
+		}
+		.deck {
+			margin-top: 0;
+		}
+	}
+	/* the number beside the headline, over a figure the page's width */
+	.point.is-band .point-copy {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		column-gap: 56px;
+		align-items: end;
+		.sec-label {
+			grid-column: 1 / -1;
+		}
+		.stat {
+			max-width: 22rem;
+		}
+		h2 {
+			margin-top: 0;
+		}
 	}
 	.point-ctas {
-		margin-top: 28px;
+		margin-top: 24px;
 	}
 	.deck code {
 		font-size: 0.88em;
 		color: var(--gold);
 	}
+	.point h2 .hl {
+		display: block;
+	}
 
 	/* the one number a point leads with; its headline steps down beside it */
 	.stat {
 		display: grid;
-		gap: 10px;
+		gap: 12px;
 		margin: 22px 0 0;
 	}
 	.stat-num {
@@ -61,164 +200,133 @@
 		white-space: nowrap;
 	}
 	.stat-unit {
-		font: 400 13px / 1.4 var(--mono);
-		color: var(--ink-3);
+		font: 400 14px / 1.45 var(--mono);
+		color: var(--ink-2);
 	}
-	.stat + h2 {
-		margin-top: 28px;
-		font-size: clamp(1.55rem, 1.2rem + 1.1vw, 2.2rem);
-		line-height: 1.12;
-		letter-spacing: -0.025em;
+	.stat + .point-words h2 {
+		margin-top: 30px;
+		font-size: clamp(1.7rem, 1.25rem + 1.3vw, 2.5rem);
+		line-height: 1.08;
+		letter-spacing: -0.028em;
 	}
 
-	/* ---------- the board, as a strip ---------- */
-	.board-head h2 {
-		margin-top: 0;
+	/* what a point doesn't cover, said where the point is made */
+	.point-caveat {
+		margin-top: 28px;
 	}
-	.tiles {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 16px;
-		margin: 36px 0 0;
-	}
-	.tile {
-		/* when its place lands: home.css adds this to each card's stagger */
-		--won: 0.3s;
-		grid-row: auto;
-		grid-template-rows: auto auto 1fr;
-		grid-template-columns: auto minmax(0, 1fr);
-		grid-template-areas:
-			"head head"
-			"big margin"
-			"big more";
-		column-gap: 22px;
-		padding: 18px 22px 16px;
-		.card-head {
-			grid-area: head;
-		}
-		.card-big {
-			grid-area: big;
-			margin-top: 14px;
-		}
-		.card-margin {
-			grid-area: margin;
-			margin: 18px 0 0;
-			font-size: 14.5px;
+	.loses {
+		max-width: 96ch;
+		margin: 0;
+		padding: 2px 0 2px 16px;
+		border-left: 2px solid var(--copper);
+		font-size: 15.5px;
+		line-height: 1.55;
+		color: var(--ink-2);
+		b {
+			color: var(--ink);
+			font-weight: 700;
 		}
 	}
-	.tile-more {
-		grid-area: more;
-		align-self: end;
-		justify-self: start;
-		margin-top: 10px;
-		font: 400 12px / 1.4 var(--mono);
-		color: var(--sky);
-		text-decoration: none;
-		&::after {
-			content: "↓" / "";
-			display: inline-block;
-			margin-left: 0.4em;
-			transition: translate var(--t-micro) var(--ease-out);
+
+	/* ---------- drill-downs: a row of chips, one panel ---------- */
+	.drills {
+		margin-top: 24px;
+	}
+	.point-caveat + .drills {
+		margin-top: 20px;
+	}
+	.drill-chips {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+		&::before {
+			content: "// more";
+			margin-right: 4px;
+			font: 400 13px / 1 var(--mono);
+			color: var(--ink-3);
+		}
+	}
+	.drill-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.7ch;
+		padding: 8px 13px 8px 11px;
+		border-radius: var(--r-pill);
+		border: 1px solid var(--line);
+		background: color-mix(in oklab, var(--surface) 60%, transparent);
+		font: 400 13px / 1.2 var(--mono);
+		color: var(--ink-2);
+		cursor: pointer;
+		transition:
+			color var(--t-micro),
+			border-color var(--t-micro),
+			background var(--t-micro);
+		&::before {
+			content: "+";
+			color: var(--copper);
 		}
 		&:hover {
-			text-decoration: underline;
-			text-underline-offset: 3px;
+			color: var(--ink);
+			border-color: color-mix(in oklab, var(--ink) 30%, transparent);
 		}
-		&:hover::after {
-			translate: 0 2px;
-		}
-	}
-	.board > .drills {
-		margin-top: 28px;
-	}
-
-	/* ---------- drill-downs ---------- */
-	.drills {
-		margin-top: 48px;
-		border-top: 1px solid var(--rule-soft);
-	}
-	.drill,
-	.drill-body [id] {
-		scroll-margin-top: calc(var(--top) + 20px);
-	}
-	.drill {
-		border-bottom: 1px solid var(--rule-soft);
-		> summary {
-			display: flex;
-			align-items: baseline;
-			gap: 14px;
-			padding: 15px 6px;
-			list-style: none;
-			cursor: pointer;
-			border-radius: var(--r-xs);
-			transition: background var(--t-micro);
-			&::-webkit-details-marker {
-				display: none;
-			}
-			&:hover {
-				background: color-mix(in oklab, var(--ink) 3%, transparent);
-				.drill-title {
-					color: var(--gold);
-				}
-			}
-		}
-		&[open] > summary .drill-title {
+		&[aria-expanded="true"] {
 			color: var(--gold);
+			border-color: color-mix(in oklab, var(--gold) 55%, transparent);
+			background: color-mix(in oklab, var(--gold) 9%, transparent);
+			&::before {
+				content: "−";
+				color: inherit;
+			}
 		}
 	}
-	/* a plus that turns into a minus */
-	.drill-mark {
-		flex: none;
-		align-self: center;
-		position: relative;
-		width: 11px;
-		height: 11px;
-		color: var(--copper);
-		&::before,
-		&::after {
-			content: "";
-			position: absolute;
-			inset: 5px 0 auto;
-			height: 1.5px;
-			border-radius: 1px;
-			background: currentColor;
-			transition: rotate var(--t-ui) var(--ease-out);
-		}
-		&::after {
-			rotate: 90deg;
-		}
-	}
-	.drill[open] > summary .drill-mark::after {
-		rotate: 0deg;
-	}
-	.drill-title {
-		font: 600 16px / 1.35 var(--sans);
-		letter-spacing: -0.01em;
-		color: var(--ink);
-		transition: color var(--t-micro);
-	}
-	.drill-hint {
-		margin-left: auto;
-		font: 400 12.5px / 1.4 var(--mono);
-		color: var(--ink-3);
-		text-align: right;
-	}
-	.drill-body {
-		padding: 4px 6px 40px;
-		> :first-child {
-			margin-top: 12px;
+	.drill-panel {
+		margin-top: 14px;
+		padding: 26px 28px 30px;
+		border-radius: var(--r-lg);
+		border: 1px solid var(--rule);
+		background: var(--panel);
+		scroll-margin-top: calc(var(--top) + 20px);
+		[id] {
+			scroll-margin-top: calc(var(--top) + 20px);
 		}
 		h3 {
 			font: 700 17px / 1.3 var(--sans);
 			letter-spacing: -0.01em;
 		}
+		.board-note:first-of-type {
+			margin-top: 14px;
+		}
 		.board-note + .board-note {
-			margin-top: 12px;
+			margin-top: 10px;
+		}
+		.sides,
+		.proof,
+		.pair2,
+		.figs,
+		.examples,
+		.guide {
+			margin-top: 22px;
+		}
+		.bench {
+			margin-top: 8px;
+		}
+	}
+	/* what the panel concludes, before any of its data */
+	.drill-verdict {
+		max-width: 70ch;
+		margin: 0;
+		font: 600 clamp(1.1rem, 1rem + 0.4vw, 1.3rem) / 1.35 var(--sans);
+		letter-spacing: -0.015em;
+		color: var(--ink);
+		code {
+			font-size: 0.88em;
+			color: var(--gold);
 		}
 	}
 	.drill-p {
 		max-width: 78ch;
-		margin: 16px 0 0;
+		margin: 14px 0 0;
 		font-size: 15.5px;
 		line-height: 1.6;
 		color: var(--ink-2);
@@ -249,7 +357,7 @@
 	.card.is-solo {
 		display: block;
 		max-width: 720px;
-		margin: 16px 0 0;
+		margin: 18px 0 0;
 		&:hover {
 			translate: none;
 			border-color: var(--rule);
@@ -264,34 +372,23 @@
 			border-top: 0;
 		}
 	}
-	.drill-body .sides,
-	.drill-body .proof,
-	.drill-body .pair2,
-	.drill-body .figs,
-	.drill-body .examples,
-	.drill-body .p3 {
-		margin-top: 20px;
-	}
-	.drill-body .bench {
-		margin-top: 8px;
-	}
 
-	/* ---------- 02: the lap race ---------- */
-	.laps,
+	/* ---------- figures: one panel, one caption ---------- */
+	.count,
 	.boot,
 	.bytes {
 		margin: 0;
-		padding: 22px 24px 18px;
+		padding: 22px 26px 18px;
 		border-radius: var(--r-lg);
 		border: 1px solid var(--rule);
 		background: var(--panel);
 		box-shadow: var(--shadow-card);
 		figcaption {
-			margin-top: 18px;
+			margin-top: 20px;
 			padding-top: 14px;
 			border-top: 1px dashed var(--rule-soft);
-			font: 400 11.5px / 1.55 var(--mono);
-			color: var(--ink-3);
+			font: 400 13px / 1.5 var(--mono);
+			color: var(--ink-2);
 			a {
 				color: var(--sky);
 			}
@@ -302,36 +399,23 @@
 			list-style: none;
 		}
 	}
-	.laps-head,
-	.lap-lane {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) 7ch 13ch;
-		grid-template-areas: "name count x" "track track track";
-		column-gap: 12px;
-		align-items: baseline;
-	}
-	.lap-name {
-		grid-area: name;
-	}
-	.lap-count {
-		grid-area: count;
-	}
-	.lap-x {
-		grid-area: x;
-	}
-	.laps-head {
-		padding-bottom: 12px;
-		font: 400 11px / 1.2 var(--mono);
-		color: var(--ink-3);
-		> :not(:first-child) {
-			text-align: right;
+	.count-head,
+	.boot-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		min-height: 28px;
+		margin-bottom: 18px;
+		font: 400 13px / 1.3 var(--mono);
+		color: var(--ink-2);
+		.p {
+			color: var(--copper);
 		}
 	}
-	/* shown once the race is running: until then there is nothing to pause */
-	.laps-toggle {
-		visibility: hidden;
-		margin: -3px 0;
-		padding: 3px 9px;
+	:is(.count-toggle, .boot-replay) {
+		flex: none;
+		padding: 4px 11px;
 		border-radius: var(--r-pill);
 		border: 1px solid var(--line);
 		background: none;
@@ -346,136 +430,131 @@
 			border-color: color-mix(in oklab, var(--ink) 28%, transparent);
 		}
 	}
-	.laps-th {
+	/* shown once something is running: until then there is nothing to stop */
+	.count:not([data-play]) .count-toggle,
+	.boot:not([data-play]) .boot-replay {
 		visibility: hidden;
 	}
-	.laps[data-play] :is(.laps-toggle, .laps-th) {
-		visibility: visible;
-	}
-	.laps ol {
-		display: grid;
-		gap: 15px;
-	}
-	.lap-lane {
-		row-gap: 7px;
-		font: 400 13px / 1.2 var(--mono);
-		color: var(--ink-2);
-	}
-	.lap-track {
-		grid-area: track;
-		position: relative;
-		height: 14px;
-		border-radius: 7px;
-		background: color-mix(in oklab, var(--ink) 5%, transparent);
-		overflow: hidden;
-	}
-	/* at rest it's a bar chart: each lane's throughput as a share of ArkType's */
-	.lap-fill {
-		position: absolute;
-		inset: 0 auto 0 0;
-		width: calc(100% / var(--ratio));
-		min-width: 3px;
-		border-radius: inherit;
-		background: color-mix(in oklab, var(--ink-3) 34%, transparent);
-	}
-	/* as wide as its lane, lit only at its leading end */
-	.lap-runner {
-		position: absolute;
-		inset: 0;
-		translate: -100% 0;
-		background: linear-gradient(
-			90deg,
-			transparent calc(100% - var(--streak) * 100%),
-			var(--ink-2)
-		);
-		&::after {
-			content: "";
-			position: absolute;
-			inset: 0 0 0 auto;
-			width: 4px;
-			border-radius: 2px;
-			background: var(--ink);
-		}
-	}
-	.lap-count,
-	.lap-x {
-		text-align: right;
-		font-variant-numeric: tabular-nums;
-	}
-	.lap-count {
-		color: var(--ink-3);
-	}
-	.lap-x {
-		color: var(--ink);
-	}
-	.lap-lane.is-ours {
-		color: var(--ink);
-		.lap-name {
-			font-weight: 600;
-		}
-		.lap-fill {
-			background: color-mix(in oklab, var(--gold-fill) 26%, transparent);
-		}
-		.lap-runner {
-			background: linear-gradient(
-				90deg,
-				transparent calc(100% - var(--streak) * 100%),
-				var(--gold-fill)
-			);
-			&::after {
-				background: var(--gold-fill-hi);
-				box-shadow: 0 0 12px 2px
-					color-mix(in oklab, var(--gold-glow) 70%, transparent);
-			}
-		}
-		.lap-count,
-		.lap-x {
-			color: var(--gold);
-		}
-	}
 
-	/* ---------- 03: the cold-start sweep ---------- */
-	.boot ol {
-		position: relative;
+	/* ---------- 03: validations, counted ---------- */
+	.count ol {
 		display: grid;
-		gap: 13px;
-		overflow: clip;
 	}
-	.boot-lane {
+	.count-lane {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) auto;
 		grid-template-areas:
-			"name val"
-			"track track";
-		gap: 6px 10px;
-		font: 400 13px / 1.2 var(--mono);
+			"name num"
+			"x num"
+			"bar bar";
+		align-items: end;
+		column-gap: 16px;
+		padding: 12px 0 13px;
+		font: 400 13px / 1.3 var(--mono);
+		color: var(--ink-2);
+		& + & {
+			border-top: 1px solid var(--rule-soft);
+		}
+	}
+	.count-name {
+		grid-area: name;
+		font: 600 15px / 1.2 var(--sans);
+		color: var(--ink);
+	}
+	.count-x {
+		grid-area: x;
+		margin-top: 3px;
+	}
+	.count-num {
+		grid-area: num;
+		min-width: 4ch;
+		font: 700 clamp(1.7rem, 1.4rem + 0.9vw, 2.3rem) / 1 var(--sans);
+		letter-spacing: -0.035em;
+		font-variant-numeric: tabular-nums;
+		text-align: right;
+		color: var(--ink-2);
+	}
+	/* each library's share of ArkType's count, which is the same at any moment */
+	.count-stream {
+		grid-area: bar;
+		height: 4px;
+		margin-top: 10px;
+		border-radius: 2px;
+		background: linear-gradient(var(--ink-3), var(--ink-3)) no-repeat 0 0 /
+			max(3px, calc(100% / var(--ratio))) 100%
+			color-mix(in oklab, var(--ink) 5%, transparent);
+	}
+	.count-lane.is-ours {
+		padding-top: 2px;
+		.count-name {
+			font-size: 17px;
+		}
+		.count-x {
+			color: var(--gold);
+		}
+		.count-num {
+			font-size: clamp(3.2rem, 2.4rem + 2.6vw, 4.8rem);
+			font-weight: 800;
+			letter-spacing: -0.05em;
+			line-height: 0.9;
+			color: var(--gold);
+			text-shadow: 0 0 50px
+				color-mix(in oklab, var(--gold-glow) 34%, transparent);
+		}
+		.count-stream {
+			background: var(--gold-fill);
+			box-shadow: 0 0 12px 0
+				color-mix(in oklab, var(--gold-glow) 55%, transparent);
+		}
+	}
+
+	/* ---------- 05: a boot log ---------- */
+	.boot ol {
+		display: grid;
+		gap: 14px;
+	}
+	.boot-lane {
+		display: grid;
+		grid-template-columns: 14ch minmax(0, 1fr) 8ch;
+		grid-template-areas:
+			"name status val"
+			"track track track";
+		align-items: baseline;
+		gap: 7px 12px;
+		font: 400 13.5px / 1.25 var(--mono);
 		color: var(--ink-2);
 	}
 	.boot-name {
 		grid-area: name;
+		color: var(--ink);
+	}
+	.boot-status {
+		grid-area: status;
+		white-space: nowrap;
+	}
+	/* shown in place of "first validation" while the library is still starting */
+	.boot-run {
+		display: none;
+		color: var(--ink-3);
+		&::after {
+			content: "…";
+		}
+	}
+	.boot-done {
+		color: var(--teal);
 	}
 	.boot-val {
 		grid-area: val;
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
+		text-align: right;
 		font-variant-numeric: tabular-nums;
 		color: var(--ink);
 	}
-	/* a lamp: lit once the library has run its first validation */
-	.boot-ready {
-		width: 7px;
-		height: 7px;
-		border-radius: 50%;
-		background: var(--teal);
-		box-shadow: 0 0 0 3px color-mix(in oklab, var(--teal) 20%, transparent);
-	}
 	/* cut into ticks of a million instructions each */
 	.boot-track {
-		--tick: calc(100% / var(--max));
+		--tick: calc(100% / var(--max) * 1000000);
 		grid-area: track;
 		position: relative;
-		height: 14px;
+		height: 12px;
 		background: color-mix(in oklab, var(--ink) 5%, transparent);
 		mask: repeating-linear-gradient(
 			90deg,
@@ -486,34 +565,53 @@
 	.boot-bar {
 		position: absolute;
 		inset: 0 auto 0 0;
-		width: calc(var(--v) / var(--max) * 100%);
+		width: max(3px, calc(var(--v) / var(--max) * 100%));
 		background: var(--ink-3);
 		transform-origin: left;
 	}
 	.boot-lane.is-ours {
-		color: var(--ink);
 		.boot-name {
-			font-weight: 600;
+			font-weight: 700;
+			color: var(--gold);
 		}
 		.boot-val {
 			color: var(--gold);
 		}
 		.boot-bar {
 			background: var(--gold-fill);
+			box-shadow: 0 0 10px 0
+				color-mix(in oklab, var(--gold-glow) 60%, transparent);
 		}
 	}
 
-	/* ---------- 04: bytes, a block each ---------- */
-	.bytes {
+	/* ---------- 04: bytes, a block each, every library at one scale ---------- */
+	.byte-rows {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		gap: 26px;
-		figcaption {
-			margin-top: 0;
-		}
+		gap: 18px;
+	}
+	.byte-row {
+		display: grid;
+		grid-template-columns: 9ch 9ch minmax(0, 1fr);
+		grid-template-areas: "name size grid";
+		align-items: baseline;
+		column-gap: 14px;
+		font: 400 13.5px / 1.25 var(--mono);
+		color: var(--ink-2);
+	}
+	.byte-name {
+		grid-area: name;
+		color: var(--ink);
+	}
+	.byte-size {
+		grid-area: size;
+		text-align: right;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+		color: var(--ink);
 	}
 	.byte-grid {
 		--b: 9px;
+		grid-area: grid;
 		display: grid;
 		grid-template-columns: repeat(auto-fill, var(--b));
 		gap: 3px;
@@ -522,105 +620,65 @@
 		width: var(--b);
 		height: var(--b);
 		border-radius: 2px;
-		background: var(--bar);
+		background: var(--byte-idle);
 	}
-	.byte.is-kept {
-		background: var(--gold-fill);
-		box-shadow: 0 0 10px 0
-			color-mix(in oklab, var(--gold-glow) 60%, transparent);
+	.byte-row.is-ours {
+		grid-template-areas:
+			"head head head"
+			". . grid";
+		row-gap: 14px;
+		padding-bottom: 22px;
+		border-bottom: 1px dashed var(--rule-soft);
+		.byte-name {
+			font: 700 17px / 1.2 var(--sans);
+		}
+		.byte-size {
+			font: 800 clamp(1.9rem, 1.5rem + 1.2vw, 2.7rem) / 1 var(--sans);
+			letter-spacing: -0.04em;
+			color: var(--gold);
+			transition: color 0.4s var(--ease-out);
+		}
 	}
-	/* what a precompiled build leaves behind, as an outline */
-	.byte.is-parser {
-		background: transparent;
-		box-shadow: inset 0 0 0 1px var(--byte-ghost);
-	}
-	.bytes-read {
+	.byte-head {
+		grid-area: head;
 		display: flex;
 		flex-wrap: wrap;
 		align-items: baseline;
 		gap: 4px 16px;
-		margin-bottom: 16px;
-	}
-	.bytes-name {
-		font: 600 13px / 1.2 var(--mono);
-		color: var(--ink);
-	}
-	.bytes-now {
-		font: 800 clamp(2.2rem, 1.8rem + 1.4vw, 3rem) / 1 var(--sans);
-		letter-spacing: -0.04em;
-		font-variant-numeric: tabular-nums;
-		color: var(--gold);
-		white-space: nowrap;
 	}
 	.bytes-num {
 		display: inline-block;
 		text-align: right;
 	}
-	.bytes-was {
-		display: inline-flex;
-		gap: 8px;
-		margin-left: auto;
-		font: 400 12px / 1.3 var(--mono);
-		color: var(--ink-3);
-		.is-precompiled {
-			color: var(--gold);
-		}
-	}
-	.bytes-key {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 4px 18px;
-		margin-top: 14px;
-		font: 400 11.5px / 1.4 var(--mono);
-		color: var(--ink-3);
-		> span {
-			display: inline-flex;
-			align-items: center;
-			gap: 7px;
-			&::before {
-				content: "";
-				width: 9px;
-				height: 9px;
-				border-radius: 2px;
-			}
-		}
-		.key-kept::before {
-			background: var(--gold-fill);
-		}
-		.key-parser::before {
-			box-shadow: inset 0 0 0 1px
-				color-mix(in oklab, var(--ink) 30%, transparent);
-		}
-	}
-	.bytes-rivals {
+	.byte-state {
 		display: grid;
-		grid-template-columns: repeat(3, minmax(0, auto));
-		justify-content: start;
-		gap: 16px 36px;
-		padding-top: 20px !important;
-		border-top: 1px dashed var(--rule-soft);
+		> * {
+			grid-area: 1 / 1;
+			transition: opacity 0.3s var(--ease-out);
+		}
 	}
-	.bytes-rival {
-		display: grid;
-		grid-template-columns: auto auto;
-		justify-content: start;
-		align-content: start;
-		gap: 8px 10px;
-		font: 400 13px / 1.2 var(--mono);
+	.byte-before {
+		opacity: 0;
+	}
+	.byte-after {
 		color: var(--ink-2);
-		.bytes-name {
-			font-weight: 400;
-			color: var(--ink-2);
-		}
-		.bytes-size {
-			color: var(--ink);
-			font-variant-numeric: tabular-nums;
-		}
-		.byte-grid {
-			grid-column: 1 / -1;
-			/* ten across, so a hundred blocks read as a square */
-			grid-template-columns: repeat(10, var(--b));
-		}
+	}
+	/* one row tall, as it ends: what the parser adds spills over the rows
+	   below, which arrive only once it has gone */
+	.byte-grid.is-ours {
+		height: var(--b);
+		grid-auto-rows: var(--b);
+	}
+	.byte.is-kept {
+		background: var(--gold-fill);
+		box-shadow: 0 0 10px 0
+			color-mix(in oklab, var(--gold-glow) 60%, transparent);
+		transition:
+			background 0.4s var(--ease-out),
+			box-shadow 0.4s var(--ease-out);
+	}
+	.byte.is-parser {
+		display: none;
 	}
 
 	/* the size drill-down: bytes against Types */
@@ -821,18 +879,90 @@
 		}
 	}
 
-	/* ---------- 05: a definition, and what the build makes of it ---------- */
+	/* ---------- 02: the plugin, a definition, and what the build makes of it ---------- */
 	.compile {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.3fr);
-		align-items: center;
+		grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+		grid-template-areas:
+			"config out"
+			"in out";
+		gap: 18px 22px;
+		.code-card {
+			display: flex;
+			flex-direction: column;
+		}
 		.code-card > pre.shiki {
+			flex: 1;
 			font-size: 14px;
 			line-height: 1.75;
 		}
+		.code-card > figcaption {
+			color: var(--ink-2);
+		}
+		.code-card > footer {
+			font-size: 13px;
+			color: var(--ink-2);
+			code {
+				color: var(--gold);
+			}
+		}
+	}
+	.compile-config {
+		grid-area: config;
 	}
 	.compile-in {
+		grid-area: in;
 		overflow: hidden;
+	}
+	.compile-out {
+		grid-area: out;
+		> pre.shiki {
+			font-size: clamp(14px, 0.6rem + 0.55vw, 16.5px) !important;
+			line-height: 1.85 !important;
+			padding-block: 24px;
+		}
+	}
+	/* a stage of the build, numbered in the order it plays */
+	.compile-step {
+		display: inline-flex;
+		align-items: center;
+		gap: 9px;
+		color: var(--ink);
+		b {
+			display: inline-grid;
+			place-items: center;
+			width: 20px;
+			height: 20px;
+			border-radius: 50%;
+			background: var(--gold-fill);
+			color: var(--on-gold) !important;
+			font: 700 11.5px / 1 var(--mono) !important;
+		}
+	}
+	.diff {
+		display: grid;
+		margin: 0;
+		padding: 14px 0;
+		font: 400 13.5px / 1.75 var(--mono);
+		font-variant-ligatures: none;
+		tab-size: 2;
+		color: var(--ink-2);
+		overflow-x: auto;
+		> span {
+			padding-right: 20px;
+			white-space: pre;
+		}
+	}
+	.diff-mark {
+		display: inline-block;
+		width: 4ch;
+		text-align: center;
+		color: var(--teal);
+		user-select: none;
+	}
+	.diff-add {
+		background: var(--add);
+		color: var(--ink);
 	}
 	/* the band of light that reads the source, top to bottom */
 	.compile-scan {
@@ -854,123 +984,20 @@
 				top / 100% 45% no-repeat;
 		}
 	}
-	.compile-via {
-		display: flex;
-		align-items: center;
-		code {
-			padding: 6px 12px;
-			border-radius: var(--r-pill);
-			border: 1px solid color-mix(in oklab, var(--gold) 40%, transparent);
-			background: color-mix(in oklab, var(--gold) 7%, var(--bg));
-			font-size: 12.5px;
-			color: var(--gold);
-			white-space: nowrap;
-		}
-	}
-	.compile-wire {
-		width: 22px;
-		height: 1px;
-		background: color-mix(in oklab, var(--gold) 40%, transparent);
-	}
 
-	/* ---------- 08: one card, Zod then ArkType ---------- */
+	/* ---------- one card, one file, before and after ---------- */
 	.point .moves {
 		grid-template-columns: minmax(0, 1fr);
 		gap: 12px;
 		margin-top: 28px;
 	}
-	/* what switching buys, against Zod: the three numbers the page led with */
-	.gains {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 0;
-		margin: 48px 0 0;
-		border-top: 1px solid var(--rule-soft);
-		> div {
-			padding: 18px 20px 4px 0;
-		}
-		> div + div {
-			padding-left: 20px;
-			border-left: 1px solid var(--rule-soft);
-		}
-		dt {
-			font: 400 12px / 1.3 var(--mono);
-			color: var(--ink-3);
-			a {
-				color: inherit;
-				text-decoration: none;
-				&::before {
-					content: "vs Zod 4 · ";
-				}
-				&:hover {
-					color: var(--sky);
-				}
-			}
-		}
-		dd {
-			margin: 8px 0 0;
-			font-size: 15px;
-			line-height: 1.45;
-			color: var(--ink-2);
-		}
-		b {
-			display: block;
-			margin-bottom: 2px;
-			font: 800 clamp(1.7rem, 1.3rem + 1.2vw, 2.4rem) / 1.05 var(--sans);
-			letter-spacing: -0.035em;
-			color: var(--gold);
-			white-space: nowrap;
-		}
-	}
-	.gains + .drills {
-		margin-top: 20px;
-	}
-	/*
-	 * The hero's copy of them: the three numbers a first screen should not
-	 * make anyone scroll for. The board below ranks every library; this is
-	 * only the one comparison most readers arrive with.
-	 */
-	.hero-gains .gains {
-		margin-top: 32px;
-		/* the last number is the long one, and takes the width it needs */
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) max-content;
-		&::before {
-			content: "// against Zod 4";
-			grid-column: 1 / -1;
-			padding-top: 14px;
-			font: 400 12px / 1.3 var(--mono);
-			color: var(--ink-3);
-		}
-		dt {
-			display: none;
-		}
-		> div {
-			padding-top: 10px;
-		}
-		> div + div {
-			padding-left: 14px;
-			border-left: 1px solid var(--rule-soft);
-			border-top: 0;
-		}
-		dd {
-			font-size: 13px;
-		}
-		b {
-			font-size: clamp(1.45rem, 0.6rem + 1.1vw, 1.7rem);
-		}
-	}
-	.point h2 .hl {
-		display: block;
-	}
-	.point.is-stack h2 {
-		max-width: 26ch;
-	}
 	.morph-stack {
 		position: relative;
 		display: grid;
 	}
-	/* ArkType shows above the wipe line and Zod below it, so the two never overlap */
+	/* the new file shows above the wipe line and the old one below it, so the two never overlap */
 	.morph-pane {
+		position: relative;
 		grid-area: 1 / 1;
 		min-width: 0;
 		transition: clip-path 0.55s var(--ease-out);
@@ -1017,8 +1044,8 @@
 			display: block;
 			padding: 4px 11px;
 			border-radius: var(--r-pill);
-			font: 400 12px / 1.3 var(--mono);
-			color: var(--ink-3);
+			font: 400 12.5px / 1.3 var(--mono);
+			color: var(--ink-2);
 			transition:
 				background var(--t-micro),
 				color var(--t-micro);
@@ -1033,64 +1060,144 @@
 		}
 	}
 
-	/* 06 and 07 keep home.css's transcript and twin code as they are */
+	/* ---------- 06: the interface, then the Type, then a bad payload ---------- */
+	.write-pair {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 22px;
+	}
+	.mirror {
+		--code-fs: 14.5px;
+		--code-lh: 1.8;
+		--pre-y: 20px;
+		.morph-pane > pre.shiki {
+			padding: var(--pre-y) 22px;
+			font-size: var(--code-fs);
+			line-height: var(--code-lh);
+		}
+	}
+	/* over the two lines that say more than the interface could: the third and fourth */
+	.mirror-lit {
+		position: absolute;
+		inset: calc(var(--pre-y) + 2 * var(--code-fs) * var(--code-lh)) 0 auto;
+		height: calc(2 * var(--code-fs) * var(--code-lh));
+		background: var(--lit);
+		box-shadow: inset 2px 0 0 var(--lit-edge);
+		pointer-events: none;
+	}
+	.mirror:has(input[value="zod"]:checked) .mirror-key {
+		opacity: 0.4;
+	}
+	.mirror-run {
+		padding: 14px 22px 18px;
+		border-top: 1px solid var(--rule-soft);
+	}
+	.mirror-note {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		margin: 0;
+		font: 400 13px / 1.4 var(--mono);
+		color: var(--ink-2);
+	}
+	.mirror-key {
+		flex: none;
+		width: 14px;
+		height: 14px;
+		border-radius: 2px;
+		background: var(--lit);
+		box-shadow: inset 2px 0 0 var(--lit-edge);
+		transition: opacity var(--t-ui);
+	}
+	.mirror-out {
+		display: grid;
+		gap: 2px;
+		margin: 12px 0 0;
+		font: 400 13px / 1.6 var(--mono);
+		font-variant-ligatures: none;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		color: var(--ink);
+	}
+	.mirror-err {
+		color: var(--red-ink);
+		&::before {
+			content: "✗ ";
+		}
+	}
+	.works {
+		margin-top: 28px;
+	}
+
+	/* ---------- 07: the transcript's one beat ---------- */
 	.point .term[data-term] {
 		min-width: 0;
 	}
-	.point-figure .works {
+	.term-foot {
+		padding: 11px 20px 12px;
+		border-top: 1px solid var(--line);
+		font: 400 13px / 1.4 var(--mono);
+		color: var(--ink-2);
+	}
+	.term-body {
+		position: relative;
+	}
+	.fix-target {
+		border-radius: 3px;
+		transition:
+			background 0.5s var(--ease-out),
+			box-shadow 0.5s var(--ease-out);
+		&.is-unset {
+			visibility: hidden;
+		}
+		&.is-landed {
+			background: color-mix(in oklab, var(--teal) 26%, transparent);
+			box-shadow: 0 0 0 3px color-mix(in oklab, var(--teal) 26%, transparent);
+		}
+	}
+	.t-err mark.fix.is-lifted {
+		color: transparent;
+	}
+	/* the suggested name, on its way from the error to the diff */
+	.fix-fly {
+		position: absolute;
+		z-index: 1;
+		padding: 0 3px;
+		margin-left: -3px;
+		border-radius: 3px;
+		background: var(--teal);
+		color: var(--bg);
+		font-weight: 600;
+		white-space: nowrap;
+		pointer-events: none;
+		box-shadow: 0 6px 22px color-mix(in oklab, var(--teal) 45%, transparent);
+	}
+
+	/* ---------- the closer: two ways in ---------- */
+	.closer-go {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: stretch;
+		gap: 12px;
 		margin-top: 32px;
 	}
 }
 
-@keyframes lap {
-	from {
-		translate: -100% 0;
-	}
-	to {
-		translate: calc(var(--streak) * 100%) 0;
-	}
-}
 @keyframes boot-grow {
 	from {
 		scale: 0 1;
 	}
 }
-@keyframes boot-sweep {
-	from {
-		translate: -100% 0;
-		opacity: 1;
-	}
-	96% {
-		opacity: 1;
-	}
-	to {
-		translate: 0 0;
-		opacity: 0;
-	}
-}
-@keyframes lane-wake {
-	from {
-		opacity: 0.4;
-	}
-}
-@keyframes lamp-on {
-	from {
-		opacity: 0;
-		scale: 0.2;
-	}
-}
 @keyframes byte-leave {
-	from {
-		background: var(--byte-full);
-		box-shadow: inset 0 0 0 1px transparent;
-		scale: 1;
-	}
-	55% {
-		background: var(--byte-full);
-		scale: 0.4;
-	}
 	to {
-		scale: 1;
+		scale: 0.2;
+		opacity: 0;
+	}
+}
+@keyframes row-in {
+	from {
+		opacity: 0;
+		translate: 0 6px;
 	}
 }
 @keyframes scan-down {
@@ -1114,9 +1221,20 @@
 		clip-path: inset(0 0 0 0);
 	}
 }
-@keyframes via-pulse {
-	50% {
-		box-shadow: 0 0 0 5px var(--via-glow);
+@keyframes step-on {
+	from {
+		background: transparent;
+		color: var(--ink-3);
+		box-shadow: inset 0 0 0 1px var(--ink-3);
+	}
+	60% {
+		scale: 1.25;
+	}
+}
+@keyframes add-in {
+	from {
+		opacity: 0;
+		translate: -8px 0;
 	}
 }
 @keyframes wipe-ark {
@@ -1142,44 +1260,61 @@
 		opacity: 0;
 	}
 }
+@keyframes lit-in {
+	from {
+		opacity: 0;
+	}
+}
 @keyframes stat-in {
 	from {
 		opacity: 0;
 		translate: 0 10px;
 	}
 }
+@keyframes panel-in {
+	from {
+		opacity: 0;
+		translate: 0 -6px;
+	}
+}
 
 @media (prefers-reduced-motion: no-preference) {
-	@supports (interpolate-size: allow-keywords) {
-		.home .drill {
-			interpolate-size: allow-keywords;
-			&::details-content {
-				block-size: 0;
-				overflow: clip;
-				transition:
-					block-size 0.34s var(--ease-out),
-					content-visibility 0.34s allow-discrete;
-			}
-			&[open]::details-content {
-				block-size: auto;
-			}
-		}
+	.home .drill-panel:not([hidden]) {
+		animation: panel-in 0.28s var(--ease-out);
 	}
 	:root[data-motion] .home {
+		/* a number waits for itself to be on screen, and for nothing else */
+		.stat-num[data-to]:not([data-in]) {
+			opacity: 0;
+		}
+		.stat-num[data-in] {
+			animation: stat-in 0.5s var(--ease-pop) both;
+		}
+
 		/* each figure at its start, until it is seen */
 		[data-stage]:not([data-play]) {
 			.boot-bar {
 				scale: 0 1;
 			}
+			.boot-status,
 			.boot-val {
-				opacity: 0;
+				visibility: hidden;
 			}
-			.byte.is-parser {
-				background: var(--byte-full);
-				box-shadow: none;
-			}
-			&.compile .compile-out pre.shiki {
-				clip-path: inset(0 0 100% 0);
+			&.compile {
+				.compile-step b {
+					background: transparent;
+					color: var(--ink-3) !important;
+					box-shadow: inset 0 0 0 1px var(--ink-3);
+				}
+				.diff-add {
+					opacity: 0;
+				}
+				.compile-out pre.shiki {
+					clip-path: inset(0 0 100% 0);
+				}
+				.compile-out > footer {
+					opacity: 0;
+				}
 			}
 			&.morph .morph-pane.is-ark {
 				clip-path: inset(0 0 100% 0);
@@ -1187,61 +1322,88 @@
 			&.morph .morph-pane.is-zod {
 				clip-path: inset(0);
 			}
-		}
-		.point:has([data-stage]:not([data-play])) .stat-num {
-			opacity: 0;
-		}
-		.point:has([data-stage][data-play]) .stat-num {
-			animation: stat-in 0.5s var(--ease-pop) both;
-		}
-
-		.laps[data-play] .lap-runner {
-			animation: lap var(--lap) linear infinite;
-		}
-		.laps[data-paused] .lap-runner {
-			animation-play-state: paused;
+			.mirror-lit,
+			.mirror-run {
+				opacity: 0;
+			}
 		}
 
 		.boot[data-play] {
-			.boot-name {
-				animation: lane-wake 0.3s ease-out both;
-				animation-delay: calc(0.3s + var(--at));
-			}
 			.boot-bar {
 				animation: boot-grow var(--at) linear 0.3s both;
 			}
-			.boot-val {
-				animation: rise-fade 0.3s ease-out both;
-				animation-delay: calc(0.3s + var(--at));
+			.boot-lane:not([data-done]) {
+				.boot-run {
+					display: inline;
+				}
+				.boot-done {
+					display: none;
+				}
+				.boot-val {
+					color: var(--ink-3);
+				}
 			}
-			.boot-ready {
-				animation: lamp-on 0.4s var(--ease-pop) both;
-				animation-delay: calc(0.3s + var(--at));
-			}
-			ol::after {
-				content: "";
-				position: absolute;
-				inset: 0;
-				border-right: 1px solid var(--copper);
-				pointer-events: none;
-				animation: boot-sweep var(--sweep) linear 0.3s both;
+			.boot-lane[data-done] .boot-done {
+				animation: row-in 0.3s var(--ease-out) both;
 			}
 		}
 
-		.bytes[data-play] .byte.is-parser {
-			animation: byte-leave 0.5s ease-in both;
-			animation-delay: calc(1s + var(--k) * 1.6s);
+		/* without precompile, in grey, until the parser's blocks have gone */
+		.bytes:not([data-done]) {
+			.byte.is-parser {
+				display: block;
+			}
+			.byte.is-kept {
+				background: var(--byte-idle);
+				box-shadow: none;
+			}
+			.byte-row.is-ours .byte-size {
+				color: var(--ink-2);
+			}
+			.byte-before {
+				opacity: 1;
+			}
+			.byte-after {
+				opacity: 0;
+			}
+			.byte-row:not(.is-ours) {
+				opacity: 0;
+			}
+		}
+		.bytes[data-play]:not([data-done]) .byte.is-parser {
+			animation: byte-leave 0.45s ease-in forwards;
+			animation-delay: calc(1s + var(--k) * 1.75s);
+		}
+		.bytes[data-done] .byte-row:not(.is-ours) {
+			animation: row-in 0.45s var(--ease-out) both;
+			animation-delay: calc(0.15s + var(--i) * 0.16s);
 		}
 
+		/* 1: the plugin. 2: the definition, read. 3: what ships. */
 		.compile[data-play] {
-			.compile-scan::before {
-				animation: scan-down 1.25s cubic-bezier(0.5, 0, 0.5, 1) 0.25s both;
+			.compile-config .compile-step b {
+				animation: step-on 0.4s var(--ease-pop) 0.2s both;
 			}
-			.compile-via code {
-				animation: via-pulse 0.7s ease-in-out 0.5s 2;
+			.diff-add {
+				animation: add-in 0.4s var(--ease-out) 0.5s both;
+				& ~ .diff-add {
+					animation-delay: 1s;
+				}
+			}
+			.compile-in .compile-step b {
+				animation: step-on 0.4s var(--ease-pop) 1.9s both;
+			}
+			.compile-scan::before {
+				animation: scan-down 1.5s cubic-bezier(0.5, 0, 0.5, 1) 2.1s both;
+			}
+			.compile-out .compile-step b {
+				animation: step-on 0.4s var(--ease-pop) 3.5s both;
 			}
 			.compile-out pre.shiki {
-				animation: emit 1.15s steps(9, end) 0.75s both;
+				animation: emit 1.8s steps(9, end) 3.7s both;
+			}
+			.compile-out > footer {
+				animation: lit-in 0.4s ease-out 5.6s both;
 			}
 		}
 
@@ -1255,73 +1417,165 @@
 			.morph-line {
 				animation: wipe-line 1.3s cubic-bezier(0.5, 0, 0.3, 1) 0.5s both;
 			}
+			.mirror-lit {
+				animation: lit-in 0.5s ease-out 1.9s both;
+			}
+			.mirror-run {
+				animation: row-in 0.5s var(--ease-out) 2.5s both;
+			}
 		}
 	}
 }
 
 @media (max-width: 1080px) {
 	.home {
-		.point.is-split .point-main {
+		.point:is(.is-split, .is-flip) .point-main {
 			grid-template-columns: minmax(0, 1fr);
-			gap: 40px;
+			gap: 36px;
 		}
-		.tiles {
+		.point.is-flip .point-main .point-copy {
+			order: 0;
+		}
+		.point.is-stack .point-words {
 			grid-template-columns: minmax(0, 1fr);
-			max-width: 640px;
+			.deck {
+				margin-top: 18px;
+			}
 		}
 		.compile {
 			grid-template-columns: minmax(0, 1fr);
+			grid-template-areas: "config" "in" "out";
 		}
-		.compile-via {
-			justify-content: center;
-			padding: 10px 0;
+		.write-pair {
+			grid-template-columns: minmax(0, 1fr);
 		}
-		.compile-wire {
-			display: none;
+		.hero-foot {
+			flex-basis: 100%;
+			margin-left: 0;
 		}
 	}
 }
 
 @media (max-width: 760px) {
 	.home {
+		/* a row each: the number, then what it is a number of */
+		.hero-stats {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 14px;
+			margin-top: 26px;
+		}
+		.hero-stat {
+			grid-template-columns: 5.4rem minmax(0, 1fr);
+			grid-template-areas:
+				"num what"
+				"num scope";
+			column-gap: 14px;
+			align-items: center;
+			align-content: center;
+			.stat-num {
+				grid-area: num;
+				font-size: 3.5rem;
+				line-height: 0.9;
+			}
+		}
+		.hero-stat-what {
+			grid-area: what;
+			align-self: end;
+			margin-top: 0;
+			font-size: 1.06rem;
+		}
+		.hero-stat-scope {
+			grid-area: scope;
+			align-self: start;
+			margin-top: 3px;
+			font-size: 12.5px;
+			line-height: 1.35;
+		}
+		.hero .lede {
+			margin-top: 26px;
+		}
+		.hero .ctas {
+			margin-top: 18px;
+		}
+		.board > .p3 {
+			margin-top: 24px;
+			padding: 18px 14px 14px;
+		}
+		/* four columns in a phone's width: the marks and gaps give way first */
+		.p3-table {
+			font-size: 12.5px;
+			th,
+			td {
+				padding: 10px 3px;
+			}
+			:is(th, td):first-child {
+				width: 23%;
+				padding-left: 8px;
+			}
+		}
+		.p3-cell {
+			gap: 4px;
+		}
+		.p3-table .p3-mark {
+			width: 14px;
+			height: 14px;
+			svg {
+				width: 9px;
+				height: 9px;
+			}
+		}
+		.point-main {
+			gap: 30px;
+		}
+		.point.is-band .point-copy {
+			grid-template-columns: minmax(0, 1fr);
+			h2 {
+				margin-top: 28px;
+			}
+		}
+		.point-caveat {
+			margin-top: 22px;
+		}
+		.loses {
+			font-size: 15px;
+		}
+		.drill-chip {
+			padding: 9px 12px 9px 10px;
+		}
+		.drill-panel {
+			padding: 20px 16px 22px;
+		}
 		/* a parse error wraps to three lines at this width: room for it, so the
 		   card doesn't grow under a reader who has scrolled on mid-ghost */
 		.verdict {
 			min-height: 4.5em;
 		}
-		.drill > summary {
-			display: grid;
-			grid-template-columns: 11px minmax(0, 1fr);
-			gap: 2px 14px;
-			padding: 14px 4px;
-		}
-		.drill-mark {
-			align-self: start;
-			margin-top: 5px;
-		}
-		.drill-hint {
-			grid-column: 2;
-			margin-left: 0;
-			text-align: left;
-		}
-		.drill-body {
-			padding-inline: 2px;
-		}
-		.laps,
+		.count,
 		.boot,
 		.bytes {
 			padding: 18px 16px 16px;
 		}
+		.boot-lane {
+			grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+			font-size: 13px;
+		}
+		.boot-status {
+			font-size: 12px;
+		}
 		.byte-grid {
 			--b: 8px;
 		}
-		.bytes-was {
-			margin-left: 0;
-			flex-basis: 100%;
+		.byte-row {
+			grid-template-columns: minmax(0, 1fr) auto;
+			grid-template-areas:
+				"name size"
+				"grid grid";
+			row-gap: 9px;
 		}
-		.bytes-rivals {
-			grid-template-columns: repeat(2, minmax(0, auto));
-			gap: 18px 28px;
+		.byte-row.is-ours {
+			grid-template-areas:
+				"head head"
+				"grid grid";
 		}
 		.scale-plot {
 			height: 260px;
@@ -1334,36 +1588,56 @@
 		.cutoffs li {
 			grid-template-columns: minmax(0, 1fr);
 		}
+		/* what ships, whole: its lines wrap under themselves instead of running off */
 		.compile .code-card > pre.shiki {
+			font-size: 12.5px !important;
+		}
+		.compile-out > pre.shiki {
+			padding-block: 16px;
+			line-height: 1.7 !important;
+			&,
+			code,
+			.line {
+				white-space: pre-wrap;
+				overflow-wrap: anywhere;
+			}
+			/* over code.css, which sizes a block to its longest line */
+			code {
+				min-width: 0;
+			}
+			/* a wrapped line continues past its own indent */
+			.line {
+				box-sizing: border-box;
+				max-width: 100%;
+				padding-left: 8ch;
+				text-indent: -8ch;
+			}
+		}
+		.diff {
+			font-size: 12px;
+		}
+		.diff-mark {
+			width: 2.5ch;
+		}
+		.morph:not(.mirror) pre.shiki {
+			--pre-x: 14px;
+			font-size: 12px;
+		}
+		.mirror {
+			--code-fs: 13px;
+			--pre-y: 16px;
+			.morph-pane > pre.shiki {
+				padding-inline: 16px;
+			}
+		}
+		.mirror-run {
+			padding: 12px 16px 16px;
+		}
+		.mirror-out {
 			font-size: 12.5px;
 		}
-		.gains {
-			grid-template-columns: minmax(0, 1fr);
-			> div + div {
-				padding-left: 0;
-				border-left: 0;
-				border-top: 1px solid var(--rule-soft);
-			}
-		}
-		/* a row each: the number, then what it is of */
-		.hero-gains .gains {
-			grid-template-columns: minmax(0, 1fr);
-			> div,
-			> div + div {
-				padding: 8px 0 0;
-				border: 0;
-			}
-			dd {
-				display: flex;
-				align-items: baseline;
-				gap: 10px;
-				margin: 0;
-			}
-			b {
-				flex: none;
-				min-width: 3ch;
-				margin: 0;
-			}
+		.closer-go > * {
+			flex: 1 1 100%;
 		}
 	}
 }

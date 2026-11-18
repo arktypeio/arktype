@@ -51,42 +51,50 @@ export const loginKb = (name: string) => {
 	return (bar.value / 1000).toPrecision(3)
 }
 
-export type ZodGain = {
+/** how many times the login form's bundle Zod's is, truncated as every ratio on the page is: "24×" */
+export const zodSizeRatio = () => {
+	const bytes = (name: string) =>
+		sizeChart.bars.find(bar => bar.name === name)!.value!
+	return formatRatio(bytes("Zod") / bytes("ArkType (precompiled)"))
+}
+
+export type HeroStat = {
 	/** the section that measures it */
 	href: string
-	/** what was measured, in a word or two */
-	kicker: string
-	/** the number its section leads with */
+	/** the ratio its section leads with */
 	value: string
-	/** what the number is of, and on what */
-	caption: string
+	/** what it is a ratio of */
+	unit: string
+	/** what it was measured on, said in the same breath */
+	scope: string
 }
 
 /**
- * The three numbers the page leads with, each against Zod 4 and each stated
- * as its own section states it: the hero shows them on a narrow screen,
- * where the board is a scroll away, and the migrate section ends on them
+ * The three numbers the page leads with, each against Zod 4 and each the
+ * one its own section leads with. The speed ratio is the median lib/claims.ts
+ * states; the other two are computed here from the bars the startup and size
+ * sections draw, so the hero can never show a number its section doesn't.
  */
-export const versusZod = (): ZodGain[] => {
+export const heroStats = (): HeroStat[] => {
 	const [zod] = categoryOf("speed").versus
 	return [
 		{
 			href: "#run",
-			kicker: "validation",
 			value: medianOf(zod.versus),
-			caption: `faster, at the median of ${zod.versus.count} scenarios`
+			unit: "faster",
+			scope: `median of ${zod.versus.count} scenarios`
 		},
 		{
 			href: "#start",
-			kicker: "cold start",
 			value: startupFacts().zodRatio,
-			caption: "less startup work, on the login app"
+			unit: "less work to start",
+			scope: "a login app, import to first validation"
 		},
 		{
 			href: "#size",
-			kicker: "bundle",
-			value: `${loginKb("Zod")} → ${loginKb("ArkType (precompiled)")} kB`,
-			caption: "gzipped, on a login form"
+			value: zodSizeRatio(),
+			unit: "smaller",
+			scope: `${loginKb("Zod")} → ${loginKb("ArkType (precompiled)")} kB gzipped, on Valibot's own login form`
 		}
 	]
 }

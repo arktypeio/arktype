@@ -25,15 +25,17 @@ const leaveAt = (i: number, total: number) => {
 	return (((total - i) / total) * 0.82 + jitter * 0.18).toFixed(3)
 }
 
-type RivalGridProps = {
+type RivalRowProps = {
 	name: string
 	bytes: number
+	/** its place among the rows that arrive once ArkType's blocks have settled */
+	i: number
 }
 
-const RivalGrid = ({ name, bytes }: RivalGridProps) => (
-	<li className="bytes-rival">
-		<span className="bytes-name">{name}</span>
-		<span className="bytes-size">{kbDigits(bytes)} kB</span>
+const RivalRow = ({ name, bytes, i }: RivalRowProps) => (
+	<li className="byte-row" style={{ "--i": i } as CSSProperties}>
+		<span className="byte-name">{name}</span>
+		<span className="byte-size">{kbDigits(bytes)} kB</span>
 		<span className="byte-grid" aria-hidden>
 			{Array.from({ length: blocksOf(bytes) }, (_, i) => (
 				<i key={i} className="byte" />
@@ -43,12 +45,13 @@ const RivalGrid = ({ name, bytes }: RivalGridProps) => (
 )
 
 /**
- * Valibot's login form, gzipped, a block per 250 B: ArkType's dynamic bundle,
- * then what's left of it precompiled, beside the same form in each other
- * library. Every byte count is one of sizeChart's bars. The markup is the
- * final state: home.css fills the parser's blocks back in before the section
- * is seen and lets them go as it plays, while HomeEffects counts the bytes
- * down.
+ * Valibot's login form, gzipped, a block per 250 B, every library at one
+ * scale: ArkType's row, then each other library's, smallest first. Every
+ * byte count is one of sizeChart's bars. The markup is the final state. With
+ * motion, the section opens on ArkType without precompile, in grey: its
+ * blocks cover the rows below until landing.css lets them go and HomeEffects
+ * counts the bytes down, and only then do the number turn gold and the other
+ * rows arrive.
  */
 export const ByteGrid = () => {
 	const dynamic = barOf("dynamic")
@@ -56,61 +59,56 @@ export const ByteGrid = () => {
 	const rivals = sizeChart.bars
 		.filter(bar => bar.kind === "other" && bar.value !== null)
 		.map(bar => ({ name: bar.name, bytes: bar.value! }))
-		.sort((l, r) => r.bytes - l.bytes)
+		.sort((l, r) => l.bytes - r.bytes)
 	const total = blocksOf(dynamic.bytes)
 	const kept = blocksOf(precompiled.bytes)
 	return (
 		<figure
 			className="bytes"
 			data-stage="bytes"
-			aria-label={`Gzipped bundle of Valibot's login form: ArkType dynamic ${kbDigits(dynamic.bytes)} kB, ArkType precompiled ${kbDigits(precompiled.bytes)} kB, ${rivals
+			aria-label={`Gzipped bundle of Valibot's login form: ArkType precompiled ${kbDigits(precompiled.bytes)} kB, ${rivals
 				.map(rival => `${rival.name} ${kbDigits(rival.bytes)} kB`)
-				.join(", ")}`}
+				.join(
+					", "
+				)}. Without precompile, ArkType is ${kbDigits(dynamic.bytes)} kB.`}
 		>
-			<div className="bytes-ours">
-				<div className="bytes-read">
-					<span className="bytes-name">ArkType</span>
-					<span className="bytes-now">
-						<span
-							className="bytes-num"
-							data-from={kbDigits(dynamic.bytes)}
-							data-to={kbDigits(precompiled.bytes)}
-						>
-							{kbDigits(precompiled.bytes)}
-						</span>{" "}
-						kB
-					</span>
-					<span className="bytes-was">
-						<span className="bytes-step is-dynamic">
-							dynamic · {kbDigits(dynamic.bytes)} kB
+			<ol className="byte-rows">
+				<li className="byte-row is-ours">
+					<span className="byte-head">
+						<span className="byte-name">ArkType</span>
+						<span className="byte-size">
+							<span
+								className="bytes-num"
+								data-from={kbDigits(dynamic.bytes)}
+								data-to={kbDigits(precompiled.bytes)}
+							>
+								{kbDigits(precompiled.bytes)}
+							</span>{" "}
+							kB
 						</span>
-						<span className="bytes-arrow" aria-hidden>
-							→
+						<span className="byte-state">
+							<span className="byte-before" aria-hidden>
+								without precompile
+							</span>
+							<span className="byte-after">
+								precompiled · {kbDigits(dynamic.bytes)} kB without
+							</span>
 						</span>
-						<span className="bytes-step is-precompiled">precompiled</span>
 					</span>
-				</div>
-				<span className="byte-grid is-ours" aria-hidden>
-					{Array.from({ length: total }, (_, i) =>
-						i < kept ?
-							<i key={i} className="byte is-kept" />
-						:	<i
-								key={i}
-								className="byte is-parser"
-								style={{ "--k": leaveAt(i, total) } as CSSProperties}
-							/>
-					)}
-				</span>
-				<span className="bytes-key" aria-hidden>
-					<span className="key-kept">what ships</span>
-					<span className="key-parser">
-						arktype's parser and compiler, left at build
+					<span className="byte-grid is-ours" aria-hidden>
+						{Array.from({ length: total }, (_, i) =>
+							i < kept ?
+								<i key={i} className="byte is-kept" />
+							:	<i
+									key={i}
+									className="byte is-parser"
+									style={{ "--k": leaveAt(i, total) } as CSSProperties}
+								/>
+						)}
 					</span>
-				</span>
-			</div>
-			<ol className="bytes-rivals">
-				{rivals.map(rival => (
-					<RivalGrid key={rival.name} {...rival} />
+				</li>
+				{rivals.map((rival, i) => (
+					<RivalRow key={rival.name} {...rival} i={i} />
 				))}
 			</ol>
 			<figcaption>

@@ -92,7 +92,7 @@ export const PickThree = () => (
 				first: the best average, or within {tieMargin} of it
 			</span>
 			<span>— not ranked: in under half its benchmarks</span>
-			<a href="#board-note">how we measured ↑</a>
+			<a href="#board-note">how we measured ↓</a>
 		</p>
 	</figure>
 )

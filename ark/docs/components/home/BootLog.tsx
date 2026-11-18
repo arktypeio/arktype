@@ -1,16 +1,17 @@
 import type { CSSProperties } from "react"
 import { startupFacts } from "./boardFacts.ts"
 
-/** seconds the sweep takes to reach the costliest library's start */
-const sweep = 3.4
+/** seconds the costliest library's start takes to play */
+const sweep = 6
 
 /**
- * The login app's cold start as a sweep: every lane's bar grows at one
- * speed, a tick per million instructions, and stops where that library runs
- * its first validation. ArkType's stops inside the first tick. The markup is
- * the final state; home.css plays it once it is seen.
+ * The login app's cold start as a boot log: every library starts at once
+ * and its count of instructions runs up at one speed until it has run its
+ * first validation. ArkType's is done inside the first tick, while the
+ * others are still counting. The markup is the final state; landing.css and
+ * HomeEffects play it once it is seen.
  */
-export const ColdStart = () => {
+export const BootLog = () => {
 	const { category, ours, rivals } = startupFacts()
 	const bars = [ours, ...rivals]
 	const max = Math.max(...bars.map(bar => bar.value))
@@ -23,6 +24,14 @@ export const ColdStart = () => {
 				.map(bar => `${bar.name} ${category.format(bar.value)}`)
 				.join(", ")}`}
 		>
+			<div className="boot-head">
+				<span>
+					<span className="p">$</span> node login-app.js
+				</span>
+				<button className="boot-replay" type="button">
+					replay
+				</button>
+			</div>
 			<ol>
 				{bars.map(bar => (
 					<li
@@ -36,23 +45,30 @@ export const ColdStart = () => {
 						}
 					>
 						<span className="boot-name">{bar.name}</span>
-						<span className="boot-track">
-							<span className="boot-bar" />
+						<span className="boot-status">
+							<span className="boot-run" aria-hidden>
+								starting
+							</span>
+							<span className="boot-done">✓ first validation</span>
 						</span>
-						<span className="boot-val">
-							<span className="boot-ready" aria-hidden />
+						<span
+							className="boot-val"
+							data-to={bar.value}
+							data-seconds={((sweep * bar.value) / max).toFixed(3)}
+						>
 							{category.format(bar.value)}
+						</span>
+						<span className="boot-track" aria-hidden>
+							<span className="boot-bar" />
 						</span>
 					</li>
 				))}
 			</ol>
 			<figcaption>
-				one tick = a million instructions, from import through the first
-				validation ·{" "}
+				CPU instructions from import through the first validation ·{" "}
 				<a href={category.source.href} target="_blank" rel="noreferrer">
 					{category.source.label}
-				</a>{" "}
-				· lower is better
+				</a>
 			</figcaption>
 		</figure>
 	)

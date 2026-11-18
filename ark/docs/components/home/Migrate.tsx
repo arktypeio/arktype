@@ -1,43 +1,45 @@
 import type { CSSProperties } from "react"
 import { withBase } from "../../lib/basePath.ts"
-import { claims } from "../../lib/claims.ts"
+import { claims, isPending } from "../../lib/claims.ts"
 import { ClaimText } from "../mdx/Claim.tsx"
-import { versusZod } from "./boardFacts.ts"
 import { CopyCommand } from "./CopyCommand.tsx"
 import { Drill, Drills, Point } from "./Drill.tsx"
 import { HomeCode } from "./HomeCode.tsx"
 
-const zod = `// ---cut-start---
-declare const data: unknown
-// ---cut-end---
-import { z } from "zod"
+// The two panes accept and reject the same inputs: run against 26 of them,
+// valid and invalid at every bound, before this was written. Messages and
+// optional keys, where a literal translation goes wrong, are the drill-down's.
+const zod = `import { z } from "zod"
 
-const User = z.object({
-	name: z.string().min(1, "Name is required"),
-	email: z.email(),
-	age: z.number().int().nonnegative().optional()
+const Item = z.object({
+	sku: z.string().min(1).max(32),
+	quantity: z.number().int().min(1).max(99)
 })
 
-type User = z.infer<typeof User>
-
-const out = User.safeParse(data)
-if (!out.success) console.error(out.error)`
-
-const ark = `// ---cut-start---
-declare const data: unknown
-// ---cut-end---
-import { type } from "arktype"
-
-const User = type({
-	name: ["string > 0", "@", { message: "Name is required" }],
-	email: "string.email",
-	"age?": "number.integer >= 0 | undefined"
+const Order = z.object({
+	status: z.enum(["pending", "paid", "shipped"]),
+	items: z.array(Item).min(1),
+	coupon: z.string().length(8).nullable(),
+	total: z.number().positive()
 })
 
-type User = typeof User.infer
+type Order = z.infer<typeof Order>`
 
-const out = User(data)
-if (out instanceof type.errors) console.error(out.summary)`
+const ark = `import { type } from "arktype"
+
+const Item = type({
+	sku: "1 <= string <= 32",
+	quantity: "1 <= number.integer <= 99"
+})
+
+const Order = type({
+	status: "'pending' | 'paid' | 'shipped'",
+	items: Item.array().atLeastLength(1),
+	coupon: "string == 8 | null",
+	total: "number > 0"
+})
+
+type Order = typeof Order.infer`
 
 /** the guide's steps, as the agent works through them */
 const steps = [
@@ -94,13 +96,13 @@ const Conversion = () => (
 	<figure className="code-card glow morph" data-stage="morph">
 		<figcaption>
 			<span>
-				<b>user.ts</b>
-				<span className="dot">·</span>converted where it is
+				<b>order.ts</b>
+				<span className="dot">·</span>same file, converted
 			</span>
 			<span
 				className="morph-tabs"
 				role="radiogroup"
-				aria-label="Show user.ts in"
+				aria-label="Show order.ts in"
 			>
 				<label>
 					<input type="radio" name="morph" value="zod" />
@@ -124,25 +126,6 @@ const Conversion = () => (
 	</figure>
 )
 
-/**
- * What the sections above measured against Zod, in one row beside the ask
- * to switch: each number is the one its section leads with, and links there
- */
-export const Gains = () => (
-	<dl className="gains" aria-label="Against Zod 4, as measured above">
-		{versusZod().map(gain => (
-			<div key={gain.href}>
-				<dt>
-					<a href={gain.href}>{gain.kicker}</a>
-				</dt>
-				<dd>
-					<b>{gain.value}</b> {gain.caption}
-				</dd>
-			</div>
-		))}
-	</dl>
-)
-
 type PairsProps = {
 	pairs: [from: string, to: string][]
 }
@@ -164,13 +147,7 @@ export const Migrate = () => (
 		id="migrate"
 		n="08"
 		kicker="migrate"
-		title={
-			<>
-				One command, one prompt.{" "}
-				<span className="hl">Your agent follows the guide.</span>
-			</>
-		}
-		deck={<ClaimText claim={claims.zodMigration} />}
+		title="Leave Zod in one prompt."
 		layout="split"
 		aside={
 			<ol className="moves">
@@ -199,11 +176,24 @@ export const Migrate = () => (
 		}
 		figure={<Conversion />}
 	>
-		<Gains />
-		<Drills>
+		<Drills name="migrate">
+			{!isPending(claims.bigApp) && (
+				<Drill
+					chip="on a real app"
+					verdict="One app's schemas, on Zod 3, Zod 4 and ArkType: what each shipped, started and ran."
+				>
+					<p className="drill-p">
+						<ClaimText claim={claims.bigApp} />
+					</p>
+				</Drill>
+			)}
 			<Drill
-				title="What your agent follows"
-				hint={`${steps.length} steps, one guide`}
+				chip="what your agent follows"
+				verdict={
+					<>
+						<ClaimText claim={claims.zodMigration} />
+					</>
+				}
 			>
 				<ol className="steps-flow">
 					{steps.map((step, i) => (
@@ -221,14 +211,14 @@ export const Migrate = () => (
 				</p>
 			</Drill>
 			<Drill
-				title="Where a literal translation goes wrong"
-				hint={`${differs.length} defaults that differ`}
+				chip="where a literal translation goes wrong"
+				verdict={`${differs.length} of Zod's defaults differ from ArkType's, and the guide converts each.`}
 			>
 				<Pairs pairs={differs} />
 			</Drill>
 			<Drill
-				title="What you keep, and what it costs"
-				hint="messages, integrations, async"
+				chip="what you keep, what it costs"
+				verdict="Messages you wrote and the libraries that read your schemas carry over. Async refinements and Zod's default error text don't."
 			>
 				<div className="guide">
 					<div>
