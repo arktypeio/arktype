@@ -27,8 +27,10 @@ const handlerOf =
 const tupleOf = <a, b>(a: Validator<unknown, a>, b: Validator<b>) =>
 	[a.infer, b.inferIn, a.infer] as [a, b?, ...a[]]
 
-const either = <a, b>(a: Validator<unknown, a>, b: Validator<unknown, b>) =>
-	a.infer as a | b
+const either = <a, b>(a: a, b: b) => a as a | b
+
+const keyedBy = <value>(value: Validator<unknown, value>) =>
+	({ 0: value.infer }) as { [id: number]: value; [name: string]: value | null }
 
 export const Role = type("'admin' | 'member'")
 
@@ -56,10 +58,15 @@ export const byId: Record<string, typeof Account.infer | undefined> = {}
 export const validated = Account["~standard"].validate({})
 
 // a member of the union is told from the other by a key's type
-export const told = either(Account, Numbered)
+export const told = either(Account.infer, Numbered.infer)
 
 // two members with the same keys and types can't be
-export const untold = either(Account, Contact)
+export const untold = either(Account.infer, Contact.infer)
+
+// each `Loaded` is told from the other by its argument's keys
+export const loadedEither = either(load(Account), load(Signup))
+
+export const keyed = keyedBy(Signup)
 
 // a literal union or a global is the same type wherever it's written
 export const interned = { role: load(Role), created: load(Created) }
@@ -79,3 +86,9 @@ export const lists = scope({
 }).export()
 
 export const parsed = handlerOf(lists.node)
+
+export function tagged<tag>(tag: tag) {
+	return { tag, account: Account.assert(tag), schema: Account }
+}
+
+export const taggedBy = <tag>(tag: tag) => ({ tag, signup: Signup.assert(tag) })

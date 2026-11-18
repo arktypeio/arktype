@@ -77,7 +77,59 @@ export type User = {
 
 A consumer's type-check then reads each Type's shape rather than inferring its definition.
 
-It declares a Type, Scope or Module this way wherever a module's top-level declaration infers one: a `const`, each name of a destructured one, a default export, a key of an object and what a function returns. A shape TypeScript can't name where a consumer resolves it, like a class its module doesn't export, is left to TypeScript's own declaration, as are a class's members and a generic function. The CLI exits with 1 where TypeScript reports an error, after writing what it emitted.
+It declares a Type, Scope or Module this way wherever a module's top-level declaration infers one: a `const`, each name of a destructured one, a default export, a key of an object and what a function returns. A shape TypeScript can't name where a consumer resolves it, like a class its module doesn't export, is left to TypeScript's own declaration, as are a class's members. The CLI exits with 1 where TypeScript reports an error, after writing what it emitted.
+
+A declaration that holds a Type's data rather than the Type references the same names. `tsc` writes the shape out again wherever a library's type holds it, like the `input` of a tRPC procedure:
+
+```ts
+// @noErrors
+// ---cut---
+// router.ts
+export const appRouter = t.router({
+	createUser: t.procedure.input(User).mutation(({ input }) => ({
+		message: `Created ${input.name}`
+	}))
+})
+
+// router.d.ts, from tsc
+export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
+	{
+		/* ... */
+	},
+	import("@trpc/server").TRPCDecorateCreateRouterOptions<{
+		createUser: import("@trpc/server").TRPCMutationProcedure<{
+			input: {
+				name: string
+				age: number
+			}
+			output: {
+				message: string
+			}
+			meta: object
+		}>
+	}>
+>
+
+// router.d.ts, from --declare
+export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
+	{
+		/* ... */
+	},
+	import("@trpc/server").TRPCDecorateCreateRouterOptions<{
+		createUser: import("@trpc/server").TRPCMutationProcedure<{
+			input: import("./~arktype.js").User
+			output: {
+				message: string
+			}
+			meta: object
+		}>
+	}>
+>
+```
+
+A Type with a [morph](/docs/intro/morphs-and-more) or a default has an input and an output that differ from its shape, so a declaration holding one names it `SignupIn` or `SignupOut` beside `Signup`. A type a library derives from a Type's, as Hono does for what `c.json` returns, isn't the Type's own and stays as TypeScript wrote it, as does a literal union or a global like `Date`.
+
+If your tsconfig sets `declaration`, run `--declare` after `tsc`, which writes the same files. Under `isolatedDeclarations`, TypeScript reports each export without an annotation and declares none of its module, from `--declare` as from `tsc`.
 
 ### Cyclic types
 

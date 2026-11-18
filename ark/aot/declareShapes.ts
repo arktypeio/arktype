@@ -44,6 +44,7 @@ export class ShapeReferences {
 	resolutions: ts.ModuleResolutionCache
 	keywordFlags: Record<number, number | undefined>
 	modulesBySpecifier = new Map<string, ts.Symbol | undefined>()
+	symbolsByNode = new WeakMap<ts.Node, ts.Symbol | undefined>()
 	// what replaces each node of the declaration being read
 	byNode = new Map<ts.Node, string>()
 	source: ts.SourceFile | undefined
@@ -135,29 +136,34 @@ export class ShapeReferences {
 	}
 
 	pairReference(node: ReferenceNode, t: ts.Type): void {
-		const { ts, checker } = this
+		const args = this.argumentsOf(node, t)
+		if (!args) return
+		const held = this.names.printHeld(t, this.key)
+		if (held !== undefined) {
+			this.byNode.set(node, held)
+			return
+		}
+		for (const [i, arg] of node.typeArguments!.entries())
+			if (i < args.length) this.pair(arg, args[i])
+	}
+
+	// the types a reference's arguments declare, where it names the type's
+	// alias, class or interface
+	argumentsOf(node: ReferenceNode, t: ts.Type): readonly ts.Type[] | undefined {
+		const { ts } = this
 		const isReference =
 			!!(t.flags & ts.TypeFlags.Object) &&
 			!!((t as ts.ObjectType).objectFlags & ts.ObjectFlags.Reference)
 		const target = isReference ? (t as ts.TypeReference).target : undefined
 		if (!node.typeArguments?.length || (!t.aliasSymbol && !target)) return
-		const symbol = this.symbolOf(node)
+		if (!this.symbolsByNode.has(node))
+			this.symbolsByNode.set(node, this.symbolOf(node))
+		const symbol = this.symbolsByNode.get(node)
 		if (!symbol) return
-		let args: readonly ts.Type[] | undefined
-		if (symbol === t.aliasSymbol) args = t.aliasTypeArguments
-		else if (target && symbol === target.symbol) {
-			const held = this.names.printHeld(t, this.key)
-			if (held !== undefined) {
-				this.byNode.set(node, held)
-				return
-			}
-			// a class in a generic one is written through both's parameters
-			if (!target.outerTypeParameters?.length)
-				args = checker.getTypeArguments(t as ts.TypeReference)
-		}
-		if (!args) return
-		for (const [i, arg] of node.typeArguments.entries())
-			if (i < args.length) this.pair(arg, args[i])
+		if (symbol === t.aliasSymbol) return t.aliasTypeArguments
+		// a class in a generic one is written through both's parameters
+		if (symbol === target?.symbol && !target.outerTypeParameters?.length)
+			return this.checker.getTypeArguments(t as ts.TypeReference)
 	}
 
 	// the symbol a reference names from the module being declared
@@ -289,10 +295,16 @@ export class ShapeReferences {
 	pairLiteral(node: ts.TypeLiteralNode, t: ts.Type): void {
 		const { ts, checker } = this
 		if (!(t.flags & ts.TypeFlags.Object)) return
-		const indexSignatures = node.members.filter(ts.isIndexSignatureDeclaration)
 		const indexInfos = checker.getIndexInfosOfType(t)
-		if (indexSignatures.length === 1 && indexInfos.length === 1)
-			this.pair(indexSignatures[0].type, indexInfos[0].type)
+		for (const member of node.members) {
+			if (!ts.isIndexSignatureDeclaration(member)) continue
+			const key = member.parameters[0]?.type
+			const infos =
+				key ?
+					indexInfos.filter(info => this.mayDeclare(key, info.keyType, 0))
+				:	[]
+			if (infos.length === 1) this.pair(member.type, infos[0].type)
+		}
 		const callSignatures = node.members.filter(ts.isCallSignatureDeclaration)
 		const signatures = t.getCallSignatures()
 		if (callSignatures.length === 1 && signatures.length === 1)
@@ -328,12 +340,7 @@ export class ShapeReferences {
 	pairSignature(node: SignatureNode, signature: ts.Signature): void {
 		const { ts, checker } = this
 		// TypeScript declares a tuple of rest parameters as a parameter each
-		if (
-			node.typeParameters ||
-			signature.typeParameters ||
-			node.parameters.length !== signature.parameters.length
-		)
-			return
+		if (node.parameters.length !== signature.parameters.length) return
 		const isPaired = node.parameters.every((parameter, i) => {
 			const declaration = signature.parameters[i].valueDeclaration
 			return (
@@ -374,19 +381,18 @@ export class ShapeReferences {
 		}
 	}
 
+	// the types a reference could declare, each an instance of what it names
+	// with arguments its own could declare
 	referencedBy(node: ReferenceNode, types: readonly ts.Type[]): ts.Type[] {
-		if (!node.typeArguments?.length) return []
-		const symbol = this.symbolOf(node)
-		if (!symbol) return []
-		return types.filter(
-			t =>
-				t.aliasSymbol === symbol ||
-				(!!(t.flags & this.ts.TypeFlags.Object) &&
-					!!(
-						(t as ts.ObjectType).objectFlags & this.ts.ObjectFlags.Reference
-					) &&
-					(t as ts.TypeReference).target.symbol === symbol)
-		)
+		return types.filter(t => {
+			const args = this.argumentsOf(node, t)
+			return (
+				!!args &&
+				node.typeArguments!.every(
+					(arg, i) => i >= args.length || this.mayDeclare(arg, args[i], 0)
+				)
+			)
+		})
 	}
 
 	// whether a node could declare a type, as far as what it writes out tells.
@@ -447,7 +453,8 @@ export class ShapeReferences {
 		}
 		if (ts.isFunctionTypeNode(node))
 			return !!(t.flags & TypeFlags.Object) && t.getCallSignatures().length > 0
-
+		if (ts.isTemplateLiteralTypeNode(node))
+			return !!(t.flags & TypeFlags.StringLike)
 		if (ts.isLiteralTypeNode(node)) {
 			const { literal } = node
 			if (ts.isStringLiteral(literal))

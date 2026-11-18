@@ -47,9 +47,10 @@ contextualize(() => {
 		declaredFile(file)
 			.split(/\n(?=export |declare )/)
 			.filter(declaration =>
-				names.includes(declaration.split(/[ (:]/)[3] ?? "")
+				names.includes(declaration.split(/[ (:<]/)[3] ?? "")
 			)
 			.join("\n")
+			.trimEnd()
 	const shapesOf = (...names: string[]) =>
 		declaredFile("~arktype.d.ts")
 			.split(/\n(?=export type )/)
@@ -341,8 +342,7 @@ export declare const env: Readonly<{
 		attest(declarationsOf("drizzle.d.ts", "SelectUser", "InsertUser", "insert"))
 			.snap(`export declare const SelectUser: import("arktype").Type<import("./~arktype.js").SelectUser>;
 export declare const InsertUser: import("arktype").Type<import("./~arktype.js").InsertUser>;
-export declare const insert: (user: typeof InsertUser.infer) => import("./~arktype.js").InsertUser;
-`)
+export declare const insert: (user: typeof InsertUser.infer) => import("./~arktype.js").InsertUser;`)
 		attest(shapesOf("SelectUser", "InsertUser"))
 			.snap(`export type SelectUser = {
     name: string;
@@ -409,6 +409,15 @@ export declare const untold: {
 };`)
 	})
 
+	it("tells references to one interface apart by their arguments, and index signatures by their keys", () => {
+		attest(declarationsOf("plain.d.ts", "loadedEither", "keyed"))
+			.snap(`export declare const loadedEither: Loaded<import("./~arktype.js").Account, never> | Loaded<import("./~arktype.js").SignupOut, never>;
+export declare const keyed: {
+    [id: number]: import("./~arktype.js").SignupOut;
+    [name: string]: import("./~arktype.js").SignupOut | null;
+};`)
+	})
+
 	it("leaves a literal union, a global and a Type no const holds", () => {
 		attest(declarationsOf("plain.d.ts", "interned", "inline"))
 			.snap(`export declare const interned: {
@@ -435,10 +444,23 @@ export type thread = {
 };`)
 	})
 
+	it("names what a generic function returns beside its type parameter", () => {
+		attest(declarationsOf("plain.d.ts", "tagged", "taggedBy"))
+			.snap(`export declare function tagged<tag>(tag: tag): {
+    tag: tag;
+    account: import("./~arktype.js").Account;
+    schema: import("arktype").Type<import("./~arktype.js").Account>;
+};
+export declare const taggedBy: <tag>(tag: tag) => {
+    tag: tag;
+    signup: import("./~arktype.js").SignupOut;
+};`)
+	})
+
 	it("names a cyclic alias's input and output", () => {
-		attest(declarationsOf("plain.d.ts", "parsed"))
-			.snap(`export declare const parsed: (input: import("./~arktype.js").nodeIn, ...fallbacks: import("./~arktype.js").nodeOut[]) => Promise<import("./~arktype.js").nodeOut>;
-`)
+		attest(declarationsOf("plain.d.ts", "parsed")).snap(
+			'export declare const parsed: (input: import("./~arktype.js").nodeIn, ...fallbacks: import("./~arktype.js").nodeOut[]) => Promise<import("./~arktype.js").nodeOut>;'
+		)
 		attest(shapesOf("node", "nodeIn", "nodeOut")).snap(`export type node = {
     value: Port;
     next?: node | undefined;
@@ -472,7 +494,7 @@ export type nodeOut = {
 			"hono.d.ts": { tsc: 7, declare: 1 },
 			"hookForm.d.ts": { tsc: 10, declare: 0 },
 			"orpc.d.ts": { tsc: 6, declare: 0 },
-			"plain.d.ts": { tsc: 25, declare: 2 },
+			"plain.d.ts": { tsc: 36, declare: 2 },
 			"schemas.d.ts": { tsc: 3, declare: 0 },
 			"standard.d.ts": { tsc: 6, declare: 0 },
 			"tanstackForm.d.ts": { tsc: 33, declare: 10 },
