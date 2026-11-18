@@ -21,10 +21,7 @@ export const PickThree = () => (
 			<h3 id="pick3-title">
 				<ClaimText claim={pickThreeTable.title} />
 			</h3>
-			<p>
-				Each library's best average, as a multiple of the best result. Lower is
-				better. {pickThreeTable.shown}
-			</p>
+			<p>Average multiple of the best result. Lower is better.</p>
 			{pickThreeTable.startupNote && (
 				<p className="p3-startup">{pickThreeTable.startupNote}</p>
 			)}
@@ -92,6 +89,7 @@ export const PickThree = () => (
 				first: the best average, or within {tieMargin} of it
 			</span>
 			<span>— not ranked: in under half its benchmarks</span>
+			<span>{pickThreeTable.shown}</span>
 			<a href="#board-note">how we measured ↓</a>
 		</p>
 	</figure>

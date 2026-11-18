@@ -1,7 +1,10 @@
-import { formatRatio } from "../../lib/bench/bench.ts"
+import { formatRatio, list } from "../../lib/bench/bench.ts"
+import { isWellKnown, rowsOf } from "../../lib/bench/leaderboard.ts"
+import { ntwineRows } from "../../lib/bench/scoreboard.ts"
 import {
 	categories,
 	medianOf,
+	ordinal,
 	sizeChart,
 	type Category
 } from "../../lib/claims.ts"
@@ -98,3 +101,53 @@ export const heroStats = (): HeroStat[] => {
 		}
 	]
 }
+
+/**
+ * Size's caveat in one line, the way the speed section words its own:
+ * `claims.sizeClose`'s facts (ArkType's average against the next best's, and
+ * where it places on each size result) from the data that claim is built
+ * from. Undefined unless ArkType has the lowest average outright and the
+ * library next to it may be named, which is all the line is worded for;
+ * the section then prints the claim itself.
+ */
+export const sizeCloseLine = () => {
+	const { leads, ties, average } = categoryOf("size")
+	if (!leads || ties || !isWellKnown(average.other.library)) return
+	const ranks = rowsOf("size").map(
+		results =>
+			Object.values(results).filter(bytes => bytes < results.ArkType).length + 1
+	)
+	const places =
+		ranks.every(rank => rank === ranks[0]) ?
+			`${ordinal(ranks[0])} on each one`
+		:	`${list(ranks.map(ordinal))} on them`
+	return `Smallest on average across ${ranks.length} public size results (${formatRatio(average.score)} the best; ${average.other.library} ${formatRatio(average.other.score)}), and ${places}.`
+}
+
+/**
+ * `claims.bigApp`'s result in one line, for the head of its panel: from the
+ * row that claim reads (ntwine, bundled with esbuild), the two margins over
+ * Zod 4 a reader came for and the comparison ArkType loses. Each number
+ * names the build it belongs to, because they are different builds: the
+ * default one is the fast one, the "smallest" preset the small one.
+ * Undefined unless every clause of it holds, and the panel then keeps its
+ * plain description.
+ */
+export const bigAppLine = () => {
+	const row = ntwineRows.find(row => row.host === "esbuild")
+	if (!row) return
+	const { precompiled, smallest, zod, zod3 } = row.arms
+	if (!precompiled || !smallest || !zod || !zod3) return
+	const faster = zod.hot / precompiled.hot
+	// truncated, so no margin is ever rounded up
+	const less = Math.floor((1 - smallest.gz / zod.gz) * 100)
+	const zod3ShipsLeast = zod3.gz < Math.min(smallest.gz, precompiled.gz)
+	if (faster < 2 || less < 1 || !zod3ShipsLeast) return
+	return `On ntwine, bundled with esbuild: the default build validated ${formatRatio(faster)} as fast as Zod 4, and the "smallest" preset shipped ${less}% less. Zod 3 shipped less than either.`
+}
+
+/**
+ * A size or a claim from lib/, with its kilobytes written as the page's own
+ * figures write them ("kB"). The numbers and the words are the source's.
+ */
+export const kB = (text: string) => text.replaceAll(" KB", " kB")

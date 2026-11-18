@@ -2,6 +2,7 @@ import type { CSSProperties } from "react"
 import { withBase } from "../../lib/basePath.ts"
 import { claims, isPending } from "../../lib/claims.ts"
 import { ClaimText } from "../mdx/Claim.tsx"
+import { bigAppLine, kB } from "./boardFacts.ts"
 import { CopyCommand } from "./CopyCommand.tsx"
 import { Drill, Drills, Point } from "./Drill.tsx"
 import { HomeCode } from "./HomeCode.tsx"
@@ -180,11 +181,12 @@ export const Migrate = () => (
 			{!isPending(claims.bigApp) && (
 				<Drill
 					chip="on a real app"
-					verdict="One app's schemas, on Zod 3, Zod 4 and ArkType: what each shipped, started and ran."
+					verdict={
+						bigAppLine() ??
+						"One app's schemas, on Zod 3, Zod 4 and ArkType: what each shipped, started and ran."
+					}
 				>
-					<p className="drill-p">
-						<ClaimText claim={claims.bigApp} />
-					</p>
+					<p className="drill-p">{kB(claims.bigApp)}</p>
 				</Drill>
 			)}
 			<Drill

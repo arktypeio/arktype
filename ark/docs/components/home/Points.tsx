@@ -20,7 +20,9 @@ import { ClaimText } from "../mdx/Claim.tsx"
 import { AverageLine, SizeStandings, SpeedSpread } from "./Board.tsx"
 import {
 	categoryOf,
+	kB,
 	loginKb,
+	sizeCloseLine,
 	startupFacts,
 	zodSizeRatio
 } from "./boardFacts.ts"
@@ -317,9 +319,7 @@ export const Speed = () => {
 						</p>
 					)}
 					{!isPending(claims.bigApp) && (
-						<p className="drill-p">
-							<ClaimText claim={claims.bigApp} />
-						</p>
+						<p className="drill-p">{kB(claims.bigApp)}</p>
 					)}
 				</Drill>
 				<Drill
@@ -359,7 +359,7 @@ const PresetRows = () => (
 								{types ? `${presetAppNames[app] ?? app}, ${types}` : row.label}
 							</th>
 							{[row.default, row.smallest, row.valibot].map((size, i) => (
-								<td key={i}>{size.replace(" KB", " kB")}</td>
+								<td key={i}>{kB(size)}</td>
 							))}
 						</tr>
 					)
@@ -385,7 +385,11 @@ export const Size = () => (
 		figure={<ByteGrid />}
 		caveat={
 			<p className="loses">
-				<ClaimText claim={claims.sizeClose} />
+				{sizeCloseLine() ?
+					<>
+						<b>Where it's close.</b> {sizeCloseLine()}
+					</>
+				:	<ClaimText claim={claims.sizeClose} />}
 			</p>
 		}
 	>
@@ -426,6 +430,9 @@ export const Size = () => (
 				chip="the close call"
 				verdict={<ClaimText claim={claims.sizeAverage} />}
 			>
+				<p className="drill-p">
+					<ClaimText claim={claims.sizeClose} />
+				</p>
 				<p className="drill-p">
 					<ClaimText claim={claims.leaveOneOut} />
 				</p>
@@ -517,8 +524,8 @@ export const Startup = () => {
 						<div>
 							<dt>shipped validator, gzip</dt>
 							<dd>
-								<b>{facts.sizeStandalone}</b>
-								<span>JIT {facts.sizeJit}</span>
+								<b>{kB(facts.sizeStandalone)}</b>
+								<span>JIT {kB(facts.sizeJit)}</span>
 							</dd>
 						</div>
 						<div>
