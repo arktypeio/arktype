@@ -46,6 +46,7 @@ import {
 } from "../shared/registry.ts"
 import {
 	allowsInBranch,
+	allowsInBranchBy,
 	applyMember,
 	transform,
 	transformed,
@@ -528,7 +529,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				// an error a branch's predicate adds through ctx fails only that branch
 				js.if(
 					branch.checksCtx ?
-						`${js.ref(allowsInBranch)}(ctx, ${js.ref(branch)}, data)`
+						`${js.ref(allowsInBranchBy)}(ctx, ${js.traversal(branch, "Allows")}, data)`
 					:	(branch.jsCond?.(js, "data") ?? js.inv(branch)),
 					() => js.return(true)
 				)
