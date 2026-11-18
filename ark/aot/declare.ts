@@ -777,7 +777,7 @@ class ShapePrinter implements ShapeNames {
 	}
 
 	referenceTo(t: ts.Type): string | undefined {
-		if (!this.isInferred(t)) return
+		if (!this.isDistinct(t)) return
 		const shape = this.shapeNames.get(t)
 		if (shape === undefined) this.reach(t)
 		else return `import(${JSON.stringify(this.shared)}).${shape}`
@@ -785,25 +785,26 @@ class ShapePrinter implements ShapeNames {
 
 	// asks the next pass to name a scope's alias or a Type's input or output
 	reach(t: ts.Type): void {
-		if (this.reached.has(t) || this.refused.has(t) || !this.isInferred(t))
+		if (this.reached.has(t) || this.refused.has(t) || !this.isDistinct(t))
 			return
 		const name = this.aliases.get(t) ?? this.sides().get(t)
 		if (name !== undefined) this.reached.set(t, name)
 	}
 
-	// whether a type is its definition's alone, where a literal union or a
-	// global like Date is the same type wherever it's written
-	isInferred(t: ts.Type, depth = 0): boolean {
+	// whether a type is one definition's alone, so that being it is having come
+	// from that definition. A literal union or a global like Date is the same
+	// type wherever it's written, whatever wrote it
+	isDistinct(t: ts.Type, depth = 0): boolean {
 		const { ts, checker } = this
 		// an array can hold itself without end, as `[[[...]]]`
 		if (depth > maxNesting) return false
 		if (t.isUnionOrIntersection())
-			return t.types.some(member => this.isInferred(member, depth + 1))
+			return t.types.some(member => this.isDistinct(member, depth + 1))
 		if (!(t.flags & ts.TypeFlags.Object)) return false
 		if (checker.isArrayType(t) || checker.isTupleType(t)) {
 			return checker
 				.getTypeArguments(t as ts.TypeReference)
-				.some(element => this.isInferred(element, depth + 1))
+				.some(element => this.isDistinct(element, depth + 1))
 		}
 		return (
 			!!(
@@ -840,7 +841,7 @@ class ShapePrinter implements ShapeNames {
 					distilled !== t &&
 					!this.shapeNames.has(distilled) &&
 					!sideNames.has(distilled) &&
-					this.isInferred(distilled)
+					this.isDistinct(distilled)
 				) {
 					sideNames.set(distilled, `${name}${side}`)
 					this.sideBases.set(distilled, t)

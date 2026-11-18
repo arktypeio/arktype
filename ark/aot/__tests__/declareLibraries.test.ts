@@ -476,7 +476,8 @@ export type nodeOut = {
 `)
 	})
 
-	// how many times each module's declaration writes a key of Account's out
+	// how many times each module's declaration writes out the `email` key
+	// Account, Signup and its input and output each hold
 	it("writes a shape once where TypeScript writes it wherever it's held", () => {
 		const written = (declaration: string) =>
 			declaration.split(/^\s+email: string;$/m).length - 1
