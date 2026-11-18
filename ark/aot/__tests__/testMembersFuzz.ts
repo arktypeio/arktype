@@ -867,7 +867,9 @@ const lateOrderOf = (dir: string): LateOrder =>
 		) as LateOrder)
 	:	"pre"
 
-const conditions = ["ark-ts", "production"]
+// a production build, which prunes, whose runtime is development's, where a
+// read of a member no build baked throws
+const conditions = ["ark-ts", "production", "development"]
 
 const run = (args: string[], cwd: string, env: Record<string, string> = {}) => {
 	const { stdout, stderr, status } = spawnSync(process.execPath, args, {
@@ -972,7 +974,9 @@ const viteOutcome = async (dir: string, plugin: boolean): Promise<Outcome> => {
 				:	[]),
 				...(late ? [lateVitePlugin(dir, lateOrderOf(dir))] : [])
 			],
-			resolve: { conditions: ["ark-ts", ...defaultClientConditions] },
+			resolve: {
+				conditions: ["ark-ts", "development", ...defaultClientConditions]
+			},
 			build: {
 				write: true,
 				outDir: out,
@@ -1008,7 +1012,10 @@ const webpackOutcome = async (
 		entry: "./main.ts",
 		target: "node" as const,
 		output: { path: out, filename: "main.cjs" },
-		resolve: { extensions: [".ts", ".js", ".cjs"] },
+		resolve: {
+			extensions: [".ts", ".js", ".cjs"],
+			conditionNames: ["development", "..."]
+		},
 		module: { rules: lateRules(dir, lateOrderOf(dir)) }
 	}
 	const compiler =
@@ -1071,6 +1078,8 @@ const driver = (dir: string, production: boolean): Outcome => {
 		[
 			"--conditions",
 			"ark-ts",
+			"--conditions",
+			"development",
 			"--import",
 			`data:text/javascript,import { register } from "${pathToFileURL(fromHere("..", "node.ts"))}"; register(${JSON.stringify({ conditions: ["ark-ts"], cwd: dir, ...buildOptions })})`,
 			"main.ts"
@@ -1115,7 +1124,16 @@ const emitOutcome = (dir: string): Outcome => {
 	)
 	if (cli.status !== 0) return { refused: cli.stderr || cli.stdout }
 	return {
-		out: run(["--conditions", "ark-ts", join(dir, "out-emit", "main.js")], dir)
+		out: run(
+			[
+				"--conditions",
+				"ark-ts",
+				"--conditions",
+				"development",
+				join(dir, "out-emit", "main.js")
+			],
+			dir
+		)
 	}
 }
 
@@ -1147,8 +1165,10 @@ const observationsOf = (out: string): unknown[] | undefined => {
 const normalized = (observation: unknown) =>
 	JSON.stringify(observation)?.replace(/\$ark\.\w+/g, "$ark.fn")
 
-// a build written for size says no more than its first half
-const unbakedMessage = /isn't precompiled(?:: set members|$)/
+// what a member no build baked throws under the "development" condition, which
+// each host resolves the runtime under: in production the read is undefined,
+// and what a reader makes of that is its own
+const unbakedMessage = /isn't precompiled: set members/
 const fallbackMessage = /takes only a target it was built with/
 
 type Verdict =

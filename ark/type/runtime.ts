@@ -16,7 +16,6 @@ import {
 	issueAt,
 	issuesOf,
 	mergeIssues,
-	namesFix,
 	runtimeConfig,
 	sharedMessageOf,
 	supportedJsonSchemaTargets,
@@ -198,6 +197,13 @@ export class Validator {
 	declare allows: (data: unknown) => boolean
 	declare assert: (data: unknown, pipedFromCtx?: Traversal) => unknown
 	declare "~standard": StandardSchemaV1.Props
+	// a member the build bakes is the validator's own. One it doesn't reads
+	// undefined, and under the "development" condition throws with the fix
+	declare expression: string
+	declare description: string
+	declare json: JsonStructure
+	declare toJSON: () => JsonStructure
+	declare toJsonSchema: () => JsonSchema
 
 	traverse(
 		data: unknown,
@@ -212,39 +218,10 @@ export class Validator {
 
 	// a build without the expression member has none to print
 	toString(): string {
-		try {
-			return `Type<${this.expression}>`
-		} catch {
-			return "Type"
-		}
-	}
-
-	// a member the build bakes is the validator's own, so reading one it
-	// doesn't throws with the fix
-	get expression(): string {
-		throw lacks("expression")
-	}
-	get description(): string {
-		throw lacks("description")
-	}
-	get json(): JsonStructure {
-		throw lacks("json")
-	}
-	get toJSON(): () => JsonStructure {
-		throw lacks("toJSON")
-	}
-	get toJsonSchema(): () => JsonSchema {
-		throw lacks("toJsonSchema")
+		const { expression } = this
+		return expression ? `Type<${expression}>` : "Type"
 	}
 }
-
-// a build written for size says what's missing and leaves the fix to the docs
-export const lacks = (member: IntrospectionMember): Error =>
-	new Error(
-		namesFix ?
-			`${member} isn't precompiled: set members["${member}"] true in the precompile options`
-		:	`${member} isn't precompiled`
-	)
 
 const getOwnPropertyDescriptors = /* @__PURE__ */ (() =>
 	Object.getOwnPropertyDescriptors)()
@@ -334,9 +311,6 @@ const standardOf = (
 		vendor: "arktype",
 		version: 1,
 		validate: freeze((input: unknown) => standardResultOf(validator(input))),
-		get jsonSchema() {
-			throw lacks("~standard.jsonSchema")
-		},
 		...attributes["~standard"]
 	})
 

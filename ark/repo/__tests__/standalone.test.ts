@@ -1334,9 +1334,8 @@ age must be a number (was missing)`)
 		attest(validator["~standard"].validate({ name: "n", age: 1 })).equals({
 			value: { name: "n", age: 1 }
 		})
-		attest(() => validator["~standard"].jsonSchema).throws(
-			'~standard.jsonSchema isn\'t precompiled: set members["~standard.jsonSchema"] true in the precompile options'
-		)
+		// not baked, so undefined, and only thrown for in development
+		attest(validator["~standard"].jsonSchema).equals(undefined)
 		// configured meta only, not a keyword's
 		attest(Id.meta).equals({})
 		attest(Described.meta).equals({ description: "an id", format: "uuid" })
@@ -1554,16 +1553,11 @@ age must be a number (was missing)`)
 		attest(() => validator.toJsonSchema({ target: "draft-07" })).throws(
 			'A standalone validator\'s JSON Schema takes only a target it was built with, and a fallback only where it was built to apply one; set members["toJsonSchema"] true, or build with runtime: "arktype"'
 		)
+		// one it didn't bake reads undefined, and only throws in development
 		const unbaked = ["json", "description", "expression", "toJSON"] as const
-		for (const member of unbaked) {
-			attest(() => validator[member]).throws(
-				`${member} isn't precompiled: set members["${member}"] true in the precompile options`
-			)
-		}
-		// as it reads toJSON
-		attest(() => JSON.stringify({ validator })).throws(
-			"toJSON isn't precompiled"
-		)
+		for (const member of unbaked) attest(validator[member]).equals(undefined)
+		// a function with no toJSON is left out of what holds it
+		attest(JSON.stringify({ validator })).equals("{}")
 		attest(String(validator)).equals("Type")
 	})
 
@@ -3383,9 +3377,7 @@ export const Validating = type(["unknown", "unknown"]).pipe(([d, validate]) => v
 				[["function", "`length`", length]],
 				{}
 			)
-			attest(() => unlisted(count.raw).expression).throws(
-				"expression isn't precompiled"
-			)
+			attest(unlisted(count.raw).expression).equals(undefined)
 		})
 
 		it("hole received twice", async () => {

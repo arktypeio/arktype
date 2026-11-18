@@ -359,7 +359,7 @@ console.log(read(all, ["inner", "User"], "description"))
 `)
 	})
 
-	it("an entry's export bakes nothing, so a read outside the bundle throws", async () => {
+	it("an entry's export bakes nothing, so a read outside the bundle is undefined", async () => {
 		const out = await logged(
 			"entry",
 			{
@@ -370,26 +370,13 @@ export const User = type({ name: "string" })
 				"reader.js": `import { User } from "./out/main.js"
 
 console.log(User({ name: "Ada" }).name)
-for (const member of ["expression", "toJsonSchema"]) {
-	try {
-		User[member]
-	} catch (e) {
-		console.log(e.message)
-	}
-}
-try {
-	User["~standard"].jsonSchema
-} catch (e) {
-	console.log(e.message)
-}
+console.log(User.expression, User.toJsonSchema, User["~standard"].jsonSchema, String(User))
 `
 			},
 			"reader.js"
 		)
 		attest(out).snap(`Ada
-expression isn't precompiled: set members["expression"] true in the precompile options
-toJsonSchema isn't precompiled: set members["toJsonSchema"] true in the precompile options
-~standard.jsonSchema isn't precompiled: set members["~standard.jsonSchema"] true in the precompile options
+undefined undefined undefined Type
 `)
 	})
 })

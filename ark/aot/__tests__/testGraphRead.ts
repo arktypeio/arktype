@@ -577,7 +577,12 @@ const build = async (
 			entry: "./main.ts",
 			target: "node",
 			output: { path: out, filename, chunkFilename: "chunk-[id].cjs" },
-			resolve: { extensions: [".ts", ".js", ".cjs"] },
+			// a production build, which prunes, whose runtime is development's:
+			// in production a read of a member no build baked is undefined
+			resolve: {
+				extensions: [".ts", ".js", ".cjs"],
+				conditionNames: ["development", "..."]
+			},
 			module: { rules: [{ test: /\.ts$/, loader: loaderPath }] }
 		},
 		overrides
@@ -640,10 +645,10 @@ const normalized = (out: string) =>
 		"according to a predicate"
 	)
 
-// a member a build left out, which it says as it's read, one written for size
-// without the setting
+// a member a build left out, which it says as it's read under the
+// "development" condition each build here resolves the runtime under
 const isLoud = (out: string) =>
-	/isn't precompiled(?:: set members|\b)|reads? \w+, which a standalone validator lacks|Type<[^>]*>|can't be precompiled/.test(
+	/isn't precompiled: set members|reads? \w+, which a standalone validator lacks|Type<[^>]*>|can't be precompiled/.test(
 		out
 	)
 

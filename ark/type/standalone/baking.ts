@@ -360,7 +360,6 @@ export interface IssueFeatures {
 	entersMissing: boolean
 	readsSummary: boolean
 	readsErrors: boolean
-	namesFix: boolean
 }
 
 export const noIssueFeatures: IssueFeatures = {
@@ -377,8 +376,7 @@ export const noIssueFeatures: IssueFeatures = {
 	discriminatesBooleans: false,
 	entersMissing: false,
 	readsSummary: false,
-	readsErrors: false,
-	namesFix: false
+	readsErrors: false
 }
 
 export interface StandaloneModules {
@@ -491,8 +489,7 @@ export const bakingOf = (
 		called: opts.called !== false,
 		readsAllows: opts.readsAllows !== false,
 		piped: opts.piped !== false,
-		// what its validators' issues hold is added as each is written
-		issues: { ...noIssueFeatures, namesFix: opts.optimize !== "size" },
+		issues: { ...noIssueFeatures },
 		sharedWrites: opts.sharedWrites ?? new Map(),
 		cells: opts.cells,
 		interned: opts.interned,

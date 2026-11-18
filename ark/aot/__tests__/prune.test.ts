@@ -708,8 +708,7 @@ export const Fields = { even: Even, name: type("string") }
 				discriminatesBooleans: false,
 				entersMissing: false,
 				readsSummary: true,
-				readsErrors: true,
-				namesFix: false
+				readsErrors: true
 			})
 			attest(
 				await issuesOf(
@@ -729,8 +728,7 @@ export const Fields = { even: Even, name: type("string") }
 				discriminatesBooleans: false,
 				entersMissing: true,
 				readsSummary: true,
-				readsErrors: true,
-				namesFix: false
+				readsErrors: true
 			})
 		})
 
@@ -753,8 +751,7 @@ export const Fields = { even: Even, name: type("string") }
 				discriminatesBooleans: false,
 				entersMissing: false,
 				readsSummary: true,
-				readsErrors: true,
-				namesFix: false
+				readsErrors: true
 			})
 		})
 
@@ -854,8 +851,7 @@ export const Fields = { even: Even, name: type("string") }
 				discriminatesBooleans: false,
 				entersMissing: false,
 				readsSummary: true,
-				readsErrors: true,
-				namesFix: false
+				readsErrors: true
 			})
 		})
 	})
@@ -1355,14 +1351,26 @@ console.log(READ, String(User({ name: 5 })))
 				}
 			}
 
-			it("builds whole where one names a binding, so the read throws", async () => {
+			it("builds whole where one names a binding, whose read is of a member no build baked", async () => {
 				const options = { ...reading, define: { READ: "local.expression" } }
 				const warnings = await warningsOf({ preset: undefined }, options)
 				attest(warnings.map(({ text }) => text)).snap([
 					"prune: off, because define names local in local.expression, which may read a validator where no module's text shows it, so the build keeps every member of its validators. Set prune: false to build them whole without this warning."
 				])
-				const out = runBundle(await bundle({ preset: undefined }, options))
-				attest(out.stderr.includes("expression isn't precompiled")).equals(true)
+				attest(run(await bundle({ preset: undefined }, options)))
+					.snap(`undefined name must be a string
+`)
+				// as a development build resolves the runtime, where the read throws
+				const development = [...conditions, "development"]
+				const out = runBundle(
+					await bundle(
+						{ preset: undefined, conditions: development },
+						{ ...options, conditions: development }
+					)
+				)
+				attest(/^Error: .*$/m.exec(out.stderr)?.[0]).snap(
+					'Error: expression isn\'t precompiled: set members["expression"] true in the precompile options'
+				)
 			})
 
 			it("prunes where each names a literal or a global", async () => {
@@ -1410,8 +1418,15 @@ console.log(READ, String(User({ name: 5 })))
 			}
 		})
 
-		it("names the fix where a member it didn't bake is read, unless written for size", async () => {
+		it("reads undefined for a member it didn't bake, where code outside it reads one", async () => {
 			// code outside the bundle reads what an entry exports
+			const reads = [
+				"lib.User.expression",
+				"lib.User.toJsonSchema",
+				'lib.User["~standard"].jsonSchema',
+				"String(lib.User)",
+				"JSON.stringify({ User: lib.User })"
+			]
 			const exporting = {
 				format: "iife",
 				globalName: "lib",
@@ -1419,16 +1434,22 @@ console.log(READ, String(User({ name: 5 })))
 					contents: `export { User } from "./types.ts"`,
 					resolveDir: root
 				},
-				footer: { js: "lib.User.expression" }
+				footer: {
+					js: `for (const read of [${reads.map(read => `() => ${read}`).join(", ")}]) {
+	try {
+		console.log(read())
+	} catch (e) {
+		console.log(e.message)
+	}
+}`
+				}
 			} as const
-			const thrownBy = async (opts: PrecompileUnpluginOptions) =>
-				/^Error: .*$/m.exec(
-					runBundle(await bundle(opts, exporting)).stderr
-				)?.[0]
-			attest(await thrownBy({ preset: undefined })).snap(
-				'Error: expression isn\'t precompiled: set members["expression"] true in the precompile options'
-			)
-			attest(await thrownBy({})).snap("Error: expression isn't precompiled")
+			for (const preset of ["smallest", undefined] as const) {
+				// a function with no toJSON is left out of what holds it
+				attest(run(await bundle({ preset }, exporting))).equals(
+					"undefined\nundefined\nundefined\nType\n{}\n"
+				)
+			}
 		})
 
 		it("drops what reads what no validator's issues hold", async () => {
@@ -3672,13 +3693,14 @@ console.log(use(), inlined())
 							}
 						)
 						attest(warnings.join("\n").includes("from two codes")).equals(true)
-						// built one module at a time, what the inline request reads is missed
+						// built one module at a time, what the inline request reads is
+						// missed, so it reads a member no build baked
 						attest(
 							spawnSync(process.execPath, {
 								input: js,
 								encoding: "utf8"
-							}).stderr.includes("expression isn't precompiled")
-						).equals(true)
+							}).stdout
+						).equals("{ name: string } undefined\n")
 					})
 				})
 

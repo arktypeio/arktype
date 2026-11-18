@@ -477,8 +477,8 @@ const readAndWrite = async (
 	if (queried) return refusalOf(queried)
 	const program = withRoots(scanned, root, scripts)
 	// what a module writes is a few imports, its validators created in the units.
-	// Each keeps its methods, whose getters throw for a member it lacks, as a
-	// module Next generates may import one where the read can't see
+	// Each keeps its methods, which in development throw reading a member it
+	// lacks, as a module Next generates may import one where the read can't see
 	const send = createAsyncPrecompiler({
 		precompilerOptions: {
 			...opts,
