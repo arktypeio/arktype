@@ -6,6 +6,7 @@ import {
 	provenance,
 	type BenchFacts
 } from "../../lib/bench/bench.ts"
+import { generatedRows } from "../../lib/bench/scoreboard.ts"
 import { sizeScale } from "../../lib/bench/sizeScale.ts"
 import { claims, isPending, medianOf, sizeChart } from "../../lib/claims.ts"
 import { BenchmarkChart } from "../mdx/BenchmarkChart.tsx"
@@ -19,6 +20,11 @@ import { Drill, Drills, Point } from "./Drill.tsx"
 import { SizeScaleChart } from "./SizeScaleChart.tsx"
 import { SpeedRace } from "./SpeedRace.tsx"
 import { Loops, Proof, proofCount } from "./WhyNow.tsx"
+
+/** the generated apps' sizes in Types, ascending */
+const appTypes = [...new Set(generatedRows.map(row => Number(row.app)))].sort(
+	(l, r) => l - r
+)
 
 export const NextTag = () =>
 	preview && <span className="next-tag">next release</span>
@@ -250,6 +256,9 @@ export const Startup = () => {
 					</p>
 					{!isPending(claims.appStartup) && (
 						<p className="drill-p">
+							On the apps we generated of {appTypes[0].toLocaleString("en-US")}{" "}
+							to {appTypes.at(-1)!.toLocaleString("en-US")} Types, which the
+							speed section's drill-down describes:{" "}
 							<ClaimText claim={claims.appStartup} />
 						</p>
 					)}
@@ -327,12 +336,13 @@ export const Size = () => (
 				title="As your app grows"
 				hint="where each build stops being the smaller"
 			>
-				<SizeScaleChart scale={sizeScale} />
-				{!isPending(claims.appSize) && (
-					<p className="drill-p">
-						<ClaimText claim={claims.appSize} />
-					</p>
-				)}
+				{sizeScale.corpora.map(corpus => (
+					<SizeScaleChart
+						key={corpus.id}
+						corpus={corpus}
+						commit={sizeScale.commit}
+					/>
+				))}
 			</Drill>
 			<Drill
 				title='The "smallest" preset, and what it costs'
@@ -343,6 +353,11 @@ export const Size = () => (
 					<ClaimText claim={claims.sizePreset} />
 				</p>
 				<PresetSizeTable />
+				<p className="note">
+					{
+						"// measured on schemas without custom messages or narrows; form-like schemas are a separate corpus, and these results don't carry over to it"
+					}
+				</p>
 				<p className="drill-p">
 					<ClaimText claim={claims.smallestSpeed} />{" "}
 					<Link className="link" href="/docs/precompile/options">

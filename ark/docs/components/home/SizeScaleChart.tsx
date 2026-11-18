@@ -2,8 +2,8 @@ import type { CSSProperties } from "react"
 import {
 	sizeCutoffs,
 	type SizeArm,
-	type SizeCutoff,
-	type SizeScale
+	type SizeCorpus,
+	type SizeCutoff
 } from "../../lib/bench/sizeScale.ts"
 
 /** "2.6 kB", "51.5 kB", "114 kB" */
@@ -58,7 +58,7 @@ type ScalePlot = {
 	labels: Map<string, number>
 }
 
-const plotOf = ({ arms, points }: SizeScale): ScalePlot => {
+const plotOf = ({ arms, points }: SizeCorpus): ScalePlot => {
 	const bytes = points.flatMap(point => Object.values(point.gz))
 	const [lo, hi] = [Math.min(...bytes) / 1.25, Math.max(...bytes) * 1.25]
 	const [first, last] = [points[0].types, points.at(-1)!.types]
@@ -122,19 +122,23 @@ const Cutoff = ({ cutoff, variant }: CutoffProps) => {
 }
 
 export type SizeScaleChartProps = {
-	scale: SizeScale
+	corpus: SizeCorpus
+	/** the commit it was measured at */
+	commit: string
 }
 
 /**
  * Gzipped bundle size against the number of Types an app defines, both on
  * log axes, a line per library and per ArkType build. Then every byte as a
- * table, and each build's cutoffs: the scales it is the smaller at. Reads
- * only its `scale`, so new data needs no change here.
+ * table, and each build's cutoffs: the scales it is the smaller at, on this
+ * corpus alone. Reads only its `corpus`, so new data needs no change here.
  */
-export const SizeScaleChart = ({ scale }: SizeScaleChartProps) => {
-	const plot = plotOf(scale)
+export const SizeScaleChart = ({ corpus, commit }: SizeScaleChartProps) => {
+	const scale = corpus
+	const plot = plotOf(corpus)
 	return (
 		<figure className="scale">
+			<h3 className="scale-title">{corpus.label}</h3>
 			<div className="scale-key" aria-hidden>
 				{scale.arms.map(arm => (
 					<span key={arm.id} className={`is-${arm.kind} is-${arm.line}`}>
@@ -238,6 +242,9 @@ export const SizeScaleChart = ({ scale }: SizeScaleChartProps) => {
 					</tbody>
 				</table>
 			</div>
+			<p className="scale-scope">
+				<b>On this corpus only.</b> {corpus.scope}
+			</p>
 			<ul className="cutoffs">
 				{sizeCutoffs(scale).map(cutoff => (
 					<Cutoff
@@ -249,7 +256,7 @@ export const SizeScaleChart = ({ scale }: SizeScaleChartProps) => {
 			</ul>
 			<figcaption>
 				{scale.source[0].toUpperCase()}
-				{scale.source.slice(1)}, at {scale.commit}.
+				{scale.source.slice(1)}, at {commit}.
 			</figcaption>
 		</figure>
 	)

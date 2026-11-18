@@ -1,12 +1,18 @@
 /**
  * Bundle size as an app's Types grow, for the homepage's size drill-down:
- * each arm's gzipped bytes at each scale, and where ArkType's builds stop
- * being the smaller one. The chart and its table read only this module, so
- * denser data (more scales, more arms) replaces `sizeScale` below without
- * touching either.
+ * per corpus, each arm's gzipped bytes at each scale, and where ArkType's
+ * builds stop being the smaller one. The chart and its table read only
+ * `sizeScale`, so denser data (more corpora, scales or arms) replaces it
+ * below without touching either.
  *
- * Today it is the bigapp board's generated apps bundled with esbuild, the
- * only host that also measures plain arktype (lib/bench/scoreboard.ts).
+ * A corpus is one kind of schema, measured at several scales. What a
+ * library ships per schema depends on what the schema holds, so a result on
+ * one corpus says nothing about another: schemas with a custom message on
+ * most fields are a different corpus from schemas with none.
+ *
+ * Today there is one, the bigapp board's generated apps bundled with
+ * esbuild, the only host that also measures plain arktype
+ * (lib/bench/scoreboard.ts).
  */
 import { generatedRows, scoreboard, type AppRow } from "./scoreboard.ts"
 
@@ -37,16 +43,25 @@ export type SizePoint = {
 	variants: SizeBytes[]
 }
 
-export type SizeScale = {
+export type SizeCorpus = {
+	id: string
+	/** the corpus in a few words, as a heading */
+	label: string
 	/** what was bundled, and how, in a sentence */
 	source: string
+	/** what its schemas hold and don't, which is what its results are scoped to */
+	scope: string
 	/** what `variants` vary, in a phrase: "with narrows" */
 	variant: string
-	commit: string
 	/** in the order the chart's key lists them */
 	arms: SizeArm[]
 	/** ascending by `types` */
 	points: SizePoint[]
+}
+
+export type SizeScale = {
+	commit: string
+	corpora: SizeCorpus[]
 }
 
 const arms: SizeArm[] = [
@@ -77,21 +92,29 @@ const bytesOf = (row: AppRow): SizeBytes =>
 const bundled = generatedRows.filter(row => row.host === "esbuild")
 
 export const sizeScale: SizeScale = {
-	source:
-		"apps we generated from our startup benchmark's SaaS schemas, each Type validating a request in a handler, bundled and minified with esbuild as a production build",
-	variant: "with narrows",
 	commit: scoreboard.commit,
-	arms: arms.filter(arm => bundled.some(row => arm.id in row.arms)),
-	points: bundled
-		.filter(row => !row.narrows)
-		.map(row => ({
-			types: Number(row.app),
-			gz: bytesOf(row),
-			variants: bundled
-				.filter(other => other.app === row.app && other.narrows)
-				.map(bytesOf)
-		}))
-		.sort((l, r) => l.types - r.types)
+	corpora: [
+		{
+			id: "models",
+			label: "Data models",
+			source:
+				"apps we generated from our startup benchmark's SaaS schemas, each Type validating a request in a handler, bundled and minified with esbuild as a production build",
+			scope:
+				"These schemas carry no custom messages, and narrows only in the variant. Form-like schemas, with a message on most fields, are a separate corpus: what a library ships per schema differs there, so these cutoffs don't carry over to it.",
+			variant: "with narrows",
+			arms: arms.filter(arm => bundled.some(row => arm.id in row.arms)),
+			points: bundled
+				.filter(row => !row.narrows)
+				.map(row => ({
+					types: Number(row.app),
+					gz: bytesOf(row),
+					variants: bundled
+						.filter(other => other.app === row.app && other.narrows)
+						.map(bytesOf)
+				}))
+				.sort((l, r) => l.types - r.types)
+		}
+	]
 }
 
 export type SizeCutoff = {
@@ -106,11 +129,11 @@ export type SizeCutoff = {
 }
 
 /**
- * Each of ArkType's builds against each other library, scale by scale. A
- * cutoff lies between the last scale in `smallerAt` and the first above it
- * that isn't; nothing is interpolated.
+ * Each of ArkType's builds against each other library on a corpus, scale by
+ * scale. A cutoff lies between the last scale in `smallerAt` and the first
+ * above it that isn't; nothing is interpolated.
  */
-export const sizeCutoffs = ({ arms, points }: SizeScale): SizeCutoff[] =>
+export const sizeCutoffs = ({ arms, points }: SizeCorpus): SizeCutoff[] =>
 	arms
 		.filter(arm => arm.kind !== "other")
 		.flatMap(ours =>

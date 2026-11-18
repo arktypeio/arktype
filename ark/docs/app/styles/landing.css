@@ -633,6 +633,20 @@
 			color: var(--ink-3);
 		}
 	}
+	.scale-title {
+		margin: 0 0 14px;
+	}
+	.scale-scope {
+		max-width: 78ch;
+		margin: 20px 0 0;
+		font-size: 14.5px;
+		line-height: 1.55;
+		color: var(--ink-2);
+		b {
+			color: var(--ink);
+			font-weight: 600;
+		}
+	}
 	.scale-key {
 		display: flex;
 		flex-wrap: wrap;
@@ -785,7 +799,7 @@
 		}
 	}
 	.cutoffs {
-		margin: 20px 0 0;
+		margin: 14px 0 0;
 		padding: 0;
 		list-style: none;
 		border-top: 1px solid var(--rule-soft);
