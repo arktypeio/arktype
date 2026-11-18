@@ -56,7 +56,13 @@ export const Hero = ({ title }: HeroProps) => {
 				{heroStats().map(stat => {
 					const [, digits, suffix] = /^([\d.]+)(.*)$/.exec(stat.value)!
 					return (
-						<a key={stat.href} className="hero-stat" href={stat.href}>
+						<a
+							key={stat.href}
+							className="hero-stat"
+							href={stat.href}
+							// its number counts up through values that aren't the claim
+							aria-label={`${stat.value} ${stat.unit} than Zod 4: ${stat.scope}`}
+						>
 							<span
 								className="stat-num"
 								data-to={digits}
