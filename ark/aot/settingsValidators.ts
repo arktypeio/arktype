@@ -495,34 +495,48 @@ var deletes = (declared, data, out) => {
 	}
 	return out
 }
-var sited = (allows, declared, write, writes, removed, withCtx) => {
+var sitedKeeps = (declared, checkers, write) => (data, values) => {
+	const out = write(data, checkers, values, copyOf)
+	if (out !== data) {
+		for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
+	}
+	return out
+}
+var sitedProps = (allows, declared, write, walks = props(declared)) => {
 	const checkers = Object.values(declared)
-	const walks = removed ? closedProps(declared, removed) : props(declared)
 	const checker = (data, ctx) =>
 		!objectCheck.test(data) ? !failsAt(ctx, objectCheck, data)
 		: ctx?._at ? walks(data, ctx)
 		: allows(data, checkers)
 	checker.description = objectCheck.description
-	if (!write) return checker
-	const changing = changingIn(declared)
-	const written = (data, values) => {
-		if (writes > 2) {
-			return Object.getPrototypeOf(data) === Object.prototype ?
-					write(data, checkers, values, copyOf)
-				:	deletes(
-						declared,
-						data,
-						values ?
-							writtenValues(declared, changing, data, values)
-						:	writtenProps(declared, changing, data)
-					)
-		}
-		const out = write(data, checkers, values, copyOf)
-		if (out !== data) {
-			for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
-		}
-		return out
+	if (write) {
+		const written = sitedKeeps(declared, checkers, write)
+		checker.t = data => written(data)
 	}
+	return checker
+}
+var sited = (allows, declared, write, writes, removed, withCtx) => {
+	const checker = sitedProps(
+		allows,
+		declared,
+		0,
+		removed ? closedProps(declared, removed) : void 0
+	)
+	if (!write) return checker
+	const checkers = Object.values(declared)
+	const changing = changingIn(declared)
+	const keeps = sitedKeeps(declared, checkers, write)
+	const written = (data, values) =>
+		writes < 3 ? keeps(data, values)
+		: Object.getPrototypeOf(data) === Object.prototype ?
+			write(data, checkers, values, copyOf)
+		:	deletes(
+				declared,
+				data,
+				values ?
+					writtenValues(declared, changing, data, values)
+				:	writtenProps(declared, changing, data)
+			)
 	checker.t =
 		writes % 2 ?
 			data => written(data)

@@ -1010,10 +1010,43 @@ type SitedWrite = (
 	copy: (data: any) => any
 ) => any
 
-// a shape of many keys that may be absent, or whose transform can fail, reading
-// and writing each at a site of its own, as one site reading them all finds each
-// by a generic lookup. Only what looks for issues in data that failed still takes
-// that site
+// what a shape keeping the keys it doesn't declare writes: its own text's
+// result, then where data's copied, each key it declares that the copy lacks
+const sitedKeeps =
+	(declared: Props, checkers: readonly Checker[], write: SitedWrite) =>
+	(data: any, values?: WrittenValues): any => {
+		const out = write(data, checkers, values, copyOf)
+		if (out !== data)
+			for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
+		return out
+	}
+
+// a shape of many keys that may be absent, reading and writing each at a site
+// of its own, as one site reading them all finds each by a generic lookup. Only
+// what looks for issues in data that failed still takes that site. This one
+// keeps the keys it doesn't declare and no transform of its own can fail, so it
+// calls nothing a closed shape or a failing transform does, and a bundle holding
+// only such shapes holds none of that
+export const sitedProps = ((
+	allows: (data: any, checkers: readonly Checker[]) => boolean,
+	declared: Props,
+	write?: SitedWrite | 0,
+	walks: Checker = props(declared)
+): Checker => {
+	const checkers = Object.values(declared)
+	const checker: Checker = (data: any, ctx: any) =>
+		!objectCheck.test(data) ? !failsAt(ctx as never, objectCheck, data)
+		: ctx?._at ? walks(data, ctx)
+		: allows(data, checkers)
+	checker.description = objectCheck.description
+	if (write) {
+		const written = sitedKeeps(declared, checkers, write)
+		checker.t = data => written(data)
+	}
+	return checker
+}) satisfies Fn
+
+// sitedProps' shape where it closes, or a transform of its own can fail
 export const sited = ((
 	allows: (data: any, checkers: readonly Checker[]) => boolean,
 	declared: Props,
@@ -1024,34 +1057,28 @@ export const sited = ((
 	removed?: string,
 	withCtx?: 1
 ): Checker => {
-	const checkers = Object.values(declared)
-	const walks = removed ? closedProps(declared, removed) : props(declared)
-	const checker: Checker = (data: any, ctx: any) =>
-		!objectCheck.test(data) ? !failsAt(ctx as never, objectCheck, data)
-		: ctx?._at ? walks(data, ctx)
-		: allows(data, checkers)
-	checker.description = objectCheck.description
+	const checker = sitedProps(
+		allows,
+		declared,
+		0,
+		removed ? closedProps(declared, removed) : undefined
+	)
 	if (!write) return checker
+	const checkers = Object.values(declared)
 	const changing = changingIn(declared)
-	const written = (data: any, values?: WrittenValues) => {
-		// an instance is copied, keeping its prototype
-		if (writes > 2) {
-			return Object.getPrototypeOf(data) === Object.prototype ?
-					write(data, checkers, values, copyOf)
-				:	deletes(
-						declared,
-						data,
-						values ?
-							writtenValues(declared, changing, data, values)
-						:	writtenProps(declared, changing, data)
-					)
-		}
-		const out = write(data, checkers, values, copyOf)
-		// where data's copied, each key it declares that the copy lacks
-		if (out !== data)
-			for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
-		return out
-	}
+	const keeps = sitedKeeps(declared, checkers, write)
+	const written = (data: any, values?: WrittenValues) =>
+		writes < 3 ? keeps(data, values)
+			// an instance is copied, keeping its prototype
+		: Object.getPrototypeOf(data) === Object.prototype ?
+			write(data, checkers, values, copyOf)
+		:	deletes(
+				declared,
+				data,
+				values ?
+					writtenValues(declared, changing, data, values)
+				:	writtenProps(declared, changing, data)
+			)
 	checker.t =
 		writes % 2 ?
 			data => written(data)

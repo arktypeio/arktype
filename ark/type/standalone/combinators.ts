@@ -875,6 +875,16 @@ const writeStructure = (
 		structure.hasMorph ||
 		structure.props.some(writesByValues)
 	if (failing || (structure.optional?.length ?? 0) >= minSitedKeys) {
+		// one that keeps the keys it doesn't declare and can't fail as it writes
+		// calls nothing a closed shape or a failing transform does
+		if (!failing && !structure.handlesUndeclared) {
+			return writeCall(
+				"sitedProps",
+				writeSitedAllows(structure, refs),
+				declared,
+				structure.tfs ? writeSitedKeep(js, structure, false) : undefined
+			)
+		}
 		const deletes = structure.handlesUndeclared === "delete"
 		return writeCall(
 			"sited",

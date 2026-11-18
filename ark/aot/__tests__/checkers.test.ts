@@ -1776,11 +1776,21 @@ ${body}
 ${repaying}
 `
 
-		const itWritesAsArktype = (name: string, body: string) =>
+		// sited where a shape closes or its transform can fail, sitedProps where
+		// neither, each as a definition calls it
+		const itWritesAsArktype = (
+			name: string,
+			body: string,
+			forms: ("sited" | "sitedProps")[] = ["sited"]
+		) =>
 			it(name, async () => {
 				const root = fixture(`sited-${name.replace(/\W+/g, "-")}`, app(body))
 				const js = await bundle(root, smallest)
-				attest(js.includes(" sited(")).equals(true)
+				attest(
+					(["sited", "sitedProps"] as const).filter(form =>
+						js.includes(`/* @__PURE__ */ ${form}(`)
+					)
+				).equals(forms)
 				attest(behaviorOf(js)).equals(runPlain(root))
 			})
 
@@ -1839,7 +1849,8 @@ const out: any = Literal(hidden)
 show(out)
 console.log(out.k3, out === hidden)
 const full = { literal: 2, k1: "x" }
-console.log(Literal(full) === full)`
+console.log(Literal(full) === full)`,
+			["sited", "sitedProps"]
 		)
 
 		itWritesAsArktype(
@@ -1859,8 +1870,28 @@ show(T({ a: "a" }))
 console.log(T.allows(Object.create({ ...present, k1: 1 })), T.allows({ ...present, k1: undefined }))
 console.log(T.allows(Object.defineProperty({ ...present }, "k2", { value: 1 })))
 console.log(T.allows(new Proxy({ ...present }, { has: (data, k) => k === "k3" || k in data, get: (data, k) => k === "k3" ? 1 : (data as any)[k] })))
-console.log(T.allows({ a: 1, u: "u", get k0(): string { throw new Error("read past a failure") } }))`
+console.log(T.allows({ a: 1, u: "u", get k0(): string { throw new Error("read past a failure") } }))`,
+			["sitedProps"]
 		)
+
+		it("holds nothing a closed shape or a failing transform calls where its shapes do neither", async () => {
+			const root = fixture(
+				"sited-open",
+				app(`const T = type({ literal: "number = 1", ${optionalKeys} })
+const data = { k1: "x", other: 1 }
+const out: any = T(data)
+show(out)
+console.log(out === data, T({ literal: 2 }).literal, T.allows({ k1: 1 }))
+show(T({ k1: 1, k2: 2 }))`)
+			)
+			const js = await bundle(root, smallest)
+			attest(
+				["sitedProps(", "writtenValues", "class Written", "closedProps"].filter(
+					name => js.includes(name)
+				)
+			).equals(["sitedProps("])
+			attest(behaviorOf(js)).equals(runPlain(root))
+		})
 
 		it("writes a default replacing undefined where config says it does", async () => {
 			const root = writeFixture(
