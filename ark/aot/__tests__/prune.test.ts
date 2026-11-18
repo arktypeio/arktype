@@ -2115,7 +2115,7 @@ export { $ark_aAllows as A }
 					)
 				)
 
-			const b = units["~arktype/a"].replaceAll("aAllows", "bAllows")
+			const b = units["~arktype/a"].replace(/aAllows/g, "bAllows")
 
 			it("are declared in one module, which each reads them from", () => {
 				const { modules, sites } = linked(8, { "~arktype/b": b })
