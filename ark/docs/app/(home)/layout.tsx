@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import { HomeNav } from "../../components/home/HomeNav.tsx"
 import { siteUrl } from "../metadata.ts"
 import "../styles/home.css"
+import "../styles/landing.css"
 
 // runs before first paint, when motion is welcome: html[data-motion] holds
 // what the board and the proof animate at their start, and html[data-ghost]

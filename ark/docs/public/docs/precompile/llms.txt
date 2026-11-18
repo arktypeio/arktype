@@ -21,11 +21,11 @@ export default {
 
 [Setup](https://arktype.io/docs/precompile/setup) covers every bundler, test runner and Next.
 
-Precompiled validators have always been faster and smaller. What they cost was a build step: setup, new errors and a second model of what runs where. If an agent runs your local dev, that's one more loop it's already good at, and every error names its fix, so you get the speed and size [without the cost](https://arktype.io/docs/precompile#with-agents).
+The cost is a build step. [Every error it reports names its fix](https://arktype.io/docs/precompile#with-agents), so an agent can run it.
 
 ## Speed and size
 
-A validator that compiles at runtime ships its compiler, and one that interprets ships its interpreter. A precompiled build ships neither: only the checks your Types need, and the runtime that reports their errors. Build the fastest validator or the smallest from the same definitions. The [options](https://arktype.io/docs/precompile/options) decide which: [`optimize: "size"`](https://arktype.io/docs/precompile/options#optimize-and-optimizeerrors) and dropping [`members`](https://arktype.io/docs/precompile/options#members) make a build smaller and its validators slower.
+A validator that compiles at runtime ships its compiler, and one that interprets ships its interpreter. A precompiled build ships neither: only the checks your Types need, and the runtime that reports their errors. Build the fastest validator or the smallest from the same definitions. The [options](https://arktype.io/docs/precompile/options) decide which.
 
 **Runtime** (instructions per call, lower is better): moltar's parseSafe benchmark (validate, removing undeclared keys), run by us on Node 24, ArkType precompiled with the default options. Precompiled ArkType isn't in moltar's published results yet. Source: [moltar/typescript-runtime-type-benchmarks](https://github.com/moltar/typescript-runtime-type-benchmarks)
 
@@ -45,15 +45,15 @@ A validator that compiles at runtime ships its compiler, and one that interprets
 
 In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled with its defaults, it reports an error for every invalid field of Valibot's own login form, with the form's messages, in a smaller bundle than Valibot. Each chart names its benchmark and the options ArkType was built with.
 
-A precompiled validator has no initialization cost, and since nothing is generated at runtime, it runs under a Content-Security-Policy that blocks `eval`.
+A precompiled Type costs nothing to create: it was built when you built. Since nothing is generated at runtime, it runs under a Content-Security-Policy that blocks `eval`.
 
 ## Optimized by set theory
 
-ArkType reduces every Type to a normalized set of constraints, so it knows which Types are subtypes of others, which overlap and which can't both be satisfied. Precompiling applies that knowledge in your build:
+ArkType reduces every Type to a normalized set of constraints, so it knows which overlap, which contain others and which can't both be satisfied. Precompiling applies that in your build:
 
 - **Unions discriminate themselves.** ArkType finds the key that tells a union's branches apart and switches on it, so data is checked against one branch rather than each in turn.
 - **Redundant checks disappear.** `number > 0` intersected with `number >= 10` is `number >= 10`, one check, and a branch never rechecks the key it was chosen by.
-- **Contradictions never ship.** A definition that intersects to nothing, like `{ id: string }` and `{ id: number }`, throws a ParseError, which fails the build rather than shipping a validator that rejects everything.
+- **Contradictions never ship.** `{ id: string }` intersected with `{ id: number }` throws a ParseError, which fails the build rather than shipping a validator that rejects everything.
 
 ```ts
 const Shape = type({
@@ -81,7 +81,7 @@ data => {
 
 ## With agents
 
-The build is quiet when everything precompiles, helpers included: ``const text = (max: number) => type(`0 < string <= ${max}`)`` precompiles at each call passing it values the build can read, like `text(50)`. Where it can't precompile a definition and the fix is clear, the build fails, with the file, line and column, what it couldn't do, why, and how to fix it:
+The build is quiet when everything precompiles, helpers included: ``const text = (max: number) => type(`0 < string <= ${max}`)`` precompiles at each call passing it values the build can read, like `text(50)`. Where it can't precompile a definition and the fix is clear, the build fails with the file, line and column, what it couldn't do, why, and how to fix it:
 
 ```
 src/forms.ts:8:16  text(limit) cannot be precompiled
@@ -108,7 +108,7 @@ At 92 Types, the plugin added 1.0 s to Vite's production build, 1.3 s to esbuild
 
 ## How a validator differs
 
-A standalone validator validates, asserts and implements Standard Schema as the Type it replaces does. It doesn't compose or introspect: it lacks methods like `.and` and `.extends`, and its error messages say what failed without printing the value. The build fails wherever it sees your program rely on what a validator lacks. See [Validators](https://arktype.io/docs/precompile/validators).
+A standalone validator validates, asserts and implements Standard Schema as the Type it replaces does, with the same error messages. It doesn't compose or introspect: it lacks methods like `.and` and `.extends`. The build fails wherever it sees your program rely on what a validator lacks. See [Validators](https://arktype.io/docs/precompile/validators).
 
 If you need the whole Type API at runtime, build with `runtime: "arktype"`: arktype ships, and each Type the build could precompile skips compiling at runtime. [Dynamic vs Precompiled](https://arktype.io/docs/precompile/dynamic-vs-precompiled) compares the three side by side.
 
@@ -127,7 +127,7 @@ In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates 
 | Generates code at runtime | yes, unless [`jitless`](https://arktype.io/docs/configuration#jitless) | never | only for Types the build couldn't precompile |
 | Composing at runtime | the whole Type API | inside definitions, which the build evaluates | the whole Type API |
 | Introspection members | all | those the build sees read, or [`members`](https://arktype.io/docs/precompile/options#members) sets | all |
-| Error messages | say what was expected and what the value was | say what was expected, and any text configured for them | say what was expected and what the value was |
+| Error messages | arktype's | the same text, on issues [without `actual` or `propString`](https://arktype.io/docs/precompile/validators#errors) | arktype's |
 | [Locales](https://arktype.io/docs/i18n) | yes | no | yes |
 | Equal definitions | one Type | one validator, [but for a few cases](https://arktype.io/docs/precompile/dynamic-vs-precompiled#equal-definitions) | one Type |
 

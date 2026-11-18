@@ -1,0 +1,1968 @@
+/* the homepage's points, loaded after home.css, whose tokens and cards these
+   build on: the first screen's numbers, a point's layouts and its big
+   number, the drill-downs that hold its data (components/home/Drill.tsx),
+   and each point's figure. Every figure's markup is its final state;
+   html[data-motion], set before first paint, holds it at its start until
+   HomeEffects marks it [data-play]. */
+
+.home {
+	/* a block the parser leaves behind, before it goes: through a variable,
+	   since the CSS pipeline drops keyframes that use color-mix() */
+	--byte-idle: color-mix(in oklab, var(--ink-3) 46%, var(--bg));
+	--lit: color-mix(in oklab, var(--gold) 13%, transparent);
+	--lit-edge: color-mix(in oklab, var(--gold) 70%, transparent);
+	--add: color-mix(in oklab, var(--teal) 13%, transparent);
+	--panel: linear-gradient(
+		180deg,
+		color-mix(in oklab, var(--surface) 90%, var(--tint) 10%),
+		var(--surface) 55%
+	);
+
+	/* ---------- the first screen: the claim, then its three numbers ---------- */
+	.hero-stats {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0 40px;
+		margin: 40px 0 0;
+	}
+	.hero-stat {
+		display: grid;
+		justify-items: start;
+		align-content: start;
+		min-width: 0;
+		color: inherit;
+		text-decoration: none;
+		.stat-num {
+			font-size: clamp(4.6rem, 1.6rem + 7.4vw, 8.6rem);
+			transition: text-shadow var(--t-ui);
+		}
+		&:hover .stat-num {
+			text-shadow: 0 0 60px
+				color-mix(in oklab, var(--gold-glow) 60%, transparent);
+		}
+	}
+	.hero-stat-what {
+		margin-top: 14px;
+		font: 400 clamp(1.05rem, 0.9rem + 0.5vw, 1.35rem) / 1.25 var(--sans);
+		letter-spacing: -0.015em;
+		text-wrap: balance;
+		color: var(--ink-2);
+		b {
+			color: var(--ink);
+			font-weight: 700;
+		}
+	}
+	.hero-stat-scope {
+		margin-top: 6px;
+		font: 400 13px / 1.45 var(--mono);
+		color: var(--ink-2);
+		opacity: 0.86;
+	}
+	.hero .lede {
+		max-width: none;
+		margin: 36px 0 0;
+		color: var(--ink);
+	}
+	.hero .ctas {
+		align-items: center;
+		margin-top: 22px;
+	}
+	.hero-foot {
+		margin-left: 10px;
+		font: 400 13px / 1.5 var(--mono);
+		color: var(--ink-2);
+		code {
+			color: var(--gold);
+		}
+		a {
+			color: var(--sky);
+			white-space: nowrap;
+		}
+	}
+	/* the other first screen: the board's title as the headline */
+	.hero h1.hero-pick {
+		font-size: clamp(2.5rem, 1.1rem + 4.6vw, 5.4rem);
+		line-height: 0.98;
+		.phrase {
+			display: inline-block;
+			white-space: nowrap;
+		}
+		.phrase:last-child {
+			color: var(--gold);
+		}
+		s {
+			color: var(--ink-3);
+			text-decoration-thickness: 0.07em;
+		}
+	}
+
+	/* ---------- the board: the title, then the table that backs it ---------- */
+	.board > .p3 {
+		max-width: none;
+		margin-top: 32px;
+	}
+	.board > .drills {
+		margin-top: 18px;
+	}
+	.board.is-untitled {
+		margin-top: 56px;
+	}
+
+	/* ---------- a point: copy, figure, drill-downs ---------- */
+	.point {
+		scroll-margin-top: calc(var(--top) + 8px);
+	}
+	.point-main {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 40px;
+	}
+	.point-copy,
+	.point-figure,
+	.point-words {
+		min-width: 0;
+	}
+	/* copy beside the figure, both from the top */
+	.point:is(.is-split, .is-flip) .point-main {
+		grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+		gap: 64px;
+		align-items: start;
+	}
+	.point.is-flip .point-main {
+		grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+		.point-copy {
+			order: 1;
+		}
+	}
+	/* beside a figure taller than it, the copy stays with the reader */
+	@media (min-width: 1081px) {
+		.point:is(.is-split, .is-flip) .point-copy {
+			position: sticky;
+			top: calc(var(--top) + 36px);
+		}
+	}
+	/* a headline with its sentence beside it, over a figure the page's width */
+	.point.is-stack .point-words {
+		display: grid;
+		grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+		column-gap: 64px;
+		align-items: end;
+		h2 {
+			grid-row: span 2;
+			max-width: 14ch;
+			font-size: clamp(2.5rem, 1.5rem + 3.2vw, 4.4rem);
+			line-height: 0.98;
+			letter-spacing: -0.04em;
+		}
+		.deck {
+			margin-top: 0;
+		}
+	}
+	/* the number beside the headline, over a figure the page's width */
+	.point.is-band .point-copy {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		column-gap: 56px;
+		align-items: end;
+		.sec-label {
+			grid-column: 1 / -1;
+		}
+		.stat {
+			max-width: 22rem;
+		}
+		h2 {
+			margin-top: 0;
+		}
+	}
+	.point-ctas {
+		margin-top: 24px;
+	}
+	.deck code {
+		font-size: 0.88em;
+		color: var(--gold);
+	}
+	.point h2 .hl {
+		display: block;
+	}
+
+	/* the one number a point leads with; its headline steps down beside it */
+	.stat {
+		display: grid;
+		gap: 12px;
+		margin: 22px 0 0;
+	}
+	.stat-num {
+		justify-self: start;
+		font: 800 clamp(5rem, 3.2rem + 7vw, 9.5rem) / 0.82 var(--sans);
+		letter-spacing: -0.06em;
+		font-variant-numeric: tabular-nums;
+		color: var(--gold);
+		text-shadow: 0 0 70px color-mix(in oklab, var(--gold-glow) 32%, transparent);
+		white-space: nowrap;
+	}
+	.stat-unit {
+		font: 400 14px / 1.45 var(--mono);
+		color: var(--ink-2);
+	}
+	.stat + .point-words h2 {
+		margin-top: 30px;
+		font-size: clamp(1.7rem, 1.25rem + 1.3vw, 2.5rem);
+		line-height: 1.08;
+		letter-spacing: -0.028em;
+	}
+
+	/* what a point doesn't cover, said where the point is made */
+	.point-caveat {
+		margin-top: 28px;
+	}
+	.loses {
+		max-width: 96ch;
+		margin: 0;
+		padding: 2px 0 2px 16px;
+		border-left: 2px solid var(--copper);
+		font-size: 15.5px;
+		line-height: 1.55;
+		color: var(--ink-2);
+		b {
+			color: var(--ink);
+			font-weight: 700;
+		}
+	}
+
+	/* ---------- drill-downs: a row of chips, one panel ---------- */
+	.drills {
+		margin-top: 24px;
+	}
+	.point-caveat + .drills {
+		margin-top: 20px;
+	}
+	.drill-chips {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+		&::before {
+			content: "// more";
+			flex: none;
+			margin-right: 4px;
+			white-space: nowrap;
+			font: 400 13px / 1 var(--mono);
+			color: var(--ink-3);
+		}
+	}
+	.drill-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.7ch;
+		padding: 8px 13px 8px 11px;
+		border-radius: var(--r-pill);
+		border: 1px solid var(--line);
+		background: color-mix(in oklab, var(--surface) 60%, transparent);
+		font: 400 13px / 1.2 var(--mono);
+		color: var(--ink-2);
+		cursor: pointer;
+		transition:
+			color var(--t-micro),
+			border-color var(--t-micro),
+			background var(--t-micro);
+		&::before {
+			content: "+";
+			color: var(--copper);
+		}
+		&:hover {
+			color: var(--ink);
+			border-color: color-mix(in oklab, var(--ink) 30%, transparent);
+		}
+		&[aria-expanded="true"] {
+			color: var(--gold);
+			border-color: color-mix(in oklab, var(--gold) 55%, transparent);
+			background: color-mix(in oklab, var(--gold) 9%, transparent);
+			&::before {
+				content: "−";
+				color: inherit;
+			}
+		}
+	}
+	.drill-link {
+		flex: none;
+		margin-left: 6px;
+		font: 400 13px / 1.2 var(--mono);
+		color: var(--sky);
+		white-space: nowrap;
+	}
+	.loses[id] {
+		scroll-margin-top: calc(var(--top) + 40vh);
+	}
+	/* closed by an attribute of its own: Tailwind's base layer hides [hidden]
+	   with !important, which the page without scripts couldn't undo */
+	.drill-panel[data-closed] {
+		display: none;
+	}
+	.drill-panel {
+		margin-top: 14px;
+		padding: 26px 28px 30px;
+		border-radius: var(--r-lg);
+		border: 1px solid var(--rule);
+		background: var(--panel);
+		scroll-margin-top: calc(var(--top) + 20px);
+		[id] {
+			scroll-margin-top: calc(var(--top) + 20px);
+		}
+		h3 {
+			font: 700 17px / 1.3 var(--sans);
+			letter-spacing: -0.01em;
+		}
+		.board-note:first-of-type {
+			margin-top: 14px;
+		}
+		.board-note + .board-note {
+			margin-top: 10px;
+		}
+		.sides,
+		.proof,
+		.pair2,
+		.figs,
+		.examples,
+		.guide {
+			margin-top: 22px;
+		}
+		.bench {
+			margin-top: 8px;
+		}
+	}
+	/* what the panel concludes, before any of its data */
+	.drill-verdict {
+		max-width: 70ch;
+		margin: 0;
+		font: 600 clamp(1.1rem, 1rem + 0.4vw, 1.3rem) / 1.35 var(--sans);
+		letter-spacing: -0.015em;
+		color: var(--ink);
+		code {
+			font-size: 0.88em;
+			color: var(--gold);
+		}
+	}
+	.drill-p {
+		max-width: 78ch;
+		margin: 14px 0 0;
+		font-size: 15.5px;
+		line-height: 1.6;
+		color: var(--ink-2);
+		code {
+			font-size: 0.88em;
+			color: var(--gold);
+		}
+		b {
+			color: var(--teal);
+			font-weight: 700;
+		}
+	}
+	.drill-list {
+		max-width: 78ch;
+		margin: 12px 0 0;
+		padding-left: 1.2em;
+		font-size: 15.5px;
+		line-height: 1.6;
+		color: var(--ink-2);
+		li + li {
+			margin-top: 8px;
+		}
+		li::marker {
+			color: var(--copper);
+		}
+	}
+	/* a board card on its own, in a drill-down */
+	.card.is-solo {
+		display: block;
+		max-width: 720px;
+		margin: 18px 0 0;
+		&:hover {
+			translate: none;
+			border-color: var(--rule);
+			box-shadow: var(--shadow-card);
+		}
+		.card-margin {
+			margin-top: 0;
+		}
+		&.is-size .race {
+			margin-top: 0;
+			padding-top: 0;
+			border-top: 0;
+		}
+	}
+
+	/* ---------- figures: one panel, one caption ---------- */
+	.count,
+	.boot,
+	.bytes {
+		margin: 0;
+		padding: 22px 26px 18px;
+		border-radius: var(--r-lg);
+		border: 1px solid var(--rule);
+		background: var(--panel);
+		box-shadow: var(--shadow-card);
+		figcaption {
+			margin-top: 20px;
+			padding-top: 14px;
+			border-top: 1px dashed var(--rule-soft);
+			font: 400 13px / 1.5 var(--mono);
+			color: var(--ink-2);
+			a {
+				color: var(--sky);
+			}
+		}
+		ol {
+			margin: 0;
+			padding: 0;
+			list-style: none;
+		}
+	}
+	.count-head,
+	.boot-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		min-height: 28px;
+		margin-bottom: 18px;
+		font: 400 13px / 1.3 var(--mono);
+		color: var(--ink-2);
+		.p {
+			color: var(--copper);
+		}
+	}
+	:is(.count-toggle, .boot-replay) {
+		flex: none;
+		padding: 4px 11px;
+		border-radius: var(--r-pill);
+		border: 1px solid var(--line);
+		background: none;
+		font: inherit;
+		color: var(--ink-2);
+		cursor: pointer;
+		transition:
+			color var(--t-micro),
+			border-color var(--t-micro);
+		&:hover {
+			color: var(--ink);
+			border-color: color-mix(in oklab, var(--ink) 28%, transparent);
+		}
+	}
+	/* over the lanes' counts, which it names */
+	.boot-unit {
+		margin-left: auto;
+		color: var(--ink-2);
+	}
+	/* shown once something is running: until then there is nothing to stop */
+	.count:not([data-play]) .count-toggle,
+	.boot:not([data-play]) .boot-replay {
+		visibility: hidden;
+	}
+
+	/* ---------- 03: validations, counted ---------- */
+	.count ol {
+		display: grid;
+	}
+	.count-lane {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-areas:
+			"name num"
+			"x num"
+			"bar bar";
+		align-items: end;
+		column-gap: 16px;
+		padding: 12px 0 13px;
+		font: 400 13px / 1.3 var(--mono);
+		color: var(--ink-2);
+		& + & {
+			border-top: 1px solid var(--rule-soft);
+		}
+	}
+	.count-name {
+		grid-area: name;
+		font: 600 15px / 1.2 var(--sans);
+		color: var(--ink);
+	}
+	.count-x {
+		grid-area: x;
+		margin-top: 3px;
+	}
+	.count-num {
+		grid-area: num;
+		min-width: 4ch;
+		font: 700 clamp(1.7rem, 1.4rem + 0.9vw, 2.3rem) / 1 var(--sans);
+		letter-spacing: -0.035em;
+		font-variant-numeric: tabular-nums;
+		text-align: right;
+		color: var(--ink-2);
+	}
+	/* each library's share of ArkType's count, which is the same at any moment */
+	.count-stream {
+		grid-area: bar;
+		height: 4px;
+		margin-top: 10px;
+		border-radius: 2px;
+		background: linear-gradient(var(--ink-3), var(--ink-3)) no-repeat 0 0 /
+			max(3px, calc(100% / var(--ratio))) 100%
+			color-mix(in oklab, var(--ink) 5%, transparent);
+	}
+	.count-lane.is-ours {
+		padding-top: 2px;
+		.count-name {
+			font-size: 17px;
+		}
+		.count-x {
+			color: var(--gold);
+		}
+		.count-num {
+			font-size: clamp(3.2rem, 2.4rem + 2.6vw, 4.8rem);
+			font-weight: 800;
+			letter-spacing: -0.05em;
+			line-height: 0.9;
+			color: var(--gold);
+			text-shadow: 0 0 50px
+				color-mix(in oklab, var(--gold-glow) 34%, transparent);
+		}
+		.count-stream {
+			background: var(--gold-fill);
+			box-shadow: 0 0 12px 0
+				color-mix(in oklab, var(--gold-glow) 55%, transparent);
+		}
+	}
+
+	/* ---------- 05: a boot log ---------- */
+	.boot ol {
+		display: grid;
+		gap: 14px;
+	}
+	.boot-lane {
+		display: grid;
+		grid-template-columns: 14ch minmax(0, 1fr) 8ch;
+		grid-template-areas:
+			"name status val"
+			"track track track";
+		align-items: baseline;
+		gap: 7px 12px;
+		font: 400 13.5px / 1.25 var(--mono);
+		color: var(--ink-2);
+	}
+	.boot-name {
+		grid-area: name;
+		color: var(--ink);
+	}
+	.boot-status {
+		grid-area: status;
+		white-space: nowrap;
+	}
+	/* shown in place of "first validation" while the library is still starting */
+	.boot-run {
+		display: none;
+		color: var(--ink-3);
+		&::after {
+			content: "…";
+		}
+	}
+	.boot-done {
+		color: var(--teal);
+	}
+	.boot-val {
+		grid-area: val;
+		text-align: right;
+		font-variant-numeric: tabular-nums;
+		color: var(--ink);
+	}
+	/* cut into ticks of a million instructions each */
+	.boot-track {
+		--tick: calc(100% / var(--max));
+		grid-area: track;
+		position: relative;
+		height: 12px;
+		background: color-mix(in oklab, var(--ink) 5%, transparent);
+		mask: repeating-linear-gradient(
+			90deg,
+			#000 0 calc(var(--tick) - 2px),
+			transparent calc(var(--tick) - 2px) var(--tick)
+		);
+	}
+	.boot-bar {
+		position: absolute;
+		inset: 0 auto 0 0;
+		width: max(3px, calc(var(--v) / var(--max) * 100%));
+		background: var(--ink-3);
+		transform-origin: left;
+	}
+	/* where ArkType finished, on every lane still running past it */
+	.boot-lane {
+		position: relative;
+	}
+	/* out of the lane's flow, centred on its track, so it adds no height to it */
+	.boot-lane:not(.is-ours)::after {
+		content: "";
+		position: absolute;
+		bottom: -5px;
+		left: calc(var(--ours) / var(--max) * 100% - 1px);
+		width: 2px;
+		height: 22px;
+		border-radius: 1px;
+		background: var(--gold);
+		box-shadow: 0 0 8px 0 color-mix(in oklab, var(--gold-glow) 70%, transparent);
+		pointer-events: none;
+		transition: opacity 0.3s;
+	}
+	.boot-key {
+		display: inline-block;
+		width: 2px;
+		height: 1.1em;
+		margin-right: 0.6ch;
+		vertical-align: -0.2em;
+		border-radius: 1px;
+		background: var(--gold);
+	}
+	.boot-lane.is-ours {
+		.boot-name {
+			font-weight: 700;
+			color: var(--gold);
+		}
+		.boot-val {
+			color: var(--gold);
+		}
+		.boot-bar {
+			background: var(--gold-fill);
+			box-shadow: 0 0 10px 0
+				color-mix(in oklab, var(--gold-glow) 60%, transparent);
+		}
+	}
+
+	/* ---------- 04: bytes, a block each, every library at one scale ---------- */
+	.byte-rows {
+		display: grid;
+		gap: 18px;
+	}
+	.byte-row {
+		display: grid;
+		grid-template-columns: 9ch 9ch minmax(0, 1fr);
+		grid-template-areas: "name size grid";
+		align-items: baseline;
+		column-gap: 14px;
+		font: 400 13.5px / 1.25 var(--mono);
+		color: var(--ink-2);
+	}
+	.byte-name {
+		grid-area: name;
+		color: var(--ink);
+	}
+	.byte-size {
+		grid-area: size;
+		text-align: right;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+		color: var(--ink);
+	}
+	.byte-grid {
+		--b: 10px;
+		grid-area: grid;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, var(--b));
+		gap: 3px;
+	}
+	.byte {
+		width: var(--b);
+		height: var(--b);
+		border-radius: 2px;
+		background: var(--byte-idle);
+	}
+	.byte-row.is-ours {
+		grid-template-areas:
+			"head head head"
+			". . grid";
+		row-gap: 14px;
+		padding-bottom: 22px;
+		border-bottom: 1px dashed var(--rule-soft);
+		.byte-name {
+			font: 700 17px / 1.2 var(--sans);
+		}
+		.byte-size {
+			font: 800 clamp(1.9rem, 1.5rem + 1.2vw, 2.7rem) / 1 var(--sans);
+			letter-spacing: -0.04em;
+			color: var(--gold);
+			transition: color 0.4s var(--ease-out);
+		}
+	}
+	.byte-head {
+		grid-area: head;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 4px 16px;
+	}
+	.bytes-num {
+		display: inline-block;
+		text-align: right;
+	}
+	.byte-state {
+		display: grid;
+		> * {
+			grid-area: 1 / 1;
+			transition: opacity 0.3s var(--ease-out);
+		}
+	}
+	.byte-before {
+		opacity: 0;
+	}
+	.byte-after {
+		color: var(--ink-2);
+	}
+	/* one row tall, as it ends: what the parser adds spills over the rows
+	   below, which arrive only once it has gone */
+	.byte-grid.is-ours {
+		height: var(--b);
+		grid-auto-rows: var(--b);
+	}
+	.byte.is-kept {
+		background: var(--gold-fill);
+		box-shadow: 0 0 10px 0
+			color-mix(in oklab, var(--gold-glow) 60%, transparent);
+		transition:
+			background 0.4s var(--ease-out),
+			box-shadow 0.4s var(--ease-out);
+	}
+	.byte.is-parser {
+		display: none;
+	}
+
+	/* the size drill-down: bytes against Types */
+	.scale {
+		max-width: 900px;
+		margin: 16px 0 0;
+		figcaption {
+			margin-top: 14px;
+			font: 400 13px / 1.55 var(--mono);
+			color: var(--ink-2);
+		}
+	}
+	.scale-title {
+		margin: 0 0 14px;
+	}
+	.scale-scope {
+		max-width: 78ch;
+		margin: 20px 0 0;
+		font-size: 14.5px;
+		line-height: 1.55;
+		color: var(--ink-2);
+		b {
+			color: var(--ink);
+			font-weight: 600;
+		}
+	}
+	.scale-key {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px 20px;
+		font: 400 13px / 1.4 var(--mono);
+		color: var(--ink-2);
+		> span {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+		}
+		i {
+			width: 22px;
+			border-top: 2px solid var(--ink-3);
+		}
+	}
+	.scale-key .is-default i,
+	.scale-key .is-smallest i,
+	.scale-key .is-dynamic i {
+		border-top-color: var(--gold-fill);
+	}
+	.scale-key .is-dashed i {
+		border-top-style: dashed;
+	}
+	.scale-key .is-dotted i {
+		border-top-style: dotted;
+	}
+	.scale-plot {
+		position: relative;
+		height: 340px;
+		margin: 22px 178px 34px 58px;
+		svg {
+			position: absolute;
+			inset: 0;
+			width: 100%;
+			height: 100%;
+			overflow: visible;
+		}
+		line {
+			stroke: color-mix(in oklab, var(--ink) 8%, transparent);
+			stroke-width: 1;
+			vector-effect: non-scaling-stroke;
+		}
+		polyline {
+			fill: none;
+			stroke: var(--ink-3);
+			stroke-width: 2;
+			stroke-linejoin: round;
+			vector-effect: non-scaling-stroke;
+			&:is(.is-default, .is-smallest, .is-dynamic) {
+				stroke: var(--gold-fill);
+			}
+			&.is-dashed {
+				stroke-dasharray: 6 5;
+			}
+			&.is-dotted {
+				stroke-dasharray: 1 6;
+				stroke-linecap: round;
+				stroke-width: 2.5;
+			}
+		}
+	}
+	.scale-dot {
+		position: absolute;
+		left: var(--x);
+		top: var(--y);
+		width: 8px;
+		height: 8px;
+		margin: -4px 0 0 -4px;
+		border-radius: 50%;
+		background: var(--ink-3);
+		box-shadow: 0 0 0 2px var(--bg);
+		&:is(.is-default, .is-smallest, .is-dynamic) {
+			background: var(--gold-fill);
+		}
+	}
+	.scale-end,
+	.scale-x,
+	.scale-y {
+		position: absolute;
+		font: 400 11px / 1 var(--mono);
+		color: var(--ink-3);
+		white-space: nowrap;
+	}
+	.scale-end {
+		left: calc(100% + 14px);
+		top: var(--y);
+		translate: 0 -50%;
+		font-size: 12px;
+		color: var(--ink-2);
+		&:is(.is-default, .is-smallest, .is-dynamic) {
+			color: var(--ink);
+		}
+	}
+	.scale-y {
+		right: calc(100% + 10px);
+		top: var(--y);
+		translate: 0 -50%;
+	}
+	.scale-x {
+		top: calc(100% + 10px);
+		left: var(--x);
+		translate: -50% 0;
+	}
+	.scale-axis {
+		margin: 0 0 18px;
+		font: 400 13px / 1.4 var(--mono);
+		color: var(--ink-2);
+	}
+	.scale-rows {
+		overflow-x: auto;
+	}
+	.scale-table {
+		width: 100%;
+		border-collapse: collapse;
+		font: 400 13px / 1.3 var(--mono);
+		font-variant-numeric: tabular-nums;
+		th,
+		td {
+			padding: 9px 10px;
+			text-align: right;
+			white-space: nowrap;
+		}
+		:is(th, td):first-child {
+			padding-left: 0;
+			text-align: left;
+		}
+		thead th {
+			font-size: 13px;
+			font-weight: 400;
+			color: var(--ink-2);
+		}
+		tbody tr {
+			border-top: 1px solid var(--rule-soft);
+		}
+		tbody th {
+			font-weight: 400;
+			color: var(--ink-2);
+		}
+		td {
+			color: var(--ink-2);
+		}
+		tr:is(.is-default, .is-smallest, .is-dynamic) {
+			th {
+				color: var(--gold);
+			}
+			td {
+				color: var(--ink);
+			}
+		}
+	}
+	.cutoffs {
+		margin: 14px 0 0;
+		padding: 0;
+		list-style: none;
+		border-top: 1px solid var(--rule-soft);
+		li {
+			display: grid;
+			grid-template-columns: minmax(0, 23rem) minmax(0, 1fr);
+			gap: 2px 20px;
+			padding: 9px 0;
+			border-bottom: 1px solid var(--rule-soft);
+			font-size: 14.5px;
+			color: var(--ink-2);
+		}
+		b {
+			color: var(--ink);
+			font-weight: 600;
+		}
+		.cut-where {
+			font: 400 13px / 1.5 var(--mono);
+		}
+	}
+
+	/* ---------- 02: the plugin, a definition, and what the build makes of it ---------- */
+	.compile {
+		display: grid;
+		grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+		grid-template-areas:
+			"config config"
+			"in out";
+		gap: 18px 22px;
+		.code-card {
+			display: flex;
+			flex-direction: column;
+		}
+		.code-card pre.shiki {
+			font-size: 14px;
+			line-height: 1.75;
+		}
+		.code-card > figcaption {
+			color: var(--ink-2);
+		}
+		.code-card > footer {
+			font-size: 13px;
+			color: var(--ink-2);
+			code {
+				color: var(--gold);
+			}
+		}
+	}
+	/* step 1 is two lines, so it is a strip: its name, then the lines, in a row */
+	.compile .compile-config {
+		grid-area: config;
+		flex-direction: row;
+		overflow: hidden;
+		> figcaption {
+			flex: none;
+			gap: 20px;
+			border-bottom: 0;
+			border-right: 1px solid var(--rule-soft);
+		}
+		.diff {
+			flex: 1;
+			display: flex;
+			flex-wrap: wrap;
+			padding: 0;
+			> span {
+				flex: 1 1 auto;
+				display: flex;
+				align-items: center;
+				padding-block: 10px;
+			}
+		}
+	}
+	.compile-in {
+		grid-area: in;
+		overflow: hidden;
+	}
+	.compile-out {
+		grid-area: out;
+		> footer {
+			flex-wrap: wrap;
+			row-gap: 4px;
+		}
+	}
+	.compile-source,
+	.compile-result {
+		flex: 1;
+		min-width: 0;
+	}
+	/* the definition is the reader's to change: a press on it starts the precompiler.
+	   It and the field that replaces it hold one more line than the definition has,
+	   so neither starting to edit nor adding a field moves what is under the card. */
+	.compile-in {
+		--edit-fs: 14px;
+		--edit-lh: 1.75;
+		--edit-h: calc(var(--rows) * var(--edit-lh) * var(--edit-fs) + 32px);
+	}
+	.compile-source {
+		cursor: text;
+		min-height: var(--edit-h);
+	}
+	/* at the card's foot, however tall its neighbour makes it */
+	.compile-in > footer {
+		flex-wrap: wrap;
+		margin-top: auto;
+	}
+	/* edits to try, one press each */
+	.compile-tries {
+		display: inline-flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+	.compile-try {
+		padding: 3px 10px;
+		border-radius: var(--r-pill);
+		border: 1px solid var(--line);
+		background: transparent;
+		font: inherit;
+		color: var(--ink-2);
+		cursor: pointer;
+		transition:
+			color var(--t-micro),
+			border-color var(--t-micro);
+		&:hover {
+			color: var(--ink);
+			border-color: color-mix(in oklab, var(--ink) 30%, transparent);
+		}
+		&[aria-pressed="true"] {
+			color: var(--gold);
+			border-color: color-mix(in oklab, var(--gold) 55%, transparent);
+		}
+	}
+	.compile-file {
+		display: inline-flex;
+		align-items: center;
+		gap: 12px;
+	}
+	.compile-act {
+		padding: 3px 10px;
+		border-radius: var(--r-pill);
+		border: 1px solid color-mix(in oklab, var(--gold) 45%, transparent);
+		background: color-mix(in oklab, var(--gold) 8%, transparent);
+		font: inherit;
+		color: var(--gold);
+		cursor: pointer;
+		transition: background var(--t-micro);
+		&:hover {
+			background: color-mix(in oklab, var(--gold) 16%, transparent);
+		}
+	}
+	/* the field that replaces the highlighted definition, in its place and its metrics */
+	.compile-edit {
+		flex: none;
+		display: block;
+		box-sizing: border-box;
+		width: 100%;
+		height: var(--edit-h);
+		margin: 0;
+		padding: 16px 20px;
+		border: 0;
+		outline: 0;
+		resize: none;
+		background: transparent;
+		font: 400 var(--edit-fs) / var(--edit-lh) var(--mono);
+		font-variant-ligatures: none;
+		tab-size: 2;
+		white-space: pre;
+		overflow: auto;
+		color: var(--ink);
+		caret-color: var(--gold);
+	}
+	.compile-in[data-editing] {
+		border-color: color-mix(in oklab, var(--gold) 45%, transparent);
+	}
+	/* what the precompiler wrote: the Type's own check at the figure's size */
+	.compile-real {
+		margin: 0;
+		padding: 22px 24px 10px;
+		font: 400 clamp(13.5px, 0.6rem + 0.5vw, 16px) / 1.8 var(--mono);
+		font-variant-ligatures: none;
+		tab-size: 2;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		color: var(--ink);
+	}
+	/* a long line wraps under itself, past its own indent, and never runs off the card */
+	.js-line {
+		display: block;
+		padding-left: 6ch;
+		text-indent: -6ch;
+	}
+	/* the checks that one calls, a press away */
+	.compile-helpers {
+		> summary {
+			display: flex;
+			align-items: center;
+			gap: 1ch;
+			width: fit-content;
+			margin: 0 14px 12px;
+			padding: 6px 10px;
+			border-radius: var(--r-pill);
+			font: 400 13px / 1.3 var(--mono);
+			color: var(--gold);
+			cursor: pointer;
+			list-style: none;
+			&::-webkit-details-marker {
+				display: none;
+			}
+			&::after {
+				content: "▸";
+				transition: rotate var(--t-micro);
+			}
+			&:hover {
+				background: color-mix(in oklab, var(--gold) 9%, transparent);
+			}
+		}
+		&[open] > summary::after {
+			rotate: 90deg;
+		}
+		.compile-real {
+			padding-block: 4px 14px;
+			font-size: 13px;
+			line-height: 1.65;
+			color: var(--ink-2);
+		}
+	}
+	.compile-fail {
+		margin: 0;
+		padding: 22px 24px;
+		font: 400 14px / 1.6 var(--mono);
+		color: var(--red-ink);
+		overflow-wrap: anywhere;
+	}
+	.compile-result {
+		transition: opacity 0.2s 0.25s;
+	}
+	/* a fixed window onto whatever was written, so typing never moves the page */
+	.compile-out[data-live] .compile-result {
+		height: 27rem;
+		flex: none;
+		overflow: auto;
+	}
+	.js-str {
+		color: var(--teal-ink);
+	}
+	.js-kw {
+		color: var(--copper);
+	}
+	.js-num {
+		color: var(--sky);
+	}
+	/* the checks shown are for an earlier definition; dimmed only if the answer is slow */
+	.compile-out[data-pending] .compile-result {
+		opacity: 0.55;
+	}
+	/* a stage of the build, numbered in the order it plays */
+	.compile-step {
+		display: inline-flex;
+		align-items: center;
+		gap: 9px;
+		color: var(--ink);
+		b {
+			display: inline-grid;
+			place-items: center;
+			width: 20px;
+			height: 20px;
+			border-radius: 50%;
+			background: var(--gold-fill);
+			color: var(--on-gold) !important;
+			font: 700 11.5px / 1 var(--mono) !important;
+		}
+	}
+	.diff {
+		display: grid;
+		margin: 0;
+		padding: 14px 0;
+		font: 400 13.5px / 1.75 var(--mono);
+		font-variant-ligatures: none;
+		tab-size: 2;
+		color: var(--ink-2);
+		overflow-x: auto;
+		> span {
+			padding-right: 20px;
+			white-space: pre;
+		}
+	}
+	.diff-mark {
+		display: inline-block;
+		width: 4ch;
+		text-align: center;
+		color: var(--teal);
+		user-select: none;
+	}
+	.diff-add {
+		background: var(--add);
+		color: var(--ink);
+	}
+	/* the band of light that reads the source, top to bottom */
+	.compile-scan {
+		position: absolute;
+		inset: 44px 0 0;
+		overflow: hidden;
+		pointer-events: none;
+		&::before {
+			content: "";
+			position: absolute;
+			inset: 0;
+			opacity: 0;
+			background: linear-gradient(
+					180deg,
+					transparent,
+					color-mix(in oklab, var(--gold) 16%, transparent) 88%,
+					var(--gold)
+				)
+				top / 100% 45% no-repeat;
+		}
+	}
+
+	/* ---------- one card, one file, before and after ---------- */
+	.point .moves {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 12px;
+		margin-top: 28px;
+	}
+	.morph-stack {
+		position: relative;
+		display: grid;
+	}
+	/* the new file shows above the wipe line and the old one below it, so the two never overlap */
+	.morph-pane {
+		position: relative;
+		grid-area: 1 / 1;
+		min-width: 0;
+		transition: clip-path 0.55s var(--ease-out);
+		&.is-ark {
+			clip-path: inset(0);
+		}
+		&.is-zod {
+			clip-path: inset(100% 0 0 0);
+		}
+	}
+	.morph:has(input[value="zod"]:checked) .morph-pane {
+		&.is-ark {
+			clip-path: inset(0 0 100% 0);
+		}
+		&.is-zod {
+			clip-path: inset(0);
+		}
+	}
+	.morph-line {
+		position: absolute;
+		inset: 0 0 auto;
+		height: 2px;
+		opacity: 0;
+		pointer-events: none;
+		background: linear-gradient(90deg, transparent, var(--gold), transparent);
+	}
+	.morph-tabs {
+		display: inline-flex;
+		padding: 2px;
+		border-radius: var(--r-pill);
+		border: 1px solid var(--line);
+		label {
+			position: relative;
+			cursor: pointer;
+		}
+		input {
+			position: absolute;
+			inset: 0;
+			margin: 0;
+			opacity: 0;
+			cursor: pointer;
+		}
+		span {
+			display: block;
+			padding: 4px 11px;
+			border-radius: var(--r-pill);
+			font: 400 13px / 1.3 var(--mono);
+			color: var(--ink-2);
+			transition:
+				background var(--t-micro),
+				color var(--t-micro);
+		}
+		input:checked + span {
+			background: color-mix(in oklab, var(--gold) 14%, transparent);
+			color: var(--gold);
+		}
+		input:focus-visible + span {
+			outline: 2px solid var(--sky);
+			outline-offset: 1px;
+		}
+	}
+
+	/* ---------- 06: the interface, then the Type, then a bad payload ---------- */
+	.write-pair {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 22px;
+	}
+	.mirror {
+		--code-fs: 14.5px;
+		--code-lh: 1.8;
+		--pre-y: 20px;
+		.morph-pane > pre.shiki {
+			padding: var(--pre-y) 22px;
+			font-size: var(--code-fs);
+			line-height: var(--code-lh);
+		}
+	}
+	/* over the two lines that say more than the interface could: the third and fourth */
+	.mirror-lit {
+		position: absolute;
+		inset: calc(var(--pre-y) + 2 * var(--code-fs) * var(--code-lh)) 0 auto;
+		height: calc(2 * var(--code-fs) * var(--code-lh));
+		background: var(--lit);
+		box-shadow: inset 2px 0 0 var(--lit-edge);
+		pointer-events: none;
+	}
+	.mirror:has(input[value="zod"]:checked) .mirror-key {
+		opacity: 0.4;
+	}
+	.mirror-run {
+		padding: 14px 22px 18px;
+		border-top: 1px solid var(--rule-soft);
+	}
+	.mirror-note {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		margin: 0;
+		font: 400 13px / 1.4 var(--mono);
+		color: var(--ink-2);
+	}
+	.mirror-key {
+		flex: none;
+		width: 14px;
+		height: 14px;
+		border-radius: 2px;
+		/* the lit lines' gold, at a strength a 14px square can carry */
+		background: color-mix(in oklab, var(--gold) 34%, transparent);
+		box-shadow: inset 3px 0 0 var(--gold);
+		transition: opacity var(--t-ui);
+	}
+	.mirror-out {
+		display: grid;
+		gap: 2px;
+		margin: 12px 0 0;
+		font: 400 13px / 1.6 var(--mono);
+		font-variant-ligatures: none;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		color: var(--ink);
+	}
+	.mirror-err {
+		color: var(--red-ink);
+		&::before {
+			content: "✗ ";
+		}
+	}
+	.works {
+		margin-top: 28px;
+	}
+
+	/* ---------- 07: the transcript's one beat ---------- */
+	.point .term[data-term] {
+		min-width: 0;
+	}
+	.term-foot {
+		padding: 11px 20px 12px;
+		border-top: 1px solid var(--line);
+		font: 400 13px / 1.4 var(--mono);
+		color: var(--ink-2);
+	}
+	.term-body {
+		position: relative;
+	}
+	.fix-target {
+		border-radius: 3px;
+		transition:
+			background 0.5s var(--ease-out),
+			box-shadow 0.5s var(--ease-out);
+		&.is-unset {
+			visibility: hidden;
+		}
+		&.is-landed {
+			background: color-mix(in oklab, var(--teal) 26%, transparent);
+			box-shadow: 0 0 0 3px color-mix(in oklab, var(--teal) 26%, transparent);
+		}
+	}
+	.t-err mark.fix.is-lifted {
+		color: transparent;
+	}
+	/* the suggested name, on its way from the error to the diff */
+	.fix-fly {
+		position: absolute;
+		z-index: 1;
+		padding: 0 3px;
+		margin-left: -3px;
+		border-radius: 3px;
+		background: var(--teal);
+		color: var(--bg);
+		font-weight: 600;
+		white-space: nowrap;
+		pointer-events: none;
+		box-shadow: 0 6px 22px color-mix(in oklab, var(--teal) 45%, transparent);
+	}
+
+	/* ---------- the closer: two ways in ---------- */
+	.closer-go {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: stretch;
+		gap: 12px;
+		margin-top: 32px;
+	}
+}
+
+@keyframes boot-grow {
+	from {
+		scale: 0 1;
+	}
+}
+@keyframes byte-leave {
+	to {
+		scale: 0.2;
+		opacity: 0;
+	}
+}
+@keyframes row-in {
+	from {
+		opacity: 0;
+		translate: 0 6px;
+	}
+}
+@keyframes scan-down {
+	from {
+		translate: 0 -45%;
+		opacity: 1;
+	}
+	85% {
+		opacity: 1;
+	}
+	to {
+		translate: 0 100%;
+		opacity: 0;
+	}
+}
+@keyframes light-up {
+	from {
+		opacity: 0.32;
+	}
+}
+@keyframes step-on {
+	from {
+		background: transparent;
+		color: var(--ink-3);
+		box-shadow: inset 0 0 0 1px var(--ink-3);
+	}
+	60% {
+		scale: 1.25;
+	}
+}
+@keyframes add-in {
+	from {
+		opacity: 0;
+		translate: -8px 0;
+	}
+}
+@keyframes wipe-ark {
+	from {
+		clip-path: inset(0 0 100% 0);
+	}
+}
+@keyframes wipe-zod {
+	from {
+		clip-path: inset(0);
+	}
+}
+@keyframes wipe-line {
+	from {
+		top: 0;
+		opacity: 1;
+	}
+	92% {
+		opacity: 1;
+	}
+	to {
+		top: 100%;
+		opacity: 0;
+	}
+}
+@keyframes lit-in {
+	from {
+		opacity: 0;
+	}
+}
+@keyframes stat-in {
+	from {
+		opacity: 0;
+		translate: 0 10px;
+	}
+}
+@keyframes act-pulse {
+	50% {
+		box-shadow: 0 0 0 5px var(--lit);
+	}
+}
+@keyframes panel-in {
+	from {
+		opacity: 0;
+		translate: 0 -6px;
+	}
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.home .drill-panel:not([data-closed]) {
+		animation: panel-in 0.28s var(--ease-out);
+	}
+	:root[data-motion] .home {
+		/* a number waits for itself to be on screen, and for nothing else */
+		.stat-num[data-to]:not([data-in]) {
+			opacity: 0;
+		}
+		.stat-num[data-in] {
+			animation: stat-in 0.5s var(--ease-pop) both;
+		}
+
+		/* each figure at its start, until it is seen */
+		[data-stage]:not([data-play]) {
+			.boot-bar {
+				scale: 0 1;
+			}
+			.boot-status,
+			.boot-val {
+				visibility: hidden;
+			}
+			.boot-lane::after {
+				opacity: 0;
+			}
+			&.compile {
+				.compile-step b {
+					background: transparent;
+					color: var(--ink-3) !important;
+					box-shadow: inset 0 0 0 1px var(--ink-3);
+				}
+				.diff-add {
+					opacity: 0;
+				}
+				/* what ships is there from the first frame, unlit until the definition is read */
+				.compile-result,
+				.compile-out > footer {
+					opacity: 0.32;
+				}
+			}
+			&.morph .morph-pane.is-ark {
+				clip-path: inset(0 0 100% 0);
+			}
+			&.morph .morph-pane.is-zod {
+				clip-path: inset(0);
+			}
+			.mirror-lit,
+			.mirror-run {
+				opacity: 0;
+			}
+		}
+
+		.boot[data-play] {
+			.boot-bar {
+				animation: boot-grow var(--at) linear 0.3s both;
+			}
+			.boot-lane:not([data-done]) {
+				.boot-run {
+					display: inline;
+				}
+				.boot-done {
+					display: none;
+				}
+				.boot-val {
+					color: var(--ink-3);
+				}
+			}
+			.boot-lane[data-done] .boot-done {
+				animation: row-in 0.3s var(--ease-out) both;
+			}
+			/* the mark is drawn the moment ArkType's lane finishes */
+			.boot-lane.is-ours:not([data-done]) ~ .boot-lane::after {
+				opacity: 0;
+			}
+		}
+
+		/* without precompile, in grey, until the parser's blocks have gone */
+		.bytes:not([data-done]) {
+			.byte.is-parser {
+				display: block;
+			}
+			.byte.is-kept {
+				background: var(--byte-idle);
+				box-shadow: none;
+			}
+			.byte-row.is-ours .byte-size {
+				color: var(--ink-2);
+			}
+			.byte-before {
+				opacity: 1;
+			}
+			.byte-after {
+				opacity: 0;
+			}
+			.byte-row:not(.is-ours) {
+				opacity: 0;
+			}
+		}
+		.bytes[data-play]:not([data-done]) .byte.is-parser {
+			animation: byte-leave 0.45s ease-in forwards;
+			animation-delay: calc(1s + var(--k) * 1.75s);
+		}
+		.bytes[data-done] .byte-row:not(.is-ours) {
+			animation: row-in 0.45s var(--ease-out) both;
+			animation-delay: calc(0.15s + var(--i) * 0.16s);
+		}
+
+		/* 1: the plugin. 2: the definition, read. 3: what ships, lit as the
+		   reading reaches it. Under two seconds, start to finish. */
+		.compile[data-play] {
+			.compile-config .compile-step b {
+				animation: step-on 0.35s var(--ease-pop) 0.1s both;
+			}
+			.diff-add {
+				animation: add-in 0.3s var(--ease-out) 0.2s both;
+				& ~ .diff-add {
+					animation-delay: 0.4s;
+				}
+			}
+			.compile-in .compile-step b {
+				animation: step-on 0.35s var(--ease-pop) 0.6s both;
+			}
+			.compile-scan::before {
+				animation: scan-down 0.75s cubic-bezier(0.5, 0, 0.5, 1) 0.7s both;
+			}
+			.compile-out .compile-step b {
+				animation: step-on 0.35s var(--ease-pop) 1.3s both;
+			}
+			.compile-result,
+			.compile-out > footer {
+				animation: light-up 0.4s ease-out 1.35s both;
+			}
+			/* the stages are done: the definition is the reader's now */
+			.compile-act {
+				animation: act-pulse 0.9s ease-in-out 2.2s 2;
+			}
+		}
+
+		.morph[data-play] {
+			.morph-pane.is-ark {
+				animation: wipe-ark 1.3s cubic-bezier(0.5, 0, 0.3, 1) 0.5s backwards;
+			}
+			.morph-pane.is-zod {
+				animation: wipe-zod 1.3s cubic-bezier(0.5, 0, 0.3, 1) 0.5s backwards;
+			}
+			.morph-line {
+				animation: wipe-line 1.3s cubic-bezier(0.5, 0, 0.3, 1) 0.5s both;
+			}
+			.mirror-lit {
+				animation: lit-in 0.5s ease-out 1.9s both;
+			}
+			.mirror-run {
+				animation: row-in 0.5s var(--ease-out) 2.5s both;
+			}
+		}
+	}
+}
+
+@media (max-width: 1080px) {
+	.home {
+		.point:is(.is-split, .is-flip) .point-main {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 36px;
+		}
+		.point.is-flip .point-main .point-copy {
+			order: 0;
+		}
+		.point.is-stack .point-words {
+			grid-template-columns: minmax(0, 1fr);
+			.deck {
+				margin-top: 18px;
+			}
+		}
+		.compile {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-areas: "config" "in" "out";
+		}
+		.write-pair {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		.hero-foot {
+			flex-basis: 100%;
+			margin-left: 0;
+		}
+	}
+}
+
+@media (max-width: 760px) {
+	.home {
+		/* a row each: the number, then what it is a number of */
+		.hero-stats {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 14px;
+			margin-top: 26px;
+		}
+		.hero-stat {
+			grid-template-columns: 5.4rem minmax(0, 1fr);
+			grid-template-areas:
+				"num what"
+				"num scope";
+			column-gap: 14px;
+			align-items: center;
+			align-content: center;
+			.stat-num {
+				grid-area: num;
+				font-size: 3.5rem;
+				line-height: 0.9;
+			}
+		}
+		.hero-stat-what {
+			grid-area: what;
+			align-self: end;
+			margin-top: 0;
+			font-size: 1.06rem;
+		}
+		.hero-stat-scope {
+			grid-area: scope;
+			align-self: start;
+			margin-top: 3px;
+			font-size: 13px;
+			line-height: 1.35;
+		}
+		.hero .lede {
+			margin-top: 26px;
+		}
+		.hero .ctas {
+			margin-top: 18px;
+		}
+		.board > .p3 {
+			margin-top: 24px;
+			padding: 18px 14px 14px;
+		}
+		/* four columns in a phone's width: the marks and gaps give way first */
+		.p3-table {
+			font-size: 12.5px;
+			th,
+			td {
+				padding: 10px 3px;
+			}
+			:is(th, td):first-child {
+				width: 23%;
+				padding-left: 8px;
+			}
+		}
+		.p3-cell {
+			gap: 4px;
+		}
+		.p3-table .p3-mark {
+			width: 14px;
+			height: 14px;
+			svg {
+				width: 9px;
+				height: 9px;
+			}
+		}
+		.point-main {
+			gap: 30px;
+		}
+		.point.is-band .point-copy {
+			grid-template-columns: minmax(0, 1fr);
+			h2 {
+				margin-top: 28px;
+			}
+		}
+		.point-caveat {
+			margin-top: 22px;
+		}
+		.loses {
+			font-size: 15px;
+		}
+		/* one row, scrolled sideways: stacked, four chips pushed every figure's
+		   data a screen away from the figure */
+		.drill-chips {
+			flex-wrap: nowrap;
+			margin-inline: calc(-1 * var(--gutter));
+			padding-inline: var(--gutter);
+			overflow-x: auto;
+			scrollbar-width: none;
+			/* the row runs off the screen: it fades at each edge that has more
+			   past it (HomeEffects names them), so a chip cut there reads as
+			   more to scroll to, not as a row that doesn't fit */
+			--fade-start: 0px;
+			--fade-end: 72px;
+			mask: linear-gradient(
+				90deg,
+				transparent,
+				#000 var(--fade-start),
+				#000 calc(100% - var(--fade-end)),
+				transparent
+			);
+			&[data-more]:not([data-more~="end"]) {
+				--fade-end: 0px;
+			}
+			&[data-more~="start"] {
+				--fade-start: 72px;
+			}
+			&::-webkit-scrollbar {
+				display: none;
+			}
+			&::after {
+				content: "";
+				flex: none;
+				width: 24px;
+			}
+		}
+		.drill-chip {
+			flex: none;
+			padding: 9px 12px 9px 10px;
+		}
+		.drill-panel {
+			padding: 20px 16px 22px;
+		}
+		/* a parse error wraps to three lines at this width: room for it, so the
+		   card doesn't grow under a reader who has scrolled on mid-ghost */
+		.verdict {
+			min-height: 4.5em;
+		}
+		.count,
+		.boot,
+		.bytes {
+			padding: 18px 16px 16px;
+		}
+		/* room for the running title's second line, so starting never moves the lanes */
+		.count-head {
+			align-items: flex-start;
+		}
+		.count-title {
+			min-height: 2lh;
+		}
+		/* the caption names the unit where the head has no room to */
+		.boot-unit {
+			display: none;
+		}
+		.boot-lane {
+			grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+			font-size: 13px;
+		}
+		.boot-status {
+			font-size: 12px;
+		}
+		.byte-grid {
+			--b: 8px;
+		}
+		.byte-row {
+			grid-template-columns: minmax(0, 1fr) auto;
+			grid-template-areas:
+				"name size"
+				"grid grid";
+			row-gap: 9px;
+		}
+		.byte-row.is-ours {
+			grid-template-areas:
+				"head head"
+				"grid grid";
+		}
+		.scale-plot {
+			height: 260px;
+			margin: 22px 22px 34px 50px;
+		}
+		.scale-end,
+		.scale-x.is-tight {
+			display: none;
+		}
+		/* three columns of numbers beside a label that may wrap, so none is off the card */
+		.scale-table.is-preset {
+			font-size: 12.5px;
+			th,
+			td {
+				padding: 9px 6px;
+			}
+			:is(th, td):first-child {
+				white-space: normal;
+			}
+		}
+		.cutoffs li {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		/* a phone keeps the one line that is the plugin: the rest of the file is
+		   scrolling between the reader and what ships */
+		.compile .compile-config {
+			flex-direction: column;
+			> figcaption {
+				border-right: 0;
+				border-bottom: 1px solid var(--rule-soft);
+			}
+			.diff > span:not([data-key]) {
+				display: none;
+			}
+		}
+		.compile-real {
+			padding: 16px 16px 8px;
+			font-size: 12.5px;
+			line-height: 1.7;
+		}
+		.compile-helpers {
+			> summary {
+				margin-inline: 6px;
+			}
+			.compile-real {
+				font-size: 12px;
+			}
+		}
+		.diff {
+			font-size: 12px;
+		}
+		.diff-mark {
+			width: 2.5ch;
+		}
+		.morph:not(.mirror) pre.shiki {
+			--pre-x: 14px;
+			font-size: 12px;
+		}
+		.mirror {
+			--code-fs: 13px;
+			--pre-y: 16px;
+			.morph-pane > pre.shiki {
+				padding-inline: 16px;
+			}
+		}
+		.mirror-run {
+			padding: 12px 16px 16px;
+		}
+		.mirror-out {
+			font-size: 12.5px;
+		}
+		.closer-go > * {
+			flex: 1 1 100%;
+		}
+	}
+}
+
+/* a field under 16px makes iOS zoom the page when it takes focus. The
+   definition is set at the field's size too, so starting to edit moves nothing. */
+@media (max-width: 760px), (pointer: coarse) {
+	.home {
+		.compile-in {
+			--edit-fs: 16px;
+			--edit-lh: 1.5;
+		}
+		.compile .compile-in pre.shiki {
+			font-size: 16px !important;
+			line-height: 1.5 !important;
+		}
+	}
+}

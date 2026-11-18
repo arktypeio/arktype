@@ -109,8 +109,17 @@ const playWhenSeen = (
 }
 
 /**
+ * Where a count starts, as a share of where it lands. From zero, the first
+ * half second of the hero read "0× less work to start": a frame nobody
+ * should be able to screenshot. From here every frame is a number the
+ * measurement supports, only smaller than the one it rests on.
+ */
+const countFrom = 0.7
+
+/**
  * A number counting up to its prerendered value after `delay` ms. It reads
- * zero from the start, so it never shows its final value and then drops.
+ * its starting share at once, so it never shows its final value and then
+ * drops.
  */
 const countUp = (el: HTMLElement, delay: number, seconds: number) => {
 	const to = Number(el.dataset.to)
@@ -119,59 +128,24 @@ const countUp = (el: HTMLElement, delay: number, seconds: number) => {
 	const final = el.textContent
 	// the final width, held, so counting never moves what follows
 	el.style.minWidth = `${el.getBoundingClientRect().width}px`
-	el.textContent = `${(0).toFixed(decimals)}${suffix}`
+	const from = to * countFrom
+	el.textContent = `${from.toFixed(decimals)}${suffix}`
 	const start = performance.now() + delay
 	const frame = (now: number) => {
 		const t = Math.max(0, Math.min((now - start) / (seconds * 1000), 1))
 		el.textContent =
 			t === 1 ? final : (
-				`${(to * (1 - (1 - t) ** 3)).toFixed(decimals)}${suffix}`
+				`${(from + (to - from) * (1 - (1 - t) ** 3)).toFixed(decimals)}${suffix}`
 			)
 		if (t < 1) requestAnimationFrame(frame)
 	}
 	requestAnimationFrame(frame)
 }
 
-/** a place like "1st" isn't counted to; it lands as ArkType's bar finishes */
-const isPlace = (num: HTMLElement) =>
-	/^(st|nd|rd|th)$/.test(num.dataset.suffix ?? "")
-
-/** seconds, from a dot's inline timing (Board.tsx): when it lands */
-const landsAt = (spot: HTMLElement) =>
-	parseFloat(spot.style.getPropertyValue("--delay")) +
-	parseFloat(spot.style.getPropertyValue("--travel"))
-
-/**
- * Each library's tally on the speed card counts its wins as their dots
- * land. Figure spaces pad it to its final length, so its text never moves.
- */
-const tallyLanes = (board: HTMLElement) => {
-	for (const lane of board.querySelectorAll<HTMLElement>(".spread .lane")) {
-		const tally = lane.querySelector<HTMLElement>(".lane-val")
-		if (!tally) continue
-		const final = tally.textContent!
-		const of = final.slice(final.indexOf("/"))
-		const landings = [...lane.querySelectorAll<HTMLElement>(".spot.is-win")]
-			.map(landsAt)
-			.sort((a, b) => a - b)
-		const start = performance.now()
-		const frame = (now: number) => {
-			const elapsed = (now - start) / 1000
-			const landed = landings.filter(t => t <= elapsed).length
-			tally.textContent =
-				landed === landings.length ?
-					final
-				:	`${landed}${of}`.padStart(final.length, "\u2007")
-			if (landed < landings.length) requestAnimationFrame(frame)
-		}
-		frame(start)
-	}
-}
-
-/** the speed card's dots: the one nearest the pointer grows and names its scenario */
+/** the speed drill-down's dots: the one nearest the pointer grows and names its scenario */
 const wireSpots = () => {
-	const board = document.querySelector<HTMLElement>("[data-board]")
-	if (!board) return
+	const card = document.querySelector<HTMLElement>(".card.is-solo.is-speed")
+	if (!card) return
 	let hot: HTMLElement | undefined
 	const tipOf = (el: Element) =>
 		el.closest(".spread-plot")?.querySelector<HTMLElement>(".spot-tip")
@@ -217,38 +191,311 @@ const wireSpots = () => {
 		)
 		tip.style.translate = `${left}px ${dot.y - area.y - tip.offsetHeight - 12}px`
 	}
-	board.addEventListener("pointermove", onPointer)
-	board.addEventListener("pointerdown", onPointer)
-	board.addEventListener("pointerleave", clear)
+	card.addEventListener("pointermove", onPointer)
+	card.addEventListener("pointerdown", onPointer)
+	card.addEventListener("pointerleave", clear)
 	return () => {
-		board.removeEventListener("pointermove", onPointer)
-		board.removeEventListener("pointerdown", onPointer)
-		board.removeEventListener("pointerleave", clear)
+		card.removeEventListener("pointermove", onPointer)
+		card.removeEventListener("pointerdown", onPointer)
+		card.removeEventListener("pointerleave", clear)
 	}
 }
 
-/** the board's bars race (the shortest, ArkType's, finishes first) as its numbers count */
-const wireBoard = () => {
-	const board = document.querySelector<HTMLElement>("[data-board]")
-	return playWhenSeen(board, 0.3, () => {
-		tallyLanes(board!)
-		for (const card of board!.querySelectorAll<HTMLElement>(".card")) {
-			const num = card.querySelector<HTMLElement>(".card-num[data-to]")
-			if (!num) continue
-			if (isPlace(num)) {
-				// home.css lands it after this, the race's own finish
-				const won = card
-					.querySelector<HTMLElement>(".race")
-					?.style.getPropertyValue("--won")
-				if (won) num.style.setProperty("--won", won)
-				continue
+/** "Pick 2" is struck out of the title, wherever the title is, once it is seen */
+const wireBoard = () =>
+	playWhenSeen(document.querySelector<HTMLElement>("[data-board]"), 0.3)
+
+/**
+ * A big number counts up once the number itself is on screen. It answers to
+ * nothing else: tied to its section's figure, it stayed blank on a phone
+ * until the figure under it had scrolled into view.
+ */
+const wireStats = () => {
+	// motion went unclaimed, so every number is showing
+	if (!("motion" in document.documentElement.dataset)) return
+	const observer = new IntersectionObserver(
+		entries => {
+			for (const entry of entries) {
+				if (!entry.isIntersecting) continue
+				const stat = entry.target as HTMLElement
+				observer.unobserve(stat)
+				// the hero's three, one after the other
+				const peers = [
+					...(stat.closest(".hero-stats")?.querySelectorAll(".stat-num") ?? [])
+				]
+				const delay = Math.max(0, peers.indexOf(stat)) * 140
+				countUp(stat, delay, 0.9)
+				stat.dataset.in = ""
 			}
-			// as the card's bars start: home.css's race delay
-			const delay =
-				Number(getComputedStyle(card).getPropertyValue("--i")) * 120 + 200
-			countUp(num, delay, 0.9)
+		},
+		{ threshold: 0.5 }
+	)
+	for (const stat of document.querySelectorAll(".stat-num[data-to]"))
+		observer.observe(stat)
+	return () => observer.disconnect()
+}
+
+/**
+ * The speed figure's counters: validations finished since it came on
+ * screen, ArkType's at the figure's rate and every other library's at that
+ * over its median ratio. Off screen or paused, the clock stops with them.
+ */
+const runCount = (figure: HTMLElement) => {
+	const rate = Number(figure.dataset.rate)
+	const lanes = [...figure.querySelectorAll<HTMLElement>(".count-num")].map(
+		el => ({
+			el,
+			ratio: Number(el.dataset.ratio),
+			shown: -1,
+			rest: el.textContent
+		})
+	)
+	const title = figure.querySelector<HTMLElement>(".count-title")
+	const rest = title?.textContent
+	if (title) title.textContent = title.dataset.live!
+	const toggle = figure.querySelector<HTMLButtonElement>(".count-toggle")
+	let elapsed = 0
+	let last = performance.now()
+	let frame = 0
+	let seen = false
+	let stopped = false
+	const tick = (now: number) => {
+		elapsed += (now - last) / 1000
+		last = now
+		for (const lane of lanes) {
+			const count = Math.floor((elapsed * rate) / lane.ratio)
+			if (count === lane.shown) continue
+			lane.shown = count
+			lane.el.textContent = count.toLocaleString("en-US")
 		}
+		frame = requestAnimationFrame(tick)
+	}
+	/** the counters run while they are on screen and nobody has stopped them */
+	const sync = () => {
+		cancelAnimationFrame(frame)
+		if (seen && !stopped) {
+			delete figure.dataset.paused
+			last = performance.now()
+			frame = requestAnimationFrame(tick)
+		} else figure.dataset.paused = ""
+	}
+	const observer = new IntersectionObserver(([entry]) => {
+		seen = entry.isIntersecting
+		sync()
 	})
+	observer.observe(figure)
+	const onToggle = () => {
+		stopped = !stopped
+		if (toggle) {
+			toggle.setAttribute("aria-pressed", String(stopped))
+			toggle.textContent = stopped ? "resume" : "pause"
+		}
+		sync()
+	}
+	toggle?.addEventListener("click", onToggle)
+	return () => {
+		cancelAnimationFrame(frame)
+		observer.disconnect()
+		toggle?.removeEventListener("click", onToggle)
+		// the markup's comparison at rest, for a remount in development
+		for (const lane of lanes) lane.el.textContent = lane.rest
+		if (title && rest) title.textContent = rest
+	}
+}
+
+/**
+ * The boot log's counts: every library's runs up at one speed, the speed at
+ * which the costliest takes `--sweep`, and stops at its own total, when its
+ * lane reads as started. landing.css grows the bars on the same clock.
+ */
+const runBoot = (figure: HTMLElement) => {
+	const max = Number(figure.style.getPropertyValue("--max"))
+	const sweep = parseFloat(figure.style.getPropertyValue("--sweep"))
+	const lanes = [...figure.querySelectorAll<HTMLElement>(".boot-lane")].map(
+		lane => {
+			const el = lane.querySelector<HTMLElement>(".boot-val")!
+			return { lane, el, to: Number(el.dataset.to), final: el.textContent }
+		}
+	)
+	const replay = figure.querySelector<HTMLButtonElement>(".boot-replay")
+	let frame = 0
+	const play = () => {
+		cancelAnimationFrame(frame)
+		for (const { lane } of lanes) delete lane.dataset.done
+		// as landing.css starts the bars
+		const start = performance.now() + 300
+		const tick = (now: number) => {
+			const reached = (Math.max(0, now - start) / 1000 / sweep) * max
+			let running = false
+			for (const { lane, el, to, final } of lanes) {
+				if ("done" in lane.dataset) continue
+				if (reached >= to) {
+					el.textContent = final
+					lane.dataset.done = ""
+				} else {
+					// in the unit its total is written in: "0.87M"
+					el.textContent = `${reached.toFixed(2)}${final?.replace(/^[\d.]+/, "")}`
+					running = true
+				}
+			}
+			if (running) frame = requestAnimationFrame(tick)
+		}
+		frame = requestAnimationFrame(tick)
+	}
+	const onReplay = () => {
+		delete figure.dataset.play
+		// a reflow between the two, so the bars' animation starts over
+		void figure.offsetWidth
+		figure.dataset.play = ""
+		play()
+	}
+	replay?.addEventListener("click", onReplay)
+	play()
+	return () => {
+		cancelAnimationFrame(frame)
+		replay?.removeEventListener("click", onReplay)
+		for (const { lane, el, final } of lanes) {
+			el.textContent = final
+			lane.dataset.done = ""
+		}
+	}
+}
+
+/** kilobytes to three figures, as ByteGrid writes them */
+const kbText = (kb: number) => kb.toPrecision(3)
+
+/**
+ * The byte grid's number, held at the dynamic bundle's size until its blocks
+ * start to leave, then counted down to the precompiled one's as they go.
+ * Only then is the figure `data-done`: the number turns gold and the other
+ * libraries' rows arrive.
+ */
+const holdBytes = (figure: HTMLElement) => {
+	const num = figure.querySelector<HTMLElement>(".bytes-num")
+	if (!num) return
+	// its markup, which a remount in development finds already rewritten
+	const final = num.dataset.to!
+	const from = Number(num.dataset.from)
+	const to = Number(num.dataset.to)
+	delete figure.dataset.done
+	num.textContent = kbText(from)
+	// the wider number's width, held, so counting never moves what follows
+	num.style.minWidth = `${num.getBoundingClientRect().width}px`
+	return () => {
+		// as landing.css lets the blocks go: from a second in, evenly, for two more
+		const start = performance.now() + 1000
+		const frame = (now: number) => {
+			const t = Math.max(0, Math.min((now - start) / 2000, 1))
+			num.textContent = t === 1 ? final : kbText(from + (to - from) * t)
+			if (t < 1) requestAnimationFrame(frame)
+			else figure.dataset.done = ""
+		}
+		requestAnimationFrame(frame)
+	}
+}
+
+/**
+ * Every figure with `data-stage` plays once it is seen: landing.css animates
+ * it from [data-play], and the stages that need a clock get one.
+ */
+const wireStages = () => {
+	// motion went unclaimed, so every figure is showing its final state
+	if (!("motion" in document.documentElement.dataset)) return
+	const cleanups = [
+		...document.querySelectorAll<HTMLElement>("[data-stage]")
+	].flatMap(figure => {
+		const { stage } = figure.dataset
+		const release = stage === "bytes" ? holdBytes(figure) : undefined
+		let stop: (() => void) | undefined
+		const unobserve = playWhenSeen(figure, 0.4, () => {
+			release?.()
+			if (stage === "count") stop = runCount(figure)
+			if (stage === "boot") stop = runBoot(figure)
+		})
+		return [unobserve, () => stop?.()]
+	})
+	return () => {
+		for (const cleanup of cleanups) cleanup?.()
+	}
+}
+
+/**
+ * A section's drill-downs: a chip opens its panel under the row and closes
+ * the one that was open. A link to something inside a closed panel opens it
+ * first, then scrolls there: on load, on a hash change and on a press of a
+ * link whose hash is already the page's.
+ */
+const wireDrills = () => {
+	const set = (chip: Element, open: boolean) => {
+		const panel = document.getElementById(chip.getAttribute("aria-controls")!)
+		if (!panel) return
+		chip.setAttribute("aria-expanded", String(open))
+		panel.toggleAttribute("data-closed", !open)
+	}
+	const toggle = (chip: Element) => {
+		const open = chip.getAttribute("aria-expanded") !== "true"
+		const row = chip.parentElement!
+		for (const other of row.querySelectorAll('[aria-expanded="true"]'))
+			set(other, false)
+		set(chip, open)
+	}
+	const reveal = (id: string) => {
+		const target = id ? document.getElementById(id) : null
+		const panel = target?.closest<HTMLElement>(".drill-panel[data-closed]")
+		if (!target || !panel) return
+		const chip = document.querySelector(
+			`.drill-chip[aria-controls="${CSS.escape(panel.id)}"]`
+		)
+		if (!chip) return
+		toggle(chip)
+		// the browser has scrolled to where the target wasn't yet
+		requestAnimationFrame(() => target.scrollIntoView())
+	}
+	const fromHash = () => reveal(decodeURIComponent(location.hash.slice(1)))
+	const onClick = (e: MouseEvent) => {
+		if (!(e.target instanceof Element)) return
+		const chip = e.target.closest(".drill-chip")
+		if (chip) return toggle(chip)
+		const link = e.target.closest<HTMLAnchorElement>('a[href^="#"]')
+		if (link) reveal(decodeURIComponent(link.hash.slice(1)))
+	}
+	fromHash()
+	addEventListener("hashchange", fromHash)
+	document.addEventListener("click", onClick)
+	return () => {
+		removeEventListener("hashchange", fromHash)
+		document.removeEventListener("click", onClick)
+	}
+}
+
+/**
+ * A chip row that scrolls sideways (a phone's) fades at whichever edge has
+ * more chips past it, and only there: `data-more` names the edges, and
+ * landing.css fades them. Before this runs, and without scripts, the row
+ * fades at its end, where the rest always starts out.
+ */
+const wireChipRows = () => {
+	const rows = [...document.querySelectorAll<HTMLElement>(".drill-chips")]
+	const mark = (row: HTMLElement) => {
+		const past = row.scrollLeft > 4
+		const ahead = row.scrollLeft + row.clientWidth < row.scrollWidth - 4
+		row.dataset.more = [past ? "start" : "", ahead ? "end" : ""]
+			.join(" ")
+			.trim()
+	}
+	const onScroll = (e: Event) => mark(e.currentTarget as HTMLElement)
+	const onResize = () => {
+		for (const row of rows) mark(row)
+	}
+	for (const row of rows) {
+		mark(row)
+		row.addEventListener("scroll", onScroll, { passive: true })
+	}
+	addEventListener("resize", onResize, { passive: true })
+	return () => {
+		for (const row of rows) row.removeEventListener("scroll", onScroll)
+		removeEventListener("resize", onResize)
+	}
 }
 
 const wireProof = () =>
@@ -257,32 +504,90 @@ const wireProof = () =>
 const wirePickThree = () =>
 	playWhenSeen(document.querySelector<HTMLElement>("[data-pick3]"), 0.5)
 
+/** the step whose output is the tsc error, and the one whose diff applies it */
+const errorStep = 2
+const fixStep = 3
+
 /**
- * The agent transcript's steps appear in order once it is half visible; a
- * press finishes it and "replay" plays it again. The markup is the final
- * state, so without JS or with reduced motion it simply reads.
+ * The agent transcript's steps appear in order once it is half visible. Its
+ * one beat is held: the name tsc suggests lifts out of the error and lands
+ * in the diff, where the typo was. A press finishes it and "replay" plays it
+ * again. The markup is the final state, so without JS or with reduced
+ * motion it simply reads.
  */
 const wireTranscript = () => {
 	const term = document.querySelector<HTMLElement>("[data-term]")
 	if (!term) return
 	let run = 0
 	const items = [...term.querySelectorAll<HTMLElement>("[data-step]")]
+	const body = term.querySelector<HTMLElement>(".term-body")
+	const fix = term.querySelector<HTMLElement>(".fix")
+	const target = term.querySelector<HTMLElement>(".fix-target")
+	let flying: HTMLElement | undefined
+	const settle = () => {
+		flying?.remove()
+		flying = undefined
+		fix?.classList.remove("is-lifted")
+		target?.classList.remove("is-unset")
+	}
 	const finish = () => {
 		run++
 		delete term.dataset.playing
 		for (const li of items) li.classList.remove("is-waiting")
+		target?.classList.remove("is-landed")
+		settle()
+	}
+	/** the suggested name, from the error to where the diff uses it */
+	const fly = async () => {
+		if (!body || !fix || !target) return
+		const area = body.getBoundingClientRect()
+		const from = fix.getBoundingClientRect()
+		const to = target.getBoundingClientRect()
+		const ghost = document.createElement("span")
+		ghost.className = "fix-fly"
+		ghost.textContent = fix.textContent
+		ghost.style.left = `${from.x - area.x}px`
+		ghost.style.top = `${from.y - area.y}px`
+		body.append(ghost)
+		flying = ghost
+		fix.classList.add("is-lifted")
+		await ghost.animate(
+			[
+				{ translate: "0 0", scale: 1 },
+				{ scale: 1.12, offset: 0.35 },
+				{ translate: `${to.x - from.x}px ${to.y - from.y}px`, scale: 1 }
+			],
+			{
+				duration: 820,
+				easing: "cubic-bezier(0.6, 0, 0.2, 1)",
+				fill: "forwards"
+			}
+		).finished
 	}
 	const play = async () => {
 		const id = ++run
+		settle()
 		term.dataset.playing = ""
+		target?.classList.remove("is-landed")
+		target?.classList.add("is-unset")
 		for (const li of items) li.classList.add("is-waiting")
 		const steps = [...new Set(items.map(li => Number(li.dataset.step)))]
 		for (const step of steps) {
 			if (id !== run) return
 			for (const li of items)
 				if (Number(li.dataset.step) === step) li.classList.remove("is-waiting")
-			// a beat to read the tsc error before the fix
-			await sleep(step === 2 ? 900 : 420)
+			if (step === errorStep) {
+				// long enough to read the error and find the name in it
+				await sleep(1500)
+			} else if (step === fixStep) {
+				await sleep(450)
+				if (id !== run) return
+				await fly()
+				if (id !== run) return
+				settle()
+				target?.classList.add("is-landed")
+				await sleep(1300)
+			} else await sleep(520)
 		}
 		if (id === run) delete term.dataset.playing
 	}
@@ -290,11 +595,16 @@ const wireTranscript = () => {
 	if (!reducedMotion() && term.getBoundingClientRect().top > innerHeight) {
 		observer = new IntersectionObserver(
 			([entry]) => {
-				if (entry.intersectionRatio < 0.5) return
+				// half of it, or half a screen of it where it is taller than one
+				if (
+					entry.intersectionRatio < 0.5 &&
+					entry.intersectionRect.height < innerHeight * 0.5
+				)
+					return
 				observer?.disconnect()
 				void play()
 			},
-			{ threshold: [0.5] }
+			{ threshold: Array.from({ length: 11 }, (_, i) => i / 20) }
 		)
 		observer.observe(term)
 	}
@@ -313,10 +623,10 @@ const wireTranscript = () => {
 	term.addEventListener("pointerdown", onPointerDown)
 	term.addEventListener("click", onClick)
 	return () => {
-		run++
 		observer?.disconnect()
 		term.removeEventListener("pointerdown", onPointerDown)
 		term.removeEventListener("click", onClick)
+		finish()
 	}
 }
 
@@ -335,6 +645,10 @@ export const HomeEffects = () => {
 			wireReveal(),
 			wireTranscript(),
 			wireBoard(),
+			wireStats(),
+			wireStages(),
+			wireDrills(),
+			wireChipRows(),
 			wireSpots(),
 			wireProof(),
 			wirePickThree()

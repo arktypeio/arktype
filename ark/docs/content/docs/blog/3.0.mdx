@@ -1,6 +1,6 @@
 ---
 title: Announcing ArkType 3.0
-description: "Fast, small and quick to start: pick 3. The build step is your agent's job, and so is migrating from Zod."
+description: "Fast, small and quick to start: pick 3. Optimized for agents and humans, with one prompt to switch from Zod."
 ogImage: blog/3.0.png
 date: 2026-10-26 # the release sets this, and blog/index.mdx's date, to the day it publishes
 ---
@@ -17,11 +17,11 @@ We recently asked which of the three you care about most. Trick question.
 
 **<Headline />** <Claim id="pickThree" /> [How we measured ↓](#the-numbers)
 
-- **What's new**: ArkType [precompiles](#the-build-step-is-your-agents-job). One plugin turns each Type into a standalone validator when you build, and your definitions don't change.
+- **What's new**: ArkType [precompiles](#agents-dont-mind-a-build-step). One plugin turns each Type into a standalone validator when you build, and your definitions don't change.
 - **Against Zod**: <Claim id="zodSpeed" /> Startup and size are [below](#the-numbers).
-- **What switching costs**: [one command and one prompt](#switching-from-zod). Your schemas keep their names, your messages keep their text and libraries that accept Standard Schema take them as they took Zod's. What doesn't carry over [is listed too](#what-a-migration-has-to-handle).
+- **What switching costs**: [one command and one prompt](#switching-from-zod). Your schemas keep their names, their messages and the libraries that read them. What doesn't carry over [is listed too](#what-a-migration-has-to-handle).
 
-If speed was never your issue, you're in good company. We hear that a lot, and it's fair: ArkType was always about the DX. Definitions read like the types you'd write anyway, `tsc` checks them as you type and errors say what went wrong.
+If speed was never your issue, fair: ArkType was always about the DX. Definitions read like the types you'd write anyway, `tsc` checks them as you type and errors say what went wrong.
 
 ```ts
 const User = type({
@@ -87,7 +87,7 @@ Your agent sets `onUndeclaredKey: "delete"` once, so objects keep removing undec
 
 ### Your messages work the way they did in Zod
 
-A `message` is one whole sentence, shown exactly as you wrote it wherever the error is read, a form library reading the Type through Standard Schema included. It never includes its path, as Zod's `issue.message` doesn't, and `summary` writes the path before it for a log:
+A `message` is shown exactly as you wrote it and never includes its path, as Zod's `issue.message` doesn't. `summary` writes the path before it for a log:
 
 ```ts
 const Signup = type({
@@ -150,7 +150,7 @@ isSubset(v1, v2) // true
 isSubset(v2, v1) // false
 ```
 
-It reads a schema from Zod 4.2 or later as the JSON Schema it writes, so it sees what JSON Schema can express, which leaves out refinements and transforms.
+It reads a schema from Zod 4.2 or later as the JSON Schema it writes, which leaves out refinements and transforms.
 
 ### What a migration has to handle
 
@@ -161,13 +161,13 @@ The [guide](/docs/migrating) your agent follows maps each Zod API and covers eac
 - **A check across keys runs last.** A `.narrow()` on an object runs once every key is valid, where Zod 4 also runs a `.refine()` when a key fails a check like `.min()`. A form shows `Passwords must match` once its fields pass.
 - **Default messages are ArkType's**, like `must be an email address` where Zod says `Invalid email address`. Messages you wrote don't change.
 
-## The build step is your agent's job
+## Agents don't mind a build step
 
-When 2.0 launched, we bragged that it needed no build step. At the time, that was the right call. Precompiled validators were always faster and smaller, but they cost you a plugin to set up, errors you'd never seen and a second model of what runs where.
+When 2.0 launched, we bragged that it needed no build step. That was the right call then: precompiled validators were always faster and smaller, but they cost a plugin to set up, errors you'd never seen and a second model of what runs where.
 
-For most projects, it wasn't worth it. Then agents started doing the setup. An agent adds the plugin, reads the errors and fixes what they point to, and [shadow mode](/docs/precompile/advanced#shadow-mode) runs your tests against both models, failing wherever they disagree. What's left is a plugin in the bundler you already run and the time it takes to build. Meanwhile, your users still download everything you ship, our parser included.
+Then agents started doing the setup. An agent adds the plugin, reads the errors and fixes what they point to, and [shadow mode](/docs/precompile/advanced#shadow-mode) runs your tests against both models, failing wherever they disagree. What's left is the time a build takes, while your users still download everything you ship, our parser included.
 
-So ArkType precompiles, and we made sure every message along the way names the fix.
+So ArkType precompiles, and every message along the way names the fix.
 
 **Definitions** are checked by `tsc` as you write them, and a typo's error suggests the fix:
 
@@ -204,7 +204,7 @@ export default {
 
 ### Dynamic, like always
 
-`type()` still parses definitions at runtime with no build step, for scripts, REPLs and definitions you only know at runtime. In a precompiled build, a [runtime island](/docs/precompile/advanced#runtime-islands) leaves one definition to arktype, and `runtime: "arktype"` ships arktype whole, skipping the compile step for every Type the build could read, so nothing you write today keeps you from precompiling.
+`type()` still parses definitions at runtime with no build step, for scripts, REPLs and definitions you only know at runtime. In a precompiled build, a [runtime island](/docs/precompile/advanced#runtime-islands) leaves one definition to arktype and `runtime: "arktype"` ships arktype whole, so nothing you write today keeps you from precompiling.
 
 ### The skill
 
@@ -225,7 +225,7 @@ If you're upgrading from 2.2, [Upgrading](/docs/upgrading) lists what breaks.
 - 🧊 <Claim id="startupAverage" />
 - 📦 <Claim id="sizeAverage" />
 
-Each score divides a library's results by the best on each row, then takes the geometric mean per benchmark and across them, so lower is better. <Claim id="sizeClose" /> <Claim id="sizePreset" ifBacked />
+Each score divides a library's results by the best on each row, then takes the geometric mean per benchmark and across them, so lower is better. <Claim id="sizeClose" />
 
 <HeadlineNote />
 
@@ -233,20 +233,11 @@ Each score divides a library's results by the best on each row, then takes the g
 - <Claim id="startupBasis" />
 - <Claim id="leaveOneOut" />
 
-Each result below is scoped to a single benchmark, and [Speed and size](/docs/precompile#speed-and-size) charts them.
+<p>
+	<Claim id="zodSpeed" /> <Claim id="speedScope" />
+</p>
 
-- <Claim id="zodSpeed" />
-- <Claim id="speedScope" />
-- <Claim id="noInit" />
-- <Claim id="startupApps" />
-
-On whole apps, written alike in each library:
-
-- <Claim id="appSpeed" />
-- <Claim id="appStartup" />
-- <Claim id="appSize" />
-
-<Claim id="bigApp" ifBacked />
+The homepage has each benchmark with its method and where it stops holding: [speed](/#run), [startup](/#start) and [size](/#size).
 
 ## `@ark/aot`
 
@@ -254,7 +245,7 @@ On whole apps, written alike in each library:
 
 Each Type your program defines becomes a validator that imports only `arktype/runtime`, and code that calls it doesn't change. Scopes, Modules, Generics, cyclic Types, `match` and `type.fn` precompile too.
 
-Options go in an [`ark.json`](/docs/precompile/options#arkjson) that the plugin, the drivers, the CLI and the ESLint rule all read, or in the plugin call. A [preset](/docs/precompile/options#presets) sets several at once: `"smallest"` trades speed for size. <Claim id="buildChoice" /> Development builds check at runtime what the build verified, like freezing each validator, and production builds leave those checks out. A library opts in with `"ark": { "aot": true }` in its `package.json`, so its consumers' builds precompile it.
+Options go in an [`ark.json`](/docs/precompile/options#arkjson) that the plugin, the drivers, the CLI and the ESLint rule all read. <Claim id="buildChoice" /> The [`"smallest"` preset](/docs/precompile/options#presets) trades speed for size. A library opts in with `"ark": { "aot": true }` in its `package.json`, so its consumers' builds precompile it.
 
 ### Set theory at build time
 
@@ -322,7 +313,7 @@ Parse keywords like `string.date.iso.parse` encode back to strings, and codecs [
 - **Dynamic Types do less work**: a Type compiles when it's first used, and one without narrows or morphs finds its errors' issues only when they're first read. <Claim id="strictSpeedup" /> <Claim id="dynamicInit" ifBacked />
 - **Syntax**: [`!=`](/docs/primitives#number-ranges) excludes one value, unions of ranges merge where they can, and an object's [`"@"`](/docs/expressions#meta) key holds its description or meta.
 - **ArkSets**: [ArkSets](/docs/sets) brings the same set theory to a Type, a Standard JSON Schema like Zod's or plain JSON Schema: relate them, [as above](#or-start-without-switching), intersect them, find a union's discriminant or write any of them as JSON Schema.
-- **JSON Schema**: every Type is a [Standard Schema](/docs/standard-schema) that writes its own JSON Schema, and a precompiled one keeps it where its build sees code read it, so the MCP SDK, the AI SDK and OpenAPI generators get it with [nothing to set](/docs/precompile/options#members). [`toJsonSchema`](/docs/json-schema/to-json-schema) writes draft 2020-12, draft-07 or OpenAPI 3.0, and [`jsonSchemaToType`](/docs/json-schema/from-json-schema) accepts what a JSON Schema 2020-12 validator does, except that lengths count UTF-16 code units.
+- **JSON Schema**: every Type is a [Standard Schema](/docs/standard-schema) that writes its own JSON Schema, and a precompiled one keeps it where its build sees code read it, so the MCP SDK, the AI SDK and OpenAPI generators get it with [nothing to set](/docs/precompile/options#members). [`toJsonSchema`](/docs/json-schema/to-json-schema) writes draft 2020-12, draft-07 or OpenAPI 3.0, and [`jsonSchemaToType`](/docs/json-schema/from-json-schema) reads one back as a Type.
 - **Errors as data**: an `ArkErrors`' `issues` are plain objects discriminated by `code`. An issue's `message` leaves out its path, which `summary` writes before it, and one you configure is [shown as you wrote it](#your-messages-work-the-way-they-did-in-zod). ArkType's own English messages don't print the value, so they don't put what the data holds into a log.
 - **A new home**: every docs page reads as Markdown for your agent, every code sample shows the types TypeScript infers, and the [playground](/playground) runs the real parser in your browser.
 

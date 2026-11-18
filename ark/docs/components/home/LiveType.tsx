@@ -6,16 +6,69 @@ import { startLiveEngine, type LiveEngine } from "./liveEngine.ts"
 import type { LiveState } from "./liveState.ts"
 import { tokenizeDefinition } from "./liveSyntax.ts"
 
-const chips = [
-	{ def: "string > 3 | null", arg: '"ark"' },
-	{ def: "5 < number < 3", arg: "4" },
-	{ def: "number % 2 & number % 3", arg: "12" },
-	{ def: "(string | number)[]", arg: '[1, "2", true]' },
-	{ def: "string.emial", arg: '"a@b.io"' }
+type Example = {
+	/** what trying it shows, since the definition alone doesn't say */
+	label: string
+	def: string
+	arg: string
+}
+
+const chips: Example[] = [
+	{ label: "two checks → one", def: "number % 2 & number % 3", arg: "9" },
+	{ label: "impossible range", def: "5 < number < 3", arg: "4" },
+	{ label: "typo → did you mean", def: "string.emial", arg: '"a@b.io"' },
+	{
+		label: "array of a union",
+		def: "(string | number)[]",
+		arg: '[1, "2", true]'
+	},
+	{ label: "string or null", def: "string > 3 | null", arg: '"ark"' }
 ]
 
 /** warm the parser once the pointer comes this close to the card */
 const intentDistance = 600
+
+/** the width from which the card sits beside the one before it, as landing.css lays them out */
+const sideBySide = "(min-width: 1081px)"
+
+/** how long a neighbour that hasn't started is waited for, and one that has is waited on */
+const neighbourWait = { start: 1500, finish: 4500 }
+
+/**
+ * Resolves once the figure this card shares a row with has finished playing.
+ * Side by side, the interface → Type wipe and this card's ghost typing
+ * started together and neither got watched; now the wipe lands its two
+ * errors first and the typing follows. Stacked, or alone, there is nothing
+ * to wait for. Both waits are bounded, so the line is never held blank on a
+ * neighbour that doesn't play.
+ */
+const afterNeighbour = async (line: HTMLElement) => {
+	const neighbour = line
+		.closest(".write-pair")
+		?.querySelector<HTMLElement>("[data-stage]")
+	if (!neighbour || !matchMedia(sideBySide).matches) return
+	if (!("play" in neighbour.dataset)) {
+		await new Promise<void>(resolve => {
+			const done = () => {
+				watcher.disconnect()
+				clearTimeout(timer)
+				resolve()
+			}
+			const watcher = new MutationObserver(done)
+			const timer = setTimeout(done, neighbourWait.start)
+			watcher.observe(neighbour, {
+				attributes: true,
+				attributeFilter: ["data-play"]
+			})
+		})
+	}
+	await Promise.race([
+		Promise.allSettled(
+			neighbour.getAnimations({ subtree: true }).map(played => played.finished)
+		),
+		sleep(neighbourWait.finish)
+	])
+}
 
 /** html[data-ghost] (see the home layout) hides what the ghost animates */
 const revealGhosted = () => delete document.documentElement.dataset.ghost
@@ -38,6 +91,8 @@ export const LiveType = ({ ghost, arg: initialArg }: LiveTypeProps) => {
 	const [arg, setArg] = useState(initialArg)
 	const [state, setState] = useState<LiveState>(final)
 	const [ghosting, setGhosting] = useState(false)
+	/** the ghost has typed nothing that parses yet, so there is no result to show */
+	const [unparsed, setUnparsed] = useState(false)
 	const [pressed, setPressed] = useState(-1)
 	const [live, setLive] = useState(false)
 	/** a call is out and the shown verdict is for an earlier definition */
@@ -96,15 +151,23 @@ export const LiveType = ({ ghost, arg: initialArg }: LiveTypeProps) => {
 		const play = async () => {
 			if (token.cancelled) return
 			setGhosting(true)
+			setUnparsed(true)
 			setDef("")
 			await sleep(200)
-			let wasValid = false
+			let shown: LiveState | undefined
 			for (const step of ghost) {
 				if (token.cancelled) return
 				setDef(step.def)
-				setState(step)
-				await sleep(step.ok && !wasValid ? 380 : 48)
-				wasValid = step.ok
+				// half-typed, a definition is an error only the ghost made: the
+				// result stays the last one that parsed
+				const lands =
+					step.ok && !(shown?.ok && shown.description === step.description)
+				if (lands) {
+					shown = step
+					setState(step)
+					setUnparsed(false)
+				}
+				await sleep(lands ? 420 : 46)
 			}
 			if (token.cancelled) return
 			token.cancelled = true
@@ -123,7 +186,7 @@ export const LiveType = ({ ghost, arg: initialArg }: LiveTypeProps) => {
 				([entry]) => {
 					if (!entry.isIntersecting) return
 					observer?.disconnect()
-					void play()
+					void afterNeighbour(line).then(play)
 				},
 				{ threshold: 0 }
 			)
@@ -145,13 +208,12 @@ export const LiveType = ({ ghost, arg: initialArg }: LiveTypeProps) => {
 	}, [ghosting, def])
 
 	const settled = !ghosting || def === final.def
-	/** the ghost's empty first frame; a definition the reader clears gets the parser's message */
-	const blank = ghosting && def === ""
+	/** until the ghost's first result; a definition the reader clears gets the parser's message */
+	const blank = ghosting && unparsed
 	return (
 		<figure
 			ref={cardRef}
-			className="code-card glow live rise"
-			style={{ "--i": 4 } as CSSProperties}
+			className="code-card glow live"
 			aria-label="Live ArkType parser"
 			onFocus={warm}
 			onPointerDown={warm}
@@ -163,7 +225,7 @@ export const LiveType = ({ ghost, arg: initialArg }: LiveTypeProps) => {
 					<span className="cap-wide">, in this page</span>
 				</span>
 				<span className="hint">
-					<span className="hover-word">type anything</span>
+					<span className="hover-word">edit the string</span>
 					<span className="tap-word">tap to edit</span>
 				</span>
 			</figcaption>
@@ -290,6 +352,7 @@ export const LiveType = ({ ghost, arg: initialArg }: LiveTypeProps) => {
 						type="button"
 						className="chip"
 						aria-pressed={pressed === i}
+						title={chip.def}
 						onClick={() => {
 							setPressed(i)
 							setDef(chip.def)
@@ -297,7 +360,7 @@ export const LiveType = ({ ghost, arg: initialArg }: LiveTypeProps) => {
 							run(chip.def, chip.arg)
 						}}
 					>
-						{chip.def}
+						{chip.label}
 					</button>
 				))}
 			</div>

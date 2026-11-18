@@ -1,32 +1,21 @@
-import { Fragment, type CSSProperties } from "react"
+import { Fragment, type CSSProperties, type ReactNode } from "react"
 import { formatRatio } from "../../lib/bench/bench.ts"
 import { wellKnownRule } from "../../lib/bench/leaderboard.ts"
 import {
 	averageText,
-	categories,
 	claims,
 	draftOf,
 	headlineMethod,
 	isPending,
 	leadsEvery,
-	medianOf,
 	standingsAsOf,
 	tieMargin,
-	type BarCategory,
 	type Category,
 	type SpreadCategory,
 	type StandingCategory
 } from "../../lib/claims.ts"
 import { ClaimText } from "../mdx/Claim.tsx"
-import { CheckIcon } from "./icons.tsx"
-
-/**
- * Seconds: a startup bar snaps on after a wait in proportion to its cost, so
- * the cheapest is first; size bars start full width and pack down one by one.
- * `length` is home.css's snap or pack duration.
- */
-const snap = { wait: 1.2, length: 0.24 }
-const pack = { stagger: 0.05, length: 0.75 }
+import { categoryOf } from "./boardFacts.ts"
 
 /** a scenario's dot, and the closest two dots' centers may come, in px */
 const dot = { size: 5.5, clear: 6.5 }
@@ -93,56 +82,6 @@ const verdictOf = (name: string, speedup: number, verdict: string) =>
 
 const round = (n: number) => Math.round(n * 1000) / 1000
 
-/** the big number, counted up to by HomeEffects in its own precision */
-const Big = ({ value, unit }: { value: string; unit: string }) => {
-	const [, digits, suffix] = /^([\d.]+)(.*)$/.exec(value)!
-	return (
-		<p className="card-big">
-			<span
-				className="card-num"
-				data-to={digits}
-				data-decimals={digits.split(".")[1]?.length ?? 0}
-				data-suffix={suffix}
-			>
-				{value}
-			</span>
-			<span className="card-unit">{unit}</span>
-		</p>
-	)
-}
-
-/** ArkType's place by best average, the same in every card so "Pick 3" reads at a glance */
-const Place = ({ category }: { category: Category }) => (
-	<Big value={category.place} unit={`of ${category.ranked} libraries`} />
-)
-
-const Head = ({ category }: { category: Category }) => (
-	<header className="card-head">
-		{category.leads && (
-			<span className="card-check" aria-hidden>
-				<CheckIcon />
-			</span>
-		)}
-		<h3 id={`card-${category.id}`} className="card-label">
-			{category.label}
-		</h3>
-	</header>
-)
-
-const Foot = ({ category }: { category: Category }) => (
-	<footer className="card-foot">
-		<a
-			className="card-src"
-			href={category.source.href}
-			{...(category.source.href.startsWith("#") ?
-				{}
-			:	{ target: "_blank", rel: "noreferrer" })}
-		>
-			{category.source.label}
-		</a>
-	</footer>
-)
-
 /** a best average, as a multiple of the best result: "1.252×" */
 const multiple = (score: number) => `${averageText(score)}×`
 
@@ -186,66 +125,8 @@ const Average = ({ category, of }: { category: Category; of: string }) => {
 	)
 }
 
-const BarCard = ({ category }: { category: BarCategory }) => {
-	const [ours, ...rivals] = category.bars.map(bar => ({
-		name: bar.name,
-		value: bar.value!
-	}))
-	const zod = rivals.find(bar => bar.name === "Zod")!
-	const valibot = rivals.find(bar => bar.name === "Valibot")!
-	const axis = Math.max(ours.value, ...rivals.map(bar => bar.value))
-	const width = (value: number) => (value / axis) * 100
-	// truncated, so no margin is ever rounded up
-	const percent = Math.floor((1 - ours.value / valibot.value) * 100)
-	return (
-		<>
-			<Place category={category} />
-			<div className="card-margin">
-				<p>
-					<b>{formatRatio(zod.value / ours.value)}</b> {category.margin} Zod and{" "}
-					<b>{percent}%</b> less than Valibot on the login app
-				</p>
-				<p>
-					<Average category={category} of="the least work" />
-				</p>
-			</div>
-			<ol
-				className="race"
-				aria-label={`${category.unit}, lower is better`}
-				style={
-					{
-						"--won": `${(snap.wait * width(ours.value)) / 100 + snap.length}s`
-					} as CSSProperties
-				}
-			>
-				{[ours, ...rivals].map(bar => (
-					<li
-						key={bar.name}
-						className={bar === ours ? "lane is-ours" : "lane"}
-						style={
-							{
-								"--w": width(bar.value) / 100,
-								"--at": `${(snap.wait * width(bar.value)) / 100}s`
-							} as CSSProperties
-						}
-					>
-						<span className="lane-name">
-							{bar === ours ? "ArkType" : bar.name}
-						</span>
-						<span className="lane-track">
-							<span className="lane-bar" />
-						</span>
-						<span className="lane-val">{category.format(bar.value)}</span>
-					</li>
-				))}
-			</ol>
-			<p className="card-rest">{category.unit}, lower is better</p>
-		</>
-	)
-}
-
-const SpreadCard = ({ category }: { category: SpreadCategory }) => {
-	const [zod] = category.versus
+/** every scenario of the homepage's benchmark as a dot per rival, at its ratio to ArkType */
+const SpreadFigure = ({ category }: { category: SpreadCategory }) => {
 	const axis = spreadAxis(
 		category.versus.flatMap(({ versus }) => versus.rows.map(r => r.speedup))
 	)
@@ -254,16 +135,8 @@ const SpreadCard = ({ category }: { category: SpreadCategory }) => {
 		return { name, versus, xs, rows: dodge(xs) }
 	})
 	return (
-		<>
-			<Place category={category} />
+		<figure className="card is-solo is-speed">
 			<div className="card-margin">
-				<p>
-					<b>
-						{zod.versus.wins}/{zod.versus.count}
-					</b>{" "}
-					scenarios faster than Zod, by a median of{" "}
-					<b>{medianOf(zod.versus)}</b>
-				</p>
 				<p>
 					<Average category={category} of="the fastest result" />
 				</p>
@@ -345,41 +218,25 @@ const SpreadCard = ({ category }: { category: SpreadCategory }) => {
 				</span>
 				how many times slower than ArkType · log scale
 			</p>
-		</>
+		</figure>
 	)
 }
 
-const StandingCard = ({ category }: { category: StandingCategory }) => {
+/** the size standings: each named library's best average, ArkType's among them */
+const StandingFigure = ({ category }: { category: StandingCategory }) => {
 	const ours = category.standings.findIndex(s => s.library === "ArkType")
 	const axis = Math.max(...category.standings.map(s => s.score))
 	return (
-		<>
-			<Place category={category} />
-			<div className="card-margin">
-				<p>
-					<Average category={category} of="the smallest bundle" />
-				</p>
-				{!isPending(claims.sizePreset) && <p>{claims.sizePreset}</p>}
-			</div>
+		<figure className="card is-solo is-size">
 			<ol
 				className="race"
 				aria-label="each library's bundles as a multiple of the smallest, averaged, lower is better"
-				style={
-					{
-						"--won": `${pack.stagger * ours + pack.length}s`
-					} as CSSProperties
-				}
 			>
 				{category.standings.map((s, i) => (
 					<li
 						key={s.library}
 						className={i === ours ? "lane is-ours" : "lane"}
-						style={
-							{
-								"--w": s.score / axis,
-								"--at": `${pack.stagger * i}s`
-							} as CSSProperties
-						}
+						style={{ "--w": s.score / axis } as CSSProperties}
 					>
 						<span className="lane-name">{s.library}</span>
 						<span className="lane-track">
@@ -393,9 +250,35 @@ const StandingCard = ({ category }: { category: StandingCategory }) => {
 				1× = the smallest bundle everywhere · lower is better
 				{category.omits && ` · libraries with ${wellKnownRule}`}
 			</p>
-		</>
+		</figure>
 	)
 }
+
+const speed = categoryOf("speed")
+const size = categoryOf("size")
+
+/** the speed drill-down: every scenario against Zod, z.compile, Zod Mini and Valibot */
+export const SpeedSpread = () => <SpreadFigure category={speed} />
+
+/** the size drill-down: the named leaders' best averages */
+export const SizeStandings = () => <StandingFigure category={size} />
+
+export type AverageLineProps = {
+	id: Category["id"]
+}
+
+/** each category's best average beside the next best's, as the board's cards worded it */
+export const AverageLine = ({ id }: AverageLineProps) => (
+	<Average
+		category={categoryOf(id)}
+		of={
+			id === "speed" ? "the fastest result"
+			: id === "startup" ?
+				"the least work"
+			:	"the smallest bundle"
+		}
+	/>
+)
 
 const pickTwo = "Pick 2."
 
@@ -407,63 +290,70 @@ const titlePhrases = () => {
 		:	phrases
 }
 
-/** ArkType's place in each category, then each against Zod and Valibot, every number from lib/claims.ts */
-export const Board = () => (
-	<section
-		className="board"
-		id="board"
-		aria-labelledby="board-title"
-		data-board
+/** the board's title, a phrase at a time, "Pick 2." struck out as it lands */
+export const BoardTitle = () => (
+	<span
+		className={
+			isPending(claims.boardTitle) ? "board-title pending-claim" : "board-title"
+		}
 	>
-		<div className="board-head">
-			<div className="sec-label">
-				<b>{"//"}</b>
-				the scoreboard
-			</div>
-			<h2
-				id="board-title"
-				className={isPending(claims.boardTitle) ? "pending-claim" : undefined}
-			>
-				{titlePhrases().map((phrase, i) => (
-					<Fragment key={phrase}>
-						{i > 0 && " "}
-						<span
-							className="phrase"
-							style={{ "--i": i } as CSSProperties}
-							aria-hidden={phrase === pickTwo || undefined}
-						>
-							{phrase === pickTwo ?
-								<s>{phrase}</s>
-							:	phrase}
-						</span>
-					</Fragment>
-				))}
-			</h2>
-		</div>
-		<div className="cards">
-			{categories.map((category, i) => (
-				<article
-					key={category.id}
-					className={`card is-${category.id}`}
+		{titlePhrases().map((phrase, i) => (
+			<Fragment key={phrase}>
+				{i > 0 && " "}
+				<span
+					className="phrase"
 					style={{ "--i": i } as CSSProperties}
-					aria-labelledby={`card-${category.id}`}
+					aria-hidden={phrase === pickTwo || undefined}
 				>
-					<Head category={category} />
-					{category.id === "speed" ?
-						<SpreadCard category={category} />
-					: category.id === "size" ?
-						<StandingCard category={category} />
-					:	<BarCard category={category} />}
-					<Foot category={category} />
-				</article>
-			))}
-		</div>
-		<p id="board-note" className="board-note">
-			<ClaimText claim={claims.boardNote} />{" "}
-			<time dateTime={standingsAsOf.date}>{standingsAsOf.text}</time>{" "}
-			<a href={headlineMethod.href} target="_blank" rel="noreferrer">
-				{headlineMethod.label} ↗
-			</a>
-		</p>
+					{phrase === pickTwo ?
+						<s>{phrase}</s>
+					:	phrase}
+				</span>
+			</Fragment>
+		))}
+	</span>
+)
+
+export type BoardProps = {
+	/** false where the hero already carries the title */
+	titled: boolean
+	/** the proof of the title: every library's averages */
+	table: ReactNode
+	/** the board's drill-downs */
+	children: ReactNode
+}
+
+/**
+ * "Pick 3", and the table that backs it: each library's best average in
+ * every category, from lib/claims.ts. How the averages are ranked is the
+ * drill-down passed as `children`.
+ */
+export const Board = ({ titled, table, children }: BoardProps) => (
+	<section
+		className={titled ? "board" : "board is-untitled"}
+		id="board"
+		aria-labelledby={titled ? "board-title" : undefined}
+		aria-label={titled ? undefined : draftOf(claims.boardTitle)}
+	>
+		{titled && (
+			<div className="board-head" data-board>
+				<h2 id="board-title">
+					<BoardTitle />
+				</h2>
+			</div>
+		)}
+		{table}
+		{children}
 	</section>
+)
+
+/** what the board's places average, the date they stood and the rule behind them */
+export const BoardNote = () => (
+	<p id="board-note" className="board-note">
+		<ClaimText claim={claims.boardNote} />{" "}
+		<time dateTime={standingsAsOf.date}>{standingsAsOf.text}</time>{" "}
+		<a href={headlineMethod.href} target="_blank" rel="noreferrer">
+			{headlineMethod.label} ↗
+		</a>
+	</p>
 )
