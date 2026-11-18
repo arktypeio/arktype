@@ -15,10 +15,22 @@ import type { MdxJsxFlowElement, MdxJsxTextElement } from "mdast-util-mdx-jsx"
 import { toMarkdown } from "mdast-util-to-markdown"
 import { visit } from "unist-util-visit"
 import { siteUrl } from "../../app/metadata.ts"
+import { captionOf } from "../../components/home/boardFacts.ts"
 import { installCommand } from "../../components/installCommand.ts"
 import { shapeEmitted, shapeSource } from "../../components/precompile/shape.ts"
 import snippetContentsById from "../../components/snippets/contentsById.ts"
 import { benchNotes, benchTable, jitComparison } from "../bench/bench.ts"
+import {
+	ownSpeedTable,
+	ownTable,
+	pooledTable,
+	resultsTable,
+	standingsTable,
+	type OwnTableId,
+	type TextTable
+} from "../bench/boardTables.ts"
+import type { CategoryId } from "../bench/leaderboard.ts"
+import { unitBoards } from "../bench/units.ts"
 import {
 	claims,
 	draftOf,
@@ -190,6 +202,8 @@ const table = (
 
 const sizeTable = ({ header, rows }: SizeTable) => table(header, rows)
 
+const textTable = ({ header, rows }: TextTable) => table(header, rows)
+
 const claimMarkdown = (claim: Claim<string>) =>
 	`${draftOf(claim)}${isPending(claim) ? " (pending)" : ""}`
 
@@ -356,6 +370,23 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 			const { summary, header, rows, note } = jitComparison()
 			return [paragraph(summary), table(header, rows), paragraph(note)]
 		}
+		case "BoardCaption":
+			return [
+				paragraph(
+					`${captionOf(unitBoards[attr(node, "category") as CategoryId])}.`,
+					true
+				)
+			]
+		case "BoardStandings":
+			return [textTable(standingsTable(attr(node, "category") as CategoryId))]
+		case "BoardResults":
+			return [textTable(resultsTable(attr(node, "category") as CategoryId))]
+		case "PooledBoard":
+			return [textTable(pooledTable())]
+		case "OwnSpeed":
+			return [textTable(ownSpeedTable())]
+		case "OwnResults":
+			return [textTable(ownTable(attr(node, "table") as OwnTableId))]
 		case "LivePrecompile":
 			return [
 				{ type: "code", lang: "ts", value: shapeSource },

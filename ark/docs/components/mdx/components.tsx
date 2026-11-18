@@ -9,7 +9,15 @@ import { RuntimeBenchmarksGraph } from "../RuntimeBenchmarksGraph.tsx"
 import { SyntaxTab, SyntaxTabs } from "../SyntaxTabs.tsx"
 import { ApiMember, ApiMembers } from "./ApiMembers.tsx"
 import { BenchmarkChart } from "./BenchmarkChart.tsx"
-import { JitComparison } from "./Benchmarks.tsx"
+import {
+	BoardCaption,
+	BoardResults,
+	BoardStandings,
+	JitComparison,
+	OwnResults,
+	OwnSpeed,
+	PooledBoard
+} from "./Benchmarks.tsx"
 import { Callout } from "./Callout.tsx"
 import {
 	Claim,
@@ -49,6 +57,10 @@ export const mdxComponents: MDXComponents = {
 	ApiMembers,
 	// every scenario of the speed benchmark, with its method
 	BenchmarkChart,
+	// the homepage board's graphs as tables, and the results under them
+	BoardCaption,
+	BoardResults,
+	BoardStandings,
 	Callout,
 	Claim,
 	ClaimCharts,
@@ -63,6 +75,11 @@ export const mdxComponents: MDXComponents = {
 	LivePrecompile: Compile,
 	// the demo itself is small; the playground behind it loads only when opened
 	MainAutoplayDemo,
+	// our own benchmark beside the board's
+	OwnResults,
+	OwnSpeed,
+	// the board as ratios to each result's best, across every result
+	PooledBoard,
 	PresetSizeTable,
 	// the 2.0 post's chart
 	RuntimeBenchmarksGraph,

@@ -1,35 +1,89 @@
 ---
 title: Benchmarks
-description: How ArkType's speed, startup and size numbers were measured, where it loses and how to rerun them.
+description: The rule the homepage's board follows, every result behind it, our own benchmark beside it and how to rerun each one.
 ---
 
-Every number on this site comes from a benchmark in the repo. This page has what each one measures, who wrote it, where ArkType doesn't win and how to rerun it.
+Every number on this site comes from a benchmark in the repo. This page has the rule the homepage's board follows, every result behind it, our own benchmark beside it and the commands that rerun each one.
 
 ## The board
 
-The homepage ranks validators in three categories by their average result across other projects' public benchmarks:
+The homepage's board has three graphs: validation speed, startup and bundle size. All three follow one rule.
+
+1. **The results are other projects' benchmarks.** None of the benchmarks a graph averages was designed by us. Each is another project's public suite, cloned at a pinned commit and run as its authors wrote it, with ArkType added the way that suite adds a library. The one exception is in size: valibot.dev's login form is Valibot's code, which we wrote in each other library and size with our own script.
+2. **Each graph averages the largest set of results that five libraries share.** A graph has five lanes: ArkType, Zod and three more libraries the site names. A library is only compared over results it ran, so the graph takes the largest set of results that ArkType, Zod and three such libraries all ran. Which results those are depends on who ran what and never on what anyone scored.
+3. **Every library that ran all of those results is ranked**, whether the site names it or not, by the geometric mean of its results.
+4. **The lanes drawn** are ArkType, the three best-placed other libraries the site names (100k+ npm downloads a week) and Zod. Zod's other entry points, `z.compile` and Zod Mini, are in the tables below rather than in a second Zod lane.
+
+Each choice has a reason:
+
+- **The unit is the one the benchmark measures.** Speed and startup are CPU instructions, counted with `perf` while the other project's benchmark code runs. An instruction count is the same on a busy machine and on a quiet one, and close to the same on another CPU, so a number here can be checked on a machine that isn't ours. Size is bytes, minified and gzipped.
+- **A geometric mean** because the results span orders of magnitude: one validates an email address, another a whole document. An arithmetic mean would be the largest result with the rest as rounding error. A geometric mean gives every result the same weight, and the ratio of two libraries' means is the mean of their ratios.
+- **The same rows for every library** because a library that skipped the hardest results would otherwise average an easier set.
+- **Startup counts creating a schema**, because that is what both public startup benchmarks time. A precompiled validator creates its schema when it builds and has nothing left to create when it loads; the graph shows that difference as it was measured. Importing a real app through its first validation is [our own startup benchmark](#startup).
+- **One build of ArkType** is in every row of all three graphs: precompiled with the default options, bundled as a production build.
+
+### Validation speed [#board-speed]
+
+<BoardCaption category="speed" />
+
+<BoardStandings category="speed" />
+
+Every result the graph averages:
+
+<BoardResults category="speed" />
+
+### Startup [#board-startup]
+
+<BoardCaption category="startup" />
+
+<BoardStandings category="startup" />
+
+Each library on each result, including the ones that only ran one:
+
+<BoardResults category="startup" />
+
+### Bundle size [#board-size]
+
+<BoardCaption category="size" />
+
+<BoardStandings category="size" />
+
+<BoardResults category="size" />
+
+Every library's result on every row, in every suite, is in [`leaderboard.json`](https://github.com/arktypeio/arktype/blob/main/ark/docs/lib/bench/leaderboard.json).
+
+### Across every result
+
+Under each graph is ArkType's place on the pooled board, which uses every result of a category rather than the ones five libraries share. Libraries there ran different results, so it can't average a unit: it divides each result by the best on its row, then takes the geometric mean per benchmark and across benchmarks. Lower is better, and 1 is the best result everywhere. A library is ranked with at least half a category's benchmarks, and places are plain order.
+
+<PooledBoard />
 
 - <Claim id="speedAverage" />
-- <Claim id="startupAverage" />
 - <Claim id="sizeAverage" />
-
-Each score divides a library's results by the best on each row, then takes the geometric mean per benchmark and across them, so lower is better and 1 is the best result everywhere.
-
-<HeadlineNote />
-
 - <Claim id="benchmarkOwners" />
 - <Claim id="startupBasis" />
-- <Claim id="leaveOneOut" />
 
 <Claim id="sizeClose" />
 
-## Validation speed
+The startup graph averages both public startup results already, so the place under it is the graph's own.
+
+The benchmarks' README has [the pooled rule in full](https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md#best-average).
+
+## Our own benchmark
+
+The board leaves our own benchmark out of its bars and its places. The homepage prints two figures from it beside the bars, in units most people think in, and the sections below have all of it.
+
+### Validation speed [#validation-speed]
+
+Nanoseconds per validation, by the clock, on one core. Each library's geometric mean over the scenarios all of them ran:
+
+<OwnSpeed />
 
 <p>
 	<Claim id="zodSpeed" /> <Claim id="speedScope" />
 </p>
 
-The homepage's speed numbers are from this benchmark. Each panel is one scenario, and the table under them has every one:
+Each panel is one scenario, and the table under them has every one:
 
 <BenchmarkChart />
 
@@ -39,18 +93,30 @@ Beyond it:
 - <Claim id="appSpeed" />
 - <Claim id="bigApp" />
 
-## Startup
+### Startup [#startup]
 
-The startup numbers count CPU instructions, which a busy machine doesn't move. They aren't seconds.
+From just before a fresh process imports an app's bundle to just after its first validation returns. In CPU instructions, beyond what an empty module costs to load:
+
+<OwnResults table="startupInstructions" />
 
 - <Claim id="startupApps" />
 - <Claim id="appStartup" />
 
-### Against dynamic ArkType
+The same apps by the clock, in milliseconds, which the homepage prints beside its startup bars:
+
+<OwnResults table="startupMs" />
+
+Most of each of those milliseconds is Node loading a module, which every library pays alike, so the quickest are close together and their order changes from app to app and from machine to machine. Instructions count what a library adds, and a busy machine doesn't move them.
+
+#### Against dynamic ArkType
 
 <JitComparison />
 
-## Bundle size
+### Bundle size [#bundle-size]
+
+Our own apps, each bundled with esbuild as a production build, minified and gzipped:
+
+<OwnResults table="size" />
 
 <p>
 	<Claim id="loginSize" /> <Claim id="dynamicSize" />
@@ -81,16 +147,49 @@ In your own project, [shadow mode](/docs/precompile/advanced#shadow-mode) runs y
 
 ## Rerun them
 
-From a clean checkout, after `pnpm i && pnpm build`:
+Clone the repo and build it once:
 
-| Script                | What it reruns                                                         |
-| --------------------- | ---------------------------------------------------------------------- |
-| `pnpm benchExternal`  | The board: each external benchmark, cloned at the commit it was run on |
-| `pnpm benchValidate`  | The speed benchmark above                                              |
-| `pnpm benchImport`    | The homepage's cold start                                              |
-| `pnpm benchSize`      | The homepage's app sizes                                               |
-| `pnpm benchSizeScale` | [Size at scale](/docs/precompile/size-at-scale)                        |
-| `pnpm benchBigApp`    | The generated apps and ntwine                                          |
-| `pnpm benchBuildTime` | [Build time](/docs/precompile#build-time)                              |
+```sh
+git clone https://github.com/arktypeio/arktype
+cd arktype
+pnpm i && pnpm build
+```
 
-The [benchmarks' README](https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md) has what each needs installed, the rule the board's averages follow and every run's results.
+### The board
+
+`pnpm benchExternal <suite>` clones a benchmark at the commit its published rows were counted on, installs it from its own lockfile, adds ArkType and runs it. The clones take about 4.5 GB under `ark/repo/bench/external/out/clones/`.
+
+| Graph            | Command                                               | Needs                    | Takes            |
+| ---------------- | ----------------------------------------------------- | ------------------------ | ---------------- |
+| Validation speed | `pnpm benchExternal sb` and `pnpm benchExternal ata`  | Linux, `perf`, `taskset` | about 75 minutes |
+| Startup          | `pnpm benchExternal sb` and `pnpm benchExternal sury` | Linux, `perf`, `taskset` | about 50 minutes |
+| Bundle size      | `pnpm benchExternal size`                             | any OS                   | about 2 minutes  |
+| All of them      | `pnpm benchExternal all`                              | Linux, `perf`, `taskset` | about 90 minutes |
+
+Instruction counts come from hardware counters, which `perf` reads on Linux and which most hosted CI runners and virtual machines don't expose. `NODE24` and `NODE26` name the Node 24 and 26 binaries the suites run on; without them the suites run on the Node that runs the script.
+
+Each run writes its results to `ark/repo/bench/external/out/fresh/`. Then:
+
+```sh
+pnpm benchBoard --fresh
+```
+
+prints each graph's standings by the rule above, the published numbers beside what your checkout measured. Without `--fresh` it prints the published ones alone. It runs the code this site runs, so what it prints for the published results is what the homepage draws.
+
+Expect every other library's bundle to match to the byte, and an instruction count to move by a few percent on another CPU or Node build while the ratios between libraries move less. ArkType's own rows are the commit you check out, and the published ones name theirs.
+
+### Our own benchmark
+
+| Script                       | What it reruns                                          | Needs                    | Takes            |
+| ---------------------------- | ------------------------------------------------------- | ------------------------ | ---------------- |
+| `pnpm benchTypia`            | Typia's generated validators, which the next three read | any OS                   | 1 to 5 minutes   |
+| `pnpm benchValidate`         | [Validation speed](#validation-speed), every scenario   | any OS                   | about 10 minutes |
+| `pnpm benchImport`           | [Startup](#startup) by the clock                        | any OS                   | under a minute   |
+| `pnpm benchSize`             | [Bundle size](#bundle-size) of our apps                 | any OS                   | seconds          |
+| `pnpm benchExternal startup` | [Startup](#startup) in instructions                     | Linux, `perf`, `taskset` | about a minute   |
+
+`benchValidate`, `benchImport` and `benchSize` write `validate.json`, `import.json` and `size.json` to `ark/repo/bench/out/`, and `pnpm benchBoard --fresh` prints them beside the published tables above. Times by the clock are your machine's: compare the ratios between libraries, not the nanoseconds.
+
+`pnpm benchSizeScale` reruns [Size at scale](/docs/precompile/size-at-scale), `pnpm benchBigApp` the generated apps and ntwine, and `pnpm benchBuildTime` [Build time](/docs/precompile#build-time).
+
+The [benchmarks' README](https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md) has what each suite needs installed, how each library was added to it, the versions every row was measured at and every run's results.
