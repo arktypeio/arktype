@@ -30,6 +30,8 @@ const checks: [script: string, what: string][] = [
 	]
 ]
 
+export const proofCount = checks.length
+
 /** a dev loop, one step a chip; `slow` is the step it waits on */
 const Loop = ({ steps, slow }: { steps: string[]; slow?: string }) => (
 	<ol className="loop" aria-label={steps.join(", then ")}>
@@ -41,69 +43,56 @@ const Loop = ({ steps, slow }: { steps: string[]; slow?: string }) => (
 	</ol>
 )
 
-/** why ahead-of-time compilation is the better trade now: the loop a build step taxed is the agent's */
-export const WhyNow = () => (
-	<section className="block" id="why" aria-labelledby="why-title">
-		<div className="sec-label">
-			<b>01</b>
-			{"// why now"}
+/** the loop a build step taxed, and whose it is now, each as a row of steps */
+export const Loops = () => (
+	<div className="sides">
+		<div className="side">
+			<span className="side-who">before</span>
+			<h3>Edit, build, wait, reload</h3>
+			<Loop steps={["edit", "build", "wait", "reload"]} slow="wait" />
+			<p>
+				Every change to a schema waited on a rebuild, and a compiler error was
+				one more thing to look up. So the validator that parsed at runtime felt
+				better to use, even though it shipped a parser to every user.
+			</p>
 		</div>
-		<h2 id="why-title">
-			DX priorities have shifted.{" "}
-			<span className="hl">Agents don't mind a build step.</span>
-		</h2>
-		<p className="deck">
-			Precompiled validators have always been faster and smaller. Runtime
-			validators won anyway, because a build step taxed the loop you worked in.
-			Now your agent works in that loop, so the trade has flipped, and ArkType's
-			build is made for it.
-		</p>
-		<div className="sides" data-reveal>
-			<div className="side">
-				<span className="side-who">before</span>
-				<h3>Edit, build, wait, reload</h3>
-				<Loop steps={["edit", "build", "wait", "reload"]} slow="wait" />
-				<p>
-					Every change to a schema waited on a rebuild, and a compiler error was
-					one more thing to look up. So the validator that parsed at runtime
-					felt better to use, even though it shipped a parser to every user.
-				</p>
-			</div>
-			<div className="side">
-				<span className="side-who">now</span>
-				<h3>Your agent's loop</h3>
-				<Loop steps={["edit", "build", "read the error", "fix"]} />
-				<p>
-					Your agent rebuilds as it goes, so getting updated validators is a
-					step nobody waits on. And a precompile error says exactly what to
-					change, so the agent fixes it from the error alone:
-				</p>
-				<pre
-					className="side-term"
-					aria-label="Output of arktype-precompile --check"
-				>
-					<span className="p">$</span> npx arktype-precompile --check
-					"src/**/*.ts"
-					{"\n"}
-					<span className="loc">src/forms.ts:14:19</span>
-					{"  "}
-					<span className="err">
-						{"type(`string <= ${limit}`) cannot be precompiled"}
-					</span>
-					{"\n  "}
-					<span className="dim">
-						`limit` is a parameter of makeField (src/forms.ts:12:22); its value
-						is known only at runtime
-					</span>
-					{"\n  "}Write the definition where makeField is called, with the value
-					it passes for `limit`, so the build precompiles each call.
-				</pre>
-			</div>
+		<div className="side">
+			<span className="side-who">now</span>
+			<h3>Your agent's loop</h3>
+			<Loop steps={["edit", "build", "read the error", "fix"]} />
+			<p>
+				Your agent rebuilds as it goes, so getting updated validators is a step
+				nobody waits on. And a precompile error says exactly what to change, so
+				the agent fixes it from the error alone:
+			</p>
+			<pre
+				className="side-term"
+				aria-label="Output of arktype-precompile --check"
+			>
+				<span className="p">$</span> npx arktype-precompile --check
+				"src/**/*.ts"
+				{"\n"}
+				<span className="loc">src/forms.ts:14:19</span>
+				{"  "}
+				<span className="err">
+					{"type(`string <= ${limit}`) cannot be precompiled"}
+				</span>
+				{"\n  "}
+				<span className="dim">
+					`limit` is a parameter of makeField (src/forms.ts:12:22); its value is
+					known only at runtime
+				</span>
+				{"\n  "}Write the definition where makeField is called, with the value
+				it passes for `limit`, so the build precompiles each call.
+			</pre>
 		</div>
-		<h3 className="sub" id="proof">
-			Every optimization has to agree with ArkType.
-		</h3>
-		<p className="deck">
+	</div>
+)
+
+/** the checks a change to precompiled output has to pass, ticking off once seen, and how the numbers are kept honest */
+export const Proof = () => (
+	<>
+		<p className="drill-p" id="proof">
 			Trading a runtime parser for generated code is only worth it if the code
 			does exactly what ArkType would. These are the checks it has to pass.
 		</p>
@@ -129,17 +118,17 @@ export const WhyNow = () => (
 				))}
 			</ol>
 		</figure>
-		<div className="receipt" data-reveal>
+		<div className="receipt">
 			<span className="side-who">and the numbers</span>
 			<p>
-				Our benchmark in 05 is one run of every library, {provenance.passes}{" "}
-				passes at one commit, published whatever it showed, and a second run
-				checks each verdict. The board's averages follow a rule we wrote before
-				computing any.{" "}
+				The speed benchmark above is one run of every library,{" "}
+				{provenance.passes} passes at one commit, published whatever it showed,
+				and a second run checks each verdict. The board's averages follow a rule
+				we wrote before computing any.{" "}
 				<a className="link ext" href={headlineMethod.href}>
 					{headlineMethod.label}
 				</a>
 			</p>
 		</div>
-	</section>
+	</>
 )

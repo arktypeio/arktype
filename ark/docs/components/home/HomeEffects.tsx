@@ -132,46 +132,10 @@ const countUp = (el: HTMLElement, delay: number, seconds: number) => {
 	requestAnimationFrame(frame)
 }
 
-/** a place like "1st" isn't counted to; it lands as ArkType's bar finishes */
-const isPlace = (num: HTMLElement) =>
-	/^(st|nd|rd|th)$/.test(num.dataset.suffix ?? "")
-
-/** seconds, from a dot's inline timing (Board.tsx): when it lands */
-const landsAt = (spot: HTMLElement) =>
-	parseFloat(spot.style.getPropertyValue("--delay")) +
-	parseFloat(spot.style.getPropertyValue("--travel"))
-
-/**
- * Each library's tally on the speed card counts its wins as their dots
- * land. Figure spaces pad it to its final length, so its text never moves.
- */
-const tallyLanes = (board: HTMLElement) => {
-	for (const lane of board.querySelectorAll<HTMLElement>(".spread .lane")) {
-		const tally = lane.querySelector<HTMLElement>(".lane-val")
-		if (!tally) continue
-		const final = tally.textContent!
-		const of = final.slice(final.indexOf("/"))
-		const landings = [...lane.querySelectorAll<HTMLElement>(".spot.is-win")]
-			.map(landsAt)
-			.sort((a, b) => a - b)
-		const start = performance.now()
-		const frame = (now: number) => {
-			const elapsed = (now - start) / 1000
-			const landed = landings.filter(t => t <= elapsed).length
-			tally.textContent =
-				landed === landings.length ?
-					final
-				:	`${landed}${of}`.padStart(final.length, "\u2007")
-			if (landed < landings.length) requestAnimationFrame(frame)
-		}
-		frame(start)
-	}
-}
-
-/** the speed card's dots: the one nearest the pointer grows and names its scenario */
+/** the speed drill-down's dots: the one nearest the pointer grows and names its scenario */
 const wireSpots = () => {
-	const board = document.querySelector<HTMLElement>("[data-board]")
-	if (!board) return
+	const card = document.querySelector<HTMLElement>(".card.is-speed")
+	if (!card) return
 	let hot: HTMLElement | undefined
 	const tipOf = (el: Element) =>
 		el.closest(".spread-plot")?.querySelector<HTMLElement>(".spot-tip")
@@ -217,38 +181,142 @@ const wireSpots = () => {
 		)
 		tip.style.translate = `${left}px ${dot.y - area.y - tip.offsetHeight - 12}px`
 	}
-	board.addEventListener("pointermove", onPointer)
-	board.addEventListener("pointerdown", onPointer)
-	board.addEventListener("pointerleave", clear)
+	card.addEventListener("pointermove", onPointer)
+	card.addEventListener("pointerdown", onPointer)
+	card.addEventListener("pointerleave", clear)
 	return () => {
-		board.removeEventListener("pointermove", onPointer)
-		board.removeEventListener("pointerdown", onPointer)
-		board.removeEventListener("pointerleave", clear)
+		card.removeEventListener("pointermove", onPointer)
+		card.removeEventListener("pointerdown", onPointer)
+		card.removeEventListener("pointerleave", clear)
 	}
 }
 
-/** the board's bars race (the shortest, ArkType's, finishes first) as its numbers count */
-const wireBoard = () => {
-	const board = document.querySelector<HTMLElement>("[data-board]")
-	return playWhenSeen(board, 0.3, () => {
-		tallyLanes(board!)
-		for (const card of board!.querySelectorAll<HTMLElement>(".card")) {
-			const num = card.querySelector<HTMLElement>(".card-num[data-to]")
-			if (!num) continue
-			if (isPlace(num)) {
-				// home.css lands it after this, the race's own finish
-				const won = card
-					.querySelector<HTMLElement>(".race")
-					?.style.getPropertyValue("--won")
-				if (won) num.style.setProperty("--won", won)
-				continue
-			}
-			// as the card's bars start: home.css's race delay
-			const delay =
-				Number(getComputedStyle(card).getPropertyValue("--i")) * 120 + 200
-			countUp(num, delay, 0.9)
+/** the board's title strikes "Pick 2" and its places land, once it is seen */
+const wireBoard = () =>
+	playWhenSeen(document.querySelector<HTMLElement>("[data-board]"), 0.3)
+
+/**
+ * The lap race's tallies: a lane's count is how many times its runner has
+ * crossed, from the same clock home.css's animation runs on. Off screen, the
+ * race and its clock both stop.
+ */
+const runLaps = (figure: HTMLElement) => {
+	const lanes = [...figure.querySelectorAll<HTMLElement>(".lap-count")].map(
+		el => ({ el, lap: Number(el.dataset.lap), shown: -1 })
+	)
+	let elapsed = 0
+	let last = performance.now()
+	let frame = 0
+	const tick = (now: number) => {
+		elapsed += (now - last) / 1000
+		last = now
+		for (const lane of lanes) {
+			const laps = Math.floor(elapsed / lane.lap)
+			if (laps === lane.shown) continue
+			lane.shown = laps
+			lane.el.textContent = laps.toLocaleString("en-US")
 		}
+		frame = requestAnimationFrame(tick)
+	}
+	const observer = new IntersectionObserver(([entry]) => {
+		cancelAnimationFrame(frame)
+		if (entry.isIntersecting) {
+			delete figure.dataset.paused
+			last = performance.now()
+			frame = requestAnimationFrame(tick)
+		} else figure.dataset.paused = ""
 	})
+	observer.observe(figure)
+	return () => {
+		cancelAnimationFrame(frame)
+		observer.disconnect()
+	}
+}
+
+/** kilobytes to three figures, as ByteGrid writes them */
+const kbText = (kb: number) => kb.toPrecision(3)
+
+/**
+ * The byte grid's number, held at the dynamic bundle's size until its blocks
+ * start to leave, then counted down to the precompiled one's as they go
+ */
+const holdBytes = (figure: HTMLElement) => {
+	const num = figure.querySelector<HTMLElement>(".bytes-num")
+	if (!num) return
+	// its markup, which a remount in development finds already rewritten
+	const final = num.dataset.to!
+	const from = Number(num.dataset.from)
+	const to = Number(num.dataset.to)
+	num.textContent = kbText(from)
+	// the wider number's width, held, so counting never moves what follows
+	num.style.minWidth = `${num.getBoundingClientRect().width}px`
+	return () => {
+		const start = performance.now() + 1000
+		const frame = (now: number) => {
+			const t = Math.max(0, Math.min((now - start) / 1700, 1))
+			// fast, then slow: most of the bytes are gone early
+			num.textContent =
+				t === 1 ? final : kbText(from * (to / from) ** (1 - (1 - t) ** 2))
+			if (t < 1) requestAnimationFrame(frame)
+		}
+		requestAnimationFrame(frame)
+	}
+}
+
+/**
+ * Every figure with `data-stage` plays once it is seen: home.css animates it
+ * from [data-play], its point's big number counts up, and the stages that
+ * need a clock get one.
+ */
+const wireStages = () => {
+	// motion went unclaimed, so every figure is showing its final state
+	if (!("motion" in document.documentElement.dataset)) return
+	const cleanups = [
+		...document.querySelectorAll<HTMLElement>("[data-stage]")
+	].flatMap(figure => {
+		const release =
+			figure.dataset.stage === "bytes" ? holdBytes(figure) : undefined
+		let stop: (() => void) | undefined
+		const unobserve = playWhenSeen(figure, 0.4, () => {
+			const stat = figure
+				.closest(".point")
+				?.querySelector<HTMLElement>(".stat-num[data-to]")
+			if (stat) countUp(stat, 100, 0.9)
+			release?.()
+			if (figure.dataset.stage === "laps") stop = runLaps(figure)
+		})
+		return [unobserve, () => stop?.()]
+	})
+	return () => {
+		for (const cleanup of cleanups) cleanup?.()
+	}
+}
+
+/**
+ * A link to something inside a closed drill-down opens it first, then
+ * scrolls there: on load, and whenever the hash changes.
+ */
+const wireHash = () => {
+	const open = () => {
+		const id = decodeURIComponent(location.hash.slice(1))
+		const target = id ? document.getElementById(id) : null
+		if (!target) return
+		const closed: HTMLDetailsElement[] = []
+		for (
+			let details = target.closest("details");
+			details;
+			details = details.parentElement?.closest("details") ?? null
+		)
+			if (!details.open) closed.push(details)
+		if (target instanceof HTMLDetailsElement && !target.open)
+			closed.push(target)
+		if (!closed.length) return
+		for (const details of closed) details.open = true
+		target.scrollIntoView()
+	}
+	open()
+	addEventListener("hashchange", open)
+	return () => removeEventListener("hashchange", open)
 }
 
 const wireProof = () =>
@@ -335,6 +403,8 @@ export const HomeEffects = () => {
 			wireReveal(),
 			wireTranscript(),
 			wireBoard(),
+			wireStages(),
+			wireHash(),
 			wireSpots(),
 			wireProof(),
 			wirePickThree()

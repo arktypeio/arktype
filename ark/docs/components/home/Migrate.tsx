@@ -3,6 +3,7 @@ import { withBase } from "../../lib/basePath.ts"
 import { claims } from "../../lib/claims.ts"
 import { ClaimText } from "../mdx/Claim.tsx"
 import { CopyCommand } from "./CopyCommand.tsx"
+import { Drill, Drills, Point } from "./Drill.tsx"
 import { HomeCode } from "./HomeCode.tsx"
 
 const zod = `// ---cut-start---
@@ -87,81 +88,102 @@ const costs: [zod: string, ark: string][] = [
 	["Zod's default messages", "ArkType's, like must be an email address"]
 ]
 
-/** migrating with the skill: one command, one prompt, the guide it follows */
-export const Migrate = () => (
-	<section className="block" id="migrate" aria-labelledby="migrate-title">
-		<div className="sec-label">
-			<b>02</b>
-			{"// migrate"}
-		</div>
-		<h2 id="migrate-title">
-			One command, one prompt.{" "}
-			<span className="hl">Your agent follows the guide.</span>
-		</h2>
-		<p className="deck">
-			The ArkType skill teaches your agent the syntax and the mistakes to avoid,
-			and links a migration guide: the workflow, a table for each library and
-			every default that differs. Your schemas keep their names and your
-			messages keep their text. Then precompiling is one plugin in the bundler
-			you already run.
-		</p>
-		<ol className="moves" data-reveal>
-			<li style={{ "--i": 0 } as CSSProperties}>
-				<span className="move-n">1</span>
-				<h3>Add the skill</h3>
-				<CopyCommand
-					text="npx skills add arktypeio/arktype"
-					label="Copy skill install command"
-				>
-					<span className="p">$</span> npx skills add arktypeio/arktype
-				</CopyCommand>
-			</li>
-			<li style={{ "--i": 1 } as CSSProperties}>
-				<span className="move-n">2</span>
-				<h3>Ask your agent</h3>
-				<CopyCommand
-					text="Migrate this project from Zod to ArkType."
-					label="Copy migration prompt"
-				>
-					<span className="p">›</span> Migrate this project from Zod to ArkType.
-				</CopyCommand>
-			</li>
-			<li style={{ "--i": 2 } as CSSProperties}>
-				<span className="move-n">3</span>
-				<h3>Precompile</h3>
-				<a className="url" href={withBase("/docs/precompile/setup")}>
-					plugins: [precompile.vite()]
-				</a>
-			</li>
-		</ol>
-		<div className="convert">
-			<figure className="code-card">
-				<figcaption>
-					<span>
-						<b>user.ts</b>
-						<span className="dot">·</span>before
-					</span>
+/** the schema as it was and as the agent leaves it, in one card: a wipe on first view, then either on request */
+const Conversion = () => (
+	<figure className="code-card glow morph" data-stage="morph">
+		<figcaption>
+			<span>
+				<b>user.ts</b>
+				<span className="dot">·</span>converted where it is
+			</span>
+			<span
+				className="morph-tabs"
+				role="radiogroup"
+				aria-label="Show user.ts in"
+			>
+				<label>
+					<input type="radio" name="morph" value="zod" />
 					<span>Zod</span>
-				</figcaption>
-				<HomeCode code={zod} />
-			</figure>
-			<div className="convert-arrow" aria-hidden>
-				<span>→</span>
-			</div>
-			<figure className="code-card glow">
-				<figcaption>
-					<span>
-						<b>user.ts</b>
-						<span className="dot">·</span>after
-					</span>
+				</label>
+				<label>
+					<input type="radio" name="morph" value="ark" defaultChecked />
 					<span>ArkType</span>
-				</figcaption>
+				</label>
+			</span>
+		</figcaption>
+		<div className="morph-stack">
+			<div className="morph-pane is-zod">
+				<HomeCode code={zod} />
+			</div>
+			<div className="morph-pane is-ark">
 				<HomeCode code={ark} />
-			</figure>
+			</div>
+			<span className="morph-line" aria-hidden />
 		</div>
-		<div className="guide">
-			<div>
-				<h3>What it follows</h3>
+	</figure>
+)
+
+type PairsProps = {
+	pairs: [from: string, to: string][]
+}
+
+const Pairs = ({ pairs }: PairsProps) => (
+	<dl className="differs">
+		{pairs.map(([from, to]) => (
+			<div key={from}>
+				<dt>{from}</dt>
+				<dd>{to}</dd>
+			</div>
+		))}
+	</dl>
+)
+
+/** migrating with the skill: one command, one prompt, and the conversion it makes */
+export const Migrate = () => (
+	<Point
+		id="migrate"
+		n="08"
+		kicker="migrate"
+		title={
+			<>
+				One command, one prompt.{" "}
+				<span className="hl">Your agent follows the guide.</span>
+			</>
+		}
+		deck={<ClaimText claim={claims.zodMigration} />}
+		layout="split"
+		aside={
+			<ol className="moves">
+				<li>
+					<span className="move-n">1</span>
+					<h3>Add the skill</h3>
+					<CopyCommand
+						text="npx skills add arktypeio/arktype"
+						label="Copy skill install command"
+					>
+						<span className="p">$</span> npx skills add arktypeio/arktype
+					</CopyCommand>
+				</li>
+				<li>
+					<span className="move-n">2</span>
+					<h3>Ask your agent</h3>
+					<CopyCommand
+						text="Migrate this project from Zod to ArkType."
+						label="Copy migration prompt"
+					>
+						<span className="p">›</span> Migrate this project from Zod to
+						ArkType.
+					</CopyCommand>
+				</li>
+			</ol>
+		}
+		figure={<Conversion />}
+	>
+		<Drills>
+			<Drill
+				title="What your agent follows"
+				hint={`${steps.length} steps, one guide`}
+			>
 				<ol className="steps-flow">
 					{steps.map((step, i) => (
 						<li key={step} style={{ "--i": i } as CSSProperties}>
@@ -176,46 +198,28 @@ export const Migrate = () => (
 						Read the guide
 					</a>
 				</p>
-			</div>
-			<div>
-				<h3>Where a literal translation goes wrong</h3>
-				<dl className="differs">
-					{differs.map(([from, to]) => (
-						<div key={from}>
-							<dt>{from}</dt>
-							<dd>{to}</dd>
-						</div>
-					))}
-				</dl>
-			</div>
-		</div>
-		<div className="guide">
-			<div>
-				<h3>What you keep</h3>
-				<dl className="differs">
-					{keeps.map(([what, how]) => (
-						<div key={what}>
-							<dt>{what}</dt>
-							<dd>{how}</dd>
-						</div>
-					))}
-				</dl>
-			</div>
-			<div>
-				<h3>What it costs</h3>
-				<dl className="differs">
-					{costs.map(([from, to]) => (
-						<div key={from}>
-							<dt>{from}</dt>
-							<dd>{to}</dd>
-						</div>
-					))}
-				</dl>
-			</div>
-		</div>
-		<p className="note">
-			{"// "}
-			<ClaimText claim={claims.zodMigration} />
-		</p>
-	</section>
+			</Drill>
+			<Drill
+				title="Where a literal translation goes wrong"
+				hint={`${differs.length} defaults that differ`}
+			>
+				<Pairs pairs={differs} />
+			</Drill>
+			<Drill
+				title="What you keep, and what it costs"
+				hint="messages, integrations, async"
+			>
+				<div className="guide">
+					<div>
+						<h3>What you keep</h3>
+						<Pairs pairs={keeps} />
+					</div>
+					<div>
+						<h3>What it costs</h3>
+						<Pairs pairs={costs} />
+					</div>
+				</div>
+			</Drill>
+		</Drills>
+	</Point>
 )
