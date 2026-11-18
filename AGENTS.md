@@ -18,10 +18,24 @@ pnpm test # run tests without type checking
 pnpm testFiles ark/type/__tests__/brand.test.ts # run and type check only the named test files
 pnpm typecheckRepo # incremental typecheck of the whole repo
 pnpm prChecks # lint, build, typecheck and test, except @ark/aot (run before PRs)
-pnpm testAot # @ark/aot's tests, which prChecks leaves out; aot.yml runs them and its other suites on demand
+pnpm testAot # @ark/aot's tests, which prChecks leaves out
+ARK_SHARD=3/8 pnpm testAot # the third of the eight shards CI runs them in
 ```
 
 Tests and typechecking read each package's source through the `ark-ts` condition, so neither needs `pnpm build`. Pass test files to `pnpm testFiles` before any flags, e.g. `pnpm testFiles a.test.ts --skipTypes`. `pnpm testTyped a.test.ts` runs every test, because mocha adds named files to the configured spec.
+
+## CI
+
+`pr.yml` runs on every PR, and its `prChecks` job is the gate. Beside `pnpm prChecks` and the compatibility, TypeScript version and history jobs, it runs:
+
+- `aot`: `pnpm testAot` in eight shards, one runner each. `ark/repo/testAotShard.ts` deals the test files among them by the seconds `ark/aot/__tests__/timings.json` has for each, heaviest first, and `pnpm testAot --list` prints the result. A file without an entry weighs the median, so a new test file needs none. A file heavier than one shard's share has entries for its heavier top-level `describe`s and one for the rest of its tests, and is divided among shards by `--grep`; a `describe` added to it later runs with the rest. A shard that takes over twice the mean shard's planned seconds times `ARK_SHARD_BUDGET_FACTOR` (4 unless set) fails and says to run `pnpm writeAotTimings`, which runs the tests once and rewrites `timings.json`. Commit the result.
+- `environments`: `pnpm testEnvironments`, a precompiled program in Deno, Bun and browsers.
+
+`aot.yml` runs @ark/aot's derived suites, up to an hour a job: `testDifferential` and `testCache`, the repo's tests against precompiled validators, then `testPerturbation` and `testPrograms`. They aren't part of the gate. It runs:
+
+- nightly, on `main` and `featherduster` (until 3.0 merges; the list is in its `plan` job). A failing night opens the issue "aot nightly failing", labelled `aot-nightly`, or comments on it, and the next passing night closes it.
+- on a PR labelled `aot:full`, when the label is added and on each push after. Add it to a PR that changes what the build emits.
+- on demand from the Actions tab, and from another workflow through `workflow_call`.
 
 ## Monorepo Structure
 
