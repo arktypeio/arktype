@@ -79,9 +79,19 @@ export const linkBundle = (
 	const shared =
 		sharesUnits && !one ? sharedModulesOf(codes, linker.siteTexts()) : undefined
 	if (shared) codes = shared.codes
-	const renamed =
-		one?.renamed ??
-		renamedOf(codes, shared ? { ...modules, ...shared.modules } : modules)
+	const originals = shared ? { ...modules, ...shared.modules } : modules
+	let renamed = one?.renamed
+	if (!renamed && sharesUnits) {
+		const read = withoutUnread(
+			codes,
+			linker.siteTexts(),
+			shared?.declaredIn ?? {}
+		)
+		// units reading each other in a cycle can't be renamed once one changes
+		renamed = renamedOf(read, originals)
+		if (renamed) codes = read
+	}
+	renamed ??= renamedOf(codes, originals)
 	if (!renamed) return
 	// a site reads what a module declares from it, under whatever it's named
 	for (const specifier in shared?.declaredIn) {
@@ -315,6 +325,114 @@ const sharedModulesOf = (
 		}
 	}
 	return shared
+}
+
+const namedImport = /^import { (\S+) as (\S+) } from "([^"]+)"$/
+
+const sideEffectImport = /^import\s*"[^"]+";?$/gm
+
+// A bundler drops a declaration nothing reads, but not all it wrote for one:
+// where it held another module's export, the minifier of Next.js keeps a read
+// of that export in its place, `ns.name;`, as reading a namespace's member may
+// run a getter. A unit declares more than a program reads, like the node of a
+// Type only ever called, so each module is written with what the sites reach
+// of it alone, through whichever units read it. One that isn't a list of
+// declarations, like a cell's, is kept whole, with all it imports
+const withoutUnread = (
+	codes: Record<string, string>,
+	siteTexts: string[],
+	declaredIn: Record<string, string>
+): Record<string, string> => {
+	const parsed = new Map<string, Declarations | undefined>()
+	const declarationsIn = (specifier: string) => {
+		if (!parsed.has(specifier))
+			parsed.set(specifier, declarationsOf({ [specifier]: codes[specifier] }))
+		return parsed.get(specifier)
+	}
+	// each name reached in a module, declared or imported, or true for all
+	const reached = new Map<string, Set<string> | true>()
+	const reachAll = (specifier: string): void => {
+		if (!(specifier in codes) || reached.get(specifier) === true) return
+		const declarations = declarationsIn(specifier)
+		reached.set(specifier, true)
+		if (declarations) {
+			for (const name of declarations.imported.keys())
+				reachImport(declarations, name)
+		} else reachImportsOf(codes[specifier])
+	}
+	// what a module read as text names of the units: each name it imports, or
+	// all of a unit it reads any other way
+	const reachImportsOf = (text: string): void => {
+		const named = new Map<string, number>()
+		for (const [, names, specifier] of text.matchAll(siteImport)) {
+			named.set(specifier, (named.get(specifier) ?? 0) + 1)
+			for (const name of names.split(",")) {
+				const [read] = name.trim().split(/\s+as\s+/)
+				if (read) reach(declaredIn[specifier] ?? specifier, read)
+			}
+		}
+		const sources = new Map<string, number>()
+		for (const [, specifier] of text.matchAll(virtualSource))
+			sources.set(specifier, (sources.get(specifier) ?? 0) + 1)
+		for (const [specifier, count] of sources) {
+			if (count !== (named.get(specifier) ?? 0))
+				reachAll(declaredIn[specifier] ?? specifier)
+		}
+	}
+	const reachImport = (declarations: Declarations, local: string): void => {
+		const text = declarations.imported.get(local)!
+		const [, name, , from] = namedImport.exec(text) ?? []
+		if (from) reach(declaredIn[from] ?? from, name)
+		else {
+			for (const [, specifier] of text.matchAll(virtualSource))
+				reachAll(declaredIn[specifier] ?? specifier)
+		}
+	}
+	const reach = (specifier: string, name: string): void => {
+		if (!(specifier in codes)) return
+		const known = reached.get(specifier)
+		if (known === true || known?.has(name)) return
+		const declarations = declarationsIn(specifier)
+		if (!declarations) return reachAll(specifier)
+		const { declared, imported, statements } = declarations
+		const names = known ?? new Set<string>()
+		names.add(name)
+		if (!known) {
+			reached.set(specifier, names)
+			// a statement run for its effect keeps what it names
+			for (const statement of statements) {
+				for (const [read] of statement.matchAll(/[\w$]+/g))
+					if (declared.has(read) || imported.has(read)) reach(specifier, read)
+			}
+		}
+		if (imported.has(name)) return reachImport(declarations, name)
+		for (const [read] of declared.get(name)?.reads ?? []) reach(specifier, read)
+	}
+	for (const text of siteTexts) reachImportsOf(text)
+	const result: Record<string, string> = {}
+	for (const specifier in codes) {
+		const names = reached.get(specifier)
+		const declarations = declarationsIn(specifier)
+		result[specifier] = codes[specifier]
+		// one no site reaches is left to the bundler, which drops it whole
+		if (!names || names === true || !declarations) continue
+		const { declared, imported, statements, exported } = declarations
+		if (
+			[...declared.keys()].every(name => names.has(name)) &&
+			[...exported].every(name => names.has(name))
+		)
+			continue
+		result[specifier] = [
+			...(codes[specifier].match(sideEffectImport) ?? []),
+			...[...imported].flatMap(([name, text]) => (names.has(name) ? text : [])),
+			...statements,
+			...[...declared].flatMap(([name, { text }]) =>
+				names.has(name) ? text : []
+			),
+			`export { ${[...exported].filter(name => names.has(name)).join(", ")} }`
+		].join("\n")
+	}
+	return result
 }
 
 const pureMarker = "/* @__PURE__ */ "

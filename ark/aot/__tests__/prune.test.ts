@@ -2164,6 +2164,58 @@ export { dAllows, setD }
 				])
 			})
 
+			it("are written with what the sites reach alone, through whichever unit reads it", () => {
+				const twice = (name: string) =>
+					`import { ${name}Allows as $ark_${name}Allows } from "~arktype/${name}"\nexport const ${name.toUpperCase()} = /* @__PURE__ */ $ark_create($ark_${name}Allows)\nexport const ${name.toUpperCase()}2 = /* @__PURE__ */ $ark_create($ark_${name}Allows)\n`
+				const { modules } = linkBundle(
+					{
+						"/main.ts": {
+							source: "export const B = type({})",
+							code: `import { create as $ark_create } from "~arktype/create"\n${twice("b")}${twice("d")}`
+						}
+					},
+					{
+						...units,
+						// its node and the unit it holds are what a Type only called leaves unread
+						"~arktype/b": `import * as runtime from "arktype/runtime"
+import { aAllows } from "~arktype/a"
+
+const bAllows = /* @__PURE__ */ runtime.props({ name: runtime.string })
+const b = [bAllows]
+const bNode = /* @__PURE__ */ runtime.freeze({ allows: b[0] })
+const held = aAllows
+const heldNode = /* @__PURE__ */ runtime.freeze({ allows: held })
+
+export { bAllows, b, bNode, held, heldNode }
+`,
+						// not declarations alone, so kept whole, with what it imports
+						"~arktype/d": `import { eAllows } from "~arktype/e"
+let d
+
+function setD() {
+	d = arguments[0]
+}
+
+const dAllows = data => d(data) && eAllows(data)
+
+export { dAllows, setD }
+`,
+						"~arktype/e": `import * as runtime from "arktype/runtime"
+
+const eAllows = /* @__PURE__ */ runtime.props({ title: runtime.string })
+const eNode = /* @__PURE__ */ runtime.freeze({ allows: eAllows })
+
+export { eAllows, eNode }
+`
+					},
+					{ sharesUnits: true }
+				)!
+				attest(printed(modules)).snap([
+					'// ~arktype/#0-#1\nimport * as runtime from "arktype/runtime"\nconst create = allows => data => allows(data)\nconst bAllows = /* @__PURE__ */ runtime.props({ name: runtime.string })\nconst eAllows = /* @__PURE__ */ runtime.props({ title: runtime.string })\nexport { create, bAllows, eAllows }',
+					'// ~arktype/d-#2\nimport { eAllows } from "~arktype/#0-#1"\nlet d\n\nfunction setD() {\n\td = arguments[0]\n}\n\nconst dAllows = data => d(data) && eAllows(data)\n\nexport { dAllows, setD }\n'
+				])
+			})
+
 			it("declare a call two of them write once, unless a function reads a name in it", () => {
 				const shape = `/* @__PURE__ */ runtime.props({ a: aAllows, name: runtime.string, title: runtime.string })`
 				const unit = (name: string, allows: string) =>
