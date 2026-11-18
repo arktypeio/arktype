@@ -361,6 +361,38 @@ export const narrowed = ((
 	return checker
 }) satisfies Fn
 
+/**
+ * a callback a build wrote where a unit reads it, as nothing names it: one a
+ * declaration held itself would be named for its variable, which what
+ * describes it would then read, and no minifier writes a function reading
+ * `arguments` into its call
+ */
+export function unnamed(): unknown {
+	// eslint-disable-next-line prefer-rest-params
+	return arguments[0]
+}
+
+/**
+ * a narrow a build read as `(data, ctx) => passes(data) || ctx.reject({ message })`,
+ * which is what it returns: the callback of nearly every field saying why it failed
+ */
+export const rejecting = ((passes: (data: any) => unknown, message: string) =>
+	(data: unknown, ctx: any) =>
+		passes(data) || ctx.reject({ message })) satisfies Fn
+
+/**
+ * the checker of that narrow, written where a unit reads it. Nothing names
+ * the callback, which is described here so nothing a minifier holds it in can
+ */
+export const rejectsWith = ((
+	passes: (data: any) => unknown,
+	message: string,
+	description: string = describePredicate({})
+): Checker => {
+	const narrow = rejecting(passes, message)
+	return narrowedWithCtx(() => narrow, description)
+}) satisfies Fn
+
 /** the checker a validator is created from, as a call a bundler may drop */
 export const allowsOf = ((validator: { allows: Checker }): Checker =>
 	validator.allows) satisfies Fn

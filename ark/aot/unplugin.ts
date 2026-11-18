@@ -1772,6 +1772,16 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				loadEsbuildModules(build, scan, esbuildResolve)
 				if (variant) resolveEsbuildVariant(build, variant)
 				resolveEsbuildRuntime(build)
+				// a unit holding a callback as text imports what that read from
+				// the file declaring it, which esbuild resolves from no module
+				// that isn't a file itself
+				build.onResolve(
+					{ filter: absoluteSpecifier, namespace: pluginName },
+					args =>
+						args.importer.includes("~arktype/") ?
+							{ path: args.path, namespace: "file" }
+						:	undefined
+				)
 			}
 		}
 	}
@@ -1824,6 +1834,9 @@ interface BundleScan {
 }
 
 const pluginName = "arktype"
+
+// a file's path on any platform, as a module's id is
+const absoluteSpecifier = /^(?:\/|[A-Za-z]:[/\\])/
 
 const checkerName = "arktype:unwritten"
 

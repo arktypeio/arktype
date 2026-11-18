@@ -1276,6 +1276,20 @@ class Linker {
 				// e.g. `export { other as name }`, which an import of it would read
 				else if (exported.kind !== "binding" || exported.binding !== outer)
 					return false
+			} else if (
+				source !== undefined &&
+				outer.kind === "import" &&
+				!isNamespaceImport(outer)
+			) {
+				// what a callback written into a unit reads of the app's own
+				// modules, under a name no other import is given
+				local = this.localOf(
+					read.unit,
+					outer.name,
+					importedNameOf(outer),
+					source,
+					imports
+				)
 			}
 			if (local === undefined) return false
 			const declared = this.declarationOf(owner, outer)?.[1]

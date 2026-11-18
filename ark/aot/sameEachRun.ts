@@ -23,13 +23,17 @@ const fixedGlobals = new Set(["undefined", "NaN", "Infinity"])
 type Located = [binding: Binding, module: SourceModule]
 
 // what a function runs if it's written in another module, as JavaScript: undefined
-// if it reads anything but what it declares and globals a module a build writes
-// can't declare, or what it's bound to, like `this`, differs there
+// if it reads anything but what it declares, globals a module a build writes
+// can't declare and what `aliasOf` names, which that module is to import under
+// the name it returns, or what it's bound to, like `this`, differs there. Of
+// `part`, an expression within it, only that part's text
 export const closedTextOf = (
 	fn: Node & { start: number; end: number },
-	module: SourceModule
+	module: SourceModule,
+	aliasOf?: (binding: Binding) => string | undefined,
+	part: Node & { start: number; end: number } = fn
 ): string | undefined => {
-	const erased: [start: number, end: number][] = []
+	const erased: [start: number, end: number, written?: string][] = []
 	const isClosed = (node: Node): boolean => {
 		switch (node.type) {
 			case "ThisExpression":
@@ -54,13 +58,23 @@ export const closedTextOf = (
 			case "Identifier": {
 				if ((node as { optional?: boolean }).optional) return false
 				const reference = module.scopes.byId.get(node)
-				if (
-					reference &&
-					(reference.binding ?
-						!contains(fn, reference.binding.id)
-					:	!(node.name in globalsByName))
-				)
-					return false
+				if (!reference) break
+				const { binding } = reference
+				if (!binding) {
+					if (!(node.name in globalsByName)) return false
+				} else if (!contains(fn, binding.id)) {
+					const alias = aliasOf?.(binding)
+					if (alias === undefined) return false
+					const { parent } = node
+					// `{ name }` reads it too, under the key it's written as
+					erased.push([
+						node.start,
+						node.end,
+						parent?.type === "Property" && parent.shorthand ?
+							`${node.name}: ${alias}`
+						:	alias
+					])
+				}
 			}
 		}
 		if (node.type.startsWith("TS") || node.type.startsWith("JSX")) return false
@@ -78,14 +92,115 @@ export const closedTextOf = (
 		}
 		return true
 	}
-	if (!isClosed(fn)) return
+	if (!isClosed(part)) return
 	let text = ""
-	let at = fn.start
-	for (const [start, end] of erased.sort(([l], [r]) => l - r)) {
-		text += module.source.slice(at, start)
+	let at = part.start
+	for (const [start, end, written = ""] of erased.sort(([l], [r]) => l - r)) {
+		// e.g. a shorthand's key and value, which are one span
+		if (start < at) continue
+		text += module.source.slice(at, start) + written
 		at = end
 	}
-	return text + module.source.slice(at, fn.end)
+	return text + module.source.slice(at, part.end)
+}
+
+/** what a narrow of the commonest shape tests and says */
+export interface Rejecting {
+	// the parameter it tests, by name
+	data: string
+	test: Node & { start: number; end: number }
+	// where test is a call of a function with that parameter alone, the function
+	callee: (Node & { start: number; end: number }) | undefined
+	// the message's own text, a string
+	message: string
+}
+
+// A narrow written `(data, ctx) => test || ctx.reject({ message: "..." })`, or
+// `test ? true : ctx.reject(...)`, as most reporting a message of their own
+// are: what it tests of data alone, and the message, which a call can hold in
+// place of the function. Only its truthiness is read, so the two are one
+export const rejectingOf = (
+	fn: Node,
+	module: SourceModule
+): Rejecting | undefined => {
+	if (
+		fn.type !== "ArrowFunctionExpression" ||
+		fn.async ||
+		fn.params.length !== 2 ||
+		fn.params[0].type !== "Identifier" ||
+		fn.params[1].type !== "Identifier"
+	)
+		return
+	const [data, ctx] = fn.params
+	const returned =
+		fn.body.type !== "BlockStatement" ? fn.body
+		: fn.body.body.length === 1 && fn.body.body[0].type === "ReturnStatement" ?
+			fn.body.body[0].argument
+		:	undefined
+	const body = returned && unwrapExpression(returned)
+	const [test, report] =
+		body?.type === "LogicalExpression" && body.operator === "||" ?
+			[body.left, body.right]
+		: (
+			body?.type === "ConditionalExpression" &&
+			body.consequent.type === "Literal" &&
+			body.consequent.value === true
+		) ?
+			[body.test, body.alternate]
+		:	[]
+	if (!test || !report) return
+	const call = unwrapExpression(report)
+	const [input] = call.type === "CallExpression" ? call.arguments : []
+	const [property] = input?.type === "ObjectExpression" ? input.properties : []
+	const isParam = (node: Node, param: Node) =>
+		node.type === "Identifier" &&
+		module.scopes.byId.get(node)?.binding?.id === param
+	if (
+		call.type !== "CallExpression" ||
+		call.optional ||
+		call.arguments.length !== 1 ||
+		call.callee.type !== "MemberExpression" ||
+		call.callee.computed ||
+		call.callee.optional ||
+		call.callee.property.name !== "reject" ||
+		!isParam(call.callee.object, ctx) ||
+		input?.type !== "ObjectExpression" ||
+		input.properties.length !== 1 ||
+		property?.type !== "Property" ||
+		property.kind !== "init" ||
+		property.computed ||
+		property.shorthand ||
+		property.key.type !== "Identifier" ||
+		property.key.name !== "message" ||
+		property.value.type !== "Literal" ||
+		typeof property.value.value !== "string"
+	)
+		return
+	// what it tests reads ctx nowhere
+	let readsCtx = false
+	walk(test, node => {
+		readsCtx ||= isParam(node, ctx)
+		return !readsCtx
+	})
+	if (readsCtx) return
+	const tested = unwrapExpression(test)
+	const callee =
+		(
+			tested.type === "CallExpression" &&
+			!tested.optional &&
+			tested.callee.type === "Identifier" &&
+			!isParam(tested.callee, data) &&
+			tested.arguments.length === 1 &&
+			isParam(tested.arguments[0], data)
+		) ?
+			tested.callee
+		:	undefined
+	return {
+		data: data.name,
+		test,
+		callee,
+		message: module.source.slice(property.value.start, property.value.end)
+	}
 }
 
 // Each run of a module's text creates its functions anew: a chunk imported

@@ -1143,6 +1143,142 @@ console.log(String(List({ a: "x", b: "abc" })), (globalThis as any).calls)
 		})
 	})
 
+	describe("a narrow that reads its ctx, or what its module imports", () => {
+		const main = `import { type } from "arktype"
+import { Name } from "./name.ts"
+
+const User = type({ name: Name, "alias?": Name })
+const tell = (out: unknown) =>
+	console.log(out instanceof type.errors ? out.issues.map(issue => \`\${issue.code} \${issue.path.join(".")} \${issue.expected}: \${issue.message}\`).join("; ") : JSON.stringify(out))
+
+tell(User({ name: "x" }))
+tell(User({ name: "ab", alias: 1 }))
+tell(User({ name: "abc", alias: "x" }))
+tell(User({ name: "abc" }))
+console.log(User.allows({ name: "x" }), User.allows({ name: "abc" }))
+`
+		const nameOf = (narrow: string, imports = "") =>
+			`import { type } from "arktype"\n${imports}\nexport const Name = type("string").narrow(${narrow})\n`
+
+		const moves = (name: string, narrow: string, written: RegExp) => {
+			const files = { "name.ts": nameOf(narrow), "main.ts": main }
+			itBehavesAsWhole(`${name}, in a default build`, files, { cells: false })
+			itBehavesAsWhole(`${name}, in a smallest build`, files, {
+				cells: false,
+				opts: { preset: "smallest" }
+			})
+			it(`${name}, as a smallest build writes it`, async () => {
+				const root = fixture(`${name.replace(/\W+/g, "-")}-written`, files)
+				const js = await esbuildBundle(root, { preset: "smallest" })
+				attest(written.test(js)).equals(true)
+				attest(/\bheld\(/.test(js)).equals(false)
+			})
+		}
+
+		moves(
+			"holds one that tests its data or rejects with a message as the test and the message",
+			`(s, ctx) => s.length > 2 || ctx.reject({ message: "Too short." })`,
+			/\brejecting\(\(?s\)? => \(?s\.length > 2\)?, "Too short\."\)/
+		)
+		moves(
+			"holds one written as a conditional the same way",
+			`(s: string, ctx) => { return s.length > 2 ? true : ctx.reject({ message: 'Too short.' }) }`,
+			/\brejecting\(\(?s\)? => \(?s\.length > 2\)?, ["']Too short\.["']\)/
+		)
+		// what it returns without a report is described by its name, which is none
+		moves(
+			"holds any other by its text, which nothing names",
+			`(s, ctx) => { if (s === "x") return ctx.mustBe("something else"); return s.length > 2 }`,
+			/\bunnamed\(\(s, ctx\) => {/
+		)
+
+		const helped = (helpers: string, narrow: string): Files => ({
+			"helpers.ts": helpers,
+			"name.ts": nameOf(narrow, `import { isLong } from "./helpers.ts"\n`),
+			"main.ts": main
+		})
+		const rejectsShort = `(s, ctx) => isLong(s) || ctx.reject({ message: "Too short." })`
+		const inert = `const least = 2\n\nexport const isLong = (s: string) => s.length > least\n`
+
+		for (const [bundler, bundle] of Object.entries(bundlers)) {
+			it(`imports what it reads of a module that only declares, bundled by ${bundler}`, async () => {
+				const root = fixture(
+					`inertHelper-${bundler}`,
+					helped(inert, rejectsShort)
+				)
+				const js = await bundle(root, { preset: "smallest" })
+				attest(setsCell(js)).equals(false)
+				// the function it calls, by the name its module declares it under
+				attest(/\brejecting\(\w+, "Too short\."\)/.test(js)).equals(true)
+				attest(behaviorOf(js)).equals(
+					behaviorOf(
+						await esbuildBundle(root, { preset: "smallest", prune: false })
+					)
+				)
+			})
+		}
+
+		itBehavesAsWhole(
+			"imports it where its module imports another that only declares",
+			{
+				...helped(
+					`import { least } from "./least.ts"\n\nexport const isLong = (s: string) => s.length > least\n`,
+					rejectsShort
+				),
+				"least.ts": `export const least = 2\n`
+			},
+			{ cells: false, opts: { preset: "smallest" } }
+		)
+
+		itBehavesAsWhole(
+			"imports it for one a default build holds too",
+			helped(
+				inert,
+				`(s, ctx) => { if (s === "x") return ctx.mustBe("something else"); return isLong(s) }`
+			),
+			{ cells: false }
+		)
+
+		const staysAt = (name: string, files: Files) =>
+			itBehavesAsWhole(name, files, {
+				cells: true,
+				opts: { preset: "smallest" }
+			})
+
+		staysAt(
+			"stays at its site where loading what it imports runs something",
+			helped(
+				`console.log("helpers loaded")\n\nexport const isLong = (s: string) => s.length > 2\n`,
+				rejectsShort
+			)
+		)
+		staysAt(
+			"stays at its site where what it imports imports a module that does",
+			{
+				...helped(
+					`import { least } from "./least.ts"\n\nexport const isLong = (s: string) => s.length > least\n`,
+					rejectsShort
+				),
+				"least.ts": `console.log("least loaded")\n\nexport const least = 2\n`
+			}
+		)
+		// such a module imports the validators' own, which would import it
+		staysAt(
+			"stays at its site where what it imports is declared beside a Type",
+			helped(
+				`import { type } from "arktype"\n\nexport const Short = type("string < 3")\nexport const isLong = (s: string) => !Short.allows(s)\n`,
+				rejectsShort
+			)
+		)
+		staysAt("stays at its site where it reads what its own module declares", {
+			"name.ts": nameOf(
+				rejectsShort,
+				`\nconst isLong = (s: string) => s.length > 2\n`
+			),
+			"main.ts": main
+		})
+	})
+
 	describe("what a validator holds of its id", () => {
 		const root = fixture("comparedIds", {
 			"containers.ts": `import { type } from "arktype"

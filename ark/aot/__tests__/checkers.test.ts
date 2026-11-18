@@ -765,6 +765,52 @@ s must be reached
 		})
 	})
 
+	it("writes a narrow that tests its data or rejects with a message where its field is checked", async () => {
+		const main = `import { type } from "arktype"
+import { isSlug } from "./helpers.ts"
+
+const print = (out: unknown) =>
+	console.log(out instanceof type.errors ? out.issues.map(issue => \`\${issue.code} \${issue.path.join(".")} \${issue.expected}: \${issue.message}\`).join("\\n") : JSON.stringify(out))
+const Post = type({
+	slug: type("1 <= string <= 20").narrow((s, ctx) => isSlug(s) || ctx.reject({ message: "Use lowercase letters and dashes." })),
+	title: type("1 <= string <= 20").configure({ message: "Title must be 1 to 20 characters." }).narrow((s, ctx) => s.trim() === s ? true : ctx.reject({ message: "Title can't start or end with a space." })),
+	"tags?": type("string").narrow((s, ctx) => !s.includes(",") || ctx.reject({ message: "One tag at a time." })).array()
+})
+print(Post({ slug: "A", title: " a", tags: ["a,b", 1] }))
+print(Post({ slug: "", title: "" }))
+print(Post({ slug: "a-b", title: "a", tags: ["a"] }))
+print(Post.allows({ slug: "A", title: "a" }))
+${repaying}
+`
+		const root = writeFixture(
+			{
+				"main.ts": main,
+				"helpers.ts": `const slug = /^[a-z-]+$/\n\nexport const isSlug = (s: string) => slug.test(s)\n`
+			},
+			fromHere("temp", "checkers", "rejects")
+		)
+		// as arktype prints them
+		const expected = behaviorOf(await bundle(root, { prune: false }))
+		attest(expected)
+			.snap(`predicate slug valid according to an anonymous predicate: Use lowercase letters and dashes.
+predicate title valid according to an anonymous predicate: Title can't start or end with a space.
+predicate tags.0 valid according to an anonymous predicate: One tag at a time.
+domain tags.1 a string: must be a string
+minLength slug non-empty: must be non-empty
+minLength title non-empty: Title must be 1 to 20 characters.
+{"slug":"a-b","title":"a","tags":["a"]}
+false
+`)
+		attest(behaviorOf(await bundle(root))).equals(expected)
+		const checkers = await bundle(root, smallest)
+		attest(behaviorOf(checkers)).equals(expected)
+		// each is one call where its field is checked, after the checker of what
+		// it narrows: no variable holds it and no site sets one
+		attest(checkers.match(/\brejectsWith\(/g)?.length).equals(3)
+		attest(/\brejectsWith\(isSlug, "Use lowercase/.test(checkers)).equals(true)
+		attest(/sethole|\bheld\(/.test(checkers)).equals(false)
+	})
+
 	describe("a narrow that reaches its ctx only to return what it reports", () => {
 		// the same callback either way: holding its ctx leaves it unproved
 		const reporting = (returns: string): [string, string, string] => [

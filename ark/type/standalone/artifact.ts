@@ -592,9 +592,13 @@ export class StandaloneArtifact {
 		const module: SharedModule =
 			cell.text !== undefined ?
 				{
-					readsRuntime: false,
-					imports: {},
-					declarations: [`var ${cell.name} = ${cell.text}`],
+					readsRuntime: true,
+					imports: cell.imports ?? {},
+					// through a call, as declared itself it would be named for the
+					// variable, which a narrow with no description is described by
+					declarations: [
+						`var ${cell.name} = ${cell.rejects === undefined ? `/* @__PURE__ */ runtime.unnamed(${cell.text})` : cell.text}`
+					],
 					exports: [cell.name]
 				}
 			:	{
@@ -1851,7 +1855,9 @@ return namespace`
 	}
 
 	// a ref read as its code runs, once the site holding the cell has, or a
-	// cell holding its function's text, which a checker holds itself
+	// cell holding its function's text, which a checker holds itself where the
+	// function reads only its argument, or only tests it and rejects with a
+	// message, importing what the text reads of other modules
 	readsCells(fn: string): string {
 		if (!this.writing) return fn
 		const { cellReads, narrowedBy } = this.writing
@@ -1859,16 +1865,30 @@ return namespace`
 		return refs.length ?
 				fn.replace(
 					new RegExp(
-						`(runtime\\.narrowedBy\\(\\(\\) => )?\\b(${refs.join("|")})\\b`,
+						`(runtime\\.narrowed(By|WithCtx)\\(\\(\\) => )?\\b(${refs.join("|")})\\b`,
 						"g"
 					),
-					(_, narrows: string | undefined, ref: string) => {
+					(
+						_,
+						narrows: string | undefined,
+						kind: "By" | "WithCtx" | undefined,
+						ref: string
+					) => {
 						const cell = narrowedBy[ref]
-						return (
-							!cell ? `${narrows ?? ""}${cellReads[ref]}`
-							: narrows ? `runtime.narrowed(${cell.text}`
-							: this.readCell(cell)
-						)
+						if (!cell) return `${narrows ?? ""}${cellReads[ref]}`
+						const held =
+							kind === "WithCtx" ?
+								cell.rejects !== undefined &&
+								`runtime.rejectsWith(${cell.rejects}`
+							:	kind === "By" &&
+								cell.rejects === undefined &&
+								`runtime.narrowed(${cell.text}`
+						if (!held) return `${narrows ?? ""}${this.readCell(cell)}`
+						for (const specifier in cell.imports) {
+							for (const name of cell.imports[specifier])
+								this.importName(specifier, name)
+						}
+						return held
 					}
 				)
 			:	fn

@@ -227,6 +227,12 @@ export interface HoleCell {
 	// the function's own text, where what it reads means the same in any module,
 	// so the cell holds it and no site sets it
 	text?: string | undefined
+	// what that text reads of other modules, each under a name of the cell's,
+	// which keeps it where those are imported: in the cell's own module
+	imports?: Record<string, string[]> | undefined
+	// where it only tests its data and rejects with a message, what `rejecting`
+	// is passed to return it, which its text then calls
+	rejects?: string | undefined
 }
 
 export interface HoleCells {

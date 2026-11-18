@@ -192,8 +192,9 @@ import {
 } from "./interpreter.ts"
 import { parseCode, SourceModule } from "./module.ts"
 import type { Preset } from "./presets.ts"
+import { inertImportsOf } from "./inert.ts"
 import { isTransparent } from "./proofs.ts"
-import { closedTextOf, SameEachRun } from "./sameEachRun.ts"
+import { closedTextOf, rejectingOf, SameEachRun } from "./sameEachRun.ts"
 import { resolvePrecompileOptions } from "./settings.ts"
 import {
 	exportNameOf,
@@ -646,6 +647,15 @@ const defersCreation = ({ code, modules }: StandaloneModules): boolean => {
 	return chars >= deferredFrom
 }
 
+// a cell's name, which is its function's, as the build named that for its content
+const cellNameOf = (hole: unknown): string => {
+	const placeholder = functionNameOf(hole as Fn)
+	return `hole${placeholder.slice(placeholder.indexOf(holeNameMarker) + holeNameMarker.length)}`
+}
+
+// what a cell holding its function's text is declared with
+type CellText = Pick<HoleCell, "imports" | "rejects"> & { text: string }
+
 // a cell some site sets
 const isSetCell = (hole: unknown, cells: HoleCells | undefined): boolean => {
 	const cell = cells?.byHole.get(hole)
@@ -738,6 +748,10 @@ export class Precompiler {
 	// whether a site of the program read whole reads a Type off a holder
 	private readsOffHolders: boolean | undefined
 	private sameEachRun: SameEachRun | undefined
+	// the modules a program's build writes, which import its units
+	private siteModules: ReadonlySet<string> = new Set()
+	// whether loading each module read for a cell's text runs nothing
+	private declaresOnlyById = new Map<string, boolean>()
 	private runsApart: ReadonlySet<string> = new Set()
 	// whether the program's bundler runs each module it holds once for a runtime
 	private runsOnce = false
@@ -1236,12 +1250,14 @@ export class Precompiler {
 				}
 			}
 		}
-		const texts = new Map<unknown, string>()
+		this.siteModules = new Set(precompiled)
+		this.declaresOnlyById.clear()
+		const texts = new Map<unknown, CellText>()
 		for (const [site] of factories) {
 			for (const reference of site.references) {
-				if (!isCell.get(reference.value)) continue
+				if (!isCell.get(reference.value) || texts.has(reference.value)) continue
 				const text = this.closedPredicateTextOf(site, reference)
-				if (text !== undefined) texts.set(reference.value, text)
+				if (text) texts.set(reference.value, text)
 			}
 		}
 		// a validator can read one only where its site runs what sets it
@@ -1269,10 +1285,7 @@ export class Precompiler {
 				placeholders.lastIndexOf(placeholder)
 			)
 				continue
-			const cell: HoleCell = {
-				name: `hole${placeholder.slice(placeholder.indexOf(holeNameMarker) + holeNameMarker.length)}`,
-				text: texts.get(hole)
-			}
+			const cell: HoleCell = { name: cellNameOf(hole), ...texts.get(hole) }
 			byHole.set(hole, cell)
 			byPlaceholder.set(placeholder, cell)
 		}
@@ -1356,13 +1369,14 @@ export class Precompiler {
 		return cells
 	}
 
-	// the text of a narrow written in place, which can read only its argument and
-	// what's closed over nothing of its module. What runs it never reads its name,
-	// which a variable holding it would change, as a build writes its description
+	// the text of a narrow a unit holds, which reads only what it's passed, what
+	// it declares and what it imports of modules loading which runs nothing. One
+	// reading only its argument is written where it's read; any other, in its
+	// cell's module, by a call, so nothing names it for a variable holding it
 	private closedPredicateTextOf(
 		site: Site,
 		reference: Site["references"][number]
-	): string | undefined {
+	): CellText | undefined {
 		const { value } = reference
 		const standIn = this.standInOf(value)
 		const node = standIn?.closure?.node
@@ -1373,7 +1387,6 @@ export class Precompiler {
 			reference.binding ||
 			reference.start !== node.start ||
 			reference.end !== node.end ||
-			!readsOnlyData.has(value as Fn) ||
 			declaredNameOf(node) !== "" ||
 			// a read of its Type before its site has run throws where a site sets it
 			this.isOnCycle(standIn!.module) ||
@@ -1384,7 +1397,79 @@ export class Precompiler {
 			)
 		)
 			return
-		return closedTextOf(node, standIn!.module)
+		return this.cellTextOf(cellNameOf(value), node, standIn!.module)
+	}
+
+	// a function's text as its cell's module holds it: what it reads of another
+	// module is imported there from the module declaring it, under a name of
+	// the cell's own, as units sharing a module share its names
+	private cellTextOf(
+		name: string,
+		node: Node,
+		module: SourceModule
+	): CellText | undefined {
+		const imports: Record<string, string[]> = {}
+		const aliases = new Map<Binding, string | undefined>()
+		const aliasOf = (binding: Binding) => {
+			if (aliases.has(binding)) return aliases.get(binding)
+			const target =
+				binding.kind === "import" ?
+					this.graph.importOf(binding, module)
+				:	undefined
+			let alias: string | undefined
+			if (
+				target?.kind === "binding" &&
+				!this.runsApart.has(target.module.id) &&
+				this.declaresOnly(target.module)
+			) {
+				alias = `${name}_${aliases.size}`
+				;(imports[target.module.id] ??= []).push(`${target.name} as ${alias}`)
+			}
+			aliases.set(binding, alias)
+			return alias
+		}
+		// one that only tests data and rejects with a message is a call holding
+		// the test and the message, the test a function's name where it's one
+		const rejecting = rejectingOf(node, module)
+		const tested =
+			rejecting &&
+			closedTextOf(node, module, aliasOf, rejecting.callee ?? rejecting.test)
+		const rejects =
+			tested === undefined ? undefined
+			: rejecting!.callee ? `${tested}, ${rejecting!.message}`
+			: `${rejecting!.data} => (${tested}), ${rejecting!.message}`
+		const text =
+			rejects === undefined ?
+				closedTextOf(node, module, aliasOf)
+			:	`/* @__PURE__ */ runtime.rejecting(${rejects})`
+		if (text === undefined) return
+		return {
+			text,
+			...(Object.keys(imports).length ? { imports } : {}),
+			...(rejects === undefined ? {} : { rejects })
+		}
+	}
+
+	// whether loading a module, and each it imports, runs nothing but
+	// declarations, so a unit importing it changes nothing by loading it first.
+	// A module the build writes imports units, and one on a cycle loads in an
+	// order its entry decides, so neither is
+	// (`isInert` asks another question, of a module declaring Types)
+	private declaresOnly(module: SourceModule): boolean {
+		let declares = this.declaresOnlyById.get(module.id)
+		if (declares === undefined) {
+			this.declaresOnlyById.set(module.id, false)
+			const imports =
+				this.siteModules.has(module.id) ? undefined : inertImportsOf(module)
+			declares =
+				!!imports &&
+				imports.every(specifier => {
+					const target = this.graph.resolve(specifier, module)
+					return target instanceof SourceModule && this.declaresOnly(target)
+				})
+			this.declaresOnlyById.set(module.id, declares)
+		}
+		return declares
 	}
 
 	// a module another plugin rewrote creates its holes anew, where what the scan
@@ -1408,11 +1493,15 @@ export class Precompiler {
 		const after = functionsIn(sites)
 		const nameOf = (hole: unknown) =>
 			declaredNameOf(this.standInOf(hole)!.closure!.node)
-		const isSameText = (text: string | undefined, hole: unknown) => {
+		const isSameText = ({ name, text, imports }: HoleCell, hole: unknown) => {
 			if (text === undefined) return true
 			const { closure, module } = this.standInOf(hole)!
-			const after = closedTextOf(closure!.node, module)
-			return after !== undefined && shapeOfCode(after) === shapeOfCode(text)
+			const after = this.cellTextOf(name, closure!.node, module)
+			return (
+				after !== undefined &&
+				shapeOfCode(after.text) === shapeOfCode(text) &&
+				JSON.stringify(after.imports) === JSON.stringify(imports)
+			)
 		}
 		const isSame = (i: number) =>
 			!cells.byHole.has(before[i]) ||
@@ -1423,7 +1512,7 @@ export class Precompiler {
 					readsOnlyData.has(before[i] as Fn) &&
 				returnsReports.has(after[i] as Fn) ===
 					returnsReports.has(before[i] as Fn) &&
-				isSameText(cells.byHole.get(before[i])!.text, after[i]) &&
+				isSameText(cells.byHole.get(before[i])!, after[i]) &&
 				sites.every(site =>
 					site.references.every(
 						reference => reference.value !== after[i] || reference.isOneValue
