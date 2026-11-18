@@ -22,10 +22,10 @@ const scope = self as unknown as {
 
 /** `const Name = <expression>`, the one statement the figure's file holds */
 const declaration =
-	/^\s*(?:export\s+)?const\s+([A-Za-z_$][\w$]*)\s*=\s*([\s\S]+?);?\s*$/
+	/^\s*(?:export\s+)?const\s+([$A-Z_a-z][\w$]*)\s*=\s*([\S\s]+?);?\s*$/
 
 /** a check as the default build writes it: whether data is allowed, and nothing else */
-const check = /^const \w+Allows = function \(data, ctx\) \{[\s\S]*?\n \}$/gm
+const check = /^const \w+Allows = function \(data, ctx\) {[\S\s]*?\n }$/gm
 
 /** as the playground's Precompiled tab asks for a module no bundler scanned */
 const optionsOf = (name: string): StandaloneOptions => ({
@@ -49,19 +49,20 @@ const optionsOf = (name: string): StandaloneOptions => ({
 const reflow = (written: string) =>
 	written
 		.replaceAll(/\/\* @__(?:NOINLINE|PURE)__ \*\/ /g, "")
-		.replace(/\{ {5}/, "{\n    ")
-		.replace(/\n \}$/, "\n}")
+		.replace(/{ {5}/, "{\n    ")
+		.replace(/\n }$/, "\n}")
 		.replaceAll(/^( {4})+/gm, indent => "\t".repeat(indent.length / 4))
 
 const messageOf = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
 const compile = (source: string): CompileResult => {
 	const match = declaration.exec(source)
-	if (!match)
+	if (!match) {
 		return {
 			ok: false,
 			message: "This file is one declaration: const Shape = type(…)"
 		}
+	}
 	const [, name, expression] = match
 	let exported: unknown
 	try {

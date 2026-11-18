@@ -1105,7 +1105,7 @@
 		gap: 10px;
 		.lbl {
 			flex-basis: 100%;
-			font: 400 13px / 1 var(--mono);
+			font: 400 13px / 1.4 var(--mono);
 			color: var(--ink-2);
 			margin-bottom: 6px;
 		}

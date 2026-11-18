@@ -3,7 +3,6 @@ import { formatRatio } from "../../lib/bench/bench.ts"
 import { wellKnownRule } from "../../lib/bench/leaderboard.ts"
 import {
 	averageText,
-	categories,
 	claims,
 	draftOf,
 	headlineMethod,

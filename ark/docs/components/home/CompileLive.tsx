@@ -34,7 +34,7 @@ export const Step = ({ n, children }: StepProps) => (
 )
 
 const tokens =
-	/("(?:[^"\\\n]|\\.)*")|\b(const|function|return|for|if|break|switch|case|typeof|true|false)\b|\b(\d+(?:\.\d+)?)\b/g
+	/("(?:[^\n"\\]|\\.)*")|\b(const|function|return|for|if|break|switch|case|typeof|true|false)\b|\b(\d+(?:\.\d+)?)\b/g
 
 /** emitted JavaScript, coloured enough to read: strings, keywords and numbers */
 const paint = (code: string): ReactNode[] => {

@@ -169,7 +169,7 @@ const show = (v: unknown): string =>
  * one, so the parser's own "'{' is unresolvable" would read as a bug.
  */
 const literalHint = (def: string) =>
-	/^\s*\{/.test(def) ?
+	/^\s*{/.test(def) ?
 		'an object is written as a value, not in the string: type({ a: "string" })'
 	: /^\s*\[/.test(def) ?
 		'a tuple is written as a value, not in the string: type(["string", "number"])'
@@ -178,13 +178,14 @@ const literalHint = (def: string) =>
 /** parses `def` with the real parser, then validates `arg` against it */
 export const evaluate = (def: string, arg: string): LiveState => {
 	const hint = literalHint(def)
-	if (hint)
+	if (hint) {
 		return {
 			def,
 			ok: false,
 			message: hint,
 			out: "// this line takes one string definition"
 		}
+	}
 	let T: ReturnType<typeof define>
 	try {
 		T = define(def)
