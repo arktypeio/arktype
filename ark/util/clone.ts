@@ -1,5 +1,21 @@
 import { getBuiltinNameOfConstructor } from "./objectKinds.ts"
 
+const temporal = (globalThis as { Temporal?: Record<string, unknown> }).Temporal
+const temporalPrototypes = new Set<unknown>(
+	[
+		temporal?.Duration,
+		temporal?.Instant,
+		temporal?.PlainDate,
+		temporal?.PlainDateTime,
+		temporal?.PlainMonthDay,
+		temporal?.PlainTime,
+		temporal?.PlainYearMonth,
+		temporal?.ZonedDateTime
+	].flatMap(constructor =>
+		typeof constructor === "function" ? [constructor.prototype] : []
+	)
+)
+
 /** Shallowly copy the properties of the object. */
 export const shallowClone: <input extends object>(
 	input: input
@@ -22,10 +38,12 @@ const _clone = (input: unknown, seen: Map<unknown, unknown> | null): any => {
 	// are rebound in case they reference `this` (see https://x.com/colinhacks/status/1818422039210049985)
 	if (builtinConstructorName && builtinConstructorName !== "Array") return input
 
-	const cloned =
-		Array.isArray(input) ?
-			input.slice()
-		:	Object.create(Object.getPrototypeOf(input))
+	const isArray = Array.isArray(input)
+	const prototype = isArray ? null : Object.getPrototypeOf(input)
+	// Preserve the internal slots of immutable Temporal values.
+	if (temporalPrototypes.has(prototype)) return input
+
+	const cloned = isArray ? input.slice() : Object.create(prototype)
 
 	const propertyDescriptors = Object.getOwnPropertyDescriptors(input)
 
