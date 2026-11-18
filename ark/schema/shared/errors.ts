@@ -459,9 +459,21 @@ export class ArkTraversal extends Traversal {
 			value === undefined &&
 			site.m &&
 			!(key in (data as object))
+		const context = (missing ? site.m : site.v) as NodeErrorContextInput
+		// a site keeps the builder found for each of its contexts, where finding
+		// one by its context is a hashed lookup for every error
+		let build = (missing ? site.mb : site.vb) as ErrorBuilder | undefined
+		if (build === undefined) {
+			build = builderOf(context, this.config)
+			if (build) {
+				if (missing) site.mb = build
+				else site.vb = build
+			}
+		}
 		this.addError(
-			errorOfNodeContext(
-				(missing ? site.m : site.v) as NodeErrorContextInput,
+			errorBuiltBy(
+				build,
+				context,
 				pathAt(this.path, key),
 				missing ? data : value,
 				this.config
@@ -706,16 +718,20 @@ const errorOfNodeContext = (
 	path: PropertyKey[],
 	data: unknown,
 	config: ResolvedConfig
-): ArkError => {
-	let build = buildersByContext.get(context)
-	if (!build && compileBuilder && !config.jitless) {
-		build = compileBuilder(context)
-		if (build) buildersByContext.set(context, build)
-	}
-	return build ?
-			build(context, path, data, stampError(new StampedFirst(), config))
-		:	stampError({ data, path, ...context } as never, config)
-}
+): ArkError =>
+	errorBuiltBy(builderOf(context, config), context, path, data, config)
+
+// a context's error: built by its compiled builder, or spread where there's none
+const errorBuiltBy = (
+	build: ErrorBuilder | undefined,
+	context: ArkErrorContextInput,
+	path: PropertyKey[],
+	data: unknown,
+	config: ResolvedConfig
+): ArkError =>
+	build ?
+		build(context, path, data, stampError(new StampedFirst(), config))
+	:	stampError({ data, path, ...context } as never, config)
 
 // the object a compiled builder assigns an error's keys to: plain, as its
 // prototype is Object's, but constructed, so each has the same shape when it's
@@ -730,6 +746,19 @@ const StampedFirst: new () => ArkError = function (
 	this.path = undefined
 } as never
 StampedFirst.prototype = Object.prototype
+
+// compiled the first time a context fails, unless its config is jitless
+const builderOf = (
+	context: ArkErrorContextInput,
+	config: ResolvedConfig
+): ErrorBuilder | undefined => {
+	let build = buildersByContext.get(context)
+	if (!build && compileBuilder && !config.jitless) {
+		build = compileBuilder(context)
+		if (build) buildersByContext.set(context, build)
+	}
+	return build
+}
 
 const buildersByContext = new WeakMap<object, ErrorBuilder>()
 

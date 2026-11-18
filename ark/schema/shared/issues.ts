@@ -59,6 +59,12 @@ export interface FailureSite extends Partial<SiteContext> {
 	v?: SiteContext
 	/** the context the missing key fails with */
 	m?: SiteContext
+	/**
+	 * @internal the functions arktype's own traversal builds v's and m's errors
+	 * with, kept on the site once found. A standalone validator has none
+	 */
+	vb?: ((...args: never[]) => unknown) | undefined
+	mb?: ((...args: never[]) => unknown) | undefined
 }
 
 export interface UnionSite {

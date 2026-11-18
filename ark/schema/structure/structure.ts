@@ -356,7 +356,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	// a key it doesn't declare is reported from its site
 	override get failSite(): FailureSite {
 		return (this.c.failSite ??= {
-			v: { code: "undeclared", meta: this.meta } as SiteContext
+			v: { code: "undeclared", meta: this.meta } as SiteContext,
+			vb: undefined,
+			mb: undefined
 		}) as FailureSite
 	}
 
