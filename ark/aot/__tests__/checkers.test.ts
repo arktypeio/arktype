@@ -265,6 +265,39 @@ amount: Enter an amount.
 			// the missing key of a field whose checks say it, not its checker
 			attest(checkers.match(/sayingMissing\(/g)?.length).equals(2)
 		})
+
+		it("is said by one checker of a pattern, however many Types say it", async () => {
+			const root = fixture(
+				"says-pattern",
+				`import { type } from "arktype"
+
+${printing}
+const email = () => type("string.email").configure({ message: "Enter an email." })
+const Invite = type({ to: email(), code: type(/^[a-z]+$/).configure({ message: "Letters only." }) })
+const Reply = type({ from: email(), code: "string" })
+print(Invite({ to: "a", code: "A" }))
+print(Reply({ from: 1, code: "A" }))
+print(Reply({ from: "a@b.co", code: "A" }))
+${repaying}
+`
+			)
+			// as arktype prints them
+			const expected = `pattern an email address: Enter an email.
+pattern matched by ^[a-z]+$: Letters only.
+to: Enter an email.
+code: Letters only.
+domain a string: Enter an email.
+from: Enter an email.
+{"from":"a@b.co","code":"A"}
+`
+			attest(behaviorOf(await bundle(root))).equals(expected)
+			const checkers = await bundle(root, smallest)
+			attest(behaviorOf(checkers)).equals(expected)
+			// the RegExp of what's checked without the message is arktype's own,
+			// so both Types read one checker, neither a function passed it
+			attest(checkers.match(/"Enter an email\."/g)?.length).equals(1)
+			attest(checkers.match(/@\[/g)?.length).equals(1)
+		})
 	})
 
 	it("has the runtime fill a node its own traversals read, where a callback reads its ctx", async () => {

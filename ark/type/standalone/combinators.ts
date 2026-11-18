@@ -14,6 +14,8 @@ import {
 	type UnionNode,
 	type UnitNode
 } from "@ark/schema"
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import { keyPatternsBySource } from "@ark/schema/internal"
 import { domainOf, isWellFormedInteger, returnsReports } from "@ark/util"
 import * as runtime from "../runtimeExports.ts"
 import {
@@ -84,6 +86,8 @@ const says = (node: BaseRoot): boolean => {
 		)
 	)
 		return false
+	// its patterns are none of the node's, whose unit is named by what it reads
+	keyPatternsBySource(plain)
 	saidByNode.set(node, { message, plain })
 	return true
 }
