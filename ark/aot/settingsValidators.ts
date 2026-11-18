@@ -192,10 +192,13 @@ var isIdentifier =
 		}
 	:	void 0
 var lineOf = issue => {
-	if (listsUnions && issue._l !== void 0) return issue._l
 	const message = (issue.message ??= messageOf(issue))
 	const path = pathOf(issue)
-	return path ? path + (customOf(issue) ? ": " : " ") + message : message
+	return (
+		listsUnions && issue._l !== void 0 ? issue._l
+		: path ? path + (writesText && issue._c ? ": " : " ") + message
+		: message
+	)
 }
 var messageOf = issue =>
 	issue.expected !== void 0 ?
@@ -300,8 +303,8 @@ var check = (code, description, test) => {
 	checker.test = test
 	return checker
 }
-var wrapping = checker =>
-	Object.assign((data, ctx) => checker(data, ctx), checker)
+var wrapping = (checker, also) =>
+	Object.assign((data, ctx) => checker(data, ctx), checker, also)
 var stringCheck = /* @__PURE__ */ check(
 	"domain",
 	"a string",
@@ -363,16 +366,10 @@ var intersection = (
 	checker.t = within?.t
 	return checker
 }
-var optional = (checker, ...value) => {
-	const wrapped = wrapping(checker)
-	wrapped.o = 1
-	wrapped.d = value
-	return wrapped
-}
-var missingSiteOf = ({ description, x, c }) =>
-	x === void 0 ?
-		requiredSiteOf(description)
-	:	{ m: { code: "required", description, x, c } }
+var optional = (checker, ...value) => wrapping(checker, { o: 1, d: value })
+var missingSiteOf = ({ description, x, c }) => ({
+	m: { code: "required", description, x, c: x === void 0 ? x : c }
+})
 var failsValue = (ctx, checker, data, k, value) =>
 	ctx?._at ?
 		appliesValues && checker.e ? checker.e(ctx, checker, value, k)
@@ -641,9 +638,6 @@ var domains = (cases, description = describeDomains(cases), fails) => {
 // ark/type/runtime.ts
 var freeze = /* @__PURE__ */ (() => Object.freeze)()
 var siteOf = (code, description, message) => ({ code, description, x: message })
-var requiredSiteOf = description => ({
-	m: { code: "required", description }
-})
 var failsAt = (ctx, site, data, key) => !ctx?._at || ctx._at(site, data, key)
 var checkedDefaultOf = ([id, holes]) => {
 	let table = checkedDefaults.next(id)

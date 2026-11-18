@@ -280,10 +280,13 @@ export const pathOf = (issue: {
 
 // an issue's line of a summary, as issues.ts's lineOf
 export const lineOf = (issue: ArkIssue): string => {
-	if (listsUnions && issue._l !== undefined) return issue._l
 	const message = (issue.message ??= messageOf(issue))
 	const path = pathOf(issue)
-	return path ? path + (customOf(issue) ? ": " : " ") + message : message
+	return (
+		listsUnions && issue._l !== undefined ? issue._l
+		: path ? path + (writesText && issue._c ? ": " : " ") + message
+		: message
+	)
 }
 
 // an undeclared key's site says what's expected, as issues.ts's messageOf

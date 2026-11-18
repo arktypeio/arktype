@@ -455,13 +455,19 @@ const isIdentifier: (k: PropertyKey) => boolean =
 /**
  * @internal an issue's line of a summary: its message after its path, one
  * configured or supplied as a sentence after a colon. A union listing its
- * branches' issues names each one's path instead
+ * branches' issues names each one's path instead. Each flag is read in the
+ * one expression returned: a bundler that inlines a flag as it prints folds
+ * an expression it's in, and leaves a statement testing it, and a function
+ * returning it, as they are. A listed issue's message is set as it's created
  */
 export const lineOf = (issue: ArkIssue): string => {
-	if (listsUnions && issue._l !== undefined) return issue._l
 	const message = (issue.message ??= messageOf(issue))
 	const path = pathOf(issue)
-	return path ? path + (customOf(issue) ? ": " : " ") + message : message
+	return (
+		listsUnions && issue._l !== undefined ? issue._l
+		: path ? path + (writesText && issue._c ? ": " : " ") + message
+		: message
+	)
 }
 
 // what an issue says where no message is configured for it, naming no path.
