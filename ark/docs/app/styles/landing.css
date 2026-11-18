@@ -1288,6 +1288,11 @@
 
 @media (max-width: 760px) {
 	.home {
+		/* a parse error wraps to three lines at this width: room for it, so the
+		   card doesn't grow under a reader who has scrolled on mid-ghost */
+		.verdict {
+			min-height: 4.5em;
+		}
 		.drill > summary {
 			display: grid;
 			grid-template-columns: 11px minmax(0, 1fr);
