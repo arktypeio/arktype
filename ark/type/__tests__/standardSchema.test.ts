@@ -101,6 +101,32 @@ contextualize(() => {
 			})
 		})
 
+		it("generates input schema with openapi-3.0", () => {
+			const T = type({ foo: "string | null" })
+			const standard: StandardJSONSchemaV1 = T
+			const jsonSchema = standard["~standard"].jsonSchema.input({
+				target: "openapi-3.0"
+			})
+			attest(jsonSchema).snap({
+				type: "object",
+				properties: { foo: { type: "string", nullable: true } },
+				required: ["foo"]
+			})
+		})
+
+		it("generates output schema with openapi-3.0", () => {
+			const T = type({ foo: "string | null" })
+			const standard: StandardJSONSchemaV1 = T
+			const jsonSchema = standard["~standard"].jsonSchema.output({
+				target: "openapi-3.0"
+			})
+			attest(jsonSchema).snap({
+				type: "object",
+				properties: { foo: { type: "string", nullable: true } },
+				required: ["foo"]
+			})
+		})
+
 		it("passes libraryOptions to toJsonSchema", () => {
 			const T = type({ foo: "string" })
 			const standard: StandardJSONSchemaV1 = T
@@ -122,9 +148,9 @@ contextualize(() => {
 			const standard: StandardJSONSchemaV1 = T
 			attest(() =>
 				standard["~standard"].jsonSchema.input({
-					target: "openapi-3.0"
+					target: "draft-04"
 				})
-			).throws(writeInvalidJsonSchemaTargetMessage("openapi-3.0"))
+			).throws(writeInvalidJsonSchemaTargetMessage("draft-04"))
 		})
 
 		it("converts what JSON Schema can't represent to {}", () => {
@@ -172,6 +198,31 @@ contextualize(() => {
 				type: "array",
 				minItems: 2,
 				items: [{ type: "string" }]
+			})
+		})
+
+		it("approximates an openapi-3.0 tuple with a union of its elements", () => {
+			const T = type(["string", "number?"])
+			const standard: StandardJSONSchemaV1 = T
+			attest(
+				standard["~standard"].jsonSchema.input({ target: "openapi-3.0" })
+			).snap({
+				type: "array",
+				items: { anyOf: [{ type: "string" }, { type: "number" }] },
+				maxItems: 2,
+				minItems: 1
+			})
+		})
+
+		it("omits an openapi-3.0 pattern key", () => {
+			const T = type({ "[/^a/]": "string", b: "number" })
+			const standard: StandardJSONSchemaV1 = T
+			attest(
+				standard["~standard"].jsonSchema.input({ target: "openapi-3.0" })
+			).snap({
+				type: "object",
+				properties: { b: { type: "number" } },
+				required: ["b"]
 			})
 		})
 

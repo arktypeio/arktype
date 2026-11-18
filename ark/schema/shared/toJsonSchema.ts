@@ -44,9 +44,11 @@ const defaultConfig: ToJsonSchema.Context = {
 		domain: ctx => ToJsonSchema.throw("domain", ctx),
 		morph: ctx => ToJsonSchema.throw("morph", ctx),
 		patternIntersection: ctx => ToJsonSchema.throw("patternIntersection", ctx),
+		patternKey: ctx => ToJsonSchema.throw("patternKey", ctx),
 		predicate: ctx => ToJsonSchema.throw("predicate", ctx),
 		proto: ctx => ToJsonSchema.throw("proto", ctx),
 		symbolKey: ctx => ToJsonSchema.throw("symbolKey", ctx),
+		tuple: ctx => ToJsonSchema.throw("tuple", ctx),
 		unit: ctx => ToJsonSchema.throw("unit", ctx),
 		date: ctx => ToJsonSchema.throw("date", ctx)
 	}
@@ -63,9 +65,11 @@ const standardFallback: ToJsonSchema.HandlerByCode = {
 	domain: ctx => ctx.base,
 	morph: ctx => ctx.base,
 	patternIntersection: ctx => ctx.base,
+	patternKey: ctx => ctx.base,
 	predicate: ctx => ctx.base,
 	proto: ctx => ctx.base,
 	symbolKey: ctx => ctx.base,
+	tuple: ctx => ctx.base,
 	unit: ctx => ctx.base,
 	date: ctx => ctx.base
 }
@@ -127,6 +131,12 @@ export declare namespace ToJsonSchema {
 		pattern: string
 	}
 
+	export interface PatternKeyContext
+		extends BaseContext<"patternKey", JsonSchema.Object> {
+		pattern: string
+		value: JsonSchema
+	}
+
 	export interface PredicateContext
 		extends BaseContext<"predicate", JsonSchema> {
 		predicate: Predicate
@@ -163,6 +173,12 @@ export declare namespace ToJsonSchema {
 		default?: Json
 	}
 
+	export interface TupleContext extends BaseContext<"tuple", JsonSchema.Array> {
+		prefix: readonly JsonSchema[]
+		variadic: JsonSchema | null
+		postfix: readonly JsonSchema[]
+	}
+
 	export interface UnitContext extends BaseContext<"unit", JsonSchema> {
 		unit: Unjsonifiable
 	}
@@ -179,9 +195,11 @@ export declare namespace ToJsonSchema {
 		domain: DomainContext
 		morph: MorphContext
 		patternIntersection: PatternIntersectionContext
+		patternKey: PatternKeyContext
 		predicate: PredicateContext
 		proto: ProtoContext
 		symbolKey: SymbolKeyContext
+		tuple: TupleContext
 		unit: UnitContext
 		date: DateContext
 	}
@@ -202,9 +220,11 @@ export declare namespace ToJsonSchema {
 			patternIntersection: (
 				ctx: PatternIntersectionContext
 			) => JsonSchema.String
+			patternKey: (ctx: PatternKeyContext) => JsonSchema.Object
 			predicate: (ctx: PredicateContext) => JsonSchema
 			proto: (ctx: ProtoContext) => JsonSchema
 			symbolKey: (ctx: SymbolKeyContext) => JsonSchema.Object
+			tuple: (ctx: TupleContext) => JsonSchema.Array
 			unit: (ctx: UnitContext) => JsonSchema
 			date: (ctx: DateContext) => JsonSchema
 		}
@@ -227,7 +247,7 @@ export declare namespace ToJsonSchema {
 
 	export type Target = satisfy<
 		StandardJSONSchemaV1.Target,
-		"draft-2020-12" | "draft-07"
+		"draft-2020-12" | "draft-07" | "openapi-3.0"
 	>
 
 	export interface Options {
@@ -246,6 +266,7 @@ export declare namespace ToJsonSchema {
 		 *
 		 *  - "draft-2020-12" -> "https://json-schema.org/draft/2020-12/schema"
 		 *  - "draft-07" -> "http://json-schema.org/draft-07/schema#"
+		 *  - "openapi-3.0" -> no $schema, since an OpenAPI 3.0 Schema Object has none
 		 *
 		 * If `dialect` is also specified, `dialect` takes precedence.
 		 */

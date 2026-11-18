@@ -164,9 +164,10 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
 		switch (this.builtinName) {
 			case "Array":
-				return {
-					type: "array"
-				}
+				// OpenAPI 3.0 requires items for arrays
+				return ctx.target === "openapi-3.0" ?
+						{ type: "array", items: {} }
+					:	{ type: "array" }
 			case "Date":
 				return (
 					ctx.fallback.date?.({ code: "date", base: {} }) ??

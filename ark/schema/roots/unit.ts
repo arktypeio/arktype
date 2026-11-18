@@ -134,6 +134,13 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 	}
 
 	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
+		// OpenAPI 3.0 has neither const nor a "null" type
+		if (
+			ctx.target === "openapi-3.0" &&
+			$ark.intrinsic.jsonPrimitive.allows(this.unit)
+		)
+			return { enum: [this.unit] }
+
 		return (
 			// this is the more standard JSON schema representation, especially for Open API
 			this.unit === null ? { type: "null" }

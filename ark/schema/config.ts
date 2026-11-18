@@ -112,9 +112,11 @@ export const mergeConfigs = <base extends ArkSchemaConfig>(
 	return result
 }
 
-const jsonSchemaTargetToDialect: Record<ToJsonSchema.Target, string> = {
+const jsonSchemaTargetToDialect: Record<ToJsonSchema.Target, string | null> = {
 	"draft-2020-12": "https://json-schema.org/draft/2020-12/schema",
-	"draft-07": "http://json-schema.org/draft-07/schema#"
+	"draft-07": "http://json-schema.org/draft-07/schema#",
+	// OpenAPI 3.0 Schema Objects have no $schema keyword
+	"openapi-3.0": null
 }
 
 type MergeToJsonSchemaConfigs = <base extends ToJsonSchema.Options | undefined>(
