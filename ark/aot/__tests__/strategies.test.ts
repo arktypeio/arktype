@@ -438,6 +438,7 @@ export const Cold = type({ amount: "number > 0", currency: "string == 3" })
 				{},
 				{ preset: "smallest" },
 				{ schemas: { "src/forms/**": "smallest" } },
+				{ lazy: false, schemas: { "src/forms/**": "smallest" } },
 				{ preset: "smallest", schemas: { "src/server/**": "fastest" } },
 				{
 					preset: "smallest",
@@ -477,6 +478,14 @@ export const Cold = type({ amount: "number > 0", currency: "string == 3" })
 				"size: intersection",
 				"size: create"
 			])
+		})
+
+		it("link the units a key writes for size too, where each validator is created as its module loads", async () => {
+			const [, js] = await bundled(root, {
+				lazy: false,
+				schemas: { "src/forms/**": "smallest" }
+			})
+			attest(writtenIn(js)).snap(["own: validators", "size: validators"])
 		})
 	})
 
