@@ -142,10 +142,6 @@ const countUp = (el: HTMLElement, delay: number, seconds: number) => {
 	requestAnimationFrame(frame)
 }
 
-/** "Pick 2" is struck out of the title, wherever the title is, once it is seen */
-const wireBoard = () =>
-	playWhenSeen(document.querySelector<HTMLElement>("[data-board]"), 0.3)
-
 /**
  * A big number counts up once the number itself is on screen. It answers to
  * nothing else: tied to its section's figure, it stayed blank on a phone
@@ -358,6 +354,20 @@ const wireStages = () => {
 	return () => {
 		for (const cleanup of cleanups) cleanup?.()
 	}
+}
+
+/**
+ * A figure that keeps moving at rest (`data-idle`) is marked `data-away`
+ * while none of it is on screen, and landing.css pauses it until it is back.
+ */
+const wireIdle = () => {
+	const observer = new IntersectionObserver(entries => {
+		for (const { target, isIntersecting } of entries)
+			target.toggleAttribute("data-away", !isIntersecting)
+	})
+	for (const figure of document.querySelectorAll("[data-idle]"))
+		observer.observe(figure)
+	return () => observer.disconnect()
 }
 
 /**
@@ -582,9 +592,9 @@ export const HomeEffects = () => {
 			wireCopy(),
 			wireReveal(),
 			wireTranscript(),
-			wireBoard(),
 			wireStats(),
 			wireStages(),
+			wireIdle(),
 			wireDrills(),
 			wireChipRows(),
 			wirePickThree()

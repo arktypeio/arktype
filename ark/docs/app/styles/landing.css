@@ -20,6 +20,13 @@
 		var(--bg)
 	);
 	--zod-ink: color-mix(in oklab, var(--red-text) 80%, var(--ink-2));
+	/* ArkType's bar, wherever one is drawn: copper into gold into light */
+	--ours-fill: linear-gradient(
+		90deg,
+		color-mix(in oklab, var(--gold-fill) 62%, var(--copper)),
+		var(--gold-fill) 70%,
+		color-mix(in oklab, var(--gold-fill) 78%, #fff)
+	);
 	--panel: linear-gradient(
 		180deg,
 		color-mix(in oklab, var(--surface) 90%, var(--tint) 10%),
@@ -87,22 +94,6 @@
 			white-space: nowrap;
 		}
 	}
-	/* the other first screen: the board's title as the headline */
-	.hero h1.hero-pick {
-		font-size: clamp(2.5rem, 1.1rem + 4.6vw, 5.4rem);
-		line-height: 0.98;
-		.phrase {
-			display: inline-block;
-			white-space: nowrap;
-		}
-		.phrase:last-child {
-			color: var(--gold);
-		}
-		s {
-			color: var(--ink-3);
-			text-decoration-thickness: 0.07em;
-		}
-	}
 
 	/* read by a screen reader, not drawn */
 	.vh {
@@ -124,16 +115,8 @@
 		box-shadow: var(--shadow-card);
 	}
 	.graphs-head {
-		h3 {
-			margin: 0;
-			font: 800 clamp(1.5rem, 1.1rem + 1.2vw, 2.1rem) / 1.1 var(--sans);
-			letter-spacing: -0.03em;
-		}
-		p {
-			margin: 8px 0 0;
-			font-size: 14px;
-			color: var(--ink-2);
-		}
+		font-size: 14px;
+		color: var(--ink-2);
 	}
 	.graphs-row {
 		display: grid;
@@ -204,63 +187,107 @@
 			background: color-mix(in oklab, var(--ink) 24%, transparent);
 		}
 	}
+	/* the bar's box. Its fill slides in from the left inside it, so the box,
+	   and the cut a long one ends in, stay where they are while it arrives */
 	.graph-bar {
 		position: absolute;
 		inset: 0 auto 0 0;
 		width: max(4px, calc(var(--w) * 100%));
 		border-radius: inherit;
-		background: var(--bar);
-		transform-origin: left;
+		overflow: hidden;
+		&::before {
+			content: "";
+			position: absolute;
+			inset: 0;
+			border-radius: inherit;
+			background: var(--lane-fill, var(--bar));
+		}
 	}
-	/* ArkType's lane: the one a glance lands on */
+	/* the libraries between ArkType and Zod, a step back */
+	.graph-lane.is-rival {
+		opacity: 0.82;
+	}
+	/* ArkType's lane, a size up from the rest: the place it took, its number
+	   in the page's headline type, a bar twice as tall. Its two lights (its
+	   edge, and the glow behind its bar) are layers of their own, so that
+	   breathing changes one opacity each and repaints nothing. */
 	.graph-lane.is-ours {
-		gap: 9px 8px;
-		margin: 0 -12px;
-		padding: 11px 12px 13px;
-		border-radius: 12px;
-		background: color-mix(in oklab, var(--gold-fill) 7%, transparent);
+		--lane-fill: var(--ours-fill);
+		position: relative;
+		isolation: isolate;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		gap: 11px 10px;
+		margin: 0 -14px;
+		padding: 14px 14px 16px;
+		border-radius: 14px;
+		background: color-mix(in oklab, var(--gold-fill) 9%, transparent);
 		box-shadow: inset 0 0 0 1px
-			color-mix(in oklab, var(--gold-fill) 30%, transparent);
+			color-mix(in oklab, var(--gold-fill) 34%, transparent);
+		&::before {
+			content: "";
+			position: absolute;
+			inset: 0;
+			z-index: -1;
+			border-radius: inherit;
+			pointer-events: none;
+			box-shadow:
+				inset 0 0 0 1px color-mix(in oklab, var(--gold-fill) 62%, transparent),
+				0 0 26px -6px color-mix(in oklab, var(--gold-glow) 70%, transparent);
+			opacity: 0.75;
+		}
 		.graph-place {
-			justify-self: start;
-			padding: 3px 7px;
+			padding: 4px 10px;
 			border-radius: var(--r-pill);
 			background: var(--gold-fill);
 			font-weight: 700;
-			font-size: 12.5px;
+			font-size: 14px;
 			color: var(--on-gold);
 		}
 		.graph-name {
-			font-weight: 700;
-			font-size: 16px;
+			font: 750 20px / 1.1 var(--sans);
+			letter-spacing: -0.01em;
 			color: var(--gold);
 		}
 		.graph-val {
-			font-weight: 700;
-			font-size: 16px;
+			font: 800 28px / 1 var(--sans);
+			letter-spacing: -0.035em;
 			color: var(--gold);
+			text-shadow: 0 0 26px
+				color-mix(in oklab, var(--gold-glow) 40%, transparent);
 		}
 		.graph-track {
-			height: 16px;
+			height: 22px;
+			border-radius: 5px;
+			&::before {
+				content: "";
+				position: absolute;
+				inset: -7px auto -7px -6px;
+				width: calc(var(--w) * 100% + 12px);
+				border-radius: 999px;
+				background: var(--gold-glow);
+				filter: blur(11px);
+				opacity: 0.5;
+				pointer-events: none;
+			}
 		}
-		.graph-bar {
-			background: linear-gradient(
-				90deg,
-				color-mix(in oklab, var(--gold-fill) 70%, var(--copper)),
-				var(--gold-fill)
-			);
-			box-shadow: 0 0 18px 0
-				color-mix(in oklab, var(--gold-glow) 60%, transparent);
+		/* light along the bar, out of sight to its left until the reveal sends it across */
+		.graph-bar::after {
+			content: "";
+			position: absolute;
+			inset: 0 auto 0 0;
+			width: 34%;
+			border-radius: inherit;
+			background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.8));
+			transform: translateX(-110%);
+			pointer-events: none;
 		}
 	}
 	.graph-lane.is-incumbent {
+		--lane-fill: var(--zod);
 		.graph-place,
 		.graph-name,
 		.graph-val {
 			color: var(--zod-ink);
-		}
-		.graph-bar {
-			background: var(--zod);
 		}
 	}
 	/* an average past the axis: drawn to the end and cut, twice, so it can't
@@ -373,8 +400,28 @@
 			font-size: 12.5px;
 			color: var(--ink-2);
 		}
-		.lane.is-ours .lane-bar {
-			min-width: 5px;
+		/* ArkType's bar here is the board's, at this figure's size */
+		.lane.is-ours {
+			.lane-val {
+				font-weight: 700;
+				color: var(--gold);
+			}
+			.lane-track::before {
+				content: "";
+				position: absolute;
+				inset: -5px auto -5px -5px;
+				width: calc(max(5px, var(--w) * 100%) + 10px);
+				border-radius: 999px;
+				background: var(--gold-glow);
+				filter: blur(8px);
+				opacity: 0.5;
+				pointer-events: none;
+			}
+			.lane-bar {
+				min-width: 5px;
+				background: var(--ours-fill);
+				box-shadow: none;
+			}
 		}
 		.lane.is-incumbent {
 			.lane-name,
@@ -476,9 +523,6 @@
 	}
 	.board > .drills {
 		margin-top: 18px;
-	}
-	.board.is-untitled {
-		margin-top: 56px;
 	}
 
 	/* ---------- a point: copy, figure, drill-downs ---------- */
@@ -861,7 +905,7 @@
 				color-mix(in oklab, var(--gold-glow) 34%, transparent);
 		}
 		.count-stream {
-			background: var(--gold-fill);
+			background: var(--ours-fill);
 			box-shadow: 0 0 12px 0
 				color-mix(in oklab, var(--gold-glow) 55%, transparent);
 		}
@@ -964,7 +1008,7 @@
 			color: var(--gold);
 		}
 		.boot-bar {
-			background: var(--gold-fill);
+			background: var(--ours-fill);
 			box-shadow: 0 0 10px 0
 				color-mix(in oklab, var(--gold-glow) 60%, transparent);
 		}
@@ -1305,6 +1349,49 @@
 		scale: 0 1;
 	}
 }
+@keyframes bar-in {
+	from {
+		transform: translateX(-101%);
+	}
+}
+@keyframes place-land {
+	from {
+		transform: scale(0.82);
+		opacity: 0.5;
+	}
+}
+/* twice across the bar, a third of it wide */
+@keyframes bar-lap {
+	0%,
+	42.01% {
+		transform: translateX(-110%);
+	}
+	42%,
+	100% {
+		transform: translateX(300%);
+	}
+}
+@keyframes glow-in {
+	from {
+		opacity: 0;
+	}
+}
+@keyframes edge-breathe {
+	from {
+		opacity: 0.75;
+	}
+	to {
+		opacity: 0.4;
+	}
+}
+@keyframes glow-breathe {
+	from {
+		opacity: 0.5;
+	}
+	to {
+		opacity: 0.28;
+	}
+}
 @keyframes byte-leave {
 	to {
 		scale: 0.2;
@@ -1315,40 +1402,6 @@
 	from {
 		opacity: 0;
 		translate: 0 6px;
-	}
-}
-@keyframes scan-down {
-	from {
-		translate: 0 -45%;
-		opacity: 1;
-	}
-	85% {
-		opacity: 1;
-	}
-	to {
-		translate: 0 100%;
-		opacity: 0;
-	}
-}
-@keyframes light-up {
-	from {
-		opacity: 0.32;
-	}
-}
-@keyframes step-on {
-	from {
-		background: transparent;
-		color: var(--ink-3);
-		box-shadow: inset 0 0 0 1px var(--ink-3);
-	}
-	60% {
-		scale: 1.25;
-	}
-}
-@keyframes add-in {
-	from {
-		opacity: 0;
-		translate: -8px 0;
 	}
 }
 @keyframes wipe-ark {
@@ -1385,11 +1438,6 @@
 		translate: 0 10px;
 	}
 }
-@keyframes act-pulse {
-	50% {
-		box-shadow: 0 0 0 5px var(--lit);
-	}
-}
 @keyframes panel-in {
 	from {
 		opacity: 0;
@@ -1412,8 +1460,15 @@
 
 		/* each figure at its start, until it is seen */
 		[data-stage]:not([data-play]) {
-			.graph-bar {
-				scale: 0 1;
+			.graph-bar::before {
+				transform: translateX(-101%);
+			}
+			.graph-lane.is-ours .graph-place {
+				transform: scale(0.82);
+				opacity: 0.5;
+			}
+			.graph-lane.is-ours .graph-track::before {
+				opacity: 0;
 			}
 			.boot-bar {
 				scale: 0 1;
@@ -1437,12 +1492,48 @@
 			}
 		}
 
-		/* the board's bars arrive a row at a time, ArkType's first in each graph */
-		.graphs[data-play] .graph-bar {
-			animation: boot-grow 0.7s var(--ease-out) calc(0.15s + var(--row) * 0.09s)
-				both;
+		/* Every bar on the board draws at one speed, so a bar takes as long as
+		   it is long and ArkType's lands first in each graph. As it lands, the
+		   place it took lights and its glow comes up; light crosses its bar
+		   twice while the others are still drawing, and never again. */
+		.graphs[data-play] {
+			--race: 2.6s;
+			.graph-lane {
+				--landed: calc(0.3s + var(--w) * var(--race));
+			}
+			.graph-bar::before {
+				animation: bar-in calc(var(--w) * var(--race)) linear 0.3s both;
+			}
+			.graph-lane.is-ours .graph-place {
+				animation: place-land 0.45s var(--ease-pop) var(--landed) both;
+			}
+			.graph-lane.is-ours .graph-bar::after {
+				animation: bar-lap 1.7s linear calc(var(--landed) + 0.2s) both;
+			}
 		}
-
+	}
+	/* then the lane rests, its two lights breathing a little, for as long as
+	   the board is on screen (HomeEffects marks it away when it isn't) */
+	.home .graphs[data-play] .graph-lane.is-ours {
+		&::before {
+			animation: edge-breathe 4.2s ease-in-out 3.2s infinite alternate both;
+		}
+		.graph-track::before {
+			animation:
+				glow-in 0.6s ease-out var(--landed) both,
+				glow-breathe 4.2s ease-in-out 3.2s infinite alternate;
+		}
+	}
+	.home .card.is-medians .lane.is-ours .lane-track::before {
+		animation: glow-breathe 4.2s ease-in-out infinite alternate;
+	}
+	.home [data-idle][data-away] :is(.graph-lane, .lane).is-ours {
+		&::before,
+		:is(.graph-track, .lane-track)::before {
+			animation-play-state: paused;
+		}
+	}
+	:root[data-motion] .home {
 		.boot[data-play] {
 			.boot-bar {
 				animation: boot-grow var(--at) linear 0.3s both;
@@ -1591,7 +1682,10 @@
 		}
 		.graph-lane.is-ours {
 			margin: 0 -8px;
-			padding: 10px 8px 12px;
+			padding: 12px 10px 14px;
+			.graph-val {
+				font-size: 26px;
+			}
 		}
 		.graph-lane.is-wide,
 		.gap-wide {

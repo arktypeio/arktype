@@ -3,7 +3,6 @@ import type { CSSProperties } from "react"
 import { preview } from "../../lib/bench/bench.ts"
 import { claims, medianOf } from "../../lib/claims.ts"
 import { ClaimText } from "../mdx/Claim.tsx"
-import { BoardTitle } from "./Board.tsx"
 import { categoryOf, heroStats, methodHref } from "./boardFacts.ts"
 
 /**
@@ -18,20 +17,12 @@ export const heroLede = "One Vite plugin. One prompt to migrate from Zod."
 
 const rise = (i: number) => ({ "--i": i }) as CSSProperties
 
-export type HeroProps = {
-	/**
-	 * `claim`: the headline lib/claims.ts guards, then the tagline. `board`:
-	 * the board's title, "Pick 2" struck out, as the first thing read.
-	 */
-	title: "claim" | "board"
-}
-
 /**
  * The first screen: the claim, then the three numbers that back it at the
  * size of a headline, each against Zod 4, scoped in its own caption and
  * linked to the section that measures it.
  */
-export const Hero = ({ title }: HeroProps) => {
+export const Hero = () => {
 	const [, zodCompiled] = categoryOf("speed").versus
 	return (
 		<section className="hero" aria-labelledby="hero-title" data-hero>
@@ -43,15 +34,10 @@ export const Hero = ({ title }: HeroProps) => {
 					</Link>
 				)}
 			</div>
-			{title === "claim" ?
-				<h1 id="hero-title" className="rise-fade">
-					<ClaimText claim={claims.headline} />{" "}
-					<span className="one">{heroLine}</span>
-				</h1>
-			:	<h1 id="hero-title" className="hero-pick" data-board>
-					<BoardTitle />
-				</h1>
-			}
+			<h1 id="hero-title" className="rise-fade">
+				<ClaimText claim={claims.headline} />{" "}
+				<span className="one">{heroLine}</span>
+			</h1>
 			<div className="hero-stats rise" style={rise(1)}>
 				{heroStats().map(stat => {
 					const [, digits, suffix] = /^([\d.]+)(.*)$/.exec(stat.value)!

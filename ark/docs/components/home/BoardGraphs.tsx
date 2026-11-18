@@ -2,7 +2,6 @@ import Link from "next/link"
 import { Fragment, type CSSProperties } from "react"
 import { wellKnownRule } from "../../lib/bench/leaderboard.ts"
 import { pickThreeTable, tieMargin } from "../../lib/claims.ts"
-import { ClaimText } from "../mdx/Claim.tsx"
 import {
 	boardGraphs,
 	methodHref,
@@ -109,13 +108,11 @@ export const BoardGraphs = () => (
 		className="graphs"
 		id="graphs"
 		data-stage="graphs"
-		aria-labelledby="graphs-title"
+		data-idle=""
+		aria-labelledby="board-title"
 	>
 		<figcaption className="graphs-head">
-			<h3 id="graphs-title">
-				<ClaimText claim={pickThreeTable.title} />
-			</h3>
-			<p>Average multiple of the best result. Shorter is better.</p>
+			Average multiple of the best result. Shorter is better.
 		</figcaption>
 		<div className="graphs-row">
 			{boardGraphs().map(graph => (

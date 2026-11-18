@@ -757,25 +757,12 @@
 		filter: blur(6px);
 	}
 }
-@keyframes squiggle-in {
-	from {
-		background-size: 0 3px;
-	}
-}
 @keyframes squiggle-type {
 	from {
 		clip-path: inset(0 100% 0 0);
 	}
 	to {
 		clip-path: inset(0);
-	}
-}
-@keyframes md-type {
-	from {
-		width: 0;
-	}
-	to {
-		width: 3ch;
 	}
 }
 
@@ -982,26 +969,19 @@
 		margin-top: 60px;
 		scroll-margin-top: calc(var(--top) + 24px);
 	}
+	/* the board's heading, and what it adds up to */
 	.board-head {
-		position: relative;
-		/* one line at the page's width, so the first screen ends on it */
 		h2 {
 			margin: 0;
 			font: 800 clamp(2.2rem, 0.9rem + 2.9vw, 3.35rem) / 1.04 var(--sans);
 			letter-spacing: -0.045em;
 		}
-		.phrase {
-			display: inline-block;
-			white-space: nowrap;
-		}
-		.phrase:last-child {
-			color: var(--gold);
-		}
-		/* the trade-off the title strikes out */
-		s {
-			color: var(--ink-3);
-			text-decoration-thickness: 0.07em;
-		}
+	}
+	.board-sub {
+		margin: 12px 0 0;
+		font: 600 clamp(1.15rem, 0.9rem + 0.7vw, 1.5rem) / 1.25 var(--sans);
+		letter-spacing: -0.015em;
+		color: var(--gold);
 	}
 	.card {
 		position: relative;
@@ -1299,66 +1279,6 @@
 				color: var(--ink-3);
 			}
 		}
-	}
-}
-
-@keyframes strike {
-	to {
-		background-size: 100% 0.07em;
-	}
-}
-/* in from past the track's right end, streaking until it slows to its ratio */
-/* one pass of light along ArkType's bar as it finishes first */
-@keyframes spin {
-	to {
-		rotate: 1turn;
-	}
-}
-@keyframes show-tick {
-	from {
-		opacity: 0;
-		scale: 0.4;
-	}
-}
-@keyframes hide {
-	to {
-		visibility: hidden;
-	}
-}
-@keyframes lit {
-	from {
-		opacity: 0.4;
-	}
-}
-
-/* the board races and the proof runs once each is seen; html[data-motion]
-   (set before first paint) holds them at their start until then */
-@media (prefers-reduced-motion: no-preference) {
-	:root[data-motion] .home {
-		/* the struck phrase's line is drawn in, so it starts as a background */
-		[data-board] s {
-			text-decoration-color: transparent;
-			background: linear-gradient(currentColor, currentColor) no-repeat 0 50% /
-				0 0.07em;
-		}
-		[data-board][data-play] s {
-			animation: strike 0.3s var(--ease-out) 0.72s both;
-		}
-	}
-	:root[data-motion] .home [data-board] .phrase {
-		animation: rise var(--t-enter) var(--ease-pop) both;
-		animation-delay: calc(var(--i) * 90ms);
-		animation-play-state: paused;
-	}
-	:root[data-motion] .home [data-board][data-play] .phrase {
-		animation-play-state: running;
-	}
-	/* a beat for the struck phrase, then its line, then the phrase after it */
-	:root[data-motion] .home [data-board]:has(s) .phrase:has(> s) {
-		animation-delay: 0.42s;
-	}
-	:root[data-motion] .home [data-board] .phrase:has(> s) ~ .phrase {
-		animation-delay: 1.05s;
 	}
 }
 

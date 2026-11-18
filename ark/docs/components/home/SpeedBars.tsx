@@ -13,7 +13,7 @@ export const SpeedBars = () => {
 	const longest = Math.max(...bars.map(bar => bar.median))
 	const { of } = bars[0]
 	return (
-		<figure className="card is-solo is-medians">
+		<figure className="card is-solo is-medians" data-idle="">
 			<ol
 				className="race"
 				aria-label={`How many times slower than precompiled ArkType each library was at the median of ${of} scenarios`}

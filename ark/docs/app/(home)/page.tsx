@@ -7,12 +7,7 @@ import {
 	InstallButton
 } from "../../components/home/CopyCommand.tsx"
 import { Drill, Drills, Point } from "../../components/home/Drill.tsx"
-import {
-	Hero,
-	heroLede,
-	heroLine,
-	type HeroProps
-} from "../../components/home/Hero.tsx"
+import { Hero, heroLede, heroLine } from "../../components/home/Hero.tsx"
 import { HomeCode, PlainCode } from "../../components/home/HomeCode.tsx"
 import { HomeEffects } from "../../components/home/HomeEffects.tsx"
 import { Migrate } from "../../components/home/Migrate.tsx"
@@ -27,13 +22,6 @@ import { BoatLane } from "../../components/shell/BoatLane.tsx"
 import { SiteFooter } from "../../components/shell/SiteFooter.tsx"
 import { claims, draftOf } from "../../lib/claims.ts"
 import { defineMetadata, tagline } from "../metadata.ts"
-
-/**
- * What the first screen is titled with. `claim` is the headline lib/claims.ts
- * guards, and the board under it keeps its own title. `board` leads with that
- * title instead ("Pick 2" struck out), and the board goes untitled.
- */
-const heroTitle: HeroProps["title"] = "claim"
 
 const lede = `${draftOf(claims.headline)} ${heroLine} ${heroLede}`
 
@@ -298,8 +286,8 @@ export default function HomePage() {
 				<style>{".home .drill-panel[data-closed]{display:block}"}</style>
 			</noscript>
 			<div className="wrap">
-				<Hero title={heroTitle} />
-				<Board titled={heroTitle === "claim"} table={<BoardGraphs />}>
+				<Hero />
+				<Board graphs={<BoardGraphs />}>
 					<Drills
 						name="board"
 						links={
