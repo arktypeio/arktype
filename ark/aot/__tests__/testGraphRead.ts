@@ -554,6 +554,9 @@ const deepMerge = (
 	return merged
 }
 
+// the plugin's defaults, and the runtime's development build
+const developmentConditions = ["import", "node", "default", "development"]
+
 const build = async (
 	bundler: Bundler,
 	dir: string,
@@ -566,10 +569,15 @@ const build = async (
 	rmSync(out, { recursive: true, force: true })
 	const filename = scenario.filename ?? "main.cjs"
 	const overrides = scenario.config?.({ bundler, dir, lib }) ?? {}
+	// a production build, which prunes, whose runtime is development's: in
+	// production a read of a member no build baked is undefined. The plugin
+	// resolves what its validators import under its own conditions on webpack,
+	// and Rspack under the config's
+	const set = { cwd: dir, conditions: developmentConditions, ...options }
 	const plugin = (
 		bundler === "webpack" ?
-			precompile.webpack({ cwd: dir, ...options })
-		:	precompile.rspack({ cwd: dir, ...options })) as never
+			precompile.webpack(set)
+		:	precompile.rspack(set)) as never
 	const config = deepMerge(
 		{
 			mode: "production",
@@ -577,8 +585,6 @@ const build = async (
 			entry: "./main.ts",
 			target: "node",
 			output: { path: out, filename, chunkFilename: "chunk-[id].cjs" },
-			// a production build, which prunes, whose runtime is development's:
-			// in production a read of a member no build baked is undefined
 			resolve: {
 				extensions: [".ts", ".js", ".cjs"],
 				conditionNames: ["development", "..."]
