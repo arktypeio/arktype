@@ -938,20 +938,52 @@
 	}
 	.compile-out {
 		grid-area: out;
-		pre.shiki {
-			font-size: clamp(14px, 0.6rem + 0.55vw, 16.5px) !important;
-			line-height: 1.85 !important;
-			padding-block: 24px;
-		}
 	}
 	.compile-source,
 	.compile-result {
 		flex: 1;
 		min-width: 0;
 	}
-	/* the definition is the reader's to change: a press on it starts the precompiler */
+	/* the definition is the reader's to change: a press on it starts the precompiler.
+	   It and the field that replaces it hold one more line than the definition has,
+	   so neither starting to edit nor adding a field moves what is under the card. */
+	.compile-in {
+		--edit-fs: 14px;
+		--edit-lh: 1.75;
+		--edit-h: calc(var(--rows) * var(--edit-lh) * var(--edit-fs) + 32px);
+	}
 	.compile-source {
 		cursor: text;
+		min-height: var(--edit-h);
+	}
+	.compile-in > footer {
+		flex-wrap: wrap;
+	}
+	/* edits to try, one press each */
+	.compile-tries {
+		display: inline-flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+	.compile-try {
+		padding: 3px 10px;
+		border-radius: var(--r-pill);
+		border: 1px solid var(--line);
+		background: transparent;
+		font: inherit;
+		color: var(--ink-2);
+		cursor: pointer;
+		transition:
+			color var(--t-micro),
+			border-color var(--t-micro);
+		&:hover {
+			color: var(--ink);
+			border-color: color-mix(in oklab, var(--ink) 30%, transparent);
+		}
+		&[aria-pressed="true"] {
+			color: var(--gold);
+			border-color: color-mix(in oklab, var(--gold) 55%, transparent);
+		}
 	}
 	.compile-file {
 		display: inline-flex;
@@ -973,34 +1005,79 @@
 	}
 	/* the field that replaces the highlighted definition, in its place and its metrics */
 	.compile-edit {
-		flex: 1;
+		flex: none;
 		display: block;
+		box-sizing: border-box;
 		width: 100%;
+		height: var(--edit-h);
 		margin: 0;
 		padding: 16px 20px;
 		border: 0;
 		outline: 0;
 		resize: none;
 		background: transparent;
-		font: 400 14px / 1.75 var(--mono);
+		font: 400 var(--edit-fs) / var(--edit-lh) var(--mono);
 		font-variant-ligatures: none;
 		tab-size: 2;
 		white-space: pre;
-		overflow-x: auto;
+		overflow: auto;
 		color: var(--ink);
 		caret-color: var(--gold);
 	}
 	.compile-in[data-editing] {
 		border-color: color-mix(in oklab, var(--gold) 45%, transparent);
 	}
-	/* what the precompiler wrote, as it wrote it */
+	/* what the precompiler wrote: the Type's own check at the figure's size */
 	.compile-real {
 		margin: 0;
-		padding: 20px 24px;
-		font: 400 13px / 1.65 var(--mono);
+		padding: 22px 24px 10px;
+		font: 400 clamp(13.5px, 0.6rem + 0.5vw, 16px) / 1.8 var(--mono);
 		font-variant-ligatures: none;
 		tab-size: 2;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
 		color: var(--ink);
+	}
+	/* a long line wraps under itself, past its own indent, and never runs off the card */
+	.js-line {
+		display: block;
+		padding-left: 6ch;
+		text-indent: -6ch;
+	}
+	/* the checks that one calls, a press away */
+	.compile-helpers {
+		> summary {
+			display: flex;
+			align-items: center;
+			gap: 1ch;
+			width: fit-content;
+			margin: 0 14px 12px;
+			padding: 6px 10px;
+			border-radius: var(--r-pill);
+			font: 400 13px / 1.3 var(--mono);
+			color: var(--gold);
+			cursor: pointer;
+			list-style: none;
+			&::-webkit-details-marker {
+				display: none;
+			}
+			&::after {
+				content: "▸";
+				transition: rotate var(--t-micro);
+			}
+			&:hover {
+				background: color-mix(in oklab, var(--gold) 9%, transparent);
+			}
+		}
+		&[open] > summary::after {
+			rotate: 90deg;
+		}
+		.compile-real {
+			padding-block: 4px 14px;
+			font-size: 13px;
+			line-height: 1.65;
+			color: var(--ink-2);
+		}
 	}
 	.compile-fail {
 		margin: 0;
@@ -1322,12 +1399,9 @@
 		opacity: 0;
 	}
 }
-@keyframes emit {
+@keyframes light-up {
 	from {
-		clip-path: inset(0 0 100% 0);
-	}
-	to {
-		clip-path: inset(0 0 0 0);
+		opacity: 0.32;
 	}
 }
 @keyframes step-on {
@@ -1423,11 +1497,10 @@
 				.diff-add {
 					opacity: 0;
 				}
-				.compile-out pre.shiki {
-					clip-path: inset(0 0 100% 0);
-				}
+				/* what ships is there from the first frame, unlit until the definition is read */
+				.compile-result,
 				.compile-out > footer {
-					opacity: 0;
+					opacity: 0.32;
 				}
 			}
 			&.morph .morph-pane.is-ark {
@@ -1493,35 +1566,34 @@
 			animation-delay: calc(0.15s + var(--i) * 0.16s);
 		}
 
-		/* 1: the plugin. 2: the definition, read. 3: what ships. */
+		/* 1: the plugin. 2: the definition, read. 3: what ships, lit as the
+		   reading reaches it. Under two seconds, start to finish. */
 		.compile[data-play] {
 			.compile-config .compile-step b {
-				animation: step-on 0.4s var(--ease-pop) 0.2s both;
+				animation: step-on 0.35s var(--ease-pop) 0.1s both;
 			}
 			.diff-add {
-				animation: add-in 0.4s var(--ease-out) 0.5s both;
+				animation: add-in 0.3s var(--ease-out) 0.2s both;
 				& ~ .diff-add {
-					animation-delay: 1s;
+					animation-delay: 0.4s;
 				}
 			}
 			.compile-in .compile-step b {
-				animation: step-on 0.4s var(--ease-pop) 1.9s both;
+				animation: step-on 0.35s var(--ease-pop) 0.6s both;
 			}
 			.compile-scan::before {
-				animation: scan-down 1.5s cubic-bezier(0.5, 0, 0.5, 1) 2.1s both;
+				animation: scan-down 0.75s cubic-bezier(0.5, 0, 0.5, 1) 0.7s both;
 			}
 			.compile-out .compile-step b {
-				animation: step-on 0.4s var(--ease-pop) 3.5s both;
+				animation: step-on 0.35s var(--ease-pop) 1.3s both;
 			}
-			.compile-out pre.shiki {
-				animation: emit 1.8s steps(9, end) 3.7s both;
-			}
+			.compile-result,
 			.compile-out > footer {
-				animation: lit-in 0.4s ease-out 5.6s both;
+				animation: light-up 0.4s ease-out 1.35s both;
 			}
 			/* the stages are done: the definition is the reader's now */
 			.compile-act {
-				animation: act-pulse 0.9s ease-in-out 6.2s 2;
+				animation: act-pulse 0.9s ease-in-out 2.2s 2;
 			}
 		}
 
@@ -1751,34 +1823,32 @@
 		.cutoffs li {
 			grid-template-columns: minmax(0, 1fr);
 		}
-		/* what ships, whole: its lines wrap under themselves instead of running off */
-		.compile .code-card pre.shiki,
-		.compile-edit {
-			font-size: 12.5px !important;
+		/* a phone keeps the one line that is the plugin: the rest of the file is
+		   scrolling between the reader and what ships */
+		.compile-config .diff {
+			padding: 0;
+			> span:not([data-key]) {
+				display: none;
+			}
+			> span {
+				padding-block: 9px;
+			}
+		}
+		.compile-out > footer {
+			flex-wrap: wrap;
+			row-gap: 4px;
 		}
 		.compile-real {
-			padding: 16px;
-			font-size: 12px;
+			padding: 16px 16px 8px;
+			font-size: 12.5px;
+			line-height: 1.7;
 		}
-		.compile-out pre.shiki {
-			padding-block: 16px;
-			line-height: 1.7 !important;
-			&,
-			code,
-			.line {
-				white-space: pre-wrap;
-				overflow-wrap: anywhere;
+		.compile-helpers {
+			> summary {
+				margin-inline: 6px;
 			}
-			/* over code.css, which sizes a block to its longest line */
-			code {
-				min-width: 0;
-			}
-			/* a wrapped line continues past its own indent */
-			.line {
-				box-sizing: border-box;
-				max-width: 100%;
-				padding-left: 8ch;
-				text-indent: -8ch;
+			.compile-real {
+				font-size: 12px;
 			}
 		}
 		.diff {
@@ -1806,6 +1876,21 @@
 		}
 		.closer-go > * {
 			flex: 1 1 100%;
+		}
+	}
+}
+
+/* a field under 16px makes iOS zoom the page when it takes focus. The
+   definition is set at the field's size too, so starting to edit moves nothing. */
+@media (max-width: 760px), (pointer: coarse) {
+	.home {
+		.compile-in {
+			--edit-fs: 16px;
+			--edit-lh: 1.5;
+		}
+		.compile .compile-in pre.shiki {
+			font-size: 16px !important;
+			line-height: 1.5 !important;
 		}
 	}
 }
