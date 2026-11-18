@@ -23,7 +23,7 @@ export type DrillProps = {
  * panel opens with its verdict, so a reader who stops there has the answer.
  */
 export const Drill = ({ verdict, panel, children }: DrillProps) => (
-	<div className="drill-panel" id={panel} hidden>
+	<div className="drill-panel" id={panel} data-closed="">
 		<p className="drill-verdict">{verdict}</p>
 		{children}
 	</div>
@@ -32,6 +32,8 @@ export const Drill = ({ verdict, panel, children }: DrillProps) => (
 export type DrillsProps = {
 	/** the section's id, which its panels' ids are built from */
 	name: string
+	/** after the chips, in their row: a link to what another section shows */
+	links?: ReactNode
 	children: ReactNode
 }
 
@@ -41,9 +43,9 @@ const isDrill = (child: unknown): child is ReactElement<DrillProps> =>
 /**
  * A section's drill-downs: one row of chips under its figure, each opening
  * its panel below the row. HomeEffects toggles them; without scripts the
- * home layout's <noscript> rule shows every panel.
+ * page's <noscript> rule shows every panel.
  */
-export const Drills = ({ name, children }: DrillsProps) => {
+export const Drills = ({ name, links, children }: DrillsProps) => {
 	const drills = Children.toArray(children).filter(isDrill)
 	const panelOf = (drill: ReactElement<DrillProps>, i: number) =>
 		drill.props.id ?? `${name}-more-${i + 1}`
@@ -61,6 +63,7 @@ export const Drills = ({ name, children }: DrillsProps) => {
 						{drill.props.chip}
 					</button>
 				))}
+				{links}
 			</div>
 			{drills.map((drill, i) =>
 				cloneElement(drill, {

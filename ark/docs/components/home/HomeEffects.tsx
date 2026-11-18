@@ -420,7 +420,7 @@ const wireDrills = () => {
 		const panel = document.getElementById(chip.getAttribute("aria-controls")!)
 		if (!panel) return
 		chip.setAttribute("aria-expanded", String(open))
-		panel.hidden = !open
+		panel.toggleAttribute("data-closed", !open)
 	}
 	const toggle = (chip: Element) => {
 		const open = chip.getAttribute("aria-expanded") !== "true"
@@ -431,7 +431,7 @@ const wireDrills = () => {
 	}
 	const reveal = (id: string) => {
 		const target = id ? document.getElementById(id) : null
-		const panel = target?.closest<HTMLElement>(".drill-panel[hidden]")
+		const panel = target?.closest<HTMLElement>(".drill-panel[data-closed]")
 		if (!target || !panel) return
 		const chip = document.querySelector(
 			`.drill-chip[aria-controls="${CSS.escape(panel.id)}"]`

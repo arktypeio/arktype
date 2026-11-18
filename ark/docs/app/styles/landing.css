@@ -45,6 +45,7 @@
 		margin-top: 14px;
 		font: 400 clamp(1.05rem, 0.9rem + 0.5vw, 1.35rem) / 1.25 var(--sans);
 		letter-spacing: -0.015em;
+		text-wrap: balance;
 		color: var(--ink-2);
 		b {
 			color: var(--ink);
@@ -281,6 +282,21 @@
 				color: inherit;
 			}
 		}
+	}
+	.drill-link {
+		flex: none;
+		margin-left: 6px;
+		font: 400 13px / 1.2 var(--mono);
+		color: var(--sky);
+		white-space: nowrap;
+	}
+	.loses[id] {
+		scroll-margin-top: calc(var(--top) + 40vh);
+	}
+	/* closed by an attribute of its own: Tailwind's base layer hides [hidden]
+	   with !important, which the page without scripts couldn't undo */
+	.drill-panel[data-closed] {
+		display: none;
 	}
 	.drill-panel {
 		margin-top: 14px;
@@ -612,7 +628,7 @@
 		color: var(--ink);
 	}
 	.byte-grid {
-		--b: 9px;
+		--b: 10px;
 		grid-area: grid;
 		display: grid;
 		grid-template-columns: repeat(auto-fill, var(--b));
@@ -1372,7 +1388,7 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-	.home .drill-panel:not([hidden]) {
+	.home .drill-panel:not([data-closed]) {
 		animation: panel-in 0.28s var(--ease-out);
 	}
 	:root[data-motion] .home {
@@ -1674,6 +1690,10 @@
 		.boot,
 		.bytes {
 			padding: 18px 16px 16px;
+		}
+		/* room for the running title's second line, so starting never moves the lanes */
+		.count-head {
+			min-height: 36px;
 		}
 		.boot-lane {
 			grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;

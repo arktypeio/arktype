@@ -585,12 +585,19 @@ export default function HomePage() {
 	return (
 		<>
 			<noscript>
-				<style>{".home .drill-panel[hidden]{display:block!important}"}</style>
+				<style>{".home .drill-panel[data-closed]{display:block}"}</style>
 			</noscript>
 			<div className="wrap">
 				<Hero title={heroTitle} />
 				<Board titled={heroTitle === "claim"} table={<PickThree />}>
-					<Drills name="board">
+					<Drills
+						name="board"
+						links={
+							<a className="drill-link" href="#loses">
+								where it loses ↓
+							</a>
+						}
+					>
 						<Drill
 							chip="how it's ranked"
 							verdict="Other projects' public benchmarks, one rule for every library."

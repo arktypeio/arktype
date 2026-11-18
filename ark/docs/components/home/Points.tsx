@@ -257,7 +257,7 @@ export const Speed = () => {
 			}
 			figure={<SpeedCount />}
 			caveat={
-				<p className="loses">
+				<p className="loses" id="loses">
 					<b>Where it loses.</b> <ClaimText claim={claims.speedScope} />
 				</p>
 			}
@@ -383,6 +383,11 @@ export const Size = () => (
 		title="Ship the checks, not the parser."
 		deck={`Valibot's own login form, messages included: ${loginKb("ArkType (precompiled)")} kB gzipped. Valibot ships ${loginKb("Valibot")}. Zod ships ${loginKb("Zod")}.`}
 		figure={<ByteGrid />}
+		caveat={
+			<p className="loses">
+				<ClaimText claim={claims.sizeClose} />
+			</p>
+		}
 	>
 		<Drills name="size">
 			<Drill
@@ -419,10 +424,9 @@ export const Size = () => (
 			</Drill>
 			<Drill
 				chip="the close call"
-				verdict={<ClaimText claim={claims.sizeClose} />}
+				verdict={<ClaimText claim={claims.sizeAverage} />}
 			>
 				<p className="drill-p">
-					<ClaimText claim={claims.sizeAverage} />{" "}
 					<ClaimText claim={claims.leaveOneOut} />
 				</p>
 				<SizeStandings />
