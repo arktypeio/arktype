@@ -3133,6 +3133,56 @@ console.log(User.description)
 `)
 				})
 
+				describe("a narrow reading what another run of its module could change", () => {
+					// esbuild passes one like it to each validator, as a chunk
+					// imported again runs again: cells.test.ts, "a function
+					// reading state"
+					const counting = `import { type } from "arktype"
+
+let calls = 0
+const isCounted = s => ++calls < 3 && s.length > 2
+
+export const Name = type("string").narrow(isCounted)
+export const User = type({ name: Name })
+`
+					const main = `import { Name, User } from "./types.js"
+
+console.log(Name.allows("abc"), User.allows({ name: "abc" }), Name.allows("abc"))
+`
+					const unminified = { optimization: { minimize: false } }
+					const setsCell = (js: string) => /\bsethole\w+\(/.test(js)
+
+					it("is held by a variable, as the runtime runs a module it holds once", async () => {
+						const root = fixture("runsOnce", {
+							"types.js": counting,
+							"main.js": main
+						})
+						const js = await bundle(name, root, {}, unminified)
+						attest(setsCell(js)).equals(true)
+						attest(output(js)).equals("true true false\n")
+						attest(
+							output(await bundle(name, root, { prune: false }, unminified))
+						).equals("true true false\n")
+					})
+
+					it("is passed to each validator of a file built as two modules", async () => {
+						const root = fixture("builtApart", {
+							"types.js": counting,
+							"other.js": `import { Name } from "./types.js"\n\nexport const others = Name.allows("abc")\n`,
+							"main.js": `import { others } from "./other.js"\n${main}console.log(others)\n`
+						})
+						const layered = {
+							...unminified,
+							experiments: { layers: true },
+							module: { rules: [{ issuer: /other\.js$/, layer: "other" }] }
+						}
+						const js = await bundle(name, root, {}, layered)
+						attest(setsCell(js)).equals(false)
+						// each module of the file counts its own calls
+						attest(output(js)).equals("true true false\ntrue\n")
+					})
+				})
+
 				describe("a define writing code no module's text holds", () => {
 					const reading = {
 						"main.js": `import { User } from "./types.js"

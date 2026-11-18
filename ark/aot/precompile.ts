@@ -523,10 +523,15 @@ const isRepeated = (fn: Node): boolean => {
 }
 
 // a module loaded under two queries, or with one and without, as esbuild holds
-// a run of each where the scan reads one module
-const modulesRunApart = ({ entries, targets }: ScannedProgram): Set<string> => {
+// a run of each where the scan reads one module, and one a bundle read as
+// built holds as two
+const modulesRunApart = ({
+	entries,
+	targets,
+	builtApart
+}: ScannedProgram): Set<string> => {
 	const queries = new Map(entries.map(id => [id, ""]))
-	const apart = new Set<string>()
+	const apart = new Set<string>(builtApart)
 	for (const importing of Object.values(targets)) {
 		for (const specifier in importing) {
 			const id = importing[specifier]
@@ -734,6 +739,8 @@ export class Precompiler {
 	private readsOffHolders: boolean | undefined
 	private sameEachRun: SameEachRun | undefined
 	private runsApart: ReadonlySet<string> = new Set()
+	// whether the program's bundler runs each module it holds once for a runtime
+	private runsOnce = false
 	// each shared unit's modules, written once for every module reading it
 	private sharedWrites: SharedWrites = new Map()
 	// the validators a site's factory last read, which inlining reads again
@@ -1057,6 +1064,7 @@ export class Precompiler {
 		const readsAllows = isRead("allows")
 		const piped = isRead("piped")
 		this.runsApart = modulesRunApart(program)
+		this.runsOnce = !!program.runsOnce
 		const [interned, baked] = this.internedIn(
 			plan,
 			readings.baked,
@@ -1438,6 +1446,17 @@ export class Precompiler {
 		}
 	}
 
+	// A function its module's own run declares is one value while that run is
+	// the only one. Where a module's text may run again, as native modules do
+	// for a chunk imported under another query, two runs must not differ, which
+	// sameEachRun proves of what it reads. A webpack or Rspack runtime keeps
+	// each module it ran in its registry and runs none twice, and the units a
+	// module reads are modules of that same registry, so there the function
+	// needs no proof: a second runtime on the page, or a worker's, runs its own
+	// copy of both. That leaves a module the bundle holds twice (runsApart),
+	// and one required again after its run threw under
+	// `output.strictModuleErrorHandling`, whose second run then sets what its
+	// validators read, as it would have had the first not thrown
 	private isCreatedOnce(hole: unknown): boolean {
 		const standIn = this.standInOf(hole)
 		const closure = standIn?.closure
@@ -1448,7 +1467,7 @@ export class Precompiler {
 			!isRepeated(closure.node) &&
 			!this.runsApart.has(standIn.module.id) &&
 			functionNameOf(hole as Fn).includes(holeNameMarker) &&
-			!!this.sameEachRun?.of(closure.node, standIn.module)
+			(this.runsOnce || !!this.sameEachRun?.of(closure.node, standIn.module))
 		)
 	}
 

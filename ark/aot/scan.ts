@@ -270,10 +270,12 @@ export const programAsBuilt = (
 	// what each module's text imports, which a loader after the plugin may add to
 	const namedBy = new Map<string, Set<string>>()
 	const reached = new Set(entries)
+	const builtApart = new Set<string>()
 	for (const module of reached) {
 		if (isRead(module)) {
 			const { id, source, transformed, mappings } = module
 			if (source === undefined) return `${pathOf(id)} can't be read`
+			if (id in modules) builtApart.add(id)
 			if (
 				source === null ||
 				(id in modules &&
@@ -351,7 +353,9 @@ export const programAsBuilt = (
 			entries.length === 1 &&
 			read.length === 1 &&
 			!dynamicImports.size &&
-			!isImportedByDependency
+			!isImportedByDependency,
+		runsOnce: true,
+		builtApart: [...builtApart].sort()
 	}
 }
 
@@ -803,6 +807,14 @@ export interface ScannedProgram {
 	// with it a module for each file such a specifier can name
 	exposesLoaded?: boolean
 	isOneChunk?: boolean
+	// whether the bundle's runtime keeps each module it ran, as webpack's and
+	// Rspack's registries do, so a module the bundle holds once runs once for
+	// each runtime that loads it, and what that run declares is one value to
+	// every module of the same runtime
+	runsOnce?: boolean
+	// each file such a bundle holds as more than one module, like one built in
+	// two layers or under two requests, whose text a runtime runs for each
+	builtApart?: string[]
 }
 
 export interface ScannedModule {
