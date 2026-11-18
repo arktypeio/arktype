@@ -495,8 +495,13 @@ export const transformed = (
 }
 
 export const pipeOf = (node: BaseNode): TraversePipe =>
-	node.hasAlias ? pipe
-	: node.tfs ? pipeTransformed
+	node.hasAlias ? pipe : pipeAcyclicOf(node)
+
+// apart from pipeOf, so pipe needn't read what reads it: a minifier counting
+// references, as SWC does through a file holding a direct eval, keeps two
+// declarations reading each other, and with them all a cyclic node reaches
+const pipeAcyclicOf = (node: BaseNode): TraversePipe =>
+	node.tfs ? pipeTransformed
 	: node.allowsCtx || node.reportsPred ? pipeChecked
 	: pipeApplied
 
@@ -522,7 +527,7 @@ export const pipeTransformed: TraversePipe = (ctx, node, data) =>
 	:	errorsOf(ctx)
 
 export const pipe: TraversePipe = (ctx, node, data) => {
-	if (!node.hasAlias) return pipeOf(node)(ctx, node, data)
+	if (!node.hasAlias) return pipeAcyclicOf(node)(ctx, node, data)
 	if (!node.allows(data)) {
 		applyPipedResolution(ctx, node, data)
 		return errorsOf(ctx)

@@ -2,10 +2,13 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import {
 	minifiedSizeOf,
+	reachedCyclesOf,
 	reachedLengthOf,
+	runtimeCyclesOf,
 	runtimeReachesOf
 } from "@ark/aot/internal/runtimeSize.ts"
 import { minifiedLengthOf } from "@ark/aot/internal/smaller.ts"
+import * as runtime from "arktype/runtime"
 
 const entry = fromHere("runtimeSize", "entry.ts")
 
@@ -50,5 +53,15 @@ contextualize(() => {
 		attest(
 			[...counted].reduce((sum, i) => sum + lengths[i], minifiedLengthOf(code))
 		).equals(minifiedSizeOf({ code, modules: {} } as never))
+	})
+
+	it("names the declarations reading each other, not one reading itself", () => {
+		attest(reachedCyclesOf(entry, ["parity"])).equals(["even", "odd"])
+	})
+
+	it("finds none in the runtime", () => {
+		// a minifier counting references would keep two reading each other,
+		// and all they reach, in a program reading neither
+		attest(runtimeCyclesOf(Object.keys(runtime))).equals([])
 	})
 })

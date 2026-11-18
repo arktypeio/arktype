@@ -178,18 +178,45 @@ export const runtimeReachesOf = (names: Iterable<string>): RuntimeReaches => {
 	return { lengths, reached }
 }
 
+/**
+ * the names of the declarations a module's exports reach that read themselves
+ * through another. A minifier that counts references, as Next.js 16.0's does
+ * through a chunk holding a direct eval, drops none of them once nothing else
+ * reads one, nor anything they reach
+ */
+export const reachedCyclesOf = (
+	file: string | undefined,
+	names: Iterable<string>
+): string[] => {
+	const cyclic: string[] = []
+	for (const declared of reachedBy(file, names)) {
+		const reached = new Set<Declared>()
+		for (const read of readsOf(declared)) reachFrom(read, reached)
+		if (reached.has(declared)) cyclic.push(declared.binding.name)
+	}
+	return cyclic.sort()
+}
+
+/** those of the runtime */
+export const runtimeCyclesOf = (names: Iterable<string>): string[] =>
+	reachedCyclesOf(runtimeFileOf(), names)
+
 const reachedBy = (
 	file: string | undefined,
 	names: Iterable<string>
 ): Set<Declared> => {
 	const reached = new Set<Declared>()
-	const reach = (declared: Declared | undefined) => {
-		if (!declared || reached.has(declared)) return
-		reached.add(declared)
-		for (const read of readsOf(declared)) reach(read)
+	for (const name of names) {
+		const declared = exportedBy(file, name) ?? localOf(file, name)
+		if (declared) reachFrom(declared, reached)
 	}
-	for (const name of names) reach(exportedBy(file, name) ?? localOf(file, name))
 	return reached
+}
+
+const reachFrom = (declared: Declared, reached: Set<Declared>): void => {
+	if (reached.has(declared)) return
+	reached.add(declared)
+	for (const read of readsOf(declared)) reachFrom(read, reached)
 }
 
 interface Declared {
