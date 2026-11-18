@@ -731,21 +731,35 @@ class Identity {
 	}
 }
 
-// a private field, so an error stays a plain object
-class ErrorSource extends Identity {
-	#config: ResolvedConfig
+// the context an error was given, whose text a copy keeps, with its config
+class Supplied {
+	declare readonly config: ResolvedConfig
+	declare readonly input: ArkErrorContextInput
 
-	constructor(error: ArkError, config: ResolvedConfig) {
+	constructor(config: ResolvedConfig, input: ArkErrorContextInput) {
+		this.config = config
+		this.input = input
+	}
+}
+
+// a private field, so an error stays a plain object. One field, its config or
+// what it was supplied with, since asking an error for a field it lacks costs
+// several times what reading the one it has does
+class ErrorSource extends Identity {
+	#source: ResolvedConfig | Supplied
+
+	constructor(error: ArkError, source: ResolvedConfig | Supplied) {
 		super(error)
-		this.#config = config
+		this.#source = source
 	}
 
-	static configOf(error: ArkError): ResolvedConfig {
-		return #config in error ? error.#config : throwError(copiedErrorMessage)
+	// a copy holds no source, so reading its config or input throws
+	static of(error: ArkError): ResolvedConfig | Supplied {
+		return #source in error ? error.#source : throwError(copiedErrorMessage)
 	}
 
 	static stamps(issue: ArkIssue): boolean {
-		return #config in issue
+		return #source in issue
 	}
 }
 
@@ -753,24 +767,14 @@ class ErrorSource extends Identity {
 export const isArkError = (issue: ArkIssue): issue is ArkError =>
 	ErrorSource.stamps(issue)
 
-// an error given a context, whose text a copy keeps
-class SuppliedSource extends ErrorSource {
-	#input: ArkErrorContextInput
+const configOf = (error: ArkError): ResolvedConfig => {
+	const source = ErrorSource.of(error)
+	return source instanceof Supplied ? source.config : source
+}
 
-	constructor(
-		error: ArkError,
-		config: ResolvedConfig,
-		input: ArkErrorContextInput
-	) {
-		super(error, config)
-		this.#input = input
-	}
-
-	static inputOf(error: ArkError): ArkErrorContextInput | undefined {
-		if (#input in error) return error.#input
-		// a copy holds neither field, so reading its config throws
-		ErrorSource.configOf(error)
-	}
+const inputOf = (error: ArkError): ArkErrorContextInput | undefined => {
+	const source = ErrorSource.of(error)
+	return source instanceof Supplied ? source.input : undefined
 }
 
 const stampError = (
@@ -778,15 +782,14 @@ const stampError = (
 	config: ResolvedConfig,
 	input?: ArkErrorContextInput
 ): ArkError => {
-	if (input) new SuppliedSource(error, config, input)
-	else new ErrorSource(error, config)
+	new ErrorSource(error, input ? new Supplied(config, input) : config)
 	return error
 }
 
 export const suppliedText = (
 	error: ArkError,
 	slot: "expected" | "actual" | "message"
-): string | undefined => SuppliedSource.inputOf(error)?.[slot]
+): string | undefined => inputOf(error)?.[slot]
 
 const writeError = (
 	error: ArkError,
@@ -877,14 +880,57 @@ export const asTemplated = <error extends ArkIssue>(
 export const isCustom = (error: ArkError): boolean => {
 	if (templated.has(error)) return false
 	if (sharing.has(error)) return true
-	const input = SuppliedSource.inputOf(error)
-	if (input?.message !== undefined) return !isInvalidInput(input)
+	const source = ErrorSource.of(error)
+	let config: ResolvedConfig
+	if (source instanceof Supplied) {
+		if (source.input.message !== undefined) return !isInvalidInput(source.input)
+		config = source.config
+	} else config = source
 	return (
 		configuredMessageOf(error) !== undefined ||
-		ErrorSource.configOf(error)[error.code].message !==
-			defaultConfig[error.code].message
+		configuresMessage(config, error.code)
 	)
 }
+
+// whether each config writes every code's message as the default does, found
+// once: nearly all do, and reading a code's writers from two configs for each
+// line of a summary cost a tenth of writing it
+let messagesDefaulted = new WeakMap<ResolvedConfig, boolean>()
+
+// the config last found to, so errors of one config ask nothing of the map
+let lastDefaulted: ResolvedConfig | undefined
+
+const defaultsMessages = (config: ResolvedConfig): boolean => {
+	if (config === lastDefaulted) return true
+	let defaulted = messagesDefaulted.get(config)
+	if (defaulted === undefined) {
+		defaulted = true
+		let k: keyof ResolvedConfig
+		for (k in defaultConfig) {
+			const writers = defaultConfig[k] as { message?: unknown } | undefined
+			if (
+				typeof writers === "object" &&
+				writers !== null &&
+				"message" in writers &&
+				(config[k] as { message?: unknown } | undefined)?.message !==
+					writers.message
+			) {
+				defaulted = false
+				break
+			}
+		}
+		messagesDefaulted.set(config, defaulted)
+	}
+	if (defaulted) lastDefaulted = config
+	return defaulted
+}
+
+const configuresMessage = (
+	config: ResolvedConfig,
+	code: ArkErrorCode
+): boolean =>
+	!defaultsMessages(config) &&
+	config[code].message !== defaultConfig[code].message
 
 /**
  * @internal whether an issue is an error of this copy of arktype whose message
@@ -976,9 +1022,12 @@ const writeAtPaths = (
 	else writeText(error, config, locale)
 }
 
-const unconfigured = (error: ArkError, config: ResolvedConfig): boolean =>
-	(configuredMessageOf(error) ?? config[error.code].message) ===
-	defaultConfig[error.code].message
+const unconfigured = (error: ArkError, config: ResolvedConfig): boolean => {
+	const message = configuredMessageOf(error)
+	return message === undefined ?
+			!configuresMessage(config, error.code)
+		:	message === defaultConfig[error.code].message
+}
 
 // the message each error was configured or supplied with, if they agree
 const sharedMessageOf = (errors: readonly ArkError[]): string | undefined => {
@@ -1053,7 +1102,12 @@ export const configureLocale = (
 	locale: ArkSchemaConfig["locale"],
 	base: ResolvedConfig
 ): Locale => {
-	defaultConfig = base
+	if (defaultConfig !== base) {
+		defaultConfig = base
+		// what each config was compared with
+		messagesDefaulted = new WeakMap()
+		lastDefaulted = undefined
+	}
 	return (
 		renderer ? renderer.configure(locale, base)
 		: locale === undefined || locale === base.locale ? base.locale
@@ -1062,7 +1116,7 @@ export const configureLocale = (
 }
 
 const writtenIn = (error: ArkError, locale: Locale): ArkError => {
-	const config = ErrorSource.configOf(error)
+	const config = configOf(error)
 	if (!renderer && locale !== config.locale)
 		return throwError(unrenderedLocaleMessage)
 	const copy = unwrittenError(error)
@@ -1076,9 +1130,9 @@ const isLocale = (locale: unknown): locale is Locale =>
 export const unwrittenError = (
 	error: ArkError,
 	prefix?: array<PropertyKey>,
-	config: ResolvedConfig = ErrorSource.configOf(error)
+	config: ResolvedConfig = configOf(error)
 ): ArkError => {
-	const input = SuppliedSource.inputOf(error)
+	const input = inputOf(error)
 	const copy: Record<string, unknown> = {}
 	for (const k in error) {
 		if (!(k in writtenKeys)) copy[k] = error[k as never]
