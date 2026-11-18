@@ -299,6 +299,9 @@ amount: Enter an amount.
 			attest(checkers.includes("customSiteOf(")).equals(false)
 			// the missing key of a field whose checks say it, not its checker
 			attest(checkers.match(/sayingMissing\(/g)?.length).equals(2)
+			// what a narrowed field checks ahead of its narrow is one checker,
+			// which says the message its checks share once
+			attest(checkers.match(/"Enter an amount\."/g)?.length).equals(1)
 		})
 
 		it("is said by one checker of a pattern, however many Types say it", async () => {

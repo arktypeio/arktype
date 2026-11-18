@@ -1062,6 +1062,57 @@ const readCase = (
 		)
 	:	readChecker(js, node)
 
+// a root a checker reads in place of what its node holds, like one without
+// the message configured for it, is no node of the root being written, nor
+// are the roots it reads, so each is reached where it's read, as a morph's
+// steps are
+const reachRootsOf = (js: CombinatorCompiler, root: BaseRoot): void => {
+	for (const reference of root.references)
+		if (reference.isRoot()) js.link.byId[reference.id] ??= reference
+}
+
+const unnarrowedByNode = new WeakMap<BaseNode, BaseRoot | null>()
+
+// what an intersection checks ahead of its predicates, as the root a Type
+// checking only that is: a narrowed field reads the checker one that isn't
+// shares, and where each of its checks says a message, that's said once over
+// it. Undefined where it checks a structure, or nothing, or would expect
+// something else of a missing key
+const unnarrowedOf = (node: IntersectionNode): BaseRoot | undefined => {
+	let unnarrowed = unnarrowedByNode.get(node)
+	if (unnarrowed === undefined) {
+		unnarrowed = null
+		// a keyword's own predicate is a check of its intersection, which a
+		// program narrowing nothing itself needn't read another checker for
+		if (
+			node.basis &&
+			!node.structure &&
+			node.inner.predicate?.some(({ predicate }) => !isKeyword(predicate))
+		) {
+			const { predicate: _, ...inner } = node.inner
+			const checks = [node.basis, ...node.preStruct]
+			const { message } = node.basis.meta
+			const root = node.$.node(
+				"intersection",
+				(
+					typeof message === "string" &&
+						checks.every(check =>
+							check.references.every(
+								reference => reference.meta.message === message
+							)
+						)
+				) ?
+					{ ...inner, meta: { message } }
+				:	inner
+			) as BaseRoot
+			if (combines(root) && checkerDescriptionOf(root) === node.brief)
+				unnarrowed = root
+		}
+		unnarrowedByNode.set(node, unnarrowed)
+	}
+	return unnarrowed ?? undefined
+}
+
 /** a node's checker, if it combines */
 export const writeCombinator = (
 	js: CombinatorCompiler,
@@ -1070,12 +1121,10 @@ export const writeCombinator = (
 	if (!combines(node)) return
 	const said = saidByNode.get(node)
 	if (said) {
-		// what it is without its message is no node of its own, nor are the
-		// roots that reads, so each is reached here: written in place where
-		// small, and otherwise the unit every root that is one reads, as each
-		// field checking a UUID reads one RegExp
-		for (const reference of said.plain.references)
-			if (reference.isRoot()) js.link.byId[reference.id] ??= reference
+		// what it is without its message is written in place where small, and
+		// is otherwise the unit every root that is one reads, as each field
+		// checking a UUID reads one RegExp
+		reachRootsOf(js, said.plain)
 		return writeCall(
 			"saying",
 			readChecker(js, said.plain),
@@ -1133,8 +1182,6 @@ const writeIntersectionCombinator = (
 ): string => {
 	const shape = js.shapes && writeShape(js, node)
 	if (shape) return shape
-	const refinements = node.preStruct.map(child => writeCheck(js, child))
-	const structure = node.structure && writeStructure(js, node.structure)
 	const predicates = node.inner.predicate?.map(predicate =>
 		writePredicate(js, predicate)
 	)
@@ -1142,6 +1189,13 @@ const writeIntersectionCombinator = (
 		predicates?.length === 1 ?
 			predicates[0]
 		:	predicates && writeCall("narrowedByEach", `[${predicates.join(", ")}]`)
+	const unnarrowed = narrowed && unnarrowedOf(node)
+	if (unnarrowed) {
+		reachRootsOf(js, unnarrowed)
+		return writeCall("narrowedAfter", readChecker(js, unnarrowed), narrowed)
+	}
+	const refinements = node.preStruct.map(child => writeCheck(js, child))
+	const structure = node.structure && writeStructure(js, node.structure)
 	const within =
 		structure && narrowed ?
 			writeCall(
