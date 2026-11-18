@@ -300,7 +300,7 @@
 		padding: 2px 7px;
 		border-radius: var(--r-pill);
 		border: 1px solid var(--rule);
-		font: 400 11px / 1.3 var(--mono);
+		font: 400 12px / 1.3 var(--mono);
 		color: var(--copper);
 		vertical-align: 1px;
 		white-space: nowrap;
@@ -334,19 +334,18 @@
 			align-items: center;
 			gap: 12px;
 			padding: 12px 20px;
-			font: 400 12.5px / 1.3 var(--mono);
-			color: var(--ink-3);
+			font: 400 13px / 1.3 var(--mono);
+			color: var(--ink-2);
 		}
 		> figcaption {
 			border-bottom: 1px solid var(--rule-soft);
 			b {
-				color: var(--ink-2);
+				color: var(--ink);
 				font-weight: 400;
 			}
 		}
 		> footer {
 			border-top: 1px solid var(--rule-soft);
-			font-size: 11px;
 		}
 	}
 	.code-card.glow::before {
@@ -544,8 +543,8 @@
 		}
 		small {
 			display: block;
-			color: var(--ink-3);
-			font-size: 12.5px;
+			color: var(--ink-2);
+			font-size: 13px;
 		}
 	}
 	.call {
@@ -604,7 +603,7 @@
 		}
 	}
 	.chip {
-		font: 400 12.5px / 1 var(--mono);
+		font: 400 13px / 1 var(--mono);
 		color: var(--ink-2);
 		padding: 8px 11px;
 		border-radius: var(--r-pill);
@@ -685,7 +684,7 @@
 		max-width: 104ch;
 		margin: 18px 0 0;
 		font: 400 13.5px / 1.6 var(--mono);
-		color: var(--ink-3);
+		color: var(--ink-2);
 		padding-left: 3ch;
 		text-indent: -3ch;
 		code {
@@ -694,34 +693,6 @@
 	}
 	.pair-note {
 		margin-top: 14px;
-	}
-
-	/* 01: the same type, twice */
-	.twin-code {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr);
-		align-items: stretch;
-		margin-top: 48px;
-		.code-card > pre.shiki {
-			--pre-x: 22px;
-			padding: 20px var(--pre-x);
-			font-size: 14.5px;
-			line-height: 1.8;
-		}
-	}
-	.eq {
-		display: grid;
-		align-content: start;
-		padding-top: calc(45px + 20px);
-		font: 400 14.5px / 1.8 var(--mono);
-		color: var(--copper);
-		text-align: center;
-		opacity: 0.75;
-		span:nth-child(3),
-		span:nth-child(4) {
-			color: var(--gold);
-			opacity: 1;
-		}
 	}
 
 	/* 02: editor | terminal, then runtime | MCP */
@@ -784,8 +755,8 @@
 		padding: 0 16px;
 		border-bottom: 1px solid var(--line);
 		background: color-mix(in oklab, var(--surface) 60%, var(--sunk));
-		font: 400 12.5px / 1 var(--mono);
-		color: var(--ink-3);
+		font: 400 13px / 1 var(--mono);
+		color: var(--ink-2);
 	}
 	.dots {
 		display: inline-flex;
@@ -913,9 +884,6 @@
 		border-radius: 50%;
 		background: var(--teal);
 		flex: none;
-		&.is-say {
-			background: var(--ink-2);
-		}
 	}
 	.t-cmd {
 		color: var(--ink);
@@ -980,19 +948,10 @@
 	.t-rt {
 		color: var(--red-ink);
 	}
-	.t-say {
-		display: flex;
-		align-items: center;
-		gap: 9px;
-		margin-top: 6px;
-		color: var(--ink);
-		font-family: var(--sans);
-		font-size: 15px;
-	}
 	.term-replay {
 		margin-left: auto;
-		font: 400 12px / 1 var(--mono);
-		color: var(--ink-3);
+		font: 400 13px / 1 var(--mono);
+		color: var(--ink-2);
 		padding: 6px 8px;
 		border-radius: var(--r-xs);
 		cursor: pointer;
@@ -1147,7 +1106,7 @@
 		.lbl {
 			flex-basis: 100%;
 			font: 400 13px / 1 var(--mono);
-			color: var(--ink-3);
+			color: var(--ink-2);
 			margin-bottom: 6px;
 		}
 		a {
@@ -1184,12 +1143,6 @@
 		.ctas {
 			margin-top: 20px;
 		}
-	}
-	.closer-agent {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 10px;
-		margin-top: 32px;
 	}
 	.site-foot {
 		margin-top: 96px;
@@ -1405,19 +1358,7 @@
 			flex-basis: 100%;
 		}
 		.block {
-			padding-top: 96px;
-		}
-		.twin-code {
-			grid-template-columns: minmax(0, 1fr);
-			gap: 12px;
-			.code-card > pre.shiki {
-				--pre-x: 16px;
-				padding: 16px var(--pre-x);
-				font-size: 13px;
-			}
-		}
-		.eq {
-			display: none;
+			padding-top: 84px;
 		}
 		.pair2 {
 			grid-template-columns: minmax(0, 1fr);
@@ -1470,7 +1411,7 @@
 		border: 1px solid var(--rule);
 		background: color-mix(in oklab, var(--gold) 5%, transparent);
 		color: var(--gold);
-		font: 400 12px / 1.2 var(--mono);
+		font: 400 13px / 1.2 var(--mono);
 		text-decoration: none;
 		transition:
 			border-color var(--t-micro),
@@ -1564,37 +1505,11 @@
 				0 0 0 4px color-mix(in oklab, var(--gold) 5%, transparent);
 		}
 	}
-	.card-head {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 10px;
-		font: 400 12.5px / 1.3 var(--mono);
-		color: var(--ink-2);
-	}
-	.card-check {
-		display: inline-grid;
-		place-items: center;
-		width: 22px;
-		height: 22px;
-		border-radius: 50%;
-		background: color-mix(in oklab, var(--teal) 16%, transparent);
-		box-shadow: inset 0 0 0 1px
-			color-mix(in oklab, var(--teal) 55%, transparent);
-		color: var(--teal);
-		svg {
-			width: 13px;
-			height: 13px;
-		}
-	}
-	.card-label {
-		font: inherit;
-	}
 	.board-note {
 		max-width: 120ch;
 		margin: 22px 0 0;
-		font: 400 12px / 1.65 var(--mono);
-		color: var(--ink-3);
+		font: 400 13px / 1.65 var(--mono);
+		color: var(--ink-2);
 		a {
 			color: var(--sky);
 		}
@@ -1627,8 +1542,8 @@
 		}
 		.p3-startup {
 			margin-top: 6px;
-			font: 400 12px / 1.5 var(--mono);
-			color: var(--ink-3);
+			font: 400 13px / 1.5 var(--mono);
+			color: var(--ink-2);
 		}
 	}
 	.p3-table {
@@ -1651,9 +1566,9 @@
 		}
 		thead th {
 			padding-block: 0 10px;
-			font-size: 12px;
+			font-size: 13px;
 			font-weight: 400;
-			color: var(--ink-3);
+			color: var(--ink-2);
 		}
 		tbody tr {
 			border-top: 1px solid var(--rule);
@@ -1664,7 +1579,7 @@
 			white-space: normal;
 		}
 		td {
-			color: var(--ink-3);
+			color: var(--ink-2);
 		}
 		td.is-first {
 			color: var(--ink);
@@ -1713,30 +1628,12 @@
 		align-items: center;
 		gap: 6px 18px;
 		margin: 14px 0 0;
-		font: 400 12px / 1.5 var(--mono);
-		color: var(--ink-3);
+		font: 400 13px / 1.5 var(--mono);
+		color: var(--ink-2);
 		a {
 			margin-left: auto;
 			color: var(--sky);
 		}
-	}
-	.card-big {
-		display: grid;
-		gap: 6px;
-		margin: 26px 0 0;
-	}
-	.card-num {
-		justify-self: start;
-		font: 800 clamp(3rem, 2.2rem + 2.2vw, 4.25rem) / 0.95 var(--sans);
-		letter-spacing: -0.045em;
-		font-variant-numeric: tabular-nums;
-		color: var(--gold);
-		text-shadow: 0 0 42px color-mix(in oklab, var(--gold-glow) 28%, transparent);
-		white-space: nowrap;
-	}
-	.card-unit {
-		font: 400 12.5px / 1.3 var(--mono);
-		color: var(--ink-3);
 	}
 	.card-margin {
 		margin: 16px 0 0;
@@ -1774,8 +1671,8 @@
 			"name val"
 			"track track";
 		gap: 5px 10px;
-		font: 400 12px / 1.2 var(--mono);
-		color: var(--ink-3);
+		font: 400 13px / 1.2 var(--mono);
+		color: var(--ink-2);
 	}
 	.lane-name {
 		grid-area: name;
@@ -1966,8 +1863,8 @@
 	}
 	.card-rest {
 		margin: 12px 0 0;
-		font: 400 11.5px / 1.5 var(--mono);
-		color: var(--ink-3);
+		font: 400 13px / 1.5 var(--mono);
+		color: var(--ink-2);
 	}
 
 	.hero a.one {
@@ -2263,77 +2160,13 @@
 	}
 }
 
-@keyframes snap {
-	from {
-		scale: 0 1;
-	}
-	70% {
-		scale: 1.04 1;
-	}
-}
-@keyframes pack {
-	from {
-		scale: calc(1 / var(--w)) 1;
-		opacity: 0;
-	}
-	20% {
-		scale: calc(1 / var(--w)) 1;
-		opacity: 1;
-	}
-	80% {
-		scale: 0.97 1;
-	}
-}
-@keyframes stamp-in {
-	from {
-		scale: 0.4;
-		opacity: 0;
-	}
-	60% {
-		scale: 1.18;
-		opacity: 1;
-	}
-}
-@keyframes place-in {
-	from {
-		opacity: 0;
-		scale: 0.6;
-	}
-	60% {
-		opacity: 1;
-		scale: 1.06;
-	}
-}
 @keyframes strike {
 	to {
 		background-size: 100% 0.07em;
 	}
 }
 /* in from past the track's right end, streaking until it slows to its ratio */
-@keyframes spot-race {
-	from {
-		opacity: 0;
-		translate: calc((1 - var(--x)) * 100cqw + 12px) 0;
-		scale: 3.2 0.7;
-	}
-	12% {
-		opacity: 1;
-	}
-}
-@keyframes line-draw {
-	from {
-		scale: 1 0;
-	}
-}
 /* one pass of light along ArkType's bar as it finishes first */
-@keyframes glint {
-	from {
-		background-position-x: -60%;
-	}
-	to {
-		background-position-x: 180%;
-	}
-}
 @keyframes spin {
 	to {
 		rotate: 1turn;
@@ -2360,74 +2193,11 @@
    (set before first paint) holds them at their start until then */
 @media (prefers-reduced-motion: no-preference) {
 	:root[data-motion] .home {
-		.board:not([data-play]) {
-			.lane-bar {
-				scale: 0 1;
-			}
-			.card-check,
-			.card-num,
-			.lane.is-ours .lane-val,
-			.spot {
-				opacity: 0;
-			}
-			.spread .lane-track::before {
-				scale: 1 0;
-			}
-		}
 		/* the struck phrase's line is drawn in, so it starts as a background */
 		[data-board] s {
 			text-decoration-color: transparent;
 			background: linear-gradient(currentColor, currentColor) no-repeat 0 50% /
 				0 0.07em;
-		}
-		.board[data-play] {
-			.is-size .lane-bar {
-				animation: pack 0.75s cubic-bezier(0.6, 0, 0.2, 1) both;
-				animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--at));
-			}
-			.card-check {
-				animation: stamp-in 0.42s var(--ease-pop) both;
-				animation-delay: calc(var(--i) * 0.12s + 0.35s);
-			}
-			/* ArkType's 1× line first, then each library's dots (Board.tsx times them) */
-			.spread .lane-track::before {
-				animation: line-draw 0.3s var(--ease-out) both;
-				animation-delay: calc(0.15s + var(--lane) * 0.06s);
-			}
-			.spot {
-				animation: spot-race var(--travel) cubic-bezier(0.2, 0.7, 0.25, 1)
-					var(--delay) both;
-			}
-			.lane.is-ours .lane-bar::after {
-				content: "";
-				position: absolute;
-				inset: 0;
-				border-radius: inherit;
-				background: linear-gradient(
-						90deg,
-						transparent,
-						color-mix(in oklab, white 60%, transparent),
-						transparent
-					) -60%
-					0 / 40% 100% no-repeat;
-				animation: glint 0.6s ease-out both;
-				animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--won));
-			}
-			.lane.is-ours .lane-val {
-				animation: rise-fade 0.3s ease-out both;
-				animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--won));
-			}
-			/* a place lands once its tile's --won has passed (landing.css sets it) */
-			.card-num:is(
-				[data-suffix="st"],
-				[data-suffix="nd"],
-				[data-suffix="rd"],
-				[data-suffix="th"]
-			) {
-				transform-origin: 0 80%;
-				animation: place-in 0.5s var(--ease-pop) both;
-				animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--won, 0.9s));
-			}
 		}
 		[data-board][data-play] s {
 			animation: strike 0.3s var(--ease-out) 0.72s both;

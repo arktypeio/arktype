@@ -242,7 +242,9 @@
 		gap: 8px;
 		&::before {
 			content: "// more";
+			flex: none;
 			margin-right: 4px;
+			white-space: nowrap;
 			font: 400 13px / 1 var(--mono);
 			color: var(--ink-3);
 		}
@@ -687,8 +689,8 @@
 		margin: 16px 0 0;
 		figcaption {
 			margin-top: 14px;
-			font: 400 11.5px / 1.55 var(--mono);
-			color: var(--ink-3);
+			font: 400 13px / 1.55 var(--mono);
+			color: var(--ink-2);
 		}
 	}
 	.scale-title {
@@ -709,7 +711,7 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 6px 20px;
-		font: 400 12px / 1.4 var(--mono);
+		font: 400 13px / 1.4 var(--mono);
 		color: var(--ink-2);
 		> span {
 			display: inline-flex;
@@ -811,8 +813,8 @@
 	}
 	.scale-axis {
 		margin: 0 0 18px;
-		font: 400 11.5px / 1.4 var(--mono);
-		color: var(--ink-3);
+		font: 400 13px / 1.4 var(--mono);
+		color: var(--ink-2);
 	}
 	.scale-rows {
 		overflow-x: auto;
@@ -833,9 +835,9 @@
 			text-align: left;
 		}
 		thead th {
-			font-size: 11.5px;
+			font-size: 13px;
 			font-weight: 400;
-			color: var(--ink-3);
+			color: var(--ink-2);
 		}
 		tbody tr {
 			border-top: 1px solid var(--rule-soft);
@@ -1130,7 +1132,7 @@
 			display: block;
 			padding: 4px 11px;
 			border-radius: var(--r-pill);
-			font: 400 12.5px / 1.3 var(--mono);
+			font: 400 13px / 1.3 var(--mono);
 			color: var(--ink-2);
 			transition:
 				background var(--t-micro),
@@ -1583,7 +1585,7 @@
 			grid-area: scope;
 			align-self: start;
 			margin-top: 3px;
-			font-size: 12.5px;
+			font-size: 13px;
 			line-height: 1.35;
 		}
 		.hero .lede {
@@ -1634,7 +1636,30 @@
 		.loses {
 			font-size: 15px;
 		}
+		/* one row, scrolled sideways: stacked, four chips pushed every figure's
+		   data a screen away from the figure */
+		.drill-chips {
+			flex-wrap: nowrap;
+			margin-inline: calc(-1 * var(--gutter));
+			padding-inline: var(--gutter);
+			overflow-x: auto;
+			scrollbar-width: none;
+			mask: linear-gradient(
+				90deg,
+				#000 calc(100% - 40px),
+				transparent calc(100% - 4px)
+			);
+			&::-webkit-scrollbar {
+				display: none;
+			}
+			&::after {
+				content: "";
+				flex: none;
+				width: 24px;
+			}
+		}
 		.drill-chip {
+			flex: none;
 			padding: 9px 12px 9px 10px;
 		}
 		.drill-panel {

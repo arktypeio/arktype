@@ -593,8 +593,11 @@ export default function HomePage() {
 					<Drills name="board">
 						<Drill
 							chip="how it's ranked"
-							verdict={<ClaimText claim={claims.benchmarkOwners} />}
+							verdict="Other projects' public benchmarks, one rule for every library."
 						>
+							<p className="drill-p">
+								<ClaimText claim={claims.benchmarkOwners} />
+							</p>
 							<BoardNote />
 							<p className="board-note">
 								<ClaimText claim={claims.leaveOneOut} />
