@@ -83,3 +83,6 @@ jobs:
         run: pnpm ci:publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # npm logs why a trusted publishing (OIDC) token exchange failed only
+          # at verbose; without it, a refused exchange surfaces as a bare E404
+          NPM_CONFIG_LOGLEVEL: verbose
