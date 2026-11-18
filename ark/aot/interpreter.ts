@@ -2372,14 +2372,13 @@ export class Interpreter {
 		} finally {
 			this.defaultCtx = previous
 		}
-		// Only one that read nothing but the default has passed whatever the
+		// Only one that read no value but the default has passed whatever the
 		// program holds as the Type is created: another's site would compare
-		// what it read, and fail a program whose value passes too
-		const { reads, exportedFunctions, readFirst, declared, holders } =
-			checking.trace
-		passes &&= ![reads, exportedFunctions, readFirst, declared, holders].some(
-			read => read.length
-		)
+		// what it read, and fail a program whose value passes too. A function
+		// another module exports, which the narrow called, is the site's helper
+		// as one its definition calls is: the same wherever nothing replaces it
+		const { reads, readFirst, declared, holders } = checking.trace
+		passes &&= ![reads, readFirst, declared, holders].some(read => read.length)
 		if (passes) mergeTrace(ctx.trace, checking.trace)
 		else if (interpreted) ctx.site!.interpreted = interpreted
 		return passes

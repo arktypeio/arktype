@@ -1193,12 +1193,17 @@ ${repaying}
 			name: string,
 			where: "as the build runs" | "where its Type is created",
 			declared: string,
-			amount: string
+			amount: string,
+			// a module beside it, which what's declared imports from
+			helpers?: string
 		) =>
 			it(`${name}, ${where}`, async () => {
-				const root = fixture(
-					`default-${name.replace(/\W+/g, "-")}`,
-					defaulted(declared, amount)
+				const root = writeFixture(
+					{
+						"main.ts": defaulted(declared, amount),
+						...(helpers === undefined ? {} : { "helpers.ts": helpers })
+					},
+					fromHere("temp", "checkers", `default-${name.replace(/\W+/g, "-")}`)
 				)
 				const whole = behaviorOf(await bundle(root, { prune: false }))
 				attest(behaviorOf(await bundle(root))).equals(whole)
@@ -1248,6 +1253,39 @@ ${repaying}
 			"where its Type is created",
 			"",
 			`type("number").narrow(n => { let rest = n; while (rest >= 5) rest -= 5; return rest === 0 }).default(0)`
+		)
+		// a function another module exports is the site's helper, as one its
+		// definition calls is
+		const safe = `type("number").narrow((n, ctx) => isSafe(n) || ctx.reject({ message: "Must be safe to count." }))`
+		itChecks(
+			"passes one whose narrow calls what another module exports",
+			"as the build runs",
+			`import { isSafe } from "./helpers.ts"`,
+			`${safe}.default(0)`,
+			`export const isSafe = (n: number) => Number.isSafeInteger(n)\n`
+		)
+		itChecks(
+			"is rejected by what its narrow calls of another module",
+			"where its Type is created",
+			`import { isSafe } from "./helpers.ts"`,
+			`${safe}.default(0.5)`,
+			`export const isSafe = (n: number) => Number.isSafeInteger(n)\n`
+		)
+		// the site imports the helper it ran, so its module still loads first
+		itChecks(
+			"passes one whose narrow calls what a module that runs code exports",
+			"as the build runs",
+			`import { isSafe } from "./helpers.ts"`,
+			`${safe}.default(0)`,
+			`console.log("helpers loaded")\n\nexport const isSafe = (n: number) => Number.isSafeInteger(n)\n`
+		)
+		// what the helper reads of its module is a value the program may hold otherwise
+		itChecks(
+			"is checked by what its narrow's helper reads of another module",
+			"where its Type is created",
+			`import { isSafe } from "./helpers.ts"`,
+			`${safe}.default(0)`,
+			`const limits = { max: 2 ** 53 }\n\nexport const isSafe = (n: number) => n < limits.max\n`
 		)
 	})
 
