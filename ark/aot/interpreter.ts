@@ -77,7 +77,12 @@ import {
 	type ModuleGraph
 } from "./graph.ts"
 import type { SourceModule } from "./module.ts"
-import { isTransparent, proveFunction, runtimeParamsOf } from "./proofs.ts"
+import {
+	isTransparent,
+	passesWithoutCtx,
+	proveFunction,
+	runtimeParamsOf
+} from "./proofs.ts"
 import {
 	isOwnEnumSeed,
 	transpiledEnumOf,
@@ -397,6 +402,8 @@ export class Interpreter {
 		| undefined
 	// the trace of stand-ins arktype calls outside a site
 	private looseTrace: Trace | undefined
+	// where a default is being run through what checks it, to tell if it passes
+	private defaultCtx: Context | undefined
 
 	private registerSites: ((module: SourceModule) => unknown) | undefined
 
@@ -2300,6 +2307,8 @@ export class Interpreter {
 	): boolean => {
 		const site = this.activeCall?.ctx.site
 		if (!site || !this.holdsStandIn(node.in as BaseRoot)) return false
+		// one the build ran is checked, so nothing is left for where it's created
+		if (this.passesAtBuild(node.in as BaseRoot, value)) return true
 		const check: DefaultCheck = [node, value, key]
 		site.reached.push(check)
 		if (owner) {
@@ -2340,6 +2349,56 @@ export class Interpreter {
 			if (!stored) entries.set(key, (stored = new Set()))
 			for (let i = mark; i < reached.length; i++) stored.add(reached[i])
 		}
+	}
+
+	// Whether a default passes what checks it, as the build can tell: each
+	// narrow it reaches is a static helper, which returns of the default what it
+	// would where the Type is created, and can't tell it's passed no ctx. A
+	// validator the build writes then holds no check of it. One it can't run, or
+	// that rejects the default, is left to check it there, where it throws
+	private passesAtBuild(input: BaseRoot, value: unknown): boolean {
+		const ctx = this.activeCall?.ctx
+		// arktype creates the node itself, and checks what it creates
+		if (!ctx || this.opts.runtime === "arktype") return false
+		const previous = this.defaultCtx
+		// what a narrow reads decides the site's value only if the default passes
+		const checking = (this.defaultCtx = { ...ctx, trace: emptyTrace() })
+		const interpreted = ctx.site && new Set(ctx.site.interpreted)
+		let passes = false
+		try {
+			passes = input.allows(value)
+		} catch {
+			// e.g. a narrow that isn't a static helper, as its call says
+		} finally {
+			this.defaultCtx = previous
+		}
+		// Only one that read nothing but the default has passed whatever the
+		// program holds as the Type is created: another's site would compare
+		// what it read, and fail a program whose value passes too
+		const { reads, exportedFunctions, readFirst, declared, holders } =
+			checking.trace
+		passes &&= ![reads, exportedFunctions, readFirst, declared, holders].some(
+			read => read.length
+		)
+		if (passes) mergeTrace(ctx.trace, checking.trace)
+		else if (interpreted) ctx.site!.interpreted = interpreted
+		return passes
+	}
+
+	// what a function arktype calls with a default returns of it alone
+	private testDefault(ctx: Context, standIn: StandIn, value: unknown): unknown {
+		const closure = standIn.closure
+		if (
+			!closure ||
+			// another module's can be replaced where the program runs
+			closure.module !== ctx.site?.module ||
+			!staticBodyOf(closure.node) ||
+			!passesWithoutCtx(closure.node)
+		)
+			throw this.calledAtDefinition(standIn, undefined)
+		const result = this.interpretCall(closure, [value], closure.node, ctx)
+		if (isDynamic(result)) throw result
+		return result
 	}
 
 	// e.g. a narrow or a writer, which checking a default would call
@@ -2624,6 +2683,8 @@ export class Interpreter {
 	}
 
 	private callStandIn(standIn: StandIn, args: unknown[]): unknown {
+		if (this.defaultCtx)
+			return this.testDefault(this.defaultCtx, standIn, args[0])
 		const active = this.activeCall
 		if (active?.isArktype) this.markCalled(standIn, true)
 		else if (active?.isDefining) this.markCalled(standIn, false)

@@ -126,6 +126,15 @@ export const rejectingOf = (
 	const parts = rejectingPartsOf(fn)
 	if (!parts) return
 	const { data, test, message, fails } = parts
+	// a call holds the test as an arrow of its data and the message as its
+	// text, so nothing else the function declares or computes may be read
+	if (
+		fn.type !== "ArrowFunctionExpression" ||
+		fn.params.length !== 2 ||
+		message.type !== "Literal" ||
+		typeof message.value !== "string"
+	)
+		return
 	// nothing binds a name between the parameter and what its body tests
 	const isData = (node: Node) =>
 		node.type === "Identifier" && node.name === data.name

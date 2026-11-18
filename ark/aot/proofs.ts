@@ -51,6 +51,11 @@ const someNode = (node: Node, test: (node: Node) => boolean): boolean => {
 	return false
 }
 
+const isFunction = (node: Node): node is FunctionNode =>
+	node.type === "ArrowFunctionExpression" ||
+	node.type === "FunctionExpression" ||
+	node.type === "FunctionDeclaration"
+
 const isArgumentsOrEval = (node: Node): boolean =>
 	node.type === "Identifier" &&
 	(node.name === "arguments" || node.name === "eval")
@@ -112,8 +117,9 @@ const isPlainReport = (method: string, args: readonly Node[]): boolean => {
 const returnsItsReports = (fn: FunctionNode): boolean => {
 	const params = runtimeParamsOf(fn)
 	const ctx = params[1]
+	// what calls it passes its data and its ctx, so a param past them is undefined
 	if (
-		params.length !== 2 ||
+		params.length < 2 ||
 		fn.async ||
 		fn.generator ||
 		ctx.type !== "Identifier" ||
@@ -167,15 +173,39 @@ const returnsItsReports = (fn: FunctionNode): boolean => {
 	)
 }
 
+/**
+ * whether what it returns of data it passes is the same with no ctx: it reads
+ * none, or reads its own only to return a report, which no data passing makes
+ */
+export const passesWithoutCtx = (fn: FunctionNode): boolean =>
+	readsOnlyItsArgument(fn) || returnsItsReports(fn)
+
 /** what a narrow of the commonest shape tests of its data, and says */
 export interface RejectingParts {
 	// the parameter it tests
 	data: Node & { name: string; start: number; end: number }
 	test: Node & { start: number; end: number }
-	// the message, a string's literal
+	// the message, which is never undefined
 	message: Node & { start: number; end: number }
 	// whether data fails where the test holds, rather than where it doesn't
 	fails: boolean
+}
+
+// a message's expression that can't be undefined, which a report would raise
+// as no message at all: `said ?? "Required."`, where a param nothing passes
+// is `said`
+const isNeverUndefined = (node: Node): boolean => {
+	const value = unwrapped(node)
+	return (
+		value.type === "Literal" ||
+		value.type === "TemplateLiteral" ||
+		(value.type === "LogicalExpression" &&
+			value.operator !== "&&" &&
+			isNeverUndefined(value.right)) ||
+		(value.type === "ConditionalExpression" &&
+			isNeverUndefined(value.consequent) &&
+			isNeverUndefined(value.alternate))
+	)
 }
 
 const unwrapped = (node: Node): Node => {
@@ -191,14 +221,9 @@ const unwrapped = (node: Node): Node => {
 // All it asks of its ctx is to reject with that message, which is a
 // predicate's issue saying it, at the path and of the data it was passed
 export const rejectingPartsOf = (fn: Node): RejectingParts | undefined => {
-	if (
-		fn.type !== "ArrowFunctionExpression" ||
-		fn.async ||
-		fn.params.length !== 2
-	)
-		return
-	const [data, ctx] = fn.params
-	if (data.type !== "Identifier" || ctx.type !== "Identifier") return
+	if (!isFunction(fn) || fn.async || fn.generator || !fn.body) return
+	const [data, ctx] = runtimeParamsOf(fn)
+	if (data?.type !== "Identifier" || ctx?.type !== "Identifier") return
 	const isTrue = (node: Node | null): boolean => {
 		const value = node && unwrapped(node)
 		return value?.type === "Literal" && value.value === true
@@ -248,6 +273,7 @@ export const rejectingPartsOf = (fn: Node): RejectingParts | undefined => {
 		call.callee.object.name !== ctx.name
 	)
 		return
+	const receiver = call.callee.object
 	const [input] = call.arguments
 	if (input.type !== "ObjectExpression" || input.properties.length !== 1) return
 	const [property] = input.properties
@@ -258,18 +284,19 @@ export const rejectingPartsOf = (fn: Node): RejectingParts | undefined => {
 		property.shorthand ||
 		property.key.type !== "Identifier" ||
 		property.key.name !== "message" ||
-		property.value.type !== "Literal" ||
-		typeof property.value.value !== "string"
+		!isNeverUndefined(property.value)
 	)
 		return
-	// what it tests can't reach its ctx: by name, which misses nothing a
+	// nothing else it runs can reach its ctx: by name, which misses nothing a
 	// binding would find, nor through what a direct eval reads
 	if (
 		someNode(
-			test,
+			fn,
 			node =>
-				isArgumentsOrEval(node) ||
-				(node.type === "Identifier" && node.name === ctx.name)
+				node !== ctx &&
+				node !== receiver &&
+				(isArgumentsOrEval(node) ||
+					(node.type === "Identifier" && node.name === ctx.name))
 		)
 	)
 		return

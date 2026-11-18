@@ -903,6 +903,21 @@ run(() => T.allows({ s: "abc" }))
 			reporting(`s.length > 2 && (s.length > 4 || ctx.mustBe("longer"))`)
 		)
 
+		// what calls it passes its data and its ctx alone
+		itRunsAsUnproved(
+			"takes a param past its ctx, which nothing passes",
+			`const T = type({ s: N, deep: { t: N.array() } })
+run(() => T({ s: "x", deep: { t: ["abc", "y"] } }))
+run(() => T.allows({ s: "x", deep: { t: [] } }))
+run(() => N("x"))
+`,
+			[
+				`function (s: string, ctx: any, expected?: string) { globalThis.calls++; return ${long} || ctx.reject({ expected: expected ?? "long" }) }`,
+				`function (s: string, ctx: any, expected?: string) { const held = ctx; globalThis.calls++; return ${long} || held.reject({ expected: expected ?? "long" }) }`,
+				"narrowedWithCtx("
+			]
+		)
+
 		// each is spread where its issue is raised, as an array's literal can be
 		itRunsAsUnproved(
 			"reports at a path an array's literal writes",
@@ -947,6 +962,7 @@ run(() => T.allows({ a: "x", b: { c: "abc" } }))
 			"through error, which returns what it adds": `(s: string, ctx: any) => s.length > 2 || ctx.error("long")`,
 			"through a key it computes": `(s: string, ctx: any) => s.length > 2 || ctx["mustBe"]("long")`,
 			"reading it for its report": `(s: string, ctx: any) => s.length > 2 || ctx.mustBe(ctx.path.join())`,
+			"from the default of a param past it": `(s: string, ctx: any, depth = ctx.path.length) => (depth < 9 && s.length > 2) || ctx.mustBe("long")`,
 			"with a path a report can't spread": `(s: string, ctx: any) => s.length > 2 || ctx.reject({ relativePath: 1, message: "short" })`,
 			"as an async function, whose promise passes": `async (s: string, ctx: any) => s.length > 2 || ctx.mustBe("long")`,
 			"past what arguments hold": `function (s: string, ctx: any) { return s.length > 2 || arguments[1].mustBe("long") }`
@@ -1020,6 +1036,23 @@ run(() => Said("x"))
 			rejecting
 		)
 
+		// a helper many fields share: nothing passes it a param past its ctx,
+		// and whichever message it computes, it's a message
+		itRunsAsUnproved(
+			"says a message it computes as it runs, with a param past its ctx",
+			`const T = type({ s: N, "t?": N.array() })
+run(() => T({ s: "x", t: ["abc", "", "y"] }))
+run(() => T({ s: "abc" }))
+run(() => T.allows({ s: "x" }))
+run(() => N(""))
+`,
+			[
+				`function (s: string, ctx: any, said?: string) { if (!(globalThis.calls++, ${long})) { return ctx.reject({ message: said ?? (s ? \`Short by \${3 - s.length}.\` : "Required.") }) } return true }`,
+				`function (s: string, ctx: any, said?: string) { const held = ctx; globalThis.calls++; if (!(${long})) { return held.reject({ message: said ?? (s ? \`Short by \${3 - s.length}.\` : "Required.") }) } return true }`,
+				"narrowedRejecting("
+			]
+		)
+
 		for (const errors of ["first", "none"] as const) {
 			it(`behaves as unproved with errors "${errors}"`, async () => {
 				const source = `const T = type({ a: N, b: { c: N } })
@@ -1060,7 +1093,7 @@ t[1]: Too short. 4
 
 		for (const [name, narrow] of Object.entries({
 			"reading its ctx in what it tests": `(s: string, ctx: any) => (ctx.path.length < 9 && s.length > 2) || ctx.reject({ message: "short" })`,
-			"with a message it writes as it runs": `(s: string, ctx: any) => s.length > 2 || ctx.reject({ message: \`short by \${3 - s.length}\` })`,
+			"with a message that may be undefined, which is none": `(s: string, ctx: any) => s.length > 2 || ctx.reject({ message: globalThis.said })`,
 			"with more than a message": `(s: string, ctx: any) => s.length > 2 || ctx.reject({ message: "short", expected: "long" })`,
 			"through mustBe": `(s: string, ctx: any) => s.length > 2 || ctx.mustBe("long")`,
 			"after a statement of its own": `(s: string, ctx: any) => { const length = s.length; return length > 2 || ctx.reject({ message: "short" }) }`
@@ -1082,6 +1115,82 @@ run(() => type({ s: N }).allows({ s: "x" }))
 				attest(behaviorOf(js)).equals(whole)
 			})
 		}
+	})
+
+	describe("a default a narrow checks", () => {
+		const defaulted = (
+			declared: string,
+			amount: string
+		) => `import { type } from "arktype"
+
+${declared}
+const tell = (f: () => unknown) => { try { console.log(String(f())) } catch (e) { console.log(e.constructor.name, e.message) } }
+tell(() => {
+	const T = type({ amount: ${amount}, "label?": "string" })
+	return JSON.stringify(T({})) + " " + T({ amount: 3 })
+})
+${repaying}
+`
+		const itChecks = (
+			name: string,
+			where: "as the build runs" | "where its Type is created",
+			declared: string,
+			amount: string
+		) =>
+			it(`${name}, ${where}`, async () => {
+				const root = fixture(
+					`default-${name.replace(/\W+/g, "-")}`,
+					defaulted(declared, amount)
+				)
+				const whole = behaviorOf(await bundle(root, { prune: false }))
+				attest(behaviorOf(await bundle(root))).equals(whole)
+				const js = await bundle(root, smallest)
+				attest(behaviorOf(js)).equals(whole)
+				attest(js.includes("checkDefault(")).equals(
+					where === "where its Type is created"
+				)
+			})
+
+		// each reads its data alone, so passes whatever the program holds
+		itChecks(
+			"passes one that reads only its data",
+			"as the build runs",
+			"",
+			`type("number").narrow(n => n % 5 === 0).default(0)`
+		)
+		itChecks(
+			"passes one that would reject with a message",
+			"as the build runs",
+			`const fives = (n: number, ctx: any) => n % 5 === 0 || ctx.reject({ message: "Must be a multiple of 5." })`,
+			`type("number").narrow(fives).default(10)`
+		)
+		// arktype's ParseError is thrown where the program creates the Type
+		itChecks(
+			"is rejected by its narrow",
+			"where its Type is created",
+			"",
+			`type("number").narrow((n, ctx) => n % 5 === 0 || ctx.reject({ message: "Must be a multiple of 5." })).default(3)`
+		)
+		// a program that sets it otherwise before the Type is created would pass
+		// another default, or fail this one
+		itChecks(
+			"is checked by what its narrow reads of its module",
+			"where its Type is created",
+			"const step = { size: 5 }",
+			`type("number").narrow(n => n % step.size === 0).default(0)`
+		)
+		itChecks(
+			"is checked by a narrow that reads its ctx",
+			"where its Type is created",
+			"",
+			`type("number").narrow((n, ctx) => ctx.path.length < 9 && n % 5 === 0).default(0)`
+		)
+		itChecks(
+			"is checked by a narrow that isn't a static helper",
+			"where its Type is created",
+			"",
+			`type("number").narrow(n => { let rest = n; while (rest >= 5) rest -= 5; return rest === 0 }).default(0)`
+		)
 	})
 
 	describe("a morph", () => {
