@@ -488,6 +488,25 @@ b must be equal to a`)
 		attest(types.u.allows(data)).equals(true)
 	})
 
+	it("a compiled union allows by a branch whose narrow reads ctx", () => {
+		const T = type({ a: "number" })
+			.narrow((o, ctx) => o.a % 2 === 0 || ctx.mustBe("even"))
+			.or(
+				type({ b: "string" }).narrow(
+					(o, ctx) => o.b.length > 2 || ctx.mustBe("long")
+				)
+			)
+		const second = { b: "abc" }
+		// its second call compiles it, and its Allows checks each branch by its own
+		T(second)
+		attest(T(second)).is(second)
+		attest(typeof T.internal.unitFn).equals("function")
+		attest(T.allows({ a: 2 })).equals(true)
+		attest(T.allows(second)).equals(true)
+		attest(T.allows({ a: 1 })).equals(false)
+		attest(T({ a: 1 }).toString()).snap("must be even or b must be a string")
+	})
+
 	it("failed branch predicate leaves its key off ctx.path", () => {
 		const $ = scope({})
 		const Positive = $.type("number").narrow(

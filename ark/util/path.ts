@@ -27,22 +27,45 @@ export type AppendStringifiedKeyFn = <stringifiable>(
 	:	noInfer<[opts: StringifyPathOptions<stringifiable>], stringifiable>
 ) => string
 
+// what a key adds to a path before it, cached since the same keys recur: one
+// lookup, where asking whether it's an identifier and writing it after a dot
+// were a lookup and two strings
+const keySuffixes = new Map<string, string>()
+
+const keySuffixOf = (key: string): string => {
+	let suffix = keySuffixes.get(key)
+	if (suffix === undefined) {
+		suffix = isDotAccessible(key) ? `.${key}` : `[${JSON.stringify(key)}]`
+		// bounded, since keys can come from data
+		if (key.length <= 64) {
+			if (keySuffixes.size === 1024) keySuffixes.clear()
+			keySuffixes.set(key, suffix)
+		}
+	}
+	return suffix
+}
+
+// an index's brackets, by the index
+const indexSuffixes: string[] = []
+
 export const appendStringifiedKey: AppendStringifiedKeyFn = ((
 	path: string,
 	prop: unknown,
 	opts?: StringifyPathOptions<unknown>
 ) => {
 	switch (typeof prop) {
-		case "string":
-			return (
-				isDotAccessible(prop) ?
-					path === "" ?
-						prop
-					:	`${path}.${prop}`
-				:	`${path}[${JSON.stringify(prop)}]`
-			)
+		case "string": {
+			const suffix = keySuffixOf(prop)
+			// a first key that's an identifier is written without its dot
+			return path === "" && suffix[0] === "." ? prop : path + suffix
+		}
 		case "number":
-			return `${path}[${prop}]`
+			return (
+				path +
+				(prop >>> 0 === prop && prop < 256 ?
+					(indexSuffixes[prop] ??= `[${prop}]`)
+				:	`[${prop}]`)
+			)
 		case "symbol":
 			// as String writes it, its description whole
 			return `${path}[${(opts?.stringifySymbol ?? String)(prop)}]`

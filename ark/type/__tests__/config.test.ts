@@ -440,6 +440,21 @@ age must be non-negative`)
 		)
 	})
 
+	it("an error a compiled builder makes is the plain object jitless spreads", () => {
+		const def = { a: "string > 2", "b?": "number" } as const
+		const data = { a: "a", b: "b" }
+		const compiled = type(def)(data) as type.errors
+		const spread = scope({}, { jitless: true }).type(def)(data) as type.errors
+		attest(compiled.issues.map(issue => Object.keys(issue))).equals(
+			spread.issues.map(issue => Object.keys(issue))
+		)
+		attest(compiled.issues).equals(spread.issues)
+		for (const issue of compiled.issues) {
+			attest(Object.getPrototypeOf(issue) === Object.prototype).equals(true)
+			attest(Object.getOwnPropertySymbols(issue)).equals([])
+		}
+	})
+
 	describe("errors", () => {
 		const none = scope({}, { errors: "none" })
 		const first = scope({}, { errors: "first" })

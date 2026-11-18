@@ -74,6 +74,34 @@ contextualize(() => {
 		])
 	})
 
+	it("reports a key holding undefined as its value, not as missing", () => {
+		const owner: CompactApply = (data, ctx) =>
+			!ctx._in(user, data, "owner", { m: { code: "required" } })
+		const errors = new ArkErrors()
+		user({ name: undefined }, errors)
+		owner({ owner: undefined }, errors)
+		attest(errors.summary).equals(
+			"name must be a string\nowner must be an object"
+		)
+	})
+
+	it("applies the value it's passed for a key, reading one that's undefined", () => {
+		const applied: unknown[] = []
+		const applies: CompactApply = value => (applied.push(value), true)
+		const required: FailureSite = { m: { code: "required" } }
+		const errors = new ArkErrors()
+		const ctx = new InternalTraversal(undefined, {} as never)
+		for (const reported of [errors, ctx]) {
+			reported._in(applies, { a: 1 }, "a", required, 1)
+			reported._in(applies, { a: 2 }, "a", required, undefined)
+			reported._in(applies, { a: undefined }, "a", required, undefined)
+			reported._in(applies, {}, "a", required, undefined)
+		}
+		attest(applied).equals([1, 2, undefined, 1, 2, undefined])
+		attest(ctx._errors!._).equals(errors._)
+		attest(errors.summary).equals("a is missing")
+	})
+
 	it("pops each key it pushes", () => {
 		const users: CompactApply = (data, ctx) => {
 			const list = data as unknown[]
@@ -132,6 +160,21 @@ contextualize(() => {
 [0] must be a string
 a[0].b must be a string
 [Symbol(s)] must be a string`)
+	})
+
+	it("brackets a key that isn't an identifier each time it's written", () => {
+		const lineAt = (...path: PropertyKey[]) => {
+			const errors = new ArkErrors()
+			errors._.push({ code: "domain", path, data: 1, expected: "a string" })
+			return errors.summary
+		}
+		// more keys than a summary remembers
+		for (let i = 0; i < 2000; i++) lineAt(`k${i}`, `${i}-`)
+		for (let written = 0; written < 2; written++) {
+			attest(lineAt("a-b", "a", "k1999", "1999-")).equals(
+				'["a-b"].a.k1999["1999-"] must be a string'
+			)
+		}
 	})
 
 	it("prints a number in a path as arktype's own errors do", () => {

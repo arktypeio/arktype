@@ -43,6 +43,9 @@ export type BranchTraversal = {
 	errN: number
 }
 
+// what a traversal in no branch holds: every one's, so never written to
+const noBranches: BranchTraversal[] = []
+
 export class InternalTraversal implements FailureContext {
 	/**
 	 * #### the path being validated or morphed
@@ -99,7 +102,7 @@ export class InternalTraversal implements FailureContext {
 		this._errors = undefined
 		this.root = root
 		this.config = config
-		this.branches = []
+		this.branches = noBranches
 		this.res = undefined
 		this.isTree = true
 		this.tfdById = undefined
@@ -144,10 +147,11 @@ export class InternalTraversal implements FailureContext {
 
 	/** starts counting a union branch's errors */
 	pushBr(): void {
-		this.branches.push({
-			error: undefined,
-			errN: 0
-		})
+		const branch: BranchTraversal = { error: undefined, errN: 0 }
+		// its first is all most unions nest, and a push onto [] makes room for
+		// 17. Once popped, the array still has room for the next
+		if (this.branches === noBranches) this.branches = [branch]
+		else this.branches.push(branch)
 	}
 
 	/** stops counting the innermost union branch's errors, returning it */
@@ -195,12 +199,16 @@ export class InternalTraversal implements FailureContext {
 		apply: CompactApply,
 		data: unknown,
 		key: PropertyKey,
-		missing?: FailureSite
+		missing?: FailureSite,
+		value?: unknown
 	): boolean | undefined {
-		if (missing && !(key in (data as object)))
+		// read first, as only a value that's undefined can be a missing key's,
+		// and whether a key any site passes is in data is a call
+		if (value === undefined) value = (data as Record<PropertyKey, unknown>)[key]
+		if (value === undefined && missing && !(key in (data as object)))
 			return this._at(missing, data, key)
 		this.path.push(key)
-		const continues = apply((data as Record<PropertyKey, unknown>)[key], this)
+		const continues = apply(value, this)
 		this.path.pop()
 		return !continues
 	}
@@ -657,8 +665,9 @@ export const allowsInBranchBy = (
 	const pathLength = ctx.path.length
 	ctx.pushBr()
 	const allowed = allows.call(node, data, ctx)
-	// compiled Allows returns false without popping the keys it pushed
-	ctx.path.length = pathLength
+	// compiled Allows returns false without popping the keys it pushed. Set
+	// only then, as an array's length is set by a call
+	if (ctx.path.length !== pathLength) ctx.path.length = pathLength
 	return ctx.popBr()!.errN === 0 && allowed
 }
 
@@ -874,13 +883,16 @@ export const exitResolution = (
 		if (assumedFrom < res.assumedFrom) res.assumedFrom = assumedFrom
 		return true
 	}
-	// settle each result that assumed this one
-	for (let i = frame.assumedLength; i < assumed.length; i += 2) {
-		const assumedStates = assumed[i] as Map<unknown, ResolutionState>
-		if (valid) assumedStates.set(assumed[i + 1], true)
-		else assumedStates.delete(assumed[i + 1])
+	// settle each result that assumed this one. Most data has none, and an
+	// array's length is set by a call even where it's the length it has
+	if (assumed.length !== frame.assumedLength) {
+		for (let i = frame.assumedLength; i < assumed.length; i += 2) {
+			const assumedStates = assumed[i] as Map<unknown, ResolutionState>
+			if (valid) assumedStates.set(assumed[i + 1], true)
+			else assumedStates.delete(assumed[i + 1])
+		}
+		assumed.length = frame.assumedLength
 	}
-	assumed.length = frame.assumedLength
 	states.set(data, state)
 	if (typeof state === "object" && state.reported) res.invalid ??= state
 	return valid

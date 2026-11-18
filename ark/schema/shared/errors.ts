@@ -26,7 +26,12 @@ import type { DiscriminantErrorContext } from "../roots/union.ts"
 import type { UndeclaredErrorContext } from "../structure/structure.ts"
 import type { NodeKind } from "./implement.ts"
 import type { Locale } from "./locale.ts"
-import { describeActual, writeLine } from "./enWriters.ts"
+import {
+	describeActual,
+	describeUnwrittenActual,
+	writeLine,
+	writeMessage
+} from "./enWriters.ts"
 import { describesData, listsErrors } from "./errorWriters.ts"
 import { describeBranches, removedProblemMessage } from "./utils.ts"
 import {
@@ -362,9 +367,10 @@ const firstPathTraversalOf = (Base: typeof Traversal): FirstPathTraversal => {
 			apply: CompactApply,
 			data: unknown,
 			key: PropertyKey,
-			missing?: FailureSite
+			missing?: FailureSite,
+			value?: unknown
 		): boolean | undefined {
-			const stops = super._in(apply, data, key, missing)
+			const stops = super._in(apply, data, key, missing, value)
 			if (
 				this.stopsElsewhere &&
 				this.firstPath !== undefined &&
@@ -446,12 +452,30 @@ export class ArkTraversal extends Traversal {
 
 	// builds a site's error as compiled code does
 	override _at(site: FailureSite, data: unknown, key?: PropertyKey): boolean {
-		const missing = key !== undefined && site.m && !(key in (data as object))
+		// read first, as only a value that's undefined can be a missing key's
+		const value = key === undefined ? data : (data as Keyed)[key]
+		const missing =
+			key !== undefined &&
+			value === undefined &&
+			site.m &&
+			!(key in (data as object))
+		const context = (missing ? site.m : site.v) as NodeErrorContextInput
+		// a site keeps the builder found for each of its contexts, where finding
+		// one by its context is a hashed lookup for every error
+		let build = (missing ? site.mb : site.vb) as ErrorBuilder | undefined
+		if (build === undefined) {
+			build = builderOf(context, this.config)
+			if (build) {
+				if (missing) site.mb = build
+				else site.vb = build
+			}
+		}
 		this.addError(
-			errorOfNodeContext(
-				(missing ? site.m : site.v) as NodeErrorContextInput,
+			errorBuiltBy(
+				build,
+				context,
 				pathAt(this.path, key),
-				key === undefined || missing ? data : (data as Keyed)[key],
+				missing ? data : value,
 				this.config
 			)
 		)
@@ -684,7 +708,9 @@ const pathKeys = {
 export type ErrorBuilder = (
 	context: ArkErrorContextInput,
 	path: PropertyKey[],
-	data: unknown
+	data: unknown,
+	// the error it assigns them to, stamped already
+	error: ArkError
 ) => ArkError
 
 const errorOfNodeContext = (
@@ -692,16 +718,46 @@ const errorOfNodeContext = (
 	path: PropertyKey[],
 	data: unknown,
 	config: ResolvedConfig
-): ArkError => {
+): ArkError =>
+	errorBuiltBy(builderOf(context, config), context, path, data, config)
+
+// a context's error: built by its compiled builder, or spread where there's none
+const errorBuiltBy = (
+	build: ErrorBuilder | undefined,
+	context: ArkErrorContextInput,
+	path: PropertyKey[],
+	data: unknown,
+	config: ResolvedConfig
+): ArkError =>
+	build ?
+		build(context, path, data, stampError(new StampedFirst(), config))
+	:	stampError({ data, path, ...context } as never, config)
+
+// the object a compiled builder assigns an error's keys to: plain, as its
+// prototype is Object's, but constructed, so each has the same shape when it's
+// stamped, whatever its code adds after. Stamping a literal of each code's
+// shape instead is a private field defined on as many shapes as there are
+// codes, which V8 stops caching past four: about 420 instructions an error,
+// against 30. Its two keys are every error's first, in a literal's order
+const StampedFirst: new () => ArkError = function (
+	this: Record<string, unknown>
+) {
+	this.data = undefined
+	this.path = undefined
+} as never
+StampedFirst.prototype = Object.prototype
+
+// compiled the first time a context fails, unless its config is jitless
+const builderOf = (
+	context: ArkErrorContextInput,
+	config: ResolvedConfig
+): ErrorBuilder | undefined => {
 	let build = buildersByContext.get(context)
 	if (!build && compileBuilder && !config.jitless) {
 		build = compileBuilder(context)
 		if (build) buildersByContext.set(context, build)
 	}
-	return stampError(
-		build ? build(context, path, data) : ({ data, path, ...context } as never),
-		config
-	)
+	return build
 }
 
 const buildersByContext = new WeakMap<object, ErrorBuilder>()
@@ -724,21 +780,35 @@ class Identity {
 	}
 }
 
-// a private field, so an error stays a plain object
-class ErrorSource extends Identity {
-	#config: ResolvedConfig
+// the context an error was given, whose text a copy keeps, with its config
+class Supplied {
+	declare readonly config: ResolvedConfig
+	declare readonly input: ArkErrorContextInput
 
-	constructor(error: ArkError, config: ResolvedConfig) {
+	constructor(config: ResolvedConfig, input: ArkErrorContextInput) {
+		this.config = config
+		this.input = input
+	}
+}
+
+// a private field, so an error stays a plain object. One field, its config or
+// what it was supplied with, since asking an error for a field it lacks costs
+// several times what reading the one it has does
+class ErrorSource extends Identity {
+	#source: ResolvedConfig | Supplied
+
+	constructor(error: ArkError, source: ResolvedConfig | Supplied) {
 		super(error)
-		this.#config = config
+		this.#source = source
 	}
 
-	static configOf(error: ArkError): ResolvedConfig {
-		return #config in error ? error.#config : throwError(copiedErrorMessage)
+	// a copy holds no source, so reading its config or input throws
+	static of(error: ArkError): ResolvedConfig | Supplied {
+		return #source in error ? error.#source : throwError(copiedErrorMessage)
 	}
 
 	static stamps(issue: ArkIssue): boolean {
-		return #config in issue
+		return #source in issue
 	}
 }
 
@@ -746,24 +816,14 @@ class ErrorSource extends Identity {
 export const isArkError = (issue: ArkIssue): issue is ArkError =>
 	ErrorSource.stamps(issue)
 
-// an error given a context, whose text a copy keeps
-class SuppliedSource extends ErrorSource {
-	#input: ArkErrorContextInput
+const configOf = (error: ArkError): ResolvedConfig => {
+	const source = ErrorSource.of(error)
+	return source instanceof Supplied ? source.config : source
+}
 
-	constructor(
-		error: ArkError,
-		config: ResolvedConfig,
-		input: ArkErrorContextInput
-	) {
-		super(error, config)
-		this.#input = input
-	}
-
-	static inputOf(error: ArkError): ArkErrorContextInput | undefined {
-		if (#input in error) return error.#input
-		// a copy holds neither field, so reading its config throws
-		ErrorSource.configOf(error)
-	}
+const inputOf = (error: ArkError): ArkErrorContextInput | undefined => {
+	const source = ErrorSource.of(error)
+	return source instanceof Supplied ? source.input : undefined
 }
 
 const stampError = (
@@ -771,23 +831,32 @@ const stampError = (
 	config: ResolvedConfig,
 	input?: ArkErrorContextInput
 ): ArkError => {
-	if (input) new SuppliedSource(error, config, input)
-	else new ErrorSource(error, config)
+	new ErrorSource(error, input ? new Supplied(config, input) : config)
 	return error
 }
 
 export const suppliedText = (
 	error: ArkError,
 	slot: "expected" | "actual" | "message"
-): string | undefined => SuppliedSource.inputOf(error)?.[slot]
+): string | undefined => inputOf(error)?.[slot]
 
 const writeError = (
 	error: ArkError,
 	config: ResolvedConfig,
 	locale: Locale
 ): void => {
-	writeAtPaths(error, config, locale)
-	writeRelative(error, config, locale)
+	const code = error.code
+	if (code === "union" || code === "intersection") {
+		writeAtPaths(error, config, locale)
+		writeRelative(error, config, locale)
+		return
+	}
+	// any other holds no errors and no bases, so it's written once at its path:
+	// what writeAtPaths does for it, without reading its code again for each
+	// question only a union or intersection answers
+	error.propString ??= stringifyPath(error.path)
+	if (renderer && locale !== renderer.en) renderer.write(error, config, locale)
+	else writeText(error, config, locale, code)
 }
 
 // the line of a union that lists its errors' whole paths, held as a
@@ -870,14 +939,57 @@ export const asTemplated = <error extends ArkIssue>(
 export const isCustom = (error: ArkError): boolean => {
 	if (templated.has(error)) return false
 	if (sharing.has(error)) return true
-	const input = SuppliedSource.inputOf(error)
-	if (input?.message !== undefined) return !isInvalidInput(input)
+	const source = ErrorSource.of(error)
+	let config: ResolvedConfig
+	if (source instanceof Supplied) {
+		if (source.input.message !== undefined) return !isInvalidInput(source.input)
+		config = source.config
+	} else config = source
 	return (
 		configuredMessageOf(error) !== undefined ||
-		ErrorSource.configOf(error)[error.code].message !==
-			defaultConfig[error.code].message
+		configuresMessage(config, error.code)
 	)
 }
+
+// whether each config writes every code's message as the default does, found
+// once: nearly all do, and reading a code's writers from two configs for each
+// line of a summary cost a tenth of writing it
+let messagesDefaulted = new WeakMap<ResolvedConfig, boolean>()
+
+// the config last found to, so errors of one config ask nothing of the map
+let lastDefaulted: ResolvedConfig | undefined
+
+const defaultsMessages = (config: ResolvedConfig): boolean => {
+	if (config === lastDefaulted) return true
+	let defaulted = messagesDefaulted.get(config)
+	if (defaulted === undefined) {
+		defaulted = true
+		let k: keyof ResolvedConfig
+		for (k in defaultConfig) {
+			const writers = defaultConfig[k] as { message?: unknown } | undefined
+			if (
+				typeof writers === "object" &&
+				writers !== null &&
+				"message" in writers &&
+				(config[k] as { message?: unknown } | undefined)?.message !==
+					writers.message
+			) {
+				defaulted = false
+				break
+			}
+		}
+		messagesDefaulted.set(config, defaulted)
+	}
+	if (defaulted) lastDefaulted = config
+	return defaulted
+}
+
+const configuresMessage = (
+	config: ResolvedConfig,
+	code: ArkErrorCode
+): boolean =>
+	!defaultsMessages(config) &&
+	config[code].message !== defaultConfig[code].message
 
 /**
  * @internal whether an issue is an error of this copy of arktype whose message
@@ -969,9 +1081,12 @@ const writeAtPaths = (
 	else writeText(error, config, locale)
 }
 
-const unconfigured = (error: ArkError, config: ResolvedConfig): boolean =>
-	(configuredMessageOf(error) ?? config[error.code].message) ===
-	defaultConfig[error.code].message
+const unconfigured = (error: ArkError, config: ResolvedConfig): boolean => {
+	const message = configuredMessageOf(error)
+	return message === undefined ?
+			!configuresMessage(config, error.code)
+		:	message === defaultConfig[error.code].message
+}
 
 // the message each error was configured or supplied with, if they agree
 const sharedMessageOf = (errors: readonly ArkError[]): string | undefined => {
@@ -995,17 +1110,48 @@ const sharedMessageOf = (errors: readonly ArkError[]): string | undefined => {
 export const writeText = (
 	error: ArkError,
 	config: ResolvedConfig,
-	locale: Locale
+	locale: Locale,
+	// read once by a caller that has, as an error's shape differs by its code,
+	// so no read of one is cached where errors of many codes are written
+	code: ArkErrorCode = error.code
 ): void => {
-	const writers = config[error.code]
+	const writers = config[code]
 	const meta = error.meta
-	const expected = meta?.expected ?? writers.expected
-	error.expected ??=
-		typeof expected === "function" ? expected(error as never, locale) : expected
-	error.actual ??= writeActual(error, meta?.actual ?? writers.actual, locale)
-	const message = configuredMessageOf(error) ?? writers.message
-	error.message ??=
-		typeof message === "function" ? message(error as never, locale) : message
+	// each slot is read once and kept, where reading back what was just
+	// written is another read no error's shape caches
+	let expected: string | undefined = error.expected
+	if (expected === undefined || expected === null) {
+		const configured = meta?.expected ?? writers.expected
+		error.expected = expected =
+			typeof configured === "function" ?
+				configured(error as never, locale)
+			:	configured
+	}
+	// whether its actual was described here, which en's message then leaves out
+	let described = false
+	if (error.actual === undefined || error.actual === null) {
+		const configured: string | ActualWriter<never> =
+			meta?.actual ?? writers.actual
+		if (typeof configured === "string") error.actual = configured
+		else {
+			if (describesData(configured)) {
+				describeUnwrittenActual(error)
+				described = true
+			}
+			error.actual = configured(error.data as never, error as never, locale)
+		}
+	}
+	if (error.message === undefined || error.message === null) {
+		const message =
+			meta?.message ??
+			(code === "required" ? configuredMessageOf(error) : undefined) ??
+			writers.message
+		error.message =
+			// en's own, written as it writes one whose actual describes its data
+			message === writeMessage && described ? `must be ${expected}`
+			: typeof message === "function" ? message(error as never, locale)
+			: message
+	}
 }
 
 /**
@@ -1046,7 +1192,12 @@ export const configureLocale = (
 	locale: ArkSchemaConfig["locale"],
 	base: ResolvedConfig
 ): Locale => {
-	defaultConfig = base
+	if (defaultConfig !== base) {
+		defaultConfig = base
+		// what each config was compared with
+		messagesDefaulted = new WeakMap()
+		lastDefaulted = undefined
+	}
 	return (
 		renderer ? renderer.configure(locale, base)
 		: locale === undefined || locale === base.locale ? base.locale
@@ -1055,7 +1206,7 @@ export const configureLocale = (
 }
 
 const writtenIn = (error: ArkError, locale: Locale): ArkError => {
-	const config = ErrorSource.configOf(error)
+	const config = configOf(error)
 	if (!renderer && locale !== config.locale)
 		return throwError(unrenderedLocaleMessage)
 	const copy = unwrittenError(error)
@@ -1069,9 +1220,9 @@ const isLocale = (locale: unknown): locale is Locale =>
 export const unwrittenError = (
 	error: ArkError,
 	prefix?: array<PropertyKey>,
-	config: ResolvedConfig = ErrorSource.configOf(error)
+	config: ResolvedConfig = configOf(error)
 ): ArkError => {
-	const input = SuppliedSource.inputOf(error)
+	const input = inputOf(error)
 	const copy: Record<string, unknown> = {}
 	for (const k in error) {
 		if (!(k in writtenKeys)) copy[k] = error[k as never]

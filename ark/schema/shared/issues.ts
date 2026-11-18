@@ -59,6 +59,12 @@ export interface FailureSite extends Partial<SiteContext> {
 	v?: SiteContext
 	/** the context the missing key fails with */
 	m?: SiteContext
+	/**
+	 * @internal the functions arktype's own traversal builds v's and m's errors
+	 * with, kept on the site once found. A standalone validator has none
+	 */
+	vb?: ((...args: never[]) => unknown) | undefined
+	mb?: ((...args: never[]) => unknown) | undefined
 }
 
 export interface UnionSite {
@@ -73,7 +79,9 @@ export type CompactApply = (data: unknown, ctx: FailureContext) => boolean
  * where a compact Apply reports failures; each returns whether to stop. A
  * minifier keeps property names, and compiled code calls these at each
  * failure, so they're named short: _at fails a site (failsAt), _in applies
- * data's value at a key (failsIn)
+ * data's value at a key (failsIn). Code compiled for speed passes _in the
+ * value too, read where its key is a constant; a value that's undefined is
+ * read from data, as one not passed is
  */
 export interface FailureContext {
 	_at(site: FailureSite, data: unknown, key?: PropertyKey): boolean | undefined
@@ -81,7 +89,8 @@ export interface FailureContext {
 		apply: CompactApply,
 		data: unknown,
 		key: PropertyKey,
-		missing?: FailureSite
+		missing?: FailureSite,
+		value?: unknown
 	): boolean | undefined
 }
 
@@ -95,7 +104,13 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	// assigned, as a target lowering class fields defines each with a helper
 	constructor() {
 		this._ = []
-		this._p = []
+		// empty, with room for one key, which is as deep as most failing data
+		// goes: a push onto [] makes room for 17, the largest thing a failing
+		// call allocated. It holds this to be removed, as a literal of constants
+		// shares its store until it's written to, and is then copied
+		const path: PropertyKey[] = [this as never]
+		path.pop()
+		this._p = path
 	}
 
 	/**
@@ -113,19 +128,45 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		return this._ as WrittenIssue[]
 	}
 
-	/** @internal */
-	_at(site: FailureSite, data: unknown, key?: PropertyKey): true | undefined {
+	/**
+	 * @internal `absent` is passed only by _in, which has found the key missing
+	 */
+	_at(
+		site: FailureSite,
+		data: unknown,
+		key?: PropertyKey,
+		absent?: boolean
+	): true | undefined {
 		// a key's site reports the missing key or its value
 		const path = this._p
+		const depth = path.length
 		let context = (readsKeySites ? site.v : undefined) ?? (site as SiteContext)
-		if (key !== undefined) {
-			path.push(key)
-			if (site.m && !(key in (data as object))) context = site.m
-			else data = (data as Keyed)[key]
+		// copied by its length where it's short, as a slice is a call
+		let at: PropertyKey[]
+		if (key === undefined) at = depth === 0 ? [] : path.slice()
+		else {
+			// read first, as only a value that's undefined can be a missing key's,
+			// and whether a key any site passes is in data is a call
+			const value = (data as Keyed)[key]
+			if (
+				value === undefined &&
+				site.m &&
+				(absent || !(key in (data as object)))
+			)
+				context = site.m
+			else data = value
+			// a key pushed onto [] would have it hold 17
+			if (depth === 0) at = [key]
+			else if (depth === 1) at = [path[0], key]
+			else {
+				path.push(key)
+				at = path.slice()
+				path.pop()
+			}
 		}
 		const issue: ArkIssue = {
 			code: context.code,
-			path: path.slice(),
+			path: at,
 			data,
 			expected: context.description,
 			message: context.x
@@ -134,8 +175,10 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 			customIssue(issue, context.c)
 			context.text?.(issue)
 		}
-		if (key !== undefined) path.pop()
-		this._.push(issue)
+		// its first issue is all most data has, and a push onto [] holds 17
+		const issues = this._
+		if (issues.length) issues.push(issue)
+		else this._ = [issue]
 		// only errors stopping at the first issue stop at this one
 		return undefined
 	}
@@ -145,12 +188,14 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		apply: CompactApply,
 		data: unknown,
 		key: PropertyKey,
-		missing?: FailureSite
+		missing?: FailureSite,
+		value?: unknown
 	): boolean | undefined {
-		if (missing && !(key in (data as object)))
-			return this._at(missing, data, key)
+		if (value === undefined) value = (data as Keyed)[key]
+		if (value === undefined && missing && !(key in (data as object)))
+			return this._at(missing, data, key, true)
 		this._p.push(key)
-		const continues = apply((data as Keyed)[key], this)
+		const continues = apply(value, this)
 		this._p.pop()
 		return !continues
 	}
@@ -163,7 +208,9 @@ const SummarizedIssues: new () => ReadIssues & { readonly summary: string } =
 		class extends ReadIssues {
 			get summary(): string {
 				let summary = ""
-				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
+				// its first line isn't added to "", as a string added is a call
+				for (const issue of this._)
+					summary = summary ? summary + "\n" + lineOf(issue) : lineOf(issue)
 				return summary
 			}
 		}
@@ -221,8 +268,13 @@ export class FirstIssues extends Issues {
 		return true
 	}
 
-	override _at(site: FailureSite, data: unknown, key?: PropertyKey): true {
-		super._at(site, data, key)
+	override _at(
+		site: FailureSite,
+		data: unknown,
+		key?: PropertyKey,
+		absent?: boolean
+	): true {
+		super._at(site, data, key, absent)
 		return true
 	}
 }
@@ -277,8 +329,11 @@ export const issueAt = (
 ): ArkIssue => {
 	let context = (readsKeySites ? site.v : undefined) ?? (site as SiteContext)
 	if (key !== undefined) {
-		if (site.m && !(key in (data as object))) context = site.m
-		else data = (data as Keyed)[key]
+		// read first, as only a value that's undefined can be a missing key's
+		const value = (data as Keyed)[key]
+		if (value === undefined && site.m && !(key in (data as object)))
+			context = site.m
+		else data = value
 	}
 	const issue: ArkIssue = {
 		code: context.code,
@@ -366,15 +421,36 @@ export const pathOf = (issue: {
 	readonly path: readonly PropertyKey[]
 }): string => {
 	let path = ""
+	// one expression, as a bundler folds a flag only where one reads it
 	for (const k of issue.path) {
-		path +=
-			reportsIndices && typeof k === "number" ? `[${k}]`
-			: bracketsKeys && !/^[$_a-z][\w$]*$/i.test(String(k)) ?
-				`[${JSON.stringify(k) ?? String(k)}]`
-			:	(path && ".") + String(k)
+		path =
+			reportsIndices && typeof k === "number" ? path + `[${k}]`
+			: bracketsKeys && !isIdentifier(k) ?
+				path + `[${JSON.stringify(k) ?? String(k)}]`
+				// a string isn't passed to String, which is a call
+			:	(path && path + ".") + (typeof k === "string" ? k : String(k))
 	}
 	return path
 }
+
+let identifiers: Map<string, boolean> | undefined
+
+// matching a key costs several times what finding it does, and most keys a
+// path holds are a schema's own, so few. Data's, like a record's, aren't, so
+// only the first 1024 are remembered. A function only where a build's flag
+// leaves it, as a bundler drops one in a branch it folds
+const isIdentifier: (k: PropertyKey) => boolean =
+	bracketsKeys ?
+		k => {
+			if (typeof k !== "string") return /^[$_a-z][\w$]*$/i.test(String(k))
+			let result = (identifiers ??= new Map()).get(k)
+			if (result === undefined) {
+				result = /^[$_a-z][\w$]*$/i.test(k)
+				if (identifiers.size < 1024) identifiers.set(k, result)
+			}
+			return result
+		}
+	:	(undefined as never)
 
 /**
  * @internal an issue's line of a summary: its message after its path, one

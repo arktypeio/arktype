@@ -45,7 +45,9 @@ var ReadIssues = class {
 	// assigned, as a target lowering class fields defines each with a helper
 	constructor() {
 		this._ = []
-		this._p = []
+		const path = [this]
+		path.pop()
+		this._p = path
 	}
 	/**
 	 * The number of issues.
@@ -60,18 +62,31 @@ var ReadIssues = class {
 		for (const issue of this._) issue.message ??= messageOf(issue)
 		return this._
 	}
-	/** @internal */
-	_at(site, data, key) {
+	/**
+	 * @internal `absent` is passed only by _in, which has found the key missing
+	 */
+	_at(site, data, key, absent) {
 		const path = this._p
+		const depth2 = path.length
 		let context = (readsKeySites ? site.v : void 0) ?? site
-		if (key !== void 0) {
-			path.push(key)
-			if (site.m && !(key in data)) context = site.m
-			else data = data[key]
+		let at
+		if (key === void 0) at = depth2 === 0 ? [] : path.slice()
+		else {
+			const value = data[key]
+			if (value === void 0 && site.m && (absent || !(key in data)))
+				context = site.m
+			else data = value
+			if (depth2 === 0) at = [key]
+			else if (depth2 === 1) at = [path[0], key]
+			else {
+				path.push(key)
+				at = path.slice()
+				path.pop()
+			}
 		}
 		const issue = {
 			code: context.code,
-			path: path.slice(),
+			path: at,
 			data,
 			expected: context.description,
 			message: context.x
@@ -80,15 +95,18 @@ var ReadIssues = class {
 			customIssue(issue, context.c)
 			context.text?.(issue)
 		}
-		if (key !== void 0) path.pop()
-		this._.push(issue)
+		const issues = this._
+		if (issues.length) issues.push(issue)
+		else this._ = [issue]
 		return void 0
 	}
 	/** @internal */
-	_in(apply, data, key, missing) {
-		if (missing && !(key in data)) return this._at(missing, data, key)
+	_in(apply, data, key, missing, value) {
+		if (value === void 0) value = data[key]
+		if (value === void 0 && missing && !(key in data))
+			return this._at(missing, data, key, true)
 		this._p.push(key)
-		const continues = apply(data[key], this)
+		const continues = apply(value, this)
 		this._p.pop()
 		return !continues
 	}
@@ -98,7 +116,8 @@ var SummarizedIssues =
 		class extends ReadIssues {
 			get summary() {
 				let summary = ""
-				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
+				for (const issue of this._)
+					summary = summary ? summary + "\n" + lineOf(issue) : lineOf(issue)
 				return summary
 			}
 		}
@@ -151,14 +170,27 @@ var movedIssue = (issue, path) =>
 var pathOf = issue => {
 	let path = ""
 	for (const k of issue.path) {
-		path +=
-			reportsIndices && typeof k === "number" ? `[${k}]`
-			: bracketsKeys && !/^[$_a-z][\w$]*$/i.test(String(k)) ?
-				`[${JSON.stringify(k) ?? String(k)}]`
-			:	(path && ".") + String(k)
+		path =
+			reportsIndices && typeof k === "number" ? path + `[${k}]`
+			: bracketsKeys && !isIdentifier(k) ?
+				path + `[${JSON.stringify(k) ?? String(k)}]`
+			:	(path && path + ".") + (typeof k === "string" ? k : String(k))
 	}
 	return path
 }
+var identifiers
+var isIdentifier =
+	bracketsKeys ?
+		k => {
+			if (typeof k !== "string") return /^[$_a-z][\w$]*$/i.test(String(k))
+			let result = (identifiers ??= /* @__PURE__ */ new Map()).get(k)
+			if (result === void 0) {
+				result = /^[$_a-z][\w$]*$/i.test(k)
+				if (identifiers.size < 1024) identifiers.set(k, result)
+			}
+			return result
+		}
+	:	void 0
 var lineOf = issue => {
 	if (listsUnions && issue._l !== void 0) return issue._l
 	const message = (issue.message ??= messageOf(issue))
@@ -1095,8 +1127,8 @@ var created2
 var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
-				const validator0 = interned("7qd91k0wat9zr", () =>
-					create12fpvlf14u2zct(intersection413gu20zqkl0a, "17vslil0")
+				const validator0 = interned("1qh18ao1yvk8sx", () =>
+					create12fpvlf14u2zct(intersection413gu20zqkl0a, "auh6zh1p")
 				)
 				return validator0
 			})())
@@ -1105,8 +1137,8 @@ var get0 = () => {
 var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
-				const validator0 = interned("1orik1i0k3lqwh", () =>
-					create12fpvlf14u2zct(intersection1upqj9817d2cda, "1q1d3q40")
+				const validator0 = interned("16td4db1jhngxx", () =>
+					create12fpvlf14u2zct(intersection1upqj9817d2cda, "mo4ghl0p")
 				)
 				return validator0
 			})())
@@ -1115,8 +1147,8 @@ var get1 = () => {
 var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
-				const validator0 = interned("1awjt4i15qfutx", () =>
-					create12fpvlf14u2zct(intersection1edczbo1pwpl8e, "1glka7t0")
+				const validator0 = interned("6vasj01biwo8b", () =>
+					create12fpvlf14u2zct(intersection1edczbo1pwpl8e, "1p5rlek0")
 				)
 				return validator0
 			})())

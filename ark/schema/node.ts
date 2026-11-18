@@ -957,7 +957,9 @@ export abstract class BaseNode<
 	/** what compiled code reports when data fails it, holding its `errorCtx` as `v` */
 	get failSite(): FailureSite | UnionSite {
 		return (this.c.failSite ??= {
-			v: (this as never as { errorCtx: SiteContext }).errorCtx
+			v: (this as never as { errorCtx: SiteContext }).errorCtx,
+			vb: undefined,
+			mb: undefined
 		})
 	}
 
