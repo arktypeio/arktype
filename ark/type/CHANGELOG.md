@@ -1,5 +1,23 @@
 # arktype
 
+## 2.2.10
+
+### Print a nested `undefined` unquoted in error messages
+
+A value printed in an error message showed a nested `undefined` as a string, so `{ a: undefined }` read the same as `{ a: "undefined" }`:
+
+```ts
+const T = type("unknown[]").narrow(
+	(arr, ctx) => !arr.includes(undefined) || ctx.mustBe("fully defined")
+)
+
+// was: must be fully defined (was [1,"undefined"])
+// now: must be fully defined (was [1,undefined])
+T([1, undefined]).toString()
+```
+
+Thanks to @youdie006 (#1717).
+
 ## 2.2.9
 
 ### Keep tuple elements around defaults in `.in` and `.out`
