@@ -1,10 +1,24 @@
 name: aot
 
-# @ark/aot's suites, which take an hour or more on runners, so they run on
-# demand rather than on every PR. prChecks stays a few minutes; this workflow
-# holds them until they have a system of their own.
+# @ark/aot's derived suites: the repo's tests run against precompiled
+# validators (differential, cache), and builds of sampled and generated
+# programs (perturbation). They take up to an hour per job on a runner, so
+# they aren't part of pr.yml's prChecks gate, which runs @ark/aot's own tests.
+#
+# - nightly, on each branch in the plan job's list. A failure opens the issue
+#   "aot nightly failing", or comments on it, and a green night closes it.
+# - on a PR labelled aot:full, when the label is added and on each push after
+# - on demand (workflow_dispatch), and from another workflow (workflow_call),
+#   which a release could wait on. The caller has to grant issues: write
+#   beside contents: read, as GitHub checks a called workflow's permissions
+#   whether or not the job asking for them runs.
 on:
   workflow_dispatch:
+  workflow_call:
+  schedule:
+    - cron: "23 8 * * *"
+  pull_request:
+    types: [labeled, synchronize]
 
 permissions:
   contents: read
@@ -13,27 +27,89 @@ defaults:
   run:
     shell: bash
 
+# a push to a labelled PR replaces the run for the push before it. An event
+# that doesn't run the suites, like another label, gets a group of its own so
+# that it can't cancel one that does
+concurrency:
+  group: aot-${{ github.event_name == 'pull_request' && (github.event.action == 'synchronize' || github.event.label.name == 'aot:full') && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
-  tests:
+  # whether this event runs the suites, and on which refs
+  plan:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.plan.outputs.run }}
+      refs: ${{ steps.plan.outputs.refs }}
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          ADDED_LABEL: ${{ github.event.label.name }}
+          LABELLED_FULL: ${{ contains(github.event.pull_request.labels.*.name, 'aot:full') }}
+          # A schedule only starts from the default branch's copy of this
+          # file, so the nightly checks out each branch it covers. 3.0 lives
+          # on featherduster until it merges to main: delete that entry then.
+          NIGHTLY_REFS: main featherduster
+          # a ref without this file doesn't have the suites, and is skipped
+          SUITE: ark/aot/__tests__/testDifferential.ts
+        run: |
+          set -euo pipefail
 
-      - name: Setup repo
-        uses: ./.github/actions/setup
+          run=true
+          # "" checks out what the event names
+          refs='[""]'
 
-      - name: Test @ark/aot
-        run: pnpm testAot
+          case "$EVENT" in
+            pull_request)
+              if [[ "$ACTION" == labeled ]]; then
+                [[ "$ADDED_LABEL" == "aot:full" ]] || run=false
+              else
+                [[ "$LABELLED_FULL" == true ]] || run=false
+              fi
+              ;;
+            schedule)
+              # forks inherit the schedule, but not the reason for it
+              if [[ "$GITHUB_REPOSITORY" != arktypeio/arktype ]]; then
+                run=false
+              else
+                found=()
+                for ref in $NIGHTLY_REFS; do
+                  if out=$(gh api "repos/$GITHUB_REPOSITORY/contents/$SUITE?ref=$ref" --silent 2>&1); then
+                    found+=("$ref")
+                  elif grep -q "HTTP 404" <<<"$out"; then
+                    echo "::notice::Skipping $ref, which has no $SUITE"
+                  else
+                    echo "$out" >&2
+                    exit 1
+                  fi
+                done
+                if (( ${#found[@]} )); then
+                  refs=$(jq -cn '$ARGS.positional' --args "${found[@]}")
+                else
+                  run=false
+                fi
+              fi
+              ;;
+          esac
+
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "refs=$refs" >> "$GITHUB_OUTPUT"
 
   differential:
+    needs: plan
+    if: needs.plan.outputs.run == 'true'
     runs-on: ubuntu-latest
     # the full-text errors tiers compare every call in each layout, about an
     # hour on a runner
     timeout-minutes: 120
     strategy:
+      fail-fast: false
       matrix:
+        ref: ${{ fromJSON(needs.plan.outputs.refs) }}
         # the build's options: mutatesInput with each errors mode, size builds,
         # and errors written for size apart from validators
         options:
@@ -50,6 +126,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ matrix.ref }}
 
       - name: Setup repo
         uses: ./.github/actions/setup
@@ -60,11 +138,19 @@ jobs:
           ARK_PRECOMPILE_OPTIONS: ${{ matrix.options }}
 
   cache:
+    needs: plan
+    if: needs.plan.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        ref: ${{ fromJSON(needs.plan.outputs.refs) }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ matrix.ref }}
 
       - name: Setup repo
         uses: ./.github/actions/setup
@@ -73,10 +159,14 @@ jobs:
         run: pnpm testCache
 
   perturbation:
+    needs: plan
+    if: needs.plan.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
+      fail-fast: false
       matrix:
+        ref: ${{ fromJSON(needs.plan.outputs.refs) }}
         # the default build and size builds, which write checkers, sampled on
         # data the suites never pass them
         options:
@@ -86,6 +176,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ matrix.ref }}
 
       - name: Setup repo
         uses: ./.github/actions/setup
@@ -101,25 +193,52 @@ jobs:
           ARK_PRECOMPILE_OPTIONS: ${{ matrix.options }}
           ARK_PRECOMPILE_PROGRAMS: 300
 
-  environments:
+  # the nightly's result, kept in one issue
+  alert:
+    needs: [plan, differential, cache, perturbation]
+    if: always() && github.event_name == 'schedule'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          NEEDS: ${{ toJSON(needs) }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TITLE: aot nightly failing
+          LABEL: aot-nightly
+        run: |
+          set -euo pipefail
 
-      - name: Setup repo
-        uses: ./.github/actions/setup
+          # jobs that didn't pass, including one cancelled or timed out
+          failed=$(jq -r '[to_entries[] | select(.value.result != "success" and .value.result != "skipped") | .key] | join(", ")' <<<"$NEEDS")
+          ran=$(jq -r '.plan.outputs.run // "false"' <<<"$NEEDS")
 
-      - name: Setup Deno
-        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2
+          if [[ -z "$failed" && "$ran" != true ]]; then
+            echo "The suites didn't run, so there is nothing to report."
+            exit 0
+          fi
 
-      # the runner's Chrome is used as installed
-      - name: Setup Firefox
-        id: firefox
-        uses: browser-actions/setup-firefox@0bc507ddf224827e3b1af68e014d5e42ab93e795 # v1
+          # the open issue's number, or nothing
+          issue=$(
+            gh issue list --label "$LABEL" --state open --limit 100 --json number,title |
+              jq -r --arg title "$TITLE" '[.[] | select(.title == $title)][0].number // empty'
+          )
 
-      - name: Run a precompiled program across environments
-        run: pnpm testEnvironments
-        env:
-          FIREFOX_BIN: ${{ steps.firefox.outputs.firefox-path }}
+          if [[ -n "$failed" ]]; then
+            body="The [nightly run]($RUN_URL) of \`aot.yml\` failed in: $failed."
+            if [[ -n "$issue" ]]; then
+              gh issue comment "$issue" --body "$body"
+            else
+              # an issue can't be opened with a label the repo doesn't have
+              gh label create "$LABEL" --description "Tracks aot.yml's nightly run" --color B60205 --force
+              gh issue create --title "$TITLE" --label "$LABEL" --body "$body"
+            fi
+          elif [[ -n "$issue" ]]; then
+            gh issue close "$issue" --comment "The [nightly run]($RUN_URL) passed."
+          else
+            echo "The nightly passed and no issue is open."
+          fi
