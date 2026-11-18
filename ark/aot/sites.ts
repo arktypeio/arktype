@@ -289,6 +289,9 @@ export interface Site {
 		| undefined
 	// e.g. `User.extends` in `User.extends(T.in)`
 	unavailableRead: string | undefined
+	// what it's written with and what chose that, as --check prints it, where
+	// a key or marker chooses for a definition of its module
+	strategy?: string | undefined
 }
 
 export interface Hole {

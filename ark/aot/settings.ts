@@ -13,6 +13,7 @@ import { writeVariantOption, writeWithoutVariant } from "./messages.ts"
 import type { PrecompileOptions } from "./precompile.ts"
 import { definedOf, withPreset } from "./presets.ts"
 import * as validators from "./settingsValidators.ts"
+import { checkStrategyOptions, normalizedSchemas } from "./strategies.ts"
 
 interface Issue {
 	path: PropertyKey[]
@@ -132,11 +133,23 @@ export const withSettingsFile = <opts extends PrecompilePluginOptions>(
 		...file.dependencies,
 		...set.dependencies
 	}
+	const strategies = file.strategies && {
+		...file.strategies,
+		...set.strategies
+	}
+	// a key names its module from cwd, so one a call sets again is one key
+	const schemas = (file.schemas || set.schemas) && {
+		...(file.schemas &&
+			normalizedSchemas(file.schemas, dirname(path!), resolve(cwd))),
+		...(set.schemas && normalizedSchemas(set.schemas, undefined, resolve(cwd)))
+	}
 	const result = {
 		...file,
 		...set,
 		...(members && { members }),
-		...(dependencies && { dependencies })
+		...(dependencies && { dependencies }),
+		...(strategies && { strategies }),
+		...(schemas && { schemas })
 	}
 	checkDependencies(result.dependencies, cwd)
 	return result
@@ -167,6 +180,7 @@ export const resolvePrecompileOptions = <opts extends PrecompileOptions>(
 	const onArktype = variant && onArktypeOf(resolved.dependencies)
 	if (onArktype)
 		throw new Error(writeVariantDependencyMessage(onArktype, variant))
+	checkStrategyOptions(resolved)
 	if (resolved.runtime === "arktype") {
 		const standaloneOption =
 			resolved.config === false ?
@@ -199,6 +213,8 @@ const standaloneOptions = [
 	"mutatesInput",
 	"optimize",
 	"optimizeErrors",
+	"strategies",
+	"schemas",
 	"prune",
 	"dependencies"
 ] as const satisfies (keyof PrecompileOptions)[]

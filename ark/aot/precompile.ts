@@ -190,7 +190,7 @@ import {
 	type SiteState,
 	type Trace
 } from "./interpreter.ts"
-import { parseCode, SourceModule } from "./module.ts"
+import { parseCode, SourceModule, type StrategyMark } from "./module.ts"
 import type { Preset } from "./presets.ts"
 import { isTransparent } from "./proofs.ts"
 import { closedTextOf, SameEachRun } from "./sameEachRun.ts"
@@ -232,6 +232,8 @@ import {
 import {
 	linkBundle,
 	prefixOf,
+	virtualSource,
+	type LinkedBundle,
 	type LinkedSite,
 	type LinkOptions
 } from "./link.ts"
@@ -352,9 +354,32 @@ import {
 	shapesPayIn,
 	unitsExposingAllowsPays
 } from "./smaller.ts"
+import {
+	declarationsOf,
+	isKeyConflict,
+	islandStrategyHint,
+	keyConflictHint,
+	nearestTo,
+	SchemaStrategies,
+	strategyMarker,
+	strategyOfSpecifier,
+	strategyMarkerHint,
+	strayStrategyMarkerMessage,
+	unnamedDeclarationHint,
+	writeIslandStrategyMessage,
+	writeKeyConflictMessage,
+	writeStrategyLabel,
+	writeUnknownStrategyMessage,
+	writeUnnamedDeclarationMessage,
+	type KeyConflict,
+	type NamedDeclaration,
+	type ResolvedStrategy,
+	type Strategy
+} from "./strategies.ts"
 export * from "./messages.ts"
 export * from "./presets.ts"
 export * from "./settings.ts"
+export * from "./strategies.ts"
 
 export type PrecompileMode = "standalone" | "cache"
 
@@ -380,6 +405,14 @@ export interface PrecompileOptions extends InterpreterOptions {
 	optimize?: Optimization | undefined
 	/** "size" writes errors smaller and slower to read, defaulting to optimize */
 	optimizeErrors?: Optimization | undefined
+	/** how a validator can be written, by name, beside "fastest" and "smallest" */
+	strategies?: Record<string, Strategy> | undefined
+	/**
+	 * the strategy each module is written with, by its path or a glob from
+	 * cwd, or one of its declarations, as "src/money.ts#Money"; what no key
+	 * matches is written as optimize says
+	 */
+	schemas?: Record<string, string> | undefined
 	/** trusts data to hold only own, enumerable keys, as JSON.parse's output does */
 	jsonInput?: boolean | undefined
 	/** @internal the chars a site's baked introspection may total */
@@ -455,6 +488,22 @@ interface ProgramUsage {
 	cells?: HoleCells | undefined
 	// the roots sites in modules apart create, by what names each
 	interned?: ReadonlyMap<unknown, string> | undefined
+	// whether any of its validators is written for size
+	sizes: boolean
+}
+
+// a module's exports written one way, as one artifact
+interface StrategyWrite {
+	optimize: Optimization
+	// "" for the build's own, else what names its shared modules apart
+	strategy: string
+	names: string[]
+}
+
+interface WrittenValidators {
+	validators: StandaloneModules
+	names: ReadonlySet<string>
+	strategy: string
 }
 
 interface ProgramPlan {
@@ -494,6 +543,9 @@ export interface PrecompiledModule extends ModuleAnalysis {
 	modules: Record<string, string>
 	// what its validators' issues may hold, where it writes any
 	issues?: IssueFeatures | undefined
+	// each local it reads a validator by whose strategy a key or marker chose,
+	// which a build weighing what its own options write leaves out
+	chosen?: string[] | undefined
 	// the helpers it exports whose calls the build folds, which only a precompiled module can call
 	foldedHelpers: string[]
 }
@@ -705,6 +757,9 @@ export class Precompiler {
 	// whether nothing chose what its validators are compiled for, so a program
 	// they leave larger than arktype would is one to say so of
 	private optimizeUnset: boolean
+	// what its options choose for each definition, beside what a marker does
+	private strategies: SchemaStrategies
+	private declarationsByModule = new WeakMap<SourceModule, NamedDeclaration[]>()
 	private configuration: Configuration | undefined
 	private loadedBeforeConfigure: string[] | undefined
 	private configureCallsByModule = new WeakMap<SourceModule, CallExpression[]>()
@@ -795,6 +850,11 @@ export class Precompiler {
 			bakedLimit: opts.bakedLimit
 		}
 		this.optimizeUnset = opts.optimize === undefined
+		this.strategies = new SchemaStrategies(
+			opts,
+			this.standalone.optimize!,
+			opts.cwd
+		)
 		this.lackedMembers = new Set(
 			defaultMembers.flatMap(member =>
 				this.members[member] !== false ? []
@@ -1087,7 +1147,8 @@ export class Precompiler {
 			written: {},
 			unscanned: new Map(),
 			cells: this.cellsOf(plan),
-			interned
+			interned,
+			sizes: this.sizesIn(plan)
 		}
 		this.usagesByProgram.set(program.key, usage)
 		const wrote = this.writeSmaller(program, plan, usage)
@@ -1596,7 +1657,10 @@ export class Precompiler {
 		plan: ProgramPlan,
 		usage: ProgramUsage
 	): WrittenProgram | undefined {
-		const decides = combinesChecks(this.standalone)
+		const decides = combinesChecks({
+			...this.standalone,
+			optimize: usage.sizes ? "size" : "speed"
+		})
 		if (decides) usage.combines = true
 		const wrote = this.writeProgram(program, plan)
 		if (!wrote || !decides) return wrote
@@ -1621,9 +1685,8 @@ export class Precompiler {
 		wrote: WrittenProgram
 	): boolean {
 		const { sources } = plan
-		// a size build's units, where the bundle is one chunk, are one module
-		const isOneChunk =
-			!!program.isOneChunk && this.standalone.optimize === "size"
+		// units written for size, where the bundle is one chunk, are one module
+		const isOneChunk = !!program.isOneChunk && usage.sizes
 		let link = this.linkWritten(wrote.written, sources, {
 			exposesAllows: usage.readsAllows,
 			isOneChunk
@@ -2213,19 +2276,58 @@ export class Precompiler {
 		return runtimeModuleOf(module, folded, kept, read, inputs, factoriesBySite)
 	}
 
+	// each strategy's modules are linked as a build of their own, as validators
+	// written otherwise share no unit: the build's own first, then those it
+	// optimizes otherwise, where only a build for size shares what it calls
 	private linkWritten(
 		written: Record<string, PrecompiledModule>,
 		sources: Record<string, string>,
 		opts: LinkOptions
 	): { changed: boolean; unexposed: number } {
+		const strategies = new Set([""])
+		for (const id in written) {
+			for (const specifier in written[id].modules)
+				strategies.add(strategyOfSpecifier(specifier))
+		}
+		let changed = false
+		let unexposed = 0
+		for (const strategy of strategies) {
+			const linked = this.linkStrategy(
+				written,
+				sources,
+				strategy,
+				(strategy || this.standalone.optimize) === "size" ?
+					opts
+				:	{ exposesAllows: !!opts.exposesAllows }
+			)
+			changed ||= linked.changed
+			unexposed += linked.unexposed
+		}
+		return { changed, unexposed }
+	}
+
+	private linkStrategy(
+		written: Record<string, PrecompiledModule>,
+		sources: Record<string, string>,
+		strategy: string,
+		opts: LinkOptions
+	): { changed: boolean; unexposed: number } {
 		const sites: Record<string, LinkedSite> = {}
 		const modules: Record<string, string> = {}
+		// what other strategies wrote, which this one's link leaves as it is
+		const apart: Record<string, string> = {}
 		for (const id in written) {
 			sites[id] = { source: sources[id], code: written[id].code }
-			Object.assign(modules, written[id].modules)
+			for (const specifier in written[id].modules) {
+				;(strategyOfSpecifier(specifier) === strategy ? modules : apart)[
+					specifier
+				] = written[id].modules[specifier]
+			}
 		}
 		const linked = linkBundle(sites, modules, opts)
 		if (!linked) return { changed: false, unexposed: 0 }
+		if (strategy) nameUnder(strategy, linked)
+		Object.assign(linked.modules, apart)
 		let changed = false
 		for (const id in written) {
 			const { code, map } = linked.sites[id]
@@ -2264,9 +2366,14 @@ export class Precompiler {
 	): FlatBundle | undefined {
 		const sites: Record<string, string> = {}
 		const modules: Record<string, string> = {}
+		// what a strategy for size wrote, whose units are module constants already
+		const apart: Record<string, string> = {}
 		for (const id in written) {
 			sites[id] = written[id].code
-			Object.assign(modules, written[id].modules)
+			for (const specifier in written[id].modules) {
+				;(strategyOfSpecifier(specifier) ? apart : modules)[specifier] =
+					written[id].modules[specifier]
+			}
 		}
 		const flat = flattenBundle(sites, modules, {
 			modules: [...runtimes.values()].map(runtime => runtime.module),
@@ -2274,7 +2381,7 @@ export class Precompiler {
 			resolve: (specifier, importer) => program.targets[importer]?.[specifier]
 		})
 		if (!flat) return
-		const reach = reacherOf(flat.modules)
+		const reach = reacherOf({ ...apart, ...flat.modules })
 		for (const id in written) {
 			written[id] = flatWrittenOf(
 				written[id],
@@ -2791,11 +2898,17 @@ export class Precompiler {
 			return precompiled
 		const site = flat.rewrite(id, precompiled.code, precompiled.modules)
 		if (site) {
+			// what a strategy for size wrote stays as written
+			const apart = Object.fromEntries(
+				Object.entries(precompiled.modules).filter(([specifier]) =>
+					strategyOfSpecifier(specifier)
+				)
+			)
 			return flatWrittenOf(
 				precompiled,
 				site,
 				source,
-				reacherOf({ ...flat.modules, ...site.modules })
+				reacherOf({ ...apart, ...flat.modules, ...site.modules })
 			)
 		}
 		// its units would be copies of those the bundle reads from one
@@ -2832,14 +2945,19 @@ export class Precompiler {
 		const { sites, diagnostics } = this.analysisOf(module)
 		diagnostics.push(...this.checkConfigOrder(module))
 		diagnostics.push(...this.copyDiagnosticsOf(module))
+		if (this.mode === "standalone") {
+			this.strategies.checkFiles()
+			diagnostics.push(...this.chooseStrategies(module, sites))
+		}
 		const prefix = prefixOf(source, id)
 		const modules: Record<string, string> = {}
 		// locals for virtual modules' exports, by specifier
 		const imports: Record<string, Record<string, string>> = {}
 		let issues: IssueFeatures | undefined
 		let inputImports = ""
+		let chosen: string[] = []
 		if (this.mode === "standalone") {
-			;[issues, inputImports] = this.writeStandalone(
+			;[issues, inputImports, chosen] = this.writeStandalone(
 				module,
 				sites,
 				s,
@@ -2869,6 +2987,7 @@ export class Precompiler {
 			diagnostics,
 			modules: this.inline ? {} : modules,
 			issues,
+			...(chosen.length && { chosen }),
 			foldedHelpers:
 				this.mode === "standalone" ?
 					this.foldedHelpersOf(module).map(([name]) => name)
@@ -2953,8 +3072,8 @@ export class Precompiler {
 		imports: Record<string, Record<string, string>>,
 		diagnostics: Diagnostic[],
 		reads: ProgramReads
-	): [issues: IssueFeatures, inputImports: string] {
-		const [inputImports, written] = this.foldSites(
+	): [issues: IssueFeatures, inputImports: string, chosen: string[]] {
+		const [inputImports, written, chosen] = this.foldSites(
 			module,
 			sites,
 			s,
@@ -2981,7 +3100,8 @@ export class Precompiler {
 							.map(name => `${name} as ${locals[name]}`)
 							.join(", ")} } from ${JSON.stringify(specifier)}`
 				)
-				.join("")
+				.join(""),
+			chosen
 		]
 	}
 
@@ -3130,9 +3250,9 @@ export class Precompiler {
 		const config = this.config
 		if (
 			config === undefined ||
-			this.standalone.optimize !== "size" ||
 			!this.configures ||
-			module.id === config
+			module.id === config ||
+			!this.writesForSize(module)
 		)
 			return
 		const isLoaded =
@@ -3588,7 +3708,10 @@ export class Precompiler {
 		reads: ProgramReads
 	): [
 		inputImports: Record<string, Record<string, string>>,
-		issues: IssueFeatures
+		issues: IssueFeatures,
+		// each local a site reads a validator by that a key or marker chose
+		// the strategy of
+		chosen: string[]
 	] {
 		if (reads.scanned && reads.cells)
 			this.adoptCells(module, sites, reads.scanned, reads.cells, diagnostics)
@@ -3602,7 +3725,7 @@ export class Precompiler {
 		)
 		const { namesBySite, factoriesBySite, folded } = plan
 		const configured = this.configuredOf(module)
-		const [validators, bakes] = this.writePlanned(
+		const [written, bakes] = this.writePlanned(
 			module,
 			sites,
 			plan,
@@ -3610,37 +3733,67 @@ export class Precompiler {
 			reads,
 			diagnostics
 		)
-		const folding: Folding = {
+		// what each artifact's sites share as they're folded
+		const inputImports: Folding["inputImports"] = {}
+		const imported = new Set<string>()
+		const kept: Span[] = []
+		const passed: Binding[] = []
+		const read: Binding[] = []
+		const foldingOf = ({
+			validators,
+			strategy
+		}: Pick<WrittenValidators, "validators" | "strategy">): Folding => ({
 			module,
 			s,
 			prefix,
 			validators,
-			specifier: `~arktype/${hashOf(validators.code)}`,
+			specifier: `~arktype/${strategy && `${strategy}/`}${hashOf(validators.code)}`,
 			configured,
 			modules,
 			imports,
-			inputImports: {},
-			imported: new Set(),
+			inputImports,
+			imported,
 			checking: new Set(validators.checking),
-			kept: [],
-			passed: [],
-			read: [],
+			kept,
+			passed,
+			read,
 			fixedAt: Infinity,
 			cells: reads.cells
-		}
+		})
+		const foldings = written.map(foldingOf)
+		// a site that throws a ParseError imports no validator
+		const unwritten = foldingOf({ validators: noValidators, strategy: "" })
+		const foldingNamed = (name: string) =>
+			foldings[written.findIndex(({ names }) => names.has(name))] ?? unwritten
+		const choosesHere = this.choosesIn(module)
+		const chosen: string[] = []
 		for (const [site, name] of namesBySite) {
+			const folding = foldingNamed(name)
 			this.foldSite(site, name, factoriesBySite.get(site), folding)
 			folded.push(site)
+			if (!choosesHere) continue
+			const strategy = this.strategyOf(module, site)
+			if (!isKeyConflict(strategy) && strategy.name !== undefined)
+				chosen.push(prefix + (folding.validators.folds[name]?.[0] ?? name))
 		}
 		for (const { name, reads, sites } of bakes) {
-			importFolded(undefined, name, prefix + name, undefined, folding)
+			importFolded(
+				undefined,
+				name,
+				prefix + name,
+				undefined,
+				foldingNamed(name)
+			)
 			for (const read of reads) bakeAt(s, module, read, prefix + name)
 			for (const site of sites ?? []) {
 				s.prependRight(site.start, `${prefix}${name}(`)
 				s.appendLeft(site.end, ")")
 			}
 		}
-		const { inputImports, kept, passed, read, fixedAt } = folding
+		const fixedAt = Math.min(
+			unwritten.fixedAt,
+			...foldings.map(folding => folding.fixedAt)
+		)
 		// fixed at the first droppable site, as arktype does at its first Type
 		if (fixedAt !== Infinity && configured !== false) {
 			const fixer = writeConfigFixer(configured)
@@ -3666,7 +3819,14 @@ export class Precompiler {
 		)
 		this.checkRuntimeImports(module, sites, diagnostics)
 		diagnostics.sort((l, r) => l.start - r.start)
-		return [inputImports, validators.issues]
+		const issues: IssueFeatures = { ...noIssueFeatures }
+		for (const { validators } of written) {
+			for (const k in issues) {
+				const feature = k as keyof IssueFeatures
+				issues[feature] ||= validators.issues[feature]
+			}
+		}
+		return [inputImports, issues, chosen]
 	}
 
 	// the config a module's validators are stamped with, where the build configures one
@@ -3703,7 +3863,7 @@ export class Precompiler {
 			interned
 		}: ProgramReads,
 		diagnostics: Diagnostic[]
-	): [validators: StandaloneModules, bakes: ImportedBake[]] {
+	): [written: WrittenValidators[], bakes: ImportedBake[]] {
 		const { namesBySite, exportsByName } = plan
 		let bakes: ImportedBake[] = []
 		let readsAlone = false
@@ -3765,52 +3925,59 @@ export class Precompiler {
 		}
 		for (;;) {
 			const refusalsByName: Record<string, string[]> = {}
-			const write = (defers: boolean) =>
-				writeValidators(
-					exportsByName,
-					{
-						...this.standalone,
-						holdsIds: this.holdsIds,
-						members,
-						called,
-						readsAllows,
-						piped,
-						combines,
-						shapes,
-						cells,
-						interned,
-						scopeNameOf: scope => this.scopeNameOf(scope, module),
-						baked: bakedByName,
-						configured,
-						bake: write => this.bake(write),
-						sharedWrites: this.sharedWrites,
-						defers,
-						// a unit a first call reads runs at its first call too
-						hoisted: this.isReachedEarly(module) || defers,
-						// shadow mode calls what it compares
-						values: !this.shadow,
-						readOnLoad: [...namesBySite]
-							.filter(([site]) => site.declarationStart !== undefined)
-							.map(([, name]) => name)
-					},
-					refusalsByName,
-					this.inline
-				)
-			const canDefer =
-				!flattens &&
-				this.standalone.lazy === true &&
-				this.standalone.optimize === "speed"
-			let validators = noValidators
-			if (Object.keys(exportsByName).length) {
-				validators = write(canDefer && this.defers === true)
-				if (
-					canDefer &&
-					this.defers === "large" &&
-					!Object.keys(refusalsByName).length &&
-					defersCreation(validators)
-				)
-					validators = write(true)
-			}
+			// one artifact for each way the module's validators are written
+			const written = this.writesOf(module, sites, plan, bakes).map(
+				({ optimize, strategy, names }): WrittenValidators => {
+					const refusals: Record<string, string[]> = {}
+					const write = (defers: boolean) =>
+						writeValidators(
+							Object.fromEntries(
+								names.map(name => [name, exportsByName[name]])
+							),
+							{
+								...this.standalone,
+								optimize,
+								strategy,
+								holdsIds: this.holdsIds,
+								members,
+								called,
+								readsAllows,
+								piped,
+								combines,
+								shapes,
+								cells,
+								interned,
+								scopeNameOf: scope => this.scopeNameOf(scope, module),
+								baked: bakedByName,
+								configured,
+								bake: write => this.bake(write),
+								sharedWrites: this.sharedWrites,
+								defers,
+								// a unit a first call reads runs at its first call too
+								hoisted: this.isReachedEarly(module) || defers,
+								// shadow mode calls what it compares
+								values: !this.shadow,
+								readOnLoad: [...namesBySite]
+									.filter(([site]) => site.declarationStart !== undefined)
+									.map(([, name]) => name)
+							},
+							refusals,
+							this.inline
+						)
+					const canDefer =
+						!flattens && this.standalone.lazy === true && optimize === "speed"
+					let validators = write(canDefer && this.defers === true)
+					if (
+						canDefer &&
+						this.defers === "large" &&
+						!Object.keys(refusals).length &&
+						defersCreation(validators)
+					)
+						validators = write(true)
+					Object.assign(refusalsByName, refusals)
+					return { validators, names: new Set(names), strategy }
+				}
+			)
 			for (const [site, name] of namesBySite) {
 				if (!refusalsByName[name]) continue
 				diagnostics.push(this.refuseWritten(module, site, refusalsByName[name]))
@@ -3833,9 +4000,250 @@ export class Precompiler {
 			}
 			bakes = bakes.filter(bake => !refusalsByName[bake.name])
 			const refused = this.refuseStandInsRead(module, sites, diagnostics)
-			if (!refused.length) return [validators, bakes]
+			if (!refused.length) return [written, bakes]
 			for (const site of refused) unplan(plan, site)
 		}
+	}
+
+	// what a definition is written with: what a key naming it, a marker on it
+	// or a key naming its module chooses, else as the build's own options say
+	private strategyOf(
+		module: SourceModule,
+		site: Span
+	): ResolvedStrategy | KeyConflict {
+		let declarations = this.declarationsByModule.get(module)
+		if (!declarations) {
+			declarations = declarationsOf(module)
+			this.declarationsByModule.set(module, declarations)
+		}
+		const declaration = declarations.find(declared => contains(declared, site))
+		// the innermost marker over it, unless it names no strategy
+		let marked: StrategyMark | undefined
+		for (const mark of module.strategyMarks) {
+			if (
+				contains(mark.node, site) &&
+				this.strategies.has(mark.name) &&
+				(!marked || contains(marked.node, mark.node))
+			)
+				marked = mark
+		}
+		return this.strategies.strategyOf(
+			module.id,
+			declaration?.names ?? [],
+			marked?.name
+		)
+	}
+
+	private optimizeOf(module: SourceModule, site: Span): Optimization {
+		const strategy = this.strategyOf(module, site)
+		// two keys that tie fail the build, which writes it as it would without them
+		return isKeyConflict(strategy) ?
+				this.strategies.defaultOptimize
+			:	strategy.optimize
+	}
+
+	// what each of a module's definitions is written for. Sites creating one
+	// Type create one validator, as arktype returns one Type for them, so each
+	// is written as the fastest of them is
+	private optimizesOf(
+		module: SourceModule,
+		sites: readonly Site[]
+	): Map<Site, Optimization> {
+		const optimizeBySite = new Map<Site, Optimization>()
+		if (!this.choosesIn(module)) {
+			for (const site of sites)
+				optimizeBySite.set(site, this.strategies.defaultOptimize)
+			return optimizeBySite
+		}
+		for (const site of sites) {
+			if (site.status === "accepted")
+				optimizeBySite.set(site, this.optimizeOf(module, site))
+		}
+		if (new Set(optimizeBySite.values()).size < 2) return optimizeBySite
+		const compiled = new Set<unknown>()
+		for (let found = true; found; ) {
+			found = false
+			for (const [site, optimize] of optimizeBySite) {
+				const roots = rootsIn(site.value)
+				if (optimize === "speed") for (const root of roots) compiled.add(root)
+				else if (roots.some(root => compiled.has(root))) {
+					optimizeBySite.set(site, "speed")
+					found = true
+				}
+			}
+		}
+		return optimizeBySite
+	}
+
+	// says of each site what it's written with, where a key or marker chooses
+	// for any in its module, and reports what one chooses that it can't:
+	// nothing, as a key naming no declaration does, or what another as specific
+	// chooses otherwise, or how arktype creates an island's Type
+	private chooseStrategies(module: SourceModule, sites: Site[]): Diagnostic[] {
+		const result = module.strayStrategyMarkers.map(marker =>
+			this.diagnostic(
+				module,
+				marker,
+				"unsupported",
+				strayStrategyMarkerMessage,
+				[],
+				strategyMarkerHint
+			)
+		)
+		if (!this.choosesIn(module)) return result
+		for (const mark of module.strategyMarks) {
+			if (!this.strategies.has(mark.name)) {
+				result.push(
+					this.diagnostic(
+						module,
+						mark.comment,
+						"unsupported",
+						writeUnknownStrategyMessage(
+							`\`// ${strategyMarker}${mark.name && ` ${mark.name}`}\``,
+							mark.name,
+							this.strategies.names
+						),
+						[],
+						false
+					)
+				)
+			} else if (!sites.some(site => contains(mark.node, site))) {
+				result.push(
+					this.diagnostic(
+						module,
+						mark.comment,
+						"unsupported",
+						strayStrategyMarkerMessage,
+						[],
+						strategyMarkerHint
+					)
+				)
+			}
+		}
+		const declarations = declarationsOf(module).filter(declaration =>
+			sites.some(site => contains(declaration, site))
+		)
+		for (const key of this.strategies.keysOf(module.id)) {
+			if (
+				key.declaration === undefined ||
+				// a glob names the declaration in whichever of its modules has it
+				key.isGlob ||
+				declarations.some(({ names }) => names.includes(key.declaration!))
+			)
+				continue
+			result.push(
+				this.diagnostic(
+					module,
+					{ start: 0, end: 0 },
+					"unsupported",
+					writeUnnamedDeclarationMessage(
+						key,
+						nearestTo(
+							key.declaration,
+							declarations.flatMap(({ names }) => names)
+						)
+					),
+					[],
+					unnamedDeclarationHint
+				)
+			)
+		}
+		const optimizeBySite = this.optimizesOf(module, sites)
+		const conflicts = new Set<string>()
+		for (const site of sites) {
+			const strategy = this.strategyOf(module, site)
+			if (isKeyConflict(strategy)) {
+				const message = writeKeyConflictMessage(strategy, module.path)
+				if (conflicts.has(message)) continue
+				conflicts.add(message)
+				result.push(
+					this.diagnostic(
+						module,
+						site,
+						"unsupported",
+						message,
+						[],
+						keyConflictHint
+					)
+				)
+			} else if (site.status === "accepted") {
+				site.strategy = writeStrategyLabel(
+					strategy,
+					optimizeBySite.get(site) ?? strategy.optimize
+				)
+			} else if (site.status === "island" && strategy.isOwn) {
+				result.push(
+					this.diagnostic(
+						module,
+						site,
+						"unsupported",
+						writeIslandStrategyMessage(strategy.by!),
+						[],
+						islandStrategyHint
+					)
+				)
+			}
+		}
+		return result
+	}
+
+	private writesForSize(module: SourceModule): boolean {
+		if (!this.choosesIn(module)) return this.standalone.optimize === "size"
+		const { sites } = this.analysisOf(module)
+		return [...this.optimizesOf(module, sites).values()].includes("size")
+	}
+
+	// whether any validator of a program is written for size, as its own
+	// options or a key or marker choosing for one says
+	private sizesIn({ planned, precompiled }: ProgramPlan): boolean {
+		return (
+			this.standalone.optimize === "size" ||
+			precompiled.some(id => {
+				const { module, folded } = planned.get(id)!
+				return (
+					this.choosesIn(module) &&
+					[...this.optimizesOf(module, folded as Site[]).values()].includes(
+						"size"
+					)
+				)
+			})
+		)
+	}
+
+	// whether a key or marker chooses for any of a module's definitions
+	private choosesIn(module: SourceModule): boolean {
+		return (
+			this.mode === "standalone" &&
+			(module.strategyMarks.length > 0 ||
+				this.strategies.keysOf(module.id).length > 0)
+		)
+	}
+
+	// the module's exports by how each is written
+	private writesOf(
+		module: SourceModule,
+		sites: readonly Site[],
+		{ namesBySite, exportsByName }: PlannedSites,
+		bakes: readonly ImportedBake[]
+	): StrategyWrite[] {
+		const optimizeBySite = this.optimizesOf(module, sites)
+		const namesByOptimize = new Map<Optimization, string[]>()
+		const add = (optimize: Optimization, name: string) => {
+			const names = namesByOptimize.get(optimize)
+			if (names) names.push(name)
+			else namesByOptimize.set(optimize, [name])
+		}
+		const own = this.strategies.defaultOptimize
+		for (const [site, name] of namesBySite)
+			if (name in exportsByName) add(optimizeBySite.get(site) ?? own, name)
+		// what a read of an import bakes is written as the build's own are
+		for (const bake of bakes)
+			if (bake.name in exportsByName) add(own, bake.name)
+		return [...namesByOptimize].map(([optimize, names]) => ({
+			optimize,
+			strategy: optimize === own ? "" : optimize,
+			names
+		}))
 	}
 
 	private foldSite(
@@ -7835,6 +8243,34 @@ let threadConfiguration: Configuration | undefined
 
 // arktype can't change its configuration once set
 // undefined where nothing changed
+// what a link declares anew it names for its content alone, so a strategy's
+// are named under it again, apart from the build's own
+const nameUnder = (strategy: string, linked: LinkedBundle): void => {
+	const renamed: Record<string, string> = {}
+	for (const specifier in linked.modules) {
+		if (strategyOfSpecifier(specifier) !== strategy) {
+			renamed[specifier] =
+				`~arktype/${strategy}/${specifier.slice("~arktype/".length)}`
+		}
+	}
+	if (!Object.keys(renamed).length) return
+	const rename = (code: string) =>
+		code.replace(virtualSource, (match, specifier: string) =>
+			specifier in renamed ? JSON.stringify(renamed[specifier]) : match
+		)
+	linked.modules = Object.fromEntries(
+		Object.entries(linked.modules).map(([specifier, code]) => [
+			renamed[specifier] ?? specifier,
+			rename(code)
+		])
+	)
+	for (const id in linked.sites)
+		linked.sites[id] = {
+			...linked.sites[id],
+			code: rename(linked.sites[id].code)
+		}
+}
+
 const mapOf = (s: MagicString, id: string): SourceMap | undefined =>
 	s.hasChanged() ?
 		s.generateMap({ source: id, includeContent: true, hires: "boundary" })

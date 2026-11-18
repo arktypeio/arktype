@@ -70,7 +70,21 @@
 				"preset": { "type": "string", "enum": ["introspectable", "smallest"] },
 				"prune": { "type": "boolean" },
 				"runtime": { "type": "string", "const": "arktype" },
+				"schemas": {
+					"type": "object",
+					"additionalProperties": { "type": "string", "minLength": 1 }
+				},
 				"shadow": { "type": "boolean" },
+				"strategies": {
+					"type": "object",
+					"additionalProperties": {
+						"type": "object",
+						"properties": {
+							"optimize": { "type": "string", "enum": ["size", "speed"] }
+						},
+						"additionalProperties": false
+					}
+				},
 				"tsconfig": {
 					"type": "string",
 					"description": "a path",
