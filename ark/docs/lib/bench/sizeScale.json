@@ -1,5 +1,5 @@
 {
-	"commit": "d87cdd289",
+	"commit": "87a4875dc",
 	"versions": {
 		"arktype": "3.0.0-beta.0",
 		"valibot": "1.5.0",
@@ -22,36 +22,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 4449,
-									"gzip": 1949,
-									"brotli": 1793
-								},
-								"smallest": {
-									"raw": 3367,
-									"gzip": 1601,
-									"brotli": 1461
-								},
-								"dynamic": {
-									"raw": 291463,
-									"gzip": 97266,
-									"brotli": 84787
-								},
-								"valibot": {
-									"raw": 4960,
-									"gzip": 1903,
-									"brotli": 1730
-								},
-								"zod": {
-									"raw": 85226,
-									"gzip": 25153,
-									"brotli": 22411
-								},
-								"zodMini": {
-									"raw": 18096,
-									"gzip": 6295,
-									"brotli": 5773
-								}
+								"default": { "raw": 4449, "gzip": 1949, "brotli": 1792 },
+								"smallest": { "raw": 3367, "gzip": 1601, "brotli": 1448 },
+								"dynamic": { "raw": 291467, "gzip": 97267, "brotli": 84828 },
+								"valibot": { "raw": 4960, "gzip": 1903, "brotli": 1730 },
+								"zod": { "raw": 85226, "gzip": 25153, "brotli": 22411 },
+								"zodMini": { "raw": 18096, "gzip": 6295, "brotli": 5773 }
 							}
 						},
 						{
@@ -59,36 +35,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 17353,
-									"gzip": 4545,
-									"brotli": 4113
-								},
-								"smallest": {
-									"raw": 7524,
-									"gzip": 3345,
-									"brotli": 3056
-								},
-								"dynamic": {
-									"raw": 293233,
-									"gzip": 97908,
-									"brotli": 85335
-								},
-								"valibot": {
-									"raw": 10405,
-									"gzip": 3415,
-									"brotli": 3085
-								},
-								"zod": {
-									"raw": 95615,
-									"gzip": 27963,
-									"brotli": 24815
-								},
-								"zodMini": {
-									"raw": 32104,
-									"gzip": 10094,
-									"brotli": 9168
-								}
+								"default": { "raw": 17353, "gzip": 4545, "brotli": 4113 },
+								"smallest": { "raw": 7518, "gzip": 3340, "brotli": 3056 },
+								"dynamic": { "raw": 293237, "gzip": 97909, "brotli": 85389 },
+								"valibot": { "raw": 10405, "gzip": 3415, "brotli": 3085 },
+								"zod": { "raw": 95615, "gzip": 27963, "brotli": 24815 },
+								"zodMini": { "raw": 32104, "gzip": 10094, "brotli": 9168 }
 							}
 						},
 						{
@@ -96,36 +48,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 65513,
-									"gzip": 11994,
-									"brotli": 10327
-								},
-								"smallest": {
-									"raw": 14521,
-									"gzip": 5617,
-									"brotli": 5133
-								},
-								"dynamic": {
-									"raw": 302652,
-									"gzip": 100012,
-									"brotli": 87298
-								},
-								"valibot": {
-									"raw": 19080,
-									"gzip": 5515,
-									"brotli": 5003
-								},
-								"zod": {
-									"raw": 104248,
-									"gzip": 29947,
-									"brotli": 26588
-								},
-								"zodMini": {
-									"raw": 40710,
-									"gzip": 12231,
-									"brotli": 11099
-								}
+								"default": { "raw": 65513, "gzip": 11992, "brotli": 10336 },
+								"smallest": { "raw": 14521, "gzip": 5616, "brotli": 5144 },
+								"dynamic": { "raw": 302656, "gzip": 100016, "brotli": 87423 },
+								"valibot": { "raw": 19080, "gzip": 5515, "brotli": 5003 },
+								"zod": { "raw": 104248, "gzip": 29947, "brotli": 26588 },
+								"zodMini": { "raw": 40710, "gzip": 12231, "brotli": 11099 }
 							}
 						},
 						{
@@ -133,36 +61,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 122194,
-									"gzip": 20878,
-									"brotli": 16791
-								},
-								"smallest": {
-									"raw": 21828,
-									"gzip": 7759,
-									"brotli": 7058
-								},
-								"dynamic": {
-									"raw": 314386,
-									"gzip": 102194,
-									"brotli": 89338
-								},
-								"valibot": {
-									"raw": 29573,
-									"gzip": 7678,
-									"brotli": 6922
-								},
-								"zod": {
-									"raw": 115058,
-									"gzip": 32035,
-									"brotli": 28526
-								},
-								"zodMini": {
-									"raw": 50931,
-									"gzip": 14412,
-									"brotli": 13062
-								}
+								"default": { "raw": 122194, "gzip": 20878, "brotli": 16785 },
+								"smallest": { "raw": 21828, "gzip": 7759, "brotli": 7058 },
+								"dynamic": { "raw": 314390, "gzip": 102194, "brotli": 89409 },
+								"valibot": { "raw": 29573, "gzip": 7678, "brotli": 6922 },
+								"zod": { "raw": 115058, "gzip": 32035, "brotli": 28526 },
+								"zodMini": { "raw": 50931, "gzip": 14412, "brotli": 13062 }
 							}
 						},
 						{
@@ -170,36 +74,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 262047,
-									"gzip": 41148,
-									"brotli": 30475
-								},
-								"smallest": {
-									"raw": 39320,
-									"gzip": 12844,
-									"brotli": 11560
-								},
-								"dynamic": {
-									"raw": 347004,
-									"gzip": 107611,
-									"brotli": 94198
-								},
-								"valibot": {
-									"raw": 58842,
-									"gzip": 13042,
-									"brotli": 11544
-								},
-								"zod": {
-									"raw": 144917,
-									"gzip": 37220,
-									"brotli": 33021
-								},
-								"zodMini": {
-									"raw": 79356,
-									"gzip": 19813,
-									"brotli": 17676
-								}
+								"default": { "raw": 262047, "gzip": 41148, "brotli": 30443 },
+								"smallest": { "raw": 39320, "gzip": 12844, "brotli": 11556 },
+								"dynamic": { "raw": 347008, "gzip": 107617, "brotli": 94182 },
+								"valibot": { "raw": 58842, "gzip": 13042, "brotli": 11544 },
+								"zod": { "raw": 144917, "gzip": 37220, "brotli": 33021 },
+								"zodMini": { "raw": 79356, "gzip": 19813, "brotli": 17676 }
 							}
 						},
 						{
@@ -207,36 +87,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 498852,
-									"gzip": 74027,
-									"brotli": 52080
-								},
-								"smallest": {
-									"raw": 69540,
-									"gzip": 20920,
-									"brotli": 18694
-								},
-								"dynamic": {
-									"raw": 402677,
-									"gzip": 116800,
-									"brotli": 101886
-								},
-								"valibot": {
-									"raw": 108651,
-									"gzip": 21965,
-									"brotli": 19100
-								},
-								"zod": {
-									"raw": 195578,
-									"gzip": 46017,
-									"brotli": 40416
-								},
-								"zodMini": {
-									"raw": 127618,
-									"gzip": 28732,
-									"brotli": 25191
-								}
+								"default": { "raw": 498852, "gzip": 74022, "brotli": 52056 },
+								"smallest": { "raw": 69540, "gzip": 20920, "brotli": 18694 },
+								"dynamic": { "raw": 402681, "gzip": 116806, "brotli": 101862 },
+								"valibot": { "raw": 108651, "gzip": 21965, "brotli": 19100 },
+								"zod": { "raw": 195578, "gzip": 46017, "brotli": 40416 },
+								"zodMini": { "raw": 127618, "gzip": 28732, "brotli": 25191 }
 							}
 						},
 						{
@@ -244,36 +100,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 986820,
-									"gzip": 141795,
-									"brotli": 95228
-								},
-								"smallest": {
-									"raw": 136122,
-									"gzip": 38644,
-									"brotli": 34115
-								},
-								"dynamic": {
-									"raw": 516982,
-									"gzip": 134960,
-									"brotli": 116995
-								},
-								"valibot": {
-									"raw": 211443,
-									"gzip": 39625,
-									"brotli": 33903
-								},
-								"zod": {
-									"raw": 300566,
-									"gzip": 63351,
-									"brotli": 54766
-								},
-								"zodMini": {
-									"raw": 227712,
-									"gzip": 46777,
-									"brotli": 40049
-								}
+								"default": { "raw": 986820, "gzip": 141795, "brotli": 95134 },
+								"smallest": { "raw": 136122, "gzip": 38644, "brotli": 34115 },
+								"dynamic": { "raw": 516986, "gzip": 134951, "brotli": 116994 },
+								"valibot": { "raw": 211443, "gzip": 39625, "brotli": 33903 },
+								"zod": { "raw": 300566, "gzip": 63351, "brotli": 54766 },
+								"zodMini": { "raw": 227712, "gzip": 46777, "brotli": 40049 }
 							}
 						},
 						{
@@ -281,36 +113,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 2422017,
-									"gzip": 336364,
-									"brotli": 213532
-								},
-								"smallest": {
-									"raw": 323671,
-									"gzip": 85860,
-									"brotli": 73199
-								},
-								"dynamic": {
-									"raw": 858098,
-									"gzip": 190243,
-									"brotli": 160206
-								},
-								"valibot": {
-									"raw": 517960,
-									"gzip": 92724,
-									"brotli": 75256
-								},
-								"zod": {
-									"raw": 612620,
-									"gzip": 115109,
-									"brotli": 95006
-								},
-								"zodMini": {
-									"raw": 526014,
-									"gzip": 99235,
-									"brotli": 81214
-								}
+								"default": { "raw": 2422017, "gzip": 336364, "brotli": 213532 },
+								"smallest": { "raw": 323671, "gzip": 85860, "brotli": 73199 },
+								"dynamic": { "raw": 858104, "gzip": 190274, "brotli": 160168 },
+								"valibot": { "raw": 517960, "gzip": 92724, "brotli": 75256 },
+								"zod": { "raw": 612620, "gzip": 115109, "brotli": 95006 },
+								"zodMini": { "raw": 526014, "gzip": 99235, "brotli": 81214 }
 							}
 						},
 						{
@@ -318,36 +126,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 4855213,
-									"gzip": 665605,
-									"brotli": 414736
-								},
-								"smallest": {
-									"raw": 645632,
-									"gzip": 164902,
-									"brotli": 140574
-								},
-								"dynamic": {
-									"raw": 1434306,
-									"gzip": 282198,
-									"brotli": 231557
-								},
-								"valibot": {
-									"raw": 1036848,
-									"gzip": 181756,
-									"brotli": 145732
-								},
-								"zod": {
-									"raw": 1142025,
-									"gzip": 201780,
-									"brotli": 164328
-								},
-								"zodMini": {
-									"raw": 1032366,
-									"gzip": 187393,
-									"brotli": 151924
-								}
+								"default": { "raw": 4855213, "gzip": 665605, "brotli": 414736 },
+								"smallest": { "raw": 645632, "gzip": 164902, "brotli": 140574 },
+								"dynamic": { "raw": 1434310, "gzip": 282220, "brotli": 231755 },
+								"valibot": { "raw": 1036848, "gzip": 181756, "brotli": 145732 },
+								"zod": { "raw": 1142025, "gzip": 201780, "brotli": 164328 },
+								"zodMini": { "raw": 1032366, "gzip": 187393, "brotli": 151924 }
 							}
 						}
 					]
@@ -360,36 +144,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 4603,
-									"gzip": 1834,
-									"brotli": 1672
-								},
-								"smallest": {
-									"raw": 3556,
-									"gzip": 1539,
-									"brotli": 1388
-								},
-								"dynamic": {
-									"raw": 291528,
-									"gzip": 97298,
-									"brotli": 84902
-								},
-								"valibot": {
-									"raw": 5883,
-									"gzip": 2034,
-									"brotli": 1855
-								},
-								"zod": {
-									"raw": 90036,
-									"gzip": 26326,
-									"brotli": 23391
-								},
-								"zodMini": {
-									"raw": 19542,
-									"gzip": 6637,
-									"brotli": 6039
-								}
+								"default": { "raw": 4603, "gzip": 1834, "brotli": 1672 },
+								"smallest": { "raw": 3556, "gzip": 1539, "brotli": 1389 },
+								"dynamic": { "raw": 291532, "gzip": 97300, "brotli": 84862 },
+								"valibot": { "raw": 5883, "gzip": 2034, "brotli": 1855 },
+								"zod": { "raw": 90036, "gzip": 26326, "brotli": 23391 },
+								"zodMini": { "raw": 19542, "gzip": 6637, "brotli": 6039 }
 							}
 						},
 						{
@@ -397,36 +157,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 20199,
-									"gzip": 5125,
-									"brotli": 4637
-								},
-								"smallest": {
-									"raw": 7781,
-									"gzip": 3490,
-									"brotli": 3197
-								},
-								"dynamic": {
-									"raw": 293498,
-									"gzip": 97956,
-									"brotli": 85407
-								},
-								"valibot": {
-									"raw": 10862,
-									"gzip": 3536,
-									"brotli": 3178
-								},
-								"zod": {
-									"raw": 95875,
-									"gzip": 28010,
-									"brotli": 24820
-								},
-								"zodMini": {
-									"raw": 32576,
-									"gzip": 10216,
-									"brotli": 9265
-								}
+								"default": { "raw": 20199, "gzip": 5125, "brotli": 4637 },
+								"smallest": { "raw": 7781, "gzip": 3490, "brotli": 3197 },
+								"dynamic": { "raw": 293502, "gzip": 97955, "brotli": 85456 },
+								"valibot": { "raw": 10862, "gzip": 3536, "brotli": 3178 },
+								"zod": { "raw": 95875, "gzip": 28010, "brotli": 24820 },
+								"zodMini": { "raw": 32576, "gzip": 10216, "brotli": 9265 }
 							}
 						},
 						{
@@ -434,36 +170,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 66501,
-									"gzip": 12399,
-									"brotli": 10556
-								},
-								"smallest": {
-									"raw": 14314,
-									"gzip": 5563,
-									"brotli": 5050
-								},
-								"dynamic": {
-									"raw": 301802,
-									"gzip": 99913,
-									"brotli": 87278
-								},
-								"valibot": {
-									"raw": 18306,
-									"gzip": 5458,
-									"brotli": 4916
-								},
-								"zod": {
-									"raw": 103498,
-									"gzip": 29875,
-									"brotli": 26542
-								},
-								"zodMini": {
-									"raw": 39823,
-									"gzip": 12172,
-									"brotli": 11003
-								}
+								"default": { "raw": 66501, "gzip": 12399, "brotli": 10556 },
+								"smallest": { "raw": 14314, "gzip": 5562, "brotli": 5055 },
+								"dynamic": { "raw": 301806, "gzip": 99915, "brotli": 87251 },
+								"valibot": { "raw": 18306, "gzip": 5458, "brotli": 4916 },
+								"zod": { "raw": 103498, "gzip": 29875, "brotli": 26542 },
+								"zodMini": { "raw": 39823, "gzip": 12172, "brotli": 11003 }
 							}
 						},
 						{
@@ -471,36 +183,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 116231,
-									"gzip": 19544,
-									"brotli": 15829
-								},
-								"smallest": {
-									"raw": 21059,
-									"gzip": 7444,
-									"brotli": 6736
-								},
-								"dynamic": {
-									"raw": 312385,
-									"gzip": 101864,
-									"brotli": 89071
-								},
-								"valibot": {
-									"raw": 27770,
-									"gzip": 7371,
-									"brotli": 6604
-								},
-								"zod": {
-									"raw": 113125,
-									"gzip": 31706,
-									"brotli": 28188
-								},
-								"zodMini": {
-									"raw": 49008,
-									"gzip": 14067,
-									"brotli": 12687
-								}
+								"default": { "raw": 116231, "gzip": 19544, "brotli": 15829 },
+								"smallest": { "raw": 21059, "gzip": 7444, "brotli": 6736 },
+								"dynamic": { "raw": 312389, "gzip": 101863, "brotli": 89133 },
+								"valibot": { "raw": 27770, "gzip": 7371, "brotli": 6604 },
+								"zod": { "raw": 113125, "gzip": 31706, "brotli": 28188 },
+								"zodMini": { "raw": 49008, "gzip": 14067, "brotli": 12687 }
 							}
 						},
 						{
@@ -508,36 +196,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 267287,
-									"gzip": 41531,
-									"brotli": 30751
-								},
-								"smallest": {
-									"raw": 38651,
-									"gzip": 12738,
-									"brotli": 11409
-								},
-								"dynamic": {
-									"raw": 345823,
-									"gzip": 107453,
-									"brotli": 93915
-								},
-								"valibot": {
-									"raw": 57882,
-									"gzip": 12981,
-									"brotli": 11465
-								},
-								"zod": {
-									"raw": 143518,
-									"gzip": 37103,
-									"brotli": 32896
-								},
-								"zodMini": {
-									"raw": 78191,
-									"gzip": 19696,
-									"brotli": 17550
-								}
+								"default": { "raw": 267287, "gzip": 41543, "brotli": 30775 },
+								"smallest": { "raw": 38651, "gzip": 12738, "brotli": 11407 },
+								"dynamic": { "raw": 345827, "gzip": 107456, "brotli": 94006 },
+								"valibot": { "raw": 57882, "gzip": 12981, "brotli": 11465 },
+								"zod": { "raw": 143518, "gzip": 37103, "brotli": 32896 },
+								"zodMini": { "raw": 78191, "gzip": 19696, "brotli": 17550 }
 							}
 						},
 						{
@@ -545,36 +209,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 505620,
-									"gzip": 75610,
-									"brotli": 53473
-								},
-								"smallest": {
-									"raw": 70124,
-									"gzip": 21196,
-									"brotli": 18822
-								},
-								"dynamic": {
-									"raw": 401226,
-									"gzip": 116836,
-									"brotli": 101957
-								},
-								"valibot": {
-									"raw": 107663,
-									"gzip": 22159,
-									"brotli": 19215
-								},
-								"zod": {
-									"raw": 193870,
-									"gzip": 45989,
-									"brotli": 40486
-								},
-								"zodMini": {
-									"raw": 126313,
-									"gzip": 28804,
-									"brotli": 25322
-								}
+								"default": { "raw": 505620, "gzip": 75610, "brotli": 53473 },
+								"smallest": { "raw": 70124, "gzip": 21196, "brotli": 18822 },
+								"dynamic": { "raw": 401230, "gzip": 116850, "brotli": 101973 },
+								"valibot": { "raw": 107663, "gzip": 22159, "brotli": 19215 },
+								"zod": { "raw": 193870, "gzip": 45989, "brotli": 40486 },
+								"zodMini": { "raw": 126313, "gzip": 28804, "brotli": 25322 }
 							}
 						},
 						{
@@ -582,36 +222,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 985847,
-									"gzip": 141999,
-									"brotli": 95587
-								},
-								"smallest": {
-									"raw": 132733,
-									"gzip": 37069,
-									"brotli": 32664
-								},
-								"dynamic": {
-									"raw": 513768,
-									"gzip": 134607,
-									"brotli": 116836
-								},
-								"valibot": {
-									"raw": 208736,
-									"gzip": 39461,
-									"brotli": 33729
-								},
-								"zod": {
-									"raw": 296403,
-									"gzip": 62851,
-									"brotli": 54531
-								},
-								"zodMini": {
-									"raw": 224598,
-									"gzip": 46537,
-									"brotli": 39868
-								}
+								"default": { "raw": 985847, "gzip": 141999, "brotli": 95587 },
+								"smallest": { "raw": 132733, "gzip": 37069, "brotli": 32664 },
+								"dynamic": { "raw": 513772, "gzip": 134605, "brotli": 116714 },
+								"valibot": { "raw": 208736, "gzip": 39461, "brotli": 33729 },
+								"zod": { "raw": 296403, "gzip": 62851, "brotli": 54531 },
+								"zodMini": { "raw": 224598, "gzip": 46537, "brotli": 39868 }
 							}
 						},
 						{
@@ -619,36 +235,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 2447099,
-									"gzip": 340216,
-									"brotli": 216895
-								},
-								"smallest": {
-									"raw": 321467,
-									"gzip": 84869,
-									"brotli": 72188
-								},
-								"dynamic": {
-									"raw": 856691,
-									"gzip": 190301,
-									"brotli": 160210
-								},
-								"valibot": {
-									"raw": 515783,
-									"gzip": 92851,
-									"brotli": 75469
-								},
-								"zod": {
-									"raw": 609024,
-									"gzip": 114856,
-									"brotli": 95191
-								},
-								"zodMini": {
-									"raw": 523443,
-									"gzip": 99301,
-									"brotli": 81304
-								}
+								"default": { "raw": 2447099, "gzip": 340216, "brotli": 216895 },
+								"smallest": { "raw": 321467, "gzip": 84869, "brotli": 72188 },
+								"dynamic": { "raw": 856697, "gzip": 190282, "brotli": 160198 },
+								"valibot": { "raw": 515783, "gzip": 92851, "brotli": 75469 },
+								"zod": { "raw": 609024, "gzip": 114856, "brotli": 95191 },
+								"zodMini": { "raw": 523443, "gzip": 99301, "brotli": 81304 }
 							}
 						},
 						{
@@ -656,36 +248,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 4905642,
-									"gzip": 672625,
-									"brotli": 420407
-								},
-								"smallest": {
-									"raw": 643390,
-									"gzip": 163893,
-									"brotli": 139614
-								},
-								"dynamic": {
-									"raw": 1432074,
-									"gzip": 282244,
-									"brotli": 231466
-								},
-								"valibot": {
-									"raw": 1033457,
-									"gzip": 181673,
-									"brotli": 145644
-								},
-								"zod": {
-									"raw": 1136538,
-									"gzip": 201509,
-									"brotli": 164293
-								},
-								"zodMini": {
-									"raw": 1027474,
-									"gzip": 187267,
-									"brotli": 151695
-								}
+								"default": { "raw": 4905642, "gzip": 672625, "brotli": 420407 },
+								"smallest": { "raw": 643390, "gzip": 163893, "brotli": 139614 },
+								"dynamic": { "raw": 1432078, "gzip": 282269, "brotli": 231540 },
+								"valibot": { "raw": 1033457, "gzip": 181673, "brotli": 145644 },
+								"zod": { "raw": 1136538, "gzip": 201509, "brotli": 164293 },
+								"zodMini": { "raw": 1027474, "gzip": 187267, "brotli": 151695 }
 							}
 						}
 					]
@@ -698,36 +266,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 3623,
-									"gzip": 1567,
-									"brotli": 1425
-								},
-								"smallest": {
-									"raw": 2747,
-									"gzip": 1339,
-									"brotli": 1199
-								},
-								"dynamic": {
-									"raw": 291471,
-									"gzip": 97274,
-									"brotli": 84845
-								},
-								"valibot": {
-									"raw": 4588,
-									"gzip": 1755,
-									"brotli": 1611
-								},
-								"zod": {
-									"raw": 84968,
-									"gzip": 25077,
-									"brotli": 22378
-								},
-								"zodMini": {
-									"raw": 15782,
-									"gzip": 5504,
-									"brotli": 5034
-								}
+								"default": { "raw": 3623, "gzip": 1567, "brotli": 1425 },
+								"smallest": { "raw": 2747, "gzip": 1339, "brotli": 1236 },
+								"dynamic": { "raw": 291475, "gzip": 97277, "brotli": 84786 },
+								"valibot": { "raw": 4588, "gzip": 1755, "brotli": 1611 },
+								"zod": { "raw": 84968, "gzip": 25077, "brotli": 22378 },
+								"zodMini": { "raw": 15782, "gzip": 5504, "brotli": 5034 }
 							}
 						},
 						{
@@ -735,36 +279,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 19694,
-									"gzip": 4963,
-									"brotli": 4482
-								},
-								"smallest": {
-									"raw": 7657,
-									"gzip": 3468,
-									"brotli": 3161
-								},
-								"dynamic": {
-									"raw": 293409,
-									"gzip": 97966,
-									"brotli": 85381
-								},
-								"valibot": {
-									"raw": 10514,
-									"gzip": 3471,
-									"brotli": 3121
-								},
-								"zod": {
-									"raw": 95772,
-									"gzip": 28022,
-									"brotli": 24878
-								},
-								"zodMini": {
-									"raw": 32208,
-									"gzip": 10145,
-									"brotli": 9204
-								}
+								"default": { "raw": 19694, "gzip": 4964, "brotli": 4477 },
+								"smallest": { "raw": 7651, "gzip": 3464, "brotli": 3155 },
+								"dynamic": { "raw": 293413, "gzip": 97964, "brotli": 85493 },
+								"valibot": { "raw": 10514, "gzip": 3471, "brotli": 3121 },
+								"zod": { "raw": 95772, "gzip": 28022, "brotli": 24878 },
+								"zodMini": { "raw": 32208, "gzip": 10145, "brotli": 9204 }
 							}
 						},
 						{
@@ -772,36 +292,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 60996,
-									"gzip": 11214,
-									"brotli": 9724
-								},
-								"smallest": {
-									"raw": 14256,
-									"gzip": 5586,
-									"brotli": 5079
-								},
-								"dynamic": {
-									"raw": 302370,
-									"gzip": 99975,
-									"brotli": 87448
-								},
-								"valibot": {
-									"raw": 18857,
-									"gzip": 5539,
-									"brotli": 4980
-								},
-								"zod": {
-									"raw": 104045,
-									"gzip": 29943,
-									"brotli": 26631
-								},
-								"zodMini": {
-									"raw": 40473,
-									"gzip": 12252,
-									"brotli": 11096
-								}
+								"default": { "raw": 60996, "gzip": 11213, "brotli": 9712 },
+								"smallest": { "raw": 14256, "gzip": 5586, "brotli": 5079 },
+								"dynamic": { "raw": 302374, "gzip": 99980, "brotli": 87371 },
+								"valibot": { "raw": 18857, "gzip": 5539, "brotli": 4980 },
+								"zod": { "raw": 104045, "gzip": 29943, "brotli": 26631 },
+								"zodMini": { "raw": 40473, "gzip": 12252, "brotli": 11096 }
 							}
 						},
 						{
@@ -809,36 +305,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 113296,
-									"gzip": 18902,
-									"brotli": 15404
-								},
-								"smallest": {
-									"raw": 21106,
-									"gzip": 7530,
-									"brotli": 6862
-								},
-								"dynamic": {
-									"raw": 313582,
-									"gzip": 101997,
-									"brotli": 89180
-								},
-								"valibot": {
-									"raw": 28926,
-									"gzip": 7501,
-									"brotli": 6704
-								},
-								"zod": {
-									"raw": 114211,
-									"gzip": 31830,
-									"brotli": 28320
-								},
-								"zodMini": {
-									"raw": 50293,
-									"gzip": 14224,
-									"brotli": 12845
-								}
+								"default": { "raw": 113296, "gzip": 18902, "brotli": 15415 },
+								"smallest": { "raw": 21106, "gzip": 7530, "brotli": 6875 },
+								"dynamic": { "raw": 313586, "gzip": 102003, "brotli": 89134 },
+								"valibot": { "raw": 28926, "gzip": 7501, "brotli": 6704 },
+								"zod": { "raw": 114211, "gzip": 31830, "brotli": 28320 },
+								"zodMini": { "raw": 50293, "gzip": 14224, "brotli": 12845 }
 							}
 						},
 						{
@@ -846,36 +318,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 258396,
-									"gzip": 40266,
-									"brotli": 30123
-								},
-								"smallest": {
-									"raw": 38845,
-									"gzip": 12828,
-									"brotli": 11547
-								},
-								"dynamic": {
-									"raw": 346719,
-									"gzip": 107559,
-									"brotli": 94126
-								},
-								"valibot": {
-									"raw": 58737,
-									"gzip": 13086,
-									"brotli": 11538
-								},
-								"zod": {
-									"raw": 144786,
-									"gzip": 37258,
-									"brotli": 33022
-								},
-								"zodMini": {
-									"raw": 79423,
-									"gzip": 19832,
-									"brotli": 17654
-								}
+								"default": { "raw": 258396, "gzip": 40266, "brotli": 30123 },
+								"smallest": { "raw": 38845, "gzip": 12827, "brotli": 11547 },
+								"dynamic": { "raw": 346723, "gzip": 107564, "brotli": 94131 },
+								"valibot": { "raw": 58737, "gzip": 13086, "brotli": 11538 },
+								"zod": { "raw": 144786, "gzip": 37258, "brotli": 33022 },
+								"zodMini": { "raw": 79423, "gzip": 19832, "brotli": 17654 }
 							}
 						},
 						{
@@ -883,36 +331,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 519152,
-									"gzip": 77555,
-									"brotli": 54556
-								},
-								"smallest": {
-									"raw": 70456,
-									"gzip": 21352,
-									"brotli": 19012
-								},
-								"dynamic": {
-									"raw": 403699,
-									"gzip": 117167,
-									"brotli": 102242
-								},
-								"valibot": {
-									"raw": 109856,
-									"gzip": 22389,
-									"brotli": 19417
-								},
-								"zod": {
-									"raw": 197164,
-									"gzip": 46356,
-									"brotli": 40761
-								},
-								"zodMini": {
-									"raw": 129295,
-									"gzip": 29099,
-									"brotli": 25587
-								}
+								"default": { "raw": 519152, "gzip": 77555, "brotli": 54556 },
+								"smallest": { "raw": 70456, "gzip": 21352, "brotli": 19012 },
+								"dynamic": { "raw": 403703, "gzip": 117172, "brotli": 102265 },
+								"valibot": { "raw": 109856, "gzip": 22389, "brotli": 19417 },
+								"zod": { "raw": 197164, "gzip": 46356, "brotli": 40761 },
+								"zodMini": { "raw": 129295, "gzip": 29099, "brotli": 25587 }
 							}
 						},
 						{
@@ -920,36 +344,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 1015151,
-									"gzip": 145768,
-									"brotli": 97971
-								},
-								"smallest": {
-									"raw": 133916,
-									"gzip": 37534,
-									"brotli": 33184
-								},
-								"dynamic": {
-									"raw": 519299,
-									"gzip": 135310,
-									"brotli": 117359
-								},
-								"valibot": {
-									"raw": 213893,
-									"gzip": 40221,
-									"brotli": 34230
-								},
-								"zod": {
-									"raw": 303126,
-									"gzip": 63702,
-									"brotli": 55013
-								},
-								"zodMini": {
-									"raw": 231006,
-									"gzip": 47332,
-									"brotli": 40345
-								}
+								"default": { "raw": 1015151, "gzip": 145767, "brotli": 97921 },
+								"smallest": { "raw": 133916, "gzip": 37534, "brotli": 33184 },
+								"dynamic": { "raw": 519303, "gzip": 135308, "brotli": 117423 },
+								"valibot": { "raw": 213893, "gzip": 40221, "brotli": 34230 },
+								"zod": { "raw": 303126, "gzip": 63702, "brotli": 55013 },
+								"zodMini": { "raw": 231006, "gzip": 47332, "brotli": 40345 }
 							}
 						},
 						{
@@ -957,36 +357,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 2523391,
-									"gzip": 351203,
-									"brotli": 225272
-								},
-								"smallest": {
-									"raw": 325563,
-									"gzip": 85766,
-									"brotli": 73071
-								},
-								"dynamic": {
-									"raw": 866779,
-									"gzip": 191783,
-									"brotli": 161652
-								},
-								"valibot": {
-									"raw": 525442,
-									"gzip": 94440,
-									"brotli": 76572
-								},
-								"zod": {
-									"raw": 620406,
-									"gzip": 116534,
-									"brotli": 96218
-								},
-								"zodMini": {
-									"raw": 534736,
-									"gzip": 100834,
-									"brotli": 82560
-								}
+								"default": { "raw": 2523391, "gzip": 351203, "brotli": 225272 },
+								"smallest": { "raw": 325563, "gzip": 85766, "brotli": 73071 },
+								"dynamic": { "raw": 866785, "gzip": 191799, "brotli": 161513 },
+								"valibot": { "raw": 525442, "gzip": 94440, "brotli": 76572 },
+								"zod": { "raw": 620406, "gzip": 116534, "brotli": 96218 },
+								"zodMini": { "raw": 534736, "gzip": 100834, "brotli": 82560 }
 							}
 						},
 						{
@@ -994,36 +370,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 4987749,
-									"gzip": 681845,
-									"brotli": 428112
-								},
-								"smallest": {
-									"raw": 648257,
-									"gzip": 165102,
-									"brotli": 140670
-								},
-								"dynamic": {
-									"raw": 1448130,
-									"gzip": 284209,
-									"brotli": 232874
-								},
-								"valibot": {
-									"raw": 1048088,
-									"gzip": 183770,
-									"brotli": 147059
-								},
-								"zod": {
-									"raw": 1153017,
-									"gzip": 203717,
-									"brotli": 165537
-								},
-								"zodMini": {
-									"raw": 1044327,
-									"gzip": 189302,
-									"brotli": 153218
-								}
+								"default": { "raw": 4987749, "gzip": 681845, "brotli": 428112 },
+								"smallest": { "raw": 648257, "gzip": 165107, "brotli": 140714 },
+								"dynamic": { "raw": 1448134, "gzip": 284231, "brotli": 233039 },
+								"valibot": { "raw": 1048088, "gzip": 183770, "brotli": 147059 },
+								"zod": { "raw": 1153017, "gzip": 203717, "brotli": 165537 },
+								"zodMini": { "raw": 1044327, "gzip": 189302, "brotli": 153218 }
 							}
 						}
 					]
@@ -1032,9 +384,7 @@
 		},
 		{
 			"id": "messages",
-			"options": {
-				"messages": 0.35
-			},
+			"options": { "messages": 0.35 },
 			"runs": [
 				{
 					"seed": 1,
@@ -1044,36 +394,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 4449,
-									"gzip": 1949,
-									"brotli": 1793
-								},
-								"smallest": {
-									"raw": 3367,
-									"gzip": 1601,
-									"brotli": 1461
-								},
-								"dynamic": {
-									"raw": 291463,
-									"gzip": 97266,
-									"brotli": 84787
-								},
-								"valibot": {
-									"raw": 4960,
-									"gzip": 1903,
-									"brotli": 1730
-								},
-								"zod": {
-									"raw": 85226,
-									"gzip": 25153,
-									"brotli": 22411
-								},
-								"zodMini": {
-									"raw": 18096,
-									"gzip": 6295,
-									"brotli": 5773
-								}
+								"default": { "raw": 4449, "gzip": 1949, "brotli": 1792 },
+								"smallest": { "raw": 3367, "gzip": 1601, "brotli": 1448 },
+								"dynamic": { "raw": 291467, "gzip": 97267, "brotli": 84828 },
+								"valibot": { "raw": 4960, "gzip": 1903, "brotli": 1730 },
+								"zod": { "raw": 85226, "gzip": 25153, "brotli": 22411 },
+								"zodMini": { "raw": 18096, "gzip": 6295, "brotli": 5773 }
 							}
 						},
 						{
@@ -1081,36 +407,12 @@
 							"messages": 10,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 20223,
-									"gzip": 5040,
-									"brotli": 4512
-								},
-								"smallest": {
-									"raw": 8485,
-									"gzip": 3653,
-									"brotli": 3340
-								},
-								"dynamic": {
-									"raw": 293893,
-									"gzip": 98091,
-									"brotli": 85478
-								},
-								"valibot": {
-									"raw": 10911,
-									"gzip": 3602,
-									"brotli": 3247
-								},
-								"zod": {
-									"raw": 96262,
-									"gzip": 28142,
-									"brotli": 24922
-								},
-								"zodMini": {
-									"raw": 32751,
-									"gzip": 10271,
-									"brotli": 9323
-								}
+								"default": { "raw": 20223, "gzip": 5040, "brotli": 4512 },
+								"smallest": { "raw": 8274, "gzip": 3637, "brotli": 3315 },
+								"dynamic": { "raw": 293897, "gzip": 98091, "brotli": 85498 },
+								"valibot": { "raw": 10911, "gzip": 3602, "brotli": 3247 },
+								"zod": { "raw": 96262, "gzip": 28142, "brotli": 24922 },
+								"zodMini": { "raw": 32751, "gzip": 10271, "brotli": 9323 }
 							}
 						},
 						{
@@ -1118,36 +420,12 @@
 							"messages": 94,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 89960,
-									"gzip": 15033,
-									"brotli": 12620
-								},
-								"smallest": {
-									"raw": 25699,
-									"gzip": 7086,
-									"brotli": 6406
-								},
-								"dynamic": {
-									"raw": 308811,
-									"gzip": 100999,
-									"brotli": 88290
-								},
-								"valibot": {
-									"raw": 23055,
-									"gzip": 6430,
-									"brotli": 5801
-								},
-								"zod": {
-									"raw": 109507,
-									"gzip": 30879,
-									"brotli": 27446
-								},
-								"zodMini": {
-									"raw": 45969,
-									"gzip": 13188,
-									"brotli": 11966
-								}
+								"default": { "raw": 89960, "gzip": 15034, "brotli": 12616 },
+								"smallest": { "raw": 18960, "gzip": 6700, "brotli": 6101 },
+								"dynamic": { "raw": 308815, "gzip": 101001, "brotli": 88398 },
+								"valibot": { "raw": 23055, "gzip": 6430, "brotli": 5801 },
+								"zod": { "raw": 109507, "gzip": 30879, "brotli": 27446 },
+								"zodMini": { "raw": 45969, "gzip": 13188, "brotli": 11966 }
 							}
 						},
 						{
@@ -1155,36 +433,12 @@
 							"messages": 174,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 168219,
-									"gzip": 26567,
-									"brotli": 20919
-								},
-								"smallest": {
-									"raw": 41146,
-									"gzip": 10160,
-									"brotli": 9140
-								},
-								"dynamic": {
-									"raw": 325906,
-									"gzip": 103881,
-									"brotli": 90912
-								},
-								"valibot": {
-									"raw": 36998,
-									"gzip": 9219,
-									"brotli": 8273
-								},
-								"zod": {
-									"raw": 124855,
-									"gzip": 33587,
-									"brotli": 29937
-								},
-								"zodMini": {
-									"raw": 60728,
-									"gzip": 16066,
-									"brotli": 14534
-								}
+								"default": { "raw": 168219, "gzip": 26567, "brotli": 20919 },
+								"smallest": { "raw": 29774, "gzip": 9516, "brotli": 8601 },
+								"dynamic": { "raw": 325910, "gzip": 103877, "brotli": 90846 },
+								"valibot": { "raw": 36998, "gzip": 9219, "brotli": 8273 },
+								"zod": { "raw": 124855, "gzip": 33587, "brotli": 29937 },
+								"zodMini": { "raw": 60728, "gzip": 16066, "brotli": 14534 }
 							}
 						},
 						{
@@ -1192,36 +446,12 @@
 							"messages": 438,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 372830,
-									"gzip": 53132,
-									"brotli": 39325
-								},
-								"smallest": {
-									"raw": 80606,
-									"gzip": 18035,
-									"brotli": 16028
-								},
-								"dynamic": {
-									"raw": 376501,
-									"gzip": 111716,
-									"brotli": 97471
-								},
-								"valibot": {
-									"raw": 77930,
-									"gzip": 16557,
-									"brotli": 14535
-								},
-								"zod": {
-									"raw": 171478,
-									"gzip": 40943,
-									"brotli": 36270
-								},
-								"zodMini": {
-									"raw": 105917,
-									"gzip": 23756,
-									"brotli": 21035
-								}
+								"default": { "raw": 372830, "gzip": 53125, "brotli": 39304 },
+								"smallest": { "raw": 59278, "gzip": 16627, "brotli": 14913 },
+								"dynamic": { "raw": 376505, "gzip": 111720, "brotli": 97524 },
+								"valibot": { "raw": 77930, "gzip": 16557, "brotli": 14535 },
+								"zod": { "raw": 171478, "gzip": 40943, "brotli": 36270 },
+								"zodMini": { "raw": 105917, "gzip": 23756, "brotli": 21035 }
 							}
 						},
 						{
@@ -1229,36 +459,12 @@
 							"messages": 911,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 719927,
-									"gzip": 95726,
-									"brotli": 68602
-								},
-								"smallest": {
-									"raw": 152759,
-									"gzip": 31057,
-									"brotli": 27154
-								},
-								"dynamic": {
-									"raw": 464389,
-									"gzip": 125067,
-									"brotli": 108200
-								},
-								"valibot": {
-									"raw": 148575,
-									"gzip": 28937,
-									"brotli": 24810
-								},
-								"zod": {
-									"raw": 250345,
-									"gzip": 53548,
-									"brotli": 46584
-								},
-								"zodMini": {
-									"raw": 182385,
-									"gzip": 36488,
-									"brotli": 31563
-								}
+								"default": { "raw": 719927, "gzip": 95726, "brotli": 68602 },
+								"smallest": { "raw": 109549, "gzip": 28383, "brotli": 24998 },
+								"dynamic": { "raw": 464393, "gzip": 125068, "brotli": 108135 },
+								"valibot": { "raw": 148575, "gzip": 28937, "brotli": 24810 },
+								"zod": { "raw": 250345, "gzip": 53548, "brotli": 46584 },
+								"zodMini": { "raw": 182385, "gzip": 36488, "brotli": 31563 }
 							}
 						},
 						{
@@ -1266,36 +472,12 @@
 							"messages": 1835,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 1415628,
-									"gzip": 182678,
-									"brotli": 125765
-								},
-								"smallest": {
-									"raw": 286389,
-									"gzip": 58398,
-									"brotli": 48957
-								},
-								"dynamic": {
-									"raw": 642262,
-									"gzip": 152313,
-									"brotli": 128442
-								},
-								"valibot": {
-									"raw": 292882,
-									"gzip": 54132,
-									"brotli": 44240
-								},
-								"zod": {
-									"raw": 414151,
-									"gzip": 79249,
-									"brotli": 66261
-								},
-								"zodMini": {
-									"raw": 341297,
-									"gzip": 62792,
-									"brotli": 51820
-								}
+								"default": { "raw": 1415628, "gzip": 182678, "brotli": 125765 },
+								"smallest": { "raw": 213719, "gzip": 53190, "brotli": 45541 },
+								"dynamic": { "raw": 642266, "gzip": 152318, "brotli": 128353 },
+								"valibot": { "raw": 292882, "gzip": 54132, "brotli": 44240 },
+								"zod": { "raw": 414151, "gzip": 79249, "brotli": 66261 },
+								"zodMini": { "raw": 341297, "gzip": 62792, "brotli": 51820 }
 							}
 						},
 						{
@@ -1303,36 +485,12 @@
 							"messages": 4499,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 3389324,
-									"gzip": 425981,
-									"brotli": 282577
-								},
-								"smallest": {
-									"raw": 682678,
-									"gzip": 132746,
-									"brotli": 107059
-								},
-								"dynamic": {
-									"raw": 1168916,
-									"gzip": 231943,
-									"brotli": 185511
-								},
-								"valibot": {
-									"raw": 721079,
-									"gzip": 127010,
-									"brotli": 98651
-								},
-								"zod": {
-									"raw": 893573,
-									"gzip": 152999,
-									"brotli": 120728
-								},
-								"zodMini": {
-									"raw": 806967,
-									"gzip": 138149,
-									"brotli": 107887
-								}
+								"default": { "raw": 3389324, "gzip": 425981, "brotli": 282577 },
+								"smallest": { "raw": 510592, "gzip": 120179, "brotli": 98147 },
+								"dynamic": { "raw": 1168922, "gzip": 231962, "brotli": 185486 },
+								"valibot": { "raw": 721079, "gzip": 127010, "brotli": 98651 },
+								"zod": { "raw": 893573, "gzip": 152999, "brotli": 120728 },
+								"zodMini": { "raw": 806967, "gzip": 138149, "brotli": 107887 }
 							}
 						},
 						{
@@ -1340,36 +498,16 @@
 							"messages": 9050,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 6645786,
-									"gzip": 831934,
-									"brotli": 539623
-								},
+								"default": { "raw": 6645786, "gzip": 831934, "brotli": 539623 },
 								"smallest": {
-									"raw": 1344559,
-									"gzip": 257871,
-									"brotli": 203264
+									"raw": 1001190,
+									"gzip": 231651,
+									"brotli": 186747
 								},
-								"dynamic": {
-									"raw": 2061881,
-									"gzip": 365565,
-									"brotli": 278592
-								},
-								"valibot": {
-									"raw": 1447834,
-									"gzip": 251042,
-									"brotli": 189528
-								},
-								"zod": {
-									"raw": 1712416,
-									"gzip": 278417,
-									"brotli": 212727
-								},
-								"zodMini": {
-									"raw": 1602757,
-									"gzip": 265515,
-									"brotli": 202171
-								}
+								"dynamic": { "raw": 2061885, "gzip": 365589, "brotli": 278449 },
+								"valibot": { "raw": 1447834, "gzip": 251042, "brotli": 189528 },
+								"zod": { "raw": 1712416, "gzip": 278417, "brotli": 212727 },
+								"zodMini": { "raw": 1602757, "gzip": 265515, "brotli": 202171 }
 							}
 						}
 					]
@@ -1382,36 +520,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 4603,
-									"gzip": 1834,
-									"brotli": 1672
-								},
-								"smallest": {
-									"raw": 3556,
-									"gzip": 1539,
-									"brotli": 1388
-								},
-								"dynamic": {
-									"raw": 291528,
-									"gzip": 97298,
-									"brotli": 84902
-								},
-								"valibot": {
-									"raw": 5883,
-									"gzip": 2034,
-									"brotli": 1855
-								},
-								"zod": {
-									"raw": 90036,
-									"gzip": 26326,
-									"brotli": 23391
-								},
-								"zodMini": {
-									"raw": 19542,
-									"gzip": 6637,
-									"brotli": 6039
-								}
+								"default": { "raw": 4603, "gzip": 1834, "brotli": 1672 },
+								"smallest": { "raw": 3556, "gzip": 1539, "brotli": 1389 },
+								"dynamic": { "raw": 291532, "gzip": 97300, "brotli": 84862 },
+								"valibot": { "raw": 5883, "gzip": 2034, "brotli": 1855 },
+								"zod": { "raw": 90036, "gzip": 26326, "brotli": 23391 },
+								"zodMini": { "raw": 19542, "gzip": 6637, "brotli": 6039 }
 							}
 						},
 						{
@@ -1419,36 +533,12 @@
 							"messages": 19,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 24258,
-									"gzip": 5831,
-									"brotli": 5231
-								},
-								"smallest": {
-									"raw": 9730,
-									"gzip": 3930,
-									"brotli": 3598
-								},
-								"dynamic": {
-									"raw": 294728,
-									"gzip": 98246,
-									"brotli": 85672
-								},
-								"valibot": {
-									"raw": 11717,
-									"gzip": 3817,
-									"brotli": 3431
-								},
-								"zod": {
-									"raw": 96870,
-									"gzip": 28288,
-									"brotli": 25053
-								},
-								"zodMini": {
-									"raw": 33571,
-									"gzip": 10493,
-									"brotli": 9510
-								}
+								"default": { "raw": 24258, "gzip": 5831, "brotli": 5230 },
+								"smallest": { "raw": 8921, "gzip": 3878, "brotli": 3575 },
+								"dynamic": { "raw": 294732, "gzip": 98246, "brotli": 85715 },
+								"valibot": { "raw": 11717, "gzip": 3817, "brotli": 3431 },
+								"zod": { "raw": 96870, "gzip": 28288, "brotli": 25053 },
+								"zodMini": { "raw": 33571, "gzip": 10493, "brotli": 9510 }
 							}
 						},
 						{
@@ -1456,36 +546,12 @@
 							"messages": 94,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 90398,
-									"gzip": 15478,
-									"brotli": 12857
-								},
-								"smallest": {
-									"raw": 25901,
-									"gzip": 7032,
-									"brotli": 6326
-								},
-								"dynamic": {
-									"raw": 307960,
-									"gzip": 100928,
-									"brotli": 88281
-								},
-								"valibot": {
-									"raw": 22259,
-									"gzip": 6393,
-									"brotli": 5737
-								},
-								"zod": {
-									"raw": 108558,
-									"gzip": 30821,
-									"brotli": 27400
-								},
-								"zodMini": {
-									"raw": 44883,
-									"gzip": 13140,
-									"brotli": 11916
-								}
+								"default": { "raw": 90398, "gzip": 15478, "brotli": 12857 },
+								"smallest": { "raw": 18727, "gzip": 6647, "brotli": 6040 },
+								"dynamic": { "raw": 307964, "gzip": 100926, "brotli": 88266 },
+								"valibot": { "raw": 22259, "gzip": 6393, "brotli": 5737 },
+								"zod": { "raw": 108558, "gzip": 30821, "brotli": 27400 },
+								"zodMini": { "raw": 44883, "gzip": 13140, "brotli": 11916 }
 							}
 						},
 						{
@@ -1493,36 +559,12 @@
 							"messages": 187,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 166354,
-									"gzip": 25589,
-									"brotli": 20192
-								},
-								"smallest": {
-									"raw": 41063,
-									"gzip": 9907,
-									"brotli": 8888
-								},
-								"dynamic": {
-									"raw": 324927,
-									"gzip": 103629,
-									"brotli": 90637
-								},
-								"valibot": {
-									"raw": 35901,
-									"gzip": 9004,
-									"brotli": 8043
-								},
-								"zod": {
-									"raw": 124558,
-									"gzip": 33394,
-									"brotli": 29730
-								},
-								"zodMini": {
-									"raw": 60441,
-									"gzip": 15830,
-									"brotli": 14316
-								}
+								"default": { "raw": 166354, "gzip": 25589, "brotli": 20192 },
+								"smallest": { "raw": 29684, "gzip": 9299, "brotli": 8414 },
+								"dynamic": { "raw": 324931, "gzip": 103633, "brotli": 90659 },
+								"valibot": { "raw": 35901, "gzip": 9004, "brotli": 8043 },
+								"zod": { "raw": 124558, "gzip": 33394, "brotli": 29730 },
+								"zodMini": { "raw": 60441, "gzip": 15830, "brotli": 14316 }
 							}
 						},
 						{
@@ -1530,36 +572,12 @@
 							"messages": 461,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 388945,
-									"gzip": 54296,
-									"brotli": 40339
-								},
-								"smallest": {
-									"raw": 81673,
-									"gzip": 18180,
-									"brotli": 16056
-								},
-								"dynamic": {
-									"raw": 377053,
-									"gzip": 111693,
-									"brotli": 97610
-								},
-								"valibot": {
-									"raw": 78169,
-									"gzip": 16668,
-									"brotli": 14593
-								},
-								"zod": {
-									"raw": 172330,
-									"gzip": 41125,
-									"brotli": 36438
-								},
-								"zodMini": {
-									"raw": 107003,
-									"gzip": 23872,
-									"brotli": 21113
-								}
+								"default": { "raw": 388945, "gzip": 54296, "brotli": 40339 },
+								"smallest": { "raw": 59513, "gzip": 16802, "brotli": 15004 },
+								"dynamic": { "raw": 377057, "gzip": 111693, "brotli": 97583 },
+								"valibot": { "raw": 78169, "gzip": 16668, "brotli": 14593 },
+								"zod": { "raw": 172330, "gzip": 41125, "brotli": 36438 },
+								"zodMini": { "raw": 107003, "gzip": 23872, "brotli": 21113 }
 							}
 						},
 						{
@@ -1567,36 +585,12 @@
 							"messages": 936,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 736880,
-									"gzip": 97961,
-									"brotli": 70579
-								},
-								"smallest": {
-									"raw": 153944,
-									"gzip": 31295,
-									"brotli": 27334
-								},
-								"dynamic": {
-									"raw": 464410,
-									"gzip": 125278,
-									"brotli": 108475
-								},
-								"valibot": {
-									"raw": 148545,
-									"gzip": 29355,
-									"brotli": 25079
-								},
-								"zod": {
-									"raw": 251339,
-									"gzip": 53857,
-									"brotli": 46818
-								},
-								"zodMini": {
-									"raw": 183782,
-									"gzip": 36867,
-									"brotli": 31775
-								}
+								"default": { "raw": 736880, "gzip": 97961, "brotli": 70579 },
+								"smallest": { "raw": 110873, "gzip": 28705, "brotli": 25203 },
+								"dynamic": { "raw": 464414, "gzip": 125286, "brotli": 108400 },
+								"valibot": { "raw": 148545, "gzip": 29355, "brotli": 25079 },
+								"zod": { "raw": 251339, "gzip": 53857, "brotli": 46818 },
+								"zodMini": { "raw": 183782, "gzip": 36867, "brotli": 31775 }
 							}
 						},
 						{
@@ -1604,36 +598,12 @@
 							"messages": 1871,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 1424361,
-									"gzip": 183293,
-									"brotli": 126719
-								},
-								"smallest": {
-									"raw": 290121,
-									"gzip": 57359,
-									"brotli": 47726
-								},
-								"dynamic": {
-									"raw": 641133,
-									"gzip": 151975,
-									"brotli": 128224
-								},
-								"valibot": {
-									"raw": 291440,
-									"gzip": 54019,
-									"brotli": 44123
-								},
-								"zod": {
-									"raw": 412131,
-									"gzip": 78932,
-									"brotli": 66076
-								},
-								"zodMini": {
-									"raw": 340326,
-									"gzip": 62567,
-									"brotli": 51641
-								}
+								"default": { "raw": 1424361, "gzip": 183293, "brotli": 126719 },
+								"smallest": { "raw": 211058, "gzip": 51733, "brotli": 44162 },
+								"dynamic": { "raw": 641137, "gzip": 151970, "brotli": 128212 },
+								"valibot": { "raw": 291440, "gzip": 54019, "brotli": 44123 },
+								"zod": { "raw": 412131, "gzip": 78932, "brotli": 66076 },
+								"zodMini": { "raw": 340326, "gzip": 62567, "brotli": 51641 }
 							}
 						},
 						{
@@ -1641,36 +611,12 @@
 							"messages": 4614,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 3432999,
-									"gzip": 432726,
-									"brotli": 286935
-								},
-								"smallest": {
-									"raw": 690472,
-									"gzip": 132377,
-									"brotli": 106386
-								},
-								"dynamic": {
-									"raw": 1174169,
-									"gzip": 232475,
-									"brotli": 185906
-								},
-								"valibot": {
-									"raw": 722902,
-									"gzip": 127672,
-									"brotli": 98950
-								},
-								"zod": {
-									"raw": 896296,
-									"gzip": 153598,
-									"brotli": 121178
-								},
-								"zodMini": {
-									"raw": 810715,
-									"gzip": 138790,
-									"brotli": 108280
-								}
+								"default": { "raw": 3432999, "gzip": 432726, "brotli": 286935 },
+								"smallest": { "raw": 511123, "gzip": 119343, "brotli": 97329 },
+								"dynamic": { "raw": 1174175, "gzip": 232473, "brotli": 185918 },
+								"valibot": { "raw": 722902, "gzip": 127672, "brotli": 98950 },
+								"zod": { "raw": 896296, "gzip": 153598, "brotli": 121178 },
+								"zodMini": { "raw": 810715, "gzip": 138790, "brotli": 108280 }
 							}
 						},
 						{
@@ -1678,36 +624,16 @@
 							"messages": 9101,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 6725351,
-									"gzip": 841177,
-									"brotli": 547191
-								},
+								"default": { "raw": 6725351, "gzip": 841177, "brotli": 547191 },
 								"smallest": {
-									"raw": 1347827,
-									"gzip": 256707,
-									"brotli": 202632
+									"raw": 1001493,
+									"gzip": 230852,
+									"brotli": 185991
 								},
-								"dynamic": {
-									"raw": 2063035,
-									"gzip": 365481,
-									"brotli": 278617
-								},
-								"valibot": {
-									"raw": 1446652,
-									"gzip": 251389,
-									"brotli": 189645
-								},
-								"zod": {
-									"raw": 1711428,
-									"gzip": 278963,
-									"brotli": 213208
-								},
-								"zodMini": {
-									"raw": 1602364,
-									"gzip": 265839,
-									"brotli": 202554
-								}
+								"dynamic": { "raw": 2063039, "gzip": 365452, "brotli": 278937 },
+								"valibot": { "raw": 1446652, "gzip": 251389, "brotli": 189645 },
+								"zod": { "raw": 1711428, "gzip": 278963, "brotli": 213208 },
+								"zodMini": { "raw": 1602364, "gzip": 265839, "brotli": 202554 }
 							}
 						}
 					]
@@ -1720,36 +646,12 @@
 							"messages": 2,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 4055,
-									"gzip": 1692,
-									"brotli": 1538
-								},
-								"smallest": {
-									"raw": 3326,
-									"gzip": 1471,
-									"brotli": 1319
-								},
-								"dynamic": {
-									"raw": 291600,
-									"gzip": 97318,
-									"brotli": 84888
-								},
-								"valibot": {
-									"raw": 4752,
-									"gzip": 1824,
-									"brotli": 1673
-								},
-								"zod": {
-									"raw": 85085,
-									"gzip": 25120,
-									"brotli": 22413
-								},
-								"zodMini": {
-									"raw": 15899,
-									"gzip": 5555,
-									"brotli": 5093
-								}
+								"default": { "raw": 4055, "gzip": 1692, "brotli": 1538 },
+								"smallest": { "raw": 3326, "gzip": 1470, "brotli": 1327 },
+								"dynamic": { "raw": 291604, "gzip": 97319, "brotli": 84871 },
+								"valibot": { "raw": 4752, "gzip": 1824, "brotli": 1673 },
+								"zod": { "raw": 85085, "gzip": 25120, "brotli": 22413 },
+								"zodMini": { "raw": 15899, "gzip": 5555, "brotli": 5093 }
 							}
 						},
 						{
@@ -1757,36 +659,12 @@
 							"messages": 21,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 24132,
-									"gzip": 5710,
-									"brotli": 5087
-								},
-								"smallest": {
-									"raw": 9892,
-									"gzip": 3934,
-									"brotli": 3581
-								},
-								"dynamic": {
-									"raw": 294805,
-									"gzip": 98272,
-									"brotli": 85638
-								},
-								"valibot": {
-									"raw": 11500,
-									"gzip": 3780,
-									"brotli": 3386
-								},
-								"zod": {
-									"raw": 97122,
-									"gzip": 28331,
-									"brotli": 25116
-								},
-								"zodMini": {
-									"raw": 33558,
-									"gzip": 10461,
-									"brotli": 9463
-								}
+								"default": { "raw": 24132, "gzip": 5710, "brotli": 5088 },
+								"smallest": { "raw": 8914, "gzip": 3872, "brotli": 3528 },
+								"dynamic": { "raw": 294809, "gzip": 98271, "brotli": 85733 },
+								"valibot": { "raw": 11500, "gzip": 3780, "brotli": 3386 },
+								"zod": { "raw": 97122, "gzip": 28331, "brotli": 25116 },
+								"zodMini": { "raw": 33558, "gzip": 10461, "brotli": 9463 }
 							}
 						},
 						{
@@ -1794,36 +672,12 @@
 							"messages": 96,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 84180,
-									"gzip": 14225,
-									"brotli": 12001
-								},
-								"smallest": {
-									"raw": 23859,
-									"gzip": 6928,
-									"brotli": 6253
-								},
-								"dynamic": {
-									"raw": 308616,
-									"gzip": 100941,
-									"brotli": 88253
-								},
-								"valibot": {
-									"raw": 22871,
-									"gzip": 6422,
-									"brotli": 5776
-								},
-								"zod": {
-									"raw": 109113,
-									"gzip": 30840,
-									"brotli": 27366
-								},
-								"zodMini": {
-									"raw": 45541,
-									"gzip": 13168,
-									"brotli": 11936
-								}
+								"default": { "raw": 84180, "gzip": 14225, "brotli": 12001 },
+								"smallest": { "raw": 18731, "gzip": 6643, "brotli": 6055 },
+								"dynamic": { "raw": 308620, "gzip": 100943, "brotli": 88345 },
+								"valibot": { "raw": 22871, "gzip": 6422, "brotli": 5776 },
+								"zod": { "raw": 109113, "gzip": 30840, "brotli": 27366 },
+								"zodMini": { "raw": 45541, "gzip": 13168, "brotli": 11936 }
 							}
 						},
 						{
@@ -1831,36 +685,12 @@
 							"messages": 193,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 163969,
-									"gzip": 25095,
-									"brotli": 19945
-								},
-								"smallest": {
-									"raw": 39911,
-									"gzip": 9987,
-									"brotli": 9007
-								},
-								"dynamic": {
-									"raw": 326392,
-									"gzip": 103758,
-									"brotli": 90857
-								},
-								"valibot": {
-									"raw": 37197,
-									"gzip": 9117,
-									"brotli": 8173
-								},
-								"zod": {
-									"raw": 125245,
-									"gzip": 33504,
-									"brotli": 29826
-								},
-								"zodMini": {
-									"raw": 61327,
-									"gzip": 15951,
-									"brotli": 14412
-								}
+								"default": { "raw": 163969, "gzip": 25095, "brotli": 19945 },
+								"smallest": { "raw": 29863, "gzip": 9393, "brotli": 8518 },
+								"dynamic": { "raw": 326396, "gzip": 103762, "brotli": 90823 },
+								"valibot": { "raw": 37197, "gzip": 9117, "brotli": 8173 },
+								"zod": { "raw": 125245, "gzip": 33504, "brotli": 29826 },
+								"zodMini": { "raw": 61327, "gzip": 15951, "brotli": 14412 }
 							}
 						},
 						{
@@ -1868,36 +698,12 @@
 							"messages": 473,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 380724,
-									"gzip": 53296,
-									"brotli": 39807
-								},
-								"smallest": {
-									"raw": 82947,
-									"gzip": 18355,
-									"brotli": 16231
-								},
-								"dynamic": {
-									"raw": 378539,
-									"gzip": 111740,
-									"brotli": 97697
-								},
-								"valibot": {
-									"raw": 79325,
-									"gzip": 16707,
-									"brotli": 14712
-								},
-								"zod": {
-									"raw": 172912,
-									"gzip": 41145,
-									"brotli": 36411
-								},
-								"zodMini": {
-									"raw": 107549,
-									"gzip": 23843,
-									"brotli": 21174
-								}
+								"default": { "raw": 380724, "gzip": 53296, "brotli": 39807 },
+								"smallest": { "raw": 59823, "gzip": 16829, "brotli": 15086 },
+								"dynamic": { "raw": 378543, "gzip": 111749, "brotli": 97662 },
+								"valibot": { "raw": 79325, "gzip": 16707, "brotli": 14712 },
+								"zod": { "raw": 172912, "gzip": 41145, "brotli": 36411 },
+								"zodMini": { "raw": 107549, "gzip": 23843, "brotli": 21174 }
 							}
 						},
 						{
@@ -1905,36 +711,12 @@
 							"messages": 919,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 745068,
-									"gzip": 99584,
-									"brotli": 71461
-								},
-								"smallest": {
-									"raw": 150783,
-									"gzip": 31271,
-									"brotli": 27432
-								},
-								"dynamic": {
-									"raw": 465640,
-									"gzip": 125381,
-									"brotli": 108608
-								},
-								"valibot": {
-									"raw": 149860,
-									"gzip": 29299,
-									"brotli": 25150
-								},
-								"zod": {
-									"raw": 251986,
-									"gzip": 53890,
-									"brotli": 46871
-								},
-								"zodMini": {
-									"raw": 184117,
-									"gzip": 36845,
-									"brotli": 31918
-								}
+								"default": { "raw": 745068, "gzip": 99584, "brotli": 71461 },
+								"smallest": { "raw": 110034, "gzip": 28673, "brotli": 25301 },
+								"dynamic": { "raw": 465644, "gzip": 125388, "brotli": 108658 },
+								"valibot": { "raw": 149860, "gzip": 29299, "brotli": 25150 },
+								"zod": { "raw": 251986, "gzip": 53890, "brotli": 46871 },
+								"zodMini": { "raw": 184117, "gzip": 36845, "brotli": 31918 }
 							}
 						},
 						{
@@ -1942,36 +724,12 @@
 							"messages": 1833,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 1444301,
-									"gzip": 186596,
-									"brotli": 128990
-								},
-								"smallest": {
-									"raw": 285670,
-									"gzip": 57363,
-									"brotli": 47945
-								},
-								"dynamic": {
-									"raw": 644364,
-									"gzip": 152362,
-									"brotli": 128651
-								},
-								"valibot": {
-									"raw": 295204,
-									"gzip": 54396,
-									"brotli": 44584
-								},
-								"zod": {
-									"raw": 416227,
-									"gzip": 79363,
-									"brotli": 66533
-								},
-								"zodMini": {
-									"raw": 344107,
-									"gzip": 62903,
-									"brotli": 52095
-								}
+								"default": { "raw": 1444301, "gzip": 186596, "brotli": 128990 },
+								"smallest": { "raw": 211887, "gzip": 52082, "brotli": 44624 },
+								"dynamic": { "raw": 644368, "gzip": 152355, "brotli": 128710 },
+								"valibot": { "raw": 295204, "gzip": 54396, "brotli": 44584 },
+								"zod": { "raw": 416227, "gzip": 79363, "brotli": 66533 },
+								"zodMini": { "raw": 344107, "gzip": 62903, "brotli": 52095 }
 							}
 						},
 						{
@@ -1979,36 +737,12 @@
 							"messages": 4655,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 3515121,
-									"gzip": 443536,
-									"brotli": 295436
-								},
-								"smallest": {
-									"raw": 697814,
-									"gzip": 133747,
-									"brotli": 107790
-								},
-								"dynamic": {
-									"raw": 1187804,
-									"gzip": 234392,
-									"brotli": 187246
-								},
-								"valibot": {
-									"raw": 735135,
-									"gzip": 129569,
-									"brotli": 100470
-								},
-								"zod": {
-									"raw": 910909,
-									"gzip": 155417,
-									"brotli": 122419
-								},
-								"zodMini": {
-									"raw": 825239,
-									"gzip": 140385,
-									"brotli": 109730
-								}
+								"default": { "raw": 3515121, "gzip": 443536, "brotli": 295436 },
+								"smallest": { "raw": 516555, "gzip": 121014, "brotli": 98642 },
+								"dynamic": { "raw": 1187810, "gzip": 234406, "brotli": 187248 },
+								"valibot": { "raw": 735135, "gzip": 129569, "brotli": 100470 },
+								"zod": { "raw": 910909, "gzip": 155417, "brotli": 122419 },
+								"zodMini": { "raw": 825239, "gzip": 140385, "brotli": 109730 }
 							}
 						},
 						{
@@ -2016,36 +750,16 @@
 							"messages": 9215,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 6785421,
-									"gzip": 849369,
-									"brotli": 553177
-								},
+								"default": { "raw": 6785421, "gzip": 849369, "brotli": 553177 },
 								"smallest": {
-									"raw": 1349292,
-									"gzip": 258423,
-									"brotli": 203403
+									"raw": 1009050,
+									"gzip": 232778,
+									"brotli": 187379
 								},
-								"dynamic": {
-									"raw": 2085974,
-									"gzip": 367847,
-									"brotli": 280133
-								},
-								"valibot": {
-									"raw": 1465586,
-									"gzip": 253647,
-									"brotli": 191093
-								},
-								"zod": {
-									"raw": 1733294,
-									"gzip": 280889,
-									"brotli": 214510
-								},
-								"zodMini": {
-									"raw": 1624604,
-									"gzip": 267750,
-									"brotli": 203911
-								}
+								"dynamic": { "raw": 2085978, "gzip": 367850, "brotli": 280265 },
+								"valibot": { "raw": 1465586, "gzip": 253647, "brotli": 191093 },
+								"zod": { "raw": 1733294, "gzip": 280889, "brotli": 214510 },
+								"zodMini": { "raw": 1624604, "gzip": 267750, "brotli": 203911 }
 							}
 						}
 					]
@@ -2054,9 +768,7 @@
 		},
 		{
 			"id": "narrows",
-			"options": {
-				"narrows": 0.25
-			},
+			"options": { "narrows": 0.25 },
 			"runs": [
 				{
 					"seed": 1,
@@ -2066,36 +778,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 4449,
-									"gzip": 1949,
-									"brotli": 1793
-								},
-								"smallest": {
-									"raw": 3367,
-									"gzip": 1601,
-									"brotli": 1461
-								},
-								"dynamic": {
-									"raw": 291463,
-									"gzip": 97266,
-									"brotli": 84787
-								},
-								"valibot": {
-									"raw": 4960,
-									"gzip": 1903,
-									"brotli": 1730
-								},
-								"zod": {
-									"raw": 85226,
-									"gzip": 25153,
-									"brotli": 22411
-								},
-								"zodMini": {
-									"raw": 18096,
-									"gzip": 6295,
-									"brotli": 5773
-								}
+								"default": { "raw": 4449, "gzip": 1949, "brotli": 1792 },
+								"smallest": { "raw": 3367, "gzip": 1601, "brotli": 1448 },
+								"dynamic": { "raw": 291467, "gzip": 97267, "brotli": 84828 },
+								"valibot": { "raw": 4960, "gzip": 1903, "brotli": 1730 },
+								"zod": { "raw": 85226, "gzip": 25153, "brotli": 22411 },
+								"zodMini": { "raw": 18096, "gzip": 6295, "brotli": 5773 }
 							}
 						},
 						{
@@ -2103,36 +791,12 @@
 							"messages": 0,
 							"narrows": 4,
 							"sizes": {
-								"default": {
-									"raw": 23567,
-									"gzip": 6407,
-									"brotli": 5804
-								},
-								"smallest": {
-									"raw": 12693,
-									"gzip": 5089,
-									"brotli": 4656
-								},
-								"dynamic": {
-									"raw": 293662,
-									"gzip": 98067,
-									"brotli": 85583
-								},
-								"valibot": {
-									"raw": 10882,
-									"gzip": 3603,
-									"brotli": 3221
-								},
-								"zod": {
-									"raw": 95918,
-									"gzip": 28110,
-									"brotli": 24890
-								},
-								"zodMini": {
-									"raw": 33047,
-									"gzip": 10423,
-									"brotli": 9417
-								}
+								"default": { "raw": 23112, "gzip": 6270, "brotli": 5718 },
+								"smallest": { "raw": 8439, "gzip": 3724, "brotli": 3399 },
+								"dynamic": { "raw": 293666, "gzip": 98067, "brotli": 85555 },
+								"valibot": { "raw": 10882, "gzip": 3603, "brotli": 3221 },
+								"zod": { "raw": 95918, "gzip": 28110, "brotli": 24890 },
+								"zodMini": { "raw": 33047, "gzip": 10423, "brotli": 9417 }
 							}
 						},
 						{
@@ -2140,36 +804,12 @@
 							"messages": 0,
 							"narrows": 28,
 							"sizes": {
-								"default": {
-									"raw": 83332,
-									"gzip": 15715,
-									"brotli": 13217
-								},
-								"smallest": {
-									"raw": 24636,
-									"gzip": 8413,
-									"brotli": 7639
-								},
-								"dynamic": {
-									"raw": 305395,
-									"gzip": 100606,
-									"brotli": 87888
-								},
-								"valibot": {
-									"raw": 21038,
-									"gzip": 6093,
-									"brotli": 5517
-								},
-								"zod": {
-									"raw": 106149,
-									"gzip": 30470,
-									"brotli": 27026
-								},
-								"zodMini": {
-									"raw": 43148,
-									"gzip": 12976,
-									"brotli": 11771
-								}
+								"default": { "raw": 80117, "gzip": 14963, "brotli": 12699 },
+								"smallest": { "raw": 17080, "gzip": 6418, "brotli": 5860 },
+								"dynamic": { "raw": 305397, "gzip": 100600, "brotli": 87834 },
+								"valibot": { "raw": 21036, "gzip": 6091, "brotli": 5518 },
+								"zod": { "raw": 106147, "gzip": 30468, "brotli": 27016 },
+								"zodMini": { "raw": 43146, "gzip": 12974, "brotli": 11760 }
 							}
 						},
 						{
@@ -2177,36 +817,12 @@
 							"messages": 0,
 							"narrows": 58,
 							"sizes": {
-								"default": {
-									"raw": 156652,
-									"gzip": 26622,
-									"brotli": 20971
-								},
-								"smallest": {
-									"raw": 38206,
-									"gzip": 11853,
-									"brotli": 10686
-								},
-								"dynamic": {
-									"raw": 319910,
-									"gzip": 103188,
-									"brotli": 90259
-								},
-								"valibot": {
-									"raw": 33232,
-									"gzip": 8611,
-									"brotli": 7738
-								},
-								"zod": {
-									"raw": 118801,
-									"gzip": 32919,
-									"brotli": 29256
-								},
-								"zodMini": {
-									"raw": 55086,
-									"gzip": 15500,
-									"brotli": 14036
-								}
+								"default": { "raw": 149895, "gzip": 25226, "brotli": 19994 },
+								"smallest": { "raw": 26304, "gzip": 8969, "brotli": 8142 },
+								"dynamic": { "raw": 319912, "gzip": 103187, "brotli": 90387 },
+								"valibot": { "raw": 33230, "gzip": 8609, "brotli": 7735 },
+								"zod": { "raw": 118799, "gzip": 32918, "brotli": 29253 },
+								"zodMini": { "raw": 55084, "gzip": 15498, "brotli": 13997 }
 							}
 						},
 						{
@@ -2214,36 +830,12 @@
 							"messages": 0,
 							"narrows": 124,
 							"sizes": {
-								"default": {
-									"raw": 332394,
-									"gzip": 51623,
-									"brotli": 38052
-								},
-								"smallest": {
-									"raw": 71478,
-									"gzip": 20221,
-									"brotli": 17994
-								},
-								"dynamic": {
-									"raw": 358786,
-									"gzip": 109630,
-									"brotli": 95833
-								},
-								"valibot": {
-									"raw": 66382,
-									"gzip": 14743,
-									"brotli": 13023
-								},
-								"zod": {
-									"raw": 152868,
-									"gzip": 38912,
-									"brotli": 34474
-								},
-								"zodMini": {
-									"raw": 87420,
-									"gzip": 21650,
-									"brotli": 19250
-								}
+								"default": { "raw": 316473, "gzip": 47956, "brotli": 35514 },
+								"smallest": { "raw": 48096, "gzip": 14933, "brotli": 13398 },
+								"dynamic": { "raw": 358786, "gzip": 109624, "brotli": 95748 },
+								"valibot": { "raw": 66378, "gzip": 14739, "brotli": 13014 },
+								"zod": { "raw": 152864, "gzip": 38909, "brotli": 34478 },
+								"zodMini": { "raw": 87416, "gzip": 21648, "brotli": 19288 }
 							}
 						},
 						{
@@ -2251,36 +843,12 @@
 							"messages": 0,
 							"narrows": 253,
 							"sizes": {
-								"default": {
-									"raw": 635797,
-									"gzip": 91775,
-									"brotli": 65069
-								},
-								"smallest": {
-									"raw": 129521,
-									"gzip": 33842,
-									"brotli": 29594
-								},
-								"dynamic": {
-									"raw": 426629,
-									"gzip": 120652,
-									"brotli": 105109
-								},
-								"valibot": {
-									"raw": 123695,
-									"gzip": 25100,
-									"brotli": 21700
-								},
-								"zod": {
-									"raw": 211622,
-									"gzip": 49087,
-									"brotli": 43062
-								},
-								"zodMini": {
-									"raw": 143252,
-									"gzip": 31859,
-									"brotli": 28014
-								}
+								"default": { "raw": 605095, "gzip": 85699, "brotli": 60841 },
+								"smallest": { "raw": 90266, "gzip": 25336, "brotli": 22535 },
+								"dynamic": { "raw": 426627, "gzip": 120654, "brotli": 105030 },
+								"valibot": { "raw": 123689, "gzip": 25097, "brotli": 21681 },
+								"zod": { "raw": 211616, "gzip": 49086, "brotli": 43035 },
+								"zodMini": { "raw": 143246, "gzip": 31860, "brotli": 28050 }
 							}
 						},
 						{
@@ -2288,36 +856,12 @@
 							"messages": 0,
 							"narrows": 520,
 							"sizes": {
-								"default": {
-									"raw": 1266550,
-									"gzip": 174397,
-									"brotli": 119199
-								},
-								"smallest": {
-									"raw": 254514,
-									"gzip": 62445,
-									"brotli": 53816
-								},
-								"dynamic": {
-									"raw": 566369,
-									"gzip": 142963,
-									"brotli": 122524
-								},
-								"valibot": {
-									"raw": 242424,
-									"gzip": 46156,
-									"brotli": 38701
-								},
-								"zod": {
-									"raw": 333781,
-									"gzip": 69841,
-									"brotli": 59583
-								},
-								"zodMini": {
-									"raw": 259420,
-									"gzip": 53201,
-									"brotli": 45084
-								}
+								"default": { "raw": 1203693, "gzip": 162754, "brotli": 110388 },
+								"smallest": { "raw": 176136, "gzip": 46619, "brotli": 40619 },
+								"dynamic": { "raw": 566359, "gzip": 142967, "brotli": 122514 },
+								"valibot": { "raw": 242410, "gzip": 46155, "brotli": 38775 },
+								"zod": { "raw": 333767, "gzip": 69841, "brotli": 59633 },
+								"zodMini": { "raw": 259406, "gzip": 53202, "brotli": 45097 }
 							}
 						},
 						{
@@ -2325,36 +869,12 @@
 							"messages": 0,
 							"narrows": 1257,
 							"sizes": {
-								"default": {
-									"raw": 3100373,
-									"gzip": 412602,
-									"brotli": 271841
-								},
-								"smallest": {
-									"raw": 611986,
-									"gzip": 144331,
-									"brotli": 119341
-								},
-								"dynamic": {
-									"raw": 977877,
-									"gzip": 208191,
-									"brotli": 172476
-								},
-								"valibot": {
-									"raw": 592931,
-									"gzip": 107192,
-									"brotli": 85692
-								},
-								"zod": {
-									"raw": 693206,
-									"gzip": 129815,
-									"brotli": 105571
-								},
-								"zodMini": {
-									"raw": 602108,
-									"gzip": 113124,
-									"brotli": 92110
-								}
+								"default": { "raw": 2943699, "gzip": 384225, "brotli": 250219 },
+								"smallest": { "raw": 419414, "gzip": 102778, "brotli": 87390 },
+								"dynamic": { "raw": 977862, "gzip": 208204, "brotli": 172407 },
+								"valibot": { "raw": 592910, "gzip": 107176, "brotli": 85770 },
+								"zod": { "raw": 693185, "gzip": 129797, "brotli": 105546 },
+								"zodMini": { "raw": 602087, "gzip": 113125, "brotli": 92000 }
 							}
 						},
 						{
@@ -2362,36 +882,12 @@
 							"messages": 0,
 							"narrows": 2532,
 							"sizes": {
-								"default": {
-									"raw": 6220966,
-									"gzip": 813899,
-									"brotli": 526982
-								},
-								"smallest": {
-									"raw": 1222776,
-									"gzip": 283159,
-									"brotli": 227814
-								},
-								"dynamic": {
-									"raw": 1675294,
-									"gzip": 318649,
-									"brotli": 253759
-								},
-								"valibot": {
-									"raw": 1187390,
-									"gzip": 210977,
-									"brotli": 165089
-								},
-								"zod": {
-									"raw": 1303982,
-									"gzip": 230956,
-									"brotli": 183711
-								},
-								"zodMini": {
-									"raw": 1184668,
-									"gzip": 217079,
-									"brotli": 171549
-								}
+								"default": { "raw": 5905045, "gzip": 755726, "brotli": 482855 },
+								"smallest": { "raw": 836789, "gzip": 200426, "brotli": 166555 },
+								"dynamic": { "raw": 1675246, "gzip": 318640, "brotli": 253824 },
+								"valibot": { "raw": 1187338, "gzip": 210951, "brotli": 164983 },
+								"zod": { "raw": 1303930, "gzip": 230935, "brotli": 183834 },
+								"zodMini": { "raw": 1184616, "gzip": 217064, "brotli": 171296 }
 							}
 						}
 					]
@@ -2404,36 +900,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 4603,
-									"gzip": 1834,
-									"brotli": 1672
-								},
-								"smallest": {
-									"raw": 3556,
-									"gzip": 1539,
-									"brotli": 1388
-								},
-								"dynamic": {
-									"raw": 291528,
-									"gzip": 97298,
-									"brotli": 84902
-								},
-								"valibot": {
-									"raw": 5883,
-									"gzip": 2034,
-									"brotli": 1855
-								},
-								"zod": {
-									"raw": 90036,
-									"gzip": 26326,
-									"brotli": 23391
-								},
-								"zodMini": {
-									"raw": 19542,
-									"gzip": 6637,
-									"brotli": 6039
-								}
+								"default": { "raw": 4603, "gzip": 1834, "brotli": 1672 },
+								"smallest": { "raw": 3556, "gzip": 1539, "brotli": 1389 },
+								"dynamic": { "raw": 291532, "gzip": 97300, "brotli": 84862 },
+								"valibot": { "raw": 5883, "gzip": 2034, "brotli": 1855 },
+								"zod": { "raw": 90036, "gzip": 26326, "brotli": 23391 },
+								"zodMini": { "raw": 19542, "gzip": 6637, "brotli": 6039 }
 							}
 						},
 						{
@@ -2441,36 +913,12 @@
 							"messages": 0,
 							"narrows": 3,
 							"sizes": {
-								"default": {
-									"raw": 25485,
-									"gzip": 6830,
-									"brotli": 6231
-								},
-								"smallest": {
-									"raw": 12613,
-									"gzip": 5140,
-									"brotli": 4726
-								},
-								"dynamic": {
-									"raw": 293784,
-									"gzip": 98073,
-									"brotli": 85550
-								},
-								"valibot": {
-									"raw": 11238,
-									"gzip": 3659,
-									"brotli": 3284
-								},
-								"zod": {
-									"raw": 96069,
-									"gzip": 28098,
-									"brotli": 24916
-								},
-								"zodMini": {
-									"raw": 33423,
-									"gzip": 10503,
-									"brotli": 9518
-								}
+								"default": { "raw": 25145, "gzip": 6725, "brotli": 6118 },
+								"smallest": { "raw": 8590, "gzip": 3819, "brotli": 3485 },
+								"dynamic": { "raw": 293788, "gzip": 98074, "brotli": 85618 },
+								"valibot": { "raw": 11238, "gzip": 3659, "brotli": 3284 },
+								"zod": { "raw": 96069, "gzip": 28098, "brotli": 24916 },
+								"zodMini": { "raw": 33423, "gzip": 10503, "brotli": 9518 }
 							}
 						},
 						{
@@ -2478,36 +926,12 @@
 							"messages": 0,
 							"narrows": 23,
 							"sizes": {
-								"default": {
-									"raw": 81077,
-									"gzip": 15718,
-									"brotli": 13282
-								},
-								"smallest": {
-									"raw": 23750,
-									"gzip": 8222,
-									"brotli": 7459
-								},
-								"dynamic": {
-									"raw": 304027,
-									"gzip": 100492,
-									"brotli": 87735
-								},
-								"valibot": {
-									"raw": 19911,
-									"gzip": 5987,
-									"brotli": 5371
-								},
-								"zod": {
-									"raw": 105011,
-									"gzip": 30348,
-									"brotli": 26921
-								},
-								"zodMini": {
-									"raw": 41905,
-									"gzip": 12854,
-									"brotli": 11626
-								}
+								"default": { "raw": 78423, "gzip": 15143, "brotli": 12784 },
+								"smallest": { "raw": 16403, "gzip": 6327, "brotli": 5718 },
+								"dynamic": { "raw": 304031, "gzip": 100491, "brotli": 87793 },
+								"valibot": { "raw": 19911, "gzip": 5987, "brotli": 5371 },
+								"zod": { "raw": 105011, "gzip": 30348, "brotli": 26921 },
+								"zodMini": { "raw": 41905, "gzip": 12854, "brotli": 11626 }
 							}
 						},
 						{
@@ -2515,36 +939,12 @@
 							"messages": 0,
 							"narrows": 53,
 							"sizes": {
-								"default": {
-									"raw": 147445,
-									"gzip": 24888,
-									"brotli": 19890
-								},
-								"smallest": {
-									"raw": 36356,
-									"gzip": 11303,
-									"brotli": 10147
-								},
-								"dynamic": {
-									"raw": 317380,
-									"gzip": 102738,
-									"brotli": 89897
-								},
-								"valibot": {
-									"raw": 31019,
-									"gzip": 8210,
-									"brotli": 7332
-								},
-								"zod": {
-									"raw": 116440,
-									"gzip": 32513,
-									"brotli": 28868
-								},
-								"zodMini": {
-									"raw": 52755,
-									"gzip": 15074,
-									"brotli": 13601
-								}
+								"default": { "raw": 141165, "gzip": 23622, "brotli": 18910 },
+								"smallest": { "raw": 24954, "gzip": 8589, "brotli": 7748 },
+								"dynamic": { "raw": 317384, "gzip": 102747, "brotli": 89855 },
+								"valibot": { "raw": 31019, "gzip": 8210, "brotli": 7332 },
+								"zod": { "raw": 116440, "gzip": 32513, "brotli": 28868 },
+								"zodMini": { "raw": 52755, "gzip": 15074, "brotli": 13601 }
 							}
 						},
 						{
@@ -2552,36 +952,12 @@
 							"messages": 0,
 							"narrows": 118,
 							"sizes": {
-								"default": {
-									"raw": 334581,
-									"gzip": 51588,
-									"brotli": 38246
-								},
-								"smallest": {
-									"raw": 69903,
-									"gzip": 19993,
-									"brotli": 17736
-								},
-								"dynamic": {
-									"raw": 357005,
-									"gzip": 109300,
-									"brotli": 95647
-								},
-								"valibot": {
-									"raw": 65000,
-									"gzip": 14600,
-									"brotli": 12775
-								},
-								"zod": {
-									"raw": 151008,
-									"gzip": 38706,
-									"brotli": 34268
-								},
-								"zodMini": {
-									"raw": 85840,
-									"gzip": 21473,
-									"brotli": 19067
-								}
+								"default": { "raw": 320544, "gzip": 48662, "brotli": 36204 },
+								"smallest": { "raw": 49160, "gzip": 15345, "brotli": 13764 },
+								"dynamic": { "raw": 357007, "gzip": 109303, "brotli": 95612 },
+								"valibot": { "raw": 64998, "gzip": 14596, "brotli": 12780 },
+								"zod": { "raw": 151006, "gzip": 38706, "brotli": 34260 },
+								"zodMini": { "raw": 85838, "gzip": 21473, "brotli": 19047 }
 							}
 						},
 						{
@@ -2589,36 +965,12 @@
 							"messages": 0,
 							"narrows": 249,
 							"sizes": {
-								"default": {
-									"raw": 638984,
-									"gzip": 93243,
-									"brotli": 66293
-								},
-								"smallest": {
-									"raw": 129467,
-									"gzip": 34021,
-									"brotli": 29835
-								},
-								"dynamic": {
-									"raw": 424603,
-									"gzip": 120536,
-									"brotli": 104882
-								},
-								"valibot": {
-									"raw": 122245,
-									"gzip": 25266,
-									"brotli": 21699
-								},
-								"zod": {
-									"raw": 209414,
-									"gzip": 49061,
-									"brotli": 42898
-								},
-								"zodMini": {
-									"raw": 141516,
-									"gzip": 31915,
-									"brotli": 27953
-								}
+								"default": { "raw": 608633, "gzip": 87237, "brotli": 62039 },
+								"smallest": { "raw": 90108, "gzip": 25406, "brotli": 22517 },
+								"dynamic": { "raw": 424605, "gzip": 120535, "brotli": 104912 },
+								"valibot": { "raw": 122243, "gzip": 25263, "brotli": 21709 },
+								"zod": { "raw": 209412, "gzip": 49060, "brotli": 42969 },
+								"zodMini": { "raw": 141514, "gzip": 31912, "brotli": 27904 }
 							}
 						},
 						{
@@ -2626,36 +978,12 @@
 							"messages": 0,
 							"narrows": 502,
 							"sizes": {
-								"default": {
-									"raw": 1256904,
-									"gzip": 174942,
-									"brotli": 119994
-								},
-								"smallest": {
-									"raw": 247984,
-									"gzip": 61233,
-									"brotli": 52742
-								},
-								"dynamic": {
-									"raw": 561406,
-									"gzip": 142244,
-									"brotli": 121915
-								},
-								"valibot": {
-									"raw": 238582,
-									"gzip": 45722,
-									"brotli": 38386
-								},
-								"zod": {
-									"raw": 328361,
-									"gzip": 69149,
-									"brotli": 59225
-								},
-								"zodMini": {
-									"raw": 255216,
-									"gzip": 52653,
-									"brotli": 44638
-								}
+								"default": { "raw": 1194838, "gzip": 162794, "brotli": 110805 },
+								"smallest": { "raw": 172264, "gzip": 45128, "brotli": 39221 },
+								"dynamic": { "raw": 561406, "gzip": 142235, "brotli": 122027 },
+								"valibot": { "raw": 238578, "gzip": 45721, "brotli": 38353 },
+								"zod": { "raw": 328357, "gzip": 69137, "brotli": 59241 },
+								"zodMini": { "raw": 255212, "gzip": 52652, "brotli": 44685 }
 							}
 						},
 						{
@@ -2663,36 +991,12 @@
 							"messages": 0,
 							"narrows": 1289,
 							"sizes": {
-								"default": {
-									"raw": 3139493,
-									"gzip": 418406,
-									"brotli": 276103
-								},
-								"smallest": {
-									"raw": 612812,
-									"gzip": 144582,
-									"brotli": 119071
-								},
-								"dynamic": {
-									"raw": 979244,
-									"gzip": 208522,
-									"brotli": 172410
-								},
-								"valibot": {
-									"raw": 592088,
-									"gzip": 107428,
-									"brotli": 85757
-								},
-								"zod": {
-									"raw": 691056,
-									"gzip": 129830,
-									"brotli": 105697
-								},
-								"zodMini": {
-									"raw": 600935,
-									"gzip": 113471,
-									"brotli": 91868
-								}
+								"default": { "raw": 2980661, "gzip": 389457, "brotli": 254402 },
+								"smallest": { "raw": 420224, "gzip": 102466, "brotli": 86724 },
+								"dynamic": { "raw": 979236, "gzip": 208510, "brotli": 172464 },
+								"valibot": { "raw": 592074, "gzip": 107421, "brotli": 85770 },
+								"zod": { "raw": 691042, "gzip": 129828, "brotli": 105679 },
+								"zodMini": { "raw": 600921, "gzip": 113464, "brotli": 91929 }
 							}
 						},
 						{
@@ -2700,36 +1004,12 @@
 							"messages": 0,
 							"narrows": 2565,
 							"sizes": {
-								"default": {
-									"raw": 6290901,
-									"gzip": 823347,
-									"brotli": 534320
-								},
-								"smallest": {
-									"raw": 1227144,
-									"gzip": 283825,
-									"brotli": 227794
-								},
-								"dynamic": {
-									"raw": 1677416,
-									"gzip": 319248,
-									"brotli": 254142
-								},
-								"valibot": {
-									"raw": 1186901,
-									"gzip": 211359,
-									"brotli": 165183
-								},
-								"zod": {
-									"raw": 1301575,
-									"gzip": 231290,
-									"brotli": 183995
-								},
-								"zodMini": {
-									"raw": 1182659,
-									"gzip": 217349,
-									"brotli": 171513
-								}
+								"default": { "raw": 5972341, "gzip": 763500, "brotli": 491831 },
+								"smallest": { "raw": 839646, "gzip": 200728, "brotli": 166368 },
+								"dynamic": { "raw": 1677380, "gzip": 319237, "brotli": 254344 },
+								"valibot": { "raw": 1186861, "gzip": 211352, "brotli": 165156 },
+								"zod": { "raw": 1301535, "gzip": 231296, "brotli": 183936 },
+								"zodMini": { "raw": 1182619, "gzip": 217347, "brotli": 171689 }
 							}
 						}
 					]
@@ -2742,36 +1022,12 @@
 							"messages": 0,
 							"narrows": 1,
 							"sizes": {
-								"default": {
-									"raw": 7521,
-									"gzip": 2999,
-									"brotli": 2750
-								},
-								"smallest": {
-									"raw": 6990,
-									"gzip": 2889,
-									"brotli": 2642
-								},
-								"dynamic": {
-									"raw": 291586,
-									"gzip": 97341,
-									"brotli": 84916
-								},
-								"valibot": {
-									"raw": 4853,
-									"gzip": 1834,
-									"brotli": 1677
-								},
-								"zod": {
-									"raw": 85048,
-									"gzip": 25118,
-									"brotli": 22425
-								},
-								"zodMini": {
-									"raw": 16516,
-									"gzip": 5740,
-									"brotli": 5246
-								}
+								"default": { "raw": 7399, "gzip": 2934, "brotli": 2706 },
+								"smallest": { "raw": 3998, "gzip": 1903, "brotli": 1718 },
+								"dynamic": { "raw": 291590, "gzip": 97341, "brotli": 84906 },
+								"valibot": { "raw": 4853, "gzip": 1834, "brotli": 1677 },
+								"zod": { "raw": 85048, "gzip": 25118, "brotli": 22425 },
+								"zodMini": { "raw": 16516, "gzip": 5740, "brotli": 5246 }
 							}
 						},
 						{
@@ -2779,36 +1035,12 @@
 							"messages": 0,
 							"narrows": 6,
 							"sizes": {
-								"default": {
-									"raw": 26418,
-									"gzip": 6919,
-									"brotli": 6248
-								},
-								"smallest": {
-									"raw": 13502,
-									"gzip": 5289,
-									"brotli": 4825
-								},
-								"dynamic": {
-									"raw": 294075,
-									"gzip": 98187,
-									"brotli": 85641
-								},
-								"valibot": {
-									"raw": 11148,
-									"gzip": 3701,
-									"brotli": 3315
-								},
-								"zod": {
-									"raw": 96237,
-									"gzip": 28190,
-									"brotli": 25054
-								},
-								"zodMini": {
-									"raw": 33318,
-									"gzip": 10530,
-									"brotli": 9526
-								}
+								"default": { "raw": 25742, "gzip": 6754, "brotli": 6130 },
+								"smallest": { "raw": 8797, "gzip": 3894, "brotli": 3552 },
+								"dynamic": { "raw": 294079, "gzip": 98187, "brotli": 85718 },
+								"valibot": { "raw": 11148, "gzip": 3701, "brotli": 3315 },
+								"zod": { "raw": 96237, "gzip": 28190, "brotli": 25054 },
+								"zodMini": { "raw": 33318, "gzip": 10530, "brotli": 9526 }
 							}
 						},
 						{
@@ -2816,36 +1048,12 @@
 							"messages": 0,
 							"narrows": 24,
 							"sizes": {
-								"default": {
-									"raw": 77738,
-									"gzip": 15140,
-									"brotli": 12931
-								},
-								"smallest": {
-									"raw": 25592,
-									"gzip": 8655,
-									"brotli": 7887
-								},
-								"dynamic": {
-									"raw": 304676,
-									"gzip": 100511,
-									"brotli": 87874
-								},
-								"valibot": {
-									"raw": 20495,
-									"gzip": 6048,
-									"brotli": 5419
-								},
-								"zod": {
-									"raw": 105600,
-									"gzip": 30392,
-									"brotli": 26944
-								},
-								"zodMini": {
-									"raw": 42592,
-									"gzip": 12899,
-									"brotli": 11659
-								}
+								"default": { "raw": 75003, "gzip": 14535, "brotli": 12441 },
+								"smallest": { "raw": 17795, "gzip": 6854, "brotli": 6251 },
+								"dynamic": { "raw": 304680, "gzip": 100512, "brotli": 87800 },
+								"valibot": { "raw": 20495, "gzip": 6048, "brotli": 5419 },
+								"zod": { "raw": 105600, "gzip": 30392, "brotli": 26944 },
+								"zodMini": { "raw": 42592, "gzip": 12899, "brotli": 11659 }
 							}
 						},
 						{
@@ -2853,36 +1061,12 @@
 							"messages": 0,
 							"narrows": 54,
 							"sizes": {
-								"default": {
-									"raw": 146807,
-									"gzip": 25114,
-									"brotli": 20145
-								},
-								"smallest": {
-									"raw": 39775,
-									"gzip": 12077,
-									"brotli": 10903
-								},
-								"dynamic": {
-									"raw": 318706,
-									"gzip": 102912,
-									"brotli": 90041
-								},
-								"valibot": {
-									"raw": 32290,
-									"gzip": 8389,
-									"brotli": 7484
-								},
-								"zod": {
-									"raw": 117642,
-									"gzip": 32656,
-									"brotli": 29030
-								},
-								"zodMini": {
-									"raw": 54151,
-									"gzip": 15244,
-									"brotli": 13750
-								}
+								"default": { "raw": 140236, "gzip": 23752, "brotli": 19171 },
+								"smallest": { "raw": 27083, "gzip": 9449, "brotli": 8589 },
+								"dynamic": { "raw": 318710, "gzip": 102910, "brotli": 89990 },
+								"valibot": { "raw": 32290, "gzip": 8385, "brotli": 7466 },
+								"zod": { "raw": 117642, "gzip": 32653, "brotli": 29062 },
+								"zodMini": { "raw": 54151, "gzip": 15239, "brotli": 13752 }
 							}
 						},
 						{
@@ -2890,36 +1074,12 @@
 							"messages": 0,
 							"narrows": 145,
 							"sizes": {
-								"default": {
-									"raw": 340647,
-									"gzip": 52439,
-									"brotli": 38896
-								},
-								"smallest": {
-									"raw": 75354,
-									"gzip": 21354,
-									"brotli": 18858
-								},
-								"dynamic": {
-									"raw": 360451,
-									"gzip": 109773,
-									"brotli": 96006
-								},
-								"valibot": {
-									"raw": 67385,
-									"gzip": 14969,
-									"brotli": 13138
-								},
-								"zod": {
-									"raw": 153951,
-									"gzip": 39122,
-									"brotli": 34635
-								},
-								"zodMini": {
-									"raw": 88595,
-									"gzip": 21863,
-									"brotli": 19410
-								}
+								"default": { "raw": 323146, "gzip": 48831, "brotli": 36425 },
+								"smallest": { "raw": 51693, "gzip": 15997, "brotli": 14358 },
+								"dynamic": { "raw": 360456, "gzip": 109777, "brotli": 95965 },
+								"valibot": { "raw": 67386, "gzip": 14967, "brotli": 13133 },
+								"zod": { "raw": 153952, "gzip": 39124, "brotli": 34627 },
+								"zodMini": { "raw": 88596, "gzip": 21860, "brotli": 19437 }
 							}
 						},
 						{
@@ -2927,36 +1087,12 @@
 							"messages": 0,
 							"narrows": 274,
 							"sizes": {
-								"default": {
-									"raw": 668619,
-									"gzip": 96987,
-									"brotli": 68895
-								},
-								"smallest": {
-									"raw": 135647,
-									"gzip": 35670,
-									"brotli": 31154
-								},
-								"dynamic": {
-									"raw": 429380,
-									"gzip": 121132,
-									"brotli": 105389
-								},
-								"valibot": {
-									"raw": 125788,
-									"gzip": 25669,
-									"brotli": 22133
-								},
-								"zod": {
-									"raw": 214198,
-									"gzip": 49574,
-									"brotli": 43480
-								},
-								"zodMini": {
-									"raw": 145828,
-									"gzip": 32429,
-									"brotli": 28409
-								}
+								"default": { "raw": 634553, "gzip": 90260, "brotli": 64149 },
+								"smallest": { "raw": 93161, "gzip": 26305, "brotli": 23398 },
+								"dynamic": { "raw": 429385, "gzip": 121136, "brotli": 105306 },
+								"valibot": { "raw": 125789, "gzip": 25666, "brotli": 22145 },
+								"zod": { "raw": 214199, "gzip": 49576, "brotli": 43474 },
+								"zodMini": { "raw": 145829, "gzip": 32427, "brotli": 28452 }
 							}
 						},
 						{
@@ -2964,36 +1100,12 @@
 							"messages": 0,
 							"narrows": 546,
 							"sizes": {
-								"default": {
-									"raw": 1311623,
-									"gzip": 181230,
-									"brotli": 124517
-								},
-								"smallest": {
-									"raw": 258031,
-									"gzip": 63671,
-									"brotli": 54679
-								},
-								"dynamic": {
-									"raw": 570763,
-									"gzip": 143515,
-									"brotli": 122948
-								},
-								"valibot": {
-									"raw": 245804,
-									"gzip": 46875,
-									"brotli": 39261
-								},
-								"zod": {
-									"raw": 337415,
-									"gzip": 70337,
-									"brotli": 60060
-								},
-								"zodMini": {
-									"raw": 263630,
-									"gzip": 53860,
-									"brotli": 45637
-								}
+								"default": { "raw": 1243963, "gzip": 168274, "brotli": 114331 },
+								"smallest": { "raw": 176244, "gzip": 46157, "brotli": 40243 },
+								"dynamic": { "raw": 570766, "gzip": 143541, "brotli": 122965 },
+								"valibot": { "raw": 245803, "gzip": 46869, "brotli": 39298 },
+								"zod": { "raw": 337414, "gzip": 70337, "brotli": 60078 },
+								"zodMini": { "raw": 263629, "gzip": 53854, "brotli": 45618 }
 							}
 						},
 						{
@@ -3001,36 +1113,12 @@
 							"messages": 0,
 							"narrows": 1290,
 							"sizes": {
-								"default": {
-									"raw": 3223409,
-									"gzip": 430653,
-									"brotli": 285647
-								},
-								"smallest": {
-									"raw": 625308,
-									"gzip": 147728,
-									"brotli": 121745
-								},
-								"dynamic": {
-									"raw": 989464,
-									"gzip": 209882,
-									"brotli": 173790
-								},
-								"valibot": {
-									"raw": 601694,
-									"gzip": 108901,
-									"brotli": 87045
-								},
-								"zod": {
-									"raw": 702421,
-									"gzip": 131286,
-									"brotli": 106973
-								},
-								"zodMini": {
-									"raw": 612143,
-									"gzip": 115183,
-									"brotli": 93355
-								}
+								"default": { "raw": 3060153, "gzip": 401094, "brotli": 262949 },
+								"smallest": { "raw": 425683, "gzip": 103922, "brotli": 88251 },
+								"dynamic": { "raw": 989455, "gzip": 209889, "brotli": 173751 },
+								"valibot": { "raw": 601679, "gzip": 108882, "brotli": 86999 },
+								"zod": { "raw": 702406, "gzip": 131280, "brotli": 106802 },
+								"zodMini": { "raw": 612128, "gzip": 115195, "brotli": 93322 }
 							}
 						},
 						{
@@ -3038,36 +1126,12 @@
 							"messages": 0,
 							"narrows": 2632,
 							"sizes": {
-								"default": {
-									"raw": 6411410,
-									"gzip": 837555,
-									"brotli": 544964
-								},
-								"smallest": {
-									"raw": 1249702,
-									"gzip": 288766,
-									"brotli": 231827
-								},
-								"dynamic": {
-									"raw": 1698713,
-									"gzip": 321800,
-									"brotli": 255696
-								},
-								"valibot": {
-									"raw": 1204047,
-									"gzip": 213822,
-									"brotli": 166974
-								},
-								"zod": {
-									"raw": 1320903,
-									"gzip": 233752,
-									"brotli": 185672
-								},
-								"zodMini": {
-									"raw": 1202016,
-									"gzip": 219684,
-									"brotli": 173221
-								}
+								"default": { "raw": 6079707, "gzip": 776018, "brotli": 501364 },
+								"smallest": { "raw": 846893, "gzip": 202564, "brotli": 167816 },
+								"dynamic": { "raw": 1698685, "gzip": 321801, "brotli": 255581 },
+								"valibot": { "raw": 1204015, "gzip": 213785, "brotli": 166840 },
+								"zod": { "raw": 1320871, "gzip": 233728, "brotli": 185661 },
+								"zodMini": { "raw": 1201984, "gzip": 219659, "brotli": 173274 }
 							}
 						}
 					]
@@ -3076,10 +1140,7 @@
 		},
 		{
 			"id": "forms",
-			"options": {
-				"messages": 0.35,
-				"narrows": 0.25
-			},
+			"options": { "messages": 0.35, "narrows": 0.25 },
 			"runs": [
 				{
 					"seed": 1,
@@ -3089,36 +1150,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 4449,
-									"gzip": 1949,
-									"brotli": 1793
-								},
-								"smallest": {
-									"raw": 3367,
-									"gzip": 1601,
-									"brotli": 1461
-								},
-								"dynamic": {
-									"raw": 291463,
-									"gzip": 97266,
-									"brotli": 84787
-								},
-								"valibot": {
-									"raw": 4960,
-									"gzip": 1903,
-									"brotli": 1730
-								},
-								"zod": {
-									"raw": 85226,
-									"gzip": 25153,
-									"brotli": 22411
-								},
-								"zodMini": {
-									"raw": 18096,
-									"gzip": 6295,
-									"brotli": 5773
-								}
+								"default": { "raw": 4449, "gzip": 1949, "brotli": 1792 },
+								"smallest": { "raw": 3367, "gzip": 1601, "brotli": 1448 },
+								"dynamic": { "raw": 291467, "gzip": 97267, "brotli": 84828 },
+								"valibot": { "raw": 4960, "gzip": 1903, "brotli": 1730 },
+								"zod": { "raw": 85226, "gzip": 25153, "brotli": 22411 },
+								"zodMini": { "raw": 18096, "gzip": 6295, "brotli": 5773 }
 							}
 						},
 						{
@@ -3126,36 +1163,12 @@
 							"messages": 13,
 							"narrows": 3,
 							"sizes": {
-								"default": {
-									"raw": 26379,
-									"gzip": 6792,
-									"brotli": 6147
-								},
-								"smallest": {
-									"raw": 14915,
-									"gzip": 5365,
-									"brotli": 4916
-								},
-								"dynamic": {
-									"raw": 294351,
-									"gzip": 98207,
-									"brotli": 85666
-								},
-								"valibot": {
-									"raw": 11392,
-									"gzip": 3734,
-									"brotli": 3351
-								},
-								"zod": {
-									"raw": 96522,
-									"gzip": 28235,
-									"brotli": 25021
-								},
-								"zodMini": {
-									"raw": 33657,
-									"gzip": 10556,
-									"brotli": 9570
-								}
+								"default": { "raw": 26038, "gzip": 6677, "brotli": 6029 },
+								"smallest": { "raw": 9109, "gzip": 3927, "brotli": 3577 },
+								"dynamic": { "raw": 294355, "gzip": 98209, "brotli": 85632 },
+								"valibot": { "raw": 11392, "gzip": 3734, "brotli": 3351 },
+								"zod": { "raw": 96522, "gzip": 28235, "brotli": 25021 },
+								"zodMini": { "raw": 33657, "gzip": 10556, "brotli": 9570 }
 							}
 						},
 						{
@@ -3163,36 +1176,12 @@
 							"messages": 75,
 							"narrows": 27,
 							"sizes": {
-								"default": {
-									"raw": 102045,
-									"gzip": 18154,
-									"brotli": 15138
-								},
-								"smallest": {
-									"raw": 37498,
-									"gzip": 9823,
-									"brotli": 8834
-								},
-								"dynamic": {
-									"raw": 310209,
-									"gzip": 101378,
-									"brotli": 88572
-								},
-								"valibot": {
-									"raw": 24150,
-									"gzip": 6829,
-									"brotli": 6135
-								},
-								"zod": {
-									"raw": 110386,
-									"gzip": 31224,
-									"brotli": 27774
-								},
-								"zodMini": {
-									"raw": 47383,
-									"gzip": 13741,
-									"brotli": 12471
-								}
+								"default": { "raw": 98987, "gzip": 17466, "brotli": 14633 },
+								"smallest": { "raw": 20304, "gzip": 7247, "brotli": 6581 },
+								"dynamic": { "raw": 310211, "gzip": 101377, "brotli": 88580 },
+								"valibot": { "raw": 24148, "gzip": 6823, "brotli": 6132 },
+								"zod": { "raw": 110384, "gzip": 31218, "brotli": 27776 },
+								"zodMini": { "raw": 47381, "gzip": 13735, "brotli": 12468 }
 							}
 						},
 						{
@@ -3200,36 +1189,12 @@
 							"messages": 173,
 							"narrows": 55,
 							"sizes": {
-								"default": {
-									"raw": 197259,
-									"gzip": 31647,
-									"brotli": 24853
-								},
-								"smallest": {
-									"raw": 63469,
-									"gzip": 14442,
-									"brotli": 12847
-								},
-								"dynamic": {
-									"raw": 331086,
-									"gzip": 104676,
-									"brotli": 91556
-								},
-								"valibot": {
-									"raw": 40518,
-									"gzip": 10001,
-									"brotli": 8951
-								},
-								"zod": {
-									"raw": 128737,
-									"gzip": 34354,
-									"brotli": 30620
-								},
-								"zodMini": {
-									"raw": 65018,
-									"gzip": 16993,
-									"brotli": 15318
-								}
+								"default": { "raw": 190887, "gzip": 30259, "brotli": 23880 },
+								"smallest": { "raw": 33773, "gzip": 10468, "brotli": 9462 },
+								"dynamic": { "raw": 331086, "gzip": 104672, "brotli": 91639 },
+								"valibot": { "raw": 40514, "gzip": 9993, "brotli": 8937 },
+								"zod": { "raw": 128733, "gzip": 34349, "brotli": 30584 },
+								"zodMini": { "raw": 65014, "gzip": 16984, "brotli": 15319 }
 							}
 						},
 						{
@@ -3237,36 +1202,12 @@
 							"messages": 433,
 							"narrows": 143,
 							"sizes": {
-								"default": {
-									"raw": 448926,
-									"gzip": 63930,
-									"brotli": 47432
-								},
-								"smallest": {
-									"raw": 135756,
-									"gzip": 27410,
-									"brotli": 23585
-								},
-								"dynamic": {
-									"raw": 389520,
-									"gzip": 113589,
-									"brotli": 99040
-								},
-								"valibot": {
-									"raw": 86288,
-									"gzip": 18219,
-									"brotli": 15961
-								},
-								"zod": {
-									"raw": 179426,
-									"gzip": 42600,
-									"brotli": 37627
-								},
-								"zodMini": {
-									"raw": 113933,
-									"gzip": 25530,
-									"brotli": 22466
-								}
+								"default": { "raw": 431020, "gzip": 60181, "brotli": 44666 },
+								"smallest": { "raw": 68507, "gzip": 18675, "brotli": 16672 },
+								"dynamic": { "raw": 389518, "gzip": 113583, "brotli": 98933 },
+								"valibot": { "raw": 86282, "gzip": 18213, "brotli": 15929 },
+								"zod": { "raw": 179420, "gzip": 42593, "brotli": 37625 },
+								"zodMini": { "raw": 113927, "gzip": 25522, "brotli": 22477 }
 							}
 						},
 						{
@@ -3274,36 +1215,12 @@
 							"messages": 877,
 							"narrows": 253,
 							"sizes": {
-								"default": {
-									"raw": 850699,
-									"gzip": 114083,
-									"brotli": 81742
-								},
-								"smallest": {
-									"raw": 250796,
-									"gzip": 47225,
-									"brotli": 39604
-								},
-								"dynamic": {
-									"raw": 485996,
-									"gzip": 128296,
-									"brotli": 110561
-								},
-								"valibot": {
-									"raw": 162498,
-									"gzip": 31657,
-									"brotli": 26942
-								},
-								"zod": {
-									"raw": 264709,
-									"gzip": 56236,
-									"brotli": 48580
-								},
-								"zodMini": {
-									"raw": 196360,
-									"gzip": 39361,
-									"brotli": 33837
-								}
+								"default": { "raw": 819031, "gzip": 107837, "brotli": 77104 },
+								"smallest": { "raw": 128384, "gzip": 32097, "brotli": 28183 },
+								"dynamic": { "raw": 485992, "gzip": 128289, "brotli": 110489 },
+								"valibot": { "raw": 162490, "gzip": 31650, "brotli": 26935 },
+								"zod": { "raw": 264701, "gzip": 56229, "brotli": 48621 },
+								"zodMini": { "raw": 196352, "gzip": 39353, "brotli": 33772 }
 							}
 						},
 						{
@@ -3311,36 +1228,12 @@
 							"messages": 1803,
 							"narrows": 516,
 							"sizes": {
-								"default": {
-									"raw": 1681587,
-									"gzip": 215947,
-									"brotli": 150547
-								},
-								"smallest": {
-									"raw": 480166,
-									"gzip": 89215,
-									"brotli": 72292
-								},
-								"dynamic": {
-									"raw": 688822,
-									"gzip": 158851,
-									"brotli": 132815
-								},
-								"valibot": {
-									"raw": 322672,
-									"gzip": 59660,
-									"brotli": 48458
-								},
-								"zod": {
-									"raw": 444181,
-									"gzip": 84675,
-									"brotli": 70089
-								},
-								"zodMini": {
-									"raw": 369847,
-									"gzip": 67630,
-									"brotli": 55848
-								}
+								"default": { "raw": 1617201, "gzip": 203681, "brotli": 141031 },
+								"smallest": { "raw": 252663, "gzip": 60502, "brotli": 51392 },
+								"dynamic": { "raw": 688807, "gzip": 158857, "brotli": 132920 },
+								"valibot": { "raw": 322653, "gzip": 59665, "brotli": 48462 },
+								"zod": { "raw": 444162, "gzip": 84677, "brotli": 70187 },
+								"zodMini": { "raw": 369828, "gzip": 67630, "brotli": 55926 }
 							}
 						},
 						{
@@ -3348,36 +1241,12 @@
 							"messages": 4587,
 							"narrows": 1311,
 							"sizes": {
-								"default": {
-									"raw": 4096701,
-									"gzip": 506588,
-									"brotli": 342918
-								},
-								"smallest": {
-									"raw": 1170085,
-									"gzip": 211440,
-									"brotli": 163340
-								},
-								"dynamic": {
-									"raw": 1297866,
-									"gzip": 248145,
-									"brotli": 195921
-								},
-								"valibot": {
-									"raw": 803513,
-									"gzip": 141340,
-									"brotli": 108559
-								},
-								"zod": {
-									"raw": 982772,
-									"gzip": 167436,
-									"brotli": 130214
-								},
-								"zodMini": {
-									"raw": 891383,
-									"gzip": 152180,
-									"brotli": 117540
-								}
+								"default": { "raw": 3930625, "gzip": 475347, "brotli": 319019 },
+								"smallest": { "raw": 610281, "gzip": 137363, "brotli": 111738 },
+								"dynamic": { "raw": 1297837, "gzip": 248158, "brotli": 195674 },
+								"valibot": { "raw": 803478, "gzip": 141346, "brotli": 108561 },
+								"zod": { "raw": 982737, "gzip": 167440, "brotli": 130165 },
+								"zodMini": { "raw": 891348, "gzip": 152192, "brotli": 117537 }
 							}
 						},
 						{
@@ -3385,36 +1254,16 @@
 							"messages": 9180,
 							"narrows": 2636,
 							"sizes": {
-								"default": {
-									"raw": 8073258,
-									"gzip": 990243,
-									"brotli": 657688
-								},
+								"default": { "raw": 7738825, "gzip": 927009, "brotli": 612767 },
 								"smallest": {
-									"raw": 2315541,
-									"gzip": 415454,
-									"brotli": 312377
+									"raw": 1191769,
+									"gzip": 267114,
+									"brotli": 211678
 								},
-								"dynamic": {
-									"raw": 2317981,
-									"gzip": 399487,
-									"brotli": 297554
-								},
-								"valibot": {
-									"raw": 1611541,
-									"gzip": 279043,
-									"brotli": 207896
-								},
-								"zod": {
-									"raw": 1886319,
-									"gzip": 306878,
-									"brotli": 230439
-								},
-								"zodMini": {
-									"raw": 1766674,
-									"gzip": 295017,
-									"brotli": 219839
-								}
+								"dynamic": { "raw": 2317929, "gzip": 399486, "brotli": 297558 },
+								"valibot": { "raw": 1611485, "gzip": 279058, "brotli": 207934 },
+								"zod": { "raw": 1886263, "gzip": 306892, "brotli": 230488 },
+								"zodMini": { "raw": 1766618, "gzip": 295026, "brotli": 219866 }
 							}
 						}
 					]
@@ -3427,36 +1276,12 @@
 							"messages": 0,
 							"narrows": 0,
 							"sizes": {
-								"default": {
-									"raw": 4603,
-									"gzip": 1834,
-									"brotli": 1672
-								},
-								"smallest": {
-									"raw": 3556,
-									"gzip": 1539,
-									"brotli": 1388
-								},
-								"dynamic": {
-									"raw": 291528,
-									"gzip": 97298,
-									"brotli": 84902
-								},
-								"valibot": {
-									"raw": 5883,
-									"gzip": 2034,
-									"brotli": 1855
-								},
-								"zod": {
-									"raw": 90036,
-									"gzip": 26326,
-									"brotli": 23391
-								},
-								"zodMini": {
-									"raw": 19542,
-									"gzip": 6637,
-									"brotli": 6039
-								}
+								"default": { "raw": 4603, "gzip": 1834, "brotli": 1672 },
+								"smallest": { "raw": 3556, "gzip": 1539, "brotli": 1389 },
+								"dynamic": { "raw": 291532, "gzip": 97300, "brotli": 84862 },
+								"valibot": { "raw": 5883, "gzip": 2034, "brotli": 1855 },
+								"zod": { "raw": 90036, "gzip": 26326, "brotli": 23391 },
+								"zodMini": { "raw": 19542, "gzip": 6637, "brotli": 6039 }
 							}
 						},
 						{
@@ -3464,36 +1289,12 @@
 							"messages": 16,
 							"narrows": 2,
 							"sizes": {
-								"default": {
-									"raw": 28331,
-									"gzip": 7289,
-									"brotli": 6578
-								},
-								"smallest": {
-									"raw": 15188,
-									"gzip": 5528,
-									"brotli": 5075
-								},
-								"dynamic": {
-									"raw": 294779,
-									"gzip": 98296,
-									"brotli": 85792
-								},
-								"valibot": {
-									"raw": 11965,
-									"gzip": 3883,
-									"brotli": 3480
-								},
-								"zod": {
-									"raw": 96892,
-									"gzip": 28310,
-									"brotli": 25107
-								},
-								"zodMini": {
-									"raw": 34243,
-									"gzip": 10713,
-									"brotli": 9724
-								}
+								"default": { "raw": 28111, "gzip": 7211, "brotli": 6513 },
+								"smallest": { "raw": 9488, "gzip": 4095, "brotli": 3733 },
+								"dynamic": { "raw": 294783, "gzip": 98296, "brotli": 85671 },
+								"valibot": { "raw": 11965, "gzip": 3883, "brotli": 3480 },
+								"zod": { "raw": 96892, "gzip": 28310, "brotli": 25107 },
+								"zodMini": { "raw": 34243, "gzip": 10713, "brotli": 9724 }
 							}
 						},
 						{
@@ -3501,36 +1302,12 @@
 							"messages": 96,
 							"narrows": 23,
 							"sizes": {
-								"default": {
-									"raw": 106169,
-									"gzip": 18751,
-									"brotli": 15484
-								},
-								"smallest": {
-									"raw": 41152,
-									"gzip": 9909,
-									"brotli": 8897
-								},
-								"dynamic": {
-									"raw": 310334,
-									"gzip": 101371,
-									"brotli": 88596
-								},
-								"valibot": {
-									"raw": 24001,
-									"gzip": 6800,
-									"brotli": 6106
-								},
-								"zod": {
-									"raw": 110255,
-									"gzip": 31161,
-									"brotli": 27641
-								},
-								"zodMini": {
-									"raw": 47135,
-									"gzip": 13711,
-									"brotli": 12403
-								}
+								"default": { "raw": 103477, "gzip": 18197, "brotli": 14983 },
+								"smallest": { "raw": 20811, "gzip": 7262, "brotli": 6577 },
+								"dynamic": { "raw": 310338, "gzip": 101367, "brotli": 88596 },
+								"valibot": { "raw": 24001, "gzip": 6800, "brotli": 6106 },
+								"zod": { "raw": 110255, "gzip": 31161, "brotli": 27641 },
+								"zodMini": { "raw": 47135, "gzip": 13711, "brotli": 12403 }
 							}
 						},
 						{
@@ -3538,36 +1315,12 @@
 							"messages": 184,
 							"narrows": 45,
 							"sizes": {
-								"default": {
-									"raw": 190525,
-									"gzip": 30021,
-									"brotli": 23723
-								},
-								"smallest": {
-									"raw": 65298,
-									"gzip": 14130,
-									"brotli": 12511
-								},
-								"dynamic": {
-									"raw": 328893,
-									"gzip": 104281,
-									"brotli": 91205
-								},
-								"valibot": {
-									"raw": 38601,
-									"gzip": 9642,
-									"brotli": 8601
-								},
-								"zod": {
-									"raw": 126757,
-									"gzip": 33979,
-									"brotli": 30215
-								},
-								"zodMini": {
-									"raw": 63088,
-									"gzip": 16630,
-									"brotli": 14972
-								}
+								"default": { "raw": 185100, "gzip": 28815, "brotli": 22875 },
+								"smallest": { "raw": 32878, "gzip": 10183, "brotli": 9133 },
+								"dynamic": { "raw": 328897, "gzip": 104294, "brotli": 91296 },
+								"valibot": { "raw": 38601, "gzip": 9646, "brotli": 8591 },
+								"zod": { "raw": 126757, "gzip": 33983, "brotli": 30180 },
+								"zodMini": { "raw": 63088, "gzip": 16633, "brotli": 14989 }
 							}
 						},
 						{
@@ -3575,36 +1328,12 @@
 							"messages": 462,
 							"narrows": 113,
 							"sizes": {
-								"default": {
-									"raw": 446926,
-									"gzip": 63763,
-									"brotli": 47751
-								},
-								"smallest": {
-									"raw": 143726,
-									"gzip": 27752,
-									"brotli": 23766
-								},
-								"dynamic": {
-									"raw": 387594,
-									"gzip": 113210,
-									"brotli": 98679
-								},
-								"valibot": {
-									"raw": 84934,
-									"gzip": 17944,
-									"brotli": 15664
-								},
-								"zod": {
-									"raw": 177880,
-									"gzip": 42304,
-									"brotli": 37307
-								},
-								"zodMini": {
-									"raw": 112727,
-									"gzip": 25257,
-									"brotli": 22238
-								}
+								"default": { "raw": 432722, "gzip": 60725, "brotli": 45507 },
+								"smallest": { "raw": 69817, "gzip": 19158, "brotli": 17001 },
+								"dynamic": { "raw": 387596, "gzip": 113203, "brotli": 98671 },
+								"valibot": { "raw": 84932, "gzip": 17940, "brotli": 15665 },
+								"zod": { "raw": 177878, "gzip": 42305, "brotli": 37383 },
+								"zodMini": { "raw": 112725, "gzip": 25253, "brotli": 22232 }
 							}
 						},
 						{
@@ -3612,36 +1341,12 @@
 							"messages": 940,
 							"narrows": 247,
 							"sizes": {
-								"default": {
-									"raw": 861838,
-									"gzip": 116226,
-									"brotli": 83830
-								},
-								"smallest": {
-									"raw": 264376,
-									"gzip": 48799,
-									"brotli": 40607
-								},
-								"dynamic": {
-									"raw": 487912,
-									"gzip": 128394,
-									"brotli": 110729
-								},
-								"valibot": {
-									"raw": 163671,
-									"gzip": 31977,
-									"brotli": 27155
-								},
-								"zod": {
-									"raw": 264994,
-									"gzip": 56257,
-									"brotli": 48725
-								},
-								"zodMini": {
-									"raw": 197050,
-									"gzip": 39584,
-									"brotli": 33871
-								}
+								"default": { "raw": 830860, "gzip": 109958, "brotli": 79123 },
+								"smallest": { "raw": 130010, "gzip": 32547, "brotli": 28567 },
+								"dynamic": { "raw": 487908, "gzip": 128376, "brotli": 110707 },
+								"valibot": { "raw": 163663, "gzip": 31964, "brotli": 27125 },
+								"zod": { "raw": 264986, "gzip": 56252, "brotli": 48699 },
+								"zodMini": { "raw": 197042, "gzip": 39573, "brotli": 33922 }
 							}
 						},
 						{
@@ -3649,36 +1354,12 @@
 							"messages": 1847,
 							"narrows": 493,
 							"sizes": {
-								"default": {
-									"raw": 1666860,
-									"gzip": 214320,
-									"brotli": 150507
-								},
-								"smallest": {
-									"raw": 480197,
-									"gzip": 87552,
-									"brotli": 70887
-								},
-								"dynamic": {
-									"raw": 686092,
-									"gzip": 158070,
-									"brotli": 132401
-								},
-								"valibot": {
-									"raw": 320423,
-									"gzip": 59254,
-									"brotli": 48068
-								},
-								"zod": {
-									"raw": 440705,
-									"gzip": 83946,
-									"brotli": 69736
-								},
-								"zodMini": {
-									"raw": 367528,
-									"gzip": 67135,
-									"brotli": 55464
-								}
+								"default": { "raw": 1606440, "gzip": 202742, "brotli": 141431 },
+								"smallest": { "raw": 248387, "gzip": 58774, "brotli": 49660 },
+								"dynamic": { "raw": 686080, "gzip": 158065, "brotli": 132268 },
+								"valibot": { "raw": 320407, "gzip": 59228, "brotli": 48086 },
+								"zod": { "raw": 440689, "gzip": 83936, "brotli": 69664 },
+								"zodMini": { "raw": 367512, "gzip": 67116, "brotli": 55447 }
 							}
 						},
 						{
@@ -3686,36 +1367,12 @@
 							"messages": 4533,
 							"narrows": 1256,
 							"sizes": {
-								"default": {
-									"raw": 4057555,
-									"gzip": 504653,
-									"brotli": 341799
-								},
-								"smallest": {
-									"raw": 1153198,
-									"gzip": 206937,
-									"brotli": 160104
-								},
-								"dynamic": {
-									"raw": 1287241,
-									"gzip": 247176,
-									"brotli": 195119
-								},
-								"valibot": {
-									"raw": 795238,
-									"gzip": 140615,
-									"brotli": 108005
-								},
-								"zod": {
-									"raw": 970008,
-									"gzip": 166237,
-									"brotli": 129473
-								},
-								"zodMini": {
-									"raw": 879996,
-									"gzip": 150786,
-									"brotli": 116875
-								}
+								"default": { "raw": 3901416, "gzip": 475207, "brotli": 319510 },
+								"smallest": { "raw": 600328, "gzip": 135452, "brotli": 109574 },
+								"dynamic": { "raw": 1287216, "gzip": 247137, "brotli": 195269 },
+								"valibot": { "raw": 795207, "gzip": 140586, "brotli": 107948 },
+								"zod": { "raw": 969977, "gzip": 166233, "brotli": 129531 },
+								"zodMini": { "raw": 879965, "gzip": 150787, "brotli": 116883 }
 							}
 						},
 						{
@@ -3723,36 +1380,16 @@
 							"messages": 9200,
 							"narrows": 2530,
 							"sizes": {
-								"default": {
-									"raw": 8060826,
-									"gzip": 990025,
-									"brotli": 658483
-								},
+								"default": { "raw": 7743514, "gzip": 930619, "brotli": 616353 },
 								"smallest": {
-									"raw": 2288335,
-									"gzip": 409556,
-									"brotli": 307944
+									"raw": 1185124,
+									"gzip": 265009,
+									"brotli": 210046
 								},
-								"dynamic": {
-									"raw": 2308374,
-									"gzip": 398528,
-									"brotli": 296961
-								},
-								"valibot": {
-									"raw": 1604144,
-									"gzip": 278094,
-									"brotli": 207502
-								},
-								"zod": {
-									"raw": 1879835,
-									"gzip": 306003,
-									"brotli": 229880
-								},
-								"zodMini": {
-									"raw": 1761185,
-									"gzip": 293944,
-									"brotli": 219303
-								}
+								"dynamic": { "raw": 2308322, "gzip": 398504, "brotli": 297142 },
+								"valibot": { "raw": 1604088, "gzip": 278040, "brotli": 207501 },
+								"zod": { "raw": 1879779, "gzip": 306007, "brotli": 229818 },
+								"zodMini": { "raw": 1761129, "gzip": 293904, "brotli": 219287 }
 							}
 						}
 					]
@@ -3765,36 +1402,12 @@
 							"messages": 2,
 							"narrows": 1,
 							"sizes": {
-								"default": {
-									"raw": 7860,
-									"gzip": 3079,
-									"brotli": 2822
-								},
-								"smallest": {
-									"raw": 7474,
-									"gzip": 2978,
-									"brotli": 2719
-								},
-								"dynamic": {
-									"raw": 291705,
-									"gzip": 97371,
-									"brotli": 84977
-								},
-								"valibot": {
-									"raw": 5014,
-									"gzip": 1894,
-									"brotli": 1725
-								},
-								"zod": {
-									"raw": 85159,
-									"gzip": 25149,
-									"brotli": 22426
-								},
-								"zodMini": {
-									"raw": 16627,
-									"gzip": 5782,
-									"brotli": 5278
-								}
+								"default": { "raw": 7738, "gzip": 3015, "brotli": 2762 },
+								"smallest": { "raw": 4291, "gzip": 2022, "brotli": 1814 },
+								"dynamic": { "raw": 291709, "gzip": 97371, "brotli": 84931 },
+								"valibot": { "raw": 5014, "gzip": 1894, "brotli": 1725 },
+								"zod": { "raw": 85159, "gzip": 25149, "brotli": 22426 },
+								"zodMini": { "raw": 16627, "gzip": 5782, "brotli": 5278 }
 							}
 						},
 						{
@@ -3802,36 +1415,12 @@
 							"messages": 20,
 							"narrows": 8,
 							"sizes": {
-								"default": {
-									"raw": 32019,
-									"gzip": 8215,
-									"brotli": 7325
-								},
-								"smallest": {
-									"raw": 16646,
-									"gzip": 6143,
-									"brotli": 5625
-								},
-								"dynamic": {
-									"raw": 295495,
-									"gzip": 98439,
-									"brotli": 85839
-								},
-								"valibot": {
-									"raw": 12126,
-									"gzip": 3967,
-									"brotli": 3538
-								},
-								"zod": {
-									"raw": 97610,
-									"gzip": 28470,
-									"brotli": 25212
-								},
-								"zodMini": {
-									"raw": 34674,
-									"gzip": 10814,
-									"brotli": 9753
-								}
+								"default": { "raw": 31155, "gzip": 7985, "brotli": 7129 },
+								"smallest": { "raw": 11274, "gzip": 4749, "brotli": 4323 },
+								"dynamic": { "raw": 295499, "gzip": 98438, "brotli": 85799 },
+								"valibot": { "raw": 12126, "gzip": 3967, "brotli": 3538 },
+								"zod": { "raw": 97610, "gzip": 28470, "brotli": 25212 },
+								"zodMini": { "raw": 34674, "gzip": 10814, "brotli": 9753 }
 							}
 						},
 						{
@@ -3839,36 +1428,12 @@
 							"messages": 83,
 							"narrows": 38,
 							"sizes": {
-								"default": {
-									"raw": 104756,
-									"gzip": 18830,
-									"brotli": 15491
-								},
-								"smallest": {
-									"raw": 36377,
-									"gzip": 10413,
-									"brotli": 9372
-								},
-								"dynamic": {
-									"raw": 311473,
-									"gzip": 101554,
-									"brotli": 88741
-								},
-								"valibot": {
-									"raw": 24904,
-									"gzip": 6997,
-									"brotli": 6248
-								},
-								"zod": {
-									"raw": 111243,
-									"gzip": 31337,
-									"brotli": 27833
-								},
-								"zodMini": {
-									"raw": 48169,
-									"gzip": 13887,
-									"brotli": 12587
-								}
+								"default": { "raw": 100522, "gzip": 17934, "brotli": 14888 },
+								"smallest": { "raw": 22866, "gzip": 8029, "brotli": 7288 },
+								"dynamic": { "raw": 311475, "gzip": 101556, "brotli": 88655 },
+								"valibot": { "raw": 24902, "gzip": 7001, "brotli": 6257 },
+								"zod": { "raw": 111241, "gzip": 31341, "brotli": 27826 },
+								"zodMini": { "raw": 48167, "gzip": 13892, "brotli": 12585 }
 							}
 						},
 						{
@@ -3876,36 +1441,12 @@
 							"messages": 158,
 							"narrows": 56,
 							"sizes": {
-								"default": {
-									"raw": 186700,
-									"gzip": 30193,
-									"brotli": 23894
-								},
-								"smallest": {
-									"raw": 59633,
-									"gzip": 14567,
-									"brotli": 13014
-								},
-								"dynamic": {
-									"raw": 329255,
-									"gzip": 104350,
-									"brotli": 91337
-								},
-								"valibot": {
-									"raw": 39096,
-									"gzip": 9709,
-									"brotli": 8644
-								},
-								"zod": {
-									"raw": 126848,
-									"gzip": 34002,
-									"brotli": 30296
-								},
-								"zodMini": {
-									"raw": 63338,
-									"gzip": 16664,
-									"brotli": 14996
-								}
+								"default": { "raw": 179779, "gzip": 28739, "brotli": 22769 },
+								"smallest": { "raw": 34534, "gzip": 11035, "brotli": 9985 },
+								"dynamic": { "raw": 329255, "gzip": 104350, "brotli": 91378 },
+								"valibot": { "raw": 39092, "gzip": 9713, "brotli": 8650 },
+								"zod": { "raw": 126844, "gzip": 34006, "brotli": 30283 },
+								"zodMini": { "raw": 63334, "gzip": 16668, "brotli": 14988 }
 							}
 						},
 						{
@@ -3913,36 +1454,12 @@
 							"messages": 421,
 							"narrows": 137,
 							"sizes": {
-								"default": {
-									"raw": 438200,
-									"gzip": 63093,
-									"brotli": 46930
-								},
-								"smallest": {
-									"raw": 132257,
-									"gzip": 27448,
-									"brotli": 23712
-								},
-								"dynamic": {
-									"raw": 387883,
-									"gzip": 113348,
-									"brotli": 98877
-								},
-								"valibot": {
-									"raw": 85379,
-									"gzip": 18126,
-									"brotli": 15821
-								},
-								"zod": {
-									"raw": 178463,
-									"gzip": 42407,
-									"brotli": 37487
-								},
-								"zodMini": {
-									"raw": 113185,
-									"gzip": 25389,
-									"brotli": 22377
-								}
+								"default": { "raw": 421844, "gzip": 59727, "brotli": 44607 },
+								"smallest": { "raw": 69664, "gzip": 19363, "brotli": 17274 },
+								"dynamic": { "raw": 387883, "gzip": 113357, "brotli": 98865 },
+								"valibot": { "raw": 85375, "gzip": 18125, "brotli": 15830 },
+								"zod": { "raw": 178459, "gzip": 42404, "brotli": 37536 },
+								"zodMini": { "raw": 113181, "gzip": 25388, "brotli": 22396 }
 							}
 						},
 						{
@@ -3950,36 +1467,12 @@
 							"messages": 884,
 							"narrows": 272,
 							"sizes": {
-								"default": {
-									"raw": 882808,
-									"gzip": 118771,
-									"brotli": 85305
-								},
-								"smallest": {
-									"raw": 246090,
-									"gzip": 48202,
-									"brotli": 40512
-								},
-								"dynamic": {
-									"raw": 489617,
-									"gzip": 128876,
-									"brotli": 111053
-								},
-								"valibot": {
-									"raw": 165665,
-									"gzip": 32280,
-									"brotli": 27473
-								},
-								"zod": {
-									"raw": 269007,
-									"gzip": 56755,
-									"brotli": 49054
-								},
-								"zodMini": {
-									"raw": 200640,
-									"gzip": 40037,
-									"brotli": 34380
-								}
+								"default": { "raw": 849491, "gzip": 112205, "brotli": 80573 },
+								"smallest": { "raw": 132099, "gzip": 33088, "brotli": 29158 },
+								"dynamic": { "raw": 489613, "gzip": 128871, "brotli": 111074 },
+								"valibot": { "raw": 165657, "gzip": 32278, "brotli": 27483 },
+								"zod": { "raw": 268999, "gzip": 56748, "brotli": 49090 },
+								"zodMini": { "raw": 200632, "gzip": 40029, "brotli": 34421 }
 							}
 						},
 						{
@@ -3987,36 +1480,12 @@
 							"messages": 1801,
 							"narrows": 563,
 							"sizes": {
-								"default": {
-									"raw": 1738196,
-									"gzip": 222607,
-									"brotli": 155650
-								},
-								"smallest": {
-									"raw": 480641,
-									"gzip": 89515,
-									"brotli": 72498
-								},
-								"dynamic": {
-									"raw": 695754,
-									"gzip": 159725,
-									"brotli": 133503
-								},
-								"valibot": {
-									"raw": 328420,
-									"gzip": 60568,
-									"brotli": 49134
-								},
-								"zod": {
-									"raw": 450863,
-									"gzip": 85467,
-									"brotli": 70806
-								},
-								"zodMini": {
-									"raw": 377021,
-									"gzip": 68358,
-									"brotli": 56605
-								}
+								"default": { "raw": 1670041, "gzip": 209683, "brotli": 145792 },
+								"smallest": { "raw": 254637, "gzip": 60287, "brotli": 51030 },
+								"dynamic": { "raw": 695746, "gzip": 159733, "brotli": 133494 },
+								"valibot": { "raw": 328408, "gzip": 60567, "brotli": 49053 },
+								"zod": { "raw": 450851, "gzip": 85469, "brotli": 70795 },
+								"zodMini": { "raw": 377009, "gzip": 68363, "brotli": 56593 }
 							}
 						},
 						{
@@ -4024,36 +1493,12 @@
 							"messages": 4608,
 							"narrows": 1348,
 							"sizes": {
-								"default": {
-									"raw": 4212728,
-									"gzip": 523302,
-									"brotli": 354422
-								},
-								"smallest": {
-									"raw": 1163412,
-									"gzip": 211654,
-									"brotli": 163587
-								},
-								"dynamic": {
-									"raw": 1311640,
-									"gzip": 250179,
-									"brotli": 197567
-								},
-								"valibot": {
-									"raw": 814427,
-									"gzip": 143298,
-									"brotli": 109977
-								},
-								"zod": {
-									"raw": 993854,
-									"gzip": 169113,
-									"brotli": 131598
-								},
-								"zodMini": {
-									"raw": 903265,
-									"gzip": 154333,
-									"brotli": 119011
-								}
+								"default": { "raw": 4046098, "gzip": 491953, "brotli": 331263 },
+								"smallest": { "raw": 614040, "gzip": 138187, "brotli": 112459 },
+								"dynamic": { "raw": 1311627, "gzip": 250179, "brotli": 197455 },
+								"valibot": { "raw": 814408, "gzip": 143288, "brotli": 109966 },
+								"zod": { "raw": 993835, "gzip": 169112, "brotli": 131588 },
+								"zodMini": { "raw": 903246, "gzip": 154338, "brotli": 119067 }
 							}
 						},
 						{
@@ -4061,36 +1506,16 @@
 							"messages": 9355,
 							"narrows": 2707,
 							"sizes": {
-								"default": {
-									"raw": 8256372,
-									"gzip": 1009679,
-									"brotli": 673550
-								},
+								"default": { "raw": 7919378, "gzip": 945739, "brotli": 631282 },
 								"smallest": {
-									"raw": 2320305,
-									"gzip": 417659,
-									"brotli": 314897
+									"raw": 1202921,
+									"gzip": 269525,
+									"brotli": 213406
 								},
-								"dynamic": {
-									"raw": 2350589,
-									"gzip": 403033,
-									"brotli": 300198
-								},
-								"valibot": {
-									"raw": 1635250,
-									"gzip": 282743,
-									"brotli": 210021
-								},
-								"zod": {
-									"raw": 1915686,
-									"gzip": 310578,
-									"brotli": 232483
-								},
-								"zodMini": {
-									"raw": 1796501,
-									"gzip": 298008,
-									"brotli": 222253
-								}
+								"dynamic": { "raw": 2350551, "gzip": 403062, "brotli": 299967 },
+								"valibot": { "raw": 1635208, "gzip": 282747, "brotli": 210095 },
+								"zod": { "raw": 1915644, "gzip": 310591, "brotli": 232518 },
+								"zodMini": { "raw": 1796459, "gzip": 298016, "brotli": 222249 }
 							}
 						}
 					]
