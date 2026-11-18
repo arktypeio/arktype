@@ -1194,6 +1194,13 @@ const writeMorph = (js: CombinatorCompiler, node: MorphNode): string =>
 			.join(", ")}]`
 	)
 
+// what narrows a checker after it, which one that transforms writes apart, so
+// a program narrowing no transform ships only the other
+const narrowedAfterOf = (
+	node: BaseNode
+): "narrowedAfter" | "transformingNarrowedAfter" =>
+	node.tfs ? "transformingNarrowedAfter" : "narrowedAfter"
+
 const writeIntersectionCombinator = (
 	js: CombinatorCompiler,
 	node: IntersectionNode
@@ -1210,14 +1217,18 @@ const writeIntersectionCombinator = (
 	const unnarrowed = narrowed && unnarrowedOf(node)
 	if (unnarrowed) {
 		reachRootsOf(js, unnarrowed)
-		return writeCall("narrowedAfter", readChecker(js, unnarrowed), narrowed)
+		return writeCall(
+			narrowedAfterOf(unnarrowed),
+			readChecker(js, unnarrowed),
+			narrowed
+		)
 	}
 	const refinements = node.preStruct.map(child => writeCheck(js, child))
 	const structure = node.structure && writeStructure(js, node.structure)
 	const within =
 		structure && narrowed ?
 			writeCall(
-				"narrowedAfter",
+				narrowedAfterOf(node.structure!),
 				(
 					node.structure!.hasAlias &&
 						node.structure!.tfs &&

@@ -813,6 +813,71 @@ false
 		attest(/\bclass Traversal\b/.test(checkers)).equals(false)
 	})
 
+	describe("a narrow after what it narrows", () => {
+		// the narrow counts its calls: what it narrows failing stops it, and one
+		// that transforms is checked before it, which is passed data as it came
+		const narrowing = (
+			definition: string,
+			by: "narrow" | "filter"
+		) => `import { type } from "arktype"
+
+const show = (out: unknown) =>
+	console.log(out instanceof type.errors ? out.summary : JSON.stringify(out), globalThis.calls)
+globalThis.calls = 0
+const T = ${definition}.${by}((o, ctx) => {
+	globalThis.calls++
+	return o.name !== "root" || ctx.reject({ message: \`Pick another name than \${JSON.stringify(o.name)}.\` })
+})
+show(T({ name: " ada " }))
+show(T({ name: "root" }))
+show(T({ name: 5 }))
+show(T({ name: "root", age: "old" }))
+show(T.allows({ name: "root" }))
+${repaying}
+`
+		const formsIn = (js: string) =>
+			["narrowedAfter", "transformingNarrowedAfter"].filter(form =>
+				new RegExp(`\\b${form}\\b`).test(js)
+			)
+
+		it("ships only what narrows a checker where none it narrows transforms", async () => {
+			const root = fixture(
+				"narrow-checking",
+				narrowing(`type({ name: "string", "age?": "number" })`, "narrow")
+			)
+			const js = await bundle(root, smallest)
+			attest(formsIn(js)).equals(["narrowedAfter"])
+			attest(behaviorOf(js)).equals(runPlain(root))
+			attest(runPlain(root)).snap(`{"name":" ada "} 1
+Pick another name than "root". 3
+name must be a string 3
+age must be a number 3
+false 4
+`)
+		})
+
+		// a narrow of what a shape writes is a morph's, so only a filter, which
+		// is passed what the shape is, narrows one in its own checker
+		it("ships only what narrows a transform where each it narrows is one", async () => {
+			const root = fixture(
+				"narrow-transforming",
+				narrowing(
+					`type({ name: "string", "age?": "number", role: "string = 'user'" })`,
+					"filter"
+				)
+			)
+			const js = await bundle(root, smallest)
+			attest(formsIn(js)).equals(["transformingNarrowedAfter"])
+			attest(behaviorOf(js)).equals(runPlain(root))
+			attest(runPlain(root)).snap(`{"name":" ada ","role":"user"} 1
+Pick another name than "root". 3
+name must be a string 3
+age must be a number 3
+false 4
+`)
+		})
+	})
+
 	it("writes once what creates a validator, whichever way its root finds its issues", async () => {
 		const root = fixture(
 			"one-creator",

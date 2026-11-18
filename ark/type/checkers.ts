@@ -309,8 +309,8 @@ export const narrowedInCtx = ((
 
 const issuesIn = (ctx: any): number => ctx.errN ?? ctx.count
 
-// a structure's issues stop its predicates, and one that transforms is only
-// checked before them, as what they're passed is data as it came
+// a structure's issues stop its predicates. One that transforms is
+// transformingNarrowedAfter's, so a program narrowing none ships only this
 export const narrowedAfter = ((
 	structure: Checker,
 	narrowed: Checker
@@ -318,16 +318,28 @@ export const narrowedAfter = ((
 	const checker: Checker = (data, ctx: any) => {
 		if (!ctx?._at || ctx._at === stops)
 			return structure(data, ctx) && narrowed(data, ctx)
-		if (structure.t) {
-			if (!(structure.a ? structure.a(data, ctx) : structure(data)))
-				return structure(data, ctx)
-		} else {
-			const issues = issuesIn(ctx)
-			if (!structure(data, ctx)) return false
-			if (issuesIn(ctx) > issues) return true
-		}
-		return narrowed(data, ctx)
+		const issues = issuesIn(ctx)
+		return (
+			structure(data, ctx) && (issuesIn(ctx) > issues || narrowed(data, ctx))
+		)
 	}
+	checker.description = structure.description
+	return checker
+}) satisfies Fn
+
+// a structure that transforms is only checked before its predicates, as what
+// they're passed is data as it came
+export const transformingNarrowedAfter = ((
+	structure: Checker,
+	narrowed: Checker
+): Checker => {
+	const checker: Checker = (data, ctx: any) =>
+		!ctx?._at || ctx._at === stops ? structure(data, ctx) && narrowed(data, ctx)
+		: (
+			structure.a ? structure.a(data, ctx) : structure(data)
+		) ?
+			narrowed(data, ctx)
+		:	structure(data, ctx)
 	checker.t = structure.t
 	checker.description = structure.description
 	return checker
