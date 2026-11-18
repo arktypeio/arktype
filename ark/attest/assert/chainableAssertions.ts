@@ -30,6 +30,7 @@ import {
 	throwAssertionError
 } from "./assertions.ts"
 import type { AssertionContext, VersionableActual } from "./attest.ts"
+import { normalizedTypePlugin } from "./normalizedType.ts"
 
 export type ChainableAssertionOptions = {
 	allowRegex?: boolean
@@ -172,6 +173,14 @@ export class ChainableAssertions implements AssertionRecord {
 		})
 	}
 
+	get normalizedSnap(): snapProperty<unknown, AssertionKind> {
+		this.ctx.versionableActual = new TypeAssertionMapping(data => ({
+			actual: formatTypeString(data.args[0].type, true)
+		}))
+		this.ctx.lastSnapName = "normalizedSnap"
+		return this.snap
+	}
+
 	private immediateOrChained() {
 		const immediateAssertion = (...args: [expected: unknown]) => {
 			let expected
@@ -278,14 +287,21 @@ export class ChainableAssertions implements AssertionRecord {
 
 const declarationPrefix = "type T = "
 
-const formatTypeString = (typeString: string) =>
+const formatTypeString = (typeString: string, normalized = false) =>
 	prettier
 		.format(`${declarationPrefix}${typeString}`, {
 			semi: false,
 			printWidth: 60,
 			trailingComma: "none",
 			parser: "typescript",
-			...getConfig().typeToStringFormat
+			...getConfig().typeToStringFormat,
+			...(normalized && {
+				parser: "attest-normalized-type",
+				plugins: [
+					...(getConfig().typeToStringFormat.plugins ?? []),
+					normalizedTypePlugin
+				]
+			})
 		})
 		.slice(declarationPrefix.length)
 		.trimEnd()
@@ -380,7 +396,10 @@ export type TypeAssertionsRoot = {
 }
 
 export type TypeAssertionProps = {
-	toString: valueFromTypeAssertion<string | RegExp>
+	toString: valueFromTypeAssertion<string | RegExp> & {
+		/** Snapshot with properties and union members sorted alphabetically. */
+		normalizedSnap: snapProperty<string, "value">
+	}
 	errors: valueFromTypeAssertion<string | RegExp, string>
 	completions: CompletionsSnap
 }
