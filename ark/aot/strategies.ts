@@ -184,9 +184,8 @@ export const checkStrategyOptions = ({
 	strategies = {},
 	schemas = {}
 }: StrategyOptions): void => {
-	for (const name in strategies) {
+	for (const name in strategies)
 		if (isBuiltin(name)) throw new Error(writeBuiltinStrategyMessage(name))
-	}
 	const names = [...Object.keys(builtinStrategies), ...Object.keys(strategies)]
 	for (const key in schemas) {
 		const [pattern, declaration] = splitKey(key)
@@ -415,7 +414,9 @@ export class SchemaStrategies {
 			try {
 				file = realpathSync(file)
 				fromCwd = relative(this.cwd, file)
-			} catch {}
+			} catch {
+				// one that's no file, like a virtual module's, is named as it is
+			}
 		}
 		return isAbsolute(fromCwd) ?
 				[slashed(file)]

@@ -8333,11 +8333,12 @@ const nameUnder = (strategy: string, linked: LinkedBundle): void => {
 			rename(code)
 		])
 	)
-	for (const id in linked.sites)
+	for (const id in linked.sites) {
 		linked.sites[id] = {
 			...linked.sites[id],
 			code: rename(linked.sites[id].code)
 		}
+	}
 }
 
 // arktype can't change its configuration once set

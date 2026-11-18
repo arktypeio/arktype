@@ -25,8 +25,8 @@ export const Order = type({ id: "string", total: Money })
 // allows data and another that says what fails, and one for size a function
 // that does both
 const formOf = (code: string) =>
-	/\btApply: \w+\[1\]/.test(code) ? "speed"
-	: /\btApply: \w+\[0\]/.test(code) ? "size"
+	/\btApply: \w+\[1]/.test(code) ? "speed"
+	: /\btApply: \w+\[0]/.test(code) ? "size"
 	: undefined
 
 // the strategy naming a module, where it's other than the build's own
