@@ -934,7 +934,7 @@
 		display: grid;
 		grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
 		grid-template-areas:
-			"config out"
+			"config config"
 			"in out";
 		gap: 18px 22px;
 		.code-card {
@@ -956,8 +956,29 @@
 			}
 		}
 	}
-	.compile-config {
+	/* step 1 is two lines, so it is a strip: its name, then the lines, in a row */
+	.compile .compile-config {
 		grid-area: config;
+		flex-direction: row;
+		overflow: hidden;
+		> figcaption {
+			flex: none;
+			gap: 20px;
+			border-bottom: 0;
+			border-right: 1px solid var(--rule-soft);
+		}
+		.diff {
+			flex: 1;
+			display: flex;
+			flex-wrap: wrap;
+			padding: 0;
+			> span {
+				flex: 1 1 auto;
+				display: flex;
+				align-items: center;
+				padding-block: 10px;
+			}
+		}
 	}
 	.compile-in {
 		grid-area: in;
@@ -965,6 +986,10 @@
 	}
 	.compile-out {
 		grid-area: out;
+		> footer {
+			flex-wrap: wrap;
+			row-gap: 4px;
+		}
 	}
 	.compile-source,
 	.compile-result {
@@ -983,8 +1008,10 @@
 		cursor: text;
 		min-height: var(--edit-h);
 	}
+	/* at the card's foot, however tall its neighbour makes it */
 	.compile-in > footer {
 		flex-wrap: wrap;
+		margin-top: auto;
 	}
 	/* edits to try, one press each */
 	.compile-tries {
@@ -1873,18 +1900,15 @@
 		}
 		/* a phone keeps the one line that is the plugin: the rest of the file is
 		   scrolling between the reader and what ships */
-		.compile-config .diff {
-			padding: 0;
-			> span:not([data-key]) {
+		.compile .compile-config {
+			flex-direction: column;
+			> figcaption {
+				border-right: 0;
+				border-bottom: 1px solid var(--rule-soft);
+			}
+			.diff > span:not([data-key]) {
 				display: none;
 			}
-			> span {
-				padding-block: 9px;
-			}
-		}
-		.compile-out > footer {
-			flex-wrap: wrap;
-			row-gap: 4px;
 		}
 		.compile-real {
 			padding: 16px 16px 8px;

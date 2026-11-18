@@ -44,26 +44,22 @@ const tries: Try[] = [
 
 type ConfigLine = {
 	text: string
-	/** a line you add */
-	added?: true
-	/** the one line a phone keeps, where the whole file doesn't fit a glance */
+	/** the one line a phone keeps, where two don't fit a glance */
 	key?: true
 }
 
-/** vite.config.ts with the plugin added */
-const config: ConfigLine[] = [
-	{ text: 'import { defineConfig } from "vite"' },
-	{ text: 'import { precompile } from "@ark/aot/unplugin"', added: true },
-	{ text: "" },
-	{ text: "export default defineConfig({" },
-	{ text: "\tplugins: [precompile.vite()]", added: true, key: true },
-	{ text: "})" }
+/** the two lines that add the plugin to a vite.config.ts */
+const added: ConfigLine[] = [
+	{ text: 'import { precompile } from "@ark/aot/unplugin"' },
+	{ text: "plugins: [precompile.vite()]", key: true }
 ]
 
 /**
  * The whole build step, in the order it happens: the two lines that add the
  * plugin, a definition, and what the build makes of it (the union's
  * discriminator found, one switch, each branch handed to its own check).
+ * The plugin is a strip across the top, as small as the step is, and the
+ * definition and what ships for it sit side by side at one height.
  * The markup is all three, finished, with the output dimmed until
  * landing.css has read the definition: the payoff is on screen from the
  * first frame. The definition can then be edited, and CompileLive runs
@@ -76,17 +72,20 @@ export const Compile = () => (
 				<Step n={1}>add the plugin</Step>
 				<span>vite.config.ts</span>
 			</figcaption>
-			<pre className="diff" aria-label="vite.config.ts, with two lines added">
-				{config.map((line, i) => (
+			<pre
+				className="diff"
+				aria-label="vite.config.ts: the two lines that add the plugin"
+			>
+				{added.map(line => (
 					<span
-						key={i}
-						className={line.added ? "diff-add" : "diff-same"}
+						key={line.text}
+						className="diff-add"
 						data-key={line.key ? "" : undefined}
 					>
 						<span className="diff-mark" aria-hidden>
-							{line.added ? "+" : " "}
+							+
 						</span>
-						{line.text || " "}
+						{line.text}
 					</span>
 				))}
 			</pre>
