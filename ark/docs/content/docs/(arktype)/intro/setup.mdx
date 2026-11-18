@@ -9,7 +9,7 @@ description: Install ArkType, define a Type and precompile it in your bundler.
 
 <InstallationTabs pkg="@ark/aot" dev />
 
-`arktype` is a dependency and `@ark/aot` a dev dependency. `arktype` defines and validates Types. [`@ark/aot`](/docs/precompile) precompiles them when you build, so arktype's parser never ships and nothing compiles at runtime. Skip it for a script or REPL with no build step: every Type works without it.
+`arktype` defines and validates Types. [`@ark/aot`](/docs/precompile), a dev dependency, precompiles them when you build, so arktype's parser never ships and nothing compiles at runtime. Skip it for a script or REPL: every Type works without it.
 
 ## Define a Type
 
@@ -193,7 +193,7 @@ Build or start your dev server as you already do. `User` is now a standalone val
 age must be non-negative
 ```
 
-A precompiled error reads as arktype's does at runtime: what failed, without printing the value.
+A precompiled error reads as arktype's does at runtime.
 
 To see what the build makes of each definition without bundling, run:
 

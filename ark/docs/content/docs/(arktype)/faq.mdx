@@ -95,7 +95,7 @@ Yes. ArkType ships English and German, and you can write a locale for any other 
 
 ## How does ArkType compare to Zod or Valibot?
 
-All three validate at runtime and infer TypeScript types. The main difference is how you write a definition: ArkType uses TypeScript's own syntax, while Zod and Valibot use function calls.
+All three validate at runtime, infer TypeScript types and implement [Standard Schema](/docs/standard-schema), so a library that accepts one accepts the others. ArkType writes a definition in TypeScript's own syntax, where Zod and Valibot use function calls:
 
 ```ts
 // z.object({ name: z.string(), age: z.number().int().min(0).optional() })
@@ -105,27 +105,11 @@ const User = type({
 })
 ```
 
-That means dynamic ArkType parses your definitions at runtime, so it ships a parser, and its bundle is larger than Zod's or Valibot's. [Precompiled](/docs/precompile), it ships no parser. <Claim id="loginSize" />
+[Precompiled](/docs/precompile), it ships no parser. <Claim id="zodSpeed" /> <Claim id="loginSize" /> The [homepage](/#board) has each benchmark with its method.
 
-Coming from Zod, most APIs have a direct equivalent:
+Without the plugin, arktype parses definitions at runtime, so it ships its parser. <Claim id="dynamicSize" />
 
-| Zod                           | ArkType                                                              |
-| ----------------------------- | -------------------------------------------------------------------- |
-| `z.object({ ... })`           | `type({ ... })`                                                      |
-| `.optional()` on a property   | `"key?": ...`                                                        |
-| `.default(value)`             | `"number = 0"` as a property value                                   |
-| `z.enum(["a", "b"])`          | `"'a' \| 'b'"`                                                       |
-| `z.array(T)`                  | `T.array()` or `"string[]"`                                          |
-| `z.infer<typeof T>`           | `typeof T.infer`                                                     |
-| `T.parse(data)`               | `T.assert(data)`                                                     |
-| `T.safeParse(data)`           | `T(data)`, then `instanceof type.errors`                             |
-| `.min(1, "Name is required")` | `["string >= 1", "@", { message: "Name is required" }]`              |
-| `.refine(fn, "Message")`      | `.narrow((v, ctx) => fn(v) \|\| ctx.reject({ message: "Message" }))` |
-| `.transform(fn)`              | `.pipe(fn)`                                                          |
-
-[Migrating](/docs/migrating) maps the rest of Zod's API, and Valibot's, and has a prompt that migrates a project for you.
-
-All three implement [Standard Schema](/docs/standard-schema), so a library that accepts one of them accepts the others, and you can [adopt ArkType one schema at a time](/docs/migrating#adopt-incrementally).
+[Migrating](/docs/migrating) maps Zod's API and Valibot's row by row, and has a prompt that migrates a project for you. You can also [adopt ArkType one schema at a time](/docs/migrating#adopt-incrementally).
 
 ## Why isn't my wrapper generic working?
 
