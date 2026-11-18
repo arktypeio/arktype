@@ -388,7 +388,7 @@ const print = (out: unknown) =>
 const evenOver = (min: number) =>
 	type("number").narrow((n, ctx) => (n > min && n % 2 === 0) || ctx.mustBe(\`even and over \${min}\`))
 const Limited = type({ name: "string", count: evenOver(2) }).narrow(
-	(data, ctx) => data.count < 10 || ctx.reject({ message: "Too many.", path: ["count"] })
+	(data, ctx) => { const held = ctx; return data.count < 10 || held.reject({ message: "Too many.", path: ["count"] }) }
 )
 print(Limited({}))
 print(Limited({ name: "n", count: 3 }))
@@ -429,7 +429,7 @@ domain items.1.name: must be a string
 const print = (out: unknown) =>
 	console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
 const Counted = type({ count: "number" }).narrow(
-	(data, ctx) => data.count < 10 || ctx.reject({ message: "Too many.", path: ["count"] })
+	(data, ctx) => { const held = ctx; return data.count < 10 || held.reject({ message: "Too many.", path: ["count"] }) }
 )
 const Listed = type({ items: Counted.array() })
 print(Counted({ count: 12 }))
@@ -901,6 +901,20 @@ run(() => T({ s: "x" }))
 run(() => T.allows({ s: "abc" }))
 `,
 			reporting(`s.length > 2 && (s.length > 4 || ctx.mustBe("longer"))`)
+		)
+
+		// each is spread where its issue is raised, as an array's literal can be
+		itRunsAsUnproved(
+			"reports at a path an array's literal writes",
+			`const T = type({ s: N, deep: { t: N.array() } })
+run(() => T({ s: "x", deep: { t: ["abc", "y"] } }))
+run(() => T({ s: "abc", deep: { t: [] } }))
+run(() => T.allows({ s: "x", deep: { t: [] } }))
+run(() => N("x"))
+`,
+			reporting(
+				`${long} || ctx.reject({ path: s === "x" ? ["at", 0] : ["elsewhere"], relativePath: ["under"], message: "short" })`
+			)
 		)
 
 		for (const errors of ["first", "none"] as const) {

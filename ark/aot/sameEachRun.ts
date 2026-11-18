@@ -109,7 +109,9 @@ export interface Rejecting {
 	// the parameter it tests, by name
 	data: string
 	test: Node & { start: number; end: number }
-	// where test is a call of a function with that parameter alone, the function
+	// whether data fails where the test holds, rather than where it doesn't
+	fails: boolean
+	// where data passes a call of a function with that parameter alone, the function
 	callee: (Node & { start: number; end: number }) | undefined
 	// the message's own text, a string
 	message: string
@@ -123,13 +125,14 @@ export const rejectingOf = (
 ): Rejecting | undefined => {
 	const parts = rejectingPartsOf(fn)
 	if (!parts) return
-	const { data, test, message } = parts
+	const { data, test, message, fails } = parts
 	// nothing binds a name between the parameter and what its body tests
 	const isData = (node: Node) =>
 		node.type === "Identifier" && node.name === data.name
 	const tested = unwrapExpression(test)
 	const callee =
 		(
+			!fails &&
 			tested.type === "CallExpression" &&
 			!tested.optional &&
 			tested.callee.type === "Identifier" &&
@@ -142,6 +145,7 @@ export const rejectingOf = (
 	return {
 		data: data.name,
 		test,
+		fails,
 		callee,
 		message: module.source.slice(message.start, message.end)
 	}

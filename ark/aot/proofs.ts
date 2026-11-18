@@ -71,6 +71,20 @@ export const readsOnlyItsArgument = (fn: FunctionNode): boolean => {
 
 const reportedKeys = new Set(["expected", "actual", "message"])
 
+// what raises its issue spreads each, which anything but an array may fail:
+// one an array's literal writes can't, whichever of two a condition picks
+const reportedPaths = new Set(["path", "relativePath", "prefixPath"])
+
+const isArrayLiteral = (node: Node): boolean => {
+	const value = unwrapped(node)
+	return (
+		value.type === "ArrayExpression" ||
+		(value.type === "ConditionalExpression" &&
+			isArrayLiteral(value.consequent) &&
+			isArrayLiteral(value.alternate))
+	)
+}
+
 // a report that reads nothing a ctx holds, so can't throw for lack of one
 const isPlainReport = (method: string, args: readonly Node[]): boolean => {
 	if (args.length !== 1) return false
@@ -87,7 +101,8 @@ const isPlainReport = (method: string, args: readonly Node[]): boolean => {
 					!prop.computed &&
 					!prop.method &&
 					prop.key.type === "Identifier" &&
-					reportedKeys.has(prop.key.name)
+					(reportedKeys.has(prop.key.name) ||
+						(reportedPaths.has(prop.key.name) && isArrayLiteral(prop.value)))
 			))
 	)
 }
@@ -159,6 +174,8 @@ export interface RejectingParts {
 	test: Node & { start: number; end: number }
 	// the message, a string's literal
 	message: Node & { start: number; end: number }
+	// whether data fails where the test holds, rather than where it doesn't
+	fails: boolean
 }
 
 const unwrapped = (node: Node): Node => {
@@ -168,10 +185,11 @@ const unwrapped = (node: Node): Node => {
 
 // A narrow written `(data, ctx) => test || ctx.reject({ message: "..." })`, or
 // `test ? true : ctx.reject(...)`, as most reporting a message of their own
-// are: what it tests, which names its ctx nowhere, and the message. Only its
-// truthiness is read, so the two are one. All it asks of its ctx is to reject
-// with that message, which is a predicate's issue saying it, at the path and
-// of the data it was passed
+// are, or testing what fails: `fails ? ctx.reject(...) : true`, or `if (fails)
+// return ctx.reject(...)` then `return true`. What it tests, which names its
+// ctx nowhere, and the message. Only its truthiness is read, so they're one.
+// All it asks of its ctx is to reject with that message, which is a
+// predicate's issue saying it, at the path and of the data it was passed
 export const rejectingPartsOf = (fn: Node): RejectingParts | undefined => {
 	if (
 		fn.type !== "ArrowFunctionExpression" ||
@@ -181,22 +199,41 @@ export const rejectingPartsOf = (fn: Node): RejectingParts | undefined => {
 		return
 	const [data, ctx] = fn.params
 	if (data.type !== "Identifier" || ctx.type !== "Identifier") return
-	const returned =
-		fn.body.type !== "BlockStatement" ? fn.body
-		: fn.body.body.length === 1 && fn.body.body[0].type === "ReturnStatement" ?
-			fn.body.body[0].argument
+	const isTrue = (node: Node | null): boolean => {
+		const value = node && unwrapped(node)
+		return value?.type === "Literal" && value.value === true
+	}
+	const returnedBy = (statement: Node | undefined): Node | null | undefined =>
+		statement?.type === "ReturnStatement" ? statement.argument
+		: statement?.type === "BlockStatement" && statement.body.length === 1 ?
+			returnedBy(statement.body[0])
 		:	undefined
-	const body = returned && unwrapped(returned)
-	const [test, report] =
-		body?.type === "LogicalExpression" && body.operator === "||" ?
-			[body.left, body.right]
-		: (
-			body?.type === "ConditionalExpression" &&
-			body.consequent.type === "Literal" &&
-			body.consequent.value === true
+	const statements =
+		fn.body.type === "BlockStatement" ? fn.body.body : undefined
+	const [first, last] = statements ?? []
+	// `if (fails) return ctx.reject(...)`, then `return true`
+	const guarded =
+		(
+			statements?.length === 2 &&
+			first.type === "IfStatement" &&
+			!first.alternate &&
+			isTrue(returnedBy(last) ?? null)
 		) ?
-			[body.test, body.alternate]
-		:	[]
+			first
+		:	undefined
+	const returned =
+		!statements ? fn.body
+		: statements.length === 1 ? returnedBy(first)
+		: undefined
+	const body = returned && unwrapped(returned)
+	const [test, report, fails = false] =
+		guarded ? [guarded.test, returnedBy(guarded.consequent), true]
+		: body?.type === "LogicalExpression" && body.operator === "||" ?
+			[body.left, body.right]
+		: body?.type !== "ConditionalExpression" ? []
+		: isTrue(body.consequent) ? [body.test, body.alternate]
+		: isTrue(body.alternate) ? [body.test, body.consequent, true]
+		: []
 	if (!test || !report) return
 	const call = unwrapped(report)
 	if (
@@ -236,7 +273,7 @@ export const rejectingPartsOf = (fn: Node): RejectingParts | undefined => {
 		)
 	)
 		return
-	return { data, test, message: property.value }
+	return { data, test, message: property.value, fails }
 }
 
 /** notes what a function a build wouldn't run can read, as it's created */

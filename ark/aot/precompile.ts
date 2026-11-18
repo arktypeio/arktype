@@ -1437,7 +1437,7 @@ export class Precompiler {
 		const rejects =
 			tested === undefined ? undefined
 			: rejecting!.callee ? `${tested}, ${rejecting!.message}`
-			: `${rejecting!.data} => (${tested}), ${rejecting!.message}`
+			: `${rejecting!.data} => ${rejecting!.fails ? "!" : ""}(${tested}), ${rejecting!.message}`
 		const text =
 			rejects === undefined ?
 				closedTextOf(node, module, aliasOf)

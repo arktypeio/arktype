@@ -1185,6 +1185,16 @@ console.log(User.allows({ name: "x" }), User.allows({ name: "abc" }))
 			`(s: string, ctx) => { return s.length > 2 ? true : ctx.reject({ message: 'Too short.' }) }`,
 			/\brejectsWith\(\(?s\)? => \(?s\.length > 2\)?, ["']Too short\.["']\)/
 		)
+		moves(
+			"holds one rejecting what its condition finds as what passes it",
+			`(s, ctx) => s.length < 3 ? ctx.reject({ message: "Too short." }) : true`,
+			/\brejectsWith\(\(?s\)? => !\(?s\.length < 3\)?, "Too short\."\)/
+		)
+		moves(
+			"holds one returning its rejection from an if the same way",
+			`(s, ctx) => { if (s.length < 3) { return ctx.reject({ message: "Too short." }) } return true }`,
+			/\brejectsWith\(\(?s\)? => !\(?s\.length < 3\)?, "Too short\."\)/
+		)
 		// what it returns without a report is described by its name, which is none
 		moves(
 			"holds any other by its text, which nothing names",
