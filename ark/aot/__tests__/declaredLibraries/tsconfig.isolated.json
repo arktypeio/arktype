@@ -1,0 +1,5 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": { "declaration": true, "isolatedDeclarations": true },
+	"include": ["src/trpc.ts"]
+}

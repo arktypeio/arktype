@@ -3,6 +3,11 @@ import { createRequire } from "node:module"
 import { join, resolve } from "node:path"
 import { dirname, relative } from "node:path/posix"
 import type * as ts from "typescript"
+import {
+	isElidedNode,
+	ShapeReferences,
+	type ShapeNames
+} from "./declareShapes.ts"
 
 export interface DeclareOptions {
 	cwd?: string | undefined
@@ -57,16 +62,33 @@ export const emitDeclarations = (opts?: DeclareOptions): Declarations => {
 	const inferredByNode = inferredOf(ts, printer.checker, emitted)
 	const inferred = [...inferredByNode.values()]
 	printer.nameAll(inferred)
-	const shapes = printer.settle(inferred)
-	const elided: string[] = []
-	const files = emitModules(
-		program,
-		emitted,
-		redeclarationOf(ts, inferredByNode, (fileName, name) =>
-			elided.push(writeElidedMessage(relative(tsPath(cwd), fileName), name))
-		),
-		diagnostics
-	)
+	let shapes = printer.settle(inferred)
+	const references = new ShapeReferences(ts, program, printer)
+	let elided: string[] = []
+	let emitDiagnostics: ts.Diagnostic[] = []
+	let files: Record<string, string> = {}
+	// a shape only a library's type holds, like a morph's input, is named once
+	// a declaration reaches it, so the modules are emitted again to read its name
+	for (let isSettled = false; !isSettled; ) {
+		elided = []
+		emitDiagnostics = []
+		files = emitModules(
+			program,
+			emitted,
+			redeclarationOf({
+				ts,
+				printer,
+				references,
+				inferredByNode,
+				onElided: (fileName, name) =>
+					elided.push(writeElidedMessage(relative(tsPath(cwd), fileName), name))
+			}),
+			emitDiagnostics
+		)
+		isSettled = !printer.nameReached()
+		if (!isSettled) shapes = printer.settle(inferred)
+	}
+	diagnostics.push(...emitDiagnostics)
 	if (shapes.length) {
 		files[sharedPath] =
 			`// the shapes of this build's Types, Scopes and Modules\n${shapes.join("\n")}\n`
@@ -381,11 +403,21 @@ const arkReferenceOf = (
 const arkDeclaration =
 	/[/\\](?:arktype|ark[/\\]type)[/\\](?:out[/\\])?(variants[/\\]\w+|scope|module)\.(?:d\.)?ts$/
 
-const redeclarationOf = (
-	ts: TypeScript,
-	inferredByNode: Map<ts.Node, Inferred>,
+interface Redeclaration {
+	ts: TypeScript
+	printer: ShapePrinter
+	references: ShapeReferences
+	inferredByNode: Map<ts.Node, Inferred>
 	onElided: (fileName: string, name: string) => void
-): ts.TransformerFactory<ts.SourceFile | ts.Bundle> => {
+}
+
+const redeclarationOf = ({
+	ts,
+	printer,
+	references,
+	inferredByNode,
+	onElided
+}: Redeclaration): ts.TransformerFactory<ts.SourceFile | ts.Bundle> => {
 	// tsc declares a destructured name or `export default <expression>` as a
 	// const of its own, which only its name ties to its source
 	const boundByFile = new Map<ts.SourceFile, Record<string, Inferred>>()
@@ -403,20 +435,44 @@ const redeclarationOf = (
 		const source = ts.getOriginalNode(node) as ts.SourceFile
 		const exported = node.statements.find(ts.isExportAssignment)?.expression
 		const defaultName = exported && ts.isIdentifier(exported) && exported.text
-		// a declaration reading neither a Type nor a cycle is left as tsc wrote it
-		const typeOf = (declared: ts.Node, name?: string | false) => {
+		// a declaration that can't be printed whole keeps what tsc wrote, but for
+		// each shape in it the build names
+		const typeOf = (
+			declared: ts.VariableDeclaration | ts.FunctionDeclaration,
+			name?: string | false
+		) => {
 			const original = ts.getOriginalNode(declared)
 			const inferred =
 				original !== declared ? inferredByNode.get(original)
 				: !name ? undefined
 				: name === defaultName ? defaultByFile.get(source)
 				: boundByFile.get(source)?.[name]
-			return (
-					inferred?.printed !== undefined &&
-						(inferred.isHolding || holdsElided(ts, declared))
-				) ?
-					ctx.factory.createTypeReferenceNode(inferred.printed)
-				:	undefined
+			if (!inferred) return
+			const printed =
+				inferred.printed === undefined ?
+					undefined
+				:	ctx.factory.createTypeReferenceNode(inferred.printed)
+			if (inferred.isHolding && printed) return printed
+			if (!declared.type || !printer.enter(source.fileName)) return
+			const byNode = references.in({
+				node: declared.type,
+				type: inferred.type,
+				key: inferred.key,
+				source
+			})
+			printer.leave()
+			const visit = (node: ts.Node): ts.Node => {
+				const reference = byNode.get(node)
+				return reference === undefined ?
+						ts.visitEachChild(node, visit, ctx)
+					:	ctx.factory.createTypeReferenceNode(reference)
+			}
+			const named =
+				byNode.size ? (visit(declared.type) as ts.TypeNode) : undefined
+			// a cycle no shape names is declared as printed, where it could be
+			return printed && holdsElided(ts, named ?? declared.type) ? printed : (
+					named
+				)
 		}
 		const redeclare = (declaration: ts.VariableDeclaration) => {
 			const type = typeOf(
@@ -468,10 +524,7 @@ const redeclarationOf = (
 
 // whether TypeScript wrote `/*elided*/ any` for a cycle in it
 const holdsElided = (ts: TypeScript, node: ts.Node): boolean =>
-	(node.kind === ts.SyntaxKind.AnyKeyword &&
-		!!ts
-			.getSyntheticLeadingComments(node)
-			?.some(comment => comment.text === "elided")) ||
+	isElidedNode(ts, node) ||
 	!!ts.forEachChild(node, child => holdsElided(ts, child) || undefined)
 
 const elidedIn = (ts: TypeScript, statement: ts.Statement): string[] => {
@@ -487,7 +540,7 @@ const elidedIn = (ts: TypeScript, statement: ts.Statement): string[] => {
 		})
 }
 
-class ShapePrinter {
+class ShapePrinter implements ShapeNames {
 	ts: TypeScript
 	checker: ts.TypeChecker
 	root: string
@@ -503,6 +556,19 @@ class ShapePrinter {
 	aliases = new Map<ts.Type, string>()
 	// the shapes this pass reached that the next names
 	unnamed = new Map<ts.Type, string>()
+	// where a scope's alias or a Type's input or output asks for its name
+	reached = this.unnamed
+	inferred: Inferred[] = []
+	// each Type's input and output where its shape isn't both, found once a
+	// declaration holds a shape without a name
+	sideNames: Map<ts.Type, string> | undefined
+	// the shape each was distilled from
+	sideBases = new Map<ts.Type, ts.Type>()
+	// each object shape's text by its name
+	textsByName = new Map<string, string>()
+	// while one of them is printed, the name of each shape its Type's holds by
+	// its text, as its own copy of one has the same
+	heldByText: Map<string, string> | undefined
 	keysByPrinting = new Map<ts.Type, string>()
 	// the directory of the declaration file being printed
 	fromDir: string
@@ -569,6 +635,7 @@ class ShapePrinter {
 
 	// a Type, Scope or Module bound to a const names its shapes for the const
 	nameAll(inferred: Inferred[]): void {
+		this.inferred = inferred
 		for (const isAliasing of [false, true]) {
 			for (const { key, type, isAliasing: isAlias } of inferred) {
 				const reference =
@@ -592,9 +659,15 @@ class ShapePrinter {
 			const unprintable: ts.Type[] = []
 			for (const [t, name] of this.shapeNames) {
 				this.isFailed = false
+				const base = this.sideBases.get(t)
+				this.heldByText = base && this.namesHeldBy(base)
 				const printed = this.printShape(t, name)
+				this.heldByText = undefined
 				if (printed === undefined) unprintable.push(t)
-				else shapes.push(`export type ${name} = ${printed};`)
+				else {
+					shapes.push(`export type ${name} = ${printed};`)
+					this.textsByName.set(name, unindented(printed))
+				}
 			}
 			for (const declaration of inferred) this.printInferred(declaration)
 			let isNamed = false
@@ -611,26 +684,181 @@ class ShapePrinter {
 	}
 
 	printInferred(inferred: Inferred): void {
-		const path = this.declarationPathByFile[inferred.fileName]
-		if (!path || inferred.isRefused) return
-		this.fromDir = dirname(path)
-		this.shared = specifierBetween(this.fromDir, this.sharedPath)
+		if (inferred.isRefused || !this.enter(inferred.fileName)) return
 		this.isHolding = false
 		this.isFailed = false
+		// what it reaches is named only if its declaration is the one printed here
+		const reached = (this.reached = new Map<ts.Type, string>())
 		inferred.printed = this.print(inferred.type, 0, inferred.key)
 		inferred.isHolding = this.isHolding
 		if (this.isFailed) inferred.isRefused = true
+		else if (this.isHolding) {
+			for (const [t, name] of reached)
+				if (!this.unnamed.has(t)) this.unnamed.set(t, name)
+		}
+		this.reached = this.unnamed
+		this.leave()
+	}
+
+	// prints from a module's declaration until it's left
+	enter(fileName: string): boolean {
+		const path = this.declarationPathByFile[fileName]
+		if (!path) return false
+		this.fromDir = dirname(path)
+		this.shared = specifierBetween(this.fromDir, this.sharedPath)
+		return true
+	}
+
+	leave(): void {
 		this.fromDir = this.root
 		this.shared = undefined
 	}
 
+	// names the shapes the modules' declarations reached as they were emitted
+	nameReached(): boolean {
+		let isNamed = false
+		for (const [t, key] of this.unnamed) isNamed = this.name(t, key) || isNamed
+		this.unnamed.clear()
+		return isNamed
+	}
+
 	print(t: ts.Type, depth: number, key = "Cycle"): string | undefined {
 		const shape = this.shapeNames.get(t)
+		if (shape !== undefined) {
+			return this.shared ?
+					`import(${JSON.stringify(this.shared)}).${shape}`
+				:	shape
+		}
+		if (this.shared !== undefined && !this.arkDepth) this.reach(t)
+		const printed = this.printShape(t, key, depth)
 		return (
-			shape === undefined ? this.printShape(t, key, depth)
-			: this.shared ? `import(${JSON.stringify(this.shared)}).${shape}`
-			: shape
+			(printed !== undefined && this.heldByText?.get(unindented(printed))) ||
+			printed
 		)
+	}
+
+	namesHeldBy(t: ts.Type): Map<string, string> {
+		const { checker } = this
+		const heldByText = new Map<string, string>()
+		const seen = new Set<ts.Type>()
+		const add = (held: ts.Type): void => {
+			if (seen.has(held) || seen.size > maxHeld) return
+			seen.add(held)
+			const name = this.shapeNames.get(held)
+			const text = name === undefined ? undefined : this.textsByName.get(name)
+			if (text?.startsWith("{\n") && !heldByText.has(text))
+				heldByText.set(text, name!)
+			if (held.isUnionOrIntersection()) {
+				for (const member of held.types) add(member)
+				return
+			}
+			if (!(held.flags & this.ts.TypeFlags.Object)) return
+			const { objectFlags } = held as ts.ObjectType
+			// an array's element, or the output of a morph's `To`
+			if (objectFlags & this.ts.ObjectFlags.Reference) {
+				for (const arg of checker.getTypeArguments(held as ts.TypeReference))
+					add(arg)
+			} else if (
+				objectFlags &
+				(this.ts.ObjectFlags.Anonymous | this.ts.ObjectFlags.Mapped)
+			) {
+				for (const property of checker.getPropertiesOfType(held))
+					add(checker.getTypeOfSymbol(property))
+				// a morph, as `(In: input) => To<output>`
+				for (const signature of held.getCallSignatures()) {
+					for (const parameter of signature.parameters)
+						add(checker.getTypeOfSymbol(parameter))
+					add(checker.getReturnTypeOfSignature(signature))
+				}
+			}
+		}
+		add(t)
+		return heldByText
+	}
+
+	referenceTo(t: ts.Type): string | undefined {
+		if (!this.isInferred(t)) return
+		const shape = this.shapeNames.get(t)
+		if (shape === undefined) this.reach(t)
+		else return `import(${JSON.stringify(this.shared)}).${shape}`
+	}
+
+	// asks the next pass to name a scope's alias or a Type's input or output
+	reach(t: ts.Type): void {
+		if (this.reached.has(t) || this.refused.has(t) || !this.isInferred(t))
+			return
+		const name = this.aliases.get(t) ?? this.sides().get(t)
+		if (name !== undefined) this.reached.set(t, name)
+	}
+
+	// whether a type is its definition's alone, where a literal union or a
+	// global like Date is the same type wherever it's written
+	isInferred(t: ts.Type, depth = 0): boolean {
+		const { ts, checker } = this
+		// an array can hold itself without end, as `[[[...]]]`
+		if (depth > maxNesting) return false
+		if (t.isUnionOrIntersection())
+			return t.types.some(member => this.isInferred(member, depth + 1))
+		if (!(t.flags & ts.TypeFlags.Object)) return false
+		if (checker.isArrayType(t) || checker.isTupleType(t)) {
+			return checker
+				.getTypeArguments(t as ts.TypeReference)
+				.some(element => this.isInferred(element, depth + 1))
+		}
+		return (
+			!!(
+				(t as ts.ObjectType).objectFlags &
+				(ts.ObjectFlags.Anonymous | ts.ObjectFlags.Mapped)
+			) &&
+			!t.getCallSignatures().length &&
+			!t.getConstructSignatures().length &&
+			checker.getPropertiesOfType(t).length > 0
+		)
+	}
+
+	sides(): Map<ts.Type, string> {
+		if (this.sideNames) return this.sideNames
+		const { checker } = this
+		const sideNames = (this.sideNames = new Map<ts.Type, string>())
+		const add = (held: ts.Type, key: string): void => {
+			const reference = arkReferenceOf(this.ts, checker, held)
+			if (reference?.name === "Module") {
+				for (const alias of checker.getPropertiesOfType(held))
+					add(checker.getTypeOfSymbol(alias), alias.name)
+			}
+			if (reference?.name !== "Type") return
+			const t = reference.args[0]
+			const name = this.shapeNames.get(t) ?? this.aliases.get(t) ?? key
+			for (const [property, side] of [
+				["inferIn", "In"],
+				["infer", "Out"]
+			]) {
+				const symbol = checker.getPropertyOfType(held, property)
+				const distilled = symbol && checker.getTypeOfSymbol(symbol)
+				if (
+					distilled &&
+					distilled !== t &&
+					!this.shapeNames.has(distilled) &&
+					!sideNames.has(distilled) &&
+					this.isInferred(distilled)
+				) {
+					sideNames.set(distilled, `${name}${side}`)
+					this.sideBases.set(distilled, t)
+				}
+			}
+		}
+		for (const isAliasing of [false, true]) {
+			for (const { key, type, isAliasing: isAlias } of this.inferred)
+				if (isAlias === isAliasing) add(type, key)
+		}
+		return sideNames
+	}
+
+	printHeld(t: ts.Type, key: string): string | undefined {
+		if (!arkReferenceOf(this.ts, this.checker, t)) return
+		this.isFailed = false
+		const printed = this.print(t, 0, key)
+		return this.isFailed ? undefined : printed
 	}
 
 	printShape(t: ts.Type, key: string, depth = 0): string | undefined {
@@ -1046,9 +1274,15 @@ const readonlyCheckFlag = 8
 
 const maxNesting = 100
 
+// how many types a Type's input or output looks through for the shapes it holds
+const maxHeld = 1000
+
 // a Type's second argument is its scope
 const argKeyOf = (reference: ArkReference, key: string, i: number) =>
 	reference.name === "Type" && i === 1 ? `${key}Scope` : key
+
+// a shape's text at any depth
+const unindented = (printed: string) => printed.replace(/\n +/g, "\n")
 
 const allPrinted = (printed: (string | undefined)[]) =>
 	printed.includes(undefined) ? undefined : (printed as string[])

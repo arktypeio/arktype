@@ -12,10 +12,7 @@ import {
 } from "node:fs"
 import { join } from "node:path"
 import { relative } from "node:path/posix"
-import { runCli } from "./utils.ts"
-
-// declarations are keyed by TypeScript's paths, which use / on Windows too
-const tsPath = (path: string) => path.split("\\").join("/")
+import { inexactExportsOf, runCli, tsPath } from "./utils.ts"
 
 const declared = fromHere("declared")
 const layouts = fromHere("declaredLayouts")
@@ -76,78 +73,6 @@ const specifiersByLayout = (tsconfig: string) => {
 		].map(match => match[1])
 	}
 	return { errors: declarations.errors, specifiersByFile }
-}
-
-// each export a consumer reads as another type than its source's
-const inexactExportsOf = (fixture: string, checks: Record<string, string>) => {
-	const lines = [
-		"type eq<l, r> = (<_>() => _ extends l ? 1 : 2) extends <_>() => _ extends r ? 1 : 2 ? true : false",
-		"type inferOf<t> = t extends { infer: infer o; inferIn: infer i } ? [o, i] : t"
-	]
-	const exportsByLine = lines.map(() => "")
-	const check = (name: string, comparison: string) => {
-		exportsByLine.push(name)
-		lines.push(`export const _${lines.length}: ${comparison} = true`)
-	}
-	const src = join(fixture, "src")
-	for (const file of readdirSync(src, {
-		recursive: true,
-		encoding: "utf8"
-	}).map(tsPath)) {
-		if (!file.endsWith(".ts")) continue
-		const module = file.slice(0, -3)
-		const id = module.replace(/\//g, "_")
-		exportsByLine.push("", "")
-		lines.push(
-			`import type * as ${id}Source from "./src/${file}"`,
-			`import type * as ${id}Declared from "./out/${module}.js"`
-		)
-		const source = readFileSync(join(src, file), "utf8")
-		for (const [, name] of source.matchAll(/^export const (\w+)/gm)) {
-			check(
-				`${module}.${name}`,
-				`eq<inferOf<typeof ${id}Declared.${name}>, inferOf<typeof ${id}Source.${name}>>`
-			)
-		}
-	}
-	for (const name in checks) check(name, checks[name])
-	try {
-		runCli(fixture, "--declare")
-		writeFileSync(join(fixture, "consumer.ts"), lines.join("\n"))
-		const { compilerOptions } = JSON.parse(
-			readFileSync(join(fixture, "tsconfig.json"), "utf8")
-		)
-		writeFileSync(
-			join(fixture, "tsconfig.consumer.json"),
-			JSON.stringify({
-				compilerOptions: {
-					...compilerOptions,
-					noEmit: true,
-					skipLibCheck: false,
-					skipDefaultLibCheck: true,
-					rootDir: undefined,
-					types: ["node"]
-				},
-				files: ["consumer.ts"]
-			})
-		)
-		const tsc = spawnSync(
-			process.execPath,
-			[
-				fromHere("..", "..", "..", "node_modules", "typescript", "bin", "tsc"),
-				"-p",
-				"tsconfig.consumer.json"
-			],
-			{ cwd: fixture, encoding: "utf8" }
-		)
-		return [...tsc.stdout.matchAll(/^consumer\.ts\((\d+),.*$/gm)].map(
-			([text, line]) => exportsByLine[+line - 1] || text
-		)
-	} finally {
-		rmSync(join(fixture, "out"), { recursive: true, force: true })
-		rmSync(join(fixture, "consumer.ts"), { force: true })
-		rmSync(join(fixture, "tsconfig.consumer.json"), { force: true })
-	}
 }
 
 contextualize(() => {
@@ -396,16 +321,49 @@ export type Q = {
 
 	it("omits exactOptionalPropertyTypes' undefined", () => {
 		const exact = fromHere("declaredExact")
-		attest(
-			emitDeclarations({ cwd: exact }).files[
-				tsPath(join(exact, "out", "~arktype.d.ts"))
-			]
-		).snap(`// the shapes of this build's Types, Scopes and Modules
+		const exactFile = (file: string) =>
+			emitDeclarations({ cwd: exact }).files[tsPath(join(exact, "out", file))]
+		attest(exactFile("~arktype.d.ts"))
+			.snap(`// the shapes of this build's Types, Scopes and Modules
+export type Draft = {
+    count: import("arktype").Default<number, 0>;
+    title?: string;
+    tags?: string[] | undefined;
+    parent?: Optional;
+};
 export type Optional = {
     a?: string;
     b?: string | undefined;
 };
 export type Elements = [string, number?];
+export type DraftIn = {
+    title?: string;
+    tags?: string[] | undefined;
+    parent?: Optional;
+    count?: number;
+};
+export type DraftOut = {
+    count: number;
+    title?: string;
+    tags?: string[] | undefined;
+    parent?: Optional;
+};
+`)
+		// in an optional key or element another declaration holds, too
+		attest(exactFile("held.d.ts"))
+			.snap(`export declare const Draft: import("arktype").Type<import("./~arktype.js").Draft>;
+export declare const draft: {
+    input?: import("./~arktype.js").DraftIn;
+    output?: import("./~arktype.js").DraftOut | undefined;
+    either?: import("./~arktype.js").DraftIn | import("./~arktype.js").DraftOut;
+    pair: [import("./~arktype.js").DraftOut, import("./~arktype.js").DraftIn?];
+};
+export declare const optional: {
+    input?: import("./~arktype.js").Optional;
+    output?: import("./~arktype.js").Optional | undefined;
+    either?: import("./~arktype.js").Optional;
+    pair: [import("./~arktype.js").Optional, import("./~arktype.js").Optional?];
+};
 `)
 	})
 
