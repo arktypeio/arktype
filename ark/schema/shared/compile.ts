@@ -32,15 +32,18 @@ import {
 	type TraversalKind
 } from "./traversal.ts"
 
+// assigns a context's keys to the error it's given, which holds data and path
+// already, in the order a literal of them would
 const writeErrorBuilder = (context: object): string => {
-	let body = "return { data, path"
+	let body = "error.data = data\nerror.path = path\n"
 	for (const k in context) {
 		const key = JSON.stringify(k)
-		body += `, ${key}: context[${key}]`
+		body += `error[${key}] = context[${key}]\n`
 	}
 	// the text written when its errors are read has slots from the start
-	for (const k of writtenSlots) if (!(k in context)) body += `, ${k}: undefined`
-	return `${body} }\n`
+	for (const k of writtenSlots)
+		if (!(k in context)) body += `error.${k} = undefined\n`
+	return `${body}return error\n`
 }
 
 const writtenSlots = ["propString", "expected", "actual", "message"]
@@ -52,6 +55,7 @@ registerBuilderCompiler(context =>
 				"context",
 				"path",
 				"data",
+				"error",
 				writeErrorBuilder(context)
 			)
 	)

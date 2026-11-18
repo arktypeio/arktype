@@ -696,7 +696,9 @@ const pathKeys = {
 export type ErrorBuilder = (
 	context: ArkErrorContextInput,
 	path: PropertyKey[],
-	data: unknown
+	data: unknown,
+	// the error it assigns them to, stamped already
+	error: ArkError
 ) => ArkError
 
 const errorOfNodeContext = (
@@ -710,11 +712,24 @@ const errorOfNodeContext = (
 		build = compileBuilder(context)
 		if (build) buildersByContext.set(context, build)
 	}
-	return stampError(
-		build ? build(context, path, data) : ({ data, path, ...context } as never),
-		config
-	)
+	return build ?
+			build(context, path, data, stampError(new StampedFirst(), config))
+		:	stampError({ data, path, ...context } as never, config)
 }
+
+// the object a compiled builder assigns an error's keys to: plain, as its
+// prototype is Object's, but constructed, so each has the same shape when it's
+// stamped, whatever its code adds after. Stamping a literal of each code's
+// shape instead is a private field defined on as many shapes as there are
+// codes, which V8 stops caching past four: about 420 instructions an error,
+// against 30. Its two keys are every error's first, in a literal's order
+const StampedFirst: new () => ArkError = function (
+	this: Record<string, unknown>
+) {
+	this.data = undefined
+	this.path = undefined
+} as never
+StampedFirst.prototype = Object.prototype
 
 const buildersByContext = new WeakMap<object, ErrorBuilder>()
 
