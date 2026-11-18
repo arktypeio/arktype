@@ -592,6 +592,33 @@
 		background: var(--ink-3);
 		transform-origin: left;
 	}
+	/* where ArkType finished, on every lane still running past it */
+	.boot-lane {
+		position: relative;
+	}
+	/* out of the lane's flow, centred on its track, so it adds no height to it */
+	.boot-lane:not(.is-ours)::after {
+		content: "";
+		position: absolute;
+		bottom: -5px;
+		left: calc(var(--ours) / var(--max) * 100% - 1px);
+		width: 2px;
+		height: 22px;
+		border-radius: 1px;
+		background: var(--gold);
+		box-shadow: 0 0 8px 0 color-mix(in oklab, var(--gold-glow) 70%, transparent);
+		pointer-events: none;
+		transition: opacity 0.3s;
+	}
+	.boot-key {
+		display: inline-block;
+		width: 2px;
+		height: 1.1em;
+		margin-right: 0.6ch;
+		vertical-align: -0.2em;
+		border-radius: 1px;
+		background: var(--gold);
+	}
 	.boot-lane.is-ours {
 		.boot-name {
 			font-weight: 700;
@@ -1488,6 +1515,9 @@
 			.boot-val {
 				visibility: hidden;
 			}
+			.boot-lane::after {
+				opacity: 0;
+			}
 			&.compile {
 				.compile-step b {
 					background: transparent;
@@ -1532,6 +1562,10 @@
 			}
 			.boot-lane[data-done] .boot-done {
 				animation: row-in 0.3s var(--ease-out) both;
+			}
+			/* the mark is drawn the moment ArkType's lane finishes */
+			.boot-lane.is-ours:not([data-done]) ~ .boot-lane::after {
+				opacity: 0;
 			}
 		}
 
