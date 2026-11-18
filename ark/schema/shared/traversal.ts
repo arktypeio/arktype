@@ -661,8 +661,9 @@ export const allowsInBranchBy = (
 	const pathLength = ctx.path.length
 	ctx.pushBr()
 	const allowed = allows.call(node, data, ctx)
-	// compiled Allows returns false without popping the keys it pushed
-	ctx.path.length = pathLength
+	// compiled Allows returns false without popping the keys it pushed. Set
+	// only then, as an array's length is set by a call
+	if (ctx.path.length !== pathLength) ctx.path.length = pathLength
 	return ctx.popBr()!.errN === 0 && allowed
 }
 
