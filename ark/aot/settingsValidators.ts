@@ -86,19 +86,14 @@ var ReadIssues = class {
 		return !continues
 	}
 }
-var SummarizedIssues =
-	readsSummary ?
-		class extends ReadIssues {
+var Issues =
+	readsErrors ?
+		class ArkIssues extends ReadIssues {
 			get summary() {
 				let summary = ""
 				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
 				return summary
 			}
-		}
-	:	ReadIssues
-var Issues =
-	readsErrors ?
-		class ArkIssues extends SummarizedIssues {
 			throw() {
 				throw new ThrownIssues(this)
 			}
@@ -109,7 +104,15 @@ var Issues =
 				return this.summary
 			}
 		}
-	:	SummarizedIssues
+	: readsSummary ?
+		class extends ReadIssues {
+			get summary() {
+				let summary = ""
+				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
+				return summary
+			}
+		}
+	:	ReadIssues
 var foundErrors = (apply, data, onFail, Ctx = Issues) => {
 	const errors = new Ctx()
 	apply(data, errors)

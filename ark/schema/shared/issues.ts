@@ -167,21 +167,18 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 }
 
 // each a class only where a build's flag leaves it, as a bundler keeps a class
-// that extends another, and all it reads, but drops one in a branch it folds
-const SummarizedIssues: new () => ReadIssues & { readonly summary: string } =
-	readsSummary ?
-		class extends ReadIssues {
+// that extends another, and all it reads, but drops one in a branch it folds.
+// Errors read whole write a summary too, so theirs is one class with both:
+// a class extending another is about 20 bytes of every bundle that has it
+const Issues: new () => Issues = (
+	readsErrors ?
+		class ArkIssues extends ReadIssues {
 			get summary(): string {
 				let summary = ""
 				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
 				return summary
 			}
-		}
-	:	(ReadIssues as never)
 
-const Issues: new () => Issues = (
-	readsErrors ?
-		class ArkIssues extends SummarizedIssues {
 			throw(): never {
 				throw new ThrownIssues(this as never)
 			}
@@ -194,7 +191,15 @@ const Issues: new () => Issues = (
 				return this.summary
 			}
 		}
-	:	SummarizedIssues) as never
+	: readsSummary ?
+		class extends ReadIssues {
+			get summary(): string {
+				let summary = ""
+				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
+				return summary
+			}
+		}
+	:	ReadIssues) as never
 
 /**
  * The errors returned by a Type on invalid input.
