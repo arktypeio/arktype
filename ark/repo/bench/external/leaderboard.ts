@@ -562,6 +562,47 @@ const runs: Record<string, Run> = Object.fromEntries(
 	)
 )
 
+// the --newest run that rewrites each kind of result file, by run.json's key
+const runOf: Partial<Record<keyof typeof fileNames, string>> = {
+	forms: "form",
+	sbCounts: "sb",
+	sbDownload: "sb",
+	suryCounts: "sury",
+	surySize: "sury"
+}
+
+type Measured = {
+	/** the day the other libraries' newest results were measured */
+	rivals: string
+	/** the commit ArkType's rows were measured at */
+	arkType: string
+}
+
+// When a suite read from result files was last measured, which the site
+// prints beside its results: by its --newest run if it has one, otherwise by
+// the latest date its rivals' files are named for and the commit ArkType's
+// rows file is named for. A fresh run's rows are today's and this checkout's.
+const measuredOf = (source: string | string[]): Measured | undefined => {
+	const kind = (Object.keys(fileNames) as (keyof typeof fileNames)[]).find(
+		kind => sources[kind] === source
+	)
+	if (!kind || freshDir) return
+	const files = sources[kind]
+	const run =
+		files.some(file => file.startsWith("results/newest/")) ?
+			runs[runOf[kind] ?? ""]
+		:	undefined
+	if (run) return { rivals: run.date, arkType: run.commit }
+	const dates = files.flatMap(file => /\d{4}-\d{2}-\d{2}/.exec(file) ?? [])
+	const commit = /-([\da-f]{9})\.json$/.exec(sources.arkType.at(-1)!)?.[1]
+	if (!dates.length || !commit) {
+		throw new Error(
+			`Can't tell when ${kind} was measured from ${files.join(", ")} and ${sources.arkType.at(-1)}`
+		)
+	}
+	return { rivals: dates.reduce((l, r) => (l > r ? l : r)), arkType: commit }
+}
+
 // when the published rows were last measured: the newest run's latest suite,
 // or today for a fresh run
 const measured =
@@ -579,7 +620,20 @@ const out =
 writeFileSync(
 	out,
 	await format(
-		JSON.stringify({ measured, runs, sources, downloads, suites }, null, "\t"),
+		JSON.stringify(
+			{
+				measured,
+				runs,
+				sources,
+				downloads,
+				suites: suites.map(suite => ({
+					...suite,
+					measured: measuredOf(suite.source)
+				}))
+			},
+			null,
+			"\t"
+		),
 		{
 			...(await resolveConfig(out)),
 			filepath: out

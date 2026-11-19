@@ -175,7 +175,11 @@
 						"TypeBox": 372.329751
 					}
 				}
-			]
+			],
+			"measured": {
+				"rivals": "2026-10-24",
+				"arkType": "20710020e"
+			}
 		},
 		{
 			"category": "speed",
@@ -766,6 +770,10 @@
 			"builds": {
 				"dynamic": 89767,
 				"smallest": 996
+			},
+			"measured": {
+				"rivals": "2026-11-06",
+				"arkType": "20710020e"
 			}
 		},
 		{
@@ -1317,7 +1325,11 @@
 						"Zod Mini": 1686.468265
 					}
 				}
-			]
+			],
+			"measured": {
+				"rivals": "2026-10-25",
+				"arkType": "20710020e"
+			}
 		},
 		{
 			"category": "speed",
@@ -1341,7 +1353,11 @@
 						"Zod (compiled)": 274.07353
 					}
 				}
-			]
+			],
+			"measured": {
+				"rivals": "2026-10-25",
+				"arkType": "20710020e"
+			}
 		},
 		{
 			"category": "speed",
@@ -1501,7 +1517,11 @@
 						"@cfworker/json-schema": 8439520.821666667
 					}
 				}
-			]
+			],
+			"measured": {
+				"rivals": "2026-10-24",
+				"arkType": "20710020e"
+			}
 		},
 		{
 			"category": "startup",
@@ -1543,7 +1563,11 @@
 						"zod-compiler": 15.942605
 					}
 				}
-			]
+			],
+			"measured": {
+				"rivals": "2026-10-25",
+				"arkType": "20710020e"
+			}
 		},
 		{
 			"category": "startup",
@@ -1567,7 +1591,11 @@
 						"Zod (compiled)": 667380.077
 					}
 				}
-			]
+			],
+			"measured": {
+				"rivals": "2026-10-25",
+				"arkType": "20710020e"
+			}
 		},
 		{
 			"category": "size",
@@ -1607,7 +1635,11 @@
 						"ata": 131004
 					}
 				}
-			]
+			],
+			"measured": {
+				"rivals": "2026-11-06",
+				"arkType": "20710020e"
+			}
 		},
 		{
 			"category": "size",
@@ -1630,7 +1662,11 @@
 						"ArkType": 270
 					}
 				}
-			]
+			],
+			"measured": {
+				"rivals": "2026-11-06",
+				"arkType": "20710020e"
+			}
 		}
 	]
 }
