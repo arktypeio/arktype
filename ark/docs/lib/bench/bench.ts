@@ -9,7 +9,9 @@
  * as a win.
  */
 import data from "./benchData.json" with { type: "json" }
+import { formBuilds, measuredOf, resultsOf } from "./leaderboard.ts"
 import { preview } from "./preview.ts"
+import { unitText } from "./units.ts"
 
 export type Verdict = {
 	ratio: number
@@ -127,8 +129,6 @@ export const formatRatio = (r: number): string =>
 	r >= 10 ? `${Math.floor(r + 1e-9)}×`
 	: r >= 2 ? `${Math.floor(r * 10 + 1e-9) / 10}×`
 	: `${Math.floor(r * 100 + 1e-9) / 100}×`
-
-const kb = (bytes: number) => `${Math.floor(bytes / 100) / 10} KB`
 
 export const list = (xs: string[]) =>
 	xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}`
@@ -624,7 +624,6 @@ export const benchFacts = () => {
 			x.rows.map(s => formatRatio(1 / ours(s).vs[x.key].speedup))
 		)})`
 	const startup = bench.startup.login
-	const size = bench.size.login
 	return {
 		validCount: verdicts.length,
 		validWins: verdicts.filter(x => x.v.verdict === "win").length,
@@ -672,8 +671,6 @@ export const benchFacts = () => {
 		),
 		coldStandalone: `${startup.standalone.coldMs} ms`,
 		coldJit: `${startup.arktype.coldMs} ms`,
-		sizeStandalone: kb(size.standalone.gzip),
-		sizeJit: kb(size.arktype.gzip),
 		scenarioCount: bench.scenarios.length
 	}
 }
@@ -692,18 +689,24 @@ export type JitComparison = {
 /** a precompiled build against dynamic ArkType, which compiles at runtime: speed once running, then what startup and the bundle cost */
 export const jitComparison = (): JitComparison => {
 	const facts = benchFacts()
+	// the form suite's label in leaderboard.json, which measuredOf looks up
+	const form = "valibot.dev's login form"
 	return {
 		summary: `On valid data, the precompiled build is ${facts.versusJit.replaceAll("ArkType's JIT", "dynamic ArkType")}. The bigger change is everything before the first call.`,
-		header: ["Login form app", "Precompiled", "Dynamic"],
+		header: ["", "Precompiled", "Dynamic"],
 		rows: [
-			["Cold start", facts.coldStandalone, facts.coldJit],
+			["Cold start, our login form app", facts.coldStandalone, facts.coldJit],
+			// the two builds of one form at one commit, the pair the size chart
+			// and claims.dynamicSize read: our own login app has no stored
+			// dynamic bundle newer than benchData.json's, which is from before
+			// the precompiled one was re-measured
 			[
-				"Bundle, gzipped",
-				facts.sizeStandalone.replace("KB", "kB"),
-				facts.sizeJit.replace("KB", "kB")
+				`Bundle gzipped, ${form}`,
+				unitText.kB(resultsOf("form", "login form").ArkType),
+				unitText.kB(formBuilds.dynamic)
 			]
 		],
-		note: benchNotes().at(-1)!.replaceAll("the JIT", "dynamic ArkType")
+		note: `Cold start is our login form app (an email and a password check), bundled and minified with esbuild: the median time for a fresh Node process to import the bundle and validate once, measured ${provenance.startup.date} at ${provenance.startup.commit}. Size is ${form}, the validators and the library code they import, minified with esbuild and gzipped, at ${measuredOf(form).arkType}.`
 	}
 }
 
@@ -731,7 +734,7 @@ export const versusLibrary = (key: string) => {
 
 export type LibraryVersus = ReturnType<typeof versusLibrary>
 
-/** the footnote, as paragraphs of plain text: the method, what differs between arms, then startup */
+/** the footnote, as paragraphs of plain text: the method, then what differs between arms */
 export const benchNotes = (): string[] => [
 	`Median ns per call over ${provenance.passes} passes, each running every library in a fresh process, outputs checked against ArkType's before timing. Ties are a two-sided sign test over paired passes at p ≥ .05; ratios are of the medians, truncated. ${provenance.runtime} on ${provenance.machine}, measured ${provenance.date} on ${
 		preview ?
@@ -751,6 +754,5 @@ export const benchNotes = (): string[] => [
 				)
 			)
 		)
-	].join(" "),
-	`Cold start and size, precompiled against the JIT, are for a login form app (an email and a password check) bundled and minified with esbuild. Cold start is the median time for a fresh Node process to import the bundle and validate once, measured ${provenance.startup.date} at ${provenance.startup.commit}; size is the gzipped bundle, the validators and the library code they import.`
+	].join(" ")
 ]
