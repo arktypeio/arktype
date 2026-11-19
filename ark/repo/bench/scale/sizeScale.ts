@@ -17,8 +17,8 @@
 // handler calls. An entry that exports its schemas instead asks a precompiled
 // build to keep every member of every one, as whoever imports it might read
 // them, which no other library here pays for. BENCH_ENTRY=exports sizes that:
-// at 5d73f2ba0, about 100 B of gzip more for "smallest" against Valibot at
-// every count.
+// at 0e29e3d1b it puts "smallest" 0.6% to 2.8% of a gzipped bundle further
+// from Valibot's than an app does, from 10 schemas.
 //
 // The schemas are in modules of 25. 26% of the modules, spread evenly from
 // where the seed starts them, hold their schemas' handlers, and the rest have
@@ -28,10 +28,10 @@
 // declares (a form's component declaring its schema, where the rest are
 // modules of schemas other modules import), and 42 of the 46 files with such a
 // Type use every Type they declare that way, so it's a module that's
-// colocated and not a schema. Where a handler is matters to a precompiled
-// build, which can declare a Type its own module doesn't use more briefly, so
-// each row also has both ends, every handler apart and every handler with its
-// schema, for the builds in layoutBuilds.
+// colocated and not a schema. Where a handler is mattered to "smallest",
+// which declared a Type its own module uses twice, at 20 B a Type, until
+// 08494852a. Each row has both ends, every handler apart and every handler
+// with its schema, for the builds in layoutBuilds, so that coming back shows.
 //
 // Each corpus is synth.ts's app at three seeds. "models" is measure.ts's
 // mixed app, schemas with no message or function of their own, as an API's
@@ -51,8 +51,8 @@
 //
 // Run `pnpm build` first to bundle arktype's build. The script runs with a
 // 16 GiB heap, which the build's pruning needs at 5,000 schemas (build.ts), and
-// takes over an hour, most of it the largest apps, which "smallest" builds at
-// three layouts.
+// takes about 50 minutes, most of it the largest apps, which "smallest"
+// builds at three layouts.
 //
 // usage: pnpm benchSizeScale
 //        BENCH_SCALES=1,50 BENCH_SEEDS=1 pnpm benchSizeScale (a part of it, written to ark/repo/bench/out/sizeScale-app.json)
@@ -143,10 +143,11 @@ const layouts = { split: 0, colocated: 1 }
 
 type LayoutId = keyof typeof layouts
 
-// What the two ends are sized for: "smallest", which they move, and the
-// library it's closest to, which they don't. The default build doesn't move
-// either, by more than 0.3% of any bundle to 1,000 schemas at 5d73f2ba0, and
-// building it at both ends would more than double the run.
+// What the two ends are sized for: "smallest", which they moved by up to 15%
+// of a bundle before 08494852a, and the library it's closest to, which they
+// don't. The default build didn't move either, by more than 0.3% of any
+// bundle to 1,000 schemas at 5d73f2ba0, and building it at both ends would
+// more than double the run.
 const layoutBuilds = ["smallest", "valibot"] as const satisfies ScaleBuild[]
 
 type LayoutBuild = (typeof layoutBuilds)[number]

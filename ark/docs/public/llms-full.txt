@@ -2437,7 +2437,7 @@ if (out instanceof type.errors) {
 }
 ```
 
-An error at the root has no path, so its line is still its message alone.
+An error at the root has no path, so its line is still its message alone, and a message that begins with `must be` and what the error expected [reads on from its path](https://arktype.io/docs/errors#summary-lines) with no colon.
 
 - Text that was a `problem`, written to follow the path, like `isn't allowed`, reads `age: isn't allowed` as a `message`. Write it as a sentence, like `This key isn't allowed`, or configure [`expected`](https://arktype.io/docs/configuration#expected) instead, which reads `age must be ...`.
 - A `message` function no longer receives `problem`. It writes one sentence from the error's `expected` and `actual`, without the path.
@@ -6598,6 +6598,8 @@ To change what an error says, see [Error messages](https://arktype.io/docs/confi
 | with a [custom message](https://arktype.io/docs/configuration#message) | its path, a colon, then its message | `email: Enter a valid email` |
 | a union listing its branches' errors | its message, with each path whole | `k.a must be a string or k.b must be a number` |
 
+A custom message is told by its text. One that begins as arktype's own would, with `must be` and what the error expected, reads on from its path as arktype's does, with no colon.
+
 ### Read errors before the data changes
 
 A Type that calls no narrow or morph may find its errors only when `issues` or `summary` is first read, so rejecting data costs little more than the check that rejected it. They describe the data as it is at that read: if it changed since it was validated, so do they, and data that no longer fails holds one root issue, `is invalid`. Read `summary` or `issues` before the data can change, as reactive form state or an Immer draft can, or anything can across an `await`:
@@ -7080,7 +7082,7 @@ Signup({})
 
 A message is never composed into another error's, and it applies to the Type it's configured on:
 
-- A union's error lists what its branches expected, not their messages, unless every failing branch has the same message, which the union's error then says.
+- A union's error lists what its branches expected, not their messages, unless every failing branch has the same message, which the union's error then says. It lists them too where that message is one configured [by code](https://arktype.io/docs/configuration#by-code) rather than on each branch's Type, or [begins as arktype's own would](https://arktype.io/docs/errors#summary-lines).
 - A message on a union replaces what it lists. To say what a union must be instead, [describe](https://arktype.io/docs/configuration#description) it: `type({ a: "string" }).or({ b: "number" }).describe("a shape")` says `must be a shape`.
 - A message on a [pipe](https://arktype.io/docs/expressions#pipe) is also the message of the errors validating its output.
 - A missing key says the message of its whole value, so configure that last, after any `.pipe()` or `.to()`.
@@ -7133,6 +7135,19 @@ Email("x")
 
 // ArkErrors: Enter a string
 Email(5)
+```
+
+A summary tells a sentence of yours by its text. A message that begins as arktype's own would, with `must be` and the error's `expected`, reads on from its path with no colon, whether it's a string or what a function returns:
+
+```ts
+const Entry = type({
+	age: type("number").configure({
+		message: ctx => `must be ${ctx.expected} (was ${ctx.actual})`
+	})
+})
+
+// ArkErrors: age must be a number (was a string)
+Entry({ age: "5" })
 ```
 
 Each function also receives the active [locale](https://arktype.io/docs/i18n#your-own-messages) as its last argument, so it can write its text in the language a message is read in. A [locale](https://arktype.io/docs/i18n#writing-a-locale) also decides how a summary places a path before a message.
@@ -7734,7 +7749,7 @@ For a language ArkType doesn't ship, start from `en` and replace each part:
 | `line` | an error's line of a summary: its message after its path or label |
 | `domain`, `min`, `required`, ... | one entry per [error code](https://arktype.io/docs/errors#error-codes) with its `message` and optionally its `expected` or `actual` |
 
-Each code's `message` is a whole sentence without a subject, and never names the error's path. `line` places the path or label before it for `summary`, `toLocaleString` and `messageIn`. It receives the error with its `message` written and `custom`, which is `true` where the message is one you [configured](https://arktype.io/docs/configuration#message) or passed to `ctx.reject` rather than one the locale wrote, so it can set a sentence of yours apart from its path, as `en` does with a colon. It's only called for an error below the root, and not for a union listing its branches' errors, each of which names its own path.
+Each code's `message` is a whole sentence without a subject, and never names the error's path. `line` places the path or label before it for `summary`, `toLocaleString` and `messageIn`. It receives the error with its `message` written and `custom`, which is `true` where the message is one you [configured](https://arktype.io/docs/configuration#message) or passed to `ctx.reject` rather than one the locale wrote, so it can set a sentence of yours apart from its path, as `en` does with a colon. A message of yours that begins as `en`'s would, with `must be` and what the error expected, isn't `custom`. It's only called for an error below the root, and not for a union listing its branches' errors, each of which names its own path.
 
 A code's `expected` is a fragment that unions and intersections list. A fragment reads as what follows the locale's "must be", like `fr`'s `doit être`:
 
