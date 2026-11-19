@@ -2298,9 +2298,13 @@ export { bAllows }
 
 export const B = /* @__PURE__ */ $ark_create($ark_bAllows)
 `
-			const linkedWith = (code: string, exposesAllows: boolean) =>
+			const linkedWith = (
+				code: string,
+				exposesAllows: boolean,
+				id = "/main.ts"
+			) =>
 				linkBundle(
-					{ "/main.ts": { source: "export const A = type({})", code } },
+					{ [id]: { source: "export const A = type({})", code } },
 					{ ...units, "~arktype/b": b },
 					{ exposesAllows }
 				)!
@@ -2376,6 +2380,92 @@ export const B = /* @__PURE__ */ $ark_create(/* @__PURE__ */ $ark_runtime.props(
 				attest(b.match(/const bAllows = .*/)?.[0]).snap(
 					"const bAllows = /* @__PURE__ */ runtime.props({ a: /* @__PURE__ */ runtime.allowsOf(aAllows) })"
 				)
+			})
+
+			// as a handler reads the Type declared beside it
+			const readHere = (reads: string, ahead = "") =>
+				`${main.replace("export const A", `${ahead}const A`)}import { bAllows as $ark_bAllows } from "~arktype/b"
+
+export const B = /* @__PURE__ */ $ark_create($ark_bAllows)
+${reads}`
+
+			it("is declared as the validator its site's own code reads, each read naming the unit", () => {
+				const linked = linkedWith(
+					readHere(
+						`export const handlers = { A, run: data => A(data), all: [A.assert] }
+export { A as Renamed, A }
+`,
+						"const later = () => A\n"
+					),
+					true
+				)
+				attest(
+					Object.entries(linked.modules).find(([specifier]) =>
+						specifier.startsWith("~arktype/a-")
+					)?.[1]
+				).snap(`import * as runtime from "arktype/runtime"
+import { create } from "~arktype/create"
+
+const aAllows = /* @__PURE__ */ create(/* @__PURE__ */ runtime.props({ name: runtime.string }))
+
+export { aAllows }
+`)
+				attest(
+					normalized(linked.sites["/main.ts"].code)
+						.split("\n")
+						.filter(line => line && !line.startsWith("import "))
+				).snap([
+					"const later = () => $ark_aAllows",
+					"export const B = /* @__PURE__ */ $ark_create(/* @__PURE__ */ $ark_runtime.props({ a: /* @__PURE__ */ $ark_runtime.allowsOf($ark_aAllows) }))",
+					"export const handlers = { A: $ark_aAllows, run: data => $ark_aAllows(data), all: [$ark_aAllows.assert] }",
+					"export { $ark_aAllows as Renamed, $ark_aAllows as A }"
+				])
+			})
+
+			it("stays a const its module reads as it loads ahead of declaring it, writes, or names in JSX", () => {
+				const created = "const A = /* @__PURE__ */ $ark_create($ark_aAllows)"
+				const kept = (code: string, id = "/main.ts") =>
+					linkedWith(code, true, id).sites[id].code.includes(created)
+				// which throws where it's a const, and wouldn't of an import
+				attest(kept(readHere("", "console.log(A)\n"))).equals(true)
+				attest(kept(readHere("", "(() => A)()\n"))).equals(true)
+				attest(kept(readHere("", "class Early { static a = A }\n"))).equals(
+					true
+				)
+				attest(kept(readHere("A = B\n"))).equals(true)
+				attest(
+					kept(readHere("export const view = <A />\n"), "/main.tsx")
+				).equals(true)
+				// as does one created each time a function runs
+				attest(
+					linkedWith(
+						`${main.replace("export const A = /* @__PURE__ */ $ark_create($ark_aAllows)", "export const make = () => {\n\tconst A = /* @__PURE__ */ $ark_create($ark_aAllows)\n\treturn A\n}")}import { bAllows as $ark_bAllows } from "~arktype/b"
+
+export const B = /* @__PURE__ */ $ark_create($ark_bAllows)
+`,
+						true
+					).sites["/main.ts"].code.includes(created)
+				).equals(true)
+			})
+
+			it("stays one object where a bundle is linked again and its site reads it once", () => {
+				const once = `${main.replace("export const A", "const A")}export const registry = [A]\n`
+				const linked = linkBundle(
+					{ "/main.ts": { source: "const A = type({})", code: once } },
+					units,
+					{ isOneChunk: true }
+				)!
+				const site = linked.sites["/main.ts"].code
+				attest(site.match(/export const registry = .*/)?.[0]).snap(
+					"export const registry = [$ark_aAllows]"
+				)
+				const again = linkBundle(
+					{ "/main.ts": { source: "const A = type({})", code: site } },
+					linked.modules,
+					{ isOneChunk: true }
+				)
+				// written where it's read, it would be created wherever that runs
+				attest(again?.sites["/main.ts"].code ?? site).equals(site)
 			})
 		})
 
