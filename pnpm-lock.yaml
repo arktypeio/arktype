@@ -137,7 +137,7 @@ importers:
         version: 0.4.0(@standard-schema/spec@1.0.0)(hono@4.13.13)
       '@hookform/resolvers':
         specifier: 5.9.1
-        version: 5.9.1(@sinclair/typebox@0.34.52)(@standard-schema/spec@1.0.0)(ajv@8.20.0)(arktype@ark+type)(react-hook-form@7.90.0(@types/react@19.2.18)(react@19.2.9))(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7)
+        version: 5.9.1(@sinclair/typebox@0.34.52)(@standard-schema/spec@1.0.0)(ajv@8.20.0)(arktype@ark+type)(react-hook-form@7.90.0(@types/react@19.3.0)(react@19.2.9))(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7)
       '@modelcontextprotocol/client':
         specifier: 2.3.1
         version: 2.3.1
@@ -175,8 +175,8 @@ importers:
         specifier: 11.19.0
         version: 11.19.0(typescript@6.0.3)
       '@types/react':
-        specifier: 19.2.18
-        version: 19.2.18
+        specifier: 19.3.0
+        version: 19.3.0
       '@typescript-eslint/scope-manager':
         specifier: 8.46.1
         version: 8.46.1
@@ -212,7 +212,7 @@ importers:
         version: 19.2.9(react@19.2.9)
       react-hook-form:
         specifier: 7.90.0
-        version: 7.90.0(@types/react@19.2.18)(react@19.2.9)
+        version: 7.90.0(@types/react@19.3.0)(react@19.2.9)
       rollup:
         specifier: 4.52.4
         version: 4.52.4
@@ -303,13 +303,13 @@ importers:
         version: link:../util
       '@icons-pack/react-simple-icons':
         specifier: 12.7.0
-        version: 12.7.0(react@19.2.9)
+        version: 12.7.0(react@19.3.1)
       '@mdx-js/mdx':
         specifier: 3.1.1
         version: 3.1.1
       '@monaco-editor/react':
         specifier: 4.7.0
-        version: 4.7.0(monaco-editor@0.52.2)(react-dom@19.2.9(react@19.2.9))(react@19.2.9)
+        version: 4.7.0(monaco-editor@0.52.2)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@shikijs/transformers':
         specifier: 4.5.0
         version: 4.5.0
@@ -348,7 +348,7 @@ importers:
         version: 6.1.2
       lucide-react:
         specifier: 0.503.0
-        version: 0.503.0(react@19.2.9)
+        version: 0.503.0(react@19.3.1)
       mdast-util-from-markdown:
         specifier: 2.1.0
         version: 2.1.0
@@ -380,8 +380,8 @@ importers:
         specifier: 3.0.1
         version: 3.0.1(onigasm@2.2.5)
       next:
-        specifier: 16.4.1
-        version: 16.4.1(@types/node@24.7.2)(react-dom@19.2.9(react@19.2.9))(react@19.2.9)
+        specifier: 16.4.6
+        version: 16.4.6(@types/node@24.7.2)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       onigasm:
         specifier: 2.2.5
         version: 2.2.5
@@ -395,11 +395,11 @@ importers:
         specifier: 3.5.3
         version: 3.5.3
       react:
-        specifier: 19.2.9
-        version: 19.2.9
+        specifier: 19.3.1
+        version: 19.3.1
       react-dom:
-        specifier: 19.2.9
-        version: 19.2.9(react@19.2.9)
+        specifier: 19.3.1
+        version: 19.3.1(react@19.3.1)
       remark-gfm:
         specifier: 4.0.1
         version: 4.0.1
@@ -433,7 +433,7 @@ importers:
         version: 0.4.0(@standard-schema/spec@1.0.0)(hono@4.13.13)
       '@hookform/resolvers':
         specifier: 5.9.1
-        version: 5.9.1(@sinclair/typebox@0.34.52)(@standard-schema/spec@1.0.0)(ajv@8.20.0)(arktype@ark+type)(react-hook-form@7.90.0(@types/react@19.2.18)(react@19.2.9))(valibot@1.1.0(typescript@6.0.3))(zod@4.1.12)
+        version: 5.9.1(@sinclair/typebox@0.34.52)(@standard-schema/spec@1.0.0)(ajv@8.20.0)(arktype@ark+type)(react-hook-form@7.90.0(@types/react@19.3.0)(react@19.3.1))(valibot@1.1.0(typescript@6.0.3))(zod@4.1.12)
       '@modelcontextprotocol/server':
         specifier: 2.3.1
         version: 2.3.1
@@ -471,11 +471,11 @@ importers:
         specifier: 2.0.13
         version: 2.0.13
       '@types/react':
-        specifier: 19.2.18
-        version: 19.2.18
+        specifier: 19.3.0
+        version: 19.3.0
       '@types/react-dom':
-        specifier: 19.2.7
-        version: 19.2.7(@types/react@19.2.18)
+        specifier: 19.3.0
+        version: 19.3.0(@types/react@19.3.0)
       '@types/wawoff2':
         specifier: 1.0.2
         version: 1.0.2
@@ -505,7 +505,7 @@ importers:
         version: 3.2.0
       react-hook-form:
         specifier: 7.90.0
-        version: 7.90.0(@types/react@19.2.18)(react@19.2.9)
+        version: 7.90.0(@types/react@19.3.0)(react@19.3.1)
       tailwindcss:
         specifier: 4.1.4
         version: 4.1.4
@@ -644,14 +644,14 @@ importers:
         specifier: 5.1.0
         version: 5.1.0(ajv@8.20.0)
       next:
-        specifier: 16.4.1
-        version: 16.4.1(@types/node@24.7.2)(react-dom@19.2.9(react@19.2.9))(react@19.2.9)
+        specifier: 16.4.6
+        version: 16.4.6(@types/node@24.7.2)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       react:
-        specifier: 19.2.9
-        version: 19.2.9
+        specifier: 19.3.1
+        version: 19.3.1
       react-dom:
-        specifier: 19.2.9
-        version: 19.2.9(react@19.2.9)
+        specifier: 19.3.1
+        version: 19.3.1(react@19.3.1)
       ttsc:
         specifier: 0.31.5
         version: 0.31.5
@@ -1374,57 +1374,57 @@ packages:
       '@emnapi/core': ^1.7.1 || ^2.0.0-alpha.4
       '@emnapi/runtime': ^1.7.1 || ^2.0.0-alpha.4
 
-  '@next/env@16.4.1':
-    resolution: {integrity: sha512-5sUUrrSvs/2/2LnLoesybMGx12EtPB46fdZ6RhAw0XDGSPxU2LFyQBB7yuEiOFFJPKmBY6+q2jTr1/AMbnp0/g==}
+  '@next/env@16.4.6':
+    resolution: {integrity: sha512-SunBjJ6t+oBtecS3dTjdVuMhUogP5wD/vrGL5EVuQYM1iS4O5ilL51HkiJ3sPjMzRHiCChvr4dbaSJbR7F3lxA==}
 
-  '@next/swc-darwin-arm64@16.4.1':
-    resolution: {integrity: sha512-U+hQ5Gj3fpzf4fveTIF3dpUFYhaSW8vHhdAnbiIomzXzg7boreYFgBqprepXFtW4sw+aTttiNmg0gew/iFNhbg==}
+  '@next/swc-darwin-arm64@16.4.6':
+    resolution: {integrity: sha512-kJ4VVZkley17xKaJx72QN2IBqjrj7zenCQZaUF0l9ShS/1Mt2kW4+Z5KGG6vgr3L/J562xTOizVyM1iA/u5nlg==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [darwin]
 
-  '@next/swc-darwin-x64@16.4.1':
-    resolution: {integrity: sha512-/hqC3V1XLUjhMASf/WridKdO9FXoEgN3HBWmtKbj00MPgnltutfraWJ3bYTpCRIgEIpbjJyOVLpYgAhh/BkdcQ==}
+  '@next/swc-darwin-x64@16.4.6':
+    resolution: {integrity: sha512-eIPGZIqC+8JKaeZmvnCANJQF4xWkkHqSnAAajtFxgwDMAOnCgxNvP52SeWZ41PyVwoe+Le/NQuZSaQ8j7YshSA==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [darwin]
 
-  '@next/swc-linux-arm64-gnu@16.4.1':
-    resolution: {integrity: sha512-GHzncHbcaS9g95kcvTNtKQW3aCLoR+xc3Jm7qrkpk1R+D2BjMHIPyvQGRPKCdMX95BsH/421jBUK06q9tEwzjw==}
+  '@next/swc-linux-arm64-gnu@16.4.6':
+    resolution: {integrity: sha512-9nI6O8vvczH2D9ZNdMGqb/3NuT15T9ksOZnAmx9/gjF2cOi74+xxyf1Hk96uIMfm14c9y6wHeBq6SH8g6udvcA==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@next/swc-linux-arm64-musl@16.4.1':
-    resolution: {integrity: sha512-1SuJyDxW/PR9dHJat/ZRgcYLhuSZ+1psP4DlKb2tKIuXbjygqpLrJWRSq+onZQBv8LcmU67EIrmb6c3XTaJLjw==}
+  '@next/swc-linux-arm64-musl@16.4.6':
+    resolution: {integrity: sha512-7/qPhTxDp2ScluOJOhLuhWmlA17o1yZ0SIgpISBCpBxXgtnK4+KGywBpFkfLPiU1rnSM1faFGzYkH6i7JdTrqA==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@next/swc-linux-x64-gnu@16.4.1':
-    resolution: {integrity: sha512-Istng1hMGp9TGO4lUqeKLd70MPN/OOkucVTP2Nmj+gLkwBgmPqUw8CJYBCC7nbl/B/23bBCcjCI5Hsh6hazC1A==}
+  '@next/swc-linux-x64-gnu@16.4.6':
+    resolution: {integrity: sha512-oOpbNa8XOW1qCGd9VvzC4fbkkRxEls7/WI6tz+YHC0xRA7KpV1U7DrAnCPjzVyOk/karzWEepCOcTIDmwK8FwQ==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@next/swc-linux-x64-musl@16.4.1':
-    resolution: {integrity: sha512-aSC9wMNiZRRFVpPkPWBzRwLQxIGm/CiQcXyFF1XNcgodb+uMxdk7aSSGGpDXCbnvZdf4itjHxpOd5h7i7zaiYw==}
+  '@next/swc-linux-x64-musl@16.4.6':
+    resolution: {integrity: sha512-aM8CZ+OR2EwXaAYw7KGkW2GDmNDsLBIRe1MMRZCJPTdw/xhTD0IMUVO4sf3KqrzuRouGzwwLZn34+gFeVXiUQA==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@next/swc-win32-arm64-msvc@16.4.1':
-    resolution: {integrity: sha512-t/myvwFDlypMUjRvbBf8qLPyuaB0iXYYdBtwMt6DM6f+60wtGr4bSYholdPqNeV5VUXZhrpMwfza829kmhS3iA==}
+  '@next/swc-win32-arm64-msvc@16.4.6':
+    resolution: {integrity: sha512-U0p7/tEtqvHX2crhd841CDwKtp5CFkKXVjOhmfccR3Pvp64sj8KBwRqsvltqLOwVBbj0NtkxwXSDpEHYGbxeXQ==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [win32]
 
-  '@next/swc-win32-x64-msvc@16.4.1':
-    resolution: {integrity: sha512-6ICqPo9awCkrtYNPhwkx1uU7rlFWrZRrIboDHS2LU+jv088UBYQtmJ25h6pCp27/+FZjF6BQ4Te4ErugyMeuBg==}
+  '@next/swc-win32-x64-msvc@16.4.6':
+    resolution: {integrity: sha512-3ZG15/5WIdlTQsIEvc9sPTTSL5XFrlLklIKmfF4fwsDnoAhu6NcBDXsk3mbGxNyo6aVLEGex+fHCv2MahY7a9g==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [win32]
@@ -2732,13 +2732,13 @@ packages:
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
 
-  '@types/react-dom@19.2.7':
-    resolution: {integrity: sha512-I8bPpDLcHBv1qiIiXDCy71Rt8eQDKJP0sMSWJphDdAcdqiJ1sGpZamavoEIRZmYzjia9LuEb2HlYdDpmoENpvQ==}
+  '@types/react-dom@19.3.0':
+    resolution: {integrity: sha512-ZI7bU42mZXXKHn/qNLEw2IrbiINU7X5+vfgdixBHkCNpYWXjKgfQ/P+uyGb5CjOLB9UcnTeg3rylQtV2hym44Q==}
     peerDependencies:
-      '@types/react': ^19.2.0
+      '@types/react': ^19.3.0
 
-  '@types/react@19.2.18':
-    resolution: {integrity: sha512-AnzbBERsrLKtk2XSfTbYRLjQPdy116Sty4q+T+Bp3IC4l6jNBvreVPAHmpq9qhXQM7CXZPjLVmGMw9sy+hxQ3w==}
+  '@types/react@19.3.0':
+    resolution: {integrity: sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==}
 
   '@types/sarif@2.1.7':
     resolution: {integrity: sha512-kRz0VEkJqWLf1LLVN4pT1cg1Z9wAuvI6L97V3m2f5B76Tg8d413ddvLBPTEHAZJlnn4XSvu0FkZtViCQGVyrXQ==}
@@ -5307,8 +5307,8 @@ packages:
     resolution: {integrity: sha512-+EUsqGPLsM+j/zdChZjsnX51g4XrHFOIXwfnCVPGlQk/k5giakcKsuxCObBRu6DSm9opw/O6slWbJdghQM4bBg==}
     engines: {node: '>= 0.6'}
 
-  next@16.4.1:
-    resolution: {integrity: sha512-uc657V62E34fOI6W5NtG9IzwsPcms0Z60grz2MJGtglgD+pTFnNt4Yw2PzaU622tfX4vhrDgLZzicE2YlhI20Q==}
+  next@16.4.6:
+    resolution: {integrity: sha512-QZJiYhaZLJMo2KpkQGQIwvmd79WVsAWeYIU554a8d7zArS3si/IRy3lBNV/rtYhE70oLwdLYhPAXLPx8HwcwtA==}
     engines: {node: '>=20.9.0'}
     hasBin: true
     peerDependencies:
@@ -5679,6 +5679,11 @@ packages:
     peerDependencies:
       react: ^19.2.9
 
+  react-dom@19.3.1:
+    resolution: {integrity: sha512-Y0bARz53lhEC1NMCASs0/j+faB/zqt3R8hpvg1e8+61ZVJ4UL0UdC4cBbXfZMcIuhrfgeILTLe+ZeBCavQPtKQ==}
+    peerDependencies:
+      react: ^19.3.1
+
   react-hook-form@7.90.0:
     resolution: {integrity: sha512-+NdG0FLzCPhFOp2NNxaUYLF9fyZhNjx9FTBBSYWF71/l6BBlmIc/j6xlp3DbaHWLJbIG7Zd8oznA19xJClU97w==}
     engines: {node: '>=18.0.0'}
@@ -5691,6 +5696,10 @@ packages:
 
   react@19.2.9:
     resolution: {integrity: sha512-RuLdAokXv3sRmZa2/N8QH0KmTBIgDKC+buRUikGqow31+mGSGidLCX2o4XFq8OV+xBFWfhM9DVgTq1PPHADH4w==}
+    engines: {node: '>=0.10.0'}
+
+  react@19.3.1:
+    resolution: {integrity: sha512-QNhWdt7nrgVWWQG58QuGsAR3jv3Hbe4mb4vz7w2csnHavciZJgda1CPNaldF6eVxv90ud3jUXpKlHL69gO38yw==}
     engines: {node: '>=0.10.0'}
 
   read-pkg@9.0.1:
@@ -5854,6 +5863,9 @@ packages:
 
   scheduler@0.27.0:
     resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
+
+  scheduler@0.28.0:
+    resolution: {integrity: sha512-juorfCmIkIw8tT+p5BXSm6PJjQF/ycEYmKyzURCIt/RaZIhL+PulbQ9Yu2z1HdOJDdqDTlxA1+xKBmHXJsczAw==}
 
   schema-utils@4.8.1:
     resolution: {integrity: sha512-x39pYlJPyH7Uge5QO64B9XGP9zLDc9WNmiQZc+CE3IzZPvMu3lHOuAMGpYNoPixEL7MSWlGhYTg5UlLSL8G6iw==}
@@ -7154,22 +7166,10 @@ snapshots:
       '@standard-schema/spec': 1.0.0
       hono: 4.13.13
 
-  '@hookform/resolvers@5.9.1(@sinclair/typebox@0.34.52)(@standard-schema/spec@1.0.0)(ajv@8.20.0)(arktype@ark+type)(react-hook-form@7.90.0(@types/react@19.2.18)(react@19.2.9))(valibot@1.1.0(typescript@6.0.3))(zod@4.1.12)':
+  '@hookform/resolvers@5.9.1(@sinclair/typebox@0.34.52)(@standard-schema/spec@1.0.0)(ajv@8.20.0)(arktype@ark+type)(react-hook-form@7.90.0(@types/react@19.3.0)(react@19.2.9))(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7)':
     dependencies:
       '@standard-schema/utils': 0.3.0
-      react-hook-form: 7.90.0(@types/react@19.2.18)(react@19.2.9)
-    optionalDependencies:
-      '@sinclair/typebox': 0.34.52
-      '@standard-schema/spec': 1.0.0
-      ajv: 8.20.0
-      arktype: link:ark/type
-      valibot: 1.1.0(typescript@6.0.3)
-      zod: 4.1.12
-
-  '@hookform/resolvers@5.9.1(@sinclair/typebox@0.34.52)(@standard-schema/spec@1.0.0)(ajv@8.20.0)(arktype@ark+type)(react-hook-form@7.90.0(@types/react@19.2.18)(react@19.2.9))(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7)':
-    dependencies:
-      '@standard-schema/utils': 0.3.0
-      react-hook-form: 7.90.0(@types/react@19.2.18)(react@19.2.9)
+      react-hook-form: 7.90.0(@types/react@19.3.0)(react@19.2.9)
     optionalDependencies:
       '@sinclair/typebox': 0.34.52
       '@standard-schema/spec': 1.0.0
@@ -7177,6 +7177,18 @@ snapshots:
       arktype: link:ark/type
       valibot: 1.5.0(typescript@6.0.3)
       zod: 4.6.7
+
+  '@hookform/resolvers@5.9.1(@sinclair/typebox@0.34.52)(@standard-schema/spec@1.0.0)(ajv@8.20.0)(arktype@ark+type)(react-hook-form@7.90.0(@types/react@19.3.0)(react@19.3.1))(valibot@1.1.0(typescript@6.0.3))(zod@4.1.12)':
+    dependencies:
+      '@standard-schema/utils': 0.3.0
+      react-hook-form: 7.90.0(@types/react@19.3.0)(react@19.3.1)
+    optionalDependencies:
+      '@sinclair/typebox': 0.34.52
+      '@standard-schema/spec': 1.0.0
+      ajv: 8.20.0
+      arktype: link:ark/type
+      valibot: 1.1.0(typescript@6.0.3)
+      zod: 4.1.12
 
   '@humanfs/core@0.19.1': {}
 
@@ -7189,9 +7201,9 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@icons-pack/react-simple-icons@12.7.0(react@19.2.9)':
+  '@icons-pack/react-simple-icons@12.7.0(react@19.3.1)':
     dependencies:
-      react: 19.2.9
+      react: 19.3.1
 
   '@img/colour@1.1.0':
     optional: true
@@ -7394,12 +7406,12 @@ snapshots:
     dependencies:
       state-local: 1.0.7
 
-  '@monaco-editor/react@4.7.0(monaco-editor@0.52.2)(react-dom@19.2.9(react@19.2.9))(react@19.2.9)':
+  '@monaco-editor/react@4.7.0(monaco-editor@0.52.2)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@monaco-editor/loader': 1.6.0
       monaco-editor: 0.52.2
-      react: 19.2.9
-      react-dom: 19.2.9(react@19.2.9)
+      react: 19.3.1
+      react-dom: 19.3.1(react@19.3.1)
 
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:
@@ -7429,30 +7441,30 @@ snapshots:
       '@tybys/wasm-util': 0.10.4
     optional: true
 
-  '@next/env@16.4.1': {}
+  '@next/env@16.4.6': {}
 
-  '@next/swc-darwin-arm64@16.4.1':
+  '@next/swc-darwin-arm64@16.4.6':
     optional: true
 
-  '@next/swc-darwin-x64@16.4.1':
+  '@next/swc-darwin-x64@16.4.6':
     optional: true
 
-  '@next/swc-linux-arm64-gnu@16.4.1':
+  '@next/swc-linux-arm64-gnu@16.4.6':
     optional: true
 
-  '@next/swc-linux-arm64-musl@16.4.1':
+  '@next/swc-linux-arm64-musl@16.4.6':
     optional: true
 
-  '@next/swc-linux-x64-gnu@16.4.1':
+  '@next/swc-linux-x64-gnu@16.4.6':
     optional: true
 
-  '@next/swc-linux-x64-musl@16.4.1':
+  '@next/swc-linux-x64-musl@16.4.6':
     optional: true
 
-  '@next/swc-win32-arm64-msvc@16.4.1':
+  '@next/swc-win32-arm64-msvc@16.4.6':
     optional: true
 
-  '@next/swc-win32-x64-msvc@16.4.1':
+  '@next/swc-win32-x64-msvc@16.4.6':
     optional: true
 
   '@node-rs/crc32-android-arm-eabi@1.10.6':
@@ -8467,11 +8479,11 @@ snapshots:
 
   '@types/normalize-package-data@2.4.4': {}
 
-  '@types/react-dom@19.2.7(@types/react@19.2.18)':
+  '@types/react-dom@19.3.0(@types/react@19.3.0)':
     dependencies:
-      '@types/react': 19.2.18
+      '@types/react': 19.3.0
 
-  '@types/react@19.2.18':
+  '@types/react@19.3.0':
     dependencies:
       csstype: 3.2.3
 
@@ -10760,9 +10772,9 @@ snapshots:
     dependencies:
       yallist: 4.0.0
 
-  lucide-react@0.503.0(react@19.2.9):
+  lucide-react@0.503.0(react@19.3.1):
     dependencies:
-      react: 19.2.9
+      react: 19.3.1
 
   magic-string@0.30.19:
     dependencies:
@@ -11356,25 +11368,25 @@ snapshots:
 
   negotiator@0.6.3: {}
 
-  next@16.4.1(@types/node@24.7.2)(react-dom@19.2.9(react@19.2.9))(react@19.2.9):
+  next@16.4.6(@types/node@24.7.2)(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
     dependencies:
-      '@next/env': 16.4.1
+      '@next/env': 16.4.6
       '@swc/helpers': 0.5.23
-      baseline-browser-mapping: 2.11.28
-      caniuse-lite: 1.0.30001750
+      baseline-browser-mapping: 2.11.31
+      caniuse-lite: 1.0.30001819
       postcss: 8.5.23
-      react: 19.2.9
-      react-dom: 19.2.9(react@19.2.9)
-      styled-jsx: 5.1.6(react@19.2.9)
+      react: 19.3.1
+      react-dom: 19.3.1(react@19.3.1)
+      styled-jsx: 5.1.6(react@19.3.1)
     optionalDependencies:
-      '@next/swc-darwin-arm64': 16.4.1
-      '@next/swc-darwin-x64': 16.4.1
-      '@next/swc-linux-arm64-gnu': 16.4.1
-      '@next/swc-linux-arm64-musl': 16.4.1
-      '@next/swc-linux-x64-gnu': 16.4.1
-      '@next/swc-linux-x64-musl': 16.4.1
-      '@next/swc-win32-arm64-msvc': 16.4.1
-      '@next/swc-win32-x64-msvc': 16.4.1
+      '@next/swc-darwin-arm64': 16.4.6
+      '@next/swc-darwin-x64': 16.4.6
+      '@next/swc-linux-arm64-gnu': 16.4.6
+      '@next/swc-linux-arm64-musl': 16.4.6
+      '@next/swc-linux-x64-gnu': 16.4.6
+      '@next/swc-linux-x64-musl': 16.4.6
+      '@next/swc-win32-arm64-msvc': 16.4.6
+      '@next/swc-win32-x64-msvc': 16.4.6
       sharp: 0.35.5(@types/node@24.7.2)
     transitivePeerDependencies:
       - '@babel/core'
@@ -11797,13 +11809,26 @@ snapshots:
       react: 19.2.9
       scheduler: 0.27.0
 
-  react-hook-form@7.90.0(@types/react@19.2.18)(react@19.2.9):
+  react-dom@19.3.1(react@19.3.1):
+    dependencies:
+      react: 19.3.1
+      scheduler: 0.28.0
+
+  react-hook-form@7.90.0(@types/react@19.3.0)(react@19.2.9):
     dependencies:
       react: 19.2.9
     optionalDependencies:
-      '@types/react': 19.2.18
+      '@types/react': 19.3.0
+
+  react-hook-form@7.90.0(@types/react@19.3.0)(react@19.3.1):
+    dependencies:
+      react: 19.3.1
+    optionalDependencies:
+      '@types/react': 19.3.0
 
   react@19.2.9: {}
+
+  react@19.3.1: {}
 
   read-pkg@9.0.1:
     dependencies:
@@ -12056,6 +12081,8 @@ snapshots:
   sax@1.4.1: {}
 
   scheduler@0.27.0: {}
+
+  scheduler@0.28.0: {}
 
   schema-utils@4.8.1(webpack@5.112.0(esbuild@0.25.10)(postcss@8.5.29)):
     dependencies:
@@ -12382,10 +12409,10 @@ snapshots:
     dependencies:
       inline-style-parser: 0.2.4
 
-  styled-jsx@5.1.6(react@19.2.9):
+  styled-jsx@5.1.6(react@19.3.1):
     dependencies:
       client-only: 0.0.1
-      react: 19.2.9
+      react: 19.3.1
 
   sucrase@3.35.0:
     dependencies:

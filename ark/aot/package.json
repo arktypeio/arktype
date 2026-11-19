@@ -159,7 +159,7 @@
 		"@tanstack/react-router": "1.170.46",
 		"@tanstack/router-core": "1.171.39",
 		"@trpc/server": "11.19.0",
-		"@types/react": "19.2.18",
+		"@types/react": "19.3.0",
 		"@typescript-eslint/scope-manager": "8.46.1",
 		"ai": "7.0.140",
 		"arktype": "workspace:*",
