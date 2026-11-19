@@ -126,10 +126,10 @@ jobs:
       - name: Claims and generated text before
         run: node ark/repo/bench/external/monthly.ts baseline "$RUNNER_TEMP/leaderboard"
 
-      # ttsc's first Go build of typia's plugin can fail, so a failed run is
-      # tried once more
+      # reproduce.ts runs a suite that fails once more itself, then with the
+      # rival it can't build held at the last release it could
       - name: Rerun the suites
-        run: pnpm benchExternal "$MONTHLY_SUITES" --newest || pnpm benchExternal "$MONTHLY_SUITES" --newest
+        run: pnpm benchExternal "$MONTHLY_SUITES" --newest
 
       - name: Rerun the "smallest" preset's sizes
         run: pnpm benchScale

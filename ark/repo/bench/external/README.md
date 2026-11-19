@@ -50,7 +50,13 @@ the byte:
   `run.json`, and rewrites `ark/docs/lib/bench/leaderboard.json`, where each
   rival keeps its smaller bundle of its pinned, 2026-10-24 and newest
   installs, ArkType's rows are the run's and `measured` is the run's date,
-  which the site prints as "Standings as of".
+  which the site prints as "Standings as of". A rival with a build step
+  moves with the packages it builds on (`newest.ts`): typia with ttsc and
+  ttsc's unplugin, at the versions typia's newest release requires. A suite
+  that fails is run once more, then with each such rival at the last release
+  the suite built: `run.json` records it as `held`, and the pull request
+  says "newest X not buildable in <suite>, kept Y". If that fails too, the
+  run fails.
 - `pnpm benchScale`, which rewrites `ark/docs/lib/bench/presetScale.json`,
   the "smallest" preset's sizes.
 

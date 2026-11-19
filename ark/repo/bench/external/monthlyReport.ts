@@ -122,6 +122,20 @@ type LeaderboardRow = {
 
 type RunRecord = {
 	installed: Record<string, string>
+	held?: Record<string, HeldRecord>
+}
+
+type HeldRecord = {
+	newest: string
+	kept: string
+}
+
+/** a rival a suite couldn't build at its newest release (reproduce.ts), so measured at an earlier one */
+export type HeldRow = {
+	suite: string
+	package: string
+	newest: string
+	kept: string
 }
 
 type Leaf = {
@@ -271,6 +285,19 @@ export const versionRowsOf = (
 		}
 	)
 }
+
+/** each rival a run.json text records as held back */
+export const heldRowsOf = (run: string | undefined): HeldRow[] =>
+	Object.entries(
+		(run === undefined ? {} : JSON.parse(run)) as Record<string, RunRecord>
+	).flatMap(([suite, { held }]) =>
+		Object.entries(held ?? {}).map(([name, { newest, kept }]) => ({
+			suite,
+			package: name,
+			newest,
+			kept
+		}))
+	)
 
 const claimsOf = (check: ClaimsCheck) =>
 	Object.fromEntries(
@@ -519,9 +546,19 @@ export const bodyOf = (report: Report): string => {
 		`CI hasn't run here: a pull request opened with the workflow's token triggers no other workflow. Close and reopen it, or push to ${code(report.branch)}, to run the checks.`
 	]
 
+	const heldRows = heldRowsOf(run?.after)
 	const versionLines = [
 		"### Versions",
 		"",
+		...(heldRows.length ?
+			[
+				...heldRows.map(
+					row =>
+						`- ${code(row.package)}: newest ${row.newest} not buildable in ${row.suite}, kept ${row.kept}`
+				),
+				""
+			]
+		:	[]),
 		...(versions.length === 0 ? ["No suite's install was recorded."]
 		: moved.length === 0 ?
 			["Every rival is at the release it was measured at before."]

@@ -224,6 +224,39 @@ contextualize(() => {
 		])
 	})
 
+	it("says first which rival a suite couldn't build at its newest release", () => {
+		const held = JSON.stringify({
+			sb: {
+				installed: { typia: "15.2.2" },
+				held: { typia: { newest: "15.4.1", kept: "15.2.2" } }
+			}
+		})
+		const body = bodyOf(
+			reportOf({
+				files: [
+					{
+						path: runPath,
+						before: JSON.stringify({ sb: { installed: { typia: "15.2.2" } } }),
+						after: held
+					}
+				]
+			})
+		)
+		attest(body.split("### Versions\n\n")[1].split("\n\n")[0]).snap(
+			"- `typia`: newest 15.4.1 not buildable in sb, kept 15.2.2"
+		)
+		// a hold is news the month it starts, though no version or number moved
+		attest(
+			isMeaningful([
+				{
+					path: runPath,
+					before: JSON.stringify({ sb: { installed: { typia: "15.2.2" } } }),
+					after: held
+				}
+			])
+		).equals(true)
+	})
+
 	it("compares claims by id, and a run that threw lists none", () => {
 		attest(claimChangesOf(holds("1.163"), holds("1.152"))).snap([
 			{
