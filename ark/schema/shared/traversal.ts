@@ -32,7 +32,7 @@ import {
 	type SiteContext,
 	type UnionSite
 } from "./issues.ts"
-import { callsSiteText, listsUnions } from "./issueFeatures.ts"
+import { callsSiteText, findsOnRead, listsUnions } from "./issueFeatures.ts"
 import { TransformErrors } from "./transform.ts"
 import { inProgress } from "./utils.ts"
 
@@ -244,7 +244,9 @@ export class InternalTraversal implements FailureContext {
 		if (this.currentBranch) this.failBranch(error)
 		else {
 			const errors = errorsOf(this)
-			if (errors._.length) errors._.push(error)
+			// errors a build wrote to find their issues once read hold no field
+			// to assign: theirs is a getter's
+			if (findsOnRead || errors._.length) errors._.push(error)
 			else errors._ = [error]
 		}
 		return error

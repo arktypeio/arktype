@@ -14,6 +14,7 @@ import {
 	failsKey,
 	failsKeySite,
 	failsSite,
+	findsOnRead,
 	FirstIssues,
 	holdsExpression,
 	isCustomIssue,
@@ -38,6 +39,7 @@ import {
 	type FailureContext,
 	type FailureSite,
 	type InternalTraversal,
+	type IssuesClass,
 	type MissingText,
 	type SiteContext,
 	type Traversal
@@ -929,80 +931,52 @@ export const applyCallErrors = (
 	return onFail ? onFail(errors) : errors
 }
 
-// as applyCallErrors, of an Apply reporting into ArkErrors and calling no
-// narrow, whose errors fail data whatever it finds, as errors finding their
-// issues once read do: they're passed neither data nor a config, and are what
-// they return
-export const foundCallErrors = (
-	apply: CompactApply,
-	data: unknown,
-	args: ValidatorArgs,
-	onFail?: ArkErrors.Handler | null,
-	Ctx: new () => ArkErrors = ArkErrors
-): unknown => {
-	const errors = new Ctx()
-	// as issuesOf, which a program finding every call's issues so never ships
-	apply(data, errors)
-	if (!errors._.length) errors._e(data, "predicate")
-	if (args.length) {
-		if (args[0]) return args[0].piped(errors as never)
-		if (args[1] !== undefined) onFail = args[1] as never
+const unreadClasses = /* @__PURE__ */ new Map<IssuesClass, IssuesClass>()
+
+// Errors of a class no build wrote to find its issues once read, as an
+// unbundled runtime's or another build's: a class beside it that does, its
+// prototype the errors', built with what finds them as the class itself is
+// where a build wrote it to. Defined at a class's first failure, as defining
+// it at load costs startup
+const unreadOf = (Ctx: IssuesClass): IssuesClass => {
+	let unread = unreadClasses.get(Ctx)
+	if (!unread) {
+		class Unread {
+			// named as the fields of errors written to wait are
+			declare _a: CompactApply
+			declare _d: unknown
+			declare _f?: ArkIssue[]
+
+			constructor(data: unknown, config: unknown, apply: CompactApply) {
+				this._a = apply
+				this._d = data
+			}
+
+			get _(): ArkIssue[] {
+				return (this._f ??= issuesOf(this._a, this._d, new Ctx()))
+			}
+		}
+		// a Ctx, built without the fields its constructor sets
+		setPrototypeOf(Unread.prototype, Ctx.prototype)
+		// keeps the prototype's own constructor, still not enumerable
+		Unread.prototype.constructor = Ctx
+		unreadClasses.set(Ctx, (unread = Unread as never))
 	}
-	return onFail ? onFail(errors) : errors
+	return unread
 }
 
-export const foundElements = (
-	allows: (data: unknown) => boolean,
-	apply: CompactApply,
-	i: number,
-	data: readonly unknown[],
-	args: ValidatorArgs,
-	onFail: ArkErrors.Handler | null,
-	Ctx?: new () => ArkErrors
-): unknown =>
-	foundCallErrors(elementsFrom(allows, apply, i, data), data, args, onFail, Ctx)
-
-type UnreadErrors = new (apply: CompactApply, data: unknown) => ArkErrors
-
-// defined at a build's first failure, as defining it at load costs startup
-type UnreadErrorsOf = () => UnreadErrors
-
-const unreadOf = (Ctx: new () => ArkErrors): UnreadErrors => {
-	class Unread {
-		// named short, as every bundle reading errors writes them
-		declare _a: CompactApply
-		declare _d: unknown
-		declare _f?: ArkIssue[]
-
-		constructor(apply: CompactApply, data: unknown) {
-			this._a = apply
-			this._d = data
-		}
-
-		get _(): ArkIssue[] {
-			return (this._f ??= issuesOf(this._a, this._d, new Ctx()))
-		}
-	}
-	// a Ctx, built without the fields its constructor sets
-	setPrototypeOf(Unread.prototype, Ctx.prototype)
-	// keeps the prototype's own constructor, still not enumerable
-	Unread.prototype.constructor = Ctx
-	return Unread as never
-}
-
-let unreadArkErrors: UnreadErrors | undefined
-
-export const UnreadArkErrors: UnreadErrorsOf = () =>
-	(unreadArkErrors ??= unreadOf(ArkErrors))
-
-// an Apply reporting into ArkErrors calls no user code, so its issues can wait
+// An Apply reporting into ArkErrors calls no user code, so its issues can wait
+// until they're read: errors are built with what finds them, in the place a
+// traversal takes after its data and config. A build that holds such a call
+// writes its errors' class to find them (findsOnRead), so they're that class
+// and the bundle holds nothing more for them to wait with
 export const unreadErrors = (
 	apply: CompactApply,
 	data: unknown,
 	onFail: ArkErrors.Handler | null,
-	Ctx: UnreadErrorsOf
+	Ctx: IssuesClass = ArkErrors
 ): unknown => {
-	const errors = new (Ctx())(apply, data)
+	const errors = new (findsOnRead ? Ctx : unreadOf(Ctx))(data, 0, apply)
 	return onFail ? onFail(errors) : errors
 }
 
@@ -1010,10 +984,10 @@ export const unreadCallErrors = (
 	apply: CompactApply,
 	data: unknown,
 	args: ValidatorArgs,
-	onFail: ArkErrors.Handler | null,
-	Ctx: UnreadErrorsOf
+	onFail?: ArkErrors.Handler | null,
+	Ctx: IssuesClass = ArkErrors
 ): unknown => {
-	const errors = new (Ctx())(apply, data)
+	const errors = new (findsOnRead ? Ctx : unreadOf(Ctx))(data, 0, apply)
 	if (args.length) {
 		if (args[0]) return args[0].piped(errors as never)
 		if (args[1] !== undefined) onFail = args[1] as never
@@ -1022,11 +996,6 @@ export const unreadCallErrors = (
 }
 
 export const emptyMeta: ArkEnv.meta = /* @__PURE__ */ freeze({})
-
-let unreadFirstIssues: UnreadErrors | undefined
-
-export const UnreadFirstIssues: UnreadErrorsOf = () =>
-	(unreadFirstIssues ??= unreadOf(FirstIssues))
 
 interface UnreadFields {
 	_a?: CompactApply
@@ -1080,8 +1049,8 @@ export const unreadElements = (
 	i: number,
 	data: readonly unknown[],
 	args: ValidatorArgs,
-	onFail: ArkErrors.Handler | null,
-	Ctx: UnreadErrorsOf
+	onFail?: ArkErrors.Handler | null,
+	Ctx?: IssuesClass
 ): unknown =>
 	unreadCallErrors(
 		elementsFrom(allows, apply, i, data),

@@ -867,10 +867,9 @@ export class Precompiler {
 			checks,
 			mutatesInput: this.mutatesInput,
 			optimize: opts.optimize ?? "speed",
-			// only errors a build asks to read fastest wait to find their issues:
-			// what waits is bytes of every bundle, and a build setting neither
-			// option checks fastest and fails smallest
-			defersIssues: (opts.optimizeErrors ?? opts.optimize) === "speed",
+			// errors written for size find their issues as a call returns: the
+			// classes that wait to are the ones written for speed
+			defersIssues: (opts.optimizeErrors ?? opts.optimize) !== "size",
 			jsonInput: opts.jsonInput,
 			bakedLimit: opts.bakedLimit
 		}
@@ -8665,7 +8664,9 @@ const anyIssues: IssueFeatures = {
 	readsSummary: true,
 	readsErrors: true,
 	holdsExpression: true,
-	namesTraversalError: true
+	namesTraversalError: true,
+	// arktype's errors hold their issues in a field
+	findsOnRead: false
 }
 
 // a Type whose members a module importing it can bake, as it holds no value

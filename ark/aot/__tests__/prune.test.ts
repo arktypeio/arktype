@@ -712,7 +712,8 @@ export const Fields = { even: Even, name: type("string") }
 				readsSummary: true,
 				readsErrors: true,
 				holdsExpression: false,
-				namesTraversalError: true
+				namesTraversalError: true,
+				findsOnRead: false
 			})
 			attest(
 				await issuesOf(
@@ -733,7 +734,8 @@ export const Fields = { even: Even, name: type("string") }
 				readsSummary: true,
 				readsErrors: true,
 				holdsExpression: false,
-				namesTraversalError: true
+				namesTraversalError: true,
+				findsOnRead: false
 			})
 		})
 
@@ -757,7 +759,8 @@ export const Fields = { even: Even, name: type("string") }
 				readsSummary: true,
 				readsErrors: true,
 				holdsExpression: false,
-				namesTraversalError: true
+				namesTraversalError: true,
+				findsOnRead: false
 			})
 		})
 
@@ -842,7 +845,8 @@ export const Fields = { even: Even, name: type("string") }
 				readsSummary: true,
 				readsErrors: true,
 				holdsExpression: false,
-				namesTraversalError: true
+				namesTraversalError: true,
+				findsOnRead: false
 			})
 		})
 
@@ -1759,16 +1763,67 @@ for (const data of [{ name: 5 }, flipping]) {
 			)
 			attest(run(asserting)).snap("name must be a string\nis invalid\n")
 			// errors finding their issues once read hold the data until then,
-			// which only a called validator's written for speed do
+			// which only a called validator's do
 			attest(asserting.includes("._d=")).equals(false)
-			attest((await bundle({ preset: undefined })).includes("._d=")).equals(
-				false
-			)
+			const calling = await bundle({ preset: undefined })
+			attest(calling.includes("._d=")).equals(true)
+			// as the class its build wrote to, with no class beside it that waits
+			attest(calling.includes("setPrototypeOf")).equals(false)
+			// errors written for size find theirs as the call returns
 			attest(
-				(await bundle({ preset: undefined, optimizeErrors: "speed" })).includes(
+				(await bundle({ preset: undefined, optimizeErrors: "size" })).includes(
 					"._d="
 				)
-			).equals(true)
+			).equals(false)
+		})
+
+		it("finds a failing call's issues once they're read, as a build that leaves the runtime as written does", async () => {
+			const files = writeFixture(
+				{
+					"main.ts": `import { firstIssue, type } from "arktype"
+
+const User = type({ name: "string", age: "number" })
+// reports through a traversal, whose errors are built with nothing to find
+const Even = type("number").narrow((n, ctx) => n % 2 === 0 || ctx.mustBe("even"))
+
+const read = (out: unknown) => (out instanceof type.errors ? out.summary : out)
+const data: Record<string, unknown> = { name: 5, age: "x" }
+const out = User(data)
+// found in the data as it is when they're first read
+data.name = "Ada"
+console.log(read(out))
+// and kept
+data.age = 1
+console.log(read(out), out instanceof type.errors && out.count)
+const unread = User({ name: 5, age: "x" })
+console.log(unread instanceof type.errors && firstIssue(unread).message)
+console.log(read(unread))
+console.log(read(Even(3)), read(Even(2)))
+try {
+	User.assert({ name: 5, age: 1 })
+} catch (e) {
+	console.log((e as Error).message)
+}
+console.log(User({}) instanceof type.errors, JSON.stringify(User({ name: "Ada", age: 1 })))
+`
+				},
+				fromHere("temp", "prunedUnread")
+			)
+			const entry = { entryPoints: [join(files, "main.ts")] }
+			const written = await bundle({ preset: undefined }, entry)
+			attest(run(written)).snap(`age must be a number
+age must be a number 1
+must be a string
+name must be a string
+age must be a number
+must be even 2
+name must be a string
+true {"name":"Ada","age":1}
+`)
+			// errors of a runtime no build wrote wait as a class beside theirs
+			attest(
+				run(await bundle({ preset: undefined, prune: false }, entry))
+			).equals(run(written))
 		})
 
 		it("joins a path's keys where none is an index or needs brackets", async () => {

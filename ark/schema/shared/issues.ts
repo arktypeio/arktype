@@ -3,6 +3,7 @@ import type { ArkErrorCode } from "./errors.ts"
 import {
 	bracketsKeys,
 	callsSiteText,
+	findsOnRead,
 	listsUnions,
 	namesTraversalError,
 	readsErrors,
@@ -200,6 +201,79 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	}
 }
 
+// As ReadIssues, in a build whose failing calls may return errors nobody
+// reads (findsOnRead). Passed what finds their issues, after the data and the
+// config a traversal is built with, they find them when first read, so a
+// call that leaves them unread costs what building them does. For that their
+// issues are a getter over a field, written into the class, with each member
+// again: a class beside the errors' with the getter, its prototype set to
+// theirs, is 98 bytes of a bundle gzipped where this is 27, and a getter
+// defined on each errors object takes longer than finding its issues does.
+// Errors built with nothing to find them, as a traversal's are, hold none
+// until one is added
+class UnreadIssues implements StandardSchemaV1.FailureResult, FailureContext {
+	declare _p: PropertyKey[]
+	/** @internal what finds its issues */
+	declare _a: CompactApply | undefined
+	/** @internal the data they're found in */
+	declare _d: unknown
+	/** @internal its issues, once found or added to */
+	declare _f: ArkIssue[] | undefined
+
+	constructor(data?: unknown, config?: unknown, apply?: CompactApply) {
+		this._p = []
+		this._a = apply
+		this._d = data
+	}
+
+	/** @internal each issue in the order it was added, found when first read */
+	get _(): ArkIssue[] {
+		if (!this._f) {
+			this._f = []
+			// data a write or a getter has made valid since fails as a whole
+			if (this._a && (this._a(this._d, this), !this._f.length))
+				this._e(this._d, "predicate")
+		}
+		return this._f
+	}
+
+	get count(): number {
+		return this._.length
+	}
+
+	get issues(): readonly WrittenIssue[] {
+		for (const issue of this._) issue.message ??= messageOf(issue)
+		return this._ as WrittenIssue[]
+	}
+
+	_e(
+		data: unknown,
+		code: ArkErrorCode,
+		expected?: string,
+		message?: string,
+		text?: SiteContext["text"]
+	): true | undefined {
+		this._.push({ code, path: this._p.slice(), data, expected, message })
+		if (callsSiteText) text?.(this._[this._.length - 1])
+		return undefined
+	}
+
+	_k(
+		apply: CompactApply,
+		data: unknown,
+		key: PropertyKey,
+		...missing: MissingText
+	): boolean | undefined {
+		this._p.push(key)
+		const stops =
+			missing.length && !(key in (data as object)) ?
+				this._e(data, "required", ...missing)
+			:	!apply((data as Keyed)[key], this)
+		this._p.pop()
+		return stops
+	}
+}
+
 /**
  * @internal fails a key of data: where it's missing, as required with what
  * a missing key expects, which is what its value does unless passed, or its
@@ -255,91 +329,190 @@ export const missingTextOf = (missing: SiteContext | undefined): MissingText =>
 // Errors read whole, as most programs read theirs, are one class extending
 // none, which is about 25 bytes of a bundle less than one that does: so it
 // writes ReadIssues's members again, each as that one's is, and a build that
-// reads errors whole drops ReadIssues
-const Issues: new () => Issues = (
+// reads errors whole drops ReadIssues. Each is written once more for errors
+// that find their issues once read, as UnreadIssues is and why
+const Issues: IssuesClass = (
 	readsErrors ?
-		class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
-			declare _: ArkIssue[]
-			declare _p: PropertyKey[]
+		findsOnRead ?
+			// named apart, as one bundle may hold both and a name is one class's
+			class UnreadArkIssues
+				implements StandardSchemaV1.FailureResult, FailureContext
+			{
+				declare _p: PropertyKey[]
+				declare _a: CompactApply | undefined
+				declare _d: unknown
+				declare _f: ArkIssue[] | undefined
 
-			constructor() {
-				this._ = []
-				this._p = []
-			}
+				constructor(data?: unknown, config?: unknown, apply?: CompactApply) {
+					this._p = []
+					this._a = apply
+					this._d = data
+				}
 
-			get count(): number {
-				return this._.length
-			}
+				get _(): ArkIssue[] {
+					if (!this._f) {
+						this._f = []
+						if (this._a && (this._a(this._d, this), !this._f.length))
+							this._e(this._d, "predicate")
+					}
+					return this._f
+				}
 
-			get issues(): readonly WrittenIssue[] {
-				for (const issue of this._) issue.message ??= messageOf(issue)
-				return this._ as WrittenIssue[]
-			}
+				get count(): number {
+					return this._.length
+				}
 
-			_e(
-				data: unknown,
-				code: ArkErrorCode,
-				expected?: string,
-				message?: string,
-				text?: SiteContext["text"]
-			): true | undefined {
-				this._.push({ code, path: this._p.slice(), data, expected, message })
-				if (callsSiteText) text?.(this._[this._.length - 1])
-				return undefined
-			}
+				get issues(): readonly WrittenIssue[] {
+					for (const issue of this._) issue.message ??= messageOf(issue)
+					return this._ as WrittenIssue[]
+				}
 
-			_k(
-				apply: CompactApply,
-				data: unknown,
-				key: PropertyKey,
-				...missing: MissingText
-			): boolean | undefined {
-				this._p.push(key)
-				const stops =
-					missing.length && !(key in (data as object)) ?
-						this._e(data, "required", ...missing)
-					:	!apply((data as Keyed)[key], this)
-				this._p.pop()
-				return stops
-			}
+				_e(
+					data: unknown,
+					code: ArkErrorCode,
+					expected?: string,
+					message?: string,
+					text?: SiteContext["text"]
+				): true | undefined {
+					this._.push({ code, path: this._p.slice(), data, expected, message })
+					if (callsSiteText) text?.(this._[this._.length - 1])
+					return undefined
+				}
 
-			get summary(): string {
-				let summary = ""
-				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
-				return summary
-			}
+				_k(
+					apply: CompactApply,
+					data: unknown,
+					key: PropertyKey,
+					...missing: MissingText
+				): boolean | undefined {
+					this._p.push(key)
+					const stops =
+						missing.length && !(key in (data as object)) ?
+							this._e(data, "required", ...missing)
+						:	!apply((data as Keyed)[key], this)
+					this._p.pop()
+					return stops
+				}
 
-			// an instance of TraversalError only where a program names the
-			// class, so can test for one: otherwise an Error it can't tell
-			// from one, with the same name, message and errors, and no class
-			// in its bundle. Its name is assigned and its errors defined as
-			// the class's are, in statements, which gzip to less than one
-			// expression building it and which a build writing the flag as
-			// a literal folds as well
-			throw(): never {
-				if (namesTraversalError) throw new ThrownIssues(this as never)
-				const thrown = Error(this.summary)
-				thrown.name = "TraversalError"
-				throw Object.defineProperty(thrown, "arkErrors", { value: this })
-			}
+				get summary(): string {
+					let summary = ""
+					for (const issue of this._)
+						summary += (summary && "\n") + lineOf(issue)
+					return summary
+				}
 
-			toJSON(): readonly unknown[] {
-				return this.issues
-			}
+				throw(): never {
+					if (namesTraversalError) throw new ThrownIssues(this as never)
+					const thrown = Error(this.summary)
+					thrown.name = "TraversalError"
+					throw Object.defineProperty(thrown, "arkErrors", { value: this })
+				}
 
-			toString(): string {
-				return this.summary
+				toJSON(): readonly unknown[] {
+					return this.issues
+				}
+
+				toString(): string {
+					return this.summary
+				}
 			}
-		}
+		:	class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
+				declare _: ArkIssue[]
+				declare _p: PropertyKey[]
+
+				constructor() {
+					this._ = []
+					this._p = []
+				}
+
+				get count(): number {
+					return this._.length
+				}
+
+				get issues(): readonly WrittenIssue[] {
+					for (const issue of this._) issue.message ??= messageOf(issue)
+					return this._ as WrittenIssue[]
+				}
+
+				_e(
+					data: unknown,
+					code: ArkErrorCode,
+					expected?: string,
+					message?: string,
+					text?: SiteContext["text"]
+				): true | undefined {
+					this._.push({ code, path: this._p.slice(), data, expected, message })
+					if (callsSiteText) text?.(this._[this._.length - 1])
+					return undefined
+				}
+
+				_k(
+					apply: CompactApply,
+					data: unknown,
+					key: PropertyKey,
+					...missing: MissingText
+				): boolean | undefined {
+					this._p.push(key)
+					const stops =
+						missing.length && !(key in (data as object)) ?
+							this._e(data, "required", ...missing)
+						:	!apply((data as Keyed)[key], this)
+					this._p.pop()
+					return stops
+				}
+
+				get summary(): string {
+					let summary = ""
+					for (const issue of this._)
+						summary += (summary && "\n") + lineOf(issue)
+					return summary
+				}
+
+				// an instance of TraversalError only where a program names the
+				// class, so can test for one: otherwise an Error it can't tell
+				// from one, with the same name, message and errors, and no class
+				// in its bundle. Its name is assigned and its errors defined as
+				// the class's are, in statements, which gzip to less than one
+				// expression building it and which a build writing the flag as
+				// a literal folds as well
+				throw(): never {
+					if (namesTraversalError) throw new ThrownIssues(this as never)
+					const thrown = Error(this.summary)
+					thrown.name = "TraversalError"
+					throw Object.defineProperty(thrown, "arkErrors", { value: this })
+				}
+
+				toJSON(): readonly unknown[] {
+					return this.issues
+				}
+
+				toString(): string {
+					return this.summary
+				}
+			}
 	: readsSummary ?
-		class extends ReadIssues {
+		class extends ((findsOnRead ? UnreadIssues : (
+			ReadIssues
+		)) as typeof ReadIssues) {
 			get summary(): string {
 				let summary = ""
 				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
 				return summary
 			}
 		}
-	:	ReadIssues) as never
+	: findsOnRead ? UnreadIssues
+	: ReadIssues) as never
+
+/**
+ * @internal an errors class: built with nothing, or as a traversal is, with
+ * data and a config, and, where its build has it find its issues once read
+ * (findsOnRead), with what finds them
+ */
+export type IssuesClass<errors extends Issues = Issues> = new (
+	data?: unknown,
+	config?: unknown,
+	apply?: CompactApply
+) => errors
 
 /**
  * The errors returned by a Type on invalid input.

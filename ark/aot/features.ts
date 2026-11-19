@@ -34,7 +34,8 @@ const featureNames = Object.keys({
 	readsSummary: 1,
 	readsErrors: 1,
 	holdsExpression: 1,
-	namesTraversalError: 1
+	namesTraversalError: 1,
+	findsOnRead: 1
 } satisfies Record<keyof IssueFeatures, 1>)
 
 // whether code names one, which a module reading it does

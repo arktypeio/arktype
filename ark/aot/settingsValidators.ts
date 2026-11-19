@@ -33,6 +33,7 @@ var failsInBranches = true
 var readsSummary = true
 var readsErrors = true
 var namesTraversalError = true
+var findsOnRead = false
 
 // ark/schema/shared/issues.ts
 var ReadIssues = class {
@@ -76,6 +77,43 @@ var ReadIssues = class {
 		return stops
 	}
 }
+var UnreadIssues = class {
+	constructor(data, config, apply) {
+		this._p = []
+		this._a = apply
+		this._d = data
+	}
+	/** @internal each issue in the order it was added, found when first read */
+	get _() {
+		if (!this._f) {
+			this._f = []
+			if (this._a && (this._a(this._d, this), !this._f.length))
+				this._e(this._d, "predicate")
+		}
+		return this._f
+	}
+	get count() {
+		return this._.length
+	}
+	get issues() {
+		for (const issue of this._) issue.message ??= messageOf(issue)
+		return this._
+	}
+	_e(data, code, expected, message, text) {
+		this._.push({ code, path: this._p.slice(), data, expected, message })
+		if (callsSiteText) text?.(this._[this._.length - 1])
+		return void 0
+	}
+	_k(apply, data, key, ...missing) {
+		this._p.push(key)
+		const stops =
+			missing.length && !(key in data) ?
+				this._e(data, "required", ...missing)
+			:	!apply(data[key], this)
+		this._p.pop()
+		return stops
+	}
+}
 var failsSite = (ctx, context, data) =>
 	ctx._e(data, context.code, context.description, context.x, context.text)
 var failsKeySite = (ctx, site, data, key) =>
@@ -89,66 +127,124 @@ var missingTextOf = missing =>
 	missing ? [missing.description, missing.x, missing.text] : []
 var Issues =
 	readsErrors ?
-		class ArkIssues {
-			constructor() {
-				this._ = []
-				this._p = []
+		findsOnRead ?
+			// named apart, as one bundle may hold both and a name is one class's
+			class UnreadArkIssues {
+				constructor(data, config, apply) {
+					this._p = []
+					this._a = apply
+					this._d = data
+				}
+				get _() {
+					if (!this._f) {
+						this._f = []
+						if (this._a && (this._a(this._d, this), !this._f.length))
+							this._e(this._d, "predicate")
+					}
+					return this._f
+				}
+				get count() {
+					return this._.length
+				}
+				get issues() {
+					for (const issue of this._) issue.message ??= messageOf(issue)
+					return this._
+				}
+				_e(data, code, expected, message, text) {
+					this._.push({ code, path: this._p.slice(), data, expected, message })
+					if (callsSiteText) text?.(this._[this._.length - 1])
+					return void 0
+				}
+				_k(apply, data, key, ...missing) {
+					this._p.push(key)
+					const stops =
+						missing.length && !(key in data) ?
+							this._e(data, "required", ...missing)
+						:	!apply(data[key], this)
+					this._p.pop()
+					return stops
+				}
+				get summary() {
+					let summary = ""
+					for (const issue of this._)
+						summary += (summary && "\n") + lineOf(issue)
+					return summary
+				}
+				throw() {
+					if (namesTraversalError) throw new ThrownIssues(this)
+					const thrown = Error(this.summary)
+					thrown.name = "TraversalError"
+					throw Object.defineProperty(thrown, "arkErrors", { value: this })
+				}
+				toJSON() {
+					return this.issues
+				}
+				toString() {
+					return this.summary
+				}
 			}
-			get count() {
-				return this._.length
+		:	class ArkIssues {
+				constructor() {
+					this._ = []
+					this._p = []
+				}
+				get count() {
+					return this._.length
+				}
+				get issues() {
+					for (const issue of this._) issue.message ??= messageOf(issue)
+					return this._
+				}
+				_e(data, code, expected, message, text) {
+					this._.push({ code, path: this._p.slice(), data, expected, message })
+					if (callsSiteText) text?.(this._[this._.length - 1])
+					return void 0
+				}
+				_k(apply, data, key, ...missing) {
+					this._p.push(key)
+					const stops =
+						missing.length && !(key in data) ?
+							this._e(data, "required", ...missing)
+						:	!apply(data[key], this)
+					this._p.pop()
+					return stops
+				}
+				get summary() {
+					let summary = ""
+					for (const issue of this._)
+						summary += (summary && "\n") + lineOf(issue)
+					return summary
+				}
+				// an instance of TraversalError only where a program names the
+				// class, so can test for one: otherwise an Error it can't tell
+				// from one, with the same name, message and errors, and no class
+				// in its bundle. Its name is assigned and its errors defined as
+				// the class's are, in statements, which gzip to less than one
+				// expression building it and which a build writing the flag as
+				// a literal folds as well
+				throw() {
+					if (namesTraversalError) throw new ThrownIssues(this)
+					const thrown = Error(this.summary)
+					thrown.name = "TraversalError"
+					throw Object.defineProperty(thrown, "arkErrors", { value: this })
+				}
+				toJSON() {
+					return this.issues
+				}
+				toString() {
+					return this.summary
+				}
 			}
-			get issues() {
-				for (const issue of this._) issue.message ??= messageOf(issue)
-				return this._
-			}
-			_e(data, code, expected, message, text) {
-				this._.push({ code, path: this._p.slice(), data, expected, message })
-				if (callsSiteText) text?.(this._[this._.length - 1])
-				return void 0
-			}
-			_k(apply, data, key, ...missing) {
-				this._p.push(key)
-				const stops =
-					missing.length && !(key in data) ?
-						this._e(data, "required", ...missing)
-					:	!apply(data[key], this)
-				this._p.pop()
-				return stops
-			}
-			get summary() {
-				let summary = ""
-				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
-				return summary
-			}
-			// an instance of TraversalError only where a program names the
-			// class, so can test for one: otherwise an Error it can't tell
-			// from one, with the same name, message and errors, and no class
-			// in its bundle. Its name is assigned and its errors defined as
-			// the class's are, in statements, which gzip to less than one
-			// expression building it and which a build writing the flag as
-			// a literal folds as well
-			throw() {
-				if (namesTraversalError) throw new ThrownIssues(this)
-				const thrown = Error(this.summary)
-				thrown.name = "TraversalError"
-				throw Object.defineProperty(thrown, "arkErrors", { value: this })
-			}
-			toJSON() {
-				return this.issues
-			}
-			toString() {
-				return this.summary
-			}
-		}
 	: readsSummary ?
-		class extends ReadIssues {
+		class extends (findsOnRead ? UnreadIssues : ReadIssues) {
 			get summary() {
 				let summary = ""
 				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
 				return summary
 			}
 		}
-	:	ReadIssues
+	: findsOnRead ? UnreadIssues
+	: ReadIssues
 var foundErrors = (apply, data, onFail, Ctx = Issues) => {
 	const errors = new Ctx()
 	apply(data, errors)

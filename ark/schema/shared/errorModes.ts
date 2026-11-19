@@ -7,6 +7,7 @@ import {
 	SiteTraversal,
 	type ArkError
 } from "./errors.ts"
+import { findsOnRead } from "./issueFeatures.ts"
 import { lineOf } from "./issues.ts"
 import { $ark } from "./registry.ts"
 import { rootApplyRuntime, type RootApplyRuntime } from "./rootApply.ts"
@@ -88,7 +89,13 @@ export const rejectUndetailed = (
 ): unknown => {
 	// no constructor: one root issue needs none of its fields
 	const errors: UndetailedErrors = Object.create(undetailedPrototype)
-	errors._ = [{ code: "predicate", path: [], data } as never]
+	const issues: UndetailedErrors["_"] = [
+		{ code: "predicate", path: [], data } as never
+	]
+	// the field a getter reads, where a build wrote errors to find their
+	// issues once read
+	if (findsOnRead) (errors as {} as { _f: unknown })._f = issues
+	else errors._ = issues
 	return onFail ? onFail(errors as never) : errors
 }
 

@@ -2992,15 +2992,10 @@ return namespace`
 		// for speed, issues reported into ArkErrors are found once read, unless a
 		// callback, which runs when arktype would run it
 		const unreads = reportsIssues && this.baking.defersIssues && !runsNarrow
-		// found as a call returns otherwise, into errors that are what it
-		// returns where compiled code reports into them. A build for size
-		// passes data its pass finds nothing wrong with, as it has
-		const finds =
-			reportsIssues && !unreads && !runsNarrow && !this.baking.shortest
 		const [callErrors, elementErrors] =
-			unreads ? ["runtime.unreadCallErrors", "runtime.unreadElements"]
-			: finds ? ["runtime.foundCallErrors", "runtime.foundElements"]
-			: ["runtime.applyCallErrors", "runtime.applyElements"]
+			unreads ?
+				["runtime.unreadCallErrors", "runtime.unreadElements"]
+			:	["runtime.applyCallErrors", "runtime.applyElements"]
 		const refOf = (param: RootApplyParam) =>
 			param === "Traversal" ?
 				ctx === "Traversal" || ctx === "FirstIssueTraversal" ?
@@ -3026,13 +3021,13 @@ return namespace`
 				this.compactPartsOf(root, tfs ? [0, 1, 2] : [0, 1], asValidator)
 			:	[]
 		if (traversals) {
-			const Ctx =
-				!unreads ? refOf("Traversal")
-				: this.baking.firstIssue ? "runtime.UnreadFirstIssues"
-				: "runtime.UnreadArkErrors"
+			// errors that wait are of the class compiled code reports into, and a
+			// build holding one writes its errors to find their issues once read
+			if (unreads) this.baking.issues.findsOnRead = true
+			const Ctx = refOf("Traversal")
 			const local = !Ctx.startsWith("runtime.")
-			// errors found as a call returns are ArkErrors unless passed
-			const passedCtx = finds && Ctx === "runtime.ArkErrors" ? "" : `, ${Ctx}`
+			// they're ArkErrors unless passed
+			const passedCtx = unreads && Ctx === "runtime.ArkErrors" ? "" : `, ${Ctx}`
 			// a unified root applies by its Allows
 			const apply = this.appliedIndexOf(root) ? "apply" : "allows"
 			const pattern =
@@ -3093,7 +3088,7 @@ return namespace`
 				{
 					params: pattern,
 					apply: `(data, onFail) => allows(data) ? ${valid} : ${
-						unreads ? `runtime.unreadErrors(${apply}, data, onFail, ${Ctx})`
+						unreads ? `runtime.unreadErrors(${apply}, data, onFail${passedCtx})`
 						: !reportsIssues ?
 							`runtime.applyErrors(${apply}, data, ${refOf("config")}, onFail, ${Ctx})`
 						: (

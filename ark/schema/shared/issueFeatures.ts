@@ -45,3 +45,12 @@ export const holdsExpression: boolean = true
 
 /** TraversalError named by a program, which may test what an assert threw against it: no issue's, but found by a build and written as they are */
 export const namesTraversalError: boolean = true
+
+/**
+ * errors that find their issues once they're read, held by a validator whose
+ * failing call may return errors nobody reads. The one a build sets true:
+ * where it does, the errors classes are written to take what finds their
+ * issues, and where none wrote it, as in arktype itself, their issues stay a
+ * field and the runtime makes errors that wait another way
+ */
+export const findsOnRead: boolean = false

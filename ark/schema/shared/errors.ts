@@ -33,6 +33,7 @@ import {
 	writeMessage
 } from "./enWriters.ts"
 import { describesData, listsErrors } from "./errorWriters.ts"
+import { findsOnRead } from "./issueFeatures.ts"
 import { describeBranches, removedProblemMessage } from "./utils.ts"
 import {
 	ArkErrors as BaseArkErrors,
@@ -296,8 +297,13 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 			node.tApply(this._d, ctx)
 			if (!ctx.hasError()) ctx.reject(invalidInput())
 			const errors = ctx.fin(null) as ArkErrors
-			if (errors._.includes(skipped))
-				errors._ = errors._.filter(error => error !== skipped)
+			if (errors._.includes(skipped)) {
+				const found = errors._.filter(error => error !== skipped)
+				// the field a getter reads, where a build wrote errors to find
+				// their issues once read
+				if (findsOnRead) (errors as {} as { _f: ArkError[] })._f = found
+				else errors._ = found
+			}
 			return (this._1 = errors._first)
 		}
 	}

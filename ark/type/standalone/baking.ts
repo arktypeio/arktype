@@ -170,9 +170,9 @@ export interface StandaloneOptions {
 	shapes?: boolean | undefined
 	// false where nothing calls a validator, so each failure's errors are read
 	called?: boolean | undefined
-	// a failing call's errors find their issues once read, where a build writes
-	// its errors for speed: a call no one reads the errors of then costs little
-	// more than its check, and every bundle holds what waits
+	// false where a failing call's errors find their issues as it returns, as a
+	// build writing its errors for size does: they otherwise find them once
+	// read, so a call no one reads the errors of costs little more than its check
 	defersIssues?: boolean | undefined
 	/** @internal the chars a site's baked introspection may total */
 	bakedLimit?: number | undefined
@@ -365,6 +365,7 @@ export interface IssueFeatures {
 	readsErrors: boolean
 	holdsExpression: boolean
 	namesTraversalError: boolean
+	findsOnRead: boolean
 }
 
 export const noIssueFeatures: IssueFeatures = {
@@ -382,7 +383,8 @@ export const noIssueFeatures: IssueFeatures = {
 	readsSummary: false,
 	readsErrors: false,
 	holdsExpression: false,
-	namesTraversalError: false
+	namesTraversalError: false,
+	findsOnRead: false
 }
 
 export interface StandaloneModules {
@@ -491,7 +493,7 @@ export const bakingOf = (
 		compiledInputs:
 			opts.optimize === "size" ? compiledInputsOf(exports) : new Set(),
 		defersIssues:
-			opts.defersIssues === true &&
+			opts.defersIssues !== false &&
 			opts.optimize !== "size" &&
 			opts.called !== false,
 		bakedLimit: opts.bakedLimit ?? defaultBakedLimit,
