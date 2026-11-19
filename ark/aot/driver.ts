@@ -108,7 +108,13 @@ export type PrecompileRequest =
 			program?: string | undefined
 	  ]
 	| [kind: "scan", program: ScannedProgram]
-	| [kind: "unseen", program: ScannedProgram]
+	| [
+			kind: "unseen",
+			program: ScannedProgram,
+			// what built each module after the plugin, where the program holds
+			// what that built of one, as a Rollup plugin's transforms do
+			after?: string | undefined
+	  ]
 	// a program holding what the loaders after the plugin built of each module
 	| [kind: "unseenBuilt", program: ScannedProgram]
 	| [kind: "program", program: ReadProgram]
@@ -409,6 +415,8 @@ const answerRequests = (
 		}
 		if (request[0] === "unseen" || request[0] === "unseenBuilt") {
 			const [kind, program] = request
+			// read as built too, once it reads no more as it reached the plugin
+			const after = kind === "unseen" ? request[2] : undefined
 			const scan = scansByProgram[program.key]
 			const key =
 				scan?.cache && keyOf(scan.key, { ...program, key: undefined, kind })
@@ -421,9 +429,10 @@ const answerRequests = (
 				return
 			const scanning = scan ? scanned(scan) : viewing(tracked)
 			const unseen =
-				kind === "unseen" ?
-					scanning.precompiler.unseenIn(program)
-				:	scanning.precompiler.unseenBuiltIn(program)
+				kind === "unseenBuilt" ? scanning.precompiler.unseenBuiltIn(program)
+				: after === undefined ? scanning.precompiler.unseenIn(program)
+				: (scanning.precompiler.unseenIn(program) ??
+					scanning.precompiler.unseenBuiltIn(program, after))
 			if (key && scan.isStored && unseen === undefined)
 				store(scanning, scan.cache!, key, null)
 			return unseen

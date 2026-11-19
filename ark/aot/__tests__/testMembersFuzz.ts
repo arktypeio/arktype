@@ -10,8 +10,11 @@
 // ARK_MEMBERS_FUZZ_LATE=1 has a transform after arktype's write some readers'
 // reads, which the build's read of the source never sees: a Vite plugin listed
 // after precompile.vite(), a webpack or Rspack loader after arktype's, each at
-// an order the app draws, and Babel on Turbopack. Such a build bakes what a
-// late read needs, or the read throws that it isn't baked.
+// an order the app draws, and Babel on Turbopack. Vite, webpack and Rspack
+// read each module again as built, and refuse an app whose late read needs
+// what they left out. Turbopack, which reads each module alone under Babel,
+// bakes what it sees, so a late read of another member throws that it isn't
+// baked.
 import { fromHere } from "@ark/fs"
 import { Precompiler } from "@ark/aot"
 import { scanProgram } from "@ark/aot/internal/scan.ts"
@@ -1203,9 +1206,10 @@ const mismatchOf = (
 	)
 		return "unbakedThroughCommonJs"
 	if (read.fallback && fallbackMessage.test(threw)) return "fallbackUnbaked"
-	// a read written after the build read the module, as the docs have one
-	// the build can't see
+	// a read written after Turbopack's build read the module, which it can't
+	// read again as built, as the docs have one the build can't see
 	if (
+		host === "turbopack" &&
 		reader.late &&
 		(unbakedMessage.test(threw) ||
 			JSON.stringify(observed) ===
