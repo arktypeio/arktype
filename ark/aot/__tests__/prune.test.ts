@@ -1591,7 +1591,7 @@ console.log(User({ name: 5 }).toString())
 			attest(run(user)).snap("name must be a string\n")
 			attest(user.includes("`[${")).equals(false)
 			attest(user.includes("JSON.stringify(")).equals(false)
-			// nor the pattern that tells a key to bracket, with the keys it remembers
+			// nor the pattern that tells a key to bracket
 			attest(user.includes("[$_a-z]")).equals(false)
 			attest(user.includes(".text?.(")).equals(false)
 			const tagged = await bundleOf("tagged.ts")

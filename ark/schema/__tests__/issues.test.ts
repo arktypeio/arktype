@@ -162,21 +162,6 @@ a[0].b must be a string
 [Symbol(s)] must be a string`)
 	})
 
-	it("brackets a key that isn't an identifier each time it's written", () => {
-		const lineAt = (...path: PropertyKey[]) => {
-			const errors = new ArkErrors()
-			errors._.push({ code: "domain", path, data: 1, expected: "a string" })
-			return errors.summary
-		}
-		// more keys than a summary remembers
-		for (let i = 0; i < 2000; i++) lineAt(`k${i}`, `${i}-`)
-		for (let written = 0; written < 2; written++) {
-			attest(lineAt("a-b", "a", "k1999", "1999-")).equals(
-				'["a-b"].a.k1999["1999-"] must be a string'
-			)
-		}
-	})
-
 	it("prints a number in a path as arktype's own errors do", () => {
 		const path = [0, -1, 1.5, 1e21, NaN, Infinity, -Infinity]
 		const printed = "[0][-1][1.5][1e+21][NaN][Infinity][-Infinity]"

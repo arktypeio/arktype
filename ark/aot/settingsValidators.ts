@@ -91,8 +91,7 @@ var SummarizedIssues =
 		class extends ReadIssues {
 			get summary() {
 				let summary = ""
-				for (const issue of this._)
-					summary = summary ? summary + "\n" + lineOf(issue) : lineOf(issue)
+				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
 				return summary
 			}
 		}
@@ -145,27 +144,14 @@ var movedIssue = (issue, path) =>
 var pathOf = issue => {
 	let path = ""
 	for (const k of issue.path) {
-		path =
-			reportsIndices && typeof k === "number" ? path + `[${k}]`
-			: bracketsKeys && !isIdentifier(k) ?
-				path + `[${JSON.stringify(k) ?? String(k)}]`
-			:	(path && path + ".") + (typeof k === "string" ? k : String(k))
+		path +=
+			reportsIndices && typeof k === "number" ? `[${k}]`
+			: bracketsKeys && !/^[$_a-z][\w$]*$/i.test(String(k)) ?
+				`[${JSON.stringify(k) ?? String(k)}]`
+			:	(path && ".") + String(k)
 	}
 	return path
 }
-var identifiers
-var isIdentifier =
-	bracketsKeys ?
-		k => {
-			if (typeof k !== "string") return /^[$_a-z][\w$]*$/i.test(String(k))
-			let result = (identifiers ??= /* @__PURE__ */ new Map()).get(k)
-			if (result === void 0) {
-				result = /^[$_a-z][\w$]*$/i.test(k)
-				if (identifiers.size < 1024) identifiers.set(k, result)
-			}
-			return result
-		}
-	:	void 0
 var lineOf = issue => {
 	const message = (issue.message ??= messageOf(issue))
 	const path = pathOf(issue)
