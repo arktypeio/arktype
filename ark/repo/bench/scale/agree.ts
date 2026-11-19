@@ -1,8 +1,10 @@
 // Whether an app synth.ts wrote is the same app in each library, and one that
-// runs: it imports each library's modules, which creates every schema, ArkType
-// dynamically, and gives each schema values it should accept and values it
-// shouldn't. The four must answer alike, and all must accept the ones made to
-// be valid. A library missing a check would ship less for it, and sizing
+// runs: it imports each library's app, which creates every schema, ArkType
+// dynamically, and gives the app's one function, for each schema, values it
+// should accept and values it shouldn't. So every schema is run as the bundle
+// sized runs it: by its handler, through validate. The four must answer alike,
+// all must accept the ones made to be valid, and each must return the text of
+// a failure. A library missing a check would ship less for it, and sizing
 // bundles runs none of them, so sizeScale.ts runs this on every app it sizes:
 // a definition ArkType throws on, like a default its own narrow rejects, fails
 // here and not in a reader's build.
@@ -14,9 +16,8 @@
 // with every plain string or every number replaced by one a narrow may reject.
 //
 // usage: node ark/repo/bench/scale/agree.ts <an app's directory>
-import { type } from "arktype"
 import { join } from "node:path"
-import type { SynthLibrary } from "./synth.ts"
+import { synthLibraries, type SynthLibrary } from "./synth.ts"
 
 /** what this reads of a Valibot schema */
 type Shape = {
@@ -163,23 +164,36 @@ type Case = {
 	valid?: boolean
 }
 
+/** what a handler returns: the data it validated, or the text of what's wrong with its input */
+type Handled = {
+	data?: unknown
+	message?: string
+}
+
+/** an app's one export */
+type App = {
+	handle: (name: string, input: unknown) => Handled
+}
+
 /**
  * Creates the app in `dir` in each library and returns how many values its
  * schemas were given, throwing where creating one throws, at the first value
- * one library accepts and another rejects, and at one made to be valid that
- * any rejects
+ * one library accepts and another rejects, at one made to be valid that any
+ * rejects, and at a failure a library has no text for
  */
 export const agreementOf = async (dir: string): Promise<Agreement> => {
-	const load = (library: SynthLibrary) => import(join(dir, `${library}.ts`))
-	const [arktype, valibot, zod, zodMini] = await Promise.all([
-		load("arktype"),
-		load("valibot"),
-		load("zod"),
-		load("zodMini")
-	])
+	const apps = Object.fromEntries(
+		await Promise.all(
+			synthLibraries.map(
+				async library =>
+					[library, await import(join(dir, library, "app.ts"))] as const
+			)
+		)
+	) as Record<SynthLibrary, App>
 	const v = await import("valibot")
-	const z = await import("zod/mini")
-	const names = Object.keys(valibot)
+	const valibot = await import(join(dir, "valibot.ts"))
+	// a module with handlers of its own exports those beside its schemas
+	const names = Object.keys(valibot).filter(name => name !== "handlers")
 	const result = { schemas: names.length, accepted: 0, rejected: 0 }
 	for (const name of names) {
 		const schema: Shape = valibot[name]
@@ -195,14 +209,16 @@ export const agreementOf = async (dir: string): Promise<Agreement> => {
 			...narrowed.map(by => ({ value: replaced(valid, by) }))
 		]
 		for (const { value, valid } of cases) {
-			// each its own copy, as a default is written into what's validated
-			const answers: Record<SynthLibrary, boolean> = {
-				arktype: !(
-					arktype[name](structuredClone(value)) instanceof type.errors
-				),
-				valibot: v.safeParse(valibot[name], structuredClone(value)).success,
-				zod: zod[name].safeParse(structuredClone(value)).success,
-				zodMini: z.safeParse(zodMini[name], structuredClone(value)).success
+			const answers = {} as Record<SynthLibrary, boolean>
+			for (const library of synthLibraries) {
+				// each its own copy, as a default is written into what's validated
+				const result = apps[library].handle(name, structuredClone(value))
+				answers[library] = "data" in result
+				if (!answers[library] && !result.message) {
+					throw new Error(
+						`${library}'s ${name} in ${dir} has no text for what's wrong with ${JSON.stringify(value)}`
+					)
+				}
 			}
 			const accepting = Object.values(answers).filter(Boolean).length
 			if (accepting % 4 || (valid && !accepting)) {

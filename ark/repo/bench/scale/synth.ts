@@ -265,20 +265,24 @@ const spaced = (key: string) =>
 
 const camel = (s: string) => s[0].toLowerCase() + s.slice(1)
 
-export const synthOf = (
-	n: number,
-	seed: number,
-	options: SynthOptions = {}
-): SynthApp => {
+// mulberry32
+const randomOf = (seed: number) => {
 	let state = seed >>> 0
-	// mulberry32
-	const random = () => {
+	return () => {
 		state = (state + 0x6d2b79f5) >>> 0
 		let t = state
 		t = Math.imul(t ^ (t >>> 15), t | 1)
 		t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
 		return ((t ^ (t >>> 14)) >>> 0) / 4294967296
 	}
+}
+
+export const synthOf = (
+	n: number,
+	seed: number,
+	options: SynthOptions = {}
+): SynthApp => {
+	const random = randomOf(seed)
 	const int = (min: number, max: number) =>
 		min + Math.floor(random() * (max - min + 1))
 	const pick = <t>(items: readonly t[]): t =>
@@ -286,14 +290,7 @@ export const synthOf = (
 	const chance = (p: number) => random() < p
 
 	// what messages and narrows draw from, so neither moves a schema's shape
-	let decorState = (seed ^ 0x9e3779b9) >>> 0
-	const decor = () => {
-		decorState = (decorState + 0x6d2b79f5) >>> 0
-		let t = decorState
-		t = Math.imul(t ^ (t >>> 15), t | 1)
-		t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
-		return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-	}
+	const decor = randomOf(seed ^ 0x9e3779b9)
 	const decorPick = <t>(items: readonly t[]): t =>
 		items[Math.floor(decor() * items.length)]
 
@@ -918,16 +915,94 @@ export const synthLibraries: readonly SynthLibrary[] = [
 const exported = "export const "
 
 /**
- * An app's source as modules of `perModule` schemas, by each module's path
- * from the app's directory: `arktype.ts`, exporting what each of
- * `arktype/m0.ts`, `arktype/m1.ts`… defines, which import the schemas they
- * refer to and the helpers their narrows name from `arktype/helpers.ts`. An
- * app's schemas are a line each, so its modules are its lines.
+ * What an app does with a schema, once in each library: validates input with
+ * it, and returns the data it validated or the text of what's wrong with it.
+ * It's what a route or a form's submit does, and the same two results in
+ * every library: ArkType's call and its errors' summary, Valibot's safeParse
+ * and summarize, Zod's safeParse and prettifyError.
+ */
+const validators: Record<SynthLibrary, string> = {
+	arktype: `import { type, type Type } from "arktype"
+
+export const validate = (schema: Type, input: unknown) => {
+	const out = schema(input)
+	return out instanceof type.errors ? { message: out.summary } : { data: out }
+}
+`,
+	valibot: `import * as v from "valibot"
+
+export const validate = (schema: v.GenericSchema, input: unknown) => {
+	const out = v.safeParse(schema, input)
+	return out.success ?
+			{ data: out.output }
+		:	{ message: v.summarize(out.issues) }
+}
+`,
+	zod: `import * as z from "zod"
+
+export const validate = (schema: z.ZodType, input: unknown) => {
+	const out = schema.safeParse(input)
+	return out.success ?
+			{ data: out.data }
+		:	{ message: z.prettifyError(out.error) }
+}
+`,
+	zodMini: `import * as z from "zod/mini"
+
+export const validate = (schema: z.ZodMiniType, input: unknown) => {
+	const out = z.safeParse(schema, input)
+	return out.success ?
+			{ data: out.data }
+		:	{ message: z.prettifyError(out.error) }
+}
+`
+}
+
+/** how an app's schemas and their handlers are laid out as modules */
+export type Layout = {
+	/** how many schemas a module defines */
+	perModule: number
+	/**
+	 * The share of modules that hold the handlers of the schemas they define, as
+	 * a form's component does where it declares its schema. The rest have theirs
+	 * in a module of handlers, which imports the schemas, as a route does where
+	 * its schemas are a module of their own.
+	 */
+	colocated: number
+	/** what picks the modules that share is of */
+	seed: number
+}
+
+/**
+ * An app of the schemas in `source`, as modules of `perModule` of them, by each
+ * module's path from the app's directory. An app's schemas are a line each,
+ * so its modules are its lines.
+ *
+ * - `arktype/m0.ts`, `arktype/m1.ts`… each define their schemas, importing the
+ *   ones they refer to and the helpers their narrows name
+ *   (`arktype/helpers.ts`). A `colocated` one then holds a handler for each:
+ *   a function of some input that passes it with its schema to `validate`
+ *   (`arktype/validate.ts`), so what a handler adds to a bundle is the same
+ *   text in every library.
+ * - `arktype/h0.ts`, `arktype/h1.ts`… each import the schemas of a module
+ *   that isn't, and hold their handlers
+ * - `arktype/app.ts` is the app: it holds every module's handlers and exports
+ *   one function, which runs the handler named. A bundle of it is closed, as
+ *   an app's is: nothing outside it reads a schema, so each library ships what
+ *   validating and reading the text of a failure need, and nothing kept only
+ *   because an export could be read some other way.
+ * - `arktype.ts` exports what every module of schemas does, for what reads
+ *   the schemas as they are: agree.ts's values, and a bundle of the schemas
+ *   alone, which is of an app with no module colocated
+ *
+ * The colocated modules are spread evenly from where the seed starts them, so
+ * any number of an app's first modules has that share of them to within one,
+ * and an app's layout is that of the first schemas of a larger app of its seed.
  */
 export const modulesOf = (
 	library: SynthLibrary,
 	source: string,
-	perModule: number
+	{ perModule, colocated, seed }: Layout
 ): Record<string, string> => {
 	const lines = source.trimEnd().split("\n")
 	const [libraryImport] = lines
@@ -940,12 +1015,19 @@ export const modulesOf = (
 	const helperNames = Object.values(helpers).flatMap(group =>
 		Object.keys(group)
 	)
-	const files: Record<string, string> = {}
+	const start = randomOf(seed ^ 0x85ebca6b)()
+	// one more of the modules to here is colocated than of those before it
+	const isColocated = (m: number) =>
+		Math.floor((m + 1) * colocated + start) > Math.floor(m * colocated + start)
+	const files: Record<string, string> = {
+		[`${library}/validate.ts`]: validators[library]
+	}
+	// the path of each module that holds handlers
+	const handlerModules: string[] = []
 	const count = Math.ceil(definitions.length / perModule)
 	for (let m = 0; m < count; m++) {
-		const body = definitions
-			.slice(m * perModule, (m + 1) * perModule)
-			.join("\n")
+		const defined = definitions.slice(m * perModule, (m + 1) * perModule)
+		const body = defined.join("\n")
 		// a schema's name within a string is a word of a key or a message
 		const code = body.replace(/"(?:[^"\\]|\\.)*"/g, '""')
 		const identifiers = new Set(code.match(/\b[A-Za-z]\w*\b/g))
@@ -957,6 +1039,16 @@ export const modulesOf = (
 		}
 		const used = helperNames.filter(name => identifiers.has(name))
 		if (used.length) importsBy.helpers = used
+		const names = defined.map(nameOf)
+		const here = isColocated(m)
+		const handlers = [
+			"export const handlers = {",
+			names
+				.map(name => `\t${name}: (input: unknown) => validate(${name}, input)`)
+				.join(",\n"),
+			"}"
+		]
+		if (here) importsBy.validate = ["validate"]
 		files[`${library}/m${m}.ts`] =
 			[
 				libraryImport,
@@ -965,8 +1057,19 @@ export const modulesOf = (
 						`import { ${names.join(", ")} } from "./${from}.ts"`
 				),
 				"",
-				body
+				body,
+				...(here ? ["", ...handlers] : [])
 			].join("\n") + "\n"
+		if (!here) {
+			files[`${library}/h${m}.ts`] =
+				[
+					`import { ${names.join(", ")} } from "./m${m}.ts"`,
+					`import { validate } from "./validate.ts"`,
+					"",
+					...handlers
+				].join("\n") + "\n"
+		}
+		handlerModules.push(`./${here ? "m" : "h"}${m}.ts`)
 	}
 	if (source.includes(helpersSource)) {
 		files[`${library}/helpers.ts`] = helpersSource.replace(
@@ -974,10 +1077,19 @@ export const modulesOf = (
 			exported
 		)
 	}
+	files[`${library}/app.ts`] =
+		[
+			...handlerModules.map(
+				(path, m) => `import { handlers as handlers${m} } from "${path}"`
+			),
+			"",
+			`const handlers: Record<string, (input: unknown) => unknown> = { ${handlerModules.map((_, m) => `...handlers${m}`).join(", ")} }`,
+			"",
+			"export const handle = (name: string, input: unknown) => handlers[name](input)"
+		].join("\n") + "\n"
 	files[`${library}.ts`] =
-		Array.from(
-			{ length: count },
-			(_, m) => `export * from "./${library}/m${m}.ts"`
-		).join("\n") + "\n"
+		handlerModules
+			.map((_, m) => `export * from "./${library}/m${m}.ts"`)
+			.join("\n") + "\n"
 	return files
 }
