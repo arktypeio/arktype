@@ -77,18 +77,51 @@ export interface UnionSite {
 export type CompactApply = (data: unknown, ctx: FailureContext) => boolean
 
 /**
- * where a compact Apply reports failures; each returns whether to stop. A
- * minifier keeps property names, and compiled code calls these at each
- * failure, so they're named short: _at fails a site (failsAt), _in applies
- * data's value at a key (failsIn), failing the key where it's missing and
- * passed the site that fails. Arktype's own compiled code passes _in
- * the value too, read where its key is a constant, which its traversal
- * applies; a validator's errors read it from data, as every bundle would
- * otherwise carry the read at each key. It also passes _at the key of a site
- * it fails at one, which its traversal enters; a validator's code calls
- * failsKey, as its errors' _at takes none
+ * what a missing key fails with, after its code, which is always required's:
+ * what it expects, the message configured for it, and what writes other text
+ * onto its issue. Passed to _k after the key, each as _e takes it
+ */
+export type MissingText = [
+	expected?: string | undefined,
+	message?: string | undefined,
+	text?: SiteContext["text"]
+]
+
+/**
+ * where a validator's compact Apply reports failures; each returns whether to
+ * stop. A minifier keeps property names, and compiled code calls these at
+ * each failure, so they're named short. _e fails data at the path the context
+ * is at, with a code, what's expected and the message configured, each a
+ * literal where it fails: a site there is three strings, where an object
+ * holding them is a call to build it at every failure and the function it
+ * calls in every bundle. _k applies data's value at a key, failing the key
+ * as required where it's missing and passed what a missing key says, even
+ * only `undefined`: an optional key is passed nothing
  */
 export interface FailureContext {
+	_e(
+		data: unknown,
+		code: ArkErrorCode,
+		expected?: string,
+		message?: string,
+		text?: SiteContext["text"]
+	): boolean | undefined
+	_k(
+		apply: CompactApply,
+		data: unknown,
+		key: PropertyKey,
+		...missing: MissingText
+	): boolean | undefined
+}
+
+/**
+ * where arktype's own compiled code reports failures: _at fails a site, whose
+ * contexts its traversal builds errors from, at a key where it's passed one,
+ * and _in applies data's value at a key, passed the site a missing key fails
+ * and the value too, read where its key is a constant. Named apart from a
+ * validator's, so a traversal can take both
+ */
+export interface SiteFailureContext {
 	_at(site: FailureSite, data: unknown, key?: PropertyKey): boolean | undefined
 	_in(
 		apply: CompactApply,
@@ -128,38 +161,38 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	}
 
 	/**
-	 * @internal fails a context at the path it's at. Every bundle holds this,
-	 * so it takes neither a key nor a key's site, which holds one context for
-	 * its value and one for where it's missing: a validator whose code fails
-	 * no site at a key would hold what enters one and picks between them for
-	 * nothing. failsKey does both, through _in
+	 * @internal fails data at the path it's at. Every bundle holds this, so it
+	 * takes neither a key nor a site: a validator whose code fails nothing at
+	 * a key would hold what enters one for nothing, which failsKey does
+	 * through _k, and a site is a function building it in every bundle
 	 */
-	_at(context: SiteContext, data: unknown): true | undefined {
-		const issue: ArkIssue = {
-			code: context.code,
-			path: this._p.slice(),
-			data,
-			expected: context.description,
-			message: context.x
-		}
-		if (callsSiteText) context.text?.(issue)
-		this._.push(issue)
+	_e(
+		data: unknown,
+		code: ArkErrorCode,
+		expected?: string,
+		message?: string,
+		text?: SiteContext["text"]
+	): true | undefined {
+		this._.push({ code, path: this._p.slice(), data, expected, message })
+		// called on the issue once it's added, so errors whose build found no
+		// site calling one hold no name for it
+		if (callsSiteText) text?.(this._[this._.length - 1])
 		// only errors stopping at the first issue stop at this one
 		return undefined
 	}
 
 	/** @internal */
-	_in(
+	_k(
 		apply: CompactApply,
 		data: unknown,
 		key: PropertyKey,
-		missing?: FailureSite
+		...missing: MissingText
 	): boolean | undefined {
 		this._p.push(key)
 		// a missing key fails with the object missing it
 		const stops =
-			missing && !(key in (data as object)) ?
-				this._at(missing.m as SiteContext, data)
+			missing.length && !(key in (data as object)) ?
+				this._e(data, "required", ...missing)
 			:	!apply((data as Keyed)[key], this)
 		this._p.pop()
 		return stops
@@ -167,24 +200,54 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 }
 
 /**
- * @internal fails a site at a key of data: the missing key, where the site
- * holds what one fails, or the key's value, with the site's context for it
- * or the site itself where it's a context. Entered through _in, which each
- * ctx implements for a key, so errors needn't hold any of it in their _at,
- * and a bundler drops this from a program failing no site at a key
+ * @internal fails a key of data: where it's missing, as required with what
+ * a missing key expects, which is what its value does unless passed, or its
+ * value, with a code and what's expected. Entered through _k, which each
+ * ctx implements for a key, so errors needn't hold any of it in their _e,
+ * and a bundler drops this from a program failing nothing at a key
  */
 export const failsKey = (
+	ctx: FailureContext,
+	data: unknown,
+	key: PropertyKey,
+	code: ArkErrorCode,
+	expected?: string,
+	missing = expected
+): boolean | undefined =>
+	ctx._k((value, ctx) => !ctx._e(value, code, expected), data, key, missing)
+
+/**
+ * @internal fails a context: a site held as an object, as one whose text a
+ * function writes is, or a checker, which is its own
+ */
+export const failsSite = (
+	ctx: FailureContext,
+	context: SiteContext,
+	data: unknown
+): boolean | undefined =>
+	ctx._e(data, context.code, context.description, context.x, context.text)
+
+/**
+ * @internal as failsKey, of a site held as an object: the missing key, where
+ * the site holds what one fails, or the key's value, with the site's context
+ * for it or the site itself where it's a context
+ */
+export const failsKeySite = (
 	ctx: FailureContext,
 	site: FailureSite,
 	data: unknown,
 	key: PropertyKey
 ): boolean | undefined =>
-	ctx._in(
-		(value, ctx) => !ctx._at(site.v ?? site, value),
+	ctx._k(
+		(value, ctx) => !failsSite(ctx, (site.v ?? site) as SiteContext, value),
 		data,
 		key,
-		site.m && site
+		...missingTextOf(site.m)
 	)
+
+/** @internal what _k is passed of a missing key's context, or nothing */
+export const missingTextOf = (missing: SiteContext | undefined): MissingText =>
+	missing ? [missing.description, missing.x, missing.text] : []
 
 // each a class only where a build's flag leaves it, as a bundler keeps a class
 // that extends another, and all it reads, but drops one in a branch it folds.
@@ -256,8 +319,8 @@ export class FirstIssues extends Issues {
 		return true
 	}
 
-	override _at(context: SiteContext, data: unknown): true {
-		super._at(context, data)
+	override _e(...failure: Parameters<Issues["_e"]>): true {
+		super._e(...failure)
 		return true
 	}
 }
@@ -284,7 +347,7 @@ export const issuesOf = (
 ): ArkIssue[] => {
 	apply(data, errors)
 	// data a write or a getter has made valid since fails as a whole
-	if (!errors._.length) errors._at({ code: "predicate" }, data)
+	if (!errors._.length) errors._e(data, "predicate")
 	return errors._
 }
 
@@ -298,7 +361,7 @@ export const foundErrors = (
 	const errors = new Ctx()
 	// as issuesOf, which a program of these never ships
 	apply(data, errors)
-	if (!errors._.length) errors._at({ code: "predicate" }, data)
+	if (!errors._.length) errors._e(data, "predicate")
 	return onFail ? onFail(errors) : errors
 }
 
@@ -470,6 +533,6 @@ export { ThrownIssues as TraversalError }
 export const throwIssues = (apply: CompactApply, data: unknown): never => {
 	const errors = new Issues()
 	apply(data, errors)
-	if (!errors._.length) errors._at({ code: "predicate" }, data)
+	if (!errors._.length) errors._e(data, "predicate")
 	return errors.throw()
 }

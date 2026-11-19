@@ -5,6 +5,7 @@ import type {
 	CompactApply,
 	FailureContext,
 	FailureSite,
+	MissingText,
 	SiteContext
 } from "./issues.ts"
 import {
@@ -43,51 +44,70 @@ class ReadIssues implements FailureContext {
 		return this._ as WrittenIssue[]
 	}
 
-	/** @internal takes neither a key nor a key's site, as issues.ts's */
-	_at(context: SiteContext, data: unknown): true | undefined {
-		const issue: ArkIssue = {
-			code: context.code,
-			path: this._p.slice(),
-			data,
-			expected: context.description,
-			message: context.x
-		}
-		if (callsSiteText) context.text?.(issue)
-		this._.push(issue)
+	/** @internal takes neither a key nor a site, as issues.ts's */
+	_e(
+		data: unknown,
+		code: ArkErrorCode,
+		expected?: string,
+		message?: string,
+		text?: SiteContext["text"]
+	): true | undefined {
+		this._.push({ code, path: this._p.slice(), data, expected, message })
+		if (callsSiteText) text?.(this._[this._.length - 1])
 		// only errors stopping at the first issue stop at this one
 		return undefined
 	}
 
 	/** @internal */
-	_in(
+	_k(
 		apply: CompactApply,
 		data: unknown,
 		key: PropertyKey,
-		missing?: FailureSite
+		...missing: MissingText
 	): boolean | undefined {
 		this._p.push(key)
 		const stops =
-			missing && !(key in (data as object)) ?
-				this._at(missing.m as SiteContext, data)
+			missing.length && !(key in (data as object)) ?
+				this._e(data, "required", ...missing)
 			:	!apply((data as Keyed)[key], this)
 		this._p.pop()
 		return stops
 	}
 }
 
-// as issues.ts's failsKey
+// as issues.ts's failsKey, failsSite, failsKeySite and missingTextOf
 export const failsKey = (
+	ctx: FailureContext,
+	data: unknown,
+	key: PropertyKey,
+	code: ArkErrorCode,
+	expected?: string,
+	missing = expected
+): boolean | undefined =>
+	ctx._k((value, ctx) => !ctx._e(value, code, expected), data, key, missing)
+
+export const failsSite = (
+	ctx: FailureContext,
+	context: SiteContext,
+	data: unknown
+): boolean | undefined =>
+	ctx._e(data, context.code, context.description, context.x, context.text)
+
+export const failsKeySite = (
 	ctx: FailureContext,
 	site: FailureSite,
 	data: unknown,
 	key: PropertyKey
 ): boolean | undefined =>
-	ctx._in(
-		(value, ctx) => !ctx._at(site.v ?? site, value),
+	ctx._k(
+		(value, ctx) => !failsSite(ctx, (site.v ?? site) as SiteContext, value),
 		data,
 		key,
-		site.m && site
+		...missingTextOf(site.m)
 	)
+
+export const missingTextOf = (missing: SiteContext | undefined): MissingText =>
+	missing ? [missing.description, missing.x, missing.text] : []
 
 // one class where errors are read, as they read the summary too
 const Issues: new () => Issues = (
@@ -141,8 +161,8 @@ export class FirstIssues extends Issues {
 		return true
 	}
 
-	override _at(context: SiteContext, data: unknown): true {
-		super._at(context, data)
+	override _e(...failure: Parameters<Issues["_e"]>): true {
+		super._e(...failure)
 		return true
 	}
 }
@@ -178,7 +198,7 @@ export const issuesOf = (
 ): ArkIssue[] => {
 	apply(data, errors)
 	// data a write or a getter has made valid since fails as a whole
-	if (!errors._.length) errors._at({ code: "predicate" }, data)
+	if (!errors._.length) errors._e(data, "predicate")
 	return errors._
 }
 
@@ -191,7 +211,7 @@ export const foundErrors = (
 	const errors = new Ctx()
 	// as issuesOf, which a program of these never ships
 	apply(data, errors)
-	if (!errors._.length) errors._at({ code: "predicate" }, data)
+	if (!errors._.length) errors._e(data, "predicate")
 	return onFail ? onFail(errors) : errors
 }
 

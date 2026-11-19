@@ -12,6 +12,8 @@ import {
 	enInfo,
 	errorsOf,
 	failsKey,
+	failsKeySite,
+	failsSite,
 	FirstIssues,
 	holdsExpression,
 	isCustomIssue,
@@ -36,6 +38,7 @@ import {
 	type FailureContext,
 	type FailureSite,
 	type InternalTraversal,
+	type MissingText,
 	type SiteContext,
 	type Traversal
 } from "@ark/schema/runtime"
@@ -98,6 +101,8 @@ export {
 	exitApplied,
 	failsInBranches,
 	failsKey,
+	failsKeySite,
+	failsSite,
 	FirstIssues,
 	FirstIssueTraversal,
 	fixConfig,
@@ -109,6 +114,7 @@ export {
 	listedIssue,
 	matchesRepeated,
 	mergeTransformed,
+	missingTextOf,
 	pipe,
 	pipeApplied,
 	pipeChecked,
@@ -727,12 +733,31 @@ export const raisingTraversalOf = (
 		}
 	}
 
-// passed no ctx (or filter's index), stops at its first failure
+// a site held as an object, as a checker is its own, fails where it's passed
+// a ctx; passed none (or filter's index), it stops at its first failure
 export const failsAt = ((
 	ctx: FailureContext | undefined,
 	site: FailureSite,
 	data: unknown
-): boolean | undefined => !ctx?._at || ctx._at(site, data)) satisfies Fn
+): boolean | undefined =>
+	!ctx?._e || failsSite(ctx, site as SiteContext, data)) satisfies Fn
+
+// as failsAt, of a site written from literals, passed as a ctx takes them
+export const failsWith = ((
+	ctx: FailureContext | undefined,
+	...failure: Parameters<FailureContext["_e"]>
+): boolean | undefined => !ctx?._e || ctx._e(...failure)) satisfies Fn
+
+// as failsKey, stopping where it's passed no ctx
+export const failsKeyWith = ((
+	ctx: FailureContext | undefined,
+	...failure: KeyFailure
+): boolean | undefined => !ctx?._e || failsKey(ctx, ...failure)) satisfies Fn
+
+// what failsKey is passed after its ctx
+type KeyFailure =
+	Parameters<typeof failsKey> extends [unknown, ...infer failure] ? failure
+	:	never
 
 // as failsAt, at a key of data: the missing key or its value
 export const failsAtKey = ((
@@ -741,7 +766,7 @@ export const failsAtKey = ((
 	data: unknown,
 	key: PropertyKey
 ): boolean | undefined =>
-	!ctx?._at || failsKey(ctx, site, data, key)) satisfies Fn
+	!ctx?._e || failsKeySite(ctx, site, data, key)) satisfies Fn
 
 // a discriminant deeper than one key misses below data, entering each key but the last
 export const failsAtPath = ((
@@ -750,20 +775,21 @@ export const failsAtPath = ((
 	data: unknown,
 	[k, ...deeper]: PropertyKey[]
 ): boolean | undefined =>
-	!ctx?._at ||
+	!ctx?._e ||
 	(deeper.length ?
-		ctx._in((value, ctx) => !failsAtPath(ctx, site, value, deeper), data, k)
-	:	failsKey(ctx, site, data, k))) satisfies Fn
+		ctx._k((value, ctx) => !failsAtPath(ctx, site, value, deeper), data, k)
+	:	failsKeySite(ctx, site, data, k))) satisfies Fn
 
+// passed what a missing key says after the key, as a ctx's _k is
 export const failsIn = ((
 	ctx: FailureContext | undefined,
 	apply: CompactApply,
 	data: unknown,
 	key: PropertyKey,
-	missing?: FailureSite
+	...missing: MissingText
 ): boolean | undefined =>
-	ctx?._at ?
-		ctx._in(apply, data, key, missing)
+	ctx?._e ?
+		ctx._k(apply, data, key, ...missing)
 	:	!(apply as Fn)((data as Record<PropertyKey, unknown>)[key])) satisfies Fn
 
 // a union's issue where it's written its own text, expecting what its branches
@@ -814,7 +840,7 @@ export const failsBranches = ((
 	data: unknown,
 	issueOf: UnionIssueOf
 ): boolean | undefined => {
-	if (!ctx?._at) return true
+	if (!ctx?._e) return true
 	const firsts: ArkIssue[] = []
 	for (const branch of branches) {
 		let first: ArkIssue | undefined
@@ -870,7 +896,7 @@ const elementsFrom =
 	): CompactApply =>
 	(_, ctx) => {
 		for (let j = i; j < data.length; j++)
-			if (!allows(data[j]) && ctx._in(apply, data, j)) return false
+			if (!allows(data[j]) && ctx._k(apply, data, j)) return false
 		return true
 	}
 

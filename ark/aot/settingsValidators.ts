@@ -54,42 +54,38 @@ var ReadIssues = class {
 		return this._
 	}
 	/**
-	 * @internal fails a context at the path it's at. Every bundle holds this,
-	 * so it takes neither a key nor a key's site, which holds one context for
-	 * its value and one for where it's missing: a validator whose code fails
-	 * no site at a key would hold what enters one and picks between them for
-	 * nothing. failsKey does both, through _in
+	 * @internal fails data at the path it's at. Every bundle holds this, so it
+	 * takes neither a key nor a site: a validator whose code fails nothing at
+	 * a key would hold what enters one for nothing, which failsKey does
+	 * through _k, and a site is a function building it in every bundle
 	 */
-	_at(context, data) {
-		const issue = {
-			code: context.code,
-			path: this._p.slice(),
-			data,
-			expected: context.description,
-			message: context.x
-		}
-		if (callsSiteText) context.text?.(issue)
-		this._.push(issue)
+	_e(data, code, expected, message, text) {
+		this._.push({ code, path: this._p.slice(), data, expected, message })
+		if (callsSiteText) text?.(this._[this._.length - 1])
 		return void 0
 	}
 	/** @internal */
-	_in(apply, data, key, missing) {
+	_k(apply, data, key, ...missing) {
 		this._p.push(key)
 		const stops =
-			missing && !(key in data) ?
-				this._at(missing.m, data)
+			missing.length && !(key in data) ?
+				this._e(data, "required", ...missing)
 			:	!apply(data[key], this)
 		this._p.pop()
 		return stops
 	}
 }
-var failsKey = (ctx, site, data, key) =>
-	ctx._in(
-		(value, ctx2) => !ctx2._at(site.v ?? site, value),
+var failsSite = (ctx, context, data) =>
+	ctx._e(data, context.code, context.description, context.x, context.text)
+var failsKeySite = (ctx, site, data, key) =>
+	ctx._k(
+		(value, ctx2) => !failsSite(ctx2, site.v ?? site, value),
 		data,
 		key,
-		site.m && site
+		...missingTextOf(site.m)
 	)
+var missingTextOf = missing =>
+	missing ? [missing.description, missing.x, missing.text] : []
 var Issues =
 	readsErrors ?
 		class ArkIssues extends ReadIssues {
@@ -120,7 +116,7 @@ var Issues =
 var foundErrors = (apply, data, onFail, Ctx = Issues) => {
 	const errors = new Ctx()
 	apply(data, errors)
-	if (!errors._.length) errors._at({ code: "predicate" }, data)
+	if (!errors._.length) errors._e(data, "predicate")
 	return onFail ? onFail(errors) : errors
 }
 var mergeIssues = (errors, merged, prefix) => {
@@ -328,11 +324,8 @@ var intersection = (
 	return checker
 }
 var optional = (checker, ...value) => wrapping(checker, { o: 1, d: value })
-var missingSiteOf = checker => ({
-	m: { ...checker, code: "required" }
-})
 var failsValue = (ctx, checker, data, k, value) =>
-	ctx?._at ?
+	ctx?._e ?
 		appliesValues && checker.e ? checker.e(ctx, checker, value, k)
 		: appliesValues && checker.t?.e ? checker.t.e(ctx, checker, value, k)
 		: (!checker.t ||
@@ -341,7 +334,7 @@ var failsValue = (ctx, checker, data, k, value) =>
 					// one only checks, as Allows does
 					!ctx.chkOnly && checker.a(value, ctx, k)
 				:	checker(value))) &&
-			ctx._in(checker, data, k)
+			ctx._k(checker, data, k)
 	:	!checker(value)
 var props = declared => {
 	const checker = (data, ctx) => {
@@ -350,11 +343,20 @@ var props = declared => {
 			const value = data[k]
 			if (
 				value === void 0 && !(k in data) ?
-					// entered by the ctx, which fails a key missing from data with
-					// the site it's passed, so no shape ships what fails at a key
+					// entered by the ctx, which fails a key missing from data as
+					// required with what it's passed: what its checker holds for
+					// it, the description it expects, the message it says and
+					// what notes one that's its code's
 					!declared[k].o &&
-					(!ctx?._at ||
-						ctx._in(declared[k], data, k, missingSiteOf(declared[k])))
+					(!ctx?._e ||
+						ctx._k(
+							declared[k],
+							data,
+							k,
+							declared[k].description,
+							declared[k].x,
+							declared[k].text
+						))
 				:	failsValue(ctx, declared[k], data, k, value)
 			)
 				return false
@@ -471,7 +473,7 @@ var sitedProps = (allows, declared, write, walks = props(declared)) => {
 	const checkers = Object.values(declared)
 	const checker = (data, ctx) =>
 		!objectCheck.test(data) ? !failsAt(ctx, objectCheck, data)
-		: ctx?._at ? walks(data, ctx)
+		: ctx?._e ? walks(data, ctx)
 		: allows(data, checkers)
 	checker.description = objectCheck.description
 	if (write) {
@@ -617,9 +619,9 @@ var domains = (cases, description = describeDomains(cases), fails) => {
 // ark/type/runtime.ts
 var freeze = /* @__PURE__ */ (() => Object.freeze)()
 var siteOf = (code, description, message) => ({ code, description, x: message })
-var failsAt = (ctx, site, data) => !ctx?._at || ctx._at(site, data)
+var failsAt = (ctx, site, data) => !ctx?._e || failsSite(ctx, site, data)
 var failsAtKey = (ctx, site, data, key) =>
-	!ctx?._at || failsKey(ctx, site, data, key)
+	!ctx?._e || failsKeySite(ctx, site, data, key)
 var checkedDefaultOf = ([id, holes]) => {
 	let table = checkedDefaults.next(id)
 	for (const hole of holes) table = table.next(hole)
@@ -1102,8 +1104,8 @@ var created2
 var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
-				const validator0 = interned("9y6hfe1snlq0m", () =>
-					create12fpvlf14u2zct(intersection413gu20zqkl0a, "1y52q7w1")
+				const validator0 = interned("mly7p124i5s3", () =>
+					create12fpvlf14u2zct(intersection413gu20zqkl0a, "155grir1")
 				)
 				return validator0
 			})())
@@ -1112,8 +1114,8 @@ var get0 = () => {
 var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
-				const validator0 = interned("c8cznq0e7e45t", () =>
-					create12fpvlf14u2zct(intersection1upqj9817d2cda, "cfi0e41t")
+				const validator0 = interned("waudm19nuc0e", () =>
+					create12fpvlf14u2zct(intersection1upqj9817d2cda, "sjfpti0l")
 				)
 				return validator0
 			})())
@@ -1122,8 +1124,8 @@ var get1 = () => {
 var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
-				const validator0 = interned("msujzw1a29nda", () =>
-					create12fpvlf14u2zct(intersection1edczbo1pwpl8e, "14xunru1")
+				const validator0 = interned("rb3eqq16juk1o", () =>
+					create12fpvlf14u2zct(intersection1edczbo1pwpl8e, "qv2d010g")
 				)
 				return validator0
 			})())

@@ -164,7 +164,7 @@ export const narrowedWithCtx = ((
 	description?: string
 ): Checker => {
 	const checker: Checker = (data, ctx: any) =>
-		ctx?._at && ctx._at !== stops ?
+		ctx?._e && ctx._e !== stops ?
 			reportedBy(read, description, data, ctx)
 		:	!!read()(data, silentCtx)
 	checker.description = description
@@ -174,12 +174,12 @@ export const narrowedWithCtx = ((
 const stops = () => true
 
 const allowingCtx = (data: any, ctx: any, checker: Checker) => {
-	if (ctx._at === stops) return checker(data, ctx)
-	const { chkOnly, _at, failsUnion } = ctx
+	if (ctx._e === stops) return checker(data, ctx)
+	const { chkOnly, _e, failsUnion } = ctx
 	ctx.chkOnly = true
-	ctx._at = ctx.failsUnion = stops
+	ctx._e = ctx.failsUnion = stops
 	const allowed = checker(data, ctx)
-	ctx._at = _at
+	ctx._e = _e
 	ctx.failsUnion = failsUnion
 	ctx.chkOnly = chkOnly
 	return allowed
@@ -224,7 +224,7 @@ interface AliasedNode {
 export const compiled = ((node: AliasedNode, transforms?: 1): Checker => {
 	const checker: Checker = (data, ctx: any) =>
 		!ctx ? node.tAllows(data, 0)
-		: ctx._at === stops ? node.tAllows(data, ctx)
+		: ctx._e === stops ? node.tAllows(data, ctx)
 		: node.tApply(data, ctx)
 	if (transforms) {
 		checker.t = (data, ctx) => node.tTransform!(data, ctx)
@@ -259,7 +259,7 @@ export const aliasedValue = ((
 	wrapped.e = (ctx, _, value, k) => {
 		ctx.path.push(k)
 		const passes =
-			ctx._at === stops ?
+			ctx._e === stops ?
 				checker(value, ctx)
 			:	(node.tfs && transformIfAllowed(ctx, node as never, value)) ||
 				(enters ?
@@ -276,7 +276,7 @@ export const aliasedValue = ((
 // a case of a union entered as the branch it was pruned from, holding an alias
 export const aliasedMember = ((checker: Checker, id: string): Checker => {
 	const entered: Checker = (data, ctx: any) =>
-		ctx?._at && ctx._at !== stops ?
+		ctx?._e && ctx._e !== stops ?
 			(enterApplied(ctx, id, data) ?? exitApplied(ctx, checker(data, ctx)))
 		:	checker(data, ctx)
 	entered.description = checker.description
@@ -300,8 +300,8 @@ export const narrowedInCtx = ((
 ): Checker => {
 	const checker: Checker = (data, ctx: any) =>
 		// one taking only data is passed no ctx where arktype only asks
-		!ctx?._at ? !!read()(data, undefined)
-		: ctx._at === stops ? !!read()(data, ctx)
+		!ctx?._e ? !!read()(data, undefined)
+		: ctx._e === stops ? !!read()(data, ctx)
 		: reportedBy(read, description, data, ctx)
 	checker.description = description
 	return checker
@@ -316,7 +316,7 @@ export const narrowedAfter = ((
 	narrowed: Checker
 ): Checker => {
 	const checker: Checker = (data, ctx: any) => {
-		if (!ctx?._at || ctx._at === stops)
+		if (!ctx?._e || ctx._e === stops)
 			return structure(data, ctx) && narrowed(data, ctx)
 		const issues = issuesIn(ctx)
 		return (
@@ -334,7 +334,7 @@ export const transformingNarrowedAfter = ((
 	narrowed: Checker
 ): Checker => {
 	const checker: Checker = (data, ctx: any) =>
-		!ctx?._at || ctx._at === stops ? structure(data, ctx) && narrowed(data, ctx)
+		!ctx?._e || ctx._e === stops ? structure(data, ctx) && narrowed(data, ctx)
 		: (
 			structure.a ? structure.a(data, ctx) : structure(data)
 		) ?
@@ -349,7 +349,7 @@ export const transformingNarrowedAfter = ((
 export const narrowedByEach = ((checkers: readonly Checker[]): Checker => {
 	const checker: Checker = (data, ctx: any) => {
 		// an issue stops what Apply runs, where Allows stops only at false
-		const applies = ctx?._at && ctx._at !== stops
+		const applies = ctx?._e && ctx._e !== stops
 		const issues = applies && issuesIn(ctx)
 		for (const narrowed of checkers) {
 			if (!narrowed(data, ctx)) return false
@@ -664,33 +664,20 @@ export const sayingMissing = ((
 // checking the same shares, and only its message is the field's
 export const saying = ((checker: Checker, message: string): Checker => {
 	const said: Checker = (data, ctx: any) => {
-		const at = ctx?._at
+		const at = ctx?._e
 		if (!at || at === stops) return checker(data, ctx)
-		ctx._at = (site: SiteContext, data: unknown) =>
-			at.call(
-				ctx,
-				{ code: site.code, description: site.description, x: message },
-				data
-			)
+		ctx._e = (data: unknown, code: unknown, expected: unknown) =>
+			at.call(ctx, data, code, expected, message)
 		try {
 			return checker(data, ctx)
 		} finally {
-			ctx._at = at
+			ctx._e = at
 		}
 	}
 	Object.assign(said, checker)
 	said.x = message
 	return said
 }) satisfies Fn
-
-// what a missing key fails: required's, with what its checker holds for it,
-// which a site names as a checker does: the description it expects, the
-// message it says and what notes one that's its code's. Spread, as naming
-// each is longer in every bundle, and a site reads nothing else a checker
-// holds. Its code is written last, as a check is a site of its own code
-const missingSiteOf = (checker: Checker): FailureSite => ({
-	m: { ...checker, code: "required" }
-})
 
 type Props = Record<string, Checker>
 
@@ -703,7 +690,7 @@ const failsValue = (
 	k: PropertyKey,
 	value: unknown
 ): boolean | undefined =>
-	(ctx as FailureContext | undefined)?._at ?
+	(ctx as FailureContext | undefined)?._e ?
 		appliesValues && checker.e ? checker.e(ctx, checker, value, k)
 		: appliesValues && checker.t?.e ? checker.t.e(ctx, checker, value, k)
 		: (!checker.t ||
@@ -712,7 +699,7 @@ const failsValue = (
 					// one only checks, as Allows does
 					!(ctx as any).chkOnly && checker.a(value, ctx, k)
 				:	checker(value))) &&
-			(ctx as FailureContext)._in(checker as CompactApply, data, k)
+			(ctx as FailureContext)._k(checker as CompactApply, data, k)
 	:	!checker(value)
 
 // keys checked in declared order; a missing key expects its checker's
@@ -726,15 +713,19 @@ export const props = ((declared: Props): Checker => {
 			const value = data[k]
 			if (
 				value === undefined && !(k in data) ?
-					// entered by the ctx, which fails a key missing from data with
-					// the site it's passed, so no shape ships what fails at a key
+					// entered by the ctx, which fails a key missing from data as
+					// required with what it's passed: what its checker holds for
+					// it, the description it expects, the message it says and
+					// what notes one that's its code's
 					!declared[k].o &&
-					(!(ctx as FailureContext | undefined)?._at ||
-						(ctx as FailureContext)._in(
+					(!(ctx as FailureContext | undefined)?._e ||
+						(ctx as FailureContext)._k(
 							declared[k] as never,
 							data,
 							k,
-							missingSiteOf(declared[k])
+							declared[k].description,
+							declared[k].x,
+							declared[k].text
 						))
 				:	failsValue(ctx, declared[k], data, k, value)
 			)
@@ -1057,7 +1048,7 @@ export const sitedProps = ((
 	const checkers = Object.values(declared)
 	const checker: Checker = (data: any, ctx: any) =>
 		!objectCheck.test(data) ? !failsAt(ctx as never, objectCheck, data)
-		: ctx?._at ? walks(data, ctx)
+		: ctx?._e ? walks(data, ctx)
 		: allows(data, checkers)
 	checker.description = objectCheck.description
 	if (write) {

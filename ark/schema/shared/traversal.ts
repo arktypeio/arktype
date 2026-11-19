@@ -28,9 +28,11 @@ import {
 	type CompactApply,
 	type FailureContext,
 	type FailureSite,
+	type MissingText,
+	type SiteContext,
 	type UnionSite
 } from "./issues.ts"
-import { listsUnions } from "./issueFeatures.ts"
+import { callsSiteText, listsUnions } from "./issueFeatures.ts"
 import { TransformErrors } from "./transform.ts"
 import { inProgress } from "./utils.ts"
 
@@ -187,29 +189,43 @@ export class InternalTraversal implements FailureContext {
 		}) as never
 	}
 
-	/** @internal */
-	_at(site: FailureSite, data: unknown, key?: PropertyKey): boolean {
-		this.addError(issueAt(this.path, site, data, key))
+	/** @internal a validator's failure, as its errors take one */
+	_e(
+		data: unknown,
+		code: ArkErrorCode,
+		expected?: string,
+		message?: string,
+		text?: SiteContext["text"]
+	): boolean {
+		const issue: ArkIssue = {
+			code,
+			path: this.path.slice(),
+			data,
+			expected,
+			message
+		}
+		if (callsSiteText) text?.(issue)
+		this.addError(issue)
 		return this.failFast
 	}
 
-	/** @internal */
-	_in(
+	/** @internal a validator's key, as its errors enter one */
+	_k(
 		apply: CompactApply,
 		data: unknown,
 		key: PropertyKey,
-		missing?: FailureSite,
-		value?: unknown
+		...missing: MissingText
 	): boolean | undefined {
+		this.path.push(key)
 		// read first, as only a value that's undefined can be a missing key's,
 		// and whether a key any site passes is in data is a call
-		if (value === undefined) value = (data as Record<PropertyKey, unknown>)[key]
-		if (value === undefined && missing && !(key in (data as object)))
-			return this._at(missing, data, key)
-		this.path.push(key)
-		const continues = apply(value, this)
+		const value = (data as Record<PropertyKey, unknown>)[key]
+		const stops =
+			value === undefined && missing.length && !(key in (data as object)) ?
+				this._e(data, "required", ...missing)
+			:	!apply(value, this)
 		this.path.pop()
-		return !continues
+		return stops
 	}
 
 	/** @internal */

@@ -1309,7 +1309,7 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 		}
 
 		it("sizes them where they're compiled for speed with optimize unset", async () => {
-			attest(await timesFrom({})).snap("1.5")
+			attest(await timesFrom({})).snap("1.4")
 		})
 
 		it("doesn't under the smallest preset, which writes them as checkers", async () => {
@@ -1345,7 +1345,7 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 		it("writes them for size where a browser loads the bundle, as optimize: size would", async () => {
 			const [warnings, js] = await built({})
 			attest(warnings).snap([
-				'precompile: compiled to check fastest, this bundle\'s validators would be about 1.4 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
+				'precompile: compiled to check fastest, this bundle\'s validators would be about 1.3 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
 			])
 			const [setWarnings, setJs] = await built({
 				optimize: "size",
@@ -1832,7 +1832,7 @@ try {
 			const allowing = await bundle({}, { stdin })
 			attest(run(allowing)).snap("false true\n")
 			// neither what writes an issue nor a validator around its checker
-			attest([allowing.includes("_at"), allowing.includes("allows")]).equals([
+			attest([allowing.includes("_e("), allowing.includes("allows")]).equals([
 				false,
 				false
 			])
@@ -4684,7 +4684,7 @@ export const shown = type({ shown: "string" })
 						return warnings
 					}
 					attest(await warningsOf({ target: "web" })).equals([
-						'precompile: compiled to check fastest, this bundle\'s validators would be about 1.4 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
+						'precompile: compiled to check fastest, this bundle\'s validators would be about 1.3 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
 					])
 					// a server's are left compiled
 					attest(await warningsOf({ target: "node" })).equals([])

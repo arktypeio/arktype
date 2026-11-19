@@ -1,22 +1,50 @@
 // what errors "none" writes besides its errors' class
 import { throwInternalError, type array } from "@ark/util"
 import type { ArkErrors } from "./issuesNone.ts"
-import type { ArkIssue, FailureContext, FailureSite } from "./issues.ts"
+import type { ArkErrorCode } from "./errors.ts"
+import type {
+	ArkIssue,
+	FailureContext,
+	FailureSite,
+	MissingText,
+	SiteContext
+} from "./issues.ts"
 import { bracketsKeys } from "./issueFeatures.ts"
 
-// as issues.ts's failsKey, for a traversal a validator's Apply is piped into
+// as issues.ts's failsKey, failsSite, failsKeySite and missingTextOf, for a
+// traversal a validator's Apply is piped into
 export const failsKey = (
+	ctx: FailureContext,
+	data: unknown,
+	key: PropertyKey,
+	code: ArkErrorCode,
+	expected?: string,
+	missing = expected
+): boolean | undefined =>
+	ctx._k((value, ctx) => !ctx._e(value, code, expected), data, key, missing)
+
+export const failsSite = (
+	ctx: FailureContext,
+	context: SiteContext,
+	data: unknown
+): boolean | undefined =>
+	ctx._e(data, context.code, context.description, context.x, context.text)
+
+export const failsKeySite = (
 	ctx: FailureContext,
 	site: FailureSite,
 	data: unknown,
 	key: PropertyKey
 ): boolean | undefined =>
-	ctx._in(
-		(value, ctx) => !ctx._at(site.v ?? site, value),
+	ctx._k(
+		(value, ctx) => !failsSite(ctx, (site.v ?? site) as SiteContext, value),
 		data,
 		key,
-		site.m && site
+		...missingTextOf(site.m)
 	)
+
+export const missingTextOf = (missing: SiteContext | undefined): MissingText =>
+	missing ? [missing.description, missing.x, missing.text] : []
 
 // a size build's root apply, which errors "none" never writes
 export const applyIssues = (): never =>

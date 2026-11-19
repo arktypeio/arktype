@@ -559,9 +559,9 @@ console.log(describe(User))
 				.join("\n")
 				.match(/const validator0 = [^]*?\n\)/)?.[0]
 		attest(createdIn(written)).snap(`const validator0 = createi4hcxm1xcmujt(
-	intersectionnzxwpv10vs7ui,
+	intersection1auzwrh0yxpmuw,
 	{ expression: expression1dlmq9v0vwoz4a() },
-	"n523gd0d"
+	"1of1gez0"
 )`)
 		attest(createdIn(rewritten)).equals(createdIn(written))
 	})

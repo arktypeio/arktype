@@ -387,17 +387,31 @@ export abstract class NodeCompiler extends CompiledFunction<
 	}
 
 	error(node: BaseNode, key?: string, data = "data"): string {
-		return key === undefined ?
-				this.fails("failsAt", `${this.site(node)}, ${data}`)
-			:	this.fails("failsKey", `${this.site(node)}, ${data}, ${key}`)
+		return this.failsSite(this.site(node), data, key)
 	}
 
-	// a call reporting a failure into ctx, by FailureContext's short names.
-	// failsKey fails a site at a key of data, which arktype's traversal enters
-	// in its _at; a validator's errors take none there, so its compilers write
-	// the call another way
-	fails(method: "failsAt" | "failsIn" | "failsKey", args: string): string {
-		return `ctx.${method === "failsIn" ? "_in" : "_at"}(${args})`
+	// a call failing a site, at a key of data where it's passed one, which
+	// arktype's traversal enters in its _at. A validator's errors take neither
+	// a site nor a key, so its compilers write the call another way
+	failsSite(site: string, data: string, key?: string): string {
+		return `ctx._at(${site}, ${data}${key === undefined ? "" : `, ${key}`})`
+	}
+
+	// a call failing one of two sites at a key of data: the first where a
+	// condition holds
+	failsEither(
+		condition: string,
+		site: string,
+		otherwise: string,
+		data: string,
+		key: string
+	): string {
+		return this.failsSite(`${condition} ? ${site} : ${otherwise}`, data, key)
+	}
+
+	// a call applying data's value at a key, by SiteFailureContext's short name
+	failsIn(args: string): string {
+		return `ctx._in(${args})`
 	}
 
 	// what _in takes after data: the key, the site it's missing at and its
@@ -504,8 +518,8 @@ export abstract class NodeCompiler extends CompiledFunction<
 			: `!(${condition}) && `
 		// a refined basis Allows rejected failed its basis or its refinement
 		if (checksAllowsFirst && isRefinedBasis(node))
-			return `${allows}${this.fails("failsKey", `${node.basis!.jsCond(this, value)} ? ${this.site(node.preStruct[0])} : ${this.site(node.basis!)}, data, ${key}`)}`
-		return `${allows}${this.fails("failsIn", `${this.traversal(node, "Apply")}, ${this.data}, ${this.applied(key, value)}`)}`
+			return `${allows}${this.failsEither(node.basis!.jsCond(this, value), this.site(node.preStruct[0]), this.site(node.basis!), "data", key)}`
+		return `${allows}${this.failsIn(`${this.traversal(node, "Apply")}, ${this.data}, ${this.applied(key, value)}`)}`
 	}
 
 	// a cyclic value is applied inline

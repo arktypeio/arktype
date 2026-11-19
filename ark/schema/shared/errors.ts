@@ -37,12 +37,14 @@ import { describeBranches, removedProblemMessage } from "./utils.ts"
 import {
 	ArkErrors as BaseArkErrors,
 	isCustomIssue,
+	issueAt,
 	messageOf,
 	TraversalError as BaseTraversalError,
 	type ArkIssue,
 	type CompactApply,
 	type FailureSite,
 	type SiteContext,
+	type SiteFailureContext,
 	type UnionSite
 } from "./issues.ts"
 import {
@@ -434,7 +436,42 @@ export const applyUnread = (
 
 type Keyed = Record<PropertyKey, unknown>
 
-export class ArkTraversal extends Traversal {
+/**
+ * the traversal arktype's own compiled code reports to, which fails a site,
+ * at a key where it's passed one, and enters a key passed the site it fails
+ * where missing and its value. A validator's code passes neither a site nor a
+ * value, so its traversal holds none of this; one of these takes a
+ * validator's failures too, as each is named apart
+ */
+export class SiteTraversal extends Traversal implements SiteFailureContext {
+	/** @internal */
+	_at(site: FailureSite, data: unknown, key?: PropertyKey): boolean {
+		this.addError(issueAt(this.path, site, data, key))
+		return this.failFast
+	}
+
+	/** @internal */
+	_in(
+		apply: CompactApply,
+		data: unknown,
+		key: PropertyKey,
+		missing?: FailureSite,
+		value?: unknown
+	): boolean | undefined {
+		// read first, as only a value that's undefined can be a missing key's,
+		// and whether a key any site passes is in data is a call
+		if (value === undefined) value = (data as Keyed)[key]
+		if (value === undefined && missing && !(key in (data as object)))
+			return this._at(missing, data, key)
+		this.path.push(key)
+		// arktype's own Apply, which reports as a SiteFailureContext takes it
+		const continues = apply(value, this as never)
+		this.path.pop()
+		return !continues
+	}
+}
+
+export class ArkTraversal extends SiteTraversal {
 	override createErrors(): ArkErrors {
 		return new ArkErrors(this.config)
 	}
@@ -489,7 +526,7 @@ export class ArkTraversal extends Traversal {
 	): boolean {
 		const errors = branches.map(branch => {
 			this.pushBr()
-			branch(data, this)
+			branch(data, this as never)
 			return this.popBr()!.error as ArkError
 		})
 		errorFromUnion(this, errors, site.meta as ArkEnv.meta, data)

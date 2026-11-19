@@ -91,7 +91,7 @@ export const rootApplyParts = (
 		if (node.hasAlias) {
 			js.const("untracked", `${ref("allowsAcyclic")}(node, data)`)
 				.if(
-					`!(untracked ?? ${ref("allowsInContext")}(node, data, ${ref("config")}))`,
+					`!(untracked ?? ${ref("allowsInContext")}(node, data, ${ref("config")}, ${ref("Traversal")}))`,
 					fallback
 				)
 				.const("ctx", newCtx)

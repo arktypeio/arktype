@@ -1785,10 +1785,12 @@ return namespace`
 			.split(unit.name)
 			.join("template")
 		if (/\bliteral\d+\b/.test(body)) return
-		// a site's description is passed, so units differing by theirs share it
+		// what a failure expects is passed, so units differing by theirs share
+		// it: the last a ctx is passed where it fails data or a key, and the
+		// last failsKey is
 		const descriptions: string[] = []
 		const shared = body.replace(
-			/(runtime\.(?:siteOf|keySiteOf)\("(?:[^"\\]|\\.)*", |runtime\.requiredSiteOf\()("(?:[^"\\]|\\.)*")\)/g,
+			/(ctx\._e\(\w+, "(?:[^"\\]|\\.)*", |ctx\._k\((?:\w+, ){2}"(?:[^"\\]|\\.)*", |runtime\.failsKey\(ctx, \w+(?:, "(?:[^"\\]|\\.)*"){2}, )("(?:[^"\\]|\\.)*")\)/g,
 			(_, call: string, description: string) => {
 				if (!descriptions.includes(description)) descriptions.push(description)
 				return `${call}d${descriptions.indexOf(description)})`

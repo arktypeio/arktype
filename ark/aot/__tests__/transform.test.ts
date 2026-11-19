@@ -1265,7 +1265,7 @@ export const E = type("strng")`,
 				normalized([...lines.slice(0, declared + 1), ...lines.slice(-7)])
 			).snap([
 				'import "arktype"',
-				'import { siteOf as $ark$0$siteOf, failsKey as $ark$0$failsKey, freeze as $ark$0$freeze, unreadCallErrors as $ark$0$unreadCallErrors, UnreadArkErrors as $ark$0$UnreadArkErrors, deepFreeze as $ark$0$deepFreeze, fixConfig as $ark$0$fixConfig, interned as $ark$0$interned, createValidatorWith as $ark$0$createValidatorWith, emptyMeta as $ark$0$emptyMeta, bakedJsonSchema as $ark$0$bakedJsonSchema, bakedStandardJsonSchema as $ark$0$bakedStandardJsonSchema, precompiledForArktype_$version as $ark$0$precompiledForArktype_$version, ParseError as $ark$0$ParseError } from "arktype/runtime"',
+				'import { freeze as $ark$0$freeze, unreadCallErrors as $ark$0$unreadCallErrors, UnreadArkErrors as $ark$0$UnreadArkErrors, deepFreeze as $ark$0$deepFreeze, fixConfig as $ark$0$fixConfig, interned as $ark$0$interned, createValidatorWith as $ark$0$createValidatorWith, emptyMeta as $ark$0$emptyMeta, bakedJsonSchema as $ark$0$bakedJsonSchema, bakedStandardJsonSchema as $ark$0$bakedStandardJsonSchema, precompiledForArktype_$version as $ark$0$precompiledForArktype_$version, ParseError as $ark$0$ParseError } from "arktype/runtime"',
 				"var $ark$exports0;",
 				"}",
 				"$ark$load2();",

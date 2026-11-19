@@ -511,8 +511,16 @@ export abstract class BaseNode<
 
 		this.allows =
 			this.allowsCtx ?
+				// in a traversal arktype's own Apply reports to, as a callback
+				// may pipe one into it
 				data =>
-					allowsUntracked(this, data) ?? allowsInContext(this, data, this.$.cfg)
+					allowsUntracked(this, data) ??
+					allowsInContext(
+						this,
+						data,
+						this.$.cfg,
+						rootApplyRuntimeOf(this.$.cfg).Traversal
+					)
 			:	data => (this.tAllows as any)(data)
 	}
 
@@ -853,7 +861,8 @@ export abstract class BaseNode<
 				if (this.hasAlias) {
 					return (data, onFail = this.onFail) => {
 						const untracked = allowsAcyclic(this, data)
-						const allowed = untracked ?? allowsInContext(this, data, this.$.cfg)
+						const allowed =
+							untracked ?? allowsInContext(this, data, this.$.cfg, Traversal)
 						if (!allowed) return this.rejectRoot(data, onFail, runtime)
 						const ctx = new Traversal(data, this.$.cfg)
 						ctx.isTree = untracked === undefined
