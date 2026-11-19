@@ -2,15 +2,7 @@
  * The published results of every benchmark the site reads
  * (leaderboard.json): each suite's rows, who wrote it, when it last ran and
  * which libraries the site may name. The site ranks by lib/bench/units.ts's
- * rule over the independent suites' rows.
- *
- * It also still computes the pooled standings ark/repo/bench/external's
- * standings.ts checks itself against, by the README's "Best average": a row's
- * results as ratios to its best, a library's suite score the geometric mean
- * over the suite's rows it's on, its category score the geometric mean over
- * its suite scores, counted with at least half a suite's rows and ranked with
- * at least half a category's suites. Nothing on the site states a place from
- * them.
+ * rule over the independent suites' rows; nothing here scores a library.
  */
 import data from "./leaderboard.json" with { type: "json" }
 
@@ -45,37 +37,16 @@ export type FormBuilds = {
 
 const suites = data.suites as Suite[]
 
-export type Standing = {
-	library: string
-	/** geometric mean of its suite scores: 1 is best on every row */
-	score: number
-	suites: number
-}
-
 export type Leaderboard = {
 	category: CategoryId
+	/** its benchmarks, by label */
 	suites: string[]
-	/** rows across its suites */
+	/** results across them */
 	rows: number
-	standings: Standing[]
 }
 
 export const geomean = (values: readonly number[]) =>
 	Math.exp(values.reduce((sum, v) => sum + Math.log(v), 0) / values.length)
-
-const suiteScores = (suite: Suite) => {
-	const ratios: Record<string, number[]> = {}
-	for (const { results } of suite.rows) {
-		const best = Math.min(...Object.values(results))
-		for (const [library, value] of Object.entries(results))
-			(ratios[library] ??= []).push(value / best)
-	}
-	return Object.fromEntries(
-		Object.entries(ratios)
-			.filter(([, r]) => r.length * 2 >= suite.rows.length)
-			.map(([library, r]) => [library, geomean(r)])
-	)
-}
 
 /** the suites we wrote, by id */
 const ownSuites = ["homepage", "startup", "homepageStartup", "homepageSize"]
@@ -117,20 +88,10 @@ const leaderboardOf = (
 	counts: (suite: Suite) => boolean
 ): Leaderboard => {
 	const counted = suites.filter(s => s.category === category && counts(s))
-	const scored = counted.map(suiteScores)
-	const libraries = new Set(scored.flatMap(Object.keys))
-	const standings = [...libraries]
-		.map(library => {
-			const scores = scored.flatMap(s => (library in s ? [s[library]] : []))
-			return { library, score: geomean(scores), suites: scores.length }
-		})
-		.filter(s => s.suites * 2 >= counted.length)
-		.sort((l, r) => l.score - r.score)
 	return {
 		category,
 		suites: counted.map(s => s.label),
-		rows: counted.reduce((sum, s) => sum + s.rows.length, 0),
-		standings
+		rows: counted.reduce((sum, s) => sum + s.rows.length, 0)
 	}
 }
 
@@ -144,7 +105,7 @@ const leaderboardsOf = (counts: (suite: Suite) => boolean) =>
 /** when the published rows were last measured, as YYYY-MM-DD */
 export const measured: string = data.measured
 
-/** every suite of a category, ours included: its benchmarks, how many results they have and the pooled standings over them */
+/** every public benchmark of a category, ours included, and how many results they have between them */
 export const fullLeaderboards = leaderboardsOf(() => true)
 
 /** a suite's row: each library's result, in the suite's unit */

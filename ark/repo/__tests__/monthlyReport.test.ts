@@ -37,6 +37,8 @@ const boardOf = (measured: string, arkType: number, extra = {}) =>
 				category: "size",
 				id: "form",
 				label: "valibot.dev's login form",
+				// a suite's own stamp: the day and the commit it was measured at
+				measured: { rivals: measured, arkType: `commit of ${measured}` },
 				rows: [
 					{
 						id: "login|form",
@@ -200,26 +202,28 @@ contextualize(() => {
 		])
 	})
 
-	it("lists a library whose place or average moved, not one that kept both", () => {
+	it("lists a library whose place or mean moved, not one that kept both", () => {
+		// standings.ts's lines: a mean is in its board's unit, and a name may
+		// hold spaces and parentheses
 		const printed = (first: string, second: string) =>
-			`size (form, sbSize; 2 rows)\n  1. ${first}\n  2. ${second} [3/4 suites]\n  3. Superstruct 1.464\n    form (1): ajv 1.000, ArkType 1.097\n`
+			`size (kB gzipped; geometric mean of 2 of 3 results: valibot.dev's login form 1, schemabenchmarks.dev's download 1)\n  1. ${first}\n  2. ${second}\n  3. Zod (compiled): 15.6 kB\n`
 		attest(
 			standingChangesOf(
-				printed("ajv 1.326", "ArkType 1.333"),
-				printed("ArkType 1.324", "ajv 1.326")
+				printed("Typia: 1.52 kB", "ArkType: 1.53 kB"),
+				printed("ArkType: 1.49 kB", "Typia: 1.52 kB")
 			)
 		).snap([
 			{
 				category: "size",
 				library: "ArkType",
-				after: { place: 1, score: "1.324" },
-				before: { place: 2, score: "1.333" }
+				after: { place: 1, score: "1.49 kB" },
+				before: { place: 2, score: "1.53 kB" }
 			},
 			{
 				category: "size",
-				library: "ajv",
-				after: { place: 2, score: "1.326" },
-				before: { place: 1, score: "1.326" }
+				library: "Typia",
+				after: { place: 2, score: "1.52 kB" },
+				before: { place: 1, score: "1.52 kB" }
 			}
 		])
 	})

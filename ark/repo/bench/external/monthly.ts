@@ -282,7 +282,7 @@ const gh = (...args: string[]) => {
 }
 
 const fail = (message: string): never => {
-	console.log(`::error title=${title}::${message.replaceAll("\n", "%0A")}`)
+	console.log(`::error title=${title}::${message.replace(/\n/g, "%0A")}`)
 	process.exit(1)
 }
 
