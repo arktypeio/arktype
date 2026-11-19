@@ -95,7 +95,8 @@ export interface BenchmarkChart {
  * ark/repo/bench/external, against moltar's typescript-runtime-type-benchmarks
  * at 499f3fb and schema-benchmarks at f1e6e8e. Its results/ holds the
  * instruction counts (counts-a306152ce.md; ArkType's recounted at 20710020e in
- * arktype-20710020e.json), the sizes (login-20710020e.json) and the
+ * arktype-20710020e.json), the sizes (results/newest/ and
+ * arktype-ba691ac56.json, ArkType's measured again at ba691ac56) and the
  * pre-registered wall-clock run at
  * f29b8d153 (wall-f29b8d153.md: 30 paired passes, Holm over H1-H4), where all
  * four hypotheses held. At the release candidate (wall.md) H1 had failed. Each
@@ -104,8 +105,9 @@ export interface BenchmarkChart {
  * instead follow the board's one rule (lib/bench/units.ts): other projects'
  * benchmarks, each library's geometric mean over the largest set of results
  * that ArkType, Zod and three more named libraries all ran, in plain order,
- * with ArkType as its default production build throughout, every one of its
- * rows measured at 20710020e.
+ * with ArkType as its default production build throughout, its instruction
+ * counts measured at 20710020e and its size rows at ba691ac56 (each suite's
+ * `measured` in leaderboard.json says which).
  */
 
 // moltar's typescript-runtime-type-benchmarks, perf instruction counts in
@@ -142,8 +144,8 @@ export const speedChart: BenchmarkChart = {
 // empty). Every bar is leaderboard.json's, so a rerun redraws the chart and
 // rewrites every sentence that states a byte of it: the form's row, which the
 // board's size graph averages, and for dynamic ArkType the form suite's
-// `builds`. At 20710020e the default build is 1026 B gz and the "smallest"
-// preset 996. Zod Mini's form is written so it runs: valibot.dev's code for
+// `builds`. At ba691ac56 the default build is 917 B gz and the "smallest"
+// preset 878. Zod Mini's form is written so it runs: valibot.dev's code for
 // it throws at its first parse on zod 4.6.7 (z.check takes no schema).
 const loginForm = resultsOf("form", "login form")
 
@@ -804,10 +806,11 @@ export const claims = {
 	// each superlative names a category ArkType must claim (claimsLead), as
 	// the check of the copy below holds. "Smallest" is the lowest geometric
 	// mean of gzipped bytes over the public size results the size graph
-	// averages: at 20710020e (results/newest/) the default build's 1.35 kB to
+	// averages: at ba691ac56 (results/newest/) the default build's 1.19 kB to
 	// Typia's 1.52 over valibot.dev's login form and schemabenchmarks.dev's
-	// download, 2nd on each of the two (ajv on the form, an unnamed library on
-	// the download), 1st of the 12 libraries on both
+	// download, the smallest on each of the two (917 B to ajv's 935 on the
+	// form, 1547 to an unnamed library's 1568 on the download), 1st of the 12
+	// libraries on both. At 20710020e it was 1.35 kB and 2nd on each
 	headline:
 		claimsLead("size") ?
 			"TypeScript's smallest, fastest validator."
@@ -842,7 +845,7 @@ export const claims = {
 	dynamicSpeed:
 		"In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType.",
 	// the default build in production against Valibot on leaderboard.json's
-	// login form row, the size chart's two bars: 1026 vs 1564 B gz at 20710020e
+	// login form row, the size chart's two bars: 917 vs 1564 B gz at ba691ac56
 	loginSize: whileSmallerThanValibot(
 		`On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: ${loginKb("ArkType")} kB gzipped against ${loginKb("Valibot")} kB.`
 	),
@@ -855,13 +858,17 @@ export const claims = {
 	// 16 instructions at 20710020e, the harness floor; typia createIs 381
 	noInit:
 		"A precompiled Type costs nothing to create: it was built when you built.",
-	// `import { type } from "arktype"` by ark/repo/bench/bundle.ts's method
-	// (esbuild 0.25.10 bundle + minify, esm, neutral, "production", gzip) at
-	// 20710020e: 89783 vs 2.2.9's 47797 B gz from npm (271466 vs 156116 min);
-	// 82983 at 5acd85130. sizeChart's dynamic bar, the login form at gzip
-	// level 9, is 89767
-	dynamicSize:
-		"Dynamic ArkType is 89.8 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.",
+	// what ships without the plugin: valibot.dev's login form built with plain
+	// `type()`, leaderboard.json's form `builds.dynamic`, which is the size
+	// chart's dynamic bar, so the sentence and the chart can't disagree (97987
+	// B gz at ba691ac56, 89767 at 20710020e). The form adds next to nothing to
+	// arktype itself: at 20710020e `import { type } from "arktype"` alone was
+	// 89783. 2.2.9's 47797 B gz (156116 min) is that import alone, from npm, by
+	// ark/repo/bench/bundle.ts's method (esbuild 0.25.10 bundle + minify, esm,
+	// neutral, "production", gzip). No result file stores it, so it is typed:
+	// it would be read too once forms/size.ts sizes the form on arktype@2.2.9
+	// as an arm of its own and leaderboard.ts keeps that beside `builds`
+	dynamicSize: `Dynamic ArkType is ${unitText.kB(formBuilds.dynamic)} gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.`,
 	zodSpec: `faster than Zod 4 in ${zodScenarios} we ran`,
 	// the median, not the range: the largest ratio is a first-error row, and
 	// Zod has no first-error mode
