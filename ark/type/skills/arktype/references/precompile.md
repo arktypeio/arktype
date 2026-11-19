@@ -102,6 +102,8 @@ A project that `tsc` compiles to run from its `outDir` precompiles what it emits
 
 A library that others install doesn't precompile itself, with `--emit` or a bundler: an app's build fails for a dependency that imports `arktype/runtime`. Precompiling a library means publishing what `tsc` emits with `"ark": { "aot": true }` in its `package.json` and `arktype` in `peerDependencies`, so each app's build precompiles it, and running `npx arktype-precompile --check src` until it accepts every definition.
 
+A package whose types others read writes its declarations with `npx arktype-precompile --declare` in place of `tsc`'s: each Type, Scope and Module is declared by its shape, in a `~arktype.d.ts` beside the others, and nothing changes at runtime. A cyclic scope's types ship no other way, since `tsc` declares an inferred cycle as `any` or fails with `TS5088`. It reads the program with the TypeScript installed: 5.5 to 6's compiler API, or TypeScript 7.1 or later's native API through tsgo, or tsrs where its binary is installed; `--checker tsjs|tsgo|tsrs` chooses one.
+
 ### Tests
 
 - Vitest: nothing beyond the Vite plugin.

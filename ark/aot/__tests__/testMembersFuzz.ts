@@ -966,7 +966,7 @@ const viteOutcome = async (dir: string, plugin: boolean): Promise<Outcome> => {
 				...(plugin ?
 					[
 						precompile.vite({
-							conditions: ["ark-ts"],
+							conditions: ["ark-ts", "development"],
 							cwd: dir,
 							...buildOptions
 						})
@@ -1018,21 +1018,22 @@ const webpackOutcome = async (
 		},
 		module: { rules: lateRules(dir, lateOrderOf(dir)) }
 	}
+	// the plugin resolves what its validators import under its own conditions
+	// on webpack, and Rspack under the config's
+	const set = {
+		cwd: dir,
+		conditions: ["import", "node", "default", "development"],
+		...buildOptions
+	}
 	const compiler =
 		bundler === "webpack" ?
 			webpack({
 				...config,
-				plugins:
-					plugin ?
-						[precompile.webpack({ cwd: dir, ...buildOptions }) as never]
-					:	[]
+				plugins: plugin ? [precompile.webpack(set) as never] : []
 			})
 		:	(rspack({
 				...config,
-				plugins:
-					plugin ?
-						[precompile.rspack({ cwd: dir, ...buildOptions }) as never]
-					:	[]
+				plugins: plugin ? [precompile.rspack(set) as never] : []
 			}) as never as webpack.Compiler)
 	const errors = await new Promise<string | undefined>((resolve, reject) => {
 		const hung = setTimeout(

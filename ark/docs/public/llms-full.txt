@@ -1579,7 +1579,7 @@ const types = scope({
 
 Inside a scope, `type()` can't see the scope's names, so write a refinement or a transform there as a tuple: `["Post[]", ":", (posts, ctx) => ...]` for a `.narrow()`, `["string", "=>", s => s.trim()]` for a `.pipe()`.
 
-Delete the hand-written TypeScript type that `z.lazy` needed; `typeof Category.infer` and `typeof types.Post.infer` replace it. Keep it where the module's declarations are emitted, as for a published package or a TypeScript project reference: a `.d.ts` holds `any` in place of the cycle, so [declare the Type with the type you wrote](https://arktype.io/docs/scopes#cyclic-types), `type.declare<Category>().type({ ... })`. For JSON data, use the `object.json` keyword rather than a recursive type of your own: `z.json()` is `"string | number | boolean | null | object.json"`.
+Delete the hand-written TypeScript type that `z.lazy` needed; `typeof Category.infer` and `typeof types.Post.infer` replace it. Where the module's declarations are emitted, as for a published package or a TypeScript project reference, `tsc` can't write the cycle in a `.d.ts`, so emit them with [`arktype-precompile --declare`](https://arktype.io/docs/precompile/advanced#cyclic-types), or keep the type and [declare the Type with it](https://arktype.io/docs/scopes#cyclic-types), `type.declare<Category>().type({ ... })`. For JSON data, use the `object.json` keyword rather than a recursive type of your own: `z.json()` is `"string | number | boolean | null | object.json"`.
 
 ### Composing objects
 
@@ -5987,7 +5987,15 @@ For a single recursive `Type`, you don't need a scope: use the [`this`](https://
 >
 > TypeScript shows an anonymous cycle as `...`, or as `any` if `noErrorTruncation` is enabled. Either way, the type itself is accurate: you get completions, and accessing a property that doesn't exist is an error.
 
-A declaration file is the exception. In the `.d.ts` TypeScript emits for a module that exports a cyclic Type, as for a published package or a project reference, the cycle is written as `any`, and that's what code importing it gets. There, name the type yourself and [declare](https://arktype.io/docs/declare) the Type with it:
+A declaration file is the exception. TypeScript can't write an inferred cycle in the `.d.ts` it emits for a module that exports a cyclic Type, as for a published package or a project reference: it writes `any` where the type recurs, which is what code importing it gets, or, depending on its version, fails with `TS5088` ([microsoft/TypeScript#64656](https://github.com/microsoft/TypeScript/issues/64656)).
+
+To ship a cyclic Type's types, write the declarations with [`arktype-precompile --declare`](https://arktype.io/docs/precompile/advanced#cyclic-types) instead of `tsc`. It declares each cycle under its alias, `Package` and `Contributor` here, and leaves how your Types validate unchanged:
+
+```sh
+npx arktype-precompile --declare
+```
+
+Without it, name the type yourself and [declare](https://arktype.io/docs/declare) the Type with it:
 
 ```ts
 export interface Category {
@@ -9506,6 +9514,18 @@ const addTag = type({ tags: "string[]" }).pipe(o => ({
 ## Should I precompile?
 
 If your app is bundled, yes. A [precompiled](https://arktype.io/docs/precompile) build ships each Type as a standalone validator, without arktype's parser and without generating code at runtime, and your definitions don't change. Stay dynamic where there's no build step or a program composes Types at runtime. See [Dynamic vs Precompiled](https://arktype.io/docs/precompile/dynamic-vs-precompiled).
+
+## How do I ship the types of my Types?
+
+If a package or a referenced project exports types derived from arktype, write its declarations with [`arktype-precompile --declare`](https://arktype.io/docs/precompile/advanced#declarations) rather than `tsc`:
+
+```sh
+npx arktype-precompile --declare
+```
+
+It declares each Type by the shape it infers, so code importing the package reads that shape rather than inferring your definitions again. It needs no bundler and leaves your Types dynamic.
+
+For a [cyclic scope](https://arktype.io/docs/scopes#cyclic-types), it's required: TypeScript can't write an inferred cycle in a `.d.ts`, so `tsc` declares it as `any` or fails with `TS5088`, where `--declare` names each cycle for its alias.
 
 ## Can I get error messages in another language?
 

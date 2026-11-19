@@ -12,6 +12,7 @@ export {
 	appliesValues,
 	discriminatesBooleans,
 	failsInBranches,
+	holdsExpression,
 	listsUnions,
 	transformsBranches,
 	traversesUnions

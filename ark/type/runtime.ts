@@ -12,6 +12,7 @@ import {
 	enInfo,
 	errorsOf,
 	FirstIssues,
+	holdsExpression,
 	isCustomIssue,
 	issueAt,
 	issuesOf,
@@ -216,10 +217,12 @@ export class Validator {
 		return this.assert(input)
 	}
 
-	// a build without the expression member has none to print
+	// a build without the expression member has none to print, and one whose
+	// validators all lack it ships no read of it
 	toString(): string {
-		const { expression } = this
-		return expression ? `Type<${expression}>` : "Type"
+		return holdsExpression && this.expression ?
+				`Type<${this.expression}>`
+			:	"Type"
 	}
 }
 

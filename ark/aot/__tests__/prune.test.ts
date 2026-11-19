@@ -3,6 +3,7 @@ import { fromHere } from "@ark/fs"
 import { Precompiler, type PrecompileOptions } from "@ark/aot"
 import { linkBundle } from "@ark/aot/internal/link.ts"
 import { emitPrecompiled } from "@ark/aot/internal/emit.ts"
+import { writeIssueFeaturesInto } from "@ark/aot/internal/features.ts"
 import {
 	addLoaded,
 	programAsBuilt,
@@ -26,6 +27,7 @@ import { precompile as bunPlugin } from "@ark/aot/bun"
 import { register } from "@ark/aot/node"
 import turbopack from "@ark/aot/turbopack"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
+import { noIssueFeatures } from "arktype/internal/standalone.ts"
 import { rspack } from "@rspack/core"
 import {
 	build,
@@ -708,7 +710,8 @@ export const Fields = { even: Even, name: type("string") }
 				discriminatesBooleans: false,
 				entersMissing: false,
 				readsSummary: true,
-				readsErrors: true
+				readsErrors: true,
+				holdsExpression: false
 			})
 			attest(
 				await issuesOf(
@@ -728,7 +731,8 @@ export const Fields = { even: Even, name: type("string") }
 				discriminatesBooleans: false,
 				entersMissing: true,
 				readsSummary: true,
-				readsErrors: true
+				readsErrors: true,
+				holdsExpression: false
 			})
 		})
 
@@ -751,7 +755,8 @@ export const Fields = { even: Even, name: type("string") }
 				discriminatesBooleans: false,
 				entersMissing: false,
 				readsSummary: true,
-				readsErrors: true
+				readsErrors: true,
+				holdsExpression: false
 			})
 		})
 
@@ -851,7 +856,95 @@ export const Fields = { even: Even, name: type("string") }
 				discriminatesBooleans: false,
 				entersMissing: false,
 				readsSummary: true,
-				readsErrors: true
+				readsErrors: true,
+				holdsExpression: false
+			})
+		})
+
+		it("a validator's expression only where one holds it, as one that's printed does", async () => {
+			const holdsExpression = async (read: string) => {
+				const issues = await issuesOf(
+					`import { type } from "arktype"\n\nconst User = type({ name: "string" })\n\nconsole.log(${read})\n`
+				)
+				return (
+					typeof issues === "object" &&
+					!Array.isArray(issues) &&
+					issues.holdsExpression
+				)
+			}
+			attest(await holdsExpression("String(User)")).equals(true)
+			// written where it's read, so the validator holds none
+			attest(await holdsExpression("User.expression")).equals(false)
+			attest(await holdsExpression("User({})")).equals(false)
+		})
+
+		describe("written into the runtime modules that read them", () => {
+			const issues = { ...noIssueFeatures, writesText: true }
+
+			const written = (code: string, id = "/node_modules/arktype/out/a.js") =>
+				writeIssueFeaturesInto(id, code, issues)
+
+			it("writes each read as what it is, and leaves the import out", () => {
+				attest(
+					written(`import { siteOf } from "./sites.js";
+import { readsKeySites, writesText as writesText2 } from "./shared/issueFeatures.js";
+import { failsAt, transformsBranches } from "@ark/schema/runtime";
+const context = (site) => (readsKeySites ? site.v : void 0) ?? site;
+const text = (issue) => writesText2 && issue._c ? ": " : " ";
+const branches = (t) => transformsBranches && t ? failsAt(t) : siteOf(t);
+`)
+				).snap(`import { siteOf } from "./sites.js";
+
+import { failsAt } from "@ark/schema/runtime";
+const context = (site) => (false ? site.v : void 0) ?? site;
+const text = (issue) => true && issue._c ? ": " : " ";
+const branches = (t) => false && t ? failsAt(t) : siteOf(t);
+`)
+			})
+
+			it("keeps the import of one the module exports again, with its reads written", () => {
+				attest(
+					written(`import { appliesValues, failsAt } from "@ark/schema/runtime";
+const fails = (checker) => appliesValues && checker.e ? checker.e : failsAt;
+export { appliesValues, fails };
+`)
+				).snap(`import { appliesValues, failsAt } from "@ark/schema/runtime";
+const fails = (checker) => false && checker.e ? checker.e : failsAt;
+export { appliesValues, fails };
+`)
+			})
+
+			it("writes one held in an object by its name with the name", () => {
+				attest(
+					written(`import { writesText } from "./issueFeatures.ts";
+export const features = { writesText, text: writesText };
+`)
+				).snap(`
+export const features = { writesText: true, text: true };
+`)
+			})
+
+			it("leaves a name another module exports, or a scope declares again", () => {
+				attest(
+					written(`import { writesText } from "./standalone/sites.js";
+import { readsErrors } from "./shared/issueFeatures.js";
+const inner = (readsErrors) => readsErrors && writesText;
+export const outer = readsErrors ? inner : writesText;
+`)
+				).snap(`import { writesText } from "./standalone/sites.js";
+
+const inner = (readsErrors) => readsErrors && writesText;
+export const outer = false ? inner : writesText;
+`)
+			})
+
+			it("answers nothing for a module that imports none", () => {
+				attest(
+					written(
+						`const writesText = (context) => !!context?.c;\nexport const text = writesText({});\n`
+					)
+				).equals(undefined)
+				attest(written(`export const a = 1;\n`)).equals(undefined)
 			})
 		})
 	})
@@ -3393,6 +3486,68 @@ console.log(User.description)
 					attest(output(js)).snap(`{ age: number & isPositive }
 { age: a number and valid according to isPositive }
 `)
+				})
+
+				describe("the issue features a program's validators write", () => {
+					const reading = `import { User } from "./types.js"
+
+console.log(String(User({ name: [5] })))
+`
+					const named = (js: string) =>
+						Object.keys(noIssueFeatures).filter(feature => js.includes(feature))
+
+					it("are written where the runtime reads them, leaving the bundle none to fold", async () => {
+						const root = fixture("issueFeatures", { "main.js": reading })
+						// as it's written, before a minifier could fold a constant
+						const js = await bundle(
+							name,
+							root,
+							{},
+							{ optimization: { minimize: false } }
+						)
+						attest(named(js)).equals([])
+						attest(output(js)).equals("name must be a string\n")
+					})
+
+					it("are written again where a cached build's program holds another", async () => {
+						const root = fixture("issueFeaturesCached", { "main.js": reading })
+						const config = {
+							optimization: { minimize: false },
+							...cacheOf(root)
+						}
+						attest(output(await bundle(name, root, {}, config))).equals(
+							"name must be a string\n"
+						)
+						// an index in a path, which the first program's issues never hold
+						writeFileSync(
+							join(root, "types.js"),
+							`import { type } from "arktype"
+
+export const User = type({ name: "string[]" })
+`
+						)
+						const js = await bundle(name, root, {}, config)
+						attest(named(js)).equals([])
+						attest(output(js)).equals("name[0] must be a string\n")
+					})
+
+					it("leave printing a validator no expression to read where none holds one", async () => {
+						const held = await bundle(
+							name,
+							fixture("expressionHeld", {
+								"main.js": `import { User } from "./types.js"
+
+console.log(String(User))
+`
+							})
+						)
+						attest(output(held)).equals("Type<{ name: string }>\n")
+						const unheld = await bundle(
+							name,
+							fixture("expressionUnheld", { "main.js": reading })
+						)
+						attest(unheld.includes("Type<")).equals(false)
+					})
 				})
 
 				describe("a narrow reading what another run of its module could change", () => {

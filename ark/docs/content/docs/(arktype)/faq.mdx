@@ -89,6 +89,18 @@ const addTag = type({ tags: "string[]" }).pipe(o => ({
 
 If your app is bundled, yes. A [precompiled](/docs/precompile) build ships each Type as a standalone validator, without arktype's parser and without generating code at runtime, and your definitions don't change. Stay dynamic where there's no build step or a program composes Types at runtime. See [Dynamic vs Precompiled](/docs/precompile/dynamic-vs-precompiled).
 
+## How do I ship the types of my Types?
+
+If a package or a referenced project exports types derived from arktype, write its declarations with [`arktype-precompile --declare`](/docs/precompile/advanced#declarations) rather than `tsc`:
+
+```sh
+npx arktype-precompile --declare
+```
+
+It declares each Type by the shape it infers, so code importing the package reads that shape rather than inferring your definitions again. It needs no bundler and leaves your Types dynamic.
+
+For a [cyclic scope](/docs/scopes#cyclic-types), it's required: TypeScript can't write an inferred cycle in a `.d.ts`, so `tsc` declares it as `any` or fails with `TS5088`, where `--declare` names each cycle for its alias.
+
 ## Can I get error messages in another language?
 
 Yes. ArkType ships English and German, and you can write a locale for any other language. See [i18n](/docs/i18n).

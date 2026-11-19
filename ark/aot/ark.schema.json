@@ -12,6 +12,7 @@
 					"description": "the characters a site's baked introspection may total",
 					"exclusiveMinimum": 0
 				},
+				"checker": { "type": "string", "enum": ["tsgo", "tsjs", "tsrs"] },
 				"conditions": { "type": "array", "items": { "type": "string" } },
 				"config": {
 					"anyOf": [

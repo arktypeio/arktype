@@ -360,6 +360,7 @@ export interface IssueFeatures {
 	entersMissing: boolean
 	readsSummary: boolean
 	readsErrors: boolean
+	holdsExpression: boolean
 }
 
 export const noIssueFeatures: IssueFeatures = {
@@ -376,7 +377,8 @@ export const noIssueFeatures: IssueFeatures = {
 	discriminatesBooleans: false,
 	entersMissing: false,
 	readsSummary: false,
-	readsErrors: false
+	readsErrors: false,
+	holdsExpression: false
 }
 
 export interface StandaloneModules {
