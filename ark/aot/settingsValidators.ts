@@ -53,31 +53,18 @@ var ReadIssues = class {
 		for (const issue of this._) issue.message ??= messageOf(issue)
 		return this._
 	}
-	/**
-	 * @internal `absent` is passed only by _in, which has found the key missing
-	 */
-	_at(site, data, key, absent) {
+	/** @internal */
+	_at(site, data, key) {
 		const path = this._p
-		const depth2 = path.length
 		let context = (readsKeySites ? site.v : void 0) ?? site
-		let at
-		if (key === void 0) at = depth2 === 0 ? [] : path.slice()
-		else {
-			const value = data[key]
-			if (value === void 0 && site.m && (absent || !(key in data)))
-				context = site.m
-			else data = value
-			if (depth2 === 0) at = [key]
-			else if (depth2 === 1) at = [path[0], key]
-			else {
-				path.push(key)
-				at = path.slice()
-				path.pop()
-			}
+		if (key !== void 0) {
+			path.push(key)
+			if (site.m && !(key in data)) context = site.m
+			else data = data[key]
 		}
 		const issue = {
 			code: context.code,
-			path: at,
+			path: path.slice(),
 			data,
 			expected: context.description,
 			message: context.x
@@ -86,18 +73,15 @@ var ReadIssues = class {
 			customIssue(issue, context.c)
 			context.text?.(issue)
 		}
-		const issues = this._
-		if (issues.length) issues.push(issue)
-		else this._ = [issue]
+		if (key !== void 0) path.pop()
+		this._.push(issue)
 		return void 0
 	}
 	/** @internal */
 	_in(apply, data, key, missing) {
-		const value = data[key]
-		if (value === void 0 && missing && !(key in data))
-			return this._at(missing, data, key, true)
+		if (missing && !(key in data)) return this._at(missing, data, key)
 		this._p.push(key)
-		const continues = apply(value, this)
+		const continues = apply(data[key], this)
 		this._p.pop()
 		return !continues
 	}
