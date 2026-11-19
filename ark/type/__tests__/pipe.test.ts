@@ -60,9 +60,11 @@ contextualize(() => {
 	})
 
 	it("compiled code of a Type includes the node a morph pipes to", () => {
-		const T = type({ compiledWith: "string.numeric.parse" }).to({
-			compiledWith: "number > 41"
-		})
+		// a scope shares its nodes by what they check, so these are in one of
+		// their own, where nothing has compiled them
+		const T = scope({})
+			.type({ compiledWith: "string.numeric.parse" })
+			.to({ compiledWith: "number > 41" })
 		const morphs = T.internal.assertIs("morph").travMorphs
 		const to = morphs[morphs.length - 1] as BaseRoot
 		attest(to.unitFn).equals(undefined)
