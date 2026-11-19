@@ -14,15 +14,15 @@ export type Json =
 /** a stored file's text at the commit measured and after the rerun, undefined where it doesn't exist */
 export type FileChange = {
 	path: string
-	before?: string
-	after?: string
+	before?: string | undefined
+	after?: string | undefined
 }
 
 /** one value of a JSON file, at the keys leading to it */
 export type LeafChange = {
 	path: string[]
-	before?: Json
-	after?: Json
+	before?: Json | undefined
+	after?: Json | undefined
 }
 
 /** one result on the leaderboard: a library on a suite's row */
@@ -31,16 +31,16 @@ export type RowChange = {
 	suite: string
 	row: string
 	library: string
-	before?: number
-	after?: number
+	before?: number | undefined
+	after?: number | undefined
 }
 
 /** a rival as a suite installed it */
 export type VersionRow = {
 	suite: string
 	package: string
-	before?: string
-	after?: string
+	before?: string | undefined
+	after?: string | undefined
 }
 
 /** headline.ts's run: its list of claims, or why claims.ts threw */
@@ -51,8 +51,8 @@ export type ClaimsCheck = {
 
 export type ClaimChange = {
 	id: string
-	before?: string
-	after?: string
+	before?: string | undefined
+	after?: string | undefined
 }
 
 /** the checked-in text the docs build writes from the numbers (writeMarkdown.ts) */
@@ -70,16 +70,17 @@ export type Standings = {
 	after: string
 }
 
-/** a library's place and score in a category, as standings.ts prints them over every suite */
+/** a library's place and geometric mean on a category's board, as standings.ts prints them */
 export type StandingChange = {
 	category: string
 	library: string
-	before?: Standing
-	after?: Standing
+	before?: Standing | undefined
+	after?: Standing | undefined
 }
 
 export type Standing = {
 	place: number
+	/** its geometric mean in the board's unit, as printed: "1.35 kB" */
 	score: string
 }
 
@@ -98,7 +99,7 @@ export type Report = {
 	claimsAfter: ClaimsCheck
 	files: FileChange[]
 	derived: Derived
-	standings?: Standings
+	standings?: Standings | undefined
 }
 
 /** `size` is what a hosted runner measures faithfully; `all` adds the instruction counts, which need perf */
@@ -158,7 +159,10 @@ export const branchFor = (base: string, defaultBranch: string): string =>
 // a run's own date and commit change every month whatever it measured, so
 // they alone aren't a change to review
 const isVolatile = (path: string[]) =>
-	["measured", "commit", "date"].includes(path.at(-1)!)
+	// leaderboard.json's `measured`, at its root and under each suite, says
+	// when and at which commit a result was measured
+	path.includes("measured") ||
+	["commit", "date"].includes(path[path.length - 1])
 
 // what names an element among its siblings, so a row added or reordered
 // doesn't read as a change to every row after it
@@ -324,7 +328,7 @@ const standingsOf = (printed: string) => {
 	let category = ""
 	for (const line of printed.split("\n")) {
 		category = /^(\w+) \(/.exec(line)?.[1] ?? category
-		const standing = /^ {2}(\d+)\. (.+?) (\d+\.\d+)(?: \[.*])?$/.exec(line)
+		const standing = /^ {2}(\d+)\. (.+): (.+)$/.exec(line)
 		if (!standing) continue
 		const [, place, library, score] = standing
 		standings.set(JSON.stringify([category, library]), {
@@ -336,7 +340,7 @@ const standingsOf = (printed: string) => {
 	return standings
 }
 
-/** each library whose place or score differs between two of standings.ts's printouts, in the after's order */
+/** each library whose place or mean differs between two of standings.ts's printouts, in the after's order */
 export const standingChangesOf = (
 	before: string,
 	after: string
@@ -372,7 +376,7 @@ export const errorOf = (stderr: string): string => {
 
 // GitHub notifies whoever a pull request's body names, and half the libraries
 // are scoped packages: @ts-runtypes is someone's login
-const code = (text: string) => `\`${text.replaceAll("`", "'")}\``
+const code = (text: string) => `\`${text.replace(/`/g, "'")}\``
 
 /** text with each @name outside a code span put in one, so it mentions nobody */
 export const unmentioned = (text: string): string =>
@@ -383,7 +387,7 @@ export const unmentioned = (text: string): string =>
 		)
 		.join("")
 
-const cell = (text: string) => text.replaceAll("|", "\\|").replaceAll("\n", " ")
+const cell = (text: string) => text.replace(/\|/g, "\\|").replace(/\n/g, " ")
 
 const numberText = (value: number) =>
 	Number.isInteger(value) ? String(value)
@@ -621,7 +625,7 @@ export const bodyOf = (report: Report): string => {
 		standingChanges.length ?
 			[
 				"",
-				'Each place and average that moved on the full board, every suite counted (`standings.ts`; the headline\'s, over the independent suites, are under "Claims"):',
+				"Each place and geometric mean that moved on the board, by the rule the headline follows (`standings.ts`, which runs `ark/docs/lib/bench/units.ts`):",
 				"",
 				...table(
 					["category", "library", "before", "after"],

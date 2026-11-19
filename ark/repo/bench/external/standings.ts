@@ -1,19 +1,34 @@
 // prints each category's standings from ark/docs/lib/bench/leaderboard.json by
-// the "Best average" rule, over every suite or only those named, so the
-// average can be read with and without a suite. The math is
-// ark/docs/lib/bench/leaderboard.ts's, which it matches over every suite
-// node standings.ts [suite id,...]
+// the rule the site's headline and board follow, which is
+// ark/docs/lib/bench/units.ts's and is run from there: over the independent
+// suites, each library's geometric mean, in the unit measured, across the
+// largest set of results that ArkType, Zod and three more named libraries all
+// ran, every library that ran all of them placed in plain order. Named suites
+// are left out, so a standing can be read with and without one.
+// node standings.ts [suite id to leave out,...]
+// With LEADERBOARD_FRESH, the leaderboard reproduce.ts or monthly.ts wrote
+// there is ranked instead. Which libraries the site names always comes from
+// the published leaderboard's downloads.
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { fullLeaderboards } from "../../../docs/lib/bench/leaderboard.ts"
+import {
+	isOwnSuite,
+	type CategoryId,
+	type SuiteRow
+} from "../../../docs/lib/bench/leaderboard.ts"
+import {
+	averagedRows,
+	sourcesOf,
+	unitBoardOver
+} from "../../../docs/lib/bench/units.ts"
 
 type Suite = {
 	category: string
 	id: string
+	label: string
 	rows: { id: string; results: Record<string, number> }[]
 }
 
-// with LEADERBOARD_FRESH, the leaderboard reproduce.ts wrote there
 const fresh = process.env.LEADERBOARD_FRESH
 const data: { suites: Suite[] } = JSON.parse(
 	readFileSync(
@@ -23,57 +38,35 @@ const data: { suites: Suite[] } = JSON.parse(
 		"utf8"
 	)
 )
-const only = process.argv[2]?.split(",")
+const without = process.argv[2]?.split(",") ?? []
 
-const geomean = (values: readonly number[]) =>
-	Math.exp(values.reduce((sum, v) => sum + Math.log(v), 0) / values.length)
-
-const suiteScores = (suite: Suite) => {
-	const ratios: Record<string, number[]> = {}
-	for (const { results } of suite.rows) {
-		const best = Math.min(...Object.values(results))
-		for (const [library, value] of Object.entries(results))
-			(ratios[library] ??= []).push(value / best)
-	}
-	return Object.fromEntries(
-		Object.entries(ratios)
-			.filter(([, r]) => r.length * 2 >= suite.rows.length)
-			.map(([library, r]) => [library, geomean(r)])
-	)
-}
+const rowsOf = (category: CategoryId): SuiteRow[] =>
+	data.suites
+		.filter(
+			suite =>
+				suite.category === category &&
+				!isOwnSuite(suite.label) &&
+				!without.includes(suite.id)
+		)
+		.flatMap(suite => suite.rows.map(row => ({ ...row, suite: suite.label })))
 
 for (const category of ["speed", "startup", "size"] as const) {
-	const suites = data.suites.filter(
-		s => s.category === category && (!only || only.includes(s.id))
-	)
-	const scored = suites.map(suiteScores)
-	const standings = [...new Set(scored.flatMap(Object.keys))]
-		.map(library => {
-			const scores = scored.flatMap(s => (library in s ? [s[library]] : []))
-			return { library, score: geomean(scores), suites: scores.length }
-		})
-		.filter(s => s.suites * 2 >= suites.length)
-		.sort((l, r) => l.score - r.score)
-	if (!only && !fresh) {
-		const docs = fullLeaderboards[category].standings
-		if (JSON.stringify(docs) !== JSON.stringify(standings))
-			throw new Error(`${category} differs from lib/bench/leaderboard.ts`)
-	}
-	console.log(
-		`${category} (${suites.map(s => s.id).join(", ")}; ${suites.reduce((n, s) => n + s.rows.length, 0)} rows)`
-	)
-	for (const [i, s] of standings.entries()) {
-		const partial =
-			s.suites < suites.length ? ` [${s.suites}/${suites.length} suites]` : ""
-		console.log(`  ${i + 1}. ${s.library} ${s.score.toFixed(3)}${partial}`)
-	}
-	// each suite's own scores, for where a library gains or loses
-	for (const [i, suite] of suites.entries()) {
+	const rows = rowsOf(category)
+	if (!averagedRows(rows).length) {
 		console.log(
-			`    ${suite.id} (${suite.rows.length}): ${Object.entries(scored[i])
-				.sort(([, l], [, r]) => l - r)
-				.map(([library, score]) => `${library} ${score.toFixed(3)}`)
-				.join(", ")}`
+			`${category}: no result has ArkType, Zod and three more named libraries on it`
 		)
+		continue
 	}
+	const board = unitBoardOver(category, rows)
+	const sources = sourcesOf(board)
+		.map(source => `${source.label} ${source.results}`)
+		.join(", ")
+	// monthlyReport.ts reads these lines: a category's opens with its id and a
+	// parenthesis, a standing is "  place. library: mean"
+	console.log(
+		`${category} (${board.unit}; geometric mean of ${board.rows.length} of ${rows.length} results: ${sources})`
+	)
+	for (const { place, library, value } of board.standings)
+		console.log(`  ${place}. ${library}: ${board.format(value)}`)
 }
