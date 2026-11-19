@@ -15,8 +15,7 @@ import {
 	BoardStandings,
 	JitComparison,
 	OwnResults,
-	OwnSpeed,
-	PooledBoard
+	OwnSpeed
 } from "./Benchmarks.tsx"
 import { Callout } from "./Callout.tsx"
 import {
@@ -78,8 +77,6 @@ export const mdxComponents: MDXComponents = {
 	// our own benchmark beside the board's
 	OwnResults,
 	OwnSpeed,
-	// the board as ratios to each result's best, across every result
-	PooledBoard,
 	PresetSizeTable,
 	// the 2.0 post's chart
 	RuntimeBenchmarksGraph,

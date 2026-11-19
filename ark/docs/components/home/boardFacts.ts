@@ -1,15 +1,9 @@
 import { formatRatio, list } from "../../lib/bench/bench.ts"
-import {
-	isWellKnown,
-	isWrittenByUs,
-	leaderboards,
-	rowsOf
-} from "../../lib/bench/leaderboard.ts"
+import { isWellKnown, isWrittenByUs } from "../../lib/bench/leaderboard.ts"
 import { ntwineRows } from "../../lib/bench/scoreboard.ts"
 import {
 	incumbent,
 	ownFigures,
-	placeAmong,
 	sourcesOf,
 	unitBoards,
 	type UnitBoard
@@ -116,29 +110,6 @@ export const heroStats = (): HeroStat[] => {
 }
 
 /**
- * Size's caveat in one line, the way the speed section words its own:
- * `claims.sizeClose`'s facts (ArkType's average against the next best's, and
- * where it places on each size result) from the data that claim is built
- * from. Undefined unless ArkType has the lowest average outright and the
- * library next to it may be named, which is all the line is worded for;
- * the section then prints the claim itself.
- */
-export const sizeCloseLine = () => {
-	const { average } = categoryOf("size")
-	const [best] = leaderboards.size.standings
-	if (best.library !== "ArkType" || !isWellKnown(average.other.library)) return
-	const ranks = rowsOf("size").map(
-		results =>
-			Object.values(results).filter(bytes => bytes < results.ArkType).length + 1
-	)
-	const places =
-		ranks.every(rank => rank === ranks[0]) ?
-			`${ordinal(ranks[0])} on each one`
-		:	`${list(ranks.map(ordinal))} on them`
-	return `Smallest on average across the ${ranks.length} size results (${formatRatio(average.score)} the best; ${average.other.library} ${formatRatio(average.other.score)}), and ${places}.`
-}
-
-/**
  * `claims.bigApp`'s result in one line, for the head of its panel: from the
  * row that claim reads (ntwine, bundled with esbuild), the two margins over
  * Zod 4 a reader came for and the comparison ArkType loses. Each number
@@ -206,9 +177,9 @@ export type BoardTick = {
 }
 
 export type BoardBadge = {
-	/** ArkType's place across every result of the category, in plain order: "1st" */
+	/** ArkType's place on the graph, in plain order: "1st" */
 	place: string
-	/** what that place is among: "of 10 across all 43 results…" */
+	/** what that place is among: "of the 5 libraries that ran all 22 results" */
 	text: string
 }
 
@@ -264,35 +235,15 @@ const subOf = (board: UnitBoard) => {
 }
 
 /**
- * ArkType's place on the pooled board, which ranks every library across every
- * result of the category by its average ratio to each result's best, in
- * plain order. A graph that already averages every result of its category
- * has no wider board to be placed on, and states its own place and how many
- * libraries it is among.
+ * ArkType's place on its graph and how many libraries that is among: every
+ * one that ran all of the graph's results, named or not, in plain order.
  */
-const badgeOf = (id: Category["id"], board: UnitBoard): BoardBadge => {
-	const { rows, suites, standings } = leaderboards[id]
-	if (rows === board.rows.length) {
-		const ours = board.standings.find(s => s.library === "ArkType")!
-		return {
-			place: ordinal(ours.place),
-			text: `of the ${board.standings.length} libraries that ran ${rows === 2 ? "both results" : `all ${rows} results`}`
-		}
-	}
-	const ours = standings.find(s => s.library === "ArkType")!
-	const independent = suites.filter(label => !isWrittenByUs(label)).length
+const badgeOf = (board: UnitBoard): BoardBadge => {
+	const ours = board.standings.find(s => s.library === "ArkType")!
+	const results = board.rows.length
 	return {
-		place: ordinal(
-			placeAmong(
-				standings.map(s => s.score),
-				ours.score
-			)
-		),
-		text: `of ${standings.length} across all ${rows} ${
-			independent === suites.length ?
-				`results from ${otherProjects(suites.length)}`
-			:	`public ${id} results`
-		}`
+		place: ordinal(ours.place),
+		text: `of the ${board.standings.length} libraries that ran ${results === 2 ? "both results" : `all ${results} results`}`
 	}
 }
 
@@ -378,7 +329,7 @@ export const boardGraphs = (): BoardGraph[] =>
 				label: board.tick(max * at, at === 1)
 			})),
 			mark: board.standings[indexOf("ArkType")].value / max,
-			badge: badgeOf(category.id, board)
+			badge: badgeOf(board)
 		}
 	})
 

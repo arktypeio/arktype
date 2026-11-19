@@ -4,17 +4,14 @@
  * numbers beside them. The page's components and its Markdown render the
  * same cells.
  */
-import { averageText, pickThreeTable } from "../claims.ts"
 import {
 	isWellKnown,
-	leaderboards,
 	rowsOfSuite,
 	type CategoryId,
 	type ResultRow
 } from "./leaderboard.ts"
 import {
 	ownFigures,
-	placeAmong,
 	sharedRows,
 	standingsOver,
 	unitBoards,
@@ -172,36 +169,3 @@ export const ownSpeedTable = (): TextTable => {
 		])
 	}
 }
-
-/** an average as a multiple of the best result: "1.252×", "19.7×", "13.8k×" */
-export const multiple = (score: number) =>
-	score < 10 ? `${averageText(score)}×`
-	: score < 1e3 ? `${score.toPrecision(3)}×`
-	: score < 1e6 ? `${(score / 1e3).toPrecision(3)}k×`
-	: `${(score / 1e6).toPrecision(3)}M×`
-
-/**
- * The pooled board, which the homepage drew before it drew units: each
- * library's average ratio to the best result across every result of a
- * category, with its place among every library ranked, in plain order.
- * lib/claims.ts picks the rows.
- */
-export const pooledTable = (): TextTable => ({
-	header: [
-		"Library",
-		...pickThreeTable.categories.map(category => category.label)
-	],
-	rows: pickThreeTable.rows.map(({ library }) => [
-		library,
-		...pickThreeTable.categories.map(({ id }) => {
-			const { standings } = leaderboards[id]
-			const standing = standings.find(s => s.library === library)
-			if (!standing) return "—"
-			const place = placeAmong(
-				standings.map(s => s.score),
-				standing.score
-			)
-			return `${multiple(standing.score)}, ${ordinal(place)} of ${standings.length}`
-		})
-	])
-})

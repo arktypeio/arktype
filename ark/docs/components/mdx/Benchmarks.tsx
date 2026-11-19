@@ -2,7 +2,6 @@ import { jitComparison } from "../../lib/bench/bench.ts"
 import {
 	ownSpeedTable,
 	ownTable,
-	pooledTable,
 	resultsTable,
 	standingsTable,
 	type OwnTableId,
@@ -88,9 +87,6 @@ export const BoardStandings = ({ category }: BoardCategoryProps) => (
 export const BoardResults = ({ category }: BoardCategoryProps) => (
 	<TextTableView table={resultsTable(category)} />
 )
-
-/** the pooled board: each library's average ratio to the best, by category */
-export const PooledBoard = () => <TextTableView table={pooledTable()} />
 
 /** our benchmark's speed, a library a row */
 export const OwnSpeed = () => <TextTableView table={ownSpeedTable()} />

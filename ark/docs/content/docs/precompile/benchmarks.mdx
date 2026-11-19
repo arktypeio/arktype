@@ -52,22 +52,8 @@ Each library on each result, including the ones that only ran one:
 
 Every library's result on every row, in every suite, is in [`leaderboard.json`](https://github.com/arktypeio/arktype/blob/main/ark/docs/lib/bench/leaderboard.json).
 
-### Across every result
-
-Under each graph is ArkType's place on the pooled board, which uses every result of a category rather than the ones five libraries share. Libraries there ran different results, so it can't average a unit: it divides each result by the best on its row, then takes the geometric mean per benchmark and across benchmarks. Lower is better, and 1 is the best result everywhere. A library is ranked with at least half a category's benchmarks, and places are plain order.
-
-<PooledBoard />
-
-- <Claim id="speedAverage" />
-- <Claim id="sizeAverage" />
 - <Claim id="benchmarkOwners" />
 - <Claim id="startupBasis" />
-
-<Claim id="sizeClose" />
-
-The startup graph averages both public startup results already, so the place under it is the graph's own.
-
-The benchmarks' README has [the pooled rule in full](https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md#best-average).
 
 ## Our own benchmark
 

@@ -23,7 +23,6 @@ import { benchNotes, benchTable, jitComparison } from "../bench/bench.ts"
 import {
 	ownSpeedTable,
 	ownTable,
-	pooledTable,
 	resultsTable,
 	standingsTable,
 	type OwnTableId,
@@ -381,8 +380,6 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 			return [textTable(standingsTable(attr(node, "category") as CategoryId))]
 		case "BoardResults":
 			return [textTable(resultsTable(attr(node, "category") as CategoryId))]
-		case "PooledBoard":
-			return [textTable(pooledTable())]
 		case "OwnSpeed":
 			return [textTable(ownSpeedTable())]
 		case "OwnResults":
