@@ -42,6 +42,15 @@ ArkType as "How each new suite is run" describes, counts every arm into
 published ones. Here `all` takes about 90 minutes: schemabenchmarks.dev 45,
 ata's 30, moltar's 10, Sury's 3, the form and `startup.ts` one each. If
 ttsc's first Go build of typia's plugin fails, run the suite again.
+`count.ts` and `startup.ts` pin each process to cores 10-15: on a machine
+without them, name its own as `COUNT_CORES` and `STARTUP_CORES`.
+
+@ts-runtypes is no longer rerun. Its packages were removed from npm on or
+before 2026-11-19, so moltar's suite, whose lockfile names them, no longer
+installs as it's pinned or at its newest commit. `reproduce.ts` takes the
+library out of the clone as it checks it out, and a run from that date has no
+`@ts-runtypes` arm. The leaderboard keeps the counts stored while it could be
+installed, at 0.10.0 and 0.12.2.
 
 The published rows were counted on an Intel i7-11700 (8 cores, 16 threads)
 under WSL2 (Linux 6.18, perf 6.18), pinned to cores 10-15, on Node 24.14.1
@@ -86,16 +95,21 @@ checks in (`llms.txt` and its like, `ark/docs/lib/writeMarkdown.ts`) is
 written again in the same commit, only the files the numbers changed.
 
 Not rerun, and not stood in for: the speed and startup suites count
-instructions with perf, and hosted runners don't expose hardware counters,
-so they're rerun by hand on a machine that does, speed with
-`pnpm benchExternal all --newest`, which keeps its counts in
-`results/newest/` the same way, and startup with
-`pnpm benchExternal startup`. The homepage's speed and cold-start rows are
+instructions with perf, which needs hardware counters only some hosted
+runners' hosts expose, so a scheduled run leaves them to
+`pnpm benchExternal all --newest` on a machine that has them. It keeps its
+counts in `results/newest/` the same way, `startup.ts`'s among them, which
+the leaderboard reads in place of the committed startup run:
+`startup.ts` bundles the repo's own dependencies, so its rivals are at the
+versions `pnpm-lock.yaml` pins. The homepage's speed and cold-start rows are
 wall clock, which a shared runner can't time. `pnpm benchSizeScale` is
 bytes too, but took 29 minutes and 13 GiB of memory at its peak on an Apple M5
 Max, more than a hosted runner's 16 GiB leaves it. To count
-instructions in the workflow, dispatch it with `suites: all` and `runner:`
-the label of a self-hosted Linux runner with perf and taskset; a scheduled
+instructions in the workflow, dispatch it with `suites: all`. Its first step
+fails on a hosted runner whose host exposes no counters (measured
+2026-11-19: Intel Xeon under KVM and arm64 Neoverse count, AMD EPYC under
+Hyper-V doesn't), and it's dispatched again; or name as `runner:` the label
+of a self-hosted Linux runner with perf and taskset. A scheduled
 run reads the repository variables `LEADERBOARD_SUITES` and
 `LEADERBOARD_RUNNER` for the same.
 

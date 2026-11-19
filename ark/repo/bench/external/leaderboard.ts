@@ -8,7 +8,8 @@
 // it holds results for reads them instead, ArkType's rows included, and the
 // leaderboard is written there. results/newest/ holds the last run with every
 // rival at its newest release (reproduce.ts --newest): each of its files is
-// read beside the committed ones, its ArkType rows in place of theirs
+// read beside the committed ones, its ArkType rows in place of theirs, and
+// its startup.json in place of the committed one
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { format, resolveConfig } from "prettier"
@@ -81,9 +82,11 @@ const fileNames = {
 	ataCounts: "ata-counts"
 }
 
+// startup.ts's wins pair every arm by round, so its rows are all one run's:
+// the newest, which counted each library, in place of the committed one
 const sources = {
 	...committed,
-	startup: freshOf("startup")[0] ?? committed.startup
+	startup: freshOf("startup")[0] ?? newestOf("startup")[0] ?? committed.startup
 }
 for (const [kind, name] of Object.entries(fileNames) as [
 	keyof typeof fileNames,
@@ -572,12 +575,14 @@ const runs: Record<string, Run> = Object.fromEntries(
 )
 
 // the --newest run that rewrites each kind of result file, by run.json's key
-const runOf: Partial<Record<keyof typeof fileNames, string>> = {
+const runOf: Record<keyof typeof fileNames, string> = {
+	counts: "moltar",
 	forms: "form",
 	sbCounts: "sb",
 	sbDownload: "sb",
 	suryCounts: "sury",
-	surySize: "sury"
+	surySize: "sury",
+	ataCounts: "ata"
 }
 
 // what a file of ArkType's rows calls each kind of result
@@ -610,7 +615,7 @@ const measuredOf = (source: string | string[]): Measured | undefined => {
 	const files = sources[kind]
 	const run =
 		files.some(file => file.startsWith("results/newest/")) ?
-			runs[runOf[kind] ?? ""]
+			runs[runOf[kind]]
 		:	undefined
 	if (run) return { rivals: run.date, arkType: run.commit }
 	const dates = files.flatMap(file => /\d{4}-\d{2}-\d{2}/.exec(file) ?? [])

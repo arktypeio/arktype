@@ -397,7 +397,7 @@ Every claim holds on the new numbers, as before. Of those \`ark/docs/lib/bench/h
 			"Size at scale"
 		])
 		attest(left("all")).snap([
-			"Startup",
+			"Startup's rivals at their newest releases",
 			"The homepage's speed and cold-start rows",
 			"Size at scale"
 		])

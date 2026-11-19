@@ -493,18 +493,16 @@ const claimsSection = (report: Report) => {
 const notRerun = (suites: Suites) => [
 	...(suites === "size" ?
 		[
-			"- **Speed** (moltar's, schemabenchmarks.dev's, Sury's and ata's suites): they count CPU instructions with `perf`, and GitHub-hosted runners don't expose hardware counters. On Linux with `perf` and `taskset`, after `pnpm i && pnpm build`:",
+			"- **Speed** (moltar's, schemabenchmarks.dev's, Sury's and ata's suites): they count CPU instructions with `perf`, which needs hardware counters only some GitHub-hosted runners' hosts expose. On Linux with `perf` and `taskset`, after `pnpm i && pnpm build`:",
 			"  ```sh",
 			"  NODE24=<node 24.14.1> NODE26=<node 26.12.1> pnpm benchExternal all --newest",
 			"  ```",
-			"  It reruns these size suites too and rewrites `leaderboard.json`. Or dispatch this workflow with `suites: all` and the label of a self-hosted runner that has both."
+			"  It reruns these size suites too and rewrites `leaderboard.json`. Or dispatch this workflow with `suites: all`: on a hosted runner the run fails at its first step where the host exposes no counters, and is dispatched again.",
+			"- **Startup** (`startup.ts`): it counts instructions with `perf` too, and the same command counts it."
 		]
-	:	[]),
-	"- **Startup** (`startup.ts`): it counts instructions with `perf` too, and has no rivals of its own to update, so `--newest` leaves it out. On the same machine:",
-	"  ```sh",
-	"  NODE24=<node 24.14.1> pnpm benchExternal startup",
-	"  ```",
-	"  It counts into `ark/repo/bench/external/out/fresh/startup.json`. To publish it, commit that as `results/startup-<commit>-node24.json`, name it as `committed.startup` in `ark/repo/bench/external/leaderboard.ts` and run `node ark/repo/bench/external/leaderboard.ts`.",
+	:	[
+			"- **Startup's rivals at their newest releases**: `startup.ts` was counted again, but it bundles the repo's own dependencies, so each rival is at the version `pnpm-lock.yaml` pins."
+		]),
 	"- **The homepage's speed and cold-start rows** (`pnpm benchValidate`, `pnpm benchImport`) and build times (`pnpm benchBuildTime`): wall clock, which on a shared runner measures the neighbors. Rerun them on a quiet machine.",
 	"- **Size at scale** (`pnpm benchSizeScale`): bundle bytes, so any machine measures it, but its peak of 13 GiB of memory is more than a hosted runner's 16 GiB leaves it. It takes about half an hour."
 ]

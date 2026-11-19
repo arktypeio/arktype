@@ -21,11 +21,14 @@ name: leaderboard
 # them is rerun here or stood in for: the pull request says so, with the
 # commands to rerun them by hand (ark/repo/bench/external/README.md,
 # "Reproduce"). `pnpm benchSizeScale` is bytes too, but peaks at 13 GiB of
-# memory, more than a hosted runner's 16 GiB leaves it. To count instructions here, dispatch
-# the workflow with `suites: all` and `runner:` a self-hosted runner's label, on
-# Linux with perf and taskset. A scheduled run reads the repository variables
-# LEADERBOARD_SUITES and LEADERBOARD_RUNNER for the same two, and without them
-# runs `size` on ubuntu-latest.
+# memory, more than a hosted runner's 16 GiB leaves it. To count instructions
+# here, dispatch the workflow with `suites: all`, which runs
+# `pnpm benchExternal all --newest`: the speed suites and startup.ts beside the
+# size suites. On a hosted runner, dispatch it again if the check fails; or
+# name as `runner:` a self-hosted runner's label, on Linux with perf and
+# taskset. A scheduled run reads the repository variables LEADERBOARD_SUITES
+# and LEADERBOARD_RUNNER for the same two, and without them runs `size` on
+# ubuntu-latest.
 #
 # ark/repo/bench/external/monthly.ts does the rest. If the rerun measured and
 # installed nothing new, the run passes and opens nothing. Otherwise the `pr`
@@ -118,6 +121,14 @@ jobs:
             echo "::error::suites: all counts instructions, which needs perf with hardware counters and taskset. This $MONTHLY_RUNNER host has neither or not both: dispatch it again for another host, run size here, or run all on a runner that does."
             exit 1
           fi
+          # count.ts and startup.ts pin each process to cores 10-15, which the
+          # machine the published rows were counted on has and a hosted
+          # runner's 4 don't: taskset fails on a core that isn't there. A
+          # runner pins to every core it has unless it names its own
+          cores="0-$(($(nproc) - 1))"
+          echo "COUNT_CORES=${COUNT_CORES:-$cores}" >> "$GITHUB_ENV"
+          echo "STARTUP_CORES=${STARTUP_CORES:-$cores}" >> "$GITHUB_ENV"
+          taskset -c "${COUNT_CORES:-$cores}" true
 
       # schemabenchmarks.dev runs on its own .node-version
       - name: Setup Node 26
