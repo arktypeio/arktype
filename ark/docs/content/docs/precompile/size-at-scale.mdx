@@ -12,8 +12,18 @@ So which is smaller depends on how many Types a bundle holds, and on what they h
 
 ## What's measured
 
-<SizeScaleText id="method" /> A library whose schemas have no methods, like
-Valibot or Zod Mini, is bundled with the functions that validate with them.
+<SizeScaleText id="method" />
+
+What's bundled is an app, not a package of schemas. It exports one function, which takes a Type's name and some input and runs that Type's handler: validate the input, then return the data or the text of what's wrong with it, as a route or a form's submit does. Each library does that in its own words:
+
+| Library  | Validates with                | Reads what's wrong with  |
+| -------- | ----------------------------- | ------------------------ |
+| ArkType  | `Contact(input)`              | `errors.summary`         |
+| Valibot  | `v.safeParse(Contact, input)` | `v.summarize(issues)`    |
+| Zod      | `Contact.safeParse(input)`    | `z.prettifyError(error)` |
+| Zod Mini | `z.safeParse(Contact, input)` | `z.prettifyError(error)` |
+
+Nothing outside the bundle can read a Type, so each library ships what those two need and no more. A precompiled build leaves out the parts of a validator no handler reads, like `assert` and its Standard Schema interface. Valibot leaves out the functions no handler calls, like `parse`. Zod's schemas are classes, which keep their methods, and Zod Mini's keep their parsing whichever function runs it. A bundle that exports its Types instead, as a package of schemas does, keeps all of each one: whoever imports it might read any of it.
 
 Each app is written twice:
 
@@ -36,6 +46,8 @@ const Contact = type({
 	)
 })
 ```
+
+<SizeScaleParagraph id="layout" />
 
 The default build here is the compiled one a server gets. Building for a browser, it [writes its validators for size](/docs/precompile/options#choosing-smallest) once they'd outweigh arktype.
 

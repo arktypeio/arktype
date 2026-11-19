@@ -94,7 +94,7 @@ for (const app of homepageApps) {
 }
 
 const gzipOf = async (dir: string, library: Build) =>
-	gzipSync(await bundleOf(dir, library)).length
+	gzipSync(await bundleOf(dir, library, "exports")).length
 
 const results = []
 for (const { apps, seed, options } of series) {
