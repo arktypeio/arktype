@@ -1897,9 +1897,13 @@ export class Precompiler {
 	}
 
 	// what a bundle reads that its scan left out, as the loaders after the
-	// plugin built each module from what reached the plugin, as webpack's do:
-	// the read, and a module whose loaders' work makes it
-	unseenBuiltIn(program: ScannedProgram): UnseenBuilt | undefined {
+	// plugin built each module from what reached the plugin, as webpack's do,
+	// or as a Rollup plugin's transforms after it did: the read, and a module
+	// whose loaders' work makes it
+	unseenBuiltIn(
+		program: ScannedProgram,
+		after = "the loaders after it"
+	): UnseenBuilt | undefined {
 		const usage = this.usagesByProgram.get(program.key)
 		if (!usage) return
 		const runtimes = this.builtRuntimesOf(program, usage)
@@ -1929,14 +1933,14 @@ export class Precompiler {
 			if (!runtime) {
 				return {
 					id,
-					read: `${this.graph.pathOf(id)}, as the loaders after it built it, fails to precompile`
+					read: `${this.graph.pathOf(id)}, as ${after} built it, fails to precompile`
 				}
 			}
 			for (const kind of ["validators", "modules"] as const) {
 				if (runtime[kind].length !== written[kind].length) {
 					return {
 						id,
-						read: `${this.graph.pathOf(id)} creates ${runtime[kind].length} ${kind === "modules" ? "Modules" : kind} as the loaders after it built it, and ${written[kind].length} as it wrote it`
+						read: `${this.graph.pathOf(id)} creates ${runtime[kind].length} ${kind === "modules" ? "Modules" : kind} as ${after} built it, and ${written[kind].length} as it wrote it`
 					}
 				}
 				for (const [i, site] of runtime[kind].entries())
@@ -1964,7 +1968,51 @@ export class Precompiler {
 			if (readWith(ids.slice(0, middle))) most = middle
 			else fewest = middle
 		}
-		return { id: ids[most - 1], read: readWith(ids.slice(0, most)) ?? read }
+		return {
+			id: ids[most - 1],
+			read: readWith(ids.slice(0, most)) ?? read,
+			members: this.unseenMembersIn(
+				program,
+				new Map([...runtimes, ...built]),
+				usage,
+				keys
+			)
+		}
+	}
+
+	// each member the modules read that it left out, where members, set true
+	// for each, has a build keep all they read: where they call no validator,
+	// read no allows and pass no traversal that it left out too
+	private unseenMembersIn(
+		program: ScannedProgram,
+		runtimes: ReadonlyMap<string, RuntimeModule>,
+		usage: ProgramUsage,
+		keys: ReadonlyMap<string, string>
+	): string[] | undefined {
+		const used = this.usedIn(program, runtimes)
+		if (
+			typeof used === "string" ||
+			(!usage.called && used.has("call")) ||
+			(!usage.readsAllows && used.has("allows")) ||
+			(!usage.piped && used.has("piped"))
+		)
+			return
+		const members: string[] = [
+			...defaultMembers.filter(
+				member =>
+					usage.members[member] === false &&
+					this.members[member] === undefined &&
+					used.has(member)
+			),
+			...this.unbakedIn(program, runtimes, usage, keys)
+		]
+		// its issues then hold what a read of each of those needs
+		const issues =
+			usage.issues &&
+			issuesReading(usage.issues, member => members.includes(member))
+		return unreadIssuesOf(issues, member => used.has(member)) ? undefined : (
+				members
+			)
 	}
 
 	// each module of a program as the host emitted it, or why one can't be read
@@ -2009,7 +2057,7 @@ export class Precompiler {
 		keys?: ReadonlyMap<string, string>
 	): string | undefined {
 		const used = this.usedIn(program, runtimes)
-		const unbaked = this.unbakedIn(program, runtimes, usage, keys)
+		const [unbaked] = this.unbakedIn(program, runtimes, usage, keys)
 		if (unbaked) return `a module reads ${unbaked} of a validator`
 		const dropped = defaultMembers.filter(
 			member =>
@@ -2037,7 +2085,7 @@ export class Precompiler {
 		return unreadIssuesOf(usage.issues, member => used.has(member))
 	}
 
-	// an introspection member the bundle as built reads of a validator its
+	// each introspection member the bundle as built reads of a validator its
 	// module, as written, didn't bake
 	private unbakedIn(
 		program: ScannedProgram,
@@ -2045,7 +2093,8 @@ export class Precompiler {
 		usage: ProgramUsage,
 		// each site's key as the plugin wrote it, by its key as built
 		keys?: ReadonlyMap<string, string>
-	): IntrospectionMember | undefined {
+	): IntrospectionMember[] {
+		const unbaked = new Set<IntrospectionMember>()
 		const { baked } = this.readingsIn({
 			...this.usageProgramOf(program, runtimes),
 			whole: true
@@ -2058,9 +2107,10 @@ export class Precompiler {
 				usage.sources[id] === program.modules[id]?.source ?
 					usage.baked?.get(key)
 				:	usage.rewrittenBaked.get(key)
-			const unbaked = members.find(member => !written?.members.includes(member))
-			if (unbaked) return unbaked
+			for (const member of members)
+				if (!written?.members.includes(member)) unbaked.add(member)
 		}
+		return [...unbaked]
 	}
 
 	// whether the bundle as built keeps a read of a module the flat function
@@ -8730,6 +8780,9 @@ export interface UnseenBuilt {
 	id: string | undefined
 	read: string
 	commonJs?: true
+	// each member to set true in members for a build to keep what the program
+	// as built reads, where it left out nothing else that's read
+	members?: string[] | undefined
 }
 
 // the folds of a module as built that it made of the module as it wrote it:
