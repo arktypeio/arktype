@@ -17,6 +17,7 @@ pnpm benchExternal <suite> --latest # its rivals at their 2026-10-24 releases
 pnpm benchExternal <suite> --newest # its rivals at their newest releases, kept in results/newest/
 pnpm benchValidate # the homepage's speed rows
 pnpm benchSize # the homepage's app sizes
+pnpm benchScale # the "smallest" preset's sizes
 pnpm benchImport # the homepage's cold start
 ```
 
@@ -37,24 +38,62 @@ for moltar's, Sury's and ata's suites and `startup.ts`, 26.12.1 for
 schemabenchmarks.dev (its `.node-version`) and 25.2.1 for the homepage's
 benchmark.
 
-**Weekly.** `.github/workflows/leaderboard.yml` runs
-`pnpm benchExternal size --newest` every Monday on a GitHub-hosted runner:
-ArkType at main, each rival at its newest release. `--newest` keeps the run
-in `results/newest/`, with each suite's commit, date and installed versions
-in `run.json`, and rewrites `ark/docs/lib/bench/leaderboard.json`, where
-each rival keeps its smaller bundle of its pinned, 2026-10-24 and newest
-installs, ArkType's rows are the run's and `measured` is the run's date,
-which the site prints as "Standings as of". The job pushes nothing: it
-checks the site's claims against the new standings
-(`ark/docs/lib/bench/headline.ts`), shows the standings in its summary and
-uploads the run as the `leaderboard` artifact. If a claim isn't backed, such
-as a lead lost by more than the tie band, it opens an issue mentioning
-@ssalbdivad, or updates the open one, with the claims before and after, the
-standings and the run's link, and the run fails. Publishing new standings is
-a rerun by hand and a commit. The speed and startup suites count
+**Monthly.** `.github/workflows/leaderboard.yml` runs on the first of each
+month on a GitHub-hosted runner, with ArkType at main and each rival at its
+newest release. It changes nothing by itself: what it measures reaches the
+site only when a maintainer merges the pull request it opens. It reruns the
+benchmarks whose result is bundle bytes, which a shared runner measures to
+the byte:
+
+- `pnpm benchExternal size --newest`, which keeps the run in
+  `results/newest/`, with each suite's commit, date and installed versions in
+  `run.json`, and rewrites `ark/docs/lib/bench/leaderboard.json`, where each
+  rival keeps its smaller bundle of its pinned, 2026-10-24 and newest
+  installs, ArkType's rows are the run's and `measured` is the run's date,
+  which the site prints as "Standings as of".
+- `pnpm benchScale`, which rewrites `ark/docs/lib/bench/presetScale.json`,
+  the "smallest" preset's sizes.
+
+`monthly.ts` does the rest. If the rerun measured and installed nothing new (a
+new date and commit alone don't count), the run passes and opens nothing.
+Otherwise it commits the files the rerun wrote to `bench/monthly-standings`,
+forced from the commit measured, and opens the pull request "bench: monthly
+standings" against main, or rewrites the body of the one already open. The
+body has the date and commit measured, each rival's version before and
+after, every number that changed with its difference, each place that moved
+on the full board, the site's claims (`ark/docs/lib/bench/headline.ts`)
+before and after, what wasn't rerun and the run's link, whose `leaderboard`
+artifact holds every file. A headline that changes, or a claim `claims.ts`
+throws on, comes first. The text the docs build writes from the numbers and
+checks in (`llms.txt` and its like, `ark/docs/lib/writeMarkdown.ts`) is
+written again in the same commit, only the files the numbers changed.
+
+Not rerun, and not stood in for: the speed and startup suites count
 instructions with perf, and hosted runners don't expose hardware counters,
-so they're rerun by hand on a machine that does, with `--newest` keeping
-them the same way.
+so they're rerun by hand on a machine that does, speed with
+`pnpm benchExternal all --newest`, which keeps its counts in
+`results/newest/` the same way, and startup with
+`pnpm benchExternal startup`. The homepage's speed and cold-start rows are
+wall clock, which a shared runner can't time. `pnpm benchSizeScale` is
+bytes too, but took 29 minutes and 13 GiB of memory at its peak on an Apple M5
+Max, more than a hosted runner's 16 GiB leaves it. To count
+instructions in the workflow, dispatch it with `suites: all` and `runner:`
+the label of a self-hosted Linux runner with perf and taskset; a scheduled
+run reads the repository variables `LEADERBOARD_SUITES` and
+`LEADERBOARD_RUNNER` for the same.
+
+What GitHub requires of it:
+
+- A scheduled workflow runs only from the default branch's copy of its file,
+  so the monthly run measures main. Dispatched on another branch, it measures
+  that branch and opens its pull request against it, from
+  `bench/monthly-standings-<branch>`.
+- The repository setting "Allow GitHub Actions to create and approve pull
+  requests" (Settings > Actions > General > Workflow permissions) must be on.
+  Where it's off, the run pushes the branch and fails, naming the setting.
+- A pull request opened with the workflow's token triggers no other
+  workflow, so `pr.yml` runs on it only once someone closes and reopens it or
+  pushes to its branch. Its body says so.
 
 **Expected variance.** Load doesn't move an instruction count, but a run's
 tiering and garbage collection do. Every suite rerun from a clean clone
@@ -333,8 +372,8 @@ qualify. Since 2026-10-25 the headline counts only the independent ones:
 other projects' suites, and valibot.dev's login form, whose code is Valibot's
 though we wrote it in each library and size it with our script ("The
 headline's suites"). The full board, every suite, is published beside it. In every category, an average within 5% of
-the best counts as first ("Ties"), since one release can move a result by about that much. The size suites are rerun every week at each library's newest release
-("Weekly" under "Reproduce"). The current standings come first, then the
+the best counts as first ("Ties"), since one release can move a result by about that much. The size suites are rerun every month at each library's newest release
+("Monthly" under "Reproduce"). The current standings come first, then the
 rule, then each earlier average as its record.
 
 ### Current standings: ArkType at 781130da3, rivals at their releases of 2026-10-24 and 2026-10-27
@@ -563,7 +602,7 @@ the rounds paired by run (p < 0.05).
 **Use.** `ark/repo/bench/external/leaderboard.ts` gathers every row into
 `ark/docs/lib/bench/leaderboard.json`; `ark/docs/lib/claims.ts` computes the
 scores from it and throws if the headline claims a category ArkType can't
-claim. Nothing is rerun to change a result: the weekly rerun runs on its
+claim. Nothing is rerun to change a result: the monthly rerun runs on its
 schedule whatever the last one showed.
 
 ### Which suites
@@ -649,7 +688,7 @@ install today: moltar's typia 9.7.2 and ata-validator 1.32.1, ata's suite's
 own ata-validator 1.48.0, Sury's zod 4.4.3 and valibot 1.4.2. So each suite's
 rivals are counted twice, at its pins and at the latest npm releases of
 2026-10-24 (`--latest`, `results/*-latest-2026-10-24.json`), and each arm
-keeps its faster count. Rivals can only gain from this. The weekly rerun of
+keeps its faster count. Rivals can only gain from this. The monthly rerun of
 the size suites adds a third install, each rival at its newest release
 (`results/newest/`). Newer isn't always faster: ata 1.60.0 takes 195
 instructions on moltar's assertLoose to 1.32.1's 94, so moltar's ata rows
@@ -834,7 +873,7 @@ schemabenchmarks.dev's download (it isn't in Sury's), within the 5% that
 counts as first. Both startup rows time creating a schema, which ArkType's
 default build does when it builds, so they show little. Speed and startup hold with any one suite left out.
 
-The size rows were then rerun (`results/newest/`, "Weekly" under
+The size rows were then rerun (`results/newest/`, "Monthly" under
 "Reproduce"): ArkType at 624a5d716, its form 1107 B, schemabenchmarks.dev's
 download 1934 B and Sury's check 278 B, every rival at its newest release of
 2026-10-25. The headline's size standings were then ArkType 1.240, Typia
