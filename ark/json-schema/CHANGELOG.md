@@ -1,6 +1,6 @@
 # @ark/json-schema
 
-## 0.0.15-beta.0
+## 0.0.15-beta.1
 
 ### Install `@ark/json-schema`, not `@arktype/json-schema`
 

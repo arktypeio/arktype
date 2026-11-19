@@ -5,7 +5,7 @@ import { printablePathOf, throwBuildError } from "./host.ts"
 import { writeArktypeHint, writeVersionHint } from "./messages.ts"
 
 // the arktype the precompiler is released with, which `pnpm bump` sets
-export const arktypeVersion = "3.0.0-beta.0"
+export const arktypeVersion = "3.0.0-beta.1"
 
 // a package manager may resolve the arktype @ark/aot peers to a version
 // lacking what the precompiler imports, as arktype 2 lacks arktype/codecs, so

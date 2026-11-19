@@ -2,7 +2,7 @@
 
 NOTE: This changelog is incomplete, but will include notable attest-specific changes (many updates consist almost entirely of bumped `arktype` versions for assertions).
 
-## 0.59.0-beta.0
+## 0.59.0-beta.1
 
 Runtime benches now run in a loop compiled for each bench, after a warmup of 500ms (or `until.ms` if shorter), with as many calls per sample as fit in about 0.2ms. Their times don't compare with earlier versions', so re-record stored runtime baselines.
 

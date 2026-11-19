@@ -1,6 +1,6 @@
 # @ark/fast-check
 
-## 0.0.22-beta.0
+## 0.0.22-beta.1
 
 ### Install `@ark/fast-check`, not `@arktype/fast-check`
 
