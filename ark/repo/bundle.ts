@@ -31,7 +31,7 @@ export const bundle = (): void => {
 		absWorkingDir: process.cwd(),
 		write: false,
 		logLevel: "warning",
-		external: [issueFeaturesPath()]
+		external: issueFeaturesSpecifiers
 	} satisfies BuildOptions
 	// a module several entries import evaluates once only if they share one build
 	const { outputFiles, metafile } = buildSync({
@@ -60,6 +60,16 @@ export const bundle = (): void => {
 		outputFiles.push(...variant.outputFiles)
 		Object.assign(metafile.outputs, variant.metafile.outputs)
 	}
+	for (const [output, { inputs }] of Object.entries(metafile.outputs)) {
+		const bundled = Object.keys(inputs).find(input =>
+			/[/\\]issueFeatures\.js$/.test(input)
+		)
+		if (bundled) {
+			throw new Error(
+				`${output} holds ${bundled}, which it must import for a bundler to fold its constants, so name each specifier importing it in issueFeaturesSpecifiers`
+			)
+		}
+	}
 	const kept = [...developmentEntryPoints(process.cwd()), issueFeaturesPath()]
 	for (const path of modulePaths) if (!kept.includes(path)) rmRf(path)
 	const loaded = precompiledSources()
@@ -67,9 +77,12 @@ export const bundle = (): void => {
 		const js = nameSelfReferencingClasses(
 			reexportImports(importingIssueFeatures(file.text))
 		)
-		const inputs = Object.keys(
-			metafile.outputs[relative(process.cwd(), file.path)]?.inputs ?? {}
-		)
+		// the metafile separates a path's parts by / on Windows too, where one
+		// separated by \ matched no output, so every file was parsed lazily
+		const output = relative(process.cwd(), file.path).replace(/\\/g, "/")
+		if (!(output in metafile.outputs))
+			throw new Error(`esbuild's metafile has no output named ${output}`)
+		const inputs = Object.keys(metafile.outputs[output].inputs)
 		writeFile(
 			file.path,
 			inputs.some(input => loaded.has(sourceOf(input))) ? js : parsedLazily(js)
@@ -116,8 +129,18 @@ const sourceOf = (input: string) =>
 // reading each validator writes it again
 const issueFeaturesPath = () => fromCwd("out", "shared", "issueFeatures.js")
 
-// as shared/issues.js imports it, from beside shared/, as every entry and
-// chunk is written
+// each specifier a module of out/ imports it by, which esbuild keeps external
+// by matching the import as it's written. Its path matched nothing on
+// Windows, where esbuild reads one starting with a drive as a package's name,
+// so each chunk held the constants as `var`s of its own, which no bundler
+// folds: every program kept each class and branch a constant chooses between
+const issueFeaturesSpecifiers = [
+	"./issueFeatures.js",
+	"./shared/issueFeatures.js"
+]
+
+// an import matched as it's written is kept as shared/issues.js wrote it, so
+// it's written from beside shared/, as every entry and chunk is
 const importingIssueFeatures = (js: string) =>
 	js.split('"./issueFeatures.js"').join('"./shared/issueFeatures.js"')
 
