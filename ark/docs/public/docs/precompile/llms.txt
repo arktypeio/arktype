@@ -35,13 +35,13 @@ A validator that compiles at runtime ships its compiler, and one that interprets
 - Typia: 213
 - ata-validator (AOT): 220
 
-**Bundle size** (bytes gzipped, lower is better): the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports an error for every invalid field. ArkType is precompiled with its default options in a production build. Zod Mini's form, as valibot.dev writes it, throws at its first parse; written so it runs, it is the same size within 20 B. Source: [the form from valibot.dev's comparison](https://valibot.dev/guides/comparison/)
+**Bundle size** (bytes gzipped, lower is better): the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports an error for every invalid field. ArkType is precompiled with its default options in a production build. Zod Mini's form is written so it runs: as valibot.dev writes it, it throws at its first parse. Source: [the form from valibot.dev's comparison](https://valibot.dev/guides/comparison/)
 
-- ArkType (precompiled): 1,007
-- Valibot: 1,547
-- Zod Mini: 5,127
-- Zod: 25,058
-- ArkType (dynamic): 89,751
+- ArkType (precompiled): 1,026
+- Valibot: 1,564
+- Zod Mini: 5,124
+- Zod: 25,076
+- ArkType (dynamic): 89,767
 
 In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled with its defaults, it reports an error for every invalid field of Valibot's own login form, with the form's messages, in a smaller bundle than Valibot. Each chart names its benchmark and the options ArkType was built with.
 
@@ -1030,6 +1030,10 @@ A package precompiled with `"aot"` is read as the program is, so a value it retu
 
 `allowUnsafe: true` (`--allow-unsafe` for `--check`) reports as warnings the problems that may throw at runtime but that a build can still write output for: a dependency that imports arktype or ships precompiled validators, a module the build can't precompile importing arktype, a read off an import it can't resolve, an import that loads a Type before the config module, a Turbopack alias for `@ark/schema/runtime` other than `@ark/aot/turbopack/runtime`, a package the build leaves external that loads arktype beside the runtime, and a definition that throws a ParseError. Each fails the build otherwise. It applies with `runtime: "arktype"` too, where a ParseError and a dependency shipping precompiled validators fail the build and the rest are warnings anyway.
 
+### checker
+
+`checker` chooses the TypeScript that [declarations](https://arktype.io/docs/precompile/advanced#declarations) read the program with: `"tsjs"` for the compiler API of TypeScript 5.5 to 6, or `"tsgo"` or `"tsrs"` for TypeScript 7's native API. It defaults to the TypeScript installed, preferring tsrs to tsgo where its binary is installed.
+
 ### conditions and tsconfig
 
 `conditions` and `tsconfig` set the export conditions and the tsconfig whose `paths` the build resolves imports with.
@@ -1264,35 +1268,201 @@ What a Type holds moves these counts more than how many there are. Gzipped, a na
 
 # Benchmarks
 
-> How ArkType's speed, startup and size numbers were measured, where it loses and how to rerun them.
+> The rule the headline and the homepage's board follow, every result behind it, our own benchmark beside it and how to rerun each one.
 
-Every number on this site comes from a benchmark in the repo. This page has what each one measures, who wrote it, where ArkType doesn't win and how to rerun it.
+Every number on this site comes from a benchmark in the repo. This page has the rule the headline and the homepage's board follow, every result behind it, our own benchmark beside it and the commands that rerun each one.
 
-## The board
+## The rule
 
-The homepage ranks validators in three categories by their average result across other projects' public benchmarks:
+The headline, the homepage's board and the tables below follow one rule, the same for validation speed, startup and bundle size.
 
-- Fastest on average across 4 independent benchmarks: 1.068, 16.1% lower than the next best's. The best of the other libraries with 100k+ npm downloads a week is Typia, at 2.837.
-- Quickest to start on average across 2 independent benchmarks, within 5% of the best: 1.001 against the best's 1.000. The best of the other libraries with 100k+ npm downloads a week is ajv, at 1.252.
-- Smallest on average across 2 independent benchmarks and valibot.dev's login form: 1.163 against Typia's 1.256, 7.4% lower.
+Ranked by geometric mean across other projects' public benchmarks and valibot.dev's login form, which we wrote in each library from Valibot's code: 22 results for validation speed, 2 for startup and 2 for bundle size; the 2 startup results time creating a schema. Each category averages the largest set of results that ArkType, Zod and three more named libraries all ran, in the unit they measure, and ranks every library that ran all of them, in plain order. ArkType is its default precompiled build in all three. We name only libraries with 100k+ npm downloads a week; every place and average counts all of them.
 
-Each score divides a library's results by the best on each row, then takes the geometric mean per benchmark and across them, so lower is better and 1 is the best result everywhere.
+So the headline's words mean these averages, each the first row of a table below:
 
-Ranked by best average across other projects' public benchmarks and valibot.dev's login form, which we wrote in each library from Valibot's code, each result a ratio to the best: 43 results for validation speed, 2 for startup and 3 for bundle size; the 2 startup results time creating a schema. With our own benchmarks added, ArkType is 1st for validation speed, 1st for startup and 2nd of 14 for bundle size, 1.333 to ajv's 1.326. In every category, an average within 5% of the best counts as first, since one release can move a result by about that much. We name only libraries with 100k+ npm downloads a week; every place, average and tie counts all of them. A monthly job reruns the size benchmarks at each library's newest release. Standings as of November 6, 2026. [Method](https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md#best-average)
+- Smallest on average across valibot.dev's login form and schemabenchmarks.dev's download: 1.35 kB gzipped against Typia's 1.52 kB, 11.3% lower.
+- Fastest on average across 22 results from 2 independent benchmarks: 664 CPU instructions per validation against Typia's 2,863, 76.8% lower.
+- Quickest to start on average across 2 results from 2 independent benchmarks: 40 CPU instructions to create a schema against TypeBox's 4,273, 99.1% lower.
 
-- Every benchmark is public. We wrote 1 of the 5 for validation speed, 2 of the 4 for startup and 1 of the 4 for bundle size on the full board; the averages above leave those out. They keep valibot.dev's login form, Valibot's code, which we wrote in each library and size with our own script.
-- Each of the 2 independent startup results times creating a schema, which a precompiled build does when it builds. Our own startup benchmarks time importing an app through its first validation (7 results), and with them ArkType is 1st for startup.
-- The validation speed lead and the startup tie hold with any one benchmark left out. The bundle size lead doesn't survive leaving out any one of valibot.dev's login form, schemabenchmarks.dev's download and Sury's schema bundled as a check.
+Standings as of November 6, 2026. [When each benchmark was measured](https://arktype.io/docs/precompile/benchmarks#when-each-was-measured) has a date per benchmark.
 
-Size is the close one: the default build ships the least on none of the 3 size results, placing 2nd on each, and Typia ships less than it on none of the 2 size results it's in.
+Each choice has a reason:
 
-## Validation speed
+- **Other projects' benchmarks, because we didn't write them.** Each is another project's public suite, cloned at a pinned commit and run as its authors wrote it, with ArkType added the way that suite adds a library. We chose none of their schemas, inputs or measurements. The one exception is in size: valibot.dev's login form is Valibot's code, which we wrote in each other library and size with our own script.
+- **The largest set of results that five libraries share**, because a library is only compared over results it ran. A graph has five lanes: ArkType, Zod and three more libraries the site names. It averages the largest set of results that ArkType, Zod and three such libraries all ran, so every bar is over the same work. Which results those are depends on who ran what and never on what anyone scored.
+- **A geometric mean**, because the results span orders of magnitude: one validates an email address, another a whole document. An arithmetic mean would be the largest result with the rest as rounding error. A geometric mean gives every result the same weight, and the ratio of two libraries' means is the mean of their ratios.
+- **The unit the benchmark measures.** Speed and startup are CPU instructions, counted with `perf` while the other project's benchmark code runs. An instruction count is the same on a busy machine and on a quiet one, and close to the same on another CPU, so a number here can be checked on a machine that isn't ours. Size is bytes, minified and gzipped.
+- **One build of ArkType in all three**, because a library that is fastest in one configuration and smallest in another is neither at once. Every row of every graph is the same build: precompiled with the default options, bundled for production.
+- **Plain order.** A place is a library's position by its mean, lowest first, among every library that ran all of a graph's results, whether the site names it or not. Nothing counts as a tie unless two means are equal.
+- **Startup counts creating a schema**, because that is what both public startup benchmarks time. A precompiled validator creates its schema when it builds and has nothing left to create when it loads; the graph shows that difference as it was measured. Importing a real app through its first validation is [our own startup benchmark](https://arktype.io/docs/precompile/benchmarks#startup).
+
+The lanes the homepage draws are ArkType, the three best-placed other libraries the site names (100k+ npm downloads a week) and Zod. Zod's other entry points, `z.compile` and Zod Mini, are in the tables below rather than in a second Zod lane.
+
+- Every benchmark is public. We wrote 1 of the 5 for validation speed, 2 of the 4 for startup and 1 of the 4 for bundle size; the averages above leave those out. They keep valibot.dev's login form, Valibot's code, which we wrote in each library and size with our own script.
+- Each of the 2 independent startup results times creating a schema, which a precompiled build does when it builds. Our own startup benchmarks time importing an app through its first validation (7 results).
+
+## The results
+
+Each table has every library its graph ranks, then every result the graph averages, so where another library has the better number on one result, that number is here.
+
+### Validation speed
+
+**CPU instructions per validation · 22 results from 2 other projects' benchmarks.**
+
+| Place | Library | CPU instructions per validation | Our benchmark, ns per validation |
+| - | - | - | - |
+| 1st | ArkType | 664 | 123 ns |
+| 2nd | Typia | 2,863 | 794 ns |
+| 3rd | Valibot | 5,675 | 1,875 ns |
+| 4th | TypeBox | 7,845 | 3,207 ns |
+| 5th | Zod | 10,117 | 2,012 ns |
+
+Every result the graph averages:
+
+| Benchmark | Result | ArkType | Typia | Valibot | TypeBox | Zod |
+| - | - | - | - | - | - | - |
+| schemabenchmarks.dev | parsing invalid | 144 | 142k | 4,704 | 98,922 | 125k |
+| schemabenchmarks.dev | parsing valid | 5,985 | 43,047 | 73,924 | 9,787 | 61,169 |
+| schemabenchmarks.dev | string email valid | 647 | 772 | 1,009 | 8,804 | 1,150 |
+| schemabenchmarks.dev | string url valid | 755 | 1,698 | 1,685 | 9,311 | 2,268 |
+| schemabenchmarks.dev | string uuid valid | 526 | 1,363 | 1,727 | 9,299 | 1,483 |
+| schemabenchmarks.dev | string ipv4 valid | 229 | 411 | 821 | 8,355 | 727 |
+| schemabenchmarks.dev | string ipv6 valid | 811 | 3,240 | 1,179 | 8,788 | 4,271 |
+| schemabenchmarks.dev | string email invalid | 372 | 406 | 1,362 | 4,489 | 4,733 |
+| schemabenchmarks.dev | string uuid invalid | 23 | 223 | 1,210 | 4,263 | 4,411 |
+| schemabenchmarks.dev | string url invalid | 371 | 223 | 1,843 | 4,898 | 1,725 |
+| schemabenchmarks.dev | string ipv4 invalid | 43 | 240 | 1,199 | 4,263 | 4,447 |
+| schemabenchmarks.dev | string ipv6 invalid | 47 | 1,704 | 1,377 | 4,663 | 958 |
+| schemabenchmarks.dev | validation valid | 5,951 | 42,434 | 73,873 | 9,686 | 61,170 |
+| schemabenchmarks.dev | validation invalid | 29 | 68 | 4,490 | 160 | 11,883 |
+| ata's validator-benchmarks | verdict-valid, user | 934 | 2,891 | 5,722 | 1,502 | 6,652 |
+| ata's validator-benchmarks | verdict-valid, order | 5,452 | 22,978 | 55,435 | 14,984 | 56,695 |
+| ata's validator-benchmarks | verdict-invalid, user | 743 | 2,374 | 4,882 | 1,400 | 18,459 |
+| ata's validator-benchmarks | verdict-invalid, order | 1,827 | 8,216 | 26,369 | 5,117 | 71,782 |
+| ata's validator-benchmarks | errors-invalid, user | 5,021 | 8,871 | 29,183 | 19,758 | 26,855 |
+| ata's validator-benchmarks | errors-invalid, order | 14,072 | 42,131 | 62,267 | 209k | 90,384 |
+| ata's validator-benchmarks | blocked-verdict-valid, user | 934 | 2,891 | 5,720 | 4,928 | 9,929 |
+| ata's validator-benchmarks | blocked-verdict-valid, order | 5,452 | 23,092 | 55,483 | 93,706 | 104k |
+
+Not averaged: 21 more public results, from moltar's typescript-runtime-type-benchmarks, schemabenchmarks.dev, Sury's schema benchmark and ata's validator-benchmarks. No set larger than these 22 was run in full by ArkType, Zod and three more libraries the site names.
+
+### Startup
+
+**CPU instructions to create a schema · 2 results from 2 other projects' benchmarks.**
+
+| Place | Library | CPU instructions to create a schema | Our apps, import to first validation |
+| - | - | - | - |
+| 1st | ArkType | 40 | 3.90 ms |
+| 2nd | TypeBox | 4,273 | 22.9 ms |
+| 3rd | Valibot | 15,028 | 3.89 ms |
+| 4th | sury | 120k | — |
+| 5th | Zod | 919k | 16.2 ms |
+| 6th | Zod (compiled) | 1.32M | 17.5 ms |
+
+Each library on each result, including the ones that only ran one:
+
+| Library | schemabenchmarks.dev's initialization | Sury's build and parse once | Geometric mean | Place |
+| - | - | - | - | - |
+| ArkType | 16 | 102 | 40 | 1st |
+| TypeBox | 119k | 153 | 4,273 | 2nd |
+| Valibot | 24,072 | 9,382 | 15,028 | 3rd |
+| sury | 70,501 | 203k | 120k | 4th |
+| Zod | 878k | 963k | 919k | 5th |
+| Zod (compiled) | 2.63M | 667k | 1.32M | 6th |
+| @sapphire/shapeshift | 595k | — | — | — |
+| ajv | 20 | — | — | — |
+| Effect Schema | 181k | — | — | — |
+| io-ts | 30,286 | — | — | — |
+| Joi | 1.30M | — | — | — |
+| Superstruct | 42,192 | — | — | — |
+| runtypes | 11.9M | — | — | — |
+| Typia | 381 | — | — | — |
+| Yup | 1.03M | — | — | — |
+| Zod Mini | 782k | — | — | — |
+| Zod 3 | 507k | — | — | — |
+
+### Bundle size
+
+**kB gzipped · valibot.dev's login form and schemabenchmarks.dev's download.**
+
+| Place | Library | kB gzipped |
+| - | - | - |
+| 1st | ArkType | 1.35 kB |
+| 2nd | Typia | 1.52 kB |
+| 3rd | ajv | 1.59 kB |
+| 4th | Superstruct | 1.77 kB |
+| 5th | Valibot | 1.79 kB |
+| 6th | runtypes | 4.94 kB |
+| 7th | Zod Mini | 5.91 kB |
+| 8th | Yup | 13.3 kB |
+| 9th | TypeBox | 17.6 kB |
+| 10th | Zod | 24.7 kB |
+| 11th | Effect Schema | 44.6 kB |
+| 12th | Joi | 53.8 kB |
+
+Each library on each result, including the ones that only ran one:
+
+| Library | valibot.dev's login form | schemabenchmarks.dev's download | Geometric mean | Place | Not averaged: Sury's schema bundled as a check |
+| - | - | - | - | - | - |
+| ArkType | 1.03 kB | 1.77 kB | 1.35 kB | 1st | 0.27 kB |
+| Typia | 1.25 kB | 1.85 kB | 1.52 kB | 2nd | — |
+| ajv | 0.94 kB | 2.72 kB | 1.59 kB | 3rd | — |
+| Superstruct | 1.62 kB | 1.94 kB | 1.77 kB | 4th | — |
+| Valibot | 1.56 kB | 2.06 kB | 1.79 kB | 5th | 1.20 kB |
+| runtypes | 5.05 kB | 4.83 kB | 4.94 kB | 6th | — |
+| Zod Mini | 5.12 kB | 6.82 kB | 5.91 kB | 7th | — |
+| Yup | 13.5 kB | 13.1 kB | 13.3 kB | 8th | — |
+| TypeBox | 22.8 kB | 13.6 kB | 17.6 kB | 9th | 0.21 kB |
+| Zod | 25.1 kB | 24.3 kB | 24.7 kB | 10th | 64.7 kB |
+| Effect Schema | 83.2 kB | 23.9 kB | 44.6 kB | 11th | — |
+| Joi | 54.7 kB | 52.9 kB | 53.8 kB | 12th | — |
+| io-ts | — | 3.62 kB | — | — | — |
+| sury | — | 15.8 kB | — | — | 11.6 kB |
+| Zod (compiled) | — | 15.6 kB | — | — | — |
+| Zod 3 | — | 13.1 kB | — | — | — |
+| @sapphire/shapeshift | — | 25.3 kB | — | — | — |
+
+Not averaged: 1 more public result, from Sury's schema bundled as a check. No set larger than these two was run in full by ArkType, Zod and three more libraries the site names.
+
+Every library's result on every row, in every suite, is in [`leaderboard.json`](https://github.com/arktypeio/arktype/blob/main/ark/docs/lib/bench/leaderboard.json).
+
+### When each was measured
+
+| Benchmark | On the board | Other libraries last measured | ArkType at |
+| - | - | - | - |
+| schemabenchmarks.dev | 14 speed results | October 25, 2026 | 20710020e |
+| ata's validator-benchmarks | 8 speed results | October 24, 2026 | 20710020e |
+| schemabenchmarks.dev's initialization | 1 startup result | October 25, 2026 | 20710020e |
+| Sury's build and parse once | 1 startup result | October 25, 2026 | 20710020e |
+| valibot.dev's login form | 1 size result | November 6, 2026 | 20710020e |
+| schemabenchmarks.dev's download | 1 size result | November 6, 2026 | 20710020e |
+
+A result is only as current as its last run, so each benchmark has its own date, and ArkType's rows name the commit they were measured at. Each month a job reruns the size benchmarks at each library's newest release and opens a pull request with the updated numbers for review, so a number on this site changes only by a reviewed commit.
+
+## Our own benchmark
+
+The rule leaves our own benchmark out of every bar, place and superlative, since we wrote it. The homepage prints two figures from it beside the bars, in units most people think in, and the sections below have all of it, including the results where another library is ahead.
+
+### Validation speed
+
+Nanoseconds per validation, by the clock, on one core. Each library's geometric mean over the scenarios all of them ran:
+
+| Place | Library | ns per validation, geometric mean of 27 scenarios | Validations a second |
+| - | - | - | - |
+| 1st | ArkType | 123 ns | 8.1M |
+| 2nd | ajv | 187 ns | 5.3M |
+| 3rd | Typia | 794 ns | 1.3M |
+| 4th | Zod (compiled) | 935 ns | 1.1M |
+| 5th | Valibot | 1,875 ns | 533k |
+| 6th | Zod | 2,012 ns | 497k |
+| 7th | TypeBox | 3,207 ns | 312k |
+| 8th | Zod Mini | 4,219 ns | 237k |
 
 Precompiled ArkType was faster than Zod 4 in all 32 scenarios of our benchmark, by a median of 15×, and faster than Zod 4's z.compile in 32 of 32, by a median of 5.3×.
 
 It isn't the fastest at everything. On the rows that report errors for invalid data, ajv was faster on 8 of 15.
 
-The homepage's speed numbers are from this benchmark. Each panel is one scenario, and the table under them has every one:
+Each panel is one scenario, and the table under them has every one:
 
 | scenario | ArkType precompiled | ArkType JIT | typia | TypeBox | ajv | Zod 4 | Zod 4 compiled | zod/mini | Valibot | fastest other | ArkType vs it |
 | - | - | - | - | - | - | - | - | - | - | - | - |
@@ -1343,14 +1513,40 @@ Beyond it:
 - On apps we generated of 11 to 1,012 Types, built with esbuild, webpack and Next on Turbopack, the default build validated faster on every one than every other library measured on it (Zod 4 and Valibot on every app, z.compile and ajv on some), by 1.68x or more: nanoseconds per call over 9 paired runs on a shared machine, p ≤ 0.039.
 - On ntwine's packages/shared, the schemas of an open-source app and the code that reads them, bundled with esbuild: the "smallest" preset shipped 129 KB gzipped to Zod 4's 191 KB and Zod 3's 111 KB, the version ntwine ships; it ran 0.205G instructions through its first validation to Zod 4's 0.481G and Zod 3's 0.270G; and the default build validated a thread 11.89x as fast as Zod 4 and 41.17x as fast as Zod 3, in nanoseconds per call over 9 paired runs on a shared machine, p ≤ 0.004. Zod 4 ships less through webpack (119 KB to 125 KB) and through Next on Turbopack (276 KB to 277 KB).
 
-## Startup
+### Startup
 
-The startup numbers count CPU instructions, which a busy machine doesn't move. They aren't seconds.
+From just before a fresh process imports an app's bundle to just after its first validation returns. In CPU instructions, beyond what an empty module costs to load:
+
+| Library | form | login | moltar | shop | Geometric mean of login, moltar, shop | Place |
+| - | - | - | - | - | - | - |
+| ArkType | 883k | 873k | 983k | 9.84M | 2.04M | 1st |
+| Valibot | 2.34M | 2.33M | 2.21M | 12.2M | 3.97M | 2nd |
+| ajv | — | 1.86M | 1.44M | 32.7M | 4.43M | 3rd |
+| Typia | — | 2.42M | 1.15M | 33.3M | 4.53M | 4th |
+| Zod Mini | 11.3M | 11.3M | 10.2M | 36.7M | 16.2M | 5th |
+| Zod | 43.7M | 43.5M | 53.5M | 102M | 61.9M | 6th |
+| Zod (compiled) | 52.0M | 53.3M | 58.1M | 125M | 72.9M | 7th |
+| TypeBox | — | 87.4M | 88.7M | 207M | 117M | 8th |
 
 - On each of the 4 apps in our startup benchmark, precompiled ArkType's default build ran fewer instructions from import through its first validation than every other library measured on it (Valibot, Zod, Zod (compiled), Zod Mini, Typia, ajv and TypeBox), by 14.8% or more, in all 20 paired runs on Node 24.
 - From import through its first validation, the "smallest" preset ran fewer instructions than every other library on every one of those apps, by 2.8% or more through esbuild and webpack and by 2.4% or more on Turbopack, where Next's own startup is in every count, p ≤ 0.004; the default build did on 19 of them.
 
-### Against dynamic ArkType
+The same apps by the clock, in milliseconds, which the homepage prints beside its startup bars:
+
+| Library | login | moltar | shop | Geometric mean | Place |
+| - | - | - | - | - | - |
+| Valibot | 3.32 ms | 3.36 ms | 5.27 ms | 3.89 ms | 1st |
+| ArkType | 3.34 ms | 3.07 ms | 5.79 ms | 3.90 ms | 2nd |
+| Typia | 3.26 ms | 3.15 ms | 8.04 ms | 4.35 ms | 3rd |
+| ajv | 3.20 ms | 3.01 ms | 8.62 ms | 4.36 ms | 4th |
+| Zod Mini | 5.35 ms | 5.15 ms | 10.8 ms | 6.68 ms | 5th |
+| Zod | 12.2 ms | 13.7 ms | 25.3 ms | 16.2 ms | 6th |
+| Zod (compiled) | 13.1 ms | 13.5 ms | 30.3 ms | 17.5 ms | 7th |
+| TypeBox | 16.8 ms | 16.5 ms | 43.3 ms | 22.9 ms | 8th |
+
+Most of each of those milliseconds is Node loading a module, which every library pays alike, so the quickest are close together and their order changes from app to app and from machine to machine. Instructions count what a library adds, and a busy machine doesn't move them.
+
+#### Against dynamic ArkType
 
 On valid data, the precompiled build is within 6% of dynamic ArkType in 14 of 16 scenarios; it's 1.11× slower on moltar and 1.45× faster on rotating. The bigger change is everything before the first call.
 
@@ -1361,9 +1557,22 @@ On valid data, the precompiled build is within 6% of dynamic ArkType in 14 of 16
 
 Cold start and size, precompiled against dynamic ArkType, are for a login form app (an email and a password check) bundled and minified with esbuild. Cold start is the median time for a fresh Node process to import the bundle and validate once, measured 2026-10-23 at 89510709d; size is the gzipped bundle, the validators and the library code they import.
 
-## Bundle size
+### Bundle size
 
-On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 1.01 kB gzipped against 1.55 kB.
+Our own apps, each bundled with esbuild as a production build, minified and gzipped:
+
+| Library | login | moltar | shop | saas | Geometric mean of login, moltar, shop | Place |
+| - | - | - | - | - | - | - |
+| ajv | 0.63 kB | 0.76 kB | 8.84 kB | — | 1.61 kB | 1st |
+| Valibot | 1.68 kB | 1.46 kB | 3.63 kB | 5.17 kB | 2.07 kB | 2nd |
+| ArkType | 1.52 kB | 1.59 kB | 5.69 kB | 10.5 kB | 2.40 kB | 3rd |
+| Typia | 1.24 kB | 1.23 kB | 16.7 kB | — | 2.94 kB | 4th |
+| Zod Mini | 5.11 kB | 4.71 kB | 10.2 kB | — | 6.26 kB | 5th |
+| Zod | 25.1 kB | 26.4 kB | 28.1 kB | — | 26.5 kB | 6th |
+| Zod (compiled) | 32.9 kB | 34.2 kB | 35.9 kB | — | 34.3 kB | 7th |
+| TypeBox | 41.9 kB | 41.9 kB | 42.9 kB | — | 42.2 kB | 8th |
+
+On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 1.03 kB gzipped against 1.56 kB.
 
 Dynamic ArkType is 89.8 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.
 
@@ -1392,19 +1601,52 @@ In your own project, [shadow mode](https://arktype.io/docs/precompile/advanced#s
 
 ## Rerun them
 
-From a clean checkout, after `pnpm i && pnpm build`:
+Clone the repo and build it once:
 
-| Script | What it reruns |
-| - | - |
-| `pnpm benchExternal` | The board: each external benchmark, cloned at the commit it was run on |
-| `pnpm benchValidate` | The speed benchmark above |
-| `pnpm benchImport` | The homepage's cold start |
-| `pnpm benchSize` | The homepage's app sizes |
-| `pnpm benchSizeScale` | [Size at scale](https://arktype.io/docs/precompile/size-at-scale) |
-| `pnpm benchBigApp` | The generated apps and ntwine |
-| `pnpm benchBuildTime` | [Build time](https://arktype.io/docs/precompile#build-time) |
+```sh
+git clone https://github.com/arktypeio/arktype
+cd arktype
+pnpm i && pnpm build
+```
 
-The [benchmarks' README](https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md) has what each needs installed, the rule the board's averages follow and every run's results.
+### The board
+
+`pnpm benchExternal <suite>` clones a benchmark at the commit its published rows were counted on, installs it from its own lockfile, adds ArkType and runs it. The clones take about 4.5 GB under `ark/repo/bench/external/out/clones/`.
+
+| Graph | Command | Needs | Takes |
+| - | - | - | - |
+| Validation speed | `pnpm benchExternal sb` and `pnpm benchExternal ata` | Linux, `perf`, `taskset` | about 75 minutes |
+| Startup | `pnpm benchExternal sb` and `pnpm benchExternal sury` | Linux, `perf`, `taskset` | about 50 minutes |
+| Bundle size | `pnpm benchExternal size` | any OS | about 2 minutes |
+| All of them | `pnpm benchExternal all` | Linux, `perf`, `taskset` | about 90 minutes |
+
+Instruction counts come from hardware counters, which `perf` reads on Linux and which most hosted CI runners and virtual machines don't expose. `NODE24` and `NODE26` name the Node 24 and 26 binaries the suites run on; without them the suites run on the Node that runs the script.
+
+Each run writes its results to `ark/repo/bench/external/out/fresh/`. Then:
+
+```sh
+pnpm benchBoard --fresh
+```
+
+prints each graph's standings by the rule above, the published numbers beside what your checkout measured. Without `--fresh` it prints the published ones alone. It runs the code this site runs, so what it prints for the published results is what the homepage draws.
+
+Expect every other library's bundle to match to the byte, and an instruction count to move by a few percent on another CPU or Node build while the ratios between libraries move less. ArkType's own rows are the commit you check out, and the published ones name theirs.
+
+### Our own benchmark
+
+| Script | What it reruns | Needs | Takes |
+| - | - | - | - |
+| `pnpm benchTypia` | Typia's generated validators, which the next three read | any OS | 1 to 5 minutes |
+| `pnpm benchValidate` | [Validation speed](https://arktype.io/docs/precompile/benchmarks#validation-speed), every scenario | any OS | about 10 minutes |
+| `pnpm benchImport` | [Startup](https://arktype.io/docs/precompile/benchmarks#startup) by the clock | any OS | under a minute |
+| `pnpm benchSize` | [Bundle size](https://arktype.io/docs/precompile/benchmarks#bundle-size) of our apps | any OS | seconds |
+| `pnpm benchExternal startup` | [Startup](https://arktype.io/docs/precompile/benchmarks#startup) in instructions | Linux, `perf`, `taskset` | about a minute |
+
+`benchValidate`, `benchImport` and `benchSize` write `validate.json`, `import.json` and `size.json` to `ark/repo/bench/out/`, and `pnpm benchBoard --fresh` prints them beside the published tables above. Times by the clock are your machine's: compare the ratios between libraries, not the nanoseconds.
+
+`pnpm benchSizeScale` reruns [Size at scale](https://arktype.io/docs/precompile/size-at-scale), `pnpm benchBigApp` the generated apps and ntwine, and `pnpm benchBuildTime` [Build time](https://arktype.io/docs/precompile#build-time).
+
+The [benchmarks' README](https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md) has what each suite needs installed, how each library was added to it, the versions every row was measured at and every run's results.
 
 # Troubleshooting
 
@@ -1778,7 +2020,13 @@ precompile.vite({ declare: true })
 
 esbuild, Bun, Farm and the Node and Turbopack drivers can't tell whether a build watches, so `declare: true` throws there; run `arktype-precompile --declare` after the build instead.
 
-Declarations read the compiler API of TypeScript 5.5 to 6 from the optional `typescript` peer. A TypeScript 7 project installs TypeScript 6 beside it:
+Declarations read your program with the TypeScript it's built with, from the optional `typescript` peer: the compiler API of TypeScript 5.5 to 6, or for TypeScript 7.1 or later, its native API, which `tsgo` serves, or [tsrs](https://www.npmjs.com/package/tsrs) where its binary is installed. `checker` (`--checker`) chooses one of `"tsjs"`, `"tsgo"` and `"tsrs"`:
+
+```sh
+npx arktype-precompile --declare --checker tsgo
+```
+
+TypeScript 7 orders an object's keys and a union's members as it declares them itself, so the shapes it declares can list them in another order than 6's. `"tsjs"` in a TypeScript 7 project reads TypeScript 6 installed beside it:
 
 ```sh
 npm i -D typescript-6@npm:typescript@6

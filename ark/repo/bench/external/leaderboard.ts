@@ -443,7 +443,13 @@ const suites = [
 					Object.entries(forms).map(([arm, { gzip }]) => [arm, gzip])
 				)
 			)
-		]
+		],
+		// ArkType's other builds of the form, which no row ranks: the site's
+		// size chart draws dynamic ArkType beside the default build
+		builds: {
+			dynamic: forms["ArkType (dynamic)"].gzip,
+			smallest: forms["ArkType (precompiled, smallest)"].gzip
+		}
 	},
 	{
 		category: "size",
@@ -546,14 +552,65 @@ const downloads = {
 	)
 }
 
+type Run = { commit: string; date: string }
+
+// the newest run of each suite that has one: the commit ArkType was at and
+// the day it ran, which the site prints beside the suite's results
+const runs: Record<string, Run> = Object.fromEntries(
+	Object.entries(read("results/newest/run.json") as Record<string, Run>).map(
+		([suite, { commit, date }]) => [suite, { commit, date }]
+	)
+)
+
+// the --newest run that rewrites each kind of result file, by run.json's key
+const runOf: Partial<Record<keyof typeof fileNames, string>> = {
+	forms: "form",
+	sbCounts: "sb",
+	sbDownload: "sb",
+	suryCounts: "sury",
+	surySize: "sury"
+}
+
+type Measured = {
+	/** the day the other libraries' newest results were measured */
+	rivals: string
+	/** the commit ArkType's rows were measured at */
+	arkType: string
+}
+
+// When a suite read from result files was last measured, which the site
+// prints beside its results: by its --newest run if it has one, otherwise by
+// the latest date its rivals' files are named for and the commit ArkType's
+// rows file is named for. A fresh run's rows are today's and this checkout's.
+const measuredOf = (source: string | string[]): Measured | undefined => {
+	const kind = (Object.keys(fileNames) as (keyof typeof fileNames)[]).find(
+		kind => sources[kind] === source
+	)
+	if (!kind || freshDir) return
+	const files = sources[kind]
+	const run =
+		files.some(file => file.startsWith("results/newest/")) ?
+			runs[runOf[kind] ?? ""]
+		:	undefined
+	if (run) return { rivals: run.date, arkType: run.commit }
+	const dates = files.flatMap(file => /\d{4}-\d{2}-\d{2}/.exec(file) ?? [])
+	// ArkType's rows are the last file's wherever two measure the same one
+	const arkTypeFile = sources.arkType[sources.arkType.length - 1]
+	const commit = /-([\da-f]{9})\.json$/.exec(arkTypeFile)?.[1]
+	if (!dates.length || !commit) {
+		throw new Error(
+			`Can't tell when ${kind} was measured from ${files.join(", ")} and ${arkTypeFile}`
+		)
+	}
+	return { rivals: dates.reduce((l, r) => (l > r ? l : r)), arkType: commit }
+}
+
 // when the published rows were last measured: the newest run's latest suite,
 // or today for a fresh run
 const measured =
 	freshDir ?
 		new Date().toISOString().slice(0, 10)
-	:	Object.values(
-			read("results/newest/run.json") as Record<string, { date: string }>
-		)
+	:	Object.values(runs)
 			.map(run => run.date)
 			.reduce((l, r) => (l > r ? l : r))
 
@@ -565,7 +622,20 @@ const out =
 writeFileSync(
 	out,
 	await format(
-		JSON.stringify({ measured, sources, downloads, suites }, null, "\t"),
+		JSON.stringify(
+			{
+				measured,
+				runs,
+				sources,
+				downloads,
+				suites: suites.map(suite => ({
+					...suite,
+					measured: measuredOf(suite.source)
+				}))
+			},
+			null,
+			"\t"
+		),
 		{
 			...(await resolveConfig(out)),
 			filepath: out

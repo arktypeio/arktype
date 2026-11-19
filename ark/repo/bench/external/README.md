@@ -19,7 +19,18 @@ pnpm benchValidate # the homepage's speed rows
 pnpm benchSize # the homepage's app sizes
 pnpm benchScale # the "smallest" preset's sizes
 pnpm benchImport # the homepage's cold start
+pnpm benchBoard --fresh # the homepage board's numbers, published beside what those runs measured
 ```
+
+`benchBoard` prints each of the homepage board's three graphs by the rule in
+`ark/docs/lib/bench/units.ts`, which is the code the site draws them with:
+the geometric mean of each library's results, in the unit they were measured
+in, over the largest set of other projects' results that ArkType, Zod and
+three more named libraries all ran, and its place among every library that
+ran all of them. Under them it prints our own benchmark's speed, cold start
+and app sizes the same way. With `--fresh` each table has a second column
+from `out/fresh/leaderboard.json`, `bench/out/validate.json`, `import.json`
+and `size.json`, wherever a run above has written one.
 
 `<suite>` is `moltar`, `sb`, `sury`, `ata`, `form`, `startup`, `size` or
 `all`, where `size` is the form and the download and bundle rows of
@@ -370,6 +381,21 @@ board's `startup.ts` rows lack it; at 90d510484 it was the closest library on
 moltar, 1.16M to 1.05M, 19 of 20.
 
 ## Best average
+
+**Superseded on 2026-11-18.** The site no longer ranks by this section's
+rule. The headline, the homepage's board and the Benchmarks page follow one
+rule, `ark/docs/lib/bench/units.ts`: over the independent suites, each
+library's geometric mean, in the unit measured, across the largest set of
+results that ArkType, Zod and three more libraries the site names all ran,
+with every library that ran all of them ranked in plain order. There is no
+tie band and no ratio to a row's best. A superlative needs the lowest mean
+outright (`claimsLead` in `ark/docs/lib/claims.ts`), and startup still needs
+`startup.ts`'s paired rounds as "Claiming" describes. The
+[Benchmarks page](https://arktype.io/docs/precompile/benchmarks) states the
+rule, its reasons and every result, and `pnpm benchBoard` prints its
+standings. What follows is the record of the rule the headline used until
+then: its standings, how it was chosen and what was said against it.
+`standings.ts` still prints its pooled standings.
 
 The headline's superlatives come from a rule, written before any average was
 computed: a library is the fastest, the quickest to start or the smallest if

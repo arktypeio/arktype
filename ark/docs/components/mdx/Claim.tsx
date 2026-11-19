@@ -2,7 +2,6 @@ import type { CSSProperties } from "react"
 import {
 	claims,
 	draftOf,
-	headlineMethod,
 	isPending,
 	presetSizeRows,
 	sizeChart,
@@ -32,15 +31,16 @@ export const Claim = ({ id, ifBacked }: { id: ClaimId; ifBacked?: boolean }) =>
 /** the headline, as claims.ts states and guards it */
 export const Headline = () => <ClaimText claim={claims.headline} />
 
-/** what the headline's superlatives average, linking the rule */
+/** when the board's published results were last measured */
+export const StandingsAsOf = () => (
+	<time dateTime={standingsAsOf.date}>{standingsAsOf.text}</time>
+)
+
+/** the rule the headline's superlatives follow and the day they were last measured */
 export const HeadlineNote = () => (
 	<div id="headline-note">
 		<p>
-			<ClaimText claim={claims.headlineNote} />{" "}
-			<time dateTime={standingsAsOf.date}>{standingsAsOf.text}</time>{" "}
-			<a href={headlineMethod.href} target="_blank" rel="noreferrer">
-				{headlineMethod.label} ↗
-			</a>
+			<ClaimText claim={claims.headlineNote} /> <StandingsAsOf />
 		</p>
 	</div>
 )

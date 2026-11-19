@@ -15,14 +15,26 @@ import type { MdxJsxFlowElement, MdxJsxTextElement } from "mdast-util-mdx-jsx"
 import { toMarkdown } from "mdast-util-to-markdown"
 import { visit } from "unist-util-visit"
 import { siteUrl } from "../../app/metadata.ts"
+import { captionOf } from "../../components/home/boardFacts.ts"
 import { installCommand } from "../../components/installCommand.ts"
 import { shapeEmitted, shapeSource } from "../../components/precompile/shape.ts"
 import snippetContentsById from "../../components/snippets/contentsById.ts"
 import { benchNotes, benchTable, jitComparison } from "../bench/bench.ts"
 import {
+	leftOutText,
+	ownSpeedTable,
+	ownTable,
+	resultsTable,
+	runsTable,
+	standingsTable,
+	type OwnTableId,
+	type TextTable
+} from "../bench/boardTables.ts"
+import type { CategoryId } from "../bench/leaderboard.ts"
+import { unitBoards } from "../bench/units.ts"
+import {
 	claims,
 	draftOf,
-	headlineMethod,
 	isPending,
 	presetSizeRows,
 	sizeChart,
@@ -190,6 +202,8 @@ const table = (
 
 const sizeTable = ({ header, rows }: SizeTable) => table(header, rows)
 
+const textTable = ({ header, rows }: TextTable) => table(header, rows)
+
 const claimMarkdown = (claim: Claim<string>) =>
 	`${draftOf(claim)}${isPending(claim) ? " (pending)" : ""}`
 
@@ -322,21 +336,18 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 			return claimContent(node, claims.headline)
 		case "HeadlineNote":
 			return [
-				{
-					type: "paragraph",
-					children: [
-						{
-							type: "text",
-							value: `${claimMarkdown(claims.headlineNote)} ${standingsAsOf.text} `
-						},
-						{
-							type: "link",
-							url: headlineMethod.href,
-							children: [{ type: "text", value: headlineMethod.label }]
-						}
-					]
-				} satisfies Paragraph
+				paragraph(`${claimMarkdown(claims.headlineNote)} ${standingsAsOf.text}`)
 			]
+		case "StandingsAsOf":
+			return node.type === "mdxJsxTextElement" ?
+					[{ type: "text", value: standingsAsOf.text }]
+				:	[paragraph(standingsAsOf.text)]
+		case "BoardRuns":
+			return [textTable(runsTable())]
+		case "BoardLeftOut": {
+			const text = leftOutText(attr(node, "category") as CategoryId)
+			return text ? [paragraph(text)] : []
+		}
 		case "BenchmarkChart": {
 			const { head, rows } = benchTable()
 			return [
@@ -356,6 +367,21 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 			const { summary, header, rows, note } = jitComparison()
 			return [paragraph(summary), table(header, rows), paragraph(note)]
 		}
+		case "BoardCaption":
+			return [
+				paragraph(
+					`${captionOf(unitBoards[attr(node, "category") as CategoryId])}.`,
+					true
+				)
+			]
+		case "BoardStandings":
+			return [textTable(standingsTable(attr(node, "category") as CategoryId))]
+		case "BoardResults":
+			return [textTable(resultsTable(attr(node, "category") as CategoryId))]
+		case "OwnSpeed":
+			return [textTable(ownSpeedTable())]
+		case "OwnResults":
+			return [textTable(ownTable(attr(node, "table") as OwnTableId))]
 		case "LivePrecompile":
 			return [
 				{ type: "code", lang: "ts", value: shapeSource },

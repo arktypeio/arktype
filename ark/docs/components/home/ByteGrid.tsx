@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react"
+import { unitText } from "../../lib/bench/units.ts"
 import { sizeChart, type BenchmarkBar } from "../../lib/claims.ts"
 import { incumbent } from "./boardFacts.ts"
 
@@ -7,8 +8,8 @@ const block = 250
 
 const blocksOf = (bytes: number) => Math.max(1, Math.round(bytes / block))
 
-/** "1.01", "25.1", "89.8": kilobytes to three figures, as the claims write them */
-const kbDigits = (bytes: number) => (bytes / 1000).toPrecision(3)
+/** "1.03", "25.1", "89.8": kilobytes as the claims write them */
+const kbDigits = unitText.kilobytes
 
 const barOf = (kind: BenchmarkBar["kind"]) => {
 	const bar = sizeChart.bars.find(bar => bar.kind === kind)

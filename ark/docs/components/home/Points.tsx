@@ -7,7 +7,6 @@ import {
 	kB,
 	loginKb,
 	methodHref,
-	sizeCloseLine,
 	startupFacts,
 	zodSizeRatio
 } from "./boardFacts.ts"
@@ -211,15 +210,6 @@ export const Size = () => (
 		title="Ship the checks, not the parser."
 		deck={`Valibot's own login form, messages included: ${loginKb("ArkType (precompiled)")} kB gzipped. Valibot ships ${loginKb("Valibot")}. Zod ships ${loginKb("Zod")}.`}
 		figure={<ByteGrid />}
-		caveat={
-			<p className="loses">
-				{sizeCloseLine() ?
-					<>
-						<b>Where it's close.</b> {sizeCloseLine()}
-					</>
-				:	<ClaimText claim={claims.sizeClose} />}
-			</p>
-		}
 	>
 		<Drills
 			name="size"
