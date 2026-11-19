@@ -254,7 +254,6 @@ Definitions are checked by TypeScript, so a mistake is an error in your editor, 
 ```ts
 const User = type({
 	name: "strng"
-	// TypeScript: 'strng' is unresolvable
 })
 ```
 
@@ -2935,7 +2934,6 @@ A key like `"[k]?"` was the literal key `"[k]"`, made optional. It now throws a 
 ```ts
 // throws ParseError: Index signature [k] can't be optional. Escape its '[' with a backslash for an optional key named '[k]'
 type({ "[k]?": "string" })
-// TypeScript: Index signature [k] can't be optional. Escape its '[' with a backslash for an optional key named '[k]'
 
 // Type<{ "[k]"?: string }>
 type({ "\\[k]?": "string" })
@@ -3006,7 +3004,6 @@ An alias that resolves to itself without passing through an object, array or mor
 ```ts
 // throws ParseError: Alias 'a' has a shallow resolution cycle: a->a
 scope({ a: "a" }).export()
-// TypeScript: Alias 'a' has a shallow resolution cycle: a->a
 ```
 
 ## Configuration
@@ -5409,7 +5406,6 @@ len([1, 2]) // 2
 
 // TraversalError: [0] must be a string or an array
 len(true)
-// TypeScript: Argument of type 'boolean' is not assignable to parameter of type 'string | unknown[]'.
 ```
 
 The result is a `TypedFn`, which is introspectable:
@@ -5617,7 +5613,6 @@ if (out instanceof type.errors) {
 } else {
 	// narrowed inference to arbitrary depth
 	console.log(out.box?.box?.label)
-	// (property) label: string | undefined
 }
 ```
 
@@ -5722,7 +5717,6 @@ const half = match.in("number | string").match({
 half(4) // 2
 // ArkErrors: must be a number or a string
 half(true)
-// TypeScript: Argument of type 'boolean' is not assignable to parameter of type 'string | number'.
 ```
 
 ## Properties with `at`
@@ -5747,7 +5741,6 @@ describe({ id: 1, count: 3 }) // "3 items"
 describe({ id: 2, label: "two" }) // "two"
 // TraversalError: id must be 1 or 2 (was missing)
 describe({ count: 3 })
-// TypeScript: Property 'id' is missing in type '{ count: number; }' but required in type '{ id: 1; count: number; }'.
 ```
 
 `match.at(key, cases)` does the same in one call.
@@ -6136,7 +6129,6 @@ const $ = scope({
 	User: type({
 		name: "string",
 		id: "Id"
-		// TypeScript: 'Id' is unresolvable
 	})
 })
 ```
@@ -6253,7 +6245,6 @@ const NonEmptyNumbers = NonEmpty("number[]")
 
 // ParseError: arr must be assignable to Array (was string)
 NonEmpty("string")
-// TypeScript: ["Invalid argument for arr", expected: unknown[]]
 ```
 
 With `type.generic`, pass a `[name, constraint]` tuple: `type.generic(["arr", "unknown[]"])("arr > 0")`.
@@ -6359,7 +6350,6 @@ const Bad = type.declare<Expected>().type({
 	a: "string",
 	// narrower than number
 	"b?": "1"
-	// TypeScript: declared: number; inferred: 1;
 })
 ```
 
@@ -6396,7 +6386,6 @@ type Expected = { a: number; b?: number }
 
 const Bad = type.declare<Expected>().type({
 	a: "string.numeric.parse",
-	// TypeScript: declared: number; inferred: (In: string) => To<number>;
 	"b?": "number"
 })
 
@@ -9595,7 +9584,7 @@ const User = type({
 
 [Precompiled](https://arktype.io/docs/precompile), it ships no parser. Precompiled ArkType was faster than Zod 4 in all 32 scenarios of our benchmark, by a median of 15×, and faster than Zod 4's z.compile in 32 of 32, by a median of 5.3×. On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 0.92 kB gzipped against 1.56 kB. [Benchmarks](https://arktype.io/docs/precompile/benchmarks) has how each was measured.
 
-Without the plugin, arktype parses definitions at runtime, so it ships its parser. Dynamic ArkType is 98.0 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.
+Without the plugin, arktype parses definitions at runtime, so it ships its parser. Dynamic ArkType is 98.1 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.
 
 [Migrating](https://arktype.io/docs/migrating) maps Zod's API and Valibot's row by row, and has a prompt that migrates a project for you. You can also [adopt ArkType one schema at a time](https://arktype.io/docs/migrating#adopt-incrementally).
 
