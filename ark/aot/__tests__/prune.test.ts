@@ -1771,6 +1771,39 @@ for (const data of [{ name: 5 }, flipping]) {
 			).equals(true)
 		})
 
+		it("joins a path's keys where none is an index or needs brackets", async () => {
+			const summary = (definition: string, data: string) =>
+				`import { type } from "arktype"
+
+const T = type(${definition})
+const out = T(${data})
+console.log(out instanceof type.errors ? out.summary : out)
+`
+			const files = writeFixture(
+				{
+					"joined.ts": summary(
+						`{ a: { b: { c: "string" } } }`,
+						`{ a: { b: { c: 1 } } }`
+					),
+					"bracketed.ts": summary(
+						`{ a: { "b-c": "string[]" } }`,
+						`{ a: { "b-c": [1] } }`
+					)
+				},
+				fromHere("temp", "prunedPaths")
+			)
+			const summarizing = (entry: string) =>
+				bundle({ preset: undefined }, { entryPoints: [join(files, entry)] })
+			const joined = await summarizing("joined.ts")
+			attest(run(joined)).snap(`a.b.c must be a string
+`)
+			attest(joined.includes('.join(".")')).equals(true)
+			const bracketed = await summarizing("bracketed.ts")
+			attest(run(bracketed)).snap(`a["b-c"][0] must be a string
+`)
+			attest(bracketed.includes('.join(".")')).equals(false)
+		})
+
 		it("throws an Error only a program naming TraversalError holds the class of", async () => {
 			const thrownBy = (imports: string, test: string) =>
 				bundle(

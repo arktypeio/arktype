@@ -89,7 +89,32 @@ var missingTextOf = missing =>
 	missing ? [missing.description, missing.x, missing.text] : []
 var Issues =
 	readsErrors ?
-		class ArkIssues extends ReadIssues {
+		class ArkIssues {
+			constructor() {
+				this._ = []
+				this._p = []
+			}
+			get count() {
+				return this._.length
+			}
+			get issues() {
+				for (const issue of this._) issue.message ??= messageOf(issue)
+				return this._
+			}
+			_e(data, code, expected, message, text) {
+				this._.push({ code, path: this._p.slice(), data, expected, message })
+				if (callsSiteText) text?.(this._[this._.length - 1])
+				return void 0
+			}
+			_k(apply, data, key, ...missing) {
+				this._p.push(key)
+				const stops =
+					missing.length && !(key in data) ?
+						this._e(data, "required", ...missing)
+					:	!apply(data[key], this)
+				this._p.pop()
+				return stops
+			}
 			get summary() {
 				let summary = ""
 				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
@@ -163,7 +188,8 @@ var pathOf = issue => {
 }
 var lineOf = issue => {
 	const message = (issue.message ??= messageOf(issue))
-	const path = pathOf(issue)
+	const path =
+		reportsIndices || bracketsKeys ? pathOf(issue) : issue.path.join(".")
 	return (
 		listsUnions && issue._l !== void 0 ? issue._l
 		: path ?

@@ -252,11 +252,57 @@ export const missingTextOf = (missing: SiteContext | undefined): MissingText =>
 
 // each a class only where a build's flag leaves it, as a bundler keeps a class
 // that extends another, and all it reads, but drops one in a branch it folds.
-// Errors read whole write a summary too, so theirs is one class with both:
-// a class extending another is about 20 bytes of every bundle that has it
+// Errors read whole, as most programs read theirs, are one class extending
+// none, which is about 25 bytes of a bundle less than one that does: so it
+// writes ReadIssues's members again, each as that one's is, and a build that
+// reads errors whole drops ReadIssues
 const Issues: new () => Issues = (
 	readsErrors ?
-		class ArkIssues extends ReadIssues {
+		class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
+			declare _: ArkIssue[]
+			declare _p: PropertyKey[]
+
+			constructor() {
+				this._ = []
+				this._p = []
+			}
+
+			get count(): number {
+				return this._.length
+			}
+
+			get issues(): readonly WrittenIssue[] {
+				for (const issue of this._) issue.message ??= messageOf(issue)
+				return this._ as WrittenIssue[]
+			}
+
+			_e(
+				data: unknown,
+				code: ArkErrorCode,
+				expected?: string,
+				message?: string,
+				text?: SiteContext["text"]
+			): true | undefined {
+				this._.push({ code, path: this._p.slice(), data, expected, message })
+				if (callsSiteText) text?.(this._[this._.length - 1])
+				return undefined
+			}
+
+			_k(
+				apply: CompactApply,
+				data: unknown,
+				key: PropertyKey,
+				...missing: MissingText
+			): boolean | undefined {
+				this._p.push(key)
+				const stops =
+					missing.length && !(key in (data as object)) ?
+						this._e(data, "required", ...missing)
+					:	!apply((data as Keyed)[key], this)
+				this._p.pop()
+				return stops
+			}
+
 			get summary(): string {
 				let summary = ""
 				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
@@ -492,7 +538,10 @@ export const pathOf = (issue: {
  */
 export const lineOf = (issue: ArkIssue): string => {
 	const message = (issue.message ??= messageOf(issue))
-	const path = pathOf(issue)
+	// every key of a build holding neither an index nor a key to bracket is an
+	// identifier, so its path is its keys joined, and it holds no pathOf
+	const path =
+		reportsIndices || bracketsKeys ? pathOf(issue) : issue.path.join(".")
 	return (
 		listsUnions && issue._l !== undefined ? issue._l
 		: path ?

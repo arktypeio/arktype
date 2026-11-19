@@ -110,10 +110,50 @@ export const failsKeySite = (
 export const missingTextOf = (missing: SiteContext | undefined): MissingText =>
 	missing ? [missing.description, missing.x, missing.text] : []
 
-// one class where errors are read, as they read the summary too
+// one class where errors are read, as they read the summary too, and as
+// issues.ts's one extending none, with ReadIssues's members written again
 const Issues: new () => Issues = (
 	readsErrors ?
-		class ArkErrors extends ReadIssues {
+		class ArkErrors implements FailureContext {
+			_: ArkIssue[] = []
+			_p: PropertyKey[] = []
+
+			get count(): number {
+				return this._.length
+			}
+
+			get issues(): readonly WrittenIssue[] {
+				for (const issue of this._) issue.message ??= messageOf(issue)
+				return this._ as WrittenIssue[]
+			}
+
+			_e(
+				data: unknown,
+				code: ArkErrorCode,
+				expected?: string,
+				message?: string,
+				text?: SiteContext["text"]
+			): true | undefined {
+				this._.push({ code, path: this._p.slice(), data, expected, message })
+				if (callsSiteText) text?.(this._[this._.length - 1])
+				return undefined
+			}
+
+			_k(
+				apply: CompactApply,
+				data: unknown,
+				key: PropertyKey,
+				...missing: MissingText
+			): boolean | undefined {
+				this._p.push(key)
+				const stops =
+					missing.length && !(key in (data as object)) ?
+						this._e(data, "required", ...missing)
+					:	!apply((data as Keyed)[key], this)
+				this._p.pop()
+				return stops
+			}
+
 			get summary(): string {
 				return this._.map(lineOf).join("\n")
 			}
@@ -300,7 +340,9 @@ export const pathOf = (issue: {
 // an issue's line of a summary, as issues.ts's lineOf
 export const lineOf = (issue: ArkIssue): string => {
 	const message = (issue.message ??= messageOf(issue))
-	const path = pathOf(issue)
+	// as issues.ts's, joined where every key is an identifier
+	const path =
+		reportsIndices || bracketsKeys ? pathOf(issue) : issue.path.join(".")
 	return (
 		listsUnions && issue._l !== undefined ? issue._l
 		: path ?
