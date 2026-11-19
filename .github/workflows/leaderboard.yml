@@ -15,7 +15,8 @@ name: leaderboard
 # - `pnpm benchScale`: the "smallest" preset's sizes, into
 #   ark/docs/lib/bench/presetScale.json
 # The speed and startup suites count instructions with perf, which needs
-# hardware counters hosted runners don't expose, and the homepage's speed and
+# hardware counters only some hosted runners' hosts expose (the check below
+# says which were seen to), and the homepage's speed and
 # cold-start rows are wall clock, which a shared runner can't time. None of
 # them is rerun here or stood in for: the pull request says so, with the
 # commands to rerun them by hand (ark/repo/bench/external/README.md,
@@ -101,8 +102,20 @@ jobs:
       - name: Check the runner counts instructions
         if: env.MONTHLY_SUITES == 'all'
         run: |
-          if ! command -v taskset > /dev/null || ! perf stat -e instructions:u true 2> /dev/null; then
-            echo "::error::suites: all counts instructions, which needs perf with hardware counters and taskset. $MONTHLY_RUNNER has neither or not both: run size here, or all on a runner that does."
+          # a hosted runner has no perf and keeps counters from unprivileged
+          # processes; a self-hosted one that already counts skips both
+          if ! perf stat -e instructions:u true 2> /dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq linux-tools-common linux-tools-generic "linux-tools-$(uname -r)" || true
+            sudo sysctl -q kernel.perf_event_paranoid=-1 || true
+          fi
+          lscpu | grep -E "Model name|Hypervisor vendor" || true
+          # whether a hosted runner's counters work depends on the host it
+          # lands on (measured 2026-11-19: Intel Xeon under KVM and arm64
+          # Neoverse count, AMD EPYC under Hyper-V doesn't), so a run that
+          # fails here is dispatched again rather than fixed
+          if ! command -v taskset > /dev/null || ! perf stat -e instructions:u true 2>&1 | grep -qE "^ *[0-9,]+ +instructions:u"; then
+            echo "::error::suites: all counts instructions, which needs perf with hardware counters and taskset. This $MONTHLY_RUNNER host has neither or not both: dispatch it again for another host, run size here, or run all on a runner that does."
             exit 1
           fi
 
