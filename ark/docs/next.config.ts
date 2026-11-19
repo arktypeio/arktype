@@ -1,5 +1,5 @@
 import type { NextConfig } from "next"
-import { mkdtempSync } from "node:fs"
+import { mkdtempSync, readFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { basePath } from "./lib/basePath.ts"
@@ -24,6 +24,15 @@ process.env.NODE_OPTIONS ??= ""
 const tmpDir = mkdtempSync(join(tmpdir(), "ark-localstorage-"))
 process.env.NODE_OPTIONS = `${process.env.NODE_OPTIONS} --localstorage-file=${join(tmpDir, "localstorage")}`
 
+// the playground loads Monaco's runtime from a CDN, and its types from the
+// monaco-editor package, so it asks the CDN for the version installed
+const monacoVersion: string = JSON.parse(
+	readFileSync(
+		new URL("./node_modules/monaco-editor/package.json", import.meta.url),
+		"utf8"
+	)
+).version
+
 const config: NextConfig = {
 	reactStrictMode: true,
 	cleanDistDir: true,
@@ -45,6 +54,9 @@ const config: NextConfig = {
 	...(basePath && { basePath }),
 	images: {
 		unoptimized: true
+	},
+	env: {
+		MONACO_VERSION: monacoVersion
 	}
 }
 
