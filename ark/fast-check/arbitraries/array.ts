@@ -13,7 +13,7 @@ export const getPossiblyWeightedArray = (
 				maxDepth: 2,
 				depthIdentifier: `id:${node.id}`
 			},
-			{ arbitrary: fc.constant([]), weight: 1 },
+			{ arbitrary: fc.constant<unknown[]>([]), weight: 1 },
 			{
 				arbitrary: arrArbitrary,
 				weight: 2

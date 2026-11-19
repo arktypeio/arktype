@@ -1,7 +1,7 @@
 "use client"
 
 import { unset } from "@ark/util"
-import Editor, { useMonaco } from "@monaco-editor/react"
+import Editor, { loader, useMonaco } from "@monaco-editor/react"
 import { type } from "arktype"
 import type * as Monaco from "monaco-editor"
 import { loadWASM } from "onigasm"
@@ -32,9 +32,19 @@ import {
 	updatePlaygroundUrl
 } from "./utils.ts"
 
+// @monaco-editor/react loads Monaco from jsdelivr, by default at a version its
+// loader pins; ask for the one whose types these files are checked against
+// (next.config.ts reads it from the monaco-editor package). From Monaco 0.56,
+// that takes @monaco-editor/loader 1.7, the first to read its AMD module
+// as it's now shaped.
+loader.config({
+	paths: {
+		vs: `https://cdn.jsdelivr.net/npm/monaco-editor@${process.env.MONACO_VERSION}/min/vs`
+	}
+})
+
 let monacoInitialized = false
-let tsLanguageServiceInstance: Monaco.languages.typescript.TypeScriptWorker | null =
-	null
+let tsLanguageServiceInstance: Monaco.typescript.TypeScriptWorker | null = null
 
 const onigasmLoaded =
 	globalThis.window &&
@@ -45,7 +55,7 @@ const onigasmLoaded =
 const setupMonaco = async (
 	monaco: typeof Monaco,
 	initialValue: string
-): Promise<Monaco.languages.typescript.TypeScriptWorker> => {
+): Promise<Monaco.typescript.TypeScriptWorker> => {
 	if (!monacoInitialized) {
 		await onigasmLoaded
 		for (const [name, theme] of Object.entries(editorThemes))
@@ -73,7 +83,7 @@ const stripTypes = async (
 		// a worker client syncs the model as it's created, so a kept one would
 		// emit the code as it was then
 		const worker = await (
-			await monaco.languages.typescript.getTypeScriptWorker()
+			await monaco.typescript.getTypeScriptWorker()
 		)(monaco.Uri.parse(editorFileUri))
 		const emitOutput = await worker.getEmitOutput(editorFileUri)
 		if (emitOutput.outputFiles.length) return emitOutput.outputFiles[0].text

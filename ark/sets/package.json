@@ -60,7 +60,7 @@
 	},
 	"devDependencies": {
 		"ajv": "8.20.0",
-		"fast-check": "3.23.2"
+		"fast-check": "4.10.2"
 	},
 	"publishConfig": {
 		"access": "public"

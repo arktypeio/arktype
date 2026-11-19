@@ -1518,7 +1518,7 @@ while (remaining > 0) {
 		`seed ${seed} run ${result.numRuns}: counterexample\n${sourceOfApp(result.counterexample![0])}`
 	)
 	// a check that threw, rather than finding a difference
-	if (result.error) console.error(result.errorInstance ?? result.error)
+	if (result.errorInstance !== null) console.error(result.errorInstance)
 	remaining -= result.numRuns
 	seed++
 }
