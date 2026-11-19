@@ -135,6 +135,8 @@ export const unitText = {
 		count >= 1e6 ? `${scaled(count / 1e6)}M`
 		: count >= 1e5 ? `${Math.round(count / 1e3)}k`
 		: thousands(Math.round(count)),
+	/** bytes as a number of kilobytes: "1.03", "0.93", "25.1" */
+	kilobytes: (bytes: number) => scaled(bytes / 1000),
 	/** bytes in kilobytes: "1.35 kB" */
 	kB: (bytes: number) => `${scaled(bytes / 1000)} kB`,
 	/** "123 ns", "2,012 ns" */
