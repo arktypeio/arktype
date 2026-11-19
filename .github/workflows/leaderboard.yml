@@ -1,40 +1,110 @@
 name: leaderboard
 
-# Every Monday, reruns the independent suites that measure bundle size (the
-# login form, schemabenchmarks.dev's download and Sury's bundle) with each
-# rival at its newest release and ArkType at main, and checks the site's
-# claims against the standings they give. It pushes nothing: the site keeps
-# the standings it was published with, dated as measured. If a claim no longer
-# holds, such as a lead lost by more than the tie band, it opens an issue, or
-# updates the open one, for a maintainer to rerun and republish. The speed and
-# startup suites count instructions with perf, which needs hardware counters
-# hosted runners don't expose, so they're rerun by hand
-# (ark/repo/bench/external/README.md, "Reproduce").
+# On the first of each month, reruns the benchmarks a GitHub-hosted runner
+# measures faithfully, with ArkType at the branch's head and each rival at its
+# newest release, and proposes what they now say as one pull request for a
+# maintainer to review. Nothing lands on any branch without that merge, so the
+# site keeps the standings it was published with, dated as measured, until
+# then.
+#
+# What it reruns is bundle bytes, which a shared runner measures to the byte:
+# - `pnpm benchExternal size --newest`: the independent size suites (the login
+#   form, schemabenchmarks.dev's download and Sury's bundle), into
+#   ark/repo/bench/external/results/newest/ and
+#   ark/docs/lib/bench/leaderboard.json
+# - `pnpm benchScale`: the "smallest" preset's sizes, into
+#   ark/docs/lib/bench/presetScale.json
+# The speed and startup suites count instructions with perf, which needs
+# hardware counters hosted runners don't expose, and the homepage's speed and
+# cold-start rows are wall clock, which a shared runner can't time. None of
+# them is rerun here or stood in for: the pull request says so, with the
+# commands to rerun them by hand (ark/repo/bench/external/README.md,
+# "Reproduce"). `pnpm benchSizeScale` is bytes too, but peaks at 13 GiB of
+# memory, more than a hosted runner's 16 GiB leaves it. To count instructions here, dispatch
+# the workflow with `suites: all` and `runner:` a self-hosted runner's label, on
+# Linux with perf and taskset. A scheduled run reads the repository variables
+# LEADERBOARD_SUITES and LEADERBOARD_RUNNER for the same two, and without them
+# runs `size` on ubuntu-latest.
+#
+# ark/repo/bench/external/monthly.ts does the rest. If the rerun measured and
+# installed nothing new, the run passes and opens nothing. Otherwise the `pr`
+# job commits the files it wrote to bench/monthly-standings, forced from the
+# commit measured, and opens a pull request against the branch the workflow ran
+# on, or rewrites the body of the one already open from that branch. The body
+# has each rival's version, every number that changed and the site's claims
+# (ark/docs/lib/bench/headline.ts) before and after, with a headline that
+# changes or a claim that no longer holds first.
+#
+# What GitHub requires of it:
+# - A scheduled workflow runs only from the default branch's copy of this file,
+#   so the monthly run measures main and its pull request is against main.
+#   Dispatch it on another branch to measure that branch: its pull request is
+#   from bench/monthly-standings-<branch>.
+# - The repository setting "Allow GitHub Actions to create and approve pull
+#   requests" (Settings > Actions > General > Workflow permissions) must be on.
+#   Where it's off, the `pr` job pushes the branch and fails, naming the
+#   setting.
+# - A pull request opened with GITHUB_TOKEN triggers no other workflow, so
+#   pr.yml doesn't run on it until someone closes and reopens it or pushes to
+#   its branch. Its body says so.
+# - Only the `pr` job's token can write, and that job runs nothing but
+#   monthly.ts: the `rerun` job, which installs and runs every rival's newest
+#   release, has a read-only token and hands its files over as the artifact.
 
 on:
   schedule:
-    - cron: "17 6 * * 1"
+    - cron: "17 6 1 * *"
   workflow_dispatch:
+    inputs:
+      suites:
+        description: "size: what a hosted runner measures. all: the instruction counts too, which need a runner with perf"
+        type: choice
+        options: [size, all]
+        default: size
+      runner:
+        description: "The runner's label: ubuntu-latest, or for all, a self-hosted Linux runner with perf and taskset"
+        type: string
+        default: ubuntu-latest
 
 permissions: {}
 
 concurrency:
-  group: leaderboard
+  group: leaderboard-${{ github.ref }}
 
 defaults:
   run:
     shell: bash
 
+env:
+  MONTHLY_SUITES: ${{ inputs.suites || vars.LEADERBOARD_SUITES || 'size' }}
+  MONTHLY_RUNNER: ${{ inputs.runner || vars.LEADERBOARD_RUNNER || 'ubuntu-latest' }}
+  BASE_BRANCH: ${{ github.ref_name }}
+  DEFAULT_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
+  RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
 jobs:
   rerun:
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
+    runs-on: ${{ inputs.runner || vars.LEADERBOARD_RUNNER || 'ubuntu-latest' }}
+    # every suite takes about 90 minutes on the machine the published rows
+    # were counted on, the size suites a fraction of it
+    timeout-minutes: ${{ (inputs.suites || vars.LEADERBOARD_SUITES) == 'all' && 300 || 90 }}
     permissions:
       contents: read
-      issues: write
+    outputs:
+      changed: ${{ steps.report.outputs.changed }}
+      artifact-url: ${{ steps.upload.outputs.artifact-url }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # a count without hardware counters would be a made-up number
+      - name: Check the runner counts instructions
+        if: env.MONTHLY_SUITES == 'all'
+        run: |
+          if ! command -v taskset > /dev/null || ! perf stat -e instructions:u true 2> /dev/null; then
+            echo "::error::suites: all counts instructions, which needs perf with hardware counters and taskset. $MONTHLY_RUNNER has neither or not both: run size here, or all on a runner that does."
+            exit 1
+          fi
 
       # schemabenchmarks.dev runs on its own .node-version
       - name: Setup Node 26
@@ -53,85 +123,63 @@ jobs:
       - name: Locate Node 24
         run: echo "NODE24=$(command -v node)" >> "$GITHUB_ENV"
 
-      - name: Claims before
-        run: node ark/docs/lib/bench/headline.ts > "$RUNNER_TEMP/before.md" 2>&1 || true
+      - name: Claims and generated text before
+        run: node ark/repo/bench/external/monthly.ts baseline "$RUNNER_TEMP/leaderboard"
 
-      # ttsc's first Go build of typia's plugin can fail, so a failed run is
-      # tried once more
-      - name: Rerun the size suites
-        run: pnpm benchExternal size --newest || pnpm benchExternal size --newest
+      # reproduce.ts runs a suite that fails once more itself, then with the
+      # rival it can't build held at the last release it could
+      - name: Rerun the suites
+        run: pnpm benchExternal "$MONTHLY_SUITES" --newest
 
-      - name: Check the claims
-        id: claims
-        continue-on-error: true
-        run: node ark/docs/lib/bench/headline.ts > "$RUNNER_TEMP/after.md" 2>&1
+      - name: Rerun the "smallest" preset's sizes
+        run: pnpm benchScale
 
-      - name: Standings
-        run: |
-          node ark/repo/bench/external/standings.ts > "$RUNNER_TEMP/standings.txt"
-          {
-            echo "### Claims"
-            echo
-            cat "$RUNNER_TEMP/after.md"
-            echo
-            echo "### Standings"
-            echo
-            echo '```'
-            cat "$RUNNER_TEMP/standings.txt"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Report what changed
+        id: report
+        run: node ark/repo/bench/external/monthly.ts report "$RUNNER_TEMP/leaderboard"
 
       - name: Keep the results
         if: always()
         run: |
           kept="$RUNNER_TEMP/leaderboard"
           mkdir -p "$kept"
-          cp -r ark/docs/lib/bench/leaderboard.json ark/repo/bench/external/results/newest "$kept"
-          cp "$RUNNER_TEMP"/{before.md,after.md,standings.txt} "$kept" 2> /dev/null || true
+          cp -r ark/docs/lib/bench/leaderboard.json ark/docs/lib/bench/presetScale.json ark/repo/bench/external/results/newest "$kept"
 
       - name: Upload the results
+        id: upload
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: leaderboard
           path: ${{ runner.temp }}/leaderboard
 
-      - name: Open or update an issue
-        if: steps.claims.outcome == 'failure'
+  # one pull request with what the rerun wrote, opened or updated
+  pr:
+    needs: rerun
+    if: needs.rerun.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # monthly.ts imports nothing installed, so Node alone runs it
+      - name: Setup Node 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.14.1
+
+      - name: Download the results
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: leaderboard
+          path: ${{ runner.temp }}/leaderboard
+
+      - name: Open or update the pull request
         env:
           GH_TOKEN: ${{ github.token }}
-          TITLE: "bench: a claim isn't backed by the weekly rerun's standings"
-          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          {
-            echo "@ssalbdivad The weekly rerun of the size suites, each rival at its newest release and ArkType at ${GITHUB_SHA::9}, doesn't back a claim on the site. Change the copy in \`ark/docs/lib/claims.ts\` or rerun and republish."
-            echo
-            echo "[Run]($RUN), with its results as the \`leaderboard\` artifact."
-            echo
-            echo "### Claims after"
-            echo
-            cat "$RUNNER_TEMP/after.md"
-            echo
-            echo "### Claims before"
-            echo
-            cat "$RUNNER_TEMP/before.md"
-            echo
-            echo "### Standings"
-            echo
-            echo '```'
-            cat "$RUNNER_TEMP/standings.txt"
-            echo '```'
-          } > "$RUNNER_TEMP/issue.md"
-          number=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number // empty')
-          if [ -n "$number" ]; then
-            gh issue edit "$number" --body-file "$RUNNER_TEMP/issue.md"
-          else
-            gh issue create --title "$TITLE" --body-file "$RUNNER_TEMP/issue.md"
-          fi
-
-      - name: Fail on an unbacked claim
-        if: steps.claims.outcome == 'failure'
-        run: |
-          cat "$RUNNER_TEMP/after.md"
-          echo "::error::A claim on the site isn't backed by the new standings"
-          exit 1
+          ARTIFACT_URL: ${{ needs.rerun.outputs.artifact-url }}
+        run: node ark/repo/bench/external/monthly.ts publish "$RUNNER_TEMP/leaderboard"

@@ -17,6 +17,7 @@ import {
 } from "@ark/aot/internal/scan.ts"
 import {
 	writeLaterLoaderReadMessage,
+	writeLaterTransformReadMessage,
 	writeUnbuiltReadMessage
 } from "@ark/aot/internal/messages.ts"
 import {
@@ -33,6 +34,7 @@ import {
 	build,
 	context,
 	transform,
+	transformSync,
 	type BuildFailure,
 	type BuildOptions,
 	type Plugin
@@ -44,6 +46,7 @@ import {
 	type Plugin as VitePlugin,
 	type Rolldown
 } from "vite"
+import { rollup, type Plugin as RollupPlugin } from "rollup"
 import webpack, { type Stats } from "webpack"
 import { spawnSync } from "node:child_process"
 import {
@@ -100,6 +103,14 @@ console.log(String(types.user({ name: 5 })), Id("x"))
 // is found once read only where the program calls a validator
 const callingFrom = (types: string) =>
 	`import { User } from "${types}"\n\nconsole.log(String(User({ name: 5 })))\n`
+
+// a module arktype's plugin wrote, importing under a second name what the
+// plugin imported for its validators: a change to code the plugin wrote
+const importingAgain = (code: string) =>
+	code.replace(
+		/(\w+) as (\$?\w+) } from "~arktype/,
+		'$1 as $2, $1 as Again } from "~arktype'
+	)
 
 const assertingFrom = (types: string) =>
 	`import { User } from "${types}"\n\ntry {\n\tUser.assert({ name: 5 })\n} catch (e) {\n\tconsole.log(e.message)\n}\n`
@@ -3475,6 +3486,174 @@ console.log(out instanceof type.errors ? out.summary : out)
 			attest(message.slice(-expected.length)).equals(expected)
 		})
 
+		describe("a plugin following it, whose transform runs on what it wrote", () => {
+			// rewrites a module once arktype's transform has, as a plugin
+			// listed after it does whatever its enforce
+			const rewriting = (
+				rewrite: (code: string) => string,
+				file = "main.ts",
+				enforce?: "pre" | "post"
+			): VitePlugin => ({
+				name: "rewriting",
+				...(enforce && { enforce }),
+				transform: (code, id) =>
+					id.endsWith(`/${file}`) ? rewrite(code) : undefined
+			})
+			const adding = (read: string, enforce?: "pre" | "post") =>
+				rewriting(code => `${code}console.log(${read})\n`, "main.ts", enforce)
+			const failureOf = (
+				following: VitePlugin[],
+				opts: PrecompileUnpluginOptions = {}
+			) =>
+				bundle(opts, { following }).then(
+					() => "it built",
+					(e: Error) => stripVTControlCharacters(e.message)
+				)
+
+			it("fails a bundle where it adds a read of a member it left out, naming the setting that keeps it", async () => {
+				const message = await failureOf([
+					adding('User.assert({ name: "Ada" }).name')
+				])
+				const expected =
+					"rewriting transformed main.ts after arktype's plugin read it, and the program as built reads what the build left out of its validators: a module reads assert of a validator. Set assert true in members, or prune: false to build each validator whole."
+				attest(message.slice(-expected.length)).equals(expected)
+			})
+
+			it("builds that read with the member set true, which throws the errors arktype does", async () => {
+				// no module the build read reads a call's errors whole, as what
+				// assert throws needs
+				const kept = await bundle(
+					{ members: { assert: true } },
+					{
+						following: [
+							adding(
+								"(() => {\n\ttry {\n\t\tUser.assert({ name: 5 })\n\t} catch (e) {\n\t\treturn String(e)\n\t}\n})()"
+							)
+						]
+					}
+				)
+				attest(run(kept)).snap(
+					"name must be a string\nTraversalError: name must be a string\n"
+				)
+				attest(kept.includes("~standard")).equals(false)
+			})
+
+			// each other read one might add, whatever its enforce: a member no
+			// setting alone keeps, as the program as built may then pass the
+			// validator on, an introspection member, and the errors of a call
+			for (const [added, read, unseen, members, enforce] of [
+				[
+					"~standard",
+					'typeof User["~standard"]',
+					"a module reads ~standard of a validator",
+					["~standard"],
+					undefined
+				],
+				[
+					"expression, as one run last",
+					"User.expression",
+					"a module reads expression of a validator",
+					[],
+					"post"
+				],
+				[
+					"a validator passed to a function, as one run first",
+					"(f => f(User))(u => typeof u.assert)",
+					"a module reads expression of a validator",
+					[],
+					"pre"
+				],
+				[
+					"the errors a call returns",
+					"String(out)",
+					"a module reads the errors a validator returns",
+					[],
+					undefined
+				]
+			] as const) {
+				it(`fails a bundle where it adds a read of ${added}`, async () => {
+					const message = await failureOf([adding(read, enforce)])
+					const expected = writeLaterTransformReadMessage(
+						"main.ts",
+						unseen,
+						["rewriting"],
+						[...members]
+					)
+					attest(message.slice(-expected.length)).equals(expected)
+				})
+			}
+
+			it("names each plugin whose transform follows its own", async () => {
+				const erasing: VitePlugin = {
+					name: "erasing",
+					enforce: "post",
+					transform: () => undefined
+				}
+				const message = await failureOf([adding("User.expression"), erasing])
+				const expected = writeLaterTransformReadMessage(
+					"main.ts",
+					"a module reads expression of a validator",
+					["rewriting", "erasing"]
+				)
+				attest(message.slice(-expected.length)).equals(expected)
+			})
+
+			it("prunes a module it rewrites without adding a read", async () => {
+				const pruned = await bundle(
+					{},
+					{
+						following: [
+							rewriting(
+								code =>
+									`const built = () => "built"\n${code.split("\n").join("\n\n")}\nconsole.log(built())\n`
+							)
+						]
+					}
+				)
+				attest(run(pruned)).snap("name must be a string\nbuilt\n")
+				attest(pruned.includes("~standard")).equals(false)
+			})
+
+			it("prunes a module holding validators that it adds to", async () => {
+				const pruned = await bundle(
+					{},
+					{
+						following: [
+							rewriting(
+								code =>
+									`${code}\nconst checked = (data) => {\n\tUser(data)\n\treturn "checked"\n}\nconsole.log(checked({ name: "Ada" }))\n`,
+								"types.ts"
+							)
+						]
+					}
+				)
+				attest(run(pruned)).snap("checked\nname must be a string\n")
+				attest(pruned.includes("~standard")).equals(false)
+			})
+
+			it("fails a bundle where it adds a read to a module holding validators", async () => {
+				const message = await failureOf([
+					rewriting(
+						code => `${code}\nconsole.log(User.expression)\n`,
+						"types.ts"
+					)
+				])
+				const expected = writeLaterTransformReadMessage(
+					"types.ts",
+					"a module reads expression of a validator",
+					["rewriting"]
+				)
+				attest(message.slice(-expected.length)).equals(expected)
+			})
+
+			it("fails a bundle where it changes what arktype's plugin wrote of a module", async () => {
+				const message = await failureOf([rewriting(importingAgain, "types.ts")])
+				const expected =
+					"rewriting changed the validators arktype's plugin wrote in types.ts, so the build can't check what the program as built reads of them. Give it enforce: \"pre\" and list it ahead of precompile.vite(), or set prune: false to build each validator whole."
+				attest(message.slice(-expected.length)).equals(expected)
+			})
+		})
+
 		it("fails a bundle a plugin ahead of it rewrote to read what no validator bakes", async () => {
 			for (const [name, read] of [
 				["validate", 'schema["~standard"].validate({})'],
@@ -3628,6 +3807,68 @@ console.log(out instanceof type.errors ? out.summary : out)
 				if (NODE_ENV === undefined) delete process.env.NODE_ENV
 				else process.env.NODE_ENV = NODE_ENV
 			}
+		})
+	})
+
+	describe("rollup", () => {
+		const conditions = ["ark-ts"]
+
+		const root = writeFixture(
+			{ "types.ts": types, "main.ts": callingFrom("./types.ts") },
+			fromHere("temp", "prunedRollup")
+		)
+		// erases types once arktype's transform has read them, as
+		// @rollup/plugin-typescript listed after it does, dropping each comment
+		const stripping: RollupPlugin = {
+			name: "stripping",
+			transform: (code, id) =>
+				id.endsWith(".ts") ?
+					transformSync(code, { loader: "ts" }).code
+				:	undefined
+		}
+		const rewriting = (
+			file: string,
+			rewrite: (code: string) => string
+		): RollupPlugin => ({
+			name: "rewriting",
+			transform: (code, id) =>
+				id.endsWith(`/${file}`) ? rewrite(code) : undefined
+		})
+		// Rollup has no mode, so a production build says what it is
+		const failureOf = (following: RollupPlugin) =>
+			rollup({
+				input: join(root, "main.ts"),
+				plugins: [
+					precompile.rollup({ cwd: root, conditions, prune: true }),
+					stripping,
+					following
+				],
+				onwarn: () => {}
+			}).then(
+				async bundle => {
+					await bundle.close()
+					return "it built"
+				},
+				(e: Error) => stripVTControlCharacters(e.message)
+			)
+
+		it("fails a bundle where a plugin following it adds a read of a member it left out", async () => {
+			const message = await failureOf(
+				rewriting(
+					"main.ts",
+					code => `${code}console.log(User.assert({ name: "Ada" }).name)\n`
+				)
+			)
+			const expected =
+				"stripping, rewriting transformed main.ts after arktype's plugin read it, and the program as built reads what the build left out of its validators: a module reads assert of a validator. Set assert true in members, or prune: false to build each validator whole."
+			attest(message.slice(-expected.length)).equals(expected)
+		})
+
+		it("fails a bundle where a plugin following it changes what it wrote of a module", async () => {
+			const message = await failureOf(rewriting("types.ts", importingAgain))
+			const expected =
+				"stripping, rewriting changed the validators arktype's plugin wrote in types.ts, so the build can't check what the program as built reads of them. List them ahead of precompile.rollup(), or set prune: false to build each validator whole."
+			attest(message.slice(-expected.length)).equals(expected)
 		})
 	})
 
@@ -4065,6 +4306,39 @@ console.log(String(User({ name: 5 })))
 							).equals(true)
 						})
 					}
+
+					it("fails a build where it adds a read of a call's errors, which no module it read reads", async () => {
+						const root = fixture("loaderAfterErrors", {
+							"main.js": `import { User } from "./types.js"
+
+const out = User({ name: 5 })
+console.log(User.allows({ name: 5 }))
+`
+						})
+						const message = await bundle(
+							name,
+							root,
+							{},
+							rewriting(code => `${code}console.log(out.summary)\n`)
+						).then(
+							() => "it built",
+							(e: Error) => e.message
+						)
+						attest(
+							message.includes(
+								writeLaterLoaderReadMessage(
+									"main.js",
+									"a module reads the summary of the errors a validator returns",
+									[
+										relative(root, fromHere("rewriteLoader.ts")).replace(
+											/\\/g,
+											"/"
+										)
+									]
+								)
+							)
+						).equals(true)
+					})
 
 					it("prunes where it moves a read without adding one", async () => {
 						const root = fixture("loaderAfterMoves", {

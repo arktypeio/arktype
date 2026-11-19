@@ -56,7 +56,7 @@
 	"devDependencies": {
 		"@ark/fast-check": "workspace:*",
 		"arktype": "workspace:*",
-		"fast-check": "3.23.2"
+		"fast-check": "4.10.2"
 	},
 	"publishConfig": {
 		"access": "public"

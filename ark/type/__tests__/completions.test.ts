@@ -9,52 +9,60 @@ const ts: typeof import("typescript") = createRequire(
 	new URL("../../attest/package.json", import.meta.url)
 )("typescript-6")
 
-const completedFile = fileURLToPath(new URL("./completed.ts", import.meta.url))
-let completedText = ""
-let completedVersion = 0
+// TypeScript asks its host for each file by a name whose separators are all
+// "/", whatever the ones in the name it was given, so that's the name here
+const completedFile = fileURLToPath(
+	new URL("./completed.ts", import.meta.url)
+).replace(/\\/g, "/")
 
-const service = ts.createLanguageService({
-	getScriptFileNames: () => [completedFile],
-	getScriptVersion: name =>
-		name === completedFile ? `${completedVersion}` : "0",
-	getScriptSnapshot: name => {
-		const contents =
-			name === completedFile ? completedText : ts.sys.readFile(name)
-		return contents === undefined ? undefined : (
-				ts.ScriptSnapshot.fromString(contents)
-			)
-	},
-	getCurrentDirectory: () => dirname(completedFile),
-	getCompilationSettings: () => ({
-		strict: true,
-		module: ts.ModuleKind.NodeNext,
-		moduleResolution: ts.ModuleResolutionKind.NodeNext,
-		customConditions: ["ark-ts"],
-		allowImportingTsExtensions: true,
-		skipLibCheck: true,
-		noEmit: true,
-		types: []
-	}),
-	getDefaultLibFileName: ts.getDefaultLibFilePath,
-	fileExists: name => name === completedFile || ts.sys.fileExists(name),
-	readFile: ts.sys.readFile,
-	readDirectory: ts.sys.readDirectory,
-	directoryExists: ts.sys.directoryExists,
-	getDirectories: ts.sys.getDirectories,
-	realpath: ts.sys.realpath!
-})
+/**
+ * A language service whose one root is completed.ts, holding `statements`
+ * after an import of type. It has built no program, so what it's asked first
+ * is answered by a checker that has checked nothing else, which is the one an
+ * editor has after an edit.
+ */
+const serviceFor = (statements: string) => {
+	const text = `import { type } from "arktype"\n${statements}\n`
+	const service = ts.createLanguageService({
+		getScriptFileNames: () => [completedFile],
+		getScriptVersion: () => "0",
+		getScriptSnapshot: name => {
+			const contents = name === completedFile ? text : ts.sys.readFile(name)
+			return contents === undefined ? undefined : (
+					ts.ScriptSnapshot.fromString(contents)
+				)
+		},
+		getCurrentDirectory: () => dirname(completedFile),
+		getCompilationSettings: () => ({
+			strict: true,
+			module: ts.ModuleKind.NodeNext,
+			moduleResolution: ts.ModuleResolutionKind.NodeNext,
+			customConditions: ["ark-ts"],
+			allowImportingTsExtensions: true,
+			skipLibCheck: true,
+			noEmit: true,
+			types: []
+		}),
+		getDefaultLibFileName: ts.getDefaultLibFilePath,
+		fileExists: name => name === completedFile || ts.sys.fileExists(name),
+		readFile: ts.sys.readFile,
+		readDirectory: ts.sys.readDirectory,
+		directoryExists: ts.sys.directoryExists,
+		getDirectories: ts.sys.getDirectories,
+		realpath: ts.sys.realpath!
+	})
+	return { service, text }
+}
 
 /**
  * What completing the last string of a call costs an editor: the completions
- * offered, and the types TypeScript instantiated to find them in a checker
- * that has checked nothing else, which is the one an editor has after an edit.
+ * offered, and the types TypeScript instantiated to find them.
  */
 const complete = (call: string) => {
-	completedText = `import { type } from "arktype"\n${call}\n`
-	completedVersion++
+	const { service, text } = serviceFor(call)
 	const completions = service.getCompletionsAtPosition(
 		completedFile,
-		completedText.lastIndexOf('"'),
+		text.lastIndexOf('"'),
 		{}
 	)
 	return {
@@ -65,13 +73,10 @@ const complete = (call: string) => {
 
 /** What an editor shows on hovering the last `name` in `statements`. */
 const hover = (statements: string, name: string): string => {
-	completedText = `import { type } from "arktype"\n${statements}\n`
-	completedVersion++
+	const { service, text } = serviceFor(statements)
 	return ts.displayPartsToString(
-		service.getQuickInfoAtPosition(
-			completedFile,
-			completedText.lastIndexOf(name)
-		)?.displayParts
+		service.getQuickInfoAtPosition(completedFile, text.lastIndexOf(name))
+			?.displayParts
 	)
 }
 

@@ -3,15 +3,28 @@ import { createRequire } from "node:module"
 import { join, resolve } from "node:path"
 import { dirname, relative } from "node:path/posix"
 import type * as ts from "typescript"
+import { installedNativeChecker, openNative } from "./declareNative.ts"
 import {
 	isElidedNode,
 	ShapeReferences,
+	type ModuleResolver,
 	type ShapeNames
 } from "./declareShapes.ts"
+
+// TypeScript's JS API (5.5 to 6), its native port (7.1 or later) or tsrs, a
+// port of that, which serves the same API
+export type Checker = "tsjs" | "tsgo" | "tsrs"
+
+export type NativeChecker = Exclude<Checker, "tsjs">
+
+export const checkers: readonly Checker[] = ["tsjs", "tsgo", "tsrs"]
 
 export interface DeclareOptions {
 	cwd?: string | undefined
 	tsconfig?: string | undefined
+	// the checker that reads the program, by default the TypeScript installed:
+	// tsjs for 5.5 to 6, and for 7, tsrs where its binary is installed or else tsgo
+	checker?: Checker | undefined
 }
 
 export interface Declarations {
@@ -25,11 +38,183 @@ export interface Declarations {
 
 export const sharedDeclarationFile = "~arktype.d.ts"
 
+// a top-level declaration's type as the build declares it: its shape printed
+// whole, or as tsc declared it with each shape it writes out named
+export type Retyped =
+	| { printed: string; byNode?: undefined }
+	| {
+			printed: string | undefined
+			byNode: Map<ts.Node, string>
+			// where TypeScript wrote any for a cycle no shape names
+			unnamedCycles: ts.Node[]
+	  }
+
+export interface DeclarationEmit {
+	inferredByNode: Map<ts.Node, Inferred>
+	retype: (
+		inferred: Inferred,
+		declared: ts.TypeNode | undefined,
+		source: ts.SourceFile,
+		isAnyElided?: boolean
+	) => Retyped | undefined
+	onElided: (fileName: string, name: string) => void
+}
+
+// a checker's program and how it declares each module
+export interface Frontend {
+	ts: TypeScript
+	program: ts.Program
+	emitted: ts.SourceFile[]
+	root: string
+	sharedPath: string
+	declarationPathByFile: Record<string, string | undefined>
+	resolveModule?: ModuleResolver | undefined
+	// each module's declaration, by its path
+	emitModules: (emit: DeclarationEmit) => Record<string, string>
+	// what the checker reports once the declarations are settled
+	finish: () => {
+		diagnostics: string
+		errors: number
+		// a cycle the checker reported where it declared any
+		elided?: { fileName: string; name: string }[]
+	}
+	dispose?: () => void
+}
+
 export const emitDeclarations = (opts?: DeclareOptions): Declarations => {
 	const cwd = resolve(opts?.cwd ?? ".")
+	const checker = opts?.checker ?? defaultCheckerOf(cwd)
+	const frontend =
+		checker === "tsjs" ?
+			openJs(cwd, opts?.tsconfig)
+		:	openNative(cwd, checker, opts?.tsconfig)
+	try {
+		return declareWith(frontend, cwd)
+	} finally {
+		frontend.dispose?.()
+	}
+}
+
+// TypeScript 5.5 to 6 where it's installed as `typescript`, TypeScript 7's
+// native API where it is instead, and TypeScript 6 installed beside it otherwise
+export const defaultCheckerOf = (cwd: string): Checker => {
+	const version = typeScriptVersionOf(cwd)
+	if (version && jsVersion.test(version)) return "tsjs"
+	return installedNativeChecker(cwd) ?? "tsjs"
+}
+
+const typeScriptVersionOf = (cwd: string) => {
+	for (const from of [join(cwd, "package.json"), import.meta.url]) {
+		try {
+			return createRequire(from)("typescript/package.json").version as string
+		} catch {
+			// not installed where it looks, so the next place is read
+		}
+	}
+}
+
+const jsVersion = /^(?:5\.(?:[5-9]|\d{2,})|6)\./
+
+const declareWith = (frontend: Frontend, cwd: string): Declarations => {
+	const { ts, program, emitted, root, sharedPath, declarationPathByFile } =
+		frontend
+	const printer = new ShapePrinter(
+		ts,
+		program,
+		root,
+		sharedPath,
+		declarationPathByFile
+	)
+	const inferredByNode = inferredOf(ts, printer.checker, emitted)
+	const inferred = [...inferredByNode.values()]
+	printer.nameAll(inferred)
+	let shapes = printer.settle(inferred)
+	const references = new ShapeReferences(
+		ts,
+		program,
+		printer,
+		frontend.resolveModule
+	)
+	let elided: string[] = []
+	let files: Record<string, string> = {}
+	const elidedMessageOf = (fileName: string, name: string) =>
+		writeElidedMessage(relative(tsPath(cwd), tsPath(fileName)), name)
+	// a shape only a library's type holds, like a morph's input, is named once
+	// a declaration reaches it, so the modules are emitted again to read its name
+	for (let isSettled = false; !isSettled; ) {
+		elided = []
+		files = frontend.emitModules({
+			inferredByNode,
+			retype: (inferred, declared, source, isAnyElided) =>
+				retypeOf({
+					printer,
+					references,
+					inferred,
+					declared,
+					source,
+					isAnyElided
+				}),
+			onElided: (fileName, name) => elided.push(elidedMessageOf(fileName, name))
+		})
+		isSettled = !printer.nameReached()
+		if (!isSettled) shapes = printer.settle(inferred)
+	}
+	if (shapes.length) {
+		files[sharedPath] =
+			`// the shapes of this build's Types, Scopes and Modules\n${shapes.join("\n")}\n`
+	}
+	const finished = frontend.finish()
+	for (const { fileName, name } of finished.elided ?? []) {
+		const message = elidedMessageOf(fileName, name)
+		if (!elided.includes(message)) elided.push(message)
+	}
+	return {
+		files,
+		root,
+		shapes: shapes.length,
+		diagnostics:
+			finished.diagnostics + elided.map(message => `${message}\n`).join(""),
+		errors: finished.errors
+	}
+}
+
+interface Retyping {
+	printer: ShapePrinter
+	references: ShapeReferences
+	inferred: Inferred
+	declared: ts.TypeNode | undefined
+	source: ts.SourceFile
+	isAnyElided: boolean | undefined
+}
+
+// a declaration that can't be printed whole keeps what tsc wrote, but for
+// each shape in it the build names
+const retypeOf = ({
+	printer,
+	references,
+	inferred,
+	declared,
+	source,
+	isAnyElided
+}: Retyping): Retyped | undefined => {
+	const { printed } = inferred
+	if (inferred.isHolding && printed !== undefined) return { printed }
+	if (!declared || !printer.enter(source.fileName)) return
+	const byNode = references.in({
+		node: declared,
+		type: inferred.type,
+		key: inferred.key,
+		source,
+		isAnyElided
+	})
+	printer.leave()
+	return { printed, byNode, unnamedCycles: references.unnamedCycles }
+}
+
+const openJs = (cwd: string, tsconfig: string | undefined): Frontend => {
 	const ts = loadTypeScript(cwd)
 	const diagnostics: ts.Diagnostic[] = []
-	const parsed = parseConfig(ts, cwd, opts?.tsconfig, diagnostics)
+	const parsed = parseConfig(ts, cwd, tsconfig, diagnostics)
 	const config = {
 		...parsed,
 		options: {
@@ -47,70 +232,39 @@ export const emitDeclarations = (opts?: DeclareOptions): Declarations => {
 		})
 	})
 	const emitted = emittedFilesOf(program)
-	const { root, sharedPath, declarationPathByFile } = layoutOf(
-		ts,
-		config,
-		emitted
-	)
-	const printer = new ShapePrinter(
+	let emitDiagnostics: ts.Diagnostic[] = []
+	return {
 		ts,
 		program,
-		root,
-		sharedPath,
-		declarationPathByFile
-	)
-	const inferredByNode = inferredOf(ts, printer.checker, emitted)
-	const inferred = [...inferredByNode.values()]
-	printer.nameAll(inferred)
-	let shapes = printer.settle(inferred)
-	const references = new ShapeReferences(ts, program, printer)
-	let elided: string[] = []
-	let emitDiagnostics: ts.Diagnostic[] = []
-	let files: Record<string, string> = {}
-	// a shape only a library's type holds, like a morph's input, is named once
-	// a declaration reaches it, so the modules are emitted again to read its name
-	for (let isSettled = false; !isSettled; ) {
-		elided = []
-		emitDiagnostics = []
-		files = emitModules(
-			program,
-			emitted,
-			redeclarationOf({
-				ts,
-				printer,
-				references,
-				inferredByNode,
-				onElided: (fileName, name) =>
-					elided.push(writeElidedMessage(relative(tsPath(cwd), fileName), name))
-			}),
-			emitDiagnostics
-		)
-		isSettled = !printer.nameReached()
-		if (!isSettled) shapes = printer.settle(inferred)
-	}
-	diagnostics.push(...emitDiagnostics)
-	if (shapes.length) {
-		files[sharedPath] =
-			`// the shapes of this build's Types, Scopes and Modules\n${shapes.join("\n")}\n`
-	}
-	// a dependency's diagnostics are left to its own build
-	diagnostics.push(
-		...program.getOptionsDiagnostics(),
-		...program.getGlobalDiagnostics(),
-		...emitted.flatMap(file => [
-			...program.getSyntacticDiagnostics(file),
-			...program.getSemanticDiagnostics(file)
-		])
-	)
-	return {
-		files,
-		root,
-		shapes: shapes.length,
-		diagnostics:
-			formatDiagnostics(ts, diagnostics, cwd) +
-			elided.map(message => `${message}\n`).join(""),
-		errors: diagnostics.filter(d => d.category === ts.DiagnosticCategory.Error)
-			.length
+		emitted,
+		...layoutOf(ts, config, emitted),
+		emitModules: emit => {
+			emitDiagnostics = []
+			return emitModules(
+				program,
+				emitted,
+				redeclarationOf(ts, emit),
+				emitDiagnostics
+			)
+		},
+		finish: () => {
+			diagnostics.push(
+				...emitDiagnostics,
+				// a dependency's diagnostics are left to its own build
+				...program.getOptionsDiagnostics(),
+				...program.getGlobalDiagnostics(),
+				...emitted.flatMap(file => [
+					...program.getSyntacticDiagnostics(file),
+					...program.getSemanticDiagnostics(file)
+				])
+			)
+			return {
+				diagnostics: formatDiagnostics(ts, diagnostics, cwd),
+				errors: diagnostics.filter(
+					d => d.category === ts.DiagnosticCategory.Error
+				).length
+			}
+		}
 	}
 }
 
@@ -275,11 +429,14 @@ const specifierBetween = (fromDir: string, declarationPath: string) => {
 }
 
 // a top-level declaration whose type TypeScript would infer
-interface Inferred {
+export interface Inferred {
 	// names the shapes it holds, and a cycle no scope names
 	key: string
 	type: ts.Type
 	fileName: string
+	// where its source declares it
+	pos: number
+	end: number
 	// a shape is named for the const that defines it, not one that aliases it
 	// or a function returning it
 	isAliasing: boolean
@@ -302,7 +459,15 @@ const inferredOf = (
 			key: string,
 			type: ts.Type,
 			isAliasing: boolean
-		) => inferredByNode.set(node, { key, type, fileName, isAliasing })
+		) =>
+			inferredByNode.set(node, {
+				key,
+				type,
+				fileName,
+				pos: node.pos,
+				end: node.end,
+				isAliasing
+			})
 		// e.g. each of `const { user, group } = scope({ ... }).export()`
 		const addBound = (
 			node: ts.VariableDeclaration | ts.BindingElement,
@@ -403,21 +568,10 @@ const arkReferenceOf = (
 const arkDeclaration =
 	/[/\\](?:arktype|ark[/\\]type)[/\\](?:out[/\\])?(variants[/\\]\w+|scope|module)\.(?:d\.)?ts$/
 
-interface Redeclaration {
-	ts: TypeScript
-	printer: ShapePrinter
-	references: ShapeReferences
-	inferredByNode: Map<ts.Node, Inferred>
-	onElided: (fileName: string, name: string) => void
-}
-
-const redeclarationOf = ({
-	ts,
-	printer,
-	references,
-	inferredByNode,
-	onElided
-}: Redeclaration): ts.TransformerFactory<ts.SourceFile | ts.Bundle> => {
+const redeclarationOf = (
+	ts: TypeScript,
+	{ inferredByNode, retype, onElided }: DeclarationEmit
+): ts.TransformerFactory<ts.SourceFile | ts.Bundle> => {
 	// tsc declares a destructured name or `export default <expression>` as a
 	// const of its own, which only its name ties to its source
 	const boundByFile = new Map<ts.SourceFile, Record<string, Inferred>>()
@@ -435,8 +589,6 @@ const redeclarationOf = ({
 		const source = ts.getOriginalNode(node) as ts.SourceFile
 		const exported = node.statements.find(ts.isExportAssignment)?.expression
 		const defaultName = exported && ts.isIdentifier(exported) && exported.text
-		// a declaration that can't be printed whole keeps what tsc wrote, but for
-		// each shape in it the build names
 		const typeOf = (
 			declared: ts.VariableDeclaration | ts.FunctionDeclaration,
 			name?: string | false
@@ -448,19 +600,14 @@ const redeclarationOf = ({
 				: name === defaultName ? defaultByFile.get(source)
 				: boundByFile.get(source)?.[name]
 			if (!inferred) return
+			const retyped = retype(inferred, declared.type, source)
+			if (!retyped) return
 			const printed =
-				inferred.printed === undefined ?
+				retyped.printed === undefined ?
 					undefined
-				:	ctx.factory.createTypeReferenceNode(inferred.printed)
-			if (inferred.isHolding && printed) return printed
-			if (!declared.type || !printer.enter(source.fileName)) return
-			const byNode = references.in({
-				node: declared.type,
-				type: inferred.type,
-				key: inferred.key,
-				source
-			})
-			printer.leave()
+				:	ctx.factory.createTypeReferenceNode(retyped.printed)
+			if (!retyped.byNode) return printed
+			const { byNode } = retyped
 			const visit = (node: ts.Node): ts.Node => {
 				const reference = byNode.get(node)
 				return reference === undefined ?
@@ -468,9 +615,9 @@ const redeclarationOf = ({
 					:	ctx.factory.createTypeReferenceNode(reference)
 			}
 			const named =
-				byNode.size ? (visit(declared.type) as ts.TypeNode) : undefined
+				byNode.size ? (visit(declared.type!) as ts.TypeNode) : undefined
 			// a cycle no shape names is declared as printed, where it could be
-			return printed && holdsElided(ts, named ?? declared.type) ? printed : (
+			return printed && holdsElided(ts, named ?? declared.type!) ? printed : (
 					named
 				)
 		}

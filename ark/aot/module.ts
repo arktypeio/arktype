@@ -40,12 +40,7 @@ export class SourceModule {
 		this.path = path
 		this.source = source
 		this.mappings = mappings ? decode(mappings) : undefined
-		let result = parse(id, source, langOf(id))
-		// Next and other tools allow JSX in a .js module
-		if (result.errors.length && id.endsWith(".js")) {
-			const jsx = parse(id, source, "jsx")
-			if (!jsx.errors.length) result = jsx
-		}
+		const result = parseModule(id, source)
 		this.program = result.program
 		this.parseErrors = result.errors.map(e => e.message)
 		this.scopes = new ModuleScopes(this.program)
@@ -113,6 +108,17 @@ const parse = (id: string, source: string, lang: Lang) =>
 		sourceType: /\.c[jt]s$/.test(id) ? "commonjs" : "module",
 		preserveParens: false
 	})
+
+// a module's tree, read in the language its id names
+export const parseModule = (id: string, source: string): ParseResult => {
+	const result = parse(id, source, langOf(id))
+	// Next and other tools allow JSX in a .js module
+	if (result.errors.length && id.endsWith(".js")) {
+		const jsx = parse(id, source, "jsx")
+		if (!jsx.errors.length) return jsx
+	}
+	return result
+}
 
 // oxc's raw transfer reads a tree several times faster than its JSON, through
 // a buffer reserving 6 GiB of address space, which Windows commits

@@ -102,7 +102,7 @@ A project that `tsc` compiles to run from its `outDir` precompiles what it emits
 
 A library that others install doesn't precompile itself, with `--emit` or a bundler: an app's build fails for a dependency that imports `arktype/runtime`. Precompiling a library means publishing what `tsc` emits with `"ark": { "aot": true }` in its `package.json` and `arktype` in `peerDependencies`, so each app's build precompiles it, and running `npx arktype-precompile --check src` until it accepts every definition.
 
-A package whose types others read writes its declarations with `npx arktype-precompile --declare` in place of `tsc`'s: each Type, Scope and Module is declared by its shape, in a `~arktype.d.ts` beside the others, and nothing changes at runtime. A cyclic scope's types ship no other way, since `tsc` declares an inferred cycle as `any` or fails with `TS5088`. It reads TypeScript 5.5 to 6's compiler API, so a TypeScript 7 project installs `typescript-6@npm:typescript@6` beside it.
+A package whose types others read writes its declarations with `npx arktype-precompile --declare` in place of `tsc`'s: each Type, Scope and Module is declared by its shape, in a `~arktype.d.ts` beside the others, and nothing changes at runtime. A cyclic scope's types ship no other way, since `tsc` declares an inferred cycle as `any` or fails with `TS5088`. It reads the program with the TypeScript installed: 5.5 to 6's compiler API, or TypeScript 7.1 or later's native API through tsgo, or tsrs where its binary is installed; `--checker tsjs|tsgo|tsrs` chooses one.
 
 ### Tests
 
@@ -182,9 +182,10 @@ Each build error names the file, line and column, then why, then the fix on its 
 | `arktype resolves to ... rather than arktype/runtime` (Turbopack)                                                    | add the `resolveAlias` entries it lists                                                                                                 |
 | `type is not a function` at runtime                                                                                  | a module defining Types wasn't precompiled, e.g. no Turbopack rule matches its extension; add one                                       |
 
-Two messages concern `members`:
+Three messages concern `members`:
 
 - `prune: keeping assert, meta, ~standard and methods, because the validator at src/schemas.ts:7:9 is lost where ...` (a warning): the build kept the members it couldn't prove unread, as where a Type is passed to a function it can't resolve; the build is correct, only larger. To build without the warning, set each member it names under `members` in `ark.json`, `true` where code may read it, like `~standard` where a library validates with it, else `false`, e.g. `"precompile": { "members": { "assert": false, "meta": false, "~standard": true, "methods": false } }`.
 - `toJsonSchema isn't precompiled`, at runtime in development, or `toJsonSchema is not a function` in production, where a member no build baked reads `undefined`: code the build can't see read it, like code outside the bundle reading an entry's export; set that member true under `members`.
+- `some-plugin transformed src/form.ts after arktype's plugin read it, and the program as built reads what the build left out of its validators: a module reads assert of a validator` (Vite, Rollup or Rolldown; webpack and Rspack say it of a loader): a plugin after arktype's added a read of something a production build left out, and the build failed rather than ship it. Set each member the message names true under `members`, or `prune: false` where it names none. Moving the plugin doesn't help.
 
 Every message and its fix: https://arktype.io/docs/precompile/troubleshooting.md.

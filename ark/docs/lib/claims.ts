@@ -15,26 +15,20 @@ import {
 	type LibraryVersus
 } from "./bench/bench.ts"
 import {
+	formBuilds,
 	fullLeaderboards,
+	independentRowsOf,
 	isOwnSuite,
-	isFirst,
 	isWellKnown,
 	isWrittenByUs,
-	leaderboards,
-	leadDependsOn,
-	leads,
 	measured,
 	pairedP,
 	resultsOf,
-	rowsOf,
 	startupPaired,
-	tieBand,
-	ties,
 	unnamed,
 	wellKnownDownloads,
 	wellKnownRule,
-	type CategoryId,
-	type Standing
+	type CategoryId
 } from "./bench/leaderboard.ts"
 import {
 	bestRivalOf,
@@ -52,6 +46,14 @@ import {
 	type Measure,
 	type Sweep
 } from "./bench/scoreboard.ts"
+import {
+	firstDependsOn,
+	isFirstOutright,
+	sourcesOf,
+	unitBoards,
+	unitText,
+	type UnitStanding
+} from "./bench/units.ts"
 import buildTime from "./bench/buildTime.json" with { type: "json" }
 import presetScale from "./bench/presetScale.json" with { type: "json" }
 
@@ -99,9 +101,11 @@ export interface BenchmarkChart {
  * four hypotheses held. At the release candidate (wall.md) H1 had failed. Each
  * claim is scoped: precompiled or dynamic, valid or invalid data, with or
  * without errors. The headline's superlatives and the board's standings
- * instead follow the README's "Best average" rule over the independent suites
- * (lib/bench/leaderboard.ts), with ArkType as its default production build
- * throughout, every one of its rows measured at 20710020e.
+ * instead follow the board's one rule (lib/bench/units.ts): other projects'
+ * benchmarks, each library's geometric mean over the largest set of results
+ * that ArkType, Zod and three more named libraries all ran, in plain order,
+ * with ArkType as its default production build throughout, every one of its
+ * rows measured at 20710020e.
  */
 
 // moltar's typescript-runtime-type-benchmarks, perf instruction counts in
@@ -129,38 +133,67 @@ export const speedChart: BenchmarkChart = {
 	]
 }
 
-// bundlejs-style esbuild of valibot.dev's login form as written, every entry
-// reporting an error for every invalid field with the form's messages (a blank
-// password gets ArkType's one, where Valibot also says it's empty), in a
-// production build (esbuild's "production" condition), which prunes a
-// precompiled validator to what the form uses. Every bar is from
-// results/login-20710020e.json: the default build
-// is 2110 / 1007 B min / gz, the "smallest" preset 978 (at 5acd85130, 1140
-// and 1037). forms/, the size suite in the README's "Best average", bundles
-// the same form with the same settings, but exporting a function that asserts
-// rather than asserting once, so its default build is 1026
-// (results/newest/forms.json). The chart's earlier 1313 was "smallest" at
-// 89510709d, before builds pruned by usage. Zod Mini's form is valibot.dev's
-// code as written, which throws at its first parse on zod 4.6.7 (z.check
-// takes no schema); written to run (z.email(...).check(...)), it is 5107.
+// valibot.dev's login form, written in each library as its docs do and bundled
+// with bundlejs's esbuild settings in a production build (esbuild's
+// "production" condition), which prunes a precompiled validator to what the
+// form uses (ark/repo/bench/external/forms/size.ts). Each bundle exports a
+// validate that reports an error for every invalid field with the form's
+// messages (a blank password gets ArkType's one, where Valibot also says it's
+// empty). Every bar is leaderboard.json's, so a rerun redraws the chart and
+// rewrites every sentence that states a byte of it: the form's row, which the
+// board's size graph averages, and for dynamic ArkType the form suite's
+// `builds`. At 20710020e the default build is 1026 B gz and the "smallest"
+// preset 996. Zod Mini's form is written so it runs: valibot.dev's code for
+// it throws at its first parse on zod 4.6.7 (z.check takes no schema).
+const loginForm = resultsOf("form", "login form")
+
+/** a library's gzipped bytes on valibot.dev's login form */
+const loginBytes = (library: string) => {
+	if (!(library in loginForm)) {
+		throw new Error(
+			`leaderboard.json's login form has no result for ${library}`
+		)
+	}
+	return loginForm[library]
+}
+
 export const sizeChart: BenchmarkChart = {
 	title: "Bundle size",
 	detail:
-		"the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports an error for every invalid field. ArkType is precompiled with its default options in a production build. Zod Mini's form, as valibot.dev writes it, throws at its first parse; written so it runs, it is the same size within 20 B",
+		"the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports an error for every invalid field. ArkType is precompiled with its default options in a production build. Zod Mini's form is written so it runs: as valibot.dev writes it, it throws at its first parse",
 	unit: "bytes gzipped",
 	source: {
 		label: "the form from valibot.dev's comparison",
 		href: "https://valibot.dev/guides/comparison/"
 	},
-	axisMax: 26_000,
+	// the next thousand bytes past classic Zod's bar, which dynamic ArkType's
+	// runs past
+	axisMax: Math.ceil(loginBytes("Zod") / 1000) * 1000,
 	bars: [
-		{ name: "ArkType (precompiled)", kind: "precompiled", value: 1007 },
-		{ name: "Valibot", kind: "other", value: 1547 },
-		{ name: "Zod Mini", kind: "other", value: 5127 },
-		{ name: "Zod", kind: "other", value: 25058 },
-		{ name: "ArkType (dynamic)", kind: "dynamic", value: 89751 }
+		{
+			name: "ArkType (precompiled)",
+			kind: "precompiled",
+			value: loginBytes("ArkType")
+		},
+		{ name: "Valibot", kind: "other", value: loginBytes("Valibot") },
+		{ name: "Zod Mini", kind: "other", value: loginBytes("Zod Mini") },
+		{ name: "Zod", kind: "other", value: loginBytes("Zod") },
+		{ name: "ArkType (dynamic)", kind: "dynamic", value: formBuilds.dynamic }
 	]
 }
+
+/**
+ * whether the default build's bundle of the login form is smaller than
+ * Valibot's, which every sentence that says so needs
+ */
+const smallerThanValibot = loginBytes("ArkType") < loginBytes("Valibot")
+
+/** a sentence that says so, draft copy while the row doesn't back it */
+const whileSmallerThanValibot = (text: string): Claim<string> =>
+	smallerThanValibot ? text : { pending: text }
+
+/** a library's bundle of the login form in kilobytes, as the size claims write them: "1.03" */
+const loginKb = (library: string) => unitText.kilobytes(loginBytes(library))
 
 // the homepage's login app as request handlers read it, bundled with
 // bench/bundle.ts's esbuild settings in a production build: perf's user-space
@@ -231,10 +264,13 @@ export const ordinal = (n: number) =>
 	: n % 10 === 3 && n % 100 !== 13 ? `${n}rd`
 	: `${n}th`
 
-const placeOf = (category: CategoryId, boards = leaderboards) => {
-	const { standings } = boards[category]
-	const i = standings.findIndex(s => s.library === "ArkType")
-	return { place: i + 1, ranked: standings.length, ...standings[i] }
+/** ArkType on a category's graph: its geometric mean, and its place among every library the graph ranks */
+const placeOf = (category: CategoryId) => {
+	const { standings } = unitBoards[category]
+	return {
+		...standings.find(s => s.library === "ArkType")!,
+		ranked: standings.length
+	}
 }
 
 /** how the board words each category: its superlative, its title phrase and what its rows measure */
@@ -271,8 +307,8 @@ const startsBefore = (app: string, library: string) =>
 
 /**
  * whether the default build started every app before every library, which
- * "Quickest to start" needs as well as the board's standing: the independent
- * startup rows time only creating a schema, which a precompiled build skips
+ * "Quickest to start" needs as well as the board's standing: the public
+ * startup results time only creating a schema, which a precompiled build skips
  */
 const startsFirst =
 	startupApps.length > 0 &&
@@ -280,15 +316,17 @@ const startsFirst =
 		Object.keys(startupWins[app]).every(library => startsBefore(app, library))
 	)
 
+/** whether ArkType has the lowest geometric mean on a category's graph, shared with no one */
+const leads = (category: CategoryId) =>
+	isFirstOutright(unitBoards[category].standings, "ArkType")
+
 /**
- * whether ArkType may claim a category: first by the board's rule on the
- * independent suites and, so that our own benchmarks can't contradict it, on
- * every suite; and for startup, startsFirst
+ * whether ArkType may claim a category: first outright on its graph, by the
+ * board's rule (lib/bench/units.ts), in plain order; and for startup,
+ * startsFirst
  */
 const claimsLead = (category: CategoryId) =>
-	leads(category) &&
-	isFirst(fullLeaderboards[category], "ArkType") &&
-	(category !== "startup" || startsFirst)
+	leads(category) && (category !== "startup" || startsFirst)
 
 /** the categories ArkType may claim, the only ones the board states a win in */
 const led = boardOrder.filter(claimsLead)
@@ -297,92 +335,99 @@ const led = boardOrder.filter(claimsLead)
 export const leadsEvery = led.length === boardOrder.length
 
 /**
- * ArkType's best average, the next best's where ArkType leads, otherwise the
- * leader's, and the best of the other libraries the site may name
+ * ArkType's geometric mean on a category's graph, the next best's where
+ * ArkType is first, otherwise the leader's, and the best of the other
+ * libraries the site may name
  */
 const averageOf = (category: CategoryId) => {
-	const { place, score } = placeOf(category)
-	const { standings } = leaderboards[category]
+	const { place, value } = placeOf(category)
+	const others = unitBoards[category].standings.filter(
+		s => s.library !== "ArkType"
+	)
 	return {
-		score,
-		other: standings[place === 1 ? 1 : 0],
-		named: standings.find(
-			s => s.library !== "ArkType" && isWellKnown(s.library)
-		)!
+		value,
+		other: place === 1 ? others[0] : unitBoards[category].standings[0],
+		named: others.find(s => isWellKnown(s.library))!
 	}
 }
 
-const nameOr = (library: string, otherwise: string) =>
-	isWellKnown(library) ? library : otherwise
-
-const namingNote = `We name only libraries with ${wellKnownRule}; every place, average and tie counts all of them.`
-
-export const tieMargin = `${Math.round(tieBand * 100)}%`
-
-export const averageText = (score: number) => score.toFixed(3)
+const namingNote = `We name only libraries with ${wellKnownRule}; every place and average counts all of them.`
 
 const leadText = (score: number, next: number) => {
 	const percent = (1 - score / next) * 100
 	return percent < 0.1 ? "less than 0.1%" : `${percent.toFixed(1)}%`
 }
 
-/** where ArkType's best average places it in a category, a superlative only where it may claim one */
+/** "2 independent benchmarks", "1 independent benchmark" */
+const independentBenchmarks = (n: number) =>
+	`${n} independent benchmark${n === 1 ? "" : "s"}`
+
+/**
+ * What a category's graph averages: how many results, from how many
+ * benchmarks. One that averages a benchmark whose code for each library we
+ * wrote names every benchmark instead, since that one isn't independent.
+ */
+const acrossOf = (category: CategoryId) => {
+	const board = unitBoards[category]
+	const sources = sourcesOf(board).map(source => source.label)
+	return sources.some(isWrittenByUs) ?
+			`across ${list(sources)}`
+		:	`across ${board.rows.length} results from ${independentBenchmarks(sources.length)}`
+}
+
+/** where ArkType's geometric mean places it on a category's graph, a superlative only where it is first outright */
 const standingOf = (category: CategoryId) => {
-	const { suites } = leaderboards[category]
-	const written = suites.filter(isWrittenByUs)
-	const across =
-		written.length ?
-			`across ${suites.length - written.length} independent benchmarks and ${list(written)}`
-		:	`across ${suites.length} independent benchmarks`
 	const { place, ranked } = placeOf(category)
-	const [first] = leaderboards[category].standings
 	const average = averageOf(category)
-	const by = place === 1 ? leadText(average.score, average.other.score) : ""
+	const by = leads(category) ? leadText(average.value, average.other.value) : ""
 	return {
 		leads: leads(category),
-		ties: ties(category),
-		place: leads(category) ? "1st" : ordinal(place),
+		place: ordinal(place),
 		ranked,
 		average,
 		by,
 		standing:
-			ties(category) ?
-				`${wording[category].superlative} on average ${across}, within ${tieMargin} of ${nameOr(first.library, "the best")}`
-			: leads(category) ?
-				`${wording[category].superlative} on average ${across}`
-			:	`${ordinal(place)} of ${ranked} on average ${across}`
+			leads(category) ?
+				`${wording[category].superlative} on average ${acrossOf(category)}`
+			:	`${ordinal(place)} of ${ranked} on average ${acrossOf(category)}`
 	}
 }
 
 /**
- * A category's standing and best average, beside the next best's and by how
- * much where ArkType leads, otherwise beside the leader's, then the best named
- * library's where the site doesn't name that one
+ * A category's standing and ArkType's geometric mean in the graph's unit,
+ * beside the next best's and by how much where ArkType is first, otherwise
+ * beside the leader's, then the best named library's where the site doesn't
+ * name that one
  */
 const averagesOf = (category: CategoryId) => {
 	const { standing, average, by } = standingOf(category)
-	const { score, other, named } = average
+	const { value, other, named } = average
+	const { quantity, format } = unitBoards[category]
 	const versus =
 		other === named ?
-			`${averageText(score)} against ${other.library}'s ${averageText(other.score)}${by && `, ${by} lower`}.`
-		: by ? `${averageText(score)}, ${by} lower than the next best's.`
-		: `${averageText(score)} against the best's ${averageText(other.score)}.`
-	return `${standing}: ${versus}${other === named ? "" : ` The best of the other libraries with ${wellKnownRule} is ${named.library}, at ${averageText(named.score)}.`}`
+			`${quantity(value)} against ${other.library}'s ${format(other.value)}${by && `, ${by} lower`}.`
+		: by ? `${quantity(value)}, ${by} lower than the next best's.`
+		: `${quantity(value)} against the best's ${format(other.value)}.`
+	return `${standing}: ${versus}${other === named ? "" : ` The best of the other libraries with ${wellKnownRule} is ${named.library}, at ${format(named.value)}.`}`
 }
+
+/** the benchmarks the graphs average, by category */
+const averagedSuites = (category: CategoryId) =>
+	sourcesOf(unitBoards[category]).map(source => source.label)
 
 /** the headline's suites whose code for each library we wrote: "valibot.dev's login form" */
 const writtenSuites = list([
 	...new Set(
 		boardOrder.flatMap(category =>
-			leaderboards[category].suites.filter(isWrittenByUs)
+			averagedSuites(category).filter(isWrittenByUs)
 		)
 	)
 ])
 
 /** what the headline's standings average */
-const rankedBy = `Ranked by best average across other projects' public benchmarks${writtenSuites ? ` and ${writtenSuites}, which we wrote in each library from Valibot's code` : ""}`
+const rankedBy = `Ranked by geometric mean across other projects' public benchmarks${writtenSuites ? ` and ${writtenSuites}, which we wrote in each library from Valibot's code` : ""}`
 
-/** how many of each category's benchmarks on the full board are ours */
+/** how many of each category's public benchmarks are ours */
 const ownedPerCategory = list(
 	boardOrder.map(category => {
 		const { suites } = fullLeaderboards[category]
@@ -390,93 +435,59 @@ const ownedPerCategory = list(
 	})
 )
 
-/** ArkType's place in each category on the full board, beside the leader where it isn't first */
-const fullBoardPlaces = list(
-	boardOrder.map(category => {
-		const { place, ranked, score } = placeOf(category, fullLeaderboards)
-		const [first] = fullLeaderboards[category].standings
-		return place === 1 ?
-				`1st for ${wording[category].measures}`
-			:	`${ordinal(place)} of ${ranked} for ${wording[category].measures}, ${averageText(score)} to ${nameOr(first.library, "the best")}'s ${averageText(first.score)}`
-	})
-)
+/** the board's rule, the same in every category: which results a graph averages and who it ranks */
+const ruleNote =
+	"Each category averages the largest set of results that ArkType, Zod and three more named libraries all ran, in the unit they measure, and ranks every library that ran all of them, in plain order."
 
-/** where ArkType places on the full board, stated wherever the headline's standings are */
-const fullBoardNote = `With our own benchmarks added, ArkType is ${fullBoardPlaces}.`
-
-/** how the standings treat noise, the same in every category */
-const methodNote = `In every category, an average within ${tieMargin} of the best counts as first, since one release can move a result by about that much.`
+/** which ArkType every row measures, the same in every category (oneBuild, below, holds it) */
+const buildNote = "ArkType is its default precompiled build in all three."
 
 /** the startup suites that time creating a schema, which a precompiled build does when it builds */
 const creationOnly = [
 	"schemabenchmarks.dev's initialization",
 	"Sury's build and parse once"
 ]
-const startupIsCreation = leaderboards.startup.suites.every(label =>
+const startupIsCreation = averagedSuites("startup").every(label =>
 	creationOnly.includes(label)
 )
 
-const claimOf = (category: CategoryId) => (ties(category) ? "tie" : "lead")
+/** how many startup results are our own benchmarks', which time whole apps */
+const ownStartupResults =
+	fullLeaderboards.startup.rows - independentRowsOf("startup").length
 
-/** the claims, "the startup lead" or "the speed and startup leads and the size tie" */
-const claimsOf = (categories: CategoryId[]) =>
-	list(
-		(["lead", "tie"] as const).flatMap(kind => {
-			const of = categories.filter(category => claimOf(category) === kind)
-			return of.length ?
-					[
-						`the ${list(of.map(category => wording[category].measures))} ${kind}${of.length > 1 ? "s" : ""}`
-					]
-				:	[]
-		})
-	)
+/** the benchmarks without which ArkType isn't first outright on a category's graph */
+const leadDependsOn = (category: CategoryId) =>
+	firstDependsOn(independentRowsOf(category), "ArkType")
 
-/** which claims hold with any one benchmark left out, and which suites the others depend on */
+/** the leads, "the startup lead" or "the validation speed and startup leads" */
+const leadsOf = (categories: CategoryId[]) =>
+	`the ${list(categories.map(category => wording[category].measures))} lead${categories.length > 1 ? "s" : ""}`
+
+/** which leads hold with any one benchmark left out, and which benchmarks the others depend on */
 const leadsWithoutEach = () => {
 	const robust = led.filter(category => !leadDependsOn(category).length)
 	const sentences = led
 		.filter(category => leadDependsOn(category).length)
 		.map(
 			category =>
-				`The ${wording[category].measures} ${claimOf(category)} doesn't survive leaving out ${leadDependsOn(category).length > 1 ? "any one of " : ""}${list(leadDependsOn(category))}.`
+				`The ${wording[category].measures} lead doesn't survive leaving out ${leadDependsOn(category).length > 1 ? "any one of " : ""}${list(leadDependsOn(category))}.`
 		)
 	if (robust.length) {
-		const claims = claimsOf(robust)
+		const holding = leadsOf(robust)
 		sentences.unshift(
-			`${claims[0].toUpperCase()}${claims.slice(1)} ${robust.length > 1 ? "hold" : "holds"} with any one benchmark left out.`
+			`${holding[0].toUpperCase()}${holding.slice(1)} ${robust.length > 1 ? "hold" : "holds"} with any one benchmark left out.`
 		)
 	}
 	return sentences.join(" ")
 }
 
-/** the size results a library ships less than ArkType on, of those it's in, including the largest bundle ArkType ships if it's one */
-const sizeResultsBeating = (library: string) => {
-	const rows = rowsOf("size").filter(results => library in results)
-	const largest = rows.reduce((l, r) => (r.ArkType > l.ArkType ? r : l))
-	const count = rows.filter(
-		results => results[library] < results.ArkType
-	).length
-	const of =
-		rows.length === rowsOf("size").length ?
-			`${rows.length} size results`
-		:	`${rows.length} size results it's in`
-	return `${count || "none"} of the ${of}${largest[library] < largest.ArkType ? ", including the largest of ArkType's bundles among them" : ""}`
-}
-
-const sizeRival = averageOf("size").other
-
-const sizeRivalName = nameOr(
-	sizeRival.library,
-	leads("size") && !ties("size") ? "the next best" : "another library"
-)
-
-/** each category's results on the independent suites, for the headline's notes, and what startup's measure */
+/** how many results each category's graph averages, for the headline's notes, and what startup's measure */
 const independentResults = `${list(
 	boardOrder.map(
 		(category, i) =>
-			`${leaderboards[category].rows}${i ? "" : " results"} for ${wording[category].measures}`
+			`${unitBoards[category].rows.length}${i ? "" : " results"} for ${wording[category].measures}`
 	)
-)}${startupIsCreation ? `; the ${leaderboards.startup.rows} startup results time creating a schema` : ""}`
+)}${startupIsCreation ? `; the ${unitBoards.startup.rows.length} startup results time creating a schema` : ""}`
 
 /**
  * Measured at febe60baf by a procedure registered before the run: a
@@ -788,33 +799,20 @@ const dynamicStartsFirst =
 const dynamicInitText = () =>
 	`Without the plugin, ArkType ran fewer instructions from import through its first validation than Zod 4 on every app we bundled with esbuild, ${dynamicRows.length} in all${dynamicRows.some(row => row.app === "ntwine") ? ", ntwine among them" : ""}, by ${percentText(Math.min(...dynamicRows.map(row => 1 - row.arms.arktype.first / row.arms.zod.first)))} or more, p ≤ ${Math.max(...dynamicRows.map(row => row.p.arktype!.zod.first)).toFixed(3)}.`
 
-const sizeRanks = rowsOf("size").map(
-	results =>
-		Object.values(results).filter(bytes => bytes < results.ArkType).length + 1
-)
-
-const sizeFirsts = sizeRanks.filter(rank => rank === 1).length
-
-/** where the default build places on the size results it isn't first on: "2nd on each" */
-const sizePlacesText = () => {
-	const places = sizeRanks.filter(rank => rank > 1)
-	return places.every(rank => rank === places[0]) ?
-			`${ordinal(places[0])} on ${sizeFirsts ? "the rest" : "each"}`
-		:	`${list(places.map(ordinal))} on ${sizeFirsts ? "the rest" : "them"}`
-}
-
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
 	// each superlative names a category ArkType must claim (claimsLead), as
-	// the check of the copy below holds. Size is the close one: ArkType 1.163
-	// to Typia's 1.256 on results/newest/'s size rows (20710020e), 2nd on each
-	// of the 3, and with our own apps counted ajv's 1.326 to ArkType's 1.333,
-	// inside tieBand
+	// the check of the copy below holds. "Smallest" is the lowest geometric
+	// mean of gzipped bytes over the public size results the size graph
+	// averages: at 20710020e (results/newest/) the default build's 1.35 kB to
+	// Typia's 1.52 over valibot.dev's login form and schemabenchmarks.dev's
+	// download, 2nd on each of the two (ajv on the form, an unnamed library on
+	// the download), 1st of the 12 libraries on both
 	headline:
 		claimsLead("size") ?
 			"TypeScript's smallest, fastest validator."
 		:	"TypeScript's fastest validator.",
-	headlineNote: `${rankedBy}, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote} ${namingNote} A weekly job reruns the size benchmarks at each library's newest release.`,
+	headlineNote: `${rankedBy}: ${independentResults}. ${ruleNote} ${buildNote} ${namingNote} A monthly job reruns the size benchmarks at each library's newest release.`,
 	// the fastest and the smallest builds differ: on moltar's cases the default
 	// build takes 13-46x fewer instructions per call than "smallest"
 	// (smallestSpeed)
@@ -830,20 +828,24 @@ export const claims = {
 	// the homepage's spec rows, each a fragment of a claim below
 	dynamicSpec:
 		"as fast as precompiled on valid data in our runs of schemabenchmarks.dev's benchmark",
-	sizeSpec:
-		"precompiled with its defaults, smaller than Valibot on its own login form, with the form's messages",
+	sizeSpec: whileSmallerThanValibot(
+		"precompiled with its defaults, smaller than Valibot on its own login form, with the form's messages"
+	),
 	// the sentence under the docs' charts
-	chartsSummary:
-		"In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled with its defaults, it reports an error for every invalid field of Valibot's own login form, with the form's messages, in a smaller bundle than Valibot.",
+	chartsSummary: whileSmallerThanValibot(
+		"In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled with its defaults, it reports an error for every invalid field of Valibot's own login form, with the form's messages, in a smaller bundle than Valibot."
+	),
 	// the product schema, valid data: 5951.05 instructions each at 20710020e,
 	// 10 reps (6005 vs 6003 at a306152ce); by wall clock at f29b8d153
 	// (H3), dynamic took 0.999x the default build's time and stayed under 1.05x
 	// in 24 of 30 passes (p 0.00072)
 	dynamicSpeed:
 		"In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType.",
-	// the default build in production, 1007 vs 1547 B gz, the form as written
-	loginSize:
-		"On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 1.01 kB gzipped against 1.55 kB.",
+	// the default build in production against Valibot on leaderboard.json's
+	// login form row, the size chart's two bars: 1026 vs 1564 B gz at 20710020e
+	loginSize: whileSmallerThanValibot(
+		`On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: ${loginKb("ArkType")} kB gzipped against ${loginKb("Valibot")} kB.`
+	),
 	// moltar strict, dynamic, 2.2.9 to now at 20710020e: assertStrict 3857-4013
 	// -> 348, parseStrict 3835-4199 -> 367 instructions over two runs of 3 reps
 	// (10.4x to 11.5x); by wall clock at f29b8d153 (H4), 0.074x
@@ -857,7 +859,7 @@ export const claims = {
 	// (esbuild 0.25.10 bundle + minify, esm, neutral, "production", gzip) at
 	// 20710020e: 89783 vs 2.2.9's 47797 B gz from npm (271466 vs 156116 min);
 	// 82983 at 5acd85130. sizeChart's dynamic bar, the login form at gzip
-	// level 9, is 89751
+	// level 9, is 89767
 	dynamicSize:
 		"Dynamic ArkType is 89.8 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.",
 	zodSpec: `faster than Zod 4 in ${zodScenarios} we ran`,
@@ -888,7 +890,7 @@ export const claims = {
 			"Fast. Small. Quick to start. Pick 3."
 		:	led.map(category => wording[category].phrase).join(" "),
 	// what the board's superlatives average
-	boardNote: `${rankedBy}, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote} ${namingNote}`,
+	boardNote: `${rankedBy}: ${independentResults}. ${ruleNote} ${buildNote} ${namingNote}`,
 	// startup.ts's apps, each library measured on it, from leaderboard.json's
 	// startup rows and their paired rounds; pending unless every app beats
 	// every library
@@ -935,16 +937,11 @@ export const claims = {
 	// the blog post's answer to "pick 2", a line per category
 	speedAverage: averagesOf("speed"),
 	startupAverage: averagesOf("startup"),
-	// the independent startup rows time creating a schema, which ArkType's
-	// default build skips; the full board adds our cold starts of whole apps
-	startupBasis: `${startupIsCreation ? `Each of the ${leaderboards.startup.rows} independent startup results times creating a schema, which a precompiled build does when it builds. ` : ""}Our own startup benchmarks time importing an app through its first validation (${fullLeaderboards.startup.rows - leaderboards.startup.rows} results), and with them ArkType is ${ordinal(placeOf("startup", fullLeaderboards).place)} for startup.`,
+	// the public startup results time creating a schema, which ArkType's
+	// default build skips; our own time cold starts of whole apps, which
+	// "Quickest to start" needs as well (startsFirst)
+	startupBasis: `${startupIsCreation ? `Each of the ${unitBoards.startup.rows.length} independent startup results times creating a schema, which a precompiled build does when it builds. ` : ""}Our own startup benchmarks time importing an app through its first validation (${ownStartupResults} results).`,
 	sizeAverage: averagesOf("size"),
-	// ArkType 1.163 to Typia's 1.256 at 20710020e, Typia on 2 of the 3
-	// suites; at 2c1a6a86e's rows 1.176, at 624a5d716's ArkType led by 1.3%,
-	// and at 808927feb's Typia had it,
-	// 1.256 to 1.297. The blog states it right after sizeAverage, which has
-	// the averages and the margin, so this adds only the results themselves
-	sizeClose: `Size is the close one: the default build ships the least on ${sizeFirsts ? `${sizeFirsts} of the ${sizeRanks.length}` : `none of the ${sizeRanks.length}`} size results${sizeFirsts < sizeRanks.length ? `, placing ${sizePlacesText()}` : ""}, and ${sizeRivalName} ships less than it on ${sizeResultsBeating(sizeRival.library)}.`,
 	// the "smallest" preset for schema-heavy frontends, where the default
 	// build's lead at form scale (sizeAverage) doesn't carry: gzip bytes from
 	// lib/bench/presetScale.json, naming the scales it wins on every row and how
@@ -957,7 +954,7 @@ export const claims = {
 	unionListing:
 		"The first union in a bundle that lists what its branches expected ships about 0.5 kB gzipped to write it, and a bundle with none ships nothing for it.",
 	// which benchmarks are ours, and that the averages leave them out
-	benchmarkOwners: `Every benchmark is public. We wrote ${ownedPerCategory} on the full board; the averages above leave those out.${writtenSuites ? ` They keep ${writtenSuites}, Valibot's code, which we wrote in each library and size with our own script.` : ""}`,
+	benchmarkOwners: `Every benchmark is public. We wrote ${ownedPerCategory}; the averages above leave those out.${writtenSuites ? ` They keep ${writtenSuites}, Valibot's code, which we wrote in each library and size with our own script.` : ""}`,
 	// the claims that depend on a single benchmark, and which
 	leaveOneOut: leadsWithoutEach(),
 	// the rest from lib/bench/buildTime.json, measured as buildTimeOf says
@@ -986,19 +983,15 @@ export const headlineMethod = {
 }
 
 const assertLeads = (category: CategoryId, by: string) => {
-	if (!isFirst(fullLeaderboards[category], "ArkType")) {
-		throw new Error(
-			`${by} claims ArkType is best on ${category}, but with our own benchmarks counted its average is more than ${tieMargin} above the best: ${JSON.stringify(fullLeaderboards[category].standings.slice(0, 5))}`
-		)
-	}
 	if (category === "startup" && !startsFirst) {
 		throw new Error(
 			`${by} claims ArkType starts first, but our startup benchmark has a library it didn't start every app before: ${JSON.stringify(startupWins)}`
 		)
 	}
 	if (!leads(category)) {
+		const { standings, rows } = unitBoards[category]
 		throw new Error(
-			`${by} claims ArkType is best on ${category}, but ${leaderboards[category].standings[0].library} has the best average, and ArkType's is more than ${tieMargin} above it: ${JSON.stringify(leaderboards[category].standings.slice(0, 5))}`
+			`${by} claims ArkType is best on ${category}, but it doesn't have the lowest geometric mean, shared with no one, over the ${rows.length} results its graph averages: ${JSON.stringify(standings.slice(0, 5))}`
 		)
 	}
 }
@@ -1072,15 +1065,15 @@ type CategoryBase = {
 	label: string
 	/** the options ArkType's numbers were built with */
 	build: string
-	/** "1st" wherever ArkType counts as first */
+	/** ArkType's place on the category's graph: "1st" */
 	place: string
 	ranked: number
 	standing: string
+	/** whether ArkType is first outright */
 	leads: boolean
-	ties: boolean
-	/** ArkType's best average, the next best's or the leader's, and the best named library's */
-	average: { score: number; other: Standing; named: Standing }
-	/** how far ArkType's average is below the next best's, where it leads: "15.0%" */
+	/** ArkType's geometric mean, the next best's or the leader's, and the best named library's */
+	average: { value: number; other: UnitStanding; named: UnitStanding }
+	/** how far ArkType's mean is below the next best's, where it leads: "15.0%" */
 	by: string
 	source: BenchmarkChart["source"]
 }
@@ -1102,11 +1095,11 @@ export type SpreadCategory = CategoryBase & {
 	versus: { name: string; versus: LibraryVersus }[]
 }
 
-/** a category drawn as its best averages, ArkType's among them */
+/** a category drawn as its geometric means, ArkType's among them */
 export type StandingCategory = CategoryBase & {
 	id: "size"
 	/** the named leaders, at least five and through one past ArkType */
-	standings: Standing[]
+	standings: UnitStanding[]
 	/** whether a library the site doesn't name ranks among them */
 	omits: boolean
 }
@@ -1129,7 +1122,7 @@ const onBoard = (chart: BenchmarkChart, runnerUp: string) => {
 }
 
 /** the size card's named leaders, at least five and through one past ArkType */
-const sizeStandings = leaderboards.size.standings.filter(s =>
+const sizeStandings = unitBoards.size.standings.filter(s =>
 	isWellKnown(s.library)
 )
 const shownSize = sizeStandings.slice(
@@ -1170,8 +1163,7 @@ export const categories: Category[] = [
 		...standingOf("size"),
 		standings: shownSize,
 		omits:
-			leaderboards.size.standings.indexOf(shownSize.at(-1)!) >=
-			shownSize.length,
+			unitBoards.size.standings.indexOf(shownSize.at(-1)!) >= shownSize.length,
 		source: headlineMethod
 	}
 ]
@@ -1184,83 +1176,6 @@ if (!isPending(claims.pickThree) && !oneBuild) {
 	throw new Error(
 		`The hero claims one build leads every category, but the board's categories come from ${list([...new Set(categories.map(c => c.build))])}`
 	)
-}
-
-export type PickThreeRow = {
-	library: string
-	/** null where it isn't ranked */
-	cells: Record<CategoryId, { score: number; first: boolean } | null>
-}
-
-const rowOf = (library: string): PickThreeRow => ({
-	library,
-	cells: Object.fromEntries(
-		boardOrder.map(category => {
-			const board = leaderboards[category]
-			const standing = board.standings.find(s => s.library === library)
-			return [
-				category,
-				standing ?
-					{ score: standing.score, first: isFirst(board, library) }
-				:	null
-			]
-		})
-	) as PickThreeRow["cells"]
-})
-
-/** every ranked library first in all three categories */
-const firstInAll = [
-	...new Set(
-		boardOrder.flatMap(c => leaderboards[c].standings.map(s => s.library))
-	)
-].filter(library =>
-	boardOrder.every(category => isFirst(leaderboards[category], library))
-)
-
-/**
- * The homepage's Pick 3 table: ArkType, every named library first in a
- * category or best of the others named in one, then Valibot and Zod, the two
- * that wrote Standard Schema with it
- */
-export const pickThreeTable: {
-	title: Claim<string>
-	shown: string
-	/** beside the startup column, what its rows time */
-	startupNote: string
-	categories: { id: CategoryId; label: string }[]
-	rows: PickThreeRow[]
-} = {
-	title:
-		leadsEvery && firstInAll.length === 1 ?
-			"Only ArkType is first in all three."
-		:	{ pending: "Only ArkType is first in all three." },
-	shown: `Libraries with ${wellKnownRule} shown, every library counted.`,
-	// the startup rows time creating a schema (startupBasis), so the column
-	// is the general advantage of building ahead of time, not like for like
-	startupNote:
-		startupIsCreation ?
-			"Startup counts creating a schema: done at build by precompiled validators, at load by the rest."
-		:	"",
-	categories: boardOrder.map(category => ({
-		id: category,
-		label: wording[category].measures
-	})),
-	rows: [
-		...new Set([
-			"ArkType",
-			...boardOrder.flatMap(category => {
-				const board = leaderboards[category]
-				return [
-					...board.standings.filter(s => isFirst(board, s.library)),
-					averageOf(category).named
-				]
-					.map(s => s.library)
-					.filter(isWellKnown)
-			}),
-			"Valibot",
-			"Zod"
-		])
-	].map(rowOf)
 }
 
 const escapeRegex = (text: string) =>
@@ -1290,21 +1205,15 @@ export const assertNamesWellKnown = (copy: string, by: string) => {
 
 for (const [id, claim] of Object.entries(claims))
 	assertNamesWellKnown(draftOf<string>(claim), id)
-assertNamesWellKnown(draftOf(pickThreeTable.title), "pickThreeTable")
 
-// the names the board and the Pick 3 table show
-for (const library of [
-	...categories.flatMap(category => [
-		category.average.named.library,
-		...(category.id === "speed" ? category.versus.map(v => v.name)
-		: category.id === "startup" ?
-			category.bars
-				.filter(bar => bar.kind !== "precompiled")
-				.map(bar => bar.name)
-		:	category.standings.map(s => s.library))
-	]),
-	...pickThreeTable.rows.map(row => row.library)
-]) {
+// the names the board shows
+for (const library of categories.flatMap(category => [
+	category.average.named.library,
+	...(category.id === "speed" ? category.versus.map(v => v.name)
+	: category.id === "startup" ?
+		category.bars.filter(bar => bar.kind !== "precompiled").map(bar => bar.name)
+	:	category.standings.map(s => s.library))
+])) {
 	if (!isWellKnown(library)) {
 		throw new Error(
 			`The homepage names ${library}, which has under ${wellKnownDownloads} npm downloads a week`

@@ -1,25 +1,40 @@
 import Link from "next/link"
 import { Fragment, type CSSProperties } from "react"
-import { wellKnownRule } from "../../lib/bench/leaderboard.ts"
-import { pickThreeTable, tieMargin } from "../../lib/claims.ts"
+import { standingsAsOf } from "../../lib/claims.ts"
 import {
 	boardGraphs,
 	methodHref,
-	multiple,
 	type BoardBar,
 	type BoardGraph
 } from "./boardFacts.ts"
 
-/**
- * How many multiples of the best result a graph's axis spans. Every graph
- * shares it, so a bar is the same length for the same average in all three,
- * and ArkType sits at the 1× line in each. An average past it is drawn to
- * the end of the track and cut: its number, printed beside it, is its
- * length, and the bar doesn't pretend to be.
- */
-const axis = 4
+/** lib/claims.ts's date line as the footer's other notes are written: "standings as of November 6, 2026" */
+const asOf = standingsAsOf.text
+	.replace(/\.$/, "")
+	.replace(/^./, first => first.toLowerCase())
 
-const ticks = Array.from({ length: axis }, (_, i) => i + 1)
+type GapProps = {
+	bar: BoardBar
+}
+
+/** the libraries that place between two lanes: said, not drawn */
+const Gap = ({ bar }: GapProps) => {
+	const { wide, narrow } = bar.gap
+	if (!wide && !narrow) return null
+	return (
+		<li
+			className={
+				bar.wide ? "graph-gap is-wide"
+				: wide ?
+					"graph-gap"
+				:	"graph-gap is-narrow"
+			}
+		>
+			<span className="gap-wide">{wide}</span>
+			<span className="gap-narrow">{narrow}</span> more between
+		</li>
+	)
+}
 
 type LaneProps = {
 	bar: BoardBar
@@ -27,81 +42,61 @@ type LaneProps = {
 	row: number
 }
 
-const Lane = ({ bar, row }: LaneProps) => {
-	const cut = bar.score > axis
-	return (
-		<li
-			className={`graph-lane is-${bar.kind}${cut ? " is-cut" : ""}${bar.wide ? " is-wide" : ""}`}
-			style={
-				{
-					"--w": Math.min(bar.score, axis) / axis,
-					"--row": row
-				} as CSSProperties
-			}
-		>
-			<span className="graph-place">{bar.place}</span>
-			<span className="graph-name">{bar.library}</span>
-			<span className="graph-val">
-				{multiple(bar.score)}
-				{cut && <span className="vh">, past the end of the axis</span>}
-			</span>
-			<span className="graph-track" aria-hidden>
-				<span className="graph-bar" />
-			</span>
-		</li>
-	)
-}
+const Lane = ({ bar, row }: LaneProps) => (
+	<li
+		className={`graph-lane is-${bar.kind}${bar.cut ? " is-cut" : ""}${bar.wide ? " is-wide" : ""}`}
+		style={{ "--w": bar.w, "--row": row } as CSSProperties}
+	>
+		<span className="graph-place">{bar.place}</span>
+		<span className="graph-name">{bar.library}</span>
+		<span className="graph-val">
+			{bar.beside && <span className="graph-beside">{bar.beside}</span>}
+			{bar.text}
+			{bar.cut && <span className="vh">, past the end of the axis</span>}
+		</span>
+		<span className="graph-track" aria-hidden>
+			<span className="graph-bar" />
+		</span>
+		{bar.sub && <span className="graph-sub">{bar.sub}</span>}
+	</li>
+)
 
 type GraphProps = {
 	graph: BoardGraph
 }
 
 const Graph = ({ graph }: GraphProps) => (
-	<div className="graph">
+	<div className="graph" style={{ "--mark": graph.mark } as CSSProperties}>
 		<h4>{graph.title}</h4>
-		<p className="graph-of">
-			{graph.results} results · {graph.ranked} libraries ranked
-		</p>
+		<p className="graph-of">{graph.caption}</p>
 		<ol>
 			{graph.bars.map((bar, row) => (
 				<Fragment key={bar.library}>
-					{
-						// between the last rival drawn and Zod: said, not drawn
-						bar.kind === "incumbent" && graph.skipped.narrow > 0 && (
-							<li
-								className={
-									graph.skipped.wide ? "graph-gap" : "graph-gap is-narrow"
-								}
-							>
-								<span className="gap-wide">{graph.skipped.wide}</span>
-								<span className="gap-narrow">{graph.skipped.narrow}</span> more
-								between
-							</li>
-						)
-					}
+					<Gap bar={bar} />
 					<Lane bar={bar} row={row} />
 				</Fragment>
 			))}
 		</ol>
 		<div className="graph-axis" aria-hidden>
-			{ticks.map(tick => (
-				<span key={tick} style={{ "--x": tick / axis } as CSSProperties}>
-					{tick}×
+			{graph.ticks.map(tick => (
+				<span key={tick.at} style={{ "--x": tick.at } as CSSProperties}>
+					{tick.label}
 				</span>
 			))}
 		</div>
-		{graph.id === "startup" && pickThreeTable.startupNote && (
-			<p className="graph-note">{pickThreeTable.startupNote}</p>
-		)}
+		<p className="graph-badge">
+			<span className="graph-badge-place">{graph.badge.place}</span>
+			<span>{graph.badge.text}</span>
+		</p>
 	</div>
 )
 
 /**
- * The board: a graph a category, ArkType first in each. Under it in every
- * graph are the best of the other libraries the site names and, wherever it
- * places, Zod, since that is the library most readers are deciding against.
- * The bars are averages from lib/bench/leaderboard.ts on one axis; the
- * table of the same numbers is the drill-down beside it.
+ * The board: a graph a category, each in the unit its results were measured
+ * in. The results are other projects' benchmarks, the bars and places
+ * lib/bench/units.ts's, and under each graph is ArkType's place across every
+ * result of its category. The same numbers as a table are the drill-down
+ * beside it, and how each was measured is a link away.
  */
 export const BoardGraphs = () => (
 	<figure
@@ -112,7 +107,7 @@ export const BoardGraphs = () => (
 		aria-labelledby="board-title"
 	>
 		<figcaption className="graphs-head">
-			Average multiple of the best result. Shorter is better.
+			Other projects' benchmarks, in the units they measure. Shorter is better.
 		</figcaption>
 		<div className="graphs-row">
 			{boardGraphs().map(graph => (
@@ -120,13 +115,15 @@ export const BoardGraphs = () => (
 			))}
 		</div>
 		<p className="graphs-foot">
-			<span>1st: the best average, or within {tieMargin} of it</span>
 			<span>
-				<span className="graph-cut-key" aria-hidden /> past {axis}×: the bar is
+				<span className="graph-cut-key" aria-hidden /> past the axis: the bar is
 				cut, the number is exact
 			</span>
-			<span>libraries with {wellKnownRule} drawn, every library ranked</span>
-			<Link href={methodHref}>how we measured →</Link>
+			<span>ArkType precompiled, default build, in all three</span>
+			<span className="graphs-method">
+				<time dateTime={standingsAsOf.date}>{asOf}</time>
+				<Link href={methodHref}>how we measured →</Link>
+			</span>
 		</p>
 	</figure>
 )

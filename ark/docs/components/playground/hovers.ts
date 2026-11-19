@@ -51,7 +51,7 @@ const getHoverRange = (
 
 export const setupHoverProvider = (
 	monaco: typeof Monaco,
-	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker
+	tsLanguageService: Monaco.typescript.TypeScriptWorker
 ): void => {
 	monaco.languages.registerHoverProvider("typescript", {
 		provideHover: async (model, position) => {
