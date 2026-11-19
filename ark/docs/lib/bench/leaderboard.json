@@ -2,20 +2,23 @@
 	"measured": "2026-11-06",
 	"runs": {
 		"form": {
-			"commit": "20710020e",
+			"commit": "ba691ac56",
 			"date": "2026-11-06"
 		},
 		"sb": {
-			"commit": "20710020e",
+			"commit": "ba691ac56",
 			"date": "2026-11-06"
 		},
 		"sury": {
-			"commit": "20710020e",
+			"commit": "ba691ac56",
 			"date": "2026-11-06"
 		}
 	},
 	"sources": {
-		"arkType": ["results/arktype-20710020e.json"],
+		"arkType": [
+			"results/arktype-20710020e.json",
+			"results/arktype-ba691ac56.json"
+		],
 		"counts": [
 			"results/counts-a306152ce.json",
 			"results/counts-latest-2026-10-24.json"
@@ -752,7 +755,7 @@
 				{
 					"id": "login form",
 					"results": {
-						"ArkType": 1026,
+						"ArkType": 917,
 						"Valibot": 1564,
 						"Zod": 25076,
 						"Zod Mini": 5124,
@@ -768,12 +771,12 @@
 				}
 			],
 			"builds": {
-				"dynamic": 89767,
-				"smallest": 996
+				"dynamic": 97987,
+				"smallest": 878
 			},
 			"measured": {
 				"rivals": "2026-11-06",
-				"arkType": "20710020e"
+				"arkType": "ba691ac56"
 			}
 		},
 		{
@@ -781,7 +784,7 @@
 			"id": "homepageSize",
 			"label": "the homepage's apps",
 			"unit": "B gzipped",
-			"source": "benchData.json size, ArkType's from results/arktype-20710020e.json",
+			"source": "benchData.json size, ArkType's from results/arktype-ba691ac56.json",
 			"rows": [
 				{
 					"id": "login",
@@ -793,7 +796,7 @@
 						"Typia": 1235,
 						"ajv": 626,
 						"TypeBox": 41859,
-						"ArkType": 1517
+						"ArkType": 1140
 					}
 				},
 				{
@@ -806,7 +809,7 @@
 						"Typia": 1229,
 						"ajv": 757,
 						"TypeBox": 41880,
-						"ArkType": 1595
+						"ArkType": 1188
 					}
 				},
 				{
@@ -819,14 +822,14 @@
 						"Typia": 16714,
 						"ajv": 8838,
 						"TypeBox": 42902,
-						"ArkType": 5692
+						"ArkType": 5074
 					}
 				},
 				{
 					"id": "saas",
 					"results": {
 						"Valibot": 5173,
-						"ArkType": 10519
+						"ArkType": 9592
 					}
 				}
 			]
@@ -1614,7 +1617,7 @@
 						"Superstruct": 1935,
 						"@remix-run/data-schema": 1923,
 						"Typia": 1846,
-						"ArkType": 1771,
+						"ArkType": 1547,
 						"Valibot": 2058,
 						"decoders": 3506,
 						"io-ts": 3617,
@@ -1638,7 +1641,7 @@
 			],
 			"measured": {
 				"rivals": "2026-11-06",
-				"arkType": "20710020e"
+				"arkType": "ba691ac56"
 			}
 		},
 		{
@@ -1665,7 +1668,7 @@
 			],
 			"measured": {
 				"rivals": "2026-11-06",
-				"arkType": "20710020e"
+				"arkType": "ba691ac56"
 			}
 		}
 	]

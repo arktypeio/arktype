@@ -1,0 +1,45 @@
+{
+	"measured": "aot-default-size ba691ac56: ArkType's size rows alone, by pnpm benchSize (the homepage's apps: esbuild-minified production bundle of each, bytes and gzip, as benchData.json's size says); rivals' rows are benchData.json's",
+	"homepageSize": {
+		"login": {
+			"standalone": {
+				"min": 2333,
+				"gzip": 1140
+			},
+			"standaloneSmallest": {
+				"min": 1934,
+				"gzip": 998
+			}
+		},
+		"moltar": {
+			"standalone": {
+				"min": 3003,
+				"gzip": 1188
+			},
+			"standaloneSmallest": {
+				"min": 2212,
+				"gzip": 1132
+			}
+		},
+		"shop": {
+			"standalone": {
+				"min": 20764,
+				"gzip": 5074
+			},
+			"standaloneSmallest": {
+				"min": 7774,
+				"gzip": 3420
+			}
+		},
+		"saas": {
+			"standalone": {
+				"min": 46937,
+				"gzip": 9592
+			},
+			"standaloneSmallest": {
+				"min": 13448,
+				"gzip": 5318
+			}
+		}
+	}
+}

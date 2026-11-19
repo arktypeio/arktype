@@ -23,7 +23,11 @@ const docs = join(here, "..", "..", "..", "docs")
 // each library's latest release on 2026-10-24, and each arm keeps the faster
 // run (README, "Versions")
 const committed = {
-	arkType: ["results/arktype-20710020e.json"],
+	arkType: [
+		"results/arktype-20710020e.json",
+		// the homepage's apps alone
+		"results/arktype-ba691ac56.json"
+	],
 	counts: [
 		"results/counts-a306152ce.json",
 		"results/counts-latest-2026-10-24.json"
