@@ -21,7 +21,6 @@ import {
 	type SuiteRow
 } from "../../docs/lib/bench/leaderboard.ts"
 import {
-	pooledOrder,
 	sharedRows,
 	sourcesOf,
 	standingsOver,
@@ -116,11 +115,7 @@ for (const board of Object.values(unitBoards)) {
 				[
 					{
 						title: "fresh",
-						standings: unitBoardOver(
-							board.id,
-							freshRowsOf(board.id),
-							pooledOrder(board.id)
-						).standings
+						standings: unitBoardOver(board.id, freshRowsOf(board.id)).standings
 					}
 				]
 			:	[])

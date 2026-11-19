@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports -- the docs aren't a
    package with entrypoints, so tests import their modules directly */
 import { attest, contextualize } from "@ark/attest"
-import type { ResultRow } from "../leaderboard.ts"
+import type { ResultRow, SuiteRow } from "../leaderboard.ts"
 import {
+	firstDependsOn,
+	isFirstOutright,
 	placeAmong,
 	sharedRows,
 	standingsOver,
@@ -97,5 +99,42 @@ contextualize(() => {
 	it("has nothing to average where too few libraries share a row", () => {
 		attest(widestShared(pooled, ["ours", "zod"], ["x", "y", "z"], 3)).equals([])
 		attest(standingsOver([])).equals([])
+	})
+
+	it("is first outright only with a mean no other library shares", () => {
+		const tied = standingsOver([row("a", { x: 2, y: 2, z: 3 })])
+		attest(isFirstOutright(tied, "x")).equals(false)
+		attest(isFirstOutright(tied, "z")).equals(false)
+		const alone = standingsOver([row("a", { x: 2, y: 2.01, z: 3 })])
+		attest(isFirstOutright(alone, "x")).equals(true)
+	})
+
+	const of = (suite: string, results: Record<string, number>): SuiteRow => ({
+		...row(suite, results),
+		suite
+	})
+
+	// a graph needs ArkType, Zod and three more libraries the site names
+	const rivals = { Zod: 9, Valibot: 5, ajv: 6 }
+
+	it("names each benchmark a first place doesn't survive without", () => {
+		const rows = [
+			of("wide lead", { ArkType: 1, Typia: 4, ...rivals }),
+			of("behind", { ArkType: 3, Typia: 2, ...rivals }),
+			of("two libraries", { ArkType: 1, Zod: 2 })
+		]
+		// first over both of the rows five libraries ran, 1.73 to 2.83
+		attest(isFirstOutright(standingsOver(rows.slice(0, 2)), "ArkType")).equals(
+			true
+		)
+		attest(firstDependsOn(rows, "ArkType")).equals(["wide lead"])
+	})
+
+	it("depends on a benchmark whose absence leaves no graph", () => {
+		const rows = [
+			of("five libraries", { ArkType: 1, Typia: 4, ...rivals }),
+			of("two libraries", { ArkType: 1, Zod: 2 })
+		]
+		attest(firstDependsOn(rows, "ArkType")).equals(["five libraries"])
 	})
 })

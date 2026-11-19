@@ -15,10 +15,10 @@
  *    site names, and Zod.
  *
  * Which results are averaged depends only on who ran what, never on what
- * they scored. Places are computed here, so nothing on the board is first
- * unless these results say so. The pooled standings over every result, as
- * ratios to each result's best, are still leaderboard.ts's, and the board
- * states ArkType's place on them beside each graph.
+ * they scored. Places are plain order, computed here, so nothing on the site
+ * is first unless these results say so: the headline's superlatives
+ * (lib/claims.ts), the board and the Benchmarks page all read
+ * {@link unitBoards}.
  *
  * Beside each lane is the same library on our own benchmark, in a unit most
  * readers think in (ns, ms). Those are {@link ownFigures}: additional data,
@@ -28,7 +28,6 @@ import {
 	geomean,
 	independentRowsOf,
 	isWellKnown,
-	leaderboards,
 	rowsOfSuite,
 	type CategoryId,
 	type ResultRow,
@@ -162,6 +161,18 @@ export const incumbent = "Zod"
  */
 const incumbentVariants = ["Zod (compiled)", "Zod Mini", "Zod 3"]
 
+/**
+ * whether `library` has the lowest mean among `standings`, shared with no
+ * one: what a superlative needs, in plain order
+ */
+export const isFirstOutright = (
+	standings: readonly UnitStanding[],
+	library: string
+) => {
+	const first = standings.filter(standing => standing.place === 1)
+	return first.length === 1 && first[0].library === library
+}
+
 /** the lanes a graph has beside ArkType's and Zod's */
 export const rivalsDrawn = 3
 
@@ -183,47 +194,59 @@ export type UnitBoard = {
 	lanes: string[]
 	/** a mean as the board prints it */
 	format: (value: number) => string
+	/** a mean as a sentence states it: "664 CPU instructions per validation" */
+	quantity: (value: number) => string
 	/** a point on the graph's axis; the last one names the unit */
 	tick: (value: number, last: boolean) => string
 }
 
-type UnitWording = Pick<UnitBoard, "unit" | "format" | "tick">
+type UnitWording = Pick<UnitBoard, "unit" | "format" | "quantity" | "tick">
 
 const wording = {
 	speed: {
 		unit: "CPU instructions per validation",
 		format: unitText.instructions,
+		quantity: count =>
+			`${unitText.instructions(count)} CPU instructions per validation`,
 		tick: unitText.instructions
 	},
 	// both of the public startup results time creating a schema
 	startup: {
 		unit: "CPU instructions to create a schema",
 		format: unitText.instructions,
+		quantity: count =>
+			`${unitText.instructions(count)} CPU instructions to create a schema`,
 		tick: unitText.instructions
 	},
 	size: {
 		unit: "kB gzipped",
 		format: unitText.kB,
+		quantity: bytes => `${unitText.kB(bytes)} gzipped`,
 		tick: (bytes, last) => (last ? `${bytes / 1000} kB` : `${bytes / 1000}`)
 	}
 } satisfies Record<CategoryId, UnitWording>
 
 /**
- * A graph over `rows`, by the rule above. `candidates` are the libraries
- * that may take a rival's lane, in the order that settles a tie between two
- * sets of results as large as each other.
+ * The results a graph over `rows` averages: the largest set that ArkType,
+ * Zod and {@link rivalsDrawn} more named libraries all ran. Should two sets
+ * be as large and as many libraries have run each in full, the libraries'
+ * names in alphabetical order settle it, so no score ever does. Empty if
+ * `rows` has no such set.
  */
-export const unitBoardOver = (
-	id: CategoryId,
-	rows: readonly SuiteRow[],
-	candidates: readonly string[]
-): UnitBoard => {
-	const shared = widestShared(
+export const averagedRows = <row extends ResultRow>(rows: readonly row[]) =>
+	widestShared(
 		rows,
 		["ArkType", incumbent],
-		candidates.filter(isRival),
+		librariesOf(rows).filter(isRival).sort(),
 		rivalsDrawn
 	)
+
+/** A graph over `rows`, by the rule above. */
+export const unitBoardOver = (
+	id: CategoryId,
+	rows: readonly SuiteRow[]
+): UnitBoard => {
+	const shared = averagedRows(rows)
 	if (!shared.length) {
 		throw new Error(
 			`No ${id} result has ArkType, ${incumbent} and ${rivalsDrawn} more named libraries on it`
@@ -250,12 +273,7 @@ export const unitBoardOver = (
 	}
 }
 
-/** the libraries the pooled board ranks in a category, best first */
-export const pooledOrder = (id: CategoryId) =>
-	leaderboards[id].standings.map(standing => standing.library)
-
-const boardOf = (id: CategoryId) =>
-	unitBoardOver(id, independentRowsOf(id), pooledOrder(id))
+const boardOf = (id: CategoryId) => unitBoardOver(id, independentRowsOf(id))
 
 /** the board's three graphs */
 export const unitBoards = {
@@ -270,6 +288,23 @@ export type UnitSource = {
 	/** how many of the graph's results are its */
 	results: number
 }
+
+/**
+ * The benchmarks among `rows` without which `library` wouldn't be first
+ * outright: each one whose results, left out, leave a graph it isn't first
+ * on, or no five libraries sharing a result to draw one from.
+ */
+export const firstDependsOn = (
+	rows: readonly SuiteRow[],
+	library: string
+): string[] =>
+	[...new Set(rows.map(row => row.suite))].filter(
+		label =>
+			!isFirstOutright(
+				standingsOver(averagedRows(rows.filter(row => row.suite !== label))),
+				library
+			)
+	)
 
 /** the benchmarks a graph's results are from, in the order they appear */
 export const sourcesOf = ({ rows }: UnitBoard): UnitSource[] =>
