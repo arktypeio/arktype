@@ -4,6 +4,7 @@ import {
 	bracketsKeys,
 	callsSiteText,
 	listsUnions,
+	namesTraversalError,
 	readsErrors,
 	readsSummary,
 	reportsIndices,
@@ -262,8 +263,18 @@ const Issues: new () => Issues = (
 				return summary
 			}
 
+			// an instance of TraversalError only where a program names the
+			// class, so can test for one: otherwise an Error it can't tell
+			// from one, with the same name, message and errors, and no class
+			// in its bundle. Its name is assigned and its errors defined as
+			// the class's are, in statements, which gzip to less than one
+			// expression building it and which a build writing the flag as
+			// a literal folds as well
 			throw(): never {
-				throw new ThrownIssues(this as never)
+				if (namesTraversalError) throw new ThrownIssues(this as never)
+				const thrown = Error(this.summary)
+				thrown.name = "TraversalError"
+				throw Object.defineProperty(thrown, "arkErrors", { value: this })
 			}
 
 			toJSON(): readonly unknown[] {
@@ -512,7 +523,7 @@ interface ThrownIssues extends Error {
 }
 
 const ThrownIssues: new (errors: Issues) => ThrownIssues = (
-	readsErrors ?
+	readsErrors && namesTraversalError ?
 		class TraversalError extends Error {
 			declare readonly name: "TraversalError"
 			declare arkErrors: Issues

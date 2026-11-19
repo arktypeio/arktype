@@ -364,6 +364,7 @@ export interface IssueFeatures {
 	readsSummary: boolean
 	readsErrors: boolean
 	holdsExpression: boolean
+	namesTraversalError: boolean
 }
 
 export const noIssueFeatures: IssueFeatures = {
@@ -380,7 +381,8 @@ export const noIssueFeatures: IssueFeatures = {
 	discriminatesBooleans: false,
 	readsSummary: false,
 	readsErrors: false,
-	holdsExpression: false
+	holdsExpression: false,
+	namesTraversalError: false
 }
 
 export interface StandaloneModules {

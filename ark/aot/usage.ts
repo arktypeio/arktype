@@ -17,7 +17,8 @@ import type { Site } from "./sites.ts"
 
 // a member, "call" where it may return errors no one reads, "piped" where a
 // call may pass a second argument, "summary" where a call's errors have theirs
-// read, or "errors" where they may be read in any other way
+// read, "errors" where they may be read in any other way, or "thrown" where
+// code may name TraversalError, the class of what an assert throws
 export type UsedMember =
 	| "assert"
 	| "~standard"
@@ -28,6 +29,7 @@ export type UsedMember =
 	| "piped"
 	| "summary"
 	| "errors"
+	| "thrown"
 
 const usedMembersByName: Record<string, UsedMember | null> =
 	Object.setPrototypeOf(
@@ -153,8 +155,10 @@ class UsageAnalysis {
 			if (
 				(edge.kind === "whole" || edge.kind === "star") &&
 				isArkSpecifier(specifier)
-			)
+			) {
 				this.used.add("errors")
+				this.used.add("thrown")
+			}
 			const id = this.program.resolve(specifier, module.id)
 			if (id === undefined) return
 			const edges = this.edgesByTarget.get(id)
@@ -309,6 +313,8 @@ class UsageAnalysis {
 		const key = `${id}\0${as}`
 		if (seen.has(key)) return
 		seen.add(key)
+		// whoever reads it
+		if (name === "TraversalError") this.used.add("thrown")
 		// code outside the bundle may read it
 		if (this.program.entries.has(id) || this.program.exposed.has(id))
 			this.used.add("errors")
@@ -345,6 +351,9 @@ class UsageAnalysis {
 	): void {
 		if (name !== "type" && name !== "ArkErrors") {
 			this.used.add("errors")
+			// the class itself, or a default or namespace it's read off
+			if (name === undefined || name === "TraversalError")
+				this.used.add("thrown")
 			return
 		}
 		for (const { id } of binding.references) {

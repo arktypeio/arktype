@@ -12,6 +12,7 @@ import {
 	bracketsKeys,
 	callsSiteText,
 	listsUnions,
+	namesTraversalError,
 	readsErrors,
 	readsSummary,
 	reportsIndices,
@@ -117,8 +118,12 @@ const Issues: new () => Issues = (
 				return this._.map(lineOf).join("\n")
 			}
 
+			// as issues.ts's, an instance of TraversalError only where a program names it
 			throw(): never {
-				throw new ThrownIssues(this as never)
+				if (namesTraversalError) throw new ThrownIssues(this as never)
+				const thrown = Error(this.summary)
+				thrown.name = "TraversalError"
+				throw Object.defineProperty(thrown, "arkErrors", { value: this })
 			}
 
 			toJSON(): readonly unknown[] {
@@ -324,7 +329,7 @@ interface ThrownIssues extends Error {
 }
 
 const ThrownIssues: new (errors: Issues) => ThrownIssues = (
-	readsErrors ?
+	readsErrors && namesTraversalError ?
 		class TraversalError extends Error {
 			declare readonly name: "TraversalError"
 			declare arkErrors: Issues

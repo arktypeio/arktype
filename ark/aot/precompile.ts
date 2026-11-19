@@ -1000,6 +1000,7 @@ export class Precompiler {
 		issues.readsSummary ||= issues.readsErrors || isRead("summary")
 		issues.rewritesUnions ||=
 			issues.readsErrors || issues.traversesUnions || isRead("~standard")
+		issues.namesTraversalError ||= isRead("thrown")
 		return issues
 	}
 
@@ -8663,7 +8664,8 @@ const anyIssues: IssueFeatures = {
 	discriminatesBooleans: true,
 	readsSummary: true,
 	readsErrors: true,
-	holdsExpression: true
+	holdsExpression: true,
+	namesTraversalError: true
 }
 
 // a Type whose members a module importing it can bake, as it holds no value

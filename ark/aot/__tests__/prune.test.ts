@@ -698,8 +698,8 @@ export const Fields = { even: Even, name: type("string") }
 					`import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n`
 				)
 			).snap({
-				bracketsKeys: false,
 				reportsIndices: false,
+				bracketsKeys: false,
 				writesText: false,
 				callsSiteText: false,
 				listsUnions: false,
@@ -711,15 +711,16 @@ export const Fields = { even: Even, name: type("string") }
 				discriminatesBooleans: false,
 				readsSummary: true,
 				readsErrors: true,
-				holdsExpression: false
+				holdsExpression: false,
+				namesTraversalError: true
 			})
 			attest(
 				await issuesOf(
 					`import { type } from "arktype"\n\nexport const Tagged = type({ tags: "string[]" })\n`
 				)
 			).snap({
-				bracketsKeys: false,
 				reportsIndices: true,
+				bracketsKeys: false,
 				writesText: false,
 				callsSiteText: false,
 				listsUnions: false,
@@ -731,7 +732,8 @@ export const Fields = { even: Even, name: type("string") }
 				discriminatesBooleans: false,
 				readsSummary: true,
 				readsErrors: true,
-				holdsExpression: false
+				holdsExpression: false,
+				namesTraversalError: true
 			})
 		})
 
@@ -741,8 +743,8 @@ export const Fields = { even: Even, name: type("string") }
 					`import { type } from "arktype"\n\nconst Keep = () => true\n\nexport const Either = type({ a: "string" }).or({ b: "number" }).narrow(Keep).pipe(data => data)\n`
 				)
 			).snap({
-				bracketsKeys: true,
 				reportsIndices: true,
+				bracketsKeys: true,
 				writesText: true,
 				callsSiteText: false,
 				listsUnions: true,
@@ -754,7 +756,8 @@ export const Fields = { even: Even, name: type("string") }
 				discriminatesBooleans: false,
 				readsSummary: true,
 				readsErrors: true,
-				holdsExpression: false
+				holdsExpression: false,
+				namesTraversalError: true
 			})
 		})
 
@@ -825,8 +828,8 @@ export const Fields = { even: Even, name: type("string") }
 					`import { type } from "arktype"\n\nexport const Strict = type({ name: "string" }).onUndeclaredKey("reject")\n`
 				)
 			).snap({
-				bracketsKeys: true,
 				reportsIndices: false,
+				bracketsKeys: true,
 				writesText: false,
 				callsSiteText: false,
 				listsUnions: false,
@@ -838,7 +841,8 @@ export const Fields = { even: Even, name: type("string") }
 				discriminatesBooleans: false,
 				readsSummary: true,
 				readsErrors: true,
-				holdsExpression: false
+				holdsExpression: false,
+				namesTraversalError: true
 			})
 		})
 
@@ -880,6 +884,36 @@ export const Fields = { even: Even, name: type("string") }
 			// written where it's read, so the validator holds none
 			attest(await holdsExpression("User.expression")).equals(false)
 			attest(await holdsExpression("User({})")).equals(false)
+		})
+
+		it("TraversalError's class only where a program may name it, to test what an assert threw", async () => {
+			const namesTraversalError = async (imports: string, read: string) => {
+				const issues = await issuesOf(
+					`${imports}\n\nconst User = type({ name: "string" })\n\ntry {\n\tUser.assert({})\n} catch (e) {\n\tconsole.log(${read})\n}\n`
+				)
+				return (
+					typeof issues === "object" &&
+					!Array.isArray(issues) &&
+					issues.namesTraversalError
+				)
+			}
+			const named = `import { type } from "arktype"`
+			attest(await namesTraversalError(named, "(e as Error).message")).equals(
+				false
+			)
+			attest(
+				await namesTraversalError(
+					`import { type, TraversalError } from "arktype"`,
+					"e instanceof TraversalError"
+				)
+			).equals(true)
+			// exported again, for code the build doesn't follow to name
+			attest(
+				await namesTraversalError(
+					`import { type } from "arktype"\nexport { TraversalError as Thrown } from "arktype"`,
+					"(e as Error).message"
+				)
+			).equals(true)
 		})
 
 		describe("written into the runtime modules that read them", () => {
@@ -1735,6 +1769,47 @@ for (const data of [{ name: 5 }, flipping]) {
 					"._d="
 				)
 			).equals(true)
+		})
+
+		it("throws an Error only a program naming TraversalError holds the class of", async () => {
+			const thrownBy = (imports: string, test: string) =>
+				bundle(
+					{ preset: undefined },
+					{
+						stdin: {
+							contents: `import { User } from "./types.ts"
+${imports}
+try {
+	User.assert({ name: 5 })
+} catch (e) {
+	const thrown = e as Error & { arkErrors: { count: number } }
+	console.log(
+		String(thrown),
+		thrown.arkErrors.count,
+		Object.keys(thrown),
+		thrown instanceof Error,
+		${test}
+	)
+}
+`,
+							resolveDir: root,
+							loader: "ts"
+						}
+					}
+				)
+			const unnamed = await thrownBy("", "thrown.name")
+			const named = await thrownBy(
+				`import { TraversalError } from "arktype"`,
+				"thrown instanceof TraversalError"
+			)
+			attest(run(unnamed))
+				.snap(`TraversalError: name must be a string 1 [ 'name' ] true TraversalError
+`)
+			attest(run(named))
+				.snap(`TraversalError: name must be a string 1 [ 'name' ] true true
+`)
+			attest(unnamed.includes("extends Error")).equals(false)
+			attest(named.includes("extends Error")).equals(true)
 		})
 
 		it("returns what a narrow finds valid once asked again, as arktype does", async () => {

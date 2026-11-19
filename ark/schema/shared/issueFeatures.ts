@@ -42,3 +42,6 @@ export const readsErrors: boolean = true
 
 /** a validator holding its expression, which printing one reads: no issue's, but found by a build and written as they are */
 export const holdsExpression: boolean = true
+
+/** TraversalError named by a program, which may test what an assert threw against it: no issue's, but found by a build and written as they are */
+export const namesTraversalError: boolean = true

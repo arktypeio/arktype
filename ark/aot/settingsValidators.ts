@@ -32,6 +32,7 @@ var transformsBranches = true
 var failsInBranches = true
 var readsSummary = true
 var readsErrors = true
+var namesTraversalError = true
 
 // ark/schema/shared/issues.ts
 var ReadIssues = class {
@@ -94,8 +95,18 @@ var Issues =
 				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
 				return summary
 			}
+			// an instance of TraversalError only where a program names the
+			// class, so can test for one: otherwise an Error it can't tell
+			// from one, with the same name, message and errors, and no class
+			// in its bundle. Its name is assigned and its errors defined as
+			// the class's are, in statements, which gzip to less than one
+			// expression building it and which a build writing the flag as
+			// a literal folds as well
 			throw() {
-				throw new ThrownIssues(this)
+				if (namesTraversalError) throw new ThrownIssues(this)
+				const thrown = Error(this.summary)
+				thrown.name = "TraversalError"
+				throw Object.defineProperty(thrown, "arkErrors", { value: this })
 			}
 			toJSON() {
 				return this.issues
@@ -170,7 +181,7 @@ var messageOf = issue =>
 	: issue.code === "required" ? "is missing"
 	: "is invalid"
 var ThrownIssues =
-	readsErrors ?
+	readsErrors && namesTraversalError ?
 		class TraversalError extends Error {
 			constructor(errors) {
 				super(errors.summary)
