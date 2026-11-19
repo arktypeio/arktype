@@ -1499,7 +1499,7 @@ while (remaining > 0) {
 	console.error(
 		`seed ${seed} run ${result.numRuns}: counterexample\n${sourceOfApp(result.counterexample![0])}\n${result.counterexample![0].readers.map(describeReader).join("\n")}`
 	)
-	if (result.error) console.error(result.errorInstance ?? result.error)
+	if (result.errorInstance !== null) console.error(result.errorInstance)
 	remaining -= result.numRuns
 	seed++
 }

@@ -3,7 +3,8 @@ import { create, type Font } from "fontkit"
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { decompress } from "wawoff2"
-import { leaderboards, type CategoryId } from "./bench/leaderboard.ts"
+import type { CategoryId } from "./bench/leaderboard.ts"
+import { unitBoards } from "./bench/units.ts"
 import {
 	assertNamesWellKnown,
 	assertStandings,
@@ -297,9 +298,9 @@ const homeCard = () => {
 	const cardHeight = 150
 	const cardTop = height - padY - cardHeight
 	const cards = (Object.keys(categoryLabels) as CategoryId[]).map((id, i) => {
-		const { standings } = leaderboards[id]
-		const place = standings.findIndex(s => s.library === "ArkType") + 1
-		if (!place) throw new Error(`ArkType isn't ranked for ${id}`)
+		// its place on the board's graph, among every library the graph ranks
+		const { standings } = unitBoards[id]
+		const { place } = standings.find(s => s.library === "ArkType")!
 		const x = padX + i * (cardWidth + gap)
 		const label = block(
 			[[categoryLabels[id], styles.label]],

@@ -1,12 +1,8 @@
 /**
- * Each category's best average across the public benchmarks in
- * leaderboard.json, by the rule in ark/repo/bench/external/README.md's "Best
- * average": a row's results as ratios to its best, a library's suite score
- * the geometric mean over the suite's rows it's on, its category score the
- * geometric mean over its suite scores. It counts a suite only with at least
- * half that suite's rows, and is ranked only with at least half the
- * category's suites. The headline's standings average the independent
- * suites; the full board, every suite, is published beside them.
+ * The published results of every benchmark the site reads
+ * (leaderboard.json): each suite's rows, who wrote it, when it last ran and
+ * which libraries the site may name. The site ranks by lib/bench/units.ts's
+ * rule over the independent suites' rows; nothing here scores a library.
  */
 import data from "./leaderboard.json" with { type: "json" }
 
@@ -19,41 +15,38 @@ type Suite = {
 	rows: { id: string; results: Record<string, number> }[]
 	/** startup.ts's rounds, each running every arm in turn, and by app, in how many ArkType ran fewer instructions than each library */
 	paired?: { rounds: number; wins: Record<string, Record<string, number>> }
+	/** the login form's bytes for ArkType's builds that no row ranks */
+	builds?: FormBuilds
+	/** when its published results were measured, if they're read from result files */
+	measured?: SuiteMeasured
+}
+
+export type SuiteMeasured = {
+	/** the day the other libraries' newest results were measured, as YYYY-MM-DD */
+	rivals: string
+	/** the commit ArkType's rows were measured at */
+	arkType: string
+}
+
+export type FormBuilds = {
+	/** `type()` with no build step */
+	dynamic: number
+	/** precompiled with the "smallest" preset */
+	smallest: number
 }
 
 const suites = data.suites as Suite[]
 
-export type Standing = {
-	library: string
-	/** geometric mean of its suite scores: 1 is best on every row */
-	score: number
-	suites: number
-}
-
 export type Leaderboard = {
 	category: CategoryId
+	/** its benchmarks, by label */
 	suites: string[]
-	/** rows across its suites */
+	/** results across them */
 	rows: number
-	standings: Standing[]
 }
 
-const geomean = (values: readonly number[]) =>
+export const geomean = (values: readonly number[]) =>
 	Math.exp(values.reduce((sum, v) => sum + Math.log(v), 0) / values.length)
-
-const suiteScores = (suite: Suite) => {
-	const ratios: Record<string, number[]> = {}
-	for (const { results } of suite.rows) {
-		const best = Math.min(...Object.values(results))
-		for (const [library, value] of Object.entries(results))
-			(ratios[library] ??= []).push(value / best)
-	}
-	return Object.fromEntries(
-		Object.entries(ratios)
-			.filter(([, r]) => r.length * 2 >= suite.rows.length)
-			.map(([library, r]) => [library, geomean(r)])
-	)
-}
 
 /** the suites we wrote, by id */
 const ownSuites = ["homepage", "startup", "homepageStartup", "homepageSize"]
@@ -92,26 +85,13 @@ const independentSuites = (suite: Suite) => !ownSuites.includes(suite.id)
 
 const leaderboardOf = (
 	category: CategoryId,
-	counts: (suite: Suite) => boolean,
-	without?: string
+	counts: (suite: Suite) => boolean
 ): Leaderboard => {
-	const counted = suites.filter(
-		s => s.category === category && counts(s) && s.label !== without
-	)
-	const scored = counted.map(suiteScores)
-	const libraries = new Set(scored.flatMap(Object.keys))
-	const standings = [...libraries]
-		.map(library => {
-			const scores = scored.flatMap(s => (library in s ? [s[library]] : []))
-			return { library, score: geomean(scores), suites: scores.length }
-		})
-		.filter(s => s.suites * 2 >= counted.length)
-		.sort((l, r) => l.score - r.score)
+	const counted = suites.filter(s => s.category === category && counts(s))
 	return {
 		category,
 		suites: counted.map(s => s.label),
-		rows: counted.reduce((sum, s) => sum + s.rows.length, 0),
-		standings
+		rows: counted.reduce((sum, s) => sum + s.rows.length, 0)
 	}
 }
 
@@ -125,16 +105,55 @@ const leaderboardsOf = (counts: (suite: Suite) => boolean) =>
 /** when the published rows were last measured, as YYYY-MM-DD */
 export const measured: string = data.measured
 
-/** the standings the headline and the board state, over independent suites */
-export const leaderboards = leaderboardsOf(independentSuites)
-
-/** every suite, ours included, published beside the headline's standings */
+/** every public benchmark of a category, ours included, and how many results they have between them */
 export const fullLeaderboards = leaderboardsOf(() => true)
 
 /** a suite's row: each library's result, in the suite's unit */
 export const resultsOf = (suiteId: string, rowId: string) =>
 	suites.find(s => s.id === suiteId)!.rows.find(row => row.id === rowId)!
 		.results
+
+export type ResultRow = { id: string; results: Record<string, number> }
+
+/** every row of a suite, by the suite's id */
+export const rowsOfSuite = (suiteId: string): ResultRow[] => {
+	const suite = suites.find(s => s.id === suiteId)
+	if (!suite) throw new Error(`No leaderboard suite has the id ${suiteId}`)
+	return suite.rows
+}
+
+export type SuiteRow = ResultRow & {
+	/** the suite it is a row of, by label: "schemabenchmarks.dev" */
+	suite: string
+}
+
+/** every row of a category's independent suites, each with its suite's label */
+export const independentRowsOf = (category: CategoryId): SuiteRow[] =>
+	suites
+		.filter(s => s.category === category && independentSuites(s))
+		.flatMap(s => s.rows.map(row => ({ ...row, suite: s.label })))
+
+/** valibot.dev's login form as ArkType's other builds bundle it, gzipped */
+export const formBuilds: FormBuilds = (() => {
+	const builds = suites.find(s => s.id === "form")?.builds
+	if (!builds) {
+		throw new Error(
+			"leaderboard.json's form suite has no builds: rerun ark/repo/bench/external/leaderboard.ts"
+		)
+	}
+	return builds
+})()
+
+/** when a suite's published results were measured, by the suite's label */
+export const measuredOf = (label: string): SuiteMeasured => {
+	const measured = suites.find(s => s.label === label)?.measured
+	if (!measured) {
+		throw new Error(
+			`leaderboard.json doesn't say when ${label} was measured: rerun ark/repo/bench/external/leaderboard.ts`
+		)
+	}
+	return measured
+}
 
 /** startup.ts's paired rounds, if its results recorded them */
 export const startupPaired = suites.find(s => s.id === "startup")?.paired
@@ -149,40 +168,6 @@ export const pairedP = (wins: number, rounds: number) => {
 	}
 	return Math.min(1, (2 * tail) / 2 ** rounds)
 }
-
-/** each row's results across a category's independent suites */
-export const rowsOf = (category: CategoryId) =>
-	suites
-		.filter(s => s.category === category && independentSuites(s))
-		.flatMap(s => s.rows.map(row => row.results))
-
-/**
- * How far above a category's best average a library's may be and still count
- * as first, in every category alike: one release can move a result by about
- * this much
- */
-export const tieBand = 0.05
-
-/** whether a library counts as first on a board: the best average, or one within tieBand of it */
-export const isFirst = ({ standings }: Leaderboard, library: string) => {
-	const standing = standings.find(s => s.library === library)
-	return !!standing && standing.score <= standings[0].score * (1 + tieBand)
-}
-
-/** whether ArkType counts as first in a category */
-export const leads = (category: CategoryId) =>
-	isFirst(leaderboards[category], "ArkType")
-
-/** whether ArkType is first by the band, another library having the best average */
-export const ties = (category: CategoryId) =>
-	leads(category) && leaderboards[category].standings[0].library !== "ArkType"
-
-/** the suites without which ArkType wouldn't count as first in a category */
-export const leadDependsOn = (category: CategoryId) =>
-	leaderboards[category].suites.filter(
-		label =>
-			!isFirst(leaderboardOf(category, independentSuites, label), "ArkType")
-	)
 
 /** the weekly npm downloads a library needs for the site to name it: Typia, the least-downloaded validator most readers know, has 211k, and the most-downloaded niche one, pure-parse, 45k */
 export const wellKnownDownloads = 100_000

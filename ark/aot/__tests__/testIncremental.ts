@@ -604,7 +604,7 @@ console.log(
 	`${result.numRuns} apps, ${edits} edits from seed ${seed} in ${Math.round((Date.now() - started) / 1000)}s`
 )
 if (result.failed) {
-	if (!failed) console.error(result.errorInstance ?? result.error)
+	if (!failed) console.error(result.errorInstance)
 	console.error(
 		`replay with ARK_INCREMENTAL=1:${seed}:${result.counterexamplePath}`
 	)

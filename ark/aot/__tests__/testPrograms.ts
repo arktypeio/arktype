@@ -2234,7 +2234,7 @@ contextualize(() => {
 					)
 				).equals([])
 			}),
-			{ numRuns: runs, seed, ...(path && { path }), errorWithCause: true }
+			{ numRuns: runs, seed, ...(path && { path }) }
 		)
 		if (process.env.ARK_PRECOMPILE_PROGRAMS) console.log(counts)
 		attest(counts.precompiledSites > counts.sites / 2).equals(true)

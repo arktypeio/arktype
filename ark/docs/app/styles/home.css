@@ -1012,7 +1012,7 @@
 		}
 	}
 
-	/* Pick 3: each library's best averages, a mark where it counts as first */
+	/* the board as a table: each library's mean and place, a mark where it is first */
 	.p3 {
 		max-width: 880px;
 		margin: 40px 0 0;
@@ -1099,8 +1099,12 @@
 			height: 11px;
 		}
 	}
-	.p3-none {
+	.p3-none,
+	.p3-place {
 		color: var(--ink-3);
+	}
+	.p3-place {
+		font-size: 12.5px;
 	}
 	.p3-foot {
 		display: flex;

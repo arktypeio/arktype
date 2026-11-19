@@ -9,14 +9,24 @@ import { RuntimeBenchmarksGraph } from "../RuntimeBenchmarksGraph.tsx"
 import { SyntaxTab, SyntaxTabs } from "../SyntaxTabs.tsx"
 import { ApiMember, ApiMembers } from "./ApiMembers.tsx"
 import { BenchmarkChart } from "./BenchmarkChart.tsx"
-import { JitComparison } from "./Benchmarks.tsx"
+import {
+	BoardCaption,
+	BoardLeftOut,
+	BoardResults,
+	BoardRuns,
+	BoardStandings,
+	JitComparison,
+	OwnResults,
+	OwnSpeed
+} from "./Benchmarks.tsx"
 import { Callout } from "./Callout.tsx"
 import {
 	Claim,
 	ClaimCharts,
 	Headline,
 	HeadlineNote,
-	PresetSizeTable
+	PresetSizeTable,
+	StandingsAsOf
 } from "./Claim.tsx"
 import { Pre } from "./CodeFrame.tsx"
 import { Heading } from "./Heading.tsx"
@@ -49,11 +59,20 @@ export const mdxComponents: MDXComponents = {
 	ApiMembers,
 	// every scenario of the speed benchmark, with its method
 	BenchmarkChart,
+	// the homepage board's graphs as tables, the results under them, the
+	// public results a graph leaves out and when each benchmark was measured
+	BoardCaption,
+	BoardLeftOut,
+	BoardResults,
+	BoardRuns,
+	BoardStandings,
 	Callout,
 	Claim,
 	ClaimCharts,
 	Headline,
 	HeadlineNote,
+	// the day the board's published results were last measured
+	StandingsAsOf,
 	CodeBlock,
 	InstallationTabs,
 	JitComparison,
@@ -63,6 +82,9 @@ export const mdxComponents: MDXComponents = {
 	LivePrecompile: Compile,
 	// the demo itself is small; the playground behind it loads only when opened
 	MainAutoplayDemo,
+	// our own benchmark beside the board's
+	OwnResults,
+	OwnSpeed,
 	PresetSizeTable,
 	// the 2.0 post's chart
 	RuntimeBenchmarksGraph,

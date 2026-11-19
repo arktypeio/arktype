@@ -8,7 +8,10 @@
 // fresh file in place of its committed one, and standings.ts prints it.
 // With --newest, each rival is at its newest release instead, the form's
 // included, and the run is kept in results/newest/, where leaderboard.ts reads
-// it beside the committed results to rewrite the published leaderboard.
+// it beside the committed results to rewrite the published leaderboard. A
+// rival with a build step moves with the packages it builds on (newest.ts),
+// and where a suite can't build its newest release it's measured at the last
+// one the suite built, which run.json records as held.
 // `size` runs only what measures bundles: the form and the download and
 // bundle rows of schemabenchmarks.dev and Sury, which need no perf.
 // After `pnpm build`, with git, perf and taskset; NODE24 and NODE26 name Node
@@ -27,6 +30,15 @@ import {
 	writeFileSync
 } from "node:fs"
 import { dirname, join } from "node:path"
+import {
+	holdsFor,
+	ownerOf,
+	packageOf,
+	specsFor,
+	highestOf,
+	toolchains,
+	type Held
+} from "./newest.ts"
 
 const here = import.meta.dirname
 const repo = join(here, "..", "..", "..", "..")
@@ -57,7 +69,13 @@ const releases = {
 		"valibot@1.5.0",
 		"zod@4.6.7"
 	],
-	sb: ["ata-validator@1.60.0", "typia@15.2.1"],
+	// ttsc and its unplugin are the suite's catalog pins, which typia builds on
+	sb: [
+		"ata-validator@1.60.0",
+		"typia@15.2.1",
+		"ttsc@0.34.1",
+		"@ttsc/unplugin@0.34.1"
+	],
 	sury: ["zod@4.6.7", "valibot@1.5.0"],
 	ata: ["ata-validator@1.60.0", "typia@15.2.1", "zod@4.6.7", "ttsc@0.34.1"],
 	// forms/package.json's, zod and typia from ark/repo's, and the ttsc that
@@ -73,22 +91,74 @@ const releases = {
 	]
 }
 
-const packageOf = (release: string) => release.replace(/(.)@.*$/, "$1")
+type Suite = keyof typeof releases
+
+type RunRecord = {
+	commit: string
+	date: string
+	installed: Record<string, string>
+	held?: Record<string, Held>
+}
 
 // where each suite this run updated installed its rivals
-const installs: Partial<Record<keyof typeof releases, string>> = {}
+const installs: Partial<Record<Suite, string>> = {}
+
+// the rivals each suite couldn't build at their newest releases
+const held: Partial<Record<Suite, Record<string, Held>>> = {}
+
+const runPath = join(here, "results", "newest", "run.json")
+
+// what each suite's last --newest run installed, which built
+const lastRuns: Partial<Record<Suite, RunRecord>> =
+	existsSync(runPath) ? JSON.parse(readFileSync(runPath, "utf8")) : {}
+
+// what npm's registry says of a package: undefined where it has no such field
+const npmView = (spec: string, field: string) => {
+	const { status, stdout } = spawnSync("npm", ["view", spec, field, "--json"], {
+		encoding: "utf8"
+	})
+	if (status !== 0)
+		throw new Error(`npm view ${spec} ${field} exited ${status}`)
+	return stdout.trim() ? JSON.parse(stdout) : undefined
+}
+
+// the version of each toolchain package a suite installs beside a rival's
+// newest release: the highest the release's peer or dev requirement allows,
+// and for one it doesn't name, the version of the one it does, as ttsc's
+// unplugin is published with ttsc
+const toolsOf = (suite: Suite) => {
+	const tools: Record<string, string> = {}
+	for (const name of releases[suite].map(packageOf)) {
+		const rival = ownerOf(name, releases[suite])
+		if (!rival || held[suite]?.[rival]) continue
+		const range =
+			npmView(`${rival}@latest`, "peerDependencies")?.[name] ??
+			npmView(`${rival}@latest`, "devDependencies")?.[name]
+		const named = toolchains[rival].map(tool => tools[tool]).find(Boolean)
+		tools[name] =
+			range ? highestOf(npmView(`${name}@${range}`, "version"))
+			: named && npmView(`${name}@${named}`, "version") ? named
+			: highestOf(npmView(name, "versions"))
+	}
+	return tools
+}
 
 // a suite's rivals to install into dir: with --newest, each at its newest
-// release
-const releasesOf = (suite: keyof typeof releases, dir: string) => {
+// release, or the release it's held at
+const releasesOf = (suite: Suite, dir: string) => {
 	installs[suite] = dir
-	return releases[suite].map(release =>
-		newest ? `${packageOf(release)}@latest` : release
-	)
+	return newest ?
+			specsFor({
+				releases: releases[suite],
+				tools: toolsOf(suite),
+				held: held[suite] ?? {},
+				last: lastRuns[suite]?.installed ?? {}
+			})
+		:	[...releases[suite]]
 }
 
 // the version of each rival a suite installed
-const installedIn = (suite: keyof typeof releases, dir: string) =>
+const installedIn = (suite: Suite, dir: string) =>
 	Object.fromEntries(
 		releases[suite].map(release => {
 			const name = packageOf(release)
@@ -272,7 +342,16 @@ const sb = () => {
 			env: { PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1" }
 		})
 	pnpm(dir, "install", "--frozen-lockfile")
-	if (latest) pnpm(schemas, "add", ...releasesOf("sb", schemas))
+	if (latest) {
+		const specs = releasesOf("sb", schemas)
+		const isTool = (spec: string) => !!ownerOf(packageOf(spec), releases.sb)
+		// the 2026-10-24 run left typia's toolchain at the suite's catalog
+		pnpm(schemas, "add", ...specs.filter(spec => newest || !isTool(spec)))
+		// the download test builds typia's entry from bench, on bench's own
+		// ttsc and unplugin
+		const tools = specs.filter(isTool)
+		if (newest && tools.length) pnpm(join(dir, "bench"), "add", ...tools)
+	}
 	// the arktype entries resolve this checkout's arktype
 	rmSync(join(schemas, "node_modules/arktype"), {
 		recursive: true,
@@ -460,11 +539,58 @@ const suites = {
 	...(!latest && { startup })
 }
 
+const failureOf = (suite: () => void) => {
+	try {
+		suite()
+	} catch (e) {
+		console.error(e)
+		return e
+	}
+}
+
+// runs a suite. With --newest, one that fails with a rival that has a build
+// step is run again, since ttsc's first Go build of typia's plugin can fail,
+// then once more with each such rival held at the last release the suite
+// built. It throws if that fails too, or if no rival is left to hold
+const runSuite = (name: keyof typeof suites) => {
+	const suite = suites[name]!
+	const builds =
+		newest &&
+		name !== "startup" &&
+		releases[name].some(release => packageOf(release) in toolchains)
+	if (!builds) return suite()
+	let failure = failureOf(suite)
+	if (!failure) return
+	console.log(`\n${name} failed: running it again`)
+	failure = failureOf(suite)
+	if (!failure) return
+	const holds = holdsFor({
+		releases: releases[name],
+		last: lastRuns[name]?.installed ?? {},
+		latest: Object.fromEntries(
+			Object.keys(toolchains).map(rival => [
+				rival,
+				npmView(`${rival}@latest`, "version")
+			])
+		)
+	})
+	if (!Object.keys(holds).length) throw failure
+	for (const [rival, { newest, kept }] of Object.entries(holds)) {
+		console.log(
+			`\n${name} failed twice: running it with ${rival} at ${kept}, the last release it built, in place of ${newest}`
+		)
+	}
+	held[name] = holds
+	suite()
+}
+
 const started = Date.now()
 mkdirSync(fresh, { recursive: true })
-if (target === "all") for (const suite of Object.values(suites)) suite()
-else if (sizeOnly) for (const suite of [form, sb, sury]) suite()
-else if (target in suites) suites[target as keyof typeof suites]!()
+if (target === "all")
+	for (const name of Object.keys(suites)) runSuite(name as keyof typeof suites)
+else if (sizeOnly)
+	for (const name of ["form", "sb", "sury"] as const) runSuite(name)
+else if (target in suites) runSuite(target as keyof typeof suites)
 else {
 	throw new Error(
 		`Unknown suite ${target}: one of ${Object.keys(suites)}, size, all`
@@ -489,14 +615,13 @@ if (newest) {
 		encoding: "utf8"
 	}).stdout.trim()
 	const date = new Date().toISOString().slice(0, 10)
-	const runPath = join(kept, "run.json")
-	const runs =
-		existsSync(runPath) ? JSON.parse(readFileSync(runPath, "utf8")) : {}
-	for (const [suite, dir] of Object.entries(installs)) {
+	const runs: Partial<Record<Suite, RunRecord>> = { ...lastRuns }
+	for (const [suite, dir] of Object.entries(installs) as [Suite, string][]) {
 		runs[suite] = {
 			commit,
 			date,
-			installed: installedIn(suite as keyof typeof releases, dir)
+			installed: installedIn(suite, dir),
+			...(held[suite] && { held: held[suite] })
 		}
 	}
 	writeFileSync(runPath, `${JSON.stringify(runs, null, "\t")}\n`)
