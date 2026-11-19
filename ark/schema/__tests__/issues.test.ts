@@ -8,10 +8,11 @@ import {
 import { ArkErrors as LeanErrors } from "@ark/schema/internal/shared/issuesLean.ts"
 import {
 	ArkErrors,
-	customIssue,
+	codedIssue,
 	FirstIssues,
 	InternalTraversal,
 	mergeIssues,
+	sharedMessageOf,
 	type CompactApply,
 	type FailureSite
 } from "@ark/schema/runtime"
@@ -186,18 +187,13 @@ a[0].b must be a string
 	it("keeps a supplied message when merging, set apart from its path", () => {
 		const inner = new ArkErrors()
 		user({}, inner)
-		inner._.push(
-			customIssue(
-				{
-					code: "predicate",
-					path: [],
-					data: 1,
-					expected: undefined,
-					message: "supplied"
-				},
-				1
-			)
-		)
+		inner._.push({
+			code: "predicate",
+			path: [],
+			data: 1,
+			expected: undefined,
+			message: "supplied"
+		})
 		// read before it's merged
 		attest(inner.summary).snap(`name is missing
 supplied`)
@@ -211,27 +207,55 @@ owner: supplied`)
 		])
 	})
 
-	it("writes a site's message by how it was configured", () => {
-		const errors = new ArkErrors()
-		const at = (c?: 1 | 2) =>
-			errors._at(
-				{ code: "domain", description: "a string", x: "said", c },
-				{
-					k: 1
-				},
-				"k"
-			)
-		at()
-		at(1)
-		at(2)
-		attest(errors.summary).snap(`k said
-k: said
-k: said`)
-		attest(errors.issues.map(issue => issue.message)).equals([
-			"said",
-			"said",
-			"said"
-		])
+	it("sets a site's message apart from its path unless it begins as what's written from what it expects", () => {
+		const messages = [
+			// a sentence of its own
+			"Enter a name.",
+			// configured as the text arktype writes, which reads on from its path
+			"must be a string",
+			// and with more after it, as what the value was
+			"must be a string (was 1)",
+			// what's expected alone isn't how arktype's begins
+			"a string"
+		]
+		for (const Errors of [ArkErrors, LeanErrors]) {
+			const errors = new Errors()
+			for (const x of messages) {
+				errors._at(
+					{ code: "domain", description: "a string", x },
+					{ k: 1 },
+					"k"
+				)
+			}
+			attest(errors.summary).equals(`k: Enter a name.
+k must be a string
+k must be a string (was 1)
+k: a string`)
+			// each is its issue's message as it was configured
+			attest(errors.issues.map(issue => issue.message)).equals(messages)
+		}
+	})
+
+	it("shares a sentence each issue says unless one's is its code's, which a copy stays", () => {
+		const said = (x: string, text?: FailureSite["text"]) => {
+			const errors = new ArkErrors()
+			errors._at({ code: "domain", description: "a string", x, text }, 1)
+			return errors
+		}
+		const own = said("Same")._[0]
+		const coded = said("Same", codedIssue)._[0]
+		attest(sharedMessageOf([own, own])).equals("Same")
+		attest(sharedMessageOf([own, coded])).equals(undefined)
+		// noted where an issue's readers don't see it
+		attest(coded).equals(own)
+		const moved = new ArkErrors()
+		mergeIssues(moved, said("Same", codedIssue), ["k"])
+		attest(sharedMessageOf(moved._)).equals(undefined)
+		mergeIssues(moved, said("Same"), ["k"])
+		attest(sharedMessageOf(moved._.slice(1))).equals("Same")
+		// one that begins as what's written from what it expects is listed
+		const written = said("must be a string")._[0]
+		attest(sharedMessageOf([written, written])).equals(undefined)
 	})
 
 	it("merges validator issues into arktype errors", () => {

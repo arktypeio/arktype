@@ -69,10 +69,7 @@ var ReadIssues = class {
 			expected: context.description,
 			message: context.x
 		}
-		if (writesText) {
-			customIssue(issue, context.c)
-			context.text?.(issue)
-		}
+		if (writesText) context.text?.(issue)
 		if (key !== void 0) path.pop()
 		this._.push(issue)
 		return void 0
@@ -128,22 +125,17 @@ var mergeIssues = (errors, merged, prefix) => {
 		)
 	}
 }
-var customIssue = (issue, c) =>
-	writesText && c !== issue._c ?
-		Object.defineProperty(issue, "_c", { value: c, configurable: true })
-	:	issue
-var customOf = issue => (writesText ? issue._c : void 0)
+var codedIssue = issue => Object.defineProperty(issue, "_c", { value: 2 })
+var notedAs = (issue, copy) =>
+	listsUnions && writesText && issue._c ? codedIssue(copy) : copy
 var movedIssue = (issue, path) =>
-	customIssue(
-		{
-			code: issue.code,
-			path,
-			data: issue.data,
-			expected: issue.expected,
-			message: issue.message
-		},
-		customOf(issue)
-	)
+	notedAs(issue, {
+		code: issue.code,
+		path,
+		data: issue.data,
+		expected: issue.expected,
+		message: issue.message
+	})
 var pathOf = issue => {
 	let path = ""
 	for (const k of issue.path) {
@@ -160,8 +152,11 @@ var lineOf = issue => {
 	const path = pathOf(issue)
 	return (
 		listsUnions && issue._l !== void 0 ? issue._l
-		: path ? path + (writesText && issue._c ? ": " : " ") + message
-		: message
+		: path ?
+			path +
+			(writesText && !message.startsWith(messageOf(issue)) ? ": " : " ") +
+			message
+		:	message
 	)
 }
 var messageOf = issue =>
@@ -326,8 +321,8 @@ var intersection = (
 	return checker
 }
 var optional = (checker, ...value) => wrapping(checker, { o: 1, d: value })
-var missingSiteOf = ({ description, x, c }) => ({
-	m: { code: "required", description, x, c: x === void 0 ? x : c }
+var missingSiteOf = checker => ({
+	m: { ...checker, code: "required" }
 })
 var failsValue = (ctx, checker, data, k, value) =>
 	ctx?._at ?

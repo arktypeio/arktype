@@ -7,7 +7,7 @@ import type {
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	ArkErrors,
-	customIssue,
+	codedIssue,
 	describeActual,
 	enInfo,
 	errorsOf,
@@ -30,7 +30,6 @@ import {
 	type ArkErrorInput,
 	type ArkIssue,
 	type CompactApply,
-	type Custom,
 	type UnionIssueOf,
 	type FailHandler,
 	type FailureContext,
@@ -78,6 +77,7 @@ export {
 	ArkErrors,
 	arrayIndexMatcher,
 	callMorph,
+	codedIssue,
 	computeDefaultValueMorph,
 	configure,
 	configuredFallbackOf,
@@ -627,22 +627,27 @@ export const type: { errors: typeof ArkErrors } = /* @__PURE__ */ freeze({
 export const canParseUrl = ((s: string): boolean =>
 	URL.canParse(s)) satisfies Fn
 
-// a site whose message is configured as a sentence, set apart from its path:
-// for its Type, or as c says, 2 for its code
-export const customSiteOf = ((
+// a site whose message is configured for its code rather than its Type, which
+// its issue notes, as a union lists errors saying one where it would say a
+// message each error's Type shares
+export const codeSiteOf = ((
 	code: ArkErrorCode,
 	description: string | undefined,
-	message: string,
-	c: Custom = 1
-): SiteContext => ({ code, description, x: message, c })) satisfies Fn
+	message: string
+): SiteContext => ({
+	code,
+	description,
+	x: message,
+	text: codedIssue
+})) satisfies Fn
 
 type Writer = string | Fn | undefined
 
 const defineProperty = /* @__PURE__ */ (() => Object.defineProperty)()
 
 // written once first read; keeps is 1 if the issue takes expected, 4 if its
-// actual describes its data, which a default message leaves out, and 2 or 8
-// if its message is configured for its Type or for its code
+// actual describes its data, which a default message leaves out, and 2 if its
+// message is configured for its code
 const writeIssue = (
 	issue: ArkIssue,
 	context: Record<string, unknown>,
@@ -651,17 +656,10 @@ const writeIssue = (
 ): void => {
 	const text: Record<string, unknown> = {
 		expected: issue.expected,
-		// one supplied where it's raised, which is noted there
+		// one supplied where it's raised, which is its own
 		message: context.message
 	}
-	if (text.message === undefined) {
-		customIssue(
-			issue,
-			keeps & 2 ? 1
-			: keeps & 8 ? 2
-			: undefined
-		)
-	}
+	if (keeps & 2 && text.message === undefined) codedIssue(issue)
 	const writeText = () => {
 		const error: Record<string, unknown> = {
 			data: issue.data,
@@ -771,7 +769,7 @@ export const ownIssue = ((site: FailureSite): UnionIssueOf =>
 		// a message its errors share is its own, as arktype's union's is, unless
 		// one is configured for it
 		const shared = isCustomIssue(issue) ? undefined : sharedMessageOf(errors)
-		if (shared !== undefined) customIssue(issue, 1).message = shared
+		if (shared !== undefined) issue.message = shared
 		issue.errors = errors
 		return issue
 	}) satisfies Fn

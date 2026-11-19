@@ -78,15 +78,12 @@ export const lineOf = (issue: ArkIssue): string => {
 	return (at && at + " ") + (issue.message ?? "is invalid")
 }
 
-// no message is configured where none is written
-export const customIssue = <issue extends ArkIssue>(issue: issue): issue =>
-	issue
-
-export const customOf = (): undefined => undefined
-
+// no message is configured where none is written, so none is noted as its code's
 export const isCustomIssue = (): boolean => false
 
-export { customIssue as templatedIssue }
+export const codedIssue = <issue extends ArkIssue>(issue: issue): issue => issue
+
+export const notedAs = (issue: ArkIssue, copy: ArkIssue): ArkIssue => copy
 
 // what arktype's Apply reports into a piped ctx, replaced by the root issue
 const issueOf = (path: PropertyKey[]): ArkIssue => ({

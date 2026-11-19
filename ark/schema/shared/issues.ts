@@ -26,8 +26,8 @@ export interface ArkIssue {
 	errors?: readonly ArkIssue[]
 	/** @internal a union's line of a summary, naming its errors' paths whole */
 	readonly _l?: string | undefined
-	/** @internal how its message was configured, as SiteContext.c says */
-	readonly _c?: Custom | undefined
+	/** @internal 2 where its message is one configured for its code: see codedIssue */
+	readonly _c?: 2 | undefined
 	/** @internal a union's, its text written again at a path before its own */
 	_m?(prefix: array<PropertyKey>): ArkIssue
 }
@@ -38,16 +38,17 @@ type WrittenIssue = ArkIssue & { message: string }
 export interface SiteContext {
 	code: ArkErrorCode
 	description?: string | undefined
-	/** the message configured for the site, which names no path */
+	/**
+	 * the message configured for the site, which names no path. A summary sets
+	 * it apart from its path with a colon unless it begins as what's written
+	 * from what the site expects would: see isCustomIssue
+	 */
 	x?: string | undefined
 	/**
-	 * how x was configured, where a summary doesn't write it after its path as
-	 * what's expected: 1 as its Type's message and 2 as its code's, each a
-	 * sentence a colon sets apart
+	 * writes other text configured for the site onto its issue, or notes that
+	 * its message is its code's, as codedIssue does
 	 */
-	c?: Custom | undefined
-	/** writes other text configured for the site onto its issue */
-	text?: (issue: ArkIssue) => void
+	text?: ((issue: ArkIssue) => unknown) | undefined
 }
 
 /**
@@ -140,10 +141,7 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 			expected: context.description,
 			message: context.x
 		}
-		if (writesText) {
-			customIssue(issue, context.c)
-			context.text?.(issue)
-		}
+		if (writesText) context.text?.(issue)
 		if (key !== undefined) path.pop()
 		this._.push(issue)
 		// only errors stopping at the first issue stop at this one
@@ -302,10 +300,7 @@ export const issueAt = (
 		expected: context.description,
 		message: context.x
 	}
-	if (writesText) {
-		customIssue(issue, context.c)
-		context.text?.(issue)
-	}
+	if (writesText) context.text?.(issue)
 	return issue
 }
 
@@ -326,51 +321,50 @@ export const mergeIssues = (
 	}
 }
 
-/** @internal how a message was configured: see SiteContext.c */
-export type Custom = 1 | 2
-
 /**
- * @internal notes how an issue's message was configured, which a summary
- * writes it by. Defined on the issue so it isn't enumerable, as only what its
- * readers see is, and so another copy of this module reads it, as arktype's
- * does of a validator's bundled apart from it and of another copy's errors
+ * @internal whether an issue's message is a sentence configured or supplied
+ * for it, which a summary sets apart from its path with a colon, rather than
+ * what's written from what it expected, which follows its path. An issue holds
+ * nothing saying which: a message is a sentence of its own unless it begins as
+ * the one written from what the issue expects would, so one configured as that
+ * text, or as it with more after it, like what the value was, reads on from
+ * its path as that would. A union listing its errors wrote its own line
  */
-export const customIssue = <issue extends ArkIssue>(
-	issue: issue,
-	c: Custom | undefined
-): issue =>
-	writesText && c !== issue._c ?
-		Object.defineProperty(issue, "_c", { value: c, configurable: true })
-	:	issue
-
-/** @internal how an issue's message was configured, if it was */
-export const customOf = (issue: ArkIssue): Custom | undefined =>
-	writesText ? issue._c : undefined
-
-/**
- * @internal notes that a message supplied for an issue was written from what
- * it expected, like one read from another copy of arktype, so a summary
- * writes it after its path
- */
-export const templatedIssue = <issue extends ArkIssue>(issue: issue): issue =>
-	customIssue(issue, undefined)
-
-/** @internal whether an issue's message is a sentence configured or supplied for it */
 export const isCustomIssue = (issue: ArkIssue): boolean =>
-	customOf(issue) !== undefined
+	writesText &&
+	issue.message !== undefined &&
+	!(listsUnions && issue._l !== undefined) &&
+	!issue.message.startsWith(messageOf(issue))
+
+/**
+ * @internal notes that an issue's message is one configured for its code, as
+ * `configure({ required: { message } })` does for every missing key. A union
+ * says the message its branches' errors share where each was configured for
+ * its error's Type or supplied where it was raised, and lists errors saying a
+ * code's, which the text alone doesn't tell from those. Defined on the issue
+ * so it isn't enumerable, as only what its readers see is. A site whose
+ * message is its code's passes this as its `text`, so only a program that
+ * configures one holds it
+ */
+export const codedIssue = <issue extends ArkIssue>(issue: issue): issue =>
+	Object.defineProperty(issue, "_c", { value: 2 })
+
+/**
+ * @internal a copy of an issue, noted as it was. Only a union reads the note,
+ * and only of a message that was written
+ */
+export const notedAs = (issue: ArkIssue, copy: ArkIssue): ArkIssue =>
+	listsUnions && writesText && issue._c ? codedIssue(copy) : copy
 
 /** @internal an issue at another path, saying what it did */
 export const movedIssue = (issue: ArkIssue, path: PropertyKey[]): ArkIssue =>
-	customIssue(
-		{
-			code: issue.code,
-			path,
-			data: issue.data,
-			expected: issue.expected,
-			message: issue.message
-		},
-		customOf(issue)
-	)
+	notedAs(issue, {
+		code: issue.code,
+		path,
+		data: issue.data,
+		expected: issue.expected,
+		message: issue.message
+	})
 
 /**
  * @internal the path as arktype's stringifyPath writes it: a key that isn't
@@ -393,8 +387,8 @@ export const pathOf = (issue: {
 
 /**
  * @internal an issue's line of a summary: its message after its path, one
- * configured or supplied as a sentence after a colon. A union listing its
- * branches' issues names each one's path instead. Each flag is read in the
+ * configured or supplied as a sentence (isCustomIssue) after a colon. A union
+ * listing its branches' issues names each one's path instead. Each flag is read in the
  * one expression returned: a bundler that inlines a flag as it prints folds
  * an expression it's in, and leaves a statement testing it, and a function
  * returning it, as they are. A listed issue's message is set as it's created
@@ -404,8 +398,11 @@ export const lineOf = (issue: ArkIssue): string => {
 	const path = pathOf(issue)
 	return (
 		listsUnions && issue._l !== undefined ? issue._l
-		: path ? path + (writesText && issue._c ? ": " : " ") + message
-		: message
+		: path ?
+			path +
+			(writesText && !message.startsWith(messageOf(issue)) ? ": " : " ") +
+			message
+		:	message
 	)
 }
 

@@ -10,7 +10,6 @@ import {
 	describesData,
 	errorWriters,
 	errorWritersByCode,
-	type Custom,
 	type FailureSite,
 	type SiteContext,
 	type UnionSite
@@ -213,7 +212,7 @@ const siteWords = new Set([
 	"runtime",
 	"void",
 	"siteOf",
-	"customSiteOf",
+	"codeSiteOf",
 	"keySiteOf",
 	"requiredSiteOf",
 	"v",
@@ -243,20 +242,12 @@ export const writeSiteOf = (
 	const args =
 		writer === "keySiteOf" ?
 			[code, description, missing === description ? undefined : missing]
-			// a message configured for its Type is what customSiteOf takes one as
-		:	[code, description, message, c === 1 ? undefined : c]
+		:	[code, description, message]
 	while (args[args.length - 1] === undefined) args.pop()
+	// a message configured for its code is noted on its issue: codeSiteOf's
 	return `runtime.${
-		writer === "keySiteOf" ? writer
-		: c ? "customSiteOf"
-		: "siteOf"
-	}(${args
-		.map(arg =>
-			arg === undefined ? "void 0"
-			: typeof arg === "number" ? arg
-			: emit(arg)
-		)
-		.join(", ")})`
+		writer === "siteOf" && c === 2 ? "codeSiteOf" : writer
+	}(${args.map(arg => (arg === undefined ? "void 0" : emit(arg))).join(", ")})`
 }
 
 // its value's brief, as arktype's is, unless the program configures required's expected
@@ -302,17 +293,22 @@ export class ConfiguredWriter {
 
 export type Writer = string | Fn | ConfiguredWriter | undefined
 
+// how a site's message was configured, which a build reads: 1 as its Type's
+// and 2 as its code's. A validator's issue holds its message, which says
+// whether it's a sentence of its own, and notes only one that's its code's
+type Custom = 1 | 2
+
 // what a site's issue reads, with text configured as strings or functions.
-// Its message names no path, and c says how it was configured where a summary
-// doesn't write it after its path as what's expected
+// Its message names no path, and c says how it was configured
 export interface IssueContext extends SiteContext {
 	message?: string
+	c?: Custom | undefined
 	written?: {
 		context: object
 		writers: Writer[]
 		// 1 if the issue takes expected, 4 if its actual describes its data,
-		// which a default message leaves out, and 2 or 8 if its message is
-		// configured for its Type or for its code
+		// which a default message leaves out, and 2 if its message is
+		// configured for its code
 		keeps: number
 	}
 }
@@ -321,12 +317,7 @@ const keepsOf = (
 	takesExpected: boolean,
 	c: Custom | undefined,
 	describes: boolean
-): number =>
-	+takesExpected |
-	(c === 1 ? 2
-	: c === 2 ? 8
-	: 0) |
-	(+describes << 2)
+): number => +takesExpected | (c === 2 ? 2 : 0) | (+describes << 2)
 
 // what a default actual writes: what arktype describes data with, where a
 // configured message reads it, shipped as the runtime's

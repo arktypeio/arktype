@@ -231,7 +231,7 @@ if (out instanceof type.errors) {
 }
 ```
 
-An error at the root has no path, so its line is still its message alone.
+An error at the root has no path, so its line is still its message alone, and a message that begins with `must be` and what the error expected [reads on from its path](/docs/errors#summary-lines) with no colon.
 
 - Text that was a `problem`, written to follow the path, like `isn't allowed`, reads `age: isn't allowed` as a `message`. Write it as a sentence, like `This key isn't allowed`, or configure [`expected`](/docs/configuration#expected) instead, which reads `age must be ...`.
 - A `message` function no longer receives `problem`. It writes one sentence from the error's `expected` and `actual`, without the path.

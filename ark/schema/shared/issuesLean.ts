@@ -3,7 +3,6 @@ import type { ArkErrorCode } from "./errors.ts"
 import type {
 	ArkIssue,
 	CompactApply,
-	Custom,
 	FailureContext,
 	FailureSite,
 	SiteContext
@@ -61,10 +60,7 @@ class ReadIssues implements FailureContext {
 			expected: context.description,
 			message: context.x
 		}
-		if (writesText) {
-			customIssue(issue, context.c)
-			context.text?.(issue)
-		}
+		if (writesText) context.text?.(issue)
 		if (key !== undefined) path.pop()
 		this._.push(issue)
 		// only errors stopping at the first issue stop at this one
@@ -167,10 +163,7 @@ export const issueAt = (
 		expected: context.description,
 		message: context.x
 	}
-	if (writesText) {
-		customIssue(issue, context.c)
-		context.text?.(issue)
-	}
+	if (writesText) context.text?.(issue)
 	if (key !== undefined) path.pop()
 	return issue
 }
@@ -237,35 +230,28 @@ export const mergeIssues = (
 	}
 }
 
-// notes how an issue's message was configured, as issues.ts does
-export const customIssue = <issue extends ArkIssue>(
-	issue: issue,
-	c: Custom | undefined
-): issue =>
-	writesText && c !== issue._c ?
-		Object.defineProperty(issue, "_c", { value: c, configurable: true })
-	:	issue
-
-export const customOf = (issue: ArkIssue): Custom | undefined =>
-	writesText ? issue._c : undefined
-
-export const templatedIssue = <issue extends ArkIssue>(issue: issue): issue =>
-	customIssue(issue, undefined)
-
+// whether an issue's message is a sentence of its own, as issues.ts's isCustomIssue
 export const isCustomIssue = (issue: ArkIssue): boolean =>
-	customOf(issue) !== undefined
+	writesText &&
+	issue.message !== undefined &&
+	!(listsUnions && issue._l !== undefined) &&
+	!issue.message.startsWith(messageOf(issue))
+
+// as issues.ts's codedIssue, notedAs and movedIssue
+export const codedIssue = <issue extends ArkIssue>(issue: issue): issue =>
+	Object.defineProperty(issue, "_c", { value: 2 })
+
+export const notedAs = (issue: ArkIssue, copy: ArkIssue): ArkIssue =>
+	listsUnions && writesText && issue._c ? codedIssue(copy) : copy
 
 export const movedIssue = (issue: ArkIssue, path: PropertyKey[]): ArkIssue =>
-	customIssue(
-		{
-			code: issue.code,
-			path,
-			data: issue.data,
-			expected: issue.expected,
-			message: issue.message
-		},
-		customOf(issue)
-	)
+	notedAs(issue, {
+		code: issue.code,
+		path,
+		data: issue.data,
+		expected: issue.expected,
+		message: issue.message
+	})
 
 // the path as issues.ts writes it
 export const pathOf = (issue: {
@@ -288,8 +274,11 @@ export const lineOf = (issue: ArkIssue): string => {
 	const path = pathOf(issue)
 	return (
 		listsUnions && issue._l !== undefined ? issue._l
-		: path ? path + (writesText && issue._c ? ": " : " ") + message
-		: message
+		: path ?
+			path +
+			(writesText && !message.startsWith(messageOf(issue)) ? ": " : " ") +
+			message
+		:	message
 	)
 }
 

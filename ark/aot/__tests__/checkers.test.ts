@@ -181,6 +181,11 @@ either[0] must be a number
 		const printing = `const print = (out: unknown) =>
 	console.log(out instanceof type.errors ? out.issues.map(issue => \`\${issue.code} \${issue.expected}: \${issue.message}\`).join("\\n") + "\\n" + out.summary : JSON.stringify(out))`
 
+		// a site written with a message of its own: its code, what it expects,
+		// then the message
+		const sitesSaying =
+			/\b(?:siteOf|codeSiteOf)\d*\("\w+", (?:void 0|"(?:[^"\\]|\\.)*"), "/
+
 		it("is said by the checker of what its field checks, at each site and where the key is missing", async () => {
 			const root = fixture(
 				"says",
@@ -242,7 +247,7 @@ form.plain must be a string (was missing)
 			attest(behaviorOf(checkers)).equals(expected)
 			// each field is a checker saying its message, none compiled with sites of its own
 			attest(checkers.match(/saying\(/g)?.length).equals(5)
-			attest(checkers.includes("customSiteOf(")).equals(false)
+			attest(sitesSaying.test(checkers)).equals(false)
 			attest(checkers.includes("sayingMissing(")).equals(false)
 		})
 
@@ -296,7 +301,7 @@ amount: Enter an amount.
 			attest(behaviorOf(await bundle(root))).equals(expected)
 			const checkers = await bundle(root, smallest)
 			attest(behaviorOf(checkers)).equals(expected)
-			attest(checkers.includes("customSiteOf(")).equals(false)
+			attest(sitesSaying.test(checkers)).equals(false)
 			// the missing key of a field whose checks say it, not its checker
 			attest(checkers.match(/sayingMissing\(/g)?.length).equals(2)
 			// what a narrowed field checks ahead of its narrow is one checker,

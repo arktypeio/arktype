@@ -799,13 +799,15 @@ const writeRequired = (prop: Prop.Node, checker: string): string => {
 				checker
 			:	writeCall("required", checker, JSON.stringify(description))
 	}
+	// what its value's checker says is its Type's message, not one the code's
 	if (held === description && said?.message === message && c === 1)
 		return checker
 	return writeCall(
 		"sayingMissing",
 		checker,
 		JSON.stringify(message),
-		c === 1 ? undefined : `${c}`,
+		// a message configured for the code is noted on the missing key's issue
+		c === 1 ? undefined : "runtime.codedIssue",
 		held === description ? undefined : JSON.stringify(description)
 	)
 }

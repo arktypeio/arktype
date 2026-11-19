@@ -69,6 +69,8 @@ To change what an error says, see [Error messages](/docs/configuration#error-mes
 | with a [custom message](/docs/configuration#message) | its path, a colon, then its message | `email: Enter a valid email`                   |
 | a union listing its branches' errors                 | its message, with each path whole   | `k.a must be a string or k.b must be a number` |
 
+A custom message is told by its text. One that begins as arktype's own would, with `must be` and what the error expected, reads on from its path as arktype's does, with no colon.
+
 ### Read errors before the data changes
 
 A Type that calls no narrow or morph may find its errors only when `issues` or `summary` is first read, so rejecting data costs little more than the check that rejected it. They describe the data as it is at that read: if it changed since it was validated, so do they, and data that no longer fails holds one root issue, `is invalid`. Read `summary` or `issues` before the data can change, as reactive form state or an Immer draft can, or anything can across an `await`:

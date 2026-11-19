@@ -20,10 +20,9 @@ import type {
 } from "./errors.ts"
 import {
 	ArkErrors as BaseArkErrors,
-	customIssue,
-	customOf,
 	issueAt,
 	mergeIssues,
+	notedAs,
 	pathOf,
 	type ArkIssue,
 	type CompactApply,
@@ -248,10 +247,7 @@ export class InternalTraversal implements FailureContext {
 					listsUnions && issue._m ?
 						issue._m(this.path)
 						// its message, which names no path, is as a callback read it
-					:	customIssue(
-							{ ...issue, path: [...this.path, ...issue.path] },
-							customOf(issue)
-						)
+					:	notedAs(issue, { ...issue, path: [...this.path, ...issue.path] })
 				)
 			}
 		}
@@ -362,11 +358,12 @@ export class Traversal extends InternalTraversal {
 				:	"valid")
 		}
 		// a message supplied is a sentence of its own, set apart from its path,
-		// unless it's arktype's for data it only knows is invalid
+		// unless it begins as what's written from what's expected would. Data
+		// arktype only knows is invalid expects nothing, which is what says so
 		if (supplied.message !== undefined) {
 			issue.message = supplied.message
-			if (supplied.message !== "is invalid" || supplied.expected !== "valid")
-				customIssue(issue, 1)
+			if (supplied.message === "is invalid" && supplied.expected === "valid")
+				issue.expected = undefined
 		}
 		// a keyword's phrase writes the SyntaxError it caught, as string.json's,
 		// and a pipe.try morph what it threw

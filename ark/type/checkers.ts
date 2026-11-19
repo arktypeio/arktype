@@ -3,7 +3,6 @@ import {
 	listedIssue,
 	type ArkErrorCode,
 	type CompactApply,
-	type Custom,
 	type FailureContext,
 	type FailureSite,
 	type SiteContext
@@ -61,8 +60,8 @@ export interface Checker {
 	e?: ApplyAt
 	/** the message a key it's the value of says where the key is missing, if its own */
 	x?: string | undefined
-	/** how x was configured, as a site's c says */
-	c?: Custom | undefined
+	/** where x is configured for required's code, what notes that on the missing key's issue */
+	text?: SiteContext["text"]
 }
 
 type DefaultWrite = (data: any, ctx?: any) => unknown
@@ -398,8 +397,7 @@ export const rejecting = ((passes: (data: any) => unknown, message: string) =>
 const rejectedSiteOf = (message: string): SiteContext => ({
 	code: "predicate",
 	description: "valid according to an anonymous predicate",
-	x: message,
-	c: 1
+	x: message
 })
 
 /**
@@ -650,13 +648,14 @@ export const required = ((checker: Checker, description: string): Checker =>
 	wrapping(checker, { description, x: undefined })) satisfies Fn
 
 // a required key's checker where the missing key says a message of its own,
-// configured for its value's Type, or as c says, 2 for the code
+// configured for its value's Type, or for the code, where a build passes what
+// notes that on its issue: codedIssue, which only such a program then holds
 export const sayingMissing = ((
 	checker: Checker,
 	message: string,
-	c: Custom = 1,
+	text?: SiteContext["text"],
 	description = checker.description
-): Checker => wrapping(checker, { description, x: message, c })) satisfies Fn
+): Checker => wrapping(checker, { description, x: message, text })) satisfies Fn
 
 // a checker each of whose sites says the message configured for its Type, as
 // does the key it's the value of where missing. It checks no key's value, so
@@ -669,7 +668,7 @@ export const saying = ((checker: Checker, message: string): Checker => {
 		ctx._at = (site: SiteContext, data: unknown) =>
 			at.call(
 				ctx,
-				{ code: site.code, description: site.description, x: message, c: 1 },
+				{ code: site.code, description: site.description, x: message },
 				data
 			)
 		try {
@@ -680,15 +679,16 @@ export const saying = ((checker: Checker, message: string): Checker => {
 	}
 	Object.assign(said, checker)
 	said.x = message
-	said.c = 1
 	return said
 }) satisfies Fn
 
-// what a missing key fails: required's, expecting its value's brief
-// One that says no message of its own notes none as configured, whatever the
-// checker it copies does
-const missingSiteOf = ({ description, x, c }: Checker): FailureSite => ({
-	m: { code: "required", description, x, c: x === undefined ? x : c }
+// what a missing key fails: required's, with what its checker holds for it,
+// which a site names as a checker does: the description it expects, the
+// message it says and what notes one that's its code's. Spread, as naming
+// each is longer in every bundle, and a site reads nothing else a checker
+// holds. Its code is written last, as a check is a site of its own code
+const missingSiteOf = (checker: Checker): FailureSite => ({
+	m: { ...checker, code: "required" }
 })
 
 type Props = Record<string, Checker>
