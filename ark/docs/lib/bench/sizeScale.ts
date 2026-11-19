@@ -1,7 +1,9 @@
 /**
  * Bundle size as an app's schemas grow, from sizeScale.json: the whole bundle
  * of a synthetic app of 1 to 5,000 distinct schemas, written alike in each
- * library, in raw minified, gzip and brotli bytes, at three seeds.
+ * library, in raw minified, gzip and brotli bytes, at three seeds. The app
+ * exports one function, which runs a handler for the schema named, so each
+ * library ships what validating and reading a failure's text need.
  * `pnpm benchSizeScale` (ark/repo/bench/scale/sizeScale.ts) measures it and
  * rewrites the data, and everything here is derived from it, so the page
  * reading this (content/docs/precompile/size-at-scale.mdx) follows a new run.
@@ -9,7 +11,9 @@
  * `sizeScale.corpora[corpus].series` is each build's `{ schemas, raw, gzip,
  * brotli }[]`, the mean of the seeds, with the line fitted to it, and
  * `.crossovers` is where each precompiled build stops or starts being the
- * smaller of a pair.
+ * smaller of a pair. `.layouts` is the same app with every handler in a
+ * module apart from its schema's and with every handler in its schema's, for
+ * the builds measured at both.
  */
 import data from "./sizeScale.json" with { type: "json" }
 
@@ -128,9 +132,34 @@ export type SizeCorpus = {
 	narrowsPerSchema: number
 	series: Record<SizeBuild, SizeSeries>
 	crossovers: SizeCrossover[]
+	layouts: Record<SizeLayoutId, SizeLayout>
 }
 
-type Row = (typeof data.corpora)[number]["runs"][number]["rows"][number]
+type Runs = (typeof data.corpora)[number]["runs"]
+
+type Row = Runs[number]["rows"][number]
+
+type Bytes = Record<SizeMetric, number>
+
+/**
+ * Where an app's handlers are: "split" is each in a module apart from its
+ * schema's, which it imports, and "colocated" each in the module that defines
+ * its schema. The app the rest of this measures has `sizeColocated` of its
+ * modules colocated.
+ */
+export const sizeLayoutIds = ["split", "colocated"] as const
+
+export type SizeLayoutId = (typeof sizeLayoutIds)[number]
+
+/** the share of an app's modules that hold the handlers of the schemas they define */
+export const sizeColocated: number = data.colocated
+
+/** the builds measured at both layouts */
+export const sizeLayoutBuilds = data.layoutBuilds as SizeLayoutBuild[]
+
+export type SizeLayoutBuild = keyof Row["layouts"]["split"]
+
+export type SizeLayout = Record<SizeLayoutBuild, SizeSeries>
 
 const mean = (values: number[]) =>
 	values.reduce((sum, value) => sum + value, 0) / values.length
@@ -177,16 +206,16 @@ const fitOf = (
 	}
 }
 
-const pointOf = (row: Row, build: SizeBuild): SizePoint => ({
-	schemas: row.schemas,
-	...row.sizes[build]
-})
-
-const seriesOf = (
-	runs: (typeof data.corpora)[number]["runs"],
-	build: SizeBuild
+const seriesOf = <build extends SizeBuild>(
+	runs: Runs,
+	build: build,
+	sizesOf: (row: Row) => Record<build, Bytes>
 ): SizeSeries => {
-	const seeds = runs.map(run => run.rows.map(row => pointOf(row, build)))
+	const seeds = runs.map(run =>
+		run.rows.map(
+			(row): SizePoint => ({ schemas: row.schemas, ...sizesOf(row)[build] })
+		)
+	)
 	const points = seeds[0].map(({ schemas }, i) => ({
 		schemas,
 		raw: Math.round(mean(seeds.map(seed => seed[i].raw))),
@@ -240,13 +269,12 @@ const crosses = (
 	ours[i + 1][metric] < theirs[i + 1][metric]
 
 const crossoverOf = (
-	series: Record<SizeBuild, SizeSeries>,
-	build: SizeBuild,
-	against: SizeBuild,
+	ours: SizeSeries,
+	theirs: SizeSeries,
 	metric: SizeMetric
 ): SizeCrossover => {
-	const ours = series[build]
-	const theirs = series[against]
+	const { build } = ours
+	const against = theirs.build
 	const crossings: SizeCrossing[] = []
 	for (let i = 0; i < ours.points.length - 1; i++) {
 		if (!crosses(ours.points, theirs.points, i, metric)) continue
@@ -299,7 +327,7 @@ const crossoverOf = (
 const corpusOf = (id: SizeCorpusId): SizeCorpus => {
 	const { runs } = data.corpora.find(corpus => corpus.id === id)!
 	const series = Object.fromEntries(
-		sizeBuilds.map(build => [build, seriesOf(runs, build)])
+		sizeBuilds.map(build => [build, seriesOf(runs, build, row => row.sizes)])
 	) as Record<SizeBuild, SizeSeries>
 	const largest = runs.map(run => run.rows.at(-1)!)
 	return {
@@ -308,8 +336,21 @@ const corpusOf = (id: SizeCorpusId): SizeCorpus => {
 		narrowsPerSchema: mean(largest.map(row => row.narrows / row.schemas)),
 		series,
 		crossovers: sizeComparisons.flatMap(([build, against]) =>
-			sizeMetrics.map(metric => crossoverOf(series, build, against, metric))
-		)
+			sizeMetrics.map(metric =>
+				crossoverOf(series[build], series[against], metric)
+			)
+		),
+		layouts: Object.fromEntries(
+			sizeLayoutIds.map(layout => [
+				layout,
+				Object.fromEntries(
+					sizeLayoutBuilds.map(build => [
+						build,
+						seriesOf(runs, build, row => row.layouts[layout])
+					])
+				)
+			])
+		) as Record<SizeLayoutId, SizeLayout>
 	}
 }
 
@@ -732,6 +773,60 @@ const outgrownText = (() => {
 const shareText = (share: number | undefined) =>
 	`${Math.round((share ?? 0) * 100)}%`
 
+// how far a build's gzipped bundle with every handler colocated is from its
+// bundle with every handler apart, at worst over every corpus, seed and count
+// compared, as a share of it
+const layoutMoveOf = (build: SizeLayoutBuild) =>
+	Math.max(
+		...sizeCorpusIds.flatMap(id => {
+			const { split, colocated } = corpora[id].layouts
+			return split[build].seeds.flatMap((seed, s) =>
+				seed.map((point, i) =>
+					point.schemas < sizeStandingFrom ?
+						0
+					:	Math.abs(colocated[build].seeds[s][i].gzip / point.gzip - 1)
+				)
+			)
+		})
+	)
+
+// a "smallest" bundle of forms at a count, gzipped: with every handler apart,
+// at the app's mix and with every handler colocated, then Valibot's
+const layoutBytesOf = (schemas: number) => {
+	const { series, layouts } = corpora.forms
+	const at = ({ points }: SizeSeries) =>
+		kbText(points.find(point => point.schemas === schemas)!.gzip)
+	return [
+		at(layouts.split.smallest),
+		at(series.smallest),
+		at(layouts.colocated.smallest),
+		at(series.valibot)
+	]
+}
+
+// the counts the layouts are quoted at, where the data has them
+const layoutCounts = [100, 1000].filter(schemas =>
+	data.scales.includes(schemas)
+)
+
+const layoutText = (() => {
+	const { types, ofTypes, wholeFiles, files } = data.colocation
+	const intro = `${shareText(sizeColocated)} of an app's modules, spread evenly from where its seed starts them, hold the handlers of the Types they define, and the rest have theirs in a module that imports the Types. That's how that frontend is laid out: code in the module declaring a Type uses ${types} of its ${ofTypes} Types, and in ${wholeFiles} of the ${files} files with such a Type, that's every Type the file declares.`
+	const moves = sizeLayoutBuilds.map(layoutMoveOf)
+	const others: SizeBuild[] = sizeLayoutBuilds.filter(
+		build => build !== "smallest"
+	)
+	if (Math.max(...moves) < 0.005 || !layoutCounts.length)
+		return `${intro} Which of the two a handler is in moves no build's gzipped bundle by more than ${percentText(Math.max(...moves), Math.ceil)}.`
+	const quoted = layoutCounts.map((schemas, i) => {
+		const [split, mix, colocated, valibot] = layoutBytesOf(schemas)
+		return i ?
+				`At ${typesText(schemas)}, those are ${split}, ${mix} and ${colocated}, where Valibot's is ${valibot}.`
+			:	`On forms at ${typesText(schemas)}, a "smallest" bundle gzips to ${split} with every handler apart, ${mix} at that mix and ${colocated} with every handler in its Type's module, where Valibot's is ${valibot}.`
+	})
+	return `${intro} Which of the two a handler is in matters to "smallest". ${quoted.join(" ")} ${listText(others.map(build => shortLabels[build]))} ${others.length > 1 ? "move" : "moves"} by at most ${percentText(Math.max(...others.map(build => layoutMoveOf(build as SizeLayoutBuild))), Math.ceil)} between those two ends.`
+})()
+
 const formsOptions = data.corpora.find(corpus => corpus.id === "forms")!.options
 
 const fixedText = (corpus: SizeCorpusId, build: SizeBuild) =>
@@ -739,6 +834,7 @@ const fixedText = (corpus: SizeCorpusId, build: SizeBuild) =>
 
 /** the page's sentences, each stating what the data does */
 export const sizeTexts = {
+	layout: layoutText,
 	method: `Each app is modules of ${data.perModule} Types, no two alike, written the same way in each library and bundled whole by esbuild ${data.versions.esbuild}, tree-shaken and minified, with ArkType ${data.versions.arktype} (${data.commit}), Valibot ${data.versions.valibot} and Zod ${data.versions.zod}. Every number is the mean of ${sizeScale.seeds.length} apps generated from different seeds.`,
 	range: `${countText(data.scales[0])} to ${typesText(sizeScaleLargest)}`,
 	formsRates: `${shareText(formsOptions.messages)} of their fields that aren't references or arrays have a message of their own and ${shareText(formsOptions.narrows)} of their plain strings and integers a narrow, about ${corpora.forms.messagesPerSchema.toFixed(1)} messages and ${corpora.forms.narrowsPerSchema.toFixed(1)} narrows a Type`,

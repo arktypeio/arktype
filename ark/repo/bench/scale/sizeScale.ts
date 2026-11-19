@@ -51,7 +51,8 @@
 //
 // Run `pnpm build` first to bundle arktype's build. The script runs with a
 // 16 GiB heap, which the build's pruning needs at 5,000 schemas (build.ts), and
-// takes about half an hour, most of it the default build's largest apps.
+// takes over an hour, most of it the largest apps, which "smallest" builds at
+// three layouts.
 //
 // usage: pnpm benchSizeScale
 //        BENCH_SCALES=1,50 BENCH_SEEDS=1 pnpm benchSizeScale (a part of it, written to ark/repo/bench/out/sizeScale-app.json)
