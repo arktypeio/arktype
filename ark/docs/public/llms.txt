@@ -1,6 +1,6 @@
 # ArkType
 
-> TypeScript's smallest, fastest validator.
+> TypeScript's smallest, fastest validator. One prompt away.
 
 The homepage's benchmark board averages other projects' public benchmarks, each in the unit it measures. Standings as of November 19, 2026. [The rule it follows, every result behind it and how to rerun them](https://arktype.io/docs/precompile/benchmarks.md)
 
@@ -108,7 +108,7 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 
 ## Optional
 
-- [ArkType, every page](https://arktype.io/llms-full.txt): TypeScript's 1:1 validator
+- [ArkType, every page](https://arktype.io/llms-full.txt): TypeScript's smallest, fastest validator. One prompt away.
 - [Precompile, every page](https://arktype.io/docs/precompile/llms.txt): Construct your Types when you build
 - [ArkRegex, every page](https://arktype.io/docs/regex/llms.txt): Regular expressions with inferred types
 - [Attest, every page](https://arktype.io/docs/attest/llms.txt): Type assertions and benchmarks

@@ -27,7 +27,7 @@ export const Hero = () => {
 	return (
 		<section className="hero" aria-labelledby="hero-title" data-hero>
 			<div className="eyebrow rise" style={rise(0)}>
-				<b>arktype</b> {"//"} TypeScript's 1:1 validator
+				<b>arktype</b>
 				{preview && (
 					<Link className="eyebrow-new" href="/docs/precompile">
 						precompile <span className="next-tag">next release</span>
