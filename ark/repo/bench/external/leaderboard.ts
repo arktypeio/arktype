@@ -8,7 +8,8 @@
 // it holds results for reads them instead, ArkType's rows included, and the
 // leaderboard is written there. results/newest/ holds the last run with every
 // rival at its newest release (reproduce.ts --newest): each of its files is
-// read beside the committed ones, its ArkType rows in place of theirs
+// read beside the committed ones, its ArkType rows in place of theirs, and
+// its startup.json in place of the committed one
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { format, resolveConfig } from "prettier"
@@ -23,7 +24,11 @@ const docs = join(here, "..", "..", "..", "docs")
 // each library's latest release on 2026-10-24, and each arm keeps the faster
 // run (README, "Versions")
 const committed = {
-	arkType: ["results/arktype-20710020e.json"],
+	arkType: [
+		"results/arktype-20710020e.json",
+		// the homepage's apps alone
+		"results/arktype-ba691ac56.json"
+	],
 	counts: [
 		"results/counts-a306152ce.json",
 		"results/counts-latest-2026-10-24.json"
@@ -77,9 +82,11 @@ const fileNames = {
 	ataCounts: "ata-counts"
 }
 
+// startup.ts's wins pair every arm by round, so its rows are all one run's:
+// the newest, which counted each library, in place of the committed one
 const sources = {
 	...committed,
-	startup: freshOf("startup")[0] ?? committed.startup
+	startup: freshOf("startup")[0] ?? newestOf("startup")[0] ?? committed.startup
 }
 for (const [kind, name] of Object.entries(fileNames) as [
 	keyof typeof fileNames,
@@ -199,6 +206,11 @@ const byCase = (entries: [string, number][]) => {
 	}
 	return Object.entries(cases).map(([id, byArm]) => rowOf(id, byArm))
 }
+
+// the last of ArkType's files that holds a measure, which is where its rows
+// are read from: one may hold only what its commit measured again
+const arkTypeFileOf = (measure: string): string | undefined =>
+	sources.arkType.filter(file => measure in read(file)).pop()
 
 // each of ArkType's measures from the last file that has it
 const arkType: Record<string, any> = {}
@@ -443,14 +455,20 @@ const suites = [
 					Object.entries(forms).map(([arm, { gzip }]) => [arm, gzip])
 				)
 			)
-		]
+		],
+		// ArkType's other builds of the form, which no row ranks: the site's
+		// size chart draws dynamic ArkType beside the default build
+		builds: {
+			dynamic: forms["ArkType (dynamic)"].gzip,
+			smallest: forms["ArkType (precompiled, smallest)"].gzip
+		}
 	},
 	{
 		category: "size",
 		id: "homepageSize",
 		label: "the homepage's apps",
 		unit: "B gzipped",
-		source: `benchData.json size, ArkType's from ${sources.arkType.join(", ")}`,
+		source: `benchData.json size, ArkType's from ${arkTypeFileOf("homepageSize")}`,
 		rows: appsOf(homepageSize, "gzip")
 	},
 	{
@@ -546,14 +564,79 @@ const downloads = {
 	)
 }
 
+type Run = { commit: string; date: string }
+
+// the newest run of each suite that has one: the commit ArkType was at and
+// the day it ran, which the site prints beside the suite's results
+const runs: Record<string, Run> = Object.fromEntries(
+	Object.entries(read("results/newest/run.json") as Record<string, Run>).map(
+		([suite, { commit, date }]) => [suite, { commit, date }]
+	)
+)
+
+// the --newest run that rewrites each kind of result file, by run.json's key
+const runOf: Record<keyof typeof fileNames, string> = {
+	counts: "moltar",
+	forms: "form",
+	sbCounts: "sb",
+	sbDownload: "sb",
+	suryCounts: "sury",
+	surySize: "sury",
+	ataCounts: "ata"
+}
+
+// what a file of ArkType's rows calls each kind of result
+const arkTypeMeasures: Record<keyof typeof fileNames, string> = {
+	counts: "moltar",
+	forms: "form",
+	sbCounts: "sbCounts",
+	sbDownload: "sbDownload",
+	suryCounts: "suryCounts",
+	surySize: "surySize",
+	ataCounts: "ataCounts"
+}
+
+type Measured = {
+	/** the day the other libraries' newest results were measured */
+	rivals: string
+	/** the commit ArkType's rows were measured at */
+	arkType: string
+}
+
+// When a suite read from result files was last measured, which the site
+// prints beside its results: by its --newest run if it has one, otherwise by
+// the latest date its rivals' files are named for and the commit ArkType's
+// rows file is named for. A fresh run's rows are today's and this checkout's.
+const measuredOf = (source: string | string[]): Measured | undefined => {
+	const kind = (Object.keys(fileNames) as (keyof typeof fileNames)[]).find(
+		kind => sources[kind] === source
+	)
+	if (!kind || freshDir) return
+	const files = sources[kind]
+	const run =
+		files.some(file => file.startsWith("results/newest/")) ?
+			runs[runOf[kind]]
+		:	undefined
+	if (run) return { rivals: run.date, arkType: run.commit }
+	const dates = files.flatMap(file => /\d{4}-\d{2}-\d{2}/.exec(file) ?? [])
+	// ArkType's rows are the last file's that measures this kind, wherever two
+	// measure the same one: a later file may hold other measures alone
+	const arkTypeFile = arkTypeFileOf(arkTypeMeasures[kind])
+	const commit = /-([\da-f]{9})\.json$/.exec(arkTypeFile ?? "")?.[1]
+	if (!dates.length || !commit) {
+		throw new Error(
+			`Can't tell when ${kind} was measured from ${files.join(", ")} and ${arkTypeFile}`
+		)
+	}
+	return { rivals: dates.reduce((l, r) => (l > r ? l : r)), arkType: commit }
+}
+
 // when the published rows were last measured: the newest run's latest suite,
 // or today for a fresh run
 const measured =
 	freshDir ?
 		new Date().toISOString().slice(0, 10)
-	:	Object.values(
-			read("results/newest/run.json") as Record<string, { date: string }>
-		)
+	:	Object.values(runs)
 			.map(run => run.date)
 			.reduce((l, r) => (l > r ? l : r))
 
@@ -565,7 +648,20 @@ const out =
 writeFileSync(
 	out,
 	await format(
-		JSON.stringify({ measured, sources, downloads, suites }, null, "\t"),
+		JSON.stringify(
+			{
+				measured,
+				runs,
+				sources,
+				downloads,
+				suites: suites.map(suite => ({
+					...suite,
+					measured: measuredOf(suite.source)
+				}))
+			},
+			null,
+			"\t"
+		),
 		{
 			...(await resolveConfig(out)),
 			filepath: out

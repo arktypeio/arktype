@@ -9,7 +9,7 @@ import {
 	printKind,
 	timeOf
 } from "@ark/util"
-import type { ActualWriter, ProblemWriter } from "./errors.ts"
+import type { ActualWriter, LineWriter, MessageWriter } from "./errors.ts"
 import type { Locale } from "./locale.ts"
 
 // en's writers, imported by standalone validators apart from arktype's errors
@@ -42,16 +42,37 @@ export const describeActual = (ctx: object): void => {
 	if (!DescribedActual.has(ctx)) new DescribedActual(ctx)
 }
 
+/**
+ * describeActual for a ctx whose actual is yet to be written, which is
+ * described already only where its actual was cleared since. It isn't asked
+ * first: V8 caches no answer for a private field an object lacks, so asking
+ * cost an error more than stamping it does
+ */
+export const describeUnwrittenActual = (ctx: object): void => {
+	try {
+		new DescribedActual(ctx)
+	} catch {
+		// stamped already
+	}
+}
+
 /** the actual en's messages say a value was: one configured or supplied */
 export const printedActualOf = (ctx: { readonly actual: string }): string =>
 	DescribedActual.has(ctx) ? "" : ctx.actual
 
-export const writeProblem: ProblemWriter = ctx => {
+export const writeMessage: MessageWriter = ctx => {
 	const actual = printedActualOf(ctx)
 	return `must be ${ctx.expected}${actual ? ` (was ${actual})` : ""}`
 }
 
-export const writeUnitProblem: ProblemWriter<"unit"> = ctx => {
+// an error's line of a summary below the root: its message after its path,
+// which starts with a bracket where its first key is an index or isn't an
+// identifier. A custom message is a sentence of its own, so a colon sets it
+// apart from the path it's about
+export const writeLine: LineWriter = ctx =>
+	`${ctx.propString}${ctx.custom ? ":" : ""} ${ctx.message}`
+
+export const writeUnitMessage: MessageWriter<"unit"> = ctx => {
 	const actual = printedActualOf(ctx)
 	return (
 		!actual ? `must be ${ctx.expected}`

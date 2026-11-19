@@ -1,3 +1,4 @@
+export { printedActualOf } from "./shared/enWriters.ts"
 export {
 	actualAtPathOf,
 	describeCause,

@@ -573,14 +573,14 @@ export const describe = (t: { description: string }) => t.description
 		attest(results).snap([
 			[
 				true,
-				"[\n  {\n    code: 'domain',\n    path: [ 'a' ],\n    data: 1,\n    expected: 'a string',\n    message: 'a must be a string'\n  }\n]",
+				"ArkErrors {\n  summary: 'a must be a string',\n  issues: [\n    {\n      code: 'domain',\n      path: [ 'a' ],\n      data: 1,\n      expected: 'a string',\n      message: 'must be a string'\n    }\n  ]\n}",
 				"TraversalError: a must be a string",
 				// a build reading one module at a time bakes each member into its exports
 				""
 			],
 			[
 				true,
-				"[\n  {\n    code: 'predicate',\n    path: [],\n    data: { a: 1 },\n    message: 'is invalid'\n  }\n]",
+				"ArkErrors {\n  summary: 'is invalid',\n  issues: [\n    {\n      code: 'predicate',\n      path: [],\n      data: { a: 1 },\n      message: 'is invalid'\n    }\n  ]\n}",
 				"Error: is invalid",
 				""
 			]
@@ -710,8 +710,17 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 			})
 		]).equals([
 			[withAllowUnsafe(writeExternalizedMessage("arktype", "externals"))],
-			[withAllowUnsafe(writeNextExternalMessage("arktype"))]
+			[withAllowUnsafe(writeNextExternalMessage("arktype", true))]
 		])
+		// webpack reads what Next.js leaves external, so bundling arktype alone is checked too
+		attest(writeNextExternalMessage("arktype", true)).snap(
+			'Next.js leaves the pages router\'s dependencies external on the server, so it leaves arktype to be loaded at runtime rather than bundled with the runtime the program\'s precompiled validators use, so the program can load a copy of arktype that isn\'t theirs, e.g. one whose `type.errors` isn\'t the class of their errors. Add `bundlePagesRouterDependencies: true` to next.config.js, so Next.js bundles them as it does the app router\'s, or add "arktype", "@ark/schema", "@ark/util", "arkregex", "arksets" to `transpilePackages`, so it bundles only those, and leave arktype out of `serverExternalPackages`.'
+		)
+		// a dependency that loads arktype is bundled with it
+		const forDependency = writeNextExternalMessage("my-forms", true)
+		attest(forDependency.slice(forDependency.indexOf("Add "))).snap(
+			'Add `bundlePagesRouterDependencies: true` to next.config.js, so Next.js bundles them as it does the app router\'s, or add "my-forms", "arktype", "@ark/schema", "@ark/util", "arkregex", "arksets" to `transpilePackages`, so it bundles only those, and leave my-forms out of `serverExternalPackages`.'
+		)
 	})
 
 	const readsErrors = `import { type } from "arktype"
@@ -2734,6 +2743,110 @@ console.log(T.allows({ x: 1 }))
 		)
 	})
 
+	it("a holder a module loads in a way the build doesn't follow", async () => {
+		const root = writeFixture(
+			{
+				"containers.ts": `export const H = { limit: 3 }
+`,
+				"main.ts": `import { type } from "arktype"
+import { H } from "./containers.ts"
+export const load = () => import("./containers.ts")
+const T = type({ x: \`string <= \${H.limit}\` })
+console.log(T.allows({ x: "abc" }), T.allows({ x: "abcd" }))
+`,
+				"written.ts": `import { type } from "arktype"
+import { H } from "./containers.ts"
+const { H: loaded } = await import("./containers.ts")
+loaded.limit = 4
+const T = type({ x: \`string <= \${H.limit}\` })
+console.log(T.allows({ x: "abc" }))
+`
+			},
+			fromHere("temp", "looseHolder")
+		)
+		const build = (opts: PrecompileUnpluginOptions, entry = "main.ts") =>
+			esbuild({
+				entryPoints: [join(root, entry)],
+				bundle: true,
+				write: false,
+				format: "esm",
+				conditions: [...conditions, "production"],
+				logLevel: "silent",
+				plugins: [precompile.esbuild({ cwd: root, conditions, ...opts })]
+			}).then(
+				({ outputFiles }) => outputFiles[0].text,
+				(e: { errors: { text: string }[] }) => e.errors.map(e => e.text)
+			)
+		// a pruned build reads the whole program, and where it can't tell that
+		// nothing writes the value, precompiles the site as a build reading one
+		// module does: its factory checks the value it read
+		attest(run((await build({})) as string)).equals("true false\n")
+		attest(run((await build({ prune: false })) as string)).equals(
+			"true false\n"
+		)
+		attest(thrownBy((await build({}, "written.ts")) as string)).equals(
+			"`H.limit` is 4, but was precompiled as 3"
+		)
+	})
+
+	it("a list a site reads whole, which a production build checks by a digest", async () => {
+		const site = `const T = type({ currency: type.enumerated(...currencies) })
+console.log(T.allows({ currency: "ALL" }), T.allows({ currency: "USD" }))
+`
+		const root = writeFixture(
+			{
+				"containers.ts": `export const currencies = ["AED", "AFN", "ALL", "AMD"]
+`,
+				"main.ts": `import { type } from "arktype"
+import { currencies } from "./containers.ts"
+${site}`,
+				"written.ts": `import { type } from "arktype"
+import { currencies } from "./containers.ts"
+const loaded = await import("./containers.ts")
+loaded.currencies[2] = "XXX"
+${site}`
+			},
+			fromHere("temp", "digestedHolder")
+		)
+		const build = (opts: PrecompileUnpluginOptions, entry = "main.ts") =>
+			esbuild({
+				entryPoints: [join(root, entry)],
+				bundle: true,
+				write: false,
+				format: "esm",
+				conditions: [...conditions, "production"],
+				logLevel: "silent",
+				plugins: [precompile.esbuild({ cwd: root, conditions, ...opts })]
+			}).then(({ outputFiles }) => outputFiles[0].text)
+		const checksOf = (js: string) =>
+			js
+				.match(/^ +check(?:Digest|Facts|Input)\(.*$/gm)
+				?.map(line => line.trim())
+		const js = await build({})
+		attest(checksOf(js)).snap([
+			'checkDigest(p0, "1cl1e3qjbc7", "`currencies`");'
+		])
+		attest(run(js)).equals("true false\n")
+		attest(thrownBy(await build({}, "written.ts"))).equals(
+			"`currencies` holds other keys or values than it was precompiled with"
+		)
+		// what checks each Type it receives names each value too
+		attest(checksOf(await build({ creationChecks: "types" }))).snap([
+			'checkFacts(describeShape(p0), "an array of length 4", "`currencies`");',
+			'checkInput(p0[0], "AED", "`currencies[0]`");',
+			'checkInput(p0[1], "AFN", "`currencies[1]`");',
+			'checkInput(p0[2], "ALL", "`currencies[2]`");',
+			'checkInput(p0[3], "AMD", "`currencies[3]`");'
+		])
+		// one written for size checks as much, and doesn't hold what names it
+		const small = await build({ optimize: "size" })
+		attest(checksOf(small)).snap(['checkDigest(p0, "1cl1e3qjbc7");'])
+		attest(run(small)).equals("true false\n")
+		attest(thrownBy(await build({ optimize: "size" }, "written.ts"))).equals(
+			"A value a validator reads holds other keys or values than it was precompiled with"
+		)
+	})
+
 	it("a Type read off a holder", async () => {
 		const root = writeFixture(
 			{
@@ -3774,6 +3887,58 @@ console.log(String(A({})), a, allowed, String(B({})), b, String(C({})), c, unall
 				}
 			})
 		}
+
+		it("builds a module written as CommonJS, which a loader after the plugin's leaves as it reads", async () => {
+			const root = writeFixture(
+				{
+					// as tsc built a workspace package
+					"built/package.json": `{ "name": "built" }`,
+					"built/limits.js": `"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.max = void 0;
+exports.max = 5;
+`,
+					"touch.cjs": `module.exports = source => source + "\\n// built\\n"\n`,
+					"main.js": `import { type } from "arktype"
+import { max } from "./built/limits.js"
+
+const Name = type(\`string <= \${max}\`)
+console.log(Name.allows("abc"), Name.allows("abcdef"))
+`
+				},
+				fromHere("temp", "commonJsLoader", "written")
+			)
+			const compiler = webpack({
+				mode: "production",
+				context: root,
+				entry: "./main.js",
+				target: "node",
+				cache: false,
+				output: { path: join(root, "out"), filename: "main.cjs" },
+				module: {
+					rules: [
+						{
+							test: /\.js$/,
+							exclude: /node_modules/,
+							loader: join(root, "touch.cjs")
+						}
+					]
+				},
+				plugins: [precompile.webpack({ cwd: root }) as never]
+			})
+			const stats = await new Promise<Stats | undefined>((resolve, reject) =>
+				compiler.run((error, stats) =>
+					compiler.close(() => (error ? reject(error) : resolve(stats)))
+				)
+			)
+			attest(stats?.toJson().errors?.map(({ message }) => message)).equals([])
+			const { stdout, stderr } = spawnSync(
+				process.execPath,
+				[join(root, "out", "main.cjs")],
+				{ encoding: "utf8" }
+			)
+			attest([stdout, stderr]).equals(["true false\n", ""])
+		})
 	})
 
 	// as SWC's loader does on Next's webpack build, it drops the types that

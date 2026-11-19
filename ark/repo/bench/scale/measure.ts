@@ -11,8 +11,6 @@
 // Run `pnpm build` first to bundle arktype's build.
 //
 // usage: pnpm benchScale
-import { precompile } from "@ark/aot/unplugin"
-import { build } from "esbuild"
 import { execSync } from "node:child_process"
 import {
 	existsSync,
@@ -24,7 +22,8 @@ import {
 } from "node:fs"
 import { join } from "node:path"
 import { gzipSync } from "node:zlib"
-import { bundle, usageEntries } from "../bundle.ts"
+import { bundle } from "../bundle.ts"
+import { bundleOf } from "./build.ts"
 import { synthOf, type SynthOptions } from "./synth.ts"
 
 const scales = [10, 50, 200, 1000]
@@ -94,31 +93,8 @@ for (const app of homepageApps) {
 	appResults.push(row)
 }
 
-const gzipOf = async (dir: string, library: Build) => {
-	const { outputFiles } = await build({
-		stdin: {
-			contents:
-				library === "valibot" ?
-					`export * from "./valibot.ts"\n${usageEntries.valibot}`
-				:	`export * from "./arktype.ts"`,
-			resolveDir: dir,
-			loader: "ts"
-		},
-		bundle: true,
-		minify: true,
-		format: "esm",
-		platform: "neutral",
-		write: false,
-		logLevel: "error",
-		conditions: ["production"],
-		plugins:
-			library === "default" ? [precompile.esbuild({ cwd: dir })]
-			: library === "smallest" ?
-				[precompile.esbuild({ cwd: dir, preset: "smallest" })]
-			:	[]
-	})
-	return gzipSync(outputFiles[0].text).length
-}
+const gzipOf = async (dir: string, library: Build) =>
+	gzipSync(await bundleOf(dir, library, "exports")).length
 
 const results = []
 for (const { apps, seed, options } of series) {

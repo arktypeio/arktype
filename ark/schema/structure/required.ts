@@ -85,8 +85,13 @@ export class RequiredNode extends BaseProp<"required"> {
 	override get failSite(): FailureSite {
 		return (this.c.failSite ??=
 			this.value.isBasis() ?
-				{ v: this.value.errorCtx, m: this.errorCtx }
-			:	{ m: this.errorCtx }) as FailureSite
+				{
+					v: this.value.errorCtx,
+					m: this.errorCtx,
+					vb: undefined,
+					mb: undefined
+				}
+			:	{ m: this.errorCtx, vb: undefined, mb: undefined }) as FailureSite
 	}
 }
 

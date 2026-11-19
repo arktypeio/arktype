@@ -209,9 +209,10 @@ console.log(${Array.from({ length: types }, (_, i) => `String(T${i}(${i % 2 ? "5
 			attest(/\w+Allows = /.test(js)).equals(false)
 		})
 
-		it("builds once each site of literals it writes often enough", async () => {
+		it("writes once the literals its failures repeat for bytes enough", async () => {
 			const [js] = await bundle({}, options)
-			attest(js.match(/keySiteOf\("domain", "a string"\)/g)?.length).equals(1)
+			attest(js.match(/"domain", "a number"/g)?.length).equals(1)
+			attest(js).satisfies(/\bfails\d+\(\w+, \w+, "b0"\)/)
 			attest(run(js)).equals(run((await bundle({ prune: false }, options))[0]))
 		})
 
@@ -226,10 +227,10 @@ members[0].name must be a string (was missing)`)
 		})
 	})
 
-	it("builds a site of literals where it fails in a program writing it rarely", async () => {
+	it("writes literals where they fail in a program repeating them for few bytes", async () => {
 		const [js] = await bundle()
-		attest(/const site\d+ = /.test(js)).equals(false)
-		attest(js).satisfies(/_at\(siteOf\("minLength", "non-empty"\), data\)/)
+		attest(/\bfails\d+\b/.test(js)).equals(false)
+		attest(js).satisfies(/_e\(data, "minLength", "non-empty"\)/)
 	})
 
 	it("writes a program of less text as arrows, holding its checks in place", async () => {

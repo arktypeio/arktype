@@ -51,6 +51,17 @@ cases({
 		strictEqual(pretrimmed.description, expected)
 		strictEqual(pretrimmed(" ").toString(), `must be ${expected}`)
 	},
+	codeMessageIsCustom: () => {
+		const T = type({ count: "number % 3", name: "string" })
+		const out = T({ count: 4, name: 0 }) as type.errors
+		// a summary sets a configured message apart from its path with a colon
+		strictEqual(
+			out.summary,
+			`count: Enter a multiple of 3\nname must be ${config.keywords.string.description}`
+		)
+		strictEqual(out.issues[0].message, "Enter a multiple of 3")
+		strictEqual(type("number % 3")(4).toString(), "Enter a multiple of 3")
+	},
 	scopeNamedLikeObjectPrototypeMember: () => {
 		const types = scope({ root: "string" }, { name: "valueOf" }).export()
 		strictEqual(types.root.description, config.keywords.string.description)

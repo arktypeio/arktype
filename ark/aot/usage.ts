@@ -17,7 +17,8 @@ import type { Site } from "./sites.ts"
 
 // a member, "call" where it may return errors no one reads, "piped" where a
 // call may pass a second argument, "summary" where a call's errors have theirs
-// read, or "errors" where they may be read in any other way
+// read, "errors" where they may be read in any other way, or "thrown" where
+// code may name TraversalError, the class of what an assert throws
 export type UsedMember =
 	| "assert"
 	| "~standard"
@@ -28,6 +29,7 @@ export type UsedMember =
 	| "piped"
 	| "summary"
 	| "errors"
+	| "thrown"
 
 const usedMembersByName: Record<string, UsedMember | null> =
 	Object.setPrototypeOf(
@@ -65,6 +67,8 @@ export interface UsageProgram {
 	entries: ReadonlySet<string>
 	// e.g. a module a framework's runtime imports, as its exports are read
 	exposed: ReadonlySet<string>
+	// whether what a computed import() or require() may load is among them
+	exposesLoaded?: boolean
 	modules: ReadonlyMap<string, RuntimeModule>
 	// the module a specifier resolves to, if the program holds it
 	resolve: (specifier: string, importer: string) => string | undefined
@@ -151,8 +155,10 @@ class UsageAnalysis {
 			if (
 				(edge.kind === "whole" || edge.kind === "star") &&
 				isArkSpecifier(specifier)
-			)
+			) {
 				this.used.add("errors")
+				this.used.add("thrown")
+			}
 			const id = this.program.resolve(specifier, module.id)
 			if (id === undefined) return
 			const edges = this.edgesByTarget.get(id)
@@ -247,11 +253,13 @@ class UsageAnalysis {
 			}
 			if (id.name !== "require") continue
 			const [operand, parent] = operatorOf(id)
-			const specifier =
-				parent?.type === "CallExpression" && parent.callee === operand ?
-					literalOf(parent.arguments[0])
-				:	undefined
+			const isCalled =
+				parent?.type === "CallExpression" && parent.callee === operand
+			const specifier = isCalled ? literalOf(parent.arguments[0]) : undefined
 			if (specifier === undefined) {
+				// each module it may load is one code outside the program may
+				// read any way, as the bundler that built them has it
+				if (isCalled && this.program.exposesLoaded) continue
 				return escape(
 					`${module.positionOf(id)} reads require other than to call it with a string`
 				)
@@ -266,6 +274,7 @@ class UsageAnalysis {
 			if (node.type === "ImportExpression") {
 				const specifier = literalOf(node.source)
 				if (specifier === undefined) {
+					if (this.program.exposesLoaded) return true
 					return escape(
 						`${module.positionOf(node)} imports a module by a computed specifier`
 					)
@@ -304,6 +313,8 @@ class UsageAnalysis {
 		const key = `${id}\0${as}`
 		if (seen.has(key)) return
 		seen.add(key)
+		// whoever reads it
+		if (name === "TraversalError") this.used.add("thrown")
 		// code outside the bundle may read it
 		if (this.program.entries.has(id) || this.program.exposed.has(id))
 			this.used.add("errors")
@@ -340,6 +351,9 @@ class UsageAnalysis {
 	): void {
 		if (name !== "type" && name !== "ArkErrors") {
 			this.used.add("errors")
+			// the class itself, or a default or namespace it's read off
+			if (name === undefined || name === "TraversalError")
+				this.used.add("thrown")
 			return
 		}
 		for (const { id } of binding.references) {

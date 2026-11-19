@@ -462,9 +462,13 @@ const keyRegisteredNames = (root: BaseRoot): string => {
 		const kind = kindsByName[name] ?? name.replace(/\$[1-9]\d*$/, "")
 		return `${kind}#${nameCount++}`
 	}
+	// a quote after a backslash is text in a string the hash holds, not a
+	// reference. Matched by the character before and not a lookbehind, since a
+	// lookbehind in a literal fails the whole module to parse before Safari 16.4
 	return root.hash.replace(
-		/(?<!\\)"\$ark\.([\w$]+)"/g,
-		(_, name: string) => `"${(keysByName[name] ??= keyOfName(name))}"`
+		/(^|[^\\])"\$ark\.([\w$]+)"/g,
+		(_, before: string, name: string) =>
+			`${before}"${(keysByName[name] ??= keyOfName(name))}"`
 	)
 }
 
@@ -597,6 +601,15 @@ export class TraversalCompiler extends NodeCompiler {
 	override traversal(node: BaseNode, kind: TraversalKind): string {
 		this.reach(node)
 		return super.traversal(node, kind)
+	}
+
+	// a node passed as a value has its traversals read from it, as the node a
+	// morph pipes to does. One a root's unit would leave uncompiled since
+	// nothing invokes it is compiled with the unit, or each read walks its nodes
+	override ref(value: object | symbol): string {
+		if (isNode(value) && !value.unitFn && this.link.unreached.delete(value))
+			this.link.reached.push(value)
+		return super.ref(value)
 	}
 
 	reach(node: BaseNode): void {

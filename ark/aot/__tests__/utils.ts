@@ -13,10 +13,13 @@ import { spawnSync } from "node:child_process"
 import {
 	mkdirSync,
 	mkdtempSync,
+	readdirSync,
+	readFileSync,
 	realpathSync,
 	rmSync,
 	writeFileSync
 } from "node:fs"
+import type { Checker } from "@ark/aot/internal/declare.ts"
 import type { Plugin } from "esbuild"
 import { tmpdir } from "node:os"
 import { dirname, join, posix } from "node:path"
@@ -282,6 +285,91 @@ export const runCli = (cwd: string, ...args: string[]) =>
 		["--conditions", "ark-ts", fromHere("..", "cli.ts"), ...args],
 		{ cwd, encoding: "utf8" }
 	)
+
+// each export a consumer reads as another type than its source's
+// declarations are keyed by TypeScript's paths, which use / on Windows too
+export const tsPath = (path: string): string => path.split("\\").join("/")
+
+// each export a consumer reads as another type than its source's, and each
+// error TypeScript reports in a declaration
+export const inexactExportsOf = (
+	fixture: string,
+	checks: Record<string, string>,
+	checker?: Checker
+): string[] => {
+	const lines = [
+		"type eq<l, r> = (<_>() => _ extends l ? 1 : 2) extends <_>() => _ extends r ? 1 : 2 ? true : false",
+		"type inferOf<t> = t extends { infer: infer o; inferIn: infer i } ? [o, i] : t"
+	]
+	const exportsByLine = lines.map(() => "")
+	const check = (name: string, comparison: string) => {
+		exportsByLine.push(name)
+		lines.push(`export const _${lines.length}: ${comparison} = true`)
+	}
+	const src = join(fixture, "src")
+	for (const file of readdirSync(src, {
+		recursive: true,
+		encoding: "utf8"
+	}).map(tsPath)) {
+		if (!file.endsWith(".ts")) continue
+		const module = file.slice(0, -3)
+		const id = module.replace(/\//g, "_")
+		exportsByLine.push("", "")
+		lines.push(
+			`import type * as ${id}Source from "./src/${file}"`,
+			`import type * as ${id}Declared from "./out/${module}.js"`
+		)
+		const source = readFileSync(join(src, file), "utf8")
+		for (const [, name] of source.matchAll(
+			/^export (?:const|function) (\w+)/gm
+		)) {
+			check(
+				`${module}.${name}`,
+				`eq<inferOf<typeof ${id}Declared.${name}>, inferOf<typeof ${id}Source.${name}>>`
+			)
+		}
+	}
+	for (const name in checks) check(name, checks[name])
+	try {
+		runCli(fixture, "--declare", ...(checker ? ["--checker", checker] : []))
+		writeFileSync(join(fixture, "consumer.ts"), lines.join("\n"))
+		const { compilerOptions } = JSON.parse(
+			readFileSync(join(fixture, "tsconfig.json"), "utf8")
+		)
+		writeFileSync(
+			join(fixture, "tsconfig.consumer.json"),
+			JSON.stringify({
+				compilerOptions: {
+					...compilerOptions,
+					noEmit: true,
+					skipLibCheck: false,
+					skipDefaultLibCheck: true,
+					rootDir: undefined,
+					types: ["node"]
+				},
+				files: ["consumer.ts"]
+			})
+		)
+		const tsc = spawnSync(
+			process.execPath,
+			[
+				fromHere("..", "..", "..", "node_modules", "typescript", "bin", "tsc"),
+				"-p",
+				"tsconfig.consumer.json"
+			],
+			{ cwd: fixture, encoding: "utf8" }
+		)
+		return [
+			...tsc.stdout.matchAll(/^(consumer\.ts|out\/[^(]+)\((\d+),.*$/gm)
+		].map(([text, file, line]) =>
+			file === "consumer.ts" ? exportsByLine[+line - 1] || text : text
+		)
+	} finally {
+		rmSync(join(fixture, "out"), { recursive: true, force: true })
+		rmSync(join(fixture, "consumer.ts"), { force: true })
+		rmSync(join(fixture, "tsconfig.consumer.json"), { force: true })
+	}
+}
 
 // Bun is optional, so its tests run where it is installed, as CI requires
 export const hasBun = (): boolean => {

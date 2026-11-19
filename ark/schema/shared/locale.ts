@@ -15,8 +15,8 @@ import {
 	type ArkErrorCode,
 	type ExpectedContext,
 	type getAssociatedDataForError,
-	type MessageContext,
-	type ProblemContext
+	type LineContext,
+	type MessageContext
 } from "./errors.ts"
 
 export type PluralCategory = "zero" | "one" | "two" | "few" | "many" | "other"
@@ -51,9 +51,14 @@ export declare namespace Locale {
 			readonly [alias in keywordAlias]?: KeywordPhrase
 		}
 		readonly actual: ActualWriter
-		/** the problem of a keyword's phrase or of expected text you wrote */
-		readonly problem: ProblemWriter
+		/** the message of a keyword's phrase or of expected text you wrote */
 		readonly message: MessageWriter
+		/**
+		 * an error's line of a summary: its message after the path it failed
+		 * at. Only written below the root, and not for a union listing its
+		 * branches' errors, each of which names its own path
+		 */
+		readonly line: LineWriter
 	}
 
 	export type Writers = {
@@ -65,11 +70,10 @@ export declare namespace Locale {
 
 	export type CodeWriters<code extends ArkErrorCode = ArkErrorCode> = {
 		/** the sentence for an error of this code, without its subject */
-		readonly problem: string | ProblemWriter<code>
+		readonly message: string | MessageWriter<code>
 		/** what unions and intersections list, as "must be" takes it */
 		readonly expected?: string | ExpectedWriter<code>
 		readonly actual?: string | ActualWriter<code>
-		readonly message?: string | MessageWriter<code>
 	}
 
 	export type ExpectedContext<code extends ArkErrorCode = ArkErrorCode> =
@@ -86,15 +90,12 @@ export declare namespace Locale {
 		locale: Locale
 	) => string
 
-	export type ProblemWriter<code extends ArkErrorCode = ArkErrorCode> = (
-		error: ProblemContext<code>,
-		locale: Locale
-	) => string
-
 	export type MessageWriter<code extends ArkErrorCode = ArkErrorCode> = (
 		error: MessageContext<code>,
 		locale: Locale
 	) => string
+
+	export type LineWriter = (error: LineContext, locale: Locale) => string
 
 	export type KeywordPhrase = string | KeywordWriters
 
@@ -141,7 +142,7 @@ const keywordPhraseOf = (
 }
 
 /** the writer a locale has for an error's keyword in a slot other than expected */
-export const keywordWriterOf = <slot extends "actual" | "problem" | "message">(
+export const keywordWriterOf = <slot extends "actual" | "message">(
 	error: { readonly meta?: ArkEnv.meta },
 	locale: Locale,
 	slot: slot

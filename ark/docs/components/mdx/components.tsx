@@ -4,21 +4,43 @@ import { MainAutoplayDemo } from "../AutoplayDemo.tsx"
 import { CodeBlock } from "../CodeBlock.tsx"
 import { InstallationTabs } from "../InstallationTabs.tsx"
 import { KeywordTable } from "../KeywordTable.tsx"
+import { Compile } from "../precompile/Compile.tsx"
 import { RuntimeBenchmarksGraph } from "../RuntimeBenchmarksGraph.tsx"
 import { SyntaxTab, SyntaxTabs } from "../SyntaxTabs.tsx"
 import { ApiMember, ApiMembers } from "./ApiMembers.tsx"
+import { BenchmarkChart } from "./BenchmarkChart.tsx"
+import {
+	BoardCaption,
+	BoardLeftOut,
+	BoardResults,
+	BoardRuns,
+	BoardStandings,
+	JitComparison,
+	OwnResults,
+	OwnSpeed
+} from "./Benchmarks.tsx"
 import { Callout } from "./Callout.tsx"
 import {
 	Claim,
 	ClaimCharts,
 	Headline,
 	HeadlineNote,
-	PresetSizeTable
+	PresetSizeTable,
+	StandingsAsOf
 } from "./Claim.tsx"
 import { Pre } from "./CodeFrame.tsx"
 import { Heading } from "./Heading.tsx"
 import { Link } from "./Link.tsx"
 import { LinkCard } from "./LinkCard.tsx"
+import {
+	SizeScaleChart,
+	SizeScaleCosts,
+	SizeScaleCrossovers,
+	SizeScaleFits,
+	SizeScaleParagraph,
+	SizeScaleTable,
+	SizeScaleText
+} from "./SizeScale.tsx"
 import { Table } from "./Table.tsx"
 import { Tab, Tabs } from "./Tabs.tsx"
 
@@ -35,20 +57,45 @@ export const mdxComponents: MDXComponents = {
 	AnchorAliases,
 	ApiMember,
 	ApiMembers,
+	// every scenario of the speed benchmark, with its method
+	BenchmarkChart,
+	// the homepage board's graphs as tables, the results under them, the
+	// public results a graph leaves out and when each benchmark was measured
+	BoardCaption,
+	BoardLeftOut,
+	BoardResults,
+	BoardRuns,
+	BoardStandings,
 	Callout,
 	Claim,
 	ClaimCharts,
 	Headline,
 	HeadlineNote,
+	// the day the board's published results were last measured
+	StandingsAsOf,
 	CodeBlock,
 	InstallationTabs,
+	JitComparison,
 	KeywordTable,
 	LinkCard,
+	// a definition and what the build writes for it, editable
+	LivePrecompile: Compile,
 	// the demo itself is small; the playground behind it loads only when opened
 	MainAutoplayDemo,
+	// our own benchmark beside the board's
+	OwnResults,
+	OwnSpeed,
 	PresetSizeTable,
 	// the 2.0 post's chart
 	RuntimeBenchmarksGraph,
+	// bundle size at scale, from lib/bench/sizeScale.ts
+	SizeScaleChart,
+	SizeScaleCosts,
+	SizeScaleCrossovers,
+	SizeScaleFits,
+	SizeScaleParagraph,
+	SizeScaleTable,
+	SizeScaleText,
 	SyntaxTab,
 	SyntaxTabs,
 	Tab,

@@ -5,7 +5,12 @@ import type {
 	PrecompilePluginOptions,
 	RenderedDiagnostics
 } from "./driver.ts"
-import { printablePathOf, scriptExtensions, transformedId } from "./host.ts"
+import {
+	printablePathOf,
+	realPathOf,
+	scriptExtensions,
+	transformedId
+} from "./host.ts"
 import {
 	pluginCallLinesOf,
 	pluginCallsIn,
@@ -20,6 +25,7 @@ import {
 	type ScannedUsage
 } from "./scan.ts"
 import { withSettingsFile } from "./settings.ts"
+import { SchemaStrategies } from "./strategies.ts"
 import { createSyncPrecompiler } from "./worker.ts"
 
 export interface CheckReport {
@@ -102,6 +108,8 @@ export const check = (
 		errors: 0,
 		files: files.length
 	}
+	// each key of schemas that chose for a definition of some file
+	const choosing = new Set<string>()
 	try {
 		for (const file of files) {
 			const result = request(
@@ -110,6 +118,18 @@ export const check = (
 				file
 			) as CheckedModule
 			reportModule(report, result, file, cwd)
+			for (const key of result.schemaKeys) choosing.add(key)
+		}
+		// a key every file of which was checked, and none found to define a Type
+		if (precompilerOptions.runtime !== "arktype") {
+			const definitionless = new SchemaStrategies(
+				precompilerOptions,
+				"speed",
+				realPathOf(cwd)
+			).definitionlessIn(new Set(files.map(realPathOf)), choosing)
+			report.lines.push(...definitionless)
+			report.errors += definitionless.length
+			report.errorsOutsideSites += definitionless.length
 		}
 		// as a build reads each dependency importing arktype
 		const { errors, warnings } = request(
@@ -181,7 +201,7 @@ const reportModule = (
 		else report.accepted++
 		entries.push([
 			site.start,
-			`${path}:${site.line}:${site.column}  ${site.status}`
+			`${path}:${site.line}:${site.column}  ${site.status}${site.strategy === undefined ? "" : `  ${site.strategy}`}`
 		])
 	}
 	entries.sort((l, r) => l[0] - r[0])

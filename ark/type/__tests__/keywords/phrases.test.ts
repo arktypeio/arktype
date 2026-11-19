@@ -174,17 +174,17 @@ contextualize(() => {
 				expected:
 					"an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER",
 				actual: '"9007199254740993"',
-				problem:
-					"must be an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER",
 				message:
 					"must be an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER"
 			})
 		})
 
 		it("date.parse", () => {
-			const error = errorOf(type({ d: "string.date.parse" }), { d: "x" })
+			const T = type({ d: "string.date.parse" })
+			const error = errorOf(T, { d: "x" })
 			attest(error.meta).snap({ keyword: "string.date.parse" })
-			attest(error.message).snap("d must be a parsable date")
+			attest(error.message).snap("must be a parsable date")
+			attest(T({ d: "x" }).toString()).snap("d must be a parsable date")
 		})
 
 		it("url.parse", () => {
@@ -199,7 +199,7 @@ contextualize(() => {
 			attest(error.meta).snap({ keyword: "string.json.parse" })
 			attest(error.cause).instanceOf(SyntaxError)
 			attest(error.actual).snap('"{"')
-			attest(error.problem).equals(`must be a JSON string (${error.cause})`)
+			attest(error.message).equals(`must be a JSON string (${error.cause})`)
 			attest(errorOf(type("string.json"), "{").meta).snap({
 				keyword: "string.json"
 			})
@@ -214,18 +214,19 @@ contextualize(() => {
 				propString: "",
 				expected: "a JSON string",
 				actual: '""',
-				problem: "must be a JSON string",
 				message: "must be a JSON string"
 			})
 		})
 
 		it("regex", () => {
-			const error = errorOf(type({ r: "string.regex" }), { r: "(" })
+			const T = type({ r: "string.regex" })
+			const error = errorOf(T, { r: "(" })
 			attest(error.meta).snap({ keyword: "string.regex" })
 			attest(error.cause).instanceOf(SyntaxError)
 			attest(error.expected).snap("a regex pattern")
-			attest(error.problem).equals(`must be a regex pattern (${error.cause})`)
-			attest(error.message).equals(`r ${error.problem}`)
+			attest(error.message).equals(`must be a regex pattern (${error.cause})`)
+			// a phrase's own message is arktype's, written after its path
+			attest(T({ r: "(" }).toString()).equals(`r ${error.message}`)
 		})
 
 		it("per-code config outranks the phrase", () => {
@@ -233,7 +234,7 @@ contextualize(() => {
 				{},
 				{
 					predicate: {
-						problem: e => `isn't ${e.expected}`,
+						message: e => `isn't ${e.expected}`,
 						actual: () => ""
 					}
 				}
@@ -252,7 +253,7 @@ contextualize(() => {
 				{
 					predicate: {
 						expected: e => `<${e.description}>`,
-						problem: e => `isn't ${e.expected}`
+						message: e => `isn't ${e.expected}`
 					}
 				}
 			)

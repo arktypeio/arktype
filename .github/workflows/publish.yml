@@ -30,8 +30,11 @@ jobs:
           echo "prerelease=$(node -p 'require("./ark/type/package.json").version.includes("-")')" >> "$GITHUB_OUTPUT"
           echo "basePath=$(node -p 'const v = require("./ark/type/package.json").version; v.includes("-") ? `/${v.split(".")[0]}` : ""')" >> "$GITHUB_OUTPUT"
 
+  # after release, so a publish that fails, like a stable arktype while the
+  # homepage's benchmark is a preview, or npm refusing a package, leaves the
+  # site as it is. A push that publishes nothing passes release and deploys
   update-gh-pages:
-    needs: version
+    needs: [version, release]
     runs-on: ubuntu-latest
     # a prerelease builds the docs twice: its own and the latest stable's
     timeout-minutes: 45

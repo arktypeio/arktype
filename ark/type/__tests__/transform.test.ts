@@ -435,6 +435,27 @@ b must be A`)
 		).equals(Object.assign(["a"], { slice: 1 }))
 	})
 
+	it("array copy holds each enumerable own key as a value read once", () => {
+		const s = Symbol("s")
+		const quiet = Symbol("quiet")
+		let reads = 0
+		const original = Object.defineProperties([" a "], {
+			hidden: { value: 1 },
+			[quiet]: { value: 2 },
+			[s]: { value: 3, enumerable: true },
+			read: { get: () => ++reads, enumerable: true }
+		})
+		const out = type("string.trim[]").assert(original)
+		attest(Reflect.ownKeys(out)).equals(["0", "length", "read", s])
+		attest(Object.getOwnPropertyDescriptor(out, "read")).equals({
+			value: 1,
+			writable: true,
+			enumerable: true,
+			configurable: true
+		})
+		attest(reads).equals(1)
+	})
+
 	it("array props with shared defaults", () => {
 		const $ = scope({})
 		const T = $.type({
@@ -894,6 +915,30 @@ k must be a number`)
 				"z",
 				"b",
 				"a"
+			])
+		})
+
+		it("writes a default where its key is declared, after an optional key or not", () => {
+			const T = type({
+				"+": "delete",
+				a: "string",
+				b: "number = 5",
+				"c?": "string",
+				d: "boolean = false"
+			})
+			// b follows only required keys, d an optional one
+			attest(Object.entries(T.assert({ a: "a", z: 1 }))).equals([
+				["a", "a"],
+				["b", 5],
+				["d", false]
+			])
+			attest(
+				Object.entries(T.assert({ z: 1, d: true, c: "c", b: 0, a: "a" }))
+			).equals([
+				["a", "a"],
+				["b", 0],
+				["c", "c"],
+				["d", true]
 			])
 		})
 

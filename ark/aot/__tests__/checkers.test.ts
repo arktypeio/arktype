@@ -1,7 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
-import { build } from "esbuild"
+import { type } from "arktype"
+import { precompileStandalone } from "arktype/internal/standalone.ts"
+import { build, transform } from "esbuild"
 import { spawnSync } from "node:child_process"
 import { join } from "node:path"
 import { runPlain, writeFixture } from "./utils.ts"
@@ -139,6 +141,360 @@ list[0] must be a string
 		})
 	})
 
+	it("describes a union told apart by domain from its cases", async () => {
+		const root = fixture(
+			"domains",
+			`import { type } from "arktype"
+
+const T = type({
+	text: "string | undefined",
+	list: "string[] | undefined",
+	shape: type({ x: "number" }).or("undefined"),
+	count: "number > 0 | undefined | null",
+	either: "string | number[]"
+})
+console.log(String(T({ text: 1, list: 1, shape: 1, count: "1", either: true })))
+console.log(String(T({ text: undefined, list: [1], shape: { x: "1" }, count: 0, either: [""] })))
+${repaying}
+`
+		)
+		// as arktype prints them
+		const expected = `text must be a string or undefined
+list must be an array or undefined
+shape must be an object or undefined
+count must be a number, undefined or null
+either must be a string or an array
+list[0] must be a string
+shape.x must be a number
+count must be positive
+either[0] must be a number
+`
+		attest(behaviorOf(await bundle(root))).equals(expected)
+		const checkers = await bundle(root, smallest)
+		attest(behaviorOf(checkers)).equals(expected)
+		// each read from what its cases describe, none written
+		attest(checkers.match(/ or (?:undefined|null|an array)"/g)).equals(null)
+	})
+
+	describe("a message configured for a Type", () => {
+		// each issue's code, what it expects and its message, then the summary
+		const printing = `const print = (out: unknown) =>
+	console.log(out instanceof type.errors ? out.issues.map(issue => \`\${issue.code} \${issue.expected}: \${issue.message}\`).join("\\n") + "\\n" + out.summary : JSON.stringify(out))`
+
+		// a site written with a message of its own: its code, what it expects,
+		// then the message
+		const sitesSaying =
+			/\b(?:siteOf|codeSiteOf)\d*\("\w+", (?:void 0|"(?:[^"\\]|\\.)*"), "/
+
+		it("is said by the checker of what its field checks, at each site and where the key is missing", async () => {
+			const root = fixture(
+				"says",
+				`import { type } from "arktype"
+
+${printing}
+const Form = type({
+	name: type("string > 0").configure({ message: "Name is required." }),
+	nickname: type("string > 0").configure({ message: "Nickname is required." }),
+	agreed: type("boolean").configure({ message: "Agree to continue." }),
+	plan: type("'free' | 'paid'").configure({ message: "Pick a plan." }),
+	"note?": type("string <= 3").configure({ message: "Note is too long." }),
+	plain: "string > 0"
+})
+print(Form({}))
+print(Form({ name: "", nickname: 1, agreed: "yes", plan: "pro", note: "long", plain: "" }))
+print(Form({ name: "a", nickname: "b", agreed: true, plan: "paid", plain: "p" }))
+print(type({ form: Form }).or({ form: "null" })({ form: { name: "" } }))
+${repaying}
+`
+			)
+			// as arktype prints them
+			const expected = `required a string: Name is required.
+required a string: Nickname is required.
+required boolean: Agree to continue.
+required "free" or "paid": Pick a plan.
+required a string: must be a string (was missing)
+name: Name is required.
+nickname: Nickname is required.
+agreed: Agree to continue.
+plan: Pick a plan.
+plain must be a string (was missing)
+minLength non-empty: Name is required.
+domain a string: Nickname is required.
+discriminant boolean: Agree to continue.
+discriminant "free" or "paid": Pick a plan.
+maxLength at most length 3: Note is too long.
+minLength non-empty: must be non-empty
+name: Name is required.
+nickname: Nickname is required.
+agreed: Agree to continue.
+plan: Pick a plan.
+note: Note is too long.
+plain must be non-empty
+{"name":"a","nickname":"b","agreed":true,"plan":"paid","plain":"p"}
+minLength non-empty: Name is required.
+required a string: Nickname is required.
+required boolean: Agree to continue.
+required "free" or "paid": Pick a plan.
+required a string: must be a string (was missing)
+form.name: Name is required.
+form.nickname: Nickname is required.
+form.agreed: Agree to continue.
+form.plan: Pick a plan.
+form.plain must be a string (was missing)
+`
+			attest(behaviorOf(await bundle(root))).equals(expected)
+			const checkers = await bundle(root, smallest)
+			attest(behaviorOf(checkers)).equals(expected)
+			// each field is a checker saying its message, none compiled with sites of its own
+			attest(checkers.match(/saying\(/g)?.length).equals(5)
+			attest(sitesSaying.test(checkers)).equals(false)
+			attest(checkers.includes("sayingMissing(")).equals(false)
+		})
+
+		it("is said by each check it's configured for where its root checks keys or calls a narrow", async () => {
+			const root = fixture(
+				"says-checks",
+				`import { type } from "arktype"
+
+${printing}
+const isEven = (n: number) => n % 2 === 0
+const Form = type({
+	tags: type("string[] > 0").configure({ message: "Add a tag." }),
+	owner: type({ id: "string", "age?": "number" }).configure({ message: "Pick an owner." }),
+	amount: type("number >= 0").configure({ message: "Enter an amount." }).narrow(isEven)
+})
+print(Form({}))
+print(Form({ tags: [], owner: 1, amount: -1 }))
+print(Form({ tags: [1], owner: { age: "1" }, amount: 1 }))
+print(Form({ tags: 1, owner: { id: "a" }, amount: "1" }))
+print(Form({ tags: ["a"], owner: { id: "a" }, amount: 2 }))
+${repaying}
+`
+			)
+			// as arktype prints them: what a field holds keeps its own text
+			const expected = `required an array: Add a tag.
+required an object: Pick an owner.
+required a number: must be a number (was missing)
+tags: Add a tag.
+owner: Pick an owner.
+amount must be a number (was missing)
+minLength non-empty: Add a tag.
+domain an object: Pick an owner.
+min non-negative: Enter an amount.
+tags: Add a tag.
+owner: Pick an owner.
+amount: Enter an amount.
+domain a string: must be a string
+required a string: must be a string (was missing)
+domain a number: must be a number
+predicate valid according to isEven: must be valid according to isEven
+tags[0] must be a string
+owner.id must be a string (was missing)
+owner.age must be a number
+amount must be valid according to isEven
+proto an array: Add a tag.
+domain a number: Enter an amount.
+tags: Add a tag.
+amount: Enter an amount.
+{"tags":["a"],"owner":{"id":"a"},"amount":2}
+`
+			attest(behaviorOf(await bundle(root))).equals(expected)
+			const checkers = await bundle(root, smallest)
+			attest(behaviorOf(checkers)).equals(expected)
+			attest(sitesSaying.test(checkers)).equals(false)
+			// the missing key of a field whose checks say it, not its checker
+			attest(checkers.match(/sayingMissing\(/g)?.length).equals(2)
+			// what a narrowed field checks ahead of its narrow is one checker,
+			// which says the message its checks share once
+			attest(checkers.match(/"Enter an amount\."/g)?.length).equals(1)
+		})
+
+		it("is said by one checker of a pattern, however many Types say it", async () => {
+			const root = fixture(
+				"says-pattern",
+				`import { type } from "arktype"
+
+${printing}
+const email = () => type("string.email").configure({ message: "Enter an email." })
+const Invite = type({ to: email(), code: type(/^[a-z]+$/).configure({ message: "Letters only." }) })
+const Reply = type({ from: email(), code: "string" })
+print(Invite({ to: "a", code: "A" }))
+print(Reply({ from: 1, code: "A" }))
+print(Reply({ from: "a@b.co", code: "A" }))
+${repaying}
+`
+			)
+			// as arktype prints them
+			const expected = `pattern an email address: Enter an email.
+pattern matched by ^[a-z]+$: Letters only.
+to: Enter an email.
+code: Letters only.
+domain a string: Enter an email.
+from: Enter an email.
+{"from":"a@b.co","code":"A"}
+`
+			attest(behaviorOf(await bundle(root))).equals(expected)
+			const checkers = await bundle(root, smallest)
+			attest(behaviorOf(checkers)).equals(expected)
+			// the RegExp of what's checked without the message is arktype's own,
+			// so both Types read one checker, neither a function passed it
+			attest(checkers.match(/"Enter an email\."/g)?.length).equals(1)
+			attest(checkers.match(/@\[/g)?.length).equals(1)
+		})
+
+		it("is said over the one checker of a keyword, whatever each Type says of it", async () => {
+			const root = fixture(
+				"says-keyword",
+				`import { type } from "arktype"
+
+${printing}
+const Order = type({
+	id: "string.uuid",
+	customerId: type("string.uuid").configure({ message: "Choose a customer." }),
+	"couponId?": type("string.uuid").configure({ message: "That coupon isn't valid." }),
+	"code?": type(/^a+$/).or("number").configure({ message: "Enter a number, or all a." })
+})
+print(Order({ id: "a", customerId: "b", couponId: 1, code: "ab" }))
+print(Order({ id: "f47ac10b-58cc-4372-a567-0e02b2c3d479" }))
+${repaying}
+`
+			)
+			// as arktype prints them
+			const expected = `pattern a UUID: must be a UUID
+pattern a UUID: Choose a customer.
+domain a UUID: That coupon isn't valid.
+pattern matched by ^a+$: Enter a number, or all a.
+id must be a UUID
+customerId: Choose a customer.
+couponId: That coupon isn't valid.
+code: Enter a number, or all a.
+required a string: Choose a customer.
+customerId: Choose a customer.
+`
+			attest(behaviorOf(await bundle(root))).equals(expected)
+			const checkers = await bundle(root, smallest)
+			attest(behaviorOf(checkers)).equals(expected)
+			// each message wraps the checker the key with none reads, whose RegExp
+			// is written once, and the union's wraps one reading its branch's
+			attest(checkers.match(/\[89ABab]/g)?.length).equals(1)
+			attest(checkers.match(/saying\(/g)?.length).equals(3)
+		})
+	})
+
+	it("has the runtime fill a node its own traversals read, where a callback reads its ctx", async () => {
+		// a definition holding what a call returns is made by a factory, which
+		// declares each node before the traversals reading it
+		const root = fixture(
+			"ctx-shape",
+			`import { type } from "arktype"
+
+const print = (out: unknown) =>
+	console.log(out instanceof type.errors ? out.issues.map(issue => \`\${issue.code} \${issue.path.join(".")}: \${issue.message}\`).join("\\n") : JSON.stringify(out))
+const evenOver = (min: number) =>
+	type("number").narrow((n, ctx) => (n > min && n % 2 === 0) || ctx.mustBe(\`even and over \${min}\`))
+const Limited = type({ name: "string", count: evenOver(2) }).narrow(
+	(data, ctx) => { const held = ctx; return data.count < 10 || held.reject({ message: "Too many.", path: ["count"] }) }
+)
+print(Limited({}))
+print(Limited({ name: "n", count: 3 }))
+print(Limited({ name: "n", count: 12 }))
+print(Limited({ name: "n", count: 4 }))
+print(Limited.allows({ name: "n", count: 4 }))
+print(Limited.allows({ name: "n", count: 12 }))
+print(type({ items: Limited.array() })({ items: [{ name: "n", count: 4 }, { name: 1, count: 12 }] }))
+${repaying}
+`
+		)
+		// as arktype prints them
+		const expected = `required name: must be a string (was missing)
+required count: must be a number (was missing)
+predicate count: must be even and over 2
+predicate count: Too many.
+{"name":"n","count":4}
+true
+false
+domain items.1.name: must be a string
+`
+		attest(behaviorOf(await bundle(root))).equals(expected)
+		const checkers = await bundle(root, smallest)
+		attest(behaviorOf(checkers)).equals(expected)
+		// neither shape writes its own members or the function answering allows
+		attest(checkers.match(/ctxNode\({[^}]*}, [^)]*, shape\d+\)/g)).equals([
+			"ctxNode({ checksCtx: true, reportsPred: true }, traversals1[0], traversals1[1], void 0, shape0)",
+			"ctxNode({ checksCtx: true, reportsPred: true }, traversals2[0], traversals2[1], void 0, shape0)"
+		])
+		attest(checkers.includes("allowsUntracked(shape")).equals(false)
+	})
+
+	it("creates the node of a checker whose callback reads its ctx from its Apply", async () => {
+		const root = fixture(
+			"ctx-node",
+			`import { type } from "arktype"
+
+const print = (out: unknown) =>
+	console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
+const Counted = type({ count: "number" }).narrow(
+	(data, ctx) => { const held = ctx; return data.count < 10 || held.reject({ message: "Too many.", path: ["count"] }) }
+)
+const Listed = type({ items: Counted.array() })
+print(Counted({ count: 12 }))
+print(Counted.allows({ count: 4 }))
+print(Listed({ items: [{ count: 4 }, { count: 12 }] }))
+print(Listed.allows({ items: [{ count: 12 }] }))
+${repaying}
+`
+		)
+		// as arktype prints them
+		const expected = `count: Too many.
+true
+count: Too many.
+false
+`
+		attest(behaviorOf(await bundle(root))).equals(expected)
+		const checkers = await bundle(root, smallest)
+		attest(behaviorOf(checkers)).equals(expected)
+		// neither its flags nor an Allows written from its Apply
+		attest(
+			checkers
+				.match(/\b(?:readingCtxNode|ctxNode)\(\w+Apply\b[^)]*\)/g)
+				?.map(node => node.replace(/\w+Apply/, "Apply"))
+		).equals(["readingCtxNode(Apply)", "readingCtxNode(Apply)"])
+	})
+
+	it("returns what a factory created before for the same function, keyed by an object its module declares", async () => {
+		const root = fixture(
+			"intern-holder",
+			`import { type } from "arktype"
+
+// each call's narrow reads its own min, so a Type holding one is passed it
+const over = (min: number) => type("number").narrow(n => n > min)
+const Low = over(2)
+const A = type({ n: Low })
+const B = type({ n: Low })
+const C = type({ n: over(4) })
+console.log(A === B, A === C)
+console.log(A.allows({ n: 3 }), C.allows({ n: 3 }))
+${repaying}
+`
+		)
+		// as arktype compares them
+		const expected = "true false\ntrue false\n"
+		attest(behaviorOf(await bundle(root))).equals(expected)
+		const checkers = await bundle(root, smallest)
+		attest(behaviorOf(checkers)).equals(expected)
+		attest(
+			checkers.match(/\binterned\d* = .*$|\bintern\w*\(interned\d*/gm)
+		).snap([
+			"interned0 = {};",
+			"interned1 = {};",
+			"interned2 = {};",
+			"internIn(interned0",
+			"internIn(interned1",
+			"internIn(interned1",
+			"internIn(interned2"
+		])
+	})
+
 	describe("a union's issue", () => {
 		const printed = `const printIssues = (out: unknown) => console.log(JSON.stringify(out instanceof type.errors ? out.issues : out))
 
@@ -160,11 +516,11 @@ console.log(JSON.stringify(Unlike["~standard"].validate({ id: 1 })))
 			const written = behaviorOf(await bundle(root, smallest))
 			attest(written).equals(behaviorOf(await bundle(root)))
 			attest(written)
-				.snap(`[{"code":"union","path":["ip"],"data":"x","errors":[{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"},{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"}],"message":"ip must be an IP address","expected":"must be an IP address"}]
-[{"code":"union","path":["ip"],"data":1,"errors":[],"message":"ip must be an IP address","expected":"an IP address"}]
-[{"code":"union","path":["id"],"data":"x","errors":[{"code":"pattern","path":["id"],"data":"x","expected":"an email address","message":"id must be an email address"},{"code":"pattern","path":["id"],"data":"x","expected":"a UUID","message":"id must be a UUID"}],"message":"id must be an email address or a UUID","expected":"must be an email address or a UUID"}]
-{"issues":[{"code":"union","path":["ip"],"data":"x","errors":[{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"},{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"ip must be an IP address"}],"message":"must be an IP address","expected":"must be an IP address"}]}
-{"issues":[{"code":"union","path":["id"],"data":1,"errors":[],"message":"must be a string or a UUID","expected":"a string or a UUID"}]}
+				.snap(`[{"code":"union","path":["ip"],"data":"x","errors":[{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"must be an IP address"},{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"must be an IP address"}],"expected":"must be an IP address","message":"must be an IP address"}]
+[{"code":"union","path":["ip"],"data":1,"errors":[],"expected":"an IP address","message":"must be an IP address"}]
+[{"code":"union","path":["id"],"data":"x","errors":[{"code":"pattern","path":["id"],"data":"x","expected":"an email address","message":"must be an email address"},{"code":"pattern","path":["id"],"data":"x","expected":"a UUID","message":"must be a UUID"}],"expected":"must be an email address or a UUID","message":"must be an email address or a UUID"}]
+{"issues":[{"code":"union","path":["ip"],"data":"x","errors":[{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"must be an IP address"},{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"must be an IP address"}],"expected":"must be an IP address","message":"must be an IP address"}],"message":"ip must be an IP address"}
+{"issues":[{"code":"union","path":["id"],"data":1,"errors":[],"expected":"a string or a UUID","message":"must be a string or a UUID"}],"message":"id must be a string or a UUID"}
 `)
 		})
 	})
@@ -345,16 +701,18 @@ console.log(String(T({})))
 ${repaying}
 `
 			)
+			// a message written out for a key's value is set apart from its
+			// path, and is the missing key's too
 			const expected = `named must be valid according to isLong
 anonymous must be valid according to an anonymous predicate
 described must be long
-too short
+configured: too short
 bare must be valid according to isLong
 missing must be valid according to isLong
 named must be a string (was missing)
 anonymous must be a string (was missing)
 described must be a string (was missing)
-configured must be a string (was missing)
+configured: too short
 bare must be present (was missing)
 `
 			attest(behaviorOf(await bundle(root))).equals(expected)
@@ -412,6 +770,277 @@ s must be reached
 		})
 	})
 
+	it("writes a narrow that tests its data or rejects with a message where its field is checked", async () => {
+		const main = `import { type } from "arktype"
+import { isSlug } from "./helpers.ts"
+
+const print = (out: unknown) =>
+	console.log(out instanceof type.errors ? out.issues.map(issue => \`\${issue.code} \${issue.path.join(".")} \${issue.expected}: \${issue.message}\`).join("\\n") : JSON.stringify(out))
+const Post = type({
+	slug: type("1 <= string <= 20").narrow((s, ctx) => isSlug(s) || ctx.reject({ message: "Use lowercase letters and dashes." })),
+	title: type("1 <= string <= 20").configure({ message: "Title must be 1 to 20 characters." }).narrow((s, ctx) => s.trim() === s ? true : ctx.reject({ message: "Title can't start or end with a space." })),
+	"tags?": type("string").narrow((s, ctx) => !s.includes(",") || ctx.reject({ message: "One tag at a time." })).array()
+})
+print(Post({ slug: "A", title: " a", tags: ["a,b", 1] }))
+print(Post({ slug: "", title: "" }))
+print(Post({ slug: "a-b", title: "a", tags: ["a"] }))
+print(Post.allows({ slug: "A", title: "a" }))
+${repaying}
+`
+		const root = writeFixture(
+			{
+				"main.ts": main,
+				"helpers.ts": `const slug = /^[a-z-]+$/\n\nexport const isSlug = (s: string) => slug.test(s)\n`
+			},
+			fromHere("temp", "checkers", "rejects")
+		)
+		// as arktype prints them
+		const expected = behaviorOf(await bundle(root, { prune: false }))
+		attest(expected)
+			.snap(`predicate slug valid according to an anonymous predicate: Use lowercase letters and dashes.
+predicate title valid according to an anonymous predicate: Title can't start or end with a space.
+predicate tags.0 valid according to an anonymous predicate: One tag at a time.
+domain tags.1 a string: must be a string
+minLength slug non-empty: must be non-empty
+minLength title non-empty: Title must be 1 to 20 characters.
+{"slug":"a-b","title":"a","tags":["a"]}
+false
+`)
+		attest(behaviorOf(await bundle(root))).equals(expected)
+		const checkers = await bundle(root, smallest)
+		attest(behaviorOf(checkers)).equals(expected)
+		// each is one call where its field is checked, after the checker of what
+		// it narrows: no variable holds it and no site sets one
+		attest(checkers.match(/\brejectsWith\(/g)?.length).equals(3)
+		attest(/\brejectsWith\(isSlug, "Use lowercase/.test(checkers)).equals(true)
+		attest(/sethole|\bheld\(/.test(checkers)).equals(false)
+		// and each fails at a site, so nothing its root is passed is a Traversal
+		attest(/\bclass Traversal\b/.test(checkers)).equals(false)
+	})
+
+	describe("a narrow after what it narrows", () => {
+		// the narrow counts its calls: what it narrows failing stops it, and one
+		// that transforms is checked before it, which is passed data as it came
+		const narrowing = (
+			definition: string,
+			by: "narrow" | "filter"
+		) => `import { type } from "arktype"
+
+const show = (out: unknown) =>
+	console.log(out instanceof type.errors ? out.summary : JSON.stringify(out), globalThis.calls)
+globalThis.calls = 0
+const T = ${definition}.${by}((o, ctx) => {
+	globalThis.calls++
+	return o.name !== "root" || ctx.reject({ message: \`Pick another name than \${JSON.stringify(o.name)}.\` })
+})
+show(T({ name: " ada " }))
+show(T({ name: "root" }))
+show(T({ name: 5 }))
+show(T({ name: "root", age: "old" }))
+show(T.allows({ name: "root" }))
+${repaying}
+`
+		const formsIn = (js: string) =>
+			["narrowedAfter", "transformingNarrowedAfter"].filter(form =>
+				new RegExp(`\\b${form}\\b`).test(js)
+			)
+
+		it("ships only what narrows a checker where none it narrows transforms", async () => {
+			const root = fixture(
+				"narrow-checking",
+				narrowing(`type({ name: "string", "age?": "number" })`, "narrow")
+			)
+			const js = await bundle(root, smallest)
+			attest(formsIn(js)).equals(["narrowedAfter"])
+			attest(behaviorOf(js)).equals(runPlain(root))
+			attest(runPlain(root)).snap(`{"name":" ada "} 1
+Pick another name than "root". 3
+name must be a string 3
+age must be a number 3
+false 4
+`)
+		})
+
+		// a narrow of what a shape writes is a morph's, so only a filter, which
+		// is passed what the shape is, narrows one in its own checker
+		it("ships only what narrows a transform where each it narrows is one", async () => {
+			const root = fixture(
+				"narrow-transforming",
+				narrowing(
+					`type({ name: "string", "age?": "number", role: "string = 'user'" })`,
+					"filter"
+				)
+			)
+			const js = await bundle(root, smallest)
+			attest(formsIn(js)).equals(["transformingNarrowedAfter"])
+			attest(behaviorOf(js)).equals(runPlain(root))
+			attest(runPlain(root)).snap(`{"name":" ada ","role":"user"} 1
+Pick another name than "root". 3
+name must be a string 3
+age must be a number 3
+false 4
+`)
+		})
+	})
+
+	it("builds a Type the module declaring it reads to what one read from another module builds to", async () => {
+		// enough Types checking alike that what they share is declared once
+		const forms = Array.from(
+			{ length: 8 },
+			(_, i) =>
+				`const Form${i} = type({ name${i}: "string > 2", count${i}: "number >= 0", "note${i}?": "string" })`
+		)
+		const declaring = (
+			exported: string
+		) => `${exported}const User = type({ name: "string > 2", "age?": "number >= 0" })
+${exported}const Post = type({ title: "string", author: User, tags: "string[]" })
+${forms.map(form => `${exported}${form}`).join("\n")}
+`
+		// a handler a Type, one of them reading a Type another Type reads too
+		const reading = `const show = (out: unknown) => console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
+const handlers = {
+	User: (data: unknown) => show(User(data)),
+	Post: (data: unknown) => show(Post(data)),
+${forms.map((_, i) => `\tForm${i}: (data: unknown) => show(Form${i}(data))`).join(",\n")}
+}
+handlers.User({ name: "abc" })
+handlers.User({ name: "a", age: -1 })
+handlers.Post({ title: "t", author: { name: "abc" }, tags: [] })
+handlers.Post({ title: 1, author: { name: "a" }, tags: [1] })
+handlers.Form7({ name7: "abc", count7: 0 })
+handlers.Form7({ name7: "a", count7: -1, note7: 1 })
+`
+		const apart = writeFixture(
+			{
+				"types.ts": `import { type } from "arktype"\n\n${declaring("export ")}`,
+				"main.ts": `import { type } from "arktype"\nimport { Post, User, ${forms.map((_, i) => `Form${i}`).join(", ")} } from "./types.ts"\n\n${reading}`
+			},
+			fromHere("temp", "checkers", "read-apart")
+		)
+		const together = fixture(
+			"read-together",
+			`import { type } from "arktype"\n\n${declaring("")}\n${reading}`
+		)
+		const minifiedLengthOf = async (js: string) =>
+			(await transform(js, { minify: true, format: "esm" })).code.length
+		const [split, colocated] = await Promise.all([
+			bundle(apart, smallest),
+			bundle(together, smallest)
+		])
+		attest(behaviorOf(colocated)).snap(`{"name":"abc"}
+name must be at least length 3
+age must be non-negative
+{"title":"t","author":{"name":"abc"},"tags":[]}
+title must be a string
+author.name must be at least length 3
+tags[0] must be a string
+{"name7":"abc","count7":0}
+name7 must be at least length 3
+count7 must be non-negative
+note7 must be a string
+`)
+		attest(behaviorOf(colocated)).equals(behaviorOf(split))
+		// its validator is the unit it's created from, as an exported one's is,
+		// where a const of its own beside the unit would cost each Type a name
+		attest(await minifiedLengthOf(colocated)).equals(
+			await minifiedLengthOf(split)
+		)
+	})
+
+	it("writes once what creates a validator, whichever way its root finds its issues", async () => {
+		const root = fixture(
+			"one-creator",
+			`import { type } from "arktype"
+
+const show = (out: unknown) => console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
+const Plain = type({ name: "string" })
+const Rejecting = type({ name: type("string").narrow((s, ctx) => s.length > 2 || ctx.reject({ message: "Too short." })) })
+const Reporting = type({ name: type("string").narrow((s, ctx) => s.length > 2 || ctx.mustBe("long")) })
+// a getter valid when asked again: a root with a narrow passes its data, as
+// arktype does, where one without fails it as a whole
+const once = () => { let reads = 0; return { get name() { return reads++ ? "abc" : 1 } } }
+for (const T of [Plain, Rejecting, Reporting]) {
+	show(T({ name: "abc" }))
+	show(T({ name: "x" }))
+	show(T({ name: 1 }))
+	show(T({}))
+	show(T(once()))
+	try { T.assert({ name: 1 }) } catch (e) { console.log(e.message) }
+}
+${repaying}
+`
+		)
+		const whole = behaviorOf(await bundle(root, { prune: false }))
+		const js = await bundle(root, smallest)
+		// arktype's but for that one line of a root without a narrow
+		attest(
+			behaviorOf(js)
+				.split("\n")
+				.filter(line => line !== "is invalid")
+		).equals(whole.split("\n").filter((_, i) => i !== 4))
+		attest(behaviorOf(js)).snap(`{"name":"abc"}
+{"name":"x"}
+name must be a string
+name must be a string (was missing)
+is invalid
+name must be a string
+{"name":"abc"}
+name: Too short.
+name must be a string
+name must be a string (was missing)
+{"name":"abc"}
+name must be a string
+{"name":"abc"}
+name must be long
+name must be a string
+name must be a string (was missing)
+{"name":"abc"}
+name must be a string
+`)
+		attest(js.match(/vendor: "arktype"/g)?.length).equals(1)
+		for (const finder of ["foundErrors", "applyIssues", "applyErrors"]) {
+			attest(
+				new RegExp(`[=,] ${finder}\\b|\\b${finder}\\(apply, `).test(js)
+			).equals(true)
+		}
+	})
+
+	// what a narrow that reports is run through, whatever it's proved of
+	const atEachDepth = `const Deep = type({
+	a: N,
+	"b?": N,
+	c: { d: N, e: { f: N, g: "string = 'x'" } },
+	list: N.array()
+})
+const good = { a: "abc", c: { d: "abc", e: { f: "abc" } }, list: ["abc"] }
+run(() => Deep(good))
+run(() => Deep({ ...good, a: "x" }))
+run(() => Deep({ ...good, b: "x" }))
+run(() => Deep({ ...good, c: { d: "x", e: { f: "x" } } }))
+run(() => Deep({ ...good, list: ["abc", "x", "y"] }))
+run(() => Deep({ list: [] }))
+run(() => Deep.allows({ ...good, c: { d: "x", e: { f: "abc" } } }))
+run(() => ["abc", "x"].filter(N.allows))
+run(() => N("x"))
+run(() => N.allows("x"))
+`
+	const inEachUnion = `const Nullable = type({ v: N.or("null") })
+run(() => Nullable({ v: "x" }))
+run(() => Nullable({ v: null }))
+const Keyed = type({ k: "'a'", v: N }).or({ k: "'b'", v: N, w: N })
+run(() => Keyed({ k: "b", v: "x", w: "y" }))
+run(() => Keyed({ k: "c", v: "x" }))
+const Unkeyed = type({ k: "'a'", v: N, w: N }).or({ v: "number", w: N })
+run(() => Unkeyed({ k: "a", v: "x", w: "y" }))
+run(() => Unkeyed({ v: 1, w: "abc" }))
+const Piped = N.pipe(s => s.length)
+run(() => Piped("abc"))
+run(() => Piped("x"))
+const Above = type({ p: Piped, q: N })
+run(() => Above({ p: "abc", q: "abc" }))
+run(() => Above({ p: "x", q: "x" }))
+`
+
 	describe("a narrow that reaches its ctx only to return what it reports", () => {
 		// the same callback either way: holding its ctx leaves it unproved
 		const reporting = (returns: string): [string, string, string] => [
@@ -443,47 +1072,15 @@ console.log(String(N("x")), N.allows("x"), String(type({ a: N })({ a: "x" })), g
 
 		itRunsAsUnproved(
 			"runs as often at each depth, reporting where it fails",
-			`const Deep = type({
-	a: N,
-	"b?": N,
-	c: { d: N, e: { f: N, g: "string = 'x'" } },
-	list: N.array()
-})
-const good = { a: "abc", c: { d: "abc", e: { f: "abc" } }, list: ["abc"] }
-run(() => Deep(good))
-run(() => Deep({ ...good, a: "x" }))
-run(() => Deep({ ...good, b: "x" }))
-run(() => Deep({ ...good, c: { d: "x", e: { f: "x" } } }))
-run(() => Deep({ ...good, list: ["abc", "x", "y"] }))
-run(() => Deep({ list: [] }))
-run(() => Deep.allows({ ...good, c: { d: "x", e: { f: "abc" } } }))
-run(() => ["abc", "x"].filter(N.allows))
-run(() => N("x"))
-run(() => N.allows("x"))
-`,
+			atEachDepth,
 			reporting(`${long} || ctx.mustBe("long")`)
 		)
 
 		itRunsAsUnproved(
 			"runs as often in each kind of union, and above a morph",
-			`const Nullable = type({ v: N.or("null") })
-run(() => Nullable({ v: "x" }))
-run(() => Nullable({ v: null }))
-const Keyed = type({ k: "'a'", v: N }).or({ k: "'b'", v: N, w: N })
-run(() => Keyed({ k: "b", v: "x", w: "y" }))
-run(() => Keyed({ k: "c", v: "x" }))
-const Unkeyed = type({ k: "'a'", v: N, w: N }).or({ v: "number", w: N })
-run(() => Unkeyed({ k: "a", v: "x", w: "y" }))
-run(() => Unkeyed({ v: 1, w: "abc" }))
-const Piped = N.pipe(s => s.length)
-run(() => Piped("abc"))
-run(() => Piped("x"))
-const Above = type({ p: Piped, q: N })
-run(() => Above({ p: "abc", q: "abc" }))
-run(() => Above({ p: "x", q: "x" }))
-`,
+			inEachUnion,
 			reporting(
-				`${long} ? true : ctx.reject({ problem: \`short by \${3 - s.length}\` })`
+				`${long} ? true : ctx.reject({ message: \`short by \${3 - s.length}\` })`
 			)
 		)
 
@@ -496,6 +1093,35 @@ run(() => T({ s: "x" }))
 run(() => T.allows({ s: "abc" }))
 `,
 			reporting(`s.length > 2 && (s.length > 4 || ctx.mustBe("longer"))`)
+		)
+
+		// what calls it passes its data and its ctx alone
+		itRunsAsUnproved(
+			"takes a param past its ctx, which nothing passes",
+			`const T = type({ s: N, deep: { t: N.array() } })
+run(() => T({ s: "x", deep: { t: ["abc", "y"] } }))
+run(() => T.allows({ s: "x", deep: { t: [] } }))
+run(() => N("x"))
+`,
+			[
+				`function (s: string, ctx: any, expected?: string) { globalThis.calls++; return ${long} || ctx.reject({ expected: expected ?? "long" }) }`,
+				`function (s: string, ctx: any, expected?: string) { const held = ctx; globalThis.calls++; return ${long} || held.reject({ expected: expected ?? "long" }) }`,
+				"narrowedWithCtx("
+			]
+		)
+
+		// each is spread where its issue is raised, as an array's literal can be
+		itRunsAsUnproved(
+			"reports at a path an array's literal writes",
+			`const T = type({ s: N, deep: { t: N.array() } })
+run(() => T({ s: "x", deep: { t: ["abc", "y"] } }))
+run(() => T({ s: "abc", deep: { t: [] } }))
+run(() => T.allows({ s: "x", deep: { t: [] } }))
+run(() => N("x"))
+`,
+			reporting(
+				`${long} || ctx.reject({ path: s === "x" ? ["at", 0] : ["elsewhere"], relativePath: ["under"], message: "short" })`
+			)
 		)
 
 		for (const errors of ["first", "none"] as const) {
@@ -521,14 +1147,15 @@ run(() => T.allows({ a: "x", b: { c: "abc" } }))
 		}
 
 		for (const [name, narrow] of Object.entries({
-			"ignoring what it returns": `function (s: string, ctx: any) { if (s.length > 2) return true; ctx.reject({ problem: "short" }); return true }`,
+			"ignoring what it returns": `function (s: string, ctx: any) { if (s.length > 2) return true; ctx.reject({ message: "short" }); return true }`,
 			"holding what it returns": `function (s: string, ctx: any) { const reported = s.length > 2 || ctx.mustBe("long"); return reported }`,
 			"before what it returns": `(s: string, ctx: any) => ctx.mustBe("long") || s.length > 2`,
 			"in a function of its own": `(s: string, ctx: any) => [1].every(() => s.length > 2 || ctx.mustBe("long"))`,
 			"through error, which returns what it adds": `(s: string, ctx: any) => s.length > 2 || ctx.error("long")`,
 			"through a key it computes": `(s: string, ctx: any) => s.length > 2 || ctx["mustBe"]("long")`,
 			"reading it for its report": `(s: string, ctx: any) => s.length > 2 || ctx.mustBe(ctx.path.join())`,
-			"with a path a report can't spread": `(s: string, ctx: any) => s.length > 2 || ctx.reject({ relativePath: 1, problem: "short" })`,
+			"from the default of a param past it": `(s: string, ctx: any, depth = ctx.path.length) => (depth < 9 && s.length > 2) || ctx.mustBe("long")`,
+			"with a path a report can't spread": `(s: string, ctx: any) => s.length > 2 || ctx.reject({ relativePath: 1, message: "short" })`,
 			"as an async function, whose promise passes": `async (s: string, ctx: any) => s.length > 2 || ctx.mustBe("long")`,
 			"past what arguments hold": `function (s: string, ctx: any) { return s.length > 2 || arguments[1].mustBe("long") }`
 		})) {
@@ -551,6 +1178,249 @@ tell(() => type({ s: N }).allows({ s: "x" }))
 				attest(behaviorOf(js)).equals(whole)
 			})
 		}
+	})
+
+	describe("a narrow that tests its data or rejects with a message", () => {
+		const long = "s.length > (globalThis.limit ?? 2)"
+		// the same callback either way: holding its ctx leaves it unproved
+		const rejecting: [string, string, string] = [
+			`(s: string, ctx: any) => (globalThis.calls++, ${long}) || ctx.reject({ message: "Too short." })`,
+			`(s: string, ctx: any) => { const held = ctx; globalThis.calls++; return ${long} || held.reject({ message: "Too short." }) }`,
+			"narrowedRejecting("
+		]
+
+		itRunsAsUnproved(
+			"fails where its ctx would reject, at each depth",
+			atEachDepth,
+			rejecting
+		)
+
+		itRunsAsUnproved(
+			"fails where its ctx would reject in each kind of union, and above a morph",
+			inEachUnion,
+			rejecting
+		)
+
+		// an alias's code is compiled, and passes it the ctx its root made
+		itRunsAsUnproved(
+			"rejects through its root's ctx where a cycle holds it",
+			`const Tree = type({ name: N, "children?": "this[]" })
+run(() => Tree({ name: "abc", children: [{ name: "x" }, { name: "abc", children: [{ name: "y" }] }] }))
+run(() => Tree({ name: "x" }))
+const Holder = type({ tree: Tree, n: N })
+run(() => Holder({ tree: { name: "x", children: [{ name: "y" }] }, n: "z" }))
+run(() => Holder({ tree: { name: "abc" }, n: "abc" }))
+run(() => Holder.allows({ tree: { name: "abc", children: [{ name: "x" }] }, n: "abc" }))
+`,
+			rejecting
+		)
+
+		itRunsAsUnproved(
+			"says its own message under one configured for its Type, which what it narrows says",
+			`const Said = N.configure({ message: "Configured." })
+const T = type({ s: Said, "t?": Said })
+run(() => T({ s: "x" }))
+run(() => T({ s: 1 }))
+run(() => T({}))
+run(() => T({ s: "abc", t: "y" }))
+run(() => Said("x"))
+`,
+			rejecting
+		)
+
+		// a helper many fields share: nothing passes it a param past its ctx,
+		// and whichever message it computes, it's a message
+		itRunsAsUnproved(
+			"says a message it computes as it runs, with a param past its ctx",
+			`const T = type({ s: N, "t?": N.array() })
+run(() => T({ s: "x", t: ["abc", "", "y"] }))
+run(() => T({ s: "abc" }))
+run(() => T.allows({ s: "x" }))
+run(() => N(""))
+`,
+			[
+				`function (s: string, ctx: any, said?: string) { if (!(globalThis.calls++, ${long})) { return ctx.reject({ message: said ?? (s ? \`Short by \${3 - s.length}.\` : "Required.") }) } return true }`,
+				`function (s: string, ctx: any, said?: string) { const held = ctx; globalThis.calls++; if (!(${long})) { return held.reject({ message: said ?? (s ? \`Short by \${3 - s.length}.\` : "Required.") }) } return true }`,
+				"narrowedRejecting("
+			]
+		)
+
+		for (const errors of ["first", "none"] as const) {
+			it(`behaves as unproved with errors "${errors}"`, async () => {
+				const source = `const T = type({ a: N, b: { c: N } })
+run(() => T({ a: "abc", b: { c: "abc" } }))
+run(() => T({ a: "x", b: { c: "x" } }))
+run(() => T.allows({ a: "x", b: { c: "abc" } }))
+`
+				const of = async (form: string, dir: string) =>
+					behaviorOf(
+						await bundle(
+							fixture(`rejecting-${errors}-${dir}`, appOf(form, source)),
+							{ ...smallest, errors }
+						)
+					)
+				attest(await of(rejecting[0], "proved")).equals(
+					await of(rejecting[1], "unproved")
+				)
+			})
+		}
+
+		it("needs no Traversal", async () => {
+			const js = await bundle(
+				fixture(
+					"rejecting-noTraversal",
+					appOf(
+						rejecting[0],
+						`run(() => type({ s: N, "t?": N.array() })({ s: "x", t: ["abc", "y"] }))`
+					)
+				),
+				smallest
+			)
+			attest(js.includes("narrowedRejecting(")).equals(true)
+			attest(/\bclass Traversal\b/.test(js)).equals(false)
+			attest(behaviorOf(js)).snap(`s: Too short.
+t[1]: Too short. 4
+`)
+		})
+
+		for (const [name, narrow] of Object.entries({
+			"reading its ctx in what it tests": `(s: string, ctx: any) => (ctx.path.length < 9 && s.length > 2) || ctx.reject({ message: "short" })`,
+			"with a message that may be undefined, which is none": `(s: string, ctx: any) => s.length > 2 || ctx.reject({ message: globalThis.said })`,
+			"with more than a message": `(s: string, ctx: any) => s.length > 2 || ctx.reject({ message: "short", expected: "long" })`,
+			"through mustBe": `(s: string, ctx: any) => s.length > 2 || ctx.mustBe("long")`,
+			"after a statement of its own": `(s: string, ctx: any) => { const length = s.length; return length > 2 || ctx.reject({ message: "short" }) }`
+		})) {
+			it(`rejects ${name}, so is passed its root's ctx`, async () => {
+				const root = fixture(
+					`rejecting-${name.replace(/\W+/g, "-")}`,
+					appOf(
+						narrow,
+						`run(() => type({ s: N })({ s: "abc" }))
+run(() => type({ s: N })({ s: "x" }))
+run(() => type({ s: N }).allows({ s: "x" }))
+`
+					)
+				)
+				const whole = behaviorOf(await bundle(root, { prune: false }))
+				const js = await bundle(root, smallest)
+				attest(js.includes("narrowedRejecting(")).equals(false)
+				attest(behaviorOf(js)).equals(whole)
+			})
+		}
+	})
+
+	describe("a default a narrow checks", () => {
+		const defaulted = (
+			declared: string,
+			amount: string
+		) => `import { type } from "arktype"
+
+${declared}
+const tell = (f: () => unknown) => { try { console.log(String(f())) } catch (e) { console.log(e.constructor.name, e.message) } }
+tell(() => {
+	const T = type({ amount: ${amount}, "label?": "string" })
+	return JSON.stringify(T({})) + " " + T({ amount: 3 })
+})
+${repaying}
+`
+		const itChecks = (
+			name: string,
+			where: "as the build runs" | "where its Type is created",
+			declared: string,
+			amount: string,
+			// a module beside it, which what's declared imports from
+			helpers?: string
+		) =>
+			it(`${name}, ${where}`, async () => {
+				const root = writeFixture(
+					{
+						"main.ts": defaulted(declared, amount),
+						...(helpers === undefined ? {} : { "helpers.ts": helpers })
+					},
+					fromHere("temp", "checkers", `default-${name.replace(/\W+/g, "-")}`)
+				)
+				const whole = behaviorOf(await bundle(root, { prune: false }))
+				attest(behaviorOf(await bundle(root))).equals(whole)
+				const js = await bundle(root, smallest)
+				attest(behaviorOf(js)).equals(whole)
+				attest(js.includes("checkDefault(")).equals(
+					where === "where its Type is created"
+				)
+			})
+
+		// each reads its data alone, so passes whatever the program holds
+		itChecks(
+			"passes one that reads only its data",
+			"as the build runs",
+			"",
+			`type("number").narrow(n => n % 5 === 0).default(0)`
+		)
+		itChecks(
+			"passes one that would reject with a message",
+			"as the build runs",
+			`const fives = (n: number, ctx: any) => n % 5 === 0 || ctx.reject({ message: "Must be a multiple of 5." })`,
+			`type("number").narrow(fives).default(10)`
+		)
+		// arktype's ParseError is thrown where the program creates the Type
+		itChecks(
+			"is rejected by its narrow",
+			"where its Type is created",
+			"",
+			`type("number").narrow((n, ctx) => n % 5 === 0 || ctx.reject({ message: "Must be a multiple of 5." })).default(3)`
+		)
+		// a program that sets it otherwise before the Type is created would pass
+		// another default, or fail this one
+		itChecks(
+			"is checked by what its narrow reads of its module",
+			"where its Type is created",
+			"const step = { size: 5 }",
+			`type("number").narrow(n => n % step.size === 0).default(0)`
+		)
+		itChecks(
+			"is checked by a narrow that reads its ctx",
+			"where its Type is created",
+			"",
+			`type("number").narrow((n, ctx) => ctx.path.length < 9 && n % 5 === 0).default(0)`
+		)
+		itChecks(
+			"is checked by a narrow that isn't a static helper",
+			"where its Type is created",
+			"",
+			`type("number").narrow(n => { let rest = n; while (rest >= 5) rest -= 5; return rest === 0 }).default(0)`
+		)
+		// a function another module exports is the site's helper, as one its
+		// definition calls is
+		const safe = `type("number").narrow((n, ctx) => isSafe(n) || ctx.reject({ message: "Must be safe to count." }))`
+		itChecks(
+			"passes one whose narrow calls what another module exports",
+			"as the build runs",
+			`import { isSafe } from "./helpers.ts"`,
+			`${safe}.default(0)`,
+			`export const isSafe = (n: number) => Number.isSafeInteger(n)\n`
+		)
+		itChecks(
+			"is rejected by what its narrow calls of another module",
+			"where its Type is created",
+			`import { isSafe } from "./helpers.ts"`,
+			`${safe}.default(0.5)`,
+			`export const isSafe = (n: number) => Number.isSafeInteger(n)\n`
+		)
+		// the site imports the helper it ran, so its module still loads first
+		itChecks(
+			"passes one whose narrow calls what a module that runs code exports",
+			"as the build runs",
+			`import { isSafe } from "./helpers.ts"`,
+			`${safe}.default(0)`,
+			`console.log("helpers loaded")\n\nexport const isSafe = (n: number) => Number.isSafeInteger(n)\n`
+		)
+		// what the helper reads of its module is a value the program may hold otherwise
+		itChecks(
+			"is checked by what its narrow's helper reads of another module",
+			"where its Type is created",
+			`import { isSafe } from "./helpers.ts"`,
+			`${safe}.default(0)`,
+			`const limits = { max: 2 ** 53 }\n\nexport const isSafe = (n: number) => n < limits.max\n`
+		)
 	})
 
 	describe("a morph", () => {
@@ -911,6 +1781,85 @@ ${repaying}
 		attest(behaviorOf(await bundle(root, smallest))).equals(runPlain(root))
 	})
 
+	it("writes a ctx's propString as arktype writes a path: a key, an index, a key that isn't an identifier and a symbol", async () => {
+		const root = fixture(
+			"ctxPropString",
+			`import { type } from "arktype"
+
+const tag = Symbol("tag")
+const seen: string[] = []
+const isValid = (value: unknown, ctx: any) => {
+	seen.push(ctx.propString)
+	return value !== "bad" || ctx.mustBe("valid")
+}
+const Leaf = type("string").narrow(isValid)
+const T = type({
+	plain: Leaf,
+	"a key": Leaf,
+	items: Leaf.array(),
+	nested: { "0": Leaf, [tag]: Leaf },
+	record: { "[string]": Leaf }
+})
+const show = (out: unknown) =>
+	console.log(
+		out instanceof type.errors ?
+			out.summary
+		:	JSON.stringify(out),
+		JSON.stringify(seen.splice(0).sort())
+	)
+show(Leaf("a"))
+show(
+	T({
+		plain: "a",
+		"a key": "b",
+		items: ["c", "bad"],
+		nested: { "0": "d", [tag]: "e" },
+		record: { "x y": "f", z: "bad" }
+	})
+)
+${repaying}
+`
+		)
+		const dynamic = runPlain(root)
+		attest(dynamic).snap(`"a" [""]
+items[1] must be valid
+record.z must be valid ["[\\"a key\\"]","[\\"a key\\"]","items[0]","items[0]","items[1]","items[1]","nested[\\"0\\"]","nested[Symbol(tag)]","plain","plain","record.z","record[\\"x y\\"]"]
+`)
+		attest(behaviorOf(await bundle(root, smallest))).equals(dynamic)
+		attest(behaviorOf(await bundle(root))).equals(dynamic)
+	})
+
+	it("writes a ctx's propString where no key of the program is bracketed and its narrow only tests", async () => {
+		const root = fixture(
+			"ctxPropStringPlain",
+			`import { type } from "arktype"
+
+const seen: string[] = []
+const isShort = (value: string, ctx: any) => {
+	seen.push(ctx.propString)
+	return ctx.propString.length < 9 && value.length < 3
+}
+const T = type({ a: { b: type("string").narrow(isShort) }, c: "number" })
+const show = (out: unknown) =>
+	console.log(
+		out instanceof type.errors ?
+			out.summary
+		:	JSON.stringify(out),
+		JSON.stringify(seen.splice(0))
+	)
+show(T({ a: { b: "ok" }, c: 1 }))
+show(T({ a: { b: "long" }, c: "1" }))
+${repaying}
+`
+		)
+		const dynamic = runPlain(root)
+		attest(dynamic).snap(`{"a":{"b":"ok"},"c":1} ["a.b"]
+a.b must be valid according to isShort
+c must be a number ["a.b","a.b"]
+`)
+		attest(behaviorOf(await bundle(root, smallest))).equals(dynamic)
+	})
+
 	it("checks a transforming key a pipe reaches before applying it where no callback reads ctx", async () => {
 		const root = fixture(
 			"checkedByPipe",
@@ -961,11 +1910,21 @@ ${body}
 ${repaying}
 `
 
-		const itWritesAsArktype = (name: string, body: string) =>
+		// sited where a shape closes or its transform can fail, sitedProps where
+		// neither, each as a definition calls it
+		const itWritesAsArktype = (
+			name: string,
+			body: string,
+			forms: ("sited" | "sitedProps")[] = ["sited"]
+		) =>
 			it(name, async () => {
 				const root = fixture(`sited-${name.replace(/\W+/g, "-")}`, app(body))
 				const js = await bundle(root, smallest)
-				attest(js.includes(" sited(")).equals(true)
+				attest(
+					(["sited", "sitedProps"] as const).filter(form =>
+						js.includes(`/* @__PURE__ */ ${form}(`)
+					)
+				).equals(forms)
 				attest(behaviorOf(js)).equals(runPlain(root))
 			})
 
@@ -1024,7 +1983,8 @@ const out: any = Literal(hidden)
 show(out)
 console.log(out.k3, out === hidden)
 const full = { literal: 2, k1: "x" }
-console.log(Literal(full) === full)`
+console.log(Literal(full) === full)`,
+			["sited", "sitedProps"]
 		)
 
 		itWritesAsArktype(
@@ -1044,8 +2004,28 @@ show(T({ a: "a" }))
 console.log(T.allows(Object.create({ ...present, k1: 1 })), T.allows({ ...present, k1: undefined }))
 console.log(T.allows(Object.defineProperty({ ...present }, "k2", { value: 1 })))
 console.log(T.allows(new Proxy({ ...present }, { has: (data, k) => k === "k3" || k in data, get: (data, k) => k === "k3" ? 1 : (data as any)[k] })))
-console.log(T.allows({ a: 1, u: "u", get k0(): string { throw new Error("read past a failure") } }))`
+console.log(T.allows({ a: 1, u: "u", get k0(): string { throw new Error("read past a failure") } }))`,
+			["sitedProps"]
 		)
+
+		it("holds nothing a closed shape or a failing transform calls where its shapes do neither", async () => {
+			const root = fixture(
+				"sited-open",
+				app(`const T = type({ literal: "number = 1", ${optionalKeys} })
+const data = { k1: "x", other: 1 }
+const out: any = T(data)
+show(out)
+console.log(out === data, T({ literal: 2 }).literal, T.allows({ k1: 1 }))
+show(T({ k1: 1, k2: 2 }))`)
+			)
+			const js = await bundle(root, smallest)
+			attest(
+				["sitedProps(", "writtenValues", "class Written", "closedProps"].filter(
+					name => js.includes(name)
+				)
+			).equals(["sitedProps("])
+			attest(behaviorOf(js)).equals(runPlain(root))
+		})
 
 		it("writes a default replacing undefined where config says it does", async () => {
 			const root = writeFixture(
@@ -1065,6 +2045,33 @@ show(T({ literal: "x" }))`)}`
 			const js = await bundle(root, { ...smallest, config: "config.ts" })
 			attest(js.includes(" sited(")).equals(true)
 			attest(behaviorOf(js)).equals(runPlain(root))
+		})
+	})
+
+	describe("a root in a cycle", () => {
+		it("compiles a root `this` names, so cyclic data stops at the alias depth", () => {
+			// `this` resolves to a node equal to the root, not the root itself. A
+			// checker's Allows passes no depth on, so one written for it would
+			// follow cyclic data until the stack overflows
+			const { code } = precompileStandalone(
+				{ T: type({ foo: { bar: "this" } }) },
+				{ configured: false, optimize: "size" }
+			)
+			attest(code.includes("runtime.sited(")).equals(false)
+			const root = writeFixture(
+				{
+					"artifact.js": code,
+					"main.ts": `import { T } from "./artifact.js"
+
+const cyclic: any = { foo: {} }
+cyclic.foo.bar = cyclic
+const validator = T()
+console.log(validator.allows(cyclic), validator(cyclic) === cyclic, validator.allows({ foo: { bar: { foo: 1 } } }))
+`
+				},
+				fromHere("temp", "checkers", "cyclic-root")
+			)
+			attest(runPlain(root)).equals("true true false\n")
 		})
 	})
 })

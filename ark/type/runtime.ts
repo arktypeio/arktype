@@ -7,15 +7,22 @@ import type {
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	ArkErrors,
+	codedIssue,
 	describeActual,
 	enInfo,
 	errorsOf,
+	failsKey,
+	failsKeySite,
+	failsSite,
+	findsOnRead,
 	FirstIssues,
+	holdsExpression,
+	isCustomIssue,
 	issueAt,
 	issuesOf,
 	mergeIssues,
-	problemOf,
 	runtimeConfig,
+	sharedMessageOf,
 	supportedJsonSchemaTargets,
 	throwOnDefault,
 	traversesUnions,
@@ -32,6 +39,8 @@ import {
 	type FailureContext,
 	type FailureSite,
 	type InternalTraversal,
+	type IssuesClass,
+	type MissingText,
 	type SiteContext,
 	type Traversal
 } from "@ark/schema/runtime"
@@ -74,6 +83,7 @@ export {
 	ArkErrors,
 	arrayIndexMatcher,
 	callMorph,
+	codedIssue,
 	computeDefaultValueMorph,
 	configure,
 	configuredFallbackOf,
@@ -92,6 +102,9 @@ export {
 	exitResolution,
 	exitApplied,
 	failsInBranches,
+	failsKey,
+	failsKeySite,
+	failsSite,
 	FirstIssues,
 	FirstIssueTraversal,
 	fixConfig,
@@ -103,6 +116,7 @@ export {
 	listedIssue,
 	matchesRepeated,
 	mergeTransformed,
+	missingTextOf,
 	pipe,
 	pipeApplied,
 	pipeChecked,
@@ -127,13 +141,13 @@ export {
 	tryMorph,
 	writeDomainActual,
 	writeLengthActual,
+	writeMessage,
 	writeNotEqualActual,
-	writeProblem,
 	writeProtoActual,
 	writeNullableJsonSchema,
 	writeUnionJsonSchema,
 	writeUnitActual,
-	writeUnitProblem,
+	writeUnitMessage,
 	type ArkError
 } from "@ark/schema/runtime"
 export {
@@ -194,6 +208,13 @@ export class Validator {
 	declare allows: (data: unknown) => boolean
 	declare assert: (data: unknown, pipedFromCtx?: Traversal) => unknown
 	declare "~standard": StandardSchemaV1.Props
+	// a member the build bakes is the validator's own. One it doesn't reads
+	// undefined, and under the "development" condition throws with the fix
+	declare expression: string
+	declare description: string
+	declare json: JsonStructure
+	declare toJSON: () => JsonStructure
+	declare toJsonSchema: () => JsonSchema
 
 	traverse(
 		data: unknown,
@@ -206,38 +227,14 @@ export class Validator {
 		return this.assert(input)
 	}
 
-	// a build without the expression member has none to print
+	// a build without the expression member has none to print, and one whose
+	// validators all lack it ships no read of it
 	toString(): string {
-		try {
-			return `Type<${this.expression}>`
-		} catch {
-			return "Type"
-		}
-	}
-
-	// a member the build bakes is the validator's own, so reading one it
-	// doesn't throws with the fix
-	get expression(): string {
-		throw lacks("expression")
-	}
-	get description(): string {
-		throw lacks("description")
-	}
-	get json(): JsonStructure {
-		throw lacks("json")
-	}
-	get toJSON(): () => JsonStructure {
-		throw lacks("toJSON")
-	}
-	get toJsonSchema(): () => JsonSchema {
-		throw lacks("toJsonSchema")
+		return holdsExpression && this.expression ?
+				`Type<${this.expression}>`
+			:	"Type"
 	}
 }
-
-export const lacks = (member: IntrospectionMember): Error =>
-	new Error(
-		`${member} isn't precompiled: set members["${member}"] true in the precompile options`
-	)
 
 const getOwnPropertyDescriptors = /* @__PURE__ */ (() =>
 	Object.getOwnPropertyDescriptors)()
@@ -290,18 +287,36 @@ export const bakeInto = <t>(
 	return validator
 }
 
-// a Standard Schema consumer shows each issue beside its path, so it says its problem
+// what reads a failure's message, as @ark/schema's standardFailure.ts has it
+// and says why: one getter for every failure, calling what the failure holds
+// to write its errors' summary
+const failureMessage: PropertyDescriptor & ThisType<{ _s: () => string }> = {
+	get() {
+		return this._s()
+	},
+	enumerable: true
+}
+
+// A Standard Schema consumer shows each issue beside its path, which its
+// message doesn't name, so each is its error's own. The failure's own message
+// is the errors' summary, written once a consumer reads it. A failure is built
+// as @ark/schema's standardFailureOf builds one, written here again rather
+// than imported: each name this module imports is one more esbuild's minifier
+// numbers a bundle's names past, whether or not the bundle holds what it
+// names, and one more took a byte of the Valibot login form gzipped (its
+// export `lo` became `co`), which holds no `~standard` at all
 export const standardResultOf = (
 	out: unknown
 ): StandardSchemaV1.Result<unknown> =>
 	out instanceof ArkErrors ?
-		{
-			issues: (out._i ? (out.issues as ArkIssue[]) : out._).map(issue => ({
-				...issue,
-				// arktype's errors hold their problem whether or not a site writes text
-				message: issue.problem ?? problemOf(issue)
-			})) as StandardSchemaV1.Issue[]
-		}
+		Object.defineProperty(
+			Object.defineProperty({ issues: out.issues }, "_s", {
+				value: () => (out as ArkErrors).summary,
+				writable: true
+			}),
+			"message",
+			failureMessage
+		)
 	:	{ value: out }
 
 // shorter at each site than a literal
@@ -334,9 +349,6 @@ const standardOf = (
 		vendor: "arktype",
 		version: 1,
 		validate: freeze((input: unknown) => standardResultOf(validator(input))),
-		get jsonSchema() {
-			throw lacks("~standard.jsonSchema")
-		},
 		...attributes["~standard"]
 	})
 
@@ -650,38 +662,39 @@ export const type: { errors: typeof ArkErrors } = /* @__PURE__ */ freeze({
 export const canParseUrl = ((s: string): boolean =>
 	URL.canParse(s)) satisfies Fn
 
-// a site whose problem is configured, and maybe its message
-export const problemSiteOf = ((
+// a site whose message is configured for its code rather than its Type, which
+// its issue notes, as a union lists errors saying one where it would say a
+// message each error's Type shares
+export const codeSiteOf = ((
 	code: ArkErrorCode,
 	description: string | undefined,
-	message: string | undefined,
-	problem: string
+	message: string
 ): SiteContext => ({
 	code,
 	description,
 	x: message,
-	text: issue => {
-		issue.problem = problem
-	}
+	text: codedIssue
 })) satisfies Fn
 
 type Writer = string | Fn | undefined
 
 const defineProperty = /* @__PURE__ */ (() => Object.defineProperty)()
 
-// written once first read; keeps is 1 if the issue takes expected, 2 if
-// problem, 4 if its actual describes its data, which a default problem leaves out
+// written once first read; keeps is 1 if the issue takes expected, 4 if its
+// actual describes its data, which a default message leaves out, and 2 if its
+// message is configured for its code
 const writeIssue = (
 	issue: ArkIssue,
 	context: Record<string, unknown>,
-	[expected, actual, problem, message]: readonly Writer[],
+	[expected, actual, message]: readonly Writer[],
 	keeps: number
 ): void => {
 	const text: Record<string, unknown> = {
 		expected: issue.expected,
-		message: issue.message
+		// one supplied where it's raised, which is its own
+		message: context.message
 	}
-	if (keeps & 2) text.problem = issue.problem
+	if (keeps & 2 && text.message === undefined) codedIssue(issue)
 	const writeText = () => {
 		const error: Record<string, unknown> = {
 			data: issue.data,
@@ -697,9 +710,7 @@ const writeIssue = (
 			if (keeps & 4) describeActual(error)
 			error.actual = write(actual, issue.data, error)
 		}
-		error.problem = context.problem ?? write(problem, error)
 		if (keeps & 1) text.expected = error.expected
-		if (keeps & 2) text.problem = error.problem
 		text.message ??= write(message, error)
 		for (const k in text) {
 			defineProperty(issue, k, {
@@ -749,13 +760,40 @@ export const raisingTraversalOf = (
 		}
 	}
 
-// passed no ctx (or filter's index), stops at its first failure
+// a site held as an object, as a checker is its own, fails where it's passed
+// a ctx; passed none (or filter's index), it stops at its first failure
 export const failsAt = ((
 	ctx: FailureContext | undefined,
 	site: FailureSite,
+	data: unknown
+): boolean | undefined =>
+	!ctx?._e || failsSite(ctx, site as SiteContext, data)) satisfies Fn
+
+// as failsAt, of a site written from literals, passed as a ctx takes them
+export const failsWith = ((
+	ctx: FailureContext | undefined,
+	...failure: Parameters<FailureContext["_e"]>
+): boolean | undefined => !ctx?._e || ctx._e(...failure)) satisfies Fn
+
+// as failsKey, stopping where it's passed no ctx
+export const failsKeyWith = ((
+	ctx: FailureContext | undefined,
+	...failure: KeyFailure
+): boolean | undefined => !ctx?._e || failsKey(ctx, ...failure)) satisfies Fn
+
+// what failsKey is passed after its ctx
+type KeyFailure =
+	Parameters<typeof failsKey> extends [unknown, ...infer failure] ? failure
+	:	never
+
+// as failsAt, at a key of data: the missing key or its value
+export const failsAtKey = ((
+	ctx: FailureContext | undefined,
+	site: FailureSite,
 	data: unknown,
-	key?: PropertyKey
-): boolean | undefined => !ctx?._at || ctx._at(site, data, key)) satisfies Fn
+	key: PropertyKey
+): boolean | undefined =>
+	!ctx?._e || failsKeySite(ctx, site, data, key)) satisfies Fn
 
 // a discriminant deeper than one key misses below data, entering each key but the last
 export const failsAtPath = ((
@@ -764,20 +802,21 @@ export const failsAtPath = ((
 	data: unknown,
 	[k, ...deeper]: PropertyKey[]
 ): boolean | undefined =>
-	!ctx?._at ||
+	!ctx?._e ||
 	(deeper.length ?
-		ctx._in((value, ctx) => !failsAtPath(ctx, site, value, deeper), data, k)
-	:	ctx._at(site, data, k))) satisfies Fn
+		ctx._k((value, ctx) => !failsAtPath(ctx, site, value, deeper), data, k)
+	:	failsKeySite(ctx, site, data, k))) satisfies Fn
 
+// passed what a missing key says after the key, as a ctx's _k is
 export const failsIn = ((
 	ctx: FailureContext | undefined,
 	apply: CompactApply,
 	data: unknown,
 	key: PropertyKey,
-	missing?: FailureSite
+	...missing: MissingText
 ): boolean | undefined =>
-	ctx?._at ?
-		ctx._in(apply, data, key, missing)
+	ctx?._e ?
+		ctx._k(apply, data, key, ...missing)
 	:	!(apply as Fn)((data as Record<PropertyKey, unknown>)[key])) satisfies Fn
 
 // a union's issue where it's written its own text, expecting what its branches
@@ -785,14 +824,15 @@ export const failsIn = ((
 export const ownIssue = ((site: FailureSite): UnionIssueOf =>
 	(path, data, errors) => {
 		const issue = issueAt(path, site, data, undefined)
+		// writes each error's message, as arktype's union does
 		const listed = writeListed(errors)
-		if (issue.expected === undefined) {
-			// its errors' paths written from its own, as arktype's union expects
-			const expected = (issue.expected =
-				path.length ? writeFromPath(path, errors, writeListed) : listed)
-			// what it lists is its problem unless one is configured, as arktype's is
-			issue.problem ??= expected
-		}
+		// its errors' paths written from its own, as arktype's union expects
+		issue.expected ??=
+			path.length ? writeFromPath(path, errors, writeListed) : listed
+		// a message its errors share is its own, as arktype's union's is, unless
+		// one is configured for it
+		const shared = isCustomIssue(issue) ? undefined : sharedMessageOf(errors)
+		if (shared !== undefined) issue.message = shared
 		issue.errors = errors
 		return issue
 	}) satisfies Fn
@@ -827,7 +867,7 @@ export const failsBranches = ((
 	data: unknown,
 	issueOf: UnionIssueOf
 ): boolean | undefined => {
-	if (!ctx?._at) return true
+	if (!ctx?._e) return true
 	const firsts: ArkIssue[] = []
 	for (const branch of branches) {
 		let first: ArkIssue | undefined
@@ -883,7 +923,7 @@ const elementsFrom =
 	): CompactApply =>
 	(_, ctx) => {
 		for (let j = i; j < data.length; j++)
-			if (!allows(data[j]) && ctx._in(apply, data, j)) return false
+			if (!allows(data[j]) && ctx._k(apply, data, j)) return false
 		return true
 	}
 
@@ -916,19 +956,18 @@ export const applyCallErrors = (
 	return onFail ? onFail(errors) : errors
 }
 
-type UnreadErrors = new (apply: CompactApply, data: unknown) => ArkErrors
-
-// defined at a build's first failure, as defining it at load costs startup
-type UnreadErrorsOf = () => UnreadErrors
-
-const unreadOf = (Ctx: new () => ArkErrors): UnreadErrors => {
+// Errors of a class no build wrote to find its issues once read, as an
+// unbundled runtime's or another build's: a class beside it that does, its
+// prototype the errors', built with what finds them as the class itself is
+// where a build wrote it to
+const unreadClassOf = (Ctx: IssuesClass): IssuesClass => {
 	class Unread {
-		// named short, as every bundle reading errors writes them
+		// named as the fields of errors written to wait are
 		declare _a: CompactApply
 		declare _d: unknown
 		declare _f?: ArkIssue[]
 
-		constructor(apply: CompactApply, data: unknown) {
+		constructor(data: unknown, config: unknown, apply: CompactApply) {
 			this._a = apply
 			this._d = data
 		}
@@ -944,19 +983,34 @@ const unreadOf = (Ctx: new () => ArkErrors): UnreadErrors => {
 	return Unread as never
 }
 
-let unreadArkErrors: UnreadErrors | undefined
+let unreadArkErrors: IssuesClass | undefined
 
-export const UnreadArkErrors: UnreadErrorsOf = () =>
-	(unreadArkErrors ??= unreadOf(ArkErrors))
+const unreadClasses = /* @__PURE__ */ new Map<IssuesClass, IssuesClass>()
 
-// an Apply reporting into ArkErrors calls no user code, so its issues can wait
+// A class's, defined at its first failure, as defining it at load costs
+// startup. ArkErrors' is held in a variable of its own: nearly every failing
+// call asks for it, and looking it up in the Map was nearly half of what a
+// call that leaves its errors unread costs (on schemabenchmarks.dev's invalid
+// product, 255 instructions a call where this is 139)
+const unreadOf = (Ctx: IssuesClass): IssuesClass => {
+	if (Ctx === ArkErrors) return (unreadArkErrors ??= unreadClassOf(Ctx))
+	let unread = unreadClasses.get(Ctx)
+	if (!unread) unreadClasses.set(Ctx, (unread = unreadClassOf(Ctx)))
+	return unread
+}
+
+// An Apply reporting into ArkErrors calls no user code, so its issues can wait
+// until they're read: errors are built with what finds them, in the place a
+// traversal takes after its data and config. A build that holds such a call
+// writes its errors' class to find them (findsOnRead), so they're that class
+// and the bundle holds nothing more for them to wait with
 export const unreadErrors = (
 	apply: CompactApply,
 	data: unknown,
 	onFail: ArkErrors.Handler | null,
-	Ctx: UnreadErrorsOf
+	Ctx: IssuesClass = ArkErrors
 ): unknown => {
-	const errors = new (Ctx())(apply, data)
+	const errors = new (findsOnRead ? Ctx : unreadOf(Ctx))(data, 0, apply)
 	return onFail ? onFail(errors) : errors
 }
 
@@ -964,10 +1018,10 @@ export const unreadCallErrors = (
 	apply: CompactApply,
 	data: unknown,
 	args: ValidatorArgs,
-	onFail: ArkErrors.Handler | null,
-	Ctx: UnreadErrorsOf
+	onFail?: ArkErrors.Handler | null,
+	Ctx: IssuesClass = ArkErrors
 ): unknown => {
-	const errors = new (Ctx())(apply, data)
+	const errors = new (findsOnRead ? Ctx : unreadOf(Ctx))(data, 0, apply)
 	if (args.length) {
 		if (args[0]) return args[0].piped(errors as never)
 		if (args[1] !== undefined) onFail = args[1] as never
@@ -976,11 +1030,6 @@ export const unreadCallErrors = (
 }
 
 export const emptyMeta: ArkEnv.meta = /* @__PURE__ */ freeze({})
-
-let unreadFirstIssues: UnreadErrors | undefined
-
-export const UnreadFirstIssues: UnreadErrorsOf = () =>
-	(unreadFirstIssues ??= unreadOf(FirstIssues))
 
 interface UnreadFields {
 	_a?: CompactApply
@@ -1034,8 +1083,8 @@ export const unreadElements = (
 	i: number,
 	data: readonly unknown[],
 	args: ValidatorArgs,
-	onFail: ArkErrors.Handler | null,
-	Ctx: UnreadErrorsOf
+	onFail?: ArkErrors.Handler | null,
+	Ctx?: IssuesClass
 ): unknown =>
 	unreadCallErrors(
 		elementsFrom(allows, apply, i, data),
@@ -1100,10 +1149,67 @@ export const describeShape = (value: unknown): string => {
 		:	`an empty ${kind}`
 }
 
+/**
+ * What a plain object or array of primitives holds, as 53 bits: what kind it
+ * is, then each own key and its value as Object.is tells it from another. A
+ * build writes it for what a site read whole, like an enum's values, in place
+ * of each key and value, which would name them all again
+ */
+export const digestOf = (value: object): string => {
+	let low = 0xdeadbeef
+	let high = 0x41c6ce57
+	// a part's end is mixed in too, so no two splits of one text agree
+	const add = (part: string) => {
+		for (let i = 0; i <= part.length; i++) {
+			const code = i < part.length ? part.charCodeAt(i) : 0x10ffff
+			low = Math.imul(low ^ code, 2654435761)
+			high = Math.imul(high ^ code, 1597334677)
+		}
+	}
+	const prototype = prototypeOf(value)
+	add(
+		Array.isArray(value) ? "array"
+		: prototype === Object.prototype ? "object"
+		: prototype === null ? "null"
+		: "instance"
+	)
+	for (const k of Reflect.ownKeys(value)) {
+		if (k === "length" && Array.isArray(value)) continue
+		const v: unknown = Reflect.get(value, k)
+		add(String(k))
+		add(typeof v)
+		add(Object.is(v, -0) ? "-0" : String(v))
+	}
+	low =
+		Math.imul(low ^ (low >>> 16), 2246822507) ^
+		Math.imul(high ^ (high >>> 13), 3266489909)
+	high =
+		Math.imul(high ^ (high >>> 16), 2246822507) ^
+		Math.imul(low ^ (low >>> 13), 3266489909)
+	return (4294967296 * (2097151 & high) + (low >>> 0)).toString(36)
+}
+
+export const writeDigestMismatchMessage = <label extends string>(
+	label: label
+): `${label} holds other keys or values than it was precompiled with` =>
+	`${label} holds other keys or values than it was precompiled with`
+
+// what a check says of a value a build written for size doesn't name
+const unnamed = "A value a validator reads"
+
+export const checkDigest = (
+	value: unknown,
+	expected: string,
+	label: string = unnamed
+): void => {
+	if (!hasDomain(value, "object") || digestOf(value) !== expected)
+		throwError(writeDigestMismatchMessage(label))
+}
+
 export const checkFacts = (
 	actual: HoleFact,
 	expected: HoleFact,
-	label: string
+	label: string = unnamed
 ): void => {
 	if (actual !== expected) {
 		throwError(
@@ -1115,6 +1221,21 @@ export const checkFacts = (
 		)
 	}
 }
+
+// a function's fact alone, its arity, so a program whose holes are functions
+// ships nothing of what tells a class or a symbol from the one a build read
+export const checkArity = (
+	value: unknown,
+	expected: number,
+	label?: string
+): void =>
+	checkFacts(
+		typeof value !== "function" || isValidator(value) ?
+			describeValue(value)
+		:	Math.min(value.length, 2),
+		expected,
+		label
+	)
 
 const describeFact = (fact: HoleFact): string =>
 	typeof fact === "string" ? fact : (
@@ -1128,8 +1249,8 @@ const describeFact = (fact: HoleFact): string =>
 export const checkIdentity = (
 	value: unknown,
 	expected: unknown,
-	label: string,
-	expectedLabel: string
+	label: string = unnamed,
+	expectedLabel = "another it reads"
 ): void => {
 	if (value !== expected)
 		throwError(writeIdentityMismatchMessage(label, expectedLabel))
@@ -1165,7 +1286,7 @@ export const checkDefault = (
 export const checkInput = (
 	value: unknown,
 	expected: unknown,
-	label: string
+	label: string = unnamed
 ): void => {
 	if (!is(value, expected)) {
 		throwError(
@@ -1188,7 +1309,10 @@ export const checkProgress = (
 		throw new ReferenceError(`Cannot access '${name}' before initialization`)
 }
 
-export const checkFunction = (value: unknown, label: string): void => {
+export const checkFunction = (
+	value: unknown,
+	label: string = unnamed
+): void => {
 	if (typeof value !== "function") {
 		throwError(
 			writeCreationMismatchMessage(label, describeValue(value), "a function")
@@ -1199,7 +1323,7 @@ export const checkFunction = (value: unknown, label: string): void => {
 // a value holding a cell a validator reads, set only once its site has run
 export const checkHeld = (
 	value: unknown,
-	label = "A value a validator reads",
+	label: string = unnamed,
 	kind: "Type" | "Module" | "Scope" | "Generic" = "Type"
 ): void => {
 	if (value === undefined) {
@@ -1231,7 +1355,7 @@ export const holdHoles = (<value extends object>(
 export const holesOf = ((
 	holder: unknown,
 	id: string,
-	label: string,
+	label: string = unnamed,
 	kind: "Type" | "Module" | "Scope" | "Generic" = "Type"
 ): readonly unknown[] => {
 	const created = holesByValue.get(holder as object)
@@ -1250,7 +1374,7 @@ export const holesOf = ((
 // a factory's check of a value it receives
 export const receiverOf = ((
 	id: string,
-	label: string,
+	label?: string,
 	kind?: "Module" | "Scope" | "Generic"
 ) =>
 	((holder: unknown): readonly unknown[] =>
@@ -1301,6 +1425,16 @@ export const intern = <value>(
 		create()
 	return (table.value ??= create()) as value
 }
+
+const tablesByHolder = /* @__PURE__ */ new InternTable()
+
+// as intern, in the table of an object a module declares for it
+export const internIn = <value>(
+	holder: object,
+	holes: readonly unknown[],
+	create: () => value,
+	defaults?: readonly DefaultKey[]
+): value => intern(tablesByHolder.next(holder), holes, create, defaults)
 
 // what a key names, created by whichever module reaches it first
 export const interned = <value, args extends unknown[]>(

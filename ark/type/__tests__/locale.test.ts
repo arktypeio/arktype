@@ -3,7 +3,7 @@ import {
 	$ark,
 	copiedErrorMessage,
 	describeMissing,
-	flatProblemsByPath,
+	flatMessagesByPath,
 	messageIn,
 	TraversalError,
 	writeInvalidLocaleMessage,
@@ -67,14 +67,14 @@ const mark = (label: string) => `⟦${label}⟧`
 const marks = (o: object): Record<string, string> =>
 	Object.fromEntries(Object.keys(o).map(k => [k, mark(k)]))
 
-const xxProblem: Locale.ProblemWriter = e =>
-	`${mark("problem")} ${e.expected} ${e.actual}`
+const xxMessage: Locale.MessageWriter = e =>
+	`${mark("message")} ${e.expected} ${e.actual}`
 
 // a marker for every entry, so any other text in its output is arktype's
 const xx: Locale = {
 	...(flatMorph(en, (k, v) =>
 		typeof v === "object" && k !== "nouns" && k !== "keywordPhrases" ?
-			[k, { expected: mark(k), problem: xxProblem }]
+			[k, { expected: mark(k), message: xxMessage }]
 		:	[]
 	) as {} as Locale.Writers),
 	union: {
@@ -82,16 +82,16 @@ const xx: Locale = {
 			e.errors
 				.map(child => `${child.propString} ${child.expected} ${child.actual}`)
 				.join(mark("or")),
-		problem: xxProblem
+		message: xxMessage
 	},
 	intersection: {
 		expected: e => e.errors.map(child => child.expected).join(mark("and")),
-		problem: xxProblem
+		message: xxMessage
 	},
 	required: {
 		expected: (e, locale) => describeMissing(e.missing, locale),
 		actual: mark("actual"),
-		problem: xxProblem
+		message: xxMessage
 	},
 	tag: "xx",
 	list: (items, type) => items.join(mark(type)),
@@ -104,8 +104,9 @@ const xx: Locale = {
 	nouns: marks(en.nouns) as Locale["nouns"],
 	keywordPhrases: marks(en.keywordPhrases),
 	actual: () => mark("actual"),
-	problem: xxProblem,
-	message: e => `${e.propString} ${mark("message")} ${e.problem}`
+	message: xxMessage,
+	line: e =>
+		`${e.propString} ${mark(e.custom ? "custom line" : "line")} ${e.message}`
 }
 
 contextualize(() => {
@@ -213,17 +214,13 @@ contextualize(() => {
 					locales.push(locale)
 					return `${locale.tag} ${ctx.code} ${data}`
 				},
-				problem: (ctx, locale) => {
-					locales.push(locale)
-					return `${locale.tag} ${ctx.expected} (${ctx.actual})`
-				},
 				message: (ctx, locale) => {
 					locales.push(locale)
-					return `${locale.tag}: ${ctx.problem}`
+					return `${locale.tag}: ${ctx.expected} (${ctx.actual})`
 				}
 			})
-			attest(T(5).toString()).snap("en: en en a string (en domain 5)")
-			attest(locales.length).equals(4)
+			attest(T(5).toString()).snap("en: en a string (en domain 5)")
+			attest(locales.length).equals(3)
 			for (const locale of locales) attest(locale).is(en)
 		})
 
@@ -231,12 +228,12 @@ contextualize(() => {
 			const calls: string[] = []
 			const T = type("number >= 5").configure({
 				actual: n => (calls.push("actual"), `${n}`),
-				message: ctx => (calls.push("message"), ctx.problem)
+				message: ctx => (calls.push("message"), `${ctx.expected} ${ctx.actual}`)
 			})
 			const errors = T(1) as ArkErrors
 			attest(
 				errors.toLocaleString({ ...xx, min: omit(xx.min, { expected: 1 }) })
-			).snap("⟦problem⟧ at least 5 1")
+			).snap("at least 5 1")
 			attest(calls).equals(["actual", "message"])
 		})
 
@@ -254,7 +251,7 @@ contextualize(() => {
 				{ short: "string >= 2" },
 				{
 					minLength: {
-						problem: (ctx, locale) =>
+						message: (ctx, locale) =>
 							`needs ${ctx.rule} ${locale.plural(ctx.rule) === "one" ? "character" : "characters"}`
 					}
 				}
@@ -264,7 +261,7 @@ contextualize(() => {
 				message: ctx =>
 					ctx.code === "minLength" ?
 						`${ctx.meta?.title ?? "value"} >= ${ctx.rule}`
-					:	ctx.problem
+					:	ctx.expected
 			})
 			attest(T("a").toString()).snap("value >= 2")
 		})
@@ -320,12 +317,12 @@ contextualize(() => {
 
 		it("a shared writer narrows to the new contexts", () => {
 			const message: MessageWriter = e =>
-				e.code === "required" ?
-					`${e.valueMeta.title ?? e.propString} is missing`
-				: e.code === "undeclared" ? `${e.propString} isn't allowed`
+				e.code === "required" ? `${e.valueMeta.title ?? "A value"} is missing`
+				: e.code === "undeclared" ?
+					`Unknown key ${String(e.path[e.path.length - 1])}`
 				: e.code === "discriminant" ?
-					`${e.propString} isn't one of ${e.cases.length}${e.absent ? " (absent)" : ""}`
-				:	e.problem
+					`Not one of ${e.cases.length}${e.absent ? " (absent)" : ""}`
+				:	e.expected
 			const $ = scope(
 				{},
 				{
@@ -338,22 +335,22 @@ contextualize(() => {
 				"+": "reject",
 				name: type("string").configure({ title: "Name" })
 			})
-			attest(T({ b: 1 }).toString()).snap(`Name is missing
-b isn't allowed`)
+			attest(T({ b: 1 }).toString()).snap(`name: Name is missing
+b: Unknown key b`)
 			const U = $.type({ k: "'a'", x: "string" }).or({ k: "'b'", y: "number" })
-			attest(U({}).toString()).snap("k isn't one of 2 (absent)")
+			attest(U({}).toString()).snap("k: Not one of 2 (absent)")
 		})
 
 		it("meta may be absent", () => {
 			const $ = scope(
 				{},
-				{ predicate: { message: ctx => `${ctx.meta?.title}: ${ctx.problem}` } }
+				{ predicate: { message: ctx => `${ctx.meta?.title}: ${ctx.expected}` } }
 			)
 			attest(
 				$.type("number")
 					.narrow((n, ctx) => n > 0 || ctx.mustBe("positive"))(-1)
 					.toString()
-			).snap("undefined: must be positive")
+			).snap("undefined: positive")
 			attest(
 				(ctx: MessageContext) =>
 					// @ts-expect-error
@@ -372,7 +369,7 @@ b isn't allowed`)
 			const rule = (e: ArkLocale.ExpectedContext<"min">) => e.rule
 			const min: ArkLocale.CodeWriters<"min"> = {
 				expected: (e, locale) => `> ${locale.number(rule(e))}`,
-				problem: xxProblem
+				message: xxMessage
 			}
 			const phrases: ArkLocale.Data["keywordPhrases"] = {
 				"string.email": { noun: "an email address" }
@@ -380,10 +377,10 @@ b isn't allowed`)
 			attest<number>(rule({ rule: 1 } as never))
 			const locale: Locale = { ...xx, min, keywordPhrases: phrases }
 			attest((type("number > 1")(0) as ArkErrors).toLocaleString(locale)).snap(
-				" ⟦message⟧ ⟦problem⟧ > ⟦number⟧ ⟦actual⟧"
+				"⟦message⟧ > ⟦number⟧ ⟦actual⟧"
 			)
 			attest(type("string.email")("x").toLocaleString(locale)).snap(
-				" ⟦message⟧ ⟦problem⟧ an email address ⟦actual⟧"
+				"⟦message⟧ an email address ⟦actual⟧"
 			)
 		})
 
@@ -397,10 +394,42 @@ b isn't allowed`)
 					// @ts-expect-error
 					required: {
 						expected: (e, locale) => describeMissing(e.missing, locale),
-						problem: xxProblem
+						message: xxMessage
 					}
 				})
 			).type.errors("Property 'actual' is missing")
+			const { line: __, ...lineless } = en
+			// @ts-expect-error
+			attest((): Locale => lineless).type.errors("Property 'line' is missing")
+		})
+
+		it("a locale has no problem", () => {
+			attest(
+				(): Locale => ({
+					...en,
+					// @ts-expect-error
+					min: { problem: xxMessage, message: xxMessage }
+				})
+			).type.errors("'problem' does not exist")
+		})
+
+		it("a locale's line follows a path with its message, marked custom or not", () => {
+			const T = type({
+				a: "string",
+				b: type("string").configure({ message: "Enter b" }),
+				c: type("string").narrow((s, ctx) => ctx.reject({ message: "Enter c" }))
+			})
+			const errors = T({ a: 1, b: 2, c: "" }) as ArkErrors
+			attest(errors.toLocaleString(xx))
+				.snap(`a ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧
+b ⟦custom line⟧ Enter b
+c ⟦custom line⟧ Enter c`)
+			// its line isn't written at the root
+			attest(
+				type("string")
+					.configure({ message: "Enter text" })(5)
+					.toLocaleString(xx)
+			).snap("Enter text")
 		})
 	})
 
@@ -409,11 +438,9 @@ b isn't allowed`)
 			const errors = type({ k: "string" })({ k: 5 }) as ArkErrors
 			const error = errors.issues[0]
 			attest(errors.toLocaleString(xx)).snap(
-				"k ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
+				"k ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧"
 			)
-			attest(messageIn(error, xx)).snap(
-				"k ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
-			)
+			attest(messageIn(error, xx)).snap("k ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧")
 			attest(errors.summary).snap("k must be a string")
 			attest(errors.toLocaleString()).equals(errors.summary)
 			// Array.prototype.toLocaleString passes each element its tag
@@ -434,41 +461,38 @@ b isn't allowed`)
 		it("toLocaleString and messageIn write a morph's returned errors as its summary", () => {
 			const A = scope(
 				{ inner: { a: "string" } },
-				{ domain: { message: ctx => `A's ${ctx.propString}` } }
+				{ domain: { message: ctx => `A's ${ctx.expected}` } }
 			).export()
 			const B = scope(
 				{ outer: ["unknown", "=>", (d: unknown) => A.inner(d)] },
-				{ domain: { message: ctx => `B's ${ctx.propString}` } }
+				{ domain: { message: ctx => `B's ${ctx.expected}` } }
 			).export()
 			const out = B.outer({ a: 1 }) as ArkErrors
 			attest([
 				out.summary,
 				out.toLocaleString(en),
 				messageIn(out.issues[0], en)
-			]).snap(["B's a", "B's a", "B's a"])
+			]).snap(["a: B's a string", "a: B's a string", "a: B's a string"])
 		})
 
 		it("toLocaleString reaches union and intersection children", () => {
 			const union = type("(string >= 3) | (string <= 0)")("a") as ArkErrors
 			attest(union.toLocaleString(xx)).snap(
-				" ⟦message⟧ ⟦problem⟧  ⟦exactLength⟧ ⟦actual⟧⟦or⟧ ⟦minLength⟧ ⟦actual⟧ ⟦actual⟧"
+				"⟦message⟧  ⟦exactLength⟧ ⟦actual⟧⟦or⟧ ⟦minLength⟧ ⟦actual⟧ ⟦actual⟧"
 			)
 			const intersection = type("(number % 2) & (number > 3)")(1) as ArkErrors
-			attest(intersection.toLocaleString(xx))
-				.snap(` ⟦message⟧ ⟦problem⟧ ⟦divisor⟧ ⟦actual⟧
- ⟦message⟧ ⟦problem⟧ ⟦min⟧ ⟦actual⟧`)
+			attest(intersection.toLocaleString(xx)).snap(`⟦message⟧ ⟦divisor⟧ ⟦actual⟧
+⟦message⟧ ⟦min⟧ ⟦actual⟧`)
 		})
 
 		it("static", () => {
 			withConfig({ locale: xx }, () => {
 				attest($ark.cfg!.locale).is(xx)
 				const errors = scope({}).type("string")(5) as ArkErrors
-				attest(errors.toString()).snap(" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧")
+				attest(errors.toString()).snap("⟦message⟧ ⟦domain⟧ ⟦actual⟧")
 				attest(errors.toLocaleString(en)).snap("must be a string")
 				// including errors from Types parsed before it was configured
-				attest(type("string")(5).toString()).snap(
-					" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
-				)
+				attest(type("string")(5).toString()).snap("⟦message⟧ ⟦domain⟧ ⟦actual⟧")
 			})
 		})
 
@@ -499,7 +523,7 @@ b isn't allowed`)
 					attest(calls).equals(0)
 					const localized = errorsOf()
 					attest(localized.toString()).snap(
-						" ⟦message⟧ ⟦problem⟧  ⟦exactLength⟧ ⟦actual⟧⟦or⟧ ⟦minLength⟧ ⟦actual⟧ ⟦actual⟧"
+						"⟦message⟧  ⟦exactLength⟧ ⟦actual⟧⟦or⟧ ⟦minLength⟧ ⟦actual⟧ ⟦actual⟧"
 					)
 					// once for the errors, which their children share
 					attest(calls).equals(1)
@@ -514,11 +538,11 @@ b isn't allowed`)
 		it("a locale configured later replaces a function", () => {
 			withConfig({ locale: () => xx }, () => {
 				const summaryOf = () => type("string")(5).toString()
-				attest(summaryOf()).snap(" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧")
+				attest(summaryOf()).snap("⟦message⟧ ⟦domain⟧ ⟦actual⟧")
 				reconfigure({ locale: en })
 				attest(summaryOf()).snap("must be a string")
 				reconfigure({ locale: xx })
-				attest(summaryOf()).snap(" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧")
+				attest(summaryOf()).snap("⟦message⟧ ⟦domain⟧ ⟦actual⟧")
 				reconfigure({ locale: () => xx })
 				reconfigure({ locale: undefined } as never)
 				attest(summaryOf()).snap("must be a string")
@@ -530,7 +554,7 @@ b isn't allowed`)
 			const error = (T({ a: "x" }) as ArkErrors).issues[0]
 			const keys = Object.keys(error)
 			attest(messageIn(error, xx)).snap(
-				"a ⟦message⟧ ⟦problem⟧ ⟦cite⟧ a count ⟦actual⟧"
+				"a ⟦line⟧ ⟦message⟧ ⟦cite⟧ a count ⟦actual⟧"
 			)
 			attest(Object.keys(error)).equals(keys)
 		})
@@ -547,21 +571,21 @@ b isn't allowed`)
 					return result
 				}
 				attest(read(() => errors.summary, 1))
-					.snap(`a ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧
-b ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧
-c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
+					.snap(`a ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧
+b ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧
+c ⟦line⟧ ⟦message⟧ ⟦boolean⟧ ⟦actual⟧`)
 				attest(
 					read(() => errors.toJSON().map(issue => (issue as any).message))
 				).snap([
-					"a ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧",
-					"b ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧",
-					"c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧"
+					"⟦message⟧ ⟦domain⟧ ⟦actual⟧",
+					"⟦message⟧ ⟦domain⟧ ⟦actual⟧",
+					"⟦message⟧ ⟦boolean⟧ ⟦actual⟧"
 				])
 				attest(read(() => errors.issues[0].actual)).snap("⟦actual⟧")
-				attest(read(() => flatProblemsByPath(errors))).snap({
-					a: ["⟦problem⟧ ⟦domain⟧ ⟦actual⟧"],
-					b: ["⟦problem⟧ ⟦domain⟧ ⟦actual⟧"],
-					c: ["⟦problem⟧ ⟦boolean⟧ ⟦actual⟧"]
+				attest(read(() => flatMessagesByPath(errors))).snap({
+					a: ["⟦message⟧ ⟦domain⟧ ⟦actual⟧"],
+					b: ["⟦message⟧ ⟦domain⟧ ⟦actual⟧"],
+					c: ["⟦message⟧ ⟦boolean⟧ ⟦actual⟧"]
 				})
 				attest(
 					read(() => {
@@ -571,9 +595,9 @@ c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
 							return (e as TraversalError).message
 						}
 					}, 1)
-				).snap(`a ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧
-b ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧
-c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
+				).snap(`a ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧
+b ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧
+c ⟦line⟧ ⟦message⟧ ⟦boolean⟧ ⟦actual⟧`)
 			})
 		})
 
@@ -619,9 +643,9 @@ c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
 						store.run(xx, () => read(0))
 					])
 				).snap([
-					"k ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧",
+					"k ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧",
 					"k must be a string",
-					"k ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
+					"k ⟦line⟧ ⟦message⟧ ⟦domain⟧ ⟦actual⟧"
 				])
 			} finally {
 				$ark.config = originalConfig
@@ -637,7 +661,7 @@ c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
 						{},
 						{
 							domain: {
-								problem: (e, locale) => `${locale.tag}: ${e.expected}`
+								message: (e, locale) => `${locale.tag}: ${e.expected}`
 							}
 						}
 					).type({
@@ -645,8 +669,8 @@ c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
 						j: type("number > 0").configure({ actual: "configured" })
 					})({ k: 5, j: 0 }) as ArkErrors
 				const rendered = errorsOf().toLocaleString(xx)
-				attest(rendered).snap(`k ⟦message⟧ xx: ⟦domain⟧
-j ⟦message⟧ ⟦problem⟧ ⟦cite⟧ positive! configured`)
+				attest(rendered).snap(`k ⟦custom line⟧ xx: ⟦domain⟧
+j ⟦line⟧ ⟦message⟧ ⟦cite⟧ positive! configured`)
 				attest(withConfig({ locale: xx }, () => errorsOf().toString())).equals(
 					rendered
 				)
@@ -661,31 +685,31 @@ j ⟦message⟧ ⟦problem⟧ ⟦cite⟧ positive! configured`)
 			const rendered = (T: type.Any, data: unknown) =>
 				(T(data) as ArkErrors).toLocaleString(xx)
 			attest(rendered(type("number").describe("a count"), "x")).snap(
-				" ⟦message⟧ ⟦problem⟧ ⟦cite⟧ a count ⟦actual⟧"
+				"⟦message⟧ ⟦cite⟧ a count ⟦actual⟧"
 			)
 			attest(
 				rendered(
 					type("number").narrow((n, ctx) => n > 0 || ctx.mustBe("positive")),
 					-1
 				)
-			).snap(" ⟦message⟧ ⟦problem⟧ ⟦cite⟧ positive ⟦actual⟧")
+			).snap("⟦message⟧ ⟦cite⟧ positive ⟦actual⟧")
 			attest(
 				rendered(type("number").configure({ expected: "a count" }), "x")
-			).snap(" ⟦message⟧ ⟦problem⟧ ⟦cite⟧ a count ⟦actual⟧")
+			).snap("⟦message⟧ ⟦cite⟧ a count ⟦actual⟧")
 			attest(rendered($.type("bigint"), 1)).snap(
-				" ⟦message⟧ ⟦problem⟧ ⟦cite⟧ a big one ⟦actual⟧"
+				"⟦message⟧ ⟦cite⟧ a big one ⟦actual⟧"
 			)
 			// a node's description is its own scope's, whichever scope validates
 			const $min = scope({}, { min: { description: n => `over ${n.rule}` } })
 			attest(rendered(type({ k: $min.type("number > 7") }), { k: 1 })).snap(
-				"k ⟦message⟧ ⟦problem⟧ ⟦cite⟧ over 7 ⟦actual⟧"
+				"k ⟦line⟧ ⟦message⟧ ⟦cite⟧ over 7 ⟦actual⟧"
 			)
 			attest(rendered($min.type({ k: type("number > 7") }), { k: 1 })).snap(
-				"k ⟦message⟧ ⟦problem⟧ ⟦min⟧ ⟦actual⟧"
+				"k ⟦line⟧ ⟦message⟧ ⟦min⟧ ⟦actual⟧"
 			)
 			// a keyword's phrase is the locale's own text
 			attest(rendered(type("string.email"), "x")).snap(
-				" ⟦message⟧ ⟦problem⟧ ⟦string.email⟧ ⟦actual⟧"
+				"⟦message⟧ ⟦string.email⟧ ⟦actual⟧"
 			)
 			// a missing value's description is authored by its meta or scope
 			const $basis = scope(
@@ -697,46 +721,44 @@ j ⟦message⟧ ⟦problem⟧ ⟦cite⟧ positive! configured`)
 			)
 			const Missing = $basis.type({ a: "'x'", b: "Date", c: "1 | 2" })
 			attest(rendered(Missing, {}))
-				.snap(`a ⟦message⟧ ⟦problem⟧ ⟦cite⟧ unit x ⟦actual⟧
-b ⟦message⟧ ⟦problem⟧ ⟦cite⟧ a moment ⟦actual⟧
-c ⟦message⟧ ⟦problem⟧ ⟦cite⟧ unit 1⟦or⟧⟦cite⟧ unit 2 ⟦actual⟧`)
+				.snap(`a ⟦line⟧ ⟦message⟧ ⟦cite⟧ unit x ⟦actual⟧
+b ⟦line⟧ ⟦message⟧ ⟦cite⟧ a moment ⟦actual⟧
+c ⟦line⟧ ⟦message⟧ ⟦cite⟧ unit 1⟦or⟧⟦cite⟧ unit 2 ⟦actual⟧`)
 			attest((Missing({}) as ArkErrors).toLocaleString({ ...en })).equals(
 				(Missing({}) as ArkErrors).summary
 			)
 			// a phrase the locale lacks shows the keyword's English
 			attest(
 				type("string.email")("x").toLocaleString({ ...xx, keywordPhrases: {} })
-			).snap(" ⟦message⟧ ⟦problem⟧ ⟦cite⟧ an email address ⟦actual⟧")
+			).snap("⟦message⟧ ⟦cite⟧ an email address ⟦actual⟧")
 		})
 
-		it("a code's own problem frames only its locale's expected text", () => {
+		it("a code's own message frames only its locale's expected text", () => {
 			const locale: Locale = {
 				...xx,
-				unit: { expected: mark("unit"), problem: mark("unit.problem") }
+				unit: { expected: mark("unit"), message: mark("unit.message") }
 			}
-			attest(type("'a'")("b").toLocaleString(locale)).snap(
-				" ⟦message⟧ ⟦unit.problem⟧"
-			)
+			attest(type("'a'")("b").toLocaleString(locale)).snap("⟦unit.message⟧")
 			attest(type("'a'").describe("an a")("b").toLocaleString(locale)).snap(
-				" ⟦message⟧ ⟦problem⟧ ⟦cite⟧ an a ⟦actual⟧"
+				"⟦message⟧ ⟦cite⟧ an a ⟦actual⟧"
 			)
 			attest(
 				type("'a'").configure({ expected: "an a" })("b").toLocaleString(locale)
-			).snap(" ⟦message⟧ ⟦problem⟧ ⟦cite⟧ an a ⟦actual⟧")
+			).snap("⟦message⟧ ⟦cite⟧ an a ⟦actual⟧")
 			const $ = scope({}, { unit: { expected: "an a" } })
 			attest($.type("'a'")("b").toLocaleString(locale)).snap(
-				" ⟦message⟧ ⟦problem⟧ ⟦cite⟧ an a ⟦actual⟧"
+				"⟦message⟧ ⟦cite⟧ an a ⟦actual⟧"
 			)
 			// a keyword's phrase is not its code's expected text
 			const patterned: Locale = {
 				...xx,
-				pattern: { expected: mark("pattern"), problem: mark("pattern.problem") }
+				pattern: { expected: mark("pattern"), message: mark("pattern.message") }
 			}
 			attest(type("/^a/")("b").toLocaleString(patterned)).snap(
-				" ⟦message⟧ ⟦pattern.problem⟧"
+				"⟦pattern.message⟧"
 			)
 			attest(type("string.email")("b").toLocaleString(patterned)).snap(
-				" ⟦message⟧ ⟦problem⟧ ⟦string.email⟧ ⟦actual⟧"
+				"⟦message⟧ ⟦string.email⟧ ⟦actual⟧"
 			)
 		})
 
@@ -747,7 +769,7 @@ c ⟦message⟧ ⟦problem⟧ ⟦cite⟧ unit 1⟦or⟧⟦cite⟧ unit 2 ⟦actu
 					expected: (e: Locale.ExpectedContext<"domain">, locale: Locale) =>
 						locale.nouns[e.domain]
 				},
-				min: { problem: () => "<min>" },
+				min: { message: () => "<min>" },
 				nouns: { string: "<string>" }
 			} as {} as Locale
 			const def = {
@@ -772,12 +794,12 @@ m must be a bigint`)
 			).equals(rendered)
 		})
 
-		it("a locale's own problem reads what the data was, which en's leaves out", () => {
+		it("a locale's own message reads what the data was, which en's leaves out", () => {
 			const errors = type({ k: "string", n: "number" })({ k: 5, n: "5" })
 			const own = {
 				tag: "own",
 				domain: { expected: (e: Locale.ExpectedContext<"domain">) => e.domain },
-				problem: (e: { expected: string; actual: string }) =>
+				message: (e: { expected: string; actual: string }) =>
 					`${e.expected}! (${e.actual})`
 			} as {} as Locale
 			const inherited = { tag: "inherited", domain: own.domain } as {} as Locale
@@ -793,9 +815,7 @@ m must be a bigint`)
 		it("a slot configured as undefined renders through the locale", () => {
 			const config = { domain: { expected: undefined } } as never
 			const errors = scope({}, config).type("number")("x") as ArkErrors
-			attest(errors.toLocaleString(xx)).snap(
-				" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
-			)
+			attest(errors.toLocaleString(xx)).snap("⟦message⟧ ⟦domain⟧ ⟦actual⟧")
 		})
 
 		it("configure rejects a locale that is neither an object nor a function", () => {
@@ -844,7 +864,7 @@ m must be a bigint`)
 				"a must be a string or b must be a number"
 			)
 			attest(errors.toLocaleString(locale)).snap(
-				" ⟦message⟧ ⟦problem⟧ a must be a string or b must be a number ⟦actual⟧"
+				"⟦message⟧ a must be a string or b must be a number ⟦actual⟧"
 			)
 			// an untyped locale without the code at all
 			const { union: __, ...untyped } = xx
@@ -946,7 +966,6 @@ m must be a bigint`)
 					codes.add(error.code)
 					check(error.expected)
 					check(error.actual)
-					check(error.problem)
 					check(error.message)
 					if (error.code === "union" || error.code === "intersection")
 						checkErrors(error.errors)

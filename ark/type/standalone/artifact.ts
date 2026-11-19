@@ -44,6 +44,7 @@ import {
 	ParseError,
 	printable,
 	prototypeOf,
+	testsOrRejects,
 	throwInternalError,
 	throwParseError,
 	unset,
@@ -57,6 +58,7 @@ import {
 	failureSources,
 	introspectionMembers,
 	invalidErrorsOf,
+	internsByHolder,
 	isCreatedByRuntime,
 	wholeReads,
 	writeFixConfig,
@@ -347,6 +349,27 @@ const sharedWritesOf = (baking: Baking): Map<string, SharedWrite> => {
 	return writes
 }
 
+// a plain object or array holding only primitives a digest tells apart, at
+// enough keys that it's smaller than a check of each
+const isDigestible = (value: object): boolean => {
+	if (!isPlainLiteral(value)) return false
+	const keys = Reflect.ownKeys(value).filter(
+		k => !(k === "length" && Array.isArray(value))
+	)
+	return (
+		keys.length >= 4 &&
+		keys.every(k => {
+			const v: unknown = Reflect.get(value, k)
+			return (
+				typeof k === "string" &&
+				typeof v !== "symbol" &&
+				typeof v !== "function" &&
+				!hasDomain(v, "object")
+			)
+		})
+	)
+}
+
 const printedHolesByUnit = new WeakMap<RootUnit, string | null>()
 
 const firstHoleName = new RegExp(holeNamePattern.source)
@@ -570,9 +593,13 @@ export class StandaloneArtifact {
 		const module: SharedModule =
 			cell.text !== undefined ?
 				{
-					readsRuntime: false,
-					imports: {},
-					declarations: [`var ${cell.name} = ${cell.text}`],
+					readsRuntime: true,
+					imports: cell.imports ?? {},
+					// through a call, as declared itself it would be named for the
+					// variable, which a narrow with no description is described by
+					declarations: [
+						`var ${cell.name} = ${cell.rejects === undefined ? `/* @__PURE__ */ runtime.unnamed(${cell.text})` : cell.text}`
+					],
 					exports: [cell.name]
 				}
 			:	{
@@ -643,8 +670,11 @@ export class StandaloneArtifact {
 				kind,
 				classesOf(hole => hole)
 			)
+			const label = this.labelArg(this.holeLabels.get(hole))
 			this.checks.push(
-				`runtime.checkFacts(runtime.factOfHole(${expression}${kind === "function" ? "" : `, "${kind}"`}${kind === "class" ? classesArg : ""}), ${JSON.stringify(expected)}, ${JSON.stringify(this.holeLabels.get(hole))})`
+				kind === "function" && typeof expected === "number" ?
+					`runtime.checkArity(${expression}, ${expected}${label})`
+				:	`runtime.checkFacts(runtime.factOfHole(${expression}${kind === "function" ? "" : `, "${kind}"`}${kind === "class" ? classesArg : ""}), ${JSON.stringify(expected)}${label})`
 			)
 		}
 	}
@@ -669,7 +699,7 @@ export class StandaloneArtifact {
 				this.holeExpressions.get(hole) !== this.holeExpressions.get(first)
 			) {
 				this.checks.push(
-					`runtime.checkFacts(${printedNameOf(hole)}, ${printedNameOf(first)}, ${JSON.stringify(this.holeLabels.get(hole))})`
+					`runtime.checkFacts(${printedNameOf(hole)}, ${printedNameOf(first)}${this.labelArg(this.holeLabels.get(hole))})`
 				)
 			}
 		}
@@ -705,12 +735,21 @@ export class StandaloneArtifact {
 			if (typeof hole === "function" && read(hole) === name) return hole
 	}
 
+	// what names a value where a check of it throws, written after the check's
+	// other arguments. A build written for size leaves it out: its checks
+	// throw as often, saying "A value a validator reads" for what another names
+	labelArg(label: string | undefined, after = ""): string {
+		return this.baking.shortest ?
+				after && `, undefined${after}`
+			:	`, ${JSON.stringify(label)}${after}`
+	}
+
 	// a hole received twice is checked by identity
 	receiveHole(hole: unknown, expression: string, label: string): boolean {
 		const received = this.holeExpressions.get(hole)
 		if (received) {
 			this.checks.push(
-				`runtime.checkIdentity(${expression}, ${received}, ${JSON.stringify(label)}, ${JSON.stringify(this.holeLabels.get(hole))})`
+				`runtime.checkIdentity(${expression}, ${received}${this.labelArg(label, this.labelArg(this.holeLabels.get(hole)))})`
 			)
 			return false
 		}
@@ -734,7 +773,7 @@ export class StandaloneArtifact {
 		if (!this.isComparedId(id))
 			throwInternalError(`Comparing ${label}, whose id the scan didn't read`)
 		const kind = hasArkKind(value, "root") ? "" : `, "${kindNameOf(value)}"`
-		const args = `${writeId(id)}, ${JSON.stringify(label)}${kind}`
+		const args = `${writeId(id)}${this.labelArg(label, kind)}`
 		const name = `${receiverPrefix}${hashOf(`runtime.holesOf(holder, ${args})`)}`
 		this.importName(
 			this.share(
@@ -797,7 +836,7 @@ export class StandaloneArtifact {
 				// a cell it reads is set by then only if what holds it has run,
 				// and arktype would throw reading it even where no site sets one
 				this.checks.push(
-					`runtime.checkHeld(${expression}, ${JSON.stringify(label)}${isType ? "" : `, "${kindNameOf(value)}"`})`
+					`runtime.checkHeld(${expression}${this.labelArg(label, isType ? "" : `, "${kindNameOf(value)}"`)})`
 				)
 			} else if (allHoles.length)
 				this.heldReads.push(`runtime.checkHeld(${expression})`)
@@ -815,7 +854,7 @@ export class StandaloneArtifact {
 		// e.g. a helper an import cycle left unset
 		if (!path.length && typeof value === "function") {
 			this.checks.push(
-				`runtime.checkFunction(${expression}, ${JSON.stringify(label)})`
+				`runtime.checkFunction(${expression}${this.labelArg(label)})`
 			)
 			return
 		}
@@ -835,7 +874,7 @@ export class StandaloneArtifact {
 				)
 			}
 			this.checks.push(
-				`runtime.checkInput(${expression}, ${this.emit(value)}, ${JSON.stringify(label)})`
+				`runtime.checkInput(${expression}, ${this.emit(value)}${this.labelArg(label)})`
 			)
 			return
 		}
@@ -853,8 +892,17 @@ export class StandaloneArtifact {
 				writeUnprecompilableMessage(`${printable(value)} read from ${label}`)
 			)
 		}
+		// a build leaving out what it verified checks one read whole, like an
+		// enum's values, by a digest of its keys and values, as naming each to
+		// say which changed writes them all again, each with its label
+		if (!this.baking.checksTypes && isDigestible(value)) {
+			this.checks.push(
+				`runtime.checkDigest(${expression}, ${JSON.stringify(runtime.digestOf(value))}${this.labelArg(label)})`
+			)
+			return
+		}
 		this.checks.push(
-			`runtime.checkFacts(runtime.describeShape(${expression}), ${JSON.stringify(runtime.describeShape(value))}, ${JSON.stringify(label)})`
+			`runtime.checkFacts(runtime.describeShape(${expression}), ${JSON.stringify(runtime.describeShape(value))}${this.labelArg(label)})`
 		)
 		if (!isPlainLiteral(value)) return
 		for (const k of Reflect.ownKeys(value)) {
@@ -1116,7 +1164,7 @@ export class StandaloneArtifact {
 			defaults.length ? `, [${defaults.map(({ key }) => key).join(", ")}]` : ""
 		if (!holes)
 			return this.writeFactoryFunction(index, params, configured, body)
-		const interned = `runtime.intern(${this.internTableOf(internedBy!)}, [${holes.join(", ")}], ${this.baking.defers ? "function ()" : "() =>"} {\n${body.filter(statement => statement).join("\n\n")}\n}${defaultKeys})`
+		const interned = `runtime.${this.internsByHolder ? "internIn" : "intern"}(${this.internTableOf(internedBy!)}, [${holes.join(", ")}], ${this.baking.defers ? "function ()" : "() =>"} {\n${body.filter(statement => statement).join("\n\n")}\n}${defaultKeys})`
 		// one holding none bakes as it's created
 		const bakedAfter =
 			this.internsAcrossModules &&
@@ -1152,9 +1200,20 @@ export class StandaloneArtifact {
 	// created each; a validator holding none is interned where it's written
 	private internTableOf(internedBy: number): string {
 		const type = this.factory!.type as never
-		return this.internsAcrossModules ?
+		return (
+			this.internsAcrossModules ?
 				`runtime.internedTable(${JSON.stringify(this.internKeyOf(type, this.validatorFormOf(type)))})`
-			:	writeLazyRead(`interned${internedBy}`, "runtime.internTable()")
+			: this.internsByHolder ? `interned${internedBy}`
+			: writeLazyRead(`interned${internedBy}`, "runtime.internTable()")
+		)
+	}
+
+	// whether a factory's table is what an object its module declares keys in
+	// the runtime, as a build written for size reads it: a factory it writes
+	// is a const, which nothing reaches before its module declared the object,
+	// so the table needn't be created by whichever call comes first
+	get internsByHolder(): boolean {
+		return internsByHolder(this.baking) && !this.internsAcrossModules
 	}
 
 	get internsAcrossModules(): boolean {
@@ -1186,9 +1245,18 @@ export class StandaloneArtifact {
 		return hashOf(
 			JSON.stringify([
 				named,
-				// each module picks what's smallest for what it holds, and a
-				// validator behaves alike however it's written
-				bakingKeyOf({ ...this.baking, combines: false, shapes: false }),
+				// each module picks what's smallest for what it holds, and each
+				// site what it's optimized for, and a validator behaves alike
+				// however it's written
+				bakingKeyOf({
+					...this.baking,
+					combines: false,
+					shapes: false,
+					shortest: false,
+					flattens: false,
+					defersIssues: false,
+					strategy: ""
+				}),
 				[...form.members].sort(),
 				form.isTemplate,
 				called,
@@ -1361,9 +1429,9 @@ return namespace`
 	}
 
 	specifierOf(name: string): string {
-		return `~arktype/${this.baking.defers ? "deferred/" : ""}${
-			this.baking.hoisted ? "hoisted/" : ""
-		}${name}`
+		return `~arktype/${this.baking.strategy && `${this.baking.strategy}/`}${
+			this.baking.defers ? "deferred/" : ""
+		}${this.baking.hoisted ? "hoisted/" : ""}${name}`
 	}
 
 	readValue(name: string): string {
@@ -1419,7 +1487,12 @@ return namespace`
 		const links = writing.own.map(root => {
 			const shape = writing.shapesByName[unit.names[root.id]]
 			returned.push(shape)
-			return `runtime.freeze(runtime.assign(${shape}, ${this.writeShape(root, shape, unit, this.traversalsOf(root, unit))}))`
+			return this.writeFilledShape(
+				root,
+				shape,
+				unit,
+				this.traversalsOf(root, unit)
+			)
 		})
 		const [moduleDeclarations, scope] =
 			this.baking.flattens ?
@@ -1623,12 +1696,8 @@ return namespace`
 				shape ? `${this.readValue(unit.name)}[${returned.indexOf(shape)}]`
 				: isChecker ?
 					`runtime.checkerNode(${this.traversalsOf(root, unit)[0]}${root.reportsPred ? ", true" : ""})`
-				: readsCtx ?
-					`runtime.ctxNode(${[
-						this.writeShapeFlags(root, unit),
-						...this.traversalsOf(root, unit)
-					].join(", ")})`
-				:	`runtime.freeze(${this.writeShape(
+				: readsCtx ? this.writeCtxNode(root, unit)
+				: `runtime.freeze(${this.writeShape(
 						root,
 						this.readValue(`${name}Node`),
 						unit,
@@ -1640,6 +1709,28 @@ return namespace`
 				!shape && (isChecker || readsCtx)
 			)
 		})
+	}
+
+	// a node reading its ctx, from its flags and traversals. Nearly each is of
+	// a checker that only checks, whose Allows is declared from its Apply, so
+	// the runtime creates that one's node from its Apply alone, and the Allows
+	// is declared only for what else reads it
+	writeCtxNode(root: BaseRoot, unit: RootUnit): string {
+		const flags = this.writeShapeFlags(root, unit)
+		const traversals = this.traversalsOf(root, unit)
+		const [allows, apply] = traversals
+		const reportsPred = flags === "{ checksCtx: true, reportsPred: true }"
+		return (
+				traversals.length === 2 &&
+					(reportsPred || flags === "{ checksCtx: true }") &&
+					unit.members.some(
+						([name, source]) =>
+							name === allows &&
+							source === `/* @__PURE__ */ runtime.allowsReadingCtx(${apply})`
+					)
+			) ?
+				`runtime.readingCtxNode(${apply}${reportsPred ? ", true" : ""})`
+			:	`runtime.ctxNode(${[flags, ...traversals].join(", ")})`
 	}
 
 	// whether a node may be written as the checker declared beside it
@@ -1694,10 +1785,12 @@ return namespace`
 			.split(unit.name)
 			.join("template")
 		if (/\bliteral\d+\b/.test(body)) return
-		// a site's description is passed, so units differing by theirs share it
+		// what a failure expects is passed, so units differing by theirs share
+		// it: the last a ctx is passed where it fails data or a key, and the
+		// last failsKey is
 		const descriptions: string[] = []
 		const shared = body.replace(
-			/(runtime\.(?:siteOf|keySiteOf)\("(?:[^"\\]|\\.)*", |runtime\.requiredSiteOf\()("(?:[^"\\]|\\.)*")\)/g,
+			/(ctx\._e\(\w+, "(?:[^"\\]|\\.)*", |ctx\._k\((?:\w+, ){2}"(?:[^"\\]|\\.)*", |runtime\.failsKey\(ctx, \w+(?:, "(?:[^"\\]|\\.)*"){2}, )("(?:[^"\\]|\\.)*")\)/g,
 			(_, call: string, description: string) => {
 				if (!descriptions.includes(description)) descriptions.push(description)
 				return `${call}d${descriptions.indexOf(description)})`
@@ -1774,7 +1867,9 @@ return namespace`
 	}
 
 	// a ref read as its code runs, once the site holding the cell has, or a
-	// cell holding its function's text, which a checker holds itself
+	// cell holding its function's text, which a checker holds itself where the
+	// function reads only its argument, or only tests it and rejects with a
+	// message, importing what the text reads of other modules
 	readsCells(fn: string): string {
 		if (!this.writing) return fn
 		const { cellReads, narrowedBy } = this.writing
@@ -1782,16 +1877,29 @@ return namespace`
 		return refs.length ?
 				fn.replace(
 					new RegExp(
-						`(runtime\\.narrowedBy\\(\\(\\) => )?\\b(${refs.join("|")})\\b`,
+						`(runtime\\.narrowed(By|WithCtx|Rejecting)\\(\\(\\) => )?\\b(${refs.join("|")})\\b`,
 						"g"
 					),
-					(_, narrows: string | undefined, ref: string) => {
+					(
+						_,
+						narrows: string | undefined,
+						kind: "By" | "WithCtx" | "Rejecting" | undefined,
+						ref: string
+					) => {
 						const cell = narrowedBy[ref]
-						return (
-							!cell ? `${narrows ?? ""}${cellReads[ref]}`
-							: narrows ? `runtime.narrowed(${cell.text}`
-							: this.readCell(cell)
-						)
+						if (!cell) return `${narrows ?? ""}${cellReads[ref]}`
+						const held =
+							kind === "By" ?
+								cell.rejects === undefined && `runtime.narrowed(${cell.text}`
+							:	kind &&
+								cell.rejects !== undefined &&
+								`runtime.rejectsWith(${cell.rejects}`
+						if (!held) return `${narrows ?? ""}${this.readCell(cell)}`
+						for (const specifier in cell.imports) {
+							for (const name of cell.imports[specifier])
+								this.importName(specifier, name)
+						}
+						return held
 					}
 				)
 			:	fn
@@ -2297,8 +2405,10 @@ return namespace`
 	): string[] {
 		const members: string[] = []
 		const bakes = (member: IntrospectionMember) => baked.has(member)
-		if (bakes("expression"))
+		if (bakes("expression")) {
+			this.baking.issues.holdsExpression = true
 			members.push(`expression: ${this.emitExpression(root)}`)
+		}
 		if (bakes("description"))
 			members.push(`description: ${this.emitDescription(root)}`)
 		if (bakes("json") || bakes("toJSON")) {
@@ -2825,11 +2935,21 @@ return namespace`
 		opts: RootApplyOptions
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
 		const { asValidator, readsAllows, unconfigured, throws } = opts
+		// a checker transforms by its t, so each is created alike
+		const checks = isChecker(root, this.variantOf(root))
+		// a narrow that only tests its data or rejects with a message is passed a
+		// ctx of its checker's, which fails at a site as a check does. Each a
+		// checker reaches is written as one, but through an alias, whose compiled
+		// code passes it the root's ctx
+		const sitesRejections =
+			checks && this.baking.detailsErrors && !root.hasAlias
 		const callbacks = declares(
 			root,
 			node =>
 				node.is("morph") ||
-				(node.is("predicate") && !raisesNothing(node.predicate))
+				(node.is("predicate") &&
+					!raisesNothing(node.predicate) &&
+					!(sitesRejections && testsOrRejects.has(node.predicate)))
 		)
 		if (!this.baking.detailsErrors) {
 			return this.emitUndetailedApply(
@@ -2888,8 +3008,6 @@ return namespace`
 				:	"runtime.applyRejected"
 			:	this.emit(rootApplyRuntime[param])
 		const strategy = root.applyMode
-		// a checker transforms by its t, so each is created alike
-		const checks = isChecker(root, this.variantOf(root))
 		// an undiscriminated union's Transform finds its branch; a checker's t trusts its Allows
 		const isArrow =
 			!root.hasAlias &&
@@ -2903,11 +3021,13 @@ return namespace`
 				this.compactPartsOf(root, tfs ? [0, 1, 2] : [0, 1], asValidator)
 			:	[]
 		if (traversals) {
-			const Ctx =
-				!unreads ? refOf("Traversal")
-				: this.baking.firstIssue ? "runtime.UnreadFirstIssues"
-				: "runtime.UnreadArkErrors"
+			// errors that wait are of the class compiled code reports into, and a
+			// build holding one writes its errors to find their issues once read
+			if (unreads) this.baking.issues.findsOnRead = true
+			const Ctx = refOf("Traversal")
 			const local = !Ctx.startsWith("runtime.")
+			// they're ArkErrors unless passed
+			const passedCtx = unreads && Ctx === "runtime.ArkErrors" ? "" : `, ${Ctx}`
 			// a unified root applies by its Allows
 			const apply = this.appliedIndexOf(root) ? "apply" : "allows"
 			const pattern =
@@ -2938,9 +3058,9 @@ return namespace`
 	for (let i = 0; i < data.length; i++) if (!allowsElement(data[i])) return i
 }`,
 						apply: `(data, ...args) => {
-	if (!Array.isArray(data)) return ${callErrors}(apply, data, args, onFail, ${Ctx})
+	if (!Array.isArray(data)) return ${callErrors}(apply, data, args, onFail${passedCtx})
 	const i = rejectedIn(data)
-	return i === undefined ? data : ${elementErrors}(allowsElement, applyElement, i, data, args, onFail, ${Ctx})
+	return i === undefined ? data : ${elementErrors}(allowsElement, applyElement, i, data, args, onFail${passedCtx})
 }`,
 						args,
 						local
@@ -2954,7 +3074,9 @@ return namespace`
 					this.emitApplier({
 						readsAllows,
 						params: `${pattern}${unconfigured ? "" : ", onFail"}`,
-						apply: `(data, ...args) => allows(data) ? ${valid} : ${callErrors}(${apply}, data, args, ${unconfigured ? "null" : "onFail"}, ${Ctx})`,
+						apply: `(data, ...args) => allows(data) ? ${valid} : ${callErrors}(${apply}, data, args${
+							unconfigured ? passedCtx && ", null" : ", onFail"
+						}${passedCtx})`,
 						args: parts,
 						local
 					}),
@@ -2966,7 +3088,7 @@ return namespace`
 				{
 					params: pattern,
 					apply: `(data, onFail) => allows(data) ? ${valid} : ${
-						unreads ? `runtime.unreadErrors(${apply}, data, onFail, ${Ctx})`
+						unreads ? `runtime.unreadErrors(${apply}, data, onFail${passedCtx})`
 						: !reportsIssues ?
 							`runtime.applyErrors(${apply}, data, ${refOf("config")}, onFail, ${Ctx})`
 						: (
@@ -3412,7 +3534,7 @@ return namespace`
 		const shape = this.declareConst(node, "shape", "{}")
 		const traversals = unit.traversals.flat()
 		this.links.push(
-			`runtime.freeze(runtime.assign(${shape}, ${this.writeShape(
+			this.writeFilledShape(
 				node,
 				shape,
 				unit,
@@ -3420,9 +3542,28 @@ return namespace`
 					traversal =>
 						`${this.localNamesByUnit.get(unit)}[${traversals.indexOf(traversal)}]`
 				)
-			)}))`
+			)
 		)
 		return shape
+	}
+
+	// a shape declared before the traversals that read it, filled once they're
+	// declared. A size build has the runtime fill one reading its ctx, as each
+	// would otherwise write the same members and the function answering allows
+	writeFilledShape(
+		node: BaseRoot,
+		shape: string,
+		unit: RootUnit,
+		traversals: string[]
+	): string {
+		if (
+			this.baking.shortest &&
+			this.baking.detailsErrors &&
+			node.allowsCtx &&
+			traversals[1]
+		)
+			return `runtime.ctxNode(${this.writeShapeFlags(node, unit)}, ${traversals[0]}, ${traversals[1]}, ${traversals[2] ?? "void 0"}, ${shape})`
+		return `runtime.freeze(runtime.assign(${shape}, ${this.writeShape(node, shape, unit, traversals)}))`
 	}
 
 	// what a node reading its ctx is told apart by

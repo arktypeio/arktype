@@ -10,6 +10,16 @@ export const minifiedLengthOf = (code: string): number =>
 		.replace(/\s+/g, "")
 		.replace(/[$A-Z_a-z][\w$]{2,}/g, "ab").length
 
+// as minifiedLengthOf, but a string keeps its text, as a minifier keeps it
+export const minifiedLengthKeepingStrings = (code: string): number =>
+	code.replace(
+		/"(?:[^\n"\\]|\\.)*"|'(?:[^\n'\\]|\\.)*'|`(?:[^\\`]|\\.)*`|\/\*[\S\s]*?\*\/|\/\/[^\n]*|\s+|[$A-Z_a-z][\w$]{2,}/g,
+		match =>
+			/^["'`]/.test(match) ? match
+			: /^[$A-Z_a-z]/.test(match) ? "ab"
+			: ""
+	).length
+
 export const runtimeReadsOf = (code: string): string[] =>
 	code.match(/(?<=\bruntime\.)[\w$]+/g) ?? []
 

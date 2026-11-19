@@ -6,6 +6,7 @@ import * as runtime from "./runtimeExports.ts"
 import { StandaloneArtifact } from "./standalone/artifact.ts"
 import {
 	bakingOf,
+	internsByHolder,
 	writeFixConfig,
 	isCreatedByRuntime,
 	writeFunction,
@@ -282,8 +283,15 @@ ${writeExport(name, index)}`
 	const sections = [
 		...creations,
 		called.length ? `export { ${called.join(", ")} }` : "",
-		// an import cycle can reach a factory before this runs
-		[...tables].map(table => `var interned${table}`).join("\n"),
+		// an import cycle can reach a factory a function declares before this
+		// runs, so only one written as a const reads a table by what's declared
+		[...tables]
+			.map(table =>
+				internsByHolder(baking) ?
+					`const interned${table} = {}`
+				:	`var interned${table}`
+			)
+			.join("\n"),
 		...factories.map(factory =>
 			typeof factory === "string" ? factory : factory()
 		)

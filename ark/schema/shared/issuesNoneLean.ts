@@ -1,4 +1,5 @@
 import type { ArkIssue } from "./issues.ts"
+import { lineOf } from "./issuesUndetailed.ts"
 
 export * from "./issuesUndetailed.ts"
 
@@ -19,8 +20,7 @@ export class ArkErrors {
 
 	get summary(): string {
 		return this._.reduce(
-			(summary, issue) =>
-				summary + (summary && "\n") + (issue.message ?? "is invalid"),
+			(summary, issue) => summary + (summary && "\n") + lineOf(issue),
 			""
 		)
 	}

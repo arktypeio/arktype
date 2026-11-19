@@ -32,6 +32,7 @@ import {
 	isAsset,
 	runtimeSpecifier,
 	scanProgram,
+	writeLargerMessage,
 	type ScannedProgram,
 	type ScannedUsage
 } from "./scan.ts"
@@ -476,8 +477,8 @@ const readAndWrite = async (
 	if (queried) return refusalOf(queried)
 	const program = withRoots(scanned, root, scripts)
 	// what a module writes is a few imports, its validators created in the units.
-	// Each keeps its methods, whose getters throw for a member it lacks, as a
-	// module Next generates may import one where the read can't see
+	// Each keeps its methods, which in development throw reading a member it
+	// lacks, as a module Next generates may import one where the read can't see
 	const send = createAsyncPrecompiler({
 		precompilerOptions: {
 			...opts,
@@ -489,9 +490,15 @@ const readAndWrite = async (
 		resolveFile(specifier, importer)
 	try {
 		const usage = (await send(["scan", program], sentResolve)) as ScannedUsage
-		const warnings = [usage.unpruned, usage.lost].filter(
-			warning => warning !== undefined
-		)
+		// one read holds the server's modules with the browser's, so it can't
+		// write the browser's alone for size
+		const warnings = [
+			usage.unpruned,
+			usage.lost,
+			usage.timesArktype === undefined ?
+				undefined
+			:	writeLargerMessage(usage.timesArktype)
+		].filter(warning => warning !== undefined)
 		const written: Record<string, TransformedModule | undefined> = {}
 		await Promise.all(
 			Object.keys(program.modules).map(async id => {

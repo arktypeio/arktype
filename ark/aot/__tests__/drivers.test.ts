@@ -260,16 +260,19 @@ console.log(JSON.stringify(messages))`
 				attest(node(["main.ts"], { runtime }).stdout).equals(expected)
 		})
 
-		it("prints errors as their issues outside production", () => {
-			attest(node(["main.ts"], {}, logged).stdout).snap(`[
-  {
-    code: 'domain',
-    path: [ 'a' ],
-    data: 'x',
-    expected: 'a number',
-    message: 'a must be a number'
-  }
-]
+		it("prints errors by name, with their summary and issues, outside production", () => {
+			attest(node(["main.ts"], {}, logged).stdout).snap(`ArkErrors {
+  summary: 'a must be a number',
+  issues: [
+    {
+      code: 'domain',
+      path: [ 'a' ],
+      data: 'x',
+      expected: 'a number',
+      message: 'must be a number'
+    }
+  ]
+}
 `)
 			// production loads the runtime without the inspect hook
 			attest(
@@ -395,7 +398,7 @@ console.log(String(types.user({ name: 5 })), Id("x"))
 			attest(thrownMessage(stdout, app))
 				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: \`'\${proces… cannot be precompiled
   \`process\` is a global the build does not read
-  Replace \`process.env.ADMIN_ROLE\` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.`)
+  Replace \`process.env.ADMIN_ROLE\` with a value the build can read, like a literal or a const holding one, or build with runtime: "arktype", so arktype defines it at runtime. A // @ark-runtime island can't define this one alone, as what it composes is precompiled.`)
 		})
 
 		it("a package reading arktype's nodes in a runtime island", () => {
@@ -1399,6 +1402,33 @@ console.log(Value, note, load, await import("#shared/lazy"))
 			attest(answers[1]).equals(fresh.answers[0])
 		})
 
+		it("answers anew once another module's change closes an import cycle through it", async () => {
+			const app =
+				'import { g } from "./g.ts"\nexport function viaG() { return g({ b: "number" }) }\n'
+			const dir = writeFixture({
+				"main.ts":
+					'import { type } from "arktype"\nimport { viaG } from "./app.ts"\n\nexport const G = type(viaG())\n',
+				"app.ts": app,
+				"g.ts":
+					'export function g(extra: object) { return { a: "string", ...extra } }\n'
+			})
+			// main.ts is unchanged, and whether it's on a cycle is kept by its source
+			const { answers } = await watched(dir, [
+				() => writeFileSync(join(dir, "app.ts"), `import "./main.ts"\n${app}`)
+			])
+			rmSync(join(dir, "node_modules"), { recursive: true, force: true })
+			const fresh = await watched(dir, [])
+			const errorsOf = (answer: unknown) =>
+				(JSON.parse(answer as string) as TransformedModule).errors.map(
+					error => error.split("\n")[1]
+				)
+			attest(errorsOf(answers[0])).equals([])
+			attest(errorsOf(answers[1])).equals([
+				"  importing `g` from g.ts here could run it earlier than the program does, as main.ts is on an import cycle"
+			])
+			attest(answers[1]).equals(fresh.answers[0])
+		})
+
 		it("asks for a new thread once its settings change", async () => {
 			const dir = writeFixture({
 				"main.ts":
@@ -1442,16 +1472,20 @@ console.log(Value, note, load, await import("#shared/lazy"))
 			}
 		})
 
-		it("prints errors as their issues outside production", () => {
-			attest(bun([...preload, "main.ts"], { cwd: logged }).stdout).snap(`[
-  {
-    code: "domain",
-    path: [ "a" ],
-    data: "x",
-    expected: "a number",
-    message: "a must be a number",
-  }
-]
+		it("prints errors by name, with their summary and issues, outside production", () => {
+			attest(bun([...preload, "main.ts"], { cwd: logged }).stdout)
+				.snap(`ArkErrors {
+  summary: 'a must be a number',
+  issues: [
+    {
+      code: 'domain',
+      path: [ 'a' ],
+      data: 'x',
+      expected: 'a number',
+      message: 'must be a number'
+    }
+  ]
+}
 `)
 		})
 
@@ -1550,7 +1584,7 @@ console.log(await result.outputs[0].text())`
 			attest(thrownMessage(stderr, app, "error: "))
 				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: \`'\${proces… cannot be precompiled
   \`process\` is a global the build does not read
-  Replace \`process.env.ADMIN_ROLE\` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.`)
+  Replace \`process.env.ADMIN_ROLE\` with a value the build can read, like a literal or a const holding one, or build with runtime: "arktype", so arktype defines it at runtime. A // @ark-runtime island can't define this one alone, as what it composes is precompiled.`)
 		})
 	})
 })

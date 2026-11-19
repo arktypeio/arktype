@@ -311,7 +311,7 @@ Palindrome("arktype")
 
 </SyntaxTabs>
 
-`ctx.reject()` can also set the error's `path` and `actual`, e.g. to report a mismatch at the right key without printing a password:
+`ctx.reject()` also takes the parts of an error: what was `expected`, or a `message` in place of "must be `expected`", and a `relativePath` that reports it at a key of the value being narrowed:
 
 ```ts
 const Form = type({
@@ -322,14 +322,20 @@ const Form = type({
 		data.password === data.confirmPassword ||
 		ctx.reject({
 			expected: "identical to password",
-			actual: "",
-			path: ["confirmPassword"]
+			relativePath: ["confirmPassword"]
 		})
 )
 
 // ArkErrors: confirmPassword must be identical to password
 Form({ password: "arktype", confirmPassword: "artkype" })
+
+// ArkErrors: [0].confirmPassword must be identical to password
+Form.array()([{ password: "arktype", confirmPassword: "artkype" }])
 ```
+
+`path` sets the error's whole path from the root of the data instead, so prefer `relativePath`, which stays right when the Type is nested in another.
+
+A narrow is called on each literal its Type allows, like `true`, `null` or `'a'`, when the Type is defined, and a literal it rejects is removed from the Type. `type("boolean").narrow(b => b)` is `true`, so `false` reads `must be true` rather than what the narrow says. To give a literal its own text, [configure](/docs/configuration#message) the Type instead: `type("true").configure({ message: "Accept the terms" })`.
 
 If a narrow's return type is a type predicate, the `Type` infers it:
 

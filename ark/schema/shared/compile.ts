@@ -32,18 +32,21 @@ import {
 	type TraversalKind
 } from "./traversal.ts"
 
+// assigns a context's keys to the error it's given, which holds data and path
+// already, in the order a literal of them would
 const writeErrorBuilder = (context: object): string => {
-	let body = "return { data, path"
+	let body = "error.data = data\nerror.path = path\n"
 	for (const k in context) {
 		const key = JSON.stringify(k)
-		body += `, ${key}: context[${key}]`
+		body += `error[${key}] = context[${key}]\n`
 	}
 	// the text written when its errors are read has slots from the start
-	for (const k of writtenSlots) if (!(k in context)) body += `, ${k}: undefined`
-	return `${body} }\n`
+	for (const k of writtenSlots)
+		if (!(k in context)) body += `error.${k} = undefined\n`
+	return `${body}return error\n`
 }
 
-const writtenSlots = ["propString", "expected", "actual", "problem", "message"]
+const writtenSlots = ["propString", "expected", "actual", "message"]
 
 registerBuilderCompiler(context =>
 	tryJit(
@@ -52,6 +55,7 @@ registerBuilderCompiler(context =>
 				"context",
 				"path",
 				"data",
+				"error",
 				writeErrorBuilder(context)
 			)
 	)
@@ -281,6 +285,9 @@ export abstract class NodeCompiler extends CompiledFunction<
 	declare readonly copiesValues?: boolean
 	// trusted to hold only own, enumerable keys, as JSON.parse's output does
 	declare readonly jsonInput?: boolean
+	// whether the ctx it reports to reads the value it applies at a key, as a
+	// standalone validator's errors do
+	declare readonly readsApplied?: boolean
 	/** whether the transform it compiles checks for errors a transformed child added */
 	checksErrs = false
 
@@ -380,15 +387,44 @@ export abstract class NodeCompiler extends CompiledFunction<
 	}
 
 	error(node: BaseNode, key?: string, data = "data"): string {
-		return this.fails(
-			"failsAt",
-			`${this.site(node)}, ${data}${key === undefined ? "" : `, ${key}`}`
-		)
+		return this.failsSite(this.site(node), data, key)
 	}
 
-	// a call reporting a failure into ctx, by FailureContext's short names
-	fails(method: "failsAt" | "failsIn", args: string): string {
-		return `ctx.${method === "failsAt" ? "_at" : "_in"}(${args})`
+	// a call failing a site, at a key of data where it's passed one, which
+	// arktype's traversal enters in its _at. A validator's errors take neither
+	// a site nor a key, so its compilers write the call another way
+	failsSite(site: string, data: string, key?: string): string {
+		return `ctx._at(${site}, ${data}${key === undefined ? "" : `, ${key}`})`
+	}
+
+	// a call failing one of two sites at a key of data: the first where a
+	// condition holds
+	failsEither(
+		condition: string,
+		site: string,
+		otherwise: string,
+		data: string,
+		key: string
+	): string {
+		return this.failsSite(`${condition} ? ${site} : ${otherwise}`, data, key)
+	}
+
+	// a call applying data's value at a key, by SiteFailureContext's short name
+	failsIn(args: string): string {
+		return `ctx._in(${args})`
+	}
+
+	// what _in takes after data: the key, the site it's missing at and its
+	// value. Read where it's compiled, a value's key is a constant, where ctx
+	// reads data by whatever key any site passes, which V8 can only look up
+	applied(key: string, value: string, missing?: string): string {
+		return (
+			this.shortest || this.readsApplied ?
+				missing === undefined ?
+					key
+				:	`${key}, ${missing}`
+			:	`${key}, ${missing ?? "void 0"}, ${value}`
+		)
 	}
 
 	// a case returning what the next one does falls through to it
@@ -482,8 +518,8 @@ export abstract class NodeCompiler extends CompiledFunction<
 			: `!(${condition}) && `
 		// a refined basis Allows rejected failed its basis or its refinement
 		if (checksAllowsFirst && isRefinedBasis(node))
-			return `${allows}${this.fails("failsAt", `${node.basis!.jsCond(this, value)} ? ${this.site(node.preStruct[0])} : ${this.site(node.basis!)}, data, ${key}`)}`
-		return `${allows}${this.fails("failsIn", `${this.traversal(node, "Apply")}, ${this.data}, ${key}`)}`
+			return `${allows}${this.failsEither(node.basis!.jsCond(this, value), this.site(node.preStruct[0]), this.site(node.basis!), "data", key)}`
+		return `${allows}${this.failsIn(`${this.traversal(node, "Apply")}, ${this.data}, ${this.applied(key, value)}`)}`
 	}
 
 	// a cyclic value is applied inline

@@ -632,7 +632,7 @@ const apps: fc.Arbitrary<App> = validators
 
 const helperSources: Record<string, string> = {
 	tell: `export const tell = o => o instanceof type.errors ? { summary: o.summary } : { value: o }`,
-	issuesOf: `export const issuesOf = o => o instanceof type.errors ? o.issues.map(i => ({ code: i.code, path: i.path, expected: i.expected, problem: i.problem, message: i.message, data: i.data })) : { value: o }`,
+	issuesOf: `export const issuesOf = o => o instanceof type.errors ? o.issues.map(i => ({ code: i.code, path: i.path, expected: i.expected, message: i.message, data: i.data })) : { value: o }`,
 	countOf: `export const countOf = o => o instanceof type.errors ? o.count : { value: o }`,
 	thrown: `export const thrown = f => {
 	try {
@@ -1518,7 +1518,7 @@ while (remaining > 0) {
 		`seed ${seed} run ${result.numRuns}: counterexample\n${sourceOfApp(result.counterexample![0])}`
 	)
 	// a check that threw, rather than finding a difference
-	if (result.error) console.error(result.errorInstance ?? result.error)
+	if (result.errorInstance !== null) console.error(result.errorInstance)
 	remaining -= result.numRuns
 	seed++
 }

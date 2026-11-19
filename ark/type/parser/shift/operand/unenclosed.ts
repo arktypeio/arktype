@@ -39,6 +39,7 @@ import {
 	writeInvalidGenericArgCountMessage,
 	type ParsedArgs
 } from "./genericArgs.ts"
+import { writeUnresolvableHint } from "./unresolvable.ts"
 
 export const parseUnenclosed = (s: RuntimeState): void => {
 	const token = shiftUntilTerminator(s.sc)
@@ -138,7 +139,8 @@ const unenclosedToNode = (s: RuntimeState, token: string): BaseRoot =>
 					shiftUntilTerminator(s.shiftedBy(1).sc)
 				)
 			:	writeMissingOperandMessage(s)
-		:	writeUnresolvableMessage(token)
+		:	writeUnresolvableMessage(token) +
+				writeUnresolvableHint(token, s.ctx.$, s.ctx.args)
 	)
 
 const maybeParseReference = (
@@ -272,11 +274,14 @@ export type unresolvableState<
 			s.error<writePrefixedPrivateReferenceMessage<name>>
 		:	never
 	: validReferenceFromToken<token, res, args, submodulePath> extends never ?
-		s.error<writeUnresolvableMessage<qualifiedReference<token, submodulePath>>>
+		s.error<writeUnresolvableWithHint<qualifiedReference<token, submodulePath>>>
 	:	s.completion<`${s["scanned"]}${qualifiedReference<
 			validReferenceFromToken<token, res, args, submodulePath>,
 			submodulePath
 		>}`>
+
+type writeUnresolvableWithHint<name extends string> =
+	`${writeUnresolvableMessage<name>}${writeUnresolvableHint<name>}`
 
 type qualifiedReference<
 	reference extends string,

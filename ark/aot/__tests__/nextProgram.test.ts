@@ -149,25 +149,67 @@ contextualize(() => {
 			attest(written.includes("~standard")).equals(false)
 		})
 
-		it("keeps each validator's methods, so a read it can't see throws", async () => {
+		it("keeps each validator's methods, so a read it can't see throws in development", async () => {
 			// where arktype resolves, as it does from an app's units
-			const dir = project({}, fromHere("temp", "nextProgram", "methods"))
+			const dir = project(
+				{
+					// a read of its `~standard`, which bakes no jsonSchema into it
+					"app/standard.ts":
+						'import { User } from "../src/user.ts"\n\nexport const POST = (data: unknown) => User["~standard"].validate(data)\n'
+				},
+				fromHere("temp", "nextProgram", "methods")
+			)
 			const { out } = await load(dir, "src/user.ts")
 			writeFileSync(join(dir, "src/written.mjs"), out!)
-			const { stderr } = spawnSync(
-				process.execPath,
-				[
-					"--conditions",
-					"ark-ts",
-					"--input-type=module",
-					"-e",
-					'import { User } from "./src/written.mjs"\nUser.expression'
-				],
-				{ cwd: dir, encoding: "utf8" }
-			)
-			attest(
-				stderr.includes("expression isn't precompiled: set members")
-			).equals(true)
+			const reads = [
+				"User.expression",
+				"User.description",
+				"User.json",
+				"User.toJsonSchema",
+				'User["~standard"].jsonSchema',
+				"String(User)",
+				"JSON.stringify({ User })"
+			]
+			const logged = (...conditions: string[]) =>
+				spawnSync(
+					process.execPath,
+					[
+						...["ark-ts", ...conditions].flatMap(condition => [
+							"--conditions",
+							condition
+						]),
+						"--input-type=module",
+						"-e",
+						`import { User } from "./src/written.mjs"
+for (const read of [${reads.map(read => `() => ${read}`).join(", ")}]) {
+	try {
+		console.log(read())
+	} catch (e) {
+		console.log(e.message)
+	}
+}`
+					],
+					{ cwd: dir, encoding: "utf8" }
+				).stdout
+			// a member no build baked reads undefined, and a function with no
+			// toJSON is left out of what holds it
+			attest(logged()).snap(`undefined
+undefined
+undefined
+undefined
+undefined
+Type
+{}
+`)
+			attest(logged("development"))
+				.snap(`expression isn't precompiled: set members["expression"] true in the precompile options
+description isn't precompiled: set members["description"] true in the precompile options
+json isn't precompiled: set members["json"] true in the precompile options
+toJsonSchema isn't precompiled: set members["toJsonSchema"] true in the precompile options
+~standard.jsonSchema isn't precompiled: set members["~standard.jsonSchema"] true in the precompile options
+Type
+toJSON isn't precompiled: set members["toJSON"] true in the precompile options
+`)
 		})
 
 		it("creates each validator as its module loads, given defers", async () => {

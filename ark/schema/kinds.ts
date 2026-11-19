@@ -28,7 +28,7 @@ import { Union } from "./roots/union.ts"
 import { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
 import type { BaseNodeInput } from "./shared/declare.ts"
-import { enInfo } from "./shared/enWriters.ts"
+import { enInfo, writeLine } from "./shared/enWriters.ts"
 import {
 	errorWriters,
 	errorWritersByCode,
@@ -113,10 +113,9 @@ const enWritersOf = (
 			kind === "union" || kind === "intersection" ? defaults.expected
 			: kind === "required" ? describeRequired
 			: defaults.description,
-		problem: defaults.problem
+		message: defaults.message
 	}
-	for (const slot of ["actual", "message"] as const)
-		if (defaults[slot] !== errorWriters[slot]) writers[slot] = defaults[slot]
+	if (defaults.actual !== errorWriters.actual) writers.actual = defaults.actual
 	return writers as never
 }
 
@@ -144,11 +143,11 @@ export const en: Locale.Complete = {
 	) as Pick<Locale.Complete, ArkErrorCode & NodeKind>),
 	undeclared: {
 		...errorWritersByCode.undeclared,
-		problem: errorWriters.problem
+		message: errorWriters.message
 	},
 	discriminant: {
 		expected: listCases,
-		problem: errorWriters.problem,
+		message: errorWriters.message,
 		actual: describeDiscriminant
 	},
 	...enInfo,
@@ -167,8 +166,8 @@ export const en: Locale.Complete = {
 	},
 	keywordPhrases: {},
 	actual: errorWriters.actual,
-	problem: errorWriters.problem,
-	message: errorWriters.message
+	message: errorWriters.message,
+	line: writeLine
 }
 
 $ark.defaultConfig = withAlphabetizedKeys(
@@ -196,13 +195,24 @@ $ark.defaultConfig = withAlphabetizedKeys(
 	) as never
 )
 
-// Node prints errors as their issues, set where runtime bundles never load
+// Node, Bun and Deno print errors by name, their summary first: printed as
+// their issues alone they read as the array they no longer are. Set where
+// runtime bundles never load
 Object.defineProperty(
 	ArkErrors.prototype,
 	Symbol.for("nodejs.util.inspect.custom"),
 	{
-		value(this: ArkErrors) {
-			return this.issues
+		value(
+			this: ArkErrors,
+			depth: number | null,
+			options: object,
+			inspect?: (value: unknown, options: object) => string
+		) {
+			const shown = { summary: this.summary, issues: this.issues }
+			if (typeof inspect !== "function") return shown
+			if (depth !== null && depth < 0) return "[ArkErrors]"
+			// one level more, so an issue prints as deep as it did in a bare array
+			return `ArkErrors ${inspect(shown, { ...options, depth: depth === null ? null : depth + 1 })}`
 		}
 	}
 )

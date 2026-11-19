@@ -1,0 +1,2873 @@
+{
+	"commit": "0e29e3d1b",
+	"versions": {
+		"arktype": "3.0.0-beta.0",
+		"valibot": "1.5.0",
+		"zod": "4.6.7",
+		"esbuild": "0.25.10"
+	},
+	"scales": [1, 10, 50, 100, 250, 500, 1000, 2500, 5000],
+	"perModule": 25,
+	"colocated": 0.2619047619047619,
+	"colocation": { "types": 55, "ofTypes": 210, "wholeFiles": 42, "files": 46 },
+	"builds": ["default", "smallest", "dynamic", "valibot", "zod", "zodMini"],
+	"layoutBuilds": ["smallest", "valibot"],
+	"corpora": [
+		{
+			"id": "models",
+			"options": {},
+			"runs": [
+				{
+					"seed": 1,
+					"rows": [
+						{
+							"schemas": 1,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 3316, "gzip": 1436, "brotli": 1315 },
+								"smallest": { "raw": 2671, "gzip": 1320, "brotli": 1221 },
+								"dynamic": { "raw": 294672, "gzip": 98139, "brotli": 85621 },
+								"valibot": { "raw": 4776, "gzip": 1839, "brotli": 1687 },
+								"zod": { "raw": 85863, "gzip": 25433, "brotli": 22651 },
+								"zodMini": { "raw": 18701, "gzip": 6532, "brotli": 5990 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 2671, "gzip": 1320, "brotli": 1221 },
+									"valibot": { "raw": 4776, "gzip": 1839, "brotli": 1687 }
+								},
+								"colocated": {
+									"smallest": { "raw": 2669, "gzip": 1321, "brotli": 1190 },
+									"valibot": { "raw": 4772, "gzip": 1838, "brotli": 1682 }
+								}
+							}
+						},
+						{
+							"schemas": 10,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 14736, "gzip": 3919, "brotli": 3528 },
+								"smallest": { "raw": 6621, "gzip": 2992, "brotli": 2716 },
+								"dynamic": { "raw": 296497, "gzip": 98774, "brotli": 86250 },
+								"valibot": { "raw": 10289, "gzip": 3387, "brotli": 3053 },
+								"zod": { "raw": 96302, "gzip": 28185, "brotli": 24981 },
+								"zodMini": { "raw": 32750, "gzip": 10325, "brotli": 9354 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 6621, "gzip": 2992, "brotli": 2716 },
+									"valibot": { "raw": 10289, "gzip": 3387, "brotli": 3053 }
+								},
+								"colocated": {
+									"smallest": { "raw": 6624, "gzip": 2991, "brotli": 2723 },
+									"valibot": { "raw": 10285, "gzip": 3381, "brotli": 3057 }
+								}
+							}
+						},
+						{
+							"schemas": 50,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 60014, "gzip": 11292, "brotli": 9703 },
+								"smallest": { "raw": 13792, "gzip": 5288, "brotli": 4817 },
+								"dynamic": { "raw": 306125, "gzip": 100914, "brotli": 88161 },
+								"valibot": { "raw": 19176, "gzip": 5544, "brotli": 5015 },
+								"zod": { "raw": 105149, "gzip": 30231, "brotli": 26880 },
+								"zodMini": { "raw": 41572, "gzip": 12539, "brotli": 11371 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 13791, "gzip": 5277, "brotli": 4819 },
+									"valibot": { "raw": 19179, "gzip": 5543, "brotli": 5011 }
+								},
+								"colocated": {
+									"smallest": { "raw": 13791, "gzip": 5276, "brotli": 4827 },
+									"valibot": { "raw": 19171, "gzip": 5529, "brotli": 4993 }
+								}
+							}
+						},
+						{
+							"schemas": 100,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 113577, "gzip": 19994, "brotli": 16175 },
+								"smallest": { "raw": 21322, "gzip": 7480, "brotli": 6777 },
+								"dynamic": { "raw": 318139, "gzip": 103214, "brotli": 90343 },
+								"valibot": { "raw": 29953, "gzip": 7793, "brotli": 7029 },
+								"zod": { "raw": 116239, "gzip": 32422, "brotli": 28817 },
+								"zodMini": { "raw": 52073, "gzip": 14739, "brotli": 13383 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 21322, "gzip": 7454, "brotli": 6759 },
+									"valibot": { "raw": 29953, "gzip": 7793, "brotli": 7034 }
+								},
+								"colocated": {
+									"smallest": { "raw": 21320, "gzip": 7453, "brotli": 6775 },
+									"valibot": { "raw": 29937, "gzip": 7761, "brotli": 7008 }
+								}
+							}
+						},
+						{
+							"schemas": 250,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 241655, "gzip": 40015, "brotli": 30055 },
+								"smallest": { "raw": 39203, "gzip": 12707, "brotli": 11460 },
+								"dynamic": { "raw": 351589, "gzip": 108968, "brotli": 95457 },
+								"valibot": { "raw": 60053, "gzip": 13347, "brotli": 11946 },
+								"zod": { "raw": 146930, "gzip": 37851, "brotli": 33710 },
+								"zodMini": { "raw": 81330, "gzip": 20415, "brotli": 18376 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 39203, "gzip": 12690, "brotli": 11448 },
+									"valibot": { "raw": 60065, "gzip": 13374, "brotli": 11997 }
+								},
+								"colocated": {
+									"smallest": { "raw": 39203, "gzip": 12679, "brotli": 11469 },
+									"valibot": { "raw": 60022, "gzip": 13352, "brotli": 11940 }
+								}
+							}
+						},
+						{
+							"schemas": 500,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 459637, "gzip": 72045, "brotli": 51743 },
+								"smallest": { "raw": 70742, "gzip": 21077, "brotli": 18938 },
+								"dynamic": { "raw": 408654, "gzip": 118593, "brotli": 103779 },
+								"valibot": { "raw": 111252, "gzip": 22769, "brotli": 20078 },
+								"zod": { "raw": 198984, "gzip": 46970, "brotli": 41654 },
+								"zodMini": { "raw": 130984, "gzip": 29830, "brotli": 26425 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 70742, "gzip": 21004, "brotli": 18938 },
+									"valibot": { "raw": 111272, "gzip": 22734, "brotli": 19998 }
+								},
+								"colocated": {
+									"smallest": { "raw": 70742, "gzip": 21015, "brotli": 18916 },
+									"valibot": { "raw": 111192, "gzip": 22672, "brotli": 19989 }
+								}
+							}
+						},
+						{
+							"schemas": 1000,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 917067, "gzip": 138235, "brotli": 95547 },
+								"smallest": { "raw": 136812, "gzip": 38603, "brotli": 34357 },
+								"dynamic": { "raw": 525735, "gzip": 138529, "brotli": 120144 },
+								"valibot": { "raw": 216818, "gzip": 41855, "brotli": 36137 },
+								"zod": { "raw": 306748, "gzip": 65764, "brotli": 57272 },
+								"zodMini": { "raw": 233854, "gzip": 48725, "brotli": 42481 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 136812, "gzip": 38243, "brotli": 34229 },
+									"valibot": { "raw": 216863, "gzip": 41834, "brotli": 36110 }
+								},
+								"colocated": {
+									"smallest": { "raw": 136812, "gzip": 38256, "brotli": 34218 },
+									"valibot": { "raw": 216703, "gzip": 41725, "brotli": 36126 }
+								}
+							}
+						},
+						{
+							"schemas": 2500,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 2249423, "gzip": 329151, "brotli": 217854 },
+								"smallest": { "raw": 331296, "gzip": 88159, "brotli": 76853 },
+								"dynamic": { "raw": 874489, "gzip": 197174, "brotli": 166959 },
+								"valibot": { "raw": 531678, "gzip": 98486, "brotli": 81819 },
+								"zod": { "raw": 627144, "gzip": 120766, "brotli": 101912 },
+								"zodMini": { "raw": 540498, "gzip": 104957, "brotli": 88060 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 331296, "gzip": 87336, "brotli": 76364 },
+									"valibot": { "raw": 531783, "gzip": 98323, "brotli": 81690 }
+								},
+								"colocated": {
+									"smallest": { "raw": 331296, "gzip": 87366, "brotli": 76337 },
+									"valibot": { "raw": 531382, "gzip": 98201, "brotli": 81663 }
+								}
+							}
+						},
+						{
+							"schemas": 5000,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 4506859, "gzip": 651002, "brotli": 418835 },
+								"smallest": { "raw": 664314, "gzip": 171347, "brotli": 147882 },
+								"dynamic": { "raw": 1465486, "gzip": 296414, "brotli": 244182 },
+								"valibot": { "raw": 1064797, "gzip": 194411, "brotli": 157515 },
+								"zod": { "raw": 1170714, "gzip": 213929, "brotli": 176080 },
+								"zodMini": { "raw": 1060790, "gzip": 200166, "brotli": 164140 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 664314,
+										"gzip": 169901,
+										"brotli": 147089
+									},
+									"valibot": {
+										"raw": 1064845,
+										"gzip": 194075,
+										"brotli": 157133
+									}
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 664338,
+										"gzip": 169948,
+										"brotli": 147007
+									},
+									"valibot": {
+										"raw": 1064044,
+										"gzip": 193680,
+										"brotli": 156986
+									}
+								}
+							}
+						}
+					]
+				},
+				{
+					"seed": 2,
+					"rows": [
+						{
+							"schemas": 1,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 3434, "gzip": 1328, "brotli": 1231 },
+								"smallest": { "raw": 2836, "gzip": 1261, "brotli": 1130 },
+								"dynamic": { "raw": 294737, "gzip": 98173, "brotli": 85682 },
+								"valibot": { "raw": 5699, "gzip": 1976, "brotli": 1798 },
+								"zod": { "raw": 90673, "gzip": 26563, "brotli": 23624 },
+								"zodMini": { "raw": 20147, "gzip": 6883, "brotli": 6284 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 2836, "gzip": 1261, "brotli": 1130 },
+									"valibot": { "raw": 5699, "gzip": 1976, "brotli": 1798 }
+								},
+								"colocated": {
+									"smallest": { "raw": 2834, "gzip": 1261, "brotli": 1128 },
+									"valibot": { "raw": 5695, "gzip": 1973, "brotli": 1802 }
+								}
+							}
+						},
+						{
+							"schemas": 10,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 17107, "gzip": 4439, "brotli": 4022 },
+								"smallest": { "raw": 6884, "gzip": 3125, "brotli": 2842 },
+								"dynamic": { "raw": 296762, "gzip": 98829, "brotli": 86258 },
+								"valibot": { "raw": 10747, "gzip": 3502, "brotli": 3165 },
+								"zod": { "raw": 96564, "gzip": 28234, "brotli": 25046 },
+								"zodMini": { "raw": 33228, "gzip": 10463, "brotli": 9515 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 6884, "gzip": 3125, "brotli": 2842 },
+									"valibot": { "raw": 10747, "gzip": 3502, "brotli": 3165 }
+								},
+								"colocated": {
+									"smallest": { "raw": 6885, "gzip": 3128, "brotli": 2847 },
+									"valibot": { "raw": 10743, "gzip": 3499, "brotli": 3159 }
+								}
+							}
+						},
+						{
+							"schemas": 50,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 61109, "gzip": 11683, "brotli": 9930 },
+								"smallest": { "raw": 13576, "gzip": 5245, "brotli": 4744 },
+								"dynamic": { "raw": 305279, "gzip": 100847, "brotli": 88122 },
+								"valibot": { "raw": 18404, "gzip": 5500, "brotli": 4915 },
+								"zod": { "raw": 104403, "gzip": 30193, "brotli": 26799 },
+								"zodMini": { "raw": 40689, "gzip": 12465, "brotli": 11292 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 13576, "gzip": 5245, "brotli": 4744 },
+									"valibot": { "raw": 18404, "gzip": 5500, "brotli": 4915 }
+								},
+								"colocated": {
+									"smallest": { "raw": 13580, "gzip": 5236, "brotli": 4744 },
+									"valibot": { "raw": 18396, "gzip": 5481, "brotli": 4938 }
+								}
+							}
+						},
+						{
+							"schemas": 100,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 108476, "gzip": 18680, "brotli": 15342 },
+								"smallest": { "raw": 20578, "gzip": 7169, "brotli": 6475 },
+								"dynamic": { "raw": 316138, "gzip": 102882, "brotli": 89971 },
+								"valibot": { "raw": 28145, "gzip": 7484, "brotli": 6711 },
+								"zod": { "raw": 114306, "gzip": 32092, "brotli": 28548 },
+								"zodMini": { "raw": 50150, "gzip": 14433, "brotli": 13065 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 20578, "gzip": 7161, "brotli": 6430 },
+									"valibot": { "raw": 28148, "gzip": 7484, "brotli": 6714 }
+								},
+								"colocated": {
+									"smallest": { "raw": 20576, "gzip": 7163, "brotli": 6450 },
+									"valibot": { "raw": 28132, "gzip": 7470, "brotli": 6707 }
+								}
+							}
+						},
+						{
+							"schemas": 250,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 245496, "gzip": 40007, "brotli": 30420 },
+								"smallest": { "raw": 38842, "gzip": 12640, "brotli": 11348 },
+								"dynamic": { "raw": 350412, "gzip": 108796, "brotli": 95282 },
+								"valibot": { "raw": 59096, "gzip": 13324, "brotli": 11893 },
+								"zod": { "raw": 145535, "gzip": 37750, "brotli": 33632 },
+								"zodMini": { "raw": 80169, "gzip": 20303, "brotli": 18219 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 38842, "gzip": 12625, "brotli": 11347 },
+									"valibot": { "raw": 59104, "gzip": 13309, "brotli": 11838 }
+								},
+								"colocated": {
+									"smallest": { "raw": 38844, "gzip": 12632, "brotli": 11333 },
+									"valibot": { "raw": 59062, "gzip": 13265, "brotli": 11851 }
+								}
+							}
+						},
+						{
+							"schemas": 500,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 466321, "gzip": 73128, "brotli": 53033 },
+								"smallest": { "raw": 71565, "gzip": 21287, "brotli": 19092 },
+								"dynamic": { "raw": 407203, "gzip": 118700, "brotli": 103779 },
+								"valibot": { "raw": 110265, "gzip": 22902, "brotli": 20153 },
+								"zod": { "raw": 197276, "gzip": 47002, "brotli": 41686 },
+								"zodMini": { "raw": 129679, "gzip": 29915, "brotli": 26463 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 71565, "gzip": 21281, "brotli": 19049 },
+									"valibot": { "raw": 110282, "gzip": 22915, "brotli": 20125 }
+								},
+								"colocated": {
+									"smallest": { "raw": 71565, "gzip": 21292, "brotli": 19056 },
+									"valibot": { "raw": 110202, "gzip": 22830, "brotli": 20195 }
+								}
+							}
+						},
+						{
+							"schemas": 1000,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 914945, "gzip": 137939, "brotli": 96020 },
+								"smallest": { "raw": 136434, "gzip": 38162, "brotli": 34010 },
+								"dynamic": { "raw": 522525, "gzip": 138231, "brotli": 119880 },
+								"valibot": { "raw": 214117, "gzip": 41679, "brotli": 36015 },
+								"zod": { "raw": 302589, "gzip": 65265, "brotli": 57187 },
+								"zodMini": { "raw": 230743, "gzip": 48381, "brotli": 42338 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 136434, "gzip": 37866, "brotli": 33773 },
+									"valibot": { "raw": 214157, "gzip": 41641, "brotli": 36008 }
+								},
+								"colocated": {
+									"smallest": { "raw": 136434, "gzip": 37865, "brotli": 33782 },
+									"valibot": { "raw": 213997, "gzip": 41572, "brotli": 35974 }
+								}
+							}
+						},
+						{
+							"schemas": 2500,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 2272507, "gzip": 332529, "brotli": 221315 },
+								"smallest": { "raw": 332440, "gzip": 88060, "brotli": 76860 },
+								"dynamic": { "raw": 873084, "gzip": 197279, "brotli": 166964 },
+								"valibot": { "raw": 529505, "gzip": 98541, "brotli": 81907 },
+								"zod": { "raw": 623548, "gzip": 120511, "brotli": 101911 },
+								"zodMini": { "raw": 537926, "gzip": 104884, "brotli": 88143 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 332440, "gzip": 87471, "brotli": 76467 },
+									"valibot": { "raw": 529606, "gzip": 98520, "brotli": 81695 }
+								},
+								"colocated": {
+									"smallest": { "raw": 332440, "gzip": 87477, "brotli": 76432 },
+									"valibot": { "raw": 529205, "gzip": 98285, "brotli": 81741 }
+								}
+							}
+						},
+						{
+							"schemas": 5000,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 4554571, "gzip": 657000, "brotli": 424586 },
+								"smallest": { "raw": 665553, "gzip": 170939, "brotli": 147935 },
+								"dynamic": { "raw": 1463216, "gzip": 296354, "brotli": 243847 },
+								"valibot": { "raw": 1061397, "gzip": 194189, "brotli": 157492 },
+								"zod": { "raw": 1165217, "gzip": 213568, "brotli": 176000 },
+								"zodMini": { "raw": 1055894, "gzip": 199833, "brotli": 163571 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 665553,
+										"gzip": 169815,
+										"brotli": 146947
+									},
+									"valibot": {
+										"raw": 1061456,
+										"gzip": 193866,
+										"brotli": 157066
+									}
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 665575,
+										"gzip": 169767,
+										"brotli": 146759
+									},
+									"valibot": {
+										"raw": 1060655,
+										"gzip": 193404,
+										"brotli": 156861
+									}
+								}
+							}
+						}
+					]
+				},
+				{
+					"seed": 3,
+					"rows": [
+						{
+							"schemas": 1,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 2406, "gzip": 1038, "brotli": 931 },
+								"smallest": { "raw": 1770, "gzip": 914, "brotli": 813 },
+								"dynamic": { "raw": 294680, "gzip": 98150, "brotli": 85600 },
+								"valibot": { "raw": 4404, "gzip": 1701, "brotli": 1566 },
+								"zod": { "raw": 85605, "gzip": 25320, "brotli": 22575 },
+								"zodMini": { "raw": 16386, "gzip": 5741, "brotli": 5267 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 1770, "gzip": 914, "brotli": 813 },
+									"valibot": { "raw": 4404, "gzip": 1701, "brotli": 1566 }
+								},
+								"colocated": {
+									"smallest": { "raw": 1768, "gzip": 914, "brotli": 812 },
+									"valibot": { "raw": 4400, "gzip": 1698, "brotli": 1556 }
+								}
+							}
+						},
+						{
+							"schemas": 10,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 16554, "gzip": 4272, "brotli": 3853 },
+								"smallest": { "raw": 6754, "gzip": 3100, "brotli": 2803 },
+								"dynamic": { "raw": 296672, "gzip": 98839, "brotli": 86266 },
+								"valibot": { "raw": 10398, "gzip": 3442, "brotli": 3096 },
+								"zod": { "raw": 96461, "gzip": 28235, "brotli": 25058 },
+								"zodMini": { "raw": 32860, "gzip": 10380, "brotli": 9433 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 6754, "gzip": 3100, "brotli": 2803 },
+									"valibot": { "raw": 10398, "gzip": 3442, "brotli": 3096 }
+								},
+								"colocated": {
+									"smallest": { "raw": 6756, "gzip": 3103, "brotli": 2805 },
+									"valibot": { "raw": 10394, "gzip": 3435, "brotli": 3088 }
+								}
+							}
+						},
+						{
+							"schemas": 50,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 55591, "gzip": 10485, "brotli": 9100 },
+								"smallest": { "raw": 13507, "gzip": 5213, "brotli": 4736 },
+								"dynamic": { "raw": 305843, "gzip": 100918, "brotli": 88233 },
+								"valibot": { "raw": 18953, "gzip": 5566, "brotli": 5000 },
+								"zod": { "raw": 104946, "gzip": 30232, "brotli": 26898 },
+								"zodMini": { "raw": 41333, "gzip": 12545, "brotli": 11372 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 13507, "gzip": 5241, "brotli": 4767 },
+									"valibot": { "raw": 18955, "gzip": 5563, "brotli": 5017 }
+								},
+								"colocated": {
+									"smallest": { "raw": 13510, "gzip": 5233, "brotli": 4755 },
+									"valibot": { "raw": 18947, "gzip": 5560, "brotli": 4995 }
+								}
+							}
+						},
+						{
+							"schemas": 100,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 104990, "gzip": 18005, "brotli": 14890 },
+								"smallest": { "raw": 20639, "gzip": 7230, "brotli": 6548 },
+								"dynamic": { "raw": 317335, "gzip": 103010, "brotli": 90112 },
+								"valibot": { "raw": 29301, "gzip": 7593, "brotli": 6825 },
+								"zod": { "raw": 115392, "gzip": 32216, "brotli": 28697 },
+								"zodMini": { "raw": 51433, "gzip": 14564, "brotli": 13201 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 20639, "gzip": 7245, "brotli": 6554 },
+									"valibot": { "raw": 29305, "gzip": 7603, "brotli": 6819 }
+								},
+								"colocated": {
+									"smallest": { "raw": 20639, "gzip": 7239, "brotli": 6566 },
+									"valibot": { "raw": 29288, "gzip": 7601, "brotli": 6824 }
+								}
+							}
+						},
+						{
+							"schemas": 250,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 238183, "gzip": 39305, "brotli": 29662 },
+								"smallest": { "raw": 39029, "gzip": 12674, "brotli": 11419 },
+								"dynamic": { "raw": 351304, "gzip": 108934, "brotli": 95448 },
+								"valibot": { "raw": 59949, "gzip": 13380, "brotli": 11909 },
+								"zod": { "raw": 146799, "gzip": 37837, "brotli": 33753 },
+								"zodMini": { "raw": 81397, "gzip": 20405, "brotli": 18293 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 39029, "gzip": 12678, "brotli": 11435 },
+									"valibot": { "raw": 59959, "gzip": 13393, "brotli": 11934 }
+								},
+								"colocated": {
+									"smallest": { "raw": 39029, "gzip": 12674, "brotli": 11463 },
+									"valibot": { "raw": 59917, "gzip": 13379, "brotli": 11927 }
+								}
+							}
+						},
+						{
+							"schemas": 500,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 480371, "gzip": 75586, "brotli": 54140 },
+								"smallest": { "raw": 71733, "gzip": 21464, "brotli": 19269 },
+								"dynamic": { "raw": 409676, "gzip": 119005, "brotli": 104049 },
+								"valibot": { "raw": 112458, "gzip": 23087, "brotli": 20335 },
+								"zod": { "raw": 200570, "gzip": 47280, "brotli": 41938 },
+								"zodMini": { "raw": 132661, "gzip": 30206, "brotli": 26723 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 71733, "gzip": 21412, "brotli": 19250 },
+									"valibot": { "raw": 112478, "gzip": 23062, "brotli": 20418 }
+								},
+								"colocated": {
+									"smallest": { "raw": 71733, "gzip": 21413, "brotli": 19230 },
+									"valibot": { "raw": 112397, "gzip": 23041, "brotli": 20363 }
+								}
+							}
+						},
+						{
+							"schemas": 1000,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 944163, "gzip": 142342, "brotli": 98569 },
+								"smallest": { "raw": 137541, "gzip": 38607, "brotli": 34453 },
+								"dynamic": { "raw": 528052, "gzip": 139053, "brotli": 120509 },
+								"valibot": { "raw": 219270, "gzip": 42323, "brotli": 36615 },
+								"zod": { "raw": 309308, "gzip": 66026, "brotli": 57815 },
+								"zodMini": { "raw": 237148, "gzip": 49205, "brotli": 42855 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 137541, "gzip": 38320, "brotli": 34365 },
+									"valibot": { "raw": 219314, "gzip": 42310, "brotli": 36493 }
+								},
+								"colocated": {
+									"smallest": { "raw": 137541, "gzip": 38342, "brotli": 34197 },
+									"valibot": { "raw": 219154, "gzip": 42194, "brotli": 36440 }
+								}
+							}
+						},
+						{
+							"schemas": 2500,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 2347584, "gzip": 343736, "brotli": 228884 },
+								"smallest": { "raw": 336010, "gzip": 89169, "brotli": 77781 },
+								"dynamic": { "raw": 883188, "gzip": 198816, "brotli": 168162 },
+								"valibot": { "raw": 539163, "gzip": 99999, "brotli": 83049 },
+								"zod": { "raw": 634930, "gzip": 122078, "brotli": 103037 },
+								"zodMini": { "raw": 549220, "gzip": 106480, "brotli": 89332 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 336010, "gzip": 88422, "brotli": 77300 },
+									"valibot": { "raw": 539263, "gzip": 99946, "brotli": 82858 }
+								},
+								"colocated": {
+									"smallest": { "raw": 336010, "gzip": 88364, "brotli": 77383 },
+									"valibot": { "raw": 538863, "gzip": 99655, "brotli": 82854 }
+								}
+							}
+						},
+						{
+							"schemas": 5000,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 4634682, "gzip": 667395, "brotli": 431944 },
+								"smallest": { "raw": 669984, "gzip": 172113, "brotli": 148732 },
+								"dynamic": { "raw": 1479274, "gzip": 298505, "brotli": 245251 },
+								"valibot": { "raw": 1076043, "gzip": 196294, "brotli": 158834 },
+								"zod": { "raw": 1181729, "gzip": 215729, "brotli": 177576 },
+								"zodMini": { "raw": 1072767, "gzip": 202025, "brotli": 165130 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 669984,
+										"gzip": 170873,
+										"brotli": 147818
+									},
+									"valibot": {
+										"raw": 1076089,
+										"gzip": 195947,
+										"brotli": 158351
+									}
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 670008,
+										"gzip": 170898,
+										"brotli": 147880
+									},
+									"valibot": {
+										"raw": 1075288,
+										"gzip": 195602,
+										"brotli": 158206
+									}
+								}
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": "messages",
+			"options": { "messages": 0.35 },
+			"runs": [
+				{
+					"seed": 1,
+					"rows": [
+						{
+							"schemas": 1,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 3316, "gzip": 1436, "brotli": 1315 },
+								"smallest": { "raw": 2671, "gzip": 1320, "brotli": 1221 },
+								"dynamic": { "raw": 294672, "gzip": 98139, "brotli": 85621 },
+								"valibot": { "raw": 4776, "gzip": 1839, "brotli": 1687 },
+								"zod": { "raw": 85863, "gzip": 25433, "brotli": 22651 },
+								"zodMini": { "raw": 18701, "gzip": 6532, "brotli": 5990 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 2671, "gzip": 1320, "brotli": 1221 },
+									"valibot": { "raw": 4776, "gzip": 1839, "brotli": 1687 }
+								},
+								"colocated": {
+									"smallest": { "raw": 2669, "gzip": 1321, "brotli": 1190 },
+									"valibot": { "raw": 4772, "gzip": 1838, "brotli": 1682 }
+								}
+							}
+						},
+						{
+							"schemas": 10,
+							"messages": 10,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 17138, "gzip": 4412, "brotli": 3948 },
+								"smallest": { "raw": 7271, "gzip": 3255, "brotli": 2954 },
+								"dynamic": { "raw": 297155, "gzip": 98954, "brotli": 86428 },
+								"valibot": { "raw": 10795, "gzip": 3573, "brotli": 3214 },
+								"zod": { "raw": 96949, "gzip": 28368, "brotli": 25187 },
+								"zodMini": { "raw": 33397, "gzip": 10506, "brotli": 9507 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 7271, "gzip": 3255, "brotli": 2954 },
+									"valibot": { "raw": 10795, "gzip": 3573, "brotli": 3214 }
+								},
+								"colocated": {
+									"smallest": { "raw": 7270, "gzip": 3255, "brotli": 2960 },
+									"valibot": { "raw": 10791, "gzip": 3569, "brotli": 3200 }
+								}
+							}
+						},
+						{
+							"schemas": 50,
+							"messages": 94,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 83303, "gzip": 14257, "brotli": 12067 },
+								"smallest": { "raw": 18119, "gzip": 6327, "brotli": 5707 },
+								"dynamic": { "raw": 312284, "gzip": 101913, "brotli": 89151 },
+								"valibot": { "raw": 23150, "gzip": 6468, "brotli": 5810 },
+								"zod": { "raw": 110408, "gzip": 31169, "brotli": 27721 },
+								"zodMini": { "raw": 46831, "gzip": 13501, "brotli": 12233 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 18117, "gzip": 6342, "brotli": 5717 },
+									"valibot": { "raw": 23150, "gzip": 6466, "brotli": 5804 }
+								},
+								"colocated": {
+									"smallest": { "raw": 18119, "gzip": 6343, "brotli": 5739 },
+									"valibot": { "raw": 23146, "gzip": 6448, "brotli": 5804 }
+								}
+							}
+						},
+						{
+							"schemas": 100,
+							"messages": 174,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 157609, "gzip": 25863, "brotli": 20434 },
+								"smallest": { "raw": 29156, "gzip": 9176, "brotli": 8270 },
+								"dynamic": { "raw": 329659, "gzip": 104938, "brotli": 91873 },
+								"valibot": { "raw": 37377, "gzip": 9331, "brotli": 8378 },
+								"zod": { "raw": 126036, "gzip": 33969, "brotli": 30260 },
+								"zodMini": { "raw": 61870, "gzip": 16391, "brotli": 14852 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 29156, "gzip": 9188, "brotli": 8275 },
+									"valibot": { "raw": 37378, "gzip": 9333, "brotli": 8376 }
+								},
+								"colocated": {
+									"smallest": { "raw": 29156, "gzip": 9195, "brotli": 8292 },
+									"valibot": { "raw": 37362, "gzip": 9301, "brotli": 8358 }
+								}
+							}
+						},
+						{
+							"schemas": 250,
+							"messages": 438,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 349667, "gzip": 52264, "brotli": 39013 },
+								"smallest": { "raw": 58883, "gzip": 16443, "brotli": 14727 },
+								"dynamic": { "raw": 381086, "gzip": 113111, "brotli": 98733 },
+								"valibot": { "raw": 79142, "gzip": 16893, "brotli": 14953 },
+								"zod": { "raw": 173491, "gzip": 41612, "brotli": 36999 },
+								"zodMini": { "raw": 107891, "gzip": 24391, "brotli": 21679 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 58883, "gzip": 16402, "brotli": 14682 },
+									"valibot": { "raw": 79153, "gzip": 16920, "brotli": 14962 }
+								},
+								"colocated": {
+									"smallest": { "raw": 58883, "gzip": 16417, "brotli": 14701 },
+									"valibot": { "raw": 79110, "gzip": 16885, "brotli": 14934 }
+								}
+							}
+						},
+						{
+							"schemas": 500,
+							"messages": 911,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 672612, "gzip": 93838, "brotli": 68544 },
+								"smallest": { "raw": 110481, "gzip": 28487, "brotli": 25134 },
+								"dynamic": { "raw": 470366, "gzip": 126970, "brotli": 110046 },
+								"valibot": { "raw": 151175, "gzip": 29808, "brotli": 25787 },
+								"zod": { "raw": 253751, "gzip": 54661, "brotli": 47797 },
+								"zodMini": { "raw": 185751, "gzip": 37665, "brotli": 32786 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 110481, "gzip": 28375, "brotli": 25145 },
+									"valibot": { "raw": 151195, "gzip": 29775, "brotli": 25799 }
+								},
+								"colocated": {
+									"smallest": { "raw": 110481, "gzip": 28395, "brotli": 25120 },
+									"valibot": { "raw": 151115, "gzip": 29701, "brotli": 25739 }
+								}
+							}
+						},
+						{
+							"schemas": 1000,
+							"messages": 1835,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 1330469, "gzip": 179329, "brotli": 126498 },
+								"smallest": { "raw": 214100, "gzip": 52895, "brotli": 45710 },
+								"dynamic": { "raw": 651015, "gzip": 155580, "brotli": 131758 },
+								"valibot": { "raw": 298258, "gzip": 56050, "brotli": 46809 },
+								"zod": { "raw": 420333, "gzip": 81441, "brotli": 68818 },
+								"zodMini": { "raw": 347439, "gzip": 64957, "brotli": 54375 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 214100, "gzip": 52495, "brotli": 45495 },
+									"valibot": { "raw": 298302, "gzip": 55998, "brotli": 46677 }
+								},
+								"colocated": {
+									"smallest": { "raw": 214100, "gzip": 52489, "brotli": 45439 },
+									"valibot": { "raw": 298142, "gzip": 55896, "brotli": 46704 }
+								}
+							}
+						},
+						{
+							"schemas": 2500,
+							"messages": 4499,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 3189093, "gzip": 420563, "brotli": 285776 },
+								"smallest": { "raw": 517683, "gzip": 122345, "brotli": 101807 },
+								"dynamic": { "raw": 1185307, "gzip": 239636, "brotli": 192314 },
+								"valibot": { "raw": 734797, "gzip": 133494, "brotli": 105288 },
+								"zod": { "raw": 908097, "gzip": 159499, "brotli": 127764 },
+								"zodMini": { "raw": 821451, "gzip": 144740, "brotli": 114805 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 517683,
+										"gzip": 121417,
+										"brotli": 101292
+									},
+									"valibot": { "raw": 734902, "gzip": 133183, "brotli": 105182 }
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 517683,
+										"gzip": 121505,
+										"brotli": 101287
+									},
+									"valibot": { "raw": 734501, "gzip": 133136, "brotli": 105206 }
+								}
+							}
+						},
+						{
+							"schemas": 5000,
+							"messages": 9050,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 6254192, "gzip": 824481, "brotli": 543353 },
+								"smallest": {
+									"raw": 1018702,
+									"gzip": 238051,
+									"brotli": 193851
+								},
+								"dynamic": { "raw": 2093061, "gzip": 382085, "brotli": 290870 },
+								"valibot": { "raw": 1475783, "gzip": 265153, "brotli": 201655 },
+								"zod": { "raw": 1741105, "gzip": 292591, "brotli": 224664 },
+								"zodMini": { "raw": 1631181, "gzip": 280825, "brotli": 214266 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 1018708,
+										"gzip": 236537,
+										"brotli": 192830
+									},
+									"valibot": {
+										"raw": 1475831,
+										"gzip": 264681,
+										"brotli": 201092
+									}
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 1018713,
+										"gzip": 236565,
+										"brotli": 192684
+									},
+									"valibot": {
+										"raw": 1475030,
+										"gzip": 264388,
+										"brotli": 200879
+									}
+								}
+							}
+						}
+					]
+				},
+				{
+					"seed": 2,
+					"rows": [
+						{
+							"schemas": 1,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 3434, "gzip": 1328, "brotli": 1231 },
+								"smallest": { "raw": 2836, "gzip": 1261, "brotli": 1130 },
+								"dynamic": { "raw": 294737, "gzip": 98173, "brotli": 85682 },
+								"valibot": { "raw": 5699, "gzip": 1976, "brotli": 1798 },
+								"zod": { "raw": 90673, "gzip": 26563, "brotli": 23624 },
+								"zodMini": { "raw": 20147, "gzip": 6883, "brotli": 6284 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 2836, "gzip": 1261, "brotli": 1130 },
+									"valibot": { "raw": 5699, "gzip": 1976, "brotli": 1798 }
+								},
+								"colocated": {
+									"smallest": { "raw": 2834, "gzip": 1261, "brotli": 1128 },
+									"valibot": { "raw": 5695, "gzip": 1973, "brotli": 1802 }
+								}
+							}
+						},
+						{
+							"schemas": 10,
+							"messages": 19,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 21476, "gzip": 5211, "brotli": 4664 },
+								"smallest": { "raw": 7920, "gzip": 3497, "brotli": 3179 },
+								"dynamic": { "raw": 297990, "gzip": 99123, "brotli": 86568 },
+								"valibot": { "raw": 11602, "gzip": 3790, "brotli": 3413 },
+								"zod": { "raw": 97559, "gzip": 28516, "brotli": 25299 },
+								"zodMini": { "raw": 34223, "gzip": 10742, "brotli": 9740 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 7920, "gzip": 3497, "brotli": 3179 },
+									"valibot": { "raw": 11602, "gzip": 3790, "brotli": 3413 }
+								},
+								"colocated": {
+									"smallest": { "raw": 7918, "gzip": 3499, "brotli": 3190 },
+									"valibot": { "raw": 11598, "gzip": 3783, "brotli": 3412 }
+								}
+							}
+						},
+						{
+							"schemas": 50,
+							"messages": 94,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 83411, "gzip": 14598, "brotli": 12206 },
+								"smallest": { "raw": 17887, "gzip": 6300, "brotli": 5678 },
+								"dynamic": { "raw": 311437, "gzip": 101857, "brotli": 89031 },
+								"valibot": { "raw": 22354, "gzip": 6434, "brotli": 5753 },
+								"zod": { "raw": 109463, "gzip": 31142, "brotli": 27673 },
+								"zodMini": { "raw": 45749, "gzip": 13434, "brotli": 12160 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 17887, "gzip": 6300, "brotli": 5678 },
+									"valibot": { "raw": 22354, "gzip": 6434, "brotli": 5753 }
+								},
+								"colocated": {
+									"smallest": { "raw": 17891, "gzip": 6300, "brotli": 5687 },
+									"valibot": { "raw": 22350, "gzip": 6416, "brotli": 5736 }
+								}
+							}
+						},
+						{
+							"schemas": 100,
+							"messages": 187,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 155138, "gzip": 24628, "brotli": 19598 },
+								"smallest": { "raw": 29083, "gzip": 8957, "brotli": 8057 },
+								"dynamic": { "raw": 328680, "gzip": 104662, "brotli": 91661 },
+								"valibot": { "raw": 36277, "gzip": 9111, "brotli": 8126 },
+								"zod": { "raw": 125739, "gzip": 33792, "brotli": 30065 },
+								"zodMini": { "raw": 61583, "gzip": 16209, "brotli": 14691 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 29083, "gzip": 8983, "brotli": 8089 },
+									"valibot": { "raw": 36280, "gzip": 9115, "brotli": 8134 }
+								},
+								"colocated": {
+									"smallest": { "raw": 29081, "gzip": 8977, "brotli": 8084 },
+									"valibot": { "raw": 36264, "gzip": 9101, "brotli": 8119 }
+								}
+							}
+						},
+						{
+							"schemas": 250,
+							"messages": 461,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 363593, "gzip": 53138, "brotli": 39980 },
+								"smallest": { "raw": 59576, "gzip": 16616, "brotli": 14842 },
+								"dynamic": { "raw": 381642, "gzip": 113099, "brotli": 98843 },
+								"valibot": { "raw": 79384, "gzip": 17002, "brotli": 15012 },
+								"zod": { "raw": 174347, "gzip": 41742, "brotli": 37093 },
+								"zodMini": { "raw": 108981, "gzip": 24494, "brotli": 21820 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 59576, "gzip": 16622, "brotli": 14836 },
+									"valibot": { "raw": 79391, "gzip": 16988, "brotli": 15052 }
+								},
+								"colocated": {
+									"smallest": { "raw": 59576, "gzip": 16636, "brotli": 14847 },
+									"valibot": { "raw": 79349, "gzip": 16957, "brotli": 15042 }
+								}
+							}
+						},
+						{
+							"schemas": 500,
+							"messages": 936,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 689442, "gzip": 95893, "brotli": 70426 },
+								"smallest": { "raw": 112163, "gzip": 28873, "brotli": 25429 },
+								"dynamic": { "raw": 470387, "gzip": 127175, "brotli": 110196 },
+								"valibot": { "raw": 151146, "gzip": 30127, "brotli": 25984 },
+								"zod": { "raw": 254745, "gzip": 54886, "brotli": 48009 },
+								"zodMini": { "raw": 187148, "gzip": 37954, "brotli": 32980 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 112163, "gzip": 28779, "brotli": 25369 },
+									"valibot": { "raw": 151165, "gzip": 30104, "brotli": 25944 }
+								},
+								"colocated": {
+									"smallest": { "raw": 112163, "gzip": 28778, "brotli": 25359 },
+									"valibot": { "raw": 151085, "gzip": 30066, "brotli": 25862 }
+								}
+							}
+						},
+						{
+							"schemas": 1000,
+							"messages": 1871,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 1338168, "gzip": 180031, "brotli": 127310 },
+								"smallest": { "raw": 214575, "gzip": 52626, "brotli": 45447 },
+								"dynamic": { "raw": 649890, "gzip": 155212, "brotli": 131679 },
+								"valibot": { "raw": 296821, "gzip": 55883, "brotli": 46605 },
+								"zod": { "raw": 418317, "gzip": 81024, "brotli": 68715 },
+								"zodMini": { "raw": 346471, "gzip": 64558, "brotli": 54288 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 214575, "gzip": 52185, "brotli": 45247 },
+									"valibot": { "raw": 296861, "gzip": 55805, "brotli": 46543 }
+								},
+								"colocated": {
+									"smallest": { "raw": 214575, "gzip": 52214, "brotli": 45149 },
+									"valibot": { "raw": 296701, "gzip": 55784, "brotli": 46568 }
+								}
+							}
+						},
+						{
+							"schemas": 2500,
+							"messages": 4614,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 3232025, "gzip": 426431, "brotli": 289372 },
+								"smallest": { "raw": 521732, "gzip": 122745, "brotli": 102075 },
+								"dynamic": { "raw": 1190562, "gzip": 240342, "brotli": 192526 },
+								"valibot": { "raw": 736623, "gzip": 134044, "brotli": 105595 },
+								"zod": { "raw": 910820, "gzip": 160069, "brotli": 128231 },
+								"zodMini": { "raw": 825198, "gzip": 145306, "brotli": 115193 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 521732,
+										"gzip": 121945,
+										"brotli": 101561
+									},
+									"valibot": { "raw": 736725, "gzip": 133850, "brotli": 105494 }
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 521732,
+										"gzip": 121943,
+										"brotli": 101607
+									},
+									"valibot": { "raw": 736324, "gzip": 133668, "brotli": 105355 }
+								}
+							}
+						},
+						{
+							"schemas": 5000,
+							"messages": 9101,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 6332592, "gzip": 832888, "brotli": 551250 },
+								"smallest": {
+									"raw": 1022873,
+									"gzip": 238101,
+									"brotli": 194224
+								},
+								"dynamic": { "raw": 2094177, "gzip": 382071, "brotli": 291008 },
+								"valibot": { "raw": 1474594, "gzip": 265219, "brotli": 201550 },
+								"zod": { "raw": 1740107, "gzip": 292756, "brotli": 225418 },
+								"zodMini": { "raw": 1630784, "gzip": 280849, "brotli": 214491 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 1022881,
+										"gzip": 236775,
+										"brotli": 193101
+									},
+									"valibot": {
+										"raw": 1474651,
+										"gzip": 264721,
+										"brotli": 201137
+									}
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 1022880,
+										"gzip": 236616,
+										"brotli": 192960
+									},
+									"valibot": {
+										"raw": 1473850,
+										"gzip": 264492,
+										"brotli": 201130
+									}
+								}
+							}
+						}
+					]
+				},
+				{
+					"seed": 3,
+					"rows": [
+						{
+							"schemas": 1,
+							"messages": 2,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 2721, "gzip": 1115, "brotli": 997 },
+								"smallest": { "raw": 2234, "gzip": 1001, "brotli": 888 },
+								"dynamic": { "raw": 294809, "gzip": 98204, "brotli": 85677 },
+								"valibot": { "raw": 4568, "gzip": 1767, "brotli": 1628 },
+								"zod": { "raw": 85722, "gzip": 25362, "brotli": 22614 },
+								"zodMini": { "raw": 16503, "gzip": 5791, "brotli": 5307 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 2234, "gzip": 1001, "brotli": 888 },
+									"valibot": { "raw": 4568, "gzip": 1767, "brotli": 1628 }
+								},
+								"colocated": {
+									"smallest": { "raw": 2232, "gzip": 1001, "brotli": 886 },
+									"valibot": { "raw": 4564, "gzip": 1766, "brotli": 1616 }
+								}
+							}
+						},
+						{
+							"schemas": 10,
+							"messages": 21,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 21522, "gzip": 5093, "brotli": 4520 },
+								"smallest": { "raw": 7913, "gzip": 3490, "brotli": 3146 },
+								"dynamic": { "raw": 298067, "gzip": 99138, "brotli": 86469 },
+								"valibot": { "raw": 11384, "gzip": 3752, "brotli": 3363 },
+								"zod": { "raw": 97811, "gzip": 28550, "brotli": 25303 },
+								"zodMini": { "raw": 34210, "gzip": 10701, "brotli": 9675 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 7913, "gzip": 3490, "brotli": 3146 },
+									"valibot": { "raw": 11384, "gzip": 3752, "brotli": 3363 }
+								},
+								"colocated": {
+									"smallest": { "raw": 7912, "gzip": 3495, "brotli": 3145 },
+									"valibot": { "raw": 11380, "gzip": 3749, "brotli": 3361 }
+								}
+							}
+						},
+						{
+							"schemas": 50,
+							"messages": 96,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 77188, "gzip": 13319, "brotli": 11335 },
+								"smallest": { "raw": 17873, "gzip": 6245, "brotli": 5662 },
+								"dynamic": { "raw": 312089, "gzip": 101887, "brotli": 89031 },
+								"valibot": { "raw": 22967, "gzip": 6449, "brotli": 5764 },
+								"zod": { "raw": 110014, "gzip": 31125, "brotli": 27645 },
+								"zodMini": { "raw": 46401, "gzip": 13465, "brotli": 12201 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 17873, "gzip": 6283, "brotli": 5674 },
+									"valibot": { "raw": 22966, "gzip": 6453, "brotli": 5801 }
+								},
+								"colocated": {
+									"smallest": { "raw": 17876, "gzip": 6270, "brotli": 5679 },
+									"valibot": { "raw": 22962, "gzip": 6445, "brotli": 5772 }
+								}
+							}
+						},
+						{
+							"schemas": 100,
+							"messages": 193,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 151471, "gzip": 24162, "brotli": 19256 },
+								"smallest": { "raw": 29287, "gzip": 9073, "brotli": 8170 },
+								"dynamic": { "raw": 330145, "gzip": 104793, "brotli": 91694 },
+								"valibot": { "raw": 37572, "gzip": 9216, "brotli": 8269 },
+								"zod": { "raw": 126426, "gzip": 33877, "brotli": 30165 },
+								"zodMini": { "raw": 62467, "gzip": 16286, "brotli": 14769 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 29287, "gzip": 9092, "brotli": 8162 },
+									"valibot": { "raw": 37575, "gzip": 9214, "brotli": 8255 }
+								},
+								"colocated": {
+									"smallest": { "raw": 29287, "gzip": 9074, "brotli": 8191 },
+									"valibot": { "raw": 37558, "gzip": 9219, "brotli": 8241 }
+								}
+							}
+						},
+						{
+							"schemas": 250,
+							"messages": 473,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 355741, "gzip": 52517, "brotli": 39335 },
+								"smallest": { "raw": 59750, "gzip": 16647, "brotli": 14862 },
+								"dynamic": { "raw": 383124, "gzip": 113173, "brotli": 99033 },
+								"valibot": { "raw": 80537, "gzip": 17017, "brotli": 15074 },
+								"zod": { "raw": 174925, "gzip": 41754, "brotli": 37112 },
+								"zodMini": { "raw": 109523, "gzip": 24481, "brotli": 21785 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 59750, "gzip": 16617, "brotli": 14883 },
+									"valibot": { "raw": 80547, "gzip": 17025, "brotli": 15076 }
+								},
+								"colocated": {
+									"smallest": { "raw": 59750, "gzip": 16625, "brotli": 14896 },
+									"valibot": { "raw": 80505, "gzip": 17022, "brotli": 15123 }
+								}
+							}
+						},
+						{
+							"schemas": 500,
+							"messages": 919,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 696634, "gzip": 97927, "brotli": 71189 },
+								"smallest": { "raw": 110972, "gzip": 28795, "brotli": 25364 },
+								"dynamic": { "raw": 471617, "gzip": 127289, "brotli": 110410 },
+								"valibot": { "raw": 152462, "gzip": 30124, "brotli": 26079 },
+								"zod": { "raw": 255392, "gzip": 54958, "brotli": 48145 },
+								"zodMini": { "raw": 187483, "gzip": 37991, "brotli": 33048 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 110972, "gzip": 28685, "brotli": 25325 },
+									"valibot": { "raw": 152481, "gzip": 30100, "brotli": 26044 }
+								},
+								"colocated": {
+									"smallest": { "raw": 110972, "gzip": 28703, "brotli": 25355 },
+									"valibot": { "raw": 152401, "gzip": 30102, "brotli": 26018 }
+								}
+							}
+						},
+						{
+							"schemas": 1000,
+							"messages": 1833,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 1355856, "gzip": 183697, "brotli": 129357 },
+								"smallest": { "raw": 214996, "gzip": 52813, "brotli": 45623 },
+								"dynamic": { "raw": 653117, "gzip": 155773, "brotli": 132094 },
+								"valibot": { "raw": 300581, "gzip": 56325, "brotli": 47099 },
+								"zod": { "raw": 422409, "gzip": 81546, "brotli": 69234 },
+								"zodMini": { "raw": 350249, "gzip": 65069, "brotli": 54707 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 214996, "gzip": 52489, "brotli": 45477 },
+									"valibot": { "raw": 300625, "gzip": 56298, "brotli": 47023 }
+								},
+								"colocated": {
+									"smallest": { "raw": 214996, "gzip": 52484, "brotli": 45433 },
+									"valibot": { "raw": 300465, "gzip": 56195, "brotli": 47038 }
+								}
+							}
+						},
+						{
+							"schemas": 2500,
+							"messages": 4655,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 3311011, "gzip": 438012, "brotli": 297959 },
+								"smallest": { "raw": 526588, "gzip": 124143, "brotli": 103213 },
+								"dynamic": { "raw": 1204213, "gzip": 242156, "brotli": 193866 },
+								"valibot": { "raw": 748856, "gzip": 135903, "brotli": 106947 },
+								"zod": { "raw": 925433, "gzip": 161793, "brotli": 129493 },
+								"zodMini": { "raw": 839723, "gzip": 147174, "brotli": 116401 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 526588,
+										"gzip": 123516,
+										"brotli": 102677
+									},
+									"valibot": { "raw": 748956, "gzip": 135783, "brotli": 106756 }
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 526588,
+										"gzip": 123545,
+										"brotli": 102684
+									},
+									"valibot": { "raw": 748556, "gzip": 135592, "brotli": 106832 }
+								}
+							}
+						},
+						{
+							"schemas": 5000,
+							"messages": 9215,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 6390035, "gzip": 842427, "brotli": 557150 },
+								"smallest": {
+									"raw": 1029808,
+									"gzip": 239754,
+									"brotli": 195086
+								},
+								"dynamic": { "raw": 2117118, "gzip": 384595, "brotli": 292435 },
+								"valibot": { "raw": 1493545, "gzip": 267627, "brotli": 203175 },
+								"zod": { "raw": 1762006, "gzip": 294982, "brotli": 226589 },
+								"zodMini": { "raw": 1653044, "gzip": 283308, "brotli": 215813 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 1029810,
+										"gzip": 238710,
+										"brotli": 194113
+									},
+									"valibot": {
+										"raw": 1493589,
+										"gzip": 267144,
+										"brotli": 202704
+									}
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 1029822,
+										"gzip": 238676,
+										"brotli": 194047
+									},
+									"valibot": {
+										"raw": 1492789,
+										"gzip": 266955,
+										"brotli": 202573
+									}
+								}
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": "narrows",
+			"options": { "narrows": 0.25 },
+			"runs": [
+				{
+					"seed": 1,
+					"rows": [
+						{
+							"schemas": 1,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 3316, "gzip": 1436, "brotli": 1315 },
+								"smallest": { "raw": 2671, "gzip": 1320, "brotli": 1221 },
+								"dynamic": { "raw": 294672, "gzip": 98139, "brotli": 85621 },
+								"valibot": { "raw": 4776, "gzip": 1839, "brotli": 1687 },
+								"zod": { "raw": 85863, "gzip": 25433, "brotli": 22651 },
+								"zodMini": { "raw": 18701, "gzip": 6532, "brotli": 5990 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 2671, "gzip": 1320, "brotli": 1221 },
+									"valibot": { "raw": 4776, "gzip": 1839, "brotli": 1687 }
+								},
+								"colocated": {
+									"smallest": { "raw": 2669, "gzip": 1321, "brotli": 1190 },
+									"valibot": { "raw": 4772, "gzip": 1838, "brotli": 1682 }
+								}
+							}
+						},
+						{
+							"schemas": 10,
+							"messages": 0,
+							"narrows": 4,
+							"sizes": {
+								"default": { "raw": 19637, "gzip": 5548, "brotli": 5032 },
+								"smallest": { "raw": 7396, "gzip": 3314, "brotli": 3008 },
+								"dynamic": { "raw": 296924, "gzip": 98947, "brotli": 86315 },
+								"valibot": { "raw": 10766, "gzip": 3568, "brotli": 3202 },
+								"zod": { "raw": 96605, "gzip": 28345, "brotli": 25141 },
+								"zodMini": { "raw": 33694, "gzip": 10658, "brotli": 9688 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 7396, "gzip": 3314, "brotli": 3008 },
+									"valibot": { "raw": 10766, "gzip": 3568, "brotli": 3202 }
+								},
+								"colocated": {
+									"smallest": { "raw": 7398, "gzip": 3315, "brotli": 3008 },
+									"valibot": { "raw": 10764, "gzip": 3567, "brotli": 3196 }
+								}
+							}
+						},
+						{
+							"schemas": 50,
+							"messages": 0,
+							"narrows": 28,
+							"sizes": {
+								"default": { "raw": 75074, "gzip": 14457, "brotli": 12222 },
+								"smallest": { "raw": 16124, "gzip": 6065, "brotli": 5455 },
+								"dynamic": { "raw": 308866, "gzip": 101531, "brotli": 88617 },
+								"valibot": { "raw": 21131, "gzip": 6113, "brotli": 5515 },
+								"zod": { "raw": 107048, "gzip": 30784, "brotli": 27300 },
+								"zodMini": { "raw": 44008, "gzip": 13266, "brotli": 12026 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 16124, "gzip": 6036, "brotli": 5462 },
+									"valibot": { "raw": 21135, "gzip": 6115, "brotli": 5507 }
+								},
+								"colocated": {
+									"smallest": { "raw": 16126, "gzip": 6032, "brotli": 5474 },
+									"valibot": { "raw": 21129, "gzip": 6103, "brotli": 5515 }
+								}
+							}
+						},
+						{
+							"schemas": 100,
+							"messages": 0,
+							"narrows": 58,
+							"sizes": {
+								"default": { "raw": 141322, "gzip": 24980, "brotli": 19775 },
+								"smallest": { "raw": 25466, "gzip": 8628, "brotli": 7803 },
+								"dynamic": { "raw": 323661, "gzip": 104206, "brotli": 91177 },
+								"valibot": { "raw": 33608, "gzip": 8727, "brotli": 7857 },
+								"zod": { "raw": 119981, "gzip": 33290, "brotli": 29604 },
+								"zodMini": { "raw": 56234, "gzip": 15838, "brotli": 14340 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 25466, "gzip": 8597, "brotli": 7759 },
+									"valibot": { "raw": 33613, "gzip": 8716, "brotli": 7814 }
+								},
+								"colocated": {
+									"smallest": { "raw": 25466, "gzip": 8607, "brotli": 7762 },
+									"valibot": { "raw": 33594, "gzip": 8686, "brotli": 7809 }
+								}
+							}
+						},
+						{
+							"schemas": 250,
+							"messages": 0,
+							"narrows": 124,
+							"sizes": {
+								"default": { "raw": 294438, "gzip": 47731, "brotli": 35772 },
+								"smallest": { "raw": 47475, "gzip": 14754, "brotli": 13247 },
+								"dynamic": { "raw": 363366, "gzip": 110920, "brotli": 97201 },
+								"valibot": { "raw": 67588, "gzip": 15069, "brotli": 13464 },
+								"zod": { "raw": 154875, "gzip": 39518, "brotli": 35233 },
+								"zodMini": { "raw": 89399, "gzip": 22283, "brotli": 19966 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 47475, "gzip": 14692, "brotli": 13224 },
+									"valibot": { "raw": 67599, "gzip": 15106, "brotli": 13453 }
+								},
+								"colocated": {
+									"smallest": { "raw": 47475, "gzip": 14706, "brotli": 13191 },
+									"valibot": { "raw": 67558, "gzip": 15070, "brotli": 13396 }
+								}
+							}
+						},
+						{
+							"schemas": 500,
+							"messages": 0,
+							"narrows": 253,
+							"sizes": {
+								"default": { "raw": 565623, "gzip": 84752, "brotli": 61323 },
+								"smallest": { "raw": 87092, "gzip": 24644, "brotli": 21992 },
+								"dynamic": { "raw": 432606, "gzip": 122397, "brotli": 106640 },
+								"valibot": { "raw": 126289, "gzip": 25911, "brotli": 22621 },
+								"zod": { "raw": 215022, "gzip": 50164, "brotli": 44205 },
+								"zodMini": { "raw": 146612, "gzip": 33042, "brotli": 29111 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 87092, "gzip": 24570, "brotli": 21983 },
+									"valibot": { "raw": 126309, "gzip": 25897, "brotli": 22658 }
+								},
+								"colocated": {
+									"smallest": { "raw": 87092, "gzip": 24565, "brotli": 21995 },
+									"valibot": { "raw": 126229, "gzip": 25814, "brotli": 22613 }
+								}
+							}
+						},
+						{
+							"schemas": 1000,
+							"messages": 0,
+							"narrows": 520,
+							"sizes": {
+								"default": { "raw": 1134899, "gzip": 161259, "brotli": 113504 },
+								"smallest": { "raw": 170097, "gzip": 45450, "brotli": 40006 },
+								"dynamic": { "raw": 575114, "gzip": 146262, "brotli": 125801 },
+								"valibot": { "raw": 247787, "gzip": 48087, "brotli": 41106 },
+								"zod": { "raw": 339949, "gzip": 71996, "brotli": 62156 },
+								"zodMini": { "raw": 265548, "gzip": 55037, "brotli": 47510 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 170097, "gzip": 45107, "brotli": 39858 },
+									"valibot": { "raw": 247830, "gzip": 48052, "brotli": 40942 }
+								},
+								"colocated": {
+									"smallest": { "raw": 170097, "gzip": 45093, "brotli": 39828 },
+									"valibot": { "raw": 247670, "gzip": 47953, "brotli": 40935 }
+								}
+							}
+						},
+						{
+							"schemas": 2500,
+							"messages": 0,
+							"narrows": 1257,
+							"sizes": {
+								"default": { "raw": 2774012, "gzip": 379337, "brotli": 259907 },
+								"smallest": { "raw": 411358, "gzip": 103635, "brotli": 89416 },
+								"dynamic": { "raw": 994201, "gzip": 215535, "brotli": 179044 },
+								"valibot": { "raw": 606629, "gzip": 113202, "brotli": 92442 },
+								"zod": { "raw": 707709, "gzip": 135662, "brotli": 112418 },
+								"zodMini": { "raw": 616571, "gzip": 119863, "brotli": 98848 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 411358,
+										"gzip": 102948,
+										"brotli": 88816
+									},
+									"valibot": { "raw": 606733, "gzip": 113118, "brotli": 92348 }
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 411358,
+										"gzip": 102985,
+										"brotli": 88974
+									},
+									"valibot": { "raw": 606332, "gzip": 112962, "brotli": 92271 }
+								}
+							}
+						},
+						{
+							"schemas": 5000,
+							"messages": 0,
+							"narrows": 2532,
+							"sizes": {
+								"default": { "raw": 5563016, "gzip": 747547, "brotli": 504285 },
+								"smallest": { "raw": 824725, "gzip": 202596, "brotli": 170769 },
+								"dynamic": { "raw": 1706423, "gzip": 333372, "brotli": 266016 },
+								"valibot": { "raw": 1215202, "gzip": 223848, "brotli": 177008 },
+								"zod": { "raw": 1332607, "gzip": 243959, "brotli": 195586 },
+								"zodMini": { "raw": 1213000, "gzip": 229994, "brotli": 183548 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 824725,
+										"gzip": 201151,
+										"brotli": 169974
+									},
+									"valibot": {
+										"raw": 1215251,
+										"gzip": 223504,
+										"brotli": 176551
+									}
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 824749,
+										"gzip": 201093,
+										"brotli": 169821
+									},
+									"valibot": {
+										"raw": 1214451,
+										"gzip": 223181,
+										"brotli": 176298
+									}
+								}
+							}
+						}
+					]
+				},
+				{
+					"seed": 2,
+					"rows": [
+						{
+							"schemas": 1,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 3434, "gzip": 1328, "brotli": 1231 },
+								"smallest": { "raw": 2836, "gzip": 1261, "brotli": 1130 },
+								"dynamic": { "raw": 294737, "gzip": 98173, "brotli": 85682 },
+								"valibot": { "raw": 5699, "gzip": 1976, "brotli": 1798 },
+								"zod": { "raw": 90673, "gzip": 26563, "brotli": 23624 },
+								"zodMini": { "raw": 20147, "gzip": 6883, "brotli": 6284 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 2836, "gzip": 1261, "brotli": 1130 },
+									"valibot": { "raw": 5699, "gzip": 1976, "brotli": 1798 }
+								},
+								"colocated": {
+									"smallest": { "raw": 2834, "gzip": 1261, "brotli": 1128 },
+									"valibot": { "raw": 5695, "gzip": 1973, "brotli": 1802 }
+								}
+							}
+						},
+						{
+							"schemas": 10,
+							"messages": 0,
+							"narrows": 3,
+							"sizes": {
+								"default": { "raw": 22157, "gzip": 6093, "brotli": 5515 },
+								"smallest": { "raw": 7554, "gzip": 3403, "brotli": 3088 },
+								"dynamic": { "raw": 297046, "gzip": 98944, "brotli": 86343 },
+								"valibot": { "raw": 11123, "gzip": 3627, "brotli": 3269 },
+								"zod": { "raw": 96758, "gzip": 28326, "brotli": 25105 },
+								"zodMini": { "raw": 34075, "gzip": 10738, "brotli": 9777 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 7554, "gzip": 3403, "brotli": 3088 },
+									"valibot": { "raw": 11123, "gzip": 3627, "brotli": 3269 }
+								},
+								"colocated": {
+									"smallest": { "raw": 7556, "gzip": 3404, "brotli": 3098 },
+									"valibot": { "raw": 11119, "gzip": 3626, "brotli": 3269 }
+								}
+							}
+						},
+						{
+							"schemas": 50,
+							"messages": 0,
+							"narrows": 23,
+							"sizes": {
+								"default": { "raw": 74124, "gzip": 14635, "brotli": 12334 },
+								"smallest": { "raw": 15531, "gzip": 5970, "brotli": 5361 },
+								"dynamic": { "raw": 307504, "gzip": 101430, "brotli": 88624 },
+								"valibot": { "raw": 20003, "gzip": 6021, "brotli": 5349 },
+								"zod": { "raw": 105916, "gzip": 30695, "brotli": 27188 },
+								"zodMini": { "raw": 42771, "gzip": 13138, "brotli": 11857 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 15531, "gzip": 5970, "brotli": 5361 },
+									"valibot": { "raw": 20003, "gzip": 6021, "brotli": 5349 }
+								},
+								"colocated": {
+									"smallest": { "raw": 15531, "gzip": 5965, "brotli": 5362 },
+									"valibot": { "raw": 19998, "gzip": 6010, "brotli": 5361 }
+								}
+							}
+						},
+						{
+							"schemas": 100,
+							"messages": 0,
+							"narrows": 53,
+							"sizes": {
+								"default": { "raw": 133253, "gzip": 23676, "brotli": 18729 },
+								"smallest": { "raw": 24292, "gzip": 8238, "brotli": 7388 },
+								"dynamic": { "raw": 321133, "gzip": 103798, "brotli": 90768 },
+								"valibot": { "raw": 31394, "gzip": 8337, "brotli": 7425 },
+								"zod": { "raw": 117622, "gzip": 32909, "brotli": 29256 },
+								"zodMini": { "raw": 53900, "gzip": 15408, "brotli": 13925 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 24292, "gzip": 8250, "brotli": 7400 },
+									"valibot": { "raw": 31398, "gzip": 8318, "brotli": 7397 }
+								},
+								"colocated": {
+									"smallest": { "raw": 24292, "gzip": 8227, "brotli": 7378 },
+									"valibot": { "raw": 31382, "gzip": 8317, "brotli": 7425 }
+								}
+							}
+						},
+						{
+							"schemas": 250,
+							"messages": 0,
+							"narrows": 118,
+							"sizes": {
+								"default": { "raw": 296995, "gzip": 47848, "brotli": 35811 },
+								"smallest": { "raw": 46666, "gzip": 14571, "brotli": 13047 },
+								"dynamic": { "raw": 361593, "gzip": 110584, "brotli": 96844 },
+								"valibot": { "raw": 66212, "gzip": 14917, "brotli": 13188 },
+								"zod": { "raw": 153021, "gzip": 39290, "brotli": 34978 },
+								"zodMini": { "raw": 87825, "gzip": 22045, "brotli": 19749 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 46666, "gzip": 14554, "brotli": 13027 },
+									"valibot": { "raw": 66219, "gzip": 14881, "brotli": 13156 }
+								},
+								"colocated": {
+									"smallest": { "raw": 46666, "gzip": 14548, "brotli": 13042 },
+									"valibot": { "raw": 66179, "gzip": 14862, "brotli": 13210 }
+								}
+							}
+						},
+						{
+							"schemas": 500,
+							"messages": 0,
+							"narrows": 249,
+							"sizes": {
+								"default": { "raw": 569315, "gzip": 86608, "brotli": 62790 },
+								"smallest": { "raw": 87376, "gzip": 24717, "brotli": 22068 },
+								"dynamic": { "raw": 430583, "gzip": 122343, "brotli": 106601 },
+								"valibot": { "raw": 124844, "gzip": 25960, "brotli": 22563 },
+								"zod": { "raw": 212818, "gzip": 50051, "brotli": 44180 },
+								"zodMini": { "raw": 144880, "gzip": 33073, "brotli": 29103 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 87376, "gzip": 24730, "brotli": 22057 },
+									"valibot": { "raw": 124864, "gzip": 25935, "brotli": 22528 }
+								},
+								"colocated": {
+									"smallest": { "raw": 87376, "gzip": 24741, "brotli": 22000 },
+									"valibot": { "raw": 124784, "gzip": 25875, "brotli": 22565 }
+								}
+							}
+						},
+						{
+							"schemas": 1000,
+							"messages": 0,
+							"narrows": 502,
+							"sizes": {
+								"default": { "raw": 1124649, "gzip": 161728, "brotli": 113588 },
+								"smallest": { "raw": 168406, "gzip": 44770, "brotli": 39456 },
+								"dynamic": { "raw": 570165, "gzip": 145569, "brotli": 125315 },
+								"valibot": { "raw": 243959, "gzip": 47612, "brotli": 40607 },
+								"zod": { "raw": 334543, "gzip": 71261, "brotli": 61716 },
+								"zodMini": { "raw": 261358, "gzip": 54564, "brotli": 47083 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 168406, "gzip": 44555, "brotli": 39259 },
+									"valibot": { "raw": 243999, "gzip": 47571, "brotli": 40503 }
+								},
+								"colocated": {
+									"smallest": { "raw": 168406, "gzip": 44512, "brotli": 39292 },
+									"valibot": { "raw": 243839, "gzip": 47514, "brotli": 40572 }
+								}
+							}
+						},
+						{
+							"schemas": 2500,
+							"messages": 0,
+							"narrows": 1289,
+							"sizes": {
+								"default": { "raw": 2807819, "gzip": 384192, "brotli": 263526 },
+								"smallest": { "raw": 413785, "gzip": 103726, "brotli": 89337 },
+								"dynamic": { "raw": 995585, "gzip": 215971, "brotli": 178875 },
+								"valibot": { "raw": 605793, "gzip": 113563, "brotli": 92545 },
+								"zod": { "raw": 705566, "gzip": 135646, "brotli": 112478 },
+								"zodMini": { "raw": 615405, "gzip": 120114, "brotli": 98837 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 413785,
+										"gzip": 103180,
+										"brotli": 88855
+									},
+									"valibot": { "raw": 605897, "gzip": 113448, "brotli": 92347 }
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 413785,
+										"gzip": 103149,
+										"brotli": 88756
+									},
+									"valibot": { "raw": 605496, "gzip": 113232, "brotli": 92292 }
+								}
+							}
+						},
+						{
+							"schemas": 5000,
+							"messages": 0,
+							"narrows": 2565,
+							"sizes": {
+								"default": { "raw": 5625655, "gzip": 756194, "brotli": 509557 },
+								"smallest": { "raw": 828868, "gzip": 203017, "brotli": 171130 },
+								"dynamic": { "raw": 1708519, "gzip": 333745, "brotli": 266107 },
+								"valibot": { "raw": 1214720, "gzip": 224327, "brotli": 177099 },
+								"zod": { "raw": 1330194, "gzip": 244070, "brotli": 195908 },
+								"zodMini": { "raw": 1211002, "gzip": 230376, "brotli": 183554 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 828868,
+										"gzip": 201963,
+										"brotli": 170369
+									},
+									"valibot": {
+										"raw": 1214772,
+										"gzip": 223942,
+										"brotli": 176800
+									}
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 828890,
+										"gzip": 201926,
+										"brotli": 169953
+									},
+									"valibot": {
+										"raw": 1213971,
+										"gzip": 223602,
+										"brotli": 176618
+									}
+								}
+							}
+						}
+					]
+				},
+				{
+					"seed": 3,
+					"rows": [
+						{
+							"schemas": 1,
+							"messages": 0,
+							"narrows": 1,
+							"sizes": {
+								"default": { "raw": 5921, "gzip": 2359, "brotli": 2170 },
+								"smallest": { "raw": 2931, "gzip": 1457, "brotli": 1307 },
+								"dynamic": { "raw": 294795, "gzip": 98205, "brotli": 85603 },
+								"valibot": { "raw": 4669, "gzip": 1775, "brotli": 1616 },
+								"zod": { "raw": 85685, "gzip": 25366, "brotli": 22604 },
+								"zodMini": { "raw": 17119, "gzip": 5979, "brotli": 5485 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 2931, "gzip": 1457, "brotli": 1307 },
+									"valibot": { "raw": 4669, "gzip": 1775, "brotli": 1616 }
+								},
+								"colocated": {
+									"smallest": { "raw": 2931, "gzip": 1457, "brotli": 1308 },
+									"valibot": { "raw": 4665, "gzip": 1776, "brotli": 1625 }
+								}
+							}
+						},
+						{
+							"schemas": 10,
+							"messages": 0,
+							"narrows": 6,
+							"sizes": {
+								"default": { "raw": 22690, "gzip": 6137, "brotli": 5525 },
+								"smallest": { "raw": 7689, "gzip": 3483, "brotli": 3150 },
+								"dynamic": { "raw": 297337, "gzip": 99042, "brotli": 86435 },
+								"valibot": { "raw": 11030, "gzip": 3670, "brotli": 3285 },
+								"zod": { "raw": 96926, "gzip": 28442, "brotli": 25168 },
+								"zodMini": { "raw": 33971, "gzip": 10754, "brotli": 9779 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 7689, "gzip": 3483, "brotli": 3150 },
+									"valibot": { "raw": 11030, "gzip": 3670, "brotli": 3285 }
+								},
+								"colocated": {
+									"smallest": { "raw": 7691, "gzip": 3482, "brotli": 3144 },
+									"valibot": { "raw": 11031, "gzip": 3666, "brotli": 3285 }
+								}
+							}
+						},
+						{
+							"schemas": 50,
+							"messages": 0,
+							"narrows": 24,
+							"sizes": {
+								"default": { "raw": 68374, "gzip": 13554, "brotli": 11514 },
+								"smallest": { "raw": 15499, "gzip": 5896, "brotli": 5326 },
+								"dynamic": { "raw": 308149, "gzip": 101434, "brotli": 88692 },
+								"valibot": { "raw": 20589, "gzip": 6078, "brotli": 5434 },
+								"zod": { "raw": 106501, "gzip": 30695, "brotli": 27255 },
+								"zodMini": { "raw": 43461, "gzip": 13181, "brotli": 11933 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 15499, "gzip": 5919, "brotli": 5347 },
+									"valibot": { "raw": 20593, "gzip": 6076, "brotli": 5425 }
+								},
+								"colocated": {
+									"smallest": { "raw": 15499, "gzip": 5921, "brotli": 5361 },
+									"valibot": { "raw": 20587, "gzip": 6065, "brotli": 5421 }
+								}
+							}
+						},
+						{
+							"schemas": 100,
+							"messages": 0,
+							"narrows": 54,
+							"sizes": {
+								"default": { "raw": 130295, "gzip": 22805, "brotli": 18276 },
+								"smallest": { "raw": 24463, "gzip": 8326, "brotli": 7501 },
+								"dynamic": { "raw": 322458, "gzip": 103935, "brotli": 90846 },
+								"valibot": { "raw": 32665, "gzip": 8479, "brotli": 7552 },
+								"zod": { "raw": 118824, "gzip": 33036, "brotli": 29359 },
+								"zodMini": { "raw": 55299, "gzip": 15591, "brotli": 14061 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 24463, "gzip": 8338, "brotli": 7535 },
+									"valibot": { "raw": 32668, "gzip": 8486, "brotli": 7549 }
+								},
+								"colocated": {
+									"smallest": { "raw": 24466, "gzip": 8331, "brotli": 7527 },
+									"valibot": { "raw": 32652, "gzip": 8477, "brotli": 7549 }
+								}
+							}
+						},
+						{
+							"schemas": 250,
+							"messages": 0,
+							"narrows": 145,
+							"sizes": {
+								"default": { "raw": 299195, "gzip": 48197, "brotli": 35841 },
+								"smallest": { "raw": 48479, "gzip": 14905, "brotli": 13368 },
+								"dynamic": { "raw": 365037, "gzip": 111062, "brotli": 97254 },
+								"valibot": { "raw": 68596, "gzip": 15274, "brotli": 13604 },
+								"zod": { "raw": 155965, "gzip": 39678, "brotli": 35261 },
+								"zodMini": { "raw": 90579, "gzip": 22451, "brotli": 20060 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 48479, "gzip": 14892, "brotli": 13368 },
+									"valibot": { "raw": 68608, "gzip": 15291, "brotli": 13542 }
+								},
+								"colocated": {
+									"smallest": { "raw": 48479, "gzip": 14886, "brotli": 13373 },
+									"valibot": { "raw": 68566, "gzip": 15264, "brotli": 13515 }
+								}
+							}
+						},
+						{
+							"schemas": 500,
+							"messages": 0,
+							"narrows": 274,
+							"sizes": {
+								"default": { "raw": 594234, "gzip": 89558, "brotli": 64066 },
+								"smallest": { "raw": 89004, "gzip": 25202, "brotli": 22433 },
+								"dynamic": { "raw": 435364, "gzip": 122927, "brotli": 107072 },
+								"valibot": { "raw": 128390, "gzip": 26384, "brotli": 23076 },
+								"zod": { "raw": 217605, "gzip": 50616, "brotli": 44636 },
+								"zodMini": { "raw": 149195, "gzip": 33595, "brotli": 29713 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 89004, "gzip": 25153, "brotli": 22430 },
+									"valibot": { "raw": 128410, "gzip": 26330, "brotli": 23049 }
+								},
+								"colocated": {
+									"smallest": { "raw": 89004, "gzip": 25141, "brotli": 22455 },
+									"valibot": { "raw": 128330, "gzip": 26345, "brotli": 23079 }
+								}
+							}
+						},
+						{
+							"schemas": 1000,
+							"messages": 0,
+							"narrows": 546,
+							"sizes": {
+								"default": { "raw": 1172706, "gzip": 166980, "brotli": 117025 },
+								"smallest": { "raw": 171861, "gzip": 45715, "brotli": 40243 },
+								"dynamic": { "raw": 579521, "gzip": 146856, "brotli": 126350 },
+								"valibot": { "raw": 251180, "gzip": 48709, "brotli": 41517 },
+								"zod": { "raw": 343596, "gzip": 72404, "brotli": 62760 },
+								"zodMini": { "raw": 269771, "gzip": 55729, "brotli": 48044 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 171861, "gzip": 45411, "brotli": 40072 },
+									"valibot": { "raw": 251224, "gzip": 48677, "brotli": 41508 }
+								},
+								"colocated": {
+									"smallest": { "raw": 171861, "gzip": 45393, "brotli": 40136 },
+									"valibot": { "raw": 251064, "gzip": 48570, "brotli": 41417 }
+								}
+							}
+						},
+						{
+							"schemas": 2500,
+							"messages": 0,
+							"narrows": 1290,
+							"sizes": {
+								"default": { "raw": 2884325, "gzip": 395454, "brotli": 270753 },
+								"smallest": { "raw": 417511, "gzip": 104977, "brotli": 90345 },
+								"dynamic": { "raw": 1005818, "gzip": 217449, "brotli": 180214 },
+								"valibot": { "raw": 615398, "gzip": 115067, "brotli": 93797 },
+								"zod": { "raw": 716930, "gzip": 137346, "brotli": 113904 },
+								"zodMini": { "raw": 626612, "gzip": 121701, "brotli": 100212 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 417511,
+										"gzip": 104351,
+										"brotli": 89995
+									},
+									"valibot": { "raw": 615502, "gzip": 114995, "brotli": 93604 }
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 417511,
+										"gzip": 104377,
+										"brotli": 90001
+									},
+									"valibot": { "raw": 615102, "gzip": 114751, "brotli": 93652 }
+								}
+							}
+						},
+						{
+							"schemas": 5000,
+							"messages": 0,
+							"narrows": 2632,
+							"sizes": {
+								"default": { "raw": 5730626, "gzip": 769016, "brotli": 517522 },
+								"smallest": { "raw": 836143, "gzip": 204687, "brotli": 172183 },
+								"dynamic": { "raw": 1729826, "gzip": 336366, "brotli": 267826 },
+								"valibot": { "raw": 1231890, "gzip": 226570, "brotli": 178975 },
+								"zod": { "raw": 1349575, "gzip": 246349, "brotli": 197413 },
+								"zodMini": { "raw": 1230391, "gzip": 232542, "brotli": 185339 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 836143,
+										"gzip": 203561,
+										"brotli": 171470
+									},
+									"valibot": {
+										"raw": 1231932,
+										"gzip": 226224,
+										"brotli": 178268
+									}
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 836167,
+										"gzip": 203474,
+										"brotli": 171415
+									},
+									"valibot": {
+										"raw": 1231131,
+										"gzip": 225825,
+										"brotli": 178176
+									}
+								}
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": "forms",
+			"options": { "messages": 0.35, "narrows": 0.25 },
+			"runs": [
+				{
+					"seed": 1,
+					"rows": [
+						{
+							"schemas": 1,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 3316, "gzip": 1436, "brotli": 1315 },
+								"smallest": { "raw": 2671, "gzip": 1320, "brotli": 1221 },
+								"dynamic": { "raw": 294672, "gzip": 98139, "brotli": 85621 },
+								"valibot": { "raw": 4776, "gzip": 1839, "brotli": 1687 },
+								"zod": { "raw": 85863, "gzip": 25433, "brotli": 22651 },
+								"zodMini": { "raw": 18701, "gzip": 6532, "brotli": 5990 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 2671, "gzip": 1320, "brotli": 1221 },
+									"valibot": { "raw": 4776, "gzip": 1839, "brotli": 1687 }
+								},
+								"colocated": {
+									"smallest": { "raw": 2669, "gzip": 1321, "brotli": 1190 },
+									"valibot": { "raw": 4772, "gzip": 1838, "brotli": 1682 }
+								}
+							}
+						},
+						{
+							"schemas": 10,
+							"messages": 13,
+							"narrows": 3,
+							"sizes": {
+								"default": { "raw": 22404, "gzip": 5926, "brotli": 5359 },
+								"smallest": { "raw": 8015, "gzip": 3512, "brotli": 3187 },
+								"dynamic": { "raw": 297613, "gzip": 99096, "brotli": 86465 },
+								"valibot": { "raw": 11274, "gzip": 3708, "brotli": 3320 },
+								"zod": { "raw": 97209, "gzip": 28470, "brotli": 25225 },
+								"zodMini": { "raw": 34303, "gzip": 10792, "brotli": 9806 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 8015, "gzip": 3512, "brotli": 3187 },
+									"valibot": { "raw": 11274, "gzip": 3708, "brotli": 3320 }
+								},
+								"colocated": {
+									"smallest": { "raw": 8018, "gzip": 3507, "brotli": 3179 },
+									"valibot": { "raw": 11275, "gzip": 3700, "brotli": 3311 }
+								}
+							}
+						},
+						{
+							"schemas": 50,
+							"messages": 75,
+							"narrows": 27,
+							"sizes": {
+								"default": { "raw": 92300, "gzip": 16962, "brotli": 14071 },
+								"smallest": { "raw": 19381, "gzip": 6883, "brotli": 6193 },
+								"dynamic": { "raw": 313680, "gzip": 102319, "brotli": 89443 },
+								"valibot": { "raw": 24245, "gzip": 6853, "brotli": 6130 },
+								"zod": { "raw": 111285, "gzip": 31538, "brotli": 28000 },
+								"zodMini": { "raw": 48243, "gzip": 14016, "brotli": 12698 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 19381, "gzip": 6870, "brotli": 6170 },
+									"valibot": { "raw": 24247, "gzip": 6849, "brotli": 6137 }
+								},
+								"colocated": {
+									"smallest": { "raw": 19381, "gzip": 6873, "brotli": 6199 },
+									"valibot": { "raw": 24243, "gzip": 6844, "brotli": 6126 }
+								}
+							}
+						},
+						{
+							"schemas": 100,
+							"messages": 173,
+							"narrows": 55,
+							"sizes": {
+								"default": { "raw": 179450, "gzip": 29746, "brotli": 23484 },
+								"smallest": { "raw": 32940, "gzip": 10133, "brotli": 9077 },
+								"dynamic": { "raw": 334835, "gzip": 105712, "brotli": 92416 },
+								"valibot": { "raw": 40890, "gzip": 10129, "brotli": 9058 },
+								"zod": { "raw": 129915, "gzip": 34724, "brotli": 30921 },
+								"zodMini": { "raw": 66164, "gzip": 17330, "brotli": 15648 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 32940, "gzip": 10120, "brotli": 9081 },
+									"valibot": { "raw": 40895, "gzip": 10108, "brotli": 9049 }
+								},
+								"colocated": {
+									"smallest": { "raw": 32940, "gzip": 10125, "brotli": 9090 },
+									"valibot": { "raw": 40877, "gzip": 10085, "brotli": 9004 }
+								}
+							}
+						},
+						{
+							"schemas": 250,
+							"messages": 433,
+							"narrows": 143,
+							"sizes": {
+								"default": { "raw": 404811, "gzip": 60095, "brotli": 44883 },
+								"smallest": { "raw": 67795, "gzip": 18529, "brotli": 16486 },
+								"dynamic": { "raw": 394104, "gzip": 114946, "brotli": 100264 },
+								"valibot": { "raw": 87492, "gzip": 18574, "brotli": 16323 },
+								"zod": { "raw": 181431, "gzip": 43240, "brotli": 38302 },
+								"zodMini": { "raw": 115910, "gzip": 26205, "brotli": 23134 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 67795, "gzip": 18384, "brotli": 16407 },
+									"valibot": { "raw": 87504, "gzip": 18589, "brotli": 16335 }
+								},
+								"colocated": {
+									"smallest": { "raw": 67795, "gzip": 18388, "brotli": 16407 },
+									"valibot": { "raw": 87463, "gzip": 18560, "brotli": 16324 }
+								}
+							}
+						},
+						{
+							"schemas": 500,
+							"messages": 877,
+							"narrows": 253,
+							"sizes": {
+								"default": { "raw": 768623, "gzip": 107364, "brotli": 77848 },
+								"smallest": { "raw": 125100, "gzip": 31512, "brotli": 27744 },
+								"dynamic": { "raw": 491971, "gzip": 130079, "brotli": 112314 },
+								"valibot": { "raw": 165091, "gzip": 32623, "brotli": 27888 },
+								"zod": { "raw": 268107, "gzip": 57509, "brotli": 49822 },
+								"zodMini": { "raw": 199718, "gzip": 40542, "brotli": 34941 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 125100, "gzip": 31352, "brotli": 27668 },
+									"valibot": { "raw": 165111, "gzip": 32597, "brotli": 27895 }
+								},
+								"colocated": {
+									"smallest": { "raw": 125100, "gzip": 31349, "brotli": 27662 },
+									"valibot": { "raw": 165031, "gzip": 32547, "brotli": 27885 }
+								}
+							}
+						},
+						{
+							"schemas": 1000,
+							"messages": 1803,
+							"narrows": 516,
+							"sizes": {
+								"default": { "raw": 1530430, "gzip": 202629, "brotli": 144817 },
+								"smallest": { "raw": 245908, "gzip": 59027, "brotli": 50454 },
+								"dynamic": { "raw": 697562, "gzip": 162021, "brotli": 136146 },
+								"valibot": { "raw": 328030, "gzip": 61649, "brotli": 50912 },
+								"zod": { "raw": 450344, "gzip": 86950, "brotli": 72663 },
+								"zodMini": { "raw": 375970, "gzip": 70557, "brotli": 58490 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 245908, "gzip": 58709, "brotli": 50304 },
+									"valibot": { "raw": 328074, "gzip": 61607, "brotli": 50868 }
+								},
+								"colocated": {
+									"smallest": { "raw": 245908, "gzip": 58717, "brotli": 50275 },
+									"valibot": { "raw": 327914, "gzip": 61503, "brotli": 50846 }
+								}
+							}
+						},
+						{
+							"schemas": 2500,
+							"messages": 4587,
+							"narrows": 1311,
+							"sizes": {
+								"default": { "raw": 3726823, "gzip": 473691, "brotli": 328865 },
+								"smallest": { "raw": 603783, "gzip": 137767, "brotli": 113101 },
+								"dynamic": { "raw": 1314176, "gzip": 256690, "brotli": 202635 },
+								"valibot": { "raw": 817197, "gzip": 148144, "brotli": 115165 },
+								"zod": { "raw": 997261, "gzip": 174489, "brotli": 137242 },
+								"zodMini": { "raw": 905832, "gzip": 159810, "brotli": 124457 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 603783,
+										"gzip": 137070,
+										"brotli": 112614
+									},
+									"valibot": { "raw": 817301, "gzip": 147964, "brotli": 115071 }
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 603783,
+										"gzip": 137088,
+										"brotli": 112678
+									},
+									"valibot": { "raw": 816900, "gzip": 147839, "brotli": 115102 }
+								}
+							}
+						},
+						{
+							"schemas": 5000,
+							"messages": 9180,
+							"narrows": 2636,
+							"sizes": {
+								"default": { "raw": 7347141, "gzip": 924451, "brotli": 631978 },
+								"smallest": {
+									"raw": 1189228,
+									"gzip": 268658,
+									"brotli": 215092
+								},
+								"dynamic": { "raw": 2349106, "gzip": 416237, "brotli": 310168 },
+								"valibot": { "raw": 1639346, "gzip": 294390, "brotli": 219981 },
+								"zod": { "raw": 1914940, "gzip": 322107, "brotli": 242473 },
+								"zodMini": { "raw": 1795002, "gzip": 310617, "brotli": 232030 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 1189232,
+										"gzip": 267292,
+										"brotli": 213785
+									},
+									"valibot": {
+										"raw": 1639396,
+										"gzip": 293945,
+										"brotli": 219574
+									}
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 1189235,
+										"gzip": 267199,
+										"brotli": 213828
+									},
+									"valibot": {
+										"raw": 1638596,
+										"gzip": 293787,
+										"brotli": 219372
+									}
+								}
+							}
+						}
+					]
+				},
+				{
+					"seed": 2,
+					"rows": [
+						{
+							"schemas": 1,
+							"messages": 0,
+							"narrows": 0,
+							"sizes": {
+								"default": { "raw": 3434, "gzip": 1328, "brotli": 1231 },
+								"smallest": { "raw": 2836, "gzip": 1261, "brotli": 1130 },
+								"dynamic": { "raw": 294737, "gzip": 98173, "brotli": 85682 },
+								"valibot": { "raw": 5699, "gzip": 1976, "brotli": 1798 },
+								"zod": { "raw": 90673, "gzip": 26563, "brotli": 23624 },
+								"zodMini": { "raw": 20147, "gzip": 6883, "brotli": 6284 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 2836, "gzip": 1261, "brotli": 1130 },
+									"valibot": { "raw": 5699, "gzip": 1976, "brotli": 1798 }
+								},
+								"colocated": {
+									"smallest": { "raw": 2834, "gzip": 1261, "brotli": 1128 },
+									"valibot": { "raw": 5695, "gzip": 1973, "brotli": 1802 }
+								}
+							}
+						},
+						{
+							"schemas": 10,
+							"messages": 16,
+							"narrows": 2,
+							"sizes": {
+								"default": { "raw": 25003, "gzip": 6520, "brotli": 5875 },
+								"smallest": { "raw": 8408, "gzip": 3672, "brotli": 3330 },
+								"dynamic": { "raw": 298041, "gzip": 99171, "brotli": 86569 },
+								"valibot": { "raw": 11850, "gzip": 3850, "brotli": 3456 },
+								"zod": { "raw": 97581, "gzip": 28542, "brotli": 25269 },
+								"zodMini": { "raw": 34895, "gzip": 10947, "brotli": 9980 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 8408, "gzip": 3672, "brotli": 3330 },
+									"valibot": { "raw": 11850, "gzip": 3850, "brotli": 3456 }
+								},
+								"colocated": {
+									"smallest": { "raw": 8410, "gzip": 3670, "brotli": 3323 },
+									"valibot": { "raw": 11847, "gzip": 3844, "brotli": 3452 }
+								}
+							}
+						},
+						{
+							"schemas": 50,
+							"messages": 96,
+							"narrows": 23,
+							"sizes": {
+								"default": { "raw": 95991, "gzip": 17463, "brotli": 14482 },
+								"smallest": { "raw": 19840, "gzip": 6879, "brotli": 6166 },
+								"dynamic": { "raw": 313811, "gzip": 102339, "brotli": 89546 },
+								"valibot": { "raw": 24098, "gzip": 6828, "brotli": 6099 },
+								"zod": { "raw": 111160, "gzip": 31515, "brotli": 28002 },
+								"zodMini": { "raw": 48001, "gzip": 13989, "brotli": 12664 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 19840, "gzip": 6879, "brotli": 6166 },
+									"valibot": { "raw": 24098, "gzip": 6828, "brotli": 6099 }
+								},
+								"colocated": {
+									"smallest": { "raw": 19840, "gzip": 6880, "brotli": 6176 },
+									"valibot": { "raw": 24094, "gzip": 6823, "brotli": 6103 }
+								}
+							}
+						},
+						{
+							"schemas": 100,
+							"messages": 184,
+							"narrows": 45,
+							"sizes": {
+								"default": { "raw": 173638, "gzip": 28322, "brotli": 22543 },
+								"smallest": { "raw": 32141, "gzip": 9820, "brotli": 8779 },
+								"dynamic": { "raw": 332646, "gzip": 105360, "brotli": 92121 },
+								"valibot": { "raw": 38979, "gzip": 9770, "brotli": 8691 },
+								"zod": { "raw": 127939, "gzip": 34382, "brotli": 30599 },
+								"zodMini": { "raw": 64232, "gzip": 16968, "brotli": 15321 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 32141, "gzip": 9848, "brotli": 8799 },
+									"valibot": { "raw": 38983, "gzip": 9752, "brotli": 8677 }
+								},
+								"colocated": {
+									"smallest": { "raw": 32141, "gzip": 9837, "brotli": 8782 },
+									"valibot": { "raw": 38965, "gzip": 9761, "brotli": 8681 }
+								}
+							}
+						},
+						{
+							"schemas": 250,
+							"messages": 462,
+							"narrows": 113,
+							"sizes": {
+								"default": { "raw": 405539, "gzip": 60002, "brotli": 44989 },
+								"smallest": { "raw": 66968, "gzip": 18238, "brotli": 16191 },
+								"dynamic": { "raw": 392182, "gzip": 114525, "brotli": 99937 },
+								"valibot": { "raw": 86145, "gzip": 18299, "brotli": 16059 },
+								"zod": { "raw": 179895, "gzip": 42914, "brotli": 38043 },
+								"zodMini": { "raw": 114712, "gzip": 25879, "brotli": 22919 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 66968, "gzip": 18183, "brotli": 16147 },
+									"valibot": { "raw": 86153, "gzip": 18289, "brotli": 16061 }
+								},
+								"colocated": {
+									"smallest": { "raw": 66968, "gzip": 18181, "brotli": 16176 },
+									"valibot": { "raw": 86113, "gzip": 18272, "brotli": 16048 }
+								}
+							}
+						},
+						{
+							"schemas": 500,
+							"messages": 940,
+							"narrows": 247,
+							"sizes": {
+								"default": { "raw": 781338, "gzip": 109371, "brotli": 79965 },
+								"smallest": { "raw": 126966, "gzip": 31645, "brotli": 27889 },
+								"dynamic": { "raw": 493887, "gzip": 130280, "brotli": 112419 },
+								"valibot": { "raw": 166264, "gzip": 32822, "brotli": 28050 },
+								"zod": { "raw": 268392, "gzip": 57492, "brotli": 49949 },
+								"zodMini": { "raw": 200408, "gzip": 40695, "brotli": 35057 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 126966, "gzip": 31582, "brotli": 27838 },
+									"valibot": { "raw": 166284, "gzip": 32781, "brotli": 28018 }
+								},
+								"colocated": {
+									"smallest": { "raw": 126966, "gzip": 31576, "brotli": 27810 },
+									"valibot": { "raw": 166204, "gzip": 32762, "brotli": 28005 }
+								}
+							}
+						},
+						{
+							"schemas": 1000,
+							"messages": 1847,
+							"narrows": 493,
+							"sizes": {
+								"default": { "raw": 1520929, "gzip": 202197, "brotli": 144557 },
+								"smallest": { "raw": 244405, "gzip": 58202, "brotli": 49934 },
+								"dynamic": { "raw": 694839, "gzip": 161218, "brotli": 135660 },
+								"valibot": { "raw": 325788, "gzip": 61046, "brotli": 50450 },
+								"zod": { "raw": 446875, "gzip": 86171, "brotli": 72225 },
+								"zodMini": { "raw": 373658, "gzip": 69957, "brotli": 58016 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 244405, "gzip": 57870, "brotli": 49571 },
+									"valibot": { "raw": 325828, "gzip": 61008, "brotli": 50403 }
+								},
+								"colocated": {
+									"smallest": { "raw": 244405, "gzip": 57881, "brotli": 49636 },
+									"valibot": { "raw": 325668, "gzip": 60977, "brotli": 50428 }
+								}
+							}
+						},
+						{
+							"schemas": 2500,
+							"messages": 4533,
+							"narrows": 1256,
+							"sizes": {
+								"default": { "raw": 3705215, "gzip": 474111, "brotli": 329157 },
+								"smallest": { "raw": 597480, "gzip": 136583, "brotli": 112209 },
+								"dynamic": { "raw": 1303565, "gzip": 255645, "brotli": 201987 },
+								"valibot": { "raw": 808926, "gzip": 147178, "brotli": 114559 },
+								"zod": { "raw": 984501, "gzip": 173062, "brotli": 136515 },
+								"zodMini": { "raw": 894449, "gzip": 158770, "brotli": 123649 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 597480,
+										"gzip": 135892,
+										"brotli": 111645
+									},
+									"valibot": { "raw": 809030, "gzip": 146985, "brotli": 114463 }
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 597480,
+										"gzip": 135870,
+										"brotli": 111574
+									},
+									"valibot": { "raw": 808629, "gzip": 146868, "brotli": 114390 }
+								}
+							}
+						},
+						{
+							"schemas": 5000,
+							"messages": 9200,
+							"narrows": 2530,
+							"sizes": {
+								"default": { "raw": 7358231, "gzip": 926850, "brotli": 634116 },
+								"smallest": {
+									"raw": 1184411,
+									"gzip": 267092,
+									"brotli": 214034
+								},
+								"dynamic": { "raw": 2339461, "gzip": 414619, "brotli": 309377 },
+								"valibot": { "raw": 1631949, "gzip": 293175, "brotli": 219450 },
+								"zod": { "raw": 1908438, "gzip": 320986, "brotli": 241934 },
+								"zodMini": { "raw": 1789512, "gzip": 309598, "brotli": 231429 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 1184415,
+										"gzip": 265509,
+										"brotli": 212829
+									},
+									"valibot": {
+										"raw": 1632001,
+										"gzip": 292776,
+										"brotli": 219088
+									}
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 1184417,
+										"gzip": 265520,
+										"brotli": 212982
+									},
+									"valibot": {
+										"raw": 1631200,
+										"gzip": 292407,
+										"brotli": 219046
+									}
+								}
+							}
+						}
+					]
+				},
+				{
+					"seed": 3,
+					"rows": [
+						{
+							"schemas": 1,
+							"messages": 2,
+							"narrows": 1,
+							"sizes": {
+								"default": { "raw": 6198, "gzip": 2416, "brotli": 2208 },
+								"smallest": { "raw": 3175, "gzip": 1560, "brotli": 1395 },
+								"dynamic": { "raw": 294914, "gzip": 98250, "brotli": 85713 },
+								"valibot": { "raw": 4830, "gzip": 1838, "brotli": 1674 },
+								"zod": { "raw": 85796, "gzip": 25398, "brotli": 22658 },
+								"zodMini": { "raw": 17230, "gzip": 6019, "brotli": 5514 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 3175, "gzip": 1560, "brotli": 1395 },
+									"valibot": { "raw": 4830, "gzip": 1838, "brotli": 1674 }
+								},
+								"colocated": {
+									"smallest": { "raw": 3175, "gzip": 1560, "brotli": 1400 },
+									"valibot": { "raw": 4826, "gzip": 1837, "brotli": 1675 }
+								}
+							}
+						},
+						{
+							"schemas": 10,
+							"messages": 20,
+							"narrows": 8,
+							"sizes": {
+								"default": { "raw": 26538, "gzip": 6735, "brotli": 6024 },
+								"smallest": { "raw": 8770, "gzip": 3790, "brotli": 3420 },
+								"dynamic": { "raw": 298757, "gzip": 99299, "brotli": 86699 },
+								"valibot": { "raw": 12008, "gzip": 3936, "brotli": 3508 },
+								"zod": { "raw": 98299, "gzip": 28699, "brotli": 25478 },
+								"zodMini": { "raw": 35327, "gzip": 11045, "brotli": 10021 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 8770, "gzip": 3790, "brotli": 3420 },
+									"valibot": { "raw": 12008, "gzip": 3936, "brotli": 3508 }
+								},
+								"colocated": {
+									"smallest": { "raw": 8772, "gzip": 3791, "brotli": 3429 },
+									"valibot": { "raw": 12009, "gzip": 3930, "brotli": 3497 }
+								}
+							}
+						},
+						{
+							"schemas": 50,
+							"messages": 83,
+							"narrows": 38,
+							"sizes": {
+								"default": { "raw": 92304, "gzip": 16634, "brotli": 13761 },
+								"smallest": { "raw": 20138, "gzip": 6979, "brotli": 6263 },
+								"dynamic": { "raw": 314944, "gzip": 102496, "brotli": 89680 },
+								"valibot": { "raw": 24998, "gzip": 7020, "brotli": 6246 },
+								"zod": { "raw": 112142, "gzip": 31661, "brotli": 28123 },
+								"zodMini": { "raw": 49036, "gzip": 14180, "brotli": 12847 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 20138, "gzip": 6997, "brotli": 6267 },
+									"valibot": { "raw": 25000, "gzip": 7019, "brotli": 6249 }
+								},
+								"colocated": {
+									"smallest": { "raw": 20138, "gzip": 7000, "brotli": 6282 },
+									"valibot": { "raw": 24996, "gzip": 7008, "brotli": 6226 }
+								}
+							}
+						},
+						{
+							"schemas": 100,
+							"messages": 158,
+							"narrows": 56,
+							"sizes": {
+								"default": { "raw": 167221, "gzip": 27446, "brotli": 21841 },
+								"smallest": { "raw": 31394, "gzip": 9813, "brotli": 8802 },
+								"dynamic": { "raw": 333003, "gzip": 105388, "brotli": 92304 },
+								"valibot": { "raw": 39468, "gzip": 9808, "brotli": 8714 },
+								"zod": { "raw": 128026, "gzip": 34370, "brotli": 30609 },
+								"zodMini": { "raw": 64478, "gzip": 17019, "brotli": 15372 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 31394, "gzip": 9837, "brotli": 8818 },
+									"valibot": { "raw": 39472, "gzip": 9815, "brotli": 8749 }
+								},
+								"colocated": {
+									"smallest": { "raw": 31392, "gzip": 9833, "brotli": 8831 },
+									"valibot": { "raw": 39456, "gzip": 9796, "brotli": 8733 }
+								}
+							}
+						},
+						{
+							"schemas": 250,
+							"messages": 421,
+							"narrows": 137,
+							"sizes": {
+								"default": { "raw": 395698, "gzip": 59054, "brotli": 44257 },
+								"smallest": { "raw": 66331, "gzip": 18271, "brotli": 16288 },
+								"dynamic": { "raw": 392465, "gzip": 114740, "brotli": 100147 },
+								"valibot": { "raw": 86585, "gzip": 18427, "brotli": 16203 },
+								"zod": { "raw": 180470, "gzip": 43104, "brotli": 38115 },
+								"zodMini": { "raw": 115164, "gzip": 26061, "brotli": 23037 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 66331, "gzip": 18311, "brotli": 16337 },
+									"valibot": { "raw": 86597, "gzip": 18452, "brotli": 16202 }
+								},
+								"colocated": {
+									"smallest": { "raw": 66329, "gzip": 18294, "brotli": 16331 },
+									"valibot": { "raw": 86556, "gzip": 18441, "brotli": 16176 }
+								}
+							}
+						},
+						{
+							"schemas": 500,
+							"messages": 884,
+							"narrows": 272,
+							"sizes": {
+								"default": { "raw": 800729, "gzip": 111428, "brotli": 80523 },
+								"smallest": { "raw": 127962, "gzip": 32030, "brotli": 28270 },
+								"dynamic": { "raw": 495592, "gzip": 130806, "brotli": 112993 },
+								"valibot": { "raw": 168258, "gzip": 33141, "brotli": 28447 },
+								"zod": { "raw": 272405, "gzip": 58153, "brotli": 50358 },
+								"zodMini": { "raw": 203998, "gzip": 41294, "brotli": 35587 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 127962, "gzip": 31986, "brotli": 28241 },
+									"valibot": { "raw": 168278, "gzip": 33108, "brotli": 28440 }
+								},
+								"colocated": {
+									"smallest": { "raw": 127962, "gzip": 31959, "brotli": 28231 },
+									"valibot": { "raw": 168198, "gzip": 33125, "brotli": 28395 }
+								}
+							}
+						},
+						{
+							"schemas": 1000,
+							"messages": 1801,
+							"narrows": 563,
+							"sizes": {
+								"default": { "raw": 1581485, "gzip": 208670, "brotli": 148310 },
+								"smallest": { "raw": 250315, "gzip": 59395, "brotli": 50846 },
+								"dynamic": { "raw": 704501, "gzip": 162967, "brotli": 136798 },
+								"valibot": { "raw": 333784, "gzip": 62568, "brotli": 51531 },
+								"zod": { "raw": 457033, "gzip": 87842, "brotli": 73389 },
+								"zodMini": { "raw": 383151, "gzip": 71566, "brotli": 59149 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": { "raw": 250315, "gzip": 59142, "brotli": 50730 },
+									"valibot": { "raw": 333828, "gzip": 62546, "brotli": 51519 }
+								},
+								"colocated": {
+									"smallest": { "raw": 250315, "gzip": 59173, "brotli": 50791 },
+									"valibot": { "raw": 333668, "gzip": 62457, "brotli": 51453 }
+								}
+							}
+						},
+						{
+							"schemas": 2500,
+							"messages": 4608,
+							"narrows": 1348,
+							"sizes": {
+								"default": { "raw": 3842642, "gzip": 489700, "brotli": 341945 },
+								"smallest": { "raw": 611323, "gzip": 139114, "brotli": 114351 },
+								"dynamic": { "raw": 1327990, "gzip": 259183, "brotli": 204238 },
+								"valibot": { "raw": 828126, "gzip": 150251, "brotli": 116548 },
+								"zod": { "raw": 1008359, "gzip": 176383, "brotli": 138580 },
+								"zodMini": { "raw": 917730, "gzip": 161866, "brotli": 125823 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 611323,
+										"gzip": 138551,
+										"brotli": 113821
+									},
+									"valibot": { "raw": 828231, "gzip": 150134, "brotli": 116465 }
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 611323,
+										"gzip": 138536,
+										"brotli": 113790
+									},
+									"valibot": { "raw": 827830, "gzip": 149923, "brotli": 116378 }
+								}
+							}
+						},
+						{
+							"schemas": 5000,
+							"messages": 9355,
+							"narrows": 2707,
+							"sizes": {
+								"default": { "raw": 7527269, "gzip": 941867, "brotli": 645602 },
+								"smallest": {
+									"raw": 1203144,
+									"gzip": 271241,
+									"brotli": 216747
+								},
+								"dynamic": { "raw": 2381692, "gzip": 420096, "brotli": 312460 },
+								"valibot": { "raw": 1663083, "gzip": 297822, "brotli": 222137 },
+								"zod": { "raw": 1944348, "gzip": 325628, "brotli": 244779 },
+								"zodMini": { "raw": 1824866, "gzip": 313908, "brotli": 234200 }
+							},
+							"layouts": {
+								"split": {
+									"smallest": {
+										"raw": 1203150,
+										"gzip": 269992,
+										"brotli": 215969
+									},
+									"valibot": {
+										"raw": 1663125,
+										"gzip": 297446,
+										"brotli": 221619
+									}
+								},
+								"colocated": {
+									"smallest": {
+										"raw": 1203150,
+										"gzip": 269990,
+										"brotli": 215947
+									},
+									"valibot": {
+										"raw": 1662324,
+										"gzip": 297159,
+										"brotli": 221583
+									}
+								}
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

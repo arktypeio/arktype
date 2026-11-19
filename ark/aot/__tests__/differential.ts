@@ -22,7 +22,7 @@ import {
 	type ValidatorMembers
 } from "arktype/internal/standalone.ts"
 import "arktype/errors"
-import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
+import * as arktypeRuntime from "arktype/runtime"
 import "arktype/mutatesInput"
 import {
 	bakedJsonSchemaOptionsMessage,
@@ -469,22 +469,19 @@ interface WrittenIssue {
 	at: string
 	expected?: unknown
 	message: unknown
-	problem?: unknown
 	errors?: WrittenIssue[]
 }
 
 // each issue's text as a program reads it, in order, which a validator writes
-// exactly as arktype does. A union's branches are listed where it has any; a
-// validator's issue holds a problem only where text sets one, its message
-// writing the problem either way. Neither's actual is compared, since a
-// validator's issue has none: what a configured actual or a missing key
-// writes is in the problem. Errors "none" promises only its one issue's
-// message, which is arktype's, not what that issue expects
+// exactly as arktype does. A union's branches are listed where it has any.
+// Neither's actual is compared, since a validator's issue has none: what a
+// configured actual or a missing key writes is in the message. Errors "none"
+// promises only its one issue's message, which is arktype's, not what that
+// issue expects
 const writtenIssueOf = (issue: ArkIssue): WrittenIssue => ({
 	at: `${pathKeyOf(issue.path)}\0${issue.code}`,
 	...(detailsErrors && { expected: issue.expected }),
 	message: issue.message,
-	...(issue.problem !== undefined && { problem: issue.problem }),
 	...(issue.errors?.length && { errors: issue.errors.map(writtenIssueOf) })
 })
 
@@ -495,33 +492,6 @@ const writtenOf = (errors: ArkErrors, grouped = true) => {
 		// a first-issue build's added issue, which the one it keeps is
 		written: (grouped ? issues : errors._).map(writtenIssueOf),
 		summary: errors.summary
-	}
-}
-
-// arktype's problem where a validator's issue holds one
-const maskProblems = (arktype: unknown, precompiled: unknown): unknown => {
-	if (!hasDomain(arktype, "object") || !hasDomain(precompiled, "object"))
-		return arktype
-	const written = (arktype as { written?: WrittenIssue[] }).written
-	const compared = (precompiled as { written?: WrittenIssue[] }).written
-	if (!written || !compared || written.length !== compared.length)
-		return arktype
-	const masked = (l: WrittenIssue, r: WrittenIssue): WrittenIssue => {
-		const { problem, errors, ...rest } = l
-		return {
-			...rest,
-			...(r.problem !== undefined && { problem }),
-			...(errors && {
-				errors:
-					r.errors?.length === errors.length ?
-						errors.map((e, i) => masked(e, r.errors![i]))
-					:	errors
-			})
-		}
-	}
-	return {
-		...arktype,
-		written: written.map((issue, i) => masked(issue, compared[i]))
 	}
 }
 
@@ -868,17 +838,20 @@ const withAlike = (observation: any, alike: any, reported: any) => {
 		(written: WrittenIssue) => written.at === from
 	)
 	if (!issue) return withIssue
-	// the message at the path reported, as arktype writes its own there
+	// its line of the summary at the path reported, as arktype writes its own
+	// there: its message, which names no path, after that path, set apart by a
+	// colon where the line errors "all" wrote is
+	const isCustom = `\n${observation.summary}\n`.includes(
+		`\n${stringifyPath(alike.path as PropertyKey[])}: ${issue.message}\n`
+	)
 	const prop = stringifyPath(reported.path as PropertyKey[])
-	const message =
-		from === to ? issue.message
-		: prop ? `${prop} ${issue.problem}`
-		: issue.problem
+	const line =
+		prop ? `${prop}${isCustom ? ":" : ""} ${issue.message}` : issue.message
 	return {
 		...withIssue,
-		...("message" in observation && { message }),
-		written: [{ ...issue, at: to, message }],
-		summary: message
+		...("message" in observation && { message: line }),
+		written: [{ ...issue, at: to }],
+		summary: line
 	}
 }
 
@@ -941,10 +914,7 @@ const reportsOneOf = (input: unknown, all: Call, first: Call): boolean =>
 			issues?.length === 1 &&
 			added?.find(issue => isAlikeIssue(input, issue, issues[0]))
 		const expected = alike ? withAlike(observed, alike, issues[0]) : observed
-		return isEqual(
-			withoutUnionText(maskProblems(expected, reported)),
-			withoutUnionText(reported)
-		)
+		return isEqual(withoutUnionText(expected), withoutUnionText(reported))
 	})
 
 // what a precompiled call is compared with: under errors "first", arktype's
@@ -955,17 +925,7 @@ const expectedOf = (arktype: Observations, i: number): Call | undefined =>
 	:	(arktype.inPlaceCalls ?? arktype.calls)[i]
 
 const agrees = (input: unknown, expected: Call, call: Call): boolean =>
-	firstIssue ?
-		reportsOneOf(input, expected, call)
-	:	isEqual(
-			Object.fromEntries(
-				Object.entries(expected).map(([k, observed]) => [
-					k,
-					maskProblems(observed, call[k as keyof Call])
-				])
-			),
-			call
-		)
+	firstIssue ? reportsOneOf(input, expected, call) : isEqual(expected, call)
 
 const observeCalls = (node: BaseRoot, inputs: unknown[]) =>
 	inputs.map(input => {

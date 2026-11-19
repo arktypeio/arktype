@@ -8,5 +8,5 @@ export const Scoped = scope(
 ).export()
 export const Narrowed = type("string").narrow(isLong)
 export const Union = type("string | number").configure({
-	message: ctx => `${ctx.problem}!`
+	message: ctx => `${ctx.expected}!`
 })

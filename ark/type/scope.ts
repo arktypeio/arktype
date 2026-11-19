@@ -65,7 +65,7 @@ import {
 	type parseGenericParams,
 	type parseValidGenericParams
 } from "./generic.ts"
-import type { Ark, type } from "./keywords/keywords.ts"
+import type { Ark } from "./keywords/keywords.ts"
 import { InternalMatchParser, type MatchParser } from "./match.ts"
 import type {
 	BoundModule,
@@ -88,7 +88,8 @@ import {
 } from "./parser/ast/validate.ts"
 import {
 	parseInnerDefinition,
-	type inferDefinition
+	type inferDefinition,
+	type validateDefinition
 } from "./parser/definition.ts"
 import type { ParsedOptionalProperty } from "./parser/property.ts"
 import type { BranchOperator } from "./parser/reduce/shared.ts"
@@ -445,7 +446,7 @@ export declare namespace scope {
 							parseScopeKey<k, def>["name"] & string
 						>
 					>
-				:	type.validate<
+				:	validateDefinition<
 						def[k],
 						bootstrapAliases<def>,
 						baseGenericConstraints<params>
@@ -458,10 +459,12 @@ export declare namespace scope {
 	export type infer<def> = inferBootstrapped<bootstrapAliases<def>>
 }
 
+// an alias is a property of scope's parameter, not a parameter itself, so it
+// doesn't need type.validate, which costs 13 more instantiations
 type validateAlias<k, def, $> =
 	shallowCycleMessageOf<k, def, $> extends infer message extends string ?
 		ErrorMessage<message>
-	:	type.validate<def, $, {}>
+	:	validateDefinition<def, $, {}>
 
 type shallowCycleMessageOf<k, def, $> =
 	def extends string ?

@@ -13,6 +13,8 @@ It works like [T3 Env](https://env.t3.gg), built around ArkType definitions, and
 
 Scaffold with `npx arkenv init` and import from `@arkenv/core` (`arkenv` on npm is the CLI).
 
+`@arkenv/core` 1.0.0-rc.4 is written for ArkType 2. Beside ArkType 3 it loads a valid environment, and throws a `TypeError` in place of its report for an [invalid one](/docs/upgrading#adapters-written-for-arktype-2).
+
 ```ts
 // @noErrors
 import arkenv from "@arkenv/core"

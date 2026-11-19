@@ -4,6 +4,7 @@ export {
 	describeMissing,
 	groupByPath,
 	labelOf,
+	printedActualOf,
 	writeKeywordExpected,
 	type PathGroup
 } from "@ark/schema/i18n"

@@ -3,6 +3,7 @@ import { fromHere } from "@ark/fs"
 import { Precompiler, type PrecompileOptions } from "@ark/aot"
 import { linkBundle } from "@ark/aot/internal/link.ts"
 import { emitPrecompiled } from "@ark/aot/internal/emit.ts"
+import { writeIssueFeaturesInto } from "@ark/aot/internal/features.ts"
 import {
 	addLoaded,
 	programAsBuilt,
@@ -16,6 +17,7 @@ import {
 } from "@ark/aot/internal/scan.ts"
 import {
 	writeLaterLoaderReadMessage,
+	writeLaterTransformReadMessage,
 	writeUnbuiltReadMessage
 } from "@ark/aot/internal/messages.ts"
 import {
@@ -26,10 +28,13 @@ import { precompile as bunPlugin } from "@ark/aot/bun"
 import { register } from "@ark/aot/node"
 import turbopack from "@ark/aot/turbopack"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
+import { noIssueFeatures } from "arktype/internal/standalone.ts"
 import { rspack } from "@rspack/core"
 import {
 	build,
 	context,
+	transform,
+	transformSync,
 	type BuildFailure,
 	type BuildOptions,
 	type Plugin
@@ -41,6 +46,7 @@ import {
 	type Plugin as VitePlugin,
 	type Rolldown
 } from "vite"
+import { rollup, type Plugin as RollupPlugin } from "rollup"
 import webpack, { type Stats } from "webpack"
 import { spawnSync } from "node:child_process"
 import {
@@ -67,6 +73,19 @@ const types = `import { type } from "arktype"
 export const User = type({ name: "string" })
 `
 
+// 48 Types of 48 keys, each a range no other is, so no two share a unit:
+// compiled, they outweigh arktype
+const ranges = `import { type } from "arktype"
+
+${Array.from(
+	{ length: 48 },
+	(_, i) =>
+		`const T${i} = type({ ${Array.from({ length: 48 }, (_, j) => `k${j}: "number < ${i * 48 + j + 1}"`).join(", ")} })`
+).join("\n")}
+
+console.log(${Array.from({ length: 48 }, (_, i) => `T${i}({})`).join(", ")})
+`
+
 // a barrel re-exporting what arktype/runtime lacks, which only sites read, or,
 // renamed, nothing
 const arkBarrel = (extension: string) => ({
@@ -84,6 +103,14 @@ console.log(String(types.user({ name: 5 })), Id("x"))
 // is found once read only where the program calls a validator
 const callingFrom = (types: string) =>
 	`import { User } from "${types}"\n\nconsole.log(String(User({ name: 5 })))\n`
+
+// a module arktype's plugin wrote, importing under a second name what the
+// plugin imported for its validators: a change to code the plugin wrote
+const importingAgain = (code: string) =>
+	code.replace(
+		/(\w+) as (\$?\w+) } from "~arktype/,
+		'$1 as $2, $1 as Again } from "~arktype'
+	)
 
 const assertingFrom = (types: string) =>
 	`import { User } from "${types}"\n\ntry {\n\tUser.assert({ name: 5 })\n} catch (e) {\n\tconsole.log(e.message)\n}\n`
@@ -170,6 +197,20 @@ contextualize(function (this: Mocha.Suite) {
 
 		it(".allows", async () => {
 			attest(await droppedReading("User.allows({})")).equals(everyMember)
+		})
+
+		it("at a key it's stored at, past a type's computed key, which nothing reads as the program runs", async () => {
+			attest(
+				await droppedReading(
+					`const keys = { a: "a" } as const
+interface Named {
+	[keys.a]: string
+}
+const forms: { schema?: typeof User } = {}
+forms.schema = User
+console.log(forms.schema?.allows({} satisfies Partial<Named>))`
+				)
+			).equals(everyMember)
 		})
 
 		it("through a const choosing between validators", async () => {
@@ -655,8 +696,8 @@ export const Fields = { even: Even, name: type("string") }
 	})
 
 	describe("what issues may hold", () => {
-		const issuesOf = async (main: string) => {
-			const usage = await usageFrom({ "/main.ts": main })
+		const issuesOf = async (main: string, opts?: PrecompileOptions) => {
+			const usage = await usageFrom({ "/main.ts": main }, opts)
 			return typeof usage === "string" || Array.isArray(usage) ?
 					usage
 				:	usage.issues
@@ -668,38 +709,44 @@ export const Fields = { even: Even, name: type("string") }
 					`import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n`
 				)
 			).snap({
-				bracketsKeys: false,
 				reportsIndices: false,
+				bracketsKeys: false,
 				writesText: false,
+				callsSiteText: false,
 				listsUnions: false,
 				rewritesUnions: true,
 				traversesUnions: false,
-				readsKeySites: true,
 				appliesValues: false,
 				transformsBranches: false,
 				failsInBranches: false,
 				discriminatesBooleans: false,
 				readsSummary: true,
-				readsErrors: true
+				readsErrors: true,
+				holdsExpression: false,
+				namesTraversalError: true,
+				findsOnRead: false
 			})
 			attest(
 				await issuesOf(
 					`import { type } from "arktype"\n\nexport const Tagged = type({ tags: "string[]" })\n`
 				)
 			).snap({
-				bracketsKeys: false,
 				reportsIndices: true,
+				bracketsKeys: false,
 				writesText: false,
+				callsSiteText: false,
 				listsUnions: false,
 				rewritesUnions: true,
 				traversesUnions: false,
-				readsKeySites: false,
 				appliesValues: false,
 				transformsBranches: false,
 				failsInBranches: false,
 				discriminatesBooleans: false,
 				readsSummary: true,
-				readsErrors: true
+				readsErrors: true,
+				holdsExpression: false,
+				namesTraversalError: true,
+				findsOnRead: false
 			})
 		})
 
@@ -709,19 +756,22 @@ export const Fields = { even: Even, name: type("string") }
 					`import { type } from "arktype"\n\nconst Keep = () => true\n\nexport const Either = type({ a: "string" }).or({ b: "number" }).narrow(Keep).pipe(data => data)\n`
 				)
 			).snap({
-				bracketsKeys: true,
 				reportsIndices: true,
+				bracketsKeys: true,
 				writesText: true,
+				callsSiteText: false,
 				listsUnions: true,
 				rewritesUnions: true,
 				traversesUnions: true,
-				readsKeySites: true,
 				appliesValues: false,
 				transformsBranches: false,
 				failsInBranches: false,
 				discriminatesBooleans: false,
 				readsSummary: true,
-				readsErrors: true
+				readsErrors: true,
+				holdsExpression: false,
+				namesTraversalError: true,
+				findsOnRead: false
 			})
 		})
 
@@ -792,19 +842,213 @@ export const Fields = { even: Even, name: type("string") }
 					`import { type } from "arktype"\n\nexport const Strict = type({ name: "string" }).onUndeclaredKey("reject")\n`
 				)
 			).snap({
-				bracketsKeys: true,
 				reportsIndices: false,
+				bracketsKeys: true,
 				writesText: false,
+				callsSiteText: false,
 				listsUnions: false,
 				rewritesUnions: true,
 				traversesUnions: false,
-				readsKeySites: true,
 				appliesValues: false,
 				transformsBranches: false,
 				failsInBranches: false,
 				discriminatesBooleans: false,
 				readsSummary: true,
-				readsErrors: true
+				readsErrors: true,
+				holdsExpression: false,
+				namesTraversalError: true,
+				findsOnRead: false
+			})
+		})
+
+		it("a site's text called only where a function writes it, which a message that's a string needs no call for", async () => {
+			const texts = async (definition: string) => {
+				const issues = await issuesOf(
+					`import { type } from "arktype"\n\nexport const T = ${definition}\n`
+				)
+				return (
+					typeof issues === "object" &&
+					!Array.isArray(issues) && [issues.writesText, issues.callsSiteText]
+				)
+			}
+			attest(await texts(`type({ a: "string" })`)).equals([false, false])
+			attest(
+				await texts(
+					`type({ a: type("string").configure({ message: "Enter text" }) })`
+				)
+			).equals([true, false])
+			attest(
+				await texts(
+					`type({ a: type("string").configure({ message: ctx => "Enter " + ctx.expected }) })`
+				)
+			).equals([true, true])
+		})
+
+		it("a validator's expression only where one holds it, as one that's printed does", async () => {
+			const holdsExpression = async (read: string) => {
+				const issues = await issuesOf(
+					`import { type } from "arktype"\n\nconst User = type({ name: "string" })\n\nconsole.log(${read})\n`
+				)
+				return (
+					typeof issues === "object" &&
+					!Array.isArray(issues) &&
+					issues.holdsExpression
+				)
+			}
+			attest(await holdsExpression("String(User)")).equals(true)
+			// written where it's read, so the validator holds none
+			attest(await holdsExpression("User.expression")).equals(false)
+			attest(await holdsExpression("User({})")).equals(false)
+		})
+
+		it("TraversalError's class only where a program may name it, to test what an assert threw", async () => {
+			const namesTraversalError = async (
+				imports: string,
+				read: string,
+				opts?: PrecompileOptions
+			) => {
+				const issues = await issuesOf(
+					`${imports}\n\nconst User = type({ name: "string" })\n\ntry {\n\tUser.assert({})\n} catch (e) {\n\tconsole.log(${read})\n}\n`,
+					opts
+				)
+				return (
+					typeof issues === "object" &&
+					!Array.isArray(issues) &&
+					issues.namesTraversalError
+				)
+			}
+			const named = `import { type } from "arktype"`
+			attest(await namesTraversalError(named, "(e as Error).message")).equals(
+				false
+			)
+			attest(
+				await namesTraversalError(
+					`import { type, TraversalError } from "arktype"`,
+					"e instanceof TraversalError"
+				)
+			).equals(true)
+			// exported again, for code the build doesn't follow to name
+			attest(
+				await namesTraversalError(
+					`import { type } from "arktype"\nexport { TraversalError as Thrown } from "arktype"`,
+					"(e as Error).message"
+				)
+			).equals(true)
+			// an assert set true is one code the build can't see may call, which
+			// has no name for the class unless the program exports or names it
+			const kept: PrecompileOptions = { members: { assert: true } }
+			attest(
+				await namesTraversalError(named, "(e as Error).message", kept)
+			).equals(false)
+			attest(
+				await namesTraversalError(
+					`import { type } from "arktype"\nexport { TraversalError as Thrown } from "arktype"`,
+					"(e as Error).message",
+					kept
+				)
+			).equals(true)
+			attest(
+				await namesTraversalError(
+					`import { type, TraversalError } from "arktype"`,
+					"e instanceof TraversalError",
+					kept
+				)
+			).equals(true)
+		})
+
+		describe("written into the runtime modules that read them", () => {
+			const issues = { ...noIssueFeatures, writesText: true }
+
+			const written = (code: string, id = "/node_modules/arktype/out/a.js") =>
+				writeIssueFeaturesInto(id, code, issues)
+
+			it("writes each read as what it is, and leaves the import out", () => {
+				attest(
+					written(`import { siteOf } from "./sites.js";
+import { listsUnions, writesText as writesText2 } from "./shared/issueFeatures.js";
+import { failsAt, transformsBranches } from "@ark/schema/runtime";
+const line = (issue) => (listsUnions ? issue._l : void 0) ?? issue.message;
+const text = (issue) => writesText2 && issue._c ? ": " : " ";
+const branches = (t) => transformsBranches && t ? failsAt(t) : siteOf(t);
+`)
+				).snap(`import { siteOf } from "./sites.js";
+
+import { failsAt } from "@ark/schema/runtime";
+const line = (issue) => ((false) ? issue._l : void 0) ?? issue.message;
+const text = (issue) => (true) && issue._c ? ": " : " ";
+const branches = (t) => (false) && t ? failsAt(t) : siteOf(t);
+`)
+			})
+
+			it("keeps the import of one the module exports again, with its reads written", () => {
+				attest(
+					written(`import { appliesValues, failsAt } from "@ark/schema/runtime";
+const fails = (checker) => appliesValues && checker.e ? checker.e : failsAt;
+export { appliesValues, fails };
+`)
+				).snap(`import { appliesValues, failsAt } from "@ark/schema/runtime";
+const fails = (checker) => (false) && checker.e ? checker.e : failsAt;
+export { appliesValues, fails };
+`)
+			})
+
+			it("writes one held in an object by its name with the name", () => {
+				attest(
+					written(`import { writesText } from "./issueFeatures.ts";
+export const features = { writesText, text: writesText };
+`)
+				).snap(`
+export const features = { writesText: (true), text: (true) };
+`)
+			})
+
+			it("leaves a name another module exports, or a scope declares again", () => {
+				attest(
+					written(`import { writesText } from "./standalone/sites.js";
+import { readsErrors } from "./shared/issueFeatures.js";
+const inner = (readsErrors) => readsErrors && writesText;
+export const outer = readsErrors ? inner : writesText;
+`)
+				).snap(`import { writesText } from "./standalone/sites.js";
+
+const inner = (readsErrors) => readsErrors && writesText;
+export const outer = (false) ? inner : writesText;
+`)
+			})
+
+			it("leaves esbuild nothing to warn of in arktype's own modules, whatever a build found", async () => {
+				// esbuild warns that `&&` after a bare `false` always returns it, in
+				// a module that isn't a dependency's, as arktype's is in a workspace
+				const allOn: typeof noIssueFeatures = Object.fromEntries(
+					Object.keys(noIssueFeatures).map(k => [k, true])
+				) as never
+				for (const features of [noIssueFeatures, allOn]) {
+					for (const file of [
+						fromHere("..", "..", "schema", "shared", "issues.ts"),
+						fromHere("..", "..", "schema", "shared", "issuesLean.ts"),
+						fromHere("..", "..", "schema", "shared", "listed.ts"),
+						fromHere("..", "..", "type", "runtime.ts"),
+						fromHere("..", "..", "type", "checkers.ts")
+					]) {
+						const code = writeIssueFeaturesInto(
+							file,
+							readFileSync(file, "utf8"),
+							features
+						)
+						attest(code === undefined).equals(false)
+						const { warnings } = await transform(code!, { loader: "ts" })
+						attest([file, ...warnings.map(({ text }) => text)]).equals([file])
+					}
+				}
+			})
+
+			it("answers nothing for a module that imports none", () => {
+				attest(
+					written(
+						`const writesText = (context) => !!context?.c;\nexport const text = writesText({});\n`
+					)
+				).equals(undefined)
+				attest(written(`export const a = 1;\n`)).equals(undefined)
 			})
 		})
 	})
@@ -1126,6 +1370,79 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 		})
 	})
 
+	describe("validators larger than arktype", () => {
+		// about how many times arktype's size a scan says they are, if more than once
+		const timesFrom = async (opts: PrecompileOptions) => {
+			const usage = await usageFrom(
+				{ "/main.ts": ranges },
+				{ preset: undefined, ...opts }
+			)
+			return typeof usage === "string" || Array.isArray(usage) ?
+					usage
+				:	usage.timesArktype?.toFixed(1)
+		}
+
+		it("sizes them where they're compiled for speed with optimize unset", async () => {
+			attest(await timesFrom({})).snap("1.4")
+		})
+
+		it("doesn't under the smallest preset, which writes them as checkers", async () => {
+			attest(await timesFrom({ preset: "smallest" })).equals(undefined)
+		})
+
+		it("doesn't where optimize is set to speed", async () => {
+			attest(await timesFrom({ optimize: "speed" })).equals(undefined)
+		})
+
+		const conditions = ["ark-ts", "production"]
+		const root = writeFixture({ "main.ts": ranges }, fromHere("temp", "larger"))
+		// a production bundle's warnings and code
+		const built = async (
+			opts: PrecompileUnpluginOptions,
+			options: BuildOptions = {}
+		) => {
+			const { outputFiles, warnings } = await build({
+				entryPoints: [join(root, "main.ts")],
+				absWorkingDir: root,
+				bundle: true,
+				write: false,
+				format: "esm",
+				minify: true,
+				conditions,
+				logLevel: "silent",
+				plugins: [precompile.esbuild({ conditions, ...opts })],
+				...options
+			})
+			return [warnings.map(({ text }) => text), outputFiles![0].text] as const
+		}
+
+		it("writes them for size where a browser loads the bundle, as optimize: size would", async () => {
+			const [warnings, js] = await built({})
+			attest(warnings).snap([
+				'precompile: compiled to check fastest, this bundle\'s validators would be about 1.3 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
+			])
+			const [setWarnings, setJs] = await built({
+				optimize: "size",
+				optimizeErrors: "speed"
+			})
+			attest(setWarnings).equals([])
+			attest(js === setJs).equals(true)
+		})
+
+		it("leaves a server's compiled, saying nothing", async () => {
+			const node = { platform: "node" } as const
+			const [warnings, js] = await built({}, node)
+			attest(warnings).equals([])
+			// each key compiled code fails by name, which a checker is declared at
+			const failed = (code: string) => code.split('"k47"').length - 1
+			// as optimize: "speed" compiles them, whose errors also wait to be read
+			const [, compiled] = await built({ optimize: "speed" }, node)
+			attest(failed(js)).equals(failed(compiled))
+			const [, sized] = await built({ optimize: "size" }, node)
+			attest(failed(sized)).equals(0)
+		})
+	})
+
 	describe("ids", () => {
 		it("names each module as the precompiler does", async () => {
 			const files: Record<string, string> = {
@@ -1236,14 +1553,26 @@ console.log(READ, String(User({ name: 5 })))
 				}
 			}
 
-			it("builds whole where one names a binding, so the read throws", async () => {
+			it("builds whole where one names a binding, whose read is of a member no build baked", async () => {
 				const options = { ...reading, define: { READ: "local.expression" } }
 				const warnings = await warningsOf({ preset: undefined }, options)
 				attest(warnings.map(({ text }) => text)).snap([
 					"prune: off, because define names local in local.expression, which may read a validator where no module's text shows it, so the build keeps every member of its validators. Set prune: false to build them whole without this warning."
 				])
-				const out = runBundle(await bundle({ preset: undefined }, options))
-				attest(out.stderr.includes("expression isn't precompiled")).equals(true)
+				attest(run(await bundle({ preset: undefined }, options)))
+					.snap(`undefined name must be a string
+`)
+				// as a development build resolves the runtime, where the read throws
+				const development = [...conditions, "development"]
+				const out = runBundle(
+					await bundle(
+						{ preset: undefined, conditions: development },
+						{ ...options, conditions: development }
+					)
+				)
+				attest(/^Error: .*$/m.exec(out.stderr)?.[0]).snap(
+					'Error: expression isn\'t precompiled: set members["expression"] true in the precompile options'
+				)
 			})
 
 			it("prunes where each names a literal or a global", async () => {
@@ -1291,6 +1620,40 @@ console.log(READ, String(User({ name: 5 })))
 			}
 		})
 
+		it("reads undefined for a member it didn't bake, where code outside it reads one", async () => {
+			// code outside the bundle reads what an entry exports
+			const reads = [
+				"lib.User.expression",
+				"lib.User.toJsonSchema",
+				'lib.User["~standard"].jsonSchema',
+				"String(lib.User)",
+				"JSON.stringify({ User: lib.User })"
+			]
+			const exporting = {
+				format: "iife",
+				globalName: "lib",
+				stdin: {
+					contents: `export { User } from "./types.ts"`,
+					resolveDir: root
+				},
+				footer: {
+					js: `for (const read of [${reads.map(read => `() => ${read}`).join(", ")}]) {
+	try {
+		console.log(read())
+	} catch (e) {
+		console.log(e.message)
+	}
+}`
+				}
+			} as const
+			for (const preset of ["smallest", undefined] as const) {
+				// a function with no toJSON is left out of what holds it
+				attest(run(await bundle({ preset }, exporting))).equals(
+					"undefined\nundefined\nundefined\nType\n{}\n"
+				)
+			}
+		})
+
 		it("drops what reads what no validator's issues hold", async () => {
 			const files = writeFixture(
 				{
@@ -1300,7 +1663,7 @@ console.log(READ, String(User({ name: 5 })))
 					"flagged.ts": `import { type } from "arktype"
 
 const Flagged = type({ name: "string" }).narrow((_, ctx) =>
-	ctx.reject({ path: ["flags", 0], problem: "is unset" })
+	ctx.reject({ path: ["flags", 0], message: "Set a flag." })
 )
 
 console.log(Flagged({ name: "Ada" }).toString())
@@ -1337,6 +1700,8 @@ console.log(User({ name: 5 }).toString())
 			attest(run(user)).snap("name must be a string\n")
 			attest(user.includes("`[${")).equals(false)
 			attest(user.includes("JSON.stringify(")).equals(false)
+			// nor the pattern that tells a key to bracket
+			attest(user.includes("[$_a-z]")).equals(false)
 			attest(user.includes(".text?.(")).equals(false)
 			const tagged = await bundleOf("tagged.ts")
 			attest(run(tagged)).snap("tags[1] must be a string\n")
@@ -1347,11 +1712,13 @@ console.log(User({ name: 5 }).toString())
 			const keyed = await bundleOf("keyed.ts")
 			attest(run(keyed)).snap('["first-name"] must be a string\n')
 			attest(keyed.includes("JSON.stringify(")).equals(true)
-			// a callback may raise an issue at any path, with any text
+			// a callback may raise an issue at any path, with any text, which a
+			// colon sets apart from its path
 			const flagged = await bundleOf("flagged.ts")
-			attest(run(flagged)).snap("flags[0] is unset\n")
+			attest(run(flagged)).snap("flags[0]: Set a flag.\n")
 			attest(flagged.includes("`[${")).equals(true)
-			attest(flagged.includes(".text?.(")).equals(true)
+			// which its traversal raises, where no site's text is called
+			attest(flagged.includes(".text?.(")).equals(false)
 			const asserted = await bundleOf("asserted.ts")
 			attest(run(asserted)).snap(`name must be a string
 age must be a number
@@ -1431,11 +1798,163 @@ for (const data of [{ name: 5 }, flipping]) {
 				}
 			)
 			attest(run(asserting)).snap("name must be a string\nis invalid\n")
-			// errors finding their issues once read hold the data until then
+			// errors finding their issues once read hold the data until then,
+			// which only a called validator's do
 			attest(asserting.includes("._d=")).equals(false)
-			attest((await bundle({ preset: undefined })).includes("._d=")).equals(
-				true
+			const calling = await bundle({ preset: undefined })
+			attest(calling.includes("._d=")).equals(true)
+			// as the class its build wrote to, with no class beside it that waits
+			attest(calling.includes("setPrototypeOf")).equals(false)
+			// errors written for size find theirs as the call returns
+			attest(
+				(await bundle({ preset: undefined, optimizeErrors: "size" })).includes(
+					"._d="
+				)
+			).equals(false)
+		})
+
+		it("finds a failing call's issues once they're read, as a build that leaves the runtime as written does", async () => {
+			const files = writeFixture(
+				{
+					"main.ts": `import { firstIssue, type } from "arktype"
+
+const User = type({ name: "string", age: "number" })
+// reports through a traversal, whose errors are built with nothing to find
+const Even = type("number").narrow((n, ctx) => n % 2 === 0 || ctx.mustBe("even"))
+
+const read = (out: unknown) => (out instanceof type.errors ? out.summary : out)
+const data: Record<string, unknown> = { name: 5, age: "x" }
+const out = User(data)
+// found in the data as it is when they're first read
+data.name = "Ada"
+console.log(read(out))
+// and kept
+data.age = 1
+console.log(read(out), out instanceof type.errors && out.count)
+const unread = User({ name: 5, age: "x" })
+console.log(unread instanceof type.errors && firstIssue(unread).message)
+console.log(read(unread))
+console.log(read(Even(3)), read(Even(2)))
+try {
+	User.assert({ name: 5, age: 1 })
+} catch (e) {
+	console.log((e as Error).message)
+}
+console.log(User({}) instanceof type.errors, JSON.stringify(User({ name: "Ada", age: 1 })))
+`
+				},
+				fromHere("temp", "prunedUnread")
 			)
+			const entry = { entryPoints: [join(files, "main.ts")] }
+			const written = await bundle({ preset: undefined }, entry)
+			attest(run(written)).snap(`age must be a number
+age must be a number 1
+must be a string
+name must be a string
+age must be a number
+must be even 2
+name must be a string
+true {"name":"Ada","age":1}
+`)
+			// errors of a runtime no build wrote wait as a class beside theirs
+			attest(
+				run(await bundle({ preset: undefined, prune: false }, entry))
+			).equals(run(written))
+		})
+
+		it("joins a path's keys where none is an index or needs brackets", async () => {
+			const summary = (definition: string, data: string) =>
+				`import { type } from "arktype"
+
+const T = type(${definition})
+const out = T(${data})
+console.log(out instanceof type.errors ? out.summary : out)
+`
+			const files = writeFixture(
+				{
+					"joined.ts": summary(
+						`{ a: { b: { c: "string" } } }`,
+						`{ a: { b: { c: 1 } } }`
+					),
+					"bracketed.ts": summary(
+						`{ a: { "b-c": "string[]" } }`,
+						`{ a: { "b-c": [1] } }`
+					)
+				},
+				fromHere("temp", "prunedPaths")
+			)
+			const summarizing = (entry: string) =>
+				bundle({ preset: undefined }, { entryPoints: [join(files, entry)] })
+			const joined = await summarizing("joined.ts")
+			attest(run(joined)).snap(`a.b.c must be a string
+`)
+			attest(joined.includes('.join(".")')).equals(true)
+			const bracketed = await summarizing("bracketed.ts")
+			attest(run(bracketed)).snap(`a["b-c"][0] must be a string
+`)
+			attest(bracketed.includes('.join(".")')).equals(false)
+		})
+
+		it("throws an Error only a program naming TraversalError holds the class of", async () => {
+			const thrownBy = (imports: string, test: string) =>
+				bundle(
+					{ preset: undefined },
+					{
+						stdin: {
+							contents: `import { User } from "./types.ts"
+${imports}
+try {
+	User.assert({ name: 5 })
+} catch (e) {
+	const thrown = e as Error & { arkErrors: { count: number } }
+	console.log(
+		String(thrown),
+		thrown.arkErrors.count,
+		Object.keys(thrown),
+		thrown instanceof Error,
+		${test}
+	)
+}
+`,
+							resolveDir: root,
+							loader: "ts"
+						}
+					}
+				)
+			const unnamed = await thrownBy("", "thrown.name")
+			const named = await thrownBy(
+				`import { TraversalError } from "arktype"`,
+				"thrown instanceof TraversalError"
+			)
+			attest(run(unnamed))
+				.snap(`TraversalError: name must be a string 1 [ 'name' ] true TraversalError
+`)
+			attest(run(named))
+				.snap(`TraversalError: name must be a string 1 [ 'name' ] true true
+`)
+			attest(unnamed.includes("extends Error")).equals(false)
+			attest(named.includes("extends Error")).equals(true)
+		})
+
+		it("writes a Standard Schema failure's message, its errors' summary, where a program reads ~standard alone", async () => {
+			const failing = (opts: PrecompileUnpluginOptions) =>
+				bundle(opts, {
+					stdin: {
+						contents: `import { User } from "./types.ts"
+
+const failure = User["~standard"].validate({ name: 5 }) as { message?: string }
+console.log(Object.keys(failure), failure.message)
+`,
+						resolveDir: root,
+						loader: "ts"
+					}
+				})
+			const expected = `[ 'issues', 'message' ] name must be a string
+`
+			// errors written for speed, then for size, then as arktype writes them
+			attest(run(await failing({ preset: undefined }))).equals(expected)
+			attest(run(await failing({}))).equals(expected)
+			attest(run(await failing({ runtime: "arktype" }))).equals(expected)
 		})
 
 		it("returns what a narrow finds valid once asked again, as arktype does", async () => {
@@ -1544,7 +2063,7 @@ try {
 			const allowing = await bundle({}, { stdin })
 			attest(run(allowing)).snap("false true\n")
 			// neither what writes an issue nor a validator around its checker
-			attest([allowing.includes("_at"), allowing.includes("allows")]).equals([
+			attest([allowing.includes("_e("), allowing.includes("allows")]).equals([
 				false,
 				false
 			])
@@ -1891,9 +2410,13 @@ export { bAllows }
 
 export const B = /* @__PURE__ */ $ark_create($ark_bAllows)
 `
-			const linkedWith = (code: string, exposesAllows: boolean) =>
+			const linkedWith = (
+				code: string,
+				exposesAllows: boolean,
+				id = "/main.ts"
+			) =>
 				linkBundle(
-					{ "/main.ts": { source: "export const A = type({})", code } },
+					{ [id]: { source: "export const A = type({})", code } },
 					{ ...units, "~arktype/b": b },
 					{ exposesAllows }
 				)!
@@ -1945,6 +2468,117 @@ export const B = /* @__PURE__ */ $ark_create(/* @__PURE__ */ $ark_runtime.props(
 				attest(linked.unexposed).equals(0)
 				attest(linked.modules["~arktype/a"]).equals(units["~arktype/a"])
 			})
+
+			it("stays the one a unit reads where a bundle is linked again, as its site names it", () => {
+				// two sites create from b, so b stays a unit, reading the validator a is
+				const twice = `${code}export const C = /* @__PURE__ */ $ark_create($ark_bAllows)\n`
+				const linked = linkedWith(twice, true)
+				const again = linkBundle(
+					{
+						"/main.ts": {
+							source: "export const A = type({})",
+							code: linked.sites["/main.ts"].code
+						}
+					},
+					linked.modules,
+					{ exposesAllows: true }
+				)
+				// the site's `export { $ark_aAllows as A }` reads it too, so no copy
+				// of what creates it is written into b
+				const modules = again?.modules ?? linked.modules
+				const [, b] = Object.entries(modules).find(([specifier]) =>
+					specifier.startsWith("~arktype/b")
+				)!
+				attest(b.match(/const bAllows = .*/)?.[0]).snap(
+					"const bAllows = /* @__PURE__ */ runtime.props({ a: /* @__PURE__ */ runtime.allowsOf(aAllows) })"
+				)
+			})
+
+			// as a handler reads the Type declared beside it
+			const readHere = (reads: string, ahead = "") =>
+				`${main.replace("export const A", `${ahead}const A`)}import { bAllows as $ark_bAllows } from "~arktype/b"
+
+export const B = /* @__PURE__ */ $ark_create($ark_bAllows)
+${reads}`
+
+			it("is declared as the validator its site's own code reads, each read naming the unit", () => {
+				const linked = linkedWith(
+					readHere(
+						`export const handlers = { A, run: data => A(data), all: [A.assert] }
+export { A as Renamed, A }
+`,
+						"const later = () => A\n"
+					),
+					true
+				)
+				attest(
+					Object.entries(linked.modules).find(([specifier]) =>
+						specifier.startsWith("~arktype/a-")
+					)?.[1]
+				).snap(`import * as runtime from "arktype/runtime"
+import { create } from "~arktype/create"
+
+const aAllows = /* @__PURE__ */ create(/* @__PURE__ */ runtime.props({ name: runtime.string }))
+
+export { aAllows }
+`)
+				attest(
+					normalized(linked.sites["/main.ts"].code)
+						.split("\n")
+						.filter(line => line && !line.startsWith("import "))
+				).snap([
+					"const later = () => $ark_aAllows",
+					"export const B = /* @__PURE__ */ $ark_create(/* @__PURE__ */ $ark_runtime.props({ a: /* @__PURE__ */ $ark_runtime.allowsOf($ark_aAllows) }))",
+					"export const handlers = { A: $ark_aAllows, run: data => $ark_aAllows(data), all: [$ark_aAllows.assert] }",
+					"export { $ark_aAllows as Renamed, $ark_aAllows as A }"
+				])
+			})
+
+			it("stays a const its module reads as it loads ahead of declaring it, writes, or names in JSX", () => {
+				const created = "const A = /* @__PURE__ */ $ark_create($ark_aAllows)"
+				const kept = (code: string, id = "/main.ts") =>
+					linkedWith(code, true, id).sites[id].code.includes(created)
+				// which throws where it's a const, and wouldn't of an import
+				attest(kept(readHere("", "console.log(A)\n"))).equals(true)
+				attest(kept(readHere("", "(() => A)()\n"))).equals(true)
+				attest(kept(readHere("", "class Early { static a = A }\n"))).equals(
+					true
+				)
+				attest(kept(readHere("A = B\n"))).equals(true)
+				attest(
+					kept(readHere("export const view = <A />\n"), "/main.tsx")
+				).equals(true)
+				// as does one created each time a function runs
+				attest(
+					linkedWith(
+						`${main.replace("export const A = /* @__PURE__ */ $ark_create($ark_aAllows)", "export const make = () => {\n\tconst A = /* @__PURE__ */ $ark_create($ark_aAllows)\n\treturn A\n}")}import { bAllows as $ark_bAllows } from "~arktype/b"
+
+export const B = /* @__PURE__ */ $ark_create($ark_bAllows)
+`,
+						true
+					).sites["/main.ts"].code.includes(created)
+				).equals(true)
+			})
+
+			it("stays one object where a bundle is linked again and its site reads it once", () => {
+				const once = `${main.replace("export const A", "const A")}export const registry = [A]\n`
+				const linked = linkBundle(
+					{ "/main.ts": { source: "const A = type({})", code: once } },
+					units,
+					{ isOneChunk: true }
+				)!
+				const site = linked.sites["/main.ts"].code
+				attest(site.match(/export const registry = .*/)?.[0]).snap(
+					"export const registry = [$ark_aAllows]"
+				)
+				const again = linkBundle(
+					{ "/main.ts": { source: "const A = type({})", code: site } },
+					linked.modules,
+					{ isOneChunk: true }
+				)
+				// written where it's read, it would be created wherever that runs
+				attest(again?.sites["/main.ts"].code ?? site).equals(site)
+			})
 		})
 
 		it("declares a one-chunk bundle's units in one module, as its sites read them", () => {
@@ -1983,6 +2617,171 @@ import { create as $ark_create } from "~arktype/#0"
 
 export { $ark_aAllows as A }
 `)
+		})
+
+		describe("units many modules read, in a bundle of many chunks", () => {
+			const reading = (name: string) =>
+				`import { ${name}Allows as $ark_${name}Allows } from "~arktype/${name}"\n\nexport const ${name.toUpperCase()} = /* @__PURE__ */ $ark_create($ark_${name}Allows)\n`
+
+			// each of count modules creating a validator from `a`, and each of
+			// the first seven from the others
+			const linked = (count: number, others: Record<string, string>) =>
+				linkBundle(
+					Object.fromEntries(
+						Array.from({ length: count }, (_, i) => [
+							`/m${i}.ts`,
+							{
+								source: "export const A = type({})",
+								code: `${main}${
+									i < 7 ?
+										Object.keys(others)
+											.map(specifier => reading(specifier.slice(9)))
+											.join("")
+									:	""
+								}`
+							}
+						])
+					),
+					{ ...units, ...others },
+					{ sharesUnits: true }
+				)!
+
+			const printed = (modules: Record<string, string>) =>
+				normalized(
+					Object.entries(modules).map(
+						([specifier, code]) => `// ${specifier}\n${code}`
+					)
+				)
+
+			const b = units["~arktype/a"].replace(/aAllows/g, "bAllows")
+
+			it("are declared in one module, which each reads them from", () => {
+				const { modules, sites } = linked(8, { "~arktype/b": b })
+				// one seven modules read, the only unit they alone reach, is left
+				attest(printed(modules)).snap([
+					'// ~arktype/#0\nimport * as runtime from "arktype/runtime"\nconst aAllows = /* @__PURE__ */ runtime.props({ name: runtime.string })\nconst create = allows => data => allows(data)\nexport { aAllows, create }',
+					'// ~arktype/b\nimport * as runtime from "arktype/runtime"\n\nconst bAllows = /* @__PURE__ */ runtime.props({ name: runtime.string })\n\nexport { bAllows }\n'
+				])
+				attest(normalized(sites["/m0.ts"].code))
+					.snap(`import { aAllows as $ark_aAllows } from "~arktype/#0"
+import { create as $ark_create } from "~arktype/#0"
+
+export const A = /* @__PURE__ */ $ark_create($ark_aAllows)
+import { bAllows as $ark_bAllows } from "~arktype/b"
+
+export const B = /* @__PURE__ */ $ark_create($ark_bAllows)
+`)
+			})
+
+			it("are declared with each unit the same sites reach, reading what more reach from its module", () => {
+				const { modules } = linked(8, {
+					"~arktype/b": b,
+					"~arktype/c": `import * as runtime from "arktype/runtime"
+import { aAllows } from "~arktype/a"
+
+const cAllows = /* @__PURE__ */ runtime.props({ a: aAllows })
+
+export { cAllows }
+`,
+					// one declaring a function, as a cell does its setter, stays apart
+					"~arktype/d": `let d
+
+function setD() {
+	d = arguments[0]
+}
+
+const dAllows = data => d(data)
+
+export { dAllows, setD }
+`
+				})
+				attest(printed(modules)).snap([
+					'// ~arktype/#0\nimport * as runtime from "arktype/runtime"\nconst aAllows = /* @__PURE__ */ runtime.props({ name: runtime.string })\nconst create = allows => data => allows(data)\nexport { aAllows, create }',
+					'// ~arktype/#1\nimport * as runtime from "arktype/runtime"\nimport { aAllows as aAllows } from "~arktype/#0"\nconst bAllows = /* @__PURE__ */ runtime.props({ name: runtime.string })\nconst cAllows = /* @__PURE__ */ runtime.props({ a: aAllows })\nexport { bAllows, cAllows }',
+					"// ~arktype/d\nlet d\n\nfunction setD() {\n\td = arguments[0]\n}\n\nconst dAllows = data => d(data)\n\nexport { dAllows, setD }\n"
+				])
+			})
+
+			it("are written with what the sites reach alone, through whichever unit reads it", () => {
+				const twice = (name: string) =>
+					`import { ${name}Allows as $ark_${name}Allows } from "~arktype/${name}"\nexport const ${name.toUpperCase()} = /* @__PURE__ */ $ark_create($ark_${name}Allows)\nexport const ${name.toUpperCase()}2 = /* @__PURE__ */ $ark_create($ark_${name}Allows)\n`
+				const { modules } = linkBundle(
+					{
+						"/main.ts": {
+							source: "export const B = type({})",
+							code: `import { create as $ark_create } from "~arktype/create"\n${twice("b")}${twice("d")}`
+						}
+					},
+					{
+						...units,
+						// its node and the unit it holds are what a Type only called leaves unread
+						"~arktype/b": `import * as runtime from "arktype/runtime"
+import { aAllows } from "~arktype/a"
+
+const bAllows = /* @__PURE__ */ runtime.props({ name: runtime.string })
+const b = [bAllows]
+const bNode = /* @__PURE__ */ runtime.freeze({ allows: b[0] })
+const held = aAllows
+const heldNode = /* @__PURE__ */ runtime.freeze({ allows: held })
+
+export { bAllows, b, bNode, held, heldNode }
+`,
+						// not declarations alone, so kept whole, with what it imports
+						"~arktype/d": `import { eAllows } from "~arktype/e"
+let d
+
+function setD() {
+	d = arguments[0]
+}
+
+const dAllows = data => d(data) && eAllows(data)
+
+export { dAllows, setD }
+`,
+						"~arktype/e": `import * as runtime from "arktype/runtime"
+
+const eAllows = /* @__PURE__ */ runtime.props({ title: runtime.string })
+const eNode = /* @__PURE__ */ runtime.freeze({ allows: eAllows })
+
+export { eAllows, eNode }
+`
+					},
+					{ sharesUnits: true }
+				)!
+				attest(printed(modules)).snap([
+					'// ~arktype/#0-#1\nimport * as runtime from "arktype/runtime"\nconst create = allows => data => allows(data)\nconst bAllows = /* @__PURE__ */ runtime.props({ name: runtime.string })\nconst eAllows = /* @__PURE__ */ runtime.props({ title: runtime.string })\nexport { create, bAllows, eAllows }',
+					'// ~arktype/d-#2\nimport { eAllows } from "~arktype/#0-#1"\nlet d\n\nfunction setD() {\n\td = arguments[0]\n}\n\nconst dAllows = data => d(data) && eAllows(data)\n\nexport { dAllows, setD }\n'
+				])
+			})
+
+			it("declare a call two of them write once, unless a function reads a name in it", () => {
+				const shape = `/* @__PURE__ */ runtime.props({ a: aAllows, name: runtime.string, title: runtime.string })`
+				const unit = (name: string, allows: string) =>
+					`import * as runtime from "arktype/runtime"
+import { aAllows } from "~arktype/a"
+
+const ${name}Allows = ${allows}
+
+export { ${name}Allows }
+`
+				const { modules } = linked(8, {
+					"~arktype/b": unit("b", `/* @__PURE__ */ runtime.optional(${shape})`),
+					"~arktype/c": unit(
+						"c",
+						`/* @__PURE__ */ runtime.elementsOf(${shape})`
+					),
+					// called once `aAllows` may be another: left as written
+					"~arktype/e": unit("e", `data => ${shape}(data)`)
+				})
+				attest(printed(modules)[1]).snap(`// ~arktype/#1
+import * as runtime from "arktype/runtime"
+import { aAllows as aAllows } from "~arktype/#0"
+const #2 = /* @__PURE__ */ runtime.props({ a: aAllows, name: runtime.string, title: runtime.string })
+const bAllows = /* @__PURE__ */ runtime.optional(#2)
+const cAllows = /* @__PURE__ */ runtime.elementsOf(#2)
+const eAllows = data => /* @__PURE__ */ runtime.props({ a: aAllows, name: runtime.string, title: runtime.string })(data)
+export { bAllows, cAllows, eAllows }`)
+			})
 		})
 
 		describe("a checker a program writes often", () => {
@@ -2065,6 +2864,117 @@ export { k${i}Allows }
 					{ sharesChecks: true, isOneChunk: true }
 				)!
 				attest(sites["/main.ts"].code.includes("$ark_create(")).equals(true)
+			})
+		})
+
+		describe("creators alike but for what finds a root's issues", () => {
+			const creator = (name: string, takes: string, found: string) =>
+				`import * as runtime from "arktype/runtime"
+
+const ${name} = (${takes}, meta = runtime.emptyMeta) => {
+	const validator = (data, _, onFail) => allows(data) ? data : ${found}
+	validator.assert = data => allows(data) ? data : ${found.replace("onFail", "runtime.throwOnDefault")}
+	validator.meta = meta
+	return validator
+}
+
+export { ${name} }
+`
+			const found = "runtime.foundErrors(allows, data, onFail)"
+			const applied = "runtime.applyIssues(allows, data, onFail)"
+			const traversed =
+				"runtime.applyErrors(allows, data, runtime.runtimeConfig, onFail, runtime.Traversal)"
+			const linkedWith = (
+				creators: Record<string, string>,
+				sharesCreators = true
+			) =>
+				linkBundle(
+					{
+						"/main.ts": {
+							source: "export const A = type({})",
+							code: `import { aAllows as $ark_aAllows } from "~arktype/a"
+${Object.keys(creators)
+	.map(
+		specifier =>
+			`import { ${specifier.slice(9)} as $ark_${specifier.slice(9)} } from "${specifier}"\n`
+	)
+	.join("")}${Object.keys(creators)
+								.map(
+									(specifier, i) =>
+										`export const A${i} = /* @__PURE__ */ $ark_${specifier.slice(9)}($ark_aAllows)\nexport const B${i} = /* @__PURE__ */ $ark_${specifier.slice(9)}($ark_aAllows)\n`
+								)
+								.join("")}`
+						}
+					},
+					{ ...units, ...creators },
+					{ sharesCreators }
+				)
+			const declarationsIn = (modules: Record<string, string>) =>
+				Object.values(modules)
+					.flatMap(code => code.match(/^const create\w+ = .*$/gm) ?? [])
+					.sort()
+
+			it("are written once, each other passing the first what it finds them with", () => {
+				const { modules } = linkedWith({
+					"~arktype/createFound": creator("createFound", "allows", found),
+					"~arktype/createApplied": creator("createApplied", "allows", applied),
+					"~arktype/createListed": creator("createListed", "[allows]", applied),
+					"~arktype/createTraversed": creator(
+						"createTraversed",
+						"allows",
+						traversed
+					)
+				})!
+				attest(declarationsIn(modules)).snap([
+					"const createApplied = (allows, meta = runtime.emptyMeta, found = runtime.applyIssues) => {",
+					"const createFound = (allows, meta = runtime.emptyMeta) => createApplied(allows, meta, runtime.foundErrors)",
+					"const createListed = ([allows], meta = runtime.emptyMeta) => createApplied(allows, meta, runtime.applyIssues)",
+					"const createTraversed = (allows, meta = runtime.emptyMeta) => createApplied(allows, meta, (apply, data, onFail) => runtime.applyErrors(apply, data, runtime.runtimeConfig, onFail, runtime.Traversal))"
+				])
+				// each call of what found them, its assert's too, is the one passed
+				const first = Object.values(modules).find(code =>
+					code.includes("const createApplied = ")
+				)!
+				attest(first.match(/\bfound\(allows, data, [\w.]+\)/g)).snap([
+					"found(allows, data, onFail)",
+					"found(allows, data, runtime.throwOnDefault)"
+				])
+				attest(/runtime\.applyIssues\(/.test(first)).equals(false)
+			})
+
+			it("are left where they differ otherwise, or the build isn't one of checkers", () => {
+				const creators = {
+					"~arktype/createFound": creator("createFound", "allows", found),
+					"~arktype/createApplied": creator("createApplied", "allows", applied)
+				}
+				const written = [
+					"const createApplied = (allows, meta = runtime.emptyMeta) => {",
+					"const createFound = (allows, meta = runtime.emptyMeta) => {"
+				]
+				attest(declarationsIn(linkedWith(creators, false)!.modules)).equals(
+					written
+				)
+				// one taking its root's Apply too finds its issues with that
+				const unlike = {
+					...creators,
+					"~arktype/createApplied": creator(
+						"createApplied",
+						"allows, apply",
+						"runtime.applyIssues(apply, data, onFail)"
+					)
+				}
+				attest(declarationsIn(linkedWith(unlike)!.modules)).equals([
+					"const createApplied = (allows, apply, meta = runtime.emptyMeta) => {",
+					written[1]
+				])
+				// and one alone is written as it was
+				attest(
+					declarationsIn(
+						linkedWith({
+							"~arktype/createFound": creators["~arktype/createFound"]
+						})!.modules
+					)
+				).equals([written[1]])
 			})
 		})
 
@@ -2622,6 +3532,174 @@ console.log(out instanceof type.errors ? out.summary : out)
 			attest(message.slice(-expected.length)).equals(expected)
 		})
 
+		describe("a plugin following it, whose transform runs on what it wrote", () => {
+			// rewrites a module once arktype's transform has, as a plugin
+			// listed after it does whatever its enforce
+			const rewriting = (
+				rewrite: (code: string) => string,
+				file = "main.ts",
+				enforce?: "pre" | "post"
+			): VitePlugin => ({
+				name: "rewriting",
+				...(enforce && { enforce }),
+				transform: (code, id) =>
+					id.endsWith(`/${file}`) ? rewrite(code) : undefined
+			})
+			const adding = (read: string, enforce?: "pre" | "post") =>
+				rewriting(code => `${code}console.log(${read})\n`, "main.ts", enforce)
+			const failureOf = (
+				following: VitePlugin[],
+				opts: PrecompileUnpluginOptions = {}
+			) =>
+				bundle(opts, { following }).then(
+					() => "it built",
+					(e: Error) => stripVTControlCharacters(e.message)
+				)
+
+			it("fails a bundle where it adds a read of a member it left out, naming the setting that keeps it", async () => {
+				const message = await failureOf([
+					adding('User.assert({ name: "Ada" }).name')
+				])
+				const expected =
+					"rewriting transformed main.ts after arktype's plugin read it, and the program as built reads what the build left out of its validators: a module reads assert of a validator. Set assert true in members, or prune: false to build each validator whole."
+				attest(message.slice(-expected.length)).equals(expected)
+			})
+
+			it("builds that read with the member set true, which throws the errors arktype does", async () => {
+				// no module the build read reads a call's errors whole, as what
+				// assert throws needs
+				const kept = await bundle(
+					{ members: { assert: true } },
+					{
+						following: [
+							adding(
+								"(() => {\n\ttry {\n\t\tUser.assert({ name: 5 })\n\t} catch (e) {\n\t\treturn String(e)\n\t}\n})()"
+							)
+						]
+					}
+				)
+				attest(run(kept)).snap(
+					"name must be a string\nTraversalError: name must be a string\n"
+				)
+				attest(kept.includes("~standard")).equals(false)
+			})
+
+			// each other read one might add, whatever its enforce: a member no
+			// setting alone keeps, as the program as built may then pass the
+			// validator on, an introspection member, and the errors of a call
+			for (const [added, read, unseen, members, enforce] of [
+				[
+					"~standard",
+					'typeof User["~standard"]',
+					"a module reads ~standard of a validator",
+					["~standard"],
+					undefined
+				],
+				[
+					"expression, as one run last",
+					"User.expression",
+					"a module reads expression of a validator",
+					[],
+					"post"
+				],
+				[
+					"a validator passed to a function, as one run first",
+					"(f => f(User))(u => typeof u.assert)",
+					"a module reads expression of a validator",
+					[],
+					"pre"
+				],
+				[
+					"the errors a call returns",
+					"String(out)",
+					"a module reads the errors a validator returns",
+					[],
+					undefined
+				]
+			] as const) {
+				it(`fails a bundle where it adds a read of ${added}`, async () => {
+					const message = await failureOf([adding(read, enforce)])
+					const expected = writeLaterTransformReadMessage(
+						"main.ts",
+						unseen,
+						["rewriting"],
+						[...members]
+					)
+					attest(message.slice(-expected.length)).equals(expected)
+				})
+			}
+
+			it("names each plugin whose transform follows its own", async () => {
+				const erasing: VitePlugin = {
+					name: "erasing",
+					enforce: "post",
+					transform: () => undefined
+				}
+				const message = await failureOf([adding("User.expression"), erasing])
+				const expected = writeLaterTransformReadMessage(
+					"main.ts",
+					"a module reads expression of a validator",
+					["rewriting", "erasing"]
+				)
+				attest(message.slice(-expected.length)).equals(expected)
+			})
+
+			it("prunes a module it rewrites without adding a read", async () => {
+				const pruned = await bundle(
+					{},
+					{
+						following: [
+							rewriting(
+								code =>
+									`const built = () => "built"\n${code.split("\n").join("\n\n")}\nconsole.log(built())\n`
+							)
+						]
+					}
+				)
+				attest(run(pruned)).snap("name must be a string\nbuilt\n")
+				attest(pruned.includes("~standard")).equals(false)
+			})
+
+			it("prunes a module holding validators that it adds to", async () => {
+				const pruned = await bundle(
+					{},
+					{
+						following: [
+							rewriting(
+								code =>
+									`${code}\nconst checked = (data) => {\n\tUser(data)\n\treturn "checked"\n}\nconsole.log(checked({ name: "Ada" }))\n`,
+								"types.ts"
+							)
+						]
+					}
+				)
+				attest(run(pruned)).snap("checked\nname must be a string\n")
+				attest(pruned.includes("~standard")).equals(false)
+			})
+
+			it("fails a bundle where it adds a read to a module holding validators", async () => {
+				const message = await failureOf([
+					rewriting(
+						code => `${code}\nconsole.log(User.expression)\n`,
+						"types.ts"
+					)
+				])
+				const expected = writeLaterTransformReadMessage(
+					"types.ts",
+					"a module reads expression of a validator",
+					["rewriting"]
+				)
+				attest(message.slice(-expected.length)).equals(expected)
+			})
+
+			it("fails a bundle where it changes what arktype's plugin wrote of a module", async () => {
+				const message = await failureOf([rewriting(importingAgain, "types.ts")])
+				const expected =
+					"rewriting changed the validators arktype's plugin wrote in types.ts, so the build can't check what the program as built reads of them. Give it enforce: \"pre\" and list it ahead of precompile.vite(), or set prune: false to build each validator whole."
+				attest(message.slice(-expected.length)).equals(expected)
+			})
+		})
+
 		it("fails a bundle a plugin ahead of it rewrote to read what no validator bakes", async () => {
 			for (const [name, read] of [
 				["validate", 'schema["~standard"].validate({})'],
@@ -2778,6 +3856,68 @@ console.log(out instanceof type.errors ? out.summary : out)
 		})
 	})
 
+	describe("rollup", () => {
+		const conditions = ["ark-ts"]
+
+		const root = writeFixture(
+			{ "types.ts": types, "main.ts": callingFrom("./types.ts") },
+			fromHere("temp", "prunedRollup")
+		)
+		// erases types once arktype's transform has read them, as
+		// @rollup/plugin-typescript listed after it does, dropping each comment
+		const stripping: RollupPlugin = {
+			name: "stripping",
+			transform: (code, id) =>
+				id.endsWith(".ts") ?
+					transformSync(code, { loader: "ts" }).code
+				:	undefined
+		}
+		const rewriting = (
+			file: string,
+			rewrite: (code: string) => string
+		): RollupPlugin => ({
+			name: "rewriting",
+			transform: (code, id) =>
+				id.endsWith(`/${file}`) ? rewrite(code) : undefined
+		})
+		// Rollup has no mode, so a production build says what it is
+		const failureOf = (following: RollupPlugin) =>
+			rollup({
+				input: join(root, "main.ts"),
+				plugins: [
+					precompile.rollup({ cwd: root, conditions, prune: true }),
+					stripping,
+					following
+				],
+				onwarn: () => {}
+			}).then(
+				async bundle => {
+					await bundle.close()
+					return "it built"
+				},
+				(e: Error) => stripVTControlCharacters(e.message)
+			)
+
+		it("fails a bundle where a plugin following it adds a read of a member it left out", async () => {
+			const message = await failureOf(
+				rewriting(
+					"main.ts",
+					code => `${code}console.log(User.assert({ name: "Ada" }).name)\n`
+				)
+			)
+			const expected =
+				"stripping, rewriting transformed main.ts after arktype's plugin read it, and the program as built reads what the build left out of its validators: a module reads assert of a validator. Set assert true in members, or prune: false to build each validator whole."
+			attest(message.slice(-expected.length)).equals(expected)
+		})
+
+		it("fails a bundle where a plugin following it changes what it wrote of a module", async () => {
+			const message = await failureOf(rewriting("types.ts", importingAgain))
+			const expected =
+				"stripping, rewriting changed the validators arktype's plugin wrote in types.ts, so the build can't check what the program as built reads of them. List them ahead of precompile.rollup(), or set prune: false to build each validator whole."
+			attest(message.slice(-expected.length)).equals(expected)
+		})
+	})
+
 	describe("webpack and Rspack", () => {
 		const compilers = {
 			webpack: [webpack, precompile.webpack],
@@ -2829,13 +3969,19 @@ console.log(out instanceof type.errors ? out.summary : out)
 		const output = (js: string, cwd?: string) =>
 			spawnSync(process.execPath, { input: js, encoding: "utf8", cwd }).stdout
 
-		// the warnings a build ends with
+		// the warnings a build ends with, each as its text alone: Rspack marks one
+		// `⚠ ` and ends its line, and where its output is colored, as on a CI
+		// runner, wraps the mark in escapes and adds an entry holding only a reset
 		const collecting = (warnings: string[]) => ({
 			apply: (compiler: webpack.Compiler) =>
 				compiler.hooks.done.tap("collecting", stats => {
 					for (const { message } of stats.toJson({ all: false, warnings: true })
-						.warnings ?? [])
-						warnings.push(message)
+						.warnings ?? []) {
+						const text = stripVTControlCharacters(message)
+							.trim()
+							.replace(/^⚠ /, "")
+						if (text) warnings.push(text)
+					}
 				})
 		})
 
@@ -2922,6 +4068,118 @@ console.log(User.description)
 					attest(output(js)).snap(`{ age: number & isPositive }
 { age: a number and valid according to isPositive }
 `)
+				})
+
+				describe("the issue features a program's validators write", () => {
+					const reading = `import { User } from "./types.js"
+
+console.log(String(User({ name: [5] })))
+`
+					const named = (js: string) =>
+						Object.keys(noIssueFeatures).filter(feature => js.includes(feature))
+
+					it("are written where the runtime reads them, leaving the bundle none to fold", async () => {
+						const root = fixture("issueFeatures", { "main.js": reading })
+						// as it's written, before a minifier could fold a constant
+						const js = await bundle(
+							name,
+							root,
+							{},
+							{ optimization: { minimize: false } }
+						)
+						attest(named(js)).equals([])
+						attest(output(js)).equals("name must be a string\n")
+					})
+
+					it("are written again where a cached build's program holds another", async () => {
+						const root = fixture("issueFeaturesCached", { "main.js": reading })
+						const config = {
+							optimization: { minimize: false },
+							...cacheOf(root)
+						}
+						attest(output(await bundle(name, root, {}, config))).equals(
+							"name must be a string\n"
+						)
+						// an index in a path, which the first program's issues never hold
+						writeFileSync(
+							join(root, "types.js"),
+							`import { type } from "arktype"
+
+export const User = type({ name: "string[]" })
+`
+						)
+						const js = await bundle(name, root, {}, config)
+						attest(named(js)).equals([])
+						attest(output(js)).equals("name[0] must be a string\n")
+					})
+
+					it("leave printing a validator no expression to read where none holds one", async () => {
+						const held = await bundle(
+							name,
+							fixture("expressionHeld", {
+								"main.js": `import { User } from "./types.js"
+
+console.log(String(User))
+`
+							})
+						)
+						attest(output(held)).equals("Type<{ name: string }>\n")
+						const unheld = await bundle(
+							name,
+							fixture("expressionUnheld", { "main.js": reading })
+						)
+						attest(unheld.includes("Type<")).equals(false)
+					})
+				})
+
+				describe("a narrow reading what another run of its module could change", () => {
+					// esbuild passes one like it to each validator, as a chunk
+					// imported again runs again: cells.test.ts, "a function
+					// reading state"
+					const counting = `import { type } from "arktype"
+
+let calls = 0
+const isCounted = s => ++calls < 3 && s.length > 2
+
+export const Name = type("string").narrow(isCounted)
+export const User = type({ name: Name })
+`
+					const main = `import { Name, User } from "./types.js"
+
+console.log(Name.allows("abc"), User.allows({ name: "abc" }), Name.allows("abc"))
+`
+					const unminified = { optimization: { minimize: false } }
+					const setsCell = (js: string) => /\bsethole\w+\(/.test(js)
+
+					it("is held by a variable, as the runtime runs a module it holds once", async () => {
+						const root = fixture("runsOnce", {
+							"types.js": counting,
+							"main.js": main
+						})
+						const js = await bundle(name, root, {}, unminified)
+						attest(setsCell(js)).equals(true)
+						attest(output(js)).equals("true true false\n")
+						attest(
+							output(await bundle(name, root, { prune: false }, unminified))
+						).equals("true true false\n")
+					})
+
+					it("is passed to each validator of a file built as two modules", async () => {
+						const root = fixture("builtApart", {
+							"types.js": counting,
+							"other.js": `import { Name } from "./types.js"\n\nexport const others = Name.allows("abc")\n`,
+							"main.js": `import { others } from "./other.js"\n${main}console.log(others)\n`
+						})
+						const layered = {
+							...unminified,
+							experiments: { layers: true },
+							module: { rules: [{ issuer: /other\.js$/, layer: "other" }] }
+						}
+						const js = await bundle(name, root, {}, layered)
+						attest(setsCell(js)).equals(false)
+						// each module of the file counts its own calls
+						attest(output(js)).equals("true true false\ntrue\n")
+					})
 				})
 
 				describe("a define writing code no module's text holds", () => {
@@ -3095,6 +4353,39 @@ console.log(String(User({ name: 5 })))
 						})
 					}
 
+					it("fails a build where it adds a read of a call's errors, which no module it read reads", async () => {
+						const root = fixture("loaderAfterErrors", {
+							"main.js": `import { User } from "./types.js"
+
+const out = User({ name: 5 })
+console.log(User.allows({ name: 5 }))
+`
+						})
+						const message = await bundle(
+							name,
+							root,
+							{},
+							rewriting(code => `${code}console.log(out.summary)\n`)
+						).then(
+							() => "it built",
+							(e: Error) => e.message
+						)
+						attest(
+							message.includes(
+								writeLaterLoaderReadMessage(
+									"main.js",
+									"a module reads the summary of the errors a validator returns",
+									[
+										relative(root, fromHere("rewriteLoader.ts")).replace(
+											/\\/g,
+											"/"
+										)
+									]
+								)
+							)
+						).equals(true)
+					})
+
 					it("prunes where it moves a read without adding one", async () => {
 						const root = fixture("loaderAfterMoves", {
 							"main.js": `import { User } from "./types.js"
@@ -3172,13 +4463,14 @@ console.log(use(), inlined())
 							}
 						)
 						attest(warnings.join("\n").includes("from two codes")).equals(true)
-						// built one module at a time, what the inline request reads is missed
+						// built one module at a time, what the inline request reads is
+						// missed, so it reads a member no build baked
 						attest(
 							spawnSync(process.execPath, {
 								input: js,
 								encoding: "utf8"
-							}).stderr.includes("expression isn't precompiled")
-						).equals(true)
+							}).stdout
+						).equals("{ name: string } undefined\n")
 					})
 				})
 
@@ -3563,6 +4855,126 @@ console.log(User({ name: "" }).name, suffixed)
 					attest(js).equals(await bundle(name, root, { prune: false }, config))
 				})
 
+				// as Next.js builds a package `experimental.optimizePackageImports`
+				// lists: its SWC loader, after the plugin's, writes each import of
+				// the package's entry as a request for the names it takes, and
+				// next-barrel-loader builds that request as those re-exports alone,
+				// or, where the entry isn't a barrel, as a re-export of the file
+				const builtThroughBarrels = async (
+					test: string,
+					files: Record<string, string>
+				) => {
+					const root = fixture(test, {
+						"optimize.ts": `export default (source: string) =>
+	source.replace(
+		/\\{ ([^}]*) \\} from "(\\.\\/ui\\/index\\.js)"/g,
+		(_, names: string, entry: string) =>
+			\`{ \${names} } from "__barrel_optimize__?names=\${names.split(", ").join(",")}!=!\${entry}"\`
+	)
+`,
+						"barrel.ts": `import { readFileSync } from "node:fs"
+
+export default function (this: { resourcePath: string; getOptions(): { names: string[] } }) {
+	const entry = readFileSync(this.resourcePath, "utf8")
+	const reExports = this.getOptions().names.map(
+		name => new RegExp(\`export \\\\{ \${name} \\\\} from "[^"]*"\`).exec(entry)?.[0]
+	)
+	return reExports.includes(undefined) ?
+			\`export * from \${JSON.stringify(this.resourcePath)}\`
+		:	reExports.join("\\n")
+}
+`,
+						"ui/package.json": `{ "name": "ui", "type": "module" }`,
+						"ui/a.js": `export const a = 1\n`,
+						"ui/b.js": `export const b = 2\n`,
+						"other.js": `export { b } from "./ui/index.js"\n`,
+						"main.js": `import { type } from "arktype"
+import { a, User } from "./ui/index.js"
+import { b } from "./other.js"
+
+const out = User({ name: 5 })
+console.log(out instanceof type.errors ? out.summary : out, a, b)
+`,
+						...files
+					})
+					const rules = [
+						{
+							test: /__barrel_optimize__/,
+							use: ({ resourceQuery }: { resourceQuery: string }) => [
+								{
+									loader: join(root, "barrel.ts"),
+									// as Next.js names each, so the bundler builds one for each set of names
+									ident: `barrel:${resourceQuery}`,
+									options: {
+										names: resourceQuery.slice("?names=".length).split(",")
+									}
+								}
+							]
+						},
+						{ test: /(?:main|other)\.js$/, loader: join(root, "optimize.ts") }
+					]
+					const stats = await built(
+						(compilers[name][0] as typeof webpack)(
+							configOf(name, root, {}, { module: { rules } })
+						)
+					)
+					const { errors, warnings } = stats!.toJson({
+						all: false,
+						errors: true,
+						warnings: true
+					})
+					attest(errors).equals([])
+					attest(warnings).equals([])
+					return readFileSync(join(root, "out", name, "main.js"), "utf8")
+				}
+
+				it("prunes a validator read through the modules Next.js's optimizePackageImports builds a package's entry as", async () => {
+					const js = await builtThroughBarrels("barrels", {
+						"ui/index.js": `export { a } from "./a.js"\nexport { b } from "./b.js"\nexport { User } from "./user.js"\n`,
+						"ui/user.js": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+`
+					})
+					attest(output(js)).equals("name must be a string 1 2\n")
+					attest(js.includes("~standard")).equals(false)
+				})
+
+				it("keeps a member a module reads off a validator it imports through one of them", async () => {
+					const js = await builtThroughBarrels("barrels-read", {
+						"ui/index.js": `export { a } from "./a.js"\nexport { b } from "./b.js"\nexport { User } from "./user.js"\n`,
+						"ui/user.js": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+`,
+						"other.js": `import { User } from "./ui/index.js"
+
+export { b } from "./ui/index.js"
+export const validate = User["~standard"].validate
+`,
+						"main.js": `import { a, User } from "./ui/index.js"
+import { b, validate } from "./other.js"
+
+console.log(User.allows({ name: "" }), validate({ name: 5 }).issues[0].message, a, b)
+`
+					})
+					attest(output(js)).equals("true must be a string 1 2\n")
+					attest(js.includes("assert")).equals(false)
+				})
+
+				it("prunes a validator defined by an entry optimizePackageImports lists that isn't a barrel", async () => {
+					const js = await builtThroughBarrels("barrels-entry", {
+						"ui/index.js": `import { type } from "arktype"
+
+export { a } from "./a.js"
+export const b = 2
+export const User = type({ name: "string" })
+`
+					})
+					attest(output(js)).equals("name must be a string 1 2\n")
+					attest(js.includes("~standard")).equals(false)
+				})
+
 				const queried = {
 					"validated.js": `import { type } from "arktype"
 
@@ -3751,6 +5163,115 @@ new Worker(new URL("./worker.js", import.meta.url))
 								readFileSync(join(dir, file), "utf8").includes("~standard")
 						)
 					).equals(true)
+				})
+
+				// the bundler built a module for each file the specifier can name,
+				// so the build reads what they export rather than give up
+				const computedImport = (page: string) => ({
+					"pages/shown.js": page,
+					"main.js": `import { User } from "./types.js"
+
+const load = name => import(\`./pages/\${name}.js\`)
+load("shown").then(page =>
+	console.log(User({ name: "" }).name, typeof page.shown)
+)
+`
+				})
+
+				const outputOfSplit = async (root: string) => {
+					const warnings: string[] = []
+					const stats = await built(
+						(compilers[name][0] as typeof webpack)(
+							configOf(
+								name,
+								root,
+								{},
+								{
+									output: {
+										path: join(root, "out", name),
+										filename: "main.cjs",
+										chunkFilename: "[name].cjs"
+									},
+									plugins: [
+										compilers[name][1]({ cwd: root }) as never,
+										collecting(warnings)
+									]
+								}
+							)
+						)
+					)
+					if (stats?.hasErrors()) throw new Error(stats.toString("errors-only"))
+					const dir = join(root, "out", name)
+					return {
+						warnings,
+						keepsStandard: readdirSync(dir).some(file =>
+							readFileSync(join(dir, file), "utf8").includes("~standard")
+						),
+						stdout: spawnSync(process.execPath, ["main.cjs"], {
+							cwd: dir,
+							encoding: "utf8"
+						}).stdout
+					}
+				}
+
+				it("prunes past an import() of a computed specifier where what it may load exports no validator", async () => {
+					const root = fixture(
+						"computedImport",
+						computedImport(`export const shown = true\n`)
+					)
+					attest(await outputOfSplit(root)).equals({
+						warnings: [],
+						keepsStandard: false,
+						stdout: " boolean\n"
+					})
+				})
+
+				it("keeps each member where an import() of a computed specifier may load a validator", async () => {
+					const root = fixture(
+						"computedImport-validator",
+						computedImport(`import { type } from "arktype"
+
+export const shown = type({ shown: "string" })
+`)
+					)
+					attest(await outputOfSplit(root)).equals({
+						warnings: [
+							"prune: keeping assert, meta, ~standard and methods, because pages/shown.js exports shown, which a dependency may read. Set assert, meta, ~standard and methods in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning."
+						],
+						keepsStandard: true,
+						stdout: " function\n"
+					})
+				})
+
+				it("writes validators that would outweigh arktype for size where its target is a browser", async () => {
+					const root = fixture("larger", { "main.js": ranges })
+					const warningsOf = async (config: object) => {
+						const warnings: string[] = []
+						const stats = await built(
+							(compilers[name][0] as typeof webpack)(
+								configOf(
+									name,
+									root,
+									{},
+									{
+										...config,
+										plugins: [
+											compilers[name][1]({ cwd: root }) as never,
+											collecting(warnings)
+										]
+									}
+								)
+							)
+						)
+						if (stats?.hasErrors())
+							throw new Error(stats.toString("errors-only"))
+						return warnings
+					}
+					attest(await warningsOf({ target: "web" })).equals([
+						'precompile: compiled to check fastest, this bundle\'s validators would be about 1.3 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
+					])
+					// a server's are left compiled
+					attest(await warningsOf({ target: "node" })).equals([])
 				})
 
 				it("answers a build its cache kept as one with no cache, whichever file a read moved to", async () => {

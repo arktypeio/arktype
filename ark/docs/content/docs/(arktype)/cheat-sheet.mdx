@@ -166,11 +166,36 @@ const Signup = type({
 	(data, ctx) =>
 		data.password === data.confirmPassword ||
 		ctx.reject({
-			expected: "identical to password",
-			actual: "",
-			path: ["confirmPassword"]
+			message: "Passwords must match",
+			// from the value being narrowed
+			relativePath: ["confirmPassword"]
 		})
 )
+```
+
+## Error messages
+
+```ts
+const Signup = type({
+	// a whole sentence, shown as written
+	email: ["string.email", "@", { message: "Enter a valid email" }],
+	// what the value must be, after "must be"
+	password: type("string >= 8").describe("8 characters or more"),
+	age: "number >= 18"
+})
+
+const out = Signup({ email: "x", password: "short", age: 3 })
+
+if (out instanceof type.errors) {
+	// email: Enter a valid email
+	// password must be 8 characters or more
+	// age must be at least 18
+	console.error(out.summary)
+
+	// without paths, e.g. to show beside each field:
+	// ["Enter a valid email", "must be 8 characters or more", "must be at least 18"]
+	out.issues.map(issue => issue.message)
+}
 ```
 
 ## Matching
@@ -262,6 +287,9 @@ export default {
 | `"Record<string, T>"` with `T` a variable                           | Use `type.Record("string", T)` or `{ "[string]": T }`                                       |
 | `type("number = 0")`                                                | Defaults only work as object values or tuple elements                                       |
 | `out[0]` or `out.map(...)` on errors                                | Use `out.issues[0]` or `out.issues.map(...)`                                                |
+| `ctx.reject("Enter a valid email")`, which reads `must be Enter…`   | Pass a sentence as `ctx.reject({ message: "Enter a valid email" })`                         |
+| `ctx.reject({ path: ["key"] })` on a nested object                  | Use `relativePath: ["key"]`; `path` is from the root of the data                            |
+| `.merge()` or `.pick()` on an object with a `.narrow()`             | Derive from the object before its `.narrow()`, which they'd drop, then add the narrow       |
 | Mutating the argument in `.pipe`                                    | Return a new value; a morph receives the caller's data, not a copy                          |
 | `type User = typeof Schema.t`                                       | Use `typeof Schema.infer` for the output type                                               |
 | Precompiled: `User.pick(...keys)` with `keys` known only at runtime | A Type per case, composed from static values: `const Admin = User.and({ role: "'admin'" })` |

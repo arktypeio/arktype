@@ -135,8 +135,10 @@ export const toJsonSchemaRecurse = (
 const refTo = (name: string, ctx: JsonSchemaContext): JsonSchema.Ref =>
 	({ $ref: refPrefixByTarget[ctx.target] + name }) as JsonSchema.Ref
 
-// the alias a cyclic definition's id starts with, without the count after it
-const nameOfId = (id: string): string => id.replace(/(?<=\d)_\d+$|\d+$/, "")
+// the alias a cyclic definition's id starts with, without the count after it,
+// which follows an underscore where the alias ends in a digit. No lookbehind:
+// one in a literal fails the whole module to parse before Safari 16.4
+const nameOfId = (id: string): string => id.replace(/(\d)_\d+$|\d+$/, "$1")
 
 // an input or output is named by the alias it was read from; an alias of an
 // anonymous value, like a union holding an alias, names nothing
@@ -171,6 +173,9 @@ const toResolvedJsonSchema = (
 	for (const k in node.meta) {
 		// keyword identifies arktype's own phrase, which JSON Schema has no key for
 		if (k === "keyword" || k === "jsonSchema") continue
+		// these word arktype's own errors: a JSON Schema reader has no use for
+		// them, and a strict validator rejects the unknown keywords
+		if (k === "expected" || k === "actual" || k === "message") continue
 		const v = (node.meta as dict)[k]
 		// JSON can't represent a function like a message writer
 		if (typeof v === "function" && k !== "default") continue

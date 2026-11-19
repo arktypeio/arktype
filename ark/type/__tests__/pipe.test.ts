@@ -1,11 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	assertNodeKind,
-	flatProblemsByPath,
+	flatMessagesByPath,
 	intrinsic,
 	registeredReference,
 	writeInvalidOperandMessage,
-	type ArkErrors
+	type ArkErrors,
+	type BaseRoot
 } from "@ark/schema"
 import {
 	discriminantJsonOf,
@@ -56,6 +57,24 @@ contextualize(() => {
 
 		attest<typeof Expected.t>(tOut.t)
 		attest(tOut.expression).equals(Expected.expression)
+	})
+
+	it("compiled code of a Type includes the node a morph pipes to", () => {
+		// a scope shares its nodes by what they check, so these are in one of
+		// their own, where nothing has compiled them
+		const T = scope({})
+			.type({ compiledWith: "string.numeric.parse" })
+			.to({ compiledWith: "number > 41" })
+		const morphs = T.internal.assertIs("morph").travMorphs
+		const to = morphs[morphs.length - 1] as BaseRoot
+		attest(to.unitFn).equals(undefined)
+		// a Type compiles at its second call
+		T({ compiledWith: "42" })
+		attest(T({ compiledWith: "42" })).equals({ compiledWith: 42 })
+		attest(typeof to.unitFn).equals("function")
+		attest(T({ compiledWith: "41" }).toString()).snap(
+			"compiledWith must be more than 41"
+		)
 	})
 
 	describe("to string syntax", () => {
@@ -172,18 +191,18 @@ contextualize(() => {
 				type("string").pipe.try(() => {
 					throw thrown
 				})("x") as type.errors
-			attest(throwing(Symbol("thrown")).issues[0].problem).snap(
+			attest(throwing(Symbol("thrown")).issues[0].message).snap(
 				"must be valid according to an anonymous predicate (Symbol(thrown))"
 			)
-			attest(throwing(Object.create(null)).issues[0].problem).snap(
+			attest(throwing(Object.create(null)).issues[0].message).snap(
 				"must be valid according to an anonymous predicate"
 			)
 			const cyclic: any = new Error("cyclic")
 			cyclic.self = cyclic
-			attest(JSON.parse(JSON.stringify(throwing(cyclic)))[0].problem).snap(
+			attest(JSON.parse(JSON.stringify(throwing(cyclic)))[0].message).snap(
 				"must be valid according to an anonymous predicate (Error: cyclic)"
 			)
-			attest(JSON.parse(JSON.stringify(throwing(5n)))[0].problem).snap(
+			attest(JSON.parse(JSON.stringify(throwing(5n)))[0].message).snap(
 				"must be valid according to an anonymous predicate (5)"
 			)
 		})
@@ -507,7 +526,7 @@ must be a digit`)
 		attest(out.summary).snap(`s must be own
 s must be matched by ^a
 s must be at least length 5`)
-		attest(flatProblemsByPath(out)).snap({
+		attest(flatMessagesByPath(out)).snap({
 			s: ["must be own", "must be matched by ^a", "must be at least length 5"]
 		})
 	})

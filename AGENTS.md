@@ -7,7 +7,7 @@ ArkType is TypeScript's 1:1 validator, optimized from editor to runtime. It pars
 - [arktype.io/llms.txt](https://arktype.io/llms.txt) indexes the docs (llmstxt.org format) with a link to each page's Markdown, and [arktype.io/llms-full.txt](https://arktype.io/llms-full.txt) is every ArkType page in one file. Precompile, ArkRegex, Attest, JSON Schema, ArkSets and Internals each have a full file at `arktype.io/docs/<section>/llms.txt`, e.g. [arktype.io/docs/regex/llms.txt](https://arktype.io/docs/regex/llms.txt). Any single page is at its URL plus `.md`. All of it is generated from `ark/docs/content/docs` by `ark/docs/lib/writeMarkdown.ts`.
 - [`ark/type/skills/arktype/SKILL.md`](ark/type/skills/arktype/SKILL.md) is the Agent Skill users install with `npx skills add arktypeio/arktype`. Keep its examples type-checking against the current API: `pnpm testSkill` checks them. Its `references/migrating.md` is written from the docs' `migrating.mdx` when the docs build, so edit that page instead.
 - [Precompile](https://arktype.io/docs/precompile) (`ark/docs/content/docs/precompile`) is the reference for `@ark/aot`; `ark/aot/README.md` only points to it.
-- Every benchmark number or superlative the docs state lives in `ark/docs/lib/claims.ts`, with the benchmark that backs it, except the homepage's own benchmark, which `ark/docs/lib/bench` computes from its data. Don't state one elsewhere.
+- Every benchmark number or superlative the docs state lives in `ark/docs/lib/claims.ts`, with the benchmark that backs it, except the homepage's own benchmark and [Size at scale](https://arktype.io/docs/precompile/size-at-scale), which `ark/docs/lib/bench` computes from its data (`sizeScale.ts` writes that page's every number and comparison from `pnpm benchSizeScale`'s). Don't state one elsewhere.
 - The [cheat sheet](https://arktype.io/docs/cheat-sheet) (`ark/docs/content/docs/(arktype)/cheat-sheet.mdx`) is an abbreviated version of the skill covering the most common syntax and gotchas.
 
 ## Commands
@@ -18,10 +18,24 @@ pnpm test # run tests without type checking
 pnpm testFiles ark/type/__tests__/brand.test.ts # run and type check only the named test files
 pnpm typecheckRepo # incremental typecheck of the whole repo
 pnpm prChecks # lint, build, typecheck and test, except @ark/aot (run before PRs)
-pnpm testAot # @ark/aot's tests, which prChecks leaves out; aot.yml runs them and its other suites on demand
+pnpm testAot # @ark/aot's tests, which prChecks leaves out
+ARK_SHARD=3/8 pnpm testAot # the third of the eight shards CI runs them in
 ```
 
 Tests and typechecking read each package's source through the `ark-ts` condition, so neither needs `pnpm build`. Pass test files to `pnpm testFiles` before any flags, e.g. `pnpm testFiles a.test.ts --skipTypes`. `pnpm testTyped a.test.ts` runs every test, because mocha adds named files to the configured spec.
+
+## CI
+
+`pr.yml` runs on every PR, and its `prChecks` job is the gate. Beside `pnpm prChecks` and the compatibility, TypeScript version and history jobs, it runs:
+
+- `aot`: `pnpm testAot` in eight shards, one runner each. `ark/repo/testAotShard.ts` deals the test files among them by the seconds `ark/aot/__tests__/timings.json` has for each, heaviest first, and `pnpm testAot --list` prints the result. A file without an entry weighs the median, so a new test file needs none. A file heavier than one shard's share has entries for its heavier top-level `describe`s and one for the rest of its tests, and is divided among shards by `--grep`; a `describe` added to it later runs with the rest. A shard that takes over twice the mean shard's planned seconds times `ARK_SHARD_BUDGET_FACTOR` (4 unless set) fails and says to run `pnpm writeAotTimings`, which runs the tests once and rewrites `timings.json`. Commit the result.
+- `environments`: `pnpm testEnvironments`, a precompiled program in Deno, Bun and browsers.
+
+`aot.yml` runs @ark/aot's derived suites, up to an hour a job: `testDifferential` and `testCache`, the repo's tests against precompiled validators, then `testPerturbation` and `testPrograms`. They aren't part of the gate. It runs:
+
+- nightly, on `main` and `featherduster` (until 3.0 merges; the list is in its `plan` job). A failing night opens the issue "aot nightly failing", labelled `aot-nightly`, or comments on it, and the next passing night closes it.
+- on a PR labelled `aot:full`, when the label is added and on each push after. Add it to a PR that changes what the build emits.
+- on demand from the Actions tab, and from another workflow through `workflow_call`.
 
 ## Monorepo Structure
 

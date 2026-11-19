@@ -219,6 +219,29 @@ for (const [kind, errors] of Object.entries(errorsByKind)) {
 
 console.log("🏎️  ArkErrors have one map per kind!")
 
+console.log("\n⏱️  Checking that Standard Schema failures have one V8 map...\n")
+
+const failures = [
+	type("string")["~standard"].validate(0),
+	type({ a: "string", b: "number" })["~standard"].validate({}),
+	type("number[]")["~standard"].validate(["", ""])
+] as { issues?: unknown; message?: string }[]
+// one whose message was read is still the others' shape
+void failures[0].message
+
+for (const failure of failures) {
+	if (!failure.issues) throw new Error("Expected a failure.")
+	if (!hasFastProperties(failure))
+		throw new Error("⚠️  A Standard Schema failure has slow properties.")
+	if (!haveSameMap(failures[0], failure)) {
+		throw new Error(
+			"⚠️  Standard Schema failures have different maps: each failing validate builds a shape of its own."
+		)
+	}
+}
+
+console.log("🏎️  Standard Schema failures have one map!")
+
 console.log(
 	"\n⏱️  Checking that resolved scope configs have fast properties...\n"
 )

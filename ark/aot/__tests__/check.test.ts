@@ -83,6 +83,81 @@ contextualize(function (this: Mocha.Suite) {
 		])
 	})
 
+	it("applies a tsconfig's paths to a file its include leaves out", () => {
+		// as esbuild, Bun and a bundler's alias for the same names do, though
+		// TypeScript applies them only to what the tsconfig includes
+		const root = writeFixture({
+			"tsconfig.json": `{ "compilerOptions": { "paths": { "@app/*": ["./src/*"] } }, "include": ["src"] }`,
+			"src/user.ts": `import { type } from "arktype"\nexport const User = type({ name: "string" })\n`,
+			"tests/user.test.ts": `import { type } from "arktype"\nimport { User } from "@app/user.ts"\nexport const Users = type({ users: User.array() })\n`
+		})
+		attest(check([], { cwd: root }).lines).snap([
+			"src/user.ts:2:21  accepted",
+			"tests/user.test.ts:3:22  accepted",
+			"2 sites in 2 files: 2 accepted (100.0%)"
+		])
+	})
+
+	it("reports a refused definition once, naming it where another composes it", () => {
+		const root = writeFixture({
+			"limits.ts": `import { type } from "arktype"\nexport const Limited = type(\`string <= \${Number(process.env.MAX)}\`)\n`,
+			"main.ts": `import { type } from "arktype"\nimport { Limited } from "./limits.ts"\nexport const A = Limited.array()\nexport const B = type({ b: Limited })\n`
+		})
+		attest(check([], { cwd: root }).lines).snap([
+			"limits.ts:2:24  type(`string <= ${Number(process.env.MAX)}`) cannot be precompiled\n  `process` is a global the build does not read\n  Replace `process.env.MAX` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.",
+			"main.ts:3:18  Limited.array composes `Limited`, which can't be precompiled\n  `Limited` is imported from limits.ts\n  `process` is a global the build does not read\n  Fix the definition it composes, as that one's report says, and the build precompiles this one with it.",
+			"main.ts:4:18  type({ b: Limited }) cannot be precompiled\n  `Limited` is imported from limits.ts\n  `process` is a global the build does not read\n  Fix the definition it composes, as that one's report says, and the build precompiles this one with it.",
+			"2 sites in 2 files: 0 accepted (0.0%), 1 error outside a site"
+		])
+	})
+
+	it("says where an island can't define what a runtime value defines", () => {
+		const root = writeFixture({
+			"main.ts": `import { type } from "arktype"
+const Address = type({ line1: "string" })
+declare const useSaved: () => string
+const useLimit = () => {
+	const limit = useSaved()
+	if (!limit) throw new Error("no limit")
+	return limit.length
+}
+export const Form = () => {
+	const limit = useLimit()
+	return type({ address: Address, note: \`string <= \${limit}\` })
+}
+export const Field = () => type(\`string <= \${useLimit()}\`)
+`
+		})
+		attest(check([], { cwd: root }).lines).snap([
+			"main.ts:2:17  accepted",
+			'main.ts:11:9  type({ address: Address, note: `string <= ${limit}` }) cannot be precompiled\n  `limit` is `useLimit()` (main.ts:10:8)\n  `useLimit()` calls a hook, whose result is known only as a component renders\n  Replace `useLimit()` with a value the build can read, like a literal or a const holding one, or build with runtime: "arktype", so arktype defines it at runtime. A // @ark-runtime island can\'t define this one alone, as what it composes is precompiled.',
+			"main.ts:13:28  type(`string <= ${useLimit()}`) cannot be precompiled\n  `useLimit()` calls a hook, whose result is known only as a component renders\n  Replace `useLimit()` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.",
+			"3 sites in 1 file: 1 accepted (33.3%)"
+		])
+	})
+
+	it("reads what only types a value as data", () => {
+		// a Type reads undefined for \`infer\` as a validator does, and what's
+		// typed by it is data however deep the path
+		const root = writeFixture({
+			"main.ts": `import { type } from "arktype"
+export const Group = type({ name: "string", cards: type({ id: "string" }).array() })
+export const defaults = { values: Group.infer }
+interface Props {
+	name: typeof Group.infer.name
+	cards: typeof Group.infer.cards
+}
+export const idsOf = ({ cards }: Props) => cards.map(card => card.id)
+type Cards = typeof Group.inferIn.cards
+export const firstOf = (cards: Cards) => cards.filter(card => card.id)[0]
+`
+		})
+		attest(check([], { cwd: root }).lines).snap([
+			"main.ts:2:22  accepted",
+			"1 site in 1 file: 1 accepted (100.0%)"
+		])
+	})
+
 	it("reports refusals while writing a site", () => {
 		attest(
 			check([], {
@@ -481,5 +556,25 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 			'2 creationChecks must be "helpers", "none" or "types" (was "bogus")',
 			'2 creationChecks chooses what a standalone build writes, which runtime: "arktype" doesn\'t. Remove runtime: "arktype" to precompile, or remove creationChecks.'
 		])
+	})
+
+	it("reads an option that takes a number as one", () => {
+		// as the same check without the flag exits
+		attest(
+			runCli(cwd, "--check", "--fail-under", "50", "--baked-limit", "500")
+				.status
+		).equals(0)
+		attest(
+			["many", "0"].map(limit => {
+				const result = runCli(cwd, "--check", "--baked-limit", limit)
+				return `${result.status} ${result.stderr.split("\n")[0]}`
+			})
+		).equals([
+			"2 --baked-limit must be a number (was many)",
+			"2 bakedLimit must be the characters a site's baked introspection may total (was 0)"
+		])
+		attest(
+			runCli(cwd, "--help").stdout.includes("[--baked-limit <number>]")
+		).equals(true)
 	})
 })

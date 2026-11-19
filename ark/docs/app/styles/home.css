@@ -49,12 +49,6 @@
 		width: min(var(--max), calc(100% - 2 * var(--gutter)));
 		margin-inline: auto;
 	}
-	.decl {
-		letter-spacing: -0.01em;
-	}
-	.c-teal {
-		color: var(--teal);
-	}
 	kbd {
 		display: inline-flex;
 		align-items: center;
@@ -260,31 +254,16 @@
 
 	/* ---------- hero ---------- */
 	.hero {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 520px);
-		gap: 64px;
-		/* start, not center: a font swap in one column can't re-center the other */
-		align-items: start;
-		padding: 52px 0 32px;
-		> * {
-			min-width: 0;
-		}
+		padding: 44px 0 0;
 		h1 {
-			margin: 22px 0 26px;
-			font: 800 var(--fs-display) / 0.95 var(--sans);
+			margin: 22px 0 0;
+			font: 800 clamp(2.1rem, 1.2rem + 2.9vw, 3.9rem) / 1.02 var(--sans);
 			letter-spacing: -0.045em;
 		}
 		.one {
-			display: inline-block;
+			display: block;
+			margin-top: 0.1em;
 			color: var(--gold);
-		}
-		h1.is-long {
-			font-size: clamp(2.4rem, 1.5rem + 2.3vw, 3.75rem);
-			line-height: 1.02;
-			.one {
-				display: block;
-				margin-top: 0.12em;
-			}
 		}
 	}
 	.eyebrow {
@@ -304,9 +283,6 @@
 		font: 400 var(--fs-lede) / 1.42 var(--sans);
 		color: var(--ink-2);
 		letter-spacing: -0.01em;
-		.decl {
-			font-size: 1.08em;
-		}
 	}
 	/* stays on every present-tense precompile claim until it ships */
 	.next-tag {
@@ -315,18 +291,10 @@
 		padding: 2px 7px;
 		border-radius: var(--r-pill);
 		border: 1px solid var(--rule);
-		font: 400 11px / 1.3 var(--mono);
+		font: 400 12px / 1.3 var(--mono);
 		color: var(--copper);
 		vertical-align: 1px;
 		white-space: nowrap;
-	}
-	/* a sourced number; its popup opens in the site's quickinfo */
-	/* over code.css's .twoslash-hover:hover and global.css's :focus-visible */
-	.tok {
-		border-radius: 3px;
-		text-decoration: underline dotted
-			color-mix(in oklab, currentColor 50%, transparent);
-		transition: background var(--t-micro);
 	}
 
 	/* ---------- code cards ---------- */
@@ -349,19 +317,18 @@
 			align-items: center;
 			gap: 12px;
 			padding: 12px 20px;
-			font: 400 12.5px / 1.3 var(--mono);
-			color: var(--ink-3);
+			font: 400 13px / 1.3 var(--mono);
+			color: var(--ink-2);
 		}
 		> figcaption {
 			border-bottom: 1px solid var(--rule-soft);
 			b {
-				color: var(--ink-2);
+				color: var(--ink);
 				font-weight: 400;
 			}
 		}
 		> footer {
 			border-top: 1px solid var(--rule-soft);
-			font-size: 11px;
 		}
 	}
 	.code-card.glow::before {
@@ -439,236 +406,12 @@
 		opacity: 0.6;
 		padding: 0 0.35ch;
 	}
-
-	/* ---------- the live type() line ---------- */
-	.live {
-		container: live / inline-size;
-	}
-	.live-body {
-		/* px, unitless so the inputs can scale from 16px to it */
-		--fs: 15;
-		padding: 22px 22px 18px;
-		font: 400 calc(var(--fs) * 1px) / 1.75 var(--mono);
-		min-height: 214px;
-	}
-	/* a long line scrolls; the padding keeps the focus ring inside */
-	.tl {
-		white-space: nowrap;
-		color: var(--ink);
-		overflow-x: auto;
-		scrollbar-width: none;
-		padding: 6px;
-		margin: -6px;
-		.decl {
-			color: var(--ink);
-		}
-	}
-	.k {
-		color: var(--copper);
-	}
-	.fn {
-		color: var(--sky);
-		font-family: var(--cursive);
-		font-style: italic;
-		font-feature-settings: "ss01";
-	}
-	.y {
-		color: var(--gold);
-	}
-	.field {
-		position: relative;
-		display: inline-block;
-		vertical-align: top;
-		input,
-		.mirror {
-			font: inherit;
-			letter-spacing: inherit;
-			padding: 0;
-			margin: 0;
-			border: 0;
-			white-space: pre;
-		}
-		input {
-			position: absolute;
-			inset: 0;
-			width: 100%;
-			background: transparent;
-			color: transparent;
-			caret-color: var(--gold);
-			outline: none;
-		}
-		&:focus-within {
-			outline: 2px solid var(--blue);
-			outline-offset: 3px;
-			border-radius: 3px;
-		}
-		.mirror {
-			display: inline-block;
-			min-width: 1ch;
-		}
-		&[data-state="err"] .mirror {
-			background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 3' height='3' width='6'%3E%3Cg fill='%239558f8'%3E%3Cpolygon points='5.5,0 2.5,3 1.1,3 4.1,0'/%3E%3Cpolygon points='4,0 6,2 6,0.6 5.4,0'/%3E%3Cpolygon points='0,2 1,3 2.4,3 0,0.6'/%3E%3C/g%3E%3C/svg%3E")
-				repeat-x left bottom / 6px 3px;
-		}
-	}
-	/* while the ghost types (and before, while it waits to), the field holds
-	   the final line's width and its closing quote is drawn back to the
-	   cursor, so nothing after it shifts */
-	:root[data-ghost] & .live-body > .tl,
-	.tl[data-ghosting] {
-		.field {
-			min-width: calc(var(--final) * 1ch);
-		}
-		.field + .y {
-			display: inline-block;
-			translate: calc((var(--typed, 1) - var(--final)) * 1ch) 0;
-		}
-	}
-	.m-kw,
-	.m-num {
-		color: var(--blue);
-	}
-	.m-sub {
-		color: var(--teal);
-	}
-	.m-op {
-		color: var(--copper);
-	}
-	.m-lit {
-		color: var(--gold);
-	}
-	.verdict {
-		display: flex;
-		gap: 1ch;
-		margin: 10px 0 14px;
-		font-size: 14px;
-		line-height: 1.5;
-		min-height: 3em;
-		transition: opacity var(--t-micro);
-		&[data-ghost] {
-			opacity: 0.55;
-		}
-		.mark {
-			flex: none;
-		}
-		&[data-state="ok"] {
-			color: var(--teal);
-		}
-		&[data-state="err"] {
-			color: var(--violet-text);
-		}
-		small {
-			display: block;
-			color: var(--ink-3);
-			font-size: 12.5px;
-		}
-	}
-	.call {
-		padding-top: 12px;
-		border-top: 1px dashed var(--rule-soft);
-		.arg {
-			vertical-align: baseline;
-			color: var(--blue);
-			background: color-mix(in oklab, var(--ink) 5%, transparent);
-			border: 1px solid transparent;
-			border-radius: 4px;
-			padding: 0 4px;
-			&:focus-within {
-				outline: none;
-				border-color: var(--blue);
-			}
-			input {
-				padding: 0 4px;
-			}
-			.mirror {
-				min-width: 2ch;
-			}
-		}
-		.out {
-			display: block;
-			margin-top: 2px;
-			font-size: 14px;
-			color: var(--ink-3);
-			transition: opacity var(--t-micro);
-			&[data-state="err"] {
-				color: var(--red-text);
-			}
-			&[data-state="ok"] {
-				color: var(--teal);
-			}
-		}
-	}
-	/* the shown result is for an earlier definition; dimmed only if the answer is slow */
-	.live-body[data-pending] :is(.verdict, .out) {
-		opacity: 0.55;
-		transition-delay: 150ms;
-	}
-	.chips {
-		display: flex;
-		flex-wrap: wrap;
-		align-content: flex-start;
-		gap: 8px;
-		padding: 0 20px 18px;
-		/* the rows they take in the card's width, reserved: chips rewrap when the mono font swaps in */
-		min-height: calc(3 * 33px + 2 * 8px + 18px);
-		@container live (min-width: 600px) {
-			min-height: calc(2 * 33px + 8px + 18px);
-		}
-		@container live (min-width: 920px) {
-			min-height: calc(33px + 18px);
-		}
-	}
-	.chip {
-		font: 400 12.5px / 1 var(--mono);
-		color: var(--ink-2);
-		padding: 8px 11px;
-		border-radius: var(--r-pill);
-		border: 1px solid var(--line);
-		cursor: pointer;
-		transition:
-			border-color var(--t-micro),
-			color var(--t-micro),
-			background var(--t-micro);
-		&:hover,
-		&[aria-pressed="true"] {
-			border-color: color-mix(in oklab, var(--gold) 45%, transparent);
-			color: var(--gold);
-			background: color-mix(in oklab, var(--gold) 6%, transparent);
-		}
-	}
-	.tap-word {
-		display: none;
-	}
 	@media (hover: none) {
-		.hover-word {
-			display: none;
-		}
-		.tap-word {
-			display: inline;
-		}
-		/* iOS zooms into a focused input under 16px: render at 16px, scaled to the line */
-		.field input {
-			inset: 0 auto auto 0;
-			width: calc(100% * 16 / var(--fs));
-			height: calc(100% * 16 / var(--fs));
-			font-size: 16px;
-			scale: calc(var(--fs) / 16);
-			transform-origin: 0 0;
-		}
-		.call .arg input {
-			padding: 0 calc(4px * 16 / var(--fs));
-		}
-	}
-	.live-state {
-		white-space: nowrap;
-		&[data-live] {
-			color: var(--teal);
-		}
 	}
 
 	/* ---------- sections ---------- */
 	.block {
-		padding-top: 128px;
+		padding-top: 88px;
 		h2 {
 			margin: 14px 0 0;
 			font: 750 var(--fs-h2-home) / 1.04 var(--sans);
@@ -700,64 +443,11 @@
 		max-width: 104ch;
 		margin: 18px 0 0;
 		font: 400 13.5px / 1.6 var(--mono);
-		color: var(--ink-3);
+		color: var(--ink-2);
 		padding-left: 3ch;
 		text-indent: -3ch;
 		code {
 			color: var(--gold);
-		}
-	}
-	.pair-note {
-		margin-top: 14px;
-	}
-
-	/* 01: the same type, twice */
-	.twin-code {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr);
-		align-items: stretch;
-		margin-top: 48px;
-		.code-card > pre.shiki {
-			--pre-x: 22px;
-			padding: 20px var(--pre-x);
-			font-size: 14.5px;
-			line-height: 1.8;
-		}
-	}
-	.eq {
-		display: grid;
-		align-content: start;
-		padding-top: calc(45px + 20px);
-		font: 400 14.5px / 1.8 var(--mono);
-		color: var(--copper);
-		text-align: center;
-		opacity: 0.75;
-		span:nth-child(3),
-		span:nth-child(4) {
-			color: var(--gold);
-			opacity: 1;
-		}
-	}
-
-	/* 02: editor | terminal, then runtime | MCP */
-	.pair2 {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		gap: 24px;
-		margin-top: 48px;
-		align-items: stretch;
-		> * {
-			min-width: 0;
-		}
-		h3 {
-			margin: 20px 0 6px;
-			font: 700 20px / 1.3 var(--sans);
-			letter-spacing: -0.015em;
-		}
-		p {
-			margin: 0;
-			color: var(--ink-2);
-			max-width: 52ch;
 		}
 	}
 	.term {
@@ -784,12 +474,6 @@
 		.loc {
 			color: var(--sky);
 		}
-		.dim {
-			color: var(--ink-3);
-		}
-		.err {
-			color: var(--violet-ink);
-		}
 	}
 	.term-bar {
 		display: flex;
@@ -799,8 +483,8 @@
 		padding: 0 16px;
 		border-bottom: 1px solid var(--line);
 		background: color-mix(in oklab, var(--surface) 60%, var(--sunk));
-		font: 400 12.5px / 1 var(--mono);
-		color: var(--ink-3);
+		font: 400 13px / 1 var(--mono);
+		color: var(--ink-2);
 	}
 	.dots {
 		display: inline-flex;
@@ -810,26 +494,6 @@
 			height: 10px;
 			border-radius: 50%;
 			background: color-mix(in oklab, var(--ink) 16%, transparent);
-		}
-	}
-	.tool-result {
-		border-top: 1px solid var(--rule-soft);
-		padding: 12px 20px 14px;
-		font: 400 13px / 1.5 var(--mono);
-		.h {
-			display: flex;
-			justify-content: space-between;
-			gap: 12px;
-			color: var(--ink-3);
-			font-size: 11.5px;
-			margin-bottom: 4px;
-		}
-		.h b {
-			font-weight: 400;
-			color: var(--red-text);
-		}
-		.m {
-			color: var(--red-ink);
 		}
 	}
 
@@ -860,63 +524,7 @@
 		color: var(--ink-2);
 		max-width: 40ch;
 	}
-	.b-pre {
-		margin-top: 56px;
-		padding-top: 28px;
-		border-top: 1px solid var(--rule-soft);
-		h3 {
-			font: 740 1.5rem / 1.15 var(--sans);
-			letter-spacing: -0.02em;
-		}
-		p {
-			margin: 10px 0 0;
-			color: var(--ink-2);
-			max-width: 60ch;
-		}
-		.facts {
-			max-width: 900px;
-		}
-	}
-	.facts {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 24px;
-		margin: 24px 0 0;
-		div {
-			display: grid;
-			gap: 6px;
-			align-content: start;
-		}
-		dt {
-			font: 400 12px / 1.3 var(--mono);
-			color: var(--ink-3);
-		}
-		dd {
-			margin: 0;
-			display: grid;
-			gap: 4px;
-		}
-		dd b {
-			font: 760 2rem / 1 var(--sans);
-			letter-spacing: -0.03em;
-		}
-		dd span {
-			font-size: 13.5px;
-			color: var(--ink-3);
-		}
-	}
 
-	/* 04: the agent transcript and its setup rows */
-	.agents {
-		display: grid;
-		grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-		gap: 56px;
-		margin-top: 44px;
-		align-items: start;
-		> * {
-			min-width: 0;
-		}
-	}
 	.term-body {
 		list-style: none;
 		margin: 0;
@@ -956,9 +564,6 @@
 		border-radius: 50%;
 		background: var(--teal);
 		flex: none;
-		&.is-say {
-			background: var(--ink-2);
-		}
 	}
 	.t-cmd {
 		color: var(--ink);
@@ -1023,81 +628,15 @@
 	.t-rt {
 		color: var(--red-ink);
 	}
-	.t-say {
-		display: flex;
-		align-items: center;
-		gap: 9px;
-		margin-top: 6px;
-		color: var(--ink);
-		font-family: var(--sans);
-		font-size: 15px;
-	}
 	.term-replay {
 		margin-left: auto;
-		font: 400 12px / 1 var(--mono);
-		color: var(--ink-3);
+		font: 400 13px / 1 var(--mono);
+		color: var(--ink-2);
 		padding: 6px 8px;
 		border-radius: var(--r-xs);
 		cursor: pointer;
 		&:hover {
 			color: var(--sky);
-		}
-	}
-	.rows-title {
-		margin: 0 0 14px;
-		font: 400 13px / 1 var(--mono);
-		color: var(--ink-3);
-		&::before {
-			content: "// ";
-			color: var(--copper);
-		}
-	}
-	.rows {
-		border-top: 1px solid var(--rule-soft);
-	}
-	.row {
-		position: relative;
-		display: grid;
-		grid-template-columns: 34px minmax(0, 1fr);
-		gap: 6px 14px;
-		padding: 24px 0 24px 14px;
-		border-bottom: 1px solid var(--rule-soft);
-		&::before {
-			content: "";
-			position: absolute;
-			left: 0;
-			top: 0;
-			bottom: 0;
-			width: 2px;
-			background: var(--copper);
-			scale: 1 0;
-			transform-origin: top;
-			transition: scale var(--t-ui) var(--ease-out);
-		}
-		&:hover::before {
-			scale: 1 1;
-		}
-		.idx {
-			font: 400 12.5px / 1.9 var(--mono);
-			color: var(--copper);
-		}
-		h3 {
-			font: 700 18px / 1.35 var(--sans);
-			letter-spacing: -0.01em;
-		}
-		p {
-			grid-column: 2;
-			margin: 0;
-			color: var(--ink-2);
-			font-size: 16px;
-		}
-		.act {
-			grid-column: 2;
-			margin-top: 10px;
-			display: flex;
-			flex-wrap: wrap;
-			gap: 10px;
-			align-items: center;
 		}
 	}
 	.cmd {
@@ -1137,65 +676,6 @@
 			color: var(--teal);
 		}
 	}
-	.url {
-		display: inline-flex;
-		align-items: center;
-		height: 40px;
-		padding: 0 14px;
-		border-radius: var(--r-sm);
-		background: var(--sunk);
-		border: 1px solid var(--line);
-		font: 400 13.5px / 1 var(--mono);
-		color: var(--ink-2);
-		text-decoration: none;
-		&:hover {
-			color: var(--ink);
-		}
-		.md {
-			display: inline-block;
-			overflow: hidden;
-			color: var(--gold);
-			vertical-align: bottom;
-		}
-	}
-
-	/* 07: sets */
-	.ex-pair {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		gap: 16px;
-	}
-	.examples {
-		display: grid;
-		margin-top: 44px;
-		border-top: 1px solid var(--rule-soft);
-	}
-	.ex {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1.9fr);
-		gap: 40px;
-		align-items: center;
-		padding: 28px 0;
-		border-bottom: 1px solid var(--rule-soft);
-		> * {
-			min-width: 0;
-		}
-		h3 {
-			font: 700 18px / 1.3 var(--sans);
-			margin: 0 0 6px;
-		}
-		p {
-			margin: 0;
-			color: var(--ink-2);
-			font-size: 15.5px;
-			max-width: 36ch;
-		}
-		.code-card > pre.shiki {
-			--pre-x: 18px;
-			padding: 16px var(--pre-x);
-			font-size: 13px;
-		}
-	}
 	.works {
 		margin-top: 56px;
 		display: flex;
@@ -1204,8 +684,8 @@
 		gap: 10px;
 		.lbl {
 			flex-basis: 100%;
-			font: 400 13px / 1 var(--mono);
-			color: var(--ink-3);
+			font: 400 13px / 1.4 var(--mono);
+			color: var(--ink-2);
 			margin-bottom: 6px;
 		}
 		a {
@@ -1228,7 +708,7 @@
 	/* ---------- closer and footer ---------- */
 	.closer {
 		position: relative;
-		margin-top: 160px;
+		margin-top: 112px;
 		padding: 72px 0 0;
 		border-top: 1px solid var(--rule-soft);
 		background: linear-gradient(180deg, transparent, var(--sunk) 70%);
@@ -1242,12 +722,6 @@
 		.ctas {
 			margin-top: 20px;
 		}
-	}
-	.closer-agent {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 10px;
-		margin-top: 32px;
 	}
 	.site-foot {
 		margin-top: 96px;
@@ -1283,25 +757,12 @@
 		filter: blur(6px);
 	}
 }
-@keyframes squiggle-in {
-	from {
-		background-size: 0 3px;
-	}
-}
 @keyframes squiggle-type {
 	from {
 		clip-path: inset(0 100% 0 0);
 	}
 	to {
 		clip-path: inset(0);
-	}
-}
-@keyframes md-type {
-	from {
-		width: 0;
-	}
-	to {
-		width: 3ch;
 	}
 }
 
@@ -1331,9 +792,6 @@
 		[data-wait][data-in="now"] {
 			transition: none;
 		}
-		.field[data-state="err"] .mirror {
-			animation: squiggle-in 0.18s ease-out;
-		}
 		/* the editor's squiggles type themselves in as its card scrolls up into
 		   view; the timeline is the card's, since the code scrolls sideways */
 		@supports (animation-timeline: view()) {
@@ -1353,14 +811,6 @@
 					animation-range: entry 55% entry 100%;
 				}
 			}
-		}
-		/* set before first paint while the live card's ghost is still to play */
-		:root[data-ghost] & .live :is(.live-body > .tl .mirror, .verdict, .out) {
-			visibility: hidden;
-		}
-		[data-reveal]:not([data-wait]) .url .md,
-		[data-reveal][data-in] .url .md {
-			animation: md-type 0.4s steps(3) 0.5s both;
 		}
 		.term[data-playing] .term-body > [data-step] {
 			transition:
@@ -1394,26 +844,12 @@
 
 @media (max-width: 1080px) {
 	.home {
-		.hero {
-			grid-template-columns: minmax(0, 1fr);
-			gap: 48px;
-			padding-top: 48px;
-		}
 		.nav-sub {
 			display: none;
 		}
 		.figs {
 			grid-template-columns: auto minmax(0, 1fr);
 		}
-		.agents {
-			grid-template-columns: minmax(0, 1fr);
-		}
-	}
-}
-
-@media (min-width: 1081px) {
-	.home .hero .live {
-		margin-top: 72px;
 	}
 }
 
@@ -1436,35 +872,14 @@
 			justify-content: center;
 		}
 		.hero {
-			padding: 28px 0 8px;
-			gap: 40px;
+			padding: 24px 0 0;
 			h1 {
-				margin: 16px 0 18px;
+				margin-top: 16px;
 			}
-		}
-		.ex-pair {
-			grid-template-columns: minmax(0, 1fr);
-		}
-		.live-body {
-			--fs: 13.5;
-			padding: 18px 16px 14px;
-			/* the card's final height, so the font swap can't shift the page */
-			min-height: 211px;
-		}
-		/* the result wraps here: keep both lines while the ghost clears it */
-		.call .out {
-			min-height: 2lh;
-			text-wrap: balance;
-		}
-		.chips {
-			padding: 0 16px 16px;
 		}
 		.code-card > figcaption,
 		.code-card > footer {
 			padding: 11px 16px;
-		}
-		.cap-wide {
-			display: none;
 		}
 		.code-card > figcaption {
 			flex-wrap: wrap;
@@ -1481,32 +896,11 @@
 			flex-basis: 100%;
 		}
 		.block {
-			padding-top: 96px;
-		}
-		.twin-code {
-			grid-template-columns: minmax(0, 1fr);
-			gap: 12px;
-			.code-card > pre.shiki {
-				--pre-x: 16px;
-				padding: 16px var(--pre-x);
-				font-size: 13px;
-			}
-		}
-		.eq {
-			display: none;
-		}
-		.pair2 {
-			grid-template-columns: minmax(0, 1fr);
-			gap: 16px;
-			margin-top: 32px;
+			padding-top: 68px;
 		}
 		.figs {
 			grid-template-columns: minmax(0, 1fr);
 			gap: 22px;
-		}
-		.facts {
-			grid-template-columns: minmax(0, 1fr);
-			gap: 18px;
 		}
 		.term pre.out,
 		.term-body {
@@ -1522,10 +916,6 @@
 		.cmd {
 			font-size: 12.5px;
 			line-height: 1.45;
-		}
-		.ex {
-			grid-template-columns: minmax(0, 1fr);
-			gap: 14px;
 		}
 	}
 }
@@ -1546,7 +936,7 @@
 		border: 1px solid var(--rule);
 		background: color-mix(in oklab, var(--gold) 5%, transparent);
 		color: var(--gold);
-		font: 400 12px / 1.2 var(--mono);
+		font: 400 13px / 1.2 var(--mono);
 		text-decoration: none;
 		transition:
 			border-color var(--t-micro),
@@ -1567,22 +957,6 @@
 			margin: 0;
 		}
 	}
-	.lede {
-		max-width: 34ch;
-		margin-bottom: 36px;
-	}
-	/* an invitation to check the numbers, quiet beside the claim it backs */
-	.how {
-		margin-left: 0.6ch;
-		font: 400 0.62em / 1 var(--mono);
-		color: var(--ink-3);
-		white-space: nowrap;
-		text-decoration: none;
-		transition: color var(--t-micro);
-		&:hover {
-			color: var(--gold);
-		}
-	}
 	.cmd .comment {
 		color: var(--ink-3);
 	}
@@ -1592,35 +966,22 @@
 
 	/* the board: a measured win in each category */
 	.board {
-		margin-top: 56px;
+		margin-top: 60px;
 		scroll-margin-top: calc(var(--top) + 24px);
 	}
+	/* the board's heading, and what it adds up to */
 	.board-head {
-		position: relative;
 		h2 {
-			margin: 14px 0 0;
-			font: 800 clamp(2.4rem, 1.3rem + 3.4vw, 4.6rem) / 1 var(--sans);
+			margin: 0;
+			font: 800 clamp(2.2rem, 0.9rem + 2.9vw, 3.35rem) / 1.04 var(--sans);
 			letter-spacing: -0.045em;
 		}
-		.phrase {
-			display: inline-block;
-			white-space: nowrap;
-		}
-		.phrase:last-child {
-			color: var(--gold);
-		}
-		/* the trade-off the title strikes out */
-		s {
-			color: var(--ink-3);
-			text-decoration-thickness: 0.07em;
-		}
 	}
-	/* each card's rows on one subgrid, so numbers, bars and claims line up */
-	.cards {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 0 16px;
-		margin: 44px 0 1.6rem;
+	.board-sub {
+		margin: 12px 0 0;
+		font: 600 clamp(1.15rem, 0.9rem + 0.7vw, 1.5rem) / 1.25 var(--sans);
+		letter-spacing: -0.015em;
+		color: var(--gold);
 	}
 	.card {
 		position: relative;
@@ -1650,43 +1011,8 @@
 				0 0 0 4px color-mix(in oklab, var(--gold) 5%, transparent);
 		}
 	}
-	.card-head {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 10px;
-		font: 400 12.5px / 1.3 var(--mono);
-		color: var(--ink-2);
-	}
-	.card-check {
-		display: inline-grid;
-		place-items: center;
-		width: 22px;
-		height: 22px;
-		border-radius: 50%;
-		background: color-mix(in oklab, var(--teal) 16%, transparent);
-		box-shadow: inset 0 0 0 1px
-			color-mix(in oklab, var(--teal) 55%, transparent);
-		color: var(--teal);
-		svg {
-			width: 13px;
-			height: 13px;
-		}
-	}
-	.card-label {
-		font: inherit;
-	}
-	.board-note {
-		max-width: 120ch;
-		margin: 22px 0 0;
-		font: 400 12px / 1.65 var(--mono);
-		color: var(--ink-3);
-		a {
-			color: var(--sky);
-		}
-	}
 
-	/* Pick 3: each library's best averages, a mark where it counts as first */
+	/* the board as a table: each library's mean and place, a mark where it is first */
 	.p3 {
 		max-width: 880px;
 		margin: 40px 0 0;
@@ -1699,23 +1025,6 @@
 			var(--surface) 55%
 		);
 		box-shadow: var(--shadow-card);
-	}
-	.p3-head {
-		h3 {
-			margin: 0;
-			font: 800 clamp(1.5rem, 1.1rem + 1.2vw, 2.1rem) / 1.1 var(--sans);
-			letter-spacing: -0.03em;
-		}
-		p {
-			margin: 8px 0 0;
-			font-size: 14px;
-			color: var(--ink-2);
-		}
-		.p3-startup {
-			margin-top: 6px;
-			font: 400 12px / 1.5 var(--mono);
-			color: var(--ink-3);
-		}
 	}
 	.p3-table {
 		width: 100%;
@@ -1737,9 +1046,9 @@
 		}
 		thead th {
 			padding-block: 0 10px;
-			font-size: 12px;
+			font-size: 13px;
 			font-weight: 400;
-			color: var(--ink-3);
+			color: var(--ink-2);
 		}
 		tbody tr {
 			border-top: 1px solid var(--rule);
@@ -1750,7 +1059,7 @@
 			white-space: normal;
 		}
 		td {
-			color: var(--ink-3);
+			color: var(--ink-2);
 		}
 		td.is-first {
 			color: var(--ink);
@@ -1790,8 +1099,12 @@
 			height: 11px;
 		}
 	}
-	.p3-none {
+	.p3-none,
+	.p3-place {
 		color: var(--ink-3);
+	}
+	.p3-place {
+		font-size: 12.5px;
 	}
 	.p3-foot {
 		display: flex;
@@ -1799,45 +1112,11 @@
 		align-items: center;
 		gap: 6px 18px;
 		margin: 14px 0 0;
-		font: 400 12px / 1.5 var(--mono);
-		color: var(--ink-3);
+		font: 400 13px / 1.5 var(--mono);
+		color: var(--ink-2);
 		a {
 			margin-left: auto;
 			color: var(--sky);
-		}
-	}
-	.card-big {
-		display: grid;
-		gap: 6px;
-		margin: 26px 0 0;
-	}
-	.card-num {
-		justify-self: start;
-		font: 800 clamp(3rem, 2.2rem + 2.2vw, 4.25rem) / 0.95 var(--sans);
-		letter-spacing: -0.045em;
-		font-variant-numeric: tabular-nums;
-		color: var(--gold);
-		text-shadow: 0 0 42px color-mix(in oklab, var(--gold-glow) 28%, transparent);
-		white-space: nowrap;
-	}
-	.card-unit {
-		font: 400 12.5px / 1.3 var(--mono);
-		color: var(--ink-3);
-	}
-	.card-margin {
-		margin: 16px 0 0;
-		font-size: 15px;
-		line-height: 1.45;
-		color: var(--ink-2);
-		p {
-			margin: 0;
-		}
-		p + p {
-			margin-top: 8px;
-		}
-		b {
-			color: var(--teal);
-			font-weight: 700;
 		}
 	}
 	.race {
@@ -1860,8 +1139,8 @@
 			"name val"
 			"track track";
 		gap: 5px 10px;
-		font: 400 12px / 1.2 var(--mono);
-		color: var(--ink-3);
+		font: 400 13px / 1.2 var(--mono);
+		color: var(--ink-2);
 	}
 	.lane-name {
 		grid-area: name;
@@ -1907,177 +1186,10 @@
 				color-mix(in oklab, var(--gold-glow) 55%, transparent);
 		}
 	}
-	/* the speed card: a beeswarm per library, each scenario a dot at its
-	   ratio on a log axis, dodged (Board.tsx) so no two overlap */
-	.spread-plot {
-		position: relative;
-	}
-	.spread {
-		row-gap: 14px;
-		.lane {
-			row-gap: 2px;
-		}
-		.lane-val {
-			color: var(--ink-2);
-		}
-		.lane-track {
-			container-type: inline-size;
-			height: calc((var(--above) + var(--below) + 1) * var(--pitch));
-			border-radius: 0;
-			background: linear-gradient(var(--line), var(--line)) 0
-				calc((var(--above) + 0.5) * var(--pitch)) / 100% 1px no-repeat;
-			/* ArkType, at 1× */
-			&::before {
-				content: "";
-				position: absolute;
-				left: calc(var(--one) * 100%);
-				top: 0;
-				bottom: 0;
-				width: 2px;
-				margin-left: -1px;
-				border-radius: 1px;
-				background: var(--copper);
-				transform-origin: bottom;
-			}
-		}
-	}
-	.spot {
-		position: absolute;
-		top: calc((var(--above) + 0.5 + var(--y)) * var(--pitch));
-		left: calc(var(--x) * 100%);
-		width: var(--dot);
-		height: var(--dot);
-		margin: calc(var(--dot) / -2) 0 0 calc(var(--dot) / -2);
-		border-radius: 50%;
-		background: var(--gold);
-		box-shadow: 0 0 0 1px var(--surface);
-		transform-origin: left;
-		transition: scale var(--t-micro) var(--ease-out);
-		&.is-loss {
-			background: var(--surface);
-			box-shadow: inset 0 0 0 1.5px var(--ink-2);
-		}
-		&.is-tie {
-			background: var(--ink-3);
-		}
-		&.is-hot {
-			z-index: 1;
-			scale: 1.7;
-			transform-origin: center;
-			box-shadow:
-				0 0 0 1px var(--surface),
-				0 0 0 2.5px var(--gold);
-		}
-	}
-	.spread-axis {
-		position: relative;
-		height: 14px;
-		margin-top: 6px;
-	}
-	.spread-axis .tick {
-		position: absolute;
-		left: calc(var(--x) * 100%);
-		translate: -50% 0;
-		font: 400 10.5px / 1 var(--mono);
-		color: var(--ink-3);
-		&.is-one {
-			color: var(--copper);
-			font-weight: 600;
-		}
-		&:last-child {
-			translate: -100% 0;
-		}
-	}
-	/* one scenario's name, times and verdict, beside the dot nearest the pointer */
-	.spot-tip {
-		position: absolute;
-		z-index: 2;
-		left: 0;
-		top: 0;
-		width: max-content;
-		max-width: min(260px, 100%);
-		margin: 0;
-		padding: 8px 11px;
-		border-radius: var(--r-sm);
-		border: 1px solid var(--popover-border);
-		background: var(--popover-bg);
-		backdrop-filter: blur(12px);
-		/* tight, so it never dims the dot it names */
-		box-shadow: 0 6px 16px -10px rgb(0 0 0 / 0.6);
-		font: 400 11.5px / 1.45 var(--mono);
-		color: var(--ink-2);
-		/* the library's median, then ArkType's, a line each */
-		white-space: pre-line;
-		pointer-events: none;
-		b {
-			display: block;
-			font: 600 12.5px / 1.35 var(--sans);
-			color: var(--ink);
-		}
-		.v {
-			display: block;
-			color: var(--gold);
-		}
-	}
-	.spread-key {
-		display: flex;
-		margin-bottom: 2px;
-	}
-	.key-one,
-	.key-dot {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		margin-right: 12px;
-		white-space: nowrap;
-		&::before {
-			content: "";
-			flex: none;
-		}
-	}
-	.key-one {
-		color: var(--copper);
-		&::before {
-			width: 2px;
-			height: 11px;
-			border-radius: 1px;
-			background: var(--copper);
-		}
-	}
-	.key-dot::before {
-		width: 7px;
-		height: 7px;
-		border-radius: 50%;
-		background: var(--gold);
-	}
 	.card-rest {
 		margin: 12px 0 0;
-		font: 400 11.5px / 1.5 var(--mono);
-		color: var(--ink-3);
-	}
-	.card-foot {
-		align-self: end;
-	}
-	.card-src {
-		justify-self: start;
-		display: inline-block;
-		margin-top: 10px;
-		font: 400 12px / 1.4 var(--mono);
-		color: var(--sky);
-		text-decoration: none;
-		&::after {
-			content: "↗" / "";
-			margin-left: 0.3em;
-			display: inline-block;
-			transition: translate var(--t-micro) var(--ease-out);
-		}
-		&:hover {
-			text-decoration: underline;
-			text-underline-offset: 3px;
-		}
-		&:hover::after {
-			translate: 2px -2px;
-		}
+		font: 400 13px / 1.5 var(--mono);
+		color: var(--ink-2);
 	}
 
 	.hero a.one {
@@ -2089,219 +1201,6 @@
 		transition: text-decoration-color var(--t-ui);
 		&:hover {
 			text-decoration-color: color-mix(in oklab, var(--gold) 45%, transparent);
-		}
-	}
-
-	/* 05: what "optimized for agentic dev" means, each a link to its proof */
-	.proofs {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 16px;
-		margin: 40px 0 0;
-		padding: 0;
-		list-style: none;
-		a {
-			display: grid;
-			align-content: start;
-			gap: 6px;
-			height: 100%;
-			padding: 20px 22px;
-			border-radius: var(--r-lg);
-			border: 1px solid var(--rule-soft);
-			background: color-mix(in oklab, var(--surface) 70%, transparent);
-			text-decoration: none;
-			transition:
-				border-color var(--t-ui),
-				translate var(--t-ui) var(--ease-out);
-			&:hover {
-				border-color: color-mix(in oklab, var(--gold) 38%, transparent);
-				translate: 0 -2px;
-			}
-		}
-		.n {
-			font: 400 12px / 1.4 var(--mono);
-			color: var(--copper);
-			&::after {
-				content: " ↓" / "";
-				color: var(--ink-3);
-			}
-		}
-		b {
-			font: 700 18px / 1.3 var(--sans);
-			letter-spacing: -0.01em;
-		}
-		a > span:last-child {
-			font-size: 14.5px;
-			line-height: 1.5;
-			color: var(--ink-3);
-		}
-		code {
-			font-size: 0.92em;
-			color: var(--gold);
-		}
-	}
-	.sub {
-		margin: 88px 0 0;
-		font: 750 clamp(1.6rem, 1.25rem + 1.1vw, 2.2rem) / 1.12 var(--sans);
-		letter-spacing: -0.025em;
-		max-width: 26ch;
-	}
-
-	/* 01: why now */
-	.sides {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		align-items: start;
-		gap: 16px;
-		margin-top: 44px;
-	}
-	.side {
-		min-width: 0;
-		padding: 26px 26px 24px;
-		border-radius: var(--r-lg);
-		border: 1px solid var(--rule-soft);
-		background: color-mix(in oklab, var(--surface) 70%, transparent);
-		h3 {
-			margin: 10px 0 0;
-			font: 750 1.6rem / 1.1 var(--sans);
-			letter-spacing: -0.025em;
-		}
-		p {
-			margin: 12px 0 0;
-			color: var(--ink-2);
-		}
-	}
-	.loop {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 6px 0;
-		margin: 16px 0 0;
-		padding: 0;
-		list-style: none;
-		li {
-			padding: 5px 11px;
-			border-radius: var(--r-pill);
-			border: 1px solid var(--line);
-			font: 400 12.5px / 1.2 var(--mono);
-			color: var(--ink-2);
-		}
-		li + li {
-			position: relative;
-			margin-left: 24px;
-			&::before {
-				content: "→" / "";
-				position: absolute;
-				right: calc(100% + 7px);
-				color: var(--ink-3);
-			}
-		}
-		/* the step the loop waits on, hatched */
-		.is-slow {
-			color: var(--red-text);
-			border-color: color-mix(in oklab, var(--red) 45%, transparent);
-			background: repeating-linear-gradient(
-				-45deg,
-				color-mix(in oklab, var(--red) 12%, transparent) 0 5px,
-				transparent 5px 10px
-			);
-		}
-	}
-	.side-who {
-		font: 400 12.5px / 1.3 var(--mono);
-		color: var(--copper);
-		&::before {
-			content: "// ";
-			color: var(--ink-3);
-		}
-	}
-	.side-term {
-		margin: 20px 0 0;
-		padding: 14px 16px;
-		border-radius: var(--r-md);
-		border: 1px solid var(--line);
-		background: var(--sunk);
-		font: 400 12.5px / 1.6 var(--mono);
-		font-variant-ligatures: none;
-		color: var(--ink-2);
-		white-space: pre-wrap;
-		overflow-wrap: anywhere;
-		.loc {
-			color: var(--sky);
-		}
-		.err {
-			color: var(--violet-ink);
-		}
-		.dim {
-			color: var(--ink-3);
-		}
-		.p {
-			color: var(--gold);
-		}
-	}
-	.proof {
-		margin: 16px 0 0;
-		border-radius: var(--r-lg);
-		border: 1px solid var(--line);
-		background: var(--sunk);
-		box-shadow: var(--shadow-card);
-		overflow: hidden;
-	}
-	.proof-body {
-		margin: 0;
-		padding: 6px 0;
-		list-style: none;
-		li {
-			display: grid;
-			grid-template-columns: 18px minmax(0, 15rem) minmax(0, 1fr);
-			gap: 16px;
-			align-items: baseline;
-			padding: 13px 22px;
-		}
-		li + li {
-			border-top: 1px dashed var(--line);
-		}
-	}
-	.proof-mark {
-		position: relative;
-		display: inline-grid;
-		place-items: center;
-		width: 18px;
-		height: 18px;
-		align-self: center;
-		.tick {
-			color: var(--teal);
-			font: 700 15px / 1 var(--mono);
-		}
-		.spin {
-			display: none;
-			width: 12px;
-			height: 12px;
-			border-radius: 50%;
-			border: 1.5px solid color-mix(in oklab, var(--teal) 30%, transparent);
-			border-top-color: var(--teal);
-		}
-	}
-	.proof-cmd {
-		font: 400 13.5px / 1.5 var(--mono);
-		color: var(--gold);
-		white-space: nowrap;
-	}
-	.proof-what {
-		font-size: 15px;
-		line-height: 1.5;
-		color: var(--ink-2);
-	}
-	.receipt {
-		display: grid;
-		grid-template-columns: max-content minmax(0, 1fr);
-		gap: 8px 24px;
-		align-items: baseline;
-		margin-top: 28px;
-		p {
-			margin: 0;
-			max-width: 72ch;
-			color: var(--ink-2);
 		}
 	}
 
@@ -2333,17 +1232,6 @@
 			justify-self: stretch;
 			justify-content: space-between;
 		}
-		.url {
-			color: var(--ink);
-			transition: border-color var(--t-micro);
-			&:hover {
-				border-color: color-mix(in oklab, var(--sky) 45%, transparent);
-			}
-			&::after {
-				content: "→" / "";
-				color: var(--ink-3);
-			}
-		}
 	}
 	.move-n {
 		display: inline-grid;
@@ -2355,32 +1243,6 @@
 		color: var(--on-gold);
 		font: 700 13px / 1 var(--mono);
 		box-shadow: 0 0 0 4px color-mix(in oklab, var(--gold) 14%, transparent);
-	}
-	.convert {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr);
-		align-items: stretch;
-		margin-top: 24px;
-		.code-card > pre.shiki {
-			--pre-x: 20px;
-			padding: 18px var(--pre-x);
-			font-size: 13.5px;
-		}
-	}
-	.convert-arrow {
-		display: grid;
-		place-items: center;
-		span {
-			display: inline-grid;
-			place-items: center;
-			width: 32px;
-			height: 32px;
-			border-radius: 50%;
-			border: 1px solid var(--rule);
-			background: var(--bg);
-			color: var(--gold);
-			font: 400 16px / 1 var(--mono);
-		}
 	}
 	.guide {
 		display: grid;
@@ -2396,36 +1258,6 @@
 				color: var(--copper);
 			}
 		}
-	}
-	.steps-flow {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-		margin: 0;
-		padding: 0;
-		list-style: none;
-		counter-reset: step;
-		li {
-			counter-increment: step;
-			display: inline-flex;
-			align-items: center;
-			gap: 8px;
-			padding: 7px 12px 7px 8px;
-			border-radius: var(--r-pill);
-			border: 1px solid var(--line);
-			font: 400 13px / 1 var(--mono);
-			color: var(--ink-2);
-			&::before {
-				content: counter(step, decimal-leading-zero);
-				color: var(--copper);
-				font-size: 11px;
-			}
-		}
-	}
-	.guide-p {
-		margin: 16px 0 0;
-		font-size: 15px;
-		color: var(--ink-2);
 	}
 	.differs {
 		display: grid;
@@ -2454,247 +1286,16 @@
 	}
 }
 
-@keyframes snap {
-	from {
-		scale: 0 1;
-	}
-	70% {
-		scale: 1.04 1;
-	}
-}
-@keyframes pack {
-	from {
-		scale: calc(1 / var(--w)) 1;
-		opacity: 0;
-	}
-	20% {
-		scale: calc(1 / var(--w)) 1;
-		opacity: 1;
-	}
-	80% {
-		scale: 0.97 1;
-	}
-}
-@keyframes stamp-in {
-	from {
-		scale: 0.4;
-		opacity: 0;
-	}
-	60% {
-		scale: 1.18;
-		opacity: 1;
-	}
-}
-@keyframes place-in {
-	from {
-		opacity: 0;
-		scale: 0.6;
-	}
-	60% {
-		opacity: 1;
-		scale: 1.06;
-	}
-}
-@keyframes strike {
-	to {
-		background-size: 100% 0.07em;
-	}
-}
-/* in from past the track's right end, streaking until it slows to its ratio */
-@keyframes spot-race {
-	from {
-		opacity: 0;
-		translate: calc((1 - var(--x)) * 100cqw + 12px) 0;
-		scale: 3.2 0.7;
-	}
-	12% {
-		opacity: 1;
-	}
-}
-@keyframes line-draw {
-	from {
-		scale: 1 0;
-	}
-}
-/* one pass of light along ArkType's bar as it finishes first */
-@keyframes glint {
-	from {
-		background-position-x: -60%;
-	}
-	to {
-		background-position-x: 180%;
-	}
-}
-@keyframes spin {
-	to {
-		rotate: 1turn;
-	}
-}
-@keyframes show-tick {
-	from {
-		opacity: 0;
-		scale: 0.4;
-	}
-}
-@keyframes hide {
-	to {
-		visibility: hidden;
-	}
-}
-@keyframes lit {
-	from {
-		opacity: 0.4;
-	}
-}
-
-/* the board races and the proof runs once each is seen; html[data-motion]
-   (set before first paint) holds them at their start until then */
-@media (prefers-reduced-motion: no-preference) {
-	:root[data-motion] .home {
-		.board:not([data-play]) {
-			.lane-bar {
-				scale: 0 1;
-			}
-			.card-check,
-			.card-num,
-			.lane.is-ours .lane-val,
-			.is-startup .lane-val,
-			.spot {
-				opacity: 0;
-			}
-			.spread .lane-track::before {
-				scale: 1 0;
-			}
-		}
-		/* the struck phrase's line is drawn in, so it starts as a background */
-		.board-head s {
-			text-decoration-color: transparent;
-			background: linear-gradient(currentColor, currentColor) no-repeat 0 50% /
-				0 0.07em;
-		}
-		.board[data-play] {
-			/* startup snaps, size packs (Board.tsx times each lane's --at) */
-			.is-startup {
-				.lane-bar,
-				.lane-val {
-					animation: snap 0.24s var(--ease-pop) both;
-					animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--at));
-				}
-				.lane-val {
-					animation-name: rise-fade;
-				}
-			}
-			.is-size .lane-bar {
-				animation: pack 0.75s cubic-bezier(0.6, 0, 0.2, 1) both;
-				animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--at));
-			}
-			.card-check {
-				animation: stamp-in 0.42s var(--ease-pop) both;
-				animation-delay: calc(var(--i) * 0.12s + 0.35s);
-			}
-			/* ArkType's 1× line first, then each library's dots (Board.tsx times them) */
-			.spread .lane-track::before {
-				animation: line-draw 0.3s var(--ease-out) both;
-				animation-delay: calc(0.15s + var(--lane) * 0.06s);
-			}
-			.spot {
-				animation: spot-race var(--travel) cubic-bezier(0.2, 0.7, 0.25, 1)
-					var(--delay) both;
-			}
-			.lane.is-ours .lane-bar::after {
-				content: "";
-				position: absolute;
-				inset: 0;
-				border-radius: inherit;
-				background: linear-gradient(
-						90deg,
-						transparent,
-						color-mix(in oklab, white 60%, transparent),
-						transparent
-					) -60%
-					0 / 40% 100% no-repeat;
-				animation: glint 0.6s ease-out both;
-				animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--won));
-			}
-			.lane.is-ours .lane-val {
-				animation: rise-fade 0.3s ease-out both;
-				animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--won));
-			}
-			/* a place lands as ArkType finishes (HomeEffects copies the race's --won) */
-			.card-num:is(
-				[data-suffix="st"],
-				[data-suffix="nd"],
-				[data-suffix="rd"],
-				[data-suffix="th"]
-			) {
-				transform-origin: 0 80%;
-				animation: place-in 0.5s var(--ease-pop) both;
-				animation-delay: calc(var(--i) * 0.12s + 0.2s + var(--won, 0.9s));
-			}
-			.board-head s {
-				animation: strike 0.3s var(--ease-out) 0.72s both;
-			}
-		}
-		/* only the marks wait dimmed: the checks stay readable before they run */
-		.proof:not([data-play]) .proof-body .tick {
-			opacity: 0;
-		}
-		.proof[data-play] .proof-body li {
-			--at: calc(0.35s + var(--i) * 0.34s);
-			.proof-mark {
-				animation: lit 0.3s ease-out var(--at) both;
-			}
-			.spin {
-				display: block;
-				animation:
-					spin 0.6s linear infinite,
-					hide 0s linear var(--at) forwards;
-			}
-			.tick {
-				position: absolute;
-				animation: show-tick 0.3s var(--ease-pop) var(--at) both;
-			}
-		}
-	}
-	:root[data-motion] .home .board .phrase {
-		animation: rise var(--t-enter) var(--ease-pop) both;
-		animation-delay: calc(var(--i) * 90ms);
-		animation-play-state: paused;
-	}
-	:root[data-motion] .home .board[data-play] .phrase {
-		animation-play-state: running;
-	}
-	/* a beat for the struck phrase, then its line, then the phrase after it */
-	:root[data-motion] .home .board-head:has(s) .phrase:has(> s) {
-		animation-delay: 0.42s;
-	}
-	:root[data-motion] .home .board-head .phrase:has(> s) ~ .phrase {
-		animation-delay: 1.05s;
-	}
-}
-
 @media (max-width: 1080px) {
 	.home {
-		.cards {
-			grid-template-columns: minmax(0, 1fr);
-			gap: 16px;
-			max-width: 640px;
-		}
 		.card {
 			grid-row: auto;
 			grid-template-rows: none;
 		}
 		.sides,
 		.moves,
-		.guide,
-		.proofs {
+		.guide {
 			grid-template-columns: minmax(0, 1fr);
-		}
-		.proof-body li {
-			grid-template-columns: 18px minmax(0, 1fr);
-			.proof-what {
-				grid-column: 2;
-			}
 		}
 	}
 }
@@ -2702,34 +1303,10 @@
 @media (max-width: 760px) {
 	.home {
 		.board {
-			margin-top: 64px;
+			margin-top: 56px;
 		}
 		.card {
 			padding: 18px 16px 16px;
-		}
-		.side {
-			padding: 20px 18px;
-		}
-		.proof-body li {
-			padding: 12px 14px;
-			gap: 4px 12px;
-		}
-		.proof-what {
-			font-size: 14px;
-		}
-		.receipt {
-			grid-template-columns: minmax(0, 1fr);
-		}
-		.convert {
-			grid-template-columns: minmax(0, 1fr);
-			gap: 8px;
-			.code-card > pre.shiki {
-				--pre-x: 16px;
-				font-size: 12.5px;
-			}
-		}
-		.convert-arrow span {
-			rotate: 90deg;
 		}
 		.differs div {
 			grid-template-columns: minmax(0, 1fr);

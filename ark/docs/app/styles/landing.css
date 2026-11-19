@@ -1,0 +1,1924 @@
+/* the homepage's points, loaded after home.css, whose tokens and cards these
+   build on: the first screen's numbers, a point's layouts and its big
+   number, the drill-downs that hold its data (components/home/Drill.tsx),
+   and each point's figure. Every figure's markup is its final state;
+   html[data-motion], set before first paint, holds it at its start until
+   HomeEffects marks it [data-play]. */
+
+.home {
+	/* a block the parser leaves behind, before it goes: through a variable,
+	   since the CSS pipeline drops keyframes that use color-mix() */
+	--byte-idle: color-mix(in oklab, var(--ink-3) 46%, var(--bg));
+	--lit: color-mix(in oklab, var(--gold) 13%, transparent);
+	--lit-edge: color-mix(in oklab, var(--gold) 70%, transparent);
+	--add: color-mix(in oklab, var(--teal) 13%, transparent);
+	/* Zod, wherever a graph keeps it in view: a red quiet enough to sit beside
+	   the greys, so the page's one contrast is gold against it */
+	--zod: color-mix(
+		in oklab,
+		color-mix(in oklab, var(--red) 82%, var(--ink-3)) 66%,
+		var(--bg)
+	);
+	--zod-ink: color-mix(in oklab, var(--red-text) 80%, var(--ink-2));
+	/* ArkType's bar, wherever one is drawn: copper into gold into light */
+	--ours-fill: linear-gradient(
+		90deg,
+		color-mix(in oklab, var(--gold-fill) 62%, var(--copper)),
+		var(--gold-fill) 70%,
+		color-mix(in oklab, var(--gold-fill) 78%, #fff)
+	);
+	--panel: linear-gradient(
+		180deg,
+		color-mix(in oklab, var(--surface) 90%, var(--tint) 10%),
+		var(--surface) 55%
+	);
+
+	/* ---------- the first screen: the claim, then its three numbers ---------- */
+	.hero-stats {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0 40px;
+		margin: 40px 0 0;
+	}
+	.hero-stat {
+		display: grid;
+		justify-items: start;
+		align-content: start;
+		min-width: 0;
+		color: inherit;
+		text-decoration: none;
+		.stat-num {
+			font-size: clamp(4.6rem, 1.6rem + 7.4vw, 8.6rem);
+			transition: text-shadow var(--t-ui);
+		}
+		&:hover .stat-num {
+			text-shadow: 0 0 60px
+				color-mix(in oklab, var(--gold-glow) 60%, transparent);
+		}
+	}
+	.hero-stat-what {
+		margin-top: 14px;
+		font: 400 clamp(1.05rem, 0.9rem + 0.5vw, 1.35rem) / 1.25 var(--sans);
+		letter-spacing: -0.015em;
+		text-wrap: balance;
+		color: var(--ink-2);
+		b {
+			color: var(--ink);
+			font-weight: 700;
+		}
+	}
+	.hero-stat-scope {
+		margin-top: 6px;
+		font: 400 13px / 1.45 var(--mono);
+		color: var(--ink-2);
+		opacity: 0.86;
+	}
+	.hero .lede {
+		max-width: none;
+		margin: 36px 0 0;
+		color: var(--ink);
+	}
+	.hero .ctas {
+		align-items: center;
+		margin-top: 22px;
+	}
+	.hero-foot {
+		margin-left: 10px;
+		font: 400 13px / 1.5 var(--mono);
+		color: var(--ink-2);
+		code {
+			color: var(--gold);
+		}
+		a {
+			color: var(--sky);
+			white-space: nowrap;
+		}
+	}
+
+	/* read by a screen reader, not drawn */
+	.vh {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	/* ---------- the board: the title, then a graph a category ---------- */
+	.graphs {
+		margin: 32px 0 0;
+		padding: 26px 28px 18px;
+		border-radius: var(--r-lg);
+		border: 1px solid var(--rule);
+		background: var(--panel);
+		box-shadow: var(--shadow-card);
+	}
+	.graphs-head {
+		font-size: 14px;
+		color: var(--ink-2);
+	}
+	.graphs-row {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0 44px;
+		margin-top: 26px;
+	}
+	.graph {
+		min-width: 0;
+		h4 {
+			margin: 0;
+			font: 700 18px / 1.2 var(--sans);
+			letter-spacing: -0.01em;
+			color: var(--ink);
+		}
+		ol {
+			display: grid;
+			gap: 13px;
+			margin: 18px 0 0;
+			padding: 0;
+			list-style: none;
+		}
+	}
+	/* two lines in every graph, so the three sets of lanes start level */
+	.graph-of {
+		min-height: calc(2 * 1.4em);
+		margin: 4px 0 0;
+		font: 400 13px / 1.4 var(--mono);
+		color: var(--ink-2);
+	}
+	.graph-lane {
+		display: grid;
+		grid-template-columns: 4.5ch minmax(0, 1fr) auto;
+		grid-template-areas:
+			"place name val"
+			"track track track"
+			"sub sub sub";
+		align-items: center;
+		gap: 6px 8px;
+		font: 400 13.5px / 1.2 var(--mono);
+		color: var(--ink-2);
+	}
+	.graph-place {
+		grid-area: place;
+		font-variant-numeric: tabular-nums;
+	}
+	.graph-name {
+		grid-area: name;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		color: var(--ink);
+	}
+	.graph-val {
+		grid-area: val;
+		text-align: right;
+		font-variant-numeric: tabular-nums;
+	}
+	/* the same library on our own benchmark, in the unit readers think in */
+	.graph-beside {
+		margin-right: 1.2ch;
+		font-size: 12.5px;
+		color: var(--ink-3);
+	}
+	.graph-track {
+		grid-area: track;
+		position: relative;
+		height: 9px;
+		border-radius: 3px;
+		background: color-mix(in oklab, var(--ink) 5%, transparent);
+		/* where ArkType's bar ends, on every track under it */
+		&::after {
+			content: "";
+			position: absolute;
+			inset: -3px auto -3px calc(var(--mark) * 100%);
+			width: 1px;
+			background: color-mix(in oklab, var(--ink) 24%, transparent);
+		}
+	}
+	/* the bar's box. Its fill slides in from the left inside it, so the box,
+	   and the cut a long one ends in, stay where they are while it arrives */
+	.graph-bar {
+		position: absolute;
+		inset: 0 auto 0 0;
+		width: max(4px, calc(var(--w) * 100%));
+		border-radius: inherit;
+		overflow: hidden;
+		&::before {
+			content: "";
+			position: absolute;
+			inset: 0;
+			border-radius: inherit;
+			background: var(--lane-fill, var(--bar));
+		}
+	}
+	/* the libraries between ArkType and Zod, a step back */
+	.graph-lane.is-rival {
+		opacity: 0.82;
+	}
+	/* ArkType's lane, a size up from the rest: the place it took, its number
+	   in the page's headline type, a bar twice as tall. Its two lights (its
+	   edge, and the glow behind its bar) are layers of their own, so that
+	   breathing changes one opacity each and repaints nothing. */
+	.graph-lane.is-ours {
+		--lane-fill: var(--ours-fill);
+		position: relative;
+		isolation: isolate;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		gap: 11px 10px;
+		margin: 0 -14px;
+		padding: 14px 14px 16px;
+		border-radius: 14px;
+		background: color-mix(in oklab, var(--gold-fill) 9%, transparent);
+		box-shadow: inset 0 0 0 1px
+			color-mix(in oklab, var(--gold-fill) 34%, transparent);
+		&::before {
+			content: "";
+			position: absolute;
+			inset: 0;
+			z-index: -1;
+			border-radius: inherit;
+			pointer-events: none;
+			box-shadow:
+				inset 0 0 0 1px color-mix(in oklab, var(--gold-fill) 62%, transparent),
+				0 0 26px -6px color-mix(in oklab, var(--gold-glow) 70%, transparent);
+			opacity: 0.75;
+		}
+		.graph-place {
+			padding: 4px 10px;
+			border-radius: var(--r-pill);
+			background: var(--gold-fill);
+			font-weight: 700;
+			font-size: 14px;
+			color: var(--on-gold);
+		}
+		.graph-name {
+			font: 750 20px / 1.1 var(--sans);
+			letter-spacing: -0.01em;
+			color: var(--gold);
+		}
+		.graph-val {
+			font: 800 28px / 1 var(--sans);
+			letter-spacing: -0.035em;
+			color: var(--gold);
+			text-shadow: 0 0 26px
+				color-mix(in oklab, var(--gold-glow) 40%, transparent);
+		}
+		.graph-track {
+			height: 22px;
+			border-radius: 5px;
+			&::after {
+				content: none;
+			}
+			&::before {
+				content: "";
+				position: absolute;
+				inset: -7px auto -7px -6px;
+				width: calc(var(--w) * 100% + 12px);
+				border-radius: 999px;
+				background: var(--gold-glow);
+				filter: blur(11px);
+				opacity: 0.5;
+				pointer-events: none;
+			}
+		}
+		/* light along the bar, out of sight to its left until the reveal sends it across */
+		.graph-bar::after {
+			content: "";
+			position: absolute;
+			inset: 0 auto 0 0;
+			width: 34%;
+			border-radius: inherit;
+			background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.8));
+			transform: translateX(-110%);
+			pointer-events: none;
+		}
+	}
+	/* under ArkType's bar: two lines in every graph, so the lanes under the
+	   three boxes stay level */
+	.graph-sub {
+		grid-area: sub;
+		min-height: calc(2 * 1.45em);
+		font: 400 12.5px / 1.45 var(--mono);
+		color: color-mix(in oklab, var(--gold) 82%, var(--ink-2));
+	}
+	.graph-lane.is-incumbent {
+		--lane-fill: var(--zod);
+		.graph-place,
+		.graph-name,
+		.graph-val {
+			color: var(--zod-ink);
+		}
+		.graph-beside {
+			color: color-mix(in oklab, var(--zod-ink) 70%, transparent);
+		}
+	}
+	/* an average past the axis: drawn to the end and cut, twice, so it can't
+	   be read as a length */
+	.graph-lane.is-cut .graph-bar {
+		width: 100%;
+		mask: linear-gradient(
+			105deg,
+			#000 0 86%,
+			transparent 86% 88.5%,
+			#000 88.5% 91%,
+			transparent 91% 93.5%,
+			#000 93.5%
+		);
+	}
+	.graph-gap {
+		padding-left: calc(4.5ch + 8px);
+		font: 400 12.5px / 1 var(--mono);
+		color: var(--ink-3);
+		&::before {
+			content: "⋮";
+			margin-right: 1ch;
+		}
+	}
+	/* a phone draws the best rival only, and counts the rest as skipped */
+	.gap-narrow,
+	.graph-gap.is-narrow {
+		display: none;
+	}
+	.graph-axis {
+		position: relative;
+		height: 16px;
+		margin-top: 9px;
+		font: 400 12px / 1 var(--mono);
+		color: var(--ink-3);
+		span {
+			position: absolute;
+			left: calc(var(--x) * 100%);
+			white-space: nowrap;
+			translate: -50% 0;
+			&:last-child {
+				translate: -100% 0;
+			}
+		}
+	}
+	/* ArkType's place across every result of the category */
+	.graph-badge {
+		display: flex;
+		align-items: baseline;
+		gap: 10px;
+		margin: 16px 0 0;
+		font: 400 13px / 1.5 var(--mono);
+		color: var(--ink);
+	}
+	.graph-badge-place {
+		flex: none;
+		padding: 1px 9px;
+		border-radius: var(--r-pill);
+		box-shadow: inset 0 0 0 1px
+			color-mix(in oklab, var(--gold-fill) 70%, transparent);
+		font-weight: 700;
+		color: var(--gold);
+	}
+	.graphs-foot {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px 22px;
+		margin: 22px 0 0;
+		padding-top: 14px;
+		border-top: 1px dashed var(--rule-soft);
+		font: 400 13px / 1.5 var(--mono);
+		color: var(--ink-2);
+		a {
+			color: var(--sky);
+		}
+	}
+	/* when the results were measured, beside where the method is */
+	.graphs-method {
+		display: inline-flex;
+		flex-wrap: wrap;
+		gap: 6px 22px;
+		margin-left: auto;
+	}
+	.graph-cut-key {
+		display: inline-block;
+		width: 26px;
+		height: 8px;
+		margin-right: 0.5ch;
+		border-radius: 2px;
+		background: var(--bar);
+		mask: linear-gradient(
+			105deg,
+			#000 0 48%,
+			transparent 48% 58%,
+			#000 58% 68%,
+			transparent 68% 78%,
+			#000 78%
+		);
+	}
+	.board .p3 {
+		max-width: none;
+		margin-top: 18px;
+	}
+
+	/* ---------- every scenario, a bar a library at its median ---------- */
+	.card.is-medians {
+		max-width: 760px;
+		.race {
+			margin-top: 0;
+			padding-top: 0;
+			border-top: 0;
+			row-gap: 16px;
+		}
+		.lane {
+			grid-template-areas:
+				"name val"
+				"track track"
+				"sub sub";
+			font-size: 13.5px;
+		}
+		.lane-val b {
+			color: var(--ink);
+		}
+		.lane-track {
+			height: 10px;
+		}
+		.lane-sub {
+			grid-area: sub;
+			font-size: 12.5px;
+			color: var(--ink-2);
+		}
+		/* ArkType's bar here is the board's, at this figure's size */
+		.lane.is-ours {
+			.lane-val {
+				font-weight: 700;
+				color: var(--gold);
+			}
+			.lane-track::before {
+				content: "";
+				position: absolute;
+				inset: -5px auto -5px -5px;
+				width: calc(max(5px, var(--w) * 100%) + 10px);
+				border-radius: 999px;
+				background: var(--gold-glow);
+				filter: blur(8px);
+				opacity: 0.5;
+				pointer-events: none;
+			}
+			.lane-bar {
+				min-width: 5px;
+				background: var(--ours-fill);
+				box-shadow: none;
+			}
+		}
+		.lane.is-incumbent {
+			.lane-name,
+			.lane-val,
+			.lane-val b {
+				color: var(--zod-ink);
+			}
+			.lane-bar {
+				background: var(--zod);
+			}
+		}
+	}
+
+	/* ---------- 05: what precompiling promises, and the error that keeps it ---------- */
+	.guarantee {
+		margin: 0;
+		border-radius: var(--r-lg);
+		border: 1px solid var(--rule);
+		background: var(--panel);
+		box-shadow: var(--shadow-card);
+		overflow: hidden;
+		figcaption {
+			padding: 11px 22px;
+			border-top: 1px solid var(--rule-soft);
+			font: 400 13px / 1.5 var(--mono);
+			color: var(--ink-2);
+		}
+	}
+	.guarantee-plugin {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px 6px;
+		margin: 0;
+		padding: 11px 22px;
+		border-bottom: 1px solid var(--rule-soft);
+		background: var(--add);
+		font: 400 13.5px / 1.5 var(--mono);
+		font-variant-ligatures: none;
+		color: var(--ink);
+		.diff-mark {
+			width: auto;
+			margin-right: 1ch;
+		}
+	}
+	.guarantee-add {
+		margin-left: auto;
+		white-space: nowrap;
+	}
+	.guarantee-file {
+		color: var(--ink-2);
+	}
+	.guarantee-body {
+		padding: 24px 24px 22px;
+		h3 {
+			margin: 0;
+			font: 800 clamp(1.4rem, 1.1rem + 0.9vw, 1.85rem) / 1.12 var(--sans);
+			letter-spacing: -0.03em;
+		}
+		p {
+			max-width: 58ch;
+			margin: 10px 0 0;
+			font-size: 16px;
+			line-height: 1.55;
+			color: var(--ink-2);
+		}
+	}
+	/* the build's error, as it prints it */
+	.diag {
+		margin: 18px 0 0;
+		padding: 14px 16px;
+		border-radius: var(--r-md);
+		border: 1px solid var(--line);
+		background: var(--sunk);
+		font: 400 13px / 1.65 var(--mono);
+		font-variant-ligatures: none;
+		tab-size: 2;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		color: var(--ink);
+	}
+	.diag-at {
+		color: var(--sky);
+	}
+	.diag-what {
+		color: var(--red-ink);
+	}
+	/* each reason and the fix on a line of its own, wrapping under itself */
+	.diag-why,
+	.diag-fix {
+		display: block;
+		padding-left: 2ch;
+	}
+	.diag-why {
+		color: var(--ink-2);
+	}
+	.diag-keep {
+		white-space: nowrap;
+	}
+	.board > .drills {
+		margin-top: 18px;
+	}
+
+	/* ---------- a point: copy, figure, drill-downs ---------- */
+	.point {
+		scroll-margin-top: calc(var(--top) + 8px);
+	}
+	.point-main {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 40px;
+	}
+	.point-copy,
+	.point-figure,
+	.point-words {
+		min-width: 0;
+	}
+	/* copy beside the figure, both from the top */
+	.point:is(.is-split, .is-flip) .point-main {
+		grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+		gap: 64px;
+		align-items: start;
+	}
+	.point.is-flip .point-main {
+		grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+		.point-copy {
+			order: 1;
+		}
+	}
+	/* beside a figure taller than it, the copy stays with the reader */
+	@media (min-width: 1081px) {
+		.point:is(.is-split, .is-flip) .point-copy {
+			position: sticky;
+			top: calc(var(--top) + 36px);
+		}
+	}
+	.point-ctas {
+		margin-top: 24px;
+	}
+	.deck code {
+		font-size: 0.88em;
+		color: var(--gold);
+	}
+	.point h2 .hl {
+		display: block;
+	}
+
+	/* the one number a point leads with; its headline steps down beside it */
+	.stat {
+		display: grid;
+		gap: 12px;
+		margin: 22px 0 0;
+	}
+	.stat-num {
+		justify-self: start;
+		font: 800 clamp(5rem, 3.2rem + 7vw, 9.5rem) / 0.82 var(--sans);
+		letter-spacing: -0.06em;
+		font-variant-numeric: tabular-nums;
+		color: var(--gold);
+		text-shadow: 0 0 70px color-mix(in oklab, var(--gold-glow) 32%, transparent);
+		white-space: nowrap;
+	}
+	.stat-unit {
+		font: 400 14px / 1.45 var(--mono);
+		color: var(--ink-2);
+	}
+	.stat + .point-words h2 {
+		margin-top: 30px;
+		font-size: clamp(1.7rem, 1.25rem + 1.3vw, 2.5rem);
+		line-height: 1.08;
+		letter-spacing: -0.028em;
+	}
+
+	/* what a point doesn't cover, said where the point is made */
+	.point-caveat {
+		margin-top: 28px;
+	}
+	.loses {
+		max-width: 96ch;
+		margin: 0;
+		padding: 2px 0 2px 16px;
+		border-left: 2px solid var(--copper);
+		font-size: 15.5px;
+		line-height: 1.55;
+		color: var(--ink-2);
+		b {
+			color: var(--ink);
+			font-weight: 700;
+		}
+	}
+
+	/* ---------- drill-downs: a row of chips, one panel ---------- */
+	.drills {
+		margin-top: 24px;
+	}
+	.point-caveat + .drills {
+		margin-top: 20px;
+	}
+	.drill-chips {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+		&::before {
+			content: "// more";
+			flex: none;
+			margin-right: 4px;
+			white-space: nowrap;
+			font: 400 13px / 1 var(--mono);
+			color: var(--ink-3);
+		}
+	}
+	.drill-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.7ch;
+		padding: 8px 13px 8px 11px;
+		border-radius: var(--r-pill);
+		border: 1px solid var(--line);
+		background: color-mix(in oklab, var(--surface) 60%, transparent);
+		font: 400 13px / 1.2 var(--mono);
+		color: var(--ink-2);
+		cursor: pointer;
+		transition:
+			color var(--t-micro),
+			border-color var(--t-micro),
+			background var(--t-micro);
+		&::before {
+			content: "+";
+			color: var(--copper);
+		}
+		&:hover {
+			color: var(--ink);
+			border-color: color-mix(in oklab, var(--ink) 30%, transparent);
+		}
+		&[aria-expanded="true"] {
+			color: var(--gold);
+			border-color: color-mix(in oklab, var(--gold) 55%, transparent);
+			background: color-mix(in oklab, var(--gold) 9%, transparent);
+			&::before {
+				content: "−";
+				color: inherit;
+			}
+		}
+	}
+	.drill-link {
+		flex: none;
+		margin-left: 6px;
+		font: 400 13px / 1.2 var(--mono);
+		color: var(--sky);
+		white-space: nowrap;
+	}
+	.loses[id] {
+		scroll-margin-top: calc(var(--top) + 40vh);
+	}
+	/* closed by an attribute of its own: Tailwind's base layer hides [hidden]
+	   with !important, which the page without scripts couldn't undo */
+	.drill-panel[data-closed] {
+		display: none;
+	}
+	.drill-panel {
+		margin-top: 14px;
+		padding: 26px 28px 30px;
+		border-radius: var(--r-lg);
+		border: 1px solid var(--rule);
+		background: var(--panel);
+		scroll-margin-top: calc(var(--top) + 20px);
+		[id] {
+			scroll-margin-top: calc(var(--top) + 20px);
+		}
+		h3 {
+			font: 700 17px / 1.3 var(--sans);
+			letter-spacing: -0.01em;
+		}
+		.sides,
+		.proof,
+		.pair2,
+		.figs,
+		.examples,
+		.guide {
+			margin-top: 22px;
+		}
+		.bench {
+			margin-top: 8px;
+		}
+	}
+	/* what the panel concludes, before any of its data */
+	.drill-verdict {
+		max-width: 70ch;
+		margin: 0;
+		font: 600 clamp(1.1rem, 1rem + 0.4vw, 1.3rem) / 1.35 var(--sans);
+		letter-spacing: -0.015em;
+		color: var(--ink);
+		code {
+			font-size: 0.88em;
+			color: var(--gold);
+		}
+	}
+	.drill-p {
+		max-width: 78ch;
+		margin: 14px 0 0;
+		font-size: 15.5px;
+		line-height: 1.6;
+		color: var(--ink-2);
+		code {
+			font-size: 0.88em;
+			color: var(--gold);
+		}
+		b {
+			color: var(--teal);
+			font-weight: 700;
+		}
+	}
+	.drill-list {
+		max-width: 78ch;
+		margin: 12px 0 0;
+		padding-left: 1.2em;
+		font-size: 15.5px;
+		line-height: 1.6;
+		color: var(--ink-2);
+		li + li {
+			margin-top: 8px;
+		}
+		li::marker {
+			color: var(--copper);
+		}
+	}
+	/* a board card on its own, in a drill-down */
+	.card.is-solo {
+		display: block;
+		max-width: 720px;
+		margin: 18px 0 0;
+		&:hover {
+			translate: none;
+			border-color: var(--rule);
+			box-shadow: var(--shadow-card);
+		}
+	}
+
+	/* ---------- figures: one panel, one caption ---------- */
+	.count,
+	.boot,
+	.bytes {
+		margin: 0;
+		padding: 22px 26px 18px;
+		border-radius: var(--r-lg);
+		border: 1px solid var(--rule);
+		background: var(--panel);
+		box-shadow: var(--shadow-card);
+		figcaption {
+			margin-top: 20px;
+			padding-top: 14px;
+			border-top: 1px dashed var(--rule-soft);
+			font: 400 13px / 1.5 var(--mono);
+			color: var(--ink-2);
+			a {
+				color: var(--sky);
+			}
+		}
+		ol {
+			margin: 0;
+			padding: 0;
+			list-style: none;
+		}
+	}
+	.count-head,
+	.boot-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		min-height: 28px;
+		margin-bottom: 18px;
+		font: 400 13px / 1.3 var(--mono);
+		color: var(--ink-2);
+		.p {
+			color: var(--copper);
+		}
+	}
+	:is(.count-toggle, .boot-replay) {
+		flex: none;
+		padding: 4px 11px;
+		border-radius: var(--r-pill);
+		border: 1px solid var(--line);
+		background: none;
+		font: inherit;
+		color: var(--ink-2);
+		cursor: pointer;
+		transition:
+			color var(--t-micro),
+			border-color var(--t-micro);
+		&:hover {
+			color: var(--ink);
+			border-color: color-mix(in oklab, var(--ink) 28%, transparent);
+		}
+	}
+	/* over the lanes' counts, which it names */
+	.boot-unit {
+		margin-left: auto;
+		color: var(--ink-2);
+	}
+	/* shown once something is running: until then there is nothing to stop */
+	.count:not([data-play]) .count-toggle,
+	.boot:not([data-play]) .boot-replay {
+		visibility: hidden;
+	}
+
+	/* ---------- 03: validations, counted ---------- */
+	.count ol {
+		display: grid;
+	}
+	.count-lane {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-areas:
+			"name num"
+			"x num"
+			"bar bar";
+		align-items: end;
+		column-gap: 16px;
+		padding: 12px 0 13px;
+		font: 400 13px / 1.3 var(--mono);
+		color: var(--ink-2);
+		& + & {
+			border-top: 1px solid var(--rule-soft);
+		}
+	}
+	.count-name {
+		grid-area: name;
+		font: 600 15px / 1.2 var(--sans);
+		color: var(--ink);
+	}
+	.count-x {
+		grid-area: x;
+		margin-top: 3px;
+	}
+	.count-num {
+		grid-area: num;
+		min-width: 4ch;
+		font: 700 clamp(1.7rem, 1.4rem + 0.9vw, 2.3rem) / 1 var(--sans);
+		letter-spacing: -0.035em;
+		font-variant-numeric: tabular-nums;
+		text-align: right;
+		color: var(--ink-2);
+	}
+	/* each library's share of ArkType's count, which is the same at any moment */
+	.count-stream {
+		grid-area: bar;
+		height: 4px;
+		margin-top: 10px;
+		border-radius: 2px;
+		background: linear-gradient(
+				var(--lane, var(--ink-3)),
+				var(--lane, var(--ink-3))
+			)
+			no-repeat 0 0 / max(3px, calc(100% / var(--ratio))) 100%
+			color-mix(in oklab, var(--ink) 5%, transparent);
+	}
+	/* Zod's lane in every figure: the same quiet red as on the board */
+	:is(.count-lane, .boot-lane, .byte-row).is-incumbent {
+		--lane: var(--zod);
+		:is(.count-name, .count-num, .boot-name, .byte-name) {
+			color: var(--zod-ink);
+		}
+	}
+	.count-lane.is-ours {
+		padding-top: 2px;
+		.count-name {
+			font-size: 17px;
+		}
+		.count-x {
+			color: var(--gold);
+		}
+		.count-num {
+			font-size: clamp(3.2rem, 2.4rem + 2.6vw, 4.8rem);
+			font-weight: 800;
+			letter-spacing: -0.05em;
+			line-height: 0.9;
+			color: var(--gold);
+			text-shadow: 0 0 50px
+				color-mix(in oklab, var(--gold-glow) 34%, transparent);
+		}
+		.count-stream {
+			background: var(--ours-fill);
+			box-shadow: 0 0 12px 0
+				color-mix(in oklab, var(--gold-glow) 55%, transparent);
+		}
+	}
+
+	/* ---------- 05: a boot log ---------- */
+	.boot ol {
+		display: grid;
+		gap: 14px;
+	}
+	.boot-lane {
+		display: grid;
+		grid-template-columns: 14ch minmax(0, 1fr) 8ch;
+		grid-template-areas:
+			"name status val"
+			"track track track";
+		align-items: baseline;
+		gap: 7px 12px;
+		font: 400 13.5px / 1.25 var(--mono);
+		color: var(--ink-2);
+	}
+	.boot-name {
+		grid-area: name;
+		color: var(--ink);
+	}
+	.boot-status {
+		grid-area: status;
+		white-space: nowrap;
+	}
+	/* shown in place of "first validation" while the library is still starting */
+	.boot-run {
+		display: none;
+		color: var(--ink-3);
+		&::after {
+			content: "…";
+		}
+	}
+	.boot-done {
+		color: var(--teal);
+	}
+	.boot-val {
+		grid-area: val;
+		text-align: right;
+		font-variant-numeric: tabular-nums;
+		color: var(--ink);
+	}
+	/* cut into ticks of a million instructions each */
+	.boot-track {
+		--tick: calc(100% / var(--max));
+		grid-area: track;
+		position: relative;
+		height: 12px;
+		background: color-mix(in oklab, var(--ink) 5%, transparent);
+		mask: repeating-linear-gradient(
+			90deg,
+			#000 0 calc(var(--tick) - 2px),
+			transparent calc(var(--tick) - 2px) var(--tick)
+		);
+	}
+	.boot-bar {
+		position: absolute;
+		inset: 0 auto 0 0;
+		width: max(3px, calc(var(--v) / var(--max) * 100%));
+		background: var(--lane, var(--ink-3));
+		transform-origin: left;
+	}
+	/* where ArkType finished, on every lane still running past it */
+	.boot-lane {
+		position: relative;
+	}
+	/* out of the lane's flow, centred on its track, so it adds no height to it */
+	.boot-lane:not(.is-ours)::after {
+		content: "";
+		position: absolute;
+		bottom: -5px;
+		left: calc(var(--ours) / var(--max) * 100% - 1px);
+		width: 2px;
+		height: 22px;
+		border-radius: 1px;
+		background: var(--gold);
+		box-shadow: 0 0 8px 0 color-mix(in oklab, var(--gold-glow) 70%, transparent);
+		pointer-events: none;
+		transition: opacity 0.3s;
+	}
+	.boot-key {
+		display: inline-block;
+		width: 2px;
+		height: 1.1em;
+		margin-right: 0.6ch;
+		vertical-align: -0.2em;
+		border-radius: 1px;
+		background: var(--gold);
+	}
+	.boot-lane.is-ours {
+		.boot-name {
+			font-weight: 700;
+			color: var(--gold);
+		}
+		.boot-val {
+			color: var(--gold);
+		}
+		.boot-bar {
+			background: var(--ours-fill);
+			box-shadow: 0 0 10px 0
+				color-mix(in oklab, var(--gold-glow) 60%, transparent);
+		}
+	}
+
+	/* ---------- 04: bytes, a block each, every library at one scale ---------- */
+	.byte-rows {
+		display: grid;
+		gap: 18px;
+	}
+	.byte-row {
+		display: grid;
+		grid-template-columns: 9ch 9ch minmax(0, 1fr);
+		grid-template-areas: "name size grid";
+		align-items: baseline;
+		column-gap: 14px;
+		font: 400 13.5px / 1.25 var(--mono);
+		color: var(--ink-2);
+	}
+	.byte-name {
+		grid-area: name;
+		color: var(--ink);
+	}
+	.byte-size {
+		grid-area: size;
+		text-align: right;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+		color: var(--ink);
+	}
+	.byte-grid {
+		--b: 10px;
+		grid-area: grid;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, var(--b));
+		gap: 3px;
+	}
+	.byte {
+		width: var(--b);
+		height: var(--b);
+		border-radius: 2px;
+		background: var(--lane, var(--byte-idle));
+	}
+	.byte-row.is-ours {
+		grid-template-areas:
+			"head head head"
+			". . grid";
+		row-gap: 14px;
+		padding-bottom: 22px;
+		border-bottom: 1px dashed var(--rule-soft);
+		.byte-name {
+			font: 700 17px / 1.2 var(--sans);
+		}
+		.byte-size {
+			font: 800 clamp(1.9rem, 1.5rem + 1.2vw, 2.7rem) / 1 var(--sans);
+			letter-spacing: -0.04em;
+			color: var(--gold);
+			transition: color 0.4s var(--ease-out);
+		}
+	}
+	.byte-head {
+		grid-area: head;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 4px 16px;
+	}
+	.bytes-num {
+		display: inline-block;
+		text-align: right;
+	}
+	.byte-state {
+		display: grid;
+		> * {
+			grid-area: 1 / 1;
+			transition: opacity 0.3s var(--ease-out);
+		}
+	}
+	.byte-before {
+		opacity: 0;
+	}
+	.byte-after {
+		color: var(--ink-2);
+	}
+	/* one row tall, as it ends: what the parser adds spills over the rows
+	   below, which arrive only once it has gone */
+	.byte-grid.is-ours {
+		height: var(--b);
+		grid-auto-rows: var(--b);
+	}
+	.byte.is-kept {
+		background: var(--gold-fill);
+		box-shadow: 0 0 10px 0
+			color-mix(in oklab, var(--gold-glow) 60%, transparent);
+		transition:
+			background 0.4s var(--ease-out),
+			box-shadow 0.4s var(--ease-out);
+	}
+	.byte.is-parser {
+		display: none;
+	}
+	.scale-rows {
+		overflow-x: auto;
+	}
+	.scale-table {
+		width: 100%;
+		border-collapse: collapse;
+		font: 400 13px / 1.3 var(--mono);
+		font-variant-numeric: tabular-nums;
+		th,
+		td {
+			padding: 9px 10px;
+			text-align: right;
+			white-space: nowrap;
+		}
+		:is(th, td):first-child {
+			padding-left: 0;
+			text-align: left;
+		}
+		thead th {
+			font-size: 13px;
+			font-weight: 400;
+			color: var(--ink-2);
+		}
+		tbody tr {
+			border-top: 1px solid var(--rule-soft);
+		}
+		tbody th {
+			font-weight: 400;
+			color: var(--ink-2);
+		}
+		td {
+			color: var(--ink-2);
+		}
+	}
+	.diff-mark {
+		display: inline-block;
+		width: 4ch;
+		text-align: center;
+		color: var(--teal);
+		user-select: none;
+	}
+	/* ---------- one card, one file, before and after ---------- */
+	.point .moves {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 12px;
+		margin-top: 28px;
+	}
+	.morph-stack {
+		position: relative;
+		display: grid;
+	}
+	/* the new file shows above the wipe line and the old one below it, so the two never overlap */
+	.morph-pane {
+		position: relative;
+		grid-area: 1 / 1;
+		min-width: 0;
+		transition: clip-path 0.55s var(--ease-out);
+		&.is-ark {
+			clip-path: inset(0);
+		}
+		&.is-zod {
+			clip-path: inset(100% 0 0 0);
+		}
+	}
+	.morph:has(input[value="zod"]:checked) .morph-pane {
+		&.is-ark {
+			clip-path: inset(0 0 100% 0);
+		}
+		&.is-zod {
+			clip-path: inset(0);
+		}
+	}
+	.morph-line {
+		position: absolute;
+		inset: 0 0 auto;
+		height: 2px;
+		opacity: 0;
+		pointer-events: none;
+		background: linear-gradient(90deg, transparent, var(--gold), transparent);
+	}
+	.morph-tabs {
+		display: inline-flex;
+		padding: 2px;
+		border-radius: var(--r-pill);
+		border: 1px solid var(--line);
+		label {
+			position: relative;
+			cursor: pointer;
+		}
+		input {
+			position: absolute;
+			inset: 0;
+			margin: 0;
+			opacity: 0;
+			cursor: pointer;
+		}
+		span {
+			display: block;
+			padding: 4px 11px;
+			border-radius: var(--r-pill);
+			font: 400 13px / 1.3 var(--mono);
+			color: var(--ink-2);
+			transition:
+				background var(--t-micro),
+				color var(--t-micro);
+		}
+		input:checked + span {
+			background: color-mix(in oklab, var(--gold) 14%, transparent);
+			color: var(--gold);
+		}
+		input:focus-visible + span {
+			outline: 2px solid var(--sky);
+			outline-offset: 1px;
+		}
+	}
+	/* ---------- 05: the interface, then the Type, then a bad payload ---------- */
+	.mirror {
+		--code-fs: 14.5px;
+		--code-lh: 1.8;
+		--pre-y: 20px;
+		.morph-pane > pre.shiki {
+			padding: var(--pre-y) 22px;
+			font-size: var(--code-fs);
+			line-height: var(--code-lh);
+		}
+	}
+	/* over the two lines that say more than the interface could: the third and fourth */
+	.mirror-lit {
+		position: absolute;
+		inset: calc(var(--pre-y) + 2 * var(--code-fs) * var(--code-lh)) 0 auto;
+		height: calc(2 * var(--code-fs) * var(--code-lh));
+		background: var(--lit);
+		box-shadow: inset 2px 0 0 var(--lit-edge);
+		pointer-events: none;
+	}
+	.mirror:has(input[value="zod"]:checked) .mirror-key {
+		opacity: 0.4;
+	}
+	.mirror-run {
+		padding: 14px 22px 18px;
+		border-top: 1px solid var(--rule-soft);
+	}
+	.mirror-note {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		margin: 0;
+		font: 400 13px / 1.4 var(--mono);
+		color: var(--ink-2);
+	}
+	.mirror-key {
+		flex: none;
+		width: 14px;
+		height: 14px;
+		border-radius: 2px;
+		/* the lit lines' gold, at a strength a 14px square can carry */
+		background: color-mix(in oklab, var(--gold) 34%, transparent);
+		box-shadow: inset 3px 0 0 var(--gold);
+		transition: opacity var(--t-ui);
+	}
+	.mirror-out {
+		display: grid;
+		gap: 2px;
+		margin: 12px 0 0;
+		font: 400 13px / 1.6 var(--mono);
+		font-variant-ligatures: none;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		color: var(--ink);
+	}
+	.mirror-err {
+		color: var(--red-ink);
+		&::before {
+			content: "✗ ";
+		}
+	}
+	.works {
+		margin-top: 28px;
+	}
+
+	/* ---------- 07: the transcript's one beat ---------- */
+	.point .term[data-term] {
+		min-width: 0;
+	}
+	.term-foot {
+		padding: 11px 20px 12px;
+		border-top: 1px solid var(--line);
+		font: 400 13px / 1.4 var(--mono);
+		color: var(--ink-2);
+	}
+	.term-body {
+		position: relative;
+	}
+	.fix-target {
+		border-radius: 3px;
+		transition:
+			background 0.5s var(--ease-out),
+			box-shadow 0.5s var(--ease-out);
+		&.is-unset {
+			visibility: hidden;
+		}
+		&.is-landed {
+			background: color-mix(in oklab, var(--teal) 26%, transparent);
+			box-shadow: 0 0 0 3px color-mix(in oklab, var(--teal) 26%, transparent);
+		}
+	}
+	.t-err mark.fix.is-lifted {
+		color: transparent;
+	}
+	/* the suggested name, on its way from the error to the diff */
+	.fix-fly {
+		position: absolute;
+		z-index: 1;
+		padding: 0 3px;
+		margin-left: -3px;
+		border-radius: 3px;
+		background: var(--teal);
+		color: var(--bg);
+		font-weight: 600;
+		white-space: nowrap;
+		pointer-events: none;
+		box-shadow: 0 6px 22px color-mix(in oklab, var(--teal) 45%, transparent);
+	}
+
+	/* ---------- the closer: two ways in ---------- */
+	.closer-go {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: stretch;
+		gap: 12px;
+		margin-top: 32px;
+	}
+}
+
+@keyframes boot-grow {
+	from {
+		scale: 0 1;
+	}
+}
+@keyframes bar-in {
+	from {
+		transform: translateX(-101%);
+	}
+}
+@keyframes place-land {
+	from {
+		transform: scale(0.82);
+		opacity: 0.5;
+	}
+}
+/* twice across the bar, a third of it wide */
+@keyframes bar-lap {
+	0%,
+	42.01% {
+		transform: translateX(-110%);
+	}
+	42%,
+	100% {
+		transform: translateX(300%);
+	}
+}
+@keyframes glow-in {
+	from {
+		opacity: 0;
+	}
+}
+@keyframes edge-breathe {
+	from {
+		opacity: 0.75;
+	}
+	to {
+		opacity: 0.4;
+	}
+}
+@keyframes glow-breathe {
+	from {
+		opacity: 0.5;
+	}
+	to {
+		opacity: 0.28;
+	}
+}
+@keyframes byte-leave {
+	to {
+		scale: 0.2;
+		opacity: 0;
+	}
+}
+@keyframes row-in {
+	from {
+		opacity: 0;
+		translate: 0 6px;
+	}
+}
+@keyframes wipe-ark {
+	from {
+		clip-path: inset(0 0 100% 0);
+	}
+}
+@keyframes wipe-zod {
+	from {
+		clip-path: inset(0);
+	}
+}
+@keyframes wipe-line {
+	from {
+		top: 0;
+		opacity: 1;
+	}
+	92% {
+		opacity: 1;
+	}
+	to {
+		top: 100%;
+		opacity: 0;
+	}
+}
+@keyframes lit-in {
+	from {
+		opacity: 0;
+	}
+}
+@keyframes stat-in {
+	from {
+		opacity: 0;
+		translate: 0 10px;
+	}
+}
+@keyframes panel-in {
+	from {
+		opacity: 0;
+		translate: 0 -6px;
+	}
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.home .drill-panel:not([data-closed]) {
+		animation: panel-in 0.28s var(--ease-out);
+	}
+	:root[data-motion] .home {
+		/* a number waits for itself to be on screen, and for nothing else */
+		.stat-num[data-to]:not([data-in]) {
+			opacity: 0;
+		}
+		.stat-num[data-in] {
+			animation: stat-in 0.5s var(--ease-pop) both;
+		}
+
+		/* each figure at its start, until it is seen */
+		[data-stage]:not([data-play]) {
+			.graph-bar::before {
+				transform: translateX(-101%);
+			}
+			.graph-lane.is-ours .graph-place {
+				transform: scale(0.82);
+				opacity: 0.5;
+			}
+			.graph-lane.is-ours .graph-track::before {
+				opacity: 0;
+			}
+			.boot-bar {
+				scale: 0 1;
+			}
+			.boot-status,
+			.boot-val {
+				visibility: hidden;
+			}
+			.boot-lane::after {
+				opacity: 0;
+			}
+			&.morph .morph-pane.is-ark {
+				clip-path: inset(0 0 100% 0);
+			}
+			&.morph .morph-pane.is-zod {
+				clip-path: inset(0);
+			}
+			.mirror-lit,
+			.mirror-run {
+				opacity: 0;
+			}
+		}
+
+		/* Every bar on the board draws at one speed, so a bar takes as long as
+		   it is long and ArkType's lands first in each graph. As it lands, the
+		   place it took lights and its glow comes up; light crosses its bar
+		   twice while the others are still drawing, and never again. */
+		.graphs[data-play] {
+			--race: 2.6s;
+			.graph-lane {
+				--landed: calc(0.3s + var(--w) * var(--race));
+			}
+			.graph-bar::before {
+				animation: bar-in calc(var(--w) * var(--race)) linear 0.3s both;
+			}
+			.graph-lane.is-ours .graph-place {
+				animation: place-land 0.45s var(--ease-pop) var(--landed) both;
+			}
+			.graph-lane.is-ours .graph-bar::after {
+				animation: bar-lap 1.7s linear calc(var(--landed) + 0.2s) both;
+			}
+		}
+	}
+	/* then the lane rests, its two lights breathing a little, for as long as
+	   the board is on screen (HomeEffects marks it away when it isn't) */
+	.home .graphs[data-play] .graph-lane.is-ours {
+		&::before {
+			animation: edge-breathe 4.2s ease-in-out 3.2s infinite alternate both;
+		}
+		.graph-track::before {
+			animation:
+				glow-in 0.6s ease-out var(--landed) both,
+				glow-breathe 4.2s ease-in-out 3.2s infinite alternate;
+		}
+	}
+	.home .card.is-medians .lane.is-ours .lane-track::before {
+		animation: glow-breathe 4.2s ease-in-out infinite alternate;
+	}
+	.home [data-idle][data-away] :is(.graph-lane, .lane).is-ours {
+		&::before,
+		:is(.graph-track, .lane-track)::before {
+			animation-play-state: paused;
+		}
+	}
+	:root[data-motion] .home {
+		.boot[data-play] {
+			.boot-bar {
+				animation: boot-grow var(--at) linear 0.3s both;
+			}
+			.boot-lane:not([data-done]) {
+				.boot-run {
+					display: inline;
+				}
+				.boot-done {
+					display: none;
+				}
+				.boot-val {
+					color: var(--ink-3);
+				}
+			}
+			.boot-lane[data-done] .boot-done {
+				animation: row-in 0.3s var(--ease-out) both;
+			}
+			/* the mark is drawn the moment ArkType's lane finishes */
+			.boot-lane.is-ours:not([data-done]) ~ .boot-lane::after {
+				opacity: 0;
+			}
+		}
+
+		/* without precompile, in grey, until the parser's blocks have gone */
+		.bytes:not([data-done]) {
+			.byte.is-parser {
+				display: block;
+			}
+			.byte.is-kept {
+				background: var(--byte-idle);
+				box-shadow: none;
+			}
+			.byte-row.is-ours .byte-size {
+				color: var(--ink-2);
+			}
+			.byte-before {
+				opacity: 1;
+			}
+			.byte-after {
+				opacity: 0;
+			}
+			.byte-row:not(.is-ours) {
+				opacity: 0;
+			}
+		}
+		.bytes[data-play]:not([data-done]) .byte.is-parser {
+			animation: byte-leave 0.45s ease-in forwards;
+			animation-delay: calc(1s + var(--k) * 1.75s);
+		}
+		.bytes[data-done] .byte-row:not(.is-ours) {
+			animation: row-in 0.45s var(--ease-out) both;
+			animation-delay: calc(0.15s + var(--i) * 0.16s);
+		}
+
+		.morph[data-play] {
+			.morph-pane.is-ark {
+				animation: wipe-ark 1.3s cubic-bezier(0.5, 0, 0.3, 1) 0.5s backwards;
+			}
+			.morph-pane.is-zod {
+				animation: wipe-zod 1.3s cubic-bezier(0.5, 0, 0.3, 1) 0.5s backwards;
+			}
+			.morph-line {
+				animation: wipe-line 1.3s cubic-bezier(0.5, 0, 0.3, 1) 0.5s both;
+			}
+			.mirror-lit {
+				animation: lit-in 0.5s ease-out 1.9s both;
+			}
+			.mirror-run {
+				animation: row-in 0.5s var(--ease-out) 2.5s both;
+			}
+		}
+	}
+}
+
+@media (max-width: 1080px) {
+	.home {
+		.point:is(.is-split, .is-flip) .point-main {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 36px;
+		}
+		.point.is-flip .point-main .point-copy {
+			order: 0;
+		}
+		.hero-foot {
+			flex-basis: 100%;
+			margin-left: 0;
+		}
+	}
+}
+
+@media (max-width: 760px) {
+	.home {
+		/* a row each: the number, then what it is a number of */
+		.hero-stats {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 14px;
+			margin-top: 26px;
+		}
+		.hero-stat {
+			grid-template-columns: 5.4rem minmax(0, 1fr);
+			grid-template-areas:
+				"num what"
+				"num scope";
+			column-gap: 14px;
+			align-items: center;
+			align-content: center;
+			.stat-num {
+				grid-area: num;
+				font-size: 3.5rem;
+				line-height: 0.9;
+			}
+		}
+		.hero-stat-what {
+			grid-area: what;
+			align-self: end;
+			margin-top: 0;
+			font-size: 1.06rem;
+		}
+		.hero-stat-scope {
+			grid-area: scope;
+			align-self: start;
+			margin-top: 3px;
+			font-size: 13px;
+			line-height: 1.35;
+		}
+		.hero .lede {
+			margin-top: 26px;
+		}
+		.hero .ctas {
+			margin-top: 18px;
+		}
+		/* a graph a row: each keeps the card's width for its bars */
+		.graphs {
+			margin-top: 24px;
+			padding: 20px 16px 14px;
+		}
+		.graphs-row {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 30px;
+			margin-top: 22px;
+		}
+		.graph ol {
+			gap: 11px;
+			margin-top: 14px;
+		}
+		.graph-lane.is-ours {
+			margin: 0 -8px;
+			padding: 12px 10px 14px;
+			.graph-val {
+				font-size: 26px;
+			}
+		}
+		.graph-of,
+		.graph-sub {
+			min-height: 0;
+		}
+		.graph-lane.is-wide,
+		.graph-gap.is-wide,
+		.gap-wide {
+			display: none;
+		}
+		.gap-narrow {
+			display: inline;
+		}
+		.graph-gap.is-narrow {
+			display: block;
+		}
+		.graphs-method {
+			margin-left: 0;
+		}
+		.guarantee-plugin,
+		.guarantee figcaption {
+			padding-inline: 16px;
+		}
+		.guarantee-add {
+			margin-left: 0;
+		}
+		.guarantee-body {
+			padding: 20px 16px 18px;
+		}
+		.diag {
+			padding: 12px;
+			font-size: 12px;
+		}
+		.point-ctas {
+			flex-wrap: wrap;
+		}
+		.board .p3 {
+			padding: 18px 14px 14px;
+		}
+		/* four columns in a phone's width: the marks and gaps give way first */
+		.p3-table {
+			font-size: 12.5px;
+			th,
+			td {
+				padding: 10px 3px;
+			}
+			:is(th, td):first-child {
+				width: 23%;
+				padding-left: 8px;
+			}
+		}
+		.p3-cell {
+			gap: 4px;
+		}
+		/* a place over its number: side by side they are wider than a column */
+		.p3-cell.is-placed {
+			flex-direction: column;
+			align-items: flex-end;
+			gap: 2px;
+		}
+		.p3-table .p3-mark {
+			width: 14px;
+			height: 14px;
+			svg {
+				width: 9px;
+				height: 9px;
+			}
+		}
+		.point-main {
+			gap: 30px;
+		}
+		.point-caveat {
+			margin-top: 22px;
+		}
+		.loses {
+			font-size: 15px;
+		}
+		/* one row, scrolled sideways: stacked, four chips pushed every figure's
+		   data a screen away from the figure */
+		.drill-chips {
+			flex-wrap: nowrap;
+			margin-inline: calc(-1 * var(--gutter));
+			padding-inline: var(--gutter);
+			overflow-x: auto;
+			scrollbar-width: none;
+			/* the row runs off the screen: it fades at each edge that has more
+			   past it (HomeEffects names them), so a chip cut there reads as
+			   more to scroll to, not as a row that doesn't fit */
+			--fade-start: 0px;
+			--fade-end: 72px;
+			mask: linear-gradient(
+				90deg,
+				transparent,
+				#000 var(--fade-start),
+				#000 calc(100% - var(--fade-end)),
+				transparent
+			);
+			&[data-more]:not([data-more~="end"]) {
+				--fade-end: 0px;
+			}
+			&[data-more~="start"] {
+				--fade-start: 72px;
+			}
+			&::-webkit-scrollbar {
+				display: none;
+			}
+			&::after {
+				content: "";
+				flex: none;
+				width: 24px;
+			}
+		}
+		.drill-chip {
+			flex: none;
+			padding: 9px 12px 9px 10px;
+		}
+		.drill-panel {
+			padding: 20px 16px 22px;
+		}
+		.count,
+		.boot,
+		.bytes {
+			padding: 18px 16px 16px;
+		}
+		/* room for the running title's second line, so starting never moves the lanes */
+		.count-head {
+			align-items: flex-start;
+		}
+		.count-title {
+			min-height: 2lh;
+		}
+		/* the caption names the unit where the head has no room to */
+		.boot-unit {
+			display: none;
+		}
+		.boot-lane {
+			grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+			font-size: 13px;
+		}
+		.boot-status {
+			font-size: 12px;
+		}
+		.byte-grid {
+			--b: 8px;
+		}
+		.byte-row {
+			grid-template-columns: minmax(0, 1fr) auto;
+			grid-template-areas:
+				"name size"
+				"grid grid";
+			row-gap: 9px;
+		}
+		.byte-row.is-ours {
+			grid-template-areas:
+				"head head"
+				"grid grid";
+		}
+		/* three columns of numbers beside a label that may wrap, so none is off the card */
+		.scale-table.is-preset {
+			font-size: 12.5px;
+			th,
+			td {
+				padding: 9px 6px;
+			}
+			:is(th, td):first-child {
+				white-space: normal;
+			}
+		}
+		.diff-mark {
+			width: 2.5ch;
+		}
+		.morph:not(.mirror) pre.shiki {
+			--pre-x: 14px;
+			font-size: 12px;
+		}
+		.mirror {
+			--code-fs: 13px;
+			--pre-y: 16px;
+			.morph-pane > pre.shiki {
+				padding-inline: 16px;
+			}
+		}
+		.mirror-run {
+			padding: 12px 16px 16px;
+		}
+		.mirror-out {
+			font-size: 12.5px;
+		}
+		.closer-go > * {
+			flex: 1 1 100%;
+		}
+	}
+}

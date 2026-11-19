@@ -35,7 +35,9 @@ import { ark, configure } from "arktype"
 import "arktype/errors"
 import "arktype/mutatesInput"
 import type { HoleKind, IntrospectionMember } from "arktype/internal/runtime.ts"
-import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
+// by its entry, as a program loads it: built, a path under arktype/internal is
+// arktype's own exports, with type, scope and match
+import * as arktypeRuntime from "arktype/runtime"
 import {
 	appendPath,
 	cellSetterOf,
@@ -172,6 +174,7 @@ import {
 	changeableDepthOf,
 	createSiteState,
 	findDynamic,
+	holderLabelOf,
 	inferredNameOf,
 	Interpreter,
 	isCall,
@@ -187,10 +190,11 @@ import {
 	type SiteState,
 	type Trace
 } from "./interpreter.ts"
-import { parseCode, SourceModule } from "./module.ts"
+import { parseCode, SourceModule, type StrategyMark } from "./module.ts"
 import type { Preset } from "./presets.ts"
+import { inertImportsOf } from "./inert.ts"
 import { isTransparent } from "./proofs.ts"
-import { closedTextOf, SameEachRun } from "./sameEachRun.ts"
+import { closedTextOf, rejectingOf, SameEachRun } from "./sameEachRun.ts"
 import { resolvePrecompileOptions } from "./settings.ts"
 import {
 	exportNameOf,
@@ -229,6 +233,8 @@ import {
 import {
 	linkBundle,
 	prefixOf,
+	virtualSource,
+	type LinkedBundle,
 	type LinkedSite,
 	type LinkOptions
 } from "./link.ts"
@@ -261,6 +267,7 @@ import {
 	isCoveredBy,
 	isFoldable,
 	isFolded,
+	holdsHole,
 	isHeld,
 	isWithin,
 	keyedMethodOf,
@@ -290,6 +297,7 @@ import {
 	isUnstaticHelperReason,
 	configuredThreadMessage,
 	copiesHint,
+	composedRefusalHint,
 	derivedHint,
 	frozenHint,
 	hintsByRule,
@@ -308,6 +316,7 @@ import {
 	unresolvedHint,
 	versionHint,
 	writeVersionHint,
+	writeComposedRuntimeHint,
 	writeConfiguredOptionHint,
 	writeConflictHint,
 	writeErrorReaderHint,
@@ -340,15 +349,38 @@ import {
 	writeUnitTable,
 	writeValidators
 } from "./output.ts"
-import { programSizeOf } from "./runtimeSize.ts"
+import { programSizeOf, validatorsToArktypeOf } from "./runtimeSize.ts"
 import {
 	combinesChecks,
 	shapesPayIn,
 	unitsExposingAllowsPays
 } from "./smaller.ts"
+import {
+	declarationsOf,
+	isKeyConflict,
+	islandStrategyHint,
+	keyConflictHint,
+	nearestTo,
+	SchemaStrategies,
+	strategyMarker,
+	strategyOfSpecifier,
+	strategyMarkerHint,
+	strayStrategyMarkerMessage,
+	unnamedDeclarationHint,
+	writeIslandStrategyMessage,
+	writeKeyConflictMessage,
+	writeStrategyLabel,
+	writeUnknownStrategyMessage,
+	writeUnnamedDeclarationMessage,
+	type KeyConflict,
+	type NamedDeclaration,
+	type ResolvedStrategy,
+	type Strategy
+} from "./strategies.ts"
 export * from "./messages.ts"
 export * from "./presets.ts"
 export * from "./settings.ts"
+export * from "./strategies.ts"
 
 export type PrecompileMode = "standalone" | "cache"
 
@@ -374,6 +406,14 @@ export interface PrecompileOptions extends InterpreterOptions {
 	optimize?: Optimization | undefined
 	/** "size" writes errors smaller and slower to read, defaulting to optimize */
 	optimizeErrors?: Optimization | undefined
+	/** how a validator can be written, by name, beside "fastest" and "smallest" */
+	strategies?: Record<string, Strategy> | undefined
+	/**
+	 * the strategy each module is written with, by its path or a glob from
+	 * cwd, or one of its declarations, as "src/money.ts#Money"; what no key
+	 * matches is written as optimize says
+	 */
+	schemas?: Record<string, string> | undefined
 	/** trusts data to hold only own, enumerable keys, as JSON.parse's output does */
 	jsonInput?: boolean | undefined
 	/** @internal the chars a site's baked introspection may total */
@@ -449,6 +489,24 @@ interface ProgramUsage {
 	cells?: HoleCells | undefined
 	// the roots sites in modules apart create, by what names each
 	interned?: ReadonlyMap<unknown, string> | undefined
+	// whether any of its validators is written for size
+	sizes: boolean
+	// what its issues hold, where the reads it saw need less than any may
+	issues?: IssueFeatures | undefined
+}
+
+// a module's exports written one way, as one artifact
+interface StrategyWrite {
+	optimize: Optimization
+	// "" for the build's own, else what names its shared modules apart
+	strategy: string
+	names: string[]
+}
+
+interface WrittenValidators {
+	validators: StandaloneModules
+	names: ReadonlySet<string>
+	strategy: string
 }
 
 interface ProgramPlan {
@@ -488,6 +546,9 @@ export interface PrecompiledModule extends ModuleAnalysis {
 	modules: Record<string, string>
 	// what its validators' issues may hold, where it writes any
 	issues?: IssueFeatures | undefined
+	// each local it reads a validator by whose strategy a key or marker chose,
+	// which a build weighing what its own options write leaves out
+	chosen?: string[] | undefined
 	// the helpers it exports whose calls the build folds, which only a precompiled module can call
 	foldedHelpers: string[]
 }
@@ -517,10 +578,15 @@ const isRepeated = (fn: Node): boolean => {
 }
 
 // a module loaded under two queries, or with one and without, as esbuild holds
-// a run of each where the scan reads one module
-const modulesRunApart = ({ entries, targets }: ScannedProgram): Set<string> => {
+// a run of each where the scan reads one module, and one a bundle read as
+// built holds as two
+const modulesRunApart = ({
+	entries,
+	targets,
+	builtApart
+}: ScannedProgram): Set<string> => {
 	const queries = new Map(entries.map(id => [id, ""]))
-	const apart = new Set<string>()
+	const apart = new Set<string>(builtApart)
 	for (const importing of Object.values(targets)) {
 		for (const specifier in importing) {
 			const id = importing[specifier]
@@ -635,6 +701,15 @@ const defersCreation = ({ code, modules }: StandaloneModules): boolean => {
 	return chars >= deferredFrom
 }
 
+// a cell's name, which is its function's, as the build named that for its content
+const cellNameOf = (hole: unknown): string => {
+	const placeholder = functionNameOf(hole as Fn)
+	return `hole${placeholder.slice(placeholder.indexOf(holeNameMarker) + holeNameMarker.length)}`
+}
+
+// what a cell holding its function's text is declared with
+type CellText = Pick<HoleCell, "imports" | "rejects"> & { text: string }
+
 // a cell some site sets
 const isSetCell = (hole: unknown, cells: HoleCells | undefined): boolean => {
 	const cell = cells?.byHole.get(hole)
@@ -696,6 +771,12 @@ export class Precompiler {
 	private variant: RuntimeVariant | undefined
 	private mutatesInput: MutatesInput | undefined
 	private standalone: StandaloneOptions
+	// whether nothing chose what its validators are compiled for, so a program
+	// they leave larger than arktype would is one to say so of
+	private optimizeUnset: boolean
+	// what its options choose for each definition, beside what a marker does
+	private strategies: SchemaStrategies
+	private declarationsByModule = new WeakMap<SourceModule, NamedDeclaration[]>()
 	private configuration: Configuration | undefined
 	private loadedBeforeConfigure: string[] | undefined
 	private configureCallsByModule = new WeakMap<SourceModule, CallExpression[]>()
@@ -714,12 +795,23 @@ export class Precompiler {
 	> = Object.create(null)
 	// each module's import cycle (SCC), numbered as found
 	private componentsById: Record<string, number> = Object.create(null)
+	// whether a module's text imports reach it again, as its source had it
+	private onCycleById: Record<string, [source: string, isOnCycle: boolean]> =
+		Object.create(null)
 	private exportsArkByModule = new WeakMap<SourceModule, boolean>()
 	private analysesByModule = new WeakMap<SourceModule, ModuleAnalysis>()
+	// the sites of each module being analyzed
+	private sitesByAnalyzing = new WeakMap<SourceModule, Site[]>()
 	// whether a site of the program read whole reads a Type off a holder
 	private readsOffHolders: boolean | undefined
 	private sameEachRun: SameEachRun | undefined
+	// the modules a program's build writes, which import its units
+	private siteModules: ReadonlySet<string> = new Set()
+	// whether loading each module read for a cell's text runs nothing
+	private declaresOnlyById = new Map<string, boolean>()
 	private runsApart: ReadonlySet<string> = new Set()
+	// whether the program's bundler runs each module it holds once for a runtime
+	private runsOnce = false
 	// each shared unit's modules, written once for every module reading it
 	private sharedWrites: SharedWrites = new Map()
 	// the validators a site's factory last read, which inlining reads again
@@ -777,9 +869,18 @@ export class Precompiler {
 			checks,
 			mutatesInput: this.mutatesInput,
 			optimize: opts.optimize ?? "speed",
+			// errors written for size find their issues as a call returns: the
+			// classes that wait to are the ones written for speed
+			defersIssues: (opts.optimizeErrors ?? opts.optimize) !== "size",
 			jsonInput: opts.jsonInput,
 			bakedLimit: opts.bakedLimit
 		}
+		this.optimizeUnset = opts.optimize === undefined
+		this.strategies = new SchemaStrategies(
+			opts,
+			this.standalone.optimize!,
+			opts.cwd
+		)
 		this.lackedMembers = new Set(
 			defaultMembers.flatMap(member =>
 				this.members[member] !== false ? []
@@ -894,13 +995,17 @@ export class Precompiler {
 			// its message is a failed default's summary
 			issues.readsErrors ||= codes.some(code => code.includes("checkDefault"))
 		}
-		const isRead = (member: UsedMember) =>
-			typeof used === "string" || used.has(member)
-		issues.readsErrors ||= readsErrorsWhole.some(isRead)
-		issues.readsSummary ||= issues.readsErrors || isRead("summary")
-		issues.rewritesUnions ||=
-			issues.readsErrors || issues.traversesUnions || isRead("~standard")
-		return issues
+		// a member set true is one code the build can't see may read. An assert
+		// set true doesn't hold the class of what it throws: code the build
+		// can't see has no name for a class the bundle doesn't export, and one
+		// it exports or names is seen, as "thrown"
+		return issuesReading(
+			issues,
+			member =>
+				typeof used === "string" ||
+				used.has(member) ||
+				this.members[member as ValidatorMember] === true
+		)
 	}
 
 	// the whole program, as a production bundle's scan or --emit reads it, so
@@ -917,31 +1022,14 @@ export class Precompiler {
 	}
 
 	private viewOf(program: ReadProgram): ProgramView {
-		const loose = new Map<string, string>()
 		const resolve = (specifier: string, importer: string) =>
 			program.targets?.[importer]?.[specifier] ??
 			this.graph.host.resolve(specifier, importer)
 		for (const id in program.modules) {
 			const { source, mappings } = program.modules[id]
-			const module = this.add(id, source, mappings)
-			walk(module.program, node => {
-				const specifier = loadedSpecifierOf(node)
-				const target =
-					typeof specifier === "string" ? resolve(specifier, id) : undefined
-				if (target !== undefined && !loose.has(target)) {
-					loose.set(
-						target,
-						`${module.positionOf(node)} loads with ${node.type === "ImportExpression" ? "import()" : "require()"}`
-					)
-				}
-				return true
-			})
+			this.add(id, source, mappings)
 		}
-		for (const id of program.dynamicImports ?? [])
-			if (!loose.has(id)) loose.set(id, "the bundle loads with import()")
-		for (const id of program.exposed ?? [])
-			if (!loose.has(id)) loose.set(id, "a dependency may import unseen")
-		return { ids: Object.keys(program.modules), resolve, loose }
+		return { ids: Object.keys(program.modules), resolve }
 	}
 
 	// what a bundle's validators are read for, so its next transforms leave out what no read needs
@@ -1059,6 +1147,7 @@ export class Precompiler {
 		const readsAllows = isRead("allows")
 		const piped = isRead("piped")
 		this.runsApart = modulesRunApart(program)
+		this.runsOnce = !!program.runsOnce
 		const [interned, baked] = this.internedIn(
 			plan,
 			readings.baked,
@@ -1089,7 +1178,8 @@ export class Precompiler {
 			written: {},
 			unscanned: new Map(),
 			cells: this.cellsOf(plan),
-			interned
+			interned,
+			sizes: this.sizesIn(plan)
 		}
 		this.usagesByProgram.set(program.key, usage)
 		const wrote = this.writeSmaller(program, plan, usage)
@@ -1119,12 +1209,33 @@ export class Precompiler {
 				false
 			:	this.linkProgram(program, plan, usage, wrote)
 		const { written, runtimes } = wrote
+		// one function declares the units of each validator it flattens, those a
+		// key or marker chose with the rest, which are told apart only as written
+		// before it: the rest weigh no more than either, so the lesser is theirs
+		const unflattened =
+			(
+				flattens &&
+				this.optimizeUnset &&
+				Object.values(written).some(module => module.chosen)
+			) ?
+				{ ...written }
+			:	undefined
 		usage.flat =
 			flattens ?
 				this.flattenWritten(written, plan.sources, program, runtimes)
 			:	undefined
 		usage.written = written
 		const issues = this.issuesOf(program, written, used)
+		usage.issues = issues
+		const timesArktype =
+			this.optimizeUnset ?
+				Math.min(
+					validatorsToArktypeOf(written, new Set(usage.flat?.replaced)),
+					unflattened && usage.flat ?
+						validatorsToArktypeOf(unflattened, new Set())
+					:	Infinity
+				)
+			:	0
 		return {
 			dropped,
 			linked,
@@ -1145,6 +1256,7 @@ export class Precompiler {
 				narrowsIssues(issues),
 			unpruned,
 			lost: readings.lost.length ? writeLostMessage(readings.lost) : undefined,
+			timesArktype: timesArktype > 1 ? timesArktype : undefined,
 			baked: readings.decisions,
 			issues
 		}
@@ -1225,12 +1337,14 @@ export class Precompiler {
 				}
 			}
 		}
-		const texts = new Map<unknown, string>()
+		this.siteModules = new Set(precompiled)
+		this.declaresOnlyById.clear()
+		const texts = new Map<unknown, CellText>()
 		for (const [site] of factories) {
 			for (const reference of site.references) {
-				if (!isCell.get(reference.value)) continue
+				if (!isCell.get(reference.value) || texts.has(reference.value)) continue
 				const text = this.closedPredicateTextOf(site, reference)
-				if (text !== undefined) texts.set(reference.value, text)
+				if (text) texts.set(reference.value, text)
 			}
 		}
 		// a validator can read one only where its site runs what sets it
@@ -1258,10 +1372,7 @@ export class Precompiler {
 				placeholders.lastIndexOf(placeholder)
 			)
 				continue
-			const cell: HoleCell = {
-				name: `hole${placeholder.slice(placeholder.indexOf(holeNameMarker) + holeNameMarker.length)}`,
-				text: texts.get(hole)
-			}
+			const cell: HoleCell = { name: cellNameOf(hole), ...texts.get(hole) }
 			byHole.set(hole, cell)
 			byPlaceholder.set(placeholder, cell)
 		}
@@ -1345,13 +1456,14 @@ export class Precompiler {
 		return cells
 	}
 
-	// the text of a narrow written in place, which can read only its argument and
-	// what's closed over nothing of its module. What runs it never reads its name,
-	// which a variable holding it would change, as a build writes its description
+	// the text of a narrow a unit holds, which reads only what it's passed, what
+	// it declares and what it imports of modules loading which runs nothing. One
+	// reading only its argument is written where it's read; any other, in its
+	// cell's module, by a call, so nothing names it for a variable holding it
 	private closedPredicateTextOf(
 		site: Site,
 		reference: Site["references"][number]
-	): string | undefined {
+	): CellText | undefined {
 		const { value } = reference
 		const standIn = this.standInOf(value)
 		const node = standIn?.closure?.node
@@ -1362,7 +1474,6 @@ export class Precompiler {
 			reference.binding ||
 			reference.start !== node.start ||
 			reference.end !== node.end ||
-			!readsOnlyData.has(value as Fn) ||
 			declaredNameOf(node) !== "" ||
 			// a read of its Type before its site has run throws where a site sets it
 			this.isOnCycle(standIn!.module) ||
@@ -1373,7 +1484,79 @@ export class Precompiler {
 			)
 		)
 			return
-		return closedTextOf(node, standIn!.module)
+		return this.cellTextOf(cellNameOf(value), node, standIn!.module)
+	}
+
+	// a function's text as its cell's module holds it: what it reads of another
+	// module is imported there from the module declaring it, under a name of
+	// the cell's own, as units sharing a module share its names
+	private cellTextOf(
+		name: string,
+		node: Node,
+		module: SourceModule
+	): CellText | undefined {
+		const imports: Record<string, string[]> = {}
+		const aliases = new Map<Binding, string | undefined>()
+		const aliasOf = (binding: Binding) => {
+			if (aliases.has(binding)) return aliases.get(binding)
+			const target =
+				binding.kind === "import" ?
+					this.graph.importOf(binding, module)
+				:	undefined
+			let alias: string | undefined
+			if (
+				target?.kind === "binding" &&
+				!this.runsApart.has(target.module.id) &&
+				this.declaresOnly(target.module)
+			) {
+				alias = `${name}_${aliases.size}`
+				;(imports[target.module.id] ??= []).push(`${target.name} as ${alias}`)
+			}
+			aliases.set(binding, alias)
+			return alias
+		}
+		// one that only tests data and rejects with a message is a call holding
+		// the test and the message, the test a function's name where it's one
+		const rejecting = rejectingOf(node, module)
+		const tested =
+			rejecting &&
+			closedTextOf(node, module, aliasOf, rejecting.callee ?? rejecting.test)
+		const rejects =
+			tested === undefined ? undefined
+			: rejecting!.callee ? `${tested}, ${rejecting!.message}`
+			: `${rejecting!.data} => ${rejecting!.fails ? "!" : ""}(${tested}), ${rejecting!.message}`
+		const text =
+			rejects === undefined ?
+				closedTextOf(node, module, aliasOf)
+			:	`/* @__PURE__ */ runtime.rejecting(${rejects})`
+		if (text === undefined) return
+		return {
+			text,
+			...(Object.keys(imports).length ? { imports } : {}),
+			...(rejects === undefined ? {} : { rejects })
+		}
+	}
+
+	// whether loading a module, and each it imports, runs nothing but
+	// declarations, so a unit importing it changes nothing by loading it first.
+	// A module the build writes imports units, and one on a cycle loads in an
+	// order its entry decides, so neither is
+	// (`isInert` asks another question, of a module declaring Types)
+	private declaresOnly(module: SourceModule): boolean {
+		let declares = this.declaresOnlyById.get(module.id)
+		if (declares === undefined) {
+			this.declaresOnlyById.set(module.id, false)
+			const imports =
+				this.siteModules.has(module.id) ? undefined : inertImportsOf(module)
+			declares =
+				!!imports &&
+				imports.every(specifier => {
+					const target = this.graph.resolve(specifier, module)
+					return target instanceof SourceModule && this.declaresOnly(target)
+				})
+			this.declaresOnlyById.set(module.id, declares)
+		}
+		return declares
 	}
 
 	// a module another plugin rewrote creates its holes anew, where what the scan
@@ -1397,11 +1580,15 @@ export class Precompiler {
 		const after = functionsIn(sites)
 		const nameOf = (hole: unknown) =>
 			declaredNameOf(this.standInOf(hole)!.closure!.node)
-		const isSameText = (text: string | undefined, hole: unknown) => {
+		const isSameText = ({ name, text, imports }: HoleCell, hole: unknown) => {
 			if (text === undefined) return true
 			const { closure, module } = this.standInOf(hole)!
-			const after = closedTextOf(closure!.node, module)
-			return after !== undefined && shapeOfCode(after) === shapeOfCode(text)
+			const after = this.cellTextOf(name, closure!.node, module)
+			return (
+				after !== undefined &&
+				shapeOfCode(after.text) === shapeOfCode(text) &&
+				JSON.stringify(after.imports) === JSON.stringify(imports)
+			)
 		}
 		const isSame = (i: number) =>
 			!cells.byHole.has(before[i]) ||
@@ -1412,7 +1599,7 @@ export class Precompiler {
 					readsOnlyData.has(before[i] as Fn) &&
 				returnsReports.has(after[i] as Fn) ===
 					returnsReports.has(before[i] as Fn) &&
-				isSameText(cells.byHole.get(before[i])!.text, after[i]) &&
+				isSameText(cells.byHole.get(before[i])!, after[i]) &&
 				sites.every(site =>
 					site.references.every(
 						reference => reference.value !== after[i] || reference.isOneValue
@@ -1435,6 +1622,17 @@ export class Precompiler {
 		}
 	}
 
+	// A function its module's own run declares is one value while that run is
+	// the only one. Where a module's text may run again, as native modules do
+	// for a chunk imported under another query, two runs must not differ, which
+	// sameEachRun proves of what it reads. A webpack or Rspack runtime keeps
+	// each module it ran in its registry and runs none twice, and the units a
+	// module reads are modules of that same registry, so there the function
+	// needs no proof: a second runtime on the page, or a worker's, runs its own
+	// copy of both. That leaves a module the bundle holds twice (runsApart),
+	// and one required again after its run threw under
+	// `output.strictModuleErrorHandling`, whose second run then sets what its
+	// validators read, as it would have had the first not thrown
 	private isCreatedOnce(hole: unknown): boolean {
 		const standIn = this.standInOf(hole)
 		const closure = standIn?.closure
@@ -1445,7 +1643,7 @@ export class Precompiler {
 			!isRepeated(closure.node) &&
 			!this.runsApart.has(standIn.module.id) &&
 			functionNameOf(hole as Fn).includes(holeNameMarker) &&
-			!!this.sameEachRun?.of(closure.node, standIn.module)
+			(this.runsOnce || !!this.sameEachRun?.of(closure.node, standIn.module))
 		)
 	}
 
@@ -1593,7 +1791,10 @@ export class Precompiler {
 		plan: ProgramPlan,
 		usage: ProgramUsage
 	): WrittenProgram | undefined {
-		const decides = combinesChecks(this.standalone)
+		const decides = combinesChecks({
+			...this.standalone,
+			optimize: usage.sizes ? "size" : "speed"
+		})
 		if (decides) usage.combines = true
 		const wrote = this.writeProgram(program, plan)
 		if (!wrote || !decides) return wrote
@@ -1618,12 +1819,13 @@ export class Precompiler {
 		wrote: WrittenProgram
 	): boolean {
 		const { sources } = plan
-		// a size build's units, where the bundle is one chunk, are one module
-		const isOneChunk =
-			!!program.isOneChunk && this.standalone.optimize === "size"
+		// units written for size, where the bundle is one chunk, are one module
+		const isOneChunk = !!program.isOneChunk && usage.sizes
+		const sharesCreators = !!usage.combines
 		let link = this.linkWritten(wrote.written, sources, {
 			exposesAllows: usage.readsAllows,
-			isOneChunk
+			isOneChunk,
+			sharesCreators
 		})
 		// a unit a site creates its validator from is declared as that
 		// validator where validators expose allows
@@ -1634,7 +1836,8 @@ export class Precompiler {
 				Object.assign(wrote, exposed)
 				link = this.linkWritten(wrote.written, sources, {
 					exposesAllows: true,
-					isOneChunk
+					isOneChunk,
+					sharesCreators
 				})
 			} else {
 				usage.readsAllows = false
@@ -1650,7 +1853,8 @@ export class Precompiler {
 				shaped &&
 				this.linkWritten(shaped.written, sources, {
 					exposesAllows: usage.readsAllows,
-					isOneChunk
+					isOneChunk,
+					sharesCreators
 				})
 			if (shaped && shapedLink && shapesPayIn(shaped.written)) {
 				Object.assign(wrote, shaped)
@@ -1665,7 +1869,9 @@ export class Precompiler {
 			const shared = this.linkWritten(wrote.written, sources, {
 				exposesAllows: usage.readsAllows,
 				isOneChunk,
-				sharesChecks: true
+				sharesChecks: true,
+				sharesCreators,
+				sharesUnits: !isOneChunk
 			})
 			return link.changed || shared.changed
 		}
@@ -1692,9 +1898,13 @@ export class Precompiler {
 	}
 
 	// what a bundle reads that its scan left out, as the loaders after the
-	// plugin built each module from what reached the plugin, as webpack's do:
-	// the read, and a module whose loaders' work makes it
-	unseenBuiltIn(program: ScannedProgram): UnseenBuilt | undefined {
+	// plugin built each module from what reached the plugin, as webpack's do,
+	// or as a Rollup plugin's transforms after it did: the read, and a module
+	// whose loaders' work makes it
+	unseenBuiltIn(
+		program: ScannedProgram,
+		after = "the loaders after it"
+	): UnseenBuilt | undefined {
 		const usage = this.usagesByProgram.get(program.key)
 		if (!usage) return
 		const runtimes = this.builtRuntimesOf(program, usage)
@@ -1704,13 +1914,19 @@ export class Precompiler {
 		// module as the plugin wrote it, as their sites are in the same order
 		const keys = new Map<string, string>()
 		for (const id in program.modules) {
-			const { built: code, transformed } = program.modules[id]
+			const { built: code, source, transformed } = program.modules[id]
 			if (code === undefined) continue
 			const written = runtimes.get(id)!
+			// one that reached the plugin as CommonJS, like a workspace package
+			// tsc built, reads no more as built: the scan left each member in
+			// what it loads with require()
+			const wasCommonJs = isCommonJs(this.add(id, source))
 			// it holds no import or export, so what it reads of a validator,
 			// through require() or exports, is beyond what the build follows
-			if (isCommonJs(this.add(id, code)))
+			if (isCommonJs(this.add(id, code))) {
+				if (wasCommonJs) continue
 				return { id, read: "", commonJs: true }
+			}
 			const runtime =
 				transformed && this.isTransformed(id) && this.importsArk(code, id) ?
 					this.plannedRuntimeOf(code, id, undefined, true)
@@ -1718,14 +1934,14 @@ export class Precompiler {
 			if (!runtime) {
 				return {
 					id,
-					read: `${this.graph.pathOf(id)}, as the loaders after it built it, fails to precompile`
+					read: `${this.graph.pathOf(id)}, as ${after} built it, fails to precompile`
 				}
 			}
 			for (const kind of ["validators", "modules"] as const) {
 				if (runtime[kind].length !== written[kind].length) {
 					return {
 						id,
-						read: `${this.graph.pathOf(id)} creates ${runtime[kind].length} ${kind === "modules" ? "Modules" : kind} as the loaders after it built it, and ${written[kind].length} as it wrote it`
+						read: `${this.graph.pathOf(id)} creates ${runtime[kind].length} ${kind === "modules" ? "Modules" : kind} as ${after} built it, and ${written[kind].length} as it wrote it`
 					}
 				}
 				for (const [i, site] of runtime[kind].entries())
@@ -1753,7 +1969,51 @@ export class Precompiler {
 			if (readWith(ids.slice(0, middle))) most = middle
 			else fewest = middle
 		}
-		return { id: ids[most - 1], read: readWith(ids.slice(0, most)) ?? read }
+		return {
+			id: ids[most - 1],
+			read: readWith(ids.slice(0, most)) ?? read,
+			members: this.unseenMembersIn(
+				program,
+				new Map([...runtimes, ...built]),
+				usage,
+				keys
+			)
+		}
+	}
+
+	// each member the modules read that it left out, where members, set true
+	// for each, has a build keep all they read: where they call no validator,
+	// read no allows and pass no traversal that it left out too
+	private unseenMembersIn(
+		program: ScannedProgram,
+		runtimes: ReadonlyMap<string, RuntimeModule>,
+		usage: ProgramUsage,
+		keys: ReadonlyMap<string, string>
+	): string[] | undefined {
+		const used = this.usedIn(program, runtimes)
+		if (
+			typeof used === "string" ||
+			(!usage.called && used.has("call")) ||
+			(!usage.readsAllows && used.has("allows")) ||
+			(!usage.piped && used.has("piped"))
+		)
+			return
+		const members: string[] = [
+			...defaultMembers.filter(
+				member =>
+					usage.members[member] === false &&
+					this.members[member] === undefined &&
+					used.has(member)
+			),
+			...this.unbakedIn(program, runtimes, usage, keys)
+		]
+		// its issues then hold what a read of each of those needs
+		const issues =
+			usage.issues &&
+			issuesReading(usage.issues, member => members.includes(member))
+		return unreadIssuesOf(issues, member => used.has(member)) ? undefined : (
+				members
+			)
 	}
 
 	// each module of a program as the host emitted it, or why one can't be read
@@ -1798,7 +2058,7 @@ export class Precompiler {
 		keys?: ReadonlyMap<string, string>
 	): string | undefined {
 		const used = this.usedIn(program, runtimes)
-		const unbaked = this.unbakedIn(program, runtimes, usage, keys)
+		const [unbaked] = this.unbakedIn(program, runtimes, usage, keys)
 		if (unbaked) return `a module reads ${unbaked} of a validator`
 		const dropped = defaultMembers.filter(
 			member =>
@@ -1807,7 +2067,11 @@ export class Precompiler {
 		// a read it can't follow may need any member, where it left one out
 		if (typeof used === "string") {
 			return (
-					dropped.length || !usage.called || !usage.readsAllows || !usage.piped
+					dropped.length ||
+						!usage.called ||
+						!usage.readsAllows ||
+						!usage.piped ||
+						unreadIssuesOf(usage.issues, () => true)
 				) ?
 					used
 				:	undefined
@@ -1819,9 +2083,10 @@ export class Precompiler {
 			return "a module reads a validator's allows"
 		if (!usage.piped && used.has("piped"))
 			return "a module passes a validator a traversal"
+		return unreadIssuesOf(usage.issues, member => used.has(member))
 	}
 
-	// an introspection member the bundle as built reads of a validator its
+	// each introspection member the bundle as built reads of a validator its
 	// module, as written, didn't bake
 	private unbakedIn(
 		program: ScannedProgram,
@@ -1829,7 +2094,8 @@ export class Precompiler {
 		usage: ProgramUsage,
 		// each site's key as the plugin wrote it, by its key as built
 		keys?: ReadonlyMap<string, string>
-	): IntrospectionMember | undefined {
+	): IntrospectionMember[] {
+		const unbaked = new Set<IntrospectionMember>()
 		const { baked } = this.readingsIn({
 			...this.usageProgramOf(program, runtimes),
 			whole: true
@@ -1842,9 +2108,10 @@ export class Precompiler {
 				usage.sources[id] === program.modules[id]?.source ?
 					usage.baked?.get(key)
 				:	usage.rewrittenBaked.get(key)
-			const unbaked = members.find(member => !written?.members.includes(member))
-			if (unbaked) return unbaked
+			for (const member of members)
+				if (!written?.members.includes(member)) unbaked.add(member)
 		}
+		return [...unbaked]
 	}
 
 	// whether the bundle as built keeps a read of a module the flat function
@@ -1933,6 +2200,7 @@ export class Precompiler {
 		return {
 			entries: new Set(program.entries),
 			exposed: new Set(program.exposed),
+			exposesLoaded: !!program.exposesLoaded,
 			modules,
 			resolve: (specifier, importer) => program.targets[importer]?.[specifier]
 		}
@@ -2202,19 +2470,58 @@ export class Precompiler {
 		return runtimeModuleOf(module, folded, kept, read, inputs, factoriesBySite)
 	}
 
+	// each strategy's modules are linked as a build of their own, as validators
+	// written otherwise share no unit: the build's own first, then those it
+	// optimizes otherwise, where only a build for size shares what it calls
 	private linkWritten(
 		written: Record<string, PrecompiledModule>,
 		sources: Record<string, string>,
 		opts: LinkOptions
 	): { changed: boolean; unexposed: number } {
+		const strategies = new Set([""])
+		for (const id in written) {
+			for (const specifier in written[id].modules)
+				strategies.add(strategyOfSpecifier(specifier))
+		}
+		let changed = false
+		let unexposed = 0
+		for (const strategy of strategies) {
+			const linked = this.linkStrategy(
+				written,
+				sources,
+				strategy,
+				(strategy || this.standalone.optimize) === "size" ?
+					opts
+				:	{ exposesAllows: !!opts.exposesAllows }
+			)
+			changed ||= linked.changed
+			unexposed += linked.unexposed
+		}
+		return { changed, unexposed }
+	}
+
+	private linkStrategy(
+		written: Record<string, PrecompiledModule>,
+		sources: Record<string, string>,
+		strategy: string,
+		opts: LinkOptions
+	): { changed: boolean; unexposed: number } {
 		const sites: Record<string, LinkedSite> = {}
 		const modules: Record<string, string> = {}
+		// what other strategies wrote, which this one's link leaves as it is
+		const apart: Record<string, string> = {}
 		for (const id in written) {
 			sites[id] = { source: sources[id], code: written[id].code }
-			Object.assign(modules, written[id].modules)
+			for (const specifier in written[id].modules) {
+				;(strategyOfSpecifier(specifier) === strategy ? modules : apart)[
+					specifier
+				] = written[id].modules[specifier]
+			}
 		}
 		const linked = linkBundle(sites, modules, opts)
 		if (!linked) return { changed: false, unexposed: 0 }
+		if (strategy) nameUnder(strategy, linked)
+		Object.assign(linked.modules, apart)
 		let changed = false
 		for (const id in written) {
 			const { code, map } = linked.sites[id]
@@ -2253,9 +2560,14 @@ export class Precompiler {
 	): FlatBundle | undefined {
 		const sites: Record<string, string> = {}
 		const modules: Record<string, string> = {}
+		// what a strategy for size wrote, whose units are module constants already
+		const apart: Record<string, string> = {}
 		for (const id in written) {
 			sites[id] = written[id].code
-			Object.assign(modules, written[id].modules)
+			for (const specifier in written[id].modules) {
+				;(strategyOfSpecifier(specifier) ? apart : modules)[specifier] =
+					written[id].modules[specifier]
+			}
 		}
 		const flat = flattenBundle(sites, modules, {
 			modules: [...runtimes.values()].map(runtime => runtime.module),
@@ -2263,7 +2575,7 @@ export class Precompiler {
 			resolve: (specifier, importer) => program.targets[importer]?.[specifier]
 		})
 		if (!flat) return
-		const reach = reacherOf(flat.modules)
+		const reach = reacherOf({ ...apart, ...flat.modules })
 		for (const id in written) {
 			written[id] = flatWrittenOf(
 				written[id],
@@ -2332,6 +2644,7 @@ export class Precompiler {
 		if (files.length) {
 			this.namesArkById = Object.create(null)
 			this.componentsById = Object.create(null)
+			this.onCycleById = Object.create(null)
 			this.loadedBeforeConfigure = undefined
 		}
 		// a build's, which the next scans and reports again
@@ -2485,16 +2798,19 @@ export class Precompiler {
 		importsOf = (id: string) =>
 			this.textImportsOf(this.graph.host.readFile(id) ?? "", id)
 	): string[] {
-		const result = [id]
-		for (let i = 0; i < result.length; i++) {
-			for (const target of importsOf(result[i]))
-				if (!result.includes(target)) result.push(target)
-		}
-		return result
+		// in the order reached: a Set iterates what's added as it goes
+		const result = new Set([id])
+		for (const reached of result)
+			for (const target of importsOf(reached)) result.add(target)
+		return [...result]
 	}
 
-	// read from text, so type-only imports count
+	// read from text, so type-only imports count. Each input of each site asks
+	// it of its module, and the answer reads every module that one reaches, so
+	// it's kept until a file changes
 	private isOnCycle(module: SourceModule): boolean {
+		const cached = this.onCycleById[module.id]
+		if (cached?.[0] === module.source) return cached[1]
 		let isOnCycle = false
 		this.textClosureOf(module.id, id => {
 			const imports = this.textImportsOf(
@@ -2504,6 +2820,7 @@ export class Precompiler {
 			isOnCycle ||= imports.includes(module.id)
 			return imports
 		})
+		this.onCycleById[module.id] = [module.source, isOnCycle]
 		return isOnCycle
 	}
 
@@ -2775,11 +3092,17 @@ export class Precompiler {
 			return precompiled
 		const site = flat.rewrite(id, precompiled.code, precompiled.modules)
 		if (site) {
+			// what a strategy for size wrote stays as written
+			const apart = Object.fromEntries(
+				Object.entries(precompiled.modules).filter(([specifier]) =>
+					strategyOfSpecifier(specifier)
+				)
+			)
 			return flatWrittenOf(
 				precompiled,
 				site,
 				source,
-				reacherOf({ ...flat.modules, ...site.modules })
+				reacherOf({ ...apart, ...flat.modules, ...site.modules })
 			)
 		}
 		// its units would be copies of those the bundle reads from one
@@ -2816,14 +3139,17 @@ export class Precompiler {
 		const { sites, diagnostics } = this.analysisOf(module)
 		diagnostics.push(...this.checkConfigOrder(module))
 		diagnostics.push(...this.copyDiagnosticsOf(module))
+		if (this.mode === "standalone")
+			diagnostics.push(...this.chooseStrategies(module, sites))
 		const prefix = prefixOf(source, id)
 		const modules: Record<string, string> = {}
 		// locals for virtual modules' exports, by specifier
 		const imports: Record<string, Record<string, string>> = {}
 		let issues: IssueFeatures | undefined
 		let inputImports = ""
+		let chosen: string[] = []
 		if (this.mode === "standalone") {
-			;[issues, inputImports] = this.writeStandalone(
+			;[issues, inputImports, chosen] = this.writeStandalone(
 				module,
 				sites,
 				s,
@@ -2853,6 +3179,7 @@ export class Precompiler {
 			diagnostics,
 			modules: this.inline ? {} : modules,
 			issues,
+			...(chosen.length && { chosen }),
 			foldedHelpers:
 				this.mode === "standalone" ?
 					this.foldedHelpersOf(module).map(([name]) => name)
@@ -2937,8 +3264,8 @@ export class Precompiler {
 		imports: Record<string, Record<string, string>>,
 		diagnostics: Diagnostic[],
 		reads: ProgramReads
-	): [issues: IssueFeatures, inputImports: string] {
-		const [inputImports, written] = this.foldSites(
+	): [issues: IssueFeatures, inputImports: string, chosen: string[]] {
+		const [inputImports, written, chosen] = this.foldSites(
 			module,
 			sites,
 			s,
@@ -2965,7 +3292,8 @@ export class Precompiler {
 							.map(name => `${name} as ${locals[name]}`)
 							.join(", ")} } from ${JSON.stringify(specifier)}`
 				)
-				.join("")
+				.join(""),
+			chosen
 		]
 	}
 
@@ -3114,9 +3442,9 @@ export class Precompiler {
 		const config = this.config
 		if (
 			config === undefined ||
-			this.standalone.optimize !== "size" ||
 			!this.configures ||
-			module.id === config
+			module.id === config ||
+			!this.writesForSize(module)
 		)
 			return
 		const isLoaded =
@@ -3572,7 +3900,10 @@ export class Precompiler {
 		reads: ProgramReads
 	): [
 		inputImports: Record<string, Record<string, string>>,
-		issues: IssueFeatures
+		issues: IssueFeatures,
+		// each local a site reads a validator by that a key or marker chose
+		// the strategy of
+		chosen: string[]
 	] {
 		if (reads.scanned && reads.cells)
 			this.adoptCells(module, sites, reads.scanned, reads.cells, diagnostics)
@@ -3586,7 +3917,7 @@ export class Precompiler {
 		)
 		const { namesBySite, factoriesBySite, folded } = plan
 		const configured = this.configuredOf(module)
-		const [validators, bakes] = this.writePlanned(
+		const [written, bakes] = this.writePlanned(
 			module,
 			sites,
 			plan,
@@ -3594,37 +3925,73 @@ export class Precompiler {
 			reads,
 			diagnostics
 		)
-		const folding: Folding = {
+		// what each artifact's sites share as they're folded
+		const inputImports: Folding["inputImports"] = {}
+		const imported = new Set<string>()
+		const kept: Span[] = []
+		const passed: Binding[] = []
+		const read: Binding[] = []
+		const foldingOf = ({
+			validators,
+			strategy
+		}: Pick<WrittenValidators, "validators" | "strategy">): Folding => ({
 			module,
 			s,
 			prefix,
 			validators,
-			specifier: `~arktype/${hashOf(validators.code)}`,
+			specifier: `~arktype/${strategy && `${strategy}/`}${hashOf(validators.code)}`,
 			configured,
 			modules,
 			imports,
-			inputImports: {},
-			imported: new Set(),
+			inputImports,
+			imported,
 			checking: new Set(validators.checking),
-			kept: [],
-			passed: [],
-			read: [],
+			kept,
+			passed,
+			read,
 			fixedAt: Infinity,
 			cells: reads.cells
-		}
+		})
+		const foldings = written.map(foldingOf)
+		// a site that throws a ParseError imports no validator
+		const unwritten = foldingOf({ validators: noValidators, strategy: "" })
+		const foldingNamed = (name: string) =>
+			foldings[written.findIndex(({ names }) => names.has(name))] ?? unwritten
+		const choosesHere = this.choosesIn(module)
+		// each local a site whose strategy was chosen reads, and each another does
+		const chosen = new Set<string>()
+		const unchosen = new Set<string>()
 		for (const [site, name] of namesBySite) {
+			const folding = foldingNamed(name)
 			this.foldSite(site, name, factoriesBySite.get(site), folding)
 			folded.push(site)
+			if (!choosesHere) continue
+			const strategy = this.strategyOf(module, site)
+			const read =
+				!isKeyConflict(strategy) && strategy.name !== undefined ?
+					chosen
+				:	unchosen
+			for (const local of foldedLocalsOf(folding.validators, name, prefix))
+				read.add(local)
 		}
 		for (const { name, reads, sites } of bakes) {
-			importFolded(undefined, name, prefix + name, undefined, folding)
+			importFolded(
+				undefined,
+				name,
+				prefix + name,
+				undefined,
+				foldingNamed(name)
+			)
 			for (const read of reads) bakeAt(s, module, read, prefix + name)
 			for (const site of sites ?? []) {
 				s.prependRight(site.start, `${prefix}${name}(`)
 				s.appendLeft(site.end, ")")
 			}
 		}
-		const { inputImports, kept, passed, read, fixedAt } = folding
+		const fixedAt = Math.min(
+			unwritten.fixedAt,
+			...foldings.map(folding => folding.fixedAt)
+		)
 		// fixed at the first droppable site, as arktype does at its first Type
 		if (fixedAt !== Infinity && configured !== false) {
 			const fixer = writeConfigFixer(configured)
@@ -3650,7 +4017,19 @@ export class Precompiler {
 		)
 		this.checkRuntimeImports(module, sites, diagnostics)
 		diagnostics.sort((l, r) => l.start - r.start)
-		return [inputImports, validators.issues]
+		const issues: IssueFeatures = { ...noIssueFeatures }
+		for (const { validators } of written) {
+			for (const k in issues) {
+				const feature = k as keyof IssueFeatures
+				issues[feature] ||= validators.issues[feature]
+			}
+		}
+		return [
+			inputImports,
+			issues,
+			// what both read is weighed, as the rest is
+			[...chosen].filter(local => !unchosen.has(local))
+		]
 	}
 
 	// the config a module's validators are stamped with, where the build configures one
@@ -3687,7 +4066,7 @@ export class Precompiler {
 			interned
 		}: ProgramReads,
 		diagnostics: Diagnostic[]
-	): [validators: StandaloneModules, bakes: ImportedBake[]] {
+	): [written: WrittenValidators[], bakes: ImportedBake[]] {
 		const { namesBySite, exportsByName } = plan
 		let bakes: ImportedBake[] = []
 		let readsAlone = false
@@ -3749,52 +4128,59 @@ export class Precompiler {
 		}
 		for (;;) {
 			const refusalsByName: Record<string, string[]> = {}
-			const write = (defers: boolean) =>
-				writeValidators(
-					exportsByName,
-					{
-						...this.standalone,
-						holdsIds: this.holdsIds,
-						members,
-						called,
-						readsAllows,
-						piped,
-						combines,
-						shapes,
-						cells,
-						interned,
-						scopeNameOf: scope => this.scopeNameOf(scope, module),
-						baked: bakedByName,
-						configured,
-						bake: write => this.bake(write),
-						sharedWrites: this.sharedWrites,
-						defers,
-						// a unit a first call reads runs at its first call too
-						hoisted: this.isReachedEarly(module) || defers,
-						// shadow mode calls what it compares
-						values: !this.shadow,
-						readOnLoad: [...namesBySite]
-							.filter(([site]) => site.declarationStart !== undefined)
-							.map(([, name]) => name)
-					},
-					refusalsByName,
-					this.inline
-				)
-			const canDefer =
-				!flattens &&
-				this.standalone.lazy === true &&
-				this.standalone.optimize === "speed"
-			let validators = noValidators
-			if (Object.keys(exportsByName).length) {
-				validators = write(canDefer && this.defers === true)
-				if (
-					canDefer &&
-					this.defers === "large" &&
-					!Object.keys(refusalsByName).length &&
-					defersCreation(validators)
-				)
-					validators = write(true)
-			}
+			// one artifact for each way the module's validators are written
+			const written = this.writesOf(module, sites, plan, bakes).map(
+				({ optimize, strategy, names }): WrittenValidators => {
+					const refusals: Record<string, string[]> = {}
+					const write = (defers: boolean) =>
+						writeValidators(
+							Object.fromEntries(
+								names.map(name => [name, exportsByName[name]])
+							),
+							{
+								...this.standalone,
+								optimize,
+								strategy,
+								holdsIds: this.holdsIds,
+								members,
+								called,
+								readsAllows,
+								piped,
+								combines,
+								shapes,
+								cells,
+								interned,
+								scopeNameOf: scope => this.scopeNameOf(scope, module),
+								baked: bakedByName,
+								configured,
+								bake: write => this.bake(write),
+								sharedWrites: this.sharedWrites,
+								defers,
+								// a unit a first call reads runs at its first call too
+								hoisted: this.isReachedEarly(module) || defers,
+								// shadow mode calls what it compares
+								values: !this.shadow,
+								readOnLoad: [...namesBySite]
+									.filter(([site]) => site.declarationStart !== undefined)
+									.map(([, name]) => name)
+							},
+							refusals,
+							this.inline
+						)
+					const canDefer =
+						!flattens && this.standalone.lazy === true && optimize === "speed"
+					let validators = write(canDefer && this.defers === true)
+					if (
+						canDefer &&
+						this.defers === "large" &&
+						!Object.keys(refusals).length &&
+						defersCreation(validators)
+					)
+						validators = write(true)
+					Object.assign(refusalsByName, refusals)
+					return { validators, names: new Set(names), strategy }
+				}
+			)
 			for (const [site, name] of namesBySite) {
 				if (!refusalsByName[name]) continue
 				diagnostics.push(this.refuseWritten(module, site, refusalsByName[name]))
@@ -3817,9 +4203,283 @@ export class Precompiler {
 			}
 			bakes = bakes.filter(bake => !refusalsByName[bake.name])
 			const refused = this.refuseStandInsRead(module, sites, diagnostics)
-			if (!refused.length) return [validators, bakes]
+			if (!refused.length) return [written, bakes]
 			for (const site of refused) unplan(plan, site)
 		}
+	}
+
+	// what a definition is written with: what a key naming it, a marker on it
+	// or a key naming its module chooses, else as the build's own options say
+	private strategyOf(
+		module: SourceModule,
+		site: Span
+	): ResolvedStrategy | KeyConflict {
+		let declarations = this.declarationsByModule.get(module)
+		if (!declarations) {
+			declarations = declarationsOf(module)
+			this.declarationsByModule.set(module, declarations)
+		}
+		const declaration = declarations.find(declared => contains(declared, site))
+		// the innermost marker over it, unless it names no strategy
+		let marked: StrategyMark | undefined
+		for (const mark of module.strategyMarks) {
+			if (
+				contains(mark.node, site) &&
+				this.strategies.has(mark.name) &&
+				(!marked || contains(marked.node, mark.node))
+			)
+				marked = mark
+		}
+		return this.strategies.strategyOf(
+			module.id,
+			declaration?.names ?? [],
+			marked?.name
+		)
+	}
+
+	private optimizeOf(module: SourceModule, site: Span): Optimization {
+		const strategy = this.strategyOf(module, site)
+		// two keys that tie fail the build, which writes it as it would without them
+		return isKeyConflict(strategy) ?
+				this.strategies.defaultOptimize
+			:	strategy.optimize
+	}
+
+	// what each of a module's definitions is written for. Sites creating one
+	// Type create one validator, as arktype returns one Type for them, so each
+	// is written as the fastest of them is
+	private optimizesOf(
+		module: SourceModule,
+		sites: readonly Site[]
+	): Map<Site, Optimization> {
+		const optimizeBySite = new Map<Site, Optimization>()
+		if (!this.choosesIn(module)) {
+			for (const site of sites)
+				optimizeBySite.set(site, this.strategies.defaultOptimize)
+			return optimizeBySite
+		}
+		for (const site of sites) {
+			if (site.status === "accepted")
+				optimizeBySite.set(site, this.optimizeOf(module, site))
+		}
+		if (new Set(optimizeBySite.values()).size < 2) return optimizeBySite
+		const compiled = new Set<unknown>()
+		for (let found = true; found; ) {
+			found = false
+			for (const [site, optimize] of optimizeBySite) {
+				const roots = rootsIn(site.value)
+				if (optimize === "speed") for (const root of roots) compiled.add(root)
+				else if (roots.some(root => compiled.has(root))) {
+					optimizeBySite.set(site, "speed")
+					found = true
+				}
+			}
+		}
+		return optimizeBySite
+	}
+
+	// says of each site what it's written with, where a key chooses for any
+	// module or a marker for one of its own, and reports what one chooses that
+	// it can't:
+	// nothing, as a key naming no declaration does, or what another as specific
+	// chooses otherwise, or how arktype creates an island's Type
+	private chooseStrategies(module: SourceModule, sites: Site[]): Diagnostic[] {
+		const result = module.strayStrategyMarkers.map(marker =>
+			this.diagnostic(
+				module,
+				marker,
+				"unsupported",
+				strayStrategyMarkerMessage,
+				[],
+				strategyMarkerHint
+			)
+		)
+		if (!this.choosesIn(module)) {
+			// where schemas chooses for any module, each site says what it's
+			// written with, so a key that was meant to match one shows it doesn't
+			if (this.strategies.keys.length) {
+				const { default: unchosen, defaultOptimize } = this.strategies
+				for (const site of sites) {
+					if (site.status === "accepted")
+						site.strategy = writeStrategyLabel(unchosen, defaultOptimize)
+				}
+			}
+			return result
+		}
+		for (const mark of module.strategyMarks) {
+			if (!this.strategies.has(mark.name)) {
+				result.push(
+					this.diagnostic(
+						module,
+						mark.comment,
+						"unsupported",
+						writeUnknownStrategyMessage(
+							`\`// ${strategyMarker}${mark.name && ` ${mark.name}`}\``,
+							mark.name,
+							this.strategies.names
+						),
+						[],
+						false
+					)
+				)
+			} else if (!sites.some(site => contains(mark.node, site))) {
+				result.push(
+					this.diagnostic(
+						module,
+						mark.comment,
+						"unsupported",
+						strayStrategyMarkerMessage,
+						[],
+						strategyMarkerHint
+					)
+				)
+			}
+		}
+		const declarations = declarationsOf(module).filter(declaration =>
+			sites.some(site => contains(declaration, site))
+		)
+		for (const key of this.strategies.keysOf(module.id)) {
+			if (
+				key.declaration === undefined ||
+				// a glob names the declaration in whichever of its modules has it
+				key.isGlob ||
+				declarations.some(({ names }) => names.includes(key.declaration!))
+			)
+				continue
+			result.push(
+				this.diagnostic(
+					module,
+					{ start: 0, end: 0 },
+					"unsupported",
+					writeUnnamedDeclarationMessage(
+						key,
+						nearestTo(
+							key.declaration,
+							declarations.flatMap(({ names }) => names)
+						)
+					),
+					[],
+					unnamedDeclarationHint
+				)
+			)
+		}
+		const optimizeBySite = this.optimizesOf(module, sites)
+		const conflicts = new Set<string>()
+		for (const site of sites) {
+			const strategy = this.strategyOf(module, site)
+			if (isKeyConflict(strategy)) {
+				const message = writeKeyConflictMessage(strategy, module.path)
+				if (conflicts.has(message)) continue
+				conflicts.add(message)
+				result.push(
+					this.diagnostic(
+						module,
+						site,
+						"unsupported",
+						message,
+						[],
+						keyConflictHint
+					)
+				)
+			} else if (site.status === "accepted") {
+				site.strategy = writeStrategyLabel(
+					strategy,
+					optimizeBySite.get(site) ?? strategy.optimize
+				)
+			} else if (site.status === "island" && strategy.isOwn) {
+				result.push(
+					this.diagnostic(
+						module,
+						site,
+						"unsupported",
+						writeIslandStrategyMessage(strategy.by!),
+						[],
+						islandStrategyHint
+					)
+				)
+			}
+		}
+		return result
+	}
+
+	private writesForSize(module: SourceModule): boolean {
+		if (!this.choosesIn(module)) return this.standalone.optimize === "size"
+		const { sites } = this.analysisOf(module)
+		return [...this.optimizesOf(module, sites).values()].includes("size")
+	}
+
+	// whether any validator of a program is written for size, as its own
+	// options or a key or marker choosing for one says
+	private sizesIn({ planned, precompiled }: ProgramPlan): boolean {
+		return (
+			this.standalone.optimize === "size" ||
+			precompiled.some(id => {
+				const { module, folded } = planned.get(id)!
+				return (
+					this.choosesIn(module) &&
+					[...this.optimizesOf(module, folded as Site[]).values()].includes(
+						"size"
+					)
+				)
+			})
+		)
+	}
+
+	// each key of schemas that chooses for a definition of a module, which
+	// --check tells from one that chooses for none
+	choosingKeysOf(id: string, sites: readonly Span[]): string[] {
+		const module = this.graph.moduleOf(id)
+		if (this.mode !== "standalone" || !(module instanceof SourceModule))
+			return []
+		const declarations = declarationsOf(module)
+		return this.strategies
+			.keysOf(id)
+			.filter(key =>
+				key.declaration === undefined ?
+					sites.length > 0
+				:	declarations.some(
+						declaration =>
+							declaration.names.includes(key.declaration!) &&
+							sites.some(site => contains(declaration, site))
+					)
+			)
+			.map(key => key.key)
+	}
+
+	// whether a key or marker chooses for any of a module's definitions
+	private choosesIn(module: SourceModule): boolean {
+		return (
+			this.mode === "standalone" &&
+			(module.strategyMarks.length > 0 ||
+				this.strategies.keysOf(module.id).length > 0)
+		)
+	}
+
+	// the module's exports by how each is written
+	private writesOf(
+		module: SourceModule,
+		sites: readonly Site[],
+		{ namesBySite, exportsByName }: PlannedSites,
+		bakes: readonly ImportedBake[]
+	): StrategyWrite[] {
+		const optimizeBySite = this.optimizesOf(module, sites)
+		const namesByOptimize = new Map<Optimization, string[]>()
+		const add = (optimize: Optimization, name: string) => {
+			const names = namesByOptimize.get(optimize)
+			if (names) names.push(name)
+			else namesByOptimize.set(optimize, [name])
+		}
+		const own = this.strategies.defaultOptimize
+		for (const [site, name] of namesBySite)
+			if (name in exportsByName) add(optimizeBySite.get(site) ?? own, name)
+		// what a read of an import bakes is written as the build's own are
+		for (const bake of bakes)
+			if (bake.name in exportsByName) add(own, bake.name)
+		return [...namesByOptimize].map(([optimize, names]) => ({
+			optimize,
+			strategy: optimize === own ? "" : optimize,
+			names
+		}))
 	}
 
 	private foldSite(
@@ -4637,7 +5297,7 @@ export class Precompiler {
 			} else if (
 				(target.kind === "binding" || target.kind === "expression") &&
 				target.module.id === input.file &&
-				(target.kind === "binding" ? target.name : "default") === input.name
+				(target.name ?? "default") === input.name
 			) {
 				importing.push({
 					expression: binding.name,
@@ -4682,21 +5342,62 @@ export class Precompiler {
 		rule: "R1" | "R2" | "unsupported",
 		reasons = site.reasons,
 		// why it's refused, whose innermost value the hint names
-		dynamic?: DynamicValue
+		dynamic?: DynamicValue,
+		// the site's expression, read for what an island of it would compose
+		node?: Node
 	): Diagnostic {
 		const keyed = keyedMethodOf(site)
+		const hint =
+			keyed && rule === "unsupported" ?
+				writeKeyedHint(module.snippetOf(site), this.keyHoldingOf(site, module))
+			:	(configuredHintOf(reasons) ??
+				(rule === "R1" && dynamic ?
+					writeStaticHint(innermostSnippetOf(dynamic, site, module))
+				:	undefined))
 		return this.diagnostic(
 			module,
 			site,
 			rule,
 			`${module.snippetOf(site)} ${rule === "unsupported" ? "can't be precompiled yet" : "cannot be precompiled"}`,
 			reasons.map(reason => this.sourceNamed(reason, site, module)),
-			keyed && rule === "unsupported" ?
-				writeKeyedHint(module.snippetOf(site), this.keyHoldingOf(site, module))
-			:	(configuredHintOf(reasons) ??
-					(rule === "R1" && dynamic ?
-						writeStaticHint(innermostSnippetOf(dynamic, site, module))
-					:	undefined))
+			this.composedHintOf(hint, node, module) ?? hint
+		)
+	}
+
+	// the hint for a refused definition composing other Types: where one of
+	// them is refused, its report is the one to act on, and where the build
+	// precompiles them, marking this one would hand arktype their validators
+	private composedHintOf(
+		hint: string | undefined,
+		node: Node | undefined,
+		module: SourceModule
+	): string | undefined {
+		if (!node) return
+		let composes = false
+		let refused = false
+		walk(node, child => {
+			if (refused) return false
+			if (child.type !== "Identifier") return true
+			const reference = module.scopes.byId.get(child)
+			const binding = reference?.binding
+			if (
+				!binding ||
+				contains(node, binding.id) ||
+				this.graph.arkExportOf(reference, module)
+			)
+				return true
+			const kind = this.graph.kindOf(child, module)
+			if (!isArk(kind) && !mayReturnArk(kind)) return true
+			composes = true
+			// e.g. `User` in `type({ user: User })`, itself refused
+			refused = isArk(kind) && this.isRefusedDefinition(binding, module)
+			return true
+		})
+		return (
+			refused ? composedRefusalHint
+			: composes && hint?.includes("// @ark-runtime") ?
+				writeComposedRuntimeHint(hint)
+			:	undefined
 		)
 	}
 
@@ -4977,6 +5678,7 @@ export class Precompiler {
 			configureStart: this.configureStartOf(module)
 		}
 		const { sites, diagnostics } = analyzing
+		this.sitesByAnalyzing.set(module, sites)
 		const refusals = new Map<unknown, Node>()
 		this.refusalsByModule.set(module, refusals)
 		for (const candidate of candidates) {
@@ -5042,9 +5744,18 @@ export class Precompiler {
 		}
 		// nothing runs what they hold unless the build reports it
 		const isQuiet = (span: Span) => quiet.some(fn => contains(fn, span))
+		// e.g. `type({ data: item })` in `(item: Type) => type({ data: item })`,
+		// evaluated holding `item` as a Standard Schema, which each call replaces
+		const holdsParam = (site: Site) => {
+			const candidate = candidatesBySite.get(site)
+			return !!candidate && !!this.heldParamOf(candidate.state)
+		}
 		return {
 			sites: sites
-				.filter(site => site.status === "accepted" || !isQuiet(site))
+				.filter(
+					site =>
+						!isQuiet(site) || (site.status === "accepted" && !holdsParam(site))
+				)
 				.sort((l, r) => l.start - r.start),
 			diagnostics: diagnostics
 				.filter(
@@ -5527,10 +6238,27 @@ export class Precompiler {
 		return candidates
 	}
 
+	// a call to a helper is a site where the build folds the helper's calls,
+	// and where it composes what the call returns, like `base().or("number")`,
+	// which is a site as what composes a Type is, the call running as written
 	private foldsCallsTo(call: SiteCandidate): boolean {
-		if (!this.calledParamOf(...call.callee!)) return false
+		if (!this.calledParamOf(...call.callee!) && !this.composesCall(call))
+			return false
 		this.interpreter.sitesByNode.set(call.state.node, call.state)
 		return true
+	}
+
+	// e.g. `base().or("number")` for `base`, but not `base()` alone, nor
+	// `getScope().type("a")`, as a Scope or Generic is precompiled only where
+	// the build sees each read of it
+	private composesCall(candidate: SiteCandidate): boolean {
+		const call = operatorOf(candidate.root)[1]
+		return (
+			call?.type === "CallExpression" &&
+			candidate.state.node !== call &&
+			contains(candidate.state.node, call) &&
+			isOnlyType(this.graph.kindOf(call, candidate.state.module))
+		)
 	}
 
 	// e.g. `max` in `const text = (max: number) => type(`string <= ${max}`)`,
@@ -5565,7 +6293,9 @@ export class Precompiler {
 			)
 				continue
 			if (!(candidate.isSite ??= this.settle(candidate))) continue
-			const param = paramOf(rejectionOf(candidate.state))
+			const param =
+				paramOf(rejectionOf(candidate.state)) ??
+				this.heldParamOf(candidate.state)
 			if (param) {
 				result = { module, read: candidate.state.node, param }
 				break
@@ -5609,6 +6339,23 @@ export class Precompiler {
 		})
 		this.calledParamsByFn.set(fn, result)
 		return result
+	}
+
+	// e.g. `item` in `(item: Type) => type({ data: item })`, which the site
+	// could hold only as a Standard Schema that isn't a Type, so each call is
+	// precompiled with the Type it passes, as one reading a param's value is
+	private heldParamOf(state: SiteState): Binding | undefined {
+		for (const hole of state.holes) {
+			const standIn = this.standInOf(hole)
+			if (
+				standIn?.kind !== "opaque" ||
+				!standIn.dynamic ||
+				!this.interpreter.checkedAsSchema(state, standIn)
+			)
+				continue
+			const param = paramOf(standIn.dynamic)
+			if (param) return param
+		}
 	}
 
 	private settle(candidate: SiteCandidate): boolean {
@@ -5914,22 +6661,12 @@ export class Precompiler {
 		for (const [declaring, holder, depth] of state.trace.holders) {
 			const elsewhere = this.graph.elsewhereOf(declaring, holder, depth)
 			if (!elsewhere) continue
-			const name =
-				holder === "default" ?
-					`the default export of ${declaring.path}`
-				:	`\`${holder.name}\``
-			const why =
-				elsewhere.kind === "loose" ?
-					new DynamicValue(
-						elsewhere.exporter,
-						elsewhere.exporter.program,
-						`${name} is exported by ${elsewhere.exporter.path}, which ${elsewhere.why}, so code the build doesn't follow may write it`
-					)
-				:	new DynamicValue(
-						elsewhere.module,
-						elsewhere.node,
-						`${name} ${this.graph.isEscape(elsewhere.node) ? "reaches code the build doesn't follow" : "is written"} at ${elsewhere.module.positionOf(elsewhere.node)}, so its value at the site is not known`
-					)
+			const name = holderLabelOf(declaring, holder)
+			const why = new DynamicValue(
+				elsewhere.module,
+				elsewhere.node,
+				`${name} ${this.graph.isEscape(elsewhere.node) ? "reaches code the build doesn't follow" : "is written"} at ${elsewhere.module.positionOf(elsewhere.node)}, so its value at the site is not known`
+			)
 			return declaring === state.module || holder === "default" ?
 					why
 				:	new DynamicValue(
@@ -6283,7 +7020,16 @@ export class Precompiler {
 			end: node.end,
 			value,
 			kind: standIn?.kind ?? "symbol",
-			isCalledAtDefinition: this.interpreter.calledIn(candidate.state, value)
+			// arktype's own call of a function the value keeps, like a narrow
+			// deciding a union's unit, is answered by the function its factory
+			// receives, so only a call from code arktype ran leaves it unknown
+			isCalledAtDefinition:
+				this.interpreter.calledIn(candidate.state, value, false) ||
+				(this.interpreter.calledIn(candidate.state, value, true) &&
+					!holdsHole(
+						candidate.state.introspection?.type ?? candidate.state.value,
+						value
+					))
 		}
 	}
 
@@ -6304,7 +7050,8 @@ export class Precompiler {
 					: rejection?.hasCode("callback") ? "R2"
 					: "R1",
 					site.reasons,
-					rejection
+					rejection,
+					node
 				)
 			]
 		}
@@ -7003,6 +7750,57 @@ export class Precompiler {
 		return result
 	}
 
+	// why a const or import a read composes isn't precompiled, where the
+	// build refused the site defining it, e.g. `User` in `User.array()`
+	private refusedDefinitionOf(
+		object: Node,
+		module: SourceModule
+	): DynamicValue | undefined {
+		const id = unwrapChain(object)
+		const binding =
+			id.type === "Identifier" ? module.scopes.byId.get(id)?.binding : undefined
+		if (!binding || !this.isRefusedDefinition(binding, module)) return
+		return findDynamic(
+			this.interpreter.exportValue({ kind: "expression", module, node: id })
+				.value
+		)
+	}
+
+	private isRefusedDefinition(
+		binding: Binding,
+		module: SourceModule,
+		seen = new Set<Binding>()
+	): boolean {
+		if (seen.has(binding)) return false
+		seen.add(binding)
+		if (binding.kind === "import") {
+			const target = this.graph.importOf(binding, module)
+			return (
+				target.kind === "binding" &&
+				this.isRefusedDefinition(target.binding, target.module, seen)
+			)
+		}
+		const declaration = binding.declaration
+		const init =
+			binding.kind === "const" && declaration.type === "VariableDeclarator" ?
+				declaration.init
+			:	undefined
+		if (!init) return false
+		// a module being analyzed has judged each of its sites by now
+		let sites = this.sitesByAnalyzing.get(module)
+		if (!sites) {
+			if (!this.analysesByModule.has(module) && !this.analyzing.has(module))
+				this.analysisOf(module)
+			sites = this.analysesByModule.get(module)?.sites
+		}
+		return !!sites?.some(
+			site =>
+				site.status === "rejected" &&
+				site.start >= init.start &&
+				site.end <= init.end
+		)
+	}
+
 	private unavailableReadDiagnosticOf(
 		[node, read, object, isUnsureRead]: UnavailableRead,
 		unavailable: UnavailableRead[],
@@ -7060,6 +7858,22 @@ export class Precompiler {
 			:	undefined
 		// a callback, like `map`'s, isn't one a Generic can replace
 		const generic = param?.fn ? param : undefined
+		// e.g. `User.array()` where `User`'s definition is refused, so nothing
+		// could cover the read: its report is the one to act on
+		const refused =
+			!isUnsure && !dropped && read !== undefined && !isSettled ?
+				this.refusedDefinitionOf(object, module)
+			:	undefined
+		if (refused) {
+			return this.diagnostic(
+				module,
+				node,
+				"R1",
+				`${module.snippetOf(node)} composes \`${module.snippetOf(object)}\`, which can't be precompiled`,
+				chainOf(refused),
+				composedRefusalHint
+			)
+		}
 		return this.diagnostic(
 			module,
 			node,
@@ -7168,7 +7982,7 @@ export class Precompiler {
 		return result
 	}
 
-	// e.g. `flatProblemsByPath(out)`, which the program can write from `out.issues`
+	// e.g. `flatMessagesByPath(out)`, which the program can write from `out.issues`
 	private errorReaderDiagnostic(
 		module: SourceModule,
 		name: string,
@@ -7663,6 +8477,48 @@ interface Configuration {
 
 let threadConfiguration: Configuration | undefined
 
+// each local a site reads its validator by: the validator's, or where it's
+// created in place, what creates it and each unit it's passed
+const foldedLocalsOf = (
+	validators: Pick<StandaloneModules, "folds" | "calls">,
+	name: string,
+	prefix: string
+): string[] => {
+	const created = validators.calls[name]
+	return created ?
+			created.flatMap(read => (read[0] === '"' ? [] : `${prefix}_${read}`))
+		:	[prefix + (validators.folds[name]?.[0] ?? name)]
+}
+
+// what a link declares anew it names for its content alone, so a strategy's
+// are named under it again, apart from the build's own
+const nameUnder = (strategy: string, linked: LinkedBundle): void => {
+	const renamed: Record<string, string> = {}
+	for (const specifier in linked.modules) {
+		if (strategyOfSpecifier(specifier) !== strategy) {
+			renamed[specifier] =
+				`~arktype/${strategy}/${specifier.slice("~arktype/".length)}`
+		}
+	}
+	if (!Object.keys(renamed).length) return
+	const rename = (code: string) =>
+		code.replace(virtualSource, (match, specifier: string) =>
+			specifier in renamed ? JSON.stringify(renamed[specifier]) : match
+		)
+	linked.modules = Object.fromEntries(
+		Object.entries(linked.modules).map(([specifier, code]) => [
+			renamed[specifier] ?? specifier,
+			rename(code)
+		])
+	)
+	for (const id in linked.sites) {
+		linked.sites[id] = {
+			...linked.sites[id],
+			code: rename(linked.sites[id].code)
+		}
+	}
+}
+
 // arktype can't change its configuration once set
 // undefined where nothing changed
 const mapOf = (s: MagicString, id: string): SourceMap | undefined =>
@@ -7853,21 +8709,66 @@ const readsNoIdentity: UsedMember[] = [
 // each may hand a program's code its errors, or throws them
 const readsErrorsWhole: UsedMember[] = ["errors", "assert", "methods", "piped"]
 
+// a bundle's issues, holding what each read of a validator needs of its errors
+const issuesReading = (
+	issues: IssueFeatures,
+	isRead: (member: UsedMember) => boolean
+): IssueFeatures => {
+	const readsErrors = issues.readsErrors || readsErrorsWhole.some(isRead)
+	return {
+		...issues,
+		readsErrors,
+		// a Standard Schema failure's message is its errors' summary
+		readsSummary:
+			issues.readsSummary ||
+			readsErrors ||
+			isRead("summary") ||
+			isRead("~standard"),
+		rewritesUnions:
+			issues.rewritesUnions ||
+			readsErrors ||
+			issues.traversesUnions ||
+			isRead("~standard"),
+		namesTraversalError: issues.namesTraversalError || isRead("thrown")
+	}
+}
+
+// what a read needs of a failure's errors that a bundle's issues, written for
+// the reads its scan saw, don't hold
+const unreadIssuesOf = (
+	issues: IssueFeatures | undefined,
+	isRead: (member: UsedMember) => boolean
+): string | undefined =>
+	!issues ? undefined
+	: !issues.readsErrors && readsErrorsWhole.some(isRead) ?
+		"a module reads the errors a validator returns"
+	: !issues.readsSummary && isRead("summary") ?
+		"a module reads the summary of the errors a validator returns"
+	: (!issues.rewritesUnions || !issues.readsSummary) && isRead("~standard") ?
+		"a module reads ~standard of a validator"
+	: !issues.namesTraversalError && isRead("thrown") ?
+		"a module names TraversalError, the class of what an assert throws"
+	:	undefined
+
 // what arktype's own errors, like an island's, may hold
 const anyIssues: IssueFeatures = {
 	reportsIndices: true,
 	bracketsKeys: true,
 	writesText: true,
+	callsSiteText: true,
 	listsUnions: true,
 	rewritesUnions: true,
 	traversesUnions: true,
-	readsKeySites: true,
 	appliesValues: true,
 	transformsBranches: true,
 	failsInBranches: true,
 	discriminatesBooleans: true,
 	readsSummary: true,
-	readsErrors: true
+	readsErrors: true,
+	holdsExpression: true,
+	namesTraversalError: true,
+	// arktype's errors hold their issues in a field
+	findsOnRead: false
 }
 
 // a Type whose members a module importing it can bake, as it holds no value
@@ -7890,6 +8791,9 @@ export interface UnseenBuilt {
 	id: string | undefined
 	read: string
 	commonJs?: true
+	// each member to set true in members for a build to keep what the program
+	// as built reads, where it left out nothing else that's read
+	members?: string[] | undefined
 }
 
 // the folds of a module as built that it made of the module as it wrote it:

@@ -25,6 +25,12 @@ const settings = {
 	"mutatesInput?": "boolean | 'always'",
 	"optimize?": optimization,
 	"optimizeErrors?": optimization,
+	// how a validator can be written, by the name schemas chooses it by
+	"strategies?": {
+		"[string]": type({ "optimize?": optimization, "+": "reject" })
+	},
+	// the strategy's name by a module's path or glob, or path#declaration
+	"schemas?": { "[string]": "string > 0" },
 	"jsonInput?": flag,
 	"bakedLimit?": type("number.integer > 0").describe(
 		"the characters a site's baked introspection may total"
@@ -37,6 +43,9 @@ const settings = {
 	"allowUnsafe?": flag,
 	"conditions?": "string[]",
 	"tsconfig?": type("string > 0").describe("a path"),
+	// what reads the program for declarations: TypeScript 5.5 to 6's JS API, or
+	// TypeScript 7's native API as tsgo or tsrs serves it
+	"checker?": "'tsjs' | 'tsgo' | 'tsrs'",
 	// a package that doesn't opt in, precompiled or run on arktype
 	"dependencies?": { "[string]": "'aot' | 'arktype'" }
 } as const

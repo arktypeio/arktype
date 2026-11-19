@@ -5,7 +5,6 @@ import {
 	isThunk,
 	noSuggest,
 	objectKindOf,
-	stringifyPath,
 	type array
 } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
@@ -23,14 +22,17 @@ import {
 	ArkErrors as BaseArkErrors,
 	issueAt,
 	mergeIssues,
-	messageOf,
+	notedAs,
+	pathOf,
 	type ArkIssue,
 	type CompactApply,
 	type FailureContext,
 	type FailureSite,
+	type MissingText,
+	type SiteContext,
 	type UnionSite
 } from "./issues.ts"
-import { listsUnions } from "./issueFeatures.ts"
+import { callsSiteText, findsOnRead, listsUnions } from "./issueFeatures.ts"
 import { TransformErrors } from "./transform.ts"
 import { inProgress } from "./utils.ts"
 
@@ -41,6 +43,9 @@ export type BranchTraversal = {
 	/** the errors the branch has added */
 	errN: number
 }
+
+// what a traversal in no branch holds: every one's, so never written to
+const noBranches: BranchTraversal[] = []
 
 export class InternalTraversal implements FailureContext {
 	/**
@@ -98,7 +103,7 @@ export class InternalTraversal implements FailureContext {
 		this._errors = undefined
 		this.root = root
 		this.config = config
-		this.branches = []
+		this.branches = noBranches
 		this.res = undefined
 		this.isTree = true
 		this.tfdById = undefined
@@ -143,10 +148,11 @@ export class InternalTraversal implements FailureContext {
 
 	/** starts counting a union branch's errors */
 	pushBr(): void {
-		this.branches.push({
-			error: undefined,
-			errN: 0
-		})
+		const branch: BranchTraversal = { error: undefined, errN: 0 }
+		// its first is all most unions nest, and a push onto [] makes room for
+		// 17. Once popped, the array still has room for the next
+		if (this.branches === noBranches) this.branches = [branch]
+		else this.branches.push(branch)
 	}
 
 	/** stops counting the innermost union branch's errors, returning it */
@@ -183,25 +189,43 @@ export class InternalTraversal implements FailureContext {
 		}) as never
 	}
 
-	/** @internal */
-	_at(site: FailureSite, data: unknown, key?: PropertyKey): boolean {
-		this.addError(issueAt(this.path, site, data, key))
+	/** @internal a validator's failure, as its errors take one */
+	_e(
+		data: unknown,
+		code: ArkErrorCode,
+		expected?: string,
+		message?: string,
+		text?: SiteContext["text"]
+	): boolean {
+		const issue: ArkIssue = {
+			code,
+			path: this.path.slice(),
+			data,
+			expected,
+			message
+		}
+		if (callsSiteText) text?.(issue)
+		this.addError(issue)
 		return this.failFast
 	}
 
-	/** @internal */
-	_in(
+	/** @internal a validator's key, as its errors enter one */
+	_k(
 		apply: CompactApply,
 		data: unknown,
 		key: PropertyKey,
-		missing?: FailureSite
+		...missing: MissingText
 	): boolean | undefined {
-		if (missing && !(key in (data as object)))
-			return this._at(missing, data, key)
 		this.path.push(key)
-		const continues = apply((data as Record<PropertyKey, unknown>)[key], this)
+		// read first, as only a value that's undefined can be a missing key's,
+		// and whether a key any site passes is in data is a call
+		const value = (data as Record<PropertyKey, unknown>)[key]
+		const stops =
+			value === undefined && missing.length && !(key in (data as object)) ?
+				this._e(data, "required", ...missing)
+			:	!apply(value, this)
 		this.path.pop()
-		return !continues
+		return stops
 	}
 
 	/** @internal */
@@ -220,7 +244,9 @@ export class InternalTraversal implements FailureContext {
 		if (this.currentBranch) this.failBranch(error)
 		else {
 			const errors = errorsOf(this)
-			if (errors._.length) errors._.push(error)
+			// errors a build wrote to find their issues once read hold no field
+			// to assign: theirs is a getter's
+			if (findsOnRead || errors._.length) errors._.push(error)
 			else errors._ = [error]
 		}
 		return error
@@ -238,15 +264,8 @@ export class InternalTraversal implements FailureContext {
 				target._.push(
 					listsUnions && issue._m ?
 						issue._m(this.path)
-					:	{
-							...issue,
-							path: [...this.path, ...issue.path],
-							// read by a callback at the old path, so rewritten unless supplied
-							message:
-								issue.message && issue.message === messageOf(issue) ?
-									undefined
-								:	issue.message
-						}
+						// its message, which names no path, is as a callback read it
+					:	notedAs(issue, { ...issue, path: [...this.path, ...issue.path] })
 				)
 			}
 		}
@@ -294,7 +313,9 @@ export class Traversal extends InternalTraversal {
 	 * @propString
 	 */
 	get propString(): string {
-		return stringifyPath(this.path)
+		// as an issue's path is written, by what a build keeps to write one: a
+		// callback holding this is what has a build bracket keys and indices
+		return pathOf(this)
 	}
 
 	/**
@@ -354,7 +375,14 @@ export class Traversal extends InternalTraversal {
 					describePredicate(supplied)
 				:	"valid")
 		}
-		if (supplied.problem !== undefined) issue.problem = supplied.problem
+		// a message supplied is a sentence of its own, set apart from its path,
+		// unless it begins as what's written from what's expected would. Data
+		// arktype only knows is invalid expects nothing, which is what says so
+		if (supplied.message !== undefined) {
+			issue.message = supplied.message
+			if (supplied.message === "is invalid" && supplied.expected === "valid")
+				issue.expected = undefined
+		}
 		// a keyword's phrase writes the SyntaxError it caught, as string.json's,
 		// and a pipe.try morph what it threw
 		else if (
@@ -362,15 +390,14 @@ export class Traversal extends InternalTraversal {
 			(supplied.meta?.keyword || supplied.morph)
 		) {
 			try {
-				issue.problem = `must be ${issue.expected} (${String(supplied.cause)})`
+				issue.message = `must be ${issue.expected} (${String(supplied.cause)})`
 			} catch {
 				// a cause String can't write, like a null-prototype object, is left out
 			}
 		}
 		// what the value was is written only where it's supplied
 		else if (supplied.actual)
-			issue.problem = `must be ${issue.expected} (was ${supplied.actual})`
-		if (supplied.message !== undefined) issue.message = supplied.message
+			issue.message = `must be ${issue.expected} (was ${supplied.actual})`
 		return this.addError(issue) as never
 	}
 }
@@ -395,7 +422,6 @@ type SuppliedIssue = {
 	expected?: string
 	description?: string
 	actual?: string
-	problem?: string
 	message?: string
 	morph?: Morph
 	cause?: unknown
@@ -494,8 +520,13 @@ export const transformed = (
 }
 
 export const pipeOf = (node: BaseNode): TraversePipe =>
-	node.hasAlias ? pipe
-	: node.tfs ? pipeTransformed
+	node.hasAlias ? pipe : pipeAcyclicOf(node)
+
+// apart from pipeOf, so pipe needn't read what reads it: a minifier counting
+// references, as SWC does through a file holding a direct eval, keeps two
+// declarations reading each other, and with them all a cyclic node reaches
+const pipeAcyclicOf = (node: BaseNode): TraversePipe =>
+	node.tfs ? pipeTransformed
 	: node.allowsCtx || node.reportsPred ? pipeChecked
 	: pipeApplied
 
@@ -521,7 +552,7 @@ export const pipeTransformed: TraversePipe = (ctx, node, data) =>
 	:	errorsOf(ctx)
 
 export const pipe: TraversePipe = (ctx, node, data) => {
-	if (!node.hasAlias) return pipeOf(node)(ctx, node, data)
+	if (!node.hasAlias) return pipeAcyclicOf(node)(ctx, node, data)
 	if (!node.allows(data)) {
 		applyPipedResolution(ctx, node, data)
 		return errorsOf(ctx)
@@ -651,8 +682,9 @@ export const allowsInBranchBy = (
 	const pathLength = ctx.path.length
 	ctx.pushBr()
 	const allowed = allows.call(node, data, ctx)
-	// compiled Allows returns false without popping the keys it pushed
-	ctx.path.length = pathLength
+	// compiled Allows returns false without popping the keys it pushed. Set
+	// only then, as an array's length is set by a call
+	if (ctx.path.length !== pathLength) ctx.path.length = pathLength
 	return ctx.popBr()!.errN === 0 && allowed
 }
 
@@ -868,13 +900,16 @@ export const exitResolution = (
 		if (assumedFrom < res.assumedFrom) res.assumedFrom = assumedFrom
 		return true
 	}
-	// settle each result that assumed this one
-	for (let i = frame.assumedLength; i < assumed.length; i += 2) {
-		const assumedStates = assumed[i] as Map<unknown, ResolutionState>
-		if (valid) assumedStates.set(assumed[i + 1], true)
-		else assumedStates.delete(assumed[i + 1])
+	// settle each result that assumed this one. Most data has none, and an
+	// array's length is set by a call even where it's the length it has
+	if (assumed.length !== frame.assumedLength) {
+		for (let i = frame.assumedLength; i < assumed.length; i += 2) {
+			const assumedStates = assumed[i] as Map<unknown, ResolutionState>
+			if (valid) assumedStates.set(assumed[i + 1], true)
+			else assumedStates.delete(assumed[i + 1])
+		}
+		assumed.length = frame.assumedLength
 	}
-	assumed.length = frame.assumedLength
 	states.set(data, state)
 	if (typeof state === "object" && state.reported) res.invalid ??= state
 	return valid

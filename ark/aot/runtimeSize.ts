@@ -4,7 +4,12 @@ import { createRequire } from "node:module"
 import { visitorKeys, type Node } from "oxc-parser"
 import { SourceModule } from "./module.ts"
 import { typeKeys, type Binding } from "./scope.ts"
-import { minifiedLengthOf, runtimeReadsOf } from "./smaller.ts"
+import {
+	minifiedLengthKeepingStrings,
+	minifiedLengthOf,
+	runtimeReadsOf
+} from "./smaller.ts"
+import { strategyOfSpecifier } from "./strategies.ts"
 
 // resolved as the precompiler's own arktype resolves it
 let runtimeFile: string | undefined
@@ -29,9 +34,74 @@ export const minifiedSizeOf = ({
  * reaches of its modules and the runtime, each declaration once, as a bundler
  * drops what nothing reads, like the Apply of a validator read only for allows
  */
-export const programSizeOf = (
-	written: Record<string, Pick<StandaloneModules, "code" | "modules">>
+export const programSizeOf = (written: WrittenModules): number => {
+	const { code, reached } = programReachOf(written)
+	let length = code
+	for (const declared of reached) length += declared.length
+	return length
+}
+
+/**
+ * about how many times the length of arktype a minifier leaves of a program's
+ * validators and the runtime they read: more than once, and the program is
+ * larger precompiled than creating its Types as it runs. A module one
+ * function replaced, declaring its unit there, is still written, and isn't counted
+ */
+export const validatorsToArktypeOf = (
+	written: WrittenModules,
+	replaced: ReadonlySet<string>
 ): number => {
+	let validators = 0
+	// what a key or marker chose a strategy for is as its program asked, so
+	// only what the build's own options write is weighed
+	for (const declared of programReachOf(written, true).reached) {
+		// a program's module is read as `\0<program>:<specifier>`
+		const { id } = declared.module
+		if (!id.startsWith("\0") || !replaced.has(id.slice(id.indexOf(":") + 1)))
+			validators += textLengthOf(declared)
+	}
+	return validators / arktypeSizeOf()
+}
+
+// what a bundle that isn't precompiled holds of arktype, as `type` reaches
+// nearly each of its declarations
+let arktypeSize: number | undefined
+
+const arktypeSizeOf = () => {
+	if (arktypeSize === undefined) {
+		arktypeSize = 0
+		const file = resolvedFileOf("arktype", import.meta.url)
+		for (const declared of reachedBy(file, ["type"]))
+			arktypeSize += textLengthOf(declared)
+		arktypeSize *= sourceToWritten
+	}
+	return arktypeSize
+}
+
+// a declaration's length with each string's text, as two programs compared
+// may differ in how much of each is messages
+const textLengthOf = (declared: Declared): number =>
+	(declared.textLength ??= minifiedLengthKeepingStrings(declared.text))
+
+// what the estimate leaves of arktype's source, next to what a minifier does,
+// over what it leaves of the code a build writes, whose names are short
+// already. Measured on esbuild and webpack bundles of 400 to 1600 number
+// ranges, and on a Next.js app of 231 validators with a message for each field
+const sourceToWritten = 1.4
+
+interface WrittenModule extends Pick<StandaloneModules, "code" | "modules"> {
+	// each local a site reads a validator by whose strategy its program chose
+	chosen?: readonly string[] | undefined
+}
+
+type WrittenModules = Record<string, WrittenModule>
+
+// a program's code's length, and what that reaches of its modules and the
+// runtime, from every validator or only those its program chose no strategy for
+const programReachOf = (
+	written: WrittenModules,
+	unchosenOnly = false
+): { code: number; reached: Set<Declared> } => {
 	const program = `\0${++programs}:`
 	for (const id in written) {
 		for (const specifier in written[id].modules)
@@ -46,7 +116,8 @@ export const programSizeOf = (
 			length += minifiedLengthOf(code)
 			text += code
 			const site = moduleAt(program + id, code)
-			for (const declared of reachedBy(site.id, importedNamesOf(site)))
+			const chosen = unchosenOnly ? (written[id].chosen ?? []) : undefined
+			for (const declared of reachedBy(site.id, importedNamesOf(site, chosen)))
 				reached.add(declared)
 		}
 	} finally {
@@ -57,21 +128,30 @@ export const programSizeOf = (
 	for (const declared of reached) text += declared.text
 	for (const declared of reachedBy(runtimeFileOf(), runtimeReadsOf(text)))
 		reached.add(declared)
-	for (const declared of reached) length += declared.length
-	return length
+	return { code: length, reached }
 }
 
 // a program's modules, read by the specifiers its code imports them by
 const virtualSources = new Map<string, string>()
 let programs = 0
 
-// what a site imports from a program's modules, each by its local name
-const importedNamesOf = (site: SourceModule): string[] =>
+// what a site imports from a program's modules, each by its local name, but
+// for what its program chose a strategy for, where those are named: what
+// another strategy's modules declare, and the build's own a site reads by one
+// of those locals
+const importedNamesOf = (
+	site: SourceModule,
+	chosen?: readonly string[]
+): string[] =>
 	Object.keys(site.scopes.root.bindings).filter(name => {
 		const binding = site.scopes.root.bindings[name]
+		if (binding.kind !== "import") return false
+		const id = declaredAs(binding)?.module.id
+		if (!id?.startsWith("\0")) return false
 		return (
-			binding.kind === "import" &&
-			declaredAs(binding)?.module.id.startsWith("\0")
+			!chosen ||
+			(!chosen.includes(name) &&
+				!strategyOfSpecifier(id.slice(id.indexOf(":") + 1)))
 		)
 	})
 
@@ -116,18 +196,45 @@ export const runtimeReachesOf = (names: Iterable<string>): RuntimeReaches => {
 	return { lengths, reached }
 }
 
+/**
+ * the names of the declarations a module's exports reach that read themselves
+ * through another. A minifier that counts references, as Next.js 16.0's does
+ * through a chunk holding a direct eval, drops none of them once nothing else
+ * reads one, nor anything they reach
+ */
+export const reachedCyclesOf = (
+	file: string | undefined,
+	names: Iterable<string>
+): string[] => {
+	const cyclic: string[] = []
+	for (const declared of reachedBy(file, names)) {
+		const reached = new Set<Declared>()
+		for (const read of readsOf(declared)) reachFrom(read, reached)
+		if (reached.has(declared)) cyclic.push(declared.binding.name)
+	}
+	return cyclic.sort()
+}
+
+/** those of the runtime */
+export const runtimeCyclesOf = (names: Iterable<string>): string[] =>
+	reachedCyclesOf(runtimeFileOf(), names)
+
 const reachedBy = (
 	file: string | undefined,
 	names: Iterable<string>
 ): Set<Declared> => {
 	const reached = new Set<Declared>()
-	const reach = (declared: Declared | undefined) => {
-		if (!declared || reached.has(declared)) return
-		reached.add(declared)
-		for (const read of readsOf(declared)) reach(read)
+	for (const name of names) {
+		const declared = exportedBy(file, name) ?? localOf(file, name)
+		if (declared) reachFrom(declared, reached)
 	}
-	for (const name of names) reach(exportedBy(file, name) ?? localOf(file, name))
 	return reached
+}
+
+const reachFrom = (declared: Declared, reached: Set<Declared>): void => {
+	if (reached.has(declared)) return
+	reached.add(declared)
+	for (const read of readsOf(declared)) reachFrom(read, reached)
 }
 
 interface Declared {
@@ -135,6 +242,8 @@ interface Declared {
 	module: SourceModule
 	text: string
 	length: number
+	// its length with each string's text
+	textLength?: number
 	reads?: Declared[]
 }
 
@@ -154,15 +263,17 @@ const moduleAt = (file: string, source?: string): SourceModule => {
 		file
 	))
 	const { bindings } = module.scopes.root
+	// each name a pattern declares is one declaration, counted once
+	const byDeclaration = new Map<Node, Declared>()
 	for (const name in bindings) {
 		const binding = bindings[name]
-		const text = javaScriptOf(module, binding.declaration)
-		declaredByBinding.set(binding, {
-			binding,
-			module,
-			text,
-			length: minifiedLengthOf(text)
-		})
+		let declared = byDeclaration.get(binding.declaration)
+		if (!declared) {
+			const text = javaScriptOf(module, binding.declaration)
+			declared = { binding, module, text, length: minifiedLengthOf(text) }
+			byDeclaration.set(binding.declaration, declared)
+		}
+		declaredByBinding.set(binding, declared)
 	}
 	return module
 }

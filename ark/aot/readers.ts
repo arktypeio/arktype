@@ -347,6 +347,10 @@ class Readers {
 			const runtime = this.runtimesByModule.get(module)
 			walk(module.program, node => {
 				if (runtime && isDead(node, runtime)) return false
+				if (isModuleHelper(node, module)) return false
+				// a type's computed key, like `[Tab.a]` in an interface, has no
+				// parent, as nothing reads it as the program runs
+				if (node.type === "MemberExpression" && !node.parent) return false
 				if (node.type === "MemberExpression" && !isWriteTarget(node))
 					add(memberNameOf(node), { node, module })
 				else if (node.type === "ObjectPattern") {
@@ -428,6 +432,8 @@ class Follow {
 	}
 
 	push(node: Node, module: SourceModule, held: Held): void {
+		// lost, it keeps each member whatever else reads it
+		if (this.lost.length) return
 		if (held.path.length > maxDepth) {
 			return this.lose(
 				node,
@@ -454,7 +460,7 @@ class Follow {
 	run(): void {
 		for (
 			let fact = this.pending.pop();
-			fact && this.facts <= maxFacts;
+			fact && this.facts <= maxFacts && !this.lost.length;
 			fact = this.pending.pop()
 		) {
 			this.quiet = !!fact.held.quiet
@@ -1011,6 +1017,7 @@ class Follow {
 		}
 		const { quiet } = this
 		for (const { node, module } of this.readers.fieldReadsOf(anyKey)) {
+			if (this.lost.length) break
 			if (owner !== undefined && !this.readers.mayRead(module, owner)) continue
 			this.quiet = quiet || !!dependencyOf(module.id)
 			const read: Held = this.quiet ? { ...fieldHeld, quiet: true } : fieldHeld
@@ -1980,6 +1987,62 @@ const isCalledBare = (read: Node): boolean => {
 		call?.type === "CallExpression" &&
 		call.callee === operand &&
 		!call.arguments.length
+	)
+}
+
+// what a compiler declares in each module it emits as CommonJS to copy one
+// module's exports to another's. Each reads a module's exports by key, which
+// the build follows by what each module imports, never an object a program
+// stores a validator in, so no read in one is a read of such a key
+
+// tsc's, each as `var __createBinding = (this && this.__createBinding) || ...`
+const tscModuleHelpers: ReadonlySet<string> = new Set([
+	"__createBinding",
+	"__setModuleDefault",
+	"__importStar",
+	"__exportStar",
+	"__importDefault"
+])
+
+// SWC's and Babel's, each a function of the name its compiler gives it
+const moduleHelperFunctions: ReadonlySet<string> = new Set([
+	"_export",
+	"_export_star",
+	"_interop_require_default",
+	"_interop_require_wildcard",
+	"_interopRequireDefault",
+	"_interopRequireWildcard",
+	"_getRequireWildcardCache"
+])
+
+const isModuleHelper = (node: Node, module: SourceModule): boolean => {
+	if (node.type === "FunctionDeclaration") {
+		return (
+			module.scopes.isCommonJs &&
+			node.parent?.type === "Program" &&
+			!!node.id &&
+			moduleHelperFunctions.has(node.id.name)
+		)
+	}
+	if (
+		node.type !== "VariableDeclarator" ||
+		node.id.type !== "Identifier" ||
+		!tscModuleHelpers.has(node.id.name) ||
+		node.parent?.parent?.type !== "Program" ||
+		!node.init
+	)
+		return false
+	const init = unwrapExpression(node.init)
+	if (init.type !== "LogicalExpression" || init.operator !== "||") return false
+	const inherited = unwrapExpression(init.left)
+	if (inherited.type !== "LogicalExpression" || inherited.operator !== "&&")
+		return false
+	const read = unwrapExpression(inherited.right)
+	return (
+		unwrapExpression(inherited.left).type === "ThisExpression" &&
+		read.type === "MemberExpression" &&
+		read.object.type === "ThisExpression" &&
+		memberNameOf(read) === node.id.name
 	)
 }
 

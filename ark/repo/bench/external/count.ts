@@ -109,3 +109,11 @@ const worker = async () => {
 }
 await Promise.all(Array.from({ length: Number(concurrency) }, worker))
 rmSync(fifos, { recursive: true, force: true })
+// one arm can fail for its own reasons, as one whose library has no such
+// case does. Every arm failing is the machine's doing: no perf, no counters,
+// or no such cores to pin to
+if (!Object.keys(arms).some(label => samples[label]?.length)) {
+	throw new Error(
+		`None of the ${Object.keys(arms).length} arms was counted: see the failures above`
+	)
+}

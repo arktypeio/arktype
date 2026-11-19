@@ -1,37 +1,71 @@
 {
 	"form": {
-		"commit": "20710020e",
-		"date": "2026-11-06",
+		"commit": "591cc38d7",
+		"date": "2026-11-19",
 		"installed": {
 			"@sinclair/typebox": "0.34.52",
 			"ajv": "8.20.0",
 			"ajv-errors": "3.0.0",
 			"ajv-formats": "3.0.1",
-			"effect": "4.1.2",
+			"effect": "4.1.4",
 			"joi": "18.3.2",
 			"runtypes": "7.0.5",
 			"superstruct": "2.0.2",
 			"valibot": "1.5.0",
 			"yup": "1.7.1",
 			"zod": "4.6.7",
-			"typia": "15.2.2",
-			"ttsc": "0.36.2"
-		}
+			"typia": "15.4.1",
+			"ttsc": "0.37.2"
+		},
+		"arkTypeDate": "2026-11-19"
 	},
 	"sb": {
-		"commit": "20710020e",
-		"date": "2026-11-06",
+		"commit": "591cc38d7",
+		"date": "2026-11-19",
 		"installed": {
-			"ata-validator": "1.63.1",
-			"typia": "15.2.2"
-		}
+			"ata-validator": "1.64.0",
+			"typia": "15.4.1",
+			"ttsc": "0.37.2",
+			"@ttsc/unplugin": "0.37.2"
+		},
+		"arkTypeDate": "2026-11-19"
 	},
 	"sury": {
-		"commit": "20710020e",
-		"date": "2026-11-06",
+		"commit": "591cc38d7",
+		"date": "2026-11-19",
 		"installed": {
 			"zod": "4.6.7",
 			"valibot": "1.5.0"
-		}
+		},
+		"arkTypeDate": "2026-11-19"
+	},
+	"moltar": {
+		"commit": "591cc38d7",
+		"date": "2026-11-19",
+		"installed": {
+			"@sx3/gate": "1.0.10",
+			"ata-validator": "1.65.0",
+			"pure-parse": "1.0.3",
+			"typia": "15.4.1",
+			"valibot": "1.5.0",
+			"zod": "4.6.7"
+		},
+		"arkTypeDate": "2026-11-19"
+	},
+	"ata": {
+		"commit": "591cc38d7",
+		"date": "2026-11-19",
+		"installed": {
+			"ata-validator": "1.65.0",
+			"typia": "15.4.1",
+			"zod": "4.6.7",
+			"ttsc": "0.37.2"
+		},
+		"arkTypeDate": "2026-11-19"
+	},
+	"startup": {
+		"commit": "591cc38d7",
+		"date": "2026-11-19",
+		"installed": {}
 	}
 }

@@ -1,4 +1,4 @@
-import { printable, throwError } from "@ark/util"
+import { printable, stringifyPath, throwError } from "@ark/util"
 import { existsSync, readFileSync } from "node:fs"
 import { basename, dirname, join, resolve } from "node:path"
 import type { PrecompilePluginOptions } from "./driver.ts"
@@ -13,8 +13,10 @@ import { writeVariantOption, writeWithoutVariant } from "./messages.ts"
 import type { PrecompileOptions } from "./precompile.ts"
 import { definedOf, withPreset } from "./presets.ts"
 import * as validators from "./settingsValidators.ts"
+import { checkStrategyOptions, normalizedSchemas } from "./strategies.ts"
 
 interface Issue {
+	path: PropertyKey[]
 	message: string
 	data: unknown
 }
@@ -25,7 +27,8 @@ type Validator = (
 	onFail: null
 ) => { issues: readonly Issue[] } | object
 
-// the validators read no configuration, so a program's configure() runs after
+// the validators read no configuration, so a program's configure() runs after.
+// An issue's message names no path, so each is written after its option's
 const validate = (
 	getValidator: () => Validator,
 	data: unknown,
@@ -35,7 +38,10 @@ const validate = (
 	if (!("issues" in out)) return
 	throw new Error(
 		out.issues
-			.map(issue => `${where}${issue.message} (was ${printable(issue.data)})`)
+			.map(issue => {
+				const option = stringifyPath(issue.path)
+				return `${where}${option && `${option} `}${issue.message} (was ${printable(issue.data)})`
+			})
 			.join("\n")
 	)
 }
@@ -127,11 +133,23 @@ export const withSettingsFile = <opts extends PrecompilePluginOptions>(
 		...file.dependencies,
 		...set.dependencies
 	}
+	const strategies = file.strategies && {
+		...file.strategies,
+		...set.strategies
+	}
+	// a key names its module from cwd, so one a call sets again is one key
+	const schemas = (file.schemas || set.schemas) && {
+		...(file.schemas &&
+			normalizedSchemas(file.schemas, dirname(path!), resolve(cwd))),
+		...(set.schemas && normalizedSchemas(set.schemas, undefined, resolve(cwd)))
+	}
 	const result = {
 		...file,
 		...set,
 		...(members && { members }),
-		...(dependencies && { dependencies })
+		...(dependencies && { dependencies }),
+		...(strategies && { strategies }),
+		...(schemas && { schemas })
 	}
 	checkDependencies(result.dependencies, cwd)
 	return result
@@ -162,6 +180,7 @@ export const resolvePrecompileOptions = <opts extends PrecompileOptions>(
 	const onArktype = variant && onArktypeOf(resolved.dependencies)
 	if (onArktype)
 		throw new Error(writeVariantDependencyMessage(onArktype, variant))
+	checkStrategyOptions(resolved)
 	if (resolved.runtime === "arktype") {
 		const standaloneOption =
 			resolved.config === false ?
@@ -194,6 +213,8 @@ const standaloneOptions = [
 	"mutatesInput",
 	"optimize",
 	"optimizeErrors",
+	"strategies",
+	"schemas",
 	"prune",
 	"dependencies"
 ] as const satisfies (keyof PrecompileOptions)[]

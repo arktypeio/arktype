@@ -69,6 +69,9 @@ export class ModuleScopes {
 	private scope: Scope
 	private pendingExports: [string, Reference][] = []
 
+	// whether it's CommonJS, whose exports are read only as tsc writes them
+	isCommonJs = false
+
 	constructor(program: Program) {
 		this.root = this.scope = createScope(program, undefined)
 		for (const statement of program.body) this.visit(statement, program)
@@ -77,10 +80,114 @@ export class ModuleScopes {
 			if (reference.binding && reference.isWrite)
 				reference.binding.writes.push(reference.id)
 		}
+		if (
+			!program.body.some(statement => statement.type in moduleSyntaxKinds) &&
+			this.root.unresolved.some(({ id }) => id.name in commonJsGlobals)
+		) {
+			this.isCommonJs = true
+			this.readCommonJs(program)
+		}
 		for (const name in this.exportsByName) {
 			const entry = this.exportsByName[name]
 			if (entry.kind === "binding") entry.binding.exportNames.push(name)
 		}
+	}
+
+	// what tsc writes for a module's exports where it emits CommonJS, read as
+	// the declarations they were: `exports.a = value`, `__exportStar(
+	// require("./a"), exports)`, `exports.a = __importStar(require("./a"))` and
+	// the getter `Object.defineProperty(exports, "a", ...)` defines for `export
+	// { a } from "./a"`. A name set any other way, or twice, is left unread
+	private readCommonJs(program: Program): void {
+		const unread = new Set<string>()
+		const set = (name: string, entry: ExportEntry | undefined) => {
+			if (!entry || name in this.exportsByName) unread.add(name)
+			this.exportsByName[name] = entry!
+		}
+		for (const statement of program.body) {
+			if (statement.type !== "ExpressionStatement") continue
+			const { expression } = statement
+			if (expression.type === "AssignmentExpression") {
+				const names: string[] = []
+				let value: Node = expression
+				while (value.type === "AssignmentExpression") {
+					const name = commonJsExportOf(value.left)
+					if (name === undefined || value.operator !== "=") break
+					names.push(name)
+					value = value.right
+				}
+				// `exports.a = void 0`, which tsc writes ahead of each export
+				if (value.type === "UnaryExpression" && value.operator === "void")
+					continue
+				const binding =
+					value.type === "Identifier" ?
+						this.root.bindings[value.name]
+					:	undefined
+				const specifier = requiredBy(value, "__importStar")
+				for (const name of names) {
+					set(
+						name,
+						value.type === "AssignmentExpression" ? undefined
+						: specifier !== undefined ? { kind: "namespace", specifier }
+						: binding ? { kind: "binding", binding }
+						: { kind: "expression", node: value }
+					)
+				}
+			} else if (expression.type === "CallExpression") {
+				const [first, second, third] = expression.arguments
+				if (
+					expression.callee.type === "Identifier" &&
+					expression.callee.name === "__exportStar"
+				) {
+					const specifier = first && requiredBy(first)
+					if (specifier !== undefined) this.starExports.push(specifier)
+				} else if (
+					isCommonJsExports(first) &&
+					second?.type === "Literal" &&
+					typeof second.value === "string" &&
+					second.value !== "__esModule"
+				)
+					set(second.value, this.reexportDefinedBy(third))
+			}
+		}
+		for (const name of unread) delete this.exportsByName[name]
+	}
+
+	// e.g. `{ enumerable: true, get: function () { return a_1.a; } }`, where
+	// `a_1` is `require("./a")`
+	private reexportDefinedBy(
+		descriptor: Node | undefined
+	): ExportEntry | undefined {
+		if (descriptor?.type !== "ObjectExpression") return
+		const getter = descriptor.properties.find(
+			property =>
+				property.type === "Property" && propertyKeyOf(property) === "get"
+		)
+		const fn = getter?.type === "Property" ? getter.value : undefined
+		const [statement, ...rest] =
+			fn?.type === "FunctionExpression" && fn.body ? fn.body.body : []
+		const returned =
+			statement?.type === "ReturnStatement" && !rest.length ?
+				statement.argument
+			:	undefined
+		if (
+			returned?.type !== "MemberExpression" ||
+			returned.computed ||
+			returned.object.type !== "Identifier"
+		)
+			return
+		const binding = this.root.bindings[returned.object.name]
+		const init =
+			(
+				binding?.declaration.type === "VariableDeclarator" &&
+				!binding.writes.length
+			) ?
+				binding.declaration.init
+			:	undefined
+		const specifier = init ? requiredBy(init, "__importStar") : undefined
+		return specifier === undefined ? undefined : (
+				{ kind: "reexport", specifier, name: returned.property.name }
+			)
 	}
 
 	private visit(node: Node | null | undefined, parent: Node): void {
@@ -765,6 +872,55 @@ const forEachChild = (node: Node, f: (child: Node) => void) => {
 			if (child) f(child)
 		} else for (const item of child) if (item) f(item)
 	}
+}
+
+const moduleSyntaxKinds = {
+	ImportDeclaration: 1,
+	ExportNamedDeclaration: 1,
+	ExportDefaultDeclaration: 1,
+	ExportAllDeclaration: 1,
+	TSExportAssignment: 1
+} as const satisfies KeySet
+
+const commonJsGlobals = {
+	exports: 1,
+	module: 1,
+	require: 1
+} as const satisfies KeySet
+
+const isCommonJsExports = (node: Node | undefined): boolean =>
+	node?.type === "Identifier" ? node.name === "exports"
+	: node?.type === "MemberExpression" ?
+		!node.computed &&
+		node.object.type === "Identifier" &&
+		node.object.name === "module" &&
+		node.property.name === "exports"
+	:	false
+
+// e.g. `a` for `exports.a` or `module.exports.a`
+const commonJsExportOf = (node: Node): string | undefined =>
+	(
+		node.type === "MemberExpression" &&
+		!node.computed &&
+		isCommonJsExports(node.object)
+	) ?
+		node.property.name
+	:	undefined
+
+// e.g. `./a` for `require("./a")`, or for `wrapper(require("./a"))`
+const requiredBy = (node: Node, wrapper?: string): string | undefined => {
+	if (node.type !== "CallExpression" || node.callee.type !== "Identifier")
+		return
+	const [argument] = node.arguments
+	if (!argument || node.arguments.length !== 1) return
+	if (node.callee.name === wrapper) return requiredBy(argument)
+	return (
+			node.callee.name === "require" &&
+				argument.type === "Literal" &&
+				typeof argument.value === "string"
+		) ?
+			argument.value
+		:	undefined
 }
 
 export const loadedSourceOf = (node: Node): Node | undefined =>

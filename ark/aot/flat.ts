@@ -1532,14 +1532,13 @@ const writtenUnitsOf = (body: string, returned: string): WrittenUnits => {
 		readPartsDirectly
 	])
 		written = untilUnchanged(written, parse, pass)
+	const writesArrows = minifiedLengthOf(written.body) < minLazyText
 	written = untilUnchanged(
 		written,
 		parse,
-		minifiedLengthOf(written.body) < minLazyText ? functionsAsArrows : (
-			shareObjectChecks
-		)
+		writesArrows ? functionsAsArrows : shareObjectChecks
 	)
-	written = untilUnchanged(written, parse, shareSites)
+	written = untilUnchanged(written, parse, shareFailuresAs(writesArrows))
 	written = untilUnchanged(written, parse, writtenWhereRead)
 	written.body = functionsDeclared(inGzipOrder(written.body))
 	return written
@@ -2031,66 +2030,113 @@ const isPlainFunction = (
 	!node.async &&
 	!node.generator
 
-// a site of literals is built where it fails, as gzip writes its text's repeats
-// in fewer bytes than a name. One written often enough is built once, so the
-// text a load parses shrinks and a failing call allocates none
-const shareSites: UnitsPass = ({ code, program }, s) => {
-	const callsByText = new Map<string, Span[]>()
-	walk(program, node => {
-		if (
-			node.type !== "CallExpression" ||
-			node.callee.type !== "MemberExpression" ||
-			node.callee.object.type !== "Identifier" ||
-			node.callee.object.name !== "runtime" ||
-			node.callee.property.type !== "Identifier" ||
-			!siteCreators.has(node.callee.property.name) ||
-			!node.arguments.every(arg => arg.type === "Literal")
-		)
-			return true
-		pushTo(callsByText, code.slice(node.start, node.end), node)
-		return false
-	})
-	const shared = [...callsByText].filter(
-		([, calls]) => calls.length >= minSharedSites
-	)
-	// a creator first called as the program loads compiles there, so what
-	// its sites save must repay that
-	const savedByCreator = new Map<string, number>()
-	for (const [text, calls] of shared) {
-		const creator = creatorOf(text)
-		savedByCreator.set(
-			creator,
-			(savedByCreator.get(creator) ?? 0) +
-				(calls.length - 1) * (text.length - creator.length)
-		)
-	}
-	const declarations: string[] = []
-	for (const [text, calls] of shared) {
-		if (savedByCreator.get(creatorOf(text))! < minSavedBySites) continue
-		const name = nameFreeIn(code, `site${declarations.length}`)
-		declarations.push(`const ${name} = /* @__PURE__ */ ${text}\n`)
-		for (const { start, end } of calls) s.overwrite(start, end, name)
-	}
-	if (declarations.length) s.prependRight(0, declarations.join(""))
-	return true
+interface FailingCall {
+	callee: Span
+	/** what the call is on, passed first where it's the errors */
+	on: string | undefined
+	first: Span
+	/** from the last argument a call of its own passes to the last literal */
+	literals: Span
 }
 
-const siteCreators = new Set(["siteOf", "requiredSiteOf", "keySiteOf"])
+// what fails is written as literals where it fails, as gzip writes its text's
+// repeats in fewer bytes than a name. Literals whose repeats are bytes enough
+// are written once, in a function each failure calls, so the text a load parses
+// shrinks. Nothing runs as the program loads, and only a failing call pays for
+// the frame
+const shareFailuresAs =
+	(writesArrows: boolean): UnitsPass =>
+	({ code, program }, s) => {
+		// by the call each would share, then its parameters
+		const callsByShared = new Map<string, FailingCall[]>()
+		const paramsByShared = new Map<string, string>()
+		walk(program, node => {
+			if (
+				node.type !== "CallExpression" ||
+				node.callee.type !== "MemberExpression" ||
+				node.callee.object.type !== "Identifier" ||
+				node.callee.property.type !== "Identifier"
+			)
+				return true
+			const fails = node.callee.property.name
+			const onRuntime = node.callee.object.name === "runtime"
+			const passed = (onRuntime ? passedToFailing : passedToErrors).get(fails)
+			const args = node.arguments
+			if (
+				!passed ||
+				args.length <= passed.length ||
+				args.some(
+					(arg, i) =>
+						arg.type === "SpreadElement" ||
+						(i >= passed.length && arg.type !== "Literal")
+				)
+			)
+				return true
+			const literals = {
+				start: args[passed.length - 1].end,
+				end: args[args.length - 1].end
+			}
+			const shared = `${onRuntime ? "runtime" : "ctx"}.${fails}(${passed.join(", ")}${code.slice(literals.start, literals.end)})`
+			paramsByShared.set(
+				shared,
+				(onRuntime ? passed : ["ctx", ...passed]).join(", ")
+			)
+			pushTo(callsByShared, shared, {
+				callee: node.callee,
+				on: onRuntime ? undefined : node.callee.object.name,
+				first: args[0],
+				literals
+			})
+			// an Apply a key is entered by may be written where it's passed
+			return true
+		})
+		const declarations: string[] = []
+		for (const [shared, calls] of callsByShared) {
+			const { start, end } = calls[0].literals
+			if ((calls.length - 1) * (end - start) < minSavedByShared) continue
+			const name = nameFreeIn(code, `fails${declarations.length}`)
+			const params = paramsByShared.get(shared)!
+			declarations.push(
+				writesArrows ?
+					`const ${name} = (${params}) => ${shared}\n`
+				:	`const ${name} = function (${params}) { return ${shared} }\n`
+			)
+			for (const { callee, on, first, literals } of calls) {
+				s.overwrite(callee.start, callee.end, name)
+				if (on) s.appendLeft(first.start, `${on}, `)
+				s.remove(literals.start, literals.end)
+			}
+		}
+		if (declarations.length) s.prependRight(0, declarations.join(""))
+		return true
+	}
 
-const creatorOf = (siteCall: string) => siteCall.slice(0, siteCall.indexOf("("))
+// what a call failing as literals passes of its own before them: the errors'
+// methods, and the runtime's functions taking the errors first
+const passedToErrors = new Map([
+	["_e", ["data"]],
+	["_k", ["apply", "data", "key"]]
+])
 
-// shared from 16 calls, gz at 8 / 16 / 32 (B, against none): 92 Types +19 / -9 /
-// -2, 1012 -594 / -594 / -461, ntwine -540 / -499 / -419
-const minSharedSites = 16
+const passedToFailing = new Map([
+	["failsKey", ["ctx", "data", "key"]],
+	["failsWith", ["ctx", "data"]],
+	["failsKeyWith", ["ctx", "data", "key"]],
+	["failsIn", ["ctx", "apply", "data", "key"]]
+])
 
-// shared, shop's 725 B of sites cost its load 30 K instructions more than they
-// saved, a92's 4.7 KB saved 150 K
-const minSavedBySites = 1024
+// the bytes of literals a function must save to be written. esbuild default,
+// min / gz (B), sharing none, what saves 384, 768 and 1536: 92 Types 77147 /
+// 11838, 73377 / 11855, 74586 / 11838, 75352 / 11820; 1012 617274 / 42964,
+// 543642 / 42366, 548454 / 42381, 561099 / 42400. shop's 28 keys missing "a
+// string" save 297, and shared cost it 5 B of gz (min -282)
+const minSavedByShared = 384
 
 // an Apply opens by checking data is an object, in a program of objects the text
 // it most repeats. Hot on a rejected call, V8 inlines each call as it read the text
 const shareObjectChecks: UnitsPass = ({ code, program }, s) => {
-	const checks: [start: number, text: string, site: string | undefined][] = []
+	// each with what it returns where it fails, if it's a statement returning
+	const checks: [start: number, text: string, fails: string | undefined][] = []
 	for (const statement of program.body as Node[]) {
 		if (statement.type !== "VariableDeclaration") continue
 		for (const { id, init } of statement.declarations) {
@@ -2108,14 +2154,14 @@ const shareObjectChecks: UnitsPass = ({ code, program }, s) => {
 	}
 	const isObject = nameFreeIn(code, "isObjectData")
 	const notObject = nameFreeIn(code, "notObjectData")
-	const site = checks.find(check => check[2])?.[2]
+	const fails = checks.find(check => check[2])?.[2]
 	const helpers = `const ${isObject} = function (data) { return data instanceof Object || Object(data) === data }\n${
-		site ?
-			`const ${notObject} = function (data, ctx) { return !ctx._at(${site}("domain", "an object"), data) }\n`
+		fails ?
+			`const ${notObject} = function (data, ctx) { return ${fails} }\n`
 		:	""
 	}`
-	const calls = checks.map(([, , site]) =>
-		site ?
+	const calls = checks.map(([, , fails]) =>
+		fails ?
 			`if (!${isObject}(data)) return ${notObject}(data, ctx)`
 		:	`${isObject}(data)`
 	)
@@ -2164,7 +2210,7 @@ const functionsAsArrows: UnitsPass = ({ code, program }, s) => {
 const applyName = /Apply(?:\$\d+)?$/
 
 const objectCheck =
-	/if \(!\(\(data instanceof Object \|\| Object\(data\) === data\)\)\) {\s*return !ctx\._at\(([\w.]+)\("domain", "an object"\), data\);?\s*}|\(data instanceof Object \|\| Object\(data\) === data\)/g
+	/if \(!\(\(data instanceof Object \|\| Object\(data\) === data\)\)\) {\s*return (!ctx\._e\(data, "domain", "an object"\));?\s*}|\(data instanceof Object \|\| Object\(data\) === data\)/g
 
 const nameFreeIn = (code: string, name: string): string =>
 	code.includes(name) ? nameFreeIn(code, `${name}_`) : name

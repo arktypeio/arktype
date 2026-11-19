@@ -19,11 +19,12 @@ import {
 	hasDomain,
 	isDotAccessible,
 	readsOnlyData,
+	testsOrRejects,
 	throwParseError
 } from "@ark/util"
 import * as runtime from "../runtimeExports.ts"
 import type { IssueFeatures } from "./baking.ts"
-import { rootUnitsOf } from "./compilers.ts"
+import { isCheckerIn, rootUnitsOf } from "./compilers.ts"
 import { printedHoleNamePattern } from "./keys.ts"
 import { declares, writtenSelectedOf } from "./units.ts"
 import {
@@ -33,7 +34,7 @@ import {
 } from "./values.ts"
 
 // the text a site's issue carries in place of what the runtime writes
-const describingKeys = ["expected", "actual", "problem", "message"] as const
+const describingKeys = ["expected", "actual", "message"] as const
 
 // a site's text is written from the program's config, so a scope's own isn't, nor a callback's
 export const assertDescribed = (root: BaseRoot): void => {
@@ -113,6 +114,14 @@ export const addIssueFeatures = (
 	units: readonly RootUnit[],
 	written: readonly BaseNode[]
 ): void => {
+	// what a unit declares where one of its roots is compiled, whose code passes
+	// a narrow its ctx: one only checkers call that tests its data or rejects
+	// with a message is passed one of theirs, and fails at a site
+	const compiled = new Set(
+		units.flatMap(unit =>
+			unit.roots.every(root => isCheckerIn(unit, root)) ? [] : unit.declared
+		)
+	)
 	for (const node of written) {
 		if (node.is("sequence")) features.reportsIndices = true
 		else if (node.is("structure")) {
@@ -128,7 +137,9 @@ export const addIssueFeatures = (
 				features.bracketsKeys = true
 		} else if (
 			node.is("morph") ||
-			(node.is("predicate") && !raisesNothing(node.predicate))
+			(node.is("predicate") &&
+				!raisesNothing(node.predicate) &&
+				(compiled.has(node) || !testsOrRejects.has(node.predicate)))
 		) {
 			features.reportsIndices = true
 			features.bracketsKeys = true
@@ -142,6 +153,8 @@ export const addIssueFeatures = (
 	for (const unit of units) {
 		for (const [, source] of unit.members) {
 			if (addsUnionIssue.test(source)) features.listsUnions = true
+			if (saysMessage.test(source)) features.writesText = true
+			if (callsTextIn.test(source)) features.callsSiteText = true
 			if (appliesValue.test(source)) features.appliesValues = true
 			if (discriminatesBoolean.test(source))
 				features.discriminatesBooleans = true
@@ -149,9 +162,9 @@ export const addIssueFeatures = (
 		for (const ref of unit.refs) {
 			if (!failureSites.has(ref as object)) continue
 			const site = ref as FailureSite
-			if (site.v) features.readsKeySites = true
 			const contexts = [site, site.v, site.m] as (IssueContext | undefined)[]
 			if (contexts.some(writesText)) features.writesText = true
+			if (contexts.some(callsText)) features.callsSiteText = true
 		}
 	}
 }
@@ -170,9 +183,22 @@ const discriminatesBoolean =
 const addsUnionIssue =
 	/runtime\.(?:failsBranches|failsListed|union|discriminateOr)\(/
 
-// a problem, or text written from the program's config, each set by a call on its issue
+// a checker saying a message set apart from its path, which its issue notes
+const saysMessage = /runtime\.(?:saying(?:Missing)?|narrowedRejecting)\(/
+
+// a message set apart from its path, or text written from the program's
+// config, each noted or set by a call on its issue
 const writesText = (context: IssueContext | undefined) =>
-	context?.problem !== undefined || !!context?.written
+	!!context?.c || !!context?.written
+
+// a site whose `text` is called on its issue: one whose text a function
+// writes, or one noting that its message is its code's. A message that's its
+// Type's is the issue's as the site holds it, with no call
+const callsText = (context: IssueContext | undefined) =>
+	context?.c === 2 || !!context?.written
+
+// code naming what writes or passes such a site
+const callsTextIn = /runtime\.(?:codeSiteOf|writtenSiteOf|codedIssue)\b/
 
 // sites only traversal reads, emitted as-is
 export const failureSites = new WeakSet<object>()
@@ -184,13 +210,11 @@ export const issueSite = <site extends object>(site: site): site => {
 
 // a site of a code and description naming nothing the validator receives
 export const isInlineSite = (site: object): site is IssueContext => {
-	const { written, description, message, problem } = site as IssueContext
+	const { written, description, message } = site as IssueContext
 	return (
 		"code" in site &&
 		!written &&
-		![description, message, problem].some(text =>
-			text?.match(printedHoleNamePattern)
-		)
+		![description, message].some(text => text?.match(printedHoleNamePattern))
 	)
 }
 
@@ -198,7 +222,7 @@ const siteWords = new Set([
 	"runtime",
 	"void",
 	"siteOf",
-	"problemSiteOf",
+	"codeSiteOf",
 	"keySiteOf",
 	"requiredSiteOf",
 	"v",
@@ -220,7 +244,7 @@ export const withoutStrings = (code: string): string =>
 
 // a key's site expects its value's brief where the key is missing, unless that's its basis's
 export const writeSiteOf = (
-	{ code, description, message, problem }: IssueContext,
+	{ code, description, message, c }: IssueContext,
 	emit: (s: string) => string,
 	writer = "siteOf",
 	missing?: string
@@ -228,12 +252,11 @@ export const writeSiteOf = (
 	const args =
 		writer === "keySiteOf" ?
 			[code, description, missing === description ? undefined : missing]
-		:	[code, description, message, problem]
+		:	[code, description, message]
 	while (args[args.length - 1] === undefined) args.pop()
+	// a message configured for its code is noted on its issue: codeSiteOf's
 	return `runtime.${
-		writer === "keySiteOf" ? writer
-		: args.length > 3 ? "problemSiteOf"
-		: "siteOf"
+		writer === "siteOf" && c === 2 ? "codeSiteOf" : writer
 	}(${args.map(arg => (arg === undefined ? "void 0" : emit(arg))).join(", ")})`
 }
 
@@ -260,6 +283,8 @@ export interface TextContext {
 	description?: string | undefined
 	/** a required key's: its value's brief, which the missing key expects */
 	missingValueDescription?: string | undefined
+	/** a required key's: its value's meta, whose message the missing key says */
+	valueMeta?: ArkEnv.meta | undefined
 	meta?: ArkEnv.meta | undefined
 }
 
@@ -278,31 +303,34 @@ export class ConfiguredWriter {
 
 export type Writer = string | Fn | ConfiguredWriter | undefined
 
-// what a site's issue reads, with text configured as strings or functions
+// how a site's message was configured, which a build reads: 1 as its Type's
+// and 2 as its code's. A validator's issue holds its message, which says
+// whether it's a sentence of its own, and notes only one that's its code's
+type Custom = 1 | 2
+
+// what a site's issue reads, with text configured as strings or functions.
+// Its message names no path, and c says how it was configured
 export interface IssueContext extends SiteContext {
 	message?: string
-	problem?: string
+	c?: Custom | undefined
 	written?: {
 		context: object
 		writers: Writer[]
-		// 1 if the issue takes expected, 2 if problem, 4 if its actual
-		// describes its data, which a default problem leaves out
+		// 1 if the issue takes expected, 4 if its actual describes its data,
+		// which a default message leaves out, and 2 if its message is
+		// configured for its code
 		keeps: number
 	}
 }
 
-// a configured actual is written in the problem, which a Standard Schema issue
-// says, so it's kept even where a configured message holds it
 const keepsOf = (
-	isCustom: (k: DescribingKey) => boolean,
+	takesExpected: boolean,
+	c: Custom | undefined,
 	describes: boolean
-): number =>
-	+isCustom("expected") |
-	(+(isCustom("problem") || isCustom("actual")) << 1) |
-	(+describes << 2)
+): number => +takesExpected | (c === 2 ? 2 : 0) | (+describes << 2)
 
 // what a default actual writes: what arktype describes data with, where a
-// configured problem or message reads it, shipped as the runtime's
+// configured message reads it, shipped as the runtime's
 const describerOf = (
 	writer: unknown,
 	readsActual: boolean
@@ -331,6 +359,18 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 		const writer = meta[k] ?? configured[k]
 		if (writer !== defaults[k]) custom[k] = writer
 	}
+	// a message written out for a key's value is the missing key's too, as
+	// arktype's is, before one configured for the code
+	const ofValue =
+		code === "required" && meta.message === undefined ?
+			context.valueMeta?.message
+		:	undefined
+	if (typeof ofValue === "string") custom.message = ofValue
+	// its Type's message is a union's to share, unlike its code's
+	const c: Custom | undefined =
+		custom.message === undefined ? undefined
+		: meta.message !== undefined || custom.message === ofValue ? 1
+		: 2
 	const locale = $ark.cfg!.locale
 	const issueContext: IssueContext = {
 		code,
@@ -343,12 +383,9 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 		!unwritableCodes.has(code) &&
 		Object.values(custom).some(writer => typeof writer === "function")
 	) {
-		const readsActual =
-			typeof custom.problem === "function" ||
-			typeof custom.message === "function"
 		const describer =
 			custom.actual === undefined ?
-				describerOf(defaults.actual, readsActual)
+				describerOf(defaults.actual, typeof custom.message === "function")
 			:	undefined
 		const writerOf = (k: DescribingKey): Writer => {
 			if (k === "actual" && describer !== undefined) return describer
@@ -362,49 +399,44 @@ export const issueContextOf = (context: TextContext): IssueContext => {
 			// static, so written as arktype would write it
 			if (k === "expected") return (writer as Fn)(context, locale) as string
 			if (runtimeKeyOf(writer)) return writer as Fn
-			if (k === "problem") return runtime.writeProblem
+			if (k === "message") return runtime.writeMessage
 			// e.g. a missing key's
 			return (writer as Fn)(undefined, context, locale) as string
 		}
 		issueContext.written = {
 			context,
-			writers: [
-				writerOf("expected"),
-				writerOf("actual"),
-				writerOf("problem"),
-				custom.message === undefined ? undefined : writerOf("message")
-			],
-			keeps: keepsOf(k => custom[k] !== undefined, !!describer)
+			writers: describingKeys.map(writerOf),
+			keeps: keepsOf(custom.expected !== undefined, c, !!describer)
 		}
 		return issueContext
 	}
-	// a union with no description writes what's configured as its whole message,
-	// expecting what its branches do unless that's what's configured. Its
-	// problem, what a Standard Schema issue says, is what's configured for it or
-	// as its expected, else what it lists
+	// a union with no description says the message configured for it, a
+	// sentence set apart from its path, and expects what its branches do
+	// unless that's configured too. What it's configured to expect alone is
+	// written after `must be` and its path, as any site's is
 	if (
 		code === "union" &&
-		(meta.description === undefined || meta.keyword !== undefined)
+		(meta.description === undefined || meta.keyword !== undefined) &&
+		typeof custom.message === "string"
 	) {
-		const problem = custom.problem ?? custom.expected
-		const own = custom.message ?? problem
-		if (typeof own === "string") {
-			issueContext.message = own
-			if (custom.expected === undefined) issueContext.description = undefined
-			if (typeof problem === "string") issueContext.problem = problem
-			return issueContext
-		}
+		issueContext.message = custom.message
+		issueContext.c = c
+		if (custom.expected === undefined) issueContext.description = undefined
+		return issueContext
 	}
-	if (typeof custom.message === "string") issueContext.message = custom.message
-	if (typeof custom.problem === "string") issueContext.problem = custom.problem
+	if (typeof custom.message === "string") {
+		issueContext.message = custom.message
+		issueContext.c = c
+	}
+	// what a configured actual says the value was is written after what's
+	// expected, as arktype's message is, and after its path as any is
 	else if (
 		typeof custom.actual === "string" &&
 		custom.actual &&
 		custom.message === undefined &&
-		custom.problem === undefined &&
-		configured.problem === errorWriters.problem
+		configured.message === errorWriters.message
 	) {
-		issueContext.problem = errorWriters.problem(
+		issueContext.message = errorWriters.message(
 			{ expected: issueContext.description, actual: custom.actual } as never,
 			locale
 		)
@@ -433,8 +465,7 @@ export const raisedWritersByCode = (): [
 			isCustom("actual") ? undefined : (
 				describerOf(
 					defaults.actual,
-					(isCustom("problem") && typeof configured.problem === "function") ||
-						(isCustom("message") && typeof configured.message === "function")
+					isCustom("message") && typeof configured.message === "function"
 				)
 			)
 		const writerOf = (k: DescribingKey): Writer => {
@@ -445,27 +476,30 @@ export const raisedWritersByCode = (): [
 						new ConfiguredWriter(code, k)
 					:	(writer as string)
 			}
-			// the raised issue's own expected, and its message as written without text
-			if (k === "expected" || k === "message") return
+			// the raised issue's own expected
+			if (k === "expected") return
 			if (typeof writer !== "function" || runtimeKeyOf(writer))
 				return writer as Writer
-			if (k === "problem") return runtime.writeProblem
+			if (k === "message") return runtime.writeMessage
 			// e.g. a missing key's
 			return (writer as Fn)(undefined, { code }, locale) as string
 		}
 		written.push([
 			code,
 			describingKeys.map(writerOf),
-			keepsOf(isCustom, !!describer)
+			// a message configured for a code is its code's, wherever it's raised
+			keepsOf(
+				isCustom("expected"),
+				isCustom("message") ? 2 : undefined,
+				!!describer
+			)
 		])
 	}
 	return written
 }
 
 export const isDescribed = (context: IssueContext): boolean =>
-	context.message === undefined &&
-	context.problem === undefined &&
-	!context.written
+	context.message === undefined && !context.written
 
 // issues hold only code and text, so equal sites share
 export const issueSiteOf = (site: FailureSite | UnionSite): object => {

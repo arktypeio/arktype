@@ -139,8 +139,8 @@ run(() => globalThis.calls)
 `
 
 const isLongKey = `function (k: string) { globalThis.calls.push("key:" + k); return k.length > 1 }`
-const ctxKey = `function (k: string, ctx: any) { globalThis.calls.push("ctxkey:" + k); return k.length > 1 || ctx.reject({ problem: "short key" }) }`
-const ctxValue = `function (v: number, ctx: any) { globalThis.calls.push("ctxvalue:" + v); return v > 0 || ctx.reject({ problem: "positive" }) }`
+const ctxKey = `function (k: string, ctx: any) { globalThis.calls.push("ctxkey:" + k); return k.length > 1 || ctx.reject({ message: "short key" }) }`
+const ctxValue = `function (v: number, ctx: any) { globalThis.calls.push("ctxvalue:" + v); return v > 0 || ctx.reject({ message: "positive" }) }`
 
 const discRows = (T: string, good: string) => `
 run(() => ${T}(${good}))
@@ -248,7 +248,7 @@ ${indexRows("T")}`,
 const T = type.Record(K, "number").onUndeclaredKey("reject")
 ${indexRows("T")}`,
 	indexCtxKeyRejectNarrow: `const K = type("string").narrow(${ctxKey})
-const T = type.Record(K, "number").onUndeclaredKey("reject").narrow(function (v, ctx) { globalThis.calls.push("whole"); return Object.keys(v).length < 3 || ctx.reject({ problem: "too many" }) })
+const T = type.Record(K, "number").onUndeclaredKey("reject").narrow(function (v, ctx) { globalThis.calls.push("whole"); return Object.keys(v).length < 3 || ctx.reject({ message: "too many" }) })
 ${indexRows("T")}`,
 	indexCtxValue: `const V = type("number").narrow(${ctxValue})
 const T = type({ "[string]": V })
@@ -671,7 +671,7 @@ run(() => Identity(data) === data)
 `,
 	ctxNarrows: `
 const note = function (tag: string, ctx: any, s: unknown) { globalThis.calls.push(tag + ":" + JSON.stringify(s) + "@" + ctx.path.join(".") + "#" + ctx.errors.count + "?" + ctx.hasError()) }
-const Rejecting = type("string").narrow(function (s, ctx) { note("rej", ctx, s); return s.length > 2 || ctx.reject({ expected: "long", problem: "short!" }) })
+const Rejecting = type("string").narrow(function (s, ctx) { note("rej", ctx, s); return s.length > 2 || ctx.reject({ expected: "long", message: "short!" }) })
 const MustBe = type("string").narrow(function (s, ctx) { note("must", ctx, s); return s.length > 2 || ctx.mustBe("long") })
 const AddsTrue = type("string").narrow(function (s, ctx) { note("adds", ctx, s); if (s === "x") ctx.error("no x"); return true })
 const FalseOnly = type("string").narrow(function (s, ctx) { note("false", ctx, s); return s.length > 1 })
@@ -1021,7 +1021,7 @@ cases.pipedReports = `
 ${morphFiller}
 const shown = (out: any) => out instanceof type.errors ? out.issues.map((issue: any) => [issue.code, issue.path, issue.data, issue.message]) : out
 const Handle = type("string").pipe(trim).narrow((s, ctx) => { globalThis.calls.push("h"); return /^@/.test(s) || ctx.mustBe("a handle") })
-const Piped = type("string").pipe(trim).to(type("string").narrow((s, ctx) => { globalThis.calls.push("p"); return /^@/.test(s) || ctx.reject({ expected: "a handle", problem: "bad" }) }))
+const Piped = type("string").pipe(trim).to(type("string").narrow((s, ctx) => { globalThis.calls.push("p"); return /^@/.test(s) || ctx.reject({ expected: "a handle", message: "bad" }) }))
 const Reporting = type("string").narrow((s, ctx) => s.length > 1 || ctx.mustBe("long"))
 const Transforming = type({ a: Trim, b: Reporting })
 const ToStructure = type("string").pipe(function (s) { return { a: s, b: s } }).to(Transforming)

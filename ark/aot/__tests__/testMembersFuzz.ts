@@ -10,8 +10,11 @@
 // ARK_MEMBERS_FUZZ_LATE=1 has a transform after arktype's write some readers'
 // reads, which the build's read of the source never sees: a Vite plugin listed
 // after precompile.vite(), a webpack or Rspack loader after arktype's, each at
-// an order the app draws, and Babel on Turbopack. Such a build bakes what a
-// late read needs, or the read throws that it isn't baked.
+// an order the app draws, and Babel on Turbopack. Vite, webpack and Rspack
+// read each module again as built, and refuse an app whose late read needs
+// what they left out. Turbopack, which reads each module alone under Babel,
+// bakes what it sees, so a late read of another member throws that it isn't
+// baked.
 import { fromHere } from "@ark/fs"
 import { Precompiler } from "@ark/aot"
 import { scanProgram } from "@ark/aot/internal/scan.ts"
@@ -867,7 +870,9 @@ const lateOrderOf = (dir: string): LateOrder =>
 		) as LateOrder)
 	:	"pre"
 
-const conditions = ["ark-ts", "production"]
+// a production build, which prunes, whose runtime is development's, where a
+// read of a member no build baked throws
+const conditions = ["ark-ts", "production", "development"]
 
 const run = (args: string[], cwd: string, env: Record<string, string> = {}) => {
 	const { stdout, stderr, status } = spawnSync(process.execPath, args, {
@@ -964,7 +969,7 @@ const viteOutcome = async (dir: string, plugin: boolean): Promise<Outcome> => {
 				...(plugin ?
 					[
 						precompile.vite({
-							conditions: ["ark-ts"],
+							conditions: ["ark-ts", "development"],
 							cwd: dir,
 							...buildOptions
 						})
@@ -972,7 +977,9 @@ const viteOutcome = async (dir: string, plugin: boolean): Promise<Outcome> => {
 				:	[]),
 				...(late ? [lateVitePlugin(dir, lateOrderOf(dir))] : [])
 			],
-			resolve: { conditions: ["ark-ts", ...defaultClientConditions] },
+			resolve: {
+				conditions: ["ark-ts", "development", ...defaultClientConditions]
+			},
 			build: {
 				write: true,
 				outDir: out,
@@ -1008,24 +1015,28 @@ const webpackOutcome = async (
 		entry: "./main.ts",
 		target: "node" as const,
 		output: { path: out, filename: "main.cjs" },
-		resolve: { extensions: [".ts", ".js", ".cjs"] },
+		resolve: {
+			extensions: [".ts", ".js", ".cjs"],
+			conditionNames: ["development", "..."]
+		},
 		module: { rules: lateRules(dir, lateOrderOf(dir)) }
+	}
+	// the plugin resolves what its validators import under its own conditions
+	// on webpack, and Rspack under the config's
+	const set = {
+		cwd: dir,
+		conditions: ["import", "node", "default", "development"],
+		...buildOptions
 	}
 	const compiler =
 		bundler === "webpack" ?
 			webpack({
 				...config,
-				plugins:
-					plugin ?
-						[precompile.webpack({ cwd: dir, ...buildOptions }) as never]
-					:	[]
+				plugins: plugin ? [precompile.webpack(set) as never] : []
 			})
 		:	(rspack({
 				...config,
-				plugins:
-					plugin ?
-						[precompile.rspack({ cwd: dir, ...buildOptions }) as never]
-					:	[]
+				plugins: plugin ? [precompile.rspack(set) as never] : []
 			}) as never as webpack.Compiler)
 	const errors = await new Promise<string | undefined>((resolve, reject) => {
 		const hung = setTimeout(
@@ -1071,6 +1082,8 @@ const driver = (dir: string, production: boolean): Outcome => {
 		[
 			"--conditions",
 			"ark-ts",
+			"--conditions",
+			"development",
 			"--import",
 			`data:text/javascript,import { register } from "${pathToFileURL(fromHere("..", "node.ts"))}"; register(${JSON.stringify({ conditions: ["ark-ts"], cwd: dir, ...buildOptions })})`,
 			"main.ts"
@@ -1115,7 +1128,16 @@ const emitOutcome = (dir: string): Outcome => {
 	)
 	if (cli.status !== 0) return { refused: cli.stderr || cli.stdout }
 	return {
-		out: run(["--conditions", "ark-ts", join(dir, "out-emit", "main.js")], dir)
+		out: run(
+			[
+				"--conditions",
+				"ark-ts",
+				"--conditions",
+				"development",
+				join(dir, "out-emit", "main.js")
+			],
+			dir
+		)
 	}
 }
 
@@ -1147,6 +1169,9 @@ const observationsOf = (out: string): unknown[] | undefined => {
 const normalized = (observation: unknown) =>
 	JSON.stringify(observation)?.replace(/\$ark\.\w+/g, "$ark.fn")
 
+// what a member no build baked throws under the "development" condition, which
+// each host resolves the runtime under: in production the read is undefined,
+// and what a reader makes of that is its own
 const unbakedMessage = /isn't precompiled: set members/
 const fallbackMessage = /takes only a target it was built with/
 
@@ -1181,9 +1206,10 @@ const mismatchOf = (
 	)
 		return "unbakedThroughCommonJs"
 	if (read.fallback && fallbackMessage.test(threw)) return "fallbackUnbaked"
-	// a read written after the build read the module, as the docs have one
-	// the build can't see
+	// a read written after Turbopack's build read the module, which it can't
+	// read again as built, as the docs have one the build can't see
 	if (
+		host === "turbopack" &&
 		reader.late &&
 		(unbakedMessage.test(threw) ||
 			JSON.stringify(observed) ===
@@ -1477,7 +1503,7 @@ while (remaining > 0) {
 	console.error(
 		`seed ${seed} run ${result.numRuns}: counterexample\n${sourceOfApp(result.counterexample![0])}\n${result.counterexample![0].readers.map(describeReader).join("\n")}`
 	)
-	if (result.error) console.error(result.errorInstance ?? result.error)
+	if (result.errorInstance !== null) console.error(result.errorInstance)
 	remaining -= result.numRuns
 	seed++
 }

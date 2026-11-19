@@ -136,3 +136,30 @@ export const hashOf = (input: string): string => {
 	h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909)
 	return (h2 >>> 0).toString(36) + (h1 >>> 0).toString(36).padStart(7, "0")
 }
+
+/**
+ * How many insertions, deletions, substitutions and swaps of neighbors turn a
+ * into b, counted as far as a suggestion for a mistyped name reads it: 3 is 3
+ * or more
+ */
+export const editsBetween = (a: string, b: string): number => {
+	if (Math.abs(a.length - b.length) > 2) return 3
+	let twoBack: number[] = []
+	let last = Array.from({ length: b.length + 1 }, (_, j) => j)
+	for (let i = 1; i <= a.length; i++) {
+		const row = [i]
+		for (let j = 1; j <= b.length; j++) {
+			row[j] = Math.min(
+				last[j] + 1,
+				row[j - 1] + 1,
+				last[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1),
+				i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1] ?
+					twoBack[j - 2] + 1
+				:	3
+			)
+		}
+		twoBack = last
+		last = row
+	}
+	return Math.min(last[b.length], 3)
+}

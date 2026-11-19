@@ -45,8 +45,9 @@ import {
 	Disjoint,
 	writeUnsatisfiableExpressionError
 } from "../shared/disjoint.ts"
-import { standardIssuesOf } from "../shared/errors.ts"
+import { isCustomError } from "../shared/errors.ts"
 import { ArkErrors } from "../shared/issues.ts"
+import { standardFailureOf } from "../shared/standardFailure.ts"
 import {
 	structuralKinds,
 	type NodeKind,
@@ -110,21 +111,29 @@ export abstract class BaseRoot<
 
 	private _standard?: StandardSchemaV1.ArkTypeProps
 	get "~standard"(): StandardSchemaV1.ArkTypeProps {
-		return (this._standard ??= {
-			vendor: "arktype",
-			version: 1,
-			validate: input => {
-				const out = this(input)
-				if (out instanceof ArkErrors)
-					return { issues: standardIssuesOf(out as never) }
-				return { value: out }
-			},
-			jsonSchema: {
-				// _in has no defaults, so the input is this Type as it's accepted
-				input: opts => toStandardJsonSchema(this, opts, "in"),
-				output: opts => toStandardJsonSchema(this._out, opts)
-			}
-		})
+		return (this._standard ??=
+			Object.defineProperty<StandardSchemaV1.ArkTypeProps>(
+				{
+					vendor: "arktype",
+					version: 1,
+					validate: input => {
+						const out = this(input)
+						return out instanceof ArkErrors ?
+								standardFailureOf(out as ArkErrors)
+							:	{ value: out }
+					},
+					jsonSchema: {
+						// _in has no defaults, so the input is this Type as it's accepted
+						input: opts => toStandardJsonSchema(this, opts, "in"),
+						output: opts => toStandardJsonSchema(this._out, opts)
+					}
+				},
+				// whether an issue of its own is custom, which another copy of
+				// arktype asks as it reads one, since only this one's errors can
+				// tell. Not enumerable, so its props read as Standard Schema's
+				"_c",
+				{ value: isCustomError }
+			))
 	}
 
 	as(): this {

@@ -1,7 +1,10 @@
 // compiles index.ts as zod-compiler's generate.ts compiles its schema: the same tsdown config, with
-// arktype's precompiler as the plugin. Its options are the default build's in a production bundle
-// (@ark/aot's productionDefaults), which a tsdown build can't tell it is. arktype is bundled in, as the
-// precompiler resolves its imports to arktype/runtime only where the bundle holds them.
+// arktype's precompiler as the plugin. The arm mirrors a production build's defaults, which a tsdown
+// build can't tell the plugin it is: @ark/aot's productionDefaults, and prune, which a production build
+// has unless it's set false and the download arm's ARK_OPTIONS pass too (reproduce.ts). Without it the
+// module isn't the default build: its runtime is arktype's as written, not as the build would write it
+// for what the module reads. arktype is bundled in, as the precompiler resolves its imports to
+// arktype/runtime only where the bundle holds them.
 // ARK_AOT=<arktype checkout's ark/aot> node ./libraries/arktype/precompiled/generate.ts
 import * as path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -22,7 +25,9 @@ const config: UserConfig = {
   dts: false,
   // bundled, as an app's bundler would, so the precompiler resolves arktype's imports to its runtime
   deps: { ...baseTsdownConfig.deps, alwaysBundle: [/^arktype/, /^@ark\//, /^arkregex/, /^arksets/] },
-  plugins: [precompile.rolldown({ freeze: false, creationChecks: "none", config: false })],
+  plugins: [
+    precompile.rolldown({ freeze: false, creationChecks: "none", config: false, prune: true }),
+  ],
 };
 
 await build(config);

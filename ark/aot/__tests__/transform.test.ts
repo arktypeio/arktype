@@ -7,6 +7,7 @@ import {
 	renderDiagnostic
 } from "@ark/aot"
 import { scope, type } from "arktype"
+import { checkArity } from "arktype/internal/runtime.ts"
 import { introspectionMembers } from "arktype/internal/standalone.ts"
 import { readFileSync } from "node:fs"
 import {
@@ -457,6 +458,52 @@ export const A = type({ a: R.a })`
 			])
 		})
 
+		it("passes what a CommonJS module sets an export to by its name", () => {
+			// as tsc writes `export * as enums from "./all"` and `export * from "./roles"`
+			const files = {
+				"/lib/index.js": `"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.enums = void 0;
+exports.enums = __importStar(require("./all.js"));
+`,
+				"/lib/all.js": `"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./roles.js"), exports);
+`,
+				"/lib/roles.js": `"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Role = void 0;
+exports.Role = { Enum: { admin: "admin", member: "member" } };
+`,
+				"/names.ts": `import { enums } from "./lib/index.js"
+export const names = () => Object.values(enums.Role.Enum)`
+			}
+			const linesOf = (source: string) =>
+				normalized(precompile(source, files).code).split("\n").slice(2)
+			// from the module that sets it, as the namespace its module imports
+			// re-exports it
+			attest(
+				linesOf(`import { type } from "arktype"
+import { enums } from "./lib/index.js"
+export const A = type.enumerated(...Object.values(enums.Role.Enum))`)
+			).snap([
+				'import "./lib/index.js"',
+				'import { enums } from "./lib/index.js"',
+				'import { Role as $ark#2 } from "./lib/roles.js"',
+				"export const A = $ark#0($ark#2)"
+			])
+			// imported where a helper of another module reads it
+			attest(
+				linesOf(`import { type } from "arktype"
+import { names } from "./names.ts"
+export const A = type.enumerated(...names())`)
+			).snap([
+				'import { names } from "./names.ts"',
+				'import { Role as $ark#2 } from "./lib/roles.js"',
+				"export const A = $ark#0($ark#2, names)"
+			])
+		})
+
 		it("refuses a site whose baked introspection is over the limit", () => {
 			const files = {
 				"/main.ts": `import { type } from "arktype"
@@ -520,7 +567,7 @@ export const C = direct.type(flag ? "b" : "b | null")`
 			attest(readerFirst["/main.ts"].diagnostics.map(renderDiagnostic)).snap([
 				'/main.ts:6:18  chosen.type("a") reads `chosen`, which the build replaced with an object that lacks its members\n  `chosen` holds scope({ a: "string" }) (/holders.ts:2:23), a Scope the build precompiles\n  Put // @ark-runtime on the line before scope({ a: "string" }), so arktype defines it at runtime, or build with runtime: "arktype".',
 				'/main.ts:6:18  chosen.type("a") can\'t be precompiled yet\n  `chosen` may be a Scope, which a standalone build replaces with an object that lacks `type`\n  Assign it to a const and read `type` off that, which the build precompiles, or build with runtime: "arktype".',
-				'/main.ts:7:18  direct.type(flag ? "b" : "b | null") cannot be precompiled\n  `flag` is declared without a value\n  Replace `flag` with a value the build can read, like a literal or a const holding one, or put // @ark-runtime on the line before the definition, so arktype defines it at runtime.',
+				'/main.ts:7:18  direct.type(flag ? "b" : "b | null") cannot be precompiled\n  `flag` is declared without a value\n  Replace `flag` with a value the build can read, like a literal or a const holding one, or build with runtime: "arktype", so arktype defines it at runtime. A // @ark-runtime island can\'t define this one alone, as what it composes is precompiled.',
 				'/main.ts:7:18  direct.type(flag ? "b" : "b | null") reads `direct`, which the build replaced with an object that lacks its members\n  `direct` is scope({ b: "string" }) (/holders.ts:3:18), a Scope the build precompiles\n  Put // @ark-runtime on the line before scope({ b: "string" }), so arktype defines it at runtime, or build with runtime: "arktype".'
 			])
 			// read off a namespace import, whose binding's value holds no export
@@ -643,7 +690,7 @@ export const K = type("string").extends(type("string").in)`,
 				{ "/limits.ts": "export const max = 5" }
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				"/main.ts:6:18  type(\"strin\") throws a ParseError\n  'strin' is unresolvable\n  Fix the definition, which throws the same ParseError at runtime, or set allowUnsafe: true to build anyway, with a warning.",
+				"/main.ts:6:18  type(\"strin\") throws a ParseError\n  'strin' is unresolvable. Did you mean 'string'?\n  Fix the definition, which throws the same ParseError at runtime, or set allowUnsafe: true to build anyway, with a warning.",
 				'/main.ts:7:18  type({ "+": "delete", "[string]": "string", a: type("string… can\'t be precompiled yet\n  structure { [string]: string, a: (In: string.date) => Out<Date> | (In: number) => Out<unknown>, + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.',
 				'/main.ts:9:18  type("string").equals("string") can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type("string").equals`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.',
 				'/main.ts:11:18  type({ a: "string" }).props[0].key can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type({ a: "string" }).props`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime.',
@@ -1067,10 +1114,22 @@ export const Labeled = $ark#6(labels)`)
 				'runtime.checkIdentity(holes3[0], p0, "`local.confirm`\'s hole 0", "`isX as never` (/main.ts:10:43)")',
 				'runtime.checkFacts(runtime.describeShape(p0), "an object with keys name", "`fields`")',
 				'runtime.checkFacts(runtime.describeShape(p1), "an object with keys message", "`config`")',
-				'runtime.checkFacts(runtime.factOfHole(p1["message"]), 1, "`config.message`")',
+				'runtime.checkArity(p1["message"], 1, "`config.message`")',
 				'runtime.checkFacts(runtime.describeShape(p0), "an object with keys message", "`labels`")',
-				'runtime.checkFacts(runtime.factOfHole(p0["message"]), 1, "`labels.message`")'
+				'runtime.checkArity(p0["message"], 1, "`labels.message`")'
 			])
+		})
+
+		it("checks a function it's passed by its arity, as arktype reads one of two or more alike", () => {
+			checkArity((a: unknown, b: unknown) => a === b, 2)
+			checkArity((a: unknown, b: unknown, c: unknown) => a === b && b === c, 2)
+			attest(() => checkArity((a: unknown) => a, 2, "`fn`")).throws(
+				"`fn` is a function of 1 parameter, but was precompiled as a function of 2 or more parameters"
+			)
+			// neither a function nor named, as a build written for size leaves it
+			attest(() => checkArity(undefined, 1)).throws(
+				"A value a validator reads is undefined, but was precompiled as a function of 1 parameter"
+			)
 		})
 
 		it("reads a function a helper call created through what holds it", () => {
@@ -1107,8 +1166,15 @@ const atLeast = (min: number) => type("string").narrow(longer(min))
 export const Island = type({ a: islanded(1) })
 export const Folded = type({ a: atLeast(1) })`)
 			attest(result.diagnostics.map(d => d.reasons[0])).snap([
-				"the function at /main.ts:4:24 is created by each call to a static helper, so the precompiled site cannot reach it",
-				"the function at /main.ts:5:33 is created by each call to a static helper, so the precompiled site cannot reach it"
+				"the function at /main.ts:4:24 is created by each call to a static helper, so the precompiled site cannot reach it"
+			])
+			// where the helper is precompiled, its validator receives the function
+			// each call creates
+			attest(normalized(result.code).split("\n").slice(-4)).snap([
+				"const longer = (min: number) => (s: string) => s.length > min",
+				"const atLeast = (min: number) => $ark#0(longer(min))",
+				"export const Island = type({ a: islanded(1) })",
+				"export const Folded = $ark#2(atLeast(1))"
 			])
 		})
 
@@ -1199,7 +1265,7 @@ export const E = type("strng")`,
 				normalized([...lines.slice(0, declared + 1), ...lines.slice(-7)])
 			).snap([
 				'import "arktype"',
-				'import { siteOf as $ark$0$siteOf, freeze as $ark$0$freeze, unreadCallErrors as $ark$0$unreadCallErrors, UnreadArkErrors as $ark$0$UnreadArkErrors, deepFreeze as $ark$0$deepFreeze, fixConfig as $ark$0$fixConfig, interned as $ark$0$interned, createValidatorWith as $ark$0$createValidatorWith, emptyMeta as $ark$0$emptyMeta, bakedJsonSchema as $ark$0$bakedJsonSchema, bakedStandardJsonSchema as $ark$0$bakedStandardJsonSchema, precompiledForArktype_$version as $ark$0$precompiledForArktype_$version, ParseError as $ark$0$ParseError } from "arktype/runtime"',
+				'import { freeze as $ark$0$freeze, unreadCallErrors as $ark$0$unreadCallErrors, deepFreeze as $ark$0$deepFreeze, fixConfig as $ark$0$fixConfig, interned as $ark$0$interned, createValidatorWith as $ark$0$createValidatorWith, emptyMeta as $ark$0$emptyMeta, bakedJsonSchema as $ark$0$bakedJsonSchema, bakedStandardJsonSchema as $ark$0$bakedStandardJsonSchema, precompiledForArktype_$version as $ark$0$precompiledForArktype_$version, ParseError as $ark$0$ParseError } from "arktype/runtime"',
 				"var $ark$exports0;",
 				"}",
 				"$ark$load2();",

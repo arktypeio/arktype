@@ -1,7 +1,13 @@
 import type { array } from "@ark/util"
 import type { ArkErrorCode } from "./errors.ts"
-import { rewritesUnions } from "./issueFeatures.ts"
-import { messageOf, type ArkIssue } from "./issues.ts"
+import { rewritesUnions, writesText } from "./issueFeatures.ts"
+import {
+	isCustomIssue,
+	lineOf,
+	messageOf,
+	pathOf,
+	type ArkIssue
+} from "./issues.ts"
 
 const writeBranches = (alternatives: string[]): string => {
 	const unique = [...new Set(alternatives)]
@@ -27,8 +33,8 @@ export const writeListed = (errors: readonly ArkIssue[]): string => {
 	const atSubject: Record<string, ArkIssue[]> = {}
 	for (const error of errors) {
 		error.message ??= messageOf(error)
-		;(atSubject[messageOf({ path: error.path, expected: "" } as never)] ??=
-			[]).push(error)
+		const path = pathOf(error)
+		;(atSubject[(path && path + " ") + "must be "] ??= []).push(error)
 	}
 	return writeBranches(
 		Object.entries(atSubject).map(
@@ -38,15 +44,38 @@ export const writeListed = (errors: readonly ArkIssue[]): string => {
 }
 
 // where a union's branches can only fail alike, as `string.ip`'s formats do,
-// what listing them writes is any one's message
+// what listing them writes is any one's line
 const writeAlike = (errors: readonly ArkIssue[]): string => {
 	for (const error of errors) error.message ??= messageOf(error)
-	return errors[0].message!
+	return lineOf(errors[0])
 }
 
-// a union's issue, which says what its branches' first issues did: its
-// message with their paths whole, what it expects with them from its own, as
-// the problem of arktype's union is written
+/**
+ * @internal
+ * the message each issue's Type was configured with or its callback supplied,
+ * a sentence of its own (isCustomIssue), if they agree, which a union of them
+ * says too, as arktype's does. One configured for a code isn't its Type's
+ * (codedIssue), so it's listed
+ */
+export const sharedMessageOf = (
+	errors: readonly ArkIssue[]
+): string | undefined => {
+	let shared: string | undefined
+	for (const error of errors) {
+		if (
+			!isCustomIssue(error) ||
+			error._c ||
+			(shared !== undefined && error.message !== shared)
+		)
+			return
+		shared = error.message
+	}
+	return shared
+}
+
+// a union's issue, which says what its branches' first issues did: its line
+// of a summary with their paths whole, and its message and what it expects
+// with them from its own, as arktype's union is written
 class ListedIssue implements ArkIssue {
 	code: ArkErrorCode = "union"
 	declare path: PropertyKey[]
@@ -54,19 +83,28 @@ class ListedIssue implements ArkIssue {
 	declare errors: readonly ArkIssue[]
 	declare expected: string
 	declare message: string
+	// private, so only what an issue's readers see is its own
+	#line: string | undefined
 
 	constructor(
 		path: PropertyKey[],
 		data: unknown,
 		errors: readonly ArkIssue[],
-		message: string,
-		expected: string
+		// undefined where its message is written after its path, as any issue's is
+		line: string | undefined,
+		expected: string,
+		message = expected
 	) {
 		this.path = path
 		this.data = data
 		this.errors = errors
-		this.message = message
 		this.expected = expected
+		this.message = message
+		this.#line = line
+	}
+
+	get _l(): string | undefined {
+		return this.#line
 	}
 }
 
@@ -76,16 +114,11 @@ export type UnionIssueOf = (
 	errors: readonly ArkIssue[]
 ) => ArkIssue
 
-// issues at other paths, each message written at its own unless supplied
+// issues at other paths, each saying what it did
 const movedBy = (
 	errors: readonly ArkIssue[],
 	path: (error: ArkIssue) => PropertyKey[]
-): ArkIssue[] =>
-	errors.map(error => ({
-		...error,
-		path: path(error),
-		message: error.message === messageOf(error) ? undefined : error.message
-	}))
+): ArkIssue[] => errors.map(error => ({ ...error, path: path(error) }))
 
 // what write lists of errors, each path written from a union's at path
 export const writeFromPath = (
@@ -116,13 +149,33 @@ const basesIssueOf = (
 			return
 	}
 	const expected = describe(errors.map(error => error.expected!))
+	// written after its path, as any issue saying what it expects is
 	return new ListedIssue(
 		path.slice(),
 		data,
 		[],
-		messageOf({ path, expected } as never),
-		expected
+		undefined,
+		expected,
+		messageOf({ expected })
 	)
+}
+
+// a union's issue of its branches' errors: what they share, said after its
+// path as a sentence, else what listing them writes
+const listed = (
+	Issue: typeof ListedIssue,
+	path: PropertyKey[],
+	data: unknown,
+	errors: readonly ArkIssue[],
+	write: (errors: readonly ArkIssue[]) => string
+): ArkIssue => {
+	// written first, as it writes each error's message
+	const line = write(errors)
+	const expected = writeFromPath(path, errors, write)
+	const shared = writesText ? sharedMessageOf(errors) : undefined
+	return shared === undefined ?
+			new Issue(path.slice(), data, errors, line, expected)
+		:	new Issue(path.slice(), data, errors, undefined, expected, shared)
 }
 
 // its readers, what pipes a validator and Standard Schema, only call what an
@@ -142,41 +195,25 @@ const issueWriterOf = (
 						...prefix,
 						...error.path
 					])
-					// moved alike, its errors' paths from its own are as they were
+					// moved alike, its errors' paths from its own are as they
+					// were, as is a message that names none
 					return new RewrittenIssue(
 						[...prefix, ...this.path],
 						this.data,
 						moved,
-						write(moved),
-						this.expected
+						this._l === undefined ? undefined : write(moved),
+						this.expected,
+						this.message
 					)
-				}
-
-				// its paths written from its own, as arktype's union's problem is,
-				// so a Standard Schema issue says it as if validated alone
-				get problem(): string {
-					return this.expected
 				}
 			}
 			return (path, data, errors) =>
 				basesIssueOf(path, data, errors, describeBases) ??
-				new RewrittenIssue(
-					path.slice(),
-					data,
-					errors,
-					write(errors),
-					writeFromPath(path, errors, write)
-				)
+				listed(RewrittenIssue, path, data, errors, write)
 		})()
 	:	(path, data, errors) =>
 			basesIssueOf(path, data, errors, describeBases) ??
-			new ListedIssue(
-				path.slice(),
-				data,
-				errors,
-				write(errors),
-				writeFromPath(path, errors, write)
-			)
+			listed(ListedIssue, path, data, errors, write)
 
 export const listedIssue: UnionIssueOf = /* @__PURE__ */ issueWriterOf(
 	writeListed,

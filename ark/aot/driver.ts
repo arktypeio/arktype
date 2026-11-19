@@ -40,6 +40,7 @@ import {
 import type { ScannedProgram, ScannedUsage } from "./scan.ts"
 import type { Site } from "./sites.ts"
 import { settingsPathsOf, withSettingsFile } from "./settings.ts"
+import { SchemaStrategies } from "./strategies.ts"
 import { isPrecompilerWorker } from "./worker.ts"
 
 export interface PrecompilePluginOptions
@@ -50,6 +51,10 @@ export const createPrecompiler = (
 	opts?: PrecompilePluginOptions
 ): Precompiler => {
 	const cwd = realPathOf(opts?.cwd ?? process.cwd())
+	// a key matching no file would choose for nothing. Read here, where a
+	// build first asks of a module, as only then is cwd the bundler's root
+	if (opts?.runtime !== "arktype")
+		new SchemaStrategies(opts ?? {}, "speed", cwd).checkFiles()
 	return new Precompiler(createNodeHost(opts), {
 		...opts,
 		cwd,
@@ -103,7 +108,13 @@ export type PrecompileRequest =
 			program?: string | undefined
 	  ]
 	| [kind: "scan", program: ScannedProgram]
-	| [kind: "unseen", program: ScannedProgram]
+	| [
+			kind: "unseen",
+			program: ScannedProgram,
+			// what built each module after the plugin, where the program holds
+			// what that built of one, as a Rollup plugin's transforms do
+			after?: string | undefined
+	  ]
 	// a program holding what the loaders after the plugin built of each module
 	| [kind: "unseenBuilt", program: ScannedProgram]
 	| [kind: "program", program: ReadProgram]
@@ -136,8 +147,13 @@ export interface TransformedModule extends InlineModule {
 export type PrecompileAnswer = { result: unknown } | { error: unknown }
 
 export interface CheckedModule {
-	sites: Pick<Site, "start" | "end" | "line" | "column" | "status">[]
+	sites: Pick<
+		Site,
+		"start" | "end" | "line" | "column" | "status" | "strategy"
+	>[]
 	diagnostics: Diagnostic[]
+	// each key of schemas choosing for one of its definitions
+	schemaKeys: string[]
 }
 
 const answerRequests = (
@@ -399,6 +415,8 @@ const answerRequests = (
 		}
 		if (request[0] === "unseen" || request[0] === "unseenBuilt") {
 			const [kind, program] = request
+			// read as built too, once it reads no more as it reached the plugin
+			const after = kind === "unseen" ? request[2] : undefined
 			const scan = scansByProgram[program.key]
 			const key =
 				scan?.cache && keyOf(scan.key, { ...program, key: undefined, kind })
@@ -411,9 +429,10 @@ const answerRequests = (
 				return
 			const scanning = scan ? scanned(scan) : viewing(tracked)
 			const unseen =
-				kind === "unseen" ?
-					scanning.precompiler.unseenIn(program)
-				:	scanning.precompiler.unseenBuiltIn(program)
+				kind === "unseenBuilt" ? scanning.precompiler.unseenBuiltIn(program)
+				: after === undefined ? scanning.precompiler.unseenIn(program)
+				: (scanning.precompiler.unseenIn(program) ??
+					scanning.precompiler.unseenBuiltIn(program, after))
 			if (key && scan.isStored && unseen === undefined)
 				store(scanning, scan.cache!, key, null)
 			return unseen
@@ -552,14 +571,16 @@ const checkedModuleOf = (
 		:	undefined
 	return {
 		sites:
-			result?.sites.map(({ start, end, line, column, status }) => ({
+			result?.sites.map(({ start, end, line, column, status, strategy }) => ({
 				start,
 				end,
 				line,
 				column,
-				status
+				status,
+				...(strategy !== undefined && { strategy })
 			})) ?? [],
-		diagnostics: result?.diagnostics ?? []
+		diagnostics: result?.diagnostics ?? [],
+		schemaKeys: result ? precompiler.choosingKeysOf(id, result.sites) : []
 	}
 }
 

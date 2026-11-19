@@ -77,7 +77,12 @@ import {
 	type ModuleGraph
 } from "./graph.ts"
 import type { SourceModule } from "./module.ts"
-import { isTransparent, proveFunction, runtimeParamsOf } from "./proofs.ts"
+import {
+	isTransparent,
+	passesWithoutCtx,
+	proveFunction,
+	runtimeParamsOf
+} from "./proofs.ts"
 import {
 	isOwnEnumSeed,
 	transpiledEnumOf,
@@ -126,7 +131,7 @@ export interface Trace {
 
 export type Holder = [
 	module: SourceModule,
-	holder: Binding | "default",
+	holder: Binding | string,
 	depth: number
 ]
 
@@ -184,6 +189,9 @@ interface Call {
 // a stand-in itself is arktype checking whether it's a Standard Schema, as a
 // definition holds it
 type Reached = DefaultCheck | ScopeAlias | Call | StandIn
+
+export const hookCallReason =
+	"calls a hook, whose result is known only as a component renders"
 
 export const isCall = (reached: Reached): reached is Call =>
 	"standIn" in reached
@@ -290,7 +298,7 @@ const exportRootOf = (
 ): InputRoot => ({
 	kind: "export",
 	file: target.module.id,
-	name: target.kind === "binding" ? target.name : "default",
+	name: target.name ?? "default",
 	importer
 })
 
@@ -394,6 +402,8 @@ export class Interpreter {
 		| undefined
 	// the trace of stand-ins arktype calls outside a site
 	private looseTrace: Trace | undefined
+	// where a default is being run through what checks it, to tell if it passes
+	private defaultCtx: Context | undefined
 
 	private registerSites: ((module: SourceModule) => unknown) | undefined
 
@@ -1185,9 +1195,7 @@ export class Interpreter {
 			((target.kind === "binding" &&
 				this.writtenIn(target.binding, target.module, depth, ctx)) ||
 				this.writtenThroughThis(
-					target.kind === "binding" ?
-						`\`${target.binding.name}\``
-					:	`the default export of ${target.module.path}`,
+					exportLabelOf(target),
 					result.value as object,
 					depth,
 					ctx
@@ -1863,9 +1871,7 @@ export class Interpreter {
 					((target.kind === "binding" &&
 						this.writtenIn(target.binding, target.module, depth, ctx)) ||
 						this.writtenThroughThis(
-							target.kind === "binding" ?
-								`\`${target.binding.name}\``
-							:	`the default export of ${target.module.path}`,
+							exportLabelOf(target),
 							result.value as object,
 							depth,
 							ctx
@@ -2044,11 +2050,20 @@ export class Interpreter {
 					}
 					return result
 				}
+				// e.g. `useAccount()`, a hook by its name, whose result no way of
+				// writing it makes static
+				const isHook =
+					!!standIn.closure &&
+					/^use[\dA-Z]/.test(declaredNameOf(standIn.closure.node) ?? "")
 				return this.reject(
 					node,
 					ctx,
-					"calls a function the build does not interpret",
-					standIn.closure && this.notStaticHelper(standIn),
+					isHook ? hookCallReason : (
+						"calls a function the build does not interpret"
+					),
+					isHook || !standIn.closure ?
+						undefined
+					:	this.notStaticHelper(standIn),
 					"opaque"
 				)
 			}
@@ -2292,6 +2307,8 @@ export class Interpreter {
 	): boolean => {
 		const site = this.activeCall?.ctx.site
 		if (!site || !this.holdsStandIn(node.in as BaseRoot)) return false
+		// one the build ran is checked, so nothing is left for where it's created
+		if (this.passesAtBuild(node.in as BaseRoot, value)) return true
 		const check: DefaultCheck = [node, value, key]
 		site.reached.push(check)
 		if (owner) {
@@ -2332,6 +2349,55 @@ export class Interpreter {
 			if (!stored) entries.set(key, (stored = new Set()))
 			for (let i = mark; i < reached.length; i++) stored.add(reached[i])
 		}
+	}
+
+	// Whether a default passes what checks it, as the build can tell: each
+	// narrow it reaches is a static helper, which returns of the default what it
+	// would where the Type is created, and can't tell it's passed no ctx. A
+	// validator the build writes then holds no check of it. One it can't run, or
+	// that rejects the default, is left to check it there, where it throws
+	private passesAtBuild(input: BaseRoot, value: unknown): boolean {
+		const ctx = this.activeCall?.ctx
+		// arktype creates the node itself, and checks what it creates
+		if (!ctx || this.opts.runtime === "arktype") return false
+		const previous = this.defaultCtx
+		// what a narrow reads decides the site's value only if the default passes
+		const checking = (this.defaultCtx = { ...ctx, trace: emptyTrace() })
+		const interpreted = ctx.site && new Set(ctx.site.interpreted)
+		let passes = false
+		try {
+			passes = input.allows(value)
+		} catch {
+			// e.g. a narrow that isn't a static helper, as its call says
+		} finally {
+			this.defaultCtx = previous
+		}
+		// Only one that read no value but the default has passed whatever the
+		// program holds as the Type is created: another's site would compare
+		// what it read, and fail a program whose value passes too. A function
+		// another module exports, which the narrow called, is the site's helper
+		// as one its definition calls is: the same wherever nothing replaces it
+		const { reads, readFirst, declared, holders } = checking.trace
+		passes &&= ![reads, readFirst, declared, holders].some(read => read.length)
+		if (passes) mergeTrace(ctx.trace, checking.trace)
+		else if (interpreted) ctx.site!.interpreted = interpreted
+		return passes
+	}
+
+	// what a function arktype calls with a default returns of it alone
+	private testDefault(ctx: Context, standIn: StandIn, value: unknown): unknown {
+		const closure = standIn.closure
+		if (
+			!closure ||
+			// another module's can be replaced where the program runs
+			closure.module !== ctx.site?.module ||
+			!staticBodyOf(closure.node) ||
+			!passesWithoutCtx(closure.node)
+		)
+			throw this.calledAtDefinition(standIn, undefined)
+		const result = this.interpretCall(closure, [value], closure.node, ctx)
+		if (isDynamic(result)) throw result
+		return result
 	}
 
 	// e.g. a narrow or a writer, which checking a default would call
@@ -2437,7 +2503,27 @@ export class Interpreter {
 		)
 		if (params[params.length - 1]?.type !== "RestElement")
 			unread.push(...args.slice(params.length))
-		return this.dynamicIn(unread)?.asOperand() ?? result
+		const dynamic = this.dynamicIn(unread)
+		// e.g. `saved` in `(saved: Address) => Address.narrow(a => !isSame(a,
+		// saved))`, which only the function the call creates reads, as it
+		// validates: a site holding that function receives it from the call, so
+		// the call runs as written, with what it's passed
+		return dynamic && !this.holdsFunctionOf(result, env) ?
+				dynamic.asOperand()
+			:	result
+	}
+
+	// whether a value holds a function a call created, which closes over the
+	// call's parameters
+	private holdsFunctionOf(value: unknown, env: Environment): boolean {
+		for (const hole of this.holesIn(value)) {
+			if (
+				hasDomain(hole, "object") &&
+				this.standIns.get(hole)?.closure?.env === env
+			)
+				return true
+		}
+		return false
 	}
 
 	// as findDynamic, remembering containers that hold none
@@ -2580,8 +2666,9 @@ export class Interpreter {
 	}
 
 	// whether arktype called it while defining the site's value, or code it
-	// ran did, as the site or a cache entry it reused reached
-	calledIn(site: SiteState, value: unknown, isDirect?: true): boolean {
+	// ran did, as the site or a cache entry it reused reached. `isDirect` asks
+	// for arktype's own calls alone, or, where false, for those of code it ran
+	calledIn(site: SiteState, value: unknown, isDirect?: boolean): boolean {
 		const standIn = hasDomain(value, "object") && this.standIns.get(value)
 		return (
 			!!standIn &&
@@ -2589,12 +2676,14 @@ export class Interpreter {
 				reached =>
 					isCall(reached) &&
 					reached.standIn === standIn &&
-					(reached.isDirect || !isDirect)
+					(isDirect === undefined || reached.isDirect === isDirect)
 			)
 		)
 	}
 
 	private callStandIn(standIn: StandIn, args: unknown[]): unknown {
+		if (this.defaultCtx)
+			return this.testDefault(this.defaultCtx, standIn, args[0])
 		const active = this.activeCall
 		if (active?.isArktype) this.markCalled(standIn, true)
 		else if (active?.isDefining) this.markCalled(standIn, false)
@@ -2650,8 +2739,8 @@ export class Interpreter {
 				fn.async ? "it's async"
 				: fn.generator ? "it's a generator"
 				: statement ?
-					`it ${isLast ? "ends with" : "runs"} \`${module.snippetOf(statement)}\` (${module.positionOf(statement)}), where a static helper declares only consts before one \`return\``
-				:	"its body is not one expression, or consts and one `return`"
+					`it ${isLast ? "ends with" : "runs"} \`${module.snippetOf(statement)}\` (${module.positionOf(statement)}), where a static helper holds only consts, \`if\`s that return and a final \`return\``
+				:	"its body is not one expression, or consts, `if`s that return and a final `return`"
 			}`
 		)
 	}
@@ -3066,17 +3155,30 @@ const addHoldersOf = (into: Trace, from: Trace) => {
 	for (const holder of from.holders) addHolder(into, ...holder)
 }
 
+// e.g. `exports.a` of a CommonJS module, read as its name is
+export const holderLabelOf = (
+	module: SourceModule,
+	holder: Binding | string
+): string =>
+	holder === "default" ? `the default export of ${module.path}`
+	: typeof holder === "string" ? `\`${holder}\``
+	: `\`${holder.name}\``
+
+const exportLabelOf = (
+	target: Extract<ImportTarget, { kind: "binding" | "expression" }>
+): string => holderLabelOf(...holderOf(target))
+
 const holderOf = (
 	target: Extract<ImportTarget, { kind: "binding" | "expression" }>
-): [module: SourceModule, holder: Binding | "default"] => [
+): [module: SourceModule, holder: Binding | string] => [
 	target.module,
-	target.kind === "binding" ? target.binding : "default"
+	target.kind === "binding" ? target.binding : (target.name ?? "default")
 ]
 
 const addHolder = (
 	trace: Trace,
 	module: SourceModule,
-	holder: Binding | "default",
+	holder: Binding | string,
 	depth: number
 ) => {
 	const added = trace.holders.find(([m, h]) => m === module && h === holder)

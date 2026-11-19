@@ -268,8 +268,7 @@ c must be removed`)
 				propString: "b",
 				expected: "removed",
 				actual: "1",
-				problem: "must be removed",
-				message: "b must be removed"
+				message: "must be removed"
 			})
 		})
 
@@ -290,9 +289,9 @@ c must be removed`)
 		it("configured text reaches a rejected key", () => {
 			const Configured = scope(
 				{},
-				{ undeclared: { problem: "isn't allowed" } }
+				{ undeclared: { message: "Unknown key" } }
 			).type({ "+": "reject", a: "string" })
-			attest(Configured({ a: "ok", b: 1 }).toString()).snap("b isn't allowed")
+			attest(Configured({ a: "ok", b: 1 }).toString()).snap("b: Unknown key")
 		})
 
 		it("structure meta reaches a rejected key", () => {

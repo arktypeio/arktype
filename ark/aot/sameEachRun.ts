@@ -5,7 +5,7 @@ import { globalsByName } from "./builtins.ts"
 import { contains, heldAs, isFunctionNode, type ModuleGraph } from "./graph.ts"
 import { initOf, type Interpreter } from "./interpreter.ts"
 import type { SourceModule } from "./module.ts"
-import { isNode } from "./proofs.ts"
+import { isNode, rejectingPartsOf } from "./proofs.ts"
 import {
 	operatorOf,
 	typeKeys,
@@ -23,13 +23,17 @@ const fixedGlobals = new Set(["undefined", "NaN", "Infinity"])
 type Located = [binding: Binding, module: SourceModule]
 
 // what a function runs if it's written in another module, as JavaScript: undefined
-// if it reads anything but what it declares and globals a module a build writes
-// can't declare, or what it's bound to, like `this`, differs there
+// if it reads anything but what it declares, globals a module a build writes
+// can't declare and what `aliasOf` names, which that module is to import under
+// the name it returns, or what it's bound to, like `this`, differs there. Of
+// `part`, an expression within it, only that part's text
 export const closedTextOf = (
 	fn: Node & { start: number; end: number },
-	module: SourceModule
+	module: SourceModule,
+	aliasOf?: (binding: Binding) => string | undefined,
+	part: Node & { start: number; end: number } = fn
 ): string | undefined => {
-	const erased: [start: number, end: number][] = []
+	const erased: [start: number, end: number, written?: string][] = []
 	const isClosed = (node: Node): boolean => {
 		switch (node.type) {
 			case "ThisExpression":
@@ -54,13 +58,23 @@ export const closedTextOf = (
 			case "Identifier": {
 				if ((node as { optional?: boolean }).optional) return false
 				const reference = module.scopes.byId.get(node)
-				if (
-					reference &&
-					(reference.binding ?
-						!contains(fn, reference.binding.id)
-					:	!(node.name in globalsByName))
-				)
-					return false
+				if (!reference) break
+				const { binding } = reference
+				if (!binding) {
+					if (!(node.name in globalsByName)) return false
+				} else if (!contains(fn, binding.id)) {
+					const alias = aliasOf?.(binding)
+					if (alias === undefined) return false
+					const { parent } = node
+					// `{ name }` reads it too, under the key it's written as
+					erased.push([
+						node.start,
+						node.end,
+						parent?.type === "Property" && parent.shorthand ?
+							`${node.name}: ${alias}`
+						:	alias
+					])
+				}
 			}
 		}
 		if (node.type.startsWith("TS") || node.type.startsWith("JSX")) return false
@@ -78,14 +92,72 @@ export const closedTextOf = (
 		}
 		return true
 	}
-	if (!isClosed(fn)) return
+	if (!isClosed(part)) return
 	let text = ""
-	let at = fn.start
-	for (const [start, end] of erased.sort(([l], [r]) => l - r)) {
-		text += module.source.slice(at, start)
+	let at = part.start
+	for (const [start, end, written = ""] of erased.sort(([l], [r]) => l - r)) {
+		// e.g. a shorthand's key and value, which are one span
+		if (start < at) continue
+		text += module.source.slice(at, start) + written
 		at = end
 	}
-	return text + module.source.slice(at, fn.end)
+	return text + module.source.slice(at, part.end)
+}
+
+/** what a narrow of the commonest shape tests and says */
+export interface Rejecting {
+	// the parameter it tests, by name
+	data: string
+	test: Node & { start: number; end: number }
+	// whether data fails where the test holds, rather than where it doesn't
+	fails: boolean
+	// where data passes a call of a function with that parameter alone, the function
+	callee: (Node & { start: number; end: number }) | undefined
+	// the message's own text, a string
+	message: string
+}
+
+// what `rejectingPartsOf` reads of a narrow, as a call can hold it in place
+// of the function
+export const rejectingOf = (
+	fn: Node,
+	module: SourceModule
+): Rejecting | undefined => {
+	const parts = rejectingPartsOf(fn)
+	if (!parts) return
+	const { data, test, message, fails } = parts
+	// a call holds the test as an arrow of its data and the message as its
+	// text, so nothing else the function declares or computes may be read
+	if (
+		fn.type !== "ArrowFunctionExpression" ||
+		fn.params.length !== 2 ||
+		message.type !== "Literal" ||
+		typeof message.value !== "string"
+	)
+		return
+	// nothing binds a name between the parameter and what its body tests
+	const isData = (node: Node) =>
+		node.type === "Identifier" && node.name === data.name
+	const tested = unwrapExpression(test)
+	const callee =
+		(
+			!fails &&
+			tested.type === "CallExpression" &&
+			!tested.optional &&
+			tested.callee.type === "Identifier" &&
+			!isData(tested.callee) &&
+			tested.arguments.length === 1 &&
+			isData(tested.arguments[0])
+		) ?
+			tested.callee
+		:	undefined
+	return {
+		data: data.name,
+		test,
+		fails,
+		callee,
+		message: module.source.slice(message.start, message.end)
+	}
 }
 
 // Each run of a module's text creates its functions anew: a chunk imported

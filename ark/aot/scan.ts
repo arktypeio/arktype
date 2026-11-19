@@ -243,6 +243,10 @@ export interface BuiltModule {
 export interface BuiltImport {
 	// undefined where nothing names it, like what a bundler's plugin adds
 	specifier: string | undefined
+	// what its importer's text names it by, where the bundler built the import
+	// under another request, as Next.js does one of a package whose entry it
+	// builds for the names imported from it
+	named?: string | undefined
 	isDynamic: boolean
 	target: BuiltModule
 }
@@ -266,10 +270,12 @@ export const programAsBuilt = (
 	// what each module's text imports, which a loader after the plugin may add to
 	const namedBy = new Map<string, Set<string>>()
 	const reached = new Set(entries)
+	const builtApart = new Set<string>()
 	for (const module of reached) {
 		if (isRead(module)) {
 			const { id, source, transformed, mappings } = module
 			if (source === undefined) return `${pathOf(id)} can't be read`
+			if (id in modules) builtApart.add(id)
 			if (
 				source === null ||
 				(id in modules &&
@@ -294,7 +300,12 @@ export const programAsBuilt = (
 				targets[id] = {}
 			}
 		}
-		for (const { specifier, isDynamic, target } of module.imports) {
+		for (const {
+			specifier,
+			named = specifier,
+			isDynamic,
+			target
+		} of module.imports) {
 			if (specifier !== undefined && runtimeSpecifier.test(specifier)) {
 				// a generated module's reads are as unknown as a dependency's
 				const imported = (arkImports[module.id ?? ""] ??= [])
@@ -309,13 +320,17 @@ export const programAsBuilt = (
 				isImportedByDependency = true
 				continue
 			}
-			if (specifier === undefined || !namedBy.get(module.id)!.has(specifier))
+			if (named === undefined || !namedBy.get(module.id)!.has(named))
 				exposed.add(target.id)
 			if (specifier === undefined) continue
 			const resolved = targets[module.id]
-			if (specifier in resolved && resolved[specifier] !== target.id)
-				return `${pathOf(module.id)} imports "${specifier}" as both ${pathOf(resolved[specifier])} and ${pathOf(target.id)}`
-			resolved[specifier] = target.id
+			// by the request it was built under too, which the module as the
+			// loaders after the plugin built it names
+			for (const name of new Set([specifier, named!])) {
+				if (name in resolved && resolved[name] !== target.id)
+					return `${pathOf(module.id)} imports "${name}" as both ${pathOf(resolved[name])} and ${pathOf(target.id)}`
+				resolved[name] = target.id
+			}
 		}
 	}
 	const read = [...new Set(entries.filter(isRead).map(({ id }) => id))]
@@ -331,11 +346,16 @@ export const programAsBuilt = (
 		),
 		dynamicImports: [...dynamicImports].sort(),
 		exposed: [...exposed].sort(),
+		// the bundler built a module for each file a computed specifier can
+		// name, which a module of its own with no file imports
+		exposesLoaded: true,
 		isOneChunk:
 			entries.length === 1 &&
 			read.length === 1 &&
 			!dynamicImports.size &&
-			!isImportedByDependency
+			!isImportedByDependency,
+		runsOnce: true,
+		builtApart: [...builtApart].sort()
 	}
 }
 
@@ -706,6 +726,14 @@ export const writeKeptMembersMessage = (
 export const writeLostMessage = (lost: readonly string[]): string =>
 	`precompile: baking each introspection member into ${lost.length === 1 ? "the validator" : `${lost.length} validators, like the one`} at ${lost[0]}. Set expression, description, json, toJSON, toJsonSchema and ~standard.jsonSchema in members, each false where no code reads it, to build without this warning.`
 
+// times is how many times arktype's size the build's validators are
+export const writeLargerMessage = (times: number): string =>
+	`precompile: this build's validators, each compiled to check fastest, are about ${times.toFixed(1)} times the size of arktype, which they replace, so the bundle is larger than one creating its Types as it runs. Set preset: "smallest" to write them as calls to checkers they share, or optimize: "speed" to build without this warning.`
+
+// where the build wrote them for size itself, as a browser loads the bundle
+export const writeChoseSizeMessage = (times: number): string =>
+	`precompile: compiled to check fastest, this bundle's validators would be about ${times.toFixed(1)} times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.`
+
 // a folded helper's call runs only where the plugin transforms it
 export const unfoldedCallProblemOf = (
 	foldedHelpersById: ReadonlyMap<string, string[]>,
@@ -774,7 +802,19 @@ export interface ScannedProgram {
 	// each module with no file, like a framework's virtual module, which its
 	// runtime may import unseen
 	exposed: string[]
+	// whether each module an import() or require() of a computed specifier
+	// may load is among `exposed`, as where a bundler built the program and
+	// with it a module for each file such a specifier can name
+	exposesLoaded?: boolean
 	isOneChunk?: boolean
+	// whether the bundle's runtime keeps each module it ran, as webpack's and
+	// Rspack's registries do, so a module the bundle holds once runs once for
+	// each runtime that loads it, and what that run declares is one value to
+	// every module of the same runtime
+	runsOnce?: boolean
+	// each file such a bundle holds as more than one module, like one built in
+	// two layers or under two requests, whose text a runtime runs for each
+	builtApart?: string[]
 }
 
 export interface ScannedModule {
@@ -804,6 +844,12 @@ export interface ScannedUsage {
 	unpruned?: string | undefined
 	// the warning where it baked every introspection member, having lost track of a read
 	lost?: string | undefined
+	// about how many times the size of arktype, which they replace, its
+	// validators are, where that's more than once and nothing set what they're
+	// compiled for
+	timesArktype?: number | undefined
+	// what a host warns of that: that they're larger, or that it wrote them for size
+	larger?: string | undefined
 	// what each validator bakes of the introspection members members leaves to
 	// it, as code reading it reads them
 	baked?: string[]

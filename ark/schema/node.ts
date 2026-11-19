@@ -19,6 +19,7 @@ import {
 	stringifyPath,
 	throwError,
 	throwInternalError,
+	throwParseError,
 	unset,
 	type Dict,
 	type Entry,
@@ -109,7 +110,8 @@ import {
 	isIoFinal,
 	isNode,
 	isResolutionFinal,
-	printSelfAsThis
+	printSelfAsThis,
+	removedProblemMessage
 } from "./shared/utils.ts"
 import type { Sequence } from "./structure/sequence.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
@@ -509,8 +511,16 @@ export abstract class BaseNode<
 
 		this.allows =
 			this.allowsCtx ?
+				// in a traversal arktype's own Apply reports to, as a callback
+				// may pipe one into it
 				data =>
-					allowsUntracked(this, data) ?? allowsInContext(this, data, this.$.cfg)
+					allowsUntracked(this, data) ??
+					allowsInContext(
+						this,
+						data,
+						this.$.cfg,
+						rootApplyRuntimeOf(this.$.cfg).Traversal
+					)
 			:	data => (this.tAllows as any)(data)
 	}
 
@@ -851,7 +861,8 @@ export abstract class BaseNode<
 				if (this.hasAlias) {
 					return (data, onFail = this.onFail) => {
 						const untracked = allowsAcyclic(this, data)
-						const allowed = untracked ?? allowsInContext(this, data, this.$.cfg)
+						const allowed =
+							untracked ?? allowsInContext(this, data, this.$.cfg, Traversal)
 						if (!allowed) return this.rejectRoot(data, onFail, runtime)
 						const ctx = new Traversal(data, this.$.cfg)
 						ctx.isTree = untracked === undefined
@@ -955,7 +966,9 @@ export abstract class BaseNode<
 	/** what compiled code reports when data fails it, holding its `errorCtx` as `v` */
 	get failSite(): FailureSite | UnionSite {
 		return (this.c.failSite ??= {
-			v: (this as never as { errorCtx: SiteContext }).errorCtx
+			v: (this as never as { errorCtx: SiteContext }).errorCtx,
+			vb: undefined,
+			mb: undefined
 		})
 	}
 
@@ -1443,6 +1456,10 @@ export abstract class BaseNode<
 		selector: NodeSelector = "references"
 	): this {
 		const normalized = NodeSelector.normalize(selector)
+
+		// 2.x's slot, which a cast or JavaScript still passes
+		if (typeof meta === "object" && "problem" in meta)
+			throwParseError(removedProblemMessage)
 
 		// a JSON Schema describes the node it's configured on, not its references
 		if (

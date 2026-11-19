@@ -13,8 +13,8 @@ cases({
 			T({ a: "x" }).toLocaleString({
 				...en,
 				tag: "test",
-				message: ctx => `${ctx.propString}: ${ctx.problem}`
+				line: ctx => `${ctx.propString} → ${ctx.message}`
 			}),
-			"a: must be a number"
+			"a → must be a number"
 		)
 })

@@ -282,6 +282,8 @@ Both act on string keys: `"reject"` checks only an object's string keys, and `"d
 
 `"delete"`'s output lists the declared keys in the order the definition declares them, as Zod does, then any keys matching an index signature in the input's order.
 
+Deleting keys makes an object a [morph](/docs/expressions#pipe), so a union holding one throws a `ParseError` if another branch accepts the same data, as an array, a `Date` or a second object with no literal key to tell them apart does. [Unions of objects](/docs/migrating#unions-of-objects) shows how to write such a union.
+
 `.onDeepUndeclaredKey()` applies the same behavior to every nested object:
 
 ```ts
@@ -358,7 +360,41 @@ const types = type.module({
 
 A key in both objects takes its value from the merged object. An [intersection](/docs/expressions#intersection) would instead intersect the two values, and `false & true` would throw a `ParseError`. When the keys don't overlap, the two give the same type, but merging is less work to compute, both when the type is created and in your editor, so prefer it for combining properties.
 
-Like the other [structural transformations](/docs/objects#properties-structural), `merge` builds a new object from the properties, so a root narrow or metadata is not carried over.
+<Callout type="warn" title="A spread doesn't carry a narrow">
+
+Like the other [structural transformations](/docs/objects#properties-structural), `merge` and `"..."` build a new object from the properties, so a narrow on the object itself is dropped, along with its metadata. This is the case that most often catches people out: a check across two fields written on a base object, then spread into a larger one.
+
+```ts
+const Dates = type({
+	issued: "string.date",
+	due: "string.date"
+}).narrow(
+	(dates, ctx) =>
+		dates.due >= dates.issued || ctx.mustBe("due on or after issued")
+)
+
+// the properties are spread, the narrow is not
+const Invoice = type({ "...": Dates, total: "number" })
+
+// passes, though due is before issued
+Invoice({ issued: "2026-02-01", due: "2026-01-01", total: 100 })
+```
+
+Spread the properties, then narrow the result:
+
+```ts
+const Dates = type({ issued: "string.date", due: "string.date" })
+
+const Invoice = type({ "...": Dates, total: "number" }).narrow(
+	(invoice, ctx) =>
+		invoice.due >= invoice.issued || ctx.mustBe("due on or after issued")
+)
+
+// ArkErrors: must be due on or after issued
+Invoice({ issued: "2026-02-01", due: "2026-01-01", total: 100 })
+```
+
+</Callout>
 
 <AnchorAliases merge-n-ary />
 #### n-ary
@@ -552,7 +588,7 @@ const PartialUser = type({
 	.narrow(user => user.email?.includes("@") ?? true)
 ```
 
-A root [morph](/docs/expressions#pipe) can't be reduced to properties, so transforming a type like `type({ name: "string" }).pipe(user => user)` throws a `ParseError` instead of dropping it.
+A root [morph](/docs/expressions#pipe) can't be reduced to properties, so transforming a type like `type({ name: "string" }).pipe(user => user)` throws a `ParseError` instead of dropping it: `partial operand must be an object (was (In: { name: string }) => Out<...>)`. An object that [deletes undeclared keys](#properties-undeclared) is a morph too, so once it has a narrow, these methods throw. Call them first, then add the narrow, as above.
 
 </Callout>
 

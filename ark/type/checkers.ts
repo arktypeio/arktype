@@ -22,12 +22,12 @@ import {
 	enterApplied,
 	exitApplied,
 	failsAt,
+	failsAtKey,
 	failsBranches,
 	failsInBranches,
 	pipeApplied,
 	pipeChecked,
 	pipeTransformed,
-	requiredSiteOf,
 	runtimeConfig,
 	runtimeScope,
 	silentCtx,
@@ -59,6 +59,10 @@ export interface Checker {
 	a?: ((data: unknown, ctx: any, k?: PropertyKey) => boolean) | undefined
 	/** where it holds an alias, how a key applies it */
 	e?: ApplyAt
+	/** the message a key it's the value of says where the key is missing, if its own */
+	x?: string | undefined
+	/** where x is configured for required's code, what notes that on the missing key's issue */
+	text?: SiteContext["text"]
 }
 
 type DefaultWrite = (data: any, ctx?: any) => unknown
@@ -160,7 +164,7 @@ export const narrowedWithCtx = ((
 	description?: string
 ): Checker => {
 	const checker: Checker = (data, ctx: any) =>
-		ctx?._at && ctx._at !== stops ?
+		ctx?._e && ctx._e !== stops ?
 			reportedBy(read, description, data, ctx)
 		:	!!read()(data, silentCtx)
 	checker.description = description
@@ -170,12 +174,12 @@ export const narrowedWithCtx = ((
 const stops = () => true
 
 const allowingCtx = (data: any, ctx: any, checker: Checker) => {
-	if (ctx._at === stops) return checker(data, ctx)
-	const { chkOnly, _at, failsUnion } = ctx
+	if (ctx._e === stops) return checker(data, ctx)
+	const { chkOnly, _e, failsUnion } = ctx
 	ctx.chkOnly = true
-	ctx._at = ctx.failsUnion = stops
+	ctx._e = ctx.failsUnion = stops
 	const allowed = checker(data, ctx)
-	ctx._at = _at
+	ctx._e = _e
 	ctx.failsUnion = failsUnion
 	ctx.chkOnly = chkOnly
 	return allowed
@@ -220,7 +224,7 @@ interface AliasedNode {
 export const compiled = ((node: AliasedNode, transforms?: 1): Checker => {
 	const checker: Checker = (data, ctx: any) =>
 		!ctx ? node.tAllows(data, 0)
-		: ctx._at === stops ? node.tAllows(data, ctx)
+		: ctx._e === stops ? node.tAllows(data, ctx)
 		: node.tApply(data, ctx)
 	if (transforms) {
 		checker.t = (data, ctx) => node.tTransform!(data, ctx)
@@ -229,8 +233,9 @@ export const compiled = ((node: AliasedNode, transforms?: 1): Checker => {
 	return checker
 }) satisfies Fn
 
-const wrapping = (checker: Checker): Checker =>
-	Object.assign((data: unknown, ctx?: any) => checker(data, ctx), checker)
+// a copy of a checker, holding what it says also, that leaves it as it was
+const wrapping = (checker: Checker, also?: Partial<Checker>): Checker =>
+	Object.assign((data: unknown, ctx?: any) => checker(data, ctx), checker, also)
 
 // tracked as what holds its id, which a unit's shape fills in once it's created
 const resolvedBy = (node: { id: string }, t: Transform): Transform => {
@@ -254,7 +259,7 @@ export const aliasedValue = ((
 	wrapped.e = (ctx, _, value, k) => {
 		ctx.path.push(k)
 		const passes =
-			ctx._at === stops ?
+			ctx._e === stops ?
 				checker(value, ctx)
 			:	(node.tfs && transformIfAllowed(ctx, node as never, value)) ||
 				(enters ?
@@ -271,7 +276,7 @@ export const aliasedValue = ((
 // a case of a union entered as the branch it was pruned from, holding an alias
 export const aliasedMember = ((checker: Checker, id: string): Checker => {
 	const entered: Checker = (data, ctx: any) =>
-		ctx?._at && ctx._at !== stops ?
+		ctx?._e && ctx._e !== stops ?
 			(enterApplied(ctx, id, data) ?? exitApplied(ctx, checker(data, ctx)))
 		:	checker(data, ctx)
 	entered.description = checker.description
@@ -295,8 +300,8 @@ export const narrowedInCtx = ((
 ): Checker => {
 	const checker: Checker = (data, ctx: any) =>
 		// one taking only data is passed no ctx where arktype only asks
-		!ctx?._at ? !!read()(data, undefined)
-		: ctx._at === stops ? !!read()(data, ctx)
+		!ctx?._e ? !!read()(data, undefined)
+		: ctx._e === stops ? !!read()(data, ctx)
 		: reportedBy(read, description, data, ctx)
 	checker.description = description
 	return checker
@@ -304,25 +309,37 @@ export const narrowedInCtx = ((
 
 const issuesIn = (ctx: any): number => ctx.errN ?? ctx.count
 
-// a structure's issues stop its predicates, and one that transforms is only
-// checked before them, as what they're passed is data as it came
+// a structure's issues stop its predicates. One that transforms is
+// transformingNarrowedAfter's, so a program narrowing none ships only this
 export const narrowedAfter = ((
 	structure: Checker,
 	narrowed: Checker
 ): Checker => {
 	const checker: Checker = (data, ctx: any) => {
-		if (!ctx?._at || ctx._at === stops)
+		if (!ctx?._e || ctx._e === stops)
 			return structure(data, ctx) && narrowed(data, ctx)
-		if (structure.t) {
-			if (!(structure.a ? structure.a(data, ctx) : structure(data)))
-				return structure(data, ctx)
-		} else {
-			const issues = issuesIn(ctx)
-			if (!structure(data, ctx)) return false
-			if (issuesIn(ctx) > issues) return true
-		}
-		return narrowed(data, ctx)
+		const issues = issuesIn(ctx)
+		return (
+			structure(data, ctx) && (issuesIn(ctx) > issues || narrowed(data, ctx))
+		)
 	}
+	checker.description = structure.description
+	return checker
+}) satisfies Fn
+
+// a structure that transforms is only checked before its predicates, as what
+// they're passed is data as it came
+export const transformingNarrowedAfter = ((
+	structure: Checker,
+	narrowed: Checker
+): Checker => {
+	const checker: Checker = (data, ctx: any) =>
+		!ctx?._e || ctx._e === stops ? structure(data, ctx) && narrowed(data, ctx)
+		: (
+			structure.a ? structure.a(data, ctx) : structure(data)
+		) ?
+			narrowed(data, ctx)
+		:	structure(data, ctx)
 	checker.t = structure.t
 	checker.description = structure.description
 	return checker
@@ -332,7 +349,7 @@ export const narrowedAfter = ((
 export const narrowedByEach = ((checkers: readonly Checker[]): Checker => {
 	const checker: Checker = (data, ctx: any) => {
 		// an issue stops what Apply runs, where Allows stops only at false
-		const applies = ctx?._at && ctx._at !== stops
+		const applies = ctx?._e && ctx._e !== stops
 		const issues = applies && issuesIn(ctx)
 		for (const narrowed of checkers) {
 			if (!narrowed(data, ctx)) return false
@@ -352,6 +369,68 @@ export const narrowed = ((
 	const checker = ((data, ctx) =>
 		!!narrow(data) || !failsAt(ctx as never, checker, data)) as Check
 	checker.code = "predicate"
+	checker.description = description
+	return checker
+}) satisfies Fn
+
+/**
+ * a callback a build wrote where a unit reads it, as nothing names it: one a
+ * declaration held itself would be named for its variable, which what
+ * describes it would then read, and no minifier writes a function reading
+ * `arguments` into its call
+ */
+export function unnamed(): unknown {
+	// eslint-disable-next-line prefer-rest-params
+	return arguments[0]
+}
+
+/**
+ * a narrow a build read as `(data, ctx) => passes(data) || ctx.reject({ message })`,
+ * which is what it returns: the callback of nearly every field saying why it failed
+ */
+export const rejecting = ((passes: (data: any) => unknown, message: string) =>
+	(data: unknown, ctx: any) =>
+		passes(data) || ctx.reject({ message })) satisfies Fn
+
+// what `ctx.reject({ message })` raises: a predicate's issue expecting what an
+// unnamed one does, saying the message as its own. No code's configured text
+// writes a predicate's raised issue, so it's this under any configuration
+const rejectedSiteOf = (message: string): SiteContext => ({
+	code: "predicate",
+	description: "valid according to an anonymous predicate",
+	x: message
+})
+
+/**
+ * the checker of that narrow, written where a unit reads it as its test and
+ * its message: data failing the test fails at the site its ctx would reject
+ * at, so it reads no ctx, and its root no Traversal
+ */
+export const rejectsWith = ((
+	passes: (data: any) => unknown,
+	message: string,
+	description?: string
+): Checker => {
+	const site = rejectedSiteOf(message)
+	const checker: Checker = (data, ctx) =>
+		!!passes(data) || !failsAt(ctx as never, site, data)
+	checker.description = description
+	return checker
+}) satisfies Fn
+
+/**
+ * the checker of one a build proved of that shape but holds as a function:
+ * the only ctx it's passed is one whose `reject` fails at that site
+ */
+export const narrowedRejecting = ((
+	read: () => (data: any, ctx: any) => unknown,
+	description?: string
+): Checker => {
+	const checker: Checker = (data, ctx) =>
+		!!read()(data, {
+			reject: (input: { message: string }) =>
+				!failsAt(ctx as never, rejectedSiteOf(input.message), data)
+		})
 	checker.description = description
 	return checker
 }) satisfies Fn
@@ -494,12 +573,14 @@ export const arrayOf = ((
 const printValue = (value: unknown): string =>
 	typeof value === "string" ? JSON.stringify(value) : `${value}`
 
-// values as arktype lists them, e.g. "a", "b" or "c"
-export const describeValues = (values: readonly unknown[]): string => {
-	const printed = values.map(printValue)
+const listed = (printed: string[]): string => {
 	const last = printed.pop()!
 	return printed.length ? `${printed.join(", ")} or ${last}` : last
 }
+
+// values as arktype lists them, e.g. "a", "b" or "c"
+export const describeValues = (values: readonly unknown[]): string =>
+	listed(values.map(printValue))
 
 export const unit = ((
 	value: unknown,
@@ -537,12 +618,8 @@ export const intersection = ((
 }) satisfies Fn
 
 // written as value where value is passed, even undefined
-export const optional = ((checker: Checker, ...value: [unknown?]): Checker => {
-	const wrapped = wrapping(checker)
-	wrapped.o = 1
-	wrapped.d = value
-	return wrapped
-}) satisfies Fn
+export const optional = ((checker: Checker, ...value: [unknown?]): Checker =>
+	wrapping(checker, { o: 1, d: value })) satisfies Fn
 
 // a default that's a function's, or that its value transforms, read where it's
 // written as it may be declared once this has loaded
@@ -566,11 +643,40 @@ export const replacingUndefined = ((
 	return wrapped
 }) satisfies Fn
 
-// a required key's checker whose description isn't what the key expects where missing
-export const required = ((checker: Checker, description: string): Checker => {
-	const wrapped = wrapping(checker)
-	wrapped.description = description
-	return wrapped
+// a required key's checker whose description isn't what the key expects where
+// missing, which says no message of its own
+export const required = ((checker: Checker, description: string): Checker =>
+	wrapping(checker, { description, x: undefined })) satisfies Fn
+
+// a required key's checker where the missing key says a message of its own,
+// configured for its value's Type, or for the code, where a build passes what
+// notes that on its issue: codedIssue, which only such a program then holds
+export const sayingMissing = ((
+	checker: Checker,
+	message: string,
+	text?: SiteContext["text"],
+	description = checker.description
+): Checker => wrapping(checker, { description, x: message, text })) satisfies Fn
+
+// a checker each of whose sites says the message configured for its Type, as
+// does the key it's the value of where missing. It checks no key's value, so
+// each site it's passed is its own: the checker of a field is the one a field
+// checking the same shares, and only its message is the field's
+export const saying = ((checker: Checker, message: string): Checker => {
+	const said: Checker = (data, ctx: any) => {
+		const at = ctx?._e
+		if (!at || at === stops) return checker(data, ctx)
+		ctx._e = (data: unknown, code: unknown, expected: unknown) =>
+			at.call(ctx, data, code, expected, message)
+		try {
+			return checker(data, ctx)
+		} finally {
+			ctx._e = at
+		}
+	}
+	Object.assign(said, checker)
+	said.x = message
+	return said
 }) satisfies Fn
 
 type Props = Record<string, Checker>
@@ -584,7 +690,7 @@ const failsValue = (
 	k: PropertyKey,
 	value: unknown
 ): boolean | undefined =>
-	(ctx as FailureContext | undefined)?._at ?
+	(ctx as FailureContext | undefined)?._e ?
 		appliesValues && checker.e ? checker.e(ctx, checker, value, k)
 		: appliesValues && checker.t?.e ? checker.t.e(ctx, checker, value, k)
 		: (!checker.t ||
@@ -593,7 +699,7 @@ const failsValue = (
 					// one only checks, as Allows does
 					!(ctx as any).chkOnly && checker.a(value, ctx, k)
 				:	checker(value))) &&
-			(ctx as FailureContext)._in(checker as CompactApply, data, k)
+			(ctx as FailureContext)._k(checker as CompactApply, data, k)
 	:	!checker(value)
 
 // keys checked in declared order; a missing key expects its checker's
@@ -607,13 +713,20 @@ export const props = ((declared: Props): Checker => {
 			const value = data[k]
 			if (
 				value === undefined && !(k in data) ?
+					// entered by the ctx, which fails a key missing from data as
+					// required with what it's passed: what its checker holds for
+					// it, the description it expects, the message it says and
+					// what notes one that's its code's
 					!declared[k].o &&
-					failsAt(
-						ctx as never,
-						requiredSiteOf(declared[k].description),
-						data,
-						k
-					)
+					(!(ctx as FailureContext | undefined)?._e ||
+						(ctx as FailureContext)._k(
+							declared[k] as never,
+							data,
+							k,
+							declared[k].description,
+							declared[k].x,
+							declared[k].text
+						))
 				:	failsValue(ctx, declared[k], data, k, value)
 			)
 				return false
@@ -640,7 +753,7 @@ export const closedProps = ((
 			if (
 				!hasOwn(declared, k) &&
 				hasOwn(data, k) &&
-				failsAt(ctx as never, removed, data, k)
+				failsAtKey(ctx as never, removed, data, k)
 			)
 				return false
 		}
@@ -692,7 +805,7 @@ export const indexed = ((
 				typeof k === "string" &&
 				!hasOwn(declared, k) &&
 				!signatures.some(([key]) => matchesKey(key, k, ctx)) &&
-				failsAt(ctx as never, site, data, k)
+				failsAtKey(ctx as never, site, data, k)
 			)
 				return false
 		}
@@ -909,10 +1022,43 @@ type SitedWrite = (
 	copy: (data: any) => any
 ) => any
 
-// a shape of many keys that may be absent, or whose transform can fail, reading
-// and writing each at a site of its own, as one site reading them all finds each
-// by a generic lookup. Only what looks for issues in data that failed still takes
-// that site
+// what a shape keeping the keys it doesn't declare writes: its own text's
+// result, then where data's copied, each key it declares that the copy lacks
+const sitedKeeps =
+	(declared: Props, checkers: readonly Checker[], write: SitedWrite) =>
+	(data: any, values?: WrittenValues): any => {
+		const out = write(data, checkers, values, copyOf)
+		if (out !== data)
+			for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
+		return out
+	}
+
+// a shape of many keys that may be absent, reading and writing each at a site
+// of its own, as one site reading them all finds each by a generic lookup. Only
+// what looks for issues in data that failed still takes that site. This one
+// keeps the keys it doesn't declare and no transform of its own can fail, so it
+// calls nothing a closed shape or a failing transform does, and a bundle holding
+// only such shapes holds none of that
+export const sitedProps = ((
+	allows: (data: any, checkers: readonly Checker[]) => boolean,
+	declared: Props,
+	write?: SitedWrite | 0,
+	walks: Checker = props(declared)
+): Checker => {
+	const checkers = Object.values(declared)
+	const checker: Checker = (data: any, ctx: any) =>
+		!objectCheck.test(data) ? !failsAt(ctx as never, objectCheck, data)
+		: ctx?._e ? walks(data, ctx)
+		: allows(data, checkers)
+	checker.description = objectCheck.description
+	if (write) {
+		const written = sitedKeeps(declared, checkers, write)
+		checker.t = data => written(data)
+	}
+	return checker
+}) satisfies Fn
+
+// sitedProps' shape where it closes, or a transform of its own can fail
 export const sited = ((
 	allows: (data: any, checkers: readonly Checker[]) => boolean,
 	declared: Props,
@@ -923,34 +1069,28 @@ export const sited = ((
 	removed?: string,
 	withCtx?: 1
 ): Checker => {
-	const checkers = Object.values(declared)
-	const walks = removed ? closedProps(declared, removed) : props(declared)
-	const checker: Checker = (data: any, ctx: any) =>
-		!objectCheck.test(data) ? !failsAt(ctx as never, objectCheck, data)
-		: ctx?._at ? walks(data, ctx)
-		: allows(data, checkers)
-	checker.description = objectCheck.description
+	const checker = sitedProps(
+		allows,
+		declared,
+		0,
+		removed ? closedProps(declared, removed) : undefined
+	)
 	if (!write) return checker
+	const checkers = Object.values(declared)
 	const changing = changingIn(declared)
-	const written = (data: any, values?: WrittenValues) => {
-		// an instance is copied, keeping its prototype
-		if (writes > 2) {
-			return Object.getPrototypeOf(data) === Object.prototype ?
-					write(data, checkers, values, copyOf)
-				:	deletes(
-						declared,
-						data,
-						values ?
-							writtenValues(declared, changing, data, values)
-						:	writtenProps(declared, changing, data)
-					)
-		}
-		const out = write(data, checkers, values, copyOf)
-		// where data's copied, each key it declares that the copy lacks
-		if (out !== data)
-			for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
-		return out
-	}
+	const keeps = sitedKeeps(declared, checkers, write)
+	const written = (data: any, values?: WrittenValues) =>
+		writes < 3 ? keeps(data, values)
+			// an instance is copied, keeping its prototype
+		: Object.getPrototypeOf(data) === Object.prototype ?
+			write(data, checkers, values, copyOf)
+		:	deletes(
+				declared,
+				data,
+				values ?
+					writtenValues(declared, changing, data, values)
+				:	writtenProps(declared, changing, data)
+			)
 	checker.t =
 		writes % 2 ?
 			data => written(data)
@@ -1221,25 +1361,38 @@ export const checkerNode = ((checker: Checker, reportsPred?: true) =>
 		allows: checker
 	})) satisfies Fn
 
-// a node read past its allows, by a cycle or a callback reading its ctx
+// a node read past its allows, by a cycle or a callback reading its ctx. One
+// its own traversals read is declared before them, and filled here
 export const ctxNode = ((
 	flags: object,
 	tAllows: Checker,
 	tApply: Checker,
-	tTransform?: Transform
+	tTransform?: Transform,
+	declared: object = {}
 ) => {
-	const node: any = Object.freeze({
-		...flags,
-		allowsCtx: true,
-		tAllows,
-		tApply,
-		tTransform,
-		allows: (data: unknown) =>
-			allowsUntracked(node, data) ?? allowsInContext(node, data, runtimeConfig),
-		$: runtimeScope
-	})
+	const node: any = Object.freeze(
+		Object.assign(declared, flags, {
+			allowsCtx: true,
+			tAllows,
+			tApply,
+			tTransform,
+			allows: (data: unknown) =>
+				allowsUntracked(node, data) ??
+				allowsInContext(node, data, runtimeConfig),
+			$: runtimeScope
+		})
+	)
 	return node
 }) satisfies Fn
+
+// one of a checker reading its ctx, which only checks: its Allows is its
+// Apply's, and all that tells it apart is whether a predicate of its reports
+export const readingCtxNode = ((tApply: Checker, reportsPred?: true) =>
+	ctxNode(
+		reportsPred ? { checksCtx: true, reportsPred } : { checksCtx: true },
+		allowsReadingCtx(tApply),
+		tApply
+	)) satisfies Fn
 
 // a union's transform where a branch's can fail, holding a morph or an alias
 export const failingBranches = ((
@@ -1261,10 +1414,26 @@ export const units = ((
 ): Checker =>
 	check(code, description, data => values.includes(data))) satisfies Fn
 
+// cases as arktype lists them, e.g. an object or undefined: a domain deciding
+// alone by its name, another by what its checker describes
+export const describeDomains = (
+	cases: Record<string, { description?: string | undefined } | 1>
+): string =>
+	listed(
+		Object.keys(cases).map(domain => {
+			const branch = cases[domain]
+			return (
+				branch !== 1 ? `${branch.description}`
+				: domain === "undefined" || domain === "null" ? domain
+				: `${domain === "object" ? "an" : "a"} ${domain}`
+			)
+		})
+	)
+
 // a union told apart by data's domain, which a branch of 1 alone decides
 export const domains = ((
 	cases: Record<string, Checker | 1>,
-	description: string,
+	description = describeDomains(cases),
 	fails?: FailingBranches
 ): Checker => {
 	const site: FailureSite = { code: "discriminant", description }
@@ -1356,7 +1525,9 @@ export const discriminate = ((
 		return (
 			branch ? branch === 1 || branch(data, ctx)
 			: objectCheck.test(data) ?
-				!failsAt(ctx as never, site, data, isOwn ? undefined : key)
+				!(isOwn ?
+					failsAt(ctx as never, site, data)
+				:	failsAtKey(ctx as never, site, data, key))
 			:	!failsAt(ctx as never, missed, data)
 		)
 	}
@@ -1384,7 +1555,8 @@ export const discriminateOr = ((
 ): Checker => {
 	const byValue = new Map(Object.entries(cases))
 	const site: FailureSite = { code: "discriminant", description }
-	const miss: Checker = (data, ctx) => !failsAt(ctx as never, site, data, key)
+	const miss: Checker = (data, ctx) =>
+		!failsAtKey(ctx as never, site, data, key)
 	const checker: Checker = (data: any, ctx) => {
 		const branch = byValue.get(data?.[key])
 		return branch ?

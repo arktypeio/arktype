@@ -5,7 +5,7 @@ import { dirname, join } from "node:path"
 import { siteUrl, tagline } from "../app/metadata.ts"
 import { getPageTree } from "./content/docs.ts"
 import { parseMdx } from "./content/frontmatter.ts"
-import { claims, draftOf, headlineMethod, standingsAsOf } from "./claims.ts"
+import { standingsAsOf } from "./claims.ts"
 import { mdxToMarkdown } from "./content/markdown.ts"
 import type { NavItem, Page, Section } from "./content/pageTree.ts"
 import { docsDir, publicDir, repoArkDir } from "./content/paths.ts"
@@ -156,7 +156,7 @@ const llmsIndex = (sections: Section[]) =>
 	[
 		"# ArkType",
 		`> ${tagline}.`,
-		`${draftOf(claims.headlineNote)} ${standingsAsOf.text} [${headlineMethod.label}](${headlineMethod.href})`,
+		`The homepage's benchmark board averages other projects' public benchmarks, each in the unit it measures. ${standingsAsOf.text} [The rule it follows, every result behind it and how to rerun them](${siteUrl}/docs/precompile/benchmarks.md)`,
 		"ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. @ark/aot precompiles them when a project builds, so its validators ship without arktype's parser. ArkRegex, Attest, @ark/json-schema and ArkSets are its companion packages.",
 		`Each link below is a docs page as Markdown. [llms-full.txt](${siteUrl}/llms-full.txt) has every ArkType page in one file. Coding agents can also install the ArkType skill, which covers writing, precompiling and migrating to ArkType, with \`npx skills add arktypeio/arktype\`; see [Agents](${siteUrl}/docs/agents.md).`,
 		...sections.flatMap(sectionLists),

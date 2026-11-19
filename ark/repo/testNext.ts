@@ -334,13 +334,14 @@ console.log(
 
 // what Babel, which Next runs on each module after the loader once a config
 // names it, may add: each read and what it renders, a member it bakes only
-// where it sees code read it throwing that it isn't
+// where it sees code read it reading undefined in a production build, and a
+// function with no toJSON printing as none
 const babelReads: [read: string, renders: string][] = [
 	["typeof Age.assert", "function"],
 	['typeof Age["~standard"]', "object"],
 	["(f => f(Age))(age => typeof age.assert)", "function"],
-	["Age.expression", "expression isn't precompiled"],
-	["JSON.stringify(Age)", "toJSON isn't precompiled"]
+	["Age.expression", "undefined"],
+	["JSON.stringify(Age)", "undefined"]
 ]
 const babelFiles: Record<string, string> = {
 	".babelrc": JSON.stringify({
@@ -524,8 +525,10 @@ console.log(
 	"▲ Building it with webpack, Next leaving the pages router's dependencies external..."
 )
 
+// the webpack plugin reads each module Next leaves external, so its message
+// also offers `transpilePackages` for the ones that load arktype
 assertFailsWith(
-	withAllowUnsafe(writeNextExternalMessage("reads-errors")),
+	withAllowUnsafe(writeNextExternalMessage("reads-errors", true)),
 	build(withoutBundling(webpack), "--webpack")
 )
 

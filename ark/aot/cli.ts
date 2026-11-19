@@ -2,7 +2,12 @@
 import { mkdirSync, writeFileSync } from "node:fs"
 import { dirname, relative } from "node:path"
 import { parseArgs } from "node:util"
-import { emitDeclarations, sharedDeclarationFile } from "./declare.ts"
+import {
+	checkers,
+	emitDeclarations,
+	sharedDeclarationFile,
+	type Checker
+} from "./declare.ts"
 import { isBuildError } from "./host.ts"
 import { writeNodeVersionMessage } from "./messages.ts"
 import type { PrecompilePluginOptions } from "./driver.ts"
@@ -47,7 +52,7 @@ const usage = `Usage: arktype-precompile --check [...files or globs] [--fail-und
 	)
 	.join(
 		" "
-	)}\n       arktype-precompile --emit [--declare] [--tsconfig <path>] [...the options --check takes]\n       arktype-precompile --declare [--tsconfig <path>]`
+	)}\n       arktype-precompile --emit [--declare] [--tsconfig <path>] [...the options --check takes]\n       arktype-precompile --declare [--tsconfig <path>] [--checker <${checkers.join("|")}>]`
 
 const fail = (problem: string): never => {
 	console.error(`${problem}\n${usage}`)
@@ -94,8 +99,12 @@ const writeFiles = (files: Record<string, string>) => {
 }
 
 const declare = (): never => {
+	const checker = values.checker as string | undefined
+	if (checker !== undefined && !checkers.includes(checker as Checker))
+		fail(`--checker must be ${checkers.join(", ")} (was ${checker})`)
 	const declarations = emitDeclarations({
-		tsconfig: values.tsconfig as string | undefined
+		tsconfig: values.tsconfig as string | undefined,
+		checker: checker as Checker | undefined
 	})
 	writeFiles(declarations.files)
 	if (declarations.diagnostics) console.error(declarations.diagnostics)
@@ -107,11 +116,11 @@ const declare = (): never => {
 
 if (values.declare && !values.emit) {
 	const others = Object.keys(values).filter(
-		flag => flag !== "declare" && flag !== "tsconfig"
+		flag => flag !== "declare" && flag !== "tsconfig" && flag !== "checker"
 	)
 	if (others.length || positionals.length) {
 		fail(
-			`--declare emits the tsconfig's program and takes no files or option but --tsconfig (was ${[...others.map(flag => `--${flag}`), ...positionals].join(" ")})`
+			`--declare emits the tsconfig's program and takes no files or option but --tsconfig and --checker (was ${[...others.map(flag => `--${flag}`), ...positionals].join(" ")})`
 		)
 	}
 	declare()
@@ -138,7 +147,12 @@ for (const [name, { type, values: taken }] of options) {
 	if (value === undefined) continue
 	if (typeof value === "boolean") opts[name] = value
 	else if (type === "array") opts[name] = value.split(",")
-	else if (type === "object") {
+	else if (type === "number") {
+		// read as its number, which the option's validator then checks
+		const count = value.trim() === "" ? Number.NaN : Number(value)
+		if (Number.isNaN(count)) fail(`--${flag} must be a number (was ${value})`)
+		opts[name] = count
+	} else if (type === "object") {
 		try {
 			opts[name] = JSON.parse(value)
 		} catch {

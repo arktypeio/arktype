@@ -45,17 +45,19 @@ In a standalone build, a definition can be left to arktype by marking it:
 export const Shaped = type(await loadShape())
 ```
 
-The marker applies to the statement or expression after it. arktype then ships beside `arktype/runtime` for the modules with islands alone. The build fails if an island reads a precompiled validator other than to validate with it, or reaches arktype outside an island, e.g. through a helper in another module. It fails too for a marker that leaves nothing to arktype: one nothing follows, one on code that doesn't use arktype, or one inside a definition the build precompiles. `--check` leaves islands out of its rate.
+The marker applies to the statement or expression after it. arktype then ships beside `arktype/runtime` for the modules with islands alone. The build fails if an island reads a precompiled validator other than to validate with it, or reaches arktype outside an island, e.g. through a helper in another module. So an island suits a definition that stands alone. For one that composes other Types or calls a helper, like `type({ user: User, role: process.env.ROLE })`, the island would need each of them marked too, and the report of a definition the build can't precompile says so in place of suggesting the marker: `A // @ark-runtime island can't define this one alone, as what it composes is precompiled.` There, move what varies into a narrow or morph, which runs as data is validated, or build with `runtime: "arktype"`. It fails too for a marker that leaves nothing to arktype: one nothing follows, one on code that doesn't use arktype, or one inside a definition the build precompiles. `--check` leaves islands out of its rate.
 
 `@ark/json-schema`, `@ark/fast-check` and `arksets` read arktype's nodes, so the build requires an island to call them, and resolves their own `arktype` imports to arktype rather than its runtime. Bun and Turbopack replace `arktype` for every importer, so with them, build a program calling one with `runtime: "arktype"`.
 
 ## Declarations
 
-A package whose types others read can declare its Types once, so its consumers don't infer arktype definitions:
+If you ship types derived from arktype, as a published package does, declare them with `--declare` rather than `tsc`, so consumers don't infer arktype definitions. For a [cyclic scope](#cyclic-types), it's the only way to ship them:
 
 ```sh
 npx arktype-precompile --declare
 ```
+
+It only writes declarations, so it needs no bundler, and the validators it declares can stay dynamic.
 
 This writes what `tsc --emitDeclarationOnly` would for the nearest `tsconfig.json`, or the one `--tsconfig` names, except that each Type, Scope and Module is declared through its shape in one `~arktype.d.ts` at the declarations' root, named once and referenced wherever another shape holds it:
 
@@ -73,7 +75,100 @@ export type User = {
 }
 ```
 
-A consumer's type-check then reads each Type's shape rather than inferring its definition. A shape TypeScript can't name where a consumer resolves it, like a class its module doesn't export, is left to TypeScript's own declaration. The CLI exits with 1 where TypeScript reports an error, after writing what it emitted.
+A consumer's type-check then reads each Type's shape rather than inferring its definition.
+
+It declares a Type, Scope or Module this way wherever a module's top-level declaration infers one: a `const`, each name of a destructured one, a default export, a key of an object and what a function returns. A shape TypeScript can't name where a consumer resolves it, like a class its module doesn't export, is left to TypeScript's own declaration, as are a class's members. The CLI exits with 1 where TypeScript reports an error, after writing what it emitted.
+
+A declaration that holds a Type's data rather than the Type references the same names. `tsc` writes the shape out again wherever a library's type holds it, like the `input` of a tRPC procedure:
+
+```ts
+// @noErrors
+// ---cut---
+// router.ts
+export const appRouter = t.router({
+	createUser: t.procedure.input(User).mutation(({ input }) => ({
+		message: `Created ${input.name}`
+	}))
+})
+
+// router.d.ts, from tsc
+export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
+	{
+		/* ... */
+	},
+	import("@trpc/server").TRPCDecorateCreateRouterOptions<{
+		createUser: import("@trpc/server").TRPCMutationProcedure<{
+			input: {
+				name: string
+				age: number
+			}
+			output: {
+				message: string
+			}
+			meta: object
+		}>
+	}>
+>
+
+// router.d.ts, from --declare
+export declare const appRouter: import("@trpc/server").TRPCBuiltRouter<
+	{
+		/* ... */
+	},
+	import("@trpc/server").TRPCDecorateCreateRouterOptions<{
+		createUser: import("@trpc/server").TRPCMutationProcedure<{
+			input: import("./~arktype.js").User
+			output: {
+				message: string
+			}
+			meta: object
+		}>
+	}>
+>
+```
+
+A Type with a [morph](/docs/intro/morphs-and-more) or a default has an input and an output that differ from its shape, so a declaration holding one names it `SignupIn` or `SignupOut` beside `Signup`. A type a library derives from a Type's, as Hono does for what `c.json` returns, isn't the Type's own and stays as TypeScript wrote it, as does a literal union or a global like `Date`.
+
+If your tsconfig sets `declaration`, run `--declare` after `tsc`, which writes the same files. Under `isolatedDeclarations`, TypeScript reports each export without an annotation and declares none of its module, from `--declare` as from `tsc`.
+
+### Cyclic types
+
+TypeScript can't write a type that refers to itself unless the type has a name, and the type arktype infers for a [cyclic](/docs/scopes#cyclic-types) alias has none. So for a module exporting one, `tsc` writes `any` where the type recurs, which is what code importing it gets, or, depending on its version, fails with `TS5088: The inferred type of 'types' references a type with a cyclic structure which cannot be trivially serialized` ([microsoft/TypeScript#64656](https://github.com/microsoft/TypeScript/issues/64656)). `--declare` names each cycle for its alias in the scope:
+
+```ts
+// @noErrors
+// ---cut---
+// types.ts
+export const types = scope({
+	User: { name: "string", "friends?": "User[]" },
+	Group: { members: "User[]", "parent?": "Group" }
+}).export()
+
+// types.d.ts
+export declare const types: import("arktype").Module<
+	import("./~arktype.js").types
+>
+
+// ~arktype.d.ts
+export type types = {
+	User: User
+	Group: Group
+}
+export type User = {
+	name: string
+	friends?: User[] | undefined
+}
+export type Group = {
+	members: User[]
+	parent?: Group | undefined
+}
+```
+
+A name another shape has is numbered, like `User$2` for a second scope's `User`, and a Type that recurs through [`this`](/docs/expressions#this) is named for its const. Code that reads a cyclic Type's data is declared with the same names, as `(data: unknown) => types.User.assert(data)` is with `User`.
+
+Where `tsc` reports TS5088, turn `declaration` off in the tsconfig it builds your JavaScript with, since `--declare` writes the declarations.
+
+A cycle `--declare` leaves to TypeScript is still declared with `any`. The CLI [warns of each](/docs/precompile/troubleshooting) without failing, as in `src/api.ts: warning: Api is declared with any where its type refers to itself`.
 
 The bundler plugin emits the same files with a Rollup, Rolldown, Vite, webpack, Rspack or Rsbuild build that neither watches nor serves:
 
@@ -85,11 +180,26 @@ precompile.vite({ declare: true })
 
 esbuild, Bun, Farm and the Node and Turbopack drivers can't tell whether a build watches, so `declare: true` throws there; run `arktype-precompile --declare` after the build instead.
 
-Declarations read the compiler API of TypeScript 5.5 to 6 from the optional `typescript` peer. A TypeScript 7 project installs TypeScript 6 beside it:
+Declarations read your program with the TypeScript it's built with, from the optional `typescript` peer: the compiler API of TypeScript 5.5 to 6, or for TypeScript 7.1 or later, its native API, which `tsgo` serves, or [tsrs](https://www.npmjs.com/package/tsrs) where its binary is installed. `checker` (`--checker`) chooses one of `"tsjs"`, `"tsgo"` and `"tsrs"`:
+
+```sh
+npx arktype-precompile --declare --checker tsgo
+```
+
+TypeScript 7 orders an object's keys and a union's members as it declares them itself, so the shapes it declares can list them in another order than 6's. `"tsjs"` in a TypeScript 7 project reads TypeScript 6 installed beside it:
 
 ```sh
 npm i -D typescript-6@npm:typescript@6
 ```
+
+## Equal definitions
+
+arktype returns one Type for a scope's equal definitions written alike, and for spellings it normalizes alike. [Other spellings](/docs/upgrading#types-are-built-when-theyre-first-read) of one Type can be two equal Types. A precompiled program compares the same, including any function a Type holds, except:
+
+- A Type the build leaves to arktype, as a [runtime island](/docs/precompile/advanced#runtime-islands), and its precompiled equal are two values.
+- A build that reads each module alone, as Node and `arktype-precompile --emit` do, and any build that doesn't [prune](/docs/precompile/options#prune), gives two values for a Type holding a cycle and for one in a scope a function creates. Reading the whole program, as a production build on Vite, Rollup, Rolldown, esbuild, webpack or Rspack does, or `next build` with Turbopack, compares them as arktype does.
+- A scope a function creates is created once, however often the function is called, so each call's Types are one value where arktype creates them anew.
+- A chunk imported again at runtime under another URL creates its functions anew, so arktype gives each run its own Type for a narrow the chunk defines. A validator holding a function the build proves can't differ between runs may be one value for both. A webpack or Rspack runtime keeps each module it ran and runs none again, so a build on either asks for no such proof of a function a module declares as it runs, except in a file the bundle holds as two modules, like one built in two layers. It assumes a module that ran is never run again: with `output.strictModuleErrorHandling`, a module required again after its run threw runs twice, and a validator its first run created then reads the functions of the second.
 
 ## Optimizations
 
@@ -97,7 +207,7 @@ What a build writes, and the [options](/docs/precompile/options) that change it.
 
 ### Valid and invalid data
 
-The default build writes two functions for each Type: a check returning whether data is valid, and a pass finding its issues, which a validator runs only for data the check rejects. Valid data costs only the check. For most Types without a narrow or morph, the pass runs once the errors' `issues` or `summary` is [first read](/docs/errors#arkerrors), so invalid data costs little more than its check until then. A build for size finds them as it validates.
+The default build writes two functions for each Type: a check returning whether data is valid, and a pass finding its issues, which a validator runs only for data the check rejects. Valid data costs only the check. For most Types without a narrow or morph, the pass runs once the errors' `issues` or `summary` is [first read](/docs/errors#arkerrors), so invalid data costs little more than its check until then. A build that writes its errors for size finds them as it validates.
 
 | Option                                                                           | Saves                                                                   | Costs                                                   |
 | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------- |
@@ -112,7 +222,7 @@ The default build writes two functions for each Type: a check returning whether 
 
 Each Type's creation is annotated `/* @__PURE__ */`, so your bundler drops a Type nothing reads, without `sideEffects: false` in your `package.json`, unless creating it could throw.
 
-A [production bundle](/docs/precompile/options#prune) that reads every module it holds leaves out the members no read needs, and the parts of the error runtime no validator in it writes: formatting an array index in a path, writing text configured for a code and, where no [runtime island](#runtime-islands) runs, the message a TraversalError writes for errors arktype returns. Written as one chunk, it also declares the units its validators share in one function.
+A [production bundle](/docs/precompile/options#prune) that reads every module it holds leaves out the members no read needs, and the parts of the error runtime no validator in it writes: formatting an array index in a path, writing text configured for a code and, where no [runtime island](#runtime-islands) runs, the message a TraversalError writes for errors arktype returns. Where no module names `TraversalError`, it leaves out the class too: `assert` throws an `Error` with the same `name`, `message` and `arkErrors`, which is all a program that can't test `instanceof TraversalError` reads of one. Written as one chunk, it also declares the units its validators share in one function.
 
 ### Large modules on Turbopack
 

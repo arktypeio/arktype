@@ -34,6 +34,10 @@ export interface LinkOptions {
 	isOneChunk?: boolean
 	// its units are checkers, so what they call may be shared
 	sharesChecks?: boolean
+	// its validators are created from checkers, by functions much alike
+	sharesCreators?: boolean
+	// its chunks are many, so the units most of its modules read are one module
+	sharesUnits?: boolean
 }
 
 interface LinkPass {
@@ -51,10 +55,13 @@ export const linkBundle = (
 	{
 		exposesAllows = false,
 		isOneChunk = false,
-		sharesChecks = false
+		sharesChecks = false,
+		sharesCreators = false,
+		sharesUnits = false
 	}: LinkOptions = {}
 ): LinkedBundle | undefined => {
-	let codes = sharesChecks ? withSharedChecks(modules) : modules
+	const created = sharesCreators ? withOneCreator(modules) : modules
+	let codes = sharesChecks ? withSharedChecks(created) : created
 	const siteCodes = Object.fromEntries(
 		Object.entries(sites).map(([id, site]) => [id, site.code])
 	)
@@ -73,8 +80,28 @@ export const linkBundle = (
 	})
 	codes = linker.codes()
 	const one = isOneChunk ? oneModuleOf(codes, linker.siteTexts()) : undefined
-	const renamed = one?.renamed ?? renamedOf(codes, modules)
+	const shared =
+		sharesUnits && !one ? sharedModulesOf(codes, linker.siteTexts()) : undefined
+	if (shared) codes = shared.codes
+	const originals = shared ? { ...modules, ...shared.modules } : modules
+	let renamed = one?.renamed
+	if (!renamed && sharesUnits) {
+		const read = withoutUnread(
+			codes,
+			linker.siteTexts(),
+			shared?.declaredIn ?? {}
+		)
+		// units reading each other in a cycle can't be renamed once one changes
+		renamed = renamedOf(read, originals)
+		if (renamed) codes = read
+	}
+	renamed ??= renamedOf(codes, originals)
 	if (!renamed) return
+	// a site reads what a module declares from it, under whatever it's named
+	for (const specifier in shared?.declaredIn) {
+		const module = shared!.declaredIn[specifier]
+		renamed[specifier] = renamed[module] ?? module
+	}
 	const linked: LinkedBundle = {
 		sites: {},
 		modules: {},
@@ -111,6 +138,8 @@ interface Declarations {
 	imported: Map<string, string>
 	// statements run for their effect, like one reading the runtime's version
 	statements: Set<string>
+	// each name a unit exports, declared or imported
+	exported: Set<string>
 }
 
 // one module of what the sites read, each after what it reads; a unit must
@@ -169,6 +198,352 @@ const oneModuleOf = (
 	return { specifier, code, renamed }
 }
 
+interface SharedModules {
+	// each module declaring units, by its specifier
+	modules: Record<string, string>
+	// the module declaring each unit one does
+	declaredIn: Record<string, string>
+	// the rest, reading them, and them
+	codes: Record<string, string>
+}
+
+// a bundler that splits a bundle into chunks copies a module too small for a
+// chunk of its own into each chunk reading it, as webpack and Rspack do, and
+// what most validators read is a few small units: what creates one, a check
+// like a string's of some length. Declared in one module, they're copied where
+// the runtime they read is, which a chunk the others load already holds. This
+// many readers repay naming it in each
+const minCommonReaders = 8
+
+// the units enough others read as one module, with what those read, and each
+// set of units the same sites reach as one: a bundler writes a module two
+// others read apart from both, with a wrapper and a read of it in each, which
+// units always loaded together needn't each pay. Undefined where no two share
+// a module
+const sharedModulesOf = (
+	codes: Record<string, string>,
+	siteTexts: string[]
+): SharedModules | undefined => {
+	const readsOf = (code: string) =>
+		new Set(
+			[...code.matchAll(virtualSource)]
+				.map(match => match[1])
+				.filter(specifier => specifier in codes)
+		)
+	const readers: Record<string, number> = {}
+	for (const code of [...Object.values(codes), ...siteTexts])
+		for (const read of readsOf(code)) readers[read] = (readers[read] ?? 0) + 1
+	// a unit declaring a function, as a cell does its setter, stays its own
+	const declarable = new Map<string, boolean>()
+	const isDeclarable = (specifier: string): boolean => {
+		let result = declarable.get(specifier)
+		if (result === undefined) {
+			result = !!declarationsOf({ [specifier]: codes[specifier] })
+			declarable.set(specifier, result)
+		}
+		return result
+	}
+	const linkable = new Map<string, boolean>()
+	const isLinkable = (specifier: string): boolean => {
+		if (!linkable.has(specifier)) {
+			linkable.set(specifier, false)
+			linkable.set(
+				specifier,
+				isDeclarable(specifier) &&
+					[...readsOf(codes[specifier])].every(isLinkable)
+			)
+		}
+		return linkable.get(specifier)!
+	}
+	const common = new Set<string>()
+	const declare = (specifier: string) => {
+		if (common.has(specifier)) return
+		common.add(specifier)
+		for (const read of readsOf(codes[specifier])) declare(read)
+	}
+	for (const specifier in readers) {
+		if (readers[specifier] >= minCommonReaders && isLinkable(specifier))
+			declare(specifier)
+	}
+	// each site reaching a unit, through whichever units read it
+	const sitesReaching = new Map<string, Set<number>>()
+	for (const [i, text] of siteTexts.entries()) {
+		const reach = (specifier: string) => {
+			let sites = sitesReaching.get(specifier)
+			if (!sites) sitesReaching.set(specifier, (sites = new Set()))
+			if (sites.has(i)) return
+			sites.add(i)
+			for (const read of readsOf(codes[specifier])) reach(read)
+		}
+		for (const read of readsOf(text)) reach(read)
+	}
+	// what one site alone reaches a bundler writes into it anyway: one module
+	// of it is what a call written in two of its units is declared once in
+	const bySites = new Map<string, string[]>()
+	for (const [specifier, sites] of sitesReaching) {
+		if (common.has(specifier) || !isDeclarable(specifier)) continue
+		const key = [...sites].sort((l, r) => l - r).join()
+		const units = bySites.get(key)
+		if (units) units.push(specifier)
+		else bySites.set(key, [specifier])
+	}
+	// a unit reads only what at least its sites reach, so each set after those
+	// more sites reach imports modules already named
+	const sets = [
+		[...common],
+		...[...bySites.values()].sort(
+			(l, r) => sitesReaching.get(r[0])!.size - sitesReaching.get(l[0])!.size
+		)
+	]
+	const shared: SharedModules = { modules: {}, declaredIn: {}, codes: {} }
+	for (const units of sets) {
+		if (units.length < 2) continue
+		const declarations = declarationsOf(
+			Object.fromEntries(
+				units.map(unit => [unit, withRenamed(codes[unit], shared.declaredIn)])
+			)
+		)
+		const order =
+			declarations && orderOf(declarations, declarations.declared.keys())
+		if (!order) continue
+		const code = withCallsOnce(
+			[
+				...declarations.imported.values(),
+				...declarations.statements,
+				...order.map(name => declarations.declared.get(name)!.text),
+				// what each exported, one it only imports among them
+				`export { ${[...declarations.exported].join(", ")} }`
+			].join("\n")
+		)
+		const specifier = `~arktype/${hashOf(code)}`
+		shared.modules[specifier] = code
+		for (const unit of units) shared.declaredIn[unit] = specifier
+	}
+	if (!Object.keys(shared.modules).length) return
+	Object.assign(shared.codes, shared.modules)
+	for (const key in codes) {
+		if (!(key in shared.declaredIn)) {
+			shared.codes[key] = withCallsOnce(
+				withRenamed(codes[key], shared.declaredIn)
+			)
+		}
+	}
+	return shared
+}
+
+const namedImport = /^import { (\S+) as (\S+) } from "([^"]+)"$/
+
+const sideEffectImport = /^import\s*"[^"]+";?$/gm
+
+// A bundler drops a declaration nothing reads, but not all it wrote for one:
+// where it held another module's export, the minifier of Next.js keeps a read
+// of that export in its place, `ns.name;`, as reading a namespace's member may
+// run a getter. A unit declares more than a program reads, like the node of a
+// Type only ever called, so each module is written with what the sites reach
+// of it alone, through whichever units read it. One that isn't a list of
+// declarations, like a cell's, is kept whole, with all it imports
+const withoutUnread = (
+	codes: Record<string, string>,
+	siteTexts: string[],
+	declaredIn: Record<string, string>
+): Record<string, string> => {
+	const parsed = new Map<string, Declarations | undefined>()
+	const declarationsIn = (specifier: string) => {
+		if (!parsed.has(specifier))
+			parsed.set(specifier, declarationsOf({ [specifier]: codes[specifier] }))
+		return parsed.get(specifier)
+	}
+	// each name reached in a module, declared or imported, or true for all
+	const reached = new Map<string, Set<string> | true>()
+	const reachAll = (specifier: string): void => {
+		if (!(specifier in codes) || reached.get(specifier) === true) return
+		const declarations = declarationsIn(specifier)
+		reached.set(specifier, true)
+		if (declarations) {
+			for (const name of declarations.imported.keys())
+				reachImport(declarations, name)
+		} else reachImportsOf(codes[specifier])
+	}
+	// what a module read as text names of the units: each name it imports, or
+	// all of a unit it reads any other way
+	const reachImportsOf = (text: string): void => {
+		const named = new Map<string, number>()
+		for (const [, names, specifier] of text.matchAll(siteImport)) {
+			named.set(specifier, (named.get(specifier) ?? 0) + 1)
+			for (const name of names.split(",")) {
+				const [read] = name.trim().split(/\s+as\s+/)
+				if (read) reach(declaredIn[specifier] ?? specifier, read)
+			}
+		}
+		const sources = new Map<string, number>()
+		for (const [, specifier] of text.matchAll(virtualSource))
+			sources.set(specifier, (sources.get(specifier) ?? 0) + 1)
+		for (const [specifier, count] of sources) {
+			if (count !== (named.get(specifier) ?? 0))
+				reachAll(declaredIn[specifier] ?? specifier)
+		}
+	}
+	const reachImport = (declarations: Declarations, local: string): void => {
+		const text = declarations.imported.get(local)!
+		const [, name, , from] = namedImport.exec(text) ?? []
+		if (from) reach(declaredIn[from] ?? from, name)
+		else {
+			for (const [, specifier] of text.matchAll(virtualSource))
+				reachAll(declaredIn[specifier] ?? specifier)
+		}
+	}
+	const reach = (specifier: string, name: string): void => {
+		if (!(specifier in codes)) return
+		const known = reached.get(specifier)
+		if (known === true || known?.has(name)) return
+		const declarations = declarationsIn(specifier)
+		if (!declarations) return reachAll(specifier)
+		const { declared, imported, statements } = declarations
+		const names = known ?? new Set<string>()
+		names.add(name)
+		if (!known) {
+			reached.set(specifier, names)
+			// a statement run for its effect keeps what it names
+			for (const statement of statements) {
+				for (const [read] of statement.matchAll(/[\w$]+/g))
+					if (declared.has(read) || imported.has(read)) reach(specifier, read)
+			}
+		}
+		if (imported.has(name)) return reachImport(declarations, name)
+		for (const [read] of declared.get(name)?.reads ?? []) reach(specifier, read)
+	}
+	for (const text of siteTexts) reachImportsOf(text)
+	const result: Record<string, string> = {}
+	for (const specifier in codes) {
+		const names = reached.get(specifier)
+		const declarations = declarationsIn(specifier)
+		result[specifier] = codes[specifier]
+		// one no site reaches is left to the bundler, which drops it whole
+		if (!names || names === true || !declarations) continue
+		const { declared, imported, statements, exported } = declarations
+		if (
+			[...declared.keys()].every(name => names.has(name)) &&
+			[...exported].every(name => names.has(name))
+		)
+			continue
+		result[specifier] = [
+			...(codes[specifier].match(sideEffectImport) ?? []),
+			...[...imported].flatMap(([name, text]) => (names.has(name) ? text : [])),
+			...statements,
+			...[...declared].flatMap(([name, { text }]) =>
+				names.has(name) ? text : []
+			),
+			`export { ${[...exported].filter(name => names.has(name)).join(", ")} }`
+		].join("\n")
+	}
+	return result
+}
+
+const pureMarker = "/* @__PURE__ */ "
+
+// A call written twice is shorter declared from about 18 characters, but gzip
+// already writes the second as a match, so a name for it only adds to what's
+// compressed: the shorter the call, the more. On an app of 128 modules writing
+// validators, minified B / gzip B of its units and runtime: none 96743 / 28694;
+// from 96 93588 / 28834; 64 93141 / 28871; 48 93151 / 29060; 18 92989 / 29184
+const minOnceCall = 64
+
+// The runtime makes the same checker of the same text, and nothing writes to
+// one once it's made, so a call a module writes more than once is declared
+// once, before the first statement reading it. Each occurrence must read only
+// what the module declares or imports, or what the call itself binds, and one
+// in a function not called as its statement runs must hold data alone: what
+// else it names may not be set until the function's called
+const withCallsOnce = (code: string): string => {
+	for (let pass = 0; pass < maxPasses; pass++) {
+		const module = new SourceModule("once.js", code, "once.js")
+		if (module.parseErrors.length) return code
+		const { scopes } = module
+		const readsOnlyModule = (start: number, end: number) =>
+			scopes.references.every(
+				({ id, binding }) =>
+					id.start < start ||
+					id.end > end ||
+					!binding ||
+					binding.scope === scopes.root ||
+					(start <= binding.id.start && binding.id.end <= end)
+			)
+		const found = new Map<string, [start: number, end: number, at: number][]>()
+		for (const statement of module.program.body) {
+			if (statement.type === "ImportDeclaration") continue
+			walk(statement, node => {
+				const start = node.start - pureMarker.length
+				if (
+					node.type === "CallExpression" &&
+					code.startsWith(pureRuntimeCall, start) &&
+					node.end - node.start >= minOnceCall
+				) {
+					const call = code.slice(start, node.end)
+					if (
+						isDeferred(node, statement) ?
+							holdsOnlyData(call)
+						:	readsOnlyModule(start, node.end)
+					) {
+						const calls = found.get(call)
+						if (calls) calls.push([start, node.end, statement.start])
+						else found.set(call, [[start, node.end, statement.start]])
+					}
+				}
+				return true
+			})
+		}
+		const edits = new MagicString(code)
+		const covered: [start: number, end: number][] = []
+		// the longest first, as what it holds is then written once with it
+		for (const [call, calls] of [...found].sort(
+			([l], [r]) => r.length - l.length
+		)) {
+			const free = calls.filter(
+				([start]) => !covered.some(([from, to]) => from <= start && start < to)
+			)
+			const name = `once${hashOf(call)}`
+			if (free.length < 2 || name in scopes.root.bindings) continue
+			edits.prependLeft(
+				Math.min(...free.map(([, , at]) => at)),
+				`const ${name} = ${call}\n`
+			)
+			for (const [start, end] of free) {
+				edits.overwrite(start, end, name)
+				covered.push([start, end])
+			}
+		}
+		if (!covered.length) return code
+		code = edits.toString()
+	}
+	return code
+}
+
+// each of the names after what it reads as it's declared, or undefined where
+// two read each other so
+const orderOf = (
+	{ declared, imported }: Declarations,
+	names: Iterable<string>
+): string[] | undefined => {
+	const order: string[] = []
+	const states = new Map<string, "visiting" | "done">()
+	const visit = (name: string): "done" | "cycle" | undefined => {
+		const declaration = declared.get(name)
+		if (!declaration) return imported.has(name) ? "done" : undefined
+		const state = states.get(name)
+		if (state) return state === "done" ? "done" : "cycle"
+		states.set(name, "visiting")
+		for (const [read, isEager] of declaration.reads) {
+			const visited = visit(read)
+			if (!visited || (visited === "cycle" && isEager)) return
+		}
+		states.set(name, "done")
+		order.push(name)
+		return "done"
+	}
+	for (const name of names) if (visit(name) !== "done") return
+	return order
+}
+
 // what each unit declares, imports and runs, where every unit is linkable
 const declarationsOf = (
 	codes: Record<string, string>
@@ -176,6 +551,7 @@ const declarationsOf = (
 	const declared = new Map<string, Declared>()
 	const imported = new Map<string, string>()
 	const statements = new Set<string>()
+	const exported = new Set<string>()
 	for (const key in codes) {
 		const module = new SourceModule(`${key}.js`, codes[key], key)
 		if (module.parseErrors.length) return
@@ -210,6 +586,7 @@ const declarationsOf = (
 						exportNameOf(specifier.exported) !== exportNameOf(specifier.local)
 					)
 						return
+					exported.add(exportNameOf(specifier.local))
 				}
 			} else if (
 				statement.type === "VariableDeclaration" ||
@@ -237,6 +614,8 @@ const declarationsOf = (
 					)
 						reads.push([binding.name, !isDeferred(id, declaration)])
 				}
+				if (statement.type === "ExportNamedDeclaration")
+					exported.add(declarator.id.name)
 				declared.set(declarator.id.name, {
 					text: source.slice(declaration.start, declaration.end),
 					reads
@@ -251,7 +630,7 @@ const declarationsOf = (
 		}
 	}
 	for (const name of declared.keys()) if (imported.has(name)) return
-	return { declared, imported, statements }
+	return { declared, imported, statements, exported }
 }
 
 // each named import of a site, which the precompiler writes on one line
@@ -345,6 +724,90 @@ const writeImports = (names: Iterable<string>): string =>
 	[...names]
 		.map(name => `import { ${name} } from "~arktype/${name}"\n`)
 		.join("")
+
+// what a creator's validator is passed to fail with: a name, or one condition
+const failArgument = String.raw`(\((?:[^()]|\([^()]*\))*\)|[\w.]+)`
+
+// each way a creator's validator finds the issues of data its Allows rejected
+const foundCall = new RegExp(
+	String.raw`\bruntime\.(foundErrors|applyIssues)\(allows, data, ${failArgument}\)|\bruntime\.applyErrors\(allows, data, runtime\.runtimeConfig, ${failArgument}, runtime\.Traversal\)`,
+	"g"
+)
+
+const applyingErrors =
+	"(apply, data, onFail) => runtime.applyErrors(apply, data, runtime.runtimeConfig, onFail, runtime.Traversal)"
+
+// the module of a creator taking its root's Allows, itself or in an array
+const creatorModule =
+	/^import \* as runtime from "arktype\/runtime"\n\nconst (create\w+) = \((\[allows]|allows)((?:, \w+(?: = [\w.]+)?)*)\) => {\n([\S\s]*)\n}\n\nexport { \1 }\n$/
+
+interface Creator {
+	specifier: string
+	name: string
+	// how it takes its root's Allows: `allows` or `[allows]`
+	takes: string
+	// its other params, as written after that one
+	rest: string
+	// its body, calling `found` where it finds a root's issues
+	body: string
+	// what it found them with
+	finder: string
+}
+
+// A program's validators are created by a few functions alike but for what
+// finds a root's issues, which depends on whether it runs a narrow and whether
+// one reads its ctx, and for taking its Allows in an array. Each is a dozen
+// lines no minifier shares, so those of one body are written once: the first
+// takes what finds the issues, by default its own, and each other passes it
+// its own. A program with one of them is written as it was
+const withOneCreator = (
+	modules: Record<string, string>
+): Record<string, string> => {
+	const alike = new Map<string, Creator[]>()
+	for (const specifier of Object.keys(modules).sort()) {
+		const match = creatorModule.exec(modules[specifier])
+		if (!match) continue
+		const [, name, takes, rest, written] = match
+		const finders = new Set<string>()
+		const body = written.replace(
+			foundCall,
+			(_, finder?: string, failing?: string, traversed?: string) => {
+				finders.add(finder ? `runtime.${finder}` : applyingErrors)
+				return `found(allows, data, ${failing ?? traversed})`
+			}
+		)
+		if (finders.size !== 1 || /\bfound\b/.test(written)) continue
+		const creator: Creator = {
+			specifier,
+			name,
+			takes,
+			rest,
+			body,
+			finder: [...finders][0]
+		}
+		const key = `${rest}\n${body}`
+		const creators = alike.get(key)
+		if (creators) creators.push(creator)
+		else alike.set(key, [creator])
+	}
+	const codes = { ...modules }
+	const runtime = `import * as runtime from "arktype/runtime"\n\n`
+	for (const creators of alike.values()) {
+		if (creators.length < 2) continue
+		// one taking the Allows itself is passed no array made for the call
+		const first =
+			creators.find(creator => creator.takes === "allows") ?? creators[0]
+		const others = creators.filter(creator => creator !== first)
+		codes[first.specifier] =
+			`${runtime}const ${first.name} = (${first.takes}${first.rest}, found = ${first.finder}) => {\n${first.body}\n}\n\nexport { ${first.name} }\n`
+		const passed = `${first.takes}${first.rest.replace(/ = [\w.]+/g, "")}`
+		for (const { specifier, name, takes, rest, finder } of others) {
+			codes[specifier] =
+				`import { ${first.name} } from ${JSON.stringify(first.specifier)}\n${runtime}const ${name} = (${takes}${rest}) => ${first.name}(${passed}, ${finder})\n\nexport { ${name} }\n`
+		}
+	}
+	return codes
+}
 
 // a checker holding only data is the same wherever it's written, so what's
 // written more than once is made once. Each makes closures an import runs,
@@ -460,6 +923,8 @@ interface Creation {
 	name: string
 	creator: Binding
 	checker: Reference
+	// each read of the validator by the site's own code
+	reads: Reference[]
 }
 
 class Linker {
@@ -593,6 +1058,11 @@ class Linker {
 			const into = statementOf(read.reference.id)
 			if (
 				read.unit.isSite !== intoSites ||
+				// a name a site exports can't be written as what declares it
+				read.reference.id.parent?.type === "ExportSpecifier" ||
+				// nor a validator an earlier link declared where the site's own code
+				// reads it: written there, it would be created each time that runs
+				(read.unit.isSite && createsValidator(owner, binding)) ||
 				written.has(statementOf(binding.declaration)) ||
 				!this.inline(owner, binding, read)
 			)
@@ -748,7 +1218,7 @@ class Linker {
 
 	private declareAsCreated(
 		binding: Binding,
-		{ site, statement, name, creator, checker }: Creation,
+		{ site, statement, name, creator, checker, reads }: Creation,
 		edits: boolean
 	): boolean {
 		const owner = this.ownerByBinding.get(binding)!
@@ -786,18 +1256,43 @@ class Linker {
 		owner.edits.prependRight(init.start, `${local}(/* @__PURE__ */ `)
 		owner.edits.appendLeft(init.end, ")")
 		addImports(owner, imports)
-		site.edits.overwrite(
-			statement.start,
-			statement.end,
-			`export { ${checker.id.name} as ${name} }`
-		)
+		// the unit is the validator now, under the name the site imports it by
+		const validator = checker.id.name
+		if (statement.type === "ExportNamedDeclaration") {
+			site.edits.overwrite(
+				statement.start,
+				statement.end,
+				`export { ${validator} as ${name} }`
+			)
+		} else site.edits.remove(statement.start, statement.end)
+		// which each read by the site's own code reads, as no const is left to
+		for (const { id } of reads) {
+			const parent = id.parent
+			if (parent?.type === "ExportSpecifier") {
+				site.edits.overwrite(
+					parent.start,
+					parent.end,
+					`${validator} as ${site.module.source.slice(parent.exported.start, parent.exported.end)}`
+				)
+			} else {
+				site.edits.overwrite(
+					id.start,
+					id.end,
+					parent?.type === "Property" && parent.shorthand ?
+						`${name}: ${validator}`
+					:	validator
+				)
+			}
+		}
 		return true
 	}
 
 	private read(unit: Unit, reference: Reference): void {
 		const binding = reference.binding
 		if (!binding || binding.scope !== unit.module.scopes.root) return
-		if (reference.id.parent?.type === "ExportSpecifier") return
+		// a unit's own list of what it declares reads none of it, where a site's
+		// names a validator the app reads, as one a link before this declared
+		if (reference.id.parent?.type === "ExportSpecifier" && !unit.isSite) return
 		const declared = this.declarationOf(unit, binding)
 		if (!declared) return
 		const [owner, declaration] = declared
@@ -897,6 +1392,20 @@ class Linker {
 				// e.g. `export { other as name }`, which an import of it would read
 				else if (exported.kind !== "binding" || exported.binding !== outer)
 					return false
+			} else if (
+				source !== undefined &&
+				outer.kind === "import" &&
+				!isNamespaceImport(outer)
+			) {
+				// what a callback written into a unit reads of the app's own
+				// modules, under a name no other import is given
+				local = this.localOf(
+					read.unit,
+					outer.name,
+					importedNameOf(outer),
+					source,
+					imports
+				)
 			}
 			if (local === undefined) return false
 			const declared = this.declarationOf(owner, outer)?.[1]
@@ -969,7 +1478,26 @@ const readsAllows = (read: Node | null | undefined): read is MemberExpression =>
 	read.property.name === "allows" &&
 	!isWriteTarget(read)
 
-// a site's export creating a validator from a checker nothing else in the module reads
+// A site's const creating a validator from a checker nothing else in the module
+// reads: one it exports, or one its own code reads, as a handler does the Type
+// declared beside it.
+//
+// Declared as created, the validator is the unit's, made as the unit's module
+// loads, and the site's const is gone: its export and its reads name what the
+// site imports the unit as. That reads the same object wherever the const was
+// read, given what's checked here and in declareAsCreated:
+// - made once, by a call the precompiler wrote and marked pure, of the checker
+//   alone, so when it's made is unobservable, and the unit's module loads
+//   before the site's body runs, as any module a site imports does
+// - a const at the module's top level, so no write of it and no second
+//   object: one in a function is created each time that runs, and is left
+// - no read the module makes as it loads ahead of the declaration, which
+//   throws where the const is and wouldn't of an import. One in a function is
+//   read whenever that's called: called before the declaration ran, it threw,
+//   and now reads the validator, as a module importing an exported one in a
+//   cycle already could
+// - no read TypeScript erases is rewritten, as scopes hold none, and a JSX
+//   name isn't one an import's can be written as
 const creationOf = (site: Unit, checker: Reference): Creation | undefined => {
 	const call = checker.id.parent
 	if (
@@ -988,29 +1516,66 @@ const creationOf = (site: Unit, checker: Reference): Creation | undefined => {
 		declarator.id.typeAnnotation ||
 		declaration?.type !== "VariableDeclaration" ||
 		declaration.kind !== "const" ||
-		declaration.declarations.length !== 1 ||
-		declaration.parent?.type !== "ExportNamedDeclaration"
+		declaration.declarations.length !== 1
 	)
 		return
+	const isExported = declaration.parent?.type === "ExportNamedDeclaration"
+	if (!isExported && declaration.parent?.type !== "Program") return
+	const statement = isExported ? declaration.parent! : declaration
 	const { scopes } = site.module
 	const binding = scopes.bindingsById.get(declarator.id)
 	const creator = scopes.byId.get(call.callee)?.binding
 	if (
 		!binding ||
-		binding.references.length ||
-		binding.exportNames.length !== 1 ||
 		!creator ||
 		!importSourceOf(creator)?.startsWith("~arktype/") ||
 		!importedNameOf(creator).startsWith("create")
 	)
 		return
+	const reads = binding.references
+	if (
+		reads.length ?
+			!reads.every(
+				({ id, isWrite }) =>
+					!isWrite &&
+					id.type === "Identifier" &&
+					(statement.end <= id.start ||
+						id.parent?.type === "ExportSpecifier" ||
+						isInFunction(id))
+			) ||
+			// read only as `.allows`, it's read as its checker instead
+			(!binding.exportNames.length &&
+				reads.every(({ id }) => readsAllows(id.parent)))
+		:	!isExported || binding.exportNames.length !== 1
+	)
+		return
 	return {
 		site,
-		statement: declaration.parent,
+		statement,
 		name: binding.name,
 		creator,
-		checker
+		checker,
+		reads
 	}
+}
+
+// whether a unit's declaration creates a validator, as declareAsCreated writes one
+const createsValidator = (owner: Unit, binding: Binding): boolean => {
+	const declarator = binding.declaration
+	if (
+		declarator.type !== "VariableDeclarator" ||
+		declarator.init?.type !== "CallExpression" ||
+		declarator.init.callee.type !== "Identifier"
+	)
+		return false
+	const creator = owner.module.scopes.byId.get(declarator.init.callee)?.binding
+	return (
+		!!creator &&
+		(creator.kind === "import" ?
+			importedNameOf(creator)
+		:	creator.name
+		).startsWith("create")
+	)
 }
 
 const addImports = (unit: Unit, imports: Map<string, string>): void => {
@@ -1123,6 +1688,24 @@ export const pureAnnotationOf = (
 export const statementOf = (node: Node): Node => {
 	while (node.parent && node.parent.type !== "Program") node = node.parent
 	return node
+}
+
+// within a function the module doesn't call where it's written, so run when
+// that's called, not as the module loads
+const isInFunction = (node: Node): boolean => {
+	for (let parent = node.parent; parent; parent = parent.parent) {
+		if (
+			parent.type === "FunctionDeclaration" ||
+			((parent.type === "FunctionExpression" ||
+				parent.type === "ArrowFunctionExpression") &&
+				!(
+					parent.parent?.type === "CallExpression" &&
+					parent.parent.callee === parent
+				))
+		)
+			return true
+	}
+	return false
 }
 
 const isAtTopLevel = (node: Node): boolean => {

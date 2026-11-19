@@ -150,6 +150,10 @@ export interface StandaloneOptions {
 	holdsIds?: boolean | undefined
 	mutatesInput?: MutatesInput | undefined
 	optimize?: Optimization | undefined
+	// names what a build writes unlike the rest of its validators, as those it
+	// optimizes otherwise: a unit's name is its content's, however it's written,
+	// so the modules they share are written apart under it
+	strategy?: string | undefined
 	// trust data to hold only own, enumerable keys, as JSON.parse's output does
 	jsonInput?: boolean | undefined
 	// declare functions, so an import cycle can call them early
@@ -166,6 +170,10 @@ export interface StandaloneOptions {
 	shapes?: boolean | undefined
 	// false where nothing calls a validator, so each failure's errors are read
 	called?: boolean | undefined
+	// false where a failing call's errors find their issues as it returns, as a
+	// build writing its errors for size does: they otherwise find them once
+	// read, so a call no one reads the errors of costs little more than its check
+	defersIssues?: boolean | undefined
 	/** @internal the chars a site's baked introspection may total */
 	bakedLimit?: number | undefined
 	// false where nothing reads a validator's .allows
@@ -228,6 +236,8 @@ export interface Baking extends ValidatorReads {
 	jsonInput: boolean
 	hoisted: boolean
 	shortest: boolean
+	// "" unless the build writes other validators otherwise
+	strategy: string
 	// whether a validator's traversals are created at its first call
 	defers: boolean
 	flattens: boolean
@@ -278,6 +288,13 @@ export const isCreatedByRuntime = (
 // V8 compiles `=== undefined` to one comparison, where `??=` and `== null` test the map
 export const writeLazyRead = (name: string, initial: string): string =>
 	`(${name} === undefined ? (${name} = ${initial}) : ${name})`
+
+// whether a module declares an object for each table its factories intern
+// in, which the runtime keys the table by, rather than a variable the first
+// call sets: what a build written for size reads, unless an import cycle can
+// call a factory before its module ran
+export const internsByHolder = (baking: Baking): boolean =>
+	baking.shortest && !baking.hoisted
 
 export const writeValue = (
 	hoisted: boolean,
@@ -336,32 +353,38 @@ export interface IssueFeatures {
 	reportsIndices: boolean
 	bracketsKeys: boolean
 	writesText: boolean
+	callsSiteText: boolean
 	listsUnions: boolean
 	rewritesUnions: boolean
 	traversesUnions: boolean
-	readsKeySites: boolean
 	appliesValues: boolean
 	transformsBranches: boolean
 	failsInBranches: boolean
 	discriminatesBooleans: boolean
 	readsSummary: boolean
 	readsErrors: boolean
+	holdsExpression: boolean
+	namesTraversalError: boolean
+	findsOnRead: boolean
 }
 
 export const noIssueFeatures: IssueFeatures = {
 	reportsIndices: false,
 	bracketsKeys: false,
 	writesText: false,
+	callsSiteText: false,
 	listsUnions: false,
 	rewritesUnions: false,
 	traversesUnions: false,
-	readsKeySites: false,
 	appliesValues: false,
 	transformsBranches: false,
 	failsInBranches: false,
 	discriminatesBooleans: false,
 	readsSummary: false,
-	readsErrors: false
+	readsErrors: false,
+	holdsExpression: false,
+	namesTraversalError: false,
+	findsOnRead: false
 }
 
 export interface StandaloneModules {
@@ -461,6 +484,7 @@ export const bakingOf = (
 		jsonInput: opts.jsonInput === true,
 		hoisted: opts.hoisted === true,
 		shortest: opts.optimize === "size",
+		strategy: opts.strategy ?? "",
 		defers:
 			opts.defers === true && opts.lazy !== false && opts.optimize !== "size",
 		flattens: opts.optimize === "size" && opts.hoisted !== true && isModular,
@@ -468,7 +492,10 @@ export const bakingOf = (
 		shapes: opts.shapes === true,
 		compiledInputs:
 			opts.optimize === "size" ? compiledInputsOf(exports) : new Set(),
-		defersIssues: opts.optimize !== "size" && opts.called !== false,
+		defersIssues:
+			opts.defersIssues !== false &&
+			opts.optimize !== "size" &&
+			opts.called !== false,
 		bakedLimit: opts.bakedLimit ?? defaultBakedLimit,
 		called: opts.called !== false,
 		readsAllows: opts.readsAllows !== false,

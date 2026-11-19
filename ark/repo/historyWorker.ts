@@ -385,7 +385,6 @@ const serialize = (
 					typeof e.data === "object" && e.data !== null ?
 						undefined
 					:	read(() => e.actual),
-				problem: read(() => e.problem),
 				message: read(() => e.message)
 			}))
 			recording = false

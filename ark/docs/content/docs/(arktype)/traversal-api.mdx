@@ -29,7 +29,7 @@ const Json = type("string").pipe((s, ctx) => {
 Json("{")
 ```
 
-`reject` and `error` take a string or the parts of an error. `relativePath` reports it below the current path:
+`reject` and `error` take a string, which is what the value must be, or the [parts of an error](/docs/configuration#error-messages): `expected` and `actual`, or a `message` that replaces the whole sentence. `relativePath` reports it below the value being checked, where `path` would replace its whole path from the root of the data:
 
 ```ts
 const Range = type({ start: "number", end: "number" }).narrow(
@@ -44,6 +44,15 @@ const Range = type({ start: "number", end: "number" }).narrow(
 
 // ArkErrors: end must be at least start (was 1)
 Range({ start: 2, end: 1 })
+
+const Booking = type({ stay: Range }).narrow(
+	(booking, ctx) =>
+		booking.stay.end - booking.stay.start <= 30 ||
+		ctx.reject({ message: "Book 30 nights or fewer", relativePath: ["stay"] })
+)
+
+// ArkErrors: stay: Book 30 nights or fewer
+Booking({ stay: { start: 1, end: 60 } })
 ```
 
 To write a check outside the call, type `ctx` with `Traversal`:

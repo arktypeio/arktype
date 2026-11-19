@@ -39,6 +39,10 @@ export const readsOnlyData: WeakSet<Function> = new WeakSet()
 // callbacks a build read and found reach their ctx only to return what it reports
 export const returnsReports: WeakSet<Function> = new WeakSet()
 
+// those of them a build read as `(data, ctx) => test || ctx.reject({ message })`,
+// the test reading no ctx: all its ctx is asked is to reject with that message
+export const testsOrRejects: WeakSet<Function> = new WeakSet()
+
 export const functionNameOf = (fn: Function): string => fn.name
 
 export const constructorNameOf = (o: object): string | undefined =>

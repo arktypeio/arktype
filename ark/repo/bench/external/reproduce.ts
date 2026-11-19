@@ -9,11 +9,22 @@
 // With --newest, each rival is at its newest release instead, the form's
 // included, and the run is kept in results/newest/, where leaderboard.ts reads
 // it beside the committed results to rewrite the published leaderboard.
+// startup.ts is counted again with them, on the repo's own dependencies. A
+// rival with a build step moves with the packages it builds on (newest.ts),
+// and where a suite can't build its newest release it's measured at the last
+// one the suite built, which run.json records as held.
+// With --newest --arktype-only, only ArkType is measured again: each suite is
+// installed from its own lockfile, counts ArkType's arms alone and keeps every
+// rival's result as results/newest/ has it, from the run that installed its
+// newest release. An instruction count is the same on any host that counts
+// (README, "Monthly"), so a rival's doesn't change until its release does.
+// startup.ts, which installs nothing and pairs its arms by round, is counted
+// whole.
 // `size` runs only what measures bundles: the form and the download and
 // bundle rows of schemabenchmarks.dev and Sury, which need no perf.
 // After `pnpm build`, with git, perf and taskset; NODE24 and NODE26 name Node
 // 24.14.1 and 26.12.1 (default: this node)
-// pnpm benchExternal <moltar|sb|sury|ata|form|startup|size|all> [--latest|--newest]
+// pnpm benchExternal <moltar|sb|sury|ata|form|startup|size|all> [--latest|--newest [--arktype-only]]
 import { spawnSync, type SpawnSyncOptions } from "node:child_process"
 import {
 	cpSync,
@@ -27,6 +38,17 @@ import {
 	writeFileSync
 } from "node:fs"
 import { dirname, join } from "node:path"
+import {
+	carriedWith,
+	holdsFor,
+	isArkType,
+	ownerOf,
+	packageOf,
+	specsFor,
+	highestOf,
+	toolchains,
+	type Held
+} from "./newest.ts"
 
 const here = import.meta.dirname
 const repo = join(here, "..", "..", "..", "..")
@@ -34,9 +56,17 @@ const clones = join(here, "out", "clones")
 const fresh = join(here, "out", "fresh")
 const node24 = process.env.NODE24 ?? process.execPath
 const node26 = process.env.NODE26 ?? process.execPath
-const [target = "all", flag] = process.argv.slice(2)
-const newest = flag === "--newest"
-const latest = flag === "--latest" || newest
+const [target = "all", ...flags] = process.argv.slice(2)
+const newest = flags.includes("--newest")
+const latest = flags.includes("--latest") || newest
+const arkTypeOnly = flags.includes("--arktype-only")
+if (arkTypeOnly && !newest) {
+	throw new Error(
+		"--arktype-only keeps the rivals' results of a --newest run, so it's passed with --newest"
+	)
+}
+// whether a suite's rivals are installed at other releases than its lockfile's
+const updates = latest && !arkTypeOnly
 const suffix =
 	newest ? "-newest"
 	: latest ? "-latest"
@@ -48,16 +78,19 @@ const sizeOnly = target === "size"
 const releases = {
 	moltar: [
 		"@sx3/gate@1.0.10",
-		"@ts-runtypes/core@0.12.2",
-		"@ts-runtypes/bin@0.12.2",
-		"@ts-runtypes/devtools@0.12.2",
 		"ata-validator@1.60.0",
 		"pure-parse@1.0.3",
 		"typia@15.2.1",
 		"valibot@1.5.0",
 		"zod@4.6.7"
 	],
-	sb: ["ata-validator@1.60.0", "typia@15.2.1"],
+	// ttsc and its unplugin are the suite's catalog pins, which typia builds on
+	sb: [
+		"ata-validator@1.60.0",
+		"typia@15.2.1",
+		"ttsc@0.34.1",
+		"@ttsc/unplugin@0.34.1"
+	],
 	sury: ["zod@4.6.7", "valibot@1.5.0"],
 	ata: ["ata-validator@1.60.0", "typia@15.2.1", "zod@4.6.7", "ttsc@0.34.1"],
 	// forms/package.json's, zod and typia from ark/repo's, and the ttsc that
@@ -73,22 +106,78 @@ const releases = {
 	]
 }
 
-const packageOf = (release: string) => release.replace(/(.)@.*$/, "$1")
+type Suite = keyof typeof releases
+
+type RunRecord = {
+	/** the commit ArkType was measured at */
+	commit: string
+	/** the day its rivals were measured */
+	date: string
+	installed: Record<string, string>
+	held?: Record<string, Held>
+	/** the day ArkType alone was measured again (--arktype-only), if it was since */
+	arkTypeDate?: string
+}
 
 // where each suite this run updated installed its rivals
-const installs: Partial<Record<keyof typeof releases, string>> = {}
+const installs: Partial<Record<Suite, string>> = {}
+
+// the rivals each suite couldn't build at their newest releases
+const held: Partial<Record<Suite, Record<string, Held>>> = {}
+
+const runPath = join(here, "results", "newest", "run.json")
+
+// what each suite's last --newest run installed, which built
+const lastRuns: Partial<Record<Suite, RunRecord>> =
+	existsSync(runPath) ? JSON.parse(readFileSync(runPath, "utf8")) : {}
+
+// what npm's registry says of a package: undefined where it has no such field
+const npmView = (spec: string, field: string) => {
+	const { status, stdout } = spawnSync("npm", ["view", spec, field, "--json"], {
+		encoding: "utf8"
+	})
+	if (status !== 0)
+		throw new Error(`npm view ${spec} ${field} exited ${status}`)
+	return stdout.trim() ? JSON.parse(stdout) : undefined
+}
+
+// the version of each toolchain package a suite installs beside a rival's
+// newest release: the highest the release's peer or dev requirement allows,
+// and for one it doesn't name, the version of the one it does, as ttsc's
+// unplugin is published with ttsc
+const toolsOf = (suite: Suite) => {
+	const tools: Record<string, string> = {}
+	for (const name of releases[suite].map(packageOf)) {
+		const rival = ownerOf(name, releases[suite])
+		if (!rival || held[suite]?.[rival]) continue
+		const range =
+			npmView(`${rival}@latest`, "peerDependencies")?.[name] ??
+			npmView(`${rival}@latest`, "devDependencies")?.[name]
+		const named = toolchains[rival].map(tool => tools[tool]).find(Boolean)
+		tools[name] =
+			range ? highestOf(npmView(`${name}@${range}`, "version"))
+			: named && npmView(`${name}@${named}`, "version") ? named
+			: highestOf(npmView(name, "versions"))
+	}
+	return tools
+}
 
 // a suite's rivals to install into dir: with --newest, each at its newest
-// release
-const releasesOf = (suite: keyof typeof releases, dir: string) => {
+// release, or the release it's held at
+const releasesOf = (suite: Suite, dir: string) => {
 	installs[suite] = dir
-	return releases[suite].map(release =>
-		newest ? `${packageOf(release)}@latest` : release
-	)
+	return newest ?
+			specsFor({
+				releases: releases[suite],
+				tools: toolsOf(suite),
+				held: held[suite] ?? {},
+				last: lastRuns[suite]?.installed ?? {}
+			})
+		:	[...releases[suite]]
 }
 
 // the version of each rival a suite installed
-const installedIn = (suite: keyof typeof releases, dir: string) =>
+const installedIn = (suite: Suite, dir: string) =>
 	Object.fromEntries(
 		releases[suite].map(release => {
 			const name = packageOf(release)
@@ -128,18 +217,53 @@ const checkout = (name: string, url: string, commit: string) => {
 	return dir
 }
 
+const kept = join(here, "results", "newest")
+
+// a result file of the last --newest run, which --arktype-only keeps the
+// rivals' results of
+const storedOf = (out: string) => {
+	const path = join(kept, out.replace("-newest", ""))
+	if (!existsSync(path)) {
+		throw new Error(
+			`--arktype-only keeps the rivals' results in ${path}, which doesn't exist: run the suite with --newest alone first`
+		)
+	}
+	return JSON.parse(readFileSync(path, "utf8"))
+}
+
 const count = (
 	arms: string,
 	out: string,
 	reps: number,
 	env: Record<string, string> = {}
-) =>
+) => {
+	if (arkTypeOnly) {
+		// count.ts resumes from its out file, so the rivals' stored counts are
+		// its first rows, once: a suite counting twice into one file adds to it
+		const path = join(fresh, out)
+		if (!existsSync(path)) {
+			writeFileSync(
+				path,
+				JSON.stringify(
+					Object.fromEntries(
+						Object.entries(storedOf(out)).filter(([label]) => !isArkType(label))
+					)
+				)
+			)
+		}
+		const all = JSON.parse(readFileSync(arms, "utf8")).count
+		const ours = Object.entries(all).filter(([label]) => isArkType(label))
+		if (!ours.length) return
+		arms = arms.replace(/\.json$/, "-arktype.json")
+		writeFileSync(arms, JSON.stringify({ count: Object.fromEntries(ours) }))
+	}
 	run(
 		node24,
 		process.execPath,
 		[join(here, "count.ts"), join(fresh, out), String(reps)],
 		{ cwd: here, env: { ...env, COUNT_ARMS: arms } }
 	)
+}
 
 // writes the arms of armsFile whose labels pass keep to a file of their own
 const armsOf = (
@@ -173,12 +297,84 @@ const npm = (node: string, cwd: string, ...args: string[]) =>
 		env: { PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1" }
 	})
 
+// @ts-runtypes, which moltar's suite builds from cases/ts-runtypes, can no
+// longer be installed: every @ts-runtypes package (core, bin, devtools and
+// bin's binaries) was removed from npm on or before 2026-11-19, when
+// `npm view` 404s on each of them and `npm ci` on the tarball the suite's
+// lockfile names. Its newest commit still lists them, so no later pin
+// installs either. The clone is therefore run without the library, at every
+// set of versions: its case, its three dependencies and their lockfile entries
+// are taken out as it's checked out, and no `<case> @ts-runtypes` arm is
+// counted. From that date a run has no row for it. The leaderboard keeps the
+// counts stored while it could be installed (results/counts-a306152ce.json
+// at 0.10.0 and results/counts-latest-2026-10-24.json at 0.12.2), as it keeps
+// every rival's best stored run.
+const removedFromNpm = {
+	scope: "@ts-runtypes/",
+	case: "ts-runtypes",
+	arm: "@ts-runtypes"
+}
+
+const withoutScope = (dependencies: Record<string, unknown> = {}) =>
+	Object.fromEntries(
+		Object.entries(dependencies).filter(
+			([name]) => !name.startsWith(removedFromNpm.scope)
+		)
+	)
+
+// moltar's clone without the library npm no longer has
+const dropRemoved = (dir: string) => {
+	const edit = (file: string, to: (text: string) => string) => {
+		const path = join(dir, file)
+		const text = readFileSync(path, "utf8")
+		const edited = to(text)
+		if (edited === text)
+			throw new Error(`${file} doesn't name ${removedFromNpm.case}`)
+		writeFileSync(path, edited)
+	}
+	const script = `compile:${removedFromNpm.case}`
+	edit("package.json", text => {
+		const manifest = JSON.parse(text)
+		manifest.dependencies = withoutScope(manifest.dependencies)
+		manifest.devDependencies = withoutScope(manifest.devDependencies)
+		manifest.scripts = Object.fromEntries(
+			Object.entries(manifest.scripts as Record<string, string>)
+				.filter(([name]) => name !== script)
+				.map(([name, command]) => [
+					name,
+					command.replace(` && npm run ${script}`, "")
+				])
+		)
+		return `${JSON.stringify(manifest, null, 2)}\n`
+	})
+	// `packages` is what npm ci installs from, keyed by path, its first entry
+	// the manifest's; `dependencies` is the same tree as npm 6 reads it
+	edit("package-lock.json", text => {
+		const lock = JSON.parse(text)
+		const root = lock.packages[""]
+		root.dependencies = withoutScope(root.dependencies)
+		root.devDependencies = withoutScope(root.devDependencies)
+		lock.packages = Object.fromEntries(
+			Object.entries(lock.packages).filter(
+				([path]) => !path.startsWith(`node_modules/${removedFromNpm.scope}`)
+			)
+		)
+		lock.dependencies = withoutScope(lock.dependencies)
+		return `${JSON.stringify(lock, null, 2)}\n`
+	})
+	const named = new RegExp(`^.*['/]${removedFromNpm.case}'.*\\n`, "m")
+	edit("cases/index.ts", text => text.replace(named, ""))
+	edit("test/benchmarks.test.ts", text => text.replace(named, ""))
+	rmSync(join(dir, "cases", removedFromNpm.case), { recursive: true })
+}
+
 const moltar = () => {
 	const dir = checkout(
 		"moltar",
 		"https://github.com/moltar/typescript-runtime-type-benchmarks",
 		"499f3fb"
 	)
+	dropRemoved(dir)
 	reset(`moltar-counts${suffix}.json`)
 	npm(node24, dir, "ci")
 	const compiled = [
@@ -188,20 +384,13 @@ const moltar = () => {
 		"typebox",
 		"ts-auto-guard",
 		"type-predicate-generator",
-		"paseri-aot",
-		"ts-runtypes"
+		"paseri-aot"
 	]
-	if (latest) {
+	if (arkTypeOnly) {
+		// ArkType's arms run cjs/cases.ts on the suite's own modules, which no
+		// rival's compiled case is among
+	} else if (latest) {
 		npm(node24, dir, "i", "--save-exact", ...releasesOf("moltar", dir))
-		// 0.12 names its factories with an Fn suffix
-		const runtypes = join(dir, "cases/ts-runtypes/src/index.ts")
-		writeFileSync(
-			runtypes,
-			readFileSync(runtypes, "utf8").replace(
-				/\b(createValidate|createHasUnknownKeys|createCloneExactShape)\b/g,
-				"$1Fn"
-			)
-		)
 		// typia 15's transform runs under ttsc, which compiles with TypeScript 7,
 		// and its clone moved from misc to plain
 		const typia = join(clones, "moltar-typia")
@@ -241,7 +430,8 @@ const moltar = () => {
 		npm(node24, typia, "i")
 		run(node24, "npx", ["ttsc", "-p", "tsconfig.json"], { cwd: typia })
 	} else compiled.push("typia")
-	for (const c of compiled) npm(node24, dir, "run", `compile:${c}`)
+	if (!arkTypeOnly)
+		for (const c of compiled) npm(node24, dir, "run", `compile:${c}`)
 	run(node24, process.execPath, [join(here, "moltar/build.ts")])
 	run(node24, process.execPath, [join(here, "arms.ts")], {
 		env: { MOLTAR: dir, NODE24: node24 }
@@ -250,7 +440,9 @@ const moltar = () => {
 		"arms.json",
 		"moltar-arms",
 		label =>
-			!label.startsWith("sb ") && !/arktype-(b2|dynamic|2\.2\.9)/.test(label)
+			!label.startsWith("sb ") &&
+			!/arktype-(b2|dynamic|2\.2\.9)/.test(label) &&
+			!label.endsWith(` ${removedFromNpm.arm}`)
 	)
 	count(arms, `moltar-counts${suffix}.json`, 3)
 }
@@ -272,7 +464,16 @@ const sb = () => {
 			env: { PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1" }
 		})
 	pnpm(dir, "install", "--frozen-lockfile")
-	if (latest) pnpm(schemas, "add", ...releasesOf("sb", schemas))
+	if (updates) {
+		const specs = releasesOf("sb", schemas)
+		const isTool = (spec: string) => !!ownerOf(packageOf(spec), releases.sb)
+		// the 2026-10-24 run left typia's toolchain at the suite's catalog
+		pnpm(schemas, "add", ...specs.filter(spec => newest || !isTool(spec)))
+		// the download test builds typia's entry from bench, on bench's own
+		// ttsc and unplugin
+		const tools = specs.filter(isTool)
+		if (newest && tools.length) pnpm(join(dir, "bench"), "add", ...tools)
+	}
 	// the arktype entries resolve this checkout's arktype
 	rmSync(join(schemas, "node_modules/arktype"), {
 		recursive: true,
@@ -349,7 +550,7 @@ const sury = () => {
 		"sury"
 	)
 	pnpm(join(dir, "packages/sury"), "run", "build:entry")
-	if (latest) {
+	if (updates) {
 		pnpm(
 			join(dir, "packages/benchmarks"),
 			"add",
@@ -380,7 +581,7 @@ const ata = () => {
 	)
 	reset(`ata-counts${suffix}.json`)
 	npm(node24, dir, "ci")
-	if (latest) npm(node24, dir, "i", "--save-exact", ...releasesOf("ata", dir))
+	if (updates) npm(node24, dir, "i", "--save-exact", ...releasesOf("ata", dir))
 	run(node24, "git", ["apply", join(here, "ata/impls.patch")], { cwd: dir })
 	npm(node24, dir, "run", "typia")
 	// ata's modules, compiled as its runner compiles them before a run
@@ -424,10 +625,11 @@ const form = () => {
 	const forms = join(here, "forms")
 	npm(node24, forms, "i")
 	// zod, typia and ttsc otherwise resolve from ark/repo
-	if (newest) npm(node24, forms, "i", "--no-save", ...releasesOf("form", forms))
+	if (updates)
+		npm(node24, forms, "i", "--no-save", ...releasesOf("form", forms))
 	run(
 		node24,
-		join(newest ? forms : join(repo, "ark/repo"), "node_modules/.bin/ttsc"),
+		join(updates ? forms : join(repo, "ark/repo"), "node_modules/.bin/ttsc"),
 		["--project", join(forms, "tsconfig.typia.json")]
 	)
 	run(node24, process.execPath, [
@@ -442,30 +644,80 @@ const startup = () => {
 	run(
 		node24,
 		process.execPath,
-		[join(here, "startup.ts"), join(fresh, "startup.json"), "20"],
+		[join(here, "startup.ts"), join(fresh, `startup${suffix}.json`), "20"],
 		{
 			env: { STARTUP_BUILDS: '{"default":{}}', STARTUP_NODE: node24 }
 		}
 	)
 }
 
-// startup.ts has no rivals of its own to update, and the form's were the
-// latest on 2026-10-24
+// the form's rivals were the latest on 2026-10-24, so --latest has nothing to
+// count it at. startup.ts has no rivals of its own to update: it bundles the
+// repo's dependencies, at the versions pnpm-lock.yaml pins. --newest counts
+// it all the same, so that ArkType's startup rows are the commit's that its
+// others are
 const suites = {
 	moltar,
 	sb,
 	sury,
 	ata,
-	...((!latest || newest) && { form }),
-	...(!latest && { startup })
+	...((!latest || newest) && { form, startup })
+}
+
+const failureOf = (suite: () => void) => {
+	try {
+		suite()
+	} catch (e) {
+		console.error(e)
+		return e
+	}
+}
+
+// runs a suite. With --newest, one that fails with a rival that has a build
+// step is run again, since ttsc's first Go build of typia's plugin can fail,
+// then once more with each such rival held at the last release the suite
+// built. It throws if that fails too, or if no rival is left to hold
+const runSuite = (name: keyof typeof suites) => {
+	const suite = suites[name]!
+	const builds =
+		newest &&
+		name !== "startup" &&
+		releases[name].some(release => packageOf(release) in toolchains)
+	if (!builds) return suite()
+	let failure = failureOf(suite)
+	if (!failure) return
+	console.log(`\n${name} failed: running it again`)
+	failure = failureOf(suite)
+	if (!failure) return
+	const holds = holdsFor({
+		releases: releases[name],
+		last: lastRuns[name]?.installed ?? {},
+		latest: Object.fromEntries(
+			Object.keys(toolchains).map(rival => [
+				rival,
+				npmView(`${rival}@latest`, "version")
+			])
+		)
+	})
+	if (!Object.keys(holds).length) throw failure
+	for (const [rival, { newest, kept }] of Object.entries(holds)) {
+		console.log(
+			`\n${name} failed twice: running it with ${rival} at ${kept}, the last release it built, in place of ${newest}`
+		)
+	}
+	held[name] = holds
+	suite()
 }
 
 const started = Date.now()
 mkdirSync(fresh, { recursive: true })
-if (target === "all") for (const suite of Object.values(suites)) suite()
-else if (sizeOnly) for (const suite of [form, sb, sury]) suite()
-else if (target in suites) suites[target as keyof typeof suites]!()
-else {
+const ran: (keyof typeof suites)[] =
+	target === "all" ? (Object.keys(suites) as (keyof typeof suites)[])
+	: sizeOnly ? ["form", "sb", "sury"]
+	: target in suites ? [target as keyof typeof suites]
+	: []
+for (const name of ran) runSuite(name)
+if (!ran.length) {
 	throw new Error(
 		`Unknown suite ${target}: one of ${Object.keys(suites)}, size, all`
 	)
@@ -475,30 +727,60 @@ else {
 // commit, date and installs in run.json, and the published leaderboard
 // rewritten from them
 if (newest) {
-	const kept = join(here, "results", "newest")
 	mkdirSync(kept, { recursive: true })
 	for (const name of readdirSync(fresh)) {
 		if (
-			name.endsWith("-newest.json") &&
-			statSync(join(fresh, name)).mtimeMs >= started
+			!name.endsWith("-newest.json") ||
+			statSync(join(fresh, name)).mtimeMs < started
 		)
-			cpSync(join(fresh, name), join(kept, name.replace("-newest", "")))
+			continue
+		// a count file already holds the rivals' stored counts, and startup.ts
+		// counts every arm; a size file measured every library, as its script
+		// does, and only ArkType's sizes are taken from it
+		if (arkTypeOnly && !/-counts-|^startup-/.test(name)) {
+			writeFileSync(
+				join(kept, name.replace("-newest", "")),
+				JSON.stringify(
+					carriedWith(
+						storedOf(name),
+						JSON.parse(readFileSync(join(fresh, name), "utf8"))
+					)
+				)
+			)
+		} else cpSync(join(fresh, name), join(kept, name.replace("-newest", "")))
 	}
-	const commit = spawnSync("git", ["rev-parse", "--short", "HEAD"], {
+	// nine digits, as the result files' names have: git abbreviates by how
+	// many objects a clone holds, so a runner's shallow one wrote seven
+	const commit = spawnSync("git", ["rev-parse", "--short=9", "HEAD"], {
 		cwd: repo,
 		encoding: "utf8"
 	}).stdout.trim()
 	const date = new Date().toISOString().slice(0, 10)
-	const runPath = join(kept, "run.json")
-	const runs =
-		existsSync(runPath) ? JSON.parse(readFileSync(runPath, "utf8")) : {}
-	for (const [suite, dir] of Object.entries(installs)) {
+	const runs: Partial<Record<Suite | "startup", RunRecord>> = { ...lastRuns }
+	for (const [suite, dir] of Object.entries(installs) as [Suite, string][]) {
 		runs[suite] = {
 			commit,
 			date,
-			installed: installedIn(suite as keyof typeof releases, dir)
+			installed: installedIn(suite, dir),
+			...(held[suite] && { held: held[suite] })
 		}
 	}
+	// a suite whose rivals' results were kept keeps their day and installs:
+	// ArkType's commit, and the day it was counted again, are all that's new
+	if (arkTypeOnly) {
+		for (const suite of ran) {
+			if (suite === "startup") continue
+			const last = lastRuns[suite]
+			if (!last) {
+				throw new Error(
+					`--arktype-only found no run of ${suite} in ${runPath}: run it with --newest alone first`
+				)
+			}
+			runs[suite] = { ...last, commit, arkTypeDate: date }
+		}
+	}
+	// startup.ts installs nothing, so its record is the commit and the day
+	if (ran.includes("startup")) runs.startup = { commit, date, installed: {} }
 	writeFileSync(runPath, `${JSON.stringify(runs, null, "\t")}\n`)
 	run(node24, join(repo, "node_modules/.bin/prettier"), ["--write", kept])
 	run(node24, process.execPath, [join(here, "leaderboard.ts")])

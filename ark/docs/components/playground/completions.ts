@@ -3,7 +3,7 @@ import type { CompletionInfo, ScriptElementKind } from "typescript"
 import { createPositionHash, isDuplicateRequest } from "./utils.ts"
 
 export const getCompletions = async (
-	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker,
+	tsLanguageService: Monaco.typescript.TypeScriptWorker,
 	model: Monaco.editor.ITextModel,
 	position: Monaco.Position
 ) => {
@@ -14,7 +14,7 @@ export const getCompletions = async (
 
 export const setupCompletionProvider = (
 	monaco: typeof Monaco,
-	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker
+	tsLanguageService: Monaco.typescript.TypeScriptWorker
 ) =>
 	monaco.languages.registerCompletionItemProvider("typescript", {
 		triggerCharacters: [".", '"', "'", "`", "/", "@", "<", "#", " "],

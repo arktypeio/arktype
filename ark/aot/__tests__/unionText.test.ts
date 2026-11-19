@@ -51,7 +51,7 @@ const behaviors: Record<string, string> = {
 		show(type("Date").configure({ expected: "a day" }).or("RegExp"), 1)
 		show(type({ o: type("Date").configure({ expected: "a day" }).or("RegExp") }), { o: 1 }, {})
 		show(type("Date").configure({ message: "no day" }).or("RegExp"), 1)
-		show(type("Date").configure({ problem: "no day" }).or("RegExp"), 1)
+		show(type("Date").configure({ actual: "no day" }).or("RegExp"), 1)
 	`,
 	"lists a morph's input beside what else a union misses": `
 		const toString = (v: unknown) => String(v)
@@ -74,8 +74,8 @@ const behaviors: Record<string, string> = {
 		${[
 			`{ description: "a thing" }`,
 			`{ expected: "A or B" }`,
-			`{ problem: "bad" }`,
 			`{ message: "whole" }`,
+			`{ message: "whole", expected: "E" }`,
 			`{ description: "a thing", expected: "E" }`,
 			`{ description: "a thing", message: "whole" }`,
 			`{ actual: "that" }`
@@ -118,11 +118,11 @@ const behaviors: Record<string, string> = {
 	`,
 	"lists what a narrow in a branch raises": `
 		show(type({ a: type("string").narrow(function raisesNothing(s, ctx) { return ctx.reject({}) }) }).or({ b: "string" }), { a: "x" })
-		show(type({ a: type("string").narrow(function raisesProblem(s, ctx) { return ctx.reject({ problem: "bad" }) }) }).or({ b: "string" }), { a: "x" })
+		show(type({ a: type("string").narrow(function raisesActual(s, ctx) { return ctx.reject({ expected: "good", actual: "bad" }) }) }).or({ b: "string" }), { a: "x" })
 		show(type({ a: type("string").narrow(function raisesMessage(s, ctx) { return ctx.reject({ message: "whole" }) }) }).or({ b: "string" }), { a: "x" })
 		show(type({ a: type("string").narrow(function raisesExpected(s, ctx) { return ctx.mustBe("long") }) }).or({ b: "string" }), { a: "x" })
 		show(type({ a: type("string").narrow(function failsIt() { return false }) }).or({ b: "string" }), { a: "x" })
-		show(type({ a: type("string").narrow(function reaches(s, ctx) { return ctx.reject({ problem: "deep", path: ["d"] }) }) }).or({ b: "string" }), { a: "x" })
+		show(type({ a: type("string").narrow(function reaches(s, ctx) { return ctx.reject({ message: "deep", path: ["d"] }) }) }).or({ b: "string" }), { a: "x" })
 		show(type("string").narrow(function bare(s, ctx) { return ctx.reject({}) }), "a")
 	`,
 	"runs a narrow in a branch as often as arktype": `
@@ -166,8 +166,24 @@ const behaviors: Record<string, string> = {
 		standard(type({ p: type("string").pipe(s => Inner(JSON.parse(s))) }), { p: "{}" })
 		standard(type({ k: Inner.configure({ description: "a thing" }) }), { k: {} })
 		standard(type({ k: Inner.configure({ expected: "E" }) }), { k: {} })
-		standard(type({ k: Inner.configure({ problem: "bad" }) }), { k: {} })
+		standard(type({ k: Inner.configure({ message: "whole", expected: "E" }) }), { k: {} })
 		standard(type({ k: Inner.configure({ message: "whole" }) }), { k: {} })
+	`,
+	"says the message its branches' issues share, set apart from its path": `
+		const SameString = type("string").configure({ message: "Same" })
+		const SameNumber = type("number").configure({ message: "Same" })
+		const Sharing = type({ a: SameString }).or({ b: SameNumber })
+		show(Sharing, {}, { a: 1, b: "x" }, { a: 1 }, 1)
+		show(type({ k: Sharing }), { k: {} }, { k: { a: 1, b: "x" } }, { k: 1 }, {})
+		show(type({ k: Sharing }).or({ z: SameString }), { k: {} }, {})
+		show(type({ a: SameString }).or({ b: "number" }), {}, { a: 1, b: "x" })
+		show(type({ a: SameString }).or({ b: type("number").configure({ message: "Other" }) }), { a: 1, b: "x" })
+		show(type({ a: type("string").narrow((s, ctx) => ctx.reject({ message: "Same" })) }).or({ b: SameNumber }), { a: "x", b: "x" })
+		show(type({ k: Sharing.configure({ expected: "E" }) }), { k: {} })
+		show(type({ k: Sharing.describe("a thing") }), { k: {} })
+		show(type({ k: Sharing.configure({ message: "whole" }) }), { k: {} })
+		standard(type({ k: Sharing }), { k: {} })
+		show(type({ k: Sharing }).pipe(o => o), { k: {} })
 	`,
 	"lists a description holding `or` as written, as a validator's text alone does": `
 		show(type({ v: type("string|number").describe("a thing or other") }).or({ v: "boolean", w: "number" }), { v: null })

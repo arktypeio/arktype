@@ -1,0 +1,132 @@
+---
+title: Size at scale
+description: What each Type adds to a bundle, dynamic and precompiled, and where each is the smaller.
+---
+
+A bundle pays for validation twice: once for the library, and again for each Type. ArkType's two modes split that differently.
+
+- **Dynamic** arktype ships its parser and compiler, a fixed cost, and each Type adds only its definition.
+- **Precompiled**, neither ships, so the fixed cost is small, and each Type adds its validator: checks compiled for it by default, or with [`preset: "smallest"`](/docs/precompile/options#choosing-smallest), what shared checkers read.
+
+So which is smaller depends on how many Types a bundle holds, and on what they hold. This page measures both, with Valibot and Zod beside them, from <SizeScaleText id="range" />.
+
+## What's measured
+
+<SizeScaleText id="method" />
+
+What's bundled is an app, not a package of schemas. It exports one function, which takes a Type's name and some input and runs that Type's handler: validate the input, then return the data or the text of what's wrong with it, as a route or a form's submit does. Each library does that in its own words:
+
+| Library  | Validates with                | Reads what's wrong with  |
+| -------- | ----------------------------- | ------------------------ |
+| ArkType  | `Contact(input)`              | `errors.summary`         |
+| Valibot  | `v.safeParse(Contact, input)` | `v.summarize(issues)`    |
+| Zod      | `Contact.safeParse(input)`    | `z.prettifyError(error)` |
+| Zod Mini | `z.safeParse(Contact, input)` | `z.prettifyError(error)` |
+
+Nothing outside the bundle can read a Type, so each library ships what those two need and no more. A precompiled build leaves out the parts of a validator no handler reads, like `assert` and its Standard Schema interface. Valibot leaves out the functions no handler calls, like `parse`. Zod's schemas are classes, which keep their methods, and Zod Mini's keep their parsing whichever function runs it. A bundle that exports its Types instead, as a package of schemas does, keeps all of each one: whoever imports it might read any of it.
+
+Each app is written twice:
+
+- **Models** are objects of ids, bounded strings, formats, integers, enums, optional keys, defaults, arrays, references to each other and discriminated unions, as an API's requests and responses are. None has a message or a function of its own.
+- **Forms** are the same Types, where <SizeScaleText id="formsRates" />. Those are the rates we counted in a production frontend's forms.
+
+```ts
+import { type } from "arktype"
+
+const isTrimmed = (s: string) => s === s.trim()
+
+const Contact = type({
+	// a message of its own
+	email: type("string.email").configure({ message: "Enter your work email." }),
+	// a narrow, with its message
+	name: type("1 <= string <= 100").narrow(
+		(value, ctx) =>
+			isTrimmed(value) ||
+			ctx.reject({ message: "Name can't start or end with a space." })
+	)
+})
+```
+
+<SizeScaleParagraph id="layout" />
+
+The default build here is the compiled one a server gets. Building for a browser, it [writes its validators for size](/docs/precompile/options#choosing-smallest) once they'd outweigh arktype.
+
+[Benchmarks](/docs/precompile/benchmarks#rerun-them) has how to rerun every number on this page.
+
+## Models
+
+<SizeScaleChart corpus="models" />
+
+<SizeScaleTable corpus="models" metric="gzip" />
+
+<SizeScaleParagraph id="fixed" />
+
+<SizeScaleParagraph id="modelsValibot" />
+
+<SizeScaleParagraph id="modelsDynamic" />
+
+Before compression:
+
+<SizeScaleTable corpus="models" metric="raw" />
+
+## Forms
+
+<SizeScaleChart corpus="forms" />
+
+<SizeScaleTable corpus="forms" metric="gzip" />
+
+<SizeScaleParagraph id="formsValibot" />
+
+<SizeScaleParagraph id="formsDynamic" />
+
+Before compression:
+
+<SizeScaleTable corpus="forms" metric="raw" />
+
+<SizeScaleParagraph id="brotli" />
+
+## What each Type adds
+
+A bundle's bytes are close to a line: what it costs before its first Type, then the same again for each one. On models:
+
+<SizeScaleFits corpus="models" />
+
+On forms:
+
+<SizeScaleFits corpus="forms" />
+
+<SizeScaleParagraph id="fitNote" />
+
+## What a message and a narrow cost
+
+Forms differ from models by their messages and narrows, so an app with only one of the two says what each adds:
+
+<SizeScaleCosts />
+
+<SizeScaleParagraph id="costs" />
+
+<SizeScaleParagraph id="messagesValibot" />
+
+<SizeScaleParagraph id="breakEven" />
+
+## Where each is smaller
+
+Each count is where the lines between the two measured counts around it meet. On models:
+
+<SizeScaleCrossovers corpus="models" />
+
+On forms:
+
+<SizeScaleCrossovers corpus="forms" />
+
+## Which to choose
+
+Precompile a bundle a browser loads, with [`"smallest"`](/docs/precompile/options#choosing-smallest) once it holds more than a handful of Types. <SizeScaleText id="smallestUntil" /> What it saves is arktype's fixed cost, which a page pays before it validates anything.
+
+<SizeScaleParagraph id="outgrown" />
+
+Keep the default build for a server and for validation on a hot path, where each validator's own compiled code is [what makes it fast](/docs/precompile#speed-and-size). <SizeScaleText id="defaultUntil" /> A bundle with both kinds of Type [chooses for each definition](/docs/precompile/options#strategies-and-schemas).
+
+What a Type holds moves these counts more than how many there are. <SizeScaleText id="costRatios" /> If bytes are all you're choosing by, compare the rows nearest your app above.
+
+[Dynamic vs Precompiled](/docs/precompile/dynamic-vs-precompiled#which-to-use) covers when to stay dynamic for reasons other than size.

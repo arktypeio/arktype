@@ -177,6 +177,9 @@ export const parseRightBound = (
 			writeDoubleRightBoundMessage(s.rightBounded.operand.expression)
 		)
 	}
+	// TypeScript's Array<string> reads as the keyword Array bounded by a type
+	const followsArray =
+		comparator === "<" && /(?:^|[^\w$.])Array\s*<$/.test(s.sc.scanned)
 	const previousScannerIndex = s.sc.location
 	s.sc.skipSpace()
 	let limit: number | Date | undefined = limitOf(s, shiftUntilTerminator(s.sc))
@@ -194,8 +197,12 @@ export const parseRightBound = (
 			(typeof limitNode.unit !== "number" &&
 				!(limitNode.unit instanceof Date)) ||
 			(typeof limitNode.unit === "number" && !Number.isFinite(limitNode.unit))
-		)
-			return s.error(writeInvalidLimitMessage(comparator, limitToken, "right"))
+		) {
+			return s.error(
+				writeInvalidLimitMessage(comparator, limitToken, "right") +
+					(followsArray ? arrayIsNotGenericHint : "")
+			)
+		}
 		limit = limitNode.unit
 	}
 	s.root = previousRoot
@@ -266,19 +273,25 @@ export type parseRightBound<
 					>
 				:	s.error<writeUnpairableComparatorMessage<comparator>>
 			:	s.reduceSingleBound<s, comparator, limit, nextState["unscanned"]>
-		:	s.error<
-				writeInvalidLimitMessage<
-					comparator,
-					scannedToken<s["unscanned"], nextState["unscanned"]>,
-					"right"
-				>
-			>
+		:	s.error<`${writeInvalidLimitMessage<
+				comparator,
+				scannedToken<s["unscanned"], nextState["unscanned"]>,
+				"right"
+			>}${[comparator, s["root"]] extends ["<", InferredAst<unknown, "Array">] ?
+				arrayIsNotGenericHint
+			:	""}`>
 	:	never
 
 type scannedToken<unscanned extends string, nextUnscanned extends string> =
 	Scanner.skipWhitespace<unscanned> extends `${infer token}${nextUnscanned}` ?
 		token
 	:	never
+
+/** what follows a limit's message where it reads as TypeScript's `Array<T>` */
+export const arrayIsNotGenericHint =
+	". Array isn't generic here: write an array of strings as string[]"
+
+export type arrayIsNotGenericHint = typeof arrayIsNotGenericHint
 
 export const writeInvalidLimitMessage = <
 	comparator extends Comparator,

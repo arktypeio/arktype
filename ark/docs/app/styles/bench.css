@@ -510,3 +510,9 @@
 		}
 	}
 }
+
+/* in a docs page's column, a panel a row: two would leave each track too
+   narrow for its axis */
+.prose .bench .b-grid {
+	grid-template-columns: minmax(0, 1fr);
+}

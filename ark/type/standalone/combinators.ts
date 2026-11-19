@@ -14,7 +14,12 @@ import {
 	type UnionNode,
 	type UnitNode
 } from "@ark/schema"
-import { domainOf, isWellFormedInteger, returnsReports } from "@ark/util"
+import {
+	domainOf,
+	isWellFormedInteger,
+	returnsReports,
+	testsOrRejects
+} from "@ark/util"
 import * as runtime from "../runtimeExports.ts"
 import {
 	basesOf,
@@ -29,7 +34,6 @@ import {
 	isKeyword,
 	issueContextOf,
 	issueSiteOf,
-	missingDescriptionOf,
 	raisesNothing,
 	type IssueContext
 } from "./sites.ts"
@@ -47,11 +51,57 @@ export const combines = (node: BaseNode): boolean => {
 		combinable =
 			node.isRoot() &&
 			!isInCycle(node) &&
-			calleesOf(node)?.every(isCallable) === true
+			(says(node) || calleesOf(node)?.every(isCallable) === true)
 		combinableByNode.set(node, combinable)
 	}
 	return combinable
 }
+
+// a root's message, and the root without it
+interface Said {
+	message: string
+	plain: BaseRoot
+}
+
+const saidByNode = new WeakMap<BaseNode, Said>()
+
+// whether a root is written as the checker of what it is without the message
+// configured for it, which that says at each of its sites. So a form's fields
+// share the checker of what they check, each holding only its own message
+const says = (node: BaseRoot): boolean => {
+	const { message } = node.meta
+	if (
+		typeof message !== "string" ||
+		!node.references.every(reference => saysAt(reference, message))
+	)
+		return false
+	const plain = node.configure(
+		({ message: _, ...meta }: ArkEnv.meta) => meta,
+		"shallow"
+	)
+	if (
+		!combines(plain) ||
+		!plain.references.every(reference => reference.meta.message === undefined)
+	)
+		return false
+	saidByNode.set(node, { message, plain })
+	return true
+}
+
+// a node whose site is one its checker is passed, saying the message its root
+// does: no key's value, whose site is another root's, nor what a callback or a
+// union of its branches' issues reports apart
+const saysAt = (node: BaseNode, message: string): boolean =>
+	node.meta.message === message &&
+	(node.is("predicate") ? raisesNothing(node.predicate)
+	: node.is("union") ? node.discriminant?.path.length === 0
+	: !node.is("alias") &&
+		!node.is("morph") &&
+		!node.is("structure") &&
+		!node.is("required") &&
+		!node.is("optional") &&
+		!node.is("index") &&
+		!node.is("sequence"))
 
 // a root a checker calls: another checker, one with a unified Allows, or one
 // holding an alias, read through what it compiles
@@ -71,7 +121,14 @@ const isInCycle = (node: BaseNode): boolean => {
 				if (!reference.is("alias") || seen.has(reference)) return false
 				seen.add(reference)
 				const { resolution } = reference
-				return resolution.references.includes(node) || reaches(resolution)
+				// by id, as `this` resolves to a node equal to the root it's
+				// written in yet not that one, which reading it as outside its
+				// own cycle would write as a checker, whose Allows restarts the
+				// alias depth each time data reaches it again
+				return (
+					resolution.references.some(reached => reached.id === node.id) ||
+					reaches(resolution)
+				)
 			})
 		inCycle = reaches(node)
 		inCycleByNode.set(node, inCycle)
@@ -140,8 +197,15 @@ const unionSiteOf = (node: UnionNode): IssueContext | undefined =>
 const discriminantSiteOf = (node: UnionNode): IssueContext | undefined =>
 	plainContextOf(discriminantContextOf(node))
 
-const checkOf = (node: BaseNode): IssueContext | undefined =>
-	node.jsCond && plainSiteOf(node)
+// a check's site: plain, or saying a message configured for its Type, which
+// its check is wrapped to say where its root's checker can't say it for each
+const checkOf = (node: BaseNode): IssueContext | undefined => {
+	if (!node.jsCond) return
+	const site = issueSiteOf(node.failSite)
+	return isInlineSite(site) && (isDescribed(site) || site.c === 1) ?
+			site
+		:	undefined
+}
 
 // a described predicate's site, keeping the description written for it unless
 // it names the function, which a callback's only has once it's called
@@ -418,13 +482,28 @@ const structureCalleesOf = (
 	]
 }
 
-// a missing key whose issue is required's alone, which props reports
+// what a missing key fails where props reports it: required's alone, as
+// described, or saying a message configured as a sentence
+const missingOf = (prop: Prop.Node): IssueContext | undefined => {
+	const { m: missing } = issueSiteOf(prop.failSite) as { m?: IssueContext }
+	return (
+			missing &&
+				missing.code === "required" &&
+				isInlineSite(missing) &&
+				(isDescribed(missing) || missing.c)
+		) ?
+			missing
+		:	undefined
+}
+
 const missesAsRequired = (prop: Prop.Node): boolean =>
-	missingDescriptionOf(issueSiteOf(prop.failSite)) !== undefined
+	missingOf(prop) !== undefined
 
 // what props reports where a checked value's key is missing; undefined where compiled
 const checkerDescriptionOf = (node: BaseNode): string | undefined => {
 	if (!combines(node)) return
+	const said = saidByNode.get(node)
+	if (said) return checkerDescriptionOf(said.plain)
 	if (node.is("domain") || node.is("proto")) return checkOf(node)!.description
 	if (node.is("unit")) return unitSiteOf(node)!.description
 	if (node.is("morph"))
@@ -498,12 +577,24 @@ const isObjectCheck = (node: BaseNode): boolean => {
 	return (
 		node.is("domain") &&
 		node.domain === "object" &&
+		site.message === undefined &&
 		site.code === runtime.objectCheck.code &&
 		site.description === runtime.objectCheck.description
 	)
 }
 
 const writeCheck = (js: CombinatorCompiler, node: BaseNode): string => {
+	const { message } = checkOf(node)!
+	const check = writeDescribedCheck(js, node)
+	return message === undefined ? check : (
+			writeCall("saying", check, JSON.stringify(message))
+		)
+}
+
+const writeDescribedCheck = (
+	js: CombinatorCompiler,
+	node: BaseNode
+): string => {
 	const site = checkOf(node)!
 	const condition = node.jsCond!(js, "data")!
 	const constant = constantChecks[condition]
@@ -697,6 +788,30 @@ const writeSitedKeep = (
 	return `(data, checkers, values, copy) => { let out = data, v; ${transforms.join(" ")} ${defaults.length ? `if (!values.failed()) { ${defaults.join(" ")} }` : ""} return out; }`
 }
 
+// a required key's checker, wrapped where what the missing key expects or says
+// isn't what its value's checker does
+const writeRequired = (prop: Prop.Node, checker: string): string => {
+	const { description, message, c } = missingOf(prop)!
+	const held = checkerDescriptionOf(prop.value)
+	const said = combines(prop.value) ? saidByNode.get(prop.value) : undefined
+	if (message === undefined) {
+		return held === description && !said ?
+				checker
+			:	writeCall("required", checker, JSON.stringify(description))
+	}
+	// what its value's checker says is its Type's message, not one the code's
+	if (held === description && said?.message === message && c === 1)
+		return checker
+	return writeCall(
+		"sayingMissing",
+		checker,
+		JSON.stringify(message),
+		// a message configured for the code is noted on the missing key's issue
+		c === 1 ? undefined : "runtime.codedIssue",
+		held === description ? undefined : JSON.stringify(description)
+	)
+}
+
 const writeStructure = (
 	js: CombinatorCompiler,
 	structure: StructureNode
@@ -713,10 +828,10 @@ const writeStructure = (
 		)
 	}
 	const refs = structure.inOrder.map(prop => ref(prop.value))
-	// in arktype's order; a required key expects its value's brief, which its checker holds
+	// in arktype's order; a required key expects its value's brief, and says its
+	// value's message, each of which its checker holds
 	const entries = structure.inOrder.map((prop, i) => {
 		const checker = refs[i]
-		const missing = missingDescriptionOf(issueSiteOf(prop.failSite))
 		return `${writeKey(prop.key as string)}: ${
 			prop.is("optional") ?
 				!prop.hasDef() ? writeCall("optional", checker)
@@ -734,8 +849,7 @@ const writeStructure = (
 						:	`data => ${js.ref(prop.defMorph)}(data)`,
 						prop.defaultsUndefined ? "1" : undefined
 					)
-			: checkerDescriptionOf(prop.value) === missing ? checker
-			: writeCall("required", checker, JSON.stringify(missing))
+			:	writeRequired(prop, checker)
 		}`
 	})
 	const declared = writeObject(entries)
@@ -763,6 +877,16 @@ const writeStructure = (
 		structure.hasMorph ||
 		structure.props.some(writesByValues)
 	if (failing || (structure.optional?.length ?? 0) >= minSitedKeys) {
+		// one that keeps the keys it doesn't declare and can't fail as it writes
+		// calls nothing a closed shape or a failing transform does
+		if (!failing && !structure.handlesUndeclared) {
+			return writeCall(
+				"sitedProps",
+				writeSitedAllows(structure, refs),
+				declared,
+				structure.tfs ? writeSitedKeep(js, structure, false) : undefined
+			)
+		}
 		const deletes = structure.handlesUndeclared === "delete"
 		return writeCall(
 			"sited",
@@ -821,7 +945,10 @@ const declaresRef = (node: BaseNode): boolean =>
 	(node.is("proto") && node.proto !== Array) ||
 	(node.is("union") && !!discriminatedOf(node))
 
-const maxInlinedNodes = 8
+// A string's or number's rules, which are one call. More would inline an
+// object of a few keys, one of them reading another Type's checker, into each
+// Type holding it, where reading the validator its own Type creates is a name
+const maxInlinedNodes = 4
 
 const maxInlinedObjectNodes = 24
 
@@ -876,6 +1003,7 @@ const rulesOf = (
 			typeof rule !== "number" ||
 			exclusive ||
 			!site ||
+			site.message !== undefined ||
 			site.code !== kinds[i] ||
 			site.description !== ruleCheckOf(kinds[i], rule).description
 		)
@@ -954,12 +1082,75 @@ const readCase = (
 		)
 	:	readChecker(js, node)
 
+// a root a checker reads in place of what its node holds, like one without
+// the message configured for it, is no node of the root being written, nor
+// are the roots it reads, so each is reached where it's read, as a morph's
+// steps are
+const reachRootsOf = (js: CombinatorCompiler, root: BaseRoot): void => {
+	for (const reference of root.references)
+		if (reference.isRoot()) js.link.byId[reference.id] ??= reference
+}
+
+const unnarrowedByNode = new WeakMap<BaseNode, BaseRoot | null>()
+
+// what an intersection checks ahead of its predicates, as the root a Type
+// checking only that is: a narrowed field reads the checker one that isn't
+// shares, and where each of its checks says a message, that's said once over
+// it. Undefined where it checks a structure, or nothing, or would expect
+// something else of a missing key
+const unnarrowedOf = (node: IntersectionNode): BaseRoot | undefined => {
+	let unnarrowed = unnarrowedByNode.get(node)
+	if (unnarrowed === undefined) {
+		unnarrowed = null
+		// a keyword's own predicate is a check of its intersection, which a
+		// program narrowing nothing itself needn't read another checker for
+		if (
+			node.basis &&
+			!node.structure &&
+			node.inner.predicate?.some(({ predicate }) => !isKeyword(predicate))
+		) {
+			const { predicate: _, ...inner } = node.inner
+			const checks = [node.basis, ...node.preStruct]
+			const { message } = node.basis.meta
+			const root = node.$.node(
+				"intersection",
+				(
+					typeof message === "string" &&
+						checks.every(check =>
+							check.references.every(
+								reference => reference.meta.message === message
+							)
+						)
+				) ?
+					{ ...inner, meta: { message } }
+				:	inner
+			) as BaseRoot
+			if (combines(root) && checkerDescriptionOf(root) === node.brief)
+				unnarrowed = root
+		}
+		unnarrowedByNode.set(node, unnarrowed)
+	}
+	return unnarrowed ?? undefined
+}
+
 /** a node's checker, if it combines */
 export const writeCombinator = (
 	js: CombinatorCompiler,
 	node: BaseNode
 ): string | undefined => {
 	if (!combines(node)) return
+	const said = saidByNode.get(node)
+	if (said) {
+		// what it is without its message is written in place where small, and
+		// is otherwise the unit every root that is one reads, as each field
+		// checking a UUID reads one RegExp
+		reachRootsOf(js, said.plain)
+		return writeCall(
+			"saying",
+			readChecker(js, said.plain),
+			JSON.stringify(said.message)
+		)
+	}
 	if (node.checksCtx) return writeCall("readingCtx", writeChecker(js, node))
 	return writeChecker(js, node)
 }
@@ -1005,14 +1196,19 @@ const writeMorph = (js: CombinatorCompiler, node: MorphNode): string =>
 			.join(", ")}]`
 	)
 
+// what narrows a checker after it, which one that transforms writes apart, so
+// a program narrowing no transform ships only the other
+const narrowedAfterOf = (
+	node: BaseNode
+): "narrowedAfter" | "transformingNarrowedAfter" =>
+	node.tfs ? "transformingNarrowedAfter" : "narrowedAfter"
+
 const writeIntersectionCombinator = (
 	js: CombinatorCompiler,
 	node: IntersectionNode
 ): string => {
 	const shape = js.shapes && writeShape(js, node)
 	if (shape) return shape
-	const refinements = node.preStruct.map(child => writeCheck(js, child))
-	const structure = node.structure && writeStructure(js, node.structure)
 	const predicates = node.inner.predicate?.map(predicate =>
 		writePredicate(js, predicate)
 	)
@@ -1020,10 +1216,21 @@ const writeIntersectionCombinator = (
 		predicates?.length === 1 ?
 			predicates[0]
 		:	predicates && writeCall("narrowedByEach", `[${predicates.join(", ")}]`)
+	const unnarrowed = narrowed && unnarrowedOf(node)
+	if (unnarrowed) {
+		reachRootsOf(js, unnarrowed)
+		return writeCall(
+			narrowedAfterOf(unnarrowed),
+			readChecker(js, unnarrowed),
+			narrowed
+		)
+	}
+	const refinements = node.preStruct.map(child => writeCheck(js, child))
+	const structure = node.structure && writeStructure(js, node.structure)
 	const within =
 		structure && narrowed ?
 			writeCall(
-				"narrowedAfter",
+				narrowedAfterOf(node.structure!),
 				(
 					node.structure!.hasAlias &&
 						node.structure!.tfs &&
@@ -1069,7 +1276,9 @@ const writePredicate = (
 		)
 	}
 	return writeCall(
-		returnsReports.has(node.predicate) ? "narrowedWithCtx"
+		// passed a ctx of its own, which reports at a site as a check does
+		testsOrRejects.has(node.predicate) ? "narrowedRejecting"
+		: returnsReports.has(node.predicate) ? "narrowedWithCtx"
 		: raisesNothing(node.predicate) ? "narrowedBy"
 		: "narrowedInCtx",
 		`() => ${fn}`,
@@ -1142,10 +1351,30 @@ const writeUnionCombinator = (
 				)
 			}
 		}
+		// what the runtime describes from its cases is omitted, where each
+		// checker's description is known
+		const described = Object.entries(domains).map(
+			(
+				[domain, branch],
+				i
+			): [string, { description: string | undefined } | 1] => [
+				domain,
+				cases[i][1] === "1" ?
+					1
+				:	{ description: checkerDescriptionOf(branch as BaseRoot) }
+			]
+		)
 		return writeCall(
 			"domains",
 			writeObject(cases.map(([domain, branch]) => `${domain}: ${branch}`)),
-			JSON.stringify(description),
+			(
+				described.every(
+					([, branch]) => branch === 1 || branch.description !== undefined
+				) &&
+					runtime.describeDomains(Object.fromEntries(described)) === description
+			) ?
+				undefined
+			:	JSON.stringify(description),
 			fails
 		)
 	}

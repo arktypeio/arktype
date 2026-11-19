@@ -138,6 +138,24 @@ contextualize(() => {
 		).equals(true)
 	})
 
+	it("reports a key holding a union of units at the key, not through the union's Apply", () => {
+		const { code } = precompileStandalone({
+			T: type({ flag: "boolean", kind: "'a' | 'b'", "maybe?": "boolean" })
+		})
+		attest(
+			code.includes(
+				`data.flag === false || data.flag === true || !runtime.failsKey(ctx, data, "flag", "discriminant", "boolean")`
+			)
+		).equals(true)
+		attest(
+			code.includes(
+				`!runtime.failsKey(ctx, data, "kind", "discriminant", "\\"a\\" or \\"b\\"")`
+			)
+		).equals(true)
+		// an optional key's is still applied
+		attest(code.match(/ctx\._k\(/g)?.length).equals(1)
+	})
+
 	it("transforms an array whose items alone transform as its items", () => {
 		const Items = type({ a: "number = 0" }).array()
 		const { code } = precompileStandalone({ Items })
@@ -276,6 +294,15 @@ contextualize(() => {
 		attest(T(1).toString()).snap(
 			"must be valid according to isSignedPrecompiled"
 		)
+	})
+
+	it("misses a unit for a key that reads like another registered name", async () => {
+		// only the count differs, which the key drops from a registered name
+		const units = await precompileUnits([type({ '"$ark.is$1': "string" })])
+		const T = type({ '"$ark.is$2': "string" })
+		attest(isPrecompiled(units, T.internal)).equals(false)
+		attest(T.allows({ '"$ark.is$2': "" })).equals(true)
+		attest(T.allows({ '"$ark.is$1': "" })).equals(false)
 	})
 
 	it("binds a unit for a function a minifier renamed, unless its arity changed", async () => {

@@ -17,13 +17,6 @@ var domainOf = data => {
 
 // ark/util/records.ts
 var hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k)
-var defineValue = (o, k, value) =>
-	Object.defineProperty(o, k, {
-		value,
-		writable: true,
-		enumerable: true,
-		configurable: true
-	})
 
 // ark/util/objectKinds.ts
 var isArray = /* @__PURE__ */ (() => Array.isArray)()
@@ -32,13 +25,15 @@ var isArray = /* @__PURE__ */ (() => Array.isArray)()
 var reportsIndices = true
 var bracketsKeys = true
 var writesText = true
+var callsSiteText = true
 var listsUnions = true
-var readsKeySites = true
 var appliesValues = true
 var transformsBranches = true
 var failsInBranches = true
 var readsSummary = true
 var readsErrors = true
+var namesTraversalError = true
+var findsOnRead = false
 
 // ark/schema/shared/issues.ts
 var ReadIssues = class {
@@ -60,65 +55,200 @@ var ReadIssues = class {
 		for (const issue of this._) issue.message ??= messageOf(issue)
 		return this._
 	}
-	/** @internal */
-	_at(site, data, key) {
-		const path = this._p
-		let context = (readsKeySites ? site.v : void 0) ?? site
-		if (key !== void 0) {
-			path.push(key)
-			if (site.m && !(key in data)) context = site.m
-			else data = data[key]
-		}
-		const issue = {
-			code: context.code,
-			path: path.slice(),
-			data,
-			expected: context.description,
-			message: context.x
-		}
-		if (writesText) context.text?.(issue)
-		if (key !== void 0) path.pop()
-		this._.push(issue)
+	/**
+	 * @internal fails data at the path it's at. Every bundle holds this, so it
+	 * takes neither a key nor a site: a validator whose code fails nothing at
+	 * a key would hold what enters one for nothing, which failsKey does
+	 * through _k, and a site is a function building it in every bundle
+	 */
+	_e(data, code, expected, message, text) {
+		this._.push({ code, path: this._p.slice(), data, expected, message })
+		if (callsSiteText) text?.(this._[this._.length - 1])
 		return void 0
 	}
 	/** @internal */
-	_in(apply, data, key, missing) {
-		if (missing && !(key in data)) return this._at(missing, data, key)
+	_k(apply, data, key, ...missing) {
 		this._p.push(key)
-		const continues = apply(data[key], this)
+		const stops =
+			missing.length && !(key in data) ?
+				this._e(data, "required", ...missing)
+			:	!apply(data[key], this)
 		this._p.pop()
-		return !continues
+		return stops
 	}
 }
-var SummarizedIssues =
-	readsSummary ?
-		class extends ReadIssues {
+var UnreadIssues = class {
+	constructor(data, config, apply) {
+		this._p = []
+		this._a = apply
+		this._d = data
+	}
+	/** @internal each issue in the order it was added, found when first read */
+	get _() {
+		if (!this._f) {
+			this._f = []
+			if (this._a && (this._a(this._d, this), !this._f.length))
+				this._e(this._d, "predicate")
+		}
+		return this._f
+	}
+	get count() {
+		return this._.length
+	}
+	get issues() {
+		for (const issue of this._) issue.message ??= messageOf(issue)
+		return this._
+	}
+	_e(data, code, expected, message, text) {
+		this._.push({ code, path: this._p.slice(), data, expected, message })
+		if (callsSiteText) text?.(this._[this._.length - 1])
+		return void 0
+	}
+	_k(apply, data, key, ...missing) {
+		this._p.push(key)
+		const stops =
+			missing.length && !(key in data) ?
+				this._e(data, "required", ...missing)
+			:	!apply(data[key], this)
+		this._p.pop()
+		return stops
+	}
+}
+var failsSite = (ctx, context, data) =>
+	ctx._e(data, context.code, context.description, context.x, context.text)
+var failsKeySite = (ctx, site, data, key) =>
+	ctx._k(
+		(value, ctx2) => !failsSite(ctx2, site.v ?? site, value),
+		data,
+		key,
+		...missingTextOf(site.m)
+	)
+var missingTextOf = missing =>
+	missing ? [missing.description, missing.x, missing.text] : []
+var Issues =
+	readsErrors ?
+		findsOnRead ?
+			// named apart, as one bundle may hold both and a name is one class's
+			class UnreadArkIssues {
+				constructor(data, config, apply) {
+					this._p = []
+					this._a = apply
+					this._d = data
+				}
+				get _() {
+					if (!this._f) {
+						this._f = []
+						if (this._a && (this._a(this._d, this), !this._f.length))
+							this._e(this._d, "predicate")
+					}
+					return this._f
+				}
+				get count() {
+					return this._.length
+				}
+				get issues() {
+					for (const issue of this._) issue.message ??= messageOf(issue)
+					return this._
+				}
+				_e(data, code, expected, message, text) {
+					this._.push({ code, path: this._p.slice(), data, expected, message })
+					if (callsSiteText) text?.(this._[this._.length - 1])
+					return void 0
+				}
+				_k(apply, data, key, ...missing) {
+					this._p.push(key)
+					const stops =
+						missing.length && !(key in data) ?
+							this._e(data, "required", ...missing)
+						:	!apply(data[key], this)
+					this._p.pop()
+					return stops
+				}
+				get summary() {
+					let summary = ""
+					for (const issue of this._)
+						summary += (summary && "\n") + lineOf(issue)
+					return summary
+				}
+				throw() {
+					if (namesTraversalError) throw new ThrownIssues(this)
+					const thrown = Error(this.summary)
+					thrown.name = "TraversalError"
+					throw Object.defineProperty(thrown, "arkErrors", { value: this })
+				}
+				toJSON() {
+					return this.issues
+				}
+				toString() {
+					return this.summary
+				}
+			}
+		:	class ArkIssues {
+				constructor() {
+					this._ = []
+					this._p = []
+				}
+				get count() {
+					return this._.length
+				}
+				get issues() {
+					for (const issue of this._) issue.message ??= messageOf(issue)
+					return this._
+				}
+				_e(data, code, expected, message, text) {
+					this._.push({ code, path: this._p.slice(), data, expected, message })
+					if (callsSiteText) text?.(this._[this._.length - 1])
+					return void 0
+				}
+				_k(apply, data, key, ...missing) {
+					this._p.push(key)
+					const stops =
+						missing.length && !(key in data) ?
+							this._e(data, "required", ...missing)
+						:	!apply(data[key], this)
+					this._p.pop()
+					return stops
+				}
+				get summary() {
+					let summary = ""
+					for (const issue of this._)
+						summary += (summary && "\n") + lineOf(issue)
+					return summary
+				}
+				// an instance of TraversalError only where a program names the
+				// class, so can test for one: otherwise an Error it can't tell
+				// from one, with the same name, message and errors, and no class
+				// in its bundle. Its name is assigned and its errors defined as
+				// the class's are, in statements, which gzip to less than one
+				// expression building it and which a build writing the flag as
+				// a literal folds as well
+				throw() {
+					if (namesTraversalError) throw new ThrownIssues(this)
+					const thrown = Error(this.summary)
+					thrown.name = "TraversalError"
+					throw Object.defineProperty(thrown, "arkErrors", { value: this })
+				}
+				toJSON() {
+					return this.issues
+				}
+				toString() {
+					return this.summary
+				}
+			}
+	: readsSummary ?
+		class extends (findsOnRead ? UnreadIssues : ReadIssues) {
 			get summary() {
 				let summary = ""
-				for (const issue of this._)
-					summary += (summary && "\n") + (issue.message ??= messageOf(issue))
+				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
 				return summary
 			}
 		}
-	:	ReadIssues
-var Issues =
-	readsErrors ?
-		class ArkIssues extends SummarizedIssues {
-			throw() {
-				throw new ThrownIssues(this)
-			}
-			toJSON() {
-				return this.issues
-			}
-			toString() {
-				return this.summary
-			}
-		}
-	:	SummarizedIssues
+	: findsOnRead ? UnreadIssues
+	: ReadIssues
 var foundErrors = (apply, data, onFail, Ctx = Issues) => {
 	const errors = new Ctx()
 	apply(data, errors)
-	if (!errors._.length) errors._at({ code: "predicate" }, data)
+	if (!errors._.length) errors._e(data, "predicate")
 	return onFail ? onFail(errors) : errors
 }
 var mergeIssues = (errors, merged, prefix) => {
@@ -126,18 +256,22 @@ var mergeIssues = (errors, merged, prefix) => {
 		errors._.push(
 			listsUnions && issue._m ?
 				issue._m(prefix)
-			:	{
-					code: issue.code,
-					path: [...prefix, ...issue.path],
-					data: issue.data,
-					expected: issue.expected,
-					problem: issue.problem,
-					message: issue.message === messageOf(issue) ? void 0 : issue.message
-				}
+			:	movedIssue(issue, [...prefix, ...issue.path])
 		)
 	}
 }
-var messageOf = issue => {
+var codedIssue = issue => Object.defineProperty(issue, "_c", { value: 2 })
+var notedAs = (issue, copy) =>
+	listsUnions && writesText && issue._c ? codedIssue(copy) : copy
+var movedIssue = (issue, path) =>
+	notedAs(issue, {
+		code: issue.code,
+		path,
+		data: issue.data,
+		expected: issue.expected,
+		message: issue.message
+	})
+var pathOf = issue => {
 	let path = ""
 	for (const k of issue.path) {
 		path +=
@@ -146,18 +280,30 @@ var messageOf = issue => {
 				`[${JSON.stringify(k) ?? String(k)}]`
 			:	(path && ".") + String(k)
 	}
-	return (path && path + " ") + problemOf(issue)
+	return path
 }
-var problemOf = issue =>
-	(writesText ? issue.problem : void 0) ??
-	(issue.expected !== void 0 ?
+var lineOf = issue => {
+	const message = (issue.message ??= messageOf(issue))
+	const path =
+		reportsIndices || bracketsKeys ? pathOf(issue) : issue.path.join(".")
+	return (
+		listsUnions && issue._l !== void 0 ? issue._l
+		: path ?
+			path +
+			(writesText && !message.startsWith(messageOf(issue)) ? ": " : " ") +
+			message
+		:	message
+	)
+}
+var messageOf = issue =>
+	issue.expected !== void 0 ?
 		"must be " +
 		issue.expected +
 		(issue.code === "required" ? " (was missing)" : "")
 	: issue.code === "required" ? "is missing"
-	: "is invalid")
+	: "is invalid"
 var ThrownIssues =
-	readsErrors ?
+	readsErrors && namesTraversalError ?
 		class TraversalError extends Error {
 			constructor(errors) {
 				super(errors.summary)
@@ -187,21 +333,16 @@ var copyOf = data => {
 	if (isArray(data)) {
 		const copy = Array.prototype.slice.call(data)
 		const keys = Object.keys(data)
-		if (
-			keys.length !== copy.length ||
-			keys[copy.length - 1] !== `${copy.length - 1}`
-		) {
-			for (const k of keys) {
-				const index = +k >>> 0
-				if (`${index}` !== k || index >= copy.length)
-					defineValue(copy, k, data[k])
-			}
-		}
-		for (const k of Object.getOwnPropertySymbols(data)) {
-			if (Object.prototype.propertyIsEnumerable.call(data, k))
-				defineValue(copy, k, data[k])
-		}
-		return copy
+		return (
+				keys.length !== copy.length ||
+					keys[copy.length - 1] !== `${copy.length - 1}` ||
+					Object.getOwnPropertySymbols(data).length
+			) ?
+				Object.defineProperties(
+					copy,
+					Object.getOwnPropertyDescriptors({ ...data })
+				)
+			:	copy
 	}
 	const prototype = Object.getPrototypeOf(data)
 	if (prototype === Object.prototype) return { ...data }
@@ -252,8 +393,8 @@ var check = (code, description, test) => {
 	checker.test = test
 	return checker
 }
-var wrapping = checker =>
-	Object.assign((data, ctx) => checker(data, ctx), checker)
+var wrapping = (checker, also) =>
+	Object.assign((data, ctx) => checker(data, ctx), checker, also)
 var stringCheck = /* @__PURE__ */ check(
 	"domain",
 	"a string",
@@ -282,11 +423,11 @@ var divisor = (
 ) => check("divisor", description, data => data % rule === 0)
 var printValue = value =>
 	typeof value === "string" ? JSON.stringify(value) : `${value}`
-var describeValues = values => {
-	const printed = values.map(printValue)
+var listed = printed => {
 	const last = printed.pop()
 	return printed.length ? `${printed.join(", ")} or ${last}` : last
 }
+var describeValues = values => listed(values.map(printValue))
 var unit = (value, description = printValue(value)) =>
 	check("unit", description, data => data === value)
 var booleanChecker = /* @__PURE__ */ check(
@@ -315,14 +456,9 @@ var intersection = (
 	checker.t = within?.t
 	return checker
 }
-var optional = (checker, ...value) => {
-	const wrapped = wrapping(checker)
-	wrapped.o = 1
-	wrapped.d = value
-	return wrapped
-}
+var optional = (checker, ...value) => wrapping(checker, { o: 1, d: value })
 var failsValue = (ctx, checker, data, k, value) =>
-	ctx?._at ?
+	ctx?._e ?
 		appliesValues && checker.e ? checker.e(ctx, checker, value, k)
 		: appliesValues && checker.t?.e ? checker.t.e(ctx, checker, value, k)
 		: (!checker.t ||
@@ -331,7 +467,7 @@ var failsValue = (ctx, checker, data, k, value) =>
 					// one only checks, as Allows does
 					!ctx.chkOnly && checker.a(value, ctx, k)
 				:	checker(value))) &&
-			ctx._in(checker, data, k)
+			ctx._k(checker, data, k)
 	:	!checker(value)
 var props = declared => {
 	const checker = (data, ctx) => {
@@ -340,8 +476,20 @@ var props = declared => {
 			const value = data[k]
 			if (
 				value === void 0 && !(k in data) ?
+					// entered by the ctx, which fails a key missing from data as
+					// required with what it's passed: what its checker holds for
+					// it, the description it expects, the message it says and
+					// what notes one that's its code's
 					!declared[k].o &&
-					failsAt(ctx, requiredSiteOf(declared[k].description), data, k)
+					(!ctx?._e ||
+						ctx._k(
+							declared[k],
+							data,
+							k,
+							declared[k].description,
+							declared[k].x,
+							declared[k].text
+						))
 				:	failsValue(ctx, declared[k], data, k, value)
 			)
 				return false
@@ -361,7 +509,7 @@ var closedProps = (declared, description = "removed") => {
 			if (
 				!hasOwn(declared, k) &&
 				hasOwn(data, k) &&
-				failsAt(ctx, removed, data, k)
+				failsAtKey(ctx, removed, data, k)
 			)
 				return false
 		}
@@ -447,34 +595,48 @@ var deletes = (declared, data, out) => {
 	}
 	return out
 }
-var sited = (allows, declared, write, writes, removed, withCtx) => {
+var sitedKeeps = (declared, checkers, write) => (data, values) => {
+	const out = write(data, checkers, values, copyOf)
+	if (out !== data) {
+		for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
+	}
+	return out
+}
+var sitedProps = (allows, declared, write, walks = props(declared)) => {
 	const checkers = Object.values(declared)
-	const walks = removed ? closedProps(declared, removed) : props(declared)
 	const checker = (data, ctx) =>
 		!objectCheck.test(data) ? !failsAt(ctx, objectCheck, data)
-		: ctx?._at ? walks(data, ctx)
+		: ctx?._e ? walks(data, ctx)
 		: allows(data, checkers)
 	checker.description = objectCheck.description
-	if (!write) return checker
-	const changing = changingIn(declared)
-	const written = (data, values) => {
-		if (writes > 2) {
-			return Object.getPrototypeOf(data) === Object.prototype ?
-					write(data, checkers, values, copyOf)
-				:	deletes(
-						declared,
-						data,
-						values ?
-							writtenValues(declared, changing, data, values)
-						:	writtenProps(declared, changing, data)
-					)
-		}
-		const out = write(data, checkers, values, copyOf)
-		if (out !== data) {
-			for (const k in declared) if (!(k in out) && k in data) out[k] = data[k]
-		}
-		return out
+	if (write) {
+		const written = sitedKeeps(declared, checkers, write)
+		checker.t = data => written(data)
 	}
+	return checker
+}
+var sited = (allows, declared, write, writes, removed, withCtx) => {
+	const checker = sitedProps(
+		allows,
+		declared,
+		0,
+		removed ? closedProps(declared, removed) : void 0
+	)
+	if (!write) return checker
+	const checkers = Object.values(declared)
+	const changing = changingIn(declared)
+	const keeps = sitedKeeps(declared, checkers, write)
+	const written = (data, values) =>
+		writes < 3 ? keeps(data, values)
+		: Object.getPrototypeOf(data) === Object.prototype ?
+			write(data, checkers, values, copyOf)
+		:	deletes(
+				declared,
+				data,
+				values ?
+					writtenValues(declared, changing, data, values)
+				:	writtenProps(declared, changing, data)
+			)
 	checker.t =
 		writes % 2 ?
 			data => written(data)
@@ -552,7 +714,18 @@ var units = (
 	code = "discriminant",
 	description = describeValues(values)
 ) => check(code, description, data => values.includes(data))
-var domains = (cases, description, fails) => {
+var describeDomains = cases =>
+	listed(
+		Object.keys(cases).map(domain => {
+			const branch = cases[domain]
+			return (
+				branch !== 1 ? `${branch.description}`
+				: domain === "undefined" || domain === "null" ? domain
+				: `${domain === "object" ? "an" : "a"} ${domain}`
+			)
+		})
+	)
+var domains = (cases, description = describeDomains(cases), fails) => {
 	const site = { code: "discriminant", description }
 	const caseOf = data =>
 		cases[
@@ -579,10 +752,9 @@ var domains = (cases, description, fails) => {
 // ark/type/runtime.ts
 var freeze = /* @__PURE__ */ (() => Object.freeze)()
 var siteOf = (code, description, message) => ({ code, description, x: message })
-var requiredSiteOf = description => ({
-	m: { code: "required", description }
-})
-var failsAt = (ctx, site, data, key) => !ctx?._at || ctx._at(site, data, key)
+var failsAt = (ctx, site, data) => !ctx?._e || failsSite(ctx, site, data)
+var failsAtKey = (ctx, site, data, key) =>
+	!ctx?._e || failsKeySite(ctx, site, data, key)
 var checkedDefaultOf = ([id, holes]) => {
 	let table = checkedDefaults.next(id)
 	for (const hole of holes) table = table.next(hole)
@@ -678,10 +850,10 @@ var intersectionnuqurd1csx8up = [
 		"removed"
 	)
 ]
-var intersection1qem54n11w8grc = /* @__PURE__ */ (([
+var intersection18s5mcd1ew9bfr = /* @__PURE__ */ (([
 	intersectionnuqurd1csx8upAllows
 ]) => {
-	const intersection1qem54n11w8grcAllows = /* @__PURE__ */ sited(
+	const intersection18s5mcd1ew9bfrAllows = /* @__PURE__ */ sited(
 		(data, checkers) => {
 			if (
 				("preset" in data && !checkers[0](data.preset)) ||
@@ -692,21 +864,24 @@ var intersection1qem54n11w8grc = /* @__PURE__ */ (([
 				("mutatesInput" in data && !checkers[5](data.mutatesInput)) ||
 				("optimize" in data && !checkers[6](data.optimize)) ||
 				("optimizeErrors" in data && !checkers[6](data.optimizeErrors)) ||
+				("strategies" in data && !checkers[8](data.strategies)) ||
+				("schemas" in data && !checkers[9](data.schemas)) ||
 				("jsonInput" in data && !booleanChecker(data.jsonInput)) ||
-				("bakedLimit" in data && !checkers[9](data.bakedLimit)) ||
+				("bakedLimit" in data && !checkers[11](data.bakedLimit)) ||
 				("freeze" in data && !booleanChecker(data.freeze)) ||
 				("lazy" in data && !booleanChecker(data.lazy)) ||
-				("creationChecks" in data && !checkers[12](data.creationChecks)) ||
+				("creationChecks" in data && !checkers[14](data.creationChecks)) ||
 				("shadow" in data && !booleanChecker(data.shadow)) ||
 				("prune" in data && !booleanChecker(data.prune)) ||
 				("allowUnsafe" in data && !booleanChecker(data.allowUnsafe)) ||
-				("conditions" in data && !checkers[16](data.conditions)) ||
-				("tsconfig" in data && !checkers[17](data.tsconfig)) ||
-				("dependencies" in data && !checkers[18](data.dependencies)) ||
-				("cwd" in data && !checkers[17](data.cwd)) ||
+				("conditions" in data && !checkers[18](data.conditions)) ||
+				("tsconfig" in data && !checkers[19](data.tsconfig)) ||
+				("checker" in data && !checkers[20](data.checker)) ||
+				("dependencies" in data && !checkers[21](data.dependencies)) ||
+				("cwd" in data && !checkers[19](data.cwd)) ||
 				("inline" in data && !booleanChecker(data.inline)) ||
 				("declare" in data && !booleanChecker(data.declare)) ||
-				("defers" in data && !checkers[22](data.defers))
+				("defers" in data && !checkers[25](data.defers))
 			)
 				return false
 			for (const k in data)
@@ -719,6 +894,8 @@ var intersection1qem54n11w8grc = /* @__PURE__ */ (([
 					case "mutatesInput":
 					case "optimize":
 					case "optimizeErrors":
+					case "strategies":
+					case "schemas":
 					case "jsonInput":
 					case "bakedLimit":
 					case "freeze":
@@ -729,6 +906,7 @@ var intersection1qem54n11w8grc = /* @__PURE__ */ (([
 					case "allowUnsafe":
 					case "conditions":
 					case "tsconfig":
+					case "checker":
 					case "dependencies":
 					case "cwd":
 					case "inline":
@@ -776,6 +954,22 @@ var intersection1qem54n11w8grc = /* @__PURE__ */ (([
 			optimizeErrors: /* @__PURE__ */ optional(
 				/* @__PURE__ */ units(["size", "speed"])
 			),
+			strategies: /* @__PURE__ */ optional(
+				/* @__PURE__ */ recordOf(
+					/* @__PURE__ */ closedProps({
+						optimize: /* @__PURE__ */ optional(
+							/* @__PURE__ */ units(["size", "speed"])
+						)
+					})
+				)
+			),
+			schemas: /* @__PURE__ */ optional(
+				/* @__PURE__ */ recordOf(
+					/* @__PURE__ */ intersection(stringCheck, [
+						/* @__PURE__ */ minLength(1)
+					])
+				)
+			),
 			jsonInput: /* @__PURE__ */ optional(booleanChecker),
 			bakedLimit: /* @__PURE__ */ optional(
 				/* @__PURE__ */ intersection(
@@ -821,6 +1015,9 @@ var intersection1qem54n11w8grc = /* @__PURE__ */ (([
 					"a string"
 				)
 			),
+			checker: /* @__PURE__ */ optional(
+				/* @__PURE__ */ units(["tsgo", "tsjs", "tsrs"])
+			),
 			dependencies: /* @__PURE__ */ optional(
 				/* @__PURE__ */ recordOf(/* @__PURE__ */ units(["aot", "arktype"]))
 			),
@@ -842,7 +1039,7 @@ var intersection1qem54n11w8grc = /* @__PURE__ */ (([
 		0,
 		"removed"
 	)
-	return [intersection1qem54n11w8grcAllows]
+	return [intersection18s5mcd1ew9bfrAllows]
 })(intersectionnuqurd1csx8up)
 var create12fpvlf14u2zct = ([allows], id, holes = []) => {
 	const validator = (data, pipedFromCtx, onFail) =>
@@ -856,10 +1053,10 @@ var create12fpvlf14u2zct = ([allows], id, holes = []) => {
 	validator.allows = freeze(allows)
 	return holdHoles(freeze(validator), id, holes)
 }
-var intersectioncv2raq0vis9zb = /* @__PURE__ */ (([
+var intersectionr7db5b16qhzdr = /* @__PURE__ */ (([
 	intersectionnuqurd1csx8upAllows
 ]) => {
-	const intersectioncv2raq0vis9zbAllows = /* @__PURE__ */ sited(
+	const intersectionr7db5b16qhzdrAllows = /* @__PURE__ */ sited(
 		(data, checkers) => {
 			if (
 				("preset" in data && !checkers[0](data.preset)) ||
@@ -870,17 +1067,20 @@ var intersectioncv2raq0vis9zb = /* @__PURE__ */ (([
 				("mutatesInput" in data && !checkers[5](data.mutatesInput)) ||
 				("optimize" in data && !checkers[6](data.optimize)) ||
 				("optimizeErrors" in data && !checkers[6](data.optimizeErrors)) ||
+				("strategies" in data && !checkers[8](data.strategies)) ||
+				("schemas" in data && !checkers[9](data.schemas)) ||
 				("jsonInput" in data && !booleanChecker(data.jsonInput)) ||
-				("bakedLimit" in data && !checkers[9](data.bakedLimit)) ||
+				("bakedLimit" in data && !checkers[11](data.bakedLimit)) ||
 				("freeze" in data && !booleanChecker(data.freeze)) ||
 				("lazy" in data && !booleanChecker(data.lazy)) ||
-				("creationChecks" in data && !checkers[12](data.creationChecks)) ||
+				("creationChecks" in data && !checkers[14](data.creationChecks)) ||
 				("shadow" in data && !booleanChecker(data.shadow)) ||
 				("prune" in data && !booleanChecker(data.prune)) ||
 				("allowUnsafe" in data && !booleanChecker(data.allowUnsafe)) ||
-				("conditions" in data && !checkers[16](data.conditions)) ||
-				("tsconfig" in data && !checkers[17](data.tsconfig)) ||
-				("dependencies" in data && !checkers[18](data.dependencies))
+				("conditions" in data && !checkers[18](data.conditions)) ||
+				("tsconfig" in data && !checkers[19](data.tsconfig)) ||
+				("checker" in data && !checkers[20](data.checker)) ||
+				("dependencies" in data && !checkers[21](data.dependencies))
 			)
 				return false
 			for (const k in data)
@@ -893,6 +1093,8 @@ var intersectioncv2raq0vis9zb = /* @__PURE__ */ (([
 					case "mutatesInput":
 					case "optimize":
 					case "optimizeErrors":
+					case "strategies":
+					case "schemas":
 					case "jsonInput":
 					case "bakedLimit":
 					case "freeze":
@@ -903,6 +1105,7 @@ var intersectioncv2raq0vis9zb = /* @__PURE__ */ (([
 					case "allowUnsafe":
 					case "conditions":
 					case "tsconfig":
+					case "checker":
 					case "dependencies":
 						break
 					default:
@@ -946,6 +1149,22 @@ var intersectioncv2raq0vis9zb = /* @__PURE__ */ (([
 			optimizeErrors: /* @__PURE__ */ optional(
 				/* @__PURE__ */ units(["size", "speed"])
 			),
+			strategies: /* @__PURE__ */ optional(
+				/* @__PURE__ */ recordOf(
+					/* @__PURE__ */ closedProps({
+						optimize: /* @__PURE__ */ optional(
+							/* @__PURE__ */ units(["size", "speed"])
+						)
+					})
+				)
+			),
+			schemas: /* @__PURE__ */ optional(
+				/* @__PURE__ */ recordOf(
+					/* @__PURE__ */ intersection(stringCheck, [
+						/* @__PURE__ */ minLength(1)
+					])
+				)
+			),
 			jsonInput: /* @__PURE__ */ optional(booleanChecker),
 			bakedLimit: /* @__PURE__ */ optional(
 				/* @__PURE__ */ intersection(
@@ -991,6 +1210,9 @@ var intersectioncv2raq0vis9zb = /* @__PURE__ */ (([
 					"a string"
 				)
 			),
+			checker: /* @__PURE__ */ optional(
+				/* @__PURE__ */ units(["tsgo", "tsjs", "tsrs"])
+			),
 			dependencies: /* @__PURE__ */ optional(
 				/* @__PURE__ */ recordOf(/* @__PURE__ */ units(["aot", "arktype"]))
 			)
@@ -999,34 +1221,34 @@ var intersectioncv2raq0vis9zb = /* @__PURE__ */ (([
 		0,
 		"removed"
 	)
-	return [intersectioncv2raq0vis9zbAllows]
+	return [intersectionr7db5b16qhzdrAllows]
 })(intersectionnuqurd1csx8up)
-var intersection1jttf1r18pdz9x = /* @__PURE__ */ (([
-	intersectioncv2raq0vis9zbAllows
+var intersection1gc9l3d1josyao = /* @__PURE__ */ (([
+	intersectionr7db5b16qhzdrAllows
 ]) => {
-	const intersection1jttf1r18pdz9xAllows = /* @__PURE__ */ closedProps({
+	const intersection1gc9l3d1josyaoAllows = /* @__PURE__ */ closedProps({
 		$schema: /* @__PURE__ */ optional(stringCheck),
-		precompile: /* @__PURE__ */ optional(intersectioncv2raq0vis9zbAllows)
+		precompile: /* @__PURE__ */ optional(intersectionr7db5b16qhzdrAllows)
 	})
-	return [intersection1jttf1r18pdz9xAllows]
-})(intersectioncv2raq0vis9zb)
-var intersection172uh0x1afmugh = /* @__PURE__ */ (([
-	intersectioncv2raq0vis9zbAllows
+	return [intersection1gc9l3d1josyaoAllows]
+})(intersectionr7db5b16qhzdr)
+var intersectionwrrov10jn1adl = /* @__PURE__ */ (([
+	intersectionr7db5b16qhzdrAllows
 ]) => {
-	const intersection172uh0x1afmughAllows = /* @__PURE__ */ closedProps({
-		precompile: /* @__PURE__ */ optional(intersectioncv2raq0vis9zbAllows),
+	const intersectionwrrov10jn1adlAllows = /* @__PURE__ */ closedProps({
+		precompile: /* @__PURE__ */ optional(intersectionr7db5b16qhzdrAllows),
 		aot: /* @__PURE__ */ optional(/* @__PURE__ */ unit(true))
 	})
-	return [intersection172uh0x1afmughAllows]
-})(intersectioncv2raq0vis9zb)
+	return [intersectionwrrov10jn1adlAllows]
+})(intersectionr7db5b16qhzdr)
 var created0
 var created1
 var created2
 var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
-				const validator0 = interned("ba2dyl0hxov64", () =>
-					create12fpvlf14u2zct(intersection1qem54n11w8grc, "1xqe4zk0")
+				const validator0 = interned("hm6a6z0jsq1k0", () =>
+					create12fpvlf14u2zct(intersection18s5mcd1ew9bfr, "1vrd1uw0")
 				)
 				return validator0
 			})())
@@ -1035,8 +1257,8 @@ var get0 = () => {
 var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
-				const validator0 = interned("131ktzb1yyv4fo", () =>
-					create12fpvlf14u2zct(intersection1jttf1r18pdz9x, "1cl1eak0")
+				const validator0 = interned("xg82nv06pk8jr", () =>
+					create12fpvlf14u2zct(intersection1gc9l3d1josyao, "2bltfq0s")
 				)
 				return validator0
 			})())
@@ -1045,8 +1267,8 @@ var get1 = () => {
 var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
-				const validator0 = interned("m6ykoq11dwob9", () =>
-					create12fpvlf14u2zct(intersection172uh0x1afmugh, "1i9mlhj1")
+				const validator0 = interned("asrfrq0l73vcp", () =>
+					create12fpvlf14u2zct(intersectionwrrov10jn1adl, "sjni0h1r")
 				)
 				return validator0
 			})())
@@ -1056,7 +1278,8 @@ export { get1 as ArkJson, get2 as PackageArk, get0 as PrecompileOptions }
 
 export const cliOptions = {
 	allowUnsafe: { type: "boolean", values: "true|false" },
-	bakedLimit: { type: "string", values: "path" },
+	bakedLimit: { type: "number", values: "number" },
+	checker: { type: "string", values: "tsgo|tsjs|tsrs" },
 	conditions: { type: "array", values: "a,b" },
 	config: { type: "string", values: "path|false" },
 	creationChecks: { type: "string", values: "helpers|none|types" },
@@ -1076,6 +1299,8 @@ export const cliOptions = {
 	preset: { type: "string", values: "introspectable|smallest" },
 	prune: { type: "boolean", values: "true|false" },
 	runtime: { type: "string", values: "arktype" },
+	schemas: { type: "object", values: "json" },
 	shadow: { type: "boolean", values: "true|false" },
+	strategies: { type: "object", values: "json" },
 	tsconfig: { type: "string", values: "path" }
 }

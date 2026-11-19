@@ -215,14 +215,14 @@ const jsonString = "a JSON string"
 const describeSyntaxError = ({ name, message }: SyntaxError): string =>
 	`${name}: ${message}`
 
-export const writeJsonSyntaxErrorProblem = (error: unknown): string =>
+export const writeJsonSyntaxErrorMessage = (error: unknown): string =>
 	`must be ${jsonString} (${describeSyntaxError(error as SyntaxError)})`
 
 // a JSON keyword's error carries the SyntaxError JSON.parse threw as its cause
-const jsonProblem: Locale.ProblemWriter = (e, locale) =>
+const jsonMessage: Locale.MessageWriter = (e, locale) =>
 	e.code === "predicate" && e.cause !== undefined ?
-		writeJsonSyntaxErrorProblem(e.cause)
-	:	locale.problem(e, locale)
+		writeJsonSyntaxErrorMessage(e.cause)
+	:	locale.message(e, locale)
 
 const jsonError = /* @__PURE__ */ keywordError("string.json", jsonString)
 
@@ -333,14 +333,14 @@ export const isRegexPattern = (s: string, ctx: Traversal): boolean => {
 
 /** en's phrases of the keywords that write the errors they raise through ctx */
 export const raisedErrorPhrases = {
-	"string.json": { noun: jsonString, problem: jsonProblem },
-	"string.json.parse": { noun: jsonString, problem: jsonProblem },
+	"string.json": { noun: jsonString, message: jsonMessage },
+	"string.json.parse": { noun: jsonString, message: jsonMessage },
 	"string.regex": {
 		noun: regexPattern,
-		problem: (e, locale) =>
+		message: (e, locale) =>
 			e.code === "predicate" && e.cause !== undefined ?
 				`must be ${regexPattern} (${describeSyntaxError(e.cause as SyntaxError)})`
-			:	locale.problem(e, locale)
+			:	locale.message(e, locale)
 	}
 } as const satisfies Record<string, Locale.KeywordWriters>
 

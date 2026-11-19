@@ -26,18 +26,26 @@ import type { DiscriminantErrorContext } from "../roots/union.ts"
 import type { UndeclaredErrorContext } from "../structure/structure.ts"
 import type { NodeKind } from "./implement.ts"
 import type { Locale } from "./locale.ts"
-import { describeActual } from "./enWriters.ts"
-import { describesData, writeMessage } from "./errorWriters.ts"
-import { describeBranches } from "./utils.ts"
+import {
+	describeActual,
+	describeUnwrittenActual,
+	writeLine,
+	writeMessage
+} from "./enWriters.ts"
+import { describesData, listsErrors } from "./errorWriters.ts"
+import { findsOnRead } from "./issueFeatures.ts"
+import { describeBranches, removedProblemMessage } from "./utils.ts"
 import {
 	ArkErrors as BaseArkErrors,
+	isCustomIssue,
+	issueAt,
 	messageOf,
-	problemOf,
 	TraversalError as BaseTraversalError,
 	type ArkIssue,
 	type CompactApply,
 	type FailureSite,
 	type SiteContext,
+	type SiteFailureContext,
 	type UnionSite
 } from "./issues.ts"
 import {
@@ -66,9 +74,14 @@ export { ThrownErrors as TraversalError }
  * written for it when its errors are first read.
  */
 export type ArkError<code extends ArkErrorCode = ArkErrorCode> =
-	code extends unknown ?
-		mutable<omit<errorCtx<code>, "meta">> & WrittenErrorContext<code>
-	:	never
+	ArkErrorsByCode[code]
+
+// a lookup, since TypeScript prints an alias for a distributive conditional as
+// what it resolves to: all 18 errors, wherever one is hovered
+type ArkErrorsByCode = {
+	[code in ArkErrorCode]: mutable<omit<errorCtx<code>, "meta">> &
+		WrittenErrorContext<code>
+}
 
 export interface WrittenErrorContext<code extends ArkErrorCode>
 	extends DerivableErrorContext<code> {
@@ -143,7 +156,8 @@ export class ArkErrors extends BaseArkErrors {
 	 * A human-readable summary of all errors.
 	 */
 	override get summary(): string {
-		return summarize(this.issues)
+		const issues = this.issues
+		return summarize(issues, this.selectedLocale)
 	}
 
 	override toJSON(): JsonArray {
@@ -156,7 +170,10 @@ export class ArkErrors extends BaseArkErrors {
 	toLocaleString(locale?: Locale): string {
 		// Array.prototype.toLocaleString passes each element a tag
 		if (!isLocale(locale)) return this.summary
-		return summarize(this._.map(error => writtenIn(error, locale)))
+		return summarize(
+			this._.map(error => writtenIn(error, locale)),
+			locale
+		)
 	}
 
 	/** @internal */
@@ -195,13 +212,9 @@ export const errorOfIssue = (
 	prefix: array<PropertyKey>,
 	config: ResolvedConfig
 ): ArkError => {
-	const problem = problemOf(issue)
-	const meta: ArkEnv.meta = {
-		expected: issue.expected ?? problem,
-		problem,
-		message: issue.message === messageOf(issue) ? writeMessage : issue.message
-	}
-	return stampError(
+	const message = issue.message ?? messageOf(issue)
+	const meta: ArkEnv.meta = { expected: issue.expected ?? message, message }
+	const error = stampError(
 		{
 			code: issue.code,
 			path: [...prefix, ...issue.path],
@@ -212,6 +225,9 @@ export const errorOfIssue = (
 		} as never,
 		config
 	)
+	// its line is the validator's, which wrote it as arktype would have
+	if (!isCustomIssue(issue)) templated.add(error)
+	return error
 }
 
 const mergeErrors = (
@@ -260,8 +276,7 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 				const ctx = new this._ctor(this._d, this.config)
 				this._node.tApply(this._d, ctx)
 				// data a write or a getter has made valid since fails as a whole
-				if (!ctx.hasError())
-					ctx.reject({ expected: "valid", problem: "is invalid" })
+				if (!ctx.hasError()) ctx.reject(invalidInput())
 				const errors = this as {} as ArkErrors
 				errors._init(this.config)
 				this._f = (ctx.fin(null) as ArkErrors)._
@@ -280,11 +295,15 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 				!revisitsPaths(node)
 			)
 			node.tApply(this._d, ctx)
-			if (!ctx.hasError())
-				ctx.reject({ expected: "valid", problem: "is invalid" })
+			if (!ctx.hasError()) ctx.reject(invalidInput())
 			const errors = ctx.fin(null) as ArkErrors
-			if (errors._.includes(skipped))
-				errors._ = errors._.filter(error => error !== skipped)
+			if (errors._.includes(skipped)) {
+				const found = errors._.filter(error => error !== skipped)
+				// the field a getter reads, where a build wrote errors to find
+				// their issues once read
+				if (findsOnRead) (errors as {} as { _f: ArkError[] })._f = found
+				else errors._ = found
+			}
 			return (this._1 = errors._first)
 		}
 	}
@@ -355,9 +374,10 @@ const firstPathTraversalOf = (Base: typeof Traversal): FirstPathTraversal => {
 			apply: CompactApply,
 			data: unknown,
 			key: PropertyKey,
-			missing?: FailureSite
+			missing?: FailureSite,
+			value?: unknown
 		): boolean | undefined {
-			const stops = super._in(apply, data, key, missing)
+			const stops = super._in(apply, data, key, missing, value)
 			if (
 				this.stopsElsewhere &&
 				this.firstPath !== undefined &&
@@ -422,7 +442,42 @@ export const applyUnread = (
 
 type Keyed = Record<PropertyKey, unknown>
 
-export class ArkTraversal extends Traversal {
+/**
+ * the traversal arktype's own compiled code reports to, which fails a site,
+ * at a key where it's passed one, and enters a key passed the site it fails
+ * where missing and its value. A validator's code passes neither a site nor a
+ * value, so its traversal holds none of this; one of these takes a
+ * validator's failures too, as each is named apart
+ */
+export class SiteTraversal extends Traversal implements SiteFailureContext {
+	/** @internal */
+	_at(site: FailureSite, data: unknown, key?: PropertyKey): boolean {
+		this.addError(issueAt(this.path, site, data, key))
+		return this.failFast
+	}
+
+	/** @internal */
+	_in(
+		apply: CompactApply,
+		data: unknown,
+		key: PropertyKey,
+		missing?: FailureSite,
+		value?: unknown
+	): boolean | undefined {
+		// read first, as only a value that's undefined can be a missing key's,
+		// and whether a key any site passes is in data is a call
+		if (value === undefined) value = (data as Keyed)[key]
+		if (value === undefined && missing && !(key in (data as object)))
+			return this._at(missing, data, key)
+		this.path.push(key)
+		// arktype's own Apply, which reports as a SiteFailureContext takes it
+		const continues = apply(value, this as never)
+		this.path.pop()
+		return !continues
+	}
+}
+
+export class ArkTraversal extends SiteTraversal {
 	override createErrors(): ArkErrors {
 		return new ArkErrors(this.config)
 	}
@@ -439,12 +494,30 @@ export class ArkTraversal extends Traversal {
 
 	// builds a site's error as compiled code does
 	override _at(site: FailureSite, data: unknown, key?: PropertyKey): boolean {
-		const missing = key !== undefined && site.m && !(key in (data as object))
+		// read first, as only a value that's undefined can be a missing key's
+		const value = key === undefined ? data : (data as Keyed)[key]
+		const missing =
+			key !== undefined &&
+			value === undefined &&
+			site.m &&
+			!(key in (data as object))
+		const context = (missing ? site.m : site.v) as NodeErrorContextInput
+		// a site keeps the builder found for each of its contexts, where finding
+		// one by its context is a hashed lookup for every error
+		let build = (missing ? site.mb : site.vb) as ErrorBuilder | undefined
+		if (build === undefined) {
+			build = builderOf(context, this.config)
+			if (build) {
+				if (missing) site.mb = build
+				else site.vb = build
+			}
+		}
 		this.addError(
-			errorOfNodeContext(
-				(missing ? site.m : site.v) as NodeErrorContextInput,
+			errorBuiltBy(
+				build,
+				context,
 				pathAt(this.path, key),
-				key === undefined || missing ? data : (data as Keyed)[key],
+				missing ? data : value,
 				this.config
 			)
 		)
@@ -459,7 +532,7 @@ export class ArkTraversal extends Traversal {
 	): boolean {
 		const errors = branches.map(branch => {
 			this.pushBr()
-			branch(data, this)
+			branch(data, this as never)
 			return this.popBr()!.error as ArkError
 		})
 		errorFromUnion(this, errors, site.meta as ArkEnv.meta, data)
@@ -467,6 +540,9 @@ export class ArkTraversal extends Traversal {
 	}
 
 	protected override raise(input: ArkErrorInput): ArkError {
+		// 2.x's slot, which a cast or JavaScript still passes
+		if (typeof input === "object" && "problem" in input)
+			throwError(removedProblemMessage)
 		// read now, so a caller's later change to its input doesn't reach the error
 		const errCtx: ArkErrorContextInput =
 			typeof input === "object" ?
@@ -490,10 +566,9 @@ export class ArkTraversal extends Traversal {
 			meta &&
 			(meta.expected !== undefined ||
 				meta.actual !== undefined ||
-				meta.problem !== undefined ||
 				meta.message !== undefined)
 		) {
-			const { expected, actual, problem, message, ...rest } = meta
+			const { expected, actual, message, ...rest } = meta
 			errCtx.meta = rest
 		}
 		return errorFromContext(this, errCtx)
@@ -539,7 +614,6 @@ export const errorFromUnion = (
 	const atBases =
 		!isDescribed &&
 		meta.expected === undefined &&
-		meta.problem === undefined &&
 		meta.message === undefined &&
 		flat.length !== 0 &&
 		flat.every(e => failsAtBasis(e, path))
@@ -571,18 +645,26 @@ const failsAtBasis = (error: ArkError, path: array<PropertyKey>): boolean =>
 	pathEquals(error.path, path)
 
 /**
- * Writes an error's text in `locale`, as its errors would be written if it
- * were configured.
+ * Writes an error's line of a summary in `locale`: its path or title, then
+ * its message, as `ArkErrors.toLocaleString(locale)` writes each error.
+ *
+ * That is not the error's `message` in that locale, which never holds its
+ * path: for an error below the root, `messageIn(error, en)` is
+ * `name must be a string` where `error.message` is `must be a string`.
  */
 export const messageIn = (error: ArkError, locale: Locale): string =>
-	writtenIn(error, locale).message
+	lineOf(writtenIn(error, locale), locale)
 
-/**
- * errors as Standard Schema issues, whose consumers show each beside its path,
- * so each says its problem
- */
-export const standardIssuesOf = (errors: ArkErrors): readonly ArkError[] =>
-	errors.issues.map(error => ({ ...error, message: error.problem }))
+// what data a write or a getter has made valid since is rejected with, and
+// what errors "none" says: arktype's own text, so it's written after a path
+// as a message arktype writes is
+const invalidInput = (): CustomErrorInput => ({
+	expected: "valid",
+	message: "is invalid"
+})
+
+const isInvalidInput = (input: ArkErrorContextInput | undefined): boolean =>
+	input?.message === "is invalid" && input.expected === "valid"
 
 /** an issue errors "none" added, written in en as saying its data is invalid */
 export const invalidError = (
@@ -590,7 +672,7 @@ export const invalidError = (
 	config: ResolvedConfig
 ): ArkError => {
 	const error = errorOfContext(
-		{ code: "predicate", expected: "valid", problem: "is invalid", data },
+		{ code: "predicate", ...invalidInput(), data } as never,
 		path,
 		config
 	)
@@ -668,7 +750,9 @@ const pathKeys = {
 export type ErrorBuilder = (
 	context: ArkErrorContextInput,
 	path: PropertyKey[],
-	data: unknown
+	data: unknown,
+	// the error it assigns them to, stamped already
+	error: ArkError
 ) => ArkError
 
 const errorOfNodeContext = (
@@ -676,16 +760,46 @@ const errorOfNodeContext = (
 	path: PropertyKey[],
 	data: unknown,
 	config: ResolvedConfig
-): ArkError => {
+): ArkError =>
+	errorBuiltBy(builderOf(context, config), context, path, data, config)
+
+// a context's error: built by its compiled builder, or spread where there's none
+const errorBuiltBy = (
+	build: ErrorBuilder | undefined,
+	context: ArkErrorContextInput,
+	path: PropertyKey[],
+	data: unknown,
+	config: ResolvedConfig
+): ArkError =>
+	build ?
+		build(context, path, data, stampError(new StampedFirst(), config))
+	:	stampError({ data, path, ...context } as never, config)
+
+// the object a compiled builder assigns an error's keys to: plain, as its
+// prototype is Object's, but constructed, so each has the same shape when it's
+// stamped, whatever its code adds after. Stamping a literal of each code's
+// shape instead is a private field defined on as many shapes as there are
+// codes, which V8 stops caching past four: about 420 instructions an error,
+// against 30. Its two keys are every error's first, in a literal's order
+const StampedFirst: new () => ArkError = function (
+	this: Record<string, unknown>
+) {
+	this.data = undefined
+	this.path = undefined
+} as never
+StampedFirst.prototype = Object.prototype
+
+// compiled the first time a context fails, unless its config is jitless
+const builderOf = (
+	context: ArkErrorContextInput,
+	config: ResolvedConfig
+): ErrorBuilder | undefined => {
 	let build = buildersByContext.get(context)
 	if (!build && compileBuilder && !config.jitless) {
 		build = compileBuilder(context)
 		if (build) buildersByContext.set(context, build)
 	}
-	return stampError(
-		build ? build(context, path, data) : ({ data, path, ...context } as never),
-		config
-	)
+	return build
 }
 
 const buildersByContext = new WeakMap<object, ErrorBuilder>()
@@ -708,21 +822,35 @@ class Identity {
 	}
 }
 
-// a private field, so an error stays a plain object
-class ErrorSource extends Identity {
-	#config: ResolvedConfig
+// the context an error was given, whose text a copy keeps, with its config
+class Supplied {
+	declare readonly config: ResolvedConfig
+	declare readonly input: ArkErrorContextInput
 
-	constructor(error: ArkError, config: ResolvedConfig) {
+	constructor(config: ResolvedConfig, input: ArkErrorContextInput) {
+		this.config = config
+		this.input = input
+	}
+}
+
+// a private field, so an error stays a plain object. One field, its config or
+// what it was supplied with, since asking an error for a field it lacks costs
+// several times what reading the one it has does
+class ErrorSource extends Identity {
+	#source: ResolvedConfig | Supplied
+
+	constructor(error: ArkError, source: ResolvedConfig | Supplied) {
 		super(error)
-		this.#config = config
+		this.#source = source
 	}
 
-	static configOf(error: ArkError): ResolvedConfig {
-		return #config in error ? error.#config : throwError(copiedErrorMessage)
+	// a copy holds no source, so reading its config or input throws
+	static of(error: ArkError): ResolvedConfig | Supplied {
+		return #source in error ? error.#source : throwError(copiedErrorMessage)
 	}
 
 	static stamps(issue: ArkIssue): boolean {
-		return #config in issue
+		return #source in issue
 	}
 }
 
@@ -730,24 +858,14 @@ class ErrorSource extends Identity {
 export const isArkError = (issue: ArkIssue): issue is ArkError =>
 	ErrorSource.stamps(issue)
 
-// an error given a context, whose text a copy keeps
-class SuppliedSource extends ErrorSource {
-	#input: ArkErrorContextInput
+const configOf = (error: ArkError): ResolvedConfig => {
+	const source = ErrorSource.of(error)
+	return source instanceof Supplied ? source.config : source
+}
 
-	constructor(
-		error: ArkError,
-		config: ResolvedConfig,
-		input: ArkErrorContextInput
-	) {
-		super(error, config)
-		this.#input = input
-	}
-
-	static inputOf(error: ArkError): ArkErrorContextInput | undefined {
-		if (#input in error) return error.#input
-		// a copy holds neither field, so reading its config throws
-		ErrorSource.configOf(error)
-	}
+const inputOf = (error: ArkError): ArkErrorContextInput | undefined => {
+	const source = ErrorSource.of(error)
+	return source instanceof Supplied ? source.input : undefined
 }
 
 const stampError = (
@@ -755,28 +873,44 @@ const stampError = (
 	config: ResolvedConfig,
 	input?: ArkErrorContextInput
 ): ArkError => {
-	if (input) new SuppliedSource(error, config, input)
-	else new ErrorSource(error, config)
+	new ErrorSource(error, input ? new Supplied(config, input) : config)
 	return error
 }
 
 export const suppliedText = (
 	error: ArkError,
-	slot: "expected" | "actual" | "problem" | "message"
-): string | undefined => SuppliedSource.inputOf(error)?.[slot]
+	slot: "expected" | "actual" | "message"
+): string | undefined => inputOf(error)?.[slot]
 
 const writeError = (
 	error: ArkError,
 	config: ResolvedConfig,
 	locale: Locale
 ): void => {
-	writeAtPaths(error, config, locale)
-	writeRelative(error, config, locale)
+	const code = error.code
+	if (code === "union" || code === "intersection") {
+		writeAtPaths(error, config, locale)
+		writeRelative(error, config, locale)
+		return
+	}
+	// any other holds no errors and no bases, so it's written once at its path:
+	// what writeAtPaths does for it, without reading its code again for each
+	// question only a union or intersection answers
+	error.propString ??= stringifyPath(error.path)
+	if (renderer && locale !== renderer.en) renderer.write(error, config, locale)
+	else writeText(error, config, locale, code)
 }
 
-// a union's or intersection's problem is about its own value, and is what its
-// Standard Schema issue says beside its path, so the paths of its errors are
-// written from its own; its message, written first, keeps them whole
+// the line of a union that lists its errors' whole paths, held as a
+// standalone validator's issue holds it, where another copy of arktype reads
+// it too. Not enumerable, so it's neither copied, printed nor serialized
+const noteLine = (error: ArkIssue, line: string): void => {
+	Object.defineProperty(error, "_l", { value: line, configurable: true })
+}
+
+// a union's or intersection's message is about its own value, and is what a
+// form shows beside its path, so the paths of its errors are written from its
+// own; the line of one listing its errors, read first, keeps them whole
 const writeRelative = (
 	error: ArkError,
 	config: ResolvedConfig,
@@ -785,12 +919,170 @@ const writeRelative = (
 	if (error.code !== "union" && error.code !== "intersection") return
 	for (const e of error.errors) writeRelative(e, config, locale)
 	if (error.path.length === 0) return
-	// written as if the data at its path were validated alone
+	if (isCustom(error)) {
+		// one configured for it was written at its own path from what it expects
+		// there; one its errors share, or it was raised with, is kept as well
+		if (unconfigured(error, config))
+			error.expected = relativeTo(error, config, locale, error.message).expected
+		return
+	}
+	// a union listing its errors names each one's path, so its line is as written
+	if (error.code === "union" && listsErrors(error))
+		noteLine(error, error.message)
+	const relative = relativeTo(error, config, locale)
+	error.expected = relative.expected
+	error.message = relative.message
+}
+
+// a union or intersection written as if the data at its path were validated
+// alone. A message is the error's own: a writer configured for it reads its
+// path, like one looking up a label, so it's never called for the copy
+const relativeTo = (
+	error: ArkError,
+	config: ResolvedConfig,
+	locale: Locale,
+	message?: string
+): ArkError => {
 	const relative = unwrittenError(error)
 	unprefix(relative, error.path.length)
+	if (message !== undefined) relative.message = message
 	writeAtPaths(relative, config, locale)
-	error.expected = relative.expected
-	error.problem = relative.problem
+	return relative
+}
+
+// errors whose message is one a union or intersection's errors share
+const sharing = new WeakSet<ArkError>()
+
+// errors whose message a standalone validator or another copy of arktype
+// wrote from what it expected, though it's held as if it were configured
+const templated = new WeakSet<ArkError>()
+
+// what tells that of a standalone validator's issue, for what reads one
+export { isCustomIssue }
+
+/**
+ * @internal marks an error raised with a message arktype wrote from what it
+ * expected, like one read from another copy of arktype, so a summary writes it
+ * after its path as it does its own, or as `line`, where it listed its
+ * errors' whole paths
+ */
+export const asTemplated = <error extends ArkIssue>(
+	error: error,
+	line?: string
+): error => {
+	if (isArkError(error)) {
+		templated.add(error)
+		if (line !== undefined) noteLine(error, line)
+	}
+	// a validator's issue holds nothing saying so: its message is a sentence of
+	// its own unless it begins as one written from what it expects would, so
+	// what it expects is read back from a message written that way, and is
+	// nothing where the message is what's written of data only known invalid
+	else if (error.message?.startsWith("must be "))
+		error.expected = error.message.slice(8)
+	else if (error.message === "is invalid") error.expected = undefined
+	return error
+}
+
+/**
+ * @internal whether an error's message was configured for its Type or code or
+ * supplied where it was raised, rather than written from what it expected
+ */
+export const isCustom = (error: ArkError): boolean => {
+	if (templated.has(error)) return false
+	if (sharing.has(error)) return true
+	const source = ErrorSource.of(error)
+	let config: ResolvedConfig
+	if (source instanceof Supplied) {
+		if (source.input.message !== undefined) return !isInvalidInput(source.input)
+		config = source.config
+	} else config = source
+	return (
+		configuredMessageOf(error) !== undefined ||
+		configuresMessage(config, error.code)
+	)
+}
+
+// whether each config writes every code's message as the default does, found
+// once: nearly all do, and reading a code's writers from two configs for each
+// line of a summary cost a tenth of writing it
+let messagesDefaulted = new WeakMap<ResolvedConfig, boolean>()
+
+// the config last found to, so errors of one config ask nothing of the map
+let lastDefaulted: ResolvedConfig | undefined
+
+const defaultsMessages = (config: ResolvedConfig): boolean => {
+	if (config === lastDefaulted) return true
+	let defaulted = messagesDefaulted.get(config)
+	if (defaulted === undefined) {
+		defaulted = true
+		let k: keyof ResolvedConfig
+		for (k in defaultConfig) {
+			const writers = defaultConfig[k] as { message?: unknown } | undefined
+			if (
+				typeof writers === "object" &&
+				writers !== null &&
+				"message" in writers &&
+				(config[k] as { message?: unknown } | undefined)?.message !==
+					writers.message
+			) {
+				defaulted = false
+				break
+			}
+		}
+		messagesDefaulted.set(config, defaulted)
+	}
+	if (defaulted) lastDefaulted = config
+	return defaulted
+}
+
+const configuresMessage = (
+	config: ResolvedConfig,
+	code: ArkErrorCode
+): boolean =>
+	!defaultsMessages(config) &&
+	config[code].message !== defaultConfig[code].message
+
+/**
+ * @internal whether an issue is an error of this copy of arktype whose message
+ * is custom: what a Type's Standard Schema props answer another copy reading
+ * one, which can't tell from what this copy's errors keep to themselves
+ */
+export const isCustomError = (issue: object): boolean =>
+	isArkError(issue as ArkIssue) && isCustom(issue as ArkError)
+
+/**
+ * @internal the message configured for an error's Type. A message written out
+ * for a value says what's wrong with it however it fails, so it's a missing
+ * key's too
+ */
+export const configuredMessageOf = (
+	error: ArkError
+): MessageConfig<never> | undefined => {
+	const message = error.meta?.message
+	if (message !== undefined || error.code !== "required") return message
+	const ofValue = error.valueMeta?.message
+	// a writer reads the context of an error of its value, which a key has none of
+	return typeof ofValue === "string" ? ofValue : undefined
+}
+
+// a written error's line of a summary: its message alone at the root or
+// where it lists its errors, and after its path anywhere else
+const lineOf = (error: ArkError, locale: Locale): string => {
+	if (error.path.length === 0) return error.message
+	const listed = (error as ArkIssue)._l
+	if (listed !== undefined) return listed
+	// as a validator's summary tells one, which holds only its message: a
+	// sentence of its own unless it begins as what's written from what it
+	// expects would, so one configured as that text reads on from its path
+	const custom = isCustom(error) && !error.message.startsWith(messageOf(error))
+	const line = locale.line as LineWriter | undefined
+	// en's, also where a locale passed as is lacks one, is written here
+	if (line === undefined || line === writeLine)
+		return `${error.propString}${custom ? ":" : ""} ${error.message}`
+	// a writer's context is the error itself, copied only to say its message
+	// is custom, since a copy costs more than the line it's read for
+	return line((custom ? { ...error, custom } : error) as never, locale)
 }
 
 const unprefix = (error: ArkError, depth: number): void => {
@@ -821,31 +1113,56 @@ const writeAtPaths = (
 			if (pathEquals(e.path, error.path)) e.propString ??= error.propString
 			writeAtPaths(e, config, locale)
 		}
+		// a message configured for each of its errors is its own
 		const shared =
-			(error.meta?.message ?? config[error.code].message) ===
-				defaultConfig[error.code].message && sharedMessageOf(error.errors)
-		if (shared) error.message ??= shared
+			error.message === undefined &&
+			unconfigured(error, config) &&
+			sharedMessageOf(error.errors)
+		if (shared) {
+			error.message = shared
+			sharing.add(error)
+		}
+		// a message configured for one below the root is written once, at its
+		// whole path, from what it expects of the value there
+		if (
+			error.path.length !== 0 &&
+			error.expected === undefined &&
+			error.message === undefined &&
+			!unconfigured(error, config)
+		)
+			error.expected = relativeTo(error, config, locale, "").expected
 	}
 	if (renderer && locale !== renderer.en) renderer.write(error, config, locale)
 	else writeText(error, config, locale)
 }
 
-// the message each error was configured or supplied with, if they agree
+const unconfigured = (error: ArkError, config: ResolvedConfig): boolean => {
+	const message = configuredMessageOf(error)
+	return message === undefined ?
+			!configuresMessage(config, error.code)
+		:	message === defaultConfig[error.code].message
+}
+
+// the message each error was configured or supplied with, if they agree. One
+// that begins as what's written from what its error expects would is listed
+// with what the others expect, as a validator's is, whose issue holds only
+// its message
 const sharedMessageOf = (errors: readonly ArkError[]): string | undefined => {
 	let shared: string | undefined
 	for (const e of errors) {
-		const message =
+		const text =
 			(
-				e.meta?.message !== undefined ||
+				configuredMessageOf(e) !== undefined ||
 				suppliedText(e, "message") !== undefined
 			) ?
-				e.message
+				e.message.startsWith(messageOf(e)) ?
+					undefined
+				:	e.message
 			: e.code === "union" || e.code === "intersection" ?
 				sharedMessageOf(e.errors)
 			:	undefined
-		if (message === undefined || (shared !== undefined && message !== shared))
-			return
-		shared = message
+		if (text === undefined || (shared !== undefined && text !== shared)) return
+		shared = text
 	}
 	return shared
 }
@@ -853,20 +1170,48 @@ const sharedMessageOf = (errors: readonly ArkError[]): string | undefined => {
 export const writeText = (
 	error: ArkError,
 	config: ResolvedConfig,
-	locale: Locale
+	locale: Locale,
+	// read once by a caller that has, as an error's shape differs by its code,
+	// so no read of one is cached where errors of many codes are written
+	code: ArkErrorCode = error.code
 ): void => {
-	const writers = config[error.code]
+	const writers = config[code]
 	const meta = error.meta
-	const expected = meta?.expected ?? writers.expected
-	error.expected ??=
-		typeof expected === "function" ? expected(error as never, locale) : expected
-	error.actual ??= writeActual(error, meta?.actual ?? writers.actual, locale)
-	const problem = meta?.problem ?? writers.problem
-	error.problem ??=
-		typeof problem === "function" ? problem(error as never, locale) : problem
-	const message = meta?.message ?? writers.message
-	error.message ??=
-		typeof message === "function" ? message(error as never, locale) : message
+	// each slot is read once and kept, where reading back what was just
+	// written is another read no error's shape caches
+	let expected: string | undefined = error.expected
+	if (expected === undefined || expected === null) {
+		const configured = meta?.expected ?? writers.expected
+		error.expected = expected =
+			typeof configured === "function" ?
+				configured(error as never, locale)
+			:	configured
+	}
+	// whether its actual was described here, which en's message then leaves out
+	let described = false
+	if (error.actual === undefined || error.actual === null) {
+		const configured: string | ActualWriter<never> =
+			meta?.actual ?? writers.actual
+		if (typeof configured === "string") error.actual = configured
+		else {
+			if (describesData(configured)) {
+				describeUnwrittenActual(error)
+				described = true
+			}
+			error.actual = configured(error.data as never, error as never, locale)
+		}
+	}
+	if (error.message === undefined || error.message === null) {
+		const message =
+			meta?.message ??
+			(code === "required" ? configuredMessageOf(error) : undefined) ??
+			writers.message
+		error.message =
+			// en's own, written as it writes one whose actual describes its data
+			message === writeMessage && described ? `must be ${expected}`
+			: typeof message === "function" ? message(error as never, locale)
+			: message
+	}
 }
 
 /**
@@ -907,7 +1252,12 @@ export const configureLocale = (
 	locale: ArkSchemaConfig["locale"],
 	base: ResolvedConfig
 ): Locale => {
-	defaultConfig = base
+	if (defaultConfig !== base) {
+		defaultConfig = base
+		// what each config was compared with
+		messagesDefaulted = new WeakMap()
+		lastDefaulted = undefined
+	}
 	return (
 		renderer ? renderer.configure(locale, base)
 		: locale === undefined || locale === base.locale ? base.locale
@@ -916,12 +1266,11 @@ export const configureLocale = (
 }
 
 const writtenIn = (error: ArkError, locale: Locale): ArkError => {
-	const config = ErrorSource.configOf(error)
+	const config = configOf(error)
 	if (!renderer && locale !== config.locale)
 		return throwError(unrenderedLocaleMessage)
 	const copy = unwrittenError(error)
-	// only its message is read
-	writeAtPaths(copy, config, locale)
+	writeError(copy, config, locale)
 	return copy
 }
 
@@ -931,9 +1280,9 @@ const isLocale = (locale: unknown): locale is Locale =>
 export const unwrittenError = (
 	error: ArkError,
 	prefix?: array<PropertyKey>,
-	config: ResolvedConfig = ErrorSource.configOf(error)
+	config: ResolvedConfig = configOf(error)
 ): ArkError => {
-	const input = SuppliedSource.inputOf(error)
+	const input = inputOf(error)
 	const copy: Record<string, unknown> = {}
 	for (const k in error) {
 		if (!(k in writtenKeys)) copy[k] = error[k as never]
@@ -946,6 +1295,12 @@ export const unwrittenError = (
 	if (error.code === "union" || error.code === "intersection")
 		copy.errors = error.errors.map(e => unwrittenError(e, prefix, config))
 	const stamped = stampError(copy as never, config, input)
+	if (templated.has(error)) {
+		templated.add(stamped)
+		// a line another validator listed whole paths in holds at the same path
+		const line = (error as ArkIssue)._l
+		if (!prefix && line !== undefined) noteLine(stamped, line)
+	}
 	const bases = basesByUnion.get(error)
 	if (bases) {
 		basesByUnion.set(
@@ -960,13 +1315,14 @@ const writtenKeys = {
 	propString: 1,
 	expected: 1,
 	actual: 1,
-	problem: 1,
 	message: 1
 }
 
-const summarize = (issues: readonly ArkError[]): string => {
-	let result = issues.length === 0 ? "" : issues[0].message
-	for (let i = 1; i < issues.length; i++) result += `\n${issues[i].message}`
+// each error's line: its message after its path, a custom one after a colon
+const summarize = (issues: readonly ArkError[], locale: Locale): string => {
+	let result = ""
+	for (let i = 0; i < issues.length; i++)
+		result += (i ? "\n" : "") + lineOf(issues[i], locale)
 	return result
 }
 
@@ -1018,11 +1374,11 @@ export const flatByPath = (errors: ArkErrors): Record<string, ArkError[]> =>
 	recordByPath(errors, error => error)
 
 /**
- * Each path's problems, by the string of the path.
+ * Each path's messages, by the string of the path.
  */
-export const flatProblemsByPath = (
+export const flatMessagesByPath = (
 	errors: ArkErrors
-): Record<string, string[]> => recordByPath(errors, error => error.problem)
+): Record<string, string[]> => recordByPath(errors, error => error.message)
 
 /**
  * All path strings at which errors are present mapped to the errors occuring
@@ -1069,7 +1425,7 @@ export interface DerivableErrorContext<
 > {
 	expected: string
 	actual: string
-	problem: string
+	/** what failed, without the path it failed at, which a summary writes */
 	message: string
 	data: getAssociatedDataForError<code>
 	path: array<PropertyKey>
@@ -1089,7 +1445,9 @@ export interface ErrorContextsByCode extends NodeErrorContextsByKind {
 	discriminant: DiscriminantErrorContext
 }
 
-export type ArkErrorCode = keyof ErrorContextsByCode
+// every key is a string already: intersected, the union is this alias's own, so
+// an error is shown as ArkError<ArkErrorCode>, not <keyof ErrorContextsByCode>
+export type ArkErrorCode = keyof ErrorContextsByCode & string
 
 type ArkErrorContextInputsByCode = {
 	[code in ArkErrorCode]: errorCtx<code> & DerivableErrorContextInput<code>
@@ -1112,10 +1470,16 @@ type unstringifiable = {
 	toLocaleString(never: never): string
 }
 
-export type ProblemContext<code extends ArkErrorCode = ArkErrorCode> =
+/** an error as its line of a summary is written, once its message is */
+export type LineContext<code extends ArkErrorCode = ArkErrorCode> =
 	code extends unknown ?
-		omit<ArkError<code>, "problem" | "message"> & unstringifiable
+		ArkError<code> & {
+			/** `true` where its message was configured or supplied, not written from what it expected */
+			readonly custom?: true
+		} & unstringifiable
 	:	never
+
+export type LineWriter = (error: LineContext, locale: Locale.Info) => string
 
 export type CustomErrorInput = show<
 	// ensure a custom error can be discriminated on the lack of a code
@@ -1123,15 +1487,6 @@ export type CustomErrorInput = show<
 >
 
 export type ArkErrorInput = string | ArkErrorContextInput | CustomErrorInput
-
-export type ProblemConfig<code extends ArkErrorCode = ArkErrorCode> =
-	| string
-	| ProblemWriter<code>
-
-export type ProblemWriter<code extends ArkErrorCode = ArkErrorCode> = (
-	error: ProblemContext<code>,
-	locale: Locale.Info
-) => string
 
 export type MessageConfig<code extends ArkErrorCode = ArkErrorCode> =
 	| string
@@ -1151,8 +1506,7 @@ export type ExpectedConfig<code extends ArkErrorCode = ArkErrorCode> =
 
 export type ExpectedContext<code extends ArkErrorCode = ArkErrorCode> =
 	code extends unknown ?
-		omit<ArkError<code>, "expected" | "actual" | "problem" | "message"> &
-			unstringifiable
+		omit<ArkError<code>, "expected" | "actual" | "message"> & unstringifiable
 	:	never
 
 export type ExpectedWriter<code extends ArkErrorCode = ArkErrorCode> = (
@@ -1166,10 +1520,7 @@ export type ActualConfig<code extends ArkErrorCode = ArkErrorCode> =
 
 export type ActualContext<code extends ArkErrorCode = ArkErrorCode> =
 	code extends unknown ?
-		omit<
-			ArkError<code>,
-			"expected" | "description" | "actual" | "problem" | "message"
-		> &
+		omit<ArkError<code>, "expected" | "description" | "actual" | "message"> &
 			unstringifiable
 	:	never
 
