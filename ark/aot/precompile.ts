@@ -8718,7 +8718,12 @@ const issuesReading = (
 	return {
 		...issues,
 		readsErrors,
-		readsSummary: issues.readsSummary || readsErrors || isRead("summary"),
+		// a Standard Schema failure's message is its errors' summary
+		readsSummary:
+			issues.readsSummary ||
+			readsErrors ||
+			isRead("summary") ||
+			isRead("~standard"),
 		rewritesUnions:
 			issues.rewritesUnions ||
 			readsErrors ||
@@ -8739,7 +8744,7 @@ const unreadIssuesOf = (
 		"a module reads the errors a validator returns"
 	: !issues.readsSummary && isRead("summary") ?
 		"a module reads the summary of the errors a validator returns"
-	: !issues.rewritesUnions && isRead("~standard") ?
+	: (!issues.rewritesUnions || !issues.readsSummary) && isRead("~standard") ?
 		"a module reads ~standard of a validator"
 	: !issues.namesTraversalError && isRead("thrown") ?
 		"a module names TraversalError, the class of what an assert throws"

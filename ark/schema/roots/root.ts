@@ -117,8 +117,18 @@ export abstract class BaseRoot<
 					version: 1,
 					validate: input => {
 						const out = this(input)
-						if (out instanceof ArkErrors)
-							return { issues: (out as ArkErrors).issues as never }
+						if (out instanceof ArkErrors) {
+							return {
+								issues: (out as ArkErrors).issues as never,
+								// the errors' summary, which a consumer is to prefer to a
+								// message it builds from issues
+								// (standard-schema/standard-schema#204): a getter, as one
+								// reading issues alone, like most today, then writes none
+								get message() {
+									return (out as ArkErrors).summary
+								}
+							}
+						}
 						return { value: out }
 					},
 					jsonSchema: {

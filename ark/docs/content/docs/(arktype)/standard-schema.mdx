@@ -23,7 +23,7 @@ Form["~standard"].validate({ name: "Ada", age: "36" })
 // { value: { name: "Ada", age: 36 } }
 ```
 
-On failure, the result is `{ issues }`, one for each error in the [`ArkErrors`](/docs/errors) you get from calling the Type. Each issue's `message` is its error's, which never names the error's own path, since a library printing Standard Schema issues writes each issue's `path` before its `message` or shows it beside the field:
+On failure, the result is `{ issues, message }`. `issues` holds one for each error in the [`ArkErrors`](/docs/errors) you get from calling the Type. Each issue's `message` is its error's, which never names the error's own path, since a library printing Standard Schema issues writes each issue's `path` before its `message` or shows it beside the field. The result's own `message` is the errors' [`summary`](/docs/errors), which does name each path, for a library that wants one string for the whole failure:
 
 ```ts
 const Form = type({
@@ -32,7 +32,10 @@ const Form = type({
 })
 // ---cut---
 const result = Form["~standard"].validate({ name: "Ada", age: "old" })
-// { issues: [{ path: ["age"], message: 'must be a well-formed integer string', ... }] }
+// {
+// 	issues: [{ path: ["age"], message: "must be a well-formed integer string", ... }],
+// 	message: "age must be a well-formed integer string"
+// }
 ```
 
 A union's message lists each branch's path from the union's, like `b must be a string or c must be a number`. A [`message`](/docs/configuration#message) you configure, or pass to `ctx.reject`, is the issue's message as you wrote it, so it's what a form shows:

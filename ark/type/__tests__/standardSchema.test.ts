@@ -33,6 +33,26 @@ contextualize(() => {
 		attest(badStandardOut.issues[0].path).equals(["foo"])
 	})
 
+	it("a failure's message is its errors' summary, which names each path", () => {
+		const T = type({ a: "string", b: { c: "number > 0" } })
+		const data = { b: { c: 0 } }
+		const failure = T["~standard"].validate(
+			data
+		) as StandardSchemaV1.FailureResult
+		attest(failure.message).equals(
+			"a must be a string (was missing)\nb.c must be positive"
+		)
+		attest(failure.message).equals((T(data) as type.errors).summary)
+		// its own, so a consumer copying or serializing the failure holds it
+		attest(Object.keys(failure)).equals(["issues", "message"])
+		attest({ ...failure }.message).equals(failure.message)
+		attest(JSON.parse(JSON.stringify(failure)).message).equals(failure.message)
+		// a success has none
+		attest(Object.keys(T["~standard"].validate({ a: "", b: { c: 1 } }))).equals(
+			["value"]
+		)
+	})
+
 	it("an issue's message is its error's message, which leaves its path to the consumer", () => {
 		const textOf = (T: type.Any, data: unknown) => {
 			const errors = T(data) as type.errors

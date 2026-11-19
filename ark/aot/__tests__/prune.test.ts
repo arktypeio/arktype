@@ -1936,6 +1936,27 @@ try {
 			attest(named.includes("extends Error")).equals(true)
 		})
 
+		it("writes a Standard Schema failure's message, its errors' summary, where a program reads ~standard alone", async () => {
+			const failing = (opts: PrecompileUnpluginOptions) =>
+				bundle(opts, {
+					stdin: {
+						contents: `import { User } from "./types.ts"
+
+const failure = User["~standard"].validate({ name: 5 }) as { message?: string }
+console.log(Object.keys(failure), failure.message)
+`,
+						resolveDir: root,
+						loader: "ts"
+					}
+				})
+			const expected = `[ 'issues', 'message' ] name must be a string
+`
+			// errors written for speed, then for size, then as arktype writes them
+			attest(run(await failing({ preset: undefined }))).equals(expected)
+			attest(run(await failing({}))).equals(expected)
+			attest(run(await failing({ runtime: "arktype" }))).equals(expected)
+		})
+
 		it("returns what a narrow finds valid once asked again, as arktype does", async () => {
 			const files = writeFixture(
 				{

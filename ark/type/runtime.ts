@@ -288,11 +288,21 @@ export const bakeInto = <t>(
 }
 
 // a Standard Schema consumer shows each issue beside its path, which its
-// message doesn't name, so each is its error's own
+// message doesn't name, so each is its error's own. The failure's own message
+// is the errors' summary, which a consumer is to prefer to one it builds from
+// issues (standard-schema/standard-schema#204): a getter, as arktype's is, so
+// one reading issues alone, like most today, writes no summary
 export const standardResultOf = (
 	out: unknown
 ): StandardSchemaV1.Result<unknown> =>
-	out instanceof ArkErrors ? { issues: out.issues } : { value: out }
+	out instanceof ArkErrors ?
+		{
+			issues: out.issues,
+			get message() {
+				return (out as ArkErrors).summary
+			}
+		}
+	:	{ value: out }
 
 // shorter at each site than a literal
 export const siteOf = ((

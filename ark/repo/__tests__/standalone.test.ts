@@ -5,6 +5,7 @@ import {
 	type ArkSchemaConfig,
 	type ExpectedContext,
 	type MessageContext,
+	type StandardSchemaV1,
 	writeInvalidJsonSchemaTargetMessage,
 	type ToJsonSchema,
 	type Traversal
@@ -710,6 +711,42 @@ nick must be a string or null`)
 		attest(
 			await issuesOf({ optimize: "size", issues: "issuesLean.ts" })
 		).equals(expected)
+	})
+
+	it("a Standard Schema failure's message is its errors' summary, as arktype's is", async () => {
+		const T = type({ a: "string", b: { c: "number > 0" } })
+		const data = { b: { c: 0 } }
+		const failureOf = (validator: type.Any) => {
+			const failure = validator["~standard"].validate(
+				data
+			) as StandardSchemaV1.FailureResult
+			return {
+				keys: Object.keys(failure),
+				message: failure.message,
+				// a consumer serializing the failure holds it
+				serialized: JSON.parse(JSON.stringify(failure)).message,
+				summary: (validator(data) as type.errors).summary
+			}
+		}
+		const expected = failureOf(T)
+		attest(expected).snap({
+			keys: ["issues", "message"],
+			message: "a must be a string (was missing)\nb.c must be positive",
+			serialized: "a must be a string (was missing)\nb.c must be positive",
+			summary: "a must be a string (was missing)\nb.c must be positive"
+		})
+		const precompiledWith = async (options: LoadOptions) =>
+			failureOf((await load({ T }, options)).T)
+		attest(await precompiledWith({})).equals(expected)
+		// errors written for size
+		attest(
+			await precompiledWith({ optimize: "size", issues: "issuesLean.ts" })
+		).equals(expected)
+		// a success has none
+		const { T: validator } = await load({ T })
+		attest(
+			Object.keys(validator["~standard"].validate({ a: "", b: { c: 1 } }))
+		).equals(["value"])
 	})
 
 	it("rejects an object only inheriting Date.prototype", async () => {
