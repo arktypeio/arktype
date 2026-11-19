@@ -5,7 +5,7 @@ import type * as Monaco from "monaco-editor"
 export const setupErrorLens = (
 	monaco: typeof Monaco,
 	editor: Monaco.editor.IStandaloneCodeEditor,
-	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker
+	tsLanguageService: Monaco.typescript.TypeScriptWorker
 ) => {
 	const styleElement = document.createElement("style")
 	styleElement.textContent = styles
@@ -26,10 +26,7 @@ export const setupErrorLens = (
 		if (!model) return
 
 		// group diagnostics by line to only show one error per line
-		const diagnosticsByLine = new Map<
-			number,
-			Monaco.languages.typescript.Diagnostic
-		>()
+		const diagnosticsByLine = new Map<number, Monaco.typescript.Diagnostic>()
 
 		for (const diag of diagnostics) {
 			if (!diag.start) continue
@@ -111,9 +108,9 @@ const applyReplacements = (message: string): string => {
 }
 
 const getDiagnostics = async (
-	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker,
+	tsLanguageService: Monaco.typescript.TypeScriptWorker,
 	model: Monaco.editor.ITextModel
-): Promise<Monaco.languages.typescript.Diagnostic[]> => {
+): Promise<Monaco.typescript.Diagnostic[]> => {
 	const uri = model.uri.toString()
 	const syntacticDiagnostics =
 		await tsLanguageService.getSyntacticDiagnostics(uri)
