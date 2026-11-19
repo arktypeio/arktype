@@ -1,0 +1,56 @@
+import type { StandardSchemaV1 } from "./standardSchema.ts"
+
+/** what a failure is built from: errors of any class, each of which writes its own summary */
+export type SummarizedErrors = {
+	readonly issues: StandardSchemaV1.FailureResult["issues"]
+	readonly summary: string
+}
+
+type StandardFailure = StandardSchemaV1.FailureResult & {
+	/** @internal writes the summary of the errors it was built from */
+	_s: () => string
+}
+
+// A failure's message is its errors' summary, which a consumer is to prefer
+// to one it builds from issues (standard-schema/standard-schema#204). It's a
+// getter, as arktype's own is, so a consumer reading issues alone, like most
+// today, has none written, and the failure's own and enumerable, so copying
+// or serializing one holds it.
+//
+// It's one getter for every failure. Written as `get message()` in the
+// failure's literal it was a getter of its own for each, and V8 kept every
+// such failure in dictionary mode (ark/repo/testV8.ts), with no shape to
+// share: a failing validate then spent more building its result than finding
+// its issues.
+const message: PropertyDescriptor & ThisType<StandardFailure> = {
+	get() {
+		return this._s()
+	},
+	enumerable: true
+}
+
+/**
+ * @internal a Standard Schema failure of errors: their issues, and their
+ * summary as its message once it's read.
+ *
+ * The summary is the errors' own rather than written from the issues, since
+ * each errors class writes its own: arktype's in the locale they were read
+ * in. What reads it is a function the failure holds, not the errors: a
+ * failure kept in a reactive store is read through a proxy that wraps each
+ * object it returns, and errors read through one can't tell their own. It's
+ * held where neither a copy, a print nor a comparison of the failure finds
+ * it, so the failure reads as Standard Schema's, and writable, as such a
+ * proxy may not return another value for a property that's neither writable
+ * nor configurable
+ */
+export const standardFailureOf = (
+	errors: SummarizedErrors
+): StandardSchemaV1.FailureResult =>
+	Object.defineProperty(
+		Object.defineProperty({ issues: errors.issues }, "_s", {
+			value: () => errors.summary,
+			writable: true
+		}),
+		"message",
+		message
+	)

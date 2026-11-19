@@ -287,21 +287,36 @@ export const bakeInto = <t>(
 	return validator
 }
 
-// a Standard Schema consumer shows each issue beside its path, which its
+// what reads a failure's message, as @ark/schema's standardFailure.ts has it
+// and says why: one getter for every failure, calling what the failure holds
+// to write its errors' summary
+const failureMessage: PropertyDescriptor & ThisType<{ _s: () => string }> = {
+	get() {
+		return this._s()
+	},
+	enumerable: true
+}
+
+// A Standard Schema consumer shows each issue beside its path, which its
 // message doesn't name, so each is its error's own. The failure's own message
-// is the errors' summary, which a consumer is to prefer to one it builds from
-// issues (standard-schema/standard-schema#204): a getter, as arktype's is, so
-// one reading issues alone, like most today, writes no summary
+// is the errors' summary, written once a consumer reads it. A failure is built
+// as @ark/schema's standardFailureOf builds one, written here again rather
+// than imported: each name this module imports is one more esbuild's minifier
+// numbers a bundle's names past, whether or not the bundle holds what it
+// names, and one more took a byte of the Valibot login form gzipped (its
+// export `lo` became `co`), which holds no `~standard` at all
 export const standardResultOf = (
 	out: unknown
 ): StandardSchemaV1.Result<unknown> =>
 	out instanceof ArkErrors ?
-		{
-			issues: out.issues,
-			get message() {
-				return (out as ArkErrors).summary
-			}
-		}
+		Object.defineProperty(
+			Object.defineProperty({ issues: out.issues }, "_s", {
+				value: () => (out as ArkErrors).summary,
+				writable: true
+			}),
+			"message",
+			failureMessage
+		)
 	:	{ value: out }
 
 // shorter at each site than a literal

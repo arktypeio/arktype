@@ -53,6 +53,60 @@ contextualize(() => {
 		)
 	})
 
+	it("a failure's message isn't written until it's read, by a getter every failure shares", () => {
+		const summary = Object.getOwnPropertyDescriptor(
+			type.errors.prototype,
+			"summary"
+		)!
+		let written = 0
+		Object.defineProperty(type.errors.prototype, "summary", {
+			...summary,
+			get() {
+				written++
+				return summary.get!.call(this)
+			}
+		})
+		try {
+			const failure = type({ a: "string" })["~standard"].validate(
+				{}
+			) as StandardSchemaV1.FailureResult
+			attest(failure.issues.map(issue => issue.message)).equals([
+				"must be a string (was missing)"
+			])
+			attest(written).equals(0)
+			attest(failure.message).equals("a must be a string (was missing)")
+			attest(written).equals(1)
+			// a getter of its own for each failure costs each a shape to share
+			const other = type("number")["~standard"].validate(
+				""
+			) as StandardSchemaV1.FailureResult
+			attest(
+				Object.getOwnPropertyDescriptor(other, "message")!.get ===
+					Object.getOwnPropertyDescriptor(failure, "message")!.get
+			).equals(true)
+			attest(written).equals(1)
+			attest(other.message).equals("must be a number")
+		} finally {
+			Object.defineProperty(type.errors.prototype, "summary", summary)
+		}
+	})
+
+	it("a failure read through a proxy that wraps what it holds, as a reactive store's does, writes its message", () => {
+		const wrapped = <t extends object>(target: t): t =>
+			new Proxy(target, {
+				get: (target, key, receiver) => {
+					const value = Reflect.get(target, key, receiver)
+					return typeof value === "object" && value !== null ?
+							wrapped(value)
+						:	value
+				}
+			})
+		const failure = type({ a: "string" })["~standard"].validate(
+			{}
+		) as StandardSchemaV1.FailureResult
+		attest(wrapped(failure).message).equals("a must be a string (was missing)")
+	})
+
 	it("an issue's message is its error's message, which leaves its path to the consumer", () => {
 		const textOf = (T: type.Any, data: unknown) => {
 			const errors = T(data) as type.errors
