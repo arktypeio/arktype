@@ -2992,10 +2992,15 @@ return namespace`
 		// for speed, issues reported into ArkErrors are found once read, unless a
 		// callback, which runs when arktype would run it
 		const unreads = reportsIssues && this.baking.defersIssues && !runsNarrow
+		// found as a call returns otherwise, into errors that are what it
+		// returns where compiled code reports into them. A build for size
+		// passes data its pass finds nothing wrong with, as it has
+		const finds =
+			reportsIssues && !unreads && !runsNarrow && !this.baking.shortest
 		const [callErrors, elementErrors] =
-			unreads ?
-				["runtime.unreadCallErrors", "runtime.unreadElements"]
-			:	["runtime.applyCallErrors", "runtime.applyElements"]
+			unreads ? ["runtime.unreadCallErrors", "runtime.unreadElements"]
+			: finds ? ["runtime.foundCallErrors", "runtime.foundElements"]
+			: ["runtime.applyCallErrors", "runtime.applyElements"]
 		const refOf = (param: RootApplyParam) =>
 			param === "Traversal" ?
 				ctx === "Traversal" || ctx === "FirstIssueTraversal" ?
@@ -3026,6 +3031,8 @@ return namespace`
 				: this.baking.firstIssue ? "runtime.UnreadFirstIssues"
 				: "runtime.UnreadArkErrors"
 			const local = !Ctx.startsWith("runtime.")
+			// errors found as a call returns are ArkErrors unless passed
+			const passedCtx = finds && Ctx === "runtime.ArkErrors" ? "" : `, ${Ctx}`
 			// a unified root applies by its Allows
 			const apply = this.appliedIndexOf(root) ? "apply" : "allows"
 			const pattern =
@@ -3056,9 +3063,9 @@ return namespace`
 	for (let i = 0; i < data.length; i++) if (!allowsElement(data[i])) return i
 }`,
 						apply: `(data, ...args) => {
-	if (!Array.isArray(data)) return ${callErrors}(apply, data, args, onFail, ${Ctx})
+	if (!Array.isArray(data)) return ${callErrors}(apply, data, args, onFail${passedCtx})
 	const i = rejectedIn(data)
-	return i === undefined ? data : ${elementErrors}(allowsElement, applyElement, i, data, args, onFail, ${Ctx})
+	return i === undefined ? data : ${elementErrors}(allowsElement, applyElement, i, data, args, onFail${passedCtx})
 }`,
 						args,
 						local
@@ -3072,7 +3079,9 @@ return namespace`
 					this.emitApplier({
 						readsAllows,
 						params: `${pattern}${unconfigured ? "" : ", onFail"}`,
-						apply: `(data, ...args) => allows(data) ? ${valid} : ${callErrors}(${apply}, data, args, ${unconfigured ? "null" : "onFail"}, ${Ctx})`,
+						apply: `(data, ...args) => allows(data) ? ${valid} : ${callErrors}(${apply}, data, args${
+							unconfigured ? passedCtx && ", null" : ", onFail"
+						}${passedCtx})`,
 						args: parts,
 						local
 					}),

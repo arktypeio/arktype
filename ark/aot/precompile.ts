@@ -867,6 +867,10 @@ export class Precompiler {
 			checks,
 			mutatesInput: this.mutatesInput,
 			optimize: opts.optimize ?? "speed",
+			// only errors a build asks to read fastest wait to find their issues:
+			// what waits is bytes of every bundle, and a build setting neither
+			// option checks fastest and fails smallest
+			defersIssues: (opts.optimizeErrors ?? opts.optimize) === "speed",
 			jsonInput: opts.jsonInput,
 			bakedLimit: opts.bakedLimit
 		}

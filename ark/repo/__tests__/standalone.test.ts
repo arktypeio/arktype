@@ -724,15 +724,30 @@ nick must be a string or null`)
 		attest(String(Unit(impostor))).snap("must be 2020-01-01")
 	})
 
-	it("finds issues as it reads them, unless it validated eagerly", async () => {
+	it("finds issues as it validates, or once they're read where a build defers them", async () => {
 		const always = standIn(() => true, "always")
 		const T = type({ a: "string", b: "number" })
-		const { Lazy } = await load({ Lazy: T })
-		const { Sized } = await load({ Sized: T }, { optimize: "size" })
+		const { Eager } = await load({ Eager: T })
+		const { Lazy } = await load({ Lazy: T }, { defersIssues: true })
+		const { Sized } = await load(
+			{ Sized: T },
+			{ optimize: "size", defersIssues: true }
+		)
 		const Narrowed = (
-			await loadFactory(T.narrow(always), [["function", "always", always]])
-		)(always)
-		const { Valid } = await load({ Valid: type({ a: "string" }) })
+			await load(
+				{
+					T: {
+						type: T.narrow(always),
+						params: [{ kind: "function", label: "always", value: always }]
+					}
+				},
+				{ defersIssues: true }
+			)
+		).T(always)
+		const { Valid } = await load(
+			{ Valid: type({ a: "string" }) },
+			{ defersIssues: true }
+		)
 		const readAfterWrites = (
 			validate: (data: unknown) => any,
 			writes: Record<string, unknown>[]
@@ -742,14 +757,17 @@ nick must be a string or null`)
 			return writes.map(write => (Object.assign(data, write), errors.summary))
 		}
 		attest({
+			// found as it validates
+			eager: readAfterWrites(Eager, [{ a: "a" }]),
 			// found once read, then kept
 			lazy: readAfterWrites(Lazy, [{ a: "a", b: "b" }, { b: 0 }]),
-			// found as it validates, for size or where it calls a narrow
+			// found as it validates even so, for size or where it calls a narrow
 			sized: readAfterWrites(Sized, [{ a: "a" }]),
 			narrowed: readAfterWrites(Narrowed, [{ a: "a" }]),
 			// data made valid before its issues are read
 			valid: readAfterWrites(Valid, [{ a: "a" }])
 		}).snap({
+			eager: ["a must be a string"],
 			lazy: ["b must be a number", "b must be a number"],
 			sized: ["a must be a string"],
 			narrowed: ["a must be a string"],
@@ -757,11 +775,31 @@ nick must be a string or null`)
 		})
 	})
 
+	it("fails as a whole data its check rejected and its pass finds no issue of", async () => {
+		const { T } = await load({ T: type({ a: "string" }) })
+		let reads = 0
+		T.allows({
+			get a() {
+				reads++
+				return 0
+			}
+		})
+		const checkReads = reads
+		reads = 0
+		// a string once the check has read it
+		const errors = T({
+			get a() {
+				return reads++ < checkReads ? 0 : "a"
+			}
+		})
+		attest(errors.summary).snap("is invalid")
+	})
+
 	it("firstIssue finds only the first of issues it hasn't read", async () => {
 		const T = type({ a: "string", b: "number" })
 		const { Lazy, Items, runtime } = await load(
 			{ Lazy: T, Items: T.array() },
-			{ configure: exportsRuntime }
+			{ configure: exportsRuntime, defersIssues: true }
 		)
 		let reads = 0
 		const counted = () => ({

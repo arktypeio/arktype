@@ -137,6 +137,26 @@ contextualize(function (this: Mocha.Suite) {
 	// a bundle or the CLI loads arktype and the precompiler in a worker
 	this.timeout(60_000)
 
+	describe("errors", () => {
+		// whether a failing call's errors wait to find their issues
+		const defersIssues = (opts: PrecompileOptions) => {
+			const { code, modules } = precompile(composed, {}, opts)
+			return [code, ...Object.values(modules)].some(written =>
+				written.includes("unreadCallErrors")
+			)
+		}
+
+		it("find their issues once read only where a build writes them for speed", () => {
+			attest(defersIssues({})).equals(false)
+			attest(defersIssues({ optimizeErrors: "speed" })).equals(true)
+			// written as validators are unless set apart
+			attest(defersIssues({ optimize: "speed" })).equals(true)
+			attest(
+				defersIssues({ optimize: "speed", optimizeErrors: "size" })
+			).equals(false)
+		})
+	})
+
 	describe("schemas", () => {
 		it("writes each definition as the strategy its key names does", () => {
 			attest(

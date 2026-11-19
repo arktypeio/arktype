@@ -201,16 +201,17 @@ What a build writes, and the [options](/docs/precompile/options) that change it.
 
 ### Valid and invalid data
 
-The default build writes two functions for each Type: a check returning whether data is valid, and a pass finding its issues, which a validator runs only for data the check rejects. Valid data costs only the check. For most Types without a narrow or morph, the pass runs once the errors' `issues` or `summary` is [first read](/docs/errors#arkerrors), so invalid data costs little more than its check until then. A build for size finds them as it validates.
+The default build writes two functions for each Type: a check returning whether data is valid, and a pass finding its issues, which a validator runs only for data the check rejects. Valid data costs only the check, and the pass runs as a call rejects data, so the default build checks as fast as it can and holds as little as it can for what fails. With `optimizeErrors: "speed"`, the pass for most Types without a narrow or morph instead waits until the errors' `issues` or `summary` is [first read](/docs/errors#arkerrors), so invalid data costs little more than its check until then.
 
-| Option                                                                           | Saves                                                                   | Costs                                                   |
-| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------- |
-| [`preset: "smallest"`](/docs/precompile/options#choosing-smallest)               | bytes, more the more Types a bundle holds                               | validation speed, and startup, creating every validator |
-| [`optimizeErrors: "size"`](/docs/precompile/options#optimize-and-optimizeerrors) | bytes of the issue-finding pass                                         | time reading issues                                     |
-| [`errors: "first"`](/docs/precompile/options#errors)                             | time on invalid data, stopping at its first issue                       | the other issues                                        |
-| [`errors: "none"`](/docs/precompile/options#errors)                              | the issue-finding pass and every message                                | every issue but one root issue, `is invalid`            |
-| [`members`](/docs/precompile/options#members)                                    | each member set false                                                   | reading it                                              |
-| [`jsonInput: true`](/docs/precompile/options#jsoninput)                          | time checking objects that reject undeclared keys, by counting the keys | an undeclared key can pass on data that isn't plain     |
+| Option                                                                            | Saves                                                                   | Costs                                                   |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------- |
+| [`preset: "smallest"`](/docs/precompile/options#choosing-smallest)                | bytes, more the more Types a bundle holds                               | validation speed, and startup, creating every validator |
+| [`optimizeErrors: "speed"`](/docs/precompile/options#optimize-and-optimizeerrors) | time on invalid data whose errors nothing reads                         | bytes of the errors that wait                           |
+| [`optimizeErrors: "size"`](/docs/precompile/options#optimize-and-optimizeerrors)  | bytes of the issue-finding pass                                         | time reading issues                                     |
+| [`errors: "first"`](/docs/precompile/options#errors)                              | time on invalid data, stopping at its first issue                       | the other issues                                        |
+| [`errors: "none"`](/docs/precompile/options#errors)                               | the issue-finding pass and every message                                | every issue but one root issue, `is invalid`            |
+| [`members`](/docs/precompile/options#members)                                     | each member set false                                                   | reading it                                              |
+| [`jsonInput: true`](/docs/precompile/options#jsoninput)                           | time checking objects that reject undeclared keys, by counting the keys | an undeclared key can pass on data that isn't plain     |
 
 ### What nothing reads
 

@@ -1359,8 +1359,13 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 			const node = { platform: "node" } as const
 			const [warnings, js] = await built({}, node)
 			attest(warnings).equals([])
+			// each key compiled code fails by name, which a checker is declared at
+			const failed = (code: string) => code.split('"k47"').length - 1
+			// as optimize: "speed" compiles them, whose errors also wait to be read
 			const [, compiled] = await built({ optimize: "speed" }, node)
-			attest(js === compiled).equals(true)
+			attest(failed(js)).equals(failed(compiled))
+			const [, sized] = await built({ optimize: "size" }, node)
+			attest(failed(sized)).equals(0)
 		})
 	})
 
@@ -1719,11 +1724,17 @@ for (const data of [{ name: 5 }, flipping]) {
 				}
 			)
 			attest(run(asserting)).snap("name must be a string\nis invalid\n")
-			// errors finding their issues once read hold the data until then
+			// errors finding their issues once read hold the data until then,
+			// which only a called validator's written for speed do
 			attest(asserting.includes("._d=")).equals(false)
 			attest((await bundle({ preset: undefined })).includes("._d=")).equals(
-				true
+				false
 			)
+			attest(
+				(await bundle({ preset: undefined, optimizeErrors: "speed" })).includes(
+					"._d="
+				)
+			).equals(true)
 		})
 
 		it("returns what a narrow finds valid once asked again, as arktype does", async () => {

@@ -929,6 +929,39 @@ export const applyCallErrors = (
 	return onFail ? onFail(errors) : errors
 }
 
+// as applyCallErrors, of an Apply reporting into ArkErrors and calling no
+// narrow, whose errors fail data whatever it finds, as errors finding their
+// issues once read do: they're passed neither data nor a config, and are what
+// they return
+export const foundCallErrors = (
+	apply: CompactApply,
+	data: unknown,
+	args: ValidatorArgs,
+	onFail?: ArkErrors.Handler | null,
+	Ctx: new () => ArkErrors = ArkErrors
+): unknown => {
+	const errors = new Ctx()
+	// as issuesOf, which a program finding every call's issues so never ships
+	apply(data, errors)
+	if (!errors._.length) errors._e(data, "predicate")
+	if (args.length) {
+		if (args[0]) return args[0].piped(errors as never)
+		if (args[1] !== undefined) onFail = args[1] as never
+	}
+	return onFail ? onFail(errors) : errors
+}
+
+export const foundElements = (
+	allows: (data: unknown) => boolean,
+	apply: CompactApply,
+	i: number,
+	data: readonly unknown[],
+	args: ValidatorArgs,
+	onFail: ArkErrors.Handler | null,
+	Ctx?: new () => ArkErrors
+): unknown =>
+	foundCallErrors(elementsFrom(allows, apply, i, data), data, args, onFail, Ctx)
+
 type UnreadErrors = new (apply: CompactApply, data: unknown) => ArkErrors
 
 // defined at a build's first failure, as defining it at load costs startup
