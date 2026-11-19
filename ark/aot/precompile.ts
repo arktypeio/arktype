@@ -491,6 +491,8 @@ interface ProgramUsage {
 	interned?: ReadonlyMap<unknown, string> | undefined
 	// whether any of its validators is written for size
 	sizes: boolean
+	// what its issues hold, where the reads it saw need less than any may
+	issues?: IssueFeatures | undefined
 }
 
 // a module's exports written one way, as one artifact
@@ -995,13 +997,14 @@ export class Precompiler {
 			// its message is a failed default's summary
 			issues.readsErrors ||= codes.some(code => code.includes("checkDefault"))
 		}
-		const isRead = (member: UsedMember) =>
-			typeof used === "string" || used.has(member)
-		issues.readsErrors ||= readsErrorsWhole.some(isRead)
-		issues.readsSummary ||= issues.readsErrors || isRead("summary")
-		issues.rewritesUnions ||=
-			issues.readsErrors || issues.traversesUnions || isRead("~standard")
-		return issues
+		// a member set true is one code the build can't see may read
+		return issuesReading(
+			issues,
+			member =>
+				typeof used === "string" ||
+				used.has(member) ||
+				this.members[member as ValidatorMember] === true
+		)
 	}
 
 	// the whole program, as a production bundle's scan or --emit reads it, so
@@ -1222,6 +1225,7 @@ export class Precompiler {
 			:	undefined
 		usage.written = written
 		const issues = this.issuesOf(program, written, used)
+		usage.issues = issues
 		const timesArktype =
 			this.optimizeUnset ?
 				Math.min(
@@ -2014,7 +2018,11 @@ export class Precompiler {
 		// a read it can't follow may need any member, where it left one out
 		if (typeof used === "string") {
 			return (
-					dropped.length || !usage.called || !usage.readsAllows || !usage.piped
+					dropped.length ||
+						!usage.called ||
+						!usage.readsAllows ||
+						!usage.piped ||
+						unreadIssuesOf(usage.issues, () => true)
 				) ?
 					used
 				:	undefined
@@ -2026,6 +2034,7 @@ export class Precompiler {
 			return "a module reads a validator's allows"
 		if (!usage.piped && used.has("piped"))
 			return "a module passes a validator a traversal"
+		return unreadIssuesOf(usage.issues, member => used.has(member))
 	}
 
 	// an introspection member the bundle as built reads of a validator its
@@ -8648,6 +8657,39 @@ const readsNoIdentity: UsedMember[] = [
 
 // each may hand a program's code its errors, or throws them
 const readsErrorsWhole: UsedMember[] = ["errors", "assert", "methods", "piped"]
+
+// a bundle's issues, holding what each read of a validator needs of its errors
+const issuesReading = (
+	issues: IssueFeatures,
+	isRead: (member: UsedMember) => boolean
+): IssueFeatures => {
+	const readsErrors = issues.readsErrors || readsErrorsWhole.some(isRead)
+	return {
+		...issues,
+		readsErrors,
+		readsSummary: issues.readsSummary || readsErrors || isRead("summary"),
+		rewritesUnions:
+			issues.rewritesUnions ||
+			readsErrors ||
+			issues.traversesUnions ||
+			isRead("~standard")
+	}
+}
+
+// what a read needs of a failure's errors that a bundle's issues, written for
+// the reads its scan saw, don't hold
+const unreadIssuesOf = (
+	issues: IssueFeatures | undefined,
+	isRead: (member: UsedMember) => boolean
+): string | undefined =>
+	!issues ? undefined
+	: !issues.readsErrors && readsErrorsWhole.some(isRead) ?
+		"a module reads the errors a validator returns"
+	: !issues.readsSummary && isRead("summary") ?
+		"a module reads the summary of the errors a validator returns"
+	: !issues.rewritesUnions && isRead("~standard") ?
+		"a module reads ~standard of a validator"
+	:	undefined
 
 // what arktype's own errors, like an island's, may hold
 const anyIssues: IssueFeatures = {

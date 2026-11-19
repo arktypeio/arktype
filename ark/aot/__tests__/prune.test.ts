@@ -3771,6 +3771,39 @@ console.log(String(User({ name: 5 })))
 						})
 					}
 
+					it("fails a build where it adds a read of a call's errors, which no module it read reads", async () => {
+						const root = fixture("loaderAfterErrors", {
+							"main.js": `import { User } from "./types.js"
+
+const out = User({ name: 5 })
+console.log(User.allows({ name: 5 }))
+`
+						})
+						const message = await bundle(
+							name,
+							root,
+							{},
+							rewriting(code => `${code}console.log(out.summary)\n`)
+						).then(
+							() => "it built",
+							(e: Error) => e.message
+						)
+						attest(
+							message.includes(
+								writeLaterLoaderReadMessage(
+									"main.js",
+									"a module reads the summary of the errors a validator returns",
+									[
+										relative(root, fromHere("rewriteLoader.ts")).replace(
+											/\\/g,
+											"/"
+										)
+									]
+								)
+							)
+						).equals(true)
+					})
+
 					it("prunes where it moves a read without adding one", async () => {
 						const root = fixture("loaderAfterMoves", {
 							"main.js": `import { User } from "./types.js"
