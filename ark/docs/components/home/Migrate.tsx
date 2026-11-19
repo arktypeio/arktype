@@ -136,11 +136,11 @@ export const Migrate = () => (
 					<span className="move-n">2</span>
 					<h3>Ask your agent</h3>
 					<CopyCommand
-						text="Migrate this project from Zod to ArkType."
+						text="Migrate this project from Zod to ArkType and precompile it."
 						label="Copy migration prompt"
 					>
 						<span className="p">›</span> Migrate this project from Zod to
-						ArkType.
+						ArkType and precompile it.
 					</CopyCommand>
 				</li>
 			</ol>

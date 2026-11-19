@@ -323,11 +323,11 @@ export default function HomePage() {
 					<div className="closer-go">
 						<InstallButton />
 						<CopyCommand
-							text="Migrate this project from Zod to ArkType."
+							text="Migrate this project from Zod to ArkType and precompile it."
 							label="Copy migration prompt"
 						>
 							<span className="p">›</span> Migrate this project from Zod to
-							ArkType.
+							ArkType and precompile it.
 						</CopyCommand>
 					</div>
 					<SiteFooter />

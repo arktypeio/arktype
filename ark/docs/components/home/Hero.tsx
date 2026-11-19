@@ -6,14 +6,19 @@ import { ClaimText } from "../mdx/Claim.tsx"
 import { categoryOf, heroStats, methodHref } from "./boardFacts.ts"
 
 /**
- * The hero's second line, after the headline lib/claims.ts guards. It states
- * no number, so it lives here; the candidates it was elected from are in the
- * commit that added it.
+ * The hero's second line, after the headline lib/claims.ts guards: with it
+ * the h1 is the tagline word for word (siteDescription in app/metadata.ts,
+ * package.json, the README). It states no number, so it lives here.
  */
-export const heroLine = "Optimized for agents and humans."
+export const heroLine = "One prompt away."
 
-/** what the build step and the migration each cost, which is the pitch */
-export const heroLede = "One Vite plugin. One prompt to migrate from Zod."
+/**
+ * What the prompt does, which is what "away" leaves open. It names no build
+ * plugin: the same prompt sets precompilation up (the migration guide's
+ * "Precompile, if asked"), so the plugin isn't a second thing to do.
+ */
+export const heroLede =
+	"Your agent migrates your schemas from Zod and precompiles them."
 
 const rise = (i: number) => ({ "--i": i }) as CSSProperties
 
