@@ -106,17 +106,20 @@ export interface BenchmarkChart {
  * benchmarks, each library's geometric mean over the largest set of results
  * that ArkType, Zod and three more named libraries all ran, in plain order,
  * with ArkType as its default production build throughout, its instruction
- * counts measured at 20710020e and its size rows at ba691ac56 (each suite's
- * `measured` in leaderboard.json says which).
+ * counts and size rows measured at 591cc38d7 (each suite's `measured` in
+ * leaderboard.json says which).
  */
 
 // moltar's typescript-runtime-type-benchmarks, perf instruction counts in
-// benny's call shape, the default build: at 20710020e 184.6 on parseSafe, 66
-// on assertLoose, dynamic 199.6 (216 at a306152ce); rivals' counts are
-// a306152ce's. By wall clock at f29b8d153 (H1, p 8.7e-7), it
-// beat every rival within 25% of its instructions in 28-29 of 30 passes:
-// @ts-runtypes, Typia, ata-validator (AOT) and ata in about 0.83x their time,
-// rescript-schema in 0.90x and @sx3/gate in 0.92x.
+// benny's call shape, the default build: at 591cc38d7 184.4 on parseSafe, 66
+// on assertLoose; dynamic 199.6 is 20710020e's (216 at a306152ce). Rivals'
+// counts are the run of 2026-11-19's, each at its newest release, and each
+// bar is a rival's best stored count. @ts-runtypes, 209 on 2026-10-24, is no
+// longer a bar: its packages were removed from npm by 2026-11-19, so nobody
+// can install it (reproduce.ts). By wall clock at f29b8d153 (H1, p 8.7e-7),
+// ArkType beat every rival within 25% of its instructions in 28-29 of 30
+// passes: @ts-runtypes, Typia, ata-validator (AOT) and ata in about 0.83x
+// their time, rescript-schema in 0.90x and @sx3/gate in 0.92x.
 export const speedChart: BenchmarkChart = {
 	title: "Runtime",
 	detail:
@@ -127,11 +130,11 @@ export const speedChart: BenchmarkChart = {
 		href: "https://github.com/moltar/typescript-runtime-type-benchmarks"
 	},
 	bars: [
-		{ name: "ArkType (precompiled)", kind: "precompiled", value: 185 },
+		{ name: "ArkType (precompiled)", kind: "precompiled", value: 184 },
 		{ name: "ArkType (dynamic)", kind: "dynamic", value: 200 },
-		{ name: "@ts-runtypes", kind: "other", value: 209 },
 		{ name: "Typia", kind: "other", value: 213 },
-		{ name: "ata-validator (AOT)", kind: "other", value: 220 }
+		{ name: "ata-validator (AOT)", kind: "other", value: 220 },
+		{ name: "@sx3/gate", kind: "other", value: 233 }
 	]
 }
 

@@ -29,11 +29,11 @@ A validator that compiles at runtime ships its compiler, and one that interprets
 
 **Runtime** (instructions per call, lower is better): moltar's parseSafe benchmark (validate, removing undeclared keys), run by us on Node 24, ArkType precompiled with the default options. Precompiled ArkType isn't in moltar's published results yet. Source: [moltar/typescript-runtime-type-benchmarks](https://github.com/moltar/typescript-runtime-type-benchmarks)
 
-- ArkType (precompiled): 185
+- ArkType (precompiled): 184
 - ArkType (dynamic): 200
-- @ts-runtypes: 209
 - Typia: 213
 - ata-validator (AOT): 220
+- @sx3/gate: 233
 
 **Bundle size** (bytes gzipped, lower is better): the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports an error for every invalid field. ArkType is precompiled with its default options in a production build. Zod Mini's form is written so it runs: as valibot.dev writes it, it throws at its first parse. Source: [the form from valibot.dev's comparison](https://valibot.dev/guides/comparison/)
 
