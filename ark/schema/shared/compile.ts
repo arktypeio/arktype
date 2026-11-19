@@ -286,7 +286,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	// trusted to hold only own, enumerable keys, as JSON.parse's output does
 	declare readonly jsonInput?: boolean
 	// whether the ctx it reports to reads the value it applies at a key, as a
-	// build for size leaves it to
+	// standalone validator's errors do
 	declare readonly readsApplied?: boolean
 	/** whether the transform it compiles checks for errors a transformed child added */
 	checksErrs = false

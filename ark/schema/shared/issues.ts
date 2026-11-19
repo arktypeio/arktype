@@ -79,9 +79,10 @@ export type CompactApply = (data: unknown, ctx: FailureContext) => boolean
  * where a compact Apply reports failures; each returns whether to stop. A
  * minifier keeps property names, and compiled code calls these at each
  * failure, so they're named short: _at fails a site (failsAt), _in applies
- * data's value at a key (failsIn). Code compiled for speed passes _in the
- * value too, read where its key is a constant; a value that's undefined is
- * read from data, as one not passed is
+ * data's value at a key (failsIn). Arktype's own compiled code passes _in
+ * the value too, read where its key is a constant, which its traversal
+ * applies; a validator's errors read it from data, as every bundle would
+ * otherwise carry the read at each key
  */
 export interface FailureContext {
 	_at(site: FailureSite, data: unknown, key?: PropertyKey): boolean | undefined
@@ -182,10 +183,9 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		apply: CompactApply,
 		data: unknown,
 		key: PropertyKey,
-		missing?: FailureSite,
-		value?: unknown
+		missing?: FailureSite
 	): boolean | undefined {
-		if (value === undefined) value = (data as Keyed)[key]
+		const value = (data as Keyed)[key]
 		if (value === undefined && missing && !(key in (data as object)))
 			return this._at(missing, data, key, true)
 		this._p.push(key)
