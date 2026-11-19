@@ -696,8 +696,8 @@ export const Fields = { even: Even, name: type("string") }
 	})
 
 	describe("what issues may hold", () => {
-		const issuesOf = async (main: string) => {
-			const usage = await usageFrom({ "/main.ts": main })
+		const issuesOf = async (main: string, opts?: PrecompileOptions) => {
+			const usage = await usageFrom({ "/main.ts": main }, opts)
 			return typeof usage === "string" || Array.isArray(usage) ?
 					usage
 				:	usage.issues
@@ -902,9 +902,14 @@ export const Fields = { even: Even, name: type("string") }
 		})
 
 		it("TraversalError's class only where a program may name it, to test what an assert threw", async () => {
-			const namesTraversalError = async (imports: string, read: string) => {
+			const namesTraversalError = async (
+				imports: string,
+				read: string,
+				opts?: PrecompileOptions
+			) => {
 				const issues = await issuesOf(
-					`${imports}\n\nconst User = type({ name: "string" })\n\ntry {\n\tUser.assert({})\n} catch (e) {\n\tconsole.log(${read})\n}\n`
+					`${imports}\n\nconst User = type({ name: "string" })\n\ntry {\n\tUser.assert({})\n} catch (e) {\n\tconsole.log(${read})\n}\n`,
+					opts
 				)
 				return (
 					typeof issues === "object" &&
@@ -927,6 +932,26 @@ export const Fields = { even: Even, name: type("string") }
 				await namesTraversalError(
 					`import { type } from "arktype"\nexport { TraversalError as Thrown } from "arktype"`,
 					"(e as Error).message"
+				)
+			).equals(true)
+			// an assert set true is one code the build can't see may call, which
+			// has no name for the class unless the program exports or names it
+			const kept: PrecompileOptions = { members: { assert: true } }
+			attest(
+				await namesTraversalError(named, "(e as Error).message", kept)
+			).equals(false)
+			attest(
+				await namesTraversalError(
+					`import { type } from "arktype"\nexport { TraversalError as Thrown } from "arktype"`,
+					"(e as Error).message",
+					kept
+				)
+			).equals(true)
+			attest(
+				await namesTraversalError(
+					`import { type, TraversalError } from "arktype"`,
+					"e instanceof TraversalError",
+					kept
 				)
 			).equals(true)
 		})

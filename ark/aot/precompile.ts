@@ -995,16 +995,16 @@ export class Precompiler {
 			// its message is a failed default's summary
 			issues.readsErrors ||= codes.some(code => code.includes("checkDefault"))
 		}
-		// a member set true is one code the build can't see may read, and what
-		// calls an assert it can't see may name the class of what that throws
+		// a member set true is one code the build can't see may read. An assert
+		// set true doesn't hold the class of what it throws: code the build
+		// can't see has no name for a class the bundle doesn't export, and one
+		// it exports or names is seen, as "thrown"
 		return issuesReading(
 			issues,
 			member =>
 				typeof used === "string" ||
 				used.has(member) ||
-				this.members[
-					(member === "thrown" ? "assert" : member) as ValidatorMember
-				] === true
+				this.members[member as ValidatorMember] === true
 		)
 	}
 
