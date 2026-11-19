@@ -23,15 +23,14 @@ const featureNames = Object.keys({
 	reportsIndices: 1,
 	bracketsKeys: 1,
 	writesText: 1,
+	callsSiteText: 1,
 	listsUnions: 1,
 	rewritesUnions: 1,
 	traversesUnions: 1,
-	readsKeySites: 1,
 	appliesValues: 1,
 	transformsBranches: 1,
 	failsInBranches: 1,
 	discriminatesBooleans: 1,
-	entersMissing: 1,
 	readsSummary: 1,
 	readsErrors: 1,
 	holdsExpression: 1
@@ -45,8 +44,8 @@ type Edit = [start: number, end: number, text: string]
 
 /**
  * A runtime module with each read of an issue feature it imports written as what
- * a build found the feature to be, e.g. `readsKeySites ? site.v : void 0` as
- * `false ? site.v : void 0`, and the import left out. A bundler that doesn't
+ * a build found the feature to be, e.g. `reportsIndices && typeof k === "number"`
+ * as `(false) && typeof k === "number"`, and the import left out. A bundler that doesn't
  * inline a constant across modules, like the webpack 5.98 Next builds with,
  * otherwise leaves each read to its minifier, and SWC folds none of them in a
  * chunk of megabytes.
@@ -82,7 +81,9 @@ export const writeIssueFeaturesInto = (
 			binding.writes.length
 		)
 			continue
-		const value = `${issues[imported as keyof IssueFeatures]}`
+		// in parentheses, which esbuild reads as meant: it warns that `&&` after
+		// a bare `false` always returns it, where the module isn't a dependency's
+		const value = `(${issues[imported as keyof IssueFeatures]})`
 		let isExported = false
 		for (const { id } of binding.references) {
 			// `export { appliesValues }`, as arktype's runtime exports

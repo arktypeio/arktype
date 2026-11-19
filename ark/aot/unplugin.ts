@@ -1224,6 +1224,23 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				warnings: transformed.warnings.map(text => ({ text }))
 			}
 		})
+		// a runtime module reading an issue feature, with each read written as
+		// what it is, as other bundlers load it. esbuild inlines a constant
+		// another module declares only as it prints, once it has decided what
+		// the bundle holds: what a branch it folds there names is kept, and a
+		// statement testing one is left behind as `!1`. Registered last, so the
+		// load above has read the module as its file has it
+		build.onLoad({ filter: issueFeatureReader }, args => {
+			const issues = esbuildScan?.issues
+			if (!issues || args.namespace !== "file") return
+			const written = writeIssueFeaturesInto(
+				args.path,
+				readFileSync(args.path, "utf8"),
+				issues
+			)
+			if (written !== undefined)
+				return { contents: written, loader: esbuildLoaderOf(args.path) }
+		})
 	}
 	const resolveEsbuildVariant = (
 		build: EsbuildPluginBuild,

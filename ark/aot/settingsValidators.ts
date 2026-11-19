@@ -25,8 +25,8 @@ var isArray = /* @__PURE__ */ (() => Array.isArray)()
 var reportsIndices = true
 var bracketsKeys = true
 var writesText = true
+var callsSiteText = true
 var listsUnions = true
-var readsKeySites = true
 var appliesValues = true
 var transformsBranches = true
 var failsInBranches = true
@@ -53,36 +53,43 @@ var ReadIssues = class {
 		for (const issue of this._) issue.message ??= messageOf(issue)
 		return this._
 	}
-	/** @internal */
-	_at(site, data, key) {
-		const path = this._p
-		let context = (readsKeySites ? site.v : void 0) ?? site
-		if (key !== void 0) {
-			path.push(key)
-			if (site.m && !(key in data)) context = site.m
-			else data = data[key]
-		}
+	/**
+	 * @internal fails a context at the path it's at. Every bundle holds this,
+	 * so it takes neither a key nor a key's site, which holds one context for
+	 * its value and one for where it's missing: a validator whose code fails
+	 * no site at a key would hold what enters one and picks between them for
+	 * nothing. failsKey does both, through _in
+	 */
+	_at(context, data) {
 		const issue = {
 			code: context.code,
-			path: path.slice(),
+			path: this._p.slice(),
 			data,
 			expected: context.description,
 			message: context.x
 		}
-		if (writesText) context.text?.(issue)
-		if (key !== void 0) path.pop()
+		if (callsSiteText) context.text?.(issue)
 		this._.push(issue)
 		return void 0
 	}
 	/** @internal */
 	_in(apply, data, key, missing) {
-		if (missing && !(key in data)) return this._at(missing, data, key)
 		this._p.push(key)
-		const continues = apply(data[key], this)
+		const stops =
+			missing && !(key in data) ?
+				this._at(missing.m, data)
+			:	!apply(data[key], this)
 		this._p.pop()
-		return !continues
+		return stops
 	}
 }
+var failsKey = (ctx, site, data, key) =>
+	ctx._in(
+		(value, ctx2) => !ctx2._at(site.v ?? site, value),
+		data,
+		key,
+		site.m && site
+	)
 var Issues =
 	readsErrors ?
 		class ArkIssues extends ReadIssues {
@@ -343,7 +350,11 @@ var props = declared => {
 			const value = data[k]
 			if (
 				value === void 0 && !(k in data) ?
-					!declared[k].o && failsAt(ctx, missingSiteOf(declared[k]), data, k)
+					// entered by the ctx, which fails a key missing from data with
+					// the site it's passed, so no shape ships what fails at a key
+					!declared[k].o &&
+					(!ctx?._at ||
+						ctx._in(declared[k], data, k, missingSiteOf(declared[k])))
 				:	failsValue(ctx, declared[k], data, k, value)
 			)
 				return false
@@ -363,7 +374,7 @@ var closedProps = (declared, description = "removed") => {
 			if (
 				!hasOwn(declared, k) &&
 				hasOwn(data, k) &&
-				failsAt(ctx, removed, data, k)
+				failsAtKey(ctx, removed, data, k)
 			)
 				return false
 		}
@@ -606,7 +617,9 @@ var domains = (cases, description = describeDomains(cases), fails) => {
 // ark/type/runtime.ts
 var freeze = /* @__PURE__ */ (() => Object.freeze)()
 var siteOf = (code, description, message) => ({ code, description, x: message })
-var failsAt = (ctx, site, data, key) => !ctx?._at || ctx._at(site, data, key)
+var failsAt = (ctx, site, data) => !ctx?._at || ctx._at(site, data)
+var failsAtKey = (ctx, site, data, key) =>
+	!ctx?._at || failsKey(ctx, site, data, key)
 var checkedDefaultOf = ([id, holes]) => {
 	let table = checkedDefaults.next(id)
 	for (const hole of holes) table = table.next(hole)
@@ -1089,8 +1102,8 @@ var created2
 var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
-				const validator0 = interned("7qd91k0wat9zr", () =>
-					create12fpvlf14u2zct(intersection413gu20zqkl0a, "17vslil0")
+				const validator0 = interned("9y6hfe1snlq0m", () =>
+					create12fpvlf14u2zct(intersection413gu20zqkl0a, "1y52q7w1")
 				)
 				return validator0
 			})())
@@ -1099,8 +1112,8 @@ var get0 = () => {
 var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
-				const validator0 = interned("1orik1i0k3lqwh", () =>
-					create12fpvlf14u2zct(intersection1upqj9817d2cda, "1q1d3q40")
+				const validator0 = interned("c8cznq0e7e45t", () =>
+					create12fpvlf14u2zct(intersection1upqj9817d2cda, "cfi0e41t")
 				)
 				return validator0
 			})())
@@ -1109,8 +1122,8 @@ var get1 = () => {
 var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
-				const validator0 = interned("1awjt4i15qfutx", () =>
-					create12fpvlf14u2zct(intersection1edczbo1pwpl8e, "1glka7t0")
+				const validator0 = interned("msujzw1a29nda", () =>
+					create12fpvlf14u2zct(intersection1edczbo1pwpl8e, "14xunru1")
 				)
 				return validator0
 			})())

@@ -2,8 +2,8 @@ import { pathAt, type array } from "@ark/util"
 import type { ArkErrorCode } from "./errors.ts"
 import {
 	bracketsKeys,
+	callsSiteText,
 	listsUnions,
-	readsKeySites,
 	readsErrors,
 	readsSummary,
 	reportsIndices,
@@ -80,10 +80,13 @@ export type CompactApply = (data: unknown, ctx: FailureContext) => boolean
  * where a compact Apply reports failures; each returns whether to stop. A
  * minifier keeps property names, and compiled code calls these at each
  * failure, so they're named short: _at fails a site (failsAt), _in applies
- * data's value at a key (failsIn). Arktype's own compiled code passes _in
+ * data's value at a key (failsIn), failing the key where it's missing and
+ * passed the site that fails. Arktype's own compiled code passes _in
  * the value too, read where its key is a constant, which its traversal
  * applies; a validator's errors read it from data, as every bundle would
- * otherwise carry the read at each key
+ * otherwise carry the read at each key. It also passes _at the key of a site
+ * it fails at one, which its traversal enters; a validator's code calls
+ * failsKey, as its errors' _at takes none
  */
 export interface FailureContext {
 	_at(site: FailureSite, data: unknown, key?: PropertyKey): boolean | undefined
@@ -124,25 +127,22 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		return this._ as WrittenIssue[]
 	}
 
-	/** @internal */
-	_at(site: FailureSite, data: unknown, key?: PropertyKey): true | undefined {
-		// a key's site reports the missing key or its value
-		const path = this._p
-		let context = (readsKeySites ? site.v : undefined) ?? (site as SiteContext)
-		if (key !== undefined) {
-			path.push(key)
-			if (site.m && !(key in (data as object))) context = site.m
-			else data = (data as Keyed)[key]
-		}
+	/**
+	 * @internal fails a context at the path it's at. Every bundle holds this,
+	 * so it takes neither a key nor a key's site, which holds one context for
+	 * its value and one for where it's missing: a validator whose code fails
+	 * no site at a key would hold what enters one and picks between them for
+	 * nothing. failsKey does both, through _in
+	 */
+	_at(context: SiteContext, data: unknown): true | undefined {
 		const issue: ArkIssue = {
 			code: context.code,
-			path: path.slice(),
+			path: this._p.slice(),
 			data,
 			expected: context.description,
 			message: context.x
 		}
-		if (writesText) context.text?.(issue)
-		if (key !== undefined) path.pop()
+		if (callsSiteText) context.text?.(issue)
 		this._.push(issue)
 		// only errors stopping at the first issue stop at this one
 		return undefined
@@ -155,14 +155,36 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		key: PropertyKey,
 		missing?: FailureSite
 	): boolean | undefined {
-		if (missing && !(key in (data as object)))
-			return this._at(missing, data, key)
 		this._p.push(key)
-		const continues = apply((data as Keyed)[key], this)
+		// a missing key fails with the object missing it
+		const stops =
+			missing && !(key in (data as object)) ?
+				this._at(missing.m as SiteContext, data)
+			:	!apply((data as Keyed)[key], this)
 		this._p.pop()
-		return !continues
+		return stops
 	}
 }
+
+/**
+ * @internal fails a site at a key of data: the missing key, where the site
+ * holds what one fails, or the key's value, with the site's context for it
+ * or the site itself where it's a context. Entered through _in, which each
+ * ctx implements for a key, so errors needn't hold any of it in their _at,
+ * and a bundler drops this from a program failing no site at a key
+ */
+export const failsKey = (
+	ctx: FailureContext,
+	site: FailureSite,
+	data: unknown,
+	key: PropertyKey
+): boolean | undefined =>
+	ctx._in(
+		(value, ctx) => !ctx._at(site.v ?? site, value),
+		data,
+		key,
+		site.m && site
+	)
 
 // each a class only where a build's flag leaves it, as a bundler keeps a class
 // that extends another, and all it reads, but drops one in a branch it folds.
@@ -234,8 +256,8 @@ export class FirstIssues extends Issues {
 		return true
 	}
 
-	override _at(site: FailureSite, data: unknown, key?: PropertyKey): true {
-		super._at(site, data, key)
+	override _at(context: SiteContext, data: unknown): true {
+		super._at(context, data)
 		return true
 	}
 }
@@ -288,7 +310,7 @@ export const issueAt = (
 	data: unknown,
 	key: PropertyKey | undefined
 ): ArkIssue => {
-	let context = (readsKeySites ? site.v : undefined) ?? (site as SiteContext)
+	let context = site.v ?? (site as SiteContext)
 	if (key !== undefined) {
 		if (site.m && !(key in (data as object))) context = site.m
 		else data = (data as Keyed)[key]
@@ -300,7 +322,7 @@ export const issueAt = (
 		expected: context.description,
 		message: context.x
 	}
-	if (writesText) context.text?.(issue)
+	if (callsSiteText) context.text?.(issue)
 	return issue
 }
 
@@ -331,10 +353,11 @@ export const mergeIssues = (
  * its path as that would. A union listing its errors wrote its own line
  */
 export const isCustomIssue = (issue: ArkIssue): boolean =>
-	writesText &&
-	issue.message !== undefined &&
-	!(listsUnions && issue._l !== undefined) &&
-	!issue.message.startsWith(messageOf(issue))
+	listsUnions && issue._l !== undefined ?
+		false
+	:	writesText &&
+		issue.message !== undefined &&
+		!issue.message.startsWith(messageOf(issue))
 
 /**
  * @internal notes that an issue's message is one configured for its code, as

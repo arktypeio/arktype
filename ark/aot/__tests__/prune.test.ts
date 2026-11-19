@@ -32,6 +32,7 @@ import { rspack } from "@rspack/core"
 import {
 	build,
 	context,
+	transform,
 	type BuildFailure,
 	type BuildOptions,
 	type Plugin
@@ -700,15 +701,14 @@ export const Fields = { even: Even, name: type("string") }
 				bracketsKeys: false,
 				reportsIndices: false,
 				writesText: false,
+				callsSiteText: false,
 				listsUnions: false,
 				rewritesUnions: true,
 				traversesUnions: false,
-				readsKeySites: true,
 				appliesValues: false,
 				transformsBranches: false,
 				failsInBranches: false,
 				discriminatesBooleans: false,
-				entersMissing: false,
 				readsSummary: true,
 				readsErrors: true,
 				holdsExpression: false
@@ -721,15 +721,14 @@ export const Fields = { even: Even, name: type("string") }
 				bracketsKeys: false,
 				reportsIndices: true,
 				writesText: false,
+				callsSiteText: false,
 				listsUnions: false,
 				rewritesUnions: true,
 				traversesUnions: false,
-				readsKeySites: false,
 				appliesValues: false,
 				transformsBranches: false,
 				failsInBranches: false,
 				discriminatesBooleans: false,
-				entersMissing: true,
 				readsSummary: true,
 				readsErrors: true,
 				holdsExpression: false
@@ -745,15 +744,14 @@ export const Fields = { even: Even, name: type("string") }
 				bracketsKeys: true,
 				reportsIndices: true,
 				writesText: true,
+				callsSiteText: false,
 				listsUnions: true,
 				rewritesUnions: true,
 				traversesUnions: true,
-				readsKeySites: true,
 				appliesValues: false,
 				transformsBranches: false,
 				failsInBranches: false,
 				discriminatesBooleans: false,
-				entersMissing: false,
 				readsSummary: true,
 				readsErrors: true,
 				holdsExpression: false
@@ -787,22 +785,6 @@ export const Fields = { even: Even, name: type("string") }
 							.map(([k]) => k)
 					:	issues
 			}
-
-			it("no key entered with the site it's missing at, which only compiled code passes", async () => {
-				const entersMissing = async (main: string) => {
-					const issues = await issuesOf(main)
-					return (
-						typeof issues === "object" &&
-						!Array.isArray(issues) &&
-						issues.entersMissing
-					)
-				}
-				const one = `import { type } from "arktype"\n\nexport const T = type({ a: { b: "string" } })\n`
-				attest(await entersMissing(`${one}${repaying}\n`)).equals(false)
-				// too few to repay checkers, so compiled, which applies a's value
-				// at its key
-				attest(await entersMissing(one)).equals(true)
-			})
 
 			it("nothing of a morph where none's held", async () => {
 				attest(await heldBy(`type({ a: "string" })`)).equals([])
@@ -846,19 +828,41 @@ export const Fields = { even: Even, name: type("string") }
 				bracketsKeys: true,
 				reportsIndices: false,
 				writesText: false,
+				callsSiteText: false,
 				listsUnions: false,
 				rewritesUnions: true,
 				traversesUnions: false,
-				readsKeySites: true,
 				appliesValues: false,
 				transformsBranches: false,
 				failsInBranches: false,
 				discriminatesBooleans: false,
-				entersMissing: false,
 				readsSummary: true,
 				readsErrors: true,
 				holdsExpression: false
 			})
+		})
+
+		it("a site's text called only where a function writes it, which a message that's a string needs no call for", async () => {
+			const texts = async (definition: string) => {
+				const issues = await issuesOf(
+					`import { type } from "arktype"\n\nexport const T = ${definition}\n`
+				)
+				return (
+					typeof issues === "object" &&
+					!Array.isArray(issues) && [issues.writesText, issues.callsSiteText]
+				)
+			}
+			attest(await texts(`type({ a: "string" })`)).equals([false, false])
+			attest(
+				await texts(
+					`type({ a: type("string").configure({ message: "Enter text" }) })`
+				)
+			).equals([true, false])
+			attest(
+				await texts(
+					`type({ a: type("string").configure({ message: ctx => "Enter " + ctx.expected }) })`
+				)
+			).equals([true, true])
 		})
 
 		it("a validator's expression only where one holds it, as one that's printed does", async () => {
@@ -887,18 +891,18 @@ export const Fields = { even: Even, name: type("string") }
 			it("writes each read as what it is, and leaves the import out", () => {
 				attest(
 					written(`import { siteOf } from "./sites.js";
-import { readsKeySites, writesText as writesText2 } from "./shared/issueFeatures.js";
+import { listsUnions, writesText as writesText2 } from "./shared/issueFeatures.js";
 import { failsAt, transformsBranches } from "@ark/schema/runtime";
-const context = (site) => (readsKeySites ? site.v : void 0) ?? site;
+const line = (issue) => (listsUnions ? issue._l : void 0) ?? issue.message;
 const text = (issue) => writesText2 && issue._c ? ": " : " ";
 const branches = (t) => transformsBranches && t ? failsAt(t) : siteOf(t);
 `)
 				).snap(`import { siteOf } from "./sites.js";
 
 import { failsAt } from "@ark/schema/runtime";
-const context = (site) => (false ? site.v : void 0) ?? site;
-const text = (issue) => true && issue._c ? ": " : " ";
-const branches = (t) => false && t ? failsAt(t) : siteOf(t);
+const line = (issue) => ((false) ? issue._l : void 0) ?? issue.message;
+const text = (issue) => (true) && issue._c ? ": " : " ";
+const branches = (t) => (false) && t ? failsAt(t) : siteOf(t);
 `)
 			})
 
@@ -909,7 +913,7 @@ const fails = (checker) => appliesValues && checker.e ? checker.e : failsAt;
 export { appliesValues, fails };
 `)
 				).snap(`import { appliesValues, failsAt } from "@ark/schema/runtime";
-const fails = (checker) => false && checker.e ? checker.e : failsAt;
+const fails = (checker) => (false) && checker.e ? checker.e : failsAt;
 export { appliesValues, fails };
 `)
 			})
@@ -920,7 +924,7 @@ export { appliesValues, fails };
 export const features = { writesText, text: writesText };
 `)
 				).snap(`
-export const features = { writesText: true, text: true };
+export const features = { writesText: (true), text: (true) };
 `)
 			})
 
@@ -934,8 +938,34 @@ export const outer = readsErrors ? inner : writesText;
 				).snap(`import { writesText } from "./standalone/sites.js";
 
 const inner = (readsErrors) => readsErrors && writesText;
-export const outer = false ? inner : writesText;
+export const outer = (false) ? inner : writesText;
 `)
+			})
+
+			it("leaves esbuild nothing to warn of in arktype's own modules, whatever a build found", async () => {
+				// esbuild warns that `&&` after a bare `false` always returns it, in
+				// a module that isn't a dependency's, as arktype's is in a workspace
+				const allOn: typeof noIssueFeatures = Object.fromEntries(
+					Object.keys(noIssueFeatures).map(k => [k, true])
+				) as never
+				for (const features of [noIssueFeatures, allOn]) {
+					for (const file of [
+						fromHere("..", "..", "schema", "shared", "issues.ts"),
+						fromHere("..", "..", "schema", "shared", "issuesLean.ts"),
+						fromHere("..", "..", "schema", "shared", "listed.ts"),
+						fromHere("..", "..", "type", "runtime.ts"),
+						fromHere("..", "..", "type", "checkers.ts")
+					]) {
+						const code = writeIssueFeaturesInto(
+							file,
+							readFileSync(file, "utf8"),
+							features
+						)
+						attest(code === undefined).equals(false)
+						const { warnings } = await transform(code!, { loader: "ts" })
+						attest([file, ...warnings.map(({ text }) => text)]).equals([file])
+					}
+				}
 			})
 
 			it("answers nothing for a module that imports none", () => {
@@ -1315,7 +1345,7 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 		it("writes them for size where a browser loads the bundle, as optimize: size would", async () => {
 			const [warnings, js] = await built({})
 			attest(warnings).snap([
-				'precompile: compiled to check fastest, this bundle\'s validators would be about 1.5 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
+				'precompile: compiled to check fastest, this bundle\'s validators would be about 1.4 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
 			])
 			const [setWarnings, setJs] = await built({
 				optimize: "size",
@@ -1608,7 +1638,8 @@ console.log(User({ name: 5 }).toString())
 			const flagged = await bundleOf("flagged.ts")
 			attest(run(flagged)).snap("flags[0]: Set a flag.\n")
 			attest(flagged.includes("`[${")).equals(true)
-			attest(flagged.includes(".text?.(")).equals(true)
+			// which its traversal raises, where no site's text is called
+			attest(flagged.includes(".text?.(")).equals(false)
 			const asserted = await bundleOf("asserted.ts")
 			attest(run(asserted)).snap(`name must be a string
 age must be a number
@@ -4653,7 +4684,7 @@ export const shown = type({ shown: "string" })
 						return warnings
 					}
 					attest(await warningsOf({ target: "web" })).equals([
-						'precompile: compiled to check fastest, this bundle\'s validators would be about 1.5 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
+						'precompile: compiled to check fastest, this bundle\'s validators would be about 1.4 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
 					])
 					// a server's are left compiled
 					attest(await warningsOf({ target: "node" })).equals([])

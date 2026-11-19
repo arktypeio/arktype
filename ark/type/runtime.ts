@@ -11,6 +11,7 @@ import {
 	describeActual,
 	enInfo,
 	errorsOf,
+	failsKey,
 	FirstIssues,
 	holdsExpression,
 	isCustomIssue,
@@ -96,6 +97,7 @@ export {
 	exitResolution,
 	exitApplied,
 	failsInBranches,
+	failsKey,
 	FirstIssues,
 	FirstIssueTraversal,
 	fixConfig,
@@ -729,9 +731,17 @@ export const raisingTraversalOf = (
 export const failsAt = ((
 	ctx: FailureContext | undefined,
 	site: FailureSite,
+	data: unknown
+): boolean | undefined => !ctx?._at || ctx._at(site, data)) satisfies Fn
+
+// as failsAt, at a key of data: the missing key or its value
+export const failsAtKey = ((
+	ctx: FailureContext | undefined,
+	site: FailureSite,
 	data: unknown,
-	key?: PropertyKey
-): boolean | undefined => !ctx?._at || ctx._at(site, data, key)) satisfies Fn
+	key: PropertyKey
+): boolean | undefined =>
+	!ctx?._at || failsKey(ctx, site, data, key)) satisfies Fn
 
 // a discriminant deeper than one key misses below data, entering each key but the last
 export const failsAtPath = ((
@@ -743,7 +753,7 @@ export const failsAtPath = ((
 	!ctx?._at ||
 	(deeper.length ?
 		ctx._in((value, ctx) => !failsAtPath(ctx, site, value, deeper), data, k)
-	:	ctx._at(site, data, k))) satisfies Fn
+	:	failsKey(ctx, site, data, k))) satisfies Fn
 
 export const failsIn = ((
 	ctx: FailureContext | undefined,

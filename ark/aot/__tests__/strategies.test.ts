@@ -176,7 +176,10 @@ contextualize(function (this: Mocha.Suite) {
 					strategies: { cold: { optimize: "size" } },
 					schemas: { "/main.ts": "cold" }
 				})
-			).snap(["amount for size, named by size", "id for size, named by size"])
+			).snap([
+				"amount for size, named by size",
+				"id and amount for size, named by size"
+			])
 		})
 
 		it("writes what a definition composes as its own strategy does, whatever that's written as", () => {
@@ -509,10 +512,10 @@ export const Cold = type({ amount: "number > 0", currency: "string == 3" })
 			(await scanned(files, opts)).timesArktype?.toFixed(1)
 
 		it("weighs only those no key or marker chose a strategy for", async () => {
-			attest(await timesOf({})).snap("3.1")
+			attest(await timesOf({})).snap("3.0")
 			// those of cold.ts: as each module wrote them where one function
 			// declares hot.ts's too, and as that function does where it doesn't
-			attest(await timesOf({ schemas: { "hot.ts": "fastest" } })).snap("2.0")
+			attest(await timesOf({ schemas: { "hot.ts": "fastest" } })).snap("1.9")
 			attest(await timesOf({ schemas: { "hot.ts": "smallest" } })).snap("1.5")
 			attest(
 				await timesOf({
@@ -531,7 +534,7 @@ export const Cold = type({ amount: "number > 0", currency: "string == 3" })
 			const schemas = { "hot.ts": "fastest" }
 			const [warnings, js] = await bundled(root, { schemas })
 			attest(warnings).snap([
-				'precompile: compiled to check fastest, this bundle\'s validators would be about 2.0 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
+				'precompile: compiled to check fastest, this bundle\'s validators would be about 1.9 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
 			])
 			const [setWarnings, setJs] = await bundled(root, {
 				optimize: "size",

@@ -9,21 +9,25 @@ import { ArkErrors as LeanErrors } from "@ark/schema/internal/shared/issuesLean.
 import {
 	ArkErrors,
 	codedIssue,
+	failsKey,
 	FirstIssues,
 	InternalTraversal,
 	mergeIssues,
 	sharedMessageOf,
 	type CompactApply,
-	type FailureSite
+	type FailureSite,
+	type SiteContext
 } from "@ark/schema/runtime"
 import { stringifyPath } from "@ark/util"
 
-const site = (code: ArkErrorCode, description: string): FailureSite => ({
-	v: { code, description }
+const site = (code: ArkErrorCode, description: string): SiteContext => ({
+	code,
+	description
 })
 
+// a key's site: its value's context, and the missing key's
 const nameSite: FailureSite = {
-	...site("domain", "a string"),
+	v: site("domain", "a string"),
 	m: { code: "required" }
 }
 
@@ -38,7 +42,7 @@ const user: CompactApply = (data, ctx) => {
 		return !ctx._at(site("domain", "an object"), data)
 	if (
 		typeof (data as { name?: unknown }).name !== "string" &&
-		ctx._at(nameSite, data, "name")
+		failsKey(ctx, nameSite, data, "name")
 	)
 		return false
 	return true
@@ -133,7 +137,8 @@ contextualize(() => {
 	it("adds a discriminant's issue at the key it reads", () => {
 		const errors = new ArkErrors()
 		errors._p.push("item")
-		errors._at(
+		failsKey(
+			errors,
 			{ code: "discriminant", description: '"a" or "b"' },
 			{ kind: "c" },
 			"kind"
@@ -221,7 +226,8 @@ owner: supplied`)
 		for (const Errors of [ArkErrors, LeanErrors]) {
 			const errors = new Errors()
 			for (const x of messages) {
-				errors._at(
+				failsKey(
+					errors,
 					{ code: "domain", description: "a string", x },
 					{ k: 1 },
 					"k"
@@ -264,7 +270,8 @@ k: a string`)
 		user({ name: 1 }, merged)
 		user({}, merged)
 		// as a build writes an undeclared key's site
-		merged._at(
+		failsKey(
+			merged,
 			{ v: { code: "undeclared", description: "removed" } },
 			{ extra: 1 },
 			"extra"

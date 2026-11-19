@@ -1,8 +1,22 @@
 // what errors "none" writes besides its errors' class
 import { throwInternalError, type array } from "@ark/util"
 import type { ArkErrors } from "./issuesNone.ts"
-import type { ArkIssue } from "./issues.ts"
+import type { ArkIssue, FailureContext, FailureSite } from "./issues.ts"
 import { bracketsKeys } from "./issueFeatures.ts"
+
+// as issues.ts's failsKey, for a traversal a validator's Apply is piped into
+export const failsKey = (
+	ctx: FailureContext,
+	site: FailureSite,
+	data: unknown,
+	key: PropertyKey
+): boolean | undefined =>
+	ctx._in(
+		(value, ctx) => !ctx._at(site.v ?? site, value),
+		data,
+		key,
+		site.m && site
+	)
 
 // a size build's root apply, which errors "none" never writes
 export const applyIssues = (): never =>

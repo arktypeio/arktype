@@ -22,6 +22,7 @@ import {
 	enterApplied,
 	exitApplied,
 	failsAt,
+	failsAtKey,
 	failsBranches,
 	failsInBranches,
 	pipeApplied,
@@ -725,8 +726,16 @@ export const props = ((declared: Props): Checker => {
 			const value = data[k]
 			if (
 				value === undefined && !(k in data) ?
+					// entered by the ctx, which fails a key missing from data with
+					// the site it's passed, so no shape ships what fails at a key
 					!declared[k].o &&
-					failsAt(ctx as never, missingSiteOf(declared[k]), data, k)
+					(!(ctx as FailureContext | undefined)?._at ||
+						(ctx as FailureContext)._in(
+							declared[k] as never,
+							data,
+							k,
+							missingSiteOf(declared[k])
+						))
 				:	failsValue(ctx, declared[k], data, k, value)
 			)
 				return false
@@ -753,7 +762,7 @@ export const closedProps = ((
 			if (
 				!hasOwn(declared, k) &&
 				hasOwn(data, k) &&
-				failsAt(ctx as never, removed, data, k)
+				failsAtKey(ctx as never, removed, data, k)
 			)
 				return false
 		}
@@ -805,7 +814,7 @@ export const indexed = ((
 				typeof k === "string" &&
 				!hasOwn(declared, k) &&
 				!signatures.some(([key]) => matchesKey(key, k, ctx)) &&
-				failsAt(ctx as never, site, data, k)
+				failsAtKey(ctx as never, site, data, k)
 			)
 				return false
 		}
@@ -1525,7 +1534,9 @@ export const discriminate = ((
 		return (
 			branch ? branch === 1 || branch(data, ctx)
 			: objectCheck.test(data) ?
-				!failsAt(ctx as never, site, data, isOwn ? undefined : key)
+				!(isOwn ?
+					failsAt(ctx as never, site, data)
+				:	failsAtKey(ctx as never, site, data, key))
 			:	!failsAt(ctx as never, missed, data)
 		)
 	}
@@ -1553,7 +1564,8 @@ export const discriminateOr = ((
 ): Checker => {
 	const byValue = new Map(Object.entries(cases))
 	const site: FailureSite = { code: "discriminant", description }
-	const miss: Checker = (data, ctx) => !failsAt(ctx as never, site, data, key)
+	const miss: Checker = (data, ctx) =>
+		!failsAtKey(ctx as never, site, data, key)
 	const checker: Checker = (data: any, ctx) => {
 		const branch = byValue.get(data?.[key])
 		return branch ?

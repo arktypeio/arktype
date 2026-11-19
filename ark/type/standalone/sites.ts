@@ -154,6 +154,7 @@ export const addIssueFeatures = (
 		for (const [, source] of unit.members) {
 			if (addsUnionIssue.test(source)) features.listsUnions = true
 			if (saysMessage.test(source)) features.writesText = true
+			if (callsTextIn.test(source)) features.callsSiteText = true
 			if (appliesValue.test(source)) features.appliesValues = true
 			if (discriminatesBoolean.test(source))
 				features.discriminatesBooleans = true
@@ -161,9 +162,9 @@ export const addIssueFeatures = (
 		for (const ref of unit.refs) {
 			if (!failureSites.has(ref as object)) continue
 			const site = ref as FailureSite
-			if (site.v) features.readsKeySites = true
 			const contexts = [site, site.v, site.m] as (IssueContext | undefined)[]
 			if (contexts.some(writesText)) features.writesText = true
+			if (contexts.some(callsText)) features.callsSiteText = true
 		}
 	}
 }
@@ -189,6 +190,15 @@ const saysMessage = /runtime\.(?:saying(?:Missing)?|narrowedRejecting)\(/
 // config, each noted or set by a call on its issue
 const writesText = (context: IssueContext | undefined) =>
 	!!context?.c || !!context?.written
+
+// a site whose `text` is called on its issue: one whose text a function
+// writes, or one noting that its message is its code's. A message that's its
+// Type's is the issue's as the site holds it, with no call
+const callsText = (context: IssueContext | undefined) =>
+	context?.c === 2 || !!context?.written
+
+// code naming what writes or passes such a site
+const callsTextIn = /runtime\.(?:codeSiteOf|writtenSiteOf|codedIssue)\b/
 
 // sites only traversal reads, emitted as-is
 export const failureSites = new WeakSet<object>()

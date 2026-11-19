@@ -62,6 +62,18 @@ class StandaloneCompiler extends TraversalCompiler {
 	// named for its content as compiled, before the size forms that follow from it
 	readonly naming: boolean = this.link.unit === undefined
 
+	// a site failed at a key is entered by the runtime's failsKey: every bundle
+	// holds its errors' _at, which would otherwise enter a key for a program
+	// whose validators fail at none, and a bundler drops a function none calls
+	override fails(
+		method: "failsAt" | "failsIn" | "failsKey",
+		args: string
+	): string {
+		return method === "failsKey" ?
+				`runtime.failsKey(ctx, ${args})`
+			:	super.fails(method, args)
+	}
+
 	unifies(node: BaseNode): boolean {
 		return unifies(node)
 	}
@@ -182,9 +194,13 @@ class StandaloneCompiler extends TraversalCompiler {
 		const path = node.missPath
 		const site = this.siteRef(issueSite(discriminantContextOf(node)))
 		// a key below data is read as a key site reads it
-		return path.length > 1 ?
+		return (
+			path.length > 1 ?
 				`!${this.ref(failsAtPath)}(ctx, ${site}, data, [${path.map(k => this.serialize(k)).join(", ")}])`
-			:	`!${this.fails("failsAt", path.length ? `${site}, data, ${this.serialize(path[0])}` : `${site}, data`)}`
+			: path.length ?
+				`!${this.fails("failsKey", `${site}, data, ${this.serialize(path[0])}`)}`
+			:	`!${this.fails("failsAt", `${site}, data`)}`
+		)
 	}
 
 	private ifReadable(
@@ -254,7 +270,7 @@ class StandaloneCompiler extends TraversalCompiler {
 				meta: node.meta
 			})
 		)
-		return this.fails("failsAt", `${this.siteRef(site)}, data, k`)
+		return this.fails("failsKey", `${this.siteRef(site)}, data, k`)
 	}
 
 	// a rejected union value reports the union's issue at its key, not its Apply
@@ -528,9 +544,13 @@ class UnifiedCompiler extends StandaloneCompiler {
 	override failingSiteOf(): undefined {}
 	override failingApplyOf(): undefined {}
 
-	// read where it fails, as a site is, so a unit needn't receive it
-	override fails(method: "failsAt" | "failsIn", args: string): string {
-		return `runtime.${method}(ctx, ${args})`
+	// read where it fails, as a site is, so a unit needn't receive it. Each
+	// stops where it's passed no ctx, as failsAtKey does at a key
+	override fails(
+		method: "failsAt" | "failsIn" | "failsKey",
+		args: string
+	): string {
+		return `runtime.${method === "failsKey" ? "failsAtKey" : method}(ctx, ${args})`
 	}
 }
 

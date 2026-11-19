@@ -169,7 +169,7 @@ export abstract class BaseProp<
 				const site = condition && js.failingSiteOf?.(this)
 				const fails =
 					this.value.isBasis() ? `!${js.error(this, key)}`
-					: site ? `!${js.fails("failsAt", `${site}, data, ${key}`)}`
+					: site ? `!${js.fails("failsKey", `${site}, data, ${key}`)}`
 					: `!${js.fails("failsIn", `${(condition && js.failingApplyOf?.(this.value)) || js.traversal(this.value, "Apply")}, data, ${js.applied(key, value, js.site(this))}`)}`
 				return condition ? `${condition} || ${fails}` : fails
 			}

@@ -144,12 +144,12 @@ contextualize(() => {
 		})
 		attest(
 			code.includes(
-				`data.flag === false || data.flag === true || !ctx._at(runtime.keySiteOf("discriminant", "boolean"), data, "flag")`
+				`data.flag === false || data.flag === true || !runtime.failsKey(ctx, runtime.keySiteOf("discriminant", "boolean"), data, "flag")`
 			)
 		).equals(true)
 		attest(
 			code.includes(
-				`!ctx._at(runtime.keySiteOf("discriminant", "\\"a\\" or \\"b\\""), data, "kind")`
+				`!runtime.failsKey(ctx, runtime.keySiteOf("discriminant", "\\"a\\" or \\"b\\""), data, "kind")`
 			)
 		).equals(true)
 		// an optional key's is still applied

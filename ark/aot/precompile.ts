@@ -987,11 +987,6 @@ export class Precompiler {
 			}
 			const codes = [written[id].code, ...Object.values(written[id].modules)]
 			issues.traversesUnions ||= codes.some(code => code.includes("Traversal"))
-			// compiled code enters a key with its site, by ctx or the runtime's
-			// call; a checker's keys are entered by the runtime, which passes none
-			issues.entersMissing ||= codes.some(code =>
-				/\b(?:_in|failsIn)\(/.test(code)
-			)
 			// its message is a failed default's summary
 			issues.readsErrors ||= codes.some(code => code.includes("checkDefault"))
 		}
@@ -8654,15 +8649,14 @@ const anyIssues: IssueFeatures = {
 	reportsIndices: true,
 	bracketsKeys: true,
 	writesText: true,
+	callsSiteText: true,
 	listsUnions: true,
 	rewritesUnions: true,
 	traversesUnions: true,
-	readsKeySites: true,
 	appliesValues: true,
 	transformsBranches: true,
 	failsInBranches: true,
 	discriminatesBooleans: true,
-	entersMissing: true,
 	readsSummary: true,
 	readsErrors: true,
 	holdsExpression: true

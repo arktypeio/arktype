@@ -349,15 +349,14 @@ export interface IssueFeatures {
 	reportsIndices: boolean
 	bracketsKeys: boolean
 	writesText: boolean
+	callsSiteText: boolean
 	listsUnions: boolean
 	rewritesUnions: boolean
 	traversesUnions: boolean
-	readsKeySites: boolean
 	appliesValues: boolean
 	transformsBranches: boolean
 	failsInBranches: boolean
 	discriminatesBooleans: boolean
-	entersMissing: boolean
 	readsSummary: boolean
 	readsErrors: boolean
 	holdsExpression: boolean
@@ -367,15 +366,14 @@ export const noIssueFeatures: IssueFeatures = {
 	reportsIndices: false,
 	bracketsKeys: false,
 	writesText: false,
+	callsSiteText: false,
 	listsUnions: false,
 	rewritesUnions: false,
 	traversesUnions: false,
-	readsKeySites: false,
 	appliesValues: false,
 	transformsBranches: false,
 	failsInBranches: false,
 	discriminatesBooleans: false,
-	entersMissing: false,
 	readsSummary: false,
 	readsErrors: false,
 	holdsExpression: false

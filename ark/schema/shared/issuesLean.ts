@@ -9,10 +9,9 @@ import type {
 } from "./issues.ts"
 import {
 	bracketsKeys,
-	entersMissing,
+	callsSiteText,
 	listsUnions,
 	readsErrors,
-	readsKeySites,
 	readsSummary,
 	reportsIndices,
 	writesText
@@ -44,24 +43,16 @@ class ReadIssues implements FailureContext {
 		return this._ as WrittenIssue[]
 	}
 
-	/** @internal */
-	_at(site: FailureSite, data: unknown, key?: PropertyKey): true | undefined {
-		const path = this._p
-		let context = (readsKeySites ? site.v : undefined) ?? (site as SiteContext)
-		if (key !== undefined) {
-			path.push(key)
-			if (site.m && !(key in (data as object))) context = site.m
-			else data = (data as Keyed)[key]
-		}
+	/** @internal takes neither a key nor a key's site, as issues.ts's */
+	_at(context: SiteContext, data: unknown): true | undefined {
 		const issue: ArkIssue = {
 			code: context.code,
-			path: path.slice(),
+			path: this._p.slice(),
 			data,
 			expected: context.description,
 			message: context.x
 		}
-		if (writesText) context.text?.(issue)
-		if (key !== undefined) path.pop()
+		if (callsSiteText) context.text?.(issue)
 		this._.push(issue)
 		// only errors stopping at the first issue stop at this one
 		return undefined
@@ -74,17 +65,29 @@ class ReadIssues implements FailureContext {
 		key: PropertyKey,
 		missing?: FailureSite
 	): boolean | undefined {
-		let continues: boolean
-		// one expression, so a build whose validators pass no missing site
-		// folds away what reads one
-		return entersMissing && missing && !(key in (data as object)) ?
-				this._at(missing, data, key)
-			:	(this._p.push(key),
-				(continues = apply((data as Keyed)[key], this)),
-				this._p.pop(),
-				!continues)
+		this._p.push(key)
+		const stops =
+			missing && !(key in (data as object)) ?
+				this._at(missing.m as SiteContext, data)
+			:	!apply((data as Keyed)[key], this)
+		this._p.pop()
+		return stops
 	}
 }
+
+// as issues.ts's failsKey
+export const failsKey = (
+	ctx: FailureContext,
+	site: FailureSite,
+	data: unknown,
+	key: PropertyKey
+): boolean | undefined =>
+	ctx._in(
+		(value, ctx) => !ctx._at(site.v ?? site, value),
+		data,
+		key,
+		site.m && site
+	)
 
 // one class where errors are read, as they read the summary too
 const Issues: new () => Issues = (
@@ -138,8 +141,8 @@ export class FirstIssues extends Issues {
 		return true
 	}
 
-	override _at(site: FailureSite, data: unknown, key?: PropertyKey): true {
-		super._at(site, data, key)
+	override _at(context: SiteContext, data: unknown): true {
+		super._at(context, data)
 		return true
 	}
 }
@@ -150,7 +153,7 @@ export const issueAt = (
 	data: unknown,
 	key: PropertyKey | undefined
 ): ArkIssue => {
-	let context = (readsKeySites ? site.v : undefined) ?? (site as SiteContext)
+	let context = site.v ?? (site as SiteContext)
 	if (key !== undefined) {
 		path.push(key)
 		if (site.m && !(key in (data as object))) context = site.m
@@ -163,7 +166,7 @@ export const issueAt = (
 		expected: context.description,
 		message: context.x
 	}
-	if (writesText) context.text?.(issue)
+	if (callsSiteText) context.text?.(issue)
 	if (key !== undefined) path.pop()
 	return issue
 }
@@ -232,10 +235,11 @@ export const mergeIssues = (
 
 // whether an issue's message is a sentence of its own, as issues.ts's isCustomIssue
 export const isCustomIssue = (issue: ArkIssue): boolean =>
-	writesText &&
-	issue.message !== undefined &&
-	!(listsUnions && issue._l !== undefined) &&
-	!issue.message.startsWith(messageOf(issue))
+	listsUnions && issue._l !== undefined ?
+		false
+	:	writesText &&
+		issue.message !== undefined &&
+		!issue.message.startsWith(messageOf(issue))
 
 // as issues.ts's codedIssue, notedAs and movedIssue
 export const codedIssue = <issue extends ArkIssue>(issue: issue): issue =>
