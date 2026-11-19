@@ -956,37 +956,46 @@ export const applyCallErrors = (
 	return onFail ? onFail(errors) : errors
 }
 
-const unreadClasses = /* @__PURE__ */ new Map<IssuesClass, IssuesClass>()
-
 // Errors of a class no build wrote to find its issues once read, as an
 // unbundled runtime's or another build's: a class beside it that does, its
 // prototype the errors', built with what finds them as the class itself is
-// where a build wrote it to. Defined at a class's first failure, as defining
-// it at load costs startup
-const unreadOf = (Ctx: IssuesClass): IssuesClass => {
-	let unread = unreadClasses.get(Ctx)
-	if (!unread) {
-		class Unread {
-			// named as the fields of errors written to wait are
-			declare _a: CompactApply
-			declare _d: unknown
-			declare _f?: ArkIssue[]
+// where a build wrote it to
+const unreadClassOf = (Ctx: IssuesClass): IssuesClass => {
+	class Unread {
+		// named as the fields of errors written to wait are
+		declare _a: CompactApply
+		declare _d: unknown
+		declare _f?: ArkIssue[]
 
-			constructor(data: unknown, config: unknown, apply: CompactApply) {
-				this._a = apply
-				this._d = data
-			}
-
-			get _(): ArkIssue[] {
-				return (this._f ??= issuesOf(this._a, this._d, new Ctx()))
-			}
+		constructor(data: unknown, config: unknown, apply: CompactApply) {
+			this._a = apply
+			this._d = data
 		}
-		// a Ctx, built without the fields its constructor sets
-		setPrototypeOf(Unread.prototype, Ctx.prototype)
-		// keeps the prototype's own constructor, still not enumerable
-		Unread.prototype.constructor = Ctx
-		unreadClasses.set(Ctx, (unread = Unread as never))
+
+		get _(): ArkIssue[] {
+			return (this._f ??= issuesOf(this._a, this._d, new Ctx()))
+		}
 	}
+	// a Ctx, built without the fields its constructor sets
+	setPrototypeOf(Unread.prototype, Ctx.prototype)
+	// keeps the prototype's own constructor, still not enumerable
+	Unread.prototype.constructor = Ctx
+	return Unread as never
+}
+
+let unreadArkErrors: IssuesClass | undefined
+
+const unreadClasses = /* @__PURE__ */ new Map<IssuesClass, IssuesClass>()
+
+// A class's, defined at its first failure, as defining it at load costs
+// startup. ArkErrors' is held in a variable of its own: nearly every failing
+// call asks for it, and looking it up in the Map was nearly half of what a
+// call that leaves its errors unread costs (on schemabenchmarks.dev's invalid
+// product, 255 instructions a call where this is 139)
+const unreadOf = (Ctx: IssuesClass): IssuesClass => {
+	if (Ctx === ArkErrors) return (unreadArkErrors ??= unreadClassOf(Ctx))
+	let unread = unreadClasses.get(Ctx)
+	if (!unread) unreadClasses.set(Ctx, (unread = unreadClassOf(Ctx)))
 	return unread
 }
 
