@@ -52,6 +52,7 @@ import {
 const here = import.meta.dirname
 const repo = join(here, "..", "..", "..", "..")
 const external = "ark/repo/bench/external"
+const docs = join(repo, "ark/docs")
 
 // what a rerun measures: the leaderboard and the run behind it
 // (reproduce.ts --newest), and the "smallest" preset's sizes (pnpm benchScale)
@@ -122,16 +123,26 @@ const checkClaims = (): ClaimsCheck => {
 		:	{ ok: false, output: errorOf(stderr) }
 }
 
-// the docs build's Markdown, written as next.config.ts has it written. Whether
-// it could be: claims.ts throws where the numbers don't back the copy
+// the docs build's Markdown, written as next.config.ts has it written: in the
+// docs' directory and as a production build. Whether it could be: claims.ts
+// throws where the numbers don't back the copy, and so does a page with
+// problems or a snippet twoslash can't type. Only a production build throws
+// for those two. Any other writes the snippet without the errors and types
+// twoslash adds, which is how a run started at the repo root, where twoslash
+// resolved no package, once committed llms-full.txt with every
+// "// TypeScript:" line gone
 const writeDerived = () =>
 	spawnSync(
 		process.execPath,
 		[
 			"-e",
-			`import(${JSON.stringify(pathToFileURL(join(repo, "ark/docs/lib/writeMarkdown.ts")).href)}).then(m => m.writeMarkdown())`
+			`import(${JSON.stringify(pathToFileURL(join(docs, "lib/writeMarkdown.ts")).href)}).then(m => m.writeMarkdown())`
 		],
-		{ cwd: repo, stdio: ["ignore", "inherit", "inherit"] }
+		{
+			cwd: docs,
+			env: { ...process.env, NODE_ENV: "production" },
+			stdio: ["ignore", "inherit", "inherit"]
+		}
 	).status === 0
 
 const restoreDerived = () => {
@@ -168,7 +179,7 @@ const derive = (claims: ClaimsCheck): Derived => {
 		return {
 			regenerated: [],
 			skipped:
-				"Not written again: `ark/docs/lib/writeMarkdown.ts` failed in the run. `pnpm buildDocs` writes them."
+				"Not written again: `ark/docs/lib/writeMarkdown.ts` failed in the run, whose log has why: a page with problems, or a snippet whose types didn't resolve. `pnpm buildDocs` writes them."
 		}
 	}
 	const baselineOf = (path: string) => join(dir, "derivedBaseline", path)

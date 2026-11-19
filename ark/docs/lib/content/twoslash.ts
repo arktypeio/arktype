@@ -83,7 +83,15 @@ const twoslashCacheDir = join(cacheDir, "twoslash")
 
 const memoryCache = new Map<string, TwoslashShikiReturn>()
 
-const baseTwoslasher = createTwoslasher(twoslashOptions)
+// twoslash resolves a snippet's imports from its vfsRoot, which defaults to
+// the directory the process started in. arktype and its companions are only
+// installed under the docs (ark/docs/node_modules), so from anywhere else,
+// the repo root for one, none of them resolves and every snippet's types are
+// `any`. `next build` starts in the docs; a script or a test needn't
+const baseTwoslasher = createTwoslasher({
+	...twoslashOptions,
+	vfsRoot: docsDir
+})
 
 type TwoslashNode = TwoslashShikiReturn["nodes"][number]
 

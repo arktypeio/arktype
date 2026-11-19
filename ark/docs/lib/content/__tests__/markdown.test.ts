@@ -16,6 +16,20 @@ const s = "five"
 // const s: "five"`)
 	})
 
+	it("a snippet's packages resolve wherever the process started", () => {
+		// the tests start at the repo root, where arktype isn't installed, as
+		// the monthly rerun did when it wrote this without its error
+		const value = `// @errors: 2322
+const User = type({
+	name: "strng"
+})`
+		attest(codeForMarkdown({ type: "code", lang: "ts", value }))
+			.snap(`const User = type({
+	name: "strng"
+	// TypeScript: 'strng' is unresolvable
+})`)
+	})
+
 	it("errors already described in a comment aren't repeated", () => {
 		const value = `// @errors: 2322
 // TypeScript: Type 'string' is not assignable to type 'number'
