@@ -85,9 +85,67 @@ const memoryCache = new Map<string, TwoslashShikiReturn>()
 
 const baseTwoslasher = createTwoslasher(twoslashOptions)
 
+type TwoslashNode = TwoslashShikiReturn["nodes"][number]
+
+/** a declaration whose whole type TypeScript couldn't resolve, as a query (`any`) or a hover (lib/shiki.ts writes `any` as `...`) shows it */
+const unresolvedPattern = /^(?:const|let|var) [\w$]+: (?:any|\.{3})$/
+
+/** the error codes a snippet says it has: `// @errors: 2322 2345` */
+const expectedErrorsOf = (code: string) =>
+	[...code.matchAll(/^\s*\/\/\s*@errors:(?<codes>.*)$/gm)].flatMap(match =>
+		(match.groups!.codes.match(/\d+/g) ?? []).map(Number)
+	)
+
+/**
+ * Why a result can't be what the snippet's author saw, if it can't.
+ *
+ * twoslash reads each package's built declarations (ark/<package>/out), not
+ * its source. Where one is missing or half written, as while `pnpm build`
+ * runs or after it failed, TypeScript resolves what it can't find to `any`
+ * and reports nothing: a hover reads `const User: any` and an error the
+ * snippet documents never happens. Neither fails twoslash, so the build
+ * would publish both.
+ */
+export const degradedBy = (
+	code: string,
+	nodes: readonly TwoslashNode[]
+): string | undefined => {
+	// a snippet that turns errors off imports what the docs don't install
+	// (a framework, a router), whose types are any by design
+	const unchecked = /^\s*\/\/\s*@noErrors\b/m.test(code)
+	const [unresolved] = nodes.flatMap(node =>
+		(
+			!unchecked &&
+			(node.type === "query" || node.type === "hover") &&
+			unresolvedPattern.test(node.text)
+		) ?
+			[node.text]
+		:	[]
+	)
+	if (unresolved) return `"${unresolved}" has no type`
+	const reported = nodes.flatMap(node =>
+		node.type === "error" ? [node.code] : []
+	)
+	const missing = expectedErrorsOf(code).filter(
+		expected => !reported.includes(expected)
+	)
+	if (missing.length)
+		return `it expects TypeScript error ${missing.join(", ")}, which didn't occur`
+}
+
+const assertNotDegraded = (code: string, nodes: readonly TwoslashNode[]) => {
+	const reason = degradedBy(code, nodes)
+	if (reason) {
+		throw new Error(
+			`A snippet's types didn't resolve: ${reason}. twoslash reads the packages' built declarations, so run \`pnpm build\` at the repo root and build the docs again once it has finished.\n${code}`
+		)
+	}
+}
+
 /**
  * Runs twoslash, caching each result in memory and on disk by a hash of the
- * snippet, its options and {@link twoslashFingerprint}.
+ * snippet, its options and {@link twoslashFingerprint}. A result whose types
+ * didn't resolve ({@link degradedBy}) throws and is never cached.
  */
 export const twoslasher: TwoslashShikiFunction = (code, lang, options) => {
 	const key = createHash("sha256")
@@ -105,9 +163,13 @@ export const twoslasher: TwoslashShikiFunction = (code, lang, options) => {
 
 	const path = join(twoslashCacheDir, `${key}.json`)
 	let result: TwoslashShikiReturn
-	if (existsSync(path)) result = JSON.parse(readFileSync(path, "utf8"))
-	else {
+	if (existsSync(path)) {
+		result = JSON.parse(readFileSync(path, "utf8"))
+		// declarations rewritten while a build ran could have cached one
+		assertNotDegraded(code, result.nodes)
+	} else {
 		const { code: output, nodes, meta } = baseTwoslasher(code, lang, options)
+		assertNotDegraded(code, nodes)
 		result = { code: output, nodes, meta: { extension: meta.extension } }
 		mkdirSync(twoslashCacheDir, { recursive: true })
 		writeFileSync(path, JSON.stringify(result))
