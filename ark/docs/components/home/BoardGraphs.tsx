@@ -1,11 +1,17 @@
 import Link from "next/link"
 import { Fragment, type CSSProperties } from "react"
+import { standingsAsOf } from "../../lib/claims.ts"
 import {
 	boardGraphs,
 	methodHref,
 	type BoardBar,
 	type BoardGraph
 } from "./boardFacts.ts"
+
+/** lib/claims.ts's date line as the footer's other notes are written: "standings as of November 6, 2026" */
+const asOf = standingsAsOf.text
+	.replace(/\.$/, "")
+	.replace(/^./, first => first.toLowerCase())
 
 type GapProps = {
 	bar: BoardBar
@@ -114,7 +120,10 @@ export const BoardGraphs = () => (
 				cut, the number is exact
 			</span>
 			<span>ArkType precompiled, default build, in all three</span>
-			<Link href={methodHref}>how we measured →</Link>
+			<span className="graphs-method">
+				<time dateTime={standingsAsOf.date}>{asOf}</time>
+				<Link href={methodHref}>how we measured →</Link>
+			</span>
 		</p>
 	</figure>
 )

@@ -337,6 +337,21 @@ moltar, 1.16M to 1.05M, 19 of 20.
 
 ## Best average
 
+**Superseded on 2026-11-18.** The site no longer ranks by this section's
+rule. The headline, the homepage's board and the Benchmarks page follow one
+rule, `ark/docs/lib/bench/units.ts`: over the independent suites, each
+library's geometric mean, in the unit measured, across the largest set of
+results that ArkType, Zod and three more libraries the site names all ran,
+with every library that ran all of them ranked in plain order. There is no
+tie band and no ratio to a row's best. A superlative needs the lowest mean
+outright (`claimsLead` in `ark/docs/lib/claims.ts`), and startup still needs
+`startup.ts`'s paired rounds as "Claiming" describes. The
+[Benchmarks page](https://arktype.io/docs/precompile/benchmarks) states the
+rule, its reasons and every result, and `pnpm benchBoard` prints its
+standings. What follows is the record of the rule the headline used until
+then: its standings, how it was chosen and what was said against it.
+`standings.ts` still prints its pooled standings.
+
 The headline's superlatives come from a rule, written before any average was
 computed: a library is the fastest, the quickest to start or the smallest if
 it has the best average in that category across the public benchmarks that

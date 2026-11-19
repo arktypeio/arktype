@@ -6,6 +6,7 @@ import {
 	ownFigures,
 	sourcesOf,
 	unitBoards,
+	unitText,
 	type UnitBoard
 } from "../../lib/bench/units.ts"
 import {
@@ -53,12 +54,12 @@ export const startupFacts = () => {
 	}
 }
 
-/** a bar of the size chart in kilobytes to three figures, as the size section writes them: "1.01" */
+/** a bar of the size chart in kilobytes, as the size section writes them: "1.03" */
 export const loginKb = (name: string) => {
 	const bar = sizeChart.bars.find(bar => bar.name === name)
 	if (!bar || bar.value === null)
 		throw new Error(`sizeChart has no ${name} bar`)
-	return (bar.value / 1000).toPrecision(3)
+	return unitText.kilobytes(bar.value)
 }
 
 /** how many times the login form's bundle Zod's is, truncated as every ratio on the page is: "24×" */

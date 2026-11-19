@@ -385,9 +385,15 @@
 		font: 400 13px / 1.5 var(--mono);
 		color: var(--ink-2);
 		a {
-			margin-left: auto;
 			color: var(--sky);
 		}
+	}
+	/* when the results were measured, beside where the method is */
+	.graphs-method {
+		display: inline-flex;
+		flex-wrap: wrap;
+		gap: 6px 22px;
+		margin-left: auto;
 	}
 	.graph-cut-key {
 		display: inline-block;
@@ -1739,7 +1745,7 @@
 		.graph-gap.is-narrow {
 			display: block;
 		}
-		.graphs-foot a {
+		.graphs-method {
 			margin-left: 0;
 		}
 		.guarantee-plugin,

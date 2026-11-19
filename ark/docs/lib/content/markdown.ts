@@ -21,9 +21,11 @@ import { shapeEmitted, shapeSource } from "../../components/precompile/shape.ts"
 import snippetContentsById from "../../components/snippets/contentsById.ts"
 import { benchNotes, benchTable, jitComparison } from "../bench/bench.ts"
 import {
+	leftOutText,
 	ownSpeedTable,
 	ownTable,
 	resultsTable,
+	runsTable,
 	standingsTable,
 	type OwnTableId,
 	type TextTable
@@ -33,7 +35,6 @@ import { unitBoards } from "../bench/units.ts"
 import {
 	claims,
 	draftOf,
-	headlineMethod,
 	isPending,
 	presetSizeRows,
 	sizeChart,
@@ -335,21 +336,18 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 			return claimContent(node, claims.headline)
 		case "HeadlineNote":
 			return [
-				{
-					type: "paragraph",
-					children: [
-						{
-							type: "text",
-							value: `${claimMarkdown(claims.headlineNote)} ${standingsAsOf.text} `
-						},
-						{
-							type: "link",
-							url: headlineMethod.href,
-							children: [{ type: "text", value: headlineMethod.label }]
-						}
-					]
-				} satisfies Paragraph
+				paragraph(`${claimMarkdown(claims.headlineNote)} ${standingsAsOf.text}`)
 			]
+		case "StandingsAsOf":
+			return node.type === "mdxJsxTextElement" ?
+					[{ type: "text", value: standingsAsOf.text }]
+				:	[paragraph(standingsAsOf.text)]
+		case "BoardRuns":
+			return [textTable(runsTable())]
+		case "BoardLeftOut": {
+			const text = leftOutText(attr(node, "category") as CategoryId)
+			return text ? [paragraph(text)] : []
+		}
 		case "BenchmarkChart": {
 			const { head, rows } = benchTable()
 			return [

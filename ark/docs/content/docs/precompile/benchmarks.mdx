@@ -1,26 +1,43 @@
 ---
 title: Benchmarks
-description: The rule the homepage's board follows, every result behind it, our own benchmark beside it and how to rerun each one.
+description: The rule the headline and the homepage's board follow, every result behind it, our own benchmark beside it and how to rerun each one.
 ---
 
-Every number on this site comes from a benchmark in the repo. This page has the rule the homepage's board follows, every result behind it, our own benchmark beside it and the commands that rerun each one.
+Every number on this site comes from a benchmark in the repo. This page has the rule the headline and the homepage's board follow, every result behind it, our own benchmark beside it and the commands that rerun each one.
 
-## The board
+## The rule
 
-The homepage's board has three graphs: validation speed, startup and bundle size. All three follow one rule.
+The headline, the homepage's board and the tables below follow one rule, the same for validation speed, startup and bundle size.
 
-1. **The results are other projects' benchmarks.** None of the benchmarks a graph averages was designed by us. Each is another project's public suite, cloned at a pinned commit and run as its authors wrote it, with ArkType added the way that suite adds a library. The one exception is in size: valibot.dev's login form is Valibot's code, which we wrote in each other library and size with our own script.
-2. **Each graph averages the largest set of results that five libraries share.** A graph has five lanes: ArkType, Zod and three more libraries the site names. A library is only compared over results it ran, so the graph takes the largest set of results that ArkType, Zod and three such libraries all ran. Which results those are depends on who ran what and never on what anyone scored.
-3. **Every library that ran all of those results is ranked**, whether the site names it or not, by the geometric mean of its results.
-4. **The lanes drawn** are ArkType, the three best-placed other libraries the site names (100k+ npm downloads a week) and Zod. Zod's other entry points, `z.compile` and Zod Mini, are in the tables below rather than in a second Zod lane.
+<Claim id="boardNote" />
+
+So the headline's words mean these averages, each the first row of a table below:
+
+- <Claim id="sizeAverage" />
+- <Claim id="speedAverage" />
+- <Claim id="startupAverage" />
+
+<StandingsAsOf /> [When each benchmark was measured](#when-each-was-measured)
+has a date per benchmark.
 
 Each choice has a reason:
 
-- **The unit is the one the benchmark measures.** Speed and startup are CPU instructions, counted with `perf` while the other project's benchmark code runs. An instruction count is the same on a busy machine and on a quiet one, and close to the same on another CPU, so a number here can be checked on a machine that isn't ours. Size is bytes, minified and gzipped.
-- **A geometric mean** because the results span orders of magnitude: one validates an email address, another a whole document. An arithmetic mean would be the largest result with the rest as rounding error. A geometric mean gives every result the same weight, and the ratio of two libraries' means is the mean of their ratios.
-- **The same rows for every library** because a library that skipped the hardest results would otherwise average an easier set.
+- **Other projects' benchmarks, because we didn't write them.** Each is another project's public suite, cloned at a pinned commit and run as its authors wrote it, with ArkType added the way that suite adds a library. We chose none of their schemas, inputs or measurements. The one exception is in size: valibot.dev's login form is Valibot's code, which we wrote in each other library and size with our own script.
+- **The largest set of results that five libraries share**, because a library is only compared over results it ran. A graph has five lanes: ArkType, Zod and three more libraries the site names. It averages the largest set of results that ArkType, Zod and three such libraries all ran, so every bar is over the same work. Which results those are depends on who ran what and never on what anyone scored.
+- **A geometric mean**, because the results span orders of magnitude: one validates an email address, another a whole document. An arithmetic mean would be the largest result with the rest as rounding error. A geometric mean gives every result the same weight, and the ratio of two libraries' means is the mean of their ratios.
+- **The unit the benchmark measures.** Speed and startup are CPU instructions, counted with `perf` while the other project's benchmark code runs. An instruction count is the same on a busy machine and on a quiet one, and close to the same on another CPU, so a number here can be checked on a machine that isn't ours. Size is bytes, minified and gzipped.
+- **One build of ArkType in all three**, because a library that is fastest in one configuration and smallest in another is neither at once. Every row of every graph is the same build: precompiled with the default options, bundled for production.
+- **Plain order.** A place is a library's position by its mean, lowest first, among every library that ran all of a graph's results, whether the site names it or not. Nothing counts as a tie unless two means are equal.
 - **Startup counts creating a schema**, because that is what both public startup benchmarks time. A precompiled validator creates its schema when it builds and has nothing left to create when it loads; the graph shows that difference as it was measured. Importing a real app through its first validation is [our own startup benchmark](#startup).
-- **One build of ArkType** is in every row of all three graphs: precompiled with the default options, bundled as a production build.
+
+The lanes the homepage draws are ArkType, the three best-placed other libraries the site names (100k+ npm downloads a week) and Zod. Zod's other entry points, `z.compile` and Zod Mini, are in the tables below rather than in a second Zod lane.
+
+- <Claim id="benchmarkOwners" />
+- <Claim id="startupBasis" />
+
+## The results
+
+Each table has every library its graph ranks, then every result the graph averages, so where another library has the better number on one result, that number is here.
 
 ### Validation speed [#board-speed]
 
@@ -32,6 +49,8 @@ Every result the graph averages:
 
 <BoardResults category="speed" />
 
+<BoardLeftOut category="speed" />
+
 ### Startup [#board-startup]
 
 <BoardCaption category="startup" />
@@ -42,22 +61,31 @@ Each library on each result, including the ones that only ran one:
 
 <BoardResults category="startup" />
 
+<BoardLeftOut category="startup" />
+
 ### Bundle size [#board-size]
 
 <BoardCaption category="size" />
 
 <BoardStandings category="size" />
 
+Each library on each result, including the ones that only ran one:
+
 <BoardResults category="size" />
+
+<BoardLeftOut category="size" />
 
 Every library's result on every row, in every suite, is in [`leaderboard.json`](https://github.com/arktypeio/arktype/blob/main/ark/docs/lib/bench/leaderboard.json).
 
-- <Claim id="benchmarkOwners" />
-- <Claim id="startupBasis" />
+### When each was measured
+
+<BoardRuns />
+
+A result is only as current as its last run, so each benchmark has its own date, and ArkType's rows name the commit they were measured at. Each month a job reruns the size benchmarks at each library's newest release and opens a pull request with the updated numbers for review, so a number on this site changes only by a reviewed commit.
 
 ## Our own benchmark
 
-The board leaves our own benchmark out of its bars and its places. The homepage prints two figures from it beside the bars, in units most people think in, and the sections below have all of it.
+The rule leaves our own benchmark out of every bar, place and superlative, since we wrote it. The homepage prints two figures from it beside the bars, in units most people think in, and the sections below have all of it, including the results where another library is ahead.
 
 ### Validation speed [#validation-speed]
 

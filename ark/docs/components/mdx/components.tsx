@@ -11,7 +11,9 @@ import { ApiMember, ApiMembers } from "./ApiMembers.tsx"
 import { BenchmarkChart } from "./BenchmarkChart.tsx"
 import {
 	BoardCaption,
+	BoardLeftOut,
 	BoardResults,
+	BoardRuns,
 	BoardStandings,
 	JitComparison,
 	OwnResults,
@@ -23,7 +25,8 @@ import {
 	ClaimCharts,
 	Headline,
 	HeadlineNote,
-	PresetSizeTable
+	PresetSizeTable,
+	StandingsAsOf
 } from "./Claim.tsx"
 import { Pre } from "./CodeFrame.tsx"
 import { Heading } from "./Heading.tsx"
@@ -56,15 +59,20 @@ export const mdxComponents: MDXComponents = {
 	ApiMembers,
 	// every scenario of the speed benchmark, with its method
 	BenchmarkChart,
-	// the homepage board's graphs as tables, and the results under them
+	// the homepage board's graphs as tables, the results under them, the
+	// public results a graph leaves out and when each benchmark was measured
 	BoardCaption,
+	BoardLeftOut,
 	BoardResults,
+	BoardRuns,
 	BoardStandings,
 	Callout,
 	Claim,
 	ClaimCharts,
 	Headline,
 	HeadlineNote,
+	// the day the board's published results were last measured
+	StandingsAsOf,
 	CodeBlock,
 	InstallationTabs,
 	JitComparison,

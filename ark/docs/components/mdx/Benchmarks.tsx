@@ -1,8 +1,10 @@
 import { jitComparison } from "../../lib/bench/bench.ts"
 import {
+	leftOutText,
 	ownSpeedTable,
 	ownTable,
 	resultsTable,
+	runsTable,
 	standingsTable,
 	type OwnTableId,
 	type TextTable
@@ -87,6 +89,15 @@ export const BoardStandings = ({ category }: BoardCategoryProps) => (
 export const BoardResults = ({ category }: BoardCategoryProps) => (
 	<TextTableView table={resultsTable(category)} />
 )
+
+/** which public results one of the board's graphs doesn't average, and why; nothing where it averages them all */
+export const BoardLeftOut = ({ category }: BoardCategoryProps) => {
+	const text = leftOutText(category)
+	return text ? <p>{text}</p> : null
+}
+
+/** when each benchmark on the board was measured */
+export const BoardRuns = () => <TextTableView table={runsTable()} />
 
 /** our benchmark's speed, a library a row */
 export const OwnSpeed = () => <TextTableView table={ownSpeedTable()} />

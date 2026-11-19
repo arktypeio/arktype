@@ -5,14 +5,18 @@
  * same cells.
  */
 import {
+	independentRowsOf,
 	isWellKnown,
+	measuredOf,
 	rowsOfSuite,
 	type CategoryId,
-	type ResultRow
+	type ResultRow,
+	type SuiteRow
 } from "./leaderboard.ts"
 import {
 	ownFigures,
 	sharedRows,
+	sourcesOf,
 	standingsOver,
 	unitBoards,
 	unitText,
@@ -61,9 +65,44 @@ export const standingsTable = (id: CategoryId): TextTable => {
 }
 
 /**
+ * The public results of a category that its graph doesn't average: the ones
+ * the libraries sharing the largest set didn't all run.
+ */
+export const leftOutRows = (id: CategoryId): SuiteRow[] =>
+	independentRowsOf(id).filter(
+		row =>
+			!unitBoards[id].rows.some(
+				averaged => averaged.suite === row.suite && averaged.id === row.id
+			)
+	)
+
+const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`
+
+const listed = (items: string[]) =>
+	items.length < 3 ?
+		items.join(" and ")
+	:	`${items.slice(0, -1).join(", ")} and ${items.at(-1)}`
+
+/**
+ * Which public results a graph leaves out and why, as a sentence. Undefined
+ * where it averages every one.
+ */
+export const leftOutText = (id: CategoryId) => {
+	const rows = leftOutRows(id)
+	if (!rows.length) return
+	const suites = [...new Set(rows.map(row => row.suite))]
+	const averaged = unitBoards[id].rows.length
+	return `Not averaged: ${plural(rows.length, "more public result")}, from ${listed(suites)}. No set larger than ${averaged === 2 ? "these two" : `these ${averaged}`} was run in full by ArkType, Zod and three more libraries the site names.`
+}
+
+/** the most results a turned table lists that its graph doesn't average */
+const leftOutColumns = 2
+
+/**
  * Every result a graph averages. With few libraries, a result a row and a
  * library a column; with many, turned, and then every named library with a
- * result on any of them is listed, ranked or not.
+ * result on any of them is listed, ranked or not, and the category's other
+ * public results, if they're few, are columns after the mean.
  */
 export const resultsTable = (id: CategoryId): TextTable => {
 	const board = unitBoards[id]
@@ -81,32 +120,71 @@ export const resultsTable = (id: CategoryId): TextTable => {
 	}
 	const placeOf = (library: string) =>
 		board.standings.find(standing => standing.library === library)
-	const listed = [
+	const others = leftOutRows(id)
+	const extra = others.length <= leftOutColumns ? others : []
+	const libraries = [
 		...ranked,
-		...[...new Set(board.rows.flatMap(row => Object.keys(row.results)))].filter(
-			library => !ranked.includes(library)
-		)
+		...[
+			...new Set(
+				[...board.rows, ...extra].flatMap(row => Object.keys(row.results))
+			)
+		].filter(library => !ranked.includes(library))
 	].filter(isWellKnown)
+	const cell = (row: SuiteRow, library: string) =>
+		library in row.results ? board.format(row.results[library]) : "—"
 	return {
 		header: [
 			"Library",
 			...board.rows.map(row => row.suite),
 			"Geometric mean",
-			"Place"
+			"Place",
+			...extra.map(row => `Not averaged: ${row.suite}`)
 		],
-		rows: listed.map(library => {
+		rows: libraries.map(library => {
 			const standing = placeOf(library)
 			return [
 				library,
-				...board.rows.map(row =>
-					library in row.results ? board.format(row.results[library]) : "—"
-				),
+				...board.rows.map(row => cell(row, library)),
 				standing ? board.format(standing.value) : "—",
-				standing ? ordinal(standing.place) : "—"
+				standing ? ordinal(standing.place) : "—",
+				...extra.map(row => cell(row, library))
 			]
 		})
 	}
 }
+
+const dayText = (date: string) =>
+	new Date(date).toLocaleDateString("en-US", {
+		timeZone: "UTC",
+		year: "numeric",
+		month: "long",
+		day: "numeric"
+	})
+
+/**
+ * When each benchmark on the board was measured: a benchmark a row, with the
+ * results each graph takes from it, the day the other libraries' newest
+ * results were measured and the commit ArkType's were measured at.
+ */
+export const runsTable = (): TextTable => ({
+	header: [
+		"Benchmark",
+		"On the board",
+		"Other libraries last measured",
+		"ArkType at"
+	],
+	rows: Object.values(unitBoards).flatMap(board =>
+		sourcesOf(board).map(({ label, results }) => {
+			const { rivals, arkType } = measuredOf(label)
+			return [
+				label,
+				`${plural(results, `${board.id} result`)}`,
+				dayText(rivals),
+				arkType
+			]
+		})
+	)
+})
 
 type OwnTable = {
 	suite: string

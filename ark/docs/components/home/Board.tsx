@@ -1,13 +1,21 @@
 import type { ReactNode } from "react"
+import { claims, draftOf, leadsEvery } from "../../lib/claims.ts"
 
 /**
  * The board's heading and the line under it, here alone so the copy changes
- * in one place. Neither states a number or a rank, so neither is a claim
- * lib/claims.ts has to guard.
+ * in one place. The heading names the categories and states nothing about
+ * them.
  */
 export const boardHeading = "Speed. Size. Startup."
 
-export const boardSubtitle = "Three metrics. Zero compromises."
+/**
+ * "Zero compromises" says ArkType gives up none of the three, so it is the
+ * line only while lib/claims.ts lets ArkType claim all three by the board's
+ * rule. Otherwise the line is claims.ts's own title for the board, which
+ * words only the categories ArkType leads.
+ */
+export const boardSubtitle =
+	leadsEvery ? "Three metrics. Zero compromises." : draftOf(claims.boardTitle)
 
 export type BoardProps = {
 	/** the graphs under the heading: a graph a category */
@@ -17,7 +25,7 @@ export type BoardProps = {
 }
 
 /**
- * The board: its heading, then each category's best averages as a graph,
+ * The board: its heading, then each category's geometric means as a graph,
  * ArkType first in each. The same numbers as a table are the drill-down
  * passed as `children`.
  */

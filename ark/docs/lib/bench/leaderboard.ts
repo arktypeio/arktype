@@ -25,6 +25,15 @@ type Suite = {
 	paired?: { rounds: number; wins: Record<string, Record<string, number>> }
 	/** the login form's bytes for ArkType's builds that no row ranks */
 	builds?: FormBuilds
+	/** when its published results were measured, if they're read from result files */
+	measured?: SuiteMeasured
+}
+
+export type SuiteMeasured = {
+	/** the day the other libraries' newest results were measured, as YYYY-MM-DD */
+	rivals: string
+	/** the commit ArkType's rows were measured at */
+	arkType: string
 }
 
 export type FormBuilds = {
@@ -173,6 +182,17 @@ export const formBuilds: FormBuilds = (() => {
 	}
 	return builds
 })()
+
+/** when a suite's published results were measured, by the suite's label */
+export const measuredOf = (label: string): SuiteMeasured => {
+	const measured = suites.find(s => s.label === label)?.measured
+	if (!measured) {
+		throw new Error(
+			`leaderboard.json doesn't say when ${label} was measured: rerun ark/repo/bench/external/leaderboard.ts`
+		)
+	}
+	return measured
+}
 
 /** startup.ts's paired rounds, if its results recorded them */
 export const startupPaired = suites.find(s => s.id === "startup")?.paired
