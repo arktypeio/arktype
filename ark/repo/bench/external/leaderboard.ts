@@ -594,10 +594,12 @@ const measuredOf = (source: string | string[]): Measured | undefined => {
 		:	undefined
 	if (run) return { rivals: run.date, arkType: run.commit }
 	const dates = files.flatMap(file => /\d{4}-\d{2}-\d{2}/.exec(file) ?? [])
-	const commit = /-([\da-f]{9})\.json$/.exec(sources.arkType.at(-1)!)?.[1]
+	// ArkType's rows are the last file's wherever two measure the same one
+	const arkTypeFile = sources.arkType[sources.arkType.length - 1]
+	const commit = /-([\da-f]{9})\.json$/.exec(arkTypeFile)?.[1]
 	if (!dates.length || !commit) {
 		throw new Error(
-			`Can't tell when ${kind} was measured from ${files.join(", ")} and ${sources.arkType.at(-1)}`
+			`Can't tell when ${kind} was measured from ${files.join(", ")} and ${arkTypeFile}`
 		)
 	}
 	return { rivals: dates.reduce((l, r) => (l > r ? l : r)), arkType: commit }
