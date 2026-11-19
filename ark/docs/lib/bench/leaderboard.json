@@ -1,5 +1,19 @@
 {
 	"measured": "2026-11-06",
+	"runs": {
+		"form": {
+			"commit": "20710020e",
+			"date": "2026-11-06"
+		},
+		"sb": {
+			"commit": "20710020e",
+			"date": "2026-11-06"
+		},
+		"sury": {
+			"commit": "20710020e",
+			"date": "2026-11-06"
+		}
+	},
 	"sources": {
 		"arkType": ["results/arktype-20710020e.json"],
 		"counts": [
@@ -748,7 +762,11 @@
 						"ajv": 935
 					}
 				}
-			]
+			],
+			"builds": {
+				"dynamic": 89767,
+				"smallest": 996
+			}
 		},
 		{
 			"category": "size",

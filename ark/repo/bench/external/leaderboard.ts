@@ -443,7 +443,13 @@ const suites = [
 					Object.entries(forms).map(([arm, { gzip }]) => [arm, gzip])
 				)
 			)
-		]
+		],
+		// ArkType's other builds of the form, which no row ranks: the site's
+		// size chart draws dynamic ArkType beside the default build
+		builds: {
+			dynamic: forms["ArkType (dynamic)"].gzip,
+			smallest: forms["ArkType (precompiled, smallest)"].gzip
+		}
 	},
 	{
 		category: "size",
@@ -546,14 +552,22 @@ const downloads = {
 	)
 }
 
+type Run = { commit: string; date: string }
+
+// the newest run of each suite that has one: the commit ArkType was at and
+// the day it ran, which the site prints beside the suite's results
+const runs: Record<string, Run> = Object.fromEntries(
+	Object.entries(read("results/newest/run.json") as Record<string, Run>).map(
+		([suite, { commit, date }]) => [suite, { commit, date }]
+	)
+)
+
 // when the published rows were last measured: the newest run's latest suite,
 // or today for a fresh run
 const measured =
 	freshDir ?
 		new Date().toISOString().slice(0, 10)
-	:	Object.values(
-			read("results/newest/run.json") as Record<string, { date: string }>
-		)
+	:	Object.values(runs)
 			.map(run => run.date)
 			.reduce((l, r) => (l > r ? l : r))
 
@@ -565,7 +579,7 @@ const out =
 writeFileSync(
 	out,
 	await format(
-		JSON.stringify({ measured, sources, downloads, suites }, null, "\t"),
+		JSON.stringify({ measured, runs, sources, downloads, suites }, null, "\t"),
 		{
 			...(await resolveConfig(out)),
 			filepath: out
