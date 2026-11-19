@@ -15,6 +15,7 @@ clean checkout after `pnpm i && pnpm build`, on Linux with `perf` and
 NODE24=<node 24.14.1> NODE26=<node 26.12.1> pnpm benchExternal <suite>
 pnpm benchExternal <suite> --latest # its rivals at their 2026-10-24 releases
 pnpm benchExternal <suite> --newest # its rivals at their newest releases, kept in results/newest/
+pnpm benchExternal <suite> --newest --arktype-only # ArkType alone, every rival's result kept from results/newest/
 pnpm benchValidate # the homepage's speed rows
 pnpm benchSize # the homepage's app sizes
 pnpm benchScale # the "smallest" preset's sizes
@@ -44,6 +45,22 @@ ata's 30, moltar's 10, Sury's 3, the form and `startup.ts` one each. If
 ttsc's first Go build of typia's plugin fails, run the suite again.
 `count.ts` and `startup.ts` pin each process to cores 10-15: on a machine
 without them, name its own as `COUNT_CORES` and `STARTUP_CORES`.
+
+`--newest --arktype-only` measures a change to ArkType without measuring
+every rival again. Each suite is installed from its own lockfile, only
+ArkType's arms are counted and only its sizes taken, and every rival's result
+stays as `results/newest/` has it from the last run that installed its
+newest release: `run.json` keeps that run's day and installs for the suite
+and records ArkType's commit and the day it was counted again
+(`arkTypeDate`). `startup.ts`, whose arms pair by round, is counted whole.
+It stands on a count being the run's and not the machine's: the hosted
+runner's counts of 2026-11-19 (an Intel Xeon under KVM) against the stored
+i7's were 0.973 to 1.002 of them on the 10 schemabenchmarks.dev arms counted
+on the same suite commit and release, and 0.999 to 1.001 on the 17 of
+ArkType's own rows its code hadn't changed. On this path `all` takes about a quarter of the time. The
+workflow runs it when dispatched with `arktype_only`, reading the rivals'
+results from the open pull request's branch where one is open, so its pull
+request is that one, rewritten with ArkType's results measured again.
 
 @ts-runtypes is no longer rerun. Its packages were removed from npm on or
 before 2026-11-19, so moltar's suite, whose lockfile names them, no longer

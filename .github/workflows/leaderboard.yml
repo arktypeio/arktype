@@ -30,6 +30,15 @@ name: leaderboard
 # and LEADERBOARD_RUNNER for the same two, and without them runs `size` on
 # ubuntu-latest.
 #
+# Dispatched with `arktype_only`, the run measures ArkType alone at the
+# branch's head (`pnpm benchExternal <suites> --newest --arktype-only`) and
+# keeps every rival's result from the last run that installed its newest
+# release: a rival's count changes with its release, not with the run, so a
+# change to ArkType is measured in the quarter of an hour its own arms take
+# rather than the hour every library's do. That run's results are the ones
+# checked in, or, while its pull request is still open, the ones on the pull
+# request's branch, which the run reads and its own pull request replaces.
+#
 # ark/repo/bench/external/monthly.ts does the rest. If the rerun measured and
 # installed nothing new, the run passes and opens nothing. Otherwise the `pr`
 # job commits the files it wrote to bench/monthly-standings, forced from the
@@ -69,6 +78,10 @@ on:
         description: "The runner's label: ubuntu-latest, or for all, a self-hosted Linux runner with perf and taskset"
         type: string
         default: ubuntu-latest
+      arktype_only:
+        description: "Measure ArkType alone, keeping every rival's result from the last run"
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -82,6 +95,7 @@ defaults:
 env:
   MONTHLY_SUITES: ${{ inputs.suites || vars.LEADERBOARD_SUITES || 'size' }}
   MONTHLY_RUNNER: ${{ inputs.runner || vars.LEADERBOARD_RUNNER || 'ubuntu-latest' }}
+  MONTHLY_ARKTYPE_ONLY: ${{ inputs.arktype_only || false }}
   BASE_BRANCH: ${{ github.ref_name }}
   DEFAULT_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
   RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -150,10 +164,32 @@ jobs:
       - name: Claims and generated text before
         run: node ark/repo/bench/external/monthly.ts baseline "$RUNNER_TEMP/leaderboard"
 
+      # the rivals' results an ArkType-only run keeps are the last run's. Where
+      # that run's pull request is still open they aren't on this branch yet, so
+      # they're read from its branch into the working tree, not the index:
+      # monthly.ts then reports and publishes them as this run's changes from
+      # the branch, with ArkType's measured again, and the open pull request
+      # is rewritten whole rather than losing them
+      - name: Read the open pull request's results
+        if: env.MONTHLY_ARKTYPE_ONLY == 'true'
+        run: |
+          # monthlyReport.ts's branchFor
+          if [ "$BASE_BRANCH" = "$DEFAULT_BRANCH" ]; then
+            branch="bench/monthly-standings"
+          else
+            branch="bench/monthly-standings-$BASE_BRANCH"
+          fi
+          if git fetch --depth=1 origin "refs/heads/$branch"; then
+            git restore --source=FETCH_HEAD --worktree -- ark/repo/bench/external/results/newest
+            echo "Rivals' results are $branch's, at $(git rev-parse --short=9 FETCH_HEAD)."
+          else
+            echo "No $branch: rivals' results are the ones checked in on $BASE_BRANCH."
+          fi
+
       # reproduce.ts runs a suite that fails once more itself, then with the
       # rival it can't build held at the last release it could
       - name: Rerun the suites
-        run: pnpm benchExternal "$MONTHLY_SUITES" --newest
+        run: pnpm benchExternal "$MONTHLY_SUITES" --newest ${{ inputs.arktype_only && '--arktype-only' || '' }}
 
       - name: Rerun the "smallest" preset's sizes
         run: pnpm benchScale

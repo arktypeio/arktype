@@ -30,6 +30,54 @@ export type HoldsPlan = {
 	latest: Record<string, string>
 }
 
+/** whether a result's label, or the library it names, is ArkType's: "arktype-b1", "ArkType (dynamic) schema", "arktype/precompiled" */
+export const isArkType = (label: string): boolean => /arktype/i.test(label)
+
+export type Stored =
+	| null
+	| boolean
+	| number
+	| string
+	| Stored[]
+	| { [key: string]: Stored }
+
+const libraryOf = (element: Stored) =>
+	(
+		element !== null &&
+		typeof element === "object" &&
+		!Array.isArray(element) &&
+		typeof element.libraryName === "string"
+	) ?
+		`${element.libraryName} ${String(element.note ?? "")}`
+	:	undefined
+
+/** a stored result with ArkType's entries taken from a fresh one and every rival's kept: an entry is a key that names a library, as a size file's labels do, or an element with a libraryName, as schemabenchmarks.dev's download has. An entry of ArkType's the fresh one lacks is kept too */
+export const carriedWith = (stored: Stored, fresh: Stored): Stored => {
+	if (stored === null || typeof stored !== "object") return stored
+	if (Array.isArray(stored)) {
+		const elements = Array.isArray(fresh) ? fresh : []
+		return stored.map(element => {
+			const library = libraryOf(element)
+			return library !== undefined && isArkType(library) ?
+					(elements.find(recounted => libraryOf(recounted) === library) ??
+						element)
+				:	element
+		})
+	}
+	const entries =
+		fresh !== null && typeof fresh === "object" && !Array.isArray(fresh) ?
+			fresh
+		:	{}
+	return Object.fromEntries(
+		Object.entries(stored).map(([key, value]) => [
+			key,
+			isArkType(key) ?
+				(entries[key] ?? value)
+			:	carriedWith(value, entries[key] ?? null)
+		])
+	)
+}
+
 /** the packages a rival's build step runs on, which move when it does: typia's transform compiles under ttsc, and a bundler reaches it through ttsc's unplugin */
 export const toolchains: Record<string, readonly string[]> = {
 	typia: ["ttsc", "@ttsc/unplugin"]

@@ -383,6 +383,52 @@ Every claim holds on the new numbers, as before. Of those \`ark/docs/lib/bench/h
 		attest(body.split("### Generated text\n\n")[1]).snap("Not written again.")
 	})
 
+	it("a run that measured ArkType alone says whose results it kept, and from which day", () => {
+		const form = {
+			commit: "5d73f2ba0",
+			date: "2026-11-19",
+			arkTypeDate: "2026-12-01",
+			installed: { valibot: "1.5.0", "@sinclair/typebox": "0.34.52" }
+		}
+		const carried = JSON.stringify({
+			form,
+			// counted whole, so it names no earlier day
+			startup: { commit: "5d73f2ba0", date: "2026-12-01", installed: {} }
+		})
+		const body = bodyOf(
+			reportOf({
+				suites: "all",
+				arkTypeOnly: true,
+				files: [
+					{
+						path: runPath,
+						before: runOf("2026-11-19", "1.5.0"),
+						after: carried
+					}
+				]
+			})
+		)
+		attest(body.split("\n\n")[0]).snap(
+			"**Only ArkType was measured again**, at `5d73f2ba0` (`main`) on 2026-12-01 on `ubuntu-latest`. Every rival's result is carried from the run of 2026-11-19, at the versions that run installed (\"Versions\" below), and wasn't measured again: a rival's count or bundle changes with its release, not from one run to the next. `startup.ts` installs nothing and pairs its arms by round, so every arm of it was counted. Nothing is published until this is merged."
+		)
+		attest(
+			body
+				.split("### Not rerun\n\n")[1]
+				.split("\n")
+				.flatMap(line => /^- \*\*(.+?)\*\*/.exec(line)?.[1] ?? [])[0]
+		).snap("Every rival")
+		// a recount restamps a commit and a day, which alone is no change to review
+		attest(
+			isMeaningful([
+				{
+					path: runPath,
+					before: runOf("2026-11-19", "1.5.0"),
+					after: JSON.stringify({ form })
+				}
+			])
+		).equals(false)
+	})
+
 	it("says what a hosted run left out, and less of a run that counted", () => {
 		const left = (suites: Report["suites"]) =>
 			bodyOf(reportOf({ suites }))

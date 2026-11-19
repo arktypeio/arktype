@@ -1,6 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { highestOf, holdsFor, specsFor } from "../bench/external/newest.ts"
+import {
+	carriedWith,
+	highestOf,
+	holdsFor,
+	specsFor
+} from "../bench/external/newest.ts"
 
 const sb = [
 	"ata-validator@1.60.0",
@@ -92,6 +97,79 @@ contextualize(() => {
 				latest: { typia: "15.4.1" }
 			})
 		).equals({})
+	})
+
+	it("takes ArkType's sizes from a fresh file and keeps every rival's, by label at any depth", () => {
+		attest(
+			carriedWith(
+				{
+					esbuild: "0.28.1",
+					production: {
+						"ArkType schema": { gzip: 908 },
+						"ArkType (dynamic) all": { gzip: 95000 },
+						"Zod schema": { gzip: 13000 }
+					}
+				},
+				{
+					esbuild: "0.29.0",
+					production: {
+						"ArkType schema": { gzip: 900 },
+						"ArkType (dynamic) all": { gzip: 95100 },
+						"Zod schema": { gzip: 12000 },
+						"Valibot schema": { gzip: 1500 }
+					}
+				}
+			)
+		).snap({
+			esbuild: "0.28.1",
+			production: {
+				"ArkType schema": { gzip: 900 },
+				"ArkType (dynamic) all": { gzip: 95100 },
+				"Zod schema": { gzip: 13000 }
+			}
+		})
+	})
+
+	it("takes ArkType's elements of a list by the library and note each names", () => {
+		attest(
+			carriedWith(
+				{
+					minified: [
+						{ libraryName: "arktype/precompiled", gzipBytes: 1547 },
+						{ libraryName: "zod", note: "mini", gzipBytes: 2000 },
+						{ libraryName: "arktype", gzipBytes: 95309 }
+					]
+				},
+				{
+					minified: [
+						{ libraryName: "zod", note: "mini", gzipBytes: 1 },
+						{ libraryName: "arktype", gzipBytes: 95390 },
+						{ libraryName: "arktype/precompiled", gzipBytes: 1540 }
+					]
+				}
+			)
+		).snap({
+			minified: [
+				{ libraryName: "arktype/precompiled", gzipBytes: 1540 },
+				{ libraryName: "zod", note: "mini", gzipBytes: 2000 },
+				{ libraryName: "arktype", gzipBytes: 95390 }
+			]
+		})
+	})
+
+	it("keeps an entry of ArkType's the fresh file lacks", () => {
+		attest(
+			carriedWith(
+				{
+					"ArkType (dynamic)": { gzip: 97987 },
+					list: [{ libraryName: "arktype" }]
+				},
+				{ list: [] }
+			)
+		).snap({
+			"ArkType (dynamic)": { gzip: 97987 },
+			list: [{ libraryName: "arktype" }]
+		})
 	})
 
 	it("picks the highest release by number, not by text or position", () => {

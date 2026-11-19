@@ -17,7 +17,8 @@
 //   branch, forced from the commit measured, and opens the pull request or
 //   rewrites the open one's body
 //
-// MONTHLY_SUITES is what reproduce.ts ran, `size` or `all`, and
+// MONTHLY_SUITES is what reproduce.ts ran, `size` or `all`,
+// MONTHLY_ARKTYPE_ONLY `true` where it ran with --arktype-only, and
 // MONTHLY_RUNNER the runner's label. publish reads GH_TOKEN, BASE_BRANCH,
 // DEFAULT_BRANCH, RUN_URL and ARTIFACT_URL beside the runner's own variables
 import { execFileSync, spawnSync } from "node:child_process"
@@ -223,6 +224,7 @@ const report = () => {
 		base,
 		branch: branchFor(base, process.env.DEFAULT_BRANCH ?? "main"),
 		suites: (process.env.MONTHLY_SUITES ?? "size") as Suites,
+		arkTypeOnly: process.env.MONTHLY_ARKTYPE_ONLY === "true",
 		runner: process.env.MONTHLY_RUNNER ?? "this machine",
 		claimsBefore,
 		claimsAfter,

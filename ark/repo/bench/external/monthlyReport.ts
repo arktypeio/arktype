@@ -94,6 +94,8 @@ export type Report = {
 	/** the branch the pull request is from */
 	branch: string
 	suites: Suites
+	/** whether only ArkType was measured again, every rival's result kept from the run before (reproduce.ts --arktype-only) */
+	arkTypeOnly?: boolean | undefined
 	runner: string
 	claimsBefore: ClaimsCheck
 	claimsAfter: ClaimsCheck
@@ -122,8 +124,11 @@ type LeaderboardRow = {
 }
 
 type RunRecord = {
+	date?: string
 	installed: Record<string, string>
 	held?: Record<string, HeldRecord>
+	/** set where ArkType alone was measured again since its rivals were */
+	arkTypeDate?: string
 }
 
 type HeldRecord = {
@@ -162,7 +167,7 @@ const isVolatile = (path: string[]) =>
 	// leaderboard.json's `measured`, at its root and under each suite, says
 	// when and at which commit a result was measured
 	path.includes("measured") ||
-	["commit", "date"].includes(path[path.length - 1])
+	["commit", "date", "arkTypeDate"].includes(path[path.length - 1])
 
 // what names an element among its siblings, so a row added or reordered
 // doesn't read as a change to every row after it
@@ -302,6 +307,16 @@ export const heldRowsOf = (run: string | undefined): HeldRow[] =>
 			kept
 		}))
 	)
+
+/** each day a run.json text's suites last measured their rivals, where ArkType alone was measured again since */
+export const carriedDatesOf = (run: string | undefined): string[] =>
+	[
+		...new Set(
+			Object.values(
+				(run === undefined ? {} : JSON.parse(run)) as Record<string, RunRecord>
+			).flatMap(({ date, arkTypeDate }) => (arkTypeDate && date ? date : []))
+		)
+	].sort()
 
 const claimsOf = (check: ClaimsCheck) =>
 	Object.fromEntries(
@@ -490,7 +505,12 @@ const claimsSection = (report: Report) => {
 	]
 }
 
-const notRerun = (suites: Suites) => [
+const notRerun = (suites: Suites, arkTypeOnly?: boolean) => [
+	...(arkTypeOnly ?
+		[
+			"- **Every rival**: its results are the last run's that installed its newest release. `pnpm benchExternal all --newest`, or this workflow without `arktype_only`, measures each again at whatever its newest release then is."
+		]
+	:	[]),
 	...(suites === "size" ?
 		[
 			"- **Speed** (moltar's, schemabenchmarks.dev's, Sury's and ata's suites): they count CPU instructions with `perf`, which needs hardware counters only some GitHub-hosted runners' hosts expose. On Linux with `perf` and `taskset`, after `pnpm i && pnpm build`:",
@@ -543,7 +563,13 @@ export const bodyOf = (report: Report): string => {
 				""
 			]
 		:	[]),
-		`The monthly rerun of the benchmarks ${report.suites === "size" ? "a GitHub-hosted runner measures faithfully" : "behind the leaderboard"}: ArkType at ${code(report.commit)} (${code(report.base)}) and each rival at its newest release, measured on ${report.date} on ${code(report.runner)}. Nothing is published until this is merged. Closing it discards the run; next month's opens another if its numbers differ from ${code(report.base)}'s.`,
+		...(report.arkTypeOnly ?
+			[
+				`**Only ArkType was measured again**, at ${code(report.commit)} (${code(report.base)}) on ${report.date} on ${code(report.runner)}. Every rival's result is carried from the run of ${carriedDatesOf(run?.after).join(" and ") || "an earlier day"}, at the versions that run installed ("Versions" below), and wasn't measured again: a rival's count or bundle changes with its release, not from one run to the next. \`startup.ts\` installs nothing and pairs its arms by round, so every arm of it was counted. Nothing is published until this is merged.`
+			]
+		:	[
+				`The monthly rerun of the benchmarks ${report.suites === "size" ? "a GitHub-hosted runner measures faithfully" : "behind the leaderboard"}: ArkType at ${code(report.commit)} (${code(report.base)}) and each rival at its newest release, measured on ${report.date} on ${code(report.runner)}. Nothing is published until this is merged. Closing it discards the run; next month's opens another if its numbers differ from ${code(report.base)}'s.`
+			]),
 		"",
 		`CI hasn't run here: a pull request opened with the workflow's token triggers no other workflow. Close and reopen it, or push to ${code(report.branch)}, to run the checks.`
 	]
@@ -689,7 +715,7 @@ export const bodyOf = (report: Report): string => {
 			"",
 			"### Not rerun",
 			"",
-			...notRerun(report.suites),
+			...notRerun(report.suites, report.arkTypeOnly),
 			"",
 			...derivedLines
 		].join("\n")
