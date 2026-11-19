@@ -167,7 +167,7 @@
 		"drizzle-orm": "0.45.4",
 		"elysia": "1.4.30",
 		"esbuild": "0.25.10",
-		"fast-check": "3.23.2",
+		"fast-check": "4.10.2",
 		"hono": "4.13.13",
 		"react": "19.2.9",
 		"react-dom": "19.2.9",

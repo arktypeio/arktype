@@ -75,8 +75,8 @@ importers:
         specifier: 61.0.2
         version: 61.0.2(eslint@9.37.0(jiti@2.7.0))
       fast-check:
-        specifier: 3.23.2
-        version: 3.23.2
+        specifier: 4.10.2
+        version: 4.10.2
       knip:
         specifier: 5.65.0
         version: 5.65.0(@types/node@24.7.2)
@@ -199,8 +199,8 @@ importers:
         specifier: 0.25.10
         version: 0.25.10
       fast-check:
-        specifier: 3.23.2
-        version: 3.23.2
+        specifier: 4.10.2
+        version: 4.10.2
       hono:
         specifier: 4.13.13
         version: 4.13.13
@@ -492,8 +492,8 @@ importers:
         specifier: 0.28.2
         version: 0.28.2
       fast-check:
-        specifier: 3.23.2
-        version: 3.23.2
+        specifier: 4.10.2
+        version: 4.10.2
       fontkit:
         specifier: 3.0.0
         version: 3.0.0
@@ -544,7 +544,7 @@ importers:
         version: link:../util
       fast-check:
         specifier: 3 || 4
-        version: 3.23.2
+        version: 4.10.2
     devDependencies:
       arktype:
         specifier: workspace:*
@@ -571,8 +571,8 @@ importers:
         specifier: workspace:*
         version: link:../type
       fast-check:
-        specifier: 3.23.2
-        version: 3.23.2
+        specifier: 4.10.2
+        version: 4.10.2
 
   ark/regex:
     dependencies:
@@ -681,8 +681,8 @@ importers:
         specifier: 8.20.0
         version: 8.20.0
       fast-check:
-        specifier: 3.23.2
-        version: 3.23.2
+        specifier: 4.10.2
+        version: 4.10.2
 
   ark/themes:
     devDependencies:
@@ -4458,9 +4458,9 @@ packages:
   extend@3.0.2:
     resolution: {integrity: sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g==}
 
-  fast-check@3.23.2:
-    resolution: {integrity: sha512-h5+1OzzfCC3Ef7VbtKdcv7zsstUQwUDlYpUTvjeUsJAssPgLn7QzbboPtL5ro04Mq0rPOsMzl7q5hIbRs2wD1A==}
-    engines: {node: '>=8.0.0'}
+  fast-check@4.10.2:
+    resolution: {integrity: sha512-iK2f+YrcmoeGqk6fA0ea2bptcu/itMIm4NfEozq6N25+aG6h7s5HZbB/k1aV7b5w5sFLMCbbtRUsTVR+BgC3xw==}
+    engines: {node: '>=12.17.0'}
 
   fast-decode-uri-component@1.0.1:
     resolution: {integrity: sha512-WKgKWg5eUxvRZGwW8FvfbaH7AXSh2cL+3j5fMGzUMCxWBJ3dV3a7Wz8y2f/uQ0e3B6WmodD3oS54jTQ9HVTIIg==}
@@ -5964,8 +5964,8 @@ packages:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
 
-  pure-rand@6.1.0:
-    resolution: {integrity: sha512-bVWawvoZoBYpp6yIoQtQXHZjmz35RSVHnUOTefl8Vcjr8snTPY1wnpSPMWekcFwbxI6gtmT7rSYPFvz71ldiOA==}
+  pure-rand@8.4.2:
+    resolution: {integrity: sha512-vvuOGgcuPJAirlHvuQw1TrOiw7ptaIXXmIbNuiNOY6lNGJJH49PQ1Kj4nd783nPdQhQdicgOjVI2yI/9BD6/Ng==}
 
   qs@6.14.0:
     resolution: {integrity: sha512-YWWTjgABSKcvs/nWBi9PycY/JiPJqOD4JA6o9Sej2AtvSGarXxKC3OQSk4pAarbdQlKAh5D4FCQkJNkW+GAn3w==}
@@ -10498,9 +10498,9 @@ snapshots:
 
   extend@3.0.2: {}
 
-  fast-check@3.23.2:
+  fast-check@4.10.2:
     dependencies:
-      pure-rand: 6.1.0
+      pure-rand: 8.4.2
 
   fast-decode-uri-component@1.0.1: {}
 
@@ -12328,7 +12328,7 @@ snapshots:
 
   punycode@2.3.1: {}
 
-  pure-rand@6.1.0: {}
+  pure-rand@8.4.2: {}
 
   qs@6.14.0:
     dependencies:
