@@ -10,7 +10,6 @@ import {
 	describesData,
 	errorWriters,
 	errorWritersByCode,
-	type Custom,
 	type FailureSite,
 	type SiteContext,
 	type UnionSite
@@ -155,6 +154,7 @@ export const addIssueFeatures = (
 		for (const [, source] of unit.members) {
 			if (addsUnionIssue.test(source)) features.listsUnions = true
 			if (saysMessage.test(source)) features.writesText = true
+			if (callsTextIn.test(source)) features.callsSiteText = true
 			if (appliesValue.test(source)) features.appliesValues = true
 			if (discriminatesBoolean.test(source))
 				features.discriminatesBooleans = true
@@ -162,9 +162,9 @@ export const addIssueFeatures = (
 		for (const ref of unit.refs) {
 			if (!failureSites.has(ref as object)) continue
 			const site = ref as FailureSite
-			if (site.v) features.readsKeySites = true
 			const contexts = [site, site.v, site.m] as (IssueContext | undefined)[]
 			if (contexts.some(writesText)) features.writesText = true
+			if (contexts.some(callsText)) features.callsSiteText = true
 		}
 	}
 }
@@ -191,6 +191,15 @@ const saysMessage = /runtime\.(?:saying(?:Missing)?|narrowedRejecting)\(/
 const writesText = (context: IssueContext | undefined) =>
 	!!context?.c || !!context?.written
 
+// a site whose `text` is called on its issue: one whose text a function
+// writes, or one noting that its message is its code's. A message that's its
+// Type's is the issue's as the site holds it, with no call
+const callsText = (context: IssueContext | undefined) =>
+	context?.c === 2 || !!context?.written
+
+// code naming what writes or passes such a site
+const callsTextIn = /runtime\.(?:codeSiteOf|writtenSiteOf|codedIssue)\b/
+
 // sites only traversal reads, emitted as-is
 export const failureSites = new WeakSet<object>()
 
@@ -213,7 +222,7 @@ const siteWords = new Set([
 	"runtime",
 	"void",
 	"siteOf",
-	"customSiteOf",
+	"codeSiteOf",
 	"keySiteOf",
 	"requiredSiteOf",
 	"v",
@@ -243,20 +252,12 @@ export const writeSiteOf = (
 	const args =
 		writer === "keySiteOf" ?
 			[code, description, missing === description ? undefined : missing]
-			// a message configured for its Type is what customSiteOf takes one as
-		:	[code, description, message, c === 1 ? undefined : c]
+		:	[code, description, message]
 	while (args[args.length - 1] === undefined) args.pop()
+	// a message configured for its code is noted on its issue: codeSiteOf's
 	return `runtime.${
-		writer === "keySiteOf" ? writer
-		: c ? "customSiteOf"
-		: "siteOf"
-	}(${args
-		.map(arg =>
-			arg === undefined ? "void 0"
-			: typeof arg === "number" ? arg
-			: emit(arg)
-		)
-		.join(", ")})`
+		writer === "siteOf" && c === 2 ? "codeSiteOf" : writer
+	}(${args.map(arg => (arg === undefined ? "void 0" : emit(arg))).join(", ")})`
 }
 
 // its value's brief, as arktype's is, unless the program configures required's expected
@@ -302,17 +303,22 @@ export class ConfiguredWriter {
 
 export type Writer = string | Fn | ConfiguredWriter | undefined
 
+// how a site's message was configured, which a build reads: 1 as its Type's
+// and 2 as its code's. A validator's issue holds its message, which says
+// whether it's a sentence of its own, and notes only one that's its code's
+type Custom = 1 | 2
+
 // what a site's issue reads, with text configured as strings or functions.
-// Its message names no path, and c says how it was configured where a summary
-// doesn't write it after its path as what's expected
+// Its message names no path, and c says how it was configured
 export interface IssueContext extends SiteContext {
 	message?: string
+	c?: Custom | undefined
 	written?: {
 		context: object
 		writers: Writer[]
 		// 1 if the issue takes expected, 4 if its actual describes its data,
-		// which a default message leaves out, and 2 or 8 if its message is
-		// configured for its Type or for its code
+		// which a default message leaves out, and 2 if its message is
+		// configured for its code
 		keeps: number
 	}
 }
@@ -321,12 +327,7 @@ const keepsOf = (
 	takesExpected: boolean,
 	c: Custom | undefined,
 	describes: boolean
-): number =>
-	+takesExpected |
-	(c === 1 ? 2
-	: c === 2 ? 8
-	: 0) |
-	(+describes << 2)
+): number => +takesExpected | (c === 2 ? 2 : 0) | (+describes << 2)
 
 // what a default actual writes: what arktype describes data with, where a
 // configured message reads it, shipped as the runtime's

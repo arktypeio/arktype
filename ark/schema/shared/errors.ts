@@ -33,17 +33,19 @@ import {
 	writeMessage
 } from "./enWriters.ts"
 import { describesData, listsErrors } from "./errorWriters.ts"
+import { findsOnRead } from "./issueFeatures.ts"
 import { describeBranches, removedProblemMessage } from "./utils.ts"
 import {
 	ArkErrors as BaseArkErrors,
 	isCustomIssue,
+	issueAt,
 	messageOf,
-	templatedIssue,
 	TraversalError as BaseTraversalError,
 	type ArkIssue,
 	type CompactApply,
 	type FailureSite,
 	type SiteContext,
+	type SiteFailureContext,
 	type UnionSite
 } from "./issues.ts"
 import {
@@ -295,8 +297,13 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 			node.tApply(this._d, ctx)
 			if (!ctx.hasError()) ctx.reject(invalidInput())
 			const errors = ctx.fin(null) as ArkErrors
-			if (errors._.includes(skipped))
-				errors._ = errors._.filter(error => error !== skipped)
+			if (errors._.includes(skipped)) {
+				const found = errors._.filter(error => error !== skipped)
+				// the field a getter reads, where a build wrote errors to find
+				// their issues once read
+				if (findsOnRead) (errors as {} as { _f: ArkError[] })._f = found
+				else errors._ = found
+			}
 			return (this._1 = errors._first)
 		}
 	}
@@ -435,7 +442,42 @@ export const applyUnread = (
 
 type Keyed = Record<PropertyKey, unknown>
 
-export class ArkTraversal extends Traversal {
+/**
+ * the traversal arktype's own compiled code reports to, which fails a site,
+ * at a key where it's passed one, and enters a key passed the site it fails
+ * where missing and its value. A validator's code passes neither a site nor a
+ * value, so its traversal holds none of this; one of these takes a
+ * validator's failures too, as each is named apart
+ */
+export class SiteTraversal extends Traversal implements SiteFailureContext {
+	/** @internal */
+	_at(site: FailureSite, data: unknown, key?: PropertyKey): boolean {
+		this.addError(issueAt(this.path, site, data, key))
+		return this.failFast
+	}
+
+	/** @internal */
+	_in(
+		apply: CompactApply,
+		data: unknown,
+		key: PropertyKey,
+		missing?: FailureSite,
+		value?: unknown
+	): boolean | undefined {
+		// read first, as only a value that's undefined can be a missing key's,
+		// and whether a key any site passes is in data is a call
+		if (value === undefined) value = (data as Keyed)[key]
+		if (value === undefined && missing && !(key in (data as object)))
+			return this._at(missing, data, key)
+		this.path.push(key)
+		// arktype's own Apply, which reports as a SiteFailureContext takes it
+		const continues = apply(value, this as never)
+		this.path.pop()
+		return !continues
+	}
+}
+
+export class ArkTraversal extends SiteTraversal {
 	override createErrors(): ArkErrors {
 		return new ArkErrors(this.config)
 	}
@@ -490,7 +532,7 @@ export class ArkTraversal extends Traversal {
 	): boolean {
 		const errors = branches.map(branch => {
 			this.pushBr()
-			branch(data, this)
+			branch(data, this as never)
 			return this.popBr()!.error as ArkError
 		})
 		errorFromUnion(this, errors, site.meta as ArkEnv.meta, data)
@@ -915,6 +957,9 @@ const sharing = new WeakSet<ArkError>()
 // wrote from what it expected, though it's held as if it were configured
 const templated = new WeakSet<ArkError>()
 
+// what tells that of a standalone validator's issue, for what reads one
+export { isCustomIssue }
+
 /**
  * @internal marks an error raised with a message arktype wrote from what it
  * expected, like one read from another copy of arktype, so a summary writes it
@@ -928,7 +973,14 @@ export const asTemplated = <error extends ArkIssue>(
 	if (isArkError(error)) {
 		templated.add(error)
 		if (line !== undefined) noteLine(error, line)
-	} else templatedIssue(error)
+	}
+	// a validator's issue holds nothing saying so: its message is a sentence of
+	// its own unless it begins as one written from what it expects would, so
+	// what it expects is read back from a message written that way, and is
+	// nothing where the message is what's written of data only known invalid
+	else if (error.message?.startsWith("must be "))
+		error.expected = error.message.slice(8)
+	else if (error.message === "is invalid") error.expected = undefined
 	return error
 }
 
@@ -1020,7 +1072,10 @@ const lineOf = (error: ArkError, locale: Locale): string => {
 	if (error.path.length === 0) return error.message
 	const listed = (error as ArkIssue)._l
 	if (listed !== undefined) return listed
-	const custom = isCustom(error)
+	// as a validator's summary tells one, which holds only its message: a
+	// sentence of its own unless it begins as what's written from what it
+	// expects would, so one configured as that text reads on from its path
+	const custom = isCustom(error) && !error.message.startsWith(messageOf(error))
 	const line = locale.line as LineWriter | undefined
 	// en's, also where a locale passed as is lacks one, is written here
 	if (line === undefined || line === writeLine)
@@ -1088,7 +1143,10 @@ const unconfigured = (error: ArkError, config: ResolvedConfig): boolean => {
 		:	message === defaultConfig[error.code].message
 }
 
-// the message each error was configured or supplied with, if they agree
+// the message each error was configured or supplied with, if they agree. One
+// that begins as what's written from what its error expects would is listed
+// with what the others expect, as a validator's is, whose issue holds only
+// its message
 const sharedMessageOf = (errors: readonly ArkError[]): string | undefined => {
 	let shared: string | undefined
 	for (const e of errors) {
@@ -1097,7 +1155,9 @@ const sharedMessageOf = (errors: readonly ArkError[]): string | undefined => {
 				configuredMessageOf(e) !== undefined ||
 				suppliedText(e, "message") !== undefined
 			) ?
-				e.message
+				e.message.startsWith(messageOf(e)) ?
+					undefined
+				:	e.message
 			: e.code === "union" || e.code === "intersection" ?
 				sharedMessageOf(e.errors)
 			:	undefined

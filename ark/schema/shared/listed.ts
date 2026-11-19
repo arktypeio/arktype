@@ -2,8 +2,7 @@ import type { array } from "@ark/util"
 import type { ArkErrorCode } from "./errors.ts"
 import { rewritesUnions, writesText } from "./issueFeatures.ts"
 import {
-	customIssue,
-	customOf,
+	isCustomIssue,
 	lineOf,
 	messageOf,
 	pathOf,
@@ -54,8 +53,9 @@ const writeAlike = (errors: readonly ArkIssue[]): string => {
 /**
  * @internal
  * the message each issue's Type was configured with or its callback supplied,
- * if they agree, which a union of them says too, as arktype's does. One
- * configured for a code isn't its Type's, so it's listed
+ * a sentence of its own (isCustomIssue), if they agree, which a union of them
+ * says too, as arktype's does. One configured for a code isn't its Type's
+ * (codedIssue), so it's listed
  */
 export const sharedMessageOf = (
 	errors: readonly ArkIssue[]
@@ -63,7 +63,8 @@ export const sharedMessageOf = (
 	let shared: string | undefined
 	for (const error of errors) {
 		if (
-			customOf(error) !== 1 ||
+			!isCustomIssue(error) ||
+			error._c ||
 			(shared !== undefined && error.message !== shared)
 		)
 			return
@@ -117,10 +118,7 @@ export type UnionIssueOf = (
 const movedBy = (
 	errors: readonly ArkIssue[],
 	path: (error: ArkIssue) => PropertyKey[]
-): ArkIssue[] =>
-	errors.map(error =>
-		customIssue({ ...error, path: path(error) }, customOf(error))
-	)
+): ArkIssue[] => errors.map(error => ({ ...error, path: path(error) }))
 
 // what write lists of errors, each path written from a union's at path
 export const writeFromPath = (
@@ -177,10 +175,7 @@ const listed = (
 	const shared = writesText ? sharedMessageOf(errors) : undefined
 	return shared === undefined ?
 			new Issue(path.slice(), data, errors, line, expected)
-		:	customIssue(
-				new Issue(path.slice(), data, errors, undefined, expected, shared),
-				1
-			)
+		:	new Issue(path.slice(), data, errors, undefined, expected, shared)
 }
 
 // its readers, what pipes a validator and Standard Schema, only call what an
@@ -202,16 +197,13 @@ const issueWriterOf = (
 					])
 					// moved alike, its errors' paths from its own are as they
 					// were, as is a message that names none
-					return customIssue(
-						new RewrittenIssue(
-							[...prefix, ...this.path],
-							this.data,
-							moved,
-							this._l === undefined ? undefined : write(moved),
-							this.expected,
-							this.message
-						),
-						customOf(this)
+					return new RewrittenIssue(
+						[...prefix, ...this.path],
+						this.data,
+						moved,
+						this._l === undefined ? undefined : write(moved),
+						this.expected,
+						this.message
 					)
 				}
 			}

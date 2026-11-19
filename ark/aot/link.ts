@@ -923,6 +923,8 @@ interface Creation {
 	name: string
 	creator: Binding
 	checker: Reference
+	// each read of the validator by the site's own code
+	reads: Reference[]
 }
 
 class Linker {
@@ -1058,6 +1060,9 @@ class Linker {
 				read.unit.isSite !== intoSites ||
 				// a name a site exports can't be written as what declares it
 				read.reference.id.parent?.type === "ExportSpecifier" ||
+				// nor a validator an earlier link declared where the site's own code
+				// reads it: written there, it would be created each time that runs
+				(read.unit.isSite && createsValidator(owner, binding)) ||
 				written.has(statementOf(binding.declaration)) ||
 				!this.inline(owner, binding, read)
 			)
@@ -1213,7 +1218,7 @@ class Linker {
 
 	private declareAsCreated(
 		binding: Binding,
-		{ site, statement, name, creator, checker }: Creation,
+		{ site, statement, name, creator, checker, reads }: Creation,
 		edits: boolean
 	): boolean {
 		const owner = this.ownerByBinding.get(binding)!
@@ -1251,11 +1256,34 @@ class Linker {
 		owner.edits.prependRight(init.start, `${local}(/* @__PURE__ */ `)
 		owner.edits.appendLeft(init.end, ")")
 		addImports(owner, imports)
-		site.edits.overwrite(
-			statement.start,
-			statement.end,
-			`export { ${checker.id.name} as ${name} }`
-		)
+		// the unit is the validator now, under the name the site imports it by
+		const validator = checker.id.name
+		if (statement.type === "ExportNamedDeclaration") {
+			site.edits.overwrite(
+				statement.start,
+				statement.end,
+				`export { ${validator} as ${name} }`
+			)
+		} else site.edits.remove(statement.start, statement.end)
+		// which each read by the site's own code reads, as no const is left to
+		for (const { id } of reads) {
+			const parent = id.parent
+			if (parent?.type === "ExportSpecifier") {
+				site.edits.overwrite(
+					parent.start,
+					parent.end,
+					`${validator} as ${site.module.source.slice(parent.exported.start, parent.exported.end)}`
+				)
+			} else {
+				site.edits.overwrite(
+					id.start,
+					id.end,
+					parent?.type === "Property" && parent.shorthand ?
+						`${name}: ${validator}`
+					:	validator
+				)
+			}
+		}
 		return true
 	}
 
@@ -1450,7 +1478,26 @@ const readsAllows = (read: Node | null | undefined): read is MemberExpression =>
 	read.property.name === "allows" &&
 	!isWriteTarget(read)
 
-// a site's export creating a validator from a checker nothing else in the module reads
+// A site's const creating a validator from a checker nothing else in the module
+// reads: one it exports, or one its own code reads, as a handler does the Type
+// declared beside it.
+//
+// Declared as created, the validator is the unit's, made as the unit's module
+// loads, and the site's const is gone: its export and its reads name what the
+// site imports the unit as. That reads the same object wherever the const was
+// read, given what's checked here and in declareAsCreated:
+// - made once, by a call the precompiler wrote and marked pure, of the checker
+//   alone, so when it's made is unobservable, and the unit's module loads
+//   before the site's body runs, as any module a site imports does
+// - a const at the module's top level, so no write of it and no second
+//   object: one in a function is created each time that runs, and is left
+// - no read the module makes as it loads ahead of the declaration, which
+//   throws where the const is and wouldn't of an import. One in a function is
+//   read whenever that's called: called before the declaration ran, it threw,
+//   and now reads the validator, as a module importing an exported one in a
+//   cycle already could
+// - no read TypeScript erases is rewritten, as scopes hold none, and a JSX
+//   name isn't one an import's can be written as
 const creationOf = (site: Unit, checker: Reference): Creation | undefined => {
 	const call = checker.id.parent
 	if (
@@ -1469,29 +1516,66 @@ const creationOf = (site: Unit, checker: Reference): Creation | undefined => {
 		declarator.id.typeAnnotation ||
 		declaration?.type !== "VariableDeclaration" ||
 		declaration.kind !== "const" ||
-		declaration.declarations.length !== 1 ||
-		declaration.parent?.type !== "ExportNamedDeclaration"
+		declaration.declarations.length !== 1
 	)
 		return
+	const isExported = declaration.parent?.type === "ExportNamedDeclaration"
+	if (!isExported && declaration.parent?.type !== "Program") return
+	const statement = isExported ? declaration.parent! : declaration
 	const { scopes } = site.module
 	const binding = scopes.bindingsById.get(declarator.id)
 	const creator = scopes.byId.get(call.callee)?.binding
 	if (
 		!binding ||
-		binding.references.length ||
-		binding.exportNames.length !== 1 ||
 		!creator ||
 		!importSourceOf(creator)?.startsWith("~arktype/") ||
 		!importedNameOf(creator).startsWith("create")
 	)
 		return
+	const reads = binding.references
+	if (
+		reads.length ?
+			!reads.every(
+				({ id, isWrite }) =>
+					!isWrite &&
+					id.type === "Identifier" &&
+					(statement.end <= id.start ||
+						id.parent?.type === "ExportSpecifier" ||
+						isInFunction(id))
+			) ||
+			// read only as `.allows`, it's read as its checker instead
+			(!binding.exportNames.length &&
+				reads.every(({ id }) => readsAllows(id.parent)))
+		:	!isExported || binding.exportNames.length !== 1
+	)
+		return
 	return {
 		site,
-		statement: declaration.parent,
+		statement,
 		name: binding.name,
 		creator,
-		checker
+		checker,
+		reads
 	}
+}
+
+// whether a unit's declaration creates a validator, as declareAsCreated writes one
+const createsValidator = (owner: Unit, binding: Binding): boolean => {
+	const declarator = binding.declaration
+	if (
+		declarator.type !== "VariableDeclarator" ||
+		declarator.init?.type !== "CallExpression" ||
+		declarator.init.callee.type !== "Identifier"
+	)
+		return false
+	const creator = owner.module.scopes.byId.get(declarator.init.callee)?.binding
+	return (
+		!!creator &&
+		(creator.kind === "import" ?
+			importedNameOf(creator)
+		:	creator.name
+		).startsWith("create")
+	)
 }
 
 const addImports = (unit: Unit, imports: Map<string, string>): void => {
@@ -1604,6 +1688,24 @@ export const pureAnnotationOf = (
 export const statementOf = (node: Node): Node => {
 	while (node.parent && node.parent.type !== "Program") node = node.parent
 	return node
+}
+
+// within a function the module doesn't call where it's written, so run when
+// that's called, not as the module loads
+const isInFunction = (node: Node): boolean => {
+	for (let parent = node.parent; parent; parent = parent.parent) {
+		if (
+			parent.type === "FunctionDeclaration" ||
+			((parent.type === "FunctionExpression" ||
+				parent.type === "ArrowFunctionExpression") &&
+				!(
+					parent.parent?.type === "CallExpression" &&
+					parent.parent.callee === parent
+				))
+		)
+			return true
+	}
+	return false
 }
 
 const isAtTopLevel = (node: Node): boolean => {

@@ -20,18 +20,19 @@ import type {
 } from "./errors.ts"
 import {
 	ArkErrors as BaseArkErrors,
-	customIssue,
-	customOf,
 	issueAt,
 	mergeIssues,
+	notedAs,
 	pathOf,
 	type ArkIssue,
 	type CompactApply,
 	type FailureContext,
 	type FailureSite,
+	type MissingText,
+	type SiteContext,
 	type UnionSite
 } from "./issues.ts"
-import { listsUnions } from "./issueFeatures.ts"
+import { callsSiteText, findsOnRead, listsUnions } from "./issueFeatures.ts"
 import { TransformErrors } from "./transform.ts"
 import { inProgress } from "./utils.ts"
 
@@ -188,29 +189,43 @@ export class InternalTraversal implements FailureContext {
 		}) as never
 	}
 
-	/** @internal */
-	_at(site: FailureSite, data: unknown, key?: PropertyKey): boolean {
-		this.addError(issueAt(this.path, site, data, key))
+	/** @internal a validator's failure, as its errors take one */
+	_e(
+		data: unknown,
+		code: ArkErrorCode,
+		expected?: string,
+		message?: string,
+		text?: SiteContext["text"]
+	): boolean {
+		const issue: ArkIssue = {
+			code,
+			path: this.path.slice(),
+			data,
+			expected,
+			message
+		}
+		if (callsSiteText) text?.(issue)
+		this.addError(issue)
 		return this.failFast
 	}
 
-	/** @internal */
-	_in(
+	/** @internal a validator's key, as its errors enter one */
+	_k(
 		apply: CompactApply,
 		data: unknown,
 		key: PropertyKey,
-		missing?: FailureSite,
-		value?: unknown
+		...missing: MissingText
 	): boolean | undefined {
+		this.path.push(key)
 		// read first, as only a value that's undefined can be a missing key's,
 		// and whether a key any site passes is in data is a call
-		if (value === undefined) value = (data as Record<PropertyKey, unknown>)[key]
-		if (value === undefined && missing && !(key in (data as object)))
-			return this._at(missing, data, key)
-		this.path.push(key)
-		const continues = apply(value, this)
+		const value = (data as Record<PropertyKey, unknown>)[key]
+		const stops =
+			value === undefined && missing.length && !(key in (data as object)) ?
+				this._e(data, "required", ...missing)
+			:	!apply(value, this)
 		this.path.pop()
-		return !continues
+		return stops
 	}
 
 	/** @internal */
@@ -229,7 +244,9 @@ export class InternalTraversal implements FailureContext {
 		if (this.currentBranch) this.failBranch(error)
 		else {
 			const errors = errorsOf(this)
-			if (errors._.length) errors._.push(error)
+			// errors a build wrote to find their issues once read hold no field
+			// to assign: theirs is a getter's
+			if (findsOnRead || errors._.length) errors._.push(error)
 			else errors._ = [error]
 		}
 		return error
@@ -248,10 +265,7 @@ export class InternalTraversal implements FailureContext {
 					listsUnions && issue._m ?
 						issue._m(this.path)
 						// its message, which names no path, is as a callback read it
-					:	customIssue(
-							{ ...issue, path: [...this.path, ...issue.path] },
-							customOf(issue)
-						)
+					:	notedAs(issue, { ...issue, path: [...this.path, ...issue.path] })
 				)
 			}
 		}
@@ -362,11 +376,12 @@ export class Traversal extends InternalTraversal {
 				:	"valid")
 		}
 		// a message supplied is a sentence of its own, set apart from its path,
-		// unless it's arktype's for data it only knows is invalid
+		// unless it begins as what's written from what's expected would. Data
+		// arktype only knows is invalid expects nothing, which is what says so
 		if (supplied.message !== undefined) {
 			issue.message = supplied.message
-			if (supplied.message !== "is invalid" || supplied.expected !== "valid")
-				customIssue(issue, 1)
+			if (supplied.message === "is invalid" && supplied.expected === "valid")
+				issue.expected = undefined
 		}
 		// a keyword's phrase writes the SyntaxError it caught, as string.json's,
 		// and a pipe.try morph what it threw

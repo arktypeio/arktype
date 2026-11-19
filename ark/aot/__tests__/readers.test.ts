@@ -558,10 +558,10 @@ console.log(describe(User))
 			Object.values(modules)
 				.join("\n")
 				.match(/const validator0 = [^]*?\n\)/)?.[0]
-		attest(createdIn(written)).snap(`const validator0 = createi4hcxm1xcmujt(
-	intersectionn6cyii0o4b9mn,
+		attest(createdIn(written)).snap(`const validator0 = createiqnrt1uwhthq(
+	intersection1auzwrh0yxpmuw,
 	{ expression: expression1dlmq9v0vwoz4a() },
-	"1lfjngd1"
+	"1of1gez0"
 )`)
 		attest(createdIn(rewritten)).equals(createdIn(written))
 	})

@@ -7,10 +7,14 @@ import type {
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	ArkErrors,
-	customIssue,
+	codedIssue,
 	describeActual,
 	enInfo,
 	errorsOf,
+	failsKey,
+	failsKeySite,
+	failsSite,
+	findsOnRead,
 	FirstIssues,
 	holdsExpression,
 	isCustomIssue,
@@ -30,12 +34,13 @@ import {
 	type ArkErrorInput,
 	type ArkIssue,
 	type CompactApply,
-	type Custom,
 	type UnionIssueOf,
 	type FailHandler,
 	type FailureContext,
 	type FailureSite,
 	type InternalTraversal,
+	type IssuesClass,
+	type MissingText,
 	type SiteContext,
 	type Traversal
 } from "@ark/schema/runtime"
@@ -78,6 +83,7 @@ export {
 	ArkErrors,
 	arrayIndexMatcher,
 	callMorph,
+	codedIssue,
 	computeDefaultValueMorph,
 	configure,
 	configuredFallbackOf,
@@ -96,6 +102,9 @@ export {
 	exitResolution,
 	exitApplied,
 	failsInBranches,
+	failsKey,
+	failsKeySite,
+	failsSite,
 	FirstIssues,
 	FirstIssueTraversal,
 	fixConfig,
@@ -107,6 +116,7 @@ export {
 	listedIssue,
 	matchesRepeated,
 	mergeTransformed,
+	missingTextOf,
 	pipe,
 	pipeApplied,
 	pipeChecked,
@@ -627,22 +637,27 @@ export const type: { errors: typeof ArkErrors } = /* @__PURE__ */ freeze({
 export const canParseUrl = ((s: string): boolean =>
 	URL.canParse(s)) satisfies Fn
 
-// a site whose message is configured as a sentence, set apart from its path:
-// for its Type, or as c says, 2 for its code
-export const customSiteOf = ((
+// a site whose message is configured for its code rather than its Type, which
+// its issue notes, as a union lists errors saying one where it would say a
+// message each error's Type shares
+export const codeSiteOf = ((
 	code: ArkErrorCode,
 	description: string | undefined,
-	message: string,
-	c: Custom = 1
-): SiteContext => ({ code, description, x: message, c })) satisfies Fn
+	message: string
+): SiteContext => ({
+	code,
+	description,
+	x: message,
+	text: codedIssue
+})) satisfies Fn
 
 type Writer = string | Fn | undefined
 
 const defineProperty = /* @__PURE__ */ (() => Object.defineProperty)()
 
 // written once first read; keeps is 1 if the issue takes expected, 4 if its
-// actual describes its data, which a default message leaves out, and 2 or 8
-// if its message is configured for its Type or for its code
+// actual describes its data, which a default message leaves out, and 2 if its
+// message is configured for its code
 const writeIssue = (
 	issue: ArkIssue,
 	context: Record<string, unknown>,
@@ -651,17 +666,10 @@ const writeIssue = (
 ): void => {
 	const text: Record<string, unknown> = {
 		expected: issue.expected,
-		// one supplied where it's raised, which is noted there
+		// one supplied where it's raised, which is its own
 		message: context.message
 	}
-	if (text.message === undefined) {
-		customIssue(
-			issue,
-			keeps & 2 ? 1
-			: keeps & 8 ? 2
-			: undefined
-		)
-	}
+	if (keeps & 2 && text.message === undefined) codedIssue(issue)
 	const writeText = () => {
 		const error: Record<string, unknown> = {
 			data: issue.data,
@@ -727,13 +735,40 @@ export const raisingTraversalOf = (
 		}
 	}
 
-// passed no ctx (or filter's index), stops at its first failure
+// a site held as an object, as a checker is its own, fails where it's passed
+// a ctx; passed none (or filter's index), it stops at its first failure
 export const failsAt = ((
 	ctx: FailureContext | undefined,
 	site: FailureSite,
+	data: unknown
+): boolean | undefined =>
+	!ctx?._e || failsSite(ctx, site as SiteContext, data)) satisfies Fn
+
+// as failsAt, of a site written from literals, passed as a ctx takes them
+export const failsWith = ((
+	ctx: FailureContext | undefined,
+	...failure: Parameters<FailureContext["_e"]>
+): boolean | undefined => !ctx?._e || ctx._e(...failure)) satisfies Fn
+
+// as failsKey, stopping where it's passed no ctx
+export const failsKeyWith = ((
+	ctx: FailureContext | undefined,
+	...failure: KeyFailure
+): boolean | undefined => !ctx?._e || failsKey(ctx, ...failure)) satisfies Fn
+
+// what failsKey is passed after its ctx
+type KeyFailure =
+	Parameters<typeof failsKey> extends [unknown, ...infer failure] ? failure
+	:	never
+
+// as failsAt, at a key of data: the missing key or its value
+export const failsAtKey = ((
+	ctx: FailureContext | undefined,
+	site: FailureSite,
 	data: unknown,
-	key?: PropertyKey
-): boolean | undefined => !ctx?._at || ctx._at(site, data, key)) satisfies Fn
+	key: PropertyKey
+): boolean | undefined =>
+	!ctx?._e || failsKeySite(ctx, site, data, key)) satisfies Fn
 
 // a discriminant deeper than one key misses below data, entering each key but the last
 export const failsAtPath = ((
@@ -742,20 +777,21 @@ export const failsAtPath = ((
 	data: unknown,
 	[k, ...deeper]: PropertyKey[]
 ): boolean | undefined =>
-	!ctx?._at ||
+	!ctx?._e ||
 	(deeper.length ?
-		ctx._in((value, ctx) => !failsAtPath(ctx, site, value, deeper), data, k)
-	:	ctx._at(site, data, k))) satisfies Fn
+		ctx._k((value, ctx) => !failsAtPath(ctx, site, value, deeper), data, k)
+	:	failsKeySite(ctx, site, data, k))) satisfies Fn
 
+// passed what a missing key says after the key, as a ctx's _k is
 export const failsIn = ((
 	ctx: FailureContext | undefined,
 	apply: CompactApply,
 	data: unknown,
 	key: PropertyKey,
-	missing?: FailureSite
+	...missing: MissingText
 ): boolean | undefined =>
-	ctx?._at ?
-		ctx._in(apply, data, key, missing)
+	ctx?._e ?
+		ctx._k(apply, data, key, ...missing)
 	:	!(apply as Fn)((data as Record<PropertyKey, unknown>)[key])) satisfies Fn
 
 // a union's issue where it's written its own text, expecting what its branches
@@ -771,7 +807,7 @@ export const ownIssue = ((site: FailureSite): UnionIssueOf =>
 		// a message its errors share is its own, as arktype's union's is, unless
 		// one is configured for it
 		const shared = isCustomIssue(issue) ? undefined : sharedMessageOf(errors)
-		if (shared !== undefined) customIssue(issue, 1).message = shared
+		if (shared !== undefined) issue.message = shared
 		issue.errors = errors
 		return issue
 	}) satisfies Fn
@@ -806,7 +842,7 @@ export const failsBranches = ((
 	data: unknown,
 	issueOf: UnionIssueOf
 ): boolean | undefined => {
-	if (!ctx?._at) return true
+	if (!ctx?._e) return true
 	const firsts: ArkIssue[] = []
 	for (const branch of branches) {
 		let first: ArkIssue | undefined
@@ -862,7 +898,7 @@ const elementsFrom =
 	): CompactApply =>
 	(_, ctx) => {
 		for (let j = i; j < data.length; j++)
-			if (!allows(data[j]) && ctx._in(apply, data, j)) return false
+			if (!allows(data[j]) && ctx._k(apply, data, j)) return false
 		return true
 	}
 
@@ -895,47 +931,52 @@ export const applyCallErrors = (
 	return onFail ? onFail(errors) : errors
 }
 
-type UnreadErrors = new (apply: CompactApply, data: unknown) => ArkErrors
+const unreadClasses = /* @__PURE__ */ new Map<IssuesClass, IssuesClass>()
 
-// defined at a build's first failure, as defining it at load costs startup
-type UnreadErrorsOf = () => UnreadErrors
+// Errors of a class no build wrote to find its issues once read, as an
+// unbundled runtime's or another build's: a class beside it that does, its
+// prototype the errors', built with what finds them as the class itself is
+// where a build wrote it to. Defined at a class's first failure, as defining
+// it at load costs startup
+const unreadOf = (Ctx: IssuesClass): IssuesClass => {
+	let unread = unreadClasses.get(Ctx)
+	if (!unread) {
+		class Unread {
+			// named as the fields of errors written to wait are
+			declare _a: CompactApply
+			declare _d: unknown
+			declare _f?: ArkIssue[]
 
-const unreadOf = (Ctx: new () => ArkErrors): UnreadErrors => {
-	class Unread {
-		// named short, as every bundle reading errors writes them
-		declare _a: CompactApply
-		declare _d: unknown
-		declare _f?: ArkIssue[]
+			constructor(data: unknown, config: unknown, apply: CompactApply) {
+				this._a = apply
+				this._d = data
+			}
 
-		constructor(apply: CompactApply, data: unknown) {
-			this._a = apply
-			this._d = data
+			get _(): ArkIssue[] {
+				return (this._f ??= issuesOf(this._a, this._d, new Ctx()))
+			}
 		}
-
-		get _(): ArkIssue[] {
-			return (this._f ??= issuesOf(this._a, this._d, new Ctx()))
-		}
+		// a Ctx, built without the fields its constructor sets
+		setPrototypeOf(Unread.prototype, Ctx.prototype)
+		// keeps the prototype's own constructor, still not enumerable
+		Unread.prototype.constructor = Ctx
+		unreadClasses.set(Ctx, (unread = Unread as never))
 	}
-	// a Ctx, built without the fields its constructor sets
-	setPrototypeOf(Unread.prototype, Ctx.prototype)
-	// keeps the prototype's own constructor, still not enumerable
-	Unread.prototype.constructor = Ctx
-	return Unread as never
+	return unread
 }
 
-let unreadArkErrors: UnreadErrors | undefined
-
-export const UnreadArkErrors: UnreadErrorsOf = () =>
-	(unreadArkErrors ??= unreadOf(ArkErrors))
-
-// an Apply reporting into ArkErrors calls no user code, so its issues can wait
+// An Apply reporting into ArkErrors calls no user code, so its issues can wait
+// until they're read: errors are built with what finds them, in the place a
+// traversal takes after its data and config. A build that holds such a call
+// writes its errors' class to find them (findsOnRead), so they're that class
+// and the bundle holds nothing more for them to wait with
 export const unreadErrors = (
 	apply: CompactApply,
 	data: unknown,
 	onFail: ArkErrors.Handler | null,
-	Ctx: UnreadErrorsOf
+	Ctx: IssuesClass = ArkErrors
 ): unknown => {
-	const errors = new (Ctx())(apply, data)
+	const errors = new (findsOnRead ? Ctx : unreadOf(Ctx))(data, 0, apply)
 	return onFail ? onFail(errors) : errors
 }
 
@@ -943,10 +984,10 @@ export const unreadCallErrors = (
 	apply: CompactApply,
 	data: unknown,
 	args: ValidatorArgs,
-	onFail: ArkErrors.Handler | null,
-	Ctx: UnreadErrorsOf
+	onFail?: ArkErrors.Handler | null,
+	Ctx: IssuesClass = ArkErrors
 ): unknown => {
-	const errors = new (Ctx())(apply, data)
+	const errors = new (findsOnRead ? Ctx : unreadOf(Ctx))(data, 0, apply)
 	if (args.length) {
 		if (args[0]) return args[0].piped(errors as never)
 		if (args[1] !== undefined) onFail = args[1] as never
@@ -955,11 +996,6 @@ export const unreadCallErrors = (
 }
 
 export const emptyMeta: ArkEnv.meta = /* @__PURE__ */ freeze({})
-
-let unreadFirstIssues: UnreadErrors | undefined
-
-export const UnreadFirstIssues: UnreadErrorsOf = () =>
-	(unreadFirstIssues ??= unreadOf(FirstIssues))
 
 interface UnreadFields {
 	_a?: CompactApply
@@ -1013,8 +1049,8 @@ export const unreadElements = (
 	i: number,
 	data: readonly unknown[],
 	args: ValidatorArgs,
-	onFail: ArkErrors.Handler | null,
-	Ctx: UnreadErrorsOf
+	onFail?: ArkErrors.Handler | null,
+	Ctx?: IssuesClass
 ): unknown =>
 	unreadCallErrors(
 		elementsFrom(allows, apply, i, data),

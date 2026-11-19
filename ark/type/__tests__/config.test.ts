@@ -228,6 +228,39 @@ tags[0] must be a string`)
 		)
 	})
 
+	it("a message that begins as arktype's own follows its path with no colon", () => {
+		const T = type({
+			same: type("string").configure({ message: "must be a string" }),
+			more: type("number").configure({
+				message: ctx => `must be ${ctx.expected} (was ${ctx.actual})`
+			}),
+			// what another expectation would begin is a sentence of its own
+			other: type("string").configure({ message: "must be text" })
+		})
+		const out = T({ same: 1, more: "", other: 1 }) as type.errors
+		attest(out.summary).equals(`same must be a string
+more must be a number (was a string)
+other: must be text`)
+		// each is still its error's message as configured
+		attest(out.issues.map(e => e.message)).equals([
+			"must be a string",
+			"must be a number (was a string)",
+			"must be text"
+		])
+	})
+
+	it("a union lists errors whose messages begin as arktype's own, and says a sentence they share", () => {
+		const AsDefault = type("string").configure({ message: "must be a string" })
+		const Sentence = type("string").configure({ message: "Enter text" })
+		const data = { a: 1, b: 1 }
+		attest(type({ a: AsDefault }).or({ b: AsDefault })(data).toString()).equals(
+			"a must be a string or b must be a string"
+		)
+		attest(type({ a: Sentence }).or({ b: Sentence })(data).toString()).equals(
+			"Enter text"
+		)
+	})
+
 	it("a missing key takes its value's custom message", () => {
 		const T = type({
 			name: type("string").configure({ message: "Name is required" })

@@ -6,6 +6,7 @@ import {
 	hasArkKind,
 	foreignTypesByMorph,
 	inProgress,
+	isCustomIssue,
 	type BaseParseContext,
 	type Traversal,
 	type BaseScope,
@@ -197,11 +198,17 @@ const parseStandardSchema = (
 			})
 			// another library's message is a sentence of its own, unlike what
 			// arktype wrote from what it expected. Which it is isn't this copy's
-			// to tell, as another's errors keep that to themselves: a standalone
-			// validator's issue says, and a Type answers for its own
+			// to tell where another's errors keep that to themselves, so a Type
+			// answers for its own. A standalone validator's issue holds only its
+			// message, read as its own summary reads it; one an earlier build
+			// wrote notes a sentence of its own as `_c`
 			if (
 				fromArk2 ||
-				(fromArk && _c === undefined && !isCustomError?.(issue))
+				(fromArk &&
+					_c === undefined &&
+					(isCustomError ?
+						!isCustomError(issue)
+					:	!isCustomIssue(issue as never)))
 			) {
 				asTemplated(
 					error,
@@ -218,9 +225,9 @@ const parseStandardSchema = (
 }
 
 // what an issue arktype wrote says beyond Standard Schema's: 2.x's message
-// without its path, and 3's how its message was configured, where a
-// standalone validator wrote it, the line of a union listing its errors and
-// that line from a path before its own
+// without its path, and 3's the line of a union listing its errors and that
+// line from a path before its own, with how its message was configured where
+// a standalone validator of an earlier build wrote it
 type ArkWrittenIssue = {
 	problem?: unknown
 	_c?: unknown

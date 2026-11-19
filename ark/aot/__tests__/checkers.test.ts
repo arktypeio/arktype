@@ -3,7 +3,7 @@ import { fromHere } from "@ark/fs"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { type } from "arktype"
 import { precompileStandalone } from "arktype/internal/standalone.ts"
-import { build } from "esbuild"
+import { build, transform } from "esbuild"
 import { spawnSync } from "node:child_process"
 import { join } from "node:path"
 import { runPlain, writeFixture } from "./utils.ts"
@@ -181,6 +181,11 @@ either[0] must be a number
 		const printing = `const print = (out: unknown) =>
 	console.log(out instanceof type.errors ? out.issues.map(issue => \`\${issue.code} \${issue.expected}: \${issue.message}\`).join("\\n") + "\\n" + out.summary : JSON.stringify(out))`
 
+		// a site written with a message of its own: its code, what it expects,
+		// then the message
+		const sitesSaying =
+			/\b(?:siteOf|codeSiteOf)\d*\("\w+", (?:void 0|"(?:[^"\\]|\\.)*"), "/
+
 		it("is said by the checker of what its field checks, at each site and where the key is missing", async () => {
 			const root = fixture(
 				"says",
@@ -242,7 +247,7 @@ form.plain must be a string (was missing)
 			attest(behaviorOf(checkers)).equals(expected)
 			// each field is a checker saying its message, none compiled with sites of its own
 			attest(checkers.match(/saying\(/g)?.length).equals(5)
-			attest(checkers.includes("customSiteOf(")).equals(false)
+			attest(sitesSaying.test(checkers)).equals(false)
 			attest(checkers.includes("sayingMissing(")).equals(false)
 		})
 
@@ -296,7 +301,7 @@ amount: Enter an amount.
 			attest(behaviorOf(await bundle(root))).equals(expected)
 			const checkers = await bundle(root, smallest)
 			attest(behaviorOf(checkers)).equals(expected)
-			attest(checkers.includes("customSiteOf(")).equals(false)
+			attest(sitesSaying.test(checkers)).equals(false)
 			// the missing key of a field whose checks say it, not its checker
 			attest(checkers.match(/sayingMissing\(/g)?.length).equals(2)
 			// what a narrowed field checks ahead of its narrow is one checker,
@@ -876,6 +881,70 @@ age must be a number 3
 false 4
 `)
 		})
+	})
+
+	it("builds a Type the module declaring it reads to what one read from another module builds to", async () => {
+		// enough Types checking alike that what they share is declared once
+		const forms = Array.from(
+			{ length: 8 },
+			(_, i) =>
+				`const Form${i} = type({ name${i}: "string > 2", count${i}: "number >= 0", "note${i}?": "string" })`
+		)
+		const declaring = (
+			exported: string
+		) => `${exported}const User = type({ name: "string > 2", "age?": "number >= 0" })
+${exported}const Post = type({ title: "string", author: User, tags: "string[]" })
+${forms.map(form => `${exported}${form}`).join("\n")}
+`
+		// a handler a Type, one of them reading a Type another Type reads too
+		const reading = `const show = (out: unknown) => console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
+const handlers = {
+	User: (data: unknown) => show(User(data)),
+	Post: (data: unknown) => show(Post(data)),
+${forms.map((_, i) => `\tForm${i}: (data: unknown) => show(Form${i}(data))`).join(",\n")}
+}
+handlers.User({ name: "abc" })
+handlers.User({ name: "a", age: -1 })
+handlers.Post({ title: "t", author: { name: "abc" }, tags: [] })
+handlers.Post({ title: 1, author: { name: "a" }, tags: [1] })
+handlers.Form7({ name7: "abc", count7: 0 })
+handlers.Form7({ name7: "a", count7: -1, note7: 1 })
+`
+		const apart = writeFixture(
+			{
+				"types.ts": `import { type } from "arktype"\n\n${declaring("export ")}`,
+				"main.ts": `import { type } from "arktype"\nimport { Post, User, ${forms.map((_, i) => `Form${i}`).join(", ")} } from "./types.ts"\n\n${reading}`
+			},
+			fromHere("temp", "checkers", "read-apart")
+		)
+		const together = fixture(
+			"read-together",
+			`import { type } from "arktype"\n\n${declaring("")}\n${reading}`
+		)
+		const minifiedLengthOf = async (js: string) =>
+			(await transform(js, { minify: true, format: "esm" })).code.length
+		const [split, colocated] = await Promise.all([
+			bundle(apart, smallest),
+			bundle(together, smallest)
+		])
+		attest(behaviorOf(colocated)).snap(`{"name":"abc"}
+name must be at least length 3
+age must be non-negative
+{"title":"t","author":{"name":"abc"},"tags":[]}
+title must be a string
+author.name must be at least length 3
+tags[0] must be a string
+{"name7":"abc","count7":0}
+name7 must be at least length 3
+count7 must be non-negative
+note7 must be a string
+`)
+		attest(behaviorOf(colocated)).equals(behaviorOf(split))
+		// its validator is the unit it's created from, as an exported one's is,
+		// where a const of its own beside the unit would cost each Type a name
+		attest(await minifiedLengthOf(colocated)).equals(
+			await minifiedLengthOf(split)
+		)
 	})
 
 	it("writes once what creates a validator, whichever way its root finds its issues", async () => {

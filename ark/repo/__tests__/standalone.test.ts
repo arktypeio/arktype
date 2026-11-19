@@ -498,7 +498,9 @@ nick must be a string or null`)
 		const unitOf = (source: string): never =>
 			({ members: [["unionApply", source]] }) as never
 		// a string holding one isn't read
-		assertReportsIssues([unitOf('(data, ctx) => ctx._at(site, data, "ctx.x")')])
+		assertReportsIssues([
+			unitOf('(data, ctx) => ctx._e(data, "domain", "ctx.x")')
+		])
 		attest(() =>
 			assertReportsIssues([
 				unitOf(
@@ -511,16 +513,16 @@ nick must be a string or null`)
 	it("literals reading as the code around them", async () => {
 		const Gated = type({ b: "string > 3" })
 		// a leaf's Apply is named for its content, so a key can name it
-		const apply = /\._in\((\w+Apply), data, "b"/.exec(
+		const apply = /\._k\((\w+Apply), data, "b"/.exec(
 			precompileStandalone({ Gated }).code
 		)![1]
-		const gate = `, xR1)!ctx._in(${apply}, data, `
+		const gate = `, xR1)!ctx._k(${apply}, data, `
 		const types = {
 			Keyed: type({
-				"ctx._at(": "string",
-				"ctx._in(": "string > 1"
+				"ctx._e(": "string",
+				"ctx._k(": "string > 1"
 			}),
-			Units: type("'ctx._in(' | 'ctx._at(' | number"),
+			Units: type("'ctx._k(' | 'ctx._e(' | number"),
 			Unit: type("'ctx.x'"),
 			Read: type({ "ctx.": "'ctx.'" }),
 			Gated: Gated.and({ [`${gate}?`]: "number" }),
@@ -554,10 +556,10 @@ nick must be a string or null`)
 				[
 					["Keyed", "Units"],
 					[
-						{ "ctx._at(": "a", "ctx._in(": "ab" },
-						{ "runtime.failsAt(ctx, ": "a", "ctx._in(": "ab" },
-						{ "ctx._at(": "a", "runtime.failsIn(ctx, ": "ab" },
-						"ctx._in(",
+						{ "ctx._e(": "a", "ctx._k(": "ab" },
+						{ "runtime.failsAt(ctx, ": "a", "ctx._k(": "ab" },
+						{ "ctx._e(": "a", "runtime.failsIn(ctx, ": "ab" },
+						"ctx._k(",
 						"runtime.failsIn(ctx, ",
 						0
 					]
@@ -722,10 +724,11 @@ nick must be a string or null`)
 		attest(String(Unit(impostor))).snap("must be 2020-01-01")
 	})
 
-	it("finds issues as it reads them, unless it validated eagerly", async () => {
+	it("finds issues once they're read, or as it validates where a build doesn't defer them", async () => {
 		const always = standIn(() => true, "always")
 		const T = type({ a: "string", b: "number" })
 		const { Lazy } = await load({ Lazy: T })
+		const { Eager } = await load({ Eager: T }, { defersIssues: false })
 		const { Sized } = await load({ Sized: T }, { optimize: "size" })
 		const Narrowed = (
 			await loadFactory(T.narrow(always), [["function", "always", always]])
@@ -742,17 +745,40 @@ nick must be a string or null`)
 		attest({
 			// found once read, then kept
 			lazy: readAfterWrites(Lazy, [{ a: "a", b: "b" }, { b: 0 }]),
-			// found as it validates, for size or where it calls a narrow
+			// found as it validates, where a build says so, for size or where it
+			// calls a narrow
+			eager: readAfterWrites(Eager, [{ a: "a" }]),
 			sized: readAfterWrites(Sized, [{ a: "a" }]),
 			narrowed: readAfterWrites(Narrowed, [{ a: "a" }]),
 			// data made valid before its issues are read
 			valid: readAfterWrites(Valid, [{ a: "a" }])
 		}).snap({
 			lazy: ["b must be a number", "b must be a number"],
+			eager: ["a must be a string"],
 			sized: ["a must be a string"],
 			narrowed: ["a must be a string"],
 			valid: ["is invalid"]
 		})
+	})
+
+	it("fails as a whole data its check rejected and its pass finds no issue of", async () => {
+		const { T } = await load({ T: type({ a: "string" }) })
+		let reads = 0
+		T.allows({
+			get a() {
+				reads++
+				return 0
+			}
+		})
+		const checkReads = reads
+		reads = 0
+		// a string once the check has read it
+		const errors = T({
+			get a() {
+				return reads++ < checkReads ? 0 : "a"
+			}
+		})
+		attest(errors.summary).snap("is invalid")
 	})
 
 	it("firstIssue finds only the first of issues it hasn't read", async () => {

@@ -25,22 +25,22 @@ var isArray = /* @__PURE__ */ (() => Array.isArray)()
 var reportsIndices = true
 var bracketsKeys = true
 var writesText = true
+var callsSiteText = true
 var listsUnions = true
-var readsKeySites = true
 var appliesValues = true
 var transformsBranches = true
 var failsInBranches = true
 var readsSummary = true
 var readsErrors = true
+var namesTraversalError = true
+var findsOnRead = false
 
 // ark/schema/shared/issues.ts
 var ReadIssues = class {
 	// assigned, as a target lowering class fields defines each with a helper
 	constructor() {
 		this._ = []
-		const path = [this]
-		path.pop()
-		this._p = path
+		this._p = []
 	}
 	/**
 	 * The number of issues.
@@ -56,83 +56,199 @@ var ReadIssues = class {
 		return this._
 	}
 	/**
-	 * @internal `absent` is passed only by _in, which has found the key missing
+	 * @internal fails data at the path it's at. Every bundle holds this, so it
+	 * takes neither a key nor a site: a validator whose code fails nothing at
+	 * a key would hold what enters one for nothing, which failsKey does
+	 * through _k, and a site is a function building it in every bundle
 	 */
-	_at(site, data, key, absent) {
-		const path = this._p
-		const depth2 = path.length
-		let context = (readsKeySites ? site.v : void 0) ?? site
-		let at
-		if (key === void 0) at = depth2 === 0 ? [] : path.slice()
-		else {
-			const value = data[key]
-			if (value === void 0 && site.m && (absent || !(key in data)))
-				context = site.m
-			else data = value
-			if (depth2 === 0) at = [key]
-			else if (depth2 === 1) at = [path[0], key]
-			else {
-				path.push(key)
-				at = path.slice()
-				path.pop()
-			}
-		}
-		const issue = {
-			code: context.code,
-			path: at,
-			data,
-			expected: context.description,
-			message: context.x
-		}
-		if (writesText) {
-			customIssue(issue, context.c)
-			context.text?.(issue)
-		}
-		const issues = this._
-		if (issues.length) issues.push(issue)
-		else this._ = [issue]
+	_e(data, code, expected, message, text) {
+		this._.push({ code, path: this._p.slice(), data, expected, message })
+		if (callsSiteText) text?.(this._[this._.length - 1])
 		return void 0
 	}
 	/** @internal */
-	_in(apply, data, key, missing, value) {
-		if (value === void 0) value = data[key]
-		if (value === void 0 && missing && !(key in data))
-			return this._at(missing, data, key, true)
+	_k(apply, data, key, ...missing) {
 		this._p.push(key)
-		const continues = apply(value, this)
+		const stops =
+			missing.length && !(key in data) ?
+				this._e(data, "required", ...missing)
+			:	!apply(data[key], this)
 		this._p.pop()
-		return !continues
+		return stops
 	}
 }
-var SummarizedIssues =
-	readsSummary ?
-		class extends ReadIssues {
+var UnreadIssues = class {
+	constructor(data, config, apply) {
+		this._p = []
+		this._a = apply
+		this._d = data
+	}
+	/** @internal each issue in the order it was added, found when first read */
+	get _() {
+		if (!this._f) {
+			this._f = []
+			if (this._a && (this._a(this._d, this), !this._f.length))
+				this._e(this._d, "predicate")
+		}
+		return this._f
+	}
+	get count() {
+		return this._.length
+	}
+	get issues() {
+		for (const issue of this._) issue.message ??= messageOf(issue)
+		return this._
+	}
+	_e(data, code, expected, message, text) {
+		this._.push({ code, path: this._p.slice(), data, expected, message })
+		if (callsSiteText) text?.(this._[this._.length - 1])
+		return void 0
+	}
+	_k(apply, data, key, ...missing) {
+		this._p.push(key)
+		const stops =
+			missing.length && !(key in data) ?
+				this._e(data, "required", ...missing)
+			:	!apply(data[key], this)
+		this._p.pop()
+		return stops
+	}
+}
+var failsSite = (ctx, context, data) =>
+	ctx._e(data, context.code, context.description, context.x, context.text)
+var failsKeySite = (ctx, site, data, key) =>
+	ctx._k(
+		(value, ctx2) => !failsSite(ctx2, site.v ?? site, value),
+		data,
+		key,
+		...missingTextOf(site.m)
+	)
+var missingTextOf = missing =>
+	missing ? [missing.description, missing.x, missing.text] : []
+var Issues =
+	readsErrors ?
+		findsOnRead ?
+			// named apart, as one bundle may hold both and a name is one class's
+			class UnreadArkIssues {
+				constructor(data, config, apply) {
+					this._p = []
+					this._a = apply
+					this._d = data
+				}
+				get _() {
+					if (!this._f) {
+						this._f = []
+						if (this._a && (this._a(this._d, this), !this._f.length))
+							this._e(this._d, "predicate")
+					}
+					return this._f
+				}
+				get count() {
+					return this._.length
+				}
+				get issues() {
+					for (const issue of this._) issue.message ??= messageOf(issue)
+					return this._
+				}
+				_e(data, code, expected, message, text) {
+					this._.push({ code, path: this._p.slice(), data, expected, message })
+					if (callsSiteText) text?.(this._[this._.length - 1])
+					return void 0
+				}
+				_k(apply, data, key, ...missing) {
+					this._p.push(key)
+					const stops =
+						missing.length && !(key in data) ?
+							this._e(data, "required", ...missing)
+						:	!apply(data[key], this)
+					this._p.pop()
+					return stops
+				}
+				get summary() {
+					let summary = ""
+					for (const issue of this._)
+						summary += (summary && "\n") + lineOf(issue)
+					return summary
+				}
+				throw() {
+					if (namesTraversalError) throw new ThrownIssues(this)
+					const thrown = Error(this.summary)
+					thrown.name = "TraversalError"
+					throw Object.defineProperty(thrown, "arkErrors", { value: this })
+				}
+				toJSON() {
+					return this.issues
+				}
+				toString() {
+					return this.summary
+				}
+			}
+		:	class ArkIssues {
+				constructor() {
+					this._ = []
+					this._p = []
+				}
+				get count() {
+					return this._.length
+				}
+				get issues() {
+					for (const issue of this._) issue.message ??= messageOf(issue)
+					return this._
+				}
+				_e(data, code, expected, message, text) {
+					this._.push({ code, path: this._p.slice(), data, expected, message })
+					if (callsSiteText) text?.(this._[this._.length - 1])
+					return void 0
+				}
+				_k(apply, data, key, ...missing) {
+					this._p.push(key)
+					const stops =
+						missing.length && !(key in data) ?
+							this._e(data, "required", ...missing)
+						:	!apply(data[key], this)
+					this._p.pop()
+					return stops
+				}
+				get summary() {
+					let summary = ""
+					for (const issue of this._)
+						summary += (summary && "\n") + lineOf(issue)
+					return summary
+				}
+				// an instance of TraversalError only where a program names the
+				// class, so can test for one: otherwise an Error it can't tell
+				// from one, with the same name, message and errors, and no class
+				// in its bundle. Its name is assigned and its errors defined as
+				// the class's are, in statements, which gzip to less than one
+				// expression building it and which a build writing the flag as
+				// a literal folds as well
+				throw() {
+					if (namesTraversalError) throw new ThrownIssues(this)
+					const thrown = Error(this.summary)
+					thrown.name = "TraversalError"
+					throw Object.defineProperty(thrown, "arkErrors", { value: this })
+				}
+				toJSON() {
+					return this.issues
+				}
+				toString() {
+					return this.summary
+				}
+			}
+	: readsSummary ?
+		class extends (findsOnRead ? UnreadIssues : ReadIssues) {
 			get summary() {
 				let summary = ""
-				for (const issue of this._)
-					summary = summary ? summary + "\n" + lineOf(issue) : lineOf(issue)
+				for (const issue of this._) summary += (summary && "\n") + lineOf(issue)
 				return summary
 			}
 		}
-	:	ReadIssues
-var Issues =
-	readsErrors ?
-		class ArkIssues extends SummarizedIssues {
-			throw() {
-				throw new ThrownIssues(this)
-			}
-			toJSON() {
-				return this.issues
-			}
-			toString() {
-				return this.summary
-			}
-		}
-	:	SummarizedIssues
+	: findsOnRead ? UnreadIssues
+	: ReadIssues
 var foundErrors = (apply, data, onFail, Ctx = Issues) => {
 	const errors = new Ctx()
 	apply(data, errors)
-	if (!errors._.length) errors._at({ code: "predicate" }, data)
+	if (!errors._.length) errors._e(data, "predicate")
 	return onFail ? onFail(errors) : errors
 }
 var mergeIssues = (errors, merged, prefix) => {
@@ -144,53 +260,39 @@ var mergeIssues = (errors, merged, prefix) => {
 		)
 	}
 }
-var customIssue = (issue, c) =>
-	writesText && c !== issue._c ?
-		Object.defineProperty(issue, "_c", { value: c, configurable: true })
-	:	issue
-var customOf = issue => (writesText ? issue._c : void 0)
+var codedIssue = issue => Object.defineProperty(issue, "_c", { value: 2 })
+var notedAs = (issue, copy) =>
+	listsUnions && writesText && issue._c ? codedIssue(copy) : copy
 var movedIssue = (issue, path) =>
-	customIssue(
-		{
-			code: issue.code,
-			path,
-			data: issue.data,
-			expected: issue.expected,
-			message: issue.message
-		},
-		customOf(issue)
-	)
+	notedAs(issue, {
+		code: issue.code,
+		path,
+		data: issue.data,
+		expected: issue.expected,
+		message: issue.message
+	})
 var pathOf = issue => {
 	let path = ""
 	for (const k of issue.path) {
-		path =
-			reportsIndices && typeof k === "number" ? path + `[${k}]`
-			: bracketsKeys && !isIdentifier(k) ?
-				path + `[${JSON.stringify(k) ?? String(k)}]`
-			:	(path && path + ".") + (typeof k === "string" ? k : String(k))
+		path +=
+			reportsIndices && typeof k === "number" ? `[${k}]`
+			: bracketsKeys && !/^[$_a-z][\w$]*$/i.test(String(k)) ?
+				`[${JSON.stringify(k) ?? String(k)}]`
+			:	(path && ".") + String(k)
 	}
 	return path
 }
-var identifiers
-var isIdentifier =
-	bracketsKeys ?
-		k => {
-			if (typeof k !== "string") return /^[$_a-z][\w$]*$/i.test(String(k))
-			let result = (identifiers ??= /* @__PURE__ */ new Map()).get(k)
-			if (result === void 0) {
-				result = /^[$_a-z][\w$]*$/i.test(k)
-				if (identifiers.size < 1024) identifiers.set(k, result)
-			}
-			return result
-		}
-	:	void 0
 var lineOf = issue => {
 	const message = (issue.message ??= messageOf(issue))
-	const path = pathOf(issue)
+	const path =
+		reportsIndices || bracketsKeys ? pathOf(issue) : issue.path.join(".")
 	return (
 		listsUnions && issue._l !== void 0 ? issue._l
-		: path ? path + (writesText && issue._c ? ": " : " ") + message
-		: message
+		: path ?
+			path +
+			(writesText && !message.startsWith(messageOf(issue)) ? ": " : " ") +
+			message
+		:	message
 	)
 }
 var messageOf = issue =>
@@ -201,7 +303,7 @@ var messageOf = issue =>
 	: issue.code === "required" ? "is missing"
 	: "is invalid"
 var ThrownIssues =
-	readsErrors ?
+	readsErrors && namesTraversalError ?
 		class TraversalError extends Error {
 			constructor(errors) {
 				super(errors.summary)
@@ -355,11 +457,8 @@ var intersection = (
 	return checker
 }
 var optional = (checker, ...value) => wrapping(checker, { o: 1, d: value })
-var missingSiteOf = ({ description, x, c }) => ({
-	m: { code: "required", description, x, c: x === void 0 ? x : c }
-})
 var failsValue = (ctx, checker, data, k, value) =>
-	ctx?._at ?
+	ctx?._e ?
 		appliesValues && checker.e ? checker.e(ctx, checker, value, k)
 		: appliesValues && checker.t?.e ? checker.t.e(ctx, checker, value, k)
 		: (!checker.t ||
@@ -368,7 +467,7 @@ var failsValue = (ctx, checker, data, k, value) =>
 					// one only checks, as Allows does
 					!ctx.chkOnly && checker.a(value, ctx, k)
 				:	checker(value))) &&
-			ctx._in(checker, data, k)
+			ctx._k(checker, data, k)
 	:	!checker(value)
 var props = declared => {
 	const checker = (data, ctx) => {
@@ -377,7 +476,20 @@ var props = declared => {
 			const value = data[k]
 			if (
 				value === void 0 && !(k in data) ?
-					!declared[k].o && failsAt(ctx, missingSiteOf(declared[k]), data, k)
+					// entered by the ctx, which fails a key missing from data as
+					// required with what it's passed: what its checker holds for
+					// it, the description it expects, the message it says and
+					// what notes one that's its code's
+					!declared[k].o &&
+					(!ctx?._e ||
+						ctx._k(
+							declared[k],
+							data,
+							k,
+							declared[k].description,
+							declared[k].x,
+							declared[k].text
+						))
 				:	failsValue(ctx, declared[k], data, k, value)
 			)
 				return false
@@ -397,7 +509,7 @@ var closedProps = (declared, description = "removed") => {
 			if (
 				!hasOwn(declared, k) &&
 				hasOwn(data, k) &&
-				failsAt(ctx, removed, data, k)
+				failsAtKey(ctx, removed, data, k)
 			)
 				return false
 		}
@@ -494,7 +606,7 @@ var sitedProps = (allows, declared, write, walks = props(declared)) => {
 	const checkers = Object.values(declared)
 	const checker = (data, ctx) =>
 		!objectCheck.test(data) ? !failsAt(ctx, objectCheck, data)
-		: ctx?._at ? walks(data, ctx)
+		: ctx?._e ? walks(data, ctx)
 		: allows(data, checkers)
 	checker.description = objectCheck.description
 	if (write) {
@@ -640,7 +752,9 @@ var domains = (cases, description = describeDomains(cases), fails) => {
 // ark/type/runtime.ts
 var freeze = /* @__PURE__ */ (() => Object.freeze)()
 var siteOf = (code, description, message) => ({ code, description, x: message })
-var failsAt = (ctx, site, data, key) => !ctx?._at || ctx._at(site, data, key)
+var failsAt = (ctx, site, data) => !ctx?._e || failsSite(ctx, site, data)
+var failsAtKey = (ctx, site, data, key) =>
+	!ctx?._e || failsKeySite(ctx, site, data, key)
 var checkedDefaultOf = ([id, holes]) => {
 	let table = checkedDefaults.next(id)
 	for (const hole of holes) table = table.next(hole)
@@ -1133,8 +1247,8 @@ var created2
 var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
-				const validator0 = interned("14qqftf0xnwh9n", () =>
-					create12fpvlf14u2zct(intersection18s5mcd1ew9bfr, "16tv4gx0")
+				const validator0 = interned("hm6a6z0jsq1k0", () =>
+					create12fpvlf14u2zct(intersection18s5mcd1ew9bfr, "1vrd1uw0")
 				)
 				return validator0
 			})())
@@ -1143,8 +1257,8 @@ var get0 = () => {
 var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
-				const validator0 = interned("d4pjhp15ccaj0", () =>
-					create12fpvlf14u2zct(intersection1gc9l3d1josyao, "hngnwn0e")
+				const validator0 = interned("xg82nv06pk8jr", () =>
+					create12fpvlf14u2zct(intersection1gc9l3d1josyao, "2bltfq0s")
 				)
 				return validator0
 			})())
@@ -1153,8 +1267,8 @@ var get1 = () => {
 var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
-				const validator0 = interned("aiaqi70n6k4os", () =>
-					create12fpvlf14u2zct(intersectionwrrov10jn1adl, "npnqwc0m")
+				const validator0 = interned("asrfrq0l73vcp", () =>
+					create12fpvlf14u2zct(intersectionwrrov10jn1adl, "sjni0h1r")
 				)
 				return validator0
 			})())

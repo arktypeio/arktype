@@ -170,6 +170,10 @@ export interface StandaloneOptions {
 	shapes?: boolean | undefined
 	// false where nothing calls a validator, so each failure's errors are read
 	called?: boolean | undefined
+	// false where a failing call's errors find their issues as it returns, as a
+	// build writing its errors for size does: they otherwise find them once
+	// read, so a call no one reads the errors of costs little more than its check
+	defersIssues?: boolean | undefined
 	/** @internal the chars a site's baked introspection may total */
 	bakedLimit?: number | undefined
 	// false where nothing reads a validator's .allows
@@ -349,36 +353,38 @@ export interface IssueFeatures {
 	reportsIndices: boolean
 	bracketsKeys: boolean
 	writesText: boolean
+	callsSiteText: boolean
 	listsUnions: boolean
 	rewritesUnions: boolean
 	traversesUnions: boolean
-	readsKeySites: boolean
 	appliesValues: boolean
 	transformsBranches: boolean
 	failsInBranches: boolean
 	discriminatesBooleans: boolean
-	entersMissing: boolean
 	readsSummary: boolean
 	readsErrors: boolean
 	holdsExpression: boolean
+	namesTraversalError: boolean
+	findsOnRead: boolean
 }
 
 export const noIssueFeatures: IssueFeatures = {
 	reportsIndices: false,
 	bracketsKeys: false,
 	writesText: false,
+	callsSiteText: false,
 	listsUnions: false,
 	rewritesUnions: false,
 	traversesUnions: false,
-	readsKeySites: false,
 	appliesValues: false,
 	transformsBranches: false,
 	failsInBranches: false,
 	discriminatesBooleans: false,
-	entersMissing: false,
 	readsSummary: false,
 	readsErrors: false,
-	holdsExpression: false
+	holdsExpression: false,
+	namesTraversalError: false,
+	findsOnRead: false
 }
 
 export interface StandaloneModules {
@@ -486,7 +492,10 @@ export const bakingOf = (
 		shapes: opts.shapes === true,
 		compiledInputs:
 			opts.optimize === "size" ? compiledInputsOf(exports) : new Set(),
-		defersIssues: opts.optimize !== "size" && opts.called !== false,
+		defersIssues:
+			opts.defersIssues !== false &&
+			opts.optimize !== "size" &&
+			opts.called !== false,
 		bakedLimit: opts.bakedLimit ?? defaultBakedLimit,
 		called: opts.called !== false,
 		readsAllows: opts.readsAllows !== false,

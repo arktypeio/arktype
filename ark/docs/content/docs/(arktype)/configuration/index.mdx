@@ -179,7 +179,7 @@ Signup({})
 
 A message is never composed into another error's, and it applies to the Type it's configured on:
 
-- A union's error lists what its branches expected, not their messages, unless every failing branch has the same message, which the union's error then says.
+- A union's error lists what its branches expected, not their messages, unless every failing branch has the same message, which the union's error then says. It lists them too where that message is one configured [by code](#by-code) rather than on each branch's Type, or [begins as arktype's own would](/docs/errors#summary-lines).
 - A message on a union replaces what it lists. To say what a union must be instead, [describe](#description) it: `type({ a: "string" }).or({ b: "number" }).describe("a shape")` says `must be a shape`.
 - A message on a [pipe](/docs/expressions#pipe) is also the message of the errors validating its output.
 - A missing key says the message of its whole value, so configure that last, after any `.pipe()` or `.to()`.
@@ -232,6 +232,19 @@ Email("x")
 
 // ArkErrors: Enter a string
 Email(5)
+```
+
+A summary tells a sentence of yours by its text. A message that begins as arktype's own would, with `must be` and the error's `expected`, reads on from its path with no colon, whether it's a string or what a function returns:
+
+```ts
+const Entry = type({
+	age: type("number").configure({
+		message: ctx => `must be ${ctx.expected} (was ${ctx.actual})`
+	})
+})
+
+// ArkErrors: age must be a number (was a string)
+Entry({ age: "5" })
 ```
 
 Each function also receives the active [locale](/docs/i18n#your-own-messages) as its last argument, so it can write its text in the language a message is read in. A [locale](/docs/i18n#writing-a-locale) also decides how a summary places a path before a message.

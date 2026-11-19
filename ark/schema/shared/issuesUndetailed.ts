@@ -1,8 +1,50 @@
 // what errors "none" writes besides its errors' class
 import { throwInternalError, type array } from "@ark/util"
 import type { ArkErrors } from "./issuesNone.ts"
-import type { ArkIssue } from "./issues.ts"
+import type { ArkErrorCode } from "./errors.ts"
+import type {
+	ArkIssue,
+	FailureContext,
+	FailureSite,
+	MissingText,
+	SiteContext
+} from "./issues.ts"
 import { bracketsKeys } from "./issueFeatures.ts"
+
+// as issues.ts's failsKey, failsSite, failsKeySite and missingTextOf, for a
+// traversal a validator's Apply is piped into
+export const failsKey = (
+	ctx: FailureContext,
+	data: unknown,
+	key: PropertyKey,
+	code: ArkErrorCode,
+	expected?: string,
+	missing = expected
+): boolean | undefined =>
+	ctx._k((value, ctx) => !ctx._e(value, code, expected), data, key, missing)
+
+export const failsSite = (
+	ctx: FailureContext,
+	context: SiteContext,
+	data: unknown
+): boolean | undefined =>
+	ctx._e(data, context.code, context.description, context.x, context.text)
+
+export const failsKeySite = (
+	ctx: FailureContext,
+	site: FailureSite,
+	data: unknown,
+	key: PropertyKey
+): boolean | undefined =>
+	ctx._k(
+		(value, ctx) => !failsSite(ctx, (site.v ?? site) as SiteContext, value),
+		data,
+		key,
+		...missingTextOf(site.m)
+	)
+
+export const missingTextOf = (missing: SiteContext | undefined): MissingText =>
+	missing ? [missing.description, missing.x, missing.text] : []
 
 // a size build's root apply, which errors "none" never writes
 export const applyIssues = (): never =>
@@ -78,15 +120,12 @@ export const lineOf = (issue: ArkIssue): string => {
 	return (at && at + " ") + (issue.message ?? "is invalid")
 }
 
-// no message is configured where none is written
-export const customIssue = <issue extends ArkIssue>(issue: issue): issue =>
-	issue
-
-export const customOf = (): undefined => undefined
-
+// no message is configured where none is written, so none is noted as its code's
 export const isCustomIssue = (): boolean => false
 
-export { customIssue as templatedIssue }
+export const codedIssue = <issue extends ArkIssue>(issue: issue): issue => issue
+
+export const notedAs = (issue: ArkIssue, copy: ArkIssue): ArkIssue => copy
 
 // what arktype's Apply reports into a piped ctx, replaced by the root issue
 const issueOf = (path: PropertyKey[]): ArkIssue => ({

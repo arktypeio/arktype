@@ -4,12 +4,14 @@ import {
 	ArkTraversal,
 	invalidError,
 	isArkError,
+	SiteTraversal,
 	type ArkError
 } from "./errors.ts"
+import { findsOnRead } from "./issueFeatures.ts"
 import { lineOf } from "./issues.ts"
 import { $ark } from "./registry.ts"
 import { rootApplyRuntime, type RootApplyRuntime } from "./rootApply.ts"
-import { Traversal, type FailHandler } from "./traversal.ts"
+import type { FailHandler } from "./traversal.ts"
 
 // errors "first" stops at the first issue, dropping any added after it
 export class ArkFirstIssueTraversal extends ArkTraversal {
@@ -65,7 +67,7 @@ export class UndetailedErrors extends ArkErrors {
 }
 
 // errors "none" fails a root with one issue, whatever ctx added
-export class UndetailedTraversal extends Traversal {
+export class UndetailedTraversal extends SiteTraversal {
 	override createErrors(): UndetailedErrors {
 		return new UndetailedErrors(this.config)
 	}
@@ -87,7 +89,13 @@ export const rejectUndetailed = (
 ): unknown => {
 	// no constructor: one root issue needs none of its fields
 	const errors: UndetailedErrors = Object.create(undetailedPrototype)
-	errors._ = [{ code: "predicate", path: [], data } as never]
+	const issues: UndetailedErrors["_"] = [
+		{ code: "predicate", path: [], data } as never
+	]
+	// the field a getter reads, where a build wrote errors to find their
+	// issues once read
+	if (findsOnRead) (errors as {} as { _f: unknown })._f = issues
+	else errors._ = issues
 	return onFail ? onFail(errors as never) : errors
 }
 

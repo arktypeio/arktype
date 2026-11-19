@@ -547,3 +547,41 @@ export const writeLaterLoaderCommonJsMessage = (
 	loaders: string[]
 ): string =>
 	`${loaders.length ? loaders.join(", ") : "A loader"} ${loaders.length > 1 ? "compile" : "compiles"} ${module} to CommonJS after arktype's loader read it, so the build can't check what the program as built reads of its validators. Have ${loaders.length > 1 ? "them" : "it"} emit ES modules, as TypeScript's module: "esnext" does, or set prune: false to build each validator whole.`
+
+const listOf = (plugins: string[]): string =>
+	plugins.length ? plugins.join(", ") : "A plugin"
+
+const themOf = (plugins: string[]): string =>
+	plugins.length > 1 ? "them" : "it"
+
+// a read a transform after the plugin's adds to a module, which a Rollup,
+// Rolldown or Vite build reads only once it's built, with what's left out
+// already written. No order of plugins has the build keep what such a read
+// needs, as it reads each module from its file, so the fix is a setting
+// `members` are those that, set true, have a build keep all the read needs
+export const writeLaterTransformReadMessage = (
+	module: string | undefined,
+	read: string,
+	plugins: string[],
+	members: string[] = []
+): string =>
+	`${listOf(plugins)} transformed ${module ?? "a module"} after arktype's plugin read it, and the program as built reads what the build left out of its validators: ${read}. Set ${members.length ? `${members.join(" and ")} true in members, or ` : ""}prune: false to build each validator whole.`
+
+// a module a transform after the plugin's compiles to CommonJS, whose reads
+// of a validator the build can't follow
+export const writeLaterTransformCommonJsMessage = (
+	module: string,
+	plugins: string[]
+): string =>
+	`${listOf(plugins)} ${plugins.length > 1 ? "compile" : "compiles"} ${module} to CommonJS after arktype's plugin read it, so the build can't check what the program as built reads of its validators. Have ${themOf(plugins)} emit ES modules, or set prune: false to build each validator whole.`
+
+// a module whose precompiled code a transform after the plugin's changed, so
+// what it reads of each validator there can't be told from what the plugin
+// wrote. `ahead` writes how to run a plugin ahead of arktype's, which then
+// reads what that plugin wrote
+export const writeLaterTransformRewroteMessage = (
+	module: string,
+	plugins: string[],
+	ahead: (it: string) => string
+): string =>
+	`${listOf(plugins)} changed the validators arktype's plugin wrote in ${module}, so the build can't check what the program as built reads of them. ${ahead(themOf(plugins))}, or set prune: false to build each validator whole.`

@@ -3,17 +3,17 @@ import type { ArkErrorCode } from "./errors.ts"
 import type {
 	ArkIssue,
 	CompactApply,
-	Custom,
 	FailureContext,
 	FailureSite,
+	MissingText,
 	SiteContext
 } from "./issues.ts"
 import {
 	bracketsKeys,
-	entersMissing,
+	callsSiteText,
 	listsUnions,
+	namesTraversalError,
 	readsErrors,
-	readsKeySites,
 	readsSummary,
 	reportsIndices,
 	writesText
@@ -45,61 +45,125 @@ class ReadIssues implements FailureContext {
 		return this._ as WrittenIssue[]
 	}
 
-	/** @internal */
-	_at(site: FailureSite, data: unknown, key?: PropertyKey): true | undefined {
-		const path = this._p
-		let context = (readsKeySites ? site.v : undefined) ?? (site as SiteContext)
-		if (key !== undefined) {
-			path.push(key)
-			if (site.m && !(key in (data as object))) context = site.m
-			else data = (data as Keyed)[key]
-		}
-		const issue: ArkIssue = {
-			code: context.code,
-			path: path.slice(),
-			data,
-			expected: context.description,
-			message: context.x
-		}
-		if (writesText) {
-			customIssue(issue, context.c)
-			context.text?.(issue)
-		}
-		if (key !== undefined) path.pop()
-		this._.push(issue)
+	/** @internal takes neither a key nor a site, as issues.ts's */
+	_e(
+		data: unknown,
+		code: ArkErrorCode,
+		expected?: string,
+		message?: string,
+		text?: SiteContext["text"]
+	): true | undefined {
+		this._.push({ code, path: this._p.slice(), data, expected, message })
+		if (callsSiteText) text?.(this._[this._.length - 1])
 		// only errors stopping at the first issue stop at this one
 		return undefined
 	}
 
 	/** @internal */
-	_in(
+	_k(
 		apply: CompactApply,
 		data: unknown,
 		key: PropertyKey,
-		missing?: FailureSite
+		...missing: MissingText
 	): boolean | undefined {
-		let continues: boolean
-		// one expression, so a build whose validators pass no missing site
-		// folds away what reads one
-		return entersMissing && missing && !(key in (data as object)) ?
-				this._at(missing, data, key)
-			:	(this._p.push(key),
-				(continues = apply((data as Keyed)[key], this)),
-				this._p.pop(),
-				!continues)
+		this._p.push(key)
+		const stops =
+			missing.length && !(key in (data as object)) ?
+				this._e(data, "required", ...missing)
+			:	!apply((data as Keyed)[key], this)
+		this._p.pop()
+		return stops
 	}
 }
 
-// one class where errors are read, as they read the summary too
+// as issues.ts's failsKey, failsSite, failsKeySite and missingTextOf
+export const failsKey = (
+	ctx: FailureContext,
+	data: unknown,
+	key: PropertyKey,
+	code: ArkErrorCode,
+	expected?: string,
+	missing = expected
+): boolean | undefined =>
+	ctx._k((value, ctx) => !ctx._e(value, code, expected), data, key, missing)
+
+export const failsSite = (
+	ctx: FailureContext,
+	context: SiteContext,
+	data: unknown
+): boolean | undefined =>
+	ctx._e(data, context.code, context.description, context.x, context.text)
+
+export const failsKeySite = (
+	ctx: FailureContext,
+	site: FailureSite,
+	data: unknown,
+	key: PropertyKey
+): boolean | undefined =>
+	ctx._k(
+		(value, ctx) => !failsSite(ctx, (site.v ?? site) as SiteContext, value),
+		data,
+		key,
+		...missingTextOf(site.m)
+	)
+
+export const missingTextOf = (missing: SiteContext | undefined): MissingText =>
+	missing ? [missing.description, missing.x, missing.text] : []
+
+// one class where errors are read, as they read the summary too, and as
+// issues.ts's one extending none, with ReadIssues's members written again
 const Issues: new () => Issues = (
 	readsErrors ?
-		class ArkErrors extends ReadIssues {
+		class ArkErrors implements FailureContext {
+			_: ArkIssue[] = []
+			_p: PropertyKey[] = []
+
+			get count(): number {
+				return this._.length
+			}
+
+			get issues(): readonly WrittenIssue[] {
+				for (const issue of this._) issue.message ??= messageOf(issue)
+				return this._ as WrittenIssue[]
+			}
+
+			_e(
+				data: unknown,
+				code: ArkErrorCode,
+				expected?: string,
+				message?: string,
+				text?: SiteContext["text"]
+			): true | undefined {
+				this._.push({ code, path: this._p.slice(), data, expected, message })
+				if (callsSiteText) text?.(this._[this._.length - 1])
+				return undefined
+			}
+
+			_k(
+				apply: CompactApply,
+				data: unknown,
+				key: PropertyKey,
+				...missing: MissingText
+			): boolean | undefined {
+				this._p.push(key)
+				const stops =
+					missing.length && !(key in (data as object)) ?
+						this._e(data, "required", ...missing)
+					:	!apply((data as Keyed)[key], this)
+				this._p.pop()
+				return stops
+			}
+
 			get summary(): string {
 				return this._.map(lineOf).join("\n")
 			}
 
+			// as issues.ts's, an instance of TraversalError only where a program names it
 			throw(): never {
-				throw new ThrownIssues(this as never)
+				if (namesTraversalError) throw new ThrownIssues(this as never)
+				const thrown = Error(this.summary)
+				thrown.name = "TraversalError"
+				throw Object.defineProperty(thrown, "arkErrors", { value: this })
 			}
 
 			toJSON(): readonly unknown[] {
@@ -142,8 +206,8 @@ export class FirstIssues extends Issues {
 		return true
 	}
 
-	override _at(site: FailureSite, data: unknown, key?: PropertyKey): true {
-		super._at(site, data, key)
+	override _e(...failure: Parameters<Issues["_e"]>): true {
+		super._e(...failure)
 		return true
 	}
 }
@@ -154,7 +218,7 @@ export const issueAt = (
 	data: unknown,
 	key: PropertyKey | undefined
 ): ArkIssue => {
-	let context = (readsKeySites ? site.v : undefined) ?? (site as SiteContext)
+	let context = site.v ?? (site as SiteContext)
 	if (key !== undefined) {
 		path.push(key)
 		if (site.m && !(key in (data as object))) context = site.m
@@ -167,10 +231,7 @@ export const issueAt = (
 		expected: context.description,
 		message: context.x
 	}
-	if (writesText) {
-		customIssue(issue, context.c)
-		context.text?.(issue)
-	}
+	if (callsSiteText) context.text?.(issue)
 	if (key !== undefined) path.pop()
 	return issue
 }
@@ -182,7 +243,7 @@ export const issuesOf = (
 ): ArkIssue[] => {
 	apply(data, errors)
 	// data a write or a getter has made valid since fails as a whole
-	if (!errors._.length) errors._at({ code: "predicate" }, data)
+	if (!errors._.length) errors._e(data, "predicate")
 	return errors._
 }
 
@@ -195,7 +256,7 @@ export const foundErrors = (
 	const errors = new Ctx()
 	// as issuesOf, which a program of these never ships
 	apply(data, errors)
-	if (!errors._.length) errors._at({ code: "predicate" }, data)
+	if (!errors._.length) errors._e(data, "predicate")
 	return onFail ? onFail(errors) : errors
 }
 
@@ -237,35 +298,29 @@ export const mergeIssues = (
 	}
 }
 
-// notes how an issue's message was configured, as issues.ts does
-export const customIssue = <issue extends ArkIssue>(
-	issue: issue,
-	c: Custom | undefined
-): issue =>
-	writesText && c !== issue._c ?
-		Object.defineProperty(issue, "_c", { value: c, configurable: true })
-	:	issue
-
-export const customOf = (issue: ArkIssue): Custom | undefined =>
-	writesText ? issue._c : undefined
-
-export const templatedIssue = <issue extends ArkIssue>(issue: issue): issue =>
-	customIssue(issue, undefined)
-
+// whether an issue's message is a sentence of its own, as issues.ts's isCustomIssue
 export const isCustomIssue = (issue: ArkIssue): boolean =>
-	customOf(issue) !== undefined
+	listsUnions && issue._l !== undefined ?
+		false
+	:	writesText &&
+		issue.message !== undefined &&
+		!issue.message.startsWith(messageOf(issue))
+
+// as issues.ts's codedIssue, notedAs and movedIssue
+export const codedIssue = <issue extends ArkIssue>(issue: issue): issue =>
+	Object.defineProperty(issue, "_c", { value: 2 })
+
+export const notedAs = (issue: ArkIssue, copy: ArkIssue): ArkIssue =>
+	listsUnions && writesText && issue._c ? codedIssue(copy) : copy
 
 export const movedIssue = (issue: ArkIssue, path: PropertyKey[]): ArkIssue =>
-	customIssue(
-		{
-			code: issue.code,
-			path,
-			data: issue.data,
-			expected: issue.expected,
-			message: issue.message
-		},
-		customOf(issue)
-	)
+	notedAs(issue, {
+		code: issue.code,
+		path,
+		data: issue.data,
+		expected: issue.expected,
+		message: issue.message
+	})
 
 // the path as issues.ts writes it
 export const pathOf = (issue: {
@@ -285,11 +340,16 @@ export const pathOf = (issue: {
 // an issue's line of a summary, as issues.ts's lineOf
 export const lineOf = (issue: ArkIssue): string => {
 	const message = (issue.message ??= messageOf(issue))
-	const path = pathOf(issue)
+	// as issues.ts's, joined where every key is an identifier
+	const path =
+		reportsIndices || bracketsKeys ? pathOf(issue) : issue.path.join(".")
 	return (
 		listsUnions && issue._l !== undefined ? issue._l
-		: path ? path + (writesText && issue._c ? ": " : " ") + message
-		: message
+		: path ?
+			path +
+			(writesText && !message.startsWith(messageOf(issue)) ? ": " : " ") +
+			message
+		:	message
 	)
 }
 
@@ -311,7 +371,7 @@ interface ThrownIssues extends Error {
 }
 
 const ThrownIssues: new (errors: Issues) => ThrownIssues = (
-	readsErrors ?
+	readsErrors && namesTraversalError ?
 		class TraversalError extends Error {
 			declare readonly name: "TraversalError"
 			declare arkErrors: Issues

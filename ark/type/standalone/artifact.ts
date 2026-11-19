@@ -1785,10 +1785,12 @@ return namespace`
 			.split(unit.name)
 			.join("template")
 		if (/\bliteral\d+\b/.test(body)) return
-		// a site's description is passed, so units differing by theirs share it
+		// what a failure expects is passed, so units differing by theirs share
+		// it: the last a ctx is passed where it fails data or a key, and the
+		// last failsKey is
 		const descriptions: string[] = []
 		const shared = body.replace(
-			/(runtime\.(?:siteOf|keySiteOf)\("(?:[^"\\]|\\.)*", |runtime\.requiredSiteOf\()("(?:[^"\\]|\\.)*")\)/g,
+			/(ctx\._e\(\w+, "(?:[^"\\]|\\.)*", |ctx\._k\((?:\w+, ){2}"(?:[^"\\]|\\.)*", |runtime\.failsKey\(ctx, \w+(?:, "(?:[^"\\]|\\.)*"){2}, )("(?:[^"\\]|\\.)*")\)/g,
 			(_, call: string, description: string) => {
 				if (!descriptions.includes(description)) descriptions.push(description)
 				return `${call}d${descriptions.indexOf(description)})`
@@ -3019,11 +3021,13 @@ return namespace`
 				this.compactPartsOf(root, tfs ? [0, 1, 2] : [0, 1], asValidator)
 			:	[]
 		if (traversals) {
-			const Ctx =
-				!unreads ? refOf("Traversal")
-				: this.baking.firstIssue ? "runtime.UnreadFirstIssues"
-				: "runtime.UnreadArkErrors"
+			// errors that wait are of the class compiled code reports into, and a
+			// build holding one writes its errors to find their issues once read
+			if (unreads) this.baking.issues.findsOnRead = true
+			const Ctx = refOf("Traversal")
 			const local = !Ctx.startsWith("runtime.")
+			// they're ArkErrors unless passed
+			const passedCtx = unreads && Ctx === "runtime.ArkErrors" ? "" : `, ${Ctx}`
 			// a unified root applies by its Allows
 			const apply = this.appliedIndexOf(root) ? "apply" : "allows"
 			const pattern =
@@ -3054,9 +3058,9 @@ return namespace`
 	for (let i = 0; i < data.length; i++) if (!allowsElement(data[i])) return i
 }`,
 						apply: `(data, ...args) => {
-	if (!Array.isArray(data)) return ${callErrors}(apply, data, args, onFail, ${Ctx})
+	if (!Array.isArray(data)) return ${callErrors}(apply, data, args, onFail${passedCtx})
 	const i = rejectedIn(data)
-	return i === undefined ? data : ${elementErrors}(allowsElement, applyElement, i, data, args, onFail, ${Ctx})
+	return i === undefined ? data : ${elementErrors}(allowsElement, applyElement, i, data, args, onFail${passedCtx})
 }`,
 						args,
 						local
@@ -3070,7 +3074,9 @@ return namespace`
 					this.emitApplier({
 						readsAllows,
 						params: `${pattern}${unconfigured ? "" : ", onFail"}`,
-						apply: `(data, ...args) => allows(data) ? ${valid} : ${callErrors}(${apply}, data, args, ${unconfigured ? "null" : "onFail"}, ${Ctx})`,
+						apply: `(data, ...args) => allows(data) ? ${valid} : ${callErrors}(${apply}, data, args${
+							unconfigured ? passedCtx && ", null" : ", onFail"
+						}${passedCtx})`,
 						args: parts,
 						local
 					}),
@@ -3082,7 +3088,7 @@ return namespace`
 				{
 					params: pattern,
 					apply: `(data, onFail) => allows(data) ? ${valid} : ${
-						unreads ? `runtime.unreadErrors(${apply}, data, onFail, ${Ctx})`
+						unreads ? `runtime.unreadErrors(${apply}, data, onFail${passedCtx})`
 						: !reportsIssues ?
 							`runtime.applyErrors(${apply}, data, ${refOf("config")}, onFail, ${Ctx})`
 						: (

@@ -54,10 +54,103 @@ const domainChecks = new Map<string, string>([
 	]
 ])
 
+// each site written from literals, by the call written for it: what builds
+// it and the literals it's passed, which a failure passes its ctx in place
+// of the site
+const inlineSites = new Map<string, [writer: string, args: string]>()
+
+const inlined = (written: string): string => {
+	if (!inlineSites.has(written)) {
+		const open = written.indexOf("(")
+		inlineSites.set(written, [
+			written.slice("runtime.".length, open),
+			written.slice(open + 1, -1)
+		])
+	}
+	return written
+}
+
 class StandaloneCompiler extends TraversalCompiler {
 	override readonly reportsFirst: boolean = false
+	// a validator's errors read the value they apply at a key: passed, it's
+	// `, data.key` at every key of every validator a bundle holds
+	override readonly readsApplied = true
 	// named for its content as compiled, before the size forms that follow from it
 	readonly naming: boolean = this.link.unit === undefined
+
+	// A site written from literals fails as them: its code, what it expects
+	// and its message, passed to the ctx where it fails, so a bundle holds no
+	// function building a site and none is built at a failure. At a key, a
+	// key's site is entered by the runtime's failsKey, which a bundler drops
+	// from a program failing at none, where every bundle holds its errors' _e.
+	// A site held as an object, as one whose text a function writes is, fails
+	// through the runtime
+	override failsSite(site: string, data: string, key?: string): string {
+		const keyed = key === undefined ? undefined : this.keyFailureOf(site)
+		if (keyed !== undefined)
+			return `runtime.failsKey(ctx, ${data}, ${key}, ${keyed})`
+		const failure = this.failureOf(site)
+		if (failure === undefined) {
+			return key === undefined ?
+					`runtime.failsSite(ctx, ${site}, ${data})`
+				:	`runtime.failsKeySite(ctx, ${site}, ${data}, ${key})`
+		}
+		// a context has nothing a missing key fails, so its key is only entered
+		return key === undefined ?
+				`ctx._e(${data}, ${failure})`
+			:	`ctx._k((data, ctx) => !ctx._e(data, ${failure}), ${data}, ${key})`
+	}
+
+	// what a ctx is passed after data for a site written from literals that's
+	// a context: its code, what it expects and its message, and what notes on
+	// its issue a message configured for its code
+	protected failureOf(site: string): string | undefined {
+		const inline = inlineSites.get(site)
+		return (
+			inline?.[0] === "siteOf" ? inline[1]
+			: inline?.[0] === "codeSiteOf" ? `${inline[1]}, runtime.codedIssue`
+			: undefined
+		)
+	}
+
+	// what failsKey is passed after the key for a key's site written from
+	// literals: its value's code and what it expects, then what the missing
+	// key does where that's something else. A site of only what a missing key
+	// expects is failed where data lacks the key, which failsKey fails as
+	// required with what it's passed
+	protected keyFailureOf(site: string): string | undefined {
+		const inline = inlineSites.get(site)
+		return (
+			inline?.[0] === "keySiteOf" ? inline[1]
+			: inline?.[0] === "requiredSiteOf" ? `"required", ${inline[1]}`
+			: undefined
+		)
+	}
+
+	// a validator's ctx enters a key by a name of its own
+	override failsIn(args: string): string {
+		return `ctx._k(${args})`
+	}
+
+	override failsEither(
+		condition: string,
+		site: string,
+		otherwise: string,
+		data: string,
+		key: string
+	): string {
+		return `(${condition} ? ${this.failsSite(site, data, key)} : ${this.failsSite(otherwise, data, key)})`
+	}
+
+	// what a missing key says, as _k takes it after the key: what it expects
+	// where its site is written from that alone
+	override applied(key: string, value: string, missing?: string): string {
+		if (missing === undefined) return key
+		const inline = inlineSites.get(missing)
+		return inline?.[0] === "requiredSiteOf" ?
+				`${key}, ${inline[1]}`
+			:	`${key}, ...runtime.missingTextOf(${missing}.m)`
+	}
 
 	unifies(node: BaseNode): boolean {
 		return unifies(node)
@@ -131,13 +224,14 @@ class StandaloneCompiler extends TraversalCompiler {
 	// a site of literals, or a key's, is built where it fails and stays a ref the unit keys
 	siteRef(site: object): string {
 		const ref = this.ref(site)
-		if (isInlineSite(site)) return writeSiteOf(site, JSON.stringify)
+		if (isInlineSite(site)) return inlined(writeSiteOf(site, JSON.stringify))
 		const { v: value } = site as { v?: object }
 		const missing = missingDescriptionOf(site)
 		if (missing === undefined) return ref
-		if (!value) return `runtime.requiredSiteOf(${JSON.stringify(missing)})`
+		if (!value)
+			return inlined(`runtime.requiredSiteOf(${JSON.stringify(missing)})`)
 		return isInlineSite(value) && isDescribed(value) ?
-				writeSiteOf(value, JSON.stringify, "keySiteOf", missing)
+				inlined(writeSiteOf(value, JSON.stringify, "keySiteOf", missing))
 			:	ref
 	}
 
@@ -179,9 +273,13 @@ class StandaloneCompiler extends TraversalCompiler {
 		const path = node.missPath
 		const site = this.siteRef(issueSite(discriminantContextOf(node)))
 		// a key below data is read as a key site reads it
-		return path.length > 1 ?
+		return (
+			path.length > 1 ?
 				`!${this.ref(failsAtPath)}(ctx, ${site}, data, [${path.map(k => this.serialize(k)).join(", ")}])`
-			:	`!${this.fails("failsAt", path.length ? `${site}, data, ${this.serialize(path[0])}` : `${site}, data`)}`
+			: path.length ?
+				`!${this.failsSite(site, "data", this.serialize(path[0]))}`
+			:	`!${this.failsSite(site, "data")}`
+		)
 	}
 
 	private ifReadable(
@@ -238,7 +336,7 @@ class StandaloneCompiler extends TraversalCompiler {
 					:	basis.domain === "object"
 				)
 			) ?
-				`!${this.fails("failsAt", `${this.siteRef(bases.site)}, data`)}`
+				`!${this.failsSite(this.siteRef(bases.site), "data")}`
 			:	this.unionFails(node)
 	}
 
@@ -251,7 +349,7 @@ class StandaloneCompiler extends TraversalCompiler {
 				meta: node.meta
 			})
 		)
-		return this.fails("failsAt", `${this.siteRef(site)}, data, k`)
+		return this.failsSite(this.siteRef(site), "data", "k")
 	}
 
 	// a rejected union value reports the union's issue at its key, not its Apply
@@ -501,9 +599,6 @@ const reportsApart = (reference: BaseNode): boolean =>
 // a detailed size build's traversals: a unifying node's Apply is its Allows,
 // reporting only to a ctx
 class UnifiedCompiler extends StandaloneCompiler {
-	// failsIn passes ctx only what a size build's reads
-	override readonly readsApplied = true
-
 	override refToId(id: NodeId, opts?: ReferenceOptions): string {
 		const node = this.link.byId[id]
 		return super.refToId(
@@ -528,9 +623,23 @@ class UnifiedCompiler extends StandaloneCompiler {
 	override failingSiteOf(): undefined {}
 	override failingApplyOf(): undefined {}
 
-	// read where it fails, as a site is, so a unit needn't receive it
-	override fails(method: "failsAt" | "failsIn", args: string): string {
-		return `runtime.${method}(ctx, ${args})`
+	// read where it fails, as a site is, so a unit needn't receive it. Each
+	// stops where it's passed no ctx, as failsAtKey does at a key
+	override failsSite(site: string, data: string, key?: string): string {
+		if (key === undefined) {
+			const failure = this.failureOf(site)
+			return failure === undefined ?
+					`runtime.failsAt(ctx, ${site}, ${data})`
+				:	`runtime.failsWith(ctx, ${data}, ${failure})`
+		}
+		const keyed = this.keyFailureOf(site)
+		return keyed === undefined ?
+				`runtime.failsAtKey(ctx, ${site}, ${data}, ${key})`
+			:	`runtime.failsKeyWith(ctx, ${data}, ${key}, ${keyed})`
+	}
+
+	override failsIn(args: string): string {
+		return `runtime.failsIn(ctx, ${args})`
 	}
 }
 
@@ -584,8 +693,6 @@ const forSize = (compiler: typeof StandaloneCompiler) =>
 		override readonly shortest: boolean = !this.naming
 		// a literal of the values a copy holds is shorter than one of nulls
 		override readonly copiesValues: boolean = this.shortest
-		// named as it's written, too
-		override readonly readsApplied = true
 	}
 
 // a detailed size build writes each node it can as a checker, whose Apply is its Allows

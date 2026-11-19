@@ -75,6 +75,9 @@ import {
 	writeFilelessImportMessage,
 	writeLaterLoaderCommonJsMessage,
 	writeLaterLoaderReadMessage,
+	writeLaterTransformCommonJsMessage,
+	writeLaterTransformReadMessage,
+	writeLaterTransformRewroteMessage,
 	writeLoadedFirstMessage,
 	writeUncachedModuleMessage,
 	writeUnbuiltReadMessage,
@@ -120,6 +123,7 @@ import {
 	withSettingsFile
 } from "./settings.ts"
 import type { UnseenBuilt } from "./precompile.ts"
+import { unwrite, type WrittenModule } from "./unwrite.ts"
 import { createAsyncPrecompiler, type BundlerResolve } from "./worker.ts"
 
 export type { PrecompilePluginOptions } from "./driver.ts"
@@ -624,6 +628,31 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 	}
 	// Vite's transforming plugins ahead of this one, which a new config module names
 	let transformersAhead: string[] = []
+	// each plugin whose transform runs after this one's, which a read one adds names
+	let transformersAfter: string[] = []
+	// a read a transform after this one's adds, or a module one built so that
+	// none can be told
+	const writeLaterTransformMessage = ({
+		id,
+		read,
+		commonJs,
+		members
+	}: UnseenLater) => {
+		const module = id && printablePathOf(realCwd(), id)
+		const call = `precompile.${meta.framework}()`
+		const ahead =
+			meta.framework === "vite" ?
+				(it: string) =>
+					`Give ${it} enforce: "pre" and list ${it} ahead of ${call}`
+			:	(it: string) => `List ${it} ahead of ${call}`
+		return (
+			read === undefined ?
+				writeLaterTransformRewroteMessage(module!, transformersAfter, ahead)
+			: commonJs && module ?
+				writeLaterTransformCommonJsMessage(module, transformersAfter)
+			:	writeLaterTransformReadMessage(module, read, transformersAfter, members)
+		)
+	}
 	const namingTransformers = (
 		diagnostics: RenderedDiagnostics
 	): RenderedDiagnostics =>
@@ -938,11 +967,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		context.warn(warning)
 	}
 	// a production build reads the bundle from the first module it transforms
-	function rollupBuildStart(
-		this: RollupContext,
-		options: { input: string[] | Record<string, string> }
-	) {
+	function rollupBuildStart(this: RollupContext, options: RollupBuildOptions) {
 		startBuild()
+		transformersAfter = laterTransformersOf(options.plugins ?? [])
 		// as ark.json may be written later
 		for (const path of settingsPathsOf(settingsRead?.cwd ?? process.cwd()))
 			this.addWatchFile(path)
@@ -1161,6 +1188,7 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				scanned,
 				verifies: scan.verifies,
 				loaded: scan.loaded,
+				written: new Map(),
 				replaced: new Set(usage.replaced),
 				holders: scan.holders,
 				issues: usage.issues
@@ -1227,6 +1255,23 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					:	[],
 				warnings: transformed.warnings.map(text => ({ text }))
 			}
+		})
+		// a runtime module reading an issue feature, with each read written as
+		// what it is, as other bundlers load it. esbuild inlines a constant
+		// another module declares only as it prints, once it has decided what
+		// the bundle holds: what a branch it folds there names is kept, and a
+		// statement testing one is left behind as `!1`. Registered last, so the
+		// load above has read the module as its file has it
+		build.onLoad({ filter: issueFeatureReader }, args => {
+			const issues = esbuildScan?.issues
+			if (!issues || args.namespace !== "file") return
+			const written = writeIssueFeaturesInto(
+				args.path,
+				readFileSync(args.path, "utf8"),
+				issues
+			)
+			if (written !== undefined)
+				return { contents: written, loader: esbuildLoaderOf(args.path) }
 		})
 	}
 	const resolveEsbuildVariant = (
@@ -1388,6 +1433,13 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 						bundlerResolveOf(this, isTransformedId)
 					)
 					if (!transformed) return
+					// read again as the transforms after this one built it
+					if (scan && transformed.code && transformed.map) {
+						scan.written.set(file, {
+							code: transformed.code,
+							mappings: transformed.map.mappings
+						})
+					}
 					// what it's written as may change with any module of the
 					// program, and its imports with it, so the bundler keeps it as
 					// it is, which the next build reads
@@ -1624,16 +1676,23 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 					scan,
 					othersByBuild.get(buildOf(this)),
 					isTransformedId,
-					program =>
+					(program, isBuilt) =>
 						requestResolving(
 							bundlerResolveOf(this, isTransformedId),
 							"unseen",
-							program
-						) as Promise<string | undefined>,
+							program,
+							isBuilt ? "the plugins after it" : undefined
+						) as Promise<string | UnseenBuilt | undefined>,
 					realCwd()
 				)
 				// fails before the bundle is written
-				if (problem) throwBuildError(problem)
+				if (problem) {
+					throwBuildError(
+						typeof problem === "string" ? problem : (
+							writeLaterTransformMessage(problem)
+						)
+					)
+				}
 			}
 			const native = this.getNativeBuildContext?.()
 			const isWatching =
@@ -1853,8 +1912,61 @@ interface BundleScan {
 	holders: ReadonlySet<string>
 	// each module as this plugin transformed it
 	loaded: LoadedSources
+	// each one its transform rewrote, as it wrote it
+	written: Map<string, WrittenModule>
 	// what its issues may hold, unless they may hold anything
 	issues: IssueFeatures | undefined
+}
+
+// what a Rollup, Rolldown or Vite bundle reads that its scan left out, as the
+// transforms after the plugin's built its modules
+interface UnseenLater {
+	// the module whose transforms make it, where one does
+	id: string | undefined
+	// undefined where they changed what the plugin wrote of the module, so
+	// what it reads can't be told
+	read: string | undefined
+	commonJs?: boolean
+	members?: string[] | undefined
+}
+
+interface RollupBuildOptions {
+	input: string[] | Record<string, string>
+	// each plugin in the order its hooks run, which Rolldown names but those
+	// it runs in parallel
+	plugins?: readonly object[]
+}
+
+interface TransformingPlugin {
+	name?: string
+	// a function, or an object holding one and the order it runs in
+	transform?: object | null
+}
+
+interface OrderedHook {
+	order?: "pre" | "post" | null
+}
+
+// each plugin whose transform runs after this one's, as any after it in the
+// list does unless its transform's order is "pre", and any with order "post"
+const laterTransformersOf = (plugins: readonly object[]): string[] => {
+	const named: readonly TransformingPlugin[] = plugins
+	const own = named.findIndex(({ name }) => name === pluginName)
+	return [
+		...new Set(
+			named.flatMap(({ name, transform }, i) => {
+				if (
+					!name ||
+					!transform ||
+					isVitesOwn(name) ||
+					name.startsWith(pluginName)
+				)
+					return []
+				const { order }: OrderedHook = transform
+				return order === "post" || (order !== "pre" && i > own) ? name : []
+			})
+		)
+	]
 }
 
 const pluginName = "arktype"
@@ -2390,6 +2502,7 @@ const rollupScanOf = async (
 					replaced: new Set(usage.replaced),
 					holders: new Set(usage.holders),
 					loaded: new Map(),
+					written: new Map(),
 					issues: usage.issues
 				}
 			:	undefined,
@@ -2425,15 +2538,22 @@ const rollupEntriesOf = async (
 
 const htmlId = /\.html$/
 
-// why a Rollup, Rolldown or Vite bundle, read as it was built, may read what its scan left out
+// why a Rollup, Rolldown or Vite bundle, read as it was built, may read what
+// its scan left out: each module as it reached the plugin, then as the
+// transforms after the plugin's built it
 const rollupUnseenOf = async (
 	context: RollupContext,
 	scan: BundleScan,
 	others: ReadonlyMap<string, string> | undefined,
 	isTransformed: (id: string) => boolean,
-	unseen: (program: ScannedProgram) => Promise<string | undefined>,
+	// why the program reads more as it reached the plugin, or what it reads
+	// as built, where it holds a module built otherwise
+	unseen: (
+		program: ScannedProgram,
+		isBuilt: boolean
+	) => Promise<string | UnseenBuilt | undefined>,
 	cwd: string
-): Promise<string | undefined> => {
+): Promise<string | UnseenLater | undefined> => {
 	const built = (reason: string) =>
 		writeUnseenMessage(`as it built the bundle, ${reason}`)
 	const entries: ScanEntry[] = []
@@ -2453,6 +2573,12 @@ const rollupUnseenOf = async (
 	}
 	// a module the bundle holds, as it built it
 	const builtCode = (id: string) => context.getModuleInfo(id)?.code ?? undefined
+	// each module the plugin transformed, as it reached it
+	const reached: Record<string, string> = {}
+	// and as the transforms after the plugin's built it, where that differs
+	const later: Record<string, string> = {}
+	// one whose precompiled code they changed
+	let rewritten: string | undefined
 	const program = await scanProgram(scan.scanned.key, entries, {
 		resolve: async (specifier, importer) => {
 			const resolved = await bundledResolutionOf(
@@ -2475,11 +2601,27 @@ const rollupUnseenOf = async (
 			const loaded = scan.loaded.get(file)
 			// null where the bundle loaded its file under two ids unalike
 			if (loaded === null) return
-			if (loaded !== undefined) return loaded
-			// one the bundle doesn't hold, as only code a later plugin strips
-			// imported it, reads nothing
-			if (!context.getModuleInfo(id)) return ""
-			return scan.scanned.modules[file]?.source ?? readFile(file)
+			// one the plugin didn't transform, as its file has it: the bundler kept
+			// it from an earlier build, or the bundle doesn't hold it, as only
+			// code a later plugin strips imported it, like an import TypeScript's
+			// transform drops once only a validator the plugin wrote read it
+			if (loaded === undefined)
+				return scan.scanned.modules[file]?.source ?? readFile(file)
+			const code = builtCode(id)
+			const written = scan.written.get(file)
+			if (code === undefined || code === (written?.code ?? loaded))
+				return loaded
+			// read for what it imports as built, which a transform may add to
+			const unwritten = unwrite({
+				id: file,
+				reached: loaded,
+				written,
+				built: code
+			})
+			if (unwritten === undefined) rewritten ??= file
+			if (unwritten === undefined || unwritten === loaded) return loaded
+			reached[file] = loaded
+			return (later[file] = unwritten)
 		},
 		// a dependency as built, as a plugin after this one may add an import to it
 		readFile: path => builtCode(path) ?? readFile(path),
@@ -2488,7 +2630,22 @@ const rollupUnseenOf = async (
 		cwd
 	})
 	if (typeof program === "string") return built(program)
-	return unseen(program)
+	const isBuilt = Object.keys(later).length > 0
+	const problem = await unseen(
+		{
+			...program,
+			modules: flatMorph(program.modules, (id, module) => [
+				id,
+				id in later ?
+					{ ...module, source: reached[id], built: later[id] }
+				:	module
+			])
+		},
+		isBuilt
+	)
+	return typeof problem !== "string" && rewritten !== undefined ?
+			{ id: rewritten, read: undefined }
+		:	problem
 }
 
 // resolved as a require, which Rollup's CommonJS plugin leaves to the others,

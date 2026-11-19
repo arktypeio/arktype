@@ -286,7 +286,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	// trusted to hold only own, enumerable keys, as JSON.parse's output does
 	declare readonly jsonInput?: boolean
 	// whether the ctx it reports to reads the value it applies at a key, as a
-	// build for size leaves it to
+	// standalone validator's errors do
 	declare readonly readsApplied?: boolean
 	/** whether the transform it compiles checks for errors a transformed child added */
 	checksErrs = false
@@ -387,15 +387,31 @@ export abstract class NodeCompiler extends CompiledFunction<
 	}
 
 	error(node: BaseNode, key?: string, data = "data"): string {
-		return this.fails(
-			"failsAt",
-			`${this.site(node)}, ${data}${key === undefined ? "" : `, ${key}`}`
-		)
+		return this.failsSite(this.site(node), data, key)
 	}
 
-	// a call reporting a failure into ctx, by FailureContext's short names
-	fails(method: "failsAt" | "failsIn", args: string): string {
-		return `ctx.${method === "failsAt" ? "_at" : "_in"}(${args})`
+	// a call failing a site, at a key of data where it's passed one, which
+	// arktype's traversal enters in its _at. A validator's errors take neither
+	// a site nor a key, so its compilers write the call another way
+	failsSite(site: string, data: string, key?: string): string {
+		return `ctx._at(${site}, ${data}${key === undefined ? "" : `, ${key}`})`
+	}
+
+	// a call failing one of two sites at a key of data: the first where a
+	// condition holds
+	failsEither(
+		condition: string,
+		site: string,
+		otherwise: string,
+		data: string,
+		key: string
+	): string {
+		return this.failsSite(`${condition} ? ${site} : ${otherwise}`, data, key)
+	}
+
+	// a call applying data's value at a key, by SiteFailureContext's short name
+	failsIn(args: string): string {
+		return `ctx._in(${args})`
 	}
 
 	// what _in takes after data: the key, the site it's missing at and its
@@ -502,8 +518,8 @@ export abstract class NodeCompiler extends CompiledFunction<
 			: `!(${condition}) && `
 		// a refined basis Allows rejected failed its basis or its refinement
 		if (checksAllowsFirst && isRefinedBasis(node))
-			return `${allows}${this.fails("failsAt", `${node.basis!.jsCond(this, value)} ? ${this.site(node.preStruct[0])} : ${this.site(node.basis!)}, data, ${key}`)}`
-		return `${allows}${this.fails("failsIn", `${this.traversal(node, "Apply")}, ${this.data}, ${this.applied(key, value)}`)}`
+			return `${allows}${this.failsEither(node.basis!.jsCond(this, value), this.site(node.preStruct[0]), this.site(node.basis!), "data", key)}`
+		return `${allows}${this.failsIn(`${this.traversal(node, "Apply")}, ${this.data}, ${this.applied(key, value)}`)}`
 	}
 
 	// a cyclic value is applied inline

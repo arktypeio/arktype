@@ -144,16 +144,16 @@ contextualize(() => {
 		})
 		attest(
 			code.includes(
-				`data.flag === false || data.flag === true || !ctx._at(runtime.keySiteOf("discriminant", "boolean"), data, "flag")`
+				`data.flag === false || data.flag === true || !runtime.failsKey(ctx, data, "flag", "discriminant", "boolean")`
 			)
 		).equals(true)
 		attest(
 			code.includes(
-				`!ctx._at(runtime.keySiteOf("discriminant", "\\"a\\" or \\"b\\""), data, "kind")`
+				`!runtime.failsKey(ctx, data, "kind", "discriminant", "\\"a\\" or \\"b\\"")`
 			)
 		).equals(true)
 		// an optional key's is still applied
-		attest(code.match(/ctx\._in\(/g)?.length).equals(1)
+		attest(code.match(/ctx\._k\(/g)?.length).equals(1)
 	})
 
 	it("transforms an array whose items alone transform as its items", () => {

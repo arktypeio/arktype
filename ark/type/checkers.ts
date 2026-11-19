@@ -3,7 +3,6 @@ import {
 	listedIssue,
 	type ArkErrorCode,
 	type CompactApply,
-	type Custom,
 	type FailureContext,
 	type FailureSite,
 	type SiteContext
@@ -23,6 +22,7 @@ import {
 	enterApplied,
 	exitApplied,
 	failsAt,
+	failsAtKey,
 	failsBranches,
 	failsInBranches,
 	pipeApplied,
@@ -61,8 +61,8 @@ export interface Checker {
 	e?: ApplyAt
 	/** the message a key it's the value of says where the key is missing, if its own */
 	x?: string | undefined
-	/** how x was configured, as a site's c says */
-	c?: Custom | undefined
+	/** where x is configured for required's code, what notes that on the missing key's issue */
+	text?: SiteContext["text"]
 }
 
 type DefaultWrite = (data: any, ctx?: any) => unknown
@@ -164,7 +164,7 @@ export const narrowedWithCtx = ((
 	description?: string
 ): Checker => {
 	const checker: Checker = (data, ctx: any) =>
-		ctx?._at && ctx._at !== stops ?
+		ctx?._e && ctx._e !== stops ?
 			reportedBy(read, description, data, ctx)
 		:	!!read()(data, silentCtx)
 	checker.description = description
@@ -174,12 +174,12 @@ export const narrowedWithCtx = ((
 const stops = () => true
 
 const allowingCtx = (data: any, ctx: any, checker: Checker) => {
-	if (ctx._at === stops) return checker(data, ctx)
-	const { chkOnly, _at, failsUnion } = ctx
+	if (ctx._e === stops) return checker(data, ctx)
+	const { chkOnly, _e, failsUnion } = ctx
 	ctx.chkOnly = true
-	ctx._at = ctx.failsUnion = stops
+	ctx._e = ctx.failsUnion = stops
 	const allowed = checker(data, ctx)
-	ctx._at = _at
+	ctx._e = _e
 	ctx.failsUnion = failsUnion
 	ctx.chkOnly = chkOnly
 	return allowed
@@ -224,7 +224,7 @@ interface AliasedNode {
 export const compiled = ((node: AliasedNode, transforms?: 1): Checker => {
 	const checker: Checker = (data, ctx: any) =>
 		!ctx ? node.tAllows(data, 0)
-		: ctx._at === stops ? node.tAllows(data, ctx)
+		: ctx._e === stops ? node.tAllows(data, ctx)
 		: node.tApply(data, ctx)
 	if (transforms) {
 		checker.t = (data, ctx) => node.tTransform!(data, ctx)
@@ -259,7 +259,7 @@ export const aliasedValue = ((
 	wrapped.e = (ctx, _, value, k) => {
 		ctx.path.push(k)
 		const passes =
-			ctx._at === stops ?
+			ctx._e === stops ?
 				checker(value, ctx)
 			:	(node.tfs && transformIfAllowed(ctx, node as never, value)) ||
 				(enters ?
@@ -276,7 +276,7 @@ export const aliasedValue = ((
 // a case of a union entered as the branch it was pruned from, holding an alias
 export const aliasedMember = ((checker: Checker, id: string): Checker => {
 	const entered: Checker = (data, ctx: any) =>
-		ctx?._at && ctx._at !== stops ?
+		ctx?._e && ctx._e !== stops ?
 			(enterApplied(ctx, id, data) ?? exitApplied(ctx, checker(data, ctx)))
 		:	checker(data, ctx)
 	entered.description = checker.description
@@ -300,8 +300,8 @@ export const narrowedInCtx = ((
 ): Checker => {
 	const checker: Checker = (data, ctx: any) =>
 		// one taking only data is passed no ctx where arktype only asks
-		!ctx?._at ? !!read()(data, undefined)
-		: ctx._at === stops ? !!read()(data, ctx)
+		!ctx?._e ? !!read()(data, undefined)
+		: ctx._e === stops ? !!read()(data, ctx)
 		: reportedBy(read, description, data, ctx)
 	checker.description = description
 	return checker
@@ -316,7 +316,7 @@ export const narrowedAfter = ((
 	narrowed: Checker
 ): Checker => {
 	const checker: Checker = (data, ctx: any) => {
-		if (!ctx?._at || ctx._at === stops)
+		if (!ctx?._e || ctx._e === stops)
 			return structure(data, ctx) && narrowed(data, ctx)
 		const issues = issuesIn(ctx)
 		return (
@@ -334,7 +334,7 @@ export const transformingNarrowedAfter = ((
 	narrowed: Checker
 ): Checker => {
 	const checker: Checker = (data, ctx: any) =>
-		!ctx?._at || ctx._at === stops ? structure(data, ctx) && narrowed(data, ctx)
+		!ctx?._e || ctx._e === stops ? structure(data, ctx) && narrowed(data, ctx)
 		: (
 			structure.a ? structure.a(data, ctx) : structure(data)
 		) ?
@@ -349,7 +349,7 @@ export const transformingNarrowedAfter = ((
 export const narrowedByEach = ((checkers: readonly Checker[]): Checker => {
 	const checker: Checker = (data, ctx: any) => {
 		// an issue stops what Apply runs, where Allows stops only at false
-		const applies = ctx?._at && ctx._at !== stops
+		const applies = ctx?._e && ctx._e !== stops
 		const issues = applies && issuesIn(ctx)
 		for (const narrowed of checkers) {
 			if (!narrowed(data, ctx)) return false
@@ -398,8 +398,7 @@ export const rejecting = ((passes: (data: any) => unknown, message: string) =>
 const rejectedSiteOf = (message: string): SiteContext => ({
 	code: "predicate",
 	description: "valid according to an anonymous predicate",
-	x: message,
-	c: 1
+	x: message
 })
 
 /**
@@ -650,13 +649,14 @@ export const required = ((checker: Checker, description: string): Checker =>
 	wrapping(checker, { description, x: undefined })) satisfies Fn
 
 // a required key's checker where the missing key says a message of its own,
-// configured for its value's Type, or as c says, 2 for the code
+// configured for its value's Type, or for the code, where a build passes what
+// notes that on its issue: codedIssue, which only such a program then holds
 export const sayingMissing = ((
 	checker: Checker,
 	message: string,
-	c: Custom = 1,
+	text?: SiteContext["text"],
 	description = checker.description
-): Checker => wrapping(checker, { description, x: message, c })) satisfies Fn
+): Checker => wrapping(checker, { description, x: message, text })) satisfies Fn
 
 // a checker each of whose sites says the message configured for its Type, as
 // does the key it's the value of where missing. It checks no key's value, so
@@ -664,32 +664,20 @@ export const sayingMissing = ((
 // checking the same shares, and only its message is the field's
 export const saying = ((checker: Checker, message: string): Checker => {
 	const said: Checker = (data, ctx: any) => {
-		const at = ctx?._at
+		const at = ctx?._e
 		if (!at || at === stops) return checker(data, ctx)
-		ctx._at = (site: SiteContext, data: unknown) =>
-			at.call(
-				ctx,
-				{ code: site.code, description: site.description, x: message, c: 1 },
-				data
-			)
+		ctx._e = (data: unknown, code: unknown, expected: unknown) =>
+			at.call(ctx, data, code, expected, message)
 		try {
 			return checker(data, ctx)
 		} finally {
-			ctx._at = at
+			ctx._e = at
 		}
 	}
 	Object.assign(said, checker)
 	said.x = message
-	said.c = 1
 	return said
 }) satisfies Fn
-
-// what a missing key fails: required's, expecting its value's brief
-// One that says no message of its own notes none as configured, whatever the
-// checker it copies does
-const missingSiteOf = ({ description, x, c }: Checker): FailureSite => ({
-	m: { code: "required", description, x, c: x === undefined ? x : c }
-})
 
 type Props = Record<string, Checker>
 
@@ -702,7 +690,7 @@ const failsValue = (
 	k: PropertyKey,
 	value: unknown
 ): boolean | undefined =>
-	(ctx as FailureContext | undefined)?._at ?
+	(ctx as FailureContext | undefined)?._e ?
 		appliesValues && checker.e ? checker.e(ctx, checker, value, k)
 		: appliesValues && checker.t?.e ? checker.t.e(ctx, checker, value, k)
 		: (!checker.t ||
@@ -711,7 +699,7 @@ const failsValue = (
 					// one only checks, as Allows does
 					!(ctx as any).chkOnly && checker.a(value, ctx, k)
 				:	checker(value))) &&
-			(ctx as FailureContext)._in(checker as CompactApply, data, k)
+			(ctx as FailureContext)._k(checker as CompactApply, data, k)
 	:	!checker(value)
 
 // keys checked in declared order; a missing key expects its checker's
@@ -725,8 +713,20 @@ export const props = ((declared: Props): Checker => {
 			const value = data[k]
 			if (
 				value === undefined && !(k in data) ?
+					// entered by the ctx, which fails a key missing from data as
+					// required with what it's passed: what its checker holds for
+					// it, the description it expects, the message it says and
+					// what notes one that's its code's
 					!declared[k].o &&
-					failsAt(ctx as never, missingSiteOf(declared[k]), data, k)
+					(!(ctx as FailureContext | undefined)?._e ||
+						(ctx as FailureContext)._k(
+							declared[k] as never,
+							data,
+							k,
+							declared[k].description,
+							declared[k].x,
+							declared[k].text
+						))
 				:	failsValue(ctx, declared[k], data, k, value)
 			)
 				return false
@@ -753,7 +753,7 @@ export const closedProps = ((
 			if (
 				!hasOwn(declared, k) &&
 				hasOwn(data, k) &&
-				failsAt(ctx as never, removed, data, k)
+				failsAtKey(ctx as never, removed, data, k)
 			)
 				return false
 		}
@@ -805,7 +805,7 @@ export const indexed = ((
 				typeof k === "string" &&
 				!hasOwn(declared, k) &&
 				!signatures.some(([key]) => matchesKey(key, k, ctx)) &&
-				failsAt(ctx as never, site, data, k)
+				failsAtKey(ctx as never, site, data, k)
 			)
 				return false
 		}
@@ -1048,7 +1048,7 @@ export const sitedProps = ((
 	const checkers = Object.values(declared)
 	const checker: Checker = (data: any, ctx: any) =>
 		!objectCheck.test(data) ? !failsAt(ctx as never, objectCheck, data)
-		: ctx?._at ? walks(data, ctx)
+		: ctx?._e ? walks(data, ctx)
 		: allows(data, checkers)
 	checker.description = objectCheck.description
 	if (write) {
@@ -1525,7 +1525,9 @@ export const discriminate = ((
 		return (
 			branch ? branch === 1 || branch(data, ctx)
 			: objectCheck.test(data) ?
-				!failsAt(ctx as never, site, data, isOwn ? undefined : key)
+				!(isOwn ?
+					failsAt(ctx as never, site, data)
+				:	failsAtKey(ctx as never, site, data, key))
 			:	!failsAt(ctx as never, missed, data)
 		)
 	}
@@ -1553,7 +1555,8 @@ export const discriminateOr = ((
 ): Checker => {
 	const byValue = new Map(Object.entries(cases))
 	const site: FailureSite = { code: "discriminant", description }
-	const miss: Checker = (data, ctx) => !failsAt(ctx as never, site, data, key)
+	const miss: Checker = (data, ctx) =>
+		!failsAtKey(ctx as never, site, data, key)
 	const checker: Checker = (data: any, ctx) => {
 		const branch = byValue.get(data?.[key])
 		return branch ?
