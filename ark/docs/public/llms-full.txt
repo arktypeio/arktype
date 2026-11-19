@@ -7888,11 +7888,14 @@ Form["~standard"].validate({ name: "Ada", age: "36" })
 // { value: { name: "Ada", age: 36 } }
 ```
 
-On failure, the result is `{ issues }`, one for each error in the [`ArkErrors`](https://arktype.io/docs/errors) you get from calling the Type. Each issue's `message` is its error's, which never names the error's own path, since a library printing Standard Schema issues writes each issue's `path` before its `message` or shows it beside the field:
+On failure, the result is `{ issues, message }`. `issues` holds one for each error in the [`ArkErrors`](https://arktype.io/docs/errors) you get from calling the Type. Each issue's `message` is its error's, which never names the error's own path, since a library printing Standard Schema issues writes each issue's `path` before its `message` or shows it beside the field. The result's own `message` is the errors' [`summary`](https://arktype.io/docs/errors), which does name each path, for a library that wants one string for the whole failure:
 
 ```ts
 const result = Form["~standard"].validate({ name: "Ada", age: "old" })
-// { issues: [{ path: ["age"], message: 'must be a well-formed integer string', ... }] }
+// {
+// 	issues: [{ path: ["age"], message: "must be a well-formed integer string", ... }],
+// 	message: "age must be a well-formed integer string"
+// }
 ```
 
 A union's message lists each branch's path from the union's, like `b must be a string or c must be a number`. A [`message`](https://arktype.io/docs/configuration#message) you configure, or pass to `ctx.reject`, is the issue's message as you wrote it, so it's what a form shows:
@@ -9590,9 +9593,9 @@ const User = type({
 })
 ```
 
-[Precompiled](https://arktype.io/docs/precompile), it ships no parser. Precompiled ArkType was faster than Zod 4 in all 32 scenarios of our benchmark, by a median of 15×, and faster than Zod 4's z.compile in 32 of 32, by a median of 5.3×. On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 1.03 kB gzipped against 1.56 kB. [Benchmarks](https://arktype.io/docs/precompile/benchmarks) has how each was measured.
+[Precompiled](https://arktype.io/docs/precompile), it ships no parser. Precompiled ArkType was faster than Zod 4 in all 32 scenarios of our benchmark, by a median of 15×, and faster than Zod 4's z.compile in 32 of 32, by a median of 5.3×. On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 0.92 kB gzipped against 1.56 kB. [Benchmarks](https://arktype.io/docs/precompile/benchmarks) has how each was measured.
 
-Without the plugin, arktype parses definitions at runtime, so it ships its parser. Dynamic ArkType is 89.8 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.
+Without the plugin, arktype parses definitions at runtime, so it ships its parser. Dynamic ArkType is 98.0 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.
 
 [Migrating](https://arktype.io/docs/migrating) maps Zod's API and Valibot's row by row, and has a prompt that migrates a project for you. You can also [adopt ArkType one schema at a time](https://arktype.io/docs/migrating#adopt-incrementally).
 

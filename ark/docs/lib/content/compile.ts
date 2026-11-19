@@ -10,6 +10,7 @@ import {
 	type TocEntry
 } from "./headings.ts"
 import { rehypeHighlight } from "./highlight.ts"
+import { remarkKeepComponentsInline } from "./inlineComponents.ts"
 
 export type CompiledMdx = {
 	Content: MDXContent
@@ -42,6 +43,7 @@ const compile = async (body: string): Promise<CompiledMdx> => {
 		development: false,
 		remarkPlugins: [
 			remarkGfm,
+			remarkKeepComponentsInline,
 			remarkExpandComponents,
 			[
 				remarkHeadings,

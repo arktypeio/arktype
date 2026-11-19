@@ -267,15 +267,23 @@ has 82965). Its precompiled rows are pruned by usage and assert the form
 usage, as B1's 1779 was. The docs' size chart and `loginSize` read the row
 "Best average" ranks instead, `forms/arktype.ts` in `leaderboard.json`: the
 same form with the same esbuild settings, which exports a function that
-asserts where `login/arktype.ts` asserts once, 1026 B at 20710020e.
+asserts where `login/arktype.ts` asserts once, 917 B at ba691ac56.
 
-At 20710020e (`results/login-20710020e.json`), the default build is 1007 B
+At 20710020e (`results/login-20710020e.json`), the default build was 1007 B
 gzipped, the `"smallest"` preset 978 and dynamic ArkType 89751; Valibot 1547,
-Zod Mini 5127 and Zod 25058 are unchanged. Every other ArkType row was
+Zod Mini 5127 and Zod 25058 were unchanged. Every other ArkType row was
 measured again on the same commit (`results/arktype-20710020e.json`,
 `results/startup-20710020e-node24.json`, Typia included, and
 `results/newest/`, every rival at its newest release of 2026-11-06), at
 1-minute loads of 6 to 12.
+
+ArkType's size rows, and only those, were measured again at ba691ac56
+(`results/newest/` and `results/arktype-ba691ac56.json`), and they are the
+ones published: `forms/`'s default build is 917 B gzipped, its `"smallest"`
+878 and its dynamic build 97987, where they were 1026, 996 and 89767 at
+20710020e. `login/` wasn't rerun there. The instruction counts are still
+20710020e's, and each suite's `measured` in `leaderboard.json` names its
+commit.
 
 ## The smallest preset's speed
 
@@ -393,38 +401,36 @@ results is ranked in plain order ("The rule"). ArkType is one build
 throughout: precompiled with the default options. The size suites are rerun
 every month at each library's newest release ("Monthly" under "Reproduce").
 
-### Current standings: ArkType at 20710020e
+### Current standings: ArkType's counts at 20710020e, its sizes at ba691ac56
 
 `node standings.ts`, on the published rows (`ark/docs/lib/bench/leaderboard.json`):
-the size suites as measured on 2026-11-06 with each rival at its newest
-release, the instruction counts with rivals at their releases of 2026-10-24
-and 2026-10-25.
+the size suites with each rival at its newest release as measured on
+2026-11-06 and ArkType's bundles measured again at ba691ac56, the instruction
+counts with rivals at their releases of 2026-10-24 and 2026-10-25.
 
 | category | averaged                                                                   | ranked | 1             | 2             | 3              |
 | -------- | -------------------------------------------------------------------------- | ------ | ------------- | ------------- | -------------- |
 | speed    | 22 of 43 results: schemabenchmarks.dev 14, ata's validator-benchmarks 8    | 5      | ArkType 664   | Typia 2,863   | Valibot 5,675  |
 | startup  | 2 of 2: schemabenchmarks.dev's initialization, Sury's build and parse once | 6      | ArkType 40    | TypeBox 4,273 | Valibot 15,028 |
-| size     | 2 of 3: valibot.dev's login form, schemabenchmarks.dev's download          | 12     | ArkType 1,348 | Typia 1,520   | ajv 1,594      |
+| size     | 2 of 3: valibot.dev's login form, schemabenchmarks.dev's download          | 12     | ArkType 1,191 | Typia 1,520   | ajv 1,594      |
 
 Speed and startup are CPU instructions, size gzipped bytes. ArkType's speed
 mean is 76.8% lower than the next best's, its startup mean 99.1% lower and
-its size mean 11.3% lower, figured as `claims.ts` states them (1 − ArkType's
+its size mean 21.7% lower, figured as `claims.ts` states them (1 − ArkType's
 / the next best's).
 
 Row by row it isn't first everywhere, and the Benchmarks page lists every
 row. On speed it has the fewest instructions on 17 of the 22; on the other
 five ata is ahead on four, ajv on two and Typia and @exodus/schemasafe on
-one each. On startup
-it is 3rd of 23 on schemabenchmarks.dev's initialization, 15.970 instructions
-to zod-compiler's 15.943 and paseri's 15.957, all at the harness's floor, and
-1st of 6 on Sury's. Both startup rows time creating a schema, which ArkType's
-default build does when it builds. On size it is 2nd on each row: 1026 B on
-the form to ajv's 935, and 1771 B on the download to @railway-ts/pipelines' 1568.
+one each. On startup it is 3rd of 23 on schemabenchmarks.dev's
+initialization, 15.970 instructions to zod-compiler's 15.943 and paseri's
+15.957, all at the harness's floor, and 1st of 6 on Sury's. Both startup rows
+time creating a schema, which ArkType's default build does when it builds. On
+size it has the smallest bundle on both rows, narrowly: 917 B on the form to
+ajv's 935, and 1547 B on the download to @railway-ts/pipelines' 1568.
 
-Speed's lead holds with any one suite left out. Startup's doesn't survive
-leaving out Sury's, which leaves the initialization row alone. Size's
-doesn't survive leaving out schemabenchmarks.dev's download, which leaves the
-form, where ajv is smaller ("Size isn't close" below).
+Speed's and size's leads hold with any one suite left out. Startup's doesn't
+survive leaving out Sury's, which leaves the initialization row alone.
 
 ### The headline's suites
 
@@ -443,8 +449,8 @@ nothing. On them, at the same commit: the default build is 1st of 8 for
 speed (123 ns a validation, geometric mean of the 27 scenarios every library
 ran, to ajv's 187); it runs the fewest instructions on every app of
 `startup.ts` against every library, and by the clock is 2nd of 8 to start,
-3.90 ms to Valibot's 3.89; and it is 3rd of 8 for size on the homepage's
-apps, 2.40 kB to ajv's 1.61 and Valibot's 2.07.
+3.90 ms to Valibot's 3.89; and it is 2nd of 8 for size on the homepage's
+apps, 1.90 kB to ajv's 1.61.
 
 Counting only the independent suites was decided on 2026-10-25, and the
 average above (the largest shared set of rows, in units, in plain order) on
@@ -750,8 +756,8 @@ form, a size suite: its schema is Valibot's, but we wrote it in every other
 library and wrote the script that sizes it. Without it, the size standings
 are over schemabenchmarks.dev's download and Sury's check, and ArkType is
 still first. Our own suites agree on speed and on startup in instructions,
-and don't on size: on the homepage's apps the default build is 3rd, behind
-ajv and Valibot. Startup without ours is two rows that time creating a
+and don't on size: on the homepage's apps the default build is 2nd, behind
+ajv. Startup without ours is two rows that time creating a
 schema, which a precompiled build doesn't do, so they show little; ours time
 whole apps from import to first validation, and the headline's startup claim
 needs those too ("Claiming").
@@ -778,21 +784,22 @@ of rows five libraries share, were both chosen with standings known. So
 here is what the choices do. The set of rows is fixed by who ran what: for
 speed, no library ran all 43 rows, and the 22 are the most that ArkType, Zod
 and three named libraries share. Averaging every size row instead, all three,
-ranks four libraries and ArkType is first of them, 789 B to Valibot's 1568.
+ranks four libraries and ArkType is first of them, 726 B to Valibot's 1568.
 Averaging the one startup row most libraries ran, schemabenchmarks.dev's
 initialization, has ArkType 3rd of 23 by 0.03 instructions, which is why
 startup's lead is stated as depending on Sury's. Speed holds with any one
 suite left out.
 
-**"Size isn't close."** It is. ArkType's mean is 1,348 B to Typia's 1,520,
-11.3% lower, over two rows, and it is 2nd on each of them: ajv's standalone
-code is smaller on the form and @railway-ts/pipelines on
-schemabenchmarks.dev's download. The lead survives leaving out the form or
-Sury's and not the download. On our own apps, which the headline doesn't
-count, the default build is 3rd: ajv's standalone code is the smallest on
-login and moltar, and Valibot ships less than the default build on shop and
-saas, 2 of the 7 size rows. Each month's rerun measures the size rows again
-with ArkType at the branch's head, and the headline follows what it finds.
+**"Size isn't close."** By its mean it isn't: 1,191 B to Typia's 1,520,
+21.7% lower, over two rows. Row by row it is. The default build has the
+smallest bundle on each, by 18 bytes on the form (917 to ajv's standalone 935) and 21 on schemabenchmarks.dev's download (1547 to
+@railway-ts/pipelines' 1568), and at 20710020e, before the default build
+was shrunk, it was 2nd on both with a mean of 1,348 B. The lead holds with
+any one suite left out. On our own apps, which the headline doesn't count,
+the default build is 2nd: ajv's standalone code is the smallest on login and
+moltar, and Valibot ships less than the default build on shop and saas, 2 of
+the 7 size rows. Each month's rerun measures the size rows again with ArkType
+at the branch's head, and the headline follows what it finds.
 
 **"Precompiled against runtime is apples to oranges."** Every library that
 documents a compiled mode is measured in it, where the suite's schema

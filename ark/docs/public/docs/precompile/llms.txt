@@ -37,11 +37,11 @@ A validator that compiles at runtime ships its compiler, and one that interprets
 
 **Bundle size** (bytes gzipped, lower is better): the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports an error for every invalid field. ArkType is precompiled with its default options in a production build. Zod Mini's form is written so it runs: as valibot.dev writes it, it throws at its first parse. Source: [the form from valibot.dev's comparison](https://valibot.dev/guides/comparison/)
 
-- ArkType (precompiled): 1,026
+- ArkType (precompiled): 917
 - Valibot: 1,564
 - Zod Mini: 5,124
 - Zod: 25,076
-- ArkType (dynamic): 89,767
+- ArkType (dynamic): 97,987
 
 In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled with its defaults, it reports an error for every invalid field of Valibot's own login form, with the form's messages, in a smaller bundle than Valibot. Each chart names its benchmark and the options ArkType was built with.
 
@@ -1301,7 +1301,7 @@ Ranked by geometric mean across other projects' public benchmarks and valibot.de
 
 So the headline's words mean these averages, each the first row of a table below:
 
-- Smallest on average across valibot.dev's login form and schemabenchmarks.dev's download: 1.35 kB gzipped against Typia's 1.52 kB, 11.3% lower.
+- Smallest on average across valibot.dev's login form and schemabenchmarks.dev's download: 1.19 kB gzipped against Typia's 1.52 kB, 21.7% lower.
 - Fastest on average across 22 results from 2 independent benchmarks: 664 CPU instructions per validation against Typia's 2,863, 76.8% lower.
 - Quickest to start on average across 2 results from 2 independent benchmarks: 40 CPU instructions to create a schema against TypeBox's 4,273, 99.1% lower.
 
@@ -1408,7 +1408,7 @@ Each library on each result, including the ones that only ran one:
 
 | Place | Library | kB gzipped |
 | - | - | - |
-| 1st | ArkType | 1.35 kB |
+| 1st | ArkType | 1.19 kB |
 | 2nd | Typia | 1.52 kB |
 | 3rd | ajv | 1.59 kB |
 | 4th | Superstruct | 1.77 kB |
@@ -1425,7 +1425,7 @@ Each library on each result, including the ones that only ran one:
 
 | Library | valibot.dev's login form | schemabenchmarks.dev's download | Geometric mean | Place | Not averaged: Sury's schema bundled as a check |
 | - | - | - | - | - | - |
-| ArkType | 1.03 kB | 1.77 kB | 1.35 kB | 1st | 0.27 kB |
+| ArkType | 0.92 kB | 1.55 kB | 1.19 kB | 1st | 0.27 kB |
 | Typia | 1.25 kB | 1.85 kB | 1.52 kB | 2nd | — |
 | ajv | 0.94 kB | 2.72 kB | 1.59 kB | 3rd | — |
 | Superstruct | 1.62 kB | 1.94 kB | 1.77 kB | 4th | — |
@@ -1455,8 +1455,8 @@ Every library's result on every row, in every suite, is in [`leaderboard.json`](
 | ata's validator-benchmarks | 8 speed results | October 24, 2026 | 20710020e |
 | schemabenchmarks.dev's initialization | 1 startup result | October 25, 2026 | 20710020e |
 | Sury's build and parse once | 1 startup result | October 25, 2026 | 20710020e |
-| valibot.dev's login form | 1 size result | November 6, 2026 | 20710020e |
-| schemabenchmarks.dev's download | 1 size result | November 6, 2026 | 20710020e |
+| valibot.dev's login form | 1 size result | November 6, 2026 | ba691ac56 |
+| schemabenchmarks.dev's download | 1 size result | November 6, 2026 | ba691ac56 |
 
 A result is only as current as its last run, so each benchmark has its own date, and ArkType's rows name the commit they were measured at. Each month a job reruns the size benchmarks at each library's newest release and opens a pull request with the updated numbers for review, so a number on this site changes only by a reviewed commit.
 
@@ -1526,8 +1526,6 @@ Zod's parse, compiled or not, and Valibot's remove undeclared keys and return a 
 
 Zod 4 compiled on parse tree (marked \*) runs Zod's runtime parser, since z.compile refuses recursive schemas. On the first-error rows, arms marked \* have no first-error mode and report every error.
 
-Cold start and size, precompiled against the JIT, are for a login form app (an email and a password check) bundled and minified with esbuild. Cold start is the median time for a fresh Node process to import the bundle and validate once, measured 2026-10-23 at 89510709d; size is the gzipped bundle, the validators and the library code they import.
-
 Beyond it:
 
 - On moltar's parseSafe benchmark, precompiled ArkType takes the fewest instructions per call, and by wall clock it was faster than each of the six libraries closest to it, Typia among them, in at least 28 of 30 paired runs.
@@ -1571,12 +1569,12 @@ Most of each of those milliseconds is Node loading a module, which every library
 
 On valid data, the precompiled build is within 6% of dynamic ArkType in 14 of 16 scenarios; it's 1.11× slower on moltar and 1.45× faster on rotating. The bigger change is everything before the first call.
 
-| Login form app | Precompiled | Dynamic |
+| | Precompiled | Dynamic |
 | - | - | - |
-| Cold start | 3.34 ms | 31.7 ms |
-| Bundle, gzipped | 1.7 kB | 82.1 kB |
+| Cold start, our login form app | 3.34 ms | 31.7 ms |
+| Bundle gzipped, valibot.dev's login form | 0.92 kB | 98.0 kB |
 
-Cold start and size, precompiled against dynamic ArkType, are for a login form app (an email and a password check) bundled and minified with esbuild. Cold start is the median time for a fresh Node process to import the bundle and validate once, measured 2026-10-23 at 89510709d; size is the gzipped bundle, the validators and the library code they import.
+Cold start is our login form app (an email and a password check), bundled and minified with esbuild: the median time for a fresh Node process to import the bundle and validate once, measured 2026-10-23 at 89510709d. Size is valibot.dev's login form, the validators and the library code they import, minified with esbuild and gzipped, at ba691ac56.
 
 ### Bundle size
 
@@ -1585,17 +1583,17 @@ Our own apps, each bundled with esbuild as a production build, minified and gzip
 | Library | login | moltar | shop | saas | Geometric mean of login, moltar, shop | Place |
 | - | - | - | - | - | - | - |
 | ajv | 0.63 kB | 0.76 kB | 8.84 kB | — | 1.61 kB | 1st |
-| Valibot | 1.68 kB | 1.46 kB | 3.63 kB | 5.17 kB | 2.07 kB | 2nd |
-| ArkType | 1.52 kB | 1.59 kB | 5.69 kB | 10.5 kB | 2.40 kB | 3rd |
+| ArkType | 1.14 kB | 1.19 kB | 5.07 kB | 9.59 kB | 1.90 kB | 2nd |
+| Valibot | 1.68 kB | 1.46 kB | 3.63 kB | 5.17 kB | 2.07 kB | 3rd |
 | Typia | 1.24 kB | 1.23 kB | 16.7 kB | — | 2.94 kB | 4th |
 | Zod Mini | 5.11 kB | 4.71 kB | 10.2 kB | — | 6.26 kB | 5th |
 | Zod | 25.1 kB | 26.4 kB | 28.1 kB | — | 26.5 kB | 6th |
 | Zod (compiled) | 32.9 kB | 34.2 kB | 35.9 kB | — | 34.3 kB | 7th |
 | TypeBox | 41.9 kB | 41.9 kB | 42.9 kB | — | 42.2 kB | 8th |
 
-On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 1.03 kB gzipped against 1.56 kB.
+On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 0.92 kB gzipped against 1.56 kB.
 
-Dynamic ArkType is 89.8 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.
+Dynamic ArkType is 98.0 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.
 
 With the "smallest" preset, its bundle was smaller than every other library's on 20 of those 22 apps, by 31 B or more; on 11 and 46 Types through webpack with narrows, Valibot's was smaller, by up to 29 B (0.6%). It shipped less than Zod 4 on every one, by 1.18x to 10.28x. The default build, the fastest, shipped 1.25x to 2.48x what "smallest" did.
 
