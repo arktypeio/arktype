@@ -814,7 +814,7 @@ export const claims = {
 		claimsLead("size") ?
 			"TypeScript's smallest, fastest validator."
 		:	"TypeScript's fastest validator.",
-	headlineNote: `${rankedBy}, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote} ${namingNote} A weekly job reruns the size benchmarks at each library's newest release.`,
+	headlineNote: `${rankedBy}, each result a ratio to the best: ${independentResults}. ${fullBoardNote} ${methodNote} ${namingNote} A monthly job reruns the size benchmarks at each library's newest release.`,
 	// the fastest and the smallest builds differ: on moltar's cases the default
 	// build takes 13-46x fewer instructions per call than "smallest"
 	// (smallestSpeed)
