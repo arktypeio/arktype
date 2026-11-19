@@ -207,7 +207,7 @@ const byCase = (entries: [string, number][]) => {
 // the last of ArkType's files that holds a measure, which is where its rows
 // are read from: one may hold only what its commit measured again
 const arkTypeFileOf = (measure: string): string | undefined =>
-	sources.arkType.findLast(file => measure in read(file))
+	sources.arkType.filter(file => measure in read(file)).pop()
 
 // each of ArkType's measures from the last file that has it
 const arkType: Record<string, any> = {}
