@@ -41,7 +41,7 @@ A validator that compiles at runtime ships its compiler, and one that interprets
 - Valibot: 1,564
 - Zod Mini: 5,124
 - Zod: 25,076
-- ArkType (dynamic): 97,987
+- ArkType (dynamic): 98,064
 
 In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled with its defaults, it reports an error for every invalid field of Valibot's own login form, with the form's messages, in a smaller bundle than Valibot. Each chart names its benchmark and the options ArkType was built with.
 
@@ -751,12 +751,12 @@ The default build compiles each validator to the code that checks its Type faste
 
 | App, gzipped production bundle | Default | `"smallest"` | Valibot |
 | - | - | - | - |
-| a login form, 1 Type | 1.4 KB | 1.1 KB | 1.7 KB |
-| a shop, 23 Types | 5.5 KB | 3.4 KB | 3.6 KB |
-| 10 Types | 4.4 KB | 3.1 KB | 3.4 KB |
-| 50 Types | 12.3 KB | 5.4 KB | 5.5 KB |
-| 200 Types | 36.6 KB | 11.0 KB | 11.3 KB |
-| 1,000 Types | 152 KB | 37.1 KB | 39.5 KB |
+| a login form, 1 Type | 1.2 KB | 1.0 KB | 1.7 KB |
+| a shop, 23 Types | 5.1 KB | 3.5 KB | 3.6 KB |
+| 10 Types | 4.1 KB | 3.2 KB | 3.4 KB |
+| 50 Types | 11.5 KB | 5.4 KB | 5.5 KB |
+| 200 Types | 33.7 KB | 11.0 KB | 11.3 KB |
+| 1,000 Types | 139 KB | 37.2 KB | 39.5 KB |
 
 What it costs is speed: the shared checkers validate more slowly than code compiled for each Type, and with [`lazy: false`](https://arktype.io/docs/precompile/options#lazy) the bundle creates every validator as it loads, so it starts more slowly too. In our runs of moltar's benchmark, counting instructions per call, "smallest" is 4% slower than Valibot on parseSafe and 2.1-2.6x faster on the other three cases, while Zod 4 is 1.5-7.9x faster than it and the default build 13-46x faster. [How it was counted](https://github.com/arktypeio/arktype/blob/main/ark/repo/bench/external/README.md#the-smallest-presets-speed). The [benchmarks](https://arktype.io/docs/precompile/benchmarks) measure the default build. Choose `"smallest"` where your bundle holds more than a handful of Types and validates input as it arrives, like a frontend's forms and API responses. Keep the default for a server and for validation on a hot path. A program with both chooses [for each definition](https://arktype.io/docs/precompile/options#strategies-and-schemas). A program reading only [`.allows`](https://arktype.io/docs/type-api) gets each validator written as the function checking it, as the default writes it, so it's no larger built `"smallest"`.
 
@@ -1302,10 +1302,10 @@ Ranked by geometric mean across other projects' public benchmarks and valibot.de
 So the headline's words mean these averages, each the first row of a table below:
 
 - Smallest on average across valibot.dev's login form and schemabenchmarks.dev's download: 1.19 kB gzipped against Typia's 1.52 kB, 21.7% lower.
-- Fastest on average across 22 results from 2 independent benchmarks: 664 CPU instructions per validation against Typia's 2,863, 76.8% lower.
-- Quickest to start on average across 2 results from 2 independent benchmarks: 40 CPU instructions to create a schema against TypeBox's 4,273, 99.1% lower.
+- Fastest on average across 22 results from 2 independent benchmarks: 658 CPU instructions per validation against Typia's 2,097, 68.6% lower.
+- Quickest to start on average across 2 results from 2 independent benchmarks: 38 CPU instructions to create a schema against TypeBox's 4,273, 99.1% lower.
 
-Standings as of November 6, 2026. [When each benchmark was measured](https://arktype.io/docs/precompile/benchmarks#when-each-was-measured) has a date per benchmark.
+Standings as of November 19, 2026. [When each benchmark was measured](https://arktype.io/docs/precompile/benchmarks#when-each-was-measured) has a date per benchmark.
 
 Each choice has a reason:
 
@@ -1332,38 +1332,38 @@ Each table has every library its graph ranks, then every result the graph averag
 
 | Place | Library | CPU instructions per validation | Our benchmark, ns per validation |
 | - | - | - | - |
-| 1st | ArkType | 664 | 123 ns |
-| 2nd | Typia | 2,863 | 794 ns |
-| 3rd | Valibot | 5,675 | 1,875 ns |
-| 4th | TypeBox | 7,845 | 3,207 ns |
-| 5th | Zod | 10,117 | 2,012 ns |
+| 1st | ArkType | 658 | 123 ns |
+| 2nd | Typia | 2,097 | 794 ns |
+| 3rd | Valibot | 5,647 | 1,875 ns |
+| 4th | TypeBox | 7,832 | 3,207 ns |
+| 5th | Zod | 10,044 | 2,012 ns |
 
 Every result the graph averages:
 
 | Benchmark | Result | ArkType | Typia | Valibot | TypeBox | Zod |
 | - | - | - | - | - | - | - |
-| schemabenchmarks.dev | parsing invalid | 144 | 142k | 4,704 | 98,922 | 125k |
-| schemabenchmarks.dev | parsing valid | 5,985 | 43,047 | 73,924 | 9,787 | 61,169 |
-| schemabenchmarks.dev | string email valid | 647 | 772 | 1,009 | 8,804 | 1,150 |
-| schemabenchmarks.dev | string url valid | 755 | 1,698 | 1,685 | 9,311 | 2,268 |
-| schemabenchmarks.dev | string uuid valid | 526 | 1,363 | 1,727 | 9,299 | 1,483 |
-| schemabenchmarks.dev | string ipv4 valid | 229 | 411 | 821 | 8,355 | 727 |
-| schemabenchmarks.dev | string ipv6 valid | 811 | 3,240 | 1,179 | 8,788 | 4,271 |
-| schemabenchmarks.dev | string email invalid | 372 | 406 | 1,362 | 4,489 | 4,733 |
-| schemabenchmarks.dev | string uuid invalid | 23 | 223 | 1,210 | 4,263 | 4,411 |
-| schemabenchmarks.dev | string url invalid | 371 | 223 | 1,843 | 4,898 | 1,725 |
-| schemabenchmarks.dev | string ipv4 invalid | 43 | 240 | 1,199 | 4,263 | 4,447 |
-| schemabenchmarks.dev | string ipv6 invalid | 47 | 1,704 | 1,377 | 4,663 | 958 |
-| schemabenchmarks.dev | validation valid | 5,951 | 42,434 | 73,873 | 9,686 | 61,170 |
-| schemabenchmarks.dev | validation invalid | 29 | 68 | 4,490 | 160 | 11,883 |
-| ata's validator-benchmarks | verdict-valid, user | 934 | 2,891 | 5,722 | 1,502 | 6,652 |
-| ata's validator-benchmarks | verdict-valid, order | 5,452 | 22,978 | 55,435 | 14,984 | 56,695 |
-| ata's validator-benchmarks | verdict-invalid, user | 743 | 2,374 | 4,882 | 1,400 | 18,459 |
-| ata's validator-benchmarks | verdict-invalid, order | 1,827 | 8,216 | 26,369 | 5,117 | 71,782 |
-| ata's validator-benchmarks | errors-invalid, user | 5,021 | 8,871 | 29,183 | 19,758 | 26,855 |
-| ata's validator-benchmarks | errors-invalid, order | 14,072 | 42,131 | 62,267 | 209k | 90,384 |
-| ata's validator-benchmarks | blocked-verdict-valid, user | 934 | 2,891 | 5,720 | 4,928 | 9,929 |
-| ata's validator-benchmarks | blocked-verdict-valid, order | 5,452 | 23,092 | 55,483 | 93,706 | 104k |
+| schemabenchmarks.dev | parsing invalid | 161 | 113k | 4,648 | 98,596 | 120k |
+| schemabenchmarks.dev | parsing valid | 5,984 | 16,791 | 72,595 | 9,787 | 59,823 |
+| schemabenchmarks.dev | string email valid | 647 | 772 | 1,009 | 8,796 | 1,150 |
+| schemabenchmarks.dev | string url valid | 755 | 1,694 | 1,670 | 9,310 | 2,268 |
+| schemabenchmarks.dev | string uuid valid | 526 | 1,363 | 1,713 | 9,299 | 1,480 |
+| schemabenchmarks.dev | string ipv4 valid | 230 | 411 | 821 | 8,354 | 727 |
+| schemabenchmarks.dev | string ipv6 valid | 811 | 3,240 | 1,179 | 8,777 | 4,263 |
+| schemabenchmarks.dev | string email invalid | 372 | 406 | 1,350 | 4,487 | 4,733 |
+| schemabenchmarks.dev | string uuid invalid | 23 | 223 | 1,194 | 4,263 | 4,411 |
+| schemabenchmarks.dev | string url invalid | 371 | 223 | 1,828 | 4,895 | 1,724 |
+| schemabenchmarks.dev | string ipv4 invalid | 43 | 240 | 1,183 | 4,262 | 4,440 |
+| schemabenchmarks.dev | string ipv6 invalid | 47 | 1,704 | 1,361 | 4,663 | 957 |
+| schemabenchmarks.dev | validation valid | 5,943 | 16,694 | 73,558 | 9,683 | 60,338 |
+| schemabenchmarks.dev | validation invalid | 29 | 68 | 4,490 | 159 | 11,883 |
+| ata's validator-benchmarks | verdict-valid, user | 934 | 1,336 | 5,722 | 1,464 | 6,652 |
+| ata's validator-benchmarks | verdict-valid, order | 5,451 | 12,495 | 55,435 | 14,984 | 56,695 |
+| ata's validator-benchmarks | verdict-invalid, user | 748 | 1,348 | 4,882 | 1,400 | 17,300 |
+| ata's validator-benchmarks | verdict-invalid, order | 1,832 | 4,312 | 26,369 | 5,117 | 71,782 |
+| ata's validator-benchmarks | errors-invalid, user | 4,347 | 6,567 | 29,183 | 19,682 | 26,855 |
+| ata's validator-benchmarks | errors-invalid, order | 11,997 | 26,273 | 62,267 | 209k | 90,019 |
+| ata's validator-benchmarks | blocked-verdict-valid, user | 934 | 1,336 | 5,720 | 4,928 | 9,900 |
+| ata's validator-benchmarks | blocked-verdict-valid, order | 5,453 | 12,485 | 55,422 | 93,706 | 104k |
 
 Not averaged: 21 more public results, from moltar's typescript-runtime-type-benchmarks, schemabenchmarks.dev, Sury's schema benchmark and ata's validator-benchmarks. No set larger than these 22 was run in full by ArkType, Zod and three more libraries the site names.
 
@@ -1373,33 +1373,33 @@ Not averaged: 21 more public results, from moltar's typescript-runtime-type-benc
 
 | Place | Library | CPU instructions to create a schema | Our apps, import to first validation |
 | - | - | - | - |
-| 1st | ArkType | 40 | 3.90 ms |
+| 1st | ArkType | 38 | 3.90 ms |
 | 2nd | TypeBox | 4,273 | 22.9 ms |
-| 3rd | Valibot | 15,028 | 3.89 ms |
-| 4th | sury | 120k | — |
-| 5th | Zod | 919k | 16.2 ms |
-| 6th | Zod (compiled) | 1.32M | 17.5 ms |
+| 3rd | Valibot | 14,801 | 3.89 ms |
+| 4th | sury | 119k | — |
+| 5th | Zod | 895k | 16.2 ms |
+| 6th | Zod (compiled) | 1.18M | 17.5 ms |
 
 Each library on each result, including the ones that only ran one:
 
 | Library | schemabenchmarks.dev's initialization | Sury's build and parse once | Geometric mean | Place |
 | - | - | - | - | - |
-| ArkType | 16 | 102 | 40 | 1st |
+| ArkType | 16 | 91 | 38 | 1st |
 | TypeBox | 119k | 153 | 4,273 | 2nd |
-| Valibot | 24,072 | 9,382 | 15,028 | 3rd |
-| sury | 70,501 | 203k | 120k | 4th |
-| Zod | 878k | 963k | 919k | 5th |
-| Zod (compiled) | 2.63M | 667k | 1.32M | 6th |
-| @sapphire/shapeshift | 595k | — | — | — |
+| Valibot | 23,353 | 9,381 | 14,801 | 3rd |
+| sury | 70,501 | 201k | 119k | 4th |
+| Zod | 878k | 913k | 895k | 5th |
+| Zod (compiled) | 2.46M | 563k | 1.18M | 6th |
+| @sapphire/shapeshift | 574k | — | — | — |
 | ajv | 20 | — | — | — |
-| Effect Schema | 181k | — | — | — |
-| io-ts | 30,286 | — | — | — |
-| Joi | 1.30M | — | — | — |
+| Effect Schema | 176k | — | — | — |
+| io-ts | 29,722 | — | — | — |
+| Joi | 1.14M | — | — | — |
 | Superstruct | 42,192 | — | — | — |
-| runtypes | 11.9M | — | — | — |
-| Typia | 381 | — | — | — |
+| runtypes | 11.8M | — | — | — |
+| Typia | 298 | — | — | — |
 | Yup | 1.03M | — | — | — |
-| Zod Mini | 782k | — | — | — |
+| Zod Mini | 750k | — | — | — |
 | Zod 3 | 507k | — | — | — |
 
 ### Bundle size
@@ -1451,12 +1451,12 @@ Every library's result on every row, in every suite, is in [`leaderboard.json`](
 
 | Benchmark | On the board | Other libraries last measured | ArkType at |
 | - | - | - | - |
-| schemabenchmarks.dev | 14 speed results | October 25, 2026 | 20710020e |
-| ata's validator-benchmarks | 8 speed results | October 24, 2026 | 20710020e |
-| schemabenchmarks.dev's initialization | 1 startup result | October 25, 2026 | 20710020e |
-| Sury's build and parse once | 1 startup result | October 25, 2026 | 20710020e |
-| valibot.dev's login form | 1 size result | November 6, 2026 | ba691ac56 |
-| schemabenchmarks.dev's download | 1 size result | November 6, 2026 | ba691ac56 |
+| schemabenchmarks.dev | 14 speed results | November 19, 2026 | 591cc38d7 |
+| ata's validator-benchmarks | 8 speed results | November 19, 2026 | 591cc38d7 |
+| schemabenchmarks.dev's initialization | 1 startup result | November 19, 2026 | 591cc38d7 |
+| Sury's build and parse once | 1 startup result | November 19, 2026 | 591cc38d7 |
+| valibot.dev's login form | 1 size result | November 19, 2026 | 591cc38d7 |
+| schemabenchmarks.dev's download | 1 size result | November 19, 2026 | 591cc38d7 |
 
 A result is only as current as its last run, so each benchmark has its own date, and ArkType's rows name the commit they were measured at. Each month a job reruns the size benchmarks at each library's newest release and opens a pull request with the updated numbers for review, so a number on this site changes only by a reviewed commit.
 
@@ -1538,16 +1538,16 @@ From just before a fresh process imports an app's bundle to just after its first
 
 | Library | form | login | moltar | shop | Geometric mean of login, moltar, shop | Place |
 | - | - | - | - | - | - | - |
-| ArkType | 883k | 873k | 983k | 9.84M | 2.04M | 1st |
-| Valibot | 2.34M | 2.33M | 2.21M | 12.2M | 3.97M | 2nd |
-| ajv | — | 1.86M | 1.44M | 32.7M | 4.43M | 3rd |
-| Typia | — | 2.42M | 1.15M | 33.3M | 4.53M | 4th |
-| Zod Mini | 11.3M | 11.3M | 10.2M | 36.7M | 16.2M | 5th |
-| Zod | 43.7M | 43.5M | 53.5M | 102M | 61.9M | 6th |
-| Zod (compiled) | 52.0M | 53.3M | 58.1M | 125M | 72.9M | 7th |
-| TypeBox | — | 87.4M | 88.7M | 207M | 117M | 8th |
+| ArkType | 819k | 687k | 940k | 9.36M | 1.82M | 1st |
+| Valibot | 2.48M | 2.35M | 2.29M | 12.3M | 4.04M | 2nd |
+| ajv | — | 1.87M | 1.61M | 32.9M | 4.63M | 3rd |
+| Typia | — | 2.45M | 1.34M | 33.4M | 4.78M | 4th |
+| Zod Mini | 11.5M | 11.4M | 10.5M | 37.0M | 16.4M | 5th |
+| Zod | 44.1M | 43.7M | 54.0M | 102M | 62.3M | 6th |
+| Zod (compiled) | 52.4M | 51.6M | 58.6M | 126M | 72.5M | 7th |
+| TypeBox | — | 87.9M | 89.4M | 208M | 118M | 8th |
 
-- On each of the 4 apps in our startup benchmark, precompiled ArkType's default build ran fewer instructions from import through its first validation than every other library measured on it (Valibot, Zod, Zod (compiled), Zod Mini, Typia, ajv and TypeBox), by 14.8% or more, in all 20 paired runs on Node 24.
+- On each of the 4 apps in our startup benchmark, precompiled ArkType's default build ran fewer instructions from import through its first validation than every other library measured on it (Valibot, Zod, Zod (compiled), Zod Mini, Typia, ajv and TypeBox), by 23.8% or more, in at least 17 of 20 paired runs on Node 24.
 - From import through its first validation, the "smallest" preset ran fewer instructions than every other library on every one of those apps, by 2.8% or more through esbuild and webpack and by 2.4% or more on Turbopack, where Next's own startup is in every count, p ≤ 0.004; the default build did on 19 of them.
 
 The same apps by the clock, in milliseconds, which the homepage prints beside its startup bars:
@@ -1572,9 +1572,9 @@ On valid data, the precompiled build is within 6% of dynamic ArkType in 14 of 16
 | | Precompiled | Dynamic |
 | - | - | - |
 | Cold start, our login form app | 3.34 ms | 31.7 ms |
-| Bundle gzipped, valibot.dev's login form | 0.92 kB | 98.0 kB |
+| Bundle gzipped, valibot.dev's login form | 0.92 kB | 98.1 kB |
 
-Cold start is our login form app (an email and a password check), bundled and minified with esbuild: the median time for a fresh Node process to import the bundle and validate once, measured 2026-10-23 at 89510709d. Size is valibot.dev's login form, the validators and the library code they import, minified with esbuild and gzipped, at ba691ac56.
+Cold start is our login form app (an email and a password check), bundled and minified with esbuild: the median time for a fresh Node process to import the bundle and validate once, measured 2026-10-23 at 89510709d. Size is valibot.dev's login form, the validators and the library code they import, minified with esbuild and gzipped, at 591cc38d7.
 
 ### Bundle size
 
@@ -1593,7 +1593,7 @@ Our own apps, each bundled with esbuild as a production build, minified and gzip
 
 On Valibot's own login form, ArkType's default build reports an error for every invalid field, with the form's messages, in a smaller bundle than Valibot: 0.92 kB gzipped against 1.56 kB.
 
-Dynamic ArkType is 98.0 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.
+Dynamic ArkType is 98.1 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less.
 
 With the "smallest" preset, its bundle was smaller than every other library's on 20 of those 22 apps, by 31 B or more; on 11 and 46 Types through webpack with narrows, Valibot's was smaller, by up to 29 B (0.6%). It shipped less than Zod 4 on every one, by 1.18x to 10.28x. The default build, the fastest, shipped 1.25x to 2.48x what "smallest" did.
 

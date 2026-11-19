@@ -2,7 +2,7 @@
 
 > TypeScript's smallest, fastest validator.
 
-The homepage's benchmark board averages other projects' public benchmarks, each in the unit it measures. Standings as of November 6, 2026. [The rule it follows, every result behind it and how to rerun them](https://arktype.io/docs/precompile/benchmarks.md)
+The homepage's benchmark board averages other projects' public benchmarks, each in the unit it measures. Standings as of November 19, 2026. [The rule it follows, every result behind it and how to rerun them](https://arktype.io/docs/precompile/benchmarks.md)
 
 ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. @ark/aot precompiles them when a project builds, so its validators ship without arktype's parser. ArkRegex, Attest, @ark/json-schema and ArkSets are its companion packages.
 
