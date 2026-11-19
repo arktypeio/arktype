@@ -200,6 +200,11 @@ const byCase = (entries: [string, number][]) => {
 	return Object.entries(cases).map(([id, byArm]) => rowOf(id, byArm))
 }
 
+// the last of ArkType's files that holds a measure, which is where its rows
+// are read from: one may hold only what its commit measured again
+const arkTypeFileOf = (measure: string): string | undefined =>
+	sources.arkType.findLast(file => measure in read(file))
+
 // each of ArkType's measures from the last file that has it
 const arkType: Record<string, any> = {}
 for (const rows of sources.arkType.map(read)) {
@@ -456,7 +461,7 @@ const suites = [
 		id: "homepageSize",
 		label: "the homepage's apps",
 		unit: "B gzipped",
-		source: `benchData.json size, ArkType's from ${sources.arkType.join(", ")}`,
+		source: `benchData.json size, ArkType's from ${arkTypeFileOf("homepageSize")}`,
 		rows: appsOf(homepageSize, "gzip")
 	},
 	{
@@ -571,6 +576,17 @@ const runOf: Partial<Record<keyof typeof fileNames, string>> = {
 	surySize: "sury"
 }
 
+// what a file of ArkType's rows calls each kind of result
+const arkTypeMeasures: Record<keyof typeof fileNames, string> = {
+	counts: "moltar",
+	forms: "form",
+	sbCounts: "sbCounts",
+	sbDownload: "sbDownload",
+	suryCounts: "suryCounts",
+	surySize: "surySize",
+	ataCounts: "ataCounts"
+}
+
 type Measured = {
 	/** the day the other libraries' newest results were measured */
 	rivals: string
@@ -594,9 +610,10 @@ const measuredOf = (source: string | string[]): Measured | undefined => {
 		:	undefined
 	if (run) return { rivals: run.date, arkType: run.commit }
 	const dates = files.flatMap(file => /\d{4}-\d{2}-\d{2}/.exec(file) ?? [])
-	// ArkType's rows are the last file's wherever two measure the same one
-	const arkTypeFile = sources.arkType[sources.arkType.length - 1]
-	const commit = /-([\da-f]{9})\.json$/.exec(arkTypeFile)?.[1]
+	// ArkType's rows are the last file's that measures this kind, wherever two
+	// measure the same one: a later file may hold other measures alone
+	const arkTypeFile = arkTypeFileOf(arkTypeMeasures[kind])
+	const commit = /-([\da-f]{9})\.json$/.exec(arkTypeFile ?? "")?.[1]
 	if (!dates.length || !commit) {
 		throw new Error(
 			`Can't tell when ${kind} was measured from ${files.join(", ")} and ${arkTypeFile}`
