@@ -216,9 +216,15 @@ importers:
       rollup:
         specifier: 4.52.4
         version: 4.52.4
+      tsrs:
+        specifier: 0.18.0-ts7.1.0-dev.20260929
+        version: 0.18.0-ts7.1.0-dev.20260929
       typescript-6:
         specifier: npm:typescript@6.0.3
         version: typescript@6.0.3
+      typescript-7:
+        specifier: npm:typescript@7.1.0-beta
+        version: typescript@7.1.0-beta
       vite:
         specifier: 8.3.4
         version: 8.3.4(@types/node@24.7.2)(esbuild@0.25.10)(jiti@2.6.1)(terser@5.51.2)(tsx@4.20.6)(yaml@2.9.1)

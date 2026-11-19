@@ -17,6 +17,7 @@ import {
 import { fingerprintOfCode } from "./cache.ts"
 import {
 	emitDeclarations,
+	type Checker,
 	refuseDeclare,
 	writeDeclaredOutsideMessage,
 	type Declarations
@@ -126,6 +127,8 @@ export type { PrecompilePluginOptions } from "./driver.ts"
 export interface PrecompileUnpluginOptions extends PrecompilePluginOptions {
 	// emit declarations with a build that neither watches nor serves
 	declare?: boolean | undefined
+	// what reads the program for them, by default the TypeScript installed
+	checker?: Checker | undefined
 }
 
 type Options = PrecompileUnpluginOptions | undefined
@@ -918,7 +921,8 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 		if (cached) return cached
 		const declarations = emitDeclarations({
 			cwd: opts?.cwd,
-			tsconfig: opts?.tsconfig
+			tsconfig: opts?.tsconfig,
+			checker: opts?.checker
 		})
 		// no build context to warn with, and type errors don't fail a bundle
 		if (declarations.diagnostics) console.warn(declarations.diagnostics)

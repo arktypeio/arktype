@@ -19,6 +19,7 @@ import {
 	rmSync,
 	writeFileSync
 } from "node:fs"
+import type { Checker } from "@ark/aot/internal/declare.ts"
 import type { Plugin } from "esbuild"
 import { tmpdir } from "node:os"
 import { dirname, join, posix } from "node:path"
@@ -293,7 +294,8 @@ export const tsPath = (path: string): string => path.split("\\").join("/")
 // error TypeScript reports in a declaration
 export const inexactExportsOf = (
 	fixture: string,
-	checks: Record<string, string>
+	checks: Record<string, string>,
+	checker?: Checker
 ): string[] => {
 	const lines = [
 		"type eq<l, r> = (<_>() => _ extends l ? 1 : 2) extends <_>() => _ extends r ? 1 : 2 ? true : false",
@@ -329,7 +331,7 @@ export const inexactExportsOf = (
 	}
 	for (const name in checks) check(name, checks[name])
 	try {
-		runCli(fixture, "--declare")
+		runCli(fixture, "--declare", ...(checker ? ["--checker", checker] : []))
 		writeFileSync(join(fixture, "consumer.ts"), lines.join("\n"))
 		const { compilerOptions } = JSON.parse(
 			readFileSync(join(fixture, "tsconfig.json"), "utf8")

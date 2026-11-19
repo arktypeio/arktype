@@ -18,6 +18,9 @@ export interface Declared {
 	type: ts.Type
 	key: string
 	source: ts.SourceFile
+	// whether each \`any\` declaring another type is where a cycle recurs, as
+	// TypeScript 7 writes one without a word
+	isAnyElided?: boolean | undefined
 }
 
 type SignatureNode =
@@ -41,40 +44,54 @@ export class ShapeReferences {
 	checker: ts.TypeChecker
 	program: ts.Program
 	names: ShapeNames
-	resolutions: ts.ModuleResolutionCache
+	resolveModule: ModuleResolver
 	keywordFlags: Record<number, number | undefined>
 	modulesBySpecifier = new Map<string, ts.Symbol | undefined>()
 	symbolsByNode = new WeakMap<ts.Node, ts.Symbol | undefined>()
 	// what replaces each node of the declaration being read
 	byNode = new Map<ts.Node, string>()
+	// where the declaration being read recurs at a cycle no shape names
+	unnamedCycles: ts.Node[] = []
+	isAnyElided = false
 	source: ts.SourceFile | undefined
 	key = ""
 
-	constructor(ts: TypeScript, program: ts.Program, names: ShapeNames) {
+	constructor(
+		ts: TypeScript,
+		program: ts.Program,
+		names: ShapeNames,
+		resolveModule: ModuleResolver = moduleResolverOf(ts, program)
+	) {
 		this.ts = ts
 		this.checker = program.getTypeChecker()
 		this.program = program
 		this.names = names
+		this.resolveModule = resolveModule
 		this.keywordFlags = keywordFlagsOf(ts)
-		this.resolutions = ts.createModuleResolutionCache(
-			program.getCurrentDirectory(),
-			path => (ts.sys.useCaseSensitiveFileNames ? path : path.toLowerCase()),
-			program.getCompilerOptions()
-		)
 	}
 
-	in({ node, type, key, source }: Declared): Map<ts.Node, string> {
+	in({ node, type, key, source, isAnyElided }: Declared): Map<ts.Node, string> {
 		this.byNode = new Map()
+		this.unnamedCycles = []
+		this.isAnyElided = !!isAnyElided
 		this.source = source
 		this.key = key
 		this.pair(node, type)
 		return this.byNode
 	}
 
+	// whether a node is where TypeScript wrote any for a cycle
+	mayBeElided(node: ts.Node): boolean {
+		return (
+			isElidedNode(this.ts, node) ||
+			(this.isAnyElided && node.kind === this.ts.SyntaxKind.AnyKeyword)
+		)
+	}
+
 	pair(node: ts.TypeNode, t: ts.Type): void {
 		const { ts } = this
 		if (ts.isParenthesizedTypeNode(node)) return this.pair(node.type, t)
-		const isElided = isElidedNode(ts, node)
+		const isElided = this.mayBeElided(node) && !(t.flags & ts.TypeFlags.Any)
 		// a type written another way, like `typeof User.infer`, stays as written
 		if (isElided || (this.isStructure(node) && this.mayDeclare(node, t, 0))) {
 			const reference = this.names.referenceTo(t)
@@ -83,7 +100,10 @@ export class ShapeReferences {
 				return
 			}
 		}
-		if (isElided) return
+		if (isElided) {
+			this.unnamedCycles.push(node)
+			return
+		}
 		if (ts.isTypeReferenceNode(node) || ts.isImportTypeNode(node))
 			return this.pairReference(node, t)
 		if (ts.isArrayTypeNode(node)) {
@@ -214,30 +234,11 @@ export class ShapeReferences {
 	}
 
 	moduleOf(specifier: string): ts.Symbol | undefined {
-		const { ts, checker, program } = this
 		const source = this.source!
 		const key = `${dirname(source.fileName)}\0${specifier}`
-		if (this.modulesBySpecifier.has(key))
-			return this.modulesBySpecifier.get(key)
-		const ambient = checker
-			.getAmbientModules()
-			.find(module => module.name === `"${specifier}"`)
-		const resolved =
-			ambient ? undefined : (
-				ts.resolveModuleName(
-					specifier,
-					source.fileName,
-					program.getCompilerOptions(),
-					ts.sys,
-					this.resolutions,
-					undefined,
-					source.impliedNodeFormat
-				).resolvedModule
-			)
-		const file = resolved && program.getSourceFile(resolved.resolvedFileName)
-		const symbol = ambient ?? (file && checker.getSymbolAtLocation(file))
-		this.modulesBySpecifier.set(key, symbol)
-		return symbol
+		if (!this.modulesBySpecifier.has(key))
+			this.modulesBySpecifier.set(key, this.resolveModule(specifier, source))
+		return this.modulesBySpecifier.get(key)
 	}
 
 	pairTuple(node: ts.TupleTypeNode, t: ts.Type): void {
@@ -317,7 +318,8 @@ export class ShapeReferences {
 				name === undefined ? undefined : checker.getPropertyOfType(t, name)
 			if (
 				!property ||
-				!!member.questionToken !== !!(property.flags & ts.SymbolFlags.Optional)
+				isOptionalMember(ts, member) !==
+					!!(property.flags & ts.SymbolFlags.Optional)
 			)
 				continue
 			const type = checker.getTypeOfSymbol(property)
@@ -332,7 +334,8 @@ export class ShapeReferences {
 				if (overloads.length === 1 && methods.length === 1)
 					this.pairSignature(member, methods[0])
 			} else if (!member.type) continue
-			else if (member.questionToken) this.pairOptional(member.type, type)
+			else if (isOptionalMember(ts, member))
+				this.pairOptional(member.type, type)
 			else this.pair(member.type, type)
 		}
 	}
@@ -369,7 +372,7 @@ export class ShapeReferences {
 			let inner = node
 			while (ts.isParenthesizedTypeNode(inner)) inner = inner.type
 			const candidates =
-				isElidedNode(ts, inner) ?
+				this.mayBeElided(inner) ?
 					// TypeScript elides only an object it's already declaring
 					types.filter(t => t.flags & ts.TypeFlags.Object)
 				: ts.isTypeReferenceNode(inner) || ts.isImportTypeNode(inner) ?
@@ -378,7 +381,70 @@ export class ShapeReferences {
 					types.filter(t => this.mayDeclare(inner, t, 0))
 				:	[]
 			if (candidates.length === 1) this.pair(inner, candidates[0])
+			else if (
+				!candidates.length &&
+				(ts.isTypeReferenceNode(inner) || ts.isImportTypeNode(inner))
+			)
+				this.pairFlattened(inner, types)
 		}
+	}
+
+	// TypeScript 7 flattens a union a member's alias wrote, as it keeps no
+	// record of how it was written, so the alias's arguments are read from the
+	// members it gave the union
+	pairFlattened(node: ReferenceNode, types: readonly ts.Type[]): void {
+		if (!node.typeArguments?.length) return
+		if (!this.symbolsByNode.has(node))
+			this.symbolsByNode.set(node, this.symbolOf(node))
+		const symbol = this.symbolsByNode.get(node)
+		if (!symbol || !(symbol.flags & this.ts.SymbolFlags.TypeAlias)) return
+		const args = this.aliasArgumentsIn(symbol, types)
+		if (!args) return
+		for (const [i, arg] of node.typeArguments.entries())
+			if (i < args.length) this.pair(arg, args[i])
+	}
+
+	// the arguments an alias was given, where each of its parameters is read
+	// alike from every member that holds it
+	aliasArgumentsIn(
+		symbol: ts.Symbol,
+		types: readonly ts.Type[]
+	): ts.Type[] | undefined {
+		const { checker } = this
+		const declared = checker.getDeclaredTypeOfSymbol(symbol)
+		const parameters = declared.aliasTypeArguments
+		if (!parameters?.length) return
+		const members = declared.isUnion() ? declared.types : [declared]
+		const byParameter = new Map<ts.Type, ts.Type>()
+		const read = (from: readonly ts.Type[], to: readonly ts.Type[]) =>
+			from.every((t, i) => {
+				if (!parameters.includes(t) || !to[i]) return true
+				const prior = byParameter.get(t)
+				byParameter.set(t, to[i])
+				return !prior || prior === to[i]
+			})
+		for (const member of members) {
+			for (const t of types) {
+				const isRead =
+					member.aliasSymbol ?
+						t.aliasSymbol !== member.aliasSymbol ||
+						read(member.aliasTypeArguments ?? [], t.aliasTypeArguments ?? [])
+					: this.isReference(member) && this.isReference(t) ?
+						member.target !== t.target ||
+						read(checker.getTypeArguments(member), checker.getTypeArguments(t))
+					:	true
+				if (!isRead) return
+			}
+		}
+		const args = parameters.map(parameter => byParameter.get(parameter))
+		return args.includes(undefined) ? undefined : (args as ts.Type[])
+	}
+
+	isReference(t: ts.Type): t is ts.TypeReference {
+		return (
+			!!(t.flags & this.ts.TypeFlags.Object) &&
+			!!((t as ts.ObjectType).objectFlags & this.ts.ObjectFlags.Reference)
+		)
 	}
 
 	// the types a reference could declare, each an instance of what it names
@@ -400,7 +466,7 @@ export class ShapeReferences {
 	mayDeclare(node: ts.TypeNode, t: ts.Type, depth: number): boolean {
 		const { ts, checker } = this
 		const { TypeFlags, SyntaxKind } = ts
-		if (depth > maxComparedDepth || isElidedNode(ts, node)) return true
+		if (depth > maxComparedDepth || this.mayBeElided(node)) return true
 		if (ts.isParenthesizedTypeNode(node))
 			return this.mayDeclare(node.type, t, depth)
 		if (ts.isTypeLiteralNode(node)) {
@@ -415,7 +481,7 @@ export class ShapeReferences {
 				const property = checker.getPropertyOfType(t, name)
 				if (
 					!property ||
-					!!member.questionToken !==
+					isOptionalMember(ts, member) !==
 						!!(property.flags & ts.SymbolFlags.Optional)
 				)
 					return false
@@ -423,7 +489,7 @@ export class ShapeReferences {
 				if (
 					ts.isPropertySignature(member) &&
 					member.type &&
-					!member.questionToken &&
+					!isOptionalMember(ts, member) &&
 					!this.mayDeclare(
 						member.type,
 						checker.getTypeOfSymbol(property),
@@ -477,6 +543,41 @@ export class ShapeReferences {
 
 const maxComparedDepth = 3
 
+// the module a specifier in a module's declaration names, from its source
+export type ModuleResolver = (
+	specifier: string,
+	source: ts.SourceFile
+) => ts.Symbol | undefined
+
+const moduleResolverOf = (
+	ts: TypeScript,
+	program: ts.Program
+): ModuleResolver => {
+	const checker = program.getTypeChecker()
+	const resolutions = ts.createModuleResolutionCache(
+		program.getCurrentDirectory(),
+		path => (ts.sys.useCaseSensitiveFileNames ? path : path.toLowerCase()),
+		program.getCompilerOptions()
+	)
+	return (specifier, source) => {
+		const ambient = checker
+			.getAmbientModules()
+			.find(module => module.name === `"${specifier}"`)
+		if (ambient) return ambient
+		const resolved = ts.resolveModuleName(
+			specifier,
+			source.fileName,
+			program.getCompilerOptions(),
+			ts.sys,
+			resolutions,
+			undefined,
+			source.impliedNodeFormat
+		).resolvedModule
+		const file = resolved && program.getSourceFile(resolved.resolvedFileName)
+		return file && checker.getSymbolAtLocation(file)
+	}
+}
+
 const keywordFlagsOf = (
 	ts: TypeScript
 ): Record<number, number | undefined> => ({
@@ -504,6 +605,15 @@ const memberNameOf = (
 	) ?
 		member.name.text
 	:	undefined
+
+// TypeScript 7 marks an optional key or method by its postfix token
+const isOptionalMember = (
+	ts: TypeScript,
+	member: ts.PropertySignature | ts.MethodSignature
+): boolean =>
+	!!member.questionToken ||
+	(member as { postfixToken?: ts.Node }).postfixToken?.kind ===
+		ts.SyntaxKind.QuestionToken
 
 // the `any` TypeScript writes where a type it's declaring recurs
 export const isElidedNode = (ts: TypeScript, node: ts.Node): boolean =>

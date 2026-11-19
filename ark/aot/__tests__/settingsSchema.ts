@@ -43,6 +43,9 @@ const settings = {
 	"allowUnsafe?": flag,
 	"conditions?": "string[]",
 	"tsconfig?": type("string > 0").describe("a path"),
+	// what reads the program for declarations: TypeScript 5.5 to 6's JS API, or
+	// TypeScript 7's native API as tsgo or tsrs serves it
+	"checker?": "'tsjs' | 'tsgo' | 'tsrs'",
 	// a package that doesn't opt in, precompiled or run on arktype
 	"dependencies?": { "[string]": "'aot' | 'arktype'" }
 } as const
