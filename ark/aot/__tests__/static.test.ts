@@ -1111,6 +1111,41 @@ export const editOrNone = (saved: string | undefined) => unlessSaved(saved).or("
 			attest(diagnosticsOf(source)).equals([])
 		})
 
+		it("a Type declare<X>() defines, whose narrow reads a parameter", () => {
+			// as a call to a parser read off `declare<X>()` returns a Type, what
+			// reads one it returns is followed as one reading `Address.narrow(...)`
+			const address = `import { type } from "arktype"
+const Address = type({ line1: "string" })
+const isLine = (a: typeof Address.infer) => a.line1.length > 0
+export const Line = type.declare<{ line1: string }>().type(Address.narrow(isLine))
+export const unlessSaved = (saved: string | undefined) =>
+	type.declare<{ line1: string }>().type(Address.narrow(a => a.line1 === saved || isLine(a)))`
+			const source = `import { scope, type } from "arktype"
+import { Line, unlessSaved } from "./address.ts"
+export const Account = type.declare<{ address: { line1: string } | undefined }>().type({ address: Line.or(type.undefined) })
+export const edit = (saved: string | undefined) => {
+	const address = unlessSaved(saved).or(type.undefined)
+	return Account.merge({ address })
+}
+const $ = scope({ line: "string" })
+const lineFor = (saved: string) => $.declare<{ line1: string }>().type({ line1: "line" }).narrow(a => a.line1 !== saved)
+export const editLine = (saved: string) => lineFor(saved).or(type.undefined)
+const issuesOf = (schema: type.Any, data: unknown) => {
+	const result = schema["~standard"].validate(data)
+	return result instanceof Promise ? [] : (result.issues ?? []).map(issue => issue.path ?? [])
+}
+console.log(issuesOf(unlessSaved(undefined), {}))`
+			attest(statusesOf(source, { "/address.ts": address })).snap([
+				"3:24 accepted { address: { line1: string } & isLine$hole_1hftpaj18xlch1 | undefined }",
+				"5:18 accepted { line1: string } & fn$hole_1nkatgu1qvz07u | undefined",
+				"6:9 accepted { address: { line1: string } & fn$hole_1nkatgu1qvz07u | undefined }",
+				"8:11 accepted",
+				"9:36 accepted { line1: string } & fn$hole_hgu1b30q64q3u",
+				"10:44 accepted { line1: string } & fn$hole_hgu1b30q64q3u | undefined"
+			])
+			attest(diagnosticsOf(source, { "/address.ts": address })).equals([])
+		})
+
 		it("what a call returns, composed", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"

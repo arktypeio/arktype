@@ -2735,13 +2735,14 @@ export class ModuleGraph {
 			this.arkExportNameOf(callee.object, module) === "type"
 		)
 			return kinds.type
-		// e.g. `$.type("User")`, with `$` a Scope
+		// e.g. `$.type("User")`, with `$` a Scope, or `type.declare<User>().type(def)`
 		if (
 			node.type === "CallExpression" &&
 			definesType(node) &&
 			callee.type === "MemberExpression" &&
 			memberNameOf(callee) === "type" &&
-			this.scopeCallOf(callee.object, module, kindOfKey)
+			(this.scopeCallOf(callee.object, module, kindOfKey) ||
+				this.isDeclaration(callee.object, module, kindOfKey))
 		)
 			return kinds.type
 		if (
@@ -3353,6 +3354,26 @@ export class ModuleGraph {
 			memberNameOf(node) === name &&
 			(this.arkExportNameOf(node.object, module) === "type" ||
 				!!this.scopeCallOf(node.object, module, kindOfKey))
+		)
+	}
+
+	// e.g. `type.declare<User>()` or `$.declare<User>()`, which returns `{ type }`
+	// holding the parser it's read off. Read as a member of a Type parser, it
+	// would be any arktype value, so the Type its `type` defines would be one a
+	// call returning it loses track of
+	private isDeclaration(
+		node: Node,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): boolean {
+		node = unwrapChain(node)
+		if (node.type !== "CallExpression") return false
+		const callee = unwrapChain(node.callee)
+		return (
+			callee.type === "MemberExpression" &&
+			memberNameOf(callee) === "declare" &&
+			(this.arkExportNameOf(callee.object, module) === "type" ||
+				!!this.scopeCallOf(callee.object, module, kindOfKey))
 		)
 	}
 
