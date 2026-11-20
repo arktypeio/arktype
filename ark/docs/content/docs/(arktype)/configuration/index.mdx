@@ -588,7 +588,7 @@ type.string(5)
 
 `onFail` can also be passed to a scope.
 
-`ArkEnv` is the `arktype` module's, not a global, so a declaration on it reaches only the copy of arktype it names. A dependency's copy, like one still on arktype 2, keeps its own keywords and `onFail`. Declare it in a file that imports or exports something, since a `declare module` in a file that does neither replaces the module instead.
+`ArkEnv` is the `arktype` module's, not a global, so a declaration on it reaches only the copy of arktype it names. A dependency's copy, like one still on arktype 2, keeps its own keywords and `onFail`. Declare it in a file that imports or exports something, since a `declare module` in a file that does neither replaces the module instead. Declare each `ArkEnv` slot once per app and compose any library types there (for example `meta(): LibMeta & AppMeta`), since multiple method declarations don't merge.
 
 ## toJsonSchema
 
