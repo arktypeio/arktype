@@ -213,7 +213,8 @@ Object.defineProperty(
 			if (depth !== null && depth < 0) return "[ArkErrors]"
 			// one level more, so an issue prints as deep as it did in a bare array
 			return `ArkErrors ${inspect(shown, { ...options, depth: depth === null ? null : depth + 1 })}`
-		}
+		},
+		configurable: true
 	}
 )
 

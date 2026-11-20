@@ -6,6 +6,7 @@ import { discriminateUnion } from "./roots/union.ts"
 import {
 	jsonSchemaContextOf,
 	jsonSchemaWriters,
+	refPrefixOf,
 	rootToJsonSchema,
 	toJsonSchemaRecurse
 } from "./toJsonSchema.ts"
@@ -19,7 +20,8 @@ export const setEngine: SetEngine = {
 	discriminate: discriminateUnion,
 	toJsonSchema: rootToJsonSchema,
 	toJsonSchemaRecurse: (node, ctx) =>
-		toJsonSchemaRecurse(node, jsonSchemaContextOf(ctx, jsonSchemaWriters))
+		toJsonSchemaRecurse(node, jsonSchemaContextOf(ctx, jsonSchemaWriters)),
+	registry: $ark
 }
 
 // must precede parsing, since nodes are reduced and discriminated when parsed

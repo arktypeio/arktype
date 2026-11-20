@@ -966,14 +966,14 @@ export const Fields = { even: Even, name: type("string") }
 				attest(
 					written(`import { siteOf } from "./sites.js";
 import { listsUnions, writesText as writesText2 } from "./shared/issueFeatures.js";
-import { failsAt, transformsBranches } from "@ark/schema/runtime";
+import { failsAt, transformsBranches } from "arktype/schema/runtime";
 const line = (issue) => (listsUnions ? issue._l : void 0) ?? issue.message;
 const text = (issue) => writesText2 && issue._c ? ": " : " ";
 const branches = (t) => transformsBranches && t ? failsAt(t) : siteOf(t);
 `)
 				).snap(`import { siteOf } from "./sites.js";
 
-import { failsAt } from "@ark/schema/runtime";
+import { failsAt } from "arktype/schema/runtime";
 const line = (issue) => ((false) ? issue._l : void 0) ?? issue.message;
 const text = (issue) => (true) && issue._c ? ": " : " ";
 const branches = (t) => (false) && t ? failsAt(t) : siteOf(t);
@@ -982,11 +982,11 @@ const branches = (t) => (false) && t ? failsAt(t) : siteOf(t);
 
 			it("keeps the import of one the module exports again, with its reads written", () => {
 				attest(
-					written(`import { appliesValues, failsAt } from "@ark/schema/runtime";
+					written(`import { appliesValues, failsAt } from "arktype/schema/runtime";
 const fails = (checker) => appliesValues && checker.e ? checker.e : failsAt;
 export { appliesValues, fails };
 `)
-				).snap(`import { appliesValues, failsAt } from "@ark/schema/runtime";
+				).snap(`import { appliesValues, failsAt } from "arktype/schema/runtime";
 const fails = (checker) => (false) && checker.e ? checker.e : failsAt;
 export { appliesValues, fails };
 `)

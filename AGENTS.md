@@ -1,6 +1,6 @@
 # ArkType
 
-ArkType is TypeScript's 1:1 validator, optimized from editor to runtime. It parses TypeScript-like string syntax at runtime.
+ArkType is TypeScript's smallest, fastest validator. It parses TypeScript-like string syntax at runtime.
 
 ## Using ArkType
 
@@ -26,16 +26,20 @@ Tests and typechecking read each package's source through the `ark-ts` condition
 
 ## CI
 
-`pr.yml` runs on every PR, and its `prChecks` job is the gate. Beside `pnpm prChecks` and the compatibility, TypeScript version and history jobs, it runs:
+`pr.yml` runs on every PR, and its `prChecks` job is the gate. It runs three groups in parallel:
 
+- `core`: lint, docs build (with twoslash cache), `pnpm testRepoWithBenches` and `pnpm testJitless`.
+- `typescript`: `attest@tsgo` and `repo@6.0.3`.
 - `aot`: `pnpm testAot` in eight shards, one runner each. `ark/repo/testAotShard.ts` deals the test files among them by the seconds `ark/aot/__tests__/timings.json` has for each, heaviest first, and `pnpm testAot --list` prints the result. A file without an entry weighs the median, so a new test file needs none. A file heavier than one shard's share has entries for its heavier top-level `describe`s and one for the rest of its tests, and is divided among shards by `--grep`; a `describe` added to it later runs with the rest. A shard that takes over twice the mean shard's planned seconds times `ARK_SHARD_BUDGET_FACTOR` (4 unless set) fails and says to run `pnpm writeAotTimings`, which runs the tests once and rewrites `timings.json`. Commit the result.
-- `environments`: `pnpm testEnvironments`, a precompiled program in Deno, Bun and browsers.
 
-`aot.yml` runs @ark/aot's derived suites, up to an hour a job: `testDifferential` and `testCache`, the repo's tests against precompiled validators, then `testPerturbation` and `testPrograms`. They aren't part of the gate. It runs:
+`pr.yml` also runs `suggest` (`ark/repo/suggestCiSuites.ts`) on non-fork PRs to post or update a single comment recommending relevant extended suites based on modified folders.
 
-- nightly, on `main` and `featherduster` (until 3.0 merges; the list is in its `plan` job). A failing night opens the issue "aot nightly failing", labelled `aot-nightly`, or comments on it, and the next passing night closes it.
-- on a PR labelled `aot:full`, when the label is added and on each push after. Add it to a PR that changes what the build emits.
-- on demand from the Actions tab, and from another workflow through `workflow_call`.
+`nightly.yml` runs the extended suites offloaded from `pr.yml` — OS/Node `compatibility` (`pnpm testRepoCompat`), `history` (`pnpm testHistory --jobs 4`), full `typescript` version matrix, `environments` (Deno, Bun, Chrome, Firefox), and `@ark/aot`'s derived suites (`testDifferential`, `testCache`, `testPerturbation`, `testPrograms`). It runs:
+
+- nightly on `main`. A failing night opens the issue "nightly failing", labelled `nightly`, or comments on it, and the next passing night closes it.
+- on a PR labelled `aot:full`, `ci:compat`, `ci:history`, `ci:ts`, `ci:environments` or `ci:all`, when the label is added and on each push after.
+- on a PR when a maintainer comments `/run <suite...>` (e.g. `/run aot:full ci:history` or `/run all`), via `pr-commands.yml`.
+- on demand from the Actions tab (`workflow_dispatch`), and from another workflow through `workflow_call`.
 
 ## Monorepo Structure
 

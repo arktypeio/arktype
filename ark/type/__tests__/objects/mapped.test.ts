@@ -95,6 +95,7 @@ contextualize(() => {
 			keyof: Base,
 			map: Base,
 			merge: Base,
+			message: Base,
 			narrow: Base,
 			omit: Base,
 			onDeepUndeclaredKey: Base,
@@ -128,6 +129,7 @@ contextualize(() => {
 			keyof: "'base'",
 			map: { base: "2" },
 			merge: { base: "1", merge: "1" },
+			message: Base.message(""),
 			narrow: [Base, ":", narrowFn],
 			omit: {},
 			onDeepUndeclaredKey: { "+": "reject", base: "1" },
@@ -172,6 +174,11 @@ contextualize(() => {
 					return {
 						key: prop.key,
 						value: prop.value.describe("")
+					}
+				case "message":
+					return {
+						key: prop.key,
+						value: prop.value.message("")
 					}
 				case "exclude":
 					return {

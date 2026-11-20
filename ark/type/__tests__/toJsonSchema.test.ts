@@ -116,6 +116,48 @@ contextualize(() => {
 		})
 	})
 
+	it("constrained index key with a declared value it narrows", () => {
+		// additionalProperties skips ab, which must be a number all the same
+		const T = type({
+			ab: "number | string",
+			"[string <= 3]": "number",
+			"+": "reject"
+		})
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: {
+				ab: { anyOf: [{ type: "number" }, { type: "string" }] }
+			},
+			required: ["ab"],
+			propertyNames: { type: "string", maxLength: 3 },
+			patternProperties: { "": { type: "number" } }
+		})
+	})
+
+	it("string index with declared values it allows", () => {
+		const T = type({ a: "number % 2", "b?": "1", "[string]": "number" })
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: {
+				a: { type: "integer", multipleOf: 2 },
+				b: { type: "number", const: 1 }
+			},
+			required: ["a"],
+			additionalProperties: { type: "number" }
+		})
+	})
+
+	it("string index with a declared value it narrows", () => {
+		// additionalProperties would skip a, which must be a number all the same
+		const T = type({ a: "number | string", "[string]": "number" })
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: { a: { anyOf: [{ type: "number" }, { type: "string" }] } },
+			required: ["a"],
+			patternProperties: { "": { type: "number" } }
+		})
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1612
 	it("refs to a structure in a union", () => {
 		const Thing = type({ a: "string" }).or("null")
@@ -644,16 +686,33 @@ contextualize(() => {
 		attest(T.toJsonSchema()).snap({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "object",
-			properties: { a: { type: "string" }, b: { enum: [] } }
+			properties: { a: { type: "string" }, b: { not: {} } }
 		})
 		attest(T["~standard"].jsonSchema.input({ target: "draft-2020-12" })).snap({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "object",
-			properties: { a: { type: "string" }, b: { enum: [] } }
+			properties: { a: { type: "string" }, b: { not: {} } }
 		})
 		attest(() => type({ a: "string | undefined" }).toJsonSchema()).throws(
 			'Can\'t convert "unit" at a to JSON Schema'
 		)
+	})
+
+	// an empty enum is invalid OpenAPI 3.0, and OpenAI rejects it
+	it("never is not {}", () => {
+		attest(type("never").toJsonSchema({ dialect: null })).snap({ not: {} })
+		attest(type("never").toJsonSchema({ target: "openapi-3.0" })).snap({
+			not: {}
+		})
+	})
+
+	it("an input of null | undefined is null", () => {
+		attest(
+			type("null | undefined")["~standard"].jsonSchema.input({
+				target: "draft-2020-12",
+				libraryOptions: { dialect: null }
+			})
+		).snap({ type: "null" })
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1462
@@ -743,9 +802,136 @@ contextualize(() => {
 		})
 	})
 
+	// a strict validator like Ajv's rejects a keyword it doesn't know
+	it("writes only meta JSON Schema has a keyword for, or an x- extension", () => {
+		// as a key added to ArkEnv.meta is
+		const added: object = { secretIngredient: "miso", "x-internal": true }
+		const T = type("string").configure({
+			alias: "Id",
+			deprecated: false,
+			readOnly: true,
+			$comment: "internal",
+			...added
+		})
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "string",
+			deprecated: false,
+			readOnly: true,
+			$comment: "internal",
+			"x-internal": true
+		})
+		attest(
+			type("string")
+				.configure({ onFail: null } as never)
+				.toJsonSchema({
+					dialect: null
+				})
+		).snap({ type: "string" })
+	})
+
+	it("a default has no base, so a universal fallback omits it", () => {
+		const T = type({ n: ["bigint", "=", 5n] })
+		// returning the property's own schema would make it contain itself
+		attest(T.toJsonSchema({ dialect: null, fallback: ctx => ctx.base })).snap({
+			type: "object",
+			properties: { n: {} }
+		})
+		attest(
+			T.toJsonSchema({
+				dialect: null,
+				fallback: {
+					domain: ctx => ({ ...ctx.base, type: "string" }),
+					defaultValue: ctx => `${ctx.value as bigint}`
+				}
+			})
+		).snap({
+			type: "object",
+			properties: { n: { type: "string", default: "5" } }
+		})
+	})
+
 	it("omits function meta", () => {
 		const T = type("string").configure({ message: () => "a letter" })
 		attest(T.toJsonSchema({ dialect: null })).snap({ type: "string" })
+	})
+
+	describe("discriminated unions", () => {
+		const T = type({ kind: "'a'", a: "string" }).or({
+			kind: "'b'",
+			b: "number"
+		})
+		const branches = [
+			{
+				type: "object",
+				properties: {
+					a: { type: "string" },
+					kind: { type: "string", const: "a" }
+				},
+				required: ["a", "kind"]
+			},
+			{
+				type: "object",
+				properties: {
+					b: { type: "number" },
+					kind: { type: "string", const: "b" }
+				},
+				required: ["b", "kind"]
+			}
+		]
+
+		// discriminator isn't JSON Schema, and Ajv rejects it by default
+		it("is oneOf without discriminator unless configured", () => {
+			attest(T.toJsonSchema({ dialect: null })).equals({ oneOf: branches })
+			attest(T.toJsonSchema({ target: "draft-07", dialect: null })).equals({
+				oneOf: branches
+			})
+			attest(T.toJsonSchema({ dialect: null, discriminator: true })).equals({
+				oneOf: branches,
+				discriminator: { propertyName: "kind" }
+			})
+		})
+
+		it("a morph's input", () => {
+			const Morphed = type({ kind: "'a'", a: "string" })
+				.pipe(o => o)
+				.or({ kind: "'b'", b: "number" })
+			attest(
+				Object.keys(
+					Morphed["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+				)
+			).equals(["$schema", "oneOf"])
+		})
+
+		it("is anyOf where a value doesn't pick one branch", () => {
+			const keysOf = (t: type.Any) =>
+				Object.keys(t.toJsonSchema({ dialect: null, discriminator: true }))
+			// a value two branches share
+			attest(
+				keysOf(
+					type({ kind: "'a'", x: "string" })
+						.or({ kind: "'a'", y: "number" })
+						.or({ kind: "'b'" })
+				)
+			).equals(["anyOf"])
+			// a branch that doesn't require the key
+			attest(
+				keysOf(
+					type({ kind: "'a'", x: "string" }).or({ "kind?": "'b'", y: "1" })
+				)
+			).equals(["anyOf"])
+			// values that aren't strings
+			attest(
+				keysOf(type({ kind: "1", x: "string" }).or({ kind: "2", y: "number" }))
+			).equals(["anyOf"])
+			// a key every object inherits
+			attest(keysOf(type({ constructor: "'a'" }).or({ kind: "'b'" }))).equals([
+				"anyOf"
+			])
+			// a branch that isn't an object
+			attest(keysOf(type({ kind: "'a'", x: "string" }).or("string"))).equals([
+				"anyOf"
+			])
+		})
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1470

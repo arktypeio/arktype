@@ -30,13 +30,14 @@ A [precompiled](/docs/precompile) validator has `toJsonSchema()`, its schema bak
 
 ## Options
 
-| option      | default           | effect                                                                                                           |
-| ----------- | ----------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `target`    | `"draft-2020-12"` | what to write, `"draft-2020-12"`, `"draft-07"`, [`"openapi-3.0"`](#openapi-30) or [`"openapi-3.1"`](#openapi-31) |
-| `dialect`   | the target's URL  | the `$schema` value. `null` omits it. Takes precedence over `target`'s URL                                       |
-| `useRefs`   | `false`           | write every part once under `$defs`, not only [cyclic aliases](#cyclic-types), and point to it with `$ref`       |
-| `aliasDefs` | `false`           | write [a scope's aliases](#named-aliases) once under `$defs`, named by the alias, not only cyclic ones           |
-| `fallback`  | throws            | what to write for a part JSON Schema can't express. See [Fallbacks](#fallbacks)                                  |
+| option          | default                                     | effect                                                                                                                |
+| --------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `target`        | `"draft-2020-12"`                           | what to write, `"draft-2020-12"`, `"draft-07"`, [`"openapi-3.0"`](#openapi-30) or [`"openapi-3.1"`](#openapi-31)      |
+| `dialect`       | the target's URL                            | the `$schema` value. `null` omits it. Takes precedence over `target`'s URL                                            |
+| `useRefs`       | `false`                                     | write every part once under `$defs`, not only [cyclic aliases](#cyclic-types), and point to it with `$ref`            |
+| `aliasDefs`     | `false`                                     | write [a scope's aliases](#named-aliases) once under `$defs`, named by the alias, not only cyclic ones                |
+| `discriminator` | `true` for `"openapi-3.0"` / `"openapi-3.1"` | name the key a [discriminated union](#discriminated-unions)'s `oneOf` is told apart by with OpenAPI's `discriminator` |
+| `fallback`      | throws                                      | what to write for a part JSON Schema can't express. See [Fallbacks](#fallbacks)                                       |
 
 ### target
 
@@ -86,7 +87,7 @@ Pair.toJsonSchema({ target: "draft-07" })
 What OpenAPI 3.0 can't express goes to a [fallback](#fallbacks), so `toJsonSchema()` throws for it by default:
 
 - A tuple's elements, since `items` is one schema for every element, go to `arrayPrefix`.
-- `patternProperties` and `propertyNames` go to `indexKey`. A `string` index signature with no declared keys is still `additionalProperties`.
+- `patternProperties` and `propertyNames` go to `indexKey`. A `string` index signature is still `additionalProperties`, unless a declared key's value allows more than its own.
 - Definitions go to `defs`. A `$ref` points into the document's `#/components/schemas`, which a Schema Object can't hold, so the handler receives them to put there:
 
 ```ts
@@ -239,10 +240,12 @@ const schema = types.User.toJsonSchema({ aliasDefs: true })
 | `"string.json"`                                       | `contentMediaType: "application/json"`              |
 | `"'a' \| 'b'"`                                        | `type: "string"`, `enum: ["a", "b"]`                |
 | `"string \| null"`                                    | `anyOf`                                             |
+| `{ kind: "'a'" }` or `{ kind: "'b'" }`                | [`oneOf`](#discriminated-unions)                    |
 | `{ "name?": "string" }`                               | `properties`, with only required keys in `required` |
 | `{ "+": "reject", ... }`                              | `additionalProperties: false`                       |
 | `"Record<string, number>"`                            | `additionalProperties: {...}`                       |
-| `{ id: "string", "[string]": "string" }`              | `patternProperties: { "": {...} }`                  |
+| `{ id: "string", "[string]": "string" }`              | `additionalProperties: {...}`                       |
+| `{ id: "string \| number", "[string]": "string" }`    | `patternProperties: { "": {...} }`                  |
 | `{ "[/^x-/]": "string" }`                             | `patternProperties: { "^x-": {...} }`               |
 | `{ "[string <= 3]": "number", "+": "reject" }`        | `propertyNames`, `additionalProperties: {...}`      |
 | `{ role: "string = 'user'" }`                         | `default: "user"` on `role`                         |
@@ -250,11 +253,57 @@ const schema = types.User.toJsonSchema({ aliasDefs: true })
 
 JSON Schema's `pattern` has no flags. `d` and `g` don't change what a regex matches, so they're left out, as is `u` for draft 2020-12, whose patterns are read with it. Any other flag, like `i` in `/^a/i`, goes to the [`patternFlags`](#fallback-codes) fallback.
 
-An index signature applies to every key, including declared ones. JSON Schema skips declared keys in `additionalProperties`, so an index signature next to declared keys is written as `patternProperties` with a pattern every key matches.
+An index signature applies to every key, including declared ones. JSON Schema skips declared keys in `additionalProperties`, so a `string` index signature is written there only if each declared key's value is already within the index's, as `id` is above. Otherwise it's written as `patternProperties` with a pattern every key matches, which checks the declared keys too. OpenAPI 3.0 and some LLM structured output APIs have no `patternProperties`, so they can read only the first.
 
 A keyword's `format`, `contentEncoding` or `contentMediaType` names what its strings are. JSON Schema reads each as an annotation, which a validator doesn't check unless it's configured to, so it's written whether or not arktype's check matches the standard's definition exactly. A keyword checked by a regex is written with that `pattern` too, so a validator that ignores formats still checks what arktype does. One checked by a function is written as its format alone: `string.date` accepts whatever `Date` parses, and `string.url` whatever `URL.canParse` does, so their schemas accept strings the Type rejects. A validator that asserts formats, like Ajv with `ajv-formats`, can also reject strings arktype accepts, where a format's RFC differs from arktype's check: `date-time` requires a time that `string.date` and `string.date.iso` don't, and `uri` rejects the space in a path that `string.url` accepts. Keywords no format names, like `string.date.epoch` or `string.creditCard`, go to the [`predicate`](#fallback-codes) fallback.
 
-A key that isn't `string` or a single regex, like `[string <= 3]`, needs `propertyNames`, which checks every key of the object. That's only the same thing when every key must match it: undeclared keys are rejected, it's the only index signature, and every declared key matches it. Any other such key goes to the [`indexKey`](#fallback-codes) fallback.
+A key that isn't `string` or a single regex, like `[string <= 3]`, needs `propertyNames`, which checks every key of the object. That's only the same thing when every key must match it: undeclared keys are rejected, it's the only index signature, and every declared key matches it. Its value is then `additionalProperties`, or, if a declared key's value allows more than it does, `patternProperties: { "": {...} }`. Any other such key goes to the [`indexKey`](#fallback-codes) fallback.
+
+### Discriminated unions
+
+A union whose object branches each require a string at one key, no value of which two branches allow, is written as `oneOf`, since no data can match two of its branches. For `"openapi-3.0"`, or where the `discriminator` option is `true`, it names that key with OpenAPI's [`discriminator`](https://spec.openapis.org/oas/v3.0.3#discriminator-object), so a code generator models it as a tagged union:
+
+```ts
+const Destination = type({ type: "'bankAccount'", routing: "string" }).or({
+	type: "'card'",
+	last4: "string"
+})
+
+const schema = Destination.toJsonSchema({ target: "openapi-3.0" })
+```
+
+```json
+{
+	"oneOf": [
+		{
+			"type": "object",
+			"properties": {
+				"routing": { "type": "string" },
+				"type": { "type": "string", "enum": ["bankAccount"] }
+			},
+			"required": ["routing", "type"]
+		},
+		{
+			"type": "object",
+			"properties": {
+				"last4": { "type": "string" },
+				"type": { "type": "string", "enum": ["card"] }
+			},
+			"required": ["last4", "type"]
+		}
+	],
+	"discriminator": { "propertyName": "type" }
+}
+```
+
+- The key is the first one the first branch requires that tells every branch apart.
+- A branch that's a `$ref`, like a [cyclic alias](#cyclic-types) or any part with `useRefs`, is listed in `discriminator.mapping` under each value it allows. An inline branch is found by its own value.
+- `discriminator` isn't a JSON Schema keyword, and Ajv rejects it unless its `discriminator` option is set, so draft targets write it only where the option is `true`, as an OpenAPI 3.1 document reads it.
+- Any other union is `anyOf`: one where two branches allow the same value, a branch doesn't require the key, the values aren't strings, or a branch isn't an object. A `null` branch is written beside the `oneOf`: `anyOf: [{ oneOf: [...] }, { type: "null" }]`.
+
+### never
+
+`never`, which accepts nothing, is `{ not: {} }` for every target. An empty `enum` would say the same, but OpenAPI 3.0 requires an `enum` to list something, and LLM APIs like OpenAI's reject it. An optional key of `undefined` alone, like `{ "b?": "undefined" }`, is `never` in JSON, which can only leave it out.
 
 ## Your own schema
 
@@ -269,6 +318,22 @@ Even.toJsonSchema() // { $schema: "...", type: "integer", multipleOf: 2 }
 ```
 
 The Type's other meta, like a description, is still written beside it. Unlike other meta, `jsonSchema` is configured on the Type alone, not on the Types it references, since it describes the whole Type.
+
+### Meta
+
+Meta is written only where it's a JSON Schema annotation: `title`, `description`, `default`, `examples`, `deprecated`, `readOnly`, `writeOnly`, `$comment`, `format`, `contentEncoding` and `contentMediaType`, plus any key starting with `x-` you add to [`ArkEnv.meta`](/docs/configuration#metadata). Anything else, like `alias`, `onFail`, the words configured for errors or another key you add, is left out, since strict validators like Ajv's, OpenAPI 3.0 and LLM APIs reject keywords they don't know. To write another key, put it in `jsonSchema`:
+
+```ts
+const Id = type("string").configure({
+	alias: "Id", // left out
+	readOnly: true,
+	jsonSchema: { type: "string", $id: "https://example.com/id" }
+})
+
+Id.toJsonSchema() // { $schema: "...", readOnly: true, type: "string", $id: "https://example.com/id" }
+```
+
+OpenAPI 3.0 has no `$comment` or `contentMediaType`, so they're left out of its schemas.
 
 ## Fallbacks
 
@@ -313,7 +378,7 @@ Event.toJsonSchema({ fallback: ctx => ctx.base })
 
 Leaving something out makes the schema accept values the Type rejects.
 
-For `defaultValue`, `base` is the property's own schema, so returning it makes the schema contain itself. Return `undefined` to drop the default instead, e.g. `{ defaultValue: () => undefined, default: ctx => ctx.base }`.
+A default is a value, not a schema, so `defaultValue` has no `base`, and `ctx => ctx.base` leaves the default out. Its handler returns the JSON to write as the default, or `undefined` to omit it.
 
 ### Morphs
 
@@ -368,7 +433,7 @@ Every reason `toJsonSchema()` can throw, with the fields its handler receives be
 | `defaultValue`        | a default that isn't JSON. Return `undefined` to omit it                              | `type({ n: "bigint = 5n" })`, after `domain` | `value`                                          |
 | `defs`                | for OpenAPI, the definitions `$ref`s point to                                         | a cyclic Type                                | `defs`, by name                                  |
 | `domain`              | `bigint` or `symbol`                                                                  | `type("bigint")`                             | `domain`                                         |
-| `indexKey`            | a key `propertyNames` can't express, or for `openapi-3.0` any key but a lone `string` | `type({ "[string <= 3]": "number" })`        | `key` and `value`, as schemas                    |
+| `indexKey`            | a key `propertyNames` can't express, or `additionalProperties` can't in `openapi-3.0` | `type({ "[string <= 3]": "number" })`        | `key` and `value`, as schemas                    |
 | `morph`               | a morph                                                                               | `type("string.trim")`                        | `out`, the output schema or `null`               |
 | `patternFlags`        | a regex flag other than `d`, `g` or, for draft 2020-12, `u`                           | `type(/^a/i)`                                | `pattern`, `flags`                               |
 | `patternIntersection` | a second regex on the same string                                                     | `type(/^a/).and(/b$/)`                       | `pattern`                                        |
@@ -436,7 +501,7 @@ Form["~standard"].jsonSchema.output({ target: "draft-2020-12" })
 Unlike `toJsonSchema()`, these never throw for a part JSON Schema can't express. They write as much of it as JSON Schema can describe, or `{}` if nothing, so `id` above accepts any value. A regex with flags is left out too, and so is an index signature `propertyNames` can't express, along with the `additionalProperties: false` that would reject the keys it allows.
 
 - `target` must be `"draft-2020-12"`, `"draft-07"` or `"openapi-3.0"`. Anything else throws.
-- For `"openapi-3.0"`, a tuple is an array of its length, and definitions are written beside the `$ref` as `definitions`, for you to move into `#/components/schemas`, where the `$ref`s point.
+- For `"openapi-3.0"`, a tuple is an array of its length. A Schema Object has nowhere to put definitions, so they're written as `definitions` beside the schema, and each `$ref` points there, like `#/definitions/Node`, as zod writes them. The schema resolves its own `$ref`s as returned. To put it in an OpenAPI document, move `definitions` to `components.schemas` and replace `#/definitions/` with `#/components/schemas/` in its `$ref`s. A `defs` handler you configure gets `#/components/schemas/` `$ref`s, as `toJsonSchema()`'s does.
 - `libraryOptions` are passed to `toJsonSchema()` as options, e.g. `{ dialect: null }`.
 - Fallback handlers you configure or pass in `libraryOptions` still apply. Only the default throwing handlers are replaced.
 - `input` writes each morph's input, so it never calls a `morph` handler. It keeps defaults, and allows keys `"+": "delete"` would remove.

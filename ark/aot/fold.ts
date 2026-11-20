@@ -1,5 +1,5 @@
-import { hasArkKind } from "@ark/schema"
-import { hashOf } from "@ark/util"
+import { hasArkKind } from "arktype/schema"
+import { hashOf } from "arktype/util"
 import type {
 	Configured,
 	FactoryParam,

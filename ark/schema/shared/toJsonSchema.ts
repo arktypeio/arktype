@@ -106,7 +106,7 @@ export const annotatingFallback: ToJsonSchema.HandlerByCode = {
 		return items ? annotate(annotated, "items", items) : annotated
 	},
 	// written as the default itself
-	defaultValue: ctx => defaultValueSerializer(ctx.value) as never,
+	defaultValue: ctx => defaultValueSerializer(ctx.value),
 	defs: ctx => annotate(ctx.base, "defs", ctx.defs),
 	domain: ctx => annotate(ctx.base, "domain", ctx.domain),
 	indexKey: ctx =>
@@ -168,8 +168,9 @@ const standardFallback: ToJsonSchema.HandlerByCode = {
 		(Array.isArray(items) ? { ...base, items } : base) as never,
 	arrayPrefix: keepBase,
 	defaultValue: () => undefined,
-	// a caller can move them to where the $refs point
-	defs: ({ base, defs }) => ({ ...base, definitions: defs }) as never,
+	// beside the $refs, which point to #/definitions/ here, so the schema
+	// resolves its own, and a caller can move them to components.schemas
+	defs: ({ base, defs }) => ({ ...base, definitions: defs }),
 	domain: keepBase,
 	// rejecting undeclared keys would reject those the index allows
 	indexKey: ({ base }) => {
@@ -223,6 +224,15 @@ export declare namespace ToJsonSchema {
 		base: base
 	}
 
+	// a default is a value, not a schema, so there's no base a handler could
+	// return as the default of the schema it is in, making it contain itself:
+	// ctx => ctx.base omits it
+	export interface DefaultValueContext {
+		code: "defaultValue"
+		base?: undefined
+		value: Unjsonifiable
+	}
+
 	export interface ArrayObjectContext
 		extends BaseContext<"arrayObject", JsonSchema.Array> {
 		object: JsonSchema.Object
@@ -238,11 +248,6 @@ export declare namespace ToJsonSchema {
 		elements: readonly JsonSchema[]
 		/** the elements after the prefix, if any */
 		items?: JsonSchema
-	}
-
-	export interface DefaultValueContext
-		extends BaseContext<"defaultValue", JsonSchema> {
-		value: Unjsonifiable
 	}
 
 	export interface DefsContext extends BaseContext<"defs", JsonSchema> {
@@ -349,7 +354,7 @@ export declare namespace ToJsonSchema {
 			arrayPostfix: (ctx: ArrayPostfixContext) => VariadicArraySchema
 			arrayPrefix: (ctx: ArrayPrefixContext) => JsonSchema.Array
 			// undefined omits the default
-			defaultValue: (ctx: DefaultValueContext) => JsonSchema | undefined
+			defaultValue: (ctx: DefaultValueContext) => Json | undefined
 			defs: (ctx: DefsContext) => JsonSchema
 			domain: (ctx: DomainContext) => JsonSchema
 			indexKey: (ctx: IndexKeyContext) => JsonSchema.Object
@@ -373,7 +378,10 @@ export declare namespace ToJsonSchema {
 		"pattern"
 	>
 
-	export type UniversalFallback = (ctx: FallbackContext) => JsonSchema
+	// undefined only omits a default, which no other code's result can be
+	export type UniversalFallback = (
+		ctx: FallbackContext
+	) => JsonSchema | undefined
 
 	export interface FallbackObject extends Partial<HandlerByCode> {
 		default?: UniversalFallback
@@ -426,10 +434,23 @@ export declare namespace ToJsonSchema {
 		 * @default false
 		 */
 		aliasDefs?: boolean | readonly string[]
+		/**
+		 * whether a union written as `oneOf`, since its object branches each
+		 * require a different string at one key, names that key with OpenAPI's
+		 * `discriminator`, and maps each value to a branch that's a `$ref`
+		 *
+		 * JSON Schema has no `discriminator` keyword, and a strict validator
+		 * like Ajv rejects it unless configured to read it
+		 *
+		 * @default true for "openapi-3.0" and "openapi-3.1", otherwise false
+		 */
+		discriminator?: boolean
 		fallback?: FallbackOption
 	}
 
-	export interface Context extends Required<Options> {
+	export interface Context
+		extends Required<Omit<Options, "discriminator">>,
+			Pick<Options, "discriminator"> {
 		fallback: HandlerByCode
 		/** set by ~standard.jsonSchema.input to write a Type as it's accepted */
 		io?: "in"

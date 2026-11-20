@@ -4,7 +4,7 @@ import type {
 	JsonPrimitive,
 	noSuggest,
 	NonNegativeIntegerLiteral
-} from "@ark/util"
+} from "arktype/util"
 import type { InferredJsonSchema } from "./jsonSchema.ts"
 
 export type inferJsonSchema<schema, root = schema> =

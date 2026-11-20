@@ -20,11 +20,10 @@ const anyOfPrefix = ({
 	items: { anyOf: items ? [...elements, items] : elements }
 })
 
-// nullable and example aren't part of the JsonSchema type
 const toOpenApi = (
 	t: { toJsonSchema: (opts: ToJsonSchema.Options) => JsonSchema },
 	opts?: ToJsonSchema.Options
-): object => t.toJsonSchema({ ...opts, target })
+): JsonSchema => t.toJsonSchema({ ...opts, target })
 
 contextualize(() => {
 	it("exclusive bounds", () => {
@@ -98,6 +97,91 @@ contextualize(() => {
 		})
 	})
 
+	it("discriminated union", () => {
+		const Destination = type({ type: "'bankAccount'", routing: "string" }).or({
+			type: "'card' | 'debitCard'",
+			last4: "string"
+		})
+		attest(toOpenApi(Destination)).snap({
+			oneOf: [
+				{
+					type: "object",
+					properties: {
+						last4: { type: "string" },
+						type: { type: "string", enum: ["card", "debitCard"] }
+					},
+					required: ["last4", "type"]
+				},
+				{
+					type: "object",
+					properties: {
+						routing: { type: "string" },
+						type: { type: "string", enum: ["bankAccount"] }
+					},
+					required: ["routing", "type"]
+				}
+			],
+			discriminator: { propertyName: "type" }
+		})
+		attest(toOpenApi(Destination, { discriminator: false })).snap({
+			oneOf: (toOpenApi(Destination) as JsonSchema.OneOf).oneOf
+		})
+	})
+
+	it("discriminated union of definitions maps each value", () => {
+		const { Ab } = scope({
+			A: { kind: "'a'", "next?": "B" },
+			B: { kind: "'b' | 'c'", "next?": "A" },
+			Ab: "A | B"
+		}).export()
+		attest(toOpenApi(Ab, { fallback: { defs: ctx => ctx.base } })).snap({
+			oneOf: [
+				{ $ref: "#/components/schemas/B" },
+				{ $ref: "#/components/schemas/A" }
+			],
+			discriminator: {
+				propertyName: "kind",
+				mapping: {
+					a: "#/components/schemas/A",
+					b: "#/components/schemas/B",
+					c: "#/components/schemas/B"
+				}
+			}
+		})
+	})
+
+	it("nullable discriminated union", () => {
+		const T = type({ kind: "'a'", a: "string" })
+			.or({ kind: "'b'", b: "number" })
+			.or("null")
+		attest(toOpenApi(T)).snap({
+			anyOf: [
+				{
+					oneOf: [
+						{
+							type: "object",
+							properties: {
+								a: { type: "string" },
+								kind: { type: "string", enum: ["a"] }
+							},
+							required: ["a", "kind"]
+						},
+						{
+							type: "object",
+							properties: {
+								b: { type: "number" },
+								kind: { type: "string", enum: ["b"] }
+							},
+							required: ["b", "kind"]
+						}
+					],
+					discriminator: { propertyName: "kind" }
+				},
+				{ type: "string", nullable: true, enum: [null] }
+			]
+		})
+	})
+
 	it("not equal", () => {
 		attest(toOpenApi(type("number != 5"))).snap({
 			type: "number",
@@ -114,6 +198,15 @@ contextualize(() => {
 			type: "array",
 			items: { type: "string" }
 		})
+	})
+
+	it("leaves out meta it has no keyword for", () => {
+		const T = type("string").configure({
+			$comment: "internal",
+			readOnly: true,
+			examples: ["a"]
+		})
+		attest(toOpenApi(T)).snap({ type: "string", readOnly: true, example: "a" })
 	})
 
 	it("examples", () => {
@@ -216,6 +309,31 @@ contextualize(() => {
 }`)
 		attest(toOpenApi(T, { fallback: { indexKey: ctx => ctx.base } })).snap({
 			type: "object"
+		})
+	})
+
+	it("string index next to declared keys", () => {
+		const T = type({ a: "number", "[string]": "number" })
+		const expected: JsonSchema.Object = {
+			type: "object",
+			properties: { a: { type: "number" } },
+			required: ["a"],
+			additionalProperties: { type: "number" }
+		}
+		attest(toOpenApi(T)).equals(expected)
+		attest(T["~standard"].jsonSchema.input({ target })).equals(expected)
+	})
+
+	it("string index next to a declared value it narrows", () => {
+		const T = type({ a: "number | string", "[string]": "number" })
+		attest(() => toOpenApi(T)).throws(
+			'Can\'t convert "indexKey" to JSON Schema.'
+		)
+		// what's representable, without the index a would have to satisfy
+		attest(T["~standard"].jsonSchema.input({ target })).snap({
+			type: "object",
+			properties: { a: { anyOf: [{ type: "number" }, { type: "string" }] } },
+			required: ["a"]
 		})
 	})
 
@@ -405,17 +523,27 @@ contextualize(() => {
 		)
 	})
 
-	it("standard cyclic", () => {
+	// one schema, not a document, so its $refs resolve against itself
+	it("standard cyclic refs the definitions beside it", () => {
 		const { Node } = scope({ Node: { "next?": "Node" } }).export()
 		attest(Node["~standard"].jsonSchema.input({ target })).snap({
-			$ref: "#/components/schemas/Node",
+			$ref: "#/definitions/Node",
 			definitions: {
 				Node: {
 					type: "object",
-					properties: { next: { $ref: "#/components/schemas/Node" } }
+					properties: { next: { $ref: "#/definitions/Node" } }
 				}
 			}
 		})
+		// a configured handler puts them in components.schemas, as for toJsonSchema
+		attest(
+			Node["~standard"].jsonSchema.input({
+				target,
+				libraryOptions: {
+					fallback: { defs: (ctx: ToJsonSchema.DefsContext) => ctx.base }
+				}
+			})
+		).snap({ $ref: "#/components/schemas/Node" })
 	})
 
 	it("unknown target", () => {

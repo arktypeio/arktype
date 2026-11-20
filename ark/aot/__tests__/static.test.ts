@@ -14,6 +14,14 @@ import {
 const unhinted = (...args: Parameters<typeof diagnosticsOf>) =>
 	diagnosticsOf(...args).map(d => d.slice(0, d.lastIndexOf("\n")))
 
+// main.tsx's diagnostics without their hints where a build drops `expression`,
+// so converting what may be a Type to a string is refused
+const unhintedTsx = (files: Record<string, string>) =>
+	new Precompiler(memoryHost(files), { members: { expression: false } })
+		.analyzeSites(files["/main.tsx"], "/main.tsx")
+		.diagnostics.map(renderDiagnostic)
+		.map(d => d.slice(0, d.lastIndexOf("\n")))
+
 // a read of a member no setting decides is baked where the build sees it, so
 // one a setting drops shows where the build sees a Type flow
 const dropsDescription: PrecompileOptions = { members: { description: false } }
@@ -1103,6 +1111,41 @@ export const editOrNone = (saved: string | undefined) => unlessSaved(saved).or("
 			attest(diagnosticsOf(source)).equals([])
 		})
 
+		it("a Type declare<X>() defines, whose narrow reads a parameter", () => {
+			// as a call to a parser read off `declare<X>()` returns a Type, what
+			// reads one it returns is followed as one reading `Address.narrow(...)`
+			const address = `import { type } from "arktype"
+const Address = type({ line1: "string" })
+const isLine = (a: typeof Address.infer) => a.line1.length > 0
+export const Line = type.declare<{ line1: string }>().type(Address.narrow(isLine))
+export const unlessSaved = (saved: string | undefined) =>
+	type.declare<{ line1: string }>().type(Address.narrow(a => a.line1 === saved || isLine(a)))`
+			const source = `import { scope, type } from "arktype"
+import { Line, unlessSaved } from "./address.ts"
+export const Account = type.declare<{ address: { line1: string } | undefined }>().type({ address: Line.or(type.undefined) })
+export const edit = (saved: string | undefined) => {
+	const address = unlessSaved(saved).or(type.undefined)
+	return Account.merge({ address })
+}
+const $ = scope({ line: "string" })
+const lineFor = (saved: string) => $.declare<{ line1: string }>().type({ line1: "line" }).narrow(a => a.line1 !== saved)
+export const editLine = (saved: string) => lineFor(saved).or(type.undefined)
+const issuesOf = (schema: type.Any, data: unknown) => {
+	const result = schema["~standard"].validate(data)
+	return result instanceof Promise ? [] : (result.issues ?? []).map(issue => issue.path ?? [])
+}
+console.log(issuesOf(unlessSaved(undefined), {}))`
+			attest(statusesOf(source, { "/address.ts": address })).snap([
+				"3:24 accepted { address: { line1: string } & isLine$hole_1hftpaj18xlch1 | undefined }",
+				"5:18 accepted { line1: string } & fn$hole_1nkatgu1qvz07u | undefined",
+				"6:9 accepted { address: { line1: string } & fn$hole_1nkatgu1qvz07u | undefined }",
+				"8:11 accepted",
+				"9:36 accepted { line1: string } & fn$hole_hgu1b30q64q3u",
+				"10:44 accepted { line1: string } & fn$hole_hgu1b30q64q3u | undefined"
+			])
+			attest(diagnosticsOf(source, { "/address.ts": address })).equals([])
+		})
+
 		it("what a call returns, composed", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
@@ -2131,6 +2174,70 @@ console.log(Object.keys(typeof d === "string" ? Parsed : Name), Object.keys(d ||
 			])
 		})
 
+		it("a member of a namespace another namespace re-exports", () => {
+			attest(
+				unhintedTsx({
+					"/common.ts": `export * as Caches from "./stores/index.ts"`,
+					"/stores/index.ts": `export * as Entities from "./rollup.ts"`,
+					"/stores/rollup.ts": `export * as Report from "./report.ts"
+export * as Schemas from "./schemas.ts"`,
+					"/stores/schemas.ts": `import { type } from "arktype"
+export const User = type({ name: "string" })`,
+					"/stores/report.ts": `type Report = { id: string; destinationId?: string; fallbackId?: string; documents: { id: string }[] }
+declare const reports: Record<string, Report>
+export const useReport = (id: string): Report | undefined => reports[id]`,
+					"/main.tsx": `import { Caches } from "./common.ts"
+export const Panel = ({ id }: { id: string }) => {
+	const report = Caches.Entities.Report.useReport(id)
+	const documents = report?.documents ?? []
+	const key = report?.destinationId ? "custom" : report?.fallbackId || "none"
+	return (
+		<div key={\`\${report?.id}-\${key}\`}>
+			{documents.map((doc, index) => <p key={doc.id}>{\`Receipt \${index + 1}\`}</p>)}
+		</div>
+	)
+}
+export const label = \`\${Caches.Entities.Schemas.User}\`
+export const named = String(Caches["Entities"].Schemas.User)`
+				})
+			).snap([
+				"/main.tsx:12:22  `${Caches.Entities.Schemas.User}` reads expression, which a standalone validator lacks\n  `Caches.Entities.Schemas.User` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				'/main.tsx:13:22  String(Caches["Entities"].Schemas.User) reads expression, which a standalone validator lacks\n  `Caches["Entities"].Schemas.User` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read'
+			])
+		})
+
+		it("what a function returns off an object a factory made", () => {
+			attest(
+				unhintedTsx({
+					"/provider.ts": `import { createContext, useContext } from "react"
+import { type } from "arktype"
+type State<t> = { state?: t }
+const Fallback = type("string")
+export const createStateProvider = () => {
+	const Context = createContext(undefined)
+	const useState = <t>() => useContext(Context) as State<t>
+	const useSchema = <t>() => (useContext(Context) as State<t>) ?? Fallback
+	return { useState, useSchema }
+}`,
+					"/main.tsx": `import { type } from "arktype"
+import { createStateProvider } from "./provider.ts"
+export const Contact = type({ name: "string" })
+const Provider = createStateProvider()
+export const Page = ({ contactId }: { contactId: string }) => {
+	const contact = Provider.useState<typeof Contact.infer>().state
+	const onClick = () => {
+		if (!contactId || !contact?.name) return
+		toast(\`Unarchived \${contact.name}\`)
+	}
+	return <button onClick={onClick} title={\`\${Provider.useSchema()}\`} />
+}
+declare const toast: (title: string) => void`
+				})
+			).snap([
+				"/main.tsx:11:42  `${Provider.useSchema()}` reads expression, which a standalone validator lacks\n  the build can't tell where `Provider.useSchema()` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+			])
+		})
+
 		it("a Type a getter returns or this reads in a static member", () => {
 			attest(
 				unhinted(`import { type } from "arktype"
@@ -2952,8 +3059,8 @@ export const holder = { s: scope({ g: "string" }) }`)
 
 		it("packages reading arktype's nodes", () => {
 			attest(
-				diagnosticsOf(`import { discriminate } from "arksets"
-import { ArkErrors, hasArkKind, Traversal } from "@ark/schema"
+				diagnosticsOf(`import { discriminate } from "arktype/sets"
+import { ArkErrors, hasArkKind, Traversal } from "arktype/schema"
 import { type } from "arktype"
 const T = type({ a: "0" }).or({ a: "1" })
 const check = (f: () => void) => f()
@@ -2962,16 +3069,16 @@ console.log(T({}) instanceof ArkErrors, Traversal.name)
 // @ark-runtime
 const D = discriminate(type({ a: "0" }).or({ a: "1" }).internal as never)`)
 			).snap([
-				'/main.ts:6:25  `discriminate` is used outside a runtime island\n  arksets reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".',
-				'/main.ts:6:51  `hasArkKind` is used outside a runtime island\n  @ark/schema reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".',
-				"/main.ts:7:30  `ArkErrors` is @ark/schema's, not the standalone runtime's\n  what a standalone validator creates isn't an instance of @ark/schema's ArkErrors\n  Import ArkErrors from arktype, which a standalone build resolves to its runtime, or read type.errors."
+				'/main.ts:6:25  `discriminate` is used outside a runtime island\n  arktype/sets reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".',
+				'/main.ts:6:51  `hasArkKind` is used outside a runtime island\n  arktype/schema reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".',
+				"/main.ts:7:30  `ArkErrors` is arktype/schema's, not the standalone runtime's\n  what a standalone validator creates isn't an instance of arktype/schema's ArkErrors\n  Import ArkErrors from arktype, which a standalone build resolves to its runtime, or read type.errors."
 			])
 		})
 
-		it("@ark/schema or islands without error detail", () => {
+		it("arktype/schema or islands without error detail", () => {
 			attest(
 				diagnosticsOf(
-					`import { Traversal } from "@ark/schema"
+					`import { Traversal } from "arktype/schema"
 import { type } from "arktype"
 console.log(Traversal.name)
 // @ark-runtime
@@ -2980,7 +3087,7 @@ const T = type("string")`,
 					{ errors: "none" }
 				)
 			).snap([
-				"/main.ts:3:13  `Traversal` is @ark/schema's, not the standalone runtime's\n  what a standalone validator creates isn't an instance of @ark/schema's Traversal\n  Import Traversal from arktype, which a standalone build resolves to its runtime.",
+				"/main.ts:3:13  `Traversal` is arktype/schema's, not the standalone runtime's\n  what a standalone validator creates isn't an instance of arktype/schema's Traversal\n  Import Traversal from arktype, which a standalone build resolves to its runtime.",
 				'/main.ts:5:1  a runtime island returns arktype\'s errors, which aren\'t instances of type.errors under errors: "none"\n  a build whose errors say only that data is invalid gives its validators a runtime of their own\n  Precompile the definition, or build without errors: "none".'
 			])
 		})

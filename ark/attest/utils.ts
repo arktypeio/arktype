@@ -1,5 +1,5 @@
 import { caller } from "@ark/fs"
-import { throwError } from "@ark/util"
+import { throwError } from "arktype/util"
 import { existsSync } from "node:fs"
 import { basename, relative, resolve } from "node:path"
 import ts from "typescript"

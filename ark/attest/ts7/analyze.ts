@@ -1,4 +1,4 @@
-import { flatMorph, throwInternalError } from "@ark/util"
+import { flatMorph, throwInternalError } from "arktype/util"
 import type {
 	ArgAssertionData,
 	AssertionsByFile,

@@ -401,7 +401,7 @@ extra must be a string or null (was missing)`)
 		const Amount = type(
 			"string",
 			":",
-			(s, ctx) => Number.isInteger(Number(s)) || ctx.reject("number")
+			(s, ctx) => Number.isInteger(Number(s)) || ctx.mustBe("number")
 		)
 			.pipe((s, ctx) => {
 				try {
@@ -1241,7 +1241,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		)
 	})
 
-	it("ArkErrors not assignable to ArkErrorInput", () => {
+	it("ArkErrors not assignable to RejectInput", () => {
 		attest(() =>
 			type({
 				type: "string"
@@ -1253,7 +1253,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 				return true
 			})
 		).type.errors(
-			"Argument of type 'ArkErrors' is not assignable to parameter of type 'ArkErrorInput'"
+			"Argument of type 'ArkErrors' is not assignable to parameter of type 'RejectInput'"
 		)
 	})
 

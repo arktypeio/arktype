@@ -1,4 +1,4 @@
-import { hashOf } from "@ark/util"
+import { hashOf } from "arktype/util"
 import { cellPrefix, heldSpecifier } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
 import type { Node, Program, Span, VariableDeclarator } from "oxc-parser"

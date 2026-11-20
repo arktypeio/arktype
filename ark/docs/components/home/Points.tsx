@@ -259,13 +259,13 @@ export const Startup = () => {
 			layout="split"
 			stat={{
 				value: zodRatio,
-				unit: "less work to start than Zod 4, on a login app"
+				unit: "fewer startup instructions than Zod 4, on a login app"
 			}}
 			title="Nothing to parse at startup."
 			deck={
 				<>
 					<ClaimText claim={claims.noInit} /> On the same app, that's{" "}
-					{valibotPercent}% less work than Valibot.
+					{valibotPercent}% fewer startup instructions than Valibot.
 				</>
 			}
 			figure={<BootLog />}

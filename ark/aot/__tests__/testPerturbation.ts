@@ -7,9 +7,9 @@ import {
 	type PrecompileOptions,
 	type ReadProgram
 } from "@ark/aot"
-import { hasArkKind } from "@ark/schema"
-import { errorWritersByCode } from "@ark/schema/internal"
-import { arkKindOf } from "@ark/util"
+import { hasArkKind } from "arktype/schema"
+import { errorWritersByCode } from "arktype/schema/internal"
+import { arkKindOf } from "arktype/util"
 import { isTypedFn, keyOf, type Foldable } from "arktype/internal/standalone.ts"
 import { bakedJsonSchemaOptionsMessage } from "arktype/runtime"
 import { bindingOfFunction, isArk } from "@ark/aot/internal/graph.ts"

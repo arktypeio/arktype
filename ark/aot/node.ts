@@ -1,4 +1,4 @@
-import { throwError } from "@ark/util"
+import { throwError } from "./util.ts"
 import { existsSync } from "node:fs"
 import module, { type LoadFnOutput } from "node:module"
 import { fileURLToPath } from "node:url"

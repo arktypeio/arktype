@@ -1,10 +1,10 @@
 # ArkType
 
-> TypeScript's smallest, fastest validator.
+> TypeScript's smallest, fastest validator. One prompt away.
 
 The homepage's benchmark board averages other projects' public benchmarks, each in the unit it measures. Standings as of November 19, 2026. [The rule it follows, every result behind it and how to rerun them](https://arktype.io/docs/precompile/benchmarks.md)
 
-ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. @ark/aot precompiles them when a project builds, so its validators ship without arktype's parser. ArkRegex, Attest, @ark/json-schema and ArkSets are its companion packages.
+ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types, with set algebra (`arktype/sets`) and type-safe regex (`arktype/regex`) built in. @ark/aot precompiles them when a project builds, so its validators ship without arktype's parser. ArkRegex, Attest, @ark/json-schema and @ark/fast-check are its companion packages.
 
 Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/llms-full.txt) has every ArkType page in one file. Coding agents can also install the ArkType skill, which covers writing, precompiling and migrating to ArkType, with `npx skills add arktypeio/arktype`; see [Agents](https://arktype.io/docs/agents.md).
 
@@ -30,7 +30,7 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 - [Codecs](https://arktype.io/docs/codecs.md): Pair a morph with its inverse to encode output back into input.
 - [Scopes](https://arktype.io/docs/scopes.md): Define aliases that reference each other, then use them in definitions or export them as a module of Types.
 - [Generics](https://arktype.io/docs/generics.md): Declare definitions with parameters and instantiate them like TypeScript generics.
-- [Declare](https://arktype.io/docs/declare.md): Define a Type that must match an existing TypeScript type exactly.
+- [Declare](https://arktype.io/docs/declare.md): Define a Type checked against an existing TypeScript type, exactly or as assignable to it.
 
 ## ArkType: Validation
 
@@ -91,7 +91,7 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 - [Overview](https://arktype.io/docs/json-schema.md): Generate JSON Schema from a Type with arktype, or build a Type from JSON Schema with @ark/json-schema.
 - [To JSON Schema](https://arktype.io/docs/json-schema/to-json-schema.md): Generate a JSON Schema from any Type, pick a draft, and decide what to write for what JSON Schema can't express.
 - [From JSON Schema](https://arktype.io/docs/json-schema/from-json-schema.md): Parse a JSON Schema into a Type with @ark/json-schema and give the result a static type.
-- [Keyword support](https://arktype.io/docs/json-schema/support.md): How @ark/json-schema and arksets read each JSON Schema keyword, which ones throw, and which are only annotations.
+- [Keyword support](https://arktype.io/docs/json-schema/support.md): How @ark/json-schema and arktype/sets read each JSON Schema keyword, which ones throw, and which are only annotations.
 
 ## ArkSets
 
@@ -101,14 +101,14 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 
 ## Internals
 
-- [Architecture](https://arktype.io/docs/internals.md): How ArkType is split into @ark/util, @ark/schema, arksets and arktype, and what each package owns.
+- [Architecture](https://arktype.io/docs/internals.md): How ArkType is layered into arktype/util, arktype/schema, arktype/sets and arktype, and what each layer owns.
 - [Nodes](https://arktype.io/docs/internals/nodes.md): The node kinds every Type is built from, and how to read them with .internal, .json and select.
-- [Schemas](https://arktype.io/docs/internals/schemas.md): Build Types from @ark/schema's object format with type.schema, rootSchema, node and schemaScope.
-- [Set algebra](https://arktype.io/docs/internals/sets.md): What importing arksets installs into @ark/schema, and what @ark/schema does without it.
+- [Schemas](https://arktype.io/docs/internals/schemas.md): Build Types from arktype/schema's object format with type.schema, rootSchema, node and schemaScope.
+- [Set algebra](https://arktype.io/docs/internals/sets.md): What importing arktype/sets installs into arktype/schema, and what arktype/schema does without it.
 
 ## Optional
 
-- [ArkType, every page](https://arktype.io/llms-full.txt): TypeScript's 1:1 validator
+- [ArkType, every page](https://arktype.io/llms-full.txt): TypeScript's smallest, fastest validator. One prompt away.
 - [Precompile, every page](https://arktype.io/docs/precompile/llms.txt): Construct your Types when you build
 - [ArkRegex, every page](https://arktype.io/docs/regex/llms.txt): Regular expressions with inferred types
 - [Attest, every page](https://arktype.io/docs/attest/llms.txt): Type assertions and benchmarks

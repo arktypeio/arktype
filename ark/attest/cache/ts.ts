@@ -1,5 +1,10 @@
 import { fromCwd, readFile, type SourcePosition } from "@ark/fs"
-import { printable, throwError, throwInternalError, type dict } from "@ark/util"
+import {
+	printable,
+	throwError,
+	throwInternalError,
+	type dict
+} from "arktype/util"
 import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
 import { resolve, dirname, join } from "node:path"

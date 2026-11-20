@@ -204,7 +204,7 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `z.coerce.number()`, `z.coerce.date()`                        | `type("unknown").pipe(Number).to("number")`, see [Coercion](#coercion-is-a-parse)                                  |
 | `z.coerce.string()`, `z.coerce.boolean()`                     | `type("unknown").pipe(String)`, `type("unknown").pipe(Boolean)`                                                    |
 | `z.stringbool()`                                              | a `.pipe()` over the strings you accept, see [Coercion](#coercion-is-a-parse)                                      |
-| `z.custom<T>(fn)`, `z.custom<T>(fn, "Message")`               | `type("unknown").narrow((v): v is T => fn(v))`, then `.configure({ message: "Message" })`                          |
+| `z.custom<T>(fn)`, `z.custom<T>(fn, "Message")`               | `type("unknown").narrow((v): v is T => fn(v))`, then `.message("Message")`                                         |
 | `.brand<"Id">()`                                              | `.brand("Id")` or `"string#Id"`                                                                                    |
 | `z.codec(In, Out, { decode, encode })`                        | `codec(In, Out, { decode, encode })` from `arktype/codecs`                                                         |
 | `T.decode(x)`, `T.encode(x)`, `T.safeEncode(x)`               | `T.assert(x)`, `T.encode.assert(x)`, `T.encode(x)`                                                                 |
@@ -215,16 +215,16 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 
 Every row is in [Custom messages](#custom-messages), with what each says.
 
-| Zod                                                | ArkType                                                                            |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `.min(1, "Name is required")`, `{ message }`       | `["string >= 1", "@", { message: "Name is required" }]` as a key's value           |
-| the same, on a Type                                | `type("string >= 1").configure({ message: "Name is required" })`                   |
-| `.min(8, "Too short").regex(r, "Add a number")`    | `.configure({ message: "Too short" }, "minLength")`, then the same for `"pattern"` |
-| `z.string({ error: "Enter a name" })`              | `["string", "@", { message: "Enter a name" }]`, which a missing key says too       |
-| `required_error`, `invalid_type_error` (Zod 3)     | `.configure({ message }, "self")`, `.configure({ message }, "domain")`             |
-| `.refine(fn, "Message")`                           | `ctx.reject({ message: "Message" })`                                               |
-| `error: issue => ...`, `z.config({ customError })` | `message: error => ...`, or [by code](/docs/configuration#by-code) in `configure`  |
-| `errorMap`, `z.setErrorMap(fn)` (Zod 3)            | the same: `message: error => ...` on the Type, or by code in `configure`           |
+| Zod                                                | ArkType                                                                           |
+| -------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `.min(1, "Name is required")`, `{ message }`       | `type.string.atLeastLength(1, "Name is required")`                                |
+| `.max(50, m)`, `.regex(r, m)`, `.gt(0, m)`         | `.atMostLength(50, m)`, `.matching(r, m)`, `.moreThan(0, m)`                      |
+| `.email("Enter a valid email")`                    | `type("string.email").message("Enter a valid email", "pattern")`                  |
+| `z.string({ error: "Enter a name" })`              | `type("string").message("Enter a name")`, which a missing key says too            |
+| `required_error`, `invalid_type_error` (Zod 3)     | `.message(m, "self")`, `.message(m, "domain")`                                    |
+| `.refine(fn, "Message")`                           | `ctx.reject({ message: "Message" })`                                              |
+| `error: issue => ...`, `z.config({ customError })` | `message: error => ...`, or [by code](/docs/configuration#by-code) in `configure` |
+| `errorMap`, `z.setErrorMap(fn)` (Zod 3)            | the same: `message: error => ...` on the Type, or by code in `configure`          |
 
 ### Types and parsing
 
@@ -512,13 +512,14 @@ const Order = type({ quantity: "number", price: "number" }).narrow((d, ctx) => {
 
 ### Custom messages
 
-A custom Zod message becomes a `message`: one whole sentence, shown as you wrote it. An issue's `message` holds it without its path, as Zod's `issue.message` did, and `summary` and a thrown `TraversalError` write the path and a colon before it:
+A custom Zod message becomes a `message`: one whole sentence, shown as you wrote it. A message Zod takes beside a check, as `.min()`, `.max()`, `.regex()`, `.gt()` or `.multipleOf()` do, goes beside the same check, as the last argument to `.atLeastLength()`, `.atMostLength()`, `.matching()`, `.moreThan()` or `.divisibleBy()`. As in Zod, only that check says it, so a value of the wrong type or a missing key says ArkType's own text, like `must be a string`:
 
 ```ts
-// Zod: z.object({ name: z.string().min(1, "Name is required") })
+// Zod: z.object({ name: z.string().min(1, "Name is required").max(50, "Name is too long") })
 const Named = type({
-	// or type("string >= 1").configure({ message: "Name is required" })
-	name: ["string >= 1", "@", { message: "Name is required" }]
+	name: type.string
+		.atLeastLength(1, "Name is required")
+		.atMostLength(50, "Name is too long")
 })
 
 const out = Named({ name: "" })
@@ -531,42 +532,31 @@ if (out instanceof type.errors) {
 }
 ```
 
-A library reading the Type through [Standard Schema](/docs/standard-schema), like TanStack Form, react-hook-form's `standardSchemaResolver` or tRPC, gets the same `message` on each issue, beside its `path`.
+An issue's `message` holds it without its path, as Zod's `issue.message` did, and `summary` and a thrown `TraversalError` write the path and a colon before it. A library reading the Type through [Standard Schema](/docs/standard-schema), like TanStack Form, react-hook-form's `standardSchemaResolver` or tRPC, gets the same `message` on each issue, beside its `path`.
 
-- **Only `message` takes a sentence.** `ctx.reject("a valid zip code")`, `ctx.mustBe("a valid zip code")`, `.describe("a valid zip code")`, `expected` and a string after `"@"` each take what the value must be, so they read `must be a valid zip code`. A Zod message passed to one reads `must be Enter a valid zip code`.
-- **It covers the whole value.** A string `message` is written for any value the Type rejects, of the wrong type included, and for a key that's absent: `Named({})` also says `Name is required`. Configure the key's whole value, last, after any `.pipe()` or `.to()`.
+- **Only `message` takes a sentence.** `ctx.mustBe("a valid zip code")`, `ctx.error("a valid zip code")`, `.describe("a valid zip code")`, `expected` and a string after `"@"` each take what the value must be, so they read `must be a valid zip code`. A Zod message passed to one reads `must be Enter a valid zip code`. `ctx.reject()` takes no string, so a `.refine()` message is `ctx.reject({ message })`.
+- **`.message()` covers the whole value.** Like Zod's `z.string({ error })`, `type("string").message("Enter a name")` is said for any value the Type rejects, of the wrong type included, and for a key that's absent. Configure it last, after any `.pipe()` or `.to()`. It replaces the messages of the constraints before it, so beside those, give a wrong type and a missing key theirs [by code](#a-check-without-a-method-takes-its-code).
 - **With `| null` or `| undefined`, configure the union.** `["string.email | null", "@", { message }]` says the message for any value it rejects. A message on one branch, as in `Email.configure({ message }).or("null")`, is lost for a value of the wrong type, which reads `must be a string or null`. With `exactOptionalPropertyTypes: false`, an optional or defaulted key's value is such a union, so where the message must cover the wrong type too, as a Zod `z.string({ error })` does, write `undefined` into it: `"email?": ["string.email | undefined", "@", { message }]`. Always write a boolean's, a literal's or an enum's message on the union, as in `"role?": ["'admin' | 'user' | undefined", "@", { message }]`: a wrong value is their only error, so a message on `Role` alone is never said beside `null` or `undefined`.
 - **A parse keyword's own failure keeps its text.** A `message` on `string.date.parse`, `string.url.parse` or `string.json.parse` is said for a value that isn't a string, but a string that doesn't parse still reads `must be a parsable date`. Check the string, then convert it: `type("string.date").pipe(s => new Date(s)).configure({ message })`, or `"string.url"` with `new URL(s)`. For JSON, call `JSON.parse` in a `.pipe()` and report its failure with `ctx.error({ message })`.
-- **For a message per check, name the check.** A second argument to `.configure()`, or a fourth element of the `"@"` tuple, is the [code](/docs/errors#error-codes) of the errors the message is for, like `minLength`, `pattern`, `min` or `divisor`:
+
+#### A check without a method takes its code
+
+A keyword's check, like `string.email`'s pattern, or one written in a string definition, has no method to pass a message to. Pass `.message()` its [code](/docs/errors#error-codes), like `minLength`, `pattern`, `min` or `divisor`, as a second argument, or as a fourth element of the `"@"` tuple. `"self"` names a missing key and `"domain"` a value of the wrong type, as Zod 3's `required_error` and `invalid_type_error` do:
 
 ```ts
-// Zod: z.string().min(8, "Use 8 or more characters").regex(/[0-9]/, "Include a number")
-const Password = type("string >= 8 & /[0-9]/")
-	.configure({ message: "Use 8 or more characters" }, "minLength")
-	.configure({ message: "Include a number" }, "pattern")
+// Zod: z.string().email("Enter a valid email")
+const Email = type("string.email").message("Enter a valid email", "pattern")
 
-const Account = type({
-	// only an empty name says it, as in Zod
-	name: ["string >= 1", "@", { message: "Name is required" }, "minLength"],
-	password: Password
-})
-```
-
-A value of the wrong type, or a missing key, then says ArkType's own text, like `must be a string`, as it said Zod's. To give those their own messages, as Zod 3's `required_error` and `invalid_type_error` do, name `"self"` for a missing key and `"domain"` for a value of the wrong type:
-
-```ts
 // Zod 3: z.string({ required_error: "SKU is required", invalid_type_error: "SKU must be text" })
 //           .regex(/^[A-Z]{3}-\d{4}$/, "SKU looks like ABC-1234")
-const Sku = type(/^[A-Z]{3}-\d{4}$/)
-	.configure({ message: "SKU is required" }, "self")
-	.configure({ message: "SKU must be text" }, "domain")
-	.configure({ message: "SKU looks like ABC-1234" }, "pattern")
+const Sku = type.string
+	.matching(/^[A-Z]{3}-\d{4}$/, "SKU looks like ABC-1234")
+	.message("SKU is required", "self")
+	.message("SKU must be text", "domain")
 ```
 
 - Zod says `required_error` for a key given `undefined` too, which here is a value of the wrong type. To keep that, write `"domain"`'s message as `error => (error.data === undefined ? "SKU is required" : "SKU must be text")`.
-- A code names every check of that kind in the Type, a nested key's included, so configure a key's value rather than the object around it.
-- A `message` configured without a code replaces those configured before it, so configure the whole value first and its checks after.
-- Two checks with one code share its message, like two patterns, or an array's length and its elements', which are both `minLength`. Configure each as its own Type and intersect them: `HasDigit.and(HasCapital)`, or `Tags` below.
+- A code names every check of that kind in the Type, a nested key's included, so configure a key's value rather than the object around it. A message passed to a constraint's method is that constraint's alone, so two checks of one kind, like two patterns, or an array's length and its elements', each keep their own, as in `Tags` below.
 - A function, like Zod 4's `error: issue => ...`, receives the error: `error.data` is Zod's `issue.input`, and once `error.code === "min"` is checked, `error.rule` is its `issue.minimum`. A missing key doesn't say a function's message, so give `"self"` a string.
 - After a `.pipe()` or `.to()`, a code doesn't reach the Type the output is checked with, so configure that Type before passing it to `.to()`. A message for the whole value, or for `"self"`, on the transformed Type replaces the ones inside it, so use one there only where a single message is enough.
 
@@ -577,33 +567,30 @@ When several checks fail at once, ArkType reports a pattern before a length, whi
 
 ```ts
 // Zod: z.string().min(1, "Email is required").email("Enter a valid email")
-const Email = type("string.email").configure(
-	{
-		message: error =>
-			error.data === "" ? "Email is required" : "Enter a valid email"
-	},
+const Email = type("string.email").message(
+	error => (error.data === "" ? "Email is required" : "Enter a valid email"),
 	"pattern"
 )
 
 // Zod: z.string().min(8, "Use 8 or more characters").regex(/[0-9]/, "Include a number")
-const Password = type("string >= 8")
-	.configure({ message: "Use 8 or more characters" }, "minLength")
+const Password = type.string
+	.atLeastLength(8, "Use 8 or more characters")
 	.narrow(
 		(s, ctx) => /[0-9]/.test(s) || ctx.reject({ message: "Include a number" })
 	)
 
 // Zod: z.string().trim().min(1, "Name is required").max(50, "Name is too long")
 const Name = type("string.trim").to(
-	type("0 < string <= 50")
-		.configure({ message: "Name is required" }, "minLength")
-		.configure({ message: "Name is too long" }, "maxLength")
+	type.string
+		.atLeastLength(1, "Name is required")
+		.atMostLength(50, "Name is too long")
 )
 
 // Zod: z.array(z.string().min(1, "Tag can't be empty")).min(1, "Add at least one tag")
-const Tag = type("string >= 1").configure({ message: "Tag can't be empty" })
-const Tags = type("unknown[] >= 1")
-	.configure({ message: "Add at least one tag" }, "minLength")
-	.and(Tag.array())
+const Tags = type.string
+	.atLeastLength(1, "Tag can't be empty")
+	.array()
+	.atLeastLength(1, "Add at least one tag")
 ```
 
 Through react-hook-form's resolvers, these four show the same message for each field as their Zod originals.
@@ -794,7 +781,7 @@ To keep each check's own error, like `limit must be at most 50`, describe the va
 
 Where nothing reads the JSON Schema, keep the text in a comment, or in `.configure({ title: text })`, which errors don't say and JSON Schema writes as `title`.
 
-A string `message` or `expected` configured on a whole value is written into the JSON Schema too, as a keyword of that name, so a model provider is sent it and a strict validator like Ajv rejects the schema. A message for one check, like `.configure({ message }, "minLength")`, isn't written, and neither is a function.
+A `message`, `expected` or `actual` isn't written into the JSON Schema, so a model provider is sent only what `.describe()` says.
 
 ### OpenAPI documents
 
@@ -914,7 +901,7 @@ To move a whole project off Zod, or another library below, work through it in th
    - **Objects.** `.passthrough()` and `z.looseObject()` are `"+": "ignore"`, and `.strict()` is `"+": "reject"`. A union throws a `ParseError` saying it's indeterminate where one of its objects overlaps another branch, like a second object with no literal key to tell them apart, or an array of the same object: write it as [Unions of objects](#unions-of-objects) shows. A `.merge()`, `.pick()`, `.omit()` or `.partial()` goes before the object's `.narrow()`, as in [Composing objects](#composing-objects).
    - **Optional keys.** Before Zod 4.4, any key whose schema accepts `undefined` may be missing, so a `z.unknown()` key is `"key?": "unknown"` and a `z.any()` key is `"key?": "unknown.any"`; from 4.4, only `.optional()` and defaults let a key be missing, so they stay `key: "unknown"`. Check the version the project installs. In Zod 4, `.default(x).optional()` still fills in `x`, as does `.partial()` on a key with a default, so it's `key: T.default(x)`. In Zod 3 neither does: write the first as `"key?": "T"`, and for the second, call `.partial()` on a Type of the keys without their defaults, and `.merge()` the defaults into the full object. `"unknown.any"` infers `any` as Zod's did, so refinements that read its properties type-check without casts.
    - **Coercions and refinements,** literally, as in [Coercion is a parse](#coercion-is-a-parse). `z.coerce.number()` takes any input, `null` included, so its input stays `"unknown"`, in a tool's input schema too. Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them. A `.refine()` after a `.transform()` is a `.narrow()` after a `.pipe()`: `.to("number > 0")` would also check the type, and `number` rejects `Infinity` and `NaN`. An object's `.refine()` stays on that object as a `.narrow()`, not in a second schema, with its `path` as `relativePath`. A `.refine()` that only rejects a literal, like `z.boolean().refine(v => v, "Accept the terms")`, becomes that literal with a `message`; [Refinements](#refinements) has both.
-   - **Custom messages,** each as a `message`, as in [Custom messages](#custom-messages): `.min(1, "Name is required")` is `["string >= 1", "@", { message: "Name is required" }]` as a key's value, a value with a message for each of several checks names each check, and a `.refine(fn, "...")` message is `ctx.reject({ message: "..." })`. Never pass a Zod message to `ctx.reject()` as a string, to `ctx.mustBe()`, to `.describe()` or as `expected`, each of which writes `must be` before it.
+   - **Custom messages,** each as a `message`, as in [Custom messages](#custom-messages): a message beside a check goes beside the same check, so `.min(1, "Name is required")` is `type.string.atLeastLength(1, "Name is required")`, a check without a method, like `.email("...")`'s, names its code, as in `.message("...", "pattern")`, and a `.refine(fn, "...")` message is `ctx.reject({ message: "..." })`. Never pass a Zod message to `ctx.mustBe()`, to `ctx.error()` as a string, to `.describe()` or as `expected`, each of which writes `must be` before it.
    - **Descriptions.** A `.describe(text)` on a schema given to a model or an OpenAPI generator, like a tool's `inputSchema`, stays one, as [Descriptions](#descriptions) shows, so the JSON Schema they read keeps it. Anywhere else it's a comment.
    - **Strings.** Zod 4's `.url()` accepts what `URL.canParse` accepts and returns the string trimmed, and by 4.6 without the tabs and line breaks inside it, which 4.1 kept. `string.url` checks with `URL.canParse` too but returns the string as given, so where the output is kept, write `type("string").pipe(s => s.trim().replace(/[\t\n\r]/g, "")).to("string.url")`. From Zod 4.5, `.min()`, `.max()` and `.length()` count code points, so an emoji counts once, where ArkType's bounds count UTF-16 code units, as `.length` does: where text may hold such characters, check the count in a `.narrow()`, as in [Defaults that differ](#defaults-that-differ). `string.email` and Zod 4's `z.email()` disagree on some addresses: Zod rejects `a..b@x.co` and `.a@x.co` and accepts `a'b@x.co`, and ArkType does the opposite. Where that matters, keep Zod's pattern as a regex.
    - **Arrays as objects.** `z.object()` and `z.record()` reject an array, which ArkType accepts as a `Record`, or as an object whose declared keys are all optional. Where every key is optional, reject arrays with a `.narrow()`, as in [Defaults that differ](#defaults-that-differ).
@@ -1084,38 +1071,38 @@ To see what's left, run `npx arktype-precompile --check`, which lists each defin
 
 Valibot's defaults are Zod's: `v.object` removes undeclared keys, and `v.optional` accepts `undefined` and replaces it with its default. Set [the same two options](#zod-side-by-side), which the ArkType column assumes. [Semantics to check](#semantics-to-check) applies too, with Valibot's names for Zod's.
 
-| Valibot                                                                  | ArkType                                                                                                                           |
-| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| `v.object`, `v.looseObject`, `v.strictObject`                            | the default once configured, `"+": "ignore"`, `"+": "reject"`                                                                     |
-| `v.objectWithRest(entries, rest)`                                        | `"[/^(?!a$\|b$)/]": rest`, `a` and `b` the declared keys                                                                          |
-| `v.optional(T)`, `v.optional(T, default)`                                | `"key?": "T"`, `key: "T = default"`                                                                                               |
-| `v.exactOptional(T)`                                                     | `"key?": "T"`, without `exactOptionalPropertyTypes: false` in the config                                                          |
-| `v.nullable(T)`, `v.nullish(T)`                                          | `"T \| null"`, `"key?": "T \| null"`                                                                                              |
-| `v.literal("a")`, `v.picklist(["a", "b"])`, `v.enum(E)`                  | `"'a'"`, `"'a' \| 'b'"`, `type.valueOf(E)`                                                                                        |
-| `v.partial(S)`, `v.required(S)`, `v.keyof(S)`                            | `T.partial()`, `T.required()`, `T.keyof()`                                                                                        |
-| `v.pick(S, ["a"])`, `v.omit(S, ["a"])`                                   | `T.pick("a")`, `T.omit("a")`                                                                                                      |
-| `v.union`, `v.variant("type", [...])`, `v.intersect`                     | `A.or(B)`, `A.or(B)`, `A.and(B)`                                                                                                  |
-| `v.array`, `v.strictTuple`, `v.tupleWithRest`, `v.record`                | `"T[]"`, `[A, B]`, `[A, "...", "B[]"]`, `"Record<string, T>"`                                                                     |
-| `v.tuple`, which removes extra elements                                  | `[A, B]`, which rejects them                                                                                                      |
-| `v.lazy`                                                                 | a scope or `this`                                                                                                                 |
-| `v.pipe(v.string(), v.email(), v.maxLength(255))`                        | `"string.email <= 255"`                                                                                                           |
-| `v.minLength`, `v.maxLength`, `v.length`, `v.nonEmpty`                   | `"string >= n"`, `"string <= n"`, `"string == n"`, `"string > 0"`                                                                 |
-| `v.minValue`, `v.maxValue`, `v.integer`, `v.multipleOf`                  | `"number >= n"`, `"number <= n"`, `"number.integer"`, `"number % n"`                                                              |
-| `v.url`, `v.uuid`, `v.regex(r)`                                          | `"string.url"`, `"string.uuid"`, `/r/`                                                                                            |
-| `v.isoDate`, `v.isoDateTime`, `v.isoTimestamp`                           | `"string.date.iso"` with a pattern for each, see [Dates and formats](#dates-and-formats)                                          |
-| `v.trim()`, `v.toLowerCase()`, `v.toNumber()`, `v.toDate()`              | `"string.trim"`, `"string.lower"`, `"string.numeric.parse"`, `"string.date.parse"`                                                |
-| `v.string("Message")`, `v.email("Message")`, `v.minLength(8, "Message")` | a `message` for each check, by its code: see [Custom messages](#custom-messages)                                                  |
-| `v.check(fn, msg)`, `v.rawCheck`                                         | `.narrow((x, ctx) => fn(x) \|\| ctx.reject({ message: msg }))`                                                                    |
-| `v.forward(v.partialCheck(...), ["key"])`                                | `.narrow(...)` with `ctx.reject({ message, relativePath: ["key"] })`, which runs only once every key is valid                     |
-| `v.transform(fn)`                                                        | `.pipe(fn)`                                                                                                                       |
-| `v.brand("Id")`                                                          | `.brand("Id")`                                                                                                                    |
-| `v.description(text)`, `v.title(text)` in a pipe                         | `.describe(text)` where a model or an OpenAPI document reads it, see [Descriptions](#descriptions); `.configure({ title: text })` |
-| `v.instance(C)`, `v.date()`, `v.custom(fn)`                              | `type.instanceOf(C)`, `"Date"`, `type("unknown").narrow(fn)`                                                                      |
-| `v.fallback(T, x)`                                                       | a `.pipe()` that returns `x` for invalid input, see [Fallbacks](#fallbacks)                                                       |
-| `v.InferOutput`, `v.InferInput`, `v.GenericSchema`                       | `typeof T.infer`, `typeof T.inferIn`, `type.Any`                                                                                  |
-| `v.parse(S, x)`, `v.safeParse(S, x)`, `v.is(S, x)`                       | `T.assert(x)`, `T(x)`, `T.allows(x)`                                                                                              |
-| `v.isValiError(e)`                                                       | `e instanceof TraversalError`, whose `e.arkErrors.issues` holds the issues                                                        |
-| `v.flatten(issues).nested`                                               | group `out.issues` by `issue.path.join(".")`                                                                                      |
+| Valibot                                                                  | ArkType                                                                                                                                    |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `v.object`, `v.looseObject`, `v.strictObject`                            | the default once configured, `"+": "ignore"`, `"+": "reject"`                                                                              |
+| `v.objectWithRest(entries, rest)`                                        | `"[/^(?!a$\|b$)/]": rest`, `a` and `b` the declared keys                                                                                   |
+| `v.optional(T)`, `v.optional(T, default)`                                | `"key?": "T"`, `key: "T = default"`                                                                                                        |
+| `v.exactOptional(T)`                                                     | `"key?": "T"`, without `exactOptionalPropertyTypes: false` in the config                                                                   |
+| `v.nullable(T)`, `v.nullish(T)`                                          | `"T \| null"`, `"key?": "T \| null"`                                                                                                       |
+| `v.literal("a")`, `v.picklist(["a", "b"])`, `v.enum(E)`                  | `"'a'"`, `"'a' \| 'b'"`, `type.valueOf(E)`                                                                                                 |
+| `v.partial(S)`, `v.required(S)`, `v.keyof(S)`                            | `T.partial()`, `T.required()`, `T.keyof()`                                                                                                 |
+| `v.pick(S, ["a"])`, `v.omit(S, ["a"])`                                   | `T.pick("a")`, `T.omit("a")`                                                                                                               |
+| `v.union`, `v.variant("type", [...])`, `v.intersect`                     | `A.or(B)`, `A.or(B)`, `A.and(B)`                                                                                                           |
+| `v.array`, `v.strictTuple`, `v.tupleWithRest`, `v.record`                | `"T[]"`, `[A, B]`, `[A, "...", "B[]"]`, `"Record<string, T>"`                                                                              |
+| `v.tuple`, which removes extra elements                                  | `[A, B]`, which rejects them                                                                                                               |
+| `v.lazy`                                                                 | a scope or `this`                                                                                                                          |
+| `v.pipe(v.string(), v.email(), v.maxLength(255))`                        | `"string.email <= 255"`                                                                                                                    |
+| `v.minLength`, `v.maxLength`, `v.length`, `v.nonEmpty`                   | `"string >= n"`, `"string <= n"`, `"string == n"`, `"string > 0"`                                                                          |
+| `v.minValue`, `v.maxValue`, `v.integer`, `v.multipleOf`                  | `"number >= n"`, `"number <= n"`, `"number.integer"`, `"number % n"`                                                                       |
+| `v.url`, `v.uuid`, `v.regex(r)`                                          | `"string.url"`, `"string.uuid"`, `/r/`                                                                                                     |
+| `v.isoDate`, `v.isoDateTime`, `v.isoTimestamp`                           | `"string.date.iso"` with a pattern for each, see [Dates and formats](#dates-and-formats)                                                   |
+| `v.trim()`, `v.toLowerCase()`, `v.toNumber()`, `v.toDate()`              | `"string.trim"`, `"string.lower"`, `"string.numeric.parse"`, `"string.date.parse"`                                                         |
+| `v.string("Message")`, `v.email("Message")`, `v.minLength(8, "Message")` | `.message("Message", "domain")`, `.message("Message", "pattern")`, `.atLeastLength(8, "Message")`: see [Custom messages](#custom-messages) |
+| `v.check(fn, msg)`, `v.rawCheck`                                         | `.narrow((x, ctx) => fn(x) \|\| ctx.reject({ message: msg }))`                                                                             |
+| `v.forward(v.partialCheck(...), ["key"])`                                | `.narrow(...)` with `ctx.reject({ message, relativePath: ["key"] })`, which runs only once every key is valid                              |
+| `v.transform(fn)`                                                        | `.pipe(fn)`                                                                                                                                |
+| `v.brand("Id")`                                                          | `.brand("Id")`                                                                                                                             |
+| `v.description(text)`, `v.title(text)` in a pipe                         | `.describe(text)` where a model or an OpenAPI document reads it, see [Descriptions](#descriptions); `.configure({ title: text })`          |
+| `v.instance(C)`, `v.date()`, `v.custom(fn)`                              | `type.instanceOf(C)`, `"Date"`, `type("unknown").narrow(fn)`                                                                               |
+| `v.fallback(T, x)`                                                       | a `.pipe()` that returns `x` for invalid input, see [Fallbacks](#fallbacks)                                                                |
+| `v.InferOutput`, `v.InferInput`, `v.GenericSchema`                       | `typeof T.infer`, `typeof T.inferIn`, `type.Any`                                                                                           |
+| `v.parse(S, x)`, `v.safeParse(S, x)`, `v.is(S, x)`                       | `T.assert(x)`, `T(x)`, `T.allows(x)`                                                                                                       |
+| `v.isValiError(e)`                                                       | `e instanceof TraversalError`, whose `e.arkErrors.issues` holds the issues                                                                 |
+| `v.flatten(issues).nested`                                               | group `out.issues` by `issue.path.join(".")`                                                                                               |
 
 `v.partial()` leaves a key with a default missing, where `.partial()` fills it in: call it on a Type of the keys without their defaults, and `.merge()` the defaults into the full object.
 
@@ -1167,7 +1154,7 @@ Yup does more to a value before checking it than ArkType does:
 | `.min(n)`, `.max(n)`, `.length(n)` on strings, arrays | `"string >= n"`, `"T[] <= n"`, `"string == n"`                                                                                              |
 | `.integer()`, `.positive()`, `.moreThan(n)`           | `"number.integer"`, `"number > 0"`, `"number > n"`                                                                                          |
 | `number()`, `date()` reading strings                  | `"number \| string.numeric.parse"`, `"Date \| string.date.parse"`                                                                           |
-| `.required("m")`, `.typeError("m")`, `.min(n, "m")`   | `.configure({ message: "m" }, "self")`, then `"domain"`, then `"minLength"` or `"min"` for a number; see below                              |
+| `.required("m")`, `.typeError("m")`, `.min(n, "m")`   | `.message("m", "self")`, `.message("m", "domain")`, `.atLeastLength(n, "m")` or `.atLeast(n, "m")` for a number; see below                  |
 | `.concat(S)`, `.pick(["a"])`, `.omit(["a"])`          | `.merge(S)`, `.pick("a")`, `.omit("a")`                                                                                                     |
 | `.trim()`, `.lowercase()`                             | `"string.trim"`, `"string.lower"`                                                                                                           |
 | `.oneOf(["a", "b"])`                                  | `"'a' \| 'b'"`                                                                                                                              |
@@ -1189,15 +1176,12 @@ Yup does more to a value before checking it than ArkType does:
 ```ts
 // yup.string().required("Email is required").email("Enter a valid email")
 const Email = type("string.email")
-	.configure(
-		{
-			message: error =>
-				error.data === "" ? "Email is required" : "Enter a valid email"
-		},
+	.message(
+		error => (error.data === "" ? "Email is required" : "Enter a valid email"),
 		"pattern"
 	)
-	.configure({ message: "Email is required" }, "self")
-	.configure({ message: "Email is required" }, "domain")
+	.message("Email is required", "self")
+	.message("Email is required", "domain")
 ```
 
 A field that transforms, like one with `.trim()` or a `number()` reading strings, says ArkType's text for a missing key unless one message covers its whole value.
@@ -1227,33 +1211,33 @@ const validate = (values: unknown) => {
 
 Joi rejects undeclared keys, rejects empty strings, and converts strings to numbers, booleans and dates unless `convert: false`. ArkType reads an ISO date-time without an offset as UTC, where Joi reads it in local time. Joi also applies a default to a key present as `undefined`; see [Defaults that differ](#defaults-that-differ). It infers no types, so `typeof T.infer` replaces the interfaces written next to Joi schemas. `validate` reports the first error unless `abortEarly: false`, where a Type reports every one. Joi's conversions take a little more than the rows below: `Joi.boolean()` reads `"TRUE"` and `Joi.number()` reads `" 2"`.
 
-| Joi                                                                                 | ArkType                                                                                                                |
-| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `Joi.object({...})`, `.unknown(true)`                                               | `type({ "+": "reject", ... })`, `type({...})`                                                                          |
-| `Joi.string()` (optional), `.required()`                                            | `"key?": "string > 0 \| undefined"`, `"key": "string > 0"`                                                             |
-| `.allow("")`, `.allow(null)`                                                        | `"string"`, `"string \| null"`                                                                                         |
-| `.valid("a", "b")`                                                                  | `"'a' \| 'b'"`                                                                                                         |
-| `.email()`, `.uri()`, `.guid()`, `.pattern(r)`                                      | `"string.email"`, `"string.url"`, `"string.uuid"`, `/r/`                                                               |
-| `.alphanum()`, `.token()`, `.hex()`, `.ip()`, `.isoDate()`                          | `"string.alphanumeric > 0"`, `/^\w+$/`, `"string.hex"`, `"string.ip"`, `"string.date.iso"`                             |
-| `.trim()`, `.lowercase()`, `.uppercase()`                                           | `"string.trim"`, `"string.lower"`, `"string.upper"`, each with `.to("string > 0")`                                     |
-| `.min(n)`, `.max(n)`, `.length(n)`                                                  | `"string >= n"`, `"string <= n"`, `"string == n"`                                                                      |
-| `Joi.number().integer().positive()`                                                 | `"number.integer > 0"`                                                                                                 |
-| `Joi.number()` reading strings                                                      | `"number \| string.numeric.parse"`                                                                                     |
-| `Joi.boolean()` reading strings                                                     | `type("boolean \| 'true' \| 'false'").pipe(v => v === true \|\| v === "true")`                                         |
-| `Joi.date()`, `Joi.date().iso()`                                                    | `"Date \| string.date.parse"`, `"string.date.iso.parse"`                                                               |
-| `Joi.date()` reading milliseconds                                                   | `type("number.epoch").pipe(n => new Date(n))`                                                                          |
-| `Joi.array().items(T)`, `.min(1)`                                                   | `T.array()`, `"T[] >= 1"`                                                                                              |
-| `.unique()`                                                                         | `.narrow((a, ctx) => new Set(a).size === a.length \|\| ctx.reject("unique"))`                                          |
-| `Joi.alternatives().try(A, B)`                                                      | `A.or(B)`                                                                                                              |
-| `.default(x)`                                                                       | `"key": "T = x"`                                                                                                       |
-| `.custom(fn)`                                                                       | `.narrow()` or `.pipe()`                                                                                               |
-| `.messages({ "any.required": m })`, `"string.base"`, `"string.min"`, `"number.min"` | `.configure({ message: m }, "self")`, then `"domain"`, `"minLength"`, `"min"`; see [Custom messages](#custom-messages) |
-| `Joi.link("#id")`                                                                   | a scope or `this`                                                                                                      |
-| `.when(...)`                                                                        | a union of the cases, or a `.narrow()` on the object                                                                   |
-| `Joi.valid(Joi.ref("a"))`, `.with("a", "b")`, `.xor("a", "b")`, `.or("a", "b")`     | a `.narrow()` on the object that compares the keys or checks which are present                                         |
-| `Joi.any()`, `.forbidden()`                                                         | `"unknown"`, `"key?": "never"`                                                                                         |
-| `{ stripUnknown: true }`                                                            | `"+": "delete"` in each object, or `configure({ onUndeclaredKey: "delete" })`                                          |
-| `schema.validate(x)`, `.attempt(x, schema)`                                         | `T(x)`, `T.assert(x)`                                                                                                  |
+| Joi                                                                                 | ArkType                                                                                                                           |
+| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `Joi.object({...})`, `.unknown(true)`                                               | `type({ "+": "reject", ... })`, `type({...})`                                                                                     |
+| `Joi.string()` (optional), `.required()`                                            | `"key?": "string > 0 \| undefined"`, `"key": "string > 0"`                                                                        |
+| `.allow("")`, `.allow(null)`                                                        | `"string"`, `"string \| null"`                                                                                                    |
+| `.valid("a", "b")`                                                                  | `"'a' \| 'b'"`                                                                                                                    |
+| `.email()`, `.uri()`, `.guid()`, `.pattern(r)`                                      | `"string.email"`, `"string.url"`, `"string.uuid"`, `/r/`                                                                          |
+| `.alphanum()`, `.token()`, `.hex()`, `.ip()`, `.isoDate()`                          | `"string.alphanumeric > 0"`, `/^\w+$/`, `"string.hex"`, `"string.ip"`, `"string.date.iso"`                                        |
+| `.trim()`, `.lowercase()`, `.uppercase()`                                           | `"string.trim"`, `"string.lower"`, `"string.upper"`, each with `.to("string > 0")`                                                |
+| `.min(n)`, `.max(n)`, `.length(n)`                                                  | `"string >= n"`, `"string <= n"`, `"string == n"`                                                                                 |
+| `Joi.number().integer().positive()`                                                 | `"number.integer > 0"`                                                                                                            |
+| `Joi.number()` reading strings                                                      | `"number \| string.numeric.parse"`                                                                                                |
+| `Joi.boolean()` reading strings                                                     | `type("boolean \| 'true' \| 'false'").pipe(v => v === true \|\| v === "true")`                                                    |
+| `Joi.date()`, `Joi.date().iso()`                                                    | `"Date \| string.date.parse"`, `"string.date.iso.parse"`                                                                          |
+| `Joi.date()` reading milliseconds                                                   | `type("number.epoch").pipe(n => new Date(n))`                                                                                     |
+| `Joi.array().items(T)`, `.min(1)`                                                   | `T.array()`, `"T[] >= 1"`                                                                                                         |
+| `.unique()`                                                                         | `.narrow((a, ctx) => new Set(a).size === a.length \|\| ctx.mustBe("unique"))`                                                     |
+| `Joi.alternatives().try(A, B)`                                                      | `A.or(B)`                                                                                                                         |
+| `.default(x)`                                                                       | `"key": "T = x"`                                                                                                                  |
+| `.custom(fn)`                                                                       | `.narrow()` or `.pipe()`                                                                                                          |
+| `.messages({ "any.required": m })`, `"string.base"`, `"string.min"`, `"number.min"` | `.message(m, "self")`, `.message(m, "domain")`, `.atLeastLength(n, m)`, `.atLeast(n, m)`; see [Custom messages](#custom-messages) |
+| `Joi.link("#id")`                                                                   | a scope or `this`                                                                                                                 |
+| `.when(...)`                                                                        | a union of the cases, or a `.narrow()` on the object                                                                              |
+| `Joi.valid(Joi.ref("a"))`, `.with("a", "b")`, `.xor("a", "b")`, `.or("a", "b")`     | a `.narrow()` on the object that compares the keys or checks which are present                                                    |
+| `Joi.any()`, `.forbidden()`                                                         | `"unknown"`, `"key?": "never"`                                                                                                    |
+| `{ stripUnknown: true }`                                                            | `"+": "delete"` in each object, or `configure({ onUndeclaredKey: "delete" })`                                                     |
+| `schema.validate(x)`, `.attempt(x, schema)`                                         | `T(x)`, `T.assert(x)`                                                                                                             |
 
 ## Effect Schema
 

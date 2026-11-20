@@ -110,7 +110,7 @@ const playWhenSeen = (
 
 /**
  * Where a count starts, as a share of where it lands. From zero, the first
- * half second of the hero read "0× less work to start": a frame nobody
+ * half second of the hero read "0× fewer startup instructions": a frame nobody
  * should be able to screenshot. From here every frame is a number the
  * measurement supports, only smaller than the one it rests on.
  */

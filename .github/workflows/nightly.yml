@@ -1,0 +1,434 @@
+name: nightly
+
+# Extended suites offloaded from pr.yml so PR checks stay fast:
+# - compatibility: Windows, macOS, Node lts/-1 & latest
+# - history: history-independence fuzzing (pnpm testHistory --jobs 4)
+# - typescript: full TS 5.1–7.0 consumer matrix + attest@6.0.3
+# - environments: precompiled program across Deno, Bun, Chrome, Firefox
+# - aot: @ark/aot's derived suites (differential, cache, perturbation, programs)
+#
+# Runs:
+# - nightly on main (failure opens or comments on the "nightly failing" issue;
+#   a green night closes it)
+# - on a PR labelled aot:full, ci:compat, ci:history, ci:ts, ci:environments,
+#   or ci:all (when the label is added and on each push after)
+# - on a PR when a maintainer comments `/run <suite...>` (via pr-commands.yml)
+# - on demand from the Actions tab (workflow_dispatch) or workflow_call
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag, or SHA to test (defaults to current ref)"
+        required: false
+        default: ""
+      aot:
+        description: "Run full @ark/aot derived suites (differential, cache, perturbation)"
+        type: boolean
+        default: true
+      compat:
+        description: "Run OS & Node compatibility matrix"
+        type: boolean
+        default: true
+      history:
+        description: "Run history-independence tests"
+        type: boolean
+        default: true
+      ts:
+        description: "Run full TypeScript version matrix"
+        type: boolean
+        default: true
+      environments:
+        description: "Run precompiled program across Deno, Bun, Chrome, Firefox"
+        type: boolean
+        default: true
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: false
+        default: ""
+      pr_number:
+        type: string
+        required: false
+        default: ""
+      aot:
+        type: boolean
+        required: false
+        default: false
+      compat:
+        type: boolean
+        required: false
+        default: false
+      history:
+        type: boolean
+        required: false
+        default: false
+      ts:
+        type: boolean
+        required: false
+        default: false
+      environments:
+        type: boolean
+        required: false
+        default: false
+  schedule:
+    - cron: "23 8 * * *"
+  pull_request:
+    types: [labeled, synchronize]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+# a push to a labelled PR replaces the prior sync run; adding a specific label
+# gets its own group so adding aot:full doesn't cancel an in-flight ci:history
+concurrency:
+  group: >-
+    nightly-${{
+      github.event_name == 'pull_request' && github.event.action == 'synchronize' && format('pr-{0}-sync', github.event.pull_request.number) ||
+      github.event_name == 'pull_request' && github.event.action == 'labeled' && format('pr-{0}-{1}', github.event.pull_request.number, github.event.label.name) ||
+      github.event_name == 'workflow_call' && inputs.pr_number != '' && format('pr-{0}-cmd', inputs.pr_number) ||
+      github.run_id
+    }}
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      ref: ${{ steps.plan.outputs.ref }}
+      aot: ${{ steps.plan.outputs.aot }}
+      compat: ${{ steps.plan.outputs.compat }}
+      history: ${{ steps.plan.outputs.history }}
+      ts: ${{ steps.plan.outputs.ts }}
+      environments: ${{ steps.plan.outputs.environments }}
+    steps:
+      - id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          ADDED_LABEL: ${{ github.event.label.name }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          INPUT_REF: ${{ inputs.ref }}
+          INPUT_AOT: ${{ inputs.aot }}
+          INPUT_COMPAT: ${{ inputs.compat }}
+          INPUT_HISTORY: ${{ inputs.history }}
+          INPUT_TS: ${{ inputs.ts }}
+          INPUT_ENVS: ${{ inputs.environments }}
+        run: |
+          set -euo pipefail
+
+          ref="$INPUT_REF"
+          aot=false
+          compat=false
+          history=false
+          ts=false
+          environments=false
+
+          has_label() {
+            [[ ",$PR_LABELS," == *",$1,"* ]]
+          }
+
+          case "$EVENT" in
+            schedule)
+              # forks inherit the schedule, but not the reason for it
+              if [[ "$GITHUB_REPOSITORY" == arktypeio/arktype ]]; then
+                ref="main"
+                aot=true
+                compat=true
+                history=true
+                ts=true
+                environments=true
+              fi
+              ;;
+            workflow_dispatch|workflow_call)
+              [[ "$INPUT_AOT" == true ]] && aot=true
+              [[ "$INPUT_COMPAT" == true ]] && compat=true
+              [[ "$INPUT_HISTORY" == true ]] && history=true
+              [[ "$INPUT_TS" == true ]] && ts=true
+              [[ "$INPUT_ENVS" == true ]] && environments=true
+              ;;
+            pull_request)
+              if [[ "$ACTION" == labeled ]]; then
+                case "$ADDED_LABEL" in
+                  aot:full) aot=true ;;
+                  ci:compat) compat=true ;;
+                  ci:history) history=true ;;
+                  ci:ts) ts=true ;;
+                  ci:environments) environments=true ;;
+                  ci:all)
+                    aot=true
+                    compat=true
+                    history=true
+                    ts=true
+                    environments=true
+                    ;;
+                esac
+              else
+                if has_label "ci:all"; then
+                  aot=true
+                  compat=true
+                  history=true
+                  ts=true
+                  environments=true
+                else
+                  has_label "aot:full" && aot=true
+                  has_label "ci:compat" && compat=true
+                  has_label "ci:history" && history=true
+                  has_label "ci:ts" && ts=true
+                  has_label "ci:environments" && environments=true
+                fi
+              fi
+              ;;
+          esac
+
+          {
+            echo "ref=$ref"
+            echo "aot=$aot"
+            echo "compat=$compat"
+            echo "history=$history"
+            echo "ts=$ts"
+            echo "environments=$environments"
+          } >> "$GITHUB_OUTPUT"
+
+  compatibility:
+    needs: plan
+    if: needs.plan.outputs.compat == 'true'
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        node: [lts/*]
+        os: [windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            node: lts/-1
+          - os: ubuntu-latest
+            node: latest
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
+          fetch-depth: 0
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+        with:
+          node: ${{ matrix.node }}
+
+      - name: Test
+        run: pnpm testRepoCompat
+
+  history:
+    needs: plan
+    if: needs.plan.outputs.history == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Test history independence
+        run: pnpm testHistory --jobs 4
+
+  typescript:
+    needs: plan
+    if: needs.plan.outputs.ts == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: consumers
+            tasks: consumer@5.1.6 consumer@5.3.3 consumer@5.9.3 consumer@6.0.3 consumer@7.0.2 consumer-node10@5.9.3
+          - name: attest-and-repo
+            tasks: repo@6.0.3 attest@6.0.3 attest@tsgo
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Test ${{ matrix.name }}
+        run: pnpm testTsVersions ${{ matrix.tasks }}
+
+  environments:
+    needs: plan
+    if: needs.plan.outputs.environments == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2
+
+      # the runner's Chrome is used as installed
+      - name: Setup Firefox
+        id: firefox
+        uses: browser-actions/setup-firefox@0bc507ddf224827e3b1af68e014d5e42ab93e795 # v1
+
+      - name: Run a precompiled program across environments
+        run: pnpm testEnvironments
+        env:
+          FIREFOX_BIN: ${{ steps.firefox.outputs.firefox-path }}
+
+  differential:
+    needs: plan
+    if: needs.plan.outputs.aot == 'true'
+    runs-on: ubuntu-latest
+    # the full-text errors tiers compare every call in each layout, about an
+    # hour on a runner
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        # the build's options: mutatesInput with each errors mode, size builds,
+        # and errors written for size apart from validators
+        options:
+          - "{}"
+          - '{"mutatesInput": true, "errors": "first"}'
+          - '{"mutatesInput": true, "errors": "none"}'
+          - '{"mutatesInput": "always", "errors": "first"}'
+          - '{"mutatesInput": "always", "errors": "none", "jsonInput": true}'
+          - '{"optimize": "size"}'
+          - '{"optimize": "size", "errors": "first"}'
+          - '{"optimizeErrors": "size"}'
+          - '{"optimize": "size", "optimizeErrors": "speed"}'
+          - '{"optimizeErrors": "size", "errors": "none"}'
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Compare the suites' roots with their precompiled validators
+        run: pnpm testDifferential
+        env:
+          ARK_PRECOMPILE_OPTIONS: ${{ matrix.options }}
+
+  cache:
+    needs: plan
+    if: needs.plan.outputs.aot == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Run the suites on units precompiled for other roots
+        run: pnpm testCache
+
+  perturbation:
+    needs: plan
+    if: needs.plan.outputs.aot == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        # the default build and size builds, which write checkers, sampled on
+        # data the suites never pass them
+        options:
+          - "{}"
+          - '{"optimize": "size"}'
+          - '{"preset": "smallest"}'
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Change what precompiled sites read
+        run: pnpm testPerturbation
+        env:
+          ARK_PRECOMPILE_OPTIONS: ${{ matrix.options }}
+
+      - name: Run generated programs through the build
+        run: pnpm testPrograms
+        env:
+          ARK_PRECOMPILE_OPTIONS: ${{ matrix.options }}
+          ARK_PRECOMPILE_PROGRAMS: 300
+
+  # the nightly's result, kept in one issue
+  alert:
+    needs:
+      - plan
+      - compatibility
+      - history
+      - typescript
+      - environments
+      - differential
+      - cache
+      - perturbation
+    if: always() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          NEEDS: ${{ toJSON(needs) }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TITLE: nightly failing
+          LABEL: nightly
+        run: |
+          set -euo pipefail
+
+          # jobs that didn't pass, including one cancelled or timed out
+          failed=$(jq -r '[to_entries[] | select(.value.result != "success" and .value.result != "skipped") | .key] | join(", ")' <<<"$NEEDS")
+
+          # the open issue's number, or nothing
+          issue=$(
+            gh issue list --label "$LABEL" --state open --limit 100 --json number,title |
+              jq -r --arg title "$TITLE" '[.[] | select(.title == $title)][0].number // empty'
+          )
+
+          if [[ -n "$failed" ]]; then
+            body="The [nightly run]($RUN_URL) of \`nightly.yml\` failed in: $failed."
+            if [[ -n "$issue" ]]; then
+              gh issue comment "$issue" --body "$body"
+            else
+              gh label create "$LABEL" --description "Tracks nightly.yml failures" --color B60205 --force
+              gh issue create --title "$TITLE" --label "$LABEL" --body "$body"
+            fi
+          elif [[ -n "$issue" ]]; then
+            gh issue close "$issue" --comment "The [nightly run]($RUN_URL) passed."
+          else
+            echo "The nightly passed and no issue is open."
+          fi
