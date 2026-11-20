@@ -76,7 +76,7 @@ export const errorWritersByCode: {
 				`aborted due to error:\n    ${describeCause(ctx.cause)}\n`
 			:	printKind(data),
 		message: (ctx, info) => {
-			const locale = info as Locale
+			const locale = info as Locale.Resolved
 			// what a pipe.try morph threw is written beside what it expected
 			if (ctx.morph && ctx.cause !== undefined) {
 				try {

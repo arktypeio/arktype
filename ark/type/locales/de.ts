@@ -2,7 +2,6 @@ import {
 	actualAtPathOf,
 	describeCause,
 	describeMissing,
-	distinctExpectedOf,
 	groupByPath,
 	labelOf,
 	printedActualOf,
@@ -76,16 +75,19 @@ const date = (d: Date): string => {
 // a date is a nominative with its article
 const theDate = (date: Date, locale: Locale.Info) => `der ${locale.date(date)}`
 
-// Dates and numbers in the locale's form, other values as code
+// Dates and numbers in the locale's form, other values as code. A bigint
+// keeps its suffix, so it isn't read as the number it equals
 const print = (value: unknown, locale: Locale.Info): string =>
 	value instanceof Date && isValidDate(value) ?
 		theDate(value, locale)
 	:	locale.verbatim(
-			typeof value === "number" ? locale.number(value) : printable(value)
+			typeof value === "number" ? locale.number(value)
+			: typeof value === "bigint" ? `${locale.number(value)}n`
+			: printable(value)
 		)
 
 // errors print an object by its kind, so its contents never reach a message
-const printKind = (data: unknown, locale: Locale): string =>
+const printKind = (data: unknown, locale: Locale.Resolved): string =>
 	typeof data === "function" ? locale.nouns.Function
 	: typeof data !== "object" || data === null ? print(data, locale)
 	: locale.nouns[Array.isArray(data) ? "Array" : "object"]
@@ -161,19 +163,20 @@ const lengthWriters = {
 	message: lengthMessage
 }
 
-// a path like [0] or ["a b"] needs a noun to be a subject
+// a path like [0] or ["a b"] needs a noun to be a subject. A title follows
+// its path rather than replacing it, since values titled alike, like each
+// address's „Name“, are told apart by their paths
 const subjectOf = (
 	propString: string,
 	label: string | undefined,
 	locale: Locale.Info
-) =>
-	label === undefined ?
+) => {
+	const path =
 		propString[0] === "[" ?
 			`Wert an ${locale.verbatim(propString)}`
 		:	locale.verbatim(propString)
-	: /\[\d/.test(propString) ?
-		`„${locale.verbatim(label)}“ an ${locale.verbatim(propString)}`
-	:	`„${locale.verbatim(label)}“`
+	return label === undefined ? path : `${path} („${locale.verbatim(label)}“)`
+}
 
 const bound: Locale.ExpectedWriter<"min" | "max"> = (e, locale) =>
 	e.rule === 0 && e.exclusive ?
@@ -224,17 +227,21 @@ const casesOf: Locale.ExpectedWriter<"discriminant"> = (e, locale) =>
 			"or"
 		)
 
-const describeProto = (proto: Function, locale: Locale) => {
+const describeProto = (proto: Function, locale: Locale.Resolved) => {
 	const builtinName = getBuiltinNameOfConstructor(proto)
 	return builtinName ?
 			locale.nouns[builtinName]
 		:	`eine Instanz von ${locale.verbatim(proto.name)}`
 }
 
+// what was thrown is English text, shown as written
+const causeOf = (cause: unknown, locale: Locale.Info) =>
+	locale.verbatim(describeCause(cause))
+
 // a JSON keyword's error carries the SyntaxError JSON.parse threw as its cause
 const jsonMessage: Locale.MessageWriter = (e, locale) =>
 	e.code === "predicate" && e.cause !== undefined ?
-		`muss eine JSON-Zeichenkette sein (${describeCause(e.cause)})`
+		`muss eine JSON-Zeichenkette sein (${causeOf(e.cause, locale)})`
 	:	locale.message(e, locale)
 
 const epoch = "ein gültiger Unix-Zeitstempel als ganze Zahl"
@@ -289,7 +296,7 @@ const keywordPhrases = {
 		noun: "ein Regex-Muster",
 		message: (e, locale) =>
 			e.code === "predicate" && e.cause !== undefined ?
-				`muss ein Regex-Muster sein (${describeCause(e.cause)})`
+				`muss ein Regex-Muster sein (${causeOf(e.cause, locale)})`
 			:	locale.message(e, locale)
 	},
 	"string.semver": "eine semantische Version (siehe https://semver.org/)",
@@ -443,16 +450,6 @@ export const de: Locale.Complete = {
 		actual: (data, e, locale) => actualAtPathOf(e) ?? printKind(data, locale),
 		message: e => (e.errors.length ? e.expected : mustBe(e.expected, e))
 	},
-	intersection: {
-		expected: e =>
-			distinctExpectedOf(e.errors).length > 1 ?
-				`  ◦ ${distinctExpectedOf(e.errors).join("\n  ◦ ")}`
-			:	e.errors[0].expected,
-		message: e =>
-			distinctExpectedOf(e.errors).length > 1 ?
-				`(${printedActualOf(e)}) muss alles Folgende sein:\n${e.expected}`
-			:	mustBe(e.expected, e)
-	},
 	min: { expected: bound, message: boundMessage },
 	max: { expected: bound, message: boundMessage },
 	minLength: lengthWriters,
@@ -494,12 +491,12 @@ export const de: Locale.Complete = {
 		expected: predicateOf,
 		actual: (data, e, locale) =>
 			e.morph ?
-				`wegen eines Fehlers abgebrochen:\n    ${describeCause(e.cause)}`
+				`wegen eines Fehlers abgebrochen:\n    ${causeOf(e.cause, locale)}`
 			:	printKind(data, locale),
 		message: (e, locale) => {
 			if (!e.morph) return mustBe(predicateOf(e, locale), e)
 			const name = e.morph.name && `von ${locale.verbatim(e.morph.name)} `
-			return `konnte ${name}nicht verarbeitet werden:\n    ${describeCause(e.cause)}`
+			return `konnte ${name}nicht verarbeitet werden:\n    ${causeOf(e.cause, locale)}`
 		}
 	},
 	required: {
