@@ -1,6 +1,6 @@
 ---
 title: Schemas
-description: Build Types from @ark/schema's object format with type.schema, rootSchema, node and schemaScope.
+description: Build Types from arktype/schema's object format with type.schema, rootSchema, node and schemaScope.
 ---
 
 ArkType's syntax parses to a schema format made of [node kinds](/docs/internals/nodes#node-kinds), and you can write that format directly. It's useful when you generate types from data, like a converter from another schema language, since there's no string to assemble. A Type built this way validates like any other but infers `unknown`.
@@ -29,11 +29,11 @@ const Typed = NonEmpty.as<string>()
 
 ## rootSchema
 
-`rootSchema` is `@ark/schema`'s version of `type.schema`. Its result is typed as a node instead of a Type, so it's what you use without `arktype`:
+`rootSchema` is `arktype/schema`'s version of `type.schema`. Its result is typed as a node instead of a Type, so it's what you use without `arktype`:
 
 ```ts
-import "arksets"
-import { rootSchema } from "@ark/schema"
+import "arktype/sets"
+import { rootSchema } from "arktype/schema"
 
 const User = rootSchema({
 	domain: "object",
@@ -47,14 +47,14 @@ const User = rootSchema({
 User({ name: "Ada", age: -1 })
 ```
 
-`import "arksets"` installs the [set algebra](/docs/internals/sets). `arktype` imports it for you.
+`import "arktype/sets"` installs the [set algebra](/docs/internals/sets). `arktype` imports it for you.
 
 ## node
 
 `node` creates a single node of a given kind from its inner value. Unlike a schema, the inner value's children must already be nodes:
 
 ```ts
-import { node, rootSchema } from "@ark/schema"
+import { node, rootSchema } from "arktype/schema"
 
 const NonEmpty = node("minLength", { rule: 1 })
 NonEmpty.expression // ">= 1"
@@ -72,7 +72,7 @@ Use it when you already have nodes, such as when you rebuild part of an existing
 `schemaScope` defines schemas that reference each other by name with `$`, the way [`scope`](/docs/scopes) does for definitions:
 
 ```ts
-import { schemaScope } from "@ark/schema"
+import { schemaScope } from "arktype/schema"
 
 const $ = schemaScope({
 	user: {

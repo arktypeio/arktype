@@ -1,4 +1,4 @@
-import { throwError } from "@ark/util"
+import { throwError } from "./util.ts"
 import { existsSync } from "node:fs"
 import { createRequire } from "node:module"
 import { dirname, join, resolve } from "node:path"

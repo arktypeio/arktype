@@ -108,6 +108,11 @@ import {
 } from "./type.ts"
 
 // a bundler trusting sideEffects drops a bare import
+if (setEngine.registry !== undefined && setEngine.registry !== $ark) {
+	throwParseError(
+		"The set engine was loaded from a different copy of @ark/schema than arktype. Deduplicate your arktype install."
+	)
+}
 $ark.sets ??= setEngine
 
 /** The convenience properties attached to `scope` */

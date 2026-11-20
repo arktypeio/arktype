@@ -75,7 +75,7 @@ import type { Unit } from "./roots/unit.ts"
 import { canJit, tryJit } from "./shared/compile.ts"
 import { nodeKinds, type NodeKind } from "./shared/implement.ts"
 import type { Locale } from "./shared/locale.ts"
-import { $ark } from "./shared/registry.ts"
+import { $ark, ambientResolver } from "./shared/registry.ts"
 import { missingSetEngineMessage } from "./shared/sets.ts"
 import type { Traversal } from "./shared/traversal.ts"
 import {
@@ -1114,6 +1114,8 @@ export const resolveAmbient = (name: string): BaseRoot | undefined => {
 		)
 	})
 }
+
+ambientResolver.resolve = resolveAmbient
 
 const maybeResolveSubalias = (
 	base: Dict,

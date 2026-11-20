@@ -47,20 +47,20 @@ contextualize(() => {
 		const DivisibleBy3 = type([
 			"number",
 			":",
-			(n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3")
+			(n, ctx) => n % 3 === 0 || ctx.mustBe("divisible by 3")
 		])
 		attest(DivisibleBy3(1).toString()).snap("must be divisible by 3")
 	})
 
 	it("chained narrows", () => {
 		const A = type("number").narrow(
-			(n, ctx) => n % 2 === 0 || ctx.reject("divisible by 2")
+			(n, ctx) => n % 2 === 0 || ctx.mustBe("divisible by 2")
 		)
 
-		const b = A.narrow((n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3"))
+		const b = A.narrow((n, ctx) => n % 3 === 0 || ctx.mustBe("divisible by 3"))
 
 		const DivisibleBy30 = b.narrow(
-			(n, ctx) => n % 5 === 0 || ctx.reject("divisible by 5")
+			(n, ctx) => n % 5 === 0 || ctx.mustBe("divisible by 5")
 		)
 
 		attest<number>(DivisibleBy30.t)
@@ -132,7 +132,7 @@ b must be equal to a`)
 			"string",
 			":",
 			(s, ctx) =>
-				s === [...s].reverse().join("") ? true : ctx.reject("a palindrome")
+				s === [...s].reverse().join("") ? true : ctx.mustBe("a palindrome")
 		])
 		attest<string>(Palindrome.t)
 		attest(Palindrome("dad")).snap("dad")

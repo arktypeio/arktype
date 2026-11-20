@@ -47,7 +47,7 @@ export const Required = type({
 const Address = type({ line1: "string" })
 // passes an address left as saved, which only the narrow reads
 const unlessSaved = (saved: string | undefined) =>
-	Address.narrow((a, ctx) => a.line1 === saved || a.line1.length > 0 || ctx.reject("a first line"))
+	Address.narrow((a, ctx) => a.line1 === saved || a.line1.length > 0 || ctx.mustBe("a first line"))
 const accountOf = (address: typeof Address) => type({ address, owner: "string > 0" })
 export const Account = accountOf(Address)
 export const editAccount = (saved: string | undefined) => accountOf(unlessSaved(saved))

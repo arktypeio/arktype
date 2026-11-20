@@ -379,6 +379,8 @@ const keywordReaders: KeywordReader[] = [
 	(o, pointer, ctx) => {
 		if (o.not === undefined) return
 		const negated = read(o.not, `${pointer}/not`, ctx)
+		// { not: {} } is how never is written, so it's read back as never
+		if (negated.isUnknown()) return $ark.kw.never
 		return opaqueRoot(
 			["not", negated.id],
 			`other than ${negated.description}`,

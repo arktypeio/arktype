@@ -1,4 +1,4 @@
-import { flatMorph } from "@ark/util"
+import { flatMorph } from "arktype/util"
 import ts from "typescript"
 
 import { getConfig } from "../config.ts"

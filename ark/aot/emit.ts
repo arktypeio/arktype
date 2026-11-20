@@ -1,4 +1,4 @@
-import { throwError } from "@ark/util"
+import { throwError } from "arktype/util"
 import { isAbsolute, relative, resolve } from "node:path"
 import type * as ts from "typescript"
 import {
@@ -292,7 +292,7 @@ const rewriterOf =
 	}
 
 export const writeEmittedVariantMessage = (variant: RuntimeVariant): string =>
-	`A build with ${writeVariantOption(variant)} loads a copy of @ark/schema's runtime in place of the one arktype/runtime imports, which only a bundler or @ark/aot/node can do, so arktype-precompile --emit can't build with it${variant === "lean" ? '. Set optimizeErrors: "speed" to emit what optimize: "size" writes otherwise' : ""}`
+	`A build with ${writeVariantOption(variant)} loads a copy of arktype/schema's runtime in place of the one arktype/runtime imports, which only a bundler or @ark/aot/node can do, so arktype-precompile --emit can't build with it${variant === "lean" ? '. Set optimizeErrors: "speed" to emit what optimize: "size" writes otherwise' : ""}`
 
 export const writeUnemittedMessage = (tsconfig: string): string =>
 	`${tsconfig} emits no JavaScript for arktype-precompile --emit to precompile. Name the tsconfig tsc builds with --tsconfig.`

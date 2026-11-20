@@ -1,5 +1,5 @@
-import type { IntersectionNode } from "@ark/schema"
-import { hasKey, nearestFloat, throwInternalError } from "@ark/util"
+import type { IntersectionNode } from "arktype/schema"
+import { hasKey, nearestFloat, throwInternalError } from "arktype/util"
 import * as fc from "fast-check"
 import type { DomainInputNode } from "./domain.ts"
 

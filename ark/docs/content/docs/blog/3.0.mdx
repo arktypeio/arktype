@@ -138,7 +138,7 @@ const User = type({ name: "string", address: Address })
 [ArkSets](/docs/sets) runs ArkType's set theory on the Zod schemas you already have. In CI, `isSubset` tells you whether a change to an API schema still accepts everything the old one did:
 
 ```ts
-import { isSubset } from "arksets"
+import { isSubset } from "arktype/sets"
 import { z } from "zod"
 
 const v1 = z.object({ id: z.string(), age: z.number().int().min(0) })
@@ -289,7 +289,7 @@ Parse keywords like `string.date.iso.parse` encode back to strings, and codecs [
 - **Errors as data**: an `ArkErrors`' `issues` are plain objects discriminated by `code`. An issue's `message` leaves out its path, which `summary` writes before it, and one you configure is [shown as you wrote it](#your-messages-work-the-way-they-did-in-zod). ArkType's own English messages don't print the value, so they don't put what the data holds into a log.
 - **A new home**: every docs page reads as Markdown for your agent, every code sample shows the types TypeScript infers, and the [playground](/playground) runs the real parser in your browser.
 
-[Upgrading](/docs/upgrading) lists each breaking change with what to write instead, and the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md) have the rest.
+[Upgrading](/docs/upgrading) lists each breaking change with what to write instead, and the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md) have the rest.
 
 We can't wait to see what you build with it!
 

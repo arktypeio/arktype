@@ -4,7 +4,7 @@ import type {
 	StandardJSONSchemaV1,
 	StandardSchemaV1
 } from "@ark/schema"
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+
 import {
 	ArkErrors,
 	codedIssue,
@@ -43,7 +43,7 @@ import {
 	type MissingText,
 	type SiteContext,
 	type Traversal
-} from "@ark/schema/runtime"
+} from "arktype/schema/runtime"
 import {
 	dateGetTime,
 	getBuiltinNameOfConstructor,
@@ -66,7 +66,7 @@ import type { ObjectType } from "./variants/object.ts"
 import type { StringType } from "./variants/string.ts"
 
 // a bundle with code splitting drops a star export from another package
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+
 export {
 	addErrors,
 	addMorphErrs,
@@ -149,7 +149,7 @@ export {
 	writeUnitActual,
 	writeUnitMessage,
 	type ArkError
-} from "@ark/schema/runtime"
+} from "arktype/schema/runtime"
 export {
 	baseNameOf,
 	functionNameOf,

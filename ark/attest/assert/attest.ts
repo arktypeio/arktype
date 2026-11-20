@@ -1,5 +1,5 @@
 import { caller, getCallStack, type SourcePosition } from "@ark/fs"
-import type { ErrorMessage } from "@ark/util"
+import type { ErrorMessage } from "arktype/util"
 import { getBenchCtx } from "../bench/bench.ts"
 import type { Measure } from "../bench/measure.ts"
 import { instantiationDataHandler } from "../bench/type.ts"

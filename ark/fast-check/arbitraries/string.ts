@@ -1,5 +1,5 @@
-import type { nodeOfKind, PrestructuralKind } from "@ark/schema"
-import { throwInternalError, type array } from "@ark/util"
+import type { nodeOfKind, PrestructuralKind } from "arktype/schema"
+import { throwInternalError, type array } from "arktype/util"
 import * as fc from "fast-check"
 import type { DomainInputNode } from "./domain.ts"
 

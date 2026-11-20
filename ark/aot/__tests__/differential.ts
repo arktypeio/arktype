@@ -7,9 +7,9 @@ import {
 	type ArkErrors,
 	type BaseRoot,
 	type BaseScope
-} from "@ark/schema"
-import type { ArkIssue } from "@ark/schema/runtime"
-import { hasDomain, ParseError, stringifyPath } from "@ark/util"
+} from "arktype/schema"
+import type { ArkIssue } from "arktype/schema/runtime"
+import { hasDomain, ParseError, stringifyPath } from "arktype/util"
 import {
 	introspectionMembers,
 	keyOf,

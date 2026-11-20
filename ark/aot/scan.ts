@@ -2,7 +2,7 @@ import type {
 	IssueFeatures,
 	ValidatorMember
 } from "arktype/internal/standalone.ts"
-import { flatMorph } from "@ark/util"
+import { flatMorph } from "./util.ts"
 import { isAbsolute } from "node:path"
 import { parseSync, type Node, type Program } from "oxc-parser"
 import { dependencyOf, fileOf, printablePathOf, transformedId } from "./host.ts"
