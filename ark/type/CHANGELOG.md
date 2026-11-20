@@ -52,6 +52,10 @@ type("string").narrow(
 )
 ```
 
+### Infer `object.json` as `JsonStructure`
+
+`object.json` accepts only plain objects and arrays, but inferred `Json`, which includes strings, numbers, booleans and `null`, so `type("object.json").from("hi")` type checked and threw. It and `object.json.stringify`'s input now infer `JsonStructure`, which `arktype` exports beside `Json`.
+
 ## 3.0.0-beta.1
 
 ### Summary

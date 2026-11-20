@@ -17,7 +17,14 @@ export {
 	type JsonSchema,
 	type ToJsonSchema
 } from "@ark/schema"
-export { Hkt, inferred, ParseError, type Brand, type Json } from "@ark/util"
+export {
+	Hkt,
+	inferred,
+	ParseError,
+	type Brand,
+	type Json,
+	type JsonStructure
+} from "@ark/util"
 export { regex, type Regex } from "arkregex"
 export type {
 	Default,
