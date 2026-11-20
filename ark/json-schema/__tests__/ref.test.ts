@@ -185,6 +185,22 @@ contextualize(() => {
 		)
 	})
 
+	it("malformed definitions and pointers", () => {
+		attest(() =>
+			jsonSchemaToType({ $defs: null, $ref: "#a" } as never)
+		).throws.snap("ParseError: #/$defs must be an object of schemas (was null)")
+		// a definition the ref doesn't reach is indexed, but never read
+		attest(
+			jsonSchemaToType({
+				$defs: { a: { $anchor: "a", type: "string" }, b: { $defs: null } },
+				$ref: "#a"
+			} as never).expression
+		).snap("string")
+		attest(() => jsonSchemaToType({ $ref: "#/%ZZ" } as never)).throws.snap(
+			"ParseError: $ref #/%ZZ doesn't resolve to a schema in its document"
+		)
+	})
+
 	it("another document", () => {
 		attest(() =>
 			jsonSchemaToType({ $ref: "https://example.com/a" })

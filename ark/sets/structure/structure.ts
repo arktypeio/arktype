@@ -84,11 +84,13 @@ const allowedKeysOf = (node: Structure.Node): BaseRoot => {
 		:	keys
 }
 
-// a structure allowing more leading indices bounds an array here, narrower
-// than it is
+// how many leading indices are checked one by one for a bound
 const maxCountedIndices = 1024
 
-// how many leading indices keys allow, or null if every index a sequence can have
+// how many leading indices keys allow, or null if every index a sequence can
+// have or if they allow more than are counted. A bound is only ever where keys
+// reject an index, since one keys like /^\d+$/ allow past the count would make
+// a longer array that's allowed disjoint
 const allowedIndexCountOf = (
 	keys: BaseRoot,
 	sequence: nodeOfKind<"sequence">
@@ -100,7 +102,10 @@ const allowedIndexCountOf = (
 	)
 	let count = 0
 	while (count < max && keys.allowsUnused(`${count}`)) count++
-	return count === sequence.maxLength ? null : count
+	if (count === sequence.maxLength) return null
+	return count < maxCountedIndices || !keys.allowsUnused(`${count}`) ?
+			count
+		:	null
 }
 
 // the element at an index below a sequence's minLength
