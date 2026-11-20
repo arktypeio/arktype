@@ -59,6 +59,7 @@ const defaultConfig: ToJsonSchema.Context = {
 	target: "draft-2020-12",
 	dialect: "https://json-schema.org/draft/2020-12/schema",
 	useRefs: false,
+	aliasDefs: false,
 	fallback: {
 		arrayObject: throwFallback,
 		arrayPostfix: throwFallback,
@@ -407,6 +408,22 @@ export declare namespace ToJsonSchema {
 		 */
 		target?: Target
 		useRefs?: boolean
+		/**
+		 * Which aliases of the Type's scope are written once as definitions,
+		 * named by the alias, with a `$ref` wherever they're used. A cyclic
+		 * alias always is.
+		 *
+		 *  - `true`: every exported alias, and each of a submodule's, but one
+		 *    that resolves to a basis like `string` or `"a"`
+		 *  - a list of names, private ones included, for exactly those
+		 *
+		 * A part is matched by what it is, not where it came from, so a part
+		 * equal to an alias's resolution is a `$ref` to it too, and of aliases
+		 * that resolve to the same thing, the first is its name.
+		 *
+		 * @default false
+		 */
+		aliasDefs?: boolean | readonly string[]
 		fallback?: FallbackOption
 	}
 

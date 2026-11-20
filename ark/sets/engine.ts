@@ -4,6 +4,7 @@ import { setImplementationsByKind } from "./kinds.ts"
 import { constrainIntersection } from "./roots/intersection.ts"
 import { discriminateUnion } from "./roots/union.ts"
 import {
+	jsonSchemaContextOf,
 	jsonSchemaWriters,
 	rootToJsonSchema,
 	toJsonSchemaRecurse
@@ -18,14 +19,7 @@ export const setEngine: SetEngine = {
 	discriminate: discriminateUnion,
 	toJsonSchema: rootToJsonSchema,
 	toJsonSchemaRecurse: (node, ctx) =>
-		toJsonSchemaRecurse(node, {
-			...ctx,
-			path: "",
-			open: [],
-			defNamesById: {},
-			defs: {},
-			writers: jsonSchemaWriters
-		})
+		toJsonSchemaRecurse(node, jsonSchemaContextOf(ctx, jsonSchemaWriters))
 }
 
 // must precede parsing, since nodes are reduced and discriminated when parsed

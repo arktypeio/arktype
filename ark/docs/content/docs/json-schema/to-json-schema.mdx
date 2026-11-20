@@ -30,12 +30,13 @@ A [precompiled](/docs/precompile) validator has `toJsonSchema()`, its schema bak
 
 ## Options
 
-| option     | default           | effect                                                                                                     |
-| ---------- | ----------------- | ---------------------------------------------------------------------------------------------------------- |
-| `target`   | `"draft-2020-12"` | what to write, `"draft-2020-12"`, `"draft-07"` or [`"openapi-3.0"`](#openapi-30)                           |
-| `dialect`  | the target's URL  | the `$schema` value. `null` omits it. Takes precedence over `target`'s URL                                 |
-| `useRefs`  | `false`           | write every part once under `$defs`, not only [cyclic aliases](#cyclic-types), and point to it with `$ref` |
-| `fallback` | throws            | what to write for a part JSON Schema can't express. See [Fallbacks](#fallbacks)                            |
+| option      | default           | effect                                                                                                     |
+| ----------- | ----------------- | ---------------------------------------------------------------------------------------------------------- |
+| `target`    | `"draft-2020-12"` | what to write, `"draft-2020-12"`, `"draft-07"` or [`"openapi-3.0"`](#openapi-30)                           |
+| `dialect`   | the target's URL  | the `$schema` value. `null` omits it. Takes precedence over `target`'s URL                                 |
+| `useRefs`   | `false`           | write every part once under `$defs`, not only [cyclic aliases](#cyclic-types), and point to it with `$ref` |
+| `aliasDefs` | `false`           | write [a scope's aliases](#named-aliases) once under `$defs`, named by the alias, not only cyclic ones     |
+| `fallback`  | throws            | what to write for a part JSON Schema can't express. See [Fallbacks](#fallbacks)                            |
 
 ### target
 
@@ -169,6 +170,48 @@ const schema = types.Node.toJsonSchema()
 - A name another definition already has is numbered from 2, like `Node2`, in the order the definitions are reached.
 - A cycle with no alias, like a `this` reference, is named by what ArkType calls it, like `type`.
 - `.in`, `.out` and `~standard.jsonSchema` name definitions the same way.
+
+### Named aliases
+
+`aliasDefs: true` writes every alias of a scope under `$defs`, like a cyclic one, so an OpenAPI document's components keep their names:
+
+```ts
+const types = scope({
+	Address: { street: "string" },
+	User: { home: "Address", "work?": "Address | null" }
+}).export()
+
+const schema = types.User.toJsonSchema({ aliasDefs: true })
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$ref": "#/$defs/User",
+	"$defs": {
+		"User": {
+			"type": "object",
+			"properties": {
+				"home": { "$ref": "#/$defs/Address" },
+				"work": { "anyOf": [{ "$ref": "#/$defs/Address" }, { "type": "null" }] }
+			},
+			"required": ["home"]
+		},
+		"Address": {
+			"type": "object",
+			"properties": { "street": { "type": "string" } },
+			"required": ["street"]
+		}
+	}
+}
+```
+
+- An alias of a basis, like `Id: "string"`, is written inline, since every `string` would be a `$ref` to it. So is a private alias.
+- A list of names, like `aliasDefs: ["Address", "#Secret"]`, writes exactly those, private and basis ones included. A name no scope it reaches has throws.
+- A Type of the scope used in another, like `type({ to: types.Address })`, is still named.
+- A submodule's alias is named by its own name, like `Zip` for `Geo.Zip`, and its root by the submodule's.
+- What's named is a part equal to the alias's resolution, wherever it is: a non-cyclic alias leaves no trace in what references it. Of two aliases with the same resolution, the first is the name of both, and an alias given other meta where it's used, like `Address.describe("home")`, is a new part and is inlined.
+- Set it [on a scope](#configuration) to write that scope's Types this way by default. For `openapi-3.0`, the definitions go to [`defs`](#openapi-30), so calling `toJsonSchema` for each of a module's Types collects every component.
 
 ## How Types map
 

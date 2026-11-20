@@ -1868,6 +1868,30 @@ age must be a number (was missing)`)
 		)
 	})
 
+	it("JSON Schema of a scope configured with aliasDefs", async () => {
+		const { User } = scope(
+			{ Address: { street: "string" }, User: { home: "Address" } },
+			{ toJsonSchema: { aliasDefs: true } }
+		).export()
+		const { User: validator } = await load(
+			{ User },
+			{ members: { toJsonSchema: true } }
+		)
+		attest(validator.toJsonSchema()).equals(User.toJsonSchema())
+		attest(validator.toJsonSchema().$defs).snap({
+			User: {
+				type: "object",
+				properties: { home: { $ref: "#/$defs/Address" } },
+				required: ["home"]
+			},
+			Address: {
+				type: "object",
+				properties: { street: { type: "string" } },
+				required: ["street"]
+			}
+		})
+	})
+
 	it("unsatisfiable JSON Schema view", async () => {
 		// the output requires a default the index signature's value excludes
 		const T = type({ a: ["string = 'a'"], "[string]": "number[]" })

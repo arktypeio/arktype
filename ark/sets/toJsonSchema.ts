@@ -1,6 +1,7 @@
 import {
 	$ark,
 	foreignTypesByMorph,
+	hasArkKind,
 	mergeToJsonSchemaConfigs,
 	openApiNull,
 	ToJsonSchema,
@@ -8,9 +9,11 @@ import {
 	writeForeignArkMessage,
 	writeNullableJsonSchema,
 	writeUnionJsonSchema,
+	writeUnresolvableMessage,
 	type UnionJsonSchemaWriters,
 	type Alias,
 	type BaseRoot,
+	type BaseScope,
 	type JsonSchema,
 	type Prop,
 	type RefinementKind,
@@ -26,7 +29,9 @@ import {
 	appendStringifiedKey,
 	defineValue,
 	flatMorph,
+	hasOwn,
 	isEmptyObject,
+	throwParseError,
 	type dict
 } from "@ark/util"
 
@@ -39,6 +44,12 @@ interface JsonSchemaContext extends ToJsonSchema.Context {
 	/** the ids of the nodes being converted, so one reached again is a cycle */
 	open: string[]
 	defNamesById: Record<string, string>
+	/** the alias each node aliasDefs writes as a def is named by */
+	aliasNamesById: Record<string, string>
+	/** the scopes whose aliases are in aliasNamesById */
+	aliasScopes: Set<BaseScope>
+	/** the names aliasDefs lists that a scope reached has */
+	aliasesFound: Set<string>
 	defs: Record<string, JsonSchema | undefined>
 	writers: UnionJsonSchemaWriters
 }
@@ -52,22 +63,30 @@ export const jsonSchemaWriters: UnionJsonSchemaWriters = {
 	nullable: writeNullableJsonSchema
 }
 
+export const jsonSchemaContextOf = (
+	cfg: ToJsonSchema.Context,
+	writers: UnionJsonSchemaWriters
+): JsonSchemaContext => ({
+	...cfg,
+	path: "",
+	open: [],
+	defNamesById: {},
+	aliasNamesById: {},
+	aliasScopes: new Set(),
+	aliasesFound: new Set(),
+	defs: {},
+	writers
+})
+
 export const rootToJsonSchema = (
 	node: BaseRoot,
 	opts: ToJsonSchema.Options
 ): JsonSchema => {
-	const ctx: JsonSchemaContext = Object.assign(
+	const ctx = jsonSchemaContextOf(
 		mergeToJsonSchemaConfigs(node.$.cfg.toJsonSchema, opts),
-		{
-			path: "",
-			open: [],
-			defNamesById: {},
-			defs: {},
-			writers:
-				(opts as { [unionJsonSchemaWritersKey]?: UnionJsonSchemaWriters })[
-					unionJsonSchemaWritersKey
-				] ?? jsonSchemaWriters
-		}
+		(opts as { [unionJsonSchemaWritersKey]?: UnionJsonSchemaWriters })[
+			unionJsonSchemaWritersKey
+		] ?? jsonSchemaWriters
 	)
 	// a default handler throws naming where the part it can't convert is
 	ctx.fallback = flatMorph(ctx.fallback, (code, handler) => [
@@ -82,6 +101,11 @@ export const rootToJsonSchema = (
 		typeof ctx.dialect === "string" ? { $schema: ctx.dialect } : {},
 		toJsonSchemaRecurse(node, ctx)
 	)
+	if (Array.isArray(ctx.aliasDefs)) {
+		const missing = ctx.aliasDefs.find(name => !ctx.aliasesFound.has(name))
+		if (missing !== undefined)
+			throwParseError(writeUnresolvableMessage(missing))
+	}
 
 	if (isEmptyObject(ctx.defs)) return schema
 	const defs = ctx.defs as Record<string, JsonSchema>
@@ -111,6 +135,13 @@ export const toJsonSchemaRecurse = (
 		const name = aliasNameOf(node)
 		if (name !== undefined) nameDef(node.resolution, name, ctx)
 		return toJsonSchemaRecurse(node.resolution, ctx)
+	}
+	// so is one aliasDefs names
+	if (ctx.aliasDefs) {
+		// a scope is reached before what it names, through what references it
+		if (!ctx.aliasScopes.has(node.$)) addAliasNames(node.$, ctx)
+		const aliasName = ctx.aliasNamesById[node.id]
+		if (aliasName !== undefined) nameDef(node, aliasName, ctx)
 	}
 	const i = ctx.open.lastIndexOf(node.id)
 	// a cycle through no def is named by its id, like useRefs' parts
@@ -146,6 +177,54 @@ const aliasNameOf = (node: Alias.Node): string | undefined =>
 	node.isIo ? aliasNameOf(node.operands![0] as Alias.Node)
 	: node.reference === node.resolution.id ? nameOfId(node.reference)
 	: undefined
+
+// a non-cyclic alias is resolved where it's referenced, so nothing in a Type
+// says it came from one. What's written as its def is instead each part that
+// is the node it resolves to, as a scope reuses its nodes by what they are and
+// a node keeps them in a Type of another scope. Its input and output are too,
+// where they differ, as ~standard.jsonSchema.input writes a Type's input
+const addAliasNames = ($: BaseScope, ctx: JsonSchemaContext): void => {
+	ctx.aliasScopes.add($)
+	const aliasDefs = ctx.aliasDefs as true | readonly string[]
+	const listed = aliasDefs !== true
+	// a keyword isn't a name you gave anything, so ark's are defs only by name
+	if (!listed && $.isBuiltin) return
+	// a submodule's aliases are named by their own names, like cyclic ones
+	const add = (path: string, name: string): boolean => {
+		const def = path
+			.split(".")
+			.reduce<unknown>((m, k) => (m as dict | undefined)?.[k], $.aliases)
+		// the scope binds each of a module's aliases anew, so they're reached
+		// through it by their paths, and its root by its own
+		if (hasArkKind(def, "module")) {
+			for (const k in def) {
+				if (k === "root") addResolution(path, name)
+				else add(`${path}.${k}`, k)
+			}
+		} else if (def !== undefined) addResolution(path, name)
+		return def !== undefined
+	}
+	const addResolution = (path: string, name: string): void => {
+		const resolution = $.maybeResolve(path)
+		if (!hasArkKind(resolution, "root")) return
+		// finalized, as what .in and .out hold of a Type
+		const parts = [resolution, resolution.in, resolution.out] as BaseRoot[]
+		for (const part of parts) {
+			// a basis like string is everywhere, so it's a def only by name
+			if (part.alwaysExpandJsonSchema && !(listed && part === resolution))
+				continue
+			ctx.aliasNamesById[part.id] ??= name
+		}
+	}
+	for (const alias of listed ? aliasDefs : $.exportedNames) {
+		const path = alias[0] === "#" ? alias.slice(1) : alias
+		const dot = path.indexOf(".")
+		// an alias of another scope, or a keyword, isn't this one's
+		if (!hasOwn($.aliases, dot === -1 ? path : path.slice(0, dot))) continue
+		if (add(path, path.slice(path.lastIndexOf(".") + 1)) && listed)
+			ctx.aliasesFound.add(alias)
+	}
+}
 
 const nameDef = (
 	node: BaseRoot,

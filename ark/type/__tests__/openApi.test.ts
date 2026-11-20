@@ -285,6 +285,83 @@ contextualize(() => {
 		})
 	})
 
+	it("aliasDefs to components", () => {
+		const types = scope({
+			Money: { amount: "number", currency: "string" },
+			Address: { street: "string" },
+			Customer: {
+				address: "Address",
+				"billing?": "Address | null",
+				"referrer?": "Customer"
+			},
+			Invoice: { customer: "Customer", total: "Money", lines: "Money[]" }
+		}).export()
+		const components: Record<string, object> = {}
+		const opts: ToJsonSchema.Options = {
+			aliasDefs: true,
+			fallback: {
+				defs: ctx => {
+					Object.assign(components, ctx.defs)
+					return ctx.base
+				}
+			}
+		}
+		// each of the document's schemas, so components has what any references
+		const refs = [
+			types.Money,
+			types.Address,
+			types.Customer,
+			types.Invoice
+		].map(t => toOpenApi(t, opts))
+		attest(refs).snap([
+			{ $ref: "#/components/schemas/Money" },
+			{ $ref: "#/components/schemas/Address" },
+			{ $ref: "#/components/schemas/Customer" },
+			{ $ref: "#/components/schemas/Invoice" }
+		])
+		attest(components).snap({
+			Money: {
+				type: "object",
+				properties: {
+					amount: { type: "number" },
+					currency: { type: "string" }
+				},
+				required: ["amount", "currency"]
+			},
+			Address: {
+				type: "object",
+				properties: { street: { type: "string" } },
+				required: ["street"]
+			},
+			Customer: {
+				type: "object",
+				properties: {
+					address: { $ref: "#/components/schemas/Address" },
+					billing: {
+						anyOf: [
+							{ $ref: "#/components/schemas/Address" },
+							{ type: "string", nullable: true, enum: [null] }
+						]
+					},
+					referrer: { $ref: "#/components/schemas/Customer" }
+				},
+				required: ["address"]
+			},
+			Invoice: {
+				type: "object",
+				properties: {
+					customer: { $ref: "#/components/schemas/Customer" },
+					lines: {
+						type: "array",
+						items: { $ref: "#/components/schemas/Money" }
+					},
+					total: { $ref: "#/components/schemas/Money" }
+				},
+				required: ["customer", "lines", "total"]
+			}
+		})
+	})
+
 	it("annotatingFallback", () => {
 		attest(
 			toOpenApi(type(["string", "...", "number[]"]), {
