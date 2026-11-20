@@ -153,7 +153,7 @@ export abstract class BaseRoot<
 					jsonSchema: {
 						// _in has no defaults, so the input is this Type as it's accepted
 						input: opts => toStandardJsonSchema(this, opts, "in"),
-						output: opts => toStandardJsonSchema(this._out, opts)
+						output: opts => toStandardJsonSchema(this._out, opts, "out")
 					}
 				},
 				// whether an issue of its own is custom, which another copy of
@@ -905,14 +905,17 @@ export const emptyBrandNameMessage = `Expected a non-empty brand name after #`
 
 export type emptyBrandNameMessage = typeof emptyBrandNameMessage
 
+const standardJsonSchemaKey = Symbol.for("@ark/standardJsonSchema")
+
 const toStandardJsonSchema = (
 	node: BaseRoot,
 	opts: StandardJSONSchemaV1.Options,
-	io?: "in"
+	io: "in" | "out"
 ): Record<string, unknown> => {
+	const target = validateStandardJsonSchemaTarget(opts.target)
 	const ctx = mergeToJsonSchemaConfigs(node.$.cfg.toJsonSchema, {
-		target: validateStandardJsonSchemaTarget(opts.target),
-		...opts.libraryOptions
+		...opts.libraryOptions,
+		target
 	})
 	const fallback = flatMorph(ctx.fallback, (code, handler) => [
 		code,
@@ -920,8 +923,14 @@ const toStandardJsonSchema = (
 			ToJsonSchema.standardFallback[code]
 		:	handler
 	]) as ToJsonSchema.HandlerByCode
-	const standardCtx: ToJsonSchema.Context = { ...ctx, fallback }
-	if (io) standardCtx.io = io
+	const standardCtx: ToJsonSchema.Context & {
+		[standardJsonSchemaKey]?: boolean
+	} = {
+		...ctx,
+		fallback,
+		io,
+		[standardJsonSchemaKey]: true
+	}
 	return node.toJsonSchema(standardCtx) as never
 }
 

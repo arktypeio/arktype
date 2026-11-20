@@ -1,5 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
-import { annotatingFallback, rootSchema, type ToJsonSchema } from "@ark/schema"
+import {
+	annotatingFallback,
+	rootSchema,
+	schemaScope,
+	type ToJsonSchema
+} from "@ark/schema"
 import { Ajv } from "ajv"
 import { Ajv2020 } from "ajv/dist/2020.js"
 import { toJsonSchema } from "arksets"
@@ -373,6 +378,65 @@ contextualize(() => {
 			attest(toJsonSchema(InvalidDateOnly, { dialect: null })).snap({
 				type: "string"
 			})
+		})
+	})
+
+	describe("Standard JSON Schema output with undefined (F1) & target precedence (F2)", () => {
+		it("Ajv accepts valid undefined output and rejects invalid types across targets", () => {
+			const Obj = rootSchema({
+				domain: "object",
+				required: [
+					{ key: "name", value: "string" },
+					{ key: "nickname", value: ["string", { unit: undefined }] }
+				]
+			})
+			const RootUndef = rootSchema(["string", { unit: undefined }])
+			const ArrUndef = rootSchema({
+				proto: Array,
+				sequence: { variadic: ["number", { unit: undefined }] }
+			})
+
+			for (const [target, ajv] of [
+				["draft-2020-12", ajv2020],
+				["draft-07", ajv07]
+			] as const) {
+				const vObj = ajv.compile(Obj["~standard"].jsonSchema.output({ target }))
+				attest(vObj({ name: "a", nickname: undefined })).equals(true)
+				attest(vObj({ name: "a" })).equals(true)
+				attest(vObj({ name: "a", nickname: "bob" })).equals(true)
+				attest(vObj({ name: "a", nickname: 123 })).equals(false)
+
+				const vRoot = ajv.compile(
+					RootUndef["~standard"].jsonSchema.output({ target })
+				)
+				attest(vRoot("ok")).equals(true)
+				attest(vRoot(123)).equals(false)
+
+				const vArr = ajv.compile(
+					ArrUndef["~standard"].jsonSchema.output({ target })
+				)
+				attest(vArr([1, 2])).equals(true)
+				attest(vArr(["bad"])).equals(false)
+			}
+		})
+
+		it("Ajv compiles Standard draft-07 cyclic schema when libraryOptions.target is openapi-3.1", () => {
+			const Node = schemaScope({
+				Node: {
+					domain: "object",
+					required: [{ key: "value", value: "number" }],
+					optional: [{ key: "next", value: "$Node" }]
+				}
+			}).export().Node
+			const schema = Node["~standard"].jsonSchema.input({
+				target: "draft-07",
+				libraryOptions: { target: "openapi-3.1" as never }
+			})
+			attest(schema.$schema).equals("http://json-schema.org/draft-07/schema#")
+			const v = ajv07.compile(schema)
+			attest(v({ value: 1 })).equals(true)
+			attest(v({ value: 1, next: { value: 2 } })).equals(true)
+			attest(v({ value: 1, next: { value: "bad" } })).equals(false)
 		})
 	})
 })

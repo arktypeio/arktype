@@ -766,5 +766,108 @@ contextualize(() => {
 				required: ["foo"]
 			})
 		})
+
+		it("drops undefined branches in output and omits undefined-allowing keys from required", () => {
+			const Obj = type({ name: "string", nickname: "string | undefined" })
+			const RootUndef = type("string | undefined")
+			const ArrUndef = type("(number | undefined)[]")
+			const OnlyUndef = type({ nickname: "string | undefined" })
+			const PureUndef = type({ a: "undefined" })
+
+			for (const target of [
+				"draft-2020-12",
+				"draft-07",
+				"openapi-3.0"
+			] as const) {
+				attest(RootUndef["~standard"].jsonSchema.output({ target })).equals(
+					RootUndef["~standard"].jsonSchema.input({ target })
+				)
+				attest(ArrUndef["~standard"].jsonSchema.output({ target })).equals(
+					ArrUndef["~standard"].jsonSchema.input({ target })
+				)
+
+				const objIn = Obj["~standard"].jsonSchema.input({ target })
+				const objOut = Obj["~standard"].jsonSchema.output({ target })
+				attest(objOut.properties).equals(objIn.properties)
+				attest(objIn.required).equals(["name", "nickname"])
+				attest(objOut.required).equals(["name"])
+
+				// no required: [] when every key allows undefined
+				const onlyOut = OnlyUndef["~standard"].jsonSchema.output({ target })
+				attest("required" in onlyOut).equals(false)
+				attest(onlyOut.properties).equals({ nickname: { type: "string" } })
+
+				const pureOut = PureUndef["~standard"].jsonSchema.output({ target })
+				attest("required" in pureOut).equals(false)
+			}
+
+			// non-Standard toJsonSchema() preserves unit fallback error behavior
+			attest(() => Obj.toJsonSchema()).throws(
+				'Can\'t convert "unit" at nickname to JSON Schema'
+			)
+			attest(() => Obj.toJsonSchema({ io: "out" })).throws(
+				'Can\'t convert "unit" at nickname to JSON Schema'
+			)
+		})
+
+		it("does not allow libraryOptions.target to override Standard target", () => {
+			const Node = scope({
+				Node: { value: "number", "next?": "Node" }
+			}).export().Node
+
+			attest(
+				Node["~standard"].jsonSchema.input({
+					target: "draft-07",
+					libraryOptions: { target: "openapi-3.1" as never }
+				})
+			).snap({
+				$schema: "http://json-schema.org/draft-07/schema#",
+				$ref: "#/definitions/Node",
+				definitions: {
+					Node: {
+						type: "object",
+						properties: {
+							value: { type: "number" },
+							next: { $ref: "#/definitions/Node" }
+						},
+						required: ["value"]
+					}
+				}
+			})
+
+			attest(
+				Node["~standard"].jsonSchema.output({
+					target: "draft-2020-12",
+					libraryOptions: { target: "openapi-3.0" }
+				})
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				$ref: "#/$defs/Node",
+				$defs: {
+					Node: {
+						type: "object",
+						properties: {
+							value: { type: "number" },
+							next: { $ref: "#/$defs/Node" }
+						},
+						required: ["value"]
+					}
+				}
+			})
+
+			// invalid Standard target still throws naming only the 3 Standard targets
+			attest(() =>
+				Node["~standard"].jsonSchema.input({
+					target: "openapi-3.1" as never,
+					libraryOptions: { target: "draft-07" }
+				})
+			).throws(writeInvalidJsonSchemaTargetMessage("openapi-3.1"))
+			attest(
+				Node["~standard"].jsonSchema.input({
+					target: "draft-07",
+					libraryOptions: { target: "draft-04" as never }
+				})
+			).equals(Node["~standard"].jsonSchema.input({ target: "draft-07" }))
+		})
 	})
 })

@@ -733,13 +733,16 @@ contextualize(() => {
 			},
 			required: ["a", "b", "c"]
 		})
-		// serialized output can drop a's key, so required can't describe it
-		attest(
-			T["~standard"].jsonSchema.output({ target: "draft-2020-12" }).properties
-		).snap({
-			a: { anyOf: [{ type: "string" }, {}] },
-			b: { type: "array", items: { anyOf: [{ type: "number" }, {}] } },
-			c: { anyOf: [{}, { type: "boolean" }, { type: "null" }] }
+		// serialized output can drop a's and c's keys, so only b stays required
+		attest(T["~standard"].jsonSchema.output({ target: "draft-2020-12" })).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			properties: {
+				a: { type: "string" },
+				b: { type: "array", items: { type: "number" } },
+				c: { anyOf: [{ type: "boolean" }, { type: "null" }] }
+			},
+			required: ["b"]
 		})
 	})
 

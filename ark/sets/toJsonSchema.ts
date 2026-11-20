@@ -41,6 +41,8 @@ import {
 // JSON Schema's object type, which excludes what an Array basis allows
 export const isNonArray = (data: object): boolean => !Array.isArray(data)
 
+const standardJsonSchemaKey = Symbol.for("@ark/standardJsonSchema")
+
 interface JsonSchemaContext extends ToJsonSchema.Context {
 	/** where in the Type the node being converted is, for its errors */
 	path: string
@@ -57,6 +59,10 @@ interface JsonSchemaContext extends ToJsonSchema.Context {
 	/** what each $ref's pointer starts with, before the name of its def */
 	refPrefix: string
 	writers: UnionJsonSchemaWriters
+	/** drop undefined union branches (input and Standard JSON Schema output) */
+	dropUndefined: boolean
+	/** omit required keys whose value allows undefined (Standard JSON Schema output) */
+	omitUndefinedRequired: boolean
 }
 
 // a precompiled validator replays a call's fallback as the build recorded it
@@ -70,7 +76,8 @@ export const jsonSchemaWriters: UnionJsonSchemaWriters = {
 
 export const jsonSchemaContextOf = (
 	cfg: ToJsonSchema.Context,
-	writers: UnionJsonSchemaWriters
+	writers: UnionJsonSchemaWriters,
+	isStandard = false
 ): JsonSchemaContext => ({
 	...cfg,
 	path: "",
@@ -81,7 +88,9 @@ export const jsonSchemaContextOf = (
 	aliasesFound: new Set(),
 	defs: {},
 	refPrefix: refPrefixOf(cfg),
-	writers
+	writers,
+	dropUndefined: cfg.io === "in" || isStandard,
+	omitUndefinedRequired: isStandard && cfg.io === "out"
 })
 
 export const rootToJsonSchema = (
@@ -92,7 +101,10 @@ export const rootToJsonSchema = (
 		mergeToJsonSchemaConfigs(node.$.cfg.toJsonSchema, opts),
 		(opts as { [unionJsonSchemaWritersKey]?: UnionJsonSchemaWriters })[
 			unionJsonSchemaWritersKey
-		] ?? jsonSchemaWriters
+		] ?? jsonSchemaWriters,
+		Boolean(
+			(opts as { [standardJsonSchemaKey]?: boolean })[standardJsonSchemaKey]
+		)
 	)
 	// a default handler throws naming where the part it can't convert is
 	ctx.fallback = flatMorph(ctx.fallback, (code, handler) => [
@@ -605,11 +617,10 @@ const innerToJsonSchemaByKind: {
 	union: (node, ctx) => {
 		let branchGroups = branchGroupsOf(node)
 		// JSON has no undefined, so no input can match an undefined branch,
-		// and an input schema is exactly what's left without it. Output and
-		// root schemas keep it for fallback.unit: data with an undefined
-		// required key serializes without that key, which no schema listing
-		// it in required accepts.
-		if (ctx.io === "in")
+		// and Standard JSON Schema output drops it too so an optional-valued
+		// key or element keeps its non-undefined constraint instead of
+		// widening to {}. Non-Standard toJsonSchema() keeps it for fallback.unit.
+		if (ctx.dropUndefined)
 			branchGroups = branchGroups.filter(group => !group.hasUnit(undefined))
 		const nonNull = branchGroups.filter(branch => !branch.hasUnit(null))
 		// an input's null | undefined is null, not anyOf with never beside it
@@ -882,10 +893,17 @@ const writeProps = (
 		defineValue(schema.properties!, prop.key, valueSchema)
 	}
 	ctx.path = path
-	if (node.requiredKeys.length && schema.properties) {
-		schema.required = node.requiredKeys.filter(
-			(k): k is string => typeof k === "string" && k in schema.properties!
+	if (node.required?.length && schema.properties) {
+		const required = node.required.flatMap(prop =>
+			(
+				typeof prop.key !== "string" ||
+				!(prop.key in schema.properties!) ||
+				(ctx.omitUndefinedRequired && prop.value.allows(undefined))
+			) ?
+				[]
+			:	[prop.key]
 		)
+		if (required.length) schema.required = required
 	}
 	return schema
 }
