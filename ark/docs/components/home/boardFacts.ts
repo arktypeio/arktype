@@ -230,9 +230,8 @@ export const captionOf = (board: UnitBoard) => {
  */
 const subOf = (board: UnitBoard) => {
 	const own = ownFigures[board.id].ArkType
-	if (!own) {
+	if (!own)
 		return `${loginKb("ArkType (precompiled)")} kB on Valibot's login form · ${zodSizeRatio()} smaller than Zod`
-	}
 	return board.id === "speed" ?
 			`${own.text} · ${own.rate} validations a second on our benchmark`
 		:	`${own.text} from import to first validation on our apps`
