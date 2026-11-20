@@ -58,27 +58,44 @@ export const foundErrors = issuesOf
 
 export const throwIssues = issuesOf
 
-export class TraversalError extends Error {
-	declare readonly name: "TraversalError"
-	declare arkErrors: ArkErrors
-
-	constructor(errors: ArkErrors) {
-		super(errors.summary)
-
-		// assigned, as a field's initializer compiles where the class is defined
-		this.name = "TraversalError"
-		// defined, so it's neither enumerable nor writable
-		Object.defineProperty(this, "arkErrors", { value: errors })
-	}
+interface ThrownErrors extends Error {
+	readonly name: "TraversalError"
+	arkErrors: ArkErrors
 }
 
-// a plain Error holds them as its cause, which the ES2020 lib lacks
-export const throwOnDefault = (errors: ArkErrors): never => {
-	throw new (Error as new (
-		message: string,
-		options: { cause: unknown }
-	) => Error)("is invalid", { cause: errors })
-}
+// as issues.ts's: always defined, dropped where nothing imports it, and
+// recognizing what any errors throw, with or without it
+const ThrownErrors: new (errors: ArkErrors) => ThrownErrors =
+	/* @__PURE__ */ (() =>
+		class TraversalError extends Error {
+			declare readonly name: "TraversalError"
+			declare arkErrors: ArkErrors
+
+			constructor(errors: ArkErrors) {
+				super(errors.summary)
+
+				// assigned, as a field's initializer compiles where the class is defined
+				this.name = "TraversalError"
+				// defined, so it's neither enumerable nor writable
+				Object.defineProperty(this, "arkErrors", { value: errors })
+			}
+
+			static [Symbol.hasInstance](value: unknown): boolean {
+				return (
+					Function.prototype[Symbol.hasInstance].call(this, value) ||
+					(this === TraversalError &&
+						value instanceof Error &&
+						value.name === "TraversalError" &&
+						"arkErrors" in value)
+				)
+			}
+		})()
+
+export { ThrownErrors as TraversalError }
+
+// the errors' own, as issues.ts's, so in source, where these are the full
+// runtime's, what's thrown is that runtime's TraversalError
+export const throwOnDefault = (errors: ArkErrors): never => errors.throw()
 
 // a merged issue is at its path, which a summary names, as a default's check
 // reports the key

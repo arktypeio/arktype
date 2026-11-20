@@ -408,8 +408,12 @@ const Issues: IssuesClass = (
 					throw Object.defineProperty(thrown, "arkErrors", { value: this })
 				}
 
-				toJSON(): readonly unknown[] {
-					return this.issues
+				toJSON(): readonly IssueJson[] {
+					return this.issues.map(jsonIssueOf)
+				}
+
+				[Symbol.iterator](): IterableIterator<WrittenIssue> {
+					return this.issues[Symbol.iterator]()
 				}
 
 				toString(): string {
@@ -468,13 +472,13 @@ const Issues: IssuesClass = (
 					return summary
 				}
 
-				// an instance of TraversalError only where a program names the
-				// class, so can test for one: otherwise an Error it can't tell
-				// from one, with the same name, message and errors, and no class
-				// in its bundle. Its name is assigned and its errors defined as
-				// the class's are, in statements, which gzip to less than one
-				// expression building it and which a build writing the flag as
-				// a literal folds as well
+				// constructed by TraversalError only where a program names the
+				// class: otherwise an Error with the same name, message and
+				// errors, which `instanceof TraversalError` recognizes wherever
+				// the class is imported, and no class in its bundle. Its name is
+				// assigned and its errors defined as the class's are, in
+				// statements, which gzip to less than one expression building it
+				// and which a build writing the flag as a literal folds as well
 				throw(): never {
 					if (namesTraversalError) throw new ThrownIssues(this as never)
 					const thrown = Error(this.summary)
@@ -482,8 +486,12 @@ const Issues: IssuesClass = (
 					throw Object.defineProperty(thrown, "arkErrors", { value: this })
 				}
 
-				toJSON(): readonly unknown[] {
-					return this.issues
+				toJSON(): readonly IssueJson[] {
+					return this.issues.map(jsonIssueOf)
+				}
+
+				[Symbol.iterator](): IterableIterator<WrittenIssue> {
+					return this.issues[Symbol.iterator]()
 				}
 
 				toString(): string {
@@ -526,8 +534,15 @@ interface Issues extends ReadIssues {
 	 * Throw a TraversalError based on these errors.
 	 */
 	throw(): never
+	/**
+	 * Each issue's JSON: what it says and where, without its data.
+	 */
 	toJSON(): readonly unknown[]
 	toString(): string
+	/**
+	 * Each issue, as `issues` holds them.
+	 */
+	[Symbol.iterator](): IterableIterator<this["issues"][number]>
 	/** @internal set by a build asking for only the first issue */
 	failFast?: true
 	/** @internal arktype's errors, which copy their contexts when merged */
@@ -535,6 +550,27 @@ interface Issues extends ReadIssues {
 	/** @internal arktype's errors, grouped by path */
 	readonly _i?: ArkIssue[]
 }
+
+/** an issue's JSON, as a standalone validator's errors write it */
+export interface IssueJson {
+	code: ArkErrorCode
+	path: (string | number)[]
+	expected: string | undefined
+	message: string
+	errors?: IssueJson[]
+}
+
+// an issue as JSON: what it says and where. Never its data, which may be
+// private, as a password is, or a bigint or circular, which JSON.stringify
+// throws on. A symbol key is written as String writes it, as a path's is.
+// Not exported, as issuesNone.ts and issuesLean.ts stand in for this module
+const jsonIssueOf = (issue: ArkIssue): IssueJson => ({
+	code: issue.code,
+	path: issue.path.map(k => (typeof k === "symbol" ? String(k) : k)),
+	expected: issue.expected,
+	message: issue.message ?? messageOf(issue),
+	...(issue.errors && { errors: issue.errors.map(jsonIssueOf) })
+})
 
 declare namespace Issues {
 	export type Handler<returns = unknown> = (errors: Issues) => returns
@@ -744,8 +780,14 @@ interface ThrownIssues extends Error {
 	arkErrors: Issues
 }
 
-const ThrownIssues: new (errors: Issues) => ThrownIssues = (
-	readsErrors && namesTraversalError ?
+// what's thrown is an instance of TraversalError only where a program names
+// the class (namesTraversalError), but the class is always defined: a module
+// the build doesn't read, like a dependency, may import it, and a bundler
+// drops it where none does. It recognizes what any errors throw as its own,
+// the Error a build without it throws, as each throw() writes it, and what
+// another copy of arktype throws
+const ThrownIssues: new (errors: Issues) => ThrownIssues =
+	/* @__PURE__ */ (() =>
 		class TraversalError extends Error {
 			declare readonly name: "TraversalError"
 			declare arkErrors: Issues
@@ -758,8 +800,18 @@ const ThrownIssues: new (errors: Issues) => ThrownIssues = (
 				// defined, so it's neither enumerable nor writable
 				Object.defineProperty(this, "arkErrors", { value: errors })
 			}
-		}
-	:	undefined) as never
+
+			// a subclass's instances are only those it constructs
+			static [Symbol.hasInstance](value: unknown): boolean {
+				return (
+					Function.prototype[Symbol.hasInstance].call(this, value) ||
+					(this === TraversalError &&
+						value instanceof Error &&
+						value.name === "TraversalError" &&
+						"arkErrors" in value)
+				)
+			}
+		})()
 
 export { ThrownIssues as TraversalError }
 

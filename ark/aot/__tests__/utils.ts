@@ -211,7 +211,7 @@ console.log(JSON.stringify(T({ a: "a", b: "[1]" })))
 try {
 	T.assert({ a: 1 })
 } catch (e) {
-	console.log(String(e), (e as { cause?: unknown }).cause instanceof type.errors)
+	console.log(String(e), (e as { arkErrors?: unknown }).arkErrors instanceof type.errors)
 }
 `,
 			"reads/main.ts": 'import { reads } from "reads"\n\nconsole.log(reads)\n',
@@ -227,7 +227,7 @@ try {
 // what that program logs, its errors saying only that data is invalid
 export const undetailedOutput = `true is invalid
 {"a":"a","b":[1]}
-Error: is invalid true
+TraversalError: is invalid true
 `
 
 const tempDirs: string[] = []

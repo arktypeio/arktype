@@ -5,6 +5,7 @@ import type {
 	CompactApply,
 	FailureContext,
 	FailureSite,
+	IssueJson,
 	MissingText,
 	SiteContext
 } from "./issues.ts"
@@ -166,12 +167,16 @@ const Issues: new () => Issues = (
 				throw Object.defineProperty(thrown, "arkErrors", { value: this })
 			}
 
-			toJSON(): readonly unknown[] {
-				return this.issues
+			toJSON(): readonly IssueJson[] {
+				return this.issues.map(jsonIssueOf)
 			}
 
 			toString(): string {
 				return this.summary
+			}
+
+			[Symbol.iterator](): IterableIterator<WrittenIssue> {
+				return this.issues[Symbol.iterator]()
 			}
 		}
 	: readsSummary ?
@@ -193,6 +198,7 @@ interface Issues extends ReadIssues {
 	throw(): never
 	toJSON(): readonly unknown[]
 	toString(): string
+	[Symbol.iterator](): IterableIterator<this["issues"][number]>
 	/** @internal set by a build asking for only the first issue */
 	failFast?: true
 	/** @internal arktype's errors, which copy their contexts when merged */
@@ -200,6 +206,15 @@ interface Issues extends ReadIssues {
 }
 
 export { Issues as ArkErrors }
+
+// an issue as JSON, without its data, as issues.ts's jsonIssueOf
+const jsonIssueOf = (issue: ArkIssue): IssueJson => ({
+	code: issue.code,
+	path: issue.path.map(k => (typeof k === "symbol" ? String(k) : k)),
+	expected: issue.expected,
+	message: issue.message ?? messageOf(issue),
+	...(issue.errors && { errors: issue.errors.map(jsonIssueOf) })
+})
 
 export class FirstIssues extends Issues {
 	override get failFast(): true {
@@ -370,8 +385,9 @@ interface ThrownIssues extends Error {
 	arkErrors: Issues
 }
 
-const ThrownIssues: new (errors: Issues) => ThrownIssues = (
-	readsErrors && namesTraversalError ?
+// always defined, and dropped where nothing imports it, as issues.ts's
+const ThrownIssues: new (errors: Issues) => ThrownIssues =
+	/* @__PURE__ */ (() =>
 		class TraversalError extends Error {
 			declare readonly name: "TraversalError"
 			declare arkErrors: Issues
@@ -384,7 +400,16 @@ const ThrownIssues: new (errors: Issues) => ThrownIssues = (
 				// defined, so it's neither enumerable nor writable
 				Object.defineProperty(this, "arkErrors", { value: errors })
 			}
-		}
-	:	undefined) as never
+
+			static [Symbol.hasInstance](value: unknown): boolean {
+				return (
+					Function.prototype[Symbol.hasInstance].call(this, value) ||
+					(this === TraversalError &&
+						value instanceof Error &&
+						value.name === "TraversalError" &&
+						"arkErrors" in value)
+				)
+			}
+		})()
 
 export { ThrownIssues as TraversalError }

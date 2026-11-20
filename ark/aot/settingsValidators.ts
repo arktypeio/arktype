@@ -177,7 +177,10 @@ var Issues =
 					throw Object.defineProperty(thrown, "arkErrors", { value: this })
 				}
 				toJSON() {
-					return this.issues
+					return this.issues.map(jsonIssueOf)
+				}
+				[Symbol.iterator]() {
+					return this.issues[Symbol.iterator]()
 				}
 				toString() {
 					return this.summary
@@ -215,13 +218,13 @@ var Issues =
 						summary += (summary && "\n") + lineOf(issue)
 					return summary
 				}
-				// an instance of TraversalError only where a program names the
-				// class, so can test for one: otherwise an Error it can't tell
-				// from one, with the same name, message and errors, and no class
-				// in its bundle. Its name is assigned and its errors defined as
-				// the class's are, in statements, which gzip to less than one
-				// expression building it and which a build writing the flag as
-				// a literal folds as well
+				// constructed by TraversalError only where a program names the
+				// class: otherwise an Error with the same name, message and
+				// errors, which `instanceof TraversalError` recognizes wherever
+				// the class is imported, and no class in its bundle. Its name is
+				// assigned and its errors defined as the class's are, in
+				// statements, which gzip to less than one expression building it
+				// and which a build writing the flag as a literal folds as well
 				throw() {
 					if (namesTraversalError) throw new ThrownIssues(this)
 					const thrown = Error(this.summary)
@@ -229,7 +232,10 @@ var Issues =
 					throw Object.defineProperty(thrown, "arkErrors", { value: this })
 				}
 				toJSON() {
-					return this.issues
+					return this.issues.map(jsonIssueOf)
+				}
+				[Symbol.iterator]() {
+					return this.issues[Symbol.iterator]()
 				}
 				toString() {
 					return this.summary
@@ -245,6 +251,13 @@ var Issues =
 		}
 	: findsOnRead ? UnreadIssues
 	: ReadIssues
+var jsonIssueOf = issue => ({
+	code: issue.code,
+	path: issue.path.map(k => (typeof k === "symbol" ? String(k) : k)),
+	expected: issue.expected,
+	message: issue.message ?? messageOf(issue),
+	...(issue.errors && { errors: issue.errors.map(jsonIssueOf) })
+})
 var foundErrors = (apply, data, onFail, Ctx = Issues) => {
 	const errors = new Ctx()
 	apply(data, errors)
@@ -302,16 +315,24 @@ var messageOf = issue =>
 		(issue.code === "required" ? " (was missing)" : "")
 	: issue.code === "required" ? "is missing"
 	: "is invalid"
-var ThrownIssues =
-	readsErrors && namesTraversalError ?
-		class TraversalError extends Error {
-			constructor(errors) {
-				super(errors.summary)
-				this.name = "TraversalError"
-				Object.defineProperty(this, "arkErrors", { value: errors })
-			}
+var ThrownIssues = /* @__PURE__ */ (() =>
+	class TraversalError extends Error {
+		constructor(errors) {
+			super(errors.summary)
+			this.name = "TraversalError"
+			Object.defineProperty(this, "arkErrors", { value: errors })
 		}
-	:	void 0
+		// a subclass's instances are only those it constructs
+		static [Symbol.hasInstance](value) {
+			return (
+				Function.prototype[Symbol.hasInstance].call(this, value) ||
+				(this === TraversalError &&
+					value instanceof Error &&
+					value.name === "TraversalError" &&
+					"arkErrors" in value)
+			)
+		}
+	})()
 
 // ark/schema/shared/transform.ts
 var TransformErrors = class _TransformErrors {

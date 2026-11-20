@@ -222,7 +222,7 @@ The default build writes two functions for each Type: a check returning whether 
 
 Each Type's creation is annotated `/* @__PURE__ */`, so your bundler drops a Type nothing reads, without `sideEffects: false` in your `package.json`, unless creating it could throw.
 
-A [production bundle](/docs/precompile/options#prune) that reads every module it holds leaves out the members no read needs, and the parts of the error runtime no validator in it writes: formatting an array index in a path, writing text configured for a code and, where no [runtime island](#runtime-islands) runs, the message a TraversalError writes for errors arktype returns. Where no module names `TraversalError`, it leaves out the class too: `assert` throws an `Error` with the same `name`, `message` and `arkErrors`, which is all a program that can't test `instanceof TraversalError` reads of one. Written as one chunk, it also declares the units its validators share in one function.
+A [production bundle](/docs/precompile/options#prune) that reads every module it holds leaves out the members no read needs, and the parts of the error runtime no validator in it writes: formatting an array index in a path, writing text configured for a code and, where no [runtime island](#runtime-islands) runs, the message a TraversalError writes for errors arktype returns. Where no module it reads names `TraversalError`, `assert` throws an `Error` with the same `name`, `message` and `arkErrors` rather than constructing the class, which then ships only where a module it doesn't read, like a dependency, imports it. `instanceof TraversalError` recognizes that `Error` as one. Written as one chunk, it also declares the units its validators share in one function.
 
 ### Large modules on Turbopack
 

@@ -1,5 +1,6 @@
+import { namesTraversalError } from "./issueFeatures.ts"
 import type { ArkIssue } from "./issues.ts"
-import { lineOf } from "./issuesUndetailed.ts"
+import { lineOf, TraversalError } from "./issuesUndetailed.ts"
 
 export * from "./issuesUndetailed.ts"
 
@@ -25,12 +26,28 @@ export class ArkErrors {
 		)
 	}
 
-	toJSON(): readonly ArkIssue[] {
-		return this.issues
+	// as issuesNone.ts's
+	throw(): never {
+		if (namesTraversalError) throw new TraversalError(this as never)
+		const thrown = Error(this.summary)
+		thrown.name = "TraversalError"
+		throw Object.defineProperty(thrown, "arkErrors", { value: this })
+	}
+
+	toJSON(): readonly object[] {
+		return this.issues.map(({ code, path, message }) => ({
+			code,
+			path: path.map(k => (typeof k === "symbol" ? String(k) : k)),
+			message
+		}))
 	}
 
 	toString(): string {
 		return this.summary
+	}
+
+	[Symbol.iterator](): IterableIterator<ArkIssue> {
+		return this.issues[Symbol.iterator]()
 	}
 }
 
