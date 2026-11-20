@@ -363,7 +363,9 @@ const kinds = {
 	// data the build has no source for, like an exported function's parameter
 	opaque: 256,
 	// data whose members the build has no source for, like one annotated `unknown`
-	opaqueHolder: 512
+	opaqueHolder: 512,
+	// a function whose call may return what the build has no source for
+	returnsOpaque: 1024
 } as const
 
 type KindBits = number
@@ -920,15 +922,17 @@ const callKindOf = (callee: KindBits): KindBits =>
 	(callee & kinds.returnsType ? kinds.type : 0) |
 	(callee & kinds.returnsArk ? anyKind : 0) |
 	(callee & kinds.returnsUnsure ? unsure : 0) |
+	(callee & kinds.returnsOpaque ? opaque : 0) |
 	unsureOf(callee)
 
 const functionKindOf = (returned: KindBits): KindBits =>
 	kinds.data |
 	(returned & kinds.type ? kinds.returnsType : 0) |
 	(returned & (anyKind & ~kinds.type & ~kinds.data) ? kinds.returnsArk : 0) |
-	(returned & (kinds.unknown | kinds.holder | opaqueBits) ?
-		kinds.returnsUnsure
-	:	0)
+	(returned & (kinds.unknown | kinds.holder) ? kinds.returnsUnsure : 0) |
+	// e.g. a hook returning `context as State<T>`, whose call is no more
+	// lost than what it returns, as one the build follows to the function is
+	(returned & opaqueBits ? kinds.returnsOpaque : 0)
 
 export const isArk = (kind: KindBits): boolean =>
 	(kind & (kinds.type | kinds.otherArk)) !== 0
@@ -970,7 +974,7 @@ const isFactory = (kind: KindBits): boolean =>
 	(kind & (kinds.returnsType | kinds.returnsArk)) !== 0
 
 export const mayReturnArk = (kind: KindBits): boolean =>
-	isFactory(kind) || (kind & kinds.returnsUnsure) !== 0
+	isFactory(kind) || (kind & (kinds.returnsUnsure | kinds.returnsOpaque)) !== 0
 
 interface Application {
 	fn: FunctionNode
@@ -3616,15 +3620,24 @@ export class ModuleGraph {
 		return this.namespaceExportOf(member.object, memberNameOf(member), module)
 	}
 
+	// e.g. `Caches.Entities.Report` given `export * as Caches from "./stores"`
+	// and `export * as Entities from "./entities"` there: a module namespace
+	// object is frozen, so each step reads one module's export
 	private namespaceExportOf(
 		object: Node,
 		name: unknown,
 		module: SourceModule
 	): ImportTarget | undefined {
+		if (typeof name !== "string") return
 		object = unwrapChain(object)
-		const binding = module.scopes.byId.get(object)?.binding
-		if (binding?.kind !== "import" || typeof name !== "string") return
-		const target = this.importOf(binding, module)
+		let target: ImportTarget | undefined
+		if (object.type === "MemberExpression")
+			target = this.namespaceMemberOf(object, module)
+		else {
+			const binding = module.scopes.byId.get(object)?.binding
+			if (binding?.kind === "import") target = this.importOf(binding, module)
+		}
+		if (!target) return
 		return (
 			target.kind === "namespace" ? this.exportOf(target.module, name)
 			: target.kind === "arktypeNamespace" ? arktypeExportOf(target, name)
