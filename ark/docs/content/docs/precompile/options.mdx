@@ -184,7 +184,7 @@ A build left compiled writes the Types of its forms as checkers the other way ar
 }
 ```
 
-A key is a path from [`cwd`](#cwd), or from its own directory in `ark.json`, written with `/`. In it, `*` stands for any part of a name, `**` for any directories, `?` for one character and `{a,b}` for either, and a directory stands for every module under it. A `#` and a name after the path choose for one of the module's top-level declarations, by its own name, a name it's exported under, or `default`, and so for each definition inside it.
+A key is a path from [`cwd`](#cwd), or from its own directory in `ark.json`, written with `/`. In it, `*` stands for any part of a name, `**` for any directories, `?` for one character and `{a,b}` for either, and a directory stands for every module under it. Brackets are the path's own, as in a route like `"app/users/[id]/page.tsx"`. A `#` and a name after the path choose for one of the module's top-level declarations, by its own name, a name it's exported under, or `default`, and so for each definition inside it.
 
 `strategies` names your own, each for what you'd change at once:
 
@@ -210,11 +210,13 @@ A marker chooses for the statement or expression after it, as [`// @ark-runtime`
 ```ts
 import { type } from "arktype"
 // ---cut---
-// @ark-strategy fastest
+// @ark-strategy fastest // checked on every request
 export const Money = type({ amount: "number > 0", currency: "string == 3" })
 ```
 
-Where more than one chooses for a definition, the most specific does: a key naming its declaration, then a marker, then a key naming its module's path, then a glob, and of two globs the one writing more of the path before its first wildcard. Two globs writing as much that choose otherwise fail the build, naming both and the module. What chooses for a definition overrides `optimize`, a preset and the size a build [chooses for a browser's bundle](#choosing-smallest), each of which decides only what nothing chose for. That build's estimate weighs only the validators nothing chose for, too.
+A second `//` starts a reason the build ignores. Without one, what follows the marker is the strategy's name, so a misspelled one fails the build.
+
+Where more than one chooses for a definition, the most specific does: a key naming its declaration, then a marker, then a key naming its module's path, the module's own over its directory's, then a glob, and of two globs the one writing more of the path before its first wildcard. Two globs writing as much that choose otherwise fail the build, naming both and the module. What chooses for a definition overrides `optimize`, a preset and the size a build [chooses for a browser's bundle](#choosing-smallest), each of which decides only what nothing chose for. That build's estimate weighs only the validators nothing chose for, too.
 
 A strategy writes a definition's whole validator, the Types it composes included, whatever their own definitions are written as. With `Money` written `"fastest"` and a form's `Order` holding it written `"smallest"`, `Money`'s checks are written twice: compiled for `Money`, and as checkers within `Order`. A bundle with validators of both kinds also holds what each reads of the runtime. So choosing costs size where Types written differently compose each other, and on a few Types it can cost more than it saves.
 

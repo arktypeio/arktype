@@ -52,7 +52,8 @@ export interface SchemaKey {
 	isGlob: boolean
 	matches: (path: string) => boolean
 	// how much of a module's path it names: all of it, or what precedes its
-	// first wildcard, so the longer of two globs matching one module chooses
+	// first wildcard, so the longer of two paths or of two globs matching one
+	// module chooses
 	specificity: number
 }
 
@@ -79,7 +80,9 @@ export interface NamedDeclaration extends Span {
 	names: string[]
 }
 
-const wildcard = /[*?[\]{}]/
+// brackets are no wildcard, so a route like `app/users/[id]/page.tsx` is a
+// path as Next and SvelteKit write it
+const wildcard = /[*?{}]/
 
 const keyText = (key: string) => `schemas[${JSON.stringify(key)}]`
 
@@ -153,9 +156,14 @@ const parseKey = (
 		strategy,
 		isGlob,
 		matches: path => matcher.test(path),
-		specificity: isGlob ? pattern.search(wildcard) : Infinity
+		specificity: isGlob ? pattern.search(wildcard) : pattern.length
 	}
 }
+
+// a path chooses over any glob, then the key naming more of the path: of
+// two paths matching one module, one is the other's directory
+const bySpecificity = (l: SchemaKey, r: SchemaKey): number =>
+	Number(l.isGlob) - Number(r.isGlob) || r.specificity - l.specificity
 
 /** keys as the build compares them, so one set in ark.json and again in a call is one key */
 export const normalizedSchemas = (
@@ -275,9 +283,11 @@ export const strayStrategyMarkerMessage = `\`// ${strategyMarker}\` marks no def
 
 export const strategyMarkerHint = `Write \`// ${strategyMarker} <name>\` on the line before a statement holding a definition, as before \`export const Money = type(...)\`.`
 
-// what a marker reads as, e.g. `fastest` of `// @ark-strategy fastest`
+// what a marker reads as, e.g. `fastest` of `// @ark-strategy fastest`, or
+// of `// @ark-strategy fastest // hot path`: a reason follows a second //,
+// as a name of more than one word stays one, so a misspelling still fails
 export const markedStrategyOf = (comment: string): string | undefined => {
-	const [marker, ...rest] = comment.trim().split(/\s+/)
+	const [marker, ...rest] = comment.split("//", 1)[0].trim().split(/\s+/)
 	return marker === strategyMarker ? rest.join(" ") : undefined
 }
 
@@ -431,9 +441,7 @@ export class SchemaStrategies {
 			const paths = this.pathOf(id)
 			matching = this.byPath[id] = this.keys
 				.filter(key => paths.some(path => key.matches(path)))
-				.sort((l, r) =>
-					l.specificity === r.specificity ? 0 : r.specificity - l.specificity
-				)
+				.sort(bySpecificity)
 		}
 		return matching
 	}
@@ -465,7 +473,7 @@ export class SchemaStrategies {
 		const [first] = keys
 		const tied = keys.find(
 			key =>
-				key.specificity === first.specificity &&
+				bySpecificity(key, first) === 0 &&
 				this.strategies[key.strategy].optimize !==
 					this.strategies[first.strategy].optimize
 		)

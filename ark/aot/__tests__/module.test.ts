@@ -29,4 +29,21 @@ contextualize(() => {
 		const few = new SourceModule("/main.ts", importing(2), "main.ts")
 		attest(shapeOf(program.body[1])).equals(shapeOf(few.program.body[1]))
 	})
+	it("reads a // @ark-runtime marker past the reason after it", () => {
+		const module = new SourceModule(
+			"/main.ts",
+			`import { type } from "arktype"
+
+// @ark-runtime its shape is loaded
+export const Shaped = type({ a: "string" })
+// @ark-runtimes
+export const Other = type({ b: "string" })
+`,
+			"main.ts"
+		)
+		// a misspelled marker is no marker
+		attest(module.islands.map(island => module.textOf(island))).equals([
+			'export const Shaped = type({ a: "string" })'
+		])
+	})
 })

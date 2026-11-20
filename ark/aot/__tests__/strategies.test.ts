@@ -258,6 +258,41 @@ export const held = { inner: type({ d: "string" }) }
 			).snap('smallest by schemas["/main.ts#Money"]')
 		})
 
+		it("chooses by a file's key over its directory's", () => {
+			const root = writeFixture(app)
+			attest(
+				check([], {
+					cwd: root,
+					schemas: {
+						"src/server": "fastest",
+						"src/server/money.ts": "smallest"
+					}
+				}).lines
+			).snap([
+				'src/forms/order.ts:4:22  accepted  optimize: "speed"',
+				'src/server/money.ts:3:22  accepted  smallest by schemas["src/server/money.ts"]',
+				"2 sites in 3 files: 2 accepted (100.0%)"
+			])
+		})
+
+		it("reads brackets in a key as the path's own, as a route's are", () => {
+			const root = writeFixture({
+				"app/users/[id]/page.ts": app["src/server/money.ts"]
+			})
+			const chosen = (schemas: Record<string, string>) =>
+				check([], { cwd: root, preset: "smallest", schemas }).lines[0]
+			attest(chosen({ "app/users/[id]/page.ts": "fastest" })).snap(
+				'app/users/[id]/page.ts:3:22  accepted  fastest by schemas["app/users/[id]/page.ts"]'
+			)
+			attest(chosen({ "app/users/[id]": "fastest" })).snap(
+				'app/users/[id]/page.ts:3:22  accepted  fastest by schemas["app/users/[id]"]'
+			)
+			// beside a wildcard, too
+			attest(chosen({ "app/*/[id]/*.ts": "fastest" })).snap(
+				'app/users/[id]/page.ts:3:22  accepted  fastest by schemas["app/*/[id]/*.ts"]'
+			)
+		})
+
 		it("fails where two keys as specific choose otherwise", () => {
 			attest(
 				problemsOf(composed, {
@@ -393,6 +428,21 @@ export const Order = type({ id: "string", total: Money })
 			attest(
 				chosenIn(marked, { schemas: { "/main.ts#Money": "fastest" } })
 			).snap(['fastest by schemas["/main.ts#Money"]', 'optimize: "speed"'])
+		})
+
+		it("reads past a reason after //", () => {
+			attest(
+				chosenIn(
+					marked.replace("smallest\n", "smallest // a form's, so size wins\n"),
+					{}
+				)
+			).snap(["smallest by // @ark-strategy smallest", 'optimize: "speed"'])
+			// a reason without // is part of the name
+			attest(
+				problemsOf(marked.replace("smallest\n", "smallest for forms\n"))
+			).snap([
+				'/main.ts:3:1  `// @ark-strategy smallest for forms` names the strategy "smallest for forms", which isn\'t one. A strategy is "fastest" or "smallest", or one strategies defines.'
+			])
 		})
 
 		it("fails where one names no strategy, or leads no definition", () => {
