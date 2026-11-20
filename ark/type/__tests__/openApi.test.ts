@@ -236,6 +236,20 @@ contextualize(() => {
 		})
 	})
 
+	it("contentMediaType is left out of a keyword's schema, not yours", () => {
+		attest(toOpenApi(type("string.json"))).snap({
+			type: "string",
+			description: "a JSON string"
+		})
+		const Configured = type("string").configure({
+			jsonSchema: { type: "string", contentMediaType: "application/json" }
+		})
+		attest(toOpenApi(Configured)).snap({
+			type: "string",
+			contentMediaType: "application/json"
+		})
+	})
+
 	it("tuple", () => {
 		const T = type(["string", "number"])
 		attest(() => toOpenApi(T)).throws

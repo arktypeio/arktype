@@ -79,6 +79,7 @@ Pair.toJsonSchema({ target: "draft-07" })
 | `type: "null"`                                  | `type: "string"`, `nullable: true`, `enum: [null]` |
 | `examples: ["a", "b"]`                          | `example: "a"`                                     |
 | `contentEncoding: "base64"`                     | `format: "byte"`                                   |
+| `contentMediaType: "application/json"`          | left out                                           |
 | `type: "array"`                                 | `type: "array"`, `items: {}`                       |
 
 `nullable` adds `null` only to the `type` beside it, and an `enum` there must list `null` too. A union whose other branches share no `type`, like `string | number | null`, keeps `null` as a branch of its `anyOf`. OpenAPI 3.0 has no `null` type, so `null` alone is written as zod writes it: a `nullable` string whose `enum` allows only `null`.
@@ -131,7 +132,7 @@ Pair.toJsonSchema({
 })
 ```
 
-[`jsonSchema` meta](#your-own-schema) is written as configured, so `string.json`'s `contentMediaType`, which OpenAPI 3.0 lacks, is too.
+OpenAPI 3.0 names a media type where a request's body is, not in a schema, so `string.json` is a `string` with no `contentMediaType`. [`jsonSchema` meta](#your-own-schema) you configure is written as configured, `contentMediaType` included.
 
 ### dialect
 
@@ -204,6 +205,8 @@ const schema = types.Node.toJsonSchema()
 JSON Schema's `pattern` has no flags. `d` and `g` don't change what a regex matches, so they're left out, as is `u` for draft 2020-12, whose patterns are read with it. Any other flag, like `i` in `/^a/i`, goes to the [`patternFlags`](#fallback-codes) fallback.
 
 An index signature applies to every key, including declared ones. JSON Schema skips declared keys in `additionalProperties`, so an index signature next to declared keys is written as `patternProperties` with a pattern every key matches.
+
+A keyword's `pattern` has no lookaround or backreference, so a validator reading patterns with RE2, as some LLMs' structured outputs do, reads it as arktype's regex does. Your own regex is written as you wrote it.
 
 A keyword's `format`, `contentEncoding` or `contentMediaType` names what its strings are. JSON Schema reads each as an annotation, which a validator doesn't check unless it's configured to, so it's written whether or not arktype's check matches the standard's definition exactly. A keyword checked by a regex is written with that `pattern` too, so a validator that ignores formats still checks what arktype does. One checked by a function is written as its format alone: `string.date` accepts whatever `Date` parses, and `string.url` whatever `URL.canParse` does, so their schemas accept strings the Type rejects. A validator that asserts formats, like Ajv with `ajv-formats`, can also reject strings arktype accepts, where a format's RFC differs from arktype's check: `date-time` requires a time that `string.date` and `string.date.iso` don't, and `uri` rejects the space in a path that `string.url` accepts. Keywords no format names, like `string.date.epoch` or `string.creditCard`, go to the [`predicate`](#fallback-codes) fallback.
 
@@ -359,7 +362,7 @@ Every reason `toJsonSchema()` can throw, with the fields its handler receives be
 | `arrayObject`         | an array with named properties                                                        | `type("string[]").and({ n: "number" })`      | `object`                                         |
 | `arrayPostfix`        | elements after a variadic element                                                     | `type(["...", "string[]", "number"])`        | `elements`                                       |
 | `arrayPrefix`         | for `openapi-3.0`, elements before any variadic element                               | `type(["string", "number"])`                 | `elements`, and `items` for the rest, if any     |
-| `date`                | a `Date`, with its bounds                                                             | `type("Date")`                               | `before`, `after`                                |
+| `date`                | a `Date`, once with all its bounds                                                    | `type("Date")`                               | `before`, `after`, `notEqual` (a list)           |
 | `defaultValue`        | a default that isn't JSON. Return `undefined` to omit it                              | `type({ n: "bigint = 5n" })`, after `domain` | `value`                                          |
 | `defs`                | for `openapi-3.0`, the definitions `$ref`s point to                                   | a cyclic Type                                | `defs`, by name                                  |
 | `domain`              | `bigint` or `symbol`                                                                  | `type("bigint")`                             | `domain`                                         |
@@ -434,4 +437,5 @@ Unlike `toJsonSchema()`, these never throw for a part JSON Schema can't express.
 - For `"openapi-3.0"`, a tuple is an array of its length, and definitions are written beside the `$ref` as `definitions`, for you to move into `#/components/schemas`, where the `$ref`s point.
 - `libraryOptions` are passed to `toJsonSchema()` as options, e.g. `{ dialect: null }`.
 - Fallback handlers you configure or pass in `libraryOptions` still apply. Only the default throwing handlers are replaced.
+- A second regex on a string is kept in `allOf`, as `annotatingFallback` writes it.
 - `input` writes each morph's input, so it never calls a `morph` handler. It keeps defaults, and allows keys `"+": "delete"` would remove.

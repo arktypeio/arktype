@@ -96,6 +96,14 @@ const appendAnnotation = <schema extends JsonSchema>(
 		value
 	])
 
+// a schema has one pattern, so each other is a schema of allOf
+const allOfPatterns = (
+	ctx: ToJsonSchema.PatternIntersectionContext
+): JsonSchema.String => {
+	const { allOf = [] } = ctx.base as { allOf?: readonly JsonSchema[] }
+	return { ...ctx.base, allOf: [...allOf, { pattern: ctx.pattern }] } as never
+}
+
 // writes what JSON Schema can't express as x-arktype-* keywords
 export const annotatingFallback: ToJsonSchema.HandlerByCode = {
 	arrayObject: ctx => annotate(ctx.base, "object", ctx.object),
@@ -116,10 +124,7 @@ export const annotatingFallback: ToJsonSchema.HandlerByCode = {
 			rule: ctx.pattern,
 			flags: ctx.flags
 		}),
-	patternIntersection: ctx => {
-		const { allOf = [] } = ctx.base as { allOf?: readonly JsonSchema[] }
-		return { ...ctx.base, allOf: [...allOf, { pattern: ctx.pattern }] } as never
-	},
+	patternIntersection: ctx => allOfPatterns(ctx),
 	predicate: ctx =>
 		appendAnnotation(ctx.base, "predicates", namedReference(ctx.predicate)),
 	proto: ctx =>
@@ -151,7 +156,11 @@ export const annotatingFallback: ToJsonSchema.HandlerByCode = {
 			...(ctx.after && { "x-arktype-after": ctx.after.toISOString() })
 		}
 		return ctx.notEqual ?
-				appendAnnotation(base, "notEqual", ctx.notEqual.toISOString())
+				annotate(
+					base,
+					"notEqual",
+					ctx.notEqual.map(date => date.toISOString())
+				)
 			:	base
 	}
 }
@@ -177,7 +186,8 @@ const standardFallback: ToJsonSchema.HandlerByCode = {
 	},
 	morph: keepBase,
 	patternFlags: keepBase,
-	patternIntersection: keepBase,
+	// JSON Schema can require each pattern, so each is kept
+	patternIntersection: allOfPatterns,
 	predicate: keepBase,
 	proto: keepBase,
 	symbolKey: keepBase,
@@ -316,7 +326,8 @@ export declare namespace ToJsonSchema {
 	export interface DateContext extends BaseContext<"date", JsonSchema> {
 		before?: Date
 		after?: Date
-		notEqual?: Date
+		/** each Date excluded with `!=` */
+		notEqual?: readonly Date[]
 	}
 
 	export interface ContextByCode {

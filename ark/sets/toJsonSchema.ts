@@ -10,7 +10,9 @@ import {
 	writeUnionJsonSchema,
 	type UnionJsonSchemaWriters,
 	type Alias,
+	type BaseNode,
 	type BaseRoot,
+	type Intersection,
 	type JsonSchema,
 	type Prop,
 	type RefinementKind,
@@ -161,15 +163,15 @@ const nameDef = (
 	ctx.defNamesById[node.id] = unique
 }
 
+// writeInner writes what its constraints imply, beside which its meta is written
 const toResolvedJsonSchema = (
 	node: BaseRoot,
-	ctx: JsonSchemaContext
+	ctx: JsonSchemaContext,
+	writeInner: () => JsonSchema = () =>
+		innerToJsonSchemaByKind[node.kind](node as never, ctx)
 ): JsonSchema => {
 	const { jsonSchema } = node.meta
-	const result: JsonSchema & dict =
-		jsonSchema ?
-			{}
-		:	(innerToJsonSchemaByKind[node.kind](node as never, ctx) as never)
+	const result: JsonSchema & dict = jsonSchema ? {} : (writeInner() as never)
 
 	for (const k in node.meta) {
 		// keyword identifies arktype's own phrase, which JSON Schema has no key for
@@ -304,8 +306,63 @@ const writeAnnotation = (
 	// OpenAPI 3.0 has no contentEncoding, but names base64 with a format
 	else if (k === "contentEncoding") {
 		if (v === "base64") annotations.format = "byte"
-	} else annotations[k] = v
+	}
+	// nor contentMediaType, whose equivalent is a request's media type, which
+	// no Schema Object holds
+	else if (k !== "contentMediaType") annotations[k] = v
 }
+
+// a keyword's own schema, like string.json's, is written for the target, but
+// one you configure is written as configured
+const writeJsonSchemaMeta = (
+	schema: JsonSchema,
+	node: BaseNode,
+	ctx: JsonSchemaContext
+): JsonSchema => {
+	const jsonSchema = node.meta.jsonSchema as dict
+	if (!node.meta.keyword) return Object.assign(schema, jsonSchema)
+	for (const k in jsonSchema) writeAnnotation(schema, k, jsonSchema[k], ctx)
+	return schema
+}
+
+type DateBounds = Pick<
+	ToJsonSchema.DateContext,
+	"before" | "after" | "notEqual"
+>
+
+const isDateBound = (node: BaseNode): boolean =>
+	node.is("before") ||
+	node.is("after") ||
+	(node.is("notEqual") && node.rule instanceof Date)
+
+// a Date's bounds, given to one call of fallback.date with the Date itself
+const dateBoundsOf = (node: Intersection.Node): DateBounds | undefined => {
+	let before: Date | undefined
+	let after: Date | undefined
+	const notEqual: Date[] = []
+	for (const child of node.children) {
+		if (child.is("before")) before = child.rule
+		else if (child.is("after")) after = child.rule
+		else if (child.is("notEqual") && child.rule instanceof Date)
+			notEqual.push(child.rule)
+	}
+	if (!before && !after && !notEqual.length) return
+	// only the keys it has, as a handler spreading them expects
+	return {
+		...(before && { before }),
+		...(after && { after }),
+		...(notEqual.length ? { notEqual } : {})
+	}
+}
+
+// a precompiled validator's replay calls proto where date returns nullish
+// for a call writing a Date, which it finds by its empty base
+const dateToJsonSchema = (
+	bounds: DateBounds | undefined,
+	ctx: JsonSchemaContext
+): JsonSchema =>
+	ctx.fallback.date?.({ code: "date", base: {}, ...bounds }) ??
+	ctx.fallback.proto({ code: "proto", base: {}, proto: Date })
 
 // a union's true and false branches are written as one boolean
 const branchGroupsOf = (node: Union.Node): BaseRoot[] => {
@@ -381,28 +438,47 @@ const innerToJsonSchemaByKind: {
 		: ctx.target === "openapi-3.0" ?
 			{ type: typeof node.unit as JsonSchema.TypeName, enum: [node.unit] }
 		:	{ type: typeof node.unit as JsonSchema.TypeName, const: node.unit },
-	intersection: (node, ctx) =>
-		node.children.reduce<JsonSchema>(
+	intersection: (node, ctx) => {
+		const dateBounds = dateBoundsOf(node)
+		// written with the Date itself, or after a subclass of it
+		let datesWritten = false
+		return node.children.reduce<JsonSchema>(
 			// cast is required since TS doesn't know children have compatible schema prerequisites
-			(schema, child) =>
-				child.isBasis() ? toJsonSchemaRecurse(child, ctx)
-				: child.meta.jsonSchema ? Object.assign(schema, child.meta.jsonSchema)
-				: reduceJsonSchemaByKind[child.kind](
-						child as never,
-						schema as never,
-						ctx
-					),
+			(schema, child) => {
+				if (child.isBasis()) {
+					if (!dateBounds || !child.is("proto") || child.proto !== Date)
+						return toJsonSchemaRecurse(child, ctx)
+					return toResolvedJsonSchema(child, ctx, () => {
+						datesWritten = true
+						return dateToJsonSchema(dateBounds, ctx)
+					})
+				}
+				if (isDateBound(child)) {
+					if (datesWritten) return schema
+					datesWritten = true
+					return ctx.fallback.date({
+						code: "date",
+						base: schema,
+						...dateBounds
+					})
+				}
+				return child.meta.jsonSchema ?
+						writeJsonSchemaMeta(schema, child, ctx)
+					:	reduceJsonSchemaByKind[child.kind as ReducedKind](
+							child as never,
+							schema as never,
+							ctx
+						)
+			},
 			{}
-		),
+		)
+	},
 	proto: (node, ctx) => {
 		switch (node.builtinName) {
 			case "Array":
 				return arraySchemaOf(ctx)
 			case "Date":
-				return (
-					ctx.fallback.date?.({ code: "date", base: {} }) ??
-					ctx.fallback.proto({ code: "proto", base: {}, proto: node.proto })
-				)
+				return dateToJsonSchema(undefined, ctx)
 			default:
 				return ctx.fallback.proto({
 					code: "proto",
@@ -819,14 +895,15 @@ type JsonSchemaOperandByKind = {
 	notEqualLength: JsonSchema.LengthBoundable
 	maxLength: JsonSchema.LengthBoundable
 	minLength: JsonSchema.LengthBoundable
-	before: JsonSchema
-	after: JsonSchema
 	structure: JsonSchema.Structure
 	predicate: JsonSchema.Constrainable
 }
 
+// a Date's bounds are written with it
+type ReducedKind = Exclude<RefinementKind, "before" | "after">
+
 const reduceJsonSchemaByKind: {
-	[kind in RefinementKind]: (
+	[kind in ReducedKind]: (
 		node: nodeOfKind<kind>,
 		schema: JsonSchemaOperandByKind[kind],
 		ctx: JsonSchemaContext
@@ -860,7 +937,8 @@ const reduceJsonSchemaByKind: {
 
 		if (node.rule === 1) return schema
 
-		schema.multipleOf = node.rule
+		// a multiple of -n is a multiple of n, and multipleOf must be positive
+		schema.multipleOf = Math.abs(node.rule)
 
 		return schema
 	},
@@ -883,13 +961,8 @@ const reduceJsonSchemaByKind: {
 	min: (node, schema, ctx) =>
 		writeBound(node, schema, ctx, "minimum", "exclusiveMinimum"),
 	notEqual: (node, schema, ctx) => {
-		if (node.rule instanceof Date) {
-			return ctx.fallback.date({
-				code: "date",
-				base: schema,
-				notEqual: node.rule
-			})
-		}
+		// a Date's is written with it
+		const rule = node.rule as number
 		schema.not =
 			schema.not ?
 				{
@@ -897,11 +970,11 @@ const reduceJsonSchemaByKind: {
 						...("enum" in schema.not ?
 							(schema.not as JsonSchema.Enum).enum
 						:	[schema.not.const]),
-						node.rule
+						rule
 					]
 				}
-			: ctx.target === "openapi-3.0" ? { enum: [node.rule] }
-			: { const: node.rule }
+			: ctx.target === "openapi-3.0" ? { enum: [rule] }
+			: { const: rule }
 		return schema
 	},
 	notEqualLength: (node, schema, ctx) => {
@@ -946,10 +1019,6 @@ const reduceJsonSchemaByKind: {
 				return ToJsonSchema.throwOperandError("minLength", schema)
 		}
 	},
-	before: (node, base, ctx) =>
-		ctx.fallback.date({ code: "date", base, before: node.rule }),
-	after: (node, base, ctx) =>
-		ctx.fallback.date({ code: "date", base, after: node.rule }),
 	structure: (node, schema, ctx) => {
 		switch (schema.type) {
 			case "object":

@@ -578,7 +578,7 @@ contextualize(() => {
 		it("after", () => {
 			const T = rootSchema({
 				proto: "Date",
-				after: new Date("01-01-2000")
+				after: new Date("2000-01-01T00:00:00.000Z")
 			})
 
 			attest(() =>
@@ -591,7 +591,8 @@ contextualize(() => {
 				.snap(`ToJsonSchemaError: Can't convert "date" to JSON Schema. Configure fallback.date to write it:
 {
     code: "date",
-    base: {}
+    base: {},
+    after: January 1, 2000
 }`)
 		})
 	})
