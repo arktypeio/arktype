@@ -106,6 +106,22 @@ contextualize(() => {
 			attest(IsoDate.allows(s)).equals(true)
 	})
 
+	it("string.date.iso reads a leap day after a sign and before a time", () => {
+		const IsoDate = type("string.date.iso")
+		attest(IsoDate.allows("+2024-02-29T00:00:00+05:30")).equals(true)
+		attest(IsoDate.allows("-2000-02-29")).equals(true)
+		attest(IsoDate.allows("-2023-02-29")).equals(false)
+		attest(IsoDate.allows("2023-02-29T10:00-05:00")).equals(false)
+		attest(IsoDate.allows("20230229T1030")).equals(false)
+	})
+
+	it("string.date rejects a day its month doesn't have in either ISO form", () => {
+		const DateString = type("string.date")
+		attest(DateString.allows("2025-04-31T10:00Z")).equals(false)
+		attest(DateString.allows("20250431")).equals(false)
+		attest(DateString.allows("2024-02-29T10:00Z")).equals(true)
+	})
+
 	it("string.date.iso still converts to JSON Schema", () => {
 		attest(type("string.date.iso").toJsonSchema()).equals({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
