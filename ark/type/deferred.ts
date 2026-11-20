@@ -492,7 +492,12 @@ const fnKey = (fn: object) => {
 }
 
 const defaultKey = (of: Facts, value: unknown) =>
-	`${wrap(of)}=${typeof value === "function" ? fnKey(value) : `${typeof value}:${String(value)}`}`
+	`${wrap(of)}=${
+		typeof value === "function" ? fnKey(value)
+		: typeof value === "string" ? `string:${JSON.stringify(value)}`
+		: typeof value === "number" && Object.is(value, -0) ? "number:-0"
+		: `${typeof value}:${String(value)}`
+	}`
 
 const nodeFacts = (node: BaseRoot): Facts | undefined => {
 	if (node.isNever() || node.topAlias) return
@@ -636,7 +641,12 @@ const walkLiteral = (
 		const [of, kept] = value
 		if (of.defaults && (isTuple || key.kind === "optional")) return
 		if (isTuple && v[1] === "=") {
-			if (!isThunk(v[2]) && (hasDomain(v[2], "object") || !fits(v[2], of)))
+			if (
+				!isThunk(v[2]) &&
+				(hasDomain(v[2], "object") ||
+					typeof v[2] === "symbol" ||
+					!fits(v[2], of))
+			)
 				return
 			facts.pure = false
 		}
@@ -926,10 +936,14 @@ const deferredMethods: Dict<
 		) ?
 			{
 				...facts,
-				key: `${facts.key}+${rule}`,
+				key: `${wrap(facts)}+${rule}`,
+				terms: undefined,
+				values: undefined,
+				of: undefined,
 				pure: rule === "ignore" && facts.pure,
 				names: undefined,
-				entries: undefined
+				entries: undefined,
+				literal: false
 			}
 		:	undefined,
 	exclude: ({ facts }, [r]) => {
@@ -1077,7 +1091,10 @@ const canDefer = ($: InternalScope) => {
 }
 
 const literalOf = (value: unknown) =>
-	typeof value === "string" ? `'${value}'`
+	typeof value === "string" ?
+		value.includes("'") || value.includes("\\") ?
+			"?"
+		:	`'${value}'`
 	: typeof value === "number" || value === null || typeof value === "boolean" ?
 		`${value}`
 	: value === undefined ? "undefined"
