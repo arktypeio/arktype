@@ -1639,8 +1639,9 @@ age must be a number (was missing)`)
 		attest(validator.toJsonSchema({ target: "draft-2020-12" })).equals(
 			T.toJsonSchema({ target: "draft-2020-12" })
 		)
-		attest(() => validator.toJsonSchema({ target: "draft-07" })).throws(
-			'A standalone validator\'s JSON Schema takes only a target it was built with, and a fallback only where it was built to apply one; set members["toJsonSchema"] true, or build with runtime: "arktype"'
+		// members.toJsonSchema bakes every target, as code can pass any
+		attest(validator.toJsonSchema({ target: "draft-07" })).equals(
+			T.toJsonSchema({ target: "draft-07" })
 		)
 		// one it didn't bake reads undefined, and only throws in development
 		const unbaked = ["json", "description", "expression", "toJSON"] as const
@@ -2703,14 +2704,15 @@ after: isn't January 1, 2000, 12:00:00.001 AM UTC or later (January 1, 1970)`)
 			T: type("string")
 		}).code.replace(
 			"runtime.fixConfig()",
-			"runtime.fixConfig()\nruntime.configure({})"
+			"runtime.fixConfig()\nruntime.configure({ numberAllowsNaN: true })"
 		)
 		attest(
 			await importCode(bundle(createdFirst).js)
 				.then(artifact => artifact.T())
 				.catch((e: Error) => e.message)
 		).equals(reconfiguredMessage)
-		// a second configure() after the first, or after the build's own
+		// a second configure() after the first, or after the build's own, unless
+		// it changes nothing
 		const nan = fingerprintOf({ numberAllowsNaN: true })
 		const configured = `runtime.configure({ numberAllowsNaN: true }, "${nan}")`
 		attest([
@@ -2719,7 +2721,7 @@ after: isn't January 1, 2000, 12:00:00.001 AM UTC or later (January 1, 1970)`)
 				nan
 			),
 			await messageOf(`${configured}\n${configured}`, nan)
-		]).equals([reconfiguredMessage, reconfiguredMessage])
+		]).equals([reconfiguredMessage, ""])
 	})
 
 	it("fingerprints apart differing values", () => {
@@ -2806,7 +2808,9 @@ config.onUndeclaredKey = "reject"`
 		artifact.configure(config, fingerprintOf(config))
 		attest(artifact.T()({ a: 1 })).equals("configured")
 		attest(artifact.T()).is(artifact.T())
-		attest(() => artifact.configure(config)).throws(reconfiguredMessage)
+		attest(() => artifact.configure({ onFail: () => "other" })).throws(
+			reconfiguredMessage
+		)
 		// unless built with lazy: false
 		attest(
 			await importCode(
@@ -2849,7 +2853,9 @@ config.onUndeclaredKey = "reject"`
 			)
 			artifact.configure({}, fingerprintOf({}))
 			artifact[name]()
-			attest(() => artifact.configure({})).throws(reconfiguredMessage)
+			attest(() => artifact.configure({ numberAllowsNaN: true })).throws(
+				reconfiguredMessage
+			)
 		}
 	})
 
@@ -3718,6 +3724,7 @@ export default shared`).js
 		const runtimeModules = new Set([
 			"<stdin>",
 			"schema/runtime.ts",
+			"schema/shared/configured.ts",
 			"schema/shared/enWriters.ts",
 			"schema/shared/errorWriters.ts",
 			"schema/shared/issues.ts",
