@@ -99,6 +99,18 @@ const writeFiles = (files: Record<string, string>) => {
 	}
 }
 
+const run = <result>(build: () => result): result => {
+	try {
+		return build()
+	} catch (e) {
+		// e.g. a config module that can't be read or a tsconfig that's missing,
+		// which the message names
+		if (!isBuildError(e)) throw e
+		console.error(e.message)
+		process.exit(1)
+	}
+}
+
 const declare = (): never => {
 	const checker = values.checker as string | undefined
 	if (checker !== undefined && !checkers.includes(checker as Checker))
@@ -114,7 +126,9 @@ const declare = (): never => {
 			return fail((e as Error).message)
 		}
 	})()
-	const declarations = emitDeclarations({ tsconfig, checker: setChecker })
+	const declarations = run(() =>
+		emitDeclarations({ tsconfig, checker: setChecker })
+	)
 	writeFiles(declarations.files)
 	if (declarations.diagnostics) console.error(declarations.diagnostics)
 	console.log(
@@ -185,17 +199,6 @@ try {
 	resolvePrecompileOptions(set)
 } catch (e) {
 	fail((e as Error).message)
-}
-
-const run = <result>(build: () => result): result => {
-	try {
-		return build()
-	} catch (e) {
-		// e.g. a config module that can't be read, which the message names
-		if (!isBuildError(e)) throw e
-		console.error(e.message)
-		process.exit(1)
-	}
 }
 
 if (values.emit) {

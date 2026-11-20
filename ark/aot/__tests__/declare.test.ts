@@ -840,6 +840,15 @@ export type makeTree = {
 		)
 	}).timeout(60000)
 
+	it("prints why --declare can't read its tsconfig, without a stack", () => {
+		const dir = writeFixture({ "src/index.ts": "export const id = 1\n" })
+		const cli = runCli(dir, "--declare", "--tsconfig", "missing.json")
+		attest([cli.status, cli.stderr.split(dir).join("")]).snap([
+			1,
+			"error TS5083: Cannot read file '/missing.json'.\n\n"
+		])
+	})
+
 	it("refuses the CLI's other modes and options with --declare", () => {
 		const cli = runCli(layouts, "--declare", "--check", "--preset", "smallest")
 		attest([cli.status, cli.stderr.split("\n")[0]]).snap([
