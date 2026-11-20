@@ -69,7 +69,7 @@ contextualize(() => {
 	describe("literals and enums", () => {
 		it("never", () => {
 			const T = type("never")
-			const S = inferred({ enum: [] })
+			const S = inferred({ not: {} })
 			assertEmits(T, S)
 			attest<typeof T.infer>(S).type.toString.snap("never")
 		})

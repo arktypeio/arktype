@@ -41,6 +41,8 @@ interface JsonSchemaContext extends ToJsonSchema.Context {
 	open: string[]
 	defNamesById: Record<string, string>
 	defs: Record<string, JsonSchema | undefined>
+	/** what each $ref's pointer starts with, before the name of its def */
+	refPrefix: string
 	writers: UnionJsonSchemaWriters
 }
 
@@ -57,19 +59,18 @@ export const rootToJsonSchema = (
 	node: BaseRoot,
 	opts: ToJsonSchema.Options
 ): JsonSchema => {
-	const ctx: JsonSchemaContext = Object.assign(
-		mergeToJsonSchemaConfigs(node.$.cfg.toJsonSchema, opts),
-		{
-			path: "",
-			open: [],
-			defNamesById: {},
-			defs: {},
-			writers:
-				(opts as { [unionJsonSchemaWritersKey]?: UnionJsonSchemaWriters })[
-					unionJsonSchemaWritersKey
-				] ?? jsonSchemaWriters
-		}
-	)
+	const merged = mergeToJsonSchemaConfigs(node.$.cfg.toJsonSchema, opts)
+	const ctx: JsonSchemaContext = Object.assign(merged, {
+		path: "",
+		open: [],
+		defNamesById: {},
+		defs: {},
+		refPrefix: refPrefixOf(merged),
+		writers:
+			(opts as { [unionJsonSchemaWritersKey]?: UnionJsonSchemaWriters })[
+				unionJsonSchemaWritersKey
+			] ?? jsonSchemaWriters
+	})
 	// a default handler throws naming where the part it can't convert is
 	ctx.fallback = flatMorph(ctx.fallback, (code, handler) => [
 		code,
@@ -103,6 +104,18 @@ const refPrefixByTarget: Record<ToJsonSchema.Target, string> = {
 	"openapi-3.0": "#/components/schemas/"
 }
 
+// ~standard.jsonSchema returns one schema, not the document holding it, so
+// for OpenAPI its $refs point to the definitions written beside them, as
+// zod's do, for a caller to move to components.schemas with the refs. Not
+// where a configured defs handler expects #/components/schemas/
+export const refPrefixOf = (ctx: ToJsonSchema.Context): string =>
+	(
+		ctx.target === "openapi-3.0" &&
+		ctx.fallback.defs === ToJsonSchema.standardFallback.defs
+	) ?
+		"#/definitions/"
+	:	refPrefixByTarget[ctx.target]
+
 export const toJsonSchemaRecurse = (
 	node: BaseRoot,
 	ctx: JsonSchemaContext
@@ -134,7 +147,7 @@ export const toJsonSchemaRecurse = (
 }
 
 const refTo = (name: string, ctx: JsonSchemaContext): JsonSchema.Ref =>
-	({ $ref: refPrefixByTarget[ctx.target] + name }) as JsonSchema.Ref
+	({ $ref: ctx.refPrefix + name }) as JsonSchema.Ref
 
 // the alias a cyclic definition's id starts with, without the count after it,
 // which follows an underscore where the alias ends in a digit. No lookbehind:
@@ -172,11 +185,7 @@ const toResolvedJsonSchema = (
 		:	(innerToJsonSchemaByKind[node.kind](node as never, ctx) as never)
 
 	for (const k in node.meta) {
-		// keyword identifies arktype's own phrase, which JSON Schema has no key for
-		if (k === "keyword" || k === "jsonSchema") continue
-		// these word arktype's own errors: a JSON Schema reader has no use for
-		// them, and a strict validator rejects the unknown keywords
-		if (k === "expected" || k === "actual" || k === "message") continue
+		if (!annotationKeys.has(k) && !k.startsWith("x-")) continue
 		const v = (node.meta as dict)[k]
 		// JSON can't represent a function like a message writer
 		if (typeof v === "function" && k !== "default") continue
@@ -186,17 +195,32 @@ const toResolvedJsonSchema = (
 		const jsonValue =
 			typeof v !== "function" && $ark.kw.jsonData.allows(v) ? v
 			: k === "default" ?
-				ctx.fallback.defaultValue({
-					code: "defaultValue",
-					base: result,
-					value: v as never
-				})
+				ctx.fallback.defaultValue({ code: "defaultValue", value: v as never })
 			:	(node.metaJson as dict)[k]
 		if (jsonValue !== undefined) writeAnnotation(result, k, jsonValue, ctx)
 	}
 
 	return jsonSchema ? Object.assign(result, jsonSchema) : result
 }
+
+// the meta written as annotations: JSON Schema's own and any x- extension.
+// Any other key, like arktype's alias, onFail, the words of its errors or a
+// key ArkEnv.meta adds, is no JSON Schema keyword, which a strict validator
+// like Ajv, an OpenAPI 3.0 linter or an LLM API rejects, so jsonSchema meta
+// writes it instead
+const annotationKeys: ReadonlySet<string> = new Set([
+	"title",
+	"description",
+	"default",
+	"examples",
+	"deprecated",
+	"readOnly",
+	"writeOnly",
+	"$comment",
+	"format",
+	"contentEncoding",
+	"contentMediaType"
+])
 
 const branchGroupsToJsonSchema = (
 	node: Union.Node,
@@ -304,7 +328,9 @@ const writeAnnotation = (
 	// OpenAPI 3.0 has no contentEncoding, but names base64 with a format
 	else if (k === "contentEncoding") {
 		if (v === "base64") annotations.format = "byte"
-	} else annotations[k] = v
+	}
+	// nor $comment or contentMediaType, which it has nothing for
+	else if (k !== "$comment" && k !== "contentMediaType") annotations[k] = v
 }
 
 // a union's true and false branches are written as one boolean
@@ -341,6 +367,8 @@ const innerToJsonSchemaByKind: {
 		if (ctx.io === "in")
 			branchGroups = branchGroups.filter(group => !group.hasUnit(undefined))
 		const nonNull = branchGroups.filter(branch => !branch.hasUnit(null))
+		// an input's null | undefined is null, not anyOf with never beside it
+		if (!nonNull.length && branchGroups.length) return nullSchemaOf(ctx)
 		return nonNull.length === branchGroups.length ?
 				branchGroupsToJsonSchema(node, branchGroups, ctx)
 			:	ctx.writers.nullable(
@@ -372,10 +400,7 @@ const innerToJsonSchemaByKind: {
 	},
 	unit: (node, ctx) =>
 		// this is the more standard JSON schema representation, especially for Open API
-		node.unit === null ?
-			ctx.target === "openapi-3.0" ?
-				openApiNull()
-			:	{ type: "null" }
+		node.unit === null ? nullSchemaOf(ctx)
 		: !$ark.kw.jsonPrimitive.allows(node.unit) ?
 			ctx.fallback.unit({ code: "unit", base: {}, unit: node.unit })
 		: ctx.target === "openapi-3.0" ?
@@ -727,11 +752,7 @@ const writeDefault = (
 	const jsonDefault =
 		$ark.kw.jsonData.allows(value) ?
 			value
-		:	ctx.fallback.defaultValue({
-				code: "defaultValue",
-				base: schema,
-				value
-			})
+		:	ctx.fallback.defaultValue({ code: "defaultValue", value })
 	if (jsonDefault !== undefined) schema.default = jsonDefault
 }
 
@@ -813,6 +834,9 @@ const reduceSequenceJsonSchema = (
 	return schema
 }
 
+const nullSchemaOf = (ctx: JsonSchemaContext): JsonSchema =>
+	ctx.target === "openapi-3.0" ? openApiNull() : { type: "null" }
+
 // an OpenAPI 3.0 array schema must have items
 const arraySchemaOf = (ctx: JsonSchemaContext): JsonSchema.Array =>
 	ctx.target === "openapi-3.0" ?
@@ -827,11 +851,11 @@ const writeBound = (
 	exclusiveKey: "exclusiveMinimum" | "exclusiveMaximum"
 ): JsonSchema.Numeric => {
 	if (!node.exclusive) schema[key] = node.rule
-	// openapi-3.0 marks the bound itself exclusive
-	else if (ctx.target === "openapi-3.0") {
-		schema[key] = node.rule
-		schema[exclusiveKey] = true
-	} else schema[exclusiveKey] = node.rule
+	// openapi-3.0 marks the bound itself exclusive, with a boolean the type
+	// leaves out to fit JSONSchema7
+	else if (ctx.target === "openapi-3.0")
+		Object.assign(schema, { [key]: node.rule, [exclusiveKey]: true })
+	else schema[exclusiveKey] = node.rule
 	return schema
 }
 

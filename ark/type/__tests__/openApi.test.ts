@@ -19,11 +19,10 @@ const anyOfPrefix = ({
 	items: { anyOf: items ? [...elements, items] : elements }
 })
 
-// nullable and example aren't part of the JsonSchema type
 const toOpenApi = (
 	t: { toJsonSchema: (opts: ToJsonSchema.Options) => JsonSchema },
 	opts?: ToJsonSchema.Options
-): object => t.toJsonSchema({ ...opts, target })
+): JsonSchema => t.toJsonSchema({ ...opts, target })
 
 contextualize(() => {
 	it("exclusive bounds", () => {
@@ -198,6 +197,15 @@ contextualize(() => {
 			type: "array",
 			items: { type: "string" }
 		})
+	})
+
+	it("leaves out meta it has no keyword for", () => {
+		const T = type("string").configure({
+			$comment: "internal",
+			readOnly: true,
+			examples: ["a"]
+		})
+		attest(toOpenApi(T)).snap({ type: "string", readOnly: true, example: "a" })
 	})
 
 	it("examples", () => {
@@ -437,17 +445,27 @@ contextualize(() => {
 		)
 	})
 
-	it("standard cyclic", () => {
+	// one schema, not a document, so its $refs resolve against itself
+	it("standard cyclic refs the definitions beside it", () => {
 		const { Node } = scope({ Node: { "next?": "Node" } }).export()
 		attest(Node["~standard"].jsonSchema.input({ target })).snap({
-			$ref: "#/components/schemas/Node",
+			$ref: "#/definitions/Node",
 			definitions: {
 				Node: {
 					type: "object",
-					properties: { next: { $ref: "#/components/schemas/Node" } }
+					properties: { next: { $ref: "#/definitions/Node" } }
 				}
 			}
 		})
+		// a configured handler puts them in components.schemas, as for toJsonSchema
+		attest(
+			Node["~standard"].jsonSchema.input({
+				target,
+				libraryOptions: {
+					fallback: { defs: (ctx: ToJsonSchema.DefsContext) => ctx.base }
+				}
+			})
+		).snap({ $ref: "#/components/schemas/Node" })
 	})
 
 	it("unknown target", () => {
