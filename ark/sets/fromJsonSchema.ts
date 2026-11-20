@@ -3,12 +3,11 @@ import {
 	Disjoint,
 	defining,
 	isNode,
-	node,
-	rootSchema,
-	rootSchemaScope,
+	schemaScope,
 	type BaseNode,
 	type BaseParseContext,
 	type BaseRoot,
+	type BaseScope,
 	type JsonSchema,
 	type NodeSchema,
 	type Predicate,
@@ -33,8 +32,9 @@ import { isNonArray } from "./toJsonSchema.ts"
 
 interface ReadContext {
 	document: unknown
-	// draft-07 and earlier ignore the keywords beside a $ref
-	ignoresRefSiblings: boolean
+	// draft-07 and earlier ignore the keywords beside a $ref, and have none of
+	// the 2019-09 keywords arksets can't read
+	dialectBefore2019: boolean
 	// draft-04 identifies a resource with `id`
 	idKey: "$id" | "id"
 	documentResource: Resource
@@ -53,6 +53,33 @@ interface Resource {
 	uri: string
 }
 
+// what a JSON Schema accepts can't depend on configure(). The scope pins the
+// option it can, and the nodes written here state the global-only ones
+// (onUndeclaredKey, numberAllowsNaN, numberAllowsInfinity) themselves: a scope
+// can't set those, and a node rebuilt in another scope, e.g. by an
+// intersection with an arktype Type, would otherwise take that scope's
+const jsonSchemaScope = /* @__PURE__ */ cached((): BaseScope => {
+	const $ = schemaScope(
+		{},
+		{ name: "jsonSchema", exactOptionalPropertyTypes: true }
+	)
+	$.export()
+	return $
+})
+
+const rootSchema = (schema: RootSchema): BaseRoot =>
+	jsonSchemaScope().schema(schema)
+
+const node: BaseScope["node"] = (kind, schema, opts) =>
+	jsonSchemaScope().node(kind, schema, opts)
+
+// a number JSON Schema reads is finite, whatever configure() says
+const numberDomain = {
+	domain: "number",
+	numberAllowsNaN: false,
+	numberAllowsInfinity: false
+} as const
+
 export const readJsonSchema = (
 	schema: JsonSchema.Input,
 	document: JsonSchema.Input = schema
@@ -61,7 +88,7 @@ export const readJsonSchema = (
 	const documentResource = { schema: document, uri: documentUri }
 	const ctx: ReadContext = {
 		document,
-		ignoresRefSiblings: /draft-0[3-7]/.test($schema),
+		dialectBefore2019: /draft-0[3-7]/.test($schema),
 		idKey: /draft-0[34]/.test($schema) ? "id" : "$id",
 		documentResource,
 		resource: documentResource,
@@ -73,7 +100,7 @@ export const readJsonSchema = (
 	const id = idOf(document, ctx)
 	if (id !== undefined) documentResource.uri = resolveUri(id, documentUri, "#")
 	try {
-		return rootSchemaScope.fin(defining(() => read(schema, "#", ctx)))
+		return jsonSchemaScope().fin(defining(() => read(schema, "#", ctx)))
 	} finally {
 		for (const ref in ctx.cyclesByRef)
 			delete $ark.nodesById[ctx.cyclesByRef[ref].id]
@@ -86,8 +113,8 @@ const read = (schema: unknown, pointer: string, ctx: ReadContext): BaseRoot => {
 	if (!isPlainObject(schema))
 		return throwParseError(writeInvalidJsonSchemaMessage(pointer, schema))
 	const o = schema as dict
-	for (const k in o) checkKeyword(o, k, pointer)
-	if (o.$ref !== undefined && ctx.ignoresRefSiblings)
+	for (const k in o) checkKeyword(o, k, pointer, ctx)
+	if (o.$ref !== undefined && ctx.dialectBefore2019)
 		return readRef(o.$ref as string, pointer, ctx)
 	const enclosing = ctx.resource
 	const id = schema === enclosing.schema ? undefined : idOf(o, ctx)
@@ -122,10 +149,10 @@ const readRef = (ref: string, pointer: string, ctx: ReadContext): BaseRoot => {
 	if (key in ctx.rootsByRef) return ctx.rootsByRef[key]
 	// a ref within its own target is a cycle, resolved once that's read
 	if (ctx.refsBeingRead.includes(key)) {
-		ctx.cyclesByRef[key] ??= rootSchemaScope.openSynthetic(
+		ctx.cyclesByRef[key] ??= jsonSchemaScope().openSynthetic(
 			`synthetic${hashOf(`${key}\n${printable(target.schema)}`)}`
 		)
-		return rootSchemaScope.lazilyResolve(
+		return jsonSchemaScope().lazilyResolve(
 			() => ctx.rootsByRef[key],
 			ctx.cyclesByRef[key].id
 		)
@@ -190,9 +217,7 @@ const resolvePointer = (
 				if (id !== undefined)
 					resource = { schema: target, uri: resolveUri(id, resource.uri, ref) }
 			}
-			const key = decodeURIComponent(segment)
-				.replace(/~1/g, "/")
-				.replace(/~0/g, "~")
+			const key = decodePointerSegment(segment, ref)
 			return (
 					typeof target === "object" && target !== null && hasOwn(target, key)
 				) ?
@@ -202,6 +227,17 @@ const resolvePointer = (
 	return { schema: target, resource, fragment }
 }
 
+const decodePointerSegment = (segment: string, ref: string): string => {
+	let decoded: string
+	try {
+		decoded = decodeURIComponent(segment)
+	} catch {
+		// a malformed escape like %ZZ names no key
+		return throwParseError(writeUnresolvableRefMessage(ref))
+	}
+	return decoded.replace(/~1/g, "/").replace(/~0/g, "~")
+}
+
 // the base URI of a document without an absolute $id
 const documentUri = "arksets:/document"
 
@@ -209,7 +245,7 @@ const documentUri = "arksets:/document"
 const idOf = (schema: unknown, ctx: ReadContext): string | undefined => {
 	if (!isPlainObject(schema)) return
 	const o = schema as dict
-	if (o.$ref !== undefined && ctx.ignoresRefSiblings) return
+	if (o.$ref !== undefined && ctx.dialectBefore2019) return
 	const id = o[ctx.idKey]
 	return typeof id === "string" && id[0] !== "#" ? id : undefined
 }
@@ -249,18 +285,17 @@ const indexResources = (ctx: ReadContext): Record<string, Resource> => {
 				uri: resource.uri
 			}
 		}
+		// a keyword's value is checked only where it's read, so one here may be invalid
 		for (const k in o) {
 			const kind = keywordValueKinds[k]
 			if (kind === "schema") visit(o[k], resource)
 			else if (kind === "items" || kind === "schemas" || kind === "branches")
 				for (const v of isArray(o[k]) ? o[k] : [o[k]]) visit(v, resource)
 			else if (
-				kind === "schemasByKey" ||
-				kind === "dependencies" ||
-				k === "$defs" ||
-				k === "definitions"
+				(kind === "schemasByKey" || kind === "dependencies") &&
+				isPlainObject(o[k])
 			)
-				for (const v of Object.values(o[k] as dict)) visit(v, resource)
+				for (const v of Object.values(o[k])) visit(v, resource)
 		}
 		// an OpenAPI document's schemas
 		if (schema === ctx.document && isPlainObject(o.components)) {
@@ -275,7 +310,7 @@ const indexResources = (ctx: ReadContext): Record<string, Resource> => {
 
 // before 2019-09, an anchor is an id that's only a fragment
 const anchorsOf = (o: dict, ctx: ReadContext): string[] => {
-	if (o.$ref !== undefined && ctx.ignoresRefSiblings) return []
+	if (o.$ref !== undefined && ctx.dialectBefore2019) return []
 	const id = o[ctx.idKey]
 	return [
 		o.$anchor,
@@ -285,7 +320,7 @@ const anchorsOf = (o: dict, ctx: ReadContext): string[] => {
 }
 
 const intersectRoots = (l: BaseRoot, r: BaseRoot): BaseRoot =>
-	intersectNodesRoot(l, r, rootSchemaScope).toNeverIfDisjoint()
+	intersectNodesRoot(l, r, jsonSchemaScope()).toNeverIfDisjoint()
 
 const keywordReaders: KeywordReader[] = [
 	(o, pointer, ctx) =>
@@ -442,10 +477,14 @@ const readArray = (
 			]
 		})
 	}
-	if (o.contains !== undefined) {
+	const min = (o.minContains ?? 1) as number
+	const max = (o.maxContains ?? Number.POSITIVE_INFINITY) as number
+	// any array has at least 0 items that are anything, so that relates as Array
+	if (
+		o.contains !== undefined &&
+		(min !== 0 || max !== Number.POSITIVE_INFINITY)
+	) {
 		const contained = read(o.contains, `${pointer}/contains`, ctx)
-		const min = (o.minContains ?? 1) as number
-		const max = (o.maxContains ?? Number.POSITIVE_INFINITY) as number
 		constraints.push({
 			predicate: [
 				opaque(
@@ -496,12 +535,14 @@ const readObject = (
 			value: p.value
 		})) as unknown[],
 		predicate: [] as unknown[],
-		undeclared: undefined as "reject" | undefined,
+		// stated, so configure({ onUndeclaredKey }) can't change it
+		undeclared: (additional.isNever() ? "reject" : "ignore") as
+			| "reject"
+			| "ignore",
 		// as properties lists them
 		order: [] as string[]
 	}
 	for (const key of new Set([...Object.keys(properties), ...required])) {
-		structure.order.push(key)
 		// a declared key meets every pattern it matches, else additionalProperties
 		const value = patterns
 			.filter(p => p.matcher.test(key))
@@ -516,12 +557,35 @@ const readObject = (
 				: isDeclared(key) ? $ark.kw.unknown
 				: additional
 			)
-		if (!required.includes(key)) structure.optional.push({ key, value })
-		else if (value.isNever()) return [$ark.kw.never]
-		else structure.required.push({ key, value })
+		const isRequired = required.includes(key)
+		if (isRequired && value.isNever()) return [$ark.kw.never]
+		// a JSON object's properties are its own, but a prop finds a key like
+		// toString on Object.prototype. An index signature reads only own keys,
+		// and a required one is also checked to be own
+		if (key in Object.prototype) {
+			structure.index.push({
+				signature: {
+					domain: "string",
+					pattern: [{ rule: `^${escapeRegex(key)}$` }]
+				},
+				value
+			})
+			if (isRequired) {
+				structure.predicate.push(
+					opaque(
+						["ownKey", key],
+						`an object with its own ${key}`,
+						(data: dict) => hasOwn(data, key)
+					)
+				)
+			}
+			continue
+		}
+		structure.order.push(key)
+		if (isRequired) structure.required.push({ key, value })
+		else structure.optional.push({ key, value })
 	}
-	if (additional.isNever()) structure.undeclared = "reject"
-	else if (!additional.isUnknown()) {
+	if (!additional.isNever() && !additional.isUnknown()) {
 		if (Object.keys(properties).length === 0 && patterns.length === 0)
 			structure.index.push({ signature: "string", value: additional })
 		else {
@@ -548,13 +612,14 @@ const readObject = (
 				structure.optional.length ||
 				structure.index.length ||
 				structure.predicate.length ||
-				structure.undeclared
+				structure.undeclared === "reject"
 		) ?
 			[structure as never]
 		:	[]
 }
 
-// the keywords constraining an object's keys as a whole
+// the keywords constraining an object's keys as a whole. One every object
+// meets adds no predicate, which would keep it from relating to one without
 const readKeyPredicates = (
 	o: dict,
 	pointer: string,
@@ -563,17 +628,19 @@ const readKeyPredicates = (
 	const predicates: NodeSchema<"predicate">[] = []
 	if (o.propertyNames !== undefined) {
 		const names = read(o.propertyNames, `${pointer}/propertyNames`, ctx)
-		predicates.push(
-			opaque(
-				["propertyNames", names.id],
-				`an object whose keys are ${names.description}`,
-				(data: dict) => Object.keys(data).every(k => names.allows(k))
+		if (!$ark.kw.string.extends(names)) {
+			predicates.push(
+				opaque(
+					["propertyNames", names.id],
+					`an object whose keys are ${names.description}`,
+					(data: dict) => Object.keys(data).every(k => names.allows(k))
+				)
 			)
-		)
+		}
 	}
-	if (o.minProperties !== undefined || o.maxProperties !== undefined) {
-		const min = (o.minProperties ?? 0) as number
-		const max = (o.maxProperties ?? Number.POSITIVE_INFINITY) as number
+	const min = (o.minProperties ?? 0) as number
+	const max = (o.maxProperties ?? Number.POSITIVE_INFINITY) as number
+	if (min !== 0 || max !== Number.POSITIVE_INFINITY) {
 		predicates.push(
 			opaque(
 				["properties", min, max],
@@ -594,6 +661,7 @@ const readKeyPredicates = (
 		for (const key in dependencies) {
 			const dependency = dependencies[key]
 			if (isArray(dependency)) {
+				if (dependency.length === 0) continue
 				predicates.push(
 					opaque(
 						["dependentRequired", key, dependency],
@@ -609,6 +677,7 @@ const readKeyPredicates = (
 					`${pointer}/${keyword}/${escapePointer(key)}`,
 					ctx
 				)
+				if (dependent.isUnknown()) continue
 				predicates.push(
 					opaque(
 						["dependentSchemas", key, dependent.id],
@@ -647,7 +716,7 @@ const constrainOwnType = (
 		])
 
 const basisOf = {
-	number: { domain: "number" },
+	number: { domain: numberDomain },
 	string: { domain: "string" },
 	array: { proto: Array },
 	object: { domain: "object" }
@@ -676,8 +745,8 @@ const disjointFromArray = (node: BaseNode): Disjoint | undefined => {
 const typeRoots = /* @__PURE__ */ cached(
 	(): Record<JsonSchema.TypeName, BaseRoot> => ({
 		string: $ark.kw.string,
-		number: $ark.kw.number,
-		integer: $ark.kw.integer,
+		number: rootSchema(numberDomain),
+		integer: rootSchema({ domain: numberDomain, divisor: 1 }),
 		boolean: $ark.kw.boolean,
 		null: $ark.kw.null,
 		array: $ark.kw.Array,
@@ -775,7 +844,9 @@ const branchesAreDisjoint = (branches: BaseRoot[]) =>
 	branches.every((l, i) =>
 		branches
 			.slice(i + 1)
-			.every(r => intersectNodesRoot(l, r, rootSchemaScope) instanceof Disjoint)
+			.every(
+				r => intersectNodesRoot(l, r, jsonSchemaScope()) instanceof Disjoint
+			)
 	)
 
 const withAnnotations = (root: BaseRoot, o: dict): BaseRoot => {
@@ -851,6 +922,9 @@ export const isPlainObject = (value: unknown): value is object => {
 
 const escapePointer = (key: string) =>
 	key.replace(/~/g, "~0").replace(/\//g, "~1")
+
+const escapeRegex = (source: string) =>
+	source.replace(/[$()*+./?[\\\]^{|}]/g, "\\$&")
 
 const isSchema = (v: unknown) => typeof v === "boolean" || isPlainObject(v)
 
@@ -955,9 +1029,13 @@ const keywordValueKinds: Record<string, keyof typeof keywordValues> = {
 	not: "schema",
 	if: "schema",
 	then: "schema",
-	else: "schema"
+	else: "schema",
+	// checked wherever they are, as a $ref into them reads only its target
+	$defs: "schemasByKey",
+	definitions: "schemasByKey"
 }
 
+// keywords from 2019-09 on, which a draft-07 or earlier validator ignores
 const unsupportedKeywords = [
 	"$dynamicRef",
 	"$recursiveRef",
@@ -965,8 +1043,13 @@ const unsupportedKeywords = [
 	"unevaluatedProperties"
 ]
 
-const checkKeyword = (o: dict, k: string, pointer: string): void => {
-	if (unsupportedKeywords.includes(k))
+const checkKeyword = (
+	o: dict,
+	k: string,
+	pointer: string,
+	ctx: ReadContext
+): void => {
+	if (unsupportedKeywords.includes(k) && !ctx.dialectBefore2019)
 		throwParseError(writeUnsupportedKeywordMessage(`${pointer}/${k}`))
 	if (!hasOwn(keywordValueKinds, k)) return
 	const [expected, allows] = keywordValues[keywordValueKinds[k]]
