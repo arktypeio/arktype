@@ -5,6 +5,7 @@ import type {
 	CompactApply,
 	FailureContext,
 	FailureSite,
+	IssueJson,
 	MissingText,
 	SiteContext
 } from "./issues.ts"
@@ -158,20 +159,25 @@ const Issues: new () => Issues = (
 				return this._.map(lineOf).join("\n")
 			}
 
-			// as issues.ts's, an instance of TraversalError only where a program names it
+			// as issues.ts's, an instance of TraversalError wherever it's kept
 			throw(): never {
 				if (namesTraversalError) throw new ThrownIssues(this as never)
+				if (definedThrown) throw new definedThrown(this as never)
 				const thrown = Error(this.summary)
 				thrown.name = "TraversalError"
 				throw Object.defineProperty(thrown, "arkErrors", { value: this })
 			}
 
-			toJSON(): readonly unknown[] {
-				return this.issues
+			toJSON(): readonly IssueJson[] {
+				return this.issues.map(jsonIssueOf)
 			}
 
 			toString(): string {
 				return this.summary
+			}
+
+			[Symbol.iterator](): IterableIterator<WrittenIssue> {
+				return this.issues[Symbol.iterator]()
 			}
 		}
 	: readsSummary ?
@@ -193,6 +199,7 @@ interface Issues extends ReadIssues {
 	throw(): never
 	toJSON(): readonly unknown[]
 	toString(): string
+	[Symbol.iterator](): IterableIterator<this["issues"][number]>
 	/** @internal set by a build asking for only the first issue */
 	failFast?: true
 	/** @internal arktype's errors, which copy their contexts when merged */
@@ -200,6 +207,15 @@ interface Issues extends ReadIssues {
 }
 
 export { Issues as ArkErrors }
+
+// an issue as JSON, without its data, as issues.ts's jsonIssueOf
+const jsonIssueOf = (issue: ArkIssue): IssueJson => ({
+	code: issue.code,
+	path: issue.path.map(k => (typeof k === "symbol" ? String(k) : k)),
+	expected: issue.expected,
+	message: issue.message ?? messageOf(issue),
+	...(issue.errors && { errors: issue.errors.map(jsonIssueOf) })
+})
 
 export class FirstIssues extends Issues {
 	override get failFast(): true {
@@ -370,9 +386,13 @@ interface ThrownIssues extends Error {
 	arkErrors: Issues
 }
 
-const ThrownIssues: new (errors: Issues) => ThrownIssues = (
-	readsErrors && namesTraversalError ?
-		class TraversalError extends Error {
+// defined as its module loads, and dropped where nothing imports it, as
+// issues.ts's
+let definedThrown: (new (errors: Issues) => ThrownIssues) | undefined
+
+const ThrownIssues: new (errors: Issues) => ThrownIssues =
+	/* @__PURE__ */ (() =>
+		(definedThrown = class TraversalError extends Error {
 			declare readonly name: "TraversalError"
 			declare arkErrors: Issues
 
@@ -384,7 +404,6 @@ const ThrownIssues: new (errors: Issues) => ThrownIssues = (
 				// defined, so it's neither enumerable nor writable
 				Object.defineProperty(this, "arkErrors", { value: errors })
 			}
-		}
-	:	undefined) as never
+		}))()
 
 export { ThrownIssues as TraversalError }

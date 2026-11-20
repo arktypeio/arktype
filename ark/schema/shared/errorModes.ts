@@ -89,6 +89,12 @@ export const rejectUndetailed = (
 ): unknown => {
 	// no constructor: one root issue needs none of its fields
 	const errors: UndetailedErrors = Object.create(undetailedPrototype)
+	// its code is predicate, arktype's for a failure it says nothing more of,
+	// as ctx.reject reports one without a code, and as data a write has made
+	// valid since fails: expected "valid", "is invalid". A code of its own
+	// would be a member every switch over ArkErrorCode and every complete
+	// Locale must handle, to tell apart issues that only errors "none" adds,
+	// which the config that set it already says
 	const issues: UndetailedErrors["_"] = [
 		{ code: "predicate", path: [], data } as never
 	]

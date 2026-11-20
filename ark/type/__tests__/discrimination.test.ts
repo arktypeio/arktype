@@ -1031,18 +1031,17 @@ contextualize(() => {
 			})
 			const errors = T({ k: 3.5 }) as type.errors
 			attest(errors.summary).snap("k must be 1.5 or 2.5")
+			// its JSON leaves out the value, which the error holds
+			attest(errors.issues[0].data).equals(3.5)
 			attest(errors.toJSON()[0]).snap({
-				data: 3.5,
 				path: ["k"],
 				code: "discriminant",
 				discriminantKind: "unit",
 				onKey: true,
 				absent: false,
 				description: "1.5 or 2.5",
-				meta: {},
 				propString: "k",
 				expected: "1.5 or 2.5",
-				actual: "3.5",
 				message: "must be 1.5 or 2.5"
 			})
 		})

@@ -155,10 +155,8 @@ b: Enter a number`)
 		attest(error.message).snap("must be a greeting")
 		attest(errors.toJSON()).snap([
 			{
-				data: "x",
 				path: [],
 				expected: "a greeting",
-				actual: "",
 				code: "predicate",
 				propString: "",
 				message: "must be a greeting"
@@ -233,27 +231,19 @@ b: Enter a number`)
 	it("serialization", () => {
 		attest(errors.toJSON()).snap([
 			{
-				data: 1,
 				path: ["n"],
 				code: "divisor",
 				description: "even",
-				meta: {},
-				rule: 2,
 				propString: "n",
 				expected: "even",
-				actual: "1",
 				message: "must be even"
 			},
 			{
-				data: 1,
 				path: ["n"],
 				code: "min",
 				description: "at least 2",
-				meta: {},
-				rule: 2,
 				propString: "n",
 				expected: "at least 2",
-				actual: "1",
 				message: "must be at least 2"
 			}
 		])
@@ -273,7 +263,17 @@ b: Enter a number`)
 			JSON.stringify({ issues: result.issues, messages })
 		) as { issues: unknown[]; messages: string[] }
 
-		attest(parsed.issues).equals(JSON.parse(JSON.stringify(errors)))
+		// the errors' JSON is each issue's without its data, the actual that
+		// describes it or the values its Type checked against
+		attest(JSON.parse(JSON.stringify(errors))).equals(
+			parsed.issues.map(issue => {
+				const { data, actual, meta, rule, ...json } = issue as Record<
+					string,
+					unknown
+				>
+				return json
+			})
+		)
 		attest(parsed.messages).equals(messages!)
 	})
 

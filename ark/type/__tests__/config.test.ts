@@ -525,7 +525,7 @@ age must be non-negative`)
 			attest(out instanceof type.errors).equals(true)
 			attest(out.toString()).snap("is invalid")
 			attest(JSON.stringify(out)).snap(
-				'[{"data":{"a":1,"b":"2"},"path":[],"code":"predicate","expected":"valid","message":"is invalid","propString":"","actual":"an object"}]'
+				'[{"path":[],"code":"predicate","expected":"valid","message":"is invalid","propString":""}]'
 			)
 		})
 
@@ -549,13 +549,11 @@ age must be non-negative`)
 			const T = none.type("string").pipe((s, ctx) => ctx.error("short"))
 			attest((T("x") as type.errors).toJSON()).snap([
 				{
-					data: "x",
 					path: [],
 					code: "predicate",
 					expected: "valid",
 					message: "is invalid",
-					propString: "",
-					actual: '"x"'
+					propString: ""
 				}
 			])
 		})
