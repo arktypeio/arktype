@@ -74,6 +74,17 @@ An optional key's value is read as `-?` reads it, so it keeps an `undefined` it 
 
 Like `.readonly()`, they keep array methods like `.atLeastLength()` on a tuple or array Type.
 
+### Type a `type.fn`'s `params` and `returns` as the Types they are
+
+They were typed from the function's signature, which leaves a morph only its input or output, so a morph's `returns` was typed as its output alone:
+
+```ts
+const f = type.fn("string", ":", "string.numeric.parse")(s => s)
+
+// was: Type<number>, now: Type<(In: string) => To<number>>
+f.returns
+```
+
 ## 3.0.0-beta.1
 
 ### Summary
