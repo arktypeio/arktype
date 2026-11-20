@@ -172,6 +172,7 @@ var Issues =
 				}
 				throw() {
 					if (namesTraversalError) throw new ThrownIssues(this)
+					if (definedThrown) throw new definedThrown(this)
 					const thrown = Error(this.summary)
 					thrown.name = "TraversalError"
 					throw Object.defineProperty(thrown, "arkErrors", { value: this })
@@ -218,15 +219,15 @@ var Issues =
 						summary += (summary && "\n") + lineOf(issue)
 					return summary
 				}
-				// constructed by TraversalError only where a program names the
+				// constructed by TraversalError wherever its bundle keeps the
 				// class: otherwise an Error with the same name, message and
-				// errors, which `instanceof TraversalError` recognizes wherever
-				// the class is imported, and no class in its bundle. Its name is
-				// assigned and its errors defined as the class's are, in
-				// statements, which gzip to less than one expression building it
-				// and which a build writing the flag as a literal folds as well
+				// errors, and no class in its bundle. Its name is assigned and
+				// its errors defined as the class's are, in statements, which
+				// gzip to less than one expression building it and which a build
+				// writing the flag as a literal folds as well
 				throw() {
 					if (namesTraversalError) throw new ThrownIssues(this)
+					if (definedThrown) throw new definedThrown(this)
 					const thrown = Error(this.summary)
 					thrown.name = "TraversalError"
 					throw Object.defineProperty(thrown, "arkErrors", { value: this })
@@ -315,24 +316,15 @@ var messageOf = issue =>
 		(issue.code === "required" ? " (was missing)" : "")
 	: issue.code === "required" ? "is missing"
 	: "is invalid"
+var definedThrown
 var ThrownIssues = /* @__PURE__ */ (() =>
-	class TraversalError extends Error {
+	(definedThrown = class TraversalError extends Error {
 		constructor(errors) {
 			super(errors.summary)
 			this.name = "TraversalError"
 			Object.defineProperty(this, "arkErrors", { value: errors })
 		}
-		// a subclass's instances are only those it constructs
-		static [Symbol.hasInstance](value) {
-			return (
-				Function.prototype[Symbol.hasInstance].call(this, value) ||
-				(this === TraversalError &&
-					value instanceof Error &&
-					value.name === "TraversalError" &&
-					"arkErrors" in value)
-			)
-		}
-	})()
+	}))()
 
 // ark/schema/shared/transform.ts
 var TransformErrors = class _TransformErrors {

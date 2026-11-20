@@ -227,8 +227,6 @@ try {
 
 `arkErrors` is non-enumerable, so loggers that print an error's own properties skip it.
 
-`instanceof TraversalError` is also true of one another copy of arktype threw, and of the `Error` named `TraversalError` holding `arkErrors` that a [precompiled](/docs/precompile/advanced#what-nothing-reads) build throws where none of its modules names the class.
-
 ## ParseError
 
 A `ParseError` is thrown when a definition is invalid, as the Type is created rather than when it validates. TypeScript reports the same mistakes in your editor, so you'll usually see one only for definitions TypeScript can't check, like strings built at runtime:

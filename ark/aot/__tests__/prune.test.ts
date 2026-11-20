@@ -1383,7 +1383,7 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 		}
 
 		it("sizes them where they're compiled for speed with optimize unset", async () => {
-			attest(await timesFrom({})).snap("1.4")
+			attest(await timesFrom({})).snap("1.3")
 		})
 
 		it("doesn't under the smallest preset, which writes them as checkers", async () => {
@@ -1516,6 +1516,16 @@ console.log(out instanceof type.errors ? out.summary : out)
 
 const User = type({ name: "string" })
 console.log(User.allows({ name: 5 }), User.allows({ name: "Ada" }))
+`,
+				// a dependency the build bundles without reading it
+				"node_modules/dep/package.json": JSON.stringify({
+					name: "dep",
+					type: "module",
+					main: "index.js"
+				}),
+				"node_modules/dep/index.js": `import { TraversalError } from "arktype"
+
+export const isThrown = e => e instanceof TraversalError
 `
 			},
 			fromHere("temp", "pruned")
@@ -1895,7 +1905,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 			attest(bracketed.includes('.join(".")')).equals(false)
 		})
 
-		it("throws an Error only a program naming TraversalError holds the class of", async () => {
+		it("throws an Error only where no module, a dependency included, imports TraversalError", async () => {
 			const thrownBy = (imports: string, test: string) =>
 				bundle(
 					{ preset: undefined },
@@ -1934,6 +1944,13 @@ try {
 `)
 			attest(unnamed.includes("extends Error")).equals(false)
 			attest(named.includes("extends Error")).equals(true)
+			// a dependency's import isn't read, so the class is kept for it alone
+			const depended = await thrownBy(
+				`import { isThrown } from "dep"`,
+				"isThrown(thrown)"
+			)
+			attest(run(depended)).equals(run(named))
+			attest(depended.includes("extends Error")).equals(true)
 		})
 
 		it("writes a Standard Schema failure's message, its errors' summary, where a program reads ~standard alone", async () => {

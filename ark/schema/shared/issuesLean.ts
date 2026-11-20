@@ -159,9 +159,10 @@ const Issues: new () => Issues = (
 				return this._.map(lineOf).join("\n")
 			}
 
-			// as issues.ts's, an instance of TraversalError only where a program names it
+			// as issues.ts's, an instance of TraversalError wherever it's kept
 			throw(): never {
 				if (namesTraversalError) throw new ThrownIssues(this as never)
+				if (definedThrown) throw new definedThrown(this as never)
 				const thrown = Error(this.summary)
 				thrown.name = "TraversalError"
 				throw Object.defineProperty(thrown, "arkErrors", { value: this })
@@ -385,10 +386,13 @@ interface ThrownIssues extends Error {
 	arkErrors: Issues
 }
 
-// always defined, and dropped where nothing imports it, as issues.ts's
+// defined as its module loads, and dropped where nothing imports it, as
+// issues.ts's
+let definedThrown: (new (errors: Issues) => ThrownIssues) | undefined
+
 const ThrownIssues: new (errors: Issues) => ThrownIssues =
 	/* @__PURE__ */ (() =>
-		class TraversalError extends Error {
+		(definedThrown = class TraversalError extends Error {
 			declare readonly name: "TraversalError"
 			declare arkErrors: Issues
 
@@ -400,16 +404,6 @@ const ThrownIssues: new (errors: Issues) => ThrownIssues =
 				// defined, so it's neither enumerable nor writable
 				Object.defineProperty(this, "arkErrors", { value: errors })
 			}
-
-			static [Symbol.hasInstance](value: unknown): boolean {
-				return (
-					Function.prototype[Symbol.hasInstance].call(this, value) ||
-					(this === TraversalError &&
-						value instanceof Error &&
-						value.name === "TraversalError" &&
-						"arkErrors" in value)
-				)
-			}
-		})()
+		}))()
 
 export { ThrownIssues as TraversalError }

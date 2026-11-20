@@ -1,6 +1,6 @@
 import { namesTraversalError } from "./issueFeatures.ts"
 import type { ArkIssue } from "./issues.ts"
-import { lineOf, TraversalError } from "./issuesUndetailed.ts"
+import { lineOf } from "./issuesUndetailed.ts"
 
 export * from "./issuesUndetailed.ts"
 
@@ -28,7 +28,8 @@ export class ArkErrors {
 
 	// as issuesNone.ts's
 	throw(): never {
-		if (namesTraversalError) throw new TraversalError(this as never)
+		if (namesTraversalError) throw new ThrownErrors(this)
+		if (definedThrown) throw new definedThrown(this)
 		const thrown = Error(this.summary)
 		thrown.name = "TraversalError"
 		throw Object.defineProperty(thrown, "arkErrors", { value: this })
@@ -52,3 +53,26 @@ export class ArkErrors {
 }
 
 export { ArkErrors as FirstIssues }
+
+interface ThrownErrors extends Error {
+	readonly name: "TraversalError"
+	arkErrors: ArkErrors
+}
+
+// as issuesNone.ts's
+let definedThrown: (new (errors: ArkErrors) => ThrownErrors) | undefined
+
+const ThrownErrors: new (errors: ArkErrors) => ThrownErrors =
+	/* @__PURE__ */ (() =>
+		(definedThrown = class TraversalError extends Error {
+			declare readonly name: "TraversalError"
+			declare arkErrors: ArkErrors
+
+			constructor(errors: ArkErrors) {
+				super(errors.summary)
+				this.name = "TraversalError"
+				Object.defineProperty(this, "arkErrors", { value: errors })
+			}
+		}))()
+
+export { ThrownErrors as TraversalError }

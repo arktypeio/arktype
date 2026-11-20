@@ -195,27 +195,6 @@ natural must be positive
 name must be a string`)
 	})
 
-	it("TraversalError recognizes what any errors throw", () => {
-		const out = type("string")(5) as ArkErrors
-		// as a build leaving out the class, or another copy of arktype, throws it
-		const thrown = Object.defineProperty(
-			Object.assign(new Error(out.summary), { name: "TraversalError" }),
-			"arkErrors",
-			{ value: out }
-		)
-		attest(thrown instanceof TraversalError).equals(true)
-		attest(new Error("x") instanceof TraversalError).equals(false)
-		attest(
-			Object.assign(new Error("x"), { name: "TraversalError" }) instanceof
-				TraversalError
-		).equals(false)
-		// a subclass's instances are only those it constructs
-		class Thrown extends TraversalError {}
-		attest(thrown instanceof Thrown).equals(false)
-		attest(new Thrown(out) instanceof Thrown).equals(true)
-		attest(new Thrown(out) instanceof TraversalError).equals(true)
-	})
-
 	it("homepage example", () => {
 		const User = type({
 			name: "string",

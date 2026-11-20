@@ -403,6 +403,7 @@ const Issues: IssuesClass = (
 
 				throw(): never {
 					if (namesTraversalError) throw new ThrownIssues(this as never)
+					if (definedThrown) throw new definedThrown(this as never)
 					const thrown = Error(this.summary)
 					thrown.name = "TraversalError"
 					throw Object.defineProperty(thrown, "arkErrors", { value: this })
@@ -472,15 +473,15 @@ const Issues: IssuesClass = (
 					return summary
 				}
 
-				// constructed by TraversalError only where a program names the
+				// constructed by TraversalError wherever its bundle keeps the
 				// class: otherwise an Error with the same name, message and
-				// errors, which `instanceof TraversalError` recognizes wherever
-				// the class is imported, and no class in its bundle. Its name is
-				// assigned and its errors defined as the class's are, in
-				// statements, which gzip to less than one expression building it
-				// and which a build writing the flag as a literal folds as well
+				// errors, and no class in its bundle. Its name is assigned and
+				// its errors defined as the class's are, in statements, which
+				// gzip to less than one expression building it and which a build
+				// writing the flag as a literal folds as well
 				throw(): never {
 					if (namesTraversalError) throw new ThrownIssues(this as never)
+					if (definedThrown) throw new definedThrown(this as never)
 					const thrown = Error(this.summary)
 					thrown.name = "TraversalError"
 					throw Object.defineProperty(thrown, "arkErrors", { value: this })
@@ -780,15 +781,17 @@ interface ThrownIssues extends Error {
 	arkErrors: Issues
 }
 
-// what's thrown is an instance of TraversalError only where a program names
-// the class (namesTraversalError), but the class is always defined: a module
-// the build doesn't read, like a dependency, may import it, and a bundler
-// drops it where none does. It recognizes what any errors throw as its own,
-// the Error a build without it throws, as each throw() writes it, and what
-// another copy of arktype throws
+// the class, once its module defines it. A build reading where a program
+// names it (namesTraversalError) constructs it, but a module the build
+// doesn't read, like a dependency, may import it too: so it's defined as its
+// module loads, and assigned here as it is, which a bundler drops with the
+// class where nothing imports it. What's thrown is then an instance of the
+// class wherever it can be named
+let definedThrown: (new (errors: Issues) => ThrownIssues) | undefined
+
 const ThrownIssues: new (errors: Issues) => ThrownIssues =
 	/* @__PURE__ */ (() =>
-		class TraversalError extends Error {
+		(definedThrown = class TraversalError extends Error {
 			declare readonly name: "TraversalError"
 			declare arkErrors: Issues
 
@@ -800,18 +803,7 @@ const ThrownIssues: new (errors: Issues) => ThrownIssues =
 				// defined, so it's neither enumerable nor writable
 				Object.defineProperty(this, "arkErrors", { value: errors })
 			}
-
-			// a subclass's instances are only those it constructs
-			static [Symbol.hasInstance](value: unknown): boolean {
-				return (
-					Function.prototype[Symbol.hasInstance].call(this, value) ||
-					(this === TraversalError &&
-						value instanceof Error &&
-						value.name === "TraversalError" &&
-						"arkErrors" in value)
-				)
-			}
-		})()
+		}))()
 
 export { ThrownIssues as TraversalError }
 
