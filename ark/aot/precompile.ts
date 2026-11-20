@@ -1048,7 +1048,7 @@ export class Precompiler {
 
 	// what a bundle's validators are read for, so its next transforms leave out what no read needs
 	scan(program: ScannedProgram): ScannedUsage {
-		return this.interpreter.withActive(() => {
+		return this.withActive(() => {
 			this.readProgram(program)
 			this.usagesByProgram.delete(program.key)
 			const unwritten: ScannedUsage = {
@@ -2704,7 +2704,7 @@ export class Precompiler {
 
 	// its sites and diagnostics before validators are written
 	analyzeSites(source: string, id: string): ModuleAnalysis {
-		return this.interpreter.withActive(() => {
+		return this.withActive(() => {
 			const module = this.add(id, source)
 			// analyzed under the thread's configuration
 			if (threadConfiguration) this.configuration ??= this.applyConfiguration()
@@ -2716,7 +2716,7 @@ export class Precompiler {
 
 	// a module another plugin writes, like a compiled Svelte component, is read but not precompiled
 	checkUnwritten(source: string, id: string, mappings?: string): Diagnostic[] {
-		return this.interpreter.withActive(() => {
+		return this.withActive(() => {
 			if (this.mode !== "standalone" || !this.importsArk(source, id)) return []
 			const module = this.add(id, source, mappings)
 			this.configuration ??= this.applyConfiguration()
@@ -3087,7 +3087,7 @@ export class Precompiler {
 		// the bundle a scan read, whose validators lack what no read needs
 		program?: string
 	): PrecompiledModule {
-		return this.interpreter.withActive(() => {
+		return this.withActive(() => {
 			const written = this.writtenIn(program, id, source)
 			if (written) return written
 			const precompiled = this.precompileUnscanned(
@@ -3689,12 +3689,24 @@ export class Precompiler {
 					}
 		}
 		if (evaluated) {
+			if (!problem) {
+				configuration.interpreter = this.interpreter
+				configure(evaluated.value as never)
+			}
 			threadConfiguration = configuration
-			if (!problem) configure(evaluated.value as never)
 		}
 		// so a later configure() throws, as after the first Type
 		void ark.internal.cfg
 		return configuration
+	}
+
+	// keeps the shared thread configuration's writer interpreter on the active
+	// stack when a replacement Precompiler runs sites under its writers
+	private withActive<t>(run: () => t): t {
+		const configInterpreter = threadConfiguration?.interpreter
+		return configInterpreter && configInterpreter !== this.interpreter ?
+				configInterpreter.withActive(() => this.interpreter.withActive(run))
+			:	this.interpreter.withActive(run)
 	}
 
 	get conflictsWithThread(): boolean {
@@ -8526,6 +8538,8 @@ interface Configuration {
 	reasons: string[]
 	// false where the reasons say how to fix them
 	hint?: string | false | undefined
+	// the interpreter that evaluated configure() writers shared across replacements
+	interpreter?: Interpreter | undefined
 }
 
 let threadConfiguration: Configuration | undefined

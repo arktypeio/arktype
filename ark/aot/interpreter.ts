@@ -212,7 +212,7 @@ type StandInProxyOptions = {
 	mayHaveHasInstance?: boolean
 }
 
-let activeInterpreter: Interpreter | undefined
+const activeInterpreters: Interpreter[] = []
 
 // created at module scope so V8's shared function context never retains an
 // Interpreter, StandIn, or SourceModule when arktype caches a stand-in proxy
@@ -223,13 +223,18 @@ const createClassTarget = (base: unknown): Function =>
 		class extends (base as new () => object) {}
 	:	class {}
 
-// Look up the stand-in on the currently executing Interpreter without storing a
+// Look up the stand-in on the active Interpreter stack without storing a
 // strong or WeakRef back-pointer on the proxy itself (even constructing a
 // WeakRef pins its target in V8's KeptObjects until the end of the JS job).
+// Walking the stack handles a shared configuration writer created by a prior
+// Interpreter running while a replacement Interpreter evaluates its own site.
 const resolveStandIn = (proxy: object): [Interpreter, StandIn] | undefined => {
-	const active = activeInterpreter
-	const standIn = active?.standIns.get(proxy)
-	return active && standIn ? [active, standIn] : undefined
+	for (let i = activeInterpreters.length - 1; i >= 0; i--) {
+		const active = activeInterpreters[i]
+		const standIn = active.standIns.get(proxy)
+		if (standIn) return [active, standIn]
+	}
+	return undefined
 }
 
 const requireStandIn = (proxy: object): [Interpreter, StandIn] => {
@@ -523,12 +528,11 @@ export class Interpreter {
 	}
 
 	withActive<t>(run: () => t): t {
-		const previous = activeInterpreter
-		activeInterpreter = this
+		activeInterpreters.push(this)
 		try {
 			return run()
 		} finally {
-			activeInterpreter = previous
+			activeInterpreters.pop()
 		}
 	}
 
