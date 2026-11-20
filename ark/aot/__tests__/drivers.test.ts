@@ -1194,6 +1194,25 @@ console.log(Value, note, load, await import("#shared/lazy"))
 				)
 			})
 
+			it("leaves a published package whose TypeScript, which Node won't run there, imports arktype", async () => {
+				attest(
+					await externalProblemOf("shipsTests", {
+						files: {
+							...naming("ships-tests").files,
+							// a test it runs on arktype in development
+							"node_modules/ships-tests/package.json": JSON.stringify({
+								name: "ships-tests",
+								devDependencies: { arktype: "*" }
+							}),
+							"node_modules/ships-tests/index.js":
+								"export const failed = () => false\n",
+							"node_modules/ships-tests/src/index.test.ts":
+								'import { type } from "arktype"\n\nexport const T = type("string")\n'
+						}
+					})
+				).equals(undefined)
+			})
+
 			it("reads serverExternalPackages however next.config returns it", async () => {
 				attest(
 					await externalProblemOf("configFunction", {

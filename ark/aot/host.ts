@@ -305,16 +305,21 @@ const arktypeEntries = ["arktype", "@ark/schema"]
 const importOfArktype =
 	/(?:\bfrom\s*|\bimport\s*\(?\s*|require\s*\(\s*)["'`](?:arktype|@ark\/schema)(?:\/[^"'`]*)?["'`]/
 
-// a published package's JavaScript, or the source a workspace package's
-// exports name, which Node strips the types of outside node_modules. A
-// declaration only names arktype's types
+// a package's JavaScript, which Node runs wherever the package is
+const javaScriptFile = /\.[cm]?js$/
+
+// and the source a workspace package's exports may name, which Node strips
+// the types of only outside node_modules, so a published package's .ts, like
+// a test it ships importing arktype it lists as a devDependency, never runs.
+// A declaration only names arktype's types
 const scriptFile = /(?<!\.d)\.(?:[cm]?[jt]s|[jt]sx)$/
 
-const importsArktype = (dir: string): boolean =>
+const importsArktype = (dir: string, readsSource: boolean): boolean =>
 	readdirSync(dir, { withFileTypes: true }).some(entry =>
 		entry.isDirectory() ?
-			entry.name !== "node_modules" && importsArktype(join(dir, entry.name))
-		:	scriptFile.test(entry.name) &&
+			entry.name !== "node_modules" &&
+			importsArktype(join(dir, entry.name), readsSource)
+		:	(readsSource ? scriptFile : javaScriptFile).test(entry.name) &&
 			importOfArktype.test(readFile(join(dir, entry.name)) ?? "")
 	)
 
@@ -334,7 +339,8 @@ export const dependsOnArktype = (name: string, from: string): boolean => {
 	)) {
 		if (
 			arktypeEntries.some(entry => manifest.includes(`"${entry}"`)) &&
-			importsArktype(root)
+			// a root is real, so a workspace package's names no node_modules
+			importsArktype(root, !/[/\\]node_modules[/\\]/.test(root))
 		)
 			return true
 	}
