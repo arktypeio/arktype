@@ -841,6 +841,8 @@ const withAlike = (observation: any, alike: any, reported: any) => {
 	if (!observation.written) return withIssue
 	const from = `${pathKeyOf(alike.path)}\0${alike.code}`
 	const to = `${pathKeyOf(reported.path)}\0${alike.code}`
+	// one issue at the same path already has its exact written text and summary
+	if (observation.written.length === 1 && from === to) return withIssue
 	const issue = observation.written.find(
 		(written: WrittenIssue) => written.at === from
 	)

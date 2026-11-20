@@ -123,8 +123,12 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 
 		it("throws naming a site that throws at creation", () => {
 			// what arktype creates is compared by meta, unless the validator lacks it
+			const hole =
+				testedOptions.optimize === "size" ?
+					"A value a validator reads"
+				:	"`isLong` (created.ts:5:43)"
 			attest(shadow.created).equals(
-				`Error: created.ts:5:21  type("string").narrow(isLong) diverges from arktype at creation: arktype gives ${lacks("meta") ? "{}" : '{"meta":{}}'}, its validator {"threw":"Error: \`isLong\` (created.ts:5:43) is a function of 2 or more parameters, but was precompiled as a function of 1 parameter"}`
+				`Error: created.ts:5:21  type("string").narrow(isLong) diverges from arktype at creation: arktype gives ${lacks("meta") ? "{}" : '{"meta":{}}'}, its validator {"threw":"Error: ${hole} is a function of 2 or more parameters, but was precompiled as a function of 1 parameter"}`
 			)
 		})
 
