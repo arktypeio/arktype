@@ -117,7 +117,9 @@ export abstract class BaseRoot<
 					vendor: "arktype",
 					version: 1,
 					validate: input => {
-						const out = this(input)
+						// Standard Schema returns its issues, so a configured onFail
+						// that throws or returns something else isn't called
+						const out = this.traverse(input)
 						return out instanceof ArkErrors ?
 								standardFailureOf(out as ArkErrors)
 							:	{ value: out }

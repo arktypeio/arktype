@@ -159,6 +159,14 @@ const resolveThunk = (def: Fn): unknown => {
 	}
 }
 
+// any thenable, since a Promise from another realm, or a library's own, isn't
+// an instance of this realm's Promise
+const isThenable = (result: unknown): result is PromiseLike<unknown> =>
+	typeof result === "object" &&
+	result !== null &&
+	"then" in result &&
+	typeof result.then === "function"
+
 // a Type from another copy of arktype, like 2.x, is foreign: it has its
 // arkKind but not its methods, so it validates through its Standard Schema
 const parseStandardSchema = (
@@ -169,7 +177,7 @@ const parseStandardSchema = (
 	const validate = (v: unknown, ctx: Traversal) => {
 		const result = def["~standard"].validate(v)
 
-		if (result instanceof Promise) {
+		if (isThenable(result)) {
 			return throwError(
 				writeAsyncStandardSchemaMessage(def["~standard"].vendor)
 			)

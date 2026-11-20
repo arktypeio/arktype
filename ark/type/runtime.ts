@@ -348,7 +348,10 @@ const standardOf = (
 	freeze({
 		vendor: "arktype",
 		version: 1,
-		validate: freeze((input: unknown) => standardResultOf(validator(input))),
+		// Standard Schema returns its issues, so a configured onFail isn't called
+		validate: freeze((input: unknown) =>
+			standardResultOf(validator(input, undefined, null))
+		),
 		...attributes["~standard"]
 	})
 
