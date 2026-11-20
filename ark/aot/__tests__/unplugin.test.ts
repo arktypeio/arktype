@@ -767,10 +767,21 @@ export const failed = out => out instanceof type.errors
 							name: "nested",
 							peerDependencies: { arktype: "*" }
 						}),
-					"node_modules/bundled/node_modules/nested/index.js": readsErrors
+					"node_modules/bundled/node_modules/nested/index.js": readsErrors,
+					// a workspace package its exports name the source of
+					"packages/ts-errors/package.json": JSON.stringify({
+						name: "ts-errors",
+						type: "module",
+						exports: "./src/index.ts",
+						dependencies: { arktype: "*" }
+					}),
+					"packages/ts-errors/src/index.ts": readsErrors
 				},
 				fromHere("temp", "webpackReachingExternals", name)
 			)
+			// linked from its own directory, as a workspace links it
+			rmSync(join(root, "node_modules/ts-errors"), { force: true })
+			symlinkSync("../packages/ts-errors", join(root, "node_modules/ts-errors"))
 			const compiler = (build as typeof webpack)({
 				mode: "production",
 				context: root,
@@ -809,6 +820,14 @@ export const failed = out => out instanceof type.errors
 					"wraps-errors"
 				])
 			).equals(leaves("wraps-errors"))
+		})
+
+		it("as a workspace package shipping its TypeScript source", async () => {
+			attest(
+				await errorsOf(webpack, precompile.webpack, "source", ["ts-errors"])
+			).equals([
+				withAllowUnsafe(writeExternalizedMessage("ts-errors", "externals"))
+			])
 		})
 
 		it("as the module importing it resolves it", async () => {

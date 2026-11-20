@@ -305,11 +305,16 @@ const arktypeEntries = ["arktype", "@ark/schema"]
 const importOfArktype =
 	/(?:\bfrom\s*|\bimport\s*\(?\s*|require\s*\(\s*)["'`](?:arktype|@ark\/schema)(?:\/[^"'`]*)?["'`]/
 
+// a published package's JavaScript, or the source a workspace package's
+// exports name, which Node strips the types of outside node_modules. A
+// declaration only names arktype's types
+const scriptFile = /(?<!\.d)\.(?:[cm]?[jt]s|[jt]sx)$/
+
 const importsArktype = (dir: string): boolean =>
 	readdirSync(dir, { withFileTypes: true }).some(entry =>
 		entry.isDirectory() ?
 			entry.name !== "node_modules" && importsArktype(join(dir, entry.name))
-		:	/\.[cm]?js$/.test(entry.name) &&
+		:	scriptFile.test(entry.name) &&
 			importOfArktype.test(readFile(join(dir, entry.name)) ?? "")
 	)
 
