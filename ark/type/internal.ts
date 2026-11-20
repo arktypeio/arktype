@@ -2,6 +2,7 @@
 export * from "./index.ts"
 export * from "./attributes.ts"
 export * from "./codecs.ts"
+export * from "./config.ts"
 export * from "./declare.ts"
 export * from "./deferred.ts"
 export * from "./errors.ts"

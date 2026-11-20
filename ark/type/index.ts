@@ -11,8 +11,6 @@ export {
 	TraversalError,
 	type ArkError,
 	type ArkErrorCode,
-	type ArkSchemaConfig,
-	type ArkSchemaScopeConfig,
 	type GenericAst,
 	type JsonSchema,
 	type StandardJSONSchemaV1,
@@ -29,14 +27,8 @@ export {
 	type JsonStructure
 } from "@ark/util"
 export { regex, type Regex, type RegexExecArray } from "arkregex"
-export type {
-	Default,
-	distill,
-	Out,
-	TerminallyInferredObject,
-	To
-} from "./attributes.ts"
-export * from "./config.ts"
+export type { Default, distill, Out, To } from "./attributes.ts"
+export { configure, type ArkConfig, type KeywordConfig } from "./config.ts"
 export type { TypedFn } from "./fn.ts"
 export { Generic } from "./generic.ts"
 export type { ParsedFormData } from "./keywords/FormData.ts"
