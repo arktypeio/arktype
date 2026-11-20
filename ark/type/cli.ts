@@ -1,15 +1,21 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process"
 import {
-	cpSync,
+	constants,
+	copyFileSync,
 	existsSync,
+	lstatSync,
 	mkdirSync,
+	readdirSync,
 	readFileSync,
 	realpathSync,
-	writeFileSync
+	statSync,
+	unlinkSync,
+	writeFileSync,
+	type Stats
 } from "node:fs"
 import { createRequire } from "node:module"
-import { dirname, join, resolve } from "node:path"
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 import { parseArgs } from "node:util"
 
@@ -151,17 +157,154 @@ const defaultSkillTarget = (projectRoot: string): string => {
 	return join(projectRoot, ".agents", "skills", "arktype")
 }
 
+export type InstallSkillOptions = {
+	force?: boolean
+}
+
+const lstatIfExists = (path: string): Stats | undefined => {
+	try {
+		return lstatSync(path)
+	} catch (e) {
+		if ((e as NodeJS.ErrnoException).code === "ENOENT") return undefined
+		throw e
+	}
+}
+
+const isWithinDir = (root: string, target: string): boolean => {
+	const rel = relative(root, target)
+	return (
+		rel === "" ||
+		(rel !== ".." &&
+			!rel.startsWith(`..${sep}`) &&
+			!rel.startsWith("../") &&
+			!isAbsolute(rel))
+	)
+}
+
+const resolveSafeSkillDir = (
+	projectRoot: string,
+	dest: string,
+	explicitDir: boolean,
+	force: boolean
+): string => {
+	const realRoot = realpathSync(projectRoot)
+	// walk up via lstat so dangling symlinks are detected instead of skipped
+	let cur = dest
+	let stat = lstatIfExists(cur)
+	while (!stat) {
+		const parent = dirname(cur)
+		if (parent === cur) break
+		cur = parent
+		stat = lstatIfExists(cur)
+	}
+	let resolvedAncestor: string
+	if (stat?.isSymbolicLink()) {
+		try {
+			resolvedAncestor = realpathSync(cur)
+		} catch {
+			throw new Error(
+				`Refusing to install skill through dangling symlink ${cur}`
+			)
+		}
+		if (!statSync(resolvedAncestor).isDirectory()) {
+			throw new Error(
+				`Cannot install skill to ${dest}: ${cur} resolves to ${resolvedAncestor}, which is not a directory`
+			)
+		}
+	} else if (stat && !stat.isDirectory()) {
+		throw new Error(
+			`Cannot install skill to ${dest}: ${cur} is not a directory`
+		)
+	} else resolvedAncestor = realpathSync(cur)
+
+	const resolvedDest = join(resolvedAncestor, relative(cur, dest))
+	if (!explicitDir && !force && !isWithinDir(realRoot, resolvedDest)) {
+		throw new Error(
+			`Refusing to install skill to ${dest}: resolves to ${resolvedDest}, outside project root ${realRoot} (pass --force to allow)`
+		)
+	}
+	return resolvedDest
+}
+
+const validateSkillTree = (srcDir: string, destDir: string): void => {
+	for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
+		const srcPath = join(srcDir, entry.name)
+		const destPath = join(destDir, entry.name)
+		const destStat = lstatIfExists(destPath)
+		if (destStat?.isSymbolicLink())
+			throw new Error(`Refusing to write through symlink at ${destPath}`)
+		if (entry.isDirectory()) {
+			if (destStat && !destStat.isDirectory()) {
+				throw new Error(
+					`Cannot create directory at ${destPath}: path exists and is not a directory`
+				)
+			}
+			validateSkillTree(srcPath, destPath)
+		} else if (entry.isFile() && destStat && !destStat.isFile()) {
+			throw new Error(
+				`Cannot write file at ${destPath}: path exists and is not a regular file`
+			)
+		}
+	}
+}
+
+const copySkillTree = (srcDir: string, destDir: string): void => {
+	for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
+		const srcPath = join(srcDir, entry.name)
+		const destPath = join(destDir, entry.name)
+		const destStat = lstatIfExists(destPath)
+		if (destStat?.isSymbolicLink())
+			throw new Error(`Refusing to write through symlink at ${destPath}`)
+		if (entry.isDirectory()) {
+			if (destStat && !destStat.isDirectory()) {
+				throw new Error(
+					`Cannot create directory at ${destPath}: path exists and is not a directory`
+				)
+			}
+			if (!destStat) mkdirSync(destPath)
+			copySkillTree(srcPath, destPath)
+		} else if (entry.isFile()) {
+			if (destStat) {
+				if (!destStat.isFile()) {
+					throw new Error(
+						`Cannot write file at ${destPath}: path exists and is not a regular file`
+					)
+				}
+				unlinkSync(destPath)
+			}
+			copyFileSync(srcPath, destPath, constants.COPYFILE_EXCL)
+		}
+	}
+}
+
 export const installBundledSkill = (
 	projectRoot: string,
-	targetDir?: string
+	targetDir?: string,
+	opts?: InstallSkillOptions
 ): string => {
 	const src = bundledSkillPath()
 	const dest =
 		targetDir ?
 			resolve(projectRoot, targetDir)
 		:	defaultSkillTarget(projectRoot)
-	mkdirSync(dirname(dest), { recursive: true })
-	cpSync(src, dest, { recursive: true, force: true })
+	const resolvedDest = resolveSafeSkillDir(
+		projectRoot,
+		dest,
+		targetDir !== undefined,
+		Boolean(opts?.force)
+	)
+	const realSrc = realpathSync(src)
+	if (
+		isWithinDir(realSrc, resolvedDest) ||
+		isWithinDir(resolvedDest, realSrc)
+	) {
+		throw new Error(
+			`Refusing to install skill to ${dest}: destination overlaps bundled skill source ${realSrc}`
+		)
+	}
+	validateSkillTree(realSrc, resolvedDest)
+	mkdirSync(resolvedDest, { recursive: true })
+	copySkillTree(realSrc, resolvedDest)
 	return dest
 }
 
@@ -293,26 +436,65 @@ const runInit = (
 	const manifest = readManifest(projectRoot)
 	const tools = detectedToolsOf(manifest, projectRoot)
 	const settingsPath = join(projectRoot, "ark.json")
+	const settingsContent = `${JSON.stringify({ precompile: {} }, null, "\t")}\n`
 
 	if (hasArkPrecompileSetting(manifest)) {
 		stdout(
 			`Found existing "ark" settings in ${join(projectRoot, "package.json")}; leaving ark.json untouched.\n`
 		)
-	} else if (existsSync(settingsPath) && !parsed.values.force) {
-		stdout(
-			`ark.json already exists at ${settingsPath} (pass --force to overwrite).\n`
-		)
-	} else {
-		writeFileSync(
-			settingsPath,
-			`${JSON.stringify({ precompile: {} }, null, "\t")}\n`
-		)
+	} else if (parsed.values.force) {
+		const stat = lstatIfExists(settingsPath)
+		if (stat?.isSymbolicLink()) {
+			stderr(`Refusing to overwrite symlink at ${settingsPath}.\n`)
+			return 1
+		}
+		if (stat && !stat.isFile()) {
+			stderr(`Cannot write ${settingsPath}: path is not a regular file.\n`)
+			return 1
+		}
+		try {
+			if (stat) unlinkSync(settingsPath)
+			writeFileSync(settingsPath, settingsContent, { flag: "wx" })
+		} catch (e) {
+			stderr(`Failed to write ${settingsPath}: ${(e as Error).message}\n`)
+			return 1
+		}
 		stdout(`Created ${settingsPath}\n`)
+	} else {
+		try {
+			writeFileSync(settingsPath, settingsContent, { flag: "wx" })
+			stdout(`Created ${settingsPath}\n`)
+		} catch (e) {
+			if ((e as NodeJS.ErrnoException).code === "EEXIST") {
+				const stat = lstatIfExists(settingsPath)
+				if (stat?.isSymbolicLink()) {
+					stderr(`Refusing to write through symlink at ${settingsPath}.\n`)
+					return 1
+				}
+				if (stat && !stat.isFile()) {
+					stderr(`Cannot write ${settingsPath}: path is not a regular file.\n`)
+					return 1
+				}
+				stdout(
+					`ark.json already exists at ${settingsPath} (pass --force to overwrite).\n`
+				)
+			} else {
+				stderr(`Failed to write ${settingsPath}: ${(e as Error).message}\n`)
+				return 1
+			}
+		}
 	}
 
 	if (!parsed.values["no-skill"]) {
-		const dest = installBundledSkill(projectRoot)
-		stdout(`Installed ArkType skill to ${dest}\n`)
+		try {
+			const dest = installBundledSkill(projectRoot, undefined, {
+				force: Boolean(parsed.values.force)
+			})
+			stdout(`Installed ArkType skill to ${dest}\n`)
+		} catch (e) {
+			stderr(`${(e as Error).message}\n`)
+			return 1
+		}
 	}
 
 	if (tools.length) stdout(`Detected tools: ${tools.join(", ")}\n`)
@@ -333,11 +515,14 @@ const buildMigrationPrompt = (
 	source: MigrationSource | undefined,
 	skillDir: string
 ): string => {
-	const fromLabel =
-		source === "v2" ? "ArkType 2.x"
-		: source ? source
-		: "the existing validation library"
 	const skillFile = join(skillDir, "SKILL.md")
+	if (source === "v2") {
+		return [
+			"Migrate this codebase from ArkType 2.x to ArkType 3.",
+			`Read the "Upgrading from ArkType 2" section of ${skillFile} and https://arktype.io/docs/upgrading.md first, then upgrade schemas, types, and error handling incrementally while keeping typecheck and tests green.`
+		].join("\n")
+	}
+	const fromLabel = source ?? "the existing validation library"
 	const migratingFile = join(skillDir, "references", "migrating.md")
 	return [
 		`Migrate this codebase from ${fromLabel} to ArkType 3.`,
@@ -396,13 +581,17 @@ const runMigrate = (
 		source = argSource as MigrationSource
 	} else source = detectMigrationSource(manifest)
 
-	const skillDir =
-		parsed.values["no-skill"] ?
-			bundledSkillPath()
-		:	installBundledSkill(projectRoot)
-
-	if (!parsed.values["no-skill"])
+	let skillDir: string
+	if (parsed.values["no-skill"]) skillDir = bundledSkillPath()
+	else {
+		try {
+			skillDir = installBundledSkill(projectRoot)
+		} catch (e) {
+			stderr(`${(e as Error).message}\n`)
+			return 1
+		}
 		stdout(`Installed ArkType skill to ${skillDir}\n`)
+	}
 
 	const prompt = buildMigrationPrompt(source, skillDir)
 
@@ -441,6 +630,7 @@ const runSkill = (
 			args,
 			options: {
 				dir: { type: "string" },
+				force: { type: "boolean", default: false },
 				help: { type: "boolean", short: "h", default: false }
 			},
 			allowPositionals: true
@@ -464,9 +654,16 @@ const runSkill = (
 		const projectRoot = findProjectRoot(cwd)
 		const target =
 			typeof parsed.values.dir === "string" ? parsed.values.dir : undefined
-		const dest = installBundledSkill(projectRoot, target)
-		stdout(`Installed ArkType skill to ${dest}\n`)
-		return 0
+		try {
+			const dest = installBundledSkill(projectRoot, target, {
+				force: Boolean(parsed.values.force)
+			})
+			stdout(`Installed ArkType skill to ${dest}\n`)
+			return 0
+		} catch (e) {
+			stderr(`${(e as Error).message}\n`)
+			return 1
+		}
 	}
 	stderr(`Unknown skill action "${action}". Expected "path" or "install".\n`)
 	return 1

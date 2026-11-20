@@ -1,5 +1,7 @@
 import {
 	isKeyOf,
+	isValidDate,
+	printable,
 	printDecimal,
 	throwParseError,
 	type array,
@@ -21,6 +23,7 @@ export abstract class BaseRange<
 	d extends BaseRangeDeclaration
 > extends InternalPrimitiveConstraint<d> {
 	declare readonly exclusive?: true
+	readonly expression: string
 
 	constructor(
 		...args: ConstructorParameters<typeof InternalPrimitiveConstraint>
@@ -28,6 +31,16 @@ export abstract class BaseRange<
 		super(...args)
 		if (this.opKind === "length")
 			assertLengthRule(this.kind as LengthBoundKind, this.rule as number)
+		else if (this.opKind === "value") {
+			if (typeof this.rule !== "number")
+				throwParseError(writeInvalidRangeRuleMessage(this.kind, this.rule))
+		} else if (!(this.rule instanceof Date) || !isValidDate(this.rule))
+			throwParseError(writeInvalidRangeRuleMessage(this.kind, this.rule))
+		this.expression = `${this.comparator} ${
+			this.opKind === "date" ?
+				`d'${this.stringLimit}'`
+			:	printDecimal(this.rule as number)
+		}`
 	}
 
 	override sameInner(r: BaseRange<d>): boolean | undefined {
@@ -51,12 +64,6 @@ export abstract class BaseRange<
 		return this.rule.valueOf()
 	}
 
-	readonly expression: string = `${this.comparator} ${
-		this.opKind === "date" ?
-			`d'${this.stringLimit}'`
-		:	printDecimal(this.rule as number)
-	}`
-
 	get limitKind(): LimitKind {
 		return this.comparator["0"] === "<" ? "upper" : "lower"
 	}
@@ -66,7 +73,7 @@ export abstract class BaseRange<
 			this.opKind === "value" ? data
 			: this.opKind === "length" ? `${data}.length`
 			: `${data}.valueOf()`
-		return `${actual} ${this.comparator} ${this.numRule}`
+		return `${actual} ${this.comparator} ${js.num(this.numRule)}`
 	}
 
 	get stringLimit(): string {
@@ -205,6 +212,12 @@ export const writeInvalidLengthBoundMessage = (
 	kind: LengthBoundKind,
 	limit: number
 ): string => `${kind} bound must be a positive integer (was ${limit})`
+
+export const writeInvalidRangeRuleMessage = (
+	kind: RangeKind,
+	limit: unknown
+): string =>
+	`${kind} bound must be ${kind === "before" || kind === "after" ? "a valid Date" : "a number"} (was ${printable(limit)})`
 
 export const assertLengthRule = (kind: LengthBoundKind, rule: number): void => {
 	if (!Number.isInteger(rule) || rule < 0)

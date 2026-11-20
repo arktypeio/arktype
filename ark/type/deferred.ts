@@ -423,6 +423,7 @@ const regexFacts = (v: RegExp): Facts => ({
 	pure: true
 })
 
+const maxScannedDefs = 4096
 const scanned = new Map<string, Facts | null>()
 
 /** what a string so plain that parsing it can't throw says */
@@ -434,6 +435,7 @@ const scanLeaf = (def: string): Facts | undefined => {
 		} catch {
 			facts = null
 		}
+		if (scanned.size >= maxScannedDefs) scanned.clear()
 		scanned.set(def, facts)
 	}
 	return facts ?? undefined

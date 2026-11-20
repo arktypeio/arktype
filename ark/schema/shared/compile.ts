@@ -4,6 +4,7 @@ import {
 	hasDomain,
 	isDotAccessible,
 	serializePrimitive,
+	throwInternalError,
 	type Fn
 } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
@@ -374,6 +375,13 @@ export abstract class NodeCompiler extends CompiledFunction<
 		return hasDomain(value, "object") || typeof value === "symbol" ?
 				this.ref(value)
 			:	serializePrimitive(value as never)
+	}
+
+	/** validates that a numeric literal interpolated into generated JS is a number */
+	num(n: number): string {
+		if (typeof n !== "number")
+			throwInternalError(`Expected a numeric literal (was ${typeof n})`)
+		return `${n}`
 	}
 
 	ref(value: object | symbol): string {

@@ -2,10 +2,12 @@ import { attest, contextualize } from "@ark/attest"
 import { spawnSync } from "node:child_process"
 import {
 	existsSync,
+	lstatSync,
 	mkdirSync,
 	mkdtempSync,
 	readFileSync,
 	rmSync,
+	symlinkSync,
 	writeFileSync
 } from "node:fs"
 import { tmpdir } from "node:os"
@@ -205,6 +207,23 @@ contextualize(() => {
 		attest(bad.err.includes('Unknown migration source "unknown-lib"')).equals(
 			true
 		)
+
+		const v2Dir = tempProject({
+			"package.json": JSON.stringify({
+				name: "app",
+				dependencies: { arktype: "^2.2.9" }
+			})
+		})
+		const v2Res = invoke(["migrate", "--no-skill"], v2Dir)
+		attest(v2Res.code).equals(0)
+		attest(
+			v2Res.out.includes("Migrate this codebase from ArkType 2.x to ArkType 3.")
+		).equals(true)
+		attest(v2Res.out.includes("Upgrading from ArkType 2")).equals(true)
+		attest(v2Res.out.includes("https://arktype.io/docs/upgrading.md")).equals(
+			true
+		)
+		attest(v2Res.out.includes("references/migrating.md")).equals(false)
 	})
 
 	it("prints and installs the bundled skill via ark skill", () => {
@@ -234,5 +253,122 @@ contextualize(() => {
 		})
 		attest(run.status).equals(0)
 		attest(run.stdout.trim()).satisfies(/^\d+\.\d+\.\d+/)
+	})
+
+	it("refuses writing skill files through symlinks (including dangling targets)", () => {
+		const outside = tempProject({ "victim.txt": "SECRET\n" })
+		const dir = tempProject({ "package.json": "{}" })
+		const skillDir = join(dir, ".agents", "skills", "arktype")
+		mkdirSync(join(skillDir, "references"), { recursive: true })
+
+		// existing target symlink
+		symlinkSync(join(outside, "victim.txt"), join(skillDir, "SKILL.md"))
+		const res1 = invoke(["skill", "install"], dir)
+		attest(res1.code).equals(1)
+		attest(res1.err.includes("symlink")).equals(true)
+		attest(readFileSync(join(outside, "victim.txt"), "utf8")).equals("SECRET\n")
+
+		// dangling target symlink inside references/
+		rmSync(join(skillDir, "SKILL.md"))
+		const dangleTarget = join(outside, "dangle.md")
+		symlinkSync(dangleTarget, join(skillDir, "references", "migrating.md"))
+		const res2 = invoke(["init", "--no-skill"], dir)
+		attest(res2.code).equals(0)
+		const res3 = invoke(["migrate"], dir)
+		attest(res3.code).equals(1)
+		attest(res3.err.includes("symlink")).equals(true)
+		attest(existsSync(dangleTarget)).equals(false)
+		// two-pass validation should not have written SKILL.md either
+		attest(existsSync(join(skillDir, "SKILL.md"))).equals(false)
+	})
+
+	it("allows in-project symlinked skill dirs and refuses outside-project escapes without --force", () => {
+		const outside = tempProject({ "outside-skills/keep.txt": "KEEP\n" })
+		const dir = tempProject({ "package.json": "{}" })
+
+		// legitimate in-project leaf symlink
+		const realTarget = join(dir, "shared-skills", "arktype")
+		mkdirSync(realTarget, { recursive: true })
+		mkdirSync(join(dir, ".agents", "skills"), { recursive: true })
+		symlinkSync(realTarget, join(dir, ".agents", "skills", "arktype"))
+		const inProjectRes = invoke(["skill", "install"], dir)
+		attest(inProjectRes.code).equals(0)
+		attest(existsSync(join(realTarget, "SKILL.md"))).equals(true)
+
+		// legitimate in-project parent symlink (.claude/skills -> ../.agents/skills)
+		const dirParent = tempProject({ "package.json": "{}" })
+		mkdirSync(join(dirParent, "real-skills"), { recursive: true })
+		mkdirSync(join(dirParent, ".claude"), { recursive: true })
+		symlinkSync(
+			join(dirParent, "real-skills"),
+			join(dirParent, ".claude", "skills")
+		)
+		const parentRes = invoke(["skill", "install"], dirParent)
+		attest(parentRes.code).equals(0)
+		attest(
+			existsSync(join(dirParent, "real-skills", "arktype", "SKILL.md"))
+		).equals(true)
+
+		// outside-project symlinked parent refused without --force, naming both paths
+		const dirEscape = tempProject({ "package.json": "{}" })
+		mkdirSync(join(dirEscape, ".agents"), { recursive: true })
+		const outsideSkills = join(outside, "outside-skills")
+		symlinkSync(outsideSkills, join(dirEscape, ".agents", "skills"))
+		const escapedRes = invoke(["skill", "install"], dirEscape)
+		attest(escapedRes.code).equals(1)
+		attest(escapedRes.err.includes("outside project root")).equals(true)
+		attest(
+			escapedRes.err.includes(join(dirEscape, ".agents", "skills", "arktype"))
+		).equals(true)
+		attest(escapedRes.err.includes("outside-skills")).equals(true)
+		attest(existsSync(join(outsideSkills, "arktype", "SKILL.md"))).equals(false)
+
+		// allowed when --force is passed
+		const forcedRes = invoke(["skill", "install", "--force"], dirEscape)
+		attest(forcedRes.code).equals(0)
+		attest(existsSync(join(outsideSkills, "arktype", "SKILL.md"))).equals(true)
+
+		// dangling skill dir symlink refused
+		const dirDangle = tempProject({ "package.json": "{}" })
+		mkdirSync(join(dirDangle, ".agents"), { recursive: true })
+		symlinkSync(
+			join(outside, "nonexistent"),
+			join(dirDangle, ".agents", "skills")
+		)
+		const dangleRes = invoke(["skill", "install"], dirDangle)
+		attest(dangleRes.code).equals(1)
+		attest(dangleRes.err.includes("dangling symlink")).equals(true)
+	})
+
+	it("refuses writing ark.json through symlinks or over a directory", () => {
+		const outside = tempProject({ "existing.txt": "KEEP\n" })
+
+		// dangling ark.json symlink without --force
+		const dirDangle = tempProject({ "package.json": "{}" })
+		const dangleTarget = join(outside, "created-by-init.json")
+		symlinkSync(dangleTarget, join(dirDangle, "ark.json"))
+		const resDangle = invoke(["init", "--no-skill"], dirDangle)
+		attest(resDangle.code).equals(1)
+		attest(resDangle.err.includes("symlink")).equals(true)
+		attest(existsSync(dangleTarget)).equals(false)
+		attest(lstatSync(join(dirDangle, "ark.json")).isSymbolicLink()).equals(true)
+
+		// existing ark.json symlink with --force
+		const dirForce = tempProject({ "package.json": "{}" })
+		symlinkSync(join(outside, "existing.txt"), join(dirForce, "ark.json"))
+		const resForce = invoke(["init", "--no-skill", "--force"], dirForce)
+		attest(resForce.code).equals(1)
+		attest(resForce.err.includes("symlink")).equals(true)
+		attest(readFileSync(join(outside, "existing.txt"), "utf8")).equals("KEEP\n")
+
+		// ark.json as a directory with and without --force
+		const dirIsDir = tempProject({ "package.json": "{}" })
+		mkdirSync(join(dirIsDir, "ark.json"))
+		const resDir1 = invoke(["init", "--no-skill"], dirIsDir)
+		attest(resDir1.code).equals(1)
+		attest(resDir1.err.includes("not a regular file")).equals(true)
+		const resDir2 = invoke(["init", "--no-skill", "--force"], dirIsDir)
+		attest(resDir2.code).equals(1)
+		attest(resDir2.err.includes("not a regular file")).equals(true)
 	})
 })

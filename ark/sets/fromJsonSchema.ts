@@ -45,7 +45,7 @@ interface ReadContext {
 	rootsByRef: Record<string, BaseRoot>
 	refsBeingRead: string[]
 	// refs entered since descending into a child value, to reject shallow
-	// cycles through opaque predicates (not/oneOf/if/dependentSchemas)
+	// cycles through combinators/predicates (anyOf/oneOf/not/if/dependentSchemas)
 	shallowRefs: Set<string>
 	inPredicate: number
 	// JS object stack within the current $ref frame, to reject circular objects
@@ -469,7 +469,11 @@ const keywordReaders: KeywordReader[] = [
 	(o, pointer, ctx) =>
 		o.anyOf === undefined ?
 			undefined
-		:	unionOf(readEach(o.anyOf as array, `${pointer}/anyOf`, ctx)),
+		:	unionOf(
+				withShallowPredicate(ctx, () =>
+					readEach(o.anyOf as array, `${pointer}/anyOf`, ctx)
+				)
+			),
 	(o, pointer, ctx) => {
 		if (o.oneOf === undefined) return
 		const branches = withShallowPredicate(ctx, () =>
@@ -479,7 +483,7 @@ const keywordReaders: KeywordReader[] = [
 				unionOf(branches)
 			:	opaqueRoot(
 					["oneOf", idsOf(branches)],
-					`exactly one of ${branches.map(branch => branch.description).join(", ")}`,
+					`exactly one of ${branches.map(expectedOf).join(", ")}`,
 					data => branches.filter(branch => branch.allows(data)).length === 1
 				)
 	},
@@ -492,7 +496,7 @@ const keywordReaders: KeywordReader[] = [
 		if (negated.isUnknown()) return $ark.kw.never
 		return opaqueRoot(
 			["not", negated.id],
-			`other than ${negated.description}`,
+			`other than ${expectedOf(negated)}`,
 			data => !negated.allows(data)
 		)
 	},
@@ -509,7 +513,7 @@ const keywordReaders: KeywordReader[] = [
 		)
 		return opaqueRoot(
 			["if", idsOf([condition, consequent, alternative])],
-			`${consequent.description} if ${condition.description}, else ${alternative.description}`,
+			`${expectedOf(consequent)} if ${expectedOf(condition)}, else ${expectedOf(alternative)}`,
 			data =>
 				condition.allows(data) ?
 					consequent.allows(data)
@@ -548,11 +552,7 @@ const readArray = (
 	if (o.uniqueItems === true) {
 		constraints.push({
 			predicate: [
-				opaque(["uniqueItems"], "an array of unique items", (data: array) =>
-					data.every((item, i) =>
-						data.slice(i + 1).every(other => !jsonEquals(item, other))
-					)
-				)
+				opaque(["uniqueItems"], "an array of unique items", hasUniqueItems)
 			]
 		})
 	}
@@ -571,8 +571,8 @@ const readArray = (
 				opaque(
 					["contains", contained.id, min, max],
 					min === 1 && max === Number.POSITIVE_INFINITY ?
-						`an array containing ${contained.description}`
-					:	`an array with ${describeCount(min, max, "item that is", "items that are")} ${contained.description}`,
+						`an array containing ${expectedOf(contained)}`
+					:	`an array with ${describeCount(min, max, "item that is", "items that are")} ${expectedOf(contained)}`,
 					(data: array) => {
 						const count = data.filter(item => contained.allows(item)).length
 						return count >= min && count <= max
@@ -665,7 +665,7 @@ const readObject = (
 						Object.keys(properties),
 						patterns.map(p => p.schema)
 					],
-					`an object whose other properties are ${additional.description}`,
+					`an object whose other properties are ${expectedOf(additional)}`,
 					(data: dict) =>
 						Object.keys(data).every(
 							k => isDeclared(k) || additional.allows(data[k])
@@ -702,7 +702,7 @@ const readKeyPredicates = (
 			predicates.push(
 				opaque(
 					["propertyNames", names.id],
-					`an object whose keys are ${names.description}`,
+					`an object whose keys are ${expectedOf(names)}`,
 					(data: dict) => Object.keys(data).every(k => names.allows(k))
 				)
 			)
@@ -749,7 +749,7 @@ const readKeyPredicates = (
 				predicates.push(
 					opaque(
 						["dependentSchemas", key, dependent.id],
-						`${dependent.description} if it has ${key}`,
+						`${expectedOf(dependent)} if it has ${key}`,
 						(data: dict) => !hasOwn(data, key) || dependent.allows(data)
 					)
 				)
@@ -986,13 +986,19 @@ const branchesAreDisjoint = (branches: BaseRoot[]) =>
 			)
 	)
 
+const expectedOf = (root: BaseRoot): string =>
+	typeof root.meta.expected === "string" ? root.meta.expected : root.description
+
 const withAnnotations = (root: BaseRoot, o: dict): BaseRoot => {
-	const meta = flatMorph(annotationKeys, (i, k) =>
+	const meta: dict = flatMorph(annotationKeys, (i, k) =>
 		o[k] === undefined ? [] : [k, o[k]]
 	)
-	return Object.keys(meta).length === 0 || root.is("alias") ?
-			root
-		:	root.configure(meta as never, "self")
+	if (Object.keys(meta).length === 0 || root.is("alias")) return root
+	// a JSON Schema description is documentation, not an error expectation;
+	// keep the structural description as `expected` so errors still name the
+	// expected type while `.description` and `toJsonSchema()` preserve it
+	if (typeof meta.description === "string") meta.expected = expectedOf(root)
+	return root.configure(meta as never, "self")
 }
 
 const annotationKeys = [
@@ -1031,6 +1037,98 @@ const patternSchemaOf = (source: string, pointer: string) => {
 	}
 	const flags = flagsOf(source)
 	return flags ? { rule: source, flags } : { rule: source }
+}
+
+type KeyBudget = {
+	remaining: number
+}
+
+const canonicalJsonKey = (
+	value: unknown,
+	seen: Set<object>,
+	budget: KeyBudget
+): string => {
+	if (value === null) return "null"
+	switch (typeof value) {
+		case "string":
+			return JSON.stringify(value)
+		case "number":
+			return `${value}`
+		case "boolean":
+			return value ? "true" : "false"
+		case "bigint":
+			return `${value}n`
+		case "undefined":
+			return "undefined"
+		case "object": {
+			if (budget.remaining <= 0) return "..."
+			if (seen.has(value)) return "@"
+			budget.remaining--
+			seen.add(value)
+			try {
+				if (isArray(value)) {
+					const parts: string[] = []
+					for (let i = 0; i < value.length; i++) {
+						if (budget.remaining <= 0) {
+							parts.push(`...(${value.length})`)
+							break
+						}
+						budget.remaining--
+						parts.push(canonicalJsonKey(value[i], seen, budget))
+					}
+					return `[${parts.join(",")}]`
+				}
+				const keys = Object.keys(value).sort()
+				const parts: string[] = []
+				for (let i = 0; i < keys.length; i++) {
+					if (budget.remaining <= 0) {
+						parts.push(`...(${keys.length})`)
+						break
+					}
+					budget.remaining--
+					const k = keys[i]
+					parts.push(
+						`${JSON.stringify(k)}:${canonicalJsonKey((value as dict)[k], seen, budget)}`
+					)
+				}
+				return `{${parts.join(",")}}`
+			} finally {
+				seen.delete(value)
+			}
+		}
+		default:
+			return "?"
+	}
+}
+
+// O(n) expected: primitives go through a Set (SameValueZero treats -0 and 0
+// as equal per JSON Schema; NaN is skipped to match jsonEquals), while objects
+// and arrays bucket by canonical sorted-key serialization and verify exact
+// jsonEquals within each bucket
+const hasUniqueItems = (data: array): boolean => {
+	if (data.length <= 1) return true
+	let primitives: Set<unknown> | undefined
+	let objects: Map<string, unknown[]> | undefined
+	let seen: Set<object> | undefined
+	for (let i = 0; i < data.length; i++) {
+		const item = data[i]
+		if (typeof item !== "object" || item === null) {
+			if (typeof item === "number" && Number.isNaN(item)) continue
+			primitives ??= new Set()
+			if (primitives.has(item)) return false
+			primitives.add(item)
+		} else {
+			seen ??= new Set()
+			const key = canonicalJsonKey(item, seen, { remaining: 256 })
+			objects ??= new Map()
+			const bucket = objects.get(key)
+			if (bucket) {
+				if (bucket.some(other => jsonEquals(item, other))) return false
+				bucket.push(item)
+			} else objects.set(key, [item])
+		}
+	}
+	return true
 }
 
 const jsonEquals = (l: unknown, r: unknown): boolean => {

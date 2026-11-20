@@ -2,11 +2,14 @@ import {
 	builtinConstructors,
 	domainDescriptions,
 	hasDomain,
+	hasOwn,
 	isArray,
 	isEmptyObject,
 	isInstanceOf,
 	liftArray,
+	printable,
 	throwParseError,
+	timeOf,
 	type array,
 	type BuiltinObjectKind,
 	type Constructor,
@@ -230,7 +233,7 @@ const discriminateRootKind = (schema: unknown): RootKind => {
 	if (typeof schema === "string") {
 		return (
 			schema[0] === "$" ? "alias"
-			: schema in domainDescriptions ? "domain"
+			: hasOwn(domainDescriptions, schema) ? "domain"
 			: "proto"
 		)
 	}
@@ -267,7 +270,10 @@ type SchemaReader = (
 const readConstraint =
 	(kind: Constraint.PrimitiveKind): SchemaReader =>
 	schema =>
-		constraintInputOf(kind, schema)
+		constraintInputOf(
+			kind,
+			schema === null ? ({ rule: null } as never) : schema
+		)
 
 const readProp = (schema: PropSchema, $: BaseScope) => ({
 	...schema,
@@ -289,13 +295,12 @@ const readers: Record<NodeKind, SchemaReader> = {
 	},
 	domain: schema => (typeof schema === "string" ? { domain: schema } : schema),
 	proto: schema =>
-		typeof schema === "string" ?
-			{ proto: builtinConstructors[schema as keyof builtinConstructors] }
+		typeof schema === "string" ? { proto: lookupBuiltinProto(schema, schema) }
 		: typeof schema === "function" ? { proto: schema }
 		: typeof schema.proto === "string" ?
 			{
 				...schema,
-				proto: builtinConstructors[schema.proto as keyof builtinConstructors]
+				proto: lookupBuiltinProto(schema.proto, schema)
 			}
 		:	schema,
 	unit: schema => schema,
@@ -401,10 +406,29 @@ const readers: Record<NodeKind, SchemaReader> = {
 	minLength: readConstraint("minLength"),
 	before: readConstraint("before"),
 	after: readConstraint("after"),
-	notEqual: readConstraint("notEqual"),
+	notEqual: schema => {
+		const input = constraintInputOf(
+			"notEqual",
+			schema === null ? ({ rule: null } as never) : schema
+		)
+		if (
+			typeof input.rule !== "number" &&
+			(!(input.rule instanceof Date) || timeOf(input.rule) === undefined)
+		) {
+			throwParseError(
+				`notEqual bound must be a number or Date (was ${printable(input.rule)})`
+			)
+		}
+		return input
+	},
 	notEqualLength: readConstraint("notEqualLength"),
 	pattern: readConstraint("pattern")
 }
+
+const lookupBuiltinProto = (name: string, schema: unknown): Constructor =>
+	hasOwn(builtinConstructors, name) ?
+		builtinConstructors[name as BuiltinObjectKind]
+	:	throwParseError(writeInvalidSchemaMessage(schema))
 
 const parseConstraint = (
 	kind: ConstraintKind,

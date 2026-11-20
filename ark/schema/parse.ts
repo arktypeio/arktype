@@ -115,7 +115,7 @@ const idPrefixes: PartialRecord<string, string> = Object.create(null)
 
 const idPrefixOf = (written: string): string => {
 	let prefix = written.replace(/[^\w$]/g, "_")
-	if (/^\d/.test(prefix)) prefix = `_${prefix}`
+	if (!prefix || /^\d/.test(prefix)) prefix = `_${prefix}`
 	if (/\d$/.test(prefix)) prefix += "_"
 	return prefix
 }
