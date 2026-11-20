@@ -1186,12 +1186,19 @@ user.name must be a string`)
 			assert: "assert" in validator,
 			meta: "meta" in validator,
 			"~standard": "~standard" in validator,
+			withContext: "withContext" in validator,
 			methods:
 				"traverse" in validator &&
 				"from" in validator &&
 				Object.getPrototypeOf(validator) !== Function.prototype
 		})
-		const all = { assert: true, meta: true, "~standard": true, methods: true }
+		const all = {
+			assert: true,
+			meta: true,
+			"~standard": true,
+			withContext: true,
+			methods: true
+		}
 		const { T: full } = await load({ T })
 		attest(membersOf(full)).equals(all)
 		for (const member of Object.keys(all)) {
@@ -1210,6 +1217,7 @@ user.name must be a string`)
 					assert: false,
 					meta: false,
 					"~standard": false,
+					withContext: false,
 					methods: false,
 					expression: true
 				}
