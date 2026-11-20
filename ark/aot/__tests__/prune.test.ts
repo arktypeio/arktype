@@ -65,6 +65,7 @@ import {
 	runBundle,
 	runCli,
 	runPlain,
+	tempPath,
 	writeFixture
 } from "./utils.ts"
 
@@ -1404,7 +1405,7 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 		})
 
 		const conditions = ["ark-ts", "production"]
-		const root = writeFixture({ "main.ts": ranges }, fromHere("temp", "larger"))
+		const root = writeFixture({ "main.ts": ranges }, tempPath("larger"))
 		// a production bundle's warnings and code
 		const built = async (
 			opts: PrecompileUnpluginOptions,
@@ -1537,7 +1538,7 @@ console.log(User.allows({ name: 5 }), User.allows({ name: "Ada" }))
 export const isThrown = e => e instanceof TraversalError
 `
 			},
-			fromHere("temp", "pruned")
+			tempPath("pruned")
 		)
 
 		const bundle = async (
@@ -1711,7 +1712,7 @@ export const User = type({ name: "string" })
 console.log(User({ name: 5 }).toString())
 `
 				},
-				fromHere("temp", "prunedIssues")
+				tempPath("prunedIssues")
 			)
 			const bundleOf = (entry: string) =>
 				bundle({ preset: undefined }, { entryPoints: [join(files, entry)] })
@@ -1772,7 +1773,7 @@ const Named = type("string").narrow(s => s.length as never)
 console.log(Named.allows("Ada"), Named.allows(""))
 `
 				},
-				fromHere("temp", "prunedNarrow")
+				tempPath("prunedNarrow")
 			)
 			const js = await bundle(
 				{ preset: undefined },
@@ -1862,7 +1863,7 @@ try {
 console.log(User({}) instanceof type.errors, JSON.stringify(User({ name: "Ada", age: 1 })))
 `
 				},
-				fromHere("temp", "prunedUnread")
+				tempPath("prunedUnread")
 			)
 			const entry = { entryPoints: [join(files, "main.ts")] }
 			const written = await bundle({ preset: undefined }, entry)
@@ -1900,7 +1901,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 						`{ a: { "b-c": [1] } }`
 					)
 				},
-				fromHere("temp", "prunedPaths")
+				tempPath("prunedPaths")
 			)
 			const summarizing = (entry: string) =>
 				bundle({ preset: undefined }, { entryPoints: [join(files, entry)] })
@@ -2005,7 +2006,7 @@ console.log(
 )
 `
 				},
-				fromHere("temp", "flippingNarrow")
+				tempPath("flippingNarrow")
 			)
 			const plain = runPlain(files)
 			attest(plain).snap(
@@ -2029,7 +2030,7 @@ const Strict = type({ name: "string" }).onUndeclaredKey("reject")
 console.log(Strict({ name: "Ada", 0: 1, "a-b": 2 }).toString())
 `
 				},
-				fromHere("temp", "prunedUndeclared")
+				tempPath("prunedUndeclared")
 			)
 			const options = { entryPoints: [join(files, "main.ts")] }
 			const pruned = await bundle({ preset: undefined }, options)
@@ -2222,7 +2223,7 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 					"asserter.ts": `import { User } from "./types.ts"\n\nexport const read = () => User.assert({})\n`,
 					"main.ts": `import { read } from "./reader.ts"\n\nconsole.log(read())\n`
 				},
-				fromHere("temp", "prunedResolved")
+				tempPath("prunedResolved")
 			)
 			let res = 0
 			// resolves reader.ts as the scan reads it, then as asserter.ts
@@ -2255,7 +2256,7 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 					"reader.ts": `import { User } from "./types.ts"\n\nexport const read = () => User.allows({})\n`,
 					"main.ts": `const { read } = await import("./reader.ts")\n\nconsole.log(read())\n`
 				},
-				fromHere("temp", "prunedSplit")
+				tempPath("prunedSplit")
 			)
 			const { outputFiles } = await build({
 				entryPoints: [join(files, "main.ts")],
@@ -2310,7 +2311,7 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 					"types.ts": types,
 					"main.ts": `${readFileSync(join(root, "main.ts"))}`
 				},
-				fromHere("temp", "prunedRebuilt")
+				tempPath("prunedRebuilt")
 			)
 			const main = join(files, "main.ts")
 			const ctx = await context({
@@ -2339,7 +2340,7 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 		it("writes again as a rebuild's edit changes how the program fails", async () => {
 			const files = writeFixture(
 				{ "types.ts": types, "main.ts": callingFrom("./types.ts") },
-				fromHere("temp", "prunedRebuiltFailure")
+				tempPath("prunedRebuiltFailure")
 			)
 			const main = join(files, "main.ts")
 			const options = (): BuildOptions => ({
@@ -3063,7 +3064,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 <script type="module" src="/main.ts"></script>
 `
 			},
-			fromHere("temp", "prunedVite")
+			tempPath("prunedVite")
 		)
 
 		// Vite reads its mode from NODE_ENV
@@ -3170,7 +3171,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 		it("builds a barrel re-exporting what arktype/runtime lacks for sites to read", async () => {
 			const barrel = writeFixture(
 				{ ...arkBarrel(".ts"), "index.html": "" },
-				fromHere("temp", "prunedViteBarrel")
+				tempPath("prunedViteBarrel")
 			)
 			attest(run(await bundle({}, { at: barrel }))).equals(
 				"name must be a string x\n"
@@ -3837,7 +3838,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 		it("writes again as a watch build's edit changes how the program fails", async () => {
 			const files = writeFixture(
 				{ "types.ts": types, "main.ts": callingFrom("./types.ts") },
-				fromHere("temp", "prunedViteWatched")
+				tempPath("prunedViteWatched")
 			)
 			const config = (outDir: string, watch: boolean): InlineConfig => ({
 				root: files,
@@ -3887,7 +3888,7 @@ console.log(out instanceof type.errors ? out.summary : out)
 
 		const root = writeFixture(
 			{ "types.ts": types, "main.ts": callingFrom("./types.ts") },
-			fromHere("temp", "prunedRollup")
+			tempPath("prunedRollup")
 		)
 		// erases types once arktype's transform has read them, as
 		// @rollup/plugin-typescript listed after it does, dropping each comment
@@ -4042,7 +4043,7 @@ console.log(typeof User["~standard"].validate)
 				const fixture = (test: string, files: Record<string, string>) =>
 					writeFixture(
 						{ "types.js": types, ...files },
-						fromHere("temp", "prunedWebpack", name, test)
+						tempPath("prunedWebpack", name, test)
 					)
 
 				const cacheOf = (root: string) =>
@@ -5479,7 +5480,7 @@ next.value must be a number
 					"late.js": readsStandard,
 					"main.js": `import { User } from "./types.js"\n\nconsole.log(User({ name: "" }).name)\n`
 				},
-				fromHere("temp", "prunedWebpack", "late")
+				tempPath("prunedWebpack", "late")
 			)
 			const late = {
 				apply: (compiler: webpack.Compiler) =>
@@ -5519,7 +5520,7 @@ next.value must be a number
 					"child.js": `import { User } from "./types.js"\n\nexport const validate = User["~standard"].validate\n`,
 					"main.js": `import { User } from "./types.js"\n\nconsole.log(User({ name: "" }).name)\n`
 				},
-				fromHere("temp", "prunedWebpack", "child")
+				tempPath("prunedWebpack", "child")
 			)
 			const child = {
 				apply: (compiler: webpack.Compiler) =>
@@ -5558,7 +5559,7 @@ next.value must be a number
 console.log(READ, String(User({ name: 5 })))
 `
 				},
-				fromHere("temp", "prunedWebpack", "webpack", "runtimeValue")
+				tempPath("prunedWebpack", "webpack", "runtimeValue")
 			)
 			const warnings: string[] = []
 			await bundle(
@@ -5595,7 +5596,7 @@ console.log(READ, String(User({ name: 5 })))
 console.log(String(User({ name: 5 })))
 `
 				},
-				fromHere("temp", "prunedWebpack", "webpack", "forgets")
+				tempPath("prunedWebpack", "webpack", "forgets")
 			)
 			// as a webpack that came to defer them otherwise might
 			const forgets = {
@@ -5767,7 +5768,7 @@ console.log(String(User({ name: 5 })))
 				"package.json": "{}",
 				"ark.json": JSON.stringify({ precompile: { prune: true } })
 			},
-			fromHere("temp", "prunedSettings")
+			tempPath("prunedSettings")
 		)
 
 		const refusals = (refuse: (opts: PrecompileUnpluginOptions) => unknown) =>

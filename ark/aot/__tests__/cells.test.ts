@@ -13,7 +13,7 @@ import {
 import { spawnSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { runPlain, writeFixture } from "./utils.ts"
+import { runPlain, tempPath, writeFixture } from "./utils.ts"
 
 // arktype's packages resolve to their source in this repo
 const conditions = ["ark-ts", "production"]
@@ -21,7 +21,7 @@ const conditions = ["ark-ts", "production"]
 type Files = Record<string, string>
 
 const fixture = (name: string, files: Files) =>
-	writeFixture(files, fromHere("temp", "cells", name))
+	writeFixture(files, tempPath("cells", name))
 
 const esbuildBundle = async (
 	root: string,

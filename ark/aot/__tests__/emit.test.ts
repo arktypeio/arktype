@@ -15,7 +15,7 @@ import {
 } from "node:fs"
 import { SourceMap, type SourceMapping } from "node:module"
 import { join } from "node:path"
-import { runCli, tempDir, writeFixture } from "./utils.ts"
+import { runCli, tempDir, tempPath, writeFixture } from "./utils.ts"
 
 const emitted = fromHere("emitted")
 const out = join(emitted, "out")
@@ -157,7 +157,7 @@ contextualize(() => {
 				"src/main.ts":
 					'import { type } from "arktype"\nimport { Length } from "schemas"\n\nconsole.log(type({ name: Length }))\n'
 			},
-			fromHere("temp", "emitDependency")
+			tempPath("emitDependency")
 		)
 		attest(emitPrecompiled({ cwd: dir }).errors).snap([
 			"src/main.ts:4:13  type({ name: Length }) can't be precompiled yet\n  `Length` (src/main.ts:4:26) is not static, so the site holds it as a Standard Schema, which a standalone validator can't receive yet\n  `schemas` is a package --emit leaves to Node, though it imports arktype\n  Bundle the program with arktype's plugin, which precompiles schemas with it where it opts in, or put // @ark-runtime on the line before this definition, so arktype defines it at runtime."

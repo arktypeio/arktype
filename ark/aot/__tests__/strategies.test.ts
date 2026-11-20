@@ -9,10 +9,16 @@ import {
 	precompile as plugin,
 	type PrecompileUnpluginOptions
 } from "@ark/aot/unplugin"
-import { fromHere } from "@ark/fs"
 import { build } from "esbuild"
 import { join, posix } from "node:path"
-import { memoryHost, precompile, run, runCli, writeFixture } from "./utils.ts"
+import {
+	memoryHost,
+	precompile,
+	run,
+	runCli,
+	tempPath,
+	writeFixture
+} from "./utils.ts"
 
 // a Type on a hot path, and one composing it that validates a form
 const composed = `import { type } from "arktype"
@@ -489,7 +495,7 @@ export const Cold = type({ amount: "number > 0", currency: "string == 3" })
 					"cold.ts": `import { type } from "arktype"\n\nexport const Cold = type({ amount: "number > 0" })\n`,
 					"main.ts": `import { Cold } from "./cold.ts"\nimport { Hot } from "./hot.ts"\n\nconsole.log(Hot === Cold, Hot({ amount: 1 }), String(Cold({ amount: 0 })))\n`
 				},
-				fromHere("temp", "strategies", "equal")
+				tempPath("strategies", "equal")
 			)
 			for (const opts of [
 				{ schemas: { "cold.ts": "smallest" } },
@@ -503,7 +509,7 @@ export const Cold = type({ amount: "number > 0", currency: "string == 3" })
 	})
 
 	describe("bundles", () => {
-		const root = writeFixture(app, fromHere("temp", "strategies", "app"))
+		const root = writeFixture(app, tempPath("strategies", "app"))
 
 		it("validate alike under each strategy, and under both", async () => {
 			for (const opts of [
@@ -598,7 +604,7 @@ export const Cold = type({ amount: "number > 0", currency: "string == 3" })
 				Object.fromEntries(
 					Object.entries(files).map(([path, source]) => [path.slice(1), source])
 				),
-				fromHere("temp", "strategies", "larger")
+				tempPath("strategies", "larger")
 			)
 			const schemas = { "hot.ts": "fastest" }
 			const [warnings, js] = await bundled(root, { schemas })

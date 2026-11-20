@@ -5,7 +5,7 @@ import { build } from "esbuild"
 import { spawnSync } from "node:child_process"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
-import { run, runCli, runPlain, writeFixture } from "./utils.ts"
+import { run, runCli, runPlain, tempPath, writeFixture } from "./utils.ts"
 
 // arktype returns one Type for a Scope's equal definitions, in whichever
 // modules they're written, and a precompiled program compares the same
@@ -137,7 +137,7 @@ ${Object.entries({ ...definitions, ...rewritten })
 `
 
 const fixture = (name: string, files: Record<string, string>) =>
-	writeFixture(files, fromHere("temp", "identity", name))
+	writeFixture(files, tempPath("identity", name))
 
 const twins = fixture("twins", {
 	"package.json": `{ "type": "module" }\n`,

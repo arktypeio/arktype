@@ -1,9 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
-import { fromHere } from "@ark/fs"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { build } from "esbuild"
 import { join } from "node:path"
-import { run, runPlain, writeFixture } from "./utils.ts"
+import { run, runPlain, tempPath, writeFixture } from "./utils.ts"
 
 // a build's validators tell a sentence configured or supplied for an error
 // from text written from what it expected exactly as arktype does: by the
@@ -198,7 +197,7 @@ const itWritesAsArktype = (
 	describe(name, () => {
 		const root = writeFixture(
 			files,
-			fromHere("temp", "messageText", name.replace(/ /g, "-"))
+			tempPath("messageText", name.replace(/ /g, "-"))
 		)
 		const bundles: Bundles = {}
 		let plain: string

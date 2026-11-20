@@ -1,5 +1,4 @@
 import { attest, contextualize } from "@ark/attest"
-import { fromHere } from "@ark/fs"
 import { flattenBundle } from "@ark/aot/internal/flat.ts"
 import {
 	unseenFlatMessage,
@@ -16,7 +15,7 @@ import {
 import { parseSync } from "oxc-parser"
 import { mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { run, runPlain, writeFixture } from "./utils.ts"
+import { run, runPlain, tempPath, writeFixture } from "./utils.ts"
 
 // arktype's packages resolve to their source in this repo
 const conditions = ["ark-ts", "production"]
@@ -65,7 +64,7 @@ console.log(User.allows({ name: "Ada", email: "ada@arktype.io" }), Later.allows(
 export const Later = type("number")
 `
 	},
-	fromHere("temp", "flat")
+	tempPath("flat")
 )
 
 const bundle = async (
@@ -153,7 +152,7 @@ console.log(String(Short({ name: "a".repeat(11) })))
 console.log(JSON.stringify(Long({ name: "a".repeat(11) })))
 `
 			},
-			fromHere("temp", "flatMerged")
+			tempPath("flatMerged")
 		)
 		const { outputFiles } = await build({
 			entryPoints: [join(root, "main.ts")],
@@ -199,7 +198,7 @@ for (const data of [5, { lead: 5, members: [] }, { lead: {}, members: [{}] }])
 console.log(${Array.from({ length: types }, (_, i) => `String(T${i}(${i % 2 ? "5" : "{}"}))`).join(", ")})
 `
 			},
-			fromHere("temp", "flatBig")
+			tempPath("flatBig")
 		)
 		const options: BuildOptions = { entryPoints: [join(files, "main.ts")] }
 
@@ -261,7 +260,7 @@ members[0].name must be a string (was missing)`)
 			{
 				"types.ts": `${types}export const schemas = { team: Team, unread: Unread } as const\n`
 			},
-			fromHere("temp", "flatHolding")
+			tempPath("flatHolding")
 		)
 		const [js] = await bundle(
 			{},
@@ -286,7 +285,7 @@ export const schemas = { team: Team, unread: Unread }
 export const greet = () => "hi"
 `
 			},
-			fromHere("temp", "flatImportedHolder")
+			tempPath("flatImportedHolder")
 		)
 		const [js] = await bundle(
 			{},
@@ -314,7 +313,7 @@ export const greet = () => "hi"
 export default Unread
 `
 			},
-			fromHere("temp", "flatDefault")
+			tempPath("flatDefault")
 		)
 		const [js] = await bundle(
 			{},
@@ -396,7 +395,7 @@ lead.email must be a string (was missing)
 				),
 				"main.ts": `import { Team } from "./types.ts"\n\nconsole.log(String(Team({ lead: {}, members: [] })))\n`
 			},
-			fromHere("temp", "flatAsserted")
+			tempPath("flatAsserted")
 		)
 		const [js] = await bundle({}, { entryPoints: [join(files, "main.ts")] })
 		attest(run(js)).snap(`lead.name must be a string (was missing)
@@ -418,7 +417,7 @@ for (const discount of [0, "0", null]) {
 }
 `
 			},
-			fromHere("temp", "flatInlined")
+			tempPath("flatInlined")
 		)
 		const options: BuildOptions = { entryPoints: [join(files, "main.ts")] }
 		const [js] = await bundle({}, options)
@@ -446,7 +445,7 @@ const out = Email("ada")
 if (out instanceof type.errors) console.log(out.summary)
 `
 			},
-			fromHere("temp", "flatPrimitive")
+			tempPath("flatPrimitive")
 		)
 		const [js] = await bundle({}, { entryPoints: [join(files, "main.ts")] })
 		attest(run(js)).snap(`must be an email address
@@ -465,7 +464,7 @@ const User = type({ name: "string", role: "string = 'member'" })
 console.log(User({ name: "Ada" }))
 `
 			},
-			fromHere("temp", "flatAlias")
+			tempPath("flatAlias")
 		)
 		const [js] = await bundle({}, { entryPoints: [join(files, "main.ts")] })
 		attest(run(js)).snap(`{ name: 'Ada', role: 'member' }
@@ -493,7 +492,7 @@ for (const data of [{ name: "Ada" }, {}]) {
 }
 `
 			},
-			fromHere("temp", "flatAssert")
+			tempPath("flatAssert")
 		)
 		const options: BuildOptions = { entryPoints: [join(files, "main.ts")] }
 		const [js] = await bundle({}, options)
@@ -521,7 +520,7 @@ const User = type({ name: "string" })
 console.log(User.allows({ name: "Ada" }), User.assert({ name: "Ada" }))
 `
 			},
-			fromHere("temp", "flatAllows")
+			tempPath("flatAllows")
 		)
 		const [js] = await bundle({}, { entryPoints: [join(files, "main.ts")] })
 		attest(run(js)).snap("true false\n")
@@ -895,7 +894,7 @@ export { unit }
 				"other.ts": `import { type } from "arktype"\n\nexport const read = type({ id: "number.integer" })\n`,
 				"main.ts": `export { read } from "./reader.ts"\n`
 			},
-			fromHere("temp", "flatUnscanned")
+			tempPath("flatUnscanned")
 		)
 
 		const bundleSwapping = (to: string) =>

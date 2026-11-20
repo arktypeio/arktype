@@ -1,5 +1,4 @@
 import { attest, contextualize } from "@ark/attest"
-import { fromHere } from "@ark/fs"
 import type { Diagnostic } from "@ark/aot"
 import { type } from "arktype"
 import { keywordMetas } from "arktype/internal/standalone.ts"
@@ -23,6 +22,7 @@ import {
 } from "./grammar.ts"
 import { lacks, testedOptions } from "./contract.ts"
 import { serialize, type Manifest } from "./perturbationWorker.ts"
+import { tempPath } from "./utils.ts"
 import { throughArkBarrel } from "./arkBarrel.ts"
 import {
 	buildPerturbed,
@@ -1955,7 +1955,7 @@ const [runs = 20, seed = 1, ...pathSegments] =
 	process.env.ARK_PRECOMPILE_PROGRAMS?.split(":").map(Number) ?? []
 const path = pathSegments.length ? pathSegments.join(":") : undefined
 
-const out = fromHere("temp", "programs", `${seed}`)
+const out = tempPath("programs", `${seed}`)
 
 contextualize(() => {
 	it("excludes a disagreement by its line below a multiline declaration", () => {

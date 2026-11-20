@@ -1,10 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { fromHere } from "@ark/fs"
 import { precompile, type PrecompilePluginOptions } from "@ark/aot/unplugin"
 import { build } from "esbuild"
 import { spawnSync } from "node:child_process"
 import { join } from "node:path"
-import { writeFixture } from "./utils.ts"
+import { tempPath, writeFixture } from "./utils.ts"
 
 const conditions = ["ark-ts", "production"]
 
@@ -18,7 +17,7 @@ const logged = async (
 ): Promise<string> => {
 	const dir = writeFixture(
 		{ "package.json": '{ "type": "module" }', ...files },
-		fromHere("temp", "libraries", name)
+		tempPath("libraries", name)
 	)
 	await build({
 		entryPoints: [join(dir, "main.ts")],

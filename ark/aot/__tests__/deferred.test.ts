@@ -1,6 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
 import { Precompiler, type PrecompileOptions } from "@ark/aot"
-import { fromHere } from "@ark/fs"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { build } from "esbuild"
 import { spawnSync } from "node:child_process"
@@ -11,6 +10,7 @@ import {
 	normalized,
 	runBundle,
 	tempDir,
+	tempPath,
 	writeFixture
 } from "./utils.ts"
 
@@ -33,7 +33,7 @@ const rootsByFiles = new WeakMap<object, string>()
 const rootOf = (files: Record<string, string>) => {
 	let root = rootsByFiles.get(files)
 	if (!root) {
-		root = writeFixture(files, tempDir("ark-deferred-", fromHere("temp")))
+		root = writeFixture(files, tempDir("ark-deferred-", tempPath()))
 		rootsByFiles.set(files, root)
 	}
 	return root

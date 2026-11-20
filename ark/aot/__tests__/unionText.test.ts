@@ -1,9 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
-import { fromHere } from "@ark/fs"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { build } from "esbuild"
 import { join } from "node:path"
-import { run, runPlain, writeFixture } from "./utils.ts"
+import { run, runPlain, tempPath, writeFixture } from "./utils.ts"
 
 // a build's validators write a union's text exactly as arktype does
 
@@ -253,7 +252,7 @@ contextualize(function (this: Mocha.Suite) {
 
 	const root = writeFixture(
 		{ "main.ts": appOf(behaviors) },
-		fromHere("temp", "unionText", "behaviors")
+		tempPath("unionText", "behaviors")
 	)
 	const builds: [string, string][] = []
 	let plain: string
