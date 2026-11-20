@@ -150,7 +150,7 @@ A declaration file is the exception. TypeScript can't write an inferred cycle in
 To ship a cyclic Type's types, write the declarations with [`arktype-precompile --declare`](/docs/precompile/advanced#cyclic-types) instead of `tsc`. It declares each cycle under its alias, `Package` and `Contributor` here, and leaves how your Types validate unchanged:
 
 ```sh
-npx arktype-precompile --declare
+npx @ark/aot --declare
 ```
 
 Without it, name the type yourself and [declare](/docs/declare) the Type with it:
