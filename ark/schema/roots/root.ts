@@ -857,8 +857,10 @@ const isDefaultedNode = (node: BaseNode): boolean =>
 	(node.is("optional") && node.hasDef()) ||
 	(node.is("sequence") && node.defLen !== 0)
 
-const reachesDefault = (root: BaseRoot): boolean => {
-	const final = isResolutionFinal()
+const reachesDefaultCache = /* @__PURE__ */ new WeakMap<BaseRoot, boolean>()
+const withoutDefaultsCache = /* @__PURE__ */ new WeakMap<BaseRoot, BaseRoot>()
+
+const computeReachesDefault = (root: BaseRoot, final: boolean): boolean => {
 	if (!root.alters && !(final && root.tfs)) return false
 	const followAliases = root.hasAlias && final
 	const visited = new Set<BaseNode>()
@@ -874,38 +876,59 @@ const reachesDefault = (root: BaseRoot): boolean => {
 	return false
 }
 
+const reachesDefault = (root: BaseRoot): boolean => {
+	if (!root.alters && !root.hasAlias) return false
+	const final = isResolutionFinal()
+	const cacheable = final || !root.hasAlias
+	if (cacheable) {
+		const cached = reachesDefaultCache.get(root)
+		if (cached !== undefined) return cached
+	}
+	const result = computeReachesDefault(root, final)
+	if (cacheable) reachesDefaultCache.set(root, result)
+	return result
+}
+
 // defaults are input-side annotations, not constraints on which inputs a type allows
 const withoutDefaults = (node: BaseRoot): BaseRoot => {
-	if (!reachesDefault(node)) return node
+	if (!node.alters && !node.hasAlias) return node
 	const final = isResolutionFinal()
-	return node.transform(
-		(kind, inner) => {
-			if (kind === "optional" && "default" in inner)
-				return omit(inner as Optional.Inner, { default: 1 })
-			if (kind === "sequence" && (inner as Sequence.Inner).defaultables) {
-				const { defaultables, optionals, ...rest } = inner as Sequence.Inner
-				return {
-					...rest,
-					optionals: [
-						...defaultables!.map(([element]) => element),
-						...(optionals ?? [])
-					]
+	const cacheable = final || !node.hasAlias
+	if (cacheable) {
+		const cached = withoutDefaultsCache.get(node)
+		if (cached !== undefined) return cached
+	}
+	const result =
+		reachesDefault(node) ?
+			(node.transform(
+				(kind, inner) => {
+					if (kind === "optional" && "default" in inner)
+						return omit(inner as Optional.Inner, { default: 1 })
+					if (kind === "sequence" && (inner as Sequence.Inner).defaultables) {
+						const { defaultables, optionals, ...rest } = inner as Sequence.Inner
+						return {
+							...rest,
+							optionals: [
+								...defaultables!.map(([element]) => element),
+								...(optionals ?? [])
+							]
+						}
+					}
+					return inner
+				},
+				{
+					shouldTf: n =>
+						n.alters || (n.is("optional") && n.hasDef()) || (final && n.tfs)
 				}
-			}
-			return inner
-		},
-		{
-			shouldTf: n =>
-				n.alters || (n.is("optional") && n.hasDef()) || (final && n.tfs)
-		}
-	) as BaseRoot
+			) as BaseRoot)
+		:	node
+	if (cacheable) withoutDefaultsCache.set(node, result)
+	return result
 }
 
 export const emptyBrandNameMessage = `Expected a non-empty brand name after #`
 
 export type emptyBrandNameMessage = typeof emptyBrandNameMessage
-
-const standardJsonSchemaKey = Symbol.for("@ark/standardJsonSchema")
 
 const toStandardJsonSchema = (
 	node: BaseRoot,
@@ -923,15 +946,7 @@ const toStandardJsonSchema = (
 			ToJsonSchema.standardFallback[code]
 		:	handler
 	]) as ToJsonSchema.HandlerByCode
-	const standardCtx: ToJsonSchema.Context & {
-		[standardJsonSchemaKey]?: boolean
-	} = {
-		...ctx,
-		fallback,
-		io,
-		[standardJsonSchemaKey]: true
-	}
-	return node.toJsonSchema(standardCtx) as never
+	return node.toJsonSchema({ ...ctx, fallback, io }) as never
 }
 
 // a constraint's schema, with the message passed beside it configured on that

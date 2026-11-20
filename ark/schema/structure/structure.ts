@@ -1,7 +1,6 @@
 import {
 	append,
 	conflatenate,
-	defineValue,
 	flatMorph,
 	hasOwn,
 	nameOf,
@@ -46,6 +45,7 @@ import {
 	keepOwn,
 	holdsOnlyIndices,
 	mergeTransformed,
+	setOwnValue,
 	TransformErrors
 } from "../shared/transform.ts"
 import { errorFromContext } from "../shared/errors.ts"
@@ -1631,11 +1631,6 @@ const getPossibleMorph = (
 		(node as Structure.Node).applyStructMorph(data, data, ctx)
 
 	return defaultableMorphsCache.set(cacheKey, $arkStructuralMorph)
-}
-
-const setOwnValue = (out: object, k: Key, value: unknown): void => {
-	if (k === "__proto__") defineValue(out, k, value)
-	else out[k as never] = value as never
 }
 
 // assigning "__proto__" invokes Object.prototype's setter instead of defining an own key

@@ -172,4 +172,73 @@ contextualize(() => {
 			attest(fromJsonSchema(z.string()).extends(Refined)).equals(true)
 		})
 	})
+
+	it("handles recursive $ref in not, oneOf, and if beside sibling keywords", () => {
+		const S1 = fromJsonSchema({
+			properties: { next: { not: { $ref: "#" }, minimum: 0 } }
+		})
+		// exercise uncompiled first call and compiled JIT path
+		for (let pass = 0; pass < 2; pass++) {
+			attest(S1.allows({})).equals(true)
+			attest(S1.allows(true)).equals(true)
+			attest(S1.allows({ next: 1 })).equals(false)
+			attest(S1.allows({ next: true })).equals(false)
+			attest(S1.allows({ next: { next: 1 } })).equals(true)
+			attest(S1.allows({ next: { next: { next: 1 } } })).equals(false)
+		}
+
+		const S2 = fromJsonSchema({
+			items: { const: 1, not: { $ref: "#" } }
+		})
+		for (let pass = 0; pass < 2; pass++) {
+			attest(S2.allows(1)).equals(true)
+			attest(S2.allows([])).equals(true)
+			attest(S2.allows([1])).equals(false)
+			attest(S2.allows([2])).equals(false)
+		}
+
+		const S2Arr = fromJsonSchema({
+			type: "array",
+			items: { const: 1, not: { $ref: "#" } }
+		})
+		for (let pass = 0; pass < 2; pass++) {
+			attest(S2Arr.allows(1)).equals(false)
+			attest(S2Arr.allows([])).equals(true)
+			attest(S2Arr.allows([1])).equals(true)
+			attest(S2Arr.allows([2])).equals(false)
+		}
+
+		const S3 = fromJsonSchema({
+			type: "object",
+			properties: {
+				child: {
+					required: ["id"],
+					oneOf: [{ $ref: "#" }, { required: ["leaf"] }]
+				}
+			}
+		})
+		for (let pass = 0; pass < 2; pass++) {
+			attest(S3.allows({})).equals(true)
+			attest(S3.allows({ child: true })).equals(true)
+			attest(S3.allows({ child: { id: 1 } })).equals(true)
+			attest(S3.allows({ child: { id: 1, leaf: 1 } })).equals(false)
+			attest(S3.allows({ child: { leaf: 1 } })).equals(false)
+		}
+
+		const S4 = fromJsonSchema({
+			properties: {
+				next: {
+					if: { $ref: "#" },
+					then: { minimum: 0 },
+					else: { const: true }
+				}
+			}
+		})
+		for (let pass = 0; pass < 2; pass++) {
+			attest(S4.allows({ next: 1 })).equals(true)
+			attest(S4.allows({ next: -1 })).equals(false)
+			attest(S4.allows({ next: true })).equals(true)
+			attest(S4.allows({ next: { next: -1 } })).equals(false)
+		}
+	})
 })

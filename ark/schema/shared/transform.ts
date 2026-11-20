@@ -86,7 +86,11 @@ export const copyOf = (data: object): object => {
 		:	data
 }
 
-const setOwnValue = (out: object, k: PropertyKey, value: unknown): void => {
+export const setOwnValue = (
+	out: object,
+	k: PropertyKey,
+	value: unknown
+): void => {
 	if (k === "__proto__") defineValue(out, k, value)
 	else out[k as never] = value as never
 }

@@ -1215,4 +1215,187 @@ nested.z must be removed`)
 		T({ k: "c" })
 		attest(calls).equals(callsOnFirstMiss)
 	})
+
+	it('does not confuse literal "null" or "undefined" with null or undefined in 2-branch unions', () => {
+		const J = type("string.json.parse").to("'null' | 'number'")
+		// exercise uncompiled first call and compiled JIT path
+		for (let i = 0; i < 3; i++) {
+			attest(J("null").toString()).snap('must be "null" or "number"')
+			attest(J("123").toString()).snap('must be "null" or "number"')
+			attest(J('"null"')).equals("null")
+			attest(J('"number"')).equals("number")
+		}
+
+		const Obj = type({ a: "'null' | 'number'", b: "string" })
+		for (let i = 0; i < 3; i++) {
+			attest(Obj({ a: 123, b: 456 }).toString()).snap(
+				'a must be "null" or "number"\nb must be a string'
+			)
+			attest(Obj({ a: null, b: 456 }).toString()).snap(
+				'a must be "null" or "number"\nb must be a string'
+			)
+		}
+
+		const Discriminated = type({ kind: "'null'" }).or({
+			kind: "'foo'",
+			x: "number"
+		})
+		const Piped = type("unknown").pipe(x => x, Discriminated)
+		for (let i = 0; i < 3; i++) {
+			attest(Discriminated({ kind: "foo", x: "bad" }).toString()).snap(
+				"x must be a number"
+			)
+			attest(Discriminated({ kind: null }).toString()).snap(
+				'kind must be "foo" or "null"'
+			)
+			attest(Piped({ kind: null }).toString()).snap(
+				'kind must be "foo" or "null"'
+			)
+		}
+
+		const UndefDiscriminated = type({ kind: "'undefined'" }).or({
+			kind: "'string'",
+			x: type("number").narrow((n, ctx) => n > 0 || ctx.mustBe("positive"))
+		})
+		for (let i = 0; i < 3; i++) {
+			attest(UndefDiscriminated({ kind: undefined }).toString()).snap(
+				'kind must be "undefined" or "string"'
+			)
+			attest(UndefDiscriminated({ kind: "undefined" })).equals({
+				kind: "undefined"
+			})
+		}
+	})
+
+	it("does not drop a branch via derived empty-array length disjoint", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type("string[] == 1 | number[] <= 2 | d'2020-01-01'")
+			const expected: [unknown, boolean][] = [
+				[[1, 2], true],
+				[[1], true],
+				[["a"], true],
+				[[], true],
+				[new Date("2020-01-01"), true],
+				[["a", "b"], false],
+				[[1, 2, 3], false],
+				["nope", false]
+			]
+			// verify both cold (call 1) and warm (post-JIT call 2)
+			for (let pass = 0; pass < 2; pass++) {
+				for (const [input, allowed] of expected) {
+					attest(T.allows(input)).equals(allowed)
+					attest(!(T(input) instanceof type.errors)).equals(allowed)
+				}
+			}
+		}
+
+		const Wrapped = type({
+			tags: "string[] == 1 | number[] <= 2 | d'2020-01-01'"
+		})
+		attest(Wrapped.allows({ tags: [1, 2] })).equals(true)
+		attest(Wrapped.allows({ tags: [1, 2] })).equals(true)
+		attest(Wrapped.allows({ tags: ["a", "b"] })).equals(false)
+
+		// distinct declared exact lengths still discriminate on length
+		const Exact = type("string[] == 1 | number[] == 2 | d'2020-01-01'")
+		attest(Exact.internal.assertIs("union").discriminant?.path).equals([
+			"length"
+		])
+		attest(Exact.allows(["a"])).equals(true)
+		attest(Exact.allows([1, 2])).equals(true)
+		attest(Exact.allows(new Date("2020-01-01"))).equals(true)
+		attest(Exact.allows([1])).equals(false)
+		attest(Exact.allows([])).equals(false)
+	})
+
+	it("keeps index-signature and reject branches reachable across length switches", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const Rec = $.type([
+				[["string"], "|", ["number", "number"]],
+				"|",
+				"Record<string, string>"
+			])
+			for (let pass = 0; pass < 2; pass++) {
+				attest(Rec.allows(["a", "b"])).equals(true)
+				attest(Rec(["a", "b"])).unknown.equals(["a", "b"])
+				attest(Rec.allows(["a"])).equals(true)
+				attest(Rec.allows([1, 2])).equals(true)
+				attest(Rec.allows({ a: "x" })).equals(true)
+				attest(Rec.allows([1, "a"])).equals(false)
+				attest(Rec.allows({ length: 2, a: "x" })).equals(false)
+			}
+
+			const Reject = $.type([
+				"unknown[] == 1 | number[] == 0",
+				"|",
+				{ "+": "reject" }
+			])
+			const fn0 = () => 1
+			const fn1 = (x: unknown) => x
+			for (let pass = 0; pass < 2; pass++) {
+				attest(Reject.allows(fn0)).equals(true)
+				attest(Reject.allows(fn1)).equals(true)
+				attest(Reject.allows([])).equals(true)
+				attest(Reject.allows([1])).equals(true)
+				attest(Reject.allows({})).equals(true)
+				attest(Reject.allows([1, 2])).equals(false)
+				attest(Reject.allows({ length: 1 })).equals(false)
+			}
+
+			// built-in non-enumerable Function.name with "+": "reject"
+			const ByName = $.type({ name: "'foo'", x: "string" })
+				.or({ name: "'bar'", y: "number" })
+				.or({ "+": "reject" })
+			const foo = function foo() {}
+			for (let pass = 0; pass < 2; pass++) {
+				attest(ByName.allows(foo)).equals(true)
+				attest(ByName.allows({ name: "foo" })).equals(false)
+			}
+
+			// nested Record inside tuple element and outer Record
+			const TupleRec = $.type([["string"]])
+				.or([["number", "number"]])
+				.or(["Record<string, string>"])
+			const NestedRec = $.type({ a: ["string"] })
+				.or({ a: ["number", "number"] })
+				.or("Record<string, Record<string, string>>")
+			for (let pass = 0; pass < 2; pass++) {
+				attest(TupleRec.allows([["a", "b"]])).equals(true)
+				attest(TupleRec.allows([[1, "a"]])).equals(false)
+				attest(NestedRec.allows({ a: ["a", "b"] })).equals(true)
+				attest(NestedRec.allows({ a: [1, "a"] })).equals(false)
+			}
+		}
+
+		// a declared optional prop still checks via `in`, so it excludes arrays/functions
+		const DeclaredOpt = type(["string"])
+			.or(["number", "number"])
+			.or({ "length?": "string" })
+		attest(DeclaredOpt.allows(["a", "b"])).equals(false)
+		attest(DeclaredOpt.allows(["a", "b"])).equals(false)
+	})
+
+	it("discriminates a Record union with a morph branch without spurious overlap", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const U = $.type("Record<string, string>")
+				.or({ kind: "1", v: "string.trim" })
+				.or({ kind: "2" })
+			// call 1 and post-JIT calls must both succeed without ParseError
+			for (let i = 0; i < 3; i++) {
+				attest(U({ kind: 1, v: " x " })).equals({ kind: 1, v: "x" })
+				attest(U({ kind: 2 })).equals({ kind: 2 })
+				attest(U({ a: "ok" })).equals({ a: "ok" })
+			}
+
+			const T = $.type("Record<string, string>")
+				.or({ k: "1", j: "'a'" })
+				.or({ k: "2", j: "'a'" })
+				.or({ k: "'b'|'c'" })
+			attest(T({ k: 1, j: "b" }).toString()).snap('j must be "a"')
+			attest(T.allows({ k: 1, j: "a", x: 1, y: 2, z: 3 })).equals(true)
+		}
+	})
 })

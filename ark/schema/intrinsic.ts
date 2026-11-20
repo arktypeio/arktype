@@ -82,8 +82,7 @@ const bootstrapIntrinsic = () => {
 							predicate: isPlainObjectOrArray,
 							meta: {
 								description: "a plain object or array",
-								keyword: "object.json",
-								jsonSchema: {}
+								keyword: "object.json"
 							}
 						}
 					],

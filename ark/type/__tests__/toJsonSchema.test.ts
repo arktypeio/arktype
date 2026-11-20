@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import type { ToJsonSchema } from "@ark/schema"
-import { keywords, Module, scope, Type, type } from "arktype"
+import { fromJsonSchema, keywords, Module, scope, Type, type } from "arktype"
 import type { JSONSchema7 } from "json-schema"
 
 // a keyword's pattern is its source, so only its presence is asserted
@@ -733,17 +733,24 @@ contextualize(() => {
 			},
 			required: ["a", "b", "c"]
 		})
-		// serialized output can drop a's and c's keys, so only b stays required
-		attest(T["~standard"].jsonSchema.output({ target: "draft-2020-12" })).snap({
+		// serialized output can drop a's and c's keys, so only b stays required,
+		// while array elements keep {} so [1, undefined] and [1, null] stay valid
+		const out = T["~standard"].jsonSchema.output({ target: "draft-2020-12" })
+		attest(out).snap({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "object",
 			properties: {
 				a: { type: "string" },
-				b: { type: "array", items: { type: "number" } },
+				b: { type: "array", items: { anyOf: [{ type: "number" }, {}] } },
 				c: { anyOf: [{ type: "boolean" }, { type: "null" }] }
 			},
 			required: ["b"]
 		})
+		const parsedOut = fromJsonSchema(out)
+		attest(parsedOut.allows({ b: [1, undefined] })).equals(true)
+		attest(parsedOut.allows({ b: [1, null] })).equals(true)
+		attest(parsedOut.allows({ a: "x", b: [1, 2], c: true })).equals(true)
+		attest(parsedOut.allows({ a: 123, b: [1] })).equals(false)
 	})
 
 	it("fits JSONSchema7 and Record<string, unknown> without a cast", () => {
@@ -1127,5 +1134,24 @@ contextualize(() => {
 				{ type: "string", format: "date-time" }
 			]
 		})
+	})
+
+	it("converts object.json for round-tripping and rejects derived intersections", () => {
+		const Json = type("object.json")
+		const rt = fromJsonSchema(Json.toJsonSchema())
+		attest(rt.allows({})).equals(true)
+		attest(rt.allows({ a: [1, true, null, "x"] })).equals(true)
+		attest(rt.allows([])).equals(true)
+		attest(rt.allows([1, { b: 2 }])).equals(true)
+		attest(rt.allows("str")).equals(false)
+		attest(rt.allows(42)).equals(false)
+		attest(rt.allows(true)).equals(false)
+		attest(rt.allows(null)).equals(false)
+
+		const Derived = Json.and({ "[string]": "number | string" })
+		attest(Derived.allows([1])).equals(true)
+		attest(() => Derived.toJsonSchema()).throws(
+			'Can\'t convert "predicate" to JSON Schema'
+		)
 	})
 })

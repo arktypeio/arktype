@@ -3,8 +3,10 @@ import {
 	ArkErrors,
 	flatByPath,
 	flatMessagesByPath,
+	messageIn,
 	rootSchema,
 	schemaScope,
+	writeInvalidLocaleObjectMessage,
 	type ArkError,
 	type Traversal
 } from "@ark/schema"
@@ -324,5 +326,22 @@ n must be at least 2`)
 		attest(flatMessagesByPath(errors)).snap({
 			n: ["must be even", "must be at least 2"]
 		})
+	})
+
+	it("throws ParseError when a non-object locale is passed to summaryIn or messageIn", () => {
+		const out = rootSchema({
+			domain: "object",
+			required: [{ key: "a", value: "string" }]
+		})({ a: 1 }) as ArkErrors
+		const first = out.issues[0]
+
+		for (const bad of ["de", ["de"], null, 42]) {
+			const expected = writeInvalidLocaleObjectMessage(bad)
+			attest(() => out.summaryIn(bad as never)).throws(expected)
+			attest(() => messageIn(first, bad as never)).throws(expected)
+		}
+		attest(() => messageIn(first, undefined as never)).throws(
+			writeInvalidLocaleObjectMessage(undefined)
+		)
 	})
 })

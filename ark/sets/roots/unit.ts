@@ -59,38 +59,28 @@ export const unit: setImplementationOf<Unit.Declaration> = {
 				return Disjoint.init("assignability", l, rBasis)
 			}
 
-			if (!isResolutionFinal()) {
-				// r may contain an unresolved alias directly or inside an opaque
-				// predicate (e.g. fromJsonSchema's not/oneOf/if on a recursive $ref)
-				if (r.hasAlias) return deferUnitIntersection(l, r, ctx)
-				if (r.is("intersection") && (r.inner.predicate || r.userCode)) {
+			if (!r.is("intersection")) return l
+
+			if (!isResolutionFinal() && r.hasAlias)
+				return deferUnitIntersection(l, r, ctx)
+
+			// when not yet final, an opaque predicate (e.g. fromJsonSchema's
+			// not/oneOf/if on a recursive $ref) may touch an unresolved alias
+			const deferOnError =
+				!isResolutionFinal() && Boolean(r.inner.predicate || r.userCode)
+			for (const rConstraint of r.children) {
+				if (rConstraint === rBasis) continue
+				if (deferOnError) {
 					try {
-						if (r.allowsUnused(l.unit)) return l
+						if (rConstraint.allowsUnused(l.unit as never)) continue
 					} catch (e) {
 						if (e instanceof ParseError) throw e
 						return deferUnitIntersection(l, r, ctx)
 					}
-					return Disjoint.init(
-						"assignability",
-						l,
-						r.children.find(
-							rConstraint => !rConstraint.allowsUnused(l.unit as never)
-						)!
-					)
-				}
+				} else if (rConstraint.allowsUnused(l.unit as never)) continue
+				return Disjoint.init("assignability", l, rConstraint)
 			}
-
-			if (r.allowsUnused(l.unit)) return l
-
-			return Disjoint.init(
-				"assignability",
-				l,
-				r.is("intersection") ?
-					r.children.find(
-						rConstraint => !rConstraint.allowsUnused(l.unit as never)
-					)!
-				:	r
-			)
+			return l
 		})
 	}
 }

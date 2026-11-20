@@ -32,7 +32,7 @@ export abstract class BaseRange<
 		if (this.opKind === "length")
 			assertLengthRule(this.kind as LengthBoundKind, this.rule as number)
 		else if (this.opKind === "value") {
-			if (typeof this.rule !== "number")
+			if (typeof this.rule !== "number" || Number.isNaN(this.rule))
 				throwParseError(writeInvalidRangeRuleMessage(this.kind, this.rule))
 		} else if (!(this.rule instanceof Date) || !isValidDate(this.rule))
 			throwParseError(writeInvalidRangeRuleMessage(this.kind, this.rule))

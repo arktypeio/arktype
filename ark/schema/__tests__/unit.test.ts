@@ -109,4 +109,37 @@ contextualize(() => {
 		attest(T.allows(-Infinity)).equals(true)
 		attest(T.allows(0)).equals(false)
 	})
+
+	it("handles Invalid Date units without throwing RangeError", () => {
+		const Invalid = rootSchema({ unit: new Date(Number.NaN) })
+		const Str = rootSchema({ unit: "Invalid Date" })
+
+		attest(Invalid.expression).equals("Invalid Date")
+		attest(Invalid.description).equals("Invalid Date")
+		attest(Invalid.equals(rootSchema({ unit: new Date("not a date") }))).equals(
+			true
+		)
+		attest(Invalid.equals(Str)).equals(false)
+		attest(Invalid.extends(rootSchema(Date))).equals(false)
+
+		const fakeDate = Object.create(Date.prototype)
+		// exercise uncompiled first call and compiled JIT path
+		for (let i = 0; i < 3; i++) {
+			attest(Invalid.allows(new Date(Number.NaN))).equals(true)
+			attest(Invalid.allows(new Date("bad"))).equals(true)
+			attest(Invalid.allows(new Date(0))).equals(false)
+			attest(Invalid.allows("Invalid Date")).equals(false)
+			attest(Invalid.allows(Number.NaN)).equals(false)
+			attest(Invalid.allows(fakeDate)).equals(false)
+			attest(Invalid(new Date(0))?.toString()).snap("must be Invalid Date")
+
+			attest(Str.allows("Invalid Date")).equals(true)
+			attest(Str.allows(new Date(Number.NaN))).equals(false)
+		}
+
+		// fake Date prototype object uses reference identity without throwing TypeError
+		const FakeUnit = rootSchema({ unit: fakeDate })
+		attest(FakeUnit.allows(fakeDate)).equals(true)
+		attest(FakeUnit.allows(Object.create(Date.prototype))).equals(false)
+	})
 })

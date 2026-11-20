@@ -6,7 +6,13 @@ import {
 	type StandardSchemaV1
 } from "@ark/schema"
 import type { promisable } from "@ark/util"
-import { scope, type } from "arktype"
+import { ArkErrors, fromJsonSchema, scope, type } from "arktype"
+import {
+	ArkErrors as RuntimeArkErrors,
+	FirstIssues,
+	InvalidErrors,
+	unreadErrors
+} from "arktype/runtime"
 import { writeAsyncStandardSchemaMessage } from "arktype/internal/parser/definition.ts"
 import { en } from "arktype/locales/en"
 import { runInNewContext } from "node:vm"
@@ -767,46 +773,89 @@ contextualize(() => {
 			})
 		})
 
-		it("drops undefined branches in output and omits undefined-allowing keys from required", () => {
+		it("drops undefined on object prop/index output while preserving sequence and root undefined", () => {
 			const Obj = type({ name: "string", nickname: "string | undefined" })
+			const Rec = type({ "[string]": "string | undefined" })
 			const RootUndef = type("string | undefined")
 			const ArrUndef = type("(number | undefined)[]")
+			const TupleUndef = type(["string | undefined", "number"])
 			const OnlyUndef = type({ nickname: "string | undefined" })
 			const PureUndef = type({ a: "undefined" })
+			const Cyclic = scope({
+				Node: { value: "number", next: "Node | undefined" }
+			}).export().Node
 
 			for (const target of [
 				"draft-2020-12",
 				"draft-07",
 				"openapi-3.0"
 			] as const) {
-				attest(RootUndef["~standard"].jsonSchema.output({ target })).equals(
-					RootUndef["~standard"].jsonSchema.input({ target })
-				)
-				attest(ArrUndef["~standard"].jsonSchema.output({ target })).equals(
-					ArrUndef["~standard"].jsonSchema.input({ target })
-				)
-
 				const objIn = Obj["~standard"].jsonSchema.input({ target })
 				const objOut = Obj["~standard"].jsonSchema.output({ target })
 				attest(objOut.properties).equals(objIn.properties)
 				attest(objIn.required).equals(["name", "nickname"])
 				attest(objOut.required).equals(["name"])
+				attest(Obj.toJsonSchema({ target, io: "out" })).equals(objOut)
+
+				const recOut = Rec["~standard"].jsonSchema.output({ target })
+				attest(recOut).equals(Rec.toJsonSchema({ target, io: "out" }))
+				attest(recOut.additionalProperties).equals({ type: "string" })
 
 				// no required: [] when every key allows undefined
 				const onlyOut = OnlyUndef["~standard"].jsonSchema.output({ target })
 				attest("required" in onlyOut).equals(false)
 				attest(onlyOut.properties).equals({ nickname: { type: "string" } })
+				attest(OnlyUndef.toJsonSchema({ target, io: "out" })).equals(onlyOut)
 
 				const pureOut = PureUndef["~standard"].jsonSchema.output({ target })
 				attest("required" in pureOut).equals(false)
+				attest(pureOut.properties).equals({ a: { not: {} } })
+				attest(PureUndef.toJsonSchema({ target, io: "out" })).equals(pureOut)
+
+				// array and tuple elements cannot be omitted in JSON, so output keeps {}
+				const arrOut = ArrUndef["~standard"].jsonSchema.output({ target })
+				attest(arrOut.items).equals({ anyOf: [{ type: "number" }, {}] })
+				attest(fromJsonSchema(arrOut).allows([1, undefined])).equals(true)
+				attest(fromJsonSchema(arrOut).allows([1, null])).equals(true)
+
+				const rootOut = RootUndef["~standard"].jsonSchema.output({ target })
+				attest(rootOut.anyOf).equals([{ type: "string" }, {}])
+				attest(fromJsonSchema(rootOut).allows(undefined)).equals(true)
 			}
 
-			// non-Standard toJsonSchema() preserves unit fallback error behavior
+			const tupleOut = TupleUndef["~standard"].jsonSchema.output({
+				target: "draft-2020-12"
+			})
+			attest(tupleOut).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "array",
+				minItems: 2,
+				prefixItems: [{ anyOf: [{ type: "string" }, {}] }, { type: "number" }],
+				items: false
+			})
+			attest(fromJsonSchema(tupleOut).allows([undefined, 1])).equals(true)
+			attest(fromJsonSchema(tupleOut).allows([null, 1])).equals(true)
+
+			attest(Cyclic.toJsonSchema({ dialect: null, io: "out" })).snap({
+				$ref: "#/$defs/Node",
+				$defs: {
+					Node: {
+						type: "object",
+						properties: {
+							next: { $ref: "#/$defs/Node" },
+							value: { type: "number" }
+						},
+						required: ["value"]
+					}
+				}
+			})
+
+			// default toJsonSchema() (without io) preserves unit fallback error behavior
 			attest(() => Obj.toJsonSchema()).throws(
 				'Can\'t convert "unit" at nickname to JSON Schema'
 			)
-			attest(() => Obj.toJsonSchema({ io: "out" })).throws(
-				'Can\'t convert "unit" at nickname to JSON Schema'
+			attest(() => Rec.toJsonSchema()).throws(
+				'Can\'t convert "unit" at [string] to JSON Schema'
 			)
 		})
 
@@ -869,5 +918,115 @@ contextualize(() => {
 				})
 			).equals(Node["~standard"].jsonSchema.input({ target: "draft-07" }))
 		})
+	})
+
+	describe("Standard Schema toJSON() data stripping", () => {
+		it("strips data and actual from JSON.stringify on Standard Schema failures", () => {
+			const Login = type({ email: "string.email", password: "string >= 12" })
+			const input = { email: "a@b.co", password: "hunter2" }
+			const direct = Login(input) as type.errors
+			const result = Login["~standard"].validate(
+				input
+			) as StandardSchemaV1.FailureResult
+
+			// JS properties remain readable
+			const firstIssue = result.issues[0] as {
+				data?: unknown
+				actual?: unknown
+			}
+			attest(firstIssue.data).equals("hunter2")
+			attest(firstIssue.actual).equals("7")
+
+			const directJson = JSON.parse(JSON.stringify(direct))
+			const serialized = JSON.stringify(result)
+			const parsed = JSON.parse(serialized) as {
+				issues: Record<string, unknown>[]
+				message: string
+			}
+			attest(parsed).snap({
+				issues: [
+					{
+						code: "minLength",
+						description: "at least length 12",
+						expected: "at least length 12",
+						message: "must be at least length 12",
+						path: ["password"],
+						propString: "password"
+					}
+				],
+				message: "password must be at least length 12"
+			})
+			attest(parsed.issues).equals(directJson)
+			attest(parsed.message).equals(direct.summary)
+			attest("data" in parsed.issues[0]).equals(false)
+			attest("actual" in parsed.issues[0]).equals(false)
+		})
+
+		it("serializes BigInt, circular data, symbol paths, and reactive proxies safely", () => {
+			const tag = Symbol("secret")
+			const cyclic: Record<string, unknown> = {}
+			cyclic.self = cyclic
+			const T = type({ [tag]: "string", n: "string", c: "string" })
+			const result = T["~standard"].validate({
+				[tag]: 1n,
+				n: 2n,
+				c: cyclic
+			}) as StandardSchemaV1.FailureResult
+
+			const parsed = JSON.parse(JSON.stringify(result)) as {
+				issues: { path: unknown[]; data?: unknown }[]
+				message: string
+			}
+			attest(parsed.issues.map(issue => issue.path)).equals([
+				["n"],
+				["c"],
+				["Symbol(secret)"]
+			])
+			for (const issue of parsed.issues) attest("data" in issue).equals(false)
+
+			const wrap = <t extends object>(target: t): t =>
+				new Proxy(target, {
+					get: (t, k, receiver) => {
+						const value = Reflect.get(t, k, receiver)
+						return typeof value === "object" && value !== null ?
+								wrap(value)
+							:	value
+					}
+				})
+			const wrappedJson = JSON.stringify(wrap(result))
+			attest(wrappedJson).equals(JSON.stringify(result))
+		})
+	})
+
+	it("recognizes arktype/runtime errors as instanceof ArkErrors and type.errors", () => {
+		const runtimeErr = new RuntimeArkErrors()
+		runtimeErr._e(1, "domain", "a string")
+		const firstErr = new FirstIssues()
+		firstErr._e(1, "domain", "a string")
+		const invalidErr = new InvalidErrors(1)
+		const lazyErr = unreadErrors(
+			(data, ctx) => !ctx._e(data, "domain", "a string"),
+			1,
+			null
+		)
+
+		for (const err of [runtimeErr, firstErr, invalidErr, lazyErr]) {
+			attest(err instanceof ArkErrors).equals(true)
+			attest(err instanceof type.errors).equals(true)
+		}
+
+		// TypeScript narrowing on instanceof type.errors still works
+		const out = type("string")(1)
+		if (out instanceof type.errors) attest<type.errors>(out)
+		else attest<string>(out)
+
+		for (const notErrors of [
+			{ " arkKind": "errors" },
+			null,
+			undefined,
+			5,
+			{}
+		] as unknown[])
+			attest(notErrors instanceof ArkErrors).equals(false)
 	})
 })

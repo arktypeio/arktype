@@ -1415,13 +1415,10 @@ const builtinObjectPrototypes = [
 	Error.prototype
 ]
 
-// own non-enumerable properties on plain JS objects (arrays, functions, regexps, errors)
+// own non-enumerable properties on built-in objects not already on builtinObjectPrototypes
 const builtinNonEnumerableKeys: ReadonlySet<PropertyKey> = new Set([
-	"length",
-	"name",
 	"prototype",
 	"lastIndex",
-	"message",
 	"stack",
 	"cause"
 ])
@@ -1480,7 +1477,16 @@ const disjointEntryLeavesKeyOverlap = (
 	if (prop) return disjointEntryLeavesKeyOverlap(prop.value, entry, depth + 1)
 	if (entry.undeclared) return isBuiltinNonEnumerableKey(key)
 	// a disjoint at an undeclared key without undeclared handling comes from an index signature
-	return node.structure.index !== undefined
+	if (!node.structure.index) return false
+	if (isBuiltinNonEnumerableKey(key)) return true
+	return (
+		depth < entry.path.length - 1 &&
+		node.structure.index.some(
+			idx =>
+				idx.signature.allowsUnused(key) &&
+				disjointEntryLeavesKeyOverlap(idx.value, entry, depth + 1)
+		)
+	)
 }
 
 export const writeIndiscriminableMorphMessage = (

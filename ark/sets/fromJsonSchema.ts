@@ -152,7 +152,7 @@ const read = (schema: unknown, pointer: string, ctx: ReadContext): BaseRoot => {
 			const constraint = readKeywords(o, pointer, ctx)
 			if (constraint) result = intersectRoots(result, constraint)
 		}
-		return withAnnotations(result, o)
+		return withAnnotations(result, o, pointer, ctx)
 	} finally {
 		ctx.resource = enclosing
 		ctx.depth--
@@ -330,9 +330,14 @@ const indexResources = (ctx: ReadContext): Record<string, Resource> => {
 		[ctx.documentResource.uri]: ctx.documentResource
 	}
 	const visited = new Set<unknown>()
-	const visit = (schema: unknown, enclosing: Resource, depth: number): void => {
+	const visit = (
+		schema: unknown,
+		enclosing: Resource,
+		pointer: string,
+		depth: number
+	): void => {
 		if (!isJsonSchemaObject(schema) || visited.has(schema)) return
-		if (depth >= maxReadDepth) throwParseError(writeMaxDepthMessage("#"))
+		if (depth >= maxReadDepth) throwParseError(writeMaxDepthMessage(pointer))
 		visited.add(schema)
 		const o = schema as dict
 		const id = schema === ctx.document ? undefined : idOf(o, ctx)
@@ -349,24 +354,43 @@ const indexResources = (ctx: ReadContext): Record<string, Resource> => {
 		// a keyword's value is checked only where it's read, so one here may be invalid
 		for (const k in o) {
 			const kind = keywordValueKinds[k]
-			if (kind === "schema") visit(o[k], resource, depth + 1)
+			const keyPointer = `${pointer}/${escapePointer(k)}`
+			if (kind === "schema") visit(o[k], resource, keyPointer, depth + 1)
 			else if (kind === "items" || kind === "schemas" || kind === "branches") {
-				for (const v of isArray(o[k]) ? o[k] : [o[k]])
-					visit(v, resource, depth + 1)
+				if (isArray(o[k])) {
+					for (let i = 0; i < o[k].length; i++)
+						visit(o[k][i], resource, `${keyPointer}/${i}`, depth + 1)
+				} else visit(o[k], resource, keyPointer, depth + 1)
 			} else if (
 				(kind === "schemasByKey" || kind === "dependencies") &&
 				isJsonSchemaObject(o[k])
-			)
-				for (const v of Object.values(o[k])) visit(v, resource, depth + 1)
+			) {
+				for (const [subKey, v] of Object.entries(o[k])) {
+					visit(
+						v,
+						resource,
+						`${keyPointer}/${escapePointer(subKey)}`,
+						depth + 1
+					)
+				}
+			}
 		}
 		// an OpenAPI document's schemas
 		if (schema === ctx.document && isJsonSchemaObject(o.components)) {
 			const { schemas } = o.components as dict
-			if (isJsonSchemaObject(schemas))
-				for (const v of Object.values(schemas)) visit(v, resource, depth + 1)
+			if (isJsonSchemaObject(schemas)) {
+				for (const [subKey, v] of Object.entries(schemas)) {
+					visit(
+						v,
+						resource,
+						`${pointer}/components/schemas/${escapePointer(subKey)}`,
+						depth + 1
+					)
+				}
+			}
 		}
 	}
-	visit(ctx.document, ctx.documentResource, 0)
+	visit(ctx.document, ctx.documentResource, "#", 0)
 	return resourcesByUri
 }
 
@@ -403,11 +427,24 @@ const keywordReaders: KeywordReader[] = [
 		:	unionOf(
 				typeNamesOf(o).map(name => typeRoots()[name as JsonSchema.TypeName])
 			),
-	o => (o.const === undefined ? undefined : constRoot(o.const)),
-	o =>
-		o.enum === undefined ?
+	(o, pointer, ctx) =>
+		o.const === undefined ?
 			undefined
-		:	unionOf((o.enum as array).map(constRoot)),
+		:	constRoot(o.const, `${pointer}/const`, ctx),
+	(o, pointer, ctx) => {
+		if (o.enum === undefined) return
+		const items = o.enum as array
+		if (ctx.reading.has(items))
+			return throwParseError(writeCircularSchemaMessage(`${pointer}/enum`))
+		ctx.reading.add(items)
+		try {
+			return unionOf(
+				items.map((v, i) => constRoot(v, `${pointer}/enum/${i}`, ctx))
+			)
+		} finally {
+			ctx.reading.delete(items)
+		}
+	},
 	o => {
 		const constraints: RootSchema[] = []
 		if (o.minimum !== undefined) constraints.push({ min: o.minimum as number })
@@ -901,12 +938,21 @@ const isDecimalMultipleOf = (divisor: number): ((data: number) => boolean) => {
 	}
 }
 
-const constObjectRoot = (value: object): BaseRoot => {
-	const required: { key: string; value: BaseRoot }[] = []
+type RequiredPropEntry = {
+	key: string
+	value: BaseRoot
+}
+
+const constObjectRoot = (
+	value: object,
+	pointer: string,
+	ctx: ReadContext
+): BaseRoot => {
+	const required: RequiredPropEntry[] = []
 	const index: unknown[] = []
 	const predicate: unknown[] = [notArray()]
 	for (const [key, v] of Object.entries(value)) {
-		const propValue = constRoot(v)
+		const propValue = constRoot(v, `${pointer}/${escapePointer(key)}`, ctx)
 		if (key in Object.prototype)
 			addPrototypeKeyConstraint({ index, predicate }, key, propValue, true)
 		else required.push({ key, value: propValue })
@@ -920,15 +966,40 @@ const constObjectRoot = (value: object): BaseRoot => {
 	} as never)
 }
 
-const constRoot = (value: unknown): BaseRoot =>
-	isArray(value) ?
-		jsonSchemaRoot(
-			value.length === 0 ?
-				{ proto: Array, exactLength: 0 }
-			:	{ proto: Array, sequence: { prefix: value.map(constRoot) } }
-		)
-	: isJsonSchemaObject(value) ? constObjectRoot(value)
-	: jsonSchemaRoot({ unit: value })
+const constRoot = (
+	value: unknown,
+	pointer: string,
+	ctx: ReadContext
+): BaseRoot => {
+	const isArr = isArray(value)
+	if (!isArr && !isJsonSchemaObject(value))
+		return jsonSchemaRoot({ unit: value })
+	if (ctx.depth >= maxReadDepth)
+		return throwParseError(writeMaxDepthMessage(pointer))
+	if (ctx.reading.has(value))
+		return throwParseError(writeCircularSchemaMessage(pointer))
+	ctx.reading.add(value)
+	ctx.depth++
+	try {
+		return isArr ?
+				jsonSchemaRoot(
+					value.length === 0 ?
+						{ proto: Array, exactLength: 0 }
+					:	{
+							proto: Array,
+							sequence: {
+								prefix: value.map((v, i) =>
+									constRoot(v, `${pointer}/${i}`, ctx)
+								)
+							}
+						}
+				)
+			:	constObjectRoot(value, pointer, ctx)
+	} finally {
+		ctx.depth--
+		ctx.reading.delete(value)
+	}
+}
 
 // one predicate per keyword and subschemas, so equal reads relate
 const predicatesByKey = /* @__PURE__ */ new WeakCache<Predicate>()
@@ -989,7 +1060,41 @@ const branchesAreDisjoint = (branches: BaseRoot[]) =>
 const expectedOf = (root: BaseRoot): string =>
 	typeof root.meta.expected === "string" ? root.meta.expected : root.description
 
-const withAnnotations = (root: BaseRoot, o: dict): BaseRoot => {
+const checkAnnotationValue = (
+	value: unknown,
+	pointer: string,
+	ctx: ReadContext
+): void => {
+	if (typeof value !== "object" || value === null) return
+	if (ctx.depth >= maxReadDepth) throwParseError(writeMaxDepthMessage(pointer))
+	if (ctx.reading.has(value))
+		throwParseError(writeCircularSchemaMessage(pointer))
+	ctx.reading.add(value)
+	ctx.depth++
+	try {
+		if (isArray(value)) {
+			for (let i = 0; i < value.length; i++)
+				if (i in value) checkAnnotationValue(value[i], `${pointer}/${i}`, ctx)
+		} else {
+			for (const [key, v] of Object.entries(value))
+				checkAnnotationValue(v, `${pointer}/${escapePointer(key)}`, ctx)
+		}
+	} finally {
+		ctx.depth--
+		ctx.reading.delete(value)
+	}
+}
+
+const withAnnotations = (
+	root: BaseRoot,
+	o: dict,
+	pointer: string,
+	ctx: ReadContext
+): BaseRoot => {
+	if (o.default !== undefined)
+		checkAnnotationValue(o.default, `${pointer}/default`, ctx)
+	if (o.examples !== undefined)
+		checkAnnotationValue(o.examples, `${pointer}/examples`, ctx)
 	const meta: dict = flatMorph(annotationKeys, (i, k) =>
 		o[k] === undefined ? [] : [k, o[k]]
 	)

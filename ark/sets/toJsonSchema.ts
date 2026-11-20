@@ -41,8 +41,6 @@ import {
 // JSON Schema's object type, which excludes what an Array basis allows
 export const isNonArray = (data: object): boolean => !Array.isArray(data)
 
-const standardJsonSchemaKey = Symbol.for("@ark/standardJsonSchema")
-
 interface JsonSchemaContext extends ToJsonSchema.Context {
 	/** where in the Type the node being converted is, for its errors */
 	path: string
@@ -59,10 +57,6 @@ interface JsonSchemaContext extends ToJsonSchema.Context {
 	/** what each $ref's pointer starts with, before the name of its def */
 	refPrefix: string
 	writers: UnionJsonSchemaWriters
-	/** drop undefined union branches (input and Standard JSON Schema output) */
-	dropUndefined: boolean
-	/** omit required keys whose value allows undefined (Standard JSON Schema output) */
-	omitUndefinedRequired: boolean
 }
 
 // a precompiled validator replays a call's fallback as the build recorded it
@@ -76,8 +70,7 @@ export const jsonSchemaWriters: UnionJsonSchemaWriters = {
 
 export const jsonSchemaContextOf = (
 	cfg: ToJsonSchema.Context,
-	writers: UnionJsonSchemaWriters,
-	isStandard = false
+	writers: UnionJsonSchemaWriters
 ): JsonSchemaContext => ({
 	...cfg,
 	path: "",
@@ -88,9 +81,7 @@ export const jsonSchemaContextOf = (
 	aliasesFound: new Set(),
 	defs: {},
 	refPrefix: refPrefixOf(cfg),
-	writers,
-	dropUndefined: cfg.io === "in" || isStandard,
-	omitUndefinedRequired: isStandard && cfg.io === "out"
+	writers
 })
 
 export const rootToJsonSchema = (
@@ -101,10 +92,7 @@ export const rootToJsonSchema = (
 		mergeToJsonSchemaConfigs(node.$.cfg.toJsonSchema, opts),
 		(opts as { [unionJsonSchemaWritersKey]?: UnionJsonSchemaWriters })[
 			unionJsonSchemaWritersKey
-		] ?? jsonSchemaWriters,
-		Boolean(
-			(opts as { [standardJsonSchemaKey]?: boolean })[standardJsonSchemaKey]
-		)
+		] ?? jsonSchemaWriters
 	)
 	// a default handler throws naming where the part it can't convert is
 	ctx.fallback = flatMorph(ctx.fallback, (code, handler) => [
@@ -299,8 +287,12 @@ const jsonAnnotationValue = (
 	seen.add(value)
 	if (Array.isArray(value)) {
 		const out: unknown[] = []
-		for (const item of value) {
-			const jsonItem = jsonAnnotationValue(item, seen)
+		for (let i = 0; i < value.length; i++) {
+			if (!(i in value)) {
+				seen.delete(value)
+				return nonJsonAnnotation
+			}
+			const jsonItem = jsonAnnotationValue(value[i], seen)
 			if (jsonItem === nonJsonAnnotation) {
 				seen.delete(value)
 				return nonJsonAnnotation
@@ -332,8 +324,9 @@ const examplesAnnotationValue = (value: unknown): unknown[] | undefined => {
 	if (!Array.isArray(value)) return undefined
 	if (!value.length) return []
 	const out: unknown[] = []
-	for (const entry of value) {
-		const jsonEntry = jsonAnnotationValue(entry)
+	for (let i = 0; i < value.length; i++) {
+		if (!(i in value)) continue
+		const jsonEntry = jsonAnnotationValue(value[i])
 		if (jsonEntry !== nonJsonAnnotation) out.push(jsonEntry)
 	}
 	return out.length ? out : undefined
@@ -350,14 +343,16 @@ const writeNodeAnnotations = (
 		// JSON can't represent a function like a message writer
 		if (typeof v === "function" && k !== "default") continue
 		let jsonValue: unknown
-		if (typeof v !== "function" && $ark.kw.jsonData.allows(v)) jsonValue = v
+		if (k === "examples") jsonValue = examplesAnnotationValue(v)
 		else if (k === "default") {
-			jsonValue = ctx.fallback.defaultValue({
-				code: "defaultValue",
-				value: v as never
-			})
-		} else if (k === "examples") jsonValue = examplesAnnotationValue(v)
-		else {
+			jsonValue =
+				typeof v !== "function" && $ark.kw.jsonData.allows(v) ?
+					v
+				:	ctx.fallback.defaultValue({
+						code: "defaultValue",
+						value: v as never
+					})
+		} else {
 			const converted = jsonAnnotationValue(v)
 			if (converted !== nonJsonAnnotation) jsonValue = converted
 		}
@@ -616,11 +611,8 @@ const innerToJsonSchemaByKind: {
 	alias: (node, ctx) => toJsonSchemaRecurse(node.resolution, ctx),
 	union: (node, ctx) => {
 		let branchGroups = branchGroupsOf(node)
-		// JSON has no undefined, so no input can match an undefined branch,
-		// and Standard JSON Schema output drops it too so an optional-valued
-		// key or element keeps its non-undefined constraint instead of
-		// widening to {}. Non-Standard toJsonSchema() keeps it for fallback.unit.
-		if (ctx.dropUndefined)
+		// JSON has no undefined, so no input can match an undefined branch
+		if (ctx.io === "in")
 			branchGroups = branchGroups.filter(group => !group.hasUnit(undefined))
 		const nonNull = branchGroups.filter(branch => !branch.hasUnit(null))
 		// an input's null | undefined is null, not anyOf with never beside it
@@ -822,7 +814,7 @@ const reduceObjectJsonSchema = (
 	) {
 		// every key must match the index, so its value applies to each one
 		schema.propertyNames = indexKeys[0].key
-		if (declaredValuesExtend(node, indexKeys[0].valueNode))
+		if (declaredValuesExtend(node, indexKeys[0].valueNode, ctx))
 			schema.additionalProperties = indexKeys[0].value
 		// a declared key's value must be the index's too, which only a pattern
 		// every key matches checks
@@ -834,7 +826,7 @@ const reduceObjectJsonSchema = (
 		schema.patternProperties?.[""] &&
 		Object.keys(schema.patternProperties).length === 1 &&
 		indexes.anyString &&
-		declaredValuesExtend(node, indexes.anyString)
+		declaredValuesExtend(node, indexes.anyString, ctx)
 	) {
 		// with no other patterns, the index adds nothing declared keys don't
 		// already check, so it's written as additionalProperties, which OpenAPI
@@ -860,9 +852,14 @@ const reduceObjectJsonSchema = (
 
 // additionalProperties skips declared keys, so it holds an index's value only
 // where each declared key's value is already within it
-const declaredValuesExtend = (node: Structure.Node, value: BaseRoot): boolean =>
+const declaredValuesExtend = (
+	node: Structure.Node,
+	value: BaseRoot,
+	ctx: JsonSchemaContext
+): boolean =>
 	node.props.every(
-		prop => typeof prop.key === "symbol" || jsonValueOf(prop).extends(value)
+		prop =>
+			typeof prop.key === "symbol" || jsonValueOf(prop, ctx).extends(value)
 	)
 
 const writeProps = (
@@ -874,7 +871,7 @@ const writeProps = (
 	schema.properties = {}
 	for (const prop of node.props) {
 		ctx.path = appendStringifiedKey(path, prop.key)
-		const valueSchema = toJsonSchemaRecurse(jsonValueOf(prop), ctx)
+		const valueSchema = toJsonSchemaRecurse(jsonValueOf(prop, ctx), ctx)
 
 		if (typeof prop.key === "symbol") {
 			schema = ctx.fallback.symbolKey({
@@ -898,7 +895,7 @@ const writeProps = (
 			(
 				typeof prop.key !== "string" ||
 				!(prop.key in schema.properties!) ||
-				(ctx.omitUndefinedRequired && prop.value.allows(undefined))
+				(ctx.io === "out" && prop.value.allowsUnused(undefined))
 			) ?
 				[]
 			:	[prop.key]
@@ -917,9 +914,11 @@ const writeIndex = (
 	ctx: JsonSchemaContext,
 	indexes: IndexWrites
 ): JsonSchema.Object => {
+	const indexValue =
+		ctx.io === "out" ? withoutUndefined(index.value) : index.value
 	const path = ctx.path
 	ctx.path = `${path}[${index.signature.expression}]`
-	const valueJsonSchema = toJsonSchemaRecurse(index.value, ctx)
+	const valueJsonSchema = toJsonSchemaRecurse(indexValue, ctx)
 	ctx.path = path
 
 	for (const keyBranch of index.signature.branches) {
@@ -957,10 +956,10 @@ const writeIndex = (
 			pattern !== undefined &&
 			// OpenAPI 3.0 has no patternProperties, only additionalProperties
 			(ctx.target !== "openapi-3.0" ||
-				(pattern === "" && declaredValuesExtend(node, index.value)))
+				(pattern === "" && declaredValuesExtend(node, indexValue, ctx)))
 		) {
 			defineValue((schema.patternProperties ??= {}), pattern, valueJsonSchema)
-			if (pattern === "") indexes.anyString = index.value
+			if (pattern === "") indexes.anyString = indexValue
 			continue
 		}
 
@@ -968,22 +967,27 @@ const writeIndex = (
 			node: keyIn,
 			key: keySchema ?? (toResolvedJsonSchema(keyIn, ctx) as never),
 			value: valueJsonSchema,
-			valueNode: index.value
+			valueNode: indexValue
 		})
 	}
 	return schema
 }
 
-// JSON has no undefined, so an optional key holds it only by being absent
-const jsonValueOf = (prop: Prop.Node): BaseRoot =>
-	(
-		prop.optional &&
-		prop.value.branches.some(branch => branch.hasUnit(undefined))
-	) ?
-		prop.value.$.schema(
-			prop.value.branches.filter(branch => !branch.hasUnit(undefined))
+// JSON has no undefined: an optional key, or any object key or index value on
+// output, holds undefined only by being absent
+const withoutUndefined = (value: BaseRoot): BaseRoot => {
+	const resolved = value.is("alias") ? value.resolution : value
+	if (!resolved.branches.some(branch => branch.hasUnit(undefined))) return value
+	const stripped = resolved.$.schema(
+		resolved.branches.filter(branch => !branch.hasUnit(undefined))
+	)
+	return isEmptyObject(resolved.meta) ? stripped : (
+			stripped.configure(resolved.meta, "self")
 		)
-	:	prop.value
+}
+
+const jsonValueOf = (prop: Prop.Node, ctx: JsonSchemaContext): BaseRoot =>
+	prop.optional || ctx.io === "out" ? withoutUndefined(prop.value) : prop.value
 
 interface IndexKey {
 	node: BaseRoot
@@ -1014,8 +1018,11 @@ const keyPatternOf = (
 		:	undefined
 }
 
-// JSON Schema compiles pattern with "u"; reject flagless sources that fail or
-// invert meaning under "u" (\p{...}, \P{...}, \u{...})
+// JSON Schema compiles pattern with "u"; reject flagless sources that fail,
+// invert meaning (\p{...}, \P{...}, \u{...}), or contain astral/surrogate code
+// units whose matching changes under "u"
+const surrogateEscapePattern = /^[Dd][89A-Fa-f][\dA-Fa-f]{2}/
+
 const differsUnderUnicodeFlag = (source: string): boolean => {
 	try {
 		new RegExp(source, "u")
@@ -1023,11 +1030,18 @@ const differsUnderUnicodeFlag = (source: string): boolean => {
 		return true
 	}
 	for (let i = 0; i < source.length; i++) {
-		if (source[i] === "\\") {
+		const code = source.charCodeAt(i)
+		if (code >= 0xd800 && code <= 0xdfff) return true
+		if (code === 0x5c) {
 			const escaped = source[++i]
 			if (
 				(escaped === "p" || escaped === "P" || escaped === "u") &&
 				source[i + 1] === "{"
+			)
+				return true
+			if (
+				escaped === "u" &&
+				surrogateEscapePattern.test(source.slice(i + 1, i + 5))
 			)
 				return true
 		}

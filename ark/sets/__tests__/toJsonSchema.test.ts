@@ -7,7 +7,7 @@ import {
 } from "@ark/schema"
 import { Ajv } from "ajv"
 import { Ajv2020 } from "ajv/dist/2020.js"
-import { toJsonSchema } from "arksets"
+import { parse, toJsonSchema } from "arksets"
 
 const ajv2020 = new Ajv2020({ strict: false, validateFormats: false })
 const ajv07 = new Ajv({ strict: false, validateFormats: false })
@@ -17,7 +17,7 @@ const openApiPrefixFallback: ToJsonSchema.Options["fallback"] = {
 }
 
 contextualize(() => {
-	describe("tuple length bounds (#5)", () => {
+	describe("tuple length bounds", () => {
 		it("keeps tighter minItems on optional tuples across targets", () => {
 			const T = rootSchema({
 				proto: Array,
@@ -191,17 +191,21 @@ contextualize(() => {
 		})
 	})
 
-	describe("flagless regexes sensitive to u flag (#6)", () => {
+	describe("flagless regexes sensitive to u flag", () => {
 		const uSensitivePatterns = [
 			"^\\p{L}$",
 			"^\\P{L}$",
 			"^a\\-b$",
 			"^\\u{61}$",
 			"^[\\u{61}]$",
-			"^{$"
+			"^{$",
+			"^[😀]$",
+			"^😀+$",
+			"^😀$",
+			"^[\\uD83D\\uDE00]$"
 		]
 
-		it("routes flagless u-sensitive patterns to patternFlags fallback", () => {
+		it("routes flagless u-sensitive and astral patterns to patternFlags fallback", () => {
 			for (const pattern of uSensitivePatterns) {
 				const T = rootSchema({ domain: "string", pattern })
 				for (const target of [
@@ -239,6 +243,7 @@ contextualize(() => {
 				".*",
 				"^.*$",
 				".+",
+				"^a.b$",
 				"^[a\\-b]$",
 				"^[\\dA-Fa-f]+$",
 				"^[^@]+$",
@@ -248,7 +253,6 @@ contextualize(() => {
 				"^\\D+$",
 				"^\\W+$",
 				"^.$",
-				"^😀$",
 				"^\\\\p{1}$"
 			]) {
 				const T = rootSchema({ domain: "string", pattern })
@@ -277,7 +281,7 @@ contextualize(() => {
 		})
 	})
 
-	describe("non-JSON examples and annotations (#13)", () => {
+	describe("non-JSON examples and annotations", () => {
 		it("omits non-JSON examples and converts valid Dates to ISO strings", () => {
 			const Big = rootSchema("bigint").configure({ examples: [5n] })
 			attest(
@@ -343,7 +347,12 @@ contextualize(() => {
 			})
 		})
 
-		it("filters mixed examples and non-JSON x- extensions without metaJson", () => {
+		it("filters mixed, sparse, and non-JSON examples and x- extensions", () => {
+			// eslint-disable-next-line no-sparse-arrays
+			const sparse = [1, , 3]
+			// eslint-disable-next-line no-sparse-arrays
+			const allHoles = [, ,]
+
 			const Mixed = rootSchema({}).configure({
 				examples: [
 					5n,
@@ -360,7 +369,8 @@ contextualize(() => {
 				"x-invalid-date": new Date(Number.NaN),
 				"x-bigint": 5n,
 				"x-symbol": Symbol("s"),
-				"x-undef": undefined
+				"x-undef": undefined,
+				"x-sparse": sparse
 			} as never)
 
 			attest(toJsonSchema(Mixed, { dialect: null })).snap({
@@ -372,6 +382,21 @@ contextualize(() => {
 				"x-date": "1970-01-01T00:00:00.000Z"
 			})
 
+			const SparseExamples = rootSchema("number").configure({
+				examples: sparse as never
+			})
+			attest(toJsonSchema(SparseExamples, { dialect: null })).snap({
+				type: "number",
+				examples: [1, 3]
+			})
+
+			const AllHolesExamples = rootSchema("number").configure({
+				examples: allHoles as never
+			})
+			attest(toJsonSchema(AllHolesExamples, { dialect: null })).snap({
+				type: "number"
+			})
+
 			const InvalidDateOnly = rootSchema("string").configure({
 				examples: [new Date(Number.NaN)]
 			})
@@ -381,8 +406,152 @@ contextualize(() => {
 		})
 	})
 
-	describe("Standard JSON Schema output with undefined (F1) & target precedence (F2)", () => {
-		it("Ajv accepts valid undefined output and rejects invalid types across targets", () => {
+	describe("io sides, union annotations, and $ref escaping", () => {
+		it("does not mix input and output sides for undeclared delete with defaulted keys", () => {
+			const T = rootSchema({
+				domain: "object",
+				required: [{ key: "b", value: "number" }],
+				optional: [{ key: "a", value: "string", default: "x" }],
+				undeclared: "delete"
+			})
+			attest(T.toJsonSchema({ dialect: null })).snap({
+				type: "object",
+				properties: {
+					b: { type: "number" },
+					a: { type: "string", default: "x" }
+				},
+				required: ["b"]
+			})
+			attest(T.toJsonSchema({ dialect: null, io: "in" })).snap({
+				type: "object",
+				properties: {
+					b: { type: "number" },
+					a: { type: "string", default: "x" }
+				},
+				required: ["b"]
+			})
+			attest(T.toJsonSchema({ dialect: null, io: "out" })).snap({
+				type: "object",
+				properties: { a: { type: "string" }, b: { type: "number" } },
+				required: ["a", "b"],
+				additionalProperties: false
+			})
+
+			const Morph = rootSchema({
+				in: "string",
+				morphs: [(s: string) => Number(s)],
+				declaredOut: rootSchema("number")
+			})
+			attest(Morph.toJsonSchema({ dialect: null, io: "in" })).snap({
+				type: "string"
+			})
+			attest(Morph.toJsonSchema({ dialect: null, io: "out" })).snap({
+				type: "number"
+			})
+		})
+
+		it("does not duplicate union meta onto branches", () => {
+			const SN = rootSchema(["string", "number"]).configure({ title: "SN" })
+			attest(SN.toJsonSchema({ dialect: null })).snap({
+				anyOf: [{ type: "number" }, { type: "string" }],
+				title: "SN"
+			})
+
+			const DescribedBranch = rootSchema([
+				rootSchema("string").describe("text"),
+				"number"
+			]).configure({ title: "SN" })
+			attest(DescribedBranch.toJsonSchema({ dialect: null })).snap({
+				anyOf: [{ type: "number" }, { type: "string", description: "text" }],
+				title: "SN"
+			})
+
+			const Nullable = rootSchema(["string", { unit: null }]).configure({
+				title: "SN"
+			})
+			attest(Nullable.toJsonSchema({ dialect: null })).snap({
+				anyOf: [{ type: "string" }, { type: "null" }],
+				title: "SN"
+			})
+		})
+
+		it("JSON-Pointer-escapes alias $refs and handles Object.prototype def names", () => {
+			const $ = schemaScope({
+				"a/b": { domain: "object", required: [{ key: "x", value: "string" }] },
+				"a~b": { domain: "object", required: [{ key: "y", value: "number" }] },
+				"a b": { domain: "object", required: [{ key: "z", value: "boolean" }] },
+				toString: {
+					domain: "object",
+					required: [{ key: "s", value: "string" }]
+				}
+			})
+			const defs = $.export()
+			const root = $.schema({
+				domain: "object",
+				required: [
+					{ key: "slash", value: defs["a/b"] },
+					{ key: "tilde", value: defs["a~b"] },
+					{ key: "space", value: defs["a b"] },
+					{ key: "str", value: defs.toString }
+				]
+			})
+
+			const schema = root.toJsonSchema({ aliasDefs: true, dialect: null })
+			attest(schema).unknown.snap({
+				type: "object",
+				properties: {
+					slash: { $ref: "#/$defs/a~1b" },
+					space: { $ref: "#/$defs/a%20b" },
+					str: { $ref: "#/$defs/toString" },
+					tilde: { $ref: "#/$defs/a~0b" }
+				},
+				required: ["slash", "space", "str", "tilde"],
+				$defs: {
+					"a/b": {
+						type: "object",
+						properties: { x: { type: "string" } },
+						required: ["x"]
+					},
+					"a b": {
+						type: "object",
+						properties: { z: { type: "boolean" } },
+						required: ["z"]
+					},
+					toString: {
+						type: "object",
+						properties: { s: { type: "string" } },
+						required: ["s"]
+					},
+					"a~b": {
+						type: "object",
+						properties: { y: { type: "number" } },
+						required: ["y"]
+					}
+				}
+			})
+
+			const parsed = parse(schema)
+			attest(
+				parsed.allows({
+					slash: { x: "hi" },
+					tilde: { y: 1 },
+					space: { z: true },
+					str: { s: "ok" }
+				})
+			).equals(true)
+			attest(
+				parsed.allows({
+					slash: { x: 1 },
+					tilde: { y: 1 },
+					space: { z: true },
+					str: { s: "ok" }
+				})
+			).equals(false)
+		})
+	})
+
+	describe("Standard JSON Schema output with undefined and target precedence", () => {
+		it("Ajv accepts valid undefined output in objects, arrays, and tuples across targets", () => {
 			const Obj = rootSchema({
 				domain: "object",
 				required: [
@@ -390,33 +559,59 @@ contextualize(() => {
 					{ key: "nickname", value: ["string", { unit: undefined }] }
 				]
 			})
-			const RootUndef = rootSchema(["string", { unit: undefined }])
+			const Rec = rootSchema({
+				domain: "object",
+				index: [{ signature: "string", value: ["string", { unit: undefined }] }]
+			})
 			const ArrUndef = rootSchema({
 				proto: Array,
 				sequence: { variadic: ["number", { unit: undefined }] }
 			})
+			const TupleUndef = rootSchema({
+				proto: Array,
+				sequence: { prefix: [["string", { unit: undefined }], "number"] }
+			})
+			const RootUndef = rootSchema(["string", { unit: undefined }])
 
 			for (const [target, ajv] of [
 				["draft-2020-12", ajv2020],
 				["draft-07", ajv07]
 			] as const) {
-				const vObj = ajv.compile(Obj["~standard"].jsonSchema.output({ target }))
+				const objOut = Obj["~standard"].jsonSchema.output({ target })
+				attest(objOut).equals(toJsonSchema(Obj, { target, io: "out" }))
+				const vObj = ajv.compile(objOut)
 				attest(vObj({ name: "a", nickname: undefined })).equals(true)
 				attest(vObj({ name: "a" })).equals(true)
 				attest(vObj({ name: "a", nickname: "bob" })).equals(true)
 				attest(vObj({ name: "a", nickname: 123 })).equals(false)
 
-				const vRoot = ajv.compile(
-					RootUndef["~standard"].jsonSchema.output({ target })
-				)
-				attest(vRoot("ok")).equals(true)
-				attest(vRoot(123)).equals(false)
+				const recOut = Rec["~standard"].jsonSchema.output({ target })
+				attest(recOut).equals(toJsonSchema(Rec, { target, io: "out" }))
+				const vRec = ajv.compile(recOut)
+				attest(vRec({})).equals(true)
+				attest(vRec({ k: "ok" })).equals(true)
+				attest(vRec({ k: 123 })).equals(false)
 
 				const vArr = ajv.compile(
 					ArrUndef["~standard"].jsonSchema.output({ target })
 				)
 				attest(vArr([1, 2])).equals(true)
-				attest(vArr(["bad"])).equals(false)
+				attest(vArr([1, undefined])).equals(true)
+				attest(vArr([1, null])).equals(true)
+
+				const vTuple = ajv.compile(
+					TupleUndef["~standard"].jsonSchema.output({ target })
+				)
+				attest(vTuple(["a", 1])).equals(true)
+				attest(vTuple([undefined, 1])).equals(true)
+				attest(vTuple([null, 1])).equals(true)
+				attest(vTuple(["a", "bad"])).equals(false)
+
+				const vRootOut = ajv.compile(
+					RootUndef["~standard"].jsonSchema.output({ target })
+				)
+				attest(vRootOut("ok")).equals(true)
+				attest(vRootOut(undefined)).equals(true)
 			}
 		})
 

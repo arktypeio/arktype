@@ -290,4 +290,229 @@ contextualize(() => {
 			"ParseError: #/dependentSchemas/a/minLength must be a non-negative integer (was -1)"
 		)
 	})
+
+	describe("decimal multipleOf", () => {
+		it("handles decimal steps without float division drift", () => {
+			const tenths = parse({ type: "number", multipleOf: 0.1 })
+			attest(tenths.allows(0.3)).equals(true)
+			attest(tenths.allows(-0.3)).equals(true)
+			attest(tenths.allows(0)).equals(true)
+			attest(tenths.allows(1.5)).equals(true)
+			attest(tenths.allows(0.35)).equals(false)
+			attest(tenths.allows(0.1 + 0.2)).equals(false)
+			attest(tenths.allows(1e14 + 0.05)).equals(false)
+
+			const cents = parse({ type: "number", multipleOf: 0.01 })
+			for (const valid of [19.99, 4.35, 0.07, 0.29, 1.15, 0.35])
+				attest(cents.allows(valid)).equals(true)
+			attest(cents.allows(19.991)).equals(false)
+			attest(cents.allows(0.005)).equals(false)
+
+			const sevenths = parse({ type: "number", multipleOf: 0.07 })
+			attest(sevenths.allows(2.03)).equals(true)
+			attest(sevenths.allows(2.04)).equals(false)
+
+			const tiny = parse({ type: "number", multipleOf: 1e-7 })
+			attest(tiny.allows(3e-7)).equals(true)
+			attest(tiny.allows(2.5e-7)).equals(false)
+		})
+
+		it("handles huge finite numbers where data / divisor overflows", () => {
+			const halves = parse({ type: "number", multipleOf: 0.5 })
+			attest(halves.allows(1e308)).equals(true)
+			attest(halves.allows(-1e308)).equals(true)
+			attest(halves.allows(0.3)).equals(false)
+
+			const thirds = parse({ type: "number", multipleOf: 0.3 })
+			attest(thirds.allows(0.9)).equals(true)
+			attest(thirds.allows(1e308)).equals(false)
+		})
+	})
+
+	it("requires own properties for Object.prototype keys in const", () => {
+		const Ctor = parse({ const: { constructor: Object } })
+		attest(Ctor.allows({})).equals(false)
+		attest(Ctor.allows({ constructor: Object })).equals(true)
+		attest(Ctor.allows({ constructor: Object, extra: 1 })).equals(false)
+
+		const Mixed = parse({ const: { toString: "x", a: 1 } })
+		attest(Mixed.allows({ a: 1 })).equals(false)
+		attest(Mixed.allows({ toString: "x", a: 1 })).equals(true)
+
+		const protoPayload = JSON.parse('{"__proto__":{"a":1}}')
+		const ProtoConst = parse({ const: protoPayload })
+		attest(ProtoConst.allows({})).equals(false)
+		attest(ProtoConst.allows(JSON.parse('{"__proto__":{"a":1}}'))).equals(true)
+	})
+
+	describe("cycle and depth guards", () => {
+		it("rejects shallow $ref cycles through not, oneOf, if/then/else and dependentSchemas", () => {
+			const shallowCyclicSchemas = [
+				{
+					$defs: { a: { not: { $ref: "#/$defs/a" } } },
+					$ref: "#/$defs/a"
+				},
+				{
+					$defs: {
+						a: { oneOf: [{ $ref: "#/$defs/a" }, { type: "string" }] }
+					},
+					$ref: "#/$defs/a"
+				},
+				{
+					$defs: {
+						a: { if: { $ref: "#/$defs/a" }, then: { type: "string" } }
+					},
+					$ref: "#/$defs/a"
+				},
+				{
+					$defs: {
+						a: { if: { type: "string" }, then: { $ref: "#/$defs/a" } }
+					},
+					$ref: "#/$defs/a"
+				},
+				{
+					$defs: {
+						a: {
+							if: { type: "string" },
+							then: { type: "string" },
+							else: { $ref: "#/$defs/a" }
+						}
+					},
+					$ref: "#/$defs/a"
+				},
+				{
+					$defs: {
+						a: { dependentSchemas: { x: { $ref: "#/$defs/a" } } }
+					},
+					$ref: "#/$defs/a"
+				},
+				{ not: { $ref: "#" } },
+				{
+					$defs: {
+						a: { not: { $ref: "#/$defs/b" } },
+						b: { $ref: "#/$defs/a" }
+					},
+					$ref: "#/$defs/a"
+				}
+			] as const
+			for (const schema of shallowCyclicSchemas)
+				attest(() => parse(schema as never)).throws("shallow $ref cycle")
+		})
+
+		it("allows guarded $ref cycles inside not / oneOf", () => {
+			const NotNested = parse({
+				$defs: {
+					a: { not: { properties: { x: { $ref: "#/$defs/a" } } } }
+				},
+				$ref: "#/$defs/a"
+			})
+			attest(NotNested.allows({})).equals(false)
+			attest(NotNested.allows({ x: {} })).equals(true)
+			attest(NotNested.allows({ x: { x: {} } })).equals(false)
+		})
+
+		it("rejects circular JS schema objects with ParseError", () => {
+			const selfProp: { type: string; properties: Record<string, unknown> } = {
+				type: "object",
+				properties: {}
+			}
+			selfProp.properties.self = selfProp
+			attest(() => parse(selfProp)).throws.snap(
+				"ParseError: JSON Schema at #/properties/self is circular"
+			)
+
+			const selfAllOf: { allOf: unknown[] } = { allOf: [] }
+			selfAllOf.allOf.push(selfAllOf)
+			attest(() => parse(selfAllOf)).throws.snap(
+				"ParseError: JSON Schema at #/allOf/0 is circular"
+			)
+
+			// non-circular shared DAG remains valid
+			const shared = { type: "string" } as const
+			const dag = parse({
+				type: "object",
+				properties: { a: shared, b: shared },
+				required: ["a", "b"]
+			})
+			attest(dag.allows({ a: "x", b: "y" })).equals(true)
+		})
+
+		it("guards excessive nesting depth while preserving 150-level schemas", () => {
+			let deep150: Record<string, unknown> = { type: "string" }
+			let data150: unknown = "ok"
+			for (let i = 0; i < 150; i++) {
+				deep150 = { type: "array", items: deep150 }
+				data150 = [data150]
+			}
+			const Deep150 = parse(deep150)
+			attest(Deep150.allows(data150)).equals(true)
+			attest(Deep150.allows(["wrong"])).equals(false)
+
+			let deep5000: Record<string, unknown> = { type: "string" }
+			for (let i = 0; i < 5000; i++)
+				deep5000 = { type: "array", items: deep5000 }
+			attest(() => parse(deep5000)).throws(
+				"exceeds maximum nesting depth of 512"
+			)
+			attest(() =>
+				parse({ $ref: "https://example.com/a", items: deep5000 })
+			).throws("exceeds maximum nesting depth of 512")
+		})
+
+		it("rejects circular and deeply nested const, enum, default, and examples with ParseError", () => {
+			const circularObj: Record<string, unknown> = {}
+			circularObj.self = circularObj
+			const circularArr: unknown[] = []
+			circularArr.push(circularArr)
+
+			attest(() => parse({ const: circularObj })).throws.snap(
+				"ParseError: JSON Schema at #/const/self is circular"
+			)
+			attest(() => parse({ const: circularArr })).throws.snap(
+				"ParseError: JSON Schema at #/const/0 is circular"
+			)
+			attest(() => parse({ enum: [circularObj] })).throws.snap(
+				"ParseError: JSON Schema at #/enum/0/self is circular"
+			)
+			attest(() => parse({ enum: circularArr })).throws.snap(
+				"ParseError: JSON Schema at #/enum/0 is circular"
+			)
+			attest(() =>
+				parse({ type: "object", default: circularObj as never })
+			).throws.snap("ParseError: JSON Schema at #/default/self is circular")
+			attest(() =>
+				parse({ type: "object", examples: [circularObj] as never })
+			).throws.snap("ParseError: JSON Schema at #/examples/0/self is circular")
+
+			let deepObj: Record<string, unknown> = { leaf: 1 }
+			let deepArr: unknown[] = [1]
+			for (let i = 0; i < 20_000; i++) {
+				deepObj = { a: deepObj }
+				deepArr = [deepArr]
+			}
+			for (const schema of [
+				{ const: deepObj },
+				{ const: deepArr },
+				{ enum: [deepObj] },
+				{ type: "object", default: deepObj },
+				{ type: "array", default: deepArr },
+				{ type: "object", examples: [deepObj] }
+			]) {
+				attest(() => parse(schema)).throws(
+					"exceeds maximum nesting depth of 512"
+				)
+			}
+
+			// non-circular shared DAG in const and default remains valid
+			const shared = { x: 1 }
+			const ConstDag = parse({ const: { a: shared, b: shared } })
+			attest(ConstDag.allows({ a: { x: 1 }, b: { x: 1 } })).equals(true)
+			attest(ConstDag.allows({ a: { x: 1 }, b: { x: 2 } })).equals(false)
+			const DefaultDag = parse({
+				type: "object",
+				default: { a: shared, b: shared }
+			})
+			attest(DefaultDag.allows({})).equals(true)
+		})
+	})
 })

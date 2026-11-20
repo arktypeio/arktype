@@ -6,10 +6,10 @@ import {
 	isArray,
 	isEmptyObject,
 	isInstanceOf,
+	isValidDate,
 	liftArray,
 	printable,
 	throwParseError,
-	timeOf,
 	type array,
 	type BuiltinObjectKind,
 	type Constructor,
@@ -29,6 +29,7 @@ import {
 	type NodeId
 } from "./parse.ts"
 import type { Predicate } from "./predicate.ts"
+import { writeInvalidRangeRuleMessage } from "./refinements/range.ts"
 import type { Domain } from "./roots/domain.ts"
 import type { Intersection } from "./roots/intersection.ts"
 import type { Morph } from "./roots/morph.ts"
@@ -275,6 +276,26 @@ const readConstraint =
 			schema === null ? ({ rule: null } as never) : schema
 		)
 
+const readDateRange =
+	(kind: "before" | "after"): SchemaReader =>
+	schema => {
+		const rawRule =
+			(
+				typeof schema === "object" &&
+				schema !== null &&
+				!(schema instanceof Date)
+			) ?
+				(schema as dict).rule
+			:	schema
+		if (
+			typeof rawRule !== "string" &&
+			(typeof rawRule !== "number" || Number.isNaN(rawRule)) &&
+			!(rawRule instanceof Date)
+		)
+			throwParseError(writeInvalidRangeRuleMessage(kind, rawRule))
+		return constraintInputOf(kind, schema)
+	}
+
 const readProp = (schema: PropSchema, $: BaseScope) => ({
 	...schema,
 	value: parseSchema(schema.value, $)
@@ -404,16 +425,16 @@ const readers: Record<NodeKind, SchemaReader> = {
 	min: readConstraint("min"),
 	maxLength: readConstraint("maxLength"),
 	minLength: readConstraint("minLength"),
-	before: readConstraint("before"),
-	after: readConstraint("after"),
+	before: readDateRange("before"),
+	after: readDateRange("after"),
 	notEqual: schema => {
 		const input = constraintInputOf(
 			"notEqual",
 			schema === null ? ({ rule: null } as never) : schema
 		)
 		if (
-			typeof input.rule !== "number" &&
-			(!(input.rule instanceof Date) || timeOf(input.rule) === undefined)
+			(typeof input.rule !== "number" || Number.isNaN(input.rule)) &&
+			(!(input.rule instanceof Date) || !isValidDate(input.rule))
 		) {
 			throwParseError(
 				`notEqual bound must be a number or Date (was ${printable(input.rule)})`

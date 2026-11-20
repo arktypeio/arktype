@@ -1,5 +1,4 @@
 import {
-	defineValue,
 	functionNameOf,
 	hasDomain,
 	isArray,
@@ -37,7 +36,7 @@ import {
 } from "./issues.ts"
 import { callsSiteText, findsOnRead, listsUnions } from "./issueFeatures.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
-import { TransformErrors } from "./transform.ts"
+import { setOwnValue, TransformErrors } from "./transform.ts"
 import { inProgress, removedProblemMessage } from "./utils.ts"
 import type { ArkEnv } from "./declare.ts"
 
@@ -1293,8 +1292,7 @@ export const computeDefaultValueMorph = (
 ): Morph<any> => {
 	const thunk = isThunkInput ? (defaultInput as () => unknown) : undefined
 	const write = (data: Record<PropertyKey, unknown>, v: unknown) => {
-		if (key === "__proto__") defineValue(data, key, v)
-		else data[key] = v
+		setOwnValue(data, key, v)
 		return data
 	}
 	if (!thunk && !node.alters && !node.hasAlias)
