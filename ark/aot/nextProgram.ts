@@ -26,6 +26,7 @@ import {
 	transformedFilterOf
 } from "./host.ts"
 import { writeUnreadProgramMessage } from "./messages.ts"
+import { parseJsonText } from "./util.ts"
 import { withEnvironment } from "./presets.ts"
 import {
 	importsOf,
@@ -605,8 +606,11 @@ export const isArkFile = (id: string): boolean => {
 		const manifest = join(dir, "package.json")
 		if (existsSync(manifest)) {
 			return arkPackageName.test(
-				(JSON.parse(readFileSync(manifest, "utf8")) as { name?: string })
-					.name ?? ""
+				(
+					parseJsonText(readFileSync(manifest, "utf8"), manifest) as {
+						name?: string
+					}
+				).name ?? ""
 			)
 		}
 		if (dir === dirname(dir)) return false

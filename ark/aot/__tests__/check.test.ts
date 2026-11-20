@@ -602,4 +602,22 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 			runCli(cwd, "--help").stdout.includes("[--baked-limit <number>]")
 		).equals(true)
 	})
+
+	it("accepts a BOM in package.json and exits 1 without usage for invalid JSON manifests", () => {
+		const bomRoot = writeFixture({
+			"package.json": `\uFEFF{"name":"bom-cli","type":"module"}`,
+			"main.ts": `import { type } from "arktype"\nexport const A = type("string")\n`
+		})
+		const ok = runCli(bomRoot, "--check")
+		attest([ok.status, ok.stderr]).equals([0, ""])
+
+		const badRoot = writeFixture({
+			"package.json": `{not json`,
+			"main.ts": `import { type } from "arktype"\nexport const A = type("string")\n`
+		})
+		const bad = runCli(badRoot, "--check")
+		attest(bad.status).equals(1)
+		attest(bad.stderr.includes("package.json isn't JSON")).equals(true)
+		attest(bad.stderr.includes("Usage:")).equals(false)
+	})
 })

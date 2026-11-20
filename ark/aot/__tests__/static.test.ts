@@ -56,6 +56,89 @@ export const Element = type.instanceOf(HTMLElement)`)
 			])
 		})
 
+		it("user class instanceOf in unit unions and exclusions", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+class Local { x = 1 }
+class Sub extends Local {}
+class Custom { static [Symbol.hasInstance](x: unknown) { return x === null } }
+class SubCustom extends Custom {}
+class WithBlock { static { (this as any)[Symbol.hasInstance] = () => true } }
+export const A = type.instanceOf(Local).or("null")
+export const B = type.instanceOf(Local).or("undefined")
+export const C = type.instanceOf(Local).or("1 | 2")
+export const D = type.instanceOf(Local).or(type.unit(true))
+export const E = type([type.instanceOf(Local), "|", "null"])
+export const F = type.or(type.instanceOf(Local), "null")
+export const G = type.instanceOf(Local).or("null").exclude("null")
+export const H = type({ "k?": type.instanceOf(Local).or("undefined") })
+export const I = type.instanceOf(Sub).or("null")
+export const J = type.instanceOf(Custom).or("null")
+export const K = type.instanceOf(SubCustom).or("null")
+export const L = type.instanceOf(WithBlock).or("null")`)
+			).snap([
+				"7:18 accepted Local$hole_1h8zvuv1se1bai | null",
+				"8:18 accepted Local$hole_1h8zvuv1se1bai | undefined",
+				"9:18 accepted Local$hole_1h8zvuv1se1bai | 1 | 2",
+				"10:18 accepted Local$hole_1h8zvuv1se1bai | true",
+				"11:18 accepted Local$hole_1h8zvuv1se1bai | null",
+				"12:18 accepted Local$hole_1h8zvuv1se1bai | null",
+				"13:18 accepted Local$hole_1h8zvuv1se1bai",
+				"14:18 accepted { k?: Local$hole_1h8zvuv1se1bai | undefined }",
+				"15:18 accepted Sub$hole_awirc51ega8d9 | null",
+				"16:18 rejected\n  arktype reads `class Custom { static [Symbol.hasInstance](x: unknown) { re…` while defining the type, so it must be static",
+				"17:18 rejected\n  arktype reads `class Custom { static [Symbol.hasInstance](x: unknown) { re…` while defining the type, so it must be static",
+				"18:18 rejected\n  arktype reads `class WithBlock { static { (this as any)[Symbol.hasInstance…` while defining the type, so it must be static"
+			])
+		})
+
+		it("JSON imports, default, named, namespace, re-exported, and with BOM", () => {
+			const files = {
+				"/data.json": `{"values":["a","b"],"kind":"string"}`,
+				"/bom.json": `\uFEFF{"kind":"number"}`,
+				"/reexport.ts": `export { kind } from "./data.json"\nexport * from "./bom.json"\n`
+			}
+			const source = `import { type } from "arktype"
+import data from "./data.json" with { type: "json" }
+import { kind, values, missing } from "./data.json"
+import * as ns from "./data.json"
+import { default as whole } from "./data.json"
+import { kind as reKind } from "./reexport.ts"
+import { kind as bomKind } from "./bom.json"
+export const A = type.enumerated(...data.values)
+export const B = type({ k: data.kind })
+export const C = type({ k: kind })
+export const D = type.enumerated(...values)
+export const E = type({ k: ns.kind })
+export const F = type({ k: whole.kind })
+export const G = type({ k: reKind })
+export const H = type({ k: bomKind })
+export const I = type({ k: missing })`
+			attest(statusesOf(source, files)).snap([
+				'8:18 accepted "a" | "b"',
+				"9:18 accepted { k: string }",
+				"10:18 accepted { k: string }",
+				'11:18 accepted "a" | "b"',
+				"12:18 accepted { k: string }",
+				"13:18 accepted { k: string }",
+				"14:18 accepted { k: string }",
+				"15:18 accepted { k: number }",
+				"16:18 rejected\n  `missing` is an import the build cannot follow\n  /data.json has no export `missing`"
+			])
+			// full precompile (including rootOf/originOf/isOffHolder/inputExpressionOf)
+			const ok = `import { type } from "arktype"
+import data from "./data.json" with { type: "json" }
+import { kind, values } from "./data.json"
+export const A = type.enumerated(...data.values)
+export const B = type({ k: kind })
+export const C = type.enumerated(...values)`
+			for (const creationChecks of ["types", "none"] as const) {
+				const out = precompile(ok, files, { creationChecks })
+				attest(out.diagnostics).equals([])
+				attest(Boolean(out.code)).equals(true)
+			}
+		})
+
 		it("fromJsonSchema", () => {
 			const source = `import { fromJsonSchema } from "arktype"
 const Name = fromJsonSchema({ type: "string", minLength: 1 })

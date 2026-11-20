@@ -11,6 +11,7 @@ import {
 	type ModuleGraph
 } from "./graph.ts"
 import { dependencyOf } from "./host.ts"
+import { parseJsonText } from "./util.ts"
 import { SourceModule } from "./module.ts"
 import {
 	exportNameOf,
@@ -231,9 +232,17 @@ class Readers {
 		if (name === owner) return true
 		let dependsOn = this.dependenciesByRoot.get(root)
 		if (!dependsOn) {
-			const manifest = this.graph.host.readFile(join(root, "package.json"))
-			const { dependencies, peerDependencies, optionalDependencies } =
-				manifest === undefined ? {} : JSON.parse(manifest)
+			const manifestPath = join(root, "package.json")
+			const manifest = this.graph.host.readFile(manifestPath)
+			let parsed: Record<string, Record<string, unknown> | undefined> = {}
+			if (manifest !== undefined) {
+				try {
+					parsed = parseJsonText(manifest, manifestPath) as typeof parsed
+				} catch {
+					// an unparseable manifest declares no dependencies
+				}
+			}
+			const { dependencies, peerDependencies, optionalDependencies } = parsed
 			dependsOn = new Set(
 				Object.keys({
 					...dependencies,

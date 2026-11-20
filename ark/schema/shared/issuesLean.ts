@@ -159,6 +159,17 @@ const Issues: new () => Issues = (
 				return this._.map(lineOf).join("\n")
 			}
 
+			summaryIn(locale?: unknown): string {
+				if (
+					locale !== undefined &&
+					(typeof locale !== "object" ||
+						locale === null ||
+						Array.isArray(locale))
+				)
+					throw Error("Expected a Locale object")
+				return this.summary
+			}
+
 			// as issues.ts's, an instance of TraversalError wherever it's kept
 			throw(): never {
 				if (namesTraversalError) throw new ThrownIssues(this as never)
@@ -193,6 +204,10 @@ interface Issues extends ReadIssues {
 	 * A human-readable summary of all errors.
 	 */
 	readonly summary: string
+	/**
+	 * The summary in `locale`, or as configured without one.
+	 */
+	summaryIn(locale?: unknown): string
 	/**
 	 * Throw a TraversalError based on these errors.
 	 */

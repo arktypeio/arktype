@@ -1,5 +1,5 @@
 import type { KeySet } from "arktype/util"
-import { flatMorph, throwError } from "./util.ts"
+import { flatMorph, parseJsonText, throwError } from "./util.ts"
 import {
 	existsSync,
 	mkdirSync,
@@ -8,7 +8,14 @@ import {
 	statSync,
 	writeFileSync
 } from "node:fs"
-import { basename, dirname, isAbsolute, join, resolve } from "node:path"
+import {
+	basename,
+	dirname,
+	extname,
+	isAbsolute,
+	join,
+	resolve
+} from "node:path"
 import { relative } from "node:path/posix"
 import {
 	createUnplugin,
@@ -1259,7 +1266,9 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			if (!transformed?.code && !transformed?.errors.length) return
 			return {
 				contents: appendSourceMap(transformed.code ?? code, transformed.map),
-				loader: esbuildLoaderOf(args.path),
+				loader:
+					build.initialOptions.loader?.[extname(args.path)] ??
+					esbuildLoaderOf(args.path),
 				watchFiles: transformed.dependencies.filter(
 					dependency => dependency !== args.path
 				),
@@ -1285,8 +1294,14 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 				readFileSync(args.path, "utf8"),
 				issues
 			)
-			if (written !== undefined)
-				return { contents: written, loader: esbuildLoaderOf(args.path) }
+			if (written !== undefined) {
+				return {
+					contents: written,
+					loader:
+						build.initialOptions.loader?.[extname(args.path)] ??
+						esbuildLoaderOf(args.path)
+				}
+			}
 		})
 	}
 	const resolveEsbuildVariant = (
@@ -1583,6 +1598,30 @@ const unplugin = createUnplugin<Options, boolean>((opts, meta) => {
 			},
 			configureServer: devServer => {
 				server = devServer
+				// Vite calls hotUpdate only with HMR enabled; Vitest and servers with
+				// hmr: false only soft-invalidate importers, keeping stale precompiled code
+				const invalidateIn = <mod>(
+					moduleGraph: InvalidationGraph<mod>,
+					dependents: Set<string>
+				) => {
+					for (const id of dependents) {
+						const mod = moduleGraph.getModuleById(id)
+						if (mod) moduleGraph.invalidateModule(mod)
+					}
+				}
+				const invalidateDependents = (file: string) => {
+					const dependents =
+						dependentsByFile[fileOf(file)] ??
+						dependentsByFile[join(fileOf(dirname(file)), basename(file))]
+					if (!dependents?.size) return
+					if (devServer.environments) {
+						for (const environment of Object.values(devServer.environments))
+							invalidateIn(environment.moduleGraph, dependents)
+					} else invalidateIn(devServer.moduleGraph, dependents)
+				}
+				devServer.watcher.on("change", invalidateDependents)
+				devServer.watcher.on("add", invalidateDependents)
+				devServer.watcher.on("unlink", invalidateDependents)
 			},
 			// Vite and Vitest otherwise leave dependencies to Node or prebundling
 			config: config => {
@@ -2948,6 +2987,11 @@ const esbuildLoaderOf = (path: string): "ts" | "tsx" | "js" | "jsx" =>
 	: /\.[cm]?ts$/.test(path) ? "ts"
 	: "js"
 
+interface InvalidationGraph<mod> {
+	getModuleById: (id: string) => mod | undefined
+	invalidateModule: (mod: mod) => void
+}
+
 interface BundlerCompiler {
 	context: string
 	options: {
@@ -3195,7 +3239,12 @@ const packageOfFile = (file: string): string | undefined => {
 	if (packagesByDir.has(dir)) return packagesByDir.get(dir)
 	let name: string | undefined
 	try {
-		name = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).name
+		const manifest = join(dir, "package.json")
+		name = (
+			parseJsonText(readFileSync(manifest, "utf8"), manifest) as {
+				name?: string
+			}
+		).name
 	} catch {
 		name = dir === dirname(dir) ? undefined : packageOfFile(dir)
 	}
@@ -3216,9 +3265,13 @@ const externalizableSpecifiers = [
 const dependsOnNext = (root: string): boolean => {
 	const manifest = join(root, "package.json")
 	if (!existsSync(manifest)) return false
-	const { dependencies, devDependencies } = JSON.parse(
-		readFileSync(manifest, "utf8")
-	)
+	const { dependencies, devDependencies } = parseJsonText(
+		readFileSync(manifest, "utf8"),
+		manifest
+	) as {
+		dependencies?: Record<string, string>
+		devDependencies?: Record<string, string>
+	}
 	return "next" in { ...dependencies, ...devDependencies }
 }
 

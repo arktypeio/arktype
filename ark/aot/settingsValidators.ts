@@ -170,6 +170,16 @@ var Issues =
 						summary += (summary && "\n") + lineOf(issue)
 					return summary
 				}
+				summaryIn(locale) {
+					if (
+						locale !== void 0 &&
+						(typeof locale !== "object" ||
+							locale === null ||
+							Array.isArray(locale))
+					)
+						throw Error("Expected a Locale object")
+					return this.summary
+				}
 				throw() {
 					if (namesTraversalError) throw new ThrownIssues(this)
 					if (definedThrown) throw new definedThrown(this)
@@ -218,6 +228,16 @@ var Issues =
 					for (const issue of this._)
 						summary += (summary && "\n") + lineOf(issue)
 					return summary
+				}
+				summaryIn(locale) {
+					if (
+						locale !== void 0 &&
+						(typeof locale !== "object" ||
+							locale === null ||
+							Array.isArray(locale))
+					)
+						throw Error("Expected a Locale object")
+					return this.summary
 				}
 				// constructed by TraversalError wherever its bundle keeps the
 				// class: otherwise an Error with the same name, message and
@@ -1365,8 +1385,8 @@ export const precompileJsonSchema = {
 		conditions: { type: "array", items: { type: "string" } },
 		config: {
 			anyOf: [
-				{ type: "string", description: "a module path or false", minLength: 1 },
-				{ type: "boolean", const: false, description: "a module path or false" }
+				{ type: "string", minLength: 1 },
+				{ type: "boolean", const: false }
 			],
 			description: "a module path or false"
 		},

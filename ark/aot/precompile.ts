@@ -171,6 +171,7 @@ import {
 	type PrecompileHost,
 	type RuntimeVariant
 } from "./host.ts"
+import { parseJsonText } from "./util.ts"
 import {
 	changeableDepthOf,
 	createSiteState,
@@ -923,12 +924,18 @@ export class Precompiler {
 		}))
 	}
 
+	private isJsonInput(input: Input): boolean {
+		return (
+			input.kind === "import" &&
+			!(this.graph.moduleOf(input.file!) instanceof SourceModule)
+		)
+	}
+
 	private rootOf(input: Input): Binding | Node | undefined {
 		if (input.kind === "local") return this.bindingsByInput.get(input)
-		const target = this.graph.exportOf(
-			this.graph.moduleOf(input.file!) as SourceModule,
-			input.name
-		)
+		const imported = this.graph.moduleOf(input.file!)
+		if (!(imported instanceof SourceModule)) return
+		const target = this.graph.exportOf(imported, input.name)
 		return (
 			target.kind === "binding" ? target.binding
 			: target.kind === "expression" ? target.node
@@ -939,7 +946,7 @@ export class Precompiler {
 	// whether a site's path reads a member of a Type, as `User.in`, rather than
 	// a Type off what holds it, as `Fields.user`
 	private readsMemberThrough(input: Input): boolean {
-		if (!input.path.length) return false
+		if (!input.path.length || this.isJsonInput(input)) return false
 		const root = this.rootOf(input)
 		const evaluated = root && this.interpreter.evaluatedOf(root)
 		if (!evaluated) return true
@@ -956,6 +963,7 @@ export class Precompiler {
 	// `const C = H.a`. Under creationChecks "none" its factory still checks
 	// it's the Type the build read, so a write the build missed fails loudly.
 	private isOffHolder(input: Input): boolean {
+		if (this.isJsonInput(input)) return false
 		const root = this.rootOf(input)
 		const evaluated = root && this.interpreter.evaluatedOf(root)
 		if (!evaluated) return true
@@ -3008,9 +3016,13 @@ export class Precompiler {
 			root !== dirname(root);
 			root = dirname(root)
 		) {
-			const manifest = this.graph.host.readFile(join(root, "package.json"))
+			const manifestPath = join(root, "package.json")
+			const manifest = this.graph.host.readFile(manifestPath)
 			if (manifest === undefined) continue
-			const { name: packageName, version } = JSON.parse(manifest)
+			const { name: packageName, version } = parseJsonText(
+				manifest,
+				manifestPath
+			) as { name?: string; version?: string }
 			if (packageName === name) return [root, version ?? "unknown"]
 		}
 		return [dirname(entry), "unknown"]
@@ -3027,9 +3039,11 @@ export class Precompiler {
 
 	// the @ark/aot released with a program's arktype, which arktype's package.json names
 	private versionHintOf(root: string, version: string): string {
-		const { arkAotVersion } = JSON.parse(
-			this.graph.host.readFile(join(root, "package.json"))!
-		)
+		const manifestPath = join(root, "package.json")
+		const { arkAotVersion } = parseJsonText(
+			this.graph.host.readFile(manifestPath)!,
+			manifestPath
+		) as { arkAotVersion?: string }
 		return arkAotVersion ?
 				writeVersionHint(version, arkAotVersion)
 			:	versionHint
@@ -5231,10 +5245,9 @@ export class Precompiler {
 		// another module's export is read where it's declared
 		return site.inputs.some(input => {
 			if (input.kind !== "import" || input.value !== value) return false
-			const target = this.graph.exportOf(
-				this.graph.moduleOf(input.file!) as SourceModule,
-				input.name
-			)
+			const imported = this.graph.moduleOf(input.file!)
+			if (!(imported instanceof SourceModule)) return false
+			const target = this.graph.exportOf(imported, input.name)
 			return (
 				(target.kind === "binding" &&
 					isInIsland(target.binding.declaration, target.module)) ||
@@ -5250,10 +5263,9 @@ export class Precompiler {
 		if (input.path.length) return
 		if (input.kind === "local")
 			return [this.bindingsByInput.get(input)!, module]
-		const target = this.graph.exportOf(
-			this.graph.moduleOf(input.file!) as SourceModule,
-			input.name
-		)
+		const imported = this.graph.moduleOf(input.file!)
+		if (!(imported instanceof SourceModule)) return
+		const target = this.graph.exportOf(imported, input.name)
 		return target.kind === "binding" ?
 				[target.binding, target.module]
 			:	undefined
@@ -5293,9 +5305,12 @@ export class Precompiler {
 				const expression = appendStringifiedKey(binding.name, input.name)
 				namespace = { expression, label: expression, binding }
 			} else if (
-				(target.kind === "binding" || target.kind === "expression") &&
-				target.module.id === input.file &&
-				(target.name ?? "default") === input.name
+				(target.kind === "json" &&
+					target.id === input.file &&
+					(target.name ?? "default") === input.name) ||
+				((target.kind === "binding" || target.kind === "expression") &&
+					target.module.id === input.file &&
+					(target.name ?? "default") === input.name)
 			) {
 				importing.push({
 					expression: binding.name,
@@ -6681,9 +6696,9 @@ export class Precompiler {
 		root: Read["root"],
 		module: SourceModule
 	): SourceModule | undefined {
-		return root.kind === "export" && root.importer === module ?
-				(this.graph.moduleOf(root.file) as SourceModule)
-			:	undefined
+		if (root.kind !== "export" || root.importer !== module) return
+		const imported = this.graph.moduleOf(root.file)
+		return imported instanceof SourceModule ? imported : undefined
 	}
 
 	// the site's inputs and holes, or the read that keeps it from having them

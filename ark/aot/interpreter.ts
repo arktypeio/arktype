@@ -1208,7 +1208,7 @@ export class Interpreter {
 				}
 			case "json":
 				return lookupOf(
-					{ kind: "export", file: target.id, name: "default" },
+					{ kind: "export", file: target.id, name: target.name ?? "default" },
 					target.value
 				)
 		}
@@ -2824,20 +2824,25 @@ export class Interpreter {
 		const name = this.holeNameOf(node, ctx.module, declaredNameOf(node))
 		const standIn = createStandIn("class", ctx.module, node)
 		if (name) this.standInsByName.set(name, standIn)
+		const hasStatic = (name?: string) =>
+			node.body.body.some(
+				element =>
+					element.type === "StaticBlock" ||
+					((element.type === "PropertyDefinition" ||
+						element.type === "MethodDefinition" ||
+						element.type === "AccessorProperty") &&
+						element.static &&
+						(element.computed ||
+							(name !== undefined &&
+								(element.key as { value?: unknown }).value === name)))
+			)
 		const proxy = this.standInProxy(target, standIn, {
 			...this.factsOf(
 				standIn,
 				length,
 				name,
-				node.body.body.some(
-					element =>
-						(element.type === "PropertyDefinition" ||
-							element.type === "MethodDefinition" ||
-							element.type === "AccessorProperty") &&
-						element.static &&
-						(element.computed ||
-							(element.key as { value?: unknown }).value === "~standard")
-				)
+				hasStatic("~standard"),
+				hasStatic() || (!!node.superClass && typeof base !== "function")
 			),
 			apply: () => {
 				this.markCalled(standIn, true)
@@ -2892,14 +2897,17 @@ export class Interpreter {
 		length: number | undefined,
 		name: string,
 		// a class whose statics may hold one
-		mayBeStandardSchema = false
+		mayBeStandardSchema = false,
+		// a class whose statics or unfollowed base may define [Symbol.hasInstance]
+		mayHaveHasInstance = false
 	): ProxyHandler<Function> {
 		return {
 			get: (target, k) =>
 				k === "length" ? length
 				: k === "name" ? name
-				: answersFact(k) ? Reflect.get(target, k)
-				: this.refuse(standIn),
+				: answersFact(k) || (k === Symbol.hasInstance && !mayHaveHasInstance) ?
+					Reflect.get(target, k)
+				:	this.refuse(standIn),
 			// arktype checks whether a function is a Standard Schema
 			has: (target, k) =>
 				k === "~standard" && !mayBeStandardSchema ?

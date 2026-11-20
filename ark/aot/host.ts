@@ -1,4 +1,4 @@
-import { throwError } from "./util.ts"
+import { parseJsonText, throwError } from "./util.ts"
 import {
 	decode,
 	encode,
@@ -144,8 +144,27 @@ export const readFile = (path: string): string | undefined =>
 	existsSync(path) ? readFileSync(path, "utf8") : undefined
 
 // `"ark": { "aot": true }`
-export const optsIn = (manifest: string | undefined): boolean =>
-	manifest !== undefined && JSON.parse(manifest).ark?.aot === true
+export const optsIn = (
+	manifest: string | undefined,
+	path?: string,
+	warn?: (message: string) => void
+): boolean => {
+	if (manifest === undefined) return false
+	try {
+		return (
+			(
+				parseJsonText(manifest, path ?? "package.json") as {
+					ark?: { aot?: unknown }
+				}
+			).ark?.aot === true
+		)
+	} catch (e) {
+		warn?.(
+			`precompile: ${(e as Error).message}; ignoring it for dependency precompilation`
+		)
+		return false
+	}
+}
 
 export type DependencyMode = "aot" | "arktype"
 
@@ -184,7 +203,12 @@ export const workspacePackageNameOf = (
 		if (dir in namesByDir) return namesByDir[dir]
 		let name: unknown
 		try {
-			name = JSON.parse(readFile(join(dir, "package.json")) ?? "{}").name
+			const manifestPath = join(dir, "package.json")
+			const manifest = readFile(manifestPath)
+			if (manifest !== undefined) {
+				name = (parseJsonText(manifest, manifestPath) as { name?: unknown })
+					.name
+			}
 		} catch {
 			// one that doesn't parse names nothing
 		}
@@ -253,21 +277,39 @@ const reachedFrom = function* (
 	start: string,
 	name: string,
 	readsDevDependencies: boolean,
-	leaves: readonly string[] = []
-): Generator<[root: string, name: string, manifest: string]> {
+	leaves: readonly string[] = [],
+	warn?: (message: string) => void
+): Generator<
+	[
+		root: string,
+		name: string,
+		manifest: string,
+		parsed: Record<string, unknown>
+	]
+> {
 	const packages: [root: string, name: string][] = [[start, name]]
 	const visited = new Set([realPathOf(start)])
 	for (let i = 0; i < packages.length; i++) {
 		const [root, name] = packages[i]
-		const manifest = readFile(join(root, "package.json"))
+		const manifestPath = join(root, "package.json")
+		const manifest = readFile(manifestPath)
 		if (manifest === undefined) continue
-		yield [root, name, manifest]
+		let parsed: Record<string, unknown>
+		try {
+			parsed = parseJsonText(manifest, manifestPath) as Record<string, unknown>
+		} catch (e) {
+			warn?.(
+				`precompile: ${(e as Error).message}; ignoring it for dependency precompilation`
+			)
+			continue
+		}
+		yield [root, name, manifest, parsed]
 		const {
 			dependencies,
 			devDependencies,
 			optionalDependencies,
 			peerDependencies
-		} = JSON.parse(manifest)
+		} = parsed as Record<string, Record<string, unknown> | undefined>
 		for (const dependency in {
 			...dependencies,
 			// a dependency's devDependencies aren't installed
@@ -288,14 +330,27 @@ const reachedFrom = function* (
 // for a host that must be told before the build which packages it transforms
 export const optedInPackagesOf = (
 	cwd: string,
-	dependencies?: DependencyModes
+	dependencies?: DependencyModes,
+	warn: (message: string) => void = console.warn
 ): string[] => {
 	const result = Object.keys(dependencies ?? {}).filter(
 		name => dependencies![name] === "aot"
 	)
 	// every package the project reaches, as one that doesn't opt in may depend on one that does
-	for (const [, name, manifest] of reachedFrom(projectOf(cwd), "", true))
-		if (name && optsIn(manifest) && !result.includes(name)) result.push(name)
+	for (const [, name, , parsed] of reachedFrom(
+		projectOf(cwd),
+		"",
+		true,
+		[],
+		warn
+	)) {
+		if (
+			name &&
+			(parsed.ark as { aot?: unknown } | undefined)?.aot === true &&
+			!result.includes(name)
+		)
+			result.push(name)
+	}
 	return result
 }
 

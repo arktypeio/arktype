@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { check } from "@ark/aot/internal/check.ts"
+import { optedInPackagesOf } from "@ark/aot/internal/host.ts"
 import { writeVariantImportMessage } from "@ark/aot/internal/messages.ts"
 import { withEnvironment } from "@ark/aot/internal/presets.ts"
 import {
@@ -317,5 +318,36 @@ contextualize(() => {
 		const files = await writeSettingsFiles()
 		for (const path in files)
 			attest(readFileSync(path, "utf8")).equals(files[path])
+	})
+
+	it("accepts a UTF-8 BOM in package.json and ark.json, and warns on an unparseable dependency manifest", () => {
+		const root = writeFixture({
+			"package.json": `\uFEFF${JSON.stringify({
+				name: "bom-app",
+				type: "module",
+				dependencies: { "bom-dep": "1.0.0", "bad-dep": "1.0.0" }
+			})}`,
+			"ark.json": `\uFEFF${JSON.stringify({ precompile: { errors: "first" } })}`,
+			"node_modules/bom-dep/package.json": `\uFEFF${JSON.stringify({
+				name: "bom-dep",
+				ark: { aot: true }
+			})}`,
+			"node_modules/bad-dep/package.json": "{not json"
+		})
+		attest(withSettingsFile({ cwd: root })).snap({
+			errors: "first",
+			cwd: root
+		} as never)
+		const warnings: string[] = []
+		attest(optedInPackagesOf(root, undefined, w => warnings.push(w))).equals([
+			"bom-dep"
+		])
+		attest(warnings.length).equals(1)
+		attest(
+			warnings[0].includes(
+				join(root, "node_modules", "bad-dep", "package.json")
+			)
+		).equals(true)
+		attest(warnings[0].includes("isn't JSON")).equals(true)
 	})
 })

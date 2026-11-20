@@ -401,6 +401,17 @@ const Issues: IssuesClass = (
 					return summary
 				}
 
+				summaryIn(locale?: unknown): string {
+					if (
+						locale !== undefined &&
+						(typeof locale !== "object" ||
+							locale === null ||
+							Array.isArray(locale))
+					)
+						throw Error("Expected a Locale object")
+					return this.summary
+				}
+
 				throw(): never {
 					if (namesTraversalError) throw new ThrownIssues(this as never)
 					if (definedThrown) throw new definedThrown(this as never)
@@ -473,6 +484,17 @@ const Issues: IssuesClass = (
 					return summary
 				}
 
+				summaryIn(locale?: unknown): string {
+					if (
+						locale !== undefined &&
+						(typeof locale !== "object" ||
+							locale === null ||
+							Array.isArray(locale))
+					)
+						throw Error("Expected a Locale object")
+					return this.summary
+				}
+
 				// constructed by TraversalError wherever its bundle keeps the
 				// class: otherwise an Error with the same name, message and
 				// errors, and no class in its bundle. Its name is assigned and
@@ -531,6 +553,10 @@ interface Issues extends ReadIssues {
 	 * A human-readable summary of all errors.
 	 */
 	readonly summary: string
+	/**
+	 * The summary in `locale`, or as configured without one.
+	 */
+	summaryIn(locale?: unknown): string
 	/**
 	 * Throw a TraversalError based on these errors.
 	 */
