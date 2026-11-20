@@ -25,7 +25,7 @@ import {
 	composing,
 	type makeRootAndArrayPropertiesMutable
 } from "../shared/utils.ts"
-import { resolveAmbient } from "../scope.ts"
+import { ambientResolver } from "../shared/registry.ts"
 import type { Structure } from "../structure/structure.ts"
 import type { Domain } from "./domain.ts"
 import type { Morph } from "./morph.ts"
@@ -538,7 +538,8 @@ const keywordsOf = (node: Intersection.Node) => {
 	const written = new Set<BaseNode>()
 	for (const p of node.inner.predicate ?? []) {
 		const keyword = p.meta.keyword
-		const resolved = keyword === undefined ? undefined : resolveAmbient(keyword)
+		const resolved =
+			keyword === undefined ? undefined : ambientResolver.resolve?.(keyword)
 		// a cyclic keyword like object.json is an alias until resolved
 		if (!resolved?.is("intersection") || resolved.isCyclic) continue
 		const held = resolved.children.map(

@@ -1,10 +1,4 @@
-import {
-	readsOnlyData,
-	returnsReports,
-	testsOrRejects,
-	type Fn,
-	type KeySet
-} from "@ark/util"
+import type { Fn, KeySet } from "arktype/util"
 import type {
 	ArrowFunctionExpression,
 	Function,
@@ -114,7 +108,7 @@ const isPlainReport = (method: string, args: readonly Node[]): boolean => {
 
 // each read of its ctx is a return of ctx.mustBe(...) or ctx.reject(...), which
 // return false, so where nothing reads its reports it can't tell it has no ctx
-const returnsItsReports = (fn: FunctionNode): boolean => {
+export const returnsItsReports = (fn: FunctionNode): boolean => {
 	const params = runtimeParamsOf(fn)
 	const ctx = params[1]
 	// what calls it passes its data and its ctx, so a param past them is undefined
@@ -303,16 +297,23 @@ export const rejectingPartsOf = (fn: Node): RejectingParts | undefined => {
 	return { data, test, message: property.value, fails }
 }
 
+export type FunctionProofSets = {
+	readsOnlyData: WeakSet<Fn>
+	returnsReports: WeakSet<Fn>
+	testsOrRejects: WeakSet<Fn>
+}
+
 /** notes what a function a build wouldn't run can read, as it's created */
 export const proveFunction = (
 	fn: Fn,
 	node: FunctionNode,
 	// arktype compiles its own validators, knowing nothing of what a build reads
-	isStandalone: boolean
+	isStandalone: boolean,
+	sets: FunctionProofSets
 ): void => {
-	if (readsOnlyItsArgument(node)) readsOnlyData.add(fn)
+	if (readsOnlyItsArgument(node)) sets.readsOnlyData.add(fn)
 	else if (isStandalone && returnsItsReports(node)) {
-		returnsReports.add(fn)
-		if (rejectingPartsOf(node)) testsOrRejects.add(fn)
+		sets.returnsReports.add(fn)
+		if (rejectingPartsOf(node)) sets.testsOrRejects.add(fn)
 	}
 }

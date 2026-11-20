@@ -68,13 +68,13 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => {
 				}
 				const variant = resolvedVariantOf(opts)
 				if (variant) {
-					build.module("@ark/schema/runtime", () => ({
-						contents: `export * from ${JSON.stringify(host.resolve(`@ark/schema/runtime/${variant}`, runtime!))}`,
+					build.module("arktype/schema/runtime", () => ({
+						contents: `export * from ${JSON.stringify(host.resolve(`arktype/schema/runtime/${variant}`, runtime!))}`,
 						loader: "js"
 					}))
 					// throws once linked, as Bun names no importer
-					build.module("@ark/schema", () => ({
-						contents: `export * from ${JSON.stringify(host.resolve("@ark/schema", runtime!))}\nthrow new Error(${JSON.stringify(writeVariantImportMessage("a module", "@ark/schema", variant))})`,
+					build.module("arktype/schema", () => ({
+						contents: `export * from ${JSON.stringify(host.resolve("arktype/schema", runtime!))}\nthrow new Error(${JSON.stringify(writeVariantImportMessage("a module", "arktype/schema", variant))})`,
 						loader: "js"
 					}))
 				}

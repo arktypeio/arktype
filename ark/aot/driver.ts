@@ -1,4 +1,4 @@
-import { flatMorph, throwError } from "@ark/util"
+import { flatMorph, throwError } from "arktype/util"
 import { existsSync } from "node:fs"
 import { isAbsolute, resolve } from "node:path"
 import type { SourceMap } from "magic-string"

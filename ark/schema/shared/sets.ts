@@ -31,6 +31,8 @@ export interface SetEngine {
 	toJsonSchemaRecurse(node: BaseRoot, ctx: ToJsonSchema.Context): JsonSchema
 	// proves intersections empty; installed by readers that need it
 	disjointOf?(node: BaseNode): Disjoint | undefined
+	// the registry the engine was built against, to catch duplicate @ark/schema copies
+	registry?: unknown
 }
 
 export type InternalNodeIntersection<ctx> = <
@@ -47,6 +49,6 @@ export const sets = (): SetEngine =>
 	$ark.sets ?? throwParseError(missingSetEngineMessage)
 
 export const missingSetEngineMessage =
-	'Set algebra is not installed (import "arksets" to install it)'
+	'Set algebra is not installed (import "arktype/sets" to install it)'
 
 export type missingSetEngineMessage = typeof missingSetEngineMessage

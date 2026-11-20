@@ -5,7 +5,7 @@ import {
 	writeUnionJsonSchema,
 	type BaseRoot,
 	type ToJsonSchema
-} from "@ark/schema"
+} from "arktype/schema"
 import { type, type Type } from "arktype"
 import {
 	traceFallbacks,

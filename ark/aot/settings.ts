@@ -1,4 +1,4 @@
-import { printable, stringifyPath, throwError } from "@ark/util"
+import { printable, stringifyPath, throwError } from "./util.ts"
 import { existsSync, readFileSync } from "node:fs"
 import { basename, dirname, join, resolve } from "node:path"
 import type { PrecompilePluginOptions } from "./driver.ts"

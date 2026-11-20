@@ -12,7 +12,6 @@ import {
 	writeInnerJson,
 	type BaseNode
 } from "../node.ts"
-import { nodesById, type NodeId } from "../parse.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { declareNode } from "../shared/declare.ts"
 import {
@@ -30,7 +29,7 @@ import {
 	type AliasDepth,
 	type InternalTraversal
 } from "../shared/traversal.ts"
-import { $ark } from "../shared/registry.ts"
+import { $ark, nodesById, type NodeId } from "../shared/registry.ts"
 import {
 	assertUnchecked,
 	hasArkKind,

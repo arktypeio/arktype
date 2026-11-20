@@ -1,4 +1,5 @@
-import { buildSync, type BuildOptions } from "esbuild"
+import { build, buildSync, type BuildOptions, type Plugin } from "esbuild"
+import { chmodSync } from "node:fs"
 import { join, relative } from "node:path"
 import { ts } from "ts-morph"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
@@ -11,30 +12,54 @@ import {
 } from "../fs/index.ts"
 import { packagesByScope, repoDirs } from "./shared.ts"
 
-export const bundle = (): void => {
+export const bundle = async (): Promise<void> => {
 	const modulePaths = walkPaths(fromCwd("out"), {
 		include: path => path.endsWith(".js")
 	})
 	const entryPoints = publicEntryPoints(process.cwd())
 	// a runtime bundled with an issues module of its own, by that module
 	const variants = [
-		[fromCwd("out", "runtimeNone.js"), "./issuesNone.js"],
-		[fromCwd("out", "runtimeLean.js"), "./issuesLean.js"],
-		[fromCwd("out", "runtimeNoneLean.js"), "./issuesNoneLean.js"]
+		[fromCwd("out", "schemaRuntimeNone.js"), "issuesNone.js"],
+		[fromCwd("out", "schemaRuntimeLean.js"), "issuesLean.js"],
+		[fromCwd("out", "schemaRuntimeNoneLean.js"), "issuesNoneLean.js"]
 	].filter(([runtime]) => entryPoints.includes(runtime))
+	const schemaRuntimeEntry = fromCwd("out", "schemaRuntime.js")
+	const sharedPlugins: Plugin[] = [
+		{
+			name: "externalize-issue-features",
+			setup: build => {
+				build.onResolve(
+					{ filter: /(?:^|[/\\])issueFeatures(?:\.js)?$/ },
+					() => ({ path: "./shared/issueFeatures.js", external: true })
+				)
+			}
+		},
+		{
+			name: "externalize-schema-runtime",
+			setup: build => {
+				build.onResolve(
+					{ filter: /^(?:arktype|@ark)\/schema\/runtime$/ },
+					args =>
+						args.importer === schemaRuntimeEntry ?
+							undefined
+						:	{ path: "arktype/schema/runtime", external: true }
+				)
+			}
+		}
+	]
 	const opts = {
 		bundle: true,
 		format: "esm",
 		platform: "neutral",
-		packages: "external",
 		charset: "utf8",
 		absWorkingDir: process.cwd(),
 		write: false,
 		logLevel: "warning",
-		external: issueFeaturesSpecifiers
+		external: ["node:*"],
+		plugins: sharedPlugins
 	} satisfies BuildOptions
 	// a module several entries import evaluates once only if they share one build
-	const { outputFiles, metafile } = buildSync({
+	const { outputFiles, metafile } = await build({
 		...opts,
 		metafile: true,
 		entryPoints: entryPoints.filter(
@@ -45,14 +70,22 @@ export const bundle = (): void => {
 		outdir: fromCwd("out"),
 		splitting: true
 	})
-	// each bundled once issues.js re-exports its issues module
+	// each bundled with its replacement issues module
 	for (const [runtime, issues] of variants) {
-		writeFile(
-			fromCwd("out", "shared", "issues.js"),
-			`export * from ${JSON.stringify(issues)}\n`
-		)
-		const variant = buildSync({
+		const target = join(packagesByScope.schema.path, "out", "shared", issues)
+		const swapIssues: Plugin = {
+			name: "swap-issues",
+			setup: build => {
+				build.onResolve({ filter: /(?:^|[/\\])issues\.js$/ }, args =>
+					/[/\\]schema[/\\]out[/\\]/.test(args.importer) ?
+						{ path: target }
+					:	undefined
+				)
+			}
+		}
+		const variant = await build({
 			...opts,
+			plugins: [swapIssues, ...sharedPlugins],
 			entryPoints: [runtime],
 			outfile: runtime,
 			metafile: true
@@ -70,8 +103,14 @@ export const bundle = (): void => {
 			)
 		}
 	}
-	const kept = [...developmentEntryPoints(process.cwd()), issueFeaturesPath()]
+	const bins = binEntryPoints(process.cwd())
+	const kept = [
+		...developmentEntryPoints(process.cwd()),
+		...bins,
+		issueFeaturesPath()
+	]
 	for (const path of modulePaths) if (!kept.includes(path)) rmRf(path)
+	for (const bin of bins) chmodSync(bin, 0o755)
 	const loaded = precompiledSources()
 	for (const file of outputFiles) {
 		const js = nameSelfReferencingClasses(
@@ -98,7 +137,10 @@ const precompiledSources = (): Set<string> => {
 			json.exports as Record<string, { "ark-ts"?: unknown }>
 		).flatMap(([subpath, target]) => {
 			const source = target["ark-ts"] as string | { default: string }
-			return subpath.startsWith("./runtime") ?
+			return (
+					subpath.startsWith("./runtime") ||
+						subpath.startsWith("./schema/runtime")
+				) ?
 					[join(path, typeof source === "string" ? source : source.default)]
 				:	[]
 		})
@@ -122,22 +164,14 @@ const precompiledSources = (): Set<string> => {
 
 // the source tsc wrote an input of the bundle from
 const sourceOf = (input: string) =>
-	join(process.cwd(), input.replace(/^out\//, "").replace(/\.js$/, ".ts"))
+	join(process.cwd(), input)
+		.replace(/([/\\])out([/\\])/, "$1")
+		.replace(/\.js$/, ".ts")
 
 // what a program's issues may hold, an entry every chunk reading it shares,
 // kept as tsc writes it, so a bundler inlines its constants and a build
 // reading each validator writes it again
 const issueFeaturesPath = () => fromCwd("out", "shared", "issueFeatures.js")
-
-// each specifier a module of out/ imports it by, which esbuild keeps external
-// by matching the import as it's written. Its path matched nothing on
-// Windows, where esbuild reads one starting with a drive as a package's name,
-// so each chunk held the constants as `var`s of its own, which no bundler
-// folds: every program kept each class and branch a constant chooses between
-const issueFeaturesSpecifiers = [
-	"./issueFeatures.js",
-	"./shared/issueFeatures.js"
-]
 
 // an import matched as it's written is kept as shared/issues.js wrote it, so
 // it's written from beside shared/, as every entry and chunk is
@@ -157,6 +191,15 @@ export const publicEntryPoints = (dir: string): string[] => [
 		})
 	)
 ]
+
+// each bin entry ships standalone as tsc wrote it, keeping its shebang
+const binEntryPoints = (dir: string): string[] => {
+	const { bin } = readPackageJson(dir)
+	if (!bin) return []
+	return (typeof bin === "string" ? [bin] : Object.values<string>(bin)).map(
+		file => join(dir, file)
+	)
+}
 
 // each imports the entry it wraps, so it ships as tsc wrote it
 const developmentEntryPoints = (dir: string): string[] =>

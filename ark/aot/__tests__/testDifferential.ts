@@ -1,4 +1,4 @@
-import { BaseNode, type BaseRoot } from "@ark/schema"
+import { BaseNode, type BaseRoot } from "arktype/schema"
 import { writeFileSync } from "node:fs"
 import { join } from "node:path"
 import {

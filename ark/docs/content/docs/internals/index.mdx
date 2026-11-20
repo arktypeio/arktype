@@ -1,24 +1,24 @@
 ---
 title: Architecture
-description: How ArkType is split into @ark/util, @ark/schema, arksets and arktype, and what each package owns.
+description: How ArkType is layered into arktype/util, arktype/schema, arktype/sets and arktype, and what each layer owns.
 ---
 
 <Callout type="warn" title="Not semver-stable">
 
-`@ark/schema` and `arksets/internal` change whenever `arktype` needs them to, so anything on these pages can break in a minor or patch release. That includes `.internal`, `select` and the schema format. If you import either directly, install the exact versions your `arktype` depends on. `arksets`' own functions are documented in [ArkSets](/docs/sets).
+`arktype/schema` and `arktype/schema/internal` change whenever `arktype` needs them to, so anything on these pages can break in a minor or patch release. That includes `.internal`, `select` and the schema format. `arktype/sets`' own functions are documented in [ArkSets](/docs/sets).
 
 </Callout>
 
-ArkType is four packages, each built on the one before it:
+ArkType is bundled as a single zero-dependency package, structured in four internal layers, each exposed as a subpath:
 
-| package       | owns                                                                                                                             | depends on                 |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| `@ark/util`   | Utilities every package shares, like `ParseError`, `Json` and the registry that lets compiled validators reference functions     |                            |
-| `@ark/schema` | Nodes: the schema format, node kinds, scopes, validation and the compiler behind it, `ArkErrors`, config and locales             | `@ark/util`                |
-| `arksets`     | Set algebra over nodes: intersecting them, reducing them as they're created, discriminating unions and generating JSON Schema    | `@ark/schema`              |
-| `arktype`     | The definition syntax (`"string > 5"`, object literals, tuple expressions), its type inference, `type`, `scope` and the keywords | all three, plus `arkregex` |
+| subpath          | owns                                                                                                                             | built on                        |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `arktype/util`   | Utilities every layer shares, like `ParseError`, `Json` and the registry that lets compiled validators reference functions       |                                 |
+| `arktype/schema` | Nodes: the schema format, node kinds, scopes, validation and the compiler behind it, `ArkErrors`, config and locales             | `arktype/util`                  |
+| `arktype/sets`   | Set algebra over nodes: intersecting them, reducing them as they're created, discriminating unions and generating JSON Schema    | `arktype/schema`                |
+| `arktype`        | The definition syntax (`"string > 5"`, object literals, tuple expressions), its type inference, `type`, `scope` and the keywords | all three, plus `arktype/regex` |
 
-When you call `type("string > 5")`, `arktype` parses the string into an `@ark/schema` node, `arksets` reduces it as it's created, and the node compiles itself into a validator. The Type you get back is that node:
+When you call `type("string > 5")`, `arktype` parses the string into an `arktype/schema` node, `arktype/sets` reduces it as it's created, and the node compiles itself into a validator. The Type you get back is that node:
 
 ```ts
 const T = type("string > 5")
@@ -27,8 +27,8 @@ T.json // { domain: "string", minLength: 6 }
 T.internal.kind // "intersection"
 ```
 
-`arktype` imports `arksets` itself, so you never install or import `@ark/schema` or `arksets` to use ArkType. They're documented here for three cases:
+`arktype` imports its set algebra automatically, so you never need to import `arktype/schema` or `arktype/sets` to use ArkType. They're documented here for three cases:
 
 - **Inspecting a Type.** Read its node kinds, its `.json` and its references with [`select`](/docs/internals/nodes#select).
 - **Building a Type from data instead of syntax**, such as a converter from another schema format. Pass a schema to [`type.schema` or `rootSchema`](/docs/internals/schemas).
-- **Using `@ark/schema` without `arktype`.** Import `arksets` yourself, or see [what works without it](/docs/internals/sets).
+- **Using `arktype/schema` without `arktype`.** Import `arktype/sets` yourself, or see [what works without it](/docs/internals/sets).
