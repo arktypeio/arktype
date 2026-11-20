@@ -558,6 +558,14 @@ export abstract class BaseRoot<
 		return this._constrain("root", kind, schema)
 	}
 
+	/** constrains its output, like constrainOut, without finalizing it */
+	rawConstrainOut<kind extends Constraint.PrimitiveKind>(
+		kind: kind,
+		schema: Constraint.Schema<kind>
+	): BaseRoot {
+		return this._constrain("out", kind, schema)
+	}
+
 	private _constrain(
 		io: "root" | "in" | "out",
 		kind: Constraint.PrimitiveKind,

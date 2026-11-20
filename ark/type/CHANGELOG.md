@@ -52,6 +52,81 @@ type("string").narrow(
 )
 ```
 
+### A tuple expression's `:` is a `.narrow()`
+
+`[def, ":", fn]` and `type(def, ":", fn)` checked `def`'s input, before any morph or default it holds, though the docs and the tuple form's types had them narrow its output, as `.narrow(fn)` does. They now do, so the predicate sees what `def` returns, and both forms type it that way:
+
+```ts
+const T = type({ a: "number = 5" }, ":", o => o.a > 0)
+
+// was: ArkErrors, since the predicate read {} and o.a was undefined
+// now: { a: 5 }
+T({})
+```
+
+After a morph, `:` narrows the morph's output, where it threw `ParseError: Predicate operand must be unknown (was a morph)`. Check the input with `.filter()`.
+
+### Infer `object.json` as `JsonStructure`
+
+`object.json` accepts only plain objects and arrays, but inferred `Json`, which includes strings, numbers, booleans and `null`, so `type("object.json").from("hi")` type checked and threw. It and `object.json.stringify`'s input now infer `JsonStructure`, which `arktype` exports beside `Json`.
+
+### Type each of `.props` as the prop it is
+
+Each prop's `value` is one Type, as it is at runtime. A union value was split into a prop per branch, and `undefined` was dropped from every value, so a required key's `"undefined"` value left no prop at all:
+
+```ts
+const T = type({ a: "string | number", b: "string | undefined" })
+
+// was: Type<string> | Type<number> | Type<string>
+// now: Type<string | number> | Type<string | undefined>
+T.props[0].value
+```
+
+An optional key's value is read as `-?` reads it, so it keeps an `undefined` it was given where `exactOptionalPropertyTypes` is enabled. A defaulted morph's prop has its `default`.
+
+### `.required()` and `.partial()` of an array return an array Type
+
+Like `.readonly()`, they keep array methods like `.atLeastLength()` on a tuple or array Type.
+
+### Type a `type.fn`'s `params` and `returns` as the Types they are
+
+They were typed from the function's signature, which leaves a morph only its input or output, so a morph's `returns` was typed as its output alone:
+
+```ts
+const f = type.fn("string", ":", "string.numeric.parse")(s => s)
+
+// was: Type<number>, now: Type<(In: string) => To<number>>
+f.returns
+```
+
+### Without `exactOptionalPropertyTypes`, drop `undefined` where a key or element becomes required
+
+With `exactOptionalPropertyTypes: false`, an optional key's value allows `undefined`, and TypeScript's `Required` drops it again, whether or not it was written. `.required()`, `.out` and `.encode` now do too, where they kept it, so `.out` agrees with its type and a defaulted key's output has a JSON Schema:
+
+```ts
+const T = type({ "a?": "string", b: "number = 5" })
+
+// was: { a: string | undefined, b: number | undefined }
+// now: { a: string, b: number }
+T.required()
+
+// was: { a?: string | undefined, b: number | undefined }
+// now: { a?: string | undefined, b: number }
+T.out
+```
+
+A default replaces `undefined`, so a default of `undefined` throws a ParseError, where `["string", "=", undefined]` passed.
+
+Tuples follow the same rules, where they ignored the option: an optional or defaultable element allows `undefined`, a default replaces it, and `.required()`, `.out` and `.encode` drop it.
+
+### Don't transform an `undefined` a default replaces
+
+With `exactOptionalPropertyTypes: false`, a defaulted key holding `undefined` is replaced by its default, but its value's morph ran on the `undefined` first when its input allowed it, then again on the default.
+
+### `type.declare` accepts either definition of an optional key without `exactOptionalPropertyTypes`
+
+Where `exactOptionalPropertyTypes` isn't enabled, TS reads `{ a?: string }` and `{ a?: string | undefined }` as the same type, so a key declared as either can be defined as `"a?": "string"` or `"a?": "string | undefined"`. The second was a type error.
+
 ## 3.0.0-beta.1
 
 ### Summary

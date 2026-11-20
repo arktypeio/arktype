@@ -5,8 +5,11 @@ import {
 	writeNonStructuralOperandMessage
 } from "@ark/schema"
 import { Hkt, type array } from "@ark/util"
-import { generic, scope, type } from "arktype"
-import type { BaseTypeProp } from "arktype/internal/variants/object.ts"
+import { generic, scope, type, type To } from "arktype"
+import type {
+	BaseTypeProp,
+	DefaultedTypeProp
+} from "arktype/internal/variants/object.ts"
 
 // by default because of the toJSON method, it wouldn't be clear
 // if the snapshotted props were requied or optional
@@ -37,6 +40,57 @@ contextualize(() => {
 			{ kind: "required", key: "bar", value: "2" },
 			{ kind: "required", key: "foo", value: "1" },
 			{ kind: "optional", key: "baz", value: "3" }
+		])
+	})
+
+	it("a value is one Type, keeping the undefined it was given", () => {
+		const T = type({
+			union: "string | number",
+			undefinable: "string | undefined",
+			undefined: "undefined",
+			unknown: "unknown",
+			"optional?": "string",
+			"undefinableOptional?": "string | undefined"
+		})
+
+		attest<
+			array<
+				| BaseTypeProp<"required", "union", string | number, {}>
+				| BaseTypeProp<"required", "undefinable", string | undefined, {}>
+				| BaseTypeProp<"required", "undefined", undefined, {}>
+				| BaseTypeProp<"required", "unknown", unknown, {}>
+				| BaseTypeProp<"optional", "optional", string, {}>
+				| BaseTypeProp<
+						"optional",
+						"undefinableOptional",
+						string | undefined,
+						{}
+				  >
+			>
+		>(T.props)
+
+		attest(snapshottableProps(T.props)).snap([
+			{ kind: "required", key: "undefinable", value: "string | undefined" },
+			{ kind: "required", key: "undefined", value: "undefined" },
+			{ kind: "required", key: "union", value: "number | string" },
+			{ kind: "required", key: "unknown", value: "unknown" },
+			{ kind: "optional", key: "optional", value: "string" },
+			{
+				kind: "optional",
+				key: "undefinableOptional",
+				value: "string | undefined"
+			}
+		])
+	})
+
+	it("a defaulted morph has its default", () => {
+		const T = type({ a: ["string.numeric.parse", "=", "5"] })
+
+		attest<array<DefaultedTypeProp<"a", (In: string) => To<number>, "5", {}>>>(
+			T.props
+		)
+		attest(T.props.map(p => [p.kind, "default" in p && p.default])).snap([
+			["optional", "5"]
 		])
 	})
 

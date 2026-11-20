@@ -1,5 +1,18 @@
 # arkregex
 
+## Unreleased
+
+### Type an unmatched capture's indices as `undefined`
+
+With the `d` flag, `exec` sets `indices[i]` and `indices.groups[name]` to `undefined` for a capture that didn't participate in the match, but each was typed as a range. A capture that may not match is now `[start, end] | undefined`, and one absent from the matching branch `undefined`:
+
+```ts
+const { indices } = regex("^(a)?b$", "d").exec("b")!
+
+// was: [start: number, end: number], now: [start: number, end: number] | undefined
+indices[1]
+```
+
 ## 0.0.16-beta.1
 
 ### infer capture indices across alternation branches

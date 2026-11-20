@@ -546,7 +546,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			...(inner.sequence ? { sequence: inner.sequence.require() } : {}),
 			required: this.props.map(prop =>
 				prop.is("optional") ?
-					this.$.node("required", { key: prop.key, value: prop.value })
+					this.$.node("required", { key: prop.key, value: prop.requiredValue })
 				:	prop
 			),
 			order: this.keyOrder
@@ -721,12 +721,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const props = this.inOrder
 		for (let i = 0; i < props.length; i++) {
 			const prop = props[i]
+			// a value its default replaces isn't transformed first
 			if (!hasIndexedProp) {
-				if (prop.value.tfs && prop.key in data)
+				if (prop.value.tfs && prop.holdsValue(data))
 					tfKey(prop.key, data[prop.key as never], prop.value)
 				continue
 			}
-			if (!(prop.key in data)) continue
+			if (!prop.holdsValue(data)) continue
 			const keyErrorCount = ctx.errN
 			const input: unknown = data[prop.key as never]
 			let value = input
@@ -794,7 +795,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const errN = ctx.errN
 		this._traverse("Apply", data, ctx, false)
 		for (const prop of this.inOrder)
-			if (prop.key in data) this.tfSharedKey(data, prop.key, ctx)
+			if (prop.holdsValue(data)) this.tfSharedKey(data, prop.key, ctx)
 		for (const k of ownKeysOf(data))
 			if (!(k in this.byKey)) this.tfSharedKey(data, k, ctx)
 		return !ctx.failFast || ctx.errN === errN
@@ -861,16 +862,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 		}
 		const sequence = this.sequence
-		if (
-			sequence?.defaultables &&
-			(data as array).length < sequence.preLen + sequence.defLen
-		) {
-			if (out === data && !this.writesInto(ctx)) out = this.copy(data)
-			for (
-				let i = (data as array).length - sequence.preLen;
-				i < sequence.defaultables.length;
-				i++
-			) {
+		if (sequence?.defaultables) {
+			for (let i = 0; i < sequence.defLen; i++) {
+				if (sequence.holdsElement(data as array, sequence.preLen + i)) continue
+				if (out === data && !this.writesInto(ctx)) out = this.copy(data)
 				const defaulted = sequence.defMorphs[i](out as never, ctx as never)
 				if (defaulted instanceof TransformErrors)
 					failed = defaulted.addTo(failed)
@@ -1132,7 +1127,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			transformedProps.length === 1 &&
 			!js.needsCtx
 		for (let i = 0; i < transformedProps.length; i++) {
-			const { key, optional } = transformedProps[i]
+			const prop = transformedProps[i]
+			const { key, optional } = prop
 			const keyExpr = js.serialize(key)
 			const onChange = () => {
 				this.jsCopy(js, { first: i === 0 }).line(
@@ -1146,7 +1142,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				this.tfsOf(transformedProps[i]),
 				{
 					keyExpr,
-					...(optional ? { condition: `${keyExpr} in data` } : {}),
+					...(optional ? { condition: prop.jsHoldsValue(js, "data") } : {}),
 					...(deletes ? {} : { onChange })
 				}
 			)
@@ -1296,23 +1292,37 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const sequence = this.sequence
 		if (!sequence?.defaultables) return
 		const defaultables = sequence.defaultables
-		js.if(`data.length < ${sequence.preLen + sequence.defLen}`, () => {
-			this.jsCopy(js)
+		const writeDefault = (i: number) => {
+			const [node, defaultValue] = defaultables[i]
+			const morph = sequence.defMorphs[i]
+			return typeof defaultValue !== "function" && !node.tfs ?
+					js.line(
+						`out[${sequence.preLen + i}] = ${serializeDefault(js, defaultValue)}`
+					)
+				:	compileDefaultMorph(
+						js,
+						sequence,
+						`${js.ref(morph)}(out${morph.length === 2 ? ", ctx" : ""})`,
+						"out"
+					)
+		}
+		// an undefined element is replaced too, so each is checked on its own
+		if (sequence.defaultsUndefined) {
 			for (let i = 0; i < defaultables.length; i++) {
-				const [node, defaultValue] = defaultables[i]
-				const index = sequence.preLen + i
-				const morph = sequence.defMorphs[i]
-				js.if(`data.length <= ${index}`, () =>
-					typeof defaultValue !== "function" && !node.tfs ?
-						js.line(`out[${index}] = ${serializeDefault(js, defaultValue)}`)
-					:	compileDefaultMorph(
-							js,
-							sequence,
-							`${js.ref(morph)}(out${morph.length === 2 ? ", ctx" : ""})`,
-							"out"
-						)
+				js.if(
+					`!(${sequence.jsHoldsElement(true, sequence.preLen + i)})`,
+					() => {
+						this.jsCopy(js)
+						return writeDefault(i)
+					}
 				)
 			}
+			return
+		}
+		js.if(`data.length < ${sequence.preLen + sequence.defLen}`, () => {
+			this.jsCopy(js)
+			for (let i = 0; i < defaultables.length; i++)
+				js.if(`data.length <= ${sequence.preLen + i}`, () => writeDefault(i))
 			return js
 		})
 	}

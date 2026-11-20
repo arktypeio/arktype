@@ -20,7 +20,14 @@ export {
 	type StandardTypedV1,
 	type ToJsonSchema
 } from "@ark/schema"
-export { Hkt, inferred, ParseError, type Brand, type Json } from "@ark/util"
+export {
+	Hkt,
+	inferred,
+	ParseError,
+	type Brand,
+	type Json,
+	type JsonStructure
+} from "@ark/util"
 export { regex, type Regex, type RegexExecArray } from "arkregex"
 export type {
 	Default,

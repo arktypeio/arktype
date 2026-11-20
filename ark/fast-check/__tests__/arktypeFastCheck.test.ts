@@ -171,7 +171,15 @@ contextualize(() => {
 		it("morph", () => {
 			const T = type(["string<5", "=>", val => `${val}`])
 			const arbitrary = arkToArbitrary(T)
+			// generated for the morph's input
+			attest<Arbitrary<string>>(arbitrary)
 			assertProperty(arbitrary, T)
+		})
+		it("typed as the input", () => {
+			const T = type({ name: "string", "age?": "number", role: "'a' = 'a'" })
+			attest<Arbitrary<{ name: string; age?: number; role?: "a" }>>(
+				arkToArbitrary(T)
+			)
 		})
 		it("unsupported class", () => {
 			class Foo {}

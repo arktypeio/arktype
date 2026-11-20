@@ -221,9 +221,14 @@ type BuiltinTerminalObject = {
 	: arkPrototypes.instances[k]
 }[keyof arkPrototypes.instances]
 
+// as .narrow() infers, a morph's output is narrowed
 export type inferPredicate<t, predicate> =
 	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?
-		narrowed
+		t extends InferredMorph<infer i, infer o> ?
+			o extends To ?
+				(In: i) => To<narrowed>
+			:	(In: i) => Out<narrowed>
+		:	narrowed
 	:	t
 
 export type inferNaryPipe<morphs extends readonly Morph[]> = _inferNaryPipe<

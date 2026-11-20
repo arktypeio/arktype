@@ -3,6 +3,7 @@ import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { Union } from "../roots/union.ts"
 import type { BaseScope } from "../scope.ts"
+import { withoutUndefined, type Optional } from "../structure/optional.ts"
 import type { Sequence } from "../structure/sequence.ts"
 import type { Structure } from "../structure/structure.ts"
 import { $ark } from "./registry.ts"
@@ -28,9 +29,12 @@ const encoderOf = (node: BaseRoot): BaseRoot =>
 		(kind, inner) =>
 			kind === "morph" ? invert(inner as never, node.$)
 			: kind === "optional" && "default" in inner ?
-				node.$.node("required", omit(inner as never, { default: 1 }))
+				node.$.node("required", {
+					...omit(inner as Optional.Inner, { default: 1 }),
+					value: decodedValueOf((inner as Optional.Inner).value, node.$)
+				})
 			: kind === "structure" ? requireDefaulted(inner as never)
-			: kind === "sequence" ? requireDefaultables(inner as never)
+			: kind === "sequence" ? requireDefaultables(inner as never, node.$)
 			: kind === "union" ?
 				{
 					...inner,
@@ -92,10 +96,18 @@ const requireDefaulted = (inner: Structure.Inner): Structure.Inner => {
 	} as never
 }
 
-const requireDefaultables = ({
-	defaultables = [],
-	...inner
-}: Sequence.Inner): Sequence.Inner => ({
+const requireDefaultables = (
+	{ defaultables = [], ...inner }: Sequence.Inner,
+	$: BaseScope
+): Sequence.Inner => ({
 	...inner,
-	prefix: [...(inner.prefix ?? []), ...defaultables.map(([node]) => node)]
+	prefix: [
+		...(inner.prefix ?? []),
+		...defaultables.map(([node]) => decodedValueOf(node, $))
+	]
 })
+
+// without exactOptionalPropertyTypes, a default replaces undefined, so it's
+// never what was decoded
+const decodedValueOf = (value: BaseRoot, $: BaseScope): BaseRoot =>
+	$.cfg.exactOptionalPropertyTypes === false ? withoutUndefined(value) : value

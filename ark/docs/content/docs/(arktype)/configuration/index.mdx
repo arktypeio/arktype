@@ -407,9 +407,14 @@ const MyObj = type({
 
 // { key: undefined, withDefault: 5 }
 MyObj({ key: undefined, withDefault: undefined })
+
+// { key: number, withDefault: number }
+MyObj.required()
 ```
 
-With `false`, an explicit `undefined` at a key with a default is replaced by the default, as a missing key is. Treating `null` as missing is tracked in [#1283](https://github.com/arktypeio/arktype/issues/1283).
+With `false`, an explicit `undefined` at a key with a default is replaced by the default, as a missing key is, so a default can't be `undefined` itself. Optional and defaultable tuple elements allow `undefined` the same way. Treating `null` as missing is tracked in [#1283](https://github.com/arktypeio/arktype/issues/1283).
+
+As TypeScript's `Required` does without `exactOptionalPropertyTypes`, what makes a key or element required drops the `undefined` it allowed, whether or not it was written: `.required()`, and a defaulted key or element in `.out` and `.encode`.
 
 ## numberAllowsNaN
 
