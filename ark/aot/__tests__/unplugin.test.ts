@@ -1839,12 +1839,14 @@ console.log(type({ n: Max })({ n: 2 }) instanceof type.errors)
 				output: { path: join(root, "out") },
 				plugins: [precompile.webpack({ cwd: root })]
 			})
-			// each build's errors, the last failing it whole
+			// each build's errors, as its compilation's: one rejected from the
+			// compiler's own hook fails the compiler, which Next's dev server
+			// then waits on for good instead of showing it
 			const errors: string[][] = []
 			const watching = compiler.watch({}, (error, stats) => {
 				errors.push(
 					error ?
-						[error.message]
+						[`the compiler failed: ${error.message}`]
 					:	stats!
 							.toJson({ all: false, errors: true })
 							.errors!.map(error => error.message)

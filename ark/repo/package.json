@@ -29,9 +29,16 @@
 		"ts": "./ts.ts"
 	},
 	"devDependencies": {
+		"@babel/core": "7.29.13",
+		"@babel/runtime": "8.1.2",
+		"@react-native/babel-preset": "0.88.1",
+		"@react-native/metro-babel-transformer": "0.88.1",
 		"ajv": "8.20.0",
 		"ajv-formats": "3.0.1",
 		"ajv-keywords": "5.1.0",
+		"metro": "0.87.3",
+		"metro-config": "0.87.3",
+		"metro-runtime": "0.87.3",
 		"next": "16.4.6",
 		"react": "19.3.1",
 		"react-dom": "19.3.1",
