@@ -2,22 +2,40 @@
 
 ## Unreleased
 
-### Set a Type's message with `.message()`
+### Pass a constraint its message
 
-`.message(text)` is `.configure({ message: text })`, as `.describe(text)` is for `description`, and takes the same selector, so a message for one check is as short as Zod's `.min(1, "...")`:
+Each constraint method, like `.atLeastLength()`, `.atMost()`, `.matching()`, `.divisibleBy()` or `.laterThan()`, takes a message as its last argument, a sentence or a function of the error, which that constraint alone says, as Zod's `.min(1, "...")` does:
 
 ```ts
 const Signup = type({
-	name: type("string >= 1").message("Name is required"),
-	password: type("string >= 8").message("Use 8 or more characters", "minLength")
+	name: type.string.atLeastLength(1, "Name is required"),
+	password: type.string
+		.atLeastLength(8, "Use 8 or more characters")
+		.matching(/[0-9]/, "Include a number")
 })
 
 // name: Name is required
+// password: Include a number
 // password: Use 8 or more characters
 Signup({ name: "", password: "abc" })
+
+// name must be a string (was missing)
+// password must be a string (was missing)
+Signup({})
 ```
 
-A precompiled build writes it as it does `.configure({ message })`.
+It's that constraint's own `meta`, so two of one kind, like two patterns, or an array's length and its elements', each say their own, where a message selected by code is said by every check of that kind. It's left out of `expression`, `description` and JSON Schema, and a precompiled build writes it.
+
+### Set a Type's message with `.message()`
+
+`.message(text)` is `.configure({ message: text })`, as `.describe(text)` is for `description`: a value of the wrong type and a missing key say it too. Its second argument selects which errors say it, like `"self"` for a missing key, `"domain"` for a wrong type, or a code for a check without a method, like `string.email`'s `"pattern"`:
+
+```ts
+const Sku = type.string
+	.matching(/^[A-Z]{3}-\d{4}$/, "SKU looks like ABC-1234")
+	.message("SKU is required", "self")
+	.message("SKU must be text", "domain")
+```
 
 ### `ctx.reject()` takes no string
 

@@ -177,23 +177,24 @@ const Signup = type({
 
 ```ts
 const Signup = type({
-	// a whole sentence, shown as written
+	// a sentence for one check, shown as written
+	password: type.string.atLeastLength(8, "Use 8 or more characters"),
+	// a sentence for every failure, a missing key's included
 	email: type("string.email").message("Enter a valid email"),
 	// what the value must be, after "must be"
-	password: type("string >= 8").describe("8 characters or more"),
-	age: "number >= 18"
+	age: type("number >= 18").describe("an adult's age")
 })
 
-const out = Signup({ email: "x", password: "short", age: 3 })
+const out = Signup({ password: "short", email: "x", age: 3 })
 
 if (out instanceof type.errors) {
+	// password: Use 8 or more characters
 	// email: Enter a valid email
-	// password must be 8 characters or more
-	// age must be at least 18
+	// age must be an adult's age
 	console.error(out.summary)
 
 	// without paths, e.g. to show beside each field:
-	// ["Enter a valid email", "must be 8 characters or more", "must be at least 18"]
+	// ["Use 8 or more characters", "Enter a valid email", "must be an adult's age"]
 	out.issues.map(issue => issue.message)
 }
 ```
