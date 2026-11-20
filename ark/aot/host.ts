@@ -156,10 +156,44 @@ export const islandDependencySpecifier = "arktype/internal/islandDependency.js"
 
 export const runsOnArktype = (
 	importer: string | undefined,
-	dependencies: DependencyModes | undefined
+	dependencies: DependencyModes | undefined,
+	namesByDir?: PackageNamesByDir
 ): boolean => {
-	const name = dependencyNameOf(importer)
-	return !!name && dependencies?.[name] === "arktype"
+	// only a program running one on arktype reads a manifest for it
+	if (!importer || !Object.values(dependencies ?? {}).includes("arktype"))
+		return false
+	const file = importer.split("?")[0]
+	const name =
+		dependencyOf(file)?.[1] ?? workspacePackageNameOf(file, namesByDir)
+	return !!name && dependencies![name] === "arktype"
+}
+
+export type PackageNamesByDir = Record<string, string | undefined>
+
+// a workspace links a package to its own directory, which pnpm, npm and yarn
+// all do under the name its manifest declares, and a bundler reads its
+// modules by their real paths, which name no node_modules. So the manifest
+// names it: the nearest declaring a name, as a nameless one, like the
+// { "type": "module" } a dual package writes into dist/esm, only scopes files
+export const workspacePackageNameOf = (
+	file: string,
+	namesByDir: PackageNamesByDir = {}
+): string | undefined => {
+	if (!isAbsolute(file)) return
+	const nameIn = (dir: string): string | undefined => {
+		if (dir in namesByDir) return namesByDir[dir]
+		let name: unknown
+		try {
+			name = JSON.parse(readFile(join(dir, "package.json")) ?? "{}").name
+		} catch {
+			// one that doesn't parse names nothing
+		}
+		return (namesByDir[dir] =
+			typeof name === "string" ? name
+			: dir === dirname(dir) ? undefined
+			: nameIn(dirname(dir)))
+	}
+	return nameIn(dirname(file))
 }
 
 const dependencyNameOf = (importer: string | undefined): string | undefined =>

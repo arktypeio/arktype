@@ -55,7 +55,9 @@ import {
 	dependencyOf,
 	optsIn,
 	printablePathOf,
+	runsOnArktype,
 	type DependencyModes,
+	type PackageNamesByDir,
 	type PrecompileHost
 } from "./host.ts"
 import { SourceModule } from "./module.ts"
@@ -1120,6 +1122,7 @@ export class ModuleGraph {
 	leavesDependencies = false
 	private packageNamesByDir: Record<string, string | undefined> =
 		Object.create(null)
+	private workspaceNamesByDir: PackageNamesByDir = Object.create(null)
 
 	constructor(
 		host: PrecompileHost,
@@ -1268,16 +1271,16 @@ export class ModuleGraph {
 		)
 	}
 
-	// outside node_modules, or in a package that opts in or the settings precompile
+	// outside node_modules, or in a package that opts in or the settings
+	// precompile, but not a workspace package the settings run on arktype
 	isFollowed(id: string): boolean {
 		const [root, name] = dependencyOf(id) ?? []
-		return (
-			root === undefined ||
-			(!this.leavesDependencies &&
-				(this.optsInByPackage[root] ??=
-					this.dependencies[name!] === "aot" ||
-					optsIn(this.host.readFile(join(root, "package.json")))))
-		)
+		return root === undefined ?
+				!runsOnArktype(id, this.dependencies, this.workspaceNamesByDir)
+			:	!this.leavesDependencies &&
+					(this.optsInByPackage[root] ??=
+						this.dependencies[name!] === "aot" ||
+						optsIn(this.host.readFile(join(root, "package.json"))))
 	}
 
 	// e.g. `arksets` for a module a workspace links from its source

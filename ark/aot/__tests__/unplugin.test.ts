@@ -1951,6 +1951,49 @@ console.log(
 			attest(run(bundle)).equals(precompiled(expected))
 	})
 
+	it("runs a workspace package the program's settings name on arktype", async () => {
+		const root = writeFixture(
+			{
+				"package.json": '{ "type": "module" }',
+				// linked as a pnpm, npm or yarn workspace links it, from its own directory
+				...packageFiles(
+					"@acme/tables",
+					{
+						"index.js":
+							'import { type } from "arktype"\n\nexport const typeOf = columns => type(Object.fromEntries(columns.map(c => [c, "string"])))\n'
+					},
+					{},
+					"packages/tables"
+				),
+				"main.ts": `import { type } from "arktype"
+import { typeOf } from "@acme/tables"
+
+// columns the build can't know, as a table read from a database's schema
+const Row = typeOf(JSON.parse(process.env.COLUMNS ?? '["name"]'))
+console.log(JSON.stringify([Row({ name: "Ada" }), Row({ name: 1 }) instanceof type.errors]))
+`
+			},
+			fromHere("temp", "workspaceTables")
+		)
+		rmSync(join(root, "node_modules"), { recursive: true, force: true })
+		mkdirSync(join(root, "node_modules", "@acme"), { recursive: true })
+		symlinkSync(
+			"../../packages/tables",
+			join(root, "node_modules", "@acme", "tables")
+		)
+		const opts = {
+			cwd: root,
+			dependencies: { "@acme/tables": "arktype" }
+		} as const
+		const expected = runPlain(root)
+		attest(JSON.parse(expected)).snap([{ name: "Ada" }, true])
+		for (const bundle of [
+			await bundlers.esbuild(opts, root),
+			await withNodeEnv("production", () => bundlers.vite(opts, root))
+		])
+			attest(run(bundle)).equals(expected)
+	})
+
 	it("builds a dependency reading only what arktype's runtime exports", async () => {
 		attest(await buildDependency("adapter.ts")).equals({
 			errors: [],
