@@ -19,6 +19,7 @@ The changes most code meets are to errors. The [checklist](#checklist) covers th
 | `out.message`, `out.toTraversalError()`                                                              | [`out.summary`, `new TraversalError(out)`](#arkerrors-is-no-longer-an-array)                                          |
 | `error.hasCode("min")`, `error instanceof ArkError`                                                  | [`error.code === "min"`, and `ArkError` is only a type](#errors-are-plain-objects)                                    |
 | `ctx.errors.add(error)`                                                                              | [`ctx.error(...)` or `ctx.reject(...)`](#arkerrors-is-no-longer-an-array)                                             |
+| `ctx.reject("a valid zip code")`                                                                     | [`ctx.mustBe("a valid zip code")`, or a sentence as `ctx.reject({ message })`](#ctxreject-takes-no-string)            |
 | `message: ctx => ...`, reading `ctx.problem`                                                         | [`message: (error, locale) => ...`](#error-writers-receive-the-error-and-the-locale), from `error.expected`           |
 | a snapshot ending `(was a number)`                                                                   | [the same text without it](#messages-leave-out-the-value)                                                             |
 | `configure()` after a Type exists, `clone`                                                           | [a config file imported first](#configure-before-any-type-is-created); [remove `clone`](#the-clone-option-is-removed) |
@@ -37,6 +38,7 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you call methods on an error, like `hasCode()`, `toString()` or `instanceof ArkError`? [Errors are plain objects](#errors-are-plain-objects).
 - Do you switch on error `code`s, or configure text for `predicate`? See [undeclared](#undeclared-keys-have-the-undeclared-code), [discriminant](#union-misses-have-the-discriminant-code) and [notEqual](#excluded-values-have-the-notequal-codes).
 - Do you read an error's `message` or `problem`, or configure either, in `.configure()`, `configure()`, a Scope or `ctx.reject()`? [`message` leaves out the path, and `problem` is gone](#message-leaves-out-the-path-and-problem-is-gone), and [a message you configure is written after its path](#custom-messages-are-written-after-their-path).
+- Do you pass a string to `ctx.reject()`? [Pass it to `ctx.mustBe()`, or a sentence as `{ message }`](#ctxreject-takes-no-string).
 - Do you snapshot or assert error messages, or their order? See [Errors](#errors): messages leave out the value, each failed check is its own error, `assert` throws the errors' summary, dates and union misses print differently, errors follow the order keys are declared, configured messages apply to more errors, and [other messages changed](#other-messages-that-changed).
 - Do you show the messages of Standard Schema issues, as a form library does? [Each leaves out the path](#standard-schema-messages-leave-out-the-path).
 - Do you configure an `expected`, `actual` or `message` writer? [Writers take the error](#error-writers-receive-the-error-and-the-locale).
@@ -245,9 +247,29 @@ const T = type({ name: "string > 1" })
 T["~standard"].validate({ name: "x" })
 ```
 
-A union's `message` writes the path of each error it lists from its own, like `b must be a string or c must be a number`. A `message` you configure, or pass to `ctx.reject()`, reaches the issues as you wrote it, as before. Pass a sentence to a narrow as `ctx.reject({ message: "Enter a valid zip code" })`, since `ctx.reject("a valid zip code")` is what the value must be and reads `must be a valid zip code`.
+A union's `message` writes the path of each error it lists from its own, like `b must be a string or c must be a number`. A `message` you configure, or pass to `ctx.reject()`, reaches the issues as you wrote it, as before. Pass a sentence to a narrow as `ctx.reject({ message: "Enter a valid zip code" })`.
 
 Update snapshots of those messages, and read `summary` from the errors calling the Type returns for one line naming each path.
+
+### ctx.reject takes no string
+
+A string passed to `ctx.reject()` was what the value must be, as one passed to `ctx.mustBe()` is, so a sentence read `must be Enter a valid zip code`. Now that a form shows each issue's `message`, `ctx.reject()` takes only an object, and TypeScript flags a string:
+
+```ts
+const Zip = type("string").narrow(
+	(s, ctx) =>
+		/^\d{5}$/.test(s) || ctx.reject({ message: "Enter a valid zip code" })
+)
+
+// before: ctx.reject("a valid zip code"), or with a sentence, which read "must be Enter a valid zip code"
+const Zip5 = type("string").narrow(
+	(s, ctx) => /^\d{5}$/.test(s) || ctx.mustBe("a valid zip code")
+)
+```
+
+- Pass a sentence as `{ message }`, and what the value must be to `ctx.mustBe()`.
+- At runtime, a string still says what the value must be, so JavaScript or a cast reads as before.
+- `ctx.error()`, which a morph returns, still takes either.
 
 ### Errors are plain objects
 

@@ -209,6 +209,22 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                         "kind": "noteStart",
                         "value": "useful for predicates like `.narrow`"
                     }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "`{ message: \"Enter a valid email\" }` is the whole sentence an issue says"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "to say what the value must be, as `must be even`, pass `\"even\"` to "
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "mustBe"
+                    }
                 ]
             ],
             "params": [
@@ -278,6 +294,13 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     {
                         "kind": "noteStart",
                         "value": "useful for morphs like `.pipe`"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "a string is what the value must be: `error(\"valid JSON\")` reads `must be valid JSON`, so pass a sentence as `{ message }`",
+                        "warning": true
                     }
                 ]
             ],
@@ -490,6 +513,22 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                         "kind": "noteStart",
                         "value": "useful for predicates like `.narrow`"
                     }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "`{ message: \"Enter a valid email\" }` is the whole sentence an issue says"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "to say what the value must be, as `must be even`, pass `\"even\"` to "
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "mustBe"
+                    }
                 ]
             ],
             "params": [
@@ -559,6 +598,13 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     {
                         "kind": "noteStart",
                         "value": "useful for morphs like `.pipe`"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "a string is what the value must be: `error(\"valid JSON\")` reads `must be valid JSON`, so pass a sentence as `{ message }`",
+                        "warning": true
                     }
                 ]
             ],
@@ -953,6 +999,45 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 ]
             ],
             "example": "const AToZ = type(/^a.*z$/).describe(\"a string like 'a...z'\")\nconst good = AToZ(\"alcatraz\") // \"alcatraz\"\n// ArkErrors: must be a string like 'a...z'\nconst badPattern = AToZ(\"albatross\")"
+        },
+        {
+            "group": "Metadata",
+            "name": "message",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "set the sentence an error says"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "equivalent to `.configure({ message })` (see "
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "configure"
+                    },
+                    {
+                        "kind": "text",
+                        "value": ")"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "a missing key says it too, as Zod's `required_error`"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "a selector like `\"minLength\"` scopes it to that check, as Zod's `.min(1, \"Name is required\")`"
+                    }
+                ]
+            ],
+            "example": "const Name = type(\"string >= 1\").message(\"Name is required\")\n// ArkErrors: Name is required\nconst empty = Name(\"\")\n\nconst Password = type(\"string >= 8\").message(\"Use 8 or more characters\", \"minLength\")\n// ArkErrors: Use 8 or more characters\nconst short = Password(\"abc\")\n// ArkErrors: must be a string\nconst nonString = Password(5)"
         }
     ],
     "Composition": [

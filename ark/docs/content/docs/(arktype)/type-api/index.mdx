@@ -138,6 +138,22 @@ const Even = type.number.divisibleBy(2)
 Even(3)
 ```
 
+Each takes a [`message`](/docs/configuration#message) as its last argument, a sentence or a function of the error, which that constraint alone says:
+
+```ts
+const Handle = type.string
+	.atLeastLength(3, "Use 3 or more characters")
+	.matching(/^[a-z]+$/, "Use lowercase letters only")
+
+// ArkErrors: Use 3 or more characters
+Handle("ab")
+
+const Age = type.number.atLeast(18, error => `Must be ${error.rule} or older`)
+
+// ArkErrors: Must be 18 or older
+Age(16)
+```
+
 ## Serialization
 
 [To JSON Schema](/docs/json-schema/to-json-schema) covers `toJsonSchema()` and `~standard.jsonSchema`: their options, what they can't represent, and the fallbacks. [Standard Schema](/docs/standard-schema) covers `~standard.validate`.

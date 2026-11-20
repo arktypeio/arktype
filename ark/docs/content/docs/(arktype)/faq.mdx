@@ -39,10 +39,10 @@ See [Errors](/docs/errors) for everything an error carries.
 
 ## Why does my error say `must be Enter a valid email`?
 
-A string passed to `.describe()`, `ctx.reject()` or `ctx.mustBe()`, or configured as `expected`, is what the value must be, so ArkType writes "must be" before it. A whole sentence is a [`message`](/docs/configuration#message):
+A string passed to `.describe()`, `ctx.mustBe()` or `ctx.error()`, or configured as `expected`, is what the value must be, so ArkType writes "must be" before it. A whole sentence is a [`message`](/docs/configuration#message), which `.message()` sets, and which `ctx.reject()` takes as `{ message }` (it doesn't take a string):
 
 ```ts
-const Email = type("string.email").configure({ message: "Enter a valid email" })
+const Email = type("string.email").message("Enter a valid email")
 
 const Zip = type("string").narrow(
 	(s, ctx) =>

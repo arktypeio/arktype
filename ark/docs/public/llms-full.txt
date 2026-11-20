@@ -654,23 +654,24 @@ const Signup = type({
 
 ```ts
 const Signup = type({
-	// a whole sentence, shown as written
-	email: ["string.email", "@", { message: "Enter a valid email" }],
+	// a sentence for one check, shown as written
+	password: type.string.atLeastLength(8, "Use 8 or more characters"),
+	// a sentence for every failure, a missing key's included
+	email: type("string.email").message("Enter a valid email"),
 	// what the value must be, after "must be"
-	password: type("string >= 8").describe("8 characters or more"),
-	age: "number >= 18"
+	age: type("number >= 18").describe("an adult's age")
 })
 
-const out = Signup({ email: "x", password: "short", age: 3 })
+const out = Signup({ password: "short", email: "x", age: 3 })
 
 if (out instanceof type.errors) {
+	// password: Use 8 or more characters
 	// email: Enter a valid email
-	// password must be 8 characters or more
-	// age must be at least 18
+	// age must be an adult's age
 	console.error(out.summary)
 
 	// without paths, e.g. to show beside each field:
-	// ["Enter a valid email", "must be 8 characters or more", "must be at least 18"]
+	// ["Use 8 or more characters", "Enter a valid email", "must be an adult's age"]
 	out.issues.map(issue => issue.message)
 }
 ```
@@ -757,7 +758,7 @@ export default {
 | `"Record<string, T>"` with `T` a variable | Use `type.Record("string", T)` or `{ "[string]": T }` |
 | `type("number = 0")` | Defaults only work as object values or tuple elements |
 | `out[0]` or `out.map(...)` on errors | Use `out.issues[0]` or `out.issues.map(...)` |
-| `ctx.reject("Enter a valid email")`, which reads `must be Enter…` | Pass a sentence as `ctx.reject({ message: "Enter a valid email" })` |
+| `.describe("Enter a valid email")`, which reads `must be Enter…` | Pass a sentence to `.message("Enter a valid email")` or `ctx.reject({ message })` |
 | `ctx.reject({ path: ["key"] })` on a nested object | Use `relativePath: ["key"]`; `path` is from the root of the data |
 | `.merge()` or `.pick()` on an object with a `.narrow()` | Derive from the object before its `.narrow()`, which they'd drop, then add the narrow |
 | Mutating the argument in `.pipe` | Return a new value; a morph receives the caller's data, not a copy |
@@ -1087,7 +1088,7 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `z.coerce.number()`, `z.coerce.date()` | `type("unknown").pipe(Number).to("number")`, see [Coercion](https://arktype.io/docs/migrating#coercion-is-a-parse) |
 | `z.coerce.string()`, `z.coerce.boolean()` | `type("unknown").pipe(String)`, `type("unknown").pipe(Boolean)` |
 | `z.stringbool()` | a `.pipe()` over the strings you accept, see [Coercion](https://arktype.io/docs/migrating#coercion-is-a-parse) |
-| `z.custom<T>(fn)`, `z.custom<T>(fn, "Message")` | `type("unknown").narrow((v): v is T => fn(v))`, then `.configure({ message: "Message" })` |
+| `z.custom<T>(fn)`, `z.custom<T>(fn, "Message")` | `type("unknown").narrow((v): v is T => fn(v))`, then `.message("Message")` |
 | `.brand<"Id">()` | `.brand("Id")` or `"string#Id"` |
 | `z.codec(In, Out, { decode, encode })` | `codec(In, Out, { decode, encode })` from `arktype/codecs` |
 | `T.decode(x)`, `T.encode(x)`, `T.safeEncode(x)` | `T.assert(x)`, `T.encode.assert(x)`, `T.encode(x)` |
@@ -1100,11 +1101,11 @@ Every row is in [Custom messages](https://arktype.io/docs/migrating#custom-messa
 
 | Zod | ArkType |
 | - | - |
-| `.min(1, "Name is required")`, `{ message }` | `["string >= 1", "@", { message: "Name is required" }]` as a key's value |
-| the same, on a Type | `type("string >= 1").configure({ message: "Name is required" })` |
-| `.min(8, "Too short").regex(r, "Add a number")` | `.configure({ message: "Too short" }, "minLength")`, then the same for `"pattern"` |
-| `z.string({ error: "Enter a name" })` | `["string", "@", { message: "Enter a name" }]`, which a missing key says too |
-| `required_error`, `invalid_type_error` (Zod 3) | `.configure({ message }, "self")`, `.configure({ message }, "domain")` |
+| `.min(1, "Name is required")`, `{ message }` | `type.string.atLeastLength(1, "Name is required")` |
+| `.max(50, m)`, `.regex(r, m)`, `.gt(0, m)` | `.atMostLength(50, m)`, `.matching(r, m)`, `.moreThan(0, m)` |
+| `.email("Enter a valid email")` | `type("string.email").message("Enter a valid email", "pattern")` |
+| `z.string({ error: "Enter a name" })` | `type("string").message("Enter a name")`, which a missing key says too |
+| `required_error`, `invalid_type_error` (Zod 3) | `.message(m, "self")`, `.message(m, "domain")` |
 | `.refine(fn, "Message")` | `ctx.reject({ message: "Message" })` |
 | `error: issue => ...`, `z.config({ customError })` | `message: error => ...`, or [by code](https://arktype.io/docs/configuration#by-code) in `configure` |
 | `errorMap`, `z.setErrorMap(fn)` (Zod 3) | the same: `message: error => ...` on the Type, or by code in `configure` |
@@ -1395,13 +1396,14 @@ const Order = type({ quantity: "number", price: "number" }).narrow((d, ctx) => {
 
 ### Custom messages
 
-A custom Zod message becomes a `message`: one whole sentence, shown as you wrote it. An issue's `message` holds it without its path, as Zod's `issue.message` did, and `summary` and a thrown `TraversalError` write the path and a colon before it:
+A custom Zod message becomes a `message`: one whole sentence, shown as you wrote it. A message Zod takes beside a check, as `.min()`, `.max()`, `.regex()`, `.gt()` or `.multipleOf()` do, goes beside the same check, as the last argument to `.atLeastLength()`, `.atMostLength()`, `.matching()`, `.moreThan()` or `.divisibleBy()`. As in Zod, only that check says it, so a value of the wrong type or a missing key says ArkType's own text, like `must be a string`:
 
 ```ts
-// Zod: z.object({ name: z.string().min(1, "Name is required") })
+// Zod: z.object({ name: z.string().min(1, "Name is required").max(50, "Name is too long") })
 const Named = type({
-	// or type("string >= 1").configure({ message: "Name is required" })
-	name: ["string >= 1", "@", { message: "Name is required" }]
+	name: type.string
+		.atLeastLength(1, "Name is required")
+		.atMostLength(50, "Name is too long")
 })
 
 const out = Named({ name: "" })
@@ -1414,42 +1416,31 @@ if (out instanceof type.errors) {
 }
 ```
 
-A library reading the Type through [Standard Schema](https://arktype.io/docs/standard-schema), like TanStack Form, react-hook-form's `standardSchemaResolver` or tRPC, gets the same `message` on each issue, beside its `path`.
+An issue's `message` holds it without its path, as Zod's `issue.message` did, and `summary` and a thrown `TraversalError` write the path and a colon before it. A library reading the Type through [Standard Schema](https://arktype.io/docs/standard-schema), like TanStack Form, react-hook-form's `standardSchemaResolver` or tRPC, gets the same `message` on each issue, beside its `path`.
 
-- **Only `message` takes a sentence.** `ctx.reject("a valid zip code")`, `ctx.mustBe("a valid zip code")`, `.describe("a valid zip code")`, `expected` and a string after `"@"` each take what the value must be, so they read `must be a valid zip code`. A Zod message passed to one reads `must be Enter a valid zip code`.
-- **It covers the whole value.** A string `message` is written for any value the Type rejects, of the wrong type included, and for a key that's absent: `Named({})` also says `Name is required`. Configure the key's whole value, last, after any `.pipe()` or `.to()`.
+- **Only `message` takes a sentence.** `ctx.mustBe("a valid zip code")`, `ctx.error("a valid zip code")`, `.describe("a valid zip code")`, `expected` and a string after `"@"` each take what the value must be, so they read `must be a valid zip code`. A Zod message passed to one reads `must be Enter a valid zip code`. `ctx.reject()` takes no string, so a `.refine()` message is `ctx.reject({ message })`.
+- **`.message()` covers the whole value.** Like Zod's `z.string({ error })`, `type("string").message("Enter a name")` is said for any value the Type rejects, of the wrong type included, and for a key that's absent. Configure it last, after any `.pipe()` or `.to()`. It replaces the messages of the constraints before it, so beside those, give a wrong type and a missing key theirs [by code](https://arktype.io/docs/migrating#a-check-without-a-method-takes-its-code).
 - **With `| null` or `| undefined`, configure the union.** `["string.email | null", "@", { message }]` says the message for any value it rejects. A message on one branch, as in `Email.configure({ message }).or("null")`, is lost for a value of the wrong type, which reads `must be a string or null`. With `exactOptionalPropertyTypes: false`, an optional or defaulted key's value is such a union, so where the message must cover the wrong type too, as a Zod `z.string({ error })` does, write `undefined` into it: `"email?": ["string.email | undefined", "@", { message }]`. Always write a boolean's, a literal's or an enum's message on the union, as in `"role?": ["'admin' | 'user' | undefined", "@", { message }]`: a wrong value is their only error, so a message on `Role` alone is never said beside `null` or `undefined`.
 - **A parse keyword's own failure keeps its text.** A `message` on `string.date.parse`, `string.url.parse` or `string.json.parse` is said for a value that isn't a string, but a string that doesn't parse still reads `must be a parsable date`. Check the string, then convert it: `type("string.date").pipe(s => new Date(s)).configure({ message })`, or `"string.url"` with `new URL(s)`. For JSON, call `JSON.parse` in a `.pipe()` and report its failure with `ctx.error({ message })`.
-- **For a message per check, name the check.** A second argument to `.configure()`, or a fourth element of the `"@"` tuple, is the [code](https://arktype.io/docs/errors#error-codes) of the errors the message is for, like `minLength`, `pattern`, `min` or `divisor`:
+
+#### A check without a method takes its code
+
+A keyword's check, like `string.email`'s pattern, or one written in a string definition, has no method to pass a message to. Pass `.message()` its [code](https://arktype.io/docs/errors#error-codes), like `minLength`, `pattern`, `min` or `divisor`, as a second argument, or as a fourth element of the `"@"` tuple. `"self"` names a missing key and `"domain"` a value of the wrong type, as Zod 3's `required_error` and `invalid_type_error` do:
 
 ```ts
-// Zod: z.string().min(8, "Use 8 or more characters").regex(/[0-9]/, "Include a number")
-const Password = type("string >= 8 & /[0-9]/")
-	.configure({ message: "Use 8 or more characters" }, "minLength")
-	.configure({ message: "Include a number" }, "pattern")
+// Zod: z.string().email("Enter a valid email")
+const Email = type("string.email").message("Enter a valid email", "pattern")
 
-const Account = type({
-	// only an empty name says it, as in Zod
-	name: ["string >= 1", "@", { message: "Name is required" }, "minLength"],
-	password: Password
-})
-```
-
-A value of the wrong type, or a missing key, then says ArkType's own text, like `must be a string`, as it said Zod's. To give those their own messages, as Zod 3's `required_error` and `invalid_type_error` do, name `"self"` for a missing key and `"domain"` for a value of the wrong type:
-
-```ts
 // Zod 3: z.string({ required_error: "SKU is required", invalid_type_error: "SKU must be text" })
 //           .regex(/^[A-Z]{3}-\d{4}$/, "SKU looks like ABC-1234")
-const Sku = type(/^[A-Z]{3}-\d{4}$/)
-	.configure({ message: "SKU is required" }, "self")
-	.configure({ message: "SKU must be text" }, "domain")
-	.configure({ message: "SKU looks like ABC-1234" }, "pattern")
+const Sku = type.string
+	.matching(/^[A-Z]{3}-\d{4}$/, "SKU looks like ABC-1234")
+	.message("SKU is required", "self")
+	.message("SKU must be text", "domain")
 ```
 
 - Zod says `required_error` for a key given `undefined` too, which here is a value of the wrong type. To keep that, write `"domain"`'s message as `error => (error.data === undefined ? "SKU is required" : "SKU must be text")`.
-- A code names every check of that kind in the Type, a nested key's included, so configure a key's value rather than the object around it.
-- A `message` configured without a code replaces those configured before it, so configure the whole value first and its checks after.
-- Two checks with one code share its message, like two patterns, or an array's length and its elements', which are both `minLength`. Configure each as its own Type and intersect them: `HasDigit.and(HasCapital)`, or `Tags` below.
+- A code names every check of that kind in the Type, a nested key's included, so configure a key's value rather than the object around it. A message passed to a constraint's method is that constraint's alone, so two checks of one kind, like two patterns, or an array's length and its elements', each keep their own, as in `Tags` below.
 - A function, like Zod 4's `error: issue => ...`, receives the error: `error.data` is Zod's `issue.input`, and once `error.code === "min"` is checked, `error.rule` is its `issue.minimum`. A missing key doesn't say a function's message, so give `"self"` a string.
 - After a `.pipe()` or `.to()`, a code doesn't reach the Type the output is checked with, so configure that Type before passing it to `.to()`. A message for the whole value, or for `"self"`, on the transformed Type replaces the ones inside it, so use one there only where a single message is enough.
 
@@ -1460,33 +1451,30 @@ When several checks fail at once, ArkType reports a pattern before a length, whi
 
 ```ts
 // Zod: z.string().min(1, "Email is required").email("Enter a valid email")
-const Email = type("string.email").configure(
-	{
-		message: error =>
-			error.data === "" ? "Email is required" : "Enter a valid email"
-	},
+const Email = type("string.email").message(
+	error => (error.data === "" ? "Email is required" : "Enter a valid email"),
 	"pattern"
 )
 
 // Zod: z.string().min(8, "Use 8 or more characters").regex(/[0-9]/, "Include a number")
-const Password = type("string >= 8")
-	.configure({ message: "Use 8 or more characters" }, "minLength")
+const Password = type.string
+	.atLeastLength(8, "Use 8 or more characters")
 	.narrow(
 		(s, ctx) => /[0-9]/.test(s) || ctx.reject({ message: "Include a number" })
 	)
 
 // Zod: z.string().trim().min(1, "Name is required").max(50, "Name is too long")
 const Name = type("string.trim").to(
-	type("0 < string <= 50")
-		.configure({ message: "Name is required" }, "minLength")
-		.configure({ message: "Name is too long" }, "maxLength")
+	type.string
+		.atLeastLength(1, "Name is required")
+		.atMostLength(50, "Name is too long")
 )
 
 // Zod: z.array(z.string().min(1, "Tag can't be empty")).min(1, "Add at least one tag")
-const Tag = type("string >= 1").configure({ message: "Tag can't be empty" })
-const Tags = type("unknown[] >= 1")
-	.configure({ message: "Add at least one tag" }, "minLength")
-	.and(Tag.array())
+const Tags = type.string
+	.atLeastLength(1, "Tag can't be empty")
+	.array()
+	.atLeastLength(1, "Add at least one tag")
 ```
 
 Through react-hook-form's resolvers, these four show the same message for each field as their Zod originals.
@@ -1677,7 +1665,7 @@ To keep each check's own error, like `limit must be at most 50`, describe the va
 
 Where nothing reads the JSON Schema, keep the text in a comment, or in `.configure({ title: text })`, which errors don't say and JSON Schema writes as `title`.
 
-A string `message` or `expected` configured on a whole value is written into the JSON Schema too, as a keyword of that name, so a model provider is sent it and a strict validator like Ajv rejects the schema. A message for one check, like `.configure({ message }, "minLength")`, isn't written, and neither is a function.
+A `message`, `expected` or `actual` isn't written into the JSON Schema, so a model provider is sent only what `.describe()` says.
 
 ### OpenAPI documents
 
@@ -1795,7 +1783,7 @@ To move a whole project off Zod, or another library below, work through it in th
    - **Objects.** `.passthrough()` and `z.looseObject()` are `"+": "ignore"`, and `.strict()` is `"+": "reject"`. A union throws a `ParseError` saying it's indeterminate where one of its objects overlaps another branch, like a second object with no literal key to tell them apart, or an array of the same object: write it as [Unions of objects](https://arktype.io/docs/migrating#unions-of-objects) shows. A `.merge()`, `.pick()`, `.omit()` or `.partial()` goes before the object's `.narrow()`, as in [Composing objects](https://arktype.io/docs/migrating#composing-objects).
    - **Optional keys.** Before Zod 4.4, any key whose schema accepts `undefined` may be missing, so a `z.unknown()` key is `"key?": "unknown"` and a `z.any()` key is `"key?": "unknown.any"`; from 4.4, only `.optional()` and defaults let a key be missing, so they stay `key: "unknown"`. Check the version the project installs. In Zod 4, `.default(x).optional()` still fills in `x`, as does `.partial()` on a key with a default, so it's `key: T.default(x)`. In Zod 3 neither does: write the first as `"key?": "T"`, and for the second, call `.partial()` on a Type of the keys without their defaults, and `.merge()` the defaults into the full object. `"unknown.any"` infers `any` as Zod's did, so refinements that read its properties type-check without casts.
    - **Coercions and refinements,** literally, as in [Coercion is a parse](https://arktype.io/docs/migrating#coercion-is-a-parse). `z.coerce.number()` takes any input, `null` included, so its input stays `"unknown"`, in a tool's input schema too. Keywords like `string.numeric.parse` reject inputs Zod accepted, like `" 1"`, so suggest them rather than substituting them. A `.refine()` after a `.transform()` is a `.narrow()` after a `.pipe()`: `.to("number > 0")` would also check the type, and `number` rejects `Infinity` and `NaN`. An object's `.refine()` stays on that object as a `.narrow()`, not in a second schema, with its `path` as `relativePath`. A `.refine()` that only rejects a literal, like `z.boolean().refine(v => v, "Accept the terms")`, becomes that literal with a `message`; [Refinements](https://arktype.io/docs/migrating#refinements) has both.
-   - **Custom messages,** each as a `message`, as in [Custom messages](https://arktype.io/docs/migrating#custom-messages): `.min(1, "Name is required")` is `["string >= 1", "@", { message: "Name is required" }]` as a key's value, a value with a message for each of several checks names each check, and a `.refine(fn, "...")` message is `ctx.reject({ message: "..." })`. Never pass a Zod message to `ctx.reject()` as a string, to `ctx.mustBe()`, to `.describe()` or as `expected`, each of which writes `must be` before it.
+   - **Custom messages,** each as a `message`, as in [Custom messages](https://arktype.io/docs/migrating#custom-messages): a message beside a check goes beside the same check, so `.min(1, "Name is required")` is `type.string.atLeastLength(1, "Name is required")`, a check without a method, like `.email("...")`'s, names its code, as in `.message("...", "pattern")`, and a `.refine(fn, "...")` message is `ctx.reject({ message: "..." })`. Never pass a Zod message to `ctx.mustBe()`, to `ctx.error()` as a string, to `.describe()` or as `expected`, each of which writes `must be` before it.
    - **Descriptions.** A `.describe(text)` on a schema given to a model or an OpenAPI generator, like a tool's `inputSchema`, stays one, as [Descriptions](https://arktype.io/docs/migrating#descriptions) shows, so the JSON Schema they read keeps it. Anywhere else it's a comment.
    - **Strings.** Zod 4's `.url()` accepts what `URL.canParse` accepts and returns the string trimmed, and by 4.6 without the tabs and line breaks inside it, which 4.1 kept. `string.url` checks with `URL.canParse` too but returns the string as given, so where the output is kept, write `type("string").pipe(s => s.trim().replace(/[\t\n\r]/g, "")).to("string.url")`. From Zod 4.5, `.min()`, `.max()` and `.length()` count code points, so an emoji counts once, where ArkType's bounds count UTF-16 code units, as `.length` does: where text may hold such characters, check the count in a `.narrow()`, as in [Defaults that differ](https://arktype.io/docs/migrating#defaults-that-differ). `string.email` and Zod 4's `z.email()` disagree on some addresses: Zod rejects `a..b@x.co` and `.a@x.co` and accepts `a'b@x.co`, and ArkType does the opposite. Where that matters, keep Zod's pattern as a regex.
    - **Arrays as objects.** `z.object()` and `z.record()` reject an array, which ArkType accepts as a `Record`, or as an object whose declared keys are all optional. Where every key is optional, reject arrays with a `.narrow()`, as in [Defaults that differ](https://arktype.io/docs/migrating#defaults-that-differ).
@@ -1976,7 +1964,7 @@ Valibot's defaults are Zod's: `v.object` removes undeclared keys, and `v.optiona
 | `v.url`, `v.uuid`, `v.regex(r)` | `"string.url"`, `"string.uuid"`, `/r/` |
 | `v.isoDate`, `v.isoDateTime`, `v.isoTimestamp` | `"string.date.iso"` with a pattern for each, see [Dates and formats](https://arktype.io/docs/migrating#dates-and-formats) |
 | `v.trim()`, `v.toLowerCase()`, `v.toNumber()`, `v.toDate()` | `"string.trim"`, `"string.lower"`, `"string.numeric.parse"`, `"string.date.parse"` |
-| `v.string("Message")`, `v.email("Message")`, `v.minLength(8, "Message")` | a `message` for each check, by its code: see [Custom messages](https://arktype.io/docs/migrating#custom-messages) |
+| `v.string("Message")`, `v.email("Message")`, `v.minLength(8, "Message")` | `.message("Message", "domain")`, `.message("Message", "pattern")`, `.atLeastLength(8, "Message")`: see [Custom messages](https://arktype.io/docs/migrating#custom-messages) |
 | `v.check(fn, msg)`, `v.rawCheck` | `.narrow((x, ctx) => fn(x) \|\| ctx.reject({ message: msg }))` |
 | `v.forward(v.partialCheck(...), ["key"])` | `.narrow(...)` with `ctx.reject({ message, relativePath: ["key"] })`, which runs only once every key is valid |
 | `v.transform(fn)` | `.pipe(fn)` |
@@ -2039,7 +2027,7 @@ Yup does more to a value before checking it than ArkType does:
 | `.min(n)`, `.max(n)`, `.length(n)` on strings, arrays | `"string >= n"`, `"T[] <= n"`, `"string == n"` |
 | `.integer()`, `.positive()`, `.moreThan(n)` | `"number.integer"`, `"number > 0"`, `"number > n"` |
 | `number()`, `date()` reading strings | `"number \| string.numeric.parse"`, `"Date \| string.date.parse"` |
-| `.required("m")`, `.typeError("m")`, `.min(n, "m")` | `.configure({ message: "m" }, "self")`, then `"domain"`, then `"minLength"` or `"min"` for a number; see below |
+| `.required("m")`, `.typeError("m")`, `.min(n, "m")` | `.message("m", "self")`, `.message("m", "domain")`, `.atLeastLength(n, "m")` or `.atLeast(n, "m")` for a number; see below |
 | `.concat(S)`, `.pick(["a"])`, `.omit(["a"])` | `.merge(S)`, `.pick("a")`, `.omit("a")` |
 | `.trim()`, `.lowercase()` | `"string.trim"`, `"string.lower"` |
 | `.oneOf(["a", "b"])` | `"'a' \| 'b'"` |
@@ -2061,15 +2049,12 @@ Yup does more to a value before checking it than ArkType does:
 ```ts
 // yup.string().required("Email is required").email("Enter a valid email")
 const Email = type("string.email")
-	.configure(
-		{
-			message: error =>
-				error.data === "" ? "Email is required" : "Enter a valid email"
-		},
+	.message(
+		error => (error.data === "" ? "Email is required" : "Enter a valid email"),
 		"pattern"
 	)
-	.configure({ message: "Email is required" }, "self")
-	.configure({ message: "Email is required" }, "domain")
+	.message("Email is required", "self")
+	.message("Email is required", "domain")
 ```
 
 A field that transforms, like one with `.trim()` or a `number()` reading strings, says ArkType's text for a missing key unless one message covers its whole value.
@@ -2114,11 +2099,11 @@ Joi rejects undeclared keys, rejects empty strings, and converts strings to numb
 | `Joi.date()`, `Joi.date().iso()` | `"Date \| string.date.parse"`, `"string.date.iso.parse"` |
 | `Joi.date()` reading milliseconds | `type("number.epoch").pipe(n => new Date(n))` |
 | `Joi.array().items(T)`, `.min(1)` | `T.array()`, `"T[] >= 1"` |
-| `.unique()` | `.narrow((a, ctx) => new Set(a).size === a.length \|\| ctx.reject("unique"))` |
+| `.unique()` | `.narrow((a, ctx) => new Set(a).size === a.length \|\| ctx.mustBe("unique"))` |
 | `Joi.alternatives().try(A, B)` | `A.or(B)` |
 | `.default(x)` | `"key": "T = x"` |
 | `.custom(fn)` | `.narrow()` or `.pipe()` |
-| `.messages({ "any.required": m })`, `"string.base"`, `"string.min"`, `"number.min"` | `.configure({ message: m }, "self")`, then `"domain"`, `"minLength"`, `"min"`; see [Custom messages](https://arktype.io/docs/migrating#custom-messages) |
+| `.messages({ "any.required": m })`, `"string.base"`, `"string.min"`, `"number.min"` | `.message(m, "self")`, `.message(m, "domain")`, `.atLeastLength(n, m)`, `.atLeast(n, m)`; see [Custom messages](https://arktype.io/docs/migrating#custom-messages) |
 | `Joi.link("#id")` | a scope or `this` |
 | `.when(...)` | a union of the cases, or a `.narrow()` on the object |
 | `Joi.valid(Joi.ref("a"))`, `.with("a", "b")`, `.xor("a", "b")`, `.or("a", "b")` | a `.narrow()` on the object that compares the keys or checks which are present |
@@ -2225,6 +2210,7 @@ The changes most code meets are to errors. The [checklist](https://arktype.io/do
 | `out.message`, `out.toTraversalError()` | [`out.summary`, `new TraversalError(out)`](https://arktype.io/docs/upgrading#arkerrors-is-no-longer-an-array) |
 | `error.hasCode("min")`, `error instanceof ArkError` | [`error.code === "min"`, and `ArkError` is only a type](https://arktype.io/docs/upgrading#errors-are-plain-objects) |
 | `ctx.errors.add(error)` | [`ctx.error(...)` or `ctx.reject(...)`](https://arktype.io/docs/upgrading#arkerrors-is-no-longer-an-array) |
+| `ctx.reject("a valid zip code")` | [`ctx.mustBe("a valid zip code")`, or a sentence as `ctx.reject({ message })`](https://arktype.io/docs/upgrading#ctxreject-takes-no-string) |
 | `message: ctx => ...`, reading `ctx.problem` | [`message: (error, locale) => ...`](https://arktype.io/docs/upgrading#error-writers-receive-the-error-and-the-locale), from `error.expected` |
 | a snapshot ending `(was a number)` | [the same text without it](https://arktype.io/docs/upgrading#messages-leave-out-the-value) |
 | `configure()` after a Type exists, `clone` | [a config file imported first](https://arktype.io/docs/upgrading#configure-before-any-type-is-created); [remove `clone`](https://arktype.io/docs/upgrading#the-clone-option-is-removed) |
@@ -2243,6 +2229,7 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you call methods on an error, like `hasCode()`, `toString()` or `instanceof ArkError`? [Errors are plain objects](https://arktype.io/docs/upgrading#errors-are-plain-objects).
 - Do you switch on error `code`s, or configure text for `predicate`? See [undeclared](https://arktype.io/docs/upgrading#undeclared-keys-have-the-undeclared-code), [discriminant](https://arktype.io/docs/upgrading#union-misses-have-the-discriminant-code) and [notEqual](https://arktype.io/docs/upgrading#excluded-values-have-the-notequal-codes).
 - Do you read an error's `message` or `problem`, or configure either, in `.configure()`, `configure()`, a Scope or `ctx.reject()`? [`message` leaves out the path, and `problem` is gone](https://arktype.io/docs/upgrading#message-leaves-out-the-path-and-problem-is-gone), and [a message you configure is written after its path](https://arktype.io/docs/upgrading#custom-messages-are-written-after-their-path).
+- Do you pass a string to `ctx.reject()`? [Pass it to `ctx.mustBe()`, or a sentence as `{ message }`](https://arktype.io/docs/upgrading#ctxreject-takes-no-string).
 - Do you snapshot or assert error messages, or their order? See [Errors](https://arktype.io/docs/upgrading#errors): messages leave out the value, each failed check is its own error, `assert` throws the errors' summary, dates and union misses print differently, errors follow the order keys are declared, configured messages apply to more errors, and [other messages changed](https://arktype.io/docs/upgrading#other-messages-that-changed).
 - Do you show the messages of Standard Schema issues, as a form library does? [Each leaves out the path](https://arktype.io/docs/upgrading#standard-schema-messages-leave-out-the-path).
 - Do you configure an `expected`, `actual` or `message` writer? [Writers take the error](https://arktype.io/docs/upgrading#error-writers-receive-the-error-and-the-locale).
@@ -2451,9 +2438,29 @@ const T = type({ name: "string > 1" })
 T["~standard"].validate({ name: "x" })
 ```
 
-A union's `message` writes the path of each error it lists from its own, like `b must be a string or c must be a number`. A `message` you configure, or pass to `ctx.reject()`, reaches the issues as you wrote it, as before. Pass a sentence to a narrow as `ctx.reject({ message: "Enter a valid zip code" })`, since `ctx.reject("a valid zip code")` is what the value must be and reads `must be a valid zip code`.
+A union's `message` writes the path of each error it lists from its own, like `b must be a string or c must be a number`. A `message` you configure, or pass to `ctx.reject()`, reaches the issues as you wrote it, as before. Pass a sentence to a narrow as `ctx.reject({ message: "Enter a valid zip code" })`.
 
 Update snapshots of those messages, and read `summary` from the errors calling the Type returns for one line naming each path.
+
+### ctx.reject takes no string
+
+A string passed to `ctx.reject()` was what the value must be, as one passed to `ctx.mustBe()` is, so a sentence read `must be Enter a valid zip code`. Now that a form shows each issue's `message`, `ctx.reject()` takes only an object, and TypeScript flags a string:
+
+```ts
+const Zip = type("string").narrow(
+	(s, ctx) =>
+		/^\d{5}$/.test(s) || ctx.reject({ message: "Enter a valid zip code" })
+)
+
+// before: ctx.reject("a valid zip code"), or with a sentence, which read "must be Enter a valid zip code"
+const Zip5 = type("string").narrow(
+	(s, ctx) => /^\d{5}$/.test(s) || ctx.mustBe("a valid zip code")
+)
+```
+
+- Pass a sentence as `{ message }`, and what the value must be to `ctx.mustBe()`.
+- At runtime, a string still says what the value must be, so JavaScript or a cast reads as before.
+- `ctx.error()`, which a morph returns, still takes either.
 
 ### Errors are plain objects
 
@@ -5172,7 +5179,7 @@ If a narrow's return type is a type predicate, the `Type` infers it:
 // Type<`ark${string}`>
 const ArkString = type("string").narrow(
 	(data, ctx): data is `ark${string}` =>
-		data.startsWith("ark") || ctx.reject("a string starting with 'ark'")
+		data.startsWith("ark") || ctx.mustBe("a string starting with 'ark'")
 )
 ```
 
@@ -5188,7 +5195,7 @@ The [traversal API](https://arktype.io/docs/traversal-api) documents everything 
 ```ts
 const ShortNumeric = type("string.numeric.parse").filter(
 	// s is the input string, not the parsed number
-	(s, ctx) => s.length <= 10 || ctx.reject("at most 10 characters")
+	(s, ctx) => s.length <= 10 || ctx.mustBe("at most 10 characters")
 )
 
 // 123
@@ -6825,7 +6832,7 @@ const Json = type("string").pipe((s, ctx) => {
 Json("{")
 ```
 
-`reject` and `error` take a string, which is what the value must be, or the [parts of an error](https://arktype.io/docs/configuration#error-messages): `expected` and `actual`, or a `message` that replaces the whole sentence. `relativePath` reports it below the value being checked, where `path` would replace its whole path from the root of the data:
+`reject` takes the [parts of an error](https://arktype.io/docs/configuration#error-messages): `expected` and `actual`, or a `message` that replaces the whole sentence. It doesn't take a string, which would read as a sentence but say what the value must be: pass that to `mustBe`. `error` takes either, its string being what the value must be. `relativePath` reports it below the value being checked, where `path` would replace its whole path from the root of the data:
 
 ```ts
 const Range = type({ start: "number", end: "number" }).narrow(
@@ -6915,6 +6922,8 @@ const propString = 'key1[Symbol(key2)].key3[4]["~key5"]'
 add an [ArkError](https://arktype.io/docs/errors) and return `false`
 
 - useful for predicates like `.narrow`
+- `{ message: "Enter a valid email" }` is the whole sentence an issue says
+- to say what the value must be, as `must be even`, pass `"even"` to [`mustBe`](https://arktype.io/docs/traversal-api#mustbe)
 
 ### `mustBe`
 
@@ -6928,6 +6937,7 @@ add an [ArkError](https://arktype.io/docs/errors) from a description and return 
 add and return an [ArkError](https://arktype.io/docs/errors)
 
 - useful for morphs like `.pipe`
+- warning: a string is what the value must be: `error("valid JSON")` reads `must be valid JSON`, so pass a sentence as `{ message }`
 
 ### `path`
 
@@ -7093,15 +7103,15 @@ There are two ways to change what an error says:
 
 ```ts
 const User = type({
-	name: "string",
-	age: type("number >= 18").configure({ expected: "an adult's age" }),
-	email: type("string.email").configure({ message: "Enter a valid email" })
+	name: type.string.atLeastLength(1, "Enter your name"),
+	age: type("number >= 18").describe("an adult's age"),
+	email: type("string.email").message("Enter a valid email")
 })
 
-// ArkErrors: name must be a string
+// ArkErrors: name: Enter your name
 //            age must be an adult's age
 //            email: Enter a valid email
-User({ name: 5, age: 3, email: "x" })
+User({ name: "", age: 3, email: "x" })
 ```
 
 `expected`, `actual` and `message` each take a string or a function. See [Errors](https://arktype.io/docs/errors) for what an error contains.
@@ -7147,11 +7157,31 @@ Age(101)
 
 ### message
 
-One whole sentence in place of "must be `expected`". It's the error's `message`, so it's what a [Standard Schema](https://arktype.io/docs/standard-schema) consumer, like a form library, shows beside a field, and a summary writes it after the error's path and a colon:
+One whole sentence in place of "must be `expected`". It's the error's `message`, so it's what a [Standard Schema](https://arktype.io/docs/standard-schema) consumer, like a form library, shows beside a field, and a summary writes it after the error's path and a colon.
+
+Pass it beside a constraint, as the last argument to [`.atLeastLength()`, `.lessThan()`, `.matching()`](https://arktype.io/docs/type-api#constraints) or any other constraint method, and only that constraint says it, as Zod's `.min(8, "...")` does:
+
+```ts
+const Password = type.string
+	.atLeastLength(8, "Use 8 or more characters")
+	.matching(/[0-9]/, "Include a number")
+	.matching(/[A-Z]/, "Include a capital letter")
+
+// ArkErrors: Include a number
+//            Include a capital letter
+//            Use 8 or more characters
+Password("short")
+
+// a value of the wrong type keeps arktype's text
+// ArkErrors: must be a string
+Password(5)
+```
+
+`.message(text)` configures the whole Type, as `.configure({ message: text })` does, so a value of the wrong type and a missing key say it too:
 
 ```ts
 const Signup = type({
-	email: type("string.email").configure({ message: "Enter a valid email" })
+	email: type("string.email").message("Enter a valid email")
 })
 
 const out = Signup({ email: "x" })
@@ -7169,34 +7199,22 @@ if (out instanceof type.errors) {
 Signup({})
 ```
 
-A message is never composed into another error's, and it applies to the Type it's configured on:
+A message is never composed into another error's, as an `expected` is, and it applies to the constraint or the Type it's configured on:
 
 - A union's error lists what its branches expected, not their messages, unless every failing branch has the same message, which the union's error then says. It lists them too where that message is one configured [by code](https://arktype.io/docs/configuration#by-code) rather than on each branch's Type, or [begins as arktype's own would](https://arktype.io/docs/errors#summary-lines).
 - A message on a union replaces what it lists. To say what a union must be instead, [describe](https://arktype.io/docs/configuration#description) it: `type({ a: "string" }).or({ b: "number" }).describe("a shape")` says `must be a shape`.
 - A message on a [pipe](https://arktype.io/docs/expressions#pipe) is also the message of the errors validating its output.
 - A missing key says the message of its whole value, so configure that last, after any `.pipe()` or `.to()`.
 - A message doesn't apply to the Types inside its own, so one on an object is what data that isn't an object says, and each key keeps its own.
-- A message is what every check of its Type says. For one check's alone, pass that check's [error code](https://arktype.io/docs/errors#error-codes) as a [selector](https://arktype.io/docs/expressions#meta):
+- A message on a Type is what every check of it says. For a check written in a string definition, or a keyword's, like `string.email`'s pattern, pass the check's [error code](https://arktype.io/docs/errors#error-codes) as a [selector](https://arktype.io/docs/expressions#meta), as in `type("string >= 8").message("Use 8 or more characters", "minLength")`.
+
+`"domain"` selects a value of the wrong type, and `"self"` the Type's own node, whose message a missing key says. Beside constraints' messages, they give every failure its own:
 
 ```ts
-const Password = type("string >= 8 & /[0-9]/")
-	.configure({ message: "Use 8 or more characters" }, "minLength")
-	.configure({ message: "Include a number" }, "pattern")
-
-// ArkErrors: Include a number
-//            Use 8 or more characters
-Password("short")
-
-// ArkErrors: must be a string
-Password(5)
-```
-
-`"domain"` selects a value of the wrong type, and `"self"` the Type's own node, whose message a missing key says:
-
-```ts
-const Sku = type(/^[A-Z]{3}-\d{4}$/)
-	.configure({ message: "SKU is required" }, "self")
-	.configure({ message: "SKU must be text" }, "domain")
+const Sku = type.string
+	.matching(/^[A-Z]{3}-\d{4}$/, "SKU looks like ABC-1234")
+	.message("SKU is required", "self")
+	.message("SKU must be text", "domain")
 
 const Product = type({ sku: Sku })
 
@@ -7206,11 +7224,11 @@ Product({})
 // ArkErrors: sku: SKU must be text
 Product({ sku: 5 })
 
-// ArkErrors: sku must be matched by ^[A-Z]{3}-\d{4}$
+// ArkErrors: sku: SKU looks like ABC-1234
 Product({ sku: "x" })
 ```
 
-A code selects every check of that kind in the Type, a nested key's included, so configure a key's value rather than the object around it. A message configured without a selector replaces those configured before it, so configure it first.
+A code selects every check of that kind in the Type, a nested key's included, so configure a key's value rather than the object around it, or pass the message to the constraint method. A message configured without a selector replaces those configured before it, a constraint's included, and a constraint added after it makes a Type whose missing key doesn't say it, so add a whole-value message's `"self"` and `"domain"` after the constraints.
 
 A function receives the error, including its `expected` and `actual`. A summary writes its text after the path and a colon as it does a string's, but a missing key doesn't say it:
 
@@ -7987,11 +8005,11 @@ const result = Form["~standard"].validate({ name: "Ada", age: "old" })
 // }
 ```
 
-A union's message lists each branch's path from the union's, like `b must be a string or c must be a number`. A [`message`](https://arktype.io/docs/configuration#message) you configure, or pass to `ctx.reject`, is the issue's message as you wrote it, so it's what a form shows:
+A union's message lists each branch's path from the union's, like `b must be a string or c must be a number`. A [`message`](https://arktype.io/docs/configuration#message) you configure, pass to a constraint method or pass to `ctx.reject`, is the issue's message as you wrote it, so it's what a form shows:
 
 ```ts
 const Signup = type({
-	email: type("string.email").configure({ message: "Enter a valid email" })
+	email: type("string.email").message("Enter a valid email")
 })
 
 Signup["~standard"].validate({ email: "x" })
@@ -8225,7 +8243,7 @@ import { type } from "arktype"
 import { useForm } from "react-hook-form"
 
 const User = type({
-	name: ["string > 0", "@", { message: "Name is required" }],
+	name: type.string.atLeastLength(1, "Name is required"),
 	age: "number.integer >= 0"
 })
 
@@ -8915,6 +8933,26 @@ const good = AToZ("alcatraz") // "alcatraz"
 const badPattern = AToZ("albatross")
 ```
 
+### `message`
+
+set the sentence an error says
+
+- equivalent to `.configure({ message })` (see [`configure`](https://arktype.io/docs/type-api#configure))
+- a missing key says it too, as Zod's `required_error`
+- a selector like `"minLength"` scopes it to that check, as Zod's `.min(1, "Name is required")`
+
+```ts
+const Name = type("string >= 1").message("Name is required")
+// ArkErrors: Name is required
+const empty = Name("")
+
+const Password = type("string >= 8").message("Use 8 or more characters", "minLength")
+// ArkErrors: Use 8 or more characters
+const short = Password("abc")
+// ArkErrors: must be a string
+const nonString = Password(5)
+```
+
 ## Composition
 
 ### `and`
@@ -9375,6 +9413,22 @@ const Even = type.number.divisibleBy(2)
 Even(3)
 ```
 
+Each takes a [`message`](https://arktype.io/docs/configuration#message) as its last argument, a sentence or a function of the error, which that constraint alone says:
+
+```ts
+const Handle = type.string
+	.atLeastLength(3, "Use 3 or more characters")
+	.matching(/^[a-z]+$/, "Use lowercase letters only")
+
+// ArkErrors: Use 3 or more characters
+Handle("ab")
+
+const Age = type.number.atLeast(18, error => `Must be ${error.rule} or older`)
+
+// ArkErrors: Must be 18 or older
+Age(16)
+```
+
 ## Serialization
 
 [To JSON Schema](https://arktype.io/docs/json-schema/to-json-schema) covers `toJsonSchema()` and `~standard.jsonSchema`: their options, what they can't represent, and the fallbacks. [Standard Schema](https://arktype.io/docs/standard-schema) covers `~standard.validate`.
@@ -9603,10 +9657,10 @@ See [Errors](https://arktype.io/docs/errors) for everything an error carries.
 
 ## Why does my error say `must be Enter a valid email`?
 
-A string passed to `.describe()`, `ctx.reject()` or `ctx.mustBe()`, or configured as `expected`, is what the value must be, so ArkType writes "must be" before it. A whole sentence is a [`message`](https://arktype.io/docs/configuration#message):
+A string passed to `.describe()`, `ctx.mustBe()` or `ctx.error()`, or configured as `expected`, is what the value must be, so ArkType writes "must be" before it. A whole sentence is a [`message`](https://arktype.io/docs/configuration#message), which `.message()` sets, and which `ctx.reject()` takes as `{ message }` (it doesn't take a string):
 
 ```ts
-const Email = type("string.email").configure({ message: "Enter a valid email" })
+const Email = type("string.email").message("Enter a valid email")
 
 const Zip = type("string").narrow(
 	(s, ctx) =>
