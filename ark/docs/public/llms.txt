@@ -1,6 +1,6 @@
 # ArkType
 
-> TypeScript's smallest, fastest validator.
+> TypeScript's smallest, fastest validator. One prompt away.
 
 The homepage's benchmark board averages other projects' public benchmarks, each in the unit it measures. Standings as of November 19, 2026. [The rule it follows, every result behind it and how to rerun them](https://arktype.io/docs/precompile/benchmarks.md)
 
@@ -30,7 +30,7 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 - [Codecs](https://arktype.io/docs/codecs.md): Pair a morph with its inverse to encode output back into input.
 - [Scopes](https://arktype.io/docs/scopes.md): Define aliases that reference each other, then use them in definitions or export them as a module of Types.
 - [Generics](https://arktype.io/docs/generics.md): Declare definitions with parameters and instantiate them like TypeScript generics.
-- [Declare](https://arktype.io/docs/declare.md): Define a Type that must match an existing TypeScript type exactly.
+- [Declare](https://arktype.io/docs/declare.md): Define a Type checked against an existing TypeScript type, exactly or as assignable to it.
 
 ## ArkType: Validation
 
@@ -108,7 +108,7 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 
 ## Optional
 
-- [ArkType, every page](https://arktype.io/llms-full.txt): TypeScript's 1:1 validator
+- [ArkType, every page](https://arktype.io/llms-full.txt): TypeScript's smallest, fastest validator. One prompt away.
 - [Precompile, every page](https://arktype.io/docs/precompile/llms.txt): Construct your Types when you build
 - [ArkRegex, every page](https://arktype.io/docs/regex/llms.txt): Regular expressions with inferred types
 - [Attest, every page](https://arktype.io/docs/attest/llms.txt): Type assertions and benchmarks

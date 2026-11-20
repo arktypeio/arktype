@@ -1,4 +1,5 @@
 import type {
+	MessageConfig,
 	ExactLength,
 	ExclusiveNumericRangeSchema,
 	InclusiveNumericRangeSchema,
@@ -11,21 +12,37 @@ import type { BaseType } from "./base.ts"
 interface Type<out t extends string = string, in out $ = {}>
 	extends BaseType<t, $> {
 	matching<const schema extends Pattern.Schema>(
-		schema: schema
+		schema: schema,
+		message?: MessageConfig<"pattern">
 	): schema extends string ? Type<regex.infer<schema>, $>
 	: schema extends { rule: infer pattern extends string } ?
 		Type<regex.infer<pattern>, $>
 	:	this
 
-	atLeastLength(schema: InclusiveNumericRangeSchema): this
+	atLeastLength(
+		schema: InclusiveNumericRangeSchema,
+		message?: MessageConfig<"minLength">
+	): this
 
-	atMostLength(schema: InclusiveNumericRangeSchema): this
+	atMostLength(
+		schema: InclusiveNumericRangeSchema,
+		message?: MessageConfig<"maxLength">
+	): this
 
-	moreThanLength(schema: ExclusiveNumericRangeSchema): this
+	moreThanLength(
+		schema: ExclusiveNumericRangeSchema,
+		message?: MessageConfig<"minLength">
+	): this
 
-	lessThanLength(schema: ExclusiveNumericRangeSchema): this
+	lessThanLength(
+		schema: ExclusiveNumericRangeSchema,
+		message?: MessageConfig<"maxLength">
+	): this
 
-	exactlyLength(schema: ExactLength.Schema): this
+	exactlyLength(
+		schema: ExactLength.Schema,
+		message?: MessageConfig<"exactLength">
+	): this
 }
 
 export type { Type as StringType }

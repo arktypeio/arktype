@@ -6,16 +6,32 @@ import { ClaimText } from "../mdx/Claim.tsx"
 import { categoryOf, heroStats, methodHref } from "./boardFacts.ts"
 
 /**
- * The hero's second line, after the headline lib/claims.ts guards. It states
- * no number, so it lives here; the candidates it was elected from are in the
- * commit that added it.
+ * The hero's second line, after the headline lib/claims.ts guards: with it
+ * the h1 is the tagline word for word (siteDescription in app/metadata.ts,
+ * package.json, the README). It states no number, so it lives here.
  */
-export const heroLine = "Optimized for agents and humans."
+export const heroLine = "One prompt away."
 
-/** what the build step and the migration each cost, which is the pitch */
-export const heroLede = "One Vite plugin. One prompt to migrate from Zod."
+/**
+ * The quest the hero offers, under its numbers: a link to #migrate, which is
+ * where "one prompt" is spelled out. It promises nothing the prompt has to
+ * do, so the prompt it leads to is the short one.
+ */
+export const heroLede = "Level up your Zod schemas."
 
 const rise = (i: number) => ({ "--i": i }) as CSSProperties
+
+/**
+ * "A quest is available here": an exclamation point drawn for this page, a
+ * tapered stroke over a round dot, in the gold of the button under it. The
+ * page has one, and the link it sits in is named by its sentence alone.
+ */
+const QuestMark = () => (
+	<svg className="quest-mark" viewBox="0 0 10 24" aria-hidden focusable="false">
+		<path d="M5 1C3.2 1 1.9 2.3 2.1 4.1l1.2 10.6c.1 1 .8 1.6 1.7 1.6s1.6-.6 1.7-1.6L7.9 4.1C8.1 2.3 6.8 1 5 1Z" />
+		<circle cx="5" cy="20.6" r="2.4" />
+	</svg>
+)
 
 /**
  * The first screen: the claim, then the three numbers that back it at the
@@ -27,7 +43,7 @@ export const Hero = () => {
 	return (
 		<section className="hero" aria-labelledby="hero-title" data-hero>
 			<div className="eyebrow rise" style={rise(0)}>
-				<b>arktype</b> {"//"} TypeScript's 1:1 validator
+				<b>arktype</b>
 				{preview && (
 					<Link className="eyebrow-new" href="/docs/precompile">
 						precompile <span className="next-tag">next release</span>
@@ -66,7 +82,10 @@ export const Hero = () => {
 				})}
 			</div>
 			<p className="lede rise" style={rise(2)}>
-				{heroLede}
+				<a className="quest" href="#migrate">
+					<QuestMark />
+					{heroLede}
+				</a>
 			</p>
 			<div className="ctas rise" style={rise(3)}>
 				<Link className="btn btn-gold" href="/docs/intro/setup">
@@ -75,9 +94,18 @@ export const Hero = () => {
 						→
 					</span>
 				</Link>
-				<a className="btn" href="#migrate">
-					Migrate from Zod
-				</a>
+				<span className="quest-cta">
+					<a className="btn" href="#migrate">
+						Migrate from Zod
+					</a>
+					{/* what taking the quest does: landing.css sends these up past the button */}
+					<span className="level-up" aria-hidden>
+						<i />
+						<i />
+						<i />
+						<i />
+					</span>
+				</span>
 				<span className="hero-foot">
 					{medianOf(zodCompiled.versus)} faster than Zod's own{" "}
 					<code>z.compile</code> at the median, too ·{" "}
