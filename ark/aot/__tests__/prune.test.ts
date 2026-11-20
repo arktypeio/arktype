@@ -177,7 +177,7 @@ const droppedReading = (read: string, files: Record<string, string> = {}) =>
 		...files
 	})
 
-const everyMember = ["assert", "meta", "~standard", "methods"]
+const everyMember = ["assert", "meta", "~standard", "methods", "withContext"]
 
 // a lazy build passes the factory creating Admin the User it read
 const composed = {
@@ -488,7 +488,7 @@ export const Fields = { even: Even, name: type("string") }
 					"/types.ts": `import { type } from "arktype"\n\nconst User = type({ name: "string" })\n\nexport default User`,
 					"/main.ts": `import User from "./types.ts"\n\nUser.assert({})`
 				})
-			).equals(["meta", "~standard", "methods"])
+			).equals(["meta", "~standard", "methods", "withContext"])
 		})
 
 		it("an entry's own validator, which it doesn't export", async () => {
@@ -1358,7 +1358,8 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 				attest(await droppedThrough(fw, page)).equals([
 					"meta",
 					"~standard",
-					"methods"
+					"methods",
+					"withContext"
 				])
 			}
 		})
@@ -2145,10 +2146,10 @@ console.log(User({ name: 5 }, undefined, () => "handled"))
 			)
 			try {
 				attest(await textsOf({ preset: undefined })).snap([
-					"prune: keeping assert, meta, ~standard and methods, because the validator at types.ts:3:21 is lost where main.ts:7:6 passes it to send, which the build can't follow. Set assert, meta, ~standard and methods in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning."
+					"prune: keeping assert, meta, ~standard, methods and withContext, because the validator at types.ts:3:21 is lost where main.ts:7:6 passes it to send, which the build can't follow. Set assert, meta, ~standard, methods and withContext in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning."
 				])
 				attest(await textsOf({ members: { assert: true } })).snap([
-					"prune: keeping meta, ~standard and methods, because the validator at types.ts:3:21 is lost where main.ts:7:6 passes it to send, which the build can't follow. Set meta, ~standard and methods in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning."
+					"prune: keeping meta, ~standard, methods and withContext, because the validator at types.ts:3:21 is lost where main.ts:7:6 passes it to send, which the build can't follow. Set meta, ~standard, methods and withContext in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning."
 				])
 				attest(await textsOf({ members })).equals([])
 				// setting what it kept changes nothing it writes
@@ -5236,7 +5237,7 @@ export const shown = type({ shown: "string" })
 					)
 					attest(await outputOfSplit(root)).equals({
 						warnings: [
-							"prune: keeping assert, meta, ~standard and methods, because pages/shown.js exports shown, which a dependency may read. Set assert, meta, ~standard and methods in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning."
+							"prune: keeping assert, meta, ~standard, methods and withContext, because pages/shown.js exports shown, which a dependency may read. Set assert, meta, ~standard, methods and withContext in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning."
 						],
 						keepsStandard: true,
 						stdout: " function\n"

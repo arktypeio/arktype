@@ -92,6 +92,7 @@ import {
 	addErrors,
 	allowsAcyclic,
 	allowsInContext,
+	readingContextWith,
 	allowsUntracked,
 	pipe,
 	transform,
@@ -242,6 +243,14 @@ const assertOf =
 	(node: BaseNode) =>
 	(data: unknown, pipedFromCtx?: Traversal): unknown =>
 		node(data, pipedFromCtx, throwOnDefault)
+
+export const writeContextAtDefinitionMessage =
+	"A narrow read ctx.context where ArkType checks a literal as it defines a Type, before any call can pass one. Narrow a wider Type, like string, and check the literal in the narrow"
+
+// a result a narrow gave as a Type checks a literal while it's defined would
+// be kept for every call, so it can't read a context no call has passed yet
+const readContextAtDefinition = (): never =>
+	throwParseError(writeContextAtDefinitionMessage)
 
 // long hashes mostly serve parsing, so they're dropped once the job that wrote them ends
 let hashedInJob: NodeCache[] = []
@@ -1018,7 +1027,11 @@ export abstract class BaseNode<
 
 	// allows data without using the Type, e.g. a key an intersection checks
 	allowsUnused(data: d["prerequisite"]): boolean {
-		return (this.c.preJit ?? this.allows)(data)
+		const allows = this.c.preJit ?? this.allows
+		// as it's defined, so no call has passed a context to read
+		return this.allowsCtx ?
+				readingContextWith(readContextAtDefinition, () => allows(data))
+			:	allows(data)
 	}
 
 	/** _in should be used internally instead */

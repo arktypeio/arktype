@@ -45,7 +45,7 @@ const propString = 'key1[Symbol(key2)].key3[4]["~key5"]'`
  * {@link typeMembersInProse}, so a new member can't silently go undocumented.
  */
 const typeApiGroups = {
-	Validation: ["assert", "allows", "from"],
+	Validation: ["assert", "allows", "from", "withContext"],
 	Inference: [
 		"infer",
 		"inferIn",

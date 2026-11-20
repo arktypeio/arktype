@@ -969,7 +969,7 @@ contextualize(function (this: Mocha.Suite) {
 			}
 			const [code, warnings] = await warnedIn()
 			attest(warnings).snap([
-				"prune: keeping assert, meta, ~standard and methods, because the validator at a.ts:3:18 is lost where main.ts:3:1 stores it on the global object, which code outside the bundle may read. Set assert, meta, ~standard and methods in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning.",
+				"prune: keeping assert, meta, ~standard, methods and withContext, because the validator at a.ts:3:18 is lost where main.ts:3:1 stores it on the global object, which code outside the bundle may read. Set assert, meta, ~standard, methods and withContext in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning.",
 				"precompile: baking each introspection member into the validator at a.ts:3:18, because main.ts:3:1 stores it on the global object, which code outside the bundle may read. Set expression, description, json, toJSON, toJsonSchema and ~standard.jsonSchema in members, each false where no code reads it, to build without this warning."
 			])
 			const written = writtenOf(dir)

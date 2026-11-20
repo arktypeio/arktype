@@ -798,7 +798,7 @@ var interned = (key, create, ...args) =>
 	intern(internedTable(key), [], () => create(...args))
 
 // <stdin>
-var intersectionnuqurd1csx8up = [
+var intersectionj0sv370oqte88 = [
 	/* @__PURE__ */ sited(
 		(data, checkers) => {
 			if (
@@ -806,6 +806,7 @@ var intersectionnuqurd1csx8up = [
 				("meta" in data && !booleanChecker(data.meta)) ||
 				("~standard" in data && !booleanChecker(data["~standard"])) ||
 				("methods" in data && !booleanChecker(data.methods)) ||
+				("withContext" in data && !booleanChecker(data.withContext)) ||
 				("expression" in data && !booleanChecker(data.expression)) ||
 				("description" in data && !booleanChecker(data.description)) ||
 				("json" in data && !booleanChecker(data.json)) ||
@@ -821,6 +822,7 @@ var intersectionnuqurd1csx8up = [
 					case "meta":
 					case "~standard":
 					case "methods":
+					case "withContext":
 					case "expression":
 					case "description":
 					case "json":
@@ -838,6 +840,7 @@ var intersectionnuqurd1csx8up = [
 			meta: /* @__PURE__ */ optional(booleanChecker),
 			"~standard": /* @__PURE__ */ optional(booleanChecker),
 			methods: /* @__PURE__ */ optional(booleanChecker),
+			withContext: /* @__PURE__ */ optional(booleanChecker),
 			expression: /* @__PURE__ */ optional(booleanChecker),
 			description: /* @__PURE__ */ optional(booleanChecker),
 			json: /* @__PURE__ */ optional(booleanChecker),
@@ -850,10 +853,10 @@ var intersectionnuqurd1csx8up = [
 		"removed"
 	)
 ]
-var intersection18s5mcd1ew9bfr = /* @__PURE__ */ (([
-	intersectionnuqurd1csx8upAllows
+var intersectiona1747b08zjj0x = /* @__PURE__ */ (([
+	intersectionj0sv370oqte88Allows
 ]) => {
-	const intersection18s5mcd1ew9bfrAllows = /* @__PURE__ */ sited(
+	const intersectiona1747b08zjj0xAllows = /* @__PURE__ */ sited(
 		(data, checkers) => {
 			if (
 				("preset" in data && !checkers[0](data.preset)) ||
@@ -941,7 +944,7 @@ var intersection18s5mcd1ew9bfr = /* @__PURE__ */ (([
 					"a module path or false"
 				)
 			),
-			members: /* @__PURE__ */ optional(intersectionnuqurd1csx8upAllows),
+			members: /* @__PURE__ */ optional(intersectionj0sv370oqte88Allows),
 			errors: /* @__PURE__ */ optional(
 				/* @__PURE__ */ units(["all", "first", "none"])
 			),
@@ -1039,9 +1042,9 @@ var intersection18s5mcd1ew9bfr = /* @__PURE__ */ (([
 		0,
 		"removed"
 	)
-	return [intersection18s5mcd1ew9bfrAllows]
-})(intersectionnuqurd1csx8up)
-var create12fpvlf14u2zct = ([allows], id, holes = []) => {
+	return [intersectiona1747b08zjj0xAllows]
+})(intersectionj0sv370oqte88)
+var create1q5hta0h0lh5t = ([allows], id, holes = []) => {
 	const validator = (data, pipedFromCtx, onFail) =>
 		allows(data) ?
 			(allows.t?.(data) ?? data)
@@ -1051,12 +1054,13 @@ var create12fpvlf14u2zct = ([allows], id, holes = []) => {
 				pipedFromCtx ? errors => pipedFromCtx.piped(errors) : onFail
 			)
 	validator.allows = freeze(allows)
+	validator.withContext = freeze(context => (void 0)(validator, context))
 	return holdHoles(freeze(validator), id, holes)
 }
-var intersectionr7db5b16qhzdr = /* @__PURE__ */ (([
-	intersectionnuqurd1csx8upAllows
+var intersection1kiu37t1iquj2h = /* @__PURE__ */ (([
+	intersectionj0sv370oqte88Allows
 ]) => {
-	const intersectionr7db5b16qhzdrAllows = /* @__PURE__ */ sited(
+	const intersection1kiu37t1iquj2hAllows = /* @__PURE__ */ sited(
 		(data, checkers) => {
 			if (
 				("preset" in data && !checkers[0](data.preset)) ||
@@ -1136,7 +1140,7 @@ var intersectionr7db5b16qhzdr = /* @__PURE__ */ (([
 					"a module path or false"
 				)
 			),
-			members: /* @__PURE__ */ optional(intersectionnuqurd1csx8upAllows),
+			members: /* @__PURE__ */ optional(intersectionj0sv370oqte88Allows),
 			errors: /* @__PURE__ */ optional(
 				/* @__PURE__ */ units(["all", "first", "none"])
 			),
@@ -1221,34 +1225,34 @@ var intersectionr7db5b16qhzdr = /* @__PURE__ */ (([
 		0,
 		"removed"
 	)
-	return [intersectionr7db5b16qhzdrAllows]
-})(intersectionnuqurd1csx8up)
-var intersection1gc9l3d1josyao = /* @__PURE__ */ (([
-	intersectionr7db5b16qhzdrAllows
+	return [intersection1kiu37t1iquj2hAllows]
+})(intersectionj0sv370oqte88)
+var intersection84g0ee1bxihyt = /* @__PURE__ */ (([
+	intersection1kiu37t1iquj2hAllows
 ]) => {
-	const intersection1gc9l3d1josyaoAllows = /* @__PURE__ */ closedProps({
+	const intersection84g0ee1bxihytAllows = /* @__PURE__ */ closedProps({
 		$schema: /* @__PURE__ */ optional(stringCheck),
-		precompile: /* @__PURE__ */ optional(intersectionr7db5b16qhzdrAllows)
+		precompile: /* @__PURE__ */ optional(intersection1kiu37t1iquj2hAllows)
 	})
-	return [intersection1gc9l3d1josyaoAllows]
-})(intersectionr7db5b16qhzdr)
-var intersectionwrrov10jn1adl = /* @__PURE__ */ (([
-	intersectionr7db5b16qhzdrAllows
+	return [intersection84g0ee1bxihytAllows]
+})(intersection1kiu37t1iquj2h)
+var intersection1j4pd4n1jwocfa = /* @__PURE__ */ (([
+	intersection1kiu37t1iquj2hAllows
 ]) => {
-	const intersectionwrrov10jn1adlAllows = /* @__PURE__ */ closedProps({
-		precompile: /* @__PURE__ */ optional(intersectionr7db5b16qhzdrAllows),
+	const intersection1j4pd4n1jwocfaAllows = /* @__PURE__ */ closedProps({
+		precompile: /* @__PURE__ */ optional(intersection1kiu37t1iquj2hAllows),
 		aot: /* @__PURE__ */ optional(/* @__PURE__ */ unit(true))
 	})
-	return [intersectionwrrov10jn1adlAllows]
-})(intersectionr7db5b16qhzdr)
+	return [intersection1j4pd4n1jwocfaAllows]
+})(intersection1kiu37t1iquj2h)
 var created0
 var created1
 var created2
 var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
-				const validator0 = interned("hm6a6z0jsq1k0", () =>
-					create12fpvlf14u2zct(intersection18s5mcd1ew9bfr, "1vrd1uw0")
+				const validator0 = interned("1vfc2j508amzo4", () =>
+					create1q5hta0h0lh5t(intersectiona1747b08zjj0x, "1706xit1")
 				)
 				return validator0
 			})())
@@ -1257,8 +1261,8 @@ var get0 = () => {
 var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
-				const validator0 = interned("xg82nv06pk8jr", () =>
-					create12fpvlf14u2zct(intersection1gc9l3d1josyao, "2bltfq0s")
+				const validator0 = interned("inq2he0srsmw8", () =>
+					create1q5hta0h0lh5t(intersection84g0ee1bxihyt, "1y1ytoj0")
 				)
 				return validator0
 			})())
@@ -1267,8 +1271,8 @@ var get1 = () => {
 var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
-				const validator0 = interned("asrfrq0l73vcp", () =>
-					create12fpvlf14u2zct(intersectionwrrov10jn1adl, "sjni0h1r")
+				const validator0 = interned("73gcco1k0mhoe", () =>
+					create1q5hta0h0lh5t(intersection1j4pd4n1jwocfa, "12jiwy81")
 				)
 				return validator0
 			})())
