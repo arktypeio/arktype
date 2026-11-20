@@ -494,7 +494,9 @@ configure({
 	predicate: {
 		// before: ctx => ctx.meta.title!
 		expected: error =>
-			error.meta?.title ?? (error.meta?.keyword ? error.description : "valid")
+			error.meta?.title ??
+			(error.meta?.keyword ? error.description : undefined) ??
+			"valid"
 	}
 })
 ```
