@@ -267,10 +267,65 @@ contextualize(() => {
 					$defs: { a: { type: "string" } }
 					[k: string]: unknown
 				}>
-			).type.toString.snap("string")
+			).type.toString.snap("string | null")
 		})
 
-		it("adds nothing without a type, which the reader rejects", () => {
+		it("without a type, unions the schema with null", () => {
+			attest(
+				inferred({
+					$defs: {
+						a: { type: "object", properties: { id: { type: "number" } } }
+					},
+					allOf: [{ $ref: "#/$defs/a" }],
+					nullable: true
+				})
+			).type.toString.snap("{ id?: number } | null")
+			attest(
+				inferred({
+					anyOf: [{ type: "string" }, { type: "number" }],
+					nullable: true
+				})
+			).type.toString.snap("string | number | null")
+			attest(
+				inferred({
+					oneOf: [{ type: "string" }, { type: "boolean" }],
+					nullable: true
+				})
+			).type.toString.snap("string | boolean | null")
+			attest(
+				inferred({
+					$defs: { a: { type: "string" } },
+					$ref: "#/$defs/a",
+					nullable: true
+				})
+			).type.toString.snap("string | null")
+			attest(inferred({ enum: ["a", "b"], nullable: true })).type.toString.snap(
+				'"a" | "b" | null'
+			)
+			attest(inferred({ const: "a", nullable: true })).type.toString.snap(
+				'"a" | null'
+			)
+			attest(
+				inferred({
+					$defs: { a: { type: "string" } },
+					allOf: [{ $ref: "#/$defs/a" }],
+					nullable: false
+				})
+			).type.toString.snap("string")
+			attest(
+				inferred({ enum: ["a", "b"], not: { const: "b" }, nullable: true })
+			).type.toString.snap('"a" | null')
+			attest(inferred({ not: {}, nullable: true })).type.toString.snap("null")
+			attest(inferred({ nullable: true })).type.toString.snap("unknown")
+			// draft-07 ignores $ref siblings, while a widened $schema may be 2020-12
+			attest(
+				{} as jsonSchema.infer<{
+					$schema: "http://json-schema.org/draft-07/schema#"
+					definitions: { a: { type: "string" } }
+					$ref: "#/definitions/a"
+					nullable: true
+				}>
+			).type.toString.snap("string")
 			attest(
 				{} as jsonSchema.infer<{
 					$schema: string
@@ -278,7 +333,15 @@ contextualize(() => {
 					$defs: { a: { type: "string" } }
 					nullable: true
 				}>
-			).type.toString.snap("string")
+			).type.toString.snap("string | null")
+			// an optional type may be absent at runtime, where nullable unions with null
+			attest(
+				{} as jsonSchema.infer<{
+					type?: "string"
+					enum: ["a"]
+					nullable: true
+				}>
+			).type.toString.snap('"a" | null')
 		})
 
 		it("beside a $ref, adds null to the type beside it", () => {

@@ -2485,17 +2485,26 @@ true {"name":"Ada","age":1}
 			).equals(run(written))
 		})
 
-		it("serializes a ~standard failure with JSON.stringify when ArkErrors#toJSON is pruned", async () => {
+		it("serializes a ~standard failure and result.issues with JSON.stringify when ArkErrors#toJSON is pruned", async () => {
 			const files = writeFixture(
 				{
 					"main.ts": `import { type } from "arktype"
 
-const User = type({ name: "string" })
-console.log(JSON.stringify(User["~standard"].validate({})))
-console.log(JSON.stringify(User["~standard"].validate({ name: "secret" })))
+const Login = type({ password: "string >= 12", amount: "number" })
+const bad = Login["~standard"].validate({ password: "hunter2", amount: 10n })
+console.log(JSON.stringify(bad))
+if (bad.issues) {
+	console.log(JSON.stringify(bad.issues))
+	console.log(
+		Array.isArray(bad.issues),
+		(bad.issues[0] as { data?: unknown }).data,
+		(bad.issues[1] as { data?: unknown }).data === 10n
+	)
+}
+console.log(JSON.stringify(Login["~standard"].validate({ password: "long-enough-pw", amount: 1 })))
 `
 				},
-				fromHere("temp", "prunedStandardJson")
+				tempPath("prunedStandardJson")
 			)
 			const entry = { entryPoints: [join(files, "main.ts")] }
 			const unpruned = run(
@@ -2506,8 +2515,10 @@ console.log(JSON.stringify(User["~standard"].validate({ name: "secret" })))
 			attest(defaultPruned).equals(unpruned)
 			attest(smallestPruned).equals(unpruned)
 			attest(defaultPruned)
-				.snap(`{"issues":[{"code":"required","path":["name"],"expected":"a string","message":"must be a string (was missing)"}],"message":"name must be a string (was missing)"}
-{"value":{"name":"secret"}}
+				.snap(`{"issues":[{"code":"minLength","path":["password"],"expected":"at least length 12","message":"must be at least length 12"},{"code":"domain","path":["amount"],"expected":"a number","message":"must be a number"}],"message":"password must be at least length 12\\namount must be a number"}
+[{"code":"minLength","path":["password"],"expected":"at least length 12","message":"must be at least length 12"},{"code":"domain","path":["amount"],"expected":"a number","message":"must be a number"}]
+true hunter2 true
+{"value":{"password":"long-enough-pw","amount":1}}
 `)
 		})
 

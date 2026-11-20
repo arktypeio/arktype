@@ -79,6 +79,16 @@ See the [migration guide](https://arktype.io/docs/migrating) for Zod, Valibot, T
 - **[With agents](https://arktype.io/docs/agents)** — the skill and Markdown docs at [arktype.io/llms.txt](https://arktype.io/llms.txt)
 - **[What's new in 3.0](https://arktype.io/docs/blog/3.0)** — release notes and [upgrading from 2.x](https://arktype.io/docs/upgrading)
 
+## CLI
+
+`arktype` ships the `ark` binary (`init`, `migrate`, `skill`, and `check` / `emit` / `declare` via `@ark/aot`). Inside an installed project, run `pnpm exec ark` (or `npx arktype` everywhere — `ark` on npm is an unrelated package):
+
+```sh
+npx arktype init     # create ark.json and install the bundled skill
+npx arktype migrate  # install the skill and print a migration prompt
+npx arktype check    # run @ark/aot --check
+```
+
 ## Contributions
 
 We accept and encourage pull requests from outside ArkType. Planned work is tracked in [this GitHub project](https://github.com/orgs/arktypeio/projects/4).

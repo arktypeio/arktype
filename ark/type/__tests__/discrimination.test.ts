@@ -1034,13 +1034,8 @@ contextualize(() => {
 			// its JSON leaves out the value, which the error holds
 			attest(errors.issues[0].data).equals(3.5)
 			attest(errors.toJSON()[0]).snap({
-				path: ["k"],
 				code: "discriminant",
-				discriminantKind: "unit",
-				onKey: true,
-				absent: false,
-				description: "1.5 or 2.5",
-				propString: "k",
+				path: ["k"],
 				expected: "1.5 or 2.5",
 				message: "must be 1.5 or 2.5"
 			})

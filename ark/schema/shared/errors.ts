@@ -38,6 +38,7 @@ import { findsOnRead } from "./issueFeatures.ts"
 import {
 	ArkErrors as BaseArkErrors,
 	isCustomIssue,
+	pathOf,
 	issueAt,
 	messageOf,
 	TraversalError as BaseTraversalError,
@@ -141,12 +142,13 @@ export class ArkErrors extends BaseArkErrors {
 	 */
 	override get issues(): readonly ArkError[] {
 		const issues = this._
-		if (this[writtenKey] === issues.length) return issues
-		const locale = selectedLocaleOf(this)
-		const config = this[configKey]
-		while (this[writtenKey] < issues.length)
-			writeError(issues[this[writtenKey]++], config, locale)
-		return issues
+		if (this[writtenKey] < issues.length) {
+			const locale = selectedLocaleOf(this)
+			const config = this[configKey]
+			while (this[writtenKey] < issues.length)
+				writeError(issues[this[writtenKey]++], config, locale)
+		}
+		return serializableErrors(issues)
 	}
 
 	/** @internal the first of issues, its text written alone */
@@ -1040,14 +1042,21 @@ export const asTemplated = <error extends ArkIssue>(
 	if (isArkError(error)) {
 		templated.add(error)
 		if (line !== undefined) noteLine(error, line)
-	}
-	// a validator's issue holds nothing saying so: its message is a sentence of
-	// its own unless it begins as one written from what it expects would, so
-	// what it expects is read back from a message written that way, and is
-	// nothing where the message is what's written of data only known invalid
-	else if (error.message?.startsWith("must be "))
+	} else if (line !== undefined) (error as mutable<ArkIssue>)._l = line
+	// read what was expected back from a templated message so both dynamic
+	// ArkErrors and standalone issues expose the same expected and JSON shape
+	if (error.message?.startsWith("must be "))
 		error.expected = error.message.slice(8)
-	else if (error.message === "is invalid") error.expected = undefined
+	else if (error.message === "is invalid") error.expected = "valid"
+	else if (
+		!isArkError(error) &&
+		error._l === undefined &&
+		error.message !== undefined
+	) {
+		const path = pathOf(error)
+		;(error as mutable<ArkIssue>)._l =
+			path ? `${path} ${error.message}` : error.message
+	}
 	return error
 }
 
@@ -1429,49 +1438,38 @@ const summarize = (
 	return result
 }
 
-// what an error says and where, as JSON: its text, as a message never says
-// what the value was. Its data isn't, nor its actual, which describes the data
-// and for a primitive is the data printed, as a pattern's or a narrow's is:
-// data may be private, as a password is. Nor are the values its Type checked
-// against, like a unit, a prototype, a rule or its meta, any of which may be a
-// bigint, a symbol, a function or circular, which JSON.stringify throws on or
-// drops, as is any other key whose value isn't JSON, like one ctx.reject was
-// passed
-const jsonOf = (error: ArkError): JsonObject => {
-	const json: Record<string, unknown> = {}
-	for (const k in error) {
-		if (k in excludedFromJson) continue
-		const v = error[k as never] as unknown
-		if (k === "path") json.path = (v as PropertyKey[]).map(jsonKeyOf)
-		else if (k === "errors") json.errors = (v as ArkError[]).map(jsonOf)
-		else if (isJsonPrimitive(v)) json[k] = v
-	}
-	return json as never
-}
-
-const isJsonPrimitive = (v: unknown): boolean =>
-	v === null ||
-	typeof v === "string" ||
-	typeof v === "number" ||
-	typeof v === "boolean"
+// what an error says and where, as JSON: the same wire shape a standalone
+// validator writes. Never its data or actual, which may be private (as a
+// password is), nor internal or non-JSON fields like meta, rule, unit, proto,
+// or cause, any of which may be a bigint, a symbol, a function, or circular.
+const jsonOf = (error: ArkError): JsonObject => ({
+	code: error.code,
+	path: error.path.map(jsonKeyOf),
+	...(error.expected !== undefined && { expected: error.expected }),
+	message: error.message,
+	...(error.code === "union" && error.errors.length > 0 ?
+		{ errors: error.errors.map(jsonOf) }
+	:	{})
+})
 
 // as String writes it, as propString and a standalone validator's JSON do
 const jsonKeyOf = (k: PropertyKey) => (typeof k === "symbol" ? String(k) : k)
 
-const excludedFromJson = {
-	data: 1,
-	actual: 1,
-	meta: 1,
-	unit: 1,
-	proto: 1,
-	rule: 1,
-	predicate: 1,
-	morph: 1,
-	cause: 1,
-	missing: 1,
-	valueMeta: 1,
-	cases: 1
+const errorsToJson: PropertyDescriptor & ThisType<readonly ArkError[]> = {
+	value() {
+		return this.map(jsonOf)
+	},
+	writable: true,
+	configurable: true
 }
+
+type ErrorsWithToJson = ArkError[] & { toJSON?: () => JsonArray }
+
+/** @internal attaches non-enumerable toJSON to an errors' issues array */
+export const serializableErrors = (issues: ArkError[]): readonly ArkError[] =>
+	(issues as ErrorsWithToJson).toJSON ?
+		issues
+	:	Object.defineProperty(issues, "toJSON", errorsToJson)
 
 /**
  * The first of `errors.issues`, its text written without the rest's.

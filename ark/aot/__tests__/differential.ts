@@ -485,13 +485,18 @@ const writtenIssueOf = (issue: ArkIssue): WrittenIssue => ({
 	...(issue.errors?.length && { errors: issue.errors.map(writtenIssueOf) })
 })
 
-// what a program reads of its errors: each issue's text and the summary
+// what a program reads of its errors: each issue's text, JSON and the summary
 const writtenOf = (errors: ArkErrors, grouped = true) => {
 	const issues: readonly ArkIssue[] = errors.issues
+	const json = firstIssue ? undefined : JSON.stringify(errors)
 	return {
 		// a first-issue build's added issue, which the one it keeps is
 		written: (grouped ? issues : errors._).map(writtenIssueOf),
-		summary: errors.summary
+		summary: errors.summary,
+		...(!firstIssue && {
+			json,
+			issuesJsonMatches: JSON.stringify(issues) === json
+		})
 	}
 }
 
@@ -688,20 +693,25 @@ const standardOutcomeOf = (t: Validator, input: unknown): unknown => {
 	if (!result.issues) return result
 	const issues = keptIssuesOf({ issues: result.issues } as never)
 	const errors: any = traverse(t, cloneInput(input))
-	return isErrors(errors) && isEqual(issues, keptIssuesOf(errors)) ?
-			{
-				failedWithItsErrors: true,
-				// a consumer prefixes each message with its path, as written
-				...(!firstIssue && {
-					messages: result.issues.map(
-						(issue: { message: string; path?: PropertyKey[] }) => [
-							issue.message,
-							issue.path?.map(String)
-						]
-					)
-				})
-			}
-		:	{ issues }
+	if (!isErrors(errors) || !isEqual(issues, keptIssuesOf(errors)))
+		return { issues }
+	const errorsJson = JSON.stringify(errors)
+	return {
+		failedWithItsErrors: true,
+		issuesJsonMatches: JSON.stringify(result.issues) === errorsJson,
+		resultJsonMatches:
+			JSON.stringify(result) ===
+			`{"issues":${errorsJson},"message":${JSON.stringify(errors.summary)}}`,
+		// a consumer prefixes each message with its path, as written
+		...(!firstIssue && {
+			messages: result.issues.map(
+				(issue: { message: string; path?: PropertyKey[] }) => [
+					issue.message,
+					issue.path?.map(String)
+				]
+			)
+		})
+	}
 }
 
 const hasIssues = (observation: unknown): boolean =>
@@ -831,6 +841,8 @@ const withAlike = (observation: any, alike: any, reported: any) => {
 	if (!observation.written) return withIssue
 	const from = `${pathKeyOf(alike.path)}\0${alike.code}`
 	const to = `${pathKeyOf(reported.path)}\0${alike.code}`
+	// one issue at the same path already has its exact written text and summary
+	if (observation.written.length === 1 && from === to) return withIssue
 	const issue = observation.written.find(
 		(written: WrittenIssue) => written.at === from
 	)

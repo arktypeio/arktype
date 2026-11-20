@@ -185,7 +185,7 @@ A precompiled error reads as arktype's does at runtime.
 To see what the build makes of each definition without bundling, run:
 
 ```sh
-npx arktype-precompile --check
+npx @ark/aot --check
 ```
 
 ```
@@ -838,7 +838,7 @@ Agents that don't load skills still read your `AGENTS.md` or `CLAUDE.md`. Paste 
 If you precompile, add:
 
 ```md
-- ArkType definitions are precompiled by @ark/aot when the app builds. Fix each precompile error as its last line says, and don't set allowUnsafe or runtime: "arktype" to get past one. `npx arktype-precompile --check src` lists them without building. Setup and fixes: https://arktype.io/docs/precompile/llms.txt
+- ArkType definitions are precompiled by @ark/aot when the app builds. Fix each precompile error as its last line says, and don't set allowUnsafe or runtime: "arktype" to get past one. `npx @ark/aot --check src` lists them without building. Setup and fixes: https://arktype.io/docs/precompile/llms.txt
 ```
 
 ## Building agents
@@ -1894,7 +1894,7 @@ const argsSchema = {
 6. **Compare with the originals while Zod is still installed.** The project's tests check the schemas they use. Check the rest directly, and every schema if there's no `test` script: in a scratch file, import each original from a copy of its file (`git show HEAD:src/schemas.ts > scratch/schemas.zod.ts`) and its conversion, call both on the same inputs and compare which they accept and what they return. Use the project's fixtures or sample data where it has them, plus each case [Defaults that differ](https://arktype.io/docs/migrating#defaults-that-differ) lists: a missing key, a key present as `undefined`, an undeclared key, a wrong type, an array in place of an object, an empty string and a value at each bound. Fix each difference in the schema, then delete the scratch files. [How to convert](https://arktype.io/docs/migrating#how-to-convert) shows a check that their types match too.
 7. **Swap dependencies.** Remove `zod` and the packages that existed only for it, and add their replacements, with the project's package manager, like `pnpm remove zod` or `npm uninstall zod`. Editing `package.json` by hand leaves the lockfile stale, and some package managers then refuse to run scripts. If `arktype` is already a dependency, keep that version. Don't upgrade another dependency to a new major version, like the MCP SDK to v2, so it takes ArkType; keep Zod for it as the table says. If a dependency requires `zod` as a peer dependency, keep it installed for that dependency and say so.
 8. **Verify.** Run the `typecheck` and `test` scripts in `package.json` until both pass; `npx tsc` alone can miss a second tsconfig. Run the `build` script too, if there is one. If Jest fails with `Must use import to load ES Module`, naming arktype, [have it transform arktype's packages](https://arktype.io/docs/faq#why-does-jest-say-must-use-import-to-load-es-module), which ship ES modules only. If there's no `test` script, step 6's comparison is the behavior check, so say what it covered. Search again for imports of the old library, and check that every file importing `arktype`, `.js` files included, imports the config first if it creates a Type. Change a test only where it asserts the old library itself, like a Zod error message, an issue `code` or `instanceof ZodError`. Never delete a test, weaken an assertion or change an expected value to match new output. The exception is a snapshot of generated JSON Schema, which ArkType writes in a canonical order: required keys, then optional ones, each sorted, and enum and union members sorted. Reorder such a snapshot only when order is its only difference.
-9. **Precompile, if asked.** Set it up as the skill's `references/precompile.md`, or [Precompile setup](https://arktype.io/docs/precompile/setup), says: add `@ark/aot` and the plugin for the bundler, name the config file from step 2 as `config` in `ark.json`, run `npx arktype-precompile --check src` until it accepts every definition, then run the `typecheck`, `test` and `build` scripts again. A library others install doesn't precompile itself: it publishes what `tsc` emits and [opts in](https://arktype.io/docs/precompile/advanced#libraries), so each app's build precompiles it. With `drizzle-arktype`, see [Precompile](https://arktype.io/docs/migrating#precompile) below.
+9. **Precompile, if asked.** Set it up as the skill's `references/precompile.md`, or [Precompile setup](https://arktype.io/docs/precompile/setup), says: add `@ark/aot` and the plugin for the bundler, name the config file from step 2 as `config` in `ark.json`, run `npx @ark/aot --check src` until it accepts every definition, then run the `typecheck`, `test` and `build` scripts again. A library others install doesn't precompile itself: it publishes what `tsc` emits and [opts in](https://arktype.io/docs/precompile/advanced#libraries), so each app's build precompiles it. With `drizzle-arktype`, see [Precompile](https://arktype.io/docs/migrating#precompile) below.
 10. **Report** what still behaves differently, if anything, such as error message text, any snapshot you reordered, and any dependency you kept Zod for. Where the code ships to a browser and wasn't precompiled, say that arktype's parser now ships with it, which [precompiling](https://arktype.io/docs/migrating#precompile) removes.
 
 ## How to convert
@@ -1952,7 +1952,7 @@ export default defineConfig({
 })
 ```
 
-To see what's left, run `npx arktype-precompile --check`, which lists each definition the default build would refuse. See [Dynamic vs Precompiled](https://arktype.io/docs/precompile/dynamic-vs-precompiled).
+To see what's left, run `npx @ark/aot --check`, which lists each definition the default build would refuse. See [Dynamic vs Precompiled](https://arktype.io/docs/precompile/dynamic-vs-precompiled).
 
 `drizzle-arktype`, from [Swap integrations](https://arktype.io/docs/migrating#migrating-a-project), creates Types from your tables as the program runs, so the build [runs it on arktype](https://arktype.io/docs/precompile/options#dependencies), shipping the parser. To precompile those Types too, write each one out, with a line that fails to compile if it drifts from the table, like `const matches: Equals<typeof selectTask.infer, typeof tasks.$inferSelect> = true`, `Equals` as in [How to convert](https://arktype.io/docs/migrating#how-to-convert).
 
@@ -2218,7 +2218,7 @@ The changes most code meets are to errors. The [checklist](https://arktype.io/do
 
 | 2.2 | 3.0 |
 | - | - |
-| `out[0]`, `out.length`, `out.map(fn)`, `for (const e of out)` | [the same on `out.issues`](https://arktype.io/docs/upgrading#arkerrors-is-no-longer-an-array) |
+| `out[0]`, `out.length`, `out.map(fn)` | [the same on `out.issues`](https://arktype.io/docs/upgrading#arkerrors-is-no-longer-an-array) |
 | `error.message`, for text that names its path | [`out.summary`](https://arktype.io/docs/upgrading#message-leaves-out-the-path-and-problem-is-gone), a line per error |
 | `error.problem` | [`error.message`](https://arktype.io/docs/upgrading#message-leaves-out-the-path-and-problem-is-gone) |
 | `{ problem: "isn't allowed" }` in config or `ctx.reject()` | [`{ message: "This key isn't allowed" }`](https://arktype.io/docs/upgrading#custom-messages-are-written-after-their-path), a whole sentence |
@@ -2305,12 +2305,12 @@ An adapter that reads [`ArkErrors` as an array](https://arktype.io/docs/upgradin
 | `@hookform/resolvers` 4.1.3 | `arktypeResolver` throws `TypeError: Cannot read properties of undefined (reading 'join')` on invalid values | `standardSchemaResolver` from `@hookform/resolvers/standard-schema`, there since 4.0.0, or upgrade to 5 |
 | `@hookform/resolvers` 3.10.0 | `arktypeResolver` throws a `TypeError` ending `forEach is not a function` on invalid values | upgrade to 5 or later, which needs `react-hook-form@7.55`; version 3 has no `standardSchemaResolver` |
 | `@hono/arktype-validator` 2.0.1 | an invalid `header` is a 500, `TypeError: out.map is not a function`; `json` and `query` still respond 400 | `sValidator` from [`@hono/standard-validator`](https://arktype.io/docs/integrations#hono) |
-| `sveltekit-superforms` 3.1.0 | `arktype()` and `arktypeClient()` throw `TypeError: result is not iterable` on an invalid form | `standard(T, { jsonSchema: T.toJsonSchema() })` and `standardClient(T)` from `sveltekit-superforms/adapters`, with a [`fallback`](https://arktype.io/docs/json-schema/to-json-schema#fallbacks) for a `Date` or `bigint` |
+| `sveltekit-superforms` 3.1.0 | `arktype()` and `arktypeClient()` report every error's message as `undefined` on an invalid form, since they read `problem` | `standard(T, { jsonSchema: T.toJsonSchema() })` and `standardClient(T)` from `sveltekit-superforms/adapters`, with a [`fallback`](https://arktype.io/docs/json-schema/to-json-schema#fallbacks) for a `Date` or `bigint` |
 | `@arkenv/core` 1.0.0-rc.4, `arkenv` 0.7.3 | an invalid environment throws `TypeError: Cannot convert undefined or null to object` in place of its report | nothing yet: a valid environment loads, so only the report of what's wrong is lost |
 | `@typeschema/arktype` 0.14.0 | `validate` returns `{ success: false, issues: [] }`, and `assert` throws without saying why | pass the Type itself wherever the library accepts a Standard Schema |
 | `@t3-oss/env-core` 0.13.11, `@tanstack/arktype-adapter` 1.167.0 | work, `presets-arktype` included | as before |
 | `@standard-community/standard-json` 0.4.0, `xsschema` 1.0.0-beta.8 | work: they call `toJsonSchema()` and `~standard` | as before |
-| `hono-openapi` 1.5.0, with `@standard-community/standard-json` 0.3.7 and `@standard-community/standard-openapi` 0.2.11 | works: `validator`, `resolver` and the generated document | as before |
+| `hono-openapi` 1.5.0, with `@standard-community/standard-json` 0.3.7 and `@standard-community/standard-openapi` 0.2.11 | works: `validator`, `resolver` and the generated document, except that a `ref` set with `.configure({ ref })` no longer names a component, since [meta is written only where it's an annotation](https://arktype.io/docs/upgrading#output) | as before |
 | `@regle/schemas` 1.29.5, `@t3-oss/env-nextjs` and `@t3-oss/env-nuxt` 0.13.11 | untested; `@regle/schemas` has no code specific to arktype, and the other two wrap `@t3-oss/env-core` | as before |
 
 The error text is V8's, as Node and Chrome write it. `@hookform/resolvers` 3, 4 and 5.0 to 5.4.0 don't peer on arktype, so npm installs them beside arktype 3 without an error. From version 5, and through `standardSchemaResolver`, a field error's `type` is `""`, where `arktypeResolver` 3 and 4 set it to the error's `code`. The `errors` a `@hono/arktype-validator` hook receives is the `ArkErrors`, so a hook that reads it as an array needs [`errors.issues`](https://arktype.io/docs/upgrading#arkerrors-is-no-longer-an-array) too.
@@ -2371,7 +2371,7 @@ if (out instanceof type.errors) {
 
 `Array.isArray(out)` is now `false`, and `[].concat(out)` nests the errors instead of spreading them, so pass `out.issues`. A [Standard Schema](https://arktype.io/docs/standard-schema) failure is no longer the `ArkErrors`, but `{ issues }`, as [below](https://arktype.io/docs/upgrading#standard-schema-messages-leave-out-the-path).
 
-`ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()` and `toString()`, and gains [`summaryIn(locale)`](https://arktype.io/docs/i18n#rendering-in-a-locale). `toJSON()`, and so `JSON.stringify(out)`, now leaves out each error's `data` and `actual`, which describes it, and its `meta`, `rule`, `unit` and `proto`, so a rejected password isn't serialized and a bigint or circular value doesn't throw: read them off `out.issues`. `message` and `toTraversalError()` are gone: read `summary`, and call `throw()`, or construct the error with `new TraversalError(out)`. `byPath`, `flatByPath` and `byAncestorPath` are functions `arktype` exports, as is `flatProblemsByPath`, now named `flatMessagesByPath`:
+`ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()` and `toString()`, and gains [`summaryIn(locale)`](https://arktype.io/docs/i18n#rendering-in-a-locale). `toJSON()`, `JSON.stringify(out)`, `JSON.stringify(out.issues)`, and a Standard Schema failure's `JSON.stringify(result)` and `JSON.stringify(result.issues)` all emit `{ code, path, expected, message, errors? }` (matching precompiled validators), leaving out `data`, `actual`, `propString`, and internal or non-JSON fields like `meta`, `rule`, `unit`, `proto` and `cause`, so a rejected password isn't serialized and a bigint or circular value doesn't throw: read those off `out.issues[i]` in JavaScript. `message` and `toTraversalError()` are gone: read `summary`, and call `throw()`, or construct the error with `new TraversalError(out)`. `byPath`, `flatByPath` and `byAncestorPath` are functions `arktype` exports, as is `flatProblemsByPath`, now named `flatMessagesByPath`:
 
 ```ts
 import { flatMessagesByPath, type } from "arktype"
@@ -2486,7 +2486,7 @@ const Zip5 = type("string").narrow(
 
 ### Errors are plain objects
 
-The errors in `issues` are plain objects without getters or methods, holding the keys their JSON had, without `problem` and with `propString` before `expected`, so serialized issues, like the `errors` `@hono/arktype-validator` responds with, include it. `ArkError` is exported only as a type, which comparing `code` narrows as `hasCode` did, and `messageIn` writes one's `message` in a locale:
+The errors in `issues` are plain objects without getters or methods, holding their fields directly without `problem` and with `propString` before `expected` (while serializing `out`, `out.issues`, or a Standard Schema failure emits `{ code, path, expected, message, errors? }` without `data` or internal fields). `ArkError` is exported only as a type, which comparing `code` narrows as `hasCode` did, and `messageIn` writes one's `message` in a locale:
 
 ```ts
 import { messageIn, type } from "arktype"
@@ -2728,7 +2728,7 @@ if (out instanceof type.errors) {
 
 ### Keyword parse errors are data
 
-The errors `string.integer.parse`, `string.date.parse`, `string.url.parse`, `string.json`, `string.json.parse` and `string.regex` raise while parsing carry `meta.keyword`, a `description` and what was thrown as `cause`, instead of their own English `expected` text. Their messages are unchanged, and `predicate` config now applies to them (except `expected` on `string.json`, `string.json.parse` and `string.regex` when a `cause` was thrown):
+The errors `string.integer.parse`, `string.date.parse`, `string.url.parse`, `string.json`, `string.json.parse` and `string.regex` raise while parsing carry `meta.keyword`, a `description` and what was thrown as `cause`, instead of their own English `expected` text. `predicate` config now applies to all of them, and `string.json`, `string.json.parse` and `string.regex` omit the engine's `SyntaxError` text from `message` (which echoed the rejected input) while keeping the `SyntaxError` on `error.cause`:
 
 ```ts
 const out = type("string.json.parse")("{")
@@ -2771,7 +2771,8 @@ Each was wrong or unclear, but a snapshot or message assertion may hold it:
 
 - `string.date.iso` and `string.date.iso.parse`: `must be an ISO 8601 date or date-time`, before: `must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date`.
 - A missing `string.uuid` key: `id must be a string (was missing)`, before: `id must be a string or a UUID (was missing)`.
-- `string.regex`: `must be a regex pattern (SyntaxError: Invalid regular expression: /(/: Unterminated group)`, before: the bare `SyntaxError: ...`.
+- `string.json` and `string.json.parse`: `must be a JSON string`, before: `must be a JSON string (SyntaxError: ...)`, which echoed the rejected input. `error.cause` still holds the `SyntaxError`.
+- `string.regex`: `must be a regex pattern`, before: the bare `SyntaxError: ...`, which echoed the rejected input. `error.cause` still holds the `SyntaxError`.
 - `{ foo: string } | { foo: number } | { foo: Function }` given `{ foo: null }`: `foo must be a number, a string or an object`, before: `foo must be an object, a number or a string (was null)`.
 - A key that must be `never`: `files must be never`, before: `never`.
 - A described union: `must be a shape`, where it listed its cases or its branches' errors.
@@ -3145,6 +3146,8 @@ Object.keys(User) // its node's keys
 These change what `toJsonSchema()`, `.expression` and `.json` return, which matters if you store or snapshot them.
 
 - `jsonSchema` meta is the Type's JSON Schema, replacing what its constraints imply, where it was written into the schema as an ordinary `jsonSchema` key. See [Your own schema](https://arktype.io/docs/json-schema/to-json-schema#your-own-schema).
+
+- Meta is written only where it's a JSON Schema annotation, like `title` or `description`, or a key starting with `x-`, where every key was written: `type("string").configure({ ref: "Id" }).toJsonSchema()` is `{ type: "string" }`, before: `{ type: "string", ref: "Id" }`. A tool that read its own key from the JSON Schema can read it from the Type's `meta`, or the key can be written through `jsonSchema` or renamed with an `x-` prefix. See [Meta](https://arktype.io/docs/json-schema/to-json-schema#meta).
 
 - Unions of ranges that overlap, meet or leave out one value, and of objects alike but for one key's value, are one range or object: `1 < number < 10 | 10 <= number < 100` is `1 < number < 100`, `number < 0 | number > 0` is `number != 0`, and `{ kind: "a", x: string } | { kind: "b", x: string }` is `{ kind: "a" | "b", x: string }`.
 
@@ -5941,7 +5944,7 @@ const Settings = type({ since: EpochMs.default(0) })
 const out = Settings.encode({})
 ```
 
-A union encodes a value with a branch that accepts it, trying the branches without morphs first, so a value a branch would decode unchanged is encoded unchanged. Which branch encodes a value that more than one branch with a morph accepts is unspecified, and may change in a minor release.
+A union encodes a value with a branch that accepts it, trying any branch without morphs first so a value it decodes unchanged is encoded unchanged. If two branches with morphs accept overlapping values when encoding, accessing `.encode` throws a `ParseError`—the same indeterminate-union error ArkType throws when decoding overlapping morphs.
 
 ## Keywords
 
@@ -6111,7 +6114,7 @@ A declaration file is the exception. TypeScript can't write an inferred cycle in
 To ship a cyclic Type's types, write the declarations with [`arktype-precompile --declare`](https://arktype.io/docs/precompile/advanced#cyclic-types) instead of `tsc`. It declares each cycle under its alias, `Package` and `Contributor` here, and leaves how your Types validate unchanged:
 
 ```sh
-npx arktype-precompile --declare
+npx @ark/aot --declare
 ```
 
 Without it, name the type yourself and [declare](https://arktype.io/docs/declare) the Type with it:
@@ -6690,7 +6693,7 @@ if (out instanceof type.errors) {
 | `issues` | an array with one error per failed check, in the order each failed |
 | `summary`, `toString()` | a line for each error: its message after its path |
 | `count` | how many errors were added |
-| `toJSON()` | an array of each error's JSON, with its `propString` and without its data |
+| `toJSON()` | an array of `{ code, path, expected, message, errors? }` for each error, without its data |
 | `summaryIn(locale?)` | the summary in a [locale](https://arktype.io/docs/i18n#rendering-in-a-locale) |
 | `throw()` | throws a [`TraversalError`](https://arktype.io/docs/errors#traversalerror) |
 | `[Symbol.iterator]()` | each error in `issues`, for `for...of` and spread |
@@ -6790,7 +6793,7 @@ Its `message`:
 
 An error also has `meta`, the metadata of the Type that failed, and usually a `description`. It has no methods, so `JSON.stringify(error)` serializes its own keys, `data` included, and `messageIn(error, locale)` writes its `message` in another locale.
 
-Since `data` is the rejected value, a password or a token is in an error you serialize, whether a logged `out.issues` or the issues a library returns through [Standard Schema](https://arktype.io/docs/standard-schema). `JSON.stringify(out)` leaves it out: each error's JSON holds its code, path, `expected` and `message`, but not its `data`, nor its `actual`, which for a string or a number may be the value itself, nor a value its Type checked against, like its `rule`, `unit` or `meta`, any of which may be a bigint or circular, which JSON can't hold. To send less, send each error's `path` and `message`, or `flatMessagesByPath(out)`.
+Since `data` is the rejected value, avoid serializing an individual `error` directly. `JSON.stringify(out)`, `JSON.stringify(out.issues)`, and a [Standard Schema](https://arktype.io/docs/standard-schema) failure's `JSON.stringify(result)` and `JSON.stringify(result.issues)` all leave `data` out: each error's JSON holds only its `code`, `path` (with symbols stringified), `expected`, `message`, and `errors` (for a union with branch errors) — matching [precompiled](https://arktype.io/docs/precompile/validators#errors) validators and omitting `data`, `actual`, `propString`, and internal or non-JSON fields like `rule`, `unit`, `meta` or `cause`, any of which may be a bigint or circular. To send less, send each error's `path` and `message`, or `flatMessagesByPath(out)`.
 
 When several checks fail at one path, each is its own error. `flatByPath` and `flatMessagesByPath` group them by path:
 
@@ -7737,7 +7740,7 @@ type.string(5)
 
 `onFail` can also be passed to a scope.
 
-`ArkEnv` is the `arktype` module's, not a global, so a declaration on it reaches only the copy of arktype it names. A dependency's copy, like one still on arktype 2, keeps its own keywords and `onFail`. Declare it in a file that imports or exports something, since a `declare module` in a file that does neither replaces the module instead.
+`ArkEnv` is the `arktype` module's, not a global, so a declaration on it reaches only the copy of arktype it names. A dependency's copy, like one still on arktype 2, keeps its own keywords and `onFail`. Declare it in a file that imports or exports something, since a `declare module` in a file that does neither replaces the module instead. Declare each `ArkEnv` slot once per app and compose any library types there (for example `meta(): LibMeta & AppMeta`), since multiple method declarations don't merge.
 
 ## toJsonSchema
 
@@ -9816,9 +9819,11 @@ import "./config.ts"
 import { type } from "arktype"
 ```
 
+`arktype` also installs an `ark` CLI (`init`, `migrate`, `skill`, and `check`, `emit` and `declare` via `@ark/aot`). Outside a project with `arktype` installed, invoke it as `npx arktype` rather than `npx ark` (`ark` on npm is an unrelated package).
+
 ## Other packages
 
-- **`@ark/aot`** has an entrypoint for each way to run it: `@ark/aot/unplugin` (`precompile.vite()`, `.rollup()`, `.webpack()` and the other bundlers), `@ark/aot/node` (`register()`), `@ark/aot/bun` (`precompile()`), `@ark/aot/turbopack` (a loader, `withPrecompile()` for `next.config` and `@ark/aot/turbopack/runtime` for its alias) and `@ark/aot/eslint` (`configs.recommended`). It installs an `arktype-precompile` CLI for `--check`, `--emit` and `--declare`, and `@ark/aot` itself exports `Precompiler`, whose `analyze()` the CLI and ESLint rule run. It needs Node 22.12 or later, and `typescript` 5.5 to 6 for declarations. See [Setup](https://arktype.io/docs/precompile/setup).
+- **`@ark/aot`** has an entrypoint for each way to run it: `@ark/aot/unplugin` (`precompile.vite()`, `.rollup()`, `.webpack()` and the other bundlers), `@ark/aot/node` (`register()`), `@ark/aot/bun` (`precompile()`), `@ark/aot/turbopack` (a loader, `withPrecompile()` for `next.config` and `@ark/aot/turbopack/runtime` for its alias) and `@ark/aot/eslint` (`configs.recommended`). It installs an `arktype-precompile` CLI (run via `npx @ark/aot`, `pnpm exec arktype-precompile`, or `ark check`/`emit`/`declare`) for `--check`, `--emit` and `--declare`, and `@ark/aot` itself exports `Precompiler`, whose `analyze()` the CLI and ESLint rule run. It needs Node 22.12 or later, and `typescript` 5.5 to 6 for declarations. See [Setup](https://arktype.io/docs/precompile/setup).
 - **`arkregex`** exports `regex`, which is also exported from `arktype`, and the `Regex` type.
 - **`@ark/attest`** exports `attest`, `bench`, `setup` and `teardown`, and installs an `attest` CLI. Install it as a dev dependency.
 - **`@ark/fast-check`** exports `arkToArbitrary`. It needs `fast-check` 3 or 4 installed beside it.
@@ -9920,7 +9925,7 @@ If your app is bundled, yes. A [precompiled](https://arktype.io/docs/precompile)
 If a package or a referenced project exports types derived from arktype, write its declarations with [`arktype-precompile --declare`](https://arktype.io/docs/precompile/advanced#declarations) rather than `tsc`:
 
 ```sh
-npx arktype-precompile --declare
+npx @ark/aot --declare
 ```
 
 It declares each Type by the shape it infers, so code importing the package reads that shape rather than inferring your definitions again. It needs no bundler and leaves your Types dynamic.

@@ -167,8 +167,7 @@ class ReadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	 * Each issue, its message written when they are first read.
 	 */
 	get issues(): readonly WrittenIssue[] {
-		for (const issue of this._) issue.message ??= messageOf(issue)
-		return this._ as WrittenIssue[]
+		return serializableIssues(this._)
 	}
 
 	/**
@@ -241,7 +240,7 @@ class UnreadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 			this._f = []
 			// data a write or a getter has made valid since fails as a whole
 			if (this._a && (this._a(this._d, this), !this._f.length))
-				this._e(this._d, "predicate")
+				this._e(this._d, "predicate", "valid", "is invalid")
 		}
 		return this._f
 	}
@@ -251,8 +250,7 @@ class UnreadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	}
 
 	get issues(): readonly WrittenIssue[] {
-		for (const issue of this._) issue.message ??= messageOf(issue)
-		return this._ as WrittenIssue[]
+		return serializableIssues(this._)
 	}
 
 	_e(
@@ -362,7 +360,7 @@ const Issues: IssuesClass = (
 					if (!this._f) {
 						this._f = []
 						if (this._a && (this._a(this._d, this), !this._f.length))
-							this._e(this._d, "predicate")
+							this._e(this._d, "predicate", "valid", "is invalid")
 					}
 					return this._f
 				}
@@ -372,8 +370,7 @@ const Issues: IssuesClass = (
 				}
 
 				get issues(): readonly WrittenIssue[] {
-					for (const issue of this._) issue.message ??= messageOf(issue)
-					return this._ as WrittenIssue[]
+					return serializableIssues(this._)
 				}
 
 				_e(
@@ -449,8 +446,7 @@ const Issues: IssuesClass = (
 				}
 
 				get issues(): readonly WrittenIssue[] {
-					for (const issue of this._) issue.message ??= messageOf(issue)
-					return this._ as WrittenIssue[]
+					return serializableIssues(this._)
 				}
 
 				_e(
@@ -579,7 +575,7 @@ interface Issues extends ReadIssues {
 export interface IssueJson {
 	code: ArkErrorCode
 	path: (string | number)[]
-	expected: string | undefined
+	expected?: string
 	message: string
 	errors?: IssueJson[]
 }
@@ -591,10 +587,30 @@ export interface IssueJson {
 const jsonIssueOf = (issue: ArkIssue): IssueJson => ({
 	code: issue.code,
 	path: issue.path.map(k => (typeof k === "symbol" ? String(k) : k)),
-	expected: issue.expected,
+	...(issue.expected !== undefined && { expected: issue.expected }),
 	message: issue.message ?? messageOf(issue),
-	...(issue.errors && { errors: issue.errors.map(jsonIssueOf) })
+	...(issue.errors?.length ? { errors: issue.errors.map(jsonIssueOf) } : {})
 })
+
+// non-enumerable on an errors' issues array so JSON.stringify(result.issues)
+// and JSON.stringify(errors.issues) serialize each issue without data, actual,
+// or non-JSON fields, while keeping issues a plain array of objects
+const issuesToJson: PropertyDescriptor & ThisType<readonly ArkIssue[]> = {
+	value() {
+		return this.map(jsonIssueOf)
+	},
+	writable: true,
+	configurable: true
+}
+
+type IssuesWithToJson = ArkIssue[] & { toJSON?: () => readonly IssueJson[] }
+
+const serializableIssues = (issues: ArkIssue[]): readonly WrittenIssue[] => {
+	for (const issue of issues) issue.message ??= messageOf(issue)
+	return (issues as IssuesWithToJson).toJSON ?
+			(issues as WrittenIssue[])
+		:	(Object.defineProperty(issues, "toJSON", issuesToJson) as WrittenIssue[])
+}
 
 declare namespace Issues {
 	export type Handler<returns = unknown> = (errors: Issues) => returns
@@ -637,7 +653,7 @@ export const issuesOf = (
 ): ArkIssue[] => {
 	apply(data, errors)
 	// data a write or a getter has made valid since fails as a whole
-	if (!errors._.length) errors._e(data, "predicate")
+	if (!errors._.length) errors._e(data, "predicate", "valid", "is invalid")
 	return errors._
 }
 
@@ -651,7 +667,7 @@ export const foundErrors = (
 	const errors = new Ctx()
 	// as issuesOf, which a program of these never ships
 	apply(data, errors)
-	if (!errors._.length) errors._e(data, "predicate")
+	if (!errors._.length) errors._e(data, "predicate", "valid", "is invalid")
 	return onFail ? onFail(errors) : errors
 }
 
@@ -779,7 +795,13 @@ export const lineOf = (issue: ArkIssue): string => {
 		listsUnions && issue._l !== undefined ? issue._l
 		: path ?
 			path +
-			(writesText && !message.startsWith(messageOf(issue)) ? ": " : " ") +
+			((
+				writesText &&
+				!(message === "is invalid" && issue.expected === "valid") &&
+				!message.startsWith(messageOf(issue))
+			) ?
+				": "
+			:	" ") +
 			message
 		:	message
 	)
@@ -833,6 +855,6 @@ export { ThrownIssues as TraversalError }
 export const throwIssues = (apply: CompactApply, data: unknown): never => {
 	const errors = new Issues()
 	apply(data, errors)
-	if (!errors._.length) errors._e(data, "predicate")
+	if (!errors._.length) errors._e(data, "predicate", "valid", "is invalid")
 	return errors.throw()
 }

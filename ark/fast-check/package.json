@@ -1,6 +1,6 @@
 {
 	"name": "@ark/fast-check",
-	"version": "0.0.22-beta.2",
+	"version": "0.0.22-rc.0",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -43,7 +43,7 @@
 		"access": "public"
 	},
 	"peerDependencies": {
-		"arktype": "workspace:^",
+		"arktype": "workspace:*",
 		"fast-check": "3 || 4"
 	}
 }

@@ -64,7 +64,7 @@ const issuesOf = (data: unknown) => {
 
 contextualize(() => {
 	it("reports a missing key as required, with the object missing it", () => {
-		attest(issuesOf({})).snap([
+		attest([...issuesOf({})]).snap([
 			{
 				code: "required",
 				path: ["name"],
@@ -76,7 +76,7 @@ contextualize(() => {
 	})
 
 	it("reports a present key's value at its path", () => {
-		attest(issuesOf({ name: 1 })).snap([
+		attest([...issuesOf({ name: 1 })]).snap([
 			{
 				code: "domain",
 				path: ["name"],
@@ -113,7 +113,7 @@ contextualize(() => {
 		}
 		attest(applied).equals([1, undefined, undefined, 1, undefined, undefined])
 		attest(ctx._errors!._).equals(errors._)
-		attest(errors.issues).snap([
+		attest([...errors.issues]).snap([
 			{
 				code: "required",
 				path: ["a"],
@@ -165,7 +165,7 @@ c must be a string`)
 		const errors = new ArkErrors()
 		errors._p.push("item")
 		failsUnder(errors, { kind: "c" }, "kind", "discriminant", '"a" or "b"')
-		attest(errors.issues).snap([
+		attest([...errors.issues]).snap([
 			{
 				code: "discriminant",
 				path: ["item", "kind"],

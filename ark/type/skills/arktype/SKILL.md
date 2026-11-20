@@ -43,7 +43,7 @@ A project whose bundler config uses `@ark/aot` (e.g. `precompile.vite()` from `@
 - Define Types from static values, and compose them inside definitions, like `const Admin = User.and({ role: "'admin'" })`. A definition reading a parameter, or a function calling `.or`, `.pick` or another composing method at runtime, fails the build. To reuse a pattern, define a Generic.
 - Define Types in JavaScript or TypeScript modules. A Svelte component's script isn't precompiled, so one importing arktype fails the build: put the Types, and any code checking a result against `type.errors`, in a `.ts` module the component imports.
 - If the project calls `configure()`, name its module as `config` under `precompile` in an `ark.json` beside `package.json`, which the plugin, the test drivers, the CLI and the ESLint rule all read.
-- A build error names the file, line and column, then why, then the fix on its last line. Apply that fix. Don't set `allowUnsafe` or switch to `runtime: "arktype"` to get past one. `npx arktype-precompile --check src` lists every one without bundling.
+- A build error names the file, line and column, then why, then the fix on its last line. Apply that fix. Don't set `allowUnsafe` or switch to `runtime: "arktype"` to get past one. `npx @ark/aot --check src` (or `pnpm exec arktype-precompile --check src`) lists every one without bundling.
 - A validator's error messages say what failed but not what the value was, like `name must be a string`.
 - The build works out which introspection members, like a JSON Schema or `expression`, each validator needs from the code reading it, its dependencies' included, so the MCP SDK, the AI SDK and OpenAPI generators get one with nothing to set. Setting one under `members` only overrides that. Code the build can't see, like code outside the bundle reading an entry's export, reads `undefined`, and warns in development naming the member to set true under `members`.
 
@@ -304,7 +304,7 @@ const post = types.Post({ title: "Hello", author: { name: "Ada" } })
 
 Don't wrap definitions inside a scope with `type()`. They're resolved within the scope, and `type()` would resolve them globally, so an alias there is `unresolvable`. For a `.narrow()` or a `.pipe()` inside a scope, write a tuple: `["Tag[]", ":", (tags, ctx) => ...]` or `["string", "=>", s => s.trim()]`. For JSON data, use the built-in `"string | number | boolean | null | object.json"` rather than a recursive type of your own. Define recursive Types once, at module scope, since each stays in memory for the life of the process.
 
-TypeScript can't write an inferred cycle in a `.d.ts`: `tsc` declares it as `any`, or fails with `TS5088`. In a package or project whose declarations are emitted, write them with `npx arktype-precompile --declare` (from `@ark/aot`) instead, which names each cycle for its alias and changes nothing at runtime. See https://arktype.io/docs/precompile/advanced.md.
+TypeScript can't write an inferred cycle in a `.d.ts`: `tsc` declares it as `any`, or fails with `TS5088`. In a package or project whose declarations are emitted, write them with `npx @ark/aot --declare` instead, which names each cycle for its alias and changes nothing at runtime. See https://arktype.io/docs/precompile/advanced.md.
 
 ## Extra keys
 

@@ -257,7 +257,7 @@ console.log(JSON.stringify({
 }))
 `
 			},
-			fromHere("temp", "messageText", "summaryIn")
+			tempPath("messageText", "summaryIn")
 		)
 		// the runtime as published, so each of its error classes is the one built
 		for (const opts of [

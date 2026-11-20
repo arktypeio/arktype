@@ -1,7 +1,9 @@
 import { omit, throwParseError } from "@ark/util"
-import type {
-	DeepNodeTransformContext,
-	DeepNodeTransformation
+import {
+	referencesWithoutCases,
+	type BaseNode,
+	type DeepNodeTransformContext,
+	type DeepNodeTransformation
 } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
@@ -11,7 +13,12 @@ import { withoutUndefined, type Optional } from "../structure/optional.ts"
 import type { Sequence } from "../structure/sequence.ts"
 import type { Structure } from "../structure/structure.ts"
 import { $ark } from "./registry.ts"
-import { hasArkKind } from "./utils.ts"
+import {
+	assertUnchecked,
+	defining,
+	hasArkKind,
+	isResolutionFinal
+} from "./utils.ts"
 
 // inverses of morphs whose nodes are created without one, like keywords'
 export const inverses: WeakMap<Morph, Morph> = new WeakMap()
@@ -23,7 +30,21 @@ export const writeMissingInverseMessage = (expression: string): string =>
 
 export const encode = (node: BaseRoot): BaseRoot => {
 	let encoder = encoders.get(node)
-	if (!encoder) encoders.set(node, (encoder = node.$.fin(encoderOf(node))))
+	if (!encoder) {
+		const isFinal = isResolutionFinal()
+		// discard any check left over from an earlier failed parse
+		if (isFinal) defining(() => {})
+		let raw: BaseRoot
+		try {
+			raw = encoderOf(node)
+		} catch (e) {
+			// discard any check queued for synthetic aliases of a failed encode
+			if (isFinal) defining(() => {})
+			throw e
+		}
+		assertUnchecked()
+		encoders.set(node, (encoder = node.$.fin(raw)))
+	}
 	return encoder
 }
 
@@ -43,20 +64,79 @@ const encoderOf = (node: BaseRoot): BaseRoot => {
 		: kind === "structure" ? requireDefaulted(inner as never)
 		: kind === "sequence" ? requireDefaultables(inner as never, node.$)
 		: kind === "union" ?
-			{
-				...inner,
-				// a branch without morphs encodes a value unchanged
-				branches: sortByTfs((inner as Union.Inner).branches, branchTfs.pop()!),
-				ordered: true
-			}
+			encodeUnion(inner as Union.Inner, branchTfs.pop()!, node.$)
 		:	(inner as never)
 	return node.transform(mapper, {
 		shouldTf: n => {
 			const tfs = n.tfs || (n.is("optional") && n.hasDef())
-			if (tfs && n.is("union")) branchTfs.push(n.branches.map(b => b.tfs))
+			if (tfs && n.is("union"))
+				branchTfs.push(n.branches.map(transformsOnEncode))
 			return tfs
 		}
 	}) as never
+}
+
+// whether a branch reaches a transform that survives encoding (morphs and
+// undeclared: "delete"), excluding defaults stripped to required/prefix
+const transformsOnEncode = (root: BaseRoot): boolean => {
+	if (!root.tfs) return false
+	const visited = new Set<BaseNode>()
+	const queue: BaseNode[] = [root]
+	for (let i = 0; i < queue.length; i++) {
+		for (const ref of referencesWithoutCases(queue[i])) {
+			if (visited.has(ref)) continue
+			visited.add(ref)
+			if (ref.is("morph")) return true
+			if (ref.is("structure") && ref.undeclared === "delete") return true
+			if (ref.is("alias") && !ref.isIo) queue.push(ref.resolution)
+		}
+	}
+	return false
+}
+
+const encodeUnion = (
+	inner: Union.Inner,
+	tfs: readonly boolean[],
+	$: BaseScope
+): Union.Input => {
+	if (inner.ordered) {
+		return {
+			...inner,
+			branches: sortByTfs(inner.branches, tfs),
+			ordered: true
+		}
+	}
+	const plain: BaseRoot[] = []
+	const morphed: BaseRoot[] = []
+	for (let i = 0; i < inner.branches.length; i++) {
+		const branch = inner.branches[i]
+		// a branch without morphs (like a plain branch, or one whose only
+		// transform was a default) encodes values unchanged
+		if (branch.hasAlias ? tfs[i] : branch.tfs) morphed.push(branch)
+		else plain.push(branch)
+	}
+	if (!plain.length) return { ...inner, branches: morphed }
+	if (!morphed.length) return inner
+	// validate transforming branches pairwise as an unordered union so
+	// overlapping codec outputs throw even alongside a plain branch
+	const morphedBranches =
+		morphed.length > 1 ?
+			$.node("union", { branches: morphed }).branches
+		:	morphed
+	const overlapsPlain = plain.some(p =>
+		morphedBranches.some(m => p._in.overlaps(m._in))
+	)
+	if (!overlapsPlain)
+		return { ...inner, branches: [...plain, ...morphedBranches] }
+	const plainBranches =
+		plain.length > 1 ? $.node("union", { branches: plain }).branches : plain
+	return {
+		...inner,
+		// a branch without morphs encodes a value unchanged, so try it before
+		// an overlapping codec branch
+		branches: [...plainBranches, ...morphedBranches],
+		ordered: true
+	}
 }
 
 const sortByTfs = (

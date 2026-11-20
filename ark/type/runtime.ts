@@ -191,7 +191,7 @@ export interface ValidatorAttributes {
 export type IntrospectionMember = (typeof introspectionMembers)[number]
 
 // each precompiled module imports it, so another version's runtime fails to link
-export const precompiledForArktype_3_0_0_beta_2 = true
+export const precompiledForArktype_3_0_0_rc_0 = true
 
 // captured at load so a program can't replace them; each alone to tree-shake
 export const assign = /* @__PURE__ */ (() => Object.assign)()
@@ -320,13 +320,9 @@ const failureToJson: PropertyDescriptor & ThisType<StandardFailure> = {
 	configurable: true
 }
 
-const jsonIssueOf = (issue: ArkIssue): Record<string, unknown> => ({
-	code: issue.code,
-	path: issue.path.map(k => (typeof k === "symbol" ? String(k) : k)),
-	expected: issue.expected,
-	message: issue.message,
-	...(issue.errors && { errors: issue.errors.map(jsonIssueOf) })
-})
+type SerializableIssues = readonly ArkIssue[] & {
+	toJSON?: () => readonly unknown[]
+}
 
 // A Standard Schema consumer shows each issue beside its path, which its
 // message doesn't name, so each is its error's own. The failure's own message
@@ -338,26 +334,27 @@ const jsonIssueOf = (issue: ArkIssue): Record<string, unknown> => ({
 // export `lo` became `co`), which holds no `~standard` at all
 export const standardResultOf = (
 	out: unknown
-): StandardSchemaV1.Result<unknown> =>
-	out instanceof ArkErrors ?
+): StandardSchemaV1.Result<unknown> => {
+	if (!(out instanceof ArkErrors)) return { value: out }
+	const issues = out.issues
+	return Object.defineProperty(
 		Object.defineProperty(
-			Object.defineProperty(
-				Object.defineProperty({ issues: out.issues }, "_s", {
-					value: (json?: true) =>
-						json ?
-							typeof (out as ArkErrors).toJSON === "function" ?
-								(out as ArkErrors).toJSON()
-							:	(out as ArkErrors).issues.map(jsonIssueOf)
-						:	(out as ArkErrors).summary,
-					writable: true
-				}),
-				"message",
-				failureMessage
-			),
-			"toJSON",
-			failureToJson
-		)
-	:	{ value: out }
+			Object.defineProperty({ issues }, "_s", {
+				value: (json?: true) =>
+					json ?
+						typeof (out as ArkErrors).toJSON === "function" ?
+							(out as ArkErrors).toJSON()
+						:	(issues as SerializableIssues).toJSON!()
+					:	(out as ArkErrors).summary,
+				writable: true
+			}),
+			"message",
+			failureMessage
+		),
+		"toJSON",
+		failureToJson
+	)
+}
 
 // a validation Standard Schema asked for, in the context its options pass
 export const standardValidated = (

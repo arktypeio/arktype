@@ -78,7 +78,7 @@ export const collectDefaults = (
 		if (node.defMorph) {
 			defaultsByMorph.set(node.defMorph, [
 				node.key,
-				node.value,
+				node.requiredValue,
 				node.inner.default
 			])
 		}
@@ -88,7 +88,7 @@ export const collectDefaults = (
 		const [value, defaultValue] = node.defaultables![i]
 		defaultsByMorph.set(node.defMorphs[i], [
 			node.preLen + i,
-			value,
+			node.requiredOf(value),
 			defaultValue
 		])
 	}

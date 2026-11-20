@@ -37,7 +37,7 @@ import {
 } from "@ark/util"
 import type { Out } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
-import type { InnerParseResult } from "../scope.ts"
+import type { bindThis, InnerParseResult } from "../scope.ts"
 import type { instantiateType } from "../variants/instantiate.ts"
 import type { ObjectType } from "../variants/object.ts"
 import type {
@@ -262,7 +262,7 @@ type ArkWrittenProps = StandardSchemaV1.Props & {
 export const writeAsyncStandardSchemaMessage = (vendor: string): string =>
 	`Standard Schema definitions must validate synchronously (${vendor} returned a Promise)`
 
-export type inferDefinition<def, $, args> =
+export type inferDefinition<def, $ = {}, args = bindThis<def>> =
 	[def] extends [anyOrNever] ? def
 	: def extends type.cast<infer t> ?
 		// type.cast's [inferred] is optional, so inferring through it drops

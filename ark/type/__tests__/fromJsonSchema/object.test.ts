@@ -110,4 +110,34 @@ contextualize(() => {
 		)
 		attest(T.allows([])).equals(false)
 	})
+
+	it("rejects functions and round-trips through toJsonSchema", () => {
+		const T = fromJsonSchema({ type: "object" })
+		for (let pass = 0; pass < 2; pass++) {
+			attest(T.allows({})).equals(true)
+			attest(T.allows(Object.create(null))).equals(true)
+			attest(T.allows([])).equals(false)
+			attest(T.allows(() => {})).equals(false)
+			attest(T.allows(function fn() {})).equals(false)
+			attest(T.allows(class C {})).equals(false)
+		}
+		attest(() => T.assert(() => {})).throws.snap(
+			"TraversalError: must be not an array or function"
+		)
+		attest(T.toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			properties: {}
+		})
+
+		const WithProp = fromJsonSchema({
+			type: "object",
+			properties: { a: { type: "string" } },
+			required: ["a"]
+		})
+		attest(WithProp.allows(Object.assign(() => {}, { a: "x" }))).equals(false)
+
+		const ConstObj = fromJsonSchema({ const: { a: 1 } })
+		attest(ConstObj.allows(Object.assign(() => {}, { a: 1 }))).equals(false)
+	})
 })

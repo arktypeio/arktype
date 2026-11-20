@@ -43,6 +43,8 @@ import { keptIssuesOf } from "@ark/aot/internal/issues.ts"
 import { build, buildSync, type BuildOptions } from "esbuild"
 import { join } from "node:path"
 
+type IssueWithData = { data: unknown }
+
 const optionsOf = (source: string) =>
 	({
 		stdin: {
@@ -667,7 +669,7 @@ nick must be a string or null`)
 			{ configure: exportsRuntime }
 		)
 		const errors = T({ b: { c: 0 } })
-		attest(errors.issues).snap([
+		attest([...errors.issues]).snap([
 			{
 				code: "required",
 				path: ["a"],
@@ -698,6 +700,7 @@ nick must be a string or null`)
 				message: "must be positive"
 			}
 		])
+		attest(JSON.stringify(errors.issues)).equals(JSON.stringify(errors))
 		// a failure's class is type.errors, read or unread
 		attest(T({}).constructor).is(runtime.type.errors)
 		attest(U(5) instanceof runtime.ArkErrors).equals(true)
@@ -902,6 +905,7 @@ nick must be a string or null`)
 				)
 				return [
 					`${out.constructor === runtime.type.errors} ${out.count} ${JSON.stringify(out.issues)}`,
+					JSON.stringify(out.issues.map((i: IssueWithData) => i.data)),
 					out.summary,
 					`${String(out) === out.summary} ${`${out}` === out.summary} ${[...out].length === out.count}`,
 					// what it says and where, without its data
@@ -912,8 +916,8 @@ nick must be a string or null`)
 			})
 		)
 		attest(outputs).snap([
-			'true 2 [{"code":"required","path":["a"],"data":{"b":{"c":[1,"x"]}},"expected":"a string","message":"must be a string (was missing)"},{"code":"domain","path":["b","c",1],"data":"x","expected":"a number","message":"must be a number"}]\na must be a string (was missing)\nb.c[1] must be a number\ntrue true true\n[{"code":"required","path":["a"],"expected":"a string","message":"must be a string (was missing)"},{"code":"domain","path":["b","c",1],"expected":"a number","message":"must be a number"}]\nTraversalError: a must be a string (was missing)\nb must be an object (was missing) true\nTraversalError: a must be a string (was missing)\nb.c[1] must be a number true\n',
-			'true 1 [{"code":"predicate","path":[],"data":{"b":{"c":[1,"x"]}},"expected":"valid","message":"is invalid"}]\nis invalid\ntrue true true\n[{"code":"predicate","path":[],"expected":"valid","message":"is invalid"}]\nTraversalError: is invalid true\nTraversalError: is invalid true\n'
+			'true 2 [{"code":"required","path":["a"],"expected":"a string","message":"must be a string (was missing)"},{"code":"domain","path":["b","c",1],"expected":"a number","message":"must be a number"}]\n[{"b":{"c":[1,"x"]}},"x"]\na must be a string (was missing)\nb.c[1] must be a number\ntrue true true\n[{"code":"required","path":["a"],"expected":"a string","message":"must be a string (was missing)"},{"code":"domain","path":["b","c",1],"expected":"a number","message":"must be a number"}]\nTraversalError: a must be a string (was missing)\nb must be an object (was missing) true\nTraversalError: a must be a string (was missing)\nb.c[1] must be a number true\n',
+			'true 1 [{"code":"predicate","path":[],"expected":"valid","message":"is invalid"}]\n[{"b":{"c":[1,"x"]}}]\nis invalid\ntrue true true\n[{"code":"predicate","path":[],"expected":"valid","message":"is invalid"}]\nTraversalError: is invalid true\nTraversalError: is invalid true\n'
 		])
 	})
 
@@ -2017,7 +2021,7 @@ age must be a number (was missing)`)
 b: string isn't a number
 c must be a number (was string)
 d must be a number, as written`)
-		attest(errors.issues).snap([
+		attest([...errors.issues]).snap([
 			{
 				code: "minLength",
 				path: ["a"],

@@ -525,7 +525,7 @@ age must be non-negative`)
 			attest(out instanceof type.errors).equals(true)
 			attest(out.toString()).snap("is invalid")
 			attest(JSON.stringify(out)).snap(
-				'[{"path":[],"code":"predicate","expected":"valid","message":"is invalid","propString":""}]'
+				'[{"code":"predicate","path":[],"expected":"valid","message":"is invalid"}]'
 			)
 		})
 
@@ -549,11 +549,10 @@ age must be non-negative`)
 			const T = none.type("string").pipe((s, ctx) => ctx.error("short"))
 			attest((T("x") as type.errors).toJSON()).snap([
 				{
-					path: [],
 					code: "predicate",
+					path: [],
 					expected: "valid",
-					message: "is invalid",
-					propString: ""
+					message: "is invalid"
 				}
 			])
 		})
@@ -580,8 +579,8 @@ age must be non-negative`)
 			const T = none.type("string")
 			attest(() => T.assert(5)).throws.snap("TraversalError: is invalid")
 			const result = T["~standard"].validate(5)
-			const issues: unknown = "issues" in result && result.issues
-			attest(issues).snap([
+			const issues = "issues" in result ? result.issues : undefined
+			attest((issues ? [...issues] : undefined) as unknown).snap([
 				{
 					data: 5,
 					path: [],
@@ -592,6 +591,9 @@ age must be non-negative`)
 					actual: "5"
 				}
 			])
+			attest(JSON.stringify(issues)).snap(
+				'[{"code":"predicate","path":[],"expected":"valid","message":"is invalid"}]'
+			)
 		})
 
 		it("none checks a default", () => {

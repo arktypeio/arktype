@@ -15,7 +15,15 @@ import {
 	type Stats
 } from "node:fs"
 import { createRequire } from "node:module"
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
+import {
+	basename,
+	dirname,
+	isAbsolute,
+	join,
+	relative,
+	resolve,
+	sep
+} from "node:path"
 import { fileURLToPath } from "node:url"
 import { parseArgs } from "node:util"
 
@@ -161,6 +169,7 @@ const defaultSkillTarget = (projectRoot: string): string => {
 
 export type InstallSkillOptions = {
 	allowOutside?: boolean
+	cwd?: string
 }
 
 const lstatIfExists = (path: string): Stats | undefined => {
@@ -285,6 +294,11 @@ type PreparedSkillInstall = {
 	resolvedDest: string
 }
 
+const resolveExplicitSkillTarget = (cwd: string, targetDir: string): string => {
+	const resolved = resolve(cwd, targetDir)
+	return basename(resolved) === "arktype" ? resolved : join(resolved, "arktype")
+}
+
 const prepareSkillInstall = (
 	projectRoot: string,
 	targetDir?: string,
@@ -292,8 +306,8 @@ const prepareSkillInstall = (
 ): PreparedSkillInstall => {
 	const src = bundledSkillPath()
 	const dest =
-		targetDir ?
-			resolve(projectRoot, targetDir)
+		targetDir !== undefined ?
+			resolveExplicitSkillTarget(opts?.cwd ?? process.cwd(), targetDir)
 		:	defaultSkillTarget(projectRoot)
 	const resolvedDest = resolveSafeSkillDir(
 		projectRoot,
@@ -688,7 +702,7 @@ const runSkill = (
 	}
 	if (parsed.values.help) {
 		stdout(
-			"Usage: ark skill [path|install] [--dir <path>] [--allow-outside]\n\nPrints the path to the bundled ArkType skill or installs it into your project.\n"
+			"Usage: ark skill [path|install] [--dir <path>] [--allow-outside]\n\nPrints the path to the bundled ArkType skill or installs it into your project. With --dir <path> (resolved from cwd), installs to <path>/arktype unless <path> already ends in arktype.\n"
 		)
 		return 0
 	}
@@ -703,7 +717,8 @@ const runSkill = (
 			typeof parsed.values.dir === "string" ? parsed.values.dir : undefined
 		try {
 			const dest = installBundledSkill(projectRoot, target, {
-				allowOutside: Boolean(parsed.values["allow-outside"])
+				allowOutside: Boolean(parsed.values["allow-outside"]),
+				cwd
 			})
 			stdout(`Installed ArkType skill to ${dest}\n`)
 			return 0

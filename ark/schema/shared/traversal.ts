@@ -396,19 +396,11 @@ export class Traversal extends InternalTraversal {
 				:	"valid")
 		}
 		// a message supplied is a sentence of its own, set apart from its path,
-		// unless it begins as what's written from what's expected would. Data
-		// arktype only knows is invalid expects nothing, which is what says so
-		if (supplied.message !== undefined) {
-			issue.message = supplied.message
-			if (supplied.message === "is invalid" && supplied.expected === "valid")
-				issue.expected = undefined
-		}
-		// a keyword's phrase writes the SyntaxError it caught, as string.json's,
-		// and a pipe.try morph what it threw
-		else if (
-			supplied.cause !== undefined &&
-			(supplied.meta?.keyword || supplied.morph)
-		) {
+		// unless it begins as what's written from what's expected would or is
+		// arktype's own invalidInput ({ expected: "valid", message: "is invalid" })
+		if (supplied.message !== undefined) issue.message = supplied.message
+		// a pipe.try morph writes what it threw beside what it expected
+		else if (supplied.cause !== undefined && supplied.morph) {
 			try {
 				issue.message = `must be ${issue.expected} (${String(supplied.cause)})`
 			} catch {

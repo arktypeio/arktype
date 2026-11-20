@@ -477,10 +477,8 @@ a must be a number (was missing)`)
 			const T = type({ amount: "0n | 1n" })
 			attest(JSON.parse(JSON.stringify(T({})))).snap([
 				{
-					path: ["amount"],
 					code: "required",
-					missingValueDescription: "0n or 1n",
-					propString: "amount",
+					path: ["amount"],
 					expected: "0n or 1n",
 					message: "must be 0n or 1n (was missing)"
 				}

@@ -58,8 +58,7 @@ var ReadIssues = class {
 	 * Each issue, its message written when they are first read.
 	 */
 	get issues() {
-		for (const issue of this._) issue.message ??= messageOf(issue)
-		return this._
+		return serializableIssues(this._)
 	}
 	/**
 	 * @internal fails data at the path it's at. Every bundle holds this, so it
@@ -94,7 +93,7 @@ var UnreadIssues = class {
 		if (!this._f) {
 			this._f = []
 			if (this._a && (this._a(this._d, this), !this._f.length))
-				this._e(this._d, "predicate")
+				this._e(this._d, "predicate", "valid", "is invalid")
 		}
 		return this._f
 	}
@@ -102,8 +101,7 @@ var UnreadIssues = class {
 		return this._.length
 	}
 	get issues() {
-		for (const issue of this._) issue.message ??= messageOf(issue)
-		return this._
+		return serializableIssues(this._)
 	}
 	_e(data, code, expected, message, text) {
 		this._.push({ code, path: this._p.slice(), data, expected, message })
@@ -145,7 +143,7 @@ var Issues =
 					if (!this._f) {
 						this._f = []
 						if (this._a && (this._a(this._d, this), !this._f.length))
-							this._e(this._d, "predicate")
+							this._e(this._d, "predicate", "valid", "is invalid")
 					}
 					return this._f
 				}
@@ -153,8 +151,7 @@ var Issues =
 					return this._.length
 				}
 				get issues() {
-					for (const issue of this._) issue.message ??= messageOf(issue)
-					return this._
+					return serializableIssues(this._)
 				}
 				_e(data, code, expected, message, text) {
 					this._.push({ code, path: this._p.slice(), data, expected, message })
@@ -206,8 +203,7 @@ var Issues =
 					return this._.length
 				}
 				get issues() {
-					for (const issue of this._) issue.message ??= messageOf(issue)
-					return this._
+					return serializableIssues(this._)
 				}
 				_e(data, code, expected, message, text) {
 					this._.push({ code, path: this._p.slice(), data, expected, message })
@@ -269,14 +265,27 @@ var Issues =
 var jsonIssueOf = issue => ({
 	code: issue.code,
 	path: issue.path.map(k => (typeof k === "symbol" ? String(k) : k)),
-	expected: issue.expected,
+	...(issue.expected !== void 0 && { expected: issue.expected }),
 	message: issue.message ?? messageOf(issue),
-	...(issue.errors && { errors: issue.errors.map(jsonIssueOf) })
+	...(issue.errors?.length ? { errors: issue.errors.map(jsonIssueOf) } : {})
 })
+var issuesToJson = {
+	value() {
+		return this.map(jsonIssueOf)
+	},
+	writable: true,
+	configurable: true
+}
+var serializableIssues = issues => {
+	for (const issue of issues) issue.message ??= messageOf(issue)
+	return issues.toJSON ? issues : (
+			Object.defineProperty(issues, "toJSON", issuesToJson)
+		)
+}
 var foundErrors = (apply, data, onFail, Ctx = Issues) => {
 	const errors = new Ctx()
 	apply(data, errors)
-	if (!errors._.length) errors._e(data, "predicate")
+	if (!errors._.length) errors._e(data, "predicate", "valid", "is invalid")
 	return onFail ? onFail(errors) : errors
 }
 var mergeIssues = (errors, merged, prefix) => {
@@ -318,7 +327,13 @@ var lineOf = issue => {
 		listsUnions && issue._l !== void 0 ? issue._l
 		: path ?
 			path +
-			(writesText && !message.startsWith(messageOf(issue)) ? ": " : " ") +
+			((
+				writesText &&
+				!(message === "is invalid" && issue.expected === "valid") &&
+				!message.startsWith(messageOf(issue))
+			) ?
+				": "
+			:	" ") +
 			message
 		:	message
 	)

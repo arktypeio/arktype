@@ -606,19 +606,18 @@ d must be a number`)
 		attest(path).snap(["stringKey", "Symbol(ctxPathExampleSymbol)", 1])
 	})
 
-	it("serializes an error's own keys, where toJSON() prints a symbol key", () => {
+	it("serializes an error's own keys, where issues and toJSON() print symbol keys", () => {
 		const tag = Symbol("my tag")
 		const out = type({ [tag]: "string" })({ [tag]: 1 }) as ArkErrors
-		attest(JSON.parse(JSON.stringify(out.issues))[0].path).equals([null])
-		attest(out.toJSON()[0]).snap({
-			path: ["Symbol(my tag)"],
+		attest(JSON.parse(JSON.stringify(out.issues[0])).path).equals([null])
+		const expected = {
 			code: "domain",
-			description: "a string",
-			domain: "string",
-			propString: "[Symbol(my tag)]",
+			path: ["Symbol(my tag)"],
 			expected: "a string",
 			message: "must be a string"
-		})
+		}
+		attest(out.toJSON()[0]).snap(expected)
+		attest(JSON.parse(JSON.stringify(out.issues))[0]).equals(expected)
 	})
 
 	it("serializes errors without their data", () => {
@@ -630,20 +629,17 @@ d must be a number`)
 		attest(out.issues[1].actual).snap('"secret-token"')
 		const json = JSON.stringify(out)
 		attest(json.includes("hunter2") || json.includes("secret")).equals(false)
+		attest(JSON.stringify(out.issues)).equals(json)
 		attest(out.toJSON()).snap([
 			{
-				path: ["password"],
 				code: "minLength",
-				description: "at least length 8",
-				propString: "password",
+				path: ["password"],
 				expected: "at least length 8",
 				message: "must be at least length 8"
 			},
 			{
-				path: ["token"],
 				code: "pattern",
-				description: "a UUID",
-				propString: "token",
+				path: ["token"],
 				expected: "a UUID",
 				message: "must be a UUID"
 			}
@@ -659,29 +655,23 @@ d must be a number`)
 			c: type.instanceOf(Date)
 		})
 		const out = T({ a: cyclic, b: 2n, c: cyclic }) as ArkErrors
+		attest(JSON.stringify(out.issues)).equals(JSON.stringify(out))
 		attest(JSON.parse(JSON.stringify(out))).snap([
 			{
-				path: ["a"],
 				code: "domain",
-				description: "a number",
-				domain: "number",
-				propString: "a",
+				path: ["a"],
 				expected: "a number",
 				message: "must be a number"
 			},
 			{
-				path: ["b"],
 				code: "unit",
-				description: "1n",
-				propString: "b",
+				path: ["b"],
 				expected: "1n",
 				message: "must be 1n"
 			},
 			{
-				path: ["c"],
 				code: "proto",
-				description: "a Date",
-				propString: "c",
+				path: ["c"],
 				expected: "a Date",
 				message: "must be a Date"
 			}
@@ -695,33 +685,27 @@ d must be a number`)
 		}) as ArkErrors
 		const json = JSON.stringify(out)
 		attest(json.includes('"data"')).equals(false)
+		attest(JSON.stringify(out.issues)).equals(json)
 		attest(JSON.parse(json)).snap([
 			{
-				path: [],
 				code: "union",
+				path: [],
+				expected: "a must be a string or b must be a bigint",
+				message: "a must be a string or b must be a bigint",
 				errors: [
 					{
-						path: ["a"],
 						code: "domain",
-						description: "a string",
-						domain: "string",
-						propString: "a",
+						path: ["a"],
 						expected: "a string",
 						message: "must be a string"
 					},
 					{
-						path: ["b"],
 						code: "domain",
-						description: "a bigint",
-						domain: "bigint",
-						propString: "b",
+						path: ["b"],
 						expected: "a bigint",
 						message: "must be a bigint"
 					}
-				],
-				propString: "",
-				expected: "a must be a string or b must be a bigint",
-				message: "a must be a string or b must be a bigint"
+				]
 			}
 		])
 	})
@@ -884,11 +868,10 @@ c must be a string`)
 		data.a = "a"
 		attest(out.toJSON()).snap([
 			{
+				code: "predicate",
 				path: [],
 				expected: "valid",
-				message: "is invalid",
-				code: "predicate",
-				propString: ""
+				message: "is invalid"
 			}
 		])
 	})

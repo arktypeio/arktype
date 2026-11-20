@@ -34,15 +34,15 @@ if (out instanceof type.errors) {
 
 `ArkErrors` isn't an array. Its errors are in `issues`, so index them or call array methods there. `for (const error of out)` and `[...out]` iterate `issues`. Log `out.summary` or `out.issues` rather than `out`: its own fields are internal, and those are what a browser console shows.
 
-| member                  | what it is                                                                |
-| ----------------------- | ------------------------------------------------------------------------- |
-| `issues`                | an array with one error per failed check, in the order each failed        |
-| `summary`, `toString()` | a line for each error: its message after its path                         |
-| `count`                 | how many errors were added                                                |
-| `toJSON()`              | an array of each error's JSON, with its `propString` and without its data |
-| `summaryIn(locale?)`    | the summary in a [locale](/docs/i18n#rendering-in-a-locale)               |
-| `throw()`               | throws a [`TraversalError`](#traversalerror)                              |
-| `[Symbol.iterator]()`   | each error in `issues`, for `for...of` and spread                         |
+| member                  | what it is                                                                                |
+| ----------------------- | ----------------------------------------------------------------------------------------- |
+| `issues`                | an array with one error per failed check, in the order each failed                        |
+| `summary`, `toString()` | a line for each error: its message after its path                                         |
+| `count`                 | how many errors were added                                                                |
+| `toJSON()`              | an array of `{ code, path, expected, message, errors? }` for each error, without its data |
+| `summaryIn(locale?)`    | the summary in a [locale](/docs/i18n#rendering-in-a-locale)                               |
+| `throw()`               | throws a [`TraversalError`](#traversalerror)                                              |
+| `[Symbol.iterator]()`   | each error in `issues`, for `for...of` and spread                                         |
 
 `arktype` exports functions that read an `ArkErrors`, most grouping it by path:
 
@@ -139,7 +139,7 @@ Its `message`:
 
 An error also has `meta`, the metadata of the Type that failed, and usually a `description`. It has no methods, so `JSON.stringify(error)` serializes its own keys, `data` included, and `messageIn(error, locale)` writes its `message` in another locale.
 
-Since `data` is the rejected value, a password or a token is in an error you serialize, whether a logged `out.issues` or the issues a library returns through [Standard Schema](/docs/standard-schema). `JSON.stringify(out)` leaves it out: each error's JSON holds its code, path, `expected` and `message`, but not its `data`, nor its `actual`, which for a string or a number may be the value itself, nor a value its Type checked against, like its `rule`, `unit` or `meta`, any of which may be a bigint or circular, which JSON can't hold. To send less, send each error's `path` and `message`, or `flatMessagesByPath(out)`.
+Since `data` is the rejected value, avoid serializing an individual `error` directly. `JSON.stringify(out)`, `JSON.stringify(out.issues)`, and a [Standard Schema](/docs/standard-schema) failure's `JSON.stringify(result)` and `JSON.stringify(result.issues)` all leave `data` out: each error's JSON holds only its `code`, `path` (with symbols stringified), `expected`, `message`, and `errors` (for a union with branch errors) — matching [precompiled](/docs/precompile/validators#errors) validators and omitting `data`, `actual`, `propString`, and internal or non-JSON fields like `rule`, `unit`, `meta` or `cause`, any of which may be a bigint or circular. To send less, send each error's `path` and `message`, or `flatMessagesByPath(out)`.
 
 When several checks fail at one path, each is its own error. `flatByPath` and `flatMessagesByPath` group them by path:
 

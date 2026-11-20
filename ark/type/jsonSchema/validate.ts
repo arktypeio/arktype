@@ -127,6 +127,8 @@ export type validateKeywords<schema, root, position extends SchemaPosition> = {
 			  : k extends "$ref" ? validateRef<schema[k], root>
 			  : k extends CountKeyword ? validateCount<schema[k], k>
 			  : k extends "multipleOf" ? validateMultipleOf<schema[k]>
+			  : k extends "nullable" ?
+					validateNullable<schema[k], schema["type" & keyof schema]>
 			  : k extends keyof KeywordValueTypes ? KeywordValueTypes[k]
 			  : k extends SchemaRecordKeyword ?
 					validateSchemaRecord<schema[k], root, "branch">
@@ -264,6 +266,14 @@ export type validateMultipleOf<n> =
 			ErrorMessage<writeInvalidMultipleOfMessage<n>>
 		:	n
 	:	number
+
+export type validateNullable<nullable, type> =
+	[nullable] extends [anyOrNever] ? nullable
+	: [nullable] extends [false] ?
+		includesNullType<type> extends true ?
+			ErrorMessage<NonNullableNullMessage>
+		:	false
+	:	boolean
 
 export type validateRef<ref, root> =
 	ref extends LocalRef ?
@@ -420,7 +430,6 @@ export type KeywordValueTypes = {
 	pattern: string | RegExp
 	format: string
 	uniqueItems: boolean
-	nullable: boolean
 }
 
 export type ValidatedKeyword =
@@ -436,6 +445,7 @@ export type ValidatedKeyword =
 	| "prefixItems"
 	| "$ref"
 	| "multipleOf"
+	| "nullable"
 	| "dependencies"
 	| "dependentRequired"
 	| "additionalItems"
@@ -459,6 +469,7 @@ export type KeywordName =
 export type StaticallyValidSchema = boolean | StaticallyValidSchemaObject
 
 export interface StaticallyValidSchemaObject extends ContextFreeKeywords {
+	nullable?: true
 	required?: never
 	$ref?: never
 	multipleOf?: never
@@ -510,7 +521,6 @@ export interface ContextFreeKeywords {
 	pattern?: string | RegExp
 	format?: string
 	uniqueItems?: boolean
-	nullable?: boolean
 	const?: unknown
 	title?: unknown
 	description?: unknown
@@ -567,6 +577,7 @@ export interface DependentRequired {
  * to validateKeywords for errors if any check fails */
 export interface ValidSchemaObject<schema extends KeywordObject, root>
 	extends ContextFreeKeywords {
+	nullable?: checkNullable<schema["nullable"], schema["type"]>
 	required?: array<keyof schema["properties"] & string>
 	$ref?: checkRef<schema["$ref"], root>
 	multipleOf?: checkMultipleOf<schema["multipleOf"]>
@@ -695,6 +706,32 @@ export type checkMultipleOf<n> =
 	: n extends undefined ? n
 	: never
 
+export type checkNullable<nullable, type> =
+	[nullable] extends [anyOrNever] ? nullable
+	: [nullable] extends [false] ?
+		includesNullType<type> extends true ?
+			never
+		:	false
+	: nullable extends boolean | undefined ? nullable
+	: never
+
+export type includesNullType<type> =
+	[type] extends [anyOrNever] ? false
+	: JsonSchema.TypeName extends Extract<type, string> ? false
+	: type extends array ?
+		number extends type["length"] ? false
+		: true extends (
+			{
+				[i in keyof type]: [type[i]] extends [anyOrNever] ? false
+				: [type[i]] extends ["null"] ? true
+				: false
+			}[number]
+		) ?
+			true
+		:	false
+	: [type] extends ["null"] ? true
+	: false
+
 export type NonPositiveString = `-${string}` | "0"
 
 export type checkRef<ref, root> =
@@ -789,3 +826,6 @@ export type writeInvalidMultipleOfMessage<value extends number> =
 
 export type writeUnsupportedKeywordMessage<keyword extends string> =
 	`${keyword} isn't supported by fromJsonSchema`
+
+export type NonNullableNullMessage =
+	"nullable can't be false beside a type that includes null"

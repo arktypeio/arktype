@@ -22,7 +22,10 @@ import {
 } from "@ark/util"
 import type { distill, Out } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
-import type { validateDefinition } from "./parser/definition.ts"
+import type {
+	inferDefinition,
+	validateDefinition
+} from "./parser/definition.ts"
 import type { BaseCompletions } from "./parser/string.ts"
 import type { bindThis, InternalScope } from "./scope.ts"
 import type { Inferred } from "./variants/base.ts"
@@ -58,7 +61,7 @@ declare namespace ctx {
 export interface MatchParser<$> extends CaseMatchParser<ctx.init<$>> {
 	in<const def>(
 		def: type.validate<def, $>
-	): ChainableMatchParser<ctx.init<$, type.infer<def, $>, true>>
+	): ChainableMatchParser<ctx.init<$, inferDefinition<def, $>, true>>
 	in<const typedInput = never>(
 		...args: [typedInput] extends [never] ?
 			[
@@ -69,7 +72,7 @@ export interface MatchParser<$> extends CaseMatchParser<ctx.init<$>> {
 	// include this signature a second time so that e.g. `match.in({ foo: "strin" })` shows the right error
 	in<const def>(
 		def: type.validate<def, $>
-	): ChainableMatchParser<ctx.init<$, type.infer<def, $>, true>>
+	): ChainableMatchParser<ctx.init<$, inferDefinition<def, $>, true>>
 
 	case: CaseParser<ctx.init<$>>
 
@@ -149,7 +152,7 @@ type inferCaseArg<
 	ctx extends MatchParserContext,
 	endpoint extends "in" | "out"
 > = _finalizeCaseArg<
-	maybeLiftToKey<type.infer<def, ctx["$"]>, ctx>,
+	maybeLiftToKey<inferDefinition<def, ctx["$"]>, ctx>,
 	ctx,
 	endpoint
 >

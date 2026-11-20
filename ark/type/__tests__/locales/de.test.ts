@@ -257,15 +257,13 @@ contextualize(() => {
 			'string.ip ← "x"': "muss eine IP-Adresse sein",
 			'string.ip.v4 ← "x"': "muss eine IPv4-Adresse sein",
 			'string.ip.v6 ← "x"': "muss eine IPv6-Adresse sein",
-			'string.json ← "x"': "muss eine JSON-Zeichenkette sein (⟨SyntaxError⟩)",
-			'string.json.parse ← "x"':
-				"muss eine JSON-Zeichenkette sein (⟨SyntaxError⟩)",
+			'string.json ← "x"': "muss eine JSON-Zeichenkette sein",
+			'string.json.parse ← "x"': "muss eine JSON-Zeichenkette sein",
 			'string.lower.preformatted ← "X"': "muss kleingeschrieben sein",
 			'string.numeric ← "x"':
 				"muss eine wohlgeformte numerische Zeichenkette sein",
 			'string.numeric.parse ← "1e400"': "muss endlich sein",
-			'string.regex ← "("':
-				"muss ein Regex-Muster sein (SyntaxError: Invalid regular expression: /(/: Unterminated group)",
+			'string.regex ← "("': "muss ein Regex-Muster sein",
 			'string.semver ← "x"':
 				"muss eine semantische Version (siehe https://semver.org/) sein",
 			'string.trim.preformatted ← " x"':

@@ -51,8 +51,7 @@ class ReadIssues implements FailureContext {
 	 * Each issue, its message written when they are first read.
 	 */
 	get issues(): readonly WrittenIssue[] {
-		for (const issue of this._) issue.message ??= messageOf(issue)
-		return this._ as WrittenIssue[]
+		return serializableIssues(this._)
 	}
 
 	/** @internal takes neither a key nor a site, as issues.ts's */
@@ -133,8 +132,7 @@ const Issues: new () => Issues = (
 			}
 
 			get issues(): readonly WrittenIssue[] {
-				for (const issue of this._) issue.message ??= messageOf(issue)
-				return this._ as WrittenIssue[]
+				return serializableIssues(this._)
 			}
 
 			_e(
@@ -230,10 +228,27 @@ export { Issues as ArkErrors }
 const jsonIssueOf = (issue: ArkIssue): IssueJson => ({
 	code: issue.code,
 	path: issue.path.map(k => (typeof k === "symbol" ? String(k) : k)),
-	expected: issue.expected,
+	...(issue.expected !== undefined && { expected: issue.expected }),
 	message: issue.message ?? messageOf(issue),
-	...(issue.errors && { errors: issue.errors.map(jsonIssueOf) })
+	...(issue.errors?.length ? { errors: issue.errors.map(jsonIssueOf) } : {})
 })
+
+const issuesToJson: PropertyDescriptor & ThisType<readonly ArkIssue[]> = {
+	value() {
+		return this.map(jsonIssueOf)
+	},
+	writable: true,
+	configurable: true
+}
+
+type IssuesWithToJson = ArkIssue[] & { toJSON?: () => readonly IssueJson[] }
+
+const serializableIssues = (issues: ArkIssue[]): readonly WrittenIssue[] => {
+	for (const issue of issues) issue.message ??= messageOf(issue)
+	return (issues as IssuesWithToJson).toJSON ?
+			(issues as WrittenIssue[])
+		:	(Object.defineProperty(issues, "toJSON", issuesToJson) as WrittenIssue[])
+}
 
 export class FirstIssues extends Issues {
 	override get failFast(): true {
@@ -277,7 +292,7 @@ export const issuesOf = (
 ): ArkIssue[] => {
 	apply(data, errors)
 	// data a write or a getter has made valid since fails as a whole
-	if (!errors._.length) errors._e(data, "predicate")
+	if (!errors._.length) errors._e(data, "predicate", "valid", "is invalid")
 	return errors._
 }
 
@@ -290,7 +305,7 @@ export const foundErrors = (
 	const errors = new Ctx()
 	// as issuesOf, which a program of these never ships
 	apply(data, errors)
-	if (!errors._.length) errors._e(data, "predicate")
+	if (!errors._.length) errors._e(data, "predicate", "valid", "is invalid")
 	return onFail ? onFail(errors) : errors
 }
 
@@ -381,7 +396,13 @@ export const lineOf = (issue: ArkIssue): string => {
 		listsUnions && issue._l !== undefined ? issue._l
 		: path ?
 			path +
-			(writesText && !message.startsWith(messageOf(issue)) ? ": " : " ") +
+			((
+				writesText &&
+				!(message === "is invalid" && issue.expected === "valid") &&
+				!message.startsWith(messageOf(issue))
+			) ?
+				": "
+			:	" ") +
 			message
 		:	message
 	)

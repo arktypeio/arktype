@@ -146,6 +146,7 @@ export const addIssueFeatures = (
 			features.bracketsKeys = true
 			features.writesText = true
 			features.readsErrors = true
+			if (node.is("morph")) features.listsUnions = true
 		} else if (node.is("union") && node.tfs) {
 			features.transformsBranches = true
 			if (node.hasMorph || node.hasAlias) features.failsInBranches = true

@@ -159,6 +159,8 @@ const read = (schema: unknown, pointer: string, ctx: ReadContext): BaseRoot => {
 			const constraint = readKeywords(o, pointer, ctx)
 			if (constraint) result = intersectRoots(result, constraint)
 		}
+		if (o.type === undefined && o.nullable === true)
+			result = unionOf([result, typeRoots().null])
 		return withAnnotations(result, o, pointer)
 	} finally {
 		ctx.resource = enclosing
@@ -832,7 +834,7 @@ const notArray = /* @__PURE__ */ cached(() => {
 	$ark.sets!.disjointOf = disjointFromArray
 	return jsonSchemaNode("predicate", {
 		predicate: isNonArray,
-		meta: { description: "not an array" }
+		meta: { description: "not an array or function" }
 	})
 })
 
@@ -859,14 +861,10 @@ const typeRoots = /* @__PURE__ */ cached(
 )
 
 const otherThan = (...branches: BaseRoot[]) =>
-	unionOf([
-		...branches,
-		jsonSchemaRoot(["bigint", "symbol", { unit: undefined }]),
-		typeRoots().boolean,
-		typeRoots().null
-	])
+	unionOf([...branches, typeRoots().boolean, typeRoots().null])
 
-// a type's keywords constrain only that type, e.g. { minimum: 5 } allows "foo"
+// a type's keywords constrain only that type, leaving the other JSON domains
+// unconstrained (e.g. { minimum: 5 } allows "foo" but not undefined)
 const unconstrainedBy = /* @__PURE__ */ cached(
 	(): Record<ConstrainedType, BaseRoot> => {
 		const { number, string, array, object } = typeRoots()
@@ -1413,12 +1411,10 @@ const checkKeyword = (
 	if (k === "nullable") checkNullable(o, pointer)
 }
 
-// like ajv, which throws compiling either, even beside a $ref whose siblings
-// a draft-07 schema otherwise ignores
+// reject the contradiction of nullable: false beside a type that includes null
 const checkNullable = (o: dict, pointer: string): void => {
-	if (o.type === undefined)
-		throwParseError(writeNullableWithoutTypeMessage(`${pointer}/nullable`))
 	if (
+		o.type !== undefined &&
 		o.nullable === false &&
 		(isArray(o.type) ? o.type : [o.type]).includes("null")
 	)
@@ -1458,9 +1454,6 @@ export const writeUnsupportedRefMessage = (
 
 export const writeUnresolvableRefMessage = (ref: string): string =>
 	`$ref ${ref} doesn't resolve to a schema in its document`
-
-export const writeNullableWithoutTypeMessage = (pointer: string): string =>
-	`${pointer} must be beside a type, to which it adds null`
 
 export const writeNonNullableNullMessage = (pointer: string): string =>
 	`${pointer} can't be false beside a type that includes null`

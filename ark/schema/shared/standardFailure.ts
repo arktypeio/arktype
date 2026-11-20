@@ -71,8 +71,32 @@ const jsonIssueOf = (issue: SerializableIssue): Record<string, unknown> => ({
 	...(issue.path !== undefined && { path: jsonPathOf(issue.path) }),
 	...(issue.expected !== undefined && { expected: issue.expected }),
 	message: issue.message,
-	...(issue.errors && { errors: issue.errors.map(jsonIssueOf) })
+	...(issue.errors?.length ? { errors: issue.errors.map(jsonIssueOf) } : {})
 })
+
+type SerializableIssues = readonly SerializableIssue[] & {
+	toJSON?: () => readonly unknown[]
+}
+
+const issuesToJson: PropertyDescriptor &
+	ThisType<readonly SerializableIssue[]> = {
+	value() {
+		return this.map(jsonIssueOf)
+	},
+	writable: true,
+	configurable: true
+}
+
+const serializableIssuesOf = (
+	issues: StandardSchemaV1.FailureResult["issues"]
+): StandardSchemaV1.FailureResult["issues"] =>
+	typeof (issues as SerializableIssues).toJSON === "function" ?
+		issues
+	:	Object.defineProperty(
+			Object.isExtensible(issues) ? issues : [...issues],
+			"toJSON",
+			issuesToJson
+		)
 
 /**
  * @internal a Standard Schema failure of errors: their issues, and their
@@ -90,15 +114,16 @@ const jsonIssueOf = (issue: SerializableIssue): Record<string, unknown> => ({
  */
 export const standardFailureOf = (
 	errors: SummarizedErrors
-): StandardSchemaV1.FailureResult =>
-	Object.defineProperty(
+): StandardSchemaV1.FailureResult => {
+	const issues = serializableIssuesOf(errors.issues)
+	return Object.defineProperty(
 		Object.defineProperty(
-			Object.defineProperty({ issues: errors.issues }, "_s", {
+			Object.defineProperty({ issues }, "_s", {
 				value: (json?: true) =>
 					json ?
 						typeof errors.toJSON === "function" ?
 							errors.toJSON()
-						:	errors.issues.map(jsonIssueOf)
+						:	issues.map(jsonIssueOf)
 					:	errors.summary,
 				writable: true
 			}),
@@ -108,3 +133,4 @@ export const standardFailureOf = (
 		"toJSON",
 		toJson
 	)
+}

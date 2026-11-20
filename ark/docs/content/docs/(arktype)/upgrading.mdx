@@ -164,7 +164,7 @@ if (out instanceof type.errors) {
 
 `Array.isArray(out)` is now `false`, and `[].concat(out)` nests the errors instead of spreading them, so pass `out.issues`. A [Standard Schema](/docs/standard-schema) failure is no longer the `ArkErrors`, but `{ issues }`, as [below](#standard-schema-messages-leave-out-the-path).
 
-`ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()` and `toString()`, and gains [`summaryIn(locale)`](/docs/i18n#rendering-in-a-locale). `toJSON()`, and so `JSON.stringify(out)`, now leaves out each error's `data` and `actual`, which describes it, and its `meta`, `rule`, `unit` and `proto`, so a rejected password isn't serialized and a bigint or circular value doesn't throw: read them off `out.issues`. `message` and `toTraversalError()` are gone: read `summary`, and call `throw()`, or construct the error with `new TraversalError(out)`. `byPath`, `flatByPath` and `byAncestorPath` are functions `arktype` exports, as is `flatProblemsByPath`, now named `flatMessagesByPath`:
+`ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()` and `toString()`, and gains [`summaryIn(locale)`](/docs/i18n#rendering-in-a-locale). `toJSON()`, `JSON.stringify(out)`, `JSON.stringify(out.issues)`, and a Standard Schema failure's `JSON.stringify(result)` and `JSON.stringify(result.issues)` all emit `{ code, path, expected, message, errors? }` (matching precompiled validators), leaving out `data`, `actual`, `propString`, and internal or non-JSON fields like `meta`, `rule`, `unit`, `proto` and `cause`, so a rejected password isn't serialized and a bigint or circular value doesn't throw: read those off `out.issues[i]` in JavaScript. `message` and `toTraversalError()` are gone: read `summary`, and call `throw()`, or construct the error with `new TraversalError(out)`. `byPath`, `flatByPath` and `byAncestorPath` are functions `arktype` exports, as is `flatProblemsByPath`, now named `flatMessagesByPath`:
 
 ```ts
 import { flatMessagesByPath, type } from "arktype"
@@ -279,7 +279,7 @@ const Zip5 = type("string").narrow(
 
 ### Errors are plain objects
 
-The errors in `issues` are plain objects without getters or methods, holding the keys their JSON had, without `problem` and with `propString` before `expected`, so serialized issues, like the `errors` `@hono/arktype-validator` responds with, include it. `ArkError` is exported only as a type, which comparing `code` narrows as `hasCode` did, and `messageIn` writes one's `message` in a locale:
+The errors in `issues` are plain objects without getters or methods, holding their fields directly without `problem` and with `propString` before `expected` (while serializing `out`, `out.issues`, or a Standard Schema failure emits `{ code, path, expected, message, errors? }` without `data` or internal fields). `ArkError` is exported only as a type, which comparing `code` narrows as `hasCode` did, and `messageIn` writes one's `message` in a locale:
 
 ```ts
 import { messageIn, type } from "arktype"
@@ -521,7 +521,7 @@ if (out instanceof type.errors) {
 
 ### Keyword parse errors are data
 
-The errors `string.integer.parse`, `string.date.parse`, `string.url.parse`, `string.json`, `string.json.parse` and `string.regex` raise while parsing carry `meta.keyword`, a `description` and what was thrown as `cause`, instead of their own English `expected` text. Their messages are unchanged, and `predicate` config now applies to them (except `expected` on `string.json`, `string.json.parse` and `string.regex` when a `cause` was thrown):
+The errors `string.integer.parse`, `string.date.parse`, `string.url.parse`, `string.json`, `string.json.parse` and `string.regex` raise while parsing carry `meta.keyword`, a `description` and what was thrown as `cause`, instead of their own English `expected` text. `predicate` config now applies to all of them, and `string.json`, `string.json.parse` and `string.regex` omit the engine's `SyntaxError` text from `message` (which echoed the rejected input) while keeping the `SyntaxError` on `error.cause`:
 
 ```ts
 const out = type("string.json.parse")("{")
@@ -564,7 +564,8 @@ Each was wrong or unclear, but a snapshot or message assertion may hold it:
 
 - `string.date.iso` and `string.date.iso.parse`: `must be an ISO 8601 date or date-time`, before: `must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date`.
 - A missing `string.uuid` key: `id must be a string (was missing)`, before: `id must be a string or a UUID (was missing)`.
-- `string.regex`: `must be a regex pattern (SyntaxError: Invalid regular expression: /(/: Unterminated group)`, before: the bare `SyntaxError: ...`.
+- `string.json` and `string.json.parse`: `must be a JSON string`, before: `must be a JSON string (SyntaxError: ...)`, which echoed the rejected input. `error.cause` still holds the `SyntaxError`.
+- `string.regex`: `must be a regex pattern`, before: the bare `SyntaxError: ...`, which echoed the rejected input. `error.cause` still holds the `SyntaxError`.
 - `{ foo: string } | { foo: number } | { foo: Function }` given `{ foo: null }`: `foo must be a number, a string or an object`, before: `foo must be an object, a number or a string (was null)`.
 - A key that must be `never`: `files must be never`, before: `never`.
 - A described union: `must be a shape`, where it listed its cases or its branches' errors.

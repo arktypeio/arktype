@@ -56,7 +56,7 @@ The marker applies to the statement or expression after it, and what follows it 
 If you ship types derived from arktype, as a published package does, declare them with `--declare` rather than `tsc`, so consumers don't infer arktype definitions. For a [cyclic scope](#cyclic-types), it's the only way to ship them:
 
 ```sh
-npx arktype-precompile --declare
+npx @ark/aot --declare
 ```
 
 It only writes declarations, so it needs no bundler, and the validators it declares can stay dynamic.
@@ -180,12 +180,12 @@ import { precompile } from "@ark/aot/unplugin"
 precompile.vite({ declare: true })
 ```
 
-esbuild, Bun, Farm and the Node and Turbopack drivers can't tell whether a build watches, so `declare: true` throws there; run `arktype-precompile --declare` after the build instead.
+esbuild, Bun, Farm and the Node and Turbopack drivers can't tell whether a build watches, so `declare: true` throws there; run `npx @ark/aot --declare` after the build instead.
 
 Declarations read your program with the TypeScript it's built with, from the optional `typescript` peer: the compiler API of TypeScript 5.5 to 6, or for TypeScript 7.1 or later, its native API, which `tsgo` serves, or [tsrs](https://www.npmjs.com/package/tsrs) where its binary is installed. `checker` (`--checker`) chooses one of `"tsjs"`, `"tsgo"` and `"tsrs"`:
 
 ```sh
-npx arktype-precompile --declare --checker tsgo
+npx @ark/aot --declare --checker tsgo
 ```
 
 TypeScript 7 orders an object's keys and a union's members as it declares them itself, so the shapes it declares can list them in another order than 6's. `"tsjs"` in a TypeScript 7 project reads TypeScript 6 installed beside it:

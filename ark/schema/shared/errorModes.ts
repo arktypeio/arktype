@@ -4,6 +4,7 @@ import {
 	ArkTraversal,
 	invalidError,
 	isArkError,
+	serializableErrors,
 	SiteTraversal,
 	type ArkError
 } from "./errors.ts"
@@ -41,7 +42,7 @@ export class UndetailedErrors extends ArkErrors {
 		for (let i = 0; i < issues.length; i++)
 			if (!isArkError(issues[i])) issues[i] = invalidError(issues[i], $ark.cfg!)
 
-		return issues
+		return serializableErrors(issues)
 	}
 
 	override get _first(): ArkError | undefined {

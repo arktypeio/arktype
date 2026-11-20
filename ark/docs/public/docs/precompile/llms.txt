@@ -494,7 +494,7 @@ Add the two to a `transpilePackages` you already set, and the plugin to a `webpa
 Check the app before its first build, from its directory, which takes seconds where the build takes minutes:
 
 ```sh
-npx arktype-precompile --check
+npx @ark/aot --check
 ```
 
 Nothing else is set for the workspace:
@@ -633,10 +633,10 @@ Some tools and modules can't be precompiled. [Troubleshooting](https://arktype.i
 
 ## Check an existing project
 
-`--check` lists the definitions that can't be precompiled, and why, without bundling:
+`--check` lists the definitions that can't be precompiled, and why, without bundling (also runnable via `pnpm exec arktype-precompile --check` or `arktype`'s `ark check` — use `npx arktype check` outside an installed project, since `ark` on npm is an unrelated package):
 
 ```sh
-npx arktype-precompile --check src
+npx @ark/aot --check src
 ```
 
 ```
@@ -1820,7 +1820,7 @@ The reason **`calls a hook, whose result is known only as a component renders`**
 
 ## Setup
 
-**`arktype resolves to 3.0.0-beta.1, but @ark/aot runs on 3.0.0-beta.2`**: validators run only on the arktype they were built with. Where your program imports the other version, as after upgrading arktype alone, the message names the `@ark/aot` released with it, e.g. `npm i -D @ark/aot@<version>`. Where it's an arktype released before `@ark/aot`, which pnpm and yarn install beside it with only a peer warning, the message names the arktype `@ark/aot` runs on, e.g. `npm i arktype@<version>`. Where a dependency does, install one version, e.g. with your package manager's dedupe or overrides.
+**`arktype resolves to 3.0.0-beta.2, but @ark/aot runs on 3.0.0-rc.0`**: validators run only on the arktype they were built with. Where your program imports the other version, as after upgrading arktype alone, the message names the `@ark/aot` released with it, e.g. `npm i -D @ark/aot@<version>`. Where it's an arktype released before `@ark/aot`, which pnpm and yarn install beside it with only a peer warning, the message names the arktype `@ark/aot` runs on, e.g. `npm i arktype@<version>`. Where a dependency does, install one version, e.g. with your package manager's dedupe or overrides.
 
 **`precompiledForArktype_<version>` is not exported by `arktype/runtime`** (each bundler words it its own way; CommonJS emitted by `--emit` throws `This module needs arktype/runtime to export precompiledForArktype_<version>, ...` when loaded): a module of validators was linked to the runtime of another arktype version than it was [built for](https://arktype.io/docs/precompile/setup#installation), usually from a bundler cache kept from before an upgrade, a stale `--emit` build, or a second copy of arktype. Install one version, clear the bundler's cache or rebuild with `arktype-precompile --emit`. ESM `--emit` relies on static ESM imports for this version check, so post-transforming emitted ESM files file-by-file to CommonJS (e.g. Jest, Babel or SWC) skips link-time validation; emit CommonJS or bundle instead.
 
@@ -1980,7 +1980,7 @@ The marker applies to the statement or expression after it, and what follows it 
 If you ship types derived from arktype, as a published package does, declare them with `--declare` rather than `tsc`, so consumers don't infer arktype definitions. For a [cyclic scope](https://arktype.io/docs/precompile/advanced#cyclic-types), it's the only way to ship them:
 
 ```sh
-npx arktype-precompile --declare
+npx @ark/aot --declare
 ```
 
 It only writes declarations, so it needs no bundler, and the validators it declares can stay dynamic.
@@ -2096,12 +2096,12 @@ The bundler plugin emits the same files with a Rollup, Rolldown, Vite, webpack, 
 precompile.vite({ declare: true })
 ```
 
-esbuild, Bun, Farm and the Node and Turbopack drivers can't tell whether a build watches, so `declare: true` throws there; run `arktype-precompile --declare` after the build instead.
+esbuild, Bun, Farm and the Node and Turbopack drivers can't tell whether a build watches, so `declare: true` throws there; run `npx @ark/aot --declare` after the build instead.
 
 Declarations read your program with the TypeScript it's built with, from the optional `typescript` peer: the compiler API of TypeScript 5.5 to 6, or for TypeScript 7.1 or later, its native API, which `tsgo` serves, or [tsrs](https://www.npmjs.com/package/tsrs) where its binary is installed. `checker` (`--checker`) chooses one of `"tsjs"`, `"tsgo"` and `"tsrs"`:
 
 ```sh
-npx arktype-precompile --declare --checker tsgo
+npx @ark/aot --declare --checker tsgo
 ```
 
 TypeScript 7 orders an object's keys and a union's members as it declares them itself, so the shapes it declares can list them in another order than 6's. `"tsjs"` in a TypeScript 7 project reads TypeScript 6 installed beside it:

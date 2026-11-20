@@ -6,7 +6,7 @@ import { baseNameOf } from "./serialize.ts"
 // recent node versions (https://nodejs.org/api/esm.html#json-modules).
 
 // For now, we assert this matches the package.json version via a unit test.
-export const arkUtilVersion = "3.0.0-beta.2"
+export const arkUtilVersion = "3.0.0-rc.0"
 
 // reserve internal $ark slots up front so `name in registry` prevents user
 // classes or symbols with matching names (e.g. `inPlace`, `encode`) from

@@ -38,8 +38,9 @@ import {
 	type dict
 } from "@ark/util"
 
-// JSON Schema's object type, which excludes what an Array basis allows
-export const isNonArray = (data: object): boolean => !Array.isArray(data)
+// JSON Schema's object type, which excludes arrays and functions
+export const isNonArray = (data: object): boolean =>
+	typeof data !== "function" && !Array.isArray(data)
 
 interface JsonSchemaContext extends ToJsonSchema.Context {
 	/** where in the Type the node being converted is, for its errors */
@@ -1368,7 +1369,7 @@ const reduceJsonSchemaByKind: {
 		}
 	},
 	predicate: (node, base, ctx) =>
-		// JSON Schema's object type already excludes arrays
+		// JSON Schema's object type already excludes arrays and functions
 		node.predicate === isNonArray ?
 			base
 		:	ctx.fallback.predicate({

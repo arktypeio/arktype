@@ -90,7 +90,7 @@ console.log(JSON.stringify({
 }))
 `
 			},
-			fromHere("temp", "standardValidate", "errors-none")
+			tempPath("standardValidate", "errors-none")
 		)
 		// the runtime as published, so each of its error classes is the one built
 		for (const optimizeErrors of ["speed", "size"] as const) {
