@@ -5,6 +5,7 @@ import { constrainIntersection } from "./roots/intersection.ts"
 import { discriminateUnion } from "./roots/union.ts"
 import {
 	jsonSchemaWriters,
+	refPrefixOf,
 	rootToJsonSchema,
 	toJsonSchemaRecurse
 } from "./toJsonSchema.ts"
@@ -24,6 +25,7 @@ export const setEngine: SetEngine = {
 			open: [],
 			defNamesById: {},
 			defs: {},
+			refPrefix: refPrefixOf(ctx),
 			writers: jsonSchemaWriters
 		}),
 	registry: $ark

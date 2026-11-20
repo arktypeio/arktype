@@ -1,5 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
-import { unionJsonSchemaWritersKey, type BaseRoot } from "arktype/schema"
+import {
+	unionJsonSchemaWritersKey,
+	writeNullableJsonSchema,
+	writeUnionJsonSchema,
+	type BaseRoot,
+	type ToJsonSchema
+} from "arktype/schema"
 import { type, type Type } from "arktype"
 import {
 	traceFallbacks,
@@ -70,5 +76,55 @@ contextualize(() => {
 		attest(readsOf(fallback => replayed((_, ctx) => fallback(ctx)))).equals(
 			readsOf(writeSchema)
 		)
+	})
+
+	// the branch a predicate's fallback writes is only known as it's called,
+	// so the replay writes the union again, discriminant and all
+	it("replays a discriminated union whose branch is a fallback's", () => {
+		const root = type({ kind: "'a'" })
+			.narrow(() => true)
+			.or({ kind: "'b'" }).internal as BaseRoot
+		const write = (fallback: object, writers?: object) =>
+			root.toJsonSchema({
+				target: "openapi-3.0",
+				fallback,
+				...(writers && { [unionJsonSchemaWritersKey]: writers })
+			} as never)
+		const trace = traceFallbacks(root, write)!
+		attest(
+			trace.steps.map(step => ("write" in step ? step.write : null))
+		).equals([null, "union"])
+		const replay = writeReplay(
+			trace,
+			value => JSON.stringify(value),
+			() => undefined,
+			text => text
+		)!
+		const replayed = new Function("runtime", `return ${replay}`)({
+			writeUnionJsonSchema,
+			writeNullableJsonSchema
+		}) as (fallBack: (code: string, ctx: object) => object) => unknown
+		const predicate = (ctx: ToJsonSchema.PredicateContext) => ({
+			...ctx.base,
+			"x-checked": true
+		})
+		const replayedSchema = replayed((_, ctx) => predicate(ctx as never))
+		attest(replayedSchema).equals(write({ predicate }))
+		attest(replayedSchema).snap({
+			oneOf: [
+				{
+					type: "object",
+					properties: { kind: { type: "string", enum: ["a"] } },
+					required: ["kind"],
+					"x-checked": true
+				},
+				{
+					type: "object",
+					properties: { kind: { type: "string", enum: ["b"] } },
+					required: ["kind"]
+				}
+			],
+			discriminator: { propertyName: "kind" }
+		})
 	})
 })

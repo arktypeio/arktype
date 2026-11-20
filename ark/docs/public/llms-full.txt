@@ -6991,6 +6991,8 @@ const propString = 'key1[Symbol(key2)].key3[4]["~key5"]'
 add an [ArkError](https://arktype.io/docs/errors) and return `false`
 
 - useful for predicates like `.narrow`
+- `{ message: "Enter a valid email" }` is the whole sentence an issue says
+- to say what the value must be, as `must be even`, pass `"even"` to [`mustBe`](https://arktype.io/docs/traversal-api#mustbe)
 
 ### `mustBe`
 
@@ -7004,6 +7006,7 @@ add an [ArkError](https://arktype.io/docs/errors) from a description and return 
 add and return an [ArkError](https://arktype.io/docs/errors)
 
 - useful for morphs like `.pipe`
+- warning: a string is what the value must be: `error("valid JSON")` reads `must be valid JSON`, so pass a sentence as `{ message }`
 
 # Configuration
 
@@ -7610,6 +7613,8 @@ const MrPingsSecretIngredientSoup = type({
 	ingredients: "string[]"
 }).configure({ secretIngredient: "nothing!" })
 ```
+
+`toJsonSchema()` writes a key you add only if it starts with `x-`, since JSON Schema has no keyword for it. See [Meta](https://arktype.io/docs/json-schema/to-json-schema#meta).
 
 ## prototypes
 
