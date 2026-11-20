@@ -28,7 +28,13 @@ export type RegexIndexRange = [start: number, end: number]
 interface RegexIndicesArray<
 	patternAndCaptures extends IndexedCaptures,
 	namedCaptures extends NamedCaptures
-> extends DynamicBase<{ [i in keyof patternAndCaptures]: RegexIndexRange }> {
+> extends DynamicBase<{
+		[i in keyof patternAndCaptures]: indexRangeOf<patternAndCaptures[i]>
+	}> {
 	groups: keyof namedCaptures extends never ? undefined
-	:	{ [k in keyof namedCaptures]: RegexIndexRange }
+	:	{ [k in keyof namedCaptures]: indexRangeOf<namedCaptures[k]> }
 }
+
+// a capture that didn't participate in the match has no range, as it has no value
+type indexRangeOf<capture> =
+	capture extends string ? RegexIndexRange : undefined
