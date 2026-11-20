@@ -225,11 +225,14 @@ export const captionOf = (board: UnitBoard) => {
 
 /**
  * The line under ArkType's bar: the same build on our own benchmark, in the
- * unit most readers think in. Size has none, being in kilobytes already.
+ * unit most readers think in, or the login-form comparison for size so all
+ * three gold cards share the same height and the rival lanes stay level.
  */
 const subOf = (board: UnitBoard) => {
 	const own = ownFigures[board.id].ArkType
-	if (!own) return
+	if (!own) {
+		return `${loginKb("ArkType (precompiled)")} kB on Valibot's login form · ${zodSizeRatio()} smaller than Zod`
+	}
 	return board.id === "speed" ?
 			`${own.text} · ${own.rate} validations a second on our benchmark`
 		:	`${own.text} from import to first validation on our apps`

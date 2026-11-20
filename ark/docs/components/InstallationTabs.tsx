@@ -1,3 +1,4 @@
+import { Fragment } from "react"
 import { highlightToJsx } from "./CodeBlock.tsx"
 import {
 	installCommand,
@@ -17,9 +18,11 @@ export const InstallationTabs = async (props: InstallationTabsProps) => (
 		code
 		label="Package manager"
 		panels={await Promise.all(
-			installers.map(installer =>
-				highlightToJsx(installCommand(installer, props), "bash")
-			)
+			installers.map(async installer => (
+				<Fragment key={installer}>
+					{await highlightToJsx(installCommand(installer, props), "bash")}
+				</Fragment>
+			))
 		)}
 	/>
 )

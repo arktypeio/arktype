@@ -72,6 +72,7 @@
 		font: 400 13px / 1.45 var(--mono);
 		color: var(--ink-2);
 		opacity: 0.86;
+		text-wrap: balance;
 	}
 	.hero .lede {
 		max-width: none;
@@ -317,6 +318,24 @@
 	/* the libraries between ArkType and Zod, a step back */
 	.graph-lane.is-rival {
 		opacity: 0.82;
+	}
+	.graph-lane {
+		border-radius: var(--r-sm);
+		transition:
+			opacity var(--t-micro),
+			background var(--t-micro);
+	}
+	/* hovering a library in one graph traces it across all three */
+	.graphs[data-hover-lib] .graph-lane:not(.is-ours) {
+		opacity: 0.42;
+	}
+	.graphs[data-hover-lib] .graph-lane.is-traced {
+		opacity: 1;
+	}
+	.graphs[data-hover-lib] .graph-lane.is-traced:not(.is-ours) {
+		margin-inline: -8px;
+		padding-inline: 8px;
+		background: color-mix(in oklab, var(--ink) 5%, transparent);
 	}
 	/* ArkType's lane, a size up from the rest: the place it took, its number
 	   in the page's headline type, a bar twice as tall. Its two lights (its
@@ -705,6 +724,21 @@
 	}
 	.point-ctas {
 		margin-top: 24px;
+		gap: 14px 22px;
+		.link {
+			display: inline-flex;
+			align-items: center;
+			gap: 5px;
+			font-size: 15px;
+			line-height: 1.2;
+			white-space: nowrap;
+			.arrow {
+				transition: translate var(--t-micro) var(--ease-out);
+			}
+			&:hover .arrow {
+				translate: 3px 0;
+			}
+		}
 	}
 	.deck code {
 		font-size: 0.88em;
