@@ -57,6 +57,8 @@
 	--red: #f85858;
 	--red-text: #ff8a8a;
 	--red-ink: #ffb4b4;
+	/* a level gained: what rises behind the homepage's migrate button */
+	--green: #6fdc8c;
 
 	/* chart: gold is ArkType, everything else one neutral */
 	--bar: color-mix(in oklab, var(--ink-3) 62%, var(--bg));
@@ -178,6 +180,7 @@
 	--red: #c42b2b;
 	--red-text: #b42323;
 	--red-ink: #9e1f1f;
+	--green: #1d7a46;
 
 	--bar: color-mix(in oklab, var(--ink-3) 55%, var(--bg));
 	--bar-faster: var(--ink-2);

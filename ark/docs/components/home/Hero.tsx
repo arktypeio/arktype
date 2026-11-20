@@ -13,14 +13,25 @@ import { categoryOf, heroStats, methodHref } from "./boardFacts.ts"
 export const heroLine = "One prompt away."
 
 /**
- * What the prompt does, which is what "away" leaves open. It names no build
- * plugin: the same prompt sets precompilation up (the migration guide's
- * "Precompile, if asked"), so the plugin isn't a second thing to do.
+ * The quest the hero offers, under its numbers: a link to #migrate, which is
+ * where "one prompt" is spelled out. It promises nothing the prompt has to
+ * do, so the prompt it leads to is the short one.
  */
-export const heroLede =
-	"Your agent migrates your schemas from Zod and precompiles them."
+export const heroLede = "Level up your Zod schemas."
 
 const rise = (i: number) => ({ "--i": i }) as CSSProperties
+
+/**
+ * "A quest is available here": an exclamation point drawn for this page, a
+ * tapered stroke over a round dot, in the gold of the button under it. The
+ * page has one, and the link it sits in is named by its sentence alone.
+ */
+const QuestMark = () => (
+	<svg className="quest-mark" viewBox="0 0 10 24" aria-hidden focusable="false">
+		<path d="M5 1C3.2 1 1.9 2.3 2.1 4.1l1.2 10.6c.1 1 .8 1.6 1.7 1.6s1.6-.6 1.7-1.6L7.9 4.1C8.1 2.3 6.8 1 5 1Z" />
+		<circle cx="5" cy="20.6" r="2.4" />
+	</svg>
+)
 
 /**
  * The first screen: the claim, then the three numbers that back it at the
@@ -71,7 +82,10 @@ export const Hero = () => {
 				})}
 			</div>
 			<p className="lede rise" style={rise(2)}>
-				{heroLede}
+				<a className="quest" href="#migrate">
+					<QuestMark />
+					{heroLede}
+				</a>
 			</p>
 			<div className="ctas rise" style={rise(3)}>
 				<Link className="btn btn-gold" href="/docs/intro/setup">
@@ -80,9 +94,18 @@ export const Hero = () => {
 						→
 					</span>
 				</Link>
-				<a className="btn" href="#migrate">
-					Migrate from Zod
-				</a>
+				<span className="quest-cta">
+					<a className="btn" href="#migrate">
+						Migrate from Zod
+					</a>
+					{/* what taking the quest does: landing.css sends these up past the button */}
+					<span className="level-up" aria-hidden>
+						<i />
+						<i />
+						<i />
+						<i />
+					</span>
+				</span>
 				<span className="hero-foot">
 					{medianOf(zodCompiled.versus)} faster than Zod's own{" "}
 					<code>z.compile</code> at the median, too ·{" "}

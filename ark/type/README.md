@@ -42,7 +42,7 @@ npx skills add arktypeio/arktype
 ```
 
 ```
-Migrate this project from Zod to ArkType and precompile it.
+Migrate this project from Zod to ArkType.
 ```
 
 ## Docs
