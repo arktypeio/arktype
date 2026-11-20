@@ -1,5 +1,6 @@
 import {
 	$ark,
+	encodeWithoutCodecsMessage,
 	hasArkKind,
 	holeNameMarker,
 	writeMissingImportMessage,
@@ -333,6 +334,7 @@ import {
 	writeUnsureHint,
 	writeVariantOption,
 	withAllowUnsafe,
+	codecsImportHint,
 	unwrittenHint
 } from "./messages.ts"
 import {
@@ -845,8 +847,12 @@ export class Precompiler {
 	constructor(host: PrecompileHost, opts: PrecompileOptions = {}) {
 		opts = resolvePrecompileOptions(opts)
 		this.graph = new ModuleGraph(host, opts.cwd, opts.dependencies)
-		this.interpreter = new Interpreter(this.graph, opts, module =>
-			this.readsOf(module)
+		this.interpreter = new Interpreter(
+			this.graph,
+			opts,
+			module => this.readsOf(module),
+			// arktype throws reading .encode in a program built on it
+			module => this.mode !== "standalone" || this.importsCodecs(module)
 		)
 		this.mode = opts.runtime === "arktype" ? "cache" : "standalone"
 		this.config = opts.config || undefined
@@ -7064,6 +7070,10 @@ export class Precompiler {
 				this.unsupportedReasonsOf(site, module).length
 			)
 		) {
+			const hint =
+				site.parseError.message === encodeWithoutCodecsMessage ?
+					codecsImportHint
+				:	hintsByRule.parse
 			result.push(
 				this.diagnostic(
 					module,
@@ -7072,9 +7082,7 @@ export class Precompiler {
 					`${module.snippetOf(node)} throws a ParseError`,
 					[this.sourceNamed(site.parseError.message, site, module)],
 					// arktype throws it too, so it fails with runtime: "arktype" as well
-					this.allowUnsafe ?
-						hintsByRule.parse
-					:	withAllowUnsafe(hintsByRule.parse),
+					this.allowUnsafe ? hint : withAllowUnsafe(hint),
 					this.allowUnsafe ? "warning" : "error"
 				)
 			)
@@ -7140,6 +7148,24 @@ export class Precompiler {
 		}
 		this.configureCallsByModule.set(module, result)
 		return result
+	}
+
+	// a module whose imports, which run before it, load arktype/codecs. A build
+	// reading each module alone can't see another loading it first, so a module
+	// encoding imports it itself, as one a test loads alone must
+	private importsCodecs(module: SourceModule): boolean {
+		return this.importClosureOf(module.id).some(id => {
+			const reached = this.graph.moduleOf(id)
+			return (
+				reached instanceof SourceModule &&
+				reached.program.body.some(
+					statement =>
+						"source" in statement &&
+						codecsSpecifier.test(statement.source?.value ?? "") &&
+						!isTypeOnly(statement)
+				)
+			)
+		})
 	}
 
 	private importClosureOf(id: string): string[] {
@@ -8568,9 +8594,13 @@ const sharedSchemaExports = Object.keys(runtimeExports).filter(
 		(arktypeRuntime as Record<string, unknown>)[name]
 )
 
-// a missing inverse, which a Type's definition alone decides, whatever the build reads
+// a missing inverse, which a Type's definition alone decides, or a missing
+// import of arktype/codecs, either failing the build whatever the build reads
 const isEncodingError = (e: Error) =>
-	e.message.startsWith(writeMissingInverseMessage(""))
+	e.message.startsWith(writeMissingInverseMessage("")) ||
+	e.message === encodeWithoutCodecsMessage
+
+const codecsSpecifier = /^(?:arktype|@ark\/type)\/codecs$/
 
 // e.g. `from "arktype"`, `import("arktype")` or `require("arktype")`
 const arktypeSpecifier =

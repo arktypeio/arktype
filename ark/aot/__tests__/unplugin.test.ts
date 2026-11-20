@@ -502,6 +502,34 @@ console.log(
 		attest(run(standalone)).equals(runPlain(root))
 	})
 
+	it("esbuild encodes where an import loads arktype/codecs, as arktype does", async () => {
+		const root = writeFixture(
+			{
+				"codecs.ts": `import { codec } from "arktype/codecs"
+export const EpochMs = codec("number.integer", "Date", {
+	decode: n => new Date(n),
+	encode: d => d.getTime()
+})
+`,
+				"main.ts": `import { type } from "arktype"
+import { EpochMs } from "./codecs.ts"
+
+const Event = type({ at: EpochMs, day: "string.date.iso.parse" })
+const encode = (event: unknown) => Event.encode(event)
+const encoded = encode({ at: new Date(5), day: new Date(0) })
+const refused = encode({ at: 5, day: new Date(0) })
+console.log(JSON.stringify(encoded), refused instanceof type.errors && refused.summary)
+`
+			},
+			fromHere("temp", "codecsImported")
+		)
+		const plain = runPlain(root)
+		attest(plain)
+			.snap(`{"at":5,"day":"1970-01-01T00:00:00.000Z"} at must be a Date
+`)
+		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(plain)
+	})
+
 	it("esbuild writes no NUL into its output", async () => {
 		const standalone = await bundlers.esbuild({}, app, false)
 		attest(standalone.includes("~arktype/")).equals(true)

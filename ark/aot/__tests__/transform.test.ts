@@ -730,6 +730,15 @@ export const encode = (v: unknown) => T.encode(v)`)
 			).snap(["const T = /* @__PURE__ */ $ark#0(s => s.length)"])
 		})
 
+		it("refuses .encode where its module doesn't import arktype/codecs", () => {
+			const result = precompile(`import { type } from "arktype"
+const T = type("string.date.iso.parse")
+export const encode = (v: unknown) => T.encode(v)`)
+			attest(result.diagnostics.map(renderDiagnostic)).snap([
+				'/main.ts:3:39  T.encode throws a ParseError\n  .encode requires import "arktype/codecs"\n  Import "arktype/codecs" in this module or one it imports, as arktype throws reading .encode before it loads, or set allowUnsafe: true to build anyway, with a warning.'
+			])
+		})
+
 		it("refuses a Scope or Generic's json", () => {
 			const result = precompile(`import { scope, type } from "arktype"
 const $ = scope({ a: "string" })

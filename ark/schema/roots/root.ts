@@ -77,6 +77,10 @@ import type {
 import type { Morph } from "./morph.ts"
 import type { Union } from "./union.ts"
 
+// arktype/codecs installs encoding, so an app that doesn't encode doesn't ship it
+export const encodeWithoutCodecsMessage =
+	'.encode requires import "arktype/codecs"'
+
 export interface InternalRootDeclaration extends BaseNodeDeclaration {
 	kind: RootKind
 }
@@ -485,9 +489,7 @@ export abstract class BaseRoot<
 	}
 
 	get encode(): BaseRoot {
-		return (
-			$ark.encode ?? throwParseError('.encode requires import "arktype/codecs"')
-		)(this)
+		return ($ark.encode ?? throwParseError(encodeWithoutCodecsMessage))(this)
 	}
 
 	rawPipeOnce(morph: Morph): BaseRoot {

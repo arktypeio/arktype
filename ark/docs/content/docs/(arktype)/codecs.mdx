@@ -123,7 +123,7 @@ export const Event = type({ at: EpochMs })
 export const encode = (event: unknown) => Event.encode(event)
 ```
 
-A standalone build installs encoding itself, so `.encode` works there even if the program never imports `arktype/codecs`. A Type with a morph that has no inverse fails the build where its `.encode` is read, since arktype would throw there.
+A standalone build fails where `.encode` is read in a module that doesn't import `arktype/codecs`, itself or through a module it imports, or where the Type has a morph without an inverse, with the `ParseError` arktype would throw there. A build may see only the module it's reading, so importing `arktype/codecs` elsewhere in the program, like in its entry, isn't enough.
 
 ## Morphs without an inverse
 

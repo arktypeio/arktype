@@ -8,9 +8,10 @@ import {
 	ToJsonSchema,
 	type BaseNode,
 	type BaseRoot,
+	encodeWithoutCodecsMessage,
 	type CacheReach
 } from "@ark/schema"
-import { hasDomain, ParseError, type Fn } from "@ark/util"
+import { hasDomain, ParseError, throwParseError, type Fn } from "@ark/util"
 import { configure } from "arktype"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
@@ -406,15 +407,20 @@ export class Interpreter {
 	private defaultCtx: Context | undefined
 
 	private registerSites: ((module: SourceModule) => unknown) | undefined
+	// whether arktype/codecs has installed encoding where a module runs, as
+	// the build's own import of it installs it for every program
+	private importsCodecs: ((module: SourceModule) => boolean) | undefined
 
 	constructor(
 		graph: ModuleGraph,
 		opts: InterpreterOptions = {},
-		registerSites?: (module: SourceModule) => unknown
+		registerSites?: (module: SourceModule) => unknown,
+		importsCodecs?: (module: SourceModule) => boolean
 	) {
 		this.graph = graph
 		this.opts = opts
 		this.registerSites = registerSites
+		this.importsCodecs = importsCodecs
 	}
 
 	holesIn(
@@ -1818,7 +1824,10 @@ export class Interpreter {
 		ctx.site?.arktypeArguments.push(object)
 		let read
 		try {
-			read = Reflect.get(object, key)
+			read =
+				key === "encode" && !this.encodes(object, ctx) ?
+					throwParseError(encodeWithoutCodecsMessage)
+				:	Reflect.get(object, key)
 		} catch (e) {
 			this.claimParseError(e, ctx)
 			throw e
@@ -2208,6 +2217,16 @@ export class Interpreter {
 			receiver.some(element => hasDomain(element, "object"))
 		)
 			return conversionProblem
+	}
+
+	// a Type's .encode, read where arktype/codecs has run: in the module
+	// reading it or the site's, or what either imports, which runs first
+	private encodes(object: object, ctx: Context): boolean {
+		if (!this.importsCodecs || !hasArkKind(object, "root")) return true
+		return (
+			this.importsCodecs(ctx.module) ||
+			(!!ctx.site && this.importsCodecs(ctx.site.module))
+		)
 	}
 
 	private claimParseError(e: unknown, ctx: Context): void {

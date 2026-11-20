@@ -278,6 +278,9 @@ export const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 	copies: copiesHint
 }
 
+export const codecsImportHint =
+	'Import "arktype/codecs" in this module or one it imports, as arktype throws reading .encode before it loads.'
+
 const opaqueSchemaNote =
 	"A Standard Schema other than a Type, like a Zod schema, needs no change."
 
