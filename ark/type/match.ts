@@ -17,7 +17,6 @@ import {
 	type Key,
 	type mutable,
 	type numericStringKeyOf,
-	type propValueOf,
 	type show,
 	type unionToTuple
 } from "@ark/util"
@@ -115,20 +114,21 @@ type CaseKeyKind = "def" | "string"
 type casesToMorphTuple<
 	cases,
 	ctx extends MatchParserContext,
-	kind extends CaseKeyKind
-> = unionToTuple<
-	propValueOf<{
-		[def in Exclude<keyof cases, "default">]: cases[def] extends (
-			Morph<never, infer o>
-		) ?
-			kind extends "def" ?
-				(
-					In: inferCaseArg<def extends number ? `${number}` : def, ctx, "in">
-				) => o
-			:	(In: maybeLiftToKey<def, ctx>) => o
-		:	never
-	}>
->
+	kind extends CaseKeyKind,
+	defs extends (keyof cases)[] = unionToTuple<Exclude<keyof cases, "default">>
+> = {
+	[i in keyof defs]: cases[defs[i]] extends Morph<never, infer o> ?
+		kind extends "def" ?
+			(
+				In: inferCaseArg<
+					defs[i] extends number ? `${number}` : defs[i],
+					ctx,
+					"in"
+				>
+			) => o
+		:	(In: maybeLiftToKey<defs[i], ctx>) => o
+	:	never
+}
 
 type addCasesToParser<
 	cases,
