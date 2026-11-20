@@ -128,6 +128,8 @@ const User = fromJsonSchema({ ...openApi, $ref: "#/components/schemas/User" })
 User.allows({ name: "Ada" }) // true
 ```
 
+OpenAPI 3.0's `nullable: true` adds `null` to the `type` beside it, as ajv reads it, and infers it there too. A `nullable` without a `type`, like one beside a `$ref`, throws a `ParseError`, as ajv does.
+
 [Keyword support](/docs/json-schema/support) lists how each keyword is read.
 
 ## Invalid schemas

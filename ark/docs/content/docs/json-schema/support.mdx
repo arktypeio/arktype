@@ -17,9 +17,9 @@ Every keyword in a schema applies, and a type's keywords constrain only that typ
 
 A keyword with an invalid value throws, like `#/minLength must be a non-negative integer (was -1)`. A keyword JSON Schema doesn't define is ignored.
 
-OpenAPI 3.0's own forms, which `toJsonSchema({ target: "openapi-3.0" })` writes, aren't read: `nullable` and `example` are ignored, and a boolean `exclusiveMinimum` throws.
+Of OpenAPI 3.0's own forms, which `toJsonSchema({ target: "openapi-3.0" })` writes, only `nullable` is read, as ajv reads it: `nullable: true` adds `null` to the `type` beside it, and the schema's other keywords still apply, so an `enum` there must list `null` too. `example` is ignored, and a boolean `exclusiveMinimum` throws.
 
-`fromJsonSchema` checks a schema written in the call as you write it: an invalid keyword value is a type error, as is each keyword below that throws, except a `$ref` to another document. See [Invalid schemas](/docs/json-schema/from-json-schema#invalid-schemas).
+`fromJsonSchema` checks a schema written in the call as you write it: an invalid keyword value is a type error, as is each keyword below that throws, except a `$ref` to another document and a `nullable` without a `type`. See [Invalid schemas](/docs/json-schema/from-json-schema#invalid-schemas).
 
 ## Core
 
@@ -37,7 +37,7 @@ OpenAPI 3.0's own forms, which `toJsonSchema({ target: "openapi-3.0" })` writes,
 | `$id`, `$anchor`, `$dynamicAnchor`                          | supported   | identify a schema a `$ref` resolves to. Draft-04 reads `id`                                       |
 | `$comment`, `readOnly`, `writeOnly`                         | **ignored** |                                                                                                   |
 | `contentEncoding`, `contentMediaType`                       | **ignored** | annotations in 2020-12                                                                            |
-| `nullable` (OpenAPI 3.0)                                    | **ignored** | write `type: ["string", "null"]` instead                                                          |
+| `nullable` (OpenAPI 3.0)                                    | supported   | adds `null` to the `type` beside it. **Throws** without a `type`, as ajv does                     |
 
 ## Composition
 

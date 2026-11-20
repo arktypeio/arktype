@@ -88,7 +88,8 @@ contextualize(() => {
 			interface B extends JsonSchema.String {
 				nullable?: boolean
 			}
-			attest<"a" | null, jsonSchema.infer<A>>()
+			// nullable adds null to the type, which the const then excludes
+			attest<"a", jsonSchema.infer<A>>()
 			attest<string | null, jsonSchema.infer<B>>()
 		})
 
@@ -240,8 +241,9 @@ contextualize(() => {
 			>()
 		})
 
-		it("applies after values and before not", () => {
+		it("adds null to the type, which values and not still filter", () => {
 			attest<null>(inferred({ type: "string", nullable: true, const: null }))
+			attest<"x">(inferred({ type: "string", nullable: true, enum: ["x"] }))
 			attest(
 				inferred({ type: "string", nullable: true, not: { type: "null" } })
 			).type.toString.snap("string")
@@ -265,10 +267,10 @@ contextualize(() => {
 					$defs: { a: { type: "string" } }
 					[k: string]: unknown
 				}>
-			).type.toString.snap("string | null")
+			).type.toString.snap("string")
 		})
 
-		it("beside a $ref in a dialect that may be 2020-12", () => {
+		it("adds nothing without a type, which the reader rejects", () => {
 			attest(
 				{} as jsonSchema.infer<{
 					$schema: string
@@ -276,7 +278,18 @@ contextualize(() => {
 					$defs: { a: { type: "string" } }
 					nullable: true
 				}>
-			).type.toString.snap("string | null")
+			).type.toString.snap("string")
+		})
+
+		it("beside a $ref, adds null to the type beside it", () => {
+			attest(
+				inferred({
+					$ref: "#/$defs/a",
+					$defs: { a: { enum: ["x", 1, null] } },
+					type: "string",
+					nullable: true
+				})
+			).type.toString.snap('"x" | null')
 		})
 	})
 
@@ -512,8 +525,13 @@ contextualize(() => {
 				type: "object",
 				properties: {
 					a: { type: "string", nullable: true },
-					b: { allOf: [{ $ref: "#/components/schemas/B" }], nullable: true },
-					c: { type: "string", enum: ["x", "y"], nullable: true }
+					// B's own type still excludes null, as ajv reads it
+					b: {
+						type: "object",
+						allOf: [{ $ref: "#/components/schemas/B" }],
+						nullable: true
+					},
+					c: { type: "string", enum: ["x", "y", null], nullable: true }
 				},
 				required: ["a", "b", "c"],
 				components: {
@@ -524,7 +542,7 @@ contextualize(() => {
 			})
 			attest<{
 				a: string | null
-				b: { id?: number } | null
+				b: { id?: number }
 				c: "x" | "y" | null
 			}>(T)
 		})

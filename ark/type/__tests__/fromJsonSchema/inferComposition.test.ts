@@ -138,7 +138,8 @@ contextualize(() => {
 				not: { type: "number" },
 				nullable: true
 			})
-			attest(T).type.toString.snap("string | null")
+			// the allOf's type excludes the null nullable adds
+			attest(T).type.toString.snap("string")
 		})
 
 		it("every part kind at once", () => {

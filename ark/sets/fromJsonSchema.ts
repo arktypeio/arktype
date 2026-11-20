@@ -321,6 +321,16 @@ const anchorsOf = (o: dict, ctx: ReadContext): string[] => {
 	].filter((anchor): anchor is string => typeof anchor === "string" && !!anchor)
 }
 
+// OpenAPI 3.0's nullable adds null to the type beside it, as ajv reads it: the
+// schema's other keywords still apply, so an enum or const without null, or
+// a subschema with a type of its own, still excludes it
+const typeNamesOf = (o: dict): array => {
+	const names = isArray(o.type) ? o.type : [o.type]
+	return o.nullable === true && !names.includes("null") ?
+			[...names, "null"]
+		:	names
+}
+
 const intersectRoots = (l: BaseRoot, r: BaseRoot): BaseRoot =>
 	intersectNodesRoot(l, r, jsonSchemaScope()).toNeverIfDisjoint()
 
@@ -331,9 +341,7 @@ const keywordReaders: KeywordReader[] = [
 		o.type === undefined ?
 			undefined
 		:	unionOf(
-				(isArray(o.type) ? o.type : [o.type]).map(
-					name => typeRoots()[name as JsonSchema.TypeName]
-				)
+				typeNamesOf(o).map(name => typeRoots()[name as JsonSchema.TypeName])
 			),
 	o => (o.const === undefined ? undefined : constRoot(o.const)),
 	o =>
@@ -1015,6 +1023,8 @@ const keywordValueKinds: Record<string, keyof typeof keywordValues> = {
 	minItems: "count",
 	maxItems: "count",
 	uniqueItems: "boolean",
+	// OpenAPI 3.0
+	nullable: "boolean",
 	contains: "schema",
 	minContains: "count",
 	maxContains: "count",
@@ -1063,6 +1073,19 @@ const checkKeyword = (
 			writeInvalidKeywordMessage(`${pointer}/${k}`, expected, o[k])
 		)
 	}
+	if (k === "nullable") checkNullable(o, pointer)
+}
+
+// like ajv, which throws compiling either, even beside a $ref whose siblings
+// a draft-07 schema otherwise ignores
+const checkNullable = (o: dict, pointer: string): void => {
+	if (o.type === undefined)
+		throwParseError(writeNullableWithoutTypeMessage(`${pointer}/nullable`))
+	if (
+		o.nullable === false &&
+		(isArray(o.type) ? o.type : [o.type]).includes("null")
+	)
+		throwParseError(writeNonNullableNullMessage(`${pointer}/nullable`))
 }
 
 export const writeUnparsableSchemaMessage = (actual: string): string =>
@@ -1098,3 +1121,9 @@ export const writeUnsupportedRefMessage = (
 
 export const writeUnresolvableRefMessage = (ref: string): string =>
 	`$ref ${ref} doesn't resolve to a schema in its document`
+
+export const writeNullableWithoutTypeMessage = (pointer: string): string =>
+	`${pointer} must be beside a type, to which it adds null`
+
+export const writeNonNullableNullMessage = (pointer: string): string =>
+	`${pointer} can't be false beside a type that includes null`

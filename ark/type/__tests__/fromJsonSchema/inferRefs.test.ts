@@ -175,7 +175,7 @@ contextualize(() => {
 			const T = inferred({
 				$defs: {
 					a: { $ref: "#/$defs/b", type: "string" },
-					b: { $ref: "#/$defs/c", nullable: true },
+					b: { $ref: "#/$defs/c", type: ["string", "number"], nullable: true },
 					c: { enum: ["x", 1, null] }
 				},
 				$ref: "#/$defs/a"

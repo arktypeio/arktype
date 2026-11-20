@@ -43,12 +43,6 @@ export type inferSchema<schema, root, seen> =
 			keyof schema & PartKeyword,
 			seen
 		>
-	: "2020-12" extends draftsOf<root> ?
-		// a dialect that may be 2020-12 may apply `nullable` beside the `$ref`
-		applyNullable<
-			schema,
-			inferRef<schema["$ref" & keyof schema], resourceOf<schema, root>, seen>
-		>
 	:	inferRef<schema["$ref" & keyof schema], resourceOf<schema, root>, seen>
 
 /** excludes `nullable`, including from an index signature that may hold it,
@@ -341,9 +335,12 @@ export type inferPart<k extends keyof schema, schema, root, seen> =
  * `type` every other JSON value is valid */
 export type inferBase<schema, root, seen> =
 	schema extends TypeListSchema ?
-		inferTypeName<schema["type"][number], schema, root, seen>
+		applyNullable<
+			schema,
+			inferTypeName<schema["type"][number], schema, root, seen>
+		>
 	: schema extends TypedSchema ?
-		inferTypeName<schema["type"], schema, root, seen>
+		applyNullable<schema, inferTypeName<schema["type"], schema, root, seen>>
 	: schema extends ImpliedObjectSchema ?
 		schema extends ImpliedArraySchema ?
 			inferArray<
@@ -432,11 +429,11 @@ export interface ConditionalSchema {
 export type applyModifiers<schema, t> =
 	schema extends NegatedSchema ?
 		skipsNot<schema["not"], schema> extends true ?
-			applyNullable<schema, t>
-		:	applyNot<schema["not"], applyNullable<schema, t>>
-	:	applyNullable<schema, t>
+			t
+		:	applyNot<schema["not"], t>
+	:	t
 
-export interface UnmodifiedNode extends NonNullableNode {
+export interface UnmodifiedNode {
 	not?: never
 	[k: string]: unknown
 }
@@ -593,7 +590,10 @@ export type TypeDomains = {
 /** JSON's non-array objects (TS `object` includes arrays) */
 export type JsonObject = object & { length?: never }
 
-/** `nullable` might be `true` (a widened `boolean` or an optional keyword) */
+/** OpenAPI 3.0's `nullable` adds `null` to the `type` beside it, so the
+ * node's other parts still filter it, like ajv. Without a `type`, the reader
+ * throws, so it adds nothing. `nullable` might be `true` (a widened `boolean`
+ * or an optional keyword) */
 export type applyNullable<schema, t> =
 	true extends schema["nullable" & keyof schema] ? t | null : t
 

@@ -16,6 +16,19 @@ contextualize(() => {
 			attest(T.expression).snap("{ name: string } & isNonArray")
 		})
 
+		it("OpenAPI 3.0 nullable is read as it's inferred", () => {
+			const T = fromJsonSchema({
+				type: "object",
+				properties: {
+					a: { type: "string", nullable: true },
+					b: { type: "string", enum: ["x"], nullable: true }
+				},
+				required: ["a", "b"]
+			})
+			attest<{ a: string | null; b: "x" }>(T.infer)
+			attest(T.expression).snap('{ a: string | null, b: "x" } & isNonArray')
+		})
+
 		it("a widened JSON Schema infers unknown", () => {
 			const schema: JsonSchema = JSON.parse(`{ "type": "string" }`)
 			const T = fromJsonSchema(schema)
