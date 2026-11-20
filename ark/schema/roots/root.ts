@@ -45,7 +45,7 @@ import {
 	Disjoint,
 	writeUnsatisfiableExpressionError
 } from "../shared/disjoint.ts"
-import { isCustomError } from "../shared/errors.ts"
+import { isCustomError, type MessageConfig } from "../shared/errors.ts"
 import { ArkErrors } from "../shared/issues.ts"
 import { standardFailureOf } from "../shared/standardFailure.ts"
 import {
@@ -425,6 +425,10 @@ export abstract class BaseRoot<
 
 	describe(description: string, selector: NodeSelector = "shallow"): this {
 		return this.configure({ description }, selector)
+	}
+
+	message(message: MessageConfig, selector: NodeSelector = "shallow"): this {
+		return this.configure({ message }, selector)
 	}
 
 	// these should ideally be implemented in arktype since they use its syntax

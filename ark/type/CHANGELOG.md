@@ -1,5 +1,39 @@
 # arktype
 
+## Unreleased
+
+### Set a Type's message with `.message()`
+
+`.message(text)` is `.configure({ message: text })`, as `.describe(text)` is for `description`, and takes the same selector, so a message for one check is as short as Zod's `.min(1, "...")`:
+
+```ts
+const Signup = type({
+	name: type("string >= 1").message("Name is required"),
+	password: type("string >= 8").message("Use 8 or more characters", "minLength")
+})
+
+// name: Name is required
+// password: Use 8 or more characters
+Signup({ name: "", password: "abc" })
+```
+
+A precompiled build writes it as it does `.configure({ message })`.
+
+### `ctx.reject()` takes no string
+
+A string passed to `ctx.reject()` was what the value must be, as it is for `ctx.mustBe()`, so a sentence read `must be Enter a valid zip code`. Its parameter is now `RejectInput`, the parts of an error, so TypeScript flags a string. Pass a sentence as `ctx.reject({ message })` and what the value must be to `ctx.mustBe()`. At runtime a string is still read as before, and `ctx.error()` still takes one.
+
+```ts
+// TypeScript: Argument of type 'string' is not assignable to parameter of type 'RejectInput'
+type("string").narrow(
+	(s, ctx) => s.length > 0 || ctx.reject("Name is required")
+)
+
+type("string").narrow(
+	(s, ctx) => s.length > 0 || ctx.reject({ message: "Name is required" })
+)
+```
+
 ## 3.0.0-beta.1
 
 ### Summary

@@ -115,27 +115,27 @@ Common keywords: `string.email`, `string.uuid`, `string.url`, `string.ip`, `stri
 
 What a Zod schema becomes. To migrate a project, follow [references/migrating.md](references/migrating.md), which has every API, each library and the defaults that differ.
 
-| Zod                                       | ArkType                                                                  |
-| ----------------------------------------- | ------------------------------------------------------------------------ |
-| `z.object({ ... })`                       | `type({ ... })`, which keeps undeclared keys unless configured           |
-| `z.string().min(1).max(100)`              | `"1 <= string <= 100"`                                                   |
-| `z.string().email()`, `.url()`, `.uuid()` | `"string.email"`, `"string.url"`, `"string.uuid"`                        |
-| `z.number().int().positive()`             | `"number.integer > 0"`                                                   |
-| `z.enum(["a", "b"])`                      | `"'a' \| 'b'"`                                                           |
-| `.optional()` on a key                    | `"key?": "T \| undefined"`, or `"key?": "T"` with Zod's defaults set     |
-| `.nullable()`                             | `"T \| null"`                                                            |
-| `.default(x)`                             | `key: "T = x"` or `key: T.default(x)`                                    |
-| `z.array(T).min(1)`                       | `T.array().atLeastLength(1)`, or `"string[] >= 1"` in a string           |
-| `z.union([A, B])`, `z.discriminatedUnion` | `A.or(B)`                                                                |
-| `.extend({ ... })`, `.pick({ a: true })`  | `.merge({ ... })`, `.pick("a")`                                          |
-| `.refine(fn, message)`                    | `.narrow((v, ctx) => fn(v) \|\| ctx.reject({ message }))`                |
-| `.refine(fn, { message, path })`          | `ctx.reject({ message, relativePath: path })`                            |
-| `.min(1, "Name is required")`             | `["string >= 1", "@", { message: "Name is required" }]` as a key's value |
-| `.transform(fn)`                          | `.pipe(fn)`                                                              |
-| `z.coerce.number()`                       | `type("unknown").pipe(Number).to("number")`                              |
-| `z.infer<typeof T>`, `z.input`            | `typeof T.infer`, `typeof T.inferIn`                                     |
-| `T.parse(x)`, `T.safeParse(x)`            | `T.assert(x)`, `T(x)` checked with `instanceof type.errors`              |
-| `e instanceof ZodError` in a `catch`      | `e instanceof TraversalError`, then `e.arkErrors.issues`                 |
+| Zod                                       | ArkType                                                              |
+| ----------------------------------------- | -------------------------------------------------------------------- |
+| `z.object({ ... })`                       | `type({ ... })`, which keeps undeclared keys unless configured       |
+| `z.string().min(1).max(100)`              | `"1 <= string <= 100"`                                               |
+| `z.string().email()`, `.url()`, `.uuid()` | `"string.email"`, `"string.url"`, `"string.uuid"`                    |
+| `z.number().int().positive()`             | `"number.integer > 0"`                                               |
+| `z.enum(["a", "b"])`                      | `"'a' \| 'b'"`                                                       |
+| `.optional()` on a key                    | `"key?": "T \| undefined"`, or `"key?": "T"` with Zod's defaults set |
+| `.nullable()`                             | `"T \| null"`                                                        |
+| `.default(x)`                             | `key: "T = x"` or `key: T.default(x)`                                |
+| `z.array(T).min(1)`                       | `T.array().atLeastLength(1)`, or `"string[] >= 1"` in a string       |
+| `z.union([A, B])`, `z.discriminatedUnion` | `A.or(B)`                                                            |
+| `.extend({ ... })`, `.pick({ a: true })`  | `.merge({ ... })`, `.pick("a")`                                      |
+| `.refine(fn, message)`                    | `.narrow((v, ctx) => fn(v) \|\| ctx.reject({ message }))`            |
+| `.refine(fn, { message, path })`          | `ctx.reject({ message, relativePath: path })`                        |
+| `.min(1, "Name is required")`             | `type("string >= 1").message("Name is required")`                    |
+| `.transform(fn)`                          | `.pipe(fn)`                                                          |
+| `z.coerce.number()`                       | `type("unknown").pipe(Number).to("number")`                          |
+| `z.infer<typeof T>`, `z.input`            | `typeof T.infer`, `typeof T.inferIn`                                 |
+| `T.parse(x)`, `T.safeParse(x)`            | `T.assert(x)`, `T(x)` checked with `instanceof type.errors`          |
+| `e instanceof ZodError` in a `catch`      | `e instanceof TraversalError`, then `e.arkErrors.issues`             |
 
 ## Composing types
 
@@ -248,25 +248,25 @@ const Signup = type({
 
 There are two ways to say what's wrong. Choose by the text you have:
 
-| The text is                                                     | Write it as                                                                                 | An issue's `message`    | Its line of `out.summary`     |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ----------------------- | ----------------------------- |
-| a whole sentence, like any Zod message: `"Enter a valid email"` | `message`, in `.configure({ message })`, a `"@"` tuple or `ctx.reject({ message })`         | `Enter a valid email`   | `email: Enter a valid email`  |
-| what the value must be: `"a valid email"`                       | `.describe(text)`, `.configure({ expected: text })`, `ctx.reject(text)`, `ctx.mustBe(text)` | `must be a valid email` | `email must be a valid email` |
+| The text is                                                     | Write it as                                                                                           | An issue's `message`    | Its line of `out.summary`     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------- | ----------------------------- |
+| a whole sentence, like any Zod message: `"Enter a valid email"` | `message`, in `.message(text)`, `.configure({ message })`, a `"@"` tuple or `ctx.reject({ message })` | `Enter a valid email`   | `email: Enter a valid email`  |
+| what the value must be: `"a valid email"`                       | `.describe(text)`, `.configure({ expected: text })`, `ctx.mustBe(text)`, `ctx.error(text)`            | `must be a valid email` | `email must be a valid email` |
 
-- A message from Zod, or any sentence a user reads, is always a `message`. Passed as a string to `ctx.reject()`, to `ctx.mustBe()`, to `.describe()`, as `expected` or as a string after `"@"`, it would read `must be Enter a valid email`.
+- A message from Zod, or any sentence a user reads, is always a `message`. Passed to `ctx.mustBe()`, as a string to `ctx.error()`, to `.describe()`, as `expected` or as a string after `"@"`, it would read `must be Enter a valid email`. `ctx.reject()` takes no string, so TypeScript flags `ctx.reject("Enter a valid email")`: write `ctx.reject({ message: "Enter a valid email" })`.
 - An issue's `message` is what a form library, or anything else reading the Type through Standard Schema, shows beside the field. `out.summary`, and the `TraversalError` `.assert()` throws, write a line for each error with its path.
 - A `message` isn't composed into other text. What a Type is `expected` to be is: a union lists it, as in `must be a valid email or null`. So with `| null` or `| undefined`, configure the whole union, as in `["string.email | null", "@", { message }]`: a message on one branch is lost for a value of the wrong type. With `exactOptionalPropertyTypes: false`, an optional or defaulted key's value is such a union, so write `"role?": ["'admin' | 'user' | undefined", "@", { message }]`: a message on an enum, a literal or a boolean alone is never said there.
 - A `message` on `string.date.parse`, `string.url.parse` or `string.json.parse` isn't said for a string that fails to parse. Check, then convert: `type("string.date").pipe(s => new Date(s)).configure({ message })`.
 
-In a definition, a tuple with `"@"` configures a value where it's written, as Zod's `.min(1, "Name is required")` does. For a message per check, name the check after it, by its error code (`minLength`, `maxLength`, `pattern`, `min`, `max`, `divisor`), in the tuple or as `.configure()`'s second argument:
+`.message(text)` sets a Type's message, as `.describe(text)` sets what it must be; it's `.configure({ message: text })`. In a definition, a tuple with `"@"` configures a value where it's written. For a message per check, as Zod's `.min(1, "Name is required")` gives, name the check after it, by its error code (`minLength`, `maxLength`, `pattern`, `min`, `max`, `divisor`), as `.message()`'s second argument or in the tuple:
 
 ```ts
 const Invite = type({
 	name: ["string > 0", "@", { message: "Name is required" }],
 	email: ["string.email", "@", { message: "Enter a valid email" }],
 	password: type("string >= 8 & /[0-9]/")
-		.configure({ message: "Use 8 or more characters" }, "minLength")
-		.configure({ message: "Include a number" }, "pattern")
+		.message("Use 8 or more characters", "minLength")
+		.message("Include a number", "pattern")
 })
 
 // name: Name is required

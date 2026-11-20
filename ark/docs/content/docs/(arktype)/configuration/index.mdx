@@ -155,11 +155,11 @@ Age(101)
 
 ### message
 
-One whole sentence in place of "must be `expected`". It's the error's `message`, so it's what a [Standard Schema](/docs/standard-schema) consumer, like a form library, shows beside a field, and a summary writes it after the error's path and a colon:
+One whole sentence in place of "must be `expected`". It's the error's `message`, so it's what a [Standard Schema](/docs/standard-schema) consumer, like a form library, shows beside a field, and a summary writes it after the error's path and a colon. `.message(text)` is `.configure({ message: text })`, as `.describe()` is for `description`:
 
 ```ts
 const Signup = type({
-	email: type("string.email").configure({ message: "Enter a valid email" })
+	email: type("string.email").message("Enter a valid email")
 })
 
 const out = Signup({ email: "x" })
@@ -184,12 +184,12 @@ A message is never composed into another error's, and it applies to the Type it'
 - A message on a [pipe](/docs/expressions#pipe) is also the message of the errors validating its output.
 - A missing key says the message of its whole value, so configure that last, after any `.pipe()` or `.to()`.
 - A message doesn't apply to the Types inside its own, so one on an object is what data that isn't an object says, and each key keeps its own.
-- A message is what every check of its Type says. For one check's alone, pass that check's [error code](/docs/errors#error-codes) as a [selector](/docs/expressions#meta):
+- A message is what every check of its Type says. For one check's alone, like Zod's `.min(8, "...")`, pass that check's [error code](/docs/errors#error-codes) as a [selector](/docs/expressions#meta):
 
 ```ts
 const Password = type("string >= 8 & /[0-9]/")
-	.configure({ message: "Use 8 or more characters" }, "minLength")
-	.configure({ message: "Include a number" }, "pattern")
+	.message("Use 8 or more characters", "minLength")
+	.message("Include a number", "pattern")
 
 // ArkErrors: Include a number
 //            Use 8 or more characters
@@ -203,8 +203,8 @@ Password(5)
 
 ```ts
 const Sku = type(/^[A-Z]{3}-\d{4}$/)
-	.configure({ message: "SKU is required" }, "self")
-	.configure({ message: "SKU must be text" }, "domain")
+	.message("SKU is required", "self")
+	.message("SKU must be text", "domain")
 
 const Product = type({ sku: Sku })
 

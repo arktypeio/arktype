@@ -169,7 +169,7 @@ const C = type("string | undefined").narrow(s => ${nonStatic})`
 const A = type("'a' | 'b'").narrow(s => s === "a")
 const B = type("'a' | 'b'").narrow(s => ${nonStatic})
 const C = type("string").narrow(s => ${nonStatic})
-const D = type("'a' | 0").narrow((d, ctx) => typeof d !== "number" || d > 0 || ctx.reject("positive"))
+const D = type("'a' | 0").narrow((d, ctx) => typeof d !== "number" || d > 0 || ctx.mustBe("positive"))
 import { isPositive } from "pkg"
 const E = type("'a' | 0").narrow(d => typeof d !== "number" || isPositive(d))`)
 		).snap([

@@ -178,7 +178,7 @@ const Signup = type({
 ```ts
 const Signup = type({
 	// a whole sentence, shown as written
-	email: ["string.email", "@", { message: "Enter a valid email" }],
+	email: type("string.email").message("Enter a valid email"),
 	// what the value must be, after "must be"
 	password: type("string >= 8").describe("8 characters or more"),
 	age: "number >= 18"
@@ -287,7 +287,7 @@ export default {
 | `"Record<string, T>"` with `T` a variable                           | Use `type.Record("string", T)` or `{ "[string]": T }`                                       |
 | `type("number = 0")`                                                | Defaults only work as object values or tuple elements                                       |
 | `out[0]` or `out.map(...)` on errors                                | Use `out.issues[0]` or `out.issues.map(...)`                                                |
-| `ctx.reject("Enter a valid email")`, which reads `must be Enter…`   | Pass a sentence as `ctx.reject({ message: "Enter a valid email" })`                         |
+| `.describe("Enter a valid email")`, which reads `must be Enter…`    | Pass a sentence to `.message("Enter a valid email")` or `ctx.reject({ message })`           |
 | `ctx.reject({ path: ["key"] })` on a nested object                  | Use `relativePath: ["key"]`; `path` is from the root of the data                            |
 | `.merge()` or `.pick()` on an object with a `.narrow()`             | Derive from the object before its `.narrow()`, which they'd drop, then add the narrow       |
 | Mutating the argument in `.pipe`                                    | Return a new value; a morph receives the caller's data, not a copy                          |
