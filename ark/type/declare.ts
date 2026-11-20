@@ -40,7 +40,7 @@ export type DeclarationParser<$> = <
 type finalizePreinferred<preinferred, def, $, ctx extends DeclareContext> =
 	// an assignable declaration keeps what its definition infers, which may be
 	// narrower than what it declares
-	ctx["assignable"] extends true ? type.infer<def, $>
+	ctx["assignable"] extends true ? inferDefinition<def, $>
 	: ctx["side"] extends distill.Side ?
 		ctx["side"] extends "in" ?
 			(In: preinferred) => Out<type.infer.Out<def, $>>

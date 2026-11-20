@@ -8,9 +8,9 @@ import {
 	type Scanner,
 	type trim
 } from "@ark/util"
-import type { type } from "../../../keywords/keywords.ts"
 import type { DateLiteral } from "../../../attributes.ts"
 import { emptyCollectionDefaults } from "../../../keywords/functions.ts"
+import type { inferDefinition } from "../../definition.ts"
 import type { RootedRuntimeState } from "../../reduce/dynamic.ts"
 import type {
 	EnclosingLiteralStartToken,
@@ -41,14 +41,14 @@ export type DefaultLiteral = UnitLiteral | EmptyCollectionLiteral
 
 const emptyCollectionLiterals = keysOf(emptyCollectionDefaults)
 
-// neither empty collection literal can resolve via type.infer- "[]" would be
+// neither empty collection literal can resolve via inferDefinition- "[]" would be
 // parsed as the empty group type `never` rather than a literal `[]`, and "{}"
 // isn't parseable at all- so each is special-cased here to its literal type.
-// Unit literals are self-contained, so unscoped type.infer is safe for them.
+// Unit literals are self-contained, so unscoped inferDefinition is safe for them.
 export type inferDefaultLiteral<literal> =
 	literal extends "[]" ? []
 	: literal extends "{}" ? {}
-	: type.infer<literal>
+	: inferDefinition<literal, {}, {}>
 
 export type ParsedDefaultableProperty = readonly [BaseRoot, "=", unknown]
 

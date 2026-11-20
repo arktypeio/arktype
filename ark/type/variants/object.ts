@@ -28,6 +28,7 @@ import type {
 	withDefault
 } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
+import type { inferDefinition } from "../parser/definition.ts"
 import type { ArrayType } from "./array.ts"
 import type { BaseType } from "./base.ts"
 import type { instantiateType } from "./instantiate.ts"
@@ -118,14 +119,14 @@ interface Type<out t extends object = object, in out $ = {}>
 	 */
 	merge<
 		const def,
-		inferredDef = type.infer<def, $>,
+		inferredDef = inferDefinition<def, $>,
 		r = Type<merge<t, inferredDef>, $>
 	>(
 		def: type.validate<def, $> &
 			// if you can figure out a way to avoid inlining this without
 			// breaking autocomplete and validation, do it! checking inferredDef
 			// instead fails to infer def from a call like .describe() within it
-			(type.infer<def, $> extends object ? unknown
+			(inferDefinition<def, $> extends object ? unknown
 			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredDef]>)
 	): r extends infer _ ? _ : never
 

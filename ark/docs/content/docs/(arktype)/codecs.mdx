@@ -85,7 +85,7 @@ const Settings = type({ since: EpochMs.default(0) })
 const out = Settings.encode({})
 ```
 
-A union encodes a value with a branch that accepts it, trying the branches without morphs first, so a value a branch would decode unchanged is encoded unchanged. Which branch encodes a value that more than one branch with a morph accepts is unspecified, and may change in a minor release.
+A union encodes a value with a branch that accepts it, trying any branch without morphs first so a value it decodes unchanged is encoded unchanged. If two branches with morphs accept overlapping values when encoding, accessing `.encode` throws a `ParseError`—the same indeterminate-union error ArkType throws when decoding overlapping morphs.
 
 ## Keywords
 

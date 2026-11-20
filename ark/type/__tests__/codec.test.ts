@@ -112,6 +112,125 @@ pair[1] must be a Date`)
 		attest(T.encode(new Date(1))).equals(new Date(1))
 	})
 
+	it("disjoint codec union encodes cleanly without forcing ordered", () => {
+		const T = EpochMs.or("string.numeric.parse")
+		attest(T.encode.internal.is("union") && T.encode.internal.ordered).equals(
+			undefined
+		)
+		attest(T.encode(42)).equals("42")
+		attest(T.encode(new Date(0))).equals(0)
+		attest(T(T.encode(42))).equals(42)
+		attest(T(T.encode(new Date(0)))).equals(new Date(0))
+
+		const Tagged = type({
+			kind: "'num'",
+			v: "string.numeric.parse"
+		}).or({
+			kind: "'date'",
+			v: "string.date.iso.parse"
+		})
+		attest(
+			Tagged.encode.internal.is("union") && Tagged.encode.internal.ordered
+		).equals(undefined)
+		attest(Tagged.encode({ kind: "num", v: 42 })).equals({
+			kind: "num",
+			v: "42"
+		})
+		attest(Tagged.encode({ kind: "date", v: new Date(0) })).equals({
+			kind: "date",
+			v: "1970-01-01T00:00:00.000Z"
+		})
+
+		const WithPlain = EpochMs.or("string.numeric.parse").or("boolean")
+		attest(
+			WithPlain.encode.internal.is("union") && WithPlain.encode.internal.ordered
+		).equals(undefined)
+		attest(WithPlain.encode(true)).equals(true)
+		attest(WithPlain.encode(42)).equals("42")
+		attest(WithPlain.encode(new Date(0))).equals(0)
+
+		const Early = codec("number < 0", "Date < d'1970-01-01'", {
+			decode: n => new Date(n),
+			encode: d => d.getTime()
+		})
+		const Late = codec("string.date.iso", "Date >= d'1970-01-01'", {
+			decode: s => new Date(s),
+			encode: d => d.toISOString()
+		})
+		const SplitDate = Early.or(Late)
+		attest(
+			SplitDate.encode.internal.is("union") && SplitDate.encode.internal.ordered
+		).equals(undefined)
+		attest(SplitDate.encode(new Date(-1000))).equals(-1000)
+		attest(SplitDate.encode(new Date(1000))).equals("1970-01-01T00:00:01.000Z")
+	})
+
+	it("overlapping codec union throws ParseError on .encode", () => {
+		const Iso = type("string.date.iso.parse")
+		const Ms = codec("number", "Date", {
+			decode: n => new Date(n),
+			encode: d => d.getTime()
+		})
+		const expected = writeIndiscriminableMorphMessage(
+			Ms.encode.expression,
+			Iso.encode.expression
+		)
+		attest(() => Iso.or(Ms).encode).throws(expected)
+		attest(() => Ms.or(Iso).encode).throws(expected)
+		// overlapping codec branches remain indeterminate even beside a plain branch
+		attest(() => type("Date").or(Iso).or(Ms).encode).throws(expected)
+		attest(() => type({ at: Iso }).or({ at: Ms }).encode).throws(expected)
+		// two object branches disjoint on decode whose encoded shapes overlap
+		const TagA = codec("'a'", "'same'", {
+			decode: () => "same",
+			encode: () => "a"
+		})
+		const TagB = codec("'b'", "'same'", {
+			decode: () => "same",
+			encode: () => "b"
+		})
+		const Nested = type({ tag: TagA, at: Iso }).or({ tag: TagB, at: Ms })
+		attest(() => Nested.encode).throws(
+			writeIndiscriminableMorphMessage(
+				`{ at: ${Ms.encode.expression}, tag: ${TagB.encode.expression} }`,
+				`{ at: ${Iso.encode.expression}, tag: ${TagA.encode.expression} }`
+			)
+		)
+	})
+
+	it("recursive overlapping codec union throws and failed encode does not leak checks", () => {
+		const TagA = codec("'a'", "'same'", {
+			decode: () => "same",
+			encode: () => "a"
+		})
+		const TagB = codec("'b'", "'same'", {
+			decode: () => "same",
+			encode: () => "b"
+		})
+		const Ambig = scope({
+			V: "BoxA | BoxB | number",
+			BoxA: { tag: TagA, x: "string.numeric.parse" },
+			BoxB: { tag: TagB, x: "V" }
+		}).export().V
+		attest(() => Ambig.encode).throws(
+			writeIndiscriminableMorphMessage(
+				`{ tag: ${TagA.encode.expression}, x: ${type("string.numeric.parse").encode.expression} }`,
+				`{ tag: ${TagB.encode.expression}, x: this }`
+			)
+		)
+		// a mid-transform error after queuing recursive checks must not leak to later encodes
+		const Broken = scope({
+			V: "BoxA | BoxB | number",
+			BoxA: { tag: TagA, x: "string.numeric.parse" },
+			BoxB: { tag: TagB, x: "V" },
+			Outer: { v: "V", bad: ["string", "=>", s => s.length] }
+		}).export().Outer
+		attest(() => Broken.encode).throws(
+			writeMissingInverseMessage("(In: string) => Out<unknown>")
+		)
+		attest(type("string.numeric.parse").encode(42)).equals("42")
+	})
+
 	it("union discriminated by a codec", () => {
 		const On = codec("1", "true", { decode: () => true, encode: () => 1 })
 		const Off = codec("0", "false", { decode: () => false, encode: () => 0 })
@@ -281,8 +400,13 @@ pair[1] must be a Date`)
 		const decode = (v: string | bigint) => Number(v)
 		const FromString = codec("string", "number", { decode, encode: String })
 		const FromBigint = codec("bigint", "number", { decode, encode: BigInt })
-		attest(FromString.or(FromBigint).encode.expression).snap(
-			"(In: number) => To<bigint> | (In: number) => To<string>"
+		const Both = FromString.or(FromBigint)
+		attest(Both.internal.branches.length).equals(2)
+		attest(() => Both.encode).throws(
+			writeIndiscriminableMorphMessage(
+				"(In: number) => To<bigint>",
+				"(In: number) => To<string>"
+			)
 		)
 	})
 

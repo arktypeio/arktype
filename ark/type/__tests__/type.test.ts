@@ -1,7 +1,19 @@
 import { attest, contextualize } from "@ark/attest"
 import { TraversalError, type JsonSchema, type UnitNode } from "@ark/schema"
-import { flatMorph } from "@ark/util"
-import { Generic, keywords, scope, Type, type, type Ark } from "arktype"
+import { flatMorph, type equals } from "@ark/util"
+import {
+	declare,
+	fn,
+	Generic,
+	generic,
+	keywords,
+	match,
+	scope,
+	Type,
+	type,
+	type Ark
+} from "arktype"
+import { codec } from "arktype/codecs"
 import * as assert from "node:assert/strict"
 
 contextualize(() => {
@@ -320,5 +332,112 @@ contextualize(() => {
 		}
 
 		attest(schema).equals(expected)
+	})
+
+	it("type.infer distills to Out, matching typeof T.infer", () => {
+		const EpochMs = codec("number.integer", "Date", {
+			decode: n => new Date(n),
+			encode: d => d.getTime()
+		})
+		const User = type({
+			name: "string",
+			age: "string.numeric.parse",
+			len: type("string").pipe(s => s.length),
+			count: "number = 5",
+			at: EpochMs,
+			"bio?": "string",
+			id: type("string").brand("userId"),
+			nested: {
+				at: EpochMs,
+				score: "number = 0"
+			},
+			pair: ["string.numeric.parse", "number = 1"]
+		})
+
+		attest<typeof User.infer, type.infer<typeof User>>()
+		attest<true, equals<type.infer<typeof User>, typeof User.infer>>()
+		attest<typeof User.inferOut, type.infer.Out<typeof User>>()
+		attest<typeof User.inferIn, type.infer.In<typeof User>>()
+		attest<
+			typeof User.inferIntrospectableOut,
+			type.infer.introspectable.Out<typeof User>
+		>()
+
+		attest<
+			{ age: number; count: number },
+			type.infer<{ age: "string.numeric.parse"; count: "number = 5" }>
+		>()
+		attest<
+			{ age: string; count?: number },
+			type.infer.In<{ age: "string.numeric.parse"; count: "number = 5" }>
+		>()
+		attest<Date, type.infer<typeof EpochMs>>()
+		attest<number, type.infer.In<typeof EpochMs>>()
+
+		const $ = scope({ id: "string.numeric.parse" })
+		attest<number, type.infer<"id", typeof $.t>>()
+		attest<string, type.infer.In<"id", typeof $.t>>()
+
+		const Node = scope({
+			Node: { v: "string.numeric.parse", "kids?": "Node[]" }
+		}).export().Node
+		attest<typeof Node.infer, type.infer<typeof Node>>()
+	})
+
+	it("internal combinators preserve morphs and defaults", () => {
+		const OrNary = type.or("string.numeric.parse", "boolean")
+		attest<string | boolean>(OrNary.inferIn)
+		attest<number | boolean>(OrNary.infer)
+
+		const OrChained = type("boolean").or("string.numeric.parse")
+		attest<boolean | string>(OrChained.inferIn)
+		attest<boolean | number>(OrChained.infer)
+
+		const AndChained = type({ a: "string" }).and({
+			b: "string.numeric.parse"
+		})
+		attest<{ a: string; b: string }>(AndChained.inferIn)
+		attest<{ a: string; b: number }>(AndChained.infer)
+
+		const MergedChained = type({ a: "string" }).merge({
+			b: "string.numeric.parse",
+			c: "number = 5"
+		})
+		attest<{ a: string; b: string; c?: number }>(MergedChained.inferIn)
+		attest<{ a: string; b: number; c: number }>(MergedChained.infer)
+
+		const MergedNary = type.merge(
+			{ a: "string" },
+			{ b: "string.numeric.parse", c: "number = 5" }
+		)
+		attest<{ a: string; b: string; c?: number }>(MergedNary.inferIn)
+		attest<{ a: string; b: number; c: number }>(MergedNary.infer)
+
+		const Piped = type("string").to("string.numeric.parse")
+		attest<string>(Piped.inferIn)
+		attest<number>(Piped.infer)
+
+		const Parse = fn("string", ":", "string.numeric.parse")(s => s)
+		attest<number>(Parse("42"))
+		attest<string>(Parse.returns.inferIn)
+		attest<number>(Parse.returns.infer)
+
+		const Box = generic("t")({ v: "t" })
+		const NumBox = Box("string.numeric.parse")
+		attest<{ v: string }>(NumBox.inferIn)
+		attest<{ v: number }>(NumBox.infer)
+
+		const Matched = match
+			.case("string.numeric.parse", n => n + 1)
+			.default("assert")
+		attest<string>(Matched.inferIn)
+		attest<number>(Matched.infer)
+
+		const Declared = declare<
+			{ a: number },
+			{ assignable: true; side: "out" }
+		>().type({ a: "string.numeric.parse" })
+		attest<{ a: string }>(Declared.inferIn)
+		attest<{ a: number }>(Declared.infer)
 	})
 })

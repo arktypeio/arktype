@@ -38,7 +38,10 @@ import type {
 	NaryPipeParser,
 	NaryUnionParser
 } from "./nary.ts"
-import type { validateDefinition } from "./parser/definition.ts"
+import type {
+	inferDefinition,
+	validateDefinition
+} from "./parser/definition.ts"
 import type {
 	ArgTwoOperator,
 	IndexZeroOperator,
@@ -92,8 +95,8 @@ export interface ValidatedArgs<
 			baseGenericConstraints<parseValidGenericParams<zero, $>>
 		>
 	:	never
-	predicate: Predicate<distill.Out<type.infer<zero, $>>>
-	morph: Morph<distill.Out<type.infer<zero, $>>, unknown>
+	predicate: Predicate<distill.Out<inferDefinition<zero, $>>>
+	morph: Morph<distill.Out<inferDefinition<zero, $>>, unknown>
 	operand: validateDefinition<rest[0], $, bindThis<rest[0]>>
 	predicateRest: [
 		ValidatedArgs<zero, one, rest, $>[zero extends unknown ? "predicate"

@@ -42,7 +42,7 @@ export type validateParameterString<s extends ParameterString, $> =
 	:	s
 
 export type validateGenericArg<arg, param extends GenericParamAst, $> =
-	type.infer<arg, $> extends param[1] ? unknown
+	inferDefinition<arg, $> extends param[1] ? unknown
 	:	ErrorType<[`Invalid argument for ${param[0]}`, expected: param[1]]>
 
 export type GenericInstantiator<
@@ -153,13 +153,13 @@ type instantiateGeneric<
 	args$
 > = Type<
 	[def] extends [Hkt] ?
-		Hkt.apply<def, { [i in keyof args]: type.infer<args[i], args$> }>
+		Hkt.apply<def, { [i in keyof args]: inferDefinition<args[i], args$> }>
 	:	inferDefinition<def, $, bindGenericArgs<params, args$, args>>,
 	args$
 >
 
 type bindGenericArgs<params extends array<GenericParamAst>, $, args> = {
-	[i in keyof params & `${number}` as params[i][0]]: type.infer<
+	[i in keyof params & `${number}` as params[i][0]]: inferDefinition<
 		args[i & keyof args],
 		$
 	>
@@ -329,8 +329,9 @@ type _parseOptionalConstraint<
 
 type genericParamDefToAst<schema extends GenericParamDef, $> =
 	schema extends string ? [schema, unknown]
-	: schema extends readonly [infer name, infer def] ? [name, type.infer<def, $>]
-	: never
+	: schema extends readonly [infer name, infer def] ?
+		[name, inferDefinition<def, $>]
+	:	never
 
 export type genericParamDefsToAst<defs extends array<GenericParamDef>, $> = [
 	...{ [i in keyof defs]: genericParamDefToAst<defs[i], $> }

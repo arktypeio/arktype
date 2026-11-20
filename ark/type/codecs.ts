@@ -24,6 +24,7 @@ import {
 	writeUrl
 } from "./keywords/functions.ts"
 import { type } from "./keywords/keywords.ts"
+import type { inferDefinition } from "./parser/definition.ts"
 import type { instantiateType } from "./variants/instantiate.ts"
 
 /**
@@ -43,8 +44,10 @@ export const codec = <
 	const o,
 	r = instantiateType<
 		inferPipe<
-			(In: distill.In<type.infer<i>>) => Out<distill.In<type.infer<o>>>,
-			type.infer<o>
+			(
+				In: distill.In<inferDefinition<i>>
+			) => Out<distill.In<inferDefinition<o>>>,
+			inferDefinition<o>
 		>,
 		{}
 	>
@@ -57,12 +60,12 @@ export const codec = <
 	}: noInfer<
 		{
 			decode: Morph<
-				distill.Out<type.infer<i>>,
-				distill.In<type.infer<o>> | ArkError | ArkErrors
+				distill.Out<inferDefinition<i>>,
+				distill.In<inferDefinition<o>> | ArkError | ArkErrors
 			>
 			encode: Morph<
-				distill.In<type.infer<o>>,
-				distill.Out<type.infer<i>> | ArkError | ArkErrors
+				distill.In<inferDefinition<o>>,
+				distill.Out<inferDefinition<i>> | ArkError | ArkErrors
 			>
 		},
 		i | o

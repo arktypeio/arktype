@@ -172,10 +172,8 @@ export declare namespace type {
 		args = bindThis<def>
 	> = instantiateDefinition<def, $, args>
 
-	export type infer<def, $ = {}, args = bindThis<def>> = inferDefinition<
-		def,
-		$,
-		args
+	export type infer<def, $ = {}, args = bindThis<def>> = distill.Out<
+		inferDefinition<def, $, args>
 	>
 
 	export namespace infer {

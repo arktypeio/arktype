@@ -11,7 +11,10 @@ import {
 } from "@ark/util"
 import type { distill } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
-import type { validateInnerDefinition } from "./parser/definition.ts"
+import type {
+	inferDefinition,
+	validateInnerDefinition
+} from "./parser/definition.ts"
 import type {
 	inferTupleLiteral,
 	validateTupleLiteral
@@ -27,7 +30,7 @@ export type BaseFnParser<$ = {}> = <
 		{}
 	>,
 	returnT = args extends readonly [...unknown[], ":", infer returnDef] ?
-		type.infer<returnDef, $>
+		inferDefinition<returnDef, $>
 	:	unknown
 >(
 	...args: {

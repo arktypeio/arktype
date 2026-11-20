@@ -34,6 +34,7 @@ import type {
 import type { ArkAmbient } from "../config.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { NaryPipeParser } from "../nary.ts"
+import type { inferDefinition } from "../parser/definition.ts"
 import type { Scope } from "../scope.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
@@ -509,7 +510,7 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * // parse a string and validate the result as a user
 	 * const parseUser = type("string").pipe(s => JSON.parse(s)).to({ name: "string" })
 	 */
-	to<const def, r = instantiateType<inferPipe<t, type.infer<def, $>>, $>>(
+	to<const def, r = instantiateType<inferPipe<t, inferDefinition<def, $>>, $>>(
 		def: type.validate<def, $>
 	): r extends infer _ ? _ : never
 
@@ -553,7 +554,7 @@ interface Type<out t = unknown, in out $ = {}>
 	 */
 	and<
 		const def,
-		r = instantiateType<inferIntersection<t, type.infer<def, $>>, $>
+		r = instantiateType<inferIntersection<t, inferDefinition<def, $>>, $>
 	>(
 		def: type.validate<def, $>
 	): r extends infer _ ? _ : never
@@ -567,7 +568,7 @@ interface Type<out t = unknown, in out $ = {}>
 	 * // Type<string | { box: string }>
 	 * const T = type("string").or({ box: "string" })
 	 */
-	or<const def, r = instantiateType<t | type.infer<def, $>, $>>(
+	or<const def, r = instantiateType<t | inferDefinition<def, $>, $>>(
 		def: type.validate<def, $>
 	): r extends infer _ ? _ : never
 
@@ -588,7 +589,7 @@ interface Type<out t = unknown, in out $ = {}>
 	 */
 	intersect<
 		const def,
-		r = instantiateType<inferIntersection<t, type.infer<def, $>>, $>
+		r = instantiateType<inferIntersection<t, inferDefinition<def, $>>, $>
 	>(
 		def: type.validate<def, $>
 	): r extends infer _ ? _ | Disjoint : never
@@ -675,7 +676,7 @@ interface Type<out t = unknown, in out $ = {}>
 	 */
 	extract<
 		const def,
-		r = instantiateType<t extends type.infer<def, $> ? t : never, $>
+		r = instantiateType<t extends inferDefinition<def, $> ? t : never, $>
 	>(
 		r: type.validate<def, $>
 	): r extends infer _ extends r ? _ : never
@@ -690,7 +691,7 @@ interface Type<out t = unknown, in out $ = {}>
 	 */
 	exclude<
 		const def,
-		r = instantiateType<t extends type.infer<def, $> ? never : t, $>
+		r = instantiateType<t extends inferDefinition<def, $> ? never : t, $>
 	>(
 		r: type.validate<def, $>
 	): r extends infer _ ? _ : never

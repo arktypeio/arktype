@@ -101,10 +101,8 @@ declare global {
 			$
 		>
 
-		export type infer<def, $ = {}, args = a.bindThis<def>> = a.inferDefinition<
-			def,
-			$,
-			args
+		export type infer<def, $ = {}, args = a.bindThis<def>> = a.distill.Out<
+			a.inferDefinition<def, $, args>
 		>
 
 		/** @ts-ignore cast variance */
