@@ -6,7 +6,6 @@ import {
 	printable,
 	throwParseError,
 	type ArkRegistry,
-	type dict,
 	type requireKeys,
 	type show
 } from "@ark/util"
@@ -32,6 +31,7 @@ import {
 	type DescriptionWriter,
 	type NodeKind
 } from "./shared/implement.ts"
+import { copyConfig, isSameConfig } from "./shared/configured.ts"
 import { validateToJsonSchemaTarget } from "./shared/jsonSchema.ts"
 import type { Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
@@ -204,22 +204,16 @@ export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
 	}
 	if (config.locale !== undefined && !hasDomain(config.locale, "object"))
 		throwParseError(writeInvalidLocaleMessage(config.locale))
-	const merged = mergeConfigs($ark.config, config)
-	// a config file evaluated again, as after a test runner resets modules, can reapply what's set
-	if ($ark.cfg && !isSameConfig(merged, $ark.config))
-		return throwParseError(configureAfterTypeMessage)
-	return Object.assign($ark.config, merged)
-}
-
-const isSameConfig = (l: unknown, r: unknown): boolean => {
-	if (l === r) return true
-	// functions are only the same by reference
-	if (typeof l !== "object" || typeof r !== "object" || !l || !r) return false
-	const entries = Object.entries(l)
-	return (
-		entries.length === Object.keys(r).length &&
-		entries.every(([k, v]) => isSameConfig(v, (r as dict)[k]))
-	)
+	const merged = mergeConfigs($ark.config, copyConfig(config))
+	if ($ark.cfg) {
+		// a config file evaluated again, as after a test runner resets modules,
+		// can reapply what's set, which changes nothing
+		if (!isSameConfig(merged, $ark.config))
+			return throwParseError(configureAfterTypeMessage)
+	} else Object.assign($ark.config, merged)
+	// what was passed, as a precompiled program's configure() returns, rather
+	// than $ark.config, whose writes would skip this validation
+	return config
 }
 
 /** $ark.config merged over base, with its static locale */

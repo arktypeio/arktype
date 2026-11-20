@@ -110,7 +110,7 @@ export const check = data => User.assert(data)`
 		attest(() => lint(code, { members: { asserts: false } })).throws
 			.snap(`Error: Key "rules": Key "@ark/aot/precompilable":
 	Value {"asserts":false} should NOT have additional properties.
-		Unexpected property "asserts". Expected properties: "assert", "meta", "~standard", "methods", "expression", "description", "json", "toJSON", "toJsonSchema", "~standard.jsonSchema".
+		Unexpected property "asserts". Expected properties: "assert", "description", "expression", "json", "meta", "methods", "toJSON", "toJsonSchema", "~standard", "~standard.jsonSchema".
 `)
 		// a build that copies its input accepts transforms
 		const tagged = `import { type } from "arktype"
@@ -119,6 +119,18 @@ export const Tagged = type({
 	"[string]": { "[string]": { label: ["string", "=", "none"] } }
 })`
 		attest(lint(tagged, { mutatesInput: "always" })).equals([])
+	})
+
+	it("takes every option ark.json does", () => {
+		const code = `import { type } from "arktype"
+export const User = type({ name: "string" })`
+		attest(
+			lint(code, {
+				checker: "tsjs",
+				dependencies: { "@ark/util": "aot" },
+				bakedLimit: 1_000_000
+			})
+		).equals([])
 	})
 
 	it("applies a changed configuration", () => {

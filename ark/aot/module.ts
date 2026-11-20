@@ -51,7 +51,8 @@ export class SourceModule {
 					source,
 					result.comments,
 					this.strayMarkers,
-					comment => comment === islandMarker || undefined
+					// what follows it is a reason, as `// @ark-runtime its shape is loaded`
+					comment => comment.split(/\s/, 1)[0] === islandMarker || undefined
 				).map(([node]) => node)
 			:	[]
 		this.strategyMarks =

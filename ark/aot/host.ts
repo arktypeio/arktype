@@ -156,10 +156,44 @@ export const islandDependencySpecifier = "arktype/internal/islandDependency.js"
 
 export const runsOnArktype = (
 	importer: string | undefined,
-	dependencies: DependencyModes | undefined
+	dependencies: DependencyModes | undefined,
+	namesByDir?: PackageNamesByDir
 ): boolean => {
-	const name = dependencyNameOf(importer)
-	return !!name && dependencies?.[name] === "arktype"
+	// only a program running one on arktype reads a manifest for it
+	if (!importer || !Object.values(dependencies ?? {}).includes("arktype"))
+		return false
+	const file = importer.split("?")[0]
+	const name =
+		dependencyOf(file)?.[1] ?? workspacePackageNameOf(file, namesByDir)
+	return !!name && dependencies![name] === "arktype"
+}
+
+export type PackageNamesByDir = Record<string, string | undefined>
+
+// a workspace links a package to its own directory, which pnpm, npm and yarn
+// all do under the name its manifest declares, and a bundler reads its
+// modules by their real paths, which name no node_modules. So the manifest
+// names it: the nearest declaring a name, as a nameless one, like the
+// { "type": "module" } a dual package writes into dist/esm, only scopes files
+export const workspacePackageNameOf = (
+	file: string,
+	namesByDir: PackageNamesByDir = {}
+): string | undefined => {
+	if (!isAbsolute(file)) return
+	const nameIn = (dir: string): string | undefined => {
+		if (dir in namesByDir) return namesByDir[dir]
+		let name: unknown
+		try {
+			name = JSON.parse(readFile(join(dir, "package.json")) ?? "{}").name
+		} catch {
+			// one that doesn't parse names nothing
+		}
+		return (namesByDir[dir] =
+			typeof name === "string" ? name
+			: dir === dirname(dir) ? undefined
+			: nameIn(dirname(dir)))
+	}
+	return nameIn(dirname(file))
 }
 
 const dependencyNameOf = (importer: string | undefined): string | undefined =>
@@ -271,11 +305,21 @@ const arktypeEntries = ["arktype"]
 const importOfArktype =
 	/(?:\bfrom\s*|\bimport\s*\(?\s*|require\s*\(\s*)["'`](?:arktype|@ark\/schema)(?:\/[^"'`]*)?["'`]/
 
-const importsArktype = (dir: string): boolean =>
+// a package's JavaScript, which Node runs wherever the package is
+const javaScriptFile = /\.[cm]?js$/
+
+// and the source a workspace package's exports may name, which Node strips
+// the types of only outside node_modules, so a published package's .ts, like
+// a test it ships importing arktype it lists as a devDependency, never runs.
+// A declaration only names arktype's types
+const scriptFile = /(?<!\.d)\.(?:[cm]?[jt]s|[jt]sx)$/
+
+const importsArktype = (dir: string, readsSource: boolean): boolean =>
 	readdirSync(dir, { withFileTypes: true }).some(entry =>
 		entry.isDirectory() ?
-			entry.name !== "node_modules" && importsArktype(join(dir, entry.name))
-		:	/\.[cm]?js$/.test(entry.name) &&
+			entry.name !== "node_modules" &&
+			importsArktype(join(dir, entry.name), readsSource)
+		:	(readsSource ? scriptFile : javaScriptFile).test(entry.name) &&
 			importOfArktype.test(readFile(join(dir, entry.name)) ?? "")
 	)
 
@@ -295,7 +339,8 @@ export const dependsOnArktype = (name: string, from: string): boolean => {
 	)) {
 		if (
 			arktypeEntries.some(entry => manifest.includes(`"${entry}"`)) &&
-			importsArktype(root)
+			// a root is real, so a workspace package's names no node_modules
+			importsArktype(root, !/[/\\]node_modules[/\\]/.test(root))
 		)
 			return true
 	}

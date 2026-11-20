@@ -2,7 +2,8 @@ import type {
 	JsonSchema,
 	RootApply,
 	StandardJSONSchemaV1,
-	StandardSchemaV1
+	StandardSchemaV1,
+	ToJsonSchema
 } from "@ark/schema"
 
 import {
@@ -26,6 +27,7 @@ import {
 	sharedMessageOf,
 	supportedJsonSchemaTargets,
 	throwOnDefault,
+	ToJsonSchemaError,
 	traversesUnions,
 	validateStandardJsonSchemaTarget,
 	writeFromPath,
@@ -326,15 +328,18 @@ export const standardResultOf = (
 
 // a validation Standard Schema asked for, in the context its options pass
 export const standardValidated = (
-	validator: (data: unknown) => unknown,
+	validator: Validator,
 	input: unknown,
 	options: StandardSchemaV1.Options | undefined
 ): StandardSchemaV1.Result<unknown> => {
 	const context = options?.libraryOptions?.context
+	// Standard Schema returns its issues, so a configured onFail isn't called.
+	// Every validator with a ~standard takes a third argument, and one whose
+	// build configures no onFail ignores it
 	return standardResultOf(
 		context === undefined ?
-			validator(input)
-		:	inContext(context as never, () => validator(input))
+			validator(input, undefined, null)
+		:	inContext(context as never, () => validator(input, undefined, null))
 	)
 }
 
@@ -631,34 +636,19 @@ const writeStandardJsonSchema = (
 	return writers[i]() as Record<string, unknown>
 }
 
-class ToJsonSchemaError extends Error {
-	readonly name = "ToJsonSchemaError"
-	readonly code: string
-	readonly context: object
-
-	constructor(code: string, message: string, context: object) {
-		super(message)
-		this.code = code
-		this.context = context
-	}
-
-	hasCode(code: string): boolean {
-		return this.code === code
-	}
-}
-
+// @ark/schema's ToJsonSchema.Error, so instanceof holds as it does for arktype's
 export const throwJsonSchemaError = (
-	code: string,
+	code: ToJsonSchema.Code,
 	message: string,
 	context: object
 ): never => {
-	throw new ToJsonSchemaError(code, message, context)
+	throw new ToJsonSchemaError(code, context as never, "", message)
 }
 
 // arktype's error where no handler writes a code, the first line of whose
 // message is fixed at build and the rest its context, as arktype prints it
 export const fallbackThrower =
-	(code: string, header: string) =>
+	(code: ToJsonSchema.Code, header: string) =>
 	(ctx: object): never =>
 		throwJsonSchemaError(
 			code,

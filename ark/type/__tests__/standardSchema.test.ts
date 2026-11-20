@@ -7,7 +7,9 @@ import {
 } from "@ark/schema"
 import type { promisable } from "@ark/util"
 import { scope, type } from "arktype"
+import { writeAsyncStandardSchemaMessage } from "arktype/internal/parser/definition.ts"
 import { en } from "arktype/locales/en"
+import { runInNewContext } from "node:vm"
 
 contextualize(() => {
 	it("validation conforms to spec", () => {
@@ -31,6 +33,19 @@ contextualize(() => {
 			"must be a string"
 		])
 		attest(badStandardOut.issues[0].path).equals(["foo"])
+	})
+
+	it("validate returns issues where onFail would throw or return something else", () => {
+		for (const onFail of [(errors: type.errors) => errors.throw(), () => 5]) {
+			const T = scope({}, { onFail }).type("string")
+			const failure = T["~standard"].validate(
+				5
+			) as StandardSchemaV1.FailureResult
+			attest(failure.issues.map(issue => issue.message)).equals([
+				"must be a string"
+			])
+			attest(T["~standard"].validate("")).equals({ value: "" })
+		}
 	})
 
 	it("a failure's message is its errors' summary, which names each path", () => {
@@ -203,6 +218,22 @@ contextualize(() => {
 			}
 		})
 		attest(T({ a: 1 }).toString()).snap("a is invalid")
+	})
+
+	it("an embedded Standard Schema returning any thenable throws", () => {
+		const standardReturning = (result: () => unknown) =>
+			type({
+				"~standard": { version: 1, vendor: "other", validate: result }
+			} as never)
+		const message = writeAsyncStandardSchemaMessage("other")
+		// another realm's Promise isn't an instance of this one's
+		const foreignPromise = runInNewContext("Promise.resolve({ value: 1 })")
+		attest(() => standardReturning(() => foreignPromise)(1)).throws(message)
+		attest(() =>
+			standardReturning(() => ({
+				then: (resolve: (result: object) => void) => resolve({ value: 1 })
+			}))(1)
+		).throws(message)
 	})
 
 	describe("from another copy of arktype", () => {

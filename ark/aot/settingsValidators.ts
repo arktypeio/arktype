@@ -1354,3 +1354,73 @@ export const cliOptions = {
 	strategies: { type: "object", values: "json" },
 	tsconfig: { type: "string", values: "path" }
 }
+
+// what ark.json's precompile takes, as the ESLint rule's options
+export const precompileJsonSchema = {
+	type: "object",
+	properties: {
+		allowUnsafe: { type: "boolean" },
+		bakedLimit: {
+			type: "integer",
+			description: "the characters a site's baked introspection may total",
+			exclusiveMinimum: 0
+		},
+		checker: { type: "string", enum: ["tsgo", "tsjs", "tsrs"] },
+		conditions: { type: "array", items: { type: "string" } },
+		config: {
+			anyOf: [
+				{ type: "string", description: "a module path or false", minLength: 1 },
+				{ type: "boolean", const: false, description: "a module path or false" }
+			],
+			description: "a module path or false"
+		},
+		creationChecks: { type: "string", enum: ["helpers", "none", "types"] },
+		dependencies: {
+			type: "object",
+			additionalProperties: { type: "string", enum: ["aot", "arktype"] }
+		},
+		errors: { type: "string", enum: ["all", "first", "none"] },
+		freeze: { type: "boolean" },
+		jsonInput: { type: "boolean" },
+		lazy: { type: "boolean" },
+		members: {
+			type: "object",
+			properties: {
+				assert: { type: "boolean" },
+				description: { type: "boolean" },
+				expression: { type: "boolean" },
+				json: { type: "boolean" },
+				meta: { type: "boolean" },
+				methods: { type: "boolean" },
+				toJSON: { type: "boolean" },
+				toJsonSchema: { type: "boolean" },
+				"~standard": { type: "boolean" },
+				"~standard.jsonSchema": { type: "boolean" }
+			},
+			additionalProperties: false
+		},
+		mutatesInput: {
+			anyOf: [{ type: "string", const: "always" }, { type: "boolean" }]
+		},
+		optimize: { type: "string", enum: ["size", "speed"] },
+		optimizeErrors: { type: "string", enum: ["size", "speed"] },
+		preset: { type: "string", enum: ["introspectable", "smallest"] },
+		prune: { type: "boolean" },
+		runtime: { type: "string", const: "arktype" },
+		schemas: {
+			type: "object",
+			additionalProperties: { type: "string", minLength: 1 }
+		},
+		shadow: { type: "boolean" },
+		strategies: {
+			type: "object",
+			additionalProperties: {
+				type: "object",
+				properties: { optimize: { type: "string", enum: ["size", "speed"] } },
+				additionalProperties: false
+			}
+		},
+		tsconfig: { type: "string", description: "a path", minLength: 1 }
+	},
+	additionalProperties: false
+}

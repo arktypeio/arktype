@@ -3,6 +3,7 @@ import type { Diagnostic } from "./diagnostics.ts"
 import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
 import { isProductionEnv, withEnvironment } from "./presets.ts"
 import { withSettingsFile } from "./settings.ts"
+import { precompileJsonSchema } from "./settingsValidators.ts"
 import { createSyncPrecompiler } from "./worker.ts"
 
 // each configuration needs a thread of its own, apart from ESLint's
@@ -53,59 +54,8 @@ const reporterOf = (
 	meta: {
 		type: "problem",
 		docs: { description },
-		schema: [
-			{
-				type: "object",
-				properties: {
-					preset: { enum: ["smallest", "introspectable"] },
-					runtime: { enum: ["arktype"] },
-					config: { anyOf: [{ type: "string" }, { const: false }] },
-					members: {
-						type: "object",
-						properties: {
-							assert: { type: "boolean" },
-							meta: { type: "boolean" },
-							"~standard": { type: "boolean" },
-							methods: { type: "boolean" },
-							expression: { type: "boolean" },
-							description: { type: "boolean" },
-							json: { type: "boolean" },
-							toJSON: { type: "boolean" },
-							toJsonSchema: { type: "boolean" },
-							"~standard.jsonSchema": { type: "boolean" }
-						},
-						additionalProperties: false
-					},
-					creationChecks: { enum: ["types", "helpers", "none"] },
-					errors: { enum: ["all", "first", "none"] },
-					conditions: { type: "array", items: { type: "string" } },
-					tsconfig: { type: "string" },
-					freeze: { type: "boolean" },
-					lazy: { type: "boolean" },
-					mutatesInput: { enum: [false, true, "always"] },
-					optimize: { enum: ["speed", "size"] },
-					optimizeErrors: { enum: ["speed", "size"] },
-					strategies: {
-						type: "object",
-						additionalProperties: {
-							type: "object",
-							properties: { optimize: { enum: ["speed", "size"] } },
-							additionalProperties: false
-						}
-					},
-					schemas: {
-						type: "object",
-						additionalProperties: { type: "string" }
-					},
-					jsonInput: { type: "boolean" },
-					bakedLimit: { type: "integer", minimum: 1 },
-					shadow: { type: "boolean" },
-					prune: { type: "boolean" },
-					allowUnsafe: { type: "boolean" }
-				},
-				additionalProperties: false
-			}
-		]
+		// written from what ark.json takes, so the rule takes every option it does
+		schema: [precompileJsonSchema]
 	},
 	create: context => ({
 		"Program:exit": () => {

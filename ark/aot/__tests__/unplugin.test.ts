@@ -502,6 +502,34 @@ console.log(
 		attest(run(standalone)).equals(runPlain(root))
 	})
 
+	it("esbuild encodes where an import loads arktype/codecs, as arktype does", async () => {
+		const root = writeFixture(
+			{
+				"codecs.ts": `import { codec } from "arktype/codecs"
+export const EpochMs = codec("number.integer", "Date", {
+	decode: n => new Date(n),
+	encode: d => d.getTime()
+})
+`,
+				"main.ts": `import { type } from "arktype"
+import { EpochMs } from "./codecs.ts"
+
+const Event = type({ at: EpochMs, day: "string.date.iso.parse" })
+const encode = (event: unknown) => Event.encode(event)
+const encoded = encode({ at: new Date(5), day: new Date(0) })
+const refused = encode({ at: 5, day: new Date(0) })
+console.log(JSON.stringify(encoded), refused instanceof type.errors && refused.summary)
+`
+			},
+			fromHere("temp", "codecsImported")
+		)
+		const plain = runPlain(root)
+		attest(plain)
+			.snap(`{"at":5,"day":"1970-01-01T00:00:00.000Z"} at must be a Date
+`)
+		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(plain)
+	})
+
 	it("esbuild writes no NUL into its output", async () => {
 		const standalone = await bundlers.esbuild({}, app, false)
 		attest(standalone.includes("~arktype/")).equals(true)
@@ -767,10 +795,21 @@ export const failed = out => out instanceof type.errors
 							name: "nested",
 							peerDependencies: { arktype: "*" }
 						}),
-					"node_modules/bundled/node_modules/nested/index.js": readsErrors
+					"node_modules/bundled/node_modules/nested/index.js": readsErrors,
+					// a workspace package its exports name the source of
+					"packages/ts-errors/package.json": JSON.stringify({
+						name: "ts-errors",
+						type: "module",
+						exports: "./src/index.ts",
+						dependencies: { arktype: "*" }
+					}),
+					"packages/ts-errors/src/index.ts": readsErrors
 				},
 				fromHere("temp", "webpackReachingExternals", name)
 			)
+			// linked from its own directory, as a workspace links it
+			rmSync(join(root, "node_modules/ts-errors"), { force: true })
+			symlinkSync("../packages/ts-errors", join(root, "node_modules/ts-errors"))
 			const compiler = (build as typeof webpack)({
 				mode: "production",
 				context: root,
@@ -809,6 +848,14 @@ export const failed = out => out instanceof type.errors
 					"wraps-errors"
 				])
 			).equals(leaves("wraps-errors"))
+		})
+
+		it("as a workspace package shipping its TypeScript source", async () => {
+			attest(
+				await errorsOf(webpack, precompile.webpack, "source", ["ts-errors"])
+			).equals([
+				withAllowUnsafe(writeExternalizedMessage("ts-errors", "externals"))
+			])
 		})
 
 		it("as the module importing it resolves it", async () => {
@@ -1951,6 +1998,49 @@ console.log(
 			await withNodeEnv("production", () => bundlers.vite(opts, root))
 		])
 			attest(run(bundle)).equals(precompiled(expected))
+	})
+
+	it("runs a workspace package the program's settings name on arktype", async () => {
+		const root = writeFixture(
+			{
+				"package.json": '{ "type": "module" }',
+				// linked as a pnpm, npm or yarn workspace links it, from its own directory
+				...packageFiles(
+					"@acme/tables",
+					{
+						"index.js":
+							'import { type } from "arktype"\n\nexport const typeOf = columns => type(Object.fromEntries(columns.map(c => [c, "string"])))\n'
+					},
+					{},
+					"packages/tables"
+				),
+				"main.ts": `import { type } from "arktype"
+import { typeOf } from "@acme/tables"
+
+// columns the build can't know, as a table read from a database's schema
+const Row = typeOf(JSON.parse(process.env.COLUMNS ?? '["name"]'))
+console.log(JSON.stringify([Row({ name: "Ada" }), Row({ name: 1 }) instanceof type.errors]))
+`
+			},
+			fromHere("temp", "workspaceTables")
+		)
+		rmSync(join(root, "node_modules"), { recursive: true, force: true })
+		mkdirSync(join(root, "node_modules", "@acme"), { recursive: true })
+		symlinkSync(
+			"../../packages/tables",
+			join(root, "node_modules", "@acme", "tables")
+		)
+		const opts = {
+			cwd: root,
+			dependencies: { "@acme/tables": "arktype" }
+		} as const
+		const expected = runPlain(root)
+		attest(JSON.parse(expected)).snap([{ name: "Ada" }, true])
+		for (const bundle of [
+			await bundlers.esbuild(opts, root),
+			await withNodeEnv("production", () => bundlers.vite(opts, root))
+		])
+			attest(run(bundle)).equals(expected)
 	})
 
 	it("builds a dependency reading only what arktype's runtime exports", async () => {

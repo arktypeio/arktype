@@ -2440,12 +2440,17 @@ return namespace`
 		const bakedTexts = new Set(
 			[written || [], ...standard].flat().map(({ text }) => text)
 		)
-		// only targets whose text is already baked
+		// set in members, it's read where the build can't see what target code
+		// passes, so each is baked, a text like another's declared once
+		const bakesEachTarget = this.baking.members.has("toJsonSchema")
+		// else only targets whose text is already baked
 		const targets =
 			written ?
 				supportedJsonSchemaTargets.map(target => {
-					const { text } = writerOf(() => root.toJsonSchema({ target }))
-					return bakedTexts.has(text) ? text : undefined
+					const writer = writerOf(() => root.toJsonSchema({ target }))
+					return bakesEachTarget || bakedTexts.has(writer.text) ?
+							writer
+						:	undefined
 				})
 			:	[]
 		const ignoresFallback = written && this.writesWithoutFallback(root)
@@ -2476,9 +2481,14 @@ return namespace`
 		if (written) {
 			this.baked("toJsonSchema", () => {
 				const writtenName = declare(written)
-				const byTarget = targets.map(text =>
-					text ? this.jsonSchemaNameOf(writerText(text)) : 0
-				)
+				const byTarget = targets.map(target => {
+					if (!target) return 0
+					const text = writerText(target.text)
+					return (
+						this.jsonSchemaNameOf(text) ??
+						this.declareJsonSchema(text, target.values)
+					)
+				})
 				const replayed = replays.map(replay => (replay ? declare(replay) : 0))
 				members.push(
 					replayed.some(Boolean) ?

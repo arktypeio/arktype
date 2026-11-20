@@ -2,7 +2,7 @@
 import { mkdirSync, writeFileSync } from "node:fs"
 import { dirname, relative } from "node:path"
 import { parseArgs } from "node:util"
-import type { Checker } from "./declare.ts"
+import type { Checker, DeclareOptions } from "./declare.ts"
 import { isBuildError } from "./host.ts"
 import { writeNodeVersionMessage } from "./messages.ts"
 import type { PrecompilePluginOptions } from "./driver.ts"
@@ -96,14 +96,36 @@ const writeFiles = (files: Record<string, string>) => {
 	}
 }
 
+const run = <result>(build: () => result): result => {
+	try {
+		return build()
+	} catch (e) {
+		// e.g. a config module that can't be read or a tsconfig that's missing,
+		// which the message names
+		if (!isBuildError(e)) throw e
+		console.error(e.message)
+		process.exit(1)
+	}
+}
+
 const declare = (): never => {
 	const checker = values.checker as string | undefined
 	if (checker !== undefined && !checkers.includes(checker as Checker))
 		fail(`--checker must be ${checkers.join(", ")} (was ${checker})`)
-	const declarations = emitDeclarations({
-		tsconfig: values.tsconfig as string | undefined,
-		checker: checker as Checker | undefined
-	})
+	// a flag over ark.json, as for the other modes
+	const { tsconfig, checker: setChecker } = ((): DeclareOptions => {
+		try {
+			return withSettingsFile({
+				tsconfig: values.tsconfig as string | undefined,
+				checker: checker as Checker | undefined
+			})
+		} catch (e) {
+			return fail((e as Error).message)
+		}
+	})()
+	const declarations = run(() =>
+		emitDeclarations({ tsconfig, checker: setChecker })
+	)
 	writeFiles(declarations.files)
 	if (declarations.diagnostics) console.error(declarations.diagnostics)
 	console.log(
@@ -174,17 +196,6 @@ try {
 	resolvePrecompileOptions(set)
 } catch (e) {
 	fail((e as Error).message)
-}
-
-const run = <result>(build: () => result): result => {
-	try {
-		return build()
-	} catch (e) {
-		// e.g. a config module that can't be read, which the message names
-		if (!isBuildError(e)) throw e
-		console.error(e.message)
-		process.exit(1)
-	}
 }
 
 if (values.emit) {

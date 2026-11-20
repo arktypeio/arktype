@@ -624,13 +624,18 @@ const build = async (
 		[join(dir, scenario.run ?? join("out", filename))],
 		{ cwd: dir, encoding: "utf8", timeout: 120_000 }
 	)
+	// a read of a member no build baked, which the runtime warns of
+	const warned = stderr.match(unbakedWarning)?.join("\n")
 	return {
 		out:
-			status === 0 ? stdout : (
+			(status === 0 ? stdout : (
 				`exit ${status} ${/^\w*Error\b.*$/m.exec(stderr)?.[0] ?? stderr}`
-			)
+			)) + (warned ? `\n${warned}` : "")
 	}
 }
+
+const unbakedWarning =
+	/^Error: .*(?:isn't precompiled: set members|which this standalone validator lacks).*$/gm
 
 const headOf = (message: string) =>
 	(
@@ -651,7 +656,7 @@ const normalized = (out: string) =>
 		"according to a predicate"
 	)
 
-// a member a build left out, which it says as it's read under the
+// a member a build left out, which it warns of as it's read under the
 // "development" condition each build here resolves the runtime under
 const isLoud = (out: string) =>
 	/isn't precompiled: set members|reads? \w+, which a standalone validator lacks|Type<[^>]*>|can't be precompiled/.test(

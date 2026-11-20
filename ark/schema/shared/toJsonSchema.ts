@@ -11,41 +11,17 @@ import {
 } from "@ark/util"
 import type { Predicate } from "../predicate.ts"
 import { defaultValueSerializer, type ConstraintKind } from "./implement.ts"
-import type {
-	JsonSchema,
-	writeNullableJsonSchema,
-	writeUnionJsonSchema
+import {
+	ToJsonSchemaError,
+	type JsonSchema,
+	type writeNullableJsonSchema,
+	type writeUnionJsonSchema
 } from "./jsonSchema.ts"
 import { namedReference, registeredReference } from "./registry.ts"
 import type {
 	StandardJSONSchemaV1,
 	StandardSchemaV1
 } from "./standardSchema.ts"
-
-class ToJsonSchemaError<
-	code extends ToJsonSchema.Code = ToJsonSchema.Code
-> extends Error {
-	readonly name = "ToJsonSchemaError"
-	readonly code: code
-	readonly context: ToJsonSchema.ContextByCode[code]
-
-	constructor(
-		code: code,
-		context: ToJsonSchema.ContextByCode[code],
-		path = "",
-		message = `Can't convert "${code}"${path && ` at ${path}`} to JSON Schema. Configure fallback.${code} to write it:\n${printable(context, { quoteKeys: false, indent: 4 })}`
-	) {
-		super(message)
-		this.code = code
-		this.context = context
-	}
-
-	hasCode<code extends ToJsonSchema.Code>(
-		code: code
-	): this is ToJsonSchemaError<code> {
-		return this.code === (code as never)
-	}
-}
 
 /** the Types from another copy of arktype, like 2.x, by the morph that validates with each */
 export const foreignTypesByMorph: WeakMap<Function, StandardSchemaV1> =

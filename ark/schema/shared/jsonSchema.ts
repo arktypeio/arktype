@@ -3,6 +3,7 @@ import {
 	hasKey,
 	includes,
 	isEmptyObject,
+	printable,
 	throwParseError,
 	type autocomplete,
 	type Json,
@@ -195,6 +196,33 @@ export declare namespace JsonSchema {
 	export type LengthBoundable = String | Array
 
 	export type Structure = Object | Array
+}
+
+// ToJsonSchema.Error, here so a standalone validator's runtime, reading it from
+// @ark/schema/runtime, throws the same class without the rest of toJsonSchema.ts
+export class ToJsonSchemaError<
+	code extends ToJsonSchema.Code = ToJsonSchema.Code
+> extends Error {
+	readonly name = "ToJsonSchemaError"
+	readonly code: code
+	readonly context: ToJsonSchema.ContextByCode[code]
+
+	constructor(
+		code: code,
+		context: ToJsonSchema.ContextByCode[code],
+		path = "",
+		message = `Can't convert "${code}"${path && ` at ${path}`} to JSON Schema. Configure fallback.${code} to write it:\n${printable(context, { quoteKeys: false, indent: 4 })}`
+	) {
+		super(message)
+		this.code = code
+		this.context = context
+	}
+
+	hasCode<code extends ToJsonSchema.Code>(
+		code: code
+	): this is ToJsonSchemaError<code> {
+		return this.code === (code as never)
+	}
 }
 
 /** the targets ~standard.jsonSchema writes, each of which a precompiled build bakes */

@@ -98,7 +98,7 @@ The same settings can go under an `"ark"` key in that `package.json` instead, re
 
 A watch build or dev server reads them again as they change, so a build never mixes modules written under two settings. Rollup and Vite build every module anew under the new ones, Vite's dev server restarting to, unless they change what a Vite build's config was given, like `runtime`. That, and any change under webpack, Rspack, Rolldown, esbuild or Turbopack, fails each build until you restore them or restart it, naming the restart.
 
-Where `package.json` sets `"ark"` and an `ark.json` is beside it, the build fails, naming both, so keep one. A library's `package.json` also sets `"aot": true` under `"ark"` to [opt in](/docs/precompile/advanced#libraries), which is unrelated to `"precompile"`, how the program reading the file builds.
+Where `package.json` sets `"ark.precompile"` and an `ark.json` is beside it, the build fails, naming both, so keep one. A library's `package.json` also sets `"aot": true` under `"ark"` to [opt in](/docs/precompile/advanced#libraries), which is unrelated to `"precompile"`, how the program reading the file builds, so it may build with an `ark.json` beside it.
 
 ## Settings
 
@@ -118,7 +118,7 @@ The values are [arktype's `errors`](/docs/configuration#errors) option's, and a 
 
 `members` decides what a validator has besides validating. `assert`, `meta`, `~standard`, `methods` (`traverse()`, `from()` and `toString()`) and `withContext` default to true. A dropped one reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`.
 
-`expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema`, the introspection members, are each baked into the validators the build sees code read it off, and set true or false, into every validator or none. Where it can't see one, `String(User)` without `expression` is `"Type"`, and another reads `undefined`. Where `arktype/runtime` resolves under the [`"development"` condition](/docs/precompile/validators#errors), reading it throws instead, naming the member and the setting, unless the validator lacks `methods`:
+`expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema`, the introspection members, are each baked into the validators the build sees code read it off, and set true or false, into every validator or none. Where it can't see one, `String(User)` without `expression` is `"Type"`, and another reads `undefined`. Where `arktype/runtime` resolves under the [`"development"` condition](/docs/precompile/validators#errors), the read is still `undefined`, so code testing whether a validator has it, like a Standard Schema library asking whether `"jsonSchema" in schema["~standard"]`, behaves as it does in production, but the first read of each member also warns, naming the member and the setting, unless the validator lacks `methods`:
 
 ```
 toJsonSchema isn't precompiled: set members["toJsonSchema"] true in the precompile options
@@ -138,7 +138,7 @@ A production bundle reads every module, so it follows a validator a module expor
 
 Keep `assert` or `~standard` on validators you pass to a library. tRPC, for one, calls a validator that has neither as a plain parse function, so it passes on the errors the validator returns as if they were the parsed input.
 
-Each introspection member is baked as arktype returns it under the program's configuration. `toJsonSchema()` then takes a `target` whose schema is baked, and a `fallback` where `~standard.jsonSchema` is baked with it or `members` sets it: the build records what arktype hands each handler of a fallback and does with what it returns, and the validator does the same with the handlers a call passes. So hono-openapi, which passes a fallback for every Type, and oRPC's converter, which passes one for a `Date`, get what arktype returns, for a Type holding a `Date`, a morph or a `.narrow()` too. Other options throw, as does a fallback where arktype reads what it returns other than to write a union, as for a `Date` with keys of its own. A JSON Schema the build can't bake throws where it's read.
+Each introspection member is baked as arktype returns it under the program's configuration. `toJsonSchema()` then takes a `target` whose schema is baked, which is each where `members` sets `toJsonSchema`, and a `fallback` where `~standard.jsonSchema` is baked with it or `members` sets it: the build records what arktype hands each handler of a fallback and does with what it returns, and the validator does the same with the handlers a call passes. So hono-openapi, which passes a fallback for every Type, and oRPC's converter, which passes one for a `Date`, get what arktype returns, for a Type holding a `Date`, a morph or a `.narrow()` too. Other options throw, as does a fallback where arktype reads what it returns other than to write a union, as for a `Date` with keys of its own. A JSON Schema the build can't bake throws where it's read.
 
 ```ts
 import { precompile } from "@ark/aot/unplugin"
@@ -184,7 +184,7 @@ A build left compiled writes the Types of its forms as checkers the other way ar
 }
 ```
 
-A key is a path from [`cwd`](#cwd), or from its own directory in `ark.json`, written with `/`. In it, `*` stands for any part of a name, `**` for any directories, `?` for one character and `{a,b}` for either, and a directory stands for every module under it. A `#` and a name after the path choose for one of the module's top-level declarations, by its own name, a name it's exported under, or `default`, and so for each definition inside it.
+A key is a path from [`cwd`](#cwd), or from its own directory in `ark.json`, written with `/`. In it, `*` stands for any part of a name, `**` for any directories, `?` for one character and `{a,b}` for either, and a directory stands for every module under it. Brackets are the path's own, as in a route like `"app/users/[id]/page.tsx"`. A `#` and a name after the path choose for one of the module's top-level declarations, by its own name, a name it's exported under, or `default`, and so for each definition inside it.
 
 `strategies` names your own, each for what you'd change at once:
 
@@ -210,11 +210,13 @@ A marker chooses for the statement or expression after it, as [`// @ark-runtime`
 ```ts
 import { type } from "arktype"
 // ---cut---
-// @ark-strategy fastest
+// @ark-strategy fastest // checked on every request
 export const Money = type({ amount: "number > 0", currency: "string == 3" })
 ```
 
-Where more than one chooses for a definition, the most specific does: a key naming its declaration, then a marker, then a key naming its module's path, then a glob, and of two globs the one writing more of the path before its first wildcard. Two globs writing as much that choose otherwise fail the build, naming both and the module. What chooses for a definition overrides `optimize`, a preset and the size a build [chooses for a browser's bundle](#choosing-smallest), each of which decides only what nothing chose for. That build's estimate weighs only the validators nothing chose for, too.
+A second `//` starts a reason the build ignores. Without one, what follows the marker is the strategy's name, so a misspelled one fails the build.
+
+Where more than one chooses for a definition, the most specific does: a key naming its declaration, then a marker, then a key naming its module's path, the module's own over its directory's, then a glob, and of two globs the one writing more of the path before its first wildcard. Two globs writing as much that choose otherwise fail the build, naming both and the module. What chooses for a definition overrides `optimize`, a preset and the size a build [chooses for a browser's bundle](#choosing-smallest), each of which decides only what nothing chose for. That build's estimate weighs only the validators nothing chose for, too.
 
 A strategy writes a definition's whole validator, the Types it composes included, whatever their own definitions are written as. With `Money` written `"fastest"` and a form's `Order` holding it written `"smallest"`, `Money`'s checks are written twice: compiled for `Money`, and as checkers within `Order`. A bundle with validators of both kinds also holds what each reads of the runtime. So choosing costs size where Types written differently compose each other, and on a few Types it can cost more than it saves.
 
@@ -322,6 +324,8 @@ An esbuild build reads each module as it loads it, and fails where another plugi
 }
 ```
 
+A [workspace package](/docs/precompile/setup#frameworks), which the build precompiles with the program, runs on arktype too where `"arktype"` names it, by the name its `package.json` declares, as its modules resolve to its own directory rather than to `node_modules`.
+
 A package run on arktype ships arktype's parser for the Types it creates, under the program's configuration. Its errors are instances of `type.errors`, as a precompiled validator's are, and its Types are Standard Schemas, so the rest of the program reads them as it reads any. `"arktype"` fails the build with `errors: "none"` or `optimizeErrors: "size"`, whose errors are a class of their own, and with Turbopack or Bun's runtime plugin, which replace arktype for every importer. A name the program can't resolve fails the build.
 
 A package precompiled with `"aot"` is read as the program is, so a value it returns that the build can't tell from a Type is checked where it's read: `JSON.stringify(env)` on t3-env's result fails as reading `toJSON`, unless `env` is annotated with its type.
@@ -370,7 +374,7 @@ A `message`, `expected` or `actual` configured for a code, or on a Type with `.c
 - text a Scope configures for a code: configure it with `configure()`, or on each Type with `.configure()`
 - `predicate` text from `configure()` where a narrow or morph raises the error: pass the text to `ctx.reject()`
 
-The build fails where a module that creates a Type is imported before the config module, and the runtime throws if `configure()` runs after it creates its first validator, runs twice, or receives other values than the build read.
+The build fails where a module that creates a Type is imported before the config module, and the runtime throws if `configure()` runs after it creates its first validator, runs again with other values, or receives other values than the build read. Run again with the same values, as when a test runner resets its modules and the config module runs again, it changes nothing, as arktype's does.
 
 `config: false`, the default in a [production build](#production-builds), says the program never calls `configure()`, so the build fails wherever it does. A program that calls it names its module as `config`, which overrides the default.
 

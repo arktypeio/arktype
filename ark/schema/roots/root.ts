@@ -86,6 +86,10 @@ import type {
 import type { Morph } from "./morph.ts"
 import type { Union } from "./union.ts"
 
+// arktype/codecs installs encoding, so an app that doesn't encode doesn't ship it
+export const encodeWithoutCodecsMessage =
+	'.encode requires import "arktype/codecs"'
+
 export interface InternalRootDeclaration extends BaseNodeDeclaration {
 	kind: RootKind
 }
@@ -127,10 +131,12 @@ export abstract class BaseRoot<
 					version: 1,
 					validate: (input, options) => {
 						const context = options?.libraryOptions?.context
+						// Standard Schema returns its issues, so a configured onFail
+						// that throws or returns something else isn't called
 						const out =
 							context === undefined ?
-								this(input)
-							:	inContext(context as never, () => this(input))
+								this.traverse(input)
+							:	inContext(context as never, () => this.traverse(input))
 						return out instanceof ArkErrors ?
 								standardFailureOf(out as ArkErrors)
 							:	{ value: out }
@@ -504,9 +510,7 @@ export abstract class BaseRoot<
 	}
 
 	get encode(): BaseRoot {
-		return (
-			$ark.encode ?? throwParseError('.encode requires import "arktype/codecs"')
-		)(this)
+		return ($ark.encode ?? throwParseError(encodeWithoutCodecsMessage))(this)
 	}
 
 	rawPipeOnce(morph: Morph): BaseRoot {

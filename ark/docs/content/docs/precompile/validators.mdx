@@ -40,7 +40,7 @@ The build resolves an import as TypeScript does, and where that fails, a bundler
 
 The members that exist only as types, `infer`, `inferIn`, `inferOut`, `inferIntrospectableOut` and `t`, are `undefined` on a Type too, so reading one is never reported, as in `typeof User.infer.address`.
 
-Composing inside a definition is fine, since the build evaluates it: `export const Admin = User.and({ role: "'admin'" })` is precompiled to a validator of its own, as is composing the Type a call to a helper returns, like `addressOf(saved).or("undefined")`. Where the build refused the definition of `User` itself, the read is reported as ``User.and composes `User`, which can't be precompiled``, under the reasons of that definition's own report. So is [`.encode`](/docs/codecs#precompiling) wherever the build sees it read, like `const encode = (event: unknown) => Event.encode(event)`, even where the program never imports `arktype/codecs`.
+Composing inside a definition is fine, since the build evaluates it: `export const Admin = User.and({ role: "'admin'" })` is precompiled to a validator of its own, as is composing the Type a call to a helper returns, like `addressOf(saved).or("undefined")`. Where the build refused the definition of `User` itself, the read is reported as ``User.and composes `User`, which can't be precompiled``, under the reasons of that definition's own report. So is [`.encode`](/docs/codecs#precompiling) wherever the build sees it read, like `const encode = (event: unknown) => Event.encode(event)`, where its module imports `arktype/codecs`.
 
 A validator and its members are frozen, except a Date or RegExp it holds, unless the build sets [`freeze: false`](/docs/precompile/options#freeze), as a [production build](/docs/precompile/options#production-builds) does by default.
 
@@ -56,7 +56,7 @@ A validator returns errors of its own, instances of `type.errors` and of `arktyp
 - [`firstIssue(out)`](/docs/errors#finding-only-the-first) finds only the first issue of errors that haven't found theirs, stopping where the data first fails.
 - A `message`, `expected` or `actual` configured for a code or on a Type is written as arktype writes it. A build configured with what a validator can't write, like a locale, [fails with its fix](/docs/precompile/options#configuration).
 - They aren't instances of `arktype/schema`'s `ArkErrors`, so the build fails where a module imports that one.
-- `console.log` prints them by name, as `ArkErrors { summary, issues }`, where `arktype/runtime` resolves under the `"development"` condition: Vite's dev server, Vitest, webpack's development mode, and Node or esbuild given `--conditions=development`. There, reading an introspection member a validator's build didn't bake also throws, with the [`members`](/docs/precompile/options#members) setting that bakes it. A production build ships nothing for either.
+- `console.log` prints them by name, as `ArkErrors { summary, issues }`, where `arktype/runtime` resolves under the `"development"` condition: Vite's dev server, Vitest, webpack's development mode, and Node or esbuild given `--conditions=development`. There, reading an introspection member a validator's build didn't bake also warns, with the [`members`](/docs/precompile/options#members) setting that bakes it, and reads `undefined` as in production. A production build ships nothing for either.
 
 The [`errors`](/docs/precompile/options#errors) option ships less: one issue, or one saying the data is invalid.
 

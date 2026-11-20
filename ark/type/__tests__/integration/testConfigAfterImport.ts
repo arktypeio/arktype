@@ -3,13 +3,20 @@ import { configure, scope, type } from "arktype"
 import { strictEqual, throws } from "node:assert/strict"
 import { cases } from "./util.ts"
 
-configure({
+// created anew by each call, as a config module run again creates its functions
+const configOf = () => ({
 	numberAllowsInfinity: true,
 	dateAllowsInvalid: true,
 	keywords: {
-		"string.email": "a configured email"
-	}
+		"string.email": { description: "a configured email" }
+	},
+	divisor: { actual: (data: unknown) => `${data}, which isn't` }
 })
+
+const passed = configOf()
+const returned = configure(passed)
+// what was passed, written after the call, before any Type exists
+passed.keywords["string.email"].description = "written after"
 
 cases({
 	numberAllowsInfinity: () => {
@@ -48,15 +55,30 @@ cases({
 		})
 	},
 	reconfigureUnchanged: () => {
-		// as when a test runner resets its modules and the config file runs again
-		configure({
-			numberAllowsInfinity: true,
-			dateAllowsInvalid: true,
-			keywords: {
-				"string.email": "a configured email"
-			}
-		})
+		// as when a test runner resets its modules and the config file runs
+		// again, creating each function anew
+		configure(configOf())
 		configure({})
+		strictEqual(type("number").allows(Number.POSITIVE_INFINITY), true)
+		strictEqual(
+			type("number % 2")(3)?.toString(),
+			"must be even (was 3, which isn't)"
+		)
+	},
+	reconfigureOtherFunction: () => {
+		throws(
+			() =>
+				configure({
+					...configOf(),
+					divisor: { actual: (data: unknown) => `${data}, not even` }
+				}),
+			{ message: configureAfterTypeMessage }
+		)
+	},
+	returnsWhatWasPassed: () => {
+		strictEqual(returned, passed)
+		// so writing to it can't change the config past configure's checks
+		returned.numberAllowsInfinity = false
 		strictEqual(type("number").allows(Number.POSITIVE_INFINITY), true)
 	}
 })

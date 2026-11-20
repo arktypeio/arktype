@@ -16,7 +16,7 @@ import {
 } from "node:fs"
 import { join } from "node:path"
 import { relative } from "node:path/posix"
-import { inexactExportsOf, runCli, tsPath } from "./utils.ts"
+import { inexactExportsOf, runCli, tsPath, writeFixture } from "./utils.ts"
 
 const declared = fromHere("declared")
 const layouts = fromHere("declaredLayouts")
@@ -817,6 +817,37 @@ export type makeTree = {
 			rmSync(loader, { recursive: true, force: true })
 		}
 	}).timeout(60000)
+
+	it("reads the CLI's --declare options from ark.json", () => {
+		const dir = writeFixture({
+			"ark.json": JSON.stringify({
+				precompile: { tsconfig: "tsconfig.lib.json", checker: "tsjs" }
+			}),
+			"tsconfig.lib.json": JSON.stringify({
+				compilerOptions: { rootDir: "src", outDir: "lib", types: [] },
+				include: ["src"]
+			}),
+			"src/index.ts": "export const id = 1\n"
+		})
+		const cli = runCli(dir, "--declare")
+		attest([cli.status, cli.stdout, cli.stderr]).snap([
+			0,
+			"1 declaration files in lib, with 0 shapes in ~arktype.d.ts\n",
+			""
+		])
+		attest(readFileSync(join(dir, "lib", "index.d.ts"), "utf8")).snap(
+			"export declare const id = 1;\n"
+		)
+	}).timeout(60000)
+
+	it("prints why --declare can't read its tsconfig, without a stack", () => {
+		const dir = writeFixture({ "src/index.ts": "export const id = 1\n" })
+		const cli = runCli(dir, "--declare", "--tsconfig", "missing.json")
+		attest([cli.status, cli.stderr.split(dir).join("")]).snap([
+			1,
+			"error TS5083: Cannot read file '/missing.json'.\n\n"
+		])
+	})
 
 	it("refuses the CLI's other modes and options with --declare", () => {
 		const cli = runCli(layouts, "--declare", "--check", "--preset", "smallest")
