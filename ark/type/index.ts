@@ -57,4 +57,4 @@ export type {
 } from "./parser/definition.ts"
 export { scope, type bindThis, type Scope } from "./scope.ts"
 export { Type } from "./type.ts"
-export type { BaseType } from "./variants/base.ts"
+export type { BaseType, BoundType } from "./variants/base.ts"

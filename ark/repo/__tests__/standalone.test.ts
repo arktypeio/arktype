@@ -683,7 +683,21 @@ nick must be a string or null`)
 				message: "must be positive"
 			}
 		])
-		attest(errors.toJSON()).is(errors.issues)
+		// each issue without its data
+		attest(errors.toJSON()).snap([
+			{
+				code: "required",
+				path: ["a"],
+				expected: "a string",
+				message: "must be a string (was missing)"
+			},
+			{
+				code: "min",
+				path: ["b", "c"],
+				expected: "positive",
+				message: "must be positive"
+			}
+		])
 		// a failure's class is type.errors, read or unread
 		attest(T({}).constructor).is(runtime.type.errors)
 		attest(U(5) instanceof runtime.ArkErrors).equals(true)
@@ -889,15 +903,17 @@ nick must be a string or null`)
 				return [
 					`${out.constructor === runtime.type.errors} ${out.count} ${JSON.stringify(out.issues)}`,
 					out.summary,
-					`${String(out) === out.summary} ${`${out}` === out.summary} ${JSON.stringify(out) === JSON.stringify(out.issues)}`,
+					`${String(out) === out.summary} ${`${out}` === out.summary} ${[...out].length === out.count}`,
+					// what it says and where, without its data
+					JSON.stringify(out),
 					...thrown,
 					""
 				].join("\n")
 			})
 		)
 		attest(outputs).snap([
-			'true 2 [{"code":"required","path":["a"],"data":{"b":{"c":[1,"x"]}},"expected":"a string","message":"must be a string (was missing)"},{"code":"domain","path":["b","c",1],"data":"x","expected":"a number","message":"must be a number"}]\na must be a string (was missing)\nb.c[1] must be a number\ntrue true true\nTraversalError: a must be a string (was missing)\nb must be an object (was missing) true\nTraversalError: a must be a string (was missing)\nb.c[1] must be a number true\n',
-			'true 1 [{"code":"predicate","path":[],"data":{"b":{"c":[1,"x"]}},"message":"is invalid"}]\nis invalid\ntrue true true\nError: is invalid false\nTypeError: out.throw is not a function false\n'
+			'true 2 [{"code":"required","path":["a"],"data":{"b":{"c":[1,"x"]}},"expected":"a string","message":"must be a string (was missing)"},{"code":"domain","path":["b","c",1],"data":"x","expected":"a number","message":"must be a number"}]\na must be a string (was missing)\nb.c[1] must be a number\ntrue true true\n[{"code":"required","path":["a"],"expected":"a string","message":"must be a string (was missing)"},{"code":"domain","path":["b","c",1],"expected":"a number","message":"must be a number"}]\nTraversalError: a must be a string (was missing)\nb must be an object (was missing) true\nTraversalError: a must be a string (was missing)\nb.c[1] must be a number true\n',
+			'true 1 [{"code":"predicate","path":[],"data":{"b":{"c":[1,"x"]}},"message":"is invalid"}]\nis invalid\ntrue true true\n[{"code":"predicate","path":[],"message":"is invalid"}]\nTraversalError: is invalid true\nTraversalError: is invalid true\n'
 		])
 	})
 
@@ -1528,11 +1544,15 @@ age must be a number (was missing)`)
 	})
 
 	it("errors: none assert", async () => {
-		const { T } = await load({ T: type({ a: "string" }) }, { errors: "none" })
+		const { T, runtime } = await load(
+			{ T: type({ a: "string" }) },
+			{ errors: "none", configure: exportsRuntime }
+		)
 		const thrown = caught(() => T.assert({ a: 1 }))
-		attest(thrown.constructor).is(Error)
-		attest(String(thrown)).equals("Error: is invalid")
-		attest(thrown.cause.issues).equals([
+		// a TraversalError, as a detailed build's assert throws
+		attest(thrown instanceof runtime.TraversalError).equals(true)
+		attest(String(thrown)).equals("TraversalError: is invalid")
+		attest(thrown.arkErrors.issues).equals([
 			{ code: "predicate", path: [], data: { a: 1 }, message: "is invalid" }
 		])
 		const config: ArkSchemaConfig = { onFail: errors => errors.throw() }
@@ -1544,9 +1564,7 @@ age must be a number (was missing)`)
 				errors: "none"
 			}
 		)
-		attest(() => Configured({ a: 1 })).throws.snap(
-			"TypeError: errors.throw is not a function"
-		)
+		attest(() => Configured({ a: 1 })).throws.snap("TraversalError: is invalid")
 	})
 
 	it("loads without a global it reads", async () => {
@@ -1865,6 +1883,45 @@ age must be a number (was missing)`)
 			writeUnbakedMessage(
 				`${writeUnprecompilableMessage("a JSON Schema whose writing throws")}: Error: no schema`
 			)
+		)
+	})
+
+	it("JSON Schema of a scope configured with aliasDefs", async () => {
+		const { User } = scope(
+			{ Address: { street: "string" }, User: { home: "Address" } },
+			{ toJsonSchema: { aliasDefs: true } }
+		).export()
+		const { User: validator } = await load(
+			{ User },
+			{ members: { toJsonSchema: true } }
+		)
+		attest(validator.toJsonSchema()).equals(User.toJsonSchema())
+		attest(validator.toJsonSchema().$defs).snap({
+			User: {
+				type: "object",
+				properties: { home: { $ref: "#/$defs/Address" } },
+				required: ["home"]
+			},
+			Address: {
+				type: "object",
+				properties: { street: { type: "string" } },
+				required: ["street"]
+			}
+		})
+	})
+
+	it("openapi-3.1 JSON Schema only where configured", async () => {
+		const T = scope({}, { toJsonSchema: { target: "openapi-3.1" } }).type({
+			a: "string | null"
+		})
+		const U = type({ a: "string" })
+		const { T: configured, U: validator } = await load(
+			{ T, U },
+			{ members: { toJsonSchema: true } }
+		)
+		attest(configured.toJsonSchema()).equals(T.toJsonSchema())
+		attest(() => validator.toJsonSchema({ target: "openapi-3.1" })).throws(
+			bakedJsonSchemaOptionsMessage
 		)
 	})
 

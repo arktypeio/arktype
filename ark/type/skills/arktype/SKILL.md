@@ -80,7 +80,7 @@ if (out instanceof type.errors) {
 ```
 
 - Calling a type returns the validated data or an `ArkErrors` instance. It does not throw, so check with `instanceof type.errors` rather than wrapping it in `try`/`catch`.
-- `ArkErrors` is not an array. Read individual errors from `out.issues`, e.g. `out.issues[0]` or `out.issues.map(e => e.message)`, each with a `path`, `code` and `message`. A `message` leaves out its path, like `must be an email address`.
+- `ArkErrors` is not an array, though `for (const e of out)` iterates its errors. Read individual errors from `out.issues`, e.g. `out.issues[0]` or `out.issues.map(e => e.message)`, each with a `path`, `code` and `message`. A `message` leaves out its path, like `must be an email address`.
 - `User.assert(data)` throws a `TraversalError` instead, for places where invalid data is a bug. In a `catch`, check `e instanceof TraversalError` (from `arktype`) and read `e.arkErrors.issues`.
 - Name types in PascalCase (`User`). Name types that transform their input in camelCase (`parseUser`), since they behave like functions.
 - `typeof User.infer` is the output type. `typeof User.inferIn` is the input type, which differs once a type transforms its input or has defaults.
@@ -242,6 +242,7 @@ const Signup = type({
 - Always reject with text. Returning `false` reads `must be valid according to an anonymous predicate`.
 - For several errors, call `ctx.error({ message, relativePath })` for each, then return `true`.
 - A narrow on an object runs only once every key is valid, so its error is never reported alongside a key's.
+- A rule that depends on what the caller has, like a form's saved values, reads `ctx.context`. Declare its shape once on `ArkEnv` (`interface ArkEnv { context(): { savedStreet?: string } }`) and validate with `T.withContext(context)`, a Standard Schema a form library takes as is. Don't create a Type for each value: one Type defined once can be precompiled. A narrow on literals can't read it, since ArkType checks them as the Type is defined.
 - A narrow can't give a literal its own text. ArkType calls it on each literal the Type allows, like `false`, `null`, `undefined` or `'a'`, when the Type is defined, and removes those it rejects, so `type("boolean").narrow((v, ctx) => v || ctx.reject({ message: "Accept the terms" }))` reads `must be true`. Write the values allowed, with the message: `type("true").configure({ message: "Accept the terms" })`.
 
 ## Error messages

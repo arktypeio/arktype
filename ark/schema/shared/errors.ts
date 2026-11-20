@@ -3,7 +3,6 @@ import {
 	conflatenateAll,
 	hasOwn,
 	pathAt,
-	printSymbol,
 	stringifyPath,
 	throwError,
 	type JsonArray,
@@ -34,7 +33,6 @@ import {
 } from "./enWriters.ts"
 import { describesData, listsErrors } from "./errorWriters.ts"
 import { findsOnRead } from "./issueFeatures.ts"
-import { describeBranches, removedProblemMessage } from "./utils.ts"
 import {
 	ArkErrors as BaseArkErrors,
 	isCustomIssue,
@@ -50,6 +48,7 @@ import {
 } from "./issues.ts"
 import {
 	applyRejected,
+	throwOnProblem,
 	Traversal,
 	type FailHandler,
 	type InternalTraversal
@@ -94,16 +93,25 @@ export declare namespace ArkErrors {
 	export type Handler<returns = unknown> = (errors: ArkErrors) => returns
 }
 
+// an errors object's own fields, keyed by symbols so neither Object.keys, a
+// spread's for...in nor JSON lists them, where defining each as not enumerable
+// would cost 40 times what assigning it does on every failure. Not private
+// fields, as errors "none" builds its errors without a constructor
+const writtenKey = Symbol("written")
+const localeKey = Symbol("locale")
+const configKey = Symbol("config")
+
 /**
  * The errors returned by a Type on invalid input, one issue for each failed
  * check in the order each failed, as a standalone validator returns them.
  */
 export class ArkErrors extends BaseArkErrors {
-	declare _: ArkError[]
+	declare _: ArkError[];
 	// how many of the errors added have been written
-	declare private writtenCount: number
-	declare private locale: Locale | undefined
-	declare private config: ResolvedConfig
+	declare [writtenKey]: number;
+	// the locale they're written in, selected when they're first read
+	declare [localeKey]: Locale.Resolved | undefined;
+	declare [configKey]: ResolvedConfig
 
 	constructor(config: ResolvedConfig) {
 		super()
@@ -112,9 +120,9 @@ export class ArkErrors extends BaseArkErrors {
 
 	/** @internal resets the fields its constructor sets */
 	_init(config: ResolvedConfig): void {
-		this.writtenCount = 0
-		this.locale = undefined
-		this.config = config
+		this[writtenKey] = 0
+		this[localeKey] = undefined
+		this[configKey] = config
 	}
 
 	// a computed key would keep the class in a bundle that never reads it
@@ -128,10 +136,11 @@ export class ArkErrors extends BaseArkErrors {
 	 */
 	override get issues(): readonly ArkError[] {
 		const issues = this._
-		if (this.writtenCount === issues.length) return issues
-		const locale = this.selectedLocale
-		while (this.writtenCount < issues.length)
-			writeError(issues[this.writtenCount++], this.config, locale)
+		if (this[writtenKey] === issues.length) return issues
+		const locale = selectedLocaleOf(this)
+		const config = this[configKey]
+		while (this[writtenKey] < issues.length)
+			writeError(issues[this[writtenKey]++], config, locale)
 		return issues
 	}
 
@@ -140,16 +149,19 @@ export class ArkErrors extends BaseArkErrors {
 		return this._firstGrouped()
 	}
 
-	/** @internal the first of issues, found with the rest */
+	/**
+	 * @internal the first of issues, found with the rest. Counted as written,
+	 * so reading the rest doesn't write it again, which would note the line of
+	 * a union listing its errors from the message already written from its own
+	 * path, dropping the path before each error's
+	 */
 	_firstGrouped(): ArkError | undefined {
 		const first = this._[0]
-		if (first && this.writtenCount === 0)
-			writeError(first, this.config, this.selectedLocale)
+		if (first && this[writtenKey] === 0) {
+			writeError(first, this[configKey], selectedLocaleOf(this))
+			this[writtenKey] = 1
+		}
 		return first
-	}
-
-	private get selectedLocale(): Locale {
-		return (this.locale ??= renderer?.select(this.config) ?? this.config.locale)
 	}
 
 	/**
@@ -157,9 +169,13 @@ export class ArkErrors extends BaseArkErrors {
 	 */
 	override get summary(): string {
 		const issues = this.issues
-		return summarize(issues, this.selectedLocale)
+		return summarize(issues, selectedLocaleOf(this))
 	}
 
+	/**
+	 * Each error's JSON: what it says and where, without its data or any other
+	 * value only JavaScript holds, like its Type's `meta`.
+	 */
 	override toJSON(): JsonArray {
 		return this.issues.map(jsonOf)
 	}
@@ -170,27 +186,29 @@ export class ArkErrors extends BaseArkErrors {
 	toLocaleString(locale?: Locale): string {
 		// Array.prototype.toLocaleString passes each element a tag
 		if (!isLocale(locale)) return this.summary
+		const resolved = resolveLocale(locale)
 		return summarize(
-			this._.map(error => writtenIn(error, locale)),
-			locale
+			this._.map(error => writtenIn(error, resolved)),
+			resolved
 		)
 	}
 
 	/** @internal */
 	override _merge(merged: BaseArkErrors, prefix: array<PropertyKey>): void {
 		if (merged instanceof ArkErrors) return mergeErrors(this, merged, prefix)
+		const config = this[configKey]
 		for (const issue of merged.issues) {
 			this._.push(
 				issue._m ?
-					errorOfIssue(issue._m(prefix) as never, [], this.config)
-				:	errorOfIssue(issue, prefix, this.config)
+					errorOfIssue(issue._m(prefix) as never, [], config)
+				:	errorOfIssue(issue, prefix, config)
 			)
 		}
 	}
 
 	/** @internal the config its errors are written with */
 	get _config(): ResolvedConfig {
-		return this.config
+		return this[configKey]
 	}
 
 	/** @internal the errors, without their text */
@@ -198,6 +216,12 @@ export class ArkErrors extends BaseArkErrors {
 		return this._
 	}
 }
+
+// selected once, so each of its errors is written in the same locale, whenever
+// it's read, even where a configured locale is a function
+const selectedLocaleOf = (errors: ArkErrors): Locale.Resolved =>
+	(errors[localeKey] ??=
+		renderer?.select(errors[configKey]) ?? errors[configKey].locale)
 
 // compared from the end, where paths usually differ
 const pathEquals = (l: array<PropertyKey>, r: array<PropertyKey>) => {
@@ -247,17 +271,20 @@ type UnreadErrors = new (
 	ctor: typeof Traversal
 ) => ArkErrors
 
-// errors whose issues a root's traversal finds in data once they're read
+// errors whose issues a root's traversal finds in data once they're read. What
+// finds them is private, so its node and data are neither listed nor copied
+// with the errors' own keys, and each is released once they're found
 const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 	class Unread {
-		declare config: ResolvedConfig
-		declare _node: BaseNode
-		// the data, then the issues found, named as a standalone Unread's are
-		declare _d: unknown
-		declare _ctor: typeof Traversal
-		declare _f?: ArkError[]
+		declare [configKey]: ResolvedConfig;
+		declare [writtenKey]: number;
+		declare [localeKey]: Locale.Resolved | undefined
+		#node: BaseNode | undefined
+		#data: unknown
+		#ctor: typeof Traversal | undefined
+		#found: ArkError[] | undefined
 		// the first issue, found alone
-		declare _1?: ArkError | undefined
+		#first: ArkError | undefined
 
 		constructor(
 			node: BaseNode,
@@ -265,36 +292,47 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 			config: ResolvedConfig,
 			ctor: typeof Traversal
 		) {
-			this.config = config
-			this._node = node
-			this._d = data
-			this._ctor = ctor
+			this[configKey] = config
+			this.#node = node
+			this.#data = data
+			this.#ctor = ctor
 		}
 
 		get _(): ArkError[] {
-			if (!this._f) {
-				const ctx = new this._ctor(this._d, this.config)
-				this._node.tApply(this._d, ctx)
+			if (!this.#found) {
+				const config = this[configKey]
+				const ctx = new this.#ctor!(this.#data, config)
+				this.#node!.tApply(this.#data, ctx)
 				// data a write or a getter has made valid since fails as a whole
 				if (!ctx.hasError()) ctx.reject(invalidInput())
-				const errors = this as {} as ArkErrors
-				errors._init(this.config)
-				this._f = (ctx.fin(null) as ArkErrors)._
+				const found = (ctx.fin(null) as ArkErrors)._
+				// the first, found alone, is issues[0] as it was written, in the
+				// locale the rest are then written in
+				const first = this.#first
+				const locale = this[localeKey]
+				;(this as {} as ArkErrors)._init(config)
+				if (first) {
+					found[0] = first
+					this[writtenKey] = 1
+					this[localeKey] = locale
+				}
+				this.#found = found
+				this.#node = this.#ctor = this.#data = undefined
 			}
-			return this._f
+			return this.#found
 		}
 
 		// a traversal adds only the errors at its path, unless the rest were found first
 		get _first(): ArkError | undefined {
-			if (this._1 || this._f)
-				return this._1 ?? (this as {} as ArkErrors)._firstGrouped()
-			const node = this._node
-			const ctx = new (firstPathTraversalOf(this._ctor))(
-				this._d,
-				this.config,
+			if (this.#first || this.#found)
+				return this.#first ?? (this as {} as ArkErrors)._firstGrouped()
+			const node = this.#node!
+			const ctx = new (firstPathTraversalOf(this.#ctor!))(
+				this.#data,
+				this[configKey],
 				!revisitsPaths(node)
 			)
-			node.tApply(this._d, ctx)
+			node.tApply(this.#data, ctx)
 			if (!ctx.hasError()) ctx.reject(invalidInput())
 			const errors = ctx.fin(null) as ArkErrors
 			if (errors._.includes(skipped)) {
@@ -304,7 +342,9 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 				if (findsOnRead) (errors as {} as { _f: ArkError[] })._f = found
 				else errors._ = found
 			}
-			return (this._1 = errors._first)
+			// written in the locale these select, which the rest are written in
+			errors[localeKey] = selectedLocaleOf(this as {} as ArkErrors)
+			return (this.#first = errors._first)
 		}
 	}
 	// an ArkErrors, built without the fields its constructor sets
@@ -477,6 +517,16 @@ export class SiteTraversal extends Traversal implements SiteFailureContext {
 	}
 }
 
+const { _at, _in } = SiteTraversal.prototype
+
+// a validator's traversal, which its narrow or morph may pipe to one of
+// arktype's nodes, fails what arktype's compiled code does as SiteTraversal
+// would, from what every traversal holds, so the runtime needn't carry either
+export const siteTraversalOf = (ctx: Traversal): SiteTraversal => {
+	if (!("_at" in ctx)) Object.assign(ctx, { _at, _in })
+	return ctx as never
+}
+
 export class ArkTraversal extends SiteTraversal {
 	override createErrors(): ArkErrors {
 		return new ArkErrors(this.config)
@@ -540,9 +590,7 @@ export class ArkTraversal extends SiteTraversal {
 	}
 
 	protected override raise(input: ArkErrorInput): ArkError {
-		// 2.x's slot, which a cast or JavaScript still passes
-		if (typeof input === "object" && "problem" in input)
-			throwError(removedProblemMessage)
+		throwOnProblem(input)
 		// read now, so a caller's later change to its input doesn't reach the error
 		const errCtx: ArkErrorContextInput =
 			typeof input === "object" ?
@@ -652,8 +700,10 @@ const failsAtBasis = (error: ArkError, path: array<PropertyKey>): boolean =>
  * path: for an error below the root, `messageIn(error, en)` is
  * `name must be a string` where `error.message` is `must be a string`.
  */
-export const messageIn = (error: ArkError, locale: Locale): string =>
-	lineOf(writtenIn(error, locale), locale)
+export const messageIn = (error: ArkError, locale: Locale): string => {
+	const resolved = resolveLocale(locale)
+	return lineOf(writtenIn(error, resolved), resolved)
+}
 
 // what data a write or a getter has made valid since is rejected with, and
 // what errors "none" says: arktype's own text, so it's written after a path
@@ -885,7 +935,7 @@ export const suppliedText = (
 const writeError = (
 	error: ArkError,
 	config: ResolvedConfig,
-	locale: Locale
+	locale: Locale.Resolved
 ): void => {
 	const code = error.code
 	if (code === "union" || code === "intersection") {
@@ -914,7 +964,7 @@ const noteLine = (error: ArkIssue, line: string): void => {
 const writeRelative = (
 	error: ArkError,
 	config: ResolvedConfig,
-	locale: Locale
+	locale: Locale.Resolved
 ): void => {
 	if (error.code !== "union" && error.code !== "intersection") return
 	for (const e of error.errors) writeRelative(e, config, locale)
@@ -926,8 +976,14 @@ const writeRelative = (
 			error.expected = relativeTo(error, config, locale, error.message).expected
 		return
 	}
-	// a union listing its errors names each one's path, so its line is as written
-	if (error.code === "union" && listsErrors(error))
+	// a union listing its errors names each one's path, so its line is as
+	// written. Noted once: written again, as an error two unions list is, its
+	// message is already the one written from its own path
+	if (
+		error.code === "union" &&
+		listsErrors(error) &&
+		(error as ArkIssue)._l === undefined
+	)
 		noteLine(error, error.message)
 	const relative = relativeTo(error, config, locale)
 	error.expected = relative.expected
@@ -940,7 +996,7 @@ const writeRelative = (
 const relativeTo = (
 	error: ArkError,
 	config: ResolvedConfig,
-	locale: Locale,
+	locale: Locale.Resolved,
 	message?: string
 ): ArkError => {
 	const relative = unwrittenError(error)
@@ -1068,14 +1124,13 @@ export const configuredMessageOf = (
 
 // a written error's line of a summary: its message alone at the root or
 // where it lists its errors, and after its path anywhere else
-const lineOf = (error: ArkError, locale: Locale): string => {
+const lineOf = (error: ArkError, locale: Locale.Resolved): string => {
 	if (error.path.length === 0) return error.message
 	const listed = (error as ArkIssue)._l
 	if (listed !== undefined) return listed
-	// as a validator's summary tells one, which holds only its message: a
-	// sentence of its own unless it begins as what's written from what it
-	// expects would, so one configured as that text reads on from its path
-	const custom = isCustom(error) && !error.message.startsWith(messageOf(error))
+	// a sentence of its own unless it begins as the locale's own would, so
+	// one configured as that text reads on from its path
+	const custom = isCustom(error) && !beginsAsOwn(error, locale)
 	const line = locale.line as LineWriter | undefined
 	// en's, also where a locale passed as is lacks one, is written here
 	if (line === undefined || line === writeLine)
@@ -1084,6 +1139,22 @@ const lineOf = (error: ArkError, locale: Locale): string => {
 	// is custom, since a copy costs more than the line it's read for
 	return line((custom ? { ...error, custom } : error) as never, locale)
 }
+
+/**
+ * whether an error's message begins as the locale's own would from what it
+ * expects, like `must be a string` in en or `muss eine Zeichenkette sein` in
+ * de, so a summary writes it after its path as that, though it's custom. en's
+ * is what a standalone validator, whose issue holds only its message, tells a
+ * custom one by, so a summary reads alike in both
+ */
+const beginsAsOwn = (error: ArkError, locale: Locale.Resolved): boolean =>
+	error.message.startsWith(
+		// a standalone runtime's locale is en's info alone
+		locale.message === undefined || locale.message === writeMessage ?
+			messageOf(error)
+			// with no actual, which a custom message may say or not
+		:	locale.message({ ...error, actual: "" } as never, locale)
+	)
 
 const unprefix = (error: ArkError, depth: number): void => {
 	error.path = error.path.slice(depth)
@@ -1095,7 +1166,7 @@ const unprefix = (error: ArkError, depth: number): void => {
 const writeAtPaths = (
 	error: ArkError,
 	config: ResolvedConfig,
-	locale: Locale
+	locale: Locale.Resolved
 ): void => {
 	error.propString ??= stringifyPath(error.path)
 	const bases = basesByUnion.get(error)
@@ -1105,7 +1176,9 @@ const writeAtPaths = (
 			writeError(e, config, locale)
 			if (!expected.includes(e.expected)) expected.push(e.expected)
 		}
-		error.expected = describeBranches(expected)
+		// as the locale lists alternatives, which for en is as describeBranches
+		// does and a standalone validator writes
+		error.expected = locale.list(expected, "or")
 	}
 	if (error.code === "union" || error.code === "intersection") {
 		for (const e of error.errors) {
@@ -1117,7 +1190,7 @@ const writeAtPaths = (
 		const shared =
 			error.message === undefined &&
 			unconfigured(error, config) &&
-			sharedMessageOf(error.errors)
+			sharedMessageOf(error.errors, locale)
 		if (shared) {
 			error.message = shared
 			sharing.add(error)
@@ -1144,10 +1217,12 @@ const unconfigured = (error: ArkError, config: ResolvedConfig): boolean => {
 }
 
 // the message each error was configured or supplied with, if they agree. One
-// that begins as what's written from what its error expects would is listed
-// with what the others expect, as a validator's is, whose issue holds only
-// its message
-const sharedMessageOf = (errors: readonly ArkError[]): string | undefined => {
+// that begins as the locale's own would is listed with what the others
+// expect, as a validator's is, whose issue holds only its message
+const sharedMessageOf = (
+	errors: readonly ArkError[],
+	locale: Locale.Resolved
+): string | undefined => {
 	let shared: string | undefined
 	for (const e of errors) {
 		const text =
@@ -1155,11 +1230,10 @@ const sharedMessageOf = (errors: readonly ArkError[]): string | undefined => {
 				configuredMessageOf(e) !== undefined ||
 				suppliedText(e, "message") !== undefined
 			) ?
-				e.message.startsWith(messageOf(e)) ?
-					undefined
+				beginsAsOwn(e, locale) ? undefined
 				:	e.message
 			: e.code === "union" || e.code === "intersection" ?
-				sharedMessageOf(e.errors)
+				sharedMessageOf(e.errors, locale)
 			:	undefined
 		if (text === undefined || (shared !== undefined && text !== shared)) return
 		shared = text
@@ -1170,7 +1244,7 @@ const sharedMessageOf = (errors: readonly ArkError[]): string | undefined => {
 export const writeText = (
 	error: ArkError,
 	config: ResolvedConfig,
-	locale: Locale,
+	locale: Locale.Resolved,
 	// read once by a caller that has, as an error's shape differs by its code,
 	// so no read of one is cached where errors of many codes are written
 	code: ArkErrorCode = error.code
@@ -1231,12 +1305,21 @@ export const writeActual = (
 // registered by arktype/i18n
 interface LocaleRenderer {
 	/** the locale errors.ts writes itself */
-	readonly en: Locale
+	readonly en: Locale.Resolved
 	/** the locale a configured locale resolves to, en if it's a function */
-	configure: (locale: ArkSchemaConfig["locale"], base: ResolvedConfig) => Locale
+	configure: (
+		locale: ArkSchemaConfig["locale"],
+		base: ResolvedConfig
+	) => Locale.Resolved
 	/** the locale errors are written in when they are first read */
-	select: (config: ResolvedConfig) => Locale
-	write: (error: ArkError, config: ResolvedConfig, locale: Locale) => void
+	select: (config: ResolvedConfig) => Locale.Resolved
+	write: (
+		error: ArkError,
+		config: ResolvedConfig,
+		locale: Locale.Resolved
+	) => void
+	/** a locale completed from en where it lacks a part */
+	normalize: (locale: Locale) => Locale.Resolved
 }
 
 let renderer: LocaleRenderer | undefined
@@ -1251,7 +1334,7 @@ export let defaultConfig: ResolvedConfig
 export const configureLocale = (
 	locale: ArkSchemaConfig["locale"],
 	base: ResolvedConfig
-): Locale => {
+): Locale.Resolved => {
 	if (defaultConfig !== base) {
 		defaultConfig = base
 		// what each config was compared with
@@ -1265,7 +1348,12 @@ export const configureLocale = (
 	)
 }
 
-const writtenIn = (error: ArkError, locale: Locale): ArkError => {
+// a locale passed to write errors in, which without arktype/i18n is only
+// written in if it's the configured one, as writtenIn checks
+const resolveLocale = (locale: Locale): Locale.Resolved =>
+	renderer ? renderer.normalize(locale) : (locale as Locale.Resolved)
+
+const writtenIn = (error: ArkError, locale: Locale.Resolved): ArkError => {
 	const config = configOf(error)
 	if (!renderer && locale !== config.locale)
 		return throwError(unrenderedLocaleMessage)
@@ -1319,31 +1407,52 @@ const writtenKeys = {
 }
 
 // each error's line: its message after its path, a custom one after a colon
-const summarize = (issues: readonly ArkError[], locale: Locale): string => {
+const summarize = (
+	issues: readonly ArkError[],
+	locale: Locale.Resolved
+): string => {
 	let result = ""
 	for (let i = 0; i < issues.length; i++)
 		result += (i ? "\n" : "") + lineOf(issues[i], locale)
 	return result
 }
 
-// the rest reference values, which may not serialize
+// what an error says and where, as JSON: its text, as a message never says
+// what the value was. Its data isn't, nor its actual, which describes the data
+// and for a primitive is the data printed, as a pattern's or a narrow's is:
+// data may be private, as a password is. Nor are the values its Type checked
+// against, like a unit, a prototype, a rule or its meta, any of which may be a
+// bigint, a symbol, a function or circular, which JSON.stringify throws on or
+// drops, as is any other key whose value isn't JSON, like one ctx.reject was
+// passed
 const jsonOf = (error: ArkError): JsonObject => {
 	const json: Record<string, unknown> = {}
 	for (const k in error) {
 		if (k in excludedFromJson) continue
 		const v = error[k as never] as unknown
-		json[k] =
-			k === "path" ? (v as PropertyKey[]).map(jsonKeyOf)
-			: k === "errors" ? (v as ArkError[]).map(jsonOf)
-			: v
+		if (k === "path") json.path = (v as PropertyKey[]).map(jsonKeyOf)
+		else if (k === "errors") json.errors = (v as ArkError[]).map(jsonOf)
+		else if (isJsonPrimitive(v)) json[k] = v
 	}
 	return json as never
 }
 
-const jsonKeyOf = (k: PropertyKey) =>
-	typeof k === "symbol" ? printSymbol(k) : k
+const isJsonPrimitive = (v: unknown): boolean =>
+	v === null ||
+	typeof v === "string" ||
+	typeof v === "number" ||
+	typeof v === "boolean"
+
+// as String writes it, as propString and a standalone validator's JSON do
+const jsonKeyOf = (k: PropertyKey) => (typeof k === "symbol" ? String(k) : k)
 
 const excludedFromJson = {
+	data: 1,
+	actual: 1,
+	meta: 1,
+	unit: 1,
+	proto: 1,
+	rule: 1,
 	predicate: 1,
 	morph: 1,
 	cause: 1,
@@ -1362,23 +1471,35 @@ export const firstIssue = (errors: ArkErrors): ArkError =>
  * The first error at each path, by the string of the path.
  */
 export const byPath = (errors: ArkErrors): Record<string, ArkError> => {
-	const result: Record<string, ArkError> = Object.create(null)
-	for (const error of errors.issues) result[error.propString] ??= error
+	const result: Record<string, ArkError> = {}
+	for (const error of errors.issues) {
+		const k = propStringOf(error)
+		if (!hasOwn(result, k)) defineEntry(result, k, error)
+	}
 	return result
 }
 
 /**
  * Each path's errors, by the string of the path.
  */
-export const flatByPath = (errors: ArkErrors): Record<string, ArkError[]> =>
-	recordByPath(errors, error => error)
+export const flatByPath = (errors: ArkErrors): Record<string, ArkError[]> => {
+	const result: Record<string, ArkError[]> = {}
+	for (const error of errors.issues)
+		addEntry(result, propStringOf(error), error)
+	return result
+}
 
 /**
  * Each path's messages, by the string of the path.
  */
 export const flatMessagesByPath = (
 	errors: ArkErrors
-): Record<string, string[]> => recordByPath(errors, error => error.message)
+): Record<string, string[]> => {
+	const result: Record<string, string[]> = {}
+	for (const error of errors.issues)
+		addEntry(result, propStringOf(error), error.message)
+	return result
+}
 
 /**
  * All path strings at which errors are present mapped to the errors occuring
@@ -1387,38 +1508,36 @@ export const flatMessagesByPath = (
 export const byAncestorPath = (
 	errors: ArkErrors
 ): Record<string, ArkError[]> => {
-	const result: Record<string, ArkError[]> = Object.create(null)
+	const result: Record<string, ArkError[]> = {}
 	for (const error of errors.issues) {
 		let propString = ""
-		;(result[propString] ??= []).push(error)
+		addEntry(result, propString, error)
 		for (const k of error.path) {
 			propString = appendStringifiedKey(propString, k)
-			;(result[propString] ??= []).push(error)
+			addEntry(result, propString, error)
 		}
 	}
 	return result
 }
 
-// a path __proto__ is defined, since assigning it would set the prototype
-const recordByPath = <v>(
-	errors: ArkErrors,
-	valueOf: (error: ArkError) => v
-): Record<string, v[]> => {
-	const result: Record<string, v[]> = {}
-	for (const error of errors.issues) {
-		const k = error.propString
-		if (hasOwn(result, k)) result[k].push(valueOf(error))
-		else {
-			Object.defineProperty(result, k, {
-				value: [valueOf(error)],
-				enumerable: true,
-				writable: true,
-				configurable: true
-			})
-		}
-	}
-	return result
+// a standalone validator's issue, which another copy of arktype or one an
+// earlier build wrote may pass, holds no propString
+const propStringOf = (error: ArkIssue): string =>
+	(error as Partial<ArkError>).propString ?? stringifyPath(error.path)
+
+const addEntry = <v>(result: Record<string, v[]>, k: string, value: v) => {
+	if (hasOwn(result, k)) result[k].push(value)
+	else defineEntry(result, k, [value])
 }
+
+// defined, since assigning a path "__proto__" would set the prototype
+const defineEntry = (result: object, k: string, value: unknown) =>
+	Object.defineProperty(result, k, {
+		value,
+		enumerable: true,
+		writable: true,
+		configurable: true
+	})
 
 export interface DerivableErrorContext<
 	code extends ArkErrorCode = ArkErrorCode

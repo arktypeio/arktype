@@ -55,6 +55,7 @@
 						"methods": { "type": "boolean" },
 						"toJSON": { "type": "boolean" },
 						"toJsonSchema": { "type": "boolean" },
+						"withContext": { "type": "boolean" },
 						"~standard": { "type": "boolean" },
 						"~standard.jsonSchema": { "type": "boolean" }
 					},

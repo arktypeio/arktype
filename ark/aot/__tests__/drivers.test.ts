@@ -422,6 +422,31 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			attest(node(["main.ts"], {}, root).stdout).equals("true false\n")
 		})
 
+		it("a runtime island's Type a validator's narrow pipes data to", () => {
+			const root = writeFixture(
+				{
+					"package.json": JSON.stringify({ type: "module" }),
+					"main.ts": `import { type } from "arktype"
+
+// @ark-runtime
+const Island = type({ b: "string" })
+
+const T = type({
+	a: type("unknown").narrow((data, ctx) => {
+		Island(data, ctx)
+		return true
+	})
+})
+
+console.log(T({ a: { b: 1 } }).toString())
+`
+				},
+				fromHere("temp", "pipesToIsland")
+			)
+			attest(node(["main.ts"], {}, root).stdout).snap(`a.b must be a string
+`)
+		})
+
 		it("checks static helpers under node --test", () => {
 			const { status, stdout } = node(
 				["--experimental-test-module-mocks", "--test", spec, "node.check.ts"],

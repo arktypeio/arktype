@@ -197,14 +197,28 @@ export declare namespace JsonSchema {
 	export type Structure = Object | Array
 }
 
+/** the targets ~standard.jsonSchema writes, each of which a precompiled build bakes */
 export const supportedJsonSchemaTargets: readonly ToJsonSchema.Target[] = [
 	"draft-2020-12",
 	"draft-07",
 	"openapi-3.0"
 ]
 
-export const writeInvalidJsonSchemaTargetMessage = (target: string): string => {
-	const quoted = supportedJsonSchemaTargets.map(t => `"${t}"`)
+/**
+ * the targets toJsonSchema writes. Standard JSON Schema names no OpenAPI 3.1,
+ * whose Schema Object is draft-2020-12 but for where its $refs point, so it's
+ * only toJsonSchema's, and isn't baked for ~standard.jsonSchema
+ */
+export const toJsonSchemaTargets: readonly ToJsonSchema.Target[] = [
+	...supportedJsonSchemaTargets,
+	"openapi-3.1"
+]
+
+export const writeInvalidJsonSchemaTargetMessage = (
+	target: string,
+	targets: readonly string[] = supportedJsonSchemaTargets
+): string => {
+	const quoted = targets.map(t => `"${t}"`)
 	return `JSONSchema target '${target}' is not supported (must be ${quoted.slice(0, -1).join(", ")} or ${quoted[quoted.length - 1]})`
 }
 
@@ -214,6 +228,17 @@ export const validateStandardJsonSchemaTarget = (
 	if (!includes(supportedJsonSchemaTargets, target))
 		throwParseError(writeInvalidJsonSchemaTargetMessage(target))
 
+	return target
+}
+
+export const validateToJsonSchemaTarget = (
+	target: StandardJSONSchemaV1.Target
+): ToJsonSchema.Target => {
+	if (!includes(toJsonSchemaTargets, target)) {
+		throwParseError(
+			writeInvalidJsonSchemaTargetMessage(target, toJsonSchemaTargets)
+		)
+	}
 	return target
 }
 

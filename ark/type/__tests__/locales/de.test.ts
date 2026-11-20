@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { scope, type, type Locale } from "arktype"
+import { scope, type, type ArkErrors, type Locale } from "arktype"
 import { keywordPhrases } from "arktype/internal/keywords/phrases.ts"
 import { de } from "arktype/locales/de"
 import { en } from "arktype/locales/en"
@@ -84,7 +84,7 @@ contextualize(() => {
 			"May 3 ← 2000-05-04T00:00:00.000Z":
 				"muss ein Wert gemäß der Beschreibung „2000-05-03“ sein",
 			"enumerated Dates ← 2000-05-05T00:00:00.000Z":
-				"muss der 3. Mai 2000 or der 4. Mai 2000 sein",
+				"muss der 3. Mai 2000 oder der 4. Mai 2000 sein",
 			"narrowed Date ← 2000-05-03T00:00:00.000Z":
 				"muss gemäß einem anonymen Prädikat gültig sein",
 			"string ← 5": "muss eine Zeichenkette sein",
@@ -159,7 +159,7 @@ contextualize(() => {
 			'discriminant described ← {"kind":"triangle"}':
 				"muss ein Wert gemäß der Beschreibung „eine Form“ sein",
 			"discriminant described branches ← true":
-				"muss ein Wert gemäß der Beschreibung „eine Anzahl“ or eine Zeichenkette sein",
+				"muss ein Wert gemäß der Beschreibung „eine Anzahl“ oder eine Zeichenkette sein",
 			'discriminant numbers ← {"k":3.5}': "k muss 1,5 oder 2,5 sein",
 			'discriminant bigints ← {"k":"3n"}': "k muss 1n oder 2n sein",
 			'discriminant units ← "d"': 'muss "a", "b" oder "c" sein',
@@ -200,25 +200,26 @@ contextualize(() => {
 			'path of a quoted key ← {"a b":1}':
 				'Wert an ["a b"] muss eine Zeichenkette sein',
 			"titled at the root ← 5": "muss eine Zeichenkette sein",
-			'titled ← {"name":5}': "„Name“ muss eine Zeichenkette sein",
+			'titled ← {"name":5}': "name („Name“) muss eine Zeichenkette sein",
 			'titled length ← {"name":"a"}':
-				"„Name“ muss mindestens 3 Zeichen lang sein",
-			"titled required ← {}": "„Name“ fehlt (muss eine Zeichenkette sein)",
+				"name („Name“) muss mindestens 3 Zeichen lang sein",
+			"titled required ← {}":
+				"name („Name“) fehlt (muss eine Zeichenkette sein)",
 			'titled at an index ← ["a",1]':
-				"„Name“ an [1] muss eine Zeichenkette sein",
+				"Wert an [1] („Name“) muss eine Zeichenkette sein",
 			'titled through an index ← {"list":[1]}':
-				"„Name“ an list[0] muss eine Zeichenkette sein",
+				"list[0] („Name“) muss eine Zeichenkette sein",
 			'titled, two constraints ← {"n":3}':
-				"„Anzahl“ muss gerade sein\n„Anzahl“ muss größer als 10 sein",
+				"n („Anzahl“) muss gerade sein\nn („Anzahl“) muss größer als 10 sein",
 			"titled, two constraints at an index ← [3]":
-				"„Anzahl“ an [0] muss gerade sein\n„Anzahl“ an [0] muss größer als 10 sein",
-			'titled enum ← {"s":"c"}': '„Name“ muss "a" oder "b" sein',
+				"Wert an [0] („Anzahl“) muss gerade sein\nWert an [0] („Anzahl“) muss größer als 10 sein",
+			'titled enum ← {"s":"c"}': 's („Name“) muss "a" oder "b" sein',
 			'titled discriminated enum ← {"s":"d"}':
-				'„Name“ muss "a", "b" oder "c" sein',
+				's („Name“) muss "a", "b" oder "c" sein',
 			'titled domains ← {"v":true}':
-				"„Name“ muss eine Zahl oder eine Zeichenkette sein",
+				"v („Name“) muss eine Zahl oder eine Zeichenkette sein",
 			"titled union of paths ← {}":
-				"„Name“ fehlt (muss eine Zeichenkette sein) oder „Alter“ fehlt (muss eine Zahl sein)",
+				"a („Name“) fehlt (muss eine Zeichenkette sein) oder b („Alter“) fehlt (muss eine Zahl sein)",
 			"described ← 5":
 				"muss ein Wert gemäß der Beschreibung „ein Benutzername“ sein",
 			"configured expected ← 5":
@@ -401,9 +402,39 @@ Wert an ["a b"]: Bitte eine gültige E-Mail-Adresse eingeben`)
 			emails: Email.array()
 		})
 		const out = T({ name: 1, email: "x", emails: ["x"] })
-		attest(out.toLocaleString(de)).snap(`„Name“ muss eine Zeichenkette sein
-„E-Mail“: Bitte eine gültige E-Mail-Adresse eingeben
-„E-Mail“ an emails[0]: Bitte eine gültige E-Mail-Adresse eingeben`)
+		attest(out.toLocaleString(de))
+			.snap(`name („Name“) muss eine Zeichenkette sein
+email („E-Mail“): Bitte eine gültige E-Mail-Adresse eingeben
+emails[0] („E-Mail“): Bitte eine gültige E-Mail-Adresse eingeben`)
+	})
+
+	it("writes a custom message after a colon unless it begins as its own", () => {
+		const T = type({
+			a: type("string").configure({
+				message: ctx => `muss ${ctx.expected} sein, bitte`
+			}),
+			b: type("string").configure({ message: "muss ausgefüllt sein" })
+		})
+		attest(T({ a: 1, b: 1 }).toLocaleString(de))
+			.snap(`a muss eine Zeichenkette sein, bitte
+b: muss ausgefüllt sein`)
+	})
+
+	it("prints bigints through number and causes through verbatim", () => {
+		const marked = {
+			...de,
+			number: n => `#${n}`,
+			verbatim: text => `⟨${text}⟩`
+		} satisfies Locale
+		attest((type("1n")(2n) as ArkErrors).toLocaleString(marked)).snap(
+			"muss ⟨#1n⟩ sein"
+		)
+		const Parsed = type("string").pipe.try(() => {
+			throw new Error("kaputt")
+		})
+		attest(Parsed("x").toLocaleString(marked))
+			.snap(`konnte nicht verarbeitet werden:
+    ⟨Error: kaputt⟩`)
 	})
 
 	it("can be spread to change one sentence", () => {

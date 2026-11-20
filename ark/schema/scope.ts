@@ -86,7 +86,8 @@ import {
 	inProgress,
 	isNode,
 	printSelfAsThis,
-	resolving
+	resolving,
+	withoutHoleNames
 } from "./shared/utils.ts"
 import { bindPrecompiledUnits, precompile, precompileRoot } from "./units.ts"
 
@@ -362,7 +363,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		}
 		// locale is global-only, though an untyped config can pass one
 		if (cfg.locale !== globalConfig.locale)
-			(cfg as { locale: Locale }).locale = globalConfig.locale
+			(cfg as { locale: Locale.Resolved }).locale = globalConfig.locale
 		return this.memo("cfg", cfg)
 	}
 
@@ -929,7 +930,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return printSelfAsThis(
 			this.parseDef(def, {
 				...opts,
-				name: `${ctx.prefix}${hashOf(node.expression)}`
+				name: `${ctx.prefix}${hashOf(withoutHoleNames(node.expression))}`
 			}),
 			node
 		)

@@ -86,6 +86,36 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         },
         {
             "group": "Traversal",
+            "name": "context",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "the context this validation was called with"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "the same object at every path, for predicates and morphs to read"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "`undefined` when a call passes none"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "typed as declared on `ArkEnv`: `interface ArkEnv { context(): {...} }`"
+                    }
+                ]
+            ]
+        },
+        {
+            "group": "Traversal",
             "name": "hasError",
             "summary": [
                 {
@@ -390,6 +420,36 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         },
         {
             "group": "Traversal",
+            "name": "context",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "the context this validation was called with"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "the same object at every path, for predicates and morphs to read"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "`undefined` when a call passes none"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "typed as declared on `ArkEnv`: `interface ArkEnv { context(): {...} }`"
+                    }
+                ]
+            ]
+        },
+        {
+            "group": "Traversal",
             "name": "hasError",
             "summary": [
                 {
@@ -623,6 +683,17 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     "value": "validate and return transformed data or throw"
                 }
             ],
+            "notes": []
+        },
+        {
+            "group": "Validation",
+            "name": "assert",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "validate and return transformed data or throw"
+                }
+            ],
             "notes": [
                 [
                     {
@@ -648,6 +719,17 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 ]
             ],
             "example": "const CriticalPayload = type({\n    superImportantValue: \"string\"\n})\n// throws TraversalError: superImportantValue must be a string (was missing)\nconst data = CriticalPayload.assert({ irrelevantValue: \"whoops\" })\nconsole.log(data.superImportantValue) // valid output can be accessed directly"
+        },
+        {
+            "group": "Validation",
+            "name": "allows",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "check input without applying morphs"
+                }
+            ],
+            "notes": []
         },
         {
             "group": "Validation",
@@ -690,6 +772,46 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 "literal"
             ],
             "example": "const T = type({ foo: \"string\" });\n// TypeScript: Type 'number' is not assignable to type 'string'\nconst data = T.from({ foo: 5 });"
+        },
+        {
+            "group": "Validation",
+            "name": "withContext",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "bind a context its narrows and morphs read as `ctx.context`"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "creates no Type, so a static, precompilable Type can validate with what a caller has, e.g. a form's saved values"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "is a Standard Schema, as form libraries take one"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "typed as declared on `ArkEnv`"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "`~standard.validate(data, { libraryOptions: { context } })` passes a context without binding one"
+                    }
+                ]
+            ],
+            "params": [
+                "context"
+            ],
+            "example": "declare global {\n    interface ArkEnv {\n        context(): { saved?: string }\n    }\n}\n\nconst Street = type(\"string\").narrow(\n    (s, ctx) => s === ctx.context?.saved || s.length > 3 || ctx.mustBe(\"a full street\")\n)\n// the street as saved passes, though it's short\nconst out = Street.withContext({ saved: \"Elm\" })(\"Elm\")"
         }
     ],
     "Inference": [
@@ -1975,6 +2097,17 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "params": [
                 "options"
             ]
+        },
+        {
+            "group": "Serialization",
+            "name": "~standard",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "the Type's [StandardSchema](https://github.com/standard-schema/standard-schema) properties, validating in context"
+                }
+            ],
+            "notes": []
         },
         {
             "group": "Serialization",
