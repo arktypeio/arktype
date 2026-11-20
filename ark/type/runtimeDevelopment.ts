@@ -154,11 +154,12 @@ Object.setPrototypeOf(
 						value: new Proxy(value as StandardSchemaV1.Props, {
 							get: (standard, k, receiver) => {
 								// a module importing the validator may bake it later
-								if (k === "jsonSchema" && !(k in standard))
+								if (k === "jsonSchema" && !(k in standard)) {
 									warnOnce(
 										"~standard.jsonSchema",
 										lacks("~standard.jsonSchema")
 									)
+								}
 								return Reflect.get(standard, k, receiver)
 							}
 						}),
