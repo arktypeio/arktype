@@ -1712,6 +1712,8 @@ const parameters = (object: JsonSchema, where: "query" | "path") => {
 
 With `onUndeclaredKey: "delete"`, each object's schema says `additionalProperties: false`, which zod-to-openapi left out, and `.in` and `.out` write a registered schema in full where `toJsonSchema()` writes its `$ref`.
 
+Where you call `toJsonSchema` yourself, a scope can be the registry instead: with [`aliasDefs: true`](https://arktype.io/docs/json-schema/to-json-schema#named-aliases), each alias is written once, by name, and a `$ref` wherever it's used, and a [`defs` fallback](https://arktype.io/docs/json-schema/to-json-schema#openapi-30) collects them into `components`.
+
 Call `toJsonSchema(openapi)` on each Type by name, as above, rather than in a function that takes any Type. A [precompiled](https://arktype.io/docs/precompile) build can't tell which Types such a function converts, and where objects delete undeclared keys, its call throws for a Type holding a `$ref`.
 
 `hono-openapi` takes `UserRef` the same way, in `resolver(UserRef)` and `validator("json", UserRef)`. Name each schema in the document it builds: `openAPIRouteHandler(app, { documentation: { components: { schemas: { User: (await resolver(User).toOpenAPISchema()).schema } } } })`. It converts each Type itself, so a coerced key, whose input is `unknown`, is written without a type there until it's given a schema, before its `.default()`: `.configure({ jsonSchema: { type: "integer", minimum: 1, maximum: 100 } })`.

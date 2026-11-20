@@ -4,6 +4,7 @@ import { setImplementationsByKind } from "./kinds.ts"
 import { constrainIntersection } from "./roots/intersection.ts"
 import { discriminateUnion } from "./roots/union.ts"
 import {
+	jsonSchemaContextOf,
 	jsonSchemaWriters,
 	refPrefixOf,
 	rootToJsonSchema,
@@ -19,15 +20,7 @@ export const setEngine: SetEngine = {
 	discriminate: discriminateUnion,
 	toJsonSchema: rootToJsonSchema,
 	toJsonSchemaRecurse: (node, ctx) =>
-		toJsonSchemaRecurse(node, {
-			...ctx,
-			path: "",
-			open: [],
-			defNamesById: {},
-			defs: {},
-			refPrefix: refPrefixOf(ctx),
-			writers: jsonSchemaWriters
-		}),
+		toJsonSchemaRecurse(node, jsonSchemaContextOf(ctx, jsonSchemaWriters)),
 	registry: $ark
 }
 

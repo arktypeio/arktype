@@ -1868,6 +1868,45 @@ age must be a number (was missing)`)
 		)
 	})
 
+	it("JSON Schema of a scope configured with aliasDefs", async () => {
+		const { User } = scope(
+			{ Address: { street: "string" }, User: { home: "Address" } },
+			{ toJsonSchema: { aliasDefs: true } }
+		).export()
+		const { User: validator } = await load(
+			{ User },
+			{ members: { toJsonSchema: true } }
+		)
+		attest(validator.toJsonSchema()).equals(User.toJsonSchema())
+		attest(validator.toJsonSchema().$defs).snap({
+			User: {
+				type: "object",
+				properties: { home: { $ref: "#/$defs/Address" } },
+				required: ["home"]
+			},
+			Address: {
+				type: "object",
+				properties: { street: { type: "string" } },
+				required: ["street"]
+			}
+		})
+	})
+
+	it("openapi-3.1 JSON Schema only where configured", async () => {
+		const T = scope({}, { toJsonSchema: { target: "openapi-3.1" } }).type({
+			a: "string | null"
+		})
+		const U = type({ a: "string" })
+		const { T: configured, U: validator } = await load(
+			{ T, U },
+			{ members: { toJsonSchema: true } }
+		)
+		attest(configured.toJsonSchema()).equals(T.toJsonSchema())
+		attest(() => validator.toJsonSchema({ target: "openapi-3.1" })).throws(
+			bakedJsonSchemaOptionsMessage
+		)
+	})
+
 	it("unsatisfiable JSON Schema view", async () => {
 		// the output requires a default the index signature's value excludes
 		const T = type({ a: ["string = 'a'"], "[string]": "number[]" })
