@@ -239,7 +239,12 @@ Type
 
 		// which code it can't read may read, so it keeps what it would leave out
 		const keptFor = (reason: string) =>
-			writeKeptMembersMessage(reason, ["assert", "meta", "~standard"])
+			writeKeptMembersMessage(reason, [
+				"assert",
+				"meta",
+				"~standard",
+				"withContext"
+			])
 
 		it("takes what nothing imports for an entry", async () => {
 			const dir = project({
