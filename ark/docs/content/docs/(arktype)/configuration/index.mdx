@@ -605,6 +605,8 @@ const MrPingsSecretIngredientSoup = type({
 }).configure({ secretIngredient: "nothing!" })
 ```
 
+`toJsonSchema()` writes a key you add only if it starts with `x-`, since JSON Schema has no keyword for it. See [Meta](/docs/json-schema/to-json-schema#meta).
+
 ## prototypes
 
 When you `.infer` a Type, ArkType walks its inferred type to extract special values like morphs, e.g. `(In: string) => Out<number>`. For some classes that walk is slow or expands the type. Declare them in `prototypes` to have them treated as opaque:

@@ -251,6 +251,10 @@ const schema = Destination.toJsonSchema({ target: "openapi-3.0" })
 - `discriminator` isn't a JSON Schema keyword, and Ajv rejects it unless its `discriminator` option is set, so draft targets write it only where the option is `true`, as an OpenAPI 3.1 document reads it.
 - Any other union is `anyOf`: one where two branches allow the same value, a branch doesn't require the key, the values aren't strings, or a branch isn't an object. A `null` branch is written beside the `oneOf`: `anyOf: [{ oneOf: [...] }, { type: "null" }]`.
 
+### never
+
+`never`, which accepts nothing, is `{ not: {} }` for every target. An empty `enum` would say the same, but OpenAPI 3.0 requires an `enum` to list something, and LLM APIs like OpenAI's reject it. An optional key of `undefined` alone, like `{ "b?": "undefined" }`, is `never` in JSON, which can only leave it out.
+
 ## Your own schema
 
 Configure `jsonSchema` meta to write a Type's schema yourself. It replaces the schema the Type's constraints imply, so a `narrow` it covers needs no fallback:
@@ -264,6 +268,22 @@ Even.toJsonSchema() // { $schema: "...", type: "integer", multipleOf: 2 }
 ```
 
 The Type's other meta, like a description, is still written beside it. Unlike other meta, `jsonSchema` is configured on the Type alone, not on the Types it references, since it describes the whole Type.
+
+### Meta
+
+Meta is written only where it's a JSON Schema annotation: `title`, `description`, `default`, `examples`, `deprecated`, `readOnly`, `writeOnly`, `$comment`, `format`, `contentEncoding` and `contentMediaType`, plus any key starting with `x-` you add to [`ArkEnv.meta`](/docs/configuration#metadata). Anything else, like `alias`, `onFail`, the words configured for errors or another key you add, is left out, since strict validators like Ajv's, OpenAPI 3.0 and LLM APIs reject keywords they don't know. To write another key, put it in `jsonSchema`:
+
+```ts
+const Id = type("string").configure({
+	alias: "Id", // left out
+	readOnly: true,
+	jsonSchema: { type: "string", $id: "https://example.com/id" }
+})
+
+Id.toJsonSchema() // { $schema: "...", readOnly: true, type: "string", $id: "https://example.com/id" }
+```
+
+OpenAPI 3.0 has no `$comment` or `contentMediaType`, so they're left out of its schemas.
 
 ## Fallbacks
 
@@ -308,7 +328,7 @@ Event.toJsonSchema({ fallback: ctx => ctx.base })
 
 Leaving something out makes the schema accept values the Type rejects.
 
-For `defaultValue`, `base` is the property's own schema, so returning it makes the schema contain itself. Return `undefined` to drop the default instead, e.g. `{ defaultValue: () => undefined, default: ctx => ctx.base }`.
+A default is a value, not a schema, so `defaultValue` has no `base`, and `ctx => ctx.base` leaves the default out. Its handler returns the JSON to write as the default, or `undefined` to omit it.
 
 ### Morphs
 
@@ -431,7 +451,7 @@ Form["~standard"].jsonSchema.output({ target: "draft-2020-12" })
 Unlike `toJsonSchema()`, these never throw for a part JSON Schema can't express. They write as much of it as JSON Schema can describe, or `{}` if nothing, so `id` above accepts any value. A regex with flags is left out too, and so is an index signature `propertyNames` can't express, along with the `additionalProperties: false` that would reject the keys it allows.
 
 - `target` must be `"draft-2020-12"`, `"draft-07"` or `"openapi-3.0"`. Anything else throws.
-- For `"openapi-3.0"`, a tuple is an array of its length, and definitions are written beside the `$ref` as `definitions`, for you to move into `#/components/schemas`, where the `$ref`s point.
+- For `"openapi-3.0"`, a tuple is an array of its length. A Schema Object has nowhere to put definitions, so they're written as `definitions` beside the schema, and each `$ref` points there, like `#/definitions/Node`, as zod writes them. The schema resolves its own `$ref`s as returned. To put it in an OpenAPI document, move `definitions` to `components.schemas` and replace `#/definitions/` with `#/components/schemas/` in its `$ref`s. A `defs` handler you configure gets `#/components/schemas/` `$ref`s, as `toJsonSchema()`'s does.
 - `libraryOptions` are passed to `toJsonSchema()` as options, e.g. `{ dialect: null }`.
 - Fallback handlers you configure or pass in `libraryOptions` still apply. Only the default throwing handlers are replaced.
 - `input` writes each morph's input, so it never calls a `morph` handler. It keeps defaults, and allows keys `"+": "delete"` would remove.

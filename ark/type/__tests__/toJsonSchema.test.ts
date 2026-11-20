@@ -341,16 +341,33 @@ contextualize(() => {
 		attest(T.toJsonSchema()).snap({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "object",
-			properties: { a: { type: "string" }, b: { enum: [] } }
+			properties: { a: { type: "string" }, b: { not: {} } }
 		})
 		attest(T["~standard"].jsonSchema.input({ target: "draft-2020-12" })).snap({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "object",
-			properties: { a: { type: "string" }, b: { enum: [] } }
+			properties: { a: { type: "string" }, b: { not: {} } }
 		})
 		attest(() => type({ a: "string | undefined" }).toJsonSchema()).throws(
 			'Can\'t convert "unit" at a to JSON Schema'
 		)
+	})
+
+	// an empty enum is invalid OpenAPI 3.0, and OpenAI rejects it
+	it("never is not {}", () => {
+		attest(type("never").toJsonSchema({ dialect: null })).snap({ not: {} })
+		attest(type("never").toJsonSchema({ target: "openapi-3.0" })).snap({
+			not: {}
+		})
+	})
+
+	it("an input of null | undefined is null", () => {
+		attest(
+			type("null | undefined")["~standard"].jsonSchema.input({
+				target: "draft-2020-12",
+				libraryOptions: { dialect: null }
+			})
+		).snap({ type: "null" })
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1462
@@ -437,6 +454,54 @@ contextualize(() => {
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "object",
 			additionalProperties: { type: "number" }
+		})
+	})
+
+	// a strict validator like Ajv's rejects a keyword it doesn't know
+	it("writes only meta JSON Schema has a keyword for, or an x- extension", () => {
+		// as a key added to ArkEnv.meta is
+		const added: object = { secretIngredient: "miso", "x-internal": true }
+		const T = type("string").configure({
+			alias: "Id",
+			deprecated: false,
+			readOnly: true,
+			$comment: "internal",
+			...added
+		})
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "string",
+			deprecated: false,
+			readOnly: true,
+			$comment: "internal",
+			"x-internal": true
+		})
+		attest(
+			type("string")
+				.configure({ onFail: null } as never)
+				.toJsonSchema({
+					dialect: null
+				})
+		).snap({ type: "string" })
+	})
+
+	it("a default has no base, so a universal fallback omits it", () => {
+		const T = type({ n: ["bigint", "=", 5n] })
+		// returning the property's own schema would make it contain itself
+		attest(T.toJsonSchema({ dialect: null, fallback: ctx => ctx.base })).snap({
+			type: "object",
+			properties: { n: {} }
+		})
+		attest(
+			T.toJsonSchema({
+				dialect: null,
+				fallback: {
+					domain: ctx => ({ ...ctx.base, type: "string" }),
+					defaultValue: ctx => `${ctx.value as bigint}`
+				}
+			})
+		).snap({
+			type: "object",
+			properties: { n: { type: "string", default: "5" } }
 		})
 	})
 
