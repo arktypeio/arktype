@@ -93,7 +93,7 @@ import {
 	runtimeParamsOf
 } from "./proofs.ts"
 
-const proveFunction = (
+export const proveFunction = (
 	fn: Fn,
 	node: FunctionNode,
 	isStandalone: boolean

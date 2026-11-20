@@ -3,7 +3,7 @@ import {
 	holeNameOf,
 	namedPlacesOf
 } from "@ark/aot/internal/holeNames.ts"
-import { proveFunction } from "@ark/aot/internal/proofs.ts"
+import { proveFunction } from "@ark/aot/internal/interpreter.ts"
 import { combinesChecks } from "@ark/aot/internal/smaller.ts"
 import { arkKindOf, printable, type Fn } from "@ark/util"
 import {
