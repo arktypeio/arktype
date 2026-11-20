@@ -37,13 +37,23 @@ export const PageFooter = ({
 			<nav className="pager" aria-label="Previous and next page">
 				{previous && (
 					<Link href={previous.url} className="pg prev" rel="prev">
-						<span className="pg-dir">← Previous</span>
+						<span className="pg-dir">
+							<span className="pg-arrow" aria-hidden>
+								←
+							</span>{" "}
+							Previous
+						</span>
 						<span className="pg-title">{previous.frontmatter.title}</span>
 					</Link>
 				)}
 				{next && (
 					<Link href={next.url} className="pg next" rel="next">
-						<span className="pg-dir">Next →</span>
+						<span className="pg-dir">
+							Next{" "}
+							<span className="pg-arrow" aria-hidden>
+								→
+							</span>
+						</span>
 						<span className="pg-title">{next.frontmatter.title}</span>
 					</Link>
 				)}

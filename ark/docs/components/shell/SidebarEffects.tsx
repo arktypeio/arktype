@@ -24,5 +24,28 @@ export const SidebarEffects = () => {
 			container.scrollTop = link.offsetTop - container.clientHeight / 3
 	}, [pathname])
 
+	useEffect(() => {
+		const onClick = (e: MouseEvent) => {
+			const anchor =
+				e.target instanceof Element ?
+					e.target.closest<HTMLAnchorElement>(".prose .anchor")
+				:	null
+			if (!anchor) return
+			const href = anchor.getAttribute("href")
+			if (!href?.startsWith("#")) return
+			const url = new URL(href, location.href).href
+			void navigator.clipboard?.writeText(url).then(() => {
+				anchor.dataset.copied = ""
+				anchor.textContent = "✓"
+				setTimeout(() => {
+					delete anchor.dataset.copied
+					anchor.textContent = "#"
+				}, 1400)
+			})
+		}
+		document.addEventListener("click", onClick)
+		return () => document.removeEventListener("click", onClick)
+	}, [])
+
 	return null
 }

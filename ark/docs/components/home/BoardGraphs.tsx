@@ -45,6 +45,7 @@ type LaneProps = {
 const Lane = ({ bar, row }: LaneProps) => (
 	<li
 		className={`graph-lane is-${bar.kind}${bar.cut ? " is-cut" : ""}${bar.wide ? " is-wide" : ""}`}
+		data-lib={bar.library}
 		style={{ "--w": bar.w, "--row": row } as CSSProperties}
 	>
 		<span className="graph-place">{bar.place}</span>

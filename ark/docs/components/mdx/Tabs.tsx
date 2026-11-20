@@ -30,7 +30,10 @@ export const Tab = ({ children }: TabProps) => <>{children}</>
  * A panel's code block without its frame, when the panel is nothing else,
  * so a group of code blocks shares one frame with the tabs in its header.
  */
-const bareCodeOf = (content: ReactNode): ReactElement | undefined => {
+const bareCodeOf = (
+	content: ReactNode,
+	key: number
+): ReactElement | undefined => {
 	const nodes = Children.toArray(content).filter(
 		node => typeof node !== "string" || node.trim()
 	)
@@ -38,7 +41,7 @@ const bareCodeOf = (content: ReactNode): ReactElement | undefined => {
 	if (nodes.length !== 1 || !isValidElement<PreProps>(only)) return
 	if (only.type !== Pre || !only.props["data-lang"]) return
 	const { "data-title": _, ...props } = only.props
-	return <pre {...props} />
+	return <pre key={key} {...props} />
 }
 
 /** panels as code-only content when every one of them is a lone code block */

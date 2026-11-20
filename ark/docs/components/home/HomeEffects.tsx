@@ -584,6 +584,41 @@ const claimMotion = () => {
 	if (root.dataset.motion === "") root.dataset.motion = "claimed"
 }
 
+/** hovering a library in one board graph highlights that same library across all three */
+const wireBoardTrace = () => {
+	const board = document.querySelector<HTMLElement>(".graphs")
+	if (!board) return
+	const clear = () => {
+		delete board.dataset.hoverLib
+		for (const el of board.querySelectorAll(".graph-lane.is-traced"))
+			el.classList.remove("is-traced")
+	}
+	const highlight = (lib: string) => {
+		if (board.dataset.hoverLib === lib) return
+		clear()
+		board.dataset.hoverLib = lib
+		for (const el of board.querySelectorAll<HTMLElement>(".graph-lane")) {
+			if (el.dataset.lib === lib) el.classList.add("is-traced")
+		}
+	}
+	const onOver = (e: PointerEvent) => {
+		if (e.pointerType !== "mouse") return
+		const lane =
+			e.target instanceof Element ?
+				e.target.closest<HTMLElement>(".graph-lane[data-lib]")
+			:	null
+		if (lane?.dataset.lib) highlight(lane.dataset.lib)
+		else clear()
+	}
+	board.addEventListener("pointerover", onOver)
+	board.addEventListener("pointerleave", clear)
+	return () => {
+		board.removeEventListener("pointerover", onOver)
+		board.removeEventListener("pointerleave", clear)
+		clear()
+	}
+}
+
 /** the homepage's small behaviors, as delegated listeners over server markup */
 export const HomeEffects = () => {
 	useEffect(() => {
@@ -597,7 +632,8 @@ export const HomeEffects = () => {
 			wireIdle(),
 			wireDrills(),
 			wireChipRows(),
-			wirePickThree()
+			wirePickThree(),
+			wireBoardTrace()
 		]
 		return () => {
 			for (const cleanup of cleanups) cleanup?.()

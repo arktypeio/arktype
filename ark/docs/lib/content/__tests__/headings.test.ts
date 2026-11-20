@@ -64,15 +64,20 @@ contextualize(() => {
 		])
 	})
 
+	it("duplicate explicit ids are deduplicated instead of colliding", () => {
+		const { toc } = headingsOf("## First [#same]\n\n## Second [#same]")
+		attest(toc.map(entry => entry.id)).snap(["same", "same-1"])
+	})
+
 	it("ApiTable members are headings below the current one", () => {
 		const tree = parse('## Members\n\n<ApiTable group="Traversal" />')
 		expandComponents(tree)
 		const { toc } = collectHeadings(tree)
 		const members = apiDocsByGroup.Traversal
+		const ids = toc.slice(1).map(entry => entry.id)
 		attest(toc.length).equals(members.length + 1)
 		attest(toc.slice(1).every(entry => entry.depth === 3)).equals(true)
-		attest(toc.slice(1).map(entry => entry.id)).equals(
-			members.map(member => apiMemberId(member.name))
-		)
+		attest(new Set(ids).size).equals(ids.length)
+		attest(ids[0]).equals(apiMemberId(members[0].name))
 	})
 })

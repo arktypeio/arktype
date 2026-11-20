@@ -48,6 +48,7 @@ const tocDepths = new Set([2, 3])
 export const collectHeadings = (tree: Root): HeadingsResult => {
 	const slugger = new GithubSlugger()
 	const used = new Set<string>()
+	const claimed = new Set<string>()
 	const toc: TocEntry[] = []
 	const sections: SearchSection[] = [{ heading: "", id: "", text: "" }]
 	const titlesByDepth: string[] = []
@@ -65,13 +66,13 @@ export const collectHeadings = (tree: Root): HeadingsResult => {
 
 	const uniqueSlug = (text: string) => {
 		let id = slugger.slug(text)
-		while (used.has(id)) id = slugger.slug(text)
+		while (used.has(id) || claimed.has(id)) id = slugger.slug(text)
 		return id
 	}
 
 	visit(tree, (node: Nodes) => {
 		if (node.type === "heading") {
-			const id = assignId(node, uniqueSlug, used)
+			const id = assignId(node, uniqueSlug, used, claimed)
 			const title = toString(node).trim()
 			if (tocDepths.has(node.depth)) toc.push({ depth: node.depth, title, id })
 			const parent = titlesByDepth.slice(2, node.depth).findLast(Boolean)
@@ -117,7 +118,8 @@ const explicitIdOf = (node: Heading): string | undefined => {
 const assignId = (
 	node: Heading,
 	uniqueSlug: (text: string) => string,
-	used: Set<string>
+	used: Set<string>,
+	claimed: Set<string>
 ): string => {
 	const explicit = explicitIdOf(node)
 
@@ -130,8 +132,12 @@ const assignId = (
 		}
 	}
 
-	const id = explicit ?? uniqueSlug(toString(node).trim())
+	const id =
+		explicit && !claimed.has(explicit) ?
+			explicit
+		:	uniqueSlug(explicit ?? toString(node).trim())
 	used.add(id)
+	claimed.add(id)
 	node.data ??= {}
 	node.data.hProperties = { ...node.data.hProperties, id }
 	return id
