@@ -10,7 +10,7 @@
 
 </div>
 
-[ArkType](https://arktype.io) is TypeScript's 1:1 validator, optimized from editor to runtime. [Get started](https://arktype.io/docs/intro/setup), or see the project [on GitHub](https://github.com/arktypeio/arktype).
+[ArkType](https://arktype.io) is TypeScript's smallest, fastest validator. [Get started](https://arktype.io/docs/intro/setup), or see the project [on GitHub](https://github.com/arktypeio/arktype).
 
 ## Features
 

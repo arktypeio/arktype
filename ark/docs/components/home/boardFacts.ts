@@ -98,7 +98,7 @@ export const heroStats = (): HeroStat[] => {
 		{
 			href: "#start",
 			value: startupFacts().zodRatio,
-			unit: "less work to start",
+			unit: "fewer startup instructions",
 			scope: "a login app, import to first validation"
 		},
 		{

@@ -73,7 +73,7 @@ export const BootLog = () => {
 							<span className="boot-done">
 								{bar === ours ?
 									"✓ first validation"
-								:	`✓ ${formatRatio(bar.value / ours.value)} the work`}
+								:	`✓ ${formatRatio(bar.value / ours.value)} the instructions`}
 							</span>
 						</span>
 						<span
