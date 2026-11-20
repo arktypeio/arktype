@@ -1146,7 +1146,7 @@ So which is smaller depends on how many Types a bundle holds, and on what they h
 
 ## What's measured
 
-Each app is modules of 25 Types, no two alike, written the same way in each library and bundled whole by esbuild 0.25.10, tree-shaken and minified, with ArkType 3.0.0-beta.0 (0e29e3d1b), Valibot 1.5.0 and Zod 4.6.7. Every number is the mean of 3 apps generated from different seeds.
+Each app is modules of 25 Types, no two alike, written the same way in each library and bundled whole by esbuild 0.25.10, tree-shaken and minified, with ArkType 3.0.0-beta.1 (1718e5066), Valibot 1.5.0 and Zod 4.6.7. Every number is the mean of 3 apps generated from different seeds.
 
 What's bundled is an app, not a package of schemas. It exports one function, which takes a Type's name and some input and runs that Type's handler: validate the input, then return the data or the text of what's wrong with it, as a route or a form's submit does. Each library does that in its own words:
 
@@ -1191,69 +1191,69 @@ The default build here is the compiled one a server gets. Building for a browser
 
 | Types | "smallest" | Default | Dynamic | Valibot | Zod | Zod Mini |
 | - | - | - | - | - | - | - |
-| 1 | 1.2 KB | 1.3 KB | 98.2 KB | 1.8 KB | 25.8 KB | 6.4 KB |
-| 10 | 3.1 KB | 4.2 KB | 98.8 KB | 3.4 KB | 28.2 KB | 10.4 KB |
-| 50 | 5.2 KB | 11.2 KB | 101 KB | 5.5 KB | 30.2 KB | 12.5 KB |
-| 100 | 7.3 KB | 18.9 KB | 103 KB | 7.6 KB | 32.2 KB | 14.6 KB |
-| 250 | 12.7 KB | 39.8 KB | 109 KB | 13.3 KB | 37.8 KB | 20.4 KB |
-| 500 | 21.3 KB | 73.6 KB | 119 KB | 22.9 KB | 47.1 KB | 30.0 KB |
-| 1,000 | 38.5 KB | 140 KB | 139 KB | 42.0 KB | 65.7 KB | 48.8 KB |
-| 2,500 | 88.5 KB | 335 KB | 198 KB | 99.0 KB | 121 KB | 105 KB |
-| 5,000 | 171 KB | 658 KB | 297 KB | 195 KB | 214 KB | 201 KB |
+| 1 | 1.3 KB | 1.4 KB | 101 KB | 1.8 KB | 25.8 KB | 6.4 KB |
+| 10 | 3.2 KB | 4.3 KB | 102 KB | 3.4 KB | 28.2 KB | 10.4 KB |
+| 50 | 5.4 KB | 11.2 KB | 104 KB | 5.5 KB | 30.2 KB | 12.5 KB |
+| 100 | 7.4 KB | 19.0 KB | 106 KB | 7.6 KB | 32.2 KB | 14.6 KB |
+| 250 | 12.8 KB | 39.9 KB | 112 KB | 13.3 KB | 37.8 KB | 20.4 KB |
+| 500 | 21.4 KB | 73.7 KB | 122 KB | 22.9 KB | 47.1 KB | 30.0 KB |
+| 1,000 | 38.6 KB | 140 KB | 142 KB | 42.0 KB | 65.7 KB | 48.8 KB |
+| 2,500 | 88.6 KB | 335 KB | 201 KB | 99.0 KB | 121 KB | 105 KB |
+| 5,000 | 172 KB | 659 KB | 300 KB | 195 KB | 214 KB | 201 KB |
 
-With one Type of a model, the "smallest" build gzips to 1.2 KB and the default build to 1.3 KB, where dynamic arktype is 98.2 KB, Valibot 1.8 KB, Zod Mini 6.4 KB and Zod 25.8 KB.
+With one Type of a model, the "smallest" build gzips to 1.3 KB and the default build to 1.4 KB, where dynamic arktype is 101 KB, Valibot 1.8 KB, Zod Mini 6.4 KB and Zod 25.8 KB.
 
-Against Valibot on models, "smallest" gzips smaller at every count measured from 10 to 5,000 Types, by 4.0% to 12%. In raw bytes it's smaller at every count measured from 10 to 5,000 Types, by 26% to 37%.
+Against Valibot on models, "smallest" gzips smaller at every count measured from 10 to 5,000 Types, by 2.7% to 12%. In raw bytes it's smaller at every count measured from 10 to 5,000 Types, by 22% to 37%.
 
-On models, "smallest" gzips smaller at every count measured, and each Type adds 34.0 B to it and 39.6 B to dynamic arktype, so more Types only widen its lead. The default build gzips smaller until about 990 Types, as each Type adds 133 B to it and 39.6 B to dynamic arktype: it's the smaller at 500 and the larger at 1,000, and the seeds' lines cross between 960 and 1,000.
+On models, "smallest" gzips smaller at every count measured, and each Type adds 34.1 B to it and 39.6 B to dynamic arktype, so more Types only widen its lead. The default build gzips smaller until about 1,000 Types, as each Type adds 133 B to it and 39.6 B to dynamic arktype: it's the smaller at 1,000 and the larger at 2,500, and the seeds' lines cross between 1,000 and 1,000.
 
 Before compression:
 
 | Types | "smallest" | Default | Dynamic | Valibot | Zod | Zod Mini |
 | - | - | - | - | - | - | - |
-| 1 | 2.4 KB | 3.1 KB | 295 KB | 5.0 KB | 87.4 KB | 18.4 KB |
-| 10 | 6.8 KB | 16.1 KB | 297 KB | 10.5 KB | 96.4 KB | 32.9 KB |
-| 50 | 13.6 KB | 58.9 KB | 306 KB | 18.8 KB | 105 KB | 41.2 KB |
-| 100 | 20.8 KB | 109 KB | 317 KB | 29.1 KB | 115 KB | 51.2 KB |
-| 250 | 39.0 KB | 242 KB | 351 KB | 59.7 KB | 146 KB | 81.0 KB |
-| 500 | 71.3 KB | 469 KB | 409 KB | 111 KB | 199 KB | 131 KB |
-| 1,000 | 137 KB | 925 KB | 525 KB | 217 KB | 306 KB | 234 KB |
-| 2,500 | 333 KB | 2,290 KB | 877 KB | 533 KB | 629 KB | 543 KB |
-| 5,000 | 667 KB | 4,565 KB | 1,469 KB | 1,067 KB | 1,173 KB | 1,063 KB |
+| 1 | 2.8 KB | 3.4 KB | 303 KB | 5.0 KB | 87.4 KB | 18.4 KB |
+| 10 | 7.4 KB | 16.8 KB | 305 KB | 10.5 KB | 96.4 KB | 32.9 KB |
+| 50 | 14.2 KB | 59.5 KB | 314 KB | 18.8 KB | 105 KB | 41.2 KB |
+| 100 | 21.5 KB | 110 KB | 325 KB | 29.1 KB | 115 KB | 51.2 KB |
+| 250 | 39.6 KB | 242 KB | 359 KB | 59.7 KB | 146 KB | 81.0 KB |
+| 500 | 72.0 KB | 469 KB | 417 KB | 111 KB | 199 KB | 131 KB |
+| 1,000 | 138 KB | 926 KB | 534 KB | 217 KB | 306 KB | 234 KB |
+| 2,500 | 334 KB | 2,290 KB | 885 KB | 533 KB | 629 KB | 543 KB |
+| 5,000 | 667 KB | 4,566 KB | 1,478 KB | 1,067 KB | 1,173 KB | 1,063 KB |
 
 ## Forms
 
 | Types | "smallest" | Default | Dynamic | Valibot | Zod | Zod Mini |
 | - | - | - | - | - | - | - |
-| 1 | 1.4 KB | 1.7 KB | 98.2 KB | 1.9 KB | 25.8 KB | 6.5 KB |
-| 10 | 3.7 KB | 6.4 KB | 99.2 KB | 3.8 KB | 28.6 KB | 10.9 KB |
-| 50 | 6.9 KB | 17.0 KB | 102 KB | 6.9 KB | 31.6 KB | 14.1 KB |
-| 100 | 9.9 KB | 28.5 KB | 105 KB | 9.9 KB | 34.5 KB | 17.1 KB |
-| 250 | 18.3 KB | 59.7 KB | 115 KB | 18.4 KB | 43.1 KB | 26.0 KB |
-| 500 | 31.7 KB | 109 KB | 130 KB | 32.9 KB | 57.7 KB | 40.8 KB |
-| 1,000 | 58.9 KB | 204 KB | 162 KB | 61.8 KB | 87.0 KB | 70.7 KB |
-| 2,500 | 138 KB | 479 KB | 257 KB | 149 KB | 175 KB | 160 KB |
-| 5,000 | 269 KB | 931 KB | 417 KB | 295 KB | 323 KB | 311 KB |
+| 1 | 1.5 KB | 1.9 KB | 101 KB | 1.9 KB | 25.8 KB | 6.5 KB |
+| 10 | 3.8 KB | 6.6 KB | 102 KB | 3.8 KB | 28.6 KB | 10.9 KB |
+| 50 | 7.0 KB | 17.2 KB | 105 KB | 6.9 KB | 31.6 KB | 14.1 KB |
+| 100 | 10.0 KB | 28.7 KB | 108 KB | 9.9 KB | 34.5 KB | 17.1 KB |
+| 250 | 18.4 KB | 59.9 KB | 118 KB | 18.4 KB | 43.1 KB | 26.0 KB |
+| 500 | 31.8 KB | 110 KB | 133 KB | 32.9 KB | 57.7 KB | 40.8 KB |
+| 1,000 | 59.0 KB | 205 KB | 165 KB | 61.8 KB | 87.0 KB | 70.7 KB |
+| 2,500 | 138 KB | 479 KB | 260 KB | 149 KB | 175 KB | 160 KB |
+| 5,000 | 269 KB | 931 KB | 420 KB | 295 KB | 323 KB | 311 KB |
 
-On forms, "smallest" gzips smaller at 10 Types, by 3.7% to 5.2%; within 0.8% either way at 50 Types; larger at 100 Types, by 0.1% to 0.6%; smaller at 250 to 5,000 Types, by 0.2% to 8.9%. In raw bytes it's smaller at every count measured from 10 to 5,000 Types, by 17% to 29%.
+On forms, "smallest" gzips smaller at 10 Types, by 1.0% to 2.6%; larger at 50 to 100 Types, by 0.8% to 2.2%; within 0.3% either way at 250 Types; smaller at 500 to 5,000 Types, by 3.0% to 8.8%. In raw bytes it's smaller at every count measured from 10 to 5,000 Types, by 15% to 27%.
 
-On forms, "smallest" gzips smaller at every count measured, and each Type adds 53.6 B to it and 63.4 B to dynamic arktype, so more Types only widen its lead. In raw bytes it's smaller at every count measured, and each Type adds 237 B to it and 411 B to dynamic arktype, so more Types only widen its lead. The default build gzips smaller until about 670 Types, as each Type adds 191 B to it and 63.4 B to dynamic arktype: it's the smaller at 500 and the larger at 1,000, and the seeds' lines cross between 650 and 680.
+On forms, "smallest" gzips smaller at every count measured, and each Type adds 53.6 B to it and 63.5 B to dynamic arktype, so more Types only widen its lead. In raw bytes it's smaller at every count measured, and each Type adds 237 B to it and 411 B to dynamic arktype, so more Types only widen its lead. The default build gzips smaller until about 690 Types, as each Type adds 191 B to it and 63.5 B to dynamic arktype: it's the smaller at 500 and the larger at 1,000, and the seeds' lines cross between 670 and 700.
 
 Before compression:
 
 | Types | "smallest" | Default | Dynamic | Valibot | Zod | Zod Mini |
 | - | - | - | - | - | - | - |
-| 1 | 2.9 KB | 4.3 KB | 295 KB | 5.1 KB | 87.4 KB | 18.7 KB |
-| 10 | 8.4 KB | 24.6 KB | 298 KB | 11.7 KB | 97.7 KB | 34.8 KB |
-| 50 | 19.8 KB | 93.5 KB | 314 KB | 24.4 KB | 112 KB | 48.4 KB |
-| 100 | 32.2 KB | 173 KB | 333 KB | 39.8 KB | 129 KB | 65.0 KB |
-| 250 | 67.0 KB | 402 KB | 393 KB | 86.7 KB | 181 KB | 115 KB |
-| 500 | 127 KB | 784 KB | 494 KB | 167 KB | 270 KB | 201 KB |
-| 1,000 | 247 KB | 1,544 KB | 699 KB | 329 KB | 451 KB | 378 KB |
-| 2,500 | 604 KB | 3,758 KB | 1,315 KB | 818 KB | 997 KB | 906 KB |
-| 5,000 | 1,192 KB | 7,411 KB | 2,357 KB | 1,645 KB | 1,923 KB | 1,803 KB |
+| 1 | 3.3 KB | 4.8 KB | 303 KB | 5.1 KB | 87.4 KB | 18.7 KB |
+| 10 | 9.0 KB | 25.5 KB | 306 KB | 11.7 KB | 97.7 KB | 34.8 KB |
+| 50 | 20.4 KB | 94.4 KB | 322 KB | 24.4 KB | 112 KB | 48.4 KB |
+| 100 | 32.8 KB | 174 KB | 342 KB | 39.8 KB | 129 KB | 65.0 KB |
+| 250 | 67.7 KB | 403 KB | 401 KB | 86.7 KB | 181 KB | 115 KB |
+| 500 | 127 KB | 784 KB | 502 KB | 167 KB | 270 KB | 201 KB |
+| 1,000 | 248 KB | 1,545 KB | 707 KB | 329 KB | 451 KB | 378 KB |
+| 2,500 | 605 KB | 3,759 KB | 1,323 KB | 818 KB | 997 KB | 906 KB |
+| 5,000 | 1,193 KB | 7,412 KB | 2,365 KB | 1,645 KB | 1,923 KB | 1,803 KB |
 
-Compressed with brotli, "smallest" on models is smaller at every count measured from 10 to 5,000 Types, by 3.4% to 11%. On forms it's smaller at 10 Types, by 2.5% to 4.0%; larger at 50 to 250 Types, by 0.3% to 1.1%; smaller at 500 to 5,000 Types, by 0.5% to 2.4%.
+Compressed with brotli, "smallest" on models is smaller at every count measured from 10 to 5,000 Types, by 1.6% to 7.6%. On forms it's within 1.6% either way at 10 Types; larger at 50 to 250 Types, by 1.2% to 2.6%; smaller at 500 to 5,000 Types, by 0.1% to 2.4%.
 
 ## What each Type adds
 
@@ -1261,9 +1261,9 @@ A bundle's bytes are close to a line: what it costs before its first Type, then 
 
 | Build | Fixed, gzip | Each Type, gzip | Fixed, raw | Each Type, raw |
 | - | - | - | - | - |
-| ArkType precompiled, "smallest" | 4.0 KB | 34.0 B (33.8 to 34.3) | 7.6 KB | 129 B (128 to 131) |
-| ArkType precompiled, default | 5.8 KB | 133 B (130 to 137) | 17.9 KB | 906 B (887 to 929) |
-| ArkType dynamic | 99.0 KB | 39.6 B (39.4 to 39.9) | 293 KB | 234 B (233 to 237) |
+| ArkType precompiled, "smallest" | 4.1 KB | 34.1 B (33.8 to 34.3) | 8.2 KB | 130 B (128 to 131) |
+| ArkType precompiled, default | 5.9 KB | 133 B (130 to 137) | 18.5 KB | 906 B (887 to 929) |
+| ArkType dynamic | 102 KB | 39.6 B (39.4 to 40.0) | 301 KB | 234 B (233 to 237) |
 | Valibot | 3.8 KB | 38.2 B (37.8 to 38.6) | 8.0 KB | 209 B (208 to 211) |
 | Zod | 28.5 KB | 37.1 B (36.9 to 37.5) | 93.2 KB | 214 B (213 to 217) |
 | Zod Mini | 10.8 KB | 38.0 B (37.7 to 38.4) | 30.4 KB | 204 B (203 to 207) |
@@ -1272,14 +1272,14 @@ On forms:
 
 | Build | Fixed, gzip | Each Type, gzip | Fixed, raw | Each Type, raw |
 | - | - | - | - | - |
-| ArkType precompiled, "smallest" | 4.7 KB | 53.6 B (53.2 to 54.2) | 8.3 KB | 237 B (236 to 241) |
-| ArkType precompiled, default | 10.1 KB | 191 B (188 to 196) | 24.2 KB | 1,502 B (1,479 to 1,539) |
-| ArkType dynamic | 98.9 KB | 63.4 B (62.9 to 64.2) | 291 KB | 411 B (407 to 416) |
+| ArkType precompiled, "smallest" | 4.8 KB | 53.6 B (53.2 to 54.2) | 8.9 KB | 237 B (236 to 241) |
+| ArkType precompiled, default | 10.3 KB | 191 B (188 to 196) | 25.1 KB | 1,502 B (1,479 to 1,539) |
+| ArkType dynamic | 102 KB | 63.5 B (63.0 to 64.2) | 299 KB | 411 B (407 to 416) |
 | Valibot | 4.1 KB | 57.8 B (57.4 to 58.6) | 7.2 KB | 323 B (320 to 327) |
 | Zod | 28.5 KB | 58.6 B (58.1 to 59.4) | 91.2 KB | 362 B (358 to 368) |
 | Zod Mini | 11.1 KB | 59.7 B (59.3 to 60.5) | 29.3 KB | 349 B (346 to 355) |
 
-Each line is fitted to the counts from 100 Types up, where growth is steady, and is within 6.0% of every mean it's fitted to. The range after each Type's bytes is the seeds', each fitted alone.
+Each line is fitted to the counts from 100 Types up, where growth is steady, and is within 5.7% of every mean it's fitted to. The range after each Type's bytes is the seeds', each fitted alone.
 
 ## What a message and a narrow cost
 
@@ -1288,7 +1288,7 @@ Forms differ from models by their messages and narrows, so an app with only one 
 | Build | A message, gzip | A message, raw | A narrow, gzip | A narrow, raw |
 | - | - | - | - | - |
 | ArkType precompiled, "smallest" | 7.4 B | 39.2 B | 12.4 B | 63.4 B |
-| ArkType precompiled, default | 19.2 B | 193 B | 38.5 B | 417 B |
+| ArkType precompiled, default | 19.2 B | 193 B | 38.6 B | 417 B |
 | ArkType dynamic | 9.4 B | 69.3 B | 14.5 B | 95.3 B |
 | Valibot | 7.8 B | 45.4 B | 11.6 B | 59.5 B |
 | Zod | 8.7 B | 63.1 B | 11.8 B | 64.0 B |
@@ -1296,7 +1296,7 @@ Forms differ from models by their messages and narrows, so an app with only one 
 
 At 5,000 Types, a message adds 7.4 B gzipped to a "smallest" bundle and 7.8 B to Valibot's, and a narrow adds 12.4 B and 11.6 B.
 
-With messages alone, "smallest" gzips smaller at every count measured from 10 to 5,000 Types, by 1.5% to 10%. With narrows alone, it gzips smaller at every count measured from 10 to 5,000 Types, by 0.7% to 9.6%.
+With messages alone, "smallest" gzips smaller at every count measured from 10 to 5,000 Types, by 0.4% to 10%. With narrows alone, it gzips smaller at 10 Types, by 2.3% to 4.4%; within 1.4% either way at 50 to 100 Types; smaller at 250 to 5,000 Types, by 1.4% to 9.6%.
 
 At 5,000 Types, a message costs "smallest" no more than it costs Valibot, so of the two only narrows can cost it its lead: taking them alone, a "smallest" bundle gzips smaller than Valibot's while it has fewer than about 6.0 narrows a Type.
 
@@ -1312,27 +1312,27 @@ Each count is where the lines between the two measured counts around it meet. On
 | "smallest" | Dynamic | smaller at every count | smaller at every count |
 | Default | Valibot | larger from 10 | larger from 10 |
 | Default | Zod | smaller until about 230, then larger | smaller until about 110, then larger |
-| Default | Zod Mini | smaller until about 62, then larger | smaller until about 29, then larger |
-| Default | Dynamic | smaller until about 990, then larger | smaller until about 410, then larger |
+| Default | Zod Mini | smaller until about 61, then larger | smaller until about 29, then larger |
+| Default | Dynamic | smaller until about 1,000, then larger | smaller until about 420, then larger |
 
 On forms:
 
 | Build | Against | Gzip | Raw |
 | - | - | - | - |
-| "smallest" | Valibot | smaller until about 47, larger until about 130, then smaller | smaller at every count |
+| "smallest" | Valibot | smaller until about 26, larger until about 250, then smaller | smaller at every count |
 | "smallest" | Zod | smaller at every count | smaller at every count |
 | "smallest" | Zod Mini | smaller at every count | smaller at every count |
 | "smallest" | Dynamic | smaller at every count | smaller at every count |
 | Default | Valibot | larger from 10 | larger from 10 |
 | Default | Zod | smaller until about 140, then larger | smaller until about 64, then larger |
-| Default | Zod Mini | smaller until about 34, then larger | smaller until about 17, then larger |
-| Default | Dynamic | smaller until about 670, then larger | smaller until about 240, then larger |
+| Default | Zod Mini | smaller until about 33, then larger | smaller until about 17, then larger |
+| Default | Dynamic | smaller until about 690, then larger | smaller until about 250, then larger |
 
 ## Which to choose
 
 Precompile a bundle a browser loads, with [`"smallest"`](https://arktype.io/docs/precompile/options#choosing-smallest) once it holds more than a handful of Types. Built "smallest", a bundle gzips smaller than it would shipping arktype at every count measured, on models and on forms. What it saves is arktype's fixed cost, which a page pays before it validates anything.
 
-Keep the default build for a server and for validation on a hot path, where each validator's own compiled code is [what makes it fast](https://arktype.io/docs/precompile#speed-and-size). The default build gzips smaller than dynamic arktype until about 990 Types on models and until about 670 Types on forms, and in raw bytes until about 410 Types on models and until about 240 Types on forms. A bundle with both kinds of Type [chooses for each definition](https://arktype.io/docs/precompile/options#strategies-and-schemas).
+Keep the default build for a server and for validation on a hot path, where each validator's own compiled code is [what makes it fast](https://arktype.io/docs/precompile#speed-and-size). The default build gzips smaller than dynamic arktype until about 1,000 Types on models and until about 690 Types on forms, and in raw bytes until about 420 Types on models and until about 250 Types on forms. A bundle with both kinds of Type [chooses for each definition](https://arktype.io/docs/precompile/options#strategies-and-schemas).
 
 What a Type holds moves these counts more than how many there are. Gzipped, a narrow costs a "smallest" bundle 1.1x what it costs Valibot's, and a message 0.95x. If bytes are all you're choosing by, compare the rows nearest your app above.
 
