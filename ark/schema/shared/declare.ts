@@ -8,6 +8,7 @@ import type { JsonSchema } from "./jsonSchema.ts"
 
 export interface DefaultArkEnv {
 	meta(): {}
+	context(): {}
 	onFail(errors: ArkErrors): ArkErrors
 }
 
@@ -27,6 +28,9 @@ declare global {
 		export type meta = show<NodeMeta & ReturnType<ArkEnv["meta"]>>
 
 		export type onFail = ReturnType<ArkEnv["onFail"]>
+
+		/** what a call passes for its narrows and morphs to read as `ctx.context` */
+		export type context = ReturnType<ArkEnv["context"]>
 	}
 }
 

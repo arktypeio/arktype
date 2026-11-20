@@ -69,7 +69,12 @@ import type {
 	StandardSchemaV1
 } from "../shared/standardSchema.ts"
 import { ToJsonSchema } from "../shared/toJsonSchema.ts"
-import { tryMorph } from "../shared/traversal.ts"
+import {
+	inContext,
+	tryMorph,
+	withContextOf,
+	type ContextualTarget
+} from "../shared/traversal.ts"
 import { hasArkKind, isNode } from "../shared/utils.ts"
 import { assertDefaultValueAssignability } from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
@@ -120,8 +125,12 @@ export abstract class BaseRoot<
 				{
 					vendor: "arktype",
 					version: 1,
-					validate: input => {
-						const out = this(input)
+					validate: (input, options) => {
+						const context = options?.libraryOptions?.context
+						const out =
+							context === undefined ?
+								this(input)
+							:	inContext(context as never, () => this(input))
 						return out instanceof ArkErrors ?
 								standardFailureOf(out as ArkErrors)
 							:	{ value: out }
@@ -453,6 +462,10 @@ export abstract class BaseRoot<
 		// ideally we might not validate here but for now we need to do determine
 		// which morphs to apply
 		return this.assert(input)
+	}
+
+	withContext(context: ArkEnv.context): ContextualTarget {
+		return withContextOf(this as never, context)
 	}
 
 	protected _pipe(...morphs: Morph[]): BaseRoot {

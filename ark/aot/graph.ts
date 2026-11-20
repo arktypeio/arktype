@@ -143,6 +143,7 @@ export const runtimeMembers: Record<string, 1> = Object.setPrototypeOf(
 		assert: 1,
 		allows: 1,
 		from: 1,
+		withContext: 1,
 		traverse: 1,
 		tAllows: 1,
 		tApply: 1,
@@ -159,6 +160,7 @@ export const validatorMembers: Record<string, 1> = Object.setPrototypeOf(
 		assert: 1,
 		traverse: 1,
 		from: 1,
+		withContext: 1,
 		"~standard": 1
 	} satisfies Record<
 		Exclude<keyof Validator, keyof globalThis.Function | IntrospectionMember>,
@@ -182,6 +184,7 @@ export const nodeMembers: Record<string, 1> = Object.setPrototypeOf(
 		assert: 1,
 		allows: 1,
 		from: 1,
+		withContext: 1,
 		traverse: 1,
 		"~standard": 1,
 		t: 1,
