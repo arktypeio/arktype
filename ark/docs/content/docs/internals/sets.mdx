@@ -49,7 +49,7 @@ These throw the `ParseError` above:
 - `.and()`, `.narrow()`, `.filter()`, `.constrain()`, `.to()`, `.extends()`, `.overlaps()`, `.extract()`, `.exclude()`, `.keyof()`, `.toJsonSchema()` and `~standard.jsonSchema`
 - parsing a tuple whose length is bounded: a `sequence` with `prefix` or `postfix` elements or a `minVariadicLength`, or without a `variadic` element. Arrays like `{ proto: Array, sequence: "string" }` parse.
 - parsing a union that isn't `ordered` and has a branch that transforms
-- parsing an optional prop in a scope configured with `exactOptionalPropertyTypes: false`
+- parsing an optional prop, or a tuple's optional or defaultable element, in a scope configured with `exactOptionalPropertyTypes: false`
 - parsing an index signature keyed by anything but `string`, `symbol` or `string | symbol`
 
 Nodes that parse aren't reduced. `rootSchema({ domain: "number", min: 5, max: 3 })` throws with `arksets` installed, since no number satisfies it. Without it, it parses and rejects every number. Union branches aren't merged or discriminated either, so a union checks each branch in turn.

@@ -71,8 +71,9 @@ export class OptionalNode extends BaseProp<"optional"> {
 		if (!$ark.sets && this.$.cfg.exactOptionalPropertyTypes === false)
 			throwParseError(missingSetEngineMessage)
 		if ("default" in this.inner) {
+			// a default of undefined would replace undefined with itself
 			assertDefaultValueAssignability(
-				this.value,
+				this.requiredValue,
 				this.inner.default,
 				this.key,
 				this
@@ -92,14 +93,30 @@ export class OptionalNode extends BaseProp<"optional"> {
 		)
 	}
 
+	private _requiredValue: BaseRoot | undefined
+	/**
+	 * its value where its key is required, which without
+	 * exactOptionalPropertyTypes drops the undefined its key allowed, as
+	 * TS's `-?` does
+	 */
+	get requiredValue(): BaseRoot {
+		return (this._requiredValue ??=
+			this.$.cfg.exactOptionalPropertyTypes === false ?
+				withoutUndefined(this.value)
+			:	this.value)
+	}
+
 	private _outProp: Prop.Node | undefined
+	// a default replaces undefined where it's allowed, so it's not output
 	get outProp(): Prop.Node {
 		if (!this.hasDef()) return this
 		const { default: defaultValue, ...requiredInner } = this.inner
 
-		return (this._outProp ??= this.$.node("required", requiredInner, {
-			reduced: true
-		}) as never)
+		return (this._outProp ??= this.$.node(
+			"required",
+			{ ...requiredInner, value: this.requiredValue },
+			{ reduced: true }
+		) as never)
 	}
 
 	get expression(): string {
@@ -113,7 +130,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 	/** the morph writing its default when its key is missing */
 	defMorph: Morph | undefined =
 		this.hasDef() ?
-			computeDefaultValueMorph(this.key, this.value, this.default)
+			computeDefaultValueMorph(this.key, this.requiredValue, this.default)
 		:	undefined
 
 	// without exactOptionalPropertyTypes, a default replaces undefined too
@@ -137,6 +154,20 @@ export class OptionalNode extends BaseProp<"optional"> {
 export const Optional = {
 	impl: implementation,
 	Node: OptionalNode
+}
+
+/**
+ * `value` without its undefined branch, the one exactOptionalPropertyTypes:
+ * false adds to an optional key or element's value, where a `-?` drops it. A
+ * value like `unknown` allowing undefined otherwise keeps it, as in TS
+ */
+export const withoutUndefined = (value: BaseRoot): BaseRoot => {
+	const branches = value.branches.filter(branch => !branch.hasUnit(undefined))
+	if (branches.length === value.branches.length) return value
+	return value.$.node("union", {
+		branches,
+		...(value.is("union") && value.ordered ? { ordered: true } : {})
+	})
 }
 
 export const assertDefaultValueAssignability = (

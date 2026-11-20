@@ -69,6 +69,31 @@ a must be a number (was missing)`)
 		attest(T.encode([new Date(1), new Date(2)])).equals([1, 2])
 	})
 
+	it("defaults without exactOptionalPropertyTypes encode only values", () => {
+		// the undefined a default replaces is never what was decoded
+		const T = scope({}, { exactOptionalPropertyTypes: false }).type({
+			at: EpochMs.default(0),
+			pair: [EpochMs, EpochMs.default(0)]
+		})
+		attest(T({ at: undefined, pair: [1, undefined] } as never)).equals({
+			at: new Date(0),
+			pair: [new Date(1), new Date(0)]
+		})
+		attest(
+			T.encode({
+				at: undefined,
+				pair: [new Date(1), undefined]
+			} as never).toString()
+		).snap(`at must be a Date
+pair[1] must be a Date`)
+		attest(
+			T.encode({ at: new Date(2), pair: [new Date(1), new Date(3)] })
+		).equals({
+			at: 2,
+			pair: [1, 3]
+		})
+	})
+
 	it("union tries branches without morphs first", () => {
 		const T = EpochMs.or("Date")
 		attest(T.encode.expression).snap("Date | (In: Date) => To<number % 1>")

@@ -99,6 +99,26 @@ const f = type.fn("string", ":", "string.numeric.parse")(s => s)
 f.returns
 ```
 
+### Without `exactOptionalPropertyTypes`, drop `undefined` where a key or element becomes required
+
+With `exactOptionalPropertyTypes: false`, an optional key's value allows `undefined`, and TypeScript's `Required` drops it again, whether or not it was written. `.required()`, `.out` and `.encode` now do too, where they kept it, so `.out` agrees with its type and a defaulted key's output has a JSON Schema:
+
+```ts
+const T = type({ "a?": "string", b: "number = 5" })
+
+// was: { a: string | undefined, b: number | undefined }
+// now: { a: string, b: number }
+T.required()
+
+// was: { a?: string | undefined, b: number | undefined }
+// now: { a?: string | undefined, b: number }
+T.out
+```
+
+A default replaces `undefined`, so a default of `undefined` throws a ParseError, where `["string", "=", undefined]` passed.
+
+Tuples follow the same rules, where they ignored the option: an optional or defaultable element allows `undefined`, a default replaces it, and `.required()`, `.out` and `.encode` drop it.
+
 ### Don't transform an `undefined` a default replaces
 
 With `exactOptionalPropertyTypes: false`, a defaulted key holding `undefined` is replaced by its default, but its value's morph ran on the `undefined` first when its input allowed it, then again on the default.

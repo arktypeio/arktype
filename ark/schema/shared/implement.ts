@@ -287,7 +287,9 @@ export type NodeKeyImplementation<
 		reduceIo?: (
 			ioKind: "in" | "out",
 			inner: makeRootAndArrayPropertiesMutable<d["inner"]>,
-			value: d["inner"][k]
+			value: d["inner"][k],
+			// the node whose io it is
+			node: BaseNode
 		) => void
 	},
 	// require keys containing children specify it, although it can be false in cases like

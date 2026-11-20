@@ -1,6 +1,9 @@
 import {
 	$ark,
+	deferAliases,
 	Disjoint,
+	type BaseRoot,
+	type BaseScope,
 	type IntersectionContext,
 	type Sequence,
 	type SequenceElement,
@@ -11,65 +14,15 @@ import {
 import { append, throwInternalError, throwParseError } from "@ark/util"
 import type { setImplementationOf } from "../implement.ts"
 import { intersectOrPipeNodes } from "../intersections.ts"
-import { writeDefaultIntersectionMessage } from "./prop.ts"
+import { withUndefined, writeDefaultIntersectionMessage } from "./prop.ts"
 
 export const sequence: setImplementationOf<Sequence.Declaration> = {
 	reduce: (raw, $) => {
-		let minVariadicLength = raw.minVariadicLength ?? 0
-		const prefix = raw.prefix?.slice() ?? []
-		const defaultables = raw.defaultables?.slice() ?? []
-		const optionals = raw.optionals?.slice() ?? []
-		const postfix = raw.postfix?.slice() ?? []
-		if (raw.variadic) {
-			// optional elements equivalent to the variadic parameter are redundant
-			while (optionals[optionals.length - 1]?.equals(raw.variadic))
-				optionals.pop()
-
-			if (optionals.length === 0 && defaultables.length === 0) {
-				// If there are no optional, normalize prefix
-				// elements adjacent and equivalent to variadic:
-				// 		{ variadic: number, prefix: [string, number] }
-				// reduces to:
-				// 		{ variadic: number, prefix: [string], minVariadicLength: 1 }
-				while (prefix[prefix.length - 1]?.equals(raw.variadic)) {
-					prefix.pop()
-					minVariadicLength++
-				}
-			}
-			// Normalize postfix elements adjacent and equivalent to variadic:
-			// 		{ variadic: number, postfix: [number, number, 5] }
-			// reduces to:
-			// 		{ variadic: number, postfix: [5], minVariadicLength: 2 }
-			while (postfix[0]?.equals(raw.variadic)) {
-				postfix.shift()
-				minVariadicLength++
-			}
-		} else if (optionals.length === 0 && defaultables.length === 0) {
-			// if there's no variadic, optional or defaultable elements,
-			// postfix can just be appended to prefix
-			prefix.push(...postfix.splice(0))
-		}
-		if (
-			// if any variadic adjacent elements were moved to minVariadicLength
-			minVariadicLength !== (raw.minVariadicLength ?? 0) ||
-			// or any postfix elements were moved to prefix
-			(raw.prefix && raw.prefix.length !== prefix.length)
-		) {
-			// reparse the reduced def
-			return $.node(
-				"sequence",
-				{
-					...raw,
-					// empty lists are omitted when it's created
-					prefix,
-					defaultables,
-					optionals,
-					postfix,
-					...(minVariadicLength ? { minVariadicLength } : {})
-				},
-				{ reduced: true }
-			)
-		}
+		const inner = normalizedSequence(
+			raw,
+			$.cfg.exactOptionalPropertyTypes === false ? $ : undefined
+		)
+		if (inner) return $.node("sequence", inner, { reduced: true })
 	},
 	intersections: {
 		sequence: (l, r, ctx) => {
@@ -88,6 +41,14 @@ export const sequence: setImplementationOf<Sequence.Declaration> = {
 				state => state.disjoint.length === 0 && fitsLength(state)
 			)
 
+			// its elements allow undefined only where both did, whatever ctx.$ configures
+			const sequenceOf = (result: SequenceTuple) => {
+				const inner = sequenceTupleToInner(result)
+				return ctx.$.node("sequence", normalizedSequence(inner) ?? inner, {
+					reduced: true
+				})
+			}
+
 			return (
 				viableBranches.length === 0 ?
 					// variants share the entries found before they branched
@@ -97,7 +58,7 @@ export const sequence: setImplementationOf<Sequence.Declaration> = {
 						)
 					)
 				: viableBranches.length === 1 && viableBranches[0].result.length ?
-					ctx.$.node("sequence", sequenceTupleToInner(viableBranches[0].result))
+					sequenceOf(viableBranches[0].result)
 				:	ctx.$.node("union", {
 						branches: viableBranches.map(state =>
 							ctx.$.node("intersection", {
@@ -106,10 +67,7 @@ export const sequence: setImplementationOf<Sequence.Declaration> = {
 								...(state.result.length ?
 									{
 										structure: ctx.$.node("structure", {
-											sequence: ctx.$.node(
-												"sequence",
-												sequenceTupleToInner(state.result)
-											)
+											sequence: sequenceOf(state.result)
 										})
 									}
 								:	{ exactLength: ctx.$.node("exactLength", { rule: 0 }) })
@@ -123,6 +81,81 @@ export const sequence: setImplementationOf<Sequence.Declaration> = {
 		// here since impliedBy guarantees they will be added
 		// directly to the IntersectionNode parent of the SequenceNode
 		// they exist on
+	}
+}
+
+/**
+ * its canonical inner, or undefined if it's already canonical. Given a scope
+ * without exactOptionalPropertyTypes, its optional and defaultable elements
+ * allow undefined, as an optional key's value does
+ */
+const normalizedSequence = (
+	raw: Sequence.Inner,
+	loose$?: BaseScope
+): Sequence.Inner | undefined => {
+	let widened = false
+	const widen = (node: BaseRoot): BaseRoot => {
+		const result = withUndefined(node)
+		if (result === node) return node
+		widened = true
+		return deferAliases(result, loose$!) as BaseRoot
+	}
+	let minVariadicLength = raw.minVariadicLength ?? 0
+	const prefix = raw.prefix?.slice() ?? []
+	const defaultables =
+		(loose$ ?
+			raw.defaultables?.map(
+				([node, value]): Sequence.DefaultableElement => [widen(node), value]
+			)
+		:	raw.defaultables?.slice()) ?? []
+	const optionals =
+		(loose$ ? raw.optionals?.map(widen) : raw.optionals?.slice()) ?? []
+	const postfix = raw.postfix?.slice() ?? []
+	if (raw.variadic) {
+		// optional elements equivalent to the variadic parameter are redundant
+		while (optionals[optionals.length - 1]?.equals(raw.variadic))
+			optionals.pop()
+
+		if (optionals.length === 0 && defaultables.length === 0) {
+			// If there are no optional, normalize prefix
+			// elements adjacent and equivalent to variadic:
+			// 		{ variadic: number, prefix: [string, number] }
+			// reduces to:
+			// 		{ variadic: number, prefix: [string], minVariadicLength: 1 }
+			while (prefix[prefix.length - 1]?.equals(raw.variadic)) {
+				prefix.pop()
+				minVariadicLength++
+			}
+		}
+		// Normalize postfix elements adjacent and equivalent to variadic:
+		// 		{ variadic: number, postfix: [number, number, 5] }
+		// reduces to:
+		// 		{ variadic: number, postfix: [5], minVariadicLength: 2 }
+		while (postfix[0]?.equals(raw.variadic)) {
+			postfix.shift()
+			minVariadicLength++
+		}
+	} else if (optionals.length === 0 && defaultables.length === 0) {
+		// if there's no variadic, optional or defaultable elements,
+		// postfix can just be appended to prefix
+		prefix.push(...postfix.splice(0))
+	}
+	if (
+		widened ||
+		// if any variadic adjacent elements were moved to minVariadicLength
+		minVariadicLength !== (raw.minVariadicLength ?? 0) ||
+		// or any postfix elements were moved to prefix
+		(raw.prefix && raw.prefix.length !== prefix.length)
+	) {
+		return {
+			...raw,
+			// empty lists are omitted when it's created
+			prefix,
+			defaultables,
+			optionals,
+			postfix,
+			...(minVariadicLength ? { minVariadicLength } : {})
+		}
 	}
 }
 
