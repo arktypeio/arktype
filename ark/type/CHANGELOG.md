@@ -1,6 +1,6 @@
 # arktype
 
-## Unreleased
+## 3.0.0-beta.2
 
 ### Read a JSON Schema or a Zod schema with `fromJsonSchema`
 

@@ -1,6 +1,6 @@
 # @ark/fast-check
 
-## Unreleased
+## 0.0.22-beta.2
 
 ### Type `arkToArbitrary`'s values as the Type's input
 

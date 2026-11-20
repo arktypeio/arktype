@@ -6,7 +6,7 @@ import { baseNameOf } from "./serialize.ts"
 // recent node versions (https://nodejs.org/api/esm.html#json-modules).
 
 // For now, we assert this matches the package.json version via a unit test.
-export const arkUtilVersion = "0.57.0-beta.1"
+export const arkUtilVersion = "3.0.0-beta.2"
 
 export const initialRegistryContents: {
 	version: string
