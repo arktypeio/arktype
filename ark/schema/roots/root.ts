@@ -6,6 +6,7 @@ import {
 	inferred,
 	isEmptyObject,
 	isInstanceOf,
+	omit,
 	throwInternalError,
 	throwParseError,
 	type Fn,
@@ -24,6 +25,9 @@ import {
 	flatMorphsAreEqual,
 	innerHashesMatch,
 	isMutuallySimulated,
+	referencesWithoutCases,
+	type DeepNodeTransformContext,
+	type DeepNodeTransformation,
 	type GettableKeyOrNode,
 	type KeyOrKeyNode,
 	type NodeSelector
@@ -76,9 +80,13 @@ import {
 	withContextOf,
 	type ContextualTarget
 } from "../shared/traversal.ts"
-import { hasArkKind, isNode } from "../shared/utils.ts"
-import { assertDefaultValueAssignability } from "../structure/optional.ts"
+import { hasArkKind, isNode, isResolutionFinal } from "../shared/utils.ts"
+import {
+	assertDefaultValueAssignability,
+	type Optional
+} from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
+import type { Sequence } from "../structure/sequence.ts"
 import type {
 	PropFlatMapper,
 	Structure,
@@ -404,8 +412,12 @@ export abstract class BaseRoot<
 	}
 
 	overlaps(r: unknown): boolean {
-		const intersection = this.intersect(r, false)
-		return !(intersection instanceof Disjoint)
+		if (this.isNever()) return false
+		const l = withoutDefaults(this)
+		const rNode = withoutDefaults(this.$.parseDef(r))
+		if (rNode.isNever()) return false
+		const intersection = l.intersect(rNode, false)
+		return !(intersection instanceof Disjoint) && !intersection.isNever()
 	}
 
 	extends(r: unknown): boolean {
@@ -416,15 +428,29 @@ export abstract class BaseRoot<
 		)
 			return true
 
-		const intersection = this.intersect(r, false)
+		const l = withoutDefaults(this)
+		const rNode = withoutDefaults(this.$.parseDef(r))
+		if (l.kind === rNode.kind && innerHashesMatch(l, rNode)) return true
+		const intersection = l.intersect(rNode, false)
 		if (intersection instanceof Disjoint) return false
 		// meta like a description doesn't change the values a node allows
 		return (
-			this.equals(intersection) ||
-			(!this.hasAlias &&
+			l.equals(intersection) ||
+			(!l.hasAlias &&
 				!intersection.hasAlias &&
-				isMutuallySimulated(this, intersection))
+				isMutuallySimulated(l, intersection))
 		)
+	}
+
+	/** transforms this root inside an enclosing transform, sharing its cycle state */
+	transformWithin(
+		mapper: DeepNodeTransformation,
+		ctx: DeepNodeTransformContext
+	): BaseRoot | null {
+		return this._tf(mapper, {
+			...ctx,
+			undeclaredHandling: undefined
+		}) as BaseRoot | null
 	}
 
 	ifExtends(r: unknown): BaseRoot | undefined {
@@ -825,6 +851,54 @@ export const makeMorph = <args extends unknown[]>(
 export type UndeclaredKeyConfig = {
 	rule: UndeclaredKeyBehavior
 	deep?: boolean
+}
+
+const isDefaultedNode = (node: BaseNode): boolean =>
+	(node.is("optional") && node.hasDef()) ||
+	(node.is("sequence") && node.defLen !== 0)
+
+const reachesDefault = (root: BaseRoot): boolean => {
+	const final = isResolutionFinal()
+	if (!root.alters && !(final && root.tfs)) return false
+	const followAliases = root.hasAlias && final
+	const visited = new Set<BaseNode>()
+	const queue: BaseNode[] = [root]
+	for (let i = 0; i < queue.length; i++) {
+		for (const ref of referencesWithoutCases(queue[i])) {
+			if (visited.has(ref)) continue
+			visited.add(ref)
+			if (isDefaultedNode(ref)) return true
+			if (followAliases && ref.is("alias")) queue.push(ref.resolution)
+		}
+	}
+	return false
+}
+
+// defaults are input-side annotations, not constraints on which inputs a type allows
+const withoutDefaults = (node: BaseRoot): BaseRoot => {
+	if (!reachesDefault(node)) return node
+	const final = isResolutionFinal()
+	return node.transform(
+		(kind, inner) => {
+			if (kind === "optional" && "default" in inner)
+				return omit(inner as Optional.Inner, { default: 1 })
+			if (kind === "sequence" && (inner as Sequence.Inner).defaultables) {
+				const { defaultables, optionals, ...rest } = inner as Sequence.Inner
+				return {
+					...rest,
+					optionals: [
+						...defaultables!.map(([element]) => element),
+						...(optionals ?? [])
+					]
+				}
+			}
+			return inner
+		},
+		{
+			shouldTf: n =>
+				n.alters || (n.is("optional") && n.hasDef()) || (final && n.tfs)
+		}
+	) as BaseRoot
 }
 
 export const emptyBrandNameMessage = `Expected a non-empty brand name after #`

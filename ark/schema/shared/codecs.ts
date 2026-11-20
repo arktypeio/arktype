@@ -1,4 +1,8 @@
 import { omit, throwParseError } from "@ark/util"
+import type {
+	DeepNodeTransformContext,
+	DeepNodeTransformation
+} from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { Union } from "../roots/union.ts"
@@ -24,33 +28,52 @@ export const encode = (node: BaseRoot): BaseRoot => {
 }
 
 // the decoding graph with each morph inverted
-const encoderOf = (node: BaseRoot): BaseRoot =>
-	node.transform(
-		(kind, inner) =>
-			kind === "morph" ? invert(inner as never, node.$)
-			: kind === "optional" && "default" in inner ?
-				node.$.node("required", {
-					...omit(inner as Optional.Inner, { default: 1 }),
-					value: decodedValueOf((inner as Optional.Inner).value, node.$)
-				})
-			: kind === "structure" ? requireDefaulted(inner as never)
-			: kind === "sequence" ? requireDefaultables(inner as never, node.$)
-			: kind === "union" ?
-				{
-					...inner,
-					// a branch without morphs encodes a value unchanged
-					branches: [...(inner as Union.Inner).branches].sort(
-						(l, r) => Number(l.tfs) - Number(r.tfs)
-					),
-					ordered: true
-				}
-			:	inner,
-		{
-			shouldTf: n => n.tfs || (n.is("optional") && n.hasDef())
+const encoderOf = (node: BaseRoot): BaseRoot => {
+	// whether each branch of a union transforms, read from the original
+	// before its branches are, as a branch reaching an alias that's still
+	// being encoded can't resolve yet
+	const branchTfs: boolean[][] = []
+	const mapper: DeepNodeTransformation = (kind, inner, ctx) =>
+		kind === "morph" ? invert(inner as never, node.$, mapper, ctx)
+		: kind === "optional" && "default" in inner ?
+			node.$.node("required", {
+				...omit(inner as Optional.Inner, { default: 1 }),
+				value: decodedValueOf((inner as Optional.Inner).value, node.$)
+			})
+		: kind === "structure" ? requireDefaulted(inner as never)
+		: kind === "sequence" ? requireDefaultables(inner as never, node.$)
+		: kind === "union" ?
+			{
+				...inner,
+				// a branch without morphs encodes a value unchanged
+				branches: sortByTfs((inner as Union.Inner).branches, branchTfs.pop()!),
+				ordered: true
+			}
+		:	(inner as never)
+	return node.transform(mapper, {
+		shouldTf: n => {
+			const tfs = n.tfs || (n.is("optional") && n.hasDef())
+			if (tfs && n.is("union")) branchTfs.push(n.branches.map(b => b.tfs))
+			return tfs
 		}
-	) as never
+	}) as never
+}
 
-const invert = (inner: Morph.Inner, $: BaseScope): BaseRoot => {
+const sortByTfs = (
+	branches: readonly BaseRoot[],
+	tfs: readonly boolean[]
+): BaseRoot[] =>
+	branches
+		.map((branch, i) => [branch, tfs[i]] as const)
+		.sort((l, r) => Number(l[1]) - Number(r[1]))
+		.map(([branch]) => branch)
+
+const invert = (
+	inner: Morph.Inner,
+	$: BaseScope,
+	mapper: DeepNodeTransformation,
+	ctx: DeepNodeTransformContext
+): BaseRoot => {
 	let encoder = inner.declaredOut ?? $ark.kw.unknown.internal
 	// an inverse inverts the one function among its node's morphs
 	let inverse = inner.inverse
@@ -59,7 +82,13 @@ const invert = (inner: Morph.Inner, $: BaseScope): BaseRoot => {
 	for (let i = inner.morphs.length - 1; i >= (head ? 1 : 0); i--) {
 		const morph = inner.morphs[i]
 		if (hasArkKind(morph, "root")) {
-			encoder = pipeEncoder(encoder, encoderOf(morph))
+			// encoded by the same transform, so an alias it reaches that's
+			// already being encoded, like one cycling back through this pipe,
+			// resolves to that encoder rather than encoding it again
+			encoder = pipeEncoder(
+				encoder,
+				morph.transformWithin(mapper, ctx) ?? $ark.kw.unknown.internal
+			)
 			continue
 		}
 		encoder = $.node("morph", {

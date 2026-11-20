@@ -37,8 +37,15 @@ interface ConstraintIntersectionState<
 	l: BaseConstraint[]
 	r: BaseConstraint[]
 	roots: BaseRoot[]
+	// constraints in s.l / s.r that did not come unmodified from the original
+	// l / r operand, so a disjoint involving them cannot be attributed to l vs r
+	derivedL?: Set<BaseConstraint>
+	derivedR?: Set<BaseConstraint>
 	ctx: IntersectionContext
 }
+
+const asOptionalDisjoint = (disjoint: Disjoint): Disjoint =>
+	new Disjoint(...disjoint.map(entry => ({ ...entry, optional: true })))
 
 export const intersectConstraints = <kind extends ConstraintGroupKind>(
 	s: ConstraintIntersectionState<kind>
@@ -66,9 +73,8 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 			result = s.ctx.$.node("intersection", { structure: result })
 
 		for (const root of s.roots) {
-			if (result instanceof Disjoint) return result
-
 			result = intersectOrPipeNodes(root, result, s.ctx)!
+			if (result instanceof Disjoint) return asOptionalDisjoint(result)
 		}
 
 		return result as never
@@ -81,7 +87,11 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 			s.ctx
 		)
 		if (result === null) continue
-		if (result instanceof Disjoint) return result
+		if (result instanceof Disjoint) {
+			return s.derivedR?.has(head) || s.derivedL?.has(s.l[i]) ?
+					asOptionalDisjoint(result)
+				:	result
+		}
 
 		if (result.isRoot()) {
 			s.roots.push(result)
@@ -97,20 +107,38 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 		if (matched || isNarrowedRefinement) {
 			// a head can narrow two constraints, e.g. <= 1 meeting >= 1 and <= 2
 			s.l.splice(i--, 1)
-			if (!s.l.includes(result as never)) s.r.push(result as BaseConstraint)
+			if (!s.l.includes(result as never)) {
+				if (result !== head || s.derivedR?.has(head))
+					(s.derivedR ??= new Set()).add(result as BaseConstraint)
+				s.r.push(result as BaseConstraint)
+			}
 		} else {
+			if (result !== s.l[i])
+				(s.derivedL ??= new Set()).add(result as BaseConstraint)
 			s.l[i] = result as BaseConstraint
 			// a sequence narrowed by the intersection implies its own length
-			if (s.kind === "intersection")
-				for (const node of s.l[i].impliedBy ?? []) appendUnique(s.r, node)
+			if (s.kind === "intersection") {
+				for (const node of s.l[i].impliedBy ?? []) {
+					;(s.derivedR ??= new Set()).add(node)
+					appendUnique(s.r, node)
+				}
+			}
 		}
 		matched = true
 	}
-	if (!matched) s.l.push(head)
+	if (!matched) {
+		;(s.derivedL ??= new Set()).add(head)
+		s.l.push(head)
+	}
 
 	if (s.kind === "intersection") {
-		if (head.impliedBy)
-			for (const node of head.impliedBy) appendUnique(s.r, node)
+		if (head.impliedBy) {
+			const headDerived = s.derivedR?.has(head)
+			for (const node of head.impliedBy) {
+				if (headDerived) (s.derivedR ??= new Set()).add(node)
+				appendUnique(s.r, node)
+			}
+		}
 	}
 	return intersectConstraints(s)
 }

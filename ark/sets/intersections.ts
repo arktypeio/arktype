@@ -1,9 +1,11 @@
 import {
 	$ark,
 	Disjoint,
+	isIoFinal,
 	isNode,
 	rootKinds,
 	type BaseNode,
+	type BaseRoot,
 	type BaseScope,
 	type InternalNodeIntersection,
 	type IntersectionContext,
@@ -171,9 +173,22 @@ const _pipeMorphed = (
 			morphs[morphs.length - 1] = outIntersection
 		} else morphs.push(to)
 
-		let declaredOut = from.inner.declaredOut
-		if (declaredOut) {
-			const outTersection = intersectOrPipeNodes(declaredOut, to, ctx)
+		// a basisless constraint (e.g. from .narrow or .constrainOut) narrows
+		// declaredOut rather than replacing it; a full target becomes the tail
+		// whose own output is ._out
+		let declaredOut: BaseRoot | undefined
+		if (
+			from.inner.declaredOut &&
+			to.is("intersection") &&
+			!to.basis &&
+			!to.isUnknown() &&
+			(isIoFinal() || (!from.inner.declaredOut.hasAlias && !to.hasAlias))
+		) {
+			const outTersection = intersectOrPipeNodes(
+				from.inner.declaredOut,
+				to,
+				ctx
+			)
 			if (outTersection instanceof Disjoint) return outTersection
 			declaredOut = outTersection._out
 		}
