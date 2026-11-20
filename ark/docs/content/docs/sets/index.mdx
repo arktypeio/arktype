@@ -62,6 +62,8 @@ Every function takes a `Schema`, which can be any of:
 - a **[Standard JSON Schema](https://standardschema.dev/json-schema)**: a schema whose `~standard` has `jsonSchema`, like one from zod 4.2.0 or later. `arktype/sets` reads its draft 2020-12 JSON Schema, so what that can't express, like zod's refinements, transforms and `undefined`, is invisible to every function here. Pass any other library's schema as its JSON Schema, like `z.toJSONSchema(schema)` before zod 4.2.0.
 - a **JSON Schema**: an object or a boolean, read as [Keyword support](/docs/json-schema/support) describes.
 
+An object meant as none of these, like `{ name: "string" }`, reads today as a JSON Schema whose keywords are all unknown, which accepts everything, so `isSubset({ name: "string" }, { name: "number" })` is `true`; what such an object means is unspecified, and a minor release may throw for it.
+
 Every argument can be in a different format. Results that are sets are Roots, so you can validate with them, print them and pass them back in:
 
 ```ts

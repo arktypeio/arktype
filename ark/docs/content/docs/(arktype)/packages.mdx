@@ -35,6 +35,10 @@ The VS Code extensions, "ArkType" and "ArkThemes", are on the [Editor](/docs/edi
 | `arktype/i18n`                              | helpers that [a locale](/docs/i18n) uses: `listPattern`, `isolate`, `labelOf`, `groupByPath`, `printedActualOf`, `describeCause`, `describeMissing`, `writeKeywordExpected` |
 | `arktype/internal`, `arktype/internal/*.ts` | every module's exports, for tools built on ArkType. Not semver-stable.                                                                                                      |
 
+These entrypoints are `arktype`'s whole public surface. Any other subpath it exports, like `arktype/schema/internal`, `arktype/schema/issueFeatures` or `arktype/schema/runtime/*`, is not semver-stable.
+
+`arktype` is ES2022 that calls only ES2020 built-ins, so it runs wherever both are supported. CI tests it on the two latest Node LTS lines and Node's current release, Deno, Bun, Chrome and Firefox, and on the TypeScript versions [Setup](/docs/intro/setup#configure-typescript) lists.
+
 `arktype` exports:
 
 - `type`, `scope`, `match`, `generic`, `declare`, `define` and `fn` to define Types, and `keywords` and `ark`, the keywords as a module and as a scope.
