@@ -1,4 +1,4 @@
-import { throwError } from "@ark/util"
+import { throwError } from "./util.ts"
 import {
 	decode,
 	encode,
@@ -299,7 +299,7 @@ export const optedInPackagesOf = (
 	return result
 }
 
-const arktypeEntries = ["arktype", "@ark/schema"]
+const arktypeEntries = ["arktype"]
 
 // as an import, not as the vendor name a package compares a schema's to
 const importOfArktype =
@@ -419,13 +419,8 @@ export const runtimeSpecifiers = [
 	"arktype/mutatesInput"
 ]
 
-// what arktype/runtime loads, and arksets, which arktype's parser loads
-export const runtimePackages = [
-	"arktype",
-	"arksets",
-	"@ark/schema",
-	"@ark/util"
-]
+// what arktype/runtime loads
+export const runtimePackages = ["arktype"]
 
 // shadow mode keeps arktype, resolving only its config to the runtime
 export const resolvesToRuntime = (
@@ -455,7 +450,7 @@ export const resolvedVariantOf = (
 		undefined
 	:	runtimeVariantOf(opts)
 
-export const schemaSpecifier = /^@ark\/schema(?:\/|$)/
+export const schemaSpecifier = /^arktype\/schema(?:\/|$)/
 
 // only the runtime has a copy, as other entries load the errors it replaces
 export const variantSpecifierOf = (
@@ -463,15 +458,15 @@ export const variantSpecifierOf = (
 	variant: RuntimeVariant
 ): string | undefined =>
 	(
-		specifier === "@ark/schema/runtime" ||
-		specifier === `@ark/schema/runtime/${variant}`
+		specifier === "arktype/schema/runtime" ||
+		specifier === `arktype/schema/runtime/${variant}`
 	) ?
-		`@ark/schema/runtime/${variant}`
+		`arktype/schema/runtime/${variant}`
 	:	undefined
 
-// @ark/schema's constants for what a program's issues may hold, written again per build
+// arktype/schema's constants for what a program's issues may hold, written again per build
 export const issueFeaturesFile =
-	/[/\\]@?ark[/\\]schema(?:[/\\]out)?[/\\]shared[/\\]issueFeatures\.[jt]s$/
+	/[/\\](?:@?ark[/\\]schema|arktype|ark[/\\]type)(?:[/\\]out)?[/\\]shared[/\\]issueFeatures\.[jt]s$/
 
 export const writeIssueFeatures = (issues: IssueFeatures): string =>
 	Object.entries(issues)

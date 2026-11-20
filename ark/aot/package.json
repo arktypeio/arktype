@@ -13,7 +13,7 @@
 		"esbuild",
 		"unplugin"
 	],
-	"version": "0.0.1-beta.1",
+	"version": "3.0.0-beta.1",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -114,10 +114,7 @@
 		"tnt": "ts ../repo/testPackage.ts --skipTypes"
 	},
 	"dependencies": {
-		"@ark/schema": "workspace:*",
-		"@ark/util": "workspace:*",
 		"@jridgewell/sourcemap-codec": "1.5.5",
-		"arkregex": "workspace:*",
 		"magic-string": "0.30.19",
 		"oxc-parser": "0.153.0",
 		"oxc-resolver": "11.24.2",
@@ -144,6 +141,7 @@
 		"access": "public"
 	},
 	"devDependencies": {
+		"@ark/schema": "workspace:*",
 		"@elysiajs/openapi": "1.4.16",
 		"@hono/standard-validator": "0.4.0",
 		"@hookform/resolvers": "5.9.1",

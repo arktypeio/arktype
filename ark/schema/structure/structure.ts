@@ -16,7 +16,6 @@ import {
 	type mutable
 } from "@ark/util"
 import { BaseConstraint } from "../constraint.ts"
-import { intrinsic } from "../intrinsic.ts"
 import {
 	holdsSameChildren,
 	ioOf,
@@ -1574,7 +1573,7 @@ const constructStructuralMorphCacheKey = (
 			for (const index of node.index) cacheKey += index.signature.id + " | "
 		if (node.sequence) {
 			if (node.sequence.maxLength === null)
-				cacheKey += intrinsic.nonNegativeIntegerString.id
+				cacheKey += $ark.kw.nonNegativeIntegerString.id
 			else {
 				for (let i = 0; i < node.sequence.tuple.length; i++)
 					cacheKey += i + " | "

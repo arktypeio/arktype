@@ -37,12 +37,12 @@ const leavesOf = (error: ArkError): ArkError[] =>
 	:	[error]
 
 const enExpected = (error: ArkError) => {
-	const expected = en[error.code].expected
+	const expected = en[error.code]!.expected!
 	return typeof expected === "string" ? expected : expected(error as never, en)
 }
 
 const enActual = (error: ArkError) => {
-	const actual = en[error.code].actual ?? en.actual
+	const actual = en[error.code]!.actual ?? en.actual
 	return typeof actual === "string" ? actual : (
 			actual(error.data as never, error as never, en)
 		)
@@ -71,7 +71,7 @@ const xxMessage: Locale.MessageWriter = e =>
 	`${mark("message")} ${e.expected} ${e.actual}`
 
 // a marker for every entry, so any other text in its output is arktype's
-const xx: Locale = {
+const xx: Locale.Resolved = {
 	...(flatMorph(en, (k, v) =>
 		typeof v === "object" && k !== "nouns" && k !== "keywordPhrases" ?
 			[k, { expected: mark(k), message: xxMessage }]
@@ -101,7 +101,7 @@ const xx: Locale = {
 	verbatim: text => text,
 	cite: text => `${mark("cite")} ${text}`,
 	basis: basis => mark(basis.code),
-	nouns: marks(en.nouns) as Locale["nouns"],
+	nouns: marks(en.nouns) as Locale.Resolved["nouns"],
 	keywordPhrases: marks(en.keywordPhrases),
 	actual: () => mark("actual"),
 	message: xxMessage,
@@ -165,7 +165,7 @@ contextualize(() => {
 				const error = (T({}) as ArkErrors).issues[0]
 				return error.code === "required" ? error.missing : undefined!
 			}
-			const plain: Locale = {
+			const plain: Locale.Resolved = {
 				...en,
 				list: listPattern(
 					{ two: " or ", middle: ", ", end: ", or " },
@@ -384,10 +384,22 @@ b: Unknown key b`)
 			)
 		})
 
-		it("a locale is complete", () => {
-			const { min: _, ...partial } = en
+		it("a locale needs only its tag", () => {
+			// a minor version may add a code, noun or keyword, which a locale
+			// written against the last still type-checks without
+			const { min: _, ...minless } = en
+			const { line: __, ...partial } = minless
+			attest((): Locale => partial)
+			attest((): Locale => ({ tag: "xx", nouns: { string: "<string>" } }))
 			// @ts-expect-error
-			attest((): Locale => partial).type.errors("Property 'min' is missing")
+			attest((): Locale => ({ list: en.list })).type.errors(
+				"Property 'tag' is missing"
+			)
+			// but one annotated Complete lists what it hasn't translated
+			// @ts-expect-error
+			attest((): Locale.Complete => minless).type.errors(
+				"Property 'min' is missing"
+			)
 			attest(
 				(): Locale => ({
 					...en,
@@ -398,9 +410,6 @@ b: Unknown key b`)
 					}
 				})
 			).type.errors("Property 'actual' is missing")
-			const { line: __, ...lineless } = en
-			// @ts-expect-error
-			attest((): Locale => lineless).type.errors("Property 'line' is missing")
 		})
 
 		it("a locale has no problem", () => {
@@ -762,16 +771,13 @@ c ⟦line⟧ ⟦message⟧ ⟦cite⟧ unit 1⟦or⟧⟦cite⟧ unit 2 ⟦actual�
 			)
 		})
 
-		it("an untyped locale renders what it lacks through en", () => {
-			const partial = {
+		it("a partial locale renders what it lacks through en", () => {
+			const partial: Locale = {
 				tag: "partial",
-				domain: {
-					expected: (e: Locale.ExpectedContext<"domain">, locale: Locale) =>
-						locale.nouns[e.domain]
-				},
+				domain: { expected: (e, locale) => locale.nouns[e.domain] },
 				min: { message: () => "<min>" },
 				nouns: { string: "<string>" }
-			} as {} as Locale
+			}
 			const def = {
 				k: "string",
 				j: "number > 0",
@@ -852,6 +858,21 @@ m must be a bigint`)
 			)
 		})
 
+		it("a partial locale's writers receive it completed from en", () => {
+			const partial: Locale = {
+				tag: "partial",
+				line: (e, locale) =>
+					`${locale.verbatim(e.propString)} (${locale.nouns.string}) ${e.message}`
+			}
+			const errors = type({ a: "string" })({ a: 1 }) as ArkErrors
+			attest(errors.toLocaleString(partial)).snap(
+				"a (a string) must be a string"
+			)
+			attest(messageIn(errors.issues[0], partial)).snap(
+				"a (a string) must be a string"
+			)
+		})
+
 		it("a spread of en renders every fixture as en does", () => {
 			attest(matrixOf({ ...en })).equals(matrixOf(en))
 		})
@@ -928,6 +949,8 @@ m must be a bigint`)
 				[$.type("number").narrow((n, ctx) => ctx.reject({})), 1],
 				[$.type("string").pipe.try(s => JSON.parse(s)), "{"],
 				[$.type("(string >= 3) | (string <= 0)"), "a"],
+				// a union no branch of which is discriminated, listing its bases
+				[$.type("Date | RegExp").or($.type.unit(o)), 1],
 				[$.type("(number % 2) & (number > 3)"), 1],
 				[$.type({ k: "string" }), {}],
 				[$.type({ k: "boolean" }), {}],

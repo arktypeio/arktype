@@ -5,7 +5,7 @@ import {
 	type Constructor,
 	type ErrorType,
 	type isDisjoint
-} from "@ark/util"
+} from "arktype/util"
 import prettier from "@prettier/sync"
 import { type } from "arktype"
 import { isDeepStrictEqual } from "node:util"

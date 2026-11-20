@@ -2,13 +2,7 @@
 import { mkdirSync, writeFileSync } from "node:fs"
 import { dirname, relative } from "node:path"
 import { parseArgs } from "node:util"
-import {
-	checkers,
-	emitDeclarations,
-	sharedDeclarationFile,
-	type Checker,
-	type DeclareOptions
-} from "./declare.ts"
+import type { Checker, DeclareOptions } from "./declare.ts"
 import { isBuildError } from "./host.ts"
 import { writeNodeVersionMessage } from "./messages.ts"
 import type { PrecompilePluginOptions } from "./driver.ts"
@@ -34,8 +28,11 @@ try {
 	process.exit(1)
 }
 
-// after the check, since it imports arktype
+// after the check, since they import arktype
 const { check, countOf } = await import("./check.ts")
+const { checkers, emitDeclarations, sharedDeclarationFile } = await import(
+	"./declare.ts"
+)
 
 // a host's options and a test's aside, and the CLI's own --declare
 const options = Object.entries(cliOptions).filter(

@@ -1,4 +1,4 @@
-import type { Traversal } from "@ark/schema"
+import type { Traversal } from "arktype/schema"
 import { type } from "arktype"
 import fc from "fast-check"
 

@@ -55,7 +55,7 @@
 		"test": "ts ../repo/testPackage.ts",
 		"bench": "ts ./__tests__/regex.bench.ts"
 	},
-	"dependencies": {
+	"devDependencies": {
 		"@ark/util": "workspace:*"
 	},
 	"publishConfig": {

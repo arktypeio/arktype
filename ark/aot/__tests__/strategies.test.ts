@@ -603,7 +603,7 @@ export const Cold = type({ amount: "number > 0", currency: "string == 3" })
 			const schemas = { "hot.ts": "fastest" }
 			const [warnings, js] = await bundled(root, { schemas })
 			attest(warnings).snap([
-				'precompile: compiled to check fastest, this bundle\'s validators would be about 1.7 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
+				'precompile: compiled to check fastest, this bundle\'s validators would be about 1.8 times the size of arktype, which they replace, so the build wrote them as calls to checkers they share, as optimize: "size" does. Set optimize: "size", or preset: "smallest" to also create each as its module loads, to build so without this warning and without reading the bundle twice, or optimize: "speed" to compile them.'
 			])
 			const [setWarnings, setJs] = await bundled(root, {
 				optimize: "size",

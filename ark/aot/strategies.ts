@@ -1,4 +1,4 @@
-import { editsBetween, hasOwn } from "@ark/util"
+import { editsBetween, hasOwn } from "./util.ts"
 import type { Optimization } from "arktype/internal/standalone.ts"
 import { readdirSync, realpathSync, statSync } from "node:fs"
 import { isAbsolute, join, relative, resolve, sep } from "node:path"

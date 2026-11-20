@@ -10,8 +10,16 @@ import {
 	type BaseRoot,
 	encodeWithoutCodecsMessage,
 	type CacheReach
-} from "@ark/schema"
-import { hasDomain, ParseError, throwParseError, type Fn } from "@ark/util"
+} from "arktype/schema"
+import {
+	hasDomain,
+	ParseError,
+	readsOnlyData,
+	returnsReports,
+	testsOrRejects,
+	throwParseError,
+	type Fn
+} from "arktype/util"
 import { configure } from "arktype"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
@@ -81,9 +89,20 @@ import type { SourceModule } from "./module.ts"
 import {
 	isTransparent,
 	passesWithoutCtx,
-	proveFunction,
+	proveFunction as proveFunctionWithSets,
 	runtimeParamsOf
 } from "./proofs.ts"
+
+const proveFunction = (
+	fn: Fn,
+	node: FunctionNode,
+	isStandalone: boolean
+): void =>
+	proveFunctionWithSets(fn, node, isStandalone, {
+		readsOnlyData,
+		returnsReports,
+		testsOrRejects
+	})
 import {
 	isOwnEnumSeed,
 	transpiledEnumOf,

@@ -1,5 +1,5 @@
 import { ensureDir, fromCwd } from "@ark/fs"
-import { tryParseNumber, type JsonObject } from "@ark/util"
+import { tryParseNumber, type JsonObject } from "arktype/util"
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import type * as prettier from "prettier"

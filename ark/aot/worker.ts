@@ -1,4 +1,4 @@
-import { throwError } from "@ark/util"
+import { throwError } from "./util.ts"
 import { extname } from "node:path"
 import {
 	MessageChannel,

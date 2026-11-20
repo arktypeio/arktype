@@ -24,8 +24,24 @@ export type PluralCategory = "zero" | "one" | "two" | "few" | "many" | "other"
 /** a domain, a builtin object kind, or the types unknown and never */
 export type NounId = Domain | BuiltinObjectKind | "unknown" | "never"
 
-export type Locale<keywordAlias extends string = string> =
-	Locale.Data<keywordAlias> & Locale.Writers
+/**
+ * A locale you write: its tag and any part you replace, each part you leave
+ * out written as en writes it. Every key but `tag` is optional, so a locale
+ * written against one minor version still type-checks against the next, which
+ * may add an error code, a noun or a keyword. Annotate with `Locale.Complete`
+ * to find what's untranslated instead.
+ */
+export type Locale<keywordAlias extends string = string> = {
+	/** BCP 47 tag */
+	readonly tag: string
+} & {
+	readonly [k in Exclude<
+		keyof Locale.Data<keywordAlias>,
+		"tag" | "nouns"
+	>]?: Locale.Data<keywordAlias>[k]
+} & {
+	readonly nouns?: { readonly [id in NounId]?: string }
+} & { readonly [code in ArkErrorCode]?: codeWritersOf<code> }
 
 export declare namespace Locale {
 	/** what every locale has: all a writer you configure sees */
@@ -44,7 +60,7 @@ export declare namespace Locale {
 		/** names expected text written without the locale, like a description */
 		readonly cite: (text: string) => string
 		/** names one alternative of a missing value */
-		readonly basis: (basis: MissingBasis, locale: Locale) => string
+		readonly basis: (basis: MissingBasis, locale: Resolved) => string
 		/** each type's name, as the locale's "must be" takes it */
 		readonly nouns: { readonly [id in NounId]: string }
 		readonly keywordPhrases: {
@@ -62,15 +78,22 @@ export declare namespace Locale {
 	}
 
 	export type Writers = {
-		readonly [code in ArkErrorCode]: code extends "required" ?
-			// its data is the object around the key, not a value to print
-			CodeWriters<code> & { readonly actual: string | ActualWriter<code> }
-		:	CodeWriters<code>
-	}
+		readonly [code in Exclude<ArkErrorCode, unraisedCode>]: codeWritersOf<code>
+	} & { readonly [code in unraisedCode]?: codeWritersOf<code> }
+
+	/**
+	 * A locale as its writers receive it: every part, those its author left
+	 * out completed from en
+	 */
+	export type Resolved<keywordAlias extends string = string> =
+		Data<keywordAlias> & Writers
 
 	export type CodeWriters<code extends ArkErrorCode = ArkErrorCode> = {
-		/** the sentence for an error of this code, without its subject */
-		readonly message: string | MessageWriter<code>
+		/**
+		 * the sentence for an error of this code, without its subject. Without
+		 * one, the locale's `message` writes it from `expected`
+		 */
+		readonly message?: string | MessageWriter<code>
 		/** what unions and intersections list, as "must be" takes it */
 		readonly expected?: string | ExpectedWriter<code>
 		readonly actual?: string | ActualWriter<code>
@@ -81,21 +104,21 @@ export declare namespace Locale {
 
 	export type ExpectedWriter<code extends ArkErrorCode = ArkErrorCode> = (
 		error: ExpectedContext<code>,
-		locale: Locale
+		locale: Resolved
 	) => string
 
 	export type ActualWriter<code extends ArkErrorCode = ArkErrorCode> = (
 		data: getAssociatedDataForError<code>,
 		error: ActualContext<code>,
-		locale: Locale
+		locale: Resolved
 	) => string
 
 	export type MessageWriter<code extends ArkErrorCode = ArkErrorCode> = (
 		error: MessageContext<code>,
-		locale: Locale
+		locale: Resolved
 	) => string
 
-	export type LineWriter = (error: LineContext, locale: Locale) => string
+	export type LineWriter = (error: LineContext, locale: Resolved) => string
 
 	export type KeywordPhrase = string | KeywordWriters
 
@@ -107,13 +130,20 @@ export declare namespace Locale {
 	/** describes an error, or a missing value by its basis */
 	export type KeywordExpectedWriter = (
 		error: ExpectedContext | MissingBasis,
-		locale: Locale
+		locale: Resolved
 	) => string
 
-	/** a locale with every fragment and keyword phrase, which its unions may list */
+	/**
+	 * A locale with every part: a message and fragment for each code its
+	 * errors are raised with, and a phrase for every keyword, which its
+	 * unions may list. A minor version adding a code, noun or keyword adds
+	 * it here, so annotate a locale with it to find what's untranslated,
+	 * not one you publish
+	 */
 	export type Complete<keywordAlias extends string = string> =
-		Locale<keywordAlias> & {
-			readonly [code in ArkErrorCode]: {
+		Resolved<keywordAlias> & {
+			readonly [code in Exclude<ArkErrorCode, unraisedCode>]: {
+				readonly message: string | MessageWriter<code>
 				readonly expected: string | ExpectedWriter<code>
 			}
 		} & {
@@ -122,6 +152,18 @@ export declare namespace Locale {
 			}
 		}
 }
+
+// an intersection's errors are raised separately, so no error has its code
+// and no locale needs to write one
+type unraisedCode = "intersection"
+
+type codeWritersOf<code extends ArkErrorCode> =
+	code extends "required" ?
+		// its data is the object around the key, not a value to print
+		Locale.CodeWriters<code> & {
+			readonly actual: string | Locale.ActualWriter<code>
+		}
+	:	Locale.CodeWriters<code>
 
 // a locale computes expected text from an error's data, not its English
 type localeExpectedContext<code extends ArkErrorCode> =
@@ -132,7 +174,7 @@ type localeExpectedContext<code extends ArkErrorCode> =
 
 const keywordPhraseOf = (
 	error: { readonly meta?: ArkEnv.meta },
-	locale: Locale
+	locale: Locale.Resolved
 ): Locale.KeywordPhrase | undefined => {
 	const keyword = error.meta?.keyword
 	// meta.keyword is any string, so it may name an Object.prototype key
@@ -144,7 +186,7 @@ const keywordPhraseOf = (
 /** the writer a locale has for an error's keyword in a slot other than expected */
 export const keywordWriterOf = <slot extends "actual" | "message">(
 	error: { readonly meta?: ArkEnv.meta },
-	locale: Locale,
+	locale: Locale.Resolved,
 	slot: slot
 ): Locale.KeywordWriters[slot] | undefined => {
 	const phrase = keywordPhraseOf(error, locale)
@@ -154,7 +196,7 @@ export const keywordWriterOf = <slot extends "actual" | "message">(
 /** a locale's phrase for a keyword, if it has one, as expected text */
 export const writeKeywordExpected = (
 	error: Locale.ExpectedContext | MissingBasis,
-	locale: Locale
+	locale: Locale.Resolved
 ): string | undefined => {
 	const phrase = keywordPhraseOf(error, locale)
 	return (
@@ -168,7 +210,7 @@ export const writeKeywordExpected = (
 /** renders a missing value where expected text goes */
 export const describeMissing = (
 	missing: MissingValue,
-	locale: Locale
+	locale: Locale.Resolved
 ): string => {
 	if (missing.code === "intersection") return locale.nouns.unknown
 	if (missing.code !== "union") return describeBasis(missing, locale)
@@ -180,7 +222,7 @@ export const describeMissing = (
 // each alternative a missing value names, once
 const describeEachMissing = (
 	missing: MissingValue,
-	locale: Locale
+	locale: Locale.Resolved
 ): string[] => {
 	if (
 		missing.code !== "union" ||
@@ -195,7 +237,7 @@ const describeEachMissing = (
 }
 
 // a unit or proto's description is authored unless it is what arktype writes for it
-const describeBasis = (basis: MissingBasis, locale: Locale): string =>
+const describeBasis = (basis: MissingBasis, locale: Locale.Resolved): string =>
 	(
 		(basis.code === "unit" || basis.code === "proto") &&
 		basis.meta.keyword === undefined &&
@@ -236,7 +278,7 @@ export interface PathGroup {
 /** a union's errors by path, in the order each path first failed */
 export const groupByPath = (
 	union: Locale.ExpectedContext<"union">,
-	locale: Locale
+	locale: Locale.Resolved
 ): PathGroup[] => {
 	const groups: ArkError[][] = []
 	for (const error of union.errors) {
@@ -276,7 +318,7 @@ export const groupByPath = (
  */
 export const alternativesOf = (
 	error: ArkError,
-	locale: Locale
+	locale: Locale.Resolved
 ): readonly string[] => {
 	if (error.code === "required") {
 		return error.expected === describeMissing(error.missing, locale) ?

@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { type jsonSchema, jsonSchemaToType } from "@ark/json-schema"
-import type { array } from "@ark/util"
+import type { array } from "arktype/util"
 import type { JsonSchema } from "arktype"
 import { inferred, type elementAt } from "./utils.ts"
 

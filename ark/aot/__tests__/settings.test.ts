@@ -166,11 +166,11 @@ contextualize(() => {
 			const reported: string[] = []
 			await resolveId.handler.call(
 				{ error: (message: string) => reported.push(message) },
-				"@ark/schema",
+				"arktype/schema",
 				importer
 			)
 			attest(reported).equals([
-				writeVariantImportMessage(importer, "@ark/schema", "lean")
+				writeVariantImportMessage(importer, "arktype/schema", "lean")
 			])
 		})
 

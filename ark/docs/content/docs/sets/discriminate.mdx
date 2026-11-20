@@ -6,7 +6,7 @@ description: Find the path and values that tell a union's branches apart, in a s
 `discriminate` finds how a union's branches can be told apart: a path, and for each value at that path, the branches it can match. ArkType uses the same discriminant to check one key in a union of objects instead of trying each branch.
 
 ```ts
-import { discriminate } from "arksets"
+import { discriminate } from "arktype/sets"
 
 const Shape = type({ shape: { kind: "'circle'" }, r: "number" }).or({
 	shape: { kind: "'square'" },
@@ -32,7 +32,7 @@ discriminant.default // null
 A union of different types is discriminated by `typeof`:
 
 ```ts
-import { discriminate } from "arksets"
+import { discriminate } from "arktype/sets"
 
 discriminate(type("string | number | null"))?.kind // "domain"
 ```
@@ -40,7 +40,7 @@ discriminate(type("string | number | null"))?.kind // "domain"
 A branch without the discriminating key is part of `default` and of every case, since any value at the path could still match it:
 
 ```ts
-import { discriminate } from "arksets"
+import { discriminate } from "arktype/sets"
 
 const Message = {
 	anyOf: [

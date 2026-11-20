@@ -1,4 +1,4 @@
-import { InternalArktypeError } from "@ark/util"
+import { InternalArktypeError } from "arktype/util"
 import type { Node, Span } from "oxc-parser"
 import { chainOf, DynamicValue } from "./dynamic.ts"
 import { contains, memberNameOf, type FunctionNode } from "./graph.ts"
