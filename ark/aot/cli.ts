@@ -6,7 +6,8 @@ import {
 	checkers,
 	emitDeclarations,
 	sharedDeclarationFile,
-	type Checker
+	type Checker,
+	type DeclareOptions
 } from "./declare.ts"
 import { isBuildError } from "./host.ts"
 import { writeNodeVersionMessage } from "./messages.ts"
@@ -102,10 +103,18 @@ const declare = (): never => {
 	const checker = values.checker as string | undefined
 	if (checker !== undefined && !checkers.includes(checker as Checker))
 		fail(`--checker must be ${checkers.join(", ")} (was ${checker})`)
-	const declarations = emitDeclarations({
-		tsconfig: values.tsconfig as string | undefined,
-		checker: checker as Checker | undefined
-	})
+	// a flag over ark.json, as for the other modes
+	const { tsconfig, checker: setChecker } = ((): DeclareOptions => {
+		try {
+			return withSettingsFile({
+				tsconfig: values.tsconfig as string | undefined,
+				checker: checker as Checker | undefined
+			})
+		} catch (e) {
+			return fail((e as Error).message)
+		}
+	})()
+	const declarations = emitDeclarations({ tsconfig, checker: setChecker })
 	writeFiles(declarations.files)
 	if (declarations.diagnostics) console.error(declarations.diagnostics)
 	console.log(
