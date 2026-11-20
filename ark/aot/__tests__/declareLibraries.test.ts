@@ -563,6 +563,8 @@ export type nodeOut = {
 
 			it("vite declares the same modules with declare: true", async () => {
 				const conditions = ["ark-ts"]
+				// Vite sets NODE_ENV for a production build, which later suites' processes inherit
+				const { NODE_ENV } = process.env
 				const [{ output }] = (await viteBuild({
 					root: libraries,
 					configFile: false,
@@ -580,6 +582,9 @@ export type nodeOut = {
 						write: false,
 						lib: { entry: "src/trpc.ts", formats: ["es"] }
 					}
+				}).finally(() => {
+					if (NODE_ENV === undefined) delete process.env.NODE_ENV
+					else process.env.NODE_ENV = NODE_ENV
 				})) as Rolldown.RolldownOutput[]
 				attest(
 					Object.fromEntries(
