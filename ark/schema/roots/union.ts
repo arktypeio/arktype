@@ -468,7 +468,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			: (js.missFails?.(this) ??
 				`${js.ref(this)}.applyMiss(data, ctx, ${value})`)
 		// an Apply of one domain or a unit it allows, as `T | null`, needn't switch
-		if (js.trav === "Apply" && written.length === 2) {
+		if (
+			js.trav === "Apply" &&
+			discriminant.kind === "domain" &&
+			written.length === 2
+		) {
 			const unitIndex = written.findIndex(
 				([label, result]) =>
 					result === "true" &&
@@ -478,6 +482,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			if (
 				unitIndex !== -1 &&
 				label !== `case "object"` &&
+				label !== `case "null"` &&
 				label !== "default"
 			) {
 				js.return(

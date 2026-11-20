@@ -1,4 +1,4 @@
-import { omit, stringifyPath, throwError } from "@ark/util"
+import { omit, stringifyPath, throwError, throwParseError } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
 import {
 	configuredMessageOf,
@@ -8,6 +8,7 @@ import {
 	unrenderedLocaleMessage,
 	unwrittenError,
 	writeActual,
+	writeInvalidLocaleObjectMessage,
 	writeText,
 	type ArkError
 } from "./errors.ts"
@@ -235,6 +236,8 @@ const normalizedLocales = new WeakMap<object, Locale.Resolved>()
 
 /** a locale completed from en where it lacks a part */
 export const normalizeLocale = (locale: Locale): Locale.Resolved => {
+	if (typeof locale !== "object" || locale === null || Array.isArray(locale))
+		throwParseError(writeInvalidLocaleObjectMessage(locale))
 	// en, once arktype's config has resolved, or before then as it will be,
 	// so a locale is never kept as complete before there's en to complete it
 	const en = (defaultLocale ??= $ark.defaultConfig.locale)

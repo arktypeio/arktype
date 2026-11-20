@@ -1,6 +1,7 @@
 import {
 	append,
 	conflatenate,
+	defineValue,
 	flatMorph,
 	hasOwn,
 	nameOf,
@@ -715,7 +716,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				transformed = mergeTransformed(input, value, transformed)
 			if (Object.is(transformed, value)) return value
 			if (out === data && copies) out = this.copy(data)
-			return (out[k] = transformed)
+			setOwnValue(out, k, transformed)
+			return transformed
 		}
 		const hasIndexedProp = this.hasIndexedProp
 		const props = this.inOrder
@@ -880,11 +882,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (out !== data && !sequence) {
 			for (const prop of this.inOrder) {
 				if (!(prop.key in out) && prop.key in data)
-					out[prop.key as never] = data[prop.key as never]
+					setOwnValue(out, prop.key, data[prop.key as never])
 			}
 			for (const prop of this.protoProps) {
 				if (!hasOwn(out, prop.key) && hasOwn(data, prop.key))
-					out[prop.key as never] = data[prop.key as never]
+					setOwnValue(out, prop.key, data[prop.key as never])
 			}
 		}
 		if (this.undeclared !== "delete" || sliced) return out
@@ -901,7 +903,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 		const result: Record<Key, unknown> = {}
 		for (const prop of this.inOrder)
-			if (prop.key in out) result[prop.key] = out[prop.key as never]
+			if (prop.key in out) setOwnValue(result, prop.key, out[prop.key as never])
 		for (const prop of this.protoProps) {
 			if (!this.tfsOf(prop).length && !hasOwn(data, prop.key))
 				delete result[prop.key]
@@ -909,7 +911,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.index) {
 			for (const k of ownKeysOf(out)) {
 				if (!(k in this.byKey) && this.declaresKey(k))
-					result[k] = out[k as never]
+					setOwnValue(result, k, out[k as never])
 			}
 		}
 		return result
@@ -922,8 +924,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	private copy(data: object, copy = copyOf(data)): object {
 		if (this.sequence) {
-			for (const prop of this.inOrder)
-				if (prop.key in data) copy[prop.key as never] = data[prop.key as never]
+			for (const prop of this.inOrder) {
+				if (prop.key in data)
+					setOwnValue(copy, prop.key, data[prop.key as never])
+			}
 		}
 		return copy
 	}
@@ -1132,7 +1136,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			const keyExpr = js.serialize(key)
 			const onChange = () => {
 				this.jsCopy(js, { first: i === 0 }).line(
-					`out${js.prop(key)} = transformed${i}`
+					jsSetOwnProp(js, "out", key, `transformed${i}`)
 				)
 				if (once) this.jsDeclaredCopy(js, [key])
 			}
@@ -1265,7 +1269,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			for (const prop of this.protoProps) {
 				js.if(
 					`!Object.prototype.hasOwnProperty.call(out, ${js.serialize(prop.key)}) && Object.prototype.hasOwnProperty.call(data, ${js.serialize(prop.key)})`,
-					() => js.line(`out${js.prop(prop.key)} = data${js.prop(prop.key)}`)
+					() =>
+						js.line(
+							jsSetOwnProp(js, "out", prop.key, `data${js.prop(prop.key)}`)
+						)
 				)
 			}
 			return js
@@ -1280,7 +1287,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		to: string
 	): NodeCompiler {
 		for (const prop of this.inOrder) {
-			const store = `${to}${js.prop(prop.key)} = ${from}${js.prop(prop.key)}`
+			const store = jsSetOwnProp(
+				js,
+				to,
+				prop.key,
+				`${from}${js.prop(prop.key)}`
+			)
 			if (prop.required) js.line(store)
 			else js.if(`${js.serialize(prop.key)} in data`, () => js.line(store))
 		}
@@ -1342,7 +1354,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				`value${i}`
 			)
 			js.if(changed, () =>
-				this.jsCopy(js).line(`out${js.prop(prop.key)} = transformed${i}`)
+				this.jsCopy(js).line(
+					jsSetOwnProp(js, "out", prop.key, `transformed${i}`)
+				)
 			)
 		}
 		this.jsDefaults(js)
@@ -1413,7 +1427,16 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			props: array<Prop.Node>,
 			valueOf: (prop: Prop.Node) => string
 		) =>
-			`{ ${props.map(prop => `${typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]` : prop.serializedKey}: ${valueOf(prop)}`).join(", ")} }`
+			`{ ${props
+				.map(
+					prop =>
+						`${
+							typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]`
+							: prop.key === "__proto__" ? '["__proto__"]'
+							: prop.serializedKey
+						}: ${valueOf(prop)}`
+				)
+				.join(", ")} }`
 		// a literal's __proto__ is its prototype, which null would make null
 		if (js.copiesValues || this.declaresKey("__proto__"))
 			js.const("result", literalOf(literal, outputOf))
@@ -1431,7 +1454,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				literalOf(slots, () => "null")
 			)
 			for (const prop of literal)
-				js.line(`result${js.prop(prop.key)} = ${outputOf(prop)}`)
+				js.line(jsSetOwnProp(js, "result", prop.key, outputOf(prop)))
 		}
 		const copies =
 			this.declaresKey("__proto__") ?
@@ -1461,7 +1484,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 		for (const prop of added) {
 			const store = () =>
-				js.line(`result${js.prop(prop.key)} = ${outputOf(prop)}`)
+				js.line(jsSetOwnProp(js, "result", prop.key, outputOf(prop)))
 			if (prop.is("required")) store()
 			else {
 				js.if(prop.jsHoldsValue(js, "data"), store)
@@ -1610,6 +1633,22 @@ const getPossibleMorph = (
 	return defaultableMorphsCache.set(cacheKey, $arkStructuralMorph)
 }
 
+const setOwnValue = (out: object, k: Key, value: unknown): void => {
+	if (k === "__proto__") defineValue(out, k, value)
+	else out[k as never] = value as never
+}
+
+// assigning "__proto__" invokes Object.prototype's setter instead of defining an own key
+const jsSetOwnProp = (
+	js: NodeCompiler,
+	target: string,
+	key: Key,
+	value: string
+): string =>
+	key === "__proto__" ?
+		`Object.defineProperty(${target}, "__proto__", { value: ${value}, writable: true, enumerable: true, configurable: true })`
+	:	`${target}${js.prop(key)} = ${value}`
+
 export const compileDefault = (
 	js: NodeCompiler,
 	node: Optional.Node.withDefault,
@@ -1617,7 +1656,7 @@ export const compileDefault = (
 ): NodeCompiler => {
 	if (hasPlainDefault(node)) {
 		return js.line(
-			`${out}${js.prop(node.key)} = ${serializeDefault(js, node.default)}`
+			jsSetOwnProp(js, out, node.key, serializeDefault(js, node.default))
 		)
 	}
 	return compileDefaultMorph(

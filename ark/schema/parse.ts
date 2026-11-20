@@ -10,6 +10,7 @@ import {
 	printable,
 	throwInternalError,
 	throwParseError,
+	timeOf,
 	type arkKind,
 	type dict,
 	type JsonObject,
@@ -348,7 +349,7 @@ const literalKeyOf = (v: unknown): string =>
 			"-0"
 		:	`${v}`
 	: typeof v === "bigint" ? `${v}n`
-	: isDate(v) ? `d'${v.toISOString()}'`
+	: isDate(v) ? dateKeyOf(v)
 	: (
 		(typeof v === "object" && v !== null) ||
 		typeof v === "function" ||
@@ -356,6 +357,15 @@ const literalKeyOf = (v: unknown): string =>
 	) ?
 		`$${nameOf(v)}`
 	:	`${v}`
+
+const dateKeyOf = (v: Date): string => {
+	const time = timeOf(v)
+	return (
+		time === undefined ? `$${nameOf(v)}`
+		: Number.isNaN(time) ? "d'Invalid Date'"
+		: `d'${v.toISOString()}'`
+	)
+}
 
 // props of a value without an alias are found by key before parsing
 export const requiredPropOf = (

@@ -65,31 +65,31 @@ contextualize(() => {
 			)
 		})
 
-		it("JSON Schema needs a predicate fallback", () => {
+		it("JSON Schema accepts objects and arrays across targets", () => {
 			const Json = type("object.json")
+			const expectedBody = {
+				anyOf: [{ type: "object" }, { type: "array", items: {} }]
+			}
 
-			attest(() => Json.toJsonSchema()).throws("predicate")
-			attest(
-				Json.toJsonSchema({ fallback: { predicate: ctx => ctx.base } })
-			).snap({
+			attest(Json.toJsonSchema()).equals({
 				$schema: "https://json-schema.org/draft/2020-12/schema",
-				type: "object",
-				additionalProperties: { $ref: "#/$defs/jsonData" },
-				$defs: {
-					jsonData: {
-						anyOf: [
-							{ type: "number" },
-							{ type: "string" },
-							{
-								type: "object",
-								additionalProperties: { $ref: "#/$defs/jsonData" }
-							},
-							{ type: "boolean" },
-							{ type: "null" }
-						]
-					}
-				}
+				...expectedBody
 			})
+			attest(Json.toJsonSchema({ target: "draft-07" })).equals({
+				$schema: "http://json-schema.org/draft-07/schema#",
+				...expectedBody
+			})
+			attest(Json.toJsonSchema({ target: "openapi-3.0" })).equals(expectedBody)
+			attest(Json.toJsonSchema({ target: "openapi-3.1" })).equals(expectedBody)
+			attest(
+				Json["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+			).equals({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				...expectedBody
+			})
+			attest(
+				Json["~standard"].jsonSchema.input({ target: "openapi-3.0" })
+			).equals(expectedBody)
 		})
 
 		it("stringify", () => {

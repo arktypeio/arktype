@@ -4,11 +4,12 @@ import type { StandardSchemaV1 } from "./standardSchema.ts"
 export type SummarizedErrors = {
 	readonly issues: StandardSchemaV1.FailureResult["issues"]
 	readonly summary: string
+	toJSON?: () => readonly unknown[]
 }
 
 type StandardFailure = StandardSchemaV1.FailureResult & {
-	/** @internal writes the summary of the errors it was built from */
-	_s: () => string
+	/** @internal reads the errors' summary, or its JSON issues when passed true */
+	_s: (json?: true) => unknown
 }
 
 // A failure's message is its errors' summary, which a consumer is to prefer
@@ -24,9 +25,23 @@ type StandardFailure = StandardSchemaV1.FailureResult & {
 // its issues.
 const message: PropertyDescriptor & ThisType<StandardFailure> = {
 	get() {
-		return this._s()
+		return this._s() as string
 	},
 	enumerable: true
+}
+
+// One shared non-enumerable toJSON so JSON.stringify(T["~standard"].validate(x))
+// strips data/actual/non-JSON fields just like JSON.stringify(T(x)) without
+// mutating result.issues or breaking V8 map sharing.
+const toJson: PropertyDescriptor & ThisType<StandardFailure> = {
+	value() {
+		return {
+			issues: this._s(true),
+			message: this._s()
+		}
+	},
+	writable: true,
+	configurable: true
 }
 
 /**
@@ -47,10 +62,19 @@ export const standardFailureOf = (
 	errors: SummarizedErrors
 ): StandardSchemaV1.FailureResult =>
 	Object.defineProperty(
-		Object.defineProperty({ issues: errors.issues }, "_s", {
-			value: () => errors.summary,
-			writable: true
-		}),
-		"message",
-		message
+		Object.defineProperty(
+			Object.defineProperty({ issues: errors.issues }, "_s", {
+				value: (json?: true) =>
+					json ?
+						errors.toJSON ?
+							errors.toJSON()
+						:	errors.issues
+					:	errors.summary,
+				writable: true
+			}),
+			"message",
+			message
+		),
+		"toJSON",
+		toJson
 	)

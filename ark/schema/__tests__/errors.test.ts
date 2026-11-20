@@ -259,6 +259,13 @@ b: Enter a number`)
 		attest(messages).snap(["must be even", "must be at least 2"])
 		attest(messages instanceof ArkErrors).equals(false)
 
+		// JSON.stringify on the Standard Schema failure strips data, actual, and
+		// non-JSON Type metadata, matching ArkErrors.toJSON()
+		attest(JSON.parse(JSON.stringify(result))).equals({
+			issues: JSON.parse(JSON.stringify(errors)),
+			message: errors.summary
+		})
+
 		const parsed = JSON.parse(
 			JSON.stringify({ issues: result.issues, messages })
 		) as { issues: unknown[]; messages: string[] }

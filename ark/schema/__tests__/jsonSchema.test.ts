@@ -147,27 +147,35 @@ contextualize(() => {
 		})
 	})
 
-	it("cyclic", () => {
-		// JSON Schema can't require a plain object
-		const schema = toJsonSchema($ark.kw.jsonObject, {
-			fallback: { predicate: ctx => ctx.base }
-		})
+	it("jsonObject", () => {
+		const schema = toJsonSchema($ark.kw.jsonObject)
 
 		attest(schema).snap({
-			type: "object",
-			additionalProperties: { $ref: "#/$defs/jsonData" },
+			anyOf: [{ type: "object" }, { type: "array", items: {} }]
+		})
+	})
+
+	it("cyclic", () => {
+		const types = schemaScope({
+			node: {
+				domain: "object",
+				required: { key: "id", value: "string" },
+				optional: { key: "next", value: "$node" }
+			}
+		}).export()
+
+		const schema = toJsonSchema(types.node)
+
+		attest(schema).snap({
+			$ref: "#/$defs/node",
 			$defs: {
-				jsonData: {
-					anyOf: [
-						{ type: "number" },
-						{ type: "string" },
-						{
-							type: "object",
-							additionalProperties: { $ref: "#/$defs/jsonData" }
-						},
-						{ type: "boolean" },
-						{ type: "null" }
-					]
+				node: {
+					type: "object",
+					properties: {
+						id: { type: "string" },
+						next: { $ref: "#/$defs/node" }
+					},
+					required: ["id"]
 				}
 			}
 		})

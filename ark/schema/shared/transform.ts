@@ -1,4 +1,4 @@
-import { hasDomain, hasOwn, isArray, type Key } from "@ark/util"
+import { defineValue, hasDomain, hasOwn, isArray, type Key } from "@ark/util"
 import type { BaseNode, RootApply } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { ArkErrors } from "./issues.ts"
@@ -86,11 +86,16 @@ export const copyOf = (data: object): object => {
 		:	data
 }
 
+const setOwnValue = (out: object, k: PropertyKey, value: unknown): void => {
+	if (k === "__proto__") defineValue(out, k, value)
+	else out[k as never] = value as never
+}
+
 // keeps data's own key on its copy where the spread skipped it, as a
 // non-enumerable one. A key data inherits is reachable through the copy's
 // prototype, which copyOf keeps, so `in` rejects the usual key at once
 export const keepOwn = (out: object, data: object, k: Key): void => {
-	if (!(k in out) && hasOwn(data, k)) out[k as never] = data[k as never]
+	if (!(k in out) && hasOwn(data, k)) setOwnValue(out, k, data[k as never])
 }
 
 /**
@@ -109,7 +114,7 @@ export const copyDeclared = (
 		for (let i = 0; i < changes.length; i += 3) {
 			if (Object.is(changes[i + 2], changes[i + 1])) continue
 			if (out === data) out = copyOf(data)
-			out[changes[i] as never] = changes[i + 2] as never
+			setOwnValue(out, changes[i] as Key, changes[i + 2])
 		}
 		if (out !== data) for (const k of declared) keepOwn(out, data, k)
 	}
@@ -142,7 +147,7 @@ export const mergeTransformed = (
 	for (const k in input) if (!hasOwn(r, k)) delete merged[k]
 	for (const k in r) {
 		if (!(k in input) || !Object.is(r[k as never], input[k as never]))
-			merged[k] = r[k as never]
+			setOwnValue(merged, k, r[k as never])
 	}
 	return merged
 }

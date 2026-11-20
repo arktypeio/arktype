@@ -1,4 +1,5 @@
 import {
+	defineValue,
 	functionNameOf,
 	hasDomain,
 	isArray,
@@ -1291,36 +1292,32 @@ export const computeDefaultValueMorph = (
 	isThunkInput = isThunk(defaultInput)
 ): Morph<any> => {
 	const thunk = isThunkInput ? (defaultInput as () => unknown) : undefined
-	if (!thunk && !node.alters && !node.hasAlias) {
-		return data => {
-			data[key] = defaultInput
-			return data
-		}
+	const write = (data: Record<PropertyKey, unknown>, v: unknown) => {
+		if (key === "__proto__") defineValue(data, key, v)
+		else data[key] = v
+		return data
 	}
+	if (!thunk && !node.alters && !node.hasAlias)
+		return data => write(data, defaultInput)
 	if (!node.allowsCtx && !node.ctxMorph) {
 		return data => {
 			const input = thunk ? thunk() : defaultInput
 			const output = value.traverse(input)
 			if (output instanceof BaseArkErrors)
 				return new TransformErrors(output, input).addTo(undefined, key)
-			data[key] = output
-			return data
+			return write(data, output)
 		}
 	}
 	let transformingDefault = false
 	return (data, ctx) => {
 		// transforming a default through a cyclic value can reach this morph again
 		if (transformingDefault) return data
-		if (!thunk && !node.tfs) {
-			data[key] = defaultInput
-			return data
-		}
+		if (!thunk && !node.tfs) return write(data, defaultInput)
 		transformingDefault = true
 		try {
-			data[key] = travKey(
-				key,
-				() => value(thunk ? thunk() : defaultInput, ctx),
-				ctx
+			write(
+				data,
+				travKey(key, () => value(thunk ? thunk() : defaultInput, ctx), ctx)
 			)
 		} finally {
 			transformingDefault = false
