@@ -1,5 +1,5 @@
 // a library built on arktype, exporting each shape of Type whose declaration
-// `tsc --declaration` writes out. declarations.test.ts emits it.
+// tsc writes out. testBuild.ts emits its declarations against the build.
 import { define, fn, generic, match, scope, type } from "arktype"
 import { codec } from "arktype/codecs"
 import { regex } from "arktype/regex"
@@ -21,7 +21,6 @@ export const Merged = User.merge({ email: "string.email" })
 export const Picked = User.pick("name")
 export const Keys = User.keyof()
 export const Props = User.props
-export const Selected = User.select("required")
 export const Users = User.array()
 export const Narrowed = type("number").narrow(
 	(n, ctx) => n > 0 || ctx.mustBe("positive")
@@ -46,6 +45,8 @@ export const EpochMs = codec("number.integer", "Date", {
 
 export const types = scope({ id: "string", user: { id: "id" } })
 export const Owned = types.type({ owner: "user" })
+export const typeOf = types.type
+export const matchOf = types.match
 export const exported = types.export()
 export const nested = scope({
 	"#hidden": "string",

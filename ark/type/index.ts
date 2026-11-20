@@ -44,18 +44,19 @@ export {
 	type,
 	type Ark
 } from "./keywords/keywords.ts"
-export type { Match } from "./match.ts"
+export type { Match, MatchParser } from "./match.ts"
 export { Module, type BoundModule, type Submodule } from "./module.ts"
 export type {
 	inferDefinition,
 	validateDefinition
 } from "./parser/definition.ts"
 export { scope, type bindThis, type Scope } from "./scope.ts"
-export { Type } from "./type.ts"
-// tsc names a consumer's Types by these (as it does TypedFn, Match and
-// ParsedFormData) when it emits their declarations, so each is exported here
-// rather than reached under arktype/internal, which is not semver-stable.
-// ark/repo/__tests__/declarations.test.ts fails on any it would reach there.
+export { Type, type TypeParser } from "./type.ts"
+// tsc names a consumer's Types by these (as it does TypedFn, Match,
+// MatchParser, TypeParser and ParsedFormData) when it emits their
+// declarations, so each is exported here rather than reached under
+// arktype/internal, which is not semver-stable. ark/repo/testBuild.ts fails
+// on any a consumer's declarations would reach there.
 export type { ArrayType } from "./variants/array.ts"
 export type { BaseType, BoundType } from "./variants/base.ts"
 export type { DateType } from "./variants/date.ts"

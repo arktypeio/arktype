@@ -3,6 +3,7 @@ import { build, buildSync } from "esbuild"
 import { spawnSync } from "node:child_process"
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { createRequire, registerHooks } from "node:module"
+import { dirname } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { ts } from "ts-morph"
 import { publicEntryPoints } from "./bundle.ts"
@@ -234,6 +235,64 @@ for (const version of [6, 7]) {
 			`⚠️  TS ${version} finds errors in published declarations:\n${errors.join("\n")}`
 		)
 	}
+}
+
+// what tsc declares for a library built on the published arktype names it by
+// arktype and its public entries alone. Anything else, a path under
+// arktype/internal or a package arktype bundles, is either not semver-stable
+// or not installed beside it, so a library publishing it would break
+const declaringConsumer = fileURLToPath(
+	new URL("temp/declarations/", import.meta.url)
+)
+const consumerSource = fileURLToPath(
+	new URL("__tests__/declarations/consumer.ts", import.meta.url)
+)
+mkdirSync(declaringConsumer, { recursive: true })
+writeFileSync(
+	`${declaringConsumer}tsconfig.json`,
+	JSON.stringify({
+		compilerOptions: {
+			module: "nodenext",
+			target: "esnext",
+			strict: true,
+			skipLibCheck: true,
+			declaration: true,
+			emitDeclarationOnly: true,
+			rootDir: dirname(consumerSource),
+			outDir: "out",
+			lib: ["esnext", "dom"],
+			types: []
+		},
+		files: [consumerSource]
+	})
+)
+const { stdout: consumerErrors } = spawnSync(
+	process.execPath,
+	[`${tsDir(7)}/bin/tsc`, "--project", declaringConsumer, "--pretty", "false"],
+	{ encoding: "utf8" }
+)
+if (consumerErrors)
+	throw new Error(`⚠️  consumer.ts doesn't type check:\n${consumerErrors}`)
+
+const publicSpecifiers = new Set(
+	Object.keys(
+		JSON.parse(readFileSync(fromPackage("type", "package.json"), "utf8"))
+			.exports
+	)
+		.filter(path => !path.startsWith("./internal"))
+		.map(path => `arktype${path.slice(1)}`)
+)
+const unstableSpecifiers = [
+	...readFileSync(`${declaringConsumer}out/consumer.d.ts`, "utf8").matchAll(
+		/import\("([^"]+)"\)/g
+	)
+]
+	.map(match => match[1])
+	.filter(specifier => !publicSpecifiers.has(specifier))
+if (unstableSpecifiers.length) {
+	throw new Error(
+		`⚠️  Declarations emitted for a library built on arktype name it by ${[...new Set(unstableSpecifiers)].join(", ")}. Export each type they reach there from arktype's root, or keep it out of arktype's public signatures.`
+	)
 }
 
 const runtimeNames = Object.keys(
