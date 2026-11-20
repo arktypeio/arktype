@@ -14,7 +14,10 @@ import {
 } from "./arbitraries/proto.ts"
 import { initializeContext, type Ctx } from "./fastCheckContext.ts"
 
-export const arkToArbitrary = (schema: type.Any): fc.Arbitrary<unknown> => {
+// values are generated for the Type's input, which is what they're typed as
+export const arkToArbitrary = <t extends type.Any>(
+	schema: t
+): fc.Arbitrary<t["inferIn"]> => {
 	const ctx = initializeContext()
 
 	return buildArbitrary(schema as never, ctx)
