@@ -1297,9 +1297,8 @@ export abstract class BaseNode<
 		const expression = withoutHoleNames(transformed.expression)
 		for (const id in ctx.synth) {
 			if (id === this.id) name = `synthetic${hashOf(expression)}`
-			else {
+			else
 				names[id] = `synthetic${hashOf(`${expression}\n${ctx.synth[id].name}`)}`
-			}
 		}
 		const named =
 			isEmptyObject(names) ? transformed : (
