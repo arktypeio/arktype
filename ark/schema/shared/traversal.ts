@@ -403,12 +403,8 @@ export class Traversal extends InternalTraversal {
 			if (supplied.message === "is invalid" && supplied.expected === "valid")
 				issue.expected = undefined
 		}
-		// a keyword's phrase writes the SyntaxError it caught, as string.json's,
-		// and a pipe.try morph what it threw
-		else if (
-			supplied.cause !== undefined &&
-			(supplied.meta?.keyword || supplied.morph)
-		) {
+		// a pipe.try morph writes what it threw beside what it expected
+		else if (supplied.cause !== undefined && supplied.morph) {
 			try {
 				issue.message = `must be ${issue.expected} (${String(supplied.cause)})`
 			} catch {

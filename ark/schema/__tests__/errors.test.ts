@@ -157,10 +157,9 @@ b: Enter a number`)
 		attest(error.message).snap("must be a greeting")
 		attest(errors.toJSON()).snap([
 			{
+				code: "predicate",
 				path: [],
 				expected: "a greeting",
-				code: "predicate",
-				propString: "",
 				message: "must be a greeting"
 			}
 		])
@@ -233,18 +232,14 @@ b: Enter a number`)
 	it("serialization", () => {
 		attest(errors.toJSON()).snap([
 			{
-				path: ["n"],
 				code: "divisor",
-				description: "even",
-				propString: "n",
+				path: ["n"],
 				expected: "even",
 				message: "must be even"
 			},
 			{
-				path: ["n"],
 				code: "min",
-				description: "at least 2",
-				propString: "n",
+				path: ["n"],
 				expected: "at least 2",
 				message: "must be at least 2"
 			}
@@ -272,17 +267,9 @@ b: Enter a number`)
 			JSON.stringify({ issues: result.issues, messages })
 		) as { issues: unknown[]; messages: string[] }
 
-		// the errors' JSON is each issue's without its data, the actual that
-		// describes it or the values its Type checked against
-		attest(JSON.parse(JSON.stringify(errors))).equals(
-			parsed.issues.map(issue => {
-				const { data, actual, meta, rule, ...json } = issue as Record<
-					string,
-					unknown
-				>
-				return json
-			})
-		)
+		// JSON.stringify(result.issues) strips data, actual, and internal fields,
+		// matching ArkErrors.toJSON() directly
+		attest(parsed.issues).equals(JSON.parse(JSON.stringify(errors)))
 		attest(parsed.messages).equals(messages!)
 	})
 

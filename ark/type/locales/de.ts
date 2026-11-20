@@ -238,12 +238,6 @@ const describeProto = (proto: Function, locale: Locale.Resolved) => {
 const causeOf = (cause: unknown, locale: Locale.Info) =>
 	locale.verbatim(describeCause(cause))
 
-// a JSON keyword's error carries the SyntaxError JSON.parse threw as its cause
-const jsonMessage: Locale.MessageWriter = (e, locale) =>
-	e.code === "predicate" && e.cause !== undefined ?
-		`muss eine JSON-Zeichenkette sein (${causeOf(e.cause, locale)})`
-	:	locale.message(e, locale)
-
 const epoch = "ein gültiger Unix-Zeitstempel als ganze Zahl"
 
 const keywordPhrases = {
@@ -279,11 +273,10 @@ const keywordPhrases = {
 	"string.ip": "eine IP-Adresse",
 	"string.ip.v4": "eine IPv4-Adresse",
 	"string.ip.v6": "eine IPv6-Adresse",
-	"string.json": { noun: "eine JSON-Zeichenkette", message: jsonMessage },
+	"string.json": "eine JSON-Zeichenkette",
 	"string.json.parse": {
 		noun: "eine JSON-Zeichenkette",
-		actual: (data, e, locale) => (data === "" ? "leer" : print(data, locale)),
-		message: jsonMessage
+		actual: (data, e, locale) => (data === "" ? "leer" : print(data, locale))
 	},
 	"string.lower.preformatted": "kleingeschrieben",
 	"string.normalize.NFC.preformatted": "NFC-normalisiert",
@@ -292,13 +285,7 @@ const keywordPhrases = {
 	"string.normalize.NFKD.preformatted": "NFKD-normalisiert",
 	"string.numeric": "eine wohlgeformte numerische Zeichenkette",
 	"string.numeric.parse": "endlich",
-	"string.regex": {
-		noun: "ein Regex-Muster",
-		message: (e, locale) =>
-			e.code === "predicate" && e.cause !== undefined ?
-				`muss ein Regex-Muster sein (${causeOf(e.cause, locale)})`
-			:	locale.message(e, locale)
-	},
+	"string.regex": "ein Regex-Muster",
 	"string.semver": "eine semantische Version (siehe https://semver.org/)",
 	"string.trim.preformatted": "ohne Leerraum am Anfang und Ende",
 	"string.upper.preformatted": "durchgehend großgeschrieben",

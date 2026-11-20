@@ -13,14 +13,13 @@ export class ArkErrors {
 	}
 
 	get issues(): readonly ArkIssue[] {
-		return this._.reduce(
-			(issues, issue) => (
-				(issue.expected ??= "valid"),
-				(issue.message ??= "is invalid"),
-				issues
-			),
-			this._
-		)
+		for (const issue of this._) {
+			issue.expected ??= "valid"
+			issue.message ??= "is invalid"
+		}
+		return (this._ as IssuesWithToJson).toJSON ?
+				this._
+			:	Object.defineProperty(this._, "toJSON", issuesToJson)
 	}
 
 	get summary(): string {
@@ -44,12 +43,7 @@ export class ArkErrors {
 	}
 
 	toJSON(): readonly object[] {
-		return this.issues.map(({ code, path, expected, message }) => ({
-			code,
-			path: path.map(k => (typeof k === "symbol" ? String(k) : k)),
-			expected,
-			message
-		}))
+		return this.issues.map(jsonIssueOf)
 	}
 
 	toString(): string {
@@ -62,6 +56,23 @@ export class ArkErrors {
 }
 
 export { ArkErrors as FirstIssues }
+
+type IssuesWithToJson = ArkIssue[] & { toJSON?: () => readonly object[] }
+
+const jsonIssueOf = ({ code, path, expected, message }: ArkIssue): object => ({
+	code,
+	path: path.map(k => (typeof k === "symbol" ? String(k) : k)),
+	...(expected !== undefined && { expected }),
+	message
+})
+
+const issuesToJson: PropertyDescriptor & ThisType<readonly ArkIssue[]> = {
+	value() {
+		return this.map(jsonIssueOf)
+	},
+	writable: true,
+	configurable: true
+}
 
 interface ThrownErrors extends Error {
 	readonly name: "TraversalError"

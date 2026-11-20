@@ -477,11 +477,11 @@ contextualize(() => {
 		])
 	})
 
-	it("a keyword's issue writes the SyntaxError it caught", () => {
+	it("a keyword's issue omits the SyntaxError it caught", () => {
 		attest(standalone.Json).equals(arktype.Json)
 		attest(standalone.Json[0]).snap([
 			[{ code: "predicate", path: [], data: "{", expected: "a JSON string" }],
-			"must be a JSON string (SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2))"
+			"must be a JSON string"
 		])
 	})
 

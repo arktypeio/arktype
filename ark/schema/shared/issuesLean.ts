@@ -51,8 +51,7 @@ class ReadIssues implements FailureContext {
 	 * Each issue, its message written when they are first read.
 	 */
 	get issues(): readonly WrittenIssue[] {
-		for (const issue of this._) issue.message ??= messageOf(issue)
-		return this._ as WrittenIssue[]
+		return serializableIssues(this._)
 	}
 
 	/** @internal takes neither a key nor a site, as issues.ts's */
@@ -133,8 +132,7 @@ const Issues: new () => Issues = (
 			}
 
 			get issues(): readonly WrittenIssue[] {
-				for (const issue of this._) issue.message ??= messageOf(issue)
-				return this._ as WrittenIssue[]
+				return serializableIssues(this._)
 			}
 
 			_e(
@@ -230,10 +228,27 @@ export { Issues as ArkErrors }
 const jsonIssueOf = (issue: ArkIssue): IssueJson => ({
 	code: issue.code,
 	path: issue.path.map(k => (typeof k === "symbol" ? String(k) : k)),
-	expected: issue.expected,
+	...(issue.expected !== undefined && { expected: issue.expected }),
 	message: issue.message ?? messageOf(issue),
-	...(issue.errors && { errors: issue.errors.map(jsonIssueOf) })
+	...(issue.errors?.length ? { errors: issue.errors.map(jsonIssueOf) } : {})
 })
+
+const issuesToJson: PropertyDescriptor & ThisType<readonly ArkIssue[]> = {
+	value() {
+		return this.map(jsonIssueOf)
+	},
+	writable: true,
+	configurable: true
+}
+
+type IssuesWithToJson = ArkIssue[] & { toJSON?: () => readonly IssueJson[] }
+
+const serializableIssues = (issues: ArkIssue[]): readonly WrittenIssue[] => {
+	for (const issue of issues) issue.message ??= messageOf(issue)
+	return (issues as IssuesWithToJson).toJSON ?
+			(issues as WrittenIssue[])
+		:	(Object.defineProperty(issues, "toJSON", issuesToJson) as WrittenIssue[])
+}
 
 export class FirstIssues extends Issues {
 	override get failFast(): true {

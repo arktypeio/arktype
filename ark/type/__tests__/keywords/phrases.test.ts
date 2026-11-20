@@ -50,7 +50,7 @@ contextualize(() => {
 		const error = (parseJson("{") as ArkErrors)
 			.issues[0] as ArkError<"predicate">
 		attest(error.cause).instanceOf(SyntaxError)
-		attest(error.message).equals(`must be a JSON string (${error.cause})`)
+		attest(error.message).snap("must be a JSON string")
 	})
 
 	it("only own phrases are a keyword's", () => {
@@ -162,11 +162,8 @@ contextualize(() => {
 			const error = errorOf(type("string.integer.parse"), "9007199254740993")
 			attest(error.meta).snap({ keyword: "string.integer.parse" })
 			attest(jsonOf(type("string.integer.parse"), "9007199254740993")).snap({
-				path: [],
 				code: "predicate",
-				description:
-					"an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER",
-				propString: "",
+				path: [],
 				expected:
 					"an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER",
 				message:
@@ -194,17 +191,15 @@ contextualize(() => {
 			attest(error.meta).snap({ keyword: "string.json.parse" })
 			attest(error.cause).instanceOf(SyntaxError)
 			attest(error.actual).snap('"{"')
-			attest(error.message).equals(`must be a JSON string (${error.cause})`)
+			attest(error.message).snap("must be a JSON string")
 			attest(errorOf(type("string.json"), "{").meta).snap({
 				keyword: "string.json"
 			})
 			const empty = errorOf(type("string.json.parse"), "")
 			attest(empty.cause).equals(undefined)
 			attest(jsonOf(type("string.json.parse"), "")).snap({
-				path: [],
 				code: "predicate",
-				description: "a JSON string",
-				propString: "",
+				path: [],
 				expected: "a JSON string",
 				message: "must be a JSON string"
 			})
@@ -216,9 +211,9 @@ contextualize(() => {
 			attest(error.meta).snap({ keyword: "string.regex" })
 			attest(error.cause).instanceOf(SyntaxError)
 			attest(error.expected).snap("a regex pattern")
-			attest(error.message).equals(`must be a regex pattern (${error.cause})`)
+			attest(error.message).snap("must be a regex pattern")
 			// a phrase's own message is arktype's, written after its path
-			attest(T({ r: "(" }).toString()).equals(`r ${error.message}`)
+			attest(T({ r: "(" }).toString()).equals("r must be a regex pattern")
 		})
 
 		it("per-code config outranks the phrase", () => {

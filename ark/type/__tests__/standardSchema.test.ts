@@ -947,16 +947,16 @@ contextualize(() => {
 				issues: [
 					{
 						code: "minLength",
-						description: "at least length 12",
-						expected: "at least length 12",
-						message: "must be at least length 12",
 						path: ["password"],
-						propString: "password"
+						expected: "at least length 12",
+						message: "must be at least length 12"
 					}
 				],
 				message: "password must be at least length 12"
 			})
 			attest(parsed.issues).equals(directJson)
+			attest(JSON.stringify(result.issues)).equals(JSON.stringify(direct))
+			attest(JSON.stringify(result.issues).includes("hunter2")).equals(false)
 			attest(parsed.message).equals(direct.summary)
 			attest("data" in parsed.issues[0]).equals(false)
 			attest("actual" in parsed.issues[0]).equals(false)
@@ -983,6 +983,7 @@ contextualize(() => {
 				["Symbol(secret)"]
 			])
 			for (const issue of parsed.issues) attest("data" in issue).equals(false)
+			attest(JSON.parse(JSON.stringify(result.issues))).equals(parsed.issues)
 
 			const wrap = <t extends object>(target: t): t =>
 				new Proxy(target, {
@@ -995,6 +996,9 @@ contextualize(() => {
 				})
 			const wrappedJson = JSON.stringify(wrap(result))
 			attest(wrappedJson).equals(JSON.stringify(result))
+			attest(JSON.stringify(wrap(result.issues))).equals(
+				JSON.stringify(result.issues)
+			)
 		})
 	})
 

@@ -516,11 +516,11 @@ console.log(JSON.stringify(Unlike["~standard"].validate({ id: 1 })))
 			const written = behaviorOf(await bundle(root, smallest))
 			attest(written).equals(behaviorOf(await bundle(root)))
 			attest(written)
-				.snap(`[{"code":"union","path":["ip"],"data":"x","errors":[{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"must be an IP address"},{"code":"pattern","path":["ip"],"data":"x","expected":"an IP address","message":"must be an IP address"}],"expected":"must be an IP address","message":"must be an IP address"}]
-[{"code":"union","path":["ip"],"data":1,"errors":[],"expected":"an IP address","message":"must be an IP address"}]
-[{"code":"union","path":["id"],"data":"x","errors":[{"code":"pattern","path":["id"],"data":"x","expected":"an email address","message":"must be an email address"},{"code":"pattern","path":["id"],"data":"x","expected":"a UUID","message":"must be a UUID"}],"expected":"must be an email address or a UUID","message":"must be an email address or a UUID"}]
+				.snap(`[{"code":"union","path":["ip"],"expected":"must be an IP address","message":"must be an IP address","errors":[{"code":"pattern","path":["ip"],"expected":"an IP address","message":"must be an IP address"},{"code":"pattern","path":["ip"],"expected":"an IP address","message":"must be an IP address"}]}]
+[{"code":"union","path":["ip"],"expected":"an IP address","message":"must be an IP address"}]
+[{"code":"union","path":["id"],"expected":"must be an email address or a UUID","message":"must be an email address or a UUID","errors":[{"code":"pattern","path":["id"],"expected":"an email address","message":"must be an email address"},{"code":"pattern","path":["id"],"expected":"a UUID","message":"must be a UUID"}]}]
 {"issues":[{"code":"union","path":["ip"],"expected":"must be an IP address","message":"must be an IP address","errors":[{"code":"pattern","path":["ip"],"expected":"an IP address","message":"must be an IP address"},{"code":"pattern","path":["ip"],"expected":"an IP address","message":"must be an IP address"}]}],"message":"ip must be an IP address"}
-{"issues":[{"code":"union","path":["id"],"expected":"a string or a UUID","message":"must be a string or a UUID","errors":[]}],"message":"id must be a string or a UUID"}
+{"issues":[{"code":"union","path":["id"],"expected":"a string or a UUID","message":"must be a string or a UUID"}],"message":"id must be a string or a UUID"}
 `)
 		})
 	})

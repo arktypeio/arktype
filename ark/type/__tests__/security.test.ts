@@ -5,7 +5,8 @@ import {
 	node,
 	NodeCompiler,
 	rootSchema,
-	writeInvalidRangeRuleMessage
+	writeInvalidRangeRuleMessage,
+	type StandardSchemaV1
 } from "@ark/schema"
 import { UndetailedErrors } from "@ark/schema/errors"
 import { standardFailureOf } from "@ark/schema/internal"
@@ -59,17 +60,50 @@ contextualize(() => {
 				attest(other instanceof ArkErrors).equals(false)
 		})
 
-		it("omits input data when JSON-serializing precompiled Standard Schema failures", () => {
+		it("omits input data when JSON-serializing dynamic and precompiled Standard Schema failures and issues", () => {
 			const secret = "hunter2"
-			const dynamicJson = JSON.stringify(
-				type("number")["~standard"].validate(secret)
-			)
-			attest(dynamicJson).snap(
-				'{"issues":[{"path":[],"code":"domain","description":"a number","domain":"number","propString":"","expected":"a number","message":"must be a number"}],"message":"must be a number"}'
-			)
-
 			const expectedRuntimeJson =
 				'{"issues":[{"code":"domain","path":[],"expected":"a number","message":"must be a number"}],"message":"must be a number"}'
+			const expectedIssuesJson =
+				'[{"code":"domain","path":[],"expected":"a number","message":"must be a number"}]'
+
+			const dynamicResult = type("number")["~standard"].validate(
+				secret
+			) as StandardSchemaV1.FailureResult
+			attest(JSON.stringify(dynamicResult)).equals(expectedRuntimeJson)
+			attest(JSON.stringify(dynamicResult.issues)).equals(expectedIssuesJson)
+
+			// Standard Schema README pattern: JSON.stringify(res.issues) with password + BigInt (10n)
+			const Login = type({ password: "string >= 12", amount: "number" })
+			const loginResult = Login["~standard"].validate({
+				password: secret,
+				amount: 10n
+			}) as StandardSchemaV1.FailureResult
+			attest(Array.isArray(loginResult.issues)).equals(true)
+			attest((loginResult.issues[0] as IssueWithData).data).equals(secret)
+			attest((loginResult.issues[1] as IssueWithData).data).equals(10n)
+			const loginIssuesJson = JSON.stringify(loginResult.issues)
+			attest(loginIssuesJson.includes(secret)).equals(false)
+			attest(loginIssuesJson).snap(
+				'[{"code":"minLength","path":["password"],"expected":"at least length 12","message":"must be at least length 12"},{"code":"domain","path":["amount"],"expected":"a number","message":"must be a number"}]'
+			)
+			attest(JSON.stringify(loginResult)).equals(
+				`{"issues":${loginIssuesJson},"message":"password must be at least length 12\\namount must be a number"}`
+			)
+
+			// errors: "none" (UndetailedErrors) also serializes out.issues and res.issues safely on BigInt
+			const noneScope = scope({}, { errors: "none" })
+			const NoneString = noneScope.type("string")
+			const noneOut = NoneString(10n) as type.errors
+			attest(JSON.stringify(noneOut.issues)).snap(
+				'[{"code":"predicate","path":[],"expected":"valid","message":"is invalid"}]'
+			)
+			const noneStd = NoneString["~standard"].validate(
+				10n
+			) as StandardSchemaV1.FailureResult
+			attest(JSON.stringify(noneStd.issues)).equals(
+				JSON.stringify(noneOut.issues)
+			)
 
 			const runtimeErr = new RuntimeArkErrors()
 			runtimeErr._e(secret, "domain", "a number")
@@ -79,6 +113,7 @@ contextualize(() => {
 			attest((runtimeResult.issues[0] as IssueWithData).data).equals(secret)
 			attest(runtimeResult.message).equals(runtimeErr.summary)
 			attest(JSON.stringify(runtimeResult)).equals(expectedRuntimeJson)
+			attest(JSON.stringify(runtimeResult.issues)).equals(expectedIssuesJson)
 
 			// lean/pruned errors without toJSON() serialize identically without crashing or leaking data
 			const sym = Symbol("secretKey")
@@ -86,7 +121,7 @@ contextualize(() => {
 			leanRuntimeErr._.push({
 				code: "union",
 				path: [sym],
-				data: { secret, big: 1n },
+				data: { secret, big: 10n },
 				expected: "a number or a boolean",
 				message: "must be a number or a boolean",
 				errors: [
@@ -100,8 +135,13 @@ contextualize(() => {
 				]
 			})
 			Object.defineProperty(leanRuntimeErr, "toJSON", { value: undefined })
-			attest(JSON.stringify(standardResultOf(leanRuntimeErr))).snap(
+			const leanRuntimeResult = standardResultOf(leanRuntimeErr)
+			if (!leanRuntimeResult.issues) throw new Error("Expected failure result")
+			attest(JSON.stringify(leanRuntimeResult)).snap(
 				'{"issues":[{"code":"union","path":["Symbol(secretKey)"],"expected":"a number or a boolean","message":"must be a number or a boolean","errors":[{"code":"domain","path":["Symbol(secretKey)"],"expected":"a number","message":"must be a number"}]}],"message":"[Symbol(secretKey)] must be a number or a boolean"}'
+			)
+			attest(JSON.stringify(leanRuntimeResult.issues)).snap(
+				'[{"code":"union","path":["Symbol(secretKey)"],"expected":"a number or a boolean","message":"must be a number or a boolean","errors":[{"code":"domain","path":["Symbol(secretKey)"],"expected":"a number","message":"must be a number"}]}]'
 			)
 
 			const leanSchemaFailure = standardFailureOf({
@@ -109,7 +149,7 @@ contextualize(() => {
 					{
 						code: "domain",
 						path: [{ key: sym }, "password"],
-						data: 1n,
+						data: 10n,
 						actual: secret,
 						expected: "a number",
 						message: "must be a number",
@@ -129,26 +169,64 @@ contextualize(() => {
 			attest(JSON.stringify(leanSchemaFailure)).snap(
 				'{"issues":[{"code":"domain","path":[{"key":"Symbol(secretKey)"},"password"],"expected":"a number","message":"must be a number","errors":[{"code":"predicate","path":["Symbol(secretKey)"],"expected":"valid","message":"is invalid"}]}],"message":"password must be a number"}'
 			)
+			attest(JSON.stringify(leanSchemaFailure.issues)).snap(
+				'[{"code":"domain","path":[{"key":"Symbol(secretKey)"},"password"],"expected":"a number","message":"must be a number","errors":[{"code":"predicate","path":["Symbol(secretKey)"],"expected":"valid","message":"is invalid"}]}]'
+			)
 
 			const firstErr = new FirstIssues()
-			firstErr._e(secret, "domain", "a number")
-			attest(JSON.stringify(standardResultOf(firstErr))).equals(
-				expectedRuntimeJson
-			)
+			firstErr._e(10n, "domain", "a number")
+			const firstResult = standardResultOf(firstErr)
+			if (!firstResult.issues) throw new Error("Expected failure result")
+			attest(JSON.stringify(firstResult)).equals(expectedRuntimeJson)
+			attest(JSON.stringify(firstResult.issues)).equals(expectedIssuesJson)
 
 			const lazyErr = unreadErrors(
 				(data, ctx) => !ctx._e(data, "domain", "a number"),
-				secret,
+				10n,
 				null
 			)
-			attest(JSON.stringify(standardResultOf(lazyErr))).equals(
-				expectedRuntimeJson
-			)
+			const lazyResult = standardResultOf(lazyErr)
+			if (!lazyResult.issues) throw new Error("Expected failure result")
+			attest(JSON.stringify(lazyResult)).equals(expectedRuntimeJson)
+			attest(JSON.stringify(lazyResult.issues)).equals(expectedIssuesJson)
 
-			const invalidResult = standardResultOf(new InvalidErrors(secret))
+			const invalidResult = standardResultOf(new InvalidErrors(10n))
+			if (!invalidResult.issues) throw new Error("Expected failure result")
 			attest(JSON.stringify(invalidResult)).snap(
 				'{"issues":[{"code":"predicate","path":[],"expected":"valid","message":"is invalid"}],"message":"is invalid"}'
 			)
+			attest(JSON.stringify(invalidResult.issues)).snap(
+				'[{"code":"predicate","path":[],"expected":"valid","message":"is invalid"}]'
+			)
+		})
+
+		it("never echoes raw rejected input via SyntaxError in string.json, string.json.parse, or string.regex", () => {
+			const secret = "pw=hunter2"
+			for (const [T, bad, expectedSummary] of [
+				[type("string.json"), secret, "must be a JSON string"],
+				[type("string.json.parse"), secret, "must be a JSON string"],
+				[type("string.regex"), `(${secret}`, "must be a regex pattern"]
+			] as const) {
+				const out = T(bad)
+				if (!(out instanceof type.errors)) throw new Error("Expected errors")
+				attest(out.summary).equals(expectedSummary)
+				attest(out.issues[0].message).equals(expectedSummary)
+				attest((out.issues[0] as { cause?: unknown }).cause).instanceOf(
+					SyntaxError
+				)
+				const std = T["~standard"].validate(
+					bad
+				) as StandardSchemaV1.FailureResult
+				for (const text of [
+					out.summary,
+					out.issues[0].message,
+					JSON.stringify(out),
+					JSON.stringify(out.issues),
+					JSON.stringify(std),
+					JSON.stringify(std.issues)
+				])
+					attest(text.includes("hunter2")).equals(false)
+			}
 		})
 	})
 
