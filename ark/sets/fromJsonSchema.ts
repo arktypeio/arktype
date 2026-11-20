@@ -67,7 +67,7 @@ const jsonSchemaScope = /* @__PURE__ */ cached((): BaseScope => {
 	return $
 })
 
-const rootSchema = (schema: RootSchema): BaseRoot =>
+const jsonSchemaRoot = (schema: RootSchema): BaseRoot =>
 	jsonSchemaScope().schema(schema)
 
 const node: BaseScope["node"] = (kind, schema, opts) =>
@@ -706,7 +706,7 @@ const constrainOwnType = (
 				(result, constraint) =>
 					intersectRoots(
 						result,
-						rootSchema(
+						jsonSchemaRoot(
 							isNode(constraint) ? constraint : (
 								{ ...basisOf[type], ...(constraint as object) }
 							)
@@ -747,19 +747,19 @@ const disjointFromArray = (node: BaseNode): Disjoint | undefined => {
 const typeRoots = /* @__PURE__ */ cached(
 	(): Record<JsonSchema.TypeName, BaseRoot> => ({
 		string: $ark.kw.string,
-		number: rootSchema(numberDomain),
-		integer: rootSchema({ domain: numberDomain, divisor: 1 }),
+		number: jsonSchemaRoot(numberDomain),
+		integer: jsonSchemaRoot({ domain: numberDomain, divisor: 1 }),
 		boolean: $ark.kw.boolean,
 		null: $ark.kw.null,
 		array: $ark.kw.Array,
-		object: rootSchema({ domain: "object", predicate: [notArray()] })
+		object: jsonSchemaRoot({ domain: "object", predicate: [notArray()] })
 	})
 )
 
 const otherThan = (...branches: BaseRoot[]) =>
 	unionOf([
 		...branches,
-		rootSchema(["bigint", "symbol", { unit: undefined }]),
+		jsonSchemaRoot(["bigint", "symbol", { unit: undefined }]),
 		typeRoots().boolean,
 		typeRoots().null
 	])
@@ -779,13 +779,13 @@ const unconstrainedBy = /* @__PURE__ */ cached(
 
 const constRoot = (value: unknown): BaseRoot =>
 	isArray(value) ?
-		rootSchema(
+		jsonSchemaRoot(
 			value.length === 0 ?
 				{ proto: Array, exactLength: 0 }
 			:	{ proto: Array, sequence: { prefix: value.map(constRoot) } }
 		)
 	: isPlainObject(value) ?
-		rootSchema({
+		jsonSchemaRoot({
 			domain: "object",
 			predicate: [notArray()],
 			required: Object.entries(value).map(([key, v]) => ({
@@ -794,7 +794,7 @@ const constRoot = (value: unknown): BaseRoot =>
 			})),
 			undeclared: "reject"
 		})
-	:	rootSchema({ unit: value })
+	:	jsonSchemaRoot({ unit: value })
 
 // one predicate per keyword and subschemas, so equal reads relate
 const predicatesByKey = /* @__PURE__ */ new WeakCache<Predicate>()
@@ -816,7 +816,8 @@ const opaqueRoot = (
 	key: unknown[],
 	description: string,
 	predicate: Predicate
-): BaseRoot => rootSchema({ predicate: [opaque(key, description, predicate)] })
+): BaseRoot =>
+	jsonSchemaRoot({ predicate: [opaque(key, description, predicate)] })
 
 const idsOf = (roots: readonly BaseRoot[]) => roots.map(root => root.id)
 
