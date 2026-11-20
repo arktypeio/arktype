@@ -311,7 +311,7 @@ contextualize(() => {
 		])
 		const T = type("number").narrow(named("a", (n: number) => n > 0))
 		const Contextual = type("number").narrow(
-			named("a", (n: number, ctx) => n > 0 || ctx.reject("positive"))
+			named("a", (n: number, ctx) => n > 0 || ctx.mustBe("positive"))
 		)
 		attest(isPrecompiled(units, T.internal)).equals(true)
 		attest(T(-1).toString()).snap("must be valid according to a")
@@ -324,13 +324,13 @@ contextualize(() => {
 			type("number").narrow(
 				named(
 					"isPositiveReporting",
-					(n: number, ctx) => n > 0 || ctx.reject("positive")
+					(n: number, ctx) => n > 0 || ctx.mustBe("positive")
 				)
 			)
 		])
 		const isPositive = named(
 			"a",
-			(n: number, ctx: Traversal) => n > 0 || ctx.reject("positive")
+			(n: number, ctx: Traversal) => n > 0 || ctx.mustBe("positive")
 		)
 		// as a standalone build records it, so its node allows without a ctx
 		returnsReports.add(isPositive)

@@ -119,7 +119,8 @@ contextualize(() => {
 	})
 
 	it("throws on anything but a schema", () => {
-		attest(() => parse([{ type: "string" }] as never)).throws(
+		// @ts-expect-error
+		attest(() => parse([{ type: "string" }])).throws(
 			writeUnparsableSchemaMessage('[{"type":"string"}]')
 		)
 		attest(() =>
@@ -128,6 +129,63 @@ contextualize(() => {
 			writeUnparsableSchemaMessage(
 				"a valibot Standard Schema without ~standard.jsonSchema"
 			)
+		)
+		attest(() => parse({ "~standard": null } as never)).throws(
+			writeUnparsableSchemaMessage('{"~standard":null}')
+		)
+	})
+
+	it("writes a Root's JSON Schema as its own toJsonSchema() would", () => {
+		const Defaulted = rootSchema({
+			domain: "object",
+			optional: [{ key: "a", value: "number", default: 1 }]
+		})
+		attest(toJsonSchema(Defaulted)).equals(Defaulted.toJsonSchema())
+		attest(toJsonSchema(Defaulted)).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			properties: { a: { type: "number", default: 1 } }
+		})
+		const Parsed = rootSchema({
+			in: "string",
+			morphs: [(s: string) => s.length]
+		})
+		attest(() => toJsonSchema(Parsed)).throws
+			.snap(`ToJsonSchemaError: Can't convert "morph" to JSON Schema. Configure fallback.morph to write it:
+{
+    code: "morph",
+    base: {
+        type: "string"
+    },
+    out: null
+}`)
+	})
+
+	it("ignores the keywords from 2019-09 on in an earlier dialect", () => {
+		const draft07 = "http://json-schema.org/draft-07/schema#"
+		// draft-07 has no unevaluatedProperties, and ignores a $ref's siblings
+		attest(
+			parse({
+				$schema: draft07,
+				$ref: "#/definitions/a",
+				definitions: { a: { type: "string" } },
+				unevaluatedProperties: false
+			}).expression
+		).snap("string")
+		attest(
+			parse({ $schema: draft07, type: "object", unevaluatedProperties: false })
+				.expression
+		).snap("object & isNonArray")
+		// its siblings' values are still checked, as a meta-schema would
+		attest(() =>
+			parse({
+				$schema: draft07,
+				$ref: "#/definitions/a",
+				definitions: { a: {} },
+				minLength: -1
+			})
+		).throws.snap(
+			"ParseError: #/minLength must be a non-negative integer (was -1)"
 		)
 	})
 

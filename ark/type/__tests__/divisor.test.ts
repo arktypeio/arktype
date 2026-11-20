@@ -2,7 +2,8 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	intrinsic,
 	writeIndivisibleMessage,
-	writeNonIntegerDivisorMessage
+	writeNonIntegerDivisorMessage,
+	zeroDivisorMessage
 } from "@ark/schema"
 import { type } from "arktype"
 import { writeInvalidDivisorMessage } from "arktype/internal/parser/shift/operator/divisor.ts"
@@ -70,6 +71,18 @@ contextualize(() => {
 			attest(() => type("number%0")).throwsAndHasTypeError(
 				writeInvalidDivisorMessage(0)
 			)
+			attest(() => type("number").divisibleBy(0)).throws(zeroDivisorMessage)
+		})
+
+		it("negative divisor", () => {
+			const T = type("number % -2")
+			attest(T.expression).snap("number % 2")
+			attest(T.equals("number % 2")).equals(true)
+			attest(T.toJsonSchema()).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "integer",
+				multipleOf: 2
+			})
 		})
 
 		it("unknown", () => {

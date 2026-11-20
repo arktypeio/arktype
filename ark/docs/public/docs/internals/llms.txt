@@ -4,22 +4,22 @@
 
 # Architecture
 
-> How ArkType is split into @ark/util, @ark/schema, arksets and arktype, and what each package owns.
+> How ArkType is layered into arktype/util, arktype/schema, arktype/sets and arktype, and what each layer owns.
 
 > **Not semver-stable**
 >
-> `@ark/schema` and `arksets/internal` change whenever `arktype` needs them to, so anything on these pages can break in a minor or patch release. That includes `.internal`, `select` and the schema format. If you import either directly, install the exact versions your `arktype` depends on. `arksets`' own functions are documented in [ArkSets](https://arktype.io/docs/sets).
+> `arktype/schema` and `arktype/schema/internal` change whenever `arktype` needs them to, so anything on these pages can break in a minor or patch release. That includes `.internal`, `select` and the schema format. `arktype/sets`' own functions are documented in [ArkSets](https://arktype.io/docs/sets).
 
-ArkType is four packages, each built on the one before it:
+ArkType is bundled as a single zero-dependency package, structured in four internal layers, each exposed as a subpath:
 
-| package | owns | depends on |
+| subpath | owns | built on |
 | - | - | - |
-| `@ark/util` | Utilities every package shares, like `ParseError`, `Json` and the registry that lets compiled validators reference functions | |
-| `@ark/schema` | Nodes: the schema format, node kinds, scopes, validation and the compiler behind it, `ArkErrors`, config and locales | `@ark/util` |
-| `arksets` | Set algebra over nodes: intersecting them, reducing them as they're created, discriminating unions and generating JSON Schema | `@ark/schema` |
-| `arktype` | The definition syntax (`"string > 5"`, object literals, tuple expressions), its type inference, `type`, `scope` and the keywords | all three, plus `arkregex` |
+| `arktype/util` | Utilities every layer shares, like `ParseError`, `Json` and the registry that lets compiled validators reference functions | |
+| `arktype/schema` | Nodes: the schema format, node kinds, scopes, validation and the compiler behind it, `ArkErrors`, config and locales | `arktype/util` |
+| `arktype/sets` | Set algebra over nodes: intersecting them, reducing them as they're created, discriminating unions and generating JSON Schema | `arktype/schema` |
+| `arktype` | The definition syntax (`"string > 5"`, object literals, tuple expressions), its type inference, `type`, `scope` and the keywords | all three, plus `arktype/regex` |
 
-When you call `type("string > 5")`, `arktype` parses the string into an `@ark/schema` node, `arksets` reduces it as it's created, and the node compiles itself into a validator. The Type you get back is that node:
+When you call `type("string > 5")`, `arktype` parses the string into an `arktype/schema` node, `arktype/sets` reduces it as it's created, and the node compiles itself into a validator. The Type you get back is that node:
 
 ```ts
 const T = type("string > 5")
@@ -28,17 +28,17 @@ T.json // { domain: "string", minLength: 6 }
 T.internal.kind // "intersection"
 ```
 
-`arktype` imports `arksets` itself, so you never install or import `@ark/schema` or `arksets` to use ArkType. They're documented here for three cases:
+`arktype` imports its set algebra automatically, so you never need to import `arktype/schema` or `arktype/sets` to use ArkType. They're documented here for three cases:
 
 - **Inspecting a Type.** Read its node kinds, its `.json` and its references with [`select`](https://arktype.io/docs/internals/nodes#select).
 - **Building a Type from data instead of syntax**, such as a converter from another schema format. Pass a schema to [`type.schema` or `rootSchema`](https://arktype.io/docs/internals/schemas).
-- **Using `@ark/schema` without `arktype`.** Import `arksets` yourself, or see [what works without it](https://arktype.io/docs/internals/sets).
+- **Using `arktype/schema` without `arktype`.** Import `arktype/sets` yourself, or see [what works without it](https://arktype.io/docs/internals/sets).
 
 # Nodes
 
 > The node kinds every Type is built from, and how to read them with .internal, .json and select.
 
-Every Type is a tree of nodes from `@ark/schema`. Each node has a `kind`, and its `.json` shows the tree in the [schema format](https://arktype.io/docs/internals/schemas):
+Every Type is a tree of nodes from `arktype/schema`. Each node has a `kind`, and its `.json` shows the tree in the [schema format](https://arktype.io/docs/internals/schemas):
 
 ```ts
 const User = type({ name: "string", "age?": "number" })
@@ -186,7 +186,7 @@ See [metadata](https://arktype.io/docs/expressions#meta) for more on `configure`
 
 # Schemas
 
-> Build Types from @ark/schema's object format with type.schema, rootSchema, node and schemaScope.
+> Build Types from arktype/schema's object format with type.schema, rootSchema, node and schemaScope.
 
 ArkType's syntax parses to a schema format made of [node kinds](https://arktype.io/docs/internals/nodes#node-kinds), and you can write that format directly. It's useful when you generate types from data, like a converter from another schema language, since there's no string to assemble. A Type built this way validates like any other but infers `unknown`.
 
@@ -214,11 +214,11 @@ const Typed = NonEmpty.as<string>()
 
 ## rootSchema
 
-`rootSchema` is `@ark/schema`'s version of `type.schema`. Its result is typed as a node instead of a Type, so it's what you use without `arktype`:
+`rootSchema` is `arktype/schema`'s version of `type.schema`. Its result is typed as a node instead of a Type, so it's what you use without `arktype`:
 
 ```ts
-import "arksets"
-import { rootSchema } from "@ark/schema"
+import "arktype/sets"
+import { rootSchema } from "arktype/schema"
 
 const User = rootSchema({
 	domain: "object",
@@ -232,14 +232,14 @@ const User = rootSchema({
 User({ name: "Ada", age: -1 })
 ```
 
-`import "arksets"` installs the [set algebra](https://arktype.io/docs/internals/sets). `arktype` imports it for you.
+`import "arktype/sets"` installs the [set algebra](https://arktype.io/docs/internals/sets). `arktype` imports it for you.
 
 ## node
 
 `node` creates a single node of a given kind from its inner value. Unlike a schema, the inner value's children must already be nodes:
 
 ```ts
-import { node, rootSchema } from "@ark/schema"
+import { node, rootSchema } from "arktype/schema"
 
 const NonEmpty = node("minLength", { rule: 1 })
 NonEmpty.expression // ">= 1"
@@ -257,7 +257,7 @@ Use it when you already have nodes, such as when you rebuild part of an existing
 `schemaScope` defines schemas that reference each other by name with `$`, the way [`scope`](https://arktype.io/docs/scopes) does for definitions:
 
 ```ts
-import { schemaScope } from "@ark/schema"
+import { schemaScope } from "arktype/schema"
 
 const $ = schemaScope({
 	user: {
@@ -275,31 +275,29 @@ user({ id: "" })
 
 # Set algebra
 
-> What importing arksets installs into @ark/schema, and what @ark/schema does without it.
+> What importing arktype/sets installs into arktype/schema, and what arktype/schema does without it.
 
-`arktype` imports the engine from `arksets/internal`, so if you use `arktype`, set algebra is always installed. This page is for using `@ark/schema` on its own.
+`arktype` installs the engine automatically, so if you use `arktype`, set algebra is always installed. This page is for using `arktype/schema` on its own.
 
 ```ts
-import "arksets"
+import "arktype/sets"
 ```
 
-Importing `arksets` installs the engine `@ark/schema` uses to:
+Importing `arktype/sets` installs the engine `arktype/schema` uses to:
 
 - intersect and pipe nodes, which `.and()`, `.narrow()`, `.filter()`, `.constrain()`, `.to()`, `.extends()`, `.overlaps()`, `.extract()`, `.exclude()` and `.keyof()` rely on
 - reduce nodes as they're created, so an unsatisfiable intersection throws and redundant union branches merge
 - discriminate unions, so a union of objects checks a shared key instead of trying each branch
 - generate JSON Schema for `.toJsonSchema()` and `~standard.jsonSchema`
 
-Import it before you parse anything: nodes are reduced when they're created, so a node parsed earlier stays unreduced. `arksets` installs into the copy of `@ark/schema` it resolves, so keep one copy of each package.
+Import it before you parse anything: nodes are reduced when they're created, so a node parsed earlier stays unreduced. The public functions `arktype/sets` exports, like `isSubset` and `intersect`, are documented in [ArkSets](https://arktype.io/docs/sets).
 
-`arksets/internal` exports the functions the engine is built from. They change with `@ark/schema`, so they aren't documented. The functions `arksets` itself exports, like `isSubset` and `intersect`, are in [ArkSets](https://arktype.io/docs/sets).
-
-## Without arksets
+## Without arktype/sets
 
 Without it, a node still parses and validates, but intersecting it throws:
 
 ```ts
-import { rootSchema } from "@ark/schema"
+import { rootSchema } from "arktype/schema"
 
 const Positive = rootSchema({ domain: "number", min: 0 })
 
@@ -308,7 +306,7 @@ Positive(5) // 5
 Positive(-1)
 
 Positive.and(rootSchema({ domain: "number", max: 10 }))
-// ParseError: Set algebra is not installed (import "arksets" to install it)
+// ParseError: Set algebra is not installed (import "arktype/sets" to install it)
 ```
 
 These work without it:
@@ -323,7 +321,7 @@ These throw the `ParseError` above:
 - `.and()`, `.narrow()`, `.filter()`, `.constrain()`, `.to()`, `.extends()`, `.overlaps()`, `.extract()`, `.exclude()`, `.keyof()`, `.toJsonSchema()` and `~standard.jsonSchema`
 - parsing a tuple whose length is bounded: a `sequence` with `prefix` or `postfix` elements or a `minVariadicLength`, or without a `variadic` element. Arrays like `{ proto: Array, sequence: "string" }` parse.
 - parsing a union that isn't `ordered` and has a branch that transforms
-- parsing an optional prop in a scope configured with `exactOptionalPropertyTypes: false`
+- parsing an optional prop, or a tuple's optional or defaultable element, in a scope configured with `exactOptionalPropertyTypes: false`
 - parsing an index signature keyed by anything but `string`, `symbol` or `string | symbol`
 
-Nodes that parse aren't reduced. `rootSchema({ domain: "number", min: 5, max: 3 })` throws with `arksets` installed, since no number satisfies it. Without it, it parses and rejects every number. Union branches aren't merged or discriminated either, so a union checks each branch in turn.
+Nodes that parse aren't reduced. `rootSchema({ domain: "number", min: 5, max: 3 })` throws with `arktype/sets` installed, since no number satisfies it. Without it, it parses and rejects every number. Union branches aren't merged or discriminated either, so a union checks each branch in turn.

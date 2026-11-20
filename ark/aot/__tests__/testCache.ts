@@ -8,7 +8,7 @@ import {
 	type BaseNode,
 	type BaseRoot,
 	type PrecompiledUnit
-} from "@ark/schema"
+} from "arktype/schema"
 
 // each acyclic root arktype's suites finalize binds the unit first written
 // under its key, so the suites run on units written for other roots, and a

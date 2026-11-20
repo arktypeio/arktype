@@ -20,7 +20,7 @@ export const dtsGen = () => {
 	const entry = pkgScope === "regex" ? "internal" : "index"
 
 	shell(
-		`pnpm tsup ${entry}.ts --dts-only --dts-resolve --format esm --out-dir . --tsconfig ../repo/tsconfig.tsup.json`
+		`pnpm tsup ${entry}.ts --dts-only --external @ark/util --external @ark/schema --external arksets --external arkregex --format esm --out-dir . --tsconfig ../repo/tsconfig.tsup.json`
 	)
 
 	const expectedDtsBundlePath = join(pkg.path, `${entry}.d.ts`)

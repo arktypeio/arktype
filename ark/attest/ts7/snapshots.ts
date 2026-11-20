@@ -1,5 +1,5 @@
 import { positionToString, type SourcePosition } from "@ark/fs"
-import { throwInternalError } from "@ark/util"
+import { throwInternalError } from "arktype/util"
 import type { SnapCallArgs } from "../cache/snapshots.ts"
 import {
 	TsgoServer,

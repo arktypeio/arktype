@@ -1,6 +1,6 @@
-import { hasArkKind, type ArkErrors } from "@ark/schema"
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import type { ArkIssue } from "@ark/schema/runtime"
+import type { ArkErrors } from "arktype/schema"
+
+import type { ArkIssue } from "arktype/schema/runtime"
 
 export interface KeptIssue {
 	code: string
@@ -23,12 +23,11 @@ export const keptOf = (errors: ArkErrors, grouped = true): ArkIssue[] => [
 	...(grouped ? errors.issues : errors._)
 ]
 
-// a TraversalError's errors, or the cause of an errors "none" assertion
+// a TraversalError's errors, as any build's errors throw it
 export const thrownErrorsOf = (thrown: unknown): ArkErrors | undefined =>
-	!(thrown instanceof Error) ? undefined
-	: "arkErrors" in thrown ? (thrown.arkErrors as ArkErrors)
-	: "cause" in thrown && hasArkKind(thrown.cause, "errors") ? thrown.cause
-	: undefined
+	thrown instanceof Error && "arkErrors" in thrown ?
+		(thrown.arkErrors as ArkErrors)
+	:	undefined
 
 export const thrownIssuesOf = (
 	thrown: unknown,

@@ -38,7 +38,10 @@ export type DeclarationParser<$> = <
 }
 
 type finalizePreinferred<preinferred, def, $, ctx extends DeclareContext> =
-	ctx["side"] extends distill.Side ?
+	// an assignable declaration keeps what its definition infers, which may be
+	// narrower than what it declares
+	ctx["assignable"] extends true ? type.infer<def, $>
+	: ctx["side"] extends distill.Side ?
 		ctx["side"] extends "in" ?
 			(In: preinferred) => type.infer.Out<def, $>
 		:	(In: type.infer.In<def, $>) => Out<preinferred>
@@ -46,6 +49,15 @@ type finalizePreinferred<preinferred, def, $, ctx extends DeclareContext> =
 
 export type DeclareContext = {
 	side?: "in" | "out"
+	/**
+	 * Check that the definition is assignable to the declared type, rather
+	 * than equal to it, and keep the type the definition infers.
+	 *
+	 * A required key may be required or optional where it's declared optional,
+	 * an optional key may be left out, and each value may be narrower than
+	 * the one declared. A key the declared type doesn't name is still an error.
+	 */
+	assignable?: boolean
 }
 
 export type validateDeclared<declared, def, $, ctx extends DeclareContext> =
@@ -71,7 +83,7 @@ type validateArrayInference<
 	args,
 	ctx extends DeclareContext
 > =
-	declared extends array ?
+	declaredObjectOf<declared, ctx> extends infer declared extends array ?
 		{
 			[i in keyof declared]: i extends keyof def ?
 				validateInference<def[i], declared[i], $, args, ctx>
@@ -86,11 +98,53 @@ type validateObjectInference<
 	args,
 	ctx extends DeclareContext
 > = show<
-	([keyof declared & MetaKey] extends [never] ?
-		validateDeclaredKeys<def, declared, $, args, ctx>
-	:	validateEscapedDeclaredKeys<def, declared, $, args, ctx>) &
+	validateObjectKeys<def, declaredObjectOf<declared, ctx>, $, args, ctx> &
 		DeclaredObjectSettings
 >
+
+// an object is assignable to `T | undefined` exactly where it is to `T`
+type declaredObjectOf<declared, ctx extends DeclareContext> =
+	ctx["assignable"] extends true ? Exclude<declared, null | undefined>
+	:	declared
+
+type validateObjectKeys<
+	def extends object,
+	declared,
+	$,
+	args,
+	ctx extends DeclareContext
+> =
+	string extends keyof declared ?
+		validateIndexedDeclaredKeys<def, declared, $, args, ctx>
+	: [keyof declared & MetaKey] extends [never] ?
+		validateDeclaredKeys<def, declared, $, args, ctx>
+	:	validateEscapedDeclaredKeys<def, declared, $, args, ctx>
+
+// e.g. `Omit<{ a: string } & Record<string, unknown>, "b">`, which keeps only
+// `[k: string]: unknown`. Mapped over `keyof`, the index signature would take
+// every key the definition has as `unknown` and give the Type that, so each
+// key is checked against the declared key it falls under instead
+type validateIndexedDeclaredKeys<
+	def extends object,
+	declared,
+	$,
+	args,
+	ctx extends DeclareContext,
+	literalKey extends keyof declared = literalKeyOf<declared>
+> = ([literalKey] extends [never] ? unknown
+:	validateObjectKeys<def, Pick<declared, literalKey>, $, args, ctx>) & {
+	[k in Exclude<
+		keyof def,
+		literalKey | `${literalKey & string}?` | MetaKey
+	>]: validateInference<def[k], declared[string & keyof declared], $, args, ctx>
+}
+
+type literalKeyOf<o> = keyof {
+	[k in keyof o as string extends k ? never
+	: number extends k ? never
+	: symbol extends k ? never
+	: k]: 0
+}
 
 type validateDeclaredKeys<
 	def extends object,
@@ -102,11 +156,45 @@ type validateDeclaredKeys<
 	[k in requiredKeyOf<declared>]: k extends keyof def ?
 		validateInference<def[k], declared[k], $, args, ctx>
 	:	declared[k]
-} & {
-	[k in optionalKeyOf<declared> & string as declaredOptionalKeySuggestion<
-		k,
-		def
-	>]: declaredOptionalValueSuggestion<def, k, declared, $, args, ctx>
+} & (ctx["assignable"] extends true ?
+	validateAssignableOptionalKeys<def, declared, $, args, ctx>
+:	{
+		[k in optionalKeyOf<declared> & string as declaredOptionalKeySuggestion<
+			k,
+			def
+		>]: declaredOptionalValueSuggestion<def, k, declared, $, args, ctx>
+	})
+
+// a key declared optional may be left out, or written required or optional,
+// and either way its value may be narrower than the one declared
+type validateAssignableOptionalKeys<
+	def extends object,
+	declared,
+	$,
+	args,
+	ctx extends DeclareContext
+> = {
+	[k in optionalKeyOf<declared> & string as k extends keyof def ? k
+	: `${k}?` extends keyof def ? `${k}?`
+	: k | `${k}?`]?: (
+		k extends keyof def ? k
+		: `${k}?` extends keyof def ? `${k}?`
+		: never
+	) extends infer defKey extends keyof def ?
+		[defKey] extends [never] ?
+			declared[k]
+		:	validateInference<
+				def[defKey],
+				// `undefined` too, unless `exactOptionalPropertyTypes` keeps it out.
+				// written inline so a mismatch shows the type rather than an alias
+				| Required<declared>[k]
+				| ({ [_ in k]: undefined } extends Pick<declared, k> ? undefined
+				  :	never),
+				$,
+				args,
+				ctx
+			>
+	:	never
 }
 
 // a declared key that is also a special key has to be escaped to be a prop.
@@ -157,7 +245,13 @@ type declaredEscapedOptionalValueSuggestion<
 	def[declaredKey<k> & keyof def] extends OptionalPropertyDefinition ?
 		validateInference<
 			def[declaredKey<k> & keyof def],
-			Required<declared>[k],
+			declaredOptionalValue<
+				declared,
+				k,
+				def[declaredKey<k> & keyof def],
+				$,
+				args
+			>,
 			$,
 			args,
 			ctx
@@ -174,12 +268,40 @@ type declaredOptionalValueSuggestion<
 > =
 	k extends keyof def ?
 		def[k] extends OptionalPropertyDefinition ?
-			// Required<declared>[k] ensures that we can distinguish { foo?: true } from { foo?: true | undefined }
-			validateInference<def[k], Required<declared>[k], $, args, ctx>
+			validateInference<
+				def[k],
+				declaredOptionalValue<declared, k, def[k], $, args>,
+				$,
+				args,
+				ctx
+			>
 		:	declared[k]
 	: `${k}?` extends keyof def ?
-		validateInference<def[`${k}?`], Required<declared>[k], $, args, ctx>
+		validateInference<
+			def[`${k}?`],
+			declaredOptionalValue<declared, k, def[`${k}?`], $, args>,
+			$,
+			args,
+			ctx
+		>
 	:	declared[k]
+
+// Required<declared>[k] distinguishes { foo?: true } from { foo?: true | undefined }.
+// Without exactOptionalPropertyTypes, TS reads both as the second, and drops
+// undefined from both with Required, so a definition allowing undefined is
+// checked against the key with it wherever the key allows it
+type declaredOptionalValue<
+	declared,
+	k extends keyof declared,
+	valueDef,
+	$,
+	args
+> =
+	undefined extends inferDefinition<valueDef, $, args> ?
+		{ [_ in k]: undefined } extends Pick<declared, k> ?
+			declared[k]
+		:	Required<declared>[k]
+	:	Required<declared>[k]
 
 type validateShallowInference<
 	t,
@@ -187,8 +309,23 @@ type validateShallowInference<
 	ctx extends DeclareContext,
 	inferred = ctx["side"] extends distill.Side ? distill<t, ctx["side"]> : t
 > =
-	equals<inferred, declared> extends true ? unknown
+	(
+		ctx["assignable"] extends true ?
+			[inferred] extends [declared] ?
+				true
+			:	false
+		: isAny<declared> extends true ?
+			// only `unknown` is as wide as `any`, so anything narrower would
+			// be widened to it
+			unknown extends inferred ?
+				true
+			:	false
+		:	equals<inferred, declared>
+	) extends true ?
+		unknown
 	:	show<declarationMismatch<inferred, declared>>
+
+type isAny<t> = 0 extends 1 & t ? true : false
 
 type declarationMismatch<inferred, declared> = ErrorType<{
 	declared: declared

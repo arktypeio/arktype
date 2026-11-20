@@ -195,6 +195,7 @@ export const preciseFormOf = (
 	if (
 		members.has("methods") ||
 		members.has("~standard") ||
+		members.has("withContext") ||
 		(reads.piped && canPipe(baking, members, unconfigured))
 	)
 		return
@@ -337,7 +338,7 @@ const creatorBodyOf = (baking: Baking, form: CreatorForm): string => {
 		`{
 		vendor: "arktype",
 		version: 1,
-		validate: ${frozen(baking, "input => runtime.standardResultOf(validator(input))")}${members.has("~standard.jsonSchema") ? `,\n\t\t...attributes["~standard"]` : ""}
+		validate: ${frozen(baking, "(input, options) => runtime.standardValidated(validator, input, options)")}${members.has("~standard.jsonSchema") ? `,\n\t\t...attributes["~standard"]` : ""}
 	}`
 	)
 	const call = creatorCallOf(baking, form)
@@ -360,6 +361,9 @@ const creatorBodyOf = (baking: Baking, form: CreatorForm): string => {
 		: "runtime.own(validator, attributes)",
 		reads.readsAllows && isCalled ? `validator.allows = ${form.allowsOf}` : "",
 		members.has("~standard") ? `validator["~standard"] = ${standard}` : "",
+		members.has("withContext") && isCalled ?
+			`validator.withContext = ${frozen(baking, "context => runtime.withContextOf(validator, context)")}`
+		:	"",
 		baking.holdsIds ?
 			`return runtime.holdHoles(${frozen(baking, "validator")}, id, holes)`
 		:	`return ${frozen(baking, "validator")}`

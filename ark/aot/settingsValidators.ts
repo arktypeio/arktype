@@ -172,12 +172,16 @@ var Issues =
 				}
 				throw() {
 					if (namesTraversalError) throw new ThrownIssues(this)
+					if (definedThrown) throw new definedThrown(this)
 					const thrown = Error(this.summary)
 					thrown.name = "TraversalError"
 					throw Object.defineProperty(thrown, "arkErrors", { value: this })
 				}
 				toJSON() {
-					return this.issues
+					return this.issues.map(jsonIssueOf)
+				}
+				[Symbol.iterator]() {
+					return this.issues[Symbol.iterator]()
 				}
 				toString() {
 					return this.summary
@@ -215,21 +219,24 @@ var Issues =
 						summary += (summary && "\n") + lineOf(issue)
 					return summary
 				}
-				// an instance of TraversalError only where a program names the
-				// class, so can test for one: otherwise an Error it can't tell
-				// from one, with the same name, message and errors, and no class
-				// in its bundle. Its name is assigned and its errors defined as
-				// the class's are, in statements, which gzip to less than one
-				// expression building it and which a build writing the flag as
-				// a literal folds as well
+				// constructed by TraversalError wherever its bundle keeps the
+				// class: otherwise an Error with the same name, message and
+				// errors, and no class in its bundle. Its name is assigned and
+				// its errors defined as the class's are, in statements, which
+				// gzip to less than one expression building it and which a build
+				// writing the flag as a literal folds as well
 				throw() {
 					if (namesTraversalError) throw new ThrownIssues(this)
+					if (definedThrown) throw new definedThrown(this)
 					const thrown = Error(this.summary)
 					thrown.name = "TraversalError"
 					throw Object.defineProperty(thrown, "arkErrors", { value: this })
 				}
 				toJSON() {
-					return this.issues
+					return this.issues.map(jsonIssueOf)
+				}
+				[Symbol.iterator]() {
+					return this.issues[Symbol.iterator]()
 				}
 				toString() {
 					return this.summary
@@ -245,6 +252,13 @@ var Issues =
 		}
 	: findsOnRead ? UnreadIssues
 	: ReadIssues
+var jsonIssueOf = issue => ({
+	code: issue.code,
+	path: issue.path.map(k => (typeof k === "symbol" ? String(k) : k)),
+	expected: issue.expected,
+	message: issue.message ?? messageOf(issue),
+	...(issue.errors && { errors: issue.errors.map(jsonIssueOf) })
+})
 var foundErrors = (apply, data, onFail, Ctx = Issues) => {
 	const errors = new Ctx()
 	apply(data, errors)
@@ -302,16 +316,19 @@ var messageOf = issue =>
 		(issue.code === "required" ? " (was missing)" : "")
 	: issue.code === "required" ? "is missing"
 	: "is invalid"
-var ThrownIssues =
-	readsErrors && namesTraversalError ?
-		class TraversalError extends Error {
-			constructor(errors) {
-				super(errors.summary)
-				this.name = "TraversalError"
-				Object.defineProperty(this, "arkErrors", { value: errors })
-			}
+var definedThrown
+var ThrownIssues = /* @__PURE__ */ (() =>
+	(definedThrown = class TraversalError extends Error {
+		constructor(errors) {
+			super(errors.summary)
+			this.name = "TraversalError"
+			Object.defineProperty(this, "arkErrors", { value: errors })
 		}
-	:	void 0
+	}))()
+
+// ark/schema/shared/jsonSchema.ts
+var supportedJsonSchemaTargets = ["draft-2020-12", "draft-07", "openapi-3.0"]
+var toJsonSchemaTargets = [...supportedJsonSchemaTargets, "openapi-3.1"]
 
 // ark/schema/shared/transform.ts
 var TransformErrors = class _TransformErrors {
@@ -356,6 +373,35 @@ var errorsOf = ctx => (ctx._errors ??= ctx.createErrors())
 var receive = (ctx, data) => {
 	ctx.recv = data
 	ctx.recvAt = ctx.path.length
+}
+var callContext
+var inContext = (context, run) => {
+	const outer = callContext
+	callContext = context
+	try {
+		return run()
+	} finally {
+		callContext = outer
+	}
+}
+var withContextOf = (t, context) => {
+	const standard = t["~standard"]
+	return Object.assign(data => inContext(context, () => t(data)), {
+		assert: data => inContext(context, () => t.assert(data)),
+		allows: data => inContext(context, () => t.allows(data)),
+		// as the Type's, with its vendor's own members like _c, but validating in context
+		"~standard": Object.defineProperties(
+			{},
+			{
+				...Object.getOwnPropertyDescriptors(standard),
+				validate: {
+					value: (value, options) =>
+						inContext(context, () => standard.validate(value, options)),
+					enumerable: true
+				}
+			}
+		)
+	})
 }
 var addErrors = (ctx, errors) => {
 	if (errors === ctx._errors) return
@@ -798,7 +844,7 @@ var interned = (key, create, ...args) =>
 	intern(internedTable(key), [], () => create(...args))
 
 // <stdin>
-var intersectionnuqurd1csx8up = [
+var intersectionj0sv370oqte88 = [
 	/* @__PURE__ */ sited(
 		(data, checkers) => {
 			if (
@@ -806,6 +852,7 @@ var intersectionnuqurd1csx8up = [
 				("meta" in data && !booleanChecker(data.meta)) ||
 				("~standard" in data && !booleanChecker(data["~standard"])) ||
 				("methods" in data && !booleanChecker(data.methods)) ||
+				("withContext" in data && !booleanChecker(data.withContext)) ||
 				("expression" in data && !booleanChecker(data.expression)) ||
 				("description" in data && !booleanChecker(data.description)) ||
 				("json" in data && !booleanChecker(data.json)) ||
@@ -821,6 +868,7 @@ var intersectionnuqurd1csx8up = [
 					case "meta":
 					case "~standard":
 					case "methods":
+					case "withContext":
 					case "expression":
 					case "description":
 					case "json":
@@ -838,6 +886,7 @@ var intersectionnuqurd1csx8up = [
 			meta: /* @__PURE__ */ optional(booleanChecker),
 			"~standard": /* @__PURE__ */ optional(booleanChecker),
 			methods: /* @__PURE__ */ optional(booleanChecker),
+			withContext: /* @__PURE__ */ optional(booleanChecker),
 			expression: /* @__PURE__ */ optional(booleanChecker),
 			description: /* @__PURE__ */ optional(booleanChecker),
 			json: /* @__PURE__ */ optional(booleanChecker),
@@ -850,10 +899,10 @@ var intersectionnuqurd1csx8up = [
 		"removed"
 	)
 ]
-var intersection18s5mcd1ew9bfr = /* @__PURE__ */ (([
-	intersectionnuqurd1csx8upAllows
+var intersectiona1747b08zjj0x = /* @__PURE__ */ (([
+	intersectionj0sv370oqte88Allows
 ]) => {
-	const intersection18s5mcd1ew9bfrAllows = /* @__PURE__ */ sited(
+	const intersectiona1747b08zjj0xAllows = /* @__PURE__ */ sited(
 		(data, checkers) => {
 			if (
 				("preset" in data && !checkers[0](data.preset)) ||
@@ -941,7 +990,7 @@ var intersection18s5mcd1ew9bfr = /* @__PURE__ */ (([
 					"a module path or false"
 				)
 			),
-			members: /* @__PURE__ */ optional(intersectionnuqurd1csx8upAllows),
+			members: /* @__PURE__ */ optional(intersectionj0sv370oqte88Allows),
 			errors: /* @__PURE__ */ optional(
 				/* @__PURE__ */ units(["all", "first", "none"])
 			),
@@ -1039,9 +1088,9 @@ var intersection18s5mcd1ew9bfr = /* @__PURE__ */ (([
 		0,
 		"removed"
 	)
-	return [intersection18s5mcd1ew9bfrAllows]
-})(intersectionnuqurd1csx8up)
-var create12fpvlf14u2zct = ([allows], id, holes = []) => {
+	return [intersectiona1747b08zjj0xAllows]
+})(intersectionj0sv370oqte88)
+var create1q5hta0h0lh5t = ([allows], id, holes = []) => {
 	const validator = (data, pipedFromCtx, onFail) =>
 		allows(data) ?
 			(allows.t?.(data) ?? data)
@@ -1051,12 +1100,13 @@ var create12fpvlf14u2zct = ([allows], id, holes = []) => {
 				pipedFromCtx ? errors => pipedFromCtx.piped(errors) : onFail
 			)
 	validator.allows = freeze(allows)
+	validator.withContext = freeze(context => withContextOf(validator, context))
 	return holdHoles(freeze(validator), id, holes)
 }
-var intersectionr7db5b16qhzdr = /* @__PURE__ */ (([
-	intersectionnuqurd1csx8upAllows
+var intersection1kiu37t1iquj2h = /* @__PURE__ */ (([
+	intersectionj0sv370oqte88Allows
 ]) => {
-	const intersectionr7db5b16qhzdrAllows = /* @__PURE__ */ sited(
+	const intersection1kiu37t1iquj2hAllows = /* @__PURE__ */ sited(
 		(data, checkers) => {
 			if (
 				("preset" in data && !checkers[0](data.preset)) ||
@@ -1136,7 +1186,7 @@ var intersectionr7db5b16qhzdr = /* @__PURE__ */ (([
 					"a module path or false"
 				)
 			),
-			members: /* @__PURE__ */ optional(intersectionnuqurd1csx8upAllows),
+			members: /* @__PURE__ */ optional(intersectionj0sv370oqte88Allows),
 			errors: /* @__PURE__ */ optional(
 				/* @__PURE__ */ units(["all", "first", "none"])
 			),
@@ -1221,34 +1271,34 @@ var intersectionr7db5b16qhzdr = /* @__PURE__ */ (([
 		0,
 		"removed"
 	)
-	return [intersectionr7db5b16qhzdrAllows]
-})(intersectionnuqurd1csx8up)
-var intersection1gc9l3d1josyao = /* @__PURE__ */ (([
-	intersectionr7db5b16qhzdrAllows
+	return [intersection1kiu37t1iquj2hAllows]
+})(intersectionj0sv370oqte88)
+var intersection84g0ee1bxihyt = /* @__PURE__ */ (([
+	intersection1kiu37t1iquj2hAllows
 ]) => {
-	const intersection1gc9l3d1josyaoAllows = /* @__PURE__ */ closedProps({
+	const intersection84g0ee1bxihytAllows = /* @__PURE__ */ closedProps({
 		$schema: /* @__PURE__ */ optional(stringCheck),
-		precompile: /* @__PURE__ */ optional(intersectionr7db5b16qhzdrAllows)
+		precompile: /* @__PURE__ */ optional(intersection1kiu37t1iquj2hAllows)
 	})
-	return [intersection1gc9l3d1josyaoAllows]
-})(intersectionr7db5b16qhzdr)
-var intersectionwrrov10jn1adl = /* @__PURE__ */ (([
-	intersectionr7db5b16qhzdrAllows
+	return [intersection84g0ee1bxihytAllows]
+})(intersection1kiu37t1iquj2h)
+var intersection1j4pd4n1jwocfa = /* @__PURE__ */ (([
+	intersection1kiu37t1iquj2hAllows
 ]) => {
-	const intersectionwrrov10jn1adlAllows = /* @__PURE__ */ closedProps({
-		precompile: /* @__PURE__ */ optional(intersectionr7db5b16qhzdrAllows),
+	const intersection1j4pd4n1jwocfaAllows = /* @__PURE__ */ closedProps({
+		precompile: /* @__PURE__ */ optional(intersection1kiu37t1iquj2hAllows),
 		aot: /* @__PURE__ */ optional(/* @__PURE__ */ unit(true))
 	})
-	return [intersectionwrrov10jn1adlAllows]
-})(intersectionr7db5b16qhzdr)
+	return [intersection1j4pd4n1jwocfaAllows]
+})(intersection1kiu37t1iquj2h)
 var created0
 var created1
 var created2
 var get0 = () => {
 	return created0 === void 0 ?
 			(created0 = (() => {
-				const validator0 = interned("hm6a6z0jsq1k0", () =>
-					create12fpvlf14u2zct(intersection18s5mcd1ew9bfr, "1vrd1uw0")
+				const validator0 = interned("1vfc2j508amzo4", () =>
+					create1q5hta0h0lh5t(intersectiona1747b08zjj0x, "1706xit1")
 				)
 				return validator0
 			})())
@@ -1257,8 +1307,8 @@ var get0 = () => {
 var get1 = () => {
 	return created1 === void 0 ?
 			(created1 = (() => {
-				const validator0 = interned("xg82nv06pk8jr", () =>
-					create12fpvlf14u2zct(intersection1gc9l3d1josyao, "2bltfq0s")
+				const validator0 = interned("inq2he0srsmw8", () =>
+					create1q5hta0h0lh5t(intersection84g0ee1bxihyt, "1y1ytoj0")
 				)
 				return validator0
 			})())
@@ -1267,8 +1317,8 @@ var get1 = () => {
 var get2 = () => {
 	return created2 === void 0 ?
 			(created2 = (() => {
-				const validator0 = interned("asrfrq0l73vcp", () =>
-					create12fpvlf14u2zct(intersectionwrrov10jn1adl, "sjni0h1r")
+				const validator0 = interned("73gcco1k0mhoe", () =>
+					create1q5hta0h0lh5t(intersection1j4pd4n1jwocfa, "12jiwy81")
 				)
 				return validator0
 			})())

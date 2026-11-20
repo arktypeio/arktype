@@ -1,5 +1,132 @@
 # arktype
 
+## Unreleased
+
+### Pass a constraint its message
+
+Each constraint method, like `.atLeastLength()`, `.atMost()`, `.matching()`, `.divisibleBy()` or `.laterThan()`, takes a message as its last argument, a sentence or a function of the error, which that constraint alone says, as Zod's `.min(1, "...")` does:
+
+```ts
+const Signup = type({
+	name: type.string.atLeastLength(1, "Name is required"),
+	password: type.string
+		.atLeastLength(8, "Use 8 or more characters")
+		.matching(/[0-9]/, "Include a number")
+})
+
+// name: Name is required
+// password: Include a number
+// password: Use 8 or more characters
+Signup({ name: "", password: "abc" })
+
+// name must be a string (was missing)
+// password must be a string (was missing)
+Signup({})
+```
+
+It's that constraint's own `meta`, so two of one kind, like two patterns, or an array's length and its elements', each say their own, where a message selected by code is said by every check of that kind. It's left out of `expression`, `description` and JSON Schema, and a precompiled build writes it.
+
+### Set a Type's message with `.message()`
+
+`.message(text)` is `.configure({ message: text })`, as `.describe(text)` is for `description`: a value of the wrong type and a missing key say it too. Its second argument selects which errors say it, like `"self"` for a missing key, `"domain"` for a wrong type, or a code for a check without a method, like `string.email`'s `"pattern"`:
+
+```ts
+const Sku = type.string
+	.matching(/^[A-Z]{3}-\d{4}$/, "SKU looks like ABC-1234")
+	.message("SKU is required", "self")
+	.message("SKU must be text", "domain")
+```
+
+### `ctx.reject()` takes no string
+
+A string passed to `ctx.reject()` was what the value must be, as it is for `ctx.mustBe()`, so a sentence read `must be Enter a valid zip code`. Its parameter is now `RejectInput`, the parts of an error, so TypeScript flags a string. Pass a sentence as `ctx.reject({ message })` and what the value must be to `ctx.mustBe()`. At runtime a string is still read as before, and `ctx.error()` still takes one.
+
+```ts
+// TypeScript: Argument of type 'string' is not assignable to parameter of type 'RejectInput'
+type("string").narrow(
+	(s, ctx) => s.length > 0 || ctx.reject("Name is required")
+)
+
+type("string").narrow(
+	(s, ctx) => s.length > 0 || ctx.reject({ message: "Name is required" })
+)
+```
+
+### A tuple expression's `:` is a `.narrow()`
+
+`[def, ":", fn]` and `type(def, ":", fn)` checked `def`'s input, before any morph or default it holds, though the docs and the tuple form's types had them narrow its output, as `.narrow(fn)` does. They now do, so the predicate sees what `def` returns, and both forms type it that way:
+
+```ts
+const T = type({ a: "number = 5" }, ":", o => o.a > 0)
+
+// was: ArkErrors, since the predicate read {} and o.a was undefined
+// now: { a: 5 }
+T({})
+```
+
+After a morph, `:` narrows the morph's output, where it threw `ParseError: Predicate operand must be unknown (was a morph)`. Check the input with `.filter()`.
+
+### Infer `object.json` as `JsonStructure`
+
+`object.json` accepts only plain objects and arrays, but inferred `Json`, which includes strings, numbers, booleans and `null`, so `type("object.json").from("hi")` type checked and threw. It and `object.json.stringify`'s input now infer `JsonStructure`, which `arktype` exports beside `Json`.
+
+### Type each of `.props` as the prop it is
+
+Each prop's `value` is one Type, as it is at runtime. A union value was split into a prop per branch, and `undefined` was dropped from every value, so a required key's `"undefined"` value left no prop at all:
+
+```ts
+const T = type({ a: "string | number", b: "string | undefined" })
+
+// was: Type<string> | Type<number> | Type<string>
+// now: Type<string | number> | Type<string | undefined>
+T.props[0].value
+```
+
+An optional key's value is read as `-?` reads it, so it keeps an `undefined` it was given where `exactOptionalPropertyTypes` is enabled. A defaulted morph's prop has its `default`.
+
+### `.required()` and `.partial()` of an array return an array Type
+
+Like `.readonly()`, they keep array methods like `.atLeastLength()` on a tuple or array Type.
+
+### Type a `type.fn`'s `params` and `returns` as the Types they are
+
+They were typed from the function's signature, which leaves a morph only its input or output, so a morph's `returns` was typed as its output alone:
+
+```ts
+const f = type.fn("string", ":", "string.numeric.parse")(s => s)
+
+// was: Type<number>, now: Type<(In: string) => To<number>>
+f.returns
+```
+
+### Without `exactOptionalPropertyTypes`, drop `undefined` where a key or element becomes required
+
+With `exactOptionalPropertyTypes: false`, an optional key's value allows `undefined`, and TypeScript's `Required` drops it again, whether or not it was written. `.required()`, `.out` and `.encode` now do too, where they kept it, so `.out` agrees with its type and a defaulted key's output has a JSON Schema:
+
+```ts
+const T = type({ "a?": "string", b: "number = 5" })
+
+// was: { a: string | undefined, b: number | undefined }
+// now: { a: string, b: number }
+T.required()
+
+// was: { a?: string | undefined, b: number | undefined }
+// now: { a?: string | undefined, b: number }
+T.out
+```
+
+A default replaces `undefined`, so a default of `undefined` throws a ParseError, where `["string", "=", undefined]` passed.
+
+Tuples follow the same rules, where they ignored the option: an optional or defaultable element allows `undefined`, a default replaces it, and `.required()`, `.out` and `.encode` drop it.
+
+### Don't transform an `undefined` a default replaces
+
+With `exactOptionalPropertyTypes: false`, a defaulted key holding `undefined` is replaced by its default, but its value's morph ran on the `undefined` first when its input allowed it, then again on the default.
+
+### `type.declare` accepts either definition of an optional key without `exactOptionalPropertyTypes`
+
+Where `exactOptionalPropertyTypes` isn't enabled, TS reads `{ a?: string }` and `{ a?: string | undefined }` as the same type, so a key declared as either can be defined as `"a?": "string"` or `"a?": "string | undefined"`. The second was a type error.
+
 ## 3.0.0-beta.1
 
 ### Summary

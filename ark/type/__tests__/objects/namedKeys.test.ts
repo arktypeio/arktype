@@ -186,6 +186,47 @@ contextualize(() => {
 		])
 	})
 
+	it("required drops the undefined an optional key allowed", () => {
+		// as TS's Required does without exactOptionalPropertyTypes, whether
+		// or not undefined was written
+		const T = loose
+			.type({ "a?": "string", "b?": "string | undefined", "c?": "unknown" })
+			.required()
+		attest(T.expression).snap("{ a: string, b: string, c: unknown }")
+		attest(T.allows({ a: "", b: "", c: undefined })).equals(true)
+		attest(T({ a: undefined, b: "", c: 1 }).toString()).snap(
+			"a must be a string"
+		)
+	})
+
+	it("a default's output doesn't allow the undefined it replaces", () => {
+		const T = loose.type({ a: "number = 5", "b?": "string" })
+		attest(T.in.expression).snap(
+			"{ a?: number | undefined, b?: string | undefined }"
+		)
+		attest(T.out.expression).snap("{ a: number, b?: string | undefined }")
+		attest(T.out.allows({ a: undefined })).equals(false)
+		attest(T.out.toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			properties: { a: { type: "number" }, b: { type: "string" } },
+			required: ["a"]
+		})
+	})
+
+	it("a default can't be the undefined it replaces", () => {
+		attest(() =>
+			loose.type({ a: ["string", "=", undefined as never] })
+		).throws.snap("ParseError: Default for a must be a string")
+		// even where undefined is written, it would replace undefined with itself
+		attest(() =>
+			loose.type({ a: ["string | undefined", "=", undefined] })
+		).throws.snap("ParseError: Default for a must be a string")
+		// a function's result is checked as it's applied
+		const Thunked = loose.type({ a: ["string", "=", () => undefined as never] })
+		attest(Thunked({}).toString()).snap("a must be a string")
+	})
+
 	it("disjoint optional allowing undefined", () => {
 		const T = loose.type({ "a?": "string" }).and(type({ "a?": "number" }))
 		attest(T.expression).snap("{ a?: never }")

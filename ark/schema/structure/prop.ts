@@ -100,6 +100,16 @@ export abstract class BaseProp<
 		return "default" in this.inner
 	}
 
+	/** whether data has a value at its key, which its value transforms and a default leaves alone */
+	holdsValue(data: object): boolean {
+		return this.key in data
+	}
+
+	/** writes whether `data` holds its key with a value */
+	jsHoldsValue(js: NodeCompiler, data: string): string {
+		return `${js.serialize(this.key)} in ${data}`
+	}
+
 	tAllows(data: object, ctx: InternalTraversal | AliasDepth): boolean {
 		if (this.key in data) {
 			// ctx will be undefined if this node isn't context-dependent

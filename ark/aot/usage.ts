@@ -24,6 +24,7 @@ export type UsedMember =
 	| "~standard"
 	| "meta"
 	| "methods"
+	| "withContext"
 	| "allows"
 	| "call"
 	| "piped"
@@ -40,6 +41,7 @@ const usedMembersByName: Record<string, UsedMember | null> =
 			meta: "meta",
 			traverse: "methods",
 			from: "methods",
+			withContext: "withContext",
 			toString: "methods"
 		},
 		null
@@ -699,6 +701,13 @@ class UsageAnalysis {
 				if (name === "traverse") this.used.add("call")
 				// from(input) returns this.assert(input)
 				if (name === "from") this.used.add("assert")
+				// withContext(context) binds a call, assert, allows and ~standard
+				if (name === "withContext") {
+					this.used.add("call")
+					this.used.add("allows")
+					this.used.add("assert")
+					this.used.add("~standard")
+				}
 				if (name === "assert" || name === "traverse") {
 					const [method, call] = operatorOf(parent)
 					if (call?.type === "CallExpression" && call.callee === method)

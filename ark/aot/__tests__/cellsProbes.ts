@@ -195,7 +195,7 @@ const wholeKeeping: Record<string, string> = {
 	morphed: `type("string.numeric.parse | number")`
 }
 
-const ctxNarrow = `type({ a: "number | null" }).narrow((o, ctx) => o.a !== 5 || ctx.reject("not five"))`
+const ctxNarrow = `type({ a: "number | null" }).narrow((o, ctx) => o.a !== 5 || ctx.mustBe("not five"))`
 
 const inputs = [
 	`{}`,

@@ -1,5 +1,5 @@
-import type { ErrorDetail, MutatesInput } from "@ark/schema"
-import { capitalize, printable } from "@ark/util"
+import type { ErrorDetail, MutatesInput } from "arktype/schema"
+import { capitalize, printable } from "./util.ts"
 import type { PrecompilePluginOptions } from "./driver.ts"
 import {
 	packageNameOf,
@@ -81,7 +81,7 @@ export const writeVariantImportMessage = (
 	specifier: string,
 	variant: RuntimeVariant
 ): string =>
-	`${importer} imports ${specifier}, which a build with ${writeVariantOption(variant)} can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own. Import what it reads from arktype, which a standalone build resolves to that runtime, or build ${writeWithoutVariant(variant)}.`
+	`${importer} imports ${specifier}, which a build with ${writeVariantOption(variant)} can't load beside its runtime, a copy of arktype/schema's whose errors are a class of their own. Import what it reads from arktype, which a standalone build resolves to that runtime, or build ${writeWithoutVariant(variant)}.`
 
 export const writeTextlessMessage = (path: string): string =>
 	`${path} imports arktype but was loaded without @ark/aot/node's hooks, before register() ran or by a loader that compiles it itself, as tsx does in a CommonJS package, so a standalone build can't precompile it. Register them first, as with \`node --import ./register.ts\`, and let Node run the TypeScript rather than a loader like tsx.`
@@ -102,13 +102,7 @@ export const writeExternalizedMessage = (
 	`The build's \`${option}\` option leaves ${specifier} ${loadedAtRuntime}. Remove ${packageNameOf(specifier)} from \`${option}\`.`
 
 // each package arktype loads, which Next.js bundles one by one
-const arktypePackages = [
-	"arktype",
-	"@ark/schema",
-	"@ark/util",
-	"arkregex",
-	"arksets"
-]
+const arktypePackages = ["arktype"]
 
 export const writeNextExternalMessage = (
 	specifier: string,
@@ -183,7 +177,7 @@ export const writeAliasMessage = (
 // `resolved` is where @ark/schema/runtime resolves other than to the module
 // the loader writes as the build's copy
 export const writeRuntimeAliasMessage = (resolved: string): string =>
-	`@ark/schema/runtime resolves to ${resolved} rather than ${runtimeShimSpecifier}, which the loader writes as the runtime the build's options load. Add to turbopack.resolveAlias: ${JSON.stringify({ "@ark/schema/runtime": runtimeShimSpecifier })}.`
+	`arktype/schema/runtime resolves to ${resolved} rather than ${runtimeShimSpecifier}, which the loader writes as the runtime the build's options load. Add to turbopack.resolveAlias: ${JSON.stringify({ "arktype/schema/runtime": runtimeShimSpecifier })}.`
 
 export const runtimeShimSpecifier = "@ark/aot/turbopack/runtime"
 
@@ -360,17 +354,19 @@ export const writeNoConfigHint = (path: string): string =>
 	`Name this module as the build's config in ark.json: { "precompile": { "config": ${JSON.stringify(/^\.{0,2}\//.test(path) ? path : `./${path}`)} } }`
 
 // a standalone validator's issues stay apart at one path, where arktype
-// merges them into an intersection, so only these have an exact rewrite
+// merges them into an intersection, so only these have an exact rewrite.
+// byPath keeps each path's first issue: Object.fromEntries keeps the last
+// entry of a key, so the issues are read last to first
 const errorReaderRewrites: Record<string, (errors: string) => string> = {
 	byPath: errors =>
-		`Object.fromEntries(${errors}.issues.map(issue => [issue.path.join("."), issue]))`,
+		`Object.fromEntries([...${errors}.issues].reverse().map(issue => [issue.path.join("."), issue]))`,
 	flatByPath: errors =>
 		`Object.groupBy(${errors}.issues, issue => issue.path.join("."))`
 }
 
 export const writeErrorReaderHint = (name: string, errors: string): string =>
 	name in errorReaderRewrites ?
-		`Write it as \`${errorReaderRewrites[name](errors)}\`, whose keys join each path with ".", where arktype writes an index as [0], or build with runtime: "arktype".`
+		`Write it as \`${errorReaderRewrites[name](errors)}\`, whose keys join each path's keys with ".", where arktype writes an index as [0] and brackets a key that isn't an identifier, or build with runtime: "arktype".`
 	:	`Read \`${errors}.issues\`, each with its path and message, as in \`for (const { path, message } of ${errors}.issues)\`, or build with runtime: "arktype".`
 
 // a standalone validator writes its errors only in English

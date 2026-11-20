@@ -1547,4 +1547,30 @@ contextualize(() => {
 			attest<Regex<"hello", { captures: ["hello"]; flags: "gi" }>>(S)
 		})
 	})
+
+	describe("exec", () => {
+		it("indices of a capture that may not match may be undefined", () => {
+			const S = regex("^(a)?(?<b>b)?(c)$", "d")
+			const result = S.exec("c")!
+			const { indices } = result
+			attest<[start: number, end: number]>(indices[0])
+			attest<[start: number, end: number] | undefined>(indices[1])
+			attest<[start: number, end: number] | undefined>(indices.groups.b)
+			attest<[start: number, end: number]>(indices[3])
+			attest([indices[1], indices[2], indices.groups.b, indices[3]]).equals([
+				undefined,
+				undefined,
+				undefined,
+				[0, 1]
+			])
+		})
+
+		it("indices of a capture absent from a branch are undefined", () => {
+			const S = regex("^(?:(a)|(b))$", "d")
+			const { indices } = S.exec("b")!
+			attest<[start: number, end: number] | undefined>(indices[1])
+			attest<[start: number, end: number] | undefined>(indices[2])
+			attest([indices[1], indices[2]]).equals([undefined, [0, 1]])
+		})
+	})
 })

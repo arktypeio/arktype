@@ -6,6 +6,7 @@ import {
 	type BaseParseOptions,
 	type Morph,
 	type NodeSelector,
+	type Predicate,
 	type RootSchema,
 	type TypeMeta
 } from "@ark/schema"
@@ -41,8 +42,7 @@ import type { validateDefinition } from "./parser/definition.ts"
 import type {
 	ArgTwoOperator,
 	IndexZeroOperator,
-	TupleInfixOperator,
-	validatePredicate
+	TupleInfixOperator
 } from "./parser/tupleExpressions.ts"
 import {
 	$arkTypeRegistry,
@@ -92,10 +92,7 @@ export interface ValidatedArgs<
 			baseGenericConstraints<parseValidGenericParams<zero, $>>
 		>
 	:	never
-	predicate: validatePredicate<
-		type.infer<zero, $>,
-		distill.In<type.infer<zero, $>>
-	>
+	predicate: Predicate<distill.Out<type.infer<zero, $>>>
 	morph: Morph<distill.Out<type.infer<zero, $>>, unknown>
 	operand: validateDefinition<rest[0], $, bindThis<rest[0]>>
 	predicateRest: [

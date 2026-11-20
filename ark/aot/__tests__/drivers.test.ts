@@ -44,7 +44,7 @@ import {
 } from "node:fs"
 import { join, relative, sep } from "node:path"
 import { pathToFileURL } from "node:url"
-import { configureAfterTypeMessage } from "@ark/schema"
+import { configureAfterTypeMessage } from "arktype/schema"
 import {
 	hasBun,
 	inFreshProcess,
@@ -62,7 +62,7 @@ const app = fromHere("app")
 const tsconfig = fromHere("..", "..", "..", "tsconfig.json")
 
 // the versions a precompiled module depends on, which a cache must key it by
-const manifests = ["type", "schema", "util", "aot"].map(dir =>
+const manifests = ["type", "aot"].map(dir =>
 	fromHere("..", "..", dir, "package.json")
 )
 
@@ -422,6 +422,31 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			attest(node(["main.ts"], {}, root).stdout).equals("true false\n")
 		})
 
+		it("a runtime island's Type a validator's narrow pipes data to", () => {
+			const root = writeFixture(
+				{
+					"package.json": JSON.stringify({ type: "module" }),
+					"main.ts": `import { type } from "arktype"
+
+// @ark-runtime
+const Island = type({ b: "string" })
+
+const T = type({
+	a: type("unknown").narrow((data, ctx) => {
+		Island(data, ctx)
+		return true
+	})
+})
+
+console.log(T({ a: { b: 1 } }).toString())
+`
+				},
+				fromHere("temp", "pipesToIsland")
+			)
+			attest(node(["main.ts"], {}, root).stdout).snap(`a.b must be a string
+`)
+		})
+
 		it("checks static helpers under node --test", () => {
 			const { status, stdout } = node(
 				["--experimental-test-module-mocks", "--test", spec, "node.check.ts"],
@@ -456,7 +481,7 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 					writeVariantImportMessage(
 						pathToFileURL(join(undetailed, "node_modules", "reads", "index.js"))
 							.href,
-						"@ark/schema",
+						"arktype/schema",
 						"none"
 					)
 				]
@@ -871,7 +896,7 @@ console.log(Value, note, load, await import("#shared/lazy"))
 										throw new Error(`Can't resolve '${request}'`)
 									return host.resolve(
 										request === "arktype" ? target!
-										: request === "@ark/schema/runtime" ? runtimeShim
+										: request === "arktype/schema/runtime" ? runtimeShim
 										: request,
 										join(dir, "main.ts")
 									)!
@@ -909,7 +934,7 @@ console.log(Value, note, load, await import("#shared/lazy"))
 			).equals(undefined)
 		})
 
-		it("fails where @ark/schema/runtime resolves other than to the runtime it writes", async () => {
+		it("fails where arktype/schema/runtime resolves other than to the runtime it writes", async () => {
 			const host = createNodeHost({ conditions })
 			const main = readFileSync(join(app, "main.ts"), "utf8")
 			// what the loader reports and warns where Turbopack resolves the schema runtime to `target`
@@ -928,7 +953,7 @@ console.log(Value, note, load, await import("#shared/lazy"))
 										opts.shadow ?
 											"arktype"
 										:	"arktype/runtime"
-									: request === "@ark/schema/runtime" ? target
+									: request === "arktype/schema/runtime" ? target
 									: request,
 									join(dir, "main.ts")
 								)!,
@@ -941,20 +966,20 @@ console.log(Value, note, load, await import("#shared/lazy"))
 			attest(await outcomeOf(runtimeShim, none)).equals([])
 			attest(await outcomeOf(runtimeShim)).equals([])
 			// the alias is alike for every option set, so one leaving it out fails too
-			attest(await outcomeOf("@ark/schema/runtime")).snap([
-				'@ark/schema/runtime resolves to ../../../schema/runtime.ts rather than @ark/aot/turbopack/runtime, which the loader writes as the runtime the build\'s options load. Add to turbopack.resolveAlias: {"@ark/schema/runtime":"@ark/aot/turbopack/runtime"}, or set allowUnsafe: true to build anyway, with a warning.'
+			attest(await outcomeOf("arktype/schema/runtime")).snap([
+				'arktype/schema/runtime resolves to ../../../type/schemaRuntime.ts rather than @ark/aot/turbopack/runtime, which the loader writes as the runtime the build\'s options load. Add to turbopack.resolveAlias: {"arktype/schema/runtime":"@ark/aot/turbopack/runtime"}, or set allowUnsafe: true to build anyway, with a warning.'
 			])
 			attest(
-				await outcomeOf("@ark/schema/runtime/none", {
+				await outcomeOf("arktype/schema/runtime/none", {
 					...none,
 					allowUnsafe: true
 				})
 			).snap([
-				'@ark/schema/runtime resolves to ../../../schema/runtimeNone.ts rather than @ark/aot/turbopack/runtime, which the loader writes as the runtime the build\'s options load. Add to turbopack.resolveAlias: {"@ark/schema/runtime":"@ark/aot/turbopack/runtime"}.'
+				'arktype/schema/runtime resolves to ../../../type/schemaRuntimeNone.ts rather than @ark/aot/turbopack/runtime, which the loader writes as the runtime the build\'s options load. Add to turbopack.resolveAlias: {"arktype/schema/runtime":"@ark/aot/turbopack/runtime"}.'
 			])
-			// shadow mode loads arktype, so leaves @ark/schema/runtime unchecked
+			// shadow mode loads arktype, so leaves arktype/schema/runtime unchecked
 			attest(
-				await outcomeOf("@ark/schema/runtime", { ...none, shadow: true })
+				await outcomeOf("arktype/schema/runtime", { ...none, shadow: true })
 			).equals([])
 		})
 
@@ -971,15 +996,15 @@ console.log(Value, note, load, await import("#shared/lazy"))
 					},
 					readFileSync(runtimeShim, "utf8")
 				)
-			attest(shimOf({})).snap('export * from "../schema/runtime.ts"\n')
+			attest(shimOf({})).snap('export * from "../type/schemaRuntime.ts"\n')
 			attest(shimOf({ errors: "none" })).snap(
-				'export * from "../schema/runtimeNone.ts"\n'
+				'export * from "../type/schemaRuntimeNone.ts"\n'
 			)
 			attest(shimOf({ optimize: "size" })).snap(
-				'export * from "../schema/runtimeLean.ts"\n'
+				'export * from "../type/schemaRuntimeLean.ts"\n'
 			)
 			attest(shimOf({ errors: "none", shadow: true })).snap(
-				'export * from "../schema/runtime.ts"\n'
+				'export * from "../type/schemaRuntime.ts"\n'
 			)
 			// matched by the condition Setup gives the rule for JavaScript, as it
 			// exports nothing where the loader doesn't run
@@ -1048,7 +1073,7 @@ console.log(Value, note, load, await import("#shared/lazy"))
 										opts.runtime === "arktype" ?
 											"arktype"
 										:	"arktype/runtime"
-									: request === "@ark/schema/runtime" ? runtimeShim
+									: request === "arktype/schema/runtime" ? runtimeShim
 									: request,
 									join(from, "main.ts")
 								)!
@@ -1532,7 +1557,7 @@ console.log(Value, note, load, await import("#shared/lazy"))
 			})
 			attest([status, thrownMessage(stderr, undetailed, "error: ")]).equals([
 				1,
-				writeVariantImportMessage("a module", "@ark/schema", "none")
+				writeVariantImportMessage("a module", "arktype/schema", "none")
 			])
 		})
 

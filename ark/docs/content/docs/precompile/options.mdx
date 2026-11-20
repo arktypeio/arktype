@@ -104,9 +104,9 @@ Where `package.json` sets `"ark"` and an `ark.json` is beside it, the build fail
 
 ### errors
 
-`errors: "first"` stops each validation at the first issue it finds and returns it alone. Which of the data's issues that is isn't promised: the validator looks for whichever is cheapest to find, which may not be the one arktype finds first. `errors: "none"` returns errors holding one root issue with the code `"predicate"` and the message `is invalid`, so no check's description or message ships. It asks a narrow once, so one answering false and then true fails where arktype, asking again for its errors, returns the data. Those errors have no `throw()`, and `assert` throws a plain `Error` whose `cause` is the errors.
+`errors: "first"` stops each validation at the first issue it finds and returns it alone. Which of the data's issues that is isn't promised: the validator looks for whichever is cheapest to find, which may not be the one arktype finds first. `errors: "none"` returns errors holding one root issue with the code `"predicate"` and the message `is invalid`, so no check's description or message ships. It asks a narrow once, so one answering false and then true fails where arktype, asking again for its errors, returns the data. Those errors have every member other errors do, so `assert` and `throw()` throw a `TraversalError` saying `is invalid`, whose `arkErrors` are the errors.
 
-The plugin, the Node and Bun drivers and the Turbopack loader, through [the alias Setup names](/docs/precompile/setup#next), resolve `@ark/schema/runtime` to `@ark/schema/runtime/none` under `errors: "none"`, and a module importing any other `@ark/schema` entry, or a runtime island, fails the build.
+The plugin, the Node and Bun drivers and the Turbopack loader, through [the alias Setup names](/docs/precompile/setup#next), resolve `arktype/schema/runtime` to `arktype/schema/runtime/none` under `errors: "none"`, and a module importing any other `arktype/schema` entry, or a runtime island, fails the build.
 
 The values are [arktype's `errors`](/docs/configuration#errors) option's, and a program that also configures it must configure the same value.
 
@@ -116,7 +116,7 @@ The values are [arktype's `errors`](/docs/configuration#errors) option's, and a 
 
 ### members
 
-`members` decides what a validator has besides validating. `assert`, `meta`, `~standard` and `methods` (`traverse()`, `from()` and `toString()`) default to true. A dropped one reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`.
+`members` decides what a validator has besides validating. `assert`, `meta`, `~standard`, `methods` (`traverse()`, `from()` and `toString()`) and `withContext` default to true. A dropped one reads `undefined`, and the build fails where it sees the program read one, like `User.assert(data)` or `String(User)`.
 
 `expression`, `description`, `json`, `toJSON`, `toJsonSchema` and `~standard.jsonSchema`, the introspection members, are each baked into the validators the build sees code read it off, and set true or false, into every validator or none. Where it can't see one, `String(User)` without `expression` is `"Type"`, and another reads `undefined`. Where `arktype/runtime` resolves under the [`"development"` condition](/docs/precompile/validators#errors), reading it throws instead, naming the member and the setting, unless the validator lacks `methods`:
 
@@ -154,7 +154,7 @@ precompile.vite({
 
 `optimizeErrors` writes errors the same way, and is `optimize` unless set. Errors written for speed [find their issues once they're read](/docs/precompile/advanced#valid-and-invalid-data), so a failing call whose errors nothing reads costs little more than its check. Errors written for size are the smallest a build can return, find their issues as a call fails, and are slower to read, but they have the same `count`, `issues`, `summary`, `throw()`, `toJSON()` and `toString()` as other errors, and `instanceof type.errors` recognizes them.
 
-The build loads `@ark/schema/runtime/lean` in place of `@ark/schema/runtime` for them, or `@ark/schema/runtime/none-lean` with `errors: "none"`, and a runtime island fails the build, as under [`errors: "none"`](#errors).
+The build loads `arktype/schema/runtime/lean` in place of `arktype/schema/runtime` for them, or `arktype/schema/runtime/none-lean` with `errors: "none"`, and a runtime island fails the build, as under [`errors: "none"`](#errors).
 
 ### strategies and schemas
 
@@ -290,7 +290,7 @@ prune: off, because src/routes.ts:3:1 reads import.meta.glob, which may load mod
 Where it reads them all but not what a read of its validators needs, it keeps each member `members` leaves to it, and still writes what else pruning does:
 
 ```
-prune: keeping assert, meta, ~standard and methods, because src/index.ts exports User, which code outside the bundle may read. Set assert, meta, ~standard and methods in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning.
+prune: keeping assert, meta, ~standard, methods and withContext, because src/index.ts exports User, which code outside the bundle may read. Set assert, meta, ~standard, methods and withContext in members, each true where code reads it, like ~standard where a library validates with it, else false, to build without this warning.
 ```
 
 Setting each in `members` clears it, as the build then has no member left to decide. Where `NODE_ENV` is `production`, `arktype-precompile --check` prints the same warning for a bundle of the files it checks, but tests, stories and configs. It follows relative imports of scripts alone and reads no file as an entry, so it misses what an alias, a virtual module, a component or an entry's exports lead to.
@@ -328,7 +328,7 @@ A package precompiled with `"aot"` is read as the program is, so a value it retu
 
 ### allowUnsafe
 
-`allowUnsafe: true` (`--allow-unsafe` for `--check`) reports as warnings the problems that may throw at runtime but that a build can still write output for: a dependency that imports arktype or ships precompiled validators, a module the build can't precompile importing arktype, a read off an import it can't resolve, an import that loads a Type before the config module, a Turbopack alias for `@ark/schema/runtime` other than `@ark/aot/turbopack/runtime`, a package the build leaves external that loads arktype beside the runtime, and a definition that throws a ParseError. Each fails the build otherwise. It applies with `runtime: "arktype"` too, where a ParseError and a dependency shipping precompiled validators fail the build and the rest are warnings anyway.
+`allowUnsafe: true` (`--allow-unsafe` for `--check`) reports as warnings the problems that may throw at runtime but that a build can still write output for: a dependency that imports arktype or ships precompiled validators, a module the build can't precompile importing arktype, a read off an import it can't resolve, an import that loads a Type before the config module, a Turbopack alias for `arktype/schema/runtime` other than `@ark/aot/turbopack/runtime`, a package the build leaves external that loads arktype beside the runtime, and a definition that throws a ParseError. Each fails the build otherwise. It applies with `runtime: "arktype"` too, where a ParseError and a dependency shipping precompiled validators fail the build and the rest are warnings anyway.
 
 ### checker
 

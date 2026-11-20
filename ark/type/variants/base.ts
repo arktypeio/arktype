@@ -3,6 +3,7 @@ import type {
 	BaseRoot,
 	Disjoint,
 	JsonSchema,
+	MessageConfig,
 	NodeSelector,
 	Predicate,
 	StandardSchemaV1,
@@ -34,6 +35,17 @@ import type { NaryPipeParser } from "../nary.ts"
 import type { Scope } from "../scope.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
+
+/** a Type's validation, each run in the context `withContext` bound */
+export interface BoundType<In = unknown, Out = unknown>
+	extends Callable<(data: unknown) => Out | ArkEnv.onFail> {
+	/** validate and return transformed data or throw */
+	assert: (data: unknown) => Out
+	/** check input without applying morphs */
+	allows: (data: unknown) => data is In
+	/** the Type's [StandardSchema](https://github.com/standard-schema/standard-schema) properties, validating in context */
+	"~standard": StandardSchemaV1.ArkTypeProps<In, Out>
+}
 
 /** @ts-ignore cast variance */
 export interface Inferred<out t = unknown, in out $ = {}> {
@@ -236,6 +248,26 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	describe: NodeSelector.SelectableFn<string, this>
 
 	/**
+	 * #### set the sentence an error says
+	 *
+	 * 🔗 equivalent to `.configure({ message })` (see {@link configure})
+	 * ✅ a missing key says it too, as Zod's `required_error`
+	 * ✅ a selector like `"minLength"` scopes it to that check, as Zod's `.min(1, "Name is required")`
+	 *
+	 * @example
+	 * const Name = type("string >= 1").message("Name is required")
+	 * // ArkErrors: Name is required
+	 * const empty = Name("")
+	 *
+	 * const Password = type("string >= 8").message("Use 8 or more characters", "minLength")
+	 * // ArkErrors: Use 8 or more characters
+	 * const short = Password("abc")
+	 * // ArkErrors: must be a string
+	 * const nonString = Password(5)
+	 */
+	message: NodeSelector.SelectableFn<MessageConfig, this>
+
+	/**
 	 * #### apply undeclared key behavior
 	 *
 	 * {@inheritDoc UndeclaredKeyBehavior}
@@ -258,6 +290,31 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * const data = T.from({ foo: 5 });
 	 */
 	from(literal: this["inferIn"]): this["infer"]
+
+	/**
+	 * #### bind a context its narrows and morphs read as `ctx.context`
+	 *
+	 * ✅ creates no Type, so a static, precompilable Type can validate with what a caller has, e.g. a form's saved values
+	 * ✅ is a Standard Schema, as form libraries take one
+	 * ✅ typed as declared on `ArkEnv`
+	 * 🔗 `~standard.validate(data, { libraryOptions: { context } })` passes a context without binding one
+	 *
+	 * @example
+	 * declare global {
+	 *     interface ArkEnv {
+	 *         context(): { saved?: string }
+	 *     }
+	 * }
+	 *
+	 * const Street = type("string").narrow(
+	 *     (s, ctx) => s === ctx.context?.saved || s.length > 3 || ctx.mustBe("a full street")
+	 * )
+	 * // the street as saved passes, though it's short
+	 * const out = Street.withContext({ saved: "Elm" })("Elm")
+	 */
+	withContext(
+		context: ArkEnv.context
+	): BoundType<this["inferIn"] extends infer _ ? _ : never, this["infer"]>
 
 	/**
 	 * #### deeply extract inputs

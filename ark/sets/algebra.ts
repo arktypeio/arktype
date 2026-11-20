@@ -48,8 +48,10 @@ export const discriminate = (schema: Schema): Discriminant | null => {
 		path,
 		kind,
 		cases: root.discCases.cases.map(described => {
-			// an object case only arrays reach is described as Array
-			const value = described === "Array" ? "object" : described
+			// an object domain case only arrays reach is described as Array, but
+			// a unit case of "Array" is the string
+			const value =
+				kind === "domain" && described === "Array" ? "object" : described
 			const atPath = discriminantCaseToNode(
 				kind === "unit" ? root.$.node("unit", { unit: value })
 				: value === "undefined" || value === "null" || value === "boolean" ?

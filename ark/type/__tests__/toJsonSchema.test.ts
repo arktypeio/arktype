@@ -117,6 +117,48 @@ contextualize(() => {
 		})
 	})
 
+	it("constrained index key with a declared value it narrows", () => {
+		// additionalProperties skips ab, which must be a number all the same
+		const T = type({
+			ab: "number | string",
+			"[string <= 3]": "number",
+			"+": "reject"
+		})
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: {
+				ab: { anyOf: [{ type: "number" }, { type: "string" }] }
+			},
+			required: ["ab"],
+			propertyNames: { type: "string", maxLength: 3 },
+			patternProperties: { "": { type: "number" } }
+		})
+	})
+
+	it("string index with declared values it allows", () => {
+		const T = type({ a: "number % 2", "b?": "1", "[string]": "number" })
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: {
+				a: { type: "integer", multipleOf: 2 },
+				b: { type: "number", const: 1 }
+			},
+			required: ["a"],
+			additionalProperties: { type: "number" }
+		})
+	})
+
+	it("string index with a declared value it narrows", () => {
+		// additionalProperties would skip a, which must be a number all the same
+		const T = type({ a: "number | string", "[string]": "number" })
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: { a: { anyOf: [{ type: "number" }, { type: "string" }] } },
+			required: ["a"],
+			patternProperties: { "": { type: "number" } }
+		})
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1612
 	it("refs to a structure in a union", () => {
 		const Thing = type({ a: "string" }).or("null")
@@ -337,21 +379,341 @@ contextualize(() => {
 		})
 	})
 
+	describe("aliasDefs", () => {
+		const types = scope({
+			Id: "string",
+			Address: { street: "string" },
+			"#Secret": { key: "string" },
+			User: {
+				id: "Id",
+				home: "Address",
+				"work?": "Address | null",
+				secret: "Secret",
+				"friends?": "User[]"
+			},
+			Order: { buyer: "User", shipTo: "Address" }
+		}).export()
+
+		it("names each alias, nested and beside a cyclic one", () => {
+			attest(types.Order.toJsonSchema({ aliasDefs: true, dialect: null })).snap(
+				{
+					$ref: "#/$defs/Order",
+					$defs: {
+						Order: {
+							type: "object",
+							properties: {
+								buyer: { $ref: "#/$defs/User" },
+								shipTo: { $ref: "#/$defs/Address" }
+							},
+							required: ["buyer", "shipTo"]
+						},
+						User: {
+							type: "object",
+							properties: {
+								home: { $ref: "#/$defs/Address" },
+								id: { type: "string" },
+								secret: {
+									type: "object",
+									properties: { key: { type: "string" } },
+									required: ["key"]
+								},
+								friends: { type: "array", items: { $ref: "#/$defs/User" } },
+								work: { anyOf: [{ $ref: "#/$defs/Address" }, { type: "null" }] }
+							},
+							required: ["home", "id", "secret"]
+						},
+						Address: {
+							type: "object",
+							properties: { street: { type: "string" } },
+							required: ["street"]
+						}
+					}
+				}
+			)
+		})
+
+		it("names only those listed", () => {
+			attest(
+				types.Order.toJsonSchema({
+					aliasDefs: ["Address", "#Secret"],
+					dialect: null
+				})
+			).snap({
+				type: "object",
+				properties: {
+					buyer: { $ref: "#/$defs/User" },
+					shipTo: { $ref: "#/$defs/Address" }
+				},
+				required: ["buyer", "shipTo"],
+				$defs: {
+					Address: {
+						type: "object",
+						properties: { street: { type: "string" } },
+						required: ["street"]
+					},
+					Secret: {
+						type: "object",
+						properties: { key: { type: "string" } },
+						required: ["key"]
+					},
+					User: {
+						type: "object",
+						properties: {
+							home: { $ref: "#/$defs/Address" },
+							id: { type: "string" },
+							secret: { $ref: "#/$defs/Secret" },
+							friends: { type: "array", items: { $ref: "#/$defs/User" } },
+							work: { anyOf: [{ $ref: "#/$defs/Address" }, { type: "null" }] }
+						},
+						required: ["home", "id", "secret"]
+					}
+				}
+			})
+		})
+
+		it("an unresolvable name throws", () => {
+			attest(() =>
+				types.Order.toJsonSchema({ aliasDefs: ["Adress"] })
+			).throws.snap("ParseError: 'Adress' is unresolvable")
+		})
+
+		it("an alias's Type used in another scope", () => {
+			attest(
+				type({ to: types.Address, "cc?": types.Address.array() }).toJsonSchema({
+					aliasDefs: true,
+					dialect: null
+				})
+			).snap({
+				type: "object",
+				properties: {
+					to: { $ref: "#/$defs/Address" },
+					cc: { type: "array", items: { $ref: "#/$defs/Address" } }
+				},
+				required: ["to"],
+				$defs: {
+					Address: {
+						type: "object",
+						properties: { street: { type: "string" } },
+						required: ["street"]
+					}
+				}
+			})
+		})
+
+		it("a keyword isn't named unless listed", () => {
+			const T = type({ email: "string.email" })
+			attest(
+				elidePatterns(T.toJsonSchema({ aliasDefs: true, dialect: null }))
+			).snap({
+				type: "object",
+				properties: {
+					email: { type: "string", pattern: "…", format: "email" }
+				},
+				required: ["email"]
+			})
+			attest(
+				elidePatterns(
+					T.toJsonSchema({ aliasDefs: ["string.email"], dialect: null })
+				)
+			).snap({
+				type: "object",
+				properties: { email: { $ref: "#/$defs/email" } },
+				required: ["email"],
+				$defs: { email: { type: "string", pattern: "…", format: "email" } }
+			})
+		})
+
+		it("aliases that resolve to the same thing share the first's name", () => {
+			const { Person } = scope({
+				Street: "string > 0",
+				Name: "string > 0",
+				Person: { street: "Street", name: "Name" }
+			}).export()
+			attest(Person.toJsonSchema({ aliasDefs: true, dialect: null })).snap({
+				$ref: "#/$defs/Person",
+				$defs: {
+					Person: {
+						type: "object",
+						properties: {
+							name: { $ref: "#/$defs/Street" },
+							street: { $ref: "#/$defs/Street" }
+						},
+						required: ["name", "street"]
+					},
+					Street: { type: "string", minLength: 1 }
+				}
+			})
+		})
+
+		it("a submodule's aliases by their own names", () => {
+			const { Shipment } = scope({
+				Geo: type.module({ root: { lat: "number" }, Zip: { code: "string" } }),
+				Shipment: { at: "Geo", zip: "Geo.Zip" }
+			}).export()
+			attest(Shipment.toJsonSchema({ aliasDefs: true, dialect: null })).snap({
+				$ref: "#/$defs/Shipment",
+				$defs: {
+					Shipment: {
+						type: "object",
+						properties: {
+							at: { $ref: "#/$defs/Geo" },
+							zip: { $ref: "#/$defs/Zip" }
+						},
+						required: ["at", "zip"]
+					},
+					Geo: {
+						type: "object",
+						properties: { lat: { type: "number" } },
+						required: ["lat"]
+					},
+					Zip: {
+						type: "object",
+						properties: { code: { type: "string" } },
+						required: ["code"]
+					}
+				}
+			})
+			attest(
+				Shipment.toJsonSchema({ aliasDefs: ["Geo.Zip"], dialect: null })
+			).snap({
+				type: "object",
+				properties: {
+					at: {
+						type: "object",
+						properties: { lat: { type: "number" } },
+						required: ["lat"]
+					},
+					zip: { $ref: "#/$defs/Zip" }
+				},
+				required: ["at", "zip"],
+				$defs: {
+					Zip: {
+						type: "object",
+						properties: { code: { type: "string" } },
+						required: ["code"]
+					}
+				}
+			})
+		})
+
+		it("input and output", () => {
+			const { Holder } = scope({
+				Size: { size: type("string").pipe(s => s.length, type("number")) },
+				Holder: { a: "Size", b: "Size[]" }
+			}).export()
+			const libraryOptions = { aliasDefs: true }
+			attest(
+				Holder["~standard"].jsonSchema.input({
+					target: "draft-2020-12",
+					libraryOptions
+				})
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				$ref: "#/$defs/Holder",
+				$defs: {
+					Holder: {
+						type: "object",
+						properties: {
+							a: { $ref: "#/$defs/Size" },
+							b: { type: "array", items: { $ref: "#/$defs/Size" } }
+						},
+						required: ["a", "b"]
+					},
+					Size: {
+						type: "object",
+						properties: { size: { type: "string" } },
+						required: ["size"]
+					}
+				}
+			})
+			attest(
+				Holder.out.toJsonSchema({ ...libraryOptions, dialect: null })
+			).snap({
+				$ref: "#/$defs/Holder",
+				$defs: {
+					Holder: {
+						type: "object",
+						properties: {
+							a: { $ref: "#/$defs/Size" },
+							b: { type: "array", items: { $ref: "#/$defs/Size" } }
+						},
+						required: ["a", "b"]
+					},
+					Size: {
+						type: "object",
+						properties: { size: { type: "number" } },
+						required: ["size"]
+					}
+				}
+			})
+		})
+
+		it("configured on a scope", () => {
+			const { B } = scope(
+				{ A: { a: "string" }, B: { a: "A" } },
+				{ toJsonSchema: { aliasDefs: true } }
+			).export()
+			attest(B.toJsonSchema({ dialect: null })).snap({
+				$ref: "#/$defs/B",
+				$defs: {
+					B: {
+						type: "object",
+						properties: { a: { $ref: "#/$defs/A" } },
+						required: ["a"]
+					},
+					A: {
+						type: "object",
+						properties: { a: { type: "string" } },
+						required: ["a"]
+					}
+				}
+			})
+			attest(B.toJsonSchema({ dialect: null, aliasDefs: false })).snap({
+				type: "object",
+				properties: {
+					a: {
+						type: "object",
+						properties: { a: { type: "string" } },
+						required: ["a"]
+					}
+				},
+				required: ["a"]
+			})
+		})
+	})
+
 	it("an optional key's undefined is its absence", () => {
 		const T = type({ "a?": "string | undefined", "b?": "undefined" })
 		attest(T.toJsonSchema()).snap({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "object",
-			properties: { a: { type: "string" }, b: { enum: [] } }
+			properties: { a: { type: "string" }, b: { not: {} } }
 		})
 		attest(T["~standard"].jsonSchema.input({ target: "draft-2020-12" })).snap({
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "object",
-			properties: { a: { type: "string" }, b: { enum: [] } }
+			properties: { a: { type: "string" }, b: { not: {} } }
 		})
 		attest(() => type({ a: "string | undefined" }).toJsonSchema()).throws(
 			'Can\'t convert "unit" at a to JSON Schema'
 		)
+	})
+
+	// an empty enum is invalid OpenAPI 3.0, and OpenAI rejects it
+	it("never is not {}", () => {
+		attest(type("never").toJsonSchema({ dialect: null })).snap({ not: {} })
+		attest(type("never").toJsonSchema({ target: "openapi-3.0" })).snap({
+			not: {}
+		})
+	})
+
+	it("an input of null | undefined is null", () => {
+		attest(
+			type("null | undefined")["~standard"].jsonSchema.input({
+				target: "draft-2020-12",
+				libraryOptions: { dialect: null }
+			})
+		).snap({ type: "null" })
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1462
@@ -438,6 +800,54 @@ contextualize(() => {
 			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "object",
 			additionalProperties: { type: "number" }
+		})
+	})
+
+	// a strict validator like Ajv's rejects a keyword it doesn't know
+	it("writes only meta JSON Schema has a keyword for, or an x- extension", () => {
+		// as a key added to ArkEnv.meta is
+		const added: object = { secretIngredient: "miso", "x-internal": true }
+		const T = type("string").configure({
+			alias: "Id",
+			deprecated: false,
+			readOnly: true,
+			$comment: "internal",
+			...added
+		})
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "string",
+			deprecated: false,
+			readOnly: true,
+			$comment: "internal",
+			"x-internal": true
+		})
+		attest(
+			type("string")
+				.configure({ onFail: null } as never)
+				.toJsonSchema({
+					dialect: null
+				})
+		).snap({ type: "string" })
+	})
+
+	it("a default has no base, so a universal fallback omits it", () => {
+		const T = type({ n: ["bigint", "=", 5n] })
+		// returning the property's own schema would make it contain itself
+		attest(T.toJsonSchema({ dialect: null, fallback: ctx => ctx.base })).snap({
+			type: "object",
+			properties: { n: {} }
+		})
+		attest(
+			T.toJsonSchema({
+				dialect: null,
+				fallback: {
+					domain: ctx => ({ ...ctx.base, type: "string" }),
+					defaultValue: ctx => `${ctx.value as bigint}`
+				}
+			})
+		).snap({
+			type: "object",
+			properties: { n: { type: "string", default: "5" } }
 		})
 	})
 

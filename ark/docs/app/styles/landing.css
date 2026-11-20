@@ -78,9 +78,111 @@
 		margin: 36px 0 0;
 		color: var(--ink);
 	}
+	/* the lede is a quest: one link to #migrate, behind the page's one
+	   marker. Its sentence is the link's name; the marker is drawn, not read. */
+	.quest {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.42em;
+		color: inherit;
+		text-decoration: underline;
+		text-decoration-color: transparent;
+		text-decoration-thickness: 0.06em;
+		text-underline-offset: 0.22em;
+		transition: text-decoration-color var(--t-ui);
+		&:hover,
+		&:focus-visible {
+			text-decoration-color: color-mix(in oklab, var(--gold) 55%, transparent);
+			.quest-mark {
+				filter: drop-shadow(
+					0 0 9px color-mix(in oklab, var(--gold-glow) 75%, transparent)
+				);
+			}
+		}
+	}
+	.quest-mark {
+		flex: none;
+		width: 0.4em;
+		height: 0.96em;
+		overflow: visible;
+		fill: var(--gold-fill);
+		/* parchment needs an edge to see gold against; night doesn't mind one */
+		stroke: color-mix(in oklab, var(--copper) 80%, transparent);
+		stroke-width: 0.9;
+		stroke-linejoin: round;
+		paint-order: stroke;
+		filter: drop-shadow(
+			0 0 6px color-mix(in oklab, var(--gold-glow) 40%, transparent)
+		);
+		transition: filter var(--t-ui);
+	}
+	/* its own stacking context, so what rises behind a button is under that
+	   button and over nothing else */
 	.hero .ctas {
 		align-items: center;
 		margin-top: 22px;
+		isolation: isolate;
+	}
+	/* the button that takes the quest, and the level it gains */
+	.quest-cta {
+		position: relative;
+		display: inline-flex;
+		/* beside the other button its label fills it, so it is filled with the
+		   page it sits on: an arrow passes behind the label, never through it */
+		@media (min-width: 761px) {
+			.btn {
+				background: var(--bg);
+				&:hover {
+					background: color-mix(in oklab, var(--ink) 4%, var(--bg));
+				}
+			}
+		}
+	}
+	/* four chevrons that start under the button, pass behind it and fade out
+	   above it, short of the lede. Drawn only where motion is welcome (see the
+	   end of this file); the layer takes no clicks and no room, and nothing it
+	   paints leaves its box. */
+	.level-up {
+		--rise: 86px;
+		--pace: 1;
+		position: absolute;
+		inset: -22px 0 -28px;
+		z-index: -1;
+		contain: strict;
+		pointer-events: none;
+		i {
+			position: absolute;
+			bottom: 0;
+			left: var(--x);
+			width: 8px;
+			height: 8px;
+			margin-left: -4px;
+			border: solid var(--green);
+			border-width: 2px 0 0 2px;
+			rotate: 45deg;
+			opacity: 0;
+			/* lanes clear of the pill's round ends, at speeds that never line up */
+			&:nth-child(1) {
+				--x: 23%;
+				--t: 5.3s;
+				--d: -0.6s;
+			}
+			&:nth-child(2) {
+				--x: 41%;
+				--t: 6.7s;
+				--d: -3.9s;
+			}
+			&:nth-child(3) {
+				--x: 60%;
+				--t: 5.9s;
+				--d: -2.3s;
+			}
+			&:nth-child(4) {
+				--x: 78%;
+				--t: 7.3s;
+				--d: -5.6s;
+			}
+		}
 	}
 	.hero-foot {
 		margin-left: 10px;
@@ -1481,6 +1583,25 @@
 		translate: 0 10px;
 	}
 }
+@keyframes quest-bob {
+	to {
+		translate: 0 -2.5px;
+	}
+}
+@keyframes level-up {
+	0% {
+		opacity: 0;
+		translate: 0 0;
+	}
+	14%,
+	80% {
+		opacity: 0.15;
+	}
+	100% {
+		opacity: 0;
+		translate: 0 calc(-1 * var(--rise));
+	}
+}
 @keyframes panel-in {
 	from {
 		opacity: 0;
@@ -1491,6 +1612,13 @@
 @media (prefers-reduced-motion: no-preference) {
 	.home .drill-panel:not([data-closed]) {
 		animation: panel-in 0.28s var(--ease-out);
+	}
+	.home .quest-mark {
+		animation: quest-bob 2.2s ease-in-out infinite alternate;
+	}
+	.home .level-up i {
+		animation: level-up calc(var(--t) * var(--pace)) linear
+			calc(var(--d) * var(--pace)) infinite;
 	}
 	:root[data-motion] .home {
 		/* a number waits for itself to be on screen, and for nothing else */
@@ -1665,6 +1793,11 @@
 			flex-basis: 100%;
 			margin-left: 0;
 		}
+		/* the foot is under the buttons now: the arrows start in the gap above it */
+		.level-up {
+			--rise: 70px;
+			bottom: -12px;
+		}
 	}
 }
 
@@ -1708,6 +1841,33 @@
 		}
 		.hero .ctas {
 			margin-top: 18px;
+		}
+		/* stacked, the button fills its row and has room either side of its
+		   label: the arrows rise there, inside the pill, a shorter way in less
+		   time, and are gone before its edge */
+		.quest-cta {
+			flex: 1 1 auto;
+		}
+		.level-up {
+			--rise: 30px;
+			--pace: 0.62;
+			inset: 0;
+			border-radius: var(--r-pill);
+			i {
+				bottom: 3px;
+				&:nth-child(1) {
+					--x: 7%;
+				}
+				&:nth-child(2) {
+					--x: 19%;
+				}
+				&:nth-child(3) {
+					--x: 81%;
+				}
+				&:nth-child(4) {
+					--x: 93%;
+				}
+			}
 		}
 		/* a graph a row: each keeps the card's width for its bars */
 		.graphs {

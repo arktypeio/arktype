@@ -1,11 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { postfixAfterOptionalOrDefaultableMessage } from "@ark/schema"
-import { type } from "arktype"
-import {
-	badFnReturnTypeMessage,
-	type Return,
-	type TypedFn
-} from "arktype/internal/fn.ts"
+import { type, type To } from "arktype"
+import { badFnReturnTypeMessage, type TypedFn } from "arktype/internal/fn.ts"
 import {
 	multipleVariadicMesage,
 	optionalOrDefaultableAfterVariadicMessage
@@ -25,7 +21,7 @@ contextualize(() => {
 	it("0 params explicit return", () => {
 		const f = type.fn(":", "5")(() => 5)
 
-		attest<TypedFn<() => 5, {}, Return.introspectable>>(f)
+		attest<TypedFn<() => 5, {}, { returns: 5 }>>(f)
 
 		attest(f()).equals(5)
 
@@ -50,7 +46,7 @@ contextualize(() => {
 	it("1 param explicit return", () => {
 		const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
 
-		attest<TypedFn<(s: string) => number, {}, Return.introspectable>>(len)
+		attest<TypedFn<(s: string) => number, {}, { returns: number }>>(len)
 
 		attest(len.expression).snap("(string | Array) => number")
 
@@ -84,7 +80,7 @@ contextualize(() => {
 		)((s, n) => s === `${n}`)
 
 		attest<
-			TypedFn<(s: string, n: number) => boolean, {}, Return.introspectable>
+			TypedFn<(s: string, n: number) => boolean, {}, { returns: boolean }>
 		>(isNumericEquivalent)
 
 		attest(isNumericEquivalent.expression).snap("(string, number) => boolean")
@@ -98,10 +94,25 @@ contextualize(() => {
 		}, type.number)
 
 		const f = type.fn(stringToLength, ":", stringToLength)(n => n.toFixed(2))
-		attest<TypedFn<(n: string) => number, {}, Return.introspectable>>(f)
+		attest<
+			TypedFn<
+				(n: string) => number,
+				{},
+				{
+					returns: (In: string) => To<number>
+					params: [(In: string) => To<number>]
+				}
+			>
+		>(f)
 		attest(f.expression).snap(
 			"((In: string) => To<number>) => (In: string) => To<number>"
 		)
+		// the attached Types are the morphs, whose input the signature distills out
+		attest<[(In: string) => To<number>]>(f.params.t)
+		attest(f.params.expression).snap("[(In: string) => To<number>]")
+		attest<(In: string) => To<number>>(f.returns.t)
+		attest(f.returns.expression).snap("(In: string) => To<number>")
+		attest(f.returns("abc")).equals(3)
 	})
 
 	it("nary inferred return", () => {
@@ -251,7 +262,7 @@ contextualize(() => {
 		o: { o: 15 }
 	) => { p: 16 },
 	{},
-	introspectable
+	{ returns: { p: 16 } }
 >`)
 	})
 
@@ -273,9 +284,11 @@ contextualize(() => {
 		)((v: string | number): 0 | 1 => (v === "foo" ? 1 : 0))
 
 		// signature should be wider from the declaration with name "v" from implementation
-		attest(f).type.toString.snap(
-			"TypedFn<(v: string) => number, {}, introspectable>"
-		)
+		attest(f).type.toString.snap(`TypedFn<
+	(v: string) => number,
+	{},
+	{ returns: number }
+>`)
 	})
 
 	it("attached params", () => {
@@ -427,9 +440,7 @@ contextualize(() => {
 
 			const f = $.type.fn("xxx", ":", "zzz")(s => s.length)
 
-			attest<TypedFn<(s: string) => number, typeof $.t, Return.introspectable>>(
-				f
-			)
+			attest<TypedFn<(s: string) => number, typeof $.t, { returns: number }>>(f)
 
 			attest(f("foo")).equals(3)
 

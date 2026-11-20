@@ -64,6 +64,8 @@ export class DivisorNode extends InternalPrimitiveConstraint<Divisor.Declaration
 		super(...args)
 		if (!Number.isInteger(this.rule))
 			throwParseError(writeNonIntegerDivisorMessage(this.rule))
+		// data % 0 is NaN, so it would reject every number
+		if (this.rule === 0) throwParseError(zeroDivisorMessage)
 	}
 
 	tAllows(data: number): boolean {
@@ -98,3 +100,7 @@ export const writeNonIntegerDivisorMessage = <divisor extends number>(
 
 export type writeNonIntegerDivisorMessage<divisor extends number> =
 	`divisor must be an integer (was ${divisor})`
+
+export const zeroDivisorMessage = "divisor must be non-zero"
+
+export type zeroDivisorMessage = typeof zeroDivisorMessage

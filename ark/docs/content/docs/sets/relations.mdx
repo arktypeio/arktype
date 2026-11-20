@@ -12,7 +12,7 @@ description: Check whether schemas in any format are subsets of each other, equa
 | `isDisjoint(l, r)` | no value is accepted by both               |
 
 ```ts
-import { isDisjoint, isEqual, isSubset } from "arksets"
+import { isDisjoint, isEqual, isSubset } from "arktype/sets"
 
 isEqual({ type: "integer", minimum: 0 }, type("number.integer >= 0")) // true
 
@@ -26,7 +26,7 @@ They're sound for what each schema is read as: `true` is a proof. A Type is read
 `false` means the relation couldn't be proven, either because it doesn't hold or because a schema checks something the algebra can't reason about. Those are the JSON Schema keywords [Keyword support](/docs/json-schema/support) lists as opaque, like `not`, `uniqueItems` and `if`, and a Type's [`narrow`](/docs/expressions#narrow) predicates:
 
 ```ts
-import { isSubset } from "arksets"
+import { isSubset } from "arktype/sets"
 
 // true, but not provable through `not`
 isSubset({ type: "string" }, { not: { type: "number" } }) // false
@@ -39,7 +39,7 @@ An opaque keyword is still compared with itself, so a schema with `uniqueItems: 
 `intersect` returns a Root of the values every schema accepts. It's `never` if they're disjoint, and `unknown` if you pass none:
 
 ```ts
-import { intersect } from "arksets"
+import { intersect } from "arktype/sets"
 
 const Percent = intersect(type("number.integer"), { minimum: 0, maximum: 100 })
 
@@ -51,7 +51,7 @@ intersect({ type: "string" }, type("number")).expression // "never"
 `union` returns a Root of the values any schema accepts. A branch another branch already accepts is dropped, and unions of objects are [discriminated](/docs/sets/discriminate) as ArkType's own are:
 
 ```ts
-import { union } from "arksets"
+import { union } from "arktype/sets"
 
 union({ type: "string" }, { type: "string", minLength: 1 }, type("number"))
 	.expression // "number | string"
@@ -62,7 +62,7 @@ union({ type: "string" }, { type: "string", minLength: 1 }, type("number"))
 `toJsonSchema` writes the JSON Schema of any schema, so it converts a schema from any format to JSON Schema, or normalizes one JSON Schema into another:
 
 ```ts
-import { toJsonSchema } from "arksets"
+import { toJsonSchema } from "arktype/sets"
 
 toJsonSchema({
 	$defs: { Name: { type: "string" } },
@@ -78,10 +78,10 @@ toJsonSchema({
 }
 ```
 
-It takes the same options as a Type's [`toJsonSchema()`](/docs/json-schema/to-json-schema) and throws the same way. A JSON Schema keyword `arksets` checks opaquely, like `uniqueItems`, has no JSON Schema of its own once it's read, so handle its `predicate` [fallback](/docs/json-schema/to-json-schema#fallback-codes):
+It takes the same options as a Type's [`toJsonSchema()`](/docs/json-schema/to-json-schema) and throws the same way. A Type is written just as its own `toJsonSchema()` writes it, defaults included. A JSON Schema keyword `arktype/sets` checks opaquely, like `uniqueItems`, has no JSON Schema of its own once it's read, so handle its `predicate` [fallback](/docs/json-schema/to-json-schema#fallback-codes):
 
 ```ts
-import { toJsonSchema } from "arksets"
+import { toJsonSchema } from "arktype/sets"
 
 toJsonSchema(
 	{ type: "array", uniqueItems: true },

@@ -1,11 +1,11 @@
-import { hasArkKind, type BaseRoot } from "@ark/schema"
+import { hasArkKind, type BaseRoot } from "arktype/schema"
 import {
 	hasDomain,
 	hashOf,
 	isThunk,
 	registeredNameOf,
 	type ParseError
-} from "@ark/util"
+} from "arktype/util"
 import {
 	isTypedFn,
 	keyOf,

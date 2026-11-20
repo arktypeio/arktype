@@ -52,29 +52,42 @@ export const pattern: setImplementationOf<Pattern.Declaration> = {
 }
 
 export const divisor: setImplementationOf<Divisor.Declaration> = {
+	// data % -n is 0 exactly where data % n is
+	reduce: (inner, $) =>
+		inner.rule < 0 ? $.node("divisor", { rule: -inner.rule }) : undefined,
 	intersections: {
-		divisor: (l, r, ctx) =>
-			ctx.$.node("divisor", {
-				rule: Math.abs(
-					(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
-				)
-			}),
+		divisor: (l, r, ctx) => {
+			const rule = leastCommonMultipleOf(l.rule, r.rule)
+			// no double but 0 is a multiple of an integer no double can hold
+			return rule === undefined ?
+					ctx.$.node("unit", { unit: 0 })
+				:	ctx.$.node("divisor", { rule })
+		},
 		notEqual: (divisor, notEqual) =>
 			divisor.tAllows(notEqual.numRule) ? null : divisor
 	}
 }
 
+// the least common multiple of two integers, or undefined if no double holds
+// it exactly. Computed as a bigint, since l * r can exceed
+// Number.MAX_SAFE_INTEGER, rounding to a number neither divides.
+//
+// A nonzero double is an odd integer below 2^53 times a power of 2. If the
+// multiple is a double, data % multiple is exact. If it isn't, its odd part is
+// at least 2^53, so it divides no double's odd part, and only 0 is a multiple
+// of both
+const leastCommonMultipleOf = (l: number, r: number): number | undefined => {
+	const lBig = BigInt(Math.abs(l))
+	const rBig = BigInt(Math.abs(r))
+	const multiple = (lBig / greatestCommonDivisorOf(lBig, rBig)) * rBig
+	const rounded = Number(multiple)
+	return BigInt(rounded) === multiple ? rounded : undefined
+}
+
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
-const greatestCommonDivisor = (l: number, r: number) => {
-	let previous: number
-	let greatestCommonDivisor = l
-	let current = r
-	while (current !== 0) {
-		previous = current
-		current = greatestCommonDivisor % current
-		greatestCommonDivisor = previous
-	}
-	return greatestCommonDivisor
+const greatestCommonDivisorOf = (l: bigint, r: bigint): bigint => {
+	while (r !== 0n) [l, r] = [r, l % r]
+	return l
 }
 
 export const exactLength: setImplementationOf<ExactLength.Declaration> = {

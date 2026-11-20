@@ -7,9 +7,9 @@ import {
 	type ArkErrors,
 	type BaseRoot,
 	type BaseScope
-} from "@ark/schema"
-import type { ArkIssue } from "@ark/schema/runtime"
-import { hasDomain, ParseError, stringifyPath } from "@ark/util"
+} from "arktype/schema"
+import type { ArkIssue } from "arktype/schema/runtime"
+import { hasDomain, ParseError, stringifyPath } from "arktype/util"
 import {
 	introspectionMembers,
 	keyOf,
@@ -505,10 +505,7 @@ const observe = (run: () => unknown, input: unknown): unknown => {
 				}
 			:	{ out: result, isInput: result === input }
 	} catch (e) {
-		const cause = (e as { cause?: unknown } | undefined)?.cause
-		// an errors "none" assertion's cause has no arkKind where errors are written for size
-		const errors =
-			thrownErrorsOf(e) ?? (isErrors(cause) ? (cause as ArkErrors) : undefined)
+		const errors = thrownErrorsOf(e)
 		const issues = errors && keptIssuesOf(errors, !firstIssue)
 		return issues ?
 				{

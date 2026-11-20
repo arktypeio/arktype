@@ -45,13 +45,8 @@
 		"tnt": "ts ../repo/testPackage.ts --skipTypes",
 		"bench": "ts ./__tests__/infer.bench.ts"
 	},
-	"dependencies": {
-		"arksets": "workspace:*",
-		"@ark/schema": "workspace:*",
-		"@ark/util": "workspace:*"
-	},
 	"peerDependencies": {
-		"arktype": "workspace:*"
+		"arktype": "workspace:^"
 	},
 	"devDependencies": {
 		"@ark/fast-check": "workspace:*",

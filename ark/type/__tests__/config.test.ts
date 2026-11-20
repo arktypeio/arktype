@@ -271,6 +271,34 @@ other: must be text`)
 		attest(out.issues[0].code).equals("required")
 	})
 
+	it("message is configure({ message }), a missing key's included", () => {
+		const T = type({ name: type("string >= 1").message("Name is required") })
+		attest(T.expression).snap("{ name: string >= 1 }")
+		attest(standardMessagesOf(T, { name: "" })).snap(["Name is required"])
+		attest(standardMessagesOf(T, { name: 5 })).snap(["Name is required"])
+		attest(standardMessagesOf(T, {})).snap(["Name is required"])
+	})
+
+	it("message with a selector says it for that check only", () => {
+		const Password = type("string >= 8").message(
+			"Use 8 or more characters",
+			"minLength"
+		)
+		attest(Password("abc").toString()).snap("Use 8 or more characters")
+		attest(Password(5).toString()).snap("must be a string")
+		attest(type({ password: Password })({}).toString()).snap(
+			"password must be a string (was missing)"
+		)
+	})
+
+	it("message takes a writer", () => {
+		const Email = type("string.email").message(e =>
+			e.data === "" ? "Email is required" : "Enter a valid email"
+		)
+		attest(Email("").toString()).snap("Email is required")
+		attest(Email("x").toString()).snap("Enter a valid email")
+	})
+
 	it("a missing key doesn't take its value's message writer", () => {
 		const T = type({
 			name: type("string").configure({
@@ -497,7 +525,7 @@ age must be non-negative`)
 			attest(out instanceof type.errors).equals(true)
 			attest(out.toString()).snap("is invalid")
 			attest(JSON.stringify(out)).snap(
-				'[{"data":{"a":1,"b":"2"},"path":[],"code":"predicate","expected":"valid","message":"is invalid","propString":"","actual":"an object"}]'
+				'[{"path":[],"code":"predicate","expected":"valid","message":"is invalid","propString":""}]'
 			)
 		})
 
@@ -521,13 +549,11 @@ age must be non-negative`)
 			const T = none.type("string").pipe((s, ctx) => ctx.error("short"))
 			attest((T("x") as type.errors).toJSON()).snap([
 				{
-					data: "x",
 					path: [],
 					code: "predicate",
 					expected: "valid",
 					message: "is invalid",
-					propString: "",
-					actual: '"x"'
+					propString: ""
 				}
 			])
 		})

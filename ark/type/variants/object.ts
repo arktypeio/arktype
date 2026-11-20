@@ -19,7 +19,12 @@ import type {
 	show,
 	toArkKey
 } from "@ark/util"
-import type { Default, required, withDefault } from "../attributes.ts"
+import type {
+	Default,
+	InferredMorph,
+	required,
+	withDefault
+} from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { ArrayType } from "./array.ts"
 import type { BaseType } from "./base.ts"
@@ -132,7 +137,7 @@ interface Type<out t extends object = object, in out $ = {}>
 	 *
 	 * @example const T = type({ "foo?": "string" }).required() // Type<{ foo: string }>
 	 */
-	required(): Type<show<required<t>>, $>
+	required(): instantiateType<show<required<t>>, $>
 
 	/**
 	 * Create a copy of this `Type` with all properties optional.
@@ -146,7 +151,7 @@ interface Type<out t extends object = object, in out $ = {}>
 	 *
 	 * @example const T = type({ foo: "string" }).partial() // Type<{ foo?: string }>
 	 */
-	partial(): Type<{ [k in keyof t]?: t[k] }, $>
+	partial(): instantiateType<{ [k in keyof t]?: t[k] }, $>
 
 	/**
 	 * Create a copy of this `Type` with each of its properties transformed by
@@ -183,15 +188,25 @@ type typePropOf<o, $> =
 		:	never
 	:	never
 
-type typeProp<o, k extends keyof o, $, t = o[k] & ({} | null)> =
-	t extends Default<infer t, infer defaultValue> ?
+// checked whole, since a prop's value is one Type, whatever its branches
+type typeProp<o, k extends keyof o, $, v = propValueOf<o, k>> =
+	[v] extends [Default<infer t, infer defaultValue>] ?
 		DefaultedTypeProp<k & Key, t, defaultValue, $>
+	: [v] extends (
+		[InferredMorph<Default<infer i, infer defaultValue>, infer out>]
+	) ?
+		DefaultedTypeProp<k & Key, (In: i) => out, defaultValue, $>
 	:	BaseTypeProp<
 			k extends optionalKeyOf<o> ? "optional" : "required",
 			k & Key,
-			t,
+			v,
 			$
 		>
+
+// an optional key's value without the undefined its `?` adds, as `-?` reads
+// it, so it keeps an undefined it was given only with exactOptionalPropertyTypes
+type propValueOf<o, k extends keyof o> =
+	k extends optionalKeyOf<o> ? Required<o>[k] : o[k]
 
 export interface BaseTypeProp<
 	kind extends Prop.Kind = Prop.Kind,

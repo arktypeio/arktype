@@ -202,6 +202,31 @@ contextualize(() => {
 		})
 	})
 
+	it("discriminates a unit case of the string Array", () => {
+		const D = discriminate(
+			rootSchema([
+				{
+					domain: "object",
+					required: [
+						{ key: "kind", value: { unit: "Array" } },
+						{ key: "a", value: "string" }
+					]
+				},
+				{
+					domain: "object",
+					required: [
+						{ key: "kind", value: { unit: "Map" } },
+						{ key: "b", value: "number" }
+					]
+				}
+			])
+		)
+		attest(D?.cases.map(c => [c.value, c.branches.expression])).snap([
+			["Array", '{ a: string, kind: "Array" }'],
+			["Map", '{ b: number, kind: "Map" }']
+		])
+	})
+
 	it("discriminates nothing without branches to tell apart", () => {
 		attest(discriminate({ type: "string" })).equals(null)
 		attest(
@@ -293,5 +318,107 @@ contextualize(() => {
 		attest(contradictions).equals([])
 		// what it can prove, so a relation it stops proving is caught
 		attest(proven).snap({ subsets: 94, disjoint: 66 })
+	})
+
+	it("bounds an array by a closed structure only where its keys stop", () => {
+		// every index matches, though the pattern isn't provably all of them
+		const Indexed = rootSchema({
+			domain: "object",
+			index: [
+				{
+					signature: { domain: "string", pattern: ["^\\d+$"] },
+					value: "number"
+				}
+			],
+			undeclared: "reject"
+		})
+		const Long = rootSchema({
+			proto: Array,
+			sequence: "number",
+			minLength: 1025
+		})
+		attest(Indexed.allows(Array(1025).fill(1))).equals(true)
+		attest(isDisjoint(Indexed, Long)).equals(false)
+		const Pair = rootSchema({
+			domain: "object",
+			required: [
+				{ key: "0", value: "number" },
+				{ key: "1", value: "number" }
+			],
+			undeclared: "reject"
+		})
+		attest(
+			isDisjoint(
+				Pair,
+				rootSchema({ proto: Array, sequence: "number", minLength: 3 })
+			)
+		).equals(true)
+	})
+
+	it("intersects divisors whose multiple exceeds the safe integers", () => {
+		// 3 * 2^52 is a double, so data % it is exact
+		attest(
+			intersect(
+				rootSchema({ domain: "number", divisor: 2 ** 52 }),
+				rootSchema({ domain: "number", divisor: 3 })
+			).expression
+		).snap("number % 13510798882111488")
+		// these primes' product rounded to a multiple of neither, but it has no
+		// double, so only 0 is a multiple of both
+		const Both = intersect(
+			rootSchema({ domain: "number", divisor: 9007199254740881 }),
+			rootSchema({ domain: "number", divisor: 9007199254740847 })
+		)
+		attest(Both.expression).snap("0")
+		attest(Both.allows(-0)).equals(true)
+		attest(
+			isEqual(
+				rootSchema({ domain: "number", divisor: -2 }),
+				rootSchema({ domain: "number", divisor: 2 })
+			)
+		).equals(true)
+	})
+
+	it("intersects a narrowed bound with the refinements it didn't meet", () => {
+		const arrayWith = (schema: object) =>
+			rootSchema({ proto: Array, ...schema } as never)
+		// >= 1 & != 1 is >= 2, then <= 3 & != 3 is <= 2, which meets != 2
+		const L = arrayWith({ maxLength: 3, notEqualLength: [1, 2] })
+		const R = arrayWith({ minLength: 1, notEqualLength: 3 })
+		attest(intersect(L, R).expression).snap("never")
+		attest(isDisjoint(L, R)).equals(true)
+		attest(
+			intersect(
+				arrayWith({ maxLength: 4, notEqualLength: 3 }),
+				arrayWith({ minLength: 3 })
+			).expression
+		).snap("Array == 4")
+		attest(
+			intersect(
+				rootSchema({ proto: Date, before: new Date(6), notEqual: new Date(5) }),
+				rootSchema({ proto: Date, after: new Date(5) })
+			).expression
+		).snap("d'1970-01-01T00:00:00.006Z'")
+	})
+
+	it("relates a keyword every value meets as its absence", () => {
+		attest(
+			isEqual(
+				{ type: "array", contains: { type: "string" }, minContains: 0 },
+				{ type: "array" }
+			)
+		).equals(true)
+		attest(
+			isEqual(
+				{
+					type: "object",
+					dependentRequired: { a: [] },
+					dependentSchemas: { b: true },
+					propertyNames: { type: "string" },
+					minProperties: 0
+				},
+				{ type: "object" }
+			)
+		).equals(true)
 	})
 })

@@ -9,7 +9,7 @@ import {
 	cached,
 	Hkt,
 	throwParseError,
-	type Json,
+	type JsonStructure,
 	type Key,
 	type omit,
 	type pick,
@@ -102,8 +102,9 @@ export declare namespace json {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		root: Json
-		stringify: (In: Json) => To<string>
+		// only plain objects and arrays, so a primitive JSON value isn't one
+		root: JsonStructure
+		stringify: (In: JsonStructure) => To<string>
 	}
 }
 
