@@ -2,7 +2,8 @@ import type {
 	JsonSchema,
 	RootApply,
 	StandardJSONSchemaV1,
-	StandardSchemaV1
+	StandardSchemaV1,
+	ToJsonSchema
 } from "@ark/schema"
 
 import {
@@ -25,6 +26,7 @@ import {
 	sharedMessageOf,
 	supportedJsonSchemaTargets,
 	throwOnDefault,
+	ToJsonSchemaError,
 	traversesUnions,
 	validateStandardJsonSchemaTarget,
 	writeFromPath,
@@ -610,34 +612,19 @@ const writeStandardJsonSchema = (
 	return writers[i]() as Record<string, unknown>
 }
 
-class ToJsonSchemaError extends Error {
-	readonly name = "ToJsonSchemaError"
-	readonly code: string
-	readonly context: object
-
-	constructor(code: string, message: string, context: object) {
-		super(message)
-		this.code = code
-		this.context = context
-	}
-
-	hasCode(code: string): boolean {
-		return this.code === code
-	}
-}
-
+// @ark/schema's ToJsonSchema.Error, so instanceof holds as it does for arktype's
 export const throwJsonSchemaError = (
-	code: string,
+	code: ToJsonSchema.Code,
 	message: string,
 	context: object
 ): never => {
-	throw new ToJsonSchemaError(code, message, context)
+	throw new ToJsonSchemaError(code, context as never, "", message)
 }
 
 // arktype's error where no handler writes a code, the first line of whose
 // message is fixed at build and the rest its context, as arktype prints it
 export const fallbackThrower =
-	(code: string, header: string) =>
+	(code: ToJsonSchema.Code, header: string) =>
 	(ctx: object): never =>
 		throwJsonSchemaError(
 			code,

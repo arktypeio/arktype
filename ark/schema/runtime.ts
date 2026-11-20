@@ -24,6 +24,7 @@ export * from "./shared/issues.ts"
 export * from "./shared/listed.ts"
 export {
 	supportedJsonSchemaTargets,
+	ToJsonSchemaError,
 	validateStandardJsonSchemaTarget,
 	writeNullableJsonSchema,
 	writeUnionJsonSchema

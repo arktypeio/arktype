@@ -520,13 +520,18 @@ export const Shallow = type({ a: Leaf.array() })`
 				files["/main.ts"],
 				"/main.ts"
 			)
+			// Pair bakes toJsonSchema's three targets, as members sets it
 			attest(sites.map(site => site.status)).equals([
 				"accepted",
-				"accepted",
+				"rejected",
 				"rejected",
 				"accepted"
 			])
 			attest(diagnostics.map(d => [d.severity, renderDiagnostic(d)])).snap([
+				[
+					"error",
+					"/main.ts:3:14  type({ a: Leaf.array(), b: Leaf.array() }) can't be precompiled yet\n  its introspection bakes 889 chars of text (json 272 chars, toJsonSchema 617 chars), over the 600 chars a site may. Read fewer of its members, or leave it to arktype with // @ark-runtime or runtime: \"arktype\"\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
+				],
 				[
 					"error",
 					"/main.ts:4:21  type({ a: Pair.array(), b: Pair.array() }) can't be precompiled yet\n  its introspection bakes 907 chars of text (json 450 chars, toJsonSchema 457 chars), over the 600 chars a site may. Read fewer of its members, or leave it to arktype with // @ark-runtime or runtime: \"arktype\"\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."

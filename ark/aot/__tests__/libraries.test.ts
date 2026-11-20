@@ -379,4 +379,66 @@ console.log(User.expression, User.toJsonSchema, User["~standard"].jsonSchema, St
 undefined undefined undefined Type
 `)
 	})
+
+	it("members' toJsonSchema bakes each target, so a read outside the bundle passing one gets it", async () => {
+		const out = await logged(
+			"entryTargets",
+			{
+				"main.ts": `import { type } from "arktype"
+
+export const User = type({ name: "string | null" })
+export const Event = type({ at: "Date" })
+`,
+				"reader.js": `import { Event, User } from "./out/main.js"
+
+for (const target of ["draft-2020-12", "draft-07", "openapi-3.0"])
+	console.log(JSON.stringify(User.toJsonSchema({ target })))
+const date = ctx => ({ ...ctx.base, format: "date-time" })
+console.log(JSON.stringify(Event.toJsonSchema({ target: "draft-07", fallback: { date } })))
+`
+			},
+			"reader.js",
+			{ members: { toJsonSchema: true } }
+		)
+		attest(out)
+			.snap(`{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"name":{"anyOf":[{"type":"string"},{"type":"null"}]}},"required":["name"]}
+{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"name":{"anyOf":[{"type":"string"},{"type":"null"}]}},"required":["name"]}
+{"type":"object","properties":{"name":{"type":"string","nullable":true}},"required":["name"]}
+{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"at":{"format":"date-time"}},"required":["at"]}
+`)
+	})
+
+	it("a validator's JSON Schema throws the ToJsonSchema.Error a dependency reading @ark/schema checks for, as arktype's does", async () => {
+		const out = await loggedEither("jsonSchemaError", {
+			"node_modules/convert/package.json":
+				'{ "name": "convert", "type": "module", "exports": "./index.js" }',
+			"node_modules/convert/index.js": `import { ToJsonSchema } from "@ark/schema"
+
+export const caught = write => {
+	try {
+		return write()
+	} catch (e) {
+		return [e instanceof ToJsonSchema.Error, e.code]
+	}
+}
+`,
+			"node_modules/convert/index.d.ts":
+				"export declare const caught: (write: () => unknown) => unknown\n",
+			"main.ts": `import { type } from "arktype"
+import { caught } from "convert"
+
+const Event = type({ at: "Date", n: type("number").narrow(n => n > 0) })
+
+// thrown as baked, with no fallback and with one writing the narrow but not the Date
+console.log(
+	JSON.stringify([
+		caught(() => Event.toJsonSchema()),
+		caught(() => Event.toJsonSchema({ fallback: { predicate: ctx => ctx.base } }))
+	])
+)
+`
+		})
+		attest(out).snap(`[[true,"date"],[true,"date"]]
+`)
+	})
 })
