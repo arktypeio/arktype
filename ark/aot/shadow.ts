@@ -4,12 +4,13 @@ import {
 	ArkTraversal,
 	hasArkKind,
 	InternalTraversal,
+	withContextOf,
 	type BaseRoot,
 	type Traversal
-} from "@ark/schema"
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { ArkErrors, shareConfig } from "@ark/schema/runtime"
-import { arkKind, hasDomain, includes, printable } from "@ark/util"
+} from "arktype/schema"
+
+import { ArkErrors, shareConfig } from "arktype/schema/runtime"
+import { arkKind, hasDomain, includes, printable } from "arktype/util"
 import { configure } from "arktype/internal/config.js"
 import {
 	introspectionMembers,
@@ -251,6 +252,7 @@ const droppableMembers = [
 	"assert",
 	"traverse",
 	"from",
+	"withContext",
 	"meta",
 	"~standard"
 ] as const
@@ -304,6 +306,18 @@ const typeHandlerOf = (
 			for (const k in meta)
 				meta[k] = callbackByWrapper.get(meta[k] as never) ?? meta[k]
 			return Object.freeze(meta)
+		}
+		// bound over this proxy's members, so each call it makes compares both
+		if (k === "withContext") {
+			return (context: ArkEnv.context) =>
+				withContextOf(
+					Object.assign(validator(), {
+						assert: validator("assert"),
+						allows: validator("allows") as (data: unknown) => boolean,
+						"~standard": memberOf(target, "~standard") as never
+					}),
+					context
+				)
 		}
 		if (k === "~standard") {
 			const { validate, ...standard } = counterpart["~standard"] as Record<

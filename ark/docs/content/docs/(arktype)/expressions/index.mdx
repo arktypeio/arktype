@@ -343,7 +343,7 @@ If a narrow's return type is a type predicate, the `Type` infers it:
 // Type<`ark${string}`>
 const ArkString = type("string").narrow(
 	(data, ctx): data is `ark${string}` =>
-		data.startsWith("ark") || ctx.reject("a string starting with 'ark'")
+		data.startsWith("ark") || ctx.mustBe("a string starting with 'ark'")
 )
 ```
 
@@ -359,7 +359,7 @@ The [traversal API](/docs/traversal-api) documents everything `ctx` can do.
 ```ts
 const ShortNumeric = type("string.numeric.parse").filter(
 	// s is the input string, not the parsed number
-	(s, ctx) => s.length <= 10 || ctx.reject("at most 10 characters")
+	(s, ctx) => s.length <= 10 || ctx.mustBe("at most 10 characters")
 )
 
 // 123

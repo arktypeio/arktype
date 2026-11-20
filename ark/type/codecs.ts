@@ -1,7 +1,7 @@
 import type { ArkError, ArkErrors, Morph } from "@ark/schema"
 import type { noInfer } from "@ark/util"
 // installs encoding, which .encode requires
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+
 import { inverses } from "@ark/schema/codecs"
 import type { distill, inferPipe, Out } from "./attributes.ts"
 import {

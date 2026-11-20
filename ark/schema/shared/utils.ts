@@ -157,6 +157,12 @@ export const holeNameMarker = "$hole_"
 
 const holeNameSuffix = /\$hole_[\da-z]+/g
 
+// a build's placeholder leads with the name arktype would print for its
+// callback, "fn" where it has none, so text hashed for a name drops the rest
+// and names a Type as the program, running its own callbacks, does
+export const withoutHoleNames = (s: string): string =>
+	s.includes(holeNameMarker) ? s.replace(holeNameSuffix, "") : s
+
 // a nested node prints as "..." past this length, so reuse at each level can't
 // double it, whatever a build names its callbacks while it writes text
 const maxNestedLength = 1000
@@ -164,7 +170,7 @@ const maxNestedLength = 1000
 export const elided = (nested: string): string =>
 	(
 		nested.length > maxNestedLength &&
-		nested.replace(holeNameSuffix, "").length > maxNestedLength
+		withoutHoleNames(nested).length > maxNestedLength
 	) ?
 		"..."
 	:	nested

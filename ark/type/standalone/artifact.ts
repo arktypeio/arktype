@@ -17,14 +17,14 @@ import {
 	type RootUnit,
 	type UnionJsonSchemaWriters
 } from "@ark/schema"
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+
 import {
 	rootApplyRuntime,
 	rootApplyParts,
 	type FailureSite,
 	type RootApplyParam
 } from "@ark/schema/internal"
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+
 import { writesInPlace } from "@ark/schema/mutatesInput"
 import {
 	appendStringifiedKey,
@@ -951,7 +951,8 @@ export class StandaloneArtifact {
 		return (
 			!this.baking.called &&
 			!this.baking.members.has("assert") &&
-			!this.baking.members.has("~standard")
+			!this.baking.members.has("~standard") &&
+			!this.baking.members.has("withContext")
 		)
 	}
 

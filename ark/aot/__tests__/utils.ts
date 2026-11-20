@@ -8,7 +8,7 @@ import {
 	type PrecompileOptions
 } from "@ark/aot"
 import { fromHere } from "@ark/fs"
-import { hasArkKind } from "@ark/schema"
+import { hasArkKind } from "arktype/schema"
 import { spawnSync } from "node:child_process"
 import {
 	mkdirSync,
@@ -211,13 +211,13 @@ console.log(JSON.stringify(T({ a: "a", b: "[1]" })))
 try {
 	T.assert({ a: 1 })
 } catch (e) {
-	console.log(String(e), (e as { cause?: unknown }).cause instanceof type.errors)
+	console.log(String(e), (e as { arkErrors?: unknown }).arkErrors instanceof type.errors)
 }
 `,
 			"reads/main.ts": 'import { reads } from "reads"\n\nconsole.log(reads)\n',
 			...packageFiles("reads", {
 				"index.js":
-					'import { hasArkKind } from "@ark/schema"\n\nexport const reads = typeof hasArkKind\n',
+					'import { hasArkKind } from "arktype/schema"\n\nexport const reads = typeof hasArkKind\n',
 				"index.d.ts": "export declare const reads: string\n"
 			})
 		},
@@ -227,7 +227,7 @@ try {
 // what that program logs, its errors saying only that data is invalid
 export const undetailedOutput = `true is invalid
 {"a":"a","b":[1]}
-Error: is invalid true
+TraversalError: is invalid true
 `
 
 const tempDirs: string[] = []

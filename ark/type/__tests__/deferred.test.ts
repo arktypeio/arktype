@@ -252,6 +252,13 @@ for (const def of [{ "z?": X }, { z: [X, "=", () => []] }]) {
 			attest([l, r, anyType(l) === anyType(r)]).equals([l, r, false])
 	})
 
+	it("a bound with its own message isn't the Type its bound alone writes", () => {
+		attest(
+			printed(`const t = type("number").atLeast(7, "At least seven")
+console.log(t === type("number >= 7"), String(t(1)), String(type("number >= 7")(1)))`)
+		).snap("false At least seven must be at least 7\n")
+	})
+
 	it("a chain is one Type with what it writes", () => {
 		attest(
 			printed(`const longer = s => s.length > 3

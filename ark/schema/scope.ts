@@ -75,7 +75,7 @@ import type { Unit } from "./roots/unit.ts"
 import { canJit, tryJit } from "./shared/compile.ts"
 import { nodeKinds, type NodeKind } from "./shared/implement.ts"
 import type { Locale } from "./shared/locale.ts"
-import { $ark } from "./shared/registry.ts"
+import { $ark, ambientResolver } from "./shared/registry.ts"
 import { missingSetEngineMessage } from "./shared/sets.ts"
 import type { Traversal } from "./shared/traversal.ts"
 import {
@@ -86,7 +86,8 @@ import {
 	inProgress,
 	isNode,
 	printSelfAsThis,
-	resolving
+	resolving,
+	withoutHoleNames
 } from "./shared/utils.ts"
 import { bindPrecompiledUnits, precompile, precompileRoot } from "./units.ts"
 
@@ -362,7 +363,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		}
 		// locale is global-only, though an untyped config can pass one
 		if (cfg.locale !== globalConfig.locale)
-			(cfg as { locale: Locale }).locale = globalConfig.locale
+			(cfg as { locale: Locale.Resolved }).locale = globalConfig.locale
 		return this.memo("cfg", cfg)
 	}
 
@@ -929,7 +930,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return printSelfAsThis(
 			this.parseDef(def, {
 				...opts,
-				name: `${ctx.prefix}${hashOf(node.expression)}`
+				name: `${ctx.prefix}${hashOf(withoutHoleNames(node.expression))}`
 			}),
 			node
 		)
@@ -1114,6 +1115,8 @@ export const resolveAmbient = (name: string): BaseRoot | undefined => {
 		)
 	})
 }
+
+ambientResolver.resolve = resolveAmbient
 
 const maybeResolveSubalias = (
 	base: Dict,

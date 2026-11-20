@@ -6,10 +6,10 @@
 
 > Read arktype Types, Standard JSON Schemas and JSON Schemas as sets of values, relate and combine them, and write them back out as JSON Schema.
 
-`arksets` treats a schema as the set of values it accepts. It reads schemas from any format, relates and combines them with the same algebra ArkType reduces its own Types with, and writes the result back out as JSON Schema:
+`arktype/sets` treats a schema as the set of values it accepts. It reads schemas from any format, relates and combines them with the same algebra ArkType reduces its own Types with, and writes the result back out as JSON Schema:
 
 ```ts
-import { intersect, isSubset, toJsonSchema } from "arksets"
+import { intersect, isSubset, toJsonSchema } from "arktype/sets"
 
 const V1 = {
 	type: "object",
@@ -54,23 +54,23 @@ Use it to check that a new version of an API schema still accepts what the old o
 ## Installation
 
 ```bash
-npm install arksets
+npm install arktype
 ```
 
-`arktype` depends on `arksets` already, but only imports [the engine](https://arktype.io/docs/sets#the-engine). Install it yourself to import the functions on these pages.
+Import from `arktype/sets` — it ships with `arktype` and tree-shakes out of `arktype` unless you import it.
 
 ## Schemas
 
 Every function takes a `Schema`, which can be any of:
 
-- a **Root**: an `@ark/schema` node, which every arktype Type is. It's read losslessly, never through JSON Schema.
-- a **[Standard JSON Schema](https://standardschema.dev/json-schema)**: a schema whose `~standard` has `jsonSchema`, like one from zod 4.2.0 or later. `arksets` reads its draft 2020-12 JSON Schema, so what that can't express, like zod's refinements, transforms and `undefined`, is invisible to every function here. Pass any other library's schema as its JSON Schema, like `z.toJSONSchema(schema)` before zod 4.2.0.
+- a **Root**: an `arktype/schema` node, which every arktype Type is. It's read losslessly, never through JSON Schema.
+- a **[Standard JSON Schema](https://standardschema.dev/json-schema)**: a schema whose `~standard` has `jsonSchema`, like one from zod 4.2.0 or later. `arktype/sets` reads its draft 2020-12 JSON Schema, so what that can't express, like zod's refinements, transforms and `undefined`, is invisible to every function here. Pass any other library's schema as its JSON Schema, like `z.toJSONSchema(schema)` before zod 4.2.0.
 - a **JSON Schema**: an object or a boolean, read as [Keyword support](https://arktype.io/docs/json-schema/support) describes.
 
 Every argument can be in a different format. Results that are sets are Roots, so you can validate with them, print them and pass them back in:
 
 ```ts
-import { intersect } from "arksets"
+import { intersect } from "arktype/sets"
 
 const Port = intersect({ type: "integer" }, type("number >= 1024"))
 
@@ -84,7 +84,7 @@ Port.allows(80) // false
 `parse` reads a schema into a Root. Every other function calls it on its arguments, so you only need it to read a schema with options:
 
 ```ts
-import { parse } from "arksets"
+import { parse } from "arktype/sets"
 
 const Query = type({
 	page: type("string").pipe(s => Number(s), type("number.integer >= 1"))
@@ -100,7 +100,7 @@ parse(Query, { io: "out" }).expression // "{ page: number % 1 >= 1 }"
 | `root` | the schema itself | the document a JSON Schema's `#/...` refs resolve against, like an OpenAPI document |
 
 ```ts
-import { parse } from "arksets"
+import { parse } from "arktype/sets"
 
 const openApi = {
 	components: {
@@ -128,7 +128,7 @@ A schema object is read once per `io` and cached, so passing the same object to 
 ArkType's `object` includes arrays, like TypeScript's. JSON Schema's `"object"` excludes them. An arktype Type is read with its own meaning, so it accepts values a JSON Schema with the same properties doesn't:
 
 ```ts
-import { isSubset } from "arksets"
+import { isSubset } from "arktype/sets"
 
 const User = type({ name: "string" })
 
@@ -148,9 +148,7 @@ To compare a Type with JSON's meaning, pass its `.toJsonSchema()`.
 
 ## The engine
 
-Importing `arksets` also installs the set algebra `@ark/schema` reduces nodes and discriminates unions with, and that `.and()`, `.extends()`, `.toJsonSchema()` and the other relational methods use. `arktype` installs it from `arksets/internal`, so these functions stay out of its bundle. [Set algebra](https://arktype.io/docs/internals/sets) describes what `@ark/schema` does without it.
-
-`arksets/internal` exports the engine's own functions for `@ark/schema` and `arktype`. Like `@ark/schema`, it isn't semver-stable.
+Importing `arktype/sets` also installs the set algebra `arktype/schema` reduces nodes and discriminates unions with, and that `.and()`, `.extends()`, `.toJsonSchema()` and the other relational methods use. `arktype` installs it automatically, while keeping the public `arktype/sets` helpers out of its bundle. [Set algebra](https://arktype.io/docs/internals/sets) describes what `arktype/schema` does without it.
 
 # Relations
 
@@ -165,7 +163,7 @@ Importing `arksets` also installs the set algebra `@ark/schema` reduces nodes an
 | `isDisjoint(l, r)` | no value is accepted by both |
 
 ```ts
-import { isDisjoint, isEqual, isSubset } from "arksets"
+import { isDisjoint, isEqual, isSubset } from "arktype/sets"
 
 isEqual({ type: "integer", minimum: 0 }, type("number.integer >= 0")) // true
 
@@ -179,7 +177,7 @@ They're sound for what each schema is read as: `true` is a proof. A Type is read
 `false` means the relation couldn't be proven, either because it doesn't hold or because a schema checks something the algebra can't reason about. Those are the JSON Schema keywords [Keyword support](https://arktype.io/docs/json-schema/support) lists as opaque, like `not`, `uniqueItems` and `if`, and a Type's [`narrow`](https://arktype.io/docs/expressions#narrow) predicates:
 
 ```ts
-import { isSubset } from "arksets"
+import { isSubset } from "arktype/sets"
 
 // true, but not provable through `not`
 isSubset({ type: "string" }, { not: { type: "number" } }) // false
@@ -192,7 +190,7 @@ An opaque keyword is still compared with itself, so a schema with `uniqueItems: 
 `intersect` returns a Root of the values every schema accepts. It's `never` if they're disjoint, and `unknown` if you pass none:
 
 ```ts
-import { intersect } from "arksets"
+import { intersect } from "arktype/sets"
 
 const Percent = intersect(type("number.integer"), { minimum: 0, maximum: 100 })
 
@@ -204,7 +202,7 @@ intersect({ type: "string" }, type("number")).expression // "never"
 `union` returns a Root of the values any schema accepts. A branch another branch already accepts is dropped, and unions of objects are [discriminated](https://arktype.io/docs/sets/discriminate) as ArkType's own are:
 
 ```ts
-import { union } from "arksets"
+import { union } from "arktype/sets"
 
 union({ type: "string" }, { type: "string", minLength: 1 }, type("number"))
 	.expression // "number | string"
@@ -215,7 +213,7 @@ union({ type: "string" }, { type: "string", minLength: 1 }, type("number"))
 `toJsonSchema` writes the JSON Schema of any schema, so it converts a schema from any format to JSON Schema, or normalizes one JSON Schema into another:
 
 ```ts
-import { toJsonSchema } from "arksets"
+import { toJsonSchema } from "arktype/sets"
 
 toJsonSchema({
 	$defs: { Name: { type: "string" } },
@@ -231,10 +229,10 @@ toJsonSchema({
 }
 ```
 
-It takes the same options as a Type's [`toJsonSchema()`](https://arktype.io/docs/json-schema/to-json-schema) and throws the same way. A Type is written just as its own `toJsonSchema()` writes it, defaults included. A JSON Schema keyword `arksets` checks opaquely, like `uniqueItems`, has no JSON Schema of its own once it's read, so handle its `predicate` [fallback](https://arktype.io/docs/json-schema/to-json-schema#fallback-codes):
+It takes the same options as a Type's [`toJsonSchema()`](https://arktype.io/docs/json-schema/to-json-schema) and throws the same way. A Type is written just as its own `toJsonSchema()` writes it, defaults included. A JSON Schema keyword `arktype/sets` checks opaquely, like `uniqueItems`, has no JSON Schema of its own once it's read, so handle its `predicate` [fallback](https://arktype.io/docs/json-schema/to-json-schema#fallback-codes):
 
 ```ts
-import { toJsonSchema } from "arksets"
+import { toJsonSchema } from "arktype/sets"
 
 toJsonSchema(
 	{ type: "array", uniqueItems: true },
@@ -249,7 +247,7 @@ toJsonSchema(
 `discriminate` finds how a union's branches can be told apart: a path, and for each value at that path, the branches it can match. ArkType uses the same discriminant to check one key in a union of objects instead of trying each branch.
 
 ```ts
-import { discriminate } from "arksets"
+import { discriminate } from "arktype/sets"
 
 const Shape = type({ shape: { kind: "'circle'" }, r: "number" }).or({
 	shape: { kind: "'square'" },
@@ -275,7 +273,7 @@ discriminant.default // null
 A union of different types is discriminated by `typeof`:
 
 ```ts
-import { discriminate } from "arksets"
+import { discriminate } from "arktype/sets"
 
 discriminate(type("string | number | null"))?.kind // "domain"
 ```
@@ -283,7 +281,7 @@ discriminate(type("string | number | null"))?.kind // "domain"
 A branch without the discriminating key is part of `default` and of every case, since any value at the path could still match it:
 
 ```ts
-import { discriminate } from "arksets"
+import { discriminate } from "arktype/sets"
 
 const Message = {
 	anyOf: [

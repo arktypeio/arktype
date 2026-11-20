@@ -38,11 +38,11 @@ const result = Form["~standard"].validate({ name: "Ada", age: "old" })
 // }
 ```
 
-A union's message lists each branch's path from the union's, like `b must be a string or c must be a number`. A [`message`](/docs/configuration#message) you configure, or pass to `ctx.reject`, is the issue's message as you wrote it, so it's what a form shows:
+A union's message lists each branch's path from the union's, like `b must be a string or c must be a number`. A [`message`](/docs/configuration#message) you configure, pass to a constraint method or pass to `ctx.reject`, is the issue's message as you wrote it, so it's what a form shows:
 
 ```ts
 const Signup = type({
-	email: type("string.email").configure({ message: "Enter a valid email" })
+	email: type("string.email").message("Enter a valid email")
 })
 
 Signup["~standard"].validate({ email: "x" })

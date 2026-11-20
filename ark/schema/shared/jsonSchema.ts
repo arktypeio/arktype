@@ -1,6 +1,8 @@
 import {
+	defineValue,
 	hasKey,
 	includes,
+	isEmptyObject,
 	throwParseError,
 	type autocomplete,
 	type Json,
@@ -34,7 +36,13 @@ export declare namespace JsonSchema {
 		[k: string]: unknown
 		$schema?: string
 		$defs?: Record<string, JsonSchema>
+		// draft-07's $defs, and where ~standard.jsonSchema writes OpenAPI's
+		definitions?: Record<string, JsonSchema>
 		examples?: t[]
+		// OpenAPI 3.0's examples, which has one
+		example?: t
+		// OpenAPI 3.0 adds null to the type beside it
+		nullable?: boolean
 	}
 
 	export type Format = autocomplete<
@@ -50,14 +58,18 @@ export declare namespace JsonSchema {
 	>
 
 	/**
-	 * doesn't include root-only keys like $schema
+	 * the annotations a Type's meta writes to its JSON Schema, which doesn't
+	 * include root-only keys like $schema
 	 */
 	export interface UniversalMeta<t = unknown> {
 		title?: string
 		description?: string
 		format?: Format
 		contentEncoding?: string
-		deprecated?: true
+		deprecated?: boolean
+		readOnly?: boolean
+		writeOnly?: boolean
+		$comment?: string
 		default?: t
 		examples?: readonly t[]
 	}
@@ -105,6 +117,18 @@ export declare namespace JsonSchema {
 
 	export interface OneOf extends Meta {
 		oneOf: JsonSchema[]
+		discriminator?: Discriminator
+	}
+
+	/**
+	 * OpenAPI's Discriminator Object, naming the property a oneOf's branches
+	 * are told apart by
+	 * https://spec.openapis.org/oas/v3.0.3#discriminator-object
+	 */
+	export interface Discriminator {
+		propertyName: string
+		/** the $ref of the branch each value selects */
+		mapping?: Record<string, string>
 	}
 
 	export interface Union extends Meta {
@@ -129,14 +153,16 @@ export declare namespace JsonSchema {
 		contentMediaType?: string
 	}
 
-	// exclusiveMinimum and exclusiveMaximum are left to the index signature:
-	// openapi-3.0 writes them as booleans
 	export interface Numeric extends Meta<number> {
 		type: "number" | "integer"
 		// NB: JSON Schema allows decimal multipleOf, but ArkType only supports integer.
 		multipleOf?: number
 		minimum?: number
 		maximum?: number
+		// OpenAPI 3.0 writes true beside minimum or maximum instead, which
+		// number | boolean would say at the cost of fitting JSONSchema7
+		exclusiveMinimum?: number
+		exclusiveMaximum?: number
 		not?: Const | Enum
 	}
 
@@ -150,7 +176,7 @@ export declare namespace JsonSchema {
 		additionalProperties?: Branch
 		maxProperties?: number
 		minProperties?: number
-		propertyNames?: String
+		propertyNames?: Branch
 	}
 
 	export interface Array extends Meta<JsonArray> {
@@ -171,14 +197,28 @@ export declare namespace JsonSchema {
 	export type Structure = Object | Array
 }
 
+/** the targets ~standard.jsonSchema writes, each of which a precompiled build bakes */
 export const supportedJsonSchemaTargets: readonly ToJsonSchema.Target[] = [
 	"draft-2020-12",
 	"draft-07",
 	"openapi-3.0"
 ]
 
-export const writeInvalidJsonSchemaTargetMessage = (target: string): string => {
-	const quoted = supportedJsonSchemaTargets.map(t => `"${t}"`)
+/**
+ * the targets toJsonSchema writes. Standard JSON Schema names no OpenAPI 3.1,
+ * whose Schema Object is draft-2020-12 but for where its $refs point, so it's
+ * only toJsonSchema's, and isn't baked for ~standard.jsonSchema
+ */
+export const toJsonSchemaTargets: readonly ToJsonSchema.Target[] = [
+	...supportedJsonSchemaTargets,
+	"openapi-3.1"
+]
+
+export const writeInvalidJsonSchemaTargetMessage = (
+	target: string,
+	targets: readonly string[] = supportedJsonSchemaTargets
+): string => {
+	const quoted = targets.map(t => `"${t}"`)
 	return `JSONSchema target '${target}' is not supported (must be ${quoted.slice(0, -1).join(", ")} or ${quoted[quoted.length - 1]})`
 }
 
@@ -191,14 +231,40 @@ export const validateStandardJsonSchemaTarget = (
 	return target
 }
 
+export const validateToJsonSchemaTarget = (
+	target: StandardJSONSchemaV1.Target
+): ToJsonSchema.Target => {
+	if (!includes(toJsonSchemaTargets, target)) {
+		throwParseError(
+			writeInvalidJsonSchemaTargetMessage(target, toJsonSchemaTargets)
+		)
+	}
+	return target
+}
+
 type UnitJsonSchema = JsonSchema.Const &
 	JsonSchema.Enum &
 	JsonSchema.Constrainable
 
 // an OpenAPI Schema Object has no null type, and nullable only adds null to a
 // type beside it
-export const openApiNull = (): JsonSchema =>
-	({ type: "string", nullable: true, enum: [null] }) as JsonSchema
+export const openApiNull = (): JsonSchema => ({
+	type: "string",
+	nullable: true,
+	enum: [null]
+})
+
+/**
+ * the key a union's object branches each require a string at, no value of
+ * which two branches share, so exactly one branch can match any data
+ */
+export interface UnionDiscriminant {
+	key: string
+	/** the strings each branch allows at the key, in the order of the branches */
+	values: string[][]
+	/** whether OpenAPI's discriminator is written beside the oneOf */
+	writesKeyword: boolean
+}
 
 // a union from the schemas of its branches, as arktype writes it and as a
 // precompiled validator does where a branch is a call's fallback's
@@ -206,8 +272,12 @@ export const writeUnionJsonSchema = (
 	branches: JsonSchema[],
 	target: ToJsonSchema.Target,
 	meta: object,
-	metaJson: object
+	metaJson: object,
+	discriminant?: UnionDiscriminant
 ): JsonSchema => {
+	// never: an empty enum is invalid OpenAPI 3.0, whose enum needs an item,
+	// and LLM APIs like OpenAI's reject it, but every target has not
+	if (!branches.length) return { not: {} }
 	// what's left of a union without its null
 	if (branches.length === 1) return branches[0]
 	const unitKey = target === "openapi-3.0" ? "enum" : "const"
@@ -227,13 +297,44 @@ export const writeUnionJsonSchema = (
 		const values = branches.flatMap(branch =>
 			unitKey === "enum" ? branch.enum : [branch.const]
 		)
-		// never has no branches
-		const type = branches[0]?.type
+		const { type } = branches[0]
 		return type && branches.every(branch => branch.type === type) ?
 				{ type, enum: values }
 			:	{ enum: values }
 	}
-	return { anyOf: branches }
+	return discriminant && branches.every(requiresKeyOf(discriminant.key)) ?
+			writeOneOf(branches, discriminant)
+		:	{ anyOf: branches }
+}
+
+// a fallback's result can replace a branch with one that doesn't
+const requiresKeyOf =
+	(key: string) =>
+	(branch: JsonSchema): boolean =>
+		"$ref" in branch || !!(branch as JsonSchema.Object).required?.includes(key)
+
+// oneOf, since no data can match two of its branches, says to a generator
+// what anyOf would only imply: that each is a distinct variant
+const writeOneOf = (
+	branches: JsonSchema[],
+	{ key, values, writesKeyword }: UnionDiscriminant
+): JsonSchema.OneOf => {
+	if (!writesKeyword) return { oneOf: branches }
+	// OpenAPI finds an inline branch by its own value at the property, but a
+	// $ref only by its name, which a mapping replaces
+	const mapping: Record<string, string> = {}
+	for (let i = 0; i < branches.length; i++) {
+		const ref = (branches[i] as JsonSchema.Ref).$ref
+		// assigning "__proto__" would set the prototype
+		if (ref) for (const value of values[i]) defineValue(mapping, value, ref)
+	}
+	return {
+		oneOf: branches,
+		discriminator:
+			isEmptyObject(mapping) ?
+				{ propertyName: key }
+			:	{ propertyName: key, mapping }
+	}
 }
 
 // a union with null, written beside the rest so their values still share a type

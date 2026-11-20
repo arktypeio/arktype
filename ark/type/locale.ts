@@ -1,7 +1,10 @@
 import type { ArkErrorCode, Locale as BaseLocale } from "@ark/schema"
 import type { KeywordPhraseAlias } from "./keywords/phrases.ts"
 
-/** the text arktype's errors render in, with a phrase per builtin keyword */
+/**
+ * A locale you write: its tag and any part you replace, each part you leave
+ * out written as en writes it, with a phrase for any builtin keyword
+ */
 export type Locale = BaseLocale<KeywordPhraseAlias>
 
 export declare namespace Locale {
@@ -10,6 +13,8 @@ export declare namespace Locale {
 	export type Data = BaseLocale.Data<KeywordPhraseAlias>
 
 	export type Writers = BaseLocale.Writers
+
+	export type Resolved = BaseLocale.Resolved<KeywordPhraseAlias>
 
 	export type CodeWriters<code extends ArkErrorCode = ArkErrorCode> =
 		BaseLocale.CodeWriters<code>

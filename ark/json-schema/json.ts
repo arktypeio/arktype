@@ -1,4 +1,4 @@
-import { parse } from "arksets"
+import { parse } from "arktype/sets"
 import { type, type Type } from "arktype"
 import type { inferJsonSchema } from "./infer.ts"
 import type { validateJsonSchema } from "./validate.ts"

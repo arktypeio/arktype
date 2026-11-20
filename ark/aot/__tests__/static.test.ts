@@ -2368,8 +2368,8 @@ export const readers = [ark.flatByPath]
 export const translated = (out: ArkErrors) => out.issues.map(issue => ark.messageIn(issue, {} as never))`)
 			).snap([
 				'/main.ts:4:46  flatMessagesByPath(errors) calls flatMessagesByPath, which arktype/runtime doesn\'t export\n  Read `errors.issues`, each with its path and message, as in `for (const { path, message } of errors.issues)`, or build with runtime: "arktype".',
-				'/main.ts:7:38  ark.byPath(out) calls byPath, which arktype/runtime doesn\'t export\n  Write it as `Object.fromEntries(out.issues.map(issue => [issue.path.join("."), issue]))`, whose keys join each path with ".", where arktype writes an index as [0], or build with runtime: "arktype".',
-				'/main.ts:9:25  `ark.flatByPath` is arktype\'s, which arktype/runtime doesn\'t export\n  Write it as `Object.groupBy(errors.issues, issue => issue.path.join("."))`, whose keys join each path with ".", where arktype writes an index as [0], or build with runtime: "arktype".',
+				'/main.ts:7:38  ark.byPath(out) calls byPath, which arktype/runtime doesn\'t export\n  Write it as `Object.fromEntries([...out.issues].reverse().map(issue => [issue.path.join("."), issue]))`, whose keys join each path\'s keys with ".", where arktype writes an index as [0] and brackets a key that isn\'t an identifier, or build with runtime: "arktype".',
+				'/main.ts:9:25  `ark.flatByPath` is arktype\'s, which arktype/runtime doesn\'t export\n  Write it as `Object.groupBy(errors.issues, issue => issue.path.join("."))`, whose keys join each path\'s keys with ".", where arktype writes an index as [0] and brackets a key that isn\'t an identifier, or build with runtime: "arktype".',
 				'/main.ts:10:71  ark.messageIn(issue, {} as never) calls messageIn, which arktype/runtime doesn\'t export\n  Read `issue.message`, which a standalone validator writes in English, or build with runtime: "arktype" to write it in a locale.'
 			])
 		})
@@ -3059,8 +3059,8 @@ export const holder = { s: scope({ g: "string" }) }`)
 
 		it("packages reading arktype's nodes", () => {
 			attest(
-				diagnosticsOf(`import { discriminate } from "arksets"
-import { ArkErrors, hasArkKind, Traversal } from "@ark/schema"
+				diagnosticsOf(`import { discriminate } from "arktype/sets"
+import { ArkErrors, hasArkKind, Traversal } from "arktype/schema"
 import { type } from "arktype"
 const T = type({ a: "0" }).or({ a: "1" })
 const check = (f: () => void) => f()
@@ -3069,16 +3069,16 @@ console.log(T({}) instanceof ArkErrors, Traversal.name)
 // @ark-runtime
 const D = discriminate(type({ a: "0" }).or({ a: "1" }).internal as never)`)
 			).snap([
-				'/main.ts:6:25  `discriminate` is used outside a runtime island\n  arksets reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".',
-				'/main.ts:6:51  `hasArkKind` is used outside a runtime island\n  @ark/schema reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".',
-				"/main.ts:7:30  `ArkErrors` is @ark/schema's, not the standalone runtime's\n  what a standalone validator creates isn't an instance of @ark/schema's ArkErrors\n  Import ArkErrors from arktype, which a standalone build resolves to its runtime, or read type.errors."
+				'/main.ts:6:25  `discriminate` is used outside a runtime island\n  arktype/sets reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".',
+				'/main.ts:6:51  `hasArkKind` is used outside a runtime island\n  arktype/schema reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".',
+				"/main.ts:7:30  `ArkErrors` is arktype/schema's, not the standalone runtime's\n  what a standalone validator creates isn't an instance of arktype/schema's ArkErrors\n  Import ArkErrors from arktype, which a standalone build resolves to its runtime, or read type.errors."
 			])
 		})
 
-		it("@ark/schema or islands without error detail", () => {
+		it("arktype/schema or islands without error detail", () => {
 			attest(
 				diagnosticsOf(
-					`import { Traversal } from "@ark/schema"
+					`import { Traversal } from "arktype/schema"
 import { type } from "arktype"
 console.log(Traversal.name)
 // @ark-runtime
@@ -3087,7 +3087,7 @@ const T = type("string")`,
 					{ errors: "none" }
 				)
 			).snap([
-				"/main.ts:3:13  `Traversal` is @ark/schema's, not the standalone runtime's\n  what a standalone validator creates isn't an instance of @ark/schema's Traversal\n  Import Traversal from arktype, which a standalone build resolves to its runtime.",
+				"/main.ts:3:13  `Traversal` is arktype/schema's, not the standalone runtime's\n  what a standalone validator creates isn't an instance of arktype/schema's Traversal\n  Import Traversal from arktype, which a standalone build resolves to its runtime.",
 				'/main.ts:5:1  a runtime island returns arktype\'s errors, which aren\'t instances of type.errors under errors: "none"\n  a build whose errors say only that data is invalid gives its validators a runtime of their own\n  Precompile the definition, or build without errors: "none".'
 			])
 		})

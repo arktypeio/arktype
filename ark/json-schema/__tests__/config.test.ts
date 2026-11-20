@@ -13,7 +13,7 @@ configure({
 	numberAllowsNaN: true,
 	numberAllowsInfinity: true
 })
-const { intersect, parse } = await import("arksets")
+const { intersect, parse } = await import("arktype/sets")
 const { jsonSchemaToType } = await import("@ark/json-schema")
 const { type } = await import("arktype")
 const schema = { type: "object", properties: { a: { type: "number" } } }

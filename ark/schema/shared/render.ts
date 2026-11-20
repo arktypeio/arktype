@@ -22,11 +22,11 @@ type ErrorSlot = "expected" | "actual" | "message"
 type SlotConfig = string | ((...args: never[]) => string)
 
 /** defaultConfig's locale */
-let defaultLocale: Locale.Complete
+let defaultLocale: Locale.Resolved
 
 let selector: LocaleSelector | undefined
 
-let configured: Locale
+let configured: Locale.Resolved
 
 /**
  * sets the locale errors are written in from the one configure was last
@@ -35,8 +35,8 @@ let configured: Locale
 const configureLocale = (
 	locale: Locale | LocaleSelector | undefined,
 	base: ResolvedConfig
-): Locale => {
-	defaultLocale = base.locale as Locale.Complete
+): Locale.Resolved => {
+	defaultLocale = base.locale
 	if (typeof locale === "function") {
 		selector = locale
 		configured = defaultLocale
@@ -51,7 +51,7 @@ const configureLocale = (
 const isStandalone = (config: ResolvedConfig): boolean =>
 	!("cite" in config.locale)
 
-const select = (config: ResolvedConfig): Locale => {
+const select = (config: ResolvedConfig): Locale.Resolved => {
 	if (isStandalone(config)) return config.locale
 	if (selector === undefined) return configured
 	try {
@@ -63,7 +63,11 @@ const select = (config: ResolvedConfig): Locale => {
 	}
 }
 
-const write = (error: ArkError, config: ResolvedConfig, locale: Locale) => {
+const write = (
+	error: ArkError,
+	config: ResolvedConfig,
+	locale: Locale.Resolved
+) => {
 	if (isStandalone(config)) {
 		if (locale !== config.locale) throwError(unrenderedLocaleMessage)
 		return writeText(error, config, locale)
@@ -90,7 +94,7 @@ const render = (
 	expected: SlotConfig,
 	cited: string | undefined,
 	config: ResolvedConfig,
-	locale: Locale
+	locale: Locale.Resolved
 ): string => {
 	const slotConfig = configOf(error, slot, config)
 	const isDefault = slotConfig === defaultConfig[error.code][slot]
@@ -129,7 +133,7 @@ const writeSlot = (
 	error: ArkError,
 	slot: ErrorSlot,
 	config: SlotConfig,
-	locale: Locale
+	locale: Locale.Resolved
 ): string =>
 	typeof config === "string" ?
 		slot === "expected" ?
@@ -143,13 +147,13 @@ const localeWriter = (
 	slot: Exclude<ErrorSlot, "expected">,
 	expected: SlotConfig,
 	cited: string | undefined,
-	locale: Locale
+	locale: Locale.Resolved
 ): SlotConfig => {
 	if (cited !== undefined) {
 		const keywordWriter = keywordWriterOf(error, locale, slot)
 		if (keywordWriter !== undefined) return keywordWriter
 	}
-	const writer = locale[error.code][slot]
+	const writer = locale[error.code]?.[slot]
 	if (writer === undefined) return locale[slot]
 	// union and intersection frame their children's text, unless they cite
 	// their own description, or a union what it's configured to expect, which
@@ -173,11 +177,11 @@ const localeExpected = (
 	error: ArkError,
 	cited: string | undefined,
 	config: ResolvedConfig,
-	locale: Locale
+	locale: Locale.Resolved
 ): string => {
 	if (cited !== undefined)
 		return writeKeywordExpected(error as never, locale) ?? locale.cite(cited)
-	const expected = locale[error.code].expected
+	const expected = locale[error.code]?.expected
 	if (expected !== undefined) return writeExpected(error, expected, locale)
 	// written whole in en, never as en's frame around the locale's text
 	const inEn = unwrittenError(error)
@@ -209,8 +213,8 @@ const writeInEn = (
 
 const writeExpected = (
 	error: ArkError,
-	expected: string | ((error: never, locale: Locale) => string),
-	locale: Locale
+	expected: string | ((error: never, locale: Locale.Resolved) => string),
+	locale: Locale.Resolved
 ): string =>
 	typeof expected === "string" ? expected : expected(error as never, locale)
 
@@ -225,15 +229,18 @@ const isDefaultDescription = (
 		meta.description === undefined &&
 		meta.keyword === undefined &&
 		description ===
-			writeExpected(error, defaultLocale[error.code].expected, defaultLocale)
+			// en has a fragment for every code
+			writeExpected(error, defaultLocale[error.code]!.expected!, defaultLocale)
 	)
 }
 
-const normalizedLocales = new WeakMap<object, Locale>()
+const normalizedLocales = new WeakMap<object, Locale.Resolved>()
 
-/** a locale completed from en, which an older one may lack entries of */
-export const normalizeLocale = (locale: Locale): Locale => {
-	const en = defaultLocale
+/** a locale completed from en where it lacks a part */
+export const normalizeLocale = (locale: Locale): Locale.Resolved => {
+	// en, once arktype's config has resolved, or before then as it will be,
+	// so a locale is never kept as complete before there's en to complete it
+	const en = (defaultLocale ??= $ark.defaultConfig.locale)
 	if (locale === en) return en
 	let normalized = normalizedLocales.get(locale)
 	if (normalized === undefined) {
@@ -243,13 +250,13 @@ export const normalizeLocale = (locale: Locale): Locale => {
 	return normalized
 }
 
-const completeFrom = (en: Locale, locale: Locale): Locale => {
+const completeFrom = (en: Locale.Resolved, locale: Locale): Locale.Resolved => {
 	let completed: Record<string, unknown> | undefined
 	const fill = (k: string, entry: unknown) => {
 		completed ??= { ...locale }
 		completed[k] = entry
 	}
-	let k: keyof Locale
+	let k: keyof Locale.Resolved
 	for (k in en) {
 		const entry = locale[k] as Record<string, unknown> | undefined
 		if (entry === undefined) {
@@ -268,7 +275,7 @@ const completeFrom = (en: Locale, locale: Locale): Locale => {
 		)
 			fill(k, { ...en.nouns, ...entry })
 	}
-	return (completed as Locale | undefined) ?? locale
+	return (completed ?? locale) as Locale.Resolved
 }
 
 registerLocaleRenderer({
@@ -277,7 +284,8 @@ registerLocaleRenderer({
 	},
 	configure: configureLocale,
 	select,
-	write
+	write,
+	normalize: normalizeLocale
 })
 
 // arktype may resolve its config before this module loads

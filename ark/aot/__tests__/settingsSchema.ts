@@ -13,6 +13,7 @@ const settings = {
 		"meta?": flag,
 		"~standard?": flag,
 		"methods?": flag,
+		"withContext?": flag,
 		"expression?": flag,
 		"description?": flag,
 		"json?": flag,

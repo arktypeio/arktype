@@ -1,6 +1,6 @@
 ---
 title: Keyword support
-description: How @ark/json-schema and arksets read each JSON Schema keyword, which ones throw, and which are only annotations.
+description: How @ark/json-schema and arktype/sets read each JSON Schema keyword, which ones throw, and which are only annotations.
 ---
 
 `jsonSchemaToType` and [ArkSets](/docs/sets) read JSON Schema the same way. A Type read from a schema accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with ajv as the tiebreaker. Each keyword is read in one of five ways:

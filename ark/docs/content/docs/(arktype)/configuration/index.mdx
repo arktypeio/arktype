@@ -101,15 +101,15 @@ There are two ways to change what an error says:
 
 ```ts
 const User = type({
-	name: "string",
-	age: type("number >= 18").configure({ expected: "an adult's age" }),
-	email: type("string.email").configure({ message: "Enter a valid email" })
+	name: type.string.atLeastLength(1, "Enter your name"),
+	age: type("number >= 18").describe("an adult's age"),
+	email: type("string.email").message("Enter a valid email")
 })
 
-// ArkErrors: name must be a string
+// ArkErrors: name: Enter your name
 //            age must be an adult's age
 //            email: Enter a valid email
-User({ name: 5, age: 3, email: "x" })
+User({ name: "", age: 3, email: "x" })
 ```
 
 `expected`, `actual` and `message` each take a string or a function. See [Errors](/docs/errors) for what an error contains.
@@ -155,11 +155,31 @@ Age(101)
 
 ### message
 
-One whole sentence in place of "must be `expected`". It's the error's `message`, so it's what a [Standard Schema](/docs/standard-schema) consumer, like a form library, shows beside a field, and a summary writes it after the error's path and a colon:
+One whole sentence in place of "must be `expected`". It's the error's `message`, so it's what a [Standard Schema](/docs/standard-schema) consumer, like a form library, shows beside a field, and a summary writes it after the error's path and a colon.
+
+Pass it beside a constraint, as the last argument to [`.atLeastLength()`, `.lessThan()`, `.matching()`](/docs/type-api#constraints) or any other constraint method, and only that constraint says it, as Zod's `.min(8, "...")` does:
+
+```ts
+const Password = type.string
+	.atLeastLength(8, "Use 8 or more characters")
+	.matching(/[0-9]/, "Include a number")
+	.matching(/[A-Z]/, "Include a capital letter")
+
+// ArkErrors: Include a number
+//            Include a capital letter
+//            Use 8 or more characters
+Password("short")
+
+// a value of the wrong type keeps arktype's text
+// ArkErrors: must be a string
+Password(5)
+```
+
+`.message(text)` configures the whole Type, as `.configure({ message: text })` does, so a value of the wrong type and a missing key say it too:
 
 ```ts
 const Signup = type({
-	email: type("string.email").configure({ message: "Enter a valid email" })
+	email: type("string.email").message("Enter a valid email")
 })
 
 const out = Signup({ email: "x" })
@@ -177,34 +197,22 @@ if (out instanceof type.errors) {
 Signup({})
 ```
 
-A message is never composed into another error's, and it applies to the Type it's configured on:
+A message is never composed into another error's, as an `expected` is, and it applies to the constraint or the Type it's configured on:
 
 - A union's error lists what its branches expected, not their messages, unless every failing branch has the same message, which the union's error then says. It lists them too where that message is one configured [by code](#by-code) rather than on each branch's Type, or [begins as arktype's own would](/docs/errors#summary-lines).
 - A message on a union replaces what it lists. To say what a union must be instead, [describe](#description) it: `type({ a: "string" }).or({ b: "number" }).describe("a shape")` says `must be a shape`.
 - A message on a [pipe](/docs/expressions#pipe) is also the message of the errors validating its output.
 - A missing key says the message of its whole value, so configure that last, after any `.pipe()` or `.to()`.
 - A message doesn't apply to the Types inside its own, so one on an object is what data that isn't an object says, and each key keeps its own.
-- A message is what every check of its Type says. For one check's alone, pass that check's [error code](/docs/errors#error-codes) as a [selector](/docs/expressions#meta):
+- A message on a Type is what every check of it says. For a check written in a string definition, or a keyword's, like `string.email`'s pattern, pass the check's [error code](/docs/errors#error-codes) as a [selector](/docs/expressions#meta), as in `type("string >= 8").message("Use 8 or more characters", "minLength")`.
+
+`"domain"` selects a value of the wrong type, and `"self"` the Type's own node, whose message a missing key says. Beside constraints' messages, they give every failure its own:
 
 ```ts
-const Password = type("string >= 8 & /[0-9]/")
-	.configure({ message: "Use 8 or more characters" }, "minLength")
-	.configure({ message: "Include a number" }, "pattern")
-
-// ArkErrors: Include a number
-//            Use 8 or more characters
-Password("short")
-
-// ArkErrors: must be a string
-Password(5)
-```
-
-`"domain"` selects a value of the wrong type, and `"self"` the Type's own node, whose message a missing key says:
-
-```ts
-const Sku = type(/^[A-Z]{3}-\d{4}$/)
-	.configure({ message: "SKU is required" }, "self")
-	.configure({ message: "SKU must be text" }, "domain")
+const Sku = type.string
+	.matching(/^[A-Z]{3}-\d{4}$/, "SKU looks like ABC-1234")
+	.message("SKU is required", "self")
+	.message("SKU must be text", "domain")
 
 const Product = type({ sku: Sku })
 
@@ -214,11 +222,11 @@ Product({})
 // ArkErrors: sku: SKU must be text
 Product({ sku: 5 })
 
-// ArkErrors: sku must be matched by ^[A-Z]{3}-\d{4}$
+// ArkErrors: sku: SKU looks like ABC-1234
 Product({ sku: "x" })
 ```
 
-A code selects every check of that kind in the Type, a nested key's included, so configure a key's value rather than the object around it. A message configured without a selector replaces those configured before it, so configure it first.
+A code selects every check of that kind in the Type, a nested key's included, so configure a key's value rather than the object around it, or pass the message to the constraint method. A message configured without a selector replaces those configured before it, a constraint's included, and a constraint added after it makes a Type whose missing key doesn't say it, so add a whole-value message's `"self"` and `"domain"` after the constraints.
 
 A function receives the error, including its `expected` and `actual`. A summary writes its text after the path and a colon as it does a string's, but a missing key doesn't say it:
 
@@ -501,7 +509,7 @@ const out = User({ name: 5, age: "5" })
 
 With `"first"`, which of the data's errors is returned isn't promised, and can differ between a Type and its precompiled validator.
 
-With `"none"`, a failure returns one error with the code `"predicate"`, an empty path and the data. It's still an instance of `type.errors`, `.assert()` throws a `TraversalError` saying `is invalid`, and its message isn't [localized](#locale). A narrow or morph that reads `ctx.errors` while validating sees each issue added so far written the same way, as `is invalid` at its own path.
+With `"none"`, a failure returns one error with the code `"predicate"`, an empty path and the data. That's the code arktype gives any failure it says nothing more of, like `ctx.reject` without one, rather than a code of its own, which every `switch` over codes and every complete locale would have to handle. It's still an instance of `type.errors`, `.assert()` throws a `TraversalError` saying `is invalid`, and its message isn't [localized](#locale). A narrow or morph that reads `ctx.errors` while validating sees each issue added so far written the same way, as `is invalid` at its own path.
 
 `errors` can also be set per Scope. It applies to that Scope's Types, including where another Scope references them.
 
@@ -604,6 +612,8 @@ const MrPingsSecretIngredientSoup = type({
 	ingredients: "string[]"
 }).configure({ secretIngredient: "nothing!" })
 ```
+
+`toJsonSchema()` writes a key you add only if it starts with `x-`, since JSON Schema has no keyword for it. See [Meta](/docs/json-schema/to-json-schema#meta).
 
 ## prototypes
 

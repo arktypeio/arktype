@@ -32,7 +32,7 @@ import {
 	type DescriptionWriter,
 	type NodeKind
 } from "./shared/implement.ts"
-import { validateStandardJsonSchemaTarget } from "./shared/jsonSchema.ts"
+import { validateToJsonSchemaTarget } from "./shared/jsonSchema.ts"
 import type { Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
 import type { SetEngine } from "./shared/sets.ts"
@@ -230,7 +230,7 @@ export const resolveGlobalConfig = (base: ResolvedConfig): ResolvedConfig => {
 		$ark.config
 	)
 	// a locale function selects a locale per read, which is en if it returns none
-	;(resolved as { locale: Locale }).locale = configureLocale(
+	;(resolved as { locale: Locale.Resolved }).locale = configureLocale(
 		$ark.config.locale,
 		base
 	)
@@ -278,7 +278,8 @@ const jsonSchemaTargetToDialect: Record<ToJsonSchema.Target, string | null> = {
 	"draft-2020-12": "https://json-schema.org/draft/2020-12/schema",
 	"draft-07": "http://json-schema.org/draft-07/schema#",
 	// an OpenAPI Schema Object has no $schema
-	"openapi-3.0": null
+	"openapi-3.0": null,
+	"openapi-3.1": null
 }
 
 type MergeToJsonSchemaConfigs = <base extends ToJsonSchema.Options | undefined>(
@@ -316,7 +317,7 @@ const resolveTargetToDialect = <T extends ToJsonSchema.Options>(
 ): T => {
 	if (userOpts?.target === undefined) return opts
 	const dialect =
-		jsonSchemaTargetToDialect[validateStandardJsonSchemaTarget(userOpts.target)]
+		jsonSchemaTargetToDialect[validateToJsonSchemaTarget(userOpts.target)]
 	// a dialect passed with the target was already merged and takes precedence
 	return userOpts.dialect === undefined ? { ...opts, dialect } : opts
 }
@@ -382,7 +383,7 @@ export type resolveConfig<config extends ArkSchemaConfig> = show<
 			Required<config[k]>
 		: k extends "keywords" ? Record<string, TypeMeta | undefined>
 		: k extends "toJsonSchema" ? ToJsonSchema.Context
-		: k extends "locale" ? Locale
+		: k extends "locale" ? Locale.Resolved
 		: config[k]
 	} & Omit<config, keyof ArkSchemaConfig>
 >

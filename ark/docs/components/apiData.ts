@@ -86,6 +86,36 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         },
         {
             "group": "Traversal",
+            "name": "context",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "the context this validation was called with"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "the same object at every path, for predicates and morphs to read"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "`undefined` when a call passes none"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "typed as declared on `ArkEnv`: `interface ArkEnv { context(): {...} }`"
+                    }
+                ]
+            ]
+        },
+        {
+            "group": "Traversal",
             "name": "hasError",
             "summary": [
                 {
@@ -209,6 +239,22 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                         "kind": "noteStart",
                         "value": "useful for predicates like `.narrow`"
                     }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "`{ message: \"Enter a valid email\" }` is the whole sentence an issue says"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "to say what the value must be, as `must be even`, pass `\"even\"` to "
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "mustBe"
+                    }
                 ]
             ],
             "params": [
@@ -279,6 +325,347 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                         "kind": "noteStart",
                         "value": "useful for morphs like `.pipe`"
                     }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "a string is what the value must be: `error(\"valid JSON\")` reads `must be valid JSON`, so pass a sentence as `{ message }`",
+                        "warning": true
+                    }
+                ]
+            ],
+            "params": [
+                "input"
+            ]
+        },
+        {
+            "group": "Traversal",
+            "name": "path",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "the path being validated or morphed"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "array indices represented as numbers"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "mutated during traversal - use `path.slice(0)` to snapshot",
+                        "warning": true
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "use "
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "propString"
+                    },
+                    {
+                        "kind": "text",
+                        "value": " for a stringified version"
+                    }
+                ]
+            ]
+        },
+        {
+            "group": "Traversal",
+            "name": "root",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "the original value being traversed"
+                }
+            ],
+            "notes": []
+        },
+        {
+            "group": "Traversal",
+            "name": "config",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "configuration for this traversal"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "options can affect traversal results and error messages"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "defaults < global config < scope config"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "does not include options configured on individual types"
+                    }
+                ]
+            ]
+        },
+        {
+            "group": "Traversal",
+            "name": "context",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "the context this validation was called with"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "the same object at every path, for predicates and morphs to read"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "`undefined` when a call passes none"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "typed as declared on `ArkEnv`: `interface ArkEnv { context(): {...} }`"
+                    }
+                ]
+            ]
+        },
+        {
+            "group": "Traversal",
+            "name": "hasError",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "whether "
+                },
+                {
+                    "kind": "text",
+                    "value": "`currentBranch`"
+                },
+                {
+                    "kind": "text",
+                    "value": " (or the traversal root, outside a union) has one or more errors"
+                }
+            ],
+            "notes": [],
+            "params": []
+        },
+        {
+            "group": "Traversal",
+            "name": "errors",
+            "summary": [
+                {
+                    "kind": "link",
+                    "url": "https://arktype.io/docs/errors",
+                    "value": "ArkErrors"
+                },
+                {
+                    "kind": "text",
+                    "value": " that will be part of this traversal's finalized result"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "will always be empty for a valid traversal"
+                    }
+                ]
+            ]
+        },
+        {
+            "group": "Traversal",
+            "name": "data",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "the data being validated or morphed"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "the value at "
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "path"
+                    },
+                    {
+                        "kind": "text",
+                        "value": ", as transformed by any morphs that have already run"
+                    }
+                ]
+            ]
+        },
+        {
+            "group": "Traversal",
+            "name": "propString",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "a string representing "
+                },
+                {
+                    "kind": "reference",
+                    "value": "path"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "uses `.access` "
+                    },
+                    {
+                        "kind": "link",
+                        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Property_accessors#dot_notation",
+                        "value": "where allowed by JS"
+                    },
+                    {
+                        "kind": "text",
+                        "value": ", falling back to `[indexAccess]`"
+                    }
+                ]
+            ],
+            "example": "const path = [\"key1\", Symbol(\"key2\"), \"key3\", 4, \"~key5\"]\nconst propString = 'key1[Symbol(key2)].key3[4][\"~key5\"]'"
+        },
+        {
+            "group": "Traversal",
+            "name": "reject",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "add an "
+                },
+                {
+                    "kind": "link",
+                    "url": "https://arktype.io/docs/errors",
+                    "value": "ArkError"
+                },
+                {
+                    "kind": "text",
+                    "value": " and return `false`"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "useful for predicates like `.narrow`"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "`{ message: \"Enter a valid email\" }` is the whole sentence an issue says"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "to say what the value must be, as `must be even`, pass `\"even\"` to "
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "mustBe"
+                    }
+                ]
+            ],
+            "params": [
+                "input"
+            ]
+        },
+        {
+            "group": "Traversal",
+            "name": "mustBe",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "add an "
+                },
+                {
+                    "kind": "link",
+                    "url": "https://arktype.io/docs/errors",
+                    "value": "ArkError"
+                },
+                {
+                    "kind": "text",
+                    "value": " from a description and return `false`"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "useful for predicates like `.narrow`"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "equivalent to "
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "reject"
+                    },
+                    {
+                        "kind": "text",
+                        "value": "({ expected })"
+                    }
+                ]
+            ],
+            "params": [
+                "expected"
+            ]
+        },
+        {
+            "group": "Traversal",
+            "name": "error",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "add and return an "
+                },
+                {
+                    "kind": "link",
+                    "url": "https://arktype.io/docs/errors",
+                    "value": "ArkError"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "useful for morphs like `.pipe`"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "a string is what the value must be: `error(\"valid JSON\")` reads `must be valid JSON`, so pass a sentence as `{ message }`",
+                        "warning": true
+                    }
                 ]
             ],
             "params": [
@@ -287,6 +674,17 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         }
     ],
     "Validation": [
+        {
+            "group": "Validation",
+            "name": "assert",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "validate and return transformed data or throw"
+                }
+            ],
+            "notes": []
+        },
         {
             "group": "Validation",
             "name": "assert",
@@ -331,6 +729,17 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     "value": "check input without applying morphs"
                 }
             ],
+            "notes": []
+        },
+        {
+            "group": "Validation",
+            "name": "allows",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "check input without applying morphs"
+                }
+            ],
             "notes": [
                 [
                     {
@@ -363,6 +772,46 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 "literal"
             ],
             "example": "const T = type({ foo: \"string\" });\n// TypeScript: Type 'number' is not assignable to type 'string'\nconst data = T.from({ foo: 5 });"
+        },
+        {
+            "group": "Validation",
+            "name": "withContext",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "bind a context its narrows and morphs read as `ctx.context`"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "creates no Type, so a static, precompilable Type can validate with what a caller has, e.g. a form's saved values"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "is a Standard Schema, as form libraries take one"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "typed as declared on `ArkEnv`"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "`~standard.validate(data, { libraryOptions: { context } })` passes a context without binding one"
+                    }
+                ]
+            ],
+            "params": [
+                "context"
+            ],
+            "example": "declare global {\n    interface ArkEnv {\n        context(): { saved?: string }\n    }\n}\n\nconst Street = type(\"string\").narrow(\n    (s, ctx) => s === ctx.context?.saved || s.length > 3 || ctx.mustBe(\"a full street\")\n)\n// the street as saved passes, though it's short\nconst out = Street.withContext({ saved: \"Elm\" })(\"Elm\")"
         }
     ],
     "Inference": [
@@ -672,6 +1121,45 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 ]
             ],
             "example": "const AToZ = type(/^a.*z$/).describe(\"a string like 'a...z'\")\nconst good = AToZ(\"alcatraz\") // \"alcatraz\"\n// ArkErrors: must be a string like 'a...z'\nconst badPattern = AToZ(\"albatross\")"
+        },
+        {
+            "group": "Metadata",
+            "name": "message",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "set the sentence an error says"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "equivalent to `.configure({ message })` (see "
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "configure"
+                    },
+                    {
+                        "kind": "text",
+                        "value": ")"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "a missing key says it too, as Zod's `required_error`"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "a selector like `\"minLength\"` scopes it to that check, as Zod's `.min(1, \"Name is required\")`"
+                    }
+                ]
+            ],
+            "example": "const Name = type(\"string >= 1\").message(\"Name is required\")\n// ArkErrors: Name is required\nconst empty = Name(\"\")\n\nconst Password = type(\"string >= 8\").message(\"Use 8 or more characters\", \"minLength\")\n// ArkErrors: Use 8 or more characters\nconst short = Password(\"abc\")\n// ArkErrors: must be a string\nconst nonString = Password(5)"
         }
     ],
     "Composition": [
@@ -1609,6 +2097,17 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "params": [
                 "options"
             ]
+        },
+        {
+            "group": "Serialization",
+            "name": "~standard",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "the Type's [StandardSchema](https://github.com/standard-schema/standard-schema) properties, validating in context"
+                }
+            ],
+            "notes": []
         },
         {
             "group": "Serialization",

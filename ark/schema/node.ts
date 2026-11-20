@@ -59,7 +59,7 @@ import type {
 	attachmentsOf
 } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
-import type { ArkErrors } from "./shared/errors.ts"
+import { siteTraversalOf, type ArkErrors } from "./shared/errors.ts"
 import {
 	ArkErrors as BaseArkErrors,
 	throwOnDefault,
@@ -92,6 +92,7 @@ import {
 	addErrors,
 	allowsAcyclic,
 	allowsInContext,
+	readingContextWith,
 	allowsUntracked,
 	pipe,
 	transform,
@@ -111,7 +112,8 @@ import {
 	isNode,
 	isResolutionFinal,
 	printSelfAsThis,
-	removedProblemMessage
+	removedProblemMessage,
+	withoutHoleNames
 } from "./shared/utils.ts"
 import type { Sequence } from "./structure/sequence.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
@@ -171,7 +173,8 @@ const callableOf = (cache: NodeCache) =>
 		pipedFromCtx?: Traversal | undefined,
 		onFail?: ArkErrors.Handler | null
 	) => {
-		if (pipedFromCtx) return pipe(pipedFromCtx, cache.self, data)
+		if (pipedFromCtx)
+			return pipe(siteTraversalOf(pipedFromCtx), cache.self, data)
 
 		const rootApply = cache.rootApply
 		return rootApply === undefined ?
@@ -242,6 +245,14 @@ const assertOf =
 	(node: BaseNode) =>
 	(data: unknown, pipedFromCtx?: Traversal): unknown =>
 		node(data, pipedFromCtx, throwOnDefault)
+
+export const writeContextAtDefinitionMessage =
+	"A narrow read ctx.context where ArkType checks a literal as it defines a Type, before any call can pass one. Narrow a wider Type, like string, and check the literal in the narrow"
+
+// a result a narrow gave as a Type checks a literal while it's defined would
+// be kept for every call, so it can't read a context no call has passed yet
+const readContextAtDefinition = (): never =>
+	throwParseError(writeContextAtDefinitionMessage)
 
 // long hashes mostly serve parsing, so they're dropped once the job that wrote them ends
 let hashedInJob: NodeCache[] = []
@@ -1018,7 +1029,11 @@ export abstract class BaseNode<
 
 	// allows data without using the Type, e.g. a key an intersection checks
 	allowsUnused(data: d["prerequisite"]): boolean {
-		return (this.c.preJit ?? this.allows)(data)
+		const allows = this.c.preJit ?? this.allows
+		// as it's defined, so no call has passed a context to read
+		return this.allowsCtx ?
+				readingContextWith(readContextAtDefinition, () => allows(data))
+			:	allows(data)
 	}
 
 	/** _in should be used internally instead */
@@ -1278,11 +1293,12 @@ export abstract class BaseNode<
 		// again, now that synthetics have printed their names
 		let name: string | undefined
 		const names: Record<string, string> = {}
+		// named as arktype names them, whatever a build names its callbacks
+		const expression = withoutHoleNames(transformed.expression)
 		for (const id in ctx.synth) {
-			if (id === this.id) name = `synthetic${hashOf(transformed.expression)}`
+			if (id === this.id) name = `synthetic${hashOf(expression)}`
 			else {
-				names[id] =
-					`synthetic${hashOf(`${transformed.expression}\n${ctx.synth[id].name}`)}`
+				names[id] = `synthetic${hashOf(`${expression}\n${ctx.synth[id].name}`)}`
 			}
 		}
 		const named =
@@ -1337,7 +1353,7 @@ export abstract class BaseNode<
 			}
 			ctx.synth[resolution.id] ??= this.$.openSynthetic(
 				ctx.names?.[resolution.id] ??
-					(resolution === ctx.root ? undefined : this.expression)
+					(resolution.id === ctx.root.id ? undefined : this.expression)
 			)
 			return this.$.lazilyResolve(
 				ctx.seen[resolution.id]! as never,

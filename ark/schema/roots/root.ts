@@ -40,12 +40,16 @@ import type {
 	LimitSchemaValue,
 	UnknownRangeSchema
 } from "../refinements/range.ts"
-import type { BaseNodeDeclaration, TypeMeta } from "../shared/declare.ts"
+import type {
+	BaseNodeDeclaration,
+	BaseNodeInput,
+	TypeMeta
+} from "../shared/declare.ts"
 import {
 	Disjoint,
 	writeUnsatisfiableExpressionError
 } from "../shared/disjoint.ts"
-import { isCustomError } from "../shared/errors.ts"
+import { isCustomError, type MessageConfig } from "../shared/errors.ts"
 import { ArkErrors } from "../shared/issues.ts"
 import { standardFailureOf } from "../shared/standardFailure.ts"
 import {
@@ -65,7 +69,12 @@ import type {
 	StandardSchemaV1
 } from "../shared/standardSchema.ts"
 import { ToJsonSchema } from "../shared/toJsonSchema.ts"
-import { tryMorph } from "../shared/traversal.ts"
+import {
+	inContext,
+	tryMorph,
+	withContextOf,
+	type ContextualTarget
+} from "../shared/traversal.ts"
 import { hasArkKind, isNode } from "../shared/utils.ts"
 import { assertDefaultValueAssignability } from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
@@ -116,8 +125,12 @@ export abstract class BaseRoot<
 				{
 					vendor: "arktype",
 					version: 1,
-					validate: input => {
-						const out = this(input)
+					validate: (input, options) => {
+						const context = options?.libraryOptions?.context
+						const out =
+							context === undefined ?
+								this(input)
+							:	inContext(context as never, () => this(input))
 						return out instanceof ArkErrors ?
 								standardFailureOf(out as ArkErrors)
 							:	{ value: out }
@@ -427,6 +440,10 @@ export abstract class BaseRoot<
 		return this.configure({ description }, selector)
 	}
 
+	message(message: MessageConfig, selector: NodeSelector = "shallow"): this {
+		return this.configure({ message }, selector)
+	}
+
 	// these should ideally be implemented in arktype since they use its syntax
 	// https://github.com/arktypeio/arktype/issues/1223
 	optional(): [this, "?"] {
@@ -445,6 +462,10 @@ export abstract class BaseRoot<
 		// ideally we might not validate here but for now we need to do determine
 		// which morphs to apply
 		return this.assert(input)
+	}
+
+	withContext(context: ArkEnv.context): ContextualTarget {
+		return withContextOf(this as never, context)
 	}
 
 	protected _pipe(...morphs: Morph[]): BaseRoot {
@@ -647,64 +668,127 @@ export abstract class BaseRoot<
 		return this.constrainIn("predicate", predicate)
 	}
 
-	divisibleBy(schema: Divisor.Schema): BaseRoot {
-		return this.constrain("divisor", schema)
+	divisibleBy(schema: Divisor.Schema, message?: MessageConfig): BaseRoot {
+		return this.constrain("divisor", withMessage("divisor", schema, message))
 	}
 
-	matching(schema: Pattern.Schema): BaseRoot {
-		return this.constrain("pattern", schema)
+	matching(schema: Pattern.Schema, message?: MessageConfig): BaseRoot {
+		return this.constrain("pattern", withMessage("pattern", schema, message))
 	}
 
-	atLeast(schema: InclusiveNumericRangeSchema): BaseRoot {
-		return this.constrain("min", schema)
+	atLeast(
+		schema: InclusiveNumericRangeSchema,
+		message?: MessageConfig
+	): BaseRoot {
+		return this.constrain("min", withMessage("min", schema, message))
 	}
 
-	atMost(schema: InclusiveNumericRangeSchema): BaseRoot {
-		return this.constrain("max", schema)
+	atMost(
+		schema: InclusiveNumericRangeSchema,
+		message?: MessageConfig
+	): BaseRoot {
+		return this.constrain("max", withMessage("max", schema, message))
 	}
 
-	moreThan(schema: ExclusiveNumericRangeSchema): BaseRoot {
-		return this.constrain("min", exclusivizeRangeSchema(schema))
+	moreThan(
+		schema: ExclusiveNumericRangeSchema,
+		message?: MessageConfig
+	): BaseRoot {
+		return this.constrain(
+			"min",
+			withMessage("min", exclusivizeRangeSchema(schema), message)
+		)
 	}
 
-	lessThan(schema: ExclusiveNumericRangeSchema): BaseRoot {
-		return this.constrain("max", exclusivizeRangeSchema(schema))
+	lessThan(
+		schema: ExclusiveNumericRangeSchema,
+		message?: MessageConfig
+	): BaseRoot {
+		return this.constrain(
+			"max",
+			withMessage("max", exclusivizeRangeSchema(schema), message)
+		)
 	}
 
-	atLeastLength(schema: InclusiveNumericRangeSchema): BaseRoot {
-		return this.constrain("minLength", schema)
+	atLeastLength(
+		schema: InclusiveNumericRangeSchema,
+		message?: MessageConfig
+	): BaseRoot {
+		return this.constrain(
+			"minLength",
+			withMessage("minLength", schema, message)
+		)
 	}
 
-	atMostLength(schema: InclusiveNumericRangeSchema): BaseRoot {
-		return this.constrain("maxLength", schema)
+	atMostLength(
+		schema: InclusiveNumericRangeSchema,
+		message?: MessageConfig
+	): BaseRoot {
+		return this.constrain(
+			"maxLength",
+			withMessage("maxLength", schema, message)
+		)
 	}
 
-	moreThanLength(schema: ExclusiveNumericRangeSchema): BaseRoot {
-		return this.constrain("minLength", exclusivizeRangeSchema(schema))
+	moreThanLength(
+		schema: ExclusiveNumericRangeSchema,
+		message?: MessageConfig
+	): BaseRoot {
+		return this.constrain(
+			"minLength",
+			withMessage("minLength", exclusivizeRangeSchema(schema), message)
+		)
 	}
 
-	lessThanLength(schema: ExclusiveNumericRangeSchema): BaseRoot {
-		return this.constrain("maxLength", exclusivizeRangeSchema(schema))
+	lessThanLength(
+		schema: ExclusiveNumericRangeSchema,
+		message?: MessageConfig
+	): BaseRoot {
+		return this.constrain(
+			"maxLength",
+			withMessage("maxLength", exclusivizeRangeSchema(schema), message)
+		)
 	}
 
-	exactlyLength(schema: ExactLength.Schema): BaseRoot {
-		return this.constrain("exactLength", schema)
+	exactlyLength(schema: ExactLength.Schema, message?: MessageConfig): BaseRoot {
+		return this.constrain(
+			"exactLength",
+			withMessage("exactLength", schema, message)
+		)
 	}
 
-	atOrAfter(schema: InclusiveDateRangeSchema): BaseRoot {
-		return this.constrain("after", schema)
+	atOrAfter(
+		schema: InclusiveDateRangeSchema,
+		message?: MessageConfig
+	): BaseRoot {
+		return this.constrain("after", withMessage("after", schema, message))
 	}
 
-	atOrBefore(schema: InclusiveDateRangeSchema): BaseRoot {
-		return this.constrain("before", schema)
+	atOrBefore(
+		schema: InclusiveDateRangeSchema,
+		message?: MessageConfig
+	): BaseRoot {
+		return this.constrain("before", withMessage("before", schema, message))
 	}
 
-	laterThan(schema: ExclusiveDateRangeSchema): BaseRoot {
-		return this.constrain("after", exclusivizeRangeSchema(schema))
+	laterThan(
+		schema: ExclusiveDateRangeSchema,
+		message?: MessageConfig
+	): BaseRoot {
+		return this.constrain(
+			"after",
+			withMessage("after", exclusivizeRangeSchema(schema), message)
+		)
 	}
 
-	earlierThan(schema: ExclusiveDateRangeSchema): BaseRoot {
-		return this.constrain("before", exclusivizeRangeSchema(schema))
+	earlierThan(
+		schema: ExclusiveDateRangeSchema,
+		message?: MessageConfig
+	): BaseRoot {
+		return this.constrain(
+			"before",
+			withMessage("before", exclusivizeRangeSchema(schema), message)
+		)
 	}
 }
 
@@ -752,6 +836,20 @@ const toStandardJsonSchema = (
 	const standardCtx: ToJsonSchema.Context = { ...ctx, fallback }
 	if (io) standardCtx.io = io
 	return node.toJsonSchema(standardCtx) as never
+}
+
+// a constraint's schema, with the message passed beside it configured on that
+// constraint alone, as its own meta, so another of its kind keeps its text
+const withMessage = <kind extends Constraint.PrimitiveKind>(
+	kind: kind,
+	schema: Constraint.Schema<kind>,
+	message: MessageConfig | undefined
+): Constraint.Schema<kind> => {
+	if (message === undefined) return schema
+	const input = constraintInputOf(kind, schema) as BaseNodeInput
+	const meta: object | undefined =
+		typeof input.meta === "string" ? { description: input.meta } : input.meta
+	return { ...input, meta: { ...meta, message } } as never
 }
 
 export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(

@@ -29,7 +29,7 @@ const Json = type("string").pipe((s, ctx) => {
 Json("{")
 ```
 
-`reject` and `error` take a string, which is what the value must be, or the [parts of an error](/docs/configuration#error-messages): `expected` and `actual`, or a `message` that replaces the whole sentence. `relativePath` reports it below the value being checked, where `path` would replace its whole path from the root of the data:
+`reject` takes the [parts of an error](/docs/configuration#error-messages): `expected` and `actual`, or a `message` that replaces the whole sentence. It doesn't take a string, which would read as a sentence but say what the value must be: pass that to `mustBe`. `error` takes either, its string being what the value must be. `relativePath` reports it below the value being checked, where `path` would replace its whole path from the root of the data:
 
 ```ts
 const Range = type({ start: "number", end: "number" }).narrow(
@@ -64,6 +64,39 @@ const isEven = (n: number, ctx: Traversal) => n % 2 === 0 || ctx.mustBe("even")
 
 const Even = type("number").narrow(isEven)
 ```
+
+## Context
+
+A check that depends on something the caller has, like a form's saved values, reads it as `ctx.context`. Bind it with `.withContext`, so the Type stays defined once and can be [precompiled](/docs/precompile), instead of being created again for each value it closes over. Declare its shape on `ArkEnv`:
+
+```ts
+declare global {
+	interface ArkEnv {
+		context(): { savedStreet?: string }
+	}
+}
+
+// a street saved under older rules stays valid until it's edited
+const Street = type("string").narrow(
+	(s, ctx) =>
+		s === ctx.context?.savedStreet ||
+		s.length > 3 ||
+		ctx.mustBe("a full street")
+)
+
+const Address = type({ street: Street, city: "string" })
+
+// ArkErrors: street must be a full street
+Address({ street: "Elm", city: "Springfield" })
+
+// { street: "Elm", city: "Springfield" }
+Address.withContext({ savedStreet: "Elm" })({
+	street: "Elm",
+	city: "Springfield"
+})
+```
+
+`.withContext` creates no Type. It returns a validator with `assert`, `allows` and `~standard`, which is a Standard Schema a form library can take as is. Every narrow and morph the call reaches reads the same context, at any depth, and it's `undefined` in a call without one. A Standard Schema caller can also pass it without binding, as `T["~standard"].validate(data, { libraryOptions: { context } })`.
 
 ## Members
 

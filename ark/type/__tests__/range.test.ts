@@ -995,6 +995,50 @@ contextualize(() => {
 				)
 				.type.errors("Property 'atOrBefore' does not exist")
 		})
+
+		describe("message", () => {
+			it("is said for its bound alone", () => {
+				const Age = type.number.atLeast(18, "Must be an adult").lessThan(150)
+				attest(Age(3).toString()).snap("Must be an adult")
+				attest(Age(200).toString()).snap("must be less than 150")
+				attest(Age("x").toString()).snap("must be a number")
+				attest(type({ age: Age })({ age: 3 }).toString()).snap(
+					"age: Must be an adult"
+				)
+				attest(type({ age: Age })({}).toString()).snap(
+					"age must be a number (was missing)"
+				)
+			})
+
+			it("leaves its expression and JSON Schema", () => {
+				const T = type.string.atLeastLength(1, "Name is required")
+				const Plain = type.string.atLeastLength(1)
+				attest(T.expression).equals(Plain.expression)
+				attest(T.toJsonSchema()).equals(Plain.toJsonSchema())
+			})
+
+			it("takes a writer of its code's error", () => {
+				const T = type.string.atMostLength(
+					5,
+					error => `Use at most ${error.rule} characters`
+				)
+				attest(T("abcdefg").toString()).snap("Use at most 5 characters")
+			})
+
+			it("is said for a pattern, a divisor and a Date bound", () => {
+				const Slug = type.string.matching(/^[a-z-]+$/, "Use lowercase letters")
+				const Even = type.number.divisibleBy(2, "Use an even number")
+				const Modern = type.Date.laterThan("2000-01-01", "Pick a later date")
+				attest(Slug("A").toString()).snap("Use lowercase letters")
+				attest(Even(3).toString()).snap("Use an even number")
+				attest(Modern(new Date(0)).toString()).snap("Pick a later date")
+			})
+
+			it("leaves with a bound a narrower one replaces", () => {
+				const T = type.number.lessThan(100, "Under 100").lessThan(5)
+				attest(T(50).toString()).snap("must be less than 5")
+			})
+		})
 	})
 
 	it("unit overlap", () => {

@@ -15,10 +15,13 @@ export {
 	type ArkSchemaScopeConfig,
 	type GenericAst,
 	type JsonSchema,
+	type StandardJSONSchemaV1,
+	type StandardSchemaV1,
+	type StandardTypedV1,
 	type ToJsonSchema
 } from "@ark/schema"
 export { Hkt, inferred, ParseError, type Brand, type Json } from "@ark/util"
-export { regex, type Regex } from "arkregex"
+export { regex, type Regex, type RegexExecArray } from "arkregex"
 export type {
 	Default,
 	distill,
@@ -47,4 +50,4 @@ export type {
 } from "./parser/definition.ts"
 export { scope, type bindThis, type Scope } from "./scope.ts"
 export { Type } from "./type.ts"
-export type { BaseType } from "./variants/base.ts"
+export type { BaseType, BoundType } from "./variants/base.ts"
