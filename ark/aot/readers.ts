@@ -30,6 +30,7 @@ import {
 	isSpan,
 	mayReadThrough,
 	thisReadsOf,
+	type ReachedModules,
 	type ThisReads,
 	type RuntimeModule,
 	type UsageProgram
@@ -127,8 +128,13 @@ export const reachedModulesOf = (
 	program: UsageProgram,
 	graph: ModuleGraph,
 	read: Map<string, SourceModule | null>
-): readonly SourceModule[] =>
-	new Readers({ ...program, whole: true }, graph, read).reachedModules()
+): ReachedModules => {
+	const readers = new Readers({ ...program, whole: true }, graph, read)
+	return {
+		modules: readers.reachedModules(),
+		resolve: (specifier, importer) => readers.resolve(specifier, importer)
+	}
+}
 
 // what each validator's readers read of it, followed into its dependencies
 export const readingsOf = (
@@ -435,7 +441,11 @@ class Readers {
 
 	// what functions no class binds read off their `this`, anywhere the program reaches
 	get thisReads(): ThisReads {
-		return (this.reads ??= thisReadsOf(this.reachedModules()))
+		return (this.reads ??= thisReadsOf(this.reachedModules(), {
+			entries: this.program.entries,
+			exposed: this.program.exposed,
+			resolve: (specifier, importer) => this.resolve(specifier, importer)
+		}))
 	}
 }
 
@@ -943,7 +953,13 @@ class Follow {
 				// reference to the object shows, so any read at its key may find it
 				if (
 					key !== undefined &&
-					mayReadThrough(key, parent.parent, this.readers.thisReads)
+					mayReadThrough(
+						key,
+						parent.parent,
+						module,
+						this.readers.thisReads,
+						!held.path.length
+					)
 				)
 					this.followField(key, parent, module, held)
 				return push(parent.parent, {
@@ -1173,7 +1189,10 @@ class Follow {
 			return this.callback(call, module, held, [])
 		const [first, ...rest] = held.path
 		const called =
-			call?.type === "CallExpression" && call.callee === method ?
+			(
+				(call?.type === "CallExpression" && call.callee === method) ||
+				(call?.type === "TaggedTemplateExpression" && call.tag === method)
+			) ?
 				call
 			:	undefined
 		// returns its receiver, whatever it holds
@@ -1181,28 +1200,33 @@ class Follow {
 			return this.push(called, module, held)
 		if (held.path.length) {
 			if (
-				called &&
+				called?.type === "CallExpression" &&
 				key !== undefined &&
 				first === anyKey &&
 				key in arrayMethods
 			)
 				return this.arrayMethod(key, called, module, held)
 			// a method the build doesn't model may return the elements or receiver it
-			// holds, as a builtin's, or one the program patches onto a builtin prototype
+			// holds, as a builtin's, a computed call (which may be "valueOf"), or one
+			// the program patches onto a builtin prototype
 			if (
 				called &&
-				(first === anyKey ?
-					key === undefined ?
-						member.computed && isSymbolRead(member.property)
-					:	key in Array.prototype ||
+				(key === undefined ||
+					(first === anyKey ?
+						key in Array.prototype ||
 						key in Object.prototype ||
 						this.readers.patchesBuiltins
-				:	first !== key && this.readers.patchesBuiltins)
+					:	first !== key && this.readers.patchesBuiltins))
 			) {
 				return this.lose(
 					member,
 					module,
-					`calls .${key ?? "[Symbol.iterator]"} on what holds it`
+					`calls ${
+						key !== undefined ? `.${key}`
+						: member.computed && isSymbolRead(member.property) ?
+							".[Symbol.iterator]"
+						:	"a computed key"
+					} on what holds it`
 				)
 			}
 			if (key === undefined || first === anyKey || first === key)

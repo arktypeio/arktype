@@ -631,12 +631,22 @@ new Users().parse({})`)
 			)
 		})
 
-		it("what .values() returns of an array holding it", async () => {
+		it("what .values() and .entries() return of an array or object holding it", async () => {
 			attest(
 				await droppedReading(`[User].values().next().value!.assert({})`)
 			).snap(
 				"the validator at types.ts:3:21 is lost where main.ts:3:1 calls .values on what holds it"
 			)
+			attest(
+				await droppedReading(`[User].entries().next().value![1].assert({})`)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:3:1 calls .entries on what holds it"
+			)
+			attest(
+				await droppedReading(
+					`const o = { s: User }\nObject.entries(o)[0][1].assert({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
 		})
 
 		it("an object inheriting it through Object.create", async () => {
@@ -757,6 +767,208 @@ tag\`\${User}\`.assert({})`)
 			).snap(
 				"the validator at types.ts:3:21 is lost where main.ts:5:2 calls .self on what holds it"
 			)
+			attest(
+				await droppedReading(
+					`(Object.getPrototypeOf([]) as any).first = function () { return this[0] }\n;([User] as any).first().assert({})`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:4:2 calls .first on what holds it"
+			)
+			attest(
+				await droppedReading(
+					`(globalThis.Array.prototype as any).first = function () { return this[0] }\n;([User] as any).first().assert({})`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:4:2 calls .first on what holds it"
+			)
+			attest(
+				await droppedReading(
+					`(globalThis.Object.prototype as any).self = Object.prototype.valueOf\nconst o = { s: User }\n;(o as any).self().s.assert({})`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:5:2 calls .self on what holds it"
+			)
+			attest(
+				await droppedReading(
+					`const { prototype } = Array as any\nprototype.first = function () { return this[0] }\n;([User] as any).first().assert({})`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:5:2 calls .first on what holds it"
+			)
+			attest(
+				await droppedReading(
+					`([] as any).__proto__.first = function () { return this[0] }\n;([User] as any).first().assert({})`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:4:2 calls .first on what holds it"
+			)
+		})
+
+		it("a computed call whose key isn't a constant", async () => {
+			attest(
+				await droppedReading(
+					`const o = { s: User }\n;(o as any)[\`value\${"Of"}\`]().s.assert({})`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:4:2 calls a computed key on what holds it"
+			)
+			attest(
+				await droppedReading(
+					`const k = Math.random() < 2 ? "valueOf" : "toString"\nconst o = { s: User }\n;(o as any)[k]().s.assert({})`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:5:2 calls a computed key on what holds it"
+			)
+			attest(
+				await droppedReading(
+					`const key = () => "valueOf"\nconst o = { s: User }\n;(o as any)[key()]().s.assert({})`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:5:2 calls a computed key on what holds it"
+			)
+			attest(
+				await droppedReading(
+					`import { k } from "dep"\nconst o = { s: User }\n;(o as any)[k]().s.assert({})`,
+					{ "/node_modules/dep/index.js": `export const k = "valueOf"` }
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:5:2 calls a computed key on what holds it"
+			)
+			attest(
+				await droppedReading(
+					`const call = (o: any, k: string) => o[k]()\nconst o = { s: User }\ncall(o, "valueOf").s.assert({})`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:3:37 calls a computed key on what holds it"
+			)
+			attest(
+				await droppedReading(
+					`const key = () => "valueOf"\n;([User] as any)[key()]()[0].assert({})`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:4:2 calls a computed key on what holds it"
+			)
+		})
+
+		it("a forwarding helper called with a builtin, class method, reassigned let, imported builtin or bind", async () => {
+			attest(
+				await droppedReading(
+					`const forward = (fn: Function) => function (this: unknown) { return fn.apply(this, []) }
+const o = { s: User, self: forward(Object.prototype.valueOf) }
+o.self().s.assert({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`import { memo } from "./memo.ts"
+class Repo { find() { return (this as any).schema.assert({}) } }
+const repo = { schema: User, find: memo(Repo.prototype.find) }
+repo.find()`,
+					{
+						"/memo.ts": `export const memo = (func: Function) => {
+	let done = false
+	let result: unknown
+	return function (this: unknown, ...args: unknown[]) {
+		const thisArg = this
+		if (!done) {
+			done = true
+			result = func.apply(thisArg, args)
+		}
+		return result
+	}
+}`
+					}
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`let fn: Function = () => 0
+const o = { s: User, self() { return fn.call(this) } }
+fn = Object.prototype.valueOf
+o.self().s.assert({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`const forward = (fn: Function) => function (this: unknown) { return fn.bind(this)() }
+const o = { s: User, self: forward(Object.prototype.valueOf) }
+o.self().s.assert({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`import { valueOf } from "./util.ts"
+const o = { s: User, self() { return valueOf.call(this) } }
+;(o.self() as any).s.assert({})`,
+					{ "/util.ts": `export const valueOf = Object.prototype.valueOf` }
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+		})
+
+		it("a class member detached onto or inherited by an object literal", async () => {
+			attest(
+				await droppedReading(
+					`class Validates { validate(this: any, d: unknown) { return this.schema.assert(d) } }
+const api = { schema: User, validate: Validates.prototype.validate }
+api.validate({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`class A { static parse() { return (this as any).s.assert({}) } }
+const o = { s: User, parse: A.parse }
+o.parse()`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`class A { parse = function (this: any) { return this.s.assert({}) } }
+const o = { s: User, parse: new A().parse }
+o.parse()`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`class A { parse() { return (this as any).s.assert({}) } }
+const a = new A()
+const o = { s: User, parse: a.parse }
+o.parse()`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`class A { parse() { return (this as any).s.assert({}) } }
+const o = { __proto__: A.prototype, s: User }
+;(o as any).parse()`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`class A { parse() { return (this as any).s.assert({}) } }
+const o: any = { s: User }
+Object.assign(o, { parse: A.prototype.parse })
+o.parse()`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+		})
+
+		it("a method detached from an object literal through an inherited __proto__ member", async () => {
+			attest(
+				await droppedReading(
+					`const P = { get leak(): any { return (this as any).m } }
+const L1 = { __proto__: P, m() { return (this as any).s.assert({}) } }
+const o = { s: User, m: (L1 as any).leak }
+o.m()`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`const P = { leak(): any { return (this as any).m } }
+const L1 = { __proto__: P, m() { return (this as any).s.assert({}) } }
+const o = { s: User, m: (L1 as any).leak() }
+o.m()`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
 		})
 
 		it("a method detached from another object literal through valueOf, this or computed keys", async () => {
@@ -814,6 +1026,69 @@ export const debounceDeferred = (fn: (...args: never[]) => void) =>
 		const self = this
 		setTimeout(() => fn.apply(self, args), 0)
 	}`
+					}
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`import { debounce } from "./debounce.ts"
+const store = { user: User, save: debounce(() => 1) }
+const x = { user: { a: 1 } }
+console.log(store.save(), Object.keys({ ...x.user }), store.user.assert({}))`,
+					{
+						"/debounce.ts": `export const debounce = (fn: (...args: never[]) => unknown) =>
+	function (this: unknown, ...args: never[]) {
+		return fn.apply(this, args)
+	}`
+					}
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+		})
+
+		it("an unrelated dependency function or prototype method that passes or returns this", async () => {
+			attest(
+				await droppedReading(
+					`import { h, render } from "preactish"
+const schemas = { props: User }
+const x = { props: { a: 1 } }
+console.log(typeof h, typeof render, Object.keys({ ...x.props }), schemas.props.assert({}))`,
+					{
+						"/node_modules/preactish/index.js": `function M(c) { return c }
+export function Component(props) { this.props = props }
+Component.prototype.forceUpdate = function () { M(this) }
+export function h(t, p) { return { t, p } }
+export function render(v) { return v }
+export function unused() { return M(this) }`
+					}
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`import { h } from "preactish"
+const make = () => ({ props: User })
+const x = { props: { a: 1 } }
+console.log(typeof h, Object.keys({ ...x.props }), make().props.assert({}))`,
+					{
+						"/node_modules/preactish/index.js": `function M(c) { return c }
+export function Component(props) { this.props = props }
+Component.prototype.forceUpdate = function () { M(this) }
+export function h(t, p) { return { t, p } }
+export function unused() { return M(this) }`
+					}
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`import { Emitter } from "emitter"
+const schemas = { user: User }
+const e = new Emitter()
+e.on("x", () => schemas.user.assert({}))
+e.emit("x")`,
+					{
+						"/node_modules/emitter/index.js": `export function Emitter() { this.handlers = {} }
+Emitter.prototype.on = function (k, f) { (this.handlers[k] ??= []).push(f); return this }
+Emitter.prototype.emit = function (k, ...a) { for (const f of this.handlers[k] ?? []) f(...a) }
+export const copy = u => ({ ...u.user })`
 					}
 				)
 			).snap(["meta", "~standard", "methods", "withContext"])

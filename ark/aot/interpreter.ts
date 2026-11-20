@@ -2834,7 +2834,8 @@ export class Interpreter {
 						element.static &&
 						(element.computed ||
 							(name !== undefined &&
-								(element.key as { value?: unknown }).value === name)))
+								element.key.type === "Literal" &&
+								element.key.value === name)))
 			)
 		const proxy = this.standInProxy(target, standIn, {
 			...this.factsOf(

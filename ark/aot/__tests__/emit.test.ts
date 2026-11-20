@@ -6,6 +6,8 @@ import {
 	writeUnemittedMessage,
 	writeVersionMismatchMessage
 } from "@ark/aot/internal/emit.ts"
+import { type } from "arktype"
+import { arkUtilVersion, hashOf } from "arktype/util"
 import { spawnSync } from "node:child_process"
 import {
 	existsSync,
@@ -149,6 +151,69 @@ contextualize(() => {
 		attest(run.status).equals(1)
 		attest(run.stderr.match(/^Error: .*$/m)?.[0]).equals(
 			`Error: ${writeVersionMismatchMessage("precompiledForArktype_0_0_0")}`
+		)
+	}).timeout(60000)
+
+	it("keys runtime: arktype precompiled units by arktype version, falling back to compiling when keys differ", () => {
+		writeFileSync(
+			join(emitted, "package.json"),
+			JSON.stringify({ type: "module" })
+		)
+		spawnSync(process.execPath, [
+			tsc,
+			"-p",
+			join(emitted, "tsconfig.json"),
+			"--noCheck",
+			"--noResolve"
+		])
+		const emittedResult = emitPrecompiled({
+			cwd: emitted,
+			tsconfig: "tsconfig.json",
+			runtime: "arktype"
+		})
+		attest(emittedResult.errors).equals([])
+		for (const [fileName, contents] of Object.entries(emittedResult.files))
+			writeFileSync(fileName, contents)
+		const userPath = join(out, "user.js")
+		const user = readFileSync(userPath, "utf8")
+		const keys = [...user.matchAll(/"([\da-z]{10,})":\s*\[\(/g)].map(
+			match => match[1]
+		)
+		const stringHash = type("string").internal.hash
+		const currentKey = hashOf(`${arkUtilVersion}\n${stringHash}\n0,\ntrue`)
+		const otherVersionKey = hashOf(`0.0.0\n${stringHash}\n0,\ntrue`)
+		attest(keys.includes(currentKey)).equals(true)
+		attest(keys.includes(otherVersionKey)).equals(false)
+		// tamper every registered unit's checker to always return true: under the
+		// matching version keys the tampered unit binds, so age: -1 passes; under
+		// keys from another version (rewritten), arktype misses the table and falls
+		// back to compiling the real check, rejecting age: -1
+		const tampered = user.replace(/data >= 0/g, "true")
+		attest(tampered === user).equals(false)
+		writeFileSync(userPath, tampered)
+		const bound = spawnSync(
+			process.execPath,
+			["--conditions", "ark-ts", join(out, "main.js")],
+			{ encoding: "utf8" }
+		)
+		attest(bound.status).equals(0)
+		attest(bound.stdout).equals(
+			'{"name":"Ada","age":36}\nrole must be "admin"\n'
+		)
+		const mismatched = keys.reduce(
+			(code, key, i) =>
+				code.replace(new RegExp(`"${key}"`, "g"), `"otherversionkey${i}"`),
+			tampered
+		)
+		writeFileSync(userPath, mismatched)
+		const fallback = spawnSync(
+			process.execPath,
+			["--conditions", "ark-ts", join(out, "main.js")],
+			{ encoding: "utf8" }
+		)
+		attest(fallback.status).equals(0)
+		attest(fallback.stdout).equals(
+			'{"name":"Ada","age":36}\nage must be non-negative\nrole must be "admin"\n'
 		)
 	}).timeout(60000)
 
