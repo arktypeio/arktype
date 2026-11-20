@@ -122,7 +122,7 @@ import { type } from "arktype"
 import { useForm } from "react-hook-form"
 
 const User = type({
-	name: ["string > 0", "@", { message: "Name is required" }],
+	name: type.string.atLeastLength(1, "Name is required"),
 	age: "number.integer >= 0"
 })
 

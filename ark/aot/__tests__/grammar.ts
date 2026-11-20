@@ -110,7 +110,7 @@ export const predicates = {
 	isTruthy: data => !!data,
 	isShort: data => String(data).length < 3,
 	isPositive: (data, ctx) =>
-		typeof data !== "number" || data > 0 || ctx.reject("positive"),
+		typeof data !== "number" || data > 0 || ctx.mustBe("positive"),
 	isEven: data => {
 		const remainder = Number(data) % 2
 		return remainder === 0

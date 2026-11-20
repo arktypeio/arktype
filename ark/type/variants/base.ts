@@ -3,6 +3,7 @@ import type {
 	BaseRoot,
 	Disjoint,
 	JsonSchema,
+	MessageConfig,
 	NodeSelector,
 	Predicate,
 	StandardSchemaV1,
@@ -234,6 +235,26 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * const badPattern = AToZ("albatross")
 	 */
 	describe: NodeSelector.SelectableFn<string, this>
+
+	/**
+	 * #### set the sentence an error says
+	 *
+	 * 🔗 equivalent to `.configure({ message })` (see {@link configure})
+	 * ✅ a missing key says it too, as Zod's `required_error`
+	 * ✅ a selector like `"minLength"` scopes it to that check, as Zod's `.min(1, "Name is required")`
+	 *
+	 * @example
+	 * const Name = type("string >= 1").message("Name is required")
+	 * // ArkErrors: Name is required
+	 * const empty = Name("")
+	 *
+	 * const Password = type("string >= 8").message("Use 8 or more characters", "minLength")
+	 * // ArkErrors: Use 8 or more characters
+	 * const short = Password("abc")
+	 * // ArkErrors: must be a string
+	 * const nonString = Password(5)
+	 */
+	message: NodeSelector.SelectableFn<MessageConfig, this>
 
 	/**
 	 * #### apply undeclared key behavior

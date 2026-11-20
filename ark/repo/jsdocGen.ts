@@ -55,7 +55,14 @@ const typeApiGroups = {
 		"as",
 		"brand"
 	],
-	Metadata: ["description", "expression", "meta", "configure", "describe"],
+	Metadata: [
+		"description",
+		"expression",
+		"meta",
+		"configure",
+		"describe",
+		"message"
+	],
 	Composition: ["and", "or", "intersect", "array", "optional", "default"],
 	Morphs: ["narrow", "filter", "pipe", "to", "in", "out", "encode"],
 	Comparison: [

@@ -1482,11 +1482,20 @@ export type LineContext<code extends ArkErrorCode = ArkErrorCode> =
 export type LineWriter = (error: LineContext, locale: Locale.Info) => string
 
 export type CustomErrorInput = show<
-	// ensure a custom error can be discriminated on the lack of a code
-	{ code?: undefined } & DerivableErrorContextInput
+	// ensure a custom error can be discriminated on the lack of a code. meta
+	// as a coded input takes it, which its writers are typed by once a code's
+	// absence discriminates the input to this one
+	{ code?: undefined; meta?: ArkEnv.meta } & DerivableErrorContextInput
 >
 
-export type ArkErrorInput = string | ArkErrorContextInput | CustomErrorInput
+/**
+ * the parts of an error `ctx.reject` takes. A string isn't one: it would be
+ * what the value must be, which `ctx.mustBe` takes, though it reads as the
+ * sentence a `message` is
+ */
+export type RejectInput = ArkErrorContextInput | CustomErrorInput
+
+export type ArkErrorInput = string | RejectInput
 
 export type MessageConfig<code extends ArkErrorCode = ArkErrorCode> =
 	| string

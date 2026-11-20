@@ -47,6 +47,7 @@ for (const member of [
 	"brand",
 	"configure",
 	"describe",
+	"message",
 	"onUndeclaredKey",
 	"onDeepUndeclaredKey",
 	"keyof",
