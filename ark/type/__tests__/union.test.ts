@@ -562,8 +562,9 @@ x must be a string`)
 			T({ a: "x", b: 1 })
 			return tested
 		}
-		attest(testedOnFirstCall(false)).snap(["x"])
-		attest(testedOnFirstCall(true)).snap(["x"])
+		const expected = type("string").internal.$.cfg.jitless ? [] : ["x"]
+		attest(testedOnFirstCall(false)).equals(expected)
+		attest(testedOnFirstCall(true)).equals(expected)
 	})
 
 	it("equal units keep one branch however they're written", () => {
