@@ -5,6 +5,7 @@ import {
 	isThunk,
 	noSuggest,
 	objectKindOf,
+	throwError,
 	type array
 } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
@@ -35,7 +36,7 @@ import {
 } from "./issues.ts"
 import { callsSiteText, findsOnRead, listsUnions } from "./issueFeatures.ts"
 import { TransformErrors } from "./transform.ts"
-import { inProgress } from "./utils.ts"
+import { inProgress, removedProblemMessage } from "./utils.ts"
 
 export type FailHandler = (errors: never) => unknown
 
@@ -359,6 +360,7 @@ export class Traversal extends InternalTraversal {
 	}
 
 	protected raise(input: ArkErrorInput): ArkError {
+		throwOnProblem(input)
 		const supplied: SuppliedIssue =
 			typeof input === "object" ? (input as never) : { expected: input }
 		const code = supplied.code ?? "predicate"
@@ -430,6 +432,13 @@ type SuppliedIssue = {
 	morph?: Morph
 	cause?: unknown
 	meta?: { keyword?: string }
+}
+
+// 2.x's slot, which a cast or JavaScript still passes, throws in arktype and
+// in a precompiled validator alike rather than raising a predicate's error
+export const throwOnProblem = (input: ArkErrorInput): void => {
+	if (typeof input === "object" && "problem" in input)
+		throwError(removedProblemMessage)
 }
 
 export const errorsOf = (ctx: InternalTraversal): BaseArkErrors =>

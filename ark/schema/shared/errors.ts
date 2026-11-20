@@ -34,7 +34,7 @@ import {
 } from "./enWriters.ts"
 import { describesData, listsErrors } from "./errorWriters.ts"
 import { findsOnRead } from "./issueFeatures.ts"
-import { describeBranches, removedProblemMessage } from "./utils.ts"
+import { describeBranches } from "./utils.ts"
 import {
 	ArkErrors as BaseArkErrors,
 	isCustomIssue,
@@ -50,6 +50,7 @@ import {
 } from "./issues.ts"
 import {
 	applyRejected,
+	throwOnProblem,
 	Traversal,
 	type FailHandler,
 	type InternalTraversal
@@ -540,9 +541,7 @@ export class ArkTraversal extends SiteTraversal {
 	}
 
 	protected override raise(input: ArkErrorInput): ArkError {
-		// 2.x's slot, which a cast or JavaScript still passes
-		if (typeof input === "object" && "problem" in input)
-			throwError(removedProblemMessage)
+		throwOnProblem(input)
 		// read now, so a caller's later change to its input doesn't reach the error
 		const errCtx: ArkErrorContextInput =
 			typeof input === "object" ?
