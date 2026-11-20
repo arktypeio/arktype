@@ -47,15 +47,18 @@ export type inferSchema<schema, root, seen> =
 
 /** before 2019-09, a `$ref`'s siblings are ignored; a widened `$schema` may
  * also be 2020-12, where a standalone `nullable` widens the target with `null` */
-export type inferLegacyRef<schema, root, seen> =
+export type inferLegacyRef<schema, root, seen> = applyLegacyNullable<
+	schema,
+	root,
+	inferRef<schema["$ref" & keyof schema], resourceOf<schema, root>, seen>
+>
+
+export type applyLegacyNullable<schema, root, t> =
 	"2020-12" extends draftsOf<root> ?
 		schema extends NonNullableNode | DefinedTypedSchema ?
-			inferRef<schema["$ref" & keyof schema], resourceOf<schema, root>, seen>
-		:	applyNullable<
-				schema,
-				inferRef<schema["$ref" & keyof schema], resourceOf<schema, root>, seen>
-			>
-	:	inferRef<schema["$ref" & keyof schema], resourceOf<schema, root>, seen>
+			t
+		:	applyNullable<schema, t>
+	:	t
 
 /** excludes `nullable`, including from an index signature that may hold it,
  * which an optional `nullable?: never` wouldn't */
@@ -215,10 +218,7 @@ export type inferNode<
 	keys extends keyof schema & PartKeyword,
 	seen
 > =
-	schema extends UnmodifiedNode ?
-		schema extends NonNullableNode | DefinedTypedSchema ?
-			inferParts<schema, root, keys, seen>
-		:	applyNullable<schema, inferParts<schema, root, keys, seen>>
+	schema extends UnmodifiedNode ? inferParts<schema, root, keys, seen>
 	:	applyModifiers<schema, inferParts<schema, root, keys, seen>>
 
 /** a single kind or a common pair is intersected directly, which is cheaper
@@ -459,7 +459,7 @@ export type applyNotModifier<schema, t> =
 		:	applyNot<schema["not"], t>
 	:	t
 
-export interface UnmodifiedNode {
+export interface UnmodifiedNode extends NonNullableNode {
 	not?: never
 	[k: string]: unknown
 }
