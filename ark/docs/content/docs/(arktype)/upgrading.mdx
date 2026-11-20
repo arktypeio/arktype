@@ -814,7 +814,7 @@ Each was a bug, but code may depend on it:
 - With `jitless`, a `g` or `y` pattern checks from the start of the string every time, where the same input alternated between valid and invalid.
 - An optional key in an intersection allows `undefined` only where both sides do, so a Scope configured with `exactOptionalPropertyTypes: false` no longer loosens a Type from one that isn't.
 - With `exactOptionalPropertyTypes: false`, a defaulted key given `undefined` gets the default, before: kept `undefined`.
-- A tuple expression's `:` after a morph throws `ParseError: Predicate operand must be unknown (was a morph)`, where it threw a TypeError.
+- A tuple expression's `:` is a `.narrow()`, so its predicate sees the output: `type({ a: "number = 5" }, ":", o => o.a > 0)` reads `{ a: 5 }` from `{}`, before: `{}`, which it rejected. After a morph, it narrows the morph's output, where it threw a TypeError.
 - `Exclude` and `Extract` over a definition still being defined throw `ParseError: Extract can't filter a type still being defined`.
 - `type(["string", "toString"])` throws that `'toString'` is unresolvable, where it threw an internal TypeError.
 

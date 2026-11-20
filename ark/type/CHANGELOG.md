@@ -52,6 +52,20 @@ type("string").narrow(
 )
 ```
 
+### A tuple expression's `:` is a `.narrow()`
+
+`[def, ":", fn]` and `type(def, ":", fn)` checked `def`'s input, before any morph or default it holds, though the docs and the tuple form's types had them narrow its output, as `.narrow(fn)` does. They now do, so the predicate sees what `def` returns, and both forms type it that way:
+
+```ts
+const T = type({ a: "number = 5" }, ":", o => o.a > 0)
+
+// was: ArkErrors, since the predicate read {} and o.a was undefined
+// now: { a: 5 }
+T({})
+```
+
+After a morph, `:` narrows the morph's output, where it threw `ParseError: Predicate operand must be unknown (was a morph)`. Check the input with `.filter()`.
+
 ### Infer `object.json` as `JsonStructure`
 
 `object.json` accepts only plain objects and arrays, but inferred `Json`, which includes strings, numbers, booleans and `null`, so `type("object.json").from("hi")` type checked and threw. It and `object.json.stringify`'s input now infer `JsonStructure`, which `arktype` exports beside `Json`.
