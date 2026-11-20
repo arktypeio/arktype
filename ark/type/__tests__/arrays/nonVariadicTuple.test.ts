@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 
 contextualize(() => {
 	it("empty", () => {
@@ -90,6 +90,24 @@ contextualize(() => {
 		attest(T(["foo"])).equals(["foo"])
 		attest(T([5]).toString()).snap("[0] must be a string")
 		attest(T(["foo", "bar"]).toString()).snap("must be at most length 1")
+	})
+
+	it("optional element without exactOptionalPropertyTypes", () => {
+		const loose = scope({}, { exactOptionalPropertyTypes: false })
+		const T = loose.type(["string", "number?"])
+		attest<[string, number?]>(T.infer)
+		attest(T.expression).snap("[string, (number | undefined)?]")
+		attest(T(["a", undefined]) as object).equals(["a", undefined])
+		attest(T(["a", "b"]).toString()).snap("[1] must be a number or undefined")
+		// as TS's Required does, it drops the undefined an optional element allowed
+		attest(T.required().expression).snap("[string, number]")
+		// an element in an intersection allows undefined only where both do
+		const Exact = type(["string", "number?"])
+		attest([T.and(Exact), Exact.and(T)].map(t => t.expression)).equals([
+			"[string, number?]",
+			"[string, number?]"
+		])
+		attest([Exact.extends(T), T.extends(Exact)]).equals([true, false])
 	})
 
 	it("optional string-embedded tuple", () => {

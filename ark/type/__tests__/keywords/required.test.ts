@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
 import type { Out, To } from "arktype/internal/attributes.ts"
+import type { ArrayType } from "arktype/internal/variants/array.ts"
 
 contextualize(() => {
 	it("parsed", () => {
@@ -101,6 +102,15 @@ contextualize(() => {
 		attest<[string, number]>(T.t)
 		attest(T.expression).snap("[string, number]")
 		attest(T(["foo"]).toString()).snap("must be exactly length 2")
+	})
+
+	it("tuple keeps array methods", () => {
+		const T = type(["string", "number?", "...", "number[]"]).required()
+
+		attest<ArrayType<[string, number, ...number[]]>>(T)
+		const Bounded = T.atMostLength(3)
+		attest<[string, number, ...number[]]>(Bounded.t)
+		attest(Bounded.expression).snap("2 <= [string, ...number[]] <= 3")
 	})
 
 	it("empty tuple", () => {

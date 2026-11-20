@@ -1081,7 +1081,7 @@ export abstract class BaseNode<
 			const keySchemaImplementation = this.impl.keys[k]
 
 			if (keySchemaImplementation.reduceIo)
-				keySchemaImplementation.reduceIo(ioKind, ioInner, v)
+				keySchemaImplementation.reduceIo(ioKind, ioInner, v, this)
 			else if (keySchemaImplementation.child) {
 				const childValue = v as listable<BaseNode>
 

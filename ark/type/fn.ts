@@ -6,7 +6,8 @@ import {
 	type applyElementLabels,
 	type conform,
 	type Fn,
-	type get
+	type get,
+	type show
 } from "@ark/util"
 import type { distill } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
@@ -45,11 +46,14 @@ export type BaseFnParser<$ = {}> = <
 	:	ReturnType<internalSignature>
 >(
 	implementation: internalSignature
-) => TypedFn<
-	externalSignature,
-	$,
-	args extends readonly [...unknown[], ":", unknown] ? Return.introspectable
-	:	{}
+) => TypedFn<externalSignature, $, fnMetaOf<args, paramsT, returnT>>
+
+// what the Types attached as params and returns hold that their distilled
+// signature loses: a declared return, and params that transform or default
+type fnMetaOf<args, paramsT extends readonly unknown[], returnT> = show<
+	(args extends readonly [...unknown[], ":", unknown] ? { returns: returnT }
+	:	{}) &
+		([distill.In<paramsT>] extends [paramsT] ? {} : { params: paramsT })
 >
 
 export interface FnParser<$ = {}> extends BaseFnParser<$> {
@@ -110,7 +114,10 @@ export class InternalFnParser extends Callable<(...args: unknown[]) => Fn> {
 
 export declare namespace TypedFn {
 	export type meta = {
-		introspectableReturn?: true
+		/** its params' Types, where they transform or default */
+		params?: readonly unknown[]
+		/** its declared return Type */
+		returns?: unknown
 	}
 }
 
@@ -120,11 +127,12 @@ export interface TypedFn<
 	meta extends TypedFn.meta = {}
 > extends Callable<signature> {
 	expression: string
-	params: signature extends Fn<infer params> ? Type<params, $> : never
-	returns: Type<
-		meta extends Return.introspectable ? ReturnType<signature> : unknown,
+	// the Types themselves, so a morph among them keeps its input
+	params: Type<
+		meta extends { params: infer params } ? params : Parameters<signature>,
 		$
 	>
+	returns: Type<meta extends { returns: infer returns } ? returns : unknown, $>
 }
 
 export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
@@ -162,12 +170,6 @@ export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 			argsExpression = `...${argsExpression}`
 
 		return `(${argsExpression}) => ${this.returns?.expression ?? "unknown"}`
-	}
-}
-
-export declare namespace Return {
-	export interface introspectable {
-		introspectableReturn: true
 	}
 }
 

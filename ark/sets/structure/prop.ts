@@ -86,7 +86,8 @@ export const optional: setImplementationOf<Optional.Declaration> = {
 // a value allowing undefined, shared by every optional prop of the value
 const valuesWithUndefined = new WeakMap<BaseRoot, BaseRoot>()
 
-const withUndefined = (value: BaseRoot): BaseRoot => {
+/** an optional key or element's value without exactOptionalPropertyTypes, allowing undefined */
+export const withUndefined = (value: BaseRoot): BaseRoot => {
 	let result = valuesWithUndefined.get(value)
 	if (!result) {
 		result =

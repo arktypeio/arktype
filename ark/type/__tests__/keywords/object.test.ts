@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { keywords, scope, type, type Json } from "arktype"
+import { keywords, scope, type, type JsonStructure } from "arktype"
 import type { To } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
@@ -29,13 +29,18 @@ contextualize(() => {
 		it("root", () => {
 			const Json = type("object.json")
 
-			attest<Json>(Json.t)
-			attest<Json>(Json.infer)
-			attest<Json>(Json.inferIn)
+			// a primitive is valid JSON, but not an object
+			attest<JsonStructure>(Json.t)
+			attest<JsonStructure>(Json.infer)
+			attest<JsonStructure>(Json.inferIn)
 
 			attest(Json({})).equals({})
 			attest(Json([])).equals([])
 			attest(Json(5)?.toString()).snap("must be an object")
+			// @ts-expect-error
+			attest(() => Json.from("hi"))
+				.throws("must be an object")
+				.type.errors("not assignable to parameter of type 'JsonStructure'")
 			attest(Json({ foo: [5n] })?.toString()).snap(
 				'foo["0"] must be a number, a string, an object, boolean or null'
 			)
@@ -93,6 +98,7 @@ contextualize(() => {
 			const out = stringify.assert({ foo: "bar" })
 
 			attest<string>(out).snap('{"foo":"bar"}')
+			attest<JsonStructure>(stringify.inferIn)
 
 			// this error kind of sucks, should have more discriminant context
 			attest(stringify({ foo: undefined }).toString()).snap(

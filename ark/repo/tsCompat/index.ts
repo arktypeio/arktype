@@ -96,6 +96,15 @@ export const Cast = type({
 
 assertEquals<typeof Cast.infer, { c: { a: 1 }; u: string | undefined }>()
 
+// an optional key declared to allow undefined can be defined to, whether or
+// not undefined is dropped from it
+export const DeclaredUndefinable = type
+	.declare<{ a?: string | undefined; "@"?: number | undefined }>()
+	.type({
+		"a?": "string | undefined",
+		"\\@": "number | undefined?"
+	})
+
 const boxOf = type("<t>", { box: "t" })
 export const StringBox = boxOf("string")
 

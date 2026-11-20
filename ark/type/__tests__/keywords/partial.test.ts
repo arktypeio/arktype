@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
+import type { ArrayType } from "arktype/internal/variants/array.ts"
 
 contextualize(() => {
 	it("parsed", () => {
@@ -44,6 +45,15 @@ contextualize(() => {
 		attest(T([])).equals([])
 		attest(T(["foo"])).equals(["foo"])
 		attest(T({}).toString()).snap("must be an array")
+	})
+
+	it("tuple keeps array methods", () => {
+		const T = type(["string", "number"]).partial()
+
+		attest<ArrayType<[string?, number?]>>(T)
+		const NonEmpty = T.atLeastLength(1)
+		attest<[string?, number?]>(NonEmpty.t)
+		attest(NonEmpty([]).toString()).snap("must be non-empty")
 	})
 
 	it("array is unaffected", () => {
