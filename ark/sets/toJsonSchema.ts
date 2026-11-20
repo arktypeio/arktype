@@ -268,6 +268,65 @@ const nameDef = (
 	defineValue(ctx.defNamesById, node.id, unique)
 }
 
+const nonJsonAnnotation = Symbol()
+
+const jsonAnnotationValue = (
+	value: unknown,
+	seen: Set<object> = new Set()
+): unknown => {
+	if (value === null || typeof value === "boolean" || typeof value === "string")
+		return value
+	if (typeof value === "number")
+		return Number.isFinite(value) ? value : nonJsonAnnotation
+	if (value instanceof Date) {
+		return Number.isNaN(value.getTime()) ? nonJsonAnnotation : (
+				value.toISOString()
+			)
+	}
+	if (typeof value !== "object" || seen.has(value)) return nonJsonAnnotation
+	seen.add(value)
+	if (Array.isArray(value)) {
+		const out: unknown[] = []
+		for (const item of value) {
+			const jsonItem = jsonAnnotationValue(item, seen)
+			if (jsonItem === nonJsonAnnotation) {
+				seen.delete(value)
+				return nonJsonAnnotation
+			}
+			out.push(jsonItem)
+		}
+		seen.delete(value)
+		return out
+	}
+	const proto = Object.getPrototypeOf(value)
+	if (proto !== Object.prototype && proto !== null) {
+		seen.delete(value)
+		return nonJsonAnnotation
+	}
+	const out: dict = {}
+	for (const [k, prop] of Object.entries(value)) {
+		const jsonProp = jsonAnnotationValue(prop, seen)
+		if (jsonProp === nonJsonAnnotation) {
+			seen.delete(value)
+			return nonJsonAnnotation
+		}
+		defineValue(out, k, jsonProp)
+	}
+	seen.delete(value)
+	return out
+}
+
+const examplesAnnotationValue = (value: unknown): unknown[] | undefined => {
+	if (!Array.isArray(value)) return undefined
+	if (!value.length) return []
+	const out: unknown[] = []
+	for (const entry of value) {
+		const jsonEntry = jsonAnnotationValue(entry)
+		if (jsonEntry !== nonJsonAnnotation) out.push(jsonEntry)
+	}
+	return out.length ? out : undefined
+}
+
 const writeNodeAnnotations = (
 	result: dict,
 	node: BaseRoot,
@@ -278,14 +337,18 @@ const writeNodeAnnotations = (
 		const v = (node.meta as dict)[k]
 		// JSON can't represent a function like a message writer
 		if (typeof v === "function" && k !== "default") continue
-		// metaJson serializes non-primitives like [5] to references like
-		// "$ark.array1", so prefer the original value when it is valid JSON
-		// (jsonData's object domain also allows functions, so exclude them)
-		const jsonValue =
-			typeof v !== "function" && $ark.kw.jsonData.allows(v) ? v
-			: k === "default" ?
-				ctx.fallback.defaultValue({ code: "defaultValue", value: v as never })
-			:	(node.metaJson as dict)[k]
+		let jsonValue: unknown
+		if (typeof v !== "function" && $ark.kw.jsonData.allows(v)) jsonValue = v
+		else if (k === "default") {
+			jsonValue = ctx.fallback.defaultValue({
+				code: "defaultValue",
+				value: v as never
+			})
+		} else if (k === "examples") jsonValue = examplesAnnotationValue(v)
+		else {
+			const converted = jsonAnnotationValue(v)
+			if (converted !== nonJsonAnnotation) jsonValue = converted
+		}
 		if (jsonValue !== undefined) writeAnnotation(result, k, jsonValue, ctx)
 	}
 }
@@ -933,19 +996,49 @@ const keyPatternOf = (
 		:	undefined
 }
 
+// JSON Schema compiles pattern with "u"; reject flagless sources that fail or
+// change meaning under "u" (except .* / .+, which match identically either way)
+const differsUnderUnicodeFlag = (source: string): boolean => {
+	try {
+		new RegExp(source, "u")
+	} catch {
+		return true
+	}
+	let inClass = false
+	for (let i = 0; i < source.length; i++) {
+		const char = source[i]
+		if (char > "\x7f") return true
+		if (char === "\\") {
+			const escaped = source[++i]
+			if (escaped && (escaped > "\x7f" || "DPSWpu".includes(escaped)))
+				return true
+		} else if (inClass) inClass = char !== "]"
+		else if (char === "[") {
+			if (source[i + 1] === "^") return true
+			inClass = true
+		} else if (char === "." && source[i + 1] !== "*" && source[i + 1] !== "+")
+			return true
+	}
+	return false
+}
+
 // d and g don't change what a pattern matches, and draft-2020-12 patterns use u
 const isJsonSchemaPattern = (
 	node: nodeOfKind<"pattern">,
 	ctx: JsonSchemaContext
-): boolean =>
-	!node.flags ||
-	[...node.flags].every(
-		flag =>
-			flag === "d" ||
-			flag === "g" ||
-			(flag === "u" &&
-				(ctx.target === "draft-2020-12" || ctx.target === "openapi-3.1"))
-	)
+): boolean => {
+	let hasU = false
+	if (node.flags) {
+		for (const flag of node.flags) {
+			if (flag === "u") {
+				if (ctx.target !== "draft-2020-12" && ctx.target !== "openapi-3.1")
+					return false
+				hasU = true
+			} else if (flag !== "d" && flag !== "g") return false
+		}
+	}
+	return hasU || !differsUnderUnicodeFlag(node.rule)
+}
 
 const writeDefault = (
 	schema: JsonSchema,
@@ -987,7 +1080,8 @@ const reduceSequenceJsonSchema = (
 
 	// by default JSON schema prefixElements are optional
 	// add minLength here if there are any required prefix elements
-	if (node.minLength) schema.minItems = node.minLength
+	if (node.minLength)
+		schema.minItems = Math.max(schema.minItems ?? 0, node.minLength)
 
 	if (node.variadic) {
 		// a later element's index varies, so it's written as TS indexes it
@@ -1004,7 +1098,12 @@ const reduceSequenceJsonSchema = (
 
 		// maxLength constraint will be enforced by items: false
 		// for non-variadic arrays
-		if (node.maxLength) schema.maxItems = node.maxLength
+		if (node.maxLength) {
+			schema.maxItems = Math.min(
+				schema.maxItems ?? Number.POSITIVE_INFINITY,
+				node.maxLength
+			)
+		}
 
 		// postfix can only be present if variadic is present so nesting this is fine
 		if (postfixSchemas) {
@@ -1014,15 +1113,19 @@ const reduceSequenceJsonSchema = (
 				elements: postfixSchemas
 			})
 		}
-	} else if (isOpenApi) schema.maxItems = node.maxLength!
-	else {
+	} else if (isOpenApi) {
+		schema.maxItems = Math.min(
+			schema.maxItems ?? Number.POSITIVE_INFINITY,
+			node.maxLength!
+		)
+	} else {
 		// For fixed-length tuples without variadic elements
 		// draft-07 uses additionalItems: false, draft-2020-12 uses items: false
 		if (isDraft07) schema.additionalItems = false
 		else schema.items = false
-		// delete maxItems constraint that will have been added by the
-		// base intersection node to enforce fixed length
-		delete schema.maxItems
+		// delete maxItems only when items: false / additionalItems: false already enforces it
+		if (schema.maxItems !== undefined && schema.maxItems >= node.maxLength!)
+			delete schema.maxItems
 	}
 
 	// OpenAPI 3.0's items is one schema for every element, so it has no prefix
@@ -1094,7 +1197,7 @@ const reduceJsonSchemaByKind: {
 				code: "patternFlags",
 				base,
 				pattern: node.rule,
-				flags: node.flags!
+				flags: node.flags ?? ""
 			})
 		}
 		if (base.pattern) {
