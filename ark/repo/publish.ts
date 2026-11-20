@@ -1,7 +1,8 @@
 import { getShellOutput, shell } from "@ark/fs"
 import { throwError } from "@ark/util"
+import { spawnSync } from "node:child_process"
 import { preview } from "../docs/lib/bench/preview.ts"
-import { packagesByScope, publishedVersionsOf, publishOrder } from "./shared.ts"
+import { isVersionOnNpm, packagesByScope, publishOrder } from "./shared.ts"
 
 // publishes each version npm doesn't have yet, then tags and releases each one
 // npm has, so a rerun after a failure finishes what the failed run started.
@@ -20,17 +21,49 @@ const releases = await Promise.all(
 	publishOrder.map(async pkg => ({
 		pkg,
 		tag: `${pkg.name}@${pkg.version}`,
-		isOnNpm: (await publishedVersionsOf(pkg.name)).includes(pkg.version)
+		isOnNpm: await isVersionOnNpm(pkg.name, pkg.version)
 	}))
 )
 
 type Release = (typeof releases)[number]
 
+// npm reserves a version immediately on PUT 202 while its per-version GET can
+// still return 404 until async processing finishes (~1-20 min), so treat a
+// duplicate-version rejection as already published
+const alreadyPublishedMatcher =
+	/cannot publish over the previously published versions|epublishconflict/i
+
 const publish = (release: Release) => {
-	shell(
-		`pnpm publish --no-git-checks --tag ${distTagOf(release.pkg.version)}${dryRun ? " --dry-run" : ""}`,
-		{ cwd: release.pkg.path }
-	)
+	const args = [
+		"publish",
+		"--no-git-checks",
+		"--tag",
+		distTagOf(release.pkg.version),
+		...(dryRun ? ["--dry-run"] : [])
+	]
+	const result = spawnSync("pnpm", args, {
+		cwd: release.pkg.path,
+		stdio: ["inherit", "pipe", "pipe"],
+		encoding: "utf8",
+		maxBuffer: 64 * 1024 * 1024,
+		shell: process.platform === "win32"
+	})
+	if (result.stdout) process.stdout.write(result.stdout)
+	if (result.stderr) process.stderr.write(result.stderr)
+	if (result.error) throw result.error
+	if (result.status !== 0) {
+		const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`
+		if (!dryRun && alreadyPublishedMatcher.test(output)) {
+			console.log(
+				`${release.tag} is already queued or published on npm; continuing.`
+			)
+			release.isOnNpm = true
+			return
+		}
+		throwError(
+			`pnpm ${args.join(" ")} failed for ${release.tag} (exit ${result.status ?? result.signal})`
+		)
+	}
 	if (!dryRun) release.isOnNpm = true
 }
 

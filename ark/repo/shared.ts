@@ -139,3 +139,26 @@ export const publishedVersionsOf = async (name: string): Promise<string[]> => {
 	}
 	return Object.keys(versions)
 }
+
+/**
+ * whether a specific version of a package is on npm. Queries the uncached
+ * per-version endpoint rather than the packument, which is CDN-cached and
+ * omits versions still in npm's async PUT 202 processing queue.
+ */
+export const isVersionOnNpm = async (
+	name: string,
+	version: string
+): Promise<boolean> => {
+	const response = await fetch(
+		`https://registry.npmjs.org/${name.replace("/", "%2f")}/${version}`
+	)
+	if (response.status === 200) {
+		await response.body?.cancel()
+		return true
+	}
+	if (response.status === 404) {
+		await response.body?.cancel()
+		return false
+	}
+	throw new Error(`npm responded ${response.status} for ${name}@${version}`)
+}

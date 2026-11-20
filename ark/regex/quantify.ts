@@ -60,6 +60,48 @@ type parsePossibleRangeString<unscanned extends string> =
 		}>
 	:	null
 
+type GreaterDigits = {
+	"0": never
+	"1": "0"
+	"2": "0" | "1"
+	"3": "0" | "1" | "2"
+	"4": "0" | "1" | "2" | "3"
+	"5": "0" | "1" | "2" | "3" | "4"
+	"6": "0" | "1" | "2" | "3" | "4" | "5"
+	"7": "0" | "1" | "2" | "3" | "4" | "5" | "6"
+	"8": "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7"
+	"9": "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8"
+}
+
+type isGreaterNaturalString<
+	l extends string,
+	r extends string,
+	decided extends boolean | null = null
+> =
+	l extends `${infer ld extends keyof GreaterDigits}${infer lRest}` ?
+		r extends `${infer rd extends keyof GreaterDigits}${infer rRest}` ?
+			isGreaterNaturalString<
+				lRest,
+				rRest,
+				decided extends boolean ? decided
+				: ld extends rd ? null
+				: rd extends GreaterDigits[ld] ? true
+				: false
+			>
+		:	true
+	: r extends "" ?
+		decided extends true ?
+			true
+		:	false
+	:	false
+
+type exceedsMax<min extends number, max extends number | null> =
+	max extends number ?
+		min extends 0 | max ?
+			false
+		:	isGreaterNaturalString<`${min}`, `${max}`>
+	:	false
+
 type parseQuantifier<unscanned extends string, parsed extends ParsedRange> =
 	unscanned extends `${infer range}${parsed["unscanned"]}` ? `{${range}` : never
 export type parsePossibleRange<
@@ -76,14 +118,11 @@ export type parsePossibleRange<
 			s.error<
 				writeUnnaturalNumberQuantifierError<parseQuantifier<unscanned, parsed>>
 			>
-		:	s.pushQuantifier<
-				s,
-				parsed["min"],
-				parsed["max"],
-				parsed["unscanned"] extends Scanner.shift<"?", infer lazyUnscanned> ?
-					lazyUnscanned
-				:	parsed["unscanned"]
+		: exceedsMax<parsed["min"], parsed["max"]> extends true ?
+			s.error<
+				writeMinExceedsMaxQuantifierError<parseQuantifier<unscanned, parsed>>
 			>
+		:	s.pushQuantifier<s, parsed["min"], parsed["max"], parsed["unscanned"]>
 	:	s.shiftQuantifiable<s, "{", unscanned>
 
 export type quantify<
@@ -166,3 +205,11 @@ export const writeUnnaturalNumberQuantifierError = <quantifier extends string>(
 
 export type writeUnnaturalNumberQuantifierError<quantifier extends string> =
 	`Quantifier ${quantifier} must use natural numbers`
+
+export const writeMinExceedsMaxQuantifierError = <quantifier extends string>(
+	quantifier: quantifier
+): writeMinExceedsMaxQuantifierError<quantifier> =>
+	`Quantifier ${quantifier} min cannot exceed max`
+
+export type writeMinExceedsMaxQuantifierError<quantifier extends string> =
+	`Quantifier ${quantifier} min cannot exceed max`

@@ -1,11 +1,15 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	CastableBase,
 	enumValues,
+	hasOwn,
+	omit,
+	pick,
+	withAlphabetizedKeys,
+	type DynamicBase,
 	type merge,
 	type unionToPropwiseXor,
-	type withJsDoc,
-	type DynamicBase,
-	CastableBase
+	type withJsDoc
 } from "@ark/util"
 
 contextualize(() => {
@@ -183,5 +187,42 @@ contextualize(() => {
 
 		const c = new CastableBase<{ foo: 123 }>()
 		const d: CastableBase<{ foo: number }> = c
+	})
+
+	it("pick and omit ignore Object.prototype keys on keySet and inherited keys on input", () => {
+		const withProtoName: Record<string, unknown> = JSON.parse(
+			'{"a": 1, "toString": "custom", "__proto__": {"x": 2}}'
+		)
+		const picked = pick(withProtoName, { a: 1 })
+		attest(picked).equals({ a: 1 })
+		attest(hasOwn(picked, "toString")).equals(false)
+
+		const omitted = omit(withProtoName, { a: 1 })
+		attest(Object.getPrototypeOf(omitted)).is(Object.prototype)
+		attest(hasOwn(omitted, "toString")).equals(true)
+		attest(omitted["toString"]).equals("custom")
+		attest(hasOwn(omitted, "__proto__")).equals(true)
+		attest("x" in omitted).equals(false)
+
+		const proto = { inherited: 99 }
+		const derived = Object.assign(Object.create(proto), { own: 42 }) as {
+			own: number
+			inherited: number
+		}
+		attest(pick(derived, { own: 1, inherited: 1 })).equals({
+			own: 42
+		} as never)
+		attest(omit(derived, { own: 1 })).equals({} as never)
+	})
+
+	it("withAlphabetizedKeys defines __proto__ safely as own property", () => {
+		const input = JSON.parse('{"b": 2, "__proto__": {"polluted": 1}, "a": 1}')
+		const sorted = withAlphabetizedKeys(input) as Record<string, unknown>
+		attest(Object.getPrototypeOf(sorted)).is(Object.prototype)
+		attest(Object.keys(sorted)).equals(["__proto__", "a", "b"])
+		attest("polluted" in sorted).equals(false)
+		attest(Object.getOwnPropertyDescriptor(sorted, "__proto__")?.value).equals({
+			polluted: 1
+		})
 	})
 })

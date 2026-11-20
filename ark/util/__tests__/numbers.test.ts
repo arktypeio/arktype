@@ -38,8 +38,14 @@ contextualize(() => {
 		})
 
 		it("numericStringMatcher accepts decimal-only numbers", () => {
-			attest(isNumericString(".5")).equals(true)
-			attest(isNumericString("0.5")).equals(true)
+			for (const s of [".5", "0.5", "-.5", "-0.5", "-.05", "-.50", "-.5e-2"]) {
+				attest(isNumericString(s)).equals(true)
+				attest(numericStringMatcher.test(s)).equals(true)
+			}
+			for (const s of ["-.", "-.0", "-.00", "-.0e5", "-00.5"]) {
+				attest(isNumericString(s)).equals(false)
+				attest(numericStringMatcher.test(s)).equals(false)
+			}
 		})
 
 		it("wellFormedNumberMatcher rejects trailing zeros in decimals", () => {

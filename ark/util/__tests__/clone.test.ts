@@ -96,4 +96,35 @@ contextualize(() => {
 		attest(o.foo).snap("foo3")
 		attest(cloned.foo).snap("foo4")
 	})
+
+	it("does not treat plain objects with constructor: Date as Dates", () => {
+		const fakeDate = { constructor: Date, a: { nested: 1 } }
+		const cloned = deepClone(fakeDate)
+		attest(cloned instanceof Date).equals(false)
+		attest(cloned !== fakeDate).equals(true)
+		attest(cloned.a !== fakeDate.a).equals(true)
+		attest(cloned.a).equals({ nested: 1 })
+		attest(cloned.constructor).is(Date)
+
+		const fakeWithGetTime = { constructor: Date, getTime: () => 0 }
+		const clonedWithGetTime = deepClone(fakeWithGetTime)
+		attest(clonedWithGetTime instanceof Date).equals(false)
+		attest(clonedWithGetTime.getTime).is(fakeWithGetTime.getTime)
+	})
+
+	it("deeply clones symbol-keyed nested objects and cycles", () => {
+		const sym = Symbol("nested")
+		const cycSym = Symbol("cyc")
+		const orig: Record<symbol, any> = {
+			[sym]: { count: 1 }
+		}
+		orig[cycSym] = { back: orig }
+
+		const cloned = deepClone(orig)
+		attest(cloned !== orig).equals(true)
+		attest(cloned[sym] !== orig[sym]).equals(true)
+		attest(cloned[sym]).equals({ count: 1 })
+		attest(cloned[cycSym] !== orig[cycSym]).equals(true)
+		attest(cloned[cycSym].back).is(cloned)
+	})
 })

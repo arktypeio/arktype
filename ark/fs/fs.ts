@@ -10,7 +10,7 @@ import {
 	writeFileSync
 } from "node:fs"
 import { homedir } from "node:os"
-import { dirname, join, parse } from "node:path"
+import { dirname, join, parse, resolve } from "node:path"
 import * as process from "node:process"
 import { URL, fileURLToPath } from "node:url"
 import { caller } from "./caller.ts"
@@ -122,8 +122,9 @@ export const fsRoot: string = parse(process.cwd()).root
 
 export const findPackageRoot = (fromDir?: string): string | null => {
 	const startDir = fromDir ?? dirOfCaller()
-	let dirToCheck = startDir
-	while (dirToCheck !== fsRoot) {
+	let dirToCheck = resolve(startDir)
+	let previousDir: string | undefined
+	while (dirToCheck !== previousDir) {
 		try {
 			const contents = readJson(join(dirToCheck, "package.json"))
 			/*
@@ -134,14 +135,15 @@ export const findPackageRoot = (fromDir?: string): string | null => {
 		} catch {
 			// If the file doesn't exist, go up another level
 		}
-		dirToCheck = join(dirToCheck, "..")
+		previousDir = dirToCheck
+		dirToCheck = dirname(dirToCheck)
 	}
 	return null
 }
 
 export const assertPackageRoot = (fromDir?: string): string => {
 	const startDir = fromDir ?? dirOfCaller()
-	const result = findPackageRoot(fromDir)
+	const result = findPackageRoot(startDir)
 	if (result) return result
 
 	throw new Error(`${startDir} is not part of a node package.`)
@@ -156,7 +158,8 @@ export const findPackageAncestors = (fromDir?: string): string[] => {
 		dir = findPackageRoot(dir)
 		if (dir) {
 			dirs.push(dir)
-			dir = join(dir, "..")
+			const parent = dirname(dir)
+			dir = parent === dir ? null : parent
 		}
 	}
 
@@ -182,7 +185,7 @@ export const tsFileMatcher: RegExp = /^.*\.(c|m)?tsx?$/
 
 const inFileFilter: WalkOptions = {
 	include: path => tsFileMatcher.test(path),
-	ignoreDirsMatching: /node_modules|out|dist|docgen/
+	ignoreDirsMatching: /(?:^|[/\\])(?:node_modules|out|dist|docgen)(?:[/\\]|$)/
 }
 
 export const getSourceFilePaths = (dir = "."): string[] =>

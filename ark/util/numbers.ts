@@ -56,7 +56,7 @@ export const numericStringMatcher: RegExp =
 	// "-0" is excluded by requiring a nonzero digit after "-", not a lookahead,
 	// since it's a JSON Schema pattern, which RE2 (e.g. LLM structured outputs)
 	// can't read with one
-	/^(?:(?:0|[1-9]\d*)(?:\.\d+)?|\.\d+|-(?:[1-9]\d*(?:\.\d+)?|0\.\d*[1-9]\d*))(?:[Ee][+-]?\d+)?$/
+	/^(?:(?:0|[1-9]\d*)(?:\.\d+)?|\.\d+|-(?:[1-9]\d*(?:\.\d+)?|0?\.\d*[1-9]\d*))(?:[Ee][+-]?\d+)?$/
 
 export const isDigitCode = (code: number): boolean => code >= 48 && code <= 57
 
@@ -74,7 +74,7 @@ export const isNumericString = (s: string): boolean => {
 		isZero = false
 		do code = s.charCodeAt(++i)
 		while (isDigitCode(code))
-	} else if (isNegative || code !== 46) return false
+	} else if (code !== 46) return false
 	if (code === 46) {
 		code = s.charCodeAt(++i)
 		if (!isDigitCode(code)) return false
