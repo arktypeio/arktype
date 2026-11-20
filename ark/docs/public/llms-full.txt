@@ -3109,6 +3109,8 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 
 - `toJsonSchema()` throws for `object.json` and the Types it's part of, like `string.json.parse`'s output, since its check that an object is plain is a `predicate`. [Handle that code](https://arktype.io/docs/json-schema/to-json-schema#fallback-codes) to write it as before.
 
+- A keyword's `pattern` has no lookahead or backreference, so RE2 reads it: `string.integer` is `^(?:0|-?[1-9]\d*)$`, and `string.numeric` and `string.date.iso` match what they did.
+
 - `toJsonSchema()` throws a `ParseError` for a `target` other than `"draft-2020-12"`, `"draft-07"` or `"openapi-3.0"`, where it wrote draft 2020-12: `type("string").toJsonSchema({ target: "draft-04" })`, before: `{ type: "string" }`.
 
 - Expressions keep length bounds and protos beside a structure: `type("number[] > 1").expression` is `number[] >= 2`, before: `number[]`.
@@ -5894,7 +5896,7 @@ export const Event = type({ at: EpochMs })
 export const encode = (event: unknown) => Event.encode(event)
 ```
 
-A standalone build installs encoding itself, so `.encode` works there even if the program never imports `arktype/codecs`. A Type with a morph that has no inverse fails the build where its `.encode` is read, since arktype would throw there.
+A standalone build fails where `.encode` is read in a module that doesn't import `arktype/codecs`, itself or through a module it imports, or where the Type has a morph without an inverse, with the `ParseError` arktype would throw there. A build may see only the module it's reading, so importing `arktype/codecs` elsewhere in the program, like in its entry, isn't enough.
 
 ## Morphs without an inverse
 
@@ -7005,6 +7007,14 @@ configuration for this traversal
 - options can affect traversal results and error messages
 - defaults < global config < scope config
 - does not include options configured on individual types
+
+### `context`
+
+the context this validation was called with
+
+- the same object at every path, for predicates and morphs to read
+- `undefined` when a call passes none
+- typed as declared on `ArkEnv`: `interface ArkEnv { context(): {...} }`
 
 ### `hasError`
 
@@ -8649,7 +8659,7 @@ These generate only valid data:
 These throw when you call `arkToArbitrary`:
 
 - instances of any class other than `Array`, `Date` and `Set`, including `Map`, `Function`, `Promise`, typed arrays and `type.instanceOf(MyClass)`
-- regexes with a lookahead, which fast-check can't generate from. Several keywords use one, including `string.numeric`, `string.integer`, `string.date.iso` and their `.parse` variants.
+- regexes with a lookahead, which fast-check can't generate from
 - more than one regex on a string, like `string.email & string.alpha`
 - a regex with a length bound, like `string.email < 50`
 
