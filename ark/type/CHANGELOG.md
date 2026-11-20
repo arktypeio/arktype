@@ -56,6 +56,24 @@ type("string").narrow(
 
 `object.json` accepts only plain objects and arrays, but inferred `Json`, which includes strings, numbers, booleans and `null`, so `type("object.json").from("hi")` type checked and threw. It and `object.json.stringify`'s input now infer `JsonStructure`, which `arktype` exports beside `Json`.
 
+### Type each of `.props` as the prop it is
+
+Each prop's `value` is one Type, as it is at runtime. A union value was split into a prop per branch, and `undefined` was dropped from every value, so a required key's `"undefined"` value left no prop at all:
+
+```ts
+const T = type({ a: "string | number", b: "string | undefined" })
+
+// was: Type<string> | Type<number> | Type<string>
+// now: Type<string | number> | Type<string | undefined>
+T.props[0].value
+```
+
+An optional key's value is read as `-?` reads it, so it keeps an `undefined` it was given where `exactOptionalPropertyTypes` is enabled. A defaulted morph's prop has its `default`.
+
+### `.required()` and `.partial()` of an array return an array Type
+
+Like `.readonly()`, they keep array methods like `.atLeastLength()` on a tuple or array Type.
+
 ## 3.0.0-beta.1
 
 ### Summary
