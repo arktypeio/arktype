@@ -6,7 +6,6 @@ import { discriminateUnion } from "./roots/union.ts"
 import {
 	jsonSchemaContextOf,
 	jsonSchemaWriters,
-	refPrefixOf,
 	rootToJsonSchema,
 	toJsonSchemaRecurse
 } from "./toJsonSchema.ts"

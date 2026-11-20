@@ -21,6 +21,8 @@ const $ = scope({
 })
 ```
 
+Name aliases, generic parameters and brands with identifiers, like `Id`, or `#Id` for a private alias. Any other name is unspecified, and a minor release may reject it: today it's accepted and can shadow syntax, so in `type.module({ "a|b": "'x'", a: "1", b: "2", u: "a|b" })`, `u` is `"x"`.
+
 Aliases are autocompleted and validated like built-in keywords. Write definitions inside a scope directly: wrapping one in `type(...)` fails, because `type` only knows built-in keywords (see [thunks](#thunks)).
 
 `$.type` parses a definition that can reference the scope's aliases. Types created this way keep their scope, so chained methods can reference the aliases too:

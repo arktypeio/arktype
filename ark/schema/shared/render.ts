@@ -155,13 +155,12 @@ const localeWriter = (
 	}
 	const writer = locale[error.code]?.[slot]
 	if (writer === undefined) return locale[slot]
-	// union and intersection frame their children's text, unless they cite
-	// their own description, or a union what it's configured to expect, which
-	// is written after `must be` and its path as any error's is
-	if (error.code === "union" || error.code === "intersection") {
+	// a union frames its children's text, unless it cites its own description
+	// or what it's configured to expect, which is written after `must be` and
+	// its path as any error's is
+	if (error.code === "union") {
 		const framesErrors =
-			cited === undefined &&
-			(error.code === "intersection" || error.meta?.expected === undefined)
+			cited === undefined && error.meta?.expected === undefined
 		return framesErrors || slot === "actual" ? writer : locale[slot]
 	}
 	// a code's own message frames its locale's expected, not a keyword's phrase or authored text
@@ -196,10 +195,8 @@ const writeInEn = (
 	last: "expected" | "actual"
 ): void => {
 	// a union's expected reads its children's actual
-	if (error.code === "union" || error.code === "intersection") {
-		for (const e of error.errors)
-			writeInEn(e, config, error.code === "union" ? "actual" : "expected")
-	}
+	if (error.code === "union")
+		for (const e of error.errors) writeInEn(e, config, "actual")
 	error.propString ??= stringifyPath(error.path)
 	const expected = configOf(error, "expected", config)
 	error.expected ??= writeExpected(error, expected as never, defaultLocale)

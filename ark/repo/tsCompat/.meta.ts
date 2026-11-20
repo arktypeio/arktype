@@ -9,7 +9,7 @@ export const Meta = scope({
 	Binary: { "...": "BaseMeta", kind: "'binary'" }
 }).export().Binary
 
-declare global {
+declare module "arktype" {
 	interface ArkEnv {
 		meta(): typeof Meta.infer
 	}

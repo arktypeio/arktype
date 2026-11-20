@@ -32,7 +32,7 @@ const Typed = NonEmpty.as<string>()
 `rootSchema` is `arktype/schema`'s version of `type.schema`. Its result is typed as a node instead of a Type, so it's what you use without `arktype`:
 
 ```ts
-import "arktype/sets"
+import "arktype"
 import { rootSchema } from "arktype/schema"
 
 const User = rootSchema({
@@ -47,7 +47,7 @@ const User = rootSchema({
 User({ name: "Ada", age: -1 })
 ```
 
-`import "arktype/sets"` installs the [set algebra](/docs/internals/sets). `arktype` imports it for you.
+`import "arktype"` installs the [set algebra](/docs/internals/sets).
 
 ## node
 

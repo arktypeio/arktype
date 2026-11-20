@@ -276,7 +276,7 @@ contextualize(() => {
 			attest(out.summary).snap(
 				"user.id must be a string\nthunk.id must be a string"
 			)
-			attest(out.toLocaleString(en)).equals(out.summary)
+			attest(out.summaryIn(en)).equals(out.summary)
 		})
 
 		it("methods parse a Type as a Standard Schema", () => {

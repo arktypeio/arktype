@@ -6,7 +6,7 @@ import {
 } from "@ark/schema"
 import { hasDomain, ParseError, printable, throwParseError } from "@ark/util"
 import {
-	isPlainObject,
+	isJsonSchemaObject,
 	readJsonSchema,
 	writeUnparsableSchemaMessage,
 	writeUnreadableStandardSchemaMessage
@@ -49,7 +49,7 @@ export const parse = (schema: Schema, options?: ParseOptions): Root => {
 	if (!hasDomain(schema, "object"))
 		return throwParseError(writeUnparsableSchemaMessage(printable(schema)))
 	if (!("~standard" in schema)) {
-		return isPlainObject(schema) ?
+		return isJsonSchemaObject(schema) ?
 				readJsonSchema(schema, options?.root)
 			:	throwParseError(writeUnparsableSchemaMessage(printable(schema)))
 	}

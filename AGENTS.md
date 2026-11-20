@@ -4,7 +4,7 @@ ArkType is TypeScript's smallest, fastest validator. It parses TypeScript-like s
 
 ## Using ArkType
 
-- [arktype.io/llms.txt](https://arktype.io/llms.txt) indexes the docs (llmstxt.org format) with a link to each page's Markdown, and [arktype.io/llms-full.txt](https://arktype.io/llms-full.txt) is every ArkType page in one file. Precompile, ArkRegex, Attest, JSON Schema, ArkSets and Internals each have a full file at `arktype.io/docs/<section>/llms.txt`, e.g. [arktype.io/docs/regex/llms.txt](https://arktype.io/docs/regex/llms.txt). Any single page is at its URL plus `.md`. All of it is generated from `ark/docs/content/docs` by `ark/docs/lib/writeMarkdown.ts`.
+- [arktype.io/llms.txt](https://arktype.io/llms.txt) indexes the docs (llmstxt.org format) with a link to each page's Markdown, and [arktype.io/llms-full.txt](https://arktype.io/llms-full.txt) is every ArkType page in one file. Precompile, ArkRegex, Attest, JSON Schema and Internals each have a full file at `arktype.io/docs/<section>/llms.txt`, e.g. [arktype.io/docs/regex/llms.txt](https://arktype.io/docs/regex/llms.txt). Any single page is at its URL plus `.md`. All of it is generated from `ark/docs/content/docs` by `ark/docs/lib/writeMarkdown.ts`.
 - [`ark/type/skills/arktype/SKILL.md`](ark/type/skills/arktype/SKILL.md) is the Agent Skill users install with `npx skills add arktypeio/arktype`. Keep its examples type-checking against the current API: `pnpm testSkill` checks them. Its `references/migrating.md` is written from the docs' `migrating.mdx` when the docs build, so edit that page instead.
 - [Precompile](https://arktype.io/docs/precompile) (`ark/docs/content/docs/precompile`) is the reference for `@ark/aot`; `ark/aot/README.md` only points to it.
 - Every benchmark number or superlative the docs state lives in `ark/docs/lib/claims.ts`, with the benchmark that backs it, except the homepage's own benchmark and [Size at scale](https://arktype.io/docs/precompile/size-at-scale), which `ark/docs/lib/bench` computes from its data (`sizeScale.ts` writes that page's every number and comparison from `pnpm benchSizeScale`'s). Don't state one elsewhere.
@@ -45,10 +45,9 @@ Tests and typechecking read each package's source through the `ark-ts` condition
 
 - `ark/type`: main validation library (`arktype` on npm)
 - `ark/schema`: schema layer (constraint nodes, refinements, scopes)
-- `ark/sets`: set algebra over schemas, to relate, combine and convert Types and JSON Schemas (`arksets` on npm)
+- `ark/sets`: the set algebra arktype reduces, relates and converts Types with, and the reader behind `fromJsonSchema` (`arksets`, internal and unpublished)
 - `ark/util`: shared utilities
 - `ark/docs`: documentation site (Next.js)
-- `ark/json-schema`: JSON Schema conversion
 - `ark/aot`: build-time precompilation of Types to standalone validators (`@ark/aot` on npm)
 - `ark/regex`: ArkRegex type-safe regex
 - `ark/attest`: assertion/test library

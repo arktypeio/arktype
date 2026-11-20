@@ -36,7 +36,7 @@ if (out instanceof type.errors) {
 
 Like other [global config](/docs/configuration#global), a locale is configured before any Type is created. It can't be set for a scope or a Type. To choose one per request, configure a [function](#switching-locales).
 
-Shipped locales like `arktype/locales/de` work when imported. A locale you write, or a locale function, also needs `import "arktype/i18n"` unless a shipped locale is imported. Without it, creating a Type, `toLocaleString` or `messageIn` with that locale throws. This keeps other locales out of bundles that only use `en`.
+Shipped locales like `arktype/locales/de` work when imported. A locale you write, or a locale function, also needs `import "arktype/i18n"` unless a shipped locale is imported. Without it, creating a Type, `summaryIn` or `messageIn` with that locale throws. This keeps other locales out of bundles that only use `en`.
 
 Only an error's `message`, the `expected` and `actual` it's written from and its line of a summary are localized. A Type's `description` and `expression`, JSON Schema, an error's `description` and `ParseError`s stay in English.
 
@@ -119,11 +119,11 @@ const handle = (body: unknown) =>
 
 The function is called once for an `ArkErrors`, whose messages keep the locale it returned, so they never mix languages. If it returns `undefined` or throws, they're written in English.
 
-Since messages are written when they're first read, read `summary` or `issues` inside the request. Errors returned from `requestLocale.run` and read later, like by a framework's error handler, are written in English. There, call [`toLocaleString`](#rendering-in-a-locale) instead.
+Since messages are written when they're first read, read `summary` or `issues` inside the request. Errors returned from `requestLocale.run` and read later, like by a framework's error handler, are written in English. There, call [`summaryIn`](#rendering-in-a-locale) instead.
 
 ## Rendering in a locale
 
-An `ArkErrors`' `toLocaleString` writes its summary in a locale of your choice, whatever locale is configured, and `messageIn` writes one error's line of it:
+An `ArkErrors`' `summaryIn` writes its summary in a locale of your choice, whatever locale is configured, and `messageIn` writes one error's `message` in it, without its path:
 
 ```ts
 import { messageIn, type } from "arktype"
@@ -133,14 +133,15 @@ const out = type({ name: "string" })({ name: 5 })
 
 if (out instanceof type.errors) {
 	// name muss eine Zeichenkette sein
-	out.toLocaleString(de)
+	out.summaryIn(de)
+	// muss eine Zeichenkette sein
 	messageIn(out.issues[0], de)
 	// must be a string
 	out.issues[0].message
 }
 ```
 
-Called without a locale, `toLocaleString` returns the summary as configured.
+Called without a locale, `summaryIn` returns the summary as configured. `toLocaleString` is the standard one, so it ignores a locale and returns the summary as configured.
 
 ## Your own messages
 
@@ -242,9 +243,9 @@ For a language ArkType doesn't ship, write a `Locale`. Only its `tag` is require
 | `line`                           | an error's line of a summary: its message after its path or label                                                 |
 | `domain`, `min`, `required`, ... | one entry per [error code](/docs/errors#error-codes) with its `message` and optionally its `expected` or `actual` |
 
-Each code's `message` is a whole sentence without a subject, and never names the error's path. `line` places the path or label before it for `summary`, `toLocaleString` and `messageIn`. It receives the error with its `message` written and `custom`, which is `true` where the message is one you [configured](/docs/configuration#message) or passed to `ctx.reject` rather than one the locale wrote, so it can set a sentence of yours apart from its path, as `en` does with a colon. A message of yours that begins as the locale's own `message` would write it from what the error expected, like `must be a string` in `en` or `muss eine Zeichenkette sein` in `de`, isn't `custom`. It's only called for an error below the root, and not for a union listing its branches' errors, each of which names its own path.
+Each code's `message` is a whole sentence without a subject, and never names the error's path. `line` places the path or label before it for `summary` and `summaryIn`. It receives the error with its `message` written and `custom`, which is `true` where the message is one you [configured](/docs/configuration#message) or passed to `ctx.reject` rather than one the locale wrote, so it can set a sentence of yours apart from its path, as `en` does with a colon. A message of yours that begins as the locale's own `message` would write it from what the error expected, like `must be a string` in `en` or `muss eine Zeichenkette sein` in `de`, isn't `custom`. It's only called for an error below the root, and not for a union listing its branches' errors, each of which names its own path.
 
-A code's `expected` is a fragment that unions and intersections list. A fragment reads as what follows the locale's "must be", like `fr`'s `doit être`:
+A code's `expected` is a fragment that unions list. A fragment reads as what follows the locale's "must be", like `fr`'s `doit être`:
 
 ```ts
 import type { Locale } from "arktype"

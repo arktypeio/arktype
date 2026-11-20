@@ -1,4 +1,5 @@
 import {
+	type ArkEnv,
 	$ark,
 	Disjoint,
 	compileLiteralPropAccess,
@@ -1087,11 +1088,13 @@ interface Range {
 
 const rangeOf = (node: Intersection.Node, family: RangeFamily): Range => {
 	const exact = family.integral ? node.inner.exactLength : undefined
-	const limitOf = (bound: BaseRange<any> | undefined): Limit | undefined =>
+	const rangeLimitOf = (bound: BaseRange<any> | undefined): Limit | undefined =>
 		bound && { value: bound.numRule, exclusive: bound.exclusive }
 	return {
-		lower: exact ? { value: exact.rule } : limitOf(node.inner[family.lower]),
-		upper: exact ? { value: exact.rule } : limitOf(node.inner[family.upper]),
+		lower:
+			exact ? { value: exact.rule } : rangeLimitOf(node.inner[family.lower]),
+		upper:
+			exact ? { value: exact.rule } : rangeLimitOf(node.inner[family.upper]),
 		excluded: (node.inner[family.excluded] ?? []).map(node =>
 			node.rule.valueOf()
 		)

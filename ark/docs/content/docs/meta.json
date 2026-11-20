@@ -5,7 +5,6 @@
 		"regex",
 		"attest",
 		"json-schema",
-		"sets",
 		"internals",
 		"blog"
 	]

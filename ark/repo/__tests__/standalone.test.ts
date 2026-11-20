@@ -1186,12 +1186,19 @@ user.name must be a string`)
 			assert: "assert" in validator,
 			meta: "meta" in validator,
 			"~standard": "~standard" in validator,
+			withContext: "withContext" in validator,
 			methods:
 				"traverse" in validator &&
 				"from" in validator &&
 				Object.getPrototypeOf(validator) !== Function.prototype
 		})
-		const all = { assert: true, meta: true, "~standard": true, methods: true }
+		const all = {
+			assert: true,
+			meta: true,
+			"~standard": true,
+			withContext: true,
+			methods: true
+		}
 		const { T: full } = await load({ T })
 		attest(membersOf(full)).equals(all)
 		for (const member of Object.keys(all)) {
@@ -1210,6 +1217,7 @@ user.name must be a string`)
 					assert: false,
 					meta: false,
 					"~standard": false,
+					withContext: false,
 					methods: false,
 					expression: true
 				}
@@ -1631,8 +1639,9 @@ age must be a number (was missing)`)
 		attest(validator.toJsonSchema({ target: "draft-2020-12" })).equals(
 			T.toJsonSchema({ target: "draft-2020-12" })
 		)
-		attest(() => validator.toJsonSchema({ target: "draft-07" })).throws(
-			'A standalone validator\'s JSON Schema takes only a target it was built with, and a fallback only where it was built to apply one; set members["toJsonSchema"] true, or build with runtime: "arktype"'
+		// members.toJsonSchema bakes every target, as code can pass any
+		attest(validator.toJsonSchema({ target: "draft-07" })).equals(
+			T.toJsonSchema({ target: "draft-07" })
 		)
 		// one it didn't bake reads undefined, and only throws in development
 		const unbaked = ["json", "description", "expression", "toJSON"] as const
@@ -2098,10 +2107,6 @@ after: isn't January 1, 2000, 12:00:00.001 AM UTC or later (January 1, 1970)`)
 				{ message: "no extra keys" },
 				"structure"
 			),
-			Intersected: scope(
-				{},
-				{ intersection: { message: () => "configured" } }
-			).type("string >= 5 & /^a/"),
 			// another scope's descriptions, before and after the build's own
 			OwnFirst: type({ a: { v: "number" } }),
 			KeptAfter: type({ a: lib.y }),
@@ -2125,7 +2130,6 @@ after: isn't January 1, 2000, 12:00:00.001 AM UTC or later (January 1, 1970)`)
 			["Discriminated", { k: "c" }],
 			["Keyed", { a: true }],
 			["Undeclared", { a: "", b: 1 }],
-			["Intersected", "b"],
 			["OwnFirst", described],
 			["KeptAfter", described],
 			["KeptFirst", described],
@@ -2146,7 +2150,6 @@ after: isn't January 1, 2000, 12:00:00.001 AM UTC or later (January 1, 1970)`)
 			"k: unknown kind",
 			"a: no a",
 			"b: no extra keys",
-			"must be matched by ^a\nmust be at least length 5",
 			"a.v must be a number",
 			"a.v must be a custom number",
 			"b.v must be a custom number",
@@ -2695,14 +2698,15 @@ after: isn't January 1, 2000, 12:00:00.001 AM UTC or later (January 1, 1970)`)
 			T: type("string")
 		}).code.replace(
 			"runtime.fixConfig()",
-			"runtime.fixConfig()\nruntime.configure({})"
+			"runtime.fixConfig()\nruntime.configure({ numberAllowsNaN: true })"
 		)
 		attest(
 			await importCode(bundle(createdFirst).js)
 				.then(artifact => artifact.T())
 				.catch((e: Error) => e.message)
 		).equals(reconfiguredMessage)
-		// a second configure() after the first, or after the build's own
+		// a second configure() after the first, or after the build's own, unless
+		// it changes nothing
 		const nan = fingerprintOf({ numberAllowsNaN: true })
 		const configured = `runtime.configure({ numberAllowsNaN: true }, "${nan}")`
 		attest([
@@ -2711,7 +2715,7 @@ after: isn't January 1, 2000, 12:00:00.001 AM UTC or later (January 1, 1970)`)
 				nan
 			),
 			await messageOf(`${configured}\n${configured}`, nan)
-		]).equals([reconfiguredMessage, reconfiguredMessage])
+		]).equals([reconfiguredMessage, ""])
 	})
 
 	it("fingerprints apart differing values", () => {
@@ -2798,7 +2802,9 @@ config.onUndeclaredKey = "reject"`
 		artifact.configure(config, fingerprintOf(config))
 		attest(artifact.T()({ a: 1 })).equals("configured")
 		attest(artifact.T()).is(artifact.T())
-		attest(() => artifact.configure(config)).throws(reconfiguredMessage)
+		attest(() => artifact.configure({ onFail: () => "other" })).throws(
+			reconfiguredMessage
+		)
 		// unless built with lazy: false
 		attest(
 			await importCode(
@@ -2841,7 +2847,9 @@ config.onUndeclaredKey = "reject"`
 			)
 			artifact.configure({}, fingerprintOf({}))
 			artifact[name]()
-			attest(() => artifact.configure({})).throws(reconfiguredMessage)
+			attest(() => artifact.configure({ numberAllowsNaN: true })).throws(
+				reconfiguredMessage
+			)
 		}
 	})
 
@@ -3007,9 +3015,10 @@ export const Validating = type(["unknown", "unknown"]).pipe(([d, validate]) => v
 		const validated = artifact.Validating([1, artifact.T()])
 		attest([
 			errors.summary,
+			// a standalone validator's errors have no summaryIn
 			errors.toLocaleString(artifact.de),
-			artifact.Island(1).toLocaleString(artifact.de),
-			validated.toLocaleString(artifact.de),
+			artifact.Island(1).summaryIn(artifact.de),
+			validated.summaryIn(artifact.de),
 			artifact.messageIn(validated.issues[0], artifact.de)
 		]).snap([
 			"must be a string",
@@ -3710,6 +3719,7 @@ export default shared`).js
 		const runtimeModules = new Set([
 			"<stdin>",
 			"schema/runtime.ts",
+			"schema/shared/configured.ts",
 			"schema/shared/enWriters.ts",
 			"schema/shared/errorWriters.ts",
 			"schema/shared/issues.ts",

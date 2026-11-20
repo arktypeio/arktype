@@ -1,6 +1,6 @@
 # arkregex
 
-## Unreleased
+## 0.0.16-beta.2
 
 ### Type an unmatched capture's indices as `undefined`
 

@@ -5,8 +5,7 @@ import type { LimitKind } from "../refinements/range.ts"
 import { holdsSameChildren, type BaseNode } from "../node.ts"
 import type { PredicateNode } from "../predicate.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
-import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
-import type { ArkError } from "../shared/errors.ts"
+import type { declareNode } from "../shared/declare.ts"
 import {
 	implementNode,
 	type nodeImplementationOf,
@@ -54,17 +53,10 @@ export declare namespace Intersection {
 		export type mutable = makeRootAndArrayPropertiesMutable<Inner>
 	}
 
-	export interface ErrorContext
-		extends BaseErrorContext<"intersection">,
-			Inner {
-		errors: readonly ArkError[]
-	}
-
 	export type Declaration = declareNode<{
 		kind: "intersection"
 		inner: Inner
 		reducibleTo: "intersection" | BasisKind
-		errorCtx: ErrorContext
 		childKind: ChildKind
 	}>
 
@@ -74,7 +66,7 @@ export declare namespace Intersection {
 const implementation: nodeImplementationOf<Intersection.Declaration> =
 	implementNode<Intersection.Declaration>({
 		kind: "intersection",
-		ownErr: true,
+		ownErr: false,
 		fixJson: ({ structure, ...rest }) =>
 			hasDomain(structure, "object") ? { ...structure, ...rest } : rest,
 		keys: {

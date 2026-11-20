@@ -7,7 +7,10 @@ export const redirects: Readonly<Record<string, string>> = {
 	"/docs/comparisons": "/docs/faq",
 	"/docs/dynamic-vs-precompiled": "/docs/precompile/dynamic-vs-precompiled",
 	"/docs/internal": "/docs/internals/nodes",
-	"/docs/introspection": "/docs/internals/nodes"
+	"/docs/introspection": "/docs/internals/nodes",
+	"/docs/sets": "/docs/json-schema/compare",
+	"/docs/sets/discriminate": "/docs/json-schema/compare",
+	"/docs/sets/relations": "/docs/json-schema/compare"
 }
 
 /**

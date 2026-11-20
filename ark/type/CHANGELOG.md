@@ -1,6 +1,27 @@
 # arktype
 
-## Unreleased
+## 3.0.0-beta.2
+
+### Read a JSON Schema or a Zod schema with `fromJsonSchema`
+
+`fromJsonSchema` reads a JSON Schema, or a Standard JSON Schema like a Zod schema or a Type, into a Type bound to arktype's own scope. A JSON Schema written in the call is checked and its type inferred, as `jsonSchemaToType` from `@ark/json-schema` did; a Standard Schema infers its input:
+
+```ts
+import { fromJsonSchema } from "arktype"
+import { z } from "zod"
+
+const V1 = fromJsonSchema(z.object({ id: z.string(), age: z.number() }))
+const V2 = fromJsonSchema({
+	type: "object",
+	properties: { id: { type: "string" }, age: { type: "number" } },
+	required: ["id"]
+})
+
+// V2 accepts everything V1 did
+V1.extends(V2) // true
+```
+
+Every Type method works on the result, so `.extends()`, `.equals()`, `.overlaps()`, `.and()`, `.or()` and `.toJsonSchema()` compare, combine and convert schemas in any of those formats. It replaces `@ark/json-schema`, which is no longer published, and the `arktype/sets` subpath, which is removed: `isSubset(l, r)` is `fromJsonSchema(l).extends(fromJsonSchema(r))`. `jsonSchema()`, `jsonSchema.as`, `StringSchema` and `JsonSchemaScope` are gone: declare a schema `as const`, annotate a widened one's result, and type one with `JsonSchema`.
 
 ### Pass a constraint its message
 
@@ -126,6 +147,30 @@ With `exactOptionalPropertyTypes: false`, a defaulted key holding `undefined` is
 ### `type.declare` accepts either definition of an optional key without `exactOptionalPropertyTypes`
 
 Where `exactOptionalPropertyTypes` isn't enabled, TS reads `{ a?: string }` and `{ a?: string | undefined }` as the same type, so a key declared as either can be defined as `"a?": "string"` or `"a?": "string | undefined"`. The second was a type error.
+
+### Write the summary in a locale with `summaryIn`, and an error's message with `messageIn`
+
+`ArkErrors.toLocaleString(locale)` is now `summaryIn(locale)`. `toLocaleString` is ECMA-402's again, so it returns the summary as configured whatever it's passed, and `[out].toLocaleString(["de"])` no longer throws without `arktype/i18n`.
+
+`messageIn(error, locale)` returns the error's `message` in that locale, without its path, as `error.message` would be had it been configured. It returned the error's line of the summary:
+
+```ts
+import { messageIn, type } from "arktype"
+import { de } from "arktype/locales/de"
+
+const out = type({ name: "string >= 2" })({ name: "A" })
+
+if (out instanceof type.errors) {
+	// name muss mindestens 2 Zeichen lang sein
+	out.summaryIn(de)
+	// muss mindestens 2 Zeichen lang sein (before: name muss mindestens 2 Zeichen lang sein)
+	messageIn(out.issues[0], de)
+}
+```
+
+### Remove the `intersection` error code
+
+Each failed check is its own error, so nothing raised `intersection`. It's no longer an `ArkErrorCode`, so a locale has no entry for it and an exhaustive `switch` over `code` needs no case for it.
 
 ## 3.0.0-beta.1
 

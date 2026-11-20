@@ -508,9 +508,7 @@ const keptOf = (errors: ArkErrors, isArktype = !!errors._merge): KeptIssue[] =>
 
 // the first check of the first issue, where a first-issue build stops
 const firstKeptOf = (errors: ArkErrors): KeptIssue[] => {
-	const issue: any = errors.issues[0]
-	const { code, path, data } =
-		issue.code === "intersection" ? issue.errors[0] : issue
+	const { code, path, data } = errors.issues[0]
 	return [{ code, path: [...path], data }]
 }
 

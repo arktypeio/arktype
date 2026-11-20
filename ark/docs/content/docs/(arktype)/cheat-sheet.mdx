@@ -265,6 +265,23 @@ User["~standard"]
 User.toJsonSchema()
 ```
 
+```ts
+import { fromJsonSchema } from "arktype"
+import { z } from "zod"
+// ---cut---
+// a JSON Schema or a Zod schema as a Type, to validate with or compare
+const V1 = fromJsonSchema(z.object({ id: z.string() }))
+const V2 = fromJsonSchema({
+	type: "object",
+	properties: { id: { type: "string" }, age: { type: "number" } },
+	required: ["id"]
+})
+
+V1.extends(V2) // true: V2 accepts everything V1 did
+```
+
+Type methods take definitions, so pass a JSON Schema through `fromJsonSchema` before comparing it. See [Compare schemas](/docs/json-schema/compare).
+
 Global configuration goes through `configure` from `arktype/config`, in a file imported before anything creates a Type. See [Configuration](/docs/configuration).
 
 ## Precompile

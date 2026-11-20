@@ -47,7 +47,10 @@ const intersectPropsAndIndex = <
 		value.is("alias")
 	) {
 		queueUnchecked(() => {
-			const resolved = intersectValues(unaliased(l.value), unaliased(r.value))
+			const resolved = intersectValues(
+				resolvedRoot(l.value),
+				resolvedRoot(r.value)
+			)
 			if (resolved instanceof Disjoint)
 				resolved.withPrefixKey(l.key, "optional").throw()
 		}, `${l.id}&${r.id}`)
@@ -67,7 +70,7 @@ const intersectPropsAndIndex = <
 	return null
 }
 
-const unaliased = (node: BaseRoot): BaseRoot =>
+const resolvedRoot = (node: BaseRoot): BaseRoot =>
 	node.is("alias") ? node.resolution : node
 
 // a number key names the same property as its string

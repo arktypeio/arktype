@@ -320,7 +320,7 @@ A [precompiled](/docs/precompile) build takes a function for the table's other c
 | `.meta({ title, examples })`, a registry                      | `.configure({ title, examples })`, read back from `T.meta`                                 |
 | `z.config(z.locales.de())`                                    | `configure({ locale: de })`, see [i18n](/docs/i18n); only `en` and `de` ship               |
 | `zfd.formData({ ... })` from `zod-form-data`                  | `type("FormData.parse").to({ ... })`, see [Form data](#form-data)                          |
-| `z.fromJSONSchema(schema)`                                    | `jsonSchemaToType(schema)` from [`@ark/json-schema`](/docs/json-schema/from-json-schema)   |
+| `z.fromJSONSchema(schema)`                                    | [`fromJsonSchema(schema)`](/docs/json-schema/from-json-schema)                             |
 
 ## Defaults that differ
 
@@ -1290,7 +1290,7 @@ To move one schema at a time, wrap an Effect schema as a [Standard Schema](/docs
 
 ## JSON Schema and ajv
 
-To keep a schema as JSON, convert it at runtime with `jsonSchemaToType` from `@ark/json-schema`; it accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with `format` as an annotation. To rewrite it as definitions:
+To keep a schema as JSON, convert it at runtime with [`fromJsonSchema`](/docs/json-schema/from-json-schema) from `arktype`; it accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with `format` as an annotation. To rewrite it as definitions:
 
 | JSON Schema                                             | ArkType                                                                |
 | ------------------------------------------------------- | ---------------------------------------------------------------------- |

@@ -1,4 +1,4 @@
-import { type } from "arktype"
+import { type, type ArkErrors } from "arktype"
 import { strictEqual } from "node:assert/strict"
 import { cases } from "./util.ts"
 
@@ -10,7 +10,7 @@ const { en } = await import("arktype/locales/en")
 cases({
 	localeSpreadFromLateEn: () =>
 		strictEqual(
-			T({ a: "x" }).toLocaleString({
+			(T({ a: "x" }) as ArkErrors).summaryIn({
 				...en,
 				tag: "test",
 				line: ctx => `${ctx.propString} → ${ctx.message}`

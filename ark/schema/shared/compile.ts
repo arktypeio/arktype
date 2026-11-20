@@ -31,6 +31,7 @@ import {
 	transformsValid,
 	type TraversalKind
 } from "./traversal.ts"
+import type { ArkEnv } from "./declare.ts"
 
 // assigns a context's keys to the error it's given, which holds data and path
 // already, in the order a literal of them would

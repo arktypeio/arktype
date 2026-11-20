@@ -811,7 +811,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "params": [
                 "context"
             ],
-            "example": "declare global {\n    interface ArkEnv {\n        context(): { saved?: string }\n    }\n}\n\nconst Street = type(\"string\").narrow(\n    (s, ctx) => s === ctx.context?.saved || s.length > 3 || ctx.mustBe(\"a full street\")\n)\n// the street as saved passes, though it's short\nconst out = Street.withContext({ saved: \"Elm\" })(\"Elm\")"
+            "example": "declare module \"arktype\" {\n    interface ArkEnv {\n        context(): { saved?: string }\n    }\n}\n\nconst Street = type(\"string\").narrow(\n    (s, ctx) => s === ctx.context?.saved || s.length > 3 || ctx.mustBe(\"a full street\")\n)\n// the street as saved passes, though it's short\nconst out = Street.withContext({ saved: \"Elm\" })(\"Elm\")"
         }
     ],
     "Inference": [

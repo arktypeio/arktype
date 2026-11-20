@@ -237,8 +237,13 @@ export const supportedJsonSchemaTargets: readonly ToJsonSchema.Target[] = [
  * whose Schema Object is draft-2020-12 but for where its $refs point, so it's
  * only toJsonSchema's, and isn't baked for ~standard.jsonSchema
  */
+// written out rather than spread from supportedJsonSchemaTargets, as a
+// minifier keeps a spread, which may run an iterator, in every program
+// importing anything from its chunk
 export const toJsonSchemaTargets: readonly ToJsonSchema.Target[] = [
-	...supportedJsonSchemaTargets,
+	"draft-2020-12",
+	"draft-07",
+	"openapi-3.0",
 	"openapi-3.1"
 ]
 

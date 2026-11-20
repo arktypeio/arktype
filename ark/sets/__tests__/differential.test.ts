@@ -69,18 +69,29 @@ const values: unknown[] = [
 
 const lengthSafeValues = values.filter(v => !astral.includes(v as string))
 
+const compile = (schema: object | boolean) =>
+	(
+		typeof schema === "object" &&
+		String((schema as { $schema?: string }).$schema).includes("draft-07")
+	) ?
+		ajv07.compile(schema)
+	:	ajv2020.compile(schema)
+
+const throws = (f: () => unknown): boolean => {
+	try {
+		f()
+		return false
+	} catch {
+		return true
+	}
+}
+
 const disagreementsOf = (
 	schema: object | boolean,
 	data: unknown[]
 ): unknown[] => {
 	const root = parse(schema)
-	const validate =
-		(
-			typeof schema === "object" &&
-			String((schema as { $schema?: string }).$schema).includes("draft-07")
-		) ?
-			ajv07.compile(schema)
-		:	ajv2020.compile(schema)
+	const validate = compile(schema)
 	return data.filter(v => root.allows(v) !== validate(v))
 }
 
@@ -303,6 +314,52 @@ contextualize(() => {
 				dependencies: { a: ["b"], kind: { required: ["n"] } }
 			}
 		))
+
+	it("OpenAPI 3.0 nullable", () =>
+		agrees(
+			{ type: "string", nullable: true },
+			{ type: "string", nullable: false },
+			{ type: ["string", "number"], nullable: true },
+			{ type: "null", nullable: true },
+			{ type: "string", nullable: true, enum: ["a", "b"] },
+			{ type: "string", nullable: true, enum: ["a", null] },
+			{ type: "string", nullable: true, const: "a" },
+			{ type: "number", nullable: true, minimum: 2 },
+			{ type: "object", nullable: true, required: ["a"] },
+			{ type: "string", nullable: true, not: { type: "null" } },
+			{ type: "object", nullable: true, allOf: [{ required: ["a"] }] },
+			{ type: "object", nullable: true, allOf: [{ type: "object" }] },
+			{
+				$defs: { s: { type: "string" } },
+				$ref: "#/$defs/s",
+				type: "string",
+				nullable: true
+			},
+			{ properties: { a: { type: "number", nullable: true } } }
+		))
+
+	it("OpenAPI 3.0 nullable ajv rejects", () => {
+		const schemas = [
+			{ nullable: true },
+			{ nullable: false },
+			{ allOf: [{ type: "string" }], nullable: true },
+			{ $defs: { s: { type: "string" } }, $ref: "#/$defs/s", nullable: true },
+			{
+				$schema: "http://json-schema.org/draft-07/schema#",
+				definitions: { s: { type: "string" } },
+				$ref: "#/definitions/s",
+				nullable: true
+			},
+			{ type: ["string", "null"], nullable: false },
+			{ type: "string", nullable: "true" }
+		]
+		for (const schema of schemas) {
+			attest({ schema, arksets: throws(() => parse(schema)) }).equals({
+				schema,
+				arksets: throws(() => compile(schema))
+			})
+		}
+	})
 
 	it("annotations", () =>
 		agrees(

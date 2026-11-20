@@ -1,12 +1,12 @@
 ---
 title: Keyword support
-description: How @ark/json-schema and arktype/sets read each JSON Schema keyword, which ones throw, and which are only annotations.
+description: How fromJsonSchema reads each JSON Schema keyword, which ones throw, and which are only annotations.
 ---
 
-`jsonSchemaToType` and [ArkSets](/docs/sets) read JSON Schema the same way. A Type read from a schema accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with ajv as the tiebreaker. Each keyword is read in one of five ways:
+A Type read from a schema by [`fromJsonSchema`](/docs/json-schema/from-json-schema), directly or as a Standard Schema's JSON Schema, accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with ajv as the tiebreaker. Each keyword is read in one of five ways:
 
-- **supported**: the Type checks it, and [relations](/docs/sets/relations) like `isSubset` reason about it.
-- **opaque**: the Type checks it exactly, with a predicate. Relations through it can't be proven, and `toJsonSchema()` needs a [`predicate` fallback](/docs/json-schema/to-json-schema#fallback-codes) to write it back.
+- **supported**: the Type checks it, and [comparisons](/docs/json-schema/compare) like `.extends()` reason about it.
+- **opaque**: the Type checks it exactly, with a predicate. Comparisons through it can't be proven, and `toJsonSchema()` needs a [`predicate` fallback](/docs/json-schema/to-json-schema#fallback-codes) to write it back.
 - **annotation**: kept as the Type's metadata, and not validated.
 - **throws**: reading the schema throws a `ParseError` naming the keyword's JSON Pointer.
 - **ignored**: has no effect.
@@ -17,9 +17,9 @@ Every keyword in a schema applies, and a type's keywords constrain only that typ
 
 A keyword with an invalid value throws, like `#/minLength must be a non-negative integer (was -1)`. A keyword JSON Schema doesn't define is ignored.
 
-OpenAPI 3.0's own forms, which `toJsonSchema({ target: "openapi-3.0" })` writes, aren't read: `nullable` and `example` are ignored, and a boolean `exclusiveMinimum` throws.
+Of OpenAPI 3.0's own forms, which `toJsonSchema({ target: "openapi-3.0" })` writes, only `nullable` is read, as ajv reads it: `nullable: true` adds `null` to the `type` beside it, and the schema's other keywords still apply, so an `enum` there must list `null` too. `example` is ignored, and a boolean `exclusiveMinimum` throws.
 
-`jsonSchemaToType` checks a schema written in the call as you write it: an invalid keyword value is a type error, as is each keyword below that throws, except a `$ref` to another document. See [Invalid schemas](/docs/json-schema/from-json-schema#invalid-schemas).
+`fromJsonSchema` checks a schema written in the call as you write it: an invalid keyword value is a type error, as is each keyword below that throws, except a `$ref` to another document and a `nullable` without a `type`. See [Invalid schemas](/docs/json-schema/from-json-schema#invalid-schemas).
 
 ## Core
 
@@ -37,7 +37,7 @@ OpenAPI 3.0's own forms, which `toJsonSchema({ target: "openapi-3.0" })` writes,
 | `$id`, `$anchor`, `$dynamicAnchor`                          | supported   | identify a schema a `$ref` resolves to. Draft-04 reads `id`                                       |
 | `$comment`, `readOnly`, `writeOnly`                         | **ignored** |                                                                                                   |
 | `contentEncoding`, `contentMediaType`                       | **ignored** | annotations in 2020-12                                                                            |
-| `nullable` (OpenAPI 3.0)                                    | **ignored** | write `type: ["string", "null"]` instead                                                          |
+| `nullable` (OpenAPI 3.0)                                    | supported   | adds `null` to the `type` beside it. **Throws** without a `type`, as ajv does                     |
 
 ## Composition
 
@@ -51,9 +51,9 @@ OpenAPI 3.0's own forms, which `toJsonSchema({ target: "openapi-3.0" })` writes,
 Composition keywords apply together and beside any other keyword:
 
 ```ts
-import { jsonSchemaToType } from "@ark/json-schema"
+import { fromJsonSchema } from "arktype"
 
-const T = jsonSchemaToType({
+const T = fromJsonSchema({
 	anyOf: [{ type: "string" }, { type: "number" }],
 	not: { const: 0 }
 })
@@ -104,9 +104,9 @@ T(0)
 A JSON object's properties are its own, so `required: ["toString"]` rejects `{}`, though `{}` inherits `toString` from `Object.prototype`. A property named by a key `Object.prototype` has is read as a pattern that matches only that key, which, unlike a property, checks an own key alone:
 
 ```ts
-import { jsonSchemaToType } from "@ark/json-schema"
+import { fromJsonSchema } from "arktype"
 
-const T = jsonSchemaToType({
+const T = fromJsonSchema({
 	type: "object",
 	properties: { toString: { type: "string" } }
 })

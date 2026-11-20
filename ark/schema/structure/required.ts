@@ -1,6 +1,10 @@
 import type { errorCtx, nodeOfKind } from "../kinds.ts"
 import type { BaseRoot } from "../roots/root.ts"
-import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
+import type {
+	ArkEnv,
+	BaseErrorContext,
+	declareNode
+} from "../shared/declare.ts"
 import type { NodeErrorContextInput } from "../shared/errors.ts"
 import type { FailureSite } from "../shared/issues.ts"
 import {

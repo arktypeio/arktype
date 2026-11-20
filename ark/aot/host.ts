@@ -537,10 +537,10 @@ export const packageNameOf = (specifier: string): string =>
 // arktype's own packages, which read their nodes and import the runtime by design
 export const arkPackageName = /^(?:arktype|arkregex|arksets|@ark\/.+)$/
 
-// e.g. @ark/json-schema, which reads arktype's nodes, so imports arktype rather than its runtime
+// e.g. @ark/fast-check, which reads arktype's nodes, so imports arktype rather than its runtime
 export const readsNodes = (importer: string | undefined): boolean => {
 	const name = dependencyNameOf(importer)
-	return !!name && /^(?:arksets|@ark\/(?:json-schema|fast-check))$/.test(name)
+	return !!name && /^(?:arksets|@ark\/fast-check)$/.test(name)
 }
 
 // a dependency importing the runtime ships what another build precompiled

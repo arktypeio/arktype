@@ -1,0 +1,8 @@
+{
+	// its global ArkEnv stands in for another copy of arktype, so its name
+	// starts with a dot to keep it out of programs that include by glob. Libs
+	// are checked so a global arktype declared would report as a duplicate
+	"extends": "./tsconfig.json",
+	"compilerOptions": { "skipLibCheck": false },
+	"files": [".otherCopy.ts"]
+}

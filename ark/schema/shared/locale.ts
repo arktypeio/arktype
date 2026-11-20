@@ -18,6 +18,7 @@ import {
 	type LineContext,
 	type MessageContext
 } from "./errors.ts"
+import type { ArkEnv } from "./declare.ts"
 
 export type PluralCategory = "zero" | "one" | "two" | "few" | "many" | "other"
 
@@ -78,8 +79,8 @@ export declare namespace Locale {
 	}
 
 	export type Writers = {
-		readonly [code in Exclude<ArkErrorCode, unraisedCode>]: codeWritersOf<code>
-	} & { readonly [code in unraisedCode]?: codeWritersOf<code> }
+		readonly [code in ArkErrorCode]: codeWritersOf<code>
+	}
 
 	/**
 	 * A locale as its writers receive it: every part, those its author left
@@ -94,7 +95,7 @@ export declare namespace Locale {
 		 * one, the locale's `message` writes it from `expected`
 		 */
 		readonly message?: string | MessageWriter<code>
-		/** what unions and intersections list, as "must be" takes it */
+		/** what unions list, as "must be" takes it */
 		readonly expected?: string | ExpectedWriter<code>
 		readonly actual?: string | ActualWriter<code>
 	}
@@ -142,7 +143,7 @@ export declare namespace Locale {
 	 */
 	export type Complete<keywordAlias extends string = string> =
 		Resolved<keywordAlias> & {
-			readonly [code in Exclude<ArkErrorCode, unraisedCode>]: {
+			readonly [code in ArkErrorCode]: {
 				readonly message: string | MessageWriter<code>
 				readonly expected: string | ExpectedWriter<code>
 			}
@@ -152,10 +153,6 @@ export declare namespace Locale {
 			}
 		}
 }
-
-// an intersection's errors are raised separately, so no error has its code
-// and no locale needs to write one
-type unraisedCode = "intersection"
 
 type codeWritersOf<code extends ArkErrorCode> =
 	code extends "required" ?
@@ -334,11 +331,6 @@ export const alternativesOf = (
 	return error.expected === locale.list(cases, "or") ? cases : [error.expected]
 }
 
-/** what an intersection's errors expect, constraints described alike written once */
-export const distinctExpectedOf = (errors: readonly ArkError[]): string[] => [
-	...new Set(errors.map(e => e.expected))
-]
-
 /** the actual a union's errors agree on, if each is at the union's own path */
 export const actualAtPathOf = (union: {
 	readonly propString: string
@@ -368,7 +360,6 @@ export const describeCause = (cause: unknown): string => {
 /** the title of the value an error is about */
 export const labelOf = (error: Locale.ExpectedContext): string | undefined =>
 	error.code === "required" ? error.valueMeta.title
-	: error.code === "intersection" ? sharedLabelOf(error.errors)
 	: (
 		error.code === "undeclared" ||
 		(error.code === "discriminant" && error.onKey)
@@ -377,7 +368,7 @@ export const labelOf = (error: Locale.ExpectedContext): string | undefined =>
 		undefined
 	:	error.meta?.title
 
-// the label errors at one path agree on, since an intersection has no meta
+// the label errors at one path agree on
 const sharedLabelOf = (errors: readonly ArkError[]): string | undefined => {
 	const labels = errors.map(error => labelOf(error as never))
 	return labels.every(label => label === labels[0]) ? labels[0] : undefined

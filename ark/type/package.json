@@ -15,8 +15,8 @@
 		"json-schema",
 		"precompile"
 	],
-	"version": "3.0.0-beta.1",
-	"arkAotVersion": "3.0.0-beta.1",
+	"version": "3.0.0-beta.2",
+	"arkAotVersion": "3.0.0-beta.2",
 	"license": "MIT",
 	"homepage": "https://arktype.io",
 	"repository": {
@@ -39,7 +39,6 @@
 		"./i18n.ts",
 		"./keywords/phrases.ts",
 		"./locales/*.ts",
-		"./sets.ts",
 		"./schema.ts",
 		"./schemaInternal.ts",
 		"./internal.ts",
@@ -56,7 +55,6 @@
 		"./out/i18n.js",
 		"./out/keywords/phrases.js",
 		"./out/locales/*.js",
-		"./out/sets.js",
 		"./out/schema.js",
 		"./out/schemaInternal.js",
 		"./out/internal.js",
@@ -118,9 +116,6 @@
 			],
 			"schema/runtime/lean": [
 				"./out/schemaRuntimeLean.d.ts"
-			],
-			"sets": [
-				"./out/sets.d.ts"
 			],
 			"util": [
 				"./out/util.d.ts"
@@ -208,10 +203,6 @@
 		"./schema/runtime/lean": {
 			"ark-ts": "./schemaRuntimeLean.ts",
 			"default": "./out/schemaRuntimeLean.js"
-		},
-		"./sets": {
-			"ark-ts": "./sets.ts",
-			"default": "./out/sets.js"
 		},
 		"./util": {
 			"ark-ts": "./util.ts",
@@ -345,14 +336,6 @@
 			"ark-ts": "./schemaRuntimeNoneLean.ts",
 			"default": "./out/schemaRuntimeNoneLean.js"
 		},
-		"./internal/sets.ts": {
-			"ark-ts": "./sets.ts",
-			"default": "./out/sets.js"
-		},
-		"./internal/sets.js": {
-			"ark-ts": "./sets.ts",
-			"default": "./out/sets.js"
-		},
 		"./internal/util.ts": {
 			"ark-ts": "./util.ts",
 			"default": "./out/util.js"
@@ -402,7 +385,8 @@
 		"@ark/util": "workspace:*",
 		"@ark/schema": "workspace:*",
 		"arkregex": "workspace:*",
-		"arksets": "workspace:*"
+		"arksets": "workspace:*",
+		"zod": "4.6.7"
 	},
 	"publishConfig": {
 		"access": "public"

@@ -31,7 +31,7 @@ import type { Intersection } from "./roots/intersection.ts"
 import type { Morph } from "./roots/morph.ts"
 import { BaseRoot } from "./roots/root.ts"
 import { writeForeignArkMessage, type BaseScope } from "./scope.ts"
-import type { TypeMeta } from "./shared/declare.ts"
+import type { ArkEnv, TypeMeta } from "./shared/declare.ts"
 import {
 	constraintKeys,
 	structureKeys,

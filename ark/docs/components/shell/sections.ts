@@ -11,8 +11,7 @@ const blurbs: Record<string, string> = {
 	precompile: "validators at build time",
 	regex: "regex with types",
 	attest: "type-level testing",
-	"json-schema": "both directions",
-	sets: "set algebra, any format",
+	"json-schema": "convert and compare",
 	internals: "nodes and schemas"
 }
 

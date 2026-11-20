@@ -37,7 +37,7 @@ const buildCurrentProject = () =>
 		`node ${fromHere("node_modules", "typescript", "lib", "tsc.js")} --project tsconfig.build.json`
 	)
 
-const dtsScopes: PackageScope[] = ["util", "schema", "sets", "regex", "type"]
+const dtsScopes: PackageScope[] = ["util", "schema", "regex", "type"]
 
 const copyDtsTree = (
 	fromDir: string,
@@ -135,13 +135,6 @@ const inlineDeclarations = () => {
 	if (packageName === "arkregex") {
 		const utilDest = join(outDir, "_util")
 		copyDtsTree(join(packagesByScope.util.path, "out"), utilDest)
-		// strip declare global from copied registry.d.ts so arkregex and arktype
-		// can coexist in the same TS program without duplicate global ArkEnv types
-		const regDts = join(utilDest, "registry.d.ts")
-		writeFile(
-			regDts,
-			readFile(regDts).replace(/declare global {[\S\s]*?\n}\n?/, "")
-		)
 		rewriteDtsSpecifiers(outDir, { util: utilDest })
 	} else if (packageName === "arktype") {
 		const internalDir = join(outDir, "_internal")

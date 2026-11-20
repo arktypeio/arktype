@@ -22,6 +22,7 @@ import {
 	thrownIssuesOf,
 	type KeptIssue
 } from "./issues.ts"
+import type { ArkEnv } from "arktype"
 
 // it compares what each site does at its call, holding what arktype returns
 $ark.eagerTypes = true

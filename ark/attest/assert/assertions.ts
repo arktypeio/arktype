@@ -190,12 +190,7 @@ const unversionedAssertEquals: AssertFn = (expected, actual, ctx) => {
 					actual
 				)
 			}
-		} else if (
-			typeof expected === "object" ||
-			typeof expected === "function" ||
-			typeof actual === "function" ||
-			typeof actual === "function"
-		) {
+		} else if (isReference(expected) || isReference(actual)) {
 			throwUnequal(
 				"Assertion including at least one function or object was not between reference equal items",
 				expected,

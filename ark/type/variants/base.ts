@@ -1,4 +1,5 @@
 import type {
+	ArkEnv,
 	BaseNode,
 	BaseRoot,
 	Disjoint,
@@ -300,7 +301,7 @@ export interface Inferred<out t = unknown, in out $ = {}> {
 	 * 🔗 `~standard.validate(data, { libraryOptions: { context } })` passes a context without binding one
 	 *
 	 * @example
-	 * declare global {
+	 * declare module "arktype" {
 	 *     interface ArkEnv {
 	 *         context(): { saved?: string }
 	 *     }

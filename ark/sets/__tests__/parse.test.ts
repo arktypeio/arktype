@@ -222,7 +222,7 @@ contextualize(() => {
 
 	it("throws a ParseError on a primitive", () => {
 		attest(() => parse(5 as never)).throws.snap(
-			"ParseError: Schema must be a Root, a Standard JSON Schema or a JSON Schema (was 5)"
+			"ParseError: Schema must be a Type, a Standard JSON Schema or a JSON Schema (was 5)"
 		)
 		attest(() => parse(Symbol("foo") as never)).throws(
 			writeUnparsableSchemaMessage("Symbol(foo)")
@@ -254,6 +254,32 @@ contextualize(() => {
 		)
 		attest(() => parse({ anyOf: [] })).throws.snap(
 			"ParseError: #/anyOf must be a non-empty array of schemas (was [])"
+		)
+	})
+
+	it("reads back the nullable its openapi-3.0 target writes", () => {
+		const schemas = [
+			["string", { unit: null }],
+			{ unit: null },
+			[{ unit: "a" }, { unit: "b" }, { unit: null }]
+		] as const
+		for (const schema of schemas) {
+			const T = rootSchema(schema)
+			const written = toJsonSchema(T, { target: "openapi-3.0" })
+			attest(parse(written).equals(T)).equals(true)
+		}
+	})
+
+	it("throws where ajv can't compile OpenAPI 3.0's nullable", () => {
+		attest(() =>
+			parse({ properties: { a: { allOf: [{}], nullable: true } } })
+		).throws.snap(
+			"ParseError: #/properties/a/nullable must be beside a type, to which it adds null"
+		)
+		attest(() =>
+			parse({ type: ["string", "null"], nullable: false })
+		).throws.snap(
+			"ParseError: #/nullable can't be false beside a type that includes null"
 		)
 	})
 

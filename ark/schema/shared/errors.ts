@@ -53,6 +53,7 @@ import {
 	type FailHandler,
 	type InternalTraversal
 } from "./traversal.ts"
+import type { ArkEnv } from "./declare.ts"
 
 export { throwOnDefault } from "./issues.ts"
 
@@ -183,9 +184,8 @@ export class ArkErrors extends BaseArkErrors {
 	/**
 	 * The summary in `locale`, or as configured without one.
 	 */
-	toLocaleString(locale?: Locale): string {
-		// Array.prototype.toLocaleString passes each element a tag
-		if (!isLocale(locale)) return this.summary
+	summaryIn(locale?: Locale): string {
+		if (locale === undefined) return this.summary
 		const resolved = resolveLocale(locale)
 		return summarize(
 			this._.map(error => writtenIn(error, resolved)),
@@ -693,17 +693,12 @@ const failsAtBasis = (error: ArkError, path: array<PropertyKey>): boolean =>
 	pathEquals(error.path, path)
 
 /**
- * Writes an error's line of a summary in `locale`: its path or title, then
- * its message, as `ArkErrors.toLocaleString(locale)` writes each error.
- *
- * That is not the error's `message` in that locale, which never holds its
- * path: for an error below the root, `messageIn(error, en)` is
- * `name must be a string` where `error.message` is `must be a string`.
+ * Writes an error's `message` in `locale`: what `error.message` would be had
+ * that locale been configured, never naming its path, e.g. `must be a string`
+ * where its line of `summaryIn(locale)` is `name must be a string`.
  */
-export const messageIn = (error: ArkError, locale: Locale): string => {
-	const resolved = resolveLocale(locale)
-	return lineOf(writtenIn(error, resolved), resolved)
-}
+export const messageIn = (error: ArkError, locale: Locale): string =>
+	writtenIn(error, resolveLocale(locale)).message
 
 // what data a write or a getter has made valid since is rejected with, and
 // what errors "none" says: arktype's own text, so it's written after a path
@@ -938,14 +933,14 @@ const writeError = (
 	locale: Locale.Resolved
 ): void => {
 	const code = error.code
-	if (code === "union" || code === "intersection") {
+	if (code === "union") {
 		writeAtPaths(error, config, locale)
 		writeRelative(error, config, locale)
 		return
 	}
 	// any other holds no errors and no bases, so it's written once at its path:
 	// what writeAtPaths does for it, without reading its code again for each
-	// question only a union or intersection answers
+	// question only a union answers
 	error.propString ??= stringifyPath(error.path)
 	if (renderer && locale !== renderer.en) renderer.write(error, config, locale)
 	else writeText(error, config, locale, code)
@@ -966,7 +961,7 @@ const writeRelative = (
 	config: ResolvedConfig,
 	locale: Locale.Resolved
 ): void => {
-	if (error.code !== "union" && error.code !== "intersection") return
+	if (error.code !== "union") return
 	for (const e of error.errors) writeRelative(e, config, locale)
 	if (error.path.length === 0) return
 	if (isCustom(error)) {
@@ -1158,8 +1153,7 @@ const beginsAsOwn = (error: ArkError, locale: Locale.Resolved): boolean =>
 
 const unprefix = (error: ArkError, depth: number): void => {
 	error.path = error.path.slice(depth)
-	if (error.code === "union" || error.code === "intersection")
-		for (const e of error.errors) unprefix(e, depth)
+	if (error.code === "union") for (const e of error.errors) unprefix(e, depth)
 }
 
 // each error's text, any path in it written whole
@@ -1180,7 +1174,7 @@ const writeAtPaths = (
 		// does and a standalone validator writes
 		error.expected = locale.list(expected, "or")
 	}
-	if (error.code === "union" || error.code === "intersection") {
+	if (error.code === "union") {
 		for (const e of error.errors) {
 			// usually at its own path, whose string is then written once
 			if (pathEquals(e.path, error.path)) e.propString ??= error.propString
@@ -1232,9 +1226,8 @@ const sharedMessageOf = (
 			) ?
 				beginsAsOwn(e, locale) ? undefined
 				:	e.message
-			: e.code === "union" || e.code === "intersection" ?
-				sharedMessageOf(e.errors, locale)
-			:	undefined
+			: e.code === "union" ? sharedMessageOf(e.errors, locale)
+			: undefined
 		if (text === undefined || (shared !== undefined && text !== shared)) return
 		shared = text
 	}
@@ -1362,9 +1355,6 @@ const writtenIn = (error: ArkError, locale: Locale.Resolved): ArkError => {
 	return copy
 }
 
-const isLocale = (locale: unknown): locale is Locale =>
-	typeof locale === "object" && locale !== null
-
 export const unwrittenError = (
 	error: ArkError,
 	prefix?: array<PropertyKey>,
@@ -1380,7 +1370,7 @@ export const unwrittenError = (
 	// only an input has symbol keys, which for...in skips
 	if (input) assignSymbols(copy, input)
 	copy.path = prefix ? [...prefix, ...error.path] : [...error.path]
-	if (error.code === "union" || error.code === "intersection")
+	if (error.code === "union")
 		copy.errors = error.errors.map(e => unwrittenError(e, prefix, config))
 	const stamped = stampError(copy as never, config, input)
 	if (templated.has(error)) {

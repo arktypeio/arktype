@@ -162,3 +162,18 @@ ArkType can't see inside another library's schema, so it treats one as a morph f
 - `toJsonSchema()` throws on it, and `~standard.jsonSchema` writes `{}`.
 - It can't be a branch of a union, because its input overlaps every other branch.
 - Only synchronous validators work. ArkType doesn't await the result, so a schema that returns a `Promise`, like a Zod `refine` with an async callback, throws `Standard Schema definitions must validate synchronously (zod returned a Promise)` when validation reaches it.
+
+## Comparing with other validators
+
+To read what another library's schema accepts, rather than run it, pass a [Standard JSON Schema](https://standardschema.dev/json-schema), like a Zod schema, to [`fromJsonSchema`](/docs/json-schema/from-json-schema). The Type it returns compares with your own Types and with JSON Schemas:
+
+```ts
+import { fromJsonSchema } from "arktype"
+import { z } from "zod"
+
+const ZodUser = fromJsonSchema(z.object({ name: z.string() }))
+
+ZodUser.equals(fromJsonSchema(type({ name: "string" }).toJsonSchema())) // true
+```
+
+It's read as the JSON Schema it writes, so its refinements and transforms are left out. [Compare schemas](/docs/json-schema/compare) covers every comparison.

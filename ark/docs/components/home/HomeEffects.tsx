@@ -597,9 +597,8 @@ const wireBoardTrace = () => {
 		if (board.dataset.hoverLib === lib) return
 		clear()
 		board.dataset.hoverLib = lib
-		for (const el of board.querySelectorAll<HTMLElement>(".graph-lane")) {
+		for (const el of board.querySelectorAll<HTMLElement>(".graph-lane"))
 			if (el.dataset.lib === lib) el.classList.add("is-traced")
-		}
 	}
 	const onOver = (e: PointerEvent) => {
 		if (e.pointerType !== "mouse") return

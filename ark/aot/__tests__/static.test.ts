@@ -56,6 +56,23 @@ export const Element = type.instanceOf(HTMLElement)`)
 			])
 		})
 
+		it("fromJsonSchema", () => {
+			const source = `import { fromJsonSchema } from "arktype"
+const Name = fromJsonSchema({ type: "string", minLength: 1 })
+const User = fromJsonSchema({ type: "object", properties: { name: { type: "string" } } })
+// @ark-runtime
+const Island = fromJsonSchema({ type: "object", properties: { name: { type: "string" } } })`
+			attest(statusesOf(source)).snap([
+				"2:14 accepted string >= 1",
+				"3:14 accepted { name?: string } & isNonArray",
+				"5:16 island"
+			])
+			// a JSON Schema object excludes arrays with a predicate of arktype's own
+			attest(precompile(source).diagnostics.map(renderDiagnostic)).snap([
+				"/main.ts:3:14  fromJsonSchema({ type: \"object\", properties: { name: { type… can't be precompiled yet\n  Function(isNonArray) can't be precompiled to a standalone validator\n  Standalone builds can't precompile every definition yet. Put // @ark-runtime on the line before it, so arktype defines it at runtime."
+			])
+		})
+
 		it("static expressions", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
@@ -3059,18 +3076,18 @@ export const holder = { s: scope({ g: "string" }) }`)
 
 		it("packages reading arktype's nodes", () => {
 			attest(
-				diagnosticsOf(`import { discriminate } from "arktype/sets"
+				diagnosticsOf(`import { arkToArbitrary } from "@ark/fast-check"
 import { ArkErrors, hasArkKind, Traversal } from "arktype/schema"
 import { type } from "arktype"
 const T = type({ a: "0" }).or({ a: "1" })
 const check = (f: () => void) => f()
-check(() => console.log(discriminate(T as never), hasArkKind(T, "root")))
+check(() => console.log(arkToArbitrary(T as never), hasArkKind(T, "root")))
 console.log(T({}) instanceof ArkErrors, Traversal.name)
 // @ark-runtime
-const D = discriminate(type({ a: "0" }).or({ a: "1" }).internal as never)`)
+const D = arkToArbitrary(type({ a: "0" }).or({ a: "1" }).internal as never)`)
 			).snap([
-				'/main.ts:6:25  `discriminate` is used outside a runtime island\n  arktype/sets reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".',
-				'/main.ts:6:51  `hasArkKind` is used outside a runtime island\n  arktype/schema reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".',
+				'/main.ts:6:25  `arkToArbitrary` is used outside a runtime island\n  @ark/fast-check reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".',
+				'/main.ts:6:53  `hasArkKind` is used outside a runtime island\n  arktype/schema reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".',
 				"/main.ts:7:30  `ArkErrors` is arktype/schema's, not the standalone runtime's\n  what a standalone validator creates isn't an instance of arktype/schema's ArkErrors\n  Import ArkErrors from arktype, which a standalone build resolves to its runtime, or read type.errors."
 			])
 		})
@@ -3113,7 +3130,7 @@ import { type } from "arktype"
 const T = type("string")
 console.log(T.assert, de.tag)
 // @ark-runtime
-const D = type("string")(1).toLocaleString(de)`)
+const D = type("string")(1).summaryIn(de)`)
 			).snap([
 				"/main.ts:4:23  `de` is used outside a runtime island\n  arktype/locales/de writes arktype's errors in a locale, which needs the description writers of arktype's nodes, so a standalone validator writes its errors only in en\n  Write errors in a locale in a definition marked // @ark-runtime, or build with runtime: \"arktype\"."
 			])

@@ -4,7 +4,7 @@
 
 The homepage's benchmark board averages other projects' public benchmarks, each in the unit it measures. Standings as of November 19, 2026. [The rule it follows, every result behind it and how to rerun them](https://arktype.io/docs/precompile/benchmarks.md)
 
-ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types, with set algebra (`arktype/sets`) and type-safe regex (`arktype/regex`) built in. @ark/aot precompiles them when a project builds, so its validators ship without arktype's parser. ArkRegex, Attest, @ark/json-schema and @ark/fast-check are its companion packages.
+ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types, with type-safe regex (`arktype/regex`) built in. `fromJsonSchema` reads a JSON Schema or a Zod schema into a Type, so schemas in any of those formats compare with each other. @ark/aot precompiles them when a project builds, so its validators ship without arktype's parser. ArkRegex, Attest and @ark/fast-check are its companion packages.
 
 Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/llms-full.txt) has every ArkType page in one file. Coding agents can also install the ArkType skill, which covers writing, precompiling and migrating to ArkType, with `npx skills add arktypeio/arktype`; see [Agents](https://arktype.io/docs/agents.md).
 
@@ -88,23 +88,18 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 
 ## JSON Schema
 
-- [Overview](https://arktype.io/docs/json-schema.md): Generate JSON Schema from a Type with arktype, or build a Type from JSON Schema with @ark/json-schema.
+- [Overview](https://arktype.io/docs/json-schema.md): Generate JSON Schema from a Type, read a JSON Schema or a Zod schema into a Type, and compare schemas from any of them.
 - [To JSON Schema](https://arktype.io/docs/json-schema/to-json-schema.md): Generate a JSON Schema from any Type, pick a draft, and decide what to write for what JSON Schema can't express.
-- [From JSON Schema](https://arktype.io/docs/json-schema/from-json-schema.md): Parse a JSON Schema into a Type with @ark/json-schema and give the result a static type.
-- [Keyword support](https://arktype.io/docs/json-schema/support.md): How @ark/json-schema and arktype/sets read each JSON Schema keyword, which ones throw, and which are only annotations.
-
-## ArkSets
-
-- [Overview](https://arktype.io/docs/sets.md): Read arktype Types, Standard JSON Schemas and JSON Schemas as sets of values, relate and combine them, and write them back out as JSON Schema.
-- [Relations](https://arktype.io/docs/sets/relations.md): Check whether schemas in any format are subsets of each other, equal or disjoint, and intersect, union or convert them.
-- [Discriminate](https://arktype.io/docs/sets/discriminate.md): Find the path and values that tell a union's branches apart, in a schema from any format.
+- [From JSON Schema](https://arktype.io/docs/json-schema/from-json-schema.md): Read a JSON Schema, or a Standard JSON Schema like a Zod schema, into a Type with fromJsonSchema, and infer its type.
+- [Compare schemas](https://arktype.io/docs/json-schema/compare.md): Check whether JSON Schemas, Zod schemas and Types accept the same values, a subset of each other's or none in common, and combine them.
+- [Keyword support](https://arktype.io/docs/json-schema/support.md): How fromJsonSchema reads each JSON Schema keyword, which ones throw, and which are only annotations.
 
 ## Internals
 
-- [Architecture](https://arktype.io/docs/internals.md): How ArkType is layered into arktype/util, arktype/schema, arktype/sets and arktype, and what each layer owns.
+- [Architecture](https://arktype.io/docs/internals.md): How ArkType is layered into arktype/util, arktype/schema, its set algebra and arktype, and what each layer owns.
 - [Nodes](https://arktype.io/docs/internals/nodes.md): The node kinds every Type is built from, and how to read them with .internal, .json and select.
 - [Schemas](https://arktype.io/docs/internals/schemas.md): Build Types from arktype/schema's object format with type.schema, rootSchema, node and schemaScope.
-- [Set algebra](https://arktype.io/docs/internals/sets.md): What importing arktype/sets installs into arktype/schema, and what arktype/schema does without it.
+- [Set algebra](https://arktype.io/docs/internals/sets.md): What importing arktype installs into arktype/schema, and what arktype/schema does without it.
 
 ## Optional
 
@@ -112,6 +107,5 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 - [Precompile, every page](https://arktype.io/docs/precompile/llms.txt): Construct your Types when you build
 - [ArkRegex, every page](https://arktype.io/docs/regex/llms.txt): Regular expressions with inferred types
 - [Attest, every page](https://arktype.io/docs/attest/llms.txt): Type assertions and benchmarks
-- [JSON Schema, every page](https://arktype.io/docs/json-schema/llms.txt): Convert Types to JSON Schema and back
-- [ArkSets, every page](https://arktype.io/docs/sets/llms.txt): Set algebra for schemas in any format
+- [JSON Schema, every page](https://arktype.io/docs/json-schema/llms.txt): Convert Types to JSON Schema and back, and compare schemas in any format
 - [Internals, every page](https://arktype.io/docs/internals/llms.txt): The schema layer under ArkType

@@ -1,14 +1,15 @@
 ---
 title: Overview
-description: Generate JSON Schema from a Type with arktype, or build a Type from JSON Schema with @ark/json-schema.
+description: Generate JSON Schema from a Type, read a JSON Schema or a Zod schema into a Type, and compare schemas from any of them.
 ---
 
-ArkType converts in both directions, with one package for each.
+ArkType converts in both directions, and once a schema is a Type, it compares with any other.
 
-| direction          | package            | API                                             |
-| ------------------ | ------------------ | ----------------------------------------------- |
-| Type → JSON Schema | `arktype`          | `T.toJsonSchema()`, `T["~standard"].jsonSchema` |
-| JSON Schema → Type | `@ark/json-schema` | `jsonSchemaToType(schema)`                      |
+| direction                             | API                                             |
+| ------------------------------------- | ----------------------------------------------- |
+| Type → JSON Schema                    | `T.toJsonSchema()`, `T["~standard"].jsonSchema` |
+| JSON Schema or Standard Schema → Type | `fromJsonSchema(schema)`                        |
+| compare any of them                   | `.extends()`, `.equals()`, `.overlaps()`        |
 
 ## Type to JSON Schema
 
@@ -41,14 +42,12 @@ Libraries that accept any [Standard JSON Schema](https://standardschema.dev/json
 
 ## JSON Schema to Type
 
-`@ark/json-schema` parses a JSON Schema into a Type:
-
-<InstallationTabs pkg="@ark/json-schema" />
+`fromJsonSchema` reads a JSON Schema into a Type:
 
 ```ts
-import { jsonSchemaToType } from "@ark/json-schema"
+import { fromJsonSchema } from "arktype"
 
-const User = jsonSchemaToType({
+const User = fromJsonSchema({
 	type: "object",
 	properties: {
 		name: { type: "string" },
@@ -57,9 +56,30 @@ const User = jsonSchemaToType({
 	required: ["name"]
 })
 
-User.expression // "{ name: string, age?: number % 1 >= 0 }"
+User.expression // "{ name: string, age?: number % 1 >= 0 } & isNonArray"
 // ArkErrors: age must be an integer
 User({ name: "Ada", age: 1.5 })
 ```
 
-A schema written in the call infers its type, so `User` is a `Type<{ name: string; age?: number }>`. See [From JSON Schema](/docs/json-schema/from-json-schema#inferring-its-type) to type a schema declared elsewhere, and [Keyword support](/docs/json-schema/support) for which keywords it understands.
+A schema written in the call infers its type, so `User` is a `Type<{ name: string; age?: number }>`. It reads a [Standard JSON Schema](https://standardschema.dev/json-schema), like a Zod schema, too. See [From JSON Schema](/docs/json-schema/from-json-schema), and [Keyword support](/docs/json-schema/support) for which keywords it understands.
+
+## Compare schemas
+
+Read into Types, JSON Schemas, Zod schemas and your own Types compare with each other, so you can check in CI that a new version of an API schema still accepts everything the old one did:
+
+```ts
+import { fromJsonSchema } from "arktype"
+import { z } from "zod"
+
+const V1 = fromJsonSchema(z.object({ id: z.string(), age: z.number() }))
+const V2 = fromJsonSchema({
+	type: "object",
+	properties: { id: { type: "string" }, age: { type: "number" } },
+	required: ["id"]
+})
+
+V1.extends(V2) // true: V2 accepts everything V1 did
+V2.extends(V1) // false: V2 accepts { id: "a" }
+```
+
+[Compare schemas](/docs/json-schema/compare) covers every comparison and what `true` proves.

@@ -44,7 +44,7 @@ contextualize(() => {
 	const own = ownDeclarations()
 	it("TypeScript writes a Type's shape again where tRPC's router holds its input", () => {
 		attest(own["trpc.d.ts"])
-			.snap(`export declare const User: import("arktype/internal/variants/object.ts").ObjectType<{
+			.snap(`export declare const User: import("arktype").ObjectType<{
     name: string;
     age: number;
 }, {}>;

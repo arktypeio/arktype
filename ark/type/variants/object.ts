@@ -1,4 +1,5 @@
 import type {
+	ArkEnv,
 	BaseMappedPropInner,
 	OptionalMappedPropInner,
 	Prop
@@ -175,7 +176,9 @@ interface Type<out t extends object = object, in out $ = {}>
 	 * List of property info of this `Type<object>`.
 	 * @example type({ foo: "string = 'x'" }).props // [{ kind: "optional", key: "foo", value: Type<string>, default: "x" }]
 	 */
-	props: array<typePropOf<t, $>>
+	// readonly [] rather than @ark/util's array, which a consumer's emitted
+	// declarations could only name through arktype/internal
+	props: readonly typePropOf<t, $>[]
 }
 
 // each branch's props, since a union's are mapped per branch

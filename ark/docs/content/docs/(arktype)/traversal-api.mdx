@@ -70,7 +70,9 @@ const Even = type("number").narrow(isEven)
 A check that depends on something the caller has, like a form's saved values, reads it as `ctx.context`. Bind it with `.withContext`, so the Type stays defined once and can be [precompiled](/docs/precompile), instead of being created again for each value it closes over. Declare its shape on `ArkEnv`:
 
 ```ts
-declare global {
+import { type } from "arktype"
+
+declare module "arktype" {
 	interface ArkEnv {
 		context(): { savedStreet?: string }
 	}

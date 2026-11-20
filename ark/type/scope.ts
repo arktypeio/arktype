@@ -173,17 +173,18 @@ type bootstrapAliases<def> = {
 type inferBootstrapped<$> = {
 	[name in keyof $]: $[name] extends Def<infer def> ?
 		inferDefinition<def, $, {}>
-	: $[name] extends { t: infer g extends GenericAst } ? bindGenericToScope<g, $>
-	: // should be submodule
+	: // written out rather than through an alias so declarations emitted for a
+	// scope's generics name only GenericAst, which arktype exports
+	$[name] extends { t: infer g extends GenericAst } ?
+		GenericAst<
+			g["paramsAst"],
+			g["bodyDef"],
+			g["$"] extends UnparsedScope ? $ : g["$"],
+			$
+		>
+	:	// should be submodule
 		$[name]
 } & unknown
-
-export type bindGenericToScope<g extends GenericAst, $> = GenericAst<
-	g["paramsAst"],
-	g["bodyDef"],
-	g["$"] extends UnparsedScope ? $ : g["$"],
-	$
->
 
 type extractGenericName<k> =
 	k extends GenericDeclaration<infer name> ? name : never

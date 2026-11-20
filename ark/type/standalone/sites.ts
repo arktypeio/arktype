@@ -1,4 +1,5 @@
 import {
+	type ArkEnv,
 	$ark,
 	type ArkErrorCode,
 	type BaseNode,
@@ -342,11 +343,7 @@ const describerOf = (
 }
 
 // arktype passes a writer of these each branch's errors, which issues don't hold
-const unwritableCodes = new Set<ArkErrorCode>([
-	"union",
-	"discriminant",
-	"intersection"
-])
+const unwritableCodes = new Set<ArkErrorCode>(["union", "discriminant"])
 
 // the text arktype writes from meta, then the program's config for the code
 export const issueContextOf = (context: TextContext): IssueContext => {

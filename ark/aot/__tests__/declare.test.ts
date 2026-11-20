@@ -270,11 +270,10 @@ export type Owned = {
 						"Expanded",
 						"Annotated"
 					)
-				)
-					.snap(`export declare const Held: import("arktype/internal/variants/object.ts").ObjectType<{
+				).snap(`export declare const Held: import("arktype").ObjectType<{
     session: Session;
 }, {}>;
-export declare const Sessions: import("arktype/internal/variants/object.ts").ObjectType<{
+export declare const Sessions: import("arktype").ObjectType<{
     head: {
         session: Session;
         next?: /*elided*/ any | undefined;
@@ -285,7 +284,7 @@ export declare const Sessions: import("arktype/internal/variants/object.ts").Obj
         next?: /*elided*/ any | undefined;
     };
 }>;
-export declare const Expanded: import("arktype/internal/variants/object.ts").ObjectType<Expanding<string>, {}>;
+export declare const Expanded: import("arktype").ObjectType<Expanding<string>, {}>;
 export declare const Annotated: BaseType<{
     a: string;
 }>;`)

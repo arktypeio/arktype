@@ -5,7 +5,7 @@ import {
 } from "@ark/schema"
 import { scope, type } from "arktype"
 
-declare global {
+declare module "arktype" {
 	interface ArkEnv {
 		context(): { savedStreet?: string }
 	}

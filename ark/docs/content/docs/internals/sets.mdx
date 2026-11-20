@@ -1,24 +1,24 @@
 ---
 title: Set algebra
-description: What importing arktype/sets installs into arktype/schema, and what arktype/schema does without it.
+description: What importing arktype installs into arktype/schema, and what arktype/schema does without it.
 ---
 
-`arktype` installs the engine automatically, so if you use `arktype`, set algebra is always installed. This page is for using `arktype/schema` on its own.
+`arktype` installs the engine as it loads, so if you use `arktype`, set algebra is always installed. This page is for using `arktype/schema` on its own.
 
 ```ts
-import "arktype/sets"
+import "arktype"
 ```
 
-Importing `arktype/sets` installs the engine `arktype/schema` uses to:
+Importing `arktype` installs the engine `arktype/schema` uses to:
 
 - intersect and pipe nodes, which `.and()`, `.narrow()`, `.filter()`, `.constrain()`, `.to()`, `.extends()`, `.overlaps()`, `.extract()`, `.exclude()` and `.keyof()` rely on
 - reduce nodes as they're created, so an unsatisfiable intersection throws and redundant union branches merge
 - discriminate unions, so a union of objects checks a shared key instead of trying each branch
 - generate JSON Schema for `.toJsonSchema()` and `~standard.jsonSchema`
 
-Import it before you parse anything: nodes are reduced when they're created, so a node parsed earlier stays unreduced. The public functions `arktype/sets` exports, like `isSubset` and `intersect`, are documented in [ArkSets](/docs/sets).
+Import it before you parse anything: nodes are reduced when they're created, so a node parsed earlier stays unreduced. Comparing schemas from other formats is documented in [Compare schemas](/docs/json-schema/compare).
 
-## Without arktype/sets
+## Without it
 
 Without it, a node still parses and validates, but intersecting it throws:
 
@@ -32,7 +32,7 @@ Positive(5) // 5
 Positive(-1)
 
 Positive.and(rootSchema({ domain: "number", max: 10 }))
-// ParseError: Set algebra is not installed (import "arktype/sets" to install it)
+// ParseError: Set algebra is not installed (import "arktype" to install it)
 ```
 
 These work without it:
@@ -50,4 +50,4 @@ These throw the `ParseError` above:
 - parsing an optional prop, or a tuple's optional or defaultable element, in a scope configured with `exactOptionalPropertyTypes: false`
 - parsing an index signature keyed by anything but `string`, `symbol` or `string | symbol`
 
-Nodes that parse aren't reduced. `rootSchema({ domain: "number", min: 5, max: 3 })` throws with `arktype/sets` installed, since no number satisfies it. Without it, it parses and rejects every number. Union branches aren't merged or discriminated either, so a union checks each branch in turn.
+Nodes that parse aren't reduced. `rootSchema({ domain: "number", min: 5, max: 3 })` throws with set algebra installed, since no number satisfies it. Without it, it parses and rejects every number. Union branches aren't merged or discriminated either, so a union checks each branch in turn.

@@ -18,7 +18,6 @@ const fullFiles: Record<string, string> = {
 	regex: "docs/regex/llms.txt",
 	attest: "docs/attest/llms.txt",
 	"json-schema": "docs/json-schema/llms.txt",
-	sets: "docs/sets/llms.txt",
 	internals: "docs/internals/llms.txt"
 }
 
@@ -157,7 +156,7 @@ const llmsIndex = (sections: Section[]) =>
 		"# ArkType",
 		`> ${siteDescription}`,
 		`The homepage's benchmark board averages other projects' public benchmarks, each in the unit it measures. ${standingsAsOf.text} [The rule it follows, every result behind it and how to rerun them](${siteUrl}/docs/precompile/benchmarks.md)`,
-		"ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types, with set algebra (`arktype/sets`) and type-safe regex (`arktype/regex`) built in. @ark/aot precompiles them when a project builds, so its validators ship without arktype's parser. ArkRegex, Attest, @ark/json-schema and @ark/fast-check are its companion packages.",
+		"ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types, with type-safe regex (`arktype/regex`) built in. `fromJsonSchema` reads a JSON Schema or a Zod schema into a Type, so schemas in any of those formats compare with each other. @ark/aot precompiles them when a project builds, so its validators ship without arktype's parser. ArkRegex, Attest and @ark/fast-check are its companion packages.",
 		`Each link below is a docs page as Markdown. [llms-full.txt](${siteUrl}/llms-full.txt) has every ArkType page in one file. Coding agents can also install the ArkType skill, which covers writing, precompiling and migrating to ArkType, with \`npx skills add arktypeio/arktype\`; see [Agents](${siteUrl}/docs/agents.md).`,
 		...sections.flatMap(sectionLists),
 		[

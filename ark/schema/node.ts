@@ -53,6 +53,7 @@ import type { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
 import { canJit, tryJit, type NodeCompiler } from "./shared/compile.ts"
 import type {
+	ArkEnv,
 	BaseNodeDeclaration,
 	BaseNodeInput,
 	TypeMeta,
@@ -1297,9 +1298,8 @@ export abstract class BaseNode<
 		const expression = withoutHoleNames(transformed.expression)
 		for (const id in ctx.synth) {
 			if (id === this.id) name = `synthetic${hashOf(expression)}`
-			else {
+			else
 				names[id] = `synthetic${hashOf(`${expression}\n${ctx.synth[id].name}`)}`
-			}
 		}
 		const named =
 			isEmptyObject(names) ? transformed : (

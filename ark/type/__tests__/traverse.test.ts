@@ -287,7 +287,7 @@ a must be y`)
 		const out = T({ a: "y" }) as ArkErrors
 
 		attest(out.summary).snap("a must be x")
-		attest(out.toLocaleString(en)).equals(out.summary)
+		attest(out.summaryIn(en)).equals(out.summary)
 	})
 
 	it("an error a morph adds and returns is listed once", () => {

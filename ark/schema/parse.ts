@@ -38,6 +38,7 @@ import {
 } from "./shared/implement.ts"
 import { $ark, nodesById, type NodeId } from "./shared/registry.ts"
 import { composing, hasArkKind, isNode } from "./shared/utils.ts"
+import type { ArkEnv } from "./shared/declare.ts"
 
 export type ContextualArgs = Record<string, BaseRoot | NodeId>
 

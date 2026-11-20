@@ -5,7 +5,6 @@ import type { BaseErrorContext } from "./declare.ts"
 import type { ActualWriter, ArkErrorCode, MessageWriter } from "./errors.ts"
 import {
 	describeCollapsibleDate,
-	printedActualOf,
 	printKind,
 	writeDomainActual,
 	writeLengthActual,
@@ -19,7 +18,6 @@ import type { NodeKind } from "./implement.ts"
 import {
 	actualAtPathOf,
 	describeCause,
-	distinctExpectedOf,
 	keywordWriterOf,
 	type Locale
 } from "./locale.ts"
@@ -48,18 +46,6 @@ export const errorWritersByCode: {
 	divisor: {},
 	domain: { actual: writeDomainActual },
 	exactLength: { actual: writeLengthActual },
-	intersection: {
-		expected: source => {
-			const expected = distinctExpectedOf(source.errors)
-			return expected.length === 1 ?
-					expected[0]
-				:	`  ◦ ${expected.join("\n  ◦ ")}`
-		},
-		message: (ctx, info) =>
-			distinctExpectedOf(ctx.errors).length === 1 ?
-				writeMessage(ctx, info)
-			:	`(${printedActualOf(ctx)}) must be...\n${ctx.expected}`
-	},
 	max: {},
 	maxLength: { actual: writeLengthActual },
 	min: {},

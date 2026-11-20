@@ -67,10 +67,10 @@ const jsonSchemaScope = /* @__PURE__ */ cached((): BaseScope => {
 	return $
 })
 
-const rootSchema = (schema: RootSchema): BaseRoot =>
+const jsonSchemaRoot = (schema: RootSchema): BaseRoot =>
 	jsonSchemaScope().schema(schema)
 
-const node: BaseScope["node"] = (kind, schema, opts) =>
+const jsonSchemaNode: BaseScope["node"] = (kind, schema, opts) =>
 	jsonSchemaScope().node(kind, schema, opts)
 
 // a number JSON Schema reads is finite, whatever configure() says
@@ -84,7 +84,9 @@ export const readJsonSchema = (
 	schema: JsonSchema.Input,
 	document: JsonSchema.Input = schema
 ): BaseRoot => {
-	const $schema = String(isPlainObject(document) && (document as dict).$schema)
+	const $schema = String(
+		isJsonSchemaObject(document) && (document as dict).$schema
+	)
 	const documentResource = { schema: document, uri: documentUri }
 	const ctx: ReadContext = {
 		document,
@@ -110,7 +112,7 @@ export const readJsonSchema = (
 const read = (schema: unknown, pointer: string, ctx: ReadContext): BaseRoot => {
 	if (typeof schema === "boolean")
 		return schema ? $ark.kw.unknown : $ark.kw.never
-	if (!isPlainObject(schema))
+	if (!isJsonSchemaObject(schema))
 		return throwParseError(writeInvalidJsonSchemaMessage(pointer, schema))
 	const o = schema as dict
 	for (const k in o) checkKeyword(o, k, pointer, ctx)
@@ -243,7 +245,7 @@ const documentUri = "arksets:/document"
 
 // the $id that starts a new resource. One that's only a fragment is an anchor.
 const idOf = (schema: unknown, ctx: ReadContext): string | undefined => {
-	if (!isPlainObject(schema)) return
+	if (!isJsonSchemaObject(schema)) return
 	const o = schema as dict
 	if (o.$ref !== undefined && ctx.dialectBefore2019) return
 	const id = o[ctx.idKey]
@@ -271,7 +273,7 @@ const indexResources = (ctx: ReadContext): Record<string, Resource> => {
 	}
 	const visited = new Set<unknown>()
 	const visit = (schema: unknown, enclosing: Resource): void => {
-		if (!isPlainObject(schema) || visited.has(schema)) return
+		if (!isJsonSchemaObject(schema) || visited.has(schema)) return
 		visited.add(schema)
 		const o = schema as dict
 		const id = schema === ctx.document ? undefined : idOf(o, ctx)
@@ -293,14 +295,14 @@ const indexResources = (ctx: ReadContext): Record<string, Resource> => {
 				for (const v of isArray(o[k]) ? o[k] : [o[k]]) visit(v, resource)
 			else if (
 				(kind === "schemasByKey" || kind === "dependencies") &&
-				isPlainObject(o[k])
+				isJsonSchemaObject(o[k])
 			)
 				for (const v of Object.values(o[k])) visit(v, resource)
 		}
 		// an OpenAPI document's schemas
-		if (schema === ctx.document && isPlainObject(o.components)) {
+		if (schema === ctx.document && isJsonSchemaObject(o.components)) {
 			const { schemas } = o.components as dict
-			if (isPlainObject(schemas))
+			if (isJsonSchemaObject(schemas))
 				for (const v of Object.values(schemas)) visit(v, resource)
 		}
 	}
@@ -319,6 +321,16 @@ const anchorsOf = (o: dict, ctx: ReadContext): string[] => {
 	].filter((anchor): anchor is string => typeof anchor === "string" && !!anchor)
 }
 
+// OpenAPI 3.0's nullable adds null to the type beside it, as ajv reads it: the
+// schema's other keywords still apply, so an enum or const without null, or
+// a subschema with a type of its own, still excludes it
+const typeNamesOf = (o: dict): array => {
+	const names = isArray(o.type) ? o.type : [o.type]
+	return o.nullable === true && !names.includes("null") ?
+			[...names, "null"]
+		:	names
+}
+
 const intersectRoots = (l: BaseRoot, r: BaseRoot): BaseRoot =>
 	intersectNodesRoot(l, r, jsonSchemaScope()).toNeverIfDisjoint()
 
@@ -329,9 +341,7 @@ const keywordReaders: KeywordReader[] = [
 		o.type === undefined ?
 			undefined
 		:	unionOf(
-				(isArray(o.type) ? o.type : [o.type]).map(
-					name => typeRoots()[name as JsonSchema.TypeName]
-				)
+				typeNamesOf(o).map(name => typeRoots()[name as JsonSchema.TypeName])
 			),
 	o => (o.const === undefined ? undefined : constRoot(o.const)),
 	o =>
@@ -706,7 +716,7 @@ const constrainOwnType = (
 				(result, constraint) =>
 					intersectRoots(
 						result,
-						rootSchema(
+						jsonSchemaRoot(
 							isNode(constraint) ? constraint : (
 								{ ...basisOf[type], ...(constraint as object) }
 							)
@@ -728,7 +738,7 @@ const basisOf = {
 const notArray = /* @__PURE__ */ cached(() => {
 	// installs the rule only once a node can carry it
 	$ark.sets!.disjointOf = disjointFromArray
-	return node("predicate", {
+	return jsonSchemaNode("predicate", {
 		predicate: isNonArray,
 		meta: { description: "not an array" }
 	})
@@ -747,19 +757,19 @@ const disjointFromArray = (node: BaseNode): Disjoint | undefined => {
 const typeRoots = /* @__PURE__ */ cached(
 	(): Record<JsonSchema.TypeName, BaseRoot> => ({
 		string: $ark.kw.string,
-		number: rootSchema(numberDomain),
-		integer: rootSchema({ domain: numberDomain, divisor: 1 }),
+		number: jsonSchemaRoot(numberDomain),
+		integer: jsonSchemaRoot({ domain: numberDomain, divisor: 1 }),
 		boolean: $ark.kw.boolean,
 		null: $ark.kw.null,
 		array: $ark.kw.Array,
-		object: rootSchema({ domain: "object", predicate: [notArray()] })
+		object: jsonSchemaRoot({ domain: "object", predicate: [notArray()] })
 	})
 )
 
 const otherThan = (...branches: BaseRoot[]) =>
 	unionOf([
 		...branches,
-		rootSchema(["bigint", "symbol", { unit: undefined }]),
+		jsonSchemaRoot(["bigint", "symbol", { unit: undefined }]),
 		typeRoots().boolean,
 		typeRoots().null
 	])
@@ -779,13 +789,13 @@ const unconstrainedBy = /* @__PURE__ */ cached(
 
 const constRoot = (value: unknown): BaseRoot =>
 	isArray(value) ?
-		rootSchema(
+		jsonSchemaRoot(
 			value.length === 0 ?
 				{ proto: Array, exactLength: 0 }
 			:	{ proto: Array, sequence: { prefix: value.map(constRoot) } }
 		)
-	: isPlainObject(value) ?
-		rootSchema({
+	: isJsonSchemaObject(value) ?
+		jsonSchemaRoot({
 			domain: "object",
 			predicate: [notArray()],
 			required: Object.entries(value).map(([key, v]) => ({
@@ -794,7 +804,7 @@ const constRoot = (value: unknown): BaseRoot =>
 			})),
 			undeclared: "reject"
 		})
-	:	rootSchema({ unit: value })
+	:	jsonSchemaRoot({ unit: value })
 
 // one predicate per keyword and subschemas, so equal reads relate
 const predicatesByKey = /* @__PURE__ */ new WeakCache<Predicate>()
@@ -816,7 +826,8 @@ const opaqueRoot = (
 	key: unknown[],
 	description: string,
 	predicate: Predicate
-): BaseRoot => rootSchema({ predicate: [opaque(key, description, predicate)] })
+): BaseRoot =>
+	jsonSchemaRoot({ predicate: [opaque(key, description, predicate)] })
 
 const idsOf = (roots: readonly BaseRoot[]) => roots.map(root => root.id)
 
@@ -840,7 +851,7 @@ const readEach = (schemas: array, pointer: string, ctx: ReadContext) =>
 	schemas.map((schema, i) => read(schema, `${pointer}/${i}`, ctx))
 
 const unionOf = (roots: readonly BaseRoot[]): BaseRoot =>
-	node("union", { branches: roots.flatMap(root => root.branches) })
+	jsonSchemaNode("union", { branches: roots.flatMap(root => root.branches) })
 
 const branchesAreDisjoint = (branches: BaseRoot[]) =>
 	branches.every((l, i) =>
@@ -916,7 +927,7 @@ const jsonEquals = (l: unknown, r: unknown): boolean => {
 	)
 }
 
-export const isPlainObject = (value: unknown): value is object => {
+export const isJsonSchemaObject = (value: unknown): value is object => {
 	if (typeof value !== "object" || value === null) return false
 	const proto = Object.getPrototypeOf(value)
 	return proto === Object.prototype || proto === null
@@ -928,13 +939,13 @@ const escapePointer = (key: string) =>
 const escapeRegex = (source: string) =>
 	source.replace(/[$()*+./?[\\\]^{|}]/g, "\\$&")
 
-const isSchema = (v: unknown) => typeof v === "boolean" || isPlainObject(v)
+const isSchema = (v: unknown) => typeof v === "boolean" || isJsonSchemaObject(v)
 
 const isEvery = (v: unknown, allows: (element: unknown) => boolean) =>
 	isArray(v) && v.every(allows)
 
 const isEveryValue = (v: unknown, allows: (value: unknown) => boolean) =>
-	isPlainObject(v) && Object.values(v).every(allows)
+	isJsonSchemaObject(v) && Object.values(v).every(allows)
 
 const isString = (v: unknown) => typeof v === "string"
 
@@ -1012,6 +1023,8 @@ const keywordValueKinds: Record<string, keyof typeof keywordValues> = {
 	minItems: "count",
 	maxItems: "count",
 	uniqueItems: "boolean",
+	// OpenAPI 3.0
+	nullable: "boolean",
 	contains: "schema",
 	minContains: "count",
 	maxContains: "count",
@@ -1060,10 +1073,23 @@ const checkKeyword = (
 			writeInvalidKeywordMessage(`${pointer}/${k}`, expected, o[k])
 		)
 	}
+	if (k === "nullable") checkNullable(o, pointer)
+}
+
+// like ajv, which throws compiling either, even beside a $ref whose siblings
+// a draft-07 schema otherwise ignores
+const checkNullable = (o: dict, pointer: string): void => {
+	if (o.type === undefined)
+		throwParseError(writeNullableWithoutTypeMessage(`${pointer}/nullable`))
+	if (
+		o.nullable === false &&
+		(isArray(o.type) ? o.type : [o.type]).includes("null")
+	)
+		throwParseError(writeNonNullableNullMessage(`${pointer}/nullable`))
 }
 
 export const writeUnparsableSchemaMessage = (actual: string): string =>
-	`Schema must be a Root, a Standard JSON Schema or a JSON Schema (was ${actual})`
+	`Schema must be a Type, a Standard JSON Schema or a JSON Schema (was ${actual})`
 
 export const writeUnreadableStandardSchemaMessage = (
 	vendor: string,
@@ -1095,3 +1121,9 @@ export const writeUnsupportedRefMessage = (
 
 export const writeUnresolvableRefMessage = (ref: string): string =>
 	`$ref ${ref} doesn't resolve to a schema in its document`
+
+export const writeNullableWithoutTypeMessage = (pointer: string): string =>
+	`${pointer} must be beside a type, to which it adds null`
+
+export const writeNonNullableNullMessage = (pointer: string): string =>
+	`${pointer} can't be false beside a type that includes null`

@@ -17,7 +17,6 @@
 		"@ark/attest": "workspace:*",
 		"@ark/fast-check": "workspace:*",
 		"@ark/fs": "workspace:*",
-		"@ark/json-schema": "workspace:*",
 		"@ark/repo": "workspace:*",
 		"@ark/schema": "workspace:*",
 		"@ark/util": "workspace:*",

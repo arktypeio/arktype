@@ -41,7 +41,7 @@ const keywordAliases = Object.keys(
 
 const isKeywordError = (error: ArkError, alias: string): boolean =>
 	error.meta?.keyword === alias ||
-	((error.code === "union" || error.code === "intersection") &&
+	(error.code === "union" &&
 		error.errors.some(child => isKeywordError(child, alias)))
 
 // each failure the locale must render: a label and a type with data it rejects
@@ -465,7 +465,7 @@ export const matrixOf = (
 			throw new Error(`${label} accepted ${describeData(data)}`)
 		const key = `${label} ← ${describeData(data)}`
 		if (key in matrix) throw new Error(`${key} is repeated`)
-		const summary = (result as ArkErrors).toLocaleString(locale)
+		const summary = (result as ArkErrors).summaryIn(locale)
 		const jsonParseError = jsonParseErrorOf(data)
 		matrix[key] =
 			jsonParseError ?

@@ -30,14 +30,14 @@ A [precompiled](/docs/precompile) validator has `toJsonSchema()`, its schema bak
 
 ## Options
 
-| option          | default                                     | effect                                                                                                                |
-| --------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `target`        | `"draft-2020-12"`                           | what to write, `"draft-2020-12"`, `"draft-07"`, [`"openapi-3.0"`](#openapi-30) or [`"openapi-3.1"`](#openapi-31)      |
-| `dialect`       | the target's URL                            | the `$schema` value. `null` omits it. Takes precedence over `target`'s URL                                            |
-| `useRefs`       | `false`                                     | write every part once under `$defs`, not only [cyclic aliases](#cyclic-types), and point to it with `$ref`            |
-| `aliasDefs`     | `false`                                     | write [a scope's aliases](#named-aliases) once under `$defs`, named by the alias, not only cyclic ones                |
+| option          | default                                      | effect                                                                                                                |
+| --------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `target`        | `"draft-2020-12"`                            | what to write, `"draft-2020-12"`, `"draft-07"`, [`"openapi-3.0"`](#openapi-30) or [`"openapi-3.1"`](#openapi-31)      |
+| `dialect`       | the target's URL                             | the `$schema` value. `null` omits it. Takes precedence over `target`'s URL                                            |
+| `useRefs`       | `false`                                      | write every part once under `$defs`, not only [cyclic aliases](#cyclic-types), and point to it with `$ref`            |
+| `aliasDefs`     | `false`                                      | write [a scope's aliases](#named-aliases) once under `$defs`, named by the alias, not only cyclic ones                |
 | `discriminator` | `true` for `"openapi-3.0"` / `"openapi-3.1"` | name the key a [discriminated union](#discriminated-unions)'s `oneOf` is told apart by with OpenAPI's `discriminator` |
-| `fallback`      | throws                                      | what to write for a part JSON Schema can't express. See [Fallbacks](#fallbacks)                                       |
+| `fallback`      | throws                                       | what to write for a part JSON Schema can't express. See [Fallbacks](#fallbacks)                                       |
 
 ### target
 
