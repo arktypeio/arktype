@@ -48,7 +48,7 @@ These generate only valid data:
 These throw when you call `arkToArbitrary`:
 
 - instances of any class other than `Array`, `Date` and `Set`, including `Map`, `Function`, `Promise`, typed arrays and `type.instanceOf(MyClass)`
-- regexes with a lookahead, which fast-check can't generate from. Several keywords use one, including `string.numeric`, `string.integer`, `string.date.iso` and their `.parse` variants.
+- regexes with a lookahead, which fast-check can't generate from
 - more than one regex on a string, like `string.email & string.alpha`
 - a regex with a length bound, like `string.email < 50`
 

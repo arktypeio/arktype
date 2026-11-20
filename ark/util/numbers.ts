@@ -53,8 +53,10 @@ export const isWellFormedNumber: RegExp["test"] = s =>
  *  - Allows an exponent like "5.7e-10", as Number() does
  */
 export const numericStringMatcher: RegExp =
-	// eslint-disable-next-line unicorn/better-regex
-	/^(?:(?!^-0\.?0*(?:[Ee][+-]?\d+)?$)(?:-?(?:(?:0|[1-9]\d*)(?:\.\d+)?)|\.\d+?)(?:[Ee][+-]?\d+)?)$/
+	// "-0" is excluded by requiring a nonzero digit after "-", not a lookahead,
+	// since it's a JSON Schema pattern, which RE2 (e.g. LLM structured outputs)
+	// can't read with one
+	/^(?:(?:0|[1-9]\d*)(?:\.\d+)?|\.\d+|-(?:[1-9]\d*(?:\.\d+)?|0\.\d*[1-9]\d*))(?:[Ee][+-]?\d+)?$/
 
 export const isDigitCode = (code: number): boolean => code >= 48 && code <= 57
 
@@ -100,8 +102,8 @@ const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
  *    2. The value may not be "-0"
  */
 export const wellFormedIntegerMatcher: RegExp =
-	// eslint-disable-next-line unicorn/better-regex
-	/^(?:(?!^-0$)-?(?:(?:0|[1-9]\d*)))$/
+	// "-0" is excluded without a lookahead, as numericStringMatcher's is
+	/^(?:0|-?[1-9]\d*)$/
 
 // wellFormedIntegerMatcher's language, read without the RegExp
 export const isWellFormedInteger = (s: string): boolean => {

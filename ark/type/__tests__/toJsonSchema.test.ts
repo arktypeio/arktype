@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
-import { scope, type } from "arktype"
+import type { ToJsonSchema } from "@ark/schema"
+import { keywords, Module, scope, Type, type } from "arktype"
 import type { JSONSchema7 } from "json-schema"
 
 // a keyword's pattern is its source, so only its presence is asserted
@@ -1056,6 +1057,57 @@ contextualize(() => {
 			},
 			required: ["base64", "base64url", "email", "iso"]
 		})
+	})
+
+	// RE2, which structured outputs like OpenAI's read patterns with, has neither
+	it("keyword patterns have no lookaround or backreference", () => {
+		const patterns: string[] = []
+		const collect = (schema: unknown): void => {
+			if (typeof schema !== "object" || schema === null) return
+			for (const [k, v] of Object.entries(schema)) {
+				if (k === "pattern") patterns.push(v)
+				else collect(v)
+			}
+		}
+		const walk = (module: object): void => {
+			for (const t of Object.values(module)) {
+				if (t instanceof Type)
+					collect(t.in.toJsonSchema({ fallback: ctx => ctx.base }))
+				else if (t instanceof Module) walk(t)
+			}
+		}
+		walk(keywords)
+		// so a walk that reached no keyword can't pass
+		attest(patterns.length > 30).equals(true)
+		attest(patterns.filter(p => /\(\?<?[!=]|\\[1-9]|\\k</.test(p))).equals([])
+	})
+
+	it("a negative divisor's multipleOf is positive", () => {
+		attest(type("number % -2").toJsonSchema({ dialect: null })).snap({
+			type: "integer",
+			multipleOf: 2
+		})
+	})
+
+	it("a Date's bounds are written by one call", () => {
+		const calls: ToJsonSchema.DateContext[] = []
+		const T = type("d'2000-01-01' < Date < d'2020-01-01'").and(
+			type("Date != d'2010-01-01'")
+		)
+		const schema = T.toJsonSchema({
+			dialect: null,
+			fallback: { date: ctx => (calls.push(ctx), { type: "string" }) }
+		})
+		attest(schema).snap({ type: "string" })
+		attest(calls).equals([
+			{
+				code: "date",
+				base: {},
+				before: new Date("2019-12-31T23:59:59.999Z"),
+				after: new Date("2000-01-01T00:00:00.001Z"),
+				notEqual: [new Date("2010-01-01T00:00:00.000Z")]
+			}
+		])
 	})
 
 	it("keyword formats for draft-07", () => {

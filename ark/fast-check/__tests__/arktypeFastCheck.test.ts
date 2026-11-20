@@ -109,6 +109,15 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		// their patterns have no lookahead, which fast-check can't generate from
+		it("numeric and ISO date keywords", () => {
+			for (const T of [
+				type("string.numeric"),
+				type("string.integer"),
+				type("string.date.iso")
+			])
+				assertProperty(arkToArbitrary(T), T)
+		})
 		it("sticky regex", () => {
 			const T = type(/a/y)
 			attest(() => arkToArbitrary(T)).throws(
