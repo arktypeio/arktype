@@ -30,12 +30,13 @@ A [precompiled](/docs/precompile) validator has `toJsonSchema()`, its schema bak
 
 ## Options
 
-| option     | default           | effect                                                                                                     |
-| ---------- | ----------------- | ---------------------------------------------------------------------------------------------------------- |
-| `target`   | `"draft-2020-12"` | what to write, `"draft-2020-12"`, `"draft-07"` or [`"openapi-3.0"`](#openapi-30)                           |
-| `dialect`  | the target's URL  | the `$schema` value. `null` omits it. Takes precedence over `target`'s URL                                 |
-| `useRefs`  | `false`           | write every part once under `$defs`, not only [cyclic aliases](#cyclic-types), and point to it with `$ref` |
-| `fallback` | throws            | what to write for a part JSON Schema can't express. See [Fallbacks](#fallbacks)                            |
+| option          | default                    | effect                                                                                                                |
+| --------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `target`        | `"draft-2020-12"`          | what to write, `"draft-2020-12"`, `"draft-07"` or [`"openapi-3.0"`](#openapi-30)                                      |
+| `dialect`       | the target's URL           | the `$schema` value. `null` omits it. Takes precedence over `target`'s URL                                            |
+| `useRefs`       | `false`                    | write every part once under `$defs`, not only [cyclic aliases](#cyclic-types), and point to it with `$ref`            |
+| `discriminator` | `true` for `"openapi-3.0"` | name the key a [discriminated union](#discriminated-unions)'s `oneOf` is told apart by with OpenAPI's `discriminator` |
+| `fallback`      | throws                     | what to write for a part JSON Schema can't express. See [Fallbacks](#fallbacks)                                       |
 
 ### target
 
@@ -190,6 +191,7 @@ const schema = types.Node.toJsonSchema()
 | `"string.json"`                                       | `contentMediaType: "application/json"`              |
 | `"'a' \| 'b'"`                                        | `type: "string"`, `enum: ["a", "b"]`                |
 | `"string \| null"`                                    | `anyOf`                                             |
+| `{ kind: "'a'" }` or `{ kind: "'b'" }`                | [`oneOf`](#discriminated-unions)                    |
 | `{ "name?": "string" }`                               | `properties`, with only required keys in `required` |
 | `{ "+": "reject", ... }`                              | `additionalProperties: false`                       |
 | `"Record<string, number>"`                            | `additionalProperties: {...}`                       |
@@ -206,6 +208,48 @@ An index signature applies to every key, including declared ones. JSON Schema sk
 A keyword's `format`, `contentEncoding` or `contentMediaType` names what its strings are. JSON Schema reads each as an annotation, which a validator doesn't check unless it's configured to, so it's written whether or not arktype's check matches the standard's definition exactly. A keyword checked by a regex is written with that `pattern` too, so a validator that ignores formats still checks what arktype does. One checked by a function is written as its format alone: `string.date` accepts whatever `Date` parses, and `string.url` whatever `URL.canParse` does, so their schemas accept strings the Type rejects. A validator that asserts formats, like Ajv with `ajv-formats`, can also reject strings arktype accepts, where a format's RFC differs from arktype's check: `date-time` requires a time that `string.date` and `string.date.iso` don't, and `uri` rejects the space in a path that `string.url` accepts. Keywords no format names, like `string.date.epoch` or `string.creditCard`, go to the [`predicate`](#fallback-codes) fallback.
 
 A key that isn't `string` or a single regex, like `[string <= 3]`, needs `propertyNames`, which checks every key of the object. That's only the same thing when every key must match it: undeclared keys are rejected, it's the only index signature, and every declared key matches it. Any other such key goes to the [`indexKey`](#fallback-codes) fallback.
+
+### Discriminated unions
+
+A union whose object branches each require a string at one key, no value of which two branches allow, is written as `oneOf`, since no data can match two of its branches. For `"openapi-3.0"`, or where the `discriminator` option is `true`, it names that key with OpenAPI's [`discriminator`](https://spec.openapis.org/oas/v3.0.3#discriminator-object), so a code generator models it as a tagged union:
+
+```ts
+const Destination = type({ type: "'bankAccount'", routing: "string" }).or({
+	type: "'card'",
+	last4: "string"
+})
+
+const schema = Destination.toJsonSchema({ target: "openapi-3.0" })
+```
+
+```json
+{
+	"oneOf": [
+		{
+			"type": "object",
+			"properties": {
+				"routing": { "type": "string" },
+				"type": { "type": "string", "enum": ["bankAccount"] }
+			},
+			"required": ["routing", "type"]
+		},
+		{
+			"type": "object",
+			"properties": {
+				"last4": { "type": "string" },
+				"type": { "type": "string", "enum": ["card"] }
+			},
+			"required": ["last4", "type"]
+		}
+	],
+	"discriminator": { "propertyName": "type" }
+}
+```
+
+- The key is the first one the first branch requires that tells every branch apart.
+- A branch that's a `$ref`, like a [cyclic alias](#cyclic-types) or any part with `useRefs`, is listed in `discriminator.mapping` under each value it allows. An inline branch is found by its own value.
+- `discriminator` isn't a JSON Schema keyword, and Ajv rejects it unless its `discriminator` option is set, so draft targets write it only where the option is `true`, as an OpenAPI 3.1 document reads it.
+- Any other union is `anyOf`: one where two branches allow the same value, a branch doesn't require the key, the values aren't strings, or a branch isn't an object. A `null` branch is written beside the `oneOf`: `anyOf: [{ oneOf: [...] }, { type: "null" }]`.
 
 ## Your own schema
 

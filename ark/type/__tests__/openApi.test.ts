@@ -97,6 +97,91 @@ contextualize(() => {
 		})
 	})
 
+	it("discriminated union", () => {
+		const Destination = type({ type: "'bankAccount'", routing: "string" }).or({
+			type: "'card' | 'debitCard'",
+			last4: "string"
+		})
+		attest(toOpenApi(Destination)).snap({
+			oneOf: [
+				{
+					type: "object",
+					properties: {
+						last4: { type: "string" },
+						type: { type: "string", enum: ["card", "debitCard"] }
+					},
+					required: ["last4", "type"]
+				},
+				{
+					type: "object",
+					properties: {
+						routing: { type: "string" },
+						type: { type: "string", enum: ["bankAccount"] }
+					},
+					required: ["routing", "type"]
+				}
+			],
+			discriminator: { propertyName: "type" }
+		})
+		attest(toOpenApi(Destination, { discriminator: false })).snap({
+			oneOf: (toOpenApi(Destination) as JsonSchema.OneOf).oneOf
+		})
+	})
+
+	it("discriminated union of definitions maps each value", () => {
+		const { Ab } = scope({
+			A: { kind: "'a'", "next?": "B" },
+			B: { kind: "'b' | 'c'", "next?": "A" },
+			Ab: "A | B"
+		}).export()
+		attest(toOpenApi(Ab, { fallback: { defs: ctx => ctx.base } })).snap({
+			oneOf: [
+				{ $ref: "#/components/schemas/B" },
+				{ $ref: "#/components/schemas/A" }
+			],
+			discriminator: {
+				propertyName: "kind",
+				mapping: {
+					a: "#/components/schemas/A",
+					b: "#/components/schemas/B",
+					c: "#/components/schemas/B"
+				}
+			}
+		})
+	})
+
+	it("nullable discriminated union", () => {
+		const T = type({ kind: "'a'", a: "string" })
+			.or({ kind: "'b'", b: "number" })
+			.or("null")
+		attest(toOpenApi(T)).snap({
+			anyOf: [
+				{
+					oneOf: [
+						{
+							type: "object",
+							properties: {
+								a: { type: "string" },
+								kind: { type: "string", enum: ["a"] }
+							},
+							required: ["a", "kind"]
+						},
+						{
+							type: "object",
+							properties: {
+								b: { type: "number" },
+								kind: { type: "string", enum: ["b"] }
+							},
+							required: ["b", "kind"]
+						}
+					],
+					discriminator: { propertyName: "kind" }
+				},
+				{ type: "string", nullable: true, enum: [null] }
+			]
+		})
+	})
+
 	it("not equal", () => {
 		attest(toOpenApi(type("number != 5"))).snap({
 			type: "number",

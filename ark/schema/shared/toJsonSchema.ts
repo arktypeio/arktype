@@ -407,10 +407,23 @@ export declare namespace ToJsonSchema {
 		 */
 		target?: Target
 		useRefs?: boolean
+		/**
+		 * whether a union written as `oneOf`, since its object branches each
+		 * require a different string at one key, names that key with OpenAPI's
+		 * `discriminator`, and maps each value to a branch that's a `$ref`
+		 *
+		 * JSON Schema has no `discriminator` keyword, and a strict validator
+		 * like Ajv rejects it unless configured to read it
+		 *
+		 * @default true for "openapi-3.0", otherwise false
+		 */
+		discriminator?: boolean
 		fallback?: FallbackOption
 	}
 
-	export interface Context extends Required<Options> {
+	export interface Context
+		extends Required<Omit<Options, "discriminator">>,
+			Pick<Options, "discriminator"> {
 		fallback: HandlerByCode
 		/** set by ~standard.jsonSchema.input to write a Type as it's accepted */
 		io?: "in"

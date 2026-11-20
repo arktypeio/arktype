@@ -98,7 +98,7 @@ contextualize(() => {
 				b: "number"
 			})
 			const S = inferred({
-				anyOf: [
+				oneOf: [
 					{
 						type: "object",
 						properties: {

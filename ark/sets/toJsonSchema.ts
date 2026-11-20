@@ -20,6 +20,7 @@ import {
 	type StandardSchemaV1,
 	type Structure,
 	type Union,
+	type UnionDiscriminant,
 	type nodeOfKind
 } from "@ark/schema"
 import {
@@ -210,8 +211,83 @@ const branchGroupsToJsonSchema = (
 			branchGroups.map(group => toJsonSchemaRecurse(group, ctx)),
 			ctx.target,
 			node.meta,
-			node.metaJson
+			node.metaJson,
+			discriminantOf(branchGroups, ctx)
 		)
+
+// the first key the first branch requires at which every branch requires
+// strings no other branch allows, as OpenAPI's discriminator expects: any
+// other union, like one whose branches share a value or one without the key,
+// is written as anyOf
+const discriminantOf = (
+	branches: BaseRoot[],
+	ctx: JsonSchemaContext
+): UnionDiscriminant | undefined => {
+	const tagsByBranch: Tags[] = []
+	for (const branch of branches) {
+		const tags = tagsOf(branch, ctx)
+		if (!tags) return
+		tagsByBranch.push(tags)
+	}
+	keys: for (const key of tagsByBranch[0]?.keys() ?? []) {
+		const seen = new Set<string>()
+		const values: string[][] = []
+		for (const tags of tagsByBranch) {
+			const branchValues = tags.get(key)
+			if (!branchValues) continue keys
+			for (const value of branchValues) {
+				if (seen.has(value)) continue keys
+				seen.add(value)
+			}
+			values.push(branchValues)
+		}
+		return {
+			key,
+			values,
+			writesKeyword: ctx.discriminator ?? ctx.target === "openapi-3.0"
+		}
+	}
+}
+
+// the strings an object branch requires at each key that allows only strings,
+// as its schema writes them in properties and required. A Map, since a key
+// can be one an object inherits, like constructor
+type Tags = Map<string, string[]>
+
+const tagsOf = (branch: BaseRoot, ctx: JsonSchemaContext): Tags | undefined => {
+	if (branch.meta.jsonSchema) return
+	if (branch.is("alias")) return tagsOf(branch.resolution, ctx)
+	// only an input is written as what a morph accepts
+	if (branch.is("morph")) {
+		const accepted = branch.declaredIn ?? branch.head
+		return ctx.io === "in" && accepted ? tagsOf(accepted, ctx) : undefined
+	}
+	if (!branch.is("intersection")) return
+	const { basis, structure } = branch
+	if (
+		!structure ||
+		structure.meta.jsonSchema ||
+		!basis?.is("domain") ||
+		basis.domain !== "object"
+	)
+		return
+	const tags: Tags = new Map()
+	for (const prop of structure.required ?? []) {
+		const values = prop.value.meta.jsonSchema ? [] : stringUnitsOf(prop.value)
+		if (typeof prop.key === "string" && values.length)
+			tags.set(prop.key, values)
+	}
+	return tags
+}
+
+const stringUnitsOf = (node: BaseRoot): string[] => {
+	const values: string[] = []
+	for (const branch of node.branches) {
+		if (!branch.is("unit") || typeof branch.unit !== "string") return []
+		values.push(branch.unit)
+	}
+	return values
+}
 
 const writeAnnotation = (
 	schema: object,

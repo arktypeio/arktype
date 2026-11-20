@@ -445,6 +445,85 @@ contextualize(() => {
 		attest(T.toJsonSchema({ dialect: null })).snap({ type: "string" })
 	})
 
+	describe("discriminated unions", () => {
+		const T = type({ kind: "'a'", a: "string" }).or({
+			kind: "'b'",
+			b: "number"
+		})
+		const branches = [
+			{
+				type: "object",
+				properties: {
+					a: { type: "string" },
+					kind: { type: "string", const: "a" }
+				},
+				required: ["a", "kind"]
+			},
+			{
+				type: "object",
+				properties: {
+					b: { type: "number" },
+					kind: { type: "string", const: "b" }
+				},
+				required: ["b", "kind"]
+			}
+		]
+
+		// discriminator isn't JSON Schema, and Ajv rejects it by default
+		it("is oneOf without discriminator unless configured", () => {
+			attest(T.toJsonSchema({ dialect: null })).equals({ oneOf: branches })
+			attest(T.toJsonSchema({ target: "draft-07", dialect: null })).equals({
+				oneOf: branches
+			})
+			attest(T.toJsonSchema({ dialect: null, discriminator: true })).equals({
+				oneOf: branches,
+				discriminator: { propertyName: "kind" }
+			})
+		})
+
+		it("a morph's input", () => {
+			const Morphed = type({ kind: "'a'", a: "string" })
+				.pipe(o => o)
+				.or({ kind: "'b'", b: "number" })
+			attest(
+				Object.keys(
+					Morphed["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+				)
+			).equals(["$schema", "oneOf"])
+		})
+
+		it("is anyOf where a value doesn't pick one branch", () => {
+			const keysOf = (t: type.Any) =>
+				Object.keys(t.toJsonSchema({ dialect: null, discriminator: true }))
+			// a value two branches share
+			attest(
+				keysOf(
+					type({ kind: "'a'", x: "string" })
+						.or({ kind: "'a'", y: "number" })
+						.or({ kind: "'b'" })
+				)
+			).equals(["anyOf"])
+			// a branch that doesn't require the key
+			attest(
+				keysOf(
+					type({ kind: "'a'", x: "string" }).or({ "kind?": "'b'", y: "1" })
+				)
+			).equals(["anyOf"])
+			// values that aren't strings
+			attest(
+				keysOf(type({ kind: "1", x: "string" }).or({ kind: "2", y: "number" }))
+			).equals(["anyOf"])
+			// a key every object inherits
+			attest(keysOf(type({ constructor: "'a'" }).or({ kind: "'b'" }))).equals([
+				"anyOf"
+			])
+			// a branch that isn't an object
+			attest(keysOf(type({ kind: "'a'", x: "string" }).or("string"))).equals([
+				"anyOf"
+			])
+		})
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1470
 	it("configured union of literals as enum", () => {
 		const Provider = type("'sqlite' | 'postgresql'").configure({

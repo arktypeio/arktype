@@ -226,7 +226,7 @@ contextualize(() => {
 			Object.values(defs).map(def =>
 				Object.keys((def as JsonSchema.Object).properties ?? def)
 			)
-		).snap([["anyOf"], ["a", "k"], ["x"], ["b", "k"], ["y"]])
+		).snap([["oneOf"], ["a", "k"], ["x"], ["b", "k"], ["y"]])
 	})
 
 	it("includes default for object prop", () => {

@@ -257,7 +257,7 @@ export const traceFallbacks = (
 						refOf(
 							// a union's meta, whose functions, like onFail, no
 							// schema holds
-							name === "union" && i > 1 ?
+							name === "union" && (i === 2 || i === 3) ?
 								Object.fromEntries(
 									Object.entries(arg as object).filter(
 										([, v]) => typeof v !== "function"

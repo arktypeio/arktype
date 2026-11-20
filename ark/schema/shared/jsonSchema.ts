@@ -1,6 +1,8 @@
 import {
+	defineValue,
 	hasKey,
 	includes,
+	isEmptyObject,
 	throwParseError,
 	type autocomplete,
 	type Json,
@@ -105,6 +107,18 @@ export declare namespace JsonSchema {
 
 	export interface OneOf extends Meta {
 		oneOf: JsonSchema[]
+		discriminator?: Discriminator
+	}
+
+	/**
+	 * OpenAPI's Discriminator Object, naming the property a oneOf's branches
+	 * are told apart by
+	 * https://spec.openapis.org/oas/v3.0.3#discriminator-object
+	 */
+	export interface Discriminator {
+		propertyName: string
+		/** the $ref of the branch each value selects */
+		mapping?: Record<string, string>
 	}
 
 	export interface Union extends Meta {
@@ -200,13 +214,26 @@ type UnitJsonSchema = JsonSchema.Const &
 export const openApiNull = (): JsonSchema =>
 	({ type: "string", nullable: true, enum: [null] }) as JsonSchema
 
+/**
+ * the key a union's object branches each require a string at, no value of
+ * which two branches share, so exactly one branch can match any data
+ */
+export interface UnionDiscriminant {
+	key: string
+	/** the strings each branch allows at the key, in the order of the branches */
+	values: string[][]
+	/** whether OpenAPI's discriminator is written beside the oneOf */
+	writesKeyword: boolean
+}
+
 // a union from the schemas of its branches, as arktype writes it and as a
 // precompiled validator does where a branch is a call's fallback's
 export const writeUnionJsonSchema = (
 	branches: JsonSchema[],
 	target: ToJsonSchema.Target,
 	meta: object,
-	metaJson: object
+	metaJson: object,
+	discriminant?: UnionDiscriminant
 ): JsonSchema => {
 	// what's left of a union without its null
 	if (branches.length === 1) return branches[0]
@@ -233,7 +260,39 @@ export const writeUnionJsonSchema = (
 				{ type, enum: values }
 			:	{ enum: values }
 	}
-	return { anyOf: branches }
+	return discriminant && branches.every(requiresKeyOf(discriminant.key)) ?
+			writeOneOf(branches, discriminant)
+		:	{ anyOf: branches }
+}
+
+// a fallback's result can replace a branch with one that doesn't
+const requiresKeyOf =
+	(key: string) =>
+	(branch: JsonSchema): boolean =>
+		"$ref" in branch || !!(branch as JsonSchema.Object).required?.includes(key)
+
+// oneOf, since no data can match two of its branches, says to a generator
+// what anyOf would only imply: that each is a distinct variant
+const writeOneOf = (
+	branches: JsonSchema[],
+	{ key, values, writesKeyword }: UnionDiscriminant
+): JsonSchema.OneOf => {
+	if (!writesKeyword) return { oneOf: branches }
+	// OpenAPI finds an inline branch by its own value at the property, but a
+	// $ref only by its name, which a mapping replaces
+	const mapping: Record<string, string> = {}
+	for (let i = 0; i < branches.length; i++) {
+		const ref = (branches[i] as JsonSchema.Ref).$ref
+		// assigning "__proto__" would set the prototype
+		if (ref) for (const value of values[i]) defineValue(mapping, value, ref)
+	}
+	return {
+		oneOf: branches,
+		discriminator:
+			isEmptyObject(mapping) ?
+				{ propertyName: key }
+			:	{ propertyName: key, mapping }
+	}
 }
 
 // a union with null, written beside the rest so their values still share a type
