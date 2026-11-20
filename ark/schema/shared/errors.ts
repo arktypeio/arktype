@@ -38,6 +38,7 @@ import { findsOnRead } from "./issueFeatures.ts"
 import {
 	ArkErrors as BaseArkErrors,
 	isCustomIssue,
+	pathOf,
 	issueAt,
 	messageOf,
 	TraversalError as BaseTraversalError,
@@ -1041,14 +1042,21 @@ export const asTemplated = <error extends ArkIssue>(
 	if (isArkError(error)) {
 		templated.add(error)
 		if (line !== undefined) noteLine(error, line)
-	}
-	// a validator's issue holds nothing saying so: its message is a sentence of
-	// its own unless it begins as one written from what it expects would, so
-	// what it expects is read back from a message written that way, and is
-	// nothing where the message is what's written of data only known invalid
-	else if (error.message?.startsWith("must be "))
+	} else if (line !== undefined) (error as mutable<ArkIssue>)._l = line
+	// read what was expected back from a templated message so both dynamic
+	// ArkErrors and standalone issues expose the same expected and JSON shape
+	if (error.message?.startsWith("must be "))
 		error.expected = error.message.slice(8)
-	else if (error.message === "is invalid") error.expected = undefined
+	else if (error.message === "is invalid") error.expected = "valid"
+	else if (
+		!isArkError(error) &&
+		error._l === undefined &&
+		error.message !== undefined
+	) {
+		const path = pathOf(error)
+		;(error as mutable<ArkIssue>)._l =
+			path ? `${path} ${error.message}` : error.message
+	}
 	return error
 }
 

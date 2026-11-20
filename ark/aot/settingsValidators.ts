@@ -93,7 +93,7 @@ var UnreadIssues = class {
 		if (!this._f) {
 			this._f = []
 			if (this._a && (this._a(this._d, this), !this._f.length))
-				this._e(this._d, "predicate")
+				this._e(this._d, "predicate", "valid", "is invalid")
 		}
 		return this._f
 	}
@@ -143,7 +143,7 @@ var Issues =
 					if (!this._f) {
 						this._f = []
 						if (this._a && (this._a(this._d, this), !this._f.length))
-							this._e(this._d, "predicate")
+							this._e(this._d, "predicate", "valid", "is invalid")
 					}
 					return this._f
 				}
@@ -285,7 +285,7 @@ var serializableIssues = issues => {
 var foundErrors = (apply, data, onFail, Ctx = Issues) => {
 	const errors = new Ctx()
 	apply(data, errors)
-	if (!errors._.length) errors._e(data, "predicate")
+	if (!errors._.length) errors._e(data, "predicate", "valid", "is invalid")
 	return onFail ? onFail(errors) : errors
 }
 var mergeIssues = (errors, merged, prefix) => {
@@ -327,7 +327,13 @@ var lineOf = issue => {
 		listsUnions && issue._l !== void 0 ? issue._l
 		: path ?
 			path +
-			(writesText && !message.startsWith(messageOf(issue)) ? ": " : " ") +
+			((
+				writesText &&
+				!(message === "is invalid" && issue.expected === "valid") &&
+				!message.startsWith(messageOf(issue))
+			) ?
+				": "
+			:	" ") +
 			message
 		:	message
 	)

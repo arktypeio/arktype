@@ -1087,9 +1087,11 @@ export class StandaloneArtifact {
 			this.collectType(value)
 		}
 		for (const node of this.writtenSelected(holdsDefaults)) {
-			if (node.is("optional") && node.defMorph) collect(node.value)
-			else if (node.is("sequence"))
-				for (const [value] of node.defaultables ?? []) collect(value)
+			if (node.is("optional") && node.defMorph) collect(node.requiredValue)
+			else if (node.is("sequence")) {
+				for (const [value] of node.defaultables ?? [])
+					collect(node.requiredOf(value))
+			}
 		}
 		return this.validatorNames.size > typeCount
 	}

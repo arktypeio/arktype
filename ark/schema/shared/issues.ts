@@ -240,7 +240,7 @@ class UnreadIssues implements StandardSchemaV1.FailureResult, FailureContext {
 			this._f = []
 			// data a write or a getter has made valid since fails as a whole
 			if (this._a && (this._a(this._d, this), !this._f.length))
-				this._e(this._d, "predicate")
+				this._e(this._d, "predicate", "valid", "is invalid")
 		}
 		return this._f
 	}
@@ -360,7 +360,7 @@ const Issues: IssuesClass = (
 					if (!this._f) {
 						this._f = []
 						if (this._a && (this._a(this._d, this), !this._f.length))
-							this._e(this._d, "predicate")
+							this._e(this._d, "predicate", "valid", "is invalid")
 					}
 					return this._f
 				}
@@ -653,7 +653,7 @@ export const issuesOf = (
 ): ArkIssue[] => {
 	apply(data, errors)
 	// data a write or a getter has made valid since fails as a whole
-	if (!errors._.length) errors._e(data, "predicate")
+	if (!errors._.length) errors._e(data, "predicate", "valid", "is invalid")
 	return errors._
 }
 
@@ -667,7 +667,7 @@ export const foundErrors = (
 	const errors = new Ctx()
 	// as issuesOf, which a program of these never ships
 	apply(data, errors)
-	if (!errors._.length) errors._e(data, "predicate")
+	if (!errors._.length) errors._e(data, "predicate", "valid", "is invalid")
 	return onFail ? onFail(errors) : errors
 }
 
@@ -795,7 +795,13 @@ export const lineOf = (issue: ArkIssue): string => {
 		listsUnions && issue._l !== undefined ? issue._l
 		: path ?
 			path +
-			(writesText && !message.startsWith(messageOf(issue)) ? ": " : " ") +
+			((
+				writesText &&
+				!(message === "is invalid" && issue.expected === "valid") &&
+				!message.startsWith(messageOf(issue))
+			) ?
+				": "
+			:	" ") +
 			message
 		:	message
 	)
@@ -849,6 +855,6 @@ export { ThrownIssues as TraversalError }
 export const throwIssues = (apply: CompactApply, data: unknown): never => {
 	const errors = new Issues()
 	apply(data, errors)
-	if (!errors._.length) errors._e(data, "predicate")
+	if (!errors._.length) errors._e(data, "predicate", "valid", "is invalid")
 	return errors.throw()
 }

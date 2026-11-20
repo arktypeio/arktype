@@ -292,7 +292,7 @@ export const issuesOf = (
 ): ArkIssue[] => {
 	apply(data, errors)
 	// data a write or a getter has made valid since fails as a whole
-	if (!errors._.length) errors._e(data, "predicate")
+	if (!errors._.length) errors._e(data, "predicate", "valid", "is invalid")
 	return errors._
 }
 
@@ -305,7 +305,7 @@ export const foundErrors = (
 	const errors = new Ctx()
 	// as issuesOf, which a program of these never ships
 	apply(data, errors)
-	if (!errors._.length) errors._e(data, "predicate")
+	if (!errors._.length) errors._e(data, "predicate", "valid", "is invalid")
 	return onFail ? onFail(errors) : errors
 }
 
@@ -396,7 +396,13 @@ export const lineOf = (issue: ArkIssue): string => {
 		listsUnions && issue._l !== undefined ? issue._l
 		: path ?
 			path +
-			(writesText && !message.startsWith(messageOf(issue)) ? ": " : " ") +
+			((
+				writesText &&
+				!(message === "is invalid" && issue.expected === "valid") &&
+				!message.startsWith(messageOf(issue))
+			) ?
+				": "
+			:	" ") +
 			message
 		:	message
 	)
