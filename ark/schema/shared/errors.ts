@@ -34,7 +34,6 @@ import {
 } from "./enWriters.ts"
 import { describesData, listsErrors } from "./errorWriters.ts"
 import { findsOnRead } from "./issueFeatures.ts"
-import { removedProblemMessage } from "./utils.ts"
 import {
 	ArkErrors as BaseArkErrors,
 	isCustomIssue,
@@ -50,6 +49,7 @@ import {
 } from "./issues.ts"
 import {
 	applyRejected,
+	throwOnProblem,
 	Traversal,
 	type FailHandler,
 	type InternalTraversal
@@ -478,6 +478,16 @@ export class SiteTraversal extends Traversal implements SiteFailureContext {
 	}
 }
 
+const { _at, _in } = SiteTraversal.prototype
+
+// a validator's traversal, which its narrow or morph may pipe to one of
+// arktype's nodes, fails what arktype's compiled code does as SiteTraversal
+// would, from what every traversal holds, so the runtime needn't carry either
+export const siteTraversalOf = (ctx: Traversal): SiteTraversal => {
+	if (!("_at" in ctx)) Object.assign(ctx, { _at, _in })
+	return ctx as never
+}
+
 export class ArkTraversal extends SiteTraversal {
 	override createErrors(): ArkErrors {
 		return new ArkErrors(this.config)
@@ -541,9 +551,7 @@ export class ArkTraversal extends SiteTraversal {
 	}
 
 	protected override raise(input: ArkErrorInput): ArkError {
-		// 2.x's slot, which a cast or JavaScript still passes
-		if (typeof input === "object" && "problem" in input)
-			throwError(removedProblemMessage)
+		throwOnProblem(input)
 		// read now, so a caller's later change to its input doesn't reach the error
 		const errCtx: ArkErrorContextInput =
 			typeof input === "object" ?
