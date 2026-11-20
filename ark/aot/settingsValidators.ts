@@ -326,10 +326,6 @@ var ThrownIssues = /* @__PURE__ */ (() =>
 		}
 	}))()
 
-// ark/schema/shared/jsonSchema.ts
-var supportedJsonSchemaTargets = ["draft-2020-12", "draft-07", "openapi-3.0"]
-var toJsonSchemaTargets = [...supportedJsonSchemaTargets, "openapi-3.1"]
-
 // ark/schema/shared/transform.ts
 var TransformErrors = class _TransformErrors {
 	// a function, so a check can rule out other values by typeof
@@ -1394,6 +1390,7 @@ export const precompileJsonSchema = {
 				methods: { type: "boolean" },
 				toJSON: { type: "boolean" },
 				toJsonSchema: { type: "boolean" },
+				withContext: { type: "boolean" },
 				"~standard": { type: "boolean" },
 				"~standard.jsonSchema": { type: "boolean" }
 			},

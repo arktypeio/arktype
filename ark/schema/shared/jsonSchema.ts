@@ -238,7 +238,12 @@ export const supportedJsonSchemaTargets: readonly ToJsonSchema.Target[] = [
  * only toJsonSchema's, and isn't baked for ~standard.jsonSchema
  */
 export const toJsonSchemaTargets: readonly ToJsonSchema.Target[] = [
-	...supportedJsonSchemaTargets,
+	// listed rather than spread from supportedJsonSchemaTargets: a minifier
+	// reads a spread as a side effect, which keeps this module's chunk in every
+	// program importing anything from it, as arktype/runtime's TraversalError
+	"draft-2020-12",
+	"draft-07",
+	"openapi-3.0",
 	"openapi-3.1"
 ]
 
