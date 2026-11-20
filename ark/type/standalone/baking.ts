@@ -42,7 +42,8 @@ export const defaultMembers = [
 	"assert",
 	"meta",
 	"~standard",
-	"methods"
+	"methods",
+	"withContext"
 ] as const
 
 export type ValidatorMember =

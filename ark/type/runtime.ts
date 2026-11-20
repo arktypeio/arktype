@@ -17,6 +17,7 @@ import {
 	findsOnRead,
 	FirstIssues,
 	holdsExpression,
+	inContext,
 	isCustomIssue,
 	issueAt,
 	issuesOf,
@@ -29,11 +30,13 @@ import {
 	validateStandardJsonSchemaTarget,
 	writeFromPath,
 	writeListed,
+	withContextOf,
 	type ArkError,
 	type ArkErrorCode,
 	type ArkErrorInput,
 	type ArkIssue,
 	type CompactApply,
+	type ContextualTarget,
 	type UnionIssueOf,
 	type FailHandler,
 	type FailureContext,
@@ -139,6 +142,7 @@ export {
 	Traversal,
 	TraversalError,
 	tryMorph,
+	withContextOf,
 	writeDomainActual,
 	writeLengthActual,
 	writeMessage,
@@ -208,6 +212,7 @@ export class Validator {
 	declare allows: (data: unknown) => boolean
 	declare assert: (data: unknown, pipedFromCtx?: Traversal) => unknown
 	declare "~standard": StandardSchemaV1.Props
+	declare withContext: (context: ArkEnv.context) => ContextualTarget
 	// a member the build bakes is the validator's own. One it doesn't reads
 	// undefined, and under the "development" condition throws with the fix
 	declare expression: string
@@ -319,6 +324,20 @@ export const standardResultOf = (
 		)
 	:	{ value: out }
 
+// a validation Standard Schema asked for, in the context its options pass
+export const standardValidated = (
+	validator: (data: unknown) => unknown,
+	input: unknown,
+	options: StandardSchemaV1.Options | undefined
+): StandardSchemaV1.Result<unknown> => {
+	const context = options?.libraryOptions?.context
+	return standardResultOf(
+		context === undefined ?
+			validator(input)
+		:	inContext(context as never, () => validator(input))
+	)
+}
+
 // shorter at each site than a literal
 export const siteOf = ((
 	code: ArkErrorCode,
@@ -348,7 +367,9 @@ const standardOf = (
 	freeze({
 		vendor: "arktype",
 		version: 1,
-		validate: freeze((input: unknown) => standardResultOf(validator(input))),
+		validate: freeze((input: unknown, options?: StandardSchemaV1.Options) =>
+			standardValidated(validator, input, options)
+		),
 		...attributes["~standard"]
 	})
 
@@ -396,6 +417,9 @@ export const createValidatorWith = ((
 	own(validator, attributes)
 	validator.allows = freeze(parts[0] as never)
 	validator["~standard"] = standardOf(validator, attributes)
+	validator.withContext = freeze((context: ArkEnv.context) =>
+		withContextOf(validator, context)
+	)
 	return holdHoles(freeze(validator), id, holes)
 }) satisfies Fn
 

@@ -6870,6 +6870,39 @@ const isEven = (n: number, ctx: Traversal) => n % 2 === 0 || ctx.mustBe("even")
 const Even = type("number").narrow(isEven)
 ```
 
+## Context
+
+A check that depends on something the caller has, like a form's saved values, reads it as `ctx.context`. Bind it with `.withContext`, so the Type stays defined once and can be [precompiled](https://arktype.io/docs/precompile), instead of being created again for each value it closes over. Declare its shape on `ArkEnv`:
+
+```ts
+declare global {
+	interface ArkEnv {
+		context(): { savedStreet?: string }
+	}
+}
+
+// a street saved under older rules stays valid until it's edited
+const Street = type("string").narrow(
+	(s, ctx) =>
+		s === ctx.context?.savedStreet ||
+		s.length > 3 ||
+		ctx.mustBe("a full street")
+)
+
+const Address = type({ street: Street, city: "string" })
+
+// ArkErrors: street must be a full street
+Address({ street: "Elm", city: "Springfield" })
+
+// { street: "Elm", city: "Springfield" }
+Address.withContext({ savedStreet: "Elm" })({
+	street: "Elm",
+	city: "Springfield"
+})
+```
+
+`.withContext` creates no Type. It returns a validator with `assert`, `allows` and `~standard`, which is a Standard Schema a form library can take as is. Every narrow and morph the call reaches reads the same context, at any depth, and it's `undefined` in a call without one. A Standard Schema caller can also pass it without binding, as `T["~standard"].validate(data, { libraryOptions: { context } })`.
+
 ## Members
 
 ### `path`
@@ -6891,6 +6924,14 @@ configuration for this traversal
 - options can affect traversal results and error messages
 - defaults < global config < scope config
 - does not include options configured on individual types
+
+### `context`
+
+the context this validation was called with
+
+- the same object at every path, for predicates and morphs to read
+- `undefined` when a call passes none
+- typed as declared on `ArkEnv`: `interface ArkEnv { context(): {...} }`
 
 ### `hasError`
 
@@ -8748,6 +8789,10 @@ if (out instanceof type.errors) {
 
 validate and return transformed data or throw
 
+### `assert`
+
+validate and return transformed data or throw
+
 - sugar to avoid checking for [type.errors](https://arktype.io/docs/errors) if they are unrecoverable
 - warning: throws `TraversalError`
 
@@ -8759,6 +8804,10 @@ const CriticalPayload = type({
 const data = CriticalPayload.assert({ irrelevantValue: "whoops" })
 console.log(data.superImportantValue) // valid output can be accessed directly
 ```
+
+### `allows`
+
+check input without applying morphs
 
 ### `allows`
 
@@ -8780,6 +8829,29 @@ alias for [`assert`](https://arktype.io/docs/type-api#assert) with typed input
 const T = type({ foo: "string" });
 // TypeScript: Type 'number' is not assignable to type 'string'
 const data = T.from({ foo: 5 });
+```
+
+### `withContext`
+
+bind a context its narrows and morphs read as `ctx.context`
+
+- creates no Type, so a static, precompilable Type can validate with what a caller has, e.g. a form's saved values
+- is a Standard Schema, as form libraries take one
+- typed as declared on `ArkEnv`
+- `~standard.validate(data, { libraryOptions: { context } })` passes a context without binding one
+
+```ts
+declare global {
+    interface ArkEnv {
+        context(): { saved?: string }
+    }
+}
+
+const Street = type("string").narrow(
+    (s, ctx) => s === ctx.context?.saved || s.length > 3 || ctx.mustBe("a full street")
+)
+// the street as saved passes, though it's short
+const out = Street.withContext({ saved: "Elm" })("Elm")
 ```
 
 ## Inference
@@ -9453,6 +9525,10 @@ alias of [`json`](https://arktype.io/docs/type-api#json) for `JSON.stringify` co
 generate a JSON Schema
 
 - warning: throws `ToJsonSchema.Error` if this cannot be converted to JSON Schema
+
+### `~standard`
+
+the Type's [StandardSchema](https://github.com/standard-schema/standard-schema) properties, validating in context
 
 ### `~standard`
 

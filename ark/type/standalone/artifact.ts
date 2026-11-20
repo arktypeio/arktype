@@ -951,7 +951,8 @@ export class StandaloneArtifact {
 		return (
 			!this.baking.called &&
 			!this.baking.members.has("assert") &&
-			!this.baking.members.has("~standard")
+			!this.baking.members.has("~standard") &&
+			!this.baking.members.has("withContext")
 		)
 	}
 
