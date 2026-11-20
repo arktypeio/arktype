@@ -59,7 +59,7 @@ import type {
 	attachmentsOf
 } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
-import type { ArkErrors } from "./shared/errors.ts"
+import { siteTraversalOf, type ArkErrors } from "./shared/errors.ts"
 import {
 	ArkErrors as BaseArkErrors,
 	throwOnDefault,
@@ -172,7 +172,8 @@ const callableOf = (cache: NodeCache) =>
 		pipedFromCtx?: Traversal | undefined,
 		onFail?: ArkErrors.Handler | null
 	) => {
-		if (pipedFromCtx) return pipe(pipedFromCtx, cache.self, data)
+		if (pipedFromCtx)
+			return pipe(siteTraversalOf(pipedFromCtx), cache.self, data)
 
 		const rootApply = cache.rootApply
 		return rootApply === undefined ?
