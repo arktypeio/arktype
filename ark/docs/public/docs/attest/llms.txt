@@ -297,7 +297,9 @@ import { attest } from "@ark/attest"
 import { type } from "arktype"
 
 it("discriminated union", () => {
-	const User = type({
+	// measured with TypeScript 6.0.3
+	attest.instantiations([8749, "instantiations"])
+	return type({
 		kind: "'admin'",
 		"powers?": "string[]"
 	})
@@ -308,9 +310,6 @@ it("discriminated union", () => {
 		.or({
 			kind: "'pleb'"
 		})
-
-	// measured with TypeScript 6.0.3
-	attest.instantiations([17010, "instantiations"])
 })
 ```
 
@@ -404,14 +403,14 @@ import { type } from "arktype"
 bench.baseline(() => type("never"))
 
 bench("single-quoted", () => type("'nineteen characters'")).types([
-	731,
+	263,
 	"instantiations"
 ])
 
-bench("keyword", () => type("string")).types([511, "instantiations"])
+bench("keyword", () => type("string")).types([290, "instantiations"])
 ```
 
-On TypeScript 6.0.3, these benches count 13484 and 13408 without the baseline.
+On TypeScript 6.0.3, these benches count over 5000 each without the baseline.
 
 > **Warning**
 >
@@ -506,7 +505,7 @@ Set an option in one of three ways:
 - Pass it as a flag to the process that runs your tests or benches, e.g. `--skipTypes` or `--benchPercentThreshold 10`. A boolean option is turned on by its flag alone.
 - Set it as an environment variable prefixed with `ATTEST_`, e.g. `ATTEST_skipTypes=true` or `ATTEST_benchPercentThreshold=10`. Values are parsed as JSON, so a string needs quotes: `ATTEST_filter='"keyword"'`.
 
-Flags and options passed to `setup` both override environment variables. Avoid setting an option both in `setup` and as a flag: `setup` uses its own value, but your tests use the flag's. Benches don't call `setup`, so they read only flags and environment variables.
+A flag overrides an environment variable, and both override an option passed to `setup` everywhere except `setup`'s own `skipTypes` check, so avoid setting an option in `setup` and also as a flag or variable. Benches don't call `setup`, so they read only flags and environment variables.
 
 ## Options
 

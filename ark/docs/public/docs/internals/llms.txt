@@ -190,6 +190,8 @@ See [metadata](https://arktype.io/docs/expressions#meta) for more on `configure`
 
 ArkType's syntax parses to a schema format made of [node kinds](https://arktype.io/docs/internals/nodes#node-kinds), and you can write that format directly. It's useful when you generate types from data, like a converter from another schema language, since there's no string to assemble. A Type built this way validates like any other but infers `unknown`.
 
+Schemas are code-equivalent: `type.schema`, `rootSchema`, `node` and `schemaScope` compile schemas into JavaScript functions and require trusted input. Read untrusted JSON Schemas with [`fromJsonSchema`](https://arktype.io/docs/json-schema/from-json-schema), noting its regex and `allOf` limits.
+
 A root schema is one of:
 
 - a domain name: `"string"`

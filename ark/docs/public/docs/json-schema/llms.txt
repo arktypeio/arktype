@@ -66,6 +66,8 @@ User({ name: "Ada", age: 1.5 })
 
 A schema written in the call infers its type, so `User` is a `Type<{ name: string; age?: number }>`. It reads a [Standard JSON Schema](https://standardschema.dev/json-schema), like a Zod schema, too. See [From JSON Schema](https://arktype.io/docs/json-schema/from-json-schema), and [Keyword support](https://arktype.io/docs/json-schema/support) for which keywords it understands.
 
+Schemas are code-equivalent: `fromJsonSchema` prevents code injection and prototype pollution, but does not guard against catastrophic backtracking (ReDoS) in user-supplied `pattern` or `patternProperties` regexes or combinatorial `allOf` blow-up.
+
 ## Compare schemas
 
 Read into Types, JSON Schemas, Zod schemas and your own Types compare with each other, so you can check in CI that a new version of an API schema still accepts everything the old one did:
@@ -125,6 +127,7 @@ A [precompiled](https://arktype.io/docs/precompile) validator has `toJsonSchema(
 | `useRefs` | `false` | write every part once under `$defs`, not only [cyclic aliases](https://arktype.io/docs/json-schema/to-json-schema#cyclic-types), and point to it with `$ref` |
 | `aliasDefs` | `false` | write [a scope's aliases](https://arktype.io/docs/json-schema/to-json-schema#named-aliases) once under `$defs`, named by the alias, not only cyclic ones |
 | `discriminator` | `true` for `"openapi-3.0"` / `"openapi-3.1"` | name the key a [discriminated union](https://arktype.io/docs/json-schema/to-json-schema#discriminated-unions)'s `oneOf` is told apart by with OpenAPI's `discriminator` |
+| `io` | unset | convert `"in"` (input) or `"out"` (output) instead of the Type as written. See [`io`](https://arktype.io/docs/json-schema/to-json-schema#io) |
 | `fallback` | throws | what to write for a part JSON Schema can't express. See [Fallbacks](https://arktype.io/docs/json-schema/to-json-schema#fallbacks) |
 
 ### target
@@ -235,6 +238,14 @@ Standard JSON Schema has no `"openapi-3.1"` target, so `~standard.jsonSchema` do
 type("string").toJsonSchema({ dialect: null }) // { type: "string" }
 ```
 
+### io
+
+`io` chooses which side of a morph, defaulted key, `"+": "delete"` object or `undefined`-allowing property to convert:
+
+- **unset** (default): converts the Type's input while keeping output-side structure except `"+": "delete"` (so morphs hit the `morph` fallback, defaults stay `default`, and `"+": "delete"` omits `additionalProperties`).
+- **`"in"`**: converts the input (morphs as their input, keeps `default`, drops `undefined` union branches, and allows keys `"+": "delete"` removes).
+- **`"out"`**: converts the output, matching [`~standard.jsonSchema.output`](https://arktype.io/docs/json-schema/to-json-schema#standard-json-schema) (morphs as their output, applies defaults, writes `additionalProperties: false` for `"+": "delete"`, and drops `undefined` from object property/index values while omitting `undefined`-allowing object properties from `required`).
+
 ### Cyclic types
 
 A cyclic alias is written once under `$defs`, named by its alias, and each reference to it is a `$ref`. Everything else, including an alias that isn't cyclic, is written inline:
@@ -329,7 +340,7 @@ const schema = types.User.toJsonSchema({ aliasDefs: true })
 | `"string.json"` | `contentMediaType: "application/json"` |
 | `"'a' \| 'b'"` | `type: "string"`, `enum: ["a", "b"]` |
 | `"string \| null"` | `anyOf` |
-| `{ kind: "'a'" }` or `{ kind: "'b'" }` | [`oneOf`](https://arktype.io/docs/json-schema/to-json-schema#discriminated-unions) |
+| `{ kind: "'a'", a: "string" }` or `{ kind: "'b'" }` | [`oneOf`](https://arktype.io/docs/json-schema/to-json-schema#discriminated-unions) |
 | `{ "name?": "string" }` | `properties`, with only required keys in `required` |
 | `{ "+": "reject", ... }` | `additionalProperties: false` |
 | `"Record<string, number>"` | `additionalProperties: {...}` |
@@ -340,11 +351,11 @@ const schema = types.User.toJsonSchema({ aliasDefs: true })
 | `{ role: "string = 'user'" }` | `default: "user"` on `role` |
 | `.describe("...")`, `.configure({ title, examples })` | `description`, `title`, `examples` |
 
-JSON Schema's `pattern` has no flags. `d` and `g` don't change what a regex matches, so they're left out, as is `u` for draft 2020-12, whose patterns are read with it. Any other flag, like `i` in `/^a/i`, goes to the [`patternFlags`](https://arktype.io/docs/json-schema/to-json-schema#fallback-codes) fallback.
+JSON Schema's `pattern` has no flags, and validators like Ajv read every pattern with `u`. `d` and `g` don't change what a regex matches, so they're left out, as is `u` for draft 2020-12 and OpenAPI 3.1, whose patterns are read with it. Any other flag, like `i` in `/^a/i`, goes to the [`patternFlags`](https://arktype.io/docs/json-schema/to-json-schema#fallback-codes) fallback, as does a regex without `u` that fails or parses differently under `u`, like `/^a\-b$/` or `/^\p{L}$/`, with `flags: ""`.
 
 An index signature applies to every key, including declared ones. JSON Schema skips declared keys in `additionalProperties`, so a `string` index signature is written there only if each declared key's value is already within the index's, as `id` is above. Otherwise it's written as `patternProperties` with a pattern every key matches, which checks the declared keys too. OpenAPI 3.0 and some LLM structured output APIs have no `patternProperties`, so they can read only the first.
 
-A keyword's `pattern` has no lookaround or backreference, so a validator reading patterns with RE2, as some LLMs' structured outputs do, reads it as arktype's regex does. Your own regex is written as you wrote it.
+A keyword's `pattern` has no lookaround or backreference, so a validator reading patterns with RE2, as some LLMs' structured outputs do, reads it as arktype's regex does. Your own regex is written as you wrote it, unless it fails or parses differently under `u`, as above.
 
 A keyword's `format`, `contentEncoding` or `contentMediaType` names what its strings are. JSON Schema reads each as an annotation, which a validator doesn't check unless it's configured to, so it's written whether or not arktype's check matches the standard's definition exactly. A keyword checked by a regex is written with that `pattern` too, so a validator that ignores formats still checks what arktype does. One checked by a function is written as its format alone: `string.date` accepts whatever `Date` parses, and `string.url` whatever `URL.canParse` does, so their schemas accept strings the Type rejects. A validator that asserts formats, like Ajv with `ajv-formats`, can also reject strings arktype accepts, where a format's RFC differs from arktype's check: `date-time` requires a time that `string.date` and `string.date.iso` don't, and `uri` rejects the space in a path that `string.url` accepts. Keywords no format names, like `string.date.epoch` or `string.creditCard`, go to the [`predicate`](https://arktype.io/docs/json-schema/to-json-schema#fallback-codes) fallback.
 
@@ -352,7 +363,7 @@ A key that isn't `string` or a single regex, like `[string <= 3]`, needs `proper
 
 ### Discriminated unions
 
-A union whose object branches each require a string at one key, no value of which two branches allow, is written as `oneOf`, since no data can match two of its branches. For `"openapi-3.0"`, or where the `discriminator` option is `true`, it names that key with OpenAPI's [`discriminator`](https://spec.openapis.org/oas/v3.0.3#discriminator-object), so a code generator models it as a tagged union:
+A union whose object branches each require a string at one key, no value of which two branches allow, is written as `oneOf`, since no data can match two of its branches. For `"openapi-3.0"` and `"openapi-3.1"`, or where the `discriminator` option is `true`, it names that key with OpenAPI's [`discriminator`](https://spec.openapis.org/oas/v3.0.3#discriminator-object), so a code generator models it as a tagged union:
 
 ```ts
 const Destination = type({ type: "'bankAccount'", routing: "string" }).or({
@@ -369,18 +380,18 @@ const schema = Destination.toJsonSchema({ target: "openapi-3.0" })
 		{
 			"type": "object",
 			"properties": {
-				"routing": { "type": "string" },
-				"type": { "type": "string", "enum": ["bankAccount"] }
-			},
-			"required": ["routing", "type"]
-		},
-		{
-			"type": "object",
-			"properties": {
 				"last4": { "type": "string" },
 				"type": { "type": "string", "enum": ["card"] }
 			},
 			"required": ["last4", "type"]
+		},
+		{
+			"type": "object",
+			"properties": {
+				"routing": { "type": "string" },
+				"type": { "type": "string", "enum": ["bankAccount"] }
+			},
+			"required": ["routing", "type"]
 		}
 	],
 	"discriminator": { "propertyName": "type" }
@@ -524,20 +535,20 @@ Every reason `toJsonSchema()` can throw, with the fields its handler receives be
 | `domain` | `bigint` or `symbol` | `type("bigint")` | `domain` |
 | `indexKey` | a key `propertyNames` can't express, or `additionalProperties` can't in `openapi-3.0` | `type({ "[string <= 3]": "number" })` | `key` and `value`, as schemas |
 | `morph` | a morph | `type("string.trim")` | `out`, the output schema or `null` |
-| `patternFlags` | a regex flag other than `d`, `g` or, for draft 2020-12, `u` | `type(/^a/i)` | `pattern`, `flags` |
+| `patternFlags` | a regex flag other than `d`, `g` or, for 2020-12 and 3.1, `u`, or a flagless regex incompatible with `u` | `type(/^a/i)` | `pattern`, `flags` |
 | `patternIntersection` | a second regex on the same string | `type(/^a/).and(/b$/)` | `pattern` |
-| `predicate` | a `narrow`, or `object.json`'s plain-object check | `type("number").narrow(n => n > 0)` | `predicate` |
+| `predicate` | a `narrow` | `type("number").narrow(n => n > 0)` | `predicate` |
 | `proto` | an `instanceof` other than `Array` or `Date` | `type("Map")` | `proto` |
 | `symbolKey` | a symbol key or index signature | `type({ "[symbol]": "string" })` | `key` (`null` for an index), `value`, `optional` |
 | `unit` | a literal that isn't JSON | `type("undefined")` | `unit` |
 
 A `Date` is reported as `date`, never `proto`.
 
-`object.json` accepts only arrays and objects whose prototype is `Object.prototype` or `null`, which JSON Schema can't require, so its check is reported as `predicate`. Return `ctx.base` to accept any JSON object in its place:
+`object.json` accepts only arrays and objects whose prototype is `Object.prototype` or `null`. JSON Schema can't require that, but parsed JSON has no other kind of object, so it's written as any object or array:
 
 ```ts
-// { type: "object", additionalProperties: { $ref: "#/$defs/jsonData" }, $defs: { jsonData: { anyOf: [...] } } }
-type("object.json").toJsonSchema({ fallback: { predicate: ctx => ctx.base } })
+// { $schema: "...", anyOf: [{ type: "object" }, { type: "array", items: {} }] }
+type("object.json").toJsonSchema()
 ```
 
 ## Configuration
@@ -587,7 +598,7 @@ Form["~standard"].jsonSchema.input({ target: "draft-2020-12" })
 Form["~standard"].jsonSchema.output({ target: "draft-2020-12" })
 ```
 
-Unlike `toJsonSchema()`, these never throw for a part JSON Schema can't express. They write as much of it as JSON Schema can describe, or `{}` if nothing, so `id` above accepts any value. A regex with flags is left out too, and so is an index signature `propertyNames` can't express, along with the `additionalProperties: false` that would reject the keys it allows.
+Unlike `toJsonSchema()`, these never throw for a part JSON Schema can't express. They write as much of it as JSON Schema can describe, or `{}` if nothing, so `id` above accepts any value. A regex `patternFlags` covers is left out too, and so is an index signature `propertyNames` can't express, along with the `additionalProperties: false` that would reject the keys it allows.
 
 - `target` must be `"draft-2020-12"`, `"draft-07"` or `"openapi-3.0"`. Anything else throws.
 - For `"openapi-3.0"`, a tuple is an array of its length. A Schema Object has nowhere to put definitions, so they're written as `definitions` beside the schema, and each `$ref` points there, like `#/definitions/Node`, as zod writes them. The schema resolves its own `$ref`s as returned. To put it in an OpenAPI document, move `definitions` to `components.schemas` and replace `#/definitions/` with `#/components/schemas/` in its `$ref`s. A `defs` handler you configure gets `#/components/schemas/` `$ref`s, as `toJsonSchema()`'s does.
@@ -627,7 +638,7 @@ User({ name: "Ada", age: 1.5 })
 `fromJsonSchema` takes one of:
 
 - a **JSON Schema**: an object or a boolean, read as [Keyword support](https://arktype.io/docs/json-schema/support) describes.
-- a **[Standard JSON Schema](https://standardschema.dev/json-schema)**: a schema whose `~standard` has `jsonSchema`, like one from Zod 4.2.0 or later, or an arktype Type. It's read as the draft 2020-12 JSON Schema of its input, so what that can't express, like Zod's refinements, transforms and `undefined`, is left out. Pass any other library's schema as its JSON Schema, like `z.toJSONSchema(schema)` before Zod 4.2.0.
+- a **[Standard JSON Schema](https://standardschema.dev/json-schema)**: a schema whose `~standard` has `jsonSchema`, like one from Zod 4.2.0 or later, read as the draft 2020-12 JSON Schema of its input, so what that can't express, like Zod's refinements, transforms and `undefined`, is left out. An arktype Type is read as its own input directly, keeping non-JSON domains like `Date` and narrows; pass `T.toJsonSchema()` to read it by JSON Schema's rules. Pass any other library's schema as its JSON Schema, like `z.toJSONSchema(schema)` before Zod 4.2.0.
 
 ```ts
 import { fromJsonSchema } from "arktype"
@@ -724,7 +735,9 @@ User.allows({ name: "Ada" }) // true
 
 OpenAPI 3.0's `nullable: true` adds `null` to the `type` beside it, as ajv reads it, and infers it there too. A `nullable` without a `type`, like one beside a `$ref`, throws a `ParseError`, as ajv does.
 
-[Keyword support](https://arktype.io/docs/json-schema/support) lists how each keyword is read.
+A schema's `description` is kept on `T.description` and metadata so it round-trips through `toJsonSchema()`, without replacing validation error `expected` phrasing.
+
+[Keyword support](https://arktype.io/docs/json-schema/support) lists how each keyword is read. `fromJsonSchema` prevents code injection and prototype pollution, so a schema can't run arbitrary code, but it compiles `pattern` and `patternProperties` with JavaScript's `RegExp` and intersects `allOf` branches eagerly: don't pass untrusted regexes that can backtrack catastrophically or deeply nested `allOf` combinations without bounding the input.
 
 ## Invalid schemas
 
