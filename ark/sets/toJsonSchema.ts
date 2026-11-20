@@ -123,7 +123,8 @@ export const rootToJsonSchema = (
 const refPrefixByTarget: Record<ToJsonSchema.Target, string> = {
 	"draft-2020-12": "#/$defs/",
 	"draft-07": "#/definitions/",
-	"openapi-3.0": "#/components/schemas/"
+	"openapi-3.0": "#/components/schemas/",
+	"openapi-3.1": "#/components/schemas/"
 }
 
 export const toJsonSchemaRecurse = (
@@ -467,7 +468,10 @@ const writeOwn = (
 	write: StandardJSONSchemaV1.Converter["input"],
 	ctx: JsonSchemaContext
 ): JsonSchema => {
-	const { $schema, ...schema } = write({ target: ctx.target })
+	// an OpenAPI 3.1 Schema Object is draft-2020-12, which Standard JSON Schema names
+	const { $schema, ...schema } = write({
+		target: ctx.target === "openapi-3.1" ? "draft-2020-12" : ctx.target
+	})
 	return schema
 }
 
@@ -691,7 +695,8 @@ const isJsonSchemaPattern = (
 		flag =>
 			flag === "d" ||
 			flag === "g" ||
-			(flag === "u" && ctx.target === "draft-2020-12")
+			(flag === "u" &&
+				(ctx.target === "draft-2020-12" || ctx.target === "openapi-3.1"))
 	)
 
 const writeDefault = (

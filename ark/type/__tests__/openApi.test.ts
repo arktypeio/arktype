@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	annotatingFallback,
+	toJsonSchemaTargets,
 	writeInvalidJsonSchemaTargetMessage,
 	type JsonSchema,
 	type ToJsonSchema
@@ -420,6 +421,86 @@ contextualize(() => {
 	it("unknown target", () => {
 		attest(() =>
 			type("string").toJsonSchema({ target: "draft-04" as never })
-		).throws(writeInvalidJsonSchemaTargetMessage("draft-04"))
+		).throws(
+			writeInvalidJsonSchemaTargetMessage("draft-04", toJsonSchemaTargets)
+		)
+	})
+
+	describe("openapi-3.1", () => {
+		const target = "openapi-3.1"
+
+		it("writes draft-2020-12 without $schema", () => {
+			const T = type({
+				pair: ["string", "number"],
+				"name?": type("string | null").configure({ examples: ["a", null] })
+			})
+			attest(T.toJsonSchema({ target })).snap({
+				type: "object",
+				properties: {
+					pair: {
+						type: "array",
+						minItems: 2,
+						prefixItems: [{ type: "string" }, { type: "number" }],
+						items: false
+					},
+					name: {
+						anyOf: [
+							{ type: "string", examples: ["a", null] },
+							{ type: "null" }
+						],
+						examples: ["a", null]
+					}
+				},
+				required: ["pair"]
+			})
+			attest(T.toJsonSchema({ target })).equals(
+				T.toJsonSchema({ target: "draft-2020-12", dialect: null })
+			)
+		})
+
+		it("defs are components", () => {
+			const types = scope({
+				Address: { street: "string" },
+				Node: { at: "Address", "next?": "Node | null" }
+			}).export()
+			attest(() => types.Node.toJsonSchema({ target })).throws(
+				'Can\'t convert "defs" to JSON Schema'
+			)
+			const components: Record<string, object> = {}
+			const schema = types.Node.toJsonSchema({
+				target,
+				aliasDefs: true,
+				fallback: {
+					defs: ctx => {
+						Object.assign(components, ctx.defs)
+						return ctx.base
+					}
+				}
+			})
+			attest(schema).snap({ $ref: "#/components/schemas/Node" })
+			attest(components).snap({
+				Node: {
+					type: "object",
+					properties: {
+						at: { $ref: "#/components/schemas/Address" },
+						next: {
+							anyOf: [{ $ref: "#/components/schemas/Node" }, { type: "null" }]
+						}
+					},
+					required: ["at"]
+				},
+				Address: {
+					type: "object",
+					properties: { street: { type: "string" } },
+					required: ["street"]
+				}
+			})
+		})
+
+		it("isn't a Standard JSON Schema target", () => {
+			attest(() =>
+				type("string")["~standard"].jsonSchema.input({ target })
+			).throws(writeInvalidJsonSchemaTargetMessage(target))
+		})
 	})
 })

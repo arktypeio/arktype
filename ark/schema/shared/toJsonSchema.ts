@@ -383,7 +383,7 @@ export declare namespace ToJsonSchema {
 
 	export type Target = satisfy<
 		StandardJSONSchemaV1.Target,
-		"draft-2020-12" | "draft-07" | "openapi-3.0"
+		"draft-2020-12" | "draft-07" | "openapi-3.0" | "openapi-3.1"
 	>
 
 	export interface Options {
@@ -403,6 +403,8 @@ export declare namespace ToJsonSchema {
 		 *  - "draft-2020-12" -> "https://json-schema.org/draft/2020-12/schema"
 		 *  - "draft-07" -> "http://json-schema.org/draft-07/schema#"
 		 *  - "openapi-3.0" -> no $schema, for an OpenAPI 3.0 Schema Object
+		 *  - "openapi-3.1" -> no $schema, for an OpenAPI 3.1 Schema Object,
+		 *    which is draft-2020-12 with its $refs into #/components/schemas
 		 *
 		 * If `dialect` is also specified, `dialect` takes precedence.
 		 */

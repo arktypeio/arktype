@@ -30,13 +30,13 @@ A [precompiled](/docs/precompile) validator has `toJsonSchema()`, its schema bak
 
 ## Options
 
-| option      | default           | effect                                                                                                     |
-| ----------- | ----------------- | ---------------------------------------------------------------------------------------------------------- |
-| `target`    | `"draft-2020-12"` | what to write, `"draft-2020-12"`, `"draft-07"` or [`"openapi-3.0"`](#openapi-30)                           |
-| `dialect`   | the target's URL  | the `$schema` value. `null` omits it. Takes precedence over `target`'s URL                                 |
-| `useRefs`   | `false`           | write every part once under `$defs`, not only [cyclic aliases](#cyclic-types), and point to it with `$ref` |
-| `aliasDefs` | `false`           | write [a scope's aliases](#named-aliases) once under `$defs`, named by the alias, not only cyclic ones     |
-| `fallback`  | throws            | what to write for a part JSON Schema can't express. See [Fallbacks](#fallbacks)                            |
+| option      | default           | effect                                                                                                           |
+| ----------- | ----------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `target`    | `"draft-2020-12"` | what to write, `"draft-2020-12"`, `"draft-07"`, [`"openapi-3.0"`](#openapi-30) or [`"openapi-3.1"`](#openapi-31) |
+| `dialect`   | the target's URL  | the `$schema` value. `null` omits it. Takes precedence over `target`'s URL                                       |
+| `useRefs`   | `false`           | write every part once under `$defs`, not only [cyclic aliases](#cyclic-types), and point to it with `$ref`       |
+| `aliasDefs` | `false`           | write [a scope's aliases](#named-aliases) once under `$defs`, named by the alias, not only cyclic ones           |
+| `fallback`  | throws            | what to write for a part JSON Schema can't express. See [Fallbacks](#fallbacks)                                  |
 
 ### target
 
@@ -133,6 +133,12 @@ Pair.toJsonSchema({
 
 [`jsonSchema` meta](#your-own-schema) is written as configured, so `string.json`'s `contentMediaType`, which OpenAPI 3.0 lacks, is too.
 
+### OpenAPI 3.1
+
+`"openapi-3.1"` writes an [OpenAPI 3.1 Schema Object](https://spec.openapis.org/oas/v3.1.1#schema-object), which is `draft-2020-12` without `$schema`, but for its `$ref`s: like OpenAPI 3.0's, they point into `#/components/schemas`, and the definitions go to [`defs`](#openapi-30) for you to put there.
+
+Standard JSON Schema has no `"openapi-3.1"` target, so `~standard.jsonSchema` doesn't take it, and a [precompiled](/docs/precompile) validator writes it only where it's [configured](#configuration).
+
 ### dialect
 
 ```ts
@@ -211,7 +217,7 @@ const schema = types.User.toJsonSchema({ aliasDefs: true })
 - A Type of the scope used in another, like `type({ to: types.Address })`, is still named.
 - A submodule's alias is named by its own name, like `Zip` for `Geo.Zip`, and its root by the submodule's.
 - What's named is a part equal to the alias's resolution, wherever it is: a non-cyclic alias leaves no trace in what references it. Of two aliases with the same resolution, the first is the name of both, and an alias given other meta where it's used, like `Address.describe("home")`, is a new part and is inlined.
-- Set it [on a scope](#configuration) to write that scope's Types this way by default. For `openapi-3.0`, the definitions go to [`defs`](#openapi-30), so calling `toJsonSchema` for each of a module's Types collects every component.
+- Set it [on a scope](#configuration) to write that scope's Types this way by default. For `openapi-3.0` and `openapi-3.1`, the definitions go to [`defs`](#openapi-30), so calling `toJsonSchema` for each of a module's Types collects every component.
 
 ## How Types map
 
@@ -360,7 +366,7 @@ Every reason `toJsonSchema()` can throw, with the fields its handler receives be
 | `arrayPrefix`         | for `openapi-3.0`, elements before any variadic element                               | `type(["string", "number"])`                 | `elements`, and `items` for the rest, if any     |
 | `date`                | a `Date`, with its bounds                                                             | `type("Date")`                               | `before`, `after`                                |
 | `defaultValue`        | a default that isn't JSON. Return `undefined` to omit it                              | `type({ n: "bigint = 5n" })`, after `domain` | `value`                                          |
-| `defs`                | for `openapi-3.0`, the definitions `$ref`s point to                                   | a cyclic Type                                | `defs`, by name                                  |
+| `defs`                | for OpenAPI, the definitions `$ref`s point to                                         | a cyclic Type                                | `defs`, by name                                  |
 | `domain`              | `bigint` or `symbol`                                                                  | `type("bigint")`                             | `domain`                                         |
 | `indexKey`            | a key `propertyNames` can't express, or for `openapi-3.0` any key but a lone `string` | `type({ "[string <= 3]": "number" })`        | `key` and `value`, as schemas                    |
 | `morph`               | a morph                                                                               | `type("string.trim")`                        | `out`, the output schema or `null`               |

@@ -1892,6 +1892,21 @@ age must be a number (was missing)`)
 		})
 	})
 
+	it("openapi-3.1 JSON Schema only where configured", async () => {
+		const T = scope({}, { toJsonSchema: { target: "openapi-3.1" } }).type({
+			a: "string | null"
+		})
+		const U = type({ a: "string" })
+		const { T: configured, U: validator } = await load(
+			{ T, U },
+			{ members: { toJsonSchema: true } }
+		)
+		attest(configured.toJsonSchema()).equals(T.toJsonSchema())
+		attest(() => validator.toJsonSchema({ target: "openapi-3.1" })).throws(
+			bakedJsonSchemaOptionsMessage
+		)
+	})
+
 	it("unsatisfiable JSON Schema view", async () => {
 		// the output requires a default the index signature's value excludes
 		const T = type({ a: ["string = 'a'"], "[string]": "number[]" })
