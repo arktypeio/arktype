@@ -320,6 +320,14 @@ const failureToJson: PropertyDescriptor & ThisType<StandardFailure> = {
 	configurable: true
 }
 
+const jsonIssueOf = (issue: ArkIssue): Record<string, unknown> => ({
+	code: issue.code,
+	path: issue.path.map(k => (typeof k === "symbol" ? String(k) : k)),
+	expected: issue.expected,
+	message: issue.message,
+	...(issue.errors && { errors: issue.errors.map(jsonIssueOf) })
+})
+
 // A Standard Schema consumer shows each issue beside its path, which its
 // message doesn't name, so each is its error's own. The failure's own message
 // is the errors' summary, written once a consumer reads it. A failure is built
@@ -336,7 +344,11 @@ export const standardResultOf = (
 			Object.defineProperty(
 				Object.defineProperty({ issues: out.issues }, "_s", {
 					value: (json?: true) =>
-						json ? (out as ArkErrors).toJSON() : (out as ArkErrors).summary,
+						json ?
+							typeof (out as ArkErrors).toJSON === "function" ?
+								(out as ArkErrors).toJSON()
+							:	(out as ArkErrors).issues.map(jsonIssueOf)
+						:	(out as ArkErrors).summary,
 					writable: true
 				}),
 				"message",
@@ -1102,7 +1114,13 @@ export const InvalidErrors: new (data: unknown) => ArkErrors =
 
 			get _(): ArkIssue[] {
 				return (this._f ??= [
-					{ code: "predicate", path: [], data: this._d } as never
+					{
+						code: "predicate",
+						path: [],
+						data: this._d,
+						expected: "valid",
+						message: "is invalid"
+					}
 				])
 			}
 		}

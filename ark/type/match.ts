@@ -168,7 +168,6 @@ type _finalizeCaseArg<
 			distill<t, endpoint> extends infer result ?
 				unknown extends ctxInput ? result
 				: ctxInput extends result ? ctxInput
-				: result extends ctxInput ? result
 				: showIfSafelyMappable<ctxInput & result>
 			:	never
 		:	never

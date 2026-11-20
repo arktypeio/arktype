@@ -44,6 +44,36 @@ const toJson: PropertyDescriptor & ThisType<StandardFailure> = {
 	configurable: true
 }
 
+type SerializablePathSegment = { readonly key: string | number }
+
+type SerializableIssue = StandardSchemaV1.Issue & {
+	readonly code?: unknown
+	readonly expected?: unknown
+	readonly errors?: readonly SerializableIssue[]
+}
+
+const jsonKeyOf = (k: PropertyKey): string | number =>
+	typeof k === "symbol" ? String(k) : k
+
+const jsonPathOf = (
+	path: readonly (PropertyKey | StandardSchemaV1.PathSegment)[]
+): readonly (string | number | SerializablePathSegment)[] =>
+	path.map(segment =>
+		typeof segment === "object" && segment !== null ?
+			{ key: jsonKeyOf(segment.key) }
+		:	jsonKeyOf(segment)
+	)
+
+// fallback for lean or custom errors without toJSON(): keeps what an issue
+// says and where, omitting data/actual/non-JSON fields like ArkErrors.toJSON()
+const jsonIssueOf = (issue: SerializableIssue): Record<string, unknown> => ({
+	...(issue.code !== undefined && { code: issue.code }),
+	...(issue.path !== undefined && { path: jsonPathOf(issue.path) }),
+	...(issue.expected !== undefined && { expected: issue.expected }),
+	message: issue.message,
+	...(issue.errors && { errors: issue.errors.map(jsonIssueOf) })
+})
+
 /**
  * @internal a Standard Schema failure of errors: their issues, and their
  * summary as its message once it's read.
@@ -66,9 +96,9 @@ export const standardFailureOf = (
 			Object.defineProperty({ issues: errors.issues }, "_s", {
 				value: (json?: true) =>
 					json ?
-						errors.toJSON ?
+						typeof errors.toJSON === "function" ?
 							errors.toJSON()
-						:	errors.issues
+						:	errors.issues.map(jsonIssueOf)
 					:	errors.summary,
 				writable: true
 			}),

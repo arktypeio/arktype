@@ -1606,9 +1606,9 @@ Item[1].Meta must be an object (was missing)`)
 			type.pipe(type("string"), (n: number) => n.toFixed(2))
 		).type.errors("Type 'string' is not assignable to type 'number'")
 
-		// 18+ morphs hitting variadic overload check every morph in the chain and infer output
+		// 18+ morphs hitting variadic overload infer unannotated first morph and check every morph in the chain
 		const nineteen = type("'a'").pipe(
-			(s: "a") => `${s}b` as const,
+			s => `${s}b` as const,
 			(s: string) => `${s}c`,
 			(s: string) => `${s}d`,
 			(s: string) => `${s}e`,
@@ -1631,6 +1631,30 @@ Item[1].Meta must be an object (was missing)`)
 		attest<number>(nineteen.infer)
 		attest<"a">(nineteen.inferIn)
 		attest(nineteen("a")).equals(19)
+
+		const trimmedEighteen = type("string").pipe(
+			s => s.trim(),
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s.length
+		)
+		attest<number>(trimmedEighteen.infer)
+		attest<string>(trimmedEighteen.inferIn)
+		attest(trimmedEighteen(" hi ")).equals(2)
 
 		attest(() =>
 			type("'a'").pipe(
@@ -1672,5 +1696,37 @@ Item[1].Meta must be an object (was missing)`)
 		const compatibleSpread: ((s: string) => string)[] = [s => s.trim()]
 		const spreadResult = type("string").pipe(...compatibleSpread)
 		attest(spreadResult(" hi ")).equals("hi")
+
+		const headPlusRest: [(s: string) => number, ...((n: number) => number)[]] =
+			[s => s.length, n => n * 2]
+		const headRestResult = type("string").pipe(...headPlusRest)
+		attest(headRestResult("abc")).equals(6)
+
+		const multiHeadRest: [
+			(s: string) => boolean,
+			(b: boolean) => number,
+			...((n: number) => number)[]
+		] = [s => s.length > 0, b => (b ? 1 : 0), n => n + 10]
+		attest(type("string").pipe(...multiHeadRest)("a")).equals(11)
+
+		const restPlusTail: [...((s: string) => string)[], (s: string) => number] =
+			[s => s.trim(), s => s.length]
+		attest(type("string").pipe(...restPlusTail)(" ab ")).equals(2)
+
+		const badHeadRest: [(n: number) => number, ...((n: number) => number)[]] = [
+			n => n
+		]
+		attest(() =>
+			// @ts-expect-error
+			type("string").pipe(...badHeadRest)
+		).type.errors("Type 'string' is not assignable to type 'number'")
+
+		const badTailRest: [(s: string) => number, ...((s: string) => number)[]] = [
+			s => s.length
+		]
+		attest(() =>
+			// @ts-expect-error
+			type("string").pipe(...badTailRest)
+		).type.errors("Type 'number' is not assignable to type 'string'")
 	})
 })

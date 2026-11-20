@@ -1083,4 +1083,40 @@ contextualize(() => {
 		attest<Special>(fromObject(instance)).equals(instance)
 		attest<Special>(fromUnion(instance)).equals(instance)
 	})
+
+	it("preserves optional properties and index signatures from input when narrowing", () => {
+		type Response = { status: number; body?: string }
+		const onOk = match
+			.in<Response>()
+			.case({ status: "200" }, r => {
+				attest<{ status: 200; body?: string }>(r)
+				return r.body
+			})
+			.default(() => undefined)
+		attest<string | undefined>(onOk({ status: 200, body: "ok" })).equals("ok")
+		attest(onOk({ status: 200 })).equals(undefined)
+		attest(onOk({ status: 404, body: "no" })).equals(undefined)
+
+		type OptionalField = { a?: string; b: number }
+		const onOne = match
+			.in<OptionalField>()
+			.case({ b: "1" }, x => {
+				attest<{ a?: string; b: 1 }>(x)
+				return x.a
+			})
+			.default(() => undefined)
+		attest<string | undefined>(onOne({ b: 1, a: "hi" })).equals("hi")
+		attest(onOne({ b: 2, a: "no" })).equals(undefined)
+
+		const onRecord = match
+			.in<Record<string, string>>()
+			.case({ a: "'x'" }, x => {
+				attest<"x">(x.a)
+				attest<string>(x.other)
+				return x.other
+			})
+			.default(() => "")
+		attest<string>(onRecord({ a: "x", other: "y" })).equals("y")
+		attest(onRecord({ a: "z", other: "y" })).equals("")
+	})
 })

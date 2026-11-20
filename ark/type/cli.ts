@@ -279,11 +279,17 @@ const copySkillTree = (srcDir: string, destDir: string): void => {
 	}
 }
 
-export const installBundledSkill = (
+type PreparedSkillInstall = {
+	dest: string
+	realSrc: string
+	resolvedDest: string
+}
+
+const prepareSkillInstall = (
 	projectRoot: string,
 	targetDir?: string,
 	opts?: InstallSkillOptions
-): string => {
+): PreparedSkillInstall => {
 	const src = bundledSkillPath()
 	const dest =
 		targetDir ?
@@ -305,10 +311,25 @@ export const installBundledSkill = (
 		)
 	}
 	validateSkillTree(realSrc, resolvedDest)
+	return { dest, realSrc, resolvedDest }
+}
+
+const applySkillInstall = ({
+	dest,
+	realSrc,
+	resolvedDest
+}: PreparedSkillInstall): string => {
 	mkdirSync(resolvedDest, { recursive: true })
 	copySkillTree(realSrc, resolvedDest)
 	return dest
 }
+
+export const installBundledSkill = (
+	projectRoot: string,
+	targetDir?: string,
+	opts?: InstallSkillOptions
+): string =>
+	applySkillInstall(prepareSkillInstall(projectRoot, targetDir, opts))
 
 type FoundAotPackage = {
 	pkgDir: string
@@ -439,23 +460,40 @@ const runInit = (
 	const tools = detectedToolsOf(manifest, projectRoot)
 	const settingsPath = join(projectRoot, "ark.json")
 	const settingsContent = `${JSON.stringify({ precompile: {} }, null, "\t")}\n`
+	const hasSettings = hasArkPrecompileSetting(manifest)
 
-	if (hasArkPrecompileSetting(manifest)) {
+	let existingSettings: Stats | undefined
+	if (!hasSettings && parsed.values.force) {
+		existingSettings = lstatIfExists(settingsPath)
+		if (existingSettings?.isSymbolicLink()) {
+			stderr(`Refusing to overwrite symlink at ${settingsPath}.\n`)
+			return 1
+		}
+		if (existingSettings && !existingSettings.isFile()) {
+			stderr(`Cannot write ${settingsPath}: path is not a regular file.\n`)
+			return 1
+		}
+	}
+
+	let preparedSkill: PreparedSkillInstall | undefined
+	if (!parsed.values["no-skill"]) {
+		try {
+			preparedSkill = prepareSkillInstall(projectRoot, undefined, {
+				allowOutside: Boolean(parsed.values["allow-outside"])
+			})
+		} catch (e) {
+			stderr(`${(e as Error).message}\n`)
+			return 1
+		}
+	}
+
+	if (hasSettings) {
 		stdout(
 			`Found existing "ark" settings in ${join(projectRoot, "package.json")}; leaving ark.json untouched.\n`
 		)
 	} else if (parsed.values.force) {
-		const stat = lstatIfExists(settingsPath)
-		if (stat?.isSymbolicLink()) {
-			stderr(`Refusing to overwrite symlink at ${settingsPath}.\n`)
-			return 1
-		}
-		if (stat && !stat.isFile()) {
-			stderr(`Cannot write ${settingsPath}: path is not a regular file.\n`)
-			return 1
-		}
 		try {
-			if (stat) unlinkSync(settingsPath)
+			if (existingSettings) unlinkSync(settingsPath)
 			writeFileSync(settingsPath, settingsContent, { flag: "wx" })
 		} catch (e) {
 			stderr(`Failed to write ${settingsPath}: ${(e as Error).message}\n`)
@@ -469,9 +507,13 @@ const runInit = (
 		} catch (e) {
 			const code = (e as NodeJS.ErrnoException).code
 			if (code === "EEXIST" || code === "EISDIR") {
-				stdout(
-					`ark.json already exists at ${settingsPath} (pass --force to overwrite).\n`
-				)
+				const stat = lstatIfExists(settingsPath)
+				const detail =
+					stat?.isSymbolicLink() ? "symlink"
+					: stat?.isDirectory() ? "directory"
+					: stat && !stat.isFile() ? "not a regular file"
+					: "pass --force to overwrite"
+				stdout(`ark.json already exists at ${settingsPath} (${detail}).\n`)
 			} else {
 				stderr(`Failed to write ${settingsPath}: ${(e as Error).message}\n`)
 				return 1
@@ -479,11 +521,9 @@ const runInit = (
 		}
 	}
 
-	if (!parsed.values["no-skill"]) {
+	if (preparedSkill) {
 		try {
-			const dest = installBundledSkill(projectRoot, undefined, {
-				allowOutside: Boolean(parsed.values["allow-outside"])
-			})
+			const dest = applySkillInstall(preparedSkill)
 			stdout(`Installed ArkType skill to ${dest}\n`)
 		} catch (e) {
 			stderr(`${(e as Error).message}\n`)
@@ -669,17 +709,19 @@ const runSkill = (
 const usage = `Usage: ark <command> [options]
 
 Commands:
-  aot <check|emit|declare> [...flags]   Run @ark/aot precompiler commands
-  check [...flags]                      Shortcut for \`ark aot check\`
-  emit [...flags]                       Shortcut for \`ark aot emit\`
-  declare [...flags]                    Shortcut for \`ark aot declare\`
-  init [--force] [--no-skill]           Detect setup, write ark.json, install skill
-  migrate [source] [--run]              Generate or launch a migration prompt
-  skill [path|install] [--dir <path>]   Print path to or install the bundled skill
+  aot <check|emit|declare> [...flags]             Run @ark/aot precompiler commands
+  check [...flags]                                Shortcut for \`ark aot check\`
+  emit [...flags]                                 Shortcut for \`ark aot emit\`
+  declare [...flags]                              Shortcut for \`ark aot declare\`
+  init [--force] [--no-skill] [--allow-outside]   Detect setup, write ark.json, install skill
+  migrate [source] [--run] [--agent <cli>]        Generate or launch a migration prompt
+          [--no-skill] [--allow-outside]
+  skill [path|install] [--dir <path>]             Print path to or install the bundled skill
+        [--allow-outside]
 
 Options:
-  -h, --help                            Show help
-  -v, --version                         Show version
+  -h, --help                                      Show help
+  -v, --version                                   Show version
 `
 
 export const runCli = (argv: string[], ctx: CliContext = {}): number => {

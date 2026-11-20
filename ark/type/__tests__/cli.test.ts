@@ -86,17 +86,19 @@ contextualize(() => {
 		attest(help.out).snap(`Usage: ark <command> [options]
 
 Commands:
-  aot <check|emit|declare> [...flags]   Run @ark/aot precompiler commands
-  check [...flags]                      Shortcut for \`ark aot check\`
-  emit [...flags]                       Shortcut for \`ark aot emit\`
-  declare [...flags]                    Shortcut for \`ark aot declare\`
-  init [--force] [--no-skill]           Detect setup, write ark.json, install skill
-  migrate [source] [--run]              Generate or launch a migration prompt
-  skill [path|install] [--dir <path>]   Print path to or install the bundled skill
+  aot <check|emit|declare> [...flags]             Run @ark/aot precompiler commands
+  check [...flags]                                Shortcut for \`ark aot check\`
+  emit [...flags]                                 Shortcut for \`ark aot emit\`
+  declare [...flags]                              Shortcut for \`ark aot declare\`
+  init [--force] [--no-skill] [--allow-outside]   Detect setup, write ark.json, install skill
+  migrate [source] [--run] [--agent <cli>]        Generate or launch a migration prompt
+          [--no-skill] [--allow-outside]
+  skill [path|install] [--dir <path>]             Print path to or install the bundled skill
+        [--allow-outside]
 
 Options:
-  -h, --help                            Show help
-  -v, --version                         Show version
+  -h, --help                                      Show help
+  -v, --version                                   Show version
 `)
 
 		const initHelp = invoke(["init", "--help"], dir)
@@ -468,10 +470,11 @@ Read the "Upgrading from ArkType 2" section of <bundled>/SKILL.md and https://ar
 			existsSync(join(migrateCase.outsideSkills, "arktype", "SKILL.md"))
 		).equals(true)
 
-		// ark init: --force does not bypass outside-root refusal, and --allow-outside does not overwrite ark.json
+		// ark init: --force does not bypass outside-root refusal and leaves ark.json untouched when refused
 		const initCase = setupEscape()
 		const initForced = invoke(["init", "--force"], initCase.dir)
 		attest(initForced.code).equals(1)
+		attest(initForced.out).equals("")
 		attest(
 			normalize(initForced.err, {
 				"<project>": initCase.dir,
@@ -481,11 +484,12 @@ Read the "Upgrading from ArkType 2" section of <bundled>/SKILL.md and https://ar
 		attest(
 			existsSync(join(initCase.outsideSkills, "arktype", "SKILL.md"))
 		).equals(false)
+		attest(
+			JSON.parse(readFileSync(join(initCase.dir, "ark.json"), "utf8"))
+		).equals({
+			precompile: { errors: "first" }
+		})
 
-		writeFileSync(
-			join(initCase.dir, "ark.json"),
-			'{"precompile":{"errors":"first"}}\n'
-		)
 		const initAllowed = invoke(["init", "--allow-outside"], initCase.dir)
 		attest(initAllowed.code).equals(0)
 		attest(
@@ -496,6 +500,13 @@ Read the "Upgrading from ArkType 2" section of <bundled>/SKILL.md and https://ar
 		).equals({
 			precompile: { errors: "first" }
 		})
+
+		// init without existing ark.json does not create ark.json when skill path is refused
+		const initFreshCase = setupEscape()
+		rmSync(join(initFreshCase.dir, "ark.json"))
+		const initFreshRefused = invoke(["init"], initFreshCase.dir)
+		attest(initFreshRefused.code).equals(1)
+		attest(existsSync(join(initFreshCase.dir, "ark.json"))).equals(false)
 	})
 
 	it("reports existing ark.json and still installs skill without --force for symlinks and directories", () => {
@@ -514,7 +525,7 @@ Read the "Upgrading from ArkType 2" section of <bundled>/SKILL.md and https://ar
 		attest(resShared.err).equals("")
 		attest(normalize(resShared.out, { "<project>": dirShared })).equals(
 			[
-				"ark.json already exists at <project>/ark.json (pass --force to overwrite).",
+				"ark.json already exists at <project>/ark.json (symlink).",
 				"Installed ArkType skill to <project>/.agents/skills/arktype",
 				"To precompile Types at build time, install @ark/aot:",
 				`  pnpm add -D ${aotSpec}`,
@@ -534,17 +545,35 @@ Read the "Upgrading from ArkType 2" section of <bundled>/SKILL.md and https://ar
 		symlinkSync(dangleTarget, join(dirDangle, "ark.json"))
 		const resDangle = invoke(["init"], dirDangle)
 		attest(resDangle.code).equals(0)
+		attest(normalize(resDangle.out, { "<project>": dirDangle })).equals(
+			[
+				"ark.json already exists at <project>/ark.json (symlink).",
+				"Installed ArkType skill to <project>/.agents/skills/arktype",
+				"To precompile Types at build time, install @ark/aot:",
+				`  pnpm add -D ${aotSpec}`,
+				""
+			].join("\n")
+		)
 		attest(existsSync(dangleTarget)).equals(false)
 		attest(lstatSync(join(dirDangle, "ark.json")).isSymbolicLink()).equals(true)
 		attest(
 			existsSync(join(dirDangle, ".agents", "skills", "arktype", "SKILL.md"))
 		).equals(true)
 
-		// ark.json as a directory without --force reports already exists and still installs skill
+		// ark.json as a directory without --force reports already exists (directory) and still installs skill
 		const dirIsDir = tempProject({ "package.json": "{}" })
 		mkdirSync(join(dirIsDir, "ark.json"))
 		const resDir = invoke(["init"], dirIsDir)
 		attest(resDir.code).equals(0)
+		attest(normalize(resDir.out, { "<project>": dirIsDir })).equals(
+			[
+				"ark.json already exists at <project>/ark.json (directory).",
+				"Installed ArkType skill to <project>/.agents/skills/arktype",
+				"To precompile Types at build time, install @ark/aot:",
+				`  pnpm add -D ${aotSpec}`,
+				""
+			].join("\n")
+		)
 		attest(
 			existsSync(join(dirIsDir, ".agents", "skills", "arktype", "SKILL.md"))
 		).equals(true)

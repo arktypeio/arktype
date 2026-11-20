@@ -8,6 +8,7 @@ import {
 	writeInvalidRangeRuleMessage
 } from "@ark/schema"
 import { UndetailedErrors } from "@ark/schema/errors"
+import { standardFailureOf } from "@ark/schema/internal"
 import { getBuiltinNameOfConstructor } from "@ark/util"
 import {
 	ArkErrors as RuntimeArkErrors,
@@ -60,33 +61,12 @@ contextualize(() => {
 			const dynamicJson = JSON.stringify(
 				type("number")["~standard"].validate(secret)
 			)
-			attest(dynamicJson.includes(secret)).equals(false)
-			attest(JSON.parse(dynamicJson)).snap({
-				issues: [
-					{
-						path: [],
-						code: "domain",
-						description: "a number",
-						domain: "number",
-						propString: "",
-						expected: "a number",
-						message: "must be a number"
-					}
-				],
-				message: "must be a number"
-			})
+			attest(dynamicJson).snap(
+				'{"issues":[{"path":[],"code":"domain","description":"a number","domain":"number","propString":"","expected":"a number","message":"must be a number"}],"message":"must be a number"}'
+			)
 
-			const expectedRuntime = {
-				issues: [
-					{
-						code: "domain",
-						path: [],
-						expected: "a number",
-						message: "must be a number"
-					}
-				],
-				message: "must be a number"
-			}
+			const expectedRuntimeJson =
+				'{"issues":[{"code":"domain","path":[],"expected":"a number","message":"must be a number"}],"message":"must be a number"}'
 
 			const runtimeErr = new RuntimeArkErrors()
 			runtimeErr._e(secret, "domain", "a number")
@@ -97,14 +77,62 @@ contextualize(() => {
 				secret
 			)
 			attest(runtimeResult.message).equals(runtimeErr.summary)
-			const runtimeJson = JSON.stringify(runtimeResult)
-			attest(runtimeJson.includes(secret)).equals(false)
-			attest(JSON.parse(runtimeJson)).equals(expectedRuntime)
+			attest(JSON.stringify(runtimeResult)).equals(expectedRuntimeJson)
+
+			// lean/pruned errors without toJSON() serialize identically without crashing or leaking data
+			const sym = Symbol("secretKey")
+			const leanRuntimeErr = new RuntimeArkErrors()
+			leanRuntimeErr._.push({
+				code: "union",
+				path: [sym],
+				data: { secret, big: 1n },
+				expected: "a number or a boolean",
+				message: "must be a number or a boolean",
+				errors: [
+					{
+						code: "domain",
+						path: [sym],
+						data: secret,
+						expected: "a number",
+						message: "must be a number"
+					}
+				]
+			})
+			Object.defineProperty(leanRuntimeErr, "toJSON", { value: undefined })
+			attest(JSON.stringify(standardResultOf(leanRuntimeErr))).snap(
+				'{"issues":[{"code":"union","path":["Symbol(secretKey)"],"expected":"a number or a boolean","message":"must be a number or a boolean","errors":[{"code":"domain","path":["Symbol(secretKey)"],"expected":"a number","message":"must be a number"}]}],"message":"[Symbol(secretKey)] must be a number or a boolean"}'
+			)
+
+			const leanSchemaFailure = standardFailureOf({
+				issues: [
+					{
+						code: "domain",
+						path: [{ key: sym }, "password"],
+						data: 1n,
+						actual: secret,
+						expected: "a number",
+						message: "must be a number",
+						errors: [
+							{
+								code: "predicate",
+								path: [sym],
+								data: secret,
+								expected: "valid",
+								message: "is invalid"
+							}
+						]
+					} as never
+				],
+				summary: "password must be a number"
+			})
+			attest(JSON.stringify(leanSchemaFailure)).snap(
+				'{"issues":[{"code":"domain","path":[{"key":"Symbol(secretKey)"},"password"],"expected":"a number","message":"must be a number","errors":[{"code":"predicate","path":["Symbol(secretKey)"],"expected":"valid","message":"is invalid"}]}],"message":"password must be a number"}'
+			)
 
 			const firstErr = new FirstIssues()
 			firstErr._e(secret, "domain", "a number")
-			attest(JSON.parse(JSON.stringify(standardResultOf(firstErr)))).equals(
-				expectedRuntime
+			attest(JSON.stringify(standardResultOf(firstErr))).equals(
+				expectedRuntimeJson
 			)
 
 			const lazyErr = unreadErrors(
@@ -112,17 +140,14 @@ contextualize(() => {
 				secret,
 				null
 			)
-			attest(JSON.parse(JSON.stringify(standardResultOf(lazyErr)))).equals(
-				expectedRuntime
+			attest(JSON.stringify(standardResultOf(lazyErr))).equals(
+				expectedRuntimeJson
 			)
 
 			const invalidResult = standardResultOf(new InvalidErrors(secret))
-			const invalidJson = JSON.stringify(invalidResult)
-			attest(invalidJson.includes(secret)).equals(false)
-			attest(JSON.parse(invalidJson)).snap({
-				issues: [{ code: "predicate", path: [], message: "is invalid" }],
-				message: "is invalid"
-			})
+			attest(JSON.stringify(invalidResult)).snap(
+				'{"issues":[{"code":"predicate","path":[],"expected":"valid","message":"is invalid"}],"message":"is invalid"}'
+			)
 		})
 	})
 
