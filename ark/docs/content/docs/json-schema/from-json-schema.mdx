@@ -1,18 +1,14 @@
 ---
 title: From JSON Schema
-description: Parse a JSON Schema into a Type with @ark/json-schema and give the result a static type.
+description: Read a JSON Schema, or a Standard JSON Schema like a Zod schema, into a Type with fromJsonSchema, and infer its type.
 ---
 
-<InstallationTabs pkg="@ark/json-schema" />
-
-`arktype` is a peer dependency of `@ark/json-schema`, at the version released with it, so the Types it returns come from your own `arktype`. Install the versions released together; with any other, npm refuses the install and pnpm warns.
-
-`jsonSchemaToType` parses a JSON Schema into a Type:
+`fromJsonSchema` reads a JSON Schema into a Type:
 
 ```ts
-import { jsonSchemaToType } from "@ark/json-schema"
+import { fromJsonSchema } from "arktype"
 
-const User = jsonSchemaToType({
+const User = fromJsonSchema({
 	type: "object",
 	properties: {
 		name: { type: "string" },
@@ -21,22 +17,42 @@ const User = jsonSchemaToType({
 	required: ["name"]
 })
 
-User.expression // "{ name: string, age?: number % 1 >= 0 }"
+User.expression // "{ name: string, age?: number % 1 >= 0 } & isNonArray"
 User({ name: "Ada" }) // { name: "Ada" }
 // ArkErrors: age must be an integer
 User({ name: "Ada", age: 1.5 })
 ```
 
-`true` parses to `unknown` and `false` to `never`.
+`true` reads as `unknown` and `false` as `never`. The result is a Type like any other, so it validates, composes into definitions and [compares](/docs/json-schema/compare) with Types, other JSON Schemas and schemas from other libraries.
+
+## What it reads
+
+`fromJsonSchema` takes one of:
+
+- a **JSON Schema**: an object or a boolean, read as [Keyword support](/docs/json-schema/support) describes.
+- a **[Standard JSON Schema](https://standardschema.dev/json-schema)**: a schema whose `~standard` has `jsonSchema`, like one from Zod 4.2.0 or later, or an arktype Type. It's read as the draft 2020-12 JSON Schema of its input, so what that can't express, like Zod's refinements, transforms and `undefined`, is left out. Pass any other library's schema as its JSON Schema, like `z.toJSONSchema(schema)` before Zod 4.2.0.
+
+```ts
+import { fromJsonSchema } from "arktype"
+import { z } from "zod"
+
+const User = fromJsonSchema(z.object({ name: z.string(), age: z.number() }))
+
+User.expression // "{ age: number, name: string } & isNonArray"
+```
+
+Anything else throws a `ParseError`, as does a Standard Schema without `~standard.jsonSchema`, which is also a type error, and one whose `~standard.jsonSchema` throws, like Zod's for `z.date()`, with the library's error as its `cause`.
+
+An object meant as neither, like the definition `{ name: "string" }`, reads today as a JSON Schema whose keywords are all unknown, which accepts everything, so `fromJsonSchema({ name: "string" })` is `unknown`; what such an object means is unspecified, and a minor release may throw for it.
 
 ## Inferring its type
 
-`jsonSchemaToType` infers the type of a schema written in the call:
+`fromJsonSchema` infers the type of a JSON Schema written in the call, or declared `as const`:
 
 ```ts
-import { jsonSchemaToType } from "@ark/json-schema"
+import { fromJsonSchema } from "arktype"
 
-const User = jsonSchemaToType({
+const User = fromJsonSchema({
 	type: "object",
 	properties: {
 		name: { type: "string" },
@@ -51,46 +67,28 @@ type User = typeof User.infer
 
 The inferred type never rejects a value the schema accepts, but it can be wider: constraints like `minimum` and `pattern` don't narrow it, and a `$ref` that isn't a JSON Pointer, like one to an anchor, infers `unknown`. Inference follows `$ref`s into `$defs`, `definitions` and OpenAPI `components.schemas`, including recursive ones, and composition, `if`/`then`/`else` and `not`.
 
-To check and infer a schema you declare apart from the call, wrap it in `jsonSchema`, which returns it unchanged:
+A Standard Schema infers its input, as `StandardSchemaV1.InferInput` does. A JSON Schema TypeScript can't see as a literal, like one parsed from a `.json` file, infers `unknown`. If you know its shape, annotate the result:
 
 ```ts
-import { jsonSchema, jsonSchemaToType } from "@ark/json-schema"
-
-const Address = jsonSchema({
-	type: "object",
-	properties: { city: { type: "string" }, zip: { type: "string" } },
-	required: ["city"]
-})
-
-// { city: string; zip?: string }
-type Address = typeof Address.infer
-
-// Type<{ city: string; zip?: string }>
-const T = jsonSchemaToType(Address)
-```
-
-A schema TypeScript can't see as a literal, like one parsed from a `.json` file, infers `unknown`. If you know its shape, cast it with `jsonSchema.as`:
-
-```ts
-import { jsonSchema, jsonSchemaToType } from "@ark/json-schema"
+import { fromJsonSchema, type Type } from "arktype"
 declare const userJson: object
 // ---cut---
-const User = jsonSchemaToType(jsonSchema.as<{ name: string }>(userJson))
+const User: Type<{ name: string }> = fromJsonSchema(userJson) as never
 
 // { name: string }
 const user = User.assert({ name: "Ada" })
 ```
 
-`jsonSchema.as` is not checked against the schema, so keep the two in sync yourself. To write your own wrapper, `jsonSchema.validate<schema>` checks a schema and `jsonSchema.infer<schema>` infers it.
+The annotation isn't checked against the schema, so keep the two in sync yourself.
 
 ## How it reads JSON Schema
 
-`jsonSchemaToType` reads a schema with [`arktype/sets`](/docs/sets)' `parse`, so the Type accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with ajv as the tiebreaker. Every keyword in a schema applies, local `$ref`s resolve, including recursive ones, and draft-07 forms like `items` arrays and `definitions` are read too:
+A Type read from a JSON Schema accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with ajv as the tiebreaker. Every keyword in a schema applies, local `$ref`s resolve, including recursive ones, and draft-07 forms like `items` arrays and `definitions` are read too:
 
 ```ts
-import { jsonSchemaToType } from "@ark/json-schema"
+import { fromJsonSchema } from "arktype"
 
-const Tree = jsonSchemaToType({
+const Tree = fromJsonSchema({
 	$defs: {
 		Node: {
 			type: "object",
@@ -107,33 +105,56 @@ const Tree = jsonSchemaToType({
 Tree.allows({ value: 1, children: [{ value: 2 }] }) // true
 ```
 
+A `$ref` resolves against the schema it's in, so to read a schema from an OpenAPI document, spread the document into a schema that refers to it:
+
+```ts
+import { fromJsonSchema } from "arktype"
+
+const openApi = {
+	openapi: "3.1.0",
+	components: {
+		schemas: {
+			User: {
+				type: "object",
+				properties: { name: { type: "string" } },
+				required: ["name"]
+			}
+		}
+	}
+} as const
+
+const User = fromJsonSchema({ ...openApi, $ref: "#/components/schemas/User" })
+
+User.allows({ name: "Ada" }) // true
+```
+
 [Keyword support](/docs/json-schema/support) lists how each keyword is read.
 
 ## Invalid schemas
 
-A schema written in the call, or in `jsonSchema`, is checked as you write it:
+A JSON Schema written in the call is checked as you write it:
 
 ```ts
 // @errors: 2322
-import { jsonSchemaToType } from "@ark/json-schema"
+import { fromJsonSchema } from "arktype"
 // ---cut---
 // TypeScript: minLength must be a non-negative integer (was -1)
-jsonSchemaToType({ type: "string", minLength: -1 })
+fromJsonSchema({ type: "string", minLength: -1 })
 
-// TypeScript: unevaluatedProperties isn't supported by jsonSchemaToType
-jsonSchemaToType({ type: "object", unevaluatedProperties: false })
+// TypeScript: unevaluatedProperties isn't supported by fromJsonSchema
+fromJsonSchema({ type: "object", unevaluatedProperties: false })
 ```
 
-`jsonSchemaToType` throws a `ParseError` naming the keyword's JSON Pointer for an invalid keyword TypeScript can't check, like a `pattern`, or one it can't read exactly, like a `$ref` to another document:
+`fromJsonSchema` throws a `ParseError` naming the keyword's JSON Pointer for an invalid keyword TypeScript can't check, like a `pattern`, or one it can't read exactly, like a `$ref` to another document:
 
 ```ts
-import { jsonSchemaToType } from "@ark/json-schema"
+import { fromJsonSchema } from "arktype"
 // ---cut---
 // ParseError: #/pattern must be a valid pattern (was "[")
-jsonSchemaToType({ type: "string", pattern: "[" })
+fromJsonSchema({ type: "string", pattern: "[" })
 
 // ParseError: #/$ref must reference a schema in its own document (was https://example.com/user.json)
-jsonSchemaToType({ $ref: "https://example.com/user.json" })
+fromJsonSchema({ $ref: "https://example.com/user.json" })
 ```
 
 Of the keywords it can't read, `$dynamicRef`, `$recursiveRef`, `unevaluatedItems`, `unevaluatedProperties` and a draft-04 boolean `exclusiveMinimum` or `exclusiveMaximum` are type errors too.
@@ -142,7 +163,7 @@ One check is deliberately stricter than JSON Schema: a `required` key a schema's
 
 ## Typing a schema
 
-To check a schema you declare separately without inferring it, use `JsonSchema` from `arktype`:
+To check a schema you declare separately without reading it, use `JsonSchema` from `arktype`:
 
 ```ts
 import type { JsonSchema } from "arktype"
@@ -153,31 +174,6 @@ const Age = {
 } satisfies JsonSchema.Numeric
 ```
 
-For a string schema, `StringSchema` from `@ark/json-schema` matches what `jsonSchemaToType` reads more closely than `JsonSchema.String`: it leaves out `format`, which isn't validated, and its `pattern` can be a `RegExp`, read with its own flags:
-
-```ts
-import type { StringSchema } from "@ark/json-schema"
-
-const Slug = {
-	type: "string",
-	pattern: /^[a-z-]+$/,
-	maxLength: 64
-} satisfies StringSchema
-```
-
-## JsonSchemaScope
-
-`JsonSchemaScope` is a [module](/docs/scopes) whose `ArraySchema`, `NumberSchema`, `ObjectSchema` and `StringSchema` Types check a schema of that kind without converting it:
-
-```ts
-import { JsonSchemaScope } from "@ark/json-schema"
-
-// ArkErrors: minimum must be a number
-JsonSchemaScope.NumberSchema({ type: "number", minimum: "0" })
-```
-
 ## Back to JSON Schema
 
-A Type from `jsonSchemaToType` has [`toJsonSchema()`](/docs/json-schema/to-json-schema) like any other. Keywords [Keyword support](/docs/json-schema/support) lists as opaque, like `uniqueItems`, `not` and `if`, come back as [`predicate` fallbacks](/docs/json-schema/to-json-schema#fallback-codes), so `toJsonSchema()` throws for them unless you handle that code.
-
-To normalize one JSON Schema into another, or to compare JSON Schemas with each other and with Types from other libraries, use [ArkSets](/docs/sets).
+A Type from `fromJsonSchema` has [`toJsonSchema()`](/docs/json-schema/to-json-schema) like any other, so reading a schema and writing it back normalizes it. Keywords [Keyword support](/docs/json-schema/support) lists as opaque, like `uniqueItems`, `not` and `if`, come back as [`predicate` fallbacks](/docs/json-schema/to-json-schema#fallback-codes), so `toJsonSchema()` throws for them unless you handle that code.

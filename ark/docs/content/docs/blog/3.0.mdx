@@ -135,19 +135,23 @@ const User = type({ name: "string", address: Address })
 
 ### Or start without switching
 
-[ArkSets](/docs/sets) runs ArkType's set theory on the Zod schemas you already have. In CI, `isSubset` tells you whether a change to an API schema still accepts everything the old one did:
+[`fromJsonSchema`](/docs/json-schema/compare) runs ArkType's set theory on the Zod schemas and JSON Schemas you already have. In CI, `.extends()` tells you whether a change to an API schema still accepts everything the old one did:
 
 ```ts
-import { isSubset } from "arktype/sets"
+import { fromJsonSchema } from "arktype"
 import { z } from "zod"
 
-const v1 = z.object({ id: z.string(), age: z.number().int().min(0) })
-const v2 = z.object({ id: z.string(), age: z.number().optional() })
+const v1 = fromJsonSchema(
+	z.object({ id: z.string(), age: z.number().int().min(0) })
+)
+const v2 = fromJsonSchema(
+	z.object({ id: z.string(), age: z.number().optional() })
+)
 
 // v2 accepts everything v1 did, so the change is backwards compatible
-isSubset(v1, v2) // true
+v1.extends(v2) // true
 // but not the other way around: v2 accepts { id: "a" }
-isSubset(v2, v1) // false
+v2.extends(v1) // false
 ```
 
 It reads a schema from Zod 4.2 or later as the JSON Schema it writes, which leaves out refinements and transforms.
@@ -284,12 +288,12 @@ Parse keywords like `string.date.iso.parse` encode back to strings, and codecs [
 - **Fewer errors**: [`errors`](/docs/configuration#errors) `"first"` stops at the first error, and `"none"` returns one saying the data is invalid. `mutatesInput` writes what a Type transforms into its input instead of copying it. Each is installed by its own import, so a program that doesn't choose one doesn't ship it.
 - **Dynamic Types do less work**: a Type compiles when it's first used, and one without narrows or morphs finds its errors' issues only when they're first read. <Claim id="strictSpeedup" /> <Claim id="dynamicInit" ifBacked />
 - **Syntax**: [`!=`](/docs/primitives#number-ranges) excludes one value, unions of ranges merge where they can, and an object's [`"@"`](/docs/expressions#meta) key holds its description or meta.
-- **ArkSets**: [ArkSets](/docs/sets) brings the same set theory to a Type, a Standard JSON Schema like Zod's or plain JSON Schema: relate them, [as above](#or-start-without-switching), intersect them, find a union's discriminant or write any of them as JSON Schema.
-- **JSON Schema**: every Type is a [Standard Schema](/docs/standard-schema) that writes its own JSON Schema, and a precompiled one keeps it where its build sees code read it, so the MCP SDK, the AI SDK and OpenAPI generators get it with [nothing to set](/docs/precompile/options#members). [`toJsonSchema`](/docs/json-schema/to-json-schema) writes draft 2020-12, draft-07 or OpenAPI 3.0, and [`jsonSchemaToType`](/docs/json-schema/from-json-schema) reads one back as a Type.
+- **Compare any schemas**: [`fromJsonSchema`](/docs/json-schema/compare) reads a Standard JSON Schema like Zod's or plain JSON Schema into a Type, so `.extends()`, `.equals()` and `.overlaps()` relate them, [as above](#or-start-without-switching), with each other and with your Types, and `.and()`, `.or()` and `.toJsonSchema()` combine and convert them.
+- **JSON Schema**: every Type is a [Standard Schema](/docs/standard-schema) that writes its own JSON Schema, and a precompiled one keeps it where its build sees code read it, so the MCP SDK, the AI SDK and OpenAPI generators get it with [nothing to set](/docs/precompile/options#members). [`toJsonSchema`](/docs/json-schema/to-json-schema) writes draft 2020-12, draft-07 or OpenAPI 3.0, and [`fromJsonSchema`](/docs/json-schema/from-json-schema) reads one back as a Type.
 - **Errors as data**: an `ArkErrors`' `issues` are plain objects discriminated by `code`. An issue's `message` leaves out its path, which `summary` writes before it, and one you configure is [shown as you wrote it](#your-messages-work-the-way-they-did-in-zod). ArkType's own English messages don't print the value, so they don't put what the data holds into a log.
 - **A new home**: every docs page reads as Markdown for your agent, every code sample shows the types TypeScript infers, and the [playground](/playground) runs the real parser in your browser.
 
-[Upgrading](/docs/upgrading) lists each breaking change with what to write instead, and the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md) have the rest.
+[Upgrading](/docs/upgrading) lists each breaking change with what to write instead, and the CHANGELOGs of [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md) have the rest.
 
 We can't wait to see what you build with it!
 

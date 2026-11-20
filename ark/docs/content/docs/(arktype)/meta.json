@@ -33,6 +33,7 @@
 		"i18n",
 		"---Interop---",
 		"standard-schema",
+		"[Compare schemas](/docs/json-schema/compare)",
 		"integrations",
 		"fast-check",
 		"ecosystem",

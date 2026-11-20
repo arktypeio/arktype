@@ -380,33 +380,33 @@ A [precompiled](https://arktype.io/docs/precompile) build takes a function for t
 
 ### Less common
 
-| Zod                                                           | ArkType                                                                                                    |
-| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `z.hex()`, `z.base64url()`, `z.uuidv4()`                      | `"string.hex"`, `"string.base64.url"`, `"string.uuid.v4"`                                                  |
-| `z.nanoid()`, `z.ulid()`, `z.cuid2()`, `z.e164()`, `z.guid()` | no keyword: a regex, like the one Zod exports as `z.regexes.ulid`                                          |
-| `z.iso.time()`, `z.iso.duration()`                            | the same, from `z.regexes.time({})` and `z.regexes.duration`                                               |
-| `z.hostname()`, `z.cidrv4()`, `z.cidrv6()`                    | the same, from `z.regexes.hostname`, `z.regexes.cidrv4` and `z.regexes.cidrv6`                             |
-| `z.httpUrl()`                                                 | `type("string.url").and(/^https?:\/\//i)`                                                                  |
-| `.lowercase()`, `.uppercase()`, `.normalize()`                | `"string.lower.preformatted"`, `"string.upper.preformatted"`, `"string.normalize"`                         |
-| `z.templateLiteral(["user-", z.number()])`                    | a regex, like `/^user-\d+$/`                                                                               |
-| `z.int32()`, `z.uint32()`                                     | `"-2147483648 <= number.integer <= 2147483647"`, `"0 <= number.integer <= 4294967295"`                     |
-| `z.nan()`                                                     | `"number.NaN"`                                                                                             |
-| `z.bigint().min(5n)`                                          | `"bigint"` with a `.narrow()`                                                                              |
-| `z.file()`, with `.max(n)` or `.mime(type)`                   | `"File"`, with a `.narrow()` on its `size` and `type`                                                      |
-| `z.promise(T)`, `z.function()`                                | `"Promise"`, `"Function"`                                                                                  |
-| `z.xor([A, B])`                                               | a `.pipe()` that calls both and rejects unless one passes                                                  |
-| `.prefault(x)`                                                | `.default(x)`, which is an input as `.prefault()`'s is                                                     |
-| `.overwrite(fn)`                                              | `.pipe(fn)`                                                                                                |
-| `.nonoptional()`                                              | the key without its `?`                                                                                    |
-| `.unwrap()` on a nullable or optional schema                  | `T.exclude("null")`, `T.exclude("undefined")`                                                              |
-| `T.element` on an array, `T.valueType` on a record            | keep that Type in a `const`: `T.get(0)` and `T.get("key")` add `undefined` to it                           |
-| `.isOptional()`, `.isNullable()`                              | `T.allows(undefined)`, `T.allows(null)`                                                                    |
-| `T.options`, `T.enum.a` on a `z.enum`                         | `T.select("unit").map(u => u.unit)`, or keep the values in an `as const` array of your own                 |
-| `schema instanceof z.ZodObject`                               | `T.extends("object")`                                                                                      |
-| `.meta({ title, examples })`, a registry                      | `.configure({ title, examples })`, read back from `T.meta`                                                 |
-| `z.config(z.locales.de())`                                    | `configure({ locale: de })`, see [i18n](https://arktype.io/docs/i18n); only `en` and `de` ship             |
-| `zfd.formData({ ... })` from `zod-form-data`                  | `type("FormData.parse").to({ ... })`, see [Form data](#form-data)                                          |
-| `z.fromJSONSchema(schema)`                                    | `jsonSchemaToType(schema)` from [`@ark/json-schema`](https://arktype.io/docs/json-schema/from-json-schema) |
+| Zod                                                           | ArkType                                                                                        |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `z.hex()`, `z.base64url()`, `z.uuidv4()`                      | `"string.hex"`, `"string.base64.url"`, `"string.uuid.v4"`                                      |
+| `z.nanoid()`, `z.ulid()`, `z.cuid2()`, `z.e164()`, `z.guid()` | no keyword: a regex, like the one Zod exports as `z.regexes.ulid`                              |
+| `z.iso.time()`, `z.iso.duration()`                            | the same, from `z.regexes.time({})` and `z.regexes.duration`                                   |
+| `z.hostname()`, `z.cidrv4()`, `z.cidrv6()`                    | the same, from `z.regexes.hostname`, `z.regexes.cidrv4` and `z.regexes.cidrv6`                 |
+| `z.httpUrl()`                                                 | `type("string.url").and(/^https?:\/\//i)`                                                      |
+| `.lowercase()`, `.uppercase()`, `.normalize()`                | `"string.lower.preformatted"`, `"string.upper.preformatted"`, `"string.normalize"`             |
+| `z.templateLiteral(["user-", z.number()])`                    | a regex, like `/^user-\d+$/`                                                                   |
+| `z.int32()`, `z.uint32()`                                     | `"-2147483648 <= number.integer <= 2147483647"`, `"0 <= number.integer <= 4294967295"`         |
+| `z.nan()`                                                     | `"number.NaN"`                                                                                 |
+| `z.bigint().min(5n)`                                          | `"bigint"` with a `.narrow()`                                                                  |
+| `z.file()`, with `.max(n)` or `.mime(type)`                   | `"File"`, with a `.narrow()` on its `size` and `type`                                          |
+| `z.promise(T)`, `z.function()`                                | `"Promise"`, `"Function"`                                                                      |
+| `z.xor([A, B])`                                               | a `.pipe()` that calls both and rejects unless one passes                                      |
+| `.prefault(x)`                                                | `.default(x)`, which is an input as `.prefault()`'s is                                         |
+| `.overwrite(fn)`                                              | `.pipe(fn)`                                                                                    |
+| `.nonoptional()`                                              | the key without its `?`                                                                        |
+| `.unwrap()` on a nullable or optional schema                  | `T.exclude("null")`, `T.exclude("undefined")`                                                  |
+| `T.element` on an array, `T.valueType` on a record            | keep that Type in a `const`: `T.get(0)` and `T.get("key")` add `undefined` to it               |
+| `.isOptional()`, `.isNullable()`                              | `T.allows(undefined)`, `T.allows(null)`                                                        |
+| `T.options`, `T.enum.a` on a `z.enum`                         | `T.select("unit").map(u => u.unit)`, or keep the values in an `as const` array of your own     |
+| `schema instanceof z.ZodObject`                               | `T.extends("object")`                                                                          |
+| `.meta({ title, examples })`, a registry                      | `.configure({ title, examples })`, read back from `T.meta`                                     |
+| `z.config(z.locales.de())`                                    | `configure({ locale: de })`, see [i18n](https://arktype.io/docs/i18n); only `en` and `de` ship |
+| `zfd.formData({ ... })` from `zod-form-data`                  | `type("FormData.parse").to({ ... })`, see [Form data](#form-data)                              |
+| `z.fromJSONSchema(schema)`                                    | [`fromJsonSchema(schema)`](https://arktype.io/docs/json-schema/from-json-schema)               |
 
 ## Defaults that differ
 
@@ -1253,7 +1253,7 @@ To move one schema at a time, wrap an Effect schema as a [Standard Schema](https
 
 ## JSON Schema and ajv
 
-To keep a schema as JSON, convert it at runtime with `jsonSchemaToType` from `@ark/json-schema`; it accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with `format` as an annotation. To rewrite it as definitions:
+To keep a schema as JSON, convert it at runtime with [`fromJsonSchema`](https://arktype.io/docs/json-schema/from-json-schema) from `arktype`; it accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with `format` as an annotation. To rewrite it as definitions:
 
 | JSON Schema                                             | ArkType                                                                |
 | ------------------------------------------------------- | ---------------------------------------------------------------------- |

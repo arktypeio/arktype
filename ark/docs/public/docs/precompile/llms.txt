@@ -1969,7 +1969,9 @@ export const Shaped = type(await loadShape())
 
 The marker applies to the statement or expression after it, and what follows it on its line is a reason the build ignores, as in `// @ark-runtime its shape is loaded`. arktype then ships beside `arktype/runtime` for the modules with islands alone. The build fails if an island reads a precompiled validator other than to validate with it, or reaches arktype outside an island, e.g. through a helper in another module. So an island suits a definition that stands alone. For one that composes other Types or calls a helper, like `type({ user: User, role: process.env.ROLE })`, the island would need each of them marked too, and the report of a definition the build can't precompile says so in place of suggesting the marker: `A // @ark-runtime island can't define this one alone, as what it composes is precompiled.` There, move what varies into a narrow or morph, which runs as data is validated, or build with `runtime: "arktype"`. It fails too for a marker that leaves nothing to arktype: one nothing follows, one on code that doesn't use arktype, or one inside a definition the build precompiles. `--check` leaves islands out of its rate.
 
-`@ark/json-schema`, `@ark/fast-check` and `arktype/sets` read arktype's nodes, so the build requires an island to call them, and resolves their own `arktype` imports to arktype rather than its runtime. Bun and Turbopack replace `arktype` for every importer, so with them, build a program calling one with `runtime: "arktype"`.
+`@ark/fast-check` reads arktype's nodes, so the build requires an island to call it, and resolves its own `arktype` imports to arktype rather than its runtime. Bun and Turbopack replace `arktype` for every importer, so with them, build a program calling it with `runtime: "arktype"`.
+
+[`fromJsonSchema`](https://arktype.io/docs/json-schema/from-json-schema) is precompiled like `type` where the build can read its argument, except a JSON Schema `"object"`, which excludes arrays with a predicate of arktype's own, so it needs an island.
 
 ## Declarations
 
@@ -2155,8 +2157,6 @@ const Event = type({ kind: "'a'", x: "number" }).or({
 	y: "string"
 })
 ```
-
-[`discriminate`](https://arktype.io/docs/sets/discriminate) shows the discriminant ArkType finds for any union.
 
 ### Minifiers
 

@@ -737,6 +737,20 @@ User["~standard"]
 User.toJsonSchema()
 ```
 
+```ts
+// a JSON Schema or a Zod schema as a Type, to validate with or compare
+const V1 = fromJsonSchema(z.object({ id: z.string() }))
+const V2 = fromJsonSchema({
+	type: "object",
+	properties: { id: { type: "string" }, age: { type: "number" } },
+	required: ["id"]
+})
+
+V1.extends(V2) // true: V2 accepts everything V1 did
+```
+
+Type methods take definitions, so pass a JSON Schema through `fromJsonSchema` before comparing it. See [Compare schemas](https://arktype.io/docs/json-schema/compare).
+
 Global configuration goes through `configure` from `arktype/config`, in a file imported before anything creates a Type. See [Configuration](https://arktype.io/docs/configuration).
 
 ## Precompile
@@ -804,7 +818,7 @@ Migrate this project from Zod to ArkType and precompile it.
 
 Every page of these docs is available as Markdown by adding `.md` to its URL, e.g. [/docs/intro/setup.md](https://arktype.io/docs/intro/setup.md). The Copy page button beside each page's title copies it, and its menu opens it in Claude, ChatGPT or Cursor.
 
-[/llms.txt](https://arktype.io/llms.txt) is an index of every page, with a link to its Markdown and a one-line description, following the [llms.txt](https://llmstxt.org) convention. [/llms-full.txt](https://arktype.io/llms-full.txt) has the full text of every ArkType page in one file. Precompile, ArkRegex, Attest, JSON Schema, ArkSets and Internals each have a file like it at their section's URL plus `/llms.txt`, like [/docs/precompile/llms.txt](https://arktype.io/docs/precompile/llms.txt).
+[/llms.txt](https://arktype.io/llms.txt) is an index of every page, with a link to its Markdown and a one-line description, following the [llms.txt](https://llmstxt.org) convention. [/llms-full.txt](https://arktype.io/llms-full.txt) has the full text of every ArkType page in one file. Precompile, ArkRegex, Attest, JSON Schema and Internals each have a file like it at their section's URL plus `/llms.txt`, like [/docs/precompile/llms.txt](https://arktype.io/docs/precompile/llms.txt).
 
 ## Precompile
 
@@ -1204,7 +1218,7 @@ A [precompiled](https://arktype.io/docs/precompile) build takes a function for t
 | `.meta({ title, examples })`, a registry | `.configure({ title, examples })`, read back from `T.meta` |
 | `z.config(z.locales.de())` | `configure({ locale: de })`, see [i18n](https://arktype.io/docs/i18n); only `en` and `de` ship |
 | `zfd.formData({ ... })` from `zod-form-data` | `type("FormData.parse").to({ ... })`, see [Form data](https://arktype.io/docs/migrating#form-data) |
-| `z.fromJSONSchema(schema)` | `jsonSchemaToType(schema)` from [`@ark/json-schema`](https://arktype.io/docs/json-schema/from-json-schema) |
+| `z.fromJSONSchema(schema)` | [`fromJsonSchema(schema)`](https://arktype.io/docs/json-schema/from-json-schema) |
 
 ## Defaults that differ
 
@@ -2164,7 +2178,7 @@ To move one schema at a time, wrap an Effect schema as a [Standard Schema](https
 
 ## JSON Schema and ajv
 
-To keep a schema as JSON, convert it at runtime with `jsonSchemaToType` from `@ark/json-schema`; it accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with `format` as an annotation. To rewrite it as definitions:
+To keep a schema as JSON, convert it at runtime with [`fromJsonSchema`](https://arktype.io/docs/json-schema/from-json-schema) from `arktype`; it accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with `format` as an annotation. To rewrite it as definitions:
 
 | JSON Schema | ArkType |
 | - | - |
@@ -2220,7 +2234,7 @@ The changes most code meets are to errors. The [checklist](https://arktype.io/do
 
 ## Checklist
 
-Go down the list. Each question your code answers yes to links to what to change. Fixes and new features are in each package's CHANGELOG: [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [@ark/fast-check](https://github.com/arktypeio/arktype/blob/main/ark/fast-check/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md).
+Go down the list. Each question your code answers yes to links to what to change. Fixes and new features are in each package's CHANGELOG: [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [@ark/fast-check](https://github.com/arktypeio/arktype/blob/main/ark/fast-check/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md).
 
 - Do you install with npm, beside a package that peers on `arktype@^2`, like `@hookform/resolvers` or `@t3-oss/env-core`? [Override its peer](https://arktype.io/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2).
 - Do you use `arktypeResolver` from `@hookform/resolvers` 3 or 4, `@hono/arktype-validator`, `sveltekit-superforms`, `@arkenv/core` or `@typeschema/arktype`? [Each fails on invalid input](https://arktype.io/docs/upgrading#adapters-written-for-arktype-2), and all but ArkEnv have a replacement that works today.
@@ -2247,9 +2261,10 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you reflect on a Type's own keys or prototype, freeze a Type, compare `type.Record` to the generic, or compare Types written two ways with `===`? [Types are built when they're first read](https://arktype.io/docs/upgrading#types-are-built-when-theyre-first-read).
 - Do you store or snapshot `toJsonSchema()`, `.expression` or `.json`, or convert `NaN` or `Infinity` literals to JSON Schema? See [Output](https://arktype.io/docs/upgrading#output).
 - Do you rely on what `.required()`, `.map()` or arkregex infer, or reference a Type allowing `undefined` at a key without `exactOptionalPropertyTypes`? See [Inference](https://arktype.io/docs/upgrading#inference) and [ArkRegex](https://arktype.io/docs/upgrading#arkregex).
-- Do you use `arktype/schema` (previously `@ark/schema`) without `arktype`? [Import `arktype/sets`](https://arktype.io/docs/upgrading#arkschema).
+- Do you use `arktype/schema` (previously `@ark/schema`) without `arktype`? [Import `arktype`](https://arktype.io/docs/upgrading#arkschema).
 - Do you import from `@ark/schema`, `@ark/util` or a deep path like `arktype/internal/...`, or read `.internal`? See [@ark/schema](https://arktype.io/docs/upgrading#arkschema), [@ark/util](https://arktype.io/docs/upgrading#arkutil) and [Deep imports](https://arktype.io/docs/upgrading#deep-imports).
-- Do you use `@ark/json-schema`, `@ark/fast-check` or attest, or run attest on TypeScript 7? See their sections below.
+- Do you use `@ark/json-schema`? [Import `fromJsonSchema` from `arktype`](https://arktype.io/docs/upgrading#arkjson-schema).
+- Do you use `@ark/fast-check` or attest, or run attest on TypeScript 7? See their sections below.
 
 ## Installing
 
@@ -3143,7 +3158,7 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 ## @ark/schema
 
 - `@ark/schema` is no longer published separately; import from `arktype/schema` (and `arktype/schema/internal` for internals).
-- The set algebra that intersects nodes, reduces unions and writes JSON Schema moved to `arktype/sets`, which `arktype` imports. Using `arktype/schema` alone, `import "arktype/sets"` first, or `.and()` and `toJsonSchema()` throw `Set algebra is not installed` and unions aren't reduced.
+- The set algebra that intersects nodes, reduces unions and writes JSON Schema is installed by `arktype`. Using `arktype/schema` alone, `import "arktype"` first, or `.and()` and `toJsonSchema()` throw `Set algebra is not installed` and unions aren't reduced.
 - `BaseNode.compiledMeta` is removed, and `BaseScope.res` (before: `resolutions`) holds an unresolved alias's parse context instead of its id.
 - `$.node(kind, input)` takes a node's inner, with children already nodes: `$.node("min", 5)` is now `$.node("min", { rule: 5 })`. Parse the schema format with `rootSchema` or `$.schema`.
 - A node's `traverseAllows` and `traverseApply` are `tAllows` and `tApply`. Call them on the node, as in `node.tAllows(data, ctx)`, not detached, as in `[x].every(node.tAllows)`, until the JIT compiles it.
@@ -3186,7 +3201,16 @@ Other patterns infer what they match more exactly, which can widen or narrow an 
 
 ## @ark/json-schema
 
-`arktype` is a peer dependency at the version released with `@ark/json-schema`, where it was a dependency, so install the two together. `jsonSchemaToType` reads a schema as a 2020-12 validator does, which changes what some schemas accept:
+`@ark/json-schema` is no longer published. Import [`fromJsonSchema`](https://arktype.io/docs/json-schema/from-json-schema) from `arktype` where you imported `jsonSchemaToType`. It checks and infers a schema written in the call as `jsonSchemaToType` did, and reads a Standard JSON Schema, like a Zod schema, too:
+
+| Before | Now |
+| - | - |
+| `jsonSchemaToType(schema)` | `fromJsonSchema(schema)` |
+| `jsonSchema({ ... })`, to declare one apart | `{ ... } as const`, which `fromJsonSchema` checks and infers |
+| `jsonSchema.as<User>(schema)` | `const User: Type<User> = fromJsonSchema(schema) as never` |
+| `StringSchema`, `JsonSchemaScope` | `JsonSchema.String` and the other `JsonSchema` types, with `satisfies` |
+
+It reads a schema as a 2020-12 validator does, which changes what some schemas accept:
 
 - `prefixItems` makes its elements optional: `{ type: "array", prefixItems: [{ type: "string" }, { type: "number" }] }` is `[string?, number?, ...unknown[]]` and accepts `[]`, before: `[string, number, ...unknown[]]`.
 - `{ type: "object" }` rejects arrays.
@@ -3210,14 +3234,15 @@ Runtime benches run in a loop compiled for each bench, after a warmup, so their 
 
 ## Package names
 
-`arktype` and `arkregex` have zero runtime dependencies; `@ark/schema`, `@ark/util` and `arksets` are bundled into `arktype` and exposed as subpaths (`arktype/schema`, `arktype/util`, `arktype/sets`, `arktype/regex`). Each remaining package publishes under one name. The others are no longer published, and `@ark/type` and `@ark/regex` are deprecated on npm, so installing one warns with the name to use:
+`arktype` and `arkregex` have zero runtime dependencies; `@ark/schema` and `@ark/util` are bundled into `arktype` and exposed as subpaths (`arktype/schema`, `arktype/util`, `arktype/regex`), and `@ark/json-schema` is `arktype`'s `fromJsonSchema`. Each remaining package publishes under one name. The others are no longer published, and `@ark/type` and `@ark/regex` are deprecated on npm, so installing one warns with the name to use:
 
 | Install / Import | Instead of |
 | - | - |
 | `arktype` | `@ark/type`, `@arktype/type` |
-| `arktype/schema`, `arktype/util`, `arktype/sets` | `@ark/schema`, `@ark/util`, `arksets` |
+| `arktype/schema`, `arktype/util` | `@ark/schema`, `@ark/util` |
+| `fromJsonSchema` from `arktype` | `@ark/json-schema`, `arktype/sets`, `arksets` |
 | `arkregex` (or `arktype/regex`) | `@ark/regex`, `@arktype/regex` |
-| `@ark/<name>` | `@arktype/<name>`, e.g. `@arktype/json-schema` |
+| `@ark/<name>` | `@arktype/<name>`, e.g. `@arktype/attest` |
 
 # Primitives
 
@@ -5858,7 +5883,7 @@ const Settings = type({ since: EpochMs.default(0) })
 const out = Settings.encode({})
 ```
 
-A union encodes a value with a branch that accepts it, trying the branches without morphs first, so a value a branch would decode unchanged is encoded unchanged.
+A union encodes a value with a branch that accepts it, trying the branches without morphs first, so a value a branch would decode unchanged is encoded unchanged. Which branch encodes a value that more than one branch with a morph accepts is unspecified, and may change in a minor release.
 
 ## Keywords
 
@@ -5930,6 +5955,8 @@ const $ = scope({
 	UsersById: { "[Id]": "User" }
 })
 ```
+
+Name aliases, generic parameters and brands with identifiers, like `Id`, or `#Id` for a private alias. Any other name is unspecified, and a minor release may reject it: today it's accepted and can shadow syntax, so in `type.module({ "a|b": "'x'", a: "1", b: "2", u: "a|b" })`, `u` is `"x"`.
 
 Aliases are autocompleted and validated like built-in keywords. Write definitions inside a scope directly: wrapping one in `type(...)` fails, because `type` only knows built-in keywords (see [thunks](https://arktype.io/docs/scopes#thunks)).
 
@@ -8200,6 +8227,21 @@ ArkType can't see inside another library's schema, so it treats one as a morph f
 - It can't be a branch of a union, because its input overlaps every other branch.
 - Only synchronous validators work. ArkType doesn't await the result, so a schema that returns a `Promise`, like a Zod `refine` with an async callback, throws `Standard Schema definitions must validate synchronously (zod returned a Promise)` when validation reaches it.
 
+## Comparing with other validators
+
+To read what another library's schema accepts, rather than run it, pass a [Standard JSON Schema](https://standardschema.dev/json-schema), like a Zod schema, to [`fromJsonSchema`](https://arktype.io/docs/json-schema/from-json-schema). The Type it returns compares with your own Types and with JSON Schemas:
+
+```ts
+import { fromJsonSchema } from "arktype"
+import { z } from "zod"
+
+const ZodUser = fromJsonSchema(z.object({ name: z.string() }))
+
+ZodUser.equals(fromJsonSchema(type({ name: "string" }).toJsonSchema())) // true
+```
+
+It's read as the JSON Schema it writes, so its refinements and transforms are left out. [Compare schemas](https://arktype.io/docs/json-schema/compare) covers every comparison.
+
 # Integrations
 
 > Use a Type directly with tRPC, oRPC, Drizzle, React Hook Form, Hono, Fastify, the MCP SDK, the AI SDK and the OpenAI and Anthropic SDKs.
@@ -9649,7 +9691,7 @@ const AnyColor = type.valueOf(Color)
 
 > Every package ArkType publishes, its entrypoints, and what to import from each.
 
-To define and validate Types, install `arktype`. It has zero runtime dependencies and exposes its set algebra, regex parser, schema layer, and utilities under subpaths (`arktype/sets`, `arktype/regex`, `arktype/schema`, `arktype/util`). Each package publishes under exactly one name, the one listed here; `@ark/type`, `@ark/regex`, `@ark/schema`, `@ark/util`, `arksets` and the `@arktype/*` names are [no longer published](https://arktype.io/docs/upgrading#package-names).
+To define and validate Types, install `arktype`. It has zero runtime dependencies and exposes its regex parser, schema layer, and utilities under subpaths (`arktype/regex`, `arktype/schema`, `arktype/util`). Each package publishes under exactly one name, the one listed here; `@ark/type`, `@ark/regex`, `@ark/schema`, `@ark/util`, `@ark/json-schema` and the `@arktype/*` names are [no longer published](https://arktype.io/docs/upgrading#package-names).
 
 | Package | Install it to | Docs |
 | - | - | - |
@@ -9657,7 +9699,6 @@ To define and validate Types, install `arktype`. It has zero runtime dependencie
 | `@ark/aot` | construct your Types when you build | [Precompile](https://arktype.io/docs/precompile) |
 | `arkregex` | write regular expressions with inferred types | [ArkRegex](https://arktype.io/docs/regex) |
 | `@ark/attest` | assert types and benchmark them in your tests | [Attest](https://arktype.io/docs/attest) |
-| `@ark/json-schema` | build a Type from a JSON Schema | [From JSON Schema](https://arktype.io/docs/json-schema/from-json-schema) |
 | `@ark/fast-check` | generate test data from a Type with fast-check | [fast-check](https://arktype.io/docs/fast-check) |
 | `@ark/fs` | nothing: it's the filesystem layer `@ark/attest` uses | |
 
@@ -9671,7 +9712,6 @@ The VS Code extensions, "ArkType" and "ArkThemes", are on the [Editor](https://a
 | `arktype/codecs` | `codec`, and the `.encode` every Type has once it's imported ([Codecs](https://arktype.io/docs/codecs)) |
 | `arktype/errors` | installs `errors: "first"` and `"none"` ([errors](https://arktype.io/docs/configuration#errors)) |
 | `arktype/mutatesInput` | installs `mutatesInput: true` and `"always"` ([mutatesInput](https://arktype.io/docs/configuration#mutatesinput)) |
-| `arktype/sets` | `parse`, `isSubset`, `isEqual`, `isDisjoint`, `intersect`, `union`, `discriminate` and `toJsonSchema` ([ArkSets](https://arktype.io/docs/sets)) |
 | `arktype/regex` | `regex` and the `Regex` type ([ArkRegex](https://arktype.io/docs/regex)) |
 | `arktype/schema` | schema nodes, `rootSchema`, `schemaScope` and `ArkErrors` internals ([Internals](https://arktype.io/docs/internals), not semver-stable) |
 | `arktype/util` | shared utilities used by ArkType (not semver-stable) |
@@ -9681,9 +9721,14 @@ The VS Code extensions, "ArkType" and "ArkThemes", are on the [Editor](https://a
 | `arktype/i18n` | helpers that [a locale](https://arktype.io/docs/i18n) uses: `listPattern`, `isolate`, `labelOf`, `groupByPath`, `printedActualOf`, `describeCause`, `describeMissing`, `writeKeywordExpected` |
 | `arktype/internal`, `arktype/internal/*.ts` | every module's exports, for tools built on ArkType. Not semver-stable. |
 
+These entrypoints are `arktype`'s whole public surface. Any other subpath it exports, like `arktype/schema/internal`, `arktype/schema/issueFeatures` or `arktype/schema/runtime/*`, is not semver-stable.
+
+`arktype` is ES2022 that calls only ES2020 built-ins, so it runs wherever both are supported. CI tests it on the two latest Node LTS lines and Node's current release, Deno, Bun, Chrome and Firefox, and on the TypeScript versions [Setup](https://arktype.io/docs/intro/setup#configure-typescript) lists.
+
 `arktype` exports:
 
 - `type`, `scope`, `match`, `generic`, `declare`, `define` and `fn` to define Types, and `keywords` and `ark`, the keywords as a module and as a scope.
+- `fromJsonSchema`, which reads a JSON Schema or a Standard JSON Schema, like a Zod schema, into a Type ([From JSON Schema](https://arktype.io/docs/json-schema/from-json-schema)).
 - `regex`, the same function `arkregex` exports.
 - `Type`, `Module` and `Generic` to check a value with `instanceof`, and `Hkt` to write a [higher-kinded generic](https://arktype.io/docs/generics#hkt).
 - `ArkErrors`, `TraversalError` and `ParseError`, the [errors](https://arktype.io/docs/errors) ArkType returns and throws, `ArkError`, the type of one issue, and `Traversal`, the type of the `ctx` a [narrow or morph](https://arktype.io/docs/traversal-api) receives.
@@ -9709,10 +9754,9 @@ import { type } from "arktype"
 - **`@ark/aot`** has an entrypoint for each way to run it: `@ark/aot/unplugin` (`precompile.vite()`, `.rollup()`, `.webpack()` and the other bundlers), `@ark/aot/node` (`register()`), `@ark/aot/bun` (`precompile()`), `@ark/aot/turbopack` (a loader, `withPrecompile()` for `next.config` and `@ark/aot/turbopack/runtime` for its alias) and `@ark/aot/eslint` (`configs.recommended`). It installs an `arktype-precompile` CLI for `--check` and `--declare`, and `@ark/aot` itself exports `Precompiler`, whose `analyze()` the CLI and ESLint rule run. It needs Node 22.12 or later, and `typescript` 5.5 to 6 for declarations. See [Setup](https://arktype.io/docs/precompile/setup).
 - **`arkregex`** exports `regex`, which is also exported from `arktype`, and the `Regex` type.
 - **`@ark/attest`** exports `attest`, `bench`, `setup` and `teardown`, and installs an `attest` CLI. Install it as a dev dependency.
-- **`@ark/json-schema`** exports `jsonSchemaToType` and `JsonSchemaScope`.
 - **`@ark/fast-check`** exports `arkToArbitrary`. It needs `fast-check` 3 or 4 installed beside it.
 
-`@ark/json-schema`, `@ark/fast-check` and `@ark/attest` each depend on an exact version of `arktype`, and `@ark/aot` precompiles with the `arktype` it imports. Install the versions released alongside your `arktype` so your project doesn't load two copies of it.
+`@ark/fast-check` and `@ark/attest` each depend on an exact version of `arktype`, and `@ark/aot` precompiles with the `arktype` it imports. Install the versions released alongside your `arktype` so your project doesn't load two copies of it.
 
 `arkregex` also has an `./internal` entrypoint like `arktype`'s, and every package above has `./internal/*.ts` deep imports. None of them are semver-stable.
 
