@@ -85,6 +85,10 @@ const f = type.fn("string", ":", "string.numeric.parse")(s => s)
 f.returns
 ```
 
+### Don't transform an `undefined` a default replaces
+
+With `exactOptionalPropertyTypes: false`, a defaulted key holding `undefined` is replaced by its default, but its value's morph ran on the `undefined` first when its input allowed it, then again on the default.
+
 ## 3.0.0-beta.1
 
 ### Summary

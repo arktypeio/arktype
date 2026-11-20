@@ -120,18 +120,17 @@ export class OptionalNode extends BaseProp<"optional"> {
 	readonly defaultsUndefined: boolean =
 		this.hasDef() && this.$.cfg.exactOptionalPropertyTypes === false
 
-	// whether data has a value at this key, which a default leaves alone
-	holdsValue(data: object): boolean {
+	// an undefined its default replaces is no value
+	override holdsValue(data: object): boolean {
 		return this.defaultsUndefined ?
 				(data as Record<PropertyKey, unknown>)[this.key] !== undefined
 			:	this.key in data
 	}
 
-	/** writes whether `data` holds its key with a value */
-	jsHoldsValue(js: NodeCompiler, data: string): string {
+	override jsHoldsValue(js: NodeCompiler, data: string): string {
 		return this.defaultsUndefined ?
 				`${data}${js.prop(this.key)} !== undefined`
-			:	`${js.serialize(this.key)} in ${data}`
+			:	super.jsHoldsValue(js, data)
 	}
 }
 

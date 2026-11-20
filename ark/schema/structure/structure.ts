@@ -722,12 +722,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const props = this.inOrder
 		for (let i = 0; i < props.length; i++) {
 			const prop = props[i]
+			// a value its default replaces isn't transformed first
 			if (!hasIndexedProp) {
-				if (prop.value.tfs && prop.key in data)
+				if (prop.value.tfs && prop.holdsValue(data))
 					tfKey(prop.key, data[prop.key as never], prop.value)
 				continue
 			}
-			if (!(prop.key in data)) continue
+			if (!prop.holdsValue(data)) continue
 			const keyErrorCount = ctx.errN
 			const input: unknown = data[prop.key as never]
 			let value = input
@@ -795,7 +796,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const errN = ctx.errN
 		this._traverse("Apply", data, ctx, false)
 		for (const prop of this.inOrder)
-			if (prop.key in data) this.tfSharedKey(data, prop.key, ctx)
+			if (prop.holdsValue(data)) this.tfSharedKey(data, prop.key, ctx)
 		for (const k of ownKeysOf(data))
 			if (!(k in this.byKey)) this.tfSharedKey(data, k, ctx)
 		return !ctx.failFast || ctx.errN === errN
@@ -1133,7 +1134,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			transformedProps.length === 1 &&
 			!js.needsCtx
 		for (let i = 0; i < transformedProps.length; i++) {
-			const { key, optional } = transformedProps[i]
+			const prop = transformedProps[i]
+			const { key, optional } = prop
 			const keyExpr = js.serialize(key)
 			const onChange = () => {
 				this.jsCopy(js, { first: i === 0 }).line(
@@ -1147,7 +1149,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				this.tfsOf(transformedProps[i]),
 				{
 					keyExpr,
-					...(optional ? { condition: `${keyExpr} in data` } : {}),
+					...(optional ? { condition: prop.jsHoldsValue(js, "data") } : {}),
 					...(deletes ? {} : { onChange })
 				}
 			)
