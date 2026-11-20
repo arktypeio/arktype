@@ -114,7 +114,7 @@ Signup["~standard"].validate({ email: "x", password: "short", role: "admin" })
 // ] }
 ```
 
-A missing key says its value's `message` too, so it's the `required_error` as well. A `.refine()`'s message becomes `ctx.reject({ message, path })` in a `.narrow()`.
+A missing key says its value's `message` too, so it's the `required_error` as well. A `.refine()`'s message becomes `ctx.reject({ message, relativePath })` in a `.narrow()`.
 
 ### Your libraries take the Type as they took the schema
 
@@ -156,7 +156,7 @@ It reads a schema from Zod 4.2 or later as the JSON Schema it writes, which leav
 
 The [guide](/docs/migrating) your agent follows maps each Zod API and covers each of these, and its summary lists anything it couldn't keep identical.
 
-- **Defaults differ.** Besides undeclared keys, Zod's `.optional()` accepts `undefined`, where ArkType reads an optional key as TypeScript's `exactOptionalPropertyTypes` does, so the migration writes `"key?": "T | undefined"`. [Defaults that differ](/docs/migrating#defaults-that-differ) has every row.
+- **Defaults differ.** Besides undeclared keys, Zod's `.optional()` accepts `undefined`, where ArkType reads an optional key as TypeScript's `exactOptionalPropertyTypes` does, so the migration configures `exactOptionalPropertyTypes: false` and writes `"key?": "T"`. [Defaults that differ](/docs/migrating#defaults-that-differ) has every row.
 - **Validation is synchronous.** An async `.refine()` moves out of the schema, to run after validation.
 - **A check across keys runs last.** A `.narrow()` on an object runs once every key is valid, where Zod 4 also runs a `.refine()` when a key fails a check like `.min()`. A form shows `Passwords must match` once its fields pass.
 - **Default messages are ArkType's**, like `must be an email address` where Zod says `Invalid email address`. Messages you wrote don't change.

@@ -60,8 +60,6 @@ regex("\\n") // \n should be specified with a single backslash like regex('\n')
 Some valid patterns are rejected:
 
 - `\cX` control escapes, and `\/`, which a string doesn't need (write `/`).
-- `\}`, which the `u` and `v` flags require outside a character class. Write `[}]` instead.
-- `^` or `$` in the middle of a pattern, even with the `m` flag.
 - A reference to a group defined later, like `"\\k<a>(?<a>x)"`.
 - Flags out of alphabetical order, like `"ig"`. Write `"gi"`.
 
