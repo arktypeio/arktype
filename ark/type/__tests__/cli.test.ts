@@ -116,8 +116,12 @@ Options:
 		const skillHelp = invoke(["skill", "--help"], dir)
 		attest(skillHelp.code).equals(0)
 		attest(skillHelp.out).snap(
-			"Usage: ark skill [path|install] [--dir <path>] [--allow-outside]\n\nPrints the path to the bundled ArkType skill or installs it into your project.\n"
+			"Usage: ark skill [path|install] [--dir <path>] [--allow-outside]\n\nPrints the path to the bundled ArkType skill or installs it into your project. With --dir <path> (resolved from cwd), installs to <path>/arktype unless <path> already ends in arktype.\n"
 		)
+
+		const skillInstallHelp = invoke(["skill", "install", "--help"], dir)
+		attest(skillInstallHelp.code).equals(0)
+		attest(skillInstallHelp.out).equals(skillHelp.out)
 
 		const ver = invoke(["--version"], dir)
 		attest(ver.code).equals(0)
@@ -319,7 +323,7 @@ Read the "Upgrading from ArkType 2" section of <bundled>/SKILL.md and https://ar
 		attest(existsSync(join(pathRes.out.trim(), "SKILL.md"))).equals(true)
 
 		const installRes = invoke(
-			["skill", "install", "--dir", "custom-skills/arktype"],
+			["skill", "install", "--dir", "custom-skills"],
 			dir
 		)
 		attest(installRes.code).equals(0)
@@ -329,6 +333,40 @@ Read the "Upgrading from ArkType 2" section of <bundled>/SKILL.md and https://ar
 		attest(
 			existsSync(join(dir, "custom-skills", "arktype", "SKILL.md"))
 		).equals(true)
+
+		// already ending in arktype does not double to arktype/arktype
+		const exactRes = invoke(
+			["skill", "install", "--dir", "exact-skills/arktype/"],
+			dir
+		)
+		attest(exactRes.code).equals(0)
+		attest(normalize(exactRes.out, { "<project>": dir })).snap(
+			"Installed ArkType skill to <project>/exact-skills/arktype\n"
+		)
+		attest(existsSync(join(dir, "exact-skills", "arktype", "SKILL.md"))).equals(
+			true
+		)
+		attest(
+			existsSync(join(dir, "exact-skills", "arktype", "arktype", "SKILL.md"))
+		).equals(false)
+
+		// relative --dir resolves from cwd rather than projectRoot
+		const subCwd = join(dir, "packages", "app")
+		mkdirSync(subCwd, { recursive: true })
+		const subRes = invoke(
+			["skill", "install", "--dir", ".claude/skills"],
+			subCwd
+		)
+		attest(subRes.code).equals(0)
+		attest(normalize(subRes.out, { "<project>": dir })).snap(
+			"Installed ArkType skill to <project>/packages/app/.claude/skills/arktype\n"
+		)
+		attest(
+			existsSync(join(subCwd, ".claude", "skills", "arktype", "SKILL.md"))
+		).equals(true)
+		attest(
+			existsSync(join(dir, ".claude", "skills", "arktype", "SKILL.md"))
+		).equals(false)
 	})
 
 	it("ships built out/cli.js with shebang when built", () => {

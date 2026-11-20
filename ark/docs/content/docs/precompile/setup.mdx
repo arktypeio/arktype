@@ -346,7 +346,7 @@ Add the two to a `transpilePackages` you already set, and the plugin to a `webpa
 Check the app before its first build, from its directory, which takes seconds where the build takes minutes:
 
 ```sh
-npx arktype-precompile --check
+npx @ark/aot --check
 ```
 
 Nothing else is set for the workspace:
@@ -487,10 +487,10 @@ Some tools and modules can't be precompiled. [Troubleshooting](/docs/precompile/
 
 ## Check an existing project
 
-`--check` lists the definitions that can't be precompiled, and why, without bundling:
+`--check` lists the definitions that can't be precompiled, and why, without bundling (also runnable via `pnpm exec arktype-precompile --check` or `arktype`'s `ark check` — use `npx arktype check` outside an installed project, since `ark` on npm is an unrelated package):
 
 ```sh
-npx arktype-precompile --check src
+npx @ark/aot --check src
 ```
 
 ```
