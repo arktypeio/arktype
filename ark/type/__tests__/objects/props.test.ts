@@ -232,6 +232,22 @@ a must be a number (was missing)`)
 		attest(() => T.props).throws(writeLiteralUnionEntriesMessage(T.expression))
 	})
 
+	it("an array's elements and methods aren't props", () => {
+		const T = type("string[]")
+		attest<array<never>>(T.props)
+		attest(T.props).snap([])
+
+		const Tuple = type(["string", "number?"])
+		attest<array<never>>(Tuple.props)
+		attest(Tuple.props).snap([])
+
+		const WithKey = type("string[]").and({ foo: "string" })
+		attest<"foo">(WithKey.props[0].key)
+		attest(snapshottableProps(WithKey.props)).snap([
+			{ kind: "required", key: "foo", value: "string" }
+		])
+	})
+
 	it("base object", () => {
 		const T = type("object")
 

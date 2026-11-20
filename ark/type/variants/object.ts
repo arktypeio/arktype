@@ -5,6 +5,7 @@ import type {
 	Prop
 } from "@ark/schema"
 import type {
+	anyOrNever,
 	arkGet,
 	arkIndexableOf,
 	arkKeyOf,
@@ -43,25 +44,27 @@ interface Type<out t extends object = object, in out $ = {}>
 	 * Get the `Type` of a property of this `Type<object>`.
 	 * @example type({ foo: "string" }).get("foo") // Type<string>
 	 */
-	get<
-		const k1 extends arkIndexableOf<t>,
-		r = instantiateType<arkGet<t, k1>, $>
-	>(
+	get<const k1 extends arkIndexableOf<t>, r = instantiateType<gotAt<t, k1>, $>>(
 		k1: k1 | type.cast<k1>
 	): r extends infer _ ? _ : never
 	get<
 		const k1 extends arkIndexableOf<t>,
-		const k2 extends arkIndexableOf<arkGet<t, k1>>,
-		r = instantiateType<arkGet<arkGet<t, k1>, k2>, $>
+		const k2 extends arkIndexableOf<definedAt<t, k1>>,
+		r = instantiateType<gotAt<definedAt<t, k1>, k2> | undefinedAt<t, k1>, $>
 	>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>
 	): r extends infer _ ? _ : never
 	get<
 		const k1 extends arkIndexableOf<t>,
-		const k2 extends arkIndexableOf<arkGet<t, k1>>,
-		const k3 extends arkIndexableOf<arkGet<arkGet<t, k1>, k2>>,
-		r = instantiateType<arkGet<arkGet<arkGet<t, k1>, k2>, k3>, $>
+		const k2 extends arkIndexableOf<definedAt<t, k1>>,
+		const k3 extends arkIndexableOf<definedAt<definedAt<t, k1>, k2>>,
+		r = instantiateType<
+			| gotAt<definedAt<definedAt<t, k1>, k2>, k3>
+			| undefinedAt<definedAt<t, k1>, k2>
+			| undefinedAt<t, k1>,
+			$
+		>
 	>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>,
@@ -181,15 +184,38 @@ interface Type<out t extends object = object, in out $ = {}>
 	props: readonly typePropOf<t, $>[]
 }
 
+// a defaulted key is optional at runtime, so like an optional key's, the value
+// .get reads there includes undefined
+type gotAt<o, k extends arkIndexableOf<o>> = undefaulted<arkGet<o, k>>
+
+type undefaulted<v> =
+	[v] extends [anyOrNever] ? v
+	: v extends Default<infer t> ? t | undefined
+	: v extends (...args: never) => anyOrNever ? v
+	: v extends InferredMorph<Default<infer i, never>, infer out> ?
+		((In: i) => out) | undefined
+	:	v
+
+// a nested key is read through an undefined parent, as .get does at runtime
+type definedAt<o, k extends arkIndexableOf<o>> = Exclude<gotAt<o, k>, undefined>
+
+type undefinedAt<o, k extends arkIndexableOf<o>> =
+	undefined extends gotAt<o, k> ? undefined : never
+
 // each branch's props, since a union's are mapped per branch
 type typePropOf<o, $> =
 	o extends unknown ?
-		keyof o extends infer k ?
+		propKeyOf<o> extends infer k ?
 			k extends keyof o ?
 				typeProp<o, k, $>
 			:	never
 		:	never
 	:	never
+
+// an array's elements and methods aren't props at runtime, only keys
+// intersected onto it, e.g. type("string[]").and({ foo: "string" })
+type propKeyOf<o> =
+	o extends array ? Exclude<keyof o, keyof unknown[] | `${number}`> : keyof o
 
 // checked whole, since a prop's value is one Type, whatever its branches
 type typeProp<o, k extends keyof o, $, v = propValueOf<o, k>> =

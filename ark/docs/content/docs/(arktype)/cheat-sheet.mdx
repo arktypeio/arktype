@@ -258,7 +258,7 @@ const User = type({
 	"age?": "number"
 })
 // ---cut---
-// a Standard Schema, accepted by tRPC, Hono, oRPC, the MCP SDK and others
+// a Standard Schema, accepted by tRPC, Hono, oRPC, the MCP SDK from v2 and others
 User["~standard"]
 
 // { $schema: "...", type: "object", properties: { ... }, required: ["name"] }
@@ -270,7 +270,7 @@ import { fromJsonSchema } from "arktype"
 import { z } from "zod"
 // ---cut---
 // a JSON Schema or a Zod schema as a Type, to validate with or compare
-const V1 = fromJsonSchema(z.object({ id: z.string() }))
+const V1 = fromJsonSchema(z.object({ id: z.string(), age: z.number() }))
 const V2 = fromJsonSchema({
 	type: "object",
 	properties: { id: { type: "string" }, age: { type: "number" } },
@@ -311,4 +311,4 @@ export default {
 | Mutating the argument in `.pipe`                                    | Return a new value; a morph receives the caller's data, not a copy                          |
 | `type User = typeof Schema.t`                                       | Use `typeof Schema.infer` for the output type                                               |
 | Precompiled: `User.pick(...keys)` with `keys` known only at runtime | A Type per case, composed from static values: `const Admin = User.and({ role: "'admin'" })` |
-| Precompiled: `type()` from a runtime value                          | Make it static, mark it `// @ark-runtime`, or build with `runtime: "arktype"`               |
+| Precompiled: `type()` from a runtime value                          | Make it static, or mark it `// @ark-runtime` if it's only known at runtime                  |

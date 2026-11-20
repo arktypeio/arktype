@@ -171,6 +171,7 @@ import {
 	type PrecompileHost,
 	type RuntimeVariant
 } from "./host.ts"
+import { parsePackageManifest } from "./util.ts"
 import {
 	changeableDepthOf,
 	createSiteState,
@@ -242,6 +243,7 @@ import {
 import {
 	anyKey,
 	nodeAt,
+	reachedModulesOf,
 	readingsOf,
 	validatorHeld,
 	type ReaderProgram,
@@ -923,12 +925,18 @@ export class Precompiler {
 		}))
 	}
 
+	// e.g. `import settings from "./settings.json"`, which holds no Type
+	private isJsonImport(input: Input): boolean {
+		if (input.kind !== "import") return false
+		const module = this.graph.moduleOf(input.file!)
+		return !(module instanceof SourceModule) && module.kind === "json"
+	}
+
 	private rootOf(input: Input): Binding | Node | undefined {
 		if (input.kind === "local") return this.bindingsByInput.get(input)
-		const target = this.graph.exportOf(
-			this.graph.moduleOf(input.file!) as SourceModule,
-			input.name
-		)
+		const imported = this.graph.moduleOf(input.file!)
+		if (!(imported instanceof SourceModule)) return
+		const target = this.graph.exportOf(imported, input.name)
 		return (
 			target.kind === "binding" ? target.binding
 			: target.kind === "expression" ? target.node
@@ -939,7 +947,7 @@ export class Precompiler {
 	// whether a site's path reads a member of a Type, as `User.in`, rather than
 	// a Type off what holds it, as `Fields.user`
 	private readsMemberThrough(input: Input): boolean {
-		if (!input.path.length) return false
+		if (!input.path.length || this.isJsonImport(input)) return false
 		const root = this.rootOf(input)
 		const evaluated = root && this.interpreter.evaluatedOf(root)
 		if (!evaluated) return true
@@ -956,6 +964,7 @@ export class Precompiler {
 	// `const C = H.a`. Under creationChecks "none" its factory still checks
 	// it's the Type the build read, so a write the build missed fails loudly.
 	private isOffHolder(input: Input): boolean {
+		if (this.isJsonImport(input)) return false
 		const root = this.rootOf(input)
 		const evaluated = root && this.interpreter.evaluatedOf(root)
 		if (!evaluated) return true
@@ -1039,27 +1048,29 @@ export class Precompiler {
 
 	// what a bundle's validators are read for, so its next transforms leave out what no read needs
 	scan(program: ScannedProgram): ScannedUsage {
-		this.readProgram(program)
-		this.usagesByProgram.delete(program.key)
-		const unwritten: ScannedUsage = {
-			dropped: [],
-			linked: false,
-			replaced: [],
-			written: false,
-			holders: [],
-			verifies: false
-		}
-		if (this.mode !== "standalone") return unwritten
-		const plan = this.planProgram(program)
-		if (typeof plan === "string") return { ...unwritten, unpruned: plan }
-		const used = this.usedIn(program, plan.planned)
-		return this.scanAs(
-			program,
-			plan,
-			unwritten,
-			used,
-			typeof used === "string" ? this.keptMembersMessageOf(used) : undefined
-		)
+		return this.withActive(() => {
+			this.readProgram(program)
+			this.usagesByProgram.delete(program.key)
+			const unwritten: ScannedUsage = {
+				dropped: [],
+				linked: false,
+				replaced: [],
+				written: false,
+				holders: [],
+				verifies: false
+			}
+			if (this.mode !== "standalone") return unwritten
+			const plan = this.planProgram(program)
+			if (typeof plan === "string") return { ...unwritten, unpruned: plan }
+			const used = this.usedIn(program, plan.planned)
+			return this.scanAs(
+				program,
+				plan,
+				unwritten,
+				used,
+				typeof used === "string" ? this.keptMembersMessageOf(used) : undefined
+			)
+		})
 	}
 
 	// where a Scope is created, naming it to each module reaching it, if it runs once
@@ -2202,13 +2213,16 @@ export class Precompiler {
 		program: ScannedProgram,
 		modules: ReadonlyMap<string, RuntimeModule>
 	): UsageProgram {
-		return {
+		const usageProgram: UsageProgram = {
 			entries: new Set(program.entries),
 			exposed: new Set(program.exposed),
 			exposesLoaded: !!program.exposesLoaded,
 			modules,
-			resolve: (specifier, importer) => program.targets[importer]?.[specifier]
+			resolve: (specifier, importer) => program.targets[importer]?.[specifier],
+			reached: () =>
+				reachedModulesOf(usageProgram, this.graph, this.readModules)
 		}
+		return usageProgram
 	}
 
 	// the introspection members members leaves each site's validator, as code
@@ -2690,36 +2704,40 @@ export class Precompiler {
 
 	// its sites and diagnostics before validators are written
 	analyzeSites(source: string, id: string): ModuleAnalysis {
-		const module = this.add(id, source)
-		// analyzed under the thread's configuration
-		if (threadConfiguration) this.configuration ??= this.applyConfiguration()
-		const analysis = this.analysisOf(module)
-		analysis.diagnostics.push(...this.checkConfigOrder(module))
-		return analysis
+		return this.withActive(() => {
+			const module = this.add(id, source)
+			// analyzed under the thread's configuration
+			if (threadConfiguration) this.configuration ??= this.applyConfiguration()
+			const analysis = this.analysisOf(module)
+			analysis.diagnostics.push(...this.checkConfigOrder(module))
+			return analysis
+		})
 	}
 
 	// a module another plugin writes, like a compiled Svelte component, is read but not precompiled
 	checkUnwritten(source: string, id: string, mappings?: string): Diagnostic[] {
-		if (this.mode !== "standalone" || !this.importsArk(source, id)) return []
-		const module = this.add(id, source, mappings)
-		this.configuration ??= this.applyConfiguration()
-		const { sites, diagnostics } = this.analysisOf(module)
-		for (const site of sites) {
-			if (site.status === "island") continue
-			diagnostics.push(
-				this.diagnostic(
-					module,
-					site,
-					"unsupported",
-					`${module.snippetOf(site)} can't be precompiled in a module another plugin writes`,
-					[
-						`the build reads ${module.path} only once another plugin has written it, so it can't write a validator there`
-					],
-					unwrittenHint
+		return this.withActive(() => {
+			if (this.mode !== "standalone" || !this.importsArk(source, id)) return []
+			const module = this.add(id, source, mappings)
+			this.configuration ??= this.applyConfiguration()
+			const { sites, diagnostics } = this.analysisOf(module)
+			for (const site of sites) {
+				if (site.status === "island") continue
+				diagnostics.push(
+					this.diagnostic(
+						module,
+						site,
+						"unsupported",
+						`${module.snippetOf(site)} can't be precompiled in a module another plugin writes`,
+						[
+							`the build reads ${module.path} only once another plugin has written it, so it can't write a validator there`
+						],
+						unwrittenHint
+					)
 				)
-			)
-		}
-		return diagnostics
+			}
+			return diagnostics
+		})
 	}
 
 	// a config module given anew is read again
@@ -3008,9 +3026,13 @@ export class Precompiler {
 			root !== dirname(root);
 			root = dirname(root)
 		) {
-			const manifest = this.graph.host.readFile(join(root, "package.json"))
+			const manifestPath = join(root, "package.json")
+			const manifest = this.graph.host.readFile(manifestPath)
 			if (manifest === undefined) continue
-			const { name: packageName, version } = JSON.parse(manifest)
+			const { name: packageName, version } = parsePackageManifest(
+				manifest,
+				manifestPath
+			)
 			if (packageName === name) return [root, version ?? "unknown"]
 		}
 		return [dirname(entry), "unknown"]
@@ -3027,8 +3049,10 @@ export class Precompiler {
 
 	// the @ark/aot released with a program's arktype, which arktype's package.json names
 	private versionHintOf(root: string, version: string): string {
-		const { arkAotVersion } = JSON.parse(
-			this.graph.host.readFile(join(root, "package.json"))!
+		const manifestPath = join(root, "package.json")
+		const { arkAotVersion } = parsePackageManifest(
+			this.graph.host.readFile(manifestPath)!,
+			manifestPath
 		)
 		return arkAotVersion ?
 				writeVersionHint(version, arkAotVersion)
@@ -3063,16 +3087,23 @@ export class Precompiler {
 		// the bundle a scan read, whose validators lack what no read needs
 		program?: string
 	): PrecompiledModule {
-		const written = this.writtenIn(program, id, source)
-		if (written) return written
-		const precompiled = this.precompileUnscanned(source, id, mappings, program)
-		const usage =
-			program === undefined ? undefined : this.usagesByProgram.get(program)
-		if (!usage?.flat) return precompiled
-		const flat = this.flatUnscannedOf(precompiled, source, id, usage.flat)
-		// as the bundle holds it, which the host checks once it's built
-		usage.unscanned.set(id, [source, flat])
-		return flat
+		return this.withActive(() => {
+			const written = this.writtenIn(program, id, source)
+			if (written) return written
+			const precompiled = this.precompileUnscanned(
+				source,
+				id,
+				mappings,
+				program
+			)
+			const usage =
+				program === undefined ? undefined : this.usagesByProgram.get(program)
+			if (!usage?.flat) return precompiled
+			const flat = this.flatUnscannedOf(precompiled, source, id, usage.flat)
+			// as the bundle holds it, which the host checks once it's built
+			usage.unscanned.set(id, [source, flat])
+			return flat
+		})
 	}
 
 	// one another plugin rewrote reads the units as the rest do
@@ -3658,12 +3689,24 @@ export class Precompiler {
 					}
 		}
 		if (evaluated) {
+			if (!problem) {
+				configuration.interpreter = this.interpreter
+				configure(evaluated.value as never)
+			}
 			threadConfiguration = configuration
-			if (!problem) configure(evaluated.value as never)
 		}
 		// so a later configure() throws, as after the first Type
 		void ark.internal.cfg
 		return configuration
+	}
+
+	// keeps the shared thread configuration's writer interpreter on the active
+	// stack when a replacement Precompiler runs sites under its writers
+	private withActive<t>(run: () => t): t {
+		const configInterpreter = threadConfiguration?.interpreter
+		return configInterpreter && configInterpreter !== this.interpreter ?
+				configInterpreter.withActive(() => this.interpreter.withActive(run))
+			:	this.interpreter.withActive(run)
 	}
 
 	get conflictsWithThread(): boolean {
@@ -5231,10 +5274,9 @@ export class Precompiler {
 		// another module's export is read where it's declared
 		return site.inputs.some(input => {
 			if (input.kind !== "import" || input.value !== value) return false
-			const target = this.graph.exportOf(
-				this.graph.moduleOf(input.file!) as SourceModule,
-				input.name
-			)
+			const imported = this.graph.moduleOf(input.file!)
+			if (!(imported instanceof SourceModule)) return false
+			const target = this.graph.exportOf(imported, input.name)
 			return (
 				(target.kind === "binding" &&
 					isInIsland(target.binding.declaration, target.module)) ||
@@ -5250,10 +5292,9 @@ export class Precompiler {
 		if (input.path.length) return
 		if (input.kind === "local")
 			return [this.bindingsByInput.get(input)!, module]
-		const target = this.graph.exportOf(
-			this.graph.moduleOf(input.file!) as SourceModule,
-			input.name
-		)
+		const imported = this.graph.moduleOf(input.file!)
+		if (!(imported instanceof SourceModule)) return
+		const target = this.graph.exportOf(imported, input.name)
 		return target.kind === "binding" ?
 				[target.binding, target.module]
 			:	undefined
@@ -5293,9 +5334,12 @@ export class Precompiler {
 				const expression = appendStringifiedKey(binding.name, input.name)
 				namespace = { expression, label: expression, binding }
 			} else if (
-				(target.kind === "binding" || target.kind === "expression") &&
-				target.module.id === input.file &&
-				(target.name ?? "default") === input.name
+				(target.kind === "json" &&
+					target.id === input.file &&
+					(target.name ?? "default") === input.name) ||
+				((target.kind === "binding" || target.kind === "expression") &&
+					target.module.id === input.file &&
+					(target.name ?? "default") === input.name)
 			) {
 				importing.push({
 					expression: binding.name,
@@ -6681,9 +6725,9 @@ export class Precompiler {
 		root: Read["root"],
 		module: SourceModule
 	): SourceModule | undefined {
-		return root.kind === "export" && root.importer === module ?
-				(this.graph.moduleOf(root.file) as SourceModule)
-			:	undefined
+		if (root.kind !== "export" || root.importer !== module) return
+		const imported = this.graph.moduleOf(root.file)
+		return imported instanceof SourceModule ? imported : undefined
 	}
 
 	// the site's inputs and holes, or the read that keeps it from having them
@@ -8494,6 +8538,8 @@ interface Configuration {
 	reasons: string[]
 	// false where the reasons say how to fix them
 	hint?: string | false | undefined
+	// the interpreter that evaluated configure() writers shared across replacements
+	interpreter?: Interpreter | undefined
 }
 
 let threadConfiguration: Configuration | undefined

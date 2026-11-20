@@ -172,6 +172,16 @@ if (out instanceof type.errors) {
 
 Each failed check is its own error, so nothing raised `intersection`. It's no longer an `ArkErrorCode`, so a locale has no entry for it and an exhaustive `switch` over `code` needs no case for it.
 
+### JSON Schema output for `never`, meta and `"+": "delete"`
+
+- `never` is `{ not: {} }`, where it wrote `{ enum: [] }`, which OpenAPI 3.0 rejects.
+- Only JSON Schema's annotations (`title`, `description`, `default`, `examples`, `deprecated`, `readOnly`, `writeOnly`, `$comment`, `format`, `contentEncoding` and `contentMediaType`) and `x-` keys of a Type's meta reach its JSON Schema, where every key did. Write anything else with `jsonSchema` meta.
+- `"+": "delete"` no longer writes `additionalProperties: false` in `toJsonSchema()`, since input may hold the keys it deletes. `.out.toJsonSchema()` writes it for the output's schema.
+
+### Fixes
+
+- Chained `.pipe(fn)` now type-checks `fn`'s parameter against the preceding output type (#1753), so mismatched morphs like `type("string").pipe((n: number) => ...)` are caught at compile time.
+
 ## 3.0.0-beta.1
 
 ### Summary
@@ -432,7 +442,7 @@ const schema = type({ name: "string" }).toJsonSchema()
 schema.properties
 ```
 
-Each branch allows any other keyword, as JSON Schema does, so an extension like `x-internal` or OpenAPI's `nullable` type-checks. Its arrays are mutable, and a `const`, `enum`, `default` or example is `Json`. `exclusiveMinimum` and `exclusiveMaximum` are no longer declared, since `target: "openapi-3.0"` writes `true` for them, so they read as `unknown`. Inferring from a `JsonSchema` branch with `@ark/json-schema` now includes `null`, since it may be `nullable`.
+Each branch allows any other keyword, as JSON Schema does, so an extension like `x-internal` or OpenAPI's `nullable` type-checks. Its arrays are mutable, and a `const`, `enum`, `default` or example is `Json`. Inferring from a `JsonSchema` branch with `@ark/json-schema` now includes `null`, since it may be `nullable`.
 
 ### Infer `.map()` on a union per branch
 
@@ -689,13 +699,7 @@ An error `ctx.reject` or `ctx.error` raises with a `code` but no `expected` or `
 type("object.json")({ at: new Date() })
 ```
 
-JSON Schema can't require a plain object, so `toJsonSchema()` now throws for `object.json`, and for Types that include it like `string.json.parse`'s output, with the `predicate` code. Return `ctx.base` from that fallback to write the schema it wrote before:
-
-```ts
-type("object.json").toJsonSchema({ fallback: { predicate: ctx => ctx.base } })
-```
-
-`~standard.jsonSchema` leaves the check out, as it does every predicate.
+`object.json`, and the Types it's part of, like `string.json.parse`'s output, are written `{ anyOf: [{ type: "object" }, { type: "array", items: {} }] }` in JSON Schema, leaving out its check that an object is plain, which JSON Schema can't express.
 
 Its values are its `jsonData` alias, so its `description` is `{ [string]: $jsonData }` and its `expression` `{ [string]: $jsonData } & isPlainObjectOrArray`, where they listed the alias's branches, and a value JSON can't hold is reported against each of them:
 
@@ -869,7 +873,7 @@ const T = type({ name: 'string = "Anon"' })
 T["~standard"].jsonSchema.input({ target: "draft-2020-12" })
 ```
 
-`input` writes each morph's input rather than calling a configured `morph` fallback, and no longer writes `additionalProperties: false` for `"+": "delete"`, whose input may have the keys it removes. `output` and `toJsonSchema()` are unchanged.
+`input` writes each morph's input rather than calling a configured `morph` fallback, and neither `input` nor `toJsonSchema()` writes `additionalProperties: false` for `"+": "delete"`, whose input may have the keys it removes. `.out.toJsonSchema()` and `output` write it.
 
 Thanks to @ybai08 for #1695.
 
@@ -885,7 +889,7 @@ const T = type({ a: "string | undefined" })
 T["~standard"].jsonSchema.input({ target: "draft-2020-12" })
 ```
 
-`output` and `toJsonSchema()` still pass a required key's `undefined` to `fallback.unit`, since output with `a: undefined` serializes without `a`.
+`output` also drops `undefined` from a union and leaves a key allowing `undefined` out of `required`, since output with `a: undefined` serializes without `a`. `toJsonSchema()` still passes a required key's `undefined` to `fallback.unit`.
 
 Thanks to @SynthLuvr for #1715.
 
@@ -1298,7 +1302,7 @@ A Type is compiled the second time it's called or its `allows` is called, or whe
 
 A union finds its discriminant when it's compiled, checks data, describes a miss or has its references read, rather than when it's created. Where a scope has several definition errors, which is thrown first can change, and can differ between JIT and jitless, e.g. an indeterminate union of morphs before an invalid default it includes.
 
-A host that refuses code generation once it has loaded, as Cloudflare Workers do within a request, has its Types checked as with `jitless` from then on. Since a Type compiles once it's used, that includes one defined as the Worker loads and first used within a request, which is up to about 30x slower per call on a plain object, and 3x to 5x on invalid data or a morph. Only a cyclic scope's exports still compile as they load. To check with compiled code on such a host, [precompile](https://arktype.io/docs/precompile) your Types, or read a Type's `precompilation` where it's defined, which compiles it as the Worker loads and adds to its startup.
+A host that refuses code generation once it has loaded, as Cloudflare Workers do within a request, has its Types checked as with `jitless` from then on. Since a Type compiles once it's used, that includes one defined as the Worker loads and first used within a request, which is many times slower per call. Only a cyclic scope's exports still compile as they load. To check with compiled code on such a host, [precompile](https://arktype.io/docs/precompile) your Types, or read a Type's `precompilation` where it's defined, which compiles it as the Worker loads and adds to its startup.
 
 ### Order keys by code unit
 
@@ -3071,10 +3075,6 @@ A scope key declaring parameters, like `"Box<s extends string>"`, whose definiti
 // now: ParseError: Box is defined by a generic, so its key must not declare parameters
 scope({ "Box<s extends string>": generic(["s", "string"])({ box: "s" }) })
 ```
-
-### Export `TerminallyInferredObject` as a type
-
-`arktype` exports `TerminallyInferredObject`, the objects inference keeps whole rather than mapping over, like `Date`, `Promise` and any class declared in `ArkEnv.prototypes`, so a utility type built on inferred types can stop at the same objects (#1490).
 
 ### Parse a union disjoint by an optional `never` key whatever was defined first
 

@@ -537,6 +537,152 @@ console.log(JSON.stringify(encoded), refused instanceof type.errors && refused.s
 		attest(standalone.includes("\0")).equals(false)
 	})
 
+	it("esbuild validates a user class instanceOf union at runtime", async () => {
+		const root = writeFixture(
+			{
+				"package.json": `{"type":"module"}`,
+				"main.ts": `import { type } from "arktype"
+class Local { x = 1 }
+export const A = type.instanceOf(Local).or("null")
+const inst = new Local()
+const badObj = A({})
+const badNum = A(1)
+console.log(JSON.stringify({
+	instOk: A(inst) === inst,
+	nullOk: A(null) === null,
+	badObjSummary: badObj instanceof type.errors ? badObj.summary : "",
+	badNumSummary: badNum instanceof type.errors ? badNum.summary : ""
+}))
+`
+			},
+			fromHere("temp", "instanceOfUnion")
+		)
+		attest(
+			JSON.parse(run(await bundlers.esbuild({ cwd: root }, root, false)))
+		).equals({
+			instOk: true,
+			nullOk: true,
+			badObjSummary: "must be an instance of Local",
+			badNumSummary: "must be an object or null"
+		})
+	})
+
+	it("esbuild validates through default and named JSON imports", async () => {
+		const root = writeFixture(
+			{
+				"package.json": `{"type":"module"}`,
+				"data.json": `{"values":["a","b"],"kind":"string"}`,
+				"main.ts": `import { type } from "arktype"
+import data from "./data.json" with { type: "json" }
+import { kind, values } from "./data.json"
+export const E = type.enumerated(...data.values)
+export const K = type({ k: kind })
+export const N = type.enumerated(...values)
+console.log(JSON.stringify({
+	eOk: E("a"),
+	eBad: E("c") instanceof type.errors,
+	kOk: K({ k: "hi" }),
+	kBad: K({ k: 1 }) instanceof type.errors,
+	nOk: N("b")
+}))
+`
+			},
+			fromHere("temp", "jsonImports")
+		)
+		attest(JSON.parse(run(await bundlers.esbuild({ cwd: root }, root)))).equals(
+			{
+				eOk: "a",
+				eBad: true,
+				kOk: { k: "hi" },
+				kBad: true,
+				nOk: "b"
+			}
+		)
+	})
+
+	it("esbuild reads a .js module as JSX where its build's loader says to", async () => {
+		const root = writeFixture(
+			{
+				"package.json": `{"type":"module"}`,
+				"main.js": `import { type } from "arktype"
+export const User = type({ name: "string" })
+export const View = () => <div>{User.expression}</div>
+`
+			},
+			fromHere("temp", "jsxInJs")
+		)
+		for (const prune of [false, true]) {
+			const { outputFiles } = await esbuild({
+				entryPoints: [join(root, "main.js")],
+				absWorkingDir: root,
+				bundle: true,
+				write: false,
+				format: "esm",
+				conditions,
+				logLevel: "silent",
+				loader: { ".js": "jsx" },
+				jsx: "automatic",
+				external: ["react/jsx-runtime"],
+				plugins: [
+					precompile.esbuild({
+						cwd: root,
+						conditions,
+						prune,
+						members: { expression: true }
+					})
+				]
+			})
+			attest(
+				outputFiles[0].text
+					.split("\n")
+					.filter(line => line.includes("{ name: string }"))
+			).snap(['  return "{ name: string }";'])
+		}
+	})
+
+	it("esbuild reads a BOM in package.json, and warns where a dependency's isn't JSON", async () => {
+		const root = writeFixture(
+			{
+				"package.json": `\uFEFF${JSON.stringify({
+					name: "bom-bundle",
+					type: "module",
+					dependencies: { "bom-dep": "1.0.0", "bad-dep": "1.0.0" }
+				})}`,
+				"node_modules/bom-dep/package.json": `\uFEFF${JSON.stringify({
+					name: "bom-dep",
+					type: "module"
+				})}`,
+				"node_modules/bad-dep/package.json": `{not valid json`,
+				"main.ts": `import { type } from "arktype"
+const User = type({ name: "string" })
+console.log(JSON.stringify(User({ name: "ada" })))
+`
+			},
+			fromHere("temp", "bomManifests")
+		)
+		const originalWarn = console.warn
+		const warnings: string[] = []
+		console.warn = (...args: unknown[]) => warnings.push(args.join(" "))
+		let code: string
+		try {
+			code = await bundlers.esbuild({ cwd: root }, root)
+		} finally {
+			console.warn = originalWarn
+		}
+		attest(JSON.parse(run(code))).equals({ name: "ada" })
+		// the parse error is the runtime's own wording
+		attest(
+			warnings.map(warning =>
+				warning.replace(
+					/isn't JSON: .*; ignoring/,
+					"isn't JSON: <parse error>; ignoring"
+				)
+			)
+		).equals([
+			`precompile: ${join(root, "node_modules", "bad-dep", "package.json")} isn't JSON: <parse error>; ignoring it for dependency precompilation`
+		])
+	})
+
 	it("vite standalone for SSR", async () => {
 		const config = viteConfig({})
 		const { output } = (await viteBuild({
@@ -609,7 +755,7 @@ export const describe = (t: { description: string }) => t.description
 			],
 			[
 				true,
-				"ArkErrors {\n  summary: 'is invalid',\n  issues: [\n    {\n      code: 'predicate',\n      path: [],\n      data: { a: 1 },\n      message: 'is invalid'\n    }\n  ]\n}",
+				"ArkErrors {\n  summary: 'is invalid',\n  issues: [\n    {\n      code: 'predicate',\n      path: [],\n      data: { a: 1 },\n      expected: 'valid',\n      message: 'is invalid'\n    }\n  ]\n}",
 				"TraversalError: is invalid",
 				""
 			]
@@ -670,6 +816,138 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 			await runner.close()
 			await server.close()
 		}
+	})
+
+	it("vite's development server with hmr off rewrites the importers of a changed module", async () => {
+		const limitSource = (n: number) => `export const L = ${n}\n`
+		const root = writeFixture({
+			"limit.ts": limitSource(5),
+			"main.ts": `import { type } from "arktype"
+import { L } from "./limit.ts"
+export const N = type(\`number <= \${L}\`)
+export const check = (v: number) => !(N(v) instanceof type.errors)
+`
+		})
+		mkdirSync(join(root, "node_modules"))
+		symlinkSync(
+			fromHere("..", "..", "type"),
+			join(root, "node_modules/arktype")
+		)
+		const config = viteConfig({}, root)
+		const server = await withNodeEnv("development", () =>
+			createServer({
+				...config,
+				server: { hmr: false },
+				resolve: { ...config.resolve, preserveSymlinks: true },
+				ssr: { resolve: { ...config.ssr!.resolve, externalConditions: [] } }
+			})
+		)
+		try {
+			const before = (await server.ssrLoadModule("/main.ts")).check(9)
+			const file = join(root, "limit.ts")
+			writeFileSync(file, limitSource(9))
+			const limitModule = server.environments.ssr.moduleGraph.getModuleById(
+				normalizePath(file)
+			)!
+			server.watcher.emit("change", file)
+			for (let waited = 0; limitModule.transformResult; waited += 10) {
+				if (waited > 10_000) throw new Error("limit.ts was never invalidated")
+				await new Promise(resolve => setTimeout(resolve, 10))
+			}
+			attest([
+				before,
+				(await server.ssrLoadModule("/main.ts")).check(9)
+			]).equals([false, true])
+		} finally {
+			await server.close()
+		}
+	})
+
+	it("vitest in watch mode reruns a test whose Type's module changed", async () => {
+		const shapeSource = (fieldType: string) =>
+			`import { type } from "arktype"\nexport const Shape = type({ a: "${fieldType}" })\n`
+		const root = writeFixture({
+			"b.ts": shapeSource("string"),
+			"main.ts": `import { type } from "arktype"
+import { Shape } from "./b.ts"
+export const U = type({ inner: Shape })
+`,
+			"main.test.ts": `import { expect, test } from "vitest"
+import { type } from "arktype"
+import { U } from "./main.ts"
+test("validates", () => {
+	const out = U({ inner: { a: 42 } })
+	expect(out instanceof type.errors ? out.summary : "ok").toBe("ok")
+})
+`
+		})
+		mkdirSync(join(root, "node_modules"))
+		symlinkSync(
+			fromHere("..", "..", "type"),
+			join(root, "node_modules/arktype")
+		)
+		const previousExitCode = process.exitCode
+		let runs = 0
+		let resolveRerun: (() => void) | undefined
+		const rerunDone = new Promise<void>(resolve => {
+			resolveRerun = resolve
+		})
+		await withNodeEnv("test", async () => {
+			const vitest = await startVitest(
+				[],
+				{
+					root,
+					config: false,
+					include: ["main.test.ts"],
+					watch: true,
+					reporters: [
+						{
+							onTestRunEnd() {
+								runs++
+								if (runs >= 2) resolveRerun?.()
+							}
+						}
+					],
+					testTimeout: 30_000
+				},
+				viteConfig({}, root)
+			)
+			try {
+				// Shape expects a string, not 42
+				const initial = vitest.state.getFiles()[0]?.tasks[0]?.result
+				attest([initial?.state, initial?.errors?.[0]?.message]).equals([
+					"fail",
+					"expected 'inner.a must be a string' to be 'ok' // Object.is equality"
+				])
+				const shapeFile = join(root, "b.ts")
+				writeFileSync(shapeFile, shapeSource("number"))
+				vitest.vite.watcher.emit("change", shapeFile)
+				let timer: ReturnType<typeof setTimeout> | undefined
+				try {
+					await Promise.race([
+						rerunDone,
+						new Promise<never>((_, reject) => {
+							timer = setTimeout(
+								() => reject(new Error("Vitest watch rerun timed out")),
+								20_000
+							)
+						})
+					])
+				} finally {
+					clearTimeout(timer)
+				}
+				attest([
+					vitest.state.getFiles()[0]?.tasks[0]?.result?.state,
+					vitest.state.getCountOfFailedTests()
+				]).equals(["pass", 0])
+			} finally {
+				await vitest.close()
+				// watch mode attaches a stdin listener and sets exitCode on failures
+				process.stdin.pause()
+				process.stdin.unref?.()
+				process.exitCode = previousExitCode
+			}
+		})
 	})
 
 	it("fails a build whose external option takes arktype from the bundle", async () => {

@@ -31,8 +31,9 @@ Go down the list. Each question your code answers yes to links to what to change
 
 - Do you install with npm, beside a package that peers on `arktype@^2`, like `@hookform/resolvers` or `@t3-oss/env-core`? [Override its peer](#npm-refuses-packages-that-peer-on-arktype-2).
 - Do you use `arktypeResolver` from `@hookform/resolvers` 3 or 4, `@hono/arktype-validator`, `sveltekit-superforms`, `@arkenv/core` or `@typeschema/arktype`? [Each fails on invalid input](#adapters-written-for-arktype-2), and all but ArkEnv have a replacement that works today.
-- Do you keep a package that depends on arktype 2 itself, like `@ark/json-schema@0.0.13`? [Its Types are Standard Schemas](#packages-that-depend-on-arktype-2).
+- Do you keep a package that depends on arktype 2 itself, like `@ark/json-schema@0.0.14`? [Its Types are Standard Schemas](#packages-that-depend-on-arktype-2).
 - Do you ship arktype to a browser without a build step that precompiles? [It's larger](#unprecompiled-arktype-is-larger).
+- Do you validate within Cloudflare Workers requests, or anywhere `new Function` is blocked once your app has loaded? [Types compile when they're first used](#types-compile-when-theyre-first-used).
 - Do you install `@ark/type`, `@ark/regex`, `@ark/schema`, `@ark/util` or an `@arktype/*` package? [Switch to `arktype` / `arkregex`](#package-names).
 - Do you read `ArkErrors` as an array, like `out[0]`, `out.length`, `out.map()` or `[...out]`? [Read `out.issues`](#arkerrors-is-no-longer-an-array).
 - Do you call methods on an error, like `hasCode()`, `toString()` or `instanceof ArkError`? [Errors are plain objects](#errors-are-plain-objects).
@@ -130,7 +131,7 @@ app.post(
 
 ### Packages that depend on arktype 2
 
-A package that depends on arktype 2 itself, like `@ark/json-schema@0.0.13`, installs its own copy. A Type it returns works in a definition, `.pipe()` or `.to()` as a [Standard Schema](/docs/standard-schema), validating with its own copy, and `toJsonSchema()` writes what that copy's converter does, throwing where that can't stand for the Type, as for one with a morph. A module or Generic from it used in a Scope, or a Type passed to `type.schema()`, throws a `ParseError`: upgrade the package, or override its `arktype`.
+A package that depends on arktype 2 itself, like `@ark/json-schema@0.0.14`, installs its own copy. A Type it returns works in a definition, `.pipe()` or `.to()` as a [Standard Schema](/docs/standard-schema), validating with its own copy, and `toJsonSchema()` writes what that copy's converter does, throwing where that can't stand for the Type, as for one with a morph. A module or Generic from it used in a Scope, or a Type passed to `type.schema()`, throws a `ParseError`: upgrade the package, or override its `arktype`.
 
 Each copy resolves strings against its own keywords and reads only the [`ArkEnv`](#arkenv-is-arktypes-not-a-global) declared for it, so the package's Types keep arktype 2's keywords, and an `onFail` you configure types and runs only your copy's calls.
 
@@ -152,11 +153,11 @@ To ship less than before, [precompile](/docs/intro/setup#add-the-plugin). Each T
 const out = type({ name: "string" })({ name: 5 })
 
 if (out instanceof type.errors) {
-	// before: out[0], out.map(e => e.message), out.length
+	// before: out[0], out.map(e => e.code), out.length
 	out.issues[0]
-	out.issues.map(e => e.message)
+	out.issues.map(e => e.code)
 	out.issues.length
-	// unchanged
+	// iterating still works; note error.message leaves out the path (below)
 	for (const error of out) console.log(error.message)
 }
 ```
@@ -484,7 +485,7 @@ Signup({})
 
 ### Error writers receive the error and the locale
 
-An `expected` or `message` writer receives the error rather than its context, an `actual` writer receives `(data, error, locale)`, and every writer receives the [locale](/docs/i18n) last. In an `expected` writer, `meta` may be `undefined`, since an error from `ctx.reject` has none:
+An `expected` or `message` writer receives the error rather than its context, an `actual` writer receives `(data, error, locale)`, and every writer receives the [locale](/docs/i18n) last. In an `expected` writer, `meta` may be `undefined`, since an error from `ctx.reject` has none, and [keyword parse errors](#keyword-parse-errors-are-data) reach `predicate` writers too:
 
 ```ts title="config.ts"
 import { configure } from "arktype/config"
@@ -492,7 +493,10 @@ import { configure } from "arktype/config"
 configure({
 	predicate: {
 		// before: ctx => ctx.meta.title!
-		expected: error => error.meta?.title ?? "valid"
+		expected: error =>
+			error.meta?.title ??
+			(error.meta?.keyword ? error.description : undefined) ??
+			"valid"
 	}
 })
 ```
@@ -501,7 +505,7 @@ A writer's argument no longer has `toJSON`, `toString` or the text getters that 
 
 ### pipe.try errors reference the morph
 
-An error from a `pipe.try` morph that threw has the function as `morph` and what it threw as `cause`. Before, it had them as `predicate` and its own `actual`. Its `code` is still `predicate`, and its message is unchanged:
+An error from a `pipe.try` morph that threw has the function as `morph` and what it threw as `cause`. Before, it had them as `predicate` and its own `actual`. Its `code` is still `predicate`, and the text after the predicate is now `(<cause>)` on one line, before: `(was aborted due to error:\n    <cause>\n)`:
 
 ```ts
 const Parse = type("string").pipe.try((s): object => JSON.parse(s))
@@ -517,7 +521,7 @@ if (out instanceof type.errors) {
 
 ### Keyword parse errors are data
 
-The errors `string.integer.parse`, `string.date.parse`, `string.url.parse`, `string.json`, `string.json.parse` and `string.regex` raise while parsing carry `meta.keyword`, a `description` and what was thrown as `cause`, instead of their own English `expected` text. Their messages are unchanged, and `predicate` config now applies to them:
+The errors `string.integer.parse`, `string.date.parse`, `string.url.parse`, `string.json`, `string.json.parse` and `string.regex` raise while parsing carry `meta.keyword`, a `description` and what was thrown as `cause`, instead of their own English `expected` text. Their messages are unchanged, and `predicate` config now applies to them (except `expected` on `string.json`, `string.json.parse` and `string.regex` when a `cause` was thrown):
 
 ```ts
 const out = type("string.json.parse")("{")
@@ -809,6 +813,7 @@ Each was a bug, but code may depend on it:
 - A tuple expression's `:` is a `.narrow()`, so its predicate sees the output: `type({ a: "number = 5" }, ":", o => o.a > 0)` reads `{ a: 5 }` from `{}`, before: `{}`, which it rejected. After a morph, it narrows the morph's output, where it threw a TypeError.
 - `Exclude` and `Extract` over a definition still being defined throw `ParseError: Extract can't filter a type still being defined`.
 - `type(["string", "toString"])` throws that `'toString'` is unresolvable, where it threw an internal TypeError.
+- A class as a definition, like `{ createdAt: Date }`, is a type error, as it already threw: write `type.instanceOf(MyClass)` or a keyword like `"Date"`.
 
 ### Shallow cycles throw
 
@@ -909,6 +914,10 @@ A declaration left in `declare global` no longer reaches arktype 3, and says not
 
 ## Introspection
 
+### Types compile when they're first used
+
+A Type compiles the second time it's called or its `allows` is, rather than when it's defined. Where a host refuses code generation once it has loaded, as Cloudflare Workers do within a request, a Type first used there is checked without compiling, which is many times slower per call. [Precompile](/docs/precompile), or read a hot Type's `precompilation` where it's defined, which compiles it as the Worker loads.
+
 ### Types are built when they're first read
 
 `type()` builds a definition it can prove won't throw when the Type is first read, by a call or any member, rather than when it's defined. Until then, reflecting on the Type itself sees a function:
@@ -939,18 +948,23 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 - A union of literals with configured meta becomes `enum`: `type("'a' | 'b'").configure({ title: "Letter" }).toJsonSchema()` is `{ type: "string", enum: ["a", "b"], title: "Letter" }` instead of an `anyOf` of `const`s.
 - A literal's JSON Schema has its `type` beside its `const` or `enum`: `'a' | 'b'` is `{ type: "string", enum: ["a", "b"] }`, and `'a' | 'b' | null` is `{ anyOf: [{ type: "string", enum: ["a", "b"] }, { type: "null" }] }`.
 - A cyclic Type's `$defs` hold only its cyclic aliases, named by the alias, like `user`, with everything else inline, where every object, array and union was a def named like `user1` or `intersection1`.
-- A string index signature beside declared keys becomes `patternProperties: { "": ... }` instead of `additionalProperties`.
+- A string index signature beside a declared key whose value it doesn't include, like `{ a: "unknown", "[string]": "string" }`, becomes `patternProperties: { "": ... }` instead of `additionalProperties`, so it checks that key too.
 - `toJsonSchema()` throws for a regex flag JSON Schema can't express, instead of leaving it out: `type(/^a/i).toJsonSchema()` throws (code `patternFlags`), before: `{ type: "string", pattern: "^a" }`, which rejects `"A"`.
 - `toJsonSchema()` throws for an index signature key it can't express, instead of leaving out the index signature: `type({ "[string <= 3]": "number" }).toJsonSchema()` throws (code `indexKey`), before: `{ type: "object" }`. See [JSON Schema](/docs/json-schema/to-json-schema#how-types-map) for the keys it can write.
 - `toJsonSchema()` throws for a `NaN`, `Infinity` or `-Infinity` literal, like `number.NaN` or `number.Infinity`, since JSON can't hold one, where it wrote `const: Infinity`, which serializes as `null`. [Handle the `unit` code](/docs/json-schema/to-json-schema#fallback-codes), e.g. `unit: ctx => (typeof ctx.unit === "number" ? { type: "number" } : ctx.base)`.
-- `toJsonSchema()` throws for `object.json` and the Types it's part of, like `string.json.parse`'s output, since its check that an object is plain is a `predicate`. [Handle that code](/docs/json-schema/to-json-schema#fallback-codes) to write it as before.
+- `object.json`, and the Types it's part of, like `string.json.parse`'s output, are written `{ anyOf: [{ type: "object" }, { type: "array", items: {} }] }`, leaving out its check that an object is plain, which JSON Schema can't express.
+- `never` is `{ not: {} }`, before: `{ enum: [] }`, which OpenAPI 3.0 rejects.
+- Only JSON Schema's annotations (`title`, `description`, `default`, `examples`, `deprecated`, `readOnly`, `writeOnly`, `$comment`, `format`, `contentEncoding` and `contentMediaType`) and `x-` keys of a Type's meta reach its JSON Schema, where every key did, a configured `expected`, `actual` or `message` string included. Write anything else with [`jsonSchema` meta](/docs/json-schema/to-json-schema#your-own-schema).
+- An object declaring no keys is `{ type: "object", properties: {} }`, before: `{ type: "object" }`.
+- `"+": "delete"` no longer writes `additionalProperties: false`, since input may hold the keys it deletes. Call `.out.toJsonSchema()` for the output's schema, which writes it.
 - A keyword's `pattern` has no lookahead or backreference, so RE2 reads it: `string.integer` is `^(?:0|-?[1-9]\d*)$`, and `string.numeric` and `string.date.iso` match what they did.
-- `toJsonSchema()` throws a `ParseError` for a `target` other than `"draft-2020-12"`, `"draft-07"` or `"openapi-3.0"`, where it wrote draft 2020-12: `type("string").toJsonSchema({ target: "draft-04" })`, before: `{ type: "string" }`.
+- `toJsonSchema()` throws a `ParseError` for a `target` other than `"draft-2020-12"`, `"draft-07"`, `"openapi-3.0"` or `"openapi-3.1"`, where it wrote draft 2020-12: `type("string").toJsonSchema({ target: "draft-04" })`, before: `{ type: "string" }`.
 - Expressions keep length bounds and protos beside a structure: `type("number[] > 1").expression` is `number[] >= 2`, before: `number[]`.
 - Expressions parse back: `type("1 <= number <= 5").expression` is `1 <= number <= 5`, before: `number <= 5 & >= 1`, and a Date is an ISO literal, `Date >= d'2000-01-01T00:00:00.000Z'`, before: its `toString()` in the local time zone.
+- A predicate is written: `type("string").narrow(isLong).expression` is `string & isLong`, before: `string`, and `string.date` and `string.creditCard` are their own expressions, before: `string` and the credit card pattern.
 - A cyclic Type's `json` names an alias it references by its registered resolution, like `"$ark.tree2"`, before: `"$tree"`, and its `expression` prints another alias of its cycle by name: `{ b: $b }`, before: `{ b: { a?: $a } }`. A `this` reference prints as `this`, before: an id like `type64`.
 - In an `expression` or `description`, a nested Type whose own string would be longer than 1000 characters prints as `...`, as `list<...>` already did. Before, it was written in full at each reference.
-- `object.json`'s `expression` and `description` are `{ [string]: $jsonData }`, before: its alias's branches.
+- `object.json`'s `description` is `{ [string]: $jsonData }` and its `expression` `{ [string]: $jsonData } & isPlainObjectOrArray`, before: its alias's branches.
 - Functions and symbols print by name: `{ Symbol(tag): string }`, before: `{ $ark.tag: string }`. In `json`, a repeated name is counted as `isLong$1`, before: `isLong1`, and keyword morphs are named by what they do, like `$ark.trimString`, before: `$ark.morphs12`.
 - Optional keys are listed by name, whether or not they have a default: `{ bar?: number, foo: string = "foo" }`, before: `{ foo: string = "foo", bar?: number }`.
 - The `$ark.x` names that functions get in `.json` and `.expression` are names only and no longer resolve through `$ark`.
@@ -964,11 +978,11 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 - A morph that returns `any` infers `any` as its output: `type({ a: ["string", "=>", s => JSON.parse(s)] }).infer` is `{ a: any }`, before: `{ a: (In: string) => Out<any> }`.
 - Without TypeScript's `exactOptionalPropertyTypes`, a key or index signature whose value is a Type allowing `undefined` infers it: `type({ "[string]": Settings.or("undefined") }).infer` is `{ [k: string]: Settings | undefined }`, before: `{ [k: string]: Settings }`, so `settings[k].isHidden` needs a check, as TypeScript's "Object is possibly 'undefined'" says.
 - A defaulted key beside an index signature is optional in `inferIn`: `type({ a: "number = 5", "[string]": "number" })` infers `a?: number` as input, before: `a: number`.
-- `toJsonSchema()`'s `JsonSchema` no longer declares `exclusiveMinimum` and `exclusiveMaximum`, since `target: "openapi-3.0"` writes `true` for them, so they read as `unknown`.
 
 ## @ark/schema
 
 - `@ark/schema` is no longer published separately; import from `arktype/schema` (and `arktype/schema/internal` for internals).
+- `arktype` no longer exports `ArkSchemaConfig` or `ArkSchemaScopeConfig`, which `arktype/schema` does, or `ArkAmbient`: read `ArkEnv` instead.
 - The set algebra that intersects nodes, reduces unions and writes JSON Schema is installed by `arktype`. Using `arktype/schema` alone, `import "arktype"` first, or `.and()` and `toJsonSchema()` throw `Set algebra is not installed` and unions aren't reduced.
 - `BaseNode.compiledMeta` is removed, and `BaseScope.res` (before: `resolutions`) holds an unresolved alias's parse context instead of its id.
 - `$.node(kind, input)` takes a node's inner, with children already nodes: `$.node("min", 5)` is now `$.node("min", { rule: 5 })`. Parse the schema format with `rootSchema` or `$.schema`.
@@ -1033,6 +1047,8 @@ It reads a schema as a 2020-12 validator does, which changes what some schemas a
 `arktype` is a peer dependency at the version released with `@ark/fast-check`, where it was a dependency, so install the two together.
 
 ## Attest
+
+`arktype` is a peer dependency at the version released with `@ark/attest`, where it was a dependency, so install the two together.
 
 If you're upgrading attest from before 0.57: under TypeScript 7, attest analyzes with its native API, which needs 7.1 or later, so 7.0.x throws `@ark/attest requires TypeScript 7.1+`. Where attest runs, install TypeScript 7.1 or later, or keep TypeScript 6, which it analyzes with its JS API as before.
 

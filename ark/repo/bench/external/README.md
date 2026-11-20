@@ -432,21 +432,21 @@ results is ranked in plain order ("The rule"). ArkType is one build
 throughout: precompiled with the default options. The size suites are rerun
 every month at each library's newest release ("Monthly" under "Reproduce").
 
-### Current standings: ArkType's counts at 20710020e, its sizes at ba691ac56
+### Current standings: measured at 591cc38d7
 
-`node standings.ts`, on the published rows (`ark/docs/lib/bench/leaderboard.json`):
-the size suites with each rival at its newest release as measured on
-2026-11-06 and ArkType's bundles measured again at ba691ac56, the instruction
-counts with rivals at their releases of 2026-10-24 and 2026-10-25.
+`node --conditions=ark-ts ark/repo/bench/external/standings.ts`, on the
+published rows (`ark/docs/lib/bench/leaderboard.json`): every suite with each
+rival at its newest release as measured on 2026-11-19 and ArkType's rows at
+591cc38d7.
 
 | category | averaged                                                                   | ranked | 1             | 2             | 3              |
 | -------- | -------------------------------------------------------------------------- | ------ | ------------- | ------------- | -------------- |
-| speed    | 22 of 43 results: schemabenchmarks.dev 14, ata's validator-benchmarks 8    | 5      | ArkType 664   | Typia 2,863   | Valibot 5,675  |
-| startup  | 2 of 2: schemabenchmarks.dev's initialization, Sury's build and parse once | 6      | ArkType 40    | TypeBox 4,273 | Valibot 15,028 |
+| speed    | 22 of 43 results: schemabenchmarks.dev 14, ata's validator-benchmarks 8    | 5      | ArkType 658   | Typia 2,097   | Valibot 5,647  |
+| startup  | 2 of 2: schemabenchmarks.dev's initialization, Sury's build and parse once | 6      | ArkType 38    | TypeBox 4,273 | Valibot 14,801 |
 | size     | 2 of 3: valibot.dev's login form, schemabenchmarks.dev's download          | 12     | ArkType 1,191 | Typia 1,520   | ajv 1,594      |
 
 Speed and startup are CPU instructions, size gzipped bytes. ArkType's speed
-mean is 76.8% lower than the next best's, its startup mean 99.1% lower and
+mean is 68.6% lower than the next best's, its startup mean 99.1% lower and
 its size mean 21.7% lower, figured as `claims.ts` states them (1 − ArkType's
 / the next best's).
 

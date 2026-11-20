@@ -19,7 +19,10 @@ export type validateFromJsonSchema<schema> =
 	:	validateJsonSchema<schema>
 
 export type inferFromJsonSchema<schema> =
-	schema extends StandardJSONSchemaV1 ? StandardJSONSchemaV1.InferInput<schema>
+	// a schema TypeScript can't see, like JSON.parse's any, may be anything
+	0 extends 1 & schema ? unknown
+	: schema extends StandardJSONSchemaV1 ?
+		StandardJSONSchemaV1.InferInput<schema>
 	:	inferJsonSchema<schema>
 
 export type FromJsonSchema = <

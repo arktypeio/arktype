@@ -8,6 +8,7 @@ import type * as tsgo from "typescript-7/sync"
 import {
 	sharedDeclarationFile,
 	writeSharedCollisionMessage,
+	writeSolutionTsconfigMessage,
 	type Frontend,
 	type Inferred,
 	type NativeChecker,
@@ -107,7 +108,7 @@ const loadNative = (cwd: string, checker: NativeChecker): Native => {
 
 export const writeNoNativeMessage = (checker: NativeChecker): string =>
 	checker === "tsgo" ?
-		'checker: "tsgo" reads TypeScript 7.1 or later\'s API. Install it: `npm i -D typescript@7`'
+		'checker: "tsgo" reads TypeScript 7.1 or later\'s API, which 7.0 releases lack. Install `typescript@7.1` or later'
 	:	'checker: "tsrs" reads tsrs\'s API from its binary for this platform. Install it: `npm i -D tsrs`'
 
 // what lays a program's declarations out
@@ -586,6 +587,16 @@ export const openNative = (
 				:	[]
 		})
 		.sort((l, r) => (l.fileName < r.fileName ? -1 : 1))
+	if (!emitted.length) {
+		const parsed = api.parseConfigFile(configPath)
+		if (!parsed.fileNames.length && parsed.projectReferences?.length) {
+			api.close()
+			const referencePaths = parsed.projectReferences.map(({ path }) =>
+				path.endsWith(".json") ? path : join(path, "tsconfig.json")
+			)
+			throwError(writeSolutionTsconfigMessage(configPath, referencePaths, cwd))
+		}
+	}
 	const emit = raw.getDeclarationEmit(emitted.map(file => file.fileName))
 	const outputsBySource = new Map<string, [path: string, text: string]>()
 	const declarationPathByFile: Record<string, string | undefined> = {}

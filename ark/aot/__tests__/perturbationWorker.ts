@@ -664,10 +664,18 @@ const found = (issues: KeptIssue[]) =>
 
 // compared by its issues as arktype's errors are, since a standalone message
 // doesn't say what the value was
-const isStandardFailure = (out: unknown): out is { issues: unknown[] } =>
-	hasDomain(out, "object") &&
-	Array.isArray((out as { issues?: unknown }).issues) &&
-	Object.keys(out).length === 1
+const isStandardFailure = (out: unknown): out is { issues: unknown[] } => {
+	if (
+		!hasDomain(out, "object") ||
+		!Array.isArray((out as { issues?: unknown }).issues)
+	)
+		return false
+	const keys = Object.keys(out)
+	return (
+		keys.length === 1 ||
+		(keys.length === 2 && keys.includes("issues") && keys.includes("message"))
+	)
+}
 
 const callbacksRun = () =>
 	(globalThis as { $arkCallbacks?: number }).$arkCallbacks ?? 0

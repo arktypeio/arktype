@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import type { Json } from "@ark/util"
 import { fromJsonSchema, type, type JsonSchema } from "arktype"
 import { z } from "zod"
 
@@ -32,6 +33,12 @@ contextualize(() => {
 		it("a widened JSON Schema infers unknown", () => {
 			const schema: JsonSchema = JSON.parse(`{ "type": "string" }`)
 			const T = fromJsonSchema(schema)
+			attest<unknown>(T.infer)
+			attest(T.expression).snap("string")
+		})
+
+		it("a schema TypeScript can't see infers unknown", () => {
+			const T = fromJsonSchema(JSON.parse(`{ "type": "string" }`))
 			attest<unknown>(T.infer)
 			attest(T.expression).snap("string")
 		})
@@ -165,5 +172,107 @@ contextualize(() => {
 			const Refined = fromJsonSchema(z.string().refine(s => s === "x"))
 			attest(fromJsonSchema(z.string()).extends(Refined)).equals(true)
 		})
+	})
+
+	it("handles recursive $ref in not, oneOf, and if beside sibling keywords", () => {
+		const S1 = fromJsonSchema({
+			properties: { next: { not: { $ref: "#" }, minimum: 0 } }
+		})
+		// exercise uncompiled first call and compiled JIT path
+		for (let pass = 0; pass < 2; pass++) {
+			attest(S1.allows({})).equals(true)
+			attest(S1.allows(true)).equals(true)
+			attest(S1.allows({ next: 1 })).equals(false)
+			attest(S1.allows({ next: true })).equals(false)
+			attest(S1.allows({ next: { next: 1 } })).equals(true)
+			attest(S1.allows({ next: { next: { next: 1 } } })).equals(false)
+		}
+
+		const S2 = fromJsonSchema({
+			items: { const: 1, not: { $ref: "#" } }
+		})
+		for (let pass = 0; pass < 2; pass++) {
+			attest(S2.allows(1)).equals(true)
+			attest(S2.allows([])).equals(true)
+			attest(S2.allows([1])).equals(false)
+			attest(S2.allows([2])).equals(false)
+		}
+
+		const S2Arr = fromJsonSchema({
+			type: "array",
+			items: { const: 1, not: { $ref: "#" } }
+		})
+		for (let pass = 0; pass < 2; pass++) {
+			attest(S2Arr.allows(1)).equals(false)
+			attest(S2Arr.allows([])).equals(true)
+			attest(S2Arr.allows([1])).equals(true)
+			attest(S2Arr.allows([2])).equals(false)
+		}
+
+		const S3 = fromJsonSchema({
+			type: "object",
+			properties: {
+				child: {
+					required: ["id"],
+					oneOf: [{ $ref: "#" }, { required: ["leaf"] }]
+				}
+			}
+		})
+		for (let pass = 0; pass < 2; pass++) {
+			attest(S3.allows({})).equals(true)
+			attest(S3.allows({ child: true })).equals(true)
+			attest(S3.allows({ child: { id: 1 } })).equals(true)
+			attest(S3.allows({ child: { id: 1, leaf: 1 } })).equals(false)
+			attest(S3.allows({ child: { leaf: 1 } })).equals(false)
+		}
+
+		const S4 = fromJsonSchema({
+			properties: {
+				next: {
+					if: { $ref: "#" },
+					then: { minimum: 0 },
+					else: { const: true }
+				}
+			}
+		})
+		for (let pass = 0; pass < 2; pass++) {
+			attest(S4.allows({ next: 1 })).equals(true)
+			attest(S4.allows({ next: -1 })).equals(false)
+			attest(S4.allows({ next: true })).equals(true)
+			attest(S4.allows({ next: { next: -1 } })).equals(false)
+		}
+	})
+
+	it("tracks const and default value depth separately from schema nesting depth", () => {
+		// each value's depth starts over where it's held: 40 levels of schema
+		// around a value 63 deep pass 64 together, but neither budget alone. Kept
+		// under the ~175 levels of nodes whose `.json` overflows V8's stack
+		let nestedValue: Json = 1
+		for (let i = 0; i < 63; i++) nestedValue = [nestedValue]
+		let deepConst: JsonSchema = { const: nestedValue }
+		let deepDefault: JsonSchema = { type: "array", default: nestedValue }
+		let nestedData: unknown = nestedValue
+		for (let i = 0; i < 40; i++) {
+			deepConst = { type: "array", items: deepConst }
+			deepDefault = { type: "array", items: deepDefault }
+			nestedData = [nestedData]
+		}
+		const DeepConst = fromJsonSchema(deepConst)
+		attest(DeepConst.allows(nestedData)).equals(true)
+		attest(DeepConst.allows([[1]])).equals(false)
+		const DeepDefault = fromJsonSchema(deepDefault)
+		attest(DeepDefault.allows([[]])).equals(true)
+
+		let tooDeep: unknown = 1
+		for (let i = 0; i < 20_000; i++) tooDeep = [tooDeep]
+		attest(() => fromJsonSchema({ const: tooDeep })).throws(
+			"exceeds maximum nesting depth of 64"
+		)
+
+		const circular: Record<string, unknown> = {}
+		circular.self = circular
+		attest(() => fromJsonSchema({ const: circular })).throws(
+			"JSON Schema at #/const/self is circular"
+		)
 	})
 })

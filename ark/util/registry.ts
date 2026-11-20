@@ -8,12 +8,33 @@ import { baseNameOf } from "./serialize.ts"
 // For now, we assert this matches the package.json version via a unit test.
 export const arkUtilVersion = "3.0.0-beta.2"
 
+// reserve internal $ark slots up front so `name in registry` prevents user
+// classes or symbols with matching names (e.g. `inPlace`, `encode`) from
+// hijacking lazy/opt-in runtime hooks
+const reservedRegistryKeys = {
+	inPlace: undefined,
+	errorModes: undefined,
+	encode: undefined,
+	sets: undefined,
+	kw: undefined,
+	config: undefined,
+	cfg: undefined,
+	defaultConfig: undefined,
+	ambient: undefined,
+	nodesById: undefined,
+	reached: undefined,
+	deferDefaultCheck: undefined,
+	eagerTypes: undefined,
+	typeAttachments: undefined
+}
+
 export const initialRegistryContents: {
 	version: string
 	FileConstructor: typeof File
 } = {
 	version: arkUtilVersion,
-	FileConstructor
+	FileConstructor,
+	...reservedRegistryKeys
 }
 
 export type InitialRegistryContents = typeof initialRegistryContents

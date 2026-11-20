@@ -176,6 +176,8 @@ export interface StandIn {
 	dynamic: DynamicValue | undefined
 	// the parameter count arktype reads as `length`, if a declaration gives it
 	arity: number | undefined
+	// first class element that runs when the class is constructed, if any
+	effect: Node | undefined
 	// what a site reaches as arktype calls it, created once so a cache entry
 	// stores it once
 	call: Call | undefined
@@ -195,10 +197,51 @@ const createStandIn = (
 	closure: undefined,
 	dynamic: undefined,
 	arity: undefined,
+	effect: undefined,
 	call: undefined,
 	indirectCall: undefined,
 	...init
 })
+
+type StandInProxyOptions = {
+	kind: StandIn["kind"]
+	target: Function
+	length?: number | undefined
+	name?: string | undefined
+	mayBeStandardSchema?: boolean
+	mayHaveHasInstance?: boolean
+}
+
+const activeInterpreters: Interpreter[] = []
+
+// created at module scope so V8's shared function context never retains an
+// Interpreter, StandIn, or SourceModule when arktype caches a stand-in proxy
+const createArrowTarget = (): Function => () => {}
+
+const createClassTarget = (base: unknown): Function =>
+	typeof base === "function" ?
+		class extends (base as new () => object) {}
+	:	class {}
+
+// Look up the stand-in on the active Interpreter stack without storing a
+// strong or WeakRef back-pointer on the proxy itself (even constructing a
+// WeakRef pins its target in V8's KeptObjects until the end of the JS job).
+// Walking the stack handles a shared configuration writer created by a prior
+// Interpreter running while a replacement Interpreter evaluates its own site.
+const resolveStandIn = (proxy: object): [Interpreter, StandIn] | undefined => {
+	for (let i = activeInterpreters.length - 1; i >= 0; i--) {
+		const active = activeInterpreters[i]
+		const standIn = active.standIns.get(proxy)
+		if (standIn) return [active, standIn]
+	}
+	return undefined
+}
+
+const requireStandIn = (proxy: object): [Interpreter, StandIn] => {
+	const resolved = resolveStandIn(proxy)
+	if (resolved) return resolved
+	throw new Error("Stand-in accessed outside an active interpreter")
+}
 
 // a call reaches the site defining the value, so its module alone decides it
 interface Call {
@@ -484,6 +527,15 @@ export class Interpreter {
 		return standIn ? [standIn.node, standIn.module] : undefined
 	}
 
+	withActive<t>(run: () => t): t {
+		activeInterpreters.push(this)
+		try {
+			return run()
+		} finally {
+			activeInterpreters.pop()
+		}
+	}
+
 	evaluateSite(site: SiteState): SiteState {
 		if (site.isEvaluated) return site
 		site.isEvaluated = true
@@ -495,13 +547,15 @@ export class Interpreter {
 			origin: { module: site.module, node: site.node },
 			depth: 0
 		}
-		try {
-			const value = this.evaluateNode(site.node, ctx)
-			// a site inside an optional chain ends where the chain does
-			site.value = value === shortCircuit ? undefined : value
-		} catch (e) {
-			site.error = this.thrown(e, site.node, ctx)
-		}
+		this.withActive(() => {
+			try {
+				const value = this.evaluateNode(site.node, ctx)
+				// a site inside an optional chain ends where the chain does
+				site.value = value === shortCircuit ? undefined : value
+			} catch (e) {
+				site.error = this.thrown(e, site.node, ctx)
+			}
+		})
 		if (hasDomain(site.value, "object")) {
 			const sites = this.sitesByValue.get(site.value)
 			if (sites) sites.push(site)
@@ -1165,16 +1219,18 @@ export class Interpreter {
 	}
 
 	valueOfBinding(binding: Binding, module: SourceModule): unknown {
-		if (binding.kind !== "import")
-			return this.bindingValue(binding, module).value
-		const target = this.graph.importOf(binding, module)
-		return (
-			target.kind === "binding" ?
-				this.bindingValue(target.binding, target.module).value
-			: target.kind === "expression" ? this.exportValue(target).value
-			: target.kind === "arktype" ? target.value
-			: undefined
-		)
+		return this.withActive(() => {
+			if (binding.kind !== "import")
+				return this.bindingValue(binding, module).value
+			const target = this.graph.importOf(binding, module)
+			return (
+				target.kind === "binding" ?
+					this.bindingValue(target.binding, target.module).value
+				: target.kind === "expression" ? this.exportValue(target).value
+				: target.kind === "arktype" ? target.value
+				: undefined
+			)
+		})
 	}
 
 	private readImport(binding: Binding, node: Node, ctx: Context): Lookup {
@@ -1208,7 +1264,7 @@ export class Interpreter {
 				}
 			case "json":
 				return lookupOf(
-					{ kind: "export", file: target.id, name: "default" },
+					{ kind: "export", file: target.id, name: target.name ?? "default" },
 					target.value
 				)
 		}
@@ -1272,19 +1328,21 @@ export class Interpreter {
 	exportValue(
 		target: Extract<ImportTarget, { kind: "binding" | "expression" }>
 	): Evaluated {
-		if (target.kind === "expression")
-			return this.nodeValue(target.node, target.module)
-		const problem = staticProblemOf(target.binding, target.module)
-		return problem ?
-				{
-					value: new DynamicValue(
-						target.module,
-						target.binding.id,
-						`\`${target.binding.name}\` ${problem}`
-					),
-					trace: emptyTrace()
-				}
-			:	this.bindingValue(target.binding, target.module)
+		return this.withActive(() => {
+			if (target.kind === "expression")
+				return this.nodeValue(target.node, target.module)
+			const problem = staticProblemOf(target.binding, target.module)
+			return problem ?
+					{
+						value: new DynamicValue(
+							target.module,
+							target.binding.id,
+							`\`${target.binding.name}\` ${problem}`
+						),
+						trace: emptyTrace()
+					}
+				:	this.bindingValue(target.binding, target.module)
+		})
 	}
 
 	// e.g. `shape[f] = "string"` before `type(shape)`; a write inside the read is evaluated with it
@@ -2125,11 +2183,14 @@ export class Interpreter {
 	}
 
 	configurationOf(call: Node, received: unknown, ctx?: Context): unknown {
-		const cached = !ctx?.env && this.configurationsByNode.get(call)
-		if (cached) return cached
-		const result = findDynamic(received) ?? mergeConfigs({}, received as never)
-		if (!ctx?.env) this.configurationsByNode.set(call, result)
-		return result
+		return this.withActive(() => {
+			const cached = !ctx?.env && this.configurationsByNode.get(call)
+			if (cached) return cached
+			const result =
+				findDynamic(received) ?? mergeConfigs({}, received as never)
+			if (!ctx?.env) this.configurationsByNode.set(call, result)
+			return result
+		})
 	}
 
 	// the one path from interpreted to native code
@@ -2666,28 +2727,32 @@ export class Interpreter {
 			arity
 		})
 		const target =
-			closure.node.type === "ArrowFunctionExpression" ? () => {} : class {}
+			closure.node.type === "ArrowFunctionExpression" ?
+				createArrowTarget()
+			:	createClassTarget(undefined)
 		if (name) this.standInsByName.set(name, standIn)
-		const proxy = this.standInProxy(target, standIn, {
-			...this.factsOf(standIn, arity, name),
-			apply: (_, __, args: unknown[]) => this.callStandIn(standIn, args),
-			construct: () => {
-				throw this.calledAtDefinition(standIn, undefined)
-			}
+		const proxy = Interpreter.createStandInProxy({
+			kind: "function",
+			target,
+			length: arity,
+			name
 		})
+		this.standIns.set(proxy, standIn)
 		proveFunction(proxy as Fn, closure.node, this.opts.runtime !== "arktype")
 		if (!closure.env) this.standInsByNode.set(closure.node, proxy)
 		return proxy
 	}
 
 	traceOf<t>(f: () => t): [result: t, trace: Trace] {
-		const previous = this.looseTrace
-		const trace = (this.looseTrace = emptyTrace())
-		try {
-			return [f(), trace]
-		} finally {
-			this.looseTrace = previous
-		}
+		return this.withActive(() => {
+			const previous = this.looseTrace
+			const trace = (this.looseTrace = emptyTrace())
+			try {
+				return [f(), trace]
+			} finally {
+				this.looseTrace = previous
+			}
+		})
 	}
 
 	private markCalled(standIn: StandIn, isDirect: boolean): void {
@@ -2812,54 +2877,38 @@ export class Interpreter {
 					element.type === "TSIndexSignature"
 				)
 		)
-		const target =
-			typeof base === "function" ?
-				class extends (base as new () => object) {}
-			:	class {}
+		const target = createClassTarget(base)
 		const constructor = node.body.body.find(
 			element =>
 				element.type === "MethodDefinition" && element.kind === "constructor"
 		) as MethodDefinition | undefined
 		const length = constructor ? parameterCount(constructor.value) : 0
 		const name = this.holeNameOf(node, ctx.module, declaredNameOf(node))
-		const standIn = createStandIn("class", ctx.module, node)
+		const standIn = createStandIn("class", ctx.module, node, { effect })
 		if (name) this.standInsByName.set(name, standIn)
-		const proxy = this.standInProxy(target, standIn, {
-			...this.factsOf(
-				standIn,
-				length,
-				name,
-				node.body.body.some(
-					element =>
-						(element.type === "PropertyDefinition" ||
-							element.type === "MethodDefinition" ||
-							element.type === "AccessorProperty") &&
+		const hasStatic = (name?: string) =>
+			node.body.body.some(
+				element =>
+					element.type === "StaticBlock" ||
+					((element.type === "PropertyDefinition" ||
+						element.type === "MethodDefinition" ||
+						element.type === "AccessorProperty") &&
 						element.static &&
 						(element.computed ||
-							(element.key as { value?: unknown }).value === "~standard")
-				)
-			),
-			apply: () => {
-				this.markCalled(standIn, true)
-				throw new DynamicValue(
-					ctx.module,
-					node,
-					`arktype calls the class${node.id ? ` \`${node.id.name}\`` : ""} (${ctx.module.positionOf(node)}) as a function, which throws a TypeError`,
-					undefined,
-					"callback"
-				)
-			},
-			construct: (target, args, newTarget) => {
-				this.markCalled(standIn, true)
-				if (effect) {
-					throw this.calledAtDefinition(
-						standIn,
-						this.reject(effect, ctx, "runs when the class is constructed")
-					)
-				}
-				return Reflect.construct(target, args, newTarget)
-			}
+							(name !== undefined &&
+								element.key.type === "Literal" &&
+								element.key.value === name)))
+			)
+		const proxy = Interpreter.createStandInProxy({
+			kind: "class",
+			target,
+			length,
+			name,
+			mayBeStandardSchema: hasStatic("~standard"),
+			mayHaveHasInstance:
+				hasStatic() || (!!node.superClass && typeof base !== "function")
 		})
+		this.standIns.set(proxy, standIn)
 		if (!ctx.env) this.standInsByNode.set(node, proxy)
 		return proxy
 	}
@@ -2869,70 +2918,119 @@ export class Interpreter {
 			dynamic
 		})
 		// arktype may only check whether it's a Standard Schema
-		return this.standInProxy(class {}, standIn, {
-			get: (_, k) => (k === arkKind ? undefined : this.refuse(standIn)),
-			has: (_, k) => {
-				if (k !== "~standard") this.refuse(standIn)
-				this.activeCall?.ctx.site?.reached.push(standIn)
-				return true
-			},
-			getPrototypeOf: () => Object.prototype,
-			apply: () => {
-				this.markCalled(standIn, true)
-				throw this.calledAtDefinition(standIn, undefined)
-			},
-			construct: () => {
-				throw this.calledAtDefinition(standIn, undefined)
-			}
-		})
-	}
-
-	private factsOf(
-		standIn: StandIn,
-		length: number | undefined,
-		name: string,
-		// a class whose statics may hold one
-		mayBeStandardSchema = false
-	): ProxyHandler<Function> {
-		return {
-			get: (target, k) =>
-				k === "length" ? length
-				: k === "name" ? name
-				: answersFact(k) ? Reflect.get(target, k)
-				: this.refuse(standIn),
-			// arktype checks whether a function is a Standard Schema
-			has: (target, k) =>
-				k === "~standard" && !mayBeStandardSchema ?
-					Reflect.has(target, k)
-				:	this.refuse(standIn),
-			getPrototypeOf: target => Reflect.getPrototypeOf(target)
-		}
-	}
-
-	// answers only what arktype's facts module reads, refusing the rest
-	private standInProxy(
-		target: Function,
-		standIn: StandIn,
-		handler: ProxyHandler<Function>
-	): object {
-		const refuse = (): never => this.refuse(standIn)
-		const proxy = new Proxy(target, {
-			apply: refuse,
-			construct: refuse,
-			defineProperty: refuse,
-			deleteProperty: refuse,
-			get: refuse,
-			getOwnPropertyDescriptor: refuse,
-			getPrototypeOf: refuse,
-			has: refuse,
-			isExtensible: refuse,
-			ownKeys: refuse,
-			preventExtensions: refuse,
-			set: refuse,
-			setPrototypeOf: refuse,
-			...handler
+		const proxy = Interpreter.createStandInProxy({
+			kind: "opaque",
+			target: createClassTarget(undefined)
 		})
 		this.standIns.set(proxy, standIn)
+		return proxy
+	}
+
+	// answers only what arktype's facts module reads, refusing the rest. Built in
+	// a static method so trap closures hold only primitives and never pin
+	// Interpreter/Precompiler/SourceModule ASTs when arktype caches a node
+	// holding a stand-in in $ark or in V8's KeptObjects during a sync batch.
+	private static createStandInProxy({
+		kind,
+		target,
+		length,
+		name,
+		mayBeStandardSchema = false,
+		mayHaveHasInstance = false
+	}: StandInProxyOptions): object {
+		const refuse = (): never => {
+			const [interpreter, standIn] = requireStandIn(proxy)
+			return interpreter.refuse(standIn)
+		}
+		const handler: ProxyHandler<Function> =
+			kind === "opaque" ?
+				{
+					apply: () => {
+						const [interpreter, standIn] = requireStandIn(proxy)
+						interpreter.markCalled(standIn, true)
+						throw interpreter.calledAtDefinition(standIn, undefined)
+					},
+					construct: () => {
+						const [interpreter, standIn] = requireStandIn(proxy)
+						throw interpreter.calledAtDefinition(standIn, undefined)
+					},
+					defineProperty: refuse,
+					deleteProperty: refuse,
+					get: (_, k) => (k === arkKind ? undefined : refuse()),
+					getOwnPropertyDescriptor: refuse,
+					getPrototypeOf: () => Object.prototype,
+					has: (_, k) => {
+						if (k !== "~standard") refuse()
+						const resolved = resolveStandIn(proxy)
+						if (resolved)
+							resolved[0].activeCall?.ctx.site?.reached.push(resolved[1])
+						return true
+					},
+					isExtensible: refuse,
+					ownKeys: refuse,
+					preventExtensions: refuse,
+					set: refuse,
+					setPrototypeOf: refuse
+				}
+			:	{
+					apply: (_, __, args: unknown[]) => {
+						const [interpreter, standIn] = requireStandIn(proxy)
+						if (kind === "class") {
+							interpreter.markCalled(standIn, true)
+							const node = standIn.node as Class
+							throw new DynamicValue(
+								standIn.module,
+								node,
+								`arktype calls the class${node.id ? ` \`${node.id.name}\`` : ""} (${standIn.module.positionOf(node)}) as a function, which throws a TypeError`,
+								undefined,
+								"callback"
+							)
+						}
+						return interpreter.callStandIn(standIn, args)
+					},
+					construct: (fnTarget, args, newTarget) => {
+						const [interpreter, standIn] = requireStandIn(proxy)
+						if (kind === "class") {
+							interpreter.markCalled(standIn, true)
+							if (standIn.effect) {
+								throw interpreter.calledAtDefinition(
+									standIn,
+									new DynamicValue(
+										standIn.module,
+										standIn.effect,
+										`\`${standIn.module.snippetOf(standIn.effect)}\` runs when the class is constructed`
+									)
+								)
+							}
+							return Reflect.construct(fnTarget, args, newTarget)
+						}
+						throw interpreter.calledAtDefinition(standIn, undefined)
+					},
+					defineProperty: refuse,
+					deleteProperty: refuse,
+					get: (fnTarget, k) =>
+						k === "length" ? length
+						: k === "name" ? name
+						: (
+							answersFact(k) ||
+							(k === Symbol.hasInstance && !mayHaveHasInstance)
+						) ?
+							Reflect.get(fnTarget, k)
+						:	refuse(),
+					getOwnPropertyDescriptor: refuse,
+					getPrototypeOf: fnTarget => Reflect.getPrototypeOf(fnTarget),
+					// arktype checks whether a function is a Standard Schema
+					has: (fnTarget, k) =>
+						k === "~standard" && !mayBeStandardSchema ?
+							Reflect.has(fnTarget, k)
+						:	refuse(),
+					isExtensible: refuse,
+					ownKeys: refuse,
+					preventExtensions: refuse,
+					set: refuse,
+					setPrototypeOf: refuse
+				}
+		const proxy: object = new Proxy(target, handler)
 		return proxy
 	}
 

@@ -42,14 +42,25 @@ const hasFiniteMember = (node: BaseNode, resolving: Set<string>): boolean => {
 		return !node.head || hasFiniteMember(node.head, resolving)
 	if (!node.is("intersection") || !node.structure) return true
 	const structure = node.structure
+	const minLength =
+		node.inner.minLength?.rule ?? node.inner.exactLength?.rule ?? 0
+	const sequence = structure.sequence
+	const finiteNonVariadicCount =
+		sequence ?
+			sequence.preLen +
+			sequence.postLen +
+			sequence.maybes.filter(maybe => hasFiniteMember(maybe, resolving)).length
+		:	0
 	return (
 		structure.required?.every(prop =>
 			hasFiniteMember(prop.value, resolving)
 		) !== false &&
-		(structure.sequence?.tuple ?? []).every(
-			element =>
-				(element.kind !== "prefix" && element.kind !== "postfix") ||
-				hasFiniteMember(element.node, resolving)
-		)
+		(sequence?.tuple ?? []).every(element => {
+			if (element.kind === "prefix" || element.kind === "postfix")
+				return hasFiniteMember(element.node, resolving)
+			if (element.kind === "variadic" && minLength > finiteNonVariadicCount)
+				return hasFiniteMember(element.node, resolving)
+			return true
+		})
 	)
 }

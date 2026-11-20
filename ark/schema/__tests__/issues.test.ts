@@ -5,6 +5,7 @@ import {
 	rootSchema,
 	type ArkErrorCode
 } from "@ark/schema"
+import { UndetailedErrors } from "@ark/schema/errors"
 import { ArkErrors as LeanErrors } from "@ark/schema/internal/shared/issuesLean.ts"
 import {
 	ArkErrors,
@@ -297,5 +298,28 @@ owner.extra must be removed`)
 		const ctx = new ArkTraversal(5, n.$.cfg)
 		ctx._at({ v: n.errorCtx }, 5)
 		attest(String(ctx.fin())).equals(String(n.traverse(5)))
+	})
+
+	it("preserves subclass instanceof and _merge for runtime errors", () => {
+		class SubErrors extends ArktypeErrors {}
+		const cfg = rootSchema("string").$.cfg
+		const sub = new SubErrors(cfg)
+		const full = rootSchema("string")(1) as ArktypeErrors
+		const runtimeErr = new ArkErrors()
+		runtimeErr._e(1, "domain", "a string")
+		const undetailed = new UndetailedErrors(cfg)
+
+		attest(sub instanceof SubErrors).equals(true)
+		attest(sub instanceof ArktypeErrors).equals(true)
+		attest(full instanceof SubErrors).equals(false)
+		attest(runtimeErr instanceof SubErrors).equals(false)
+		attest(undetailed instanceof UndetailedErrors).equals(true)
+		attest(undetailed instanceof ArktypeErrors).equals(true)
+		attest(full instanceof UndetailedErrors).equals(false)
+		attest(runtimeErr instanceof UndetailedErrors).equals(false)
+
+		const target = new ArktypeErrors(cfg)
+		target._merge(runtimeErr, ["field"])
+		attest(target.summary).snap("field must be a string")
 	})
 })

@@ -216,6 +216,17 @@ const openJs = (cwd: string, tsconfig: string | undefined): Frontend => {
 	const ts = loadTypeScript(cwd)
 	const diagnostics: ts.Diagnostic[] = []
 	const parsed = parseConfig(ts, cwd, tsconfig, diagnostics)
+	if (!parsed.fileNames.length && parsed.projectReferences?.length) {
+		throwError(
+			writeSolutionTsconfigMessage(
+				parsed.options.configFilePath as string,
+				parsed.projectReferences.map(reference =>
+					ts.resolveProjectReferencePath(reference)
+				),
+				cwd
+			)
+		)
+	}
 	const config = {
 		...parsed,
 		options: {
@@ -278,6 +289,16 @@ const tsPath = (path: string) => path.split("\\").join("/")
 
 export const writeNoTsconfigMessage = (cwd: string): string =>
 	`No tsconfig.json is in ${cwd} or a directory above it. Create ${join(cwd, "tsconfig.json")}, as { "compilerOptions": { "rootDir": "src", "outDir": "dist" }, "include": ["src"] }, or name the one tsc builds with as --tsconfig, or as "tsconfig" in ark.json.`
+
+export const writeSolutionTsconfigMessage = (
+	configPath: string,
+	referencePaths: readonly string[],
+	cwd: string
+): string => {
+	const display = (path: string) => relative(tsPath(cwd), tsPath(path)) || path
+	const refs = referencePaths.map(display)
+	return `${display(configPath)} lists no source files of its own, only project references (${refs.join(", ")}). --declare emits one project at a time: run it for each referenced tsconfig with --tsconfig, e.g. \`arktype-precompile --declare --tsconfig ${refs[0]}\`.`
+}
 
 export const writeSharedCollisionMessage = (file: string): string =>
 	`${file} would be declared at ${sharedDeclarationFile}, which holds the shapes of the build's Types. Rename ${file}.`

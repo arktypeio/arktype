@@ -4,11 +4,12 @@ import type { StandardSchemaV1 } from "./standardSchema.ts"
 export type SummarizedErrors = {
 	readonly issues: StandardSchemaV1.FailureResult["issues"]
 	readonly summary: string
+	toJSON?: () => readonly unknown[]
 }
 
 type StandardFailure = StandardSchemaV1.FailureResult & {
-	/** @internal writes the summary of the errors it was built from */
-	_s: () => string
+	/** @internal reads the errors' summary, or its JSON issues when passed true */
+	_s: (json?: true) => unknown
 }
 
 // A failure's message is its errors' summary, which a consumer is to prefer
@@ -24,10 +25,54 @@ type StandardFailure = StandardSchemaV1.FailureResult & {
 // its issues.
 const message: PropertyDescriptor & ThisType<StandardFailure> = {
 	get() {
-		return this._s()
+		return this._s() as string
 	},
 	enumerable: true
 }
+
+// One shared non-enumerable toJSON so JSON.stringify(T["~standard"].validate(x))
+// strips data/actual/non-JSON fields just like JSON.stringify(T(x)) without
+// mutating result.issues or breaking V8 map sharing.
+const toJson: PropertyDescriptor & ThisType<StandardFailure> = {
+	value() {
+		return {
+			issues: this._s(true),
+			message: this._s()
+		}
+	},
+	writable: true,
+	configurable: true
+}
+
+type SerializablePathSegment = { readonly key: string | number }
+
+type SerializableIssue = StandardSchemaV1.Issue & {
+	readonly code?: unknown
+	readonly expected?: unknown
+	readonly errors?: readonly SerializableIssue[]
+}
+
+const jsonKeyOf = (k: PropertyKey): string | number =>
+	typeof k === "symbol" ? String(k) : k
+
+const jsonPathOf = (
+	path: readonly (PropertyKey | StandardSchemaV1.PathSegment)[]
+): readonly (string | number | SerializablePathSegment)[] =>
+	path.map(segment =>
+		typeof segment === "object" && segment !== null ?
+			{ key: jsonKeyOf(segment.key) }
+		:	jsonKeyOf(segment)
+	)
+
+// fallback for lean or custom errors without toJSON(): keeps what an issue
+// says and where, omitting data/actual/non-JSON fields like ArkErrors.toJSON()
+const jsonIssueOf = (issue: SerializableIssue): Record<string, unknown> => ({
+	...(issue.code !== undefined && { code: issue.code }),
+	...(issue.path !== undefined && { path: jsonPathOf(issue.path) }),
+	...(issue.expected !== undefined && { expected: issue.expected }),
+	message: issue.message,
+	...(issue.errors && { errors: issue.errors.map(jsonIssueOf) })
+})
 
 /**
  * @internal a Standard Schema failure of errors: their issues, and their
@@ -47,10 +92,19 @@ export const standardFailureOf = (
 	errors: SummarizedErrors
 ): StandardSchemaV1.FailureResult =>
 	Object.defineProperty(
-		Object.defineProperty({ issues: errors.issues }, "_s", {
-			value: () => errors.summary,
-			writable: true
-		}),
-		"message",
-		message
+		Object.defineProperty(
+			Object.defineProperty({ issues: errors.issues }, "_s", {
+				value: (json?: true) =>
+					json ?
+						typeof errors.toJSON === "function" ?
+							errors.toJSON()
+						:	errors.issues.map(jsonIssueOf)
+					:	errors.summary,
+				writable: true
+			}),
+			"message",
+			message
+		),
+		"toJSON",
+		toJson
 	)

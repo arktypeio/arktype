@@ -297,7 +297,7 @@ prune: keeping assert, meta, ~standard, methods and withContext, because src/ind
 
 Setting each in `members` clears it, as the build then has no member left to decide. Where `NODE_ENV` is `production`, `arktype-precompile --check` prints the same warning for a bundle of the files it checks, but tests, stories and configs. It follows relative imports of scripts alone and reads no file as an entry, so it misses what an alias, a virtual module, a component or an entry's exports lead to.
 
-Vite, Rollup, Rolldown, esbuild, webpack and Rspack bundles and `next build` with Turbopack prune, esbuild only where this plugin is the last, so no plugin loads a module after it reads it. `prune: true` also prunes a Rollup, Rolldown, esbuild, webpack or Rspack bundle that isn't for production, which the build can't tell. The Node and Bun drivers and `arktype-precompile` build every validator whole, and fail with `prune: true`, set in their options or `ark.json`, as does an esbuild build where a plugin follows this one. `next dev` builds them whole under any setting.
+Vite, Rollup, Rolldown, esbuild, webpack and Rspack bundles and `next build` with Turbopack prune, esbuild only where this plugin is the last, so no plugin loads a module after it reads it. `prune: true` also prunes a Rollup, Rolldown, esbuild, webpack or Rspack bundle that isn't for production, which the build can't tell. The Node and Bun drivers and `arktype-precompile --emit` build every validator whole, and fail with `prune: true`, set in their options or `ark.json`, as does an esbuild build where a plugin follows this one. `next dev` builds them whole under any setting.
 
 A Vite, Rollup or Rolldown build reads each module from its file, then reads the bundle again as it was built, each module as the plugins ahead of this one wrote it and as the transforms after this one's left it, and fails only where the built bundle reads what it left out, a member or more of a call's errors, naming the read. A plugin that rewrites a module without adding a read, like a Babel plugin or TanStack Router's code splitting, changes nothing, listed ahead of this one or after it. One that adds a read of a validator fails the build wherever it's listed, as no order of plugins has the build keep what such a read needs. Where its transform runs after this one's, as one listed after `precompile.vite()` or one without `enforce: "pre"` does, the build names the module, the read and each plugin whose transform follows this one's, and the members that, set true, keep all the read needs:
 
@@ -336,7 +336,7 @@ A package precompiled with `"aot"` is read as the program is, so a value it retu
 
 ### checker
 
-`checker` chooses the TypeScript that [declarations](/docs/precompile/advanced#declarations) read the program with: `"tsjs"` for the compiler API of TypeScript 5.5 to 6, or `"tsgo"` or `"tsrs"` for TypeScript 7's native API. It defaults to the TypeScript installed, preferring tsrs to tsgo where its binary is installed.
+`checker` chooses the TypeScript that [declarations](/docs/precompile/advanced#declarations) read the program with: `"tsjs"` for the compiler API of TypeScript 5.5 to 6, or `"tsgo"` or `"tsrs"` for TypeScript 7.1 or later's native API. It defaults to the TypeScript installed, preferring tsrs to tsgo where its binary is installed, and before 7.1 (or with `"tsjs"` under TypeScript 7) reads `typescript-6` installed beside it (`npm i -D typescript-6@npm:typescript@6`).
 
 ### conditions and tsconfig
 

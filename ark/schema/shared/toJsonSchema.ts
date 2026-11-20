@@ -432,14 +432,27 @@ export declare namespace ToJsonSchema {
 		 * @default true for "openapi-3.0" and "openapi-3.1", otherwise false
 		 */
 		discriminator?: boolean
+		/**
+		 * Which side of a morph, defaulted key, `"+": "delete"` object, or
+		 * `undefined`-allowing property to convert:
+		 *  - omitted (default): converts the Type as written (morphs and
+		 *    required `undefined` branches invoke `fallback`, defaults are
+		 *    written as `default`, and `"+": "delete"` omits `additionalProperties`)
+		 *  - `"in"`: the accepted JSON input (drops `undefined` union branches,
+		 *    converts morphs as their input, keeps defaults, allows keys
+		 *    `"+": "delete"` removes)
+		 *  - `"out"`: the serialized output (converts morphs as their output,
+		 *    applies defaults, writes `additionalProperties: false` for
+		 *    `"+": "delete"`, and drops `undefined` from object property/index
+		 *    values and `required`)
+		 */
+		io?: "in" | "out"
 		fallback?: FallbackOption
 	}
 
 	export interface Context
-		extends Required<Omit<Options, "discriminator">>,
-			Pick<Options, "discriminator"> {
+		extends Required<Omit<Options, "discriminator" | "io">>,
+			Pick<Options, "discriminator" | "io"> {
 		fallback: HandlerByCode
-		/** set by ~standard.jsonSchema.input to write a Type as it's accepted */
-		io?: "in"
 	}
 }

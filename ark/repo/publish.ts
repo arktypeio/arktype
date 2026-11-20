@@ -1,7 +1,13 @@
 import { getShellOutput, shell } from "@ark/fs"
 import { throwError } from "@ark/util"
+import { spawn } from "node:child_process"
 import { preview } from "../docs/lib/bench/preview.ts"
-import { packagesByScope, publishedVersionsOf, publishOrder } from "./shared.ts"
+import {
+	isVersionOnNpm,
+	npmVersionStatusOf,
+	packagesByScope,
+	publishOrder
+} from "./shared.ts"
 
 // publishes each version npm doesn't have yet, then tags and releases each one
 // npm has, so a rerun after a failure finishes what the failed run started.
@@ -20,18 +26,21 @@ const releases = await Promise.all(
 	publishOrder.map(async pkg => ({
 		pkg,
 		tag: `${pkg.name}@${pkg.version}`,
-		isOnNpm: (await publishedVersionsOf(pkg.name)).includes(pkg.version)
+		isOnNpm: await isVersionOnNpm(pkg.name, pkg.version)
 	}))
 )
 
 type Release = (typeof releases)[number]
 
-const publish = (release: Release) => {
-	shell(
-		`pnpm publish --no-git-checks --tag ${distTagOf(release.pkg.version)}${dryRun ? " --dry-run" : ""}`,
-		{ cwd: release.pkg.path }
-	)
-	if (!dryRun) release.isOnNpm = true
+// npm reserves a version immediately on PUT 202 while its per-version GET can
+// still return 404 until async processing finishes (~1-20 min), so treat a
+// duplicate-version rejection as already published
+const alreadyPublishedMatcher =
+	/cannot publish over the previously published versions|epublishconflict/i
+
+type PublishExit = {
+	code: number | null
+	signal: NodeJS.Signals | null
 }
 
 // what origin has, since a tag a failed local run created was never pushed
@@ -47,6 +56,70 @@ const existingReleases = new Set(
 	).split("\n")
 )
 
+const publish = async (release: Release) => {
+	const args = [
+		"publish",
+		"--no-git-checks",
+		"--tag",
+		distTagOf(release.pkg.version),
+		...(dryRun ? ["--dry-run"] : [])
+	]
+	const child = spawn("pnpm", args, {
+		cwd: release.pkg.path,
+		stdio: ["inherit", "pipe", "pipe"],
+		shell: process.platform === "win32"
+	})
+	let output = ""
+	child.stdout.setEncoding("utf8")
+	child.stderr.setEncoding("utf8")
+	child.stdout.on("data", (chunk: string) => {
+		process.stdout.write(chunk)
+		output += chunk
+	})
+	child.stderr.on("data", (chunk: string) => {
+		process.stderr.write(chunk)
+		output += chunk
+	})
+	const { code, signal } = await new Promise<PublishExit>((resolve, reject) => {
+		child.on("error", reject)
+		child.on("close", (exitCode, exitSignal) =>
+			resolve({ code: exitCode, signal: exitSignal })
+		)
+	})
+	if (code !== 0) {
+		if (!dryRun && alreadyPublishedMatcher.test(output)) {
+			if (await isVersionOnNpm(release.pkg.name, release.pkg.version)) {
+				console.log(`${release.tag} is already published on npm; continuing.`)
+				release.isOnNpm = true
+				return
+			}
+			// the packument's `time` keeps a version npm unpublished, which it
+			// never lets be published again, so only that case can't finish
+			const status = await npmVersionStatusOf(
+				release.pkg.name,
+				release.pkg.version
+			)
+			if (status === "unpublished") {
+				throwError(
+					`${release.tag} was published and then unpublished, and npm never accepts that version again. Bump it and rerun.`
+				)
+			}
+			if (status === "absent") {
+				console.warn(
+					`${release.tag} was rejected as already published, but npm doesn't list it yet, as for a publish it is still processing; continuing.`
+				)
+			} else
+				console.log(`${release.tag} is already published on npm; continuing.`)
+			release.isOnNpm = true
+			return
+		}
+		throwError(
+			`pnpm ${args.join(" ")} failed for ${release.tag} (exit ${code ?? signal})`
+		)
+	}
+	if (!dryRun) release.isOnNpm = true
+}
+
 const toPublish = releases.filter(release => !release.isOnNpm)
 
 // a stable arktype deploys the site, whose homepage calls precompile
@@ -60,7 +133,7 @@ if (preview && stableType) {
 	)
 }
 
-for (const release of toPublish) publish(release)
+for (const release of toPublish) await publish(release)
 
 // in a dry run, what the publishes above would have put on npm
 const onNpm = dryRun ? releases : releases.filter(release => release.isOnNpm)

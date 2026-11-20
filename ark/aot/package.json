@@ -89,6 +89,8 @@
 			"ark-ts": "./turbopackRuntime.ts",
 			"default": "./out/turbopackRuntime.js"
 		},
+		"./package.json": "./package.json",
+		"./ark.schema.json": "./ark.schema.json",
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
 			"default": "./out/*.js"

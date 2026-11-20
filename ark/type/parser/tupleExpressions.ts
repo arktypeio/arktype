@@ -129,14 +129,36 @@ export type UnparsedTupleExpressionInput = {
 
 export type UnparsedTupleOperator = show<keyof UnparsedTupleExpressionInput>
 
-export const parseKeyOfTuple: IndexZeroParser<"keyof"> = (def, ctx) =>
-	ctx.$.parseOwn(def[1], ctx).keyof()
+export const assertTupleArity = (
+	def: array,
+	operator: TupleExpressionOperator,
+	min: number,
+	max = min
+): void => {
+	if (def.length < min)
+		throwParseError(writeMissingRightOperandMessage(operator, ""))
+	if (def.length > max) {
+		throwParseError(
+			writeUnexpectedTupleElementsMessage(
+				operator,
+				min === max ? min : `${min} or ${max}`,
+				def.length
+			)
+		)
+	}
+}
+
+export const parseKeyOfTuple: IndexZeroParser<"keyof"> = (def, ctx) => {
+	assertTupleArity(def, "keyof", 2)
+	return ctx.$.parseOwn(def[1], ctx).keyof()
+}
 
 export type inferKeyOfExpression<operandDef, $, args> = show<
 	keyof inferDefinition<operandDef, $, args>
 >
 
 const parseBranchTuple: IndexOneParser<BranchOperator> = (def, ctx) => {
+	assertTupleArity(def, def[1], 3)
 	if (def[2] === undefined)
 		return throwParseError(writeMissingRightOperandMessage(def[1], ""))
 
@@ -152,8 +174,10 @@ const parseBranchTuple: IndexOneParser<BranchOperator> = (def, ctx) => {
 	return result
 }
 
-const parseArrayTuple: IndexOneParser<"[]"> = (def, ctx) =>
-	ctx.$.parseOwn(def[0], ctx).rawArray()
+const parseArrayTuple: IndexOneParser<"[]"> = (def, ctx) => {
+	assertTupleArity(def, "[]", 2)
+	return ctx.$.parseOwn(def[0], ctx).rawArray()
+}
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 
@@ -162,6 +186,7 @@ export type TupleExpressionOperator = IndexZeroOperator | IndexOneOperator
 export type ArgTwoOperator = Exclude<IndexOneOperator, "?" | "=">
 
 export const parseMorphTuple: IndexOneParser<"=>"> = (def, ctx) => {
+	assertTupleArity(def, "=>", 3)
 	if (typeof def[2] !== "function") {
 		return throwParseError(
 			writeMalformedFunctionalExpressionMessage("=>", def[2])
@@ -193,6 +218,7 @@ export type parseMorph<inDef, morph, $, args> =
 // a tuple's predicate is a .narrow(), so it checks the output, after any
 // morphs and defaults, and a morph pipes to it
 export const parseNarrowTuple: IndexOneParser<":"> = (def, ctx) => {
+	assertTupleArity(def, ":", 3)
 	if (typeof def[2] !== "function") {
 		return throwParseError(
 			writeMalformedFunctionalExpressionMessage(":", def[2])
@@ -204,8 +230,13 @@ export const parseNarrowTuple: IndexOneParser<":"> = (def, ctx) => {
 	)
 }
 
-const parseMetaTuple: IndexOneParser<"@"> = (def, ctx) =>
-	ctx.$.parseOwn(def[0], ctx).configure(def[2] as never, def[3] as NodeSelector)
+const parseMetaTuple: IndexOneParser<"@"> = (def, ctx) => {
+	assertTupleArity(def, "@", 3, 4)
+	return ctx.$.parseOwn(def[0], ctx).configure(
+		def[2] as never,
+		def[3] as NodeSelector
+	)
+}
 
 export type IndexOneExpression<token extends string = IndexOneOperator> =
 	readonly [unknown, token, ...unknown[]]
@@ -221,7 +252,10 @@ const defineIndexOneParsers = <parsers>(parsers: {
 
 const postfixParsers = defineIndexOneParsers({
 	"[]": parseArrayTuple,
-	"?": () => throwParseError(shallowOptionalMessage)
+	"?": def => {
+		assertTupleArity(def, "?", 2)
+		return throwParseError(shallowOptionalMessage)
+	}
 })
 
 export type TuplePostfixOperator = keyof typeof postfixParsers
@@ -235,7 +269,10 @@ const infixParsers = defineIndexOneParsers({
 	"@": parseMetaTuple,
 	// since object and tuple literals parse there via `parseProperty`,
 	// they must be shallow if parsed directly as a tuple expression
-	"=": () => throwParseError(shallowDefaultableMessage)
+	"=": def => {
+		assertTupleArity(def, "=", 3)
+		return throwParseError(shallowDefaultableMessage)
+	}
 })
 
 export type TupleInfixOperator = keyof typeof infixParsers
@@ -302,3 +339,10 @@ export const writeInvalidConstructorMessage = <
 	actual: actual
 ): string =>
 	`Expected a constructor following 'instanceof' operator (was ${actual})`
+
+export const writeUnexpectedTupleElementsMessage = (
+	operator: TupleExpressionOperator,
+	expected: number | string,
+	actual: number
+): string =>
+	`Tuple expression with operator '${operator}' requires ${expected} elements (got ${actual})`

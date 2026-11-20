@@ -518,10 +518,13 @@ export const importsOf = (
 	id: string,
 	source: string
 ): { imports: Import[]; unnamed: UnnamedImport | undefined } => {
-	const parsed = parseSync(id, source, {
-		lang: langOf(id),
-		sourceType: /\.c[jt]s$/.test(id) ? "commonjs" : "module"
-	})
+	const sourceType = /\.c[jt]s$/.test(id) ? "commonjs" : "module"
+	let parsed = parseSync(id, source, { lang: langOf(id), sourceType })
+	// Next, esbuild's loader option and other tools allow JSX in a .js module
+	if (parsed.errors.length && id.endsWith(".js")) {
+		const jsx = parseSync(id, source, { lang: "jsx", sourceType })
+		if (!jsx.errors.length) parsed = jsx
+	}
 	const { module, errors } = parsed
 	const imports: Import[] = []
 	if (errors.length) {

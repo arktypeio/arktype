@@ -294,7 +294,7 @@ const MyDeeplyStrippedObject = type({
 	}
 }).onDeepUndeclaredKey("delete")
 
-// { nested: { preserved: "b" }, preserved: "a" }
+// { preserved: "a", nested: { preserved: "b" } }
 MyDeeplyStrippedObject({
 	preserved: "a",
 	extra: 1,

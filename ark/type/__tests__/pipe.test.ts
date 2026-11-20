@@ -1212,7 +1212,7 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 >`)
 
 		attest(T.expression).snap(
-			"{ l: 1, n: (In: /^(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?|\\.\\d+|-(?:[1-9]\\d*(?:\\.\\d+)?|0\\.\\d*[1-9]\\d*))(?:[Ee][+-]?\\d+)?$/ & parsesFinite) => Out<number> } | { n: (In: /^(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?|\\.\\d+|-(?:[1-9]\\d*(?:\\.\\d+)?|0\\.\\d*[1-9]\\d*))(?:[Ee][+-]?\\d+)?$/ & parsesFinite) => Out<number>, r: 1 }"
+			"{ l: 1, n: (In: /^(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?|\\.\\d+|-(?:[1-9]\\d*(?:\\.\\d+)?|0?\\.\\d*[1-9]\\d*))(?:[Ee][+-]?\\d+)?$/ & parsesFinite) => Out<number> } | { n: (In: /^(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?|\\.\\d+|-(?:[1-9]\\d*(?:\\.\\d+)?|0?\\.\\d*[1-9]\\d*))(?:[Ee][+-]?\\d+)?$/ & parsesFinite) => Out<number>, r: 1 }"
 		)
 		attest(T({ l: 1, n: "234" })).snap({ l: 1, n: 234 })
 		attest(T({ r: 1, n: "234" })).snap({ r: 1, n: 234 })
@@ -1570,5 +1570,163 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 
 		attest(result.toString()).snap(`Item[0].Meta must be an object (was missing)
 Item[1].Meta must be an object (was missing)`)
+	})
+
+	it("type-checks morph parameters on chained and nary pipe", () => {
+		// @ts-expect-error
+		attest(() => type("string").pipe((n: number) => n.toFixed(2))).type.errors(
+			"Type 'string' is not assignable to type 'number'"
+		)
+		attest(() =>
+			type("string")
+				.pipe(s => s.length)
+				// @ts-expect-error
+				.pipe((s: string) => s)
+		).type.errors("Type 'number' is not assignable to type 'string'")
+		attest(() =>
+			type("string").pipe(
+				(s: string) => s.length,
+				// @ts-expect-error
+				(s: string) => s
+			)
+		).type.errors("Type 'number' is not assignable to type 'string'")
+		attest(() =>
+			type("string").pipe(
+				// @ts-expect-error
+				s => s.length,
+				(s: string) => s
+			)
+		).type.errors("not assignable")
+		attest(() =>
+			// @ts-expect-error
+			type("string").pipe.try((n: number) => n.toFixed(2))
+		).type.errors("Type 'string' is not assignable to type 'number'")
+		attest(() =>
+			// @ts-expect-error
+			type.pipe(type("string"), (n: number) => n.toFixed(2))
+		).type.errors("Type 'string' is not assignable to type 'number'")
+
+		// 18+ morphs hitting variadic overload infer unannotated first morph and check every morph in the chain
+		const nineteen = type("'a'").pipe(
+			s => `${s}b` as const,
+			(s: string) => `${s}c`,
+			(s: string) => `${s}d`,
+			(s: string) => `${s}e`,
+			(s: string) => `${s}f`,
+			(s: string) => `${s}g`,
+			(s: string) => `${s}h`,
+			(s: string) => `${s}i`,
+			(s: string) => `${s}j`,
+			(s: string) => `${s}k`,
+			(s: string) => `${s}l`,
+			(s: string) => `${s}m`,
+			(s: string) => `${s}n`,
+			(s: string) => `${s}o`,
+			(s: string) => `${s}p`,
+			(s: string) => `${s}q`,
+			(s: string) => `${s}r`,
+			(s: string) => `${s}s`,
+			(s: string) => s.length
+		)
+		attest<number>(nineteen.infer)
+		attest<"a">(nineteen.inferIn)
+		attest(nineteen("a")).equals(19)
+
+		const trimmedEighteen = type("string").pipe(
+			s => s.trim(),
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s,
+			(s: string) => s.length
+		)
+		attest<number>(trimmedEighteen.infer)
+		attest<string>(trimmedEighteen.inferIn)
+		attest(trimmedEighteen(" hi ")).equals(2)
+
+		attest(() =>
+			type("'a'").pipe(
+				(s: "a") => `${s}b` as const,
+				(s: string) => `${s}c`,
+				(s: string) => `${s}d`,
+				(s: string) => `${s}e`,
+				(s: string) => `${s}f`,
+				(s: string) => `${s}g`,
+				(s: string) => `${s}h`,
+				(s: string) => `${s}i`,
+				(s: string) => `${s}j`,
+				(s: string) => `${s}k`,
+				(s: string) => `${s}l`,
+				(s: string) => `${s}m`,
+				(s: string) => `${s}n`,
+				(s: string) => `${s}o`,
+				(s: string) => `${s}p`,
+				(s: string) => `${s}q`,
+				(s: string) => `${s}r`,
+				(s: string) => s.length,
+				// @ts-expect-error
+				(s: string) => s
+			)
+		).type.errors("Type 'number' is not assignable to type 'string'")
+
+		const mismatchedSpread: ((n: number) => string)[] = []
+		attest(() =>
+			// @ts-expect-error
+			type("string").pipe(...mismatchedSpread)
+		).type.errors("Type 'string' is not assignable to type 'number'")
+
+		const selfIncompatibleSpread: ((s: string) => number)[] = []
+		attest(() =>
+			// @ts-expect-error
+			type("string").pipe(...selfIncompatibleSpread)
+		).type.errors("Type 'number' is not assignable to type 'string'")
+
+		const compatibleSpread: ((s: string) => string)[] = [s => s.trim()]
+		const spreadResult = type("string").pipe(...compatibleSpread)
+		attest(spreadResult(" hi ")).equals("hi")
+
+		const headPlusRest: [(s: string) => number, ...((n: number) => number)[]] =
+			[s => s.length, n => n * 2]
+		const headRestResult = type("string").pipe(...headPlusRest)
+		attest(headRestResult("abc")).equals(6)
+
+		const multiHeadRest: [
+			(s: string) => boolean,
+			(b: boolean) => number,
+			...((n: number) => number)[]
+		] = [s => s.length > 0, b => (b ? 1 : 0), n => n + 10]
+		attest(type("string").pipe(...multiHeadRest)("a")).equals(11)
+
+		const restPlusTail: [...((s: string) => string)[], (s: string) => number] =
+			[s => s.trim(), s => s.length]
+		attest(type("string").pipe(...restPlusTail)(" ab ")).equals(2)
+
+		const badHeadRest: [(n: number) => number, ...((n: number) => number)[]] = [
+			n => n
+		]
+		attest(() =>
+			// @ts-expect-error
+			type("string").pipe(...badHeadRest)
+		).type.errors("Type 'string' is not assignable to type 'number'")
+
+		const badTailRest: [(s: string) => number, ...((s: string) => number)[]] = [
+			s => s.length
+		]
+		attest(() =>
+			// @ts-expect-error
+			type("string").pipe(...badTailRest)
+		).type.errors("Type 'number' is not assignable to type 'string'")
 	})
 })

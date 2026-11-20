@@ -298,7 +298,7 @@ const strict = regex("^(?-i:a)b$", "i")
 // }>
 ```
 
-The `s` flag doesn't change inference, since `.` already infers `string`. The `m` flag is a [known gap](https://arktype.io/docs/regex/faq#known-gaps).
+The `s` flag doesn't change inference, since `.` already infers `string`. With the `m` flag, `^` and `$` can match at a line break, so they don't anchor the type: `regex("^a$", "m")` infers `` `${string}a${string}` ``. An `m` modifier like `(?m:$)` is a [known gap](https://arktype.io/docs/regex/faq#known-gaps).
 
 ## `.test()`
 
@@ -372,6 +372,7 @@ Most of these would also throw from `new RegExp()`. The rest are valid at runtim
 | `\k must be followed by a named reference like <name>` | `"\\ka"` | throws with `u`, `v` or a named group; otherwise matches `ka` |
 | `\p must be followed by a property like \p{Emoji_Presentation}` | `"\\p"` | throws with `u` or `v`; otherwise matches `p` |
 | `Quantifier {1.5} must use natural numbers` | `"a{1.5}"` | throws with `u` or `v`; otherwise matches the text `a{1.5}` |
+| `Quantifier {2,1} min cannot exceed max` | `"a{2,1}"` | throws |
 | `Escape preceding q is unnecessary and should be removed.` | `"\\q"` | throws with `u` or `v`; otherwise matches `q` |
 | `Reference to incomplete group '1' has no effect` | `"(a\\1)"` | valid; the reference matches `""` |
 | `Anchor ^ may not appear mid-pattern` | `"a^b"` | valid |
@@ -404,8 +405,6 @@ Some patterns that `new RegExp()` throws on aren't caught:
 - Ranges out of order, like `"[z-a]"`.
 - Duplicate group names in the same branch, like `"(?<a>x)(?<a>y)"`.
 - Syntax that only throws with the `u` or `v` flag, like `"\\-"`, `"\\p{Foo}"` or `"a{1,b}"`.
-
-Quantifier bounds out of order, like `"a{2,1}"`, are an error, but only `Type instantiation is excessively deep and possibly infinite`.
 
 The `v` flag's nested classes and set operations, like `[[a-z]--[aeiou]]`, aren't parsed. They aren't errors, but see [known gaps](https://arktype.io/docs/regex/faq#known-gaps).
 
@@ -618,6 +617,7 @@ An inferred type is meant to include every string the expression matches. These 
 - `\d` next to an unanchored start or end of a pattern, or followed by `.` or `\w` at the end of a group, infers only `` `${number}` ``. `regex("\\d")` and ArkType's `type("/\\d/")` both infer `` `${number}` ``, but match `"abc1"`.
 - A bounded run of more than 308 digits, like `\d{309}`, infers `` `${number}` ``, which can't hold a number that large. An unbounded run like `\d+` infers `string`.
 - The `i` flag isn't applied to character sets, and a backreference repeats its group's exact case: `regex("^[ab]$", "i")` infers `"a" | "b"` but matches `"A"`, and `regex("^(a)\\1$", "i")` infers `"aa" | "AA"` but matches `"aA"`.
+- An `m` modifier group still anchors: `regex("^a(?m:$)")` infers `"a"` but matches `"a\nb"`.
 - The `v` flag's nested classes and set operations, like `[[a-z]--[aeiou]]`, aren't parsed.
 
 `.test()` narrows its input in both branches, so the `false` branch removes strings that didn't match whenever the inferred type was widened:

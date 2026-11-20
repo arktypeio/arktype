@@ -23,16 +23,16 @@ If asked to precompile too, set it up last, as [references/precompile.md](refere
 
 Follow https://arktype.io/docs/upgrading.md, whose checklist links each breaking change. What most code hits:
 
-| ArkType 2                                                      | ArkType 3                                                                  |
-| -------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `out[0]`, `out.length`, `out.map(...)`, `for (const e of out)` | the same on `out.issues`                                                   |
-| `error.message`, for text naming its path                      | `out.summary`, a line per error; `error.message` now leaves the path out   |
-| `error.problem`, `{ problem: "..." }`                          | `error.message`, `{ message: "..." }`, reworded as a whole sentence        |
-| `out.flatProblemsByPath`, `out.byPath`, `out.flatByPath`       | `flatMessagesByPath(out)`, `byPath(out)`, `flatByPath(out)` from `arktype` |
-| `out.message`, `out.toTraversalError()`                        | `out.summary`, `new TraversalError(out)`                                   |
-| `error.hasCode("min")`, `error.toString()`                     | `error.code === "min"`, `error.message`: errors are plain objects          |
-| `ctx.errors.add(...)`                                          | `ctx.error(...)` or `ctx.reject(...)`                                      |
-| `configure()` anywhere, the `clone` option                     | a config file imported before any Type is created; remove `clone`          |
+| ArkType 2                                                      | ArkType 3                                                                                     |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `out[0]`, `out.length`, `out.map(...)`, `for (const e of out)` | the same on `out.issues`                                                                      |
+| `error.message`, for text naming its path                      | `out.summary`, a line per error; `error.message` now leaves the path out                      |
+| `error.problem`, `{ problem: "..." }`                          | `error.message`, `{ message: "..." }`, reworded as a whole sentence                           |
+| `out.flatProblemsByPath`, `out.byPath`, `out.flatByPath`       | `flatMessagesByPath(out)`, `byPath(out)`, `flatByPath(out)` from `arktype`                    |
+| `out.message`, `out.toTraversalError()`                        | `out.summary`, `new TraversalError(out)`                                                      |
+| `error.hasCode("min")`, `error.toString()`                     | `error.code === "min"`, `out.summary` (errors are plain objects; `error.message` has no path) |
+| `ctx.errors.add(...)`                                          | `ctx.error(...)` or `ctx.reject(...)`                                                         |
+| `configure()` anywhere, the `clone` option                     | a config file imported before any Type is created; remove `clone`                             |
 
 Then update snapshots of error text: a message no longer says what the value was, like `(was a number)`. Replace adapters written for ArkType 2 as [Integrations](#integrations) says: they pass valid data and fail on the first invalid input.
 
@@ -45,7 +45,7 @@ A project whose bundler config uses `@ark/aot` (e.g. `precompile.vite()` from `@
 - If the project calls `configure()`, name its module as `config` under `precompile` in an `ark.json` beside `package.json`, which the plugin, the test drivers, the CLI and the ESLint rule all read.
 - A build error names the file, line and column, then why, then the fix on its last line. Apply that fix. Don't set `allowUnsafe` or switch to `runtime: "arktype"` to get past one. `npx arktype-precompile --check src` lists every one without bundling.
 - A validator's error messages say what failed but not what the value was, like `name must be a string`.
-- The build works out which introspection members, like a JSON Schema or `expression`, each validator needs from the code reading it, its dependencies' included, so the MCP SDK, the AI SDK and OpenAPI generators get one with nothing to set. Setting one under `members` only overrides that. Code the build can't see, like code outside the bundle reading an entry's export, throws naming the member to set true under `members`.
+- The build works out which introspection members, like a JSON Schema or `expression`, each validator needs from the code reading it, its dependencies' included, so the MCP SDK, the AI SDK and OpenAPI generators get one with nothing to set. Setting one under `members` only overrides that. Code the build can't see, like code outside the bundle reading an entry's export, reads `undefined`, and warns in development naming the member to set true under `members`.
 
 Docs index: https://arktype.io/llms.txt, which links each page's Markdown. Any docs page is available as Markdown by adding `.md` to its URL, e.g. https://arktype.io/docs/objects.md. Every page in one file: https://arktype.io/llms-full.txt.
 
@@ -159,8 +159,8 @@ const CustomerDraft = Customer.partial()
 Never interpolate a type into a string, as in ``type(`${Address}[]`)``. Use `Address.array()`, `Address.or(...)` and the other chained methods, or a tuple expression like `[Address, "[]"]`.
 
 - `.merge()` adds keys and replaces existing ones. `.and()` intersects, and throws when a key's types conflict.
-- `.merge()`, `"..."`, `.pick()`, `.omit()` and `.partial()` drop a `.narrow()` on the object they read, or throw if it also deletes undeclared keys. Keep the keys in a Type of their own, derive from that, and add each `.narrow()` last.
-- To share keys between types, merge a base Type, or `.pick()` them: `User.get("nick")` is the key's Type without its `?` or its default. To reuse a pattern across Types, define a Generic: `const Page = type("<t>", { items: "t[]", total: "number" })`, called as `Page(Item)`. In a Generic's body, `Omit`, `Pick`, `Partial`, `Required` and `Merge` do what the methods of those names do: `const Create = type("<t extends object>", "Omit<t, 'id'>")`.
+- `.merge()`, `"..."`, `.pick()`, `.omit()` and `.partial()` drop a `.narrow()` on the object they read, or throw if the object also transforms its input: deletes undeclared keys, or has a default or a morph at a key. Keep the keys in a Type of their own, derive from that, and add each `.narrow()` last.
+- To share keys between types, merge a base Type, or `.pick()` them: `User.get("nick")` is the key's Type without its `?` or its default, plus `| undefined` when the key is optional or defaulted. To reuse a pattern across Types, define a Generic: `const Page = type("<t>", { items: "t[]", total: "number" })`, called as `Page(Item)`. In a Generic's body, `Omit`, `Pick`, `Partial`, `Required` and `Merge` do what the methods of those names do: `const Create = type("<t extends object>", "Omit<t, 'id'>")`.
 - `.as<T>()` is a cast. To infer a narrower type, use `.narrow()` with a type predicate, e.g. `(s): s is \`data-${string}\` => s.startsWith("data-")`.
 - A definition built at runtime goes to `type.raw`, which infers nothing, then gets its type: `type.raw(Object.fromEntries(FLAGS.map(flag => [flag, "boolean"]))).as<Record<Flag, boolean>>()`.
 
@@ -302,7 +302,7 @@ const types = scope({
 const post = types.Post({ title: "Hello", author: { name: "Ada" } })
 ```
 
-Don't wrap definitions inside a scope with `type()`. They're resolved within the scope, and `type()` would resolve them globally, so an alias there is `unresolvable`. For a `.narrow()` or a `.pipe()` inside a scope, write a tuple: `["Tag[]", ":", (tags, ctx) => ...]` or `["string", "=>", s => s.trim()]`. For JSON data, use the built-in `"string | number | boolean | null | object.json"` rather than a recursive type of your own.
+Don't wrap definitions inside a scope with `type()`. They're resolved within the scope, and `type()` would resolve them globally, so an alias there is `unresolvable`. For a `.narrow()` or a `.pipe()` inside a scope, write a tuple: `["Tag[]", ":", (tags, ctx) => ...]` or `["string", "=>", s => s.trim()]`. For JSON data, use the built-in `"string | number | boolean | null | object.json"` rather than a recursive type of your own. Define recursive Types once, at module scope, since each stays in memory for the life of the process.
 
 TypeScript can't write an inferred cycle in a `.d.ts`: `tsc` declares it as `any`, or fails with `TS5088`. In a package or project whose declarations are emitted, write them with `npx arktype-precompile --declare` (from `@ark/aot`) instead, which names each cycle for its alias and changes nothing at runtime. See https://arktype.io/docs/precompile/advanced.md.
 
@@ -384,7 +384,7 @@ check(User, { name: "Ada" }, { name: "", age: -1 })
 | `Only required keys may specify default values`                                                     | drop the `?`: a key with a default may be missing                                                                                                                                           |
 | `Argument of type 'never[]' is not assignable to parameter of type '() => ...'` at `.default([])`   | an object or array default is a function, `.default(() => [])`, or `"string[] = []"` in a string                                                                                            |
 | `An unordered union of a type including a morph and a type with overlapping input is indeterminate` | narrow the morph's input so no other branch accepts it, as in `"string.numeric.parse \| undefined"`; for objects that delete keys, see [Extra keys](#extra-keys)                            |
-| `merge operand must be an object (was (In: { ... }) => To<...>)`, or `pick`, `omit`, `partial`      | the object has a `.narrow()` and deletes undeclared keys: call the method on the object before its `.narrow()`, then add the narrow                                                         |
+| `merge operand must be an object (was (In: { ... }) => To<...>)`, or `pick`, `omit`, `partial`      | the object has a `.narrow()` and deletes undeclared keys or has a default or morph at a key: call the method on the object before its `.narrow()`, then add the narrow                      |
 | `Intersection at a of string and number results in an unsatisfiable type`                           | `.and()` found conflicting keys; use `.merge()` to replace them                                                                                                                             |
 | `Index keys "a", "b" should be specified as named props`                                            | write `Record<"a" \| "b", T>` as `{ a: T, b: T }`                                                                                                                                           |
 | `configure() must be called before any Type is created`                                             | import the module calling `configure()` before any module that creates a Type                                                                                                               |

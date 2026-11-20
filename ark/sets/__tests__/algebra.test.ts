@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema } from "@ark/schema"
+import { rootSchema, schemaScope } from "@ark/schema"
+import { encode, inverses } from "@ark/schema/codecs"
 import {
 	discriminate,
 	intersect,
@@ -7,6 +8,7 @@ import {
 	isEqual,
 	isSubset,
 	parse,
+	toJsonSchema,
 	union
 } from "arksets"
 import {
@@ -420,5 +422,188 @@ contextualize(() => {
 				{ type: "object" }
 			)
 		).equals(true)
+	})
+
+	it("treats defaulted keys and tuple defaults as input-side annotations in relations", () => {
+		const A = rootSchema({
+			domain: "object",
+			optional: [{ key: "a", value: "number", default: 1 }]
+		})
+		const B = rootSchema({
+			domain: "object",
+			optional: [{ key: "a", value: "string" }]
+		})
+		const A2 = rootSchema({
+			domain: "object",
+			optional: [{ key: "a", value: "number", default: 2 }]
+		})
+		const ReqStr = rootSchema({
+			domain: "object",
+			required: [{ key: "a", value: "string" }]
+		})
+		const ReqNum = rootSchema({
+			domain: "object",
+			required: [{ key: "a", value: "number" }]
+		})
+
+		attest(A.extends(B)).equals(false)
+		attest(A.overlaps(B)).equals(true)
+		attest(A.exclude(B).expression).snap("{ a: number = 1 }")
+		attest(A.extract(B).expression).snap("never")
+
+		attest(A.overlaps(A2)).equals(true)
+		attest(A.extends(A2)).equals(true)
+		attest(A.overlaps(ReqStr)).equals(false)
+		attest(A.extends(ReqNum)).equals(false)
+		attest(ReqNum.extends(A)).equals(true)
+
+		const T1 = rootSchema({
+			proto: Array,
+			sequence: { defaultables: [["number", 1]] }
+		})
+		const T2 = rootSchema({
+			proto: Array,
+			sequence: { defaultables: [["number", 2]] }
+		})
+		const TOptStr = rootSchema({
+			proto: Array,
+			sequence: { optionals: ["string"] }
+		})
+		attest(T1.overlaps(T2)).equals(true)
+		attest(T1.extends(T2)).equals(true)
+		attest(T1.extends(TOptStr)).equals(false)
+		attest(T1.overlaps(TOptStr)).equals(true)
+
+		// explicit intersection still rejects conflicting defaults
+		attest(() => A.and(A2)).throws(
+			"Invalid intersection of default values 1 & 2"
+		)
+
+		// nested, loose optional, and cyclic defaults
+		attest(
+			rootSchema({
+				domain: "object",
+				required: [{ key: "inner", value: A }]
+			}).overlaps(
+				rootSchema({
+					domain: "object",
+					required: [{ key: "inner", value: B }]
+				})
+			)
+		).equals(true)
+
+		const Loose = schemaScope({}, { exactOptionalPropertyTypes: false })
+		const LA = Loose.schema({
+			domain: "object",
+			optional: [{ key: "a", value: "number", default: 1 }]
+		})
+		const LB = Loose.schema({
+			domain: "object",
+			optional: [{ key: "a", value: "string" }]
+		})
+		const LA2 = Loose.schema({
+			domain: "object",
+			optional: [{ key: "a", value: "number", default: 2 }]
+		})
+		attest(LA.extends(LB)).equals(false)
+		attest(LA.overlaps(LB)).equals(true)
+		attest(LA.overlaps(LA2)).equals(true)
+
+		const Cyc = schemaScope({
+			Node: {
+				domain: "object",
+				optional: [
+					{ key: "a", value: "number", default: 1 },
+					{ key: "next", value: "$Node" }
+				]
+			}
+		}).export()
+		attest(Cyc.Node.extends(B)).equals(false)
+		attest(Cyc.Node.overlaps(B)).equals(true)
+	})
+
+	it("never does not overlap never or any other type", () => {
+		const Never = rootSchema([])
+		const Unknown = rootSchema({})
+		attest(Never.overlaps(Never)).equals(false)
+		attest(Never.overlaps(Unknown)).equals(false)
+		attest(Unknown.overlaps(Never)).equals(false)
+		attest(Never.overlaps(rootSchema("string"))).equals(false)
+		attest(Never.extends(Never)).equals(true)
+	})
+
+	it("evaluates a narrowed intersection predicate once when intersecting with a unit", () => {
+		let calls = 0
+		const Positive = rootSchema({
+			domain: "number",
+			predicate: [
+				(n: number) => {
+					calls++
+					return n > 0
+				}
+			]
+		})
+		attest(intersect(rootSchema({ unit: 5 }), Positive).expression).snap("5")
+		attest(calls).equals(1)
+		calls = 0
+		attest(isDisjoint(rootSchema({ unit: -1 }), Positive)).equals(true)
+		attest(calls).equals(1)
+	})
+
+	describe("codec composition", () => {
+		const parseIso = (s: string) => new Date(s)
+		inverses.set(parseIso, (d: Date) => d.toISOString())
+
+		it("preserves declaredIn and intersects declaredOut across pipe", () => {
+			const declaredIn = rootSchema({ domain: "string", pattern: "^\\d{4}" })
+			const BaseCodec = rootSchema({
+				in: "string",
+				morphs: [parseIso],
+				declaredIn,
+				declaredOut: rootSchema("Date")
+			})
+			const Narrowed = BaseCodec.rawPipeOnce(
+				rootSchema({
+					proto: Date,
+					predicate: [(d: Date) => d.getFullYear() > 2000]
+				})
+			)
+			attest(Narrowed._in.expression).equals(declaredIn.expression)
+
+			const encoder = encode(Narrowed)
+			attest(String(encoder("not a date"))).snap("must be a Date")
+			attest(String(encoder(new Date("1999-01-01T00:00:00.000Z")))).snap(
+				"must be valid according to an anonymous predicate"
+			)
+			attest(encoder(new Date("2025-01-01T00:00:00.000Z"))).equals(
+				"2025-01-01T00:00:00.000Z"
+			)
+		})
+
+		it("intersects declaredIn when intersecting a morph with input constraints", () => {
+			const declaredIn = rootSchema({
+				domain: "string",
+				predicate: [
+					{
+						predicate: (s: string) => !Number.isNaN(Date.parse(s)),
+						meta: { jsonSchema: { type: "string", format: "date-time" } }
+					}
+				]
+			})
+			const DateCodec = rootSchema({
+				in: "string",
+				morphs: [parseIso],
+				declaredIn,
+				declaredOut: rootSchema("Date")
+			})
+			const LongDate = DateCodec.and({ domain: "string", minLength: 100 })
+			const encoder = encode(LongDate)
+			attest(String(encoder(new Date(0)))).snap("must be at least length 100")
+			attest(toJsonSchema(LongDate, { io: "in", dialect: null })).snap({
+				type: "string",
+				format: "date-time",
+				minLength: 100
+			})
+		})
 	})
 })

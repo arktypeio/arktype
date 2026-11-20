@@ -1,4 +1,4 @@
-import { printable, stringifyPath, throwError } from "./util.ts"
+import { parseJsonText, printable, stringifyPath, throwError } from "./util.ts"
 import { existsSync, readFileSync } from "node:fs"
 import { basename, dirname, join, resolve } from "node:path"
 import type { PrecompilePluginOptions } from "./driver.ts"
@@ -48,13 +48,8 @@ const validate = (
 
 export const settingsFile = "ark.json"
 
-const readJson = (path: string): unknown => {
-	try {
-		return JSON.parse(readFileSync(path, "utf8"))
-	} catch (e) {
-		throw new Error(`${path} isn't JSON: ${(e as Error).message}`)
-	}
-}
+const readJson = (path: string): unknown =>
+	parseJsonText(readFileSync(path, "utf8"), path)
 
 // where a build reads its settings, whether or not ark.json is there yet
 export const settingsPathsOf = (cwd: string): string[] => {

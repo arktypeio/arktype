@@ -680,9 +680,10 @@ export const T = type(def)`,
 			).snap([
 				'/main.ts:4:18  type(def) cannot be precompiled\n  `def` is assigned at /main.ts:3:1, so its value at the site is not known\n  With runtime: "arktype", arktype defines this at runtime.'
 			])
-			// arktype tests `null` against `Cat` as it defines the type
+			// arktype tests `null` against `Cat` as it defines the type, which reads
+			// a custom `[Symbol.hasInstance]`
 			const tested = `import { type } from "arktype"
-class Cat {}
+class Cat { static [Symbol.hasInstance](x: unknown) { return x === null } }
 export const A = type.instanceOf(Cat).or("null")`
 			attest(
 				analyze(tested, {}, { runtime: "arktype" }).diagnostics.map(

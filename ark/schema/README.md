@@ -1,6 +1,6 @@
 # @ark/schema
 
-Underlying schema language parsed from arktype syntax.
+Internal. Underlying schema language parsed from arktype syntax. It isn't published: `arktype` bundles it and exposes it as `arktype/schema`.
 
 The parts of ArkType's type system that exist in TS (i.e. not runtime-only constraints like bounds, divisors, custom predicates, morphs etc.) are structured like this:
 
@@ -19,4 +19,4 @@ In this system, `L` extends/subtypes/is assignable to `R` if and only if the int
 
 ## Docs
 
-`@ark/schema` isn't semver-stable. See [arktype.io/docs/internals](https://arktype.io/docs/internals) for its node kinds, schemas, `rootSchema` and `schemaScope`, and how it relates to `arksets` and `arktype`.
+`arktype/schema` isn't semver-stable: an export can change or go in any release. See [arktype.io/docs/internals](https://arktype.io/docs/internals) for its node kinds, schemas, `rootSchema` and `schemaScope`, and how it relates to `arksets` and `arktype`.

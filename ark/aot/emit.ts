@@ -245,12 +245,81 @@ const hoistImportsOf =
 		)
 		if (start === -1) return file
 		const body = file.statements.slice(start)
+		const imports = body.filter(ts.isImportDeclaration)
 		return context.factory.updateSourceFile(file, [
 			...file.statements.slice(0, start),
-			...body.filter(ts.isImportDeclaration),
+			...imports,
+			...(emitsEsm(ts, context.getCompilerOptions(), file) ?
+				[]
+			:	versionGuardsOf(ts, context.factory, imports)),
 			...body.filter(statement => !ts.isImportDeclaration(statement))
 		])
 	}
+
+// whether tsc leaves a file's imports as ES imports, which fail to link where
+// the module doesn't export a name, and so need no guard. Without a module
+// option, TypeScript 6 and later emit ESM.
+const emitsEsm = (
+	ts: TypeScript,
+	options: ts.CompilerOptions,
+	file: ts.SourceFile
+): boolean => {
+	const { module } = options
+	if (module === undefined) return Number.parseInt(ts.version, 10) >= 6
+	if (
+		module === ts.ModuleKind.Node16 ||
+		module === ts.ModuleKind.Node18 ||
+		module === ts.ModuleKind.Node20 ||
+		module === ts.ModuleKind.NodeNext
+	)
+		return file.impliedNodeFormat === ts.ModuleKind.ESNext
+	return (
+		module === ts.ModuleKind.ES2015 ||
+		module === ts.ModuleKind.ES2020 ||
+		module === ts.ModuleKind.ES2022 ||
+		module === ts.ModuleKind.ESNext ||
+		module === ts.ModuleKind.Preserve
+	)
+}
+
+// a named import fails to link in ESM when arktype/runtime doesn't export it,
+// but tsc's CommonJS reads it off the module as undefined, which nothing else
+// in a precompiled module checks, so only CommonJS output gets this guard. An
+// ES import's own linking fails there, and a guard is a top-level statement,
+// which would stop a bundler dropping a module whose exports go unused. Reusing
+// the import's own identifier keeps tsc rewriting it to that read, whether or
+// not the import is aliased.
+const versionGuardsOf = (
+	ts: TypeScript,
+	factory: ts.NodeFactory,
+	imports: readonly ts.ImportDeclaration[]
+): ts.Statement[] =>
+	imports.flatMap(({ importClause }) => {
+		const bindings = importClause?.namedBindings
+		if (!bindings || !ts.isNamedImports(bindings)) return []
+		return bindings.elements
+			.filter(({ name, propertyName }) =>
+				(propertyName ?? name).text.startsWith(versionExportPrefix)
+			)
+			.map(({ name, propertyName }) =>
+				factory.createIfStatement(
+					factory.createStrictInequality(name, factory.createTrue()),
+					factory.createThrowStatement(
+						factory.createNewExpression(
+							factory.createIdentifier("Error"),
+							undefined,
+							[
+								factory.createStringLiteral(
+									writeVersionMismatchMessage((propertyName ?? name).text)
+								)
+							]
+						)
+					)
+				)
+			)
+	})
+
+const versionExportPrefix = "precompiledForArktype_"
 
 const rewriterOf =
 	(
@@ -293,6 +362,9 @@ const rewriterOf =
 
 export const writeEmittedVariantMessage = (variant: RuntimeVariant): string =>
 	`A build with ${writeVariantOption(variant)} loads a copy of arktype/schema's runtime in place of the one arktype/runtime imports, which only a bundler or @ark/aot/node can do, so arktype-precompile --emit can't build with it${variant === "lean" ? '. Set optimizeErrors: "speed" to emit what optimize: "size" writes otherwise' : ""}`
+
+export const writeVersionMismatchMessage = (versionExport: string): string =>
+	`This module needs arktype/runtime to export ${versionExport}, which it doesn't, so it was precompiled for another version of arktype. Rebuild it with arktype-precompile --emit.`
 
 export const writeUnemittedMessage = (tsconfig: string): string =>
 	`${tsconfig} emits no JavaScript for arktype-precompile --emit to precompile. Name the tsconfig tsc builds with --tsconfig.`

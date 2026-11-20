@@ -1,6 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
-import { check } from "@ark/aot/internal/check.ts"
+import {
+	check,
+	writeMissingTsconfigMessage,
+	writeNoSourcesMessage,
+	writeSkippedSourcesMessage
+} from "@ark/aot/internal/check.ts"
 import { spawnSync } from "node:child_process"
 import { readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
@@ -419,6 +424,39 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 		attest(check(["src", "src/**/*.ts"], { cwd: root }).lines).equals(expected)
 	})
 
+	it("fails the patterns among several that name no script, naming only them", () => {
+		const root = writeFixture({
+			"package.json": "{}",
+			"src/main.ts": `import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n`
+		})
+		attest(() => check(["src", "srcc"], { cwd: root })).throws(
+			writeNoSourcesMessage(["srcc"], root)
+		)
+		attest(() => check(["srcc", "src", "nope/*.ts"], { cwd: root })).throws(
+			writeNoSourcesMessage(["srcc", "nope/*.ts"], root)
+		)
+	})
+
+	it("says a path holding scripts only in directories it skips isn't a typo", () => {
+		const root = writeFixture({
+			"package.json": "{}",
+			"src/main.ts": `import { type } from "arktype"\n\nexport const User = type({ name: "string" })\n`,
+			"scripts/build/make.ts": "export {}\n",
+			"scripts/out/emit.ts": "export {}\n",
+			"types/index.d.ts": "export {}\n",
+			"empty/readme.md": "# nothing to check\n"
+		})
+		attest(() => check(["src", "scripts"], { cwd: root })).throws(
+			writeSkippedSourcesMessage(["scripts"])
+		)
+		attest(() => check(["types", "scripts"], { cwd: root })).throws(
+			writeSkippedSourcesMessage(["types", "scripts"])
+		)
+		attest(() => check(["empty", "scripts"], { cwd: root })).throws(
+			`${writeNoSourcesMessage(["empty"], root)}\n${writeSkippedSourcesMessage(["scripts"])}`
+		)
+	})
+
 	it("reads the options a plugin call passes", () => {
 		const root = writeFixture({
 			"package.json": "{}",
@@ -558,6 +596,27 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 		])
 	})
 
+	it("fails a path, glob or tsconfig that names nothing", () => {
+		attest(
+			[
+				["nope.ts"],
+				["src/*.nothing", "also-nope.ts"],
+				["--tsconfig", "nope.json"]
+			].map(args => {
+				const result = runCli(cwd, "--check", ...args)
+				return [result.status, result.stdout, result.stderr]
+			})
+		).equals([
+			[1, "", `${writeNoSourcesMessage(["nope.ts"], cwd)}\n`],
+			[
+				1,
+				"",
+				`${writeNoSourcesMessage(["src/*.nothing", "also-nope.ts"], cwd)}\n`
+			],
+			[1, "", `${writeMissingTsconfigMessage(join(cwd, "nope.json"))}\n`]
+		])
+	})
+
 	it("reads an option that takes a number as one", () => {
 		// as the same check without the flag exits
 		attest(
@@ -574,7 +633,27 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 			"2 bakedLimit must be the characters a site's baked introspection may total (was 0)"
 		])
 		attest(
-			runCli(cwd, "--help").stdout.includes("[--baked-limit <number>]")
-		).equals(true)
+			runCli(cwd, "--help").stdout.match(/\[--baked-limit [^\]]+]/)?.[0]
+		).equals("[--baked-limit <number>]")
+	})
+
+	it("accepts a BOM in package.json and exits 1 without usage for invalid JSON manifests", () => {
+		const bomRoot = writeFixture({
+			"package.json": `\uFEFF{"name":"bom-cli","type":"module"}`,
+			"main.ts": `import { type } from "arktype"\nexport const A = type("string")\n`
+		})
+		const ok = runCli(bomRoot, "--check")
+		attest([ok.status, ok.stderr]).equals([0, ""])
+
+		const badRoot = writeFixture({
+			"package.json": `{not json`,
+			"main.ts": `import { type } from "arktype"\nexport const A = type("string")\n`
+		})
+		const bad = runCli(badRoot, "--check")
+		attest(bad.status).equals(1)
+		// the parse error is the runtime's own wording, and no usage follows it
+		attest(
+			bad.stderr.replace(/isn't JSON: .*/, "isn't JSON: <parse error>")
+		).equals(`${join(badRoot, "package.json")} isn't JSON: <parse error>\n`)
 	})
 })

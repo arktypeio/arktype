@@ -3,8 +3,10 @@ import {
 	ArkErrors,
 	flatByPath,
 	flatMessagesByPath,
+	messageIn,
 	rootSchema,
 	schemaScope,
+	writeInvalidLocaleObjectMessage,
 	type ArkError,
 	type Traversal
 } from "@ark/schema"
@@ -259,6 +261,13 @@ b: Enter a number`)
 		attest(messages).snap(["must be even", "must be at least 2"])
 		attest(messages instanceof ArkErrors).equals(false)
 
+		// JSON.stringify on the Standard Schema failure strips data, actual, and
+		// non-JSON Type metadata, matching ArkErrors.toJSON()
+		attest(JSON.parse(JSON.stringify(result))).equals({
+			issues: JSON.parse(JSON.stringify(errors)),
+			message: errors.summary
+		})
+
 		const parsed = JSON.parse(
 			JSON.stringify({ issues: result.issues, messages })
 		) as { issues: unknown[]; messages: string[] }
@@ -317,5 +326,22 @@ n must be at least 2`)
 		attest(flatMessagesByPath(errors)).snap({
 			n: ["must be even", "must be at least 2"]
 		})
+	})
+
+	it("throws ParseError when a non-object locale is passed to summaryIn or messageIn", () => {
+		const out = rootSchema({
+			domain: "object",
+			required: [{ key: "a", value: "string" }]
+		})({ a: 1 }) as ArkErrors
+		const first = out.issues[0]
+
+		for (const bad of ["de", ["de"], null, 42]) {
+			const expected = writeInvalidLocaleObjectMessage(bad)
+			attest(() => out.summaryIn(bad as never)).throws(expected)
+			attest(() => messageIn(first, bad as never)).throws(expected)
+		}
+		attest(() => messageIn(first, undefined as never)).throws(
+			writeInvalidLocaleObjectMessage(undefined)
+		)
 	})
 })

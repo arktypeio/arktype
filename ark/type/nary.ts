@@ -1,4 +1,4 @@
-import type { Morph } from "@ark/schema"
+import type { ArkError, ArkErrors, Morph } from "@ark/schema"
 import type { ErrorType, merge } from "@ark/util"
 import type {
 	distill,
@@ -2642,7 +2642,66 @@ export type NaryPipeParser<$, initial = unknown> = {
 		q: q
 	): r extends infer _ ? _ : never
 
+	<
+		a extends Morph<distill.Out<initial>>,
+		aOut,
+		b extends Morph<Exclude<aOut, ArkError | ArkErrors>>,
+		const morphs extends readonly [
+			Morph,
+			Morph,
+			Morph,
+			Morph,
+			Morph,
+			Morph,
+			Morph,
+			Morph,
+			Morph,
+			Morph,
+			Morph,
+			Morph,
+			Morph,
+			Morph,
+			Morph,
+			Morph,
+			...Morph[]
+		],
+		r = instantiateType<inferNaryPipe<[Type<initial>, a, b, ...morphs]>, $>
+	>(
+		a: a & Morph<distill.Out<initial>, aOut>,
+		b: b & Morph<Exclude<aOut, ArkError | ArkErrors>>,
+		...defs: expectedPipeDefs<morphs, inferMorphOut<b>>
+	): r extends infer _ ? _ : never
 	<const morphs extends readonly Morph[], r = Type<inferNaryPipe<morphs>, $>>(
-		...defs: morphs
+		...defs: expectedPipeDefs<morphs, distill.Out<initial>>
 	): r extends infer _ ? _ : never
 }
+
+// Keep the full tuple in a separate type parameter (`all`) so TypeScript's
+// homomorphic mapping over variadic tuples does not replace `morphs` with each
+// rest slice inside `expectedPipeMorphAt`.
+type expectedPipeDefs<
+	morphs extends readonly Morph[],
+	initialOut,
+	all extends readonly Morph[] = morphs
+> = {
+	[i in keyof morphs]: morphs[i] & expectedPipeMorphAt<all, i, initialOut>
+}
+
+type expectedPipeMorphAt<morphs extends readonly Morph[], i, initialOut> =
+	number extends i ? expectedVariadicRestMorph<morphs, initialOut>
+	: i extends "0" ? Morph<initialOut>
+	: i extends keyof (readonly [unknown, ...morphs]) ?
+		(readonly [unknown, ...morphs])[i] extends infer prev extends Morph ?
+			Morph<inferMorphOut<prev>>
+		:	Morph
+	:	Morph
+
+type expectedVariadicRestMorph<morphs extends readonly Morph[], prevOut> =
+	morphs extends (
+		readonly [infer head extends Morph, ...infer tail extends readonly Morph[]]
+	) ?
+		expectedVariadicRestMorph<tail, inferMorphOut<head>>
+	: morphs extends readonly [...infer init extends readonly Morph[], Morph] ?
+		expectedVariadicRestMorph<init, prevOut>
+	: [Morph.In<morphs[number]>] extends [never] ? Morph
+	: Morph<prevOut | inferMorphOut<morphs[number]>>

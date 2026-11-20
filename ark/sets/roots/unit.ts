@@ -1,19 +1,35 @@
 import {
 	$ark,
 	Disjoint,
+	isResolutionFinal,
 	type BaseConstraint,
+	type BaseRoot,
 	type DomainNode,
+	type IntersectionContext,
 	type Unit
 } from "@ark/schema"
+import { ParseError } from "@ark/util"
 import {
 	defineRightwardIntersections,
 	type setImplementationOf
 } from "../implement.ts"
 
+const deferUnitIntersection = (
+	l: Unit.Node,
+	r: BaseRoot,
+	ctx: IntersectionContext
+): BaseRoot =>
+	ctx.$.lazilyResolve(
+		() => (r.allowsUnused(l.unit) ? l : $ark.kw.never.internal),
+		`${l.id}&${r.id}`,
+		"&",
+		[l, r]
+	)
+
 export const unit: setImplementationOf<Unit.Declaration> = {
 	intersections: {
 		unit: (l, r) => Disjoint.init("unit", l, r),
-		...defineRightwardIntersections("unit", (l, r) => {
+		...defineRightwardIntersections("unit", (l, r, ctx) => {
 			// a basis pruned by a discriminant leaves constraints that can't check
 			// data outside the basis they imply
 			const rBasis =
@@ -43,17 +59,28 @@ export const unit: setImplementationOf<Unit.Declaration> = {
 				return Disjoint.init("assignability", l, rBasis)
 			}
 
-			if (r.allowsUnused(l.unit)) return l
+			if (!r.is("intersection")) return l
 
-			return Disjoint.init(
-				"assignability",
-				l,
-				r.is("intersection") ?
-					r.children.find(
-						rConstraint => !rConstraint.allowsUnused(l.unit as never)
-					)!
-				:	r
-			)
+			if (!isResolutionFinal() && r.hasAlias)
+				return deferUnitIntersection(l, r, ctx)
+
+			// when not yet final, an opaque predicate (e.g. fromJsonSchema's
+			// not/oneOf/if on a recursive $ref) may touch an unresolved alias
+			const deferOnError =
+				!isResolutionFinal() && Boolean(r.inner.predicate || r.userCode)
+			for (const rConstraint of r.children) {
+				if (rConstraint === rBasis) continue
+				if (deferOnError) {
+					try {
+						if (rConstraint.allowsUnused(l.unit as never)) continue
+					} catch (e) {
+						if (e instanceof ParseError) throw e
+						return deferUnitIntersection(l, r, ctx)
+					}
+				} else if (rConstraint.allowsUnused(l.unit as never)) continue
+				return Disjoint.init("assignability", l, rConstraint)
+			}
+			return l
 		})
 	}
 }

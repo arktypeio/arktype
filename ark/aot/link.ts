@@ -1489,6 +1489,9 @@ const readsAllows = (read: Node | null | undefined): read is MemberExpression =>
 // - made once, by a call the precompiler wrote and marked pure, of the checker
 //   alone, so when it's made is unobservable, and the unit's module loads
 //   before the site's body runs, as any module a site imports does
+// - no call fixing the config ahead of it, which a create function reads as
+//   it makes a validator, so one the unit's module made as it loads, before
+//   the site's body runs that call, would read the config unfixed
 // - a const at the module's top level, so no write of it and no second
 //   object: one in a function is created each time that runs, and is left
 // - no read the module makes as it loads ahead of the declaration, which
@@ -1523,6 +1526,7 @@ const creationOf = (site: Unit, checker: Reference): Creation | undefined => {
 	if (!isExported && declaration.parent?.type !== "Program") return
 	const statement = isExported ? declaration.parent! : declaration
 	const { scopes } = site.module
+	if (fixesConfigBefore(site, statement)) return
 	const binding = scopes.bindingsById.get(declarator.id)
 	const creator = scopes.byId.get(call.callee)?.binding
 	if (
@@ -1558,6 +1562,26 @@ const creationOf = (site: Unit, checker: Reference): Creation | undefined => {
 		reads
 	}
 }
+
+// e.g. `$arkfixConfig()`, which the precompiler writes where a program's config is
+// fixed, as the first Type arktype creates does
+const fixesConfigBefore = ({ module }: Unit, statement: Node): boolean =>
+	module.program.body.some(top => {
+		if (
+			top.end > statement.start ||
+			top.type !== "ExpressionStatement" ||
+			top.expression.type !== "CallExpression" ||
+			top.expression.arguments.length ||
+			top.expression.callee.type !== "Identifier"
+		)
+			return false
+		const fixer = module.scopes.byId.get(top.expression.callee)?.binding
+		return (
+			!!fixer &&
+			importSourceOf(fixer)?.startsWith("~arktype/") === true &&
+			importedNameOf(fixer) === "default"
+		)
+	})
 
 // whether a unit's declaration creates a validator, as declareAsCreated writes one
 const createsValidator = (owner: Unit, binding: Binding): boolean => {

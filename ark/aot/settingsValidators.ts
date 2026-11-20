@@ -36,6 +36,12 @@ var namesTraversalError = true
 var findsOnRead = false
 
 // ark/schema/shared/issues.ts
+var refuseLocale = locale => {
+	if (locale === void 0) return
+	if (typeof locale !== "object" || locale === null || Array.isArray(locale))
+		throw Error("Expected a Locale object")
+	throw Error('import "arktype/i18n" to write errors in locales other than en')
+}
 var ReadIssues = class {
 	// assigned, as a target lowering class fields defines each with a helper
 	constructor() {
@@ -170,6 +176,10 @@ var Issues =
 						summary += (summary && "\n") + lineOf(issue)
 					return summary
 				}
+				summaryIn(locale) {
+					refuseLocale(locale)
+					return this.summary
+				}
 				throw() {
 					if (namesTraversalError) throw new ThrownIssues(this)
 					if (definedThrown) throw new definedThrown(this)
@@ -218,6 +228,10 @@ var Issues =
 					for (const issue of this._)
 						summary += (summary && "\n") + lineOf(issue)
 					return summary
+				}
+				summaryIn(locale) {
+					refuseLocale(locale)
+					return this.summary
 				}
 				// constructed by TraversalError wherever its bundle keeps the
 				// class: otherwise an Error with the same name, message and
@@ -1365,8 +1379,8 @@ export const precompileJsonSchema = {
 		conditions: { type: "array", items: { type: "string" } },
 		config: {
 			anyOf: [
-				{ type: "string", description: "a module path or false", minLength: 1 },
-				{ type: "boolean", const: false, description: "a module path or false" }
+				{ type: "string", minLength: 1 },
+				{ type: "boolean", const: false }
 			],
 			description: "a module path or false"
 		},

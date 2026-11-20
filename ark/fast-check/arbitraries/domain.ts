@@ -1,6 +1,6 @@
 import type { nodeOfKind } from "arktype/schema"
 import * as fc from "fast-check"
-import { buildStructureArbitrary } from "../arktypeFastCheck.ts"
+import { buildStructureArbitrary } from "../buildArbitrary.ts"
 import type { Ctx } from "../fastCheckContext.ts"
 import { buildNumberArbitrary } from "./number.ts"
 import { buildStringArbitrary } from "./string.ts"
@@ -10,7 +10,7 @@ export const buildDomainArbitrary: BuildDomainArbitrary = {
 	string: node => buildStringArbitrary(node),
 	object: (node, ctx) =>
 		node.is("domain") ? fc.object() : buildStructureArbitrary(node, ctx),
-	symbol: () => fc.constant(Symbol()),
+	symbol: () => fc.string().map(s => Symbol(s)),
 	bigint: () => fc.bigInt()
 }
 

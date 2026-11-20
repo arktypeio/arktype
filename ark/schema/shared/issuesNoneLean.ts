@@ -14,7 +14,11 @@ export class ArkErrors {
 
 	get issues(): readonly ArkIssue[] {
 		return this._.reduce(
-			(issues, issue) => ((issue.message ??= "is invalid"), issues),
+			(issues, issue) => (
+				(issue.expected ??= "valid"),
+				(issue.message ??= "is invalid"),
+				issues
+			),
 			this._
 		)
 	}
@@ -24,6 +28,10 @@ export class ArkErrors {
 			(summary, issue) => summary + (summary && "\n") + lineOf(issue),
 			""
 		)
+	}
+
+	summaryIn(): string {
+		return this.summary
 	}
 
 	// as issuesNone.ts's
@@ -36,9 +44,10 @@ export class ArkErrors {
 	}
 
 	toJSON(): readonly object[] {
-		return this.issues.map(({ code, path, message }) => ({
+		return this.issues.map(({ code, path, expected, message }) => ({
 			code,
 			path: path.map(k => (typeof k === "symbol" ? String(k) : k)),
+			expected,
 			message
 		}))
 	}

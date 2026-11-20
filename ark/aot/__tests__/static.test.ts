@@ -56,6 +56,108 @@ export const Element = type.instanceOf(HTMLElement)`)
 			])
 		})
 
+		it("user class instanceOf in unit unions and exclusions", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+class Local { x = 1 }
+class Sub extends Local {}
+class Custom { static [Symbol.hasInstance](x: unknown) { return x === null } }
+class SubCustom extends Custom {}
+class WithBlock { static { (this as any)[Symbol.hasInstance] = () => true } }
+export const A = type.instanceOf(Local).or("null")
+export const B = type.instanceOf(Local).or("undefined")
+export const C = type.instanceOf(Local).or("1 | 2")
+export const D = type.instanceOf(Local).or(type.unit(true))
+export const E = type([type.instanceOf(Local), "|", "null"])
+export const F = type.or(type.instanceOf(Local), "null")
+export const G = type.instanceOf(Local).or("null").exclude("null")
+export const H = type({ "k?": type.instanceOf(Local).or("undefined") })
+export const I = type.instanceOf(Sub).or("null")
+export const J = type.instanceOf(Custom).or("null")
+export const K = type.instanceOf(SubCustom).or("null")
+export const L = type.instanceOf(WithBlock).or("null")`)
+			).snap([
+				"7:18 accepted Local$hole_1h8zvuv1se1bai | null",
+				"8:18 accepted Local$hole_1h8zvuv1se1bai | undefined",
+				"9:18 accepted Local$hole_1h8zvuv1se1bai | 1 | 2",
+				"10:18 accepted Local$hole_1h8zvuv1se1bai | true",
+				"11:18 accepted Local$hole_1h8zvuv1se1bai | null",
+				"12:18 accepted Local$hole_1h8zvuv1se1bai | null",
+				"13:18 accepted Local$hole_1h8zvuv1se1bai",
+				"14:18 accepted { k?: Local$hole_1h8zvuv1se1bai | undefined }",
+				"15:18 accepted Sub$hole_awirc51ega8d9 | null",
+				"16:18 rejected\n  arktype reads `class Custom { static [Symbol.hasInstance](x: unknown) { re…` while defining the type, so it must be static",
+				"17:18 rejected\n  arktype reads `class Custom { static [Symbol.hasInstance](x: unknown) { re…` while defining the type, so it must be static",
+				"18:18 rejected\n  arktype reads `class WithBlock { static { (this as any)[Symbol.hasInstance…` while defining the type, so it must be static"
+			])
+		})
+
+		it("JSON imports, default, named, namespace, re-exported, and with BOM", () => {
+			const files = {
+				"/data.json": `{"values":["a","b"],"kind":"string"}`,
+				"/bom.json": `\uFEFF{"kind":"number"}`,
+				"/reexport.ts": `export { kind } from "./data.json"\nexport * from "./bom.json"\n`
+			}
+			const source = `import { type } from "arktype"
+import data from "./data.json" with { type: "json" }
+import { kind, values, missing } from "./data.json"
+import * as ns from "./data.json"
+import { default as whole } from "./data.json"
+import { kind as reKind } from "./reexport.ts"
+import { kind as bomKind } from "./bom.json"
+export const A = type.enumerated(...data.values)
+export const B = type({ k: data.kind })
+export const C = type({ k: kind })
+export const D = type.enumerated(...values)
+export const E = type({ k: ns.kind })
+export const F = type({ k: whole.kind })
+export const G = type({ k: reKind })
+export const H = type({ k: bomKind })
+export const I = type({ k: missing })`
+			attest(statusesOf(source, files)).snap([
+				'8:18 accepted "a" | "b"',
+				"9:18 accepted { k: string }",
+				"10:18 accepted { k: string }",
+				'11:18 accepted "a" | "b"',
+				"12:18 accepted { k: string }",
+				"13:18 accepted { k: string }",
+				"14:18 accepted { k: string }",
+				"15:18 accepted { k: number }",
+				"16:18 rejected\n  `missing` is an import the build cannot follow\n  /data.json has no export `missing`"
+			])
+			// full precompile (including rootOf/originOf/isOffHolder/inputExpressionOf)
+			const ok = `import { type } from "arktype"
+import data from "./data.json" with { type: "json" }
+import { kind, values } from "./data.json"
+export const A = type.enumerated(...data.values)
+export const B = type({ k: kind })
+export const C = type.enumerated(...values)`
+			const typed = precompile(ok, files, { creationChecks: "types" })
+			attest(typed.diagnostics).equals([])
+			attest(typed.code).snap(`import "arktype"
+import { f5n9uyp0oknmm7 as $arkf5n9uyp0oknmm7 } from "~arktype/uf2b1d1h1sbpm"
+import { fy0fj731qqvenk as $arkfy0fj731qqvenk } from "~arktype/uf2b1d1h1sbpm"
+import { f1u792r713o7i60 as $arkf1u792r713o7i60 } from "~arktype/uf2b1d1h1sbpm"
+import data from "./data.json" with { type: "json" }
+import { kind, values } from "./data.json"
+export const A = $arkf5n9uyp0oknmm7(data)
+export const B = $arkfy0fj731qqvenk(kind)
+export const C = $arkf1u792r713o7i60(values)`)
+			const unchecked = precompile(ok, files, { creationChecks: "none" })
+			attest(unchecked.diagnostics).equals([])
+			attest(unchecked.code).snap(`import "arktype"
+import { f5n9uyp0oknmm7 as $arkf5n9uyp0oknmm7 } from "~arktype/jo7r2k1wen2lt"
+import { fy0fj731qqvenk as $arkfy0fj731qqvenk } from "~arktype/jo7r2k1wen2lt"
+import { f1u792r713o7i60 as $arkf1u792r713o7i60 } from "~arktype/jo7r2k1wen2lt"
+import $arkfixConfig from "~arktype/1oxp5yq1n4xifh"
+import data from "./data.json" with { type: "json" }
+import { kind, values } from "./data.json"
+$arkfixConfig()
+export const A = /* @__PURE__ */ $arkf5n9uyp0oknmm7(data)
+export const B = /* @__PURE__ */ $arkfy0fj731qqvenk(kind)
+export const C = /* @__PURE__ */ $arkf1u792r713o7i60(values)`)
+		})
+
 		it("fromJsonSchema", () => {
 			const source = `import { fromJsonSchema } from "arktype"
 const Name = fromJsonSchema({ type: "string", minLength: 1 })

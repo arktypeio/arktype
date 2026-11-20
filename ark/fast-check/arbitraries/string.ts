@@ -9,7 +9,10 @@ export const buildStringArbitrary = (
 	if (node.is("domain")) return fc.string()
 	const stringConstraints = getFastCheckStringConstraints(node.preStruct)
 	if ("pattern" in stringConstraints) {
-		if (stringConstraints.minLength || stringConstraints.maxLength)
+		if (
+			stringConstraints.minLength !== undefined ||
+			stringConstraints.maxLength !== undefined
+		)
 			throwInternalError("Bounded regex is not supported.")
 		return fc.stringMatching(
 			new RegExp(stringConstraints.pattern, stringConstraints.flags)

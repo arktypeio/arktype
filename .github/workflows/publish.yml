@@ -11,6 +11,10 @@ on:
 # dependency tree, so it must not hold a write token or an OIDC token
 permissions: {}
 
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
 jobs:
   # a prerelease (an arktype version like X.Y.Z-beta.0) publishes under next,
   # and its docs are served at arktype.io/<major> beside the stable docs, which

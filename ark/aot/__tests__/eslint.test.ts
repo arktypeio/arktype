@@ -2,7 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { configs } from "@ark/aot/eslint"
 import { Linter } from "eslint"
-import { readFileSync, utimesSync, writeFileSync } from "node:fs"
+import { readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { tempDir, writeFixture } from "./utils.ts"
 
@@ -153,6 +153,36 @@ configure({ predicate: { description: () => "satisfying a predicate" } })
 `
 		)
 		attest(lint(code, { config }, join(dir, "linted.js"), dir)).equals([])
+	}).timeout(60_000)
+
+	it("applies each change to ark.json, and its removal", () => {
+		const dir = writeFixture({
+			"package.json": "{}",
+			"ark.json": "{}",
+			"main.ts": ""
+		})
+		const code = `import { type } from "arktype"\nexport const A = type("string & number")`
+		const ark = join(dir, "ark.json")
+		// whether the unsatisfiable type fails the build, as only a build without
+		// allowUnsafe suggests setting it
+		const isRefused = () =>
+			lint(code, {}, join(dir, "main.ts"), dir).some(message =>
+				message.includes("set allowUnsafe: true")
+			)
+		const write = (settings: string) => writeFileSync(ark, settings)
+		// the same size as it, so only its content tells them apart
+		const allowUnsafe = '{ "precompile": { "allowUnsafe": true } }'
+		const refuseUnsafe = '{ "precompile": { "allowUnsafe":false } }'
+		const trail = [isRefused()]
+		write(allowUnsafe)
+		trail.push(isRefused())
+		write(refuseUnsafe)
+		trail.push(isRefused())
+		write(allowUnsafe)
+		trail.push(isRefused())
+		rmSync(ark)
+		trail.push(isRefused())
+		attest(trail).equals([true, false, true, false, true])
 	}).timeout(60_000)
 
 	it("rereads a module once it changes", () => {

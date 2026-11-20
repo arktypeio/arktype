@@ -1,6 +1,8 @@
 import {
 	domainDescriptions,
 	domainOf,
+	hasOwn,
+	printable,
 	throwParseError,
 	type Domain as _Domain
 } from "@ark/util"
@@ -72,6 +74,11 @@ const implementation: nodeImplementationOf<Domain.Declaration> =
 export class DomainNode extends InternalBasis<Domain.Declaration> {
 	constructor(...args: ConstructorParameters<typeof InternalBasis>) {
 		super(...args)
+		if (
+			typeof this.domain !== "string" ||
+			!hasOwn(domainDescriptions, this.domain)
+		)
+			throwParseError(Domain.writeInvalidDomainMessage(this.domain))
 		if (this.domain !== "number") {
 			if (this.numberAllowsNaN !== undefined)
 				throwParseError(Domain.writeBadAllowNanMessage(this.domain))
@@ -113,7 +120,7 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 					`(${data} instanceof Object || Object(${data}) === ${data})`
 				:	`${data} !== null && (typeof ${data} === "object" || typeof ${data} === "function")`
 			: this.checksNaN && this.checksInf ? `Number.isFinite(${data})`
-			: `typeof ${data} === "${this.domain}"${
+			: `typeof ${data} === ${JSON.stringify(this.domain)}${
 					this.checksNaN ? ` && !Number.isNaN(${data})`
 					: this.checksInf ? ` && ${data} !== Infinity && ${data} !== -Infinity`
 					: ""
@@ -140,6 +147,8 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 export const Domain = {
 	impl: implementation,
 	Node: DomainNode,
+	writeInvalidDomainMessage: (actual: unknown): string =>
+		`domain must be a valid JS domain (was ${printable(actual)})`,
 	writeBadAllowNanMessage: (
 		actual: Exclude<Domain.NonEnumerable, "number">
 	): string =>

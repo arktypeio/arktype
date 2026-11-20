@@ -29,6 +29,10 @@ contextualize(() => {
 		attest(parseJson(123)?.toString()).snap("must be a string")
 
 		attest(parseJson("{")?.toString()).equals(expectedSyntaxErrorMessage)
+		attest(parseJson.meta).snap({
+			description: "a JSON string",
+			keyword: "string.json.parse"
+		})
 	})
 
 	it("string.json.parse outputs only what its out allows", () => {

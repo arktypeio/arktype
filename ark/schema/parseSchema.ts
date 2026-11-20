@@ -2,10 +2,13 @@ import {
 	builtinConstructors,
 	domainDescriptions,
 	hasDomain,
+	hasOwn,
 	isArray,
 	isEmptyObject,
 	isInstanceOf,
+	isValidDate,
 	liftArray,
+	printable,
 	throwParseError,
 	type array,
 	type BuiltinObjectKind,
@@ -26,6 +29,7 @@ import {
 	type NodeId
 } from "./parse.ts"
 import type { Predicate } from "./predicate.ts"
+import { writeInvalidRangeRuleMessage } from "./refinements/range.ts"
 import type { Domain } from "./roots/domain.ts"
 import type { Intersection } from "./roots/intersection.ts"
 import type { Morph } from "./roots/morph.ts"
@@ -230,7 +234,7 @@ const discriminateRootKind = (schema: unknown): RootKind => {
 	if (typeof schema === "string") {
 		return (
 			schema[0] === "$" ? "alias"
-			: schema in domainDescriptions ? "domain"
+			: hasOwn(domainDescriptions, schema) ? "domain"
 			: "proto"
 		)
 	}
@@ -267,7 +271,30 @@ type SchemaReader = (
 const readConstraint =
 	(kind: Constraint.PrimitiveKind): SchemaReader =>
 	schema =>
-		constraintInputOf(kind, schema)
+		constraintInputOf(
+			kind,
+			schema === null ? ({ rule: null } as never) : schema
+		)
+
+const readDateRange =
+	(kind: "before" | "after"): SchemaReader =>
+	schema => {
+		const rawRule =
+			(
+				typeof schema === "object" &&
+				schema !== null &&
+				!(schema instanceof Date)
+			) ?
+				(schema as dict).rule
+			:	schema
+		if (
+			typeof rawRule !== "string" &&
+			(typeof rawRule !== "number" || Number.isNaN(rawRule)) &&
+			!(rawRule instanceof Date)
+		)
+			throwParseError(writeInvalidRangeRuleMessage(kind, rawRule))
+		return constraintInputOf(kind, schema)
+	}
 
 const readProp = (schema: PropSchema, $: BaseScope) => ({
 	...schema,
@@ -289,13 +316,12 @@ const readers: Record<NodeKind, SchemaReader> = {
 	},
 	domain: schema => (typeof schema === "string" ? { domain: schema } : schema),
 	proto: schema =>
-		typeof schema === "string" ?
-			{ proto: builtinConstructors[schema as keyof builtinConstructors] }
+		typeof schema === "string" ? { proto: lookupBuiltinProto(schema, schema) }
 		: typeof schema === "function" ? { proto: schema }
 		: typeof schema.proto === "string" ?
 			{
 				...schema,
-				proto: builtinConstructors[schema.proto as keyof builtinConstructors]
+				proto: lookupBuiltinProto(schema.proto, schema)
 			}
 		:	schema,
 	unit: schema => schema,
@@ -399,12 +425,31 @@ const readers: Record<NodeKind, SchemaReader> = {
 	min: readConstraint("min"),
 	maxLength: readConstraint("maxLength"),
 	minLength: readConstraint("minLength"),
-	before: readConstraint("before"),
-	after: readConstraint("after"),
-	notEqual: readConstraint("notEqual"),
+	before: readDateRange("before"),
+	after: readDateRange("after"),
+	notEqual: schema => {
+		const input = constraintInputOf(
+			"notEqual",
+			schema === null ? ({ rule: null } as never) : schema
+		)
+		if (
+			(typeof input.rule !== "number" || Number.isNaN(input.rule)) &&
+			(!(input.rule instanceof Date) || !isValidDate(input.rule))
+		) {
+			throwParseError(
+				`notEqual bound must be a number or Date (was ${printable(input.rule)})`
+			)
+		}
+		return input
+	},
 	notEqualLength: readConstraint("notEqualLength"),
 	pattern: readConstraint("pattern")
 }
+
+const lookupBuiltinProto = (name: string, schema: unknown): Constructor =>
+	hasOwn(builtinConstructors, name) ?
+		builtinConstructors[name as BuiltinObjectKind]
+	:	throwParseError(writeInvalidSchemaMessage(schema))
 
 const parseConstraint = (
 	kind: ConstraintKind,

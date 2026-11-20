@@ -1,5 +1,6 @@
 import {
 	arityOf,
+	arkUtilVersion,
 	hashOf,
 	hasDomain,
 	hasOwn,
@@ -418,7 +419,10 @@ let constantNames: Map<unknown, string> | undefined
 
 const sizeOf = (root: BaseRoot): number => Object.keys(root.byId).length
 
-// arity, the set engine, exactOptionalPropertyTypes and key order affect compiling but not the hash
+// arity, the set engine, exactOptionalPropertyTypes and key order affect compiling but not the hash.
+// The version is in the key so a unit emitted by another arktype, whose
+// helpers and node layout it calls into, is never bound to a node: a key it
+// doesn't match falls back to compiling it
 const precompiledKeyOf = (root: BaseRoot): string => {
 	let childCounts = ""
 	for (const id in root.byId) {
@@ -429,7 +433,9 @@ const precompiledKeyOf = (root: BaseRoot): string => {
 	}
 	const content =
 		root.hash.includes(`"$ark.`) ? keyRegisteredNames(root) : root.hash
-	return hashOf(`${content}\n${childCounts}\n${$ark.sets !== undefined}`)
+	return hashOf(
+		`${arkUtilVersion}\n${content}\n${childCounts}\n${$ark.sets !== undefined}`
+	)
 }
 
 // registered names and minified function names vary by program

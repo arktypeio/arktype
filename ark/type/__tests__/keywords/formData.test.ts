@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { registry } from "@ark/util"
+import { hasOwn, registry } from "@ark/util"
 import { type } from "arktype"
 
 contextualize(() => {
@@ -60,5 +60,35 @@ tags[2] must be a string`)
 			toString: "a",
 			constructor: ["b", "c"]
 		})
+	})
+
+	it("__proto__ key is stored as own property without hijacking prototype", () => {
+		const strData = new FormData()
+		strData.append("__proto__", "x")
+		const strOut = type("FormData.parse").assert(strData)
+		attest(Object.getPrototypeOf(strOut)).is(Object.prototype)
+		attest(hasOwn(strOut, "__proto__")).equals(true)
+		attest(strOut.__proto__).equals("x")
+
+		strData.append("__proto__", "y")
+		const multiStrOut = type("FormData.parse").assert(strData)
+		attest(Object.getPrototypeOf(multiStrOut)).is(Object.prototype)
+		attest(hasOwn(multiStrOut, "__proto__")).equals(true)
+		attest(multiStrOut.__proto__).equals(["x", "y"])
+
+		if (process.version.startsWith("v18")) return
+		const file = new registry.FileConstructor(["x"], "x.txt")
+		const fileData = new FormData()
+		fileData.append("__proto__", file)
+		const fileOut = type("FormData.parse").assert(fileData)
+		attest(Object.getPrototypeOf(fileOut)).is(Object.prototype)
+		attest(hasOwn(fileOut, "__proto__")).equals(true)
+		attest(fileOut.__proto__).is(file)
+
+		fileData.append("__proto__", "after")
+		const mixedOut = type("FormData.parse").assert(fileData)
+		attest(Object.getPrototypeOf(mixedOut)).is(Object.prototype)
+		attest(hasOwn(mixedOut, "__proto__")).equals(true)
+		attest(mixedOut.__proto__).equals([file, "after"])
 	})
 })

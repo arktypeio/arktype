@@ -5,7 +5,7 @@ import { functionNameOf, prototypeOf } from "./facts.ts"
 import type { Fn } from "./functions.ts"
 import type { anyOrNever, satisfy, show } from "./generics.ts"
 import { tryParseNumber } from "./numbers.ts"
-import { defineProperties, isKeyOf } from "./records.ts"
+import { defineProperties, hasOwn } from "./records.ts"
 
 // ECMAScript Objects
 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
@@ -201,8 +201,9 @@ export const objectKindOf = <data extends object>(
 	const constructors = builtinsOf()
 	while (
 		prototype?.constructor &&
-		(!isKeyOf(prototype.constructor.name, constructors) ||
-			constructors[prototype.constructor.name]?.prototype !== prototype)
+		(!hasOwn(constructors, prototype.constructor.name) ||
+			constructors[prototype.constructor.name as BuiltinObjectKind]
+				?.prototype !== prototype)
 	)
 		prototype = Object.getPrototypeOf(prototype)
 
@@ -378,10 +379,10 @@ export const getBuiltinNameOfConstructor = (
 	const constructorName: string | null = functionNameOf(Object(ctor)) ?? null
 	return (
 			constructorName &&
-				isKeyOf(constructorName, builtinConstructors) &&
-				builtinConstructors[constructorName] === ctor
+				hasOwn(builtinConstructors, constructorName) &&
+				builtinConstructors[constructorName as BuiltinObjectKind] === ctor
 		) ?
-			constructorName
+			(constructorName as BuiltinObjectKind)
 		:	null
 }
 

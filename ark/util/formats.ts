@@ -6,13 +6,13 @@ const isHexCode = (code: number) =>
 	(code - 48) >>> 0 < 10 || ((code | 32) - 97) >>> 0 < 6
 
 export const uuidMatcher: RegExp =
-	/^(?:[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-[1-8][\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}|0{8}-(?:0{4}-){3}0{12}|f{8}-(?:f{4}-){3}f{12})$/
+	/^(?:[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-[1-8][\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}|0{8}-(?:0{4}-){3}0{12}|[Ff]{8}-(?:[Ff]{4}-){3}[Ff]{12})$/
 
 // uuidMatcher, its classes written out: V8 loops a class counted past 3 through a
 // register, ~23 instructions per char against ~7, where charCodeAt costs ~37
 const uuidWrittenOut =
 	// eslint-disable-next-line unicorn/better-regex
-	/^(?:[\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f]-[\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f]-[1-8][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f]-[89ABab][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f]-[\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f]|0{8}-(?:0{4}-){3}0{12}|f{8}-(?:f{4}-){3}f{12})$/
+	/^(?:[\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f]-[\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f]-[1-8][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f]-[89ABab][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f]-[\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f][\dA-Fa-f]|0{8}-(?:0{4}-){3}0{12}|[Ff]{8}-(?:[Ff]{4}-){3}[Ff]{12})$/
 
 // its length rejects most strings before the RegExp
 export const isUuid = (s: string): boolean =>

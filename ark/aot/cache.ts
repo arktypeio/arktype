@@ -18,6 +18,7 @@ import {
 	readFile,
 	type PrecompileHost
 } from "./host.ts"
+import { parsePackageManifest } from "./util.ts"
 
 // what a stored answer read, which must read the same for it to be reused
 export interface Snapshot {
@@ -60,11 +61,12 @@ const fingerprintOf = (): string => {
 	const parts = [process.version, process.platform, process.arch]
 	const roots = [rootOf(fileURLToPath(import.meta.url))]
 	for (const root of roots) {
+		const manifestPath = join(root, "package.json")
 		const { name, dependencies, peerDependencies, devDependencies } =
-			JSON.parse(readFileSync(join(root, "package.json"), "utf8"))
+			parsePackageManifest(readFileSync(manifestPath, "utf8"), manifestPath)
 		const files: string[] = []
 		collectCode(root, files)
-		parts.push(name)
+		parts.push(name ?? root)
 		for (const file of files.sort())
 			parts.push(relative(root, file), hashOf(readFileSync(file, "utf8")))
 		for (const dependency in {
@@ -81,9 +83,11 @@ const fingerprintOf = (): string => {
 	}
 	for (const name of versionedDependencies) {
 		const root = rootOf(fileURLToPath(import.meta.resolve(name)))
+		const manifestPath = join(root, "package.json")
 		parts.push(
 			name,
-			JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version
+			parsePackageManifest(readFileSync(manifestPath, "utf8"), manifestPath)
+				.version ?? ""
 		)
 	}
 	return hashOf(parts.join("\n"))

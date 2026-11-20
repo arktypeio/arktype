@@ -11,6 +11,7 @@ import {
 	type ModuleGraph
 } from "./graph.ts"
 import { dependencyOf } from "./host.ts"
+import { parsePackageManifest } from "./util.ts"
 import { SourceModule } from "./module.ts"
 import {
 	exportNameOf,
@@ -24,8 +25,13 @@ import {
 import { runtimeParamsOf } from "./proofs.ts"
 import { importsOf } from "./scan.ts"
 import {
+	globalNameOf,
 	isDead,
 	isSpan,
+	mayReadThrough,
+	thisReadsOf,
+	type ReachedModules,
+	type ThisReads,
 	type RuntimeModule,
 	type UsageProgram
 } from "./usage.ts"
@@ -42,6 +48,10 @@ export interface Held {
 	// reached through a dependency's read at a key it doesn't name, as likely
 	// any object's, so losing track past it bakes every member without a warning
 	quiet?: true
+	// held one level deeper than it may be, where .flat() or .flatMap() may
+	// have flattened the array holding it, so what holds it at anyKey may be its
+	// element rather than an array
+	unflattened?: true
 }
 
 export const validatorHeld: Held = { path: [], of: "type" }
@@ -117,6 +127,19 @@ export interface ReaderProgram extends UsageProgram {
 	equalsBake?: ((value: unknown) => boolean) | undefined
 }
 
+// every module a program's own reach through their imports, dependencies included
+export const reachedModulesOf = (
+	program: UsageProgram,
+	graph: ModuleGraph,
+	read: Map<string, SourceModule | null>
+): ReachedModules => {
+	const readers = new Readers({ ...program, whole: true }, graph, read)
+	return {
+		modules: readers.reachedModules(),
+		resolve: (specifier, importer) => readers.resolve(specifier, importer)
+	}
+}
+
 // what each validator's readers read of it, followed into its dependencies
 export const readingsOf = (
 	program: ReaderProgram,
@@ -150,6 +173,8 @@ interface Entry {
 	module: SourceModule
 	// e.g. anyKey for a map() callback, whose returns its call holds at an index
 	wrap: readonly Key[]
+	// a flatMap() callback, whose returned array its call flattens by one level
+	flattens?: true
 }
 
 type Located<node extends Node = Node> = { node: node; module: SourceModule }
@@ -165,7 +190,7 @@ const shapeKeyOf = (held: Held): string =>
 	`${held.of}:${held.path.map(k => (k === anyKey ? "*" : JSON.stringify(k))).join(".")}`
 
 const heldKeyOf = (held: Held): string =>
-	`${held.quiet ? "?" : ""}${shapeKeyOf(held)}`
+	`${held.quiet ? "?" : ""}${held.unflattened ? "^" : ""}${shapeKeyOf(held)}`
 
 // the program's modules, read once for every validator
 class Readers {
@@ -176,7 +201,13 @@ class Readers {
 	private runtimesByModule = new Map<SourceModule, RuntimeModule>()
 	private importersById: Map<string, ImportEdge[]> | undefined
 	private fieldReads: Map<Key, Located[]> | undefined
-	private dependenciesByRoot = new Map<string, ReadonlySet<string>>()
+	private reached: readonly SourceModule[] | undefined
+	private reads: ThisReads | undefined
+	// undefined where a manifest doesn't parse, so it may read anything
+	private dependenciesByRoot = new Map<
+		string,
+		ReadonlySet<string> | undefined
+	>()
 
 	constructor(
 		program: ReaderProgram,
@@ -228,21 +259,30 @@ class Readers {
 		if (!dependency) return true
 		const [root, name] = dependency
 		if (name === owner) return true
-		let dependsOn = this.dependenciesByRoot.get(root)
-		if (!dependsOn) {
-			const manifest = this.graph.host.readFile(join(root, "package.json"))
-			const { dependencies, peerDependencies, optionalDependencies } =
-				manifest === undefined ? {} : JSON.parse(manifest)
-			dependsOn = new Set(
-				Object.keys({
-					...dependencies,
-					...peerDependencies,
-					...optionalDependencies
-				})
-			)
-			this.dependenciesByRoot.set(root, dependsOn)
+		if (!this.dependenciesByRoot.has(root)) {
+			const manifestPath = join(root, "package.json")
+			const manifest = this.graph.host.readFile(manifestPath)
+			let manifestDependencies: ReadonlySet<string> | undefined
+			try {
+				const { dependencies, peerDependencies, optionalDependencies } =
+					manifest === undefined ?
+						{}
+					:	parsePackageManifest(manifest, manifestPath)
+				manifestDependencies = new Set(
+					Object.keys({
+						...dependencies,
+						...peerDependencies,
+						...optionalDependencies
+					})
+				)
+			} catch {
+				// an unparseable manifest may declare any dependency, so what the
+				// package reads can't be ruled out
+			}
+			this.dependenciesByRoot.set(root, manifestDependencies)
 		}
-		return dependsOn.has(owner)
+		const dependsOn = this.dependenciesByRoot.get(root)
+		return dependsOn === undefined || dependsOn.has(owner)
 	}
 
 	importersOf(id: string): ImportEdge[] {
@@ -346,12 +386,7 @@ class Readers {
 			if (reads) reads.push(located)
 			else result.set(key, [located])
 		}
-		const pending = [...this.program.modules.values()].map(
-			runtime => runtime.module
-		)
-		const seen = new Set(pending)
-		for (let i = 0; i < pending.length; i++) {
-			const module = pending[i]
+		for (const module of this.reachedModules()) {
 			const runtime = this.runtimesByModule.get(module)
 			walk(module.program, node => {
 				if (runtime && isDead(node, runtime)) return false
@@ -379,6 +414,19 @@ class Readers {
 					add(anyKey, { node, module })
 				return true
 			})
+		}
+		return result
+	}
+
+	// every module the program's own reach through their imports, read from disk
+	reachedModules(): readonly SourceModule[] {
+		if (this.reached) return this.reached
+		const pending = [...this.program.modules.values()].map(
+			runtime => runtime.module
+		)
+		const seen = new Set(pending)
+		for (let i = 0; i < pending.length; i++) {
+			const module = pending[i]
 			for (const [specifier] of importsOf(module.id, module.source).imports) {
 				const target = this.resolve(specifier, module)
 				if (target && !seen.has(target)) {
@@ -387,7 +435,23 @@ class Readers {
 				}
 			}
 		}
-		return result
+		return (this.reached = pending)
+	}
+
+	// whether code the program reaches patches a builtin prototype, as
+	// `Array.prototype.first = …`, which may add a method that returns the
+	// elements or receiver of what it's called on
+	get patchesBuiltins(): boolean {
+		return this.thisReads.patchesBuiltins
+	}
+
+	// what functions no class binds read off their `this`, anywhere the program reaches
+	get thisReads(): ThisReads {
+		return (this.reads ??= thisReadsOf(this.reachedModules(), {
+			entries: this.program.entries,
+			exposed: this.program.exposed,
+			resolve: (specifier, importer) => this.resolve(specifier, importer)
+		}))
 	}
 }
 
@@ -861,8 +925,18 @@ class Follow {
 				if (parent.init === operand) this.bindPattern(parent.id, module, held)
 				return
 			case "AssignmentPattern":
-				if (parent.right === operand)
+				if (parent.right === operand) {
 					this.bindPattern(parent.left, module, held)
+					// `constructor(private schema = T)` also stores it at this.schema
+					if (parent.parent?.type === "TSParameterProperty") {
+						this.followField(
+							parent.left.type === "Identifier" ? parent.left.name : undefined,
+							parent,
+							module,
+							held
+						)
+					}
+				}
 				return
 			case "Property":
 				if (parent.key === operand) {
@@ -878,9 +952,27 @@ class Follow {
 					)
 				}
 				if (parent.kind !== "init") return lose("passes it to an accessor")
+				const key =
+					propertyKeyOf(parent) ??
+					(parent.computed ? constantOf(parent.key, module) : undefined)
+				if (key === "__proto__")
+					return lose("sets it as a prototype, which inherits its members")
+				// a method reads the object it's a member of as this, which no
+				// reference to the object shows, so any read at its key may find it
+				if (
+					key !== undefined &&
+					mayReadThrough(
+						key,
+						parent.parent,
+						module,
+						this.readers.thisReads,
+						!held.path.length
+					)
+				)
+					this.followField(key, parent, module, held)
 				return push(parent.parent, {
 					...held,
-					path: [propertyKeyOf(parent) ?? anyKey, ...held.path]
+					path: [key ?? anyKey, ...held.path]
 				})
 			case "ArrayExpression":
 				return push(parent, { ...held, path: [anyKey, ...held.path] })
@@ -903,6 +995,9 @@ class Follow {
 				if (parent.tag !== operand) return
 				return
 			case "TemplateLiteral":
+				// a tag is passed each expression as it is, not as a string
+				if (parent.parent?.type === "TaggedTemplateExpression")
+					return lose("passes it to a template tag")
 				return this.convert(held, parent, module)
 			case "BinaryExpression":
 				// `k in T` reads whether it has k
@@ -985,6 +1080,15 @@ class Follow {
 		}
 		if (isCommonJsExports(owner, memberNameOf(target)))
 			return this.lose(target, module, "exports it from CommonJS")
+		// `o.__proto__ = T` makes o inherit T's members, which no read of a key
+		// shows, though `o.__proto__ = { schema: T }` holds it at a key to follow
+		if (memberNameOf(target) === "__proto__" && !held.path.length) {
+			return this.lose(
+				target,
+				module,
+				"sets it as a prototype, which inherits its members"
+			)
+		}
 		this.followField(memberNameOf(target), target, module, held)
 	}
 
@@ -1091,16 +1195,52 @@ class Follow {
 			call.callee === method
 		)
 			return this.callback(call, module, held, [])
+		const [first, ...rest] = held.path
+		const called =
+			(
+				(call?.type === "CallExpression" && call.callee === method) ||
+				(call?.type === "TaggedTemplateExpression" && call.tag === method)
+			) ?
+				call
+			:	undefined
+		// returns its receiver, whatever it holds
+		if (called && key === "valueOf" && first !== key)
+			return this.push(called, module, held)
 		if (held.path.length) {
-			const [first, ...rest] = held.path
 			if (
-				call?.type === "CallExpression" &&
-				call.callee === method &&
+				called?.type === "CallExpression" &&
 				key !== undefined &&
 				first === anyKey &&
 				key in arrayMethods
 			)
-				return this.arrayMethod(key, call, module, held)
+				return this.arrayMethod(key, called, module, held)
+			// a method the build doesn't model may return the elements or receiver it
+			// holds, as a builtin's, a computed call (which may be "valueOf"), or one
+			// the program patches onto a builtin prototype. On an array, any method
+			// `arrayMethod` doesn't model loses, since the patch can be reached in
+			// more ways than `patchesBuiltins` can enumerate (`const Arr = Array`,
+			// `[].constructor.prototype`, ...)
+			if (
+				called &&
+				(key === undefined ||
+					(first === anyKey ?
+						!held.unflattened ||
+						key in Array.prototype ||
+						key in Object.prototype ||
+						this.readers.patchesBuiltins
+					:	first !== key && this.readers.patchesBuiltins))
+			) {
+				return this.lose(
+					member,
+					module,
+					`calls ${
+						key !== undefined ? `.${key}`
+						: member.computed && isSymbolRead(member.property) ?
+							".[Symbol.iterator]"
+						:	"a computed key"
+					} on what holds it`
+				)
+			}
 			if (key === undefined || first === anyKey || first === key)
 				this.push(member, module, { ...held, path: rest })
 			return
@@ -1118,6 +1258,25 @@ class Follow {
 	): void {
 		const element: Held = { ...held, path: held.path.slice(1) }
 		const returns = arrayMethods[name]
+		if (returns === "unfollowed")
+			return this.lose(call, module, `reduces it with .${name}`)
+		if (returns === "flat") {
+			// flattens each leading array of its elements, to any depth, where one
+			// flattened fewer times than the call's depth may be held deeper than it is
+			const depth = flatDepthOf(call)
+			for (let i = 0; i <= held.path.length; i++) {
+				const path = held.path.slice(i)
+				this.push(
+					call,
+					module,
+					path[0] === anyKey && i < depth ?
+						{ ...held, path, unflattened: true }
+					:	{ ...held, path }
+				)
+				if (held.path[i] !== anyKey) break
+			}
+			return
+		}
 		if (returns === "holder") this.push(call, module, held)
 		else if (returns === "element") this.push(call, module, element)
 		this.callback(
@@ -1125,8 +1284,13 @@ class Follow {
 			module,
 			element,
 			returns === "mapped" ? [anyKey] : undefined,
-			name === "reduce" ? 1 : 0
+			0,
+			name === "flatMap"
 		)
+		// flatMap flattens what its callback returns by one level, so a callback
+		// returning an element rather than an array of them holds it at the same
+		// depth
+		if (name === "flatMap") this.callback(call, module, element, [], 0)
 	}
 
 	// a callback passed what its call reads, whose returns the call holds at wrap
@@ -1135,7 +1299,8 @@ class Follow {
 		module: SourceModule,
 		held: Held,
 		wrap: readonly Key[] | undefined,
-		index = 0
+		index = 0,
+		flattens = false
 	): void {
 		const [callback] = call.arguments
 		if (!callback || callback.type === "SpreadElement") return
@@ -1149,7 +1314,12 @@ class Follow {
 		}
 		const param = runtimeParamsOf(value.fn)[index]
 		if (param) this.bindPattern(param, value.module, held)
-		if (wrap) this.addEntry(value.fn, { call, module, wrap })
+		if (wrap) {
+			this.addEntry(
+				value.fn,
+				flattens ? { call, module, wrap, flattens } : { call, module, wrap }
+			)
+		}
 	}
 
 	// passed as an argument
@@ -1205,7 +1375,7 @@ class Follow {
 		if (entries) entries.push(entry)
 		else this.entries.set(fn, [entry])
 		for (const held of this.returned.get(fn)?.values() ?? [])
-			this.push(entry.call, entry.module, wrapped(held, entry.wrap))
+			this.push(entry.call, entry.module, entryHeldOf(held, entry))
 	}
 
 	private returnFrom(
@@ -1249,7 +1419,7 @@ class Follow {
 			)
 		}
 		for (const entry of entries)
-			this.push(entry.call, entry.module, wrapped(held, entry.wrap))
+			this.push(entry.call, entry.module, entryHeldOf(held, entry))
 	}
 
 	// the calls of a function passed as a callback or held by a const, where each is seen
@@ -1271,9 +1441,13 @@ class Follow {
 		if (name === "then" || name === "catch" || name === "finally")
 			return [{ call: parent, module, wrap: [] }]
 		if (typeof name === "string" && name in arrayMethods) {
-			return arrayMethods[name] === "mapped" ?
+			return (
+				name === "flatMap" ?
+					[{ call: parent, module, wrap: [anyKey], flattens: true }]
+				: arrayMethods[name] === "mapped" ?
 					[{ call: parent, module, wrap: [anyKey] }]
 				:	[]
+			)
 		}
 		const value = this.valueOf(callee, module)
 		if (value?.kind !== "function") return
@@ -1362,6 +1536,28 @@ class Follow {
 				return
 			case "RestElement":
 				return this.bindPattern(pattern.argument, module, held)
+			// `constructor(readonly schema: T)` also stores it at this.schema
+			case "TSParameterProperty": {
+				const { parameter } = pattern
+				const target =
+					parameter.type === "AssignmentPattern" ? parameter.left : parameter
+				this.bindPattern(parameter, module, held)
+				return this.followField(
+					target.type === "Identifier" ? target.name : undefined,
+					pattern,
+					module,
+					held
+				)
+			}
+			// e.g. the `{}` of `Object.assign({}, held)`, read only as the call's result
+			case "ObjectExpression":
+				return
+			default:
+				return this.lose(
+					pattern,
+					module,
+					"binds it in a pattern the build can't follow"
+				)
 		}
 	}
 
@@ -1568,8 +1764,16 @@ class Follow {
 				return true
 			}
 			// descriptors or entries, which store it at a key the build doesn't follow
-			case "Object.defineProperties":
 			case "Object.create":
+				// the prototype's members are read off what inherits them
+				if (index === 0) {
+					if (isValue) this.lose(call, module, "inherits its members")
+					else this.push(call, module, held)
+					return true
+				}
+				this.lose(call, module, "stores it at a key the build can't name")
+				return true
+			case "Object.defineProperties":
 			case "Object.fromEntries":
 				if (index === (name === "Object.fromEntries" ? 0 : 1))
 					this.lose(call, module, "stores it at a key the build can't name")
@@ -1577,8 +1781,20 @@ class Follow {
 			case "Object.freeze":
 			case "Object.seal":
 			case "Promise.resolve":
-			case "Array.from":
 				if (index === 0) this.push(call, module, held)
+				return true
+			case "Array.from":
+				if (index === 0) {
+					this.push(call, module, held)
+					// a map function is passed each element
+					if (call.arguments[1] && !isValue) {
+						this.lose(
+							call,
+							module,
+							"maps it with a function the build can't follow"
+						)
+					}
+				}
 				return true
 			case "Object.values":
 			case "Object.entries":
@@ -1934,33 +2150,56 @@ const exits = (statement: Node): boolean => {
 const wrapped = (held: Held, wrap: readonly Key[]): Held =>
 	wrap.length ? { ...held, path: [...wrap, ...held.path] } : held
 
+// .flat()'s depth, 1 by default, or any where the build can't name it
+const flatDepthOf = (
+	call: Extract<Node, { type: "CallExpression" }>
+): number => {
+	const [arg] = call.arguments
+	if (!arg) return 1
+	const depth = unwrapExpression(arg)
+	return depth.type === "Literal" && typeof depth.value === "number" ?
+			depth.value
+		:	Infinity
+}
+
+// a flatMap() callback returning an array holds it one level shallower than
+// its wrap, as the same call's entry without one does
+const entryHeldOf = (held: Held, entry: Entry): Held =>
+	entry.flattens && held.path[0] === anyKey ?
+		{ ...wrapped(held, entry.wrap), unflattened: true }
+	:	wrapped(held, entry.wrap)
+
 // what each array method returns of its receiver: itself, an element or what its callback maps
-const arrayMethods: Record<string, "holder" | "element" | "mapped" | "none"> =
-	Object.assign(Object.create(null), {
-		filter: "holder",
-		slice: "holder",
-		concat: "holder",
-		reverse: "holder",
-		sort: "holder",
-		toSorted: "holder",
-		toReversed: "holder",
-		find: "element",
-		findLast: "element",
-		at: "element",
-		pop: "element",
-		shift: "element",
-		map: "mapped",
-		flatMap: "mapped",
-		forEach: "none",
-		some: "none",
-		every: "none",
-		findIndex: "none",
-		findLastIndex: "none",
-		includes: "none",
-		indexOf: "none",
-		reduce: "none",
-		join: "none"
-	})
+const arrayMethods: Record<
+	string,
+	"holder" | "element" | "mapped" | "none" | "flat" | "unfollowed"
+> = Object.assign(Object.create(null), {
+	filter: "holder",
+	slice: "holder",
+	concat: "holder",
+	reverse: "holder",
+	sort: "holder",
+	toSorted: "holder",
+	toReversed: "holder",
+	find: "element",
+	findLast: "element",
+	at: "element",
+	pop: "element",
+	shift: "element",
+	map: "mapped",
+	flatMap: "mapped",
+	forEach: "none",
+	some: "none",
+	every: "none",
+	findIndex: "none",
+	findLastIndex: "none",
+	includes: "none",
+	indexOf: "none",
+	reduce: "unfollowed",
+	reduceRight: "unfollowed",
+	flat: "flat",
+	join: "none"
+})
 
 // e.g. `JSON.stringify`, where no binding shadows the global
 const globalObjects = new Set(["globalThis", "window", "self", "global"])
@@ -1971,23 +2210,6 @@ const isCommonJsExports = (owner: string | undefined, name?: unknown) =>
 	owner === "exports" ||
 	owner === "module.exports" ||
 	(owner === "module" && name === "exports")
-
-const globalNameOf = (
-	callee: Node,
-	module: SourceModule
-): string | undefined => {
-	const root =
-		callee.type === "MemberExpression" ?
-			unwrapExpression(callee.object)
-		:	callee
-	if (root.type !== "Identifier" || module.scopes.byId.get(root)?.binding)
-		return
-	if (callee.type === "Identifier") return callee.name
-	const name = memberNameOf(
-		callee as Extract<Node, { type: "MemberExpression" }>
-	)
-	return typeof name === "string" ? `${root.name}.${name}` : undefined
-}
 
 // e.g. `T.toJsonSchema()`, rather than called with options or read to call later
 const isCalledBare = (read: Node): boolean => {
@@ -2230,3 +2452,9 @@ const isPrimitiveLiteral = (node: Node, module: SourceModule): boolean => {
 			!module.scopes.byId.get(expression)?.binding)
 	)
 }
+
+// e.g. the `[Symbol.iterator]` of `x[Symbol.iterator]()`
+const isSymbolRead = (property: Node): boolean =>
+	property.type === "MemberExpression" &&
+	property.object.type === "Identifier" &&
+	property.object.name === "Symbol"

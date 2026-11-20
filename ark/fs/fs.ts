@@ -10,7 +10,7 @@ import {
 	writeFileSync
 } from "node:fs"
 import { homedir } from "node:os"
-import { dirname, join, parse } from "node:path"
+import { dirname, join, parse, resolve } from "node:path"
 import * as process from "node:process"
 import { URL, fileURLToPath } from "node:url"
 import { caller } from "./caller.ts"
@@ -66,24 +66,29 @@ export type WalkOptions = {
 	include?: (path: string) => boolean
 }
 
-export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
-	readdirSync(dir).reduce((paths: string[], item: string) => {
-		const path = join(dir, item)
-		const isDir = lstatSync(path).isDirectory()
-		const isFile = lstatSync(path).isFile()
-		if (isDir && options.ignoreDirsMatching?.test(path)) return paths
+export const walkPaths = (dir: string, options: WalkOptions = {}): string[] => {
+	const walk = (currentDir: string, relPrefix: string): string[] =>
+		readdirSync(currentDir).reduce((paths: string[], item: string) => {
+			const path = join(currentDir, item)
+			const relPath = relPrefix ? join(relPrefix, item) : item
+			const stat = lstatSync(path)
+			const isDir = stat.isDirectory()
+			const isFile = stat.isFile()
+			if (isDir && options.ignoreDirsMatching?.test(relPath)) return paths
 
-		if (isFile && options.ignoreFilesMatching?.test(path)) return paths
+			if (isFile && options.ignoreFilesMatching?.test(path)) return paths
 
-		const excludeCurrent =
-			(options.excludeDirs && isDir) ||
-			(options.excludeFiles && !isDir) ||
-			options.exclude?.(path) ||
-			(options.include && !options.include(path))
-		const nestedPaths = isDir ? walkPaths(path, options) : []
-		paths.push(...(excludeCurrent ? [] : [path]), ...nestedPaths)
-		return paths
-	}, [])
+			const excludeCurrent =
+				(options.excludeDirs && isDir) ||
+				(options.excludeFiles && !isDir) ||
+				options.exclude?.(path) ||
+				(options.include && !options.include(path))
+			const nestedPaths = isDir ? walk(path, relPath) : []
+			paths.push(...(excludeCurrent ? [] : [path]), ...nestedPaths)
+			return paths
+		}, [])
+	return walk(dir, "")
+}
 
 /** Fetch the file and directory paths from a path, uri, or `import.meta.url` */
 export const filePath = (path: string): string => {
@@ -122,8 +127,9 @@ export const fsRoot: string = parse(process.cwd()).root
 
 export const findPackageRoot = (fromDir?: string): string | null => {
 	const startDir = fromDir ?? dirOfCaller()
-	let dirToCheck = startDir
-	while (dirToCheck !== fsRoot) {
+	let dirToCheck = resolve(startDir)
+	let previousDir: string | undefined
+	while (dirToCheck !== previousDir) {
 		try {
 			const contents = readJson(join(dirToCheck, "package.json"))
 			/*
@@ -134,14 +140,15 @@ export const findPackageRoot = (fromDir?: string): string | null => {
 		} catch {
 			// If the file doesn't exist, go up another level
 		}
-		dirToCheck = join(dirToCheck, "..")
+		previousDir = dirToCheck
+		dirToCheck = dirname(dirToCheck)
 	}
 	return null
 }
 
 export const assertPackageRoot = (fromDir?: string): string => {
 	const startDir = fromDir ?? dirOfCaller()
-	const result = findPackageRoot(fromDir)
+	const result = findPackageRoot(startDir)
 	if (result) return result
 
 	throw new Error(`${startDir} is not part of a node package.`)
@@ -156,7 +163,8 @@ export const findPackageAncestors = (fromDir?: string): string[] => {
 		dir = findPackageRoot(dir)
 		if (dir) {
 			dirs.push(dir)
-			dir = join(dir, "..")
+			const parent = dirname(dir)
+			dir = parent === dir ? null : parent
 		}
 	}
 
@@ -182,7 +190,7 @@ export const tsFileMatcher: RegExp = /^.*\.(c|m)?tsx?$/
 
 const inFileFilter: WalkOptions = {
 	include: path => tsFileMatcher.test(path),
-	ignoreDirsMatching: /node_modules|out|dist|docgen/
+	ignoreDirsMatching: /(?:^|[/\\])(?:node_modules|out|dist|docgen)(?:[/\\]|$)/
 }
 
 export const getSourceFilePaths = (dir = "."): string[] =>

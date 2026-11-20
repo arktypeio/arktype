@@ -8,6 +8,38 @@ export const throwError: (message: string) => never = message => {
 	throw new Error(message)
 }
 
+const fileErrors = new WeakSet<Error>()
+
+export const isFileError = (e: unknown): e is Error =>
+	e instanceof Error && fileErrors.has(e)
+
+export const parseJsonText = (text: string, path: string): unknown => {
+	try {
+		return JSON.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text)
+	} catch (e) {
+		const error = new Error(`${path} isn't JSON: ${(e as Error).message}`)
+		fileErrors.add(error)
+		throw error
+	}
+}
+
+// the package.json fields @ark/aot reads
+export type PackageManifest = {
+	name?: string
+	version?: string
+	arkAotVersion?: string
+	dependencies?: Record<string, string>
+	devDependencies?: Record<string, string>
+	peerDependencies?: Record<string, string>
+	optionalDependencies?: Record<string, string>
+	ark?: { aot?: unknown }
+}
+
+export const parsePackageManifest = (
+	text: string,
+	path: string
+): PackageManifest => parseJsonText(text, path) as PackageManifest
+
 export const hasOwn = (o: object, k: PropertyKey): boolean =>
 	Object.prototype.hasOwnProperty.call(o, k)
 

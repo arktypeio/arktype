@@ -542,7 +542,7 @@ It reads the nearest `tsconfig.json`, or the one `--tsconfig` names, and the tsc
 
 Dependencies are left to Node, so one that imports `arktype` loads it beside the runtime rather than failing the build. That includes one that [opts in](https://arktype.io/docs/precompile/advanced#libraries), whose Types are arktype's at runtime, so a definition reading one of them fails the build, naming the fix. `errors: "none"` and `optimizeErrors: "size"`, which `preset: "smallest"` sets, need a copy of `arktype/schema/runtime` that only a bundler or the Node driver can load in place of the one `arktype/runtime` imports, so `--emit` refuses them. A library publishes what `tsc` emits without `--emit`, and [opts in](https://arktype.io/docs/precompile/advanced#libraries) so its consumers' builds precompile it.
 
-`--emit --declare` also writes [declarations](https://arktype.io/docs/precompile/advanced#declarations) as `--declare` does.
+`--emit --declare` also writes [declarations](https://arktype.io/docs/precompile/advanced#declarations) as `--declare` does. `--emit` reads the compiler API of TypeScript 5.5 to 6, so in a TypeScript 7 project, install TypeScript 6 beside it: `npm i -D typescript-6@npm:typescript@6` (which `--declare` also reads before TypeScript 7.1).
 
 ## Bun
 
@@ -597,7 +597,7 @@ Metro has no plugin: it caches each module by its own text, so a module whose va
 }
 ```
 
-- Leave `declaration` unset and let `--declare` write the declarations. `tsc` can't write one for a [cyclic](https://arktype.io/docs/scopes#cyclic-types) scope, and fails with `TS5088`, where `--declare` names each cycle.
+- Leave `declaration` unset and let `--declare` write the declarations. `tsc` can't write one for a [cyclic](https://arktype.io/docs/scopes#cyclic-types) scope, and fails with `TS5088`, where `--declare` names each cycle. Under TypeScript 7, install `typescript-6@npm:typescript@6` beside it [as above](https://arktype.io/docs/precompile/setup#tsc).
 - Import the package's own modules with their `.ts` extensions, which `rewriteRelativeImportExtensions` writes as `.js` in `out`. Metro reads those imports from either, but it doesn't resolve a `.js` import to the `.ts` file beside it.
 - Each emitted module imports `arktype/runtime`, which Metro resolves through arktype's `exports`. That's on by default in Metro 0.87, and set by `resolver.unstable_enablePackageExports` in earlier versions. Install `arktype` where the package resolves it, as a dependency of the package, and let a monorepo's `watchFolders` include the package and `arktype`.
 - Rebuild the package as you edit a Type. A Metro dev server bundles the next request from the new `out`, since each emitted module holds the validators of the Types it imports in its own text.
@@ -698,7 +698,7 @@ In a [production bundle](https://arktype.io/docs/precompile/options#prune), a na
 
 ## What a validator has
 
-Besides being called, a validator has `allows()`, and by default `assert()`, `meta`, `~standard`, `traverse()`, `from()` and `toString()`. `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` are baked as arktype returns them, each into the validators the build sees code read it off, its dependencies' included, so the MCP SDK, the AI SDK, Elysia's OpenAPI plugin, hono-openapi and oRPC's converter get a JSON Schema with nothing to set. The [`members`](https://arktype.io/docs/precompile/options#members) option bakes one into every validator or none instead, and says how the build decides. A read the build sees in the program, like `User.expression`, is replaced by its value either way. Reading one a validator lacks reads `undefined`, and where `arktype/runtime` resolves under the [`"development"` condition](https://arktype.io/docs/precompile/validators#errors), throws instead, naming the member and the setting.
+Besides being called, a validator has `allows()`, and by default `assert()`, `meta`, `~standard`, `traverse()`, `from()` and `toString()`. `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` are baked as arktype returns them, each into the validators the build sees code read it off, its dependencies' included, so the MCP SDK, the AI SDK, Elysia's OpenAPI plugin, hono-openapi and oRPC's converter get a JSON Schema with nothing to set. The [`members`](https://arktype.io/docs/precompile/options#members) option bakes one into every validator or none instead, and says how the build decides. A read the build sees in the program, like `User.expression`, is replaced by its value either way. Reading one a validator lacks reads `undefined`, and where `arktype/runtime` resolves under the [`"development"` condition](https://arktype.io/docs/precompile/validators#errors), also warns, naming the member and the setting.
 
 It lacks the methods that compose or relate a Type, like `.and`, `.or`, `.in` or `.extends`. The build fails where it sees one read outside a definition it precompiles, including off a value it lost track of after a Type reached it, and, once for each import, off an import it can't resolve:
 
@@ -724,7 +724,7 @@ A validator returns errors of its own, instances of `type.errors` and of `arktyp
 - An issue has no `actual` or `propString`. Neither a validator's message nor arktype's writes what a value was unless `actual` is configured or passed to `ctx.reject`, but a missing key's message says `(was missing)` in both. A `message` writer you configure reads `actual`, the data's description, as in arktype.
 - An issue a `pipe.try` morph raises by throwing says what was thrown, as arktype's does, but has no `morph` or `cause`.
 - A validator a morph calls with its `ctx` adds its issues to that validation.
-- `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatMessagesByPath`, `byAncestorPath` or `messageIn`, and the errors have no `summaryIn`.
+- `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatMessagesByPath`, `byAncestorPath` or `messageIn`, and calls to any of them fail the build; `summaryIn()` returns `summary`, while passing a locale fails the build and requires a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands).
 - [`firstIssue(out)`](https://arktype.io/docs/errors#finding-only-the-first) finds only the first issue of errors that haven't found theirs, stopping where the data first fails.
 - A `message`, `expected` or `actual` configured for a code or on a Type is written as arktype writes it. A build configured with what a validator can't write, like a locale, [fails with its fix](https://arktype.io/docs/precompile/options#configuration).
 - They aren't instances of `arktype/schema`'s `ArkErrors`, so the build fails where a module imports that one.
@@ -749,7 +749,7 @@ To leave only some definitions to arktype in a standalone build, mark them as [r
 - The build doesn't see a Type reach a value through `arguments`, a generator, `Reflect.get`, `import()` or a namespace read at a runtime key, nor a direct `eval` or `with` changing a binding a definition reads. A Type it never sees reach a value is missed: calling a member it lacks throws, and reading one reads `undefined`.
 - The build fails where it sees a Type's keys listed, as by `Object.keys(User)`, `for...in` or a spread, since a validator's differ. Where it can't tell a Type reaches the value, as through `await`, `import()` or a `Proxy`, the keys listed are the validator's.
 - A module importing neither arktype nor a module exporting a Type isn't checked, so a member one of its functions reads off a Type passed to it is missed. Annotating the parameter with arktype's `Type` has the build check it.
-- Inside a function the build can't see every call to, like an exported function, a method or a callback, reading `expression`, `description`, `json`, `toJSON()` or `toJsonSchema()` off a parameter isn't checked, since it's usually some other object's. Passed a Type, such a read reads the member the build bakes where it follows the Type there, and where it doesn't, reads `undefined`, or throws in development. Annotate the parameter with arktype's `Type` so the build checks it, or mark the Type's definition as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands). The same goes for a field an exported class's constructor sets from a parameter, read off an instance, and for a Vue template reading a Type that `setup()` or `data()` exposes from a `<script lang="ts">` block; script setup and a plain `<script>` are checked.
+- Inside a function the build can't see every call to, like an exported function, a method or a callback, reading `expression`, `description`, `json`, `toJSON()` or `toJsonSchema()` off a parameter isn't checked, since it's usually some other object's. Passed a Type, such a read reads the member the build bakes where it follows the Type there, and where it doesn't, reads `undefined`, and warns in development. Annotate the parameter with arktype's `Type` so the build checks it, or mark the Type's definition as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands). The same goes for a field an exported class's constructor sets from a parameter, read off an instance, and for a Vue template reading a Type that `setup()` or `data()` exposes from a `<script lang="ts">` block; script setup and a plain `<script>` are checked.
 - A definition whose branches arktype orders by the names of the functions they hold, like `type.instanceOf(Cat).or(type.instanceOf(Dog))`, is reported, since a minifier can rename them.
 - A definition holding a function a parameter holds, or resolving a Scope alias a thunk defines whose Type holds one, is reported. Mark it as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands).
 - A definition holding a Standard Schema that isn't a Type, like a Zod schema, is reported. Define the schema with ArkType, or mark the definition as a [runtime island](https://arktype.io/docs/precompile/advanced#runtime-islands).
@@ -1052,7 +1052,7 @@ prune: keeping assert, meta, ~standard, methods and withContext, because src/ind
 
 Setting each in `members` clears it, as the build then has no member left to decide. Where `NODE_ENV` is `production`, `arktype-precompile --check` prints the same warning for a bundle of the files it checks, but tests, stories and configs. It follows relative imports of scripts alone and reads no file as an entry, so it misses what an alias, a virtual module, a component or an entry's exports lead to.
 
-Vite, Rollup, Rolldown, esbuild, webpack and Rspack bundles and `next build` with Turbopack prune, esbuild only where this plugin is the last, so no plugin loads a module after it reads it. `prune: true` also prunes a Rollup, Rolldown, esbuild, webpack or Rspack bundle that isn't for production, which the build can't tell. The Node and Bun drivers and `arktype-precompile` build every validator whole, and fail with `prune: true`, set in their options or `ark.json`, as does an esbuild build where a plugin follows this one. `next dev` builds them whole under any setting.
+Vite, Rollup, Rolldown, esbuild, webpack and Rspack bundles and `next build` with Turbopack prune, esbuild only where this plugin is the last, so no plugin loads a module after it reads it. `prune: true` also prunes a Rollup, Rolldown, esbuild, webpack or Rspack bundle that isn't for production, which the build can't tell. The Node and Bun drivers and `arktype-precompile --emit` build every validator whole, and fail with `prune: true`, set in their options or `ark.json`, as does an esbuild build where a plugin follows this one. `next dev` builds them whole under any setting.
 
 A Vite, Rollup or Rolldown build reads each module from its file, then reads the bundle again as it was built, each module as the plugins ahead of this one wrote it and as the transforms after this one's left it, and fails only where the built bundle reads what it left out, a member or more of a call's errors, naming the read. A plugin that rewrites a module without adding a read, like a Babel plugin or TanStack Router's code splitting, changes nothing, listed ahead of this one or after it. One that adds a read of a validator fails the build wherever it's listed, as no order of plugins has the build keep what such a read needs. Where its transform runs after this one's, as one listed after `precompile.vite()` or one without `enforce: "pre"` does, the build names the module, the read and each plugin whose transform follows this one's, and the members that, set true, keep all the read needs:
 
@@ -1091,7 +1091,7 @@ A package precompiled with `"aot"` is read as the program is, so a value it retu
 
 ### checker
 
-`checker` chooses the TypeScript that [declarations](https://arktype.io/docs/precompile/advanced#declarations) read the program with: `"tsjs"` for the compiler API of TypeScript 5.5 to 6, or `"tsgo"` or `"tsrs"` for TypeScript 7's native API. It defaults to the TypeScript installed, preferring tsrs to tsgo where its binary is installed.
+`checker` chooses the TypeScript that [declarations](https://arktype.io/docs/precompile/advanced#declarations) read the program with: `"tsjs"` for the compiler API of TypeScript 5.5 to 6, or `"tsgo"` or `"tsrs"` for TypeScript 7.1 or later's native API. It defaults to the TypeScript installed, preferring tsrs to tsgo where its binary is installed, and before 7.1 (or with `"tsjs"` under TypeScript 7) reads `typescript-6` installed beside it (`npm i -D typescript-6@npm:typescript@6`).
 
 ### conditions and tsconfig
 
@@ -1523,12 +1523,13 @@ Nanoseconds per validation, by the clock, on one core. Each library's geometric 
 | - | - | - | - |
 | 1st | ArkType | 123 ns | 8.1M |
 | 2nd | ajv | 187 ns | 5.3M |
-| 3rd | Typia | 794 ns | 1.3M |
-| 4th | Zod (compiled) | 935 ns | 1.1M |
-| 5th | Valibot | 1,875 ns | 533k |
-| 6th | Zod | 2,012 ns | 497k |
-| 7th | TypeBox | 3,207 ns | 312k |
-| 8th | Zod Mini | 4,219 ns | 237k |
+| 3rd | ArkType (dynamic) | 272 ns | 3.7M |
+| 4th | Typia | 794 ns | 1.3M |
+| 5th | Zod (compiled) | 935 ns | 1.1M |
+| 6th | Valibot | 1,875 ns | 533k |
+| 7th | Zod | 2,012 ns | 497k |
+| 8th | TypeBox | 3,207 ns | 312k |
+| 9th | Zod Mini | 4,219 ns | 237k |
 
 Precompiled ArkType was faster than Zod 4 in all 32 scenarios of our benchmark, by a median of 15×, and faster than Zod 4's z.compile in 32 of 32, by a median of 5.3×.
 
@@ -1536,7 +1537,7 @@ It isn't the fastest at everything. On the rows that report errors for invalid d
 
 Each panel is one scenario, and the table under them has every one:
 
-| scenario | ArkType precompiled | ArkType JIT | typia | TypeBox | ajv | Zod 4 | Zod 4 compiled | zod/mini | Valibot | fastest other | ArkType vs it |
+| scenario | ArkType precompiled | ArkType (dynamic) | typia | TypeBox | ajv | Zod 4 | Zod 4 compiled | zod/mini | Valibot | fastest other | ArkType vs it |
 | - | - | - | - | - | - | - | - | - | - | - | - |
 | parse moltar | 4.84 ns | 4.33 ns | 8.25 ns | 99.5 ns | 14.4 ns | 143 ns | 16.8 ns | 771 ns | 477 ns | typia | 1.71× faster |
 | parse moltar strict | 18 ns | 18.3 ns | 30.3 ns | 26.7 ns | 28.9 ns | 200 ns | 32.9 ns | 855 ns | 531 ns | TypeBox | 1.48× faster |
@@ -1613,6 +1614,7 @@ The same apps by the clock, in milliseconds, which the homepage prints beside it
 | Zod | 12.2 ms | 13.7 ms | 25.3 ms | 16.2 ms | 6th |
 | Zod (compiled) | 13.1 ms | 13.5 ms | 30.3 ms | 17.5 ms | 7th |
 | TypeBox | 16.8 ms | 16.5 ms | 43.3 ms | 22.9 ms | 8th |
+| ArkType (dynamic) | 31.7 ms | 29.9 ms | 50.6 ms | 36.3 ms | 9th |
 
 Most of each of those milliseconds is Node loading a module, which every library pays alike, so the quickest are close together and their order changes from app to app and from machine to machine. Instructions count what a library adds, and a busy machine doesn't move them.
 
@@ -1768,7 +1770,7 @@ The reason **`calls a hook, whose result is known only as a component renders`**
 
 **`` `shape` is written at ..., so its value at the site is not known ``**: the definition reads an object or array the program changes before it, through a member, a method like `push`, `Object.assign` or a function writing its argument, so the build can't tell what it holds there. Write the value whole in its literal. Where it differs by case, define a Type for each case and choose one at runtime.
 
-**`` `Plan.limit` is 4, but was precompiled as 3 ``** or **`` `currencies` holds other keys or values than it was precompiled with ``** (thrown as a validator is created): the definition reads an object or array that code the build doesn't follow changed before the definition ran, like a module loading it with `require()` or `import()`, a dependency, or a read of `export * as`. The build refuses a definition only where it sees the write, so the validator checks each value it read as it's created. A production build checks a list or enum read whole, like `Object.values(Plan.Enum)`, by a digest, so it says only that one changed, and a development build names the key. A build written for size, as `optimize: "size"` or the `"smallest"` preset sets, leaves each name out of the bundle and says `A value a validator reads` in its place, so build with `optimize: "speed"`, or as development, to read which value it was. Write the value in the definition, or don't change it after it's exported.
+**`` `Plan.limit` is 4, but was precompiled as 3 ``** or **`` `currencies` holds other keys or values than it was precompiled with ``** (thrown as a validator is created): the definition reads an object or array that code the build doesn't follow changed before the definition ran, like a module loading it with `require()` or `import()`, a dependency, or a read of `export * as`. The build refuses a definition only where it sees the write, so the validator checks each value it read as it's created. A production build checks a list or enum read whole, like `Object.values(Plan.Enum)`, by a digest, so it says only that one changed, and a development build names the key. A build written for size, as `optimize: "size"` or the `"smallest"` preset sets, leaves each name out of the bundle and says `A value a validator reads` in its place, so build with `optimize: "speed"` to read which value it was. Write the value in the definition, or don't change it after it's exported.
 
 **Both Types of `import.meta.env.DEV ? DevPost : Post` ship**: nothing reports this. The build reads each module before the bundler replaces a constant like `import.meta.env.DEV`, so it precompiles both Types, and a production bundle written as one chunk declares the units every validator it reaches reads in [one function](https://arktype.io/docs/precompile/options#prune), which the bundler keeps whole. It drops `DevPost` but not the checks only `DevPost` reads. Set `prune: false` to let the bundler drop those too, at the cost of what pruning saves elsewhere, or define one Type for both.
 
@@ -1796,7 +1798,7 @@ The reason **`calls a hook, whose result is known only as a component renders`**
 
 **`` `type` is used outside a precompiled site ``**: a standalone build doesn't ship arktype, so a call that creates a Type must be a definition the build precompiles. Move it into one, or build with `runtime: "arktype"`.
 
-**`flatMessagesByPath(out) calls flatMessagesByPath, which arktype/runtime doesn't export`**: so do `byPath`, `flatByPath` and `byAncestorPath`. Read `out.issues`, each with its `path` and `message`, as in `for (const { path, message } of out.issues)`, or build with `runtime: "arktype"`. `byPath(out)` is `Object.fromEntries(out.issues.map(issue => [issue.path.join("."), issue]))` and `flatByPath(out)` is `Object.groupBy(out.issues, issue => issue.path.join("."))`, keyed by each path joined with `.` where arktype writes an index as `[0]`; the message names the rewrite. For `messageIn(issue, locale)`, read `issue.message`, which a standalone validator writes in English.
+**`flatMessagesByPath(out) calls flatMessagesByPath, which arktype/runtime doesn't export`**: so do `byPath`, `flatByPath` and `byAncestorPath`. Read `out.issues`, each with its `path` and `message`, as in `for (const { path, message } of out.issues)`, or build with `runtime: "arktype"`. `byPath(out)` is `Object.fromEntries([...out.issues].reverse().map(issue => [issue.path.join("."), issue]))` and `flatByPath(out)` is `Object.groupBy(out.issues, issue => issue.path.join("."))`, keyed by each path joined with `.` where arktype writes an index as `[0]`; the message names the rewrite. For `messageIn(issue, locale)`, read `issue.message`, which a standalone validator writes in English.
 
 **`import("arktype") loads arktype, which a standalone build replaces with arktype/runtime`**: the build precompiles definitions it sees through an `import` declaration, and resolves every other load of arktype to its runtime, which can't create a Type. Import it with an `import` declaration, or build with `runtime: "arktype"`.
 
@@ -1820,7 +1822,7 @@ The reason **`calls a hook, whose result is known only as a component renders`**
 
 **`arktype resolves to 3.0.0-beta.1, but @ark/aot runs on 3.0.0-beta.2`**: validators run only on the arktype they were built with. Where your program imports the other version, as after upgrading arktype alone, the message names the `@ark/aot` released with it, e.g. `npm i -D @ark/aot@<version>`. Where it's an arktype released before `@ark/aot`, which pnpm and yarn install beside it with only a peer warning, the message names the arktype `@ark/aot` runs on, e.g. `npm i arktype@<version>`. Where a dependency does, install one version, e.g. with your package manager's dedupe or overrides.
 
-**`precompiledForArktype_<version>` is not exported by `arktype/runtime`** (each bundler words it its own way): a module of validators was linked to the runtime of another arktype version than it was [built for](https://arktype.io/docs/precompile/setup#installation), usually from a bundler cache kept from before an upgrade, or a second copy of arktype. Install one version and clear the bundler's cache.
+**`precompiledForArktype_<version>` is not exported by `arktype/runtime`** (each bundler words it its own way; CommonJS emitted by `--emit` throws `This module needs arktype/runtime to export precompiledForArktype_<version>, ...` when loaded): a module of validators was linked to the runtime of another arktype version than it was [built for](https://arktype.io/docs/precompile/setup#installation), usually from a bundler cache kept from before an upgrade, a stale `--emit` build, or a second copy of arktype. Install one version, clear the bundler's cache or rebuild with `arktype-precompile --emit`. ESM `--emit` relies on static ESM imports for this version check, so post-transforming emitted ESM files file-by-file to CommonJS (e.g. Jest, Babel or SWC) skips link-time validation; emit CommonJS or bundle instead.
 
 **`The bundle leaves arktype to be loaded at runtime`** (or `arktype/runtime`): the program would load arktype, or a second copy of its runtime, beside the runtime its validators use, so `out instanceof type.errors` would be false for their errors. A tool that leaves dependencies external does this unless told otherwise: with tsup, add `noExternal: ["arktype"]`, and with tsdown, `deps: { alwaysBundle: [/^arktype(\/|$)/] }`. Where every import of arktype's runtime is left external, as with esbuild's `packages: "external"`, the program loads one copy, and the build allows it.
 
@@ -1836,7 +1838,7 @@ The reason **`calls a hook, whose result is known only as a component renders`**
 
 **`arktype resolves to ... rather than arktype/runtime`** or **`arktype/schema/runtime resolves to ...`** (Turbopack): add the `turbopack.resolveAlias` entries the message lists to your Next config. See [Next.js](https://arktype.io/docs/precompile/setup#next).
 
-**`configure() is called, but the build has no config module`**: name the module that calls it as the build's [`config`](https://arktype.io/docs/precompile/options#configuration) in `ark.json`, as `{ "precompile": { "config": "./src/arktype.config.ts" } }`.
+**``configure() is called, but the build has no `config` module``**, or in a [production build](https://arktype.io/docs/precompile/options#production-builds) **``configure() is called, but the build's `config` is false``**: name the module that calls it as the build's [`config`](https://arktype.io/docs/precompile/options#configuration) in `ark.json`, as `{ "precompile": { "config": "./src/arktype.config.ts" } }`.
 
 **``--check can't read the `config` precompile.vite() is passed``** or **`... sets errors other than precompile.vite() at vite.config.ts:5:12`**: `arktype-precompile --check` reads the options a plugin call at the project's root passes, imported, required or loaded by `import()`, but only those written as literals, and only where every call agrees. Set the option in `ark.json`, which the plugin reads too, or pass it to `--check` as a flag.
 

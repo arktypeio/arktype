@@ -16,16 +16,8 @@
 				"conditions": { "type": "array", "items": { "type": "string" } },
 				"config": {
 					"anyOf": [
-						{
-							"type": "string",
-							"description": "a module path or false",
-							"minLength": 1
-						},
-						{
-							"type": "boolean",
-							"const": false,
-							"description": "a module path or false"
-						}
+						{ "type": "string", "minLength": 1 },
+						{ "type": "boolean", "const": false }
 					],
 					"description": "a module path or false"
 				},

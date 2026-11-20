@@ -114,6 +114,54 @@ contextualize(() => {
 		attest(a.expression).snap("undefined | null")
 	})
 
+	it("defaulted key adds undefined", () => {
+		const T = type({ a: "number = 5" })
+
+		const a = T.get("a")
+		attest<number | undefined>(a.t)
+		attest(a.expression).snap("number | undefined")
+		attest(a(undefined)).equals(undefined)
+	})
+
+	it("defaulted morph adds undefined", () => {
+		const T = type({ a: ["string.numeric.parse", "=", "5"] })
+
+		const a = T.get("a")
+		attest<string | undefined>(a.inferIn)
+		attest<number | undefined>(a.infer)
+		attest(a(undefined)).equals(undefined)
+	})
+
+	it("nested keys through optional and defaulted keys add undefined", () => {
+		const T = type({
+			"opt?": { b: "string" },
+			def: [{ b: "string" }, "=", () => ({ b: "x" })]
+		})
+
+		const opt = T.get("opt", "b")
+		attest<string | undefined>(opt.t)
+		attest(opt.expression).snap("string | undefined")
+
+		const def = T.get("def", "b")
+		attest<string | undefined>(def.t)
+		attest(def.expression).snap("string | undefined")
+	})
+
+	it("defaulted key in union and never key", () => {
+		const U = type({ a: "number = 5" }).or({ a: "string" })
+		const u = U.get("a")
+		attest<string | number | undefined>(u.t)
+		attest(u.expression).snap("number | string | undefined")
+
+		const N = type({ a: "never" })
+		const n = N.get("a")
+		attest<never>(n.t)
+		attest(n.expression).snap("never")
+
+		const Fn = type({ f: type("Function").as<() => never>() })
+		attest<() => never>(Fn.get("f").t)
+	})
+
 	it("non-fixed array", () => {
 		const T = type("string[]")
 

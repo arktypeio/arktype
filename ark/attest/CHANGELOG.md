@@ -19,6 +19,7 @@ Runtime benches now run in a loop compiled for each bench, after a warmup of 500
 - `getChecker()` returns the checker attest analyzes with, so a test can branch on output that differs between them.
 - `attest trace` and `attest stats` check projects with `composite: true`. They passed tsc `--incremental false`, which such a project rejects (TS6379), so since TypeScript 5.6 they skipped type checking and reported 0 instantiations ([#1306](https://github.com/arktypeio/arktype/issues/1306)).
 - `@arktype/attest`, which published the same package, is no longer published. Install `@ark/attest`.
+- `arktype` is a peer dependency at the version released with `@ark/attest`, where it was a dependency, so install the two together.
 
 ## 0.58.0
 

@@ -24,6 +24,7 @@ import type {
 import type {
 	defaultFor,
 	distill,
+	distillEncoded,
 	inferIntersection,
 	inferPipe,
 	InferredMorph,
@@ -751,7 +752,7 @@ interface Type<out t = unknown, in out $ = {}>
 
 // a method's parameter is bivariant, so a Type stays assignable to a wider one
 type inferEncoder<t> = {
-	encode(In: distill.Out<t>): To<distill.In<t>>
+	encode(In: distill.Out<t>): To<distillEncoded<t>>
 }["encode"]
 
 export interface ChainedPipeParser<$, t> extends NaryPipeParser<$, t> {

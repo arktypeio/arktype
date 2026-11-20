@@ -9,9 +9,9 @@ import {
 	ownEntriesOf,
 	toJsonMethodOf
 } from "./facts.ts"
-import { isArray, objectKindOf } from "./objectKinds.ts"
+import { isArray, isValidDate, objectKindOf } from "./objectKinds.ts"
 import { serializePrimitive, type SerializablePrimitive } from "./primitive.ts"
-import type { dict } from "./records.ts"
+import { defineValue, type dict } from "./records.ts"
 
 export type SerializationOptions = {
 	onCycle?: (value: object) => string
@@ -185,9 +185,10 @@ const _serialize = (
 			const toJson =
 				!opts.onAccessor || isDate(o) ? toJsonMethodOf(o) : undefined
 			if (toJson) return Reflect.apply(toJson, o, [])
-			if (typeof o === "function") return printableOpts.onFunction(o)
+			if (typeof o === "function")
+				return opts.onFunction?.(o) ?? printableOpts.onFunction(o)
 
-			if (seen.includes(o)) return "(cycle)"
+			if (seen.includes(o)) return opts.onCycle?.(o) ?? "(cycle)"
 
 			const nextSeen = [...seen, o]
 			if (isArray(o)) return o.map(item => _serialize(item, opts, nextSeen))
@@ -196,15 +197,18 @@ const _serialize = (
 
 			const result: Record<string, unknown> = {}
 			for (const [k, v] of ownEntriesOf(o, opts)) {
-				result[
+				const key =
 					typeof k === "symbol" ? (opts.onSymbol?.(k) ?? k.toString()) : k
-				] = _serialize(v, opts, nextSeen)
+				defineValue(result, key, _serialize(v, opts, nextSeen))
 			}
 
 			return result
 		}
 		case "symbol":
-			return printableOpts.onSymbol(data as symbol)
+			return (
+				opts.onSymbol?.(data as symbol) ??
+				printableOpts.onSymbol(data as symbol)
+			)
 		case "bigint":
 			return opts.onBigInt?.(data as bigint) ?? `${data}n`
 		case "undefined":
@@ -220,6 +224,8 @@ const _serialize = (
  * Converts a Date instance to a human-readable description relative to its precision
  */
 export const describeCollapsibleDate = (date: Date): string => {
+	if (!isValidDate(date)) return "Invalid Date"
+
 	const year = date.getUTCFullYear()
 	const month = date.getUTCMonth()
 	const dayOfMonth = date.getUTCDate()

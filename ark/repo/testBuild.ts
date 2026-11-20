@@ -186,33 +186,39 @@ mkdirSync(consumer, { recursive: true })
 const tsDir = (version: number) =>
 	fileURLToPath(fromPackage("attest", `node_modules/typescript-${version}`))
 
-writeFileSync(
-	`${consumer}tsconfig.json`,
-	JSON.stringify({
-		compilerOptions: {
-			module: "nodenext",
-			target: "esnext",
-			strict: true,
-			exactOptionalPropertyTypes: true,
-			skipLibCheck: false,
-			noEmit: true,
-			types: ["node"],
-			// attest's cache modules use the JS API, which TS 7 doesn't publish
-			paths: { typescript: [`${tsDir(6)}/lib/typescript.d.ts`] }
-		},
-		files: declaringPackages.flatMap(pkg =>
-			modulesOf(pkg, true).map(module =>
-				fileURLToPath(fromPackage(pkg, `out/${module}.d.ts`))
-			)
-		)
-	})
-)
-
 const ownDeclarations = new RegExp(
 	`^ark/(${declaringPackages.join("|")})/out/|^error`
 )
 
 for (const version of [6, 7]) {
+	writeFileSync(
+		`${consumer}tsconfig.json`,
+		JSON.stringify({
+			compilerOptions: {
+				module: "nodenext",
+				target: "esnext",
+				strict: true,
+				exactOptionalPropertyTypes: true,
+				skipLibCheck: false,
+				noEmit: true,
+				types: ["node"],
+				// attest's cache modules use the JS API, which TS 7 doesn't publish;
+				// under TS 6 also remap typescript/* so TS 7.1-only subpaths fail to resolve
+				paths: {
+					typescript: [`${tsDir(6)}/lib/typescript.d.ts`],
+					...(version === 6 ? { "typescript/*": [`${tsDir(6)}/lib/*`] } : {})
+				}
+			},
+			files: declaringPackages.flatMap(pkg =>
+				modulesOf(pkg, true)
+					.filter(
+						module =>
+							version !== 6 || pkg !== "attest" || !module.startsWith("ts7/")
+					)
+					.map(module => fileURLToPath(fromPackage(pkg, `out/${module}.d.ts`)))
+			)
+		})
+	)
 	const { stdout } = spawnSync(
 		process.execPath,
 		[`${tsDir(version)}/bin/tsc`, "--project", consumer, "--pretty", "false"],
@@ -415,7 +421,7 @@ try {
 
 if (
 	undetailedOutput !==
-	'true is invalid [{"code":"predicate","path":[],"message":"is invalid"}] 1\nTraversalError: is invalid true\n'
+	'true is invalid [{"code":"predicate","path":[],"expected":"valid","message":"is invalid"}] 1\nTraversalError: is invalid true\n'
 ) {
 	throw new Error(
 		`⚠️  A program built with errors: "none" logs ${JSON.stringify(undetailedOutput)}.`
@@ -431,7 +437,7 @@ const inspectedOutput = await undetailedLogsOf(
 
 if (
 	inspectedOutput.replace(/\s+/g, " ") !==
-	"ArkErrors { summary: 'is invalid', issues: [ { code: 'predicate', path: [], data: { a: 1 }, message: 'is invalid' } ] } "
+	"ArkErrors { summary: 'is invalid', issues: [ { code: 'predicate', path: [], data: { a: 1 }, expected: 'valid', message: 'is invalid' } ] } "
 ) {
 	throw new Error(
 		`⚠️  A development build logs its errors as ${JSON.stringify(inspectedOutput)}.`

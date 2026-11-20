@@ -266,11 +266,19 @@ contextualize(() => {
 		})
 
 		attest<
-			(In: Expected) => {
+			(In: Expected) => Out<{
 				a: number
 				b?: number
-			}
-		>(T.t).type.toString.snap("(In: Expected) => { a: number; b?: number }")
+			}>
+		>(T.t).type.toString.snap(
+			"(In: Expected) => Out<{ a: number; b?: number }>"
+		)
+		attest<Expected>(T.inferIn)
+		attest<{ a: number; b?: number }>(T.infer)
+		attest<{ a: number; b?: number }>(T.assert({ a: "5" })).equals({ a: 5 })
+		const Nested = type({ inner: T })
+		attest<{ inner: Expected }>(Nested.inferIn)
+		attest<{ inner: { a: number; b?: number } }>(Nested.infer)
 	})
 
 	it("morph in mismatch", () => {
@@ -378,6 +386,13 @@ contextualize(() => {
 	})
 
 	it("any", () => {
+		const Root = declare<any>().type("unknown")
+		attest<any>(Root.t)
+		attest(() =>
+			// @ts-expect-error
+			declare<any>().type("string")
+		).type.errors("declared: any; inferred: string")
+
 		const T = declare<{ a: any }>().type({ a: "unknown" })
 		attest<{ a: any }>(T.t)
 		attest(() =>

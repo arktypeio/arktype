@@ -1,4 +1,4 @@
-import { getBuiltinNameOfConstructor, isArray } from "./objectKinds.ts"
+import { getBuiltinNameOfConstructor, isArray, timeOf } from "./objectKinds.ts"
 
 /** Shallowly copy the properties of the object. */
 export const shallowClone: <input extends object>(
@@ -13,10 +13,13 @@ const _clone = (input: unknown, seen: Map<unknown, unknown> | null): any => {
 	if (typeof input !== "object" || input === null) return input
 	if (seen?.has(input)) return seen.get(input)
 
-	const builtinConstructorName = getBuiltinNameOfConstructor(input.constructor)
-
-	if (builtinConstructorName === "Date")
-		return new Date((input as Date).getTime())
+	if (
+		input instanceof Date &&
+		getBuiltinNameOfConstructor(input.constructor) === "Date"
+	) {
+		const time = timeOf(input)
+		if (time !== undefined) return new Date(time)
+	}
 
 	const inputIsArray = isArray(input)
 
@@ -39,11 +42,12 @@ const _clone = (input: unknown, seen: Map<unknown, unknown> | null): any => {
 	const cloned =
 		inputIsArray ? input.slice() : Object.create(Object.getPrototypeOf(input))
 
-	const propertyDescriptors = Object.getOwnPropertyDescriptors(input)
+	const propertyDescriptors: Record<PropertyKey, PropertyDescriptor> =
+		Object.getOwnPropertyDescriptors(input)
 
 	if (seen) {
 		seen.set(input, cloned)
-		for (const k in propertyDescriptors) {
+		for (const k of Reflect.ownKeys(propertyDescriptors)) {
 			const desc = propertyDescriptors[k]
 
 			if ("get" in desc || "set" in desc) continue

@@ -23,6 +23,7 @@ import {
 } from "arkregex/internal/group.ts"
 import type { next } from "arkregex/internal/parse.ts"
 import {
+	writeMinExceedsMaxQuantifierError,
 	writeUnmatchedQuantifierError,
 	writeUnnaturalNumberQuantifierError
 } from "arkregex/internal/quantify.ts"
@@ -415,6 +416,57 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => regex("^a{ 1}$")).type.errors(
 				writeUnnaturalNumberQuantifierError("{ 1}")
+			)
+		})
+
+		it("equal min and max", () => {
+			attest<Regex<"aa", {}>>(regex("^a{2,2}$"))
+			attest<Regex<"", {}>>(regex("^a{0,0}$"))
+		})
+
+		it("double lazy question mark", () => {
+			// @ts-expect-error
+			attest(() => regex("^a{1,2}??$")).type.errors(
+				writeUnmatchedQuantifierError("?")
+			)
+			// @ts-expect-error
+			attest(() => regex("^a{2}??$")).type.errors(
+				writeUnmatchedQuantifierError("?")
+			)
+			// @ts-expect-error
+			attest(() => regex("^a{1,}??$")).type.errors(
+				writeUnmatchedQuantifierError("?")
+			)
+		})
+
+		it("min exceeds max", () => {
+			// @ts-expect-error
+			attest(() => regex("^a{3,1}$")).type.errors(
+				writeMinExceedsMaxQuantifierError("{3,1}")
+			)
+			// @ts-expect-error
+			attest(() => regex("^a{3,1}?$")).type.errors(
+				writeMinExceedsMaxQuantifierError("{3,1}?")
+			)
+			// @ts-expect-error
+			attest(() => regex("^a{10,2}$")).type.errors(
+				writeMinExceedsMaxQuantifierError("{10,2}")
+			)
+			// @ts-expect-error
+			attest(() => regex("^a{1,0}$")).type.errors(
+				writeMinExceedsMaxQuantifierError("{1,0}")
+			)
+			// @ts-expect-error
+			attest(() => regex("^.{3,1}$")).type.errors(
+				writeMinExceedsMaxQuantifierError("{3,1}")
+			)
+			// @ts-expect-error
+			attest(() => regex("^\\d{3,1}$")).type.errors(
+				writeMinExceedsMaxQuantifierError("{3,1}")
+			)
+			// @ts-expect-error
+			attest(() => regex("^a{100000,99999}$")).type.errors(
+				writeMinExceedsMaxQuantifierError("{100000,99999}")
 			)
 		})
 	})

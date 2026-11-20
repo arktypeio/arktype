@@ -89,6 +89,11 @@ const bootstrapIntrinsic = () => {
 					index: {
 						signature: "string",
 						value: "$jsonData"
+					},
+					meta: {
+						jsonSchema: {
+							anyOf: [{ type: "object" }, { type: "array", items: {} }]
+						}
 					}
 				},
 				jsonData: ["$jsonPrimitive", "$jsonObject"]

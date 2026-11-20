@@ -1,16 +1,37 @@
 import type { ESLint, Linter, Rule, SourceCode } from "eslint"
+import { createHash } from "node:crypto"
+import { readFileSync } from "node:fs"
 import type { Diagnostic } from "./diagnostics.ts"
 import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
 import { isProductionEnv, withEnvironment } from "./presets.ts"
-import { withSettingsFile } from "./settings.ts"
+import { settingsPathsOf, withSettingsFile } from "./settings.ts"
 import { precompileJsonSchema } from "./settingsValidators.ts"
 import { createSyncPrecompiler } from "./worker.ts"
 
+type LintPrecompiler = {
+	request: ReturnType<typeof createSyncPrecompiler>
+	// the settings files as they were when the thread read them
+	settingsStamp: string
+}
+
 // each configuration needs a thread of its own, apart from ESLint's
-const precompilersByOptions: Record<
-	string,
-	ReturnType<typeof createSyncPrecompiler>
-> = {}
+const precompilersByOptions: Record<string, LintPrecompiler> = {}
+
+// what each settings file holds, or that it is missing. A thread reads them
+// once to set its options, and they aren't files it reads through the host, so
+// nothing else tells it one has since changed or been removed. They're read by
+// content, as an edit may keep a file's size and, on a filesystem with coarse
+// timestamps, its mtime too.
+const settingsStampOf = (cwd: string): string =>
+	settingsPathsOf(cwd)
+		.map(path => {
+			try {
+				return createHash("sha256").update(readFileSync(path)).digest("base64")
+			} catch {
+				return "missing"
+			}
+		})
+		.join(",")
 
 const check = (
 	opts: PrecompilePluginOptions,
@@ -18,17 +39,26 @@ const check = (
 	id: string
 ): CheckedModule => {
 	const key = JSON.stringify(opts)
-	// a file read for an earlier lint may have changed the configuration
-	if (precompilersByOptions[key]?.("refresh")) {
-		precompilersByOptions[key]("close")
+	const settingsStamp = settingsStampOf(opts.cwd ?? process.cwd())
+	const existing = precompilersByOptions[key]
+	// a file read for an earlier lint may have changed the configuration, as may
+	// ark.json or package.json
+	if (
+		existing &&
+		(existing.settingsStamp !== settingsStamp || existing.request("refresh"))
+	) {
+		existing.request("close")
 		delete precompilersByOptions[key]
 	}
-	const request = (precompilersByOptions[key] ??= createSyncPrecompiler({
-		precompilerOptions: withEnvironment(withSettingsFile(opts), {
-			production: isProductionEnv(),
-			testing: false
-		})
-	}))
+	const { request } = (precompilersByOptions[key] ??= {
+		request: createSyncPrecompiler({
+			precompilerOptions: withEnvironment(withSettingsFile(opts), {
+				production: isProductionEnv(),
+				testing: false
+			})
+		}),
+		settingsStamp
+	})
 	return (
 		(request("lint", source, id) as CheckedModule | undefined) ??
 		check(opts, source, id)

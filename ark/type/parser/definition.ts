@@ -68,7 +68,9 @@ import {
 	type validateTupleLiteral
 } from "./tupleLiteral.ts"
 
+const maxCachedDefs = 4096
 const parseCache = new WeakMap<BaseScope, Record<string, InnerParseResult>>()
+const parseCacheSizes = new WeakMap<BaseScope, number>()
 
 export const parseInnerDefinition = (
 	def: unknown,
@@ -93,6 +95,15 @@ export const parseInnerDefinition = (
 		const result = parseString(def, ctx)
 		const node = isArray(result) ? result[0] : result
 		if (!inProgress.definitions || !node.hasAlias) {
+			scopeCache = parseCache.get(ctx.$) ?? scopeCache
+			if (!(def in scopeCache)) {
+				const size = (parseCacheSizes.get(ctx.$) ?? 0) + 1
+				if (size > maxCachedDefs) {
+					scopeCache = Object.create(null) as Record<string, InnerParseResult>
+					parseCache.set(ctx.$, scopeCache)
+					parseCacheSizes.set(ctx.$, 1)
+				} else parseCacheSizes.set(ctx.$, size)
+			}
 			scopeCache[def] = result
 			$ark.reached?.store(mark, scopeCache, def)
 		}

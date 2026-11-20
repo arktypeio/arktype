@@ -3,11 +3,16 @@ import { Ajv } from "ajv"
 import { Ajv2020 } from "ajv/dist/2020.js"
 import { parse } from "arksets"
 
-// ajv as the spec reads it: formats are annotations, and draft-07 ignores a $ref's siblings
-const ajv2020 = new Ajv2020({ strict: false, validateFormats: false })
+// ajv as the spec reads it: formats are annotations, decimal multipleOf is exact, and draft-07 ignores a $ref's siblings
+const ajv2020 = new Ajv2020({
+	strict: false,
+	validateFormats: false,
+	multipleOfPrecision: 12
+})
 const ajv07 = new Ajv({
 	strict: false,
 	validateFormats: false,
+	multipleOfPrecision: 12,
 	ignoreKeywordsWithRef: true
 })
 

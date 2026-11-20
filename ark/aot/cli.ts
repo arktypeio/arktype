@@ -4,6 +4,7 @@ import { dirname, relative } from "node:path"
 import { parseArgs } from "node:util"
 import type { Checker, DeclareOptions } from "./declare.ts"
 import { isBuildError } from "./host.ts"
+import { isFileError } from "./util.ts"
 import { writeNodeVersionMessage } from "./messages.ts"
 import type { PrecompilePluginOptions } from "./driver.ts"
 import {
@@ -55,6 +56,15 @@ const usage = `Usage: arktype-precompile --check [...files or globs] [--fail-und
 const fail = (problem: string): never => {
 	console.error(`${problem}\n${usage}`)
 	process.exit(2)
+}
+
+// file errors (e.g. an unparseable package.json or ark.json) aren't usage errors
+const failSettings = (e: unknown): never => {
+	if (isFileError(e) || (e instanceof Error && "code" in e)) {
+		console.error(e.message)
+		process.exit(1)
+	}
+	return fail((e as Error).message)
 }
 
 const { values, positionals } = ((): {
@@ -120,7 +130,7 @@ const declare = (): never => {
 				checker: checker as Checker | undefined
 			})
 		} catch (e) {
-			return fail((e as Error).message)
+			return failSettings(e)
 		}
 	})()
 	const declarations = run(() =>
@@ -195,7 +205,7 @@ try {
 	if (values.emit) refusePrune(set, "arktype-precompile")
 	resolvePrecompileOptions(set)
 } catch (e) {
-	fail((e as Error).message)
+	failSettings(e)
 }
 
 if (values.emit) {

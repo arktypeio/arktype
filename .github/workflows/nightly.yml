@@ -85,12 +85,14 @@ defaults:
 
 # a push to a labelled PR replaces the prior sync run; adding a specific label
 # gets its own group so adding aot:full doesn't cancel an in-flight ci:history
+# and a `/run` comment, whose call sees issue_comment as its event, is keyed by
+# the pr_number pr-commands.yml passes
 concurrency:
   group: >-
     nightly-${{
       github.event_name == 'pull_request' && github.event.action == 'synchronize' && format('pr-{0}-sync', github.event.pull_request.number) ||
       github.event_name == 'pull_request' && github.event.action == 'labeled' && format('pr-{0}-{1}', github.event.pull_request.number, github.event.label.name) ||
-      github.event_name == 'workflow_call' && inputs.pr_number != '' && format('pr-{0}-cmd', inputs.pr_number) ||
+      inputs.pr_number != '' && format('pr-{0}-cmd', inputs.pr_number) ||
       github.run_id
     }}
   cancel-in-progress: true
@@ -145,7 +147,9 @@ jobs:
                 environments=true
               fi
               ;;
-            workflow_dispatch|workflow_call)
+            # a called workflow sees its caller's event, so pr-commands.yml's
+            # `/run` arrives as issue_comment, never workflow_call
+            workflow_dispatch|workflow_call|issue_comment)
               [[ "$INPUT_AOT" == true ]] && aot=true
               [[ "$INPUT_COMPAT" == true ]] && compat=true
               [[ "$INPUT_HISTORY" == true ]] && history=true
@@ -347,6 +351,9 @@ jobs:
 
       - name: Run the suites on units precompiled for other roots
         run: pnpm testCache
+
+      - name: Check pruned bundle parity across presets
+        run: pnpm testPruneParity
 
   perturbation:
     needs: plan

@@ -36,6 +36,15 @@ export interface ArkIssue {
 
 type WrittenIssue = ArkIssue & { message: string }
 
+// as errors.ts's summaryIn, which writes a locale other than the configured
+// one only where arktype/i18n is imported, so a build without it fails the same way
+const refuseLocale = (locale: unknown): void => {
+	if (locale === undefined) return
+	if (typeof locale !== "object" || locale === null || Array.isArray(locale))
+		throw Error("Expected a Locale object")
+	throw Error('import "arktype/i18n" to write errors in locales other than en')
+}
+
 /** what a site reports: its code and description */
 export interface SiteContext {
 	code: ArkErrorCode
@@ -401,6 +410,11 @@ const Issues: IssuesClass = (
 					return summary
 				}
 
+				summaryIn(locale?: unknown): string {
+					refuseLocale(locale)
+					return this.summary
+				}
+
 				throw(): never {
 					if (namesTraversalError) throw new ThrownIssues(this as never)
 					if (definedThrown) throw new definedThrown(this as never)
@@ -473,6 +487,11 @@ const Issues: IssuesClass = (
 					return summary
 				}
 
+				summaryIn(locale?: unknown): string {
+					refuseLocale(locale)
+					return this.summary
+				}
+
 				// constructed by TraversalError wherever its bundle keeps the
 				// class: otherwise an Error with the same name, message and
 				// errors, and no class in its bundle. Its name is assigned and
@@ -531,6 +550,10 @@ interface Issues extends ReadIssues {
 	 * A human-readable summary of all errors.
 	 */
 	readonly summary: string
+	/**
+	 * The summary in `locale`, or as configured without one.
+	 */
+	summaryIn(locale?: unknown): string
 	/**
 	 * Throw a TraversalError based on these errors.
 	 */

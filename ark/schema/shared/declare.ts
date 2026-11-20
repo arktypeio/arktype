@@ -7,9 +7,6 @@ import type { NarrowedAttachments, NodeKind } from "./implement.ts"
 import type { JsonSchema } from "./jsonSchema.ts"
 
 export interface DefaultArkEnv {
-	meta(): {}
-	context(): {}
-	onFail(errors: ArkErrors): ArkErrors
 	/** the scope strings resolve against, where unknown is arktype's keywords */
 	$(): unknown
 }
@@ -42,12 +39,16 @@ export interface ArkEnv extends DefaultArkEnv {
 }
 
 export declare namespace ArkEnv {
-	export type meta = show<NodeMeta & ReturnType<ArkEnv["meta"]>>
+	export type meta = show<
+		NodeMeta & (ArkEnv extends { meta(...args: never): infer meta } ? meta : {})
+	>
 
-	export type onFail = ReturnType<ArkEnv["onFail"]>
+	export type onFail =
+		ArkEnv extends { onFail(...args: never): infer result } ? result : ArkErrors
 
 	/** what a call passes for its narrows and morphs to read as `ctx.context` */
-	export type context = ReturnType<ArkEnv["context"]>
+	export type context =
+		ArkEnv extends { context(...args: never): infer context } ? context : {}
 
 	/** classes `.infer` leaves opaque */
 	export type prototypes = ReturnType<ArkEnv["prototypes"]>

@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { printable } from "@ark/util"
+import { hasOwn, printable, snapshot } from "@ark/util"
 
 contextualize(() => {
 	it("primitives", () => {
@@ -122,6 +122,7 @@ contextualize(() => {
 	it("date", () => {
 		const d = new Date("2023-10-03T14:30:15.123Z")
 		attest(printable(d)).snap("October 3, 2023, 2:30:15.123 PM UTC")
+		attest(printable(new Date(NaN))).snap("Invalid Date")
 	})
 
 	it("instance with expression", () => {
@@ -143,5 +144,42 @@ contextualize(() => {
 			toJSON: () => ({ b: 2 })
 		}
 		attest(printable(obj)).snap('{"b":2}')
+	})
+
+	it("preserves own __proto__ without polluting snapshot prototype", () => {
+		const input = JSON.parse('{"__proto__": {"polluted": 1}, "a": 2}')
+		attest(printable(input)).equals('{"__proto__":{"polluted":1},"a":2}')
+
+		const snap = snapshot(input) as Record<string, unknown>
+		attest(Object.getPrototypeOf(snap)).is(Object.prototype)
+		attest(hasOwn(snap, "__proto__")).equals(true)
+		attest("polluted" in snap).equals(false)
+		attest(Object.getOwnPropertyDescriptor(snap, "__proto__")?.value).equals({
+			polluted: 1
+		})
+	})
+
+	it("snapshot honors onFunction, onCycle, and onSymbol options", () => {
+		const symKey = Symbol("key")
+		const symVal = Symbol("val")
+		const namedFn = () => {}
+		const cyc: Record<PropertyKey, unknown> = {
+			fn: namedFn,
+			sym: symVal,
+			[symKey]: 1
+		}
+		cyc.self = cyc
+
+		const result = snapshot(cyc, {
+			onFunction: fn => `fn:${fn.name}`,
+			onCycle: () => "custom-cycle",
+			onSymbol: s => `sym:${s.description}`
+		})
+		attest(result).equals({
+			fn: "fn:namedFn",
+			sym: "sym:val",
+			self: "custom-cycle",
+			"sym:key": 1
+		} as never)
 	})
 })

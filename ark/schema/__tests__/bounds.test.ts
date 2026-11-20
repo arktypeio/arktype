@@ -4,9 +4,15 @@ import {
 	boundKindPairsByLower,
 	rootSchema,
 	writeInvalidLengthBoundMessage,
+	writeInvalidRangeRuleMessage,
 	type ArkErrors
 } from "@ark/schema"
-import { entriesOf, flatMorph, writeInvalidDateMessage } from "@ark/util"
+import {
+	entriesOf,
+	flatMorph,
+	printable,
+	writeInvalidDateMessage
+} from "@ark/util"
 
 const numericCases = {
 	lessThanMin: 4,
@@ -279,4 +285,34 @@ contextualize(() => {
 			})
 		})
 	}
+
+	it("rejects NaN numeric bounds and invalid Date notEqual", () => {
+		attest(() => rootSchema({ domain: "number", min: Number.NaN })).throws(
+			writeInvalidRangeRuleMessage("min", Number.NaN)
+		)
+		attest(() => rootSchema({ domain: "number", max: Number.NaN })).throws(
+			writeInvalidRangeRuleMessage("max", Number.NaN)
+		)
+		attest(() => rootSchema({ domain: "number", notEqual: Number.NaN })).throws(
+			"notEqual bound must be a number or Date (was NaN)"
+		)
+		const invalidDate = new Date(Number.NaN)
+		attest(() => rootSchema({ proto: Date, notEqual: invalidDate })).throws(
+			`notEqual bound must be a number or Date (was ${printable(invalidDate)})`
+		)
+	})
+
+	it("rejects non-Date values like null and booleans for before and after", () => {
+		for (const bad of [null, true, false, undefined, Number.NaN]) {
+			attest(() =>
+				rootSchema({ domain: "object", after: bad as never })
+			).throws(writeInvalidRangeRuleMessage("after", bad))
+			attest(() =>
+				rootSchema({ proto: Date, after: { rule: bad as never } })
+			).throws(writeInvalidRangeRuleMessage("after", bad))
+			attest(() => rootSchema({ proto: Date, before: bad as never })).throws(
+				writeInvalidRangeRuleMessage("before", bad)
+			)
+		}
+	})
 })

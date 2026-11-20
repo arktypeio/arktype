@@ -209,10 +209,8 @@ export const splitByKeys = <o extends object, leftKeys extends keySetOf<o>>(
 	const l: any = {}
 	const r: any = {}
 	let k: keyof o
-	for (k in o) {
-		if (k in leftKeys) l[k] = o[k]
-		else r[k] = o[k]
-	}
+	for (k in o)
+		if (hasOwn(o, k)) defineValue(hasOwn(leftKeys, k) ? l : r, k, o[k])
 	return [l, r]
 }
 
@@ -310,7 +308,7 @@ export const withAlphabetizedKeys: <o extends object>(o: o) => o = (o: any) => {
 	const keys = Object.keys(o).sort()
 	const result: any = {}
 
-	for (let i = 0; i < keys.length; i++) result[keys[i]] = o[keys[i]]
+	for (let i = 0; i < keys.length; i++) defineValue(result, keys[i], o[keys[i]])
 
 	return result
 }

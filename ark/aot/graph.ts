@@ -1,4 +1,4 @@
-import { Callable, includes } from "arktype/util"
+import { Callable, hasDomain, includes } from "arktype/util"
 import * as arkregex from "arktype/regex"
 import * as arktype from "arktype"
 import * as arktypeCodecs from "arktype/codecs"
@@ -75,6 +75,7 @@ import {
 	type Reference
 } from "./scope.ts"
 import { isTransparent, runtimeParamsOf } from "./proofs.ts"
+import { hasOwn, parseJsonText, parsePackageManifest } from "./util.ts"
 
 export type FunctionNode = Function | ArrowFunctionExpression
 
@@ -1056,7 +1057,7 @@ export type ImportTarget =
 	// `name` is what a module exports an expression as, where it isn't its
 	// default export: e.g. `exports.a = { b: 1 }`, as tsc writes CommonJS
 	| { kind: "expression"; module: SourceModule; node: Node; name?: string }
-	| { kind: "json"; id: string; value: unknown }
+	| { kind: "json"; id: string; value: unknown; name?: string }
 	| { kind: "unresolved"; message: string }
 	| { kind: "package"; message: string }
 
@@ -1281,21 +1282,35 @@ export class ModuleGraph {
 	// precompile, but not a workspace package the settings run on arktype
 	isFollowed(id: string): boolean {
 		const [root, name] = dependencyOf(id) ?? []
+		const manifestPath = root && join(root, "package.json")
 		return root === undefined ?
 				!runsOnArktype(id, this.dependencies, this.workspaceNamesByDir)
 			:	!this.leavesDependencies &&
 					(this.optsInByPackage[root] ??=
 						this.dependencies[name!] === "aot" ||
-						optsIn(this.host.readFile(join(root, "package.json"))))
+						optsIn(
+							this.host.readFile(manifestPath!),
+							manifestPath,
+							console.warn
+						))
 	}
 
 	// e.g. `arksets` for a module a workspace links from its source
 	packageNameOf(id: string): string | undefined {
 		const dir = dirname(id)
 		if (dir in this.packageNamesByDir) return this.packageNamesByDir[dir]
-		const manifest = this.host.readFile(join(dir, "package.json"))
+		const manifestPath = join(dir, "package.json")
+		const manifest = this.host.readFile(manifestPath)
+		let name: string | undefined
+		if (manifest !== undefined) {
+			try {
+				name = parsePackageManifest(manifest, manifestPath).name
+			} catch {
+				// one that doesn't parse names nothing
+			}
+		}
 		return (this.packageNamesByDir[dir] =
-			manifest !== undefined ? JSON.parse(manifest).name
+			manifest !== undefined ? name
 			: dir === dirname(dir) ? undefined
 			: this.packageNameOf(dir))
 	}
@@ -1310,7 +1325,11 @@ export class ModuleGraph {
 		}
 		if (id.endsWith(".json")) {
 			try {
-				return { kind: "json", id, value: JSON.parse(source) }
+				return {
+					kind: "json",
+					id,
+					value: parseJsonText(source, this.pathOf(id))
+				}
 			} catch {
 				return {
 					kind: "unresolved",
@@ -1365,6 +1384,18 @@ export class ModuleGraph {
 		}
 		const target = this.resolve(source, module)
 		if (!(target instanceof SourceModule)) {
+			if (target.kind === "json") {
+				return (
+					declaration.type === "ImportNamespaceSpecifier" ?
+						{ ...target, name: "*" }
+					: declaration.type === "ImportDefaultSpecifier" ?
+						{ ...target, name: "default" }
+					:	this.jsonExportOf(
+							target,
+							exportNameOf((declaration as ImportSpecifier).imported)
+						)
+				)
+			}
 			return (
 					target.kind !== "arktypeNamespace" ||
 						declaration.type === "ImportNamespaceSpecifier"
@@ -1408,10 +1439,14 @@ export class ModuleGraph {
 					const target = this.resolve(entry.specifier, module)
 					if (!(target instanceof SourceModule)) {
 						return (
-								target.kind === "arktypeNamespace" && entry.kind === "reexport"
-							) ?
+							target.kind === "arktypeNamespace" && entry.kind === "reexport" ?
 								arktypeExportOf(target, entry.name)
+							: target.kind === "json" ?
+								entry.kind === "namespace" ?
+									{ ...target, name: "*" }
+								:	this.jsonExportOf(target, entry.name)
 							:	target
+						)
 					}
 					return entry.kind === "namespace" ?
 							{ kind: "namespace", module: target }
@@ -1428,6 +1463,7 @@ export class ModuleGraph {
 				const result =
 					target instanceof SourceModule ? this.exportOf(target, name, seen)
 					: target.kind === "arktypeNamespace" ? arktypeExportOf(target, name)
+					: target.kind === "json" ? this.jsonExportOf(target, name)
 					: target.kind === "package" ? target
 					: undefined
 				if (result?.kind === "package") packageExport ??= result
@@ -1442,6 +1478,30 @@ export class ModuleGraph {
 					writeUnreadCommonJsMessage(module.path, name)
 				:	`${module.path} has no export \`${name}\``
 		}
+	}
+
+	private jsonExportOf(
+		target: Extract<ImportTarget, { kind: "json" }>,
+		name: string
+	): ImportTarget {
+		return (
+			name === "default" ? { ...target, name }
+			: (
+				hasDomain(target.value, "object") &&
+				!Array.isArray(target.value) &&
+				hasOwn(target.value, name)
+			) ?
+				{
+					kind: "json",
+					id: target.id,
+					name,
+					value: Reflect.get(target.value, name)
+				}
+			:	{
+					kind: "unresolved",
+					message: `${this.pathOf(target.id)} has no export \`${name}\``
+				}
+		)
 	}
 
 	arkExportOf(

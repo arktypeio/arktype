@@ -63,6 +63,8 @@ User({ name: "Ada", age: 1.5 })
 
 A schema written in the call infers its type, so `User` is a `Type<{ name: string; age?: number }>`. It reads a [Standard JSON Schema](https://standardschema.dev/json-schema), like a Zod schema, too. See [From JSON Schema](/docs/json-schema/from-json-schema), and [Keyword support](/docs/json-schema/support) for which keywords it understands.
 
+Schemas are code-equivalent: `fromJsonSchema` prevents code injection and prototype pollution, but does not guard against catastrophic backtracking (ReDoS) in user-supplied `pattern` or `patternProperties` regexes or combinatorial `allOf` blow-up.
+
 ## Compare schemas
 
 Read into Types, JSON Schemas, Zod schemas and your own Types compare with each other, so you can check in CI that a new version of an API schema still accepts everything the old one did:

@@ -3,8 +3,10 @@ import {
 	conflatenateAll,
 	hasOwn,
 	pathAt,
+	printable,
 	stringifyPath,
 	throwError,
+	throwParseError,
 	type JsonArray,
 	type JsonObject,
 	type array,
@@ -102,6 +104,8 @@ const writtenKey = Symbol("written")
 const localeKey = Symbol("locale")
 const configKey = Symbol("config")
 
+const hasInstance = Function.prototype[Symbol.hasInstance]
+
 /**
  * The errors returned by a Type on invalid input, one issue for each failed
  * check in the order each failed, as a standalone validator returns them.
@@ -195,7 +199,8 @@ export class ArkErrors extends BaseArkErrors {
 
 	/** @internal */
 	override _merge(merged: BaseArkErrors, prefix: array<PropertyKey>): void {
-		if (merged instanceof ArkErrors) return mergeErrors(this, merged, prefix)
+		if (hasInstance.call(ArkErrors, merged))
+			return mergeErrors(this, merged as ArkErrors, prefix)
 		const config = this[configKey]
 		for (const issue of merged.issues) {
 			this._.push(
@@ -216,6 +221,17 @@ export class ArkErrors extends BaseArkErrors {
 		return this._
 	}
 }
+
+// a precompiled validator's runtime returns BaseArkErrors directly, so accept
+// them on ArkErrors itself while keeping normal prototype checks for subclasses.
+// Non-writable so V8 inlines it: as a static method, each instanceof costs ~7 ns more
+Object.defineProperty(ArkErrors, Symbol.hasInstance, {
+	value(this: Function, value: unknown): boolean {
+		return this === ArkErrors ?
+				value instanceof BaseArkErrors
+			:	hasInstance.call(this, value)
+	}
+})
 
 // selected once, so each of its errors is written in the same locale, whenever
 // it's read, even where a configured locale is a function
@@ -1343,8 +1359,14 @@ export const configureLocale = (
 
 // a locale passed to write errors in, which without arktype/i18n is only
 // written in if it's the configured one, as writtenIn checks
-const resolveLocale = (locale: Locale): Locale.Resolved =>
-	renderer ? renderer.normalize(locale) : (locale as Locale.Resolved)
+const resolveLocale = (locale: Locale): Locale.Resolved => {
+	if (typeof locale !== "object" || locale === null || Array.isArray(locale))
+		throwParseError(writeInvalidLocaleObjectMessage(locale))
+	return renderer ? renderer.normalize(locale) : (locale as Locale.Resolved)
+}
+
+export const writeInvalidLocaleObjectMessage = (locale: unknown): string =>
+	`Expected a Locale object like \`de\` from "arktype/locales/de" (was ${printable(locale)})`
 
 const writtenIn = (error: ArkError, locale: Locale.Resolved): ArkError => {
 	const config = configOf(error)

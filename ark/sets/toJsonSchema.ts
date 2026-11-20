@@ -105,7 +105,7 @@ export const rootToJsonSchema = (
 	// ensure $schema is the first key if present
 	const schema: JsonSchema = Object.assign(
 		typeof ctx.dialect === "string" ? { $schema: ctx.dialect } : {},
-		toJsonSchemaRecurse(node, ctx)
+		toJsonSchemaRecurse(ctx.io === "out" ? node._out : node, ctx)
 	)
 	if (Array.isArray(ctx.aliasDefs)) {
 		const missing = ctx.aliasDefs.find(name => !ctx.aliasesFound.has(name))
@@ -165,25 +165,35 @@ export const toJsonSchemaRecurse = (
 	const i = ctx.open.lastIndexOf(node.id)
 	// a cycle through no def is named by its id, like useRefs' parts
 	if (
-		(i !== -1 && ctx.open.slice(i).every(id => !(id in ctx.defNamesById))) ||
+		(i !== -1 &&
+			ctx.open.slice(i).every(id => !hasOwn(ctx.defNamesById, id))) ||
 		(ctx.useRefs && !node.alwaysExpandJsonSchema)
 	)
 		nameDef(node, nameOfId(node.id), ctx)
-	const name = ctx.defNamesById[node.id]
-	if (name !== undefined && (i !== -1 || ctx.defs[name]))
+	const name =
+		hasOwn(ctx.defNamesById, node.id) ? ctx.defNamesById[node.id] : undefined
+	if (
+		name !== undefined &&
+		(i !== -1 || (hasOwn(ctx.defs, name) && ctx.defs[name] !== undefined))
+	)
 		return refTo(name, ctx)
 	ctx.open.push(node.id)
 	const schema = toResolvedJsonSchema(node, ctx)
 	ctx.open.pop()
 	// reaching it again while it was converted can have named it
-	const defName = ctx.defNamesById[node.id]
+	const defName =
+		hasOwn(ctx.defNamesById, node.id) ? ctx.defNamesById[node.id] : undefined
 	if (defName === undefined) return schema
-	ctx.defs[defName] = schema
+	defineValue(ctx.defs, defName, schema)
 	return refTo(defName, ctx)
 }
 
 const refTo = (name: string, ctx: JsonSchemaContext): JsonSchema.Ref =>
-	({ $ref: ctx.refPrefix + name }) as JsonSchema.Ref
+	({
+		$ref:
+			ctx.refPrefix +
+			encodeURIComponent(name.replace(/~/g, "~0").replace(/\//g, "~1"))
+	}) as JsonSchema.Ref
 
 // the alias a cyclic definition's id starts with, without the count after it,
 // which follows an underscore where the alias ends in a digit. No lookbehind:
@@ -250,12 +260,104 @@ const nameDef = (
 	name: string,
 	ctx: JsonSchemaContext
 ): void => {
-	if (node.id in ctx.defNamesById) return
+	if (hasOwn(ctx.defNamesById, node.id)) return
 	let unique = name
-	for (let i = 2; unique in ctx.defs; i++) unique = `${name}${i}`
+	for (let i = 2; hasOwn(ctx.defs, unique); i++) unique = `${name}${i}`
 	// reserved, so $defs are in the order they're named
-	ctx.defs[unique] = undefined
-	ctx.defNamesById[node.id] = unique
+	defineValue(ctx.defs, unique, undefined)
+	defineValue(ctx.defNamesById, node.id, unique)
+}
+
+const nonJsonAnnotation = Symbol()
+
+const jsonAnnotationValue = (
+	value: unknown,
+	seen: Set<object> = new Set()
+): unknown => {
+	if (value === null || typeof value === "boolean" || typeof value === "string")
+		return value
+	if (typeof value === "number")
+		return Number.isFinite(value) ? value : nonJsonAnnotation
+	if (value instanceof Date) {
+		return Number.isNaN(value.getTime()) ? nonJsonAnnotation : (
+				value.toISOString()
+			)
+	}
+	if (typeof value !== "object" || seen.has(value)) return nonJsonAnnotation
+	seen.add(value)
+	if (Array.isArray(value)) {
+		const out: unknown[] = []
+		for (let i = 0; i < value.length; i++) {
+			if (!(i in value)) {
+				seen.delete(value)
+				return nonJsonAnnotation
+			}
+			const jsonItem = jsonAnnotationValue(value[i], seen)
+			if (jsonItem === nonJsonAnnotation) {
+				seen.delete(value)
+				return nonJsonAnnotation
+			}
+			out.push(jsonItem)
+		}
+		seen.delete(value)
+		return out
+	}
+	const proto = Object.getPrototypeOf(value)
+	if (proto !== Object.prototype && proto !== null) {
+		seen.delete(value)
+		return nonJsonAnnotation
+	}
+	const out: dict = {}
+	for (const [k, prop] of Object.entries(value)) {
+		const jsonProp = jsonAnnotationValue(prop, seen)
+		if (jsonProp === nonJsonAnnotation) {
+			seen.delete(value)
+			return nonJsonAnnotation
+		}
+		defineValue(out, k, jsonProp)
+	}
+	seen.delete(value)
+	return out
+}
+
+const examplesAnnotationValue = (value: unknown): unknown[] | undefined => {
+	if (!Array.isArray(value)) return undefined
+	if (!value.length) return []
+	const out: unknown[] = []
+	for (let i = 0; i < value.length; i++) {
+		if (!(i in value)) continue
+		const jsonEntry = jsonAnnotationValue(value[i])
+		if (jsonEntry !== nonJsonAnnotation) out.push(jsonEntry)
+	}
+	return out.length ? out : undefined
+}
+
+const writeNodeAnnotations = (
+	result: dict,
+	node: BaseRoot,
+	ctx: JsonSchemaContext
+): void => {
+	for (const k in node.meta) {
+		if (!annotationKeys.has(k) && !k.startsWith("x-")) continue
+		const v = (node.meta as dict)[k]
+		// JSON can't represent a function like a message writer
+		if (typeof v === "function" && k !== "default") continue
+		let jsonValue: unknown
+		if (k === "examples") jsonValue = examplesAnnotationValue(v)
+		else if (k === "default") {
+			jsonValue =
+				typeof v !== "function" && $ark.kw.jsonData.allows(v) ?
+					v
+				:	ctx.fallback.defaultValue({
+						code: "defaultValue",
+						value: v as never
+					})
+		} else {
+			const converted = jsonAnnotationValue(v)
+			if (converted !== nonJsonAnnotation) jsonValue = converted
+		}
+		if (jsonValue !== undefined) writeAnnotation(result, k, jsonValue, ctx)
+	}
 }
 
 // writeInner writes what its constraints imply, beside which its meta is written
@@ -268,21 +370,7 @@ const toResolvedJsonSchema = (
 	const { jsonSchema } = node.meta
 	const result: JsonSchema & dict = jsonSchema ? {} : (writeInner() as never)
 
-	for (const k in node.meta) {
-		if (!annotationKeys.has(k) && !k.startsWith("x-")) continue
-		const v = (node.meta as dict)[k]
-		// JSON can't represent a function like a message writer
-		if (typeof v === "function" && k !== "default") continue
-		// metaJson serializes non-primitives like [5] to references like
-		// "$ark.array1", so prefer the original value when it is valid JSON
-		// (jsonData's object domain also allows functions, so exclude them)
-		const jsonValue =
-			typeof v !== "function" && $ark.kw.jsonData.allows(v) ? v
-			: k === "default" ?
-				ctx.fallback.defaultValue({ code: "defaultValue", value: v as never })
-			:	(node.metaJson as dict)[k]
-		if (jsonValue !== undefined) writeAnnotation(result, k, jsonValue, ctx)
-	}
+	writeNodeAnnotations(result, node, ctx)
 
 	return jsonSchema ? Object.assign(result, jsonSchema) : result
 }
@@ -310,18 +398,43 @@ const branchGroupsToJsonSchema = (
 	node: Union.Node,
 	branchGroups: BaseRoot[],
 	ctx: JsonSchemaContext
-): JsonSchema =>
+): JsonSchema => {
 	// special case to simplify { const: true } | { const: false }
 	// to the canonical JSON Schema representation { type: "boolean" }
-	branchGroups.length === 1 && branchGroups[0].equals($ark.kw.boolean) ?
-		{ type: "boolean" }
-	:	ctx.writers.union(
-			branchGroups.map(group => toJsonSchemaRecurse(group, ctx)),
-			ctx.target,
-			node.meta,
-			node.metaJson,
-			discriminantOf(branchGroups, ctx)
-		)
+	if (branchGroups.length === 1 && branchGroups[0].equals($ark.kw.boolean))
+		return { type: "boolean" }
+	const branchSchemas = branchGroups.map(group =>
+		toJsonSchemaRecurse(group, ctx)
+	)
+	if (!isEmptyObject(node.meta)) {
+		const unionAnnotations: dict = {}
+		writeNodeAnnotations(unionAnnotations, node, ctx)
+		if (!isEmptyObject(unionAnnotations)) {
+			for (let i = 0; i < branchSchemas.length; i++) {
+				const branch = branchSchemas[i]
+				const group = branchGroups[i]
+				if ("$ref" in branch || group.meta.jsonSchema) continue
+				const branchDict = branch as dict
+				for (const [k, v] of Object.entries(unionAnnotations)) {
+					if (
+						hasOwn(branchDict, k) &&
+						(branchDict[k] === v ||
+							(k in group.meta &&
+								(group.meta as dict)[k] === (node.meta as dict)[k]))
+					)
+						delete branchDict[k]
+				}
+			}
+		}
+	}
+	return ctx.writers.union(
+		branchSchemas,
+		ctx.target,
+		node.meta,
+		node.metaJson,
+		discriminantOf(branchGroups, ctx)
+	)
+}
 
 // the first key the first branch requires at which every branch requires
 // strings no other branch allows, as OpenAPI's discriminator expects: any
@@ -498,11 +611,7 @@ const innerToJsonSchemaByKind: {
 	alias: (node, ctx) => toJsonSchemaRecurse(node.resolution, ctx),
 	union: (node, ctx) => {
 		let branchGroups = branchGroupsOf(node)
-		// JSON has no undefined, so no input can match an undefined branch,
-		// and an input schema is exactly what's left without it. Output and
-		// root schemas keep it for fallback.unit: data with an undefined
-		// required key serializes without that key, which no schema listing
-		// it in required accepts.
+		// JSON has no undefined, so no input can match an undefined branch
 		if (ctx.io === "in")
 			branchGroups = branchGroups.filter(group => !group.hasUnit(undefined))
 		const nonNull = branchGroups.filter(branch => !branch.hasUnit(null))
@@ -692,7 +801,7 @@ const reduceObjectJsonSchema = (
 	// an input may have the keys "delete" would remove
 	const rejectsUndeclared =
 		node.undeclared === "reject" ||
-		(node.undeclared === "delete" && ctx.io !== "in")
+		(node.undeclared === "delete" && ctx.io === "out")
 
 	if (
 		indexKeys.length === 1 &&
@@ -705,7 +814,7 @@ const reduceObjectJsonSchema = (
 	) {
 		// every key must match the index, so its value applies to each one
 		schema.propertyNames = indexKeys[0].key
-		if (declaredValuesExtend(node, indexKeys[0].valueNode))
+		if (declaredValuesExtend(node, indexKeys[0].valueNode, ctx))
 			schema.additionalProperties = indexKeys[0].value
 		// a declared key's value must be the index's too, which only a pattern
 		// every key matches checks
@@ -717,7 +826,7 @@ const reduceObjectJsonSchema = (
 		schema.patternProperties?.[""] &&
 		Object.keys(schema.patternProperties).length === 1 &&
 		indexes.anyString &&
-		declaredValuesExtend(node, indexes.anyString)
+		declaredValuesExtend(node, indexes.anyString, ctx)
 	) {
 		// with no other patterns, the index adds nothing declared keys don't
 		// already check, so it's written as additionalProperties, which OpenAPI
@@ -743,9 +852,14 @@ const reduceObjectJsonSchema = (
 
 // additionalProperties skips declared keys, so it holds an index's value only
 // where each declared key's value is already within it
-const declaredValuesExtend = (node: Structure.Node, value: BaseRoot): boolean =>
+const declaredValuesExtend = (
+	node: Structure.Node,
+	value: BaseRoot,
+	ctx: JsonSchemaContext
+): boolean =>
 	node.props.every(
-		prop => typeof prop.key === "symbol" || jsonValueOf(prop).extends(value)
+		prop =>
+			typeof prop.key === "symbol" || jsonValueOf(prop, ctx).extends(value)
 	)
 
 const writeProps = (
@@ -757,7 +871,7 @@ const writeProps = (
 	schema.properties = {}
 	for (const prop of node.props) {
 		ctx.path = appendStringifiedKey(path, prop.key)
-		const valueSchema = toJsonSchemaRecurse(jsonValueOf(prop), ctx)
+		const valueSchema = toJsonSchemaRecurse(jsonValueOf(prop, ctx), ctx)
 
 		if (typeof prop.key === "symbol") {
 			schema = ctx.fallback.symbolKey({
@@ -776,10 +890,17 @@ const writeProps = (
 		defineValue(schema.properties!, prop.key, valueSchema)
 	}
 	ctx.path = path
-	if (node.requiredKeys.length && schema.properties) {
-		schema.required = node.requiredKeys.filter(
-			(k): k is string => typeof k === "string" && k in schema.properties!
+	if (node.required?.length && schema.properties) {
+		const required = node.required.flatMap(prop =>
+			(
+				typeof prop.key !== "string" ||
+				!(prop.key in schema.properties!) ||
+				(ctx.io === "out" && prop.value.allowsUnused(undefined))
+			) ?
+				[]
+			:	[prop.key]
 		)
+		if (required.length) schema.required = required
 	}
 	return schema
 }
@@ -793,9 +914,11 @@ const writeIndex = (
 	ctx: JsonSchemaContext,
 	indexes: IndexWrites
 ): JsonSchema.Object => {
+	const indexValue =
+		ctx.io === "out" ? withoutUndefined(index.value, ctx) : index.value
 	const path = ctx.path
 	ctx.path = `${path}[${index.signature.expression}]`
-	const valueJsonSchema = toJsonSchemaRecurse(index.value, ctx)
+	const valueJsonSchema = toJsonSchemaRecurse(indexValue, ctx)
 	ctx.path = path
 
 	for (const keyBranch of index.signature.branches) {
@@ -833,10 +956,10 @@ const writeIndex = (
 			pattern !== undefined &&
 			// OpenAPI 3.0 has no patternProperties, only additionalProperties
 			(ctx.target !== "openapi-3.0" ||
-				(pattern === "" && declaredValuesExtend(node, index.value)))
+				(pattern === "" && declaredValuesExtend(node, indexValue, ctx)))
 		) {
 			defineValue((schema.patternProperties ??= {}), pattern, valueJsonSchema)
-			if (pattern === "") indexes.anyString = index.value
+			if (pattern === "") indexes.anyString = indexValue
 			continue
 		}
 
@@ -844,21 +967,52 @@ const writeIndex = (
 			node: keyIn,
 			key: keySchema ?? (toResolvedJsonSchema(keyIn, ctx) as never),
 			value: valueJsonSchema,
-			valueNode: index.value
+			valueNode: indexValue
 		})
 	}
 	return schema
 }
 
-// JSON has no undefined, so an optional key holds it only by being absent
-const jsonValueOf = (prop: Prop.Node): BaseRoot =>
-	(
-		prop.optional &&
-		prop.value.branches.some(branch => branch.hasUnit(undefined))
-	) ?
-		prop.value.$.schema(
-			prop.value.branches.filter(branch => !branch.hasUnit(undefined))
+const aliasNameForStripped = (
+	value: BaseRoot,
+	stripped: BaseRoot,
+	ctx: JsonSchemaContext
+): string | undefined => {
+	if (stripped.is("alias")) return undefined
+	if (value.is("alias")) return aliasNameOf(value)
+	if (!ctx.aliasDefs) return undefined
+	if (!ctx.aliasScopes.has(value.$)) addAliasNames(value.$, ctx)
+	if (hasOwn(ctx.aliasNamesById, stripped.id)) return undefined
+	if (stripped.alwaysExpandJsonSchema && !Array.isArray(ctx.aliasDefs))
+		return undefined
+	return ctx.aliasNamesById[value.id]
+}
+
+// JSON has no undefined: an optional key, or any object key or index value on
+// output, holds undefined only by being absent
+const withoutUndefined = (
+	value: BaseRoot,
+	ctx?: JsonSchemaContext
+): BaseRoot => {
+	const resolved = value.is("alias") ? value.resolution : value
+	if (!resolved.branches.some(branch => branch.hasUnit(undefined))) return value
+	const stripped = resolved.$.schema(
+		resolved.branches.filter(branch => !branch.hasUnit(undefined))
+	)
+	const result =
+		isEmptyObject(resolved.meta) ? stripped : (
+			stripped.configure(resolved.meta, "self")
 		)
+	if (ctx) {
+		const name = aliasNameForStripped(value, result, ctx)
+		if (name !== undefined) nameDef(result, name, ctx)
+	}
+	return result
+}
+
+const jsonValueOf = (prop: Prop.Node, ctx: JsonSchemaContext): BaseRoot =>
+	prop.optional || ctx.io === "out" ?
+		withoutUndefined(prop.value, ctx)
 	:	prop.value
 
 interface IndexKey {
@@ -890,19 +1044,44 @@ const keyPatternOf = (
 		:	undefined
 }
 
+// JSON Schema compiles pattern with "u"; reject flagless sources that fail or
+// invert meaning under "u" (\p{...}, \P{...}, \u{...})
+const differsUnderUnicodeFlag = (source: string): boolean => {
+	try {
+		new RegExp(source, "u")
+	} catch {
+		return true
+	}
+	for (let i = 0; i < source.length; i++) {
+		if (source[i] === "\\") {
+			const escaped = source[++i]
+			if (
+				(escaped === "p" || escaped === "P" || escaped === "u") &&
+				source[i + 1] === "{"
+			)
+				return true
+		}
+	}
+	return false
+}
+
 // d and g don't change what a pattern matches, and draft-2020-12 patterns use u
 const isJsonSchemaPattern = (
 	node: nodeOfKind<"pattern">,
 	ctx: JsonSchemaContext
-): boolean =>
-	!node.flags ||
-	[...node.flags].every(
-		flag =>
-			flag === "d" ||
-			flag === "g" ||
-			(flag === "u" &&
-				(ctx.target === "draft-2020-12" || ctx.target === "openapi-3.1"))
-	)
+): boolean => {
+	let hasU = false
+	if (node.flags) {
+		for (const flag of node.flags) {
+			if (flag === "u") {
+				if (ctx.target !== "draft-2020-12" && ctx.target !== "openapi-3.1")
+					return false
+				hasU = true
+			} else if (flag !== "d" && flag !== "g") return false
+		}
+	}
+	return hasU || !differsUnderUnicodeFlag(node.rule)
+}
 
 const writeDefault = (
 	schema: JsonSchema,
@@ -944,7 +1123,8 @@ const reduceSequenceJsonSchema = (
 
 	// by default JSON schema prefixElements are optional
 	// add minLength here if there are any required prefix elements
-	if (node.minLength) schema.minItems = node.minLength
+	if (node.minLength)
+		schema.minItems = Math.max(schema.minItems ?? 0, node.minLength)
 
 	if (node.variadic) {
 		// a later element's index varies, so it's written as TS indexes it
@@ -961,7 +1141,12 @@ const reduceSequenceJsonSchema = (
 
 		// maxLength constraint will be enforced by items: false
 		// for non-variadic arrays
-		if (node.maxLength) schema.maxItems = node.maxLength
+		if (node.maxLength) {
+			schema.maxItems = Math.min(
+				schema.maxItems ?? Number.POSITIVE_INFINITY,
+				node.maxLength
+			)
+		}
 
 		// postfix can only be present if variadic is present so nesting this is fine
 		if (postfixSchemas) {
@@ -971,15 +1156,19 @@ const reduceSequenceJsonSchema = (
 				elements: postfixSchemas
 			})
 		}
-	} else if (isOpenApi) schema.maxItems = node.maxLength!
-	else {
+	} else if (isOpenApi) {
+		schema.maxItems = Math.min(
+			schema.maxItems ?? Number.POSITIVE_INFINITY,
+			node.maxLength!
+		)
+	} else {
 		// For fixed-length tuples without variadic elements
 		// draft-07 uses additionalItems: false, draft-2020-12 uses items: false
 		if (isDraft07) schema.additionalItems = false
 		else schema.items = false
-		// delete maxItems constraint that will have been added by the
-		// base intersection node to enforce fixed length
-		delete schema.maxItems
+		// delete maxItems only when items: false / additionalItems: false already enforces it
+		if (schema.maxItems !== undefined && schema.maxItems >= node.maxLength!)
+			delete schema.maxItems
 	}
 
 	// OpenAPI 3.0's items is one schema for every element, so it has no prefix
@@ -1051,7 +1240,7 @@ const reduceJsonSchemaByKind: {
 				code: "patternFlags",
 				base,
 				pattern: node.rule,
-				flags: node.flags!
+				flags: node.flags ?? ""
 			})
 		}
 		if (base.pattern) {

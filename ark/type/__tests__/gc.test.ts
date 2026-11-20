@@ -196,4 +196,15 @@ contextualize(() => {
 			"{ b: string, read?: number }"
 		)
 	})
+
+	it("bounds the string parse cache so dropped string types are collected", async () => {
+		const create = () => {
+			const first = new WeakRef(type.raw('"gcBounded0" | number'))
+			for (let i = 1; i < 5000; i++) type.raw(`"gcBounded${i}" | number`)
+			return first
+		}
+		const ref = create()
+		await collectTarget(ref)
+		attest(ref.deref()).equals(undefined)
+	})
 })

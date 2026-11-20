@@ -854,6 +854,37 @@ export type makeTree = {
 		])
 	})
 
+	it("fails loudly on a solution-style tsconfig with files: [] and references", () => {
+		const dir = writeFixture({
+			"tsconfig.json": JSON.stringify({
+				files: [],
+				references: [
+					{ path: "./tsconfig.app.json" },
+					{ path: "./tsconfig.lib.json" }
+				]
+			}),
+			"tsconfig.app.json": JSON.stringify({
+				compilerOptions: { composite: true, outDir: "dist-app", types: [] },
+				include: ["src"]
+			}),
+			"tsconfig.lib.json": JSON.stringify({
+				compilerOptions: { composite: true, outDir: "dist-lib", types: [] },
+				include: ["src"]
+			}),
+			"src/index.ts": "export const id = 1\n"
+		})
+		const expected =
+			"tsconfig.json lists no source files of its own, only project references (tsconfig.app.json, tsconfig.lib.json). --declare emits one project at a time: run it for each referenced tsconfig with --tsconfig, e.g. `arktype-precompile --declare --tsconfig tsconfig.app.json`."
+		for (const checker of ["tsjs", "tsgo"] as const)
+			attest(() => emitDeclarations({ cwd: dir, checker })).throws(expected)
+		const cli = runCli(dir, "--declare")
+		attest([cli.status, cli.stdout, cli.stderr]).equals([
+			1,
+			"",
+			`${expected}\n`
+		])
+	}).timeout(60000)
+
 	it("refuses the CLI's other modes and options with --declare", () => {
 		const cli = runCli(layouts, "--declare", "--check", "--preset", "smallest")
 		attest([cli.status, cli.stderr.split("\n")[0]]).snap([

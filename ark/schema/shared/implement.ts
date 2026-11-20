@@ -241,7 +241,7 @@ export type keyImplementationsOf<d extends BaseNodeDeclaration> = {
 
 // a string that reads like another value's serialization is quoted
 const ambiguousStringPattern =
-	/^(?:"|\$ark\d*\.|(?:NaN|-?Infinity|-0|-?\d+n|undefined|[+-]?\d{4,6}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z)$)/
+	/^(?:"|\$ark\d*\.|(?:NaN|-?Infinity|-0|-?\d+n|undefined|Invalid Date|[+-]?\d{4,6}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z)$)/
 
 export const defaultValueSerializer = (v: unknown): Json => {
 	if (typeof v === "string")

@@ -49,10 +49,20 @@ contextualize(() => {
 	})
 
 	it("defaulted key is required", () => {
-		const T = type({ at: EpochMs.default(0) })
-		attest<{ at: Date }>(T.encode.inferIn)
-		attest<{ at?: number }>(T.encode.infer)
-		attest(T.encode({}).toString()).snap("at must be a Date (was missing)")
+		const T = type({
+			at: EpochMs.default(0),
+			name: "string = 'x'",
+			"opt?": EpochMs
+		})
+		attest<{ at: Date; name: string; opt?: Date }>(T.encode.inferIn)
+		attest<{ at: number; name: string; opt?: number }>(T.encode.infer)
+		attest<{ at: number; name: string; opt?: number }>(T.encode.encode.inferIn)
+		// @ts-expect-error
+		attest(() => T.encode.encode.from({}))
+			.throws("at must be a number (was missing)")
+			.type.errors("missing the following properties")
+		attest(T.encode({}).toString()).snap(`at must be a Date (was missing)
+name must be a string (was missing)`)
 	})
 
 	it("defaulted key keeps its declared place", () => {
@@ -63,6 +73,8 @@ a must be a number (was missing)`)
 
 	it("defaulted element is required", () => {
 		const T = type([EpochMs, EpochMs.default(0)])
+		attest<[Date, Date]>(T.encode.inferIn)
+		attest<[number, number]>(T.encode.infer)
 		attest(T.encode.expression).snap(
 			"[(In: Date) => To<number % 1>, (In: Date) => To<number % 1>]"
 		)
@@ -200,6 +212,22 @@ pair[1] must be a Date`)
 		attest(T(T.encode(5.7e-10))).equals(5.7e-10)
 	})
 
+	it("string.integer.parse encodes only safe integers", () => {
+		const T = type("string.integer.parse")
+		attest(T.encode(Number.MAX_SAFE_INTEGER)).equals("9007199254740991")
+		attest(T(T.encode(Number.MAX_SAFE_INTEGER))).equals(Number.MAX_SAFE_INTEGER)
+		attest(T.encode(Number.MIN_SAFE_INTEGER)).equals("-9007199254740991")
+		attest(T(T.encode(Number.MIN_SAFE_INTEGER))).equals(Number.MIN_SAFE_INTEGER)
+		attest(T.encode(1e21).toString()).snap("must be at most 9007199254740991")
+		attest(T.encode(Number.MAX_SAFE_INTEGER + 1).toString()).snap(
+			"must be at most 9007199254740991"
+		)
+		attest(T.encode(Number.MIN_SAFE_INTEGER - 1).toString()).snap(
+			"must be at least -9007199254740991"
+		)
+		attest(T.encode(1.5).toString()).snap("must be an integer")
+	})
+
 	it("format keywords encode formatted strings", () => {
 		const T = type("string.trim")
 		attest(T.encode("a")).equals("a")
@@ -284,5 +312,115 @@ pair[1] must be a Date`)
 		} finally {
 			$ark.encode = installed
 		}
+	})
+
+	it("resolves .out and .toJsonSchema on recursive piped codecs", () => {
+		const L = scope({
+			Node: { v: "string.numeric.parse", "kids?": "Node[]" },
+			Json: "string.json.parse |> Node"
+		}).export()
+
+		const decoded = { v: 1, kids: [{ v: 2 }] }
+		attest(L.Json.out(decoded)).equals(decoded)
+		attest(L.Json.out.expression).snap("{ v: number, kids?: Out<$Node>[] }")
+
+		const outSchema = L.Json.out.toJsonSchema()
+		attest(outSchema).equals(L.Json.toJsonSchema({ io: "out" }))
+		attest("$defs" in outSchema).equals(true)
+	})
+
+	it("encodes nested recursive piped codecs", () => {
+		const L = scope({
+			Node: { v: "string.numeric.parse", "kids?": "Node[]" },
+			Json: "string.json.parse |> Node"
+		}).export()
+
+		const nested = { v: 1, kids: [{ v: 2, kids: [{ v: 3 }] }] }
+		const encoded = L.Json.encode(nested)
+		attest(encoded).snap('{"v":"1","kids":[{"v":"2","kids":[{"v":"3"}]}]}')
+		attest(L.Json(encoded)).equals(nested)
+
+		// cycle running back through the pipe itself must not overflow
+		const Cyc = scope({
+			Json: "string.json.parse |> Node",
+			Node: { v: "string.numeric.parse", "child?": "Json" }
+		}).export()
+		const cyclicNested = { v: 1, child: { v: 2, child: { v: 3 } } }
+		const encodedNested = Cyc.Json.encode(cyclicNested)
+		attest(typeof encodedNested).equals("string")
+		attest(Cyc.Json(encodedNested)).equals(cyclicNested)
+		attest(Cyc.Json.encode.encode(encodedNested)).equals(cyclicNested)
+
+		// missing inverse inside recursive pipe still throws ParseError
+		const NoInv = scope({
+			Node: { v: ["string", "=>", s => s.length], "kids?": "Node[]" },
+			Json: "string.json.parse |> Node"
+		}).export()
+		attest(() => NoInv.Json.encode).throws(
+			writeMissingInverseMessage("(In: string) => Out<unknown>")
+		)
+	})
+
+	it("encodes recursive unions containing codec branches", () => {
+		const Val = scope({
+			Val: "string.date.iso.parse | Val[]"
+		}).export().Val
+		const d0 = new Date(0)
+		const d1 = new Date(1)
+		const encodedVal = Val.encode([d0, [d1]])
+		attest(encodedVal).equals([d0.toISOString(), [d1.toISOString()]])
+		attest(Val(encodedVal)).equals([d0, [d1]])
+
+		const Mixed = scope({
+			Val: "number | string.date.iso.parse | Val[]"
+		}).export().Val
+		const encodedMixed = Mixed.encode([42, d0, [7, d1]])
+		attest(encodedMixed).equals([42, d0.toISOString(), [7, d1.toISOString()]])
+		attest(Mixed(encodedMixed)).equals([42, d0, [7, d1]])
+
+		const Expr = scope({
+			Expr: "Lit | Add",
+			Lit: { kind: "'lit'", v: "string.numeric.parse" },
+			Add: { kind: "'add'", l: "Expr", r: "Expr" }
+		}).export().Expr
+		const tree = {
+			kind: "add",
+			l: { kind: "lit", v: 1 },
+			r: { kind: "add", l: { kind: "lit", v: 2 }, r: { kind: "lit", v: 3 } }
+		} as const
+		const encodedTree = Expr.encode(tree)
+		attest(encodedTree).equals({
+			kind: "add",
+			l: { kind: "lit", v: "1" },
+			r: {
+				kind: "add",
+				l: { kind: "lit", v: "2" },
+				r: { kind: "lit", v: "3" }
+			}
+		})
+		attest(Expr(encodedTree)).equals(tree)
+	})
+
+	it("validates narrowed codec output when encoding", () => {
+		const After2000 = type("string.date.iso.parse").narrow(
+			d => d.getFullYear() > 2000
+		)
+		attest(After2000.encode("not a date").toString()).snap("must be a Date")
+		attest(After2000.out("not a date").toString()).snap("must be a Date")
+		attest(
+			After2000.encode(new Date("1999-01-01T00:00:00.000Z")).toString()
+		).snap("must be valid according to an anonymous predicate")
+		attest(After2000.encode(new Date("2025-01-01T00:00:00.000Z"))).equals(
+			"2025-01-01T00:00:00.000Z"
+		)
+
+		const JanAfter2000 = After2000.narrow(d => d.getUTCMonth() === 0)
+		attest(JanAfter2000.encode("not a date").toString()).snap("must be a Date")
+		attest(
+			JanAfter2000.encode(new Date("2025-02-01T00:00:00.000Z")).toString()
+		).snap("must be valid according to an anonymous predicate")
+		attest(JanAfter2000.encode(new Date("2025-01-01T00:00:00.000Z"))).equals(
+			"2025-01-01T00:00:00.000Z"
+		)
 	})
 })

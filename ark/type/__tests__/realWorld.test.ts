@@ -758,7 +758,7 @@ extra must be a string or null (was missing)`)
 		const parseJsonToObj = type("string.json.parse").pipe(ObjSchema)
 
 		attest(parseJsonToObj.expression).snap(
-			'(In: string) => To<{ action: "order.completed" } | { action: "scheduled", appointmentTypeID: number % 1, calendarID: number % 1, id: number % 1 }>'
+			'(In: string) => To<{ action: "order.completed" } | { action: "scheduled", appointmentTypeID: -9007199254740991 <= number % 1 <= 9007199254740991, calendarID: -9007199254740991 <= number % 1 <= 9007199254740991, id: -9007199254740991 <= number % 1 <= 9007199254740991 }>'
 		)
 
 		const out = parseJsonToObj(

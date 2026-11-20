@@ -461,7 +461,7 @@ type("Date")(new Date("x"))
 
 ## jitless
 
-ArkType compiles each Type to optimized validation code using `new Function`. Where that's blocked, it validates without compiling instead, which is up to about 30x slower per call on a plain object, and 3x to 5x on invalid data or a morph.
+ArkType compiles each Type to optimized validation code using `new Function`. Where that's blocked, it validates without compiling instead, which is many times slower per call.
 
 Cloudflare Workers allow `new Function` only as a Worker loads, and a Type compiles once it's used, so a Type first used within a request isn't compiled. To check with compiled code there, [precompile](/docs/precompile) your Types, or read a Type's `precompilation` where it's defined, which compiles it as the Worker loads and adds to its startup.
 
@@ -516,7 +516,7 @@ With `"first"`, which of the data's errors is returned isn't promised, and can d
 
 With `"none"`, a failure returns one error with the code `"predicate"`, an empty path and the data. That's the code arktype gives any failure it says nothing more of, like `ctx.reject` without one, rather than a code of its own, which every `switch` over codes and every complete locale would have to handle. It's still an instance of `type.errors`, `.assert()` throws a `TraversalError` saying `is invalid`, and its message isn't [localized](#locale). A narrow or morph that reads `ctx.errors` while validating sees each issue added so far written the same way, as `is invalid` at its own path.
 
-`errors` can also be set per Scope. It applies to that Scope's Types, including where another Scope references them.
+`errors` can also be set per Scope. It applies where that Scope's Types are called; a Type from another Scope that references them returns errors as its own Scope's `errors` says.
 
 A [precompiled](/docs/precompile/options#errors) build takes `errors` as an option.
 

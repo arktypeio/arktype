@@ -6,6 +6,7 @@ import {
 	inferred,
 	isEmptyObject,
 	isInstanceOf,
+	omit,
 	throwInternalError,
 	throwParseError,
 	type Fn,
@@ -24,6 +25,9 @@ import {
 	flatMorphsAreEqual,
 	innerHashesMatch,
 	isMutuallySimulated,
+	referencesWithoutCases,
+	type DeepNodeTransformContext,
+	type DeepNodeTransformation,
 	type GettableKeyOrNode,
 	type KeyOrKeyNode,
 	type NodeSelector
@@ -76,9 +80,13 @@ import {
 	withContextOf,
 	type ContextualTarget
 } from "../shared/traversal.ts"
-import { hasArkKind, isNode } from "../shared/utils.ts"
-import { assertDefaultValueAssignability } from "../structure/optional.ts"
+import { hasArkKind, isNode, isResolutionFinal } from "../shared/utils.ts"
+import {
+	assertDefaultValueAssignability,
+	type Optional
+} from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
+import type { Sequence } from "../structure/sequence.ts"
 import type {
 	PropFlatMapper,
 	Structure,
@@ -145,7 +153,7 @@ export abstract class BaseRoot<
 					jsonSchema: {
 						// _in has no defaults, so the input is this Type as it's accepted
 						input: opts => toStandardJsonSchema(this, opts, "in"),
-						output: opts => toStandardJsonSchema(this._out, opts)
+						output: opts => toStandardJsonSchema(this._out, opts, "out")
 					}
 				},
 				// whether an issue of its own is custom, which another copy of
@@ -404,8 +412,12 @@ export abstract class BaseRoot<
 	}
 
 	overlaps(r: unknown): boolean {
-		const intersection = this.intersect(r, false)
-		return !(intersection instanceof Disjoint)
+		if (this.isNever()) return false
+		const l = withoutDefaults(this)
+		const rNode = withoutDefaults(this.$.parseDef(r))
+		if (rNode.isNever()) return false
+		const intersection = l.intersect(rNode, false)
+		return !(intersection instanceof Disjoint) && !intersection.isNever()
 	}
 
 	extends(r: unknown): boolean {
@@ -416,15 +428,29 @@ export abstract class BaseRoot<
 		)
 			return true
 
-		const intersection = this.intersect(r, false)
+		const l = withoutDefaults(this)
+		const rNode = withoutDefaults(this.$.parseDef(r))
+		if (l.kind === rNode.kind && innerHashesMatch(l, rNode)) return true
+		const intersection = l.intersect(rNode, false)
 		if (intersection instanceof Disjoint) return false
 		// meta like a description doesn't change the values a node allows
 		return (
-			this.equals(intersection) ||
-			(!this.hasAlias &&
+			l.equals(intersection) ||
+			(!l.hasAlias &&
 				!intersection.hasAlias &&
-				isMutuallySimulated(this, intersection))
+				isMutuallySimulated(l, intersection))
 		)
+	}
+
+	/** transforms this root inside an enclosing transform, sharing its cycle state */
+	transformWithin(
+		mapper: DeepNodeTransformation,
+		ctx: DeepNodeTransformContext
+	): BaseRoot | null {
+		return this._tf(mapper, {
+			...ctx,
+			undeclaredHandling: undefined
+		}) as BaseRoot | null
 	}
 
 	ifExtends(r: unknown): BaseRoot | undefined {
@@ -827,6 +853,79 @@ export type UndeclaredKeyConfig = {
 	deep?: boolean
 }
 
+const isDefaultedNode = (node: BaseNode): boolean =>
+	(node.is("optional") && node.hasDef()) ||
+	(node.is("sequence") && node.defLen !== 0)
+
+const reachesDefaultCache = /* @__PURE__ */ new WeakMap<BaseRoot, boolean>()
+const withoutDefaultsCache = /* @__PURE__ */ new WeakMap<BaseRoot, BaseRoot>()
+
+const computeReachesDefault = (root: BaseRoot, final: boolean): boolean => {
+	if (!root.alters && !(final && root.tfs)) return false
+	const followAliases = root.hasAlias && final
+	const visited = new Set<BaseNode>()
+	const queue: BaseNode[] = [root]
+	for (let i = 0; i < queue.length; i++) {
+		for (const ref of referencesWithoutCases(queue[i])) {
+			if (visited.has(ref)) continue
+			visited.add(ref)
+			if (isDefaultedNode(ref)) return true
+			if (followAliases && ref.is("alias")) queue.push(ref.resolution)
+		}
+	}
+	return false
+}
+
+const reachesDefault = (root: BaseRoot): boolean => {
+	if (!root.alters && !root.hasAlias) return false
+	const final = isResolutionFinal()
+	const cacheable = final || !root.hasAlias
+	if (cacheable) {
+		const cached = reachesDefaultCache.get(root)
+		if (cached !== undefined) return cached
+	}
+	const result = computeReachesDefault(root, final)
+	if (cacheable) reachesDefaultCache.set(root, result)
+	return result
+}
+
+// defaults are input-side annotations, not constraints on which inputs a type allows
+const withoutDefaults = (node: BaseRoot): BaseRoot => {
+	if (!node.alters && !node.hasAlias) return node
+	const final = isResolutionFinal()
+	const cacheable = final || !node.hasAlias
+	if (cacheable) {
+		const cached = withoutDefaultsCache.get(node)
+		if (cached !== undefined) return cached
+	}
+	const result =
+		reachesDefault(node) ?
+			(node.transform(
+				(kind, inner) => {
+					if (kind === "optional" && "default" in inner)
+						return omit(inner as Optional.Inner, { default: 1 })
+					if (kind === "sequence" && (inner as Sequence.Inner).defaultables) {
+						const { defaultables, optionals, ...rest } = inner as Sequence.Inner
+						return {
+							...rest,
+							optionals: [
+								...defaultables!.map(([element]) => element),
+								...(optionals ?? [])
+							]
+						}
+					}
+					return inner
+				},
+				{
+					shouldTf: n =>
+						n.alters || (n.is("optional") && n.hasDef()) || (final && n.tfs)
+				}
+			) as BaseRoot)
+		:	node
+	if (cacheable) withoutDefaultsCache.set(node, result)
+	return result
+}
+
 export const emptyBrandNameMessage = `Expected a non-empty brand name after #`
 
 export type emptyBrandNameMessage = typeof emptyBrandNameMessage
@@ -834,11 +933,12 @@ export type emptyBrandNameMessage = typeof emptyBrandNameMessage
 const toStandardJsonSchema = (
 	node: BaseRoot,
 	opts: StandardJSONSchemaV1.Options,
-	io?: "in"
+	io: "in" | "out"
 ): Record<string, unknown> => {
+	const target = validateStandardJsonSchemaTarget(opts.target)
 	const ctx = mergeToJsonSchemaConfigs(node.$.cfg.toJsonSchema, {
-		target: validateStandardJsonSchemaTarget(opts.target),
-		...opts.libraryOptions
+		...opts.libraryOptions,
+		target
 	})
 	const fallback = flatMorph(ctx.fallback, (code, handler) => [
 		code,
@@ -846,9 +946,7 @@ const toStandardJsonSchema = (
 			ToJsonSchema.standardFallback[code]
 		:	handler
 	]) as ToJsonSchema.HandlerByCode
-	const standardCtx: ToJsonSchema.Context = { ...ctx, fallback }
-	if (io) standardCtx.io = io
-	return node.toJsonSchema(standardCtx) as never
+	return node.toJsonSchema({ ...ctx, fallback, io }) as never
 }
 
 // a constraint's schema, with the message passed beside it configured on that
