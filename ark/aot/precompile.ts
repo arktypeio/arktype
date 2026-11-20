@@ -1048,27 +1048,29 @@ export class Precompiler {
 
 	// what a bundle's validators are read for, so its next transforms leave out what no read needs
 	scan(program: ScannedProgram): ScannedUsage {
-		this.readProgram(program)
-		this.usagesByProgram.delete(program.key)
-		const unwritten: ScannedUsage = {
-			dropped: [],
-			linked: false,
-			replaced: [],
-			written: false,
-			holders: [],
-			verifies: false
-		}
-		if (this.mode !== "standalone") return unwritten
-		const plan = this.planProgram(program)
-		if (typeof plan === "string") return { ...unwritten, unpruned: plan }
-		const used = this.usedIn(program, plan.planned)
-		return this.scanAs(
-			program,
-			plan,
-			unwritten,
-			used,
-			typeof used === "string" ? this.keptMembersMessageOf(used) : undefined
-		)
+		return this.interpreter.withActive(() => {
+			this.readProgram(program)
+			this.usagesByProgram.delete(program.key)
+			const unwritten: ScannedUsage = {
+				dropped: [],
+				linked: false,
+				replaced: [],
+				written: false,
+				holders: [],
+				verifies: false
+			}
+			if (this.mode !== "standalone") return unwritten
+			const plan = this.planProgram(program)
+			if (typeof plan === "string") return { ...unwritten, unpruned: plan }
+			const used = this.usedIn(program, plan.planned)
+			return this.scanAs(
+				program,
+				plan,
+				unwritten,
+				used,
+				typeof used === "string" ? this.keptMembersMessageOf(used) : undefined
+			)
+		})
 	}
 
 	// where a Scope is created, naming it to each module reaching it, if it runs once
@@ -2702,36 +2704,40 @@ export class Precompiler {
 
 	// its sites and diagnostics before validators are written
 	analyzeSites(source: string, id: string): ModuleAnalysis {
-		const module = this.add(id, source)
-		// analyzed under the thread's configuration
-		if (threadConfiguration) this.configuration ??= this.applyConfiguration()
-		const analysis = this.analysisOf(module)
-		analysis.diagnostics.push(...this.checkConfigOrder(module))
-		return analysis
+		return this.interpreter.withActive(() => {
+			const module = this.add(id, source)
+			// analyzed under the thread's configuration
+			if (threadConfiguration) this.configuration ??= this.applyConfiguration()
+			const analysis = this.analysisOf(module)
+			analysis.diagnostics.push(...this.checkConfigOrder(module))
+			return analysis
+		})
 	}
 
 	// a module another plugin writes, like a compiled Svelte component, is read but not precompiled
 	checkUnwritten(source: string, id: string, mappings?: string): Diagnostic[] {
-		if (this.mode !== "standalone" || !this.importsArk(source, id)) return []
-		const module = this.add(id, source, mappings)
-		this.configuration ??= this.applyConfiguration()
-		const { sites, diagnostics } = this.analysisOf(module)
-		for (const site of sites) {
-			if (site.status === "island") continue
-			diagnostics.push(
-				this.diagnostic(
-					module,
-					site,
-					"unsupported",
-					`${module.snippetOf(site)} can't be precompiled in a module another plugin writes`,
-					[
-						`the build reads ${module.path} only once another plugin has written it, so it can't write a validator there`
-					],
-					unwrittenHint
+		return this.interpreter.withActive(() => {
+			if (this.mode !== "standalone" || !this.importsArk(source, id)) return []
+			const module = this.add(id, source, mappings)
+			this.configuration ??= this.applyConfiguration()
+			const { sites, diagnostics } = this.analysisOf(module)
+			for (const site of sites) {
+				if (site.status === "island") continue
+				diagnostics.push(
+					this.diagnostic(
+						module,
+						site,
+						"unsupported",
+						`${module.snippetOf(site)} can't be precompiled in a module another plugin writes`,
+						[
+							`the build reads ${module.path} only once another plugin has written it, so it can't write a validator there`
+						],
+						unwrittenHint
+					)
 				)
-			)
-		}
-		return diagnostics
+			}
+			return diagnostics
+		})
 	}
 
 	// a config module given anew is read again
@@ -3081,16 +3087,23 @@ export class Precompiler {
 		// the bundle a scan read, whose validators lack what no read needs
 		program?: string
 	): PrecompiledModule {
-		const written = this.writtenIn(program, id, source)
-		if (written) return written
-		const precompiled = this.precompileUnscanned(source, id, mappings, program)
-		const usage =
-			program === undefined ? undefined : this.usagesByProgram.get(program)
-		if (!usage?.flat) return precompiled
-		const flat = this.flatUnscannedOf(precompiled, source, id, usage.flat)
-		// as the bundle holds it, which the host checks once it's built
-		usage.unscanned.set(id, [source, flat])
-		return flat
+		return this.interpreter.withActive(() => {
+			const written = this.writtenIn(program, id, source)
+			if (written) return written
+			const precompiled = this.precompileUnscanned(
+				source,
+				id,
+				mappings,
+				program
+			)
+			const usage =
+				program === undefined ? undefined : this.usagesByProgram.get(program)
+			if (!usage?.flat) return precompiled
+			const flat = this.flatUnscannedOf(precompiled, source, id, usage.flat)
+			// as the bundle holds it, which the host checks once it's built
+			usage.unscanned.set(id, [source, flat])
+			return flat
+		})
 	}
 
 	// one another plugin rewrote reads the units as the rest do

@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { Precompiler } from "@ark/aot"
 import { ModuleGraph } from "@ark/aot/internal/graph.ts"
 import {
 	createSiteState,
@@ -6,8 +7,10 @@ import {
 	Interpreter
 } from "@ark/aot/internal/interpreter.ts"
 import fc from "fast-check"
+import { setFlagsFromString } from "node:v8"
 import { runInNewContext } from "node:vm"
 import type { VariableDeclaration } from "oxc-parser"
+import { memoryHost } from "./utils.ts"
 
 const interpret = (expression: string): { value: unknown } | undefined => {
 	const graph = new ModuleGraph({
@@ -188,5 +191,51 @@ contextualize(() => {
 		attest(interpret("({ ...[({}).f()], ...[1] })")).equals(undefined)
 		attest(interpret("({ a: [({}).f()], ...{ a: 1 } })")).equals(undefined)
 		attest(interpret("({ ...[0], ...[1] })")).equals({ value: { 0: 1 } })
+	})
+
+	it("releases Precompiler, Interpreter and SourceModule even when $ark caches stand-in proxies", async () => {
+		setFlagsFromString("--expose-gc")
+		const gc: () => void = runInNewContext("gc")
+		const nextJob = () => new Promise(resolve => setTimeout(resolve, 0))
+		const create = () => {
+			// cyclic node with predicate/class stand-in registers in $ark.nodesById,
+			// and object unit with toJSON stand-in registers in $ark.object$N
+			const source = `
+import { scope, type } from "arktype"
+class Box {}
+const check = (s: string) => s.length > 0
+const $ = scope({
+	node: { value: type("string").narrow(check), box: type.instanceOf(Box), "next?": "node" }
+})
+export const Node = $.export().node
+export const Unit = type.unit({ toJSON: () => "u" })
+`
+			const precompiler = new Precompiler(memoryHost({ "/main.ts": source }), {
+				cwd: "/"
+			})
+			const result = precompiler.precompile(source, "/main.ts")
+			attest(result.sites.map(s => s.status)).equals([
+				"accepted",
+				"accepted",
+				"rejected"
+			])
+			const module = precompiler.graph.moduleOf("/main.ts")!
+			return {
+				precompiler: new WeakRef(precompiler),
+				interpreter: new WeakRef(precompiler.interpreter),
+				module: new WeakRef(module)
+			}
+		}
+		const refs = create()
+		for (let i = 0; i < 10 && Object.values(refs).some(r => r.deref()); i++) {
+			await nextJob()
+			gc()
+			await nextJob()
+		}
+		attest(
+			Object.entries(refs)
+				.filter(([, ref]) => ref.deref() !== undefined)
+				.map(([name]) => name)
+		).equals([])
 	})
 })
