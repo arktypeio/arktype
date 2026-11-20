@@ -651,6 +651,8 @@ To normalize one JSON Schema into another, or to compare JSON Schemas with each 
 
 Every keyword in a schema applies, and a type's keywords constrain only that type, as JSON Schema says: `{ minimum: 5 }` accepts `"foo"`, and `{ type: ["string", "number"], minLength: 2 }` accepts `3` but not `"a"`.
 
+[`configure()`](https://arktype.io/docs/configuration) doesn't change what a schema accepts: whatever `onUndeclaredKey`, `exactOptionalPropertyTypes`, `numberAllowsNaN` and `numberAllowsInfinity` say, an object allows keys it doesn't declare, an optional property can't be `undefined`, and a number is finite.
+
 A keyword with an invalid value throws, like `#/minLength must be a non-negative integer (was -1)`. A keyword JSON Schema doesn't define is ignored.
 
 OpenAPI 3.0's own forms, which `toJsonSchema({ target: "openapi-3.0" })` writes, aren't read: `nullable` and `example` are ignored, and a boolean `exclusiveMinimum` throws.
@@ -666,8 +668,8 @@ OpenAPI 3.0's own forms, which `toJsonSchema({ target: "openapi-3.0" })` writes,
 | `const`, `enum` | supported | objects and arrays are compared by value |
 | `$ref` | supported | `#`, a JSON Pointer like `#/$defs/Node`, an anchor or an embedded `$id`, including recursive refs |
 | `$ref` to another document | **throws** | only refs into the same document are resolved |
-| `$defs`, `definitions` | supported | read where a `$ref` points to them |
-| `$dynamicRef`, `$recursiveRef` | **throws** | |
+| `$defs`, `definitions` | supported | read where a `$ref` points to them. Each value must be a schema |
+| `$dynamicRef`, `$recursiveRef` | **throws** | ignored under a draft-07 or earlier `$schema`, which has neither |
 | `title`, `description`, `default`, `examples`, `deprecated` | annotation | `default` is not applied |
 | `$schema` | annotation | draft-07 or earlier ignores the keywords beside a `$ref`, as those drafts do |
 | `$id`, `$anchor`, `$dynamicAnchor` | supported | identify a schema a `$ref` resolves to. Draft-04 reads `id` |
@@ -723,16 +725,30 @@ T(0)
 | `items` as an array, `additionalItems` | supported | draft-07's tuples |
 | `minItems`, `maxItems` | supported | |
 | `uniqueItems` | opaque | items are compared as JSON values |
-| `contains`, `minContains`, `maxContains` | opaque | |
-| `unevaluatedItems` | **throws** | |
+| `contains`, `minContains`, `maxContains` | opaque | `minContains: 0` without `maxContains` has no effect |
+| `unevaluatedItems` | **throws** | ignored under a draft-07 or earlier `$schema`, which has no such keyword |
 
 ## Objects
 
 | keyword | support | notes |
 | - | - | - |
-| `properties`, `required` | supported | a `required` key not in `properties` must be present, with any value |
+| `properties`, `required` | supported | a `required` key not in `properties` must be present, with any value. See below |
 | `patternProperties` | supported | |
 | `additionalProperties` | supported | `false` rejects other keys. A schema is an index signature alone, or opaque beside `properties` |
-| `propertyNames`, `minProperties`, `maxProperties` | opaque | |
-| `dependentRequired`, `dependentSchemas`, `dependencies` | opaque | |
-| `unevaluatedProperties` | **throws** | |
+| `propertyNames`, `minProperties`, `maxProperties` | opaque | one every object meets, like `propertyNames: { type: "string" }`, has no effect |
+| `dependentRequired`, `dependentSchemas`, `dependencies` | opaque | one every object meets, like `dependentRequired: { a: [] }`, has no effect |
+| `unevaluatedProperties` | **throws** | ignored under a draft-07 or earlier `$schema`, which has no such keyword |
+
+A JSON object's properties are its own, so `required: ["toString"]` rejects `{}`, though `{}` inherits `toString` from `Object.prototype`. A property named by a key `Object.prototype` has is read as a pattern that matches only that key, which, unlike a property, checks an own key alone:
+
+```ts
+import { jsonSchemaToType } from "@ark/json-schema"
+
+const T = jsonSchemaToType({
+	type: "object",
+	properties: { toString: { type: "string" } }
+})
+
+T.expression // "{ [/^toString$/]: string } & isNonArray"
+T.allows({}) // true
+```

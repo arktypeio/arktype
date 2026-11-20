@@ -16,13 +16,22 @@ import {
 export type Root = BaseRoot
 
 /** a Root (e.g. an arktype Type), a Standard JSON Schema (e.g. a zod schema) or a JSON Schema */
-export type Schema = Root | StandardJSONSchemaV1 | JsonSchema.Input
+export type Schema = Root | StandardJSONSchemaV1 | JsonSchemaInput
+
+/**
+ * a JSON Schema: a boolean or an object. JsonSchema's keywords complete in a
+ * literal, but any object type is accepted, like a library's own JSON Schema
+ * interface, except an array or other iterable, which no JSON Schema is
+ */
+export type JsonSchemaInput =
+	| JsonSchema.Branch
+	| (object & { readonly [Symbol.iterator]?: never })
 
 export interface ParseOptions {
 	/** which side of a schema with morphs to read, its input by default */
 	io?: "in" | "out"
 	/** the document a JSON Schema's #/... refs resolve against, the schema itself by default */
-	root?: JsonSchema.Input
+	root?: JsonSchemaInput
 }
 
 // a JSON Schema is plain data that can change between reads, so only a
@@ -58,17 +67,29 @@ export const parse = (schema: Schema, options?: ParseOptions): Root => {
 export const toJsonSchema = (
 	schema: Schema,
 	options?: ToJsonSchema.Options
-): JsonSchema => parse(schema).toJsonSchema(options)
+): JsonSchema =>
+	// a Root is written whole, as its own toJsonSchema() would, so its defaults
+	// are kept and a morph throws rather than writing only its input
+	schema instanceof BaseRoot ?
+		schema.toJsonSchema(options)
+	:	parse(schema).toJsonSchema(options)
 
 const readStandardSchema = (
 	schema: StandardJSONSchemaV1,
 	io: "in" | "out"
 ): BaseRoot => {
-	const standard = schema["~standard"]
-	if (!standard.jsonSchema) {
+	// only its key was checked, so it may be anything
+	const standard = schema["~standard"] as
+		| Partial<StandardJSONSchemaV1.Props>
+		| null
+		| undefined
+	if (!hasDomain(standard, "object"))
+		return throwParseError(writeUnparsableSchemaMessage(printable(schema)))
+	const vendor = String(standard.vendor)
+	if (!hasDomain(standard.jsonSchema, "object")) {
 		return throwParseError(
 			writeUnparsableSchemaMessage(
-				`a ${standard.vendor} Standard Schema without ~standard.jsonSchema`
+				`a ${vendor} Standard Schema without ~standard.jsonSchema`
 			)
 		)
 	}
@@ -79,7 +100,7 @@ const readStandardSchema = (
 	} catch (cause) {
 		throw Object.assign(
 			new ParseError(
-				writeUnreadableStandardSchemaMessage(standard.vendor, method, cause)
+				writeUnreadableStandardSchemaMessage(vendor, method, cause)
 			),
 			{ cause }
 		)
