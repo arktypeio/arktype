@@ -348,6 +348,9 @@ jobs:
       - name: Run the suites on units precompiled for other roots
         run: pnpm testCache
 
+      - name: Check pruned bundle parity across presets
+        run: pnpm testPruneParity
+
   perturbation:
     needs: plan
     if: needs.plan.outputs.aot == 'true'

@@ -2425,6 +2425,32 @@ true {"name":"Ada","age":1}
 			).equals(run(written))
 		})
 
+		it("serializes a ~standard failure with JSON.stringify when ArkErrors#toJSON is pruned", async () => {
+			const files = writeFixture(
+				{
+					"main.ts": `import { type } from "arktype"
+
+const User = type({ name: "string" })
+console.log(JSON.stringify(User["~standard"].validate({})))
+console.log(JSON.stringify(User["~standard"].validate({ name: "secret" })))
+`
+				},
+				fromHere("temp", "prunedStandardJson")
+			)
+			const entry = { entryPoints: [join(files, "main.ts")] }
+			const unpruned = run(
+				await bundle({ preset: undefined, prune: false }, entry)
+			)
+			const defaultPruned = run(await bundle({ preset: undefined }, entry))
+			const smallestPruned = run(await bundle({ preset: "smallest" }, entry))
+			attest(defaultPruned).equals(unpruned)
+			attest(smallestPruned).equals(unpruned)
+			attest(defaultPruned)
+				.snap(`{"issues":[{"code":"required","path":["name"],"expected":"a string","message":"must be a string (was missing)"}],"message":"name must be a string (was missing)"}
+{"value":{"name":"secret"}}
+`)
+		})
+
 		it("joins a path's keys where none is an index or needs brackets", async () => {
 			const summary = (definition: string, data: string) =>
 				`import { type } from "arktype"
