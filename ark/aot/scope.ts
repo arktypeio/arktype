@@ -1,4 +1,4 @@
-import type { KeySet } from "@ark/util"
+import type { KeySet } from "arktype/util"
 import {
 	visitorKeys,
 	type AccessorProperty,

@@ -1,6 +1,6 @@
-import { hasArkKind, type ArkErrors } from "@ark/schema"
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import type { ArkIssue } from "@ark/schema/runtime"
+import { hasArkKind, type ArkErrors } from "arktype/schema"
+
+import type { ArkIssue } from "arktype/schema/runtime"
 
 export interface KeptIssue {
 	code: string

@@ -44,7 +44,7 @@ if ("$ark2" in globalThis) {
 	)
 }
 
-const packages = ["util", "schema", "sets", "regex", "type"]
+const packages = ["regex", "type"]
 
 const fromPackage = (pkg: string, path = "") =>
 	new URL(`../${pkg}/${path}`, import.meta.url)
@@ -71,21 +71,12 @@ for (const url of loadedUrls) {
 	}
 }
 
-const arkSchema = await importBuilt("@ark/schema")
-
-for (const [name, value] of Object.entries(
-	await importBuilt("@ark/schema/config")
-)) {
-	if (value !== arkSchema[name])
-		throw new Error(`⚠️  @ark/schema/config has its own copy of ${name}.`)
-}
+const arkSchema = await importBuilt("arktype/schema")
 
 // configuring through a deep import must run before the package evaluates
-for (const pkg of ["arktype", "@ark/schema"]) {
-	for (const path of ["internal/config.ts", "internal/config.js"]) {
-		if (resolve(`${pkg}/${path}`) !== resolve(`${pkg}/config`))
-			throw new Error(`⚠️  ${pkg}/${path} loads more than ${pkg}/config.`)
-	}
+for (const path of ["internal/config.ts", "internal/config.js"]) {
+	if (resolve(`arktype/${path}`) !== resolve("arktype/config"))
+		throw new Error(`⚠️  arktype/${path} loads more than arktype/config.`)
 }
 
 const stringKeywords = await importBuilt("arktype/internal/keywords/string.ts")
@@ -100,14 +91,24 @@ if (
 	)
 }
 
-const modulesOf = (pkg: string) =>
+const modulesOf = (pkg: string, includeInlined = false) =>
 	readdirSync(fromPackage(pkg, "out"), { recursive: true, encoding: "utf8" })
-		.filter(path => path.endsWith(".d.ts"))
+		.filter(
+			path =>
+				path.endsWith(".d.ts") &&
+				(includeInlined ||
+					(!path.startsWith("_internal/") &&
+						!path.startsWith("_internal\\") &&
+						!path.startsWith("_util/") &&
+						!path.startsWith("_util\\") &&
+						path !== "shared/issueFeatures.d.ts" &&
+						path !== "shared\\issueFeatures.d.ts"))
+		)
 		.map(path => path.slice(0, -".d.ts".length).replace(/\\/g, "/"))
 
 const program = ts.createProgram(
 	packages.flatMap(pkg =>
-		modulesOf(pkg).map(module =>
+		modulesOf(pkg, true).map(module =>
 			fileURLToPath(fromPackage(pkg, `out/${module}.d.ts`))
 		)
 	),
@@ -138,9 +139,13 @@ for (const pkg of packages) {
 	}
 	const namesByPath: Record<string, Set<string>> = {}
 	for (const module of modulesOf(pkg)) {
-		// arktype/runtime under the "development" condition, which nothing
-		// imports by a path
-		if (name === "arktype" && module === "runtimeDevelopment") continue
+		// arktype/runtime under the "development" condition and the standalone
+		// ark CLI, which nothing imports by a deep path
+		if (
+			name === "arktype" &&
+			(module === "runtimeDevelopment" || module === "cli")
+		)
+			continue
 		const moduleNames = exportedNamesOf(
 			fileURLToPath(fromPackage(pkg, `out/${module}.js`))
 		)
@@ -179,10 +184,7 @@ const declaringPackages = [
 	"fs",
 	"json-schema",
 	"regex",
-	"schema",
-	"sets",
-	"type",
-	"util"
+	"type"
 ]
 
 const consumer = fileURLToPath(new URL("temp/consumer/", import.meta.url))
@@ -206,7 +208,7 @@ writeFileSync(
 			paths: { typescript: [`${tsDir(6)}/lib/typescript.d.ts`] }
 		},
 		files: declaringPackages.flatMap(pkg =>
-			modulesOf(pkg).map(module =>
+			modulesOf(pkg, true).map(module =>
 				fileURLToPath(fromPackage(pkg, `out/${module}.d.ts`))
 			)
 		)
@@ -235,29 +237,29 @@ for (const version of [6, 7]) {
 }
 
 const runtimeNames = Object.keys(
-	await importBuilt("@ark/schema/runtime")
+	await importBuilt("arktype/schema/runtime")
 ).join()
 
 // what errors "none" and builds writing errors for size load in place of
-// @ark/schema/runtime
+// arktype/schema/runtime
 const runtimeVariant = async (variant: string) => {
-	const runtime = await importBuilt(`@ark/schema/runtime/${variant}`)
+	const runtime = await importBuilt(`arktype/schema/runtime/${variant}`)
 	if (Object.keys(runtime).join() !== runtimeNames) {
 		throw new Error(
-			`⚠️  @ark/schema/runtime/${variant} exports other names than @ark/schema/runtime.`
+			`⚠️  arktype/schema/runtime/${variant} exports other names than arktype/schema/runtime.`
 		)
 	}
 	return (runtime.ArkErrors as Function).prototype
 }
 
 if ("_at" in (await runtimeVariant("none")))
-	throw new Error("⚠️  @ark/schema/runtime/none bundles shared/issues.ts.")
+	throw new Error("⚠️  arktype/schema/runtime/none bundles shared/issues.ts.")
 
 for (const variant of ["lean", "none-lean"]) {
 	// only the errors they replace have an arkKind
 	if (Object.getOwnPropertySymbols(await runtimeVariant(variant)).length) {
 		throw new Error(
-			`⚠️  @ark/schema/runtime/${variant} bundles the errors it replaces.`
+			`⚠️  arktype/schema/runtime/${variant} bundles the errors it replaces.`
 		)
 	}
 }
@@ -278,18 +280,21 @@ const algebraMarkers = [
 	"$defs"
 ]
 
-const schemaOut = fromPackage("schema", "out/")
+const schemaBundle = buildSync({
+	stdin: {
+		contents: `export * from "arktype/schema"`,
+		resolveDir: fileURLToPath(fromPackage("type")),
+		loader: "js"
+	},
+	bundle: true,
+	format: "esm",
+	platform: "neutral",
+	write: false
+}).outputFiles[0].text
 
-for (const name of readdirSync(schemaOut)) {
-	if (!name.endsWith(".js")) continue
-	const js = readFileSync(new URL(name, schemaOut), "utf8")
-	for (const marker of algebraMarkers) {
-		if (js.includes(marker)) {
-			throw new Error(
-				`⚠️  @ark/schema's out/${name} includes set algebra: ${marker}`
-			)
-		}
-	}
+for (const marker of algebraMarkers) {
+	if (schemaBundle.includes(marker))
+		throw new Error(`⚠️  arktype/schema includes set algebra: ${marker}`)
 }
 
 // what arktype/runtime can't drop ships in every artifact

@@ -60,17 +60,22 @@ const fingerprintOf = (): string => {
 	const parts = [process.version, process.platform, process.arch]
 	const roots = [rootOf(fileURLToPath(import.meta.url))]
 	for (const root of roots) {
-		const { name, dependencies, peerDependencies } = JSON.parse(
-			readFileSync(join(root, "package.json"), "utf8")
-		)
+		const { name, dependencies, peerDependencies, devDependencies } =
+			JSON.parse(readFileSync(join(root, "package.json"), "utf8"))
 		const files: string[] = []
 		collectCode(root, files)
 		parts.push(name)
 		for (const file of files.sort())
 			parts.push(relative(root, file), hashOf(readFileSync(file, "utf8")))
-		for (const dependency in { ...dependencies, ...peerDependencies }) {
+		for (const dependency in {
+			...dependencies,
+			...peerDependencies,
+			// from source (ark-ts), arktype's bundled workspace deps live here
+			...(fileURLToPath(import.meta.url).endsWith(".ts") && devDependencies)
+		}) {
 			const found =
-				arkPackageName.test(dependency) && packageRootOf(dependency, root)
+				(arkPackageName.test(dependency) || dependency === "arksets") &&
+				packageRootOf(dependency, root)
 			if (found && !roots.includes(found)) roots.push(found)
 		}
 	}

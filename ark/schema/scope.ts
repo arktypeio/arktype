@@ -75,7 +75,7 @@ import type { Unit } from "./roots/unit.ts"
 import { canJit, tryJit } from "./shared/compile.ts"
 import { nodeKinds, type NodeKind } from "./shared/implement.ts"
 import type { Locale } from "./shared/locale.ts"
-import { $ark } from "./shared/registry.ts"
+import { $ark, ambientResolver } from "./shared/registry.ts"
 import { missingSetEngineMessage } from "./shared/sets.ts"
 import type { Traversal } from "./shared/traversal.ts"
 import {
@@ -363,7 +363,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		}
 		// locale is global-only, though an untyped config can pass one
 		if (cfg.locale !== globalConfig.locale)
-			(cfg as { locale: Locale }).locale = globalConfig.locale
+			(cfg as { locale: Locale.Resolved }).locale = globalConfig.locale
 		return this.memo("cfg", cfg)
 	}
 
@@ -1115,6 +1115,8 @@ export const resolveAmbient = (name: string): BaseRoot | undefined => {
 		)
 	})
 }
+
+ambientResolver.resolve = resolveAmbient
 
 const maybeResolveSubalias = (
 	base: Dict,

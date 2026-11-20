@@ -1,4 +1,4 @@
-import { hashOf } from "@ark/util"
+import { hashOf } from "arktype/util"
 import MagicString, { type SourceMap } from "magic-string"
 import type { MemberExpression, Node, Span } from "oxc-parser"
 import { SourceModule } from "./module.ts"

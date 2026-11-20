@@ -20,6 +20,7 @@ import {
 	type StandardSchemaV1,
 	type Structure,
 	type Union,
+	type UnionDiscriminant,
 	type nodeOfKind
 } from "@ark/schema"
 import {
@@ -40,6 +41,8 @@ interface JsonSchemaContext extends ToJsonSchema.Context {
 	open: string[]
 	defNamesById: Record<string, string>
 	defs: Record<string, JsonSchema | undefined>
+	/** what each $ref's pointer starts with, before the name of its def */
+	refPrefix: string
 	writers: UnionJsonSchemaWriters
 }
 
@@ -56,19 +59,18 @@ export const rootToJsonSchema = (
 	node: BaseRoot,
 	opts: ToJsonSchema.Options
 ): JsonSchema => {
-	const ctx: JsonSchemaContext = Object.assign(
-		mergeToJsonSchemaConfigs(node.$.cfg.toJsonSchema, opts),
-		{
-			path: "",
-			open: [],
-			defNamesById: {},
-			defs: {},
-			writers:
-				(opts as { [unionJsonSchemaWritersKey]?: UnionJsonSchemaWriters })[
-					unionJsonSchemaWritersKey
-				] ?? jsonSchemaWriters
-		}
-	)
+	const merged = mergeToJsonSchemaConfigs(node.$.cfg.toJsonSchema, opts)
+	const ctx: JsonSchemaContext = Object.assign(merged, {
+		path: "",
+		open: [],
+		defNamesById: {},
+		defs: {},
+		refPrefix: refPrefixOf(merged),
+		writers:
+			(opts as { [unionJsonSchemaWritersKey]?: UnionJsonSchemaWriters })[
+				unionJsonSchemaWritersKey
+			] ?? jsonSchemaWriters
+	})
 	// a default handler throws naming where the part it can't convert is
 	ctx.fallback = flatMorph(ctx.fallback, (code, handler) => [
 		code,
@@ -102,6 +104,18 @@ const refPrefixByTarget: Record<ToJsonSchema.Target, string> = {
 	"openapi-3.0": "#/components/schemas/"
 }
 
+// ~standard.jsonSchema returns one schema, not the document holding it, so
+// for OpenAPI its $refs point to the definitions written beside them, as
+// zod's do, for a caller to move to components.schemas with the refs. Not
+// where a configured defs handler expects #/components/schemas/
+export const refPrefixOf = (ctx: ToJsonSchema.Context): string =>
+	(
+		ctx.target === "openapi-3.0" &&
+		ctx.fallback.defs === ToJsonSchema.standardFallback.defs
+	) ?
+		"#/definitions/"
+	:	refPrefixByTarget[ctx.target]
+
 export const toJsonSchemaRecurse = (
 	node: BaseRoot,
 	ctx: JsonSchemaContext
@@ -133,7 +147,7 @@ export const toJsonSchemaRecurse = (
 }
 
 const refTo = (name: string, ctx: JsonSchemaContext): JsonSchema.Ref =>
-	({ $ref: refPrefixByTarget[ctx.target] + name }) as JsonSchema.Ref
+	({ $ref: ctx.refPrefix + name }) as JsonSchema.Ref
 
 // the alias a cyclic definition's id starts with, without the count after it,
 // which follows an underscore where the alias ends in a digit. No lookbehind:
@@ -171,11 +185,7 @@ const toResolvedJsonSchema = (
 		:	(innerToJsonSchemaByKind[node.kind](node as never, ctx) as never)
 
 	for (const k in node.meta) {
-		// keyword identifies arktype's own phrase, which JSON Schema has no key for
-		if (k === "keyword" || k === "jsonSchema") continue
-		// these word arktype's own errors: a JSON Schema reader has no use for
-		// them, and a strict validator rejects the unknown keywords
-		if (k === "expected" || k === "actual" || k === "message") continue
+		if (!annotationKeys.has(k) && !k.startsWith("x-")) continue
 		const v = (node.meta as dict)[k]
 		// JSON can't represent a function like a message writer
 		if (typeof v === "function" && k !== "default") continue
@@ -185,17 +195,32 @@ const toResolvedJsonSchema = (
 		const jsonValue =
 			typeof v !== "function" && $ark.kw.jsonData.allows(v) ? v
 			: k === "default" ?
-				ctx.fallback.defaultValue({
-					code: "defaultValue",
-					base: result,
-					value: v as never
-				})
+				ctx.fallback.defaultValue({ code: "defaultValue", value: v as never })
 			:	(node.metaJson as dict)[k]
 		if (jsonValue !== undefined) writeAnnotation(result, k, jsonValue, ctx)
 	}
 
 	return jsonSchema ? Object.assign(result, jsonSchema) : result
 }
+
+// the meta written as annotations: JSON Schema's own and any x- extension.
+// Any other key, like arktype's alias, onFail, the words of its errors or a
+// key ArkEnv.meta adds, is no JSON Schema keyword, which a strict validator
+// like Ajv, an OpenAPI 3.0 linter or an LLM API rejects, so jsonSchema meta
+// writes it instead
+const annotationKeys: ReadonlySet<string> = new Set([
+	"title",
+	"description",
+	"default",
+	"examples",
+	"deprecated",
+	"readOnly",
+	"writeOnly",
+	"$comment",
+	"format",
+	"contentEncoding",
+	"contentMediaType"
+])
 
 const branchGroupsToJsonSchema = (
 	node: Union.Node,
@@ -210,8 +235,83 @@ const branchGroupsToJsonSchema = (
 			branchGroups.map(group => toJsonSchemaRecurse(group, ctx)),
 			ctx.target,
 			node.meta,
-			node.metaJson
+			node.metaJson,
+			discriminantOf(branchGroups, ctx)
 		)
+
+// the first key the first branch requires at which every branch requires
+// strings no other branch allows, as OpenAPI's discriminator expects: any
+// other union, like one whose branches share a value or one without the key,
+// is written as anyOf
+const discriminantOf = (
+	branches: BaseRoot[],
+	ctx: JsonSchemaContext
+): UnionDiscriminant | undefined => {
+	const tagsByBranch: Tags[] = []
+	for (const branch of branches) {
+		const tags = tagsOf(branch, ctx)
+		if (!tags) return
+		tagsByBranch.push(tags)
+	}
+	keys: for (const key of tagsByBranch[0]?.keys() ?? []) {
+		const seen = new Set<string>()
+		const values: string[][] = []
+		for (const tags of tagsByBranch) {
+			const branchValues = tags.get(key)
+			if (!branchValues) continue keys
+			for (const value of branchValues) {
+				if (seen.has(value)) continue keys
+				seen.add(value)
+			}
+			values.push(branchValues)
+		}
+		return {
+			key,
+			values,
+			writesKeyword: ctx.discriminator ?? ctx.target === "openapi-3.0"
+		}
+	}
+}
+
+// the strings an object branch requires at each key that allows only strings,
+// as its schema writes them in properties and required. A Map, since a key
+// can be one an object inherits, like constructor
+type Tags = Map<string, string[]>
+
+const tagsOf = (branch: BaseRoot, ctx: JsonSchemaContext): Tags | undefined => {
+	if (branch.meta.jsonSchema) return
+	if (branch.is("alias")) return tagsOf(branch.resolution, ctx)
+	// only an input is written as what a morph accepts
+	if (branch.is("morph")) {
+		const accepted = branch.declaredIn ?? branch.head
+		return ctx.io === "in" && accepted ? tagsOf(accepted, ctx) : undefined
+	}
+	if (!branch.is("intersection")) return
+	const { basis, structure } = branch
+	if (
+		!structure ||
+		structure.meta.jsonSchema ||
+		!basis?.is("domain") ||
+		basis.domain !== "object"
+	)
+		return
+	const tags: Tags = new Map()
+	for (const prop of structure.required ?? []) {
+		const values = prop.value.meta.jsonSchema ? [] : stringUnitsOf(prop.value)
+		if (typeof prop.key === "string" && values.length)
+			tags.set(prop.key, values)
+	}
+	return tags
+}
+
+const stringUnitsOf = (node: BaseRoot): string[] => {
+	const values: string[] = []
+	for (const branch of node.branches) {
+		if (!branch.is("unit") || typeof branch.unit !== "string") return []
+		values.push(branch.unit)
+	}
+	return values
+}
 
 const writeAnnotation = (
 	schema: object,
@@ -228,7 +328,9 @@ const writeAnnotation = (
 	// OpenAPI 3.0 has no contentEncoding, but names base64 with a format
 	else if (k === "contentEncoding") {
 		if (v === "base64") annotations.format = "byte"
-	} else annotations[k] = v
+	}
+	// nor $comment or contentMediaType, which it has nothing for
+	else if (k !== "$comment" && k !== "contentMediaType") annotations[k] = v
 }
 
 // a union's true and false branches are written as one boolean
@@ -265,6 +367,8 @@ const innerToJsonSchemaByKind: {
 		if (ctx.io === "in")
 			branchGroups = branchGroups.filter(group => !group.hasUnit(undefined))
 		const nonNull = branchGroups.filter(branch => !branch.hasUnit(null))
+		// an input's null | undefined is null, not anyOf with never beside it
+		if (!nonNull.length && branchGroups.length) return nullSchemaOf(ctx)
 		return nonNull.length === branchGroups.length ?
 				branchGroupsToJsonSchema(node, branchGroups, ctx)
 			:	ctx.writers.nullable(
@@ -296,10 +400,7 @@ const innerToJsonSchemaByKind: {
 	},
 	unit: (node, ctx) =>
 		// this is the more standard JSON schema representation, especially for Open API
-		node.unit === null ?
-			ctx.target === "openapi-3.0" ?
-				openApiNull()
-			:	{ type: "null" }
+		node.unit === null ? nullSchemaOf(ctx)
 		: !$ark.kw.jsonPrimitive.allows(node.unit) ?
 			ctx.fallback.unit({ code: "unit", base: {}, unit: node.unit })
 		: ctx.target === "openapi-3.0" ?
@@ -422,9 +523,10 @@ const reduceObjectJsonSchema = (
 	if (node.index && !node.props.length) delete schema.properties
 	if (node.props.length) schema = writeProps(node, schema, ctx)
 
-	const indexKeys: IndexKey[] = []
+	const indexes: IndexWrites = { keys: [] }
 	for (const index of node.index ?? [])
-		schema = writeIndex(index, node, schema, ctx, indexKeys)
+		schema = writeIndex(index, node, schema, ctx, indexes)
+	const indexKeys = indexes.keys
 
 	// an input may have the keys "delete" would remove
 	const rejectsUndeclared =
@@ -440,18 +542,25 @@ const reduceObjectJsonSchema = (
 			prop => typeof prop.key === "symbol" || indexKeys[0].node.allows(prop.key)
 		)
 	) {
-		// every key must match the index, so its value applies to each undeclared one
+		// every key must match the index, so its value applies to each one
 		schema.propertyNames = indexKeys[0].key
-		schema.additionalProperties = indexKeys[0].value
+		if (declaredValuesExtend(node, indexKeys[0].valueNode))
+			schema.additionalProperties = indexKeys[0].value
+		// a declared key's value must be the index's too, which only a pattern
+		// every key matches checks
+		else schema.patternProperties = { "": indexKeys[0].value }
 		return schema
 	}
 
 	if (
 		schema.patternProperties?.[""] &&
-		!schema.properties &&
-		Object.keys(schema.patternProperties).length === 1
+		Object.keys(schema.patternProperties).length === 1 &&
+		indexes.anyString &&
+		declaredValuesExtend(node, indexes.anyString)
 	) {
-		// with no other keys or patterns, every key is an additional property
+		// with no other patterns, the index adds nothing declared keys don't
+		// already check, so it's written as additionalProperties, which OpenAPI
+		// 3.0 and structured outputs without patternProperties read
 		schema.additionalProperties = schema.patternProperties[""]
 		delete schema.patternProperties
 	}
@@ -470,6 +579,13 @@ const reduceObjectJsonSchema = (
 
 	return schema
 }
+
+// additionalProperties skips declared keys, so it holds an index's value only
+// where each declared key's value is already within it
+const declaredValuesExtend = (node: Structure.Node, value: BaseRoot): boolean =>
+	node.props.every(
+		prop => typeof prop.key === "symbol" || jsonValueOf(prop).extends(value)
+	)
 
 const writeProps = (
 	node: Structure.Node,
@@ -514,7 +630,7 @@ const writeIndex = (
 	node: Structure.Node,
 	schema: JsonSchema.Object,
 	ctx: JsonSchemaContext,
-	indexKeys: IndexKey[]
+	indexes: IndexWrites
 ): JsonSchema.Object => {
 	const path = ctx.path
 	ctx.path = `${path}[${index.signature.expression}]`
@@ -555,16 +671,19 @@ const writeIndex = (
 		if (
 			pattern !== undefined &&
 			// OpenAPI 3.0 has no patternProperties, only additionalProperties
-			(ctx.target !== "openapi-3.0" || (pattern === "" && !node.props.length))
+			(ctx.target !== "openapi-3.0" ||
+				(pattern === "" && declaredValuesExtend(node, index.value)))
 		) {
 			defineValue((schema.patternProperties ??= {}), pattern, valueJsonSchema)
+			if (pattern === "") indexes.anyString = index.value
 			continue
 		}
 
-		indexKeys.push({
+		indexes.keys.push({
 			node: keyIn,
 			key: keySchema ?? (toResolvedJsonSchema(keyIn, ctx) as never),
-			value: valueJsonSchema
+			value: valueJsonSchema,
+			valueNode: index.value
 		})
 	}
 	return schema
@@ -585,6 +704,14 @@ interface IndexKey {
 	node: BaseRoot
 	key: JsonSchema.String
 	value: JsonSchema
+	valueNode: BaseRoot
+}
+
+interface IndexWrites {
+	// keys no pattern matches exactly, for propertyNames or the fallbacks
+	keys: IndexKey[]
+	// the value of an index any string key matches, written as the pattern ""
+	anyString?: BaseRoot
 }
 
 // the pattern matching exactly the keys an index signature's key allows
@@ -625,11 +752,7 @@ const writeDefault = (
 	const jsonDefault =
 		$ark.kw.jsonData.allows(value) ?
 			value
-		:	ctx.fallback.defaultValue({
-				code: "defaultValue",
-				base: schema,
-				value
-			})
+		:	ctx.fallback.defaultValue({ code: "defaultValue", value })
 	if (jsonDefault !== undefined) schema.default = jsonDefault
 }
 
@@ -711,6 +834,9 @@ const reduceSequenceJsonSchema = (
 	return schema
 }
 
+const nullSchemaOf = (ctx: JsonSchemaContext): JsonSchema =>
+	ctx.target === "openapi-3.0" ? openApiNull() : { type: "null" }
+
 // an OpenAPI 3.0 array schema must have items
 const arraySchemaOf = (ctx: JsonSchemaContext): JsonSchema.Array =>
 	ctx.target === "openapi-3.0" ?
@@ -725,11 +851,11 @@ const writeBound = (
 	exclusiveKey: "exclusiveMinimum" | "exclusiveMaximum"
 ): JsonSchema.Numeric => {
 	if (!node.exclusive) schema[key] = node.rule
-	// openapi-3.0 marks the bound itself exclusive
-	else if (ctx.target === "openapi-3.0") {
-		schema[key] = node.rule
-		schema[exclusiveKey] = true
-	} else schema[exclusiveKey] = node.rule
+	// openapi-3.0 marks the bound itself exclusive, with a boolean the type
+	// leaves out to fit JSONSchema7
+	else if (ctx.target === "openapi-3.0")
+		Object.assign(schema, { [key]: node.rule, [exclusiveKey]: true })
+	else schema[exclusiveKey] = node.rule
 	return schema
 }
 

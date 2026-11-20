@@ -16,7 +16,7 @@
 		"precompile"
 	],
 	"version": "3.0.0-beta.1",
-	"arkAotVersion": "0.0.1-beta.1",
+	"arkAotVersion": "3.0.0-beta.1",
 	"license": "MIT",
 	"homepage": "https://arktype.io",
 	"repository": {
@@ -30,8 +30,48 @@
 		"url": "https://arktype.io"
 	},
 	"type": "module",
+	"sideEffects": [
+		"./index.ts",
+		"./codecs.ts",
+		"./config.ts",
+		"./errors.ts",
+		"./mutatesInput.ts",
+		"./i18n.ts",
+		"./keywords/phrases.ts",
+		"./locales/*.ts",
+		"./sets.ts",
+		"./schema.ts",
+		"./schemaInternal.ts",
+		"./internal.ts",
+		"./island.ts",
+		"./islandDependency.ts",
+		"./precompiled.ts",
+		"./runtime.ts",
+		"./runtimeDevelopment.ts",
+		"./out/index.js",
+		"./out/codecs.js",
+		"./out/config.js",
+		"./out/errors.js",
+		"./out/mutatesInput.js",
+		"./out/i18n.js",
+		"./out/keywords/phrases.js",
+		"./out/locales/*.js",
+		"./out/sets.js",
+		"./out/schema.js",
+		"./out/schemaInternal.js",
+		"./out/internal.js",
+		"./out/island.js",
+		"./out/islandDependency.js",
+		"./out/precompiled.js",
+		"./out/runtime.js",
+		"./out/runtimeDevelopment.js",
+		"./out/chunk-*.js"
+	],
 	"main": "./out/index.js",
 	"types": "./out/index.d.ts",
+	"bin": {
+		"ark": "out/cli.js"
+	},
 	"typesVersions": {
 		"*": {
 			"codecs": [
@@ -52,8 +92,38 @@
 			"mutatesInput": [
 				"./out/mutatesInput.d.ts"
 			],
+			"regex": [
+				"./out/regex.d.ts"
+			],
 			"runtime": [
 				"./out/runtime.d.ts"
+			],
+			"schema": [
+				"./out/schema.d.ts"
+			],
+			"schema/internal": [
+				"./out/schemaInternal.d.ts"
+			],
+			"schema/issueFeatures": [
+				"./out/shared/issueFeatures.d.ts"
+			],
+			"schema/runtime": [
+				"./out/schemaRuntime.d.ts"
+			],
+			"schema/runtime/none": [
+				"./out/schemaRuntimeNone.d.ts"
+			],
+			"schema/runtime/none-lean": [
+				"./out/schemaRuntimeNoneLean.d.ts"
+			],
+			"schema/runtime/lean": [
+				"./out/schemaRuntimeLean.d.ts"
+			],
+			"sets": [
+				"./out/sets.d.ts"
+			],
+			"util": [
+				"./out/util.d.ts"
 			],
 			"internal": [
 				"./out/internal.d.ts"
@@ -99,6 +169,10 @@
 			"ark-ts": "./mutatesInput.ts",
 			"default": "./out/mutatesInput.js"
 		},
+		"./regex": {
+			"ark-ts": "./regex.ts",
+			"default": "./out/regex.js"
+		},
 		"./runtime": {
 			"ark-ts": {
 				"development": "./runtimeDevelopment.ts",
@@ -106,6 +180,42 @@
 			},
 			"development": "./out/runtimeDevelopment.js",
 			"default": "./out/runtime.js"
+		},
+		"./schema": {
+			"ark-ts": "./schema.ts",
+			"default": "./out/schema.js"
+		},
+		"./schema/internal": {
+			"ark-ts": "./schemaInternal.ts",
+			"default": "./out/schemaInternal.js"
+		},
+		"./schema/issueFeatures": {
+			"ark-ts": "./schemaIssueFeatures.ts",
+			"default": "./out/shared/issueFeatures.js"
+		},
+		"./schema/runtime": {
+			"ark-ts": "./schemaRuntime.ts",
+			"default": "./out/schemaRuntime.js"
+		},
+		"./schema/runtime/none": {
+			"ark-ts": "./schemaRuntimeNone.ts",
+			"default": "./out/schemaRuntimeNone.js"
+		},
+		"./schema/runtime/none-lean": {
+			"ark-ts": "./schemaRuntimeNoneLean.ts",
+			"default": "./out/schemaRuntimeNoneLean.js"
+		},
+		"./schema/runtime/lean": {
+			"ark-ts": "./schemaRuntimeLean.ts",
+			"default": "./out/schemaRuntimeLean.js"
+		},
+		"./sets": {
+			"ark-ts": "./sets.ts",
+			"default": "./out/sets.js"
+		},
+		"./util": {
+			"ark-ts": "./util.ts",
+			"default": "./out/util.js"
 		},
 		"./internal": {
 			"ark-ts": "./internal.ts",
@@ -171,6 +281,86 @@
 			"types": "./out/checkers.d.ts",
 			"default": "./out/runtime.js"
 		},
+		"./internal/regex.ts": {
+			"ark-ts": "./regex.ts",
+			"default": "./out/regex.js"
+		},
+		"./internal/regex.js": {
+			"ark-ts": "./regex.ts",
+			"default": "./out/regex.js"
+		},
+		"./internal/schema.ts": {
+			"ark-ts": "./schema.ts",
+			"default": "./out/schema.js"
+		},
+		"./internal/schema.js": {
+			"ark-ts": "./schema.ts",
+			"default": "./out/schema.js"
+		},
+		"./internal/schemaInternal.ts": {
+			"ark-ts": "./schemaInternal.ts",
+			"default": "./out/schemaInternal.js"
+		},
+		"./internal/schemaInternal.js": {
+			"ark-ts": "./schemaInternal.ts",
+			"default": "./out/schemaInternal.js"
+		},
+		"./internal/schemaIssueFeatures.ts": {
+			"ark-ts": "./schemaIssueFeatures.ts",
+			"default": "./out/shared/issueFeatures.js"
+		},
+		"./internal/schemaIssueFeatures.js": {
+			"ark-ts": "./schemaIssueFeatures.ts",
+			"default": "./out/shared/issueFeatures.js"
+		},
+		"./internal/schemaRuntime.ts": {
+			"ark-ts": "./schemaRuntime.ts",
+			"default": "./out/schemaRuntime.js"
+		},
+		"./internal/schemaRuntime.js": {
+			"ark-ts": "./schemaRuntime.ts",
+			"default": "./out/schemaRuntime.js"
+		},
+		"./internal/schemaRuntimeNone.ts": {
+			"ark-ts": "./schemaRuntimeNone.ts",
+			"default": "./out/schemaRuntimeNone.js"
+		},
+		"./internal/schemaRuntimeNone.js": {
+			"ark-ts": "./schemaRuntimeNone.ts",
+			"default": "./out/schemaRuntimeNone.js"
+		},
+		"./internal/schemaRuntimeLean.ts": {
+			"ark-ts": "./schemaRuntimeLean.ts",
+			"default": "./out/schemaRuntimeLean.js"
+		},
+		"./internal/schemaRuntimeLean.js": {
+			"ark-ts": "./schemaRuntimeLean.ts",
+			"default": "./out/schemaRuntimeLean.js"
+		},
+		"./internal/schemaRuntimeNoneLean.ts": {
+			"ark-ts": "./schemaRuntimeNoneLean.ts",
+			"default": "./out/schemaRuntimeNoneLean.js"
+		},
+		"./internal/schemaRuntimeNoneLean.js": {
+			"ark-ts": "./schemaRuntimeNoneLean.ts",
+			"default": "./out/schemaRuntimeNoneLean.js"
+		},
+		"./internal/sets.ts": {
+			"ark-ts": "./sets.ts",
+			"default": "./out/sets.js"
+		},
+		"./internal/sets.js": {
+			"ark-ts": "./sets.ts",
+			"default": "./out/sets.js"
+		},
+		"./internal/util.ts": {
+			"ark-ts": "./util.ts",
+			"default": "./out/util.js"
+		},
+		"./internal/util.js": {
+			"ark-ts": "./util.ts",
+			"default": "./out/util.js"
+		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
 			"types": "./out/*.d.ts",
@@ -189,7 +379,7 @@
 	"scripts": {
 		"build": "ts ../repo/build.ts",
 		"test": "ts ../repo/testPackage.ts; pnpm testIntegration",
-		"testIntegration": "pnpm testSimpleConfig && pnpm testAllConfig && pnpm testOnFailConfig && pnpm testEoptConfig && pnpm testJitlessConfig && pnpm testCsp && pnpm testCspConfiguredAfterImport && pnpm testCspAfterLoad && pnpm testPrecompiled && pnpm testSchemaFirst && pnpm testConfigAfterImport && pnpm testMissingGlobals && pnpm testLocaleConfig && pnpm testLocaleWithoutIntl && pnpm testLocaleWithoutI18n && pnpm testLocaleImportedAfter",
+		"testIntegration": "pnpm testSimpleConfig && pnpm testAllConfig && pnpm testOnFailConfig && pnpm testEoptConfig && pnpm testJitlessConfig && pnpm testCsp && pnpm testCspConfiguredAfterImport && pnpm testCspAfterLoad && pnpm testPrecompiled && pnpm testSchemaFirst && pnpm testConfigAfterImport && pnpm testMissingGlobals && pnpm testLocaleConfig && pnpm testLocaleWithoutIntl && pnpm testLocaleWithoutI18n && pnpm testLocaleImportedAfter && pnpm testLocaleNormalizedEarly",
 		"testSimpleConfig": "ts ./__tests__/integration/testSimpleConfig.ts",
 		"testAllConfig": "ts ./__tests__/integration/testAllConfig.ts",
 		"testOnFailConfig": "ts ./__tests__/integration/testOnFailConfig.ts",
@@ -205,9 +395,10 @@
 		"testLocaleConfig": "ts ./__tests__/integration/testLocaleConfig.ts",
 		"testLocaleWithoutIntl": "ts ./__tests__/integration/testLocaleWithoutIntl.ts",
 		"testLocaleWithoutI18n": "ts ./__tests__/integration/testLocaleWithoutI18n.ts",
-		"testLocaleImportedAfter": "ts ./__tests__/integration/testLocaleImportedAfter.ts"
+		"testLocaleImportedAfter": "ts ./__tests__/integration/testLocaleImportedAfter.ts",
+		"testLocaleNormalizedEarly": "ts ./__tests__/integration/testLocaleNormalizedEarly.ts"
 	},
-	"dependencies": {
+	"devDependencies": {
 		"@ark/util": "workspace:*",
 		"@ark/schema": "workspace:*",
 		"arkregex": "workspace:*",

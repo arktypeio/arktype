@@ -8,12 +8,12 @@ import {
 	type BaseScope,
 	type ErrorDetail,
 	type MutatesInput
-} from "@ark/schema"
-import * as arkSchema from "@ark/schema"
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { fingerprintOf } from "@ark/schema/runtime"
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { writeMissingInverseMessage } from "@ark/schema/codecs"
+} from "arktype/schema"
+import * as arkSchema from "arktype/schema"
+
+import { fingerprintOf } from "arktype/schema/runtime"
+
+import { writeMissingInverseMessage } from "arktype/schema/internal"
 import {
 	appendStringifiedKey,
 	flatMorph,
@@ -29,7 +29,7 @@ import {
 	throwError,
 	throwParseError,
 	type Fn
-} from "@ark/util"
+} from "arktype/util"
 import { ark, configure } from "arktype"
 // for configured errors and mutatesInput
 import "arktype/errors"
@@ -554,7 +554,7 @@ export interface PrecompiledModule extends ModuleAnalysis {
 }
 
 // a package arktype runs on, which must load once
-export type ArkPackage = "arktype" | "@ark/schema" | "@ark/util"
+export type ArkPackage = "arktype"
 
 interface PackageCopy {
 	version: string
@@ -831,9 +831,7 @@ export class Precompiler {
 	private packagesByEntry: Record<string, [root: string, version: string]> =
 		Object.create(null)
 	private copiesByPackage: Record<ArkPackage, Record<string, PackageCopy>> = {
-		arktype: {},
-		"@ark/schema": {},
-		"@ark/util": {}
+		arktype: {}
 	}
 	private reportedDependencies = new Set<string>()
 	private intrinsicUnits: Record<string, string> | undefined
@@ -977,6 +975,7 @@ export class Precompiler {
 				program.arkImports[id].some(
 					specifier =>
 						!runtimeSpecifiers.includes(specifier) &&
+						!specifier.startsWith("arktype/util") &&
 						!specifier.startsWith("@ark/util")
 				)
 			)
@@ -2924,11 +2923,6 @@ export class Precompiler {
 					:	versionHint
 			})
 		}
-		// arktype's own dependencies may resolve to copies of their own
-		if (name === "arktype")
-			reports.push(...this.readCopies("@ark/schema", entry))
-		if (name !== "@ark/util")
-			reports.push(...this.readCopies("@ark/util", entry))
 		return reports
 	}
 
@@ -3020,9 +3014,7 @@ export class Precompiler {
 	// keyed by reads drops it after an upgrade
 	get ownManifests(): string[] {
 		return [
-			...(["arktype", "@ark/schema", "@ark/util"] as const).map(
-				name => this.ownPackageOf(name)[0]
-			),
+			this.ownPackageOf("arktype")[0],
 			this.packageOf("@ark/aot", fileURLToPath(import.meta.url))[0]
 		].map(root => join(root, "package.json"))
 	}
@@ -7933,7 +7925,10 @@ export class Precompiler {
 			if (!isLocale && !nodePackageSpecifier.test(source)) continue
 			for (const specifier of statement.specifiers) {
 				const name =
-					source === "@ark/schema" && specifier.type === "ImportSpecifier" ?
+					(
+						(source === "arktype/schema" || source === "@ark/schema") &&
+						specifier.type === "ImportSpecifier"
+					) ?
 						exportNameOf(specifier.imported)
 					:	undefined
 				// e.g. `Traversal`, shared unless errors "none" copies the runtime
@@ -7952,11 +7947,11 @@ export class Precompiler {
 								module,
 								reference.id,
 								"R4",
-								`\`${binding!.name}\` is @ark/schema's, not the standalone runtime's`,
+								`\`${binding!.name}\` is ${source}'s, not the standalone runtime's`,
 								// a class, unlike a function like firstIssue
 								/^[A-Z]/.test(name) ?
 									[
-										`what a standalone validator creates isn't an instance of @ark/schema's ${name}`
+										`what a standalone validator creates isn't an instance of ${source}'s ${name}`
 									]
 								:	[],
 								writeSchemaExportHint(name)
@@ -8559,7 +8554,7 @@ const localeSpecifier = /^(?:arktype|@ark\/type)\/locales(?:\/|$)/
 
 // packages reading arktype's nodes, which validators lack
 const nodePackageSpecifier =
-	/^(?:(?:arksets|@ark\/(?:json-schema|fast-check)|(?:arktype|@ark\/(?:type|schema))\/internal)(?:\/|$)|@ark\/schema$)/
+	/^(?:(?:arksets|@ark\/(?:json-schema|fast-check)|arktype\/(?:sets|schema|internal)|@ark\/(?:type|schema)\/internal)(?:\/|$)|@ark\/schema$)/
 
 // @ark/schema exports the runtime shares (not ArkErrors)
 const sharedSchemaExports = Object.keys(runtimeExports).filter(
@@ -8574,7 +8569,7 @@ const isEncodingError = (e: Error) =>
 
 // e.g. `from "arktype"`, `import("arktype")` or `require("arktype")`
 const arktypeSpecifier =
-	/\b(?:from|import\s*\(?|require\s*\()\s*["'](?:(?:arktype|@ark\/type)(?:\/(?:config|codecs))?|arkregex|@ark\/regex)["']/
+	/\b(?:from|import\s*\(?|require\s*\()\s*["'](?:(?:arktype|@ark\/type)(?:\/(?:config|codecs|regex))?|arkregex|@ark\/regex)["']/
 
 // e.g. `from "./a.ts"`, `import "./a.ts"` or `import("./a.ts")`
 const importSpecifier = /\b(?:from|import\s*\(?)\s*["']([^"']+)["']/g

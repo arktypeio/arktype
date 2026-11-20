@@ -60,15 +60,13 @@ Global config is fixed when the first Type is created, by a definition or by rea
 
 ## Why does Jest say `Must use import to load ES Module`?
 
-ArkType and its dependencies ship ES modules only, and Jest runs tests as CommonJS, so a test that imports arktype fails, naming `node_modules/arktype/out/index.js`. Have Jest transform those packages, with a transform that reads JavaScript, like ts-jest's `js-with-ts` preset:
+ArkType ships ES modules only, and Jest runs tests as CommonJS, so a test that imports arktype fails, naming `node_modules/arktype/out/index.js`. Have Jest transform it, with a transform that reads JavaScript, like ts-jest's `js-with-ts` preset:
 
 ```js title="jest.config.js"
 module.exports = {
 	preset: "ts-jest/presets/js-with-ts",
-	// arktype and its dependencies ship ES modules only
-	transformIgnorePatterns: [
-		"/node_modules/(?!(\\.pnpm|arktype|arkregex|arksets|@ark)/)"
-	]
+	// arktype ships ES modules only
+	transformIgnorePatterns: ["/node_modules/(?!(\\.pnpm|arktype)/)"]
 }
 ```
 

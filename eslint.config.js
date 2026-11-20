@@ -122,7 +122,9 @@ export default tseslint.config(
 								"**/schema/**",
 								"**/sets/**",
 								"**/type/**",
-								"**/util/**"
+								"**/util/**",
+								"!arktype/schema/**",
+								"!@ark/schema/**"
 							],
 
 							message:
@@ -168,7 +170,13 @@ export default tseslint.config(
 		],
 		rules: {
 			"import/no-nodejs-modules": "warn",
-			"import/no-extraneous-dependencies": "warn"
+			"import/no-extraneous-dependencies": ["warn", { devDependencies: true }]
+		}
+	},
+	{
+		files: ["**/ark/type/cli.ts"],
+		rules: {
+			"import/no-nodejs-modules": "off"
 		}
 	},
 	{
