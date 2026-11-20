@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { ArkErrors, en, TraversalError } from "@ark/schema"
+import { ArkErrors as RuntimeErrors } from "@ark/schema/runtime"
 import { flatMorph, throwError } from "@ark/util"
 import {
 	byAncestorPath,
@@ -9,6 +10,7 @@ import {
 	flatMessagesByPath,
 	scope,
 	type,
+	type ArkError,
 	type ArkErrorCode,
 	type Type
 } from "arktype"
@@ -191,6 +193,27 @@ must be Email is not valid`)
 		attest(traversalError.message).snap(`natural must be an integer
 natural must be positive
 name must be a string`)
+	})
+
+	it("TraversalError recognizes what any errors throw", () => {
+		const out = type("string")(5) as ArkErrors
+		// as a build leaving out the class, or another copy of arktype, throws it
+		const thrown = Object.defineProperty(
+			Object.assign(new Error(out.summary), { name: "TraversalError" }),
+			"arkErrors",
+			{ value: out }
+		)
+		attest(thrown instanceof TraversalError).equals(true)
+		attest(new Error("x") instanceof TraversalError).equals(false)
+		attest(
+			Object.assign(new Error("x"), { name: "TraversalError" }) instanceof
+				TraversalError
+		).equals(false)
+		// a subclass's instances are only those it constructs
+		class Thrown extends TraversalError {}
+		attest(thrown instanceof Thrown).equals(false)
+		attest(new Thrown(out) instanceof Thrown).equals(true)
+		attest(new Thrown(out) instanceof TraversalError).equals(true)
 	})
 
 	it("homepage example", () => {
@@ -434,6 +457,37 @@ user.name must be a string`)
 		attest(Object.keys(flatByPath(out))).equals(["__proto__", "a"])
 	})
 
+	it("groups errors by path into plain objects, a path __proto__ defined", () => {
+		const out = type({ ["__proto__"]: "string", a: { b: "string" } })(
+			JSON.parse('{ "__proto__": 1, "a": { "b": 2 } }')
+		) as ArkErrors
+		const first = byPath(out)
+		const ancestors = byAncestorPath(out)
+		attest(Object.getPrototypeOf(first)).is(Object.prototype)
+		attest(Object.getPrototypeOf(ancestors)).is(Object.prototype)
+		attest(Object.keys(first)).equals(["__proto__", "a.b"])
+		attest(Object.keys(ancestors)).equals(["", "__proto__", "a", "a.b"])
+		attest(first.__proto__).is(out.issues[0])
+	})
+
+	it("groups a standalone validator's issues by their path", () => {
+		const errors = new RuntimeErrors()
+		errors._p.push("a", 0)
+		errors._e(1, "domain", "a string")
+		errors._e(2, "domain", "a number")
+		errors._p.length = 0
+		errors._e({}, "predicate")
+		const read = errors as never as ArkErrors
+		attest(Object.keys(byPath(read))).equals(["a[0]", ""])
+		attest(byPath(read)["a[0]"] === (errors.issues[0] as {})).equals(true)
+		attest(flatMessagesByPath(read)).snap({
+			"a[0]": ["must be a string", "must be a number"],
+			"": ["is invalid"]
+		})
+		attest(Object.keys(flatByPath(read))).equals(["a[0]", ""])
+		attest(Object.keys(byAncestorPath(read))).equals(["", "a", "a[0]"])
+	})
+
 	it("flatMessagesByPath holds each message without its path", () => {
 		const T = type({
 			email: type("string.email").configure({ message: "Enter a valid email" }),
@@ -574,21 +628,123 @@ d must be a number`)
 	})
 
 	it("serializes an error's own keys, where toJSON() prints a symbol key", () => {
-		const tag = Symbol("tag")
+		const tag = Symbol("my tag")
 		const out = type({ [tag]: "string" })({ [tag]: 1 }) as ArkErrors
 		attest(JSON.parse(JSON.stringify(out.issues))[0].path).equals([null])
 		attest(out.toJSON()[0]).snap({
-			data: 1,
-			path: ["Symbol(tag)"],
+			path: ["Symbol(my tag)"],
 			code: "domain",
 			description: "a string",
-			meta: {},
 			domain: "string",
-			propString: "[Symbol(tag)]",
+			propString: "[Symbol(my tag)]",
 			expected: "a string",
-			actual: "a number",
 			message: "must be a string"
 		})
+	})
+
+	it("serializes errors without their data", () => {
+		const out = type({ password: "string >= 8", token: "string.uuid" })({
+			password: "hunter2",
+			token: "secret-token"
+		}) as ArkErrors
+		// a pattern's actual is its data, printed
+		attest(out.issues[1].actual).snap('"secret-token"')
+		const json = JSON.stringify(out)
+		attest(json.includes("hunter2") || json.includes("secret")).equals(false)
+		attest(out.toJSON()).snap([
+			{
+				path: ["password"],
+				code: "minLength",
+				description: "at least length 8",
+				propString: "password",
+				expected: "at least length 8",
+				message: "must be at least length 8"
+			},
+			{
+				path: ["token"],
+				code: "pattern",
+				description: "a UUID",
+				propString: "token",
+				expected: "a UUID",
+				message: "must be a UUID"
+			}
+		])
+	})
+
+	it("serializes errors whose data or Type holds what JSON can't", () => {
+		const cyclic: Record<string, unknown> = {}
+		cyclic.self = cyclic
+		const T = type({
+			a: "number",
+			b: type("1n").configure({ fallback: 1n } as never),
+			c: type.instanceOf(Date)
+		})
+		const out = T({ a: cyclic, b: 2n, c: cyclic }) as ArkErrors
+		attest(JSON.parse(JSON.stringify(out))).snap([
+			{
+				path: ["a"],
+				code: "domain",
+				description: "a number",
+				domain: "number",
+				propString: "a",
+				expected: "a number",
+				message: "must be a number"
+			},
+			{
+				path: ["b"],
+				code: "unit",
+				description: "1n",
+				propString: "b",
+				expected: "1n",
+				message: "must be 1n"
+			},
+			{
+				path: ["c"],
+				code: "proto",
+				description: "a Date",
+				propString: "c",
+				expected: "a Date",
+				message: "must be a Date"
+			}
+		])
+	})
+
+	it("serializes a union's errors without their data", () => {
+		const out = type({ a: "string" }).or({ b: "bigint" })({
+			a: 1n,
+			b: 1
+		}) as ArkErrors
+		const json = JSON.stringify(out)
+		attest(json.includes('"data"')).equals(false)
+		attest(JSON.parse(json)).snap([
+			{
+				path: [],
+				code: "union",
+				errors: [
+					{
+						path: ["a"],
+						code: "domain",
+						description: "a string",
+						domain: "string",
+						propString: "a",
+						expected: "a string",
+						message: "must be a string"
+					},
+					{
+						path: ["b"],
+						code: "domain",
+						description: "a bigint",
+						domain: "bigint",
+						propString: "b",
+						expected: "a bigint",
+						message: "must be a bigint"
+					}
+				],
+				propString: "",
+				expected: "a must be a string or b must be a bigint",
+				message: "a must be a string or b must be a bigint"
+			}
+		])
 	})
 
 	it("issues found once read", () => {
@@ -615,13 +771,16 @@ b must be a number`)
 	})
 
 	it("writes a first issue's actual again once it's cleared", () => {
-		// a pipe's errors are found at once, so the first is written with the rest too
 		const out = type({ a: "string" }).pipe(o => o)({ a: 0 }) as ArkErrors
 		const first = firstIssue(out)
 		attest(first.actual).snap("a number")
 		first.actual = undefined as never
-		attest(out.issues[0]).equals(first)
-		attest([first.actual, out.summary]).snap(["a number", "a must be a string"])
+		// written once, so reading the rest doesn't write it again
+		attest(out.issues[0]).is(first)
+		attest(first.actual === undefined).equals(true)
+		// as errors "first" resets errors a callback read, once it drops the rest
+		out._init(out._config)
+		attest([out.summary, first.actual]).snap(["a must be a string", "a number"])
 	})
 
 	it("firstIssue intersects the errors at its path", () => {
@@ -656,6 +815,67 @@ b must be a number`)
 		attest(firstIssue(out)).is(out.issues[0])
 	})
 
+	it("firstIssue found alone is issues[0] once the rest are found", () => {
+		const out = type({ a: "string", b: "number" })({
+			a: 0,
+			b: "b"
+		}) as ArkErrors
+		const first = firstIssue(out)
+		attest(out.issues[0]).is(first)
+		attest(firstIssue(out)).is(first)
+		attest(out.summary).snap(`a must be a string
+b must be a number`)
+	})
+
+	it("a union's whole paths after firstIssue", () => {
+		const Member = type({ a: "string" }).or({ b: "number" })
+		const data = { user: { a: 1, b: "x" }, c: 1 }
+		// found as they validate, as a narrow calls user code, and once read
+		for (const T of [
+			type({ user: Member, c: "string" }).narrow(() => true),
+			type({ user: Member, c: "string" })
+		]) {
+			const out = T(data) as ArkErrors
+			attest(firstIssue(out).message).snap(
+				"a must be a string or b must be a number"
+			)
+			attest(out.summary)
+				.snap(`user.a must be a string or user.b must be a number
+c must be a string`)
+		}
+	})
+
+	it("errors list only the keys a standalone validator's have", () => {
+		const out = type({ a: "string", b: "number" })({ a: 0, b: 0 }) as ArkErrors
+		const keysOf = (o: object) => {
+			const keys: string[] = []
+			for (const k in o) keys.push(k)
+			return keys
+		}
+		// unread, none: neither the node nor the data finding their issues
+		attest(keysOf(out)).equals([])
+		firstIssue(out)
+		attest(keysOf(out)).equals([])
+		void out.summary
+		attest(keysOf(out)).equals([])
+		// found as they validate, the issues and the path they're found at
+		attest(keysOf(type("string").pipe(s => s)(0) as ArkErrors)).equals([
+			"_",
+			"_p"
+		])
+	})
+
+	it("errors iterate their issues", () => {
+		const out = type({ a: "string", b: "number" })({ a: 0, b: "b" })
+		if (!(out instanceof type.errors)) throw new Error("expected errors")
+		const spread = [...out]
+		attest<ArkError[]>(spread).equals([...out.issues])
+		const paths: string[] = []
+		for (const error of out) paths.push(error.propString)
+		attest(paths).equals(["a", "b"])
+		attest(Array.from(out)[1]).is(out.issues[1])
+	})
+
 	it("inspected errors print their name, summary and issues", () => {
 		const out = type({ a: "string" })({ a: 1 })
 		attest(inspect(out)).snap(`ArkErrors {
@@ -685,13 +905,11 @@ b must be a number`)
 		data.a = "a"
 		attest(out.toJSON()).snap([
 			{
-				data: { a: "a" },
 				path: [],
 				expected: "valid",
 				message: "is invalid",
 				code: "predicate",
-				propString: "",
-				actual: "an object"
+				propString: ""
 			}
 		])
 	})

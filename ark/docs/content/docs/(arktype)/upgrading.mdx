@@ -142,23 +142,24 @@ To ship less than before, [precompile](/docs/intro/setup#add-the-plugin). Each T
 
 ### ArkErrors is no longer an array
 
-`ArkErrors` was an `Array` subclass. It's now a plain class whose `issues` is a plain array with an error for each failed check. Indexing, iteration, `length` and array methods move to `issues`:
+`ArkErrors` was an `Array` subclass. It's now a plain class whose `issues` is a plain array with an error for each failed check. Indexing, `length` and array methods move to `issues`. Iterating still works, as `for (const e of out)` and `[...out]` read `issues`:
 
 ```ts
 const out = type({ name: "string" })({ name: 5 })
 
 if (out instanceof type.errors) {
-	// before: out[0], out.map(e => e.message), for (const e of out), out.length
+	// before: out[0], out.map(e => e.message), out.length
 	out.issues[0]
 	out.issues.map(e => e.message)
-	for (const error of out.issues) console.log(error.message)
 	out.issues.length
+	// unchanged
+	for (const error of out) console.log(error.message)
 }
 ```
 
 `Array.isArray(out)` is now `false`, and `[].concat(out)` nests the errors instead of spreading them, so pass `out.issues`. A [Standard Schema](/docs/standard-schema) failure is no longer the `ArkErrors`, but `{ issues }`, as [below](#standard-schema-messages-leave-out-the-path).
 
-`ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()` and `toString()`, and gains [`toLocaleString(locale)`](/docs/i18n#rendering-in-a-locale). `message` and `toTraversalError()` are gone: read `summary`, and call `throw()`, or construct the error with `new TraversalError(out)`. `byPath`, `flatByPath` and `byAncestorPath` are functions `arktype` exports, as is `flatProblemsByPath`, now named `flatMessagesByPath`:
+`ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()` and `toString()`, and gains [`toLocaleString(locale)`](/docs/i18n#rendering-in-a-locale). `toJSON()`, and so `JSON.stringify(out)`, now leaves out each error's `data` and `actual`, which describes it, and its `meta`, `rule`, `unit` and `proto`, so a rejected password isn't serialized and a bigint or circular value doesn't throw: read them off `out.issues`. `message` and `toTraversalError()` are gone: read `summary`, and call `throw()`, or construct the error with `new TraversalError(out)`. `byPath`, `flatByPath` and `byAncestorPath` are functions `arktype` exports, as is `flatProblemsByPath`, now named `flatMessagesByPath`:
 
 ```ts
 import { flatMessagesByPath, type } from "arktype"

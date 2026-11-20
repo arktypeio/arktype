@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { rootSchema } from "@ark/schema"
-import { match, scope, type } from "arktype"
+import { firstIssue, match, scope, type } from "arktype"
 import { setFlagsFromString } from "node:v8"
 import { runInNewContext } from "node:vm"
 
@@ -164,6 +164,26 @@ contextualize(() => {
 			T = null
 			await collect()
 			attest(String(unfinalized()(input))).equals(message)
+		}
+	})
+
+	it("errors release the data they found their issues in", async () => {
+		const T = type({ a: "string", b: "number" })
+		// each issue holds its value, not the object holding it
+		const create = (read: (errors: type.errors) => unknown) => {
+			const data = { a: 0, b: 1 }
+			const errors = T(data) as type.errors
+			read(errors)
+			return [errors, new WeakRef(data)] as const
+		}
+		for (const read of [
+			(errors: type.errors) => errors.summary,
+			(errors: type.errors) => [firstIssue(errors), errors.issues]
+		]) {
+			const [errors, ref] = create(read)
+			await collectTarget(ref)
+			attest(ref.deref()).equals(undefined)
+			attest(errors.summary).equals("a must be a string")
 		}
 	})
 
