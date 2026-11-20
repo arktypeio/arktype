@@ -43,7 +43,7 @@
 		"access": "public"
 	},
 	"peerDependencies": {
-		"arktype": "workspace:*",
+		"arktype": "workspace:^",
 		"fast-check": "3 || 4"
 	}
 }

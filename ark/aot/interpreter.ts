@@ -87,23 +87,20 @@ import type { SourceModule } from "./module.ts"
 import {
 	isTransparent,
 	passesWithoutCtx,
-	readsOnlyItsArgument,
-	rejectingPartsOf,
-	returnsItsReports,
+	proveFunction as proveFunctionWithSets,
 	runtimeParamsOf
 } from "./proofs.ts"
 
-export const proveFunction = (
+const proveFunction = (
 	fn: Fn,
 	node: FunctionNode,
 	isStandalone: boolean
-): void => {
-	if (readsOnlyItsArgument(node)) readsOnlyData.add(fn)
-	else if (isStandalone && returnsItsReports(node)) {
-		returnsReports.add(fn)
-		if (rejectingPartsOf(node)) testsOrRejects.add(fn)
-	}
-}
+): void =>
+	proveFunctionWithSets(fn, node, isStandalone, {
+		readsOnlyData,
+		returnsReports,
+		testsOrRejects
+	})
 import {
 	isOwnEnumSeed,
 	transpiledEnumOf,

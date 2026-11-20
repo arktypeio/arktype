@@ -15,6 +15,9 @@ export {
 	type ArkSchemaScopeConfig,
 	type GenericAst,
 	type JsonSchema,
+	type StandardJSONSchemaV1,
+	type StandardSchemaV1,
+	type StandardTypedV1,
 	type ToJsonSchema
 } from "@ark/schema"
 export { Hkt, inferred, ParseError, type Brand, type Json } from "@ark/util"

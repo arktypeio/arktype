@@ -58,27 +58,27 @@ export const editsBetween = (a: string, b: string): number => {
 
 export const flatMorph: typeof ArkFlatMorph = ((
 	o: object,
-	cb: (k: any, v: any) => any
-) => {
-	if (Array.isArray(o)) {
-		const result: unknown[] = []
-		for (let i = 0; i < o.length; i++) {
-			const mapped = cb(i, o[i])
-			if (Array.isArray(mapped)) result.push(...mapped)
-			else result.push(mapped)
+	flatMapEntry: (...args: any[]) => any
+): any => {
+	const result: any = {}
+	const inputIsArray = Array.isArray(o)
+	let outputShouldBeArray = false
+	const entries = Object.entries(o)
+	for (let i = 0; i < entries.length; i++) {
+		const entry = entries[i]
+		const mapped =
+			inputIsArray ?
+				flatMapEntry(i, entry[1])
+			:	flatMapEntry(entry[0], entry[1], i)
+		outputShouldBeArray ||= typeof mapped[0] === "number"
+		const flattenedEntries =
+			Array.isArray(mapped[0]) || mapped.length === 0 ? mapped : [mapped]
+		for (let j = 0; j < flattenedEntries.length; j++) {
+			const k = flattenedEntries[j][0]
+			const v = flattenedEntries[j][1]
+			if (typeof k === "object") (result[k.group] ??= []).push(v)
+			else result[k] = v
 		}
-		return result
 	}
-	const result: Record<PropertyKey, unknown> = {}
-	for (const k of Object.keys(o)) {
-		const mapped = cb(k, (o as Record<string, unknown>)[k])
-		if (!Array.isArray(mapped) || !mapped.length) continue
-		if (Array.isArray(mapped[0]))
-			for (const [mk, mv] of mapped as [PropertyKey, unknown][]) result[mk] = mv
-		else {
-			const [mk, mv] = mapped as [PropertyKey, unknown]
-			result[mk] = mv
-		}
-	}
-	return result
+	return outputShouldBeArray ? Object.values(result) : result
 }) as typeof ArkFlatMorph

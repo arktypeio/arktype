@@ -16,7 +16,7 @@
 		"precompile"
 	],
 	"version": "3.0.0-beta.1",
-	"arkAotVersion": "0.0.1-beta.1",
+	"arkAotVersion": "3.0.0-beta.1",
 	"license": "MIT",
 	"homepage": "https://arktype.io",
 	"repository": {
@@ -30,6 +30,25 @@
 		"url": "https://arktype.io"
 	},
 	"type": "module",
+	"sideEffects": [
+		"./out/index.js",
+		"./out/codecs.js",
+		"./out/config.js",
+		"./out/errors.js",
+		"./out/mutatesInput.js",
+		"./out/i18n.js",
+		"./out/keywords/phrases.js",
+		"./out/locales/*.js",
+		"./out/sets.js",
+		"./out/schema.js",
+		"./out/schemaInternal.js",
+		"./out/internal.js",
+		"./out/island.js",
+		"./out/islandDependency.js",
+		"./out/precompiled.js",
+		"./out/runtimeDevelopment.js",
+		"./out/chunk-*.js"
+	],
 	"main": "./out/index.js",
 	"types": "./out/index.d.ts",
 	"bin": {

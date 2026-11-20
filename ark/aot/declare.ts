@@ -1452,7 +1452,7 @@ const arkExportNames: KeySet = {
 }
 
 const arkExport =
-	/[/\\](?:arktype|ark[/\\]type|@ark[/\\]util|ark[/\\]util)[/\\](?:out[/\\])?(?:attributes|generics|module|serialize)\.(?:d\.)?ts$/
+	/[/\\](?:arktype|ark[/\\]type|@ark[/\\]util|ark[/\\]util)[/\\](?:out[/\\](?:_internal[/\\]util[/\\])?)?(?:attributes|generics|module|serialize)\.(?:d\.)?ts$/
 
 const shapeNameOf = (candidate: string) => {
 	const name = candidate.replace(/[^\w$]/g, "_")

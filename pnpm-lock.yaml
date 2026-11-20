@@ -243,13 +243,13 @@ importers:
       '@typescript/vfs':
         specifier: 1.6.1
         version: 1.6.1(typescript@7.1.0-beta)
-      arktype:
-        specifier: workspace:*
-        version: link:../type
       prettier:
         specifier: 3.6.2
         version: 3.6.2
     devDependencies:
+      arktype:
+        specifier: workspace:*
+        version: link:../type
       tsrs:
         specifier: 0.18.0-ts7.1.0-dev.20260929
         version: 0.18.0-ts7.1.0-dev.20260929

@@ -26,14 +26,13 @@ The changes most code meets are to errors. The [checklist](#checklist) covers th
 
 ## Checklist
 
-Go down the list. Each question your code answers yes to links to what to change. Fixes and new features are in each package's CHANGELOG: [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [@ark/fast-check](https://github.com/arktypeio/arktype/blob/main/ark/fast-check/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md).
+Go down the list. Each question your code answers yes to links to what to change. Fixes and new features are in each package's CHANGELOG: [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [@ark/fast-check](https://github.com/arktypeio/arktype/blob/main/ark/fast-check/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md).
 
 - Do you install with npm, beside a package that peers on `arktype@^2`, like `@hookform/resolvers` or `@t3-oss/env-core`? [Override its peer](#npm-refuses-packages-that-peer-on-arktype-2).
 - Do you use `arktypeResolver` from `@hookform/resolvers` 3 or 4, `@hono/arktype-validator`, `sveltekit-superforms`, `@arkenv/core` or `@typeschema/arktype`? [Each fails on invalid input](#adapters-written-for-arktype-2), and all but ArkEnv have a replacement that works today.
 - Do you keep a package that depends on arktype 2 itself, like `@ark/json-schema@0.0.13`? [Its Types are Standard Schemas](#packages-that-depend-on-arktype-2).
-- Do you run Jest with `transformIgnorePatterns` naming arktype's packages? [Add `arksets`](#jest-transforms-need-arksets).
 - Do you ship arktype to a browser without a build step that precompiles? [It's larger](#unprecompiled-arktype-is-larger).
-- Do you install `@ark/type`, `@ark/regex` or an `@arktype/*` package? [Rename it](#package-names).
+- Do you install `@ark/type`, `@ark/regex`, `@ark/schema`, `@ark/util` or an `@arktype/*` package? [Switch to `arktype` / `arkregex`](#package-names).
 - Do you read `ArkErrors` as an array, like `out[0]`, `out.length`, `out.map()` or `[...out]`? [Read `out.issues`](#arkerrors-is-no-longer-an-array).
 - Do you call methods on an error, like `hasCode()`, `toString()` or `instanceof ArkError`? [Errors are plain objects](#errors-are-plain-objects).
 - Do you switch on error `code`s, or configure text for `predicate`? See [undeclared](#undeclared-keys-have-the-undeclared-code), [discriminant](#union-misses-have-the-discriminant-code) and [notEqual](#excluded-values-have-the-notequal-codes).
@@ -53,7 +52,7 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you reflect on a Type's own keys or prototype, freeze a Type, compare `type.Record` to the generic, or compare Types written two ways with `===`? [Types are built when they're first read](#types-are-built-when-theyre-first-read).
 - Do you store or snapshot `toJsonSchema()`, `.expression` or `.json`, or convert `NaN` or `Infinity` literals to JSON Schema? See [Output](#output).
 - Do you rely on what `.required()`, `.map()` or arkregex infer, or reference a Type allowing `undefined` at a key without `exactOptionalPropertyTypes`? See [Inference](#inference) and [ArkRegex](#arkregex).
-- Do you use `@ark/schema` without `arktype`? [Import `arksets`](#arkschema).
+- Do you use `arktype/schema` (previously `@ark/schema`) without `arktype`? [Import `arktype/sets`](#arkschema).
 - Do you import from `@ark/schema`, `@ark/util` or a deep path like `arktype/internal/...`, or read `.internal`? See [@ark/schema](#arkschema), [@ark/util](#arkutil) and [Deep imports](#deep-imports).
 - Do you use `@ark/json-schema`, `@ark/fast-check` or attest, or run attest on TypeScript 7? See their sections below.
 
@@ -128,20 +127,6 @@ app.post(
 ### Packages that depend on arktype 2
 
 A package that depends on arktype 2 itself, like `@ark/json-schema@0.0.13`, installs its own copy. A Type it returns works in a definition, `.pipe()` or `.to()` as a [Standard Schema](/docs/standard-schema), validating with its own copy, and `toJsonSchema()` writes what that copy's converter does, throwing where that can't stand for the Type, as for one with a morph. A module or Generic from it used in a Scope, or a Type passed to `type.schema()`, throws a `ParseError`: upgrade the package, or override its `arktype`.
-
-### Jest transforms need arksets
-
-`arktype` now imports `arksets`, which ships ES modules only, as arktype's other packages do. A Jest config that lists them in `transformIgnorePatterns` so they're transformed fails with `Must use import to load ES Module`, naming `arksets/out/internal.js`, until it lists that one too:
-
-```js title="jest.config.js"
-module.exports = {
-	preset: "ts-jest/presets/js-with-ts",
-	transformIgnorePatterns: [
-		// before: "/node_modules/(?!(\\.pnpm|arktype|arkregex|@ark)/)"
-		"/node_modules/(?!(\\.pnpm|arktype|arkregex|arksets|@ark)/)"
-	]
-}
-```
 
 ## Bundle size
 
@@ -920,7 +905,8 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 
 ## @ark/schema
 
-- The set algebra that intersects nodes, reduces unions and writes JSON Schema moved to `arksets`, which `arktype` imports. Using `@ark/schema` alone, `import "arksets"` first, or `.and()` and `toJsonSchema()` throw `Set algebra is not installed` and unions aren't reduced. Its functions, like `intersectNodesRoot` and `reduceBranches`, are exported by `arksets/internal`, as is `discriminantJsonOf(union)`, which replaces a union's `discriminantJson`.
+- `@ark/schema` is no longer published separately; import from `arktype/schema` (and `arktype/schema/internal` for internals).
+- The set algebra that intersects nodes, reduces unions and writes JSON Schema moved to `arktype/sets`, which `arktype` imports. Using `arktype/schema` alone, `import "arktype/sets"` first, or `.and()` and `toJsonSchema()` throw `Set algebra is not installed` and unions aren't reduced.
 - `BaseNode.compiledMeta` is removed, and `BaseScope.res` (before: `resolutions`) holds an unresolved alias's parse context instead of its id.
 - `$.node(kind, input)` takes a node's inner, with children already nodes: `$.node("min", 5)` is now `$.node("min", { rule: 5 })`. Parse the schema format with `rootSchema` or `$.schema`.
 - A node's `traverseAllows` and `traverseApply` are `tAllows` and `tApply`. Call them on the node, as in `node.tAllows(data, ctx)`, not detached, as in `[x].every(node.tAllows)`, until the JIT compiles it.
@@ -933,13 +919,14 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 
 ## @ark/util
 
+- `@ark/util` is no longer published separately; import from `arktype/util`.
 - `Scanner`'s `jumpToIndex` is removed.
 - `isNumericString` and `isWellFormedInteger` read only strings: `isNumericString(5)` throws, before: `true`.
-- `$ark.filename` is removed. `$ark.version` still names the `@ark/util` version that created the registry.
+- `$ark.filename` is removed. `$ark.version` names the `arktype` version that created the registry.
 
 ## Deep imports
 
-A deep import like `arktype/internal/parser/string.ts` keeps its module's types but loads `arktype/internal` at runtime, which exports the names of every arktype module. Import from `arktype/internal` itself. `@ark/schema`, `@ark/util`, `arkregex` and `arksets` each have an `./internal` entry like it.
+A deep import like `arktype/internal/parser/string.ts` keeps its module's types but loads `arktype/internal` at runtime, which exports the names of every arktype module. Import from `arktype/internal` itself. `arktype/schema/internal` and `arkregex/internal` work the same way.
 
 ## ArkRegex
 
@@ -986,10 +973,11 @@ Runtime benches run in a loop compiled for each bench, after a warmup, so their 
 
 ## Package names
 
-Each package publishes under one name. The others, which published the same code, are no longer published, and `@ark/type` and `@ark/regex` are deprecated on npm, so installing one warns with the name to use:
+`arktype` and `arkregex` have zero runtime dependencies; `@ark/schema`, `@ark/util` and `arksets` are bundled into `arktype` and exposed as subpaths (`arktype/schema`, `arktype/util`, `arktype/sets`, `arktype/regex`). Each remaining package publishes under one name. The others are no longer published, and `@ark/type` and `@ark/regex` are deprecated on npm, so installing one warns with the name to use:
 
-| Install       | Instead of                                |
-| ------------- | ----------------------------------------- |
-| `arktype`     | `@ark/type`, `@arktype/type`              |
-| `arkregex`    | `@ark/regex`, `@arktype/regex`            |
-| `@ark/<name>` | `@arktype/<name>`, e.g. `@arktype/schema` |
+| Install / Import                                 | Instead of                                     |
+| ------------------------------------------------ | ---------------------------------------------- |
+| `arktype`                                        | `@ark/type`, `@arktype/type`                   |
+| `arktype/schema`, `arktype/util`, `arktype/sets` | `@ark/schema`, `@ark/util`, `arksets`          |
+| `arkregex` (or `arktype/regex`)                  | `@ark/regex`, `@arktype/regex`                 |
+| `@ark/<name>`                                    | `@arktype/<name>`, e.g. `@arktype/json-schema` |

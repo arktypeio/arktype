@@ -1,4 +1,4 @@
-import type { KeySet } from "arktype/util"
+import type { Fn, KeySet } from "arktype/util"
 import type {
 	ArrowFunctionExpression,
 	Function,
@@ -295,4 +295,25 @@ export const rejectingPartsOf = (fn: Node): RejectingParts | undefined => {
 	)
 		return
 	return { data, test, message: property.value, fails }
+}
+
+export type FunctionProofSets = {
+	readsOnlyData: WeakSet<Fn>
+	returnsReports: WeakSet<Fn>
+	testsOrRejects: WeakSet<Fn>
+}
+
+/** notes what a function a build wouldn't run can read, as it's created */
+export const proveFunction = (
+	fn: Fn,
+	node: FunctionNode,
+	// arktype compiles its own validators, knowing nothing of what a build reads
+	isStandalone: boolean,
+	sets: FunctionProofSets
+): void => {
+	if (readsOnlyItsArgument(node)) sets.readsOnlyData.add(fn)
+	else if (isStandalone && returnsItsReports(node)) {
+		sets.returnsReports.add(fn)
+		if (rejectingPartsOf(node)) sets.testsOrRejects.add(fn)
+	}
 }

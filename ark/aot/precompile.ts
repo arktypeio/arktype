@@ -8569,7 +8569,7 @@ const isEncodingError = (e: Error) =>
 
 // e.g. `from "arktype"`, `import("arktype")` or `require("arktype")`
 const arktypeSpecifier =
-	/\b(?:from|import\s*\(?|require\s*\()\s*["'](?:(?:arktype|@ark\/type)(?:\/(?:config|codecs))?|arkregex|@ark\/regex)["']/
+	/\b(?:from|import\s*\(?|require\s*\()\s*["'](?:(?:arktype|@ark\/type)(?:\/(?:config|codecs|regex))?|arkregex|@ark\/regex)["']/
 
 // e.g. `from "./a.ts"`, `import "./a.ts"` or `import("./a.ts")`
 const importSpecifier = /\b(?:from|import\s*\(?)\s*["']([^"']+)["']/g

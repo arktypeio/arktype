@@ -46,7 +46,7 @@
 		"bench": "ts ./__tests__/infer.bench.ts"
 	},
 	"peerDependencies": {
-		"arktype": "workspace:*"
+		"arktype": "workspace:^"
 	},
 	"devDependencies": {
 		"@ark/fast-check": "workspace:*",

@@ -545,7 +545,7 @@ const user = User.assert({ name: "Ada" })
 
 ## How it reads JSON Schema
 
-`jsonSchemaToType` reads a schema with [`arksets`](https://arktype.io/docs/sets)' `parse`, so the Type accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with ajv as the tiebreaker. Every keyword in a schema applies, local `$ref`s resolve, including recursive ones, and draft-07 forms like `items` arrays and `definitions` are read too:
+`jsonSchemaToType` reads a schema with [`arktype/sets`](https://arktype.io/docs/sets)' `parse`, so the Type accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with ajv as the tiebreaker. Every keyword in a schema applies, local `$ref`s resolve, including recursive ones, and draft-07 forms like `items` arrays and `definitions` are read too:
 
 ```ts
 import { jsonSchemaToType } from "@ark/json-schema"
@@ -639,7 +639,7 @@ To normalize one JSON Schema into another, or to compare JSON Schemas with each 
 
 # Keyword support
 
-> How @ark/json-schema and arksets read each JSON Schema keyword, which ones throw, and which are only annotations.
+> How @ark/json-schema and arktype/sets read each JSON Schema keyword, which ones throw, and which are only annotations.
 
 `jsonSchemaToType` and [ArkSets](https://arktype.io/docs/sets) read JSON Schema the same way. A Type read from a schema accepts exactly what a JSON Schema 2020-12 validator accepts, except that lengths count UTF-16 code units, with ajv as the tiebreaker. Each keyword is read in one of five ways:
 

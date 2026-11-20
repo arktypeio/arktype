@@ -62,7 +62,7 @@ Others: `precompile.rollup()` (ahead of `@rollup/plugin-typescript`), `precompil
 
 ### Next.js
 
-Next 16 builds with Turbopack. Export the config through `withPrecompile`, which reads the project before Turbopack starts so `next build` can prune. Add a loader rule for each extension holding a definition or the config module, and one for JavaScript mentioning arktype, so a dependency that defines Types fails the build rather than at runtime. Then alias arktype's entries to the runtime, and @ark/schema's runtime to the one the loader writes for your options:
+Next 16 builds with Turbopack. Export the config through `withPrecompile`, which reads the project before Turbopack starts so `next build` can prune. Add a loader rule for each extension holding a definition or the config module, and one for JavaScript mentioning arktype, so a dependency that defines Types fails the build rather than at runtime. Then alias arktype's entries to the runtime, and `arktype/schema/runtime` to the one the loader writes for your options:
 
 ```js
 // next.config.js (or the same in next.config.ts)

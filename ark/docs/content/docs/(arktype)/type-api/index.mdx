@@ -150,7 +150,7 @@ Even(3)
 
 ### internal
 
-The node from `@ark/schema` that a Type is built from. Its API is not semver-stable. See [Nodes](/docs/internals/nodes).
+The node from `arktype/schema` that a Type is built from. Its API is not semver-stable. See [Nodes](/docs/internals/nodes).
 
 ```ts
 type("string").internal.kind // "domain"
@@ -176,7 +176,7 @@ The `type` function has members of its own. Each returns a `Type` unless noted.
 | `type.declare`     | a Type checked against a TypeScript type you [declare](/docs/declare) |
 | `type.define`      | your definition, unchanged, type-checked as `type` would check it     |
 | `type.raw`         | `type` without type-level parsing, for dynamic definitions            |
-| `type.schema`      | a Type from an `@ark/schema` [schema](/docs/internals/schemas)        |
+| `type.schema`      | a Type from an `arktype/schema` [schema](/docs/internals/schemas)     |
 | `type.scope`       | a [scope](/docs/scopes), the same as `scope`                          |
 | `type.module`      | a [module](/docs/scopes#modules), the scope's exported aliases        |
 | `type.keywords`    | every [keyword](/docs/keywords), e.g. `type.keywords.string.email`    |

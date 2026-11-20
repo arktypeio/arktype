@@ -147,23 +147,21 @@ rewriteFile(aotVersionPath, contents => {
 	return bumped
 })
 
-const util = packagesByScope.util
-const nextUtil = nextVersions.get(util.name)
-if (nextUtil) {
-	// registry.ts, and the copy of its declarations the playground loads
-	replaceTracked(`arkUtilVersion = `, contents =>
-		contents.replace(
-			new RegExp(
-				`(arkUtilVersion = \\\\?")${escape(util.version)}(\\\\?")`,
-				"g"
-			),
-			(_, before: string, after: string) => `${before}${nextUtil}${after}`
-		)
-	)
-}
-
 const type = packagesByScope.type
 const nextType = nextVersions.get(type.name)!
+
+// @ark/util is private and bundled into arktype, so keep its version in sync with arktype
+const util = packagesByScope.util
+rewriteFile(util.packageJsonPath, contents =>
+	contents.replace(/^(\t"version": )"[^"]*"/m, `$1"${nextType}"`)
+)
+// registry.ts, and the copy of its declarations the playground loads
+replaceTracked(`arkUtilVersion = `, contents =>
+	contents.replace(
+		new RegExp(`(arkUtilVersion = \\\\?")${escape(util.version)}(\\\\?")`, "g"),
+		(_, before: string, after: string) => `${before}${nextType}${after}`
+	)
+)
 const versionExportOf = (version: string) =>
 	`precompiledForArktype_${version.replace(/\W/g, "_")}`
 

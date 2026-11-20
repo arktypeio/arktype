@@ -78,7 +78,7 @@ toJsonSchema({
 }
 ```
 
-It takes the same options as a Type's [`toJsonSchema()`](/docs/json-schema/to-json-schema) and throws the same way. A JSON Schema keyword `arksets` checks opaquely, like `uniqueItems`, has no JSON Schema of its own once it's read, so handle its `predicate` [fallback](/docs/json-schema/to-json-schema#fallback-codes):
+It takes the same options as a Type's [`toJsonSchema()`](/docs/json-schema/to-json-schema) and throws the same way. A JSON Schema keyword `arktype/sets` checks opaquely, like `uniqueItems`, has no JSON Schema of its own once it's read, so handle its `predicate` [fallback](/docs/json-schema/to-json-schema#fallback-codes):
 
 ```ts
 import { toJsonSchema } from "arktype/sets"

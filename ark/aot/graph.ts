@@ -94,6 +94,7 @@ const arktypeNamespacesBySpecifier: Record<string, object> =
 			arktype,
 			"arktype/codecs": arktypeCodecs,
 			"arktype/config": arktypeConfig,
+			"arktype/regex": arkregex,
 			arkregex
 		},
 		null
