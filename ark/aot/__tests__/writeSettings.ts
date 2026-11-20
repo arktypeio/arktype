@@ -66,6 +66,9 @@ const formatted = async (code: string, path: string) =>
 // configuration before the program's configure() could set it, and bundled,
 // since the runtime a program loads must be the one the build resolves
 export const writeSettingsFiles = async (): Promise<Record<string, string>> => {
+	const arkJsonSchema = ArkJson.toJsonSchema() as {
+		properties: { precompile: object }
+	}
 	const { code } = precompileStandalone(
 		{ PrecompileOptions, ArkJson, PackageArk } as never,
 		{
@@ -98,11 +101,11 @@ export const writeSettingsFiles = async (): Promise<Record<string, string>> => {
 	})
 	return {
 		[validatorsPath]: await formatted(
-			`/* eslint-disable */\n// @ts-nocheck\n// written by __tests__/writeSettings.ts from __tests__/settingsSchema.ts\n${outputFiles[0].text}\nexport const cliOptions = ${JSON.stringify(cliOptionsOf())}\n`,
+			`/* eslint-disable */\n// @ts-nocheck\n// written by __tests__/writeSettings.ts from __tests__/settingsSchema.ts\n${outputFiles[0].text}\nexport const cliOptions = ${JSON.stringify(cliOptionsOf())}\n\n// what ark.json's precompile takes, as the ESLint rule's options\nexport const precompileJsonSchema = ${JSON.stringify(arkJsonSchema.properties.precompile)}\n`,
 			validatorsPath
 		),
 		[jsonSchemaPath]: await formatted(
-			JSON.stringify(ArkJson.toJsonSchema()),
+			JSON.stringify(arkJsonSchema),
 			jsonSchemaPath
 		)
 	}
