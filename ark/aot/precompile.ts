@@ -416,7 +416,7 @@ export interface PrecompileOptions extends InterpreterOptions {
 	schemas?: Record<string, string> | undefined
 	/** trusts data to hold only own, enumerable keys, as JSON.parse's output does */
 	jsonInput?: boolean | undefined
-	/** @internal the chars a site's baked introspection may total */
+	/** the chars a site's baked introspection may total, 1 MB by default */
 	bakedLimit?: number | undefined
 	/** also create each site with arktype and throw where they diverge */
 	shadow?: boolean | undefined
