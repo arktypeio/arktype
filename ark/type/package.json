@@ -1,6 +1,6 @@
 {
 	"name": "arktype",
-	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
+	"description": "TypeScript's smallest, fastest validator. One prompt away.",
 	"keywords": [
 		"typescript",
 		"validation",

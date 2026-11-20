@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { siteDescription } from "../../app/metadata.ts"
 import { withBase } from "../../lib/basePath.ts"
 import { getPageTree } from "../../lib/content/docs.ts"
 import { Brand } from "./Brand.tsx"
@@ -24,9 +25,7 @@ export const SiteFooter = () => (
 		<div className="foot-grid">
 			<div>
 				<Brand />
-				<p className="foot-tag">
-					TypeScript's 1:1 validator, optimized from editor to runtime.
-				</p>
+				<p className="foot-tag">{siteDescription}</p>
 			</div>
 			<FootColumn title="docs">
 				{docsSectionsOf(getPageTree()).map(section => (

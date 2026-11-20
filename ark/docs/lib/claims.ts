@@ -1163,7 +1163,7 @@ export const categories: Category[] = [
 		bars: onBoard(startupChart, averageOf("startup").named.library),
 		unit: "million instructions",
 		format: n => `${n}M`,
-		margin: "less startup work than",
+		margin: "fewer startup instructions than",
 		source: startupChart.source
 	},
 	{

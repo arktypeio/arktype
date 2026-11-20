@@ -342,4 +342,139 @@ contextualize(() => {
 
 		attest<Object>(objectValidator.t)
 	})
+
+	describe("index signature", () => {
+		// Omit over an index signature keeps only the signature, e.g. on an
+		// API type generated as `{ ... } & Record<string, unknown>`
+		type Vendor = { name: string; tags?: string[] } & Record<string, unknown>
+		type Expected = Omit<Vendor, "tags"> & { kind: "a" | "b" }
+
+		it("checks a key outside its literal keys against the signature", () => {
+			attest(() =>
+				declare<Expected>().type({
+					// @ts-expect-error
+					name: "string",
+					kind: "'a' | 'b'"
+				})
+			).type.errors("declared: unknown; inferred: string")
+		})
+
+		it("checks its literal keys", () => {
+			attest(() =>
+				declare<Expected>().type({
+					name: "unknown",
+					// @ts-expect-error
+					kind: "'a'"
+				})
+			).type.errors(`declared: "a" | "b"; inferred: "a"`)
+		})
+
+		it("requires its literal keys", () => {
+			attest(() =>
+				// @ts-expect-error
+				declare<Expected>().type({ name: "unknown" })
+			).type.errors("Property 'kind' is missing")
+		})
+	})
+
+	it("any", () => {
+		const T = declare<{ a: any }>().type({ a: "unknown" })
+		attest<{ a: any }>(T.t)
+		attest(() =>
+			declare<{ a: any }>().type({
+				// @ts-expect-error
+				a: "string"
+			})
+		).type.errors("declared: any; inferred: string")
+	})
+
+	describe("assignable", () => {
+		type Expected = {
+			id: string
+			name?: string | null
+			tags?: string[]
+			nested?: { x?: number }
+		}
+
+		it("infers the definition", () => {
+			const T = declare<Expected, { assignable: true }>().type({
+				id: "string",
+				name: "string",
+				nested: { x: "number" }
+			})
+			attest<{ id: string; name: string; nested: { x: number } }>(T.t)
+		})
+
+		it("optional key", () => {
+			const T = declare<Expected, { assignable: true }>().type({
+				id: "string",
+				"name?": "string | null",
+				tags: "string[]?"
+			})
+			attest<{ id: string; name?: string | null; tags?: string[] }>(T.t)
+		})
+
+		it("optional undefined", () => {
+			type Expected = { a?: string }
+			attest(() =>
+				declare<Expected, { assignable: true }>().type({
+					// @ts-expect-error
+					a: "string | undefined"
+				})
+			).type.errors("declared: string; inferred: string | undefined")
+		})
+
+		it("required key written optional", () => {
+			attest(() =>
+				declare<Expected, { assignable: true }>().type({
+					// @ts-expect-error
+					"id?": "string"
+				})
+			).type.errors(`'"id?"' does not exist`)
+		})
+
+		it("wider", () => {
+			attest(() =>
+				declare<Expected, { assignable: true }>().type({
+					// @ts-expect-error
+					id: "string | number"
+				})
+			).type.errors("declared: string; inferred: string | number")
+		})
+
+		it("extraneous key", () => {
+			attest(() =>
+				declare<Expected, { assignable: true }>().type({
+					id: "string",
+					// @ts-expect-error
+					extra: "string"
+				})
+			).type.errors(`'extra' does not exist`)
+		})
+
+		it("shallow", () => {
+			const T = declare<string, { assignable: true }>().type("'foo'")
+			attest<"foo">(T.t)
+		})
+
+		it("narrowed Type", () => {
+			const Shape = type({ a: "string", b: "string" })
+			const T = declare<{ a: string; b?: string }, { assignable: true }>().type(
+				Shape.narrow(data => data.a !== data.b)
+			)
+			attest<{ a: string; b: string }>(T.t)
+			attest(T({ a: "x", b: "x" }).toString()).snap(
+				"must be valid according to an anonymous predicate"
+			)
+		})
+
+		it("index signature", () => {
+			type Vendor = { name: string; tags?: string[] } & Record<string, unknown>
+			const T = declare<
+				Omit<Vendor, "tags"> & { kind: "a" | "b" },
+				{ assignable: true }
+			>().type({ name: "string", kind: "'a'" })
+			attest<{ name: string; kind: "a" }>(T.t)
+		})
+	})
 })
