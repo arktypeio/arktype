@@ -3001,8 +3001,10 @@ Each was a bug, but code may depend on it:
 - Intersecting an object that rejects or deletes undeclared keys with an index signature keeps its optional keys optional: `type({ "+": "reject", "a?": "number" }).and({ "[string]": "number" })` accepts `{}`, before: rejected it.
 - With `jitless`, a `g` or `y` pattern checks from the start of the string every time, where the same input alternated between valid and invalid.
 - An optional key in an intersection allows `undefined` only where both sides do, so a Scope configured with `exactOptionalPropertyTypes: false` no longer loosens a Type from one that isn't.
-- With `exactOptionalPropertyTypes: false`, a defaulted key given `undefined` gets the default, before: kept `undefined`.
-- A tuple expression's `:` after a morph throws `ParseError: Predicate operand must be unknown (was a morph)`, where it threw a TypeError.
+- With `exactOptionalPropertyTypes: false`, a defaulted key given `undefined` gets the default, before: kept `undefined`. A default of `undefined` throws a ParseError.
+- With `exactOptionalPropertyTypes: false`, `.required()`, `.out` and `.encode` drop the `undefined` an optional or defaulted key allowed, as TypeScript's `Required` does: `type({ "a?": "string" }).required()` is `{ a: string }`, before: `{ a: string | undefined }`.
+- With `exactOptionalPropertyTypes: false`, a tuple's optional and defaultable elements allow `undefined` as optional keys do, and a default replaces it, where they rejected it.
+- A tuple expression's `:` is a `.narrow()`, so its predicate sees the output: `type({ a: "number = 5" }, ":", o => o.a > 0)` reads `{ a: 5 }` from `{}`, before: `{}`, which it rejected. After a morph, it narrows the morph's output, where it threw a TypeError.
 - `Exclude` and `Extract` over a definition still being defined throw `ParseError: Extract can't filter a type still being defined`.
 - `type(["string", "toString"])` throws that `'toString'` is unresolvable, where it threw an internal TypeError.
 
@@ -7355,9 +7357,14 @@ const MyObj = type({
 
 // { key: undefined, withDefault: 5 }
 MyObj({ key: undefined, withDefault: undefined })
+
+// { key: number, withDefault: number }
+MyObj.required()
 ```
 
-With `false`, an explicit `undefined` at a key with a default is replaced by the default, as a missing key is. Treating `null` as missing is tracked in [#1283](https://github.com/arktypeio/arktype/issues/1283).
+With `false`, an explicit `undefined` at a key with a default is replaced by the default, as a missing key is, so a default can't be `undefined` itself. Optional and defaultable tuple elements allow `undefined` the same way. Treating `null` as missing is tracked in [#1283](https://github.com/arktypeio/arktype/issues/1283).
+
+As TypeScript's `Required` does without `exactOptionalPropertyTypes`, what makes a key or element required drops the `undefined` it allowed, whether or not it was written: `.required()`, and a defaulted key or element in `.out` and `.encode`.
 
 ## numberAllowsNaN
 
@@ -7556,6 +7563,8 @@ const MrPingsSecretIngredientSoup = type({
 	ingredients: "string[]"
 }).configure({ secretIngredient: "nothing!" })
 ```
+
+`toJsonSchema()` writes a key you add only if it starts with `x-`, since JSON Schema has no keyword for it. See [Meta](https://arktype.io/docs/json-schema/to-json-schema#meta).
 
 ## prototypes
 
@@ -8518,13 +8527,7 @@ fc.assert(
 )
 ```
 
-The arbitrary is typed `fc.Arbitrary<unknown>`. To use generated values as your Type's data, cast it:
-
-```ts
-const users = arkToArbitrary(User) as fc.Arbitrary<typeof User.inferIn>
-```
-
-Values are generated for the Type's input. For a morph like `string.trim`, you get strings that haven't been trimmed yet. Checks that run inside a morph aren't seen, so a morph that can fail rejects some of what's generated.
+Values are generated for the Type's input, and the arbitrary is typed with it: `users` is an `fc.Arbitrary<typeof User.inferIn>`. For a morph like `string.trim`, you get strings that haven't been trimmed yet. Checks that run inside a morph aren't seen, so a morph that can fail rejects some of what's generated.
 
 ## What's supported
 
@@ -8549,7 +8552,7 @@ These are ignored, so the arbitrary generates data your Type rejects:
 
 - `narrow` predicates, and keywords implemented as predicates rather than regexes, like `string.url`, `string.json` and `string.date`, including their `.parse` variants
 
-When the Type accepts a reasonable share of what the arbitrary generates, filter out the rest:
+A narrow written as a type predicate, like `(s): s is "a" | "b"`, narrows the arbitrary's type though not its values. When the Type accepts a reasonable share of what the arbitrary generates, filter out the rest:
 
 ```ts
 import { arkToArbitrary } from "@ark/fast-check"
