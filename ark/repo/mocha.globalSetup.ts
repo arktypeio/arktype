@@ -43,11 +43,12 @@ export const mochaHooks = {
 		checkNodeEnv()
 		suite = current
 	},
-	afterAll(): void {
+	afterAll: (): void => {
 		checkNodeEnv()
-		if (nodeEnvLeaks.length)
+		if (nodeEnvLeaks.length) {
 			throw new Error(
 				`Suites left NODE_ENV changed:\n${nodeEnvLeaks.join("\n")}`
 			)
+		}
 	}
 }
