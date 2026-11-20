@@ -188,12 +188,12 @@ contextualize(() => {
 
 	describe("flagless regexes sensitive to u flag (#6)", () => {
 		const uSensitivePatterns = [
-			"^.$",
 			"^\\p{L}$",
+			"^\\P{L}$",
 			"^a\\-b$",
-			"^[^a]$",
-			"^\\S$",
-			"^😀$"
+			"^\\u{61}$",
+			"^[\\u{61}]$",
+			"^{$"
 		]
 
 		it("routes flagless u-sensitive patterns to patternFlags fallback", () => {
@@ -220,7 +220,7 @@ contextualize(() => {
 			const T = rootSchema({
 				domain: "object",
 				index: {
-					signature: { domain: "string", pattern: "^.$" },
+					signature: { domain: "string", pattern: "^\\p{L}$" },
 					value: "number"
 				},
 				undeclared: "reject"
@@ -228,20 +228,46 @@ contextualize(() => {
 			attest(() => toJsonSchema(T)).throws("patternFlags")
 		})
 
-		it("continues writing u-safe flagless patterns directly", () => {
+		it("continues writing ordinary flagless patterns directly across targets", () => {
 			for (const pattern of [
 				"^a+$",
 				".*",
 				"^.*$",
 				".+",
 				"^[a\\-b]$",
-				"^[\\dA-Fa-f]+$"
+				"^[\\dA-Fa-f]+$",
+				"^[^@]+$",
+				"^\\S+$",
+				// string.trim.preformatted / type("string.trim").out
+				"^\\S[\\S\\s]*\\S$|^\\S?$",
+				"^\\D+$",
+				"^\\W+$",
+				"^.$",
+				"^😀$",
+				"^\\\\p{1}$"
 			]) {
 				const T = rootSchema({ domain: "string", pattern })
 				attest(toJsonSchema(T, { dialect: null })).equals({
 					type: "string",
 					pattern
 				})
+				for (const target of [
+					"draft-2020-12",
+					"draft-07",
+					"openapi-3.0",
+					"openapi-3.1"
+				] as const) {
+					attest(toJsonSchema(T, { target })).equals({
+						...(target === "draft-2020-12" && {
+							$schema: "https://json-schema.org/draft/2020-12/schema"
+						}),
+						...(target === "draft-07" && {
+							$schema: "http://json-schema.org/draft-07/schema#"
+						}),
+						type: "string",
+						pattern
+					})
+				}
 			}
 		})
 	})

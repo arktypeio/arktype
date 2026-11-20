@@ -997,27 +997,22 @@ const keyPatternOf = (
 }
 
 // JSON Schema compiles pattern with "u"; reject flagless sources that fail or
-// change meaning under "u" (except .* / .+, which match identically either way)
+// invert meaning under "u" (\p{...}, \P{...}, \u{...})
 const differsUnderUnicodeFlag = (source: string): boolean => {
 	try {
 		new RegExp(source, "u")
 	} catch {
 		return true
 	}
-	let inClass = false
 	for (let i = 0; i < source.length; i++) {
-		const char = source[i]
-		if (char > "\x7f") return true
-		if (char === "\\") {
+		if (source[i] === "\\") {
 			const escaped = source[++i]
-			if (escaped && (escaped > "\x7f" || "DPSWpu".includes(escaped)))
+			if (
+				(escaped === "p" || escaped === "P" || escaped === "u") &&
+				source[i + 1] === "{"
+			)
 				return true
-		} else if (inClass) inClass = char !== "]"
-		else if (char === "[") {
-			if (source[i + 1] === "^") return true
-			inClass = true
-		} else if (char === "." && source[i + 1] !== "*" && source[i + 1] !== "+")
-			return true
+		}
 	}
 	return false
 }
