@@ -26,6 +26,7 @@ import { importsOf } from "./scan.ts"
 import {
 	isDead,
 	isSpan,
+	mayReadThrough,
 	type RuntimeModule,
 	type UsageProgram
 } from "./usage.ts"
@@ -861,8 +862,18 @@ class Follow {
 				if (parent.init === operand) this.bindPattern(parent.id, module, held)
 				return
 			case "AssignmentPattern":
-				if (parent.right === operand)
+				if (parent.right === operand) {
 					this.bindPattern(parent.left, module, held)
+					// `constructor(private schema = T)` also stores it at this.schema
+					if (parent.parent?.type === "TSParameterProperty") {
+						this.followField(
+							parent.left.type === "Identifier" ? parent.left.name : undefined,
+							parent,
+							module,
+							held
+						)
+					}
+				}
 				return
 			case "Property":
 				if (parent.key === operand) {
@@ -878,9 +889,19 @@ class Follow {
 					)
 				}
 				if (parent.kind !== "init") return lose("passes it to an accessor")
+				const key = propertyKeyOf(parent)
+				if (key === "__proto__")
+					return lose("sets it as a prototype, which inherits its members")
+				// a method reads the object it's a member of as this, which no
+				// reference to the object shows, so any read at its key may find it
+				if (
+					key !== undefined &&
+					mayReadThrough(key, this.readers.program.modules)
+				)
+					this.followField(key, parent, module, held)
 				return push(parent.parent, {
 					...held,
-					path: [propertyKeyOf(parent) ?? anyKey, ...held.path]
+					path: [key ?? anyKey, ...held.path]
 				})
 			case "ArrayExpression":
 				return push(parent, { ...held, path: [anyKey, ...held.path] })
@@ -903,6 +924,9 @@ class Follow {
 				if (parent.tag !== operand) return
 				return
 			case "TemplateLiteral":
+				// a tag is passed each expression as it is, not as a string
+				if (parent.parent?.type === "TaggedTemplateExpression")
+					return lose("passes it to a template tag")
 				return this.convert(held, parent, module)
 			case "BinaryExpression":
 				// `k in T` reads whether it has k
@@ -1101,6 +1125,21 @@ class Follow {
 				key in arrayMethods
 			)
 				return this.arrayMethod(key, call, module, held)
+			// a method the build doesn't model may return the elements it holds
+			if (
+				first === anyKey &&
+				call?.type === "CallExpression" &&
+				call.callee === method &&
+				(key === undefined ?
+					member.computed && isSymbolRead(member.property)
+				:	key in Array.prototype || key in Object.prototype)
+			) {
+				return this.lose(
+					member,
+					module,
+					`calls .${key ?? "[Symbol.iterator]"} on what holds it`
+				)
+			}
 			if (key === undefined || first === anyKey || first === key)
 				this.push(member, module, { ...held, path: rest })
 			return
@@ -1118,6 +1157,16 @@ class Follow {
 	): void {
 		const element: Held = { ...held, path: held.path.slice(1) }
 		const returns = arrayMethods[name]
+		if (returns === "unfollowed")
+			return this.lose(call, module, `reduces it with .${name}`)
+		if (returns === "flat") {
+			// flattens each leading array of its elements, to any depth
+			for (let i = 0; i <= held.path.length; i++) {
+				this.push(call, module, { ...held, path: held.path.slice(i) })
+				if (held.path[i] !== anyKey) break
+			}
+			return
+		}
 		if (returns === "holder") this.push(call, module, held)
 		else if (returns === "element") this.push(call, module, element)
 		this.callback(
@@ -1125,8 +1174,12 @@ class Follow {
 			module,
 			element,
 			returns === "mapped" ? [anyKey] : undefined,
-			name === "reduce" ? 1 : 0
+			0
 		)
+		// flatMap flattens what its callback returns by one level, so a callback
+		// returning an element rather than an array of them holds it at the same
+		// depth
+		if (name === "flatMap") this.callback(call, module, element, [], 0)
 	}
 
 	// a callback passed what its call reads, whose returns the call holds at wrap
@@ -1362,6 +1415,28 @@ class Follow {
 				return
 			case "RestElement":
 				return this.bindPattern(pattern.argument, module, held)
+			// `constructor(readonly schema: T)` also stores it at this.schema
+			case "TSParameterProperty": {
+				const { parameter } = pattern
+				const target =
+					parameter.type === "AssignmentPattern" ? parameter.left : parameter
+				this.bindPattern(parameter, module, held)
+				return this.followField(
+					target.type === "Identifier" ? target.name : undefined,
+					pattern,
+					module,
+					held
+				)
+			}
+			// e.g. the `{}` of `Object.assign({}, held)`, read only as the call's result
+			case "ObjectExpression":
+				return
+			default:
+				return this.lose(
+					pattern,
+					module,
+					"binds it in a pattern the build can't follow"
+				)
 		}
 	}
 
@@ -1568,8 +1643,16 @@ class Follow {
 				return true
 			}
 			// descriptors or entries, which store it at a key the build doesn't follow
-			case "Object.defineProperties":
 			case "Object.create":
+				// the prototype's members are read off what inherits them
+				if (index === 0) {
+					if (isValue) this.lose(call, module, "inherits its members")
+					else this.push(call, module, held)
+					return true
+				}
+				this.lose(call, module, "stores it at a key the build can't name")
+				return true
+			case "Object.defineProperties":
 			case "Object.fromEntries":
 				if (index === (name === "Object.fromEntries" ? 0 : 1))
 					this.lose(call, module, "stores it at a key the build can't name")
@@ -1577,8 +1660,20 @@ class Follow {
 			case "Object.freeze":
 			case "Object.seal":
 			case "Promise.resolve":
-			case "Array.from":
 				if (index === 0) this.push(call, module, held)
+				return true
+			case "Array.from":
+				if (index === 0) {
+					this.push(call, module, held)
+					// a map function is passed each element
+					if (call.arguments[1] && !isValue) {
+						this.lose(
+							call,
+							module,
+							"maps it with a function the build can't follow"
+						)
+					}
+				}
 				return true
 			case "Object.values":
 			case "Object.entries":
@@ -1935,32 +2030,36 @@ const wrapped = (held: Held, wrap: readonly Key[]): Held =>
 	wrap.length ? { ...held, path: [...wrap, ...held.path] } : held
 
 // what each array method returns of its receiver: itself, an element or what its callback maps
-const arrayMethods: Record<string, "holder" | "element" | "mapped" | "none"> =
-	Object.assign(Object.create(null), {
-		filter: "holder",
-		slice: "holder",
-		concat: "holder",
-		reverse: "holder",
-		sort: "holder",
-		toSorted: "holder",
-		toReversed: "holder",
-		find: "element",
-		findLast: "element",
-		at: "element",
-		pop: "element",
-		shift: "element",
-		map: "mapped",
-		flatMap: "mapped",
-		forEach: "none",
-		some: "none",
-		every: "none",
-		findIndex: "none",
-		findLastIndex: "none",
-		includes: "none",
-		indexOf: "none",
-		reduce: "none",
-		join: "none"
-	})
+const arrayMethods: Record<
+	string,
+	"holder" | "element" | "mapped" | "none" | "flat" | "unfollowed"
+> = Object.assign(Object.create(null), {
+	filter: "holder",
+	slice: "holder",
+	concat: "holder",
+	reverse: "holder",
+	sort: "holder",
+	toSorted: "holder",
+	toReversed: "holder",
+	find: "element",
+	findLast: "element",
+	at: "element",
+	pop: "element",
+	shift: "element",
+	map: "mapped",
+	flatMap: "mapped",
+	forEach: "none",
+	some: "none",
+	every: "none",
+	findIndex: "none",
+	findLastIndex: "none",
+	includes: "none",
+	indexOf: "none",
+	reduce: "unfollowed",
+	reduceRight: "unfollowed",
+	flat: "flat",
+	join: "none"
+})
 
 // e.g. `JSON.stringify`, where no binding shadows the global
 const globalObjects = new Set(["globalThis", "window", "self", "global"])
@@ -2230,3 +2329,9 @@ const isPrimitiveLiteral = (node: Node, module: SourceModule): boolean => {
 			!module.scopes.byId.get(expression)?.binding)
 	)
 }
+
+// e.g. the `[Symbol.iterator]` of `x[Symbol.iterator]()`
+const isSymbolRead = (property: Node): boolean =>
+	property.type === "MemberExpression" &&
+	property.object.type === "Identifier" &&
+	property.object.name === "Symbol"

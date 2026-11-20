@@ -678,6 +678,12 @@ class UsageAnalysis {
 			parent.parent?.type === "ObjectExpression"
 		) {
 			const key = propertyKeyOf(parent)
+			if (
+				key !== undefined &&
+				(key === "__proto__" || mayReadThrough(key, this.program.modules))
+			)
+				this.handedOff ??= `${module.positionOf(node)} holds a validator at ${key} of an object whose members may read it through this`
+
 			if (key !== undefined)
 				return this.readValue(parent.parent, runtime, [key, ...path])
 		}
@@ -969,3 +975,63 @@ const unwrapParentheses = (node: Node): Node =>
 	node.type === "ParenthesizedExpression" ?
 		unwrapParentheses(node.expression)
 	:	node
+
+const isClassMember = (fn: Node): boolean =>
+	fn.parent?.type === "MethodDefinition" ||
+	fn.parent?.type === "PropertyDefinition"
+
+// the keys code reads off a `this` no class binds, e.g. an object literal's
+// method or a function called with a receiver, or `any` where it's read other
+// than at a name, like `const self = this`, `read(this)` or `this[k]`
+const thisKeysByModules = new WeakMap<
+	ReadonlyMap<string, RuntimeModule>,
+	ReadonlySet<string | undefined>
+>()
+
+export const thisKeysOf = (
+	modules: ReadonlyMap<string, RuntimeModule>
+): ReadonlySet<string | undefined> => {
+	let keys = thisKeysByModules.get(modules)
+	if (keys) return keys
+	const result = new Set<string | undefined>()
+	for (const { module } of modules.values()) {
+		walk(module.program, node => {
+			if (node.type !== "ThisExpression") return true
+			// a bare `this` outside any function is the module's
+			let fn: Node | undefined
+			for (let at: Node | null | undefined = node.parent; at; at = at.parent) {
+				if (
+					at.type === "FunctionExpression" ||
+					at.type === "FunctionDeclaration" ||
+					at.type === "PropertyDefinition" ||
+					at.type === "StaticBlock"
+				) {
+					fn = at
+					break
+				}
+			}
+			if (!fn || fn.type === "PropertyDefinition" || fn.type === "StaticBlock")
+				return true
+			if (isClassMember(fn)) return true
+			const parent = node.parent
+			if (parent?.type === "MemberExpression" && parent.object === node) {
+				const name = memberNameOf(parent)
+				result.add(typeof name === "string" ? name : undefined)
+			} else result.add(undefined)
+			return true
+		})
+	}
+	thisKeysByModules.set(modules, (keys = result))
+	return keys
+}
+
+// whether a read of the object holding a validator at key may be made through
+// `this`, which no reference to the object shows: by a function in its own
+// literal, or by one the program binds a receiver
+export const mayReadThrough = (
+	key: string,
+	modules: ReadonlyMap<string, RuntimeModule>
+): boolean => {
+	const keys = thisKeysOf(modules)
+	return keys.has(key) || keys.has(undefined)
+}

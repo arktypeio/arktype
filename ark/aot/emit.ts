@@ -245,12 +245,50 @@ const hoistImportsOf =
 		)
 		if (start === -1) return file
 		const body = file.statements.slice(start)
+		const imports = body.filter(ts.isImportDeclaration)
 		return context.factory.updateSourceFile(file, [
 			...file.statements.slice(0, start),
-			...body.filter(ts.isImportDeclaration),
+			...imports,
+			...versionGuardsOf(ts, context.factory, imports),
 			...body.filter(statement => !ts.isImportDeclaration(statement))
 		])
 	}
+
+// a named import fails to link in ESM when arktype/runtime doesn't export it,
+// but tsc's CommonJS reads it off the module as undefined, which nothing else
+// in a precompiled module checks. Reusing the import's own identifier keeps tsc
+// rewriting it to that read, whether or not the import is aliased.
+const versionGuardsOf = (
+	ts: TypeScript,
+	factory: ts.NodeFactory,
+	imports: readonly ts.ImportDeclaration[]
+): ts.Statement[] =>
+	imports.flatMap(({ importClause }) => {
+		const bindings = importClause?.namedBindings
+		if (!bindings || !ts.isNamedImports(bindings)) return []
+		return bindings.elements
+			.filter(({ name, propertyName }) =>
+				(propertyName ?? name).text.startsWith(versionExportPrefix)
+			)
+			.map(({ name, propertyName }) =>
+				factory.createIfStatement(
+					factory.createStrictInequality(name, factory.createTrue()),
+					factory.createThrowStatement(
+						factory.createNewExpression(
+							factory.createIdentifier("Error"),
+							undefined,
+							[
+								factory.createStringLiteral(
+									writeVersionMismatchMessage((propertyName ?? name).text)
+								)
+							]
+						)
+					)
+				)
+			)
+	})
+
+const versionExportPrefix = "precompiledForArktype_"
 
 const rewriterOf =
 	(
@@ -293,6 +331,9 @@ const rewriterOf =
 
 export const writeEmittedVariantMessage = (variant: RuntimeVariant): string =>
 	`A build with ${writeVariantOption(variant)} loads a copy of arktype/schema's runtime in place of the one arktype/runtime imports, which only a bundler or @ark/aot/node can do, so arktype-precompile --emit can't build with it${variant === "lean" ? '. Set optimizeErrors: "speed" to emit what optimize: "size" writes otherwise' : ""}`
+
+export const writeVersionMismatchMessage = (versionExport: string): string =>
+	`This module needs arktype/runtime to export ${versionExport}, which it doesn't, so it was precompiled for another version of arktype. Rebuild it with arktype-precompile --emit.`
 
 export const writeUnemittedMessage = (tsconfig: string): string =>
 	`${tsconfig} emits no JavaScript for arktype-precompile --emit to precompile. Name the tsconfig tsc builds with --tsconfig.`

@@ -3,7 +3,8 @@ import { fromHere } from "@ark/fs"
 import {
 	emitPrecompiled,
 	writeEmittedVariantMessage,
-	writeUnemittedMessage
+	writeUnemittedMessage,
+	writeVersionMismatchMessage
 } from "@ark/aot/internal/emit.ts"
 import { spawnSync } from "node:child_process"
 import {
@@ -115,6 +116,28 @@ contextualize(() => {
 		attestBuilt(
 			build("commonjs", "tsconfig.inline.json", "tsconfig.solution.json")
 		)
+	}).timeout(60000)
+
+	it("fails CommonJS at load on an arktype/runtime of another version", () => {
+		build("commonjs", "tsconfig.inline.json", "tsconfig.solution.json")
+		const userPath = join(out, "user.js")
+		const user = readFileSync(userPath, "utf8")
+		// as a file built by another arktype looks beside this runtime
+		writeFileSync(
+			userPath,
+			user.replace(/precompiledForArktype_\w+/g, "precompiledForArktype_0_0_0")
+		)
+		const run = spawnSync(
+			process.execPath,
+			["--conditions", "ark-ts", join(out, "main.js")],
+			{ encoding: "utf8" }
+		)
+		attest(run.status).equals(1)
+		attest(
+			run.stderr.includes(
+				`Error: ${writeVersionMismatchMessage("precompiledForArktype_0_0_0")}`
+			)
+		).equals(true)
 	}).timeout(60000)
 
 	it("writes nothing for a module it can't precompile", () => {

@@ -573,6 +573,115 @@ export const Fields = { even: Even, name: type("string") }
 		})
 	})
 
+	describe("reads it follows past what shows no reference", () => {
+		it("a method reading it off the object holding it as this", async () => {
+			attest(
+				await droppedReading(`const users = { schema: User, parse(data: unknown) { return this.schema.assert(data) } }
+users.parse({})`)
+			).snap(["meta", "~standard", "methods", "withContext"])
+		})
+
+		it("a getter reading it off the object holding it as this", async () => {
+			attest(
+				await droppedReading(`const holder = { _schema: User, get schema() { return this._schema } }
+holder.schema.assert({})`)
+			).snap(["meta", "~standard", "methods", "withContext"])
+		})
+
+		it("a constructor parameter property", async () => {
+			attest(
+				await droppedReading(`class Users {
+	constructor(readonly schema: typeof User) {}
+	parse(data: unknown) { return this.schema.assert(data) }
+}
+new Users(User).parse({})`)
+			).snap(["meta", "~standard", "methods", "withContext"])
+		})
+
+		it("a constructor parameter property with a default", async () => {
+			attest(
+				await droppedReading(`class Users {
+	constructor(private schema = User) {}
+	parse(data: unknown) { return this.schema.assert(data) }
+}
+new Users().parse({})`)
+			).snap(["meta", "~standard", "methods", "withContext"])
+		})
+
+		it("what .flat() returns of an array holding it", async () => {
+			attest(await droppedReading(`[[User]].flat()[0].assert({})`)).snap([
+				"meta",
+				"~standard",
+				"methods",
+				"withContext"
+			])
+		})
+
+		it("what .flatMap() returns of an array holding it", async () => {
+			attest(
+				await droppedReading(`[User].flatMap(t => [t])[0].assert({})`)
+			).snap(["meta", "~standard", "methods", "withContext"])
+		})
+
+		it("what .reduceRight() returns of an array holding it", async () => {
+			attest(
+				await droppedReading(`[User, User].reduceRight((_, t) => t).assert({})`)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:3:1 reduces it with .reduceRight"
+			)
+		})
+
+		it("what .values() returns of an array holding it", async () => {
+			attest(
+				await droppedReading(`[User].values().next().value!.assert({})`)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:3:1 calls .values on what holds it"
+			)
+		})
+
+		it("an object inheriting it through Object.create", async () => {
+			attest(
+				await droppedReading(
+					`Object.create({ schema: User }).schema.assert({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+		})
+
+		it("an object inheriting it through __proto__", async () => {
+			attest(
+				await droppedReading(`const child: { schema: typeof User } = { __proto__: { schema: User } } as never
+child.schema.assert({})`)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:3:53 sets it as a prototype, which inherits its members"
+			)
+		})
+
+		it("a template tag it's passed", async () => {
+			attest(
+				await droppedReading(`const tag = (_: TemplateStringsArray, v: typeof User) => v
+tag\`\${User}\`.assert({})`)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:4:7 passes it to a template tag"
+			)
+		})
+
+		it("a mapper Array.from passes it", async () => {
+			attest(
+				await droppedReading(`Array.from([User], t => t.assert({}))`)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:3:1 maps it with a function the build can't follow"
+			)
+		})
+
+		it("an unrelated member read through this, which a validator at another key isn't", async () => {
+			attest(
+				await droppedReading(
+					`const users = { schema: User, name: "users", label() { return this.name } }\nconsole.log(users.label(), users.schema.allows({}))`
+				)
+			).snap(["assert", "meta", "~standard", "methods", "withContext"])
+		})
+	})
+
 	describe("reads that keep every member", () => {
 		it("an entry's export", async () => {
 			attest(await droppedReading(`export { User }`)).snap(

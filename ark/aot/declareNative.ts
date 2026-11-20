@@ -107,7 +107,7 @@ const loadNative = (cwd: string, checker: NativeChecker): Native => {
 
 export const writeNoNativeMessage = (checker: NativeChecker): string =>
 	checker === "tsgo" ?
-		'checker: "tsgo" reads TypeScript 7.1 or later\'s API. Install it: `npm i -D typescript@7`'
+		'checker: "tsgo" reads TypeScript 7.1 or later\'s API, which 7.0 releases lack. Install typescript@7.1 or, until it is released, `npm i -D typescript@beta`'
 	:	'checker: "tsrs" reads tsrs\'s API from its binary for this platform. Install it: `npm i -D tsrs`'
 
 // what lays a program's declarations out

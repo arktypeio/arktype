@@ -1,4 +1,5 @@
-import { globSync, readFileSync, statSync } from "node:fs"
+import { throwError } from "arktype/util"
+import { existsSync, globSync, readFileSync, statSync } from "node:fs"
 import { dirname, resolve, sep } from "node:path"
 import type {
 	CheckedModule,
@@ -40,6 +41,15 @@ export interface CheckReport {
 	errors: number
 	files: number
 }
+
+export const writeNoSourcesMessage = (
+	patterns: string[],
+	cwd: string
+): string =>
+	`--check was given ${patterns.join(", ")}, which matches no script in ${cwd}. Name a script, a directory holding scripts or a glob that matches some.`
+
+export const writeMissingTsconfigMessage = (tsconfig: string): string =>
+	`The tsconfig ${tsconfig} can't be read. Name the tsconfig your build uses as --tsconfig, or remove it to check without one.`
 
 const defaultSources = ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"]
 
@@ -87,6 +97,9 @@ export const check = (
 ): CheckReport => {
 	const cwd = opts?.cwd ?? process.cwd()
 	const files = sourcesOf(patterns.length ? patterns : defaultSources, cwd)
+	// a path or glob that holds nothing is a typo, which no rate would reveal
+	if (patterns.length && !files.length)
+		throwError(writeNoSourcesMessage(patterns, cwd))
 	// what the build's own plugin call passes, as in vite.config.ts
 	const calls = pluginCallsIn(cwd)
 	const given = opts ?? {}
@@ -97,6 +110,15 @@ export const check = (
 			testing: false
 		}
 	)
+	// one it can't find would otherwise check as though the project had none
+	if (
+		precompilerOptions.tsconfig &&
+		!existsSync(resolve(cwd, precompilerOptions.tsconfig))
+	) {
+		throwError(
+			writeMissingTsconfigMessage(resolve(cwd, precompilerOptions.tsconfig))
+		)
+	}
 	const request = createSyncPrecompiler({ precompilerOptions })
 	const report: CheckReport = {
 		lines: pluginCallLinesOf(calls, given),

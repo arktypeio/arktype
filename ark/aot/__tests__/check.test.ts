@@ -1,6 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
-import { check } from "@ark/aot/internal/check.ts"
+import {
+	check,
+	writeMissingTsconfigMessage,
+	writeNoSourcesMessage
+} from "@ark/aot/internal/check.ts"
 import { spawnSync } from "node:child_process"
 import { readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
@@ -555,6 +559,27 @@ forms.ts:17:16  type(\`string <= \${limit}\`) cannot be precompiled
 			"1 The config module missing.ts can't be read. Name a module that exists as the build's config.",
 			'2 creationChecks must be "helpers", "none" or "types" (was "bogus")',
 			'2 creationChecks chooses what a standalone build writes, which runtime: "arktype" doesn\'t. Remove runtime: "arktype" to precompile, or remove creationChecks.'
+		])
+	})
+
+	it("fails a path, glob or tsconfig that names nothing", () => {
+		attest(
+			[
+				["nope.ts"],
+				["src/*.nothing", "also-nope.ts"],
+				["--tsconfig", "nope.json"]
+			].map(args => {
+				const result = runCli(cwd, "--check", ...args)
+				return [result.status, result.stdout, result.stderr]
+			})
+		).equals([
+			[1, "", `${writeNoSourcesMessage(["nope.ts"], cwd)}\n`],
+			[
+				1,
+				"",
+				`${writeNoSourcesMessage(["src/*.nothing", "also-nope.ts"], cwd)}\n`
+			],
+			[1, "", `${writeMissingTsconfigMessage(join(cwd, "nope.json"))}\n`]
 		])
 	})
 
