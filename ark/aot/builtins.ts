@@ -1,5 +1,5 @@
-import { arkKind, hasArkKind, silentCtx } from "@ark/schema"
-import { builtinConstructors, hasDomain } from "@ark/util"
+import { arkKind, hasArkKind, silentCtx } from "arktype/schema"
+import { builtinConstructors, hasDomain } from "arktype/util"
 
 type ObjectArg = "object" | "callback" | "RegExp"
 

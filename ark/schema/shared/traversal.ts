@@ -16,7 +16,8 @@ import type {
 	ArkErrorCode,
 	ArkErrorInput,
 	ArkErrors,
-	NodeErrorContextInput
+	NodeErrorContextInput,
+	RejectInput
 } from "./errors.ts"
 import {
 	ArkErrors as BaseArkErrors,
@@ -335,8 +336,10 @@ export class Traversal extends InternalTraversal {
 	 * #### add an {@link ArkError} and return `false`
 	 *
 	 * ✅ useful for predicates like `.narrow`
+	 * ✅ `{ message: "Enter a valid email" }` is the whole sentence an issue says
+	 * 🔗 to say what the value must be, as `must be even`, pass `"even"` to {@link mustBe}
 	 */
-	reject(input: ArkErrorInput): false {
+	reject(input: RejectInput): false {
 		this.raise(input)
 		return false
 	}
@@ -356,6 +359,7 @@ export class Traversal extends InternalTraversal {
 	 * #### add and return an {@link ArkError}
 	 *
 	 * ✅ useful for morphs like `.pipe`
+	 * ⚠️ a string is what the value must be: `error("valid JSON")` reads `must be valid JSON`, so pass a sentence as `{ message }`
 	 */
 	error<input extends ArkErrorInput>(
 		input: input

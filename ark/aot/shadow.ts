@@ -7,10 +7,10 @@ import {
 	withContextOf,
 	type BaseRoot,
 	type Traversal
-} from "@ark/schema"
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { ArkErrors, shareConfig } from "@ark/schema/runtime"
-import { arkKind, hasDomain, includes, printable } from "@ark/util"
+} from "arktype/schema"
+
+import { ArkErrors, shareConfig } from "arktype/schema/runtime"
+import { arkKind, hasDomain, includes, printable } from "arktype/util"
 import { configure } from "arktype/internal/config.js"
 import {
 	introspectionMembers,

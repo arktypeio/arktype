@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { jsonSchema, jsonSchemaToType } from "@ark/json-schema"
-import type { JsonSchemaOrBoolean } from "@ark/schema"
+import type { JsonSchemaOrBoolean } from "arktype/schema"
 import type { JsonSchema } from "arktype"
 
 // checks inference without reading the schema at runtime

@@ -89,23 +89,23 @@ if (out instanceof type.errors) {
 
 Strings use TypeScript's operators. Write string literals in single quotes inside the definition. Object types don't go in strings: `"{ a: string }"` doesn't parse, so write objects as objects and name them in a scope to reuse them in a string.
 
-| Want                    | Write                                                                    |
-| ----------------------- | ------------------------------------------------------------------------ |
-| optional key            | `"key?": "string"`                                                       |
-| default (objects only)  | `count: "number = 0"`, `plan: "'free' \| 'pro' = 'free'"`                |
-| object or array default | `tags: "string[] = []"`, or a function: `Tags.default(() => [])`         |
-| union                   | `"string \| number"`, `"'a' \| 'b'"`                                     |
-| array                   | `"string[]"`, `"(string \| number)[]"`                                   |
-| tuple                   | `["string", "number"]`                                                   |
-| number range            | `"number > 0"`, `"0 <= number < 1"`, `"1 <= number.integer <= 100"`      |
-| string or array length  | `"string > 0"`, `"1 <= string <= 255"`, `"string[] >= 1"`                |
-| divisibility            | `"number % 2"`                                                           |
-| regex                   | `/^\d+$/` as a RegExp, or `"/^\\d+$/"` in a string                       |
-| record                  | `"Record<string, number>"` or `{ "[string]": "number" }`                 |
-| class instance          | `"Date"`, `"Map"`, or `type.instanceOf(MyClass)`                         |
-| enum from values        | `type.enumerated("a", "b")` or `type.valueOf(MyEnum)`                    |
-| array of a Type         | `Item.array()`, `Item.array().atLeastLength(1)`                          |
-| custom error message    | `type("string >= 8").configure({ message: "Use 8 or more characters" })` |
+| Want                    | Write                                                               |
+| ----------------------- | ------------------------------------------------------------------- |
+| optional key            | `"key?": "string"`                                                  |
+| default (objects only)  | `count: "number = 0"`, `plan: "'free' \| 'pro' = 'free'"`           |
+| object or array default | `tags: "string[] = []"`, or a function: `Tags.default(() => [])`    |
+| union                   | `"string \| number"`, `"'a' \| 'b'"`                                |
+| array                   | `"string[]"`, `"(string \| number)[]"`                              |
+| tuple                   | `["string", "number"]`                                              |
+| number range            | `"number > 0"`, `"0 <= number < 1"`, `"1 <= number.integer <= 100"` |
+| string or array length  | `"string > 0"`, `"1 <= string <= 255"`, `"string[] >= 1"`           |
+| divisibility            | `"number % 2"`                                                      |
+| regex                   | `/^\d+$/` as a RegExp, or `"/^\\d+$/"` in a string                  |
+| record                  | `"Record<string, number>"` or `{ "[string]": "number" }`            |
+| class instance          | `"Date"`, `"Map"`, or `type.instanceOf(MyClass)`                    |
+| enum from values        | `type.enumerated("a", "b")` or `type.valueOf(MyEnum)`               |
+| array of a Type         | `Item.array()`, `Item.array().atLeastLength(1)`                     |
+| custom error message    | `type.string.atLeastLength(8, "Use 8 or more characters")`          |
 
 A regex with flags, like `/^a$/i`, must be a RegExp. Bounds bind tighter than `|`, so `"string <= 500 | null"` is a string of at most 500 characters, or null.
 
@@ -115,27 +115,27 @@ Common keywords: `string.email`, `string.uuid`, `string.url`, `string.ip`, `stri
 
 What a Zod schema becomes. To migrate a project, follow [references/migrating.md](references/migrating.md), which has every API, each library and the defaults that differ.
 
-| Zod                                       | ArkType                                                                  |
-| ----------------------------------------- | ------------------------------------------------------------------------ |
-| `z.object({ ... })`                       | `type({ ... })`, which keeps undeclared keys unless configured           |
-| `z.string().min(1).max(100)`              | `"1 <= string <= 100"`                                                   |
-| `z.string().email()`, `.url()`, `.uuid()` | `"string.email"`, `"string.url"`, `"string.uuid"`                        |
-| `z.number().int().positive()`             | `"number.integer > 0"`                                                   |
-| `z.enum(["a", "b"])`                      | `"'a' \| 'b'"`                                                           |
-| `.optional()` on a key                    | `"key?": "T \| undefined"`, or `"key?": "T"` with Zod's defaults set     |
-| `.nullable()`                             | `"T \| null"`                                                            |
-| `.default(x)`                             | `key: "T = x"` or `key: T.default(x)`                                    |
-| `z.array(T).min(1)`                       | `T.array().atLeastLength(1)`, or `"string[] >= 1"` in a string           |
-| `z.union([A, B])`, `z.discriminatedUnion` | `A.or(B)`                                                                |
-| `.extend({ ... })`, `.pick({ a: true })`  | `.merge({ ... })`, `.pick("a")`                                          |
-| `.refine(fn, message)`                    | `.narrow((v, ctx) => fn(v) \|\| ctx.reject({ message }))`                |
-| `.refine(fn, { message, path })`          | `ctx.reject({ message, relativePath: path })`                            |
-| `.min(1, "Name is required")`             | `["string >= 1", "@", { message: "Name is required" }]` as a key's value |
-| `.transform(fn)`                          | `.pipe(fn)`                                                              |
-| `z.coerce.number()`                       | `type("unknown").pipe(Number).to("number")`                              |
-| `z.infer<typeof T>`, `z.input`            | `typeof T.infer`, `typeof T.inferIn`                                     |
-| `T.parse(x)`, `T.safeParse(x)`            | `T.assert(x)`, `T(x)` checked with `instanceof type.errors`              |
-| `e instanceof ZodError` in a `catch`      | `e instanceof TraversalError`, then `e.arkErrors.issues`                 |
+| Zod                                       | ArkType                                                              |
+| ----------------------------------------- | -------------------------------------------------------------------- |
+| `z.object({ ... })`                       | `type({ ... })`, which keeps undeclared keys unless configured       |
+| `z.string().min(1).max(100)`              | `"1 <= string <= 100"`                                               |
+| `z.string().email()`, `.url()`, `.uuid()` | `"string.email"`, `"string.url"`, `"string.uuid"`                    |
+| `z.number().int().positive()`             | `"number.integer > 0"`                                               |
+| `z.enum(["a", "b"])`                      | `"'a' \| 'b'"`                                                       |
+| `.optional()` on a key                    | `"key?": "T \| undefined"`, or `"key?": "T"` with Zod's defaults set |
+| `.nullable()`                             | `"T \| null"`                                                        |
+| `.default(x)`                             | `key: "T = x"` or `key: T.default(x)`                                |
+| `z.array(T).min(1)`                       | `T.array().atLeastLength(1)`, or `"string[] >= 1"` in a string       |
+| `z.union([A, B])`, `z.discriminatedUnion` | `A.or(B)`                                                            |
+| `.extend({ ... })`, `.pick({ a: true })`  | `.merge({ ... })`, `.pick("a")`                                      |
+| `.refine(fn, message)`                    | `.narrow((v, ctx) => fn(v) \|\| ctx.reject({ message }))`            |
+| `.refine(fn, { message, path })`          | `ctx.reject({ message, relativePath: path })`                        |
+| `.min(1, "Name is required")`             | `type.string.atLeastLength(1, "Name is required")`                   |
+| `.transform(fn)`                          | `.pipe(fn)`                                                          |
+| `z.coerce.number()`                       | `type("unknown").pipe(Number).to("number")`                          |
+| `z.infer<typeof T>`, `z.input`            | `typeof T.infer`, `typeof T.inferIn`                                 |
+| `T.parse(x)`, `T.safeParse(x)`            | `T.assert(x)`, `T(x)` checked with `instanceof type.errors`          |
+| `e instanceof ZodError` in a `catch`      | `e instanceof TraversalError`, then `e.arkErrors.issues`             |
 
 ## Composing types
 
@@ -249,25 +249,25 @@ const Signup = type({
 
 There are two ways to say what's wrong. Choose by the text you have:
 
-| The text is                                                     | Write it as                                                                                 | An issue's `message`    | Its line of `out.summary`     |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ----------------------- | ----------------------------- |
-| a whole sentence, like any Zod message: `"Enter a valid email"` | `message`, in `.configure({ message })`, a `"@"` tuple or `ctx.reject({ message })`         | `Enter a valid email`   | `email: Enter a valid email`  |
-| what the value must be: `"a valid email"`                       | `.describe(text)`, `.configure({ expected: text })`, `ctx.reject(text)`, `ctx.mustBe(text)` | `must be a valid email` | `email must be a valid email` |
+| The text is                                                     | Write it as                                                                                                     | An issue's `message`    | Its line of `out.summary`     |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------- | ----------------------------- |
+| a whole sentence, like any Zod message: `"Enter a valid email"` | `message`, as a constraint method's last argument, `.message(text)`, a `"@"` tuple or `ctx.reject({ message })` | `Enter a valid email`   | `email: Enter a valid email`  |
+| what the value must be: `"a valid email"`                       | `.describe(text)`, `.configure({ expected: text })`, `ctx.mustBe(text)`, `ctx.error(text)`                      | `must be a valid email` | `email must be a valid email` |
 
-- A message from Zod, or any sentence a user reads, is always a `message`. Passed as a string to `ctx.reject()`, to `ctx.mustBe()`, to `.describe()`, as `expected` or as a string after `"@"`, it would read `must be Enter a valid email`.
+- A message from Zod, or any sentence a user reads, is always a `message`. Passed to `ctx.mustBe()`, as a string to `ctx.error()`, to `.describe()`, as `expected` or as a string after `"@"`, it would read `must be Enter a valid email`. `ctx.reject()` takes no string, so TypeScript flags `ctx.reject("Enter a valid email")`: write `ctx.reject({ message: "Enter a valid email" })`.
 - An issue's `message` is what a form library, or anything else reading the Type through Standard Schema, shows beside the field. `out.summary`, and the `TraversalError` `.assert()` throws, write a line for each error with its path.
 - A `message` isn't composed into other text. What a Type is `expected` to be is: a union lists it, as in `must be a valid email or null`. So with `| null` or `| undefined`, configure the whole union, as in `["string.email | null", "@", { message }]`: a message on one branch is lost for a value of the wrong type. With `exactOptionalPropertyTypes: false`, an optional or defaulted key's value is such a union, so write `"role?": ["'admin' | 'user' | undefined", "@", { message }]`: a message on an enum, a literal or a boolean alone is never said there.
-- A `message` on `string.date.parse`, `string.url.parse` or `string.json.parse` isn't said for a string that fails to parse. Check, then convert: `type("string.date").pipe(s => new Date(s)).configure({ message })`.
+- A `message` on `string.date.parse`, `string.url.parse` or `string.json.parse` isn't said for a string that fails to parse. Check, then convert: `type("string.date").pipe(s => new Date(s)).message(text)`.
 
-In a definition, a tuple with `"@"` configures a value where it's written, as Zod's `.min(1, "Name is required")` does. For a message per check, name the check after it, by its error code (`minLength`, `maxLength`, `pattern`, `min`, `max`, `divisor`), in the tuple or as `.configure()`'s second argument:
+Pass a message as the last argument to a constraint method, like `atLeastLength`, `atMostLength`, `matching`, `atLeast`, `lessThan` or `divisibleBy`, and only that check says it, as with Zod's `.min(1, "Name is required")`. A check with no method, like a keyword's, takes its error code (`minLength`, `maxLength`, `pattern`, `min`, `max`, `divisor`) as `.message()`'s second argument. `.message(text)` alone sets the whole Type's message, as `.describe(text)` sets what it must be:
 
 ```ts
 const Invite = type({
-	name: ["string > 0", "@", { message: "Name is required" }],
-	email: ["string.email", "@", { message: "Enter a valid email" }],
-	password: type("string >= 8 & /[0-9]/")
-		.configure({ message: "Use 8 or more characters" }, "minLength")
-		.configure({ message: "Include a number" }, "pattern")
+	name: type.string.atLeastLength(1, "Name is required"),
+	email: type("string.email").message("Enter a valid email", "pattern"),
+	password: type.string
+		.atLeastLength(8, "Use 8 or more characters")
+		.matching(/[0-9]/, "Include a number")
 })
 
 // name: Name is required
@@ -277,13 +277,11 @@ const Invite = type({
 const out = Invite({ name: "", email: "x", password: "short" })
 ```
 
-- A string `message` on a key's whole value, like `name`'s, is what the key says when its value is wrong, `undefined` included, and when the key is missing, so `Invite({})` reads the same for `name` and `email`. It covers Zod's `required_error`.
-- Configure a whole-value message last, after any `.pipe()` or `.to()`: `type("'on'").pipe(() => true).configure({ message: "Accept the terms" })`.
-- A message for one check leaves other errors with ArkType's text, like `password must be a string (was missing)`. To give those their own, name `"domain"` for a wrong type and `"self"` for a missing key.
-- A code names every check of that kind in the Type, nested keys' included, so configure a key's value, not the object around it. An array's length and its elements' are both `minLength`: configure the length on its own Type and intersect, as in `type("unknown[] >= 1").configure({ message: "Add one" }, "minLength").and(Tag.array())`.
-- Configure a whole-value message before per-check ones, since it replaces those configured earlier.
-- After a `.pipe()` or `.to()`, a code doesn't reach the Type the output is checked with, and a whole-value or `"self"` message on the transformed Type replaces the ones inside it. Configure that Type before passing it: `type("string.trim").to(type("string > 0").configure({ message: "Name is required" }))`.
-- Several failed checks report a pattern before a length. For an empty field to say `Email is required` first, as Zod's `.min(1, "...").email("...")` did, leave out the `>= 1` and choose by the value: `.configure({ message: e => (e.data === "" ? "Email is required" : "Enter a valid email") }, "pattern")`. For a length's message to come before a pattern's, write the pattern as a `.narrow()`, which runs once the length passes.
+- A check's message leaves other errors with ArkType's text, like `name must be a string (was missing)`, as Zod's did. To give those their own, add `.message(text, "self")` for a missing key and `.message(text, "domain")` for a wrong type, after the constraints.
+- A whole-value message, `.message(text)` or `["string", "@", { message }]` in a definition, is said for every failure, a wrong type and a missing key included, as Zod's `z.string({ error })` is. Configure it last, after any `.pipe()` or `.to()`, and never after checks' messages, which it replaces.
+- A code names every check of that kind in the Type, nested keys' included. A message passed to a constraint method is that check's alone, so two patterns, or an array's length and its elements', keep their own: `Tag.array().atLeastLength(1, "Add a tag")`.
+- After a `.pipe()` or `.to()`, a code doesn't reach the Type the output is checked with, and a whole-value or `"self"` message on the transformed Type replaces the ones inside it. Give that Type its messages before passing it: `type("string.trim").to(type.string.atLeastLength(1, "Name is required"))`.
+- Several failed checks report a pattern before a length. For an empty field to say `Email is required` first, as Zod's `.min(1, "...").email("...")` did, leave out the `>= 1` and choose by the value: `.message(e => (e.data === "" ? "Email is required" : "Enter a valid email"), "pattern")`. For a length's message to come before a pattern's, write the pattern as a `.narrow()`, which runs once the length passes.
 
 To show each message beside its field, group `out.issues` by `issue.path.join(".")`, keeping the first `issue.message` for each key.
 
@@ -372,25 +370,25 @@ check(User, { name: "Ada" }, { name: "", age: -1 })
 
 ## Errors and their fixes
 
-| Error                                                                                               | Fix                                                                                                                                                                                                                  |
-| --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `'a' is unresolvable`, or `'int' is unresolvable. Did you mean 'number.integer'?`                   | use the name it suggests, or quote a string literal, `"'a'"`. Keywords have full names: `number.integer`, `string.email`, `Date`                                                                                     |
-| `Type definitions must be strings or objects (was Function)`                                        | a class is `type.instanceOf(MyClass)` or a keyword like `"Date"`, and a predicate is `.narrow(fn)`                                                                                                                   |
-| `configure() has no option 'clone'`                                                                 | remove an option 3.0 dropped, like `clone`, or use the name the error suggests for a misspelled one                                                                                                                  |
-| `problem was removed in 3.0; write message`                                                         | rename `problem` to `message` in `.configure()` and `ctx.reject()`, and write it as a whole sentence                                                                                                                 |
-| `'{' is unresolvable`                                                                               | write an object as an object, not in a string                                                                                                                                                                        |
-| `'Type' is unresolvable`                                                                            | don't interpolate a Type into a string; use `Item.array()`, `Item.or(...)` or `[Item, "[]"]`                                                                                                                         |
-| `'^\d+$' is unresolvable`, or part of another regex, like `'^'`                                     | put a regex in slashes, `"/^\\d+$/"`                                                                                                                                                                                 |
-| `Defaultable definitions like 'number = 0' are only valid as properties in an object or tuple`      | give the default in an object, `{ count: "number = 0" }`                                                                                                                                                             |
-| `Only required keys may specify default values`                                                     | drop the `?`: a key with a default may be missing                                                                                                                                                                    |
-| `Argument of type 'never[]' is not assignable to parameter of type '() => ...'` at `.default([])`   | an object or array default is a function, `.default(() => [])`, or `"string[] = []"` in a string                                                                                                                     |
-| `An unordered union of a type including a morph and a type with overlapping input is indeterminate` | narrow the morph's input so no other branch accepts it, as in `"string.numeric.parse \| undefined"`; for objects that delete keys, see [Extra keys](#extra-keys)                                                     |
-| `merge operand must be an object (was (In: { ... }) => To<...>)`, or `pick`, `omit`, `partial`      | the object has a `.narrow()` and deletes undeclared keys: call the method on the object before its `.narrow()`, then add the narrow                                                                                  |
-| `Intersection at a of string and number results in an unsatisfiable type`                           | `.and()` found conflicting keys; use `.merge()` to replace them                                                                                                                                                      |
-| `Index keys "a", "b" should be specified as named props`                                            | write `Record<"a" \| "b", T>` as `{ a: T, b: T }`                                                                                                                                                                    |
-| `configure() must be called before any Type is created`                                             | import the module calling `configure()` before any module that creates a Type                                                                                                                                        |
-| `Must use import to load ES Module: .../arktype/out/index.js`, from Jest                            | arktype ships ES modules only: add `transformIgnorePatterns: ["/node_modules/(?!(\\.pnpm\|arktype\|arkregex\|arksets\|@ark)/)"]` and a transform that reads JavaScript, like the `ts-jest/presets/js-with-ts` preset |
-| an error message reading `must be Enter a valid email`                                              | a sentence was passed as `expected`; pass it as `message`                                                                                                                                                            |
+| Error                                                                                               | Fix                                                                                                                                                                                         |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'a' is unresolvable`, or `'int' is unresolvable. Did you mean 'number.integer'?`                   | use the name it suggests, or quote a string literal, `"'a'"`. Keywords have full names: `number.integer`, `string.email`, `Date`                                                            |
+| `Type definitions must be strings or objects (was Function)`                                        | a class is `type.instanceOf(MyClass)` or a keyword like `"Date"`, and a predicate is `.narrow(fn)`                                                                                          |
+| `configure() has no option 'clone'`                                                                 | remove an option 3.0 dropped, like `clone`, or use the name the error suggests for a misspelled one                                                                                         |
+| `problem was removed in 3.0; write message`                                                         | rename `problem` to `message` in `.configure()` and `ctx.reject()`, and write it as a whole sentence                                                                                        |
+| `'{' is unresolvable`                                                                               | write an object as an object, not in a string                                                                                                                                               |
+| `'Type' is unresolvable`                                                                            | don't interpolate a Type into a string; use `Item.array()`, `Item.or(...)` or `[Item, "[]"]`                                                                                                |
+| `'^\d+$' is unresolvable`, or part of another regex, like `'^'`                                     | put a regex in slashes, `"/^\\d+$/"`                                                                                                                                                        |
+| `Defaultable definitions like 'number = 0' are only valid as properties in an object or tuple`      | give the default in an object, `{ count: "number = 0" }`                                                                                                                                    |
+| `Only required keys may specify default values`                                                     | drop the `?`: a key with a default may be missing                                                                                                                                           |
+| `Argument of type 'never[]' is not assignable to parameter of type '() => ...'` at `.default([])`   | an object or array default is a function, `.default(() => [])`, or `"string[] = []"` in a string                                                                                            |
+| `An unordered union of a type including a morph and a type with overlapping input is indeterminate` | narrow the morph's input so no other branch accepts it, as in `"string.numeric.parse \| undefined"`; for objects that delete keys, see [Extra keys](#extra-keys)                            |
+| `merge operand must be an object (was (In: { ... }) => To<...>)`, or `pick`, `omit`, `partial`      | the object has a `.narrow()` and deletes undeclared keys: call the method on the object before its `.narrow()`, then add the narrow                                                         |
+| `Intersection at a of string and number results in an unsatisfiable type`                           | `.and()` found conflicting keys; use `.merge()` to replace them                                                                                                                             |
+| `Index keys "a", "b" should be specified as named props`                                            | write `Record<"a" \| "b", T>` as `{ a: T, b: T }`                                                                                                                                           |
+| `configure() must be called before any Type is created`                                             | import the module calling `configure()` before any module that creates a Type                                                                                                               |
+| `Must use import to load ES Module: .../arktype/out/index.js`, from Jest                            | arktype ships ES modules only: add `transformIgnorePatterns: ["/node_modules/(?!(\\.pnpm\|arktype)/)"]` and a transform that reads JavaScript, like the `ts-jest/presets/js-with-ts` preset |
+| an error message reading `must be Enter a valid email`                                              | a sentence was passed as `expected`; pass it as `message`                                                                                                                                   |
 
 ## Mistakes to avoid
 

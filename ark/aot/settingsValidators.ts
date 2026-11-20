@@ -357,6 +357,35 @@ var receive = (ctx, data) => {
 	ctx.recv = data
 	ctx.recvAt = ctx.path.length
 }
+var callContext
+var inContext = (context, run) => {
+	const outer = callContext
+	callContext = context
+	try {
+		return run()
+	} finally {
+		callContext = outer
+	}
+}
+var withContextOf = (t, context) => {
+	const standard = t["~standard"]
+	return Object.assign(data => inContext(context, () => t(data)), {
+		assert: data => inContext(context, () => t.assert(data)),
+		allows: data => inContext(context, () => t.allows(data)),
+		// as the Type's, with its vendor's own members like _c, but validating in context
+		"~standard": Object.defineProperties(
+			{},
+			{
+				...Object.getOwnPropertyDescriptors(standard),
+				validate: {
+					value: (value, options) =>
+						inContext(context, () => standard.validate(value, options)),
+					enumerable: true
+				}
+			}
+		)
+	})
+}
 var addErrors = (ctx, errors) => {
 	if (errors === ctx._errors) return
 	const target = errorsOf(ctx)
@@ -1054,7 +1083,7 @@ var create1q5hta0h0lh5t = ([allows], id, holes = []) => {
 				pipedFromCtx ? errors => pipedFromCtx.piped(errors) : onFail
 			)
 	validator.allows = freeze(allows)
-	validator.withContext = freeze(context => (void 0)(validator, context))
+	validator.withContext = freeze(context => withContextOf(validator, context))
 	return holdHoles(freeze(validator), id, holes)
 }
 var intersection1kiu37t1iquj2h = /* @__PURE__ */ (([

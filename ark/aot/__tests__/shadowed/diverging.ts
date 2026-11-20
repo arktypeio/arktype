@@ -57,7 +57,7 @@ const checked = shadow(
 	(f: unknown) =>
 		type("string").narrow(
 			(s, ctx) => (
-				ctx.reject("an earlier problem"),
+				ctx.mustBe("an earlier problem"),
 				(f as typeof isFirst)(s, ctx)
 			)
 		),

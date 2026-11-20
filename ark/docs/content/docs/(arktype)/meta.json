@@ -1,6 +1,6 @@
 {
 	"title": "ArkType",
-	"description": "TypeScript's 1:1 validator",
+	"description": "TypeScript's smallest, fastest validator. One prompt away.",
 	"root": true,
 	"pages": [
 		"---Get started---",

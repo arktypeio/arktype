@@ -6,7 +6,7 @@ import { precompileStandalone } from "arktype/internal/standalone.ts"
 import { build, transform } from "esbuild"
 import { spawnSync } from "node:child_process"
 import { join } from "node:path"
-import { runPlain, writeFixture } from "./utils.ts"
+import { normalized, runPlain, writeFixture } from "./utils.ts"
 
 // arktype's packages resolve to their source in this repo
 const conditions = ["ark-ts", "production"]
@@ -945,6 +945,56 @@ note7 must be a string
 		attest(await minifiedLengthOf(colocated)).equals(
 			await minifiedLengthOf(split)
 		)
+	})
+
+	it("builds what declare<X>().type(T) defines to what T builds to, wherever it's read", async () => {
+		const addressOf = (
+			written: (def: string) => string
+		) => `import { type, type Traversal } from "arktype"
+const Address = type({ line1: "string" })
+const isLine = (a: typeof Address.infer, ctx: Traversal) => a.line1.length > 2 || ctx.reject({ expected: "a full line" })
+export const Line = ${written("Address.narrow(isLine)")}
+export const unlessSaved = (saved: string | undefined) =>
+	${written("Address.narrow((a, ctx) => a.line1 === saved || isLine(a, ctx))")}
+`
+		const main = `import { type } from "arktype"
+import { Line, unlessSaved } from "./address.ts"
+const Account = type({ address: Line.or(type.undefined) })
+const edit = (saved: string | undefined) => {
+	const address = unlessSaved(saved).or(type.undefined)
+	return Account.merge({ address })
+}
+const show = (out: unknown) => console.log(out instanceof type.errors ? out.summary : JSON.stringify(out))
+show(Line({ line1: "a" }))
+show(Account({ address: { line1: "a" } }))
+show(Account({ address: undefined }))
+show(edit("a")({ address: { line1: "a" } }))
+show(edit("b")({ address: { line1: "a" } }))
+`
+		const bundleAs = (name: string, written: (def: string) => string) =>
+			bundle(
+				writeFixture(
+					{ "address.ts": addressOf(written), "main.ts": main },
+					fromHere("temp", "checkers", `declare-${name}`)
+				)
+			)
+		const [declared, passed] = await Promise.all([
+			bundleAs(
+				"declared",
+				def => `type.declare<{ line1: string }>().type(${def})`
+			),
+			bundleAs("passed", def => def)
+		])
+		attest(behaviorOf(declared)).snap(`must be a full line
+address must be a full line
+{}
+{"address":{"line1":"a"}}
+address must be a full line
+`)
+		// the same but for the fixture's path, which also names its runtime module
+		const unplaced = (js: string, name: string) =>
+			normalized(js.split(`declare-${name}`).join("declare"))
+		attest(unplaced(declared, "declared")).equals(unplaced(passed, "passed"))
 	})
 
 	it("writes once what creates a validator, whichever way its root finds its issues", async () => {

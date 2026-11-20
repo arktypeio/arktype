@@ -118,8 +118,12 @@ for (const pkg of dependencyOrder) {
  * like @ark/aot.
  */
 export const publishOrder: ArkPackage[] = [
-	...dependencyOrder.filter(pkg => !installsType.has(pkg.name)),
-	...dependencyOrder.filter(pkg => installsType.has(pkg.name))
+	...dependencyOrder.filter(
+		pkg => !pkg.json.private && !installsType.has(pkg.name)
+	),
+	...dependencyOrder.filter(
+		pkg => !pkg.json.private && installsType.has(pkg.name)
+	)
 ]
 
 /** the versions of a package on npm, none if it isn't there yet */

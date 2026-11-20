@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { jsonSchemaToType, type jsonSchema } from "@ark/json-schema"
-import type { array } from "@ark/util"
+import type { array } from "arktype/util"
 import { inferred, type elementAt } from "./utils.ts"
 
 // every keyword path, nested as deep as the depth bar requires (32 levels, or

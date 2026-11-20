@@ -5,6 +5,7 @@ export type {
 	ArkError,
 	ArkErrorCode,
 	ArkErrorInput,
+	RejectInput,
 	ErrorContextsByCode
 } from "./shared/errors.ts"
 export * from "./shared/enWriters.ts"

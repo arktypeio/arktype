@@ -222,7 +222,7 @@ console.log(forms.schema?.allows({} satisfies Partial<Named>))`
 					`import { Admin } from "./admin.ts"\nconst T = import.meta.env.DEV ? Admin : User\n\nT.assert({})`,
 					admin
 				)
-			).snap(["meta", "~standard", "methods"])
+			).snap(["meta", "~standard", "methods", "withContext"])
 			attest(
 				await droppedReading(
 					`import { Admin } from "./admin.ts"\nconst T = (import.meta.env.DEV && Admin) || User\n\nT({})`,
@@ -247,7 +247,7 @@ console.log(forms.schema?.allows({} satisfies Partial<Named>))`
 					`import { sValidator } from "validator"\n\nsValidator("json", User)`,
 					validator
 				)
-			).snap(["assert", "meta", "methods"])
+			).snap(["assert", "meta", "methods", "withContext"])
 			// Trimmed only passed to the factory creating Admin, which finds its
 			// functions by it, reading no member
 			attest(
@@ -255,7 +255,7 @@ console.log(forms.schema?.allows({} satisfies Partial<Named>))`
 					...validator,
 					"/main.ts": `import { type } from "arktype"\nimport { sValidator } from "validator"\n\nconst Trimmed = type("string").pipe(s => s.trim())\nconst Admin = type({ name: Trimmed })\n\nsValidator("json", Admin)`
 				})
-			).snap(["assert", "meta", "methods"])
+			).snap(["assert", "meta", "methods", "withContext"])
 			// as the MCP SDK, storing it at a key it reads later
 			const server = {
 				"/node_modules/server/index.js": `export class McpServer {
@@ -274,7 +274,7 @@ console.log(forms.schema?.allows({} satisfies Partial<Named>))`
 					`import { McpServer } from "server"\n\nnew McpServer().registerTool("t", { inputSchema: User }, () => {})`,
 					server
 				)
-			).snap(["meta", "methods"])
+			).snap(["meta", "methods", "withContext"])
 		})
 
 		describe("what a production factory reads of what it's passed", () => {
@@ -345,7 +345,7 @@ export const Fields = { even: Even, name: type("string") }
 				await droppedReading(`import { check } from "checker"\n\ncheck(User)`, {
 					"/node_modules/checker/index.js": `export const check = t => [t.meta, String(t)]`
 				})
-			).snap(["assert", "~standard"])
+			).snap(["assert", "~standard", "withContext"])
 			// which keys it has depends on each, so listing them loses track
 			attest(
 				await droppedReading(`import { check } from "checker"\n\ncheck(User)`, {
@@ -386,7 +386,8 @@ export const Fields = { even: Even, name: type("string") }
 			attest(await droppedReading("User.assert({})")).snap([
 				"meta",
 				"~standard",
-				"methods"
+				"methods",
+				"withContext"
 			])
 		})
 
@@ -394,7 +395,8 @@ export const Fields = { even: Even, name: type("string") }
 			attest(await droppedReading(`User["~standard"].validate({})`)).snap([
 				"assert",
 				"meta",
-				"methods"
+				"methods",
+				"withContext"
 			])
 		})
 
@@ -402,7 +404,8 @@ export const Fields = { even: Even, name: type("string") }
 			attest(await droppedReading("console.log(User.meta)")).snap([
 				"assert",
 				"~standard",
-				"methods"
+				"methods",
+				"withContext"
 			])
 		})
 
@@ -410,12 +413,17 @@ export const Fields = { even: Even, name: type("string") }
 			attest(await droppedReading("User.traverse({})")).snap([
 				"assert",
 				"meta",
-				"~standard"
+				"~standard",
+				"withContext"
 			])
 		})
 
 		it("from(), which calls assert", async () => {
-			attest(await droppedReading("User.from({})")).snap(["meta", "~standard"])
+			attest(await droppedReading("User.from({})")).snap([
+				"meta",
+				"~standard",
+				"withContext"
+			])
 		})
 
 		it("toString()", async () => {
@@ -427,7 +435,7 @@ export const Fields = { even: Even, name: type("string") }
 					},
 					{ members: { expression: true } }
 				)
-			).snap(["assert", "meta", "~standard"])
+			).snap(["assert", "meta", "~standard", "withContext"])
 		})
 
 		it("nothing in an introspection member the build bakes", async () => {
@@ -441,7 +449,7 @@ export const Fields = { even: Even, name: type("string") }
 				await droppedReading(`import "./other.ts"\nUser.assert({})`, {
 					"/other.ts": `import { User } from "./types.ts"\n\nUser.meta`
 				})
-			).snap(["~standard", "methods"])
+			).snap(["~standard", "methods", "withContext"])
 		})
 
 		it("through a renamed re-export", async () => {
@@ -451,7 +459,7 @@ export const Fields = { even: Even, name: type("string") }
 					"/barrel.ts": `export { User as Account } from "./types.ts"`,
 					"/main.ts": `import { Account } from "./barrel.ts"\n\nAccount.assert({})`
 				})
-			).snap(["meta", "~standard", "methods"])
+			).snap(["meta", "~standard", "methods", "withContext"])
 		})
 
 		it("through export *", async () => {
@@ -470,7 +478,7 @@ export const Fields = { even: Even, name: type("string") }
 					"/types.ts": types,
 					"/main.ts": `import * as t from "./types.ts"\n\nt.User.assert({})`
 				})
-			).snap(["meta", "~standard", "methods"])
+			).snap(["meta", "~standard", "methods", "withContext"])
 		})
 
 		it("through a default export", async () => {
@@ -496,7 +504,7 @@ export const Fields = { even: Even, name: type("string") }
 				await droppedFrom({
 					"/main.ts": `import { type } from "arktype"\n\nconst User = type({ name: "string" })\n\nUser.assert({})`
 				})
-			).snap(["meta", "~standard", "methods"])
+			).snap(["meta", "~standard", "methods", "withContext"])
 		})
 
 		it("nothing in a definition the build precompiles", async () => {
@@ -552,7 +560,7 @@ export const Fields = { even: Even, name: type("string") }
 					},
 					{ members: { assert: true } }
 				)
-			).snap(["meta", "~standard", "methods"])
+			).snap(["meta", "~standard", "methods", "withContext"])
 		})
 
 		it("a function a definition keeps", async () => {
@@ -966,14 +974,14 @@ export const Fields = { even: Even, name: type("string") }
 				attest(
 					written(`import { siteOf } from "./sites.js";
 import { listsUnions, writesText as writesText2 } from "./shared/issueFeatures.js";
-import { failsAt, transformsBranches } from "@ark/schema/runtime";
+import { failsAt, transformsBranches } from "arktype/schema/runtime";
 const line = (issue) => (listsUnions ? issue._l : void 0) ?? issue.message;
 const text = (issue) => writesText2 && issue._c ? ": " : " ";
 const branches = (t) => transformsBranches && t ? failsAt(t) : siteOf(t);
 `)
 				).snap(`import { siteOf } from "./sites.js";
 
-import { failsAt } from "@ark/schema/runtime";
+import { failsAt } from "arktype/schema/runtime";
 const line = (issue) => ((false) ? issue._l : void 0) ?? issue.message;
 const text = (issue) => (true) && issue._c ? ": " : " ";
 const branches = (t) => (false) && t ? failsAt(t) : siteOf(t);
@@ -982,11 +990,11 @@ const branches = (t) => (false) && t ? failsAt(t) : siteOf(t);
 
 			it("keeps the import of one the module exports again, with its reads written", () => {
 				attest(
-					written(`import { appliesValues, failsAt } from "@ark/schema/runtime";
+					written(`import { appliesValues, failsAt } from "arktype/schema/runtime";
 const fails = (checker) => appliesValues && checker.e ? checker.e : failsAt;
 export { appliesValues, fails };
 `)
-				).snap(`import { appliesValues, failsAt } from "@ark/schema/runtime";
+				).snap(`import { appliesValues, failsAt } from "arktype/schema/runtime";
 const fails = (checker) => (false) && checker.e ? checker.e : failsAt;
 export { appliesValues, fails };
 `)
@@ -1191,7 +1199,7 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 					"/types.ts": schemas,
 					"/main.ts": `import { schemas } from "./types.ts"\n\nschemas.user.assert({})\n`
 				})
-			).snap(["meta", "~standard", "methods"])
+			).snap(["meta", "~standard", "methods", "withContext"])
 		})
 
 		it("read at a computed key, which may be any held", async () => {
@@ -1200,7 +1208,7 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 					"/types.ts": schemas,
 					"/main.ts": `import { schemas } from "./types.ts"\n\nconst k = process.argv[2] as "user" | "post"\nschemas[k].assert({})\n`
 				})
-			).snap(["meta", "~standard", "methods"])
+			).snap(["meta", "~standard", "methods", "withContext"])
 		})
 
 		it("held by a const the module reads", async () => {
@@ -1216,7 +1224,7 @@ export const schemas = { user: type({ name: "string" }), post: type({ title: "st
 				await droppedReading(
 					"const api = { v1: { user: User } }\napi.v1.user.allows({})\napi.v1.other?.assert({})"
 				)
-			).snap(["assert", "meta", "~standard", "methods"])
+			).snap(["assert", "meta", "~standard", "methods", "withContext"])
 		})
 
 		it("but not where the object is read whole", async () => {

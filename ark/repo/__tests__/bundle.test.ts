@@ -37,11 +37,11 @@ const writePackage = (
 }
 
 // only bundle() runs in dir, since attest finds type data by its path from the cwd
-const bundleIn = (dir: string) => {
+const bundleIn = async (dir: string) => {
 	const cwd = process.cwd()
 	process.chdir(dir)
 	try {
-		bundle()
+		await bundle()
 	} finally {
 		process.chdir(cwd)
 	}
@@ -50,6 +50,15 @@ const bundleIn = (dir: string) => {
 
 const evaluated = () =>
 	(globalThis as { evaluated?: string[] }).evaluated?.splice(0)
+
+const rejectionOf = async (promise: Promise<unknown>) => {
+	try {
+		await promise
+	} catch (e) {
+		return e instanceof Error ? e.message : String(e)
+	}
+	return undefined
+}
 
 contextualize(() => {
 	// buildSync's first call starts esbuild's service with the cwd it runs in, and
@@ -73,7 +82,7 @@ contextualize(() => {
 			},
 			{ ".": "./out/index.js", "./internal": "./out/internal.js" }
 		)
-		const fromOut = bundleIn(dir)
+		const fromOut = await bundleIn(dir)
 
 		const root = await import(fromOut("index.js"))
 		attest(evaluated()).equals(["a", "index"])
@@ -94,7 +103,7 @@ contextualize(() => {
 			},
 			{ ".": "./out/index.js", "./internal": "./out/internal.js" }
 		)
-		const fromOut = bundleIn(dir)
+		const fromOut = await bundleIn(dir)
 		const [chunk] = readdirSync(join(dir, "out")).filter(file =>
 			file.startsWith("chunk-")
 		)
@@ -122,7 +131,7 @@ export const short = a => a + 1;
 export const scoped = () => { const text = "${long}"; return typeof arguments };
 export const outer = () => { const inner = () => "${long}"; return inner };`
 		})
-		const fromOut = bundleIn(dir)
+		const fromOut = await bundleIn(dir)
 		const js = readFileSync(join(dir, "out", "index.js"), "utf8")
 		attest(js.match(/^var \w+ = (?:async )?\S+/gm)).equals([
 			"var block = function",
@@ -146,12 +155,12 @@ export const outer = () => { const inner = () => "${long}"; return inner };`
 		const dir = writePackage({
 			"index.js": `export class K { static self = { K }; m(o) { return o.K } _K() {} }`
 		})
-		const { K } = await import(bundleIn(dir)("index.js"))
+		const { K } = await import((await bundleIn(dir))("index.js"))
 		attest(K.name).equals("K")
 		attest(K.self.K).is(K)
 	})
 
-	it("rejects renaming a named class", () => {
+	it("rejects renaming a named class", async () => {
 		for (const [innerName, body] of [
 			["Y", "m() { return L }"],
 			["_L", "static self = { _L }"]
@@ -159,13 +168,13 @@ export const outer = () => { const inner = () => "${long}"; return inner };`
 			const selfNamed = writePackage({
 				"index.js": `export let L = class ${innerName} { ${body} }`
 			})
-			attest(() => bundleIn(selfNamed)).throws(
+			attest(await rejectionOf(bundleIn(selfNamed))).equals(
 				`Can't rename class ${innerName} to L`
 			)
 		}
 	})
 
-	it("rejects esbuild renames", () => {
+	it("rejects esbuild renames", async () => {
 		for (const [name, declaration] of [
 			["isDate", "const isDate = () => true"],
 			["parse", "function parse() {}"],
@@ -176,15 +185,15 @@ export const outer = () => { const inner = () => "${long}"; return inner };`
 				"a.js": `${declaration}; export const a = ${name};`,
 				"b.js": `${declaration}; export const b = ${name};`
 			})
-			attest(() => bundleIn(colliding)).throws(
-				`esbuild renamed ${name} to ${name}2`
+			attest(await rejectionOf(bundleIn(colliding))).equals(
+				`esbuild renamed ${name} to ${name}2, which changes its runtime name, so rename it or the ${name} it collides with`
 			)
 		}
 		const shadowing = writePackage({
 			"index.js": `export const isDate = {}; export const f = () => { const isDate = () => true; return isDate };`
 		})
-		attest(() => bundleIn(shadowing)).throws(
-			"esbuild renamed isDate to isDate2"
+		attest(await rejectionOf(bundleIn(shadowing))).equals(
+			"esbuild renamed isDate to isDate2, which changes its runtime name, so rename it or the isDate it collides with"
 		)
 	})
 })

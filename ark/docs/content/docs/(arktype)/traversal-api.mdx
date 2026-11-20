@@ -29,7 +29,7 @@ const Json = type("string").pipe((s, ctx) => {
 Json("{")
 ```
 
-`reject` and `error` take a string, which is what the value must be, or the [parts of an error](/docs/configuration#error-messages): `expected` and `actual`, or a `message` that replaces the whole sentence. `relativePath` reports it below the value being checked, where `path` would replace its whole path from the root of the data:
+`reject` takes the [parts of an error](/docs/configuration#error-messages): `expected` and `actual`, or a `message` that replaces the whole sentence. It doesn't take a string, which would read as a sentence but say what the value must be: pass that to `mustBe`. `error` takes either, its string being what the value must be. `relativePath` reports it below the value being checked, where `path` would replace its whole path from the root of the data:
 
 ```ts
 const Range = type({ start: "number", end: "number" }).narrow(

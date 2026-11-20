@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	listedIssue,
 	type ArkErrorCode,
@@ -6,7 +5,7 @@ import {
 	type FailureContext,
 	type FailureSite,
 	type SiteContext
-} from "@ark/schema/runtime"
+} from "arktype/schema/runtime"
 import { hasOwn, type Fn } from "@ark/util"
 import {
 	addErrors,

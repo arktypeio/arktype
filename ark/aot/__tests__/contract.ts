@@ -1,5 +1,5 @@
 import type { PrecompileOptions } from "@ark/aot"
-import type { MutatesInput } from "@ark/schema"
+import type { MutatesInput } from "arktype/schema"
 import { withPreset } from "@ark/aot/internal/presets.ts"
 
 // what the differential, generated programs and shadow mode build with

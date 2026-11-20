@@ -754,10 +754,12 @@ export const deferUnion = (
 
 const boundMethod =
 	(bases: string, isMin: boolean) =>
-	(d: Deferred, [n]: any[]): Facts | undefined => {
+	(d: Deferred, [n, message]: any[]): Facts | undefined => {
 		const { bounds, of, min, max, pure, cyclic } = d.facts
 		const over = of ? d.facts.base : bounds
 		if (
+			// a bound with its own message isn't the one its facts write
+			message !== undefined ||
 			cyclic === true ||
 			!over ||
 			(!pure && (!of || over !== "array")) ||

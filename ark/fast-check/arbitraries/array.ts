@@ -1,4 +1,4 @@
-import type { nodeOfKind, SequenceTuple } from "@ark/schema"
+import type { nodeOfKind, SequenceTuple } from "arktype/schema"
 import * as fc from "fast-check"
 import type { Ctx } from "../fastCheckContext.ts"
 

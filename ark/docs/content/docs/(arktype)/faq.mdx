@@ -39,10 +39,10 @@ See [Errors](/docs/errors) for everything an error carries.
 
 ## Why does my error say `must be Enter a valid email`?
 
-A string passed to `.describe()`, `ctx.reject()` or `ctx.mustBe()`, or configured as `expected`, is what the value must be, so ArkType writes "must be" before it. A whole sentence is a [`message`](/docs/configuration#message):
+A string passed to `.describe()`, `ctx.mustBe()` or `ctx.error()`, or configured as `expected`, is what the value must be, so ArkType writes "must be" before it. A whole sentence is a [`message`](/docs/configuration#message), which `.message()` sets, and which `ctx.reject()` takes as `{ message }` (it doesn't take a string):
 
 ```ts
-const Email = type("string.email").configure({ message: "Enter a valid email" })
+const Email = type("string.email").message("Enter a valid email")
 
 const Zip = type("string").narrow(
 	(s, ctx) =>
@@ -60,15 +60,13 @@ Global config is fixed when the first Type is created, by a definition or by rea
 
 ## Why does Jest say `Must use import to load ES Module`?
 
-ArkType and its dependencies ship ES modules only, and Jest runs tests as CommonJS, so a test that imports arktype fails, naming `node_modules/arktype/out/index.js`. Have Jest transform those packages, with a transform that reads JavaScript, like ts-jest's `js-with-ts` preset:
+ArkType ships ES modules only, and Jest runs tests as CommonJS, so a test that imports arktype fails, naming `node_modules/arktype/out/index.js`. Have Jest transform it, with a transform that reads JavaScript, like ts-jest's `js-with-ts` preset:
 
 ```js title="jest.config.js"
 module.exports = {
 	preset: "ts-jest/presets/js-with-ts",
-	// arktype and its dependencies ship ES modules only
-	transformIgnorePatterns: [
-		"/node_modules/(?!(\\.pnpm|arktype|arkregex|arksets|@ark)/)"
-	]
+	// arktype ships ES modules only
+	transformIgnorePatterns: ["/node_modules/(?!(\\.pnpm|arktype)/)"]
 }
 ```
 

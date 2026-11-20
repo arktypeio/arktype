@@ -1,4 +1,4 @@
-import type { JsonSchemaOrBoolean } from "@ark/schema"
+import type { JsonSchemaOrBoolean } from "arktype/schema"
 import { type JsonSchema, scope, type Scope } from "arktype"
 
 type AnyKeywords = Partial<JsonSchema.Const & JsonSchema.Enum>

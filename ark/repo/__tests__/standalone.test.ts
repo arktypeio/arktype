@@ -3671,7 +3671,8 @@ export default shared`).js
 			"type/entry.ts",
 			"type/fn.ts",
 			"type/keywords/functions.ts",
-			"type/runtime.ts"
+			"type/runtime.ts",
+			"type/schemaRuntime.ts"
 		])
 		attest(
 			modules.filter(
