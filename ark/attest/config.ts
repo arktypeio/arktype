@@ -114,7 +114,10 @@ export const attestEnvPrefix = "ATTEST_"
 const addEnvConfig = (config: BaseAttestConfig) => {
 	// the config setup() passes to child processes comes first, so an option
 	// set on its own overrides it wherever the platform orders the environment
-	const { ATTEST_CONFIG, ...env } = process.env as Record<string, string>
+	const { ATTEST_CONFIG, ATTEST_CACHE_DIR, ...env } = process.env as Record<
+		string,
+		string
+	>
 	if (ATTEST_CONFIG) Object.assign(config, JSON.parse(ATTEST_CONFIG))
 	for (const [k, v] of Object.entries(env)) {
 		if (k.startsWith(attestEnvPrefix))
@@ -136,8 +139,11 @@ export interface ParsedAttestConfig extends Readonly<BaseAttestConfig> {
 	assertionCachePath: string
 }
 
+// .attest in the working directory unless ATTEST_CACHE_DIR names another, as
+// for processes testing at once from the same directory, each of which clears
+// its cache as it starts
 const parseConfig = (): ParsedAttestConfig => {
-	const cacheDir = resolve(".attest")
+	const cacheDir = resolve(process.env.ATTEST_CACHE_DIR ?? ".attest")
 	return Object.assign(addEnvConfig(getDefaultAttestConfig()), {
 		cacheDir,
 		assertionCachePath: join(cacheDir, "assertions.json")
