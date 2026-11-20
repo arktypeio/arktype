@@ -18,11 +18,14 @@ pnpm test # run tests without type checking
 pnpm testFiles ark/type/__tests__/brand.test.ts # run and type check only the named test files
 pnpm typecheckRepo # incremental typecheck of the whole repo
 pnpm prChecks # lint, build, typecheck and test, except @ark/aot (run before PRs)
-pnpm testAot # @ark/aot's tests, which prChecks leaves out
+pnpm testAot # @ark/aot's tests, which prChecks leaves out, in up to eight shards at once
+pnpm testAot --jobs 4 # in four shards at once; --jobs 1 runs them in one process
 ARK_SHARD=3/8 pnpm testAot # the third of the eight shards CI runs them in
 ```
 
 Tests and typechecking read each package's source through the `ark-ts` condition, so neither needs `pnpm build`. Pass test files to `pnpm testFiles` before any flags, e.g. `pnpm testFiles a.test.ts --skipTypes`. `pnpm testTyped a.test.ts` runs every test, because mocha adds named files to the configured spec.
+
+`pnpm testAot` without `ARK_SHARD` runs half as many shards as there are cores, up to eight (one where `CI` is set), each in its own process with its own fixture directory (`ARK_AOT_TEMP`, under `ark/aot/__tests__/temp`) and attest cache (`ATTEST_CACHE_DIR`). It prints each failing shard's output whole, then the failing tests by shard. A fixture a test writes at a fixed path goes through `tempPath()` from `ark/aot/__tests__/utils.ts`, never `fromHere("temp", ...)`, so concurrent shards don't overwrite each other's.
 
 ## CI
 

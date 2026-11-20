@@ -1,9 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
-import { fromHere } from "@ark/fs"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { build } from "esbuild"
 import { join } from "node:path"
-import { run, runPlain, writeFixture } from "./utils.ts"
+import { run, runPlain, tempPath, writeFixture } from "./utils.ts"
 
 // json and a JSON Schema repeat a Type at each reference, so one reused at each
 // level would multiply what a build bakes where it can't see what reads them
@@ -48,7 +47,7 @@ contextualize(function (this: Mocha.Suite) {
 	this.timeout(120_000)
 
 	const fixture = (name: string, app: string) =>
-		writeFixture({ "main.ts": app }, fromHere("temp", "dataParts", name))
+		writeFixture({ "main.ts": app }, tempPath("dataParts", name))
 
 	it("bakes what's repeated once, however many levels reuse it", async () => {
 		const [shallow, deep] = await Promise.all(

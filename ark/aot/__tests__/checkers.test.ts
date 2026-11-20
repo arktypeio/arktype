@@ -6,7 +6,7 @@ import { precompileStandalone } from "arktype/internal/standalone.ts"
 import { build, transform } from "esbuild"
 import { spawnSync } from "node:child_process"
 import { join } from "node:path"
-import { normalized, runPlain, writeFixture } from "./utils.ts"
+import { normalized, runPlain, tempPath, writeFixture } from "./utils.ts"
 
 // arktype's packages resolve to their source in this repo
 const conditions = ["ark-ts", "production"]
@@ -67,7 +67,7 @@ contextualize(function (this: Mocha.Suite) {
 	this.timeout(120_000)
 
 	const fixture = (name: string, main: string) =>
-		writeFixture({ "main.ts": main }, fromHere("temp", "checkers", name))
+		writeFixture({ "main.ts": main }, tempPath("checkers", name))
 
 	const itRunsAsUnproved = (
 		name: string,
@@ -792,7 +792,7 @@ ${repaying}
 				"main.ts": main,
 				"helpers.ts": `const slug = /^[a-z-]+$/\n\nexport const isSlug = (s: string) => slug.test(s)\n`
 			},
-			fromHere("temp", "checkers", "rejects")
+			tempPath("checkers", "rejects")
 		)
 		// as arktype prints them
 		const expected = behaviorOf(await bundle(root, { prune: false }))
@@ -915,7 +915,7 @@ handlers.Form7({ name7: "a", count7: -1, note7: 1 })
 				"types.ts": `import { type } from "arktype"\n\n${declaring("export ")}`,
 				"main.ts": `import { type } from "arktype"\nimport { Post, User, ${forms.map((_, i) => `Form${i}`).join(", ")} } from "./types.ts"\n\n${reading}`
 			},
-			fromHere("temp", "checkers", "read-apart")
+			tempPath("checkers", "read-apart")
 		)
 		const together = fixture(
 			"read-together",
@@ -975,7 +975,7 @@ show(edit("b")({ address: { line1: "a" } }))
 			bundle(
 				writeFixture(
 					{ "address.ts": addressOf(written), "main.ts": main },
-					fromHere("temp", "checkers", `declare-${name}`)
+					tempPath("checkers", `declare-${name}`)
 				)
 			)
 		const [declared, passed] = await Promise.all([
@@ -1387,7 +1387,7 @@ ${repaying}
 						"main.ts": defaulted(declared, amount),
 						...(helpers === undefined ? {} : { "helpers.ts": helpers })
 					},
-					fromHere("temp", "checkers", `default-${name.replace(/\W+/g, "-")}`)
+					tempPath("checkers", `default-${name.replace(/\W+/g, "-")}`)
 				)
 				const whole = behaviorOf(await bundle(root, { prune: false }))
 				attest(behaviorOf(await bundle(root))).equals(whole)
@@ -1793,7 +1793,7 @@ console.log(JSON.stringify(Deleting(data)))
 ${repaying}
 `
 			},
-			fromHere("temp", "checkers", "ignored")
+			tempPath("checkers", "ignored")
 		)
 		attest(
 			behaviorOf(await bundle(root, { ...smallest, config: "config.ts" }))
@@ -2090,7 +2090,7 @@ show(T({ literal: undefined, byFunction: undefined, maybe: undefined, k1: undefi
 show(T({ literal: 2, byFunction: [], maybe: "x", k1: "y" }))
 show(T({ literal: "x" }))`)}`
 				},
-				fromHere("temp", "checkers", "sited-config")
+				tempPath("checkers", "sited-config")
 			)
 			const js = await bundle(root, { ...smallest, config: "config.ts" })
 			attest(js.includes(" sited(")).equals(true)
@@ -2119,7 +2119,7 @@ const validator = T()
 console.log(validator.allows(cyclic), validator(cyclic) === cyclic, validator.allows({ foo: { bar: { foo: 1 } } }))
 `
 				},
-				fromHere("temp", "checkers", "cyclic-root")
+				tempPath("checkers", "cyclic-root")
 			)
 			attest(runPlain(root)).equals("true true false\n")
 		})

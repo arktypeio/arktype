@@ -1,5 +1,4 @@
 import { attest, contextualize } from "@ark/attest"
-import { fromHere } from "@ark/fs"
 import {
 	writeMissedByProgramMessage,
 	writeUnreadProgramMessage
@@ -23,7 +22,7 @@ import {
 } from "node:fs"
 import { spawnSync } from "node:child_process"
 import { dirname, join, relative, resolve as resolvePath } from "node:path"
-import { writeFixture } from "./utils.ts"
+import { tempPath, writeFixture } from "./utils.ts"
 
 const conditions = ["ark-ts"]
 
@@ -157,7 +156,7 @@ contextualize(() => {
 					"app/standard.ts":
 						'import { User } from "../src/user.ts"\n\nexport const POST = (data: unknown) => User["~standard"].validate(data)\n'
 				},
-				fromHere("temp", "nextProgram", "methods")
+				tempPath("nextProgram", "methods")
 			)
 			const { out } = await load(dir, "src/user.ts")
 			writeFileSync(join(dir, "src/written.mjs"), out!)

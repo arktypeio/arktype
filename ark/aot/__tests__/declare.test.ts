@@ -16,7 +16,13 @@ import {
 } from "node:fs"
 import { join } from "node:path"
 import { relative } from "node:path/posix"
-import { inexactExportsOf, runCli, tsPath, writeFixture } from "./utils.ts"
+import {
+	inexactExportsOf,
+	runCli,
+	tempPath,
+	tsPath,
+	writeFixture
+} from "./utils.ts"
 
 const declared = fromHere("declared")
 const layouts = fromHere("declaredLayouts")
@@ -315,7 +321,7 @@ export type Buffered = {
 			})
 
 			it("escapes a module name in a shape's import", () => {
-				const quoted = fromHere("temp", "quoted")
+				const quoted = tempPath("quoted")
 				try {
 					mkdirSync(join(quoted, "src"), { recursive: true })
 					writeFileSync(
@@ -788,7 +794,7 @@ export type makeTree = {
 		})
 	}
 	it("skips an unreadable TypeScript", () => {
-		const loader = fromHere("temp", "loader")
+		const loader = tempPath("loader")
 		const stub = join(loader, "node_modules", "typescript")
 		try {
 			mkdirSync(join(loader, "src"), { recursive: true })

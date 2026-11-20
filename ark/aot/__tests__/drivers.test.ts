@@ -52,6 +52,7 @@ import {
 	runBundle,
 	runPlain,
 	tempDir,
+	tempPath,
 	undetailedOutput,
 	writeFixture,
 	writeLibrary,
@@ -150,7 +151,7 @@ const logged = writeFixture(
 		"main.ts":
 			'import { type } from "arktype"\n\nconsole.log(type({ a: "number" })({ a: "x" }))\n'
 	},
-	fromHere("temp", "logged")
+	tempPath("logged")
 )
 
 contextualize(function (this: Mocha.Suite) {
@@ -300,7 +301,7 @@ try {
 					"node_modules/reader/index.js": `export const inputSchemaOf = schema => schema.in.toJsonSchema()`,
 					"node_modules/reader/index.d.ts": `export declare const inputSchemaOf: (schema: any) => unknown`
 				},
-				fromHere("temp", "lackedTypeMember")
+				tempPath("lackedTypeMember")
 			)
 			const development = node(["main.ts"], {}, dir)
 			const production = node(["main.ts"], {}, dir, { NODE_ENV: "production" })
@@ -340,7 +341,7 @@ console.log(membersOf(type({ a: "string" })))
 ])`,
 					"node_modules/reader/index.d.ts": `export declare const membersOf: (schema: any) => string`
 				},
-				fromHere("temp", "testedMembers")
+				tempPath("testedMembers")
 			)
 			// as it would read every member, which the build bakes unless told not to
 			const members = {
@@ -387,7 +388,7 @@ console.log(jsonSchemaOf(Exported))
 export const Exported = type({ b: "number" })
 `
 				},
-				fromHere("temp", "readJsonSchema")
+				tempPath("readJsonSchema")
 			)
 			const expected = `{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"a":{"type":"string"}},"required":["a"]}
 {"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"b":{"type":"number"}},"required":["b"]}
@@ -418,7 +419,7 @@ console.log(String(types.user({ name: 5 })), Id("x"))
 			]) {
 				const root = writeFixture(
 					{ "ark.ts": barrel, "main.ts": main },
-					fromHere("temp", "arkBarrel", shape)
+					tempPath("arkBarrel", shape)
 				)
 				for (const NODE_ENV of ["development", "production"]) {
 					const { stdout, stderr } = node(["main.ts"], {}, root, { NODE_ENV })
@@ -479,7 +480,7 @@ const Dyn = keyedType({ key: "a", type: "string" })
 console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 `
 				},
-				fromHere("temp", "readsNodesNode")
+				tempPath("readsNodesNode")
 			)
 			attest(node(["main.ts"], {}, root).stdout).equals("true false\n")
 		})
@@ -503,7 +504,7 @@ const T = type({
 console.log(T({ a: { b: 1 } }).toString())
 `
 				},
-				fromHere("temp", "pipesToIsland")
+				tempPath("pipesToIsland")
 			)
 			attest(node(["main.ts"], {}, root).stdout).snap(`a.b must be a string
 `)
@@ -561,7 +562,7 @@ console.log(T({ a: { b: 1 } }).toString())
 					"main.js":
 						'import { prebuilt } from "prebuilt"\nconsole.log(prebuilt)\n'
 				},
-				fromHere("temp", "prebuilt")
+				tempPath("prebuilt")
 			)
 			const failed = node(["main.js"], {}, root)
 			const warned = node(["main.js"], { allowUnsafe: true }, root)
@@ -621,7 +622,7 @@ await import("./config.ts?again")
 console.log(String(T({ n: 3, e: "x" })))
 `
 				},
-				fromHere("temp", "configuredAgain")
+				tempPath("configuredAgain")
 			)
 			const expected = runPlain(root)
 			attest(expected).snap(`n must be even (was 3, which isn't)
@@ -691,7 +692,7 @@ e must be an address
 					// a bin's file, which has no extension
 					cli: 'import { type } from "arktype"\n\nconsole.log(type({ a: "number" })({ a: 1 }))\n'
 				},
-				fromHere("temp", "unprecompiled")
+				tempPath("unprecompiled")
 			)
 			const failure = (args: string[]) => {
 				const { status, stderr } = node(args, {}, root)
@@ -716,7 +717,7 @@ e must be an address
 					"noWorkers.ts":
 						'import { isMainThread } from "node:worker_threads"\n\nif (!isMainThread) throw new Error("no workers")\n'
 				},
-				fromHere("temp", "unstarted")
+				tempPath("unstarted")
 			)
 			// --input-type fails a worker given it
 			attest(
@@ -1149,7 +1150,7 @@ console.log(Value, note, load, await import("#shared/lazy"))
 						}),
 						...files
 					},
-					fromHere("temp", "nextExternals", name)
+					tempPath("nextExternals", name)
 				)
 				const host = createNodeHost({ conditions })
 				const warnings: string[] = []

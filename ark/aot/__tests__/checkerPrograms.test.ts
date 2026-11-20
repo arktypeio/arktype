@@ -4,7 +4,7 @@ import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { build } from "esbuild"
 import { spawnSync } from "node:child_process"
 import { join } from "node:path"
-import { writeFixture } from "./utils.ts"
+import { tempPath, writeFixture } from "./utils.ts"
 
 // programs a size build composes from checkers, each run as arktype runs it:
 // what's returned or reported, which callbacks run and in what order. Each theme
@@ -1147,7 +1147,7 @@ ${names.map(name => `import "./${name}.ts"`).join("\n")}
 ${repaying}
 `
 				},
-				fromHere("temp", "checkerPrograms", theme.replace(/ /g, "-"))
+				tempPath("checkerPrograms", theme.replace(/ /g, "-"))
 			)
 			let plain: string
 

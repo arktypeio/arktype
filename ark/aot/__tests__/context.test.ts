@@ -1,9 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
-import { fromHere } from "@ark/fs"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { build } from "esbuild"
 import { join } from "node:path"
-import { run, statusesOf, writeFixture } from "./utils.ts"
+import { run, statusesOf, tempPath, writeFixture } from "./utils.ts"
 
 // arktype's packages resolve to their source in this repo
 const conditions = ["ark-ts", "production"]
@@ -91,10 +90,7 @@ contextualize(function (this: Mocha.Suite) {
 	// and Parsed's morph sees it too (`Elm!` would pass on its own, so it's valid either way)
 	for (const errors of ["detailed", "first", "none"] as const) {
 		it(`validates in a bound context with errors ${errors}`, async () => {
-			const root = writeFixture(
-				{ "main.ts": app },
-				fromHere("temp", "context", errors)
-			)
+			const root = writeFixture({ "main.ts": app }, tempPath("context", errors))
 			const js = await bundle(root, errors === "detailed" ? {} : { errors })
 			// arktype itself is left out, so each validator is precompiled
 			attest(js.includes("withContextOf")).equals(true)

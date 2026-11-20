@@ -11,6 +11,8 @@ Set an option in one of three ways:
 
 Flags and options passed to `setup` both override environment variables. Avoid setting an option both in `setup` and as a flag: `setup` uses its own value, but your tests use the flag's. Benches don't call `setup`, so they read only flags and environment variables.
 
+attest keeps its cache in `.attest` in the working directory, and `setup` clears it. To run several test processes at once from one directory, give each its own with `ATTEST_CACHE_DIR`, a path rather than JSON.
+
 ## Options
 
 | Option                          | Default                             | Effect                                                                                                                                                               |

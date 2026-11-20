@@ -1,9 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
-import { fromHere } from "@ark/fs"
 import { precompile } from "@ark/aot/unplugin"
 import { build, type Plugin } from "esbuild"
 import { join } from "node:path"
-import { run, writeFixture } from "./utils.ts"
+import { run, tempPath, writeFixture } from "./utils.ts"
 
 const conditions = ["ark-ts"]
 
@@ -208,7 +207,7 @@ observe("Keyed", Keyed, { "first-name": 1, 0: 0 })
 console.log(JSON.stringify(observed))
 `
 	},
-	fromHere("temp", "bundled")
+	tempPath("bundled")
 )
 
 type Observed = Record<string, unknown[]>

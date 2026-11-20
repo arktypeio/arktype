@@ -1,9 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
-import { fromHere } from "@ark/fs"
 import { precompile, type PrecompileUnpluginOptions } from "@ark/aot/unplugin"
 import { build } from "esbuild"
 import { join } from "node:path"
-import { run, runPlain, writeFixture } from "./utils.ts"
+import { run, runPlain, tempPath, writeFixture } from "./utils.ts"
 
 // Standard Schema's validate returns its result, so a precompiled validator's
 // never calls the onFail configure() sets, as arktype's doesn't
@@ -93,7 +92,7 @@ TraversalError
 					"config.ts": `import { configure } from "arktype/config"\n\nconfigure({ onFail: ${onFail} })\n`,
 					"main.ts": main
 				},
-				fromHere("temp", "standardValidate", name.replace(/ /g, "-"))
+				tempPath("standardValidate", name.replace(/ /g, "-"))
 			)
 			attest(runPlain(root)).equals(expected)
 			for (const strategy in strategies) {

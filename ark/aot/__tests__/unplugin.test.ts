@@ -74,6 +74,7 @@ import {
 	runBundle,
 	runPlain,
 	tempDir,
+	tempPath,
 	undetailedOutput,
 	writeFixture,
 	writeLibrary,
@@ -493,7 +494,7 @@ console.log(
 )
 `
 			},
-			fromHere("temp", "fallback")
+			tempPath("fallback")
 		)
 		const standalone = await bundlers.esbuild(
 			{ cwd: root, members: { toJsonSchema: true } },
@@ -521,7 +522,7 @@ const refused = encode({ at: 5, day: new Date(0) })
 console.log(JSON.stringify(encoded), refused instanceof type.errors && refused.summary)
 `
 			},
-			fromHere("temp", "codecsImported")
+			tempPath("codecsImported")
 		)
 		const plain = runPlain(root)
 		attest(plain)
@@ -711,7 +712,7 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 					"main.js":
 						'import { type } from "arktype"\n\nconsole.log(type("string")("a"))\n'
 				},
-				fromHere("temp", "webpackExternals", name)
+				tempPath("webpackExternals", name)
 			)
 			const compiler = webpack({
 				mode: "production",
@@ -805,7 +806,7 @@ export const failed = out => out instanceof type.errors
 					}),
 					"packages/ts-errors/src/index.ts": readsErrors
 				},
-				fromHere("temp", "webpackReachingExternals", name)
+				tempPath("webpackReachingExternals", name)
 			)
 			// linked from its own directory, as a workspace links it
 			rmSync(join(root, "node_modules/ts-errors"), { force: true })
@@ -979,7 +980,7 @@ console.log(failed)
 						}),
 					"node_modules/bundled/node_modules/nested/index.js": readsErrors
 				},
-				fromHere("temp", "bundledDependents", name)
+				tempPath("bundledDependents", name)
 			)
 		const ssrBuild = (
 			root: string,
@@ -1468,7 +1469,7 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 					'import { type } from "arktype"\n\nexport const T0 = type({ a: "string" })\n'
 				:	`import { type } from "arktype"\nimport { T${i - 1} } from "./m${i - 1}.ts"\n\nexport const T${i} = type({ a: "string", prev: T${i - 1}.pick("a") })\n`
 		}
-		const root = writeFixture(files, fromHere("temp", "watchedChain"))
+		const root = writeFixture(files, tempPath("watchedChain"))
 		const plugin = precompile.esbuild({ cwd: root, conditions })
 		const watchedBy: Record<string, string[]> = {}
 		const record = (path: string, watchFiles: string[] = []) => {
@@ -1542,7 +1543,7 @@ import { Other } from "./other.ts"
 console.log(Limited({ n: 2 }) instanceof type.errors, Other({ s: "" }) instanceof type.errors)
 `
 			},
-			fromHere("temp", "rebuilt")
+			tempPath("rebuilt")
 		)
 		const ctx = await context({
 			entryPoints: [join(root, "main.ts")],
@@ -1576,7 +1577,7 @@ import { Max } from "./max.js"
 console.log(type({ n: Max })({ n: 2 }) instanceof type.errors)
 `
 			},
-			fromHere("temp", "webpackRebuilt")
+			tempPath("webpackRebuilt")
 		)
 		const compiler = webpack({
 			mode: "development",
@@ -1606,7 +1607,7 @@ console.log(type({ n: Max })({ n: 2 }) instanceof type.errors)
 	})
 
 	it("keeps a configured worker until its config changes", async () => {
-		const root = fromHere("temp", "watched")
+		const root = tempPath("watched")
 		const write = (file: string, text: string) =>
 			writeFixture({ [file]: text }, root)
 		const configure = (onUndeclaredKey: string) =>
@@ -1934,7 +1935,7 @@ console.log(type({ n: Max })({ n: 2 }) instanceof type.errors)
 					'from "untagged"'
 				)
 			},
-			fromHere("temp", "untagged")
+			tempPath("untagged")
 		)
 		const refused = await bundlers
 			.esbuild({ cwd: root }, root)
@@ -1978,7 +1979,7 @@ console.log(
 )
 `
 			},
-			fromHere("temp", "tables")
+			tempPath("tables")
 		)
 		const opts = {
 			cwd: root,
@@ -2022,7 +2023,7 @@ const Row = typeOf(JSON.parse(process.env.COLUMNS ?? '["name"]'))
 console.log(JSON.stringify([Row({ name: "Ada" }), Row({ name: 1 }) instanceof type.errors]))
 `
 			},
-			fromHere("temp", "workspaceTables")
+			tempPath("workspaceTables")
 		)
 		rmSync(join(root, "node_modules"), { recursive: true, force: true })
 		mkdirSync(join(root, "node_modules", "@acme"), { recursive: true })
@@ -2058,7 +2059,7 @@ console.log(JSON.stringify([Row({ name: "Ada" }), Row({ name: 1 }) instanceof ty
 				"main.ts":
 					'import "./config.ts"\nimport { type } from "arktype"\n\nexport const User = type({ name: "string" })\n'
 			},
-			fromHere("temp", "transformedConfig")
+			tempPath("transformedConfig")
 		)
 		const rewrite: VitePlugin = {
 			name: "rewrite-config",
@@ -2101,7 +2102,7 @@ console.log(JSON.stringify([Row({ name: "Ada" }), Row({ name: 1 }) instanceof ty
 					'<script>\nimport { type } from "arktype"\nexport const Login = type({ user: "string" })\n</script>\n',
 				"main.js": 'import { Login } from "./Form.svelte"\nconsole.log(Login)\n'
 			},
-			fromHere("temp", "untransformed")
+			tempPath("untransformed")
 		)
 		// loads a component's script, as Svelte's plugin compiles it
 		const svelte: Plugin = {
@@ -2164,7 +2165,7 @@ console.log(JSON.stringify([Row({ name: "Ada" }), Row({ name: 1 }) instanceof ty
 					'import { configure } from "arktype/config"\nimport { describe } from "#shared/describe"\n\nconfigure({ domain: { description: describe } })\n',
 				"shared/describe.ts": 'export const describe = () => "a numeral"\n'
 			},
-			fromHere("temp", "aliased")
+			tempPath("aliased")
 		)
 		const shared = join(root, "shared")
 		const failure =
@@ -2275,7 +2276,7 @@ console.log(JSON.stringify([Row({ name: "Ada" }), Row({ name: 1 }) instanceof ty
 				"main.ts":
 					'import { type } from "arktype"\n\nconst User = type({ name: "string" })\nconst out = User({ name: 5 })\n\nconsole.log(out instanceof type.errors ? out.summary : out)\n'
 			},
-			fromHere("temp", "leftToNode")
+			tempPath("leftToNode")
 		)
 		// leaves dependencies to Node, as Nitro's development build does, resolving
 		// a relative import of one to false, whose path Rollup then writes from
@@ -2315,7 +2316,7 @@ console.log(JSON.stringify([Row({ name: "Ada" }), Row({ name: 1 }) instanceof ty
 				"Form.svelte": "<script>\n</script>\n",
 				"main.js": 'import read from "./Form.svelte"\n\nconsole.log(read)\n'
 			},
-			fromHere("temp", "unwritten")
+			tempPath("unwritten")
 		)
 		// compiles a component reading User as `read` does, as Svelte's does
 		const svelte = (read: string): VitePlugin => ({
@@ -2423,7 +2424,7 @@ console.log(JSON.stringify([Row({ name: "Ada" }), Row({ name: 1 }) instanceof ty
 					'import { text } from "./fields.ts"\nexport const Bio = text(500)\nconsole.log(Bio)\n',
 				"form.js": 'import { Name } from "./Form.svelte"\nconsole.log(Name)\n'
 			},
-			fromHere("temp", "unfolded")
+			tempPath("unfolded")
 		)
 		const scriptOf = (path: string) =>
 			/<script>([\S\s]*)<\/script>/.exec(readFileSync(path, "utf8"))![1]
@@ -2505,7 +2506,7 @@ console.log(JSON.stringify([Row({ name: "Ada" }), Row({ name: 1 }) instanceof ty
 				"svelte.cjs":
 					"module.exports = source => /<script>([\\S\\s]*)<\\/script>/.exec(source)[1]\n"
 			},
-			fromHere("temp", "unfoldedWebpack")
+			tempPath("unfoldedWebpack")
 		)
 		for (const name of Object.keys(compilers) as (keyof typeof compilers)[]) {
 			it(name, async () => {
@@ -2546,7 +2547,7 @@ console.log(JSON.stringify([Row({ name: "Ada" }), Row({ name: 1 }) instanceof ty
 		const url = `data:text/javascript,${encodeURIComponent(source)}`
 		const root = writeFixture(
 			{ "main.js": `export { User } from ${JSON.stringify(url)}\n` },
-			fromHere("temp", "fileless")
+			tempPath("fileless")
 		)
 		const failure = (id: string) => writeFilelessImportMessage(id, "arktype")
 
@@ -2649,7 +2650,7 @@ console.log(JSON.stringify([Row({ name: "Ada" }), Row({ name: 1 }) instanceof ty
 				"main.ts":
 					'import { type } from "arktype"\nexport const User = type({ name: "string" })\n'
 			},
-			fromHere("temp", "loadedFirst")
+			tempPath("loadedFirst")
 		)
 		const loader: Plugin = {
 			name: "loader",
@@ -2739,7 +2740,7 @@ const out = User({ name: 1, age: 1 })
 console.log(out instanceof ArkErrors, out instanceof type.errors)
 `
 			},
-			fromHere("temp", "imported")
+			tempPath("imported")
 		)
 		const bundle = await bundlers.esbuild({ cwd: validated }, validated)
 		attest(run(bundle)).equals("user.ts\ntrue true\n")
@@ -2756,10 +2757,7 @@ console.log(JSON.stringify(User.toJsonSchema()))
 console.log(JSON.stringify(User.toJsonSchema()))
 `
 		})) {
-			const root = writeFixture(
-				{ ...files, "main.ts": main },
-				fromHere("temp", name)
-			)
+			const root = writeFixture({ ...files, "main.ts": main }, tempPath(name))
 			const introspected = await bundlers.esbuild({ cwd: root }, root)
 			attest(run(introspected)).equals(runPlain(root))
 			attest(introspected.includes("tAllows")).equals(false)
@@ -2783,7 +2781,7 @@ const T = type({ x: H.a })
 console.log(T.allows({ x: 1 }))
 `
 			},
-			fromHere("temp", "writtenElsewhere")
+			tempPath("writtenElsewhere")
 		)
 		// production's, which checks nothing at creation
 		const build = (opts: PrecompileUnpluginOptions) =>
@@ -2829,7 +2827,7 @@ const T = type({ x: \`string <= \${H.limit}\` })
 console.log(T.allows({ x: "abc" }))
 `
 			},
-			fromHere("temp", "looseHolder")
+			tempPath("looseHolder")
 		)
 		const build = (opts: PrecompileUnpluginOptions, entry = "main.ts") =>
 			esbuild({
@@ -2873,7 +2871,7 @@ const loaded = await import("./containers.ts")
 loaded.currencies[2] = "XXX"
 ${site}`
 			},
-			fromHere("temp", "digestedHolder")
+			tempPath("digestedHolder")
 		)
 		const build = (opts: PrecompileUnpluginOptions, entry = "main.ts") =>
 			esbuild({
@@ -2932,7 +2930,7 @@ const T = type({ x: Other })
 console.log(T.allows({ x: 1 }))
 `
 			},
-			fromHere("temp", "readOffHolder")
+			tempPath("readOffHolder")
 		)
 		const build = (entry: string) =>
 			esbuild({
@@ -3322,7 +3320,7 @@ export const U = make()
 		}
 		const results: Record<string, unknown> = {}
 		for (const [name, program] of Object.entries(programs)) {
-			const root = writeFixture(program, fromHere("temp", `defaulted${name}`))
+			const root = writeFixture(program, tempPath(`defaulted${name}`))
 			if (name === "workspace") {
 				rmSync(join(root, "node_modules"), { recursive: true, force: true })
 				mkdirSync(join(root, "node_modules"))
@@ -3352,7 +3350,7 @@ export const U = make()
 					'import { type } from "arktype"\n\nconst schema = type({ dropped: "string" }).toJsonSchema()\n',
 				"main.ts": 'import "./unread.ts"\nimport "./config.ts"\n'
 			},
-			fromHere("temp", "dropped")
+			tempPath("dropped")
 		)
 		// Node on Windows ends each line it prints of an uncaught error with \r\n
 		const stderrOf = (args: string[], input?: string) =>
@@ -3392,7 +3390,7 @@ export const U = make()
 			files: Record<string, string>,
 			prune?: boolean
 		) => {
-			const root = writeFixture(files, fromHere("temp", "configFirst", name))
+			const root = writeFixture(files, tempPath("configFirst", name))
 			const bundle = await bundlers.esbuild(
 				{ cwd: root, config: "config.ts", preset: "smallest", prune },
 				root
@@ -3660,7 +3658,7 @@ try {
 				// esbuild adds the directive itself where a tsconfig implies it
 				"tsconfig.json": "{}"
 			},
-			fromHere("temp", "commonjs")
+			tempPath("commonjs")
 		)
 		// for size, a transforming traversal in its module is strict itself
 		for (const optimize of ["speed", "size"] as const) {
@@ -3902,7 +3900,7 @@ console.log(String(A({})), a, allowed, String(B({})), b, String(C({})), c, unall
 						const [files, opts, expected] = programs[reads]
 						const root = writeFixture(
 							{ ...files, "transpile.cjs": transpiler },
-							fromHere("temp", "commonJsLoader", name, reads.replace(/ /g, "-"))
+							tempPath("commonJsLoader", name, reads.replace(/ /g, "-"))
 						)
 						const [compile, plugin] = compilers[name]
 						const build = (opts: PrecompileUnpluginOptions) => {
@@ -3973,7 +3971,7 @@ const Name = type(\`string <= \${max}\`)
 console.log(Name.allows("abc"), Name.allows("abcdef"))
 `
 				},
-				fromHere("temp", "commonJsLoader", "written")
+				tempPath("commonJsLoader", "written")
 			)
 			const compiler = webpack({
 				mode: "production",
@@ -4048,7 +4046,7 @@ console.log(header({ describe: "read" }), String(User({ name: 1 })), Title("t"))
 `,
 						"transpile.cjs": transpiler
 					},
-					fromHere("temp", "esmLoader", name)
+					tempPath("esmLoader", name)
 				)
 				const [compile, plugin] = compilers[name]
 				const compiler = (compile as typeof webpack)({

@@ -16,6 +16,7 @@ import {
 	readdirSync,
 	readFileSync,
 	realpathSync,
+	renameSync,
 	rmSync,
 	writeFileSync
 } from "node:fs"
@@ -25,6 +26,15 @@ import { tmpdir } from "node:os"
 import { dirname, join, posix } from "node:path"
 
 const issuesPath = fromHere("..", "..", "schema", "shared", "issues.ts")
+
+// a path under the directory the tests write their fixtures to: temp, or the
+// one ARK_AOT_TEMP names, which `pnpm testAot --jobs` gives each shard it runs
+// at once, so that two processes writing a fixture of the same name, as a
+// file's slices or files sharing a helper here do, don't overwrite each
+// other's. It stays inside __tests__, which the precompiler's fingerprint of
+// its own code leaves out
+export const tempPath = (...segments: string[]): string =>
+	join(process.env.ARK_AOT_TEMP ?? fromHere("temp"), ...segments)
 
 // an issues module for issues.ts, as each copy of @ark/schema/runtime bundles its own
 export const issuesFrom = (file: string): Plugin => ({
@@ -184,9 +194,12 @@ export const packageFiles = (
 	)
 })
 
-// a program importing a package that opts in
+// a program importing a package that opts in. Its package is written beside
+// the committed program as each file using it loads, which `pnpm testAot
+// --jobs` may do in several processes while another builds the program, so
+// it's written as writeFixtureInPlace does
 export const writeLibrary = (): string =>
-	writeFixture(
+	writeFixtureInPlace(
 		packageFiles(
 			"tagged",
 			{
@@ -221,7 +234,7 @@ try {
 				"index.d.ts": "export declare const reads: string\n"
 			})
 		},
-		fromHere("temp", "undetailed")
+		tempPath("undetailed")
 	)
 
 // what that program logs, its errors saying only that data is invalid
@@ -260,6 +273,32 @@ export const writeFixture = (
 		writeFileSync(join(root, path), files[path])
 	}
 	return root
+}
+
+// a fixture written where another process may read it at once: a file that
+// already reads as given is left alone, and one that doesn't is written beside
+// it, then renamed into place, so a reader never sees it cut short
+const writeFixtureInPlace = (
+	files: Record<string, string>,
+	root: string
+): string => {
+	for (const path in files) {
+		const target = join(root, path)
+		if (readIfExists(target) === files[path]) continue
+		mkdirSync(dirname(target), { recursive: true })
+		const written = `${target}.${process.pid}.tmp`
+		writeFileSync(written, files[path])
+		renameSync(written, target)
+	}
+	return root
+}
+
+const readIfExists = (path: string) => {
+	try {
+		return readFileSync(path, "utf8")
+	} catch {
+		return
+	}
 }
 
 // runs a bundle as an ES module
