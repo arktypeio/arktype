@@ -406,7 +406,7 @@ With Vite, list `precompile.vite()` right after your framework's plugin, and ahe
 | Monorepos | Nothing extra. A workspace package linked into `node_modules`, as pnpm, npm, Yarn and Bun workspaces link it, resolves to its own directory, so the build precompiles it with the program. It reads what the package's `exports` point at: its TypeScript source, ES modules, or the CommonJS tsc built it to, whose `exports.a = ...`, `export *` and `export * as` it reads as tsc writes them. See [Next.js with webpack in a monorepo](https://arktype.io/docs/precompile/setup#next-monorepo) for an app |
 | Jest | Not supported. See [Test runners](https://arktype.io/docs/precompile/setup#test-runners) |
 | Deno | A bundler plugin works under Deno, e.g. `deno run -A npm:vite build` with `precompile.vite()`. There's no driver, so `deno run` on your source loads arktype unprecompiled |
-| React Native (Metro) | Not supported. Metro caches each module by its own text, so a module whose validators are written from a Type it imports would keep them after that Type changed. Precompile the modules defining your Types as a package of their own, with `tsc && arktype-precompile --emit` ([Build with tsc](https://arktype.io/docs/precompile/setup#tsc)), and import that package, rather than `arktype`, from the app |
+| React Native (Metro) | Not supported as a plugin. See [React Native (Metro)](https://arktype.io/docs/precompile/setup#metro) to precompile the package defining your Types, which the app imports |
 | Parcel | Not supported. Bundle with a [supported bundler](https://arktype.io/docs/precompile/setup#bundlers) |
 
 Define your Types in `.ts` or `.js` modules. A component another plugin compiles, like a Svelte, Vue or Astro component or an MDX page, can call a validator or read its `.allows` and `.assert`, but the build can't write a validator inside it. So a read there that only a precompiled site could serve, like `.description` or `.omit()`, or that a validator lacks, like `.errors`, fails the build, or the dev server's request for the component, naming the read. Move it into a module the component imports, e.g. as a function the component calls.
@@ -468,6 +468,8 @@ export default {
 	}
 }
 ```
+
+`next dev` precompiles each module as a request first needs it, with either bundler, and rebuilds the modules that import a Type as you edit it, including one in a workspace package that `transpilePackages` names. A definition that throws fails the request with its error, and the next save that fixes it recovers. A change to `ark.json` fails each module built after it, naming the file, until you restart the server, and a restart builds under the new settings, not the earlier server's cache.
 
 ### Next.js with webpack in a monorepo
 
@@ -566,6 +568,57 @@ preload = ["./preload.ts"]
 ```
 
 Bun doesn't ask a runtime plugin to resolve packages, so `arktype` resolves to the runtime `cwd` resolves for every importer, and dependencies aren't checked for copies of arktype. To bundle with Bun, use `precompile.bun()` from [`@ark/aot/unplugin`](https://arktype.io/docs/precompile/setup#bundlers).
+
+## React Native (Metro)
+
+Metro has no plugin: it caches each module by its own text, so a module whose validators are written from a Type it imports would keep them after that Type changed. Precompile the package that defines your Types instead, with `tsc` and [`--emit`](https://arktype.io/docs/precompile/setup#tsc), and have the app import what it emits. Metro bundles that as it does any package, and the bundle holds each validator and `arktype`'s runtime, without its parser:
+
+```json
+{
+	"name": "@app/domain",
+	"type": "module",
+	"sideEffects": false,
+	"exports": {
+		".": { "types": "./out/index.d.ts", "default": "./out/index.js" }
+	},
+	"scripts": {
+		"build": "tsc && arktype-precompile --emit --declare"
+	},
+	"peerDependencies": { "arktype": "*" }
+}
+```
+
+```json
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"rewriteRelativeImportExtensions": true,
+		"allowImportingTsExtensions": true,
+		"rootDir": "src",
+		"outDir": "out"
+	},
+	"include": ["src"]
+}
+```
+
+- Leave `declaration` unset and let `--declare` write the declarations. `tsc` can't write one for a [cyclic](https://arktype.io/docs/scopes#cyclic-types) scope, and fails with `TS5088`, where `--declare` names each cycle.
+- Import the package's own modules with their `.ts` extensions, which `rewriteRelativeImportExtensions` writes as `.js` in `out`. Metro reads those imports from either, but it doesn't resolve a `.js` import to the `.ts` file beside it.
+- Each emitted module imports `arktype/runtime`, which Metro resolves through arktype's `exports`. That's on by default in Metro 0.87, and set by `resolver.unstable_enablePackageExports` in earlier versions. Install `arktype` where the package resolves it, as a dependency of the package, and let a monorepo's `watchFolders` include the package and `arktype`.
+- Rebuild the package as you edit a Type. A Metro dev server bundles the next request from the new `out`, since each emitted module holds the validators of the Types it imports in its own text.
+- A Type another module of the package composes has only the introspection members that module reads of it, so `description` or `toJsonSchema` read `undefined` in the app unless something bakes them. Set [`members`](https://arktype.io/docs/precompile/options#members) in the package's `ark.json` for each one the app reads.
+
+Have the package re-export `type` and `ArkErrors`, so the app checks an error against the runtime its validators use:
+
+```ts
+export * from "./money.ts"
+export { type, ArkErrors } from "arktype"
+```
+
+An app that imports `arktype` itself bundles its parser and a second copy of the runtime, where `out instanceof type.errors` is false for the package's errors. A validator the package exports lacks the members a Type has beyond validating, like `.and()` and `.array()`, so write each Type you compose in the package, where a definition may name another Type.
+
+Checked with Metro 0.87 and `@react-native/babel-preset` for iOS and Android bundles, minified and in development, which matched the bundle Metro built from the package's source, and a bundle also ran in Hermes 0.13.
 
 ## Test runners
 
