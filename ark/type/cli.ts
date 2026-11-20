@@ -165,24 +165,64 @@ export const installBundledSkill = (
 	return dest
 }
 
-const resolveAotCli = (cwd: string): string | undefined => {
+type FoundAotPackage = {
+	pkgDir: string
+	manifest: PackageManifest
+}
+
+const findAotManifest = (startDir: string): FoundAotPackage | undefined => {
+	for (let dir = startDir; ; dir = dirname(dir)) {
+		const manifest = readManifest(dir)
+		if (manifest?.name === "@ark/aot") return { pkgDir: dir, manifest }
+		const parent = dirname(dir)
+		if (parent === dir) return undefined
+	}
+}
+
+const findAotInNodeModules = (cwd: string): FoundAotPackage | undefined => {
+	for (let dir = resolve(cwd); ; dir = dirname(dir)) {
+		const pkgDir = join(dir, "node_modules", "@ark", "aot")
+		const manifest = readManifest(pkgDir)
+		if (manifest?.name === "@ark/aot") return { pkgDir, manifest }
+		const parent = dirname(dir)
+		if (parent === dir) return undefined
+	}
+}
+
+const findAotViaRequire = (cwd: string): FoundAotPackage | undefined => {
+	const req = createRequire(join(resolve(cwd), "package.json"))
 	try {
-		const req = createRequire(join(resolve(cwd), "package.json"))
+		const found = findAotManifest(dirname(req.resolve("@ark/aot")))
+		if (found) return found
+	} catch {
+		// fall back to resolving package.json directly when root entry isn't available
+	}
+	try {
 		const pkgPath = req.resolve("@ark/aot/package.json")
 		const pkgDir = dirname(pkgPath)
-		const manifest = JSON.parse(
-			readFileSync(pkgPath, "utf8")
-		) as PackageManifest
-		const bin =
-			typeof manifest.bin === "string" ?
-				manifest.bin
-			:	manifest.bin?.["arktype-precompile"]
-		if (bin && existsSync(join(pkgDir, bin))) return join(pkgDir, bin)
-		const srcCli = join(pkgDir, "cli.ts")
-		if (existsSync(srcCli)) return srcCli
+		const manifest = readManifest(pkgDir)
+		if (manifest) return { pkgDir, manifest }
 	} catch {
 		return undefined
 	}
+	return undefined
+}
+
+const resolveAotCli = (cwd: string): string | undefined => {
+	// Yarn PnP has no node_modules on disk; resolve through Node's module hooks
+	// (avoiding NODE_PATH leaks from pnpm bin shims in non-PnP environments)
+	const found =
+		findAotInNodeModules(cwd) ??
+		("pnp" in process.versions ? findAotViaRequire(cwd) : undefined)
+	if (!found) return undefined
+	const { pkgDir, manifest } = found
+	const bin =
+		typeof manifest.bin === "string" ?
+			manifest.bin
+		:	manifest.bin?.["arktype-precompile"]
+	if (bin && existsSync(join(pkgDir, bin))) return join(pkgDir, bin)
+	const srcCli = join(pkgDir, "cli.ts")
+	if (existsSync(srcCli)) return srcCli
 	return undefined
 }
 
@@ -213,6 +253,14 @@ const runAot = (
 	)
 	return result.status ?? 1
 }
+
+const hasArkPrecompileSetting = (
+	manifest: PackageManifest | undefined
+): boolean =>
+	typeof manifest?.ark === "object" &&
+	manifest.ark !== null &&
+	Object.prototype.hasOwnProperty.call(manifest.ark, "precompile") &&
+	(manifest.ark as Record<string, unknown>).precompile !== undefined
 
 const runInit = (
 	args: string[],
@@ -246,7 +294,7 @@ const runInit = (
 	const tools = detectedToolsOf(manifest, projectRoot)
 	const settingsPath = join(projectRoot, "ark.json")
 
-	if (manifest?.ark !== undefined) {
+	if (hasArkPrecompileSetting(manifest)) {
 		stdout(
 			`Found existing "ark" settings in ${join(projectRoot, "package.json")}; leaving ark.json untouched.\n`
 		)

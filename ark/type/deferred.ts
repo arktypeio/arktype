@@ -13,7 +13,7 @@ import {
 	type GenericRoot,
 	type IntersectionNode
 } from "@ark/schema"
-import { hasDomain, isThunk, type Dict, type Domain } from "@ark/util"
+import { domainOf, hasDomain, isThunk, type Dict, type Domain } from "@ark/util"
 import { domainsOf, unitBitsOf } from "arksets/internal"
 import { preparseKey } from "./parser/objectLiteral.ts"
 import type { InternalScope } from "./scope.ts"
@@ -47,7 +47,9 @@ interface Facts {
 	/** whether it holds a predicate, which a union calls on a unit it could allow */
 	narrowed?: boolean | undefined
 	min?: number | undefined
+	minExclusive?: boolean | undefined
 	max?: number | undefined
+	maxExclusive?: boolean | undefined
 	/** the values keys must have, which can make a union's branches disjoint */
 	tags?: Map<string, unknown[]> | undefined
 	/** the keys of an object literal saying nothing of others */
@@ -172,10 +174,13 @@ const fits = (value: unknown, facts: Facts): boolean => {
 	}
 	return (
 		typeof value === "number" &&
+		Number.isFinite(value) &&
 		(facts.base === "number" ||
 			(facts.base === "integer" && Number.isInteger(value))) &&
-		value >= (facts.min ?? -Infinity) &&
-		value <= (facts.max ?? Infinity)
+		(facts.min === undefined ||
+			(facts.minExclusive ? value > facts.min : value >= facts.min)) &&
+		(facts.max === undefined ||
+			(facts.maxExclusive ? value < facts.max : value <= facts.max))
 	)
 }
 
@@ -224,11 +229,23 @@ const scanRange = (def: string): Facts | undefined => {
 		min = +left + (leftOp === "<" ? step : 0)
 	}
 	// a length is positive and a range isn't empty
+	if (
+		(min !== undefined && !Number.isFinite(min)) ||
+		(max !== undefined && !Number.isFinite(max))
+	)
+		return
 	if ((min ?? 0) > (max ?? Infinity)) return
 	if (min === max && (op.length === 1 || leftOp === "<")) return
 	if (isLength && ((max ?? 0) < 0 || (min ?? 0) < 0)) return
 	if (isLength || (op.length === 2 && (!left || leftOp === "<=")))
 		return rangeFacts({ pure: true, base: of.base, of: of.of }, min, max)
+
+	if (
+		of.base === "integer" &&
+		((min !== undefined && !Number.isSafeInteger(min)) ||
+			(max !== undefined && !Number.isSafeInteger(max)))
+	)
+		return
 
 	// bounds apart from what they exclude
 	return {
@@ -237,7 +254,9 @@ const scanRange = (def: string): Facts | undefined => {
 		pure: true,
 		base: of.base,
 		min,
-		max
+		minExclusive: of.base === "number" && (left ? leftOp === "<" : op === ">"),
+		max,
+		maxExclusive: of.base === "number" && op === "<"
 	}
 }
 
@@ -794,16 +813,23 @@ const metaFacts = (d: Deferred, meta: object): Facts => ({
 	literal: false
 })
 
-const isPlainMeta = (meta: any) => {
-	if (!hasDomain(meta, "object") || !isPlainObject(meta)) return false
-	for (const k in meta) {
-		if (
-			!"description expected title".includes(k) ||
-			typeof meta[k] !== "string"
-		)
-			return false
+const snapshotPlainMeta = (
+	meta: unknown
+): Record<string, string> | undefined => {
+	if (
+		!hasDomain(meta, "object") ||
+		!isPlainObject(meta) ||
+		Object.getOwnPropertySymbols(meta).length
+	)
+		return
+	const copy: Record<string, string> = {}
+	for (const k of Object.keys(meta)) {
+		if (k !== "description" && k !== "expected" && k !== "title") return
+		const v = (meta as Record<string, unknown>)[k]
+		if (typeof v !== "string") return
+		copy[k] = v
 	}
-	return true
+	return copy
 }
 
 // what a method makes of a Type without building it, if its args let it, or undefined
@@ -872,11 +898,17 @@ const deferredMethods: Dict<
 		}
 	},
 	describe: (d, [description, selector]) =>
-		typeof description === "string" && !selector ?
+		typeof description === "string" && selector === undefined ?
 			metaFacts(d, { description })
 		:	undefined,
-	configure: (d, [meta, selector]) =>
-		isPlainMeta(meta) && !selector ? metaFacts(d, meta) : undefined,
+	configure: (d, args) => {
+		if (args[1] !== undefined) return
+		const copy = snapshotPlainMeta(args[0])
+		if (!copy) return
+		// snapshot mutable meta so later edits cannot poison the deferred shell or cache key
+		args[0] = copy
+		return metaFacts(d, copy)
+	},
 	to: ({ facts }, [r]) => {
 		const to =
 			typeof r === "string" ? scanAnd(r)
@@ -902,16 +934,26 @@ const deferredMethods: Dict<
 		:	undefined,
 	exclude: ({ facts }, [r]) => {
 		const excluded = typeof r === "string" ? scanLeaf(r) : undefined
-		if (!facts.terms || !facts.values || !excluded?.values) return
+		if (
+			!facts.terms ||
+			!facts.values ||
+			!excluded?.values ||
+			// every term must be a single canonical literal (not "boolean" or a settled "@node")
+			facts.terms.length !== facts.values.length ||
+			facts.terms.some(t => t[0] === "@")
+		)
+			return
 		const remaining = facts.values.filter(v => !excluded.values!.includes(v))
 		const excludedTerms = excluded.terms ?? [excluded.key]
 		const kept = facts.terms.filter(t => !excludedTerms.includes(t))
 		// one term for each value left, so what's left is what those write
 		if (!kept.length || kept.length !== remaining.length) return
+		let domains = 0
+		for (const v of remaining) domains |= unitBitsOf(domainOf(v))
 		return {
 			key: kept.join("|"),
 			terms: kept.length > 1 ? kept : undefined,
-			domains: facts.domains,
+			domains,
 			pure: true,
 			values: remaining,
 			units: true
@@ -1060,9 +1102,17 @@ export const deferredRecord = (
 	const instantiate = (...args: unknown[]) => {
 		const [k, v] = args
 		const into: Facts = { key: "", domains: 0, pure: true }
-		const key = canDefer($) && valueFacts(k, into)?.[0]
-		const value =
-			key && (typeof v === "string" ? scanUnion(v) : valueFacts(v, into)?.[0])
+		const keyEntry =
+			args.length === 2 && canDefer($) ? valueFacts(k, into) : undefined
+		let valueEntry: readonly [Facts, unknown] | undefined
+		if (keyEntry) {
+			if (typeof v === "string") {
+				const facts = scanUnion(v)
+				if (facts) valueEntry = [facts, v]
+			} else valueEntry = valueFacts(v, into)
+		}
+		const key = keyEntry?.[0]
+		const value = valueEntry?.[0]
 		return (
 				!value ||
 					!key ||
@@ -1080,7 +1130,7 @@ export const deferredRecord = (
 						pure: value.pure
 					},
 					$,
-					() => (generic() as any)(k, v)
+					() => (generic() as any)(keyEntry![1], valueEntry![1])
 				)
 	}
 	return Object.setPrototypeOf(

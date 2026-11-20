@@ -973,4 +973,80 @@ contextualize(() => {
 		attest<(typeof fromString | typeof fromNumber)[]>(matchers)
 		attest(matchers.length).equals(2)
 	})
+
+	it("at treats special and empty keys literally", () => {
+		const optKey = match.at("foo?", {
+			string: o => o["foo?"],
+			default: "reject"
+		})
+		attest(optKey({ "foo?": "ok" })).equals("ok")
+		attest(optKey({}).toString()).snap(
+			'["foo?"] must be a string (was missing)'
+		)
+
+		const plusKey = match.at("+", {
+			string: o => o["+"],
+			default: "reject"
+		})
+		attest(plusKey({ "+": "ok" })).equals("ok")
+		attest(plusKey({}).toString()).snap('["+"] must be a string (was missing)')
+
+		const indexKey = match.at("[string]", {
+			number: o => o["[string]"],
+			default: "reject"
+		})
+		attest(indexKey({ "[string]": 1 })).equals(1)
+		attest(indexKey({ a: 1 }).toString()).snap(
+			'["[string]"] must be a number (was missing)'
+		)
+
+		const spreadKey = match.at("...", {
+			string: o => o["..."],
+			default: "reject"
+		})
+		attest(spreadKey({ "...": "ok" })).equals("ok")
+		attest(spreadKey({}).toString()).snap(
+			'["..."] must be a string (was missing)'
+		)
+
+		const emptyKey = match.at("", {
+			string: o => o[""],
+			default: "reject"
+		})
+		attest(emptyKey({ "": "ok" })).equals("ok")
+		attest(emptyKey("ok").toString()).snap("must be an object")
+		attest(emptyKey({}).toString()).snap('[""] must be a string (was missing)')
+
+		attest(() =>
+			match
+				.at("")
+				// @ts-expect-error
+				.at("x")
+		).throwsAndHasTypeError(doubleAtMessage)
+	})
+
+	it("single-case assert and never defaults throw on mismatch", () => {
+		const asserted = match({
+			string: s => s.length,
+			default: "assert"
+		})
+		attest(asserted("abc")).equals(3)
+		attest(() => asserted(5)).throws.snap("TraversalError: must be a string")
+
+		const nevered = match({
+			string: s => s.length,
+			default: "never"
+		})
+		attest(nevered("abc")).equals(3)
+		// @ts-expect-error
+		attest(() => nevered(5)).throws.snap("TraversalError: must be a string")
+
+		const pruned = match({
+			string: s => s.length,
+			"'foo'": () => 0,
+			default: "assert"
+		})
+		attest(pruned("abc")).equals(3)
+		attest(() => pruned(5)).throws.snap("TraversalError: must be a string")
+	})
 })

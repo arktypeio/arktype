@@ -133,6 +133,32 @@ contextualize(() => {
 		attest(T([])).equals(["foo"])
 	})
 
+	it("spread preserves defaulted elements", () => {
+		const Inner = type(["string", "number = 0"])
+		const T = type(["boolean", "...", Inner])
+		attest(T.t).type.toString.snap("[boolean, string, Default<number, 0>]")
+		attest(T.expression).snap("[boolean, string, number = 0]")
+		attest(T([true, "hi"])).equals([true, "hi", 0])
+		attest(T([true, "hi", 5])).equals([true, "hi", 5])
+		attest(T([true, "hi", "bad"]).toString()).snap("[2] must be a number")
+		attest(T([true, "hi", 5, 6]).toString()).snap("must be at most length 3")
+
+		const WithOptional = type([
+			"boolean",
+			"...",
+			type(["string", "number = 0", "boolean?"])
+		])
+		attest(WithOptional.expression).snap(
+			"[boolean, string, number = 0, boolean?]"
+		)
+		attest(WithOptional([true, "hi"])).equals([true, "hi", 0])
+		attest(WithOptional([true, "hi", 2, false])).equals([true, "hi", 2, false])
+
+		attest(() => type(["string?", "...", type(["number = 0"])])).throws(
+			defaultablePostOptionalMessage
+		)
+	})
+
 	describe("without exactOptionalPropertyTypes", () => {
 		for (const jitless of [false, true]) {
 			const $ = scope({}, { exactOptionalPropertyTypes: false, jitless })

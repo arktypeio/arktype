@@ -91,13 +91,26 @@ const stringIntegerRoot = cached(() =>
 	regexStringNode(wellFormedIntegerMatcher, "string.integer")
 )
 
+const safeInteger = cached(() =>
+	node("intersection", {
+		domain: node("domain", {
+			domain: "number",
+			numberAllowsNaN: false,
+			numberAllowsInfinity: false
+		}),
+		divisor: node("divisor", { rule: 1 }),
+		min: node("min", { rule: Number.MIN_SAFE_INTEGER }),
+		max: node("max", { rule: Number.MAX_SAFE_INTEGER })
+	})
+)
+
 export const stringInteger: stringInteger.module = keywordModule(
 	{
 		root: stringIntegerRoot,
 		parse: () =>
 			node("morph", {
 				morphs: [stringIntegerRoot(), parseInteger],
-				declaredOut: intrinsic.integer
+				declaredOut: safeInteger()
 			})
 	},
 	{
@@ -436,7 +449,7 @@ export const json: stringJson.module = keywordModule(
 		root: jsonRoot,
 		parse: () =>
 			node("morph", {
-				meta: "safe JSON string parser",
+				meta: keywordMeta("string.json.parse"),
 				morphs: [intrinsic.string, parseJson],
 				declaredOut: intrinsic.jsonData
 			})

@@ -436,4 +436,69 @@ console.log(Object.hasOwn(t, "kind"), t === type("string.trim").to("string <= 1"
 		def.late = "number"
 		attest(t.expression).snap("{ late: string }")
 	})
+
+	it("exclude does not collide on boolean or settled unit terms", () => {
+		attest(
+			printed(`const u = type.unit(undefined)
+void u.expression
+const T = u.or("boolean").exclude("undefined")
+console.log(T.allows(undefined), T.allows(true), T.allows(false))
+const B = type("'a' | boolean").exclude("true")
+console.log(B.allows(true), B.allows(false), B.allows("a"))
+const S = type("'a' | null").exclude("null")
+console.log(S === type("'a'"), S.allows("a"), S.allows(null))`)
+		).snap("false true true\nfalse true true\ntrue true false\n")
+	})
+
+	it("Record snapshots mutable object value definitions", () => {
+		attest(
+			printed(`const def = { x: "string" }
+const R1 = type.Record("string", def)
+def.x = "number"
+const R2 = type.Record("string", { x: "string" })
+console.log(R1 === R2, R2.allows({ a: { x: "hi" } }), R2.allows({ a: { x: 42 } }))`)
+		).snap("true true false\n")
+	})
+
+	it("configure snapshots mutable meta and rejects non-plain or symbol-keyed meta", () => {
+		attest(
+			printed(`const m = { description: "first" }
+const A = type("string").configure(m)
+m.description = "MUTATED"
+const B = type("string").configure({ description: "first" })
+console.log(A === B, A.description, B.description)
+const sym = Symbol("k")
+const C = type("string").configure({ title: "x" })
+const D = type("string").configure({ title: "x", [sym]: 1 })
+console.log(C === D, Object.hasOwn(D, "kind"))
+for (const bad of [{ tit: "x" }, { e: "x" }, { "": "x" }]) {
+	const E = type("string").configure(bad)
+	console.log(Object.hasOwn(E, "kind"))
+}`)
+		).snap("true first first\nfalse true\ntrue\ntrue\ntrue\n")
+	})
+
+	it("throws eagerly on exclusive bound and non-finite numeric defaults", () => {
+		const invalidDefs: unknown[] = [
+			{ limit: "number > 0 = 0" },
+			{ n: "number < 5 = 5" },
+			{ n: "0 < number < 5 = 0" },
+			{ n: "0 < number < 5 = 5" },
+			{ x: ["number", "=", Infinity] },
+			{ x: ["number", "=", -Infinity] }
+		]
+		for (const def of invalidDefs) {
+			const expected = messageOf(() => type.raw(def))
+			attest([def, typeof expected]).equals([def, "string"])
+			attest(messageOf(() => anyType(def))).equals(expected)
+		}
+		attest(typeof messageOf(() => type("number > 0").default(0))).equals(
+			"string"
+		)
+		attest(typeof messageOf(() => type("number").default(Infinity))).equals(
+			"string"
+		)
+		// valid interior defaults still defer
+		attest(isUnread(type({ valid: "0 < number < 5 = 3" }))).equals(true)
+	})
 })

@@ -678,7 +678,7 @@ b.c.c must be an object (was missing)`)
 		attest($.type.and({ a: "string" }, { b: "number" }).expression).snap(
 			"{ a: string, b: number }"
 		)
-		attest($.type.pipe((s: string) => s.length)("abc")).equals(3)
+		attest($.type.pipe($.type("string"), s => s.length)("abc")).equals(3)
 	})
 
 	it("frozen modules and parsers", () => {

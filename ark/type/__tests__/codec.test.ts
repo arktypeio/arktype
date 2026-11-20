@@ -200,6 +200,22 @@ pair[1] must be a Date`)
 		attest(T(T.encode(5.7e-10))).equals(5.7e-10)
 	})
 
+	it("string.integer.parse encodes only safe integers", () => {
+		const T = type("string.integer.parse")
+		attest(T.encode(Number.MAX_SAFE_INTEGER)).equals("9007199254740991")
+		attest(T(T.encode(Number.MAX_SAFE_INTEGER))).equals(Number.MAX_SAFE_INTEGER)
+		attest(T.encode(Number.MIN_SAFE_INTEGER)).equals("-9007199254740991")
+		attest(T(T.encode(Number.MIN_SAFE_INTEGER))).equals(Number.MIN_SAFE_INTEGER)
+		attest(T.encode(1e21).toString()).snap("must be at most 9007199254740991")
+		attest(T.encode(Number.MAX_SAFE_INTEGER + 1).toString()).snap(
+			"must be at most 9007199254740991"
+		)
+		attest(T.encode(Number.MIN_SAFE_INTEGER - 1).toString()).snap(
+			"must be at least -9007199254740991"
+		)
+		attest(T.encode(1.5).toString()).snap("must be an integer")
+	})
+
 	it("format keywords encode formatted strings", () => {
 		const T = type("string.trim")
 		attest(T.encode("a")).equals("a")

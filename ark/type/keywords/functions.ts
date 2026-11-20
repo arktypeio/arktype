@@ -387,6 +387,13 @@ export const parseFormData = (data: FormData): ParsedFormData => {
 			if (typeof existing === "string" || existing instanceof FileConstructor)
 				result[k] = [existing, v]
 			else existing.push(v)
+		} else if (k === "__proto__") {
+			Object.defineProperty(result, k, {
+				value: v,
+				writable: true,
+				enumerable: true,
+				configurable: true
+			})
 		} else result[k] = v
 	}
 	return result

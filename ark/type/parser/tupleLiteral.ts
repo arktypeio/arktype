@@ -190,6 +190,10 @@ const appendSpreadBranch = (
 
 	if (spread.prefix)
 		for (const node of spread.prefix) appendRequiredElement(base, node)
+	if (spread.defaultables) {
+		for (const [node, def] of spread.defaultables)
+			appendDefaultableElement(base, node, def)
+	}
 	if (spread.optionals)
 		for (const node of spread.optionals) appendOptionalElement(base, node)
 	if (spread.variadic) appendVariadicElement(base, spread.variadic)

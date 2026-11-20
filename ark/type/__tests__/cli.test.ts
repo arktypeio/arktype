@@ -93,9 +93,13 @@ contextualize(() => {
 				name: "@ark/aot",
 				version: "0.0.1",
 				type: "module",
-				bin: { "arktype-precompile": "cli.js" }
+				exports: {
+					".": { default: "./out/index.js" }
+				},
+				bin: { "arktype-precompile": "out/cli.js" }
 			}),
-			"node_modules/@ark/aot/cli.js":
+			"node_modules/@ark/aot/out/index.js": "export {}\n",
+			"node_modules/@ark/aot/out/cli.js":
 				'import { writeFileSync } from "node:fs"; writeFileSync("args.json", JSON.stringify(process.argv.slice(2)));'
 		})
 
@@ -149,14 +153,26 @@ contextualize(() => {
 		})
 	})
 
-	it("leaves ark.json untouched when package.json sets ark", () => {
-		const dir = tempProject({
+	it("leaves ark.json untouched when package.json sets ark.precompile, but writes it beside ark.aot", () => {
+		const withPrecompile = tempProject({
 			"package.json": JSON.stringify({ name: "app", ark: { precompile: {} } })
 		})
-		const res = invoke(["init", "--no-skill"], dir)
-		attest(res.code).equals(0)
-		attest(existsSync(join(dir, "ark.json"))).equals(false)
-		attest(res.out.includes('existing "ark" settings')).equals(true)
+		const skipped = invoke(["init", "--no-skill"], withPrecompile)
+		attest(skipped.code).equals(0)
+		attest(existsSync(join(withPrecompile, "ark.json"))).equals(false)
+		attest(skipped.out.includes('existing "ark" settings')).equals(true)
+
+		const withAotOptIn = tempProject({
+			"package.json": JSON.stringify({ name: "lib", ark: { aot: true } })
+		})
+		const written = invoke(["init", "--no-skill"], withAotOptIn)
+		attest(written.code).equals(0)
+		attest(existsSync(join(withAotOptIn, "ark.json"))).equals(true)
+		attest(
+			JSON.parse(readFileSync(join(withAotOptIn, "ark.json"), "utf8"))
+		).equals({
+			precompile: {}
+		})
 	})
 
 	it("auto-detects validator and prints migration prompt on migrate", () => {

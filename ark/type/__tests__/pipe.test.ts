@@ -1571,4 +1571,65 @@ Make their inputs disjoint, e.g. by narrowing the morph's input, or pipe the uni
 		attest(result.toString()).snap(`Item[0].Meta must be an object (was missing)
 Item[1].Meta must be an object (was missing)`)
 	})
+
+	it("type-checks morph parameters on chained and nary pipe", () => {
+		// @ts-expect-error
+		attest(() => type("string").pipe((n: number) => n.toFixed(2))).type.errors(
+			"Type 'string' is not assignable to type 'number'"
+		)
+		attest(() =>
+			type("string")
+				.pipe(s => s.length)
+				// @ts-expect-error
+				.pipe((s: string) => s)
+		).type.errors("Type 'number' is not assignable to type 'string'")
+		attest(() =>
+			type("string").pipe(
+				(s: string) => s.length,
+				// @ts-expect-error
+				(s: string) => s
+			)
+		).type.errors("Type 'number' is not assignable to type 'string'")
+		attest(() =>
+			type("string").pipe(
+				// @ts-expect-error
+				s => s.length,
+				(s: string) => s
+			)
+		).type.errors("not assignable")
+		attest(() =>
+			// @ts-expect-error
+			type("string").pipe.try((n: number) => n.toFixed(2))
+		).type.errors("Type 'string' is not assignable to type 'number'")
+		attest(() =>
+			// @ts-expect-error
+			type.pipe(type("string"), (n: number) => n.toFixed(2))
+		).type.errors("Type 'string' is not assignable to type 'number'")
+
+		// 18+ morphs hitting variadic overload still check first morph and infer output
+		const nineteen = type("'a'").pipe(
+			s => `${s}b` as const,
+			(s: string) => `${s}c`,
+			(s: string) => `${s}d`,
+			(s: string) => `${s}e`,
+			(s: string) => `${s}f`,
+			(s: string) => `${s}g`,
+			(s: string) => `${s}h`,
+			(s: string) => `${s}i`,
+			(s: string) => `${s}j`,
+			(s: string) => `${s}k`,
+			(s: string) => `${s}l`,
+			(s: string) => `${s}m`,
+			(s: string) => `${s}n`,
+			(s: string) => `${s}o`,
+			(s: string) => `${s}p`,
+			(s: string) => `${s}q`,
+			(s: string) => `${s}r`,
+			(s: string) => `${s}s`,
+			(s: string) => s.length
+		)
+		attest<number>(nineteen.infer)
+		attest<"a">(nineteen.inferIn)
+		attest(nineteen("a")).equals(19)
+	})
 })

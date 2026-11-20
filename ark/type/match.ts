@@ -368,7 +368,7 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 	}
 
 	at(key: Key, cases?: InternalCases): InternalChainedMatchParser | Match {
-		if (this.key) throwParseError(doubleAtMessage)
+		if (this.key !== undefined) throwParseError(doubleAtMessage)
 		if (this.branches.length) throwParseError(chainedAtMessage)
 		this.key = key
 		return cases ? this.match(cases) : this
@@ -382,7 +382,15 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		node: BaseRoot,
 		resolver: Morph
 	): InternalChainedMatchParser {
-		const wrappableNode = this.key ? this.$.parse({ [this.key]: node }) : node
+		const wrappableNode =
+			this.key !== undefined ?
+				this.$.node("intersection", {
+					domain: this.$.node("domain", { domain: "object" }),
+					structure: this.$.node("structure", {
+						required: [this.$.node("required", { key: this.key, value: node })]
+					})
+				})
+			:	node
 		const branch = wrappableNode.pipe(resolver as never)
 		this.branches.push(branch)
 		return this
@@ -431,21 +439,26 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		if (typeof defaultCase === "function")
 			this.case(intrinsic.unknown, defaultCase)
 
+		const shouldThrow = defaultCase === "never" || defaultCase === "assert"
+
 		const schema: mutable<Union.Input> = {
 			branches: this.branches,
 			ordered: true
 		}
 
-		if (defaultCase === "never" || defaultCase === "assert")
-			schema.meta = { onFail: throwOnDefault }
+		if (shouldThrow) schema.meta = { onFail: throwOnDefault }
 
-		const cases = this.$.node("union", schema)
+		let cases = this.$.node("union", schema)
+
+		// a single-branch union reduces directly to that branch without schema.meta
+		if (shouldThrow && cases.meta.onFail !== throwOnDefault)
+			cases = cases.configureRefs({ onFail: throwOnDefault }, "self")
 
 		if (!this.in) return this.$.fin(cases) as never
 
 		let inputValidatedCases = this.in.pipe(cases)
 
-		if (defaultCase === "never" || defaultCase === "assert") {
+		if (shouldThrow) {
 			inputValidatedCases = inputValidatedCases.configureRefs(
 				{
 					onFail: throwOnDefault
