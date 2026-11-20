@@ -139,7 +139,7 @@ A definition reading one of its Types, like `type({ email: Email })` with `Email
 
 **`precompile.dependencies runs drizzle-arktype on arktype, which Turbopack can't`** (or Bun's runtime plugin): it replaces arktype for every importer. Set the dependency to `"aot"` if its Types are static, or build with webpack (`next build --webpack`) or `Bun.build`, or with `runtime: "arktype"`.
 
-**`/app/package.json sets "ark" and /app/ark.json is beside it`**: both set the build's options. Move `ark.json`'s contents under `package.json`'s `"ark"` key, or delete that key.
+**`/app/package.json sets "ark.precompile" and /app/ark.json is beside it`**: both set the build's options. Move `"precompile"` from one file to the other. `"aot"` may stay in `package.json` beside `ark.json`.
 
 **`my-schemas imports arktype/runtime, so it ships validators precompiled for one version of arktype`**: a dependency shipped its own precompiled build, which runs only on the arktype it was built with. Have it publish its source and opt in instead, with `"ark": { "aot": true }`.
 

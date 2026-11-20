@@ -214,13 +214,39 @@ contextualize(() => {
 			)
 		})
 
-		it("fails beside ark.json", () => {
+		it("leaves a library's aot to ark.json's options", () => {
 			const root = withArk(
-				{ precompile: {} },
+				{ aot: true },
+				{
+					"ark.json": JSON.stringify({
+						$schema: "node_modules/@ark/aot/ark.schema.json",
+						precompile: { config: "src/config.ts" }
+					})
+				}
+			)
+			attest(withSettingsFile({ cwd: root })).snap({
+				config: join(root, "src", "config.ts"),
+				cwd: root
+			} as never)
+		})
+
+		it("fails setting precompile beside ark.json", () => {
+			const root = withArk(
+				{ aot: true, precompile: {} },
 				{ "ark.json": JSON.stringify({ precompile: {} }) }
 			)
 			attest(() => withSettingsFile({ cwd: root })).throws(
-				`${join(root, "package.json")} sets "ark" and ${join(root, "ark.json")} is beside it, so the build can't tell which sets its options. Move ark.json's contents under package.json's "ark" key, or delete that key.`
+				`${join(root, "package.json")} sets "ark.precompile" and ${join(root, "ark.json")} is beside it, so the build can't tell which sets its options. Beside ark.json, "ark" may set only "aot": move "precompile" from one file to the other.`
+			)
+		})
+
+		it("names a key it rejects beside ark.json", () => {
+			const root = withArk(
+				{ aot: true, optimize: "size" },
+				{ "ark.json": JSON.stringify({ precompile: {} }) }
+			)
+			attest(() => withSettingsFile({ cwd: root })).throws(
+				`${join(root, "package.json")}: ark.optimize must be set in precompile`
 			)
 		})
 	})

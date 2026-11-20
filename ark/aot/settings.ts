@@ -68,10 +68,14 @@ export const settingsFileOf = (cwd: string): string | undefined => {
 		const manifest = join(dir, "package.json")
 		if (existsSync(manifest)) {
 			const path = join(dir, settingsFile)
-			const setsArk =
-				(readJson(manifest) as { ark?: unknown }).ark !== undefined
-			if (!existsSync(path)) return setsArk ? manifest : undefined
-			if (setsArk) throw new Error(writeSettingsConflictMessage(manifest, path))
+			const { ark } = readJson(manifest) as { ark?: unknown }
+			if (!existsSync(path)) return ark === undefined ? undefined : manifest
+			// a library's "aot" is for its consumers, so it may build with ark.json
+			if (ark !== undefined) {
+				validated(validators.PackageArk, ark, `${manifest}: ark.`)
+				if ((ark as { precompile?: unknown }).precompile !== undefined)
+					throw new Error(writeSettingsConflictMessage(manifest, path))
+			}
 			return path
 		}
 		if (dirname(dir) === dir) return
@@ -266,7 +270,7 @@ export const writeSettingsConflictMessage = (
 	manifest: string,
 	arkJson: string
 ): string =>
-	`${manifest} sets "ark" and ${arkJson} is beside it, so the build can't tell which sets its options. Move ark.json's contents under package.json's "ark" key, or delete that key.`
+	`${manifest} sets "ark.precompile" and ${arkJson} is beside it, so the build can't tell which sets its options. Beside ark.json, "ark" may set only "aot": move "precompile" from one file to the other.`
 
 export const writeUnresolvedDependencyMessage = (
 	name: string,
