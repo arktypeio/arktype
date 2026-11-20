@@ -89,6 +89,10 @@ f.returns
 
 With `exactOptionalPropertyTypes: false`, a defaulted key holding `undefined` is replaced by its default, but its value's morph ran on the `undefined` first when its input allowed it, then again on the default.
 
+### `type.declare` accepts either definition of an optional key without `exactOptionalPropertyTypes`
+
+Where `exactOptionalPropertyTypes` isn't enabled, TS reads `{ a?: string }` and `{ a?: string | undefined }` as the same type, so a key declared as either can be defined as `"a?": "string"` or `"a?": "string | undefined"`. The second was a type error.
+
 ## 3.0.0-beta.1
 
 ### Summary

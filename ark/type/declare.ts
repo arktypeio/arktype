@@ -245,7 +245,13 @@ type declaredEscapedOptionalValueSuggestion<
 	def[declaredKey<k> & keyof def] extends OptionalPropertyDefinition ?
 		validateInference<
 			def[declaredKey<k> & keyof def],
-			Required<declared>[k],
+			declaredOptionalValue<
+				declared,
+				k,
+				def[declaredKey<k> & keyof def],
+				$,
+				args
+			>,
 			$,
 			args,
 			ctx
@@ -262,12 +268,40 @@ type declaredOptionalValueSuggestion<
 > =
 	k extends keyof def ?
 		def[k] extends OptionalPropertyDefinition ?
-			// Required<declared>[k] ensures that we can distinguish { foo?: true } from { foo?: true | undefined }
-			validateInference<def[k], Required<declared>[k], $, args, ctx>
+			validateInference<
+				def[k],
+				declaredOptionalValue<declared, k, def[k], $, args>,
+				$,
+				args,
+				ctx
+			>
 		:	declared[k]
 	: `${k}?` extends keyof def ?
-		validateInference<def[`${k}?`], Required<declared>[k], $, args, ctx>
+		validateInference<
+			def[`${k}?`],
+			declaredOptionalValue<declared, k, def[`${k}?`], $, args>,
+			$,
+			args,
+			ctx
+		>
 	:	declared[k]
+
+// Required<declared>[k] distinguishes { foo?: true } from { foo?: true | undefined }.
+// Without exactOptionalPropertyTypes, TS reads both as the second, and drops
+// undefined from both with Required, so a definition allowing undefined is
+// checked against the key with it wherever the key allows it
+type declaredOptionalValue<
+	declared,
+	k extends keyof declared,
+	valueDef,
+	$,
+	args
+> =
+	undefined extends inferDefinition<valueDef, $, args> ?
+		{ [_ in k]: undefined } extends Pick<declared, k> ?
+			declared[k]
+		:	Required<declared>[k]
+	:	Required<declared>[k]
 
 type validateShallowInference<
 	t,
