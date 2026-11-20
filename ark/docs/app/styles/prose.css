@@ -65,11 +65,22 @@
 	color: var(--ink-3);
 	text-decoration: none;
 	opacity: 0;
-	transition: opacity var(--t-micro);
+	transition:
+		opacity var(--t-micro),
+		color var(--t-micro);
 }
 
-:is(h2, h3, h4, h5, h6):hover > .anchor {
+:is(h2, h3, h4, h5, h6):hover > .anchor,
+.anchor[data-copied] {
 	opacity: 1;
+}
+
+.anchor:hover {
+	color: var(--sky);
+}
+
+.anchor[data-copied] {
+	color: var(--teal);
 }
 
 /* ===== inline ===== */
@@ -118,6 +129,12 @@
 
 .prose a code:not(pre code, .api-sig) {
 	color: inherit;
+	background: color-mix(in oklab, var(--sky) 11%, transparent);
+	transition: background-color var(--t-micro);
+}
+
+.prose a:hover code:not(pre code, .api-sig) {
+	background: color-mix(in oklab, var(--sky) 18%, transparent);
 }
 
 /* ===== lists ===== */

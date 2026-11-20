@@ -116,10 +116,13 @@ export const CompileLive = ({
 	const [text, setText] = useState(source)
 	const [result, setResult] = useState<CompileResult>(initial)
 	const [pending, setPending] = useState(false)
+	const [copied, setCopied] = useState(false)
+	const [pulse, setPulse] = useState(0)
 	const fieldRef = useRef<HTMLTextAreaElement>(null)
 	const workerRef = useRef<Worker>(undefined)
 	const latestRef = useRef(0)
 	const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+	const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
 	const fail = (message: string) => {
 		setResult({ ok: false, message })
@@ -133,6 +136,7 @@ export const CompileLive = ({
 			if ("ready" in data || data.id !== latestRef.current) return
 			setResult(data.result)
 			setPending(false)
+			setPulse(n => n + 1)
 		}
 		worker.onerror = () =>
 			fail("The precompiler couldn't start in this browser.")
@@ -185,11 +189,22 @@ export const CompileLive = ({
 	useEffect(
 		() => () => {
 			clearTimeout(timerRef.current)
+			clearTimeout(copyTimerRef.current)
 			workerRef.current?.terminate()
 			workerRef.current = undefined
 		},
 		[]
 	)
+
+	const copyEmitted = () => {
+		if (!result.ok) return
+		const code = [result.main, ...result.helpers].join("\n\n")
+		void navigator.clipboard?.writeText(code).then(() => {
+			setCopied(true)
+			clearTimeout(copyTimerRef.current)
+			copyTimerRef.current = setTimeout(() => setCopied(false), 1600)
+		})
+	}
 
 	return (
 		<>
@@ -265,20 +280,53 @@ export const CompileLive = ({
 					</span>
 				</footer>
 			</figure>
+			<div
+				className="compile-pipe"
+				data-pending={pending ? "" : undefined}
+				data-fail={!result.ok ? "" : undefined}
+				aria-hidden
+			>
+				<span className="compile-pipe-tag">
+					{pending ?
+						"compiling…"
+					: result.ok ?
+						"@ark/aot ↓"
+					:	"build stopped"}
+				</span>
+			</div>
 			<figure
 				className="code-card glow compile-out"
 				data-live={editing ? "" : undefined}
 				data-pending={pending ? "" : undefined}
+				data-fail={!result.ok ? "" : undefined}
 			>
 				<figcaption>
 					<Step n={2}>what ships</Step>
-					<span>
-						{result.ok ?
-							"as emitted · names shortened"
-						:	"nothing: the build stops"}
+					<span className="compile-file">
+						<span>
+							{result.ok ?
+								"as emitted · names shortened"
+							:	"nothing: the build stops"}
+						</span>
+						{result.ok && (
+							<button
+								type="button"
+								className="compile-try"
+								data-copied={copied ? "" : undefined}
+								onClick={copyEmitted}
+							>
+								{copied ? "copied ✓" : "copy"}
+							</button>
+						)}
 					</span>
 				</figcaption>
-				<div className="compile-result" role="status" aria-live="polite">
+				<div
+					key={pulse}
+					className="compile-result"
+					data-pulsed={pulse > 0 ? "" : undefined}
+					role="status"
+					aria-live="polite"
+				>
 					{result.ok ?
 						<>
 							<Written code={result.main} />

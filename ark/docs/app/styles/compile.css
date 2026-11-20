@@ -6,8 +6,78 @@
 .compile {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
-	gap: 14px;
+	gap: 0;
 	margin: 1.6rem 0;
+}
+
+/* the build step between what you write and what ships */
+.compile-pipe {
+	position: relative;
+	display: grid;
+	place-items: center;
+	height: 36px;
+}
+
+.compile-pipe::before {
+	content: "";
+	position: absolute;
+	inset: 0 auto;
+	width: 1px;
+	background: linear-gradient(
+		180deg,
+		var(--rule),
+		color-mix(in oklab, var(--gold) 55%, transparent),
+		var(--rule)
+	);
+}
+
+.compile-pipe[data-fail]::before {
+	background: color-mix(in oklab, var(--red) 55%, transparent);
+}
+
+.compile-pipe-tag {
+	position: relative;
+	padding: 2px 10px;
+	border-radius: var(--r-pill);
+	border: 1px solid var(--rule);
+	background: var(--bg);
+	font: 400 11.5px / 1.4 var(--mono);
+	color: var(--ink-3);
+	transition:
+		color var(--t-micro),
+		border-color var(--t-micro);
+}
+
+.compile-pipe[data-pending] .compile-pipe-tag {
+	color: var(--gold);
+	border-color: color-mix(in oklab, var(--gold) 55%, transparent);
+}
+
+.compile-pipe[data-fail] .compile-pipe-tag {
+	color: var(--red-ink);
+	border-color: color-mix(in oklab, var(--red) 45%, transparent);
+}
+
+.compile-out[data-fail] {
+	border-color: color-mix(in oklab, var(--red) 45%, transparent);
+}
+
+.compile-try[data-copied] {
+	color: var(--teal);
+	border-color: color-mix(in oklab, var(--teal) 50%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.compile-result[data-pulsed] {
+		animation: compile-land 0.36s var(--ease-out);
+	}
+}
+
+@keyframes compile-land {
+	from {
+		opacity: 0.6;
+		translate: 0 3px;
+	}
 }
 
 .compile .code-card {

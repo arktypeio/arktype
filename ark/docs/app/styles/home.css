@@ -140,6 +140,7 @@
 	.ctas {
 		display: flex;
 		flex-wrap: wrap;
+		align-items: center;
 		gap: 12px;
 	}
 
@@ -681,7 +682,7 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 10px;
+		gap: 8px;
 		.lbl {
 			flex-basis: 100%;
 			font: 400 13px / 1.4 var(--mono);
@@ -689,10 +690,10 @@
 			margin-bottom: 6px;
 		}
 		a {
-			font-size: 14.5px;
+			font-size: 14px;
 			color: var(--ink-2);
 			text-decoration: none;
-			padding: 8px 14px;
+			padding: 6px 12px;
 			border-radius: var(--r-pill);
 			border: 1px solid var(--line);
 			transition:
@@ -830,7 +831,8 @@
 		.swap > * {
 			transition: none;
 		}
-		.btn:hover .arrow {
+		.btn:hover .arrow,
+		.point-ctas .link:hover .arrow {
 			translate: none;
 		}
 	}

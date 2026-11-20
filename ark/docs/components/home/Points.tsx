@@ -316,7 +316,10 @@ export const Precompile = () => (
 					</span>
 				</Link>
 				<Link className="link" href="/docs/precompile#what-ships">
-					see what it emits →
+					see what it emits{" "}
+					<span className="arrow" aria-hidden>
+						→
+					</span>
 				</Link>
 			</div>
 		}

@@ -768,6 +768,25 @@ html:not([data-mac]) .kbd-mac {
 	color: var(--ink-3);
 }
 
+.pg-arrow {
+	display: inline-block;
+	transition: translate var(--t-micro) var(--ease-out);
+}
+
+.pg.prev:hover .pg-arrow {
+	translate: -3px 0;
+}
+
+.pg.next:hover .pg-arrow {
+	translate: 3px 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.pg:hover .pg-arrow {
+		translate: none;
+	}
+}
+
 .pg-title {
 	font-size: 17px;
 	font-weight: 700;
