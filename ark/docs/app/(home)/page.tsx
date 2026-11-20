@@ -8,6 +8,7 @@ import {
 } from "../../components/home/CopyCommand.tsx"
 import { Drill, Drills, Point } from "../../components/home/Drill.tsx"
 import { Hero, heroLede, heroLine } from "../../components/home/Hero.tsx"
+import { heroStats } from "../../components/home/boardFacts.ts"
 import { HomeCode, PlainCode } from "../../components/home/HomeCode.tsx"
 import { HomeEffects } from "../../components/home/HomeEffects.tsx"
 import { Migrate } from "../../components/home/Migrate.tsx"
@@ -32,7 +33,9 @@ export const metadata: Metadata = {
 		title,
 		description: lede,
 		url: "/",
-		ogImageAlt: `${draftOf(claims.headline)} ${draftOf(claims.boardTitle)}`
+		ogImageAlt: `${draftOf(claims.headline)} ${heroLine} ${heroStats()
+			.map(s => `${s.value} ${s.unit} than Zod 4`)
+			.join(", ")}.`
 	}),
 	title: { absolute: title }
 }

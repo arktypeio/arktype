@@ -3,14 +3,12 @@ import { create, type Font } from "fontkit"
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { decompress } from "wawoff2"
-import type { CategoryId } from "./bench/leaderboard.ts"
-import { unitBoards } from "./bench/units.ts"
+import { heroLine, heroStats } from "../components/home/boardFacts.ts"
 import {
 	assertNamesWellKnown,
 	assertStandings,
 	claims,
-	draftOf,
-	ordinal
+	draftOf
 } from "./claims.ts"
 import { getPageTree } from "./content/docs.ts"
 import { docsDir, publicDir } from "./content/paths.ts"
@@ -22,12 +20,10 @@ const padY = 52
 
 const colors = {
 	background: "#080d17",
-	surface: "#0c1320",
 	ink: "#eeeeee",
 	ink2: "#b6bacb",
 	ink3: "#888899",
 	gold: "#f5cf8f",
-	copper: "#ba7e41",
 	blue: "#408fde"
 }
 
@@ -73,7 +69,6 @@ type Style = {
 	fill: string
 	/** letter-spacing in em */
 	tracking?: number
-	strike?: boolean
 }
 
 type Span = [text: string, style: Style]
@@ -90,26 +85,39 @@ const styles = {
 	headline: {
 		family: "sans",
 		weight: 800,
-		size: 68,
+		size: 56,
 		fill: colors.ink,
-		tracking: -0.035
+		tracking: -0.04
 	},
-	boardTitle: {
-		family: "sans",
-		weight: 750,
-		size: 34,
-		fill: colors.ink2,
-		tracking: -0.02
-	},
-	label: { family: "mono", weight: 400, size: 17, fill: colors.ink2 },
-	place: {
+	heroLine: {
 		family: "sans",
 		weight: 800,
-		size: 58,
+		size: 56,
 		fill: colors.gold,
 		tracking: -0.04
 	},
-	of: { family: "mono", weight: 400, size: 17, fill: colors.ink3 },
+	statNum: {
+		family: "sans",
+		weight: 800,
+		size: 108,
+		fill: colors.gold,
+		tracking: -0.045
+	},
+	statBold: {
+		family: "sans",
+		weight: 700,
+		size: 19,
+		fill: colors.ink,
+		tracking: -0.015
+	},
+	statLight: {
+		family: "sans",
+		weight: 400,
+		size: 19,
+		fill: colors.ink2,
+		tracking: -0.015
+	},
+	statScope: { family: "mono", weight: 400, size: 14, fill: colors.ink3 },
 	kicker: { family: "mono", weight: 400, size: 22, fill: colors.ink3 },
 	title: {
 		family: "sans",
@@ -145,13 +153,7 @@ const outline = (text: string, style: Style, x: number, baseline: number) => {
 			.toSVG()
 		penX += positions[i].xAdvance * scale + (style.tracking ?? 0) * style.size
 	}
-	let svg = `<path fill="${style.fill}" d="${d}"/>`
-	if (style.strike) {
-		const thickness = 0.08 * style.size
-		const y = baseline - (font.xHeight * scale) / 2 - thickness / 2
-		svg += `<rect fill="${style.fill}" x="${x}" y="${y}" width="${widthOf(text.trimEnd(), style)}" height="${thickness}"/>`
-	}
-	return svg
+	return `<path fill="${style.fill}" d="${d}"/>`
 }
 
 /** CSS's `line-height: normal` */
@@ -254,9 +256,6 @@ const card = (
 <radialGradient id="glowGold" gradientUnits="userSpaceOnUse" cx="-60" cy="660" r="700" gradientTransform="translate(0 660) scale(1 ${380 / 700}) translate(0 -660)">
 <stop offset="0" stop-color="${colors.gold}" stop-opacity="0.09"/><stop offset="0.7" stop-color="${colors.gold}" stop-opacity="0"/>
 </radialGradient>
-<linearGradient id="surface" x1="0" y1="0" x2="0" y2="1">
-<stop offset="0" stop-color="#101d2f"/><stop offset="1" stop-color="${colors.surface}"/>
-</linearGradient>
 </defs>
 <rect width="${width}" height="${height}" fill="${colors.background}"/>
 <rect width="${width}" height="${height}" fill="url(#glowGold)"/>
@@ -264,69 +263,56 @@ const card = (
 ${body}
 </svg>`
 
-const categoryLabels: Record<CategoryId, string> = {
-	speed: "validation speed",
-	startup: "startup",
-	size: "bundle size"
-}
-
-/** the homepage's card: its headline, its board's title and ArkType's places */
+/** the homepage's card: its hero headline and the three Zod 4 headline stats */
 const homeCard = () => {
 	const h1 = block(
 		[[draftOf(claims.headline), styles.headline]],
 		padX,
-		padY + brandSize + 34,
-		{ lineHeight: 68 * 1.02 }
+		padY + brandSize + 36,
+		{ lineHeight: 56 * 1.05 }
 	)
-	const pick = styles.boardTitle
-	const boardTitle = draftOf(claims.boardTitle)
-	const lead = boardTitle.replace(/ ?Pick 3\.$/, "")
-	const title = block(
-		lead === boardTitle ?
-			[[boardTitle, pick]]
-		:	[
-				[`${lead} `, pick],
-				["Pick 2. ", { ...pick, fill: colors.ink3, strike: true }],
-				["Pick 3.", { ...pick, fill: colors.gold }]
-			],
-		padX,
-		h1.bottom + 16
-	)
-
-	const gap = 20
-	const cardWidth = (width - 2 * padX - 2 * gap) / 3
-	const cardHeight = 150
-	const cardTop = height - padY - cardHeight
-	const cards = (Object.keys(categoryLabels) as CategoryId[]).map((id, i) => {
-		// its place on the board's graph, among every library the graph ranks
-		const { standings } = unitBoards[id]
-		const { place } = standings.find(s => s.library === "ArkType")!
-		const x = padX + i * (cardWidth + gap)
-		const label = block(
-			[[categoryLabels[id], styles.label]],
-			x + 22,
-			cardTop + 18
-		)
-		const placed = block(
-			[[ordinal(place), styles.place]],
-			x + 22,
-			label.bottom + 8,
-			{ lineHeight: 58 }
-		)
-		const of = block(
-			[[`of ${standings.length} libraries`, styles.of]],
-			x + 22,
-			placed.bottom + 8
-		)
-		return `<rect x="${x + 0.5}" y="${cardTop + 0.5}" width="${cardWidth - 1}" height="${cardHeight - 1}" rx="18" fill="url(#surface)" stroke="${colors.copper}" stroke-opacity="0.3"/>${label.svg}${placed.svg}${of.svg}`
+	const line = block([[heroLine, styles.heroLine]], padX, h1.bottom + 4, {
+		lineHeight: 56 * 1.05
 	})
 
-	if (title.bottom > cardTop) {
+	const gap = 28
+	const colWidth = (width - 2 * padX - 2 * gap) / 3
+	const statTop = line.bottom + 42
+	let maxBottom = statTop
+
+	const stats = heroStats().map((stat, i) => {
+		const x = padX + i * (colWidth + gap)
+		const num = block([[stat.value, styles.statNum]], x, statTop, {
+			maxWidth: colWidth,
+			lineHeight: 108 * 0.96
+		})
+		const what = block(
+			[
+				[stat.unit, styles.statBold],
+				[" than Zod 4", styles.statLight]
+			],
+			x,
+			num.bottom + 14,
+			{ maxWidth: colWidth, lineHeight: 19 * 1.3 }
+		)
+		// the latin-subsetted Cascadia Code font omits U+2192, but its `->` ligature draws the arrow
+		const scope = block(
+			[[stat.scope.replaceAll("→", "->"), styles.statScope]],
+			x,
+			what.bottom + 8,
+			{ maxWidth: colWidth, lineHeight: 14 * 1.45 }
+		)
+		if (scope.bottom > maxBottom) maxBottom = scope.bottom
+		const glow = `<radialGradient id="statGlow${i}" cx="${x + 95}" cy="${statTop + 56}" r="150" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${colors.gold}" stop-opacity="0.14"/><stop offset="1" stop-color="${colors.gold}" stop-opacity="0"/></radialGradient><rect width="${width}" height="${height}" fill="url(#statGlow${i})"/>`
+		return glow + num.svg + what.svg + scope.svg
+	})
+
+	if (maxBottom > height - padY) {
 		throw new Error(
-			`the homepage's card overlaps its places by ${title.bottom - cardTop}px`
+			`the homepage's card overflows by ${maxBottom - height + padY}px`
 		)
 	}
-	return card(header("arktype.io") + h1.svg + title.svg + cards.join(""))
+	return card(header("arktype.io") + h1.svg + line.svg + stats.join(""))
 }
 
 /** a post's card: its title, an "Announcing" title's version in gold, and its description */

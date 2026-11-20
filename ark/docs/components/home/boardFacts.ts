@@ -69,6 +69,13 @@ export const zodSizeRatio = () => {
 	return formatRatio(bytes("Zod") / bytes("ArkType (precompiled)"))
 }
 
+/**
+ * The hero's second line, after the headline lib/claims.ts guards: with it
+ * the h1 is the tagline word for word (siteDescription in app/metadata.ts,
+ * package.json, the README). It states no number, so it lives here.
+ */
+export const heroLine = "One prompt away."
+
 export type HeroStat = {
 	/** the section that measures it */
 	href: string

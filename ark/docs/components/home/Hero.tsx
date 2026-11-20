@@ -3,14 +3,9 @@ import type { CSSProperties } from "react"
 import { preview } from "../../lib/bench/bench.ts"
 import { claims, medianOf } from "../../lib/claims.ts"
 import { ClaimText } from "../mdx/Claim.tsx"
-import { categoryOf, heroStats, methodHref } from "./boardFacts.ts"
+import { categoryOf, heroLine, heroStats, methodHref } from "./boardFacts.ts"
 
-/**
- * The hero's second line, after the headline lib/claims.ts guards: with it
- * the h1 is the tagline word for word (siteDescription in app/metadata.ts,
- * package.json, the README). It states no number, so it lives here.
- */
-export const heroLine = "One prompt away."
+export { heroLine }
 
 /**
  * The quest the hero offers, under its numbers: a link to #migrate, which is

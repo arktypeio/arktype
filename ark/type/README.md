@@ -3,7 +3,7 @@
 		<img
 			src="https://arktype.io/3/image/og.png"
 			width="720"
-			alt="ArkType — TypeScript's smallest, fastest validator. Fast. Small. Quick to start. Pick 3."
+			alt="ArkType — TypeScript's smallest, fastest validator. One prompt away."
 		/>
 	</a>
 </p>
