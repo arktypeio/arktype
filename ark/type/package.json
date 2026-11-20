@@ -46,6 +46,7 @@
 		"./island.ts",
 		"./islandDependency.ts",
 		"./precompiled.ts",
+		"./runtime.ts",
 		"./runtimeDevelopment.ts",
 		"./out/index.js",
 		"./out/codecs.js",
@@ -62,6 +63,7 @@
 		"./out/island.js",
 		"./out/islandDependency.js",
 		"./out/precompiled.js",
+		"./out/runtime.js",
 		"./out/runtimeDevelopment.js",
 		"./out/chunk-*.js"
 	],

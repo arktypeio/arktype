@@ -459,6 +459,7 @@ Metro has no plugin: it caches each module by its own text, so a module whose va
 Have the package re-export `type` and `ArkErrors`, so the app checks an error against the runtime its validators use:
 
 ```ts title="packages/domain/src/index.ts"
+// @noErrors
 export * from "./money.ts"
 export { type, ArkErrors } from "arktype"
 ```
