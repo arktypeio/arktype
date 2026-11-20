@@ -7,6 +7,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 defaults:
   run:
     shell: bash
@@ -24,82 +28,31 @@ jobs:
       - name: Setup repo
         uses: ./.github/actions/setup
 
-      - name: prChecks
-        run: pnpm prChecks
+      # twoslash results (see ark/docs/lib/content/twoslash.ts), keyed by what
+      # every result depends on, matching publish.yml
+      - name: Cache docs twoslash results
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ark/docs/node_modules/.cache/ark-docs
+          key: docs-twoslash-${{ hashFiles('ark/*/out/**/*.d.ts', 'ark/docs/lib/shiki.ts', 'ark/docs/package.json') }}
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build docs
+        run: pnpm buildDocs
+
+      - name: Test and benchmark
+        run: pnpm testRepoWithBenches
 
       - name: Test jitless
         run: pnpm testJitless
 
-  compatibility:
-    needs: core
-    timeout-minutes: 45
-    strategy:
-      matrix:
-        node: [lts/*]
-        os: [windows-latest, macos-latest]
-        include:
-          - os: ubuntu-latest
-            node: lts/-1
-          - os: ubuntu-latest
-            node: latest
-      fail-fast: false
-
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup repo
-        uses: ./.github/actions/setup
-        with:
-          node: ${{ matrix.node }}
-
-      # To test node and OS versions, we don't care about rechecking types
-      # so just check runtime behavior
-      - name: Test
-        run: pnpm testRepo
-
-  history:
-    needs: core
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-
-      - name: Setup repo
-        uses: ./.github/actions/setup
-
-      - name: Test history independence
-        run: pnpm testHistory --jobs 4
-
-  tsVersionTasks:
-    needs: core
-    runs-on: ubuntu-latest
-    outputs:
-      tasks: ${{ steps.list.outputs.tasks }}
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: lts/*
-
-      - id: list
-        run: echo "tasks=$(node ark/repo/testTsVersions.ts --list)" >> "$GITHUB_OUTPUT"
-
+  # fast TypeScript checks run in parallel with core; the full consumer and
+  # older-TS matrix runs nightly and on demand via nightly.yml (label ci:ts)
   typescript:
-    needs: tsVersionTasks
-    timeout-minutes: 60
-    strategy:
-      matrix:
-        task: ${{ fromJSON(needs.tsVersionTasks.outputs.tasks) }}
-      fail-fast: false
-
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout repo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -107,14 +60,14 @@ jobs:
       - name: Setup repo
         uses: ./.github/actions/setup
 
-      - name: Test ${{ matrix.task }}
-        run: pnpm testTsVersions ${{ matrix.task }}
+      - name: Test attest@tsgo and repo@6.0.3
+        run: pnpm testTsVersions attest@tsgo repo@6.0.3
 
   # @ark/aot's tests, which take about 25 minutes in one process on a runner,
   # dealt among eight by ark/repo/testAotShard.ts. A change to the shard count
   # is made here and to defaultShardCount in ark/repo/aotShards.ts. They start
   # alongside core rather than after it, so the gate doesn't wait on both in
-  # turn. aot.yml runs @ark/aot's other suites nightly.
+  # turn. nightly.yml runs @ark/aot's other suites nightly and on demand.
   aot:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -134,37 +87,38 @@ jobs:
         env:
           ARK_SHARD: ${{ matrix.shard }}/8
 
-  environments:
-    needs: core
+  # posts or updates one sticky comment suggesting offloaded nightly suites
+  # based on which folders the PR modifies; skipped on forks (read-only token)
+  suggest:
+    if: github.event.pull_request.head.repo.fork == false
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
-      - name: Checkout repo
+      - name: Checkout suggestion script
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          sparse-checkout: ark/repo/suggestCiSuites.ts
+          sparse-checkout-cone-mode: false
 
-      - name: Setup repo
-        uses: ./.github/actions/setup
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: lts/*
 
-      - name: Setup Deno
-        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2
-
-      # the runner's Chrome is used as installed
-      - name: Setup Firefox
-        id: firefox
-        uses: browser-actions/setup-firefox@0bc507ddf224827e3b1af68e014d5e42ab93e795 # v1
-
-      - name: Run a precompiled program across environments
-        run: pnpm testEnvironments
+      - name: Suggest extra CI suites
+        run: node ark/repo/suggestCiSuites.ts --pr "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --post
         env:
-          FIREFOX_BIN: ${{ steps.firefox.outputs.firefox-path }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
 
   prChecks:
     needs:
-      - compatibility
+      - core
       - typescript
-      - history
       - aot
-      - environments
     timeout-minutes: 1
     runs-on: ubuntu-latest
     steps:
