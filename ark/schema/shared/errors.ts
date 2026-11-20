@@ -34,7 +34,7 @@ import {
 } from "./enWriters.ts"
 import { describesData, listsErrors } from "./errorWriters.ts"
 import { findsOnRead } from "./issueFeatures.ts"
-import { describeBranches, removedProblemMessage } from "./utils.ts"
+import { removedProblemMessage } from "./utils.ts"
 import {
 	ArkErrors as BaseArkErrors,
 	isCustomIssue,
@@ -102,7 +102,7 @@ export class ArkErrors extends BaseArkErrors {
 	declare _: ArkError[]
 	// how many of the errors added have been written
 	declare private writtenCount: number
-	declare private locale: Locale | undefined
+	declare private locale: Locale.Resolved | undefined
 	declare private config: ResolvedConfig
 
 	constructor(config: ResolvedConfig) {
@@ -148,7 +148,7 @@ export class ArkErrors extends BaseArkErrors {
 		return first
 	}
 
-	private get selectedLocale(): Locale {
+	private get selectedLocale(): Locale.Resolved {
 		return (this.locale ??= renderer?.select(this.config) ?? this.config.locale)
 	}
 
@@ -170,9 +170,10 @@ export class ArkErrors extends BaseArkErrors {
 	toLocaleString(locale?: Locale): string {
 		// Array.prototype.toLocaleString passes each element a tag
 		if (!isLocale(locale)) return this.summary
+		const resolved = resolveLocale(locale)
 		return summarize(
-			this._.map(error => writtenIn(error, locale)),
-			locale
+			this._.map(error => writtenIn(error, resolved)),
+			resolved
 		)
 	}
 
@@ -652,8 +653,10 @@ const failsAtBasis = (error: ArkError, path: array<PropertyKey>): boolean =>
  * path: for an error below the root, `messageIn(error, en)` is
  * `name must be a string` where `error.message` is `must be a string`.
  */
-export const messageIn = (error: ArkError, locale: Locale): string =>
-	lineOf(writtenIn(error, locale), locale)
+export const messageIn = (error: ArkError, locale: Locale): string => {
+	const resolved = resolveLocale(locale)
+	return lineOf(writtenIn(error, resolved), resolved)
+}
 
 // what data a write or a getter has made valid since is rejected with, and
 // what errors "none" says: arktype's own text, so it's written after a path
@@ -885,7 +888,7 @@ export const suppliedText = (
 const writeError = (
 	error: ArkError,
 	config: ResolvedConfig,
-	locale: Locale
+	locale: Locale.Resolved
 ): void => {
 	const code = error.code
 	if (code === "union" || code === "intersection") {
@@ -914,7 +917,7 @@ const noteLine = (error: ArkIssue, line: string): void => {
 const writeRelative = (
 	error: ArkError,
 	config: ResolvedConfig,
-	locale: Locale
+	locale: Locale.Resolved
 ): void => {
 	if (error.code !== "union" && error.code !== "intersection") return
 	for (const e of error.errors) writeRelative(e, config, locale)
@@ -940,7 +943,7 @@ const writeRelative = (
 const relativeTo = (
 	error: ArkError,
 	config: ResolvedConfig,
-	locale: Locale,
+	locale: Locale.Resolved,
 	message?: string
 ): ArkError => {
 	const relative = unwrittenError(error)
@@ -1068,14 +1071,13 @@ export const configuredMessageOf = (
 
 // a written error's line of a summary: its message alone at the root or
 // where it lists its errors, and after its path anywhere else
-const lineOf = (error: ArkError, locale: Locale): string => {
+const lineOf = (error: ArkError, locale: Locale.Resolved): string => {
 	if (error.path.length === 0) return error.message
 	const listed = (error as ArkIssue)._l
 	if (listed !== undefined) return listed
-	// as a validator's summary tells one, which holds only its message: a
-	// sentence of its own unless it begins as what's written from what it
-	// expects would, so one configured as that text reads on from its path
-	const custom = isCustom(error) && !error.message.startsWith(messageOf(error))
+	// a sentence of its own unless it begins as the locale's own would, so
+	// one configured as that text reads on from its path
+	const custom = isCustom(error) && !beginsAsOwn(error, locale)
 	const line = locale.line as LineWriter | undefined
 	// en's, also where a locale passed as is lacks one, is written here
 	if (line === undefined || line === writeLine)
@@ -1084,6 +1086,22 @@ const lineOf = (error: ArkError, locale: Locale): string => {
 	// is custom, since a copy costs more than the line it's read for
 	return line((custom ? { ...error, custom } : error) as never, locale)
 }
+
+/**
+ * whether an error's message begins as the locale's own would from what it
+ * expects, like `must be a string` in en or `muss eine Zeichenkette sein` in
+ * de, so a summary writes it after its path as that, though it's custom. en's
+ * is what a standalone validator, whose issue holds only its message, tells a
+ * custom one by, so a summary reads alike in both
+ */
+const beginsAsOwn = (error: ArkError, locale: Locale.Resolved): boolean =>
+	error.message.startsWith(
+		// a standalone runtime's locale is en's info alone
+		locale.message === undefined || locale.message === writeMessage ?
+			messageOf(error)
+			// with no actual, which a custom message may say or not
+		:	locale.message({ ...error, actual: "" } as never, locale)
+	)
 
 const unprefix = (error: ArkError, depth: number): void => {
 	error.path = error.path.slice(depth)
@@ -1095,7 +1113,7 @@ const unprefix = (error: ArkError, depth: number): void => {
 const writeAtPaths = (
 	error: ArkError,
 	config: ResolvedConfig,
-	locale: Locale
+	locale: Locale.Resolved
 ): void => {
 	error.propString ??= stringifyPath(error.path)
 	const bases = basesByUnion.get(error)
@@ -1105,7 +1123,9 @@ const writeAtPaths = (
 			writeError(e, config, locale)
 			if (!expected.includes(e.expected)) expected.push(e.expected)
 		}
-		error.expected = describeBranches(expected)
+		// as the locale lists alternatives, which for en is as describeBranches
+		// does and a standalone validator writes
+		error.expected = locale.list(expected, "or")
 	}
 	if (error.code === "union" || error.code === "intersection") {
 		for (const e of error.errors) {
@@ -1117,7 +1137,7 @@ const writeAtPaths = (
 		const shared =
 			error.message === undefined &&
 			unconfigured(error, config) &&
-			sharedMessageOf(error.errors)
+			sharedMessageOf(error.errors, locale)
 		if (shared) {
 			error.message = shared
 			sharing.add(error)
@@ -1144,10 +1164,12 @@ const unconfigured = (error: ArkError, config: ResolvedConfig): boolean => {
 }
 
 // the message each error was configured or supplied with, if they agree. One
-// that begins as what's written from what its error expects would is listed
-// with what the others expect, as a validator's is, whose issue holds only
-// its message
-const sharedMessageOf = (errors: readonly ArkError[]): string | undefined => {
+// that begins as the locale's own would is listed with what the others
+// expect, as a validator's is, whose issue holds only its message
+const sharedMessageOf = (
+	errors: readonly ArkError[],
+	locale: Locale.Resolved
+): string | undefined => {
 	let shared: string | undefined
 	for (const e of errors) {
 		const text =
@@ -1155,11 +1177,10 @@ const sharedMessageOf = (errors: readonly ArkError[]): string | undefined => {
 				configuredMessageOf(e) !== undefined ||
 				suppliedText(e, "message") !== undefined
 			) ?
-				e.message.startsWith(messageOf(e)) ?
-					undefined
+				beginsAsOwn(e, locale) ? undefined
 				:	e.message
 			: e.code === "union" || e.code === "intersection" ?
-				sharedMessageOf(e.errors)
+				sharedMessageOf(e.errors, locale)
 			:	undefined
 		if (text === undefined || (shared !== undefined && text !== shared)) return
 		shared = text
@@ -1170,7 +1191,7 @@ const sharedMessageOf = (errors: readonly ArkError[]): string | undefined => {
 export const writeText = (
 	error: ArkError,
 	config: ResolvedConfig,
-	locale: Locale,
+	locale: Locale.Resolved,
 	// read once by a caller that has, as an error's shape differs by its code,
 	// so no read of one is cached where errors of many codes are written
 	code: ArkErrorCode = error.code
@@ -1231,12 +1252,21 @@ export const writeActual = (
 // registered by arktype/i18n
 interface LocaleRenderer {
 	/** the locale errors.ts writes itself */
-	readonly en: Locale
+	readonly en: Locale.Resolved
 	/** the locale a configured locale resolves to, en if it's a function */
-	configure: (locale: ArkSchemaConfig["locale"], base: ResolvedConfig) => Locale
+	configure: (
+		locale: ArkSchemaConfig["locale"],
+		base: ResolvedConfig
+	) => Locale.Resolved
 	/** the locale errors are written in when they are first read */
-	select: (config: ResolvedConfig) => Locale
-	write: (error: ArkError, config: ResolvedConfig, locale: Locale) => void
+	select: (config: ResolvedConfig) => Locale.Resolved
+	write: (
+		error: ArkError,
+		config: ResolvedConfig,
+		locale: Locale.Resolved
+	) => void
+	/** a locale completed from en where it lacks a part */
+	normalize: (locale: Locale) => Locale.Resolved
 }
 
 let renderer: LocaleRenderer | undefined
@@ -1251,7 +1281,7 @@ export let defaultConfig: ResolvedConfig
 export const configureLocale = (
 	locale: ArkSchemaConfig["locale"],
 	base: ResolvedConfig
-): Locale => {
+): Locale.Resolved => {
 	if (defaultConfig !== base) {
 		defaultConfig = base
 		// what each config was compared with
@@ -1265,7 +1295,12 @@ export const configureLocale = (
 	)
 }
 
-const writtenIn = (error: ArkError, locale: Locale): ArkError => {
+// a locale passed to write errors in, which without arktype/i18n is only
+// written in if it's the configured one, as writtenIn checks
+const resolveLocale = (locale: Locale): Locale.Resolved =>
+	renderer ? renderer.normalize(locale) : (locale as Locale.Resolved)
+
+const writtenIn = (error: ArkError, locale: Locale.Resolved): ArkError => {
 	const config = configOf(error)
 	if (!renderer && locale !== config.locale)
 		return throwError(unrenderedLocaleMessage)
@@ -1319,7 +1354,10 @@ const writtenKeys = {
 }
 
 // each error's line: its message after its path, a custom one after a colon
-const summarize = (issues: readonly ArkError[], locale: Locale): string => {
+const summarize = (
+	issues: readonly ArkError[],
+	locale: Locale.Resolved
+): string => {
 	let result = ""
 	for (let i = 0; i < issues.length; i++)
 		result += (i ? "\n" : "") + lineOf(issues[i], locale)

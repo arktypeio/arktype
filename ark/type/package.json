@@ -189,7 +189,7 @@
 	"scripts": {
 		"build": "ts ../repo/build.ts",
 		"test": "ts ../repo/testPackage.ts; pnpm testIntegration",
-		"testIntegration": "pnpm testSimpleConfig && pnpm testAllConfig && pnpm testOnFailConfig && pnpm testEoptConfig && pnpm testJitlessConfig && pnpm testCsp && pnpm testCspConfiguredAfterImport && pnpm testCspAfterLoad && pnpm testPrecompiled && pnpm testSchemaFirst && pnpm testConfigAfterImport && pnpm testMissingGlobals && pnpm testLocaleConfig && pnpm testLocaleWithoutIntl && pnpm testLocaleWithoutI18n && pnpm testLocaleImportedAfter",
+		"testIntegration": "pnpm testSimpleConfig && pnpm testAllConfig && pnpm testOnFailConfig && pnpm testEoptConfig && pnpm testJitlessConfig && pnpm testCsp && pnpm testCspConfiguredAfterImport && pnpm testCspAfterLoad && pnpm testPrecompiled && pnpm testSchemaFirst && pnpm testConfigAfterImport && pnpm testMissingGlobals && pnpm testLocaleConfig && pnpm testLocaleWithoutIntl && pnpm testLocaleWithoutI18n && pnpm testLocaleImportedAfter && pnpm testLocaleNormalizedEarly",
 		"testSimpleConfig": "ts ./__tests__/integration/testSimpleConfig.ts",
 		"testAllConfig": "ts ./__tests__/integration/testAllConfig.ts",
 		"testOnFailConfig": "ts ./__tests__/integration/testOnFailConfig.ts",
@@ -205,7 +205,8 @@
 		"testLocaleConfig": "ts ./__tests__/integration/testLocaleConfig.ts",
 		"testLocaleWithoutIntl": "ts ./__tests__/integration/testLocaleWithoutIntl.ts",
 		"testLocaleWithoutI18n": "ts ./__tests__/integration/testLocaleWithoutI18n.ts",
-		"testLocaleImportedAfter": "ts ./__tests__/integration/testLocaleImportedAfter.ts"
+		"testLocaleImportedAfter": "ts ./__tests__/integration/testLocaleImportedAfter.ts",
+		"testLocaleNormalizedEarly": "ts ./__tests__/integration/testLocaleNormalizedEarly.ts"
 	},
 	"dependencies": {
 		"@ark/util": "workspace:*",

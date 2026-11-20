@@ -362,7 +362,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		}
 		// locale is global-only, though an untyped config can pass one
 		if (cfg.locale !== globalConfig.locale)
-			(cfg as { locale: Locale }).locale = globalConfig.locale
+			(cfg as { locale: Locale.Resolved }).locale = globalConfig.locale
 		return this.memo("cfg", cfg)
 	}
 

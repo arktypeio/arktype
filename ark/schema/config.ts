@@ -230,7 +230,7 @@ export const resolveGlobalConfig = (base: ResolvedConfig): ResolvedConfig => {
 		$ark.config
 	)
 	// a locale function selects a locale per read, which is en if it returns none
-	;(resolved as { locale: Locale }).locale = configureLocale(
+	;(resolved as { locale: Locale.Resolved }).locale = configureLocale(
 		$ark.config.locale,
 		base
 	)
@@ -382,7 +382,7 @@ export type resolveConfig<config extends ArkSchemaConfig> = show<
 			Required<config[k]>
 		: k extends "keywords" ? Record<string, TypeMeta | undefined>
 		: k extends "toJsonSchema" ? ToJsonSchema.Context
-		: k extends "locale" ? Locale
+		: k extends "locale" ? Locale.Resolved
 		: config[k]
 	} & Omit<config, keyof ArkSchemaConfig>
 >
