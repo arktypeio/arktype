@@ -559,7 +559,7 @@ A [precompiled](/docs/precompile/options#mutatesinput) build takes `mutatesInput
 
 ## onFail
 
-To throw on every failed validation, or transform its result some other way, configure `onFail`. Declare its return type on `ArkEnv` so calls are typed to match:
+To throw on every failed validation, or transform its result some other way, configure `onFail`. Declare it on arktype's `ArkEnv` so calls are typed to match:
 
 ```ts title="config.ts"
 import { configure } from "arktype/config"
@@ -568,7 +568,7 @@ const config = configure({
 	onFail: errors => errors.throw()
 })
 
-declare global {
+declare module "arktype" {
 	interface ArkEnv {
 		onFail: typeof config.onFail
 	}
@@ -588,6 +588,8 @@ type.string(5)
 
 `onFail` can also be passed to a scope.
 
+`ArkEnv` is the `arktype` module's, not a global, so a declaration on it reaches only the copy of arktype it names. A dependency's copy, like one still on arktype 2, keeps its own keywords and `onFail`. Declare it in a file that imports or exports something, since a `declare module` in a file that does neither replaces the module instead.
+
 ## toJsonSchema
 
 `toJsonSchema` sets the defaults for `.toJsonSchema()`, like its target and how to handle what JSON Schema can't express. See [JSON Schema](/docs/json-schema/to-json-schema).
@@ -601,8 +603,10 @@ type.string(5)
 Add your own keys to the metadata Types accept by extending `ArkEnv`:
 
 ```ts
-// add this anywhere in your project
-declare global {
+import { type } from "arktype"
+
+// add this to any module in your project
+declare module "arktype" {
 	interface ArkEnv {
 		meta(): {
 			// meta properties should always be optional
@@ -625,7 +629,9 @@ const MrPingsSecretIngredientSoup = type({
 When you `.infer` a Type, ArkType walks its inferred type to extract special values like morphs, e.g. `(In: string) => Out<number>`. For some classes that walk is slow or expands the type. Declare them in `prototypes` to have them treated as opaque:
 
 ```ts
-declare global {
+import { type } from "arktype"
+
+declare module "arktype" {
 	interface ArkEnv {
 		prototypes(): MySpecialClass
 	}

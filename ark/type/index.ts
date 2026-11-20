@@ -9,6 +9,7 @@ export {
 	messageIn,
 	Traversal,
 	TraversalError,
+	type ArkEnv,
 	type ArkError,
 	type ArkErrorCode,
 	type GenericAst,

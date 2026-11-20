@@ -22,6 +22,7 @@ import {
 	type SwitchCase
 } from "../shared/compile.ts"
 import type {
+	ArkEnv,
 	BaseErrorContext,
 	BaseNodeInput,
 	declareNode

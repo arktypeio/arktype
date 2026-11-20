@@ -1,4 +1,5 @@
 import type {
+	ArkEnv,
 	BaseMappedPropInner,
 	OptionalMappedPropInner,
 	Prop

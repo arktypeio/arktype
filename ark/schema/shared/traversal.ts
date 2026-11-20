@@ -38,6 +38,7 @@ import { callsSiteText, findsOnRead, listsUnions } from "./issueFeatures.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 import { TransformErrors } from "./transform.ts"
 import { inProgress, removedProblemMessage } from "./utils.ts"
+import type { ArkEnv } from "./declare.ts"
 
 export type FailHandler = (errors: never) => unknown
 

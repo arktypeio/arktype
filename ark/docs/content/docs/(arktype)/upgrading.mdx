@@ -43,6 +43,7 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you show the messages of Standard Schema issues, as a form library does? [Each leaves out the path](#standard-schema-messages-leave-out-the-path).
 - Do you configure an `expected`, `actual` or `message` writer? [Writers take the error](#error-writers-receive-the-error-and-the-locale).
 - Do you call `configure()` after a Type is created, or pass a global-only option to a Scope? See [Configuration](#configuration).
+- Do you declare `meta`, `onFail`, `context` or `prototypes` with `declare global { interface ArkEnv { ... } }`? [Declare them on the `arktype` module](#arkenv-is-arktypes-not-a-global).
 - Do you use `number` for data that can be `Infinity`? [Allow it](#number-rejects-infinity).
 - Do you write date literals or limits without a time zone, or parse ISO dates without an offset? See [date literals](#date-literals-need-a-time-zone) and [`string.date.iso.parse`](#stringdateisoparse-reads-dates-in-utc).
 - Do you use `"@"` or `"[k]?"` as a literal key? [Escape it](#-holds-an-objects-metadata).
@@ -129,6 +130,8 @@ app.post(
 ### Packages that depend on arktype 2
 
 A package that depends on arktype 2 itself, like `@ark/json-schema@0.0.13`, installs its own copy. A Type it returns works in a definition, `.pipe()` or `.to()` as a [Standard Schema](/docs/standard-schema), validating with its own copy, and `toJsonSchema()` writes what that copy's converter does, throwing where that can't stand for the Type, as for one with a morph. A module or Generic from it used in a Scope, or a Type passed to `type.schema()`, throws a `ParseError`: upgrade the package, or override its `arktype`.
+
+Each copy resolves strings against its own keywords and reads only the [`ArkEnv`](#arkenv-is-arktypes-not-a-global) declared for it, so the package's Types keep arktype 2's keywords, and an `onFail` you configure types and runs only your copy's calls.
 
 ## Bundle size
 
@@ -870,6 +873,38 @@ Built-in keywords set `meta.keyword` on the constraints they add, so a [locale](
 // before: the pattern's meta was its description, "an email address"
 type("string.email").json
 ```
+
+### ArkEnv is arktype's, not a global
+
+`ArkEnv` is the `arktype` module's interface instead of a global one, so each copy of arktype in a program, like a dependency's arktype 2, reads only what was declared for it. Before, every copy merged into one `ArkEnv`, so one copy's keywords typed the other's strings and your `onFail` typed a copy `configure()` never reached. Move what you declared from `declare global` to `declare module "arktype"`, in a file that imports or exports something:
+
+```ts
+import { configure } from "arktype/config"
+
+const config = configure({ onFail: errors => errors.throw() })
+
+class MySpecialClass {}
+
+// before: declare global {
+declare module "arktype" {
+	interface ArkEnv {
+		meta(): { secretIngredient?: string }
+		onFail: typeof config.onFail
+		context(): { savedStreet?: string }
+		prototypes(): MySpecialClass
+	}
+}
+```
+
+A declaration left in `declare global` no longer reaches arktype 3, and says nothing unless a copy of arktype 2 in the program, which still reads the global, rejects it:
+
+| declared globally                                      | now                                           |
+| ------------------------------------------------------ | --------------------------------------------- |
+| `meta()`                                               | `.configure()` rejects your keys              |
+| `onFail`                                               | calls are typed to return `ArkErrors` again   |
+| `context()`                                            | `ctx.context` is typed `{}`                   |
+| `prototypes()`                                         | `.infer` no longer treats the class as opaque |
+| `$()`, overriding the keywords strings resolve against | arktype's keywords are used                   |
 
 ## Introspection
 

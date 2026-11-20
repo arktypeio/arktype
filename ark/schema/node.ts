@@ -53,6 +53,7 @@ import type { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
 import { canJit, tryJit, type NodeCompiler } from "./shared/compile.ts"
 import type {
+	ArkEnv,
 	BaseNodeDeclaration,
 	BaseNodeInput,
 	TypeMeta,

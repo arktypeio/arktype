@@ -18,6 +18,7 @@ import {
 	type LineContext,
 	type MessageContext
 } from "./errors.ts"
+import type { ArkEnv } from "./declare.ts"
 
 export type PluralCategory = "zero" | "one" | "two" | "few" | "many" | "other"
 

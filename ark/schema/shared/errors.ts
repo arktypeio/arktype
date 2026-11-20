@@ -53,6 +53,7 @@ import {
 	type FailHandler,
 	type InternalTraversal
 } from "./traversal.ts"
+import type { ArkEnv } from "./declare.ts"
 
 export { throwOnDefault } from "./issues.ts"
 

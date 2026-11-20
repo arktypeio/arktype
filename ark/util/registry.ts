@@ -24,16 +24,6 @@ export interface ArkRegistry extends InitialRegistryContents {
 
 export const registry: ArkRegistry = initialRegistryContents as never
 
-declare global {
-	export interface ArkEnv {
-		prototypes(): never
-	}
-
-	export namespace ArkEnv {
-		export type prototypes = ReturnType<ArkEnv["prototypes"]>
-	}
-}
-
 const namesByResolution = new Map<object | symbol, string>()
 const namesByUnregisteredObject = new WeakMap<object, string>()
 // symbols can't be WeakMap keys before ES2023

@@ -10,6 +10,8 @@ export interface DefaultArkEnv {
 	meta(): {}
 	context(): {}
 	onFail(errors: ArkErrors): ArkErrors
+	/** the scope strings resolve against, where unknown is arktype's keywords */
+	$(): unknown
 }
 
 interface NodeMeta extends JsonSchema.UniversalMeta, UnknownErrorConfigs {
@@ -21,17 +23,34 @@ interface NodeMeta extends JsonSchema.UniversalMeta, UnknownErrorConfigs {
 	onFail?: ArkErrors.Handler
 }
 
-declare global {
-	export interface ArkEnv extends DefaultArkEnv {}
+/**
+ * What a program declares for arktype, by augmenting the module it imports:
+ *
+ * declare module "arktype" {
+ *     interface ArkEnv {
+ *         meta(): { secretIngredient?: string }
+ *     }
+ * }
+ *
+ * A module's interface, not a global one, so each copy of arktype in a
+ * program (a dependency's 2.x, or another 3.x) reads only what was declared
+ * for it. A global would merge every copy's declarations into one, typing one
+ * copy's strings with another's keywords and its calls with another's onFail.
+ */
+export interface ArkEnv extends DefaultArkEnv {
+	prototypes(): never
+}
 
-	export namespace ArkEnv {
-		export type meta = show<NodeMeta & ReturnType<ArkEnv["meta"]>>
+export declare namespace ArkEnv {
+	export type meta = show<NodeMeta & ReturnType<ArkEnv["meta"]>>
 
-		export type onFail = ReturnType<ArkEnv["onFail"]>
+	export type onFail = ReturnType<ArkEnv["onFail"]>
 
-		/** what a call passes for its narrows and morphs to read as `ctx.context` */
-		export type context = ReturnType<ArkEnv["context"]>
-	}
+	/** what a call passes for its narrows and morphs to read as `ctx.context` */
+	export type context = ReturnType<ArkEnv["context"]>
+
+	/** classes `.infer` leaves opaque */
+	export type prototypes = ReturnType<ArkEnv["prototypes"]>
 }
 
 export type TypeMeta = Omit<ArkEnv.meta, "onFail">

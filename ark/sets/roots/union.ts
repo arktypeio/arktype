@@ -1,4 +1,5 @@
 import {
+	type ArkEnv,
 	$ark,
 	Disjoint,
 	compileLiteralPropAccess,

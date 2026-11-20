@@ -242,7 +242,7 @@ const Signup = type({
 - Always reject with text. Returning `false` reads `must be valid according to an anonymous predicate`.
 - For several errors, call `ctx.error({ message, relativePath })` for each, then return `true`.
 - A narrow on an object runs only once every key is valid, so its error is never reported alongside a key's.
-- A rule that depends on what the caller has, like a form's saved values, reads `ctx.context`. Declare its shape once on `ArkEnv` (`interface ArkEnv { context(): { savedStreet?: string } }`) and validate with `T.withContext(context)`, a Standard Schema a form library takes as is. Don't create a Type for each value: one Type defined once can be precompiled. A narrow on literals can't read it, since ArkType checks them as the Type is defined.
+- A rule that depends on what the caller has, like a form's saved values, reads `ctx.context`. Declare its shape once on arktype's `ArkEnv` (`declare module "arktype" { interface ArkEnv { context(): { savedStreet?: string } } }`, in a file that imports or exports something) and validate with `T.withContext(context)`, a Standard Schema a form library takes as is. Don't create a Type for each value: one Type defined once can be precompiled. A narrow on literals can't read it, since ArkType checks them as the Type is defined.
 - A narrow can't give a literal its own text. ArkType calls it on each literal the Type allows, like `false`, `null`, `undefined` or `'a'`, when the Type is defined, and removes those it rejects, so `type("boolean").narrow((v, ctx) => v || ctx.reject({ message: "Accept the terms" }))` reads `must be true`. Write the values allowed, with the message: `type("true").configure({ message: "Accept the terms" })`.
 
 ## Error messages

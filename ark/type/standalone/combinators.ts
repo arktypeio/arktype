@@ -1,4 +1,5 @@
 import {
+	type ArkEnv,
 	hasArkKind,
 	isDecidedByAllows,
 	type BaseNode,

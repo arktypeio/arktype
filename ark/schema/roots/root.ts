@@ -41,6 +41,7 @@ import type {
 	UnknownRangeSchema
 } from "../refinements/range.ts"
 import type {
+	ArkEnv,
 	BaseNodeDeclaration,
 	BaseNodeInput,
 	TypeMeta

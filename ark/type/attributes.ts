@@ -1,4 +1,4 @@
-import type { ArkError, ArkErrors, arkKind, Morph } from "@ark/schema"
+import type { ArkEnv, ArkError, ArkErrors, arkKind, Morph } from "@ark/schema"
 import {
 	noSuggest,
 	type anyOrNever,

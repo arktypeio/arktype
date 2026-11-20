@@ -1,4 +1,5 @@
 import type {
+	ArkEnv,
 	JsonSchema,
 	RootApply,
 	StandardJSONSchemaV1,

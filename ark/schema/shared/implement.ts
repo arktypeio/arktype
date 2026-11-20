@@ -28,7 +28,7 @@ import type {
 import type { BaseScope, ResolvedScopeConfig } from "../scope.ts"
 import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
-import type { BaseNodeDeclaration } from "./declare.ts"
+import type { ArkEnv, BaseNodeDeclaration } from "./declare.ts"
 import type { Disjoint } from "./disjoint.ts"
 import { errorWriters, errorWritersByCode } from "./errorWriters.ts"
 import { namedReference } from "./registry.ts"
