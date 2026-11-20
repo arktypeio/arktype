@@ -303,6 +303,31 @@ contextualize(() => {
 		})
 	})
 
+	it("string index next to declared keys", () => {
+		const T = type({ a: "number", "[string]": "number" })
+		const expected = {
+			type: "object",
+			properties: { a: { type: "number" } },
+			required: ["a"],
+			additionalProperties: { type: "number" }
+		}
+		attest(toOpenApi(T)).equals(expected)
+		attest(T["~standard"].jsonSchema.input({ target })).equals(expected)
+	})
+
+	it("string index next to a declared value it narrows", () => {
+		const T = type({ a: "number | string", "[string]": "number" })
+		attest(() => toOpenApi(T)).throws(
+			'Can\'t convert "indexKey" to JSON Schema.'
+		)
+		// what's representable, without the index a would have to satisfy
+		attest(T["~standard"].jsonSchema.input({ target })).snap({
+			type: "object",
+			properties: { a: { anyOf: [{ type: "number" }, { type: "string" }] } },
+			required: ["a"]
+		})
+	})
+
 	it("cyclic", () => {
 		const { Node } = scope({
 			Node: { value: "number", "next?": "Node | null" }

@@ -292,9 +292,10 @@ contextualize(() => {
 				type: "object",
 				properties: { a: { type: "number" } },
 				required: ["a"],
-				patternProperties: { "": { type: "number" } }
+				additionalProperties: { type: "number" }
 			})
-			assertEmits(T, S, {}, "{ [//]: number, a: number }")
+			// additionalProperties skips a, so it's read back as a narrow
+			assertEmits(T, S, {}, "{ a: number } & fn")
 			attest<typeof T.infer>(S).type.toString.snap(
 				"{ [x: string]: number; a: number }"
 			)

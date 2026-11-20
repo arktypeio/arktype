@@ -86,7 +86,7 @@ Pair.toJsonSchema({ target: "draft-07" })
 What OpenAPI 3.0 can't express goes to a [fallback](#fallbacks), so `toJsonSchema()` throws for it by default:
 
 - A tuple's elements, since `items` is one schema for every element, go to `arrayPrefix`.
-- `patternProperties` and `propertyNames` go to `indexKey`. A `string` index signature with no declared keys is still `additionalProperties`.
+- `patternProperties` and `propertyNames` go to `indexKey`. A `string` index signature is still `additionalProperties`, unless a declared key's value allows more than its own.
 - Definitions go to `defs`. A `$ref` points into the document's `#/components/schemas`, which a Schema Object can't hold, so the handler receives them to put there:
 
 ```ts
@@ -195,7 +195,8 @@ const schema = types.Node.toJsonSchema()
 | `{ "name?": "string" }`                               | `properties`, with only required keys in `required` |
 | `{ "+": "reject", ... }`                              | `additionalProperties: false`                       |
 | `"Record<string, number>"`                            | `additionalProperties: {...}`                       |
-| `{ id: "string", "[string]": "string" }`              | `patternProperties: { "": {...} }`                  |
+| `{ id: "string", "[string]": "string" }`              | `additionalProperties: {...}`                       |
+| `{ id: "string \| number", "[string]": "string" }`    | `patternProperties: { "": {...} }`                  |
 | `{ "[/^x-/]": "string" }`                             | `patternProperties: { "^x-": {...} }`               |
 | `{ "[string <= 3]": "number", "+": "reject" }`        | `propertyNames`, `additionalProperties: {...}`      |
 | `{ role: "string = 'user'" }`                         | `default: "user"` on `role`                         |
@@ -203,11 +204,11 @@ const schema = types.Node.toJsonSchema()
 
 JSON Schema's `pattern` has no flags. `d` and `g` don't change what a regex matches, so they're left out, as is `u` for draft 2020-12, whose patterns are read with it. Any other flag, like `i` in `/^a/i`, goes to the [`patternFlags`](#fallback-codes) fallback.
 
-An index signature applies to every key, including declared ones. JSON Schema skips declared keys in `additionalProperties`, so an index signature next to declared keys is written as `patternProperties` with a pattern every key matches.
+An index signature applies to every key, including declared ones. JSON Schema skips declared keys in `additionalProperties`, so a `string` index signature is written there only if each declared key's value is already within the index's, as `id` is above. Otherwise it's written as `patternProperties` with a pattern every key matches, which checks the declared keys too. OpenAPI 3.0 and some LLM structured output APIs have no `patternProperties`, so they can read only the first.
 
 A keyword's `format`, `contentEncoding` or `contentMediaType` names what its strings are. JSON Schema reads each as an annotation, which a validator doesn't check unless it's configured to, so it's written whether or not arktype's check matches the standard's definition exactly. A keyword checked by a regex is written with that `pattern` too, so a validator that ignores formats still checks what arktype does. One checked by a function is written as its format alone: `string.date` accepts whatever `Date` parses, and `string.url` whatever `URL.canParse` does, so their schemas accept strings the Type rejects. A validator that asserts formats, like Ajv with `ajv-formats`, can also reject strings arktype accepts, where a format's RFC differs from arktype's check: `date-time` requires a time that `string.date` and `string.date.iso` don't, and `uri` rejects the space in a path that `string.url` accepts. Keywords no format names, like `string.date.epoch` or `string.creditCard`, go to the [`predicate`](#fallback-codes) fallback.
 
-A key that isn't `string` or a single regex, like `[string <= 3]`, needs `propertyNames`, which checks every key of the object. That's only the same thing when every key must match it: undeclared keys are rejected, it's the only index signature, and every declared key matches it. Any other such key goes to the [`indexKey`](#fallback-codes) fallback.
+A key that isn't `string` or a single regex, like `[string <= 3]`, needs `propertyNames`, which checks every key of the object. That's only the same thing when every key must match it: undeclared keys are rejected, it's the only index signature, and every declared key matches it. Its value is then `additionalProperties`, or, if a declared key's value allows more than it does, `patternProperties: { "": {...} }`. Any other such key goes to the [`indexKey`](#fallback-codes) fallback.
 
 ### Discriminated unions
 
@@ -363,7 +364,7 @@ Every reason `toJsonSchema()` can throw, with the fields its handler receives be
 | `defaultValue`        | a default that isn't JSON. Return `undefined` to omit it                              | `type({ n: "bigint = 5n" })`, after `domain` | `value`                                          |
 | `defs`                | for `openapi-3.0`, the definitions `$ref`s point to                                   | a cyclic Type                                | `defs`, by name                                  |
 | `domain`              | `bigint` or `symbol`                                                                  | `type("bigint")`                             | `domain`                                         |
-| `indexKey`            | a key `propertyNames` can't express, or for `openapi-3.0` any key but a lone `string` | `type({ "[string <= 3]": "number" })`        | `key` and `value`, as schemas                    |
+| `indexKey`            | a key `propertyNames` can't express, or `additionalProperties` can't in `openapi-3.0` | `type({ "[string <= 3]": "number" })`        | `key` and `value`, as schemas                    |
 | `morph`               | a morph                                                                               | `type("string.trim")`                        | `out`, the output schema or `null`               |
 | `patternFlags`        | a regex flag other than `d`, `g` or, for draft 2020-12, `u`                           | `type(/^a/i)`                                | `pattern`, `flags`                               |
 | `patternIntersection` | a second regex on the same string                                                     | `type(/^a/).and(/b$/)`                       | `pattern`                                        |

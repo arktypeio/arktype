@@ -498,9 +498,10 @@ const reduceObjectJsonSchema = (
 	if (node.index && !node.props.length) delete schema.properties
 	if (node.props.length) schema = writeProps(node, schema, ctx)
 
-	const indexKeys: IndexKey[] = []
+	const indexes: IndexWrites = { keys: [] }
 	for (const index of node.index ?? [])
-		schema = writeIndex(index, node, schema, ctx, indexKeys)
+		schema = writeIndex(index, node, schema, ctx, indexes)
+	const indexKeys = indexes.keys
 
 	// an input may have the keys "delete" would remove
 	const rejectsUndeclared =
@@ -516,18 +517,25 @@ const reduceObjectJsonSchema = (
 			prop => typeof prop.key === "symbol" || indexKeys[0].node.allows(prop.key)
 		)
 	) {
-		// every key must match the index, so its value applies to each undeclared one
+		// every key must match the index, so its value applies to each one
 		schema.propertyNames = indexKeys[0].key
-		schema.additionalProperties = indexKeys[0].value
+		if (declaredValuesExtend(node, indexKeys[0].valueNode))
+			schema.additionalProperties = indexKeys[0].value
+		// a declared key's value must be the index's too, which only a pattern
+		// every key matches checks
+		else schema.patternProperties = { "": indexKeys[0].value }
 		return schema
 	}
 
 	if (
 		schema.patternProperties?.[""] &&
-		!schema.properties &&
-		Object.keys(schema.patternProperties).length === 1
+		Object.keys(schema.patternProperties).length === 1 &&
+		indexes.anyString &&
+		declaredValuesExtend(node, indexes.anyString)
 	) {
-		// with no other keys or patterns, every key is an additional property
+		// with no other patterns, the index adds nothing declared keys don't
+		// already check, so it's written as additionalProperties, which OpenAPI
+		// 3.0 and structured outputs without patternProperties read
 		schema.additionalProperties = schema.patternProperties[""]
 		delete schema.patternProperties
 	}
@@ -546,6 +554,13 @@ const reduceObjectJsonSchema = (
 
 	return schema
 }
+
+// additionalProperties skips declared keys, so it holds an index's value only
+// where each declared key's value is already within it
+const declaredValuesExtend = (node: Structure.Node, value: BaseRoot): boolean =>
+	node.props.every(
+		prop => typeof prop.key === "symbol" || jsonValueOf(prop).extends(value)
+	)
 
 const writeProps = (
 	node: Structure.Node,
@@ -590,7 +605,7 @@ const writeIndex = (
 	node: Structure.Node,
 	schema: JsonSchema.Object,
 	ctx: JsonSchemaContext,
-	indexKeys: IndexKey[]
+	indexes: IndexWrites
 ): JsonSchema.Object => {
 	const path = ctx.path
 	ctx.path = `${path}[${index.signature.expression}]`
@@ -631,16 +646,19 @@ const writeIndex = (
 		if (
 			pattern !== undefined &&
 			// OpenAPI 3.0 has no patternProperties, only additionalProperties
-			(ctx.target !== "openapi-3.0" || (pattern === "" && !node.props.length))
+			(ctx.target !== "openapi-3.0" ||
+				(pattern === "" && declaredValuesExtend(node, index.value)))
 		) {
 			defineValue((schema.patternProperties ??= {}), pattern, valueJsonSchema)
+			if (pattern === "") indexes.anyString = index.value
 			continue
 		}
 
-		indexKeys.push({
+		indexes.keys.push({
 			node: keyIn,
 			key: keySchema ?? (toResolvedJsonSchema(keyIn, ctx) as never),
-			value: valueJsonSchema
+			value: valueJsonSchema,
+			valueNode: index.value
 		})
 	}
 	return schema
@@ -661,6 +679,14 @@ interface IndexKey {
 	node: BaseRoot
 	key: JsonSchema.String
 	value: JsonSchema
+	valueNode: BaseRoot
+}
+
+interface IndexWrites {
+	// keys no pattern matches exactly, for propertyNames or the fallbacks
+	keys: IndexKey[]
+	// the value of an index any string key matches, written as the pattern ""
+	anyString?: BaseRoot
 }
 
 // the pattern matching exactly the keys an index signature's key allows

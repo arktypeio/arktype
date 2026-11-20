@@ -116,6 +116,48 @@ contextualize(() => {
 		})
 	})
 
+	it("constrained index key with a declared value it narrows", () => {
+		// additionalProperties skips ab, which must be a number all the same
+		const T = type({
+			ab: "number | string",
+			"[string <= 3]": "number",
+			"+": "reject"
+		})
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: {
+				ab: { anyOf: [{ type: "number" }, { type: "string" }] }
+			},
+			required: ["ab"],
+			propertyNames: { type: "string", maxLength: 3 },
+			patternProperties: { "": { type: "number" } }
+		})
+	})
+
+	it("string index with declared values it allows", () => {
+		const T = type({ a: "number % 2", "b?": "1", "[string]": "number" })
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: {
+				a: { type: "integer", multipleOf: 2 },
+				b: { type: "number", const: 1 }
+			},
+			required: ["a"],
+			additionalProperties: { type: "number" }
+		})
+	})
+
+	it("string index with a declared value it narrows", () => {
+		// additionalProperties would skip a, which must be a number all the same
+		const T = type({ a: "number | string", "[string]": "number" })
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: { a: { anyOf: [{ type: "number" }, { type: "string" }] } },
+			required: ["a"],
+			patternProperties: { "": { type: "number" } }
+		})
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1612
 	it("refs to a structure in a union", () => {
 		const Thing = type({ a: "string" }).or("null")
