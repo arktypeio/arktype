@@ -171,8 +171,17 @@ const _pipeMorphed = (
 			morphs[morphs.length - 1] = outIntersection
 		} else morphs.push(to)
 
+		let declaredOut = from.inner.declaredOut
+		if (declaredOut) {
+			const outTersection = intersectOrPipeNodes(declaredOut, to, ctx)
+			if (outTersection instanceof Disjoint) return outTersection
+			declaredOut = outTersection._out
+		}
+
 		return ctx.$.node("morph", {
 			morphs,
+			...(from.inner.declaredIn && { declaredIn: from.inner.declaredIn }),
+			...(declaredOut && { declaredOut }),
 			inverse: from.inner.inverse as any
 		})
 	}

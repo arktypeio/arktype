@@ -105,7 +105,7 @@ export const rootToJsonSchema = (
 	// ensure $schema is the first key if present
 	const schema: JsonSchema = Object.assign(
 		typeof ctx.dialect === "string" ? { $schema: ctx.dialect } : {},
-		toJsonSchemaRecurse(node, ctx)
+		toJsonSchemaRecurse(ctx.io === "out" ? node._out : node, ctx)
 	)
 	if (Array.isArray(ctx.aliasDefs)) {
 		const missing = ctx.aliasDefs.find(name => !ctx.aliasesFound.has(name))
@@ -165,25 +165,35 @@ export const toJsonSchemaRecurse = (
 	const i = ctx.open.lastIndexOf(node.id)
 	// a cycle through no def is named by its id, like useRefs' parts
 	if (
-		(i !== -1 && ctx.open.slice(i).every(id => !(id in ctx.defNamesById))) ||
+		(i !== -1 &&
+			ctx.open.slice(i).every(id => !hasOwn(ctx.defNamesById, id))) ||
 		(ctx.useRefs && !node.alwaysExpandJsonSchema)
 	)
 		nameDef(node, nameOfId(node.id), ctx)
-	const name = ctx.defNamesById[node.id]
-	if (name !== undefined && (i !== -1 || ctx.defs[name]))
+	const name =
+		hasOwn(ctx.defNamesById, node.id) ? ctx.defNamesById[node.id] : undefined
+	if (
+		name !== undefined &&
+		(i !== -1 || (hasOwn(ctx.defs, name) && ctx.defs[name] !== undefined))
+	)
 		return refTo(name, ctx)
 	ctx.open.push(node.id)
 	const schema = toResolvedJsonSchema(node, ctx)
 	ctx.open.pop()
 	// reaching it again while it was converted can have named it
-	const defName = ctx.defNamesById[node.id]
+	const defName =
+		hasOwn(ctx.defNamesById, node.id) ? ctx.defNamesById[node.id] : undefined
 	if (defName === undefined) return schema
-	ctx.defs[defName] = schema
+	defineValue(ctx.defs, defName, schema)
 	return refTo(defName, ctx)
 }
 
 const refTo = (name: string, ctx: JsonSchemaContext): JsonSchema.Ref =>
-	({ $ref: ctx.refPrefix + name }) as JsonSchema.Ref
+	({
+		$ref:
+			ctx.refPrefix +
+			encodeURIComponent(name.replace(/~/g, "~0").replace(/\//g, "~1"))
+	}) as JsonSchema.Ref
 
 // the alias a cyclic definition's id starts with, without the count after it,
 // which follows an underscore where the alias ends in a digit. No lookbehind:
@@ -250,24 +260,19 @@ const nameDef = (
 	name: string,
 	ctx: JsonSchemaContext
 ): void => {
-	if (node.id in ctx.defNamesById) return
+	if (hasOwn(ctx.defNamesById, node.id)) return
 	let unique = name
-	for (let i = 2; unique in ctx.defs; i++) unique = `${name}${i}`
+	for (let i = 2; hasOwn(ctx.defs, unique); i++) unique = `${name}${i}`
 	// reserved, so $defs are in the order they're named
-	ctx.defs[unique] = undefined
-	ctx.defNamesById[node.id] = unique
+	defineValue(ctx.defs, unique, undefined)
+	defineValue(ctx.defNamesById, node.id, unique)
 }
 
-// writeInner writes what its constraints imply, beside which its meta is written
-const toResolvedJsonSchema = (
+const writeNodeAnnotations = (
+	result: dict,
 	node: BaseRoot,
-	ctx: JsonSchemaContext,
-	writeInner: () => JsonSchema = () =>
-		innerToJsonSchemaByKind[node.kind](node as never, ctx)
-): JsonSchema => {
-	const { jsonSchema } = node.meta
-	const result: JsonSchema & dict = jsonSchema ? {} : (writeInner() as never)
-
+	ctx: JsonSchemaContext
+): void => {
 	for (const k in node.meta) {
 		if (!annotationKeys.has(k) && !k.startsWith("x-")) continue
 		const v = (node.meta as dict)[k]
@@ -283,6 +288,19 @@ const toResolvedJsonSchema = (
 			:	(node.metaJson as dict)[k]
 		if (jsonValue !== undefined) writeAnnotation(result, k, jsonValue, ctx)
 	}
+}
+
+// writeInner writes what its constraints imply, beside which its meta is written
+const toResolvedJsonSchema = (
+	node: BaseRoot,
+	ctx: JsonSchemaContext,
+	writeInner: () => JsonSchema = () =>
+		innerToJsonSchemaByKind[node.kind](node as never, ctx)
+): JsonSchema => {
+	const { jsonSchema } = node.meta
+	const result: JsonSchema & dict = jsonSchema ? {} : (writeInner() as never)
+
+	writeNodeAnnotations(result, node, ctx)
 
 	return jsonSchema ? Object.assign(result, jsonSchema) : result
 }
@@ -310,18 +328,43 @@ const branchGroupsToJsonSchema = (
 	node: Union.Node,
 	branchGroups: BaseRoot[],
 	ctx: JsonSchemaContext
-): JsonSchema =>
+): JsonSchema => {
 	// special case to simplify { const: true } | { const: false }
 	// to the canonical JSON Schema representation { type: "boolean" }
-	branchGroups.length === 1 && branchGroups[0].equals($ark.kw.boolean) ?
-		{ type: "boolean" }
-	:	ctx.writers.union(
-			branchGroups.map(group => toJsonSchemaRecurse(group, ctx)),
-			ctx.target,
-			node.meta,
-			node.metaJson,
-			discriminantOf(branchGroups, ctx)
-		)
+	if (branchGroups.length === 1 && branchGroups[0].equals($ark.kw.boolean))
+		return { type: "boolean" }
+	const branchSchemas = branchGroups.map(group =>
+		toJsonSchemaRecurse(group, ctx)
+	)
+	if (!isEmptyObject(node.meta)) {
+		const unionAnnotations: dict = {}
+		writeNodeAnnotations(unionAnnotations, node, ctx)
+		if (!isEmptyObject(unionAnnotations)) {
+			for (let i = 0; i < branchSchemas.length; i++) {
+				const branch = branchSchemas[i]
+				const group = branchGroups[i]
+				if ("$ref" in branch || group.meta.jsonSchema) continue
+				const branchDict = branch as dict
+				for (const [k, v] of Object.entries(unionAnnotations)) {
+					if (
+						hasOwn(branchDict, k) &&
+						(branchDict[k] === v ||
+							(k in group.meta &&
+								(group.meta as dict)[k] === (node.meta as dict)[k]))
+					)
+						delete branchDict[k]
+				}
+			}
+		}
+	}
+	return ctx.writers.union(
+		branchSchemas,
+		ctx.target,
+		node.meta,
+		node.metaJson,
+		discriminantOf(branchGroups, ctx)
+	)
+}
 
 // the first key the first branch requires at which every branch requires
 // strings no other branch allows, as OpenAPI's discriminator expects: any
@@ -692,7 +735,7 @@ const reduceObjectJsonSchema = (
 	// an input may have the keys "delete" would remove
 	const rejectsUndeclared =
 		node.undeclared === "reject" ||
-		(node.undeclared === "delete" && ctx.io !== "in")
+		(node.undeclared === "delete" && ctx.io === "out")
 
 	if (
 		indexKeys.length === 1 &&

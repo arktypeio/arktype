@@ -50,14 +50,20 @@ export const morph: setImplementationOf<Morph.Declaration> = {
 		},
 		...defineRightwardIntersections("morph", (l, r, ctx) => {
 			const headTersection = l.head ? intersectOrPipeNodes(l.head, r, ctx) : r
+			if (headTersection instanceof Disjoint) return headTersection
+			const declaredIn =
+				l.declaredIn ? intersectOrPipeNodes(l.declaredIn, r, ctx) : undefined
+			if (declaredIn instanceof Disjoint) return declaredIn
 			return (
-				headTersection instanceof Disjoint ? headTersection
-				: headTersection.equals(l.head) ? l
-				: ctx.$.node("morph", {
+					headTersection.equals(l.head) &&
+						(!declaredIn || declaredIn.equals(l.declaredIn))
+				) ?
+					l
+				:	ctx.$.node("morph", {
 						...l.inner,
+						...(declaredIn && { declaredIn }),
 						morphs: [headTersection, ...l.piped]
 					})
-			)
 		})
 	}
 }

@@ -586,10 +586,7 @@ contextualize(() => {
 						items: false
 					},
 					name: {
-						anyOf: [
-							{ type: "string", examples: ["a", null] },
-							{ type: "null" }
-						],
+						anyOf: [{ type: "string" }, { type: "null" }],
 						examples: ["a", null]
 					}
 				},

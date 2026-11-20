@@ -44,6 +44,13 @@ interface ReadContext {
 	resourcesByUri: Record<string, Resource> | undefined
 	rootsByRef: Record<string, BaseRoot>
 	refsBeingRead: string[]
+	// refs entered since descending into a child value, to reject shallow
+	// cycles through opaque predicates (not/oneOf/if/dependentSchemas)
+	shallowRefs: Set<string>
+	inPredicate: number
+	// JS object stack within the current $ref frame, to reject circular objects
+	reading: Set<object>
+	depth: number
 	// a cyclic ref is named by its target, so it prints alike in any history
 	cyclesByRef: Record<string, BaseParseContext>
 }
@@ -80,6 +87,9 @@ const numberDomain = {
 	numberAllowsInfinity: false
 } as const
 
+// deep enough for real schemas (100-200+ levels) without risking a JS stack overflow
+const maxReadDepth = 512
+
 export const readJsonSchema = (
 	schema: JsonSchema.Input,
 	document: JsonSchema.Input = schema
@@ -97,6 +107,10 @@ export const readJsonSchema = (
 		resourcesByUri: undefined,
 		rootsByRef: {},
 		refsBeingRead: [],
+		shallowRefs: new Set(),
+		inPredicate: 0,
+		reading: new Set(),
+		depth: 0,
 		cyclesByRef: {}
 	}
 	const id = idOf(document, ctx)
@@ -114,25 +128,36 @@ const read = (schema: unknown, pointer: string, ctx: ReadContext): BaseRoot => {
 		return schema ? $ark.kw.unknown : $ark.kw.never
 	if (!isJsonSchemaObject(schema))
 		return throwParseError(writeInvalidJsonSchemaMessage(pointer, schema))
-	const o = schema as dict
-	for (const k in o) checkKeyword(o, k, pointer, ctx)
-	if (o.$ref !== undefined && ctx.dialectBefore2019)
-		return readRef(o.$ref as string, pointer, ctx)
+	if (ctx.depth >= maxReadDepth)
+		return throwParseError(writeMaxDepthMessage(pointer))
+	if (ctx.reading.has(schema))
+		return throwParseError(writeCircularSchemaMessage(pointer))
+	ctx.reading.add(schema)
+	ctx.depth++
 	const enclosing = ctx.resource
-	const id = schema === enclosing.schema ? undefined : idOf(o, ctx)
-	if (id !== undefined) {
-		ctx.resource = {
-			schema,
-			uri: resolveUri(id, enclosing.uri, `${pointer}/${ctx.idKey}`)
+	try {
+		const o = schema as dict
+		for (const k in o) checkKeyword(o, k, pointer, ctx)
+		if (o.$ref !== undefined && ctx.dialectBefore2019)
+			return readRef(o.$ref as string, pointer, ctx)
+		const id = schema === enclosing.schema ? undefined : idOf(o, ctx)
+		if (id !== undefined) {
+			ctx.resource = {
+				schema,
+				uri: resolveUri(id, enclosing.uri, `${pointer}/${ctx.idKey}`)
+			}
 		}
+		let result = $ark.kw.unknown
+		for (const readKeywords of keywordReaders) {
+			const constraint = readKeywords(o, pointer, ctx)
+			if (constraint) result = intersectRoots(result, constraint)
+		}
+		return withAnnotations(result, o)
+	} finally {
+		ctx.resource = enclosing
+		ctx.depth--
+		ctx.reading.delete(schema)
 	}
-	let result = $ark.kw.unknown
-	for (const readKeywords of keywordReaders) {
-		const constraint = readKeywords(o, pointer, ctx)
-		if (constraint) result = intersectRoots(result, constraint)
-	}
-	ctx.resource = enclosing
-	return withAnnotations(result, o)
 }
 
 type KeywordReader = (
@@ -148,9 +173,11 @@ const readRef = (ref: string, pointer: string, ctx: ReadContext): BaseRoot => {
 		target.resource.uri === documentUri ?
 			`#${target.fragment}`
 		:	`${target.resource.uri}#${target.fragment}`
-	if (key in ctx.rootsByRef) return ctx.rootsByRef[key]
+	if (hasOwn(ctx.rootsByRef, key)) return ctx.rootsByRef[key]
 	// a ref within its own target is a cycle, resolved once that's read
 	if (ctx.refsBeingRead.includes(key)) {
+		if (ctx.inPredicate > 0 && ctx.shallowRefs.has(key))
+			return throwParseError(writeShallowCycleMessage(ref, pointer))
 		ctx.cyclesByRef[key] ??= jsonSchemaScope().openSynthetic(
 			`synthetic${hashOf(`${key}\n${printable(target.schema)}`)}`
 		)
@@ -160,12 +187,43 @@ const readRef = (ref: string, pointer: string, ctx: ReadContext): BaseRoot => {
 		)
 	}
 	const enclosing = ctx.resource
+	const prevReading = ctx.reading
+	const hadShallow = ctx.shallowRefs.has(key)
 	ctx.resource = target.resource
+	ctx.reading = new Set()
 	ctx.refsBeingRead.push(key)
-	const root = read(target.schema, ref, ctx)
-	ctx.refsBeingRead.pop()
-	ctx.resource = enclosing
-	return (ctx.rootsByRef[key] = root)
+	ctx.shallowRefs.add(key)
+	try {
+		const root = read(target.schema, ref, ctx)
+		return (ctx.rootsByRef[key] = root)
+	} finally {
+		if (!hadShallow) ctx.shallowRefs.delete(key)
+		ctx.refsBeingRead.pop()
+		ctx.reading = prevReading
+		ctx.resource = enclosing
+	}
+}
+
+const withShallowPredicate = <t>(ctx: ReadContext, read: () => t): t => {
+	ctx.inPredicate++
+	try {
+		return read()
+	} finally {
+		ctx.inPredicate--
+	}
+}
+
+const withChildValue = <t>(ctx: ReadContext, read: () => t): t => {
+	const prevShallowRefs = ctx.shallowRefs
+	const prevInPredicate = ctx.inPredicate
+	ctx.shallowRefs = new Set()
+	ctx.inPredicate = 0
+	try {
+		return read()
+	} finally {
+		ctx.shallowRefs = prevShallowRefs
+		ctx.inPredicate = prevInPredicate
+	}
 }
 
 interface RefTarget {
@@ -272,8 +330,9 @@ const indexResources = (ctx: ReadContext): Record<string, Resource> => {
 		[ctx.documentResource.uri]: ctx.documentResource
 	}
 	const visited = new Set<unknown>()
-	const visit = (schema: unknown, enclosing: Resource): void => {
+	const visit = (schema: unknown, enclosing: Resource, depth: number): void => {
 		if (!isJsonSchemaObject(schema) || visited.has(schema)) return
+		if (depth >= maxReadDepth) throwParseError(writeMaxDepthMessage("#"))
 		visited.add(schema)
 		const o = schema as dict
 		const id = schema === ctx.document ? undefined : idOf(o, ctx)
@@ -290,23 +349,24 @@ const indexResources = (ctx: ReadContext): Record<string, Resource> => {
 		// a keyword's value is checked only where it's read, so one here may be invalid
 		for (const k in o) {
 			const kind = keywordValueKinds[k]
-			if (kind === "schema") visit(o[k], resource)
-			else if (kind === "items" || kind === "schemas" || kind === "branches")
-				for (const v of isArray(o[k]) ? o[k] : [o[k]]) visit(v, resource)
-			else if (
+			if (kind === "schema") visit(o[k], resource, depth + 1)
+			else if (kind === "items" || kind === "schemas" || kind === "branches") {
+				for (const v of isArray(o[k]) ? o[k] : [o[k]])
+					visit(v, resource, depth + 1)
+			} else if (
 				(kind === "schemasByKey" || kind === "dependencies") &&
 				isJsonSchemaObject(o[k])
 			)
-				for (const v of Object.values(o[k])) visit(v, resource)
+				for (const v of Object.values(o[k])) visit(v, resource, depth + 1)
 		}
 		// an OpenAPI document's schemas
 		if (schema === ctx.document && isJsonSchemaObject(o.components)) {
 			const { schemas } = o.components as dict
 			if (isJsonSchemaObject(schemas))
-				for (const v of Object.values(schemas)) visit(v, resource)
+				for (const v of Object.values(schemas)) visit(v, resource, depth + 1)
 		}
 	}
-	visit(ctx.document, ctx.documentResource)
+	visit(ctx.document, ctx.documentResource, 0)
 	return resourcesByUri
 }
 
@@ -372,7 +432,7 @@ const keywordReaders: KeywordReader[] = [
 							opaque(
 								["multipleOf", divisor],
 								`a multiple of ${divisor}`,
-								(data: number) => Number.isInteger(data / divisor)
+								isDecimalMultipleOf(divisor)
 							)
 						]
 					}
@@ -412,7 +472,9 @@ const keywordReaders: KeywordReader[] = [
 		:	unionOf(readEach(o.anyOf as array, `${pointer}/anyOf`, ctx)),
 	(o, pointer, ctx) => {
 		if (o.oneOf === undefined) return
-		const branches = readEach(o.oneOf as array, `${pointer}/oneOf`, ctx)
+		const branches = withShallowPredicate(ctx, () =>
+			readEach(o.oneOf as array, `${pointer}/oneOf`, ctx)
+		)
 		return branchesAreDisjoint(branches) ?
 				unionOf(branches)
 			:	opaqueRoot(
@@ -423,7 +485,9 @@ const keywordReaders: KeywordReader[] = [
 	},
 	(o, pointer, ctx) => {
 		if (o.not === undefined) return
-		const negated = read(o.not, `${pointer}/not`, ctx)
+		const negated = withShallowPredicate(ctx, () =>
+			read(o.not, `${pointer}/not`, ctx)
+		)
 		// { not: {} } is how never is written, so it's read back as never
 		if (negated.isUnknown()) return $ark.kw.never
 		return opaqueRoot(
@@ -435,9 +499,14 @@ const keywordReaders: KeywordReader[] = [
 	(o, pointer, ctx) => {
 		if (o.if === undefined || (o.then === undefined && o.else === undefined))
 			return
-		const condition = read(o.if, `${pointer}/if`, ctx)
-		const consequent = read(o.then ?? true, `${pointer}/then`, ctx)
-		const alternative = read(o.else ?? true, `${pointer}/else`, ctx)
+		const [condition, consequent, alternative] = withShallowPredicate(
+			ctx,
+			() => [
+				read(o.if, `${pointer}/if`, ctx),
+				read(o.then ?? true, `${pointer}/then`, ctx),
+				read(o.else ?? true, `${pointer}/else`, ctx)
+			]
+		)
 		return opaqueRoot(
 			["if", idsOf([condition, consequent, alternative])],
 			`${consequent.description} if ${condition.description}, else ${alternative.description}`,
@@ -458,12 +527,10 @@ const readArray = (
 	// draft-07 lists a tuple's elements as items, followed by additionalItems
 	const elementsKey = isArray(o.items) ? "items" : "prefixItems"
 	const restKey = elementsKey === "items" ? "additionalItems" : "items"
-	const elements = readEach(
-		(o[elementsKey] ?? []) as array,
-		`${pointer}/${elementsKey}`,
-		ctx
-	)
-	const rest = read(o[restKey] ?? true, `${pointer}/${restKey}`, ctx)
+	const [elements, rest] = withChildValue(ctx, () => [
+		readEach((o[elementsKey] ?? []) as array, `${pointer}/${elementsKey}`, ctx),
+		read(o[restKey] ?? true, `${pointer}/${restKey}`, ctx)
+	])
 	if (elements.length === 0 && rest.isNever())
 		constraints.push({ exactLength: 0 })
 	else if (elements.length || !rest.isUnknown()) {
@@ -496,7 +563,9 @@ const readArray = (
 		o.contains !== undefined &&
 		(min !== 0 || max !== Number.POSITIVE_INFINITY)
 	) {
-		const contained = read(o.contains, `${pointer}/contains`, ctx)
+		const contained = withChildValue(ctx, () =>
+			read(o.contains, `${pointer}/contains`, ctx)
+		)
 		constraints.push({
 			predicate: [
 				opaque(
@@ -522,10 +591,8 @@ const readObject = (
 ): RootSchema[] => {
 	const properties = (o.properties ?? {}) as dict
 	const patternProperties = (o.patternProperties ?? {}) as dict
-	const additional = read(
-		o.additionalProperties ?? true,
-		`${pointer}/additionalProperties`,
-		ctx
+	const additional = withChildValue(ctx, () =>
+		read(o.additionalProperties ?? true, `${pointer}/additionalProperties`, ctx)
 	)
 	const patterns = Object.keys(patternProperties).map(source => {
 		const patternPointer = `${pointer}/patternProperties/${escapePointer(source)}`
@@ -533,7 +600,9 @@ const readObject = (
 		return {
 			schema,
 			matcher: new RegExp(schema.rule, schema.flags),
-			value: read(patternProperties[source], patternPointer, ctx)
+			value: withChildValue(ctx, () =>
+				read(patternProperties[source], patternPointer, ctx)
+			)
 		}
 	})
 	const isDeclared = (k: string) =>
@@ -561,10 +630,12 @@ const readObject = (
 			.reduce(
 				(result, p) => intersectRoots(result, p.value),
 				hasOwn(properties, key) ?
-					read(
-						properties[key],
-						`${pointer}/properties/${escapePointer(key)}`,
-						ctx
+					withChildValue(ctx, () =>
+						read(
+							properties[key],
+							`${pointer}/properties/${escapePointer(key)}`,
+							ctx
+						)
 					)
 				: isDeclared(key) ? $ark.kw.unknown
 				: additional
@@ -575,22 +646,7 @@ const readObject = (
 		// toString on Object.prototype. An index signature reads only own keys,
 		// and a required one is also checked to be own
 		if (key in Object.prototype) {
-			structure.index.push({
-				signature: {
-					domain: "string",
-					pattern: [{ rule: `^${escapeRegex(key)}$` }]
-				},
-				value
-			})
-			if (isRequired) {
-				structure.predicate.push(
-					opaque(
-						["ownKey", key],
-						`an object with its own ${key}`,
-						(data: dict) => hasOwn(data, key)
-					)
-				)
-			}
+			addPrototypeKeyConstraint(structure, key, value, isRequired)
 			continue
 		}
 		structure.order.push(key)
@@ -639,7 +695,9 @@ const readKeyPredicates = (
 ): NodeSchema<"predicate">[] => {
 	const predicates: NodeSchema<"predicate">[] = []
 	if (o.propertyNames !== undefined) {
-		const names = read(o.propertyNames, `${pointer}/propertyNames`, ctx)
+		const names = withChildValue(ctx, () =>
+			read(o.propertyNames, `${pointer}/propertyNames`, ctx)
+		)
 		if (!$ark.kw.string.extends(names)) {
 			predicates.push(
 				opaque(
@@ -684,10 +742,8 @@ const readKeyPredicates = (
 					)
 				)
 			} else {
-				const dependent = read(
-					dependency,
-					`${pointer}/${keyword}/${escapePointer(key)}`,
-					ctx
+				const dependent = withShallowPredicate(ctx, () =>
+					read(dependency, `${pointer}/${keyword}/${escapePointer(key)}`, ctx)
 				)
 				if (dependent.isUnknown()) continue
 				predicates.push(
@@ -787,6 +843,83 @@ const unconstrainedBy = /* @__PURE__ */ cached(
 	}
 )
 
+type PrototypeKeyTarget = {
+	index: unknown[]
+	predicate: unknown[]
+}
+
+const addPrototypeKeyConstraint = (
+	target: PrototypeKeyTarget,
+	key: string,
+	value: BaseRoot,
+	isRequired: boolean
+): void => {
+	target.index.push({
+		signature: {
+			domain: "string",
+			pattern: [{ rule: `^${escapeRegex(key)}$` }]
+		},
+		value
+	})
+	if (isRequired) {
+		target.predicate.push(
+			opaque(["ownKey", key], `an object with its own ${key}`, (data: dict) =>
+				hasOwn(data, key)
+			)
+		)
+	}
+}
+
+const decimalParts = (n: number): [coeff: bigint, exp: number] => {
+	const s = `${n}`
+	const eIndex = s.indexOf("e")
+	const mantissa = eIndex === -1 ? s : s.slice(0, eIndex)
+	let exp = eIndex === -1 ? 0 : Number(s.slice(eIndex + 1))
+	const dot = mantissa.indexOf(".")
+	if (dot !== -1) {
+		exp -= mantissa.length - dot - 1
+		return [BigInt(mantissa.slice(0, dot) + mantissa.slice(dot + 1)), exp]
+	}
+	return [BigInt(mantissa), exp]
+}
+
+// exact decimal divisibility so 0.3 / 0.1 and 1e308 / 0.5 behave without float drift
+const isDecimalMultipleOf = (divisor: number): ((data: number) => boolean) => {
+	const [sCoeff, sExp] = decimalParts(divisor)
+	return (data: number) => {
+		if (data === 0) return true
+		if (!Number.isFinite(data)) return false
+		const [dCoeff, dExp] = decimalParts(data)
+		const expDiff = dExp - sExp
+		if (expDiff >= 0) {
+			if (sCoeff === 1n) return true
+			return (dCoeff * 10n ** BigInt(expDiff)) % sCoeff === 0n
+		}
+		// Number.prototype.toString produces at most 21 significant digits
+		if (expDiff < -21) return false
+		return dCoeff % (sCoeff * 10n ** BigInt(-expDiff)) === 0n
+	}
+}
+
+const constObjectRoot = (value: object): BaseRoot => {
+	const required: { key: string; value: BaseRoot }[] = []
+	const index: unknown[] = []
+	const predicate: unknown[] = [notArray()]
+	for (const [key, v] of Object.entries(value)) {
+		const propValue = constRoot(v)
+		if (key in Object.prototype)
+			addPrototypeKeyConstraint({ index, predicate }, key, propValue, true)
+		else required.push({ key, value: propValue })
+	}
+	return jsonSchemaRoot({
+		domain: "object",
+		predicate,
+		required,
+		...(index.length && { index }),
+		undeclared: "reject"
+	} as never)
+}
+
 const constRoot = (value: unknown): BaseRoot =>
 	isArray(value) ?
 		jsonSchemaRoot(
@@ -794,17 +927,8 @@ const constRoot = (value: unknown): BaseRoot =>
 				{ proto: Array, exactLength: 0 }
 			:	{ proto: Array, sequence: { prefix: value.map(constRoot) } }
 		)
-	: isJsonSchemaObject(value) ?
-		jsonSchemaRoot({
-			domain: "object",
-			predicate: [notArray()],
-			required: Object.entries(value).map(([key, v]) => ({
-				key,
-				value: constRoot(v)
-			})),
-			undeclared: "reject"
-		})
-	:	jsonSchemaRoot({ unit: value })
+	: isJsonSchemaObject(value) ? constObjectRoot(value)
+	: jsonSchemaRoot({ unit: value })
 
 // one predicate per keyword and subschemas, so equal reads relate
 const predicatesByKey = /* @__PURE__ */ new WeakCache<Predicate>()
@@ -1127,3 +1251,14 @@ export const writeNullableWithoutTypeMessage = (pointer: string): string =>
 
 export const writeNonNullableNullMessage = (pointer: string): string =>
 	`${pointer} can't be false beside a type that includes null`
+
+export const writeShallowCycleMessage = (
+	ref: string,
+	pointer: string
+): string => `${pointer} has a shallow $ref cycle (${ref})`
+
+export const writeCircularSchemaMessage = (pointer: string): string =>
+	`JSON Schema at ${pointer} is circular`
+
+export const writeMaxDepthMessage = (pointer: string): string =>
+	`JSON Schema at ${pointer} exceeds maximum nesting depth of ${maxReadDepth}`

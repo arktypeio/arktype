@@ -958,8 +958,8 @@ contextualize(() => {
 		})
 		attest(Described.toJsonSchema({ dialect: null })).snap({
 			anyOf: [
-				{ type: "string", const: "a", description: "first", title: "Letter" },
-				{ type: "string", const: "b", title: "Letter" }
+				{ type: "string", const: "a", description: "first" },
+				{ type: "string", const: "b" }
 			],
 			title: "Letter"
 		})
