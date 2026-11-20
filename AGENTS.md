@@ -1,6 +1,6 @@
 # ArkType
 
-ArkType is TypeScript's 1:1 validator, optimized from editor to runtime. It parses TypeScript-like string syntax at runtime.
+ArkType is TypeScript's smallest, fastest validator. It parses TypeScript-like string syntax at runtime.
 
 ## Using ArkType
 

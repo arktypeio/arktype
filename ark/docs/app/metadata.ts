@@ -8,6 +8,9 @@ export const siteUrl = `https://arktype.io${basePath}`
 /** the homepage's headline, which claims.ts checks against the benchmarks */
 export const tagline = draftOf(claims.headline).replace(/\.$/, "")
 
+/** the tagline as a description carries it, as package.json's and the README's do: the headline, then what switching costs */
+export const siteDescription = `${tagline}. One prompt away.`
+
 export type MetadataOptions = {
 	/** the page's own title; the root layout's template adds " · ArkType" */
 	title?: string
@@ -23,7 +26,7 @@ export type MetadataOptions = {
 
 export const defineMetadata = ({
 	title,
-	description = tagline,
+	description = siteDescription,
 	ogImage = "og.png",
 	ogImageAlt,
 	url,
