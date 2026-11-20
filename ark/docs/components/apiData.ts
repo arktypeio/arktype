@@ -209,6 +209,19 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                         "kind": "noteStart",
                         "value": "useful for predicates like `.narrow`"
                     }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "`{ message: \"Enter a valid email\" }` is the whole sentence an issue says"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "a string is what the value must be: `reject(\"even\")` reads `must be even`, so `reject(\"Enter a valid email\")` reads `must be Enter a valid email`",
+                        "warning": true
+                    }
                 ]
             ],
             "params": [
@@ -278,6 +291,21 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     {
                         "kind": "noteStart",
                         "value": "useful for morphs like `.pipe`"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "a string is what the value must be, as for ",
+                        "warning": true
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "reject"
+                    },
+                    {
+                        "kind": "text",
+                        "value": ": pass a sentence as `{ message }`"
                     }
                 ]
             ],

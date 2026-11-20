@@ -322,6 +322,8 @@ export class Traversal extends InternalTraversal {
 	 * #### add an {@link ArkError} and return `false`
 	 *
 	 * ✅ useful for predicates like `.narrow`
+	 * ✅ `{ message: "Enter a valid email" }` is the whole sentence an issue says
+	 * ⚠️ a string is what the value must be: `reject("even")` reads `must be even`, so `reject("Enter a valid email")` reads `must be Enter a valid email`
 	 */
 	reject(input: ArkErrorInput): false {
 		this.raise(input)
@@ -343,6 +345,7 @@ export class Traversal extends InternalTraversal {
 	 * #### add and return an {@link ArkError}
 	 *
 	 * ✅ useful for morphs like `.pipe`
+	 * ⚠️ a string is what the value must be, as for {@link reject}: pass a sentence as `{ message }`
 	 */
 	error<input extends ArkErrorInput>(
 		input: input
