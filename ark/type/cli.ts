@@ -60,7 +60,9 @@ const readManifest = (dir: string): PackageManifest | undefined => {
 	const path = join(dir, "package.json")
 	if (!existsSync(path)) return undefined
 	try {
-		return JSON.parse(readFileSync(path, "utf8")) as PackageManifest
+		return JSON.parse(
+			readFileSync(path, "utf8").replace(/^\uFEFF/, "")
+		) as PackageManifest
 	} catch {
 		return undefined
 	}
@@ -158,7 +160,7 @@ const defaultSkillTarget = (projectRoot: string): string => {
 }
 
 export type InstallSkillOptions = {
-	force?: boolean
+	allowOutside?: boolean
 }
 
 const lstatIfExists = (path: string): Stats | undefined => {
@@ -185,7 +187,7 @@ const resolveSafeSkillDir = (
 	projectRoot: string,
 	dest: string,
 	explicitDir: boolean,
-	force: boolean
+	allowOutside: boolean
 ): string => {
 	const realRoot = realpathSync(projectRoot)
 	// walk up via lstat so dangling symlinks are detected instead of skipped
@@ -218,9 +220,9 @@ const resolveSafeSkillDir = (
 	} else resolvedAncestor = realpathSync(cur)
 
 	const resolvedDest = join(resolvedAncestor, relative(cur, dest))
-	if (!explicitDir && !force && !isWithinDir(realRoot, resolvedDest)) {
+	if (!explicitDir && !allowOutside && !isWithinDir(realRoot, resolvedDest)) {
 		throw new Error(
-			`Refusing to install skill to ${dest}: resolves to ${resolvedDest}, outside project root ${realRoot} (pass --force to allow)`
+			`Refusing to install skill to ${dest}: resolves to ${resolvedDest}, outside project root ${realRoot} (pass --allow-outside to allow)`
 		)
 	}
 	return resolvedDest
@@ -291,7 +293,7 @@ export const installBundledSkill = (
 		projectRoot,
 		dest,
 		targetDir !== undefined,
-		Boolean(opts?.force)
+		Boolean(opts?.allowOutside)
 	)
 	const realSrc = realpathSync(src)
 	if (
@@ -402,8 +404,7 @@ const hasArkPrecompileSetting = (
 ): boolean =>
 	typeof manifest?.ark === "object" &&
 	manifest.ark !== null &&
-	Object.prototype.hasOwnProperty.call(manifest.ark, "precompile") &&
-	(manifest.ark as Record<string, unknown>).precompile !== undefined
+	Object.prototype.hasOwnProperty.call(manifest.ark, "precompile")
 
 const runInit = (
 	args: string[],
@@ -418,6 +419,7 @@ const runInit = (
 			options: {
 				force: { type: "boolean", default: false },
 				"no-skill": { type: "boolean", default: false },
+				"allow-outside": { type: "boolean", default: false },
 				help: { type: "boolean", short: "h", default: false }
 			},
 			allowPositionals: false
@@ -428,7 +430,7 @@ const runInit = (
 	}
 	if (parsed.values.help) {
 		stdout(
-			"Usage: ark init [--force] [--no-skill]\n\nDetects your bundler/test runner, writes ark.json, and installs the bundled ArkType skill.\n"
+			"Usage: ark init [--force] [--no-skill] [--allow-outside]\n\nDetects your bundler/test runner, writes ark.json, and installs the bundled ArkType skill.\n"
 		)
 		return 0
 	}
@@ -465,16 +467,8 @@ const runInit = (
 			writeFileSync(settingsPath, settingsContent, { flag: "wx" })
 			stdout(`Created ${settingsPath}\n`)
 		} catch (e) {
-			if ((e as NodeJS.ErrnoException).code === "EEXIST") {
-				const stat = lstatIfExists(settingsPath)
-				if (stat?.isSymbolicLink()) {
-					stderr(`Refusing to write through symlink at ${settingsPath}.\n`)
-					return 1
-				}
-				if (stat && !stat.isFile()) {
-					stderr(`Cannot write ${settingsPath}: path is not a regular file.\n`)
-					return 1
-				}
+			const code = (e as NodeJS.ErrnoException).code
+			if (code === "EEXIST" || code === "EISDIR") {
 				stdout(
 					`ark.json already exists at ${settingsPath} (pass --force to overwrite).\n`
 				)
@@ -488,7 +482,7 @@ const runInit = (
 	if (!parsed.values["no-skill"]) {
 		try {
 			const dest = installBundledSkill(projectRoot, undefined, {
-				force: Boolean(parsed.values.force)
+				allowOutside: Boolean(parsed.values["allow-outside"])
 			})
 			stdout(`Installed ArkType skill to ${dest}\n`)
 		} catch (e) {
@@ -553,6 +547,7 @@ const runMigrate = (
 				run: { type: "boolean", default: false },
 				agent: { type: "string" },
 				"no-skill": { type: "boolean", default: false },
+				"allow-outside": { type: "boolean", default: false },
 				help: { type: "boolean", short: "h", default: false }
 			},
 			allowPositionals: true
@@ -563,7 +558,7 @@ const runMigrate = (
 	}
 	if (parsed.values.help) {
 		stdout(
-			`Usage: ark migrate [${migrationSources.join("|")}] [--run] [--agent claude|codex] [--no-skill]\n\nDetects your existing validator, installs the bundled ArkType skill, and prints (or launches) a migration prompt.\n`
+			`Usage: ark migrate [${migrationSources.join("|")}] [--run] [--agent claude|codex] [--no-skill] [--allow-outside]\n\nDetects your existing validator, installs the bundled ArkType skill, and prints (or launches) a migration prompt.\n`
 		)
 		return 0
 	}
@@ -585,7 +580,9 @@ const runMigrate = (
 	if (parsed.values["no-skill"]) skillDir = bundledSkillPath()
 	else {
 		try {
-			skillDir = installBundledSkill(projectRoot)
+			skillDir = installBundledSkill(projectRoot, undefined, {
+				allowOutside: Boolean(parsed.values["allow-outside"])
+			})
 		} catch (e) {
 			stderr(`${(e as Error).message}\n`)
 			return 1
@@ -630,7 +627,7 @@ const runSkill = (
 			args,
 			options: {
 				dir: { type: "string" },
-				force: { type: "boolean", default: false },
+				"allow-outside": { type: "boolean", default: false },
 				help: { type: "boolean", short: "h", default: false }
 			},
 			allowPositionals: true
@@ -641,7 +638,7 @@ const runSkill = (
 	}
 	if (parsed.values.help) {
 		stdout(
-			"Usage: ark skill [path|install] [--dir <path>]\n\nPrints the path to the bundled ArkType skill or installs it into your project.\n"
+			"Usage: ark skill [path|install] [--dir <path>] [--allow-outside]\n\nPrints the path to the bundled ArkType skill or installs it into your project.\n"
 		)
 		return 0
 	}
@@ -656,7 +653,7 @@ const runSkill = (
 			typeof parsed.values.dir === "string" ? parsed.values.dir : undefined
 		try {
 			const dest = installBundledSkill(projectRoot, target, {
-				force: Boolean(parsed.values.force)
+				allowOutside: Boolean(parsed.values["allow-outside"])
 			})
 			stdout(`Installed ArkType skill to ${dest}\n`)
 			return 0

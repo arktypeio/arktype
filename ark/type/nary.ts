@@ -2666,41 +2666,28 @@ export type NaryPipeParser<$, initial = unknown> = {
 		],
 		r = instantiateType<inferNaryPipe<[Type<initial>, ...morphs]>, $>
 	>(
-		...defs: morphs
+		...defs: {
+			[i in keyof morphs]: morphs[i] &
+				expectedPipeMorphAt<morphs, i, distill.Out<initial>>
+		}
 	): r extends infer _ ? _ : never
 	<const morphs extends readonly Morph[], r = Type<inferNaryPipe<morphs>, $>>(
 		...defs: {
-			[i in keyof morphs]: number extends morphs["length"] ? morphs[i]
-			:	morphs[i] & expectedPipeMorphAt<morphs, i, initial>
+			[i in keyof morphs]: number extends morphs["length"] ?
+				morphs[i] & expectedVariadicPipeMorph<morphs[number], initial>
+			:	morphs[i] & expectedPipeMorphAt<morphs, i, distill.Out<initial>>
 		}
 	): r extends infer _ ? _ : never
 }
 
-type PrevPipeIndex = {
-	"1": "0"
-	"2": "1"
-	"3": "2"
-	"4": "3"
-	"5": "4"
-	"6": "5"
-	"7": "6"
-	"8": "7"
-	"9": "8"
-	"10": "9"
-	"11": "10"
-	"12": "11"
-	"13": "12"
-	"14": "13"
-	"15": "14"
-	"16": "15"
-	"17": "16"
-}
-
-type expectedPipeMorphAt<morphs extends readonly Morph[], i, initial> =
-	number extends morphs["length"] ? Morph
-	: i extends "0" ? Morph<distill.Out<initial>>
-	: i extends keyof PrevPipeIndex ?
-		PrevPipeIndex[i] extends keyof morphs ?
-			Morph<inferMorphOut<morphs[PrevPipeIndex[i]]>>
+type expectedPipeMorphAt<morphs extends readonly Morph[], i, initialOut> =
+	i extends "0" ? Morph<initialOut>
+	: i extends keyof (readonly [unknown, ...morphs]) ?
+		(readonly [unknown, ...morphs])[i] extends infer prev extends Morph ?
+			Morph<inferMorphOut<prev>>
 		:	Morph
 	:	Morph
+
+type expectedVariadicPipeMorph<morph extends Morph, initial> =
+	[Morph.In<morph>] extends [never] ? Morph
+	:	Morph<distill.Out<initial> | inferMorphOut<morph>>

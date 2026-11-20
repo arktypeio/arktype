@@ -913,7 +913,7 @@ nick must be a string or null`)
 		)
 		attest(outputs).snap([
 			'true 2 [{"code":"required","path":["a"],"data":{"b":{"c":[1,"x"]}},"expected":"a string","message":"must be a string (was missing)"},{"code":"domain","path":["b","c",1],"data":"x","expected":"a number","message":"must be a number"}]\na must be a string (was missing)\nb.c[1] must be a number\ntrue true true\n[{"code":"required","path":["a"],"expected":"a string","message":"must be a string (was missing)"},{"code":"domain","path":["b","c",1],"expected":"a number","message":"must be a number"}]\nTraversalError: a must be a string (was missing)\nb must be an object (was missing) true\nTraversalError: a must be a string (was missing)\nb.c[1] must be a number true\n',
-			'true 1 [{"code":"predicate","path":[],"data":{"b":{"c":[1,"x"]}},"message":"is invalid"}]\nis invalid\ntrue true true\n[{"code":"predicate","path":[],"message":"is invalid"}]\nTraversalError: is invalid true\nTraversalError: is invalid true\n'
+			'true 1 [{"code":"predicate","path":[],"data":{"b":{"c":[1,"x"]}},"expected":"valid","message":"is invalid"}]\nis invalid\ntrue true true\n[{"code":"predicate","path":[],"expected":"valid","message":"is invalid"}]\nTraversalError: is invalid true\nTraversalError: is invalid true\n'
 		])
 	})
 
@@ -1150,7 +1150,13 @@ user.name must be a string`)
 			"is invalid"
 		)
 		attest(read).equals([
-			{ code: "predicate", path: ["a"], data: "x", message: "is invalid" }
+			{
+				code: "predicate",
+				path: ["a"],
+				data: "x",
+				expected: "valid",
+				message: "is invalid"
+			}
 		])
 	})
 
@@ -1544,7 +1550,13 @@ age must be a number (was missing)`)
 				const errors = validators[name](invalid)
 				attest(errors.constructor).is(validators.runtime.type.errors)
 				attest(errors.issues).equals([
-					{ code: "predicate", path: [], data: invalid, message: "is invalid" }
+					{
+						code: "predicate",
+						path: [],
+						data: invalid,
+						expected: "valid",
+						message: "is invalid"
+					}
 				])
 				attest(errors.issues[0].data).is(invalid)
 			}
@@ -1561,7 +1573,13 @@ age must be a number (was missing)`)
 		attest(thrown instanceof runtime.TraversalError).equals(true)
 		attest(String(thrown)).equals("TraversalError: is invalid")
 		attest(thrown.arkErrors.issues).equals([
-			{ code: "predicate", path: [], data: { a: 1 }, message: "is invalid" }
+			{
+				code: "predicate",
+				path: [],
+				data: { a: 1 },
+				expected: "valid",
+				message: "is invalid"
+			}
 		])
 		const config: ArkSchemaConfig = { onFail: errors => errors.throw() }
 		const { Configured } = await load(

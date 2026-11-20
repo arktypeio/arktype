@@ -1058,14 +1058,29 @@ contextualize(() => {
 			}
 		}
 		const takes = (s: Special) => s
-		const m = match
+		const fromUnknown = match
 			.case(type.instanceOf(Special), s => {
 				attest<Special>(s)
 				return takes(s)
 			})
 			.default("assert")
 
+		const fromObject = match
+			.in<object>()
+			.case(type.instanceOf(Special), s => {
+				attest<Special>(s)
+				return takes(s)
+			})
+			.default("assert")
+
+		const fromUnion = match
+			.in<{ k: string } | Special>()
+			.case(type.instanceOf(Special), s => takes(s))
+			.default("assert")
+
 		const instance = new Special()
-		attest<Special>(m(instance)).equals(instance)
+		attest<Special>(fromUnknown(instance)).equals(instance)
+		attest<Special>(fromObject(instance)).equals(instance)
+		attest<Special>(fromUnion(instance)).equals(instance)
 	})
 })

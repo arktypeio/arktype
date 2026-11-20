@@ -129,7 +129,7 @@ export type UnparsedTupleExpressionInput = {
 
 export type UnparsedTupleOperator = show<keyof UnparsedTupleExpressionInput>
 
-const assertTupleArity = (
+export const assertTupleArity = (
 	def: array,
 	operator: TupleExpressionOperator,
 	min: number,

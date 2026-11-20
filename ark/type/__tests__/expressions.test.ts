@@ -2,6 +2,9 @@ import { attest, contextualize } from "@ark/attest"
 import { rootSchema, writeUnresolvableMessage } from "@ark/schema"
 import { type } from "arktype"
 import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
+import { writeUnexpectedTupleElementsMessage } from "arktype/internal/parser/tupleExpressions.ts"
+
+const anyType: any = type
 
 contextualize(() => {
 	describe("tuple expressions", () => {
@@ -189,6 +192,126 @@ contextualize(() => {
 				// @ts-expect-error
 				type(["string", "toString"])
 			}).throwsAndHasTypeError(writeUnresolvableMessage("toString"))
+		})
+
+		it("rejects trailing elements on infix, postfix, and prefix operators", () => {
+			const cases: [unknown[], string][] = [
+				[
+					["string", "&", "/a/", "&", "/b/"],
+					`ParseError: ${writeUnexpectedTupleElementsMessage("&", 3, 5)}`
+				],
+				[
+					["'a'", "|", "'b'", "|", "'c'"],
+					`ParseError: ${writeUnexpectedTupleElementsMessage("|", 3, 5)}`
+				],
+				[
+					["number", "|", "string", "extra"],
+					`ParseError: ${writeUnexpectedTupleElementsMessage("|", 3, 4)}`
+				],
+				[
+					["string", "|>", "string.trim", "|>", "string"],
+					`ParseError: ${writeUnexpectedTupleElementsMessage("|>", 3, 5)}`
+				],
+				[
+					["string", "[]", "extra"],
+					`ParseError: ${writeUnexpectedTupleElementsMessage("[]", 2, 3)}`
+				],
+				[
+					["string", "?", "extra"],
+					`ParseError: ${writeUnexpectedTupleElementsMessage("?", 2, 3)}`
+				],
+				[
+					["string", "=", "a", "extra"],
+					`ParseError: ${writeUnexpectedTupleElementsMessage("=", 3, 4)}`
+				],
+				[
+					["keyof", { a: "string" }, "extra"],
+					`ParseError: ${writeUnexpectedTupleElementsMessage("keyof", 2, 3)}`
+				],
+				[
+					["string", ":", (s: string) => s.length > 0, "extra"],
+					`ParseError: ${writeUnexpectedTupleElementsMessage(":", 3, 4)}`
+				],
+				[
+					["string", "=>", (s: string) => s.length, "extra"],
+					`ParseError: ${writeUnexpectedTupleElementsMessage("=>", 3, 4)}`
+				],
+				[
+					["string", "@", "desc", "self", "extra"],
+					`ParseError: ${writeUnexpectedTupleElementsMessage("@", "3 or 4", 5)}`
+				]
+			]
+
+			for (const [def, expected] of cases) {
+				attest(() => anyType(def)).throws(expected)
+				attest(() => anyType(...def)).throws(expected)
+			}
+		})
+
+		it("rejects malformed default and optional tuple expressions inside objects and tuples", () => {
+			const extraDefault = `ParseError: ${writeUnexpectedTupleElementsMessage("=", 3, 4)}`
+			const missingDefault = `ParseError: ${writeMissingRightOperandMessage("=", "")}`
+			const extraOptional = `ParseError: ${writeUnexpectedTupleElementsMessage("?", 2, 3)}`
+
+			attest(() => anyType({ a: ["number", "=", 5, "x"] })).throws(extraDefault)
+			attest(() => anyType([["number", "=", 5, "x"]])).throws(extraDefault)
+			attest(() => anyType({ a: ["number", "="] })).throws(missingDefault)
+			attest(() => anyType([["number", "="]])).throws(missingDefault)
+			attest(() => anyType({ a: ["number", "?", "x"] })).throws(extraOptional)
+			attest(() => anyType([["number", "?", "x"]])).throws(extraOptional)
+
+			attest(type({ a: ["number", "=", 5] }).expression).snap(
+				"{ a: number = 5 }"
+			)
+			attest(type([["number", "=", 5]]).expression).snap("[number = 5]")
+			attest(type({ a: ["number", "?"] }).expression).snap("{ a?: number }")
+			attest(type([["number", "?"]]).expression).snap("[number?]")
+		})
+
+		it("rejects missing right operands on prefix, functional, meta, and default operators", () => {
+			const missing: [unknown[], string][] = [
+				[
+					["keyof"],
+					`ParseError: ${writeMissingRightOperandMessage("keyof", "")}`
+				],
+				[
+					["string", ":"],
+					`ParseError: ${writeMissingRightOperandMessage(":", "")}`
+				],
+				[
+					["string", "=>"],
+					`ParseError: ${writeMissingRightOperandMessage("=>", "")}`
+				],
+				[
+					["string", "@"],
+					`ParseError: ${writeMissingRightOperandMessage("@", "")}`
+				],
+				[
+					["string", "="],
+					`ParseError: ${writeMissingRightOperandMessage("=", "")}`
+				]
+			]
+			for (const [def, expected] of missing)
+				attest(() => anyType(def)).throws(expected)
+		})
+
+		it("accepts valid arities including 3- and 4-element @ and variadic === / instanceof", () => {
+			attest(type(["string", "[]"]).expression).snap("string[]")
+			attest(type(["keyof", { a: "string" }]).expression).snap('"a"')
+			attest(type(["string", "@", "a label"]).description).equals("a label")
+			attest(
+				type([
+					{ a: "string", b: "number" },
+					"@",
+					{ description: "str" },
+					{
+						kind: "domain",
+						where: d => d.assertIs("domain").domain === "string"
+					}
+				]).get("a").description
+			).equals("str")
+			attest(type(["===", "a", "b", "c"]).expression).snap('"a" | "b" | "c"')
+			attest(type(["instanceof", Date, Map]).expression).snap("Date | Map")
 		})
 	})
 

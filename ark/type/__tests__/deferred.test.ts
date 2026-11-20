@@ -20,8 +20,8 @@ const messageOf = (define: () => unknown): string | undefined => {
 }
 
 // what a file importing arktype prints, where nothing has fixed its config
-const printed = (body: string) =>
-	spawnSync(
+const printed = (body: string) => {
+	const result = spawnSync(
 		process.execPath,
 		[
 			"--conditions",
@@ -31,7 +31,11 @@ const printed = (body: string) =>
 			`import { configure, type } from "arktype"\n${body}`
 		],
 		{ cwd: fromHere(".."), encoding: "utf8" }
-	).stdout
+	)
+	if (result.status !== 0)
+		throw new Error(result.stderr || `Subprocess exited with ${result.status}`)
+	return result.stdout
+}
 
 contextualize(() => {
 	it("a keyword is what it's said to be", () => {
@@ -479,26 +483,198 @@ for (const bad of [{ tit: "x" }, { e: "x" }, { "": "x" }]) {
 	})
 
 	it("throws eagerly on exclusive bound and non-finite numeric defaults", () => {
-		const invalidDefs: unknown[] = [
-			{ limit: "number > 0 = 0" },
-			{ n: "number < 5 = 5" },
-			{ n: "0 < number < 5 = 0" },
-			{ n: "0 < number < 5 = 5" },
-			{ x: ["number", "=", Infinity] },
-			{ x: ["number", "=", -Infinity] }
+		const invalidDefs: [unknown, string][] = [
+			[
+				{ limit: "number > 0 = 0" },
+				"ParseError: Default for limit must be positive"
+			],
+			[
+				{ n: "number < 5 = 5" },
+				"ParseError: Default for n must be less than 5"
+			],
+			[
+				{ n: "0 < number < 5 = 0" },
+				"ParseError: Default for n must be positive"
+			],
+			[
+				{ n: "0 < number < 5 = 5" },
+				"ParseError: Default for n must be less than 5"
+			],
+			[
+				{ x: ["number", "=", Infinity] },
+				"ParseError: Default for x must be a number"
+			],
+			[
+				{ x: ["number", "=", -Infinity] },
+				"ParseError: Default for x must be a number"
+			]
 		]
-		for (const def of invalidDefs) {
-			const expected = messageOf(() => type.raw(def))
-			attest([def, typeof expected]).equals([def, "string"])
-			attest(messageOf(() => anyType(def))).equals(expected)
+		for (const [def, expected] of invalidDefs) {
+			attest(() => type.raw(def)).throws(expected)
+			attest(() => anyType(def)).throws(expected)
 		}
-		attest(typeof messageOf(() => type("number > 0").default(0))).equals(
-			"string"
+		attest(() => type("number > 0").default(0)).throws.snap(
+			"ParseError: Default must be positive"
 		)
-		attest(typeof messageOf(() => type("number").default(Infinity))).equals(
-			"string"
+		attest(() => type("number").default(Infinity)).throws.snap(
+			"ParseError: Default must be a number"
 		)
 		// valid interior defaults still defer
 		attest(isUnread(type({ valid: "0 < number < 5 = 3" }))).equals(true)
+	})
+
+	describe("onUndeclaredKey cache isolation", () => {
+		it("does not collide when loose union is created before strict union", () => {
+			attest(
+				printed(`const Loose = type({ a: "string" }).or({ b: "number" }).or("null")
+const Strict = type({ a: "string" }).or({ b: "number" }).onUndeclaredKey("reject").or("null")
+console.log(
+	Loose === Strict,
+	Loose.allows({ a: "x", z: 1 }),
+	Strict.allows({ a: "x", z: 1 }),
+	Strict.allows({ a: "x" }),
+	Strict.allows(null)
+)
+console.log(Strict({ a: "x", z: 1 }).toString())`)
+			).snap(
+				"false true false true true\nz must be removed or b must be a number\n"
+			)
+		})
+
+		it("does not collide when strict union is created before loose union", () => {
+			attest(
+				printed(`const Strict = type({ a: "string" }).or({ b: "number" }).onUndeclaredKey("reject").or("null")
+const Loose = type({ a: "string" }).or({ b: "number" }).or("null")
+console.log(
+	Loose === Strict,
+	Strict.allows({ a: "x", z: 1 }),
+	Loose.allows({ a: "x", z: 1 }),
+	JSON.stringify(Loose({ a: "x", z: 1 }))
+)`)
+			).snap('false false true {"a":"x","z":1}\n')
+		})
+
+		it("distinguishes whole-union and single-branch onUndeclaredKey in both orders", () => {
+			for (const wholeFirst of [true, false]) {
+				const out = printed(`const makeWhole = () =>
+	type({ k: "'a'" }).or({ k: "'b'" }).onUndeclaredKey("reject")
+const makeHalf = () =>
+	type({ k: "'a'" }).or(type({ k: "'b'" }).onUndeclaredKey("reject"))
+const Whole = ${wholeFirst ? "makeWhole()" : "makeHalf()"}
+const Half = ${wholeFirst ? "makeHalf()" : "makeWhole()"}
+const [W, H] = ${wholeFirst ? "[Whole, Half]" : "[Half, Whole]"}
+console.log(
+	W === H,
+	W.allows({ k: "a", z: 1 }),
+	H.allows({ k: "a", z: 1 }),
+	H.allows({ k: "b", z: 1 })
+)`)
+				attest(out).equals("false false true false\n")
+			}
+		})
+
+		it("distinguishes onUndeclaredKey('ignore') on a strict union in both orders", () => {
+			for (const strictFirst of [true, false]) {
+				const out = printed(`const makeStrict = () =>
+	type({ k: "'a'", "+": "reject" }).or({ k: "'b'", "+": "reject" }).or("null")
+const makeRelaxed = () =>
+	type({ k: "'a'", "+": "reject" }).or({ k: "'b'", "+": "reject" }).onUndeclaredKey("ignore").or("null")
+const first = ${strictFirst ? "makeStrict()" : "makeRelaxed()"}
+const second = ${strictFirst ? "makeRelaxed()" : "makeStrict()"}
+const [S, R] = ${strictFirst ? "[first, second]" : "[second, first]"}
+console.log(S === R, S.allows({ k: "a", z: 1 }), R.allows({ k: "a", z: 1 }))`)
+				attest(out).equals("false false true\n")
+			}
+		})
+
+		it("does not drop onUndeclaredKey when chaining array length bounds", () => {
+			for (const strictFirst of [true, false]) {
+				const out =
+					printed(`const makeStrict = () => type("string[]").onUndeclaredKey("reject").atLeastLength(1)
+const makeLoose = () => type("string[]").atLeastLength(1)
+const first = ${strictFirst ? "makeStrict()" : "makeLoose()"}
+const second = ${strictFirst ? "makeLoose()" : "makeStrict()"}
+const [S, L] = ${strictFirst ? "[first, second]" : "[second, first]"}
+const arr = ["x"]
+arr.extra = 1
+console.log(S === L, S.allows(arr), L.allows(arr), S.allows(["x"]))`)
+				attest(out).equals("false false true true\n")
+			}
+		})
+	})
+
+	describe("unit and enumerated syntax escaping", () => {
+		it("does not interpret single quotes or backslashes as syntax when deferred", () => {
+			attest(
+				printed(`const U1 = type.unit("a' | 'b")
+const U2 = type.unit("x' | string | 'y")
+const U3 = type.unit("a\\\\b")
+const U4 = type.unit("a\\\\' | number | 'b")
+const E = type.enumerated("x' | number | 'y", "z")
+console.log(U1.expression, U1.allows("a' | 'b"), U1.allows("a"), U1.allows("b"))
+console.log(U2.allows("x' | string | 'y"), U2.allows("anything"))
+console.log(U3.allows("a\\\\b"), U3.allows("ab"))
+console.log(U4.allows("a\\\\' | number | 'b"), U4.allows(1))
+console.log(E.allows("x' | number | 'y"), E.allows("z"), E.allows(5), E.allows("x"))`)
+			).snap(
+				`"a' | 'b" true false false\ntrue false\ntrue false\ntrue false\ntrue true false false\n`
+			)
+		})
+
+		it("still defers safe unit and enumerated strings", () => {
+			attest(
+				printed(`const u = type.unit("safe")
+const e = type.enumerated("a", 1)
+console.log(
+	Object.hasOwn(u, "kind"),
+	Object.hasOwn(e, "kind"),
+	u === type("'safe'"),
+	e === type("1 | 'a'")
+)`)
+			).snap("false false true true\n")
+		})
+	})
+
+	describe("default cache key escaping and -0 isolation", () => {
+		it("prevents string default values from impersonating sibling props in both orders", () => {
+			for (const twoPropsFirst of [true, false]) {
+				const out =
+					printed(`const makeTwo = () => type({ a: "string = 'x'", b: "string = 'y'" })
+const makeOne = () => type({ a: "string = 'x,1b:string=string:y'" })
+const makeQuoted = () => type({ a: ["string", "=", 'x",1b:string=string:"y'] })
+const first = ${twoPropsFirst ? "makeTwo()" : "makeOne()"}
+const second = ${twoPropsFirst ? "makeOne()" : "makeTwo()"}
+const Quoted = makeQuoted()
+const [Two, One] = ${twoPropsFirst ? "[first, second]" : "[second, first]"}
+console.log(
+	Two === One,
+	Two === Quoted,
+	One === Quoted,
+	JSON.stringify(Two({})),
+	JSON.stringify(One({})),
+	JSON.stringify(Quoted({}))
+)`)
+				attest(out).equals(
+					'false false false {"a":"x","b":"y"} {"a":"x,1b:string=string:y"} {"a":"x\\",1b:string=string:\\"y"}\n'
+				)
+			}
+		})
+
+		it("distinguishes -0 and 0 defaults in both creation orders", () => {
+			for (const posFirst of [true, false]) {
+				const out =
+					printed(`const makePos = () => type({ a: ["number", "=", 0] })
+const makeNeg = () => type({ a: ["number", "=", -0] })
+const first = ${posFirst ? "makePos()" : "makeNeg()"}
+const second = ${posFirst ? "makeNeg()" : "makePos()"}
+const [Pos, Neg] = ${posFirst ? "[first, second]" : "[second, first]"}
+console.log(
+	Pos === Neg,
+	Object.is(Pos({}).a, 0),
+	Object.is(Neg({}).a, -0)
+)`)
+				attest(out).equals("false true true\n")
+			}
+		})
 	})
 })

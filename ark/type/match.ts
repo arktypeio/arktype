@@ -168,10 +168,16 @@ type _finalizeCaseArg<
 			distill<t, endpoint> extends infer result ?
 				unknown extends ctxInput ? result
 				: ctxInput extends result ? ctxInput
-				: show<ctxInput & result>
+				: result extends ctxInput ? result
+				: showIfSafelyMappable<ctxInput & result>
 			:	never
 		:	never
 	:	never
+
+type showIfSafelyMappable<t> =
+	[t] extends [never] ? never
+	: show<t> extends infer shown extends t ? shown
+	: t
 
 type CaseParser<ctx extends MatchParserContext> = <const def, ret>(
 	def: type.validate<def, ctx["$"]>,

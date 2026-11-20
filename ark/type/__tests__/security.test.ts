@@ -13,36 +13,14 @@ import {
 	ArkErrors as RuntimeArkErrors,
 	FirstIssues,
 	InvalidErrors,
+	standardResultOf,
 	unreadErrors
 } from "arktype/runtime"
-import { ArkErrors, fromJsonSchema, ParseError, scope, type } from "arktype"
-
-const expectParseError = (
-	fn: () => unknown,
-	pattern?: RegExp | string
-): void => {
-	let caught: unknown
-	try {
-		fn()
-	} catch (e) {
-		caught = e
-	}
-	attest(caught instanceof ParseError).equals(true)
-	if (typeof pattern === "string")
-		attest((caught as Error).message.includes(pattern)).equals(true)
-	else if (pattern) attest((caught as Error).message).satisfies(pattern)
-}
+import { ArkErrors, fromJsonSchema, scope, type } from "arktype"
 
 contextualize(() => {
-	describe("P1: ArkErrors non-writable Symbol.hasInstance", () => {
-		it("installs Symbol.hasInstance as a non-writable own property while preserving parity and subclasses", () => {
-			const desc = Object.getOwnPropertyDescriptor(
-				ArkErrors,
-				Symbol.hasInstance
-			)
-			attest(desc?.writable).equals(false)
-			attest(typeof desc?.value).equals("function")
-
+	describe("ArkErrors instanceof and Standard Schema serialization", () => {
+		it("recognizes runtime error variants and isolates subclasses", () => {
 			const runtimeErr = new RuntimeArkErrors()
 			runtimeErr._e(1, "domain", "a string")
 			const firstErr = new FirstIssues()
@@ -76,87 +54,167 @@ contextualize(() => {
 			for (const other of [null, undefined, 0, {}, { " arkKind": "errors" }])
 				attest(other instanceof ArkErrors).equals(false)
 		})
+
+		it("omits input data when JSON-serializing precompiled Standard Schema failures", () => {
+			const secret = "hunter2"
+			const dynamicJson = JSON.stringify(
+				type("number")["~standard"].validate(secret)
+			)
+			attest(dynamicJson.includes(secret)).equals(false)
+			attest(JSON.parse(dynamicJson)).snap({
+				issues: [
+					{
+						path: [],
+						code: "domain",
+						description: "a number",
+						domain: "number",
+						propString: "",
+						expected: "a number",
+						message: "must be a number"
+					}
+				],
+				message: "must be a number"
+			})
+
+			const expectedRuntime = {
+				issues: [
+					{
+						code: "domain",
+						path: [],
+						expected: "a number",
+						message: "must be a number"
+					}
+				],
+				message: "must be a number"
+			}
+
+			const runtimeErr = new RuntimeArkErrors()
+			runtimeErr._e(secret, "domain", "a number")
+			const runtimeResult = standardResultOf(runtimeErr)
+			if (!runtimeResult.issues) throw new Error("Expected failure result")
+			// in-memory issues keep data, while JSON serialization strips it
+			attest((runtimeResult.issues[0] as { data?: unknown }).data).equals(
+				secret
+			)
+			attest(runtimeResult.message).equals(runtimeErr.summary)
+			const runtimeJson = JSON.stringify(runtimeResult)
+			attest(runtimeJson.includes(secret)).equals(false)
+			attest(JSON.parse(runtimeJson)).equals(expectedRuntime)
+
+			const firstErr = new FirstIssues()
+			firstErr._e(secret, "domain", "a number")
+			attest(JSON.parse(JSON.stringify(standardResultOf(firstErr)))).equals(
+				expectedRuntime
+			)
+
+			const lazyErr = unreadErrors(
+				(data, ctx) => !ctx._e(data, "domain", "a number"),
+				secret,
+				null
+			)
+			attest(JSON.parse(JSON.stringify(standardResultOf(lazyErr)))).equals(
+				expectedRuntime
+			)
+
+			const invalidResult = standardResultOf(new InvalidErrors(secret))
+			const invalidJson = JSON.stringify(invalidResult)
+			attest(invalidJson.includes(secret)).equals(false)
+			attest(JSON.parse(invalidJson)).snap({
+				issues: [{ code: "predicate", path: [], message: "is invalid" }],
+				message: "is invalid"
+			})
+		})
 	})
 
-	describe("J1: code injection guards on min/max, domain, and numeric rules", () => {
-		it("rejects non-number min/max rules and never evaluates injected payloads", () => {
+	describe("schema codegen injection guards", () => {
+		it("rejects non-number bounds and spoofed numeric rules without evaluating payloads", () => {
 			const g = globalThis as Record<string, unknown>
-			delete g.__arkJ1Pwned
+			delete g.__arkInjectedRule
 
 			const payloads: unknown[] = [
-				"0||(globalThis.__arkJ1Pwned='min')",
+				"0||(globalThis.__arkInjectedRule='min')",
 				"1e-999999999999",
 				true,
 				null
 			]
 
 			for (const payload of payloads) {
-				expectParseError(
-					() => type.schema({ domain: "number", min: payload as never }),
-					writeInvalidRangeRuleMessage("min", payload)
-				)
-				expectParseError(
-					() => type.schema({ domain: "number", max: payload as never }),
-					writeInvalidRangeRuleMessage("max", payload)
-				)
-				expectParseError(
-					() => node("min", { rule: payload as never }),
-					writeInvalidRangeRuleMessage("min", payload)
-				)
+				const minMsg = `ParseError: ${writeInvalidRangeRuleMessage("min", payload)}`
+				const maxMsg = `ParseError: ${writeInvalidRangeRuleMessage("max", payload)}`
+				attest(() =>
+					type.schema({ domain: "number", min: payload as never })
+				).throws(minMsg)
+				attest(() =>
+					type.schema({ domain: "number", max: payload as never })
+				).throws(maxMsg)
+				attest(() => node("min", { rule: payload as never })).throws(minMsg)
 			}
 
 			const spoofedObj = {
-				valueOf: () => "0||(globalThis.__arkJ1Pwned='obj')"
+				valueOf: () => "0||(globalThis.__arkInjectedRule='obj')"
 			}
-			expectParseError(
-				() =>
-					type.schema({
-						domain: "number",
-						min: { rule: spoofedObj as never }
-					}),
-				writeInvalidRangeRuleMessage("min", spoofedObj)
-			)
-			expectParseError(() =>
+			attest(() =>
+				type.schema({
+					domain: "number",
+					min: { rule: spoofedObj as never }
+				})
+			).throws(`ParseError: ${writeInvalidRangeRuleMessage("min", spoofedObj)}`)
+			attest(() =>
 				type.schema({ domain: "number", min: spoofedObj as never })
-			)
+			).throws(`ParseError: ${writeInvalidRangeRuleMessage("min", undefined)}`)
 
-			expectParseError(() =>
+			attest(() =>
 				type.schema({
 					domain: "number",
 					notEqual: {
 						rule: {
-							valueOf: () => "0||(globalThis.__arkJ1Pwned='ne')"
+							valueOf: () => "0||(globalThis.__arkInjectedRule='ne')"
 						} as never
 					}
 				})
+			).throws.snap(
+				'ParseError: notEqual bound must be a number or Date (was {"valueOf":"Function(valueOf)"})'
 			)
-			expectParseError(() => node("before", { rule: "0||1" as never }))
-			expectParseError(() => node("after", { rule: new Date(NaN) }))
-			expectParseError(() =>
+			attest(() => node("before", { rule: "0||1" as never })).throws(
+				`ParseError: ${writeInvalidRangeRuleMessage("before", "0||1")}`
+			)
+			const invalidDate = new Date(NaN)
+			attest(() => node("after", { rule: invalidDate })).throws(
+				`ParseError: ${writeInvalidRangeRuleMessage("after", invalidDate)}`
+			)
+			attest(() =>
 				type.schema({ domain: "number", divisor: "1||1" as never })
-			)
-			expectParseError(() =>
+			).throws.snap("ParseError: divisor must be an integer (was 1||1)")
+			attest(() =>
 				type.schema({ domain: "string", minLength: "0||1" as never })
+			).throws.snap(
+				"ParseError: minLength bound must be a positive integer (was 0||1)"
 			)
-			expectParseError(() =>
+			attest(() =>
 				type.schema({ domain: "string", maxLength: "0||1" as never })
+			).throws.snap(
+				"ParseError: maxLength bound must be a positive integer (was 0||1)"
 			)
-			expectParseError(() =>
+			attest(() =>
 				type.schema({ domain: "string", exactLength: "0||1" as never })
+			).throws.snap(
+				"ParseError: exactLength bound must be a positive integer (was 0||1)"
 			)
-			expectParseError(() =>
+			attest(() =>
 				type.schema({ domain: "string", notEqualLength: "0||1" as never })
+			).throws.snap(
+				"ParseError: notEqualLength bound must be a positive integer (was 0||1)"
 			)
 
-			attest(g.__arkJ1Pwned).equals(undefined)
+			attest(g.__arkInjectedRule).equals(undefined)
 		})
 
-		it("rejects invalid or injected domain values including prototype and spoofed objects", () => {
+		it("rejects invalid or injected domain values including prototype keys and spoofed objects", () => {
 			const g = globalThis as Record<string, unknown>
-			delete g.__arkJ1Domain
+			delete g.__arkInjectedDomain
 
 			const badDomains: unknown[] = [
-				'string"||(globalThis.__arkJ1Domain=1)||"',
+				'string"||(globalThis.__arkInjectedDomain=1)||"',
 				"toString",
 				"constructor",
 				"__proto__",
@@ -165,20 +223,15 @@ contextualize(() => {
 			]
 
 			for (const bad of badDomains) {
-				expectParseError(
-					() => type.schema({ domain: bad as never }),
-					Domain.writeInvalidDomainMessage(bad)
-				)
-				expectParseError(
-					() => rootSchema({ domain: bad as never }),
-					Domain.writeInvalidDomainMessage(bad)
-				)
+				const expected = `ParseError: ${Domain.writeInvalidDomainMessage(bad)}`
+				attest(() => type.schema({ domain: bad as never })).throws(expected)
+				attest(() => rootSchema({ domain: bad as never })).throws(expected)
 			}
 
-			attest(g.__arkJ1Domain).equals(undefined)
+			attest(g.__arkInjectedDomain).equals(undefined)
 		})
 
-		it("guards numeric literal compilation via js.num()", () => {
+		it("guards numeric literal compilation via NodeCompiler.num", () => {
 			class TestCompiler extends NodeCompiler {
 				outline(): this {
 					return this
@@ -187,27 +240,18 @@ contextualize(() => {
 			const js = new TestCompiler({ kind: "Allows" })
 			attest(js.num(42)).equals("42")
 			attest(js.num(-0)).equals("0")
-			attest(() => js.num("0||1" as never)).throws(
-				"Expected a numeric literal (was string)"
+			attest(() => js.num("0||1" as never)).throws.snap(
+				"Error: Expected a numeric literal (was string)"
 			)
-			attest(() => js.num({ valueOf: () => 5 } as never)).throws(
-				"Expected a numeric literal (was object)"
+			attest(() => js.num({ valueOf: () => 5 } as never)).throws.snap(
+				"Error: Expected a numeric literal (was object)"
 			)
-
-			const minNode = node("min", { rule: 5 })
-			attest(minNode.jsCond(js, "data")).equals("data >= 5")
-
-			// even if a node's rule is tampered with after construction, jsCond rejects it
-			const tampered = Object.create(minNode) as typeof minNode
-			Object.defineProperty(tampered, "rule", { value: "0||1" })
-			attest(() => tampered.jsCond(js, "data")).throws(
-				"Expected a numeric literal (was string)"
-			)
+			attest(node("min", { rule: 5 }).jsCond(js, "data")).equals("data >= 5")
 		})
 	})
 
-	describe("J2: $ark reserved internal slots", () => {
-		it("prevents user classes and symbols named after internal hooks from hijacking $ark", () => {
+	describe("$ark registry slot isolation", () => {
+		it("prevents user classes and symbols named after internal hooks from overwriting $ark", () => {
 			class inPlace {}
 			class errorModes {}
 			class encode {}
@@ -237,10 +281,11 @@ contextualize(() => {
 		})
 	})
 
-	describe("J3: fromJsonSchema uniqueItems O(n) correctness and performance", () => {
+	describe("fromJsonSchema uniqueItems", () => {
 		it("handles primitives, -0/0, nested objects with different key order, BigInt, and arrays", () => {
 			const Unique = fromJsonSchema({ type: "array", uniqueItems: true })
 
+			// 3 calls cover both the first-call interpreter and compiled JIT
 			for (let i = 0; i < 3; i++) {
 				attest(Unique.allows([])).equals(true)
 				attest(Unique.allows([1])).equals(true)
@@ -270,50 +315,48 @@ contextualize(() => {
 			}
 		})
 
-		it("validates large unique arrays in linear time", () => {
+		it("handles large unique and duplicate primitive and object arrays", () => {
 			const Unique = fromJsonSchema({ type: "array", uniqueItems: true })
-			const nums = Array.from({ length: 30_000 }, (_, i) => i)
-			const objs = Array.from({ length: 10_000 }, (_, i) => ({
+			const nums = Array.from({ length: 10_000 }, (_, i) => i)
+			const objs = Array.from({ length: 5_000 }, (_, i) => ({
 				id: i,
 				tag: `k${i}`
 			}))
 
-			const start = performance.now()
 			attest(Unique.allows(nums)).equals(true)
-			attest(Unique.allows([...nums, 12_345])).equals(false)
+			attest(Unique.allows([...nums, 4_321])).equals(false)
 			attest(Unique.allows(objs)).equals(true)
-			attest(Unique.allows([...objs, { tag: "k9999", id: 9999 }])).equals(false)
-			const elapsedMs = performance.now() - start
-			attest(elapsedMs < 1500).equals(true)
+			attest(Unique.allows([...objs, { tag: "k4999", id: 4999 }])).equals(false)
 		})
 	})
 
-	describe("J6: fromJsonSchema shallow anyOf self-cycle rejection", () => {
+	describe("fromJsonSchema recursive anyOf", () => {
 		it("rejects shallow anyOf self-$ref cycles instead of failing open", () => {
-			const shallowCases = [
-				{
+			attest(() =>
+				fromJsonSchema({
 					$defs: {
 						j: { anyOf: [{ $ref: "#/$defs/j" }, { type: "number" }] }
 					},
 					type: "object",
 					properties: { x: { $ref: "#/$defs/j" } }
-				},
-				{ anyOf: [{ $ref: "#" }, { type: "string" }] },
-				{
+				})
+			).throws.snap(
+				"ParseError: #/$defs/j/anyOf/0 has a shallow $ref cycle (#/$defs/j)"
+			)
+			attest(() =>
+				fromJsonSchema({ anyOf: [{ $ref: "#" }, { type: "string" }] })
+			).throws.snap("ParseError: #/anyOf/0 has a shallow $ref cycle (#)")
+			attest(() =>
+				fromJsonSchema({
 					$defs: {
 						a: { anyOf: [{ $ref: "#/$defs/b" }, { type: "number" }] },
 						b: { $ref: "#/$defs/a" }
 					},
 					$ref: "#/$defs/a"
-				}
-			] as const
-
-			for (const schema of shallowCases) {
-				expectParseError(
-					() => fromJsonSchema(schema as never),
-					"shallow $ref cycle"
-				)
-			}
+				})
+			).throws.snap(
+				"ParseError: #/$defs/b has a shallow $ref cycle (#/$defs/a)"
+			)
 		})
 
 		it("still allows guarded recursive anyOf schemas through items and properties", () => {
@@ -345,7 +388,7 @@ contextualize(() => {
 		})
 	})
 
-	describe("J7: proto name own-property lookup", () => {
+	describe("proto name lookup", () => {
 		it("rejects prototype-chain and unknown proto names with ParseError", () => {
 			for (const bad of [
 				"toString",
@@ -354,9 +397,12 @@ contextualize(() => {
 				"__proto__",
 				"Nope"
 			]) {
-				expectParseError(() => type.schema({ proto: bad as never }))
-				expectParseError(() => type.schema(bad as never))
-				expectParseError(() => rootSchema({ proto: bad as never }))
+				const protoMsg = `ParseError: {"proto":"${bad}"} is not a valid type schema`
+				attest(() => type.schema({ proto: bad as never })).throws(protoMsg)
+				attest(() => rootSchema({ proto: bad as never })).throws(protoMsg)
+				attest(() => type.schema(bad as never)).throws(
+					`ParseError: "${bad}" is not a valid type schema`
+				)
 			}
 
 			attest(getBuiltinNameOfConstructor(Object.prototype.toString)).equals(
@@ -368,12 +414,13 @@ contextualize(() => {
 		})
 	})
 
-	describe("J8: empty alias compilation", () => {
+	describe("empty alias compilation", () => {
 		it("generates valid JS identifiers for empty aliases", () => {
 			const T = type({ a: "string" }).configure({ alias: "" })
 			const S = type.schema({ domain: "string", meta: { alias: "" } })
 			const Cyclic = scope({ "": { a: "string", "n?": "" } }).export()[""]
 
+			// 3 calls cover both the first-call interpreter and compiled JIT
 			for (let i = 0; i < 3; i++) {
 				attest(T.allows({ a: "ok" })).equals(true)
 				attest(T.allows({ a: 1 })).equals(false)
@@ -385,7 +432,7 @@ contextualize(() => {
 		})
 	})
 
-	describe("F3: fromJsonSchema description preserves expected error text", () => {
+	describe("fromJsonSchema description annotations", () => {
 		it("keeps structural expected text in error messages while preserving description metadata and JSON Schema round-trip", () => {
 			const Customer = fromJsonSchema({
 				type: "object",

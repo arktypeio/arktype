@@ -421,7 +421,7 @@ try {
 
 if (
 	undetailedOutput !==
-	'true is invalid [{"code":"predicate","path":[],"message":"is invalid"}] 1\nTraversalError: is invalid true\n'
+	'true is invalid [{"code":"predicate","path":[],"expected":"valid","message":"is invalid"}] 1\nTraversalError: is invalid true\n'
 ) {
 	throw new Error(
 		`⚠️  A program built with errors: "none" logs ${JSON.stringify(undetailedOutput)}.`
@@ -437,7 +437,7 @@ const inspectedOutput = await undetailedLogsOf(
 
 if (
 	inspectedOutput.replace(/\s+/g, " ") !==
-	"ArkErrors { summary: 'is invalid', issues: [ { code: 'predicate', path: [], data: { a: 1 }, message: 'is invalid' } ] } "
+	"ArkErrors { summary: 'is invalid', issues: [ { code: 'predicate', path: [], data: { a: 1 }, expected: 'valid', message: 'is invalid' } ] } "
 ) {
 	throw new Error(
 		`⚠️  A development build logs its errors as ${JSON.stringify(inspectedOutput)}.`

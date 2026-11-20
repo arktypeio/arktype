@@ -1606,9 +1606,9 @@ Item[1].Meta must be an object (was missing)`)
 			type.pipe(type("string"), (n: number) => n.toFixed(2))
 		).type.errors("Type 'string' is not assignable to type 'number'")
 
-		// 18+ morphs hitting variadic overload still check first morph and infer output
+		// 18+ morphs hitting variadic overload check every morph in the chain and infer output
 		const nineteen = type("'a'").pipe(
-			s => `${s}b` as const,
+			(s: "a") => `${s}b` as const,
 			(s: string) => `${s}c`,
 			(s: string) => `${s}d`,
 			(s: string) => `${s}e`,
@@ -1631,5 +1631,46 @@ Item[1].Meta must be an object (was missing)`)
 		attest<number>(nineteen.infer)
 		attest<"a">(nineteen.inferIn)
 		attest(nineteen("a")).equals(19)
+
+		attest(() =>
+			type("'a'").pipe(
+				(s: "a") => `${s}b` as const,
+				(s: string) => `${s}c`,
+				(s: string) => `${s}d`,
+				(s: string) => `${s}e`,
+				(s: string) => `${s}f`,
+				(s: string) => `${s}g`,
+				(s: string) => `${s}h`,
+				(s: string) => `${s}i`,
+				(s: string) => `${s}j`,
+				(s: string) => `${s}k`,
+				(s: string) => `${s}l`,
+				(s: string) => `${s}m`,
+				(s: string) => `${s}n`,
+				(s: string) => `${s}o`,
+				(s: string) => `${s}p`,
+				(s: string) => `${s}q`,
+				(s: string) => `${s}r`,
+				(s: string) => s.length,
+				// @ts-expect-error
+				(s: string) => s
+			)
+		).type.errors("Type 'number' is not assignable to type 'string'")
+
+		const mismatchedSpread: ((n: number) => string)[] = []
+		attest(() =>
+			// @ts-expect-error
+			type("string").pipe(...mismatchedSpread)
+		).type.errors("Type 'string' is not assignable to type 'number'")
+
+		const selfIncompatibleSpread: ((s: string) => number)[] = []
+		attest(() =>
+			// @ts-expect-error
+			type("string").pipe(...selfIncompatibleSpread)
+		).type.errors("Type 'number' is not assignable to type 'string'")
+
+		const compatibleSpread: ((s: string) => string)[] = [s => s.trim()]
+		const spreadResult = type("string").pipe(...compatibleSpread)
+		attest(spreadResult(" hi ")).equals("hi")
 	})
 })

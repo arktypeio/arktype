@@ -93,11 +93,7 @@ const stringIntegerRoot = cached(() =>
 
 const safeInteger = cached(() =>
 	node("intersection", {
-		domain: node("domain", {
-			domain: "number",
-			numberAllowsNaN: false,
-			numberAllowsInfinity: false
-		}),
+		domain: node("domain", { domain: "number" }),
 		divisor: node("divisor", { rule: 1 }),
 		min: node("min", { rule: Number.MIN_SAFE_INTEGER }),
 		max: node("max", { rule: Number.MAX_SAFE_INTEGER })

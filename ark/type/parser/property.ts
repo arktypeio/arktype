@@ -22,6 +22,7 @@ import type {
 } from "./objectLiteral.ts"
 import type { ParsedDefaultableProperty } from "./shift/operator/default.ts"
 import type { parseString } from "./string.ts"
+import { assertTupleArity } from "./tupleExpressions.ts"
 
 export type ParsedPropertyKind = "plain" | "optional" | "defaultable"
 
@@ -39,9 +40,15 @@ export const parseProperty = (
 	ctx: BaseParseContext
 ): ParsedProperty => {
 	if (isArray(def)) {
-		if (def[1] === "=") return [ctx.$.parseOwn(def[0], ctx), "=", def[2]]
+		if (def[1] === "=") {
+			assertTupleArity(def, "=", 3)
+			return [ctx.$.parseOwn(def[0], ctx), "=", def[2]]
+		}
 
-		if (def[1] === "?") return [ctx.$.parseOwn(def[0], ctx), "?"]
+		if (def[1] === "?") {
+			assertTupleArity(def, "?", 2)
+			return [ctx.$.parseOwn(def[0], ctx), "?"]
+		}
 	}
 
 	// string-embedded defaults/optionals are handled by the string parser

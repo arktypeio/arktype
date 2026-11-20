@@ -295,14 +295,29 @@ export const bakeInto = <t>(
 	return validator
 }
 
+type StandardFailure = StandardSchemaV1.FailureResult & {
+	_s: (json?: true) => unknown
+}
+
 // what reads a failure's message, as @ark/schema's standardFailure.ts has it
 // and says why: one getter for every failure, calling what the failure holds
 // to write its errors' summary
-const failureMessage: PropertyDescriptor & ThisType<{ _s: () => string }> = {
+const failureMessage: PropertyDescriptor & ThisType<StandardFailure> = {
 	get() {
-		return this._s()
+		return this._s() as string
 	},
 	enumerable: true
+}
+
+const failureToJson: PropertyDescriptor & ThisType<StandardFailure> = {
+	value() {
+		return {
+			issues: this._s(true),
+			message: this._s()
+		}
+	},
+	writable: true,
+	configurable: true
 }
 
 // A Standard Schema consumer shows each issue beside its path, which its
@@ -318,12 +333,17 @@ export const standardResultOf = (
 ): StandardSchemaV1.Result<unknown> =>
 	out instanceof ArkErrors ?
 		Object.defineProperty(
-			Object.defineProperty({ issues: out.issues }, "_s", {
-				value: () => (out as ArkErrors).summary,
-				writable: true
-			}),
-			"message",
-			failureMessage
+			Object.defineProperty(
+				Object.defineProperty({ issues: out.issues }, "_s", {
+					value: (json?: true) =>
+						json ? (out as ArkErrors).toJSON() : (out as ArkErrors).summary,
+					writable: true
+				}),
+				"message",
+				failureMessage
+			),
+			"toJSON",
+			failureToJson
 		)
 	:	{ value: out }
 
