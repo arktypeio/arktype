@@ -1,0 +1,142 @@
+name: pr-commands
+
+# Lets maintainers trigger nightly/extended CI suites on a PR by commenting
+# `/run <suite...>` (e.g. `/run aot:full ci:history` or `/run all`).
+# Applies the corresponding labels (so future pushes also re-run them) and
+# invokes nightly.yml immediately via workflow_call.
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  parse:
+    if: >-
+      github.event.issue.pull_request != null &&
+      startsWith(github.event.comment.body, '/run') &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      valid: ${{ steps.parse.outputs.valid }}
+      ref: ${{ steps.parse.outputs.ref }}
+      pr_number: ${{ github.event.issue.number }}
+      aot: ${{ steps.parse.outputs.aot }}
+      compat: ${{ steps.parse.outputs.compat }}
+      history: ${{ steps.parse.outputs.history }}
+      ts: ${{ steps.parse.outputs.ts }}
+      environments: ${{ steps.parse.outputs.environments }}
+    steps:
+      - id: parse
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          # only read the first line after `/run`
+          first_line=$(head -n 1 <<<"$COMMENT_BODY")
+          read -ra tokens <<<"$first_line"
+
+          aot=false
+          compat=false
+          history=false
+          ts=false
+          environments=false
+          labels=()
+          unknown=()
+
+          for token in "${tokens[@]:1}"; do
+            case "$token" in
+              aot:full|aot)
+                aot=true
+                labels+=("aot:full")
+                ;;
+              ci:compat|compat)
+                compat=true
+                labels+=("ci:compat")
+                ;;
+              ci:history|history)
+                history=true
+                labels+=("ci:history")
+                ;;
+              ci:ts|ts)
+                ts=true
+                labels+=("ci:ts")
+                ;;
+              ci:environments|environments|envs)
+                environments=true
+                labels+=("ci:environments")
+                ;;
+              ci:all|all)
+                aot=true
+                compat=true
+                history=true
+                ts=true
+                environments=true
+                labels+=("ci:all")
+                ;;
+              *)
+                unknown+=("$token")
+                ;;
+            esac
+          done
+
+          if (( ${#labels[@]} == 0 || ${#unknown[@]} > 0 )); then
+            msg="Usage: \`/run <suite...>\` with one or more of \`aot:full\`, \`ci:compat\`, \`ci:history\`, \`ci:ts\`, \`ci:environments\`, or \`all\`."
+            if (( ${#unknown[@]} > 0 )); then
+              msg="Unknown suite(s): \`${unknown[*]}\`. $msg"
+            fi
+            gh issue comment "$PR_NUMBER" --body "$msg"
+            echo "valid=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # acknowledge with a rocket reaction
+          gh api --method POST "repos/$GH_REPO/issues/comments/$COMMENT_ID/reactions" -f content=rocket --silent
+
+          # ensure labels exist and apply them so subsequent pushes also run them
+          for label in "${labels[@]}"; do
+            gh label create "$label" --color 5319e7 --description "Run $label suite on this PR" --force >/dev/null 2>&1 || true
+            gh issue edit "$PR_NUMBER" --add-label "$label" >/dev/null
+          done
+
+          head_sha=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.head.sha')
+          short_sha="${head_sha:0:7}"
+          joined=$(IFS=', '; echo "${labels[*]}")
+          gh issue comment "$PR_NUMBER" --body "Started [\`nightly.yml\`]($RUN_URL) for \`$joined\` on \`$short_sha\`."
+
+          {
+            echo "valid=true"
+            echo "ref=refs/pull/$PR_NUMBER/head"
+            echo "aot=$aot"
+            echo "compat=$compat"
+            echo "history=$history"
+            echo "ts=$ts"
+            echo "environments=$environments"
+          } >> "$GITHUB_OUTPUT"
+
+  run:
+    needs: parse
+    if: needs.parse.outputs.valid == 'true'
+    uses: ./.github/workflows/nightly.yml
+    with:
+      ref: ${{ needs.parse.outputs.ref }}
+      pr_number: ${{ needs.parse.outputs.pr_number }}
+      aot: ${{ needs.parse.outputs.aot == 'true' }}
+      compat: ${{ needs.parse.outputs.compat == 'true' }}
+      history: ${{ needs.parse.outputs.history == 'true' }}
+      ts: ${{ needs.parse.outputs.ts == 'true' }}
+      environments: ${{ needs.parse.outputs.environments == 'true' }}
