@@ -111,7 +111,8 @@ import {
 	isNode,
 	isResolutionFinal,
 	printSelfAsThis,
-	removedProblemMessage
+	removedProblemMessage,
+	withoutHoleNames
 } from "./shared/utils.ts"
 import type { Sequence } from "./structure/sequence.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
@@ -1278,11 +1279,12 @@ export abstract class BaseNode<
 		// again, now that synthetics have printed their names
 		let name: string | undefined
 		const names: Record<string, string> = {}
+		// named as arktype names them, whatever a build names its callbacks
+		const expression = withoutHoleNames(transformed.expression)
 		for (const id in ctx.synth) {
-			if (id === this.id) name = `synthetic${hashOf(transformed.expression)}`
+			if (id === this.id) name = `synthetic${hashOf(expression)}`
 			else {
-				names[id] =
-					`synthetic${hashOf(`${transformed.expression}\n${ctx.synth[id].name}`)}`
+				names[id] = `synthetic${hashOf(`${expression}\n${ctx.synth[id].name}`)}`
 			}
 		}
 		const named =
@@ -1337,7 +1339,7 @@ export abstract class BaseNode<
 			}
 			ctx.synth[resolution.id] ??= this.$.openSynthetic(
 				ctx.names?.[resolution.id] ??
-					(resolution === ctx.root ? undefined : this.expression)
+					(resolution.id === ctx.root.id ? undefined : this.expression)
 			)
 			return this.$.lazilyResolve(
 				ctx.seen[resolution.id]! as never,
