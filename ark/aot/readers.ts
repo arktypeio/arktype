@@ -48,6 +48,10 @@ export interface Held {
 	// reached through a dependency's read at a key it doesn't name, as likely
 	// any object's, so losing track past it bakes every member without a warning
 	quiet?: true
+	// held one level deeper than it may be, where .flat() or .flatMap() may
+	// have flattened the array holding it, so what holds it at anyKey may be its
+	// element rather than an array
+	unflattened?: true
 }
 
 export const validatorHeld: Held = { path: [], of: "type" }
@@ -169,6 +173,8 @@ interface Entry {
 	module: SourceModule
 	// e.g. anyKey for a map() callback, whose returns its call holds at an index
 	wrap: readonly Key[]
+	// a flatMap() callback, whose returned array its call flattens by one level
+	flattens?: true
 }
 
 type Located<node extends Node = Node> = { node: node; module: SourceModule }
@@ -184,7 +190,7 @@ const shapeKeyOf = (held: Held): string =>
 	`${held.of}:${held.path.map(k => (k === anyKey ? "*" : JSON.stringify(k))).join(".")}`
 
 const heldKeyOf = (held: Held): string =>
-	`${held.quiet ? "?" : ""}${shapeKeyOf(held)}`
+	`${held.quiet ? "?" : ""}${held.unflattened ? "^" : ""}${shapeKeyOf(held)}`
 
 // the program's modules, read once for every validator
 class Readers {
@@ -946,7 +952,9 @@ class Follow {
 					)
 				}
 				if (parent.kind !== "init") return lose("passes it to an accessor")
-				const key = propertyKeyOf(parent)
+				const key =
+					propertyKeyOf(parent) ??
+					(parent.computed ? constantOf(parent.key, module) : undefined)
 				if (key === "__proto__")
 					return lose("sets it as a prototype, which inherits its members")
 				// a method reads the object it's a member of as this, which no
@@ -1208,11 +1216,15 @@ class Follow {
 				return this.arrayMethod(key, called, module, held)
 			// a method the build doesn't model may return the elements or receiver it
 			// holds, as a builtin's, a computed call (which may be "valueOf"), or one
-			// the program patches onto a builtin prototype
+			// the program patches onto a builtin prototype. On an array, any method
+			// `arrayMethod` doesn't model loses, since the patch can be reached in
+			// more ways than `patchesBuiltins` can enumerate (`const Arr = Array`,
+			// `[].constructor.prototype`, ...)
 			if (
 				called &&
 				(key === undefined ||
 					(first === anyKey ?
+						!held.unflattened ||
 						key in Array.prototype ||
 						key in Object.prototype ||
 						this.readers.patchesBuiltins
@@ -1249,9 +1261,18 @@ class Follow {
 		if (returns === "unfollowed")
 			return this.lose(call, module, `reduces it with .${name}`)
 		if (returns === "flat") {
-			// flattens each leading array of its elements, to any depth
+			// flattens each leading array of its elements, to any depth, where one
+			// flattened fewer times than the call's depth may be held deeper than it is
+			const depth = flatDepthOf(call)
 			for (let i = 0; i <= held.path.length; i++) {
-				this.push(call, module, { ...held, path: held.path.slice(i) })
+				const path = held.path.slice(i)
+				this.push(
+					call,
+					module,
+					path[0] === anyKey && i < depth ?
+						{ ...held, path, unflattened: true }
+					:	{ ...held, path }
+				)
 				if (held.path[i] !== anyKey) break
 			}
 			return
@@ -1263,7 +1284,8 @@ class Follow {
 			module,
 			element,
 			returns === "mapped" ? [anyKey] : undefined,
-			0
+			0,
+			name === "flatMap"
 		)
 		// flatMap flattens what its callback returns by one level, so a callback
 		// returning an element rather than an array of them holds it at the same
@@ -1277,7 +1299,8 @@ class Follow {
 		module: SourceModule,
 		held: Held,
 		wrap: readonly Key[] | undefined,
-		index = 0
+		index = 0,
+		flattens = false
 	): void {
 		const [callback] = call.arguments
 		if (!callback || callback.type === "SpreadElement") return
@@ -1291,7 +1314,12 @@ class Follow {
 		}
 		const param = runtimeParamsOf(value.fn)[index]
 		if (param) this.bindPattern(param, value.module, held)
-		if (wrap) this.addEntry(value.fn, { call, module, wrap })
+		if (wrap) {
+			this.addEntry(
+				value.fn,
+				flattens ? { call, module, wrap, flattens } : { call, module, wrap }
+			)
+		}
 	}
 
 	// passed as an argument
@@ -1347,7 +1375,7 @@ class Follow {
 		if (entries) entries.push(entry)
 		else this.entries.set(fn, [entry])
 		for (const held of this.returned.get(fn)?.values() ?? [])
-			this.push(entry.call, entry.module, wrapped(held, entry.wrap))
+			this.push(entry.call, entry.module, entryHeldOf(held, entry))
 	}
 
 	private returnFrom(
@@ -1391,7 +1419,7 @@ class Follow {
 			)
 		}
 		for (const entry of entries)
-			this.push(entry.call, entry.module, wrapped(held, entry.wrap))
+			this.push(entry.call, entry.module, entryHeldOf(held, entry))
 	}
 
 	// the calls of a function passed as a callback or held by a const, where each is seen
@@ -1413,9 +1441,13 @@ class Follow {
 		if (name === "then" || name === "catch" || name === "finally")
 			return [{ call: parent, module, wrap: [] }]
 		if (typeof name === "string" && name in arrayMethods) {
-			return arrayMethods[name] === "mapped" ?
+			return (
+				name === "flatMap" ?
+					[{ call: parent, module, wrap: [anyKey], flattens: true }]
+				: arrayMethods[name] === "mapped" ?
 					[{ call: parent, module, wrap: [anyKey] }]
 				:	[]
+			)
 		}
 		const value = this.valueOf(callee, module)
 		if (value?.kind !== "function") return
@@ -2117,6 +2149,25 @@ const exits = (statement: Node): boolean => {
 
 const wrapped = (held: Held, wrap: readonly Key[]): Held =>
 	wrap.length ? { ...held, path: [...wrap, ...held.path] } : held
+
+// .flat()'s depth, 1 by default, or any where the build can't name it
+const flatDepthOf = (
+	call: Extract<Node, { type: "CallExpression" }>
+): number => {
+	const [arg] = call.arguments
+	if (!arg) return 1
+	const depth = unwrapExpression(arg)
+	return depth.type === "Literal" && typeof depth.value === "number" ?
+			depth.value
+		:	Infinity
+}
+
+// a flatMap() callback returning an array holds it one level shallower than
+// its wrap, as the same call's entry without one does
+const entryHeldOf = (held: Held, entry: Entry): Held =>
+	entry.flattens && held.path[0] === anyKey ?
+		{ ...wrapped(held, entry.wrap), unflattened: true }
+	:	wrapped(held, entry.wrap)
 
 // what each array method returns of its receiver: itself, an element or what its callback maps
 const arrayMethods: Record<

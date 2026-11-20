@@ -143,16 +143,11 @@ export const publishedVersionsOf = async (name: string): Promise<string[]> => {
 const npmFetchTimeoutMs = 15_000
 const maxNpmFetchAttempts = 3
 
-/**
- * whether a specific version of a package is on npm. Queries the uncached
- * per-version endpoint rather than the packument, which is CDN-cached and
- * omits versions still in npm's async PUT 202 processing queue.
- */
-export const isVersionOnNpm = async (
-	name: string,
-	version: string
-): Promise<boolean> => {
-	const url = `https://registry.npmjs.org/${name.replace("/", "%2f")}/${version}`
+const npmUrlOf = (name: string, path = "") =>
+	`https://registry.npmjs.org/${name.replace("/", "%2f")}${path}`
+
+// retries a timeout, a 429 or a 5xx, and returns any other response
+const fetchNpm = async (url: string): Promise<Response> => {
 	for (let attempt = 1; ; attempt++) {
 		let response: Response
 		try {
@@ -164,12 +159,59 @@ export const isVersionOnNpm = async (
 			await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
 			continue
 		}
-		await response.body?.cancel()
-		if (response.status === 200) return true
-		if (response.status === 404) return false
 		const isTransient = response.status === 429 || response.status >= 500
-		if (!isTransient || attempt >= maxNpmFetchAttempts)
-			throw new Error(`npm responded ${response.status} for ${name}@${version}`)
+		if (!isTransient || attempt >= maxNpmFetchAttempts) return response
+		await response.body?.cancel()
 		await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
 	}
+}
+
+/**
+ * whether a specific version of a package is on npm. Queries the uncached
+ * per-version endpoint rather than the packument, which is CDN-cached and
+ * omits versions still in npm's async PUT 202 processing queue.
+ */
+export const isVersionOnNpm = async (
+	name: string,
+	version: string
+): Promise<boolean> => {
+	const response = await fetchNpm(npmUrlOf(name, `/${version}`))
+	await response.body?.cancel()
+	if (response.status === 200) return true
+	if (response.status === 404) return false
+	throw new Error(`npm responded ${response.status} for ${name}@${version}`)
+}
+
+type Packument = {
+	versions?: Record<string, unknown>
+	time?: Record<string, string>
+}
+
+export type NpmVersionStatus = "published" | "unpublished" | "absent"
+
+/**
+ * what the full packument says of a version: "published" if it lists it,
+ * "unpublished" if its `time` records a publish its `versions` no longer has
+ * (npm never lets that version be reused), or "absent" if it has neither,
+ * as for a version npm is still processing
+ */
+export const npmVersionStatusOf = async (
+	name: string,
+	version: string
+): Promise<NpmVersionStatus> => {
+	const response = await fetchNpm(npmUrlOf(name))
+	if (response.status === 404) {
+		await response.body?.cancel()
+		return "absent"
+	}
+	if (!response.ok) {
+		await response.body?.cancel()
+		throw new Error(`npm responded ${response.status} for ${name}`)
+	}
+	const packument = (await response.json()) as Packument
+	return (
+		packument.versions?.[version] ? "published"
+		: packument.time?.[version] ? "unpublished"
+		: "absent"
+	)
 }

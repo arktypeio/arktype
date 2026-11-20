@@ -802,6 +802,13 @@ tag\`\${User}\`.assert({})`)
 			).snap(
 				"the validator at types.ts:3:21 is lost where main.ts:4:2 calls .first on what holds it"
 			)
+			attest(
+				await droppedReading(
+					`const Arr: any = Array\nArr.prototype.first = function () { return this[0] }\n;([User] as any).first().assert({})`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:5:2 calls .first on what holds it"
+			)
 		})
 
 		it("a computed call whose key isn't a constant", async () => {
@@ -950,6 +957,58 @@ Object.assign(o, { parse: A.prototype.parse })
 o.parse()`
 				)
 			).snap(["meta", "~standard", "methods", "withContext"])
+		})
+
+		it("a class method detached by a computed read whose key isn't a constant", async () => {
+			attest(
+				await droppedReading(
+					`class C { get(k: string) { return (this as any)[k] } validate() { return (this as any).s.assert({}) } }
+const o = { s: User, m: new C().get("validate") }
+o.m()`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:3:28 returns it from a function whose calls the build can't follow"
+			)
+			attest(
+				await droppedReading(
+					`class C { validate() { return (this as any).s.assert({}) } }
+const pick = (x: any, k: string) => x[k]
+const k = Math.random() < 2 ? "validate" : "other"
+const o = { s: User, m: pick(new C(), k) }
+o.m()`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+		})
+
+		it("a private class method detached through a getter", async () => {
+			attest(
+				await droppedReading(
+					`class A { #m() { return (this as any).s.assert({}) } get m() { return this.#m } }
+const o = { s: User, m: new A().m }
+o.m()`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+		})
+
+		it("a forwarding callee whose call the program overrides", async () => {
+			attest(
+				await droppedReading(
+					`const f = function (): any { return 0 }
+;(f as any).call = (t: unknown) => t
+const o = { s: User, self() { return f.call(this) } }
+o.self().s.assert({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`;(Function.prototype as any).call = function (t: unknown) { return t }
+const f = function (): any { return 0 }
+const o = { s: User, self() { return f.call(this) } }
+o.self().s.assert({})`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:6:1 calls .self on what holds it"
+			)
 		})
 
 		it("a method detached from an object literal through an inherited __proto__ member", async () => {

@@ -19,6 +19,9 @@ import {
 } from "arktype/runtime"
 import { ArkErrors, fromJsonSchema, scope, type } from "arktype"
 
+// a runtime issue keeps the data it describes in memory
+type IssueWithData = { data?: unknown }
+
 contextualize(() => {
 	describe("ArkErrors instanceof and Standard Schema serialization", () => {
 		it("recognizes runtime error variants and isolates subclasses", () => {
@@ -73,9 +76,7 @@ contextualize(() => {
 			const runtimeResult = standardResultOf(runtimeErr)
 			if (!runtimeResult.issues) throw new Error("Expected failure result")
 			// in-memory issues keep data, while JSON serialization strips it
-			attest((runtimeResult.issues[0] as { data?: unknown }).data).equals(
-				secret
-			)
+			attest((runtimeResult.issues[0] as IssueWithData).data).equals(secret)
 			attest(runtimeResult.message).equals(runtimeErr.summary)
 			attest(JSON.stringify(runtimeResult)).equals(expectedRuntimeJson)
 

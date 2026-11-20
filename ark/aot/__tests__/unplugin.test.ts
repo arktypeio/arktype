@@ -754,7 +754,7 @@ export const describe = (t: { description: string }) => t.description
 			],
 			[
 				true,
-				"ArkErrors {\n  summary: 'is invalid',\n  issues: [\n    {\n      code: 'predicate',\n      path: [],\n      data: { a: 1 },\n      message: 'is invalid'\n    }\n  ]\n}",
+				"ArkErrors {\n  summary: 'is invalid',\n  issues: [\n    {\n      code: 'predicate',\n      path: [],\n      data: { a: 1 },\n      expected: 'valid',\n      message: 'is invalid'\n    }\n  ]\n}",
 				"TraversalError: is invalid",
 				""
 			]

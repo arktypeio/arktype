@@ -2,7 +2,12 @@ import { getShellOutput, shell } from "@ark/fs"
 import { throwError } from "@ark/util"
 import { spawn } from "node:child_process"
 import { preview } from "../docs/lib/bench/preview.ts"
-import { isVersionOnNpm, packagesByScope, publishOrder } from "./shared.ts"
+import {
+	isVersionOnNpm,
+	npmVersionStatusOf,
+	packagesByScope,
+	publishOrder
+} from "./shared.ts"
 
 // publishes each version npm doesn't have yet, then tags and releases each one
 // npm has, so a rerun after a failure finishes what the failed run started.
@@ -43,10 +48,6 @@ const existingTags = new Set(
 	getShellOutput("git ls-remote --tags origin")
 		.split("\n")
 		.map(line => line.split("refs/tags/")[1]?.replace("^{}", ""))
-)
-
-const localTags = new Set(
-	getShellOutput("git tag --list").split("\n").filter(Boolean)
 )
 
 const existingReleases = new Set(
@@ -92,16 +93,25 @@ const publish = async (release: Release) => {
 				release.isOnNpm = true
 				return
 			}
-			if (existingTags.has(release.tag) || localTags.has(release.tag)) {
-				console.warn(
-					`${release.tag} was rejected as already published and isVersionOnNpm still returned false, but git tag ${release.tag} already exists (npm PUT 202 async queue); continuing.`
-				)
-				release.isOnNpm = true
-				return
-			}
-			throwError(
-				`${release.tag} was rejected as already published, but isVersionOnNpm returned false and git tag ${release.tag} does not exist (version was likely unpublished and cannot be reused)`
+			// the packument's `time` keeps a version npm unpublished, which it
+			// never lets be published again, so only that case can't finish
+			const status = await npmVersionStatusOf(
+				release.pkg.name,
+				release.pkg.version
 			)
+			if (status === "unpublished") {
+				throwError(
+					`${release.tag} was published and then unpublished, and npm never accepts that version again. Bump it and rerun.`
+				)
+			}
+			if (status === "absent") {
+				console.warn(
+					`${release.tag} was rejected as already published, but npm doesn't list it yet, as for a publish it is still processing; continuing.`
+				)
+			} else
+				console.log(`${release.tag} is already published on npm; continuing.`)
+			release.isOnNpm = true
+			return
 		}
 		throwError(
 			`pnpm ${args.join(" ")} failed for ${release.tag} (exit ${code ?? signal})`

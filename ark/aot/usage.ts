@@ -1108,7 +1108,7 @@ export const globalNameOf = (
 	return typeof name === "string" ? `${root.name}.${name}` : undefined
 }
 
-const builtinPrototypeCtors = new Set(["Array", "Object"])
+const builtinPrototypeCtors = new Set(["Array", "Function", "Object"])
 const globalHostNames = new Set(["globalThis", "window", "self", "global"])
 const prototypeMutators = new Set([
 	"Object.defineProperty",
@@ -1181,6 +1181,10 @@ const isGetPrototypeOfCallee = (node: Node, module: SourceModule): boolean => {
 	)
 }
 
+// `==`, `===`, `!=` or `!==`, which compare a reference without leaking it
+const isEqualityOperator = (operator: string): boolean =>
+	/^[!=]==?$/.test(operator)
+
 // a read of a prototype that neither mutates nor leaks it, e.g.
 // `Array.prototype.slice.call(list)` or `proto === Object.prototype`
 const isSafePrototypeRead = (
@@ -1190,7 +1194,7 @@ const isSafePrototypeRead = (
 	(parent?.type === "MemberExpression" &&
 		parent.object === operand &&
 		!isWriteTarget(parent)) ||
-	(parent?.type === "BinaryExpression" && /^[!=]==?$/.test(parent.operator))
+	(parent?.type === "BinaryExpression" && isEqualityOperator(parent.operator))
 
 const isPrototypeMutatorCall = (
 	operand: Node,
@@ -1323,6 +1327,7 @@ type ThisReadsContext = {
 	hasProtoInheritance: boolean
 	hasDescriptorRead: boolean
 	hasEscapedPrototype: boolean
+	patchesBuiltins: boolean
 	skippedCache: Map<Node, boolean>
 }
 
@@ -1372,10 +1377,12 @@ const staticMemberKeyOf = (
 	member: Extract<Node, { type: "MemberExpression" }>,
 	module: SourceModule
 ): string | undefined => {
-	const name = memberNameOf(member)
-	if (typeof name === "string" || typeof name === "number") return String(name)
+	// checked before memberNameOf, which names `this.#m` "m", so the key matches
+	// classMemberKeyOf's "#m"
 	if (!member.computed && member.property.type === "PrivateIdentifier")
 		return `#${member.property.name}`
+	const name = memberNameOf(member)
+	if (typeof name === "string" || typeof name === "number") return String(name)
 	return member.computed ? constantKeyOf(member.property, module) : undefined
 }
 
@@ -1461,15 +1468,10 @@ const isNonNullProtoProperty = (
 	return proto.type !== "Literal" || proto.value !== null
 }
 
-type BuiltThisReadsContext = {
-	ctx: ThisReadsContext
-	patchesBuiltins: boolean
-}
-
 const buildThisReadsContext = (
 	modules: readonly SourceModule[],
 	options?: ThisReadsOptions
-): BuiltThisReadsContext => {
+): ThisReadsContext => {
 	const resolve = options?.resolve ?? (() => undefined)
 	const importersById = new Map<string, ThisImportEdge[]>()
 	const addEdge = (
@@ -1573,11 +1575,17 @@ const buildThisReadsContext = (
 						hasProtoInheritance = true
 				} else {
 					const key = staticMemberKeyOf(node, module)
-					if (key !== undefined && !isDirectCallMember(node)) {
+					// a non-constant read like `x[k]` may detach any method, whatever
+					// reaches `x` (`pick(new C(), k)`, a mixin copy over
+					// getOwnPropertyNames), so it counts as an uncalled read of every
+					// key. Detached methods still go through receiver isolation.
+					if (key === undefined && node.computed && !isDirectCallMember(node))
+						hasDescriptorRead = true
+					else if (key !== undefined && !isDirectCallMember(node)) {
 						uncalledKeys.add(key)
 						if (
 							key === "prototype" &&
-							!isUnboundBuiltinObject(node.object, module)
+							!isUnboundIdentifier(node.object, module)
 						) {
 							const [protoOp, protoUse] = operatorOf(node)
 							const isSafeProtoUse =
@@ -1586,7 +1594,7 @@ const buildThisReadsContext = (
 									isDiscardedProtoMethodWrite(protoUse)) ||
 								isSubProtoCreate(protoOp, protoUse, module) ||
 								(protoUse?.type === "BinaryExpression" &&
-									/^[!=]==?$/.test(protoUse.operator))
+									isEqualityOperator(protoUse.operator))
 							if (!isSafeProtoUse) hasEscapedPrototype = true
 						}
 					}
@@ -1637,24 +1645,22 @@ const buildThisReadsContext = (
 	}
 
 	return {
-		ctx: {
-			modules,
-			entries: options?.entries ?? emptyStringSet,
-			exposed: options?.exposed ?? emptyStringSet,
-			resolve,
-			importersById,
-			hasDynamicImport,
-			uncalledKeys,
-			hasProtoInheritance,
-			hasDescriptorRead,
-			hasEscapedPrototype,
-			skippedCache: new Map()
-		},
-		patchesBuiltins
+		modules,
+		entries: options?.entries ?? emptyStringSet,
+		exposed: options?.exposed ?? emptyStringSet,
+		resolve,
+		importersById,
+		hasDynamicImport,
+		uncalledKeys,
+		hasProtoInheritance,
+		hasDescriptorRead,
+		hasEscapedPrototype,
+		patchesBuiltins,
+		skippedCache: new Map()
 	}
 }
 
-const isUnboundBuiltinObject = (node: Node, module: SourceModule): boolean => {
+const isUnboundIdentifier = (node: Node, module: SourceModule): boolean => {
 	const target = unwrapExpression(node)
 	return (
 		target.type === "Identifier" && !module.scopes.byId.get(target)?.binding
@@ -1666,11 +1672,11 @@ export const thisReadsOf = (
 	options?: ThisReadsOptions
 ): ThisReads => {
 	const moduleList = [...modules]
-	const { ctx, patchesBuiltins } = buildThisReadsContext(moduleList, options)
+	const ctx = buildThisReadsContext(moduleList, options)
 	const reads: ThisReads = {
 		escaped: { keys: new Set(), any: false },
 		byLiteral: new Map(),
-		patchesBuiltins
+		patchesBuiltins: ctx.patchesBuiltins
 	}
 	const addLiteralTarget = (literal: Node, targets: KeyReads[]) => {
 		let own = reads.byLiteral.get(literal)
@@ -1900,7 +1906,7 @@ const classBindingExposes = (
 		}
 		if (
 			use?.type === "BinaryExpression" &&
-			(use.operator === "instanceof" || /^[!=]==?$/.test(use.operator))
+			(use.operator === "instanceof" || isEqualityOperator(use.operator))
 		)
 			continue
 		if (use?.type === "MemberExpression" && use.object === op) {
@@ -2000,7 +2006,7 @@ const ctorExposesPrototype = (
 			if (isSubProtoCreate(protoOp, protoUse, module)) continue
 			if (
 				protoUse?.type === "BinaryExpression" &&
-				/^[!=]==?$/.test(protoUse.operator)
+				isEqualityOperator(protoUse.operator)
 			)
 				continue
 			if (
@@ -2148,8 +2154,10 @@ const namesReadOf = (
 ): ReadonlySet<string> | "any" => {
 	const [operand, parent] = operatorOf(node)
 	// e.g. `fn.apply(this, args)` in a debounce, where fn is proven to be an
-	// indexed function whose own body records every `this` read
+	// indexed function whose own body records every `this` read, unless the
+	// program may have patched `Function.prototype.call` or `.apply`
 	if (
+		!ctx.patchesBuiltins &&
 		parent?.type === "CallExpression" &&
 		parent.arguments[0] === operand &&
 		parent.callee.type === "MemberExpression" &&
@@ -2228,7 +2236,12 @@ const isForwardingBinding = (
 	ctx: ThisReadsContext,
 	seen: Set<Binding>
 ): boolean => {
-	if (seen.has(binding) || binding.writes.length > 0) return false
+	if (
+		seen.has(binding) ||
+		binding.writes.length > 0 ||
+		mayOverrideForwarding(binding, module)
+	)
+		return false
 	seen.add(binding)
 	switch (binding.kind) {
 		case "function":
@@ -2260,6 +2273,25 @@ const isForwardingBinding = (
 			return false
 	}
 }
+
+// whether a reference may give the function its own `call` or `apply`, or a
+// prototype other than Function.prototype: a member write like
+// `f.call = t => t`, or `Object.defineProperty(f, "call", ...)` and
+// `Object.setPrototypeOf(f, ...)`
+const mayOverrideForwarding = (
+	binding: Binding,
+	module: SourceModule
+): boolean =>
+	binding.references.some(ref => {
+		if (ref.isWrite) return false
+		const [op, use] = operatorOf(ref.id)
+		return (
+			(use?.type === "MemberExpression" &&
+				use.object === op &&
+				isWriteTarget(use)) ||
+			isPrototypeMutatorCall(op, use, module)
+		)
+	})
 
 const resolveImportBinding = (
 	binding: Binding,
@@ -2589,7 +2621,7 @@ const collectExportCalls = (
 
 // whether no escaped function can ever be called with `this === literal`:
 // `literal` never escapes, inherits no prototype, has no spread or computed
-// keys, never invokes external or non-own members on itself, and its own inline
+// keys but constant ones, never invokes external or non-own members on itself, and its own inline
 // methods/getters only read direct own members off `this`
 const receivesNoEscapedThis = (
 	literal: Extract<Node, { type: "ObjectExpression" }>,
@@ -2601,11 +2633,12 @@ const receivesNoEscapedThis = (
 	let hasInlineThisOwner = false
 	for (const prop of literal.properties) {
 		if (prop.type !== "Property") return false
-		const key = propertyKeyOf(prop)
+		const key =
+			propertyKeyOf(prop) ??
+			(prop.computed ? constantKeyOf(prop.key, module) : undefined)
 		if (key === undefined) return false
 		if (key === "__proto__" && !prop.computed && prop.kind === "init") {
-			const proto = unwrapExpression(prop.value)
-			if (proto.type !== "Literal" || proto.value !== null) return false
+			if (isNonNullProtoProperty(prop)) return false
 			continue
 		}
 		ownKeys.add(key)
@@ -2838,8 +2871,7 @@ const isContained = (
 		if (key === undefined) return false
 		// a non-null __proto__ inherits getters/methods that run with `this === literal`
 		if (key === "__proto__" && !prop.computed && prop.kind === "init") {
-			const proto = unwrapExpression(prop.value)
-			if (proto.type !== "Literal" || proto.value !== null) return false
+			if (isNonNullProtoProperty(prop)) return false
 			continue
 		}
 		ownKeys.add(key)
