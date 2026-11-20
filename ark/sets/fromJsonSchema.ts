@@ -89,6 +89,7 @@ const numberDomain = {
 
 // deep enough for real schemas (100-200+ levels) without risking a JS stack overflow
 const maxReadDepth = 512
+const maxValueDepth = 1024
 
 export const readJsonSchema = (
 	schema: JsonSchema.Input,
@@ -152,7 +153,7 @@ const read = (schema: unknown, pointer: string, ctx: ReadContext): BaseRoot => {
 			const constraint = readKeywords(o, pointer, ctx)
 			if (constraint) result = intersectRoots(result, constraint)
 		}
-		return withAnnotations(result, o, pointer, ctx)
+		return withAnnotations(result, o, pointer)
 	} finally {
 		ctx.resource = enclosing
 		ctx.depth--
@@ -427,23 +428,15 @@ const keywordReaders: KeywordReader[] = [
 		:	unionOf(
 				typeNamesOf(o).map(name => typeRoots()[name as JsonSchema.TypeName])
 			),
-	(o, pointer, ctx) =>
-		o.const === undefined ?
-			undefined
-		:	constRoot(o.const, `${pointer}/const`, ctx),
-	(o, pointer, ctx) => {
+	(o, pointer) =>
+		o.const === undefined ? undefined : constRoot(o.const, `${pointer}/const`),
+	(o, pointer) => {
 		if (o.enum === undefined) return
 		const items = o.enum as array
-		if (ctx.reading.has(items))
-			return throwParseError(writeCircularSchemaMessage(`${pointer}/enum`))
-		ctx.reading.add(items)
-		try {
-			return unionOf(
-				items.map((v, i) => constRoot(v, `${pointer}/enum/${i}`, ctx))
-			)
-		} finally {
-			ctx.reading.delete(items)
-		}
+		const seen = new Set<object>([items])
+		return unionOf(
+			items.map((v, i) => constRoot(v, `${pointer}/enum/${i}`, 0, seen))
+		)
 	},
 	o => {
 		const constraints: RootSchema[] = []
@@ -946,13 +939,19 @@ type RequiredPropEntry = {
 const constObjectRoot = (
 	value: object,
 	pointer: string,
-	ctx: ReadContext
+	depth: number,
+	seen: Set<object>
 ): BaseRoot => {
 	const required: RequiredPropEntry[] = []
 	const index: unknown[] = []
 	const predicate: unknown[] = [notArray()]
 	for (const [key, v] of Object.entries(value)) {
-		const propValue = constRoot(v, `${pointer}/${escapePointer(key)}`, ctx)
+		const propValue = constRoot(
+			v,
+			`${pointer}/${escapePointer(key)}`,
+			depth,
+			seen
+		)
 		if (key in Object.prototype)
 			addPrototypeKeyConstraint({ index, predicate }, key, propValue, true)
 		else required.push({ key, value: propValue })
@@ -969,17 +968,17 @@ const constObjectRoot = (
 const constRoot = (
 	value: unknown,
 	pointer: string,
-	ctx: ReadContext
+	depth = 0,
+	seen: Set<object> = new Set()
 ): BaseRoot => {
 	const isArr = isArray(value)
 	if (!isArr && !isJsonSchemaObject(value))
 		return jsonSchemaRoot({ unit: value })
-	if (ctx.depth >= maxReadDepth)
-		return throwParseError(writeMaxDepthMessage(pointer))
-	if (ctx.reading.has(value))
+	if (depth >= maxValueDepth)
+		return throwParseError(writeMaxDepthMessage(pointer, maxValueDepth))
+	if (seen.has(value))
 		return throwParseError(writeCircularSchemaMessage(pointer))
-	ctx.reading.add(value)
-	ctx.depth++
+	seen.add(value)
 	try {
 		return isArr ?
 				jsonSchemaRoot(
@@ -989,15 +988,14 @@ const constRoot = (
 							proto: Array,
 							sequence: {
 								prefix: value.map((v, i) =>
-									constRoot(v, `${pointer}/${i}`, ctx)
+									constRoot(v, `${pointer}/${i}`, depth + 1, seen)
 								)
 							}
 						}
 				)
-			:	constObjectRoot(value, pointer, ctx)
+			:	constObjectRoot(value, pointer, depth + 1, seen)
 	} finally {
-		ctx.depth--
-		ctx.reading.delete(value)
+		seen.delete(value)
 	}
 }
 
@@ -1063,38 +1061,44 @@ const expectedOf = (root: BaseRoot): string =>
 const checkAnnotationValue = (
 	value: unknown,
 	pointer: string,
-	ctx: ReadContext
+	depth = 0,
+	seen: Set<object> = new Set()
 ): void => {
 	if (typeof value !== "object" || value === null) return
-	if (ctx.depth >= maxReadDepth) throwParseError(writeMaxDepthMessage(pointer))
-	if (ctx.reading.has(value))
-		throwParseError(writeCircularSchemaMessage(pointer))
-	ctx.reading.add(value)
-	ctx.depth++
+	if (depth >= maxValueDepth)
+		throwParseError(writeMaxDepthMessage(pointer, maxValueDepth))
+	if (seen.has(value)) throwParseError(writeCircularSchemaMessage(pointer))
+	seen.add(value)
 	try {
 		if (isArray(value)) {
-			for (let i = 0; i < value.length; i++)
-				if (i in value) checkAnnotationValue(value[i], `${pointer}/${i}`, ctx)
+			for (let i = 0; i < value.length; i++) {
+				if (i in value)
+					checkAnnotationValue(value[i], `${pointer}/${i}`, depth + 1, seen)
+			}
 		} else {
-			for (const [key, v] of Object.entries(value))
-				checkAnnotationValue(v, `${pointer}/${escapePointer(key)}`, ctx)
+			for (const [key, v] of Object.entries(value)) {
+				checkAnnotationValue(
+					v,
+					`${pointer}/${escapePointer(key)}`,
+					depth + 1,
+					seen
+				)
+			}
 		}
 	} finally {
-		ctx.depth--
-		ctx.reading.delete(value)
+		seen.delete(value)
 	}
 }
 
 const withAnnotations = (
 	root: BaseRoot,
 	o: dict,
-	pointer: string,
-	ctx: ReadContext
+	pointer: string
 ): BaseRoot => {
 	if (o.default !== undefined)
-		checkAnnotationValue(o.default, `${pointer}/default`, ctx)
+		checkAnnotationValue(o.default, `${pointer}/default`)
 	if (o.examples !== undefined)
-		checkAnnotationValue(o.examples, `${pointer}/examples`, ctx)
+		checkAnnotationValue(o.examples, `${pointer}/examples`)
 	const meta: dict = flatMorph(annotationKeys, (i, k) =>
 		o[k] === undefined ? [] : [k, o[k]]
 	)
@@ -1463,5 +1467,8 @@ export const writeShallowCycleMessage = (
 export const writeCircularSchemaMessage = (pointer: string): string =>
 	`JSON Schema at ${pointer} is circular`
 
-export const writeMaxDepthMessage = (pointer: string): string =>
-	`JSON Schema at ${pointer} exceeds maximum nesting depth of ${maxReadDepth}`
+export const writeMaxDepthMessage = (
+	pointer: string,
+	maxDepth = maxReadDepth
+): string =>
+	`JSON Schema at ${pointer} exceeds maximum nesting depth of ${maxDepth}`

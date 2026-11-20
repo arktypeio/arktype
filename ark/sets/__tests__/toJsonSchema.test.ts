@@ -198,14 +198,10 @@ contextualize(() => {
 			"^a\\-b$",
 			"^\\u{61}$",
 			"^[\\u{61}]$",
-			"^{$",
-			"^[😀]$",
-			"^😀+$",
-			"^😀$",
-			"^[\\uD83D\\uDE00]$"
+			"^{$"
 		]
 
-		it("routes flagless u-sensitive and astral patterns to patternFlags fallback", () => {
+		it("routes flagless u-sensitive patterns to patternFlags fallback", () => {
 			for (const pattern of uSensitivePatterns) {
 				const T = rootSchema({ domain: "string", pattern })
 				for (const target of [
@@ -253,7 +249,10 @@ contextualize(() => {
 				"^\\D+$",
 				"^\\W+$",
 				"^.$",
-				"^\\\\p{1}$"
+				"^\\\\p{1}$",
+				"😀",
+				"^😀$",
+				"^\\ud83d$"
 			]) {
 				const T = rootSchema({ domain: "string", pattern })
 				attest(toJsonSchema(T, { dialect: null })).equals({
@@ -632,6 +631,67 @@ contextualize(() => {
 			attest(v({ value: 1 })).equals(true)
 			attest(v({ value: 1, next: { value: 2 } })).equals(true)
 			attest(v({ value: 1, next: { value: "bad" } })).equals(false)
+		})
+
+		it("preserves cyclic alias names under io: 'out' and Standard output when withoutUndefined unwraps an alias", () => {
+			const $ = schemaScope({
+				Root: {
+					domain: "object",
+					required: [{ key: "head", value: "$Node" }]
+				},
+				Node: [
+					{
+						domain: "object",
+						required: [{ key: "value", value: "number" }],
+						optional: [{ key: "next", value: "$Node" }]
+					},
+					{ unit: undefined }
+				]
+			}).export()
+
+			attest(
+				$.Root.toJsonSchema({ dialect: null, io: "out", aliasDefs: true })
+			).snap({
+				$ref: "#/$defs/Root",
+				$defs: {
+					Root: {
+						type: "object",
+						properties: { head: { $ref: "#/$defs/Node" } }
+					},
+					Node: {
+						type: "object",
+						properties: {
+							next: { $ref: "#/$defs/Node" },
+							value: { type: "number" }
+						},
+						required: ["value"]
+					}
+				}
+			})
+
+			attest(
+				$.Root["~standard"].jsonSchema.output({
+					target: "draft-2020-12",
+					libraryOptions: { aliasDefs: true }
+				})
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				$ref: "#/$defs/Root",
+				$defs: {
+					Root: {
+						type: "object",
+						properties: { head: { $ref: "#/$defs/Node" } }
+					},
+					Node: {
+						type: "object",
+						properties: {
+							next: { $ref: "#/$defs/Node" },
+							value: { type: "number" }
+						},
+						required: ["value"]
+					}
+				}
+			})
 		})
 	})
 })

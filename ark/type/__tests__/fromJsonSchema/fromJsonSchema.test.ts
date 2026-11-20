@@ -241,4 +241,33 @@ contextualize(() => {
 			attest(S4.allows({ next: { next: -1 } })).equals(false)
 		}
 	})
+
+	it("tracks const and default value depth separately from schema nesting depth", () => {
+		let nestedConst: unknown = 1
+		for (let i = 0; i < 600; i++) nestedConst = [nestedConst]
+		const DeepConst = fromJsonSchema({ const: nestedConst })
+		attest(DeepConst.allows(nestedConst)).equals(true)
+		attest(DeepConst.allows([1])).equals(false)
+
+		let deepSchema: JsonSchema = {
+			type: "object",
+			default: { nested: { ok: true } }
+		}
+		for (let i = 0; i < 511; i++)
+			deepSchema = { type: "object", properties: { a: deepSchema } }
+		const DeepDefault = fromJsonSchema(deepSchema)
+		attest(DeepDefault.allows({})).equals(true)
+
+		let tooDeep: unknown = 1
+		for (let i = 0; i < 20_000; i++) tooDeep = [tooDeep]
+		attest(() => fromJsonSchema({ const: tooDeep })).throws(
+			"exceeds maximum nesting depth of 1024"
+		)
+
+		const circular: Record<string, unknown> = {}
+		circular.self = circular
+		attest(() => fromJsonSchema({ const: circular })).throws(
+			"JSON Schema at #/const/self is circular"
+		)
+	})
 })

@@ -499,7 +499,7 @@ contextualize(() => {
 				{ type: "object", examples: [deepObj] }
 			]) {
 				attest(() => parse(schema)).throws(
-					"exceeds maximum nesting depth of 512"
+					"exceeds maximum nesting depth of 1024"
 				)
 			}
 

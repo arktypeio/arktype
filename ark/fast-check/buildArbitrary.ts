@@ -28,15 +28,18 @@ export const buildArbitrary = (
 					buildDomainArbitrary[node.basis?.domain](node, ctx)
 				:	buildProtoArbitrary(node.basis.proto, node, ctx)
 
-			// generated around the values a != excludes
+			// generated around the values a != excludes or a narrow filters
 			const excluded = [
 				...(node.inner.notEqual ?? []),
 				...(node.inner.notEqualLength ?? [])
 			]
+			const predicates = node.inner.predicate ?? []
 			const intersectionArbitrary =
-				excluded.length ?
-					basisArbitrary.filter(data =>
-						excluded.every(node => node.tAllows(data as never))
+				excluded.length || predicates.length ?
+					basisArbitrary.filter(
+						data =>
+							excluded.every(ex => ex.tAllows(data as never)) &&
+							predicates.every(pred => pred.allows(data as never))
 					)
 				:	basisArbitrary
 

@@ -154,7 +154,7 @@ type("string").toJsonSchema({ dialect: null }) // { type: "string" }
 
 - **unset** (default): converts the Type's input while keeping output-side structure except `"+": "delete"` (so morphs hit the `morph` fallback, defaults stay `default`, and `"+": "delete"` omits `additionalProperties`).
 - **`"in"`**: converts the input (morphs as their input, keeps `default`, drops `undefined` union branches, and allows keys `"+": "delete"` removes).
-- **`"out"`**: converts the output, matching [`~standard.jsonSchema.output`](#standard-json-schema) (morphs as their output, applies defaults, writes `additionalProperties: false` for `"+": "delete"`, and drops `undefined` from object property/index values while omitting `undefined`-allowing object properties from `required`).
+- **`"out"`**: converts the output (morphs as their output, applies defaults, writes `additionalProperties: false` for `"+": "delete"`, and drops `undefined` from object property/index values while omitting `undefined`-allowing object properties from `required`); paired with a base fallback (`fallback: ctx => ctx.base`), it matches [`~standard.jsonSchema.output`](#standard-json-schema).
 
 ### Cyclic types
 

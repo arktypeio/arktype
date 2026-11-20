@@ -95,7 +95,7 @@ contextualize(() => {
 				"-1 <= number % 5 <= 6 & number != 0 & number != 5"
 			)
 			attest(() => arkToArbitrary(unsatisfiable)).throws(
-				"satisfy != constraints"
+				"No values within range -1 - 6 divisible by 5 satisfy != constraints."
 			)
 		})
 	})
@@ -598,6 +598,15 @@ contextualize(() => {
 			attest(() =>
 				arkToArbitrary(type("Date").and({ custom: "string" }))
 			).throws("Date instances with structure constraints can't be generated.")
+		})
+		it("proto intersection without conflicting structural constraints", () => {
+			for (const T of [
+				type("Date").and({}),
+				type("Date").narrow(d => d.getTime() >= 0),
+				type("Set").narrow(s => s.size >= 0),
+				type.instanceOf(Error).and({ message: "string" })
+			])
+				assertProperty(arkToArbitrary(T), T)
 		})
 	})
 })

@@ -38,6 +38,23 @@ type PublishExit = {
 	signal: NodeJS.Signals | null
 }
 
+// what origin has, since a tag a failed local run created was never pushed
+const existingTags = new Set(
+	getShellOutput("git ls-remote --tags origin")
+		.split("\n")
+		.map(line => line.split("refs/tags/")[1]?.replace("^{}", ""))
+)
+
+const localTags = new Set(
+	getShellOutput("git tag --list").split("\n").filter(Boolean)
+)
+
+const existingReleases = new Set(
+	getShellOutput(
+		`gh release list --limit 10000 --json tagName --jq ".[].tagName"`
+	).split("\n")
+)
+
 const publish = async (release: Release) => {
 	const args = [
 		"publish",
@@ -70,15 +87,21 @@ const publish = async (release: Release) => {
 	})
 	if (code !== 0) {
 		if (!dryRun && alreadyPublishedMatcher.test(output)) {
-			if (await isVersionOnNpm(release.pkg.name, release.pkg.version))
+			if (await isVersionOnNpm(release.pkg.name, release.pkg.version)) {
 				console.log(`${release.tag} is already published on npm; continuing.`)
-			else {
-				console.warn(
-					`${release.tag} was rejected as already published, but isVersionOnNpm still returned false (either npm's PUT 202 async queue hasn't materialized it yet, or the version was previously unpublished and cannot be reused); continuing.`
-				)
+				release.isOnNpm = true
+				return
 			}
-			release.isOnNpm = true
-			return
+			if (existingTags.has(release.tag) || localTags.has(release.tag)) {
+				console.warn(
+					`${release.tag} was rejected as already published and isVersionOnNpm still returned false, but git tag ${release.tag} already exists (npm PUT 202 async queue); continuing.`
+				)
+				release.isOnNpm = true
+				return
+			}
+			throwError(
+				`${release.tag} was rejected as already published, but isVersionOnNpm returned false and git tag ${release.tag} does not exist (version was likely unpublished and cannot be reused)`
+			)
 		}
 		throwError(
 			`pnpm ${args.join(" ")} failed for ${release.tag} (exit ${code ?? signal})`
@@ -86,19 +109,6 @@ const publish = async (release: Release) => {
 	}
 	if (!dryRun) release.isOnNpm = true
 }
-
-// what origin has, since a tag a failed local run created was never pushed
-const existingTags = new Set(
-	getShellOutput("git ls-remote --tags origin")
-		.split("\n")
-		.map(line => line.split("refs/tags/")[1]?.replace("^{}", ""))
-)
-
-const existingReleases = new Set(
-	getShellOutput(
-		`gh release list --limit 10000 --json tagName --jq ".[].tagName"`
-	).split("\n")
-)
 
 const toPublish = releases.filter(release => !release.isOnNpm)
 

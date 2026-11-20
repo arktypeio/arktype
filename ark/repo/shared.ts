@@ -140,6 +140,7 @@ export const publishedVersionsOf = async (name: string): Promise<string[]> => {
 	return Object.keys(versions)
 }
 
+const npmFetchTimeoutMs = 15_000
 const maxNpmFetchAttempts = 3
 
 /**
@@ -153,7 +154,16 @@ export const isVersionOnNpm = async (
 ): Promise<boolean> => {
 	const url = `https://registry.npmjs.org/${name.replace("/", "%2f")}/${version}`
 	for (let attempt = 1; ; attempt++) {
-		const response = await fetch(url)
+		let response: Response
+		try {
+			response = await fetch(url, {
+				signal: AbortSignal.timeout(npmFetchTimeoutMs)
+			})
+		} catch (e) {
+			if (attempt >= maxNpmFetchAttempts) throw e
+			await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
+			continue
+		}
 		await response.body?.cancel()
 		if (response.status === 200) return true
 		if (response.status === 404) return false

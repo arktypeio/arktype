@@ -915,7 +915,7 @@ const writeIndex = (
 	indexes: IndexWrites
 ): JsonSchema.Object => {
 	const indexValue =
-		ctx.io === "out" ? withoutUndefined(index.value) : index.value
+		ctx.io === "out" ? withoutUndefined(index.value, ctx) : index.value
 	const path = ctx.path
 	ctx.path = `${path}[${index.signature.expression}]`
 	const valueJsonSchema = toJsonSchemaRecurse(indexValue, ctx)
@@ -973,21 +973,47 @@ const writeIndex = (
 	return schema
 }
 
+const aliasNameForStripped = (
+	value: BaseRoot,
+	stripped: BaseRoot,
+	ctx: JsonSchemaContext
+): string | undefined => {
+	if (stripped.is("alias")) return undefined
+	if (value.is("alias")) return aliasNameOf(value)
+	if (!ctx.aliasDefs) return undefined
+	if (!ctx.aliasScopes.has(value.$)) addAliasNames(value.$, ctx)
+	if (hasOwn(ctx.aliasNamesById, stripped.id)) return undefined
+	if (stripped.alwaysExpandJsonSchema && !Array.isArray(ctx.aliasDefs))
+		return undefined
+	return ctx.aliasNamesById[value.id]
+}
+
 // JSON has no undefined: an optional key, or any object key or index value on
 // output, holds undefined only by being absent
-const withoutUndefined = (value: BaseRoot): BaseRoot => {
+const withoutUndefined = (
+	value: BaseRoot,
+	ctx?: JsonSchemaContext
+): BaseRoot => {
 	const resolved = value.is("alias") ? value.resolution : value
 	if (!resolved.branches.some(branch => branch.hasUnit(undefined))) return value
 	const stripped = resolved.$.schema(
 		resolved.branches.filter(branch => !branch.hasUnit(undefined))
 	)
-	return isEmptyObject(resolved.meta) ? stripped : (
+	const result =
+		isEmptyObject(resolved.meta) ? stripped : (
 			stripped.configure(resolved.meta, "self")
 		)
+	if (ctx) {
+		const name = aliasNameForStripped(value, result, ctx)
+		if (name !== undefined) nameDef(result, name, ctx)
+	}
+	return result
 }
 
 const jsonValueOf = (prop: Prop.Node, ctx: JsonSchemaContext): BaseRoot =>
-	prop.optional || ctx.io === "out" ? withoutUndefined(prop.value) : prop.value
+	prop.optional || ctx.io === "out" ?
+		withoutUndefined(prop.value, ctx)
+	:	prop.value
 
 interface IndexKey {
 	node: BaseRoot
@@ -1018,11 +1044,8 @@ const keyPatternOf = (
 		:	undefined
 }
 
-// JSON Schema compiles pattern with "u"; reject flagless sources that fail,
-// invert meaning (\p{...}, \P{...}, \u{...}), or contain astral/surrogate code
-// units whose matching changes under "u"
-const surrogateEscapePattern = /^[Dd][89A-Fa-f][\dA-Fa-f]{2}/
-
+// JSON Schema compiles pattern with "u"; reject flagless sources that fail or
+// invert meaning under "u" (\p{...}, \P{...}, \u{...})
 const differsUnderUnicodeFlag = (source: string): boolean => {
 	try {
 		new RegExp(source, "u")
@@ -1030,18 +1053,11 @@ const differsUnderUnicodeFlag = (source: string): boolean => {
 		return true
 	}
 	for (let i = 0; i < source.length; i++) {
-		const code = source.charCodeAt(i)
-		if (code >= 0xd800 && code <= 0xdfff) return true
-		if (code === 0x5c) {
+		if (source[i] === "\\") {
 			const escaped = source[++i]
 			if (
 				(escaped === "p" || escaped === "P" || escaped === "u") &&
 				source[i + 1] === "{"
-			)
-				return true
-			if (
-				escaped === "u" &&
-				surrogateEscapePattern.test(source.slice(i + 1, i + 5))
 			)
 				return true
 		}
