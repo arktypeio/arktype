@@ -75,7 +75,11 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 	}
 	let matched = false
 	for (let i = 0; i < s.l.length; i++) {
-		const result = intersectOrPipeNodes(s.l[i], head, s.ctx)
+		const result: BaseNode | Disjoint | null = intersectOrPipeNodes(
+			s.l[i],
+			head,
+			s.ctx
+		)
 		if (result === null) continue
 		if (result instanceof Disjoint) return result
 
@@ -85,17 +89,22 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 			return intersectConstraints(s)
 		}
 
-		if (!matched) {
-			s.l[i] = result as BaseConstraint
-			matched = true
-			// a sequence narrowed by the intersection implies its own length
-			if (s.kind === "intersection")
-				for (const node of s.l[i].impliedBy ?? []) appendUnique(s.r, node)
-		} else {
+		// a refinement narrowed to a new one can meet a sibling it didn't, e.g.
+		// >= 3 meeting != 3 is > 3, which meets <= 4 as == 4, so it meets each
+		// sibling again. One that's either operand has met each already
+		const isNarrowedRefinement =
+			s.kind === "intersection" && result !== s.l[i] && result !== head
+		if (matched || isNarrowedRefinement) {
 			// a head can narrow two constraints, e.g. <= 1 meeting >= 1 and <= 2
 			s.l.splice(i--, 1)
 			if (!s.l.includes(result as never)) s.r.push(result as BaseConstraint)
+		} else {
+			s.l[i] = result as BaseConstraint
+			// a sequence narrowed by the intersection implies its own length
+			if (s.kind === "intersection")
+				for (const node of s.l[i].impliedBy ?? []) appendUnique(s.r, node)
 		}
+		matched = true
 	}
 	if (!matched) s.l.push(head)
 
