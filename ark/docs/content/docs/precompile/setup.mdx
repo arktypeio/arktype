@@ -7,7 +7,7 @@ description: Add precompilation to your bundler, framework, test runner or Node 
 
 <InstallationTabs pkg="@ark/aot" dev />
 
-`@ark/aot` runs on Node 22.12 or later, and precompiles with the version of `arktype` it imports, so install one copy of `arktype`. The build fails if your program resolves another version, or more than one copy of `arktype`, `@ark/schema` or `@ark/util`, naming each and the file that reached it. Each module of validators also imports an export of `arktype/runtime` named for its version, so a bundle or Node [fails to link](/docs/precompile/troubleshooting#setup) it to another version's runtime, like one a stale cache kept. That import adds nothing to the bundle.
+`@ark/aot` runs on Node 22.12 or later, and precompiles with the version of `arktype` it imports, so install one copy of `arktype`. The build fails if your program resolves another version, or more than one copy of `arktype`, naming each and the file that reached it. Each module of validators also imports an export of `arktype/runtime` named for its version, so a bundle or Node [fails to link](/docs/precompile/troubleshooting#setup) it to another version's runtime, like one a stale cache kept. That import adds nothing to the bundle.
 
 `@ark/aot` peers on the exact `arktype` it was released with, so upgrade the two together. Renovate and Dependabot open a pull request for each unless you group them:
 
@@ -265,7 +265,7 @@ A production build reads each component as its framework compiles it, and each v
 
 ## Next.js [#next]
 
-With Turbopack, the default, export your config through `withPrecompile`, add the loader as a rule for each extension your definitions and config module are in, and for JavaScript that mentions arktype, which checks your dependencies, then alias arktype's entries to the runtime, and @ark/schema's runtime to the one the loader writes for your options:
+With Turbopack, the default, export your config through `withPrecompile`, add the loader as a rule for each extension your definitions and config module are in, and for JavaScript that mentions arktype, which checks your dependencies, then alias arktype's entries to the runtime, and `arktype/schema/runtime` to the one the loader writes for your options:
 
 ```js title="next.config.js"
 import { withPrecompile } from "@ark/aot/turbopack"
@@ -288,13 +288,13 @@ export default withPrecompile({
 			"arktype/config": "arktype/runtime",
 			"arktype/errors": "arktype/runtime",
 			"arktype/mutatesInput": "arktype/runtime",
-			"@ark/schema/runtime": "@ark/aot/turbopack/runtime"
+			"arktype/schema/runtime": "@ark/aot/turbopack/runtime"
 		}
 	}
 })
 ```
 
-`withPrecompile` also takes a function, as Next does. The loader fails a module whose `arktype` imports resolve otherwise, naming the aliases to add. With `runtime: "arktype"` or `shadow: true`, leave the `arktype` aliases out, since the loader fails a module they resolve to the runtime. `@ark/aot/turbopack/runtime` re-exports the copy of @ark/schema's runtime your options load, like the one [`errors: "none"`](/docs/precompile/options#errors) does, so the aliases stay alike as you change them. It reruns when a module's local imports change, and applies a changed configuration once the dev server restarts.
+`withPrecompile` also takes a function, as Next does. The loader fails a module whose `arktype` imports resolve otherwise, naming the aliases to add. With `runtime: "arktype"` or `shadow: true`, leave the `arktype` aliases out, since the loader fails a module they resolve to the runtime. `@ark/aot/turbopack/runtime` re-exports the copy of `arktype/schema/runtime` your options load, like the one [`errors: "none"`](/docs/precompile/options#errors) does, so the aliases stay alike as you change them. It reruns when a module's local imports change, and applies a changed configuration once the dev server restarts.
 
 The aliases also point a dependency's `arktype` imports at the runtime, so the `*.{js,mjs}` rule has the loader fail the build for a dependency that defines Types but doesn't [opt in](/docs/precompile/advanced#libraries), and precompile one that does or that [`dependencies`](/docs/precompile/options#dependencies) sets to `"aot"`. Turbopack can't run one dependency on arktype, so for one that creates Types from values it reads as it runs, like `drizzle-arktype`, build with webpack or with `runtime: "arktype"`. The loader reads only `import` and `export` declarations, so a CommonJS dependency that `require`s arktype throws `type is not a function` when it loads instead.
 
@@ -333,13 +333,7 @@ const { precompile } = require("@ark/aot/unplugin")
 module.exports = {
 	// bundles arktype on the pages router's server, leaving its other
 	// dependencies external, as bundlePagesRouterDependencies wouldn't
-	transpilePackages: [
-		"arktype",
-		"@ark/schema",
-		"@ark/util",
-		"arkregex",
-		"arksets"
-	],
+	transpilePackages: ["arktype", "arkregex"],
 	webpack: config => {
 		config.plugins.push(precompile.webpack())
 		return config
@@ -347,7 +341,7 @@ module.exports = {
 }
 ```
 
-Add the five to a `transpilePackages` you already set, and the plugin to a `webpack` function you already have, before it returns. The plugin reads each module Next leaves external, and fails the build, naming the package to add, where one still loads arktype. `bundlePagesRouterDependencies: true` bundles every dependency instead, and is what Turbopack needs.
+Add the two to a `transpilePackages` you already set, and the plugin to a `webpack` function you already have, before it returns. The plugin reads each module Next leaves external, and fails the build, naming the package to add, where one still loads arktype. `bundlePagesRouterDependencies: true` bundles every dependency instead, and is what Turbopack needs.
 
 Check the app before its first build, from its directory, which takes seconds where the build takes minutes:
 
@@ -398,7 +392,7 @@ A program `tsc` compiles to run from its `outDir` precompiles what it emits with
 
 It reads the nearest `tsconfig.json`, or the one `--tsconfig` names, and the tsconfigs it references. Each module reading arktype, directly or through a Type it imports, is precompiled from its source as a bundler would and emitted again over what `tsc` wrote, in the module format, target and source maps the tsconfig sets, with `arktype` and its other entries imported or required as `arktype/runtime`. Other modules and declarations stay as `tsc` emitted them. It takes the options `--check` does, reads `ark.json`, and fails on what a build would, writing nothing. Since it emits from source, run anything that rewrites `tsc`'s output, like `tsc-alias`, after it.
 
-Dependencies are left to Node, so one that imports `arktype` loads it beside the runtime rather than failing the build. That includes one that [opts in](/docs/precompile/advanced#libraries), whose Types are arktype's at runtime, so a definition reading one of them fails the build, naming the fix. `errors: "none"` and `optimizeErrors: "size"`, which `preset: "smallest"` sets, need a copy of `@ark/schema`'s runtime that only a bundler or the Node driver can load in place of the one `arktype/runtime` imports, so `--emit` refuses them. A library publishes what `tsc` emits without `--emit`, and [opts in](/docs/precompile/advanced#libraries) so its consumers' builds precompile it.
+Dependencies are left to Node, so one that imports `arktype` loads it beside the runtime rather than failing the build. That includes one that [opts in](/docs/precompile/advanced#libraries), whose Types are arktype's at runtime, so a definition reading one of them fails the build, naming the fix. `errors: "none"` and `optimizeErrors: "size"`, which `preset: "smallest"` sets, need a copy of `arktype/schema/runtime` that only a bundler or the Node driver can load in place of the one `arktype/runtime` imports, so `--emit` refuses them. A library publishes what `tsc` emits without `--emit`, and [opts in](/docs/precompile/advanced#libraries) so its consumers' builds precompile it.
 
 `--emit --declare` also writes [declarations](/docs/precompile/advanced#declarations) as `--declare` does.
 
@@ -465,6 +459,7 @@ Metro has no plugin: it caches each module by its own text, so a module whose va
 Have the package re-export `type` and `ArkErrors`, so the app checks an error against the runtime its validators use:
 
 ```ts title="packages/domain/src/index.ts"
+// @noErrors
 export * from "./money.ts"
 export { type, ArkErrors } from "arktype"
 ```

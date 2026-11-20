@@ -1,4 +1,4 @@
-import { hasDomain } from "@ark/util"
+import { hasDomain } from "arktype/util"
 import { keyOf } from "arktype/internal/standalone.ts"
 import type { Node } from "oxc-parser"
 import { globalsByName } from "./builtins.ts"

@@ -8,7 +8,7 @@ import {
 	writeJson,
 	type SourcePosition
 } from "@ark/fs"
-import { throwInternalError } from "@ark/util"
+import { throwInternalError } from "arktype/util"
 import { existsSync } from "node:fs"
 import { basename, dirname, isAbsolute, join } from "node:path"
 import { getConfig } from "../config.ts"

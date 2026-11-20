@@ -3,7 +3,7 @@ import {
 	expressionOf,
 	printable,
 	throwInternalError
-} from "@ark/util"
+} from "arktype/util"
 import type { type } from "arktype"
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"

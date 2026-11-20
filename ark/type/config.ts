@@ -1,7 +1,7 @@
 import type { arkKind, TypeMeta } from "@ark/schema"
 import type { Ark } from "./keywords/keywords.ts"
 import type { Locale } from "./locale.ts"
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+
 import {
 	configureSchema,
 	type ArkSchemaConfig,

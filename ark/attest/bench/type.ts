@@ -1,5 +1,5 @@
 import { caller } from "@ark/fs"
-import { throwInternalError } from "@ark/util"
+import { throwInternalError } from "arktype/util"
 import ts from "typescript"
 import { getBenchAssertionAtPosition } from "../cache/getCachedAssertions.ts"
 import {

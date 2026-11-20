@@ -5,7 +5,7 @@ import {
 	type BaseRoot,
 	type RootUnit
 } from "@ark/schema"
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+
 import {
 	describesData,
 	errorWriters,

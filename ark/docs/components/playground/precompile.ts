@@ -5,7 +5,14 @@ import {
 } from "@ark/aot/internal/holeNames.ts"
 import { proveFunction } from "@ark/aot/internal/proofs.ts"
 import { combinesChecks } from "@ark/aot/internal/smaller.ts"
-import { arkKindOf, printable, type Fn } from "@ark/util"
+import {
+	arkKindOf,
+	printable,
+	readsOnlyData,
+	returnsReports,
+	testsOrRejects,
+	type Fn
+} from "@ark/util"
 import {
 	keyOf,
 	precompileStandalone,
@@ -135,8 +142,13 @@ const holeNamerOf =
 	(written: FunctionSite[]) =>
 	(f: Fn, i: number): Fn => {
 		const site = written[i]
-		if (!site.node.type.startsWith("Class"))
-			proveFunction(f, site.node as never, true)
+		if (!site.node.type.startsWith("Class")) {
+			proveFunction(f, site.node as never, true, {
+				readsOnlyData,
+				returnsReports,
+				testsOrRejects
+			})
+		}
 		return Object.defineProperty(f, "name", { value: holeNameAt(site) })
 	}
 

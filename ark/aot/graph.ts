@@ -1,10 +1,10 @@
-import { Callable, includes } from "@ark/util"
-import * as arkregex from "arkregex"
+import { Callable, includes } from "arktype/util"
+import * as arkregex from "arktype/regex"
 import * as arktype from "arktype"
 import * as arktypeCodecs from "arktype/codecs"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import * as arktypeConfig from "arktype/config"
-import type { BaseRoot, GenericRoot } from "@ark/schema"
+import type { BaseRoot, GenericRoot } from "arktype/schema"
 import type { Generic } from "arktype/internal/generic.ts"
 import type {
 	IntrospectionMember,
@@ -94,6 +94,7 @@ const arktypeNamespacesBySpecifier: Record<string, object> =
 			arktype,
 			"arktype/codecs": arktypeCodecs,
 			"arktype/config": arktypeConfig,
+			"arktype/regex": arkregex,
 			arkregex
 		},
 		null

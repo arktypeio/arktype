@@ -187,7 +187,7 @@ const runtimeShimOf = (
 	const runtime = host.resolve("arktype/runtime", join(root, "package.json"))
 	const variant = resolvedVariantOf(opts)
 	const entry =
-		variant ? `@ark/schema/runtime/${variant}` : "@ark/schema/runtime"
+		variant ? `arktype/schema/runtime/${variant}` : "arktype/schema/runtime"
 	const resolved = runtime && host.resolve(entry, runtime)
 	if (!resolved)
 		return throwBuildError(writeUnresolvedSchemaRuntimeMessage(entry))
@@ -557,9 +557,10 @@ const checkAliases = async (
 	if (opts.runtime === "arktype" || opts.shadow) return
 	// the runtime loads @ark/schema's, which the build may replace with a copy,
 	// through the module the loader writes for its options
-	const resolved = await resolve(dirname(runtime), "@ark/schema/runtime").catch(
-		() => undefined
-	)
+	const resolved = await resolve(
+		dirname(runtime),
+		"arktype/schema/runtime"
+	).catch(() => undefined)
 	if (resolved === undefined || isRuntimeShim(resolved)) return
 	const problem = writeRuntimeAliasMessage(
 		printablePathOf(opts.cwd ?? process.cwd(), resolved)

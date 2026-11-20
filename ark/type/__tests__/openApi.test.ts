@@ -313,7 +313,7 @@ contextualize(() => {
 
 	it("string index next to declared keys", () => {
 		const T = type({ a: "number", "[string]": "number" })
-		const expected = {
+		const expected: JsonSchema.Object = {
 			type: "object",
 			properties: { a: { type: "number" } },
 			required: ["a"],

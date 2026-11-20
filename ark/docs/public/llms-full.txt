@@ -71,7 +71,7 @@ export default withPrecompile({
 			"arktype/config": "arktype/runtime",
 			"arktype/errors": "arktype/runtime",
 			"arktype/mutatesInput": "arktype/runtime",
-			"@ark/schema/runtime": "@ark/aot/turbopack/runtime"
+			"arktype/schema/runtime": "@ark/aot/turbopack/runtime"
 		}
 	}
 })
@@ -2218,14 +2218,13 @@ The changes most code meets are to errors. The [checklist](https://arktype.io/do
 
 ## Checklist
 
-Go down the list. Each question your code answers yes to links to what to change. Fixes and new features are in each package's CHANGELOG: [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [arksets](https://github.com/arktypeio/arktype/blob/main/ark/sets/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [@ark/fast-check](https://github.com/arktypeio/arktype/blob/main/ark/fast-check/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md).
+Go down the list. Each question your code answers yes to links to what to change. Fixes and new features are in each package's CHANGELOG: [arktype](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md), [@ark/aot](https://github.com/arktypeio/arktype/blob/main/ark/aot/CHANGELOG.md), [@ark/json-schema](https://github.com/arktypeio/arktype/blob/main/ark/json-schema/CHANGELOG.md), [@ark/fast-check](https://github.com/arktypeio/arktype/blob/main/ark/fast-check/CHANGELOG.md), [arkregex](https://github.com/arktypeio/arktype/blob/main/ark/regex/CHANGELOG.md) and [@ark/attest](https://github.com/arktypeio/arktype/blob/main/ark/attest/CHANGELOG.md).
 
 - Do you install with npm, beside a package that peers on `arktype@^2`, like `@hookform/resolvers` or `@t3-oss/env-core`? [Override its peer](https://arktype.io/docs/upgrading#npm-refuses-packages-that-peer-on-arktype-2).
 - Do you use `arktypeResolver` from `@hookform/resolvers` 3 or 4, `@hono/arktype-validator`, `sveltekit-superforms`, `@arkenv/core` or `@typeschema/arktype`? [Each fails on invalid input](https://arktype.io/docs/upgrading#adapters-written-for-arktype-2), and all but ArkEnv have a replacement that works today.
 - Do you keep a package that depends on arktype 2 itself, like `@ark/json-schema@0.0.13`? [Its Types are Standard Schemas](https://arktype.io/docs/upgrading#packages-that-depend-on-arktype-2).
-- Do you run Jest with `transformIgnorePatterns` naming arktype's packages? [Add `arksets`](https://arktype.io/docs/upgrading#jest-transforms-need-arksets).
 - Do you ship arktype to a browser without a build step that precompiles? [It's larger](https://arktype.io/docs/upgrading#unprecompiled-arktype-is-larger).
-- Do you install `@ark/type`, `@ark/regex` or an `@arktype/*` package? [Rename it](https://arktype.io/docs/upgrading#package-names).
+- Do you install `@ark/type`, `@ark/regex`, `@ark/schema`, `@ark/util` or an `@arktype/*` package? [Switch to `arktype` / `arkregex`](https://arktype.io/docs/upgrading#package-names).
 - Do you read `ArkErrors` as an array, like `out[0]`, `out.length`, `out.map()` or `[...out]`? [Read `out.issues`](https://arktype.io/docs/upgrading#arkerrors-is-no-longer-an-array).
 - Do you call methods on an error, like `hasCode()`, `toString()` or `instanceof ArkError`? [Errors are plain objects](https://arktype.io/docs/upgrading#errors-are-plain-objects).
 - Do you switch on error `code`s, or configure text for `predicate`? See [undeclared](https://arktype.io/docs/upgrading#undeclared-keys-have-the-undeclared-code), [discriminant](https://arktype.io/docs/upgrading#union-misses-have-the-discriminant-code) and [notEqual](https://arktype.io/docs/upgrading#excluded-values-have-the-notequal-codes).
@@ -2246,7 +2245,7 @@ Go down the list. Each question your code answers yes to links to what to change
 - Do you reflect on a Type's own keys or prototype, freeze a Type, compare `type.Record` to the generic, or compare Types written two ways with `===`? [Types are built when they're first read](https://arktype.io/docs/upgrading#types-are-built-when-theyre-first-read).
 - Do you store or snapshot `toJsonSchema()`, `.expression` or `.json`, or convert `NaN` or `Infinity` literals to JSON Schema? See [Output](https://arktype.io/docs/upgrading#output).
 - Do you rely on what `.required()`, `.map()` or arkregex infer, or reference a Type allowing `undefined` at a key without `exactOptionalPropertyTypes`? See [Inference](https://arktype.io/docs/upgrading#inference) and [ArkRegex](https://arktype.io/docs/upgrading#arkregex).
-- Do you use `@ark/schema` without `arktype`? [Import `arksets`](https://arktype.io/docs/upgrading#arkschema).
+- Do you use `arktype/schema` (previously `@ark/schema`) without `arktype`? [Import `arktype/sets`](https://arktype.io/docs/upgrading#arkschema).
 - Do you import from `@ark/schema`, `@ark/util` or a deep path like `arktype/internal/...`, or read `.internal`? See [@ark/schema](https://arktype.io/docs/upgrading#arkschema), [@ark/util](https://arktype.io/docs/upgrading#arkutil) and [Deep imports](https://arktype.io/docs/upgrading#deep-imports).
 - Do you use `@ark/json-schema`, `@ark/fast-check` or attest, or run attest on TypeScript 7? See their sections below.
 
@@ -2321,20 +2320,6 @@ app.post(
 ### Packages that depend on arktype 2
 
 A package that depends on arktype 2 itself, like `@ark/json-schema@0.0.13`, installs its own copy. A Type it returns works in a definition, `.pipe()` or `.to()` as a [Standard Schema](https://arktype.io/docs/standard-schema), validating with its own copy, and `toJsonSchema()` writes what that copy's converter does, throwing where that can't stand for the Type, as for one with a morph. A module or Generic from it used in a Scope, or a Type passed to `type.schema()`, throws a `ParseError`: upgrade the package, or override its `arktype`.
-
-### Jest transforms need arksets
-
-`arktype` now imports `arksets`, which ships ES modules only, as arktype's other packages do. A Jest config that lists them in `transformIgnorePatterns` so they're transformed fails with `Must use import to load ES Module`, naming `arksets/out/internal.js`, until it lists that one too:
-
-```js
-module.exports = {
-	preset: "ts-jest/presets/js-with-ts",
-	transformIgnorePatterns: [
-		// before: "/node_modules/(?!(\\.pnpm|arktype|arkregex|@ark)/)"
-		"/node_modules/(?!(\\.pnpm|arktype|arkregex|arksets|@ark)/)"
-	]
-}
-```
 
 ## Bundle size
 
@@ -3152,7 +3137,8 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 
 ## @ark/schema
 
-- The set algebra that intersects nodes, reduces unions and writes JSON Schema moved to `arksets`, which `arktype` imports. Using `@ark/schema` alone, `import "arksets"` first, or `.and()` and `toJsonSchema()` throw `Set algebra is not installed` and unions aren't reduced. Its functions, like `intersectNodesRoot` and `reduceBranches`, are exported by `arksets/internal`, as is `discriminantJsonOf(union)`, which replaces a union's `discriminantJson`.
+- `@ark/schema` is no longer published separately; import from `arktype/schema` (and `arktype/schema/internal` for internals).
+- The set algebra that intersects nodes, reduces unions and writes JSON Schema moved to `arktype/sets`, which `arktype` imports. Using `arktype/schema` alone, `import "arktype/sets"` first, or `.and()` and `toJsonSchema()` throw `Set algebra is not installed` and unions aren't reduced.
 - `BaseNode.compiledMeta` is removed, and `BaseScope.res` (before: `resolutions`) holds an unresolved alias's parse context instead of its id.
 - `$.node(kind, input)` takes a node's inner, with children already nodes: `$.node("min", 5)` is now `$.node("min", { rule: 5 })`. Parse the schema format with `rootSchema` or `$.schema`.
 - A node's `traverseAllows` and `traverseApply` are `tAllows` and `tApply`. Call them on the node, as in `node.tAllows(data, ctx)`, not detached, as in `[x].every(node.tAllows)`, until the JIT compiles it.
@@ -3165,13 +3151,14 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 
 ## @ark/util
 
+- `@ark/util` is no longer published separately; import from `arktype/util`.
 - `Scanner`'s `jumpToIndex` is removed.
 - `isNumericString` and `isWellFormedInteger` read only strings: `isNumericString(5)` throws, before: `true`.
-- `$ark.filename` is removed. `$ark.version` still names the `@ark/util` version that created the registry.
+- `$ark.filename` is removed. `$ark.version` names the `arktype` version that created the registry.
 
 ## Deep imports
 
-A deep import like `arktype/internal/parser/string.ts` keeps its module's types but loads `arktype/internal` at runtime, which exports the names of every arktype module. Import from `arktype/internal` itself. `@ark/schema`, `@ark/util`, `arkregex` and `arksets` each have an `./internal` entry like it.
+A deep import like `arktype/internal/parser/string.ts` keeps its module's types but loads `arktype/internal` at runtime, which exports the names of every arktype module. Import from `arktype/internal` itself. `arktype/schema/internal` and `arkregex/internal` work the same way.
 
 ## ArkRegex
 
@@ -3218,13 +3205,14 @@ Runtime benches run in a loop compiled for each bench, after a warmup, so their 
 
 ## Package names
 
-Each package publishes under one name. The others, which published the same code, are no longer published, and `@ark/type` and `@ark/regex` are deprecated on npm, so installing one warns with the name to use:
+`arktype` and `arkregex` have zero runtime dependencies; `@ark/schema`, `@ark/util` and `arksets` are bundled into `arktype` and exposed as subpaths (`arktype/schema`, `arktype/util`, `arktype/sets`, `arktype/regex`). Each remaining package publishes under one name. The others are no longer published, and `@ark/type` and `@ark/regex` are deprecated on npm, so installing one warns with the name to use:
 
-| Install | Instead of |
+| Install / Import | Instead of |
 | - | - |
 | `arktype` | `@ark/type`, `@arktype/type` |
-| `arkregex` | `@ark/regex`, `@arktype/regex` |
-| `@ark/<name>` | `@arktype/<name>`, e.g. `@arktype/schema` |
+| `arktype/schema`, `arktype/util`, `arktype/sets` | `@ark/schema`, `@ark/util`, `arksets` |
+| `arkregex` (or `arktype/regex`) | `@ark/regex`, `@arktype/regex` |
+| `@ark/<name>` | `@arktype/<name>`, e.g. `@arktype/json-schema` |
 
 # Primitives
 
@@ -6953,6 +6941,75 @@ add and return an [ArkError](https://arktype.io/docs/errors)
 - useful for morphs like `.pipe`
 - warning: a string is what the value must be: `error("valid JSON")` reads `must be valid JSON`, so pass a sentence as `{ message }`
 
+### `path`
+
+the path being validated or morphed
+
+- array indices represented as numbers
+- warning: mutated during traversal - use `path.slice(0)` to snapshot
+- use [`propString`](https://arktype.io/docs/traversal-api#propstring) for a stringified version
+
+### `root`
+
+the original value being traversed
+
+### `config`
+
+configuration for this traversal
+
+- options can affect traversal results and error messages
+- defaults < global config < scope config
+- does not include options configured on individual types
+
+### `hasError`
+
+whether `currentBranch` (or the traversal root, outside a union) has one or more errors
+
+### `errors`
+
+[ArkErrors](https://arktype.io/docs/errors) that will be part of this traversal's finalized result
+
+- will always be empty for a valid traversal
+
+### `data`
+
+the data being validated or morphed
+
+- the value at [`path`](https://arktype.io/docs/traversal-api#path), as transformed by any morphs that have already run
+
+### `propString`
+
+a string representing [`path`](https://arktype.io/docs/traversal-api#path)
+
+- uses `.access` [where allowed by JS](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Property_accessors#dot_notation), falling back to `[indexAccess]`
+
+```ts
+const path = ["key1", Symbol("key2"), "key3", 4, "~key5"]
+const propString = 'key1[Symbol(key2)].key3[4]["~key5"]'
+```
+
+### `reject`
+
+add an [ArkError](https://arktype.io/docs/errors) and return `false`
+
+- useful for predicates like `.narrow`
+- `{ message: "Enter a valid email" }` is the whole sentence an issue says
+- to say what the value must be, as `must be even`, pass `"even"` to [`mustBe`](https://arktype.io/docs/traversal-api#mustbe)
+
+### `mustBe`
+
+add an [ArkError](https://arktype.io/docs/errors) from a description and return `false`
+
+- useful for predicates like `.narrow`
+- equivalent to [`reject`](https://arktype.io/docs/traversal-api#reject)({ expected })
+
+### `error`
+
+add and return an [ArkError](https://arktype.io/docs/errors)
+
+- useful for morphs like `.pipe`
+- warning: a string is what the value must be: `error("valid JSON")` reads `must be valid JSON`, so pass a sentence as `{ message }`
+
 # Configuration
 
 > Change ArkType's defaults and error messages globally, for a scope or for a single Type.
@@ -9425,7 +9482,7 @@ const values = type("'red' | 'blue'").select("unit").map(u => u.unit)
 
 ### internal
 
-The node from `@ark/schema` that a Type is built from. Its API is not semver-stable. See [Nodes](https://arktype.io/docs/internals/nodes).
+The node from `arktype/schema` that a Type is built from. Its API is not semver-stable. See [Nodes](https://arktype.io/docs/internals/nodes).
 
 ```ts
 type("string").internal.kind // "domain"
@@ -9451,7 +9508,7 @@ The `type` function has members of its own. Each returns a `Type` unless noted.
 | `type.declare` | a Type checked against a TypeScript type you [declare](https://arktype.io/docs/declare) |
 | `type.define` | your definition, unchanged, type-checked as `type` would check it |
 | `type.raw` | `type` without type-level parsing, for dynamic definitions |
-| `type.schema` | a Type from an `@ark/schema` [schema](https://arktype.io/docs/internals/schemas) |
+| `type.schema` | a Type from an `arktype/schema` [schema](https://arktype.io/docs/internals/schemas) |
 | `type.scope` | a [scope](https://arktype.io/docs/scopes), the same as `scope` |
 | `type.module` | a [module](https://arktype.io/docs/scopes#modules), the scope's exported aliases |
 | `type.keywords` | every [keyword](https://arktype.io/docs/keywords), e.g. `type.keywords.string.email` |
@@ -9499,7 +9556,7 @@ const AnyColor = type.valueOf(Color)
 
 > Every package ArkType publishes, its entrypoints, and what to import from each.
 
-To define and validate Types, install `arktype`. It brings `arkregex`, `@ark/schema`, `arksets` and `@ark/util` with it, so you never install those yourself to use ArkType. Each package publishes under exactly one name, the one listed here; `@ark/type`, `@ark/regex` and the `@arktype/*` names are [no longer published](https://arktype.io/docs/upgrading#package-names).
+To define and validate Types, install `arktype`. It has zero runtime dependencies and exposes its set algebra, regex parser, schema layer, and utilities under subpaths (`arktype/sets`, `arktype/regex`, `arktype/schema`, `arktype/util`). Each package publishes under exactly one name, the one listed here; `@ark/type`, `@ark/regex`, `@ark/schema`, `@ark/util`, `arksets` and the `@arktype/*` names are [no longer published](https://arktype.io/docs/upgrading#package-names).
 
 | Package | Install it to | Docs |
 | - | - | - |
@@ -9509,9 +9566,6 @@ To define and validate Types, install `arktype`. It brings `arkregex`, `@ark/sch
 | `@ark/attest` | assert types and benchmark them in your tests | [Attest](https://arktype.io/docs/attest) |
 | `@ark/json-schema` | build a Type from a JSON Schema | [From JSON Schema](https://arktype.io/docs/json-schema/from-json-schema) |
 | `@ark/fast-check` | generate test data from a Type with fast-check | [fast-check](https://arktype.io/docs/fast-check) |
-| `@ark/schema` | build Types from nodes instead of syntax (not semver-stable) | [Internals](https://arktype.io/docs/internals) |
-| `arksets` | relate, combine and convert schemas from any format | [ArkSets](https://arktype.io/docs/sets) |
-| `@ark/util` | nothing: it's shared by the other packages | |
 | `@ark/fs` | nothing: it's the filesystem layer `@ark/attest` uses | |
 
 The VS Code extensions, "ArkType" and "ArkThemes", are on the [Editor](https://arktype.io/docs/editor) page.
@@ -9524,6 +9578,10 @@ The VS Code extensions, "ArkType" and "ArkThemes", are on the [Editor](https://a
 | `arktype/codecs` | `codec`, and the `.encode` every Type has once it's imported ([Codecs](https://arktype.io/docs/codecs)) |
 | `arktype/errors` | installs `errors: "first"` and `"none"` ([errors](https://arktype.io/docs/configuration#errors)) |
 | `arktype/mutatesInput` | installs `mutatesInput: true` and `"always"` ([mutatesInput](https://arktype.io/docs/configuration#mutatesinput)) |
+| `arktype/sets` | `parse`, `isSubset`, `isEqual`, `isDisjoint`, `intersect`, `union`, `discriminate` and `toJsonSchema` ([ArkSets](https://arktype.io/docs/sets)) |
+| `arktype/regex` | `regex` and the `Regex` type ([ArkRegex](https://arktype.io/docs/regex)) |
+| `arktype/schema` | schema nodes, `rootSchema`, `schemaScope` and `ArkErrors` internals ([Internals](https://arktype.io/docs/internals), not semver-stable) |
+| `arktype/util` | shared utilities used by ArkType (not semver-stable) |
 | `arktype/runtime` | what [precompiled](https://arktype.io/docs/precompile) validators run on. A build resolves `arktype` to it; you don't import it yourself |
 | `arktype/config` | `configure`, before anything else from `arktype` is imported |
 | `arktype/locales/en`, `arktype/locales/de` | the `en` and `de` [locales](https://arktype.io/docs/i18n) |
@@ -9560,12 +9618,10 @@ import { type } from "arktype"
 - **`@ark/attest`** exports `attest`, `bench`, `setup` and `teardown`, and installs an `attest` CLI. Install it as a dev dependency.
 - **`@ark/json-schema`** exports `jsonSchemaToType` and `JsonSchemaScope`.
 - **`@ark/fast-check`** exports `arkToArbitrary`. It needs `fast-check` 3 or 4 installed beside it.
-- **`@ark/schema`** exports nodes, `rootSchema`, `schemaScope` and the classes behind `ArkErrors`, with `config`, `i18n`, `codecs`, `errors`, `mutatesInput` and `runtime` entrypoints like `arktype`'s.
-- **`arksets`** exports `parse`, `isSubset`, `isEqual`, `isDisjoint`, `intersect`, `union`, `discriminate` and `toJsonSchema`, and installs set algebra into `@ark/schema` when imported. `arktype` imports only that engine, from `arksets/internal`.
 
 `@ark/json-schema`, `@ark/fast-check` and `@ark/attest` each depend on an exact version of `arktype`, and `@ark/aot` precompiles with the `arktype` it imports. Install the versions released alongside your `arktype` so your project doesn't load two copies of it.
 
-`arkregex`, `@ark/schema`, `arksets` and `@ark/util` have an `./internal` entrypoint like `arktype`'s, and every package above has `./internal/*.ts` deep imports. None of them are semver-stable.
+`arkregex` also has an `./internal` entrypoint like `arktype`'s, and every package above has `./internal/*.ts` deep imports. None of them are semver-stable.
 
 # FAQ
 
@@ -9628,15 +9684,13 @@ Global config is fixed when the first Type is created, by a definition or by rea
 
 ## Why does Jest say `Must use import to load ES Module`?
 
-ArkType and its dependencies ship ES modules only, and Jest runs tests as CommonJS, so a test that imports arktype fails, naming `node_modules/arktype/out/index.js`. Have Jest transform those packages, with a transform that reads JavaScript, like ts-jest's `js-with-ts` preset:
+ArkType ships ES modules only, and Jest runs tests as CommonJS, so a test that imports arktype fails, naming `node_modules/arktype/out/index.js`. Have Jest transform it, with a transform that reads JavaScript, like ts-jest's `js-with-ts` preset:
 
 ```js
 module.exports = {
 	preset: "ts-jest/presets/js-with-ts",
-	// arktype and its dependencies ship ES modules only
-	transformIgnorePatterns: [
-		"/node_modules/(?!(\\.pnpm|arktype|arkregex|arksets|@ark)/)"
-	]
+	// arktype ships ES modules only
+	transformIgnorePatterns: ["/node_modules/(?!(\\.pnpm|arktype)/)"]
 }
 ```
 

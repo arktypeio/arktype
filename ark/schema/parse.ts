@@ -11,7 +11,6 @@ import {
 	throwInternalError,
 	throwParseError,
 	type arkKind,
-	type Brand,
 	type dict,
 	type JsonObject,
 	type Key,
@@ -37,7 +36,7 @@ import {
 	type UnknownAttachmentsInput,
 	type UnknownNodeImplementation
 } from "./shared/implement.ts"
-import { $ark } from "./shared/registry.ts"
+import { $ark, nodesById, type NodeId } from "./shared/registry.ts"
 import { composing, hasArkKind, isNode } from "./shared/utils.ts"
 
 export type ContextualArgs = Record<string, BaseRoot | NodeId>
@@ -98,16 +97,9 @@ export const writeInvalidSchemaMessage = (schema: unknown): string =>
 
 const nodeCountsByPrefix: PartialRecord<string, number> = Object.create(null)
 
-export type NodeId = Brand<string, "NodeId">
+export { nodesById, type NodeId }
 
 export type NodeResolver = (id: NodeId) => BaseNode
-
-export const nodesById: Record<
-	NodeId,
-	BaseNode | BaseParseContext | undefined
-> = {}
-
-$ark.nodesById = nodesById
 
 // compiled code declares functions by id, so an alias prefix is written as an identifier
 export const registerNodeId = (written: string): NodeId => {

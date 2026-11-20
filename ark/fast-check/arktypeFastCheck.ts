@@ -1,5 +1,5 @@
-import type { NodeKind, nodeOfKind, SequenceTuple } from "@ark/schema"
-import { hasKey, hasOwn, throwError, throwInternalError } from "@ark/util"
+import type { NodeKind, nodeOfKind, SequenceTuple } from "arktype/schema"
+import { hasKey, hasOwn, throwError, throwInternalError } from "arktype/util"
 import type { type } from "arktype"
 import * as fc from "fast-check"
 import {

@@ -1,4 +1,4 @@
-import { snapshot, throwInternalError } from "@ark/util"
+import { snapshot, throwInternalError } from "arktype/util"
 import process from "node:process"
 import { throwAssertionError } from "../assert/assertions.ts"
 import {

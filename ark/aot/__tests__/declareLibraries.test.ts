@@ -421,11 +421,11 @@ export declare const merged: import("./~arktype.js").Account & {
 				// TypeScript 7 orders a union's members as its checker does
 				if (checker === "tsjs") {
 					attest(validated).snap(
-						`export declare const validated: import("@ark/schema").StandardSchemaV1.Result<import("./~arktype.js").Account> | Promise<import("@ark/schema").StandardSchemaV1.Result<import("./~arktype.js").Account>>;`
+						`export declare const validated: import("arktype").StandardSchemaV1.Result<import("./~arktype.js").Account> | Promise<import("arktype").StandardSchemaV1.Result<import("./~arktype.js").Account>>;`
 					)
 				} else {
 					attest(validated).snap(
-						`export declare const validated: Promise<import("@ark/schema").StandardSchemaV1.Result<import("./~arktype.js").Account>> | import("@ark/schema").StandardSchemaV1.Result<import("./~arktype.js").Account>;`
+						`export declare const validated: Promise<import("arktype").StandardSchemaV1.Result<import("./~arktype.js").Account>> | import("arktype").StandardSchemaV1.Result<import("./~arktype.js").Account>;`
 					)
 				}
 			})

@@ -63,11 +63,11 @@ import {
 import { rspack } from "@rspack/core"
 import { startVitest } from "vitest/node"
 import webpack, { type Stats } from "webpack"
-import { configureAfterTypeMessage } from "@ark/schema"
+import { configureAfterTypeMessage } from "arktype/schema"
 import {
 	writeCreatedBeforeConfigureMessage,
 	writtenConfigMessage
-} from "@ark/schema/runtime"
+} from "arktype/schema/runtime"
 import {
 	packageFiles,
 	run,
@@ -665,13 +665,13 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 				(
 					await createServer({
 						...config,
-						ssr: { ...config.ssr, external: ["@ark/schema"] }
+						ssr: { ...config.ssr, external: ["arktype"] }
 					})
 				).close()
 			)
 		]).equals([
 			withAllowUnsafe(writeExternalizedMessage("arktype", "external")),
-			withAllowUnsafe(writeExternalizedMessage("@ark/schema", "ssr.external"))
+			withAllowUnsafe(writeExternalizedMessage("arktype", "ssr.external"))
 		])
 	})
 
@@ -714,12 +714,12 @@ export const allows = (n: number) => !(Search({ q: "", n }) instanceof type.erro
 		])
 		// webpack reads what Next.js leaves external, so bundling arktype alone is checked too
 		attest(writeNextExternalMessage("arktype", true)).snap(
-			'Next.js leaves the pages router\'s dependencies external on the server, so it leaves arktype to be loaded at runtime rather than bundled with the runtime the program\'s precompiled validators use, so the program can load a copy of arktype that isn\'t theirs, e.g. one whose `type.errors` isn\'t the class of their errors. Add `bundlePagesRouterDependencies: true` to next.config.js, so Next.js bundles them as it does the app router\'s, or add "arktype", "@ark/schema", "@ark/util", "arkregex", "arksets" to `transpilePackages`, so it bundles only those, and leave arktype out of `serverExternalPackages`.'
+			"Next.js leaves the pages router's dependencies external on the server, so it leaves arktype to be loaded at runtime rather than bundled with the runtime the program's precompiled validators use, so the program can load a copy of arktype that isn't theirs, e.g. one whose `type.errors` isn't the class of their errors. Add `bundlePagesRouterDependencies: true` to next.config.js, so Next.js bundles them as it does the app router's, or add \"arktype\" to `transpilePackages`, so it bundles only those, and leave arktype out of `serverExternalPackages`."
 		)
 		// a dependency that loads arktype is bundled with it
 		const forDependency = writeNextExternalMessage("my-forms", true)
 		attest(forDependency.slice(forDependency.indexOf("Add "))).snap(
-			'Add `bundlePagesRouterDependencies: true` to next.config.js, so Next.js bundles them as it does the app router\'s, or add "my-forms", "arktype", "@ark/schema", "@ark/util", "arkregex", "arksets" to `transpilePackages`, so it bundles only those, and leave my-forms out of `serverExternalPackages`.'
+			'Add `bundlePagesRouterDependencies: true` to next.config.js, so Next.js bundles them as it does the app router\'s, or add "my-forms", "arktype" to `transpilePackages`, so it bundles only those, and leave my-forms out of `serverExternalPackages`.'
 		)
 	})
 
@@ -2607,10 +2607,6 @@ console.log(
 			if (runtime) continue
 			// its copy is also a version other than the build's own
 			attest(errors.filter(text => text.includes("@ark/aot runs on"))).equals([
-				`@ark/schema resolves to 0.1.0, but @ark/aot runs on ${schemaVersion}
-  0.1.0 at node_modules/@ark/schema, reached from node_modules/forked/node_modules/arktype/index.js
-  ${schemaVersion} at ${ownPath("schema")}, which @ark/aot imports
-  ${versionHint}`,
 				`arktype resolves to 2.1.0, but @ark/aot runs on ${arktypeVersion}
   2.1.0 at node_modules/forked/node_modules/arktype, reached from node_modules/forked/index.js
   ${arktypeVersion} at ${ownPath("type")}, which @ark/aot imports
@@ -2628,28 +2624,7 @@ console.log(
 			`upgraded/main.ts:1:22  arktype resolves to 9.0.0, but @ark/aot runs on ${arktypeVersion}
   9.0.0 at upgraded/node_modules/arktype, reached from upgraded/main.ts
   ${arktypeVersion} at ${ownPath("type")}, which @ark/aot imports
-  A precompiled validator is written for the arktype it was built with. Install the @ark/aot released with arktype 9.0.0, so it imports what the program does: npm i -D @ark/aot@9.1.0
-upgraded/main.ts:1:22  @ark/schema resolves to 0.1.0, but @ark/aot runs on ${schemaVersion}
-  0.1.0 at node_modules/@ark/schema, reached from upgraded/node_modules/arktype/index.js
-  ${schemaVersion} at ${ownPath("schema")}, which @ark/aot imports
-  ${versionHint}`
-		])
-	})
-
-	it("fails for a second copy of a package arktype runs on", async () => {
-		attest(
-			(await buildDependency("schema.ts")).errors.filter(text =>
-				text.includes("more than one copy")
-			)
-		).equals([
-			`schema.ts:1:8  @ark/schema resolves to 0.1.0, but @ark/aot runs on ${schemaVersion}
-  0.1.0 at node_modules/@ark/schema, reached from schema.ts
-  ${schemaVersion} at ${ownPath("schema")}, which @ark/aot imports
-  ${versionHint}
-schema.ts:2:22  @ark/schema resolves to more than one copy
-  0.1.0 at node_modules/@ark/schema, reached from schema.ts
-  ${schemaVersion} at node_modules/arktype/node_modules/@ark/schema, reached from node_modules/arktype/index.js
-  Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides.`
+  A precompiled validator is written for the arktype it was built with. Install the @ark/aot released with arktype 9.0.0, so it imports what the program does: npm i -D @ark/aot@9.1.0`
 		])
 	})
 
@@ -2892,7 +2867,7 @@ console.log(T.allows({ x: 1 }))
 
 	it("undetailed bundles", async () => {
 		const reads = join(undetailed, "reads")
-		const message = `${join(undetailed, "node_modules", "reads", "index.js")} imports @ark/schema, which a build with errors: "none" can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own. Import what it reads from arktype, which a standalone build resolves to that runtime, or build without errors: "none".`
+		const message = `${join(undetailed, "node_modules", "reads", "index.js")} imports arktype/schema, which a build with errors: "none" can't load beside its runtime, a copy of arktype/schema's whose errors are a class of their own. Import what it reads from arktype, which a standalone build resolves to that runtime, or build without errors: "none".`
 		for (const bundler of ["esbuild", "vite"] as const) {
 			attest(
 				run(

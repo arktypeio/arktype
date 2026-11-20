@@ -1,11 +1,11 @@
-import type { JsonSchema } from "@ark/schema"
+import type { JsonSchema } from "arktype/schema"
 import type {
 	anyOrNever,
 	array,
 	Digit,
 	domainOf,
 	ErrorMessage
-} from "@ark/util"
+} from "arktype/util"
 import type {
 	Anchor,
 	AnnotationKeyword,

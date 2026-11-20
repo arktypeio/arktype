@@ -1,5 +1,5 @@
 import type { SourcePosition } from "@ark/fs"
-import { throwError } from "@ark/util"
+import { throwError } from "arktype/util"
 import { execFileSync } from "node:child_process"
 import { basename, dirname, extname, join } from "node:path"
 import { fileURLToPath } from "node:url"

@@ -1,5 +1,5 @@
 import { fromCwd } from "@ark/fs"
-import { throwError, throwInternalError, type JsonObject } from "@ark/util"
+import { throwError, throwInternalError, type JsonObject } from "arktype/util"
 import { existsSync } from "node:fs"
 import { createRequire } from "node:module"
 import { dirname, join, resolve } from "node:path"
