@@ -890,6 +890,54 @@ contextualize(() => {
 		}
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1724
+	it("undefined case on a nested path keeps the object checks", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ k: "1", a: "2" }).or({ k: "3", a: "undefined" })
+
+			for (const data of [0, "s", null, undefined])
+				attest(T.allows(data)).equals(false)
+			attest(T(0).toString()).snap("must be an object")
+			attest(T.allows({ k: 3 })).equals(false)
+			attest(T.allows({ k: 3, a: undefined })).equals(true)
+			attest(T.allows({ k: 1, a: 2 })).equals(true)
+		}
+	})
+
+	it("undefined case on a nested path requires the key", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ a: "2" }).or({ a: "undefined" })
+
+			attest(T.allows(0)).equals(false)
+			attest(T.allows({})).equals(false)
+			attest(T({}).toString()).satisfies(/^a must be .*\(was missing\)$/)
+			attest(T.allows({ a: undefined })).equals(true)
+			attest(T.allows({ a: 2 })).equals(true)
+
+			const Deep = $.type({ a: { b: "2" } }).or({ a: { b: "undefined" } })
+
+			attest(Deep.allows({})).equals(false)
+			attest(Deep.allows({ a: 0 })).equals(false)
+			attest(Deep.allows({ a: {} })).equals(false)
+			attest(Deep.allows({ a: { b: undefined } })).equals(true)
+		}
+	})
+
+	it("undefined domain case on a nested path keeps the object checks", () => {
+		const T = type({ a: "string", b: "1" })
+			.or({ a: "undefined" })
+			.or({ a: "number", b: "2" })
+
+		attest(T.allows(0)).equals(false)
+		attest(T.allows({})).equals(false)
+		attest(T.allows({ a: undefined })).equals(true)
+		attest(T.allows({ a: "x", b: 1 })).equals(true)
+		attest(T.allows({ a: 5, b: 2 })).equals(true)
+		attest(T.allows({ a: "x", b: 2 })).equals(false)
+	})
+
 	it("primitive with discriminant key", () => {
 		const $ = scope({})
 		const T = $.type({ length: "3", x: "string" }).or({
