@@ -132,11 +132,30 @@ import { kind, values } from "./data.json"
 export const A = type.enumerated(...data.values)
 export const B = type({ k: kind })
 export const C = type.enumerated(...values)`
-			for (const creationChecks of ["types", "none"] as const) {
-				const out = precompile(ok, files, { creationChecks })
-				attest(out.diagnostics).equals([])
-				attest(Boolean(out.code)).equals(true)
-			}
+			const typed = precompile(ok, files, { creationChecks: "types" })
+			attest(typed.diagnostics).equals([])
+			attest(typed.code).snap(`import "arktype"
+import { f5n9uyp0oknmm7 as $arkf5n9uyp0oknmm7 } from "~arktype/uf2b1d1h1sbpm"
+import { fy0fj731qqvenk as $arkfy0fj731qqvenk } from "~arktype/uf2b1d1h1sbpm"
+import { f1u792r713o7i60 as $arkf1u792r713o7i60 } from "~arktype/uf2b1d1h1sbpm"
+import data from "./data.json" with { type: "json" }
+import { kind, values } from "./data.json"
+export const A = $arkf5n9uyp0oknmm7(data)
+export const B = $arkfy0fj731qqvenk(kind)
+export const C = $arkf1u792r713o7i60(values)`)
+			const unchecked = precompile(ok, files, { creationChecks: "none" })
+			attest(unchecked.diagnostics).equals([])
+			attest(unchecked.code).snap(`import "arktype"
+import { f5n9uyp0oknmm7 as $arkf5n9uyp0oknmm7 } from "~arktype/jo7r2k1wen2lt"
+import { fy0fj731qqvenk as $arkfy0fj731qqvenk } from "~arktype/jo7r2k1wen2lt"
+import { f1u792r713o7i60 as $arkf1u792r713o7i60 } from "~arktype/jo7r2k1wen2lt"
+import $arkfixConfig from "~arktype/1oxp5yq1n4xifh"
+import data from "./data.json" with { type: "json" }
+import { kind, values } from "./data.json"
+$arkfixConfig()
+export const A = /* @__PURE__ */ $arkf5n9uyp0oknmm7(data)
+export const B = /* @__PURE__ */ $arkfy0fj731qqvenk(kind)
+export const C = /* @__PURE__ */ $arkf1u792r713o7i60(values)`)
 		})
 
 		it("fromJsonSchema", () => {

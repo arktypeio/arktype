@@ -36,6 +36,12 @@ var namesTraversalError = true
 var findsOnRead = false
 
 // ark/schema/shared/issues.ts
+var refuseLocale = locale => {
+	if (locale === void 0) return
+	if (typeof locale !== "object" || locale === null || Array.isArray(locale))
+		throw Error("Expected a Locale object")
+	throw Error('import "arktype/i18n" to write errors in locales other than en')
+}
 var ReadIssues = class {
 	// assigned, as a target lowering class fields defines each with a helper
 	constructor() {
@@ -171,13 +177,7 @@ var Issues =
 					return summary
 				}
 				summaryIn(locale) {
-					if (
-						locale !== void 0 &&
-						(typeof locale !== "object" ||
-							locale === null ||
-							Array.isArray(locale))
-					)
-						throw Error("Expected a Locale object")
+					refuseLocale(locale)
 					return this.summary
 				}
 				throw() {
@@ -230,13 +230,7 @@ var Issues =
 					return summary
 				}
 				summaryIn(locale) {
-					if (
-						locale !== void 0 &&
-						(typeof locale !== "object" ||
-							locale === null ||
-							Array.isArray(locale))
-					)
-						throw Error("Expected a Locale object")
+					refuseLocale(locale)
 					return this.summary
 				}
 				// constructed by TraversalError wherever its bundle keeps the

@@ -169,17 +169,14 @@ configure({ predicate: { description: () => "satisfying a predicate" } })
 			lint(code, {}, join(dir, "main.ts"), dir).some(message =>
 				message.includes("set allowUnsafe: true")
 			)
-		let at = Date.now()
-		const write = (settings: string) => {
-			writeFileSync(ark, settings)
-			// as a write a filesystem stamps no later than the last one is
-			utimesSync(ark, new Date((at += 1000)), new Date(at))
-		}
+		const write = (settings: string) => writeFileSync(ark, settings)
+		// the same size as it, so only its content tells them apart
 		const allowUnsafe = '{ "precompile": { "allowUnsafe": true } }'
+		const refuseUnsafe = '{ "precompile": { "allowUnsafe":false } }'
 		const trail = [isRefused()]
 		write(allowUnsafe)
 		trail.push(isRefused())
-		write("{}")
+		write(refuseUnsafe)
 		trail.push(isRefused())
 		write(allowUnsafe)
 		trail.push(isRefused())

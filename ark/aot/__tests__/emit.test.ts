@@ -88,6 +88,16 @@ const sourceLineOf = (text: string) => {
 	return (map.findEntry(line, 0) as SourceMapping).originalLine + 1
 }
 
+// the statements of an emitted module that throw where arktype/runtime lacks
+// the version it was built for
+const versionGuardsOf = (file: string) =>
+	readFileSync(join(out, file), "utf8")
+		.split("\n")
+		.filter(line => /^if \(.*precompiledForArktype_/.test(line))
+		.map(line =>
+			line.replace(/precompiledForArktype_\w+/, "precompiledForArktype_*")
+		)
+
 contextualize(() => {
 	afterEach(() => {
 		rmSync(out, { recursive: true, force: true })
@@ -108,14 +118,18 @@ contextualize(() => {
 		attest(sourceLineOf("const Admin")).equals(5)
 	}
 
-	it("precompiles what tsc emits as ESM", () => {
+	it("precompiles what tsc emits as ESM, leaving linking to check the runtime's version", () => {
 		attestBuilt(build("module", "tsconfig.json"))
+		attest(versionGuardsOf("user.js")).equals([])
 	}).timeout(60000)
 
-	it("precompiles what tsc emits as CommonJS, through references", () => {
+	it("precompiles what tsc emits as CommonJS, through references, guarding the runtime's version at load", () => {
 		attestBuilt(
 			build("commonjs", "tsconfig.inline.json", "tsconfig.solution.json")
 		)
+		attest(versionGuardsOf("user.js")).equals([
+			"if (runtime_1.precompiledForArktype_* !== true)"
+		])
 	}).timeout(60000)
 
 	it("fails CommonJS at load on an arktype/runtime of another version", () => {
@@ -133,11 +147,9 @@ contextualize(() => {
 			{ encoding: "utf8" }
 		)
 		attest(run.status).equals(1)
-		attest(
-			run.stderr.includes(
-				`Error: ${writeVersionMismatchMessage("precompiledForArktype_0_0_0")}`
-			)
-		).equals(true)
+		attest(run.stderr.match(/^Error: .*$/m)?.[0]).equals(
+			`Error: ${writeVersionMismatchMessage("precompiledForArktype_0_0_0")}`
+		)
 	}).timeout(60000)
 
 	it("writes nothing for a module it can't precompile", () => {

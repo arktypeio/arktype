@@ -42,11 +42,19 @@ export interface CheckReport {
 	files: number
 }
 
+const nameASource =
+	"Name a script, a directory holding scripts or a glob that matches some."
+
+// each of patterns matched nothing
 export const writeNoSourcesMessage = (
 	patterns: string[],
 	cwd: string
 ): string =>
-	`--check was given ${patterns.join(", ")}, which matches no script in ${cwd}. Name a script, a directory holding scripts or a glob that matches some.`
+	`--check was given ${patterns.join(", ")}, which ${patterns.length === 1 ? "matches" : "match"} no script in ${cwd}. ${nameASource}`
+
+// each of patterns holds scripts, but only in directories it skips
+export const writeSkippedSourcesMessage = (patterns: string[]): string =>
+	`--check was given ${patterns.join(", ")}, which ${patterns.length === 1 ? "holds" : "hold"} scripts only in directories it skips (node_modules, out, dist and build) or as declaration files. ${nameASource}`
 
 export const writeMissingTsconfigMessage = (tsconfig: string): string =>
 	`The tsconfig ${tsconfig} can't be read. Name the tsconfig your build uses as --tsconfig, or remove it to check without one.`
@@ -84,6 +92,49 @@ const sourcesOf = (patterns: string[], cwd: string): string[] => {
 	return [...files].sort()
 }
 
+const isInNodeModules = (path: string) =>
+	/(^|[/\\])node_modules([/\\]|$)/.test(path)
+
+// whether a pattern matches scripts only where sourcesOf skips them, which
+// isn't a typo
+const holdsSkippedSources = (pattern: string, cwd: string): boolean => {
+	const exclude = isInNodeModules(pattern) ? undefined : isInNodeModules
+	return globSync(pattern, { cwd, exclude }).some(match => {
+		const path = resolve(cwd, match)
+		return statSync(path).isDirectory() ?
+				globSync(defaultSources, {
+					cwd: path,
+					exclude
+				}).length > 0
+			:	scriptFile.test(path)
+	})
+}
+
+// the scripts each pattern names, failing those that name none
+const requiredSourcesOf = (patterns: string[], cwd: string): string[] => {
+	const files = new Set<string>()
+	const unmatched: string[] = []
+	const skipped: string[] = []
+	for (const pattern of patterns) {
+		const found = sourcesOf([pattern], cwd)
+		if (found.length) for (const file of found) files.add(file)
+		else if (holdsSkippedSources(pattern, cwd)) skipped.push(pattern)
+		else unmatched.push(pattern)
+	}
+	// a path or glob that holds nothing is a typo, which no rate would reveal
+	if (unmatched.length || skipped.length) {
+		throwError(
+			[
+				unmatched.length && writeNoSourcesMessage(unmatched, cwd),
+				skipped.length && writeSkippedSourcesMessage(skipped)
+			]
+				.filter(Boolean)
+				.join("\n")
+		)
+	}
+	return [...files].sort()
+}
+
 // a component may read a validator as only its framework's compiled code shows
 const componentsOf = (cwd: string): string[] =>
 	globSync("**/*.{svelte,vue,astro,mdx}", { cwd, exclude: isExcluded })
@@ -96,10 +147,10 @@ export const check = (
 	opts?: PrecompilePluginOptions
 ): CheckReport => {
 	const cwd = opts?.cwd ?? process.cwd()
-	const files = sourcesOf(patterns.length ? patterns : defaultSources, cwd)
-	// a path or glob that holds nothing is a typo, which no rate would reveal
-	if (patterns.length && !files.length)
-		throwError(writeNoSourcesMessage(patterns, cwd))
+	const files =
+		patterns.length ?
+			requiredSourcesOf(patterns, cwd)
+		:	sourcesOf(defaultSources, cwd)
 	// what the build's own plugin call passes, as in vite.config.ts
 	const calls = pluginCallsIn(cwd)
 	const given = opts ?? {}

@@ -23,6 +23,23 @@ export const parseJsonText = (text: string, path: string): unknown => {
 	}
 }
 
+// the package.json fields @ark/aot reads
+export type PackageManifest = {
+	name?: string
+	version?: string
+	arkAotVersion?: string
+	dependencies?: Record<string, string>
+	devDependencies?: Record<string, string>
+	peerDependencies?: Record<string, string>
+	optionalDependencies?: Record<string, string>
+	ark?: { aot?: unknown }
+}
+
+export const parsePackageManifest = (
+	text: string,
+	path: string
+): PackageManifest => parseJsonText(text, path) as PackageManifest
+
 export const hasOwn = (o: object, k: PropertyKey): boolean =>
 	Object.prototype.hasOwnProperty.call(o, k)
 

@@ -1,5 +1,6 @@
 import type { ESLint, Linter, Rule, SourceCode } from "eslint"
-import { statSync } from "node:fs"
+import { createHash } from "node:crypto"
+import { readFileSync } from "node:fs"
 import type { Diagnostic } from "./diagnostics.ts"
 import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
 import { isProductionEnv, withEnvironment } from "./presets.ts"
@@ -16,15 +17,16 @@ type LintPrecompiler = {
 // each configuration needs a thread of its own, apart from ESLint's
 const precompilersByOptions: Record<string, LintPrecompiler> = {}
 
-// where each settings file was last written, or that it is missing. A thread
-// reads them once to set its options, and they aren't files it reads through
-// the host, so nothing else tells it one has since changed or been removed.
+// what each settings file holds, or that it is missing. A thread reads them
+// once to set its options, and they aren't files it reads through the host, so
+// nothing else tells it one has since changed or been removed. They're read by
+// content, as an edit may keep a file's size and, on a filesystem with coarse
+// timestamps, its mtime too.
 const settingsStampOf = (cwd: string): string =>
 	settingsPathsOf(cwd)
 		.map(path => {
 			try {
-				const { mtimeMs, size } = statSync(path)
-				return `${mtimeMs}:${size}`
+				return createHash("sha256").update(readFileSync(path)).digest("base64")
 			} catch {
 				return "missing"
 			}

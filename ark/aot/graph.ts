@@ -75,7 +75,7 @@ import {
 	type Reference
 } from "./scope.ts"
 import { isTransparent, runtimeParamsOf } from "./proofs.ts"
-import { hasOwn, parseJsonText } from "./util.ts"
+import { hasOwn, parseJsonText, parsePackageManifest } from "./util.ts"
 
 export type FunctionNode = Function | ArrowFunctionExpression
 
@@ -1304,7 +1304,7 @@ export class ModuleGraph {
 		let name: string | undefined
 		if (manifest !== undefined) {
 			try {
-				name = (parseJsonText(manifest, manifestPath) as { name?: string }).name
+				name = parsePackageManifest(manifest, manifestPath).name
 			} catch {
 				// one that doesn't parse names nothing
 			}

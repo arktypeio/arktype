@@ -40,18 +40,22 @@ try {
 }
 `
 
-const bundle = async (root: string, opts: PrecompileUnpluginOptions) => {
+const bundle = async (
+	root: string,
+	opts: PrecompileUnpluginOptions,
+	buildConditions = conditions
+) => {
 	const { outputFiles } = await build({
 		entryPoints: [join(root, "main.ts")],
 		bundle: true,
 		write: false,
 		format: "esm",
-		conditions,
+		conditions: buildConditions,
 		logLevel: "silent",
 		plugins: [
 			precompile.esbuild({
 				cwd: root,
-				conditions,
+				conditions: buildConditions,
 				config: "config.ts",
 				...opts
 			})
@@ -62,6 +66,56 @@ const bundle = async (root: string, opts: PrecompileUnpluginOptions) => {
 
 contextualize(function (this: Mocha.Suite) {
 	this.timeout(600_000)
+
+	it("reports each issue as expected to be valid, and as invalid, where errors is none", async () => {
+		const root = writeFixture(
+			{
+				"package.json": `{"type":"module"}`,
+				"config.ts": `import "arktype/errors"
+import { configure } from "arktype/config"
+configure({ errors: "none" })
+`,
+				"main.ts": `import "./config.ts"
+import { type } from "arktype"
+const T = type({ a: "string" })
+const out = T({ a: 1 })
+if (!(out instanceof type.errors)) throw new Error("expected errors")
+const std = T["~standard"].validate({ a: 1 }) as { issues: readonly { expected?: unknown }[] }
+console.log(JSON.stringify({
+	summary: out.summary,
+	summaryIn: out.summaryIn(),
+	expected: out.issues[0].expected,
+	message: out.issues[0].message,
+	stdExpected: std.issues[0].expected,
+	json: out.toJSON()
+}))
+`
+			},
+			fromHere("temp", "standardValidate", "errors-none")
+		)
+		// the runtime as published, so each of its error classes is the one built
+		for (const optimizeErrors of ["speed", "size"] as const) {
+			attest(
+				JSON.parse(
+					run(await bundle(root, { errors: "none", optimizeErrors }, []))
+				)
+			).snap({
+				summary: "is invalid",
+				summaryIn: "is invalid",
+				expected: "valid",
+				message: "is invalid",
+				stdExpected: "valid",
+				json: [
+					{
+						code: "predicate",
+						path: [],
+						expected: "valid",
+						message: "is invalid"
+					}
+				]
+			})
+		}
+	})
 
 	for (const [name, onFail, expected] of [
 		[

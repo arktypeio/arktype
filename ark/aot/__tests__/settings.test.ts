@@ -342,12 +342,16 @@ contextualize(() => {
 		attest(optedInPackagesOf(root, undefined, w => warnings.push(w))).equals([
 			"bom-dep"
 		])
-		attest(warnings.length).equals(1)
+		// the parse error is the runtime's own wording
 		attest(
-			warnings[0].includes(
-				join(root, "node_modules", "bad-dep", "package.json")
+			warnings.map(warning =>
+				warning.replace(
+					/isn't JSON: .*; ignoring/,
+					"isn't JSON: <parse error>; ignoring"
+				)
 			)
-		).equals(true)
-		attest(warnings[0].includes("isn't JSON")).equals(true)
+		).equals([
+			`precompile: ${join(root, "node_modules", "bad-dep", "package.json")} isn't JSON: <parse error>; ignoring it for dependency precompilation`
+		])
 	})
 })

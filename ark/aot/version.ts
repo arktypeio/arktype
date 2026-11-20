@@ -3,7 +3,7 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { printablePathOf, throwBuildError } from "./host.ts"
 import { writeArktypeHint, writeVersionHint } from "./messages.ts"
-import { parseJsonText } from "./util.ts"
+import { parsePackageManifest } from "./util.ts"
 
 // the arktype the precompiler is released with, which `pnpm bump` sets
 export const arktypeVersion = "3.0.0-beta.2"
@@ -19,10 +19,10 @@ export const checkArktypeVersion = (): void => {
 	) {
 		const path = join(root, "package.json")
 		if (!existsSync(path)) continue
-		const { name, version, arkAotVersion } = parseJsonText(
+		const { name, version, arkAotVersion } = parsePackageManifest(
 			readFileSync(path, "utf8"),
 			path
-		) as { name?: string; version?: string; arkAotVersion?: string }
+		)
 		if (name !== "arktype") continue
 		if (version === arktypeVersion) return
 		throwBuildError(

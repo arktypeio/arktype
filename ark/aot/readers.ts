@@ -11,7 +11,7 @@ import {
 	type ModuleGraph
 } from "./graph.ts"
 import { dependencyOf } from "./host.ts"
-import { parseJsonText } from "./util.ts"
+import { parsePackageManifest } from "./util.ts"
 import { SourceModule } from "./module.ts"
 import {
 	exportNameOf,
@@ -25,9 +25,12 @@ import {
 import { runtimeParamsOf } from "./proofs.ts"
 import { importsOf } from "./scan.ts"
 import {
+	globalNameOf,
 	isDead,
 	isSpan,
 	mayReadThrough,
+	thisReadsOf,
+	type ThisReads,
 	type RuntimeModule,
 	type UsageProgram
 } from "./usage.ts"
@@ -119,6 +122,14 @@ export interface ReaderProgram extends UsageProgram {
 	equalsBake?: ((value: unknown) => boolean) | undefined
 }
 
+// every module a program's own reach through their imports, dependencies included
+export const reachedModulesOf = (
+	program: UsageProgram,
+	graph: ModuleGraph,
+	read: Map<string, SourceModule | null>
+): readonly SourceModule[] =>
+	new Readers({ ...program, whole: true }, graph, read).reachedModules()
+
 // what each validator's readers read of it, followed into its dependencies
 export const readingsOf = (
 	program: ReaderProgram,
@@ -178,7 +189,13 @@ class Readers {
 	private runtimesByModule = new Map<SourceModule, RuntimeModule>()
 	private importersById: Map<string, ImportEdge[]> | undefined
 	private fieldReads: Map<Key, Located[]> | undefined
-	private dependenciesByRoot = new Map<string, ReadonlySet<string>>()
+	private reached: readonly SourceModule[] | undefined
+	private reads: ThisReads | undefined
+	// undefined where a manifest doesn't parse, so it may read anything
+	private dependenciesByRoot = new Map<
+		string,
+		ReadonlySet<string> | undefined
+	>()
 
 	constructor(
 		program: ReaderProgram,
@@ -230,29 +247,30 @@ class Readers {
 		if (!dependency) return true
 		const [root, name] = dependency
 		if (name === owner) return true
-		let dependsOn = this.dependenciesByRoot.get(root)
-		if (!dependsOn) {
+		if (!this.dependenciesByRoot.has(root)) {
 			const manifestPath = join(root, "package.json")
 			const manifest = this.graph.host.readFile(manifestPath)
-			let parsed: Record<string, Record<string, unknown> | undefined> = {}
-			if (manifest !== undefined) {
-				try {
-					parsed = parseJsonText(manifest, manifestPath) as typeof parsed
-				} catch {
-					// an unparseable manifest declares no dependencies
-				}
+			let manifestDependencies: ReadonlySet<string> | undefined
+			try {
+				const { dependencies, peerDependencies, optionalDependencies } =
+					manifest === undefined ?
+						{}
+					:	parsePackageManifest(manifest, manifestPath)
+				manifestDependencies = new Set(
+					Object.keys({
+						...dependencies,
+						...peerDependencies,
+						...optionalDependencies
+					})
+				)
+			} catch {
+				// an unparseable manifest may declare any dependency, so what the
+				// package reads can't be ruled out
 			}
-			const { dependencies, peerDependencies, optionalDependencies } = parsed
-			dependsOn = new Set(
-				Object.keys({
-					...dependencies,
-					...peerDependencies,
-					...optionalDependencies
-				})
-			)
-			this.dependenciesByRoot.set(root, dependsOn)
+			this.dependenciesByRoot.set(root, manifestDependencies)
 		}
-		return dependsOn.has(owner)
+		const dependsOn = this.dependenciesByRoot.get(root)
+		return dependsOn === undefined || dependsOn.has(owner)
 	}
 
 	importersOf(id: string): ImportEdge[] {
@@ -356,12 +374,7 @@ class Readers {
 			if (reads) reads.push(located)
 			else result.set(key, [located])
 		}
-		const pending = [...this.program.modules.values()].map(
-			runtime => runtime.module
-		)
-		const seen = new Set(pending)
-		for (let i = 0; i < pending.length; i++) {
-			const module = pending[i]
+		for (const module of this.reachedModules()) {
 			const runtime = this.runtimesByModule.get(module)
 			walk(module.program, node => {
 				if (runtime && isDead(node, runtime)) return false
@@ -389,6 +402,19 @@ class Readers {
 					add(anyKey, { node, module })
 				return true
 			})
+		}
+		return result
+	}
+
+	// every module the program's own reach through their imports, read from disk
+	reachedModules(): readonly SourceModule[] {
+		if (this.reached) return this.reached
+		const pending = [...this.program.modules.values()].map(
+			runtime => runtime.module
+		)
+		const seen = new Set(pending)
+		for (let i = 0; i < pending.length; i++) {
+			const module = pending[i]
 			for (const [specifier] of importsOf(module.id, module.source).imports) {
 				const target = this.resolve(specifier, module)
 				if (target && !seen.has(target)) {
@@ -397,7 +423,19 @@ class Readers {
 				}
 			}
 		}
-		return result
+		return (this.reached = pending)
+	}
+
+	// whether code the program reaches patches a builtin prototype, as
+	// `Array.prototype.first = …`, which may add a method that returns the
+	// elements or receiver of what it's called on
+	get patchesBuiltins(): boolean {
+		return this.thisReads.patchesBuiltins
+	}
+
+	// what functions no class binds read off their `this`, anywhere the program reaches
+	get thisReads(): ThisReads {
+		return (this.reads ??= thisReadsOf(this.reachedModules()))
 	}
 }
 
@@ -905,7 +943,7 @@ class Follow {
 				// reference to the object shows, so any read at its key may find it
 				if (
 					key !== undefined &&
-					mayReadThrough(key, this.readers.program.modules)
+					mayReadThrough(key, parent.parent, this.readers.thisReads)
 				)
 					this.followField(key, parent, module, held)
 				return push(parent.parent, {
@@ -1018,6 +1056,15 @@ class Follow {
 		}
 		if (isCommonJsExports(owner, memberNameOf(target)))
 			return this.lose(target, module, "exports it from CommonJS")
+		// `o.__proto__ = T` makes o inherit T's members, which no read of a key
+		// shows, though `o.__proto__ = { schema: T }` holds it at a key to follow
+		if (memberNameOf(target) === "__proto__" && !held.path.length) {
+			return this.lose(
+				target,
+				module,
+				"sets it as a prototype, which inherits its members"
+			)
+		}
 		this.followField(memberNameOf(target), target, module, held)
 	}
 
@@ -1124,24 +1171,33 @@ class Follow {
 			call.callee === method
 		)
 			return this.callback(call, module, held, [])
+		const [first, ...rest] = held.path
+		const called =
+			call?.type === "CallExpression" && call.callee === method ?
+				call
+			:	undefined
+		// returns its receiver, whatever it holds
+		if (called && key === "valueOf" && first !== key)
+			return this.push(called, module, held)
 		if (held.path.length) {
-			const [first, ...rest] = held.path
 			if (
-				call?.type === "CallExpression" &&
-				call.callee === method &&
+				called &&
 				key !== undefined &&
 				first === anyKey &&
 				key in arrayMethods
 			)
-				return this.arrayMethod(key, call, module, held)
-			// a method the build doesn't model may return the elements it holds
+				return this.arrayMethod(key, called, module, held)
+			// a method the build doesn't model may return the elements or receiver it
+			// holds, as a builtin's, or one the program patches onto a builtin prototype
 			if (
-				first === anyKey &&
-				call?.type === "CallExpression" &&
-				call.callee === method &&
-				(key === undefined ?
-					member.computed && isSymbolRead(member.property)
-				:	key in Array.prototype || key in Object.prototype)
+				called &&
+				(first === anyKey ?
+					key === undefined ?
+						member.computed && isSymbolRead(member.property)
+					:	key in Array.prototype ||
+						key in Object.prototype ||
+						this.readers.patchesBuiltins
+				:	first !== key && this.readers.patchesBuiltins)
 			) {
 				return this.lose(
 					member,
@@ -2079,23 +2135,6 @@ const isCommonJsExports = (owner: string | undefined, name?: unknown) =>
 	owner === "exports" ||
 	owner === "module.exports" ||
 	(owner === "module" && name === "exports")
-
-const globalNameOf = (
-	callee: Node,
-	module: SourceModule
-): string | undefined => {
-	const root =
-		callee.type === "MemberExpression" ?
-			unwrapExpression(callee.object)
-		:	callee
-	if (root.type !== "Identifier" || module.scopes.byId.get(root)?.binding)
-		return
-	if (callee.type === "Identifier") return callee.name
-	const name = memberNameOf(
-		callee as Extract<Node, { type: "MemberExpression" }>
-	)
-	return typeof name === "string" ? `${root.name}.${name}` : undefined
-}
 
 // e.g. `T.toJsonSchema()`, rather than called with options or read to call later
 const isCalledBare = (read: Node): boolean => {

@@ -160,17 +160,19 @@ ${Array.from(
 ).join("\n")}
 `
 
-const bundle = async (root: string, opts: PrecompileUnpluginOptions = {}) => {
+const bundle = async (
+	root: string,
+	opts: PrecompileUnpluginOptions = {},
+	conditions = production
+) => {
 	const { outputFiles } = await build({
 		entryPoints: [join(root, "main.ts")],
 		bundle: true,
 		write: false,
 		format: "esm",
-		conditions: production,
+		conditions,
 		logLevel: "silent",
-		plugins: [
-			precompile.esbuild({ cwd: root, conditions: production, ...opts })
-		]
+		plugins: [precompile.esbuild({ cwd: root, conditions, ...opts })]
 	})
 	return outputFiles![0].text
 }
@@ -231,6 +233,48 @@ const itWritesAsArktype = (
 
 contextualize(function (this: Mocha.Suite) {
 	this.timeout(600_000)
+
+	it("writes an error's summaryIn() as its summary, and refuses a locale as arktype does without arktype/i18n", async () => {
+		const root = writeFixture(
+			{
+				"package.json": `{"type":"module"}`,
+				"main.ts": `import { type } from "arktype"
+const out = type({ a: "string" })({ a: 1 })
+if (!(out instanceof type.errors)) throw new Error("expected errors")
+const refusal = (locale: unknown) => {
+	try {
+		out.summaryIn(locale as never)
+		return "returned"
+	} catch (e) {
+		return (e as Error).message
+	}
+}
+console.log(JSON.stringify({
+	summary: out.summary,
+	summaryIn: out.summaryIn(),
+	summaryInUndefined: out.summaryIn(undefined),
+	notALocale: refusal("de"),
+	aLocale: refusal({})
+}))
+`
+			},
+			fromHere("temp", "messageText", "summaryIn")
+		)
+		// the runtime as published, so each of its error classes is the one built
+		for (const opts of [
+			{ optimizeErrors: "speed" },
+			{ optimize: "size", optimizeErrors: "size" }
+		] as const) {
+			attest(JSON.parse(run(await bundle(root, opts, [])))).snap({
+				summary: "a must be a string",
+				summaryIn: "a must be a string",
+				summaryInUndefined: "a must be a string",
+				notALocale: "Expected a Locale object",
+				aLocale:
+					'import "arktype/i18n" to write errors in locales other than en'
+			})
+		}
+	})
 
 	itWritesAsArktype("a message told by its text", told, {
 		"main.ts": appOf(told)

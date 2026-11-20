@@ -581,11 +581,11 @@ export const Cold = type({ amount: "number > 0", currency: "string == 3" })
 			(await scanned(files, opts)).timesArktype?.toFixed(1)
 
 		it("weighs only those no key or marker chose a strategy for", async () => {
-			attest(await timesOf({})).snap("2.7")
+			attest(await timesOf({})).snap("2.6")
 			// those of cold.ts: as each module wrote them where one function
 			// declares hot.ts's too, and as that function does where it doesn't
 			attest(await timesOf({ schemas: { "hot.ts": "fastest" } })).snap("1.7")
-			attest(await timesOf({ schemas: { "hot.ts": "smallest" } })).snap("1.4")
+			attest(await timesOf({ schemas: { "hot.ts": "smallest" } })).snap("1.3")
 			attest(
 				await timesOf({
 					schemas: { "hot.ts": "fastest", "cold.ts": "smallest" }

@@ -171,7 +171,7 @@ import {
 	type PrecompileHost,
 	type RuntimeVariant
 } from "./host.ts"
-import { parseJsonText } from "./util.ts"
+import { parsePackageManifest } from "./util.ts"
 import {
 	changeableDepthOf,
 	createSiteState,
@@ -243,6 +243,7 @@ import {
 import {
 	anyKey,
 	nodeAt,
+	reachedModulesOf,
 	readingsOf,
 	validatorHeld,
 	type ReaderProgram,
@@ -924,11 +925,11 @@ export class Precompiler {
 		}))
 	}
 
-	private isJsonInput(input: Input): boolean {
-		return (
-			input.kind === "import" &&
-			!(this.graph.moduleOf(input.file!) instanceof SourceModule)
-		)
+	// e.g. `import settings from "./settings.json"`, which holds no Type
+	private isJsonImport(input: Input): boolean {
+		if (input.kind !== "import") return false
+		const module = this.graph.moduleOf(input.file!)
+		return !(module instanceof SourceModule) && module.kind === "json"
 	}
 
 	private rootOf(input: Input): Binding | Node | undefined {
@@ -946,7 +947,7 @@ export class Precompiler {
 	// whether a site's path reads a member of a Type, as `User.in`, rather than
 	// a Type off what holds it, as `Fields.user`
 	private readsMemberThrough(input: Input): boolean {
-		if (!input.path.length || this.isJsonInput(input)) return false
+		if (!input.path.length || this.isJsonImport(input)) return false
 		const root = this.rootOf(input)
 		const evaluated = root && this.interpreter.evaluatedOf(root)
 		if (!evaluated) return true
@@ -963,7 +964,7 @@ export class Precompiler {
 	// `const C = H.a`. Under creationChecks "none" its factory still checks
 	// it's the Type the build read, so a write the build missed fails loudly.
 	private isOffHolder(input: Input): boolean {
-		if (this.isJsonInput(input)) return false
+		if (this.isJsonImport(input)) return false
 		const root = this.rootOf(input)
 		const evaluated = root && this.interpreter.evaluatedOf(root)
 		if (!evaluated) return true
@@ -2210,13 +2211,16 @@ export class Precompiler {
 		program: ScannedProgram,
 		modules: ReadonlyMap<string, RuntimeModule>
 	): UsageProgram {
-		return {
+		const usageProgram: UsageProgram = {
 			entries: new Set(program.entries),
 			exposed: new Set(program.exposed),
 			exposesLoaded: !!program.exposesLoaded,
 			modules,
-			resolve: (specifier, importer) => program.targets[importer]?.[specifier]
+			resolve: (specifier, importer) => program.targets[importer]?.[specifier],
+			reached: () =>
+				reachedModulesOf(usageProgram, this.graph, this.readModules)
 		}
+		return usageProgram
 	}
 
 	// the introspection members members leaves each site's validator, as code
@@ -3019,10 +3023,10 @@ export class Precompiler {
 			const manifestPath = join(root, "package.json")
 			const manifest = this.graph.host.readFile(manifestPath)
 			if (manifest === undefined) continue
-			const { name: packageName, version } = parseJsonText(
+			const { name: packageName, version } = parsePackageManifest(
 				manifest,
 				manifestPath
-			) as { name?: string; version?: string }
+			)
 			if (packageName === name) return [root, version ?? "unknown"]
 		}
 		return [dirname(entry), "unknown"]
@@ -3040,10 +3044,10 @@ export class Precompiler {
 	// the @ark/aot released with a program's arktype, which arktype's package.json names
 	private versionHintOf(root: string, version: string): string {
 		const manifestPath = join(root, "package.json")
-		const { arkAotVersion } = parseJsonText(
+		const { arkAotVersion } = parsePackageManifest(
 			this.graph.host.readFile(manifestPath)!,
 			manifestPath
-		) as { arkAotVersion?: string }
+		)
 		return arkAotVersion ?
 				writeVersionHint(version, arkAotVersion)
 			:	versionHint

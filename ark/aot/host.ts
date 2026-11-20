@@ -1,4 +1,8 @@
-import { parseJsonText, throwError } from "./util.ts"
+import {
+	parsePackageManifest,
+	throwError,
+	type PackageManifest
+} from "./util.ts"
 import {
 	decode,
 	encode,
@@ -152,11 +156,7 @@ export const optsIn = (
 	if (manifest === undefined) return false
 	try {
 		return (
-			(
-				parseJsonText(manifest, path ?? "package.json") as {
-					ark?: { aot?: unknown }
-				}
-			).ark?.aot === true
+			parsePackageManifest(manifest, path ?? "package.json").ark?.aot === true
 		)
 	} catch (e) {
 		warn?.(
@@ -205,10 +205,8 @@ export const workspacePackageNameOf = (
 		try {
 			const manifestPath = join(dir, "package.json")
 			const manifest = readFile(manifestPath)
-			if (manifest !== undefined) {
-				name = (parseJsonText(manifest, manifestPath) as { name?: unknown })
-					.name
-			}
+			if (manifest !== undefined)
+				name = parsePackageManifest(manifest, manifestPath).name
 		} catch {
 			// one that doesn't parse names nothing
 		}
@@ -280,12 +278,7 @@ const reachedFrom = function* (
 	leaves: readonly string[] = [],
 	warn?: (message: string) => void
 ): Generator<
-	[
-		root: string,
-		name: string,
-		manifest: string,
-		parsed: Record<string, unknown>
-	]
+	[root: string, name: string, manifest: string, parsed: PackageManifest]
 > {
 	const packages: [root: string, name: string][] = [[start, name]]
 	const visited = new Set([realPathOf(start)])
@@ -294,9 +287,9 @@ const reachedFrom = function* (
 		const manifestPath = join(root, "package.json")
 		const manifest = readFile(manifestPath)
 		if (manifest === undefined) continue
-		let parsed: Record<string, unknown>
+		let parsed: PackageManifest
 		try {
-			parsed = parseJsonText(manifest, manifestPath) as Record<string, unknown>
+			parsed = parsePackageManifest(manifest, manifestPath)
 		} catch (e) {
 			warn?.(
 				`precompile: ${(e as Error).message}; ignoring it for dependency precompilation`
@@ -309,7 +302,7 @@ const reachedFrom = function* (
 			devDependencies,
 			optionalDependencies,
 			peerDependencies
-		} = parsed as Record<string, Record<string, unknown> | undefined>
+		} = parsed
 		for (const dependency in {
 			...dependencies,
 			// a dependency's devDependencies aren't installed
@@ -344,11 +337,7 @@ export const optedInPackagesOf = (
 		[],
 		warn
 	)) {
-		if (
-			name &&
-			(parsed.ark as { aot?: unknown } | undefined)?.aot === true &&
-			!result.includes(name)
-		)
+		if (name && parsed.ark?.aot === true && !result.includes(name))
 			result.push(name)
 	}
 	return result

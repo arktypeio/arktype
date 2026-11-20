@@ -36,6 +36,15 @@ export interface ArkIssue {
 
 type WrittenIssue = ArkIssue & { message: string }
 
+// as errors.ts's summaryIn, which writes a locale other than the configured
+// one only where arktype/i18n is imported, so a build without it fails the same way
+const refuseLocale = (locale: unknown): void => {
+	if (locale === undefined) return
+	if (typeof locale !== "object" || locale === null || Array.isArray(locale))
+		throw Error("Expected a Locale object")
+	throw Error('import "arktype/i18n" to write errors in locales other than en')
+}
+
 /** what a site reports: its code and description */
 export interface SiteContext {
 	code: ArkErrorCode
@@ -402,13 +411,7 @@ const Issues: IssuesClass = (
 				}
 
 				summaryIn(locale?: unknown): string {
-					if (
-						locale !== undefined &&
-						(typeof locale !== "object" ||
-							locale === null ||
-							Array.isArray(locale))
-					)
-						throw Error("Expected a Locale object")
+					refuseLocale(locale)
 					return this.summary
 				}
 
@@ -485,13 +488,7 @@ const Issues: IssuesClass = (
 				}
 
 				summaryIn(locale?: unknown): string {
-					if (
-						locale !== undefined &&
-						(typeof locale !== "object" ||
-							locale === null ||
-							Array.isArray(locale))
-					)
-						throw Error("Expected a Locale object")
+					refuseLocale(locale)
 					return this.summary
 				}
 

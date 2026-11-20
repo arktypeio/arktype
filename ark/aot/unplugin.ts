@@ -1,5 +1,5 @@
 import type { KeySet } from "arktype/util"
-import { flatMorph, parseJsonText, throwError } from "./util.ts"
+import { flatMorph, parsePackageManifest, throwError } from "./util.ts"
 import {
 	existsSync,
 	mkdirSync,
@@ -3240,11 +3240,7 @@ const packageOfFile = (file: string): string | undefined => {
 	let name: string | undefined
 	try {
 		const manifest = join(dir, "package.json")
-		name = (
-			parseJsonText(readFileSync(manifest, "utf8"), manifest) as {
-				name?: string
-			}
-		).name
+		name = parsePackageManifest(readFileSync(manifest, "utf8"), manifest).name
 	} catch {
 		name = dir === dirname(dir) ? undefined : packageOfFile(dir)
 	}
@@ -3265,13 +3261,10 @@ const externalizableSpecifiers = [
 const dependsOnNext = (root: string): boolean => {
 	const manifest = join(root, "package.json")
 	if (!existsSync(manifest)) return false
-	const { dependencies, devDependencies } = parseJsonText(
+	const { dependencies, devDependencies } = parsePackageManifest(
 		readFileSync(manifest, "utf8"),
 		manifest
-	) as {
-		dependencies?: Record<string, string>
-		devDependencies?: Record<string, string>
-	}
+	)
 	return "next" in { ...dependencies, ...devDependencies }
 }
 

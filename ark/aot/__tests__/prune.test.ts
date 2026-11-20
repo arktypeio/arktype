@@ -673,12 +673,172 @@ tag\`\${User}\`.assert({})`)
 			)
 		})
 
+		it("a method a dependency reads it through as this", async () => {
+			attest(
+				await droppedReading(
+					`import { callParse } from "dep"\nconst o = { schema: User, callParse }\no.callParse()`,
+					{
+						"/node_modules/dep/index.js": `export function callParse() { return this.schema.assert({}) }`
+					}
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`import { validate } from "dep"\nconst o = { schema: User, data: {}, validate }\no.validate()`,
+					{
+						"/node_modules/dep/index.js": `export const validate = function () { return this.schema.assert(this.data) }`
+					}
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+		})
+
+		it("a method copied from another object that reads it as this", async () => {
+			attest(
+				await droppedReading(
+					`const base = { run() { return this.user.assert({}) } }\nconst o = { ...base, user: User }\no.run()`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+		})
+
+		it("a method reading it off an alias of this", async () => {
+			attest(
+				await droppedReading(
+					`const o = { user: User, run() { const self = this; return self.user.assert({}) } }\no.run()`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+		})
+
+		it("what valueOf returns of what holds it", async () => {
+			attest(
+				await droppedReading(`const o = { s: User }\no.valueOf().s.assert({})`)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`const o = { s: User }\nconst { s } = o.valueOf()\ns.assert({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(await droppedReading(`User.valueOf().assert({})`)).snap([
+				"meta",
+				"~standard",
+				"methods",
+				"withContext"
+			])
+		})
+
+		it("an object inheriting it through an assigned __proto__", async () => {
+			attest(
+				await droppedReading(
+					`const o: any = {}\no.__proto__ = User\no.assert({})`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:4:1 sets it as a prototype, which inherits its members"
+			)
+			attest(
+				await droppedReading(
+					`const o: any = {}\no["__proto__"] = User\no.assert({})`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:4:1 sets it as a prototype, which inherits its members"
+			)
+		})
+
+		it("a method patched onto Array.prototype or Object.prototype", async () => {
+			attest(
+				await droppedReading(
+					`(Array.prototype as any).first = function () { return this[0] }\n;([User] as any).first().assert({})`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:4:2 calls .first on what holds it"
+			)
+			attest(
+				await droppedReading(
+					`(Object.prototype as any).self = Object.prototype.valueOf\nconst o = { s: User }\n;(o as any).self().s.assert({})`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:5:2 calls .self on what holds it"
+			)
+		})
+
+		it("a method detached from another object literal through valueOf, this or computed keys", async () => {
+			attest(
+				await droppedReading(
+					`const other = { run() { return (this as any).user.assert({}) } }\nconst o = { user: User, run: other.run.valueOf() }\no.run()`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`const other = { run() { return (this as any).user.assert({}) } }\nconst o = { user: User, run: (other.valueOf() as typeof other).run }\no.run()`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`const other = { run() { return (this as any).user.assert({}) }, getFn() { return this.run } }\nconst o = { user: User, run: other.getFn() }\no.run()`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+			attest(
+				await droppedReading(
+					`const logger = { read(key: string): any { return (this as any)[key] } }\nconst o = { user: User, read: logger.read("read") }\no.read("user").assert({})`
+				)
+			).snap(
+				"the validator at types.ts:3:21 is lost where main.ts:3:43 returns it from a function whose calls the build can't follow"
+			)
+			attest(
+				await droppedReading(
+					`const fn = Object.prototype.valueOf\nconst alias = fn\nconst o = { s: User, self() { return alias.call(this) as typeof o } }\no.self().s.assert({})`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+		})
+
 		it("an unrelated member read through this, which a validator at another key isn't", async () => {
 			attest(
 				await droppedReading(
 					`const users = { schema: User, name: "users", label() { return this.name } }\nconsole.log(users.label(), users.schema.allows({}))`
 				)
 			).snap(["assert", "meta", "~standard", "methods", "withContext"])
+		})
+
+		it("an unrelated read of the key, where a helper forwards this", async () => {
+			attest(
+				await droppedReading(
+					`import { debounce, debounceDeferred } from "./debounce.ts"
+const schemas = { user: User }
+const x = { user: { a: 1 } }
+console.log(debounce, debounceDeferred, Object.keys({ ...x.user }), schemas.user.assert({}))`,
+					{
+						"/debounce.ts": `export const debounce = (fn: (...args: never[]) => void) =>
+	function (this: unknown, ...args: never[]) {
+		fn.apply(this, args)
+	}
+export const debounceDeferred = (fn: (...args: never[]) => void) =>
+	function (this: unknown, ...args: never[]) {
+		const self = this
+		setTimeout(() => fn.apply(self, args), 0)
+	}`
+					}
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+		})
+
+		it("an unrelated read of the key, where another object's method reads this", async () => {
+			attest(
+				await droppedReading(
+					`const logger = { prefix: "log", format(key: "prefix") { return \`\${this.prefix}:\${this[key]}\` } }
+const other = { user: "ada", greet() { return this.user } }
+const schemas = { user: User }
+const x = { user: { a: 1 } }
+console.log(logger.format("prefix"), other.greet(), Object.keys({ ...x.user }), schemas.user.assert({}))`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
+		})
+
+		it("a method copied from a nested object literal that reads it as this", async () => {
+			attest(
+				await droppedReading(
+					`const outer = { inner: { run() { return this.user.assert({}) } } }
+const o = { ...outer.inner, user: User }
+o.run()`
+				)
+			).snap(["meta", "~standard", "methods", "withContext"])
 		})
 	})
 

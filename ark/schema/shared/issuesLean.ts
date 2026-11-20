@@ -24,6 +24,15 @@ type WrittenIssue = ArkIssue & { message: string }
 
 type Keyed = Record<PropertyKey, unknown>
 
+// as errors.ts's summaryIn, which writes a locale other than the configured
+// one only where arktype/i18n is imported, so a build without it fails the same way
+const refuseLocale = (locale: unknown): void => {
+	if (locale === undefined) return
+	if (typeof locale !== "object" || locale === null || Array.isArray(locale))
+		throw Error("Expected a Locale object")
+	throw Error('import "arktype/i18n" to write errors in locales other than en')
+}
+
 // in place of issues.ts, written for size, whose tiers it's chosen from as issues.ts's are
 class ReadIssues implements FailureContext {
 	/** @internal each issue in the order it was added */
@@ -160,13 +169,7 @@ const Issues: new () => Issues = (
 			}
 
 			summaryIn(locale?: unknown): string {
-				if (
-					locale !== undefined &&
-					(typeof locale !== "object" ||
-						locale === null ||
-						Array.isArray(locale))
-				)
-					throw Error("Expected a Locale object")
+				refuseLocale(locale)
 				return this.summary
 			}
 

@@ -74,6 +74,9 @@ export interface UsageProgram {
 	modules: ReadonlyMap<string, RuntimeModule>
 	// the module a specifier resolves to, if the program holds it
 	resolve: (specifier: string, importer: string) => string | undefined
+	// every module the program reaches through its imports, dependencies
+	// included, which code reading a validator through `this` may be in
+	reached?: () => Iterable<SourceModule>
 }
 
 export interface ProgramUse {
@@ -131,8 +134,17 @@ class UsageAnalysis {
 	private arkReexports: [runtime: RuntimeModule, as: string, name: string][] =
 		[]
 
+	private reads: ThisReads | undefined
+
 	constructor(program: UsageProgram) {
 		this.program = program
+	}
+
+	private get thisReads(): ThisReads {
+		return (this.reads ??= thisReadsOf(
+			this.program.reached?.() ??
+				[...this.program.modules.values()].map(runtime => runtime.module)
+		))
 	}
 
 	analyze(): void {
@@ -680,7 +692,8 @@ class UsageAnalysis {
 			const key = propertyKeyOf(parent)
 			if (
 				key !== undefined &&
-				(key === "__proto__" || mayReadThrough(key, this.program.modules))
+				(key === "__proto__" ||
+					mayReadThrough(key, parent.parent, this.thisReads))
 			)
 				this.handedOff ??= `${module.positionOf(node)} holds a validator at ${key} of an object whose members may read it through this`
 
@@ -742,12 +755,30 @@ class UsageAnalysis {
 			!isWriteTarget(parent)
 		) {
 			const name = memberNameOf(parent)
+			const [member, memberParent] = operatorOf(parent)
+			const isCall =
+				memberParent?.type === "CallExpression" &&
+				memberParent.callee === member
+			// returns its receiver, whatever it holds
+			if (name === "valueOf" && path[0] !== name && isCall) {
+				const [call, callParent] = operatorOf(memberParent)
+				return this.read(call, callParent, runtime, path)
+			}
+			// a patched builtin prototype method or computed call (e.g. `o[k]()`,
+			// where k may be "valueOf") needs Readers to follow or lose safely
+			if (
+				isCall &&
+				((name === undefined && path.length > 0) ||
+					(String(name) !== path[0] && this.thisReads.patchesBuiltins))
+			) {
+				this.handedOff ??= `${module.positionOf(node)} calls ${module.snippetOf(member)} on what holds a validator at ${path.join(".")}`
+				return
+			}
 			if (
 				(typeof name === "string" || typeof name === "number") &&
 				String(name) !== path[0]
 			)
 				return
-			const [member, memberParent] = operatorOf(parent)
 			return this.read(member, memberParent, runtime, path.slice(1))
 		}
 		const holder = `${module.snippetOf(node)}, which holds a validator at ${path.join(".")},`
@@ -980,58 +1011,430 @@ const isClassMember = (fn: Node): boolean =>
 	fn.parent?.type === "MethodDefinition" ||
 	fn.parent?.type === "PropertyDefinition"
 
-// the keys code reads off a `this` no class binds, e.g. an object literal's
-// method or a function called with a receiver, or `any` where it's read other
-// than at a name, like `const self = this`, `read(this)` or `this[k]`
-const thisKeysByModules = new WeakMap<
-	ReadonlyMap<string, RuntimeModule>,
-	ReadonlySet<string | undefined>
->()
+type KeyReads = { keys: Set<string>; any: boolean }
 
-export const thisKeysOf = (
-	modules: ReadonlyMap<string, RuntimeModule>
-): ReadonlySet<string | undefined> => {
-	let keys = thisKeysByModules.get(modules)
-	if (keys) return keys
-	const result = new Set<string | undefined>()
-	for (const { module } of modules.values()) {
+// what code reads off a `this` no class binds, e.g. an object literal's method
+// or a function called with a receiver, plus whether a builtin prototype is patched
+export type ThisReads = {
+	// by a function that may be bound to any object, as one reaching code the
+	// build can't see
+	escaped: KeyReads
+	// by the functions only an object literal can bind: its own methods and
+	// getters, and the functions it holds by reference
+	byLiteral: ReadonlyMap<Node, KeyReads>
+	// whether code the program reaches writes to Array.prototype or Object.prototype
+	patchesBuiltins: boolean
+}
+
+const keyReadsIn = (reads: ThisReads, literal: Node): KeyReads[] => {
+	const own = reads.byLiteral.get(literal)
+	return own ? [reads.escaped, own] : [reads.escaped]
+}
+
+// whether a read of the object literal holding a validator at key may be made
+// through `this`, which no reference to the object shows: by a function that
+// can be bound to it, as one in its own literal, or one it holds
+export const mayReadThrough = (
+	key: string,
+	literal: Node,
+	reads: ThisReads
+): boolean =>
+	keyReadsIn(reads, literal).some(read => read.any || read.keys.has(key))
+
+const builtinPrototypes = new Set(["Array.prototype", "Object.prototype"])
+
+export const globalNameOf = (
+	callee: Node,
+	module: SourceModule
+): string | undefined => {
+	const root =
+		callee.type === "MemberExpression" ?
+			unwrapExpression(callee.object)
+		:	callee
+	if (root.type !== "Identifier" || module.scopes.byId.get(root)?.binding)
+		return
+	if (callee.type === "Identifier") return callee.name
+	const name = memberNameOf(
+		callee as Extract<Node, { type: "MemberExpression" }>
+	)
+	return typeof name === "string" ? `${root.name}.${name}` : undefined
+}
+
+// e.g. `Array.prototype.first = fn` or `Object.defineProperty(Array.prototype, …)`,
+// rather than `Array.prototype.slice.call(list)`
+const isBuiltinPrototypePatch = (node: Node, module: SourceModule): boolean => {
+	if (
+		node.type !== "MemberExpression" ||
+		!builtinPrototypes.has(globalNameOf(node, module) ?? "")
+	)
+		return false
+	const [operand, parent] = operatorOf(node)
+	return (
+		parent?.type !== "MemberExpression" ||
+		parent.object !== operand ||
+		isWriteTarget(parent)
+	)
+}
+
+export const thisReadsOf = (modules: Iterable<SourceModule>): ThisReads => {
+	const reads: ThisReads = {
+		escaped: { keys: new Set(), any: false },
+		byLiteral: new Map(),
+		patchesBuiltins: false
+	}
+	for (const module of modules) {
 		walk(module.program, node => {
+			if (!reads.patchesBuiltins && isBuiltinPrototypePatch(node, module))
+				reads.patchesBuiltins = true
 			if (node.type !== "ThisExpression") return true
-			// a bare `this` outside any function is the module's
-			let fn: Node | undefined
-			for (let at: Node | null | undefined = node.parent; at; at = at.parent) {
-				if (
-					at.type === "FunctionExpression" ||
-					at.type === "FunctionDeclaration" ||
-					at.type === "PropertyDefinition" ||
-					at.type === "StaticBlock"
-				) {
-					fn = at
-					break
-				}
+			const fn = enclosingThisFunctionOf(node)
+			if (!fn || isClassMember(fn)) return true
+			const read = namesReadOf(node, module)
+			if (read !== "any" && !read.size) return true
+			const bound = boundLiteralsOf(fn, module)
+			const targets =
+				bound === "escapes" ?
+					[reads.escaped]
+				:	bound.map(literal => {
+						let own = reads.byLiteral.get(literal)
+						if (!own) {
+							own = { keys: new Set(), any: false }
+							;(reads.byLiteral as Map<Node, KeyReads>).set(literal, own)
+						}
+						return own
+					})
+			for (const target of targets) {
+				if (read === "any") target.any = true
+				else for (const key of read) target.keys.add(key)
 			}
-			if (!fn || fn.type === "PropertyDefinition" || fn.type === "StaticBlock")
-				return true
-			if (isClassMember(fn)) return true
-			const parent = node.parent
-			if (parent?.type === "MemberExpression" && parent.object === node) {
-				const name = memberNameOf(parent)
-				result.add(typeof name === "string" ? name : undefined)
-			} else result.add(undefined)
 			return true
 		})
 	}
-	thisKeysByModules.set(modules, (keys = result))
-	return keys
+	return reads
 }
 
-// whether a read of the object holding a validator at key may be made through
-// `this`, which no reference to the object shows: by a function in its own
-// literal, or by one the program binds a receiver
-export const mayReadThrough = (
-	key: string,
-	modules: ReadonlyMap<string, RuntimeModule>
+// the function a this is read in, where it has one a class doesn't bind
+const enclosingThisFunctionOf = (node: Node): Node | undefined => {
+	for (let at: Node | null | undefined = node.parent; at; at = at.parent) {
+		if (at.type === "FunctionExpression" || at.type === "FunctionDeclaration")
+			return at
+		// a bare `this` outside any function is the module's
+		if (at.type === "PropertyDefinition" || at.type === "StaticBlock") return
+	}
+}
+
+const forwardingMethods = new Set(["apply", "call", "bind"])
+
+const emptyNames: ReadonlySet<string> = new Set()
+
+// the names read off what a node evaluates to, or "any" where it's read other
+// than at a name, like `read(this)` or `this[k]`, or empty where it's passed
+// as the receiver of a function whose own body reads it
+const namesReadOf = (
+	node: Node,
+	module: SourceModule,
+	seen = new Set<Binding>()
+): ReadonlySet<string> | "any" => {
+	const [operand, parent] = operatorOf(node)
+	// e.g. `fn.apply(this, args)` in a debounce, where fn reads what it names
+	// off its receiver at its own `this`
+	if (
+		parent?.type === "CallExpression" &&
+		parent.arguments[0] === operand &&
+		parent.callee.type === "MemberExpression" &&
+		forwardingMethods.has(String(memberNameOf(parent.callee))) &&
+		isForwardingCallee(parent.callee.object, module)
+	)
+		return emptyNames
+	if (parent?.type === "MemberExpression" && parent.object === operand) {
+		const name = memberNameOf(parent)
+		return typeof name === "string" ? new Set([name]) : "any"
+	}
+	// e.g. `const self = this` or `const { schema } = this`, read at its references
+	if (parent?.type === "VariableDeclarator" && parent.init === operand) {
+		if (parent.id.type === "ObjectPattern") {
+			const names = new Set<string>()
+			for (const property of parent.id.properties) {
+				const name =
+					property.type === "Property" ? propertyKeyOf(property) : undefined
+				if (name === undefined) return "any"
+				names.add(name)
+			}
+			return names
+		}
+		const binding =
+			parent.id.type === "Identifier" ?
+				module.scopes.bindingsById.get(parent.id)
+			:	undefined
+		if (!binding || seen.has(binding)) return "any"
+		seen.add(binding)
+		const names = new Set<string>()
+		for (const reference of binding.references) {
+			if (reference.isWrite) continue
+			const read = namesReadOf(reference.id, module, seen)
+			if (read === "any") return "any"
+			for (const name of read) names.add(name)
+		}
+		return names
+	}
+	return "any"
+}
+
+// a function whose own `this` reads thisReadsOf indexes, as a callback param,
+// local function or import — not a builtin prototype method like `[].slice`
+const isForwardingCallee = (
+	node: Node,
+	module: SourceModule,
+	seen = new Set<Binding>()
 ): boolean => {
-	const keys = thisKeysOf(modules)
-	return keys.has(key) || keys.has(undefined)
+	const target = unwrapExpression(node)
+	if (target.type !== "Identifier") return false
+	const binding = module.scopes.byId.get(target)?.binding
+	if (!binding || seen.has(binding)) return false
+	seen.add(binding)
+	if (
+		binding.kind === "param" ||
+		binding.kind === "function" ||
+		binding.kind === "import"
+	)
+		return true
+	if (
+		binding.declaration.type === "VariableDeclarator" &&
+		binding.declaration.id.type === "Identifier" &&
+		binding.declaration.init
+	) {
+		const init = unwrapExpression(binding.declaration.init)
+		return (
+			init.type === "FunctionExpression" ||
+			init.type === "ArrowFunctionExpression" ||
+			(init.type === "Identifier" && isForwardingCallee(init, module, seen))
+		)
+	}
+	return false
+}
+
+// the object literals a function may be bound to as their member, "escapes"
+// where it may be bound to any other object
+const boundLiteralsOf = (
+	fn: Node,
+	module: SourceModule
+): readonly Node[] | "escapes" => {
+	// a named function expression can pass or return itself through its own name
+	if (
+		fn.type === "FunctionExpression" &&
+		fn.id &&
+		module.scopes.bindingsById.get(fn.id)?.references.length
+	)
+		return "escapes"
+	const parent = fn.parent
+	if (parent?.type === "Property" && parent.value === fn) {
+		const literal = parent.parent
+		return (
+				literal?.type === "ObjectExpression" &&
+					isContained(literal, module, parent)
+			) ?
+				[literal]
+			:	"escapes"
+	}
+	const binding =
+		fn.type === "FunctionDeclaration" ?
+			fn.id && module.scopes.bindingsById.get(fn.id)
+		: (
+			parent?.type === "VariableDeclarator" &&
+			parent.init === fn &&
+			parent.id.type === "Identifier"
+		) ?
+			module.scopes.bindingsById.get(parent.id)
+		:	undefined
+	if (!binding || binding.exportNames.length) return "escapes"
+	const literals: Node[] = []
+	for (const reference of binding.references) {
+		if (reference.isWrite) continue
+		const [operand, use] = operatorOf(reference.id)
+		// held by an object literal, shorthand or by reference
+		if (use?.type === "Property" && use.value === operand) {
+			const literal = use.parent
+			if (
+				literal?.type !== "ObjectExpression" ||
+				!isContained(literal, module, use)
+			)
+				return "escapes"
+			literals.push(literal)
+			continue
+		}
+		// called as a function, which binds no receiver
+		if (use?.type === "CallExpression" && use.callee === operand) continue
+		return "escapes"
+	}
+	return literals
+}
+
+type PropertyNode = Extract<Node, { type: "Property" }>
+
+// whether `property`'s function on `literal` cannot be detached and bound to
+// another object: neither through references to `literal`'s binding nor through
+// `this` inside `literal`'s own methods/getters or external methods called on it
+const isContained = (
+	literal: Extract<Node, { type: "ObjectExpression" }>,
+	module: SourceModule,
+	property: PropertyNode
+): boolean => {
+	const fnKey = propertyKeyOf(property)
+	if (fnKey === undefined) return false
+	const isMethod = property.kind === "init"
+	const [operand, declarator] = operatorOf(literal)
+	if (
+		declarator?.type !== "VariableDeclarator" ||
+		declarator.init !== operand ||
+		declarator.id.type !== "Identifier"
+	)
+		return false
+	const binding = module.scopes.bindingsById.get(declarator.id)
+	if (!binding || binding.exportNames.length) return false
+	const ownKeys = new Set<string>()
+	// keys whose value is not inline, so calling `literal.<key>()` runs external
+	// code with `this === literal` that could detach `this.<fnKey>`
+	const externalKeys = new Set<string>()
+	for (const prop of literal.properties) {
+		if (prop.type !== "Property") return false
+		const key = propertyKeyOf(prop)
+		if (key === undefined) return false
+		ownKeys.add(key)
+		if (prop !== property && prop.kind === "init") {
+			const value = unwrapExpression(prop.value)
+			if (
+				value.type !== "FunctionExpression" &&
+				value.type !== "ArrowFunctionExpression" &&
+				value.type !== "Literal" &&
+				value.type !== "TemplateLiteral" &&
+				value.type !== "ObjectExpression" &&
+				value.type !== "ArrayExpression"
+			)
+				externalKeys.add(key)
+		}
+	}
+	const refsContained = binding.references.every(reference => {
+		if (reference.isWrite) return false
+		const [read, use] = operatorOf(reference.id)
+		if (
+			use?.type !== "MemberExpression" ||
+			use.object !== read ||
+			isWriteTarget(use)
+		)
+			return false
+		const name = memberNameOf(use)
+		if (typeof name !== "string") return false
+		// e.g. `other.valueOf()`, `other.__lookupGetter__("x")`, `other.__proto__`
+		if (!ownKeys.has(name) && name in Object.prototype) return false
+		const [member, after] = operatorOf(use)
+		const isDirectCall =
+			after?.type === "CallExpression" && after.callee === member
+		// `other.run` must only be called directly, never read (e.g. `.valueOf()`, `.bind()`)
+		if (isMethod && name === fnKey) return isDirectCall
+		// calling an external property on `other` passes `this === other` to unseen code
+		if (externalKeys.has(name) && isDirectCall) return false
+		return true
+	})
+	if (!refsContained) return false
+	let leaksThis = false
+	walk(literal, node => {
+		if (leaksThis) return false
+		if (node.type !== "ThisExpression") return true
+		const owner = enclosingThisFunctionOf(node)
+		if (
+			owner &&
+			owner.parent?.type === "Property" &&
+			owner.parent.value === owner &&
+			owner.parent.parent === literal &&
+			!isContainedThis(node, fnKey, isMethod, ownKeys, externalKeys, module)
+		)
+			leaksThis = true
+		return true
+	})
+	return !leaksThis
+}
+
+// whether a `this` read inside a literal's own method or getter can neither
+// leak the literal itself nor detach its property at `fnKey`
+const isContainedThis = (
+	node: Node,
+	fnKey: string,
+	isMethod: boolean,
+	ownKeys: ReadonlySet<string>,
+	externalKeys: ReadonlySet<string>,
+	module: SourceModule,
+	seen = new Set<Binding>()
+): boolean => {
+	const [operand, parent] = operatorOf(node)
+	if (parent?.type === "MemberExpression" && parent.object === operand) {
+		if (isWriteTarget(parent)) return false
+		const name = memberNameOf(parent)
+		if (typeof name === "string") {
+			if (!ownKeys.has(name) && name in Object.prototype) return false
+			const [member, after] = operatorOf(parent)
+			const isDirectCall =
+				after?.type === "CallExpression" && after.callee === member
+			if (isMethod && name === fnKey) return isDirectCall
+			if (externalKeys.has(name) && isDirectCall) return false
+			return true
+		}
+		// computed read `this[k]` can return `this[fnKey]` unless only converted/logged
+		return isNonEscapingRead(parent, module)
+	}
+	if (parent?.type === "VariableDeclarator" && parent.init === operand) {
+		if (parent.id.type === "ObjectPattern") {
+			return parent.id.properties.every(property => {
+				const key =
+					property.type === "Property" ? propertyKeyOf(property) : undefined
+				return (
+					key !== undefined &&
+					(!isMethod || key !== fnKey) &&
+					(ownKeys.has(key) || !(key in Object.prototype))
+				)
+			})
+		}
+		const binding =
+			parent.id.type === "Identifier" ?
+				module.scopes.bindingsById.get(parent.id)
+			:	undefined
+		if (!binding || seen.has(binding)) return false
+		seen.add(binding)
+		return binding.references.every(
+			reference =>
+				reference.isWrite ||
+				isContainedThis(
+					reference.id,
+					fnKey,
+					isMethod,
+					ownKeys,
+					externalKeys,
+					module,
+					seen
+				)
+		)
+	}
+	return false
+}
+
+// whether a computed `this[k]` value cannot escape as a callable function
+const isNonEscapingRead = (node: Node, module: SourceModule): boolean => {
+	const [operand, parent] = operatorOf(node)
+	if (!parent) return false
+	if (parent.type === "ExpressionStatement") return true
+	if (parent.type === "UnaryExpression") return true
+	if (parent.type === "BinaryExpression") return parent.operator !== "in"
+	if (parent.type === "TemplateLiteral")
+		return parent.parent?.type !== "TaggedTemplateExpression"
+	if (parent.type === "CallExpression" && parent.callee !== operand) {
+		const name = globalNameOf(parent.callee, module)
+		return (
+			name === "String" ||
+			name === "Boolean" ||
+			name === "Number" ||
+			name === "console.log" ||
+			name === "console.warn" ||
+			name === "console.error"
+		)
+	}
+	return false
 }
