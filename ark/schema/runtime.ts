@@ -1,5 +1,6 @@
 import { throwParseError, type Fn } from "@ark/util"
 import type { ArkSchemaConfig, ResolvedConfig } from "./config.ts"
+import { copyConfig, isSameConfig } from "./shared/configured.ts"
 
 export type {
 	ArkError,
@@ -50,9 +51,14 @@ export const configure = (
 	config: ArkSchemaConfig,
 	fingerprint?: string
 ): ArkSchemaConfig => {
-	// arktype's config is fixed at its first Type
-	if (Object.isFrozen(runtimeConfig) || checkConfigured)
-		return throwParseError(reconfiguredMessage)
+	// arktype's config is fixed at its first Type, and the build's is one
+	// call's. Called again, as when a test runner resets its modules and the
+	// config module runs again, the same values change nothing
+	if (Object.isFrozen(runtimeConfig) || checkConfigured) {
+		return isSameConfig(config, programConfig ?? {}) ? config : (
+				throwParseError(reconfiguredMessage)
+			)
+	}
 	const received = fingerprintOf(config)
 	// a loader can rewrite the config module after the build read it
 	if (fingerprint !== undefined && fingerprint !== received)
@@ -72,12 +78,7 @@ export const configure = (
 			throwParseError(configMismatchMessage)
 	}
 	// copied, as arktype copies configure()'s argument
-	const held: Record<string, unknown> = {}
-	for (const k in config) {
-		const v = (config as Record<string, unknown>)[k]
-		held[k] = v && typeof v === "object" ? { ...v } : v
-	}
-	programConfig = held
+	programConfig = copyConfig(config)
 	return config
 }
 

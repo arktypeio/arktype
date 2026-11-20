@@ -575,6 +575,42 @@ console.log(Dyn.allows({ a: "x" }), Dyn.allows({ a: 1 }))
 			}
 		})
 
+		it("configured again with the same values, as after a test runner resets its modules", () => {
+			const root = writeFixture(
+				{
+					"package.json": '{ "type": "module" }',
+					"config.ts": `import { configure } from "arktype/config"
+
+configure({
+	divisor: { actual: data => \`\${data}, which isn't\` },
+	keywords: { "string.email": { description: "an address" } }
+})
+`,
+					"main.ts": `import "./config.ts"
+import { type } from "arktype"
+
+const T = type({ n: "number % 2", e: "string.email" })
+console.log(String(T({ n: 3, e: "x" })))
+// the config module run again, creating its function anew
+await import("./config.ts?again")
+console.log(String(T({ n: 3, e: "x" })))
+`
+				},
+				fromHere("temp", "configuredAgain")
+			)
+			const expected = runPlain(root)
+			attest(expected).snap(`n must be even (was 3, which isn't)
+e must be an address
+n must be even (was 3, which isn't)
+e must be an address
+`)
+			for (const runtime of [undefined, "arktype"] as const) {
+				attest(
+					node(["main.ts"], { runtime, config: "config.ts" }, root).stdout
+				).equals(expected)
+			}
+		})
+
 		it("configured behind a transpiling loader", () => {
 			const expected = runPlain(transpiled)
 			for (const runtime of [undefined, "arktype"] as const) {

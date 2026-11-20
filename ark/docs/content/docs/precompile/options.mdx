@@ -372,7 +372,7 @@ A `message`, `expected` or `actual` configured for a code, or on a Type with `.c
 - text a Scope configures for a code: configure it with `configure()`, or on each Type with `.configure()`
 - `predicate` text from `configure()` where a narrow or morph raises the error: pass the text to `ctx.reject()`
 
-The build fails where a module that creates a Type is imported before the config module, and the runtime throws if `configure()` runs after it creates its first validator, runs twice, or receives other values than the build read.
+The build fails where a module that creates a Type is imported before the config module, and the runtime throws if `configure()` runs after it creates its first validator, runs again with other values, or receives other values than the build read. Run again with the same values, as when a test runner resets its modules and the config module runs again, it changes nothing, as arktype's does.
 
 `config: false`, the default in a [production build](#production-builds), says the program never calls `configure()`, so the build fails wherever it does. A program that calls it names its module as `config`, which overrides the default.
 
