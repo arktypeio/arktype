@@ -1,5 +1,5 @@
 import type { NodeKind, nodeOfKind, SequenceTuple } from "arktype/schema"
-import { hasKey, hasOwn, throwError, throwInternalError } from "arktype/util"
+import { hasKey, throwError, throwInternalError } from "arktype/util"
 import * as fc from "fast-check"
 import {
 	getPossiblyWeightedArray,
@@ -7,10 +7,7 @@ import {
 } from "./arbitraries/array.ts"
 import { buildDomainArbitrary } from "./arbitraries/domain.ts"
 import { buildCyclicArbitrary } from "./arbitraries/object.ts"
-import {
-	buildProtoArbitrary,
-	type ProtoInputNode
-} from "./arbitraries/proto.ts"
+import { buildProtoArbitrary } from "./arbitraries/proto.ts"
 import type { Ctx } from "./fastCheckContext.ts"
 
 export const buildArbitrary = (
@@ -29,7 +26,7 @@ export const buildArbitrary = (
 			const basisArbitrary =
 				node.basis?.kind === "domain" ?
 					buildDomainArbitrary[node.basis?.domain](node, ctx)
-				:	buildInstanceArbitrary(node.basis.proto.name, node, ctx)
+				:	buildProtoArbitrary(node.basis.proto, node, ctx)
 
 			// generated around the values a != excludes
 			const excluded = [
@@ -70,7 +67,7 @@ export const buildArbitrary = (
 		case "unit":
 			return fc.constant(node.unit)
 		case "proto":
-			return buildInstanceArbitrary(node.proto.name, node as never, ctx)
+			return buildProtoArbitrary(node.proto, node, ctx)
 		case "structure":
 			return buildStructureArbitrary(node as never, ctx)
 		case "index":
@@ -101,15 +98,6 @@ export const buildArbitrary = (
 	}
 	throwInternalError(`${node.kind} is not supported`)
 }
-
-const buildInstanceArbitrary = (
-	className: string,
-	node: ProtoInputNode,
-	ctx: Ctx
-): fc.Arbitrary<unknown> =>
-	hasOwn(buildProtoArbitrary, className) ?
-		buildProtoArbitrary[className](node, ctx)
-	:	throwError(`${className} instances can't be generated`)
 
 export const buildStructureArbitrary = (
 	node: nodeOfKind<"intersection">,
@@ -252,7 +240,7 @@ const buildArrayArbitrary = (
 
 		const arrArbitrary = fc.array(elementsArbitrary, refinements)
 
-		return getPossiblyWeightedArray(arrArbitrary, node, ctx)
+		return getPossiblyWeightedArray(arrArbitrary, node, refinements, ctx)
 	}
 
 	return getSpreadVariadicElementsTuple(node.tuple, refinements, ctx)

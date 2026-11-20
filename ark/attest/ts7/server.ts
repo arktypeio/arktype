@@ -13,8 +13,6 @@ import { getChecker } from "../checker.ts"
 import { getConfig } from "../config.ts"
 import { narrowToNamedTestFiles } from "../utils.ts"
 
-export { getChecker }
-
 // resolved relative to attest so the API matches the installed typescript
 const requireTypeScript = createRequire(import.meta.url)
 

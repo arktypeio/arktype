@@ -5,9 +5,10 @@ import type { Ctx } from "../fastCheckContext.ts"
 export const getPossiblyWeightedArray = (
 	arrArbitrary: fc.Arbitrary<unknown[]>,
 	node: nodeOfKind<"sequence">,
+	refinements: fc.ArrayConstraints,
 	ctx: Ctx
 ): fc.Arbitrary<unknown[]> =>
-	ctx.tieStack.length ?
+	ctx.tieStack.length && !refinements.minLength ?
 		fc.oneof(
 			{
 				maxDepth: 2,

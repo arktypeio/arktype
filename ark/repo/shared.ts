@@ -140,6 +140,8 @@ export const publishedVersionsOf = async (name: string): Promise<string[]> => {
 	return Object.keys(versions)
 }
 
+const maxNpmFetchAttempts = 3
+
 /**
  * whether a specific version of a package is on npm. Queries the uncached
  * per-version endpoint rather than the packument, which is CDN-cached and
@@ -149,16 +151,15 @@ export const isVersionOnNpm = async (
 	name: string,
 	version: string
 ): Promise<boolean> => {
-	const response = await fetch(
-		`https://registry.npmjs.org/${name.replace("/", "%2f")}/${version}`
-	)
-	if (response.status === 200) {
+	const url = `https://registry.npmjs.org/${name.replace("/", "%2f")}/${version}`
+	for (let attempt = 1; ; attempt++) {
+		const response = await fetch(url)
 		await response.body?.cancel()
-		return true
+		if (response.status === 200) return true
+		if (response.status === 404) return false
+		const isTransient = response.status === 429 || response.status >= 500
+		if (!isTransient || attempt >= maxNpmFetchAttempts)
+			throw new Error(`npm responded ${response.status} for ${name}@${version}`)
+		await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
 	}
-	if (response.status === 404) {
-		await response.body?.cancel()
-		return false
-	}
-	throw new Error(`npm responded ${response.status} for ${name}@${version}`)
 }

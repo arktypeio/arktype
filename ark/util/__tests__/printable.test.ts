@@ -122,6 +122,7 @@ contextualize(() => {
 	it("date", () => {
 		const d = new Date("2023-10-03T14:30:15.123Z")
 		attest(printable(d)).snap("October 3, 2023, 2:30:15.123 PM UTC")
+		attest(printable(new Date(NaN))).snap("Invalid Date")
 	})
 
 	it("instance with expression", () => {

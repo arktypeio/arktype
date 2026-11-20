@@ -90,6 +90,33 @@ contextualize(() => {
 				"src/index.ts",
 				"src/router/page.ts"
 			])
+
+			const outAncestorProj = ensureDir(join(tmpRoot, "out", "proj"))
+			for (const rel of [
+				"src/a.ts",
+				"b.ts",
+				"out/ignored.ts",
+				"src/out/nestedIgnored.ts"
+			]) {
+				ensureDir(join(outAncestorProj, rel, ".."))
+				writeFile(join(outAncestorProj, rel), "export {}\n")
+			}
+
+			const foundUnderOutAbs = getSourceFilePaths(outAncestorProj)
+				.map(p => relative(outAncestorProj, p).replace(/\\/g, "/"))
+				.sort()
+			attest(foundUnderOutAbs).equals(["b.ts", "src/a.ts"])
+
+			let foundUnderOutRel: string[] = []
+			try {
+				process.chdir(tmpRoot)
+				foundUnderOutRel = getSourceFilePaths(join("out", "proj"))
+					.map(p => p.replace(/\\/g, "/"))
+					.sort()
+			} finally {
+				process.chdir(prevCwd)
+			}
+			attest(foundUnderOutRel).equals(["out/proj/b.ts", "out/proj/src/a.ts"])
 		} finally {
 			rmRf(tmpRoot)
 		}

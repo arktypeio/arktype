@@ -528,6 +528,18 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("recursive array with minLength", () => {
+			const $ = scope({
+				tree: { children: "tree[] >= 1 | null" },
+				nonEmptyBranch: { children: "(nonEmptyBranch | number)[] >= 1" },
+				unbounded: { children: ["unbounded", "...", "unbounded[]"] }
+			}).export()
+			assertProperty(arkToArbitrary($.tree), $.tree)
+			assertProperty(arkToArbitrary($.nonEmptyBranch), $.nonEmptyBranch)
+			attest(() => arkToArbitrary($.unbounded)).throws(
+				"Infinitely deep cycles are not supported."
+			)
+		})
 	})
 
 	describe("proto", () => {
@@ -569,6 +581,23 @@ contextualize(() => {
 		it("exclusive date bounds", () => {
 			const tight = type("d'2020-01-01'<Date<d'2020-01-01T00:00:00.005Z'")
 			assertProperty(arkToArbitrary(tight), tight)
+		})
+		it("custom class shadowing builtin name", () => {
+			class Map {}
+			attest(() => arkToArbitrary(type.instanceOf(Map))).throws(
+				"Map instances can't be generated"
+			)
+		})
+		it("constrained proto intersection", () => {
+			attest(() =>
+				arkToArbitrary(type.instanceOf(Error).and({ message: "'boom'" }))
+			).throws("Error instances with structure constraints can't be generated.")
+			attest(() =>
+				arkToArbitrary(type.instanceOf(Map).and({ size: "0" }))
+			).throws("Map instances with structure constraints can't be generated.")
+			attest(() =>
+				arkToArbitrary(type("Date").and({ custom: "string" }))
+			).throws("Date instances with structure constraints can't be generated.")
 		})
 	})
 })

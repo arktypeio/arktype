@@ -9,7 +9,7 @@ import {
 	ownEntriesOf,
 	toJsonMethodOf
 } from "./facts.ts"
-import { isArray, objectKindOf } from "./objectKinds.ts"
+import { isArray, isValidDate, objectKindOf } from "./objectKinds.ts"
 import { serializePrimitive, type SerializablePrimitive } from "./primitive.ts"
 import { defineValue, type dict } from "./records.ts"
 
@@ -224,6 +224,8 @@ const _serialize = (
  * Converts a Date instance to a human-readable description relative to its precision
  */
 export const describeCollapsibleDate = (date: Date): string => {
+	if (!isValidDate(date)) return "Invalid Date"
+
 	const year = date.getUTCFullYear()
 	const month = date.getUTCMonth()
 	const dayOfMonth = date.getUTCDate()

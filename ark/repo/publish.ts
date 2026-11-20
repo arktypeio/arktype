@@ -1,6 +1,6 @@
 import { getShellOutput, shell } from "@ark/fs"
 import { throwError } from "@ark/util"
-import { spawnSync } from "node:child_process"
+import { spawn } from "node:child_process"
 import { preview } from "../docs/lib/bench/preview.ts"
 import { isVersionOnNpm, packagesByScope, publishOrder } from "./shared.ts"
 
@@ -33,7 +33,12 @@ type Release = (typeof releases)[number]
 const alreadyPublishedMatcher =
 	/cannot publish over the previously published versions|epublishconflict/i
 
-const publish = (release: Release) => {
+type PublishExit = {
+	code: number | null
+	signal: NodeJS.Signals | null
+}
+
+const publish = async (release: Release) => {
 	const args = [
 		"publish",
 		"--no-git-checks",
@@ -41,27 +46,42 @@ const publish = (release: Release) => {
 		distTagOf(release.pkg.version),
 		...(dryRun ? ["--dry-run"] : [])
 	]
-	const result = spawnSync("pnpm", args, {
+	const child = spawn("pnpm", args, {
 		cwd: release.pkg.path,
 		stdio: ["inherit", "pipe", "pipe"],
-		encoding: "utf8",
-		maxBuffer: 64 * 1024 * 1024,
 		shell: process.platform === "win32"
 	})
-	if (result.stdout) process.stdout.write(result.stdout)
-	if (result.stderr) process.stderr.write(result.stderr)
-	if (result.error) throw result.error
-	if (result.status !== 0) {
-		const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`
+	let output = ""
+	child.stdout.setEncoding("utf8")
+	child.stderr.setEncoding("utf8")
+	child.stdout.on("data", (chunk: string) => {
+		process.stdout.write(chunk)
+		output += chunk
+	})
+	child.stderr.on("data", (chunk: string) => {
+		process.stderr.write(chunk)
+		output += chunk
+	})
+	const { code, signal } = await new Promise<PublishExit>((resolve, reject) => {
+		child.on("error", reject)
+		child.on("close", (exitCode, exitSignal) =>
+			resolve({ code: exitCode, signal: exitSignal })
+		)
+	})
+	if (code !== 0) {
 		if (!dryRun && alreadyPublishedMatcher.test(output)) {
-			console.log(
-				`${release.tag} is already queued or published on npm; continuing.`
-			)
+			if (await isVersionOnNpm(release.pkg.name, release.pkg.version))
+				console.log(`${release.tag} is already published on npm; continuing.`)
+			else {
+				console.warn(
+					`${release.tag} was rejected as already published, but isVersionOnNpm still returned false (either npm's PUT 202 async queue hasn't materialized it yet, or the version was previously unpublished and cannot be reused); continuing.`
+				)
+			}
 			release.isOnNpm = true
 			return
 		}
 		throwError(
-			`pnpm ${args.join(" ")} failed for ${release.tag} (exit ${result.status ?? result.signal})`
+			`pnpm ${args.join(" ")} failed for ${release.tag} (exit ${code ?? signal})`
 		)
 	}
 	if (!dryRun) release.isOnNpm = true
@@ -93,7 +113,7 @@ if (preview && stableType) {
 	)
 }
 
-for (const release of toPublish) publish(release)
+for (const release of toPublish) await publish(release)
 
 // in a dry run, what the publishes above would have put on npm
 const onNpm = dryRun ? releases : releases.filter(release => release.isOnNpm)

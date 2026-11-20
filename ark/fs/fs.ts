@@ -66,24 +66,29 @@ export type WalkOptions = {
 	include?: (path: string) => boolean
 }
 
-export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
-	readdirSync(dir).reduce((paths: string[], item: string) => {
-		const path = join(dir, item)
-		const isDir = lstatSync(path).isDirectory()
-		const isFile = lstatSync(path).isFile()
-		if (isDir && options.ignoreDirsMatching?.test(path)) return paths
+export const walkPaths = (dir: string, options: WalkOptions = {}): string[] => {
+	const walk = (currentDir: string, relPrefix: string): string[] =>
+		readdirSync(currentDir).reduce((paths: string[], item: string) => {
+			const path = join(currentDir, item)
+			const relPath = relPrefix ? join(relPrefix, item) : item
+			const stat = lstatSync(path)
+			const isDir = stat.isDirectory()
+			const isFile = stat.isFile()
+			if (isDir && options.ignoreDirsMatching?.test(relPath)) return paths
 
-		if (isFile && options.ignoreFilesMatching?.test(path)) return paths
+			if (isFile && options.ignoreFilesMatching?.test(path)) return paths
 
-		const excludeCurrent =
-			(options.excludeDirs && isDir) ||
-			(options.excludeFiles && !isDir) ||
-			options.exclude?.(path) ||
-			(options.include && !options.include(path))
-		const nestedPaths = isDir ? walkPaths(path, options) : []
-		paths.push(...(excludeCurrent ? [] : [path]), ...nestedPaths)
-		return paths
-	}, [])
+			const excludeCurrent =
+				(options.excludeDirs && isDir) ||
+				(options.excludeFiles && !isDir) ||
+				options.exclude?.(path) ||
+				(options.include && !options.include(path))
+			const nestedPaths = isDir ? walk(path, relPath) : []
+			paths.push(...(excludeCurrent ? [] : [path]), ...nestedPaths)
+			return paths
+		}, [])
+	return walk(dir, "")
+}
 
 /** Fetch the file and directory paths from a path, uri, or `import.meta.url` */
 export const filePath = (path: string): string => {

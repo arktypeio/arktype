@@ -107,8 +107,8 @@ export class ChainableAssertions implements AssertionRecord {
 				stack: this.ctx.assertionStack,
 				message: `Expected an instance of ${expected.name} (was ${
 					typeof actual === "object" && actual !== null ?
-						(actual.constructor?.name ?? this.serializedActual)
-					:	this.serializedActual
+						(actual.constructor?.name ?? printable(actual))
+					:	printable(actual)
 				})`
 			})
 		}

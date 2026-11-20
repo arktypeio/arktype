@@ -50,6 +50,10 @@ contextualize(() => {
 		)
 	})
 
+	it("returns Invalid Date for invalid dates", () => {
+		attest(describeCollapsibleDate(new Date(NaN))).snap("Invalid Date")
+	})
+
 	it("doesn't depend on the default locale's time format", () => {
 		const toLocaleTimeString = Date.prototype.toLocaleTimeString
 		// simulate a system whose default locale uses a 24-hour clock
