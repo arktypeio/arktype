@@ -43,6 +43,18 @@ export type inferSchema<schema, root, seen> =
 			keyof schema & PartKeyword,
 			seen
 		>
+	:	inferLegacyRef<schema, root, seen>
+
+/** before 2019-09, a `$ref`'s siblings are ignored; a widened `$schema` may
+ * also be 2020-12, where a standalone `nullable` widens the target with `null` */
+export type inferLegacyRef<schema, root, seen> =
+	"2020-12" extends draftsOf<root> ?
+		schema extends NonNullableNode | DefinedTypedSchema ?
+			inferRef<schema["$ref" & keyof schema], resourceOf<schema, root>, seen>
+		:	applyNullable<
+				schema,
+				inferRef<schema["$ref" & keyof schema], resourceOf<schema, root>, seen>
+			>
 	:	inferRef<schema["$ref" & keyof schema], resourceOf<schema, root>, seen>
 
 /** excludes `nullable`, including from an index signature that may hold it,
@@ -203,7 +215,10 @@ export type inferNode<
 	keys extends keyof schema & PartKeyword,
 	seen
 > =
-	schema extends UnmodifiedNode ? inferParts<schema, root, keys, seen>
+	schema extends UnmodifiedNode ?
+		schema extends NonNullableNode | DefinedTypedSchema ?
+			inferParts<schema, root, keys, seen>
+		:	applyNullable<schema, inferParts<schema, root, keys, seen>>
 	:	applyModifiers<schema, inferParts<schema, root, keys, seen>>
 
 /** a single kind or a common pair is intersected directly, which is cheaper
@@ -358,6 +373,12 @@ export interface TypedSchema {
 	type: unknown
 }
 
+/** a schema whose `type` is definitely present, so `nullable` adds `null` to
+ * that `type` rather than unioning the whole schema with `null` */
+export interface DefinedTypedSchema {
+	type: {}
+}
+
 export interface TypeListSchema {
 	type: array
 }
@@ -427,6 +448,11 @@ export interface ConditionalSchema {
 }
 
 export type applyModifiers<schema, t> =
+	schema extends NonNullableNode | DefinedTypedSchema ?
+		applyNotModifier<schema, t>
+	:	applyNullable<schema, applyNotModifier<schema, t>>
+
+export type applyNotModifier<schema, t> =
 	schema extends NegatedSchema ?
 		skipsNot<schema["not"], schema> extends true ?
 			t
@@ -590,9 +616,9 @@ export type TypeDomains = {
 /** JSON's non-array objects (TS `object` includes arrays) */
 export type JsonObject = object & { length?: never }
 
-/** OpenAPI 3.0's `nullable` adds `null` to the `type` beside it, so the
- * node's other parts still filter it, like ajv. Without a `type`, the reader
- * throws, so it adds nothing. `nullable` might be `true` (a widened `boolean`
+/** OpenAPI 3.0's `nullable` adds `null` to the `type` beside it (so other
+ * keywords still filter it, like ajv), or unions the whole schema with `null`
+ * when no `type` is present. `nullable` might be `true` (a widened `boolean`
  * or an optional keyword) */
 export type applyNullable<schema, t> =
 	true extends schema["nullable" & keyof schema] ? t | null : t

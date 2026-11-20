@@ -11,33 +11,33 @@ A Type read from a schema by [`fromJsonSchema`](/docs/json-schema/from-json-sche
 - **throws**: reading the schema throws a `ParseError` naming the keyword's JSON Pointer.
 - **ignored**: has no effect.
 
-Every keyword in a schema applies, and a type's keywords constrain only that type, as JSON Schema says: `{ minimum: 5 }` accepts `"foo"`, and `{ type: ["string", "number"], minLength: 2 }` accepts `3` but not `"a"`.
+Every keyword in a schema applies, and a type's keywords constrain only that type while leaving the other JSON types unconstrained: `{ minimum: 5 }` accepts `"foo"` and other JSON values like `null` or `{}`, rejects `-1` and non-JSON values like `undefined`, `bigint`, `symbol`, or functions, and `{ type: ["string", "number"], minLength: 2 }` accepts `3` but not `"a"`.
 
 [`configure()`](/docs/configuration) doesn't change what a schema accepts: whatever `onUndeclaredKey`, `exactOptionalPropertyTypes`, `numberAllowsNaN` and `numberAllowsInfinity` say, an object allows keys it doesn't declare, an optional property can't be `undefined`, and a number is finite.
 
 A keyword with an invalid value throws, like `#/minLength must be a non-negative integer (was -1)`. A keyword JSON Schema doesn't define is ignored.
 
-Of OpenAPI 3.0's own forms, which `toJsonSchema({ target: "openapi-3.0" })` writes, only `nullable` is read, as ajv reads it: `nullable: true` adds `null` to the `type` beside it, and the schema's other keywords still apply, so an `enum` there must list `null` too. `example` is ignored, and a boolean `exclusiveMinimum` throws.
+Of OpenAPI 3.0's own forms, which `toJsonSchema({ target: "openapi-3.0" })` writes, only `nullable` is read: beside a `type`, `nullable: true` adds `null` to that type as ajv reads it, so a sibling `enum` must list `null` too; without a `type` — beside `allOf`, `anyOf`, `oneOf`, `$ref`, `enum`, `const`, or any other subschema — `nullable: true` unions the schema with `null`. `example` is ignored, and a boolean `exclusiveMinimum` throws.
 
-`fromJsonSchema` checks a schema written in the call as you write it: an invalid keyword value is a type error, as is each keyword below that throws, except a `$ref` to another document and a `nullable` without a `type`. See [Invalid schemas](/docs/json-schema/from-json-schema#invalid-schemas).
+`fromJsonSchema` checks a schema written in the call as you write it: an invalid keyword value is a type error, as is each keyword below that throws, except a `$ref` to another document. See [Invalid schemas](/docs/json-schema/from-json-schema#invalid-schemas).
 
 ## Core
 
-| keyword                                                     | support     | notes                                                                                             |
-| ----------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------- |
-| `true`, `false`                                             | supported   | `unknown` and `never`                                                                             |
-| `type`                                                      | supported   | a name or an array of names. `"object"` excludes arrays                                           |
-| `const`, `enum`                                             | supported   | objects and arrays are compared by value                                                          |
-| `$ref`                                                      | supported   | `#`, a JSON Pointer like `#/$defs/Node`, an anchor or an embedded `$id`, including recursive refs |
-| `$ref` to another document                                  | **throws**  | only refs into the same document are resolved                                                     |
-| `$defs`, `definitions`                                      | supported   | read where a `$ref` points to them. Each value must be a schema                                   |
-| `$dynamicRef`, `$recursiveRef`                              | **throws**  | ignored under a draft-07 or earlier `$schema`, which has neither                                  |
-| `title`, `description`, `default`, `examples`, `deprecated` | annotation  | `default` is not applied                                                                          |
-| `$schema`                                                   | annotation  | draft-07 or earlier ignores the keywords beside a `$ref`, as those drafts do                      |
-| `$id`, `$anchor`, `$dynamicAnchor`                          | supported   | identify a schema a `$ref` resolves to. Draft-04 reads `id`                                       |
-| `$comment`, `readOnly`, `writeOnly`                         | **ignored** |                                                                                                   |
-| `contentEncoding`, `contentMediaType`                       | **ignored** | annotations in 2020-12                                                                            |
-| `nullable` (OpenAPI 3.0)                                    | supported   | adds `null` to the `type` beside it. **Throws** without a `type`, as ajv does                     |
+| keyword                                                     | support     | notes                                                                                                                         |
+| ----------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `true`, `false`                                             | supported   | `unknown` and `never`                                                                                                         |
+| `type`                                                      | supported   | a name or an array of names. `"object"` excludes arrays and functions                                                         |
+| `const`, `enum`                                             | supported   | objects and arrays are compared by value                                                                                      |
+| `$ref`                                                      | supported   | `#`, a JSON Pointer like `#/$defs/Node`, an anchor or an embedded `$id`, including recursive refs                             |
+| `$ref` to another document                                  | **throws**  | only refs into the same document are resolved                                                                                 |
+| `$defs`, `definitions`                                      | supported   | read where a `$ref` points to them. Each value must be a schema                                                               |
+| `$dynamicRef`, `$recursiveRef`                              | **throws**  | ignored under a draft-07 or earlier `$schema`, which has neither                                                              |
+| `title`, `description`, `default`, `examples`, `deprecated` | annotation  | `default` is not applied                                                                                                      |
+| `$schema`                                                   | annotation  | draft-07 or earlier ignores the keywords beside a `$ref`, as those drafts do                                                  |
+| `$id`, `$anchor`, `$dynamicAnchor`                          | supported   | identify a schema a `$ref` resolves to. Draft-04 reads `id`                                                                   |
+| `$comment`, `readOnly`, `writeOnly`                         | **ignored** |                                                                                                                               |
+| `contentEncoding`, `contentMediaType`                       | **ignored** | annotations in 2020-12                                                                                                        |
+| `nullable` (OpenAPI 3.0)                                    | supported   | adds `null` to the `type` beside it, or unions the schema with `null` without a `type`. **Throws** if `false` beside `"null"` |
 
 ## Composition
 

@@ -270,17 +270,88 @@ contextualize(() => {
 		}
 	})
 
-	it("throws where ajv can't compile OpenAPI 3.0's nullable", () => {
-		attest(() =>
-			parse({ properties: { a: { allOf: [{}], nullable: true } } })
-		).throws.snap(
-			"ParseError: #/properties/a/nullable must be beside a type, to which it adds null"
+	it("reads OpenAPI 3.0 nullable without a sibling type", () => {
+		const defs = { A: { type: "string" } } as const
+		attest(
+			parse({ $defs: defs, allOf: [{ $ref: "#/$defs/A" }], nullable: true })
+				.expression
+		).snap("string | null")
+		attest(
+			parse({
+				anyOf: [{ type: "string" }, { type: "number" }],
+				nullable: true
+			}).expression
+		).snap("number | string | null")
+		attest(
+			parse({
+				oneOf: [{ type: "string" }, { type: "number" }],
+				nullable: true
+			}).expression
+		).snap("number | string | null")
+		attest(
+			parse({ $defs: defs, $ref: "#/$defs/A", nullable: true }).expression
+		).snap("string | null")
+		attest(parse({ enum: ["a", "b"], nullable: true }).expression).snap(
+			'"a" | "b" | null'
 		)
+		attest(parse({ const: "a", nullable: true }).expression).snap('"a" | null')
+		attest(parse({ nullable: true }).expression).snap("unknown")
+		attest(
+			parse({ $defs: defs, allOf: [{ $ref: "#/$defs/A" }], nullable: false })
+				.expression
+		).snap("string")
+		attest(parse({ nullable: false }).expression).snap("unknown")
+	})
+
+	it("throws on contradictory or malformed OpenAPI 3.0 nullable", () => {
 		attest(() =>
 			parse({ type: ["string", "null"], nullable: false })
 		).throws.snap(
 			"ParseError: #/nullable can't be false beside a type that includes null"
 		)
+		attest(() => parse({ type: "null", nullable: false })).throws.snap(
+			"ParseError: #/nullable can't be false beside a type that includes null"
+		)
+		attest(() =>
+			parse({ allOf: [{ type: "string" }], nullable: "true" as never })
+		).throws.snap('ParseError: #/nullable must be a boolean (was "true")')
+	})
+
+	it("reads untyped constrained subschemas over JSON domains and converts cleanly", () => {
+		const Root = parse({ type: "object", properties: { n: { minimum: 0 } } })
+		attest(Root.allows({ n: 5 })).equals(true)
+		attest(Root.allows({ n: "x" })).equals(true)
+		attest(Root.allows({ n: -1 })).equals(false)
+		attest(Root.allows({ n: undefined })).equals(false)
+		attest(Root.allows({ n: 10n })).equals(false)
+		attest(Root.allows({ n: Symbol("s") })).equals(false)
+		attest(Root.allows({ n: () => {} })).equals(false)
+
+		const written = toJsonSchema(Root)
+		attest(parse(written).equals(Root)).equals(true)
+		const nProp = (
+			written as { properties: { n: { anyOf: Record<string, unknown>[] } } }
+		).properties.n
+		attest(nProp.anyOf.some(branch => Object.keys(branch).length === 0)).equals(
+			false
+		)
+		attest(
+			nProp.anyOf.some(
+				branch => branch.type === "number" && branch.minimum === 0
+			)
+		).equals(true)
+	})
+
+	it("rejects functions for type object and round-trips through toJsonSchema", () => {
+		const Obj = parse({ type: "object" })
+		attest(Obj.allows({})).equals(true)
+		attest(Obj.allows([])).equals(false)
+		attest(Obj.allows(() => {})).equals(false)
+		attest(toJsonSchema(Obj)).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			properties: {}
+		})
 	})
 
 	it("points into dependentSchemas", () => {

@@ -695,6 +695,47 @@ contextualize(() => {
 				.snap(`Type 'true' is not assignable to type '"boolean exclusiveMinimum isn't supported by fromJsonSchema\u200b"'.
 Type '{ type: string; }' is not assignable to type '"unevaluatedProperties isn't supported by fromJsonSchema\u200b"'.`)
 		})
+
+		it("nullable", () => {
+			attest(() =>
+				inferred({
+					$defs: { a: { type: "string" } },
+					allOf: [{ $ref: "#/$defs/a" }],
+					nullable: true
+				})
+			).type.errors.is("")
+			attest(() =>
+				inferred({
+					anyOf: [{ type: "string" }],
+					nullable: false
+				})
+			).type.errors.is("")
+			attest(() => inferred({ nullable: true })).type.errors.is("")
+			attest(() => inferred({ nullable: false })).type.errors.is("")
+			attest(() =>
+				// @ts-expect-error
+				inferred({ type: "null", nullable: false })
+			).type.errors("nullable can't be false beside a type that includes null")
+			attest(() =>
+				// @ts-expect-error
+				inferred({ type: ["string", "null"], nullable: false })
+			).type.errors("nullable can't be false beside a type that includes null")
+			attest(() =>
+				// @ts-expect-error
+				inferred({ allOf: [{ type: "string" }], nullable: "true" })
+			).type.errors("Type 'string' is not assignable to type 'boolean'")
+			attest<
+				[true, true, true, true, false, false],
+				[
+					isValid<{ type: "null"; nullable: boolean }>,
+					isValid<{ type: "null"; nullable?: false }>,
+					isValid<{ type: "string" | "null"; nullable: false }>,
+					isValid<{ type: ["string" | "null"]; nullable: false }>,
+					isValid<{ type: "null"; nullable: false }>,
+					isValid<{ type: ["string", "null"]; nullable: false }>
+				]
+			>()
+		})
 	})
 
 	describe("invalid subschemas", () => {

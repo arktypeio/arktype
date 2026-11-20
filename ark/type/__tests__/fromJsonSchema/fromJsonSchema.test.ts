@@ -30,6 +30,95 @@ contextualize(() => {
 			attest(T.expression).snap('{ a: string | null, b: "x" } & isNonArray')
 		})
 
+		it("OpenAPI 3.0 nullable without a sibling type", () => {
+			const T = fromJsonSchema({
+				$defs: {
+					Address: {
+						type: "object",
+						properties: { city: { type: "string" } },
+						required: ["city"]
+					}
+				},
+				type: "object",
+				properties: {
+					allOfRef: { allOf: [{ $ref: "#/$defs/Address" }], nullable: true },
+					anyOfVal: {
+						anyOf: [{ type: "string" }, { type: "number" }],
+						nullable: true
+					},
+					oneOfVal: {
+						oneOf: [{ type: "string" }, { type: "boolean" }],
+						nullable: true
+					},
+					directRef: { $ref: "#/$defs/Address", nullable: true },
+					enumVal: { enum: ["a", "b"], nullable: true },
+					constVal: { const: "x", nullable: true },
+					nonNullAllOf: {
+						allOf: [{ $ref: "#/$defs/Address" }],
+						nullable: false
+					}
+				},
+				required: [
+					"allOfRef",
+					"anyOfVal",
+					"oneOfVal",
+					"directRef",
+					"enumVal",
+					"constVal",
+					"nonNullAllOf"
+				]
+			})
+			attest<{
+				allOfRef: { city: string } | null
+				anyOfVal: string | number | null
+				oneOfVal: string | boolean | null
+				directRef: { city: string } | null
+				enumVal: "a" | "b" | null
+				constVal: "x" | null
+				nonNullAllOf: { city: string }
+			}>(T.infer)
+			const validNulls = {
+				allOfRef: null,
+				anyOfVal: null,
+				oneOfVal: null,
+				directRef: null,
+				enumVal: null,
+				constVal: null,
+				nonNullAllOf: { city: "NYC" }
+			}
+			attest(T.allows(validNulls)).equals(true)
+			attest(T.allows({ ...validNulls, nonNullAllOf: null })).equals(false)
+			attest(
+				T.allows({
+					allOfRef: { city: "SF" },
+					anyOfVal: 42,
+					oneOfVal: true,
+					directRef: { city: "LA" },
+					enumVal: "b",
+					constVal: "x",
+					nonNullAllOf: { city: "NYC" }
+				})
+			).equals(true)
+
+			// recursive $ref with nullable: true
+			const Node = fromJsonSchema({
+				$defs: {
+					Node: {
+						type: "object",
+						properties: {
+							val: { type: "number" },
+							next: { allOf: [{ $ref: "#/$defs/Node" }], nullable: true }
+						},
+						required: ["val", "next"]
+					}
+				},
+				$ref: "#/$defs/Node"
+			})
+			attest(Node.allows({ val: 1, next: null })).equals(true)
+			attest(Node.allows({ val: 1, next: { val: 2, next: null } })).equals(true)
+			attest(Node.allows({ val: 1, next: "bad" })).equals(false)
+		})
+
 		it("a widened JSON Schema infers unknown", () => {
 			const schema: JsonSchema = JSON.parse(`{ "type": "string" }`)
 			const T = fromJsonSchema(schema)

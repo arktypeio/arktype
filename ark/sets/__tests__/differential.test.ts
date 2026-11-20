@@ -115,7 +115,7 @@ const agrees = (...schemas: (object | boolean)[]) =>
 contextualize(() => {
 	it("boolean schemas", () => agrees(true, false, {}))
 
-	it("type", () =>
+	it("type", () => {
 		agrees(
 			{ type: "string" },
 			{ type: "number" },
@@ -127,7 +127,10 @@ contextualize(() => {
 			{ type: ["string", "null"] },
 			{ type: ["integer", "number"] },
 			{ type: ["object", "array"] }
-		))
+		)
+		// both reject JS functions as JSON objects
+		agreesOn([() => {}, function fn() {}, {}, []], { type: "object" })
+	})
 
 	it("const and enum", () =>
 		agrees(
@@ -343,20 +346,60 @@ contextualize(() => {
 			{ properties: { a: { type: "number", nullable: true } } }
 		))
 
-	it("OpenAPI 3.0 nullable ajv rejects", () => {
-		const schemas = [
-			{ nullable: true },
-			{ nullable: false },
+	it("OpenAPI 3.0 nullable without sibling type", () => {
+		const checkEquivalent = (schema: object, equivalent: object) => {
+			const root = parse(schema)
+			const validate = compile(equivalent)
+			attest({
+				schema,
+				disagreements: values.filter(v => root.allows(v) !== validate(v))
+			}).equals({ schema, disagreements: [] })
+		}
+		checkEquivalent({ nullable: true }, {})
+		checkEquivalent({ nullable: false }, {})
+		checkEquivalent(
 			{ allOf: [{ type: "string" }], nullable: true },
+			{ type: ["string", "null"] }
+		)
+		checkEquivalent(
+			{ allOf: [{ type: "string" }], nullable: false },
+			{ type: "string" }
+		)
+		checkEquivalent(
+			{ anyOf: [{ type: "string" }, { type: "number" }], nullable: true },
+			{ type: ["string", "number", "null"] }
+		)
+		checkEquivalent(
+			{ oneOf: [{ minimum: 2 }, { maximum: 4 }], nullable: true },
+			{ anyOf: [{ oneOf: [{ minimum: 2 }, { maximum: 4 }] }, { type: "null" }] }
+		)
+		checkEquivalent(
 			{ $defs: { s: { type: "string" } }, $ref: "#/$defs/s", nullable: true },
+			{ type: ["string", "null"] }
+		)
+		// draft-07 ignores $ref siblings, including nullable
+		checkEquivalent(
 			{
 				$schema: "http://json-schema.org/draft-07/schema#",
 				definitions: { s: { type: "string" } },
 				$ref: "#/definitions/s",
 				nullable: true
 			},
+			{ type: "string" }
+		)
+		checkEquivalent(
+			{ enum: ["a", "b"], nullable: true },
+			{ enum: ["a", "b", null] }
+		)
+		checkEquivalent({ const: "a", nullable: true }, { enum: ["a", null] })
+	})
+
+	it("OpenAPI 3.0 nullable invalid forms", () => {
+		const schemas = [
+			{ type: "null", nullable: false },
 			{ type: ["string", "null"], nullable: false },
-			{ type: "string", nullable: "true" }
+			{ type: "string", nullable: "true" },
+			{ allOf: [{ type: "string" }], nullable: "true" }
 		]
 		for (const schema of schemas) {
 			attest({ schema, arksets: throws(() => parse(schema)) }).equals({
@@ -364,6 +407,22 @@ contextualize(() => {
 				arksets: throws(() => compile(schema))
 			})
 		}
+	})
+
+	it("Standard JSON Schema output of untyped constrained subschemas rejects invalid numbers in Ajv", () => {
+		const root = parse({ type: "object", properties: { n: { minimum: 0 } } })
+		const standard = root["~standard"].jsonSchema.input({
+			target: "draft-2020-12"
+		})
+		const validate = ajv2020.compile(standard)
+		attest(validate({ n: 5 })).equals(true)
+		attest(validate({ n: 0 })).equals(true)
+		attest(validate({ n: "x" })).equals(true)
+		attest(validate({ n: null })).equals(true)
+		attest(validate({ n: true })).equals(true)
+		attest(validate({ n: [] })).equals(true)
+		attest(validate({ n: {} })).equals(true)
+		attest(validate({ n: -1 })).equals(false)
 	})
 
 	it("annotations", () =>
