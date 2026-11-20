@@ -143,12 +143,20 @@ const isoDateOf = (parts: RegExpExecArray): Date | undefined => {
 	return date
 }
 
+// a calendar date on a day past the 28th, which iso8601Matcher takes only in
+// a month that has it
+const lateDay = /^([+-]?\d{4}(-?)(?:0[1-9]|1[0-2])\2)(?:29|3[01])(?=T|$)/
+
 // an ISO date is read as string.date.iso.parse reads it, other forms by the host's Date
 const readDate = (s: string): Date | undefined => {
 	if (iso8601Matcher.test(s)) {
 		const parts = isoDateParts.exec(s)
 		return parts ? isoDateOf(parts) : undefined
 	}
+	// an ISO date but for a day its month doesn't have, e.g. 2025-02-30, which
+	// new Date would roll into the next month
+	const on28th = s.replace(lateDay, (_, monthOf: string) => `${monthOf}28`)
+	if (on28th !== s && iso8601Matcher.test(on28th)) return
 	const date = new Date(s)
 	return Number.isNaN(date.valueOf()) ? undefined : date
 }
