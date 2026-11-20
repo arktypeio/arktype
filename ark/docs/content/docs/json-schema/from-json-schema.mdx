@@ -130,6 +130,8 @@ User.allows({ name: "Ada" }) // true
 
 OpenAPI 3.0's `nullable: true` adds `null` to the `type` beside it, as ajv reads it, and infers it there too. A `nullable` without a `type`, like one beside a `$ref`, throws a `ParseError`, as ajv does.
 
+A schema's `description` is kept on `T.description` and metadata so it round-trips through `toJsonSchema()`, without replacing validation error `expected` phrasing.
+
 [Keyword support](/docs/json-schema/support) lists how each keyword is read. `fromJsonSchema` prevents code injection and prototype pollution, so a schema can't run arbitrary code, but it compiles `pattern` and `patternProperties` with JavaScript's `RegExp` and intersects `allOf` branches eagerly: don't pass untrusted regexes that can backtrack catastrophically or deeply nested `allOf` combinations without bounding the input.
 
 ## Invalid schemas

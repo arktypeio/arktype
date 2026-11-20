@@ -178,6 +178,10 @@ Each failed check is its own error, so nothing raised `intersection`. It's no lo
 - Only JSON Schema's annotations (`title`, `description`, `default`, `examples`, `deprecated`, `readOnly`, `writeOnly`, `$comment`, `format`, `contentEncoding` and `contentMediaType`) and `x-` keys of a Type's meta reach its JSON Schema, where every key did. Write anything else with `jsonSchema` meta.
 - `"+": "delete"` no longer writes `additionalProperties: false` in `toJsonSchema()`, since input may hold the keys it deletes. `.out.toJsonSchema()` writes it for the output's schema.
 
+### Fixes
+
+- Chained `.pipe(fn)` now type-checks `fn`'s parameter against the preceding output type (#1753), so mismatched morphs like `type("string").pipe((n: number) => ...)` are caught at compile time.
+
 ## 3.0.0-beta.1
 
 ### Summary

@@ -37,6 +37,7 @@ A [precompiled](/docs/precompile) validator has `toJsonSchema()`, its schema bak
 | `useRefs`       | `false`                                      | write every part once under `$defs`, not only [cyclic aliases](#cyclic-types), and point to it with `$ref`            |
 | `aliasDefs`     | `false`                                      | write [a scope's aliases](#named-aliases) once under `$defs`, named by the alias, not only cyclic ones                |
 | `discriminator` | `true` for `"openapi-3.0"` / `"openapi-3.1"` | name the key a [discriminated union](#discriminated-unions)'s `oneOf` is told apart by with OpenAPI's `discriminator` |
+| `io`            | unset                                        | convert `"in"` (input) or `"out"` (output) instead of the Type as written. See [`io`](#io)                            |
 | `fallback`      | throws                                       | what to write for a part JSON Schema can't express. See [Fallbacks](#fallbacks)                                       |
 
 ### target
@@ -146,6 +147,14 @@ Standard JSON Schema has no `"openapi-3.1"` target, so `~standard.jsonSchema` do
 ```ts
 type("string").toJsonSchema({ dialect: null }) // { type: "string" }
 ```
+
+### io
+
+`io` chooses which side of a morph, defaulted key, `"+": "delete"` object or `undefined`-allowing property to convert:
+
+- **unset** (default): converts the Type's input while keeping output-side structure except `"+": "delete"` (so morphs hit the `morph` fallback, defaults stay `default`, and `"+": "delete"` omits `additionalProperties`).
+- **`"in"`**: converts the input (morphs as their input, keeps `default`, drops `undefined` union branches, and allows keys `"+": "delete"` removes).
+- **`"out"`**: converts the output, matching [`~standard.jsonSchema.output`](#standard-json-schema) (morphs as their output, applies defaults, writes `additionalProperties: false` for `"+": "delete"`, and drops `undefined` from object property/index values while omitting `undefined`-allowing object properties from `required`).
 
 ### Cyclic types
 
