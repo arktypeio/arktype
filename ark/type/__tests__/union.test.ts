@@ -3,7 +3,8 @@ import {
 	intrinsic,
 	rootSchema,
 	writeIndivisibleMessage,
-	writeUnresolvableMessage
+	writeUnresolvableMessage,
+	type UnionNode
 } from "@ark/schema"
 import { type } from "arktype"
 import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
@@ -537,8 +538,32 @@ x must be a string`)
 			}),
 			b: "2"
 		})
+		// a Type is built at its first read
+		attest(T.expression).snap('{ a: string & fn, b: 2 } | { a: "x", b: 1 }')
 		attest(tested).snap(["x"])
 		attest(T({ a: "x", b: 1 })).snap({ a: "x", b: 1 })
+	})
+
+	it("an uncompiled check calls a predicate whether or not the union was discriminated", () => {
+		const testedOnFirstCall = (discriminated: boolean) => {
+			const tested: unknown[] = []
+			const T = type({ a: "'x'", b: "1" }).or({
+				a: type("string").narrow(s => {
+					tested.push(s)
+					return true
+				}),
+				b: "2"
+			})
+			const node = T.internal as UnionNode
+			// what reads a union's references, like binding precompiled units,
+			// discriminates it before its first check
+			if (discriminated) void node.discriminant
+			tested.length = 0
+			T({ a: "x", b: 1 })
+			return tested
+		}
+		attest(testedOnFirstCall(false)).snap(["x"])
+		attest(testedOnFirstCall(true)).snap(["x"])
 	})
 
 	it("equal units keep one branch however they're written", () => {

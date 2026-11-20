@@ -2,6 +2,7 @@ import {
 	$ark,
 	constraintKeys,
 	Disjoint,
+	type Alias,
 	type BaseConstraint,
 	type BaseNode,
 	type BaseProp,
@@ -175,9 +176,33 @@ export const sortSiblings = <node extends BaseNode>(
 const compareSiblings = (l: BaseNode, r: BaseNode): number =>
 	l.is("required") || l.is("optional") ?
 		compareKeys(l.key, (r as BaseProp).key) || compareHashes(l.hash, r.hash)
-	: l.kind === r.kind ? compareHashes(l.hash, r.hash)
 	: l.kind < r.kind ? -1
-	: 1
+	: l.kind > r.kind ? 1
+	: l.is("alias") ? compareAliases(l, r as Alias.Node)
+	: compareHashes(l.hash, r.hash)
+
+// an operation's alias hashes as its reference, which names its operands by
+// node id, e.g. `unit57&intersection88` for a unit deferred beside a cycle.
+// An id counts every node created before it, so ordering by it ordered
+// `(true&fn) | (undefined&fn)` by which tests ran first. Operations order by
+// their operator and operands instead, as the operands do by their content
+const compareAliases = (l: Alias.Node, r: Alias.Node): number => {
+	if (!l.operands || !r.operands) {
+		return (
+			l.operands ? 1
+			: r.operands ? -1
+			: compareHashes(l.hash, r.hash)
+		)
+	}
+	if (l.operator !== r.operator) return l.operator! < r.operator! ? -1 : 1
+	const lOperands = sortSiblings(l.operands)
+	const rOperands = sortSiblings(r.operands)
+	for (let i = 0; i < lOperands.length && i < rOperands.length; i++) {
+		const order = compareSiblings(lOperands[i], rOperands[i])
+		if (order) return order
+	}
+	return lOperands.length - rOperands.length || compareHashes(l.hash, r.hash)
+}
 
 // a registered name's counter compares as a number, so names order as registered
 const compareHashes = (l: string, r: string): number => {

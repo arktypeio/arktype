@@ -14,6 +14,7 @@ import {
 import type { nodeOfKind } from "../kinds.ts"
 import { forgetReferences, type BaseNode } from "../node.ts"
 import {
+	canJit,
 	compileSerializedValue,
 	expectedOf,
 	isDecidedByAllows,
@@ -261,16 +262,20 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	/**
-	 * whether a discriminant was found, finding it first if it wasn't
-	 * uncompiled checks don't discriminate
+	 * the discriminant an uncompiled check reads. A Type compiled later checks
+	 * its first data through its branches, sparing that call discriminating
+	 * every union on the data's path. A predicate reading ctx is only called for
+	 * the branch compiled code picks, and a node never compiled checks as
+	 * compiled code would. This reads no cache: whether something else had
+	 * already discriminated the union (a binding sizing its references by id,
+	 * a describe of a miss) would decide which branches' predicates are called
 	 */
-	private get foundDisc(): Discriminant | null {
-		return this._disc === undefined ? null : this.discriminant
+	private get uncompiledDisc(): Discriminant | null {
+		return this.checksCtx || !canJit(this.$.cfg) ? this.discriminant : null
 	}
 
 	tAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
-		// a predicate reading ctx is only called for the branch compiled code picks
-		const discriminant = this.checksCtx ? this.discriminant : this.foundDisc
+		const discriminant = this.uncompiledDisc
 		if (!discriminant) {
 			return this.branches.some(b =>
 				b.checksCtx ?

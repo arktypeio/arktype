@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import type { Json } from "@ark/util"
 import { fromJsonSchema, type, type JsonSchema } from "arktype"
 import { z } from "zod"
 
@@ -243,25 +244,29 @@ contextualize(() => {
 	})
 
 	it("tracks const and default value depth separately from schema nesting depth", () => {
-		let nestedConst: unknown = 1
-		for (let i = 0; i < 600; i++) nestedConst = [nestedConst]
-		const DeepConst = fromJsonSchema({ const: nestedConst })
-		attest(DeepConst.allows(nestedConst)).equals(true)
-		attest(DeepConst.allows([1])).equals(false)
-
-		let deepSchema: JsonSchema = {
-			type: "object",
-			default: { nested: { ok: true } }
+		// each value's depth starts over where it's held: 40 levels of schema
+		// around a value 63 deep pass 64 together, but neither budget alone. Kept
+		// under the ~175 levels of nodes whose `.json` overflows V8's stack
+		let nestedValue: Json = 1
+		for (let i = 0; i < 63; i++) nestedValue = [nestedValue]
+		let deepConst: JsonSchema = { const: nestedValue }
+		let deepDefault: JsonSchema = { type: "array", default: nestedValue }
+		let nestedData: unknown = nestedValue
+		for (let i = 0; i < 40; i++) {
+			deepConst = { type: "array", items: deepConst }
+			deepDefault = { type: "array", items: deepDefault }
+			nestedData = [nestedData]
 		}
-		for (let i = 0; i < 511; i++)
-			deepSchema = { type: "object", properties: { a: deepSchema } }
-		const DeepDefault = fromJsonSchema(deepSchema)
-		attest(DeepDefault.allows({})).equals(true)
+		const DeepConst = fromJsonSchema(deepConst)
+		attest(DeepConst.allows(nestedData)).equals(true)
+		attest(DeepConst.allows([[1]])).equals(false)
+		const DeepDefault = fromJsonSchema(deepDefault)
+		attest(DeepDefault.allows([[]])).equals(true)
 
 		let tooDeep: unknown = 1
 		for (let i = 0; i < 20_000; i++) tooDeep = [tooDeep]
 		attest(() => fromJsonSchema({ const: tooDeep })).throws(
-			"exceeds maximum nesting depth of 1024"
+			"exceeds maximum nesting depth of 64"
 		)
 
 		const circular: Record<string, unknown> = {}

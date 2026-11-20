@@ -89,7 +89,13 @@ const numberDomain = {
 
 // deep enough for real schemas (100-200+ levels) without risking a JS stack overflow
 const maxReadDepth = 512
-const maxValueDepth = 1024
+// a const or enum value nests a node per level, starting over at whatever depth
+// of schema holds it. Printing or serializing a Type recurses through each
+// node, and V8's default stack overflows its `.json` past about 175 levels of
+// arrays, so a budget of 1024 accepted values whose Type then threw a
+// RangeError for `.expression`, `.json` or its first uncompiled check. A
+// default or example is only checked for depth and cycles, on the same budget
+const maxValueDepth = 64
 
 export const readJsonSchema = (
 	schema: JsonSchema.Input,

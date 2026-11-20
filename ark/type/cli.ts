@@ -501,22 +501,32 @@ const runInit = (
 		}
 		stdout(`Created ${settingsPath}\n`)
 	} else {
-		try {
-			writeFileSync(settingsPath, settingsContent, { flag: "wx" })
-			stdout(`Created ${settingsPath}\n`)
-		} catch (e) {
-			const code = (e as NodeJS.ErrnoException).code
-			if (code === "EEXIST" || code === "EISDIR") {
-				const stat = lstatIfExists(settingsPath)
-				const detail =
-					stat?.isSymbolicLink() ? "symlink"
-					: stat?.isDirectory() ? "directory"
-					: stat && !stat.isFile() ? "not a regular file"
-					: "pass --force to overwrite"
-				stdout(`ark.json already exists at ${settingsPath} (${detail}).\n`)
-			} else {
-				stderr(`Failed to write ${settingsPath}: ${(e as Error).message}\n`)
-				return 1
+		// lstat before writing: on Windows, the "wx" flag follows a dangling
+		// symlink and creates its target (possibly outside the project) instead
+		// of failing with EEXIST as POSIX does. "wx" stays as the defense
+		// against a file appearing between the lstat and the write.
+		const reportExisting = (stat: Stats | undefined) => {
+			const detail =
+				stat?.isSymbolicLink() ? "symlink"
+				: stat?.isDirectory() ? "directory"
+				: stat && !stat.isFile() ? "not a regular file"
+				: "pass --force to overwrite"
+			stdout(`ark.json already exists at ${settingsPath} (${detail}).\n`)
+		}
+		const stat = lstatIfExists(settingsPath)
+		if (stat) reportExisting(stat)
+		else {
+			try {
+				writeFileSync(settingsPath, settingsContent, { flag: "wx" })
+				stdout(`Created ${settingsPath}\n`)
+			} catch (e) {
+				const code = (e as NodeJS.ErrnoException).code
+				if (code === "EEXIST" || code === "EISDIR")
+					reportExisting(lstatIfExists(settingsPath))
+				else {
+					stderr(`Failed to write ${settingsPath}: ${(e as Error).message}\n`)
+					return 1
+				}
 			}
 		}
 	}
