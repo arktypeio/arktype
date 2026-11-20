@@ -59,9 +59,9 @@ import "./arktype.config.ts"
 import { type } from "arktype"
 
 const User = type({
-	name: ["string >= 1", "@", { message: "Name is required" }],
+	name: type.string.atLeastLength(1, "Name is required"),
 	email: "string.email",
-	"age?": "number.integer >= 0",
+	"age?": "0 <= number.integer <= 9007199254740991",
 	role: "'admin' | 'member' = 'member'"
 })
 
@@ -86,7 +86,7 @@ configure({
 })
 ```
 
-Import it before anything creates a Type. To convert one schema without it, say both in the definition: `"+": "delete"` in each object, and `"age?": "number.integer >= 0 | undefined"`. [Defaults that differ](#defaults-that-differ) has every default to check, for each library.
+Import it before anything creates a Type. To convert one schema without it, say both in the definition: `"+": "delete"` in each object, `"age?": "0 <= number.integer <= 9007199254740991 | undefined"`, and write `role`'s default as [Defaults that differ](#defaults-that-differ) does, so `undefined` gets it too. [Defaults that differ](#defaults-that-differ) has every default to check, for each library.
 
 ## Zod
 
@@ -154,11 +154,11 @@ Zod Mini spells most methods as functions, so `z.optional(z.string())` maps like
 | `.extend({ ... })`, `.safeExtend({ ... })`, `.merge(B)` | `.merge({ ... })`, `.merge(B)`                                                                     |
 | `.pick({ a: true })`, `.omit({ a: true })`              | `.pick("a")`, `.omit("a")`                                                                         |
 | `.partial()`, `.required()`, `.keyof()`                 | same names                                                                                         |
-| `.required()` on keys that were optional or defaulted   | `.merge()` them in without `?`: its keys still take `undefined` once configured, and lose defaults |
+| `.required()` on a key with a default                   | `.required()`, which rejects `undefined` there where Zod's still fills in the default              |
 | `.deepPartial()` (Zod 3), `z.deepPartial(T)`            | no equivalent: call `.partial()` on each nested object's Type                                      |
 | any of those on a schema with a `.refine()`             | on the object before its `.narrow()`, see [Composing objects](#composing-objects)                  |
 | `T.shape.a`, `Object.keys(T.shape)`                     | `T.get("a")`, `T.props.map(prop => prop.key)`                                                      |
-| `z.object({ a: T.shape.a, b: B })`, to reuse a key      | `T.pick("a").merge({ b: B })`: `T.get("a")` is `a`'s Type without its `?` or default               |
+| `z.object({ a: T.shape.a, b: B })`, to reuse a key      | `T.pick("a").merge({ b: B })`: `T.get("a")` drops `?` and defaults, adding `\| undefined`          |
 | `.strict()`, `z.strictObject`                           | `"+": "reject"` in the object, or `T.onUndeclaredKey("reject")`                                    |
 | `.passthrough()`, `.loose()`, `z.looseObject`           | `"+": "ignore"` in the object, or `T.onUndeclaredKey("ignore")`                                    |
 | the same, where code reads the extra keys               | `"[string]": "unknown"` beside it, which infers the index signature Zod's type had                 |
@@ -450,7 +450,7 @@ const Flag = type("'true' | 'false'").pipe(s => s === "true")
 ```
 
 - A default is an input, so a transform's default is what it parses, as Zod's `.prefault()` is: `z.stringbool().default(false)` is `Flag.default("false")`.
-- `unknown` includes `undefined`, so a coercion at an optional or defaulted key is handed a key that's present as `undefined`, as `process.env`'s may be, where Zod's `.optional()` and `.default()` answer first. Return it or the default from the pipe, as `Server` does: `z.coerce.number().optional()` is `"limit?": type("unknown").pipe(v => (v === undefined ? v : Number(v))).to("number | undefined")`.
+- `unknown` includes `undefined`, so a coercion at an optional key, or at a defaulted one without `exactOptionalPropertyTypes: false`, is handed a key that's present as `undefined`, as `process.env`'s may be, where Zod's `.optional()` and `.default()` answer first. Return it or the default from the pipe, as `Server` does: `z.coerce.number().optional()` is `"limit?": type("unknown").pipe(v => (v === undefined ? v : Number(v))).to("number | undefined")`.
 
 ### Form data
 
@@ -683,13 +683,13 @@ const types = scope({
 
 Inside a scope, `type()` can't see the scope's names, so write a refinement or a transform there as a tuple: `["Post[]", ":", (posts, ctx) => ...]` for a `.narrow()`, `["string", "=>", s => s.trim()]` for a `.pipe()`.
 
-Delete the hand-written TypeScript type that `z.lazy` needed; `typeof Category.infer` and `typeof types.Post.infer` replace it. Where the module's declarations are emitted, as for a published package or a TypeScript project reference, `tsc` can't write the cycle in a `.d.ts`, so emit them with [`arktype-precompile --declare`](/docs/precompile/advanced#cyclic-types), or keep the type and [declare the Type with it](/docs/scopes#cyclic-types), `type.declare<Category>().type({ ... })`. For JSON data, use the `object.json` keyword rather than a recursive type of your own: `z.json()` is `"string | number | boolean | null | object.json"`.
+Delete the hand-written TypeScript type that `z.lazy` needed; `typeof Category.infer` and `typeof types.Post.infer` replace it. Where the module's declarations are emitted, as for a published package or a TypeScript project reference, `tsc` can't write the cycle in a `.d.ts`, so emit them with [`arktype-precompile --declare`](/docs/precompile/advanced#cyclic-types), or keep the type and [declare the Type with it](/docs/scopes#cyclic-types), `type.declare<Category>().type({ ... })`. For JSON data, use the `object.json` keyword rather than a recursive type of your own: `z.json()` is `"string | number | boolean | null | object.json"`. Define recursive Types once, at module scope, since each stays in memory for the life of the process.
 
 ### Composing objects
 
 `.merge()` replaces keys like Zod's `.extend()` or `v.object({ ...a.entries })`. `.and()` intersects, like `Type.Composite`, and throws when a key's types conflict. `.pick()` and `.omit()` take key names, as in `.pick("name", "email")`. Like Zod's, they and `.partial()` keep an object's `"+"`, so a `.strict()` object's are strict too, where `.merge()` takes `"+"` from the object merged in.
 
-A `.narrow()` on an object doesn't survive them. `.merge()`, a `"..."` spread, `.pick()`, `.omit()` and `.partial()` take the object's keys and leave its narrow behind, so a refinement Zod's `.extend()` kept no longer runs. Where the object also deletes undeclared keys, they throw instead: `merge operand must be an object (was (In: { ... }) => To<...>)`. Either way, keep the keys in a Type of their own, derive from that, and add the narrow last:
+A `.narrow()` on an object doesn't survive them. `.merge()`, a `"..."` spread, `.pick()`, `.omit()` and `.partial()` take the object's keys and leave its narrow behind, so a refinement Zod's `.extend()` kept no longer runs. Where the object also transforms its input — deletes undeclared keys, or has a default or morph at a key — they throw instead: `merge operand must be an object (was (In: { ... }) => To<...>)`. Either way, keep the keys in a Type of their own, derive from that, and add the narrow last:
 
 ```ts
 import { type, type Traversal } from "arktype"
@@ -826,7 +826,7 @@ const parameters = (object: JsonSchema, where: "query" | "path") => {
 }
 ```
 
-With `onUndeclaredKey: "delete"`, each object's schema says `additionalProperties: false`, which zod-to-openapi left out, and `.in` and `.out` write a registered schema in full where `toJsonSchema()` writes its `$ref`.
+With `onUndeclaredKey: "delete"`, `toJsonSchema()` writes what an object accepts, so without `additionalProperties: false`, which `.out.toJsonSchema()` writes. `.in` and `.out` write a registered schema in full where `toJsonSchema()` writes its `$ref`.
 
 Where you call `toJsonSchema` yourself, a scope can be the registry instead: with [`aliasDefs: true`](/docs/json-schema/to-json-schema#named-aliases), each alias is written once, by name, and a `$ref` wherever it's used, and a [`defs` fallback](/docs/json-schema/to-json-schema#openapi-30) collects them into `components`.
 
@@ -855,9 +855,9 @@ Zod 3, and Zod 4 before 4.5, also take `2025-01-01T10:00Z`, so write the seconds
 
 Valibot's `v.isoDate()` is `Day` and `v.isoTimestamp()` is `Zoned`. Its `v.isoDateTime()` takes only minutes and no offset, like `2025-01-01T10:00`, so its pattern is `/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/`.
 
-`string.date.iso` checks the format, not the calendar, so `2020-02-30` passes, where Zod and `string.date.iso.parse` reject it.
+`string.date.iso` checks the calendar as Zod does, so `2020-02-30` fails and `2024-02-29` passes.
 
-JSON Schema has one `pattern` for a string, so `toJsonSchema()` throws for these, and the schema a tool reads through Standard Schema keeps only the second. Where one is converted, say what to write, as Zod does: `Instant.configure({ jsonSchema: { type: "string", format: "date-time" } })`, or `format: "date"` for `Day`.
+`toJsonSchema()` throws for these, since it writes one `pattern` for a string, and the schema a tool reads through Standard Schema keeps both, the second in an `allOf`. Where one is converted, say what to write, as Zod does: `Instant.configure({ jsonSchema: { type: "string", format: "date-time" } })`, or `format: "date"` for `Day`.
 
 In JSON Schema, `format` is an annotation and validates nothing unless the validator, like ajv with `ajv-formats`, checks it; `string.email` always validates.
 

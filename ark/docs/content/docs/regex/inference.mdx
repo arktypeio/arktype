@@ -196,7 +196,7 @@ const strict = regex("^(?-i:a)b$", "i")
 //    ^? Regex<"ab" | "aB", { flags: "i" }>
 ```
 
-The `s` flag doesn't change inference, since `.` already infers `string`. The `m` flag is a [known gap](/docs/regex/faq#known-gaps).
+The `s` flag doesn't change inference, since `.` already infers `string`. With the `m` flag, `^` and `$` can match at a line break, so they don't anchor the type: `regex("^a$", "m")` infers `` `${string}a${string}` ``. An `m` modifier like `(?m:$)` is a [known gap](/docs/regex/faq#known-gaps).
 
 ## `.test()`
 

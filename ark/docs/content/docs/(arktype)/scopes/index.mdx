@@ -137,7 +137,7 @@ types.Package(packageData)
 
 A cycle must pass through an object, array or morph. An alias that resolves to itself without one, like `a` in `scope({ a: "a | string" })`, is a type error and throws a `ParseError`.
 
-For a single recursive `Type`, you don't need a scope: use the [`this`](/docs/expressions#this) keyword.
+For a single recursive `Type`, you don't need a scope: use the [`this`](/docs/expressions#this) keyword. Define cyclic scopes and recursive Types once, at module scope: each stays in memory for the life of the process.
 
 <Callout type="warn" title="Cyclic types may display as any">
 

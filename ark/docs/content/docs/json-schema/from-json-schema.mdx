@@ -30,7 +30,7 @@ User({ name: "Ada", age: 1.5 })
 `fromJsonSchema` takes one of:
 
 - a **JSON Schema**: an object or a boolean, read as [Keyword support](/docs/json-schema/support) describes.
-- a **[Standard JSON Schema](https://standardschema.dev/json-schema)**: a schema whose `~standard` has `jsonSchema`, like one from Zod 4.2.0 or later, or an arktype Type. It's read as the draft 2020-12 JSON Schema of its input, so what that can't express, like Zod's refinements, transforms and `undefined`, is left out. Pass any other library's schema as its JSON Schema, like `z.toJSONSchema(schema)` before Zod 4.2.0.
+- a **[Standard JSON Schema](https://standardschema.dev/json-schema)**: a schema whose `~standard` has `jsonSchema`, like one from Zod 4.2.0 or later, read as the draft 2020-12 JSON Schema of its input, so what that can't express, like Zod's refinements, transforms and `undefined`, is left out. An arktype Type is read as its own input directly, keeping non-JSON domains like `Date` and narrows; pass `T.toJsonSchema()` to read it by JSON Schema's rules. Pass any other library's schema as its JSON Schema, like `z.toJSONSchema(schema)` before Zod 4.2.0.
 
 ```ts
 import { fromJsonSchema } from "arktype"
@@ -130,7 +130,7 @@ User.allows({ name: "Ada" }) // true
 
 OpenAPI 3.0's `nullable: true` adds `null` to the `type` beside it, as ajv reads it, and infers it there too. A `nullable` without a `type`, like one beside a `$ref`, throws a `ParseError`, as ajv does.
 
-[Keyword support](/docs/json-schema/support) lists how each keyword is read.
+[Keyword support](/docs/json-schema/support) lists how each keyword is read. `fromJsonSchema` prevents code injection and prototype pollution, so a schema can't run arbitrary code, but it compiles `pattern` and `patternProperties` with JavaScript's `RegExp` and intersects `allOf` branches eagerly: don't pass untrusted regexes that can backtrack catastrophically or deeply nested `allOf` combinations without bounding the input.
 
 ## Invalid schemas
 

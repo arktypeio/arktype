@@ -40,14 +40,14 @@ import { type } from "arktype"
 bench.baseline(() => type("never"))
 
 bench("single-quoted", () => type("'nineteen characters'")).types([
-	731,
+	263,
 	"instantiations"
 ])
 
-bench("keyword", () => type("string")).types([511, "instantiations"])
+bench("keyword", () => type("string")).types([290, "instantiations"])
 ```
 
-On TypeScript 6.0.3, these benches count 13484 and 13408 without the baseline.
+On TypeScript 6.0.3, these benches count over 5000 each without the baseline.
 
 <Callout type="warn">
 	Don't bench an expression identical to your baseline expression. The bench

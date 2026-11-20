@@ -6,6 +6,10 @@
 
 `arkToArbitrary(T)` returns an `fc.Arbitrary<typeof T.inferIn>`, where it returned `fc.Arbitrary<unknown>` to be cast.
 
+### Generate `Map`, `RegExp`, `URL` and `Error`
+
+`arkToArbitrary` now generates `Map`, whose keys and values can be any value, `RegExp`, `URL` and `Error`, where each threw that instances couldn't be generated.
+
 ## 0.0.22-beta.1
 
 ### Install `@ark/fast-check`, not `@arktype/fast-check`
@@ -58,4 +62,4 @@ An object with several index signatures, like `{ "[string]": "number", "[/^a/]":
 
 ### Name the class an arbitrary can't be generated for
 
-A class with no builder, like `Map` or `type.instanceOf(Foo)`, threw `buildProtoArbitrary[node.proto.name] is not a function`. It now throws `Foo instances can't be generated`.
+A class with no builder, like `WeakMap` or `type.instanceOf(Foo)`, threw `buildProtoArbitrary[node.proto.name] is not a function`. It now throws `Foo instances can't be generated`.

@@ -103,7 +103,7 @@ const Key = type({ id: "number", name: "string" }).keyof()
 
 ## Constraints
 
-Each method adds a constraint you could also write in a [string definition](/docs/intro/adding-constraints), and returns a Type of the same kind. A Date bound can be a `Date`, a number of milliseconds or a string `new Date()` accepts.
+Each method adds a constraint you could also write in a [string definition](/docs/intro/adding-constraints), and returns a Type of the same kind. A Date bound can be a `Date`, a number of milliseconds, or a string that's an ISO date, an ISO date-time with `Z` or an offset, or epoch milliseconds, as a [date literal](/docs/objects#dates-literals) is.
 
 | Method           | Available on  | Constraint                                          |
 | ---------------- | ------------- | --------------------------------------------------- |
