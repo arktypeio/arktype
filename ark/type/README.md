@@ -1,9 +1,34 @@
-<h1 align="center">ArkType</h1>
-<h3 align="center"><i>TypeScript's smallest, fastest validator. One prompt away.</i></h3>
+<p align="center">
+	<a href="https://arktype.io">
+		<img
+			src="https://arktype.io/3/image/og.png"
+			width="720"
+			alt="ArkType — TypeScript's smallest, fastest validator. Fast. Small. Quick to start. Pick 3."
+		/>
+	</a>
+</p>
 
 <p align="center">
-	<a href="https://arktype.io/#board"><img src="https://arktype.io/image/og.png" width="640" alt="ArkType's places for validation speed, startup and bundle size, from the scoreboard at arktype.io" /></a>
+	<a href="https://arktype.io/docs/intro/setup"><strong>Docs</strong></a>
+	&nbsp;·&nbsp;
+	<a href="https://arktype.io/#board">Benchmarks</a>
+	&nbsp;·&nbsp;
+	<a href="https://arktype.io/docs/precompile">Precompile</a>
+	&nbsp;·&nbsp;
+	<a href="https://arktype.io/docs/migrating">Migrate from Zod</a>
+	&nbsp;·&nbsp;
+	<a href="https://arktype.io/playground">Playground</a>
+	&nbsp;·&nbsp;
+	<a href="https://arktype.io/discord">Discord</a>
 </p>
+
+## Quick start
+
+```sh
+npm install arktype
+```
+
+Write definitions in TypeScript's own syntax — inferred 1:1 and validated at runtime. Works with anything that takes [Standard Schema](https://standardschema.dev) (tRPC, Hono, React Hook Form, Drizzle, AI SDK, MCP SDK, and more).
 
 ```ts
 import { type } from "arktype"
@@ -29,30 +54,30 @@ if (out instanceof type.errors) {
 }
 ```
 
-```sh
-npm install arktype
-```
-
 ## Migrate with one prompt
 
-Add the skill, then ask your coding agent:
+1. Add the ArkType [agent skill](https://arktype.io/docs/agents):
 
-```sh
-npx skills add arktypeio/arktype
-```
+   ```sh
+   npx skills add arktypeio/arktype
+   ```
 
-```
-Migrate this project from Zod to ArkType.
-```
+2. Ask your coding agent:
+
+   ```text
+   Migrate this project from Zod to ArkType.
+   ```
+
+See the [migration guide](https://arktype.io/docs/migrating) for Zod, Valibot, TypeBox, Yup, Joi, Effect Schema, and JSON Schema.
 
 ## Docs
 
-- [Get started](https://arktype.io/docs/intro/setup)
-- [Benchmarks](https://arktype.io/#board), each with its method and the commands to rerun it
-- [Precompile](https://arktype.io/docs/precompile) with `@ark/aot`
-- [Migration guide](https://arktype.io/docs/migrating), for Zod, Valibot, TypeBox, Yup, Joi, Effect Schema and JSON Schema
-- [With agents](https://arktype.io/docs/agents)
-- [What's new in 3.0](https://arktype.io/docs/blog/3.0) and [upgrading from 2.x](https://arktype.io/docs/upgrading)
+- **[Get started](https://arktype.io/docs/intro/setup)** — installation, editor setup, and your first type
+- **[Precompile](https://arktype.io/docs/precompile)** — compile Types at build time with `@ark/aot`
+- **[Benchmarks](https://arktype.io/#board)** — speed, startup, and bundle size, with methods and rerun commands
+- **[Migration guide](https://arktype.io/docs/migrating)** — from Zod, Valibot, TypeBox, Yup, Joi, Effect Schema, and JSON Schema
+- **[With agents](https://arktype.io/docs/agents)** — the skill and Markdown docs at [arktype.io/llms.txt](https://arktype.io/llms.txt)
+- **[What's new in 3.0](https://arktype.io/docs/blog/3.0)** — release notes and [upgrading from 2.x](https://arktype.io/docs/upgrading)
 
 ## Contributions
 
